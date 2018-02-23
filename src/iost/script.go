@@ -7,10 +7,10 @@ import (
 )
 
 type BtcScript struct {
-	myStack * stack.Stack
+	myStack *stack.Stack
 }
 
-func NewBtcScriptor () BtcScript {
+func NewBtcScriptor() BtcScript {
 	var bb BtcScript
 	bb.myStack = stack.New()
 	return bb

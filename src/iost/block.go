@@ -1,17 +1,15 @@
 package iost
 
-type IBlock interface {
+type Block interface {
 	Serializable
 	SelfHash() []byte
 	SuperHash() []byte
 	ContentHash() []byte
 }
 
-
 // 以下是btc的block实现
 
 type BtcHeader struct {
-	ver        uint32
 	superHash  []byte
 	merkleHash []byte
 	timeStamp  uint32
@@ -21,7 +19,7 @@ type BtcHeader struct {
 
 func (h *BtcHeader) Bytes() []byte {
 	var s Binary
-	s.putUInt(h.ver).putBytes(h.superHash).putBytes(h.merkleHash)
+	s.putBytes(h.superHash).putBytes(h.merkleHash)
 	s.putUInt(h.timeStamp).putUInt(h.difficulty).putUInt(h.nonce)
 	return s.Bytes()
 }
