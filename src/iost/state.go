@@ -12,7 +12,7 @@ type State interface {
 	Bytes() []byte
 }
 
-// 比特币UTXO的实现
+// bitcoin utxo
 type UTXO struct {
 	value  uint64
 	script string

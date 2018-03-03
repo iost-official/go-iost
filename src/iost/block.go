@@ -1,13 +1,13 @@
 package iost
 
 type Block interface {
-	Serializable
 	SelfHash() []byte
 	SuperHash() []byte
 	ContentHash() []byte
+	Bytes() []byte
 }
 
-// 以下是btc的block实现
+// BitCoin like block
 
 type BtcHeader struct {
 	superHash  []byte
