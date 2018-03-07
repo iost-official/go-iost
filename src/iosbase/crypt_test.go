@@ -1,4 +1,4 @@
-package iost
+package iosbase
 
 import (
 	"fmt"

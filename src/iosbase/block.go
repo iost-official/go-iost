@@ -1,4 +1,4 @@
-package iost
+package iosbase
 
 type Block interface {
 	SelfHash() []byte
@@ -53,3 +53,14 @@ func (b *BtcBlock) ContentHash() []byte {
 }
 
 // end of BtcBlock
+
+
+// IosBlock
+
+type IosBlock struct {
+	superHash  []byte
+	contentHash []byte
+	memberHash []byte
+	timeStamp uint32
+
+}

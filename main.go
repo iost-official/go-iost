@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-//import "BlockChainFramework/src/iost"
+//import "BlockChainFramework/src/iosbase"
 
 func main() {
 	fmt.Println("hello world")

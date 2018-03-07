@@ -1,4 +1,4 @@
-package iost
+package iosbase
 
 import "fmt"
 
@@ -41,4 +41,8 @@ func (sp *StatePool) Del(key []byte) error {
 	} else {
 		return fmt.Errorf("state_not_exist")
 	}
+}
+
+func (sp *StatePool) Transact(t Transaction) error{
+	return nil
 }
