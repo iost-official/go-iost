@@ -1,0 +1,22 @@
+struct PrePrepare  {
+	sig     []byte
+	pubkey  []byte
+	blk     []byte
+}
+
+struct Prepare {
+    sig      []byte
+    pubkey   []byte
+	isAccept bool
+}
+
+struct Commit {
+	sig     []byte
+	pubkey  []byte
+	blkHash []byte
+}
+
+struct Receipt {
+	hashHead [8]byte
+}
+
