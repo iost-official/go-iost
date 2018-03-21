@@ -5,17 +5,20 @@ import (
 	"common"
 )
 
+
+
+
 type forkItem struct {
 	num     uint32 // initialized in ctor
 	prev    *forkItem
 	invalid bool
+	id      common.BlockIdType
+	data    protocol.SignedBlock
 	/**
+	 * isvalid:
 	 * Used to flag a block as invalid and prevent other blocks from
 	 * building on top of it.
 	 */
-
-	id   common.BlockIdType
-	data protocol.SignedBlock
 }
 
 /**
@@ -28,7 +31,10 @@ type forkItem struct {
 *  Every time a block is pushed into the fork DB the
 *  block with the highest block_num will be returned.
 */
+const MAX_BLOCK_REORDERING int =1024
+
 type ForkDatabase struct {
+	_index 
 	_head     *forkItem
 	_max_size uint32
 }
