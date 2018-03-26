@@ -16,7 +16,4 @@ struct Commit {
 	blkHash []byte
 }
 
-struct Receipt {
-	hashHead [8]byte
-}
 

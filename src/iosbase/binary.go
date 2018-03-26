@@ -1,3 +1,8 @@
+// wrap of binary/byte level operates
+
+/*
+This package contains structures of IOS block-chain and functions to operate them
+ */
 package iosbase
 
 import (
@@ -6,8 +11,11 @@ import (
 )
 
 type Serializable interface {
-	Bytes() []byte
+	Encode() []byte
+	Decode([]byte) error
+	Hash() []byte
 }
+
 
 type Binary struct {
 	bytes  []byte
@@ -61,7 +69,7 @@ func (bin *Binary) PutBytes(b []byte) *Binary {
 }
 
 func (bin *Binary) Put(o Serializable) *Binary {
-	bytes := o.Bytes()
+	bytes := o.Encode()
 	bin.bytes = append(bin.bytes, bytes...)
 	bin.length += len(bytes)
 	return bin
@@ -73,7 +81,6 @@ func GetInt(b []byte, start, end int) int {
 	binary.Read(bBuf, binary.BigEndian, &ans)
 	return ans
 }
-
 
 func (bin *Binary) Bytes() []byte {
 	return bin.bytes

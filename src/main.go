@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"IOS/src/pbft"
+	"IOS/src/protocol"
 )
 
 type Node struct {
-	pbft.ValidatorImpl
+	protocol.Validator
 }
 
 func main() {
