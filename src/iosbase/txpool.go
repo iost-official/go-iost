@@ -30,3 +30,11 @@ func (tp *TxPoolImpl) Has(txHash []byte) (bool, error) {
 	return true, nil
 }
 
+func (tp *TxPoolImpl) GetSlice() ([]Tx, error) {
+	return nil, nil
+}
+
+
+func FindTxPool (hash []byte) (TxPool, error) {
+	return nil,nil
+}

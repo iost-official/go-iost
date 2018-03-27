@@ -1,34 +1,34 @@
 package iosbase
 
-func (b *Block) Encode() []byte {
-	bin, err := b.Marshal(nil)
+func (d *Block) Encode() []byte {
+	bin, err := d.Marshal(nil)
 	if err != nil {
 		panic(err)
 	}
 	return bin
 }
 
-func (b *Block) Decode(bin []byte) error {
-	_,err := b.Unmarshal(bin)
+func (d *Block) Decode(bin []byte) error {
+	_,err := d.Unmarshal(bin)
 	return err
 }
-func (b *Block) Hash() []byte {
-	return Sha256(b.Encode())
+func (d *Block) Hash() []byte {
+	return Sha256(d.Encode())
 }
 
 
-func (b *BlockHead) Encode() []byte {
-	bin, err := b.Marshal(nil)
+func (d *BlockHead) Encode() []byte {
+	bin, err := d.Marshal(nil)
 	if err != nil {
 		panic(err)
 	}
 	return bin
 }
 
-func (b *BlockHead) Decode(bin []byte) error {
-	_,err := b.Unmarshal(bin)
+func (d *BlockHead) Decode(bin []byte) error {
+	_,err := d.Unmarshal(bin)
 	return err
 }
-func (b *BlockHead) Hash() []byte {
-	return Sha256(b.Encode())
+func (d *BlockHead) Hash() []byte {
+	return Sha256(d.Encode())
 }

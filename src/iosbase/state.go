@@ -1,17 +1,17 @@
 package iosbase
 
-func (s * State) Encode() []byte {
-	bin, err := s.Marshal(nil)
+func (d * State) Encode() []byte {
+	bin, err := d.Marshal(nil)
 	if err != nil {
 		panic(err)
 	}
 	return bin
 }
 
-func (s * State) Decode(bin []byte) error {
-	_,err := s.Unmarshal(bin)
+func (d * State) Decode(bin []byte) error {
+	_,err := d.Unmarshal(bin)
 	return err
 }
-func (s * State) Hash() []byte {
-	return Sha256(s.Encode())
+func (d * State) Hash() []byte {
+	return Sha256(d.Encode())
 }
