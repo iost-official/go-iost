@@ -7,6 +7,7 @@ struct PrePrepare  {
 struct Prepare {
     sig      []byte
     pubkey   []byte
+    rand     []byte
 	isAccept bool
 }
 

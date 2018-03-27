@@ -6,13 +6,6 @@ import (
 	"IOS/src/iosbase"
 )
 
-type View interface {
-	GetPrimaryID() string
-	GetBackupID() []string
-	isPrimary(ID string) bool
-	isBackup(ID string) bool
-}
-
 type Character int
 
 const (
@@ -62,23 +55,15 @@ func (c *Consensus) Run() {
 	var err error = nil
 	c.isRunning = true
 
+	to := time.NewTimer(1 * time.Minute)
+
 	for c.isRunning {
 		switch c.phase {
 		case StartPhase:
-			c.phase, err = c.onNewView()
-		case PrePreparePhase:
-			pp := PrePrepare{}
-			pp.Unmarshal(req.Body)
-			c.phase, err = c.onPrePrepare(pp)
-		case PreparePhase:
-			p := Prepare{}
-			p.Unmarshal(req.Body)
-			c.phase, err = c.onPrepare(p)
-		case CommitPhase:
-			cm := Commit{}
-			cm.Unmarshal(req.Body)
-			c.phase, err = c.onCommit(cm)
+			v := NewDposView(c.blockChain)
+			c.phase, err = c.onNewView(&v)
 		case PanicPhase:
+			return
 		case EndPhase:
 			return
 		}
@@ -87,16 +72,31 @@ func (c *Consensus) Run() {
 			fmt.Println(err)
 		}
 
-		to := time.NewTimer(1 * time.Minute)
 		select {
 		case <-c.receiveChan:
 			req = <-c.receiveChan
-			if ! to.Stop() {
+
+			switch c.phase {
+			case PrePreparePhase:
+				pp := PrePrepare{}
+				pp.Unmarshal(req.Body)
+				c.phase, err = c.onPrePrepare(&pp)
+			case PreparePhase:
+				p := Prepare{}
+				p.Unmarshal(req.Body)
+				c.phase, err = c.onPrepare(p)
+			case CommitPhase:
+				cm := Commit{}
+				cm.Unmarshal(req.Body)
+				c.phase, err = c.onCommit(cm)
+			}
+
+			if !to.Stop() {
 				<-to.C
 			}
 			to.Reset(ExpireTime)
 		case <-to.C:
-			c.phase, err = c.onTimeOut()
+			c.phase, err = c.onTimeOut(c.phase)
 			if err != nil {
 				return
 			}

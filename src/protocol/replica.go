@@ -16,3 +16,15 @@ func (c *Consensus) replicaInit (bc iosbase.BlockChain, sp iosbase.StatePool) er
 func (c *Consensus) verifyTx (tx iosbase.Tx) error {
 	return nil
 }
+
+func (c *Consensus) makeBlock() iosbase.Block {
+	return iosbase.Block{}
+}
+
+func (c *Consensus) makeEmptyBlock() {
+	c.blockChain.Push(iosbase.Block{})
+}
+
+func (c *Consensus) admitBlock(blkHash []byte) {
+
+}

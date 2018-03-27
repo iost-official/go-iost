@@ -222,6 +222,7 @@ func (d *PrePrepare) Unmarshal(buf []byte) (uint64, error) {
 type Prepare struct {
 	sig      []byte
 	pubkey   []byte
+	rand     []byte
 	isAccept bool
 }
 
@@ -244,6 +245,21 @@ func (d *Prepare) Size() (s uint64) {
 	}
 	{
 		l := uint64(len(d.pubkey))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t >>= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.rand))
 
 		{
 
@@ -310,6 +326,25 @@ func (d *Prepare) Marshal(buf []byte) ([]byte, error) {
 		i += l
 	}
 	{
+		l := uint64(len(d.rand))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+0] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+0] = byte(t)
+			i++
+
+		}
+		copy(buf[i+0:], d.rand)
+		i += l
+	}
+	{
 		if d.isAccept {
 			buf[i+0] = 1
 		} else {
@@ -370,6 +405,31 @@ func (d *Prepare) Unmarshal(buf []byte) (uint64, error) {
 			d.pubkey = make([]byte, l)
 		}
 		copy(d.pubkey, buf[i+0:])
+		i += l
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+0] & 0x7F)
+			for buf[i+0]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+0]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		if uint64(cap(d.rand)) >= l {
+			d.rand = d.rand[:l]
+		} else {
+			d.rand = make([]byte, l)
+		}
+		copy(d.rand, buf[i+0:])
 		i += l
 	}
 	{
@@ -581,45 +641,6 @@ func (d *Commit) Unmarshal(buf []byte) (uint64, error) {
 		}
 		copy(d.blkHash, buf[i+0:])
 		i += l
-	}
-	return i + 0, nil
-}
-
-type Receipt struct {
-	hashHead [8]byte
-}
-
-func (d *Receipt) Size() (s uint64) {
-
-	{
-		s += 8
-	}
-	return
-}
-func (d *Receipt) Marshal(buf []byte) ([]byte, error) {
-	size := d.Size()
-	{
-		if uint64(cap(buf)) >= size {
-			buf = buf[:size]
-		} else {
-			buf = make([]byte, size)
-		}
-	}
-	i := uint64(0)
-
-	{
-		copy(buf[i+0:], d.hashHead[:])
-		i += 8
-	}
-	return buf[:i+0], nil
-}
-
-func (d *Receipt) Unmarshal(buf []byte) (uint64, error) {
-	i := uint64(0)
-
-	{
-		copy(d.hashHead[:], buf[i+0:])
-		i += 8
 	}
 	return i + 0, nil
 }
