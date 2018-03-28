@@ -9,7 +9,6 @@ type TxPool interface {
 	Serializable
 }
 
-
 type TxPoolImpl struct {
 	txs map[string]Tx
 }
@@ -34,7 +33,6 @@ func (tp *TxPoolImpl) GetSlice() ([]Tx, error) {
 	return nil, nil
 }
 
-
-func FindTxPool (hash []byte) (TxPool, error) {
-	return nil,nil
+func FindTxPool(hash []byte) (TxPool, error) {
+	return nil, nil
 }

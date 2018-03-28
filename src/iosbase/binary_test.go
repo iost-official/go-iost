@@ -1,8 +1,8 @@
 package iosbase
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestBinaryFromBase58(t *testing.T) {

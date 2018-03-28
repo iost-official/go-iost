@@ -8,5 +8,3 @@ type BlockChain interface {
 
 	SubChain(layer int) BlockChain
 }
-
-

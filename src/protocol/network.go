@@ -4,20 +4,21 @@ import "IOS/src/iosbase"
 
 type NetworkFilter struct {
 	base iosbase.Network
+	*RuntimeData
 
-	valiChan  chan iosbase.Request
-	repliChan chan iosbase.Request
+	replicaChan  chan iosbase.Request
+	recorderChan chan iosbase.Request
 }
 
-func (c *Consensus) send(request iosbase.Request) {
-	c.base.Send(request)
+func (n *NetworkFilter) send(request iosbase.Request) {
+	n.base.Send(request)
 }
 
-func (c *Consensus) networkFilterInit(nw iosbase.Network) error {
-	c.base = nw
+func (n *NetworkFilter) init(rd *RuntimeData, nw iosbase.Network) error {
+	n.RuntimeData = rd
+	n.base = nw
 	return nil
 }
-
 
 type ResponseState int
 
@@ -27,53 +28,104 @@ const (
 	Error
 )
 
-func (c *Consensus) replicaFilter(request chan iosbase.Request, res chan iosbase.Response) {
+func (n *NetworkFilter) replicaFilter(request chan iosbase.Request, res chan iosbase.Response) {
 	var req iosbase.Request
-	for c.isRunning {
+	for n.isRunning {
 		req = <-request
 		// 1. if req comes from right member
-		if c.view.isPrimary(req.From) || c.view.isBackup(req.From) {
-			res <- iosbase.Response{req.To, req.From, int(Reject), "YOU ARE NOT MEMBER"}
+		if n.view.isPrimary(req.From) || n.view.isBackup(req.From) {
+			res <- authorityError(req)
 		}
 		// 2. if req in right phase
-		switch c.phase {
+		switch n.phase {
 		case StartPhase:
-			res <- iosbase.Response{req.To, req.From, int(Reject), "ON START PHASE"}
+			res <- iosbase.Response{
+				From:        req.To,
+				To:          req.From,
+				Code:        int(Reject),
+				Description: "ON START PHASE",
+			}
 		case PrePreparePhase:
 			if req.ReqType == int(PrePreparePhase) {
-				res <- iosbase.Response{req.To, req.From, int(Accepted), ""}
-				c.valiChan <- req
+				res <- accept(req)
+				n.replicaChan <- req
 			} else {
-				res <- iosbase.Response{req.To, req.From, int(Reject), "ON START PHASE"}
+				res <- invalidPhase(req)
 			}
 		case PreparePhase:
 			if req.ReqType == int(PreparePhase) {
-				res <- iosbase.Response{req.To, req.From, int(Accepted), ""}
-				c.valiChan <- req
+				res <- accept(req)
+				n.replicaChan <- req
 			} else {
-				res <- iosbase.Response{req.To, req.From, int(Reject), "ON START PHASE"}
+				res <- invalidPhase(req)
 			}
 		case CommitPhase:
 			if req.ReqType == int(CommitPhase) {
-				res <- iosbase.Response{req.To, req.From, int(Accepted), ""}
-				c.valiChan <- req
+				res <- accept(req)
+				n.replicaChan <- req
 			} else {
-				res <- iosbase.Response{req.To, req.From, int(Reject), "ON START PHASE"}
+				res <- invalidPhase(req)
 			}
 		case PanicPhase:
-			res <- iosbase.Response{req.To, req.From, int(Error), "INTERNAL ERROR"}
+			res <- internalError(req)
 		case EndPhase:
-			res <- iosbase.Response{req.To, req.From, int(Reject), "ON START PHASE"}
+			res <- invalidPhase(req)
 		}
-		res <- iosbase.Response{req.To, req.From, int(Reject), "ON START PHASE"}
+		res <- internalError(req)
 	}
 }
 
-func (c *Consensus) recorderFilter(req chan iosbase.Request, res chan iosbase.Response) {
-	for c.isRunning {
-		request := <-req
+func (n *NetworkFilter) recorderFilter(recorder Recorder, reqChan chan iosbase.Request, resChan chan iosbase.Response) {
+	for n.isRunning {
+		req := <-reqChan
 		var tx iosbase.Tx
-		tx.Decode(request.Body)
-		c.PublishTx(tx)
+		err := tx.Decode(req.Body)
+		if err != nil {
+			resChan <- illegalTx(req)
+		}
+		recorder.publishTx(tx)
+	}
+}
+
+func invalidPhase(req iosbase.Request) iosbase.Response {
+	return iosbase.Response{From: req.To,
+		To:   req.From,
+		Code: int(Reject), Description: "Error: Invalid phase",
+	}
+}
+
+func accept(req iosbase.Request) iosbase.Response {
+	return iosbase.Response{
+		From:        req.To,
+		To:          req.From,
+		Code:        int(Accepted),
+		Description: "",
+	}
+}
+
+func internalError(req iosbase.Request) iosbase.Response {
+	return iosbase.Response{
+		From:        req.To,
+		To:          req.From,
+		Code:        int(Reject),
+		Description: "Error: Internal error",
+	}
+}
+
+func authorityError(req iosbase.Request) iosbase.Response {
+	return iosbase.Response{
+		From:        req.To,
+		To:          req.From,
+		Code:        int(Reject),
+		Description: "Error: Authority error",
+	}
+}
+
+func illegalTx(req iosbase.Request) iosbase.Response {
+	return iosbase.Response{
+		From:        req.To,
+		To:          req.From,
+		Code:        int(Error),
+		Description: "ERROR: Illegal Transaction",
 	}
 }

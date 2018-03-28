@@ -6,7 +6,6 @@ type Member struct {
 	Seckey []byte
 }
 
-
 func NewMember(seckey []byte) (Member, error) {
 	var m Member
 	m.Seckey = seckey

@@ -2,10 +2,10 @@ package iosbase
 
 import (
 	"crypto/sha256"
-	"golang.org/x/crypto/ripemd160"
+	"encoding/hex"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	"encoding/hex"
+	"golang.org/x/crypto/ripemd160"
 )
 
 func Sha256(raw []byte) []byte {

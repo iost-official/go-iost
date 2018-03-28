@@ -9,13 +9,12 @@ func (d *Block) Encode() []byte {
 }
 
 func (d *Block) Decode(bin []byte) error {
-	_,err := d.Unmarshal(bin)
+	_, err := d.Unmarshal(bin)
 	return err
 }
 func (d *Block) Hash() []byte {
 	return Sha256(d.Encode())
 }
-
 
 func (d *BlockHead) Encode() []byte {
 	bin, err := d.Marshal(nil)
@@ -26,7 +25,7 @@ func (d *BlockHead) Encode() []byte {
 }
 
 func (d *BlockHead) Decode(bin []byte) error {
-	_,err := d.Unmarshal(bin)
+	_, err := d.Unmarshal(bin)
 	return err
 }
 func (d *BlockHead) Hash() []byte {

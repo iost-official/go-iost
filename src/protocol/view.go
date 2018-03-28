@@ -23,25 +23,25 @@ func NewDposView(chain iosbase.BlockChain) DposView {
 	var view DposView
 
 	/*
-	ruler:
-	1. the backups become primary in turn
-	2. primary make block, and leave
-	3. the best recorder become the newest backup
-	4. the rulers in bad situations，simply put empty block，thus the member will walk though as the empty block on the top
+		ruler:
+		1. the backups become primary in turn
+		2. primary make block, and leave
+		3. the best recorder become the newest backup
+		4. the rulers in bad situations，simply put empty block，thus the member will walk though as the empty block on the top
 	*/
 
 	top := chain.Length()
 	emptyCount := 0
 
-	top --
+	top--
 	blk, err := chain.Get(top)
 	if err != nil {
 		panic(err) // TODO
 	}
 
 	for isEmptyBlock(blk) {
-		emptyCount ++
-		top --
+		emptyCount++
+		top--
 		blk, err = chain.Get(top)
 		if err != nil {
 			panic(err) // TODO
@@ -54,7 +54,7 @@ func NewDposView(chain iosbase.BlockChain) DposView {
 	candidateMap := make(map[string]int)
 
 	for _, tx := range txs {
-		candidateMap[tx.Recorder] ++
+		candidateMap[tx.Recorder]++
 	}
 
 	var candidates CandidateSlice
@@ -124,7 +124,7 @@ type Candidate struct {
 	Vote int
 }
 
-type CandidateSlice [] Candidate
+type CandidateSlice []Candidate
 
 func (a CandidateSlice) Len() int {
 	return len(a)

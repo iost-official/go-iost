@@ -9,7 +9,7 @@ func (d *TxInput) Encode() []byte {
 }
 
 func (d *TxInput) Decode(bin []byte) error {
-	_,err := d.Unmarshal(bin)
+	_, err := d.Unmarshal(bin)
 	return err
 }
 func (d *TxInput) Hash() []byte {
@@ -25,7 +25,7 @@ func (d *Tx) Encode() []byte {
 }
 
 func (d *Tx) Decode(bin []byte) error {
-	_,err := d.Unmarshal(bin)
+	_, err := d.Unmarshal(bin)
 	return err
 }
 func (d *Tx) Hash() []byte {

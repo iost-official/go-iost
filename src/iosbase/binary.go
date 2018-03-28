@@ -2,12 +2,12 @@
 
 /*
 This package contains structures of IOS block-chain and functions to operate them
- */
+*/
 package iosbase
 
 import (
-	"encoding/binary"
 	"bytes"
+	"encoding/binary"
 )
 
 type Serializable interface {
@@ -15,7 +15,6 @@ type Serializable interface {
 	Decode([]byte) error
 	Hash() []byte
 }
-
 
 type Binary struct {
 	bytes  []byte

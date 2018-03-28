@@ -1,8 +1,8 @@
 package protocol
 
 import (
-	"time"
 	"IOS/src/iosbase"
+	"time"
 )
 
 type Character int
@@ -16,7 +16,7 @@ const (
 type Phase int
 
 const (
-	StartPhase      Phase = iota
+	StartPhase Phase = iota
 	PrePreparePhase
 	PreparePhase
 	CommitPhase
@@ -28,24 +28,23 @@ const (
 	ReplicaPort  = 12306
 	RecorderPort = 12307
 	ExpireTime   = 1 * time.Minute
+	Period       = 5 * time.Minute
 )
 
 type Consensus struct {
-	iosbase.Member
 	Recorder
 	Replica
 	NetworkFilter
-
-	phase     Phase
-	isRunning bool
 }
 
 func (c *Consensus) Init(bc iosbase.BlockChain, sp iosbase.StatePool, network iosbase.Network) error {
-	err := c.replicaInit(bc, sp)
+	rd := RuntimeData{}
+	err := c.Recorder.init(&rd, bc, sp)
 	if err != nil {
 		return err
 	}
-	err = c.networkFilterInit(network)
+	err = c.NetworkFilter.init(&rd, network)
+	c.Replica.init(&rd, &c.NetworkFilter, &c.Recorder)
 	return err
 }
 
@@ -63,11 +62,8 @@ func (c *Consensus) Run() {
 		panic(err)
 	}
 	defer c.base.Close(RecorderPort)
-	go c.recorderFilter(req2, res2)
+	go c.recorderFilter(c.Recorder, req2, res2)
 
-	for c.isRunning {
-
-	}
 }
 
 func (c *Consensus) Stop() {

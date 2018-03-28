@@ -2,14 +2,16 @@ package protocol
 
 import (
 	"IOS/src/iosbase"
+	"fmt"
 	"math/rand"
 	"time"
-	"fmt"
 )
 
 type Replica struct {
-	character Character
-	view      View
+	*RuntimeData
+
+	network  *NetworkFilter
+	recorder *Recorder
 
 	block            iosbase.Block
 	prePrepare       *PrePrepare
@@ -21,30 +23,36 @@ type Replica struct {
 	correctBlockHash []byte
 }
 
-func (c *Consensus) onNewView(view View) (Phase, error) {
-	c.view = view
+func (r *Replica) init(rd *RuntimeData, network *NetworkFilter, recorder *Recorder) {
+	r.RuntimeData = rd
+	r.recorder = recorder
+	r.network = network
+}
+
+func (r *Replica) onNewView(view View) (Phase, error) {
+	r.view = view
 	// step 1 determine what character it is
-	if c.view.isPrimary(c.ID) {
-		c.character = Primary
-	} else if c.view.isBackup(c.ID) {
-		c.character = Backup
+	if r.view.isPrimary(r.ID) {
+		r.character = Primary
+	} else if r.view.isBackup(r.ID) {
+		r.character = Backup
 	} else {
-		c.character = Idle
+		r.character = Idle
 	}
 
-	if c.character == Backup {
+	if r.character == Backup {
 		return PreparePhase, nil
-	} else if c.character == Idle {
+	} else if r.character == Idle {
 		return EndPhase, nil
 	}
 
 	// step 2 if it is primary, make a block/pre-prepare package and broadcast it
-	c.block = c.makeBlock()
-	bBlk := c.block.Encode()
+	r.block = r.recorder.makeBlock()
+	bBlk := r.block.Encode()
 
-	sig := iosbase.Sign(iosbase.Sha256(bBlk), c.Seckey)
+	sig := iosbase.Sign(iosbase.Sha256(bBlk), r.Seckey)
 
-	pre := PrePrepare{sig, c.Pubkey, bBlk}
+	pre := PrePrepare{sig, r.Pubkey, bBlk}
 
 	bPre, err := pre.Marshal(nil)
 	if err != nil {
@@ -52,130 +60,150 @@ func (c *Consensus) onNewView(view View) (Phase, error) {
 	}
 
 	for _, m := range view.GetBackup() {
-		c.send(iosbase.Request{time.Now().Unix(), c.ID, m.ID, int(PrePreparePhase), bPre})
+		r.network.send(iosbase.Request{
+			Time:    time.Now().Unix(),
+			From:    r.ID,
+			To:      m.ID,
+			ReqType: int(PrePreparePhase),
+			Body:    bPre})
 	}
 
 	// step 3, as primary, prepare a Prepare pack which is always true
-	c.prepare = c.makePrepare(true)
+	r.prepare = r.makePrepare(true)
 
 	return PreparePhase, nil
 }
 
-func (c *Consensus) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
+func (r *Replica) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
+	// 0. verify sender's identity
 	// 1. verify block syntax
-	c.prePrepare = prePrepare
-	c.block.Decode(prePrepare.blk)
+	r.prePrepare = prePrepare
+	r.block.Decode(prePrepare.blk)
 
 	// 2. verify if txs contains tx which validated sign conflict
-	// if ok, c.prepare is Accept, vise versa
-	c.prepare = c.makePrepare(true)
+	// if ok, r.prepare is Accept, vise versa
+	r.prepare = r.makePrepare(true)
 
 	// 3. save pre-prepare, block, broadcast prepare
-	bPare, err := c.prepare.Marshal(nil)
+	bPare, err := r.prepare.Marshal(nil)
 	if err != nil {
 		return PrePreparePhase, err
 	}
 
-	c.send(iosbase.Request{time.Now().Unix(), c.ID, c.view.GetPrimary().ID, int(PreparePhase), bPare})
-	for _, m := range c.view.GetBackup() {
-		if m.ID == c.ID {
+	r.network.send(iosbase.Request{
+		Time: time.Now().Unix(),
+		From: r.ID, To: r.view.GetPrimary().ID,
+		ReqType: int(PreparePhase),
+		Body:    bPare})
+
+	for _, m := range r.view.GetBackup() {
+		if m.ID == r.ID {
 			continue
 		}
-		c.send(iosbase.Request{time.Now().Unix(), c.ID, m.ID, int(PreparePhase), bPare})
+		r.network.send(iosbase.Request{
+			Time: time.Now().Unix(),
+			From: r.ID, To: m.ID,
+			ReqType: int(PreparePhase),
+			Body:    bPare})
 	}
 
-	c.AcceptCount = 0
-	c.RejectCount = 0
+	r.AcceptCount = 0
+	r.RejectCount = 0
 
 	return PreparePhase, nil
 }
 
-func (c *Consensus) onPrepare(prepare Prepare) (Phase, error) {
+func (r *Replica) onPrepare(prepare Prepare) (Phase, error) {
 	// 1. verify prepare Sign whether comes from right member
 	// 2. then count accept or reject, if
 	//    2.1 2t + 1 ac or rj, do as
 	//    2.2 t ac vs t rj, or time expired, the system is in failed, currently we push empty block to go to next turn
 	if prepare.isAccept {
-		c.AcceptCount ++
+		r.AcceptCount++
 	} else {
-		c.RejectCount ++
+		r.RejectCount++
 	}
 
-	if c.AcceptCount > 1+2*c.view.ByzantineTolerance() {
-		c.commit = c.makeCommit()
+	if r.AcceptCount > 1+2*r.view.ByzantineTolerance() {
+		r.commit = r.makeCommit()
 
-		bCmt, err := c.commit.Marshal(nil)
+		bCmt, err := r.commit.Marshal(nil)
 		if err != nil {
 			return PreparePhase, err
 		}
-		for _, m := range c.view.GetBackup() {
-			if m.ID == c.ID {
+		for _, m := range r.view.GetBackup() {
+			if m.ID == r.ID {
 				continue
 			}
-			c.send(iosbase.Request{time.Now().Unix(), c.ID, m.ID, int(PreparePhase), bCmt})
+			r.network.send(iosbase.Request{time.Now().Unix(), r.ID, m.ID, int(PreparePhase), bCmt})
 		}
-		c.AcceptCount = 0
-		c.RejectCount = 0
-		c.commitCounts = make(map[string]int, c.view.ByzantineTolerance())
-		c.commitCounts[iosbase.Base58Encode(c.commit.blkHash)] = 1
+		r.AcceptCount = 0
+		r.RejectCount = 0
+		r.commitCounts = make(map[string]int, r.view.ByzantineTolerance())
+		r.commitCounts[iosbase.Base58Encode(r.commit.blkHash)] = 1
 		return CommitPhase, nil
-	} else if c.RejectCount > 1+2*c.view.ByzantineTolerance() {
-		return c.onPrepareReject()
-	} else if c.RejectCount > c.view.ByzantineTolerance() && c.AcceptCount > c.view.ByzantineTolerance() {
-		return c.onTimeOut(PreparePhase)
+	} else if r.RejectCount > 1+2*r.view.ByzantineTolerance() {
+		return r.onPrepareReject()
+	} else if r.RejectCount > r.view.ByzantineTolerance() && r.AcceptCount > r.view.ByzantineTolerance() {
+		return r.onTimeOut(PreparePhase)
 	}
 	return PreparePhase, nil
 }
 
-func (c *Consensus) onPrepareReject() (Phase, error) {
-	c.makeEmptyBlock()
+func (r *Replica) onPrepareReject() (Phase, error) {
+	r.recorder.makeEmptyBlock()
 	return StartPhase, nil
 }
 
-func (c *Consensus) onCommit(commit Commit) (Phase, error) {
+func (r *Replica) onCommit(commit Commit) (Phase, error) {
 
 	// 1. verify the sender is correct
-	c.commitCounts[iosbase.Base58Encode(commit.blkHash)] ++
+	r.commitCounts[iosbase.Base58Encode(commit.blkHash)]++
 
 	isCritical := 0
-	for key, value := range c.commitCounts {
-		if value > 1+2*c.view.ByzantineTolerance() {
-			c.admitBlock(iosbase.Base58Decode(key))  // if the block is local, ok; otherwise request the correct block
-			return StartPhase,nil
+	for key, value := range r.commitCounts {
+		if value > 1+2*r.view.ByzantineTolerance() {
+			// if the block is local, ok; otherwise request the correct block
+			if key == iosbase.Base58Encode(r.block.Head.Hash()) {
+				r.recorder.admitBlock(r.block)
+			} else {
+
+			}
+			return StartPhase, nil
 		}
-		if value > c.view.ByzantineTolerance() {
+		if value > r.view.ByzantineTolerance() {
 			isCritical++
 			if isCritical > 2 {
 				// TODO critical situation
-				return c.onTimeOut(CommitPhase)
+				return r.onTimeOut(CommitPhase)
 			}
 		}
 	}
 	return CommitPhase, nil
 }
 
-func (c *Consensus) onCommitFailed() (Phase, error) {
-	c.makeEmptyBlock()
+func (r *Replica) onCommitFailed() (Phase, error) {
+	r.recorder.makeEmptyBlock()
 	return StartPhase, nil
 }
 
-func (c *Consensus) onTimeOut(phase Phase) (Phase, error) {
+func (r *Replica) onTimeOut(phase Phase) (Phase, error) {
 	switch phase {
-	case PrePreparePhase :
+	case PrePreparePhase:
 		// if backup did not receive PPP pack, simply mark reject and goes to prepare phase
-		c.prepare = c.makePrepare(false)
+		r.prepare = r.makePrepare(false)
 		return PreparePhase, nil
-	case PreparePhase :
+	case PreparePhase:
 		// time out means offline committee members or divergence > t
-		return c.onPrepareReject()
-	case CommitPhase :
+		return r.onPrepareReject()
+	case CommitPhase:
 		//
-		return c.onCommitFailed()
+		return r.onCommitFailed()
 	}
 	return StartPhase, nil
 }
 
-func (c *Consensus) makePrepare(isAccept bool) Prepare {
+func (r *Replica) makePrepare(isAccept bool) Prepare {
 	random := rand.NewSource(time.Now().Unix())
 	bin := iosbase.Binary{}
 	randomByte := bin.PutULong(uint64(random.Int63())).Bytes()
@@ -188,34 +216,34 @@ func (c *Consensus) makePrepare(isAccept bool) Prepare {
 	}
 	vote = append(vote, randomByte...)
 
-	pareSig := iosbase.Sign(vote, c.Seckey)
-	prepare := Prepare{pareSig, c.Pubkey, randomByte, isAccept}
+	pareSig := iosbase.Sign(vote, r.Seckey)
+	prepare := Prepare{pareSig, r.Pubkey, randomByte, isAccept}
 
 	return prepare
 }
 
-func (c *Consensus) makeCommit() Commit {
+func (r *Replica) makeCommit() Commit {
 	var cc Commit
-	cc.pubkey = c.Pubkey
-	cc.blkHash = iosbase.Sha256(c.block.Encode())
-	cc.sig = iosbase.Sign(cc.blkHash, c.Seckey)
+	cc.pubkey = r.Pubkey
+	cc.blkHash = r.block.Head.Hash()
+	cc.sig = iosbase.Sign(cc.blkHash, r.Seckey)
 	return cc
 }
 
-func (c *Consensus) replicaLoop() {
-	c.phase = StartPhase
+func (r *Replica) replicaLoop() {
+	r.phase = StartPhase
 	var req iosbase.Request
 	var err error = nil
-	c.isRunning = true
+	r.isRunning = true
 
 	to := time.NewTimer(1 * time.Minute)
 
-	for c.isRunning {
+	for r.isRunning {
 
-		switch c.phase {
+		switch r.phase {
 		case StartPhase:
-			v := NewDposView(c.blockChain)
-			c.phase, err = c.onNewView(&v)
+			v := NewDposView(r.blockChain)
+			r.phase, err = r.onNewView(&v)
 		case PanicPhase:
 			return
 		case EndPhase:
@@ -227,22 +255,22 @@ func (c *Consensus) replicaLoop() {
 		}
 
 		select {
-		case <-c.valiChan:
-			req = <-c.valiChan
+		case <-r.network.replicaChan:
+			req = <-r.network.replicaChan
 
-			switch c.phase {
+			switch r.phase {
 			case PrePreparePhase:
 				pp := PrePrepare{}
 				pp.Unmarshal(req.Body)
-				c.phase, err = c.onPrePrepare(&pp)
+				r.phase, err = r.onPrePrepare(&pp)
 			case PreparePhase:
 				p := Prepare{}
 				p.Unmarshal(req.Body)
-				c.phase, err = c.onPrepare(p)
+				r.phase, err = r.onPrepare(p)
 			case CommitPhase:
 				cm := Commit{}
 				cm.Unmarshal(req.Body)
-				c.phase, err = c.onCommit(cm)
+				r.phase, err = r.onCommit(cm)
 			}
 
 			if !to.Stop() {
@@ -250,7 +278,7 @@ func (c *Consensus) replicaLoop() {
 			}
 			to.Reset(ExpireTime)
 		case <-to.C:
-			c.phase, err = c.onTimeOut(c.phase)
+			r.phase, err = r.onTimeOut(r.phase)
 			if err != nil {
 				return
 			}
@@ -258,5 +286,3 @@ func (c *Consensus) replicaLoop() {
 		}
 	}
 }
-
-
