@@ -39,12 +39,7 @@ func (n *NetworkFilter) replicaFilter(request chan iosbase.Request, res chan ios
 		// 2. if req in right phase
 		switch n.phase {
 		case StartPhase:
-			res <- iosbase.Response{
-				From:        req.To,
-				To:          req.From,
-				Code:        int(Reject),
-				Description: "ON START PHASE",
-			}
+			res <- invalidPhase(req)
 		case PrePreparePhase:
 			if req.ReqType == int(PrePreparePhase) {
 				res <- accept(req)
@@ -88,9 +83,11 @@ func (n *NetworkFilter) recorderFilter(recorder Recorder, reqChan chan iosbase.R
 }
 
 func invalidPhase(req iosbase.Request) iosbase.Response {
-	return iosbase.Response{From: req.To,
-		To:   req.From,
-		Code: int(Reject), Description: "Error: Invalid phase",
+	return iosbase.Response{
+		From:        req.To,
+		To:          req.From,
+		Code:        int(Reject),
+		Description: "Error: Invalid phase",
 	}
 }
 

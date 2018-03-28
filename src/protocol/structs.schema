@@ -2,6 +2,7 @@ struct PrePrepare  {
 	sig     []byte
 	pubkey  []byte
 	blk     []byte
+	blkHeadHash []byte
 }
 
 struct Prepare {
@@ -14,7 +15,7 @@ struct Prepare {
 struct Commit {
 	sig     []byte
 	pubkey  []byte
-	blkHash []byte
+	blkHeadHash []byte
 }
 
 

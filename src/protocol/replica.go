@@ -13,7 +13,7 @@ type Replica struct {
 	network  *NetworkFilter
 	recorder *Recorder
 
-	block            iosbase.Block
+	block            *iosbase.Block
 	prePrepare       *PrePrepare
 	prepare          Prepare
 	commit           Commit
@@ -27,9 +27,17 @@ func (r *Replica) init(rd *RuntimeData, network *NetworkFilter, recorder *Record
 	r.RuntimeData = rd
 	r.recorder = recorder
 	r.network = network
+
 }
 
 func (r *Replica) onNewView(view View) (Phase, error) {
+
+	r.block = nil
+	r.AcceptCount = 0
+	r.RejectCount = 0
+	r.commitCounts = nil
+	r.correctBlockHash = nil
+
 	r.view = view
 	// step 1 determine what character it is
 	if r.view.isPrimary(r.ID) {
@@ -49,10 +57,14 @@ func (r *Replica) onNewView(view View) (Phase, error) {
 	// step 2 if it is primary, make a block/pre-prepare package and broadcast it
 	r.block = r.recorder.makeBlock()
 	bBlk := r.block.Encode()
-
+	bHH := r.block.Head.Hash()
 	sig := iosbase.Sign(iosbase.Sha256(bBlk), r.Seckey)
-
-	pre := PrePrepare{sig, r.Pubkey, bBlk}
+	pre := PrePrepare{
+		sig:         sig,
+		pubkey:      r.Pubkey,
+		blk:         bBlk,
+		blkHeadHash: bHH,
+	}
 
 	bPre, err := pre.Marshal(nil)
 	if err != nil {
@@ -75,14 +87,18 @@ func (r *Replica) onNewView(view View) (Phase, error) {
 }
 
 func (r *Replica) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
-	// 0. verify sender's identity
+
 	// 1. verify block syntax
 	r.prePrepare = prePrepare
 	r.block.Decode(prePrepare.blk)
 
 	// 2. verify if txs contains tx which validated sign conflict
 	// if ok, r.prepare is Accept, vise versa
-	r.prepare = r.makePrepare(true)
+	if err := r.recorder.verifyBlock(r.block); err != nil {
+		r.prepare = r.makePrepare(true)
+	} else {
+		r.prepare = r.makePrepare(false)
+	}
 
 	// 3. save pre-prepare, block, broadcast prepare
 	bPare, err := r.prepare.Marshal(nil)
@@ -114,10 +130,9 @@ func (r *Replica) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
 }
 
 func (r *Replica) onPrepare(prepare Prepare) (Phase, error) {
-	// 1. verify prepare Sign whether comes from right member
-	// 2. then count accept or reject, if
-	//    2.1 2t + 1 ac or rj, do as
-	//    2.2 t ac vs t rj, or time expired, the system is in failed, currently we push empty block to go to next turn
+	// count accept or reject, if
+	//    1. 2t + 1 ac or rj, do as
+	//    2. t ac vs t rj, or time expired, the system is in failed, currently we push empty block to go to next turn
 	if prepare.isAccept {
 		r.AcceptCount++
 	} else {
@@ -140,7 +155,7 @@ func (r *Replica) onPrepare(prepare Prepare) (Phase, error) {
 		r.AcceptCount = 0
 		r.RejectCount = 0
 		r.commitCounts = make(map[string]int, r.view.ByzantineTolerance())
-		r.commitCounts[iosbase.Base58Encode(r.commit.blkHash)] = 1
+		r.commitCounts[iosbase.Base58Encode(r.commit.blkHeadHash)] = 1
 		return CommitPhase, nil
 	} else if r.RejectCount > 1+2*r.view.ByzantineTolerance() {
 		return r.onPrepareReject()
@@ -157,8 +172,7 @@ func (r *Replica) onPrepareReject() (Phase, error) {
 
 func (r *Replica) onCommit(commit Commit) (Phase, error) {
 
-	// 1. verify the sender is correct
-	r.commitCounts[iosbase.Base58Encode(commit.blkHash)]++
+	r.commitCounts[iosbase.Base58Encode(commit.blkHeadHash)]++
 
 	isCritical := 0
 	for key, value := range r.commitCounts {
@@ -225,8 +239,8 @@ func (r *Replica) makePrepare(isAccept bool) Prepare {
 func (r *Replica) makeCommit() Commit {
 	var cc Commit
 	cc.pubkey = r.Pubkey
-	cc.blkHash = r.block.Head.Hash()
-	cc.sig = iosbase.Sign(cc.blkHash, r.Seckey)
+	cc.blkHeadHash = r.block.Head.Hash()
+	cc.sig = iosbase.Sign(cc.blkHeadHash, r.Seckey)
 	return cc
 }
 
@@ -262,15 +276,33 @@ func (r *Replica) replicaLoop() {
 			case PrePreparePhase:
 				pp := PrePrepare{}
 				pp.Unmarshal(req.Body)
-				r.phase, err = r.onPrePrepare(&pp)
+				// verify sender's identity
+				if iosbase.Base58Encode(pp.pubkey) != req.From ||
+					!iosbase.VerifySignature(pp.blkHeadHash, pp.pubkey, pp.sig) {
+					err = fmt.Errorf("fake package")
+				} else {
+					r.phase, err = r.onPrePrepare(&pp)
+				}
 			case PreparePhase:
 				p := Prepare{}
 				p.Unmarshal(req.Body)
-				r.phase, err = r.onPrepare(p)
+				// verify prepare Sign whether comes from right member
+				if iosbase.Base58Encode(p.pubkey) != req.From ||
+					!iosbase.VerifySignature(p.rand, p.pubkey, p.sig) {
+					err = fmt.Errorf("fake package")
+				} else {
+					r.phase, err = r.onPrepare(p)
+				}
 			case CommitPhase:
 				cm := Commit{}
 				cm.Unmarshal(req.Body)
-				r.phase, err = r.onCommit(cm)
+				if iosbase.Base58Encode(cm.pubkey) != req.From ||
+					!iosbase.VerifySignature(cm.blkHeadHash, cm.pubkey, cm.sig) {
+					err = fmt.Errorf("fake package")
+				} else {
+					r.phase, err = r.onCommit(cm)
+
+				}
 			}
 
 			if !to.Stop() {

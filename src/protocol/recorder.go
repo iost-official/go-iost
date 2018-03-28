@@ -19,15 +19,19 @@ func (r *Recorder) verifyTx(tx iosbase.Tx) error {
 	return nil
 }
 
-func (r *Recorder) makeBlock() iosbase.Block {
-	return iosbase.Block{}
+func (r *Recorder) verifyBlock(block *iosbase.Block) error {
+	return nil
+}
+
+func (r *Recorder) makeBlock() *iosbase.Block {
+	return &iosbase.Block{}
 }
 
 func (r *Recorder) makeEmptyBlock() {
 	r.blockChain.Push(iosbase.Block{})
 }
 
-func (r *Recorder) admitBlock(blk iosbase.Block) {
+func (r *Recorder) admitBlock(block *iosbase.Block) {
 }
 
 func (r *Recorder) publishTx(tx iosbase.Tx) {

@@ -13,9 +13,10 @@ var (
 )
 
 type PrePrepare struct {
-	sig    []byte
-	pubkey []byte
-	blk    []byte
+	sig         []byte
+	pubkey      []byte
+	blk         []byte
+	blkHeadHash []byte
 }
 
 func (d *PrePrepare) Size() (s uint64) {
@@ -52,6 +53,21 @@ func (d *PrePrepare) Size() (s uint64) {
 	}
 	{
 		l := uint64(len(d.blk))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t >>= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.blkHeadHash))
 
 		{
 
@@ -135,6 +151,25 @@ func (d *PrePrepare) Marshal(buf []byte) ([]byte, error) {
 		copy(buf[i+0:], d.blk)
 		i += l
 	}
+	{
+		l := uint64(len(d.blkHeadHash))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+0] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+0] = byte(t)
+			i++
+
+		}
+		copy(buf[i+0:], d.blkHeadHash)
+		i += l
+	}
 	return buf[:i+0], nil
 }
 
@@ -214,6 +249,31 @@ func (d *PrePrepare) Unmarshal(buf []byte) (uint64, error) {
 			d.blk = make([]byte, l)
 		}
 		copy(d.blk, buf[i+0:])
+		i += l
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+0] & 0x7F)
+			for buf[i+0]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+0]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		if uint64(cap(d.blkHeadHash)) >= l {
+			d.blkHeadHash = d.blkHeadHash[:l]
+		} else {
+			d.blkHeadHash = make([]byte, l)
+		}
+		copy(d.blkHeadHash, buf[i+0:])
 		i += l
 	}
 	return i + 0, nil
@@ -439,9 +499,9 @@ func (d *Prepare) Unmarshal(buf []byte) (uint64, error) {
 }
 
 type Commit struct {
-	sig     []byte
-	pubkey  []byte
-	blkHash []byte
+	sig         []byte
+	pubkey      []byte
+	blkHeadHash []byte
 }
 
 func (d *Commit) Size() (s uint64) {
@@ -477,7 +537,7 @@ func (d *Commit) Size() (s uint64) {
 		s += l
 	}
 	{
-		l := uint64(len(d.blkHash))
+		l := uint64(len(d.blkHeadHash))
 
 		{
 
@@ -543,7 +603,7 @@ func (d *Commit) Marshal(buf []byte) ([]byte, error) {
 		i += l
 	}
 	{
-		l := uint64(len(d.blkHash))
+		l := uint64(len(d.blkHeadHash))
 
 		{
 
@@ -558,7 +618,7 @@ func (d *Commit) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.blkHash)
+		copy(buf[i+0:], d.blkHeadHash)
 		i += l
 	}
 	return buf[:i+0], nil
@@ -634,12 +694,12 @@ func (d *Commit) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.blkHash)) >= l {
-			d.blkHash = d.blkHash[:l]
+		if uint64(cap(d.blkHeadHash)) >= l {
+			d.blkHeadHash = d.blkHeadHash[:l]
 		} else {
-			d.blkHash = make([]byte, l)
+			d.blkHeadHash = make([]byte, l)
 		}
-		copy(d.blkHash, buf[i+0:])
+		copy(d.blkHeadHash, buf[i+0:])
 		i += l
 	}
 	return i + 0, nil
