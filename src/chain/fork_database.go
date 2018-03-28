@@ -34,7 +34,7 @@ type forkItem struct {
 const MAX_BLOCK_REORDERING int =1024
 
 type ForkDatabase struct {
-	_index 
+	_index
 	_head     *forkItem
 	_max_size uint32
 }
