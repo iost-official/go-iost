@@ -6,7 +6,7 @@ import (
 )
 
 type Node struct {
-	protocol.Validator
+	protocol.Replica
 }
 
 func main() {
