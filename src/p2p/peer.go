@@ -43,6 +43,7 @@ type protoHandshake struct {
 	ID         discover.NodeID
 
 	// Ignore additional fields (for forward compatibility).
-	Rest []rlp.RawValue `rlp:"tail"`
+
+	//Rest []rlp.RawValue `rlp:"tail"`
 	//Recursive Length Prefix
 }
