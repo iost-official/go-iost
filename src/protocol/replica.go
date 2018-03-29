@@ -7,11 +7,26 @@ import (
 	"time"
 )
 
-type Replica struct {
+type Replica interface {
+	Init(rd *RuntimeData, network *NetworkFilter, recorder Recorder)
+	ReplicaLoop()
+	OnRequest(request iosbase.Request)
+}
+
+func ReplicaFactory(kind string) (Replica, error) {
+	switch kind {
+	case "base1.0":
+		rep := ReplicaImpl{}
+		return &rep, nil
+	}
+	return nil, fmt.Errorf("target replica not found")
+}
+
+type ReplicaImpl struct {
 	*RuntimeData
 
 	network  *NetworkFilter
-	recorder *Recorder
+	recorder Recorder
 
 	block            *iosbase.Block
 	prePrepare       *PrePrepare
@@ -21,16 +36,19 @@ type Replica struct {
 	RejectCount      int
 	commitCounts     map[string]int
 	correctBlockHash []byte
+	reqChan          chan iosbase.Request
 }
 
-func (r *Replica) init(rd *RuntimeData, network *NetworkFilter, recorder *Recorder) {
+func (r *ReplicaImpl) Init(rd *RuntimeData, network *NetworkFilter, recorder Recorder) {
 	r.RuntimeData = rd
 	r.recorder = recorder
 	r.network = network
 
+	r.reqChan = make(chan iosbase.Request)
+
 }
 
-func (r *Replica) onNewView(view View) (Phase, error) {
+func (r *ReplicaImpl) onNewView(view View) (Phase, error) {
 
 	r.block = nil
 	r.AcceptCount = 0
@@ -55,7 +73,7 @@ func (r *Replica) onNewView(view View) (Phase, error) {
 	}
 
 	// step 2 if it is primary, make a block/pre-prepare package and broadcast it
-	r.block = r.recorder.makeBlock()
+	r.block = r.recorder.MakeBlock()
 	bBlk := r.block.Encode()
 	bHH := r.block.Head.Hash()
 	sig := iosbase.Sign(iosbase.Sha256(bBlk), r.Seckey)
@@ -86,7 +104,7 @@ func (r *Replica) onNewView(view View) (Phase, error) {
 	return PreparePhase, nil
 }
 
-func (r *Replica) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
+func (r *ReplicaImpl) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
 
 	// 1. verify block syntax
 	r.prePrepare = prePrepare
@@ -94,7 +112,7 @@ func (r *Replica) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
 
 	// 2. verify if txs contains tx which validated sign conflict
 	// if ok, r.prepare is Accept, vise versa
-	if err := r.recorder.verifyBlock(r.block); err != nil {
+	if err := r.recorder.VerifyBlock(r.block); err != nil {
 		r.prepare = r.makePrepare(true)
 	} else {
 		r.prepare = r.makePrepare(false)
@@ -129,10 +147,10 @@ func (r *Replica) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
 	return PreparePhase, nil
 }
 
-func (r *Replica) onPrepare(prepare Prepare) (Phase, error) {
-	// count accept or reject, if
-	//    1. 2t + 1 ac or rj, do as
-	//    2. t ac vs t rj, or time expired, the system is in failed, currently we push empty block to go to next turn
+func (r *ReplicaImpl) onPrepare(prepare Prepare) (Phase, error) {
+	// count accept and reject numbers, if
+	//    1. ac or rj > 2t + 1 , do as it is
+	//    2. ac > t && rj > t, or time expired, the system is in failed and no consensus can reach, so put empty in it
 	if prepare.isAccept {
 		r.AcceptCount++
 	} else {
@@ -150,7 +168,13 @@ func (r *Replica) onPrepare(prepare Prepare) (Phase, error) {
 			if m.ID == r.ID {
 				continue
 			}
-			r.network.send(iosbase.Request{time.Now().Unix(), r.ID, m.ID, int(PreparePhase), bCmt})
+			r.network.send(iosbase.Request{
+				Time:    time.Now().Unix(),
+				From:    r.ID,
+				To:      m.ID,
+				ReqType: int(PreparePhase),
+				Body:    bCmt,
+			})
 		}
 		r.AcceptCount = 0
 		r.RejectCount = 0
@@ -165,43 +189,42 @@ func (r *Replica) onPrepare(prepare Prepare) (Phase, error) {
 	return PreparePhase, nil
 }
 
-func (r *Replica) onPrepareReject() (Phase, error) {
-	r.recorder.makeEmptyBlock()
+func (r *ReplicaImpl) onPrepareReject() (Phase, error) {
+	r.recorder.AdmitEmptyBlock()
 	return StartPhase, nil
 }
 
-func (r *Replica) onCommit(commit Commit) (Phase, error) {
+func (r *ReplicaImpl) onCommit(commit Commit) (Phase, error) {
 
 	r.commitCounts[iosbase.Base58Encode(commit.blkHeadHash)]++
 
-	isCritical := 0
+	divergence := 0
 	for key, value := range r.commitCounts {
 		if value > 1+2*r.view.ByzantineTolerance() {
 			// if the block is local, ok; otherwise request the correct block
 			if key == iosbase.Base58Encode(r.block.Head.Hash()) {
-				r.recorder.admitBlock(r.block)
+				r.recorder.AdmitBlock(r.block)
 			} else {
 
 			}
 			return StartPhase, nil
 		}
 		if value > r.view.ByzantineTolerance() {
-			isCritical++
-			if isCritical > 2 {
-				// TODO critical situation
-				return r.onTimeOut(CommitPhase)
+			divergence++
+			if divergence > 2 {
+				return r.onCommitFailed()
 			}
 		}
 	}
 	return CommitPhase, nil
 }
 
-func (r *Replica) onCommitFailed() (Phase, error) {
-	r.recorder.makeEmptyBlock()
+func (r *ReplicaImpl) onCommitFailed() (Phase, error) {
+	r.recorder.AdmitEmptyBlock()
 	return StartPhase, nil
 }
 
-func (r *Replica) onTimeOut(phase Phase) (Phase, error) {
+func (r *ReplicaImpl) onTimeOut(phase Phase) (Phase, error) {
 	switch phase {
 	case PrePreparePhase:
 		// if backup did not receive PPP pack, simply mark reject and goes to prepare phase
@@ -217,7 +240,7 @@ func (r *Replica) onTimeOut(phase Phase) (Phase, error) {
 	return StartPhase, nil
 }
 
-func (r *Replica) makePrepare(isAccept bool) Prepare {
+func (r *ReplicaImpl) makePrepare(isAccept bool) Prepare {
 	random := rand.NewSource(time.Now().Unix())
 	bin := iosbase.Binary{}
 	randomByte := bin.PutULong(uint64(random.Int63())).Bytes()
@@ -236,7 +259,7 @@ func (r *Replica) makePrepare(isAccept bool) Prepare {
 	return prepare
 }
 
-func (r *Replica) makeCommit() Commit {
+func (r *ReplicaImpl) makeCommit() Commit {
 	var cc Commit
 	cc.pubkey = r.Pubkey
 	cc.blkHeadHash = r.block.Head.Hash()
@@ -244,7 +267,7 @@ func (r *Replica) makeCommit() Commit {
 	return cc
 }
 
-func (r *Replica) replicaLoop() {
+func (r *ReplicaImpl) ReplicaLoop() {
 	r.phase = StartPhase
 	var req iosbase.Request
 	var err error = nil
@@ -269,8 +292,8 @@ func (r *Replica) replicaLoop() {
 		}
 
 		select {
-		case <-r.network.replicaChan:
-			req = <-r.network.replicaChan
+		case <-r.reqChan:
+			req = <-r.reqChan
 
 			switch r.phase {
 			case PrePreparePhase:
@@ -317,4 +340,8 @@ func (r *Replica) replicaLoop() {
 			to.Reset(ExpireTime)
 		}
 	}
+}
+
+func (r *ReplicaImpl) OnRequest(request iosbase.Request) {
+	r.reqChan <- request
 }

@@ -7,10 +7,10 @@ struct State  {
 struct TxInput {
    TxHash []byte
    UnlockScript string
-   UTXOHash []byte
+   StateHash []byte
 }
 
-struct Tx {
+struct Tx {ddddd
    Version int32
    Recorder string
    Inputs []TxInput

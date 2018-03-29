@@ -183,7 +183,7 @@ func (d *State) Unmarshal(buf []byte) (uint64, error) {
 type TxInput struct {
 	TxHash       []byte
 	UnlockScript string
-	UTXOHash     []byte
+	StateHash    []byte
 }
 
 func (d *TxInput) Size() (s uint64) {
@@ -219,7 +219,7 @@ func (d *TxInput) Size() (s uint64) {
 		s += l
 	}
 	{
-		l := uint64(len(d.UTXOHash))
+		l := uint64(len(d.StateHash))
 
 		{
 
@@ -285,7 +285,7 @@ func (d *TxInput) Marshal(buf []byte) ([]byte, error) {
 		i += l
 	}
 	{
-		l := uint64(len(d.UTXOHash))
+		l := uint64(len(d.StateHash))
 
 		{
 
@@ -300,7 +300,7 @@ func (d *TxInput) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.UTXOHash)
+		copy(buf[i+0:], d.StateHash)
 		i += l
 	}
 	return buf[:i+0], nil
@@ -371,12 +371,12 @@ func (d *TxInput) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.UTXOHash)) >= l {
-			d.UTXOHash = d.UTXOHash[:l]
+		if uint64(cap(d.StateHash)) >= l {
+			d.StateHash = d.StateHash[:l]
 		} else {
-			d.UTXOHash = make([]byte, l)
+			d.StateHash = make([]byte, l)
 		}
-		copy(d.UTXOHash, buf[i+0:])
+		copy(d.StateHash, buf[i+0:])
 		i += l
 	}
 	return i + 0, nil

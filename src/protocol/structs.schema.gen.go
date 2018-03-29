@@ -517,7 +517,6 @@ func (d *Commit) Size() (s uint64) {
 				s++
 			}
 			s++
-
 		}
 		s += l
 	}

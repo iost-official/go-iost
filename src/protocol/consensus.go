@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"IOS/src/iosbase"
+	"sync"
 	"time"
 )
 
@@ -25,10 +26,10 @@ const (
 )
 
 const (
-	ReplicaPort  = 12306
-	RecorderPort = 12307
-	ExpireTime   = 1 * time.Minute
-	Period       = 5 * time.Minute
+	Version    = 1
+	Port       = 12306
+	ExpireTime = 1 * time.Minute
+	Period     = 5 * time.Minute
 )
 
 type Consensus struct {
@@ -39,47 +40,72 @@ type Consensus struct {
 
 func (c *Consensus) Init(bc iosbase.BlockChain, sp iosbase.StatePool, network iosbase.Network) error {
 	rd := RuntimeData{}
-	err := c.Recorder.init(&rd, bc, sp)
+
+	err := c.NetworkFilter.init(&rd, network)
 	if err != nil {
 		return err
 	}
-	err = c.NetworkFilter.init(&rd, network)
-	c.Replica.init(&rd, &c.NetworkFilter, &c.Recorder)
+
+	c.Recorder, err = RecorderFactory("base1.0")
+	err = c.Recorder.Init(&rd, &c.NetworkFilter, bc, sp)
+	if err != nil {
+		return err
+	}
+
+	c.Replica, err = ReplicaFactory("base1.0")
+	if err != nil {
+		return err
+	}
+	c.Replica.Init(&rd, &c.NetworkFilter, c.Recorder)
 	return err
 }
 
 func (c *Consensus) Run() {
-	go c.replicaLoop()
-	rawReq, rawRes, err := c.base.Listen(ReplicaPort)
+	req, res, err := c.base.Listen(Port)
 	if err != nil {
 		panic(err)
 	}
-	defer c.base.Close(ReplicaPort)
-	go c.replicaFilter(rawReq, rawRes)
+	defer c.base.Close(Port)
 
-	req2, res2, err := c.base.Listen(RecorderPort)
-	if err != nil {
-		panic(err)
-	}
-	defer c.base.Close(RecorderPort)
-	go c.recorderFilter(c.Recorder, req2, res2)
+	var wg sync.WaitGroup
 
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		c.router(req)
+	}()
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		c.ReplicaLoop()
+	}()
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		c.replicaFilter(c.Replica, res)
+	}()
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		c.RecorderLoop()
+	}()
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		c.recorderFilter(c.Recorder, res)
+	}()
+
+	wg.Wait()
 }
 
 func (c *Consensus) Stop() {
 	c.isRunning = false
 }
 func (c *Consensus) PublishTx(tx iosbase.Tx) error {
-	err := c.verifyTx(tx)
-	if err != nil {
-		return err
-	}
-	tx.Recorder = c.ID
-	c.txPool.Add(tx)
-	return nil
+	return c.Recorder.PublishTx(tx)
 }
 func (c *Consensus) CheckTx(tx iosbase.Tx) (iosbase.TxStatus, error) {
-	return iosbase.POOL, nil
+	return iosbase.POOL, nil // TODO not complete
 }
 func (c *Consensus) GetStatus() (iosbase.BlockChain, iosbase.StatePool, error) {
 	return c.blockChain, c.statePool, nil

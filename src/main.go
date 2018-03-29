@@ -6,7 +6,7 @@ import (
 )
 
 type Node struct {
-	protocol.Replica
+	protocol.ReplicaImpl
 }
 
 func main() {

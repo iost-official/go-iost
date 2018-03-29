@@ -112,7 +112,7 @@ func (v *DposView) ByzantineTolerance() int {
 }
 
 func isEmptyBlock(block iosbase.Block) bool {
-	return false
+	return block.Content == nil
 }
 
 func parseCoinbaseTx(tx iosbase.Tx) (primary iosbase.Member, backups []iosbase.Member, err error) {

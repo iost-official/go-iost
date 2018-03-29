@@ -1,21 +1,22 @@
 package protocol
 
-import (
-	"IOS/src/iosbase"
-	"testing"
-)
-
-type MockView struct {
-}
-
-func TestOnNewView(t *testing.T) {
-	prim := iosbase.Member{ID: "primary"}
-	bkup0 := iosbase.Member{ID: "bkup0"}
-	bkup1 := iosbase.Member{ID: "bkup1"}
-	bkup2 := iosbase.Member{ID: "bkup2"}
-	view := DposView{primary: prim, backup: []iosbase.Member{bkup0, bkup1, bkup2}}
-
-	var consensus Consensus
-	consensus.onNewView(&view)
-
-}
+//import (
+//	"IOS/src/iosbase"
+//	"testing"
+//)
+//
+//func TestReplica_Init(t *testing.T) {
+//	mockRuntimeData := RuntimeData{
+//		Member:    iosbase.Member{ID: "test", Pubkey: make([]byte, 32), Seckey: make([]byte, 32)},
+//		isRunning: true,
+//	}
+//
+//	mockView := MockView{}
+//
+//	nf := NetworkFilter{}
+//
+//	replica := ReplicaImpl{}
+//
+//	replica.init()
+//
+//}
