@@ -1,5 +1,13 @@
 package p2p
 
+import (
+	"net"
+	"fmt"
+	"encoding/binary"
+	"unsafe"
+	"bytes"
+)
+
 type Request struct {
 	Time    int64  // 发送时的时间戳
 	From    string // From To是钱包地址的base58编码字符串（就是Member.ID，下同）
@@ -7,6 +15,12 @@ type Request struct {
 	ReqType int // 此request的类型码，通过类型可以确定body的格式以方便解码body
 	Body    []byte
 }
+
+type RequestHead struct {
+	Length uint32 // Request的长度信息
+}
+
+const HEADLENGTH = 4
 
 type Response struct {
 	From        string
@@ -20,4 +34,75 @@ type Network interface {
 	Send(req Request) chan Response
 	Listen(port uint16) (chan Request, chan Response, error)
 	Close(port uint16) error
+}
+
+type NaiveNetwork struct {
+	peerList []string
+}
+
+func (network *NaiveNetwork) Send(req Request) {
+	length := unsafe.Sizeof(req)
+	int32buf := new(bytes.Buffer)
+	binary.Write(int32buf, binary.BigEndian, length)
+	for _, addr := range network.peerList {
+		conn, err := net.Dial("tcp", addr)
+		if err != nil {
+			fmt.Println("Error dialing to ", addr, err.Error())
+		}
+		if _, err = conn.Write(int32buf.Bytes()); err != nil {
+			fmt.Println("Error sending request head:", err.Error())
+		}
+		buf := *(*[length]byte)(unsafe.Pointer(&req))
+		if _, err = conn.Write(buf[:]); err != nil {
+			fmt.Println("Error sending request body:", err.Error())
+		}
+		conn.Close()
+	}
+
+}
+
+func (network *NaiveNetwork) Listen(port uint16) (chan Request, error) {
+	ln, err := net.Listen("tcp", ":"+string(port))
+	if err != nil {
+		fmt.Println("Error listening:", err.Error())
+		return nil, err
+	}
+	fmt.Println("Listening on " + ":" + string(port))
+
+	req := make(chan Request)
+	go func(chan Request) {
+		for {
+			// Listen for an incoming connection.
+			conn, err := ln.Accept()
+			if err != nil {
+				fmt.Println("Error accepting: ", err.Error())
+				continue
+			}
+			// Handle connections in a new goroutine.
+			go func(conn net.Conn, req chan Request) {
+				// Make a buffer to hold incoming data.
+				buf := make([]byte, HEADLENGTH)
+				// Read the incoming connection into the buffer.
+				_, err := conn.Read(buf)
+				if err != nil {
+					fmt.Println("Error reading request head:", err.Error())
+				}
+				length := binary.BigEndian.Uint32(buf)
+				_buf := make([]byte, length)
+				_, err = conn.Read(_buf)
+
+				if err != nil {
+					fmt.Println("Error reading request body:", err.Error())
+				}
+
+				req <- *(*Request)(unsafe.Pointer(&_buf))
+				// Send a response back to person contacting us.
+				conn.Write([]byte("Message received."))
+				// Close the connection when you're done with it.
+				conn.Close()
+			}(conn, req)
+		}
+
+	}(req)
+	return req, nil
 }
