@@ -10,7 +10,7 @@ struct TxInput {
    StateHash []byte
 }
 
-struct Tx {ddddd
+struct Tx {
    Version int32
    Recorder string
    Inputs []TxInput

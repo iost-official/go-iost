@@ -15,6 +15,8 @@ type Response struct {
 	Description string
 }
 
+//go:generate mockgen -destination mocks/mock_network.go -package iosbase -source network.go
+
 type Network interface {
 	Send(req Request) chan Response
 	Listen(port uint16) (chan Request, chan Response, error)

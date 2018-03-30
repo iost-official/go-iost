@@ -5,6 +5,8 @@ import (
 	"sort"
 )
 
+//go:generate mockgen -destination mocks/mock_view.go -package protocol -source view.go
+
 type View interface {
 	GetPrimary() iosbase.Member
 	GetBackup() []iosbase.Member

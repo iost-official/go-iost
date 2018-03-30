@@ -6,6 +6,7 @@ type TxPool interface {
 	Find(txHash []byte) (Tx, error)
 	GetSlice() ([]Tx, error)
 	Has(txHash []byte) (bool, error)
+	Size() int
 	Serializable
 }
 
@@ -31,6 +32,10 @@ func (tp *TxPoolImpl) Has(txHash []byte) (bool, error) {
 
 func (tp *TxPoolImpl) GetSlice() ([]Tx, error) {
 	return nil, nil
+}
+
+func (tp *TxPoolImpl) Size() int {
+	return 0
 }
 
 func FindTxPool(hash []byte) (TxPool, error) {

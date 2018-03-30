@@ -17,7 +17,7 @@ const (
 type Phase int
 
 const (
-	StartPhase Phase = iota
+	StartPhase      Phase = iota
 	PrePreparePhase
 	PreparePhase
 	CommitPhase
@@ -35,19 +35,21 @@ const (
 type Consensus struct {
 	Recorder
 	Replica
+	DataHolder
 	NetworkFilter
+	RuntimeData
 }
 
 func (c *Consensus) Init(bc iosbase.BlockChain, sp iosbase.StatePool, network iosbase.Network) error {
-	rd := RuntimeData{}
+	c.RuntimeData = RuntimeData{}
 
-	err := c.NetworkFilter.init(&rd, network)
+	err := c.NetworkFilter.Init(&c.RuntimeData, network, Port)
 	if err != nil {
 		return err
 	}
 
 	c.Recorder, err = RecorderFactory("base1.0")
-	err = c.Recorder.Init(&rd, &c.NetworkFilter, bc, sp)
+	err = c.Recorder.Init(&c.RuntimeData, &c.NetworkFilter)
 	if err != nil {
 		return err
 	}
@@ -56,43 +58,33 @@ func (c *Consensus) Init(bc iosbase.BlockChain, sp iosbase.StatePool, network io
 	if err != nil {
 		return err
 	}
-	c.Replica.Init(&rd, &c.NetworkFilter, c.Recorder)
+	err = c.Replica.Init(&c.RuntimeData, &c.NetworkFilter)
+	if err != nil {
+		return err
+	}
+
+	c.DataHolder, err = DataHolderFactory("base1.0")
+	if err != nil {
+		return err
+	}
+	err = c.DataHolder.Init(&c.RuntimeData, &c.NetworkFilter)
+
 	return err
 }
 
 func (c *Consensus) Run() {
-	req, res, err := c.base.Listen(Port)
-	if err != nil {
-		panic(err)
-	}
-	defer c.base.Close(Port)
 
 	var wg sync.WaitGroup
 
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		c.router(req)
+		c.Router(c.Replica, c.Recorder, c.DataHolder)
 	}()
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
 		c.ReplicaLoop()
-	}()
-	go func() {
-		wg.Add(1)
-		defer wg.Done()
-		c.replicaFilter(c.Replica, res)
-	}()
-	go func() {
-		wg.Add(1)
-		defer wg.Done()
-		c.RecorderLoop()
-	}()
-	go func() {
-		wg.Add(1)
-		defer wg.Done()
-		c.recorderFilter(c.Recorder, res)
 	}()
 
 	wg.Wait()
@@ -100,6 +92,7 @@ func (c *Consensus) Run() {
 
 func (c *Consensus) Stop() {
 	c.isRunning = false
+	c.base.Close(Port)
 }
 func (c *Consensus) PublishTx(tx iosbase.Tx) error {
 	return c.Recorder.PublishTx(tx)

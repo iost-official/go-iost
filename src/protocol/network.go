@@ -7,13 +7,12 @@ import (
 type ReqType int
 
 const (
-	ReqPrePrepare     ReqType = iota
+	ReqPrePrepare   ReqType = iota
 	ReqPrepare
 	ReqCommit
+	ReqSubmitTxPack
 	ReqPublishTx
-	ReqApplyBlockHash
-	ReqApplyBlock
-	ReqSendBlock
+	ReqNewBlock
 )
 
 type ResState int
@@ -28,114 +27,119 @@ type NetworkFilter struct {
 	base iosbase.Network
 	*RuntimeData
 
-	replicaChan  chan iosbase.Request
-	recorderChan chan iosbase.Request
+	reqChan chan iosbase.Request
+	resChan chan iosbase.Response
 }
 
-func (n *NetworkFilter) send(request iosbase.Request) chan iosbase.Response {
+func (n *NetworkFilter) Send(request iosbase.Request) chan iosbase.Response {
 	return n.base.Send(request)
 }
 
-func (n *NetworkFilter) init(rd *RuntimeData, nw iosbase.Network) error {
+func (n *NetworkFilter) Init(rd *RuntimeData, nw iosbase.Network, port uint16) error {
 	n.RuntimeData = rd
 	n.base = nw
-
-	n.replicaChan = make(chan iosbase.Request)
-	n.recorderChan = make(chan iosbase.Request)
-
-	return nil
+	var err error
+	n.reqChan, n.resChan, err = n.base.Listen(port)
+	return err
 }
 
-func (n *NetworkFilter) router(reqChan chan iosbase.Request) {
-	for n.isRunning {
-		req := <-reqChan
+func (n *NetworkFilter) Router(replica Replica, recorder Recorder, holder DataHolder) {
+	for n.isRunning { // TODO bug：lock here!
+		req := <-n.reqChan
 		switch req.ReqType {
 		case int(ReqPrePrepare):
 			fallthrough
 		case int(ReqPrepare):
 			fallthrough
+		case int(ReqSubmitTxPack):
+			fallthrough
 		case int(ReqCommit):
-			n.replicaChan <- req
+			n.replicaFilter(replica, n.resChan, req)
 		case int(ReqPublishTx):
-			fallthrough
-		case int(ReqApplyBlockHash):
-			fallthrough
-		case int(ReqApplyBlock):
-			fallthrough
-		case int(ReqSendBlock):
-			n.recorderChan <- req
+			n.recorderFilter(recorder, n.resChan, req)
+		case int(ReqNewBlock):
+			n.dataholderFilter(holder, n.resChan, req)
 		}
 	}
 }
 
-func (n *NetworkFilter) replicaFilter(replica Replica, res chan iosbase.Response) {
-	var req iosbase.Request
-	for n.isRunning {
-		req = <-n.replicaChan
-		// 1. if req comes from right member
-		if !n.view.isPrimary(req.From) && !n.view.isBackup(req.From) {
-			res <- authorityError(req)
-			continue
-		}
-		// 2. if req in right phase
-		switch n.phase {
-		case StartPhase:
-			res <- invalidPhase(req)
-		case PrePreparePhase:
-			if req.ReqType == int(ReqPrePrepare) {
-				res <- accept(req)
-				replica.OnRequest(req)
-			} else {
-				res <- invalidPhase(req)
-			}
-		case PreparePhase:
-			if req.ReqType == int(ReqPrepare) {
-				res <- accept(req)
-				replica.OnRequest(req)
-			} else {
-				res <- invalidPhase(req)
-			}
-		case CommitPhase:
-			if req.ReqType == int(ReqCommit) {
-				res <- accept(req)
-				replica.OnRequest(req)
-			} else {
-				res <- invalidPhase(req)
-			}
-		case PanicPhase:
-			res <- internalError(req)
-		case EndPhase:
-			res <- invalidPhase(req)
-		default:
-			res <- internalError(req)
-		}
+func (n *NetworkFilter) replicaFilter(replica Replica, res chan iosbase.Response, req iosbase.Request) {
+	// 1. if req comes from right member
+	if !n.view.isPrimary(req.From) && !n.view.isBackup(req.From) {
+		res <- authorityError(req)
+		return
+	}
 
+	switch req.ReqType {
+	case int(ReqSubmitTxPack):
+		var txpool iosbase.TxPool
+		txpool.Decode(req.Body)
+		replica.OnTxPack(txpool)
+		return
+	}
+
+	// 2. if req in right phase
+	switch n.phase {
+	case StartPhase:
+		res <- invalidPhase(req)
+	case PrePreparePhase:
+		if req.ReqType == int(ReqPrePrepare) {
+			res <- accept(req)
+			replica.OnRequest(req)
+		} else {
+			res <- invalidPhase(req)
+		}
+	case PreparePhase:
+		if req.ReqType == int(ReqPrepare) {
+			res <- accept(req)
+			replica.OnRequest(req)
+		} else {
+			res <- invalidPhase(req)
+		}
+	case CommitPhase:
+		if req.ReqType == int(ReqCommit) {
+			res <- accept(req)
+			replica.OnRequest(req)
+		} else {
+			res <- invalidPhase(req)
+		}
+	case PanicPhase:
+		res <- internalError(req)
+	case EndPhase:
+		res <- invalidPhase(req)
+	default:
+		res <- internalError(req)
+	}
+
+}
+
+func (n *NetworkFilter) recorderFilter(recorder Recorder, resChan chan iosbase.Response, req iosbase.Request) {
+	switch req.ReqType {
+	case int(ReqPublishTx):
+		var tx iosbase.Tx
+		err := tx.Decode(req.Body)
+		if err != nil {
+			resChan <- illegalTx(req)
+		}
+		recorder.PublishTx(tx)
+	default:
+		resChan <- internalError(req)
 	}
 }
 
-func (n *NetworkFilter) recorderFilter(recorder Recorder, resChan chan iosbase.Response) {
-	for n.isRunning {
-		req := <-n.recorderChan
-		switch req.ReqType {
-		case int(ReqPublishTx):
-			var tx iosbase.Tx
-			err := tx.Decode(req.Body)
-			if err != nil {
-				resChan <- illegalTx(req)
-			}
-			recorder.PublishTx(tx)
-		case int(ReqApplyBlockHash):
-			recorder.OnAppliedBlockHash(req.From, resChan)
-		case int(ReqApplyBlock):
-			recorder.OnAppliedBlock(req.From)
-		case int(ReqSendBlock):
-			var blk iosbase.Block
-			blk.Decode(req.Body)
-			recorder.OnReceiveBlock(&blk)
-		default:
-			resChan <- internalError(req)
+func (n *NetworkFilter) dataholderFilter(holder DataHolder, resChan chan iosbase.Response, req iosbase.Request) {
+	switch req.ReqType {
+	case int(ReqNewBlock):
+		var blk iosbase.Block
+		err := blk.Decode(req.Body)
+		if err != nil {
+			resChan <- illegalTx(req)
 		}
+		holder.OnNewBlock(&blk)
+	default:
+		resChan <- internalError(req)
 	}
+
 }
 
 func invalidPhase(req iosbase.Request) iosbase.Response {
@@ -181,4 +185,8 @@ func illegalTx(req iosbase.Request) iosbase.Response {
 		Code:        int(Error),
 		Description: "ERROR: Illegal Transaction",
 	}
+}
+
+func (n *NetworkFilter) BroadcastToMembers(req iosbase.Request) {
+
 }

@@ -7,10 +7,13 @@ import (
 	"time"
 )
 
+//go:generate mockgen -destination mocks/mock_replica.go -package protocol -source replica.go
+
 type Replica interface {
-	Init(rd *RuntimeData, network *NetworkFilter, recorder Recorder)
+	Init(rd *RuntimeData, network *NetworkFilter) error
 	ReplicaLoop()
 	OnRequest(request iosbase.Request)
+	OnTxPack(pool iosbase.TxPool) error
 }
 
 func ReplicaFactory(kind string) (Replica, error) {
@@ -24,11 +27,11 @@ func ReplicaFactory(kind string) (Replica, error) {
 
 type ReplicaImpl struct {
 	*RuntimeData
+	network *NetworkFilter
 
-	network  *NetworkFilter
-	recorder Recorder
+	txPool iosbase.TxPool
+	block  *iosbase.Block
 
-	block            *iosbase.Block
 	prePrepare       *PrePrepare
 	prepare          Prepare
 	commit           Commit
@@ -36,16 +39,16 @@ type ReplicaImpl struct {
 	RejectCount      int
 	commitCounts     map[string]int
 	correctBlockHash []byte
-	reqChan          chan iosbase.Request
+
+	reqChan chan iosbase.Request
 }
 
-func (r *ReplicaImpl) Init(rd *RuntimeData, network *NetworkFilter, recorder Recorder) {
+func (r *ReplicaImpl) Init(rd *RuntimeData, network *NetworkFilter) error {
 	r.RuntimeData = rd
-	r.recorder = recorder
 	r.network = network
 
 	r.reqChan = make(chan iosbase.Request)
-
+	return nil
 }
 
 func (r *ReplicaImpl) onNewView(view View) (Phase, error) {
@@ -73,7 +76,7 @@ func (r *ReplicaImpl) onNewView(view View) (Phase, error) {
 	}
 
 	// step 2 if it is primary, make a block/pre-prepare package and broadcast it
-	r.block = r.recorder.MakeBlock()
+	r.block = r.makeBlock()
 	bBlk := r.block.Encode()
 	bHH := r.block.Head.Hash()
 	sig := iosbase.Sign(iosbase.Sha256(bBlk), r.Seckey)
@@ -90,7 +93,7 @@ func (r *ReplicaImpl) onNewView(view View) (Phase, error) {
 	}
 
 	for _, m := range view.GetBackup() {
-		r.network.send(iosbase.Request{
+		r.network.Send(iosbase.Request{
 			Time:    time.Now().Unix(),
 			From:    r.ID,
 			To:      m.ID,
@@ -112,7 +115,7 @@ func (r *ReplicaImpl) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
 
 	// 2. verify if txs contains tx which validated sign conflict
 	// if ok, r.prepare is Accept, vise versa
-	if err := r.recorder.VerifyBlock(r.block); err != nil {
+	if err := r.verifyBlock(r.block); err != nil {
 		r.prepare = r.makePrepare(true)
 	} else {
 		r.prepare = r.makePrepare(false)
@@ -124,9 +127,9 @@ func (r *ReplicaImpl) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
 		return PrePreparePhase, err
 	}
 
-	r.network.send(iosbase.Request{
-		Time: time.Now().Unix(),
-		From: r.ID, To: r.view.GetPrimary().ID,
+	r.network.Send(iosbase.Request{
+		Time:    time.Now().Unix(),
+		From:    r.ID, To: r.view.GetPrimary().ID,
 		ReqType: int(PreparePhase),
 		Body:    bPare})
 
@@ -134,9 +137,9 @@ func (r *ReplicaImpl) onPrePrepare(prePrepare *PrePrepare) (Phase, error) {
 		if m.ID == r.ID {
 			continue
 		}
-		r.network.send(iosbase.Request{
-			Time: time.Now().Unix(),
-			From: r.ID, To: m.ID,
+		r.network.Send(iosbase.Request{
+			Time:    time.Now().Unix(),
+			From:    r.ID, To: m.ID,
 			ReqType: int(PreparePhase),
 			Body:    bPare})
 	}
@@ -168,7 +171,7 @@ func (r *ReplicaImpl) onPrepare(prepare Prepare) (Phase, error) {
 			if m.ID == r.ID {
 				continue
 			}
-			r.network.send(iosbase.Request{
+			r.network.Send(iosbase.Request{
 				Time:    time.Now().Unix(),
 				From:    r.ID,
 				To:      m.ID,
@@ -190,8 +193,8 @@ func (r *ReplicaImpl) onPrepare(prepare Prepare) (Phase, error) {
 }
 
 func (r *ReplicaImpl) onPrepareReject() (Phase, error) {
-	r.recorder.AdmitEmptyBlock()
-	return StartPhase, nil
+	err := r.admitEmptyBlock()
+	return StartPhase, err
 }
 
 func (r *ReplicaImpl) onCommit(commit Commit) (Phase, error) {
@@ -203,7 +206,7 @@ func (r *ReplicaImpl) onCommit(commit Commit) (Phase, error) {
 		if value > 1+2*r.view.ByzantineTolerance() {
 			// if the block is local, ok; otherwise request the correct block
 			if key == iosbase.Base58Encode(r.block.Head.Hash()) {
-				r.recorder.AdmitBlock(r.block)
+				r.admitBlock(r.block)
 			} else {
 
 			}
@@ -220,7 +223,7 @@ func (r *ReplicaImpl) onCommit(commit Commit) (Phase, error) {
 }
 
 func (r *ReplicaImpl) onCommitFailed() (Phase, error) {
-	r.recorder.AdmitEmptyBlock()
+	r.admitEmptyBlock()
 	return StartPhase, nil
 }
 
@@ -276,7 +279,6 @@ func (r *ReplicaImpl) ReplicaLoop() {
 	to := time.NewTimer(1 * time.Minute)
 
 	for r.isRunning {
-
 		switch r.phase {
 		case StartPhase:
 			v := NewDposView(r.blockChain)
@@ -344,4 +346,151 @@ func (r *ReplicaImpl) ReplicaLoop() {
 
 func (r *ReplicaImpl) OnRequest(request iosbase.Request) {
 	r.reqChan <- request
+}
+
+func (r *ReplicaImpl) makeBlock() *iosbase.Block {
+	blockHead := iosbase.BlockHead{
+		Version:   Version,
+		SuperHash: r.blockChain.Top().HeadHash(),
+		TreeHash:  r.txPool.Hash(),
+		Time:      time.Now().Unix(),
+	}
+
+	block := iosbase.Block{
+		Version:   Version,
+		SuperHash: r.blockChain.Top().HeadHash(),
+		Head:      blockHead,
+		Content:   r.txPool.Encode(),
+	}
+
+	return &block
+}
+
+func (r *ReplicaImpl) verifyBlock(block *iosbase.Block) error {
+	var blkTxPool iosbase.TxPool
+	blkTxPool.Decode(block.Content)
+
+	txs, _ := blkTxPool.GetSlice()
+	for i, tx := range txs {
+		if i == 0 { // verify coinbase tx
+			continue
+		}
+		err := r.verifyTx(tx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *ReplicaImpl) admitBlock(block *iosbase.Block) error {
+	r.blockChain.Push(*block)
+	r.network.BroadcastToMembers(iosbase.Request{
+		From:    r.ID,
+		To:      "",
+		ReqType: int(ReqNewBlock),
+		Body:    block.Encode(),
+	})
+	return nil
+}
+
+func (r *ReplicaImpl) admitEmptyBlock() error {
+	baseBlk, err := r.blockChain.Get(r.blockChain.Length())
+	if err != nil {
+		return err
+	}
+	head := iosbase.BlockHead{
+		Version:   Version,
+		SuperHash: baseBlk.Head.Hash(),
+		TreeHash:  make([]byte, 32),
+		Time:      time.Now().Unix(),
+	}
+	r.blockChain.Push(iosbase.Block{
+		Version:   Version,
+		SuperHash: baseBlk.Head.Hash(),
+		Head:      head,
+		Content:   nil,
+	})
+	return nil
+}
+
+func (r *ReplicaImpl) OnTxPack(pool iosbase.TxPool) error {
+	txs, err := pool.GetSlice()
+	if err != nil {
+		return err
+	}
+	for _, tx := range txs {
+		if err := r.verifyTx(tx); err == nil {
+			r.txPool.Add(tx)
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
+// reject duplicated Tx, which might come from corruption actions
+func (r *ReplicaImpl) verifyTx(tx iosbase.Tx) error {
+	err := r.RuntimeData.VerifyTx(tx)
+	if err != nil {
+		return err
+	}
+	txs, _ := r.txPool.GetSlice()
+	for _, existedTx := range txs {
+		if iosbase.Equal(existedTx.Hash(), tx.Hash()) {
+			return fmt.Errorf("has included")
+		}
+		if txConflict(existedTx, tx) {
+			r.txPool.Del(existedTx)				// TODO : BUG, if there are three txs with different recorder
+			return fmt.Errorf("conflicted")
+		} else if sliceIntersect(existedTx.Inputs, tx.Inputs) {
+			return fmt.Errorf("conflicted")
+		}
+	}
+	return nil
+}
+
+func sliceEqualI(a, b []iosbase.TxInput) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if !iosbase.Equal(a[i].Hash(), b[i].Hash()) {
+			return false
+		}
+	}
+	return true
+}
+
+func sliceEqualS(a, b []iosbase.State) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if !iosbase.Equal(a[i].Hash(), b[i].Hash()) {
+			return false
+		}
+	}
+	return true
+}
+
+func sliceIntersect(a []iosbase.TxInput, b []iosbase.TxInput) bool {
+	for _, ina := range a {
+		for _, inb := range b {
+			if iosbase.Equal(ina.Hash(), inb.Hash()) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func txConflict(a, b iosbase.Tx) bool {
+	if sliceEqualI(a.Inputs, b.Inputs) &&
+		sliceEqualS(a.Outputs, b.Outputs) &&
+		a.Recorder != b.Recorder {
+		return true
+	} else {
+		return false
+	}
 }

@@ -13,10 +13,12 @@ package protocol
 //
 //	mockView := MockView{}
 //
+//
+//
 //	nf := NetworkFilter{}
 //
 //	replica := ReplicaImpl{}
 //
-//	replica.init()
+//	replica.Init()
 //
 //}
