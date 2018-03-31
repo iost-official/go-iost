@@ -12,7 +12,7 @@ import (
 
 type LDBDatabase struct {
 	fn string
-	db *leveldb
+	db *leveldb.DB
 
 	quitLock sync.Mutex
 	quitChan chan chan error
@@ -66,7 +66,11 @@ func (db *LDBDatabase) NewIterator() iterator.Iterator {
 }
 
 func (db *LDBDatabase) Close() {
-	err := db.db.Close()
+	db.quitLock.Lock()
+	defer db.quitLock.Unlock()
+
+	db.db.Close()
+
 }
 
 func (db *LDBDatabase) DB() *leveldb.DB {
@@ -79,7 +83,7 @@ func (db *LDBDatabase) NewBatch() Batch {
 
 type ldbBatch struct {
 	db   *leveldb.DB
-	b    *leveldb.ldbBatch
+	b    *leveldb.Batch
 	size int
 }
 
@@ -107,7 +111,7 @@ type table struct {
 	prefix string
 }
 
-func NewTable(db Database, prefix string) Database {
+func NewTable(db Database, prefix string) *table {
 	return &table{
 		db:     db,
 		prefix: prefix,

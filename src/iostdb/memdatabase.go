@@ -69,6 +69,10 @@ func (db *MemDatabase) Delete(key []byte) error {
 
 func (db *MemDatabase) Close() {}
 
+func (db *MemDatabase) NewBatch() Batch {
+	return &memBatch{db: db}
+}
+
 type kv struct {
 	k, v []byte
 }
