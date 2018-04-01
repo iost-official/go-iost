@@ -15,7 +15,7 @@ struct Tx {
    Recorder string
    Inputs []TxInput
    Outputs []State
-   Time uint64
+   Time int64
 }
 
 struct BlockHead {

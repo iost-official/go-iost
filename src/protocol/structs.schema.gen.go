@@ -12,17 +12,17 @@ var (
 	_ = time.Now()
 )
 
-type PrePrepare struct {
-	sig         []byte
-	pubkey      []byte
-	blk         []byte
-	blkHeadHash []byte
+type SignedBlock struct {
+	Sig         []byte
+	Pubkey      []byte
+	Blk         []byte
+	BlkHeadHash []byte
 }
 
-func (d *PrePrepare) Size() (s uint64) {
+func (d *SignedBlock) Size() (s uint64) {
 
 	{
-		l := uint64(len(d.sig))
+		l := uint64(len(d.Sig))
 
 		{
 
@@ -37,7 +37,7 @@ func (d *PrePrepare) Size() (s uint64) {
 		s += l
 	}
 	{
-		l := uint64(len(d.pubkey))
+		l := uint64(len(d.Pubkey))
 
 		{
 
@@ -52,7 +52,7 @@ func (d *PrePrepare) Size() (s uint64) {
 		s += l
 	}
 	{
-		l := uint64(len(d.blk))
+		l := uint64(len(d.Blk))
 
 		{
 
@@ -67,7 +67,7 @@ func (d *PrePrepare) Size() (s uint64) {
 		s += l
 	}
 	{
-		l := uint64(len(d.blkHeadHash))
+		l := uint64(len(d.BlkHeadHash))
 
 		{
 
@@ -83,7 +83,7 @@ func (d *PrePrepare) Size() (s uint64) {
 	}
 	return
 }
-func (d *PrePrepare) Marshal(buf []byte) ([]byte, error) {
+func (d *SignedBlock) Marshal(buf []byte) ([]byte, error) {
 	size := d.Size()
 	{
 		if uint64(cap(buf)) >= size {
@@ -95,7 +95,7 @@ func (d *PrePrepare) Marshal(buf []byte) ([]byte, error) {
 	i := uint64(0)
 
 	{
-		l := uint64(len(d.sig))
+		l := uint64(len(d.Sig))
 
 		{
 
@@ -110,11 +110,11 @@ func (d *PrePrepare) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.sig)
+		copy(buf[i+0:], d.Sig)
 		i += l
 	}
 	{
-		l := uint64(len(d.pubkey))
+		l := uint64(len(d.Pubkey))
 
 		{
 
@@ -129,11 +129,11 @@ func (d *PrePrepare) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.pubkey)
+		copy(buf[i+0:], d.Pubkey)
 		i += l
 	}
 	{
-		l := uint64(len(d.blk))
+		l := uint64(len(d.Blk))
 
 		{
 
@@ -148,11 +148,11 @@ func (d *PrePrepare) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.blk)
+		copy(buf[i+0:], d.Blk)
 		i += l
 	}
 	{
-		l := uint64(len(d.blkHeadHash))
+		l := uint64(len(d.BlkHeadHash))
 
 		{
 
@@ -167,13 +167,13 @@ func (d *PrePrepare) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.blkHeadHash)
+		copy(buf[i+0:], d.BlkHeadHash)
 		i += l
 	}
 	return buf[:i+0], nil
 }
 
-func (d *PrePrepare) Unmarshal(buf []byte) (uint64, error) {
+func (d *SignedBlock) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
 
 	{
@@ -193,12 +193,12 @@ func (d *PrePrepare) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.sig)) >= l {
-			d.sig = d.sig[:l]
+		if uint64(cap(d.Sig)) >= l {
+			d.Sig = d.Sig[:l]
 		} else {
-			d.sig = make([]byte, l)
+			d.Sig = make([]byte, l)
 		}
-		copy(d.sig, buf[i+0:])
+		copy(d.Sig, buf[i+0:])
 		i += l
 	}
 	{
@@ -218,12 +218,12 @@ func (d *PrePrepare) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.pubkey)) >= l {
-			d.pubkey = d.pubkey[:l]
+		if uint64(cap(d.Pubkey)) >= l {
+			d.Pubkey = d.Pubkey[:l]
 		} else {
-			d.pubkey = make([]byte, l)
+			d.Pubkey = make([]byte, l)
 		}
-		copy(d.pubkey, buf[i+0:])
+		copy(d.Pubkey, buf[i+0:])
 		i += l
 	}
 	{
@@ -243,12 +243,12 @@ func (d *PrePrepare) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.blk)) >= l {
-			d.blk = d.blk[:l]
+		if uint64(cap(d.Blk)) >= l {
+			d.Blk = d.Blk[:l]
 		} else {
-			d.blk = make([]byte, l)
+			d.Blk = make([]byte, l)
 		}
-		copy(d.blk, buf[i+0:])
+		copy(d.Blk, buf[i+0:])
 		i += l
 	}
 	{
@@ -268,28 +268,28 @@ func (d *PrePrepare) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.blkHeadHash)) >= l {
-			d.blkHeadHash = d.blkHeadHash[:l]
+		if uint64(cap(d.BlkHeadHash)) >= l {
+			d.BlkHeadHash = d.BlkHeadHash[:l]
 		} else {
-			d.blkHeadHash = make([]byte, l)
+			d.BlkHeadHash = make([]byte, l)
 		}
-		copy(d.blkHeadHash, buf[i+0:])
+		copy(d.BlkHeadHash, buf[i+0:])
 		i += l
 	}
 	return i + 0, nil
 }
 
 type Prepare struct {
-	sig      []byte
-	pubkey   []byte
-	rand     []byte
-	isAccept bool
+	Sig      []byte
+	Pubkey   []byte
+	Rand     []byte
+	IsAccept bool
 }
 
 func (d *Prepare) Size() (s uint64) {
 
 	{
-		l := uint64(len(d.sig))
+		l := uint64(len(d.Sig))
 
 		{
 
@@ -304,7 +304,7 @@ func (d *Prepare) Size() (s uint64) {
 		s += l
 	}
 	{
-		l := uint64(len(d.pubkey))
+		l := uint64(len(d.Pubkey))
 
 		{
 
@@ -319,7 +319,7 @@ func (d *Prepare) Size() (s uint64) {
 		s += l
 	}
 	{
-		l := uint64(len(d.rand))
+		l := uint64(len(d.Rand))
 
 		{
 
@@ -348,7 +348,7 @@ func (d *Prepare) Marshal(buf []byte) ([]byte, error) {
 	i := uint64(0)
 
 	{
-		l := uint64(len(d.sig))
+		l := uint64(len(d.Sig))
 
 		{
 
@@ -363,11 +363,11 @@ func (d *Prepare) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.sig)
+		copy(buf[i+0:], d.Sig)
 		i += l
 	}
 	{
-		l := uint64(len(d.pubkey))
+		l := uint64(len(d.Pubkey))
 
 		{
 
@@ -382,11 +382,11 @@ func (d *Prepare) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.pubkey)
+		copy(buf[i+0:], d.Pubkey)
 		i += l
 	}
 	{
-		l := uint64(len(d.rand))
+		l := uint64(len(d.Rand))
 
 		{
 
@@ -401,11 +401,11 @@ func (d *Prepare) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.rand)
+		copy(buf[i+0:], d.Rand)
 		i += l
 	}
 	{
-		if d.isAccept {
+		if d.IsAccept {
 			buf[i+0] = 1
 		} else {
 			buf[i+0] = 0
@@ -434,12 +434,12 @@ func (d *Prepare) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.sig)) >= l {
-			d.sig = d.sig[:l]
+		if uint64(cap(d.Sig)) >= l {
+			d.Sig = d.Sig[:l]
 		} else {
-			d.sig = make([]byte, l)
+			d.Sig = make([]byte, l)
 		}
-		copy(d.sig, buf[i+0:])
+		copy(d.Sig, buf[i+0:])
 		i += l
 	}
 	{
@@ -459,12 +459,12 @@ func (d *Prepare) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.pubkey)) >= l {
-			d.pubkey = d.pubkey[:l]
+		if uint64(cap(d.Pubkey)) >= l {
+			d.Pubkey = d.Pubkey[:l]
 		} else {
-			d.pubkey = make([]byte, l)
+			d.Pubkey = make([]byte, l)
 		}
-		copy(d.pubkey, buf[i+0:])
+		copy(d.Pubkey, buf[i+0:])
 		i += l
 	}
 	{
@@ -484,30 +484,30 @@ func (d *Prepare) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.rand)) >= l {
-			d.rand = d.rand[:l]
+		if uint64(cap(d.Rand)) >= l {
+			d.Rand = d.Rand[:l]
 		} else {
-			d.rand = make([]byte, l)
+			d.Rand = make([]byte, l)
 		}
-		copy(d.rand, buf[i+0:])
+		copy(d.Rand, buf[i+0:])
 		i += l
 	}
 	{
-		d.isAccept = buf[i+0] == 1
+		d.IsAccept = buf[i+0] == 1
 	}
 	return i + 1, nil
 }
 
 type Commit struct {
-	sig         []byte
-	pubkey      []byte
-	blkHeadHash []byte
+	Sig         []byte
+	Pubkey      []byte
+	BlkHeadHash []byte
 }
 
 func (d *Commit) Size() (s uint64) {
 
 	{
-		l := uint64(len(d.sig))
+		l := uint64(len(d.Sig))
 
 		{
 
@@ -521,7 +521,7 @@ func (d *Commit) Size() (s uint64) {
 		s += l
 	}
 	{
-		l := uint64(len(d.pubkey))
+		l := uint64(len(d.Pubkey))
 
 		{
 
@@ -536,7 +536,7 @@ func (d *Commit) Size() (s uint64) {
 		s += l
 	}
 	{
-		l := uint64(len(d.blkHeadHash))
+		l := uint64(len(d.BlkHeadHash))
 
 		{
 
@@ -564,7 +564,7 @@ func (d *Commit) Marshal(buf []byte) ([]byte, error) {
 	i := uint64(0)
 
 	{
-		l := uint64(len(d.sig))
+		l := uint64(len(d.Sig))
 
 		{
 
@@ -579,11 +579,11 @@ func (d *Commit) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.sig)
+		copy(buf[i+0:], d.Sig)
 		i += l
 	}
 	{
-		l := uint64(len(d.pubkey))
+		l := uint64(len(d.Pubkey))
 
 		{
 
@@ -598,11 +598,11 @@ func (d *Commit) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.pubkey)
+		copy(buf[i+0:], d.Pubkey)
 		i += l
 	}
 	{
-		l := uint64(len(d.blkHeadHash))
+		l := uint64(len(d.BlkHeadHash))
 
 		{
 
@@ -617,7 +617,7 @@ func (d *Commit) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.blkHeadHash)
+		copy(buf[i+0:], d.BlkHeadHash)
 		i += l
 	}
 	return buf[:i+0], nil
@@ -643,12 +643,12 @@ func (d *Commit) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.sig)) >= l {
-			d.sig = d.sig[:l]
+		if uint64(cap(d.Sig)) >= l {
+			d.Sig = d.Sig[:l]
 		} else {
-			d.sig = make([]byte, l)
+			d.Sig = make([]byte, l)
 		}
-		copy(d.sig, buf[i+0:])
+		copy(d.Sig, buf[i+0:])
 		i += l
 	}
 	{
@@ -668,12 +668,12 @@ func (d *Commit) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.pubkey)) >= l {
-			d.pubkey = d.pubkey[:l]
+		if uint64(cap(d.Pubkey)) >= l {
+			d.Pubkey = d.Pubkey[:l]
 		} else {
-			d.pubkey = make([]byte, l)
+			d.Pubkey = make([]byte, l)
 		}
-		copy(d.pubkey, buf[i+0:])
+		copy(d.Pubkey, buf[i+0:])
 		i += l
 	}
 	{
@@ -693,12 +693,12 @@ func (d *Commit) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.blkHeadHash)) >= l {
-			d.blkHeadHash = d.blkHeadHash[:l]
+		if uint64(cap(d.BlkHeadHash)) >= l {
+			d.BlkHeadHash = d.BlkHeadHash[:l]
 		} else {
-			d.blkHeadHash = make([]byte, l)
+			d.BlkHeadHash = make([]byte, l)
 		}
-		copy(d.blkHeadHash, buf[i+0:])
+		copy(d.BlkHeadHash, buf[i+0:])
 		i += l
 	}
 	return i + 0, nil

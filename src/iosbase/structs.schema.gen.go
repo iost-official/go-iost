@@ -387,7 +387,7 @@ type Tx struct {
 	Recorder string
 	Inputs   []TxInput
 	Outputs  []State
-	Time     uint64
+	Time     int64
 }
 
 func (d *Tx) Size() (s uint64) {
@@ -673,7 +673,7 @@ func (d *Tx) Unmarshal(buf []byte) (uint64, error) {
 	}
 	{
 
-		d.Time = 0 | (uint64(buf[i+0+4]) << 0) | (uint64(buf[i+1+4]) << 8) | (uint64(buf[i+2+4]) << 16) | (uint64(buf[i+3+4]) << 24) | (uint64(buf[i+4+4]) << 32) | (uint64(buf[i+5+4]) << 40) | (uint64(buf[i+6+4]) << 48) | (uint64(buf[i+7+4]) << 56)
+		d.Time = 0 | (int64(buf[i+0+4]) << 0) | (int64(buf[i+1+4]) << 8) | (int64(buf[i+2+4]) << 16) | (int64(buf[i+3+4]) << 24) | (int64(buf[i+4+4]) << 32) | (int64(buf[i+5+4]) << 40) | (int64(buf[i+6+4]) << 48) | (int64(buf[i+7+4]) << 56)
 
 	}
 	return i + 12, nil

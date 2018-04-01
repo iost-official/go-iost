@@ -5,11 +5,13 @@ import (
 	"fmt"
 )
 
-//go:generate mockgen -destination mocks/mock_dataholder.go -package protocol -source dataholder.go
+//go:generate mockgen -destination dataholder_mock_test.go -package protocol -source blockchain_holder.go
 
 type DataHolder interface {
 	Init(rd *RuntimeData, network *NetworkFilter) error
-	OnNewBlock(block *iosbase.Block)
+	Run()
+	Stop()
+	OnRequest(req iosbase.Request) iosbase.Response
 }
 
 func DataHolderFactory(kind string) (DataHolder, error) {
@@ -44,7 +46,15 @@ func (d *DataHolderImpl) OnNewBlock(block *iosbase.Block) {
 	for key, val := range d.blkHashCounter {
 		if val > d.view.ByzantineTolerance() {
 			d.blockChain.Push(*d.blkCache[key])
-
 		}
 	}
 }
+
+func (d *DataHolderImpl) Run() {
+
+}
+
+func (d *DataHolderImpl) Stop() {
+}
+
+func ()

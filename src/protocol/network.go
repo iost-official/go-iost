@@ -44,28 +44,32 @@ func (n *NetworkFilter) Init(rd *RuntimeData, nw iosbase.Network, port uint16) e
 }
 
 func (n *NetworkFilter) Router(replica Replica, recorder Recorder, holder DataHolder) {
-	for n.isRunning { // TODO bug：lock here!
-		req := <-n.reqChan
-		switch req.ReqType {
-		case int(ReqPrePrepare):
-			fallthrough
-		case int(ReqPrepare):
-			fallthrough
-		case int(ReqSubmitTxPack):
-			fallthrough
-		case int(ReqCommit):
-			n.replicaFilter(replica, n.resChan, req)
-		case int(ReqPublishTx):
-			n.recorderFilter(recorder, n.resChan, req)
-		case int(ReqNewBlock):
-			n.dataholderFilter(holder, n.resChan, req)
+	for true {
+		select {
+		case req := <-n.reqChan:
+			switch req.ReqType {
+			case int(ReqPrePrepare):
+				fallthrough
+			case int(ReqPrepare):
+				fallthrough
+			case int(ReqSubmitTxPack):
+				fallthrough
+			case int(ReqCommit):
+				n.replicaFilter(replica, n.resChan, req)
+			case int(ReqPublishTx):
+				n.recorderFilter(recorder, n.resChan, req)
+			case int(ReqNewBlock):
+				n.dataholderFilter(holder, n.resChan, req)
+			}
+		case <-n.ExitSignal:
+			return
 		}
 	}
 }
 
 func (n *NetworkFilter) replicaFilter(replica Replica, res chan iosbase.Response, req iosbase.Request) {
 	// 1. if req comes from right member
-	if !n.view.isPrimary(req.From) && !n.view.isBackup(req.From) {
+	if !n.view.IsPrimary(req.From) && !n.view.IsBackup(req.From) {
 		res <- authorityError(req)
 		return
 	}
@@ -79,37 +83,8 @@ func (n *NetworkFilter) replicaFilter(replica Replica, res chan iosbase.Response
 	}
 
 	// 2. if req in right phase
-	switch n.phase {
-	case StartPhase:
-		res <- invalidPhase(req)
-	case PrePreparePhase:
-		if req.ReqType == int(ReqPrePrepare) {
-			res <- accept(req)
-			replica.OnRequest(req)
-		} else {
-			res <- invalidPhase(req)
-		}
-	case PreparePhase:
-		if req.ReqType == int(ReqPrepare) {
-			res <- accept(req)
-			replica.OnRequest(req)
-		} else {
-			res <- invalidPhase(req)
-		}
-	case CommitPhase:
-		if req.ReqType == int(ReqCommit) {
-			res <- accept(req)
-			replica.OnRequest(req)
-		} else {
-			res <- invalidPhase(req)
-		}
-	case PanicPhase:
-		res <- internalError(req)
-	case EndPhase:
-		res <- invalidPhase(req)
-	default:
-		res <- internalError(req)
-	}
+
+	res <- replica.OnRequest(req)
 
 }
 
@@ -121,6 +96,7 @@ func (n *NetworkFilter) recorderFilter(recorder Recorder, resChan chan iosbase.R
 		if err != nil {
 			resChan <- illegalTx(req)
 		}
+		resChan <- accept(req)
 		recorder.PublishTx(tx)
 	default:
 		resChan <- internalError(req)
@@ -135,7 +111,7 @@ func (n *NetworkFilter) dataholderFilter(holder DataHolder, resChan chan iosbase
 		if err != nil {
 			resChan <- illegalTx(req)
 		}
-		holder.OnNewBlock(&blk)
+		holder.OnRequest(&blk)
 	default:
 		resChan <- internalError(req)
 	}
@@ -156,7 +132,7 @@ func accept(req iosbase.Request) iosbase.Response {
 		From:        req.To,
 		To:          req.From,
 		Code:        int(Accepted),
-		Description: "",
+		Description: "Accepted",
 	}
 }
 
@@ -184,6 +160,15 @@ func illegalTx(req iosbase.Request) iosbase.Response {
 		To:          req.From,
 		Code:        int(Error),
 		Description: "ERROR: Illegal Transaction",
+	}
+}
+
+func syntaxError(req iosbase.Request) iosbase.Response {
+	return iosbase.Response{
+		From:        req.To,
+		To:          req.From,
+		Code:        int(Error),
+		Description: "ERROR: Syntax Error",
 	}
 }
 

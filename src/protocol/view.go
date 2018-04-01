@@ -5,13 +5,14 @@ import (
 	"sort"
 )
 
-//go:generate mockgen -destination mocks/mock_view.go -package protocol -source view.go
+//go:generate mockgen -destination view_mock_test.go -package protocol -source view.go
+
 
 type View interface {
 	GetPrimary() iosbase.Member
 	GetBackup() []iosbase.Member
-	isPrimary(ID string) bool
-	isBackup(ID string) bool
+	IsPrimary(ID string) bool
+	IsBackup(ID string) bool
 	CommitteeSize() int
 	ByzantineTolerance() int
 }
@@ -38,7 +39,7 @@ func NewDposView(chain iosbase.BlockChain) DposView {
 	top--
 	blk, err := chain.Get(top)
 	if err != nil {
-		panic(err) // TODO
+		panic(err) // TODO remove panic
 	}
 
 	for isEmptyBlock(blk) {
@@ -46,7 +47,7 @@ func NewDposView(chain iosbase.BlockChain) DposView {
 		top--
 		blk, err = chain.Get(top)
 		if err != nil {
-			panic(err) // TODO
+			panic(err) // TODO remove panic
 		}
 	}
 
@@ -87,7 +88,7 @@ func (v *DposView) GetBackup() []iosbase.Member {
 	return v.backup
 }
 
-func (v *DposView) isPrimary(ID string) bool {
+func (v *DposView) IsPrimary(ID string) bool {
 	if ID == v.primary.ID {
 		return true
 	} else {
@@ -95,7 +96,7 @@ func (v *DposView) isPrimary(ID string) bool {
 	}
 }
 
-func (v *DposView) isBackup(ID string) bool {
+func (v *DposView) IsBackup(ID string) bool {
 	ans := false
 	for _, m := range v.backup {
 		if ID == m.ID {

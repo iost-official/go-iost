@@ -1,6 +1,5 @@
 package protocol
 
-
 //type MockView struct {
 //}
 //
@@ -14,10 +13,10 @@ package protocol
 //		{ID: "test_backup3"},
 //	}
 //}
-//func (m *MockView) isPrimary(ID string) bool {
+//func (m *MockView) IsPrimary(ID string) bool {
 //	return ID == "test_primary"
 //}
-//func (m *MockView) isBackup(ID string) bool {
+//func (m *MockView) IsBackup(ID string) bool {
 //	return ID == "test_backup1" || ID == "test_backup2" || ID == "test_backup3"
 //}
 //func (m *MockView) CommitteeSize() int {
@@ -26,4 +25,3 @@ package protocol
 //func (m *MockView) ByzantineTolerance() int {
 //	return 1
 //}
-

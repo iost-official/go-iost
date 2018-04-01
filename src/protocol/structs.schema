@@ -1,21 +1,21 @@
 struct PrePrepare  {
-	sig     []byte
-	pubkey  []byte
-	blk     []byte
-	blkHeadHash []byte
+	Sig     []byte
+	Pubkey  []byte
+	Blk     []byte
+	BlkHeadHash []byte
 }
 
 struct Prepare {
-    sig      []byte
-    pubkey   []byte
-    rand     []byte
+    Sig      []byte
+    Pubkey   []byte
+    Rand     []byte
 	isAccept bool
 }
 
 struct Commit {
-	sig     []byte
-	pubkey  []byte
-	blkHeadHash []byte
+	Sig     []byte
+	Pubkey  []byte
+	BlkHeadHash []byte
 }
 
 

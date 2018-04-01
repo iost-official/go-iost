@@ -14,16 +14,7 @@ const (
 	Idle
 )
 
-type Phase int
 
-const (
-	StartPhase      Phase = iota
-	PrePreparePhase
-	PreparePhase
-	CommitPhase
-	PanicPhase
-	EndPhase
-)
 
 const (
 	Version    = 1
@@ -91,7 +82,7 @@ func (c *Consensus) Run() {
 }
 
 func (c *Consensus) Stop() {
-	c.isRunning = false
+	c.ExitSignal <- true
 	c.base.Close(Port)
 }
 func (c *Consensus) PublishTx(tx iosbase.Tx) error {
