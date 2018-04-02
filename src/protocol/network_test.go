@@ -2,11 +2,11 @@ package protocol
 
 import (
 	"IOS/src/iosbase"
-	"testing"
-	. "github.com/smartystreets/goconvey/convey"
-	. "github.com/golang/mock/gomock"
 	"github.com/golang/mock/gomock"
+	. "github.com/golang/mock/gomock"
+	. "github.com/smartystreets/goconvey/convey"
 	"reflect"
+	"testing"
 )
 
 // MockNetwork is a mock of Network interface
@@ -185,11 +185,11 @@ func TestNetworkFilter_ReplicaFilter(t *testing.T) {
 
 	})
 
-	Convey("Input should successfully passed:",t , func() {
+	Convey("Input should successfully passed:", t, func() {
 		So(reqCheck, ShouldEqual, byte(127))
 	})
 
-	Convey("Input should be rejected for authority:",t, func() {
+	Convey("Input should be rejected for authority:", t, func() {
 
 		//reqCheck := byte(0)
 		mockView.EXPECT().IsPrimary(Any()).Return(false)
@@ -199,7 +199,7 @@ func TestNetworkFilter_ReplicaFilter(t *testing.T) {
 		resp := <-res
 		So(resp.Description, ShouldEqual, "Error: Authority error")
 	})
-	Convey("Input should be rejected for phase error:",t, func() {
+	Convey("Input should be rejected for phase error:", t, func() {
 
 		mockView.EXPECT().IsPrimary(Any()).Return(true)
 		nf.RuntimeData.phase = PrePreparePhase
@@ -228,8 +228,8 @@ func TestNetworkFilter_Router(t *testing.T) {
 
 	nf := NetworkFilter{
 		RuntimeData: &mockRuntimeData,
-		resChan:resChan,
-		reqChan:reqChan,
+		resChan:     resChan,
+		reqChan:     reqChan,
 	}
 
 	Convey("Should send req correctly", t, func() {

@@ -14,8 +14,6 @@ const (
 	Idle
 )
 
-
-
 const (
 	Version    = 1
 	Port       = 12306

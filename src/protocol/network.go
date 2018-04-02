@@ -7,7 +7,7 @@ import (
 type ReqType int
 
 const (
-	ReqPrePrepare   ReqType = iota
+	ReqPrePrepare ReqType = iota
 	ReqPrepare
 	ReqCommit
 	ReqSubmitTxPack

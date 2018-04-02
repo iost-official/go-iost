@@ -56,5 +56,3 @@ func (d *DataHolderImpl) Run() {
 
 func (d *DataHolderImpl) Stop() {
 }
-
-func ()

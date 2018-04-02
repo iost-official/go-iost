@@ -12,7 +12,7 @@ import (
 type Phase int
 
 const (
-	StartPhase      Phase = iota
+	StartPhase Phase = iota
 	PrePreparePhase
 	PreparePhase
 	CommitPhase
@@ -175,7 +175,7 @@ func (r *ReplicaImpl) pbftLoop() {
 		case <-timeout.C:
 			r.phase, err = r.onTimeOut(PrePreparePhase)
 		}
-	case PreparePhase :
+	case PreparePhase:
 		r.AcceptCount = 0
 		r.RejectCount = 0
 
@@ -250,7 +250,6 @@ func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
 		return PanicPhase, err
 	}
 
-
 	if !r.view.IsPrimary(iosbase.Base58Encode(iosbase.Hash160(sblk.Pubkey))) ||
 		!iosbase.VerifySignature(sblk.BlkHeadHash, sblk.Pubkey, sblk.Sig) {
 		return PrePreparePhase, nil
@@ -260,7 +259,7 @@ func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
 	r.prePrepare = &sblk
 	err = r.block.Decode(sblk.Blk)
 	if err != nil {
-	    r.chReply <- syntaxError(req)
+		r.chReply <- syntaxError(req)
 		r.prepare = r.makePrepare(true)
 	} else {
 		r.chReply <- accept(req)
@@ -284,11 +283,11 @@ func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
 	}
 
 	r.chSend <- iosbase.Request{
-			Time:    time.Now().Unix(),
-			From:    r.ID,
-			To: r.view.GetPrimary().ID,
-			ReqType: int(PreparePhase),
-			Body:    bPare}
+		Time:    time.Now().Unix(),
+		From:    r.ID,
+		To:      r.view.GetPrimary().ID,
+		ReqType: int(PreparePhase),
+		Body:    bPare}
 
 	for _, m := range r.view.GetBackup() {
 		if m.ID == r.ID {
@@ -297,7 +296,7 @@ func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
 		r.chSend <- iosbase.Request{
 			Time:    time.Now().Unix(),
 			From:    r.ID,
-			To: r.view.GetPrimary().ID,
+			To:      r.view.GetPrimary().ID,
 			ReqType: int(PreparePhase),
 			Body:    bPare}
 	}

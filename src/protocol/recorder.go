@@ -63,9 +63,9 @@ func (r *RecorderImpl) RecorderLoop() {
 	to := time.NewTimer(Period)
 	for true {
 		select {
-		case <-r.ExitSignal :
+		case <-r.ExitSignal:
 			return
-		case <-to.C :
+		case <-to.C:
 			if r.txPool.Size() > 0 {
 				for _, m := range r.view.GetBackup() {
 					r.SendTxPack(m)
