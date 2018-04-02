@@ -4,18 +4,8 @@ import (
 	"net"
 	"fmt"
 	"encoding/binary"
-	"unsafe"
 	"bytes"
 )
-
-type Request struct {
-	Time    int64  // 发送时的时间戳
-	From    string // From To是钱包地址的base58编码字符串（就是Member.ID，下同）
-	To      string
-	ReqType int // 此request的类型码，通过类型可以确定body的格式以方便解码body
-	Body    []byte
-}
-
 type RequestHead struct {
 	Length uint32 // Request的长度信息
 }
@@ -42,13 +32,26 @@ type NaiveNetwork struct {
 	done     bool
 }
 
-func (network *NaiveNetwork) Close(port uint16) {
+func NewNaiveNetwork() *NaiveNetwork {
+	nn := &NaiveNetwork{
+		peerList: []string{"1.1.1.1", "2.2.2.2"},
+		listen:   nil,
+		done:     false,
+	}
+	return nn
+}
+
+func (network *NaiveNetwork) Close(port uint16) error {
 	network.done = true
-	network.listen.Close()
+	return network.listen.Close()
 }
 
 func (network *NaiveNetwork) Send(req Request) {
-	length := unsafe.Sizeof(req)
+	buf,err := req.Marshal(nil)
+	if err!=nil{
+		fmt.Println("Error marshal body:", err.Error())
+	}
+	length := len(buf)
 	int32buf := new(bytes.Buffer)
 	binary.Write(int32buf, binary.BigEndian, length)
 	for _, addr := range network.peerList {
@@ -59,7 +62,6 @@ func (network *NaiveNetwork) Send(req Request) {
 		if _, err = conn.Write(int32buf.Bytes()); err != nil {
 			fmt.Println("Error sending request head:", err.Error())
 		}
-		buf := *(*[length]byte)(unsafe.Pointer(&req))
 		if _, err = conn.Write(buf[:]); err != nil {
 			fmt.Println("Error sending request body:", err.Error())
 		}
@@ -105,10 +107,11 @@ func (network *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
 				if err != nil {
 					fmt.Println("Error reading request body:", err.Error())
 				}
-
-				req <- *(*Request)(unsafe.Pointer(&_buf))
+				var received Request
+				received.Unmarshal(_buf)
+				req<-received
 				// Send a response back to person contacting us.
-				conn.Write([]byte("Message received."))
+				//conn.Write([]byte("Message received."))
 			}(conn)
 		}
 
