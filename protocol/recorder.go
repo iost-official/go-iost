@@ -1,9 +1,10 @@
 package protocol
 
 import (
-	"IOS/src/iosbase"
 	"fmt"
 	"time"
+
+	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
 //go:generate mockgen -destination recorder_mock_test.go -package protocol -source recorder.go

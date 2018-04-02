@@ -3,6 +3,7 @@ package iosbase
 import (
 	"crypto/sha256"
 	"encoding/hex"
+
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"golang.org/x/crypto/ripemd160"

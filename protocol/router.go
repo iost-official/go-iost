@@ -1,6 +1,8 @@
 package protocol
 
-import "IOS/src/iosbase"
+import (
+	"github.com/iost-official/PrototypeWorks/iosbase"
+)
 
 type Filter struct {
 	WhiteList  []iosbase.Member

@@ -1,8 +1,9 @@
 package protocol
 
 import (
-	"IOS/src/iosbase"
 	"fmt"
+
+	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
 type DatabaseDep interface {

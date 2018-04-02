@@ -1,8 +1,9 @@
 package protocol
 
 import (
-	"IOS/src/iosbase"
 	"fmt"
+
+	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
 //go:generate mockgen -destination dataholder_mock_test.go -package protocol -source blockchain_holder.go
