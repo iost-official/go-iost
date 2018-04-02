@@ -15,10 +15,11 @@
 			"revisionTime": "2018-03-28T12:35:41Z"
 		},
 		{
-			"checksumSHA1": "LS/Qn4CAVXw3zDAiURIS9LIvKxg=",
+			"checksumSHA1": "u8cuRovXF5jNs/xKr4RPnwf7+1U=",
 			"path": "github.com/ethereum/go-ethereum/crypto/secp256k1",
 			"revision": "a095b84ec5a35cb3432380cc677d4e244b4a137f",
-			"revisionTime": "2018-03-28T12:35:41Z"
+			"revisionTime": "2018-03-28T12:35:41Z",
+			"tree": true
 		},
 		{
 			"checksumSHA1": "x2Km0Qy3WgJJnV19Zv25VwTJcBM=",
