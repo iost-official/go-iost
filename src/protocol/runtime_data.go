@@ -22,8 +22,8 @@ type DatabaseDep interface {
 type RuntimeData struct {
 	iosbase.Member
 
-	character  Character
-	view       View
+	character Character
+	view      View
 	//ExitSignal chan bool
 
 	blockChain iosbase.BlockChain
