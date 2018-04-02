@@ -12,7 +12,8 @@ type Filter struct {
 }
 
 type Router interface {
-	FilteredReqChan(filter Filter) (chan iosbase.Request, error)
+	FilteredInChan(filter Filter) (chan iosbase.Request, error)
+	FilteredOutChan(filter Filter) (chan iosbase.Request, error)
 	Run()
 	Stop() error
 	SendChan() (chan iosbase.Request, chan iosbase.Response, error)

@@ -13,7 +13,7 @@ import (
 type Phase int
 
 const (
-	StartPhase Phase = iota
+	StartPhase      Phase = iota
 	PrePreparePhase
 	PreparePhase
 	CommitPhase
@@ -25,7 +25,6 @@ const (
 	PrePrepareTimeout = 30 * time.Second
 	PrepareTimeout    = 10 * time.Second
 	CommitTimeout     = 20 * time.Second
-	PBFTPeriod        = 1 * time.Minute
 )
 
 type Replica interface {
@@ -49,9 +48,7 @@ type ReplicaImpl struct {
 	Database
 
 	phase            Phase
-	prePrepare       *SignedBlock
-	prepare          Prepare
-	commit           Commit
+	sblk             *SignedBlock
 	AcceptCount      int
 	RejectCount      int
 	commitCounts     map[string]int
@@ -61,7 +58,7 @@ type ReplicaImpl struct {
 	chView                            chan View             // in
 	chPrePrepare, chPrepare, chCommit chan iosbase.Request  // in
 	chTxPack                          chan iosbase.Request  // in
-	chSend                            chan iosbase.Request  // out
+	chSend, chBroadcast               chan iosbase.Request  // out
 	chReply, chRes                    chan iosbase.Response // out, in
 	ExitSignal                        chan bool             // in
 
@@ -83,7 +80,7 @@ func (r *ReplicaImpl) Init(db Database, router Router) error {
 	filter := Filter{
 		AcceptType: []ReqType{ReqSubmitTxPack},
 	}
-	r.chTxPack, err = router.FilteredReqChan(filter)
+	r.chTxPack, err = router.FilteredInChan(filter)
 	if err != nil {
 		return err
 	}
@@ -98,7 +95,7 @@ func (r *ReplicaImpl) Init(db Database, router Router) error {
 	filter = Filter{
 		AcceptType: []ReqType{ReqPrePrepare},
 	}
-	r.chPrePrepare, err = router.FilteredReqChan(filter)
+	r.chPrePrepare, err = router.FilteredInChan(filter)
 	if err != nil {
 		return err
 	}
@@ -106,7 +103,7 @@ func (r *ReplicaImpl) Init(db Database, router Router) error {
 	filter = Filter{
 		AcceptType: []ReqType{ReqPrepare},
 	}
-	r.chPrepare, err = router.FilteredReqChan(filter)
+	r.chPrepare, err = router.FilteredInChan(filter)
 	if err != nil {
 		return err
 	}
@@ -114,11 +111,12 @@ func (r *ReplicaImpl) Init(db Database, router Router) error {
 	filter = Filter{
 		AcceptType: []ReqType{ReqCommit},
 	}
-	r.chCommit, err = router.FilteredReqChan(filter)
+	r.chCommit, err = router.FilteredInChan(filter)
 	if err != nil {
 		return err
 	}
 
+	r.chBroadcast, err = router.FilteredOutChan(Filter{})
 	return nil
 }
 
@@ -166,7 +164,6 @@ func (r *ReplicaImpl) pbftLoop() {
 			r.phase = EndPhase
 		}
 	case PrePreparePhase:
-		r.prePrepare = nil
 		timeout := time.NewTimer(PrePrepareTimeout)
 		select {
 		case req = <-r.chPrePrepare:
@@ -177,10 +174,35 @@ func (r *ReplicaImpl) pbftLoop() {
 			r.phase, err = r.onTimeOut(PrePreparePhase)
 		}
 	case PreparePhase:
-		r.AcceptCount = 0
-		r.RejectCount = 0
-
+		timeout := time.NewTimer(PrepareTimeout)
+		select {
+		case req = <-r.chPrepare:
+			r.phase, err = r.onPrepare(req)
+		case <-r.ExitSignal:
+			r.phase = EndPhase
+		case <-timeout.C:
+			r.phase, err = r.onTimeOut(PreparePhase)
+		}
+	case CommitPhase:
+		timeout := time.NewTimer(CommitTimeout)
+		select {
+		case req = <-r.chCommit:
+			r.phase, err = r.onCommit(req)
+		case <-r.ExitSignal:
+			r.phase = EndPhase
+		case <-timeout.C:
+			r.phase, err = r.onTimeOut(CommitPhase)
+		}
+	case PanicPhase:
+		fmt.Println(err)
+		fallthrough
+	case EndPhase:
+		return
 	}
+}
+
+func (r *ReplicaImpl) Stop() {
+	r.ExitSignal <- true
 }
 
 func (r *ReplicaImpl) onStart() (Phase, error) {
@@ -206,7 +228,11 @@ func (r *ReplicaImpl) onStart() (Phase, error) {
 	}
 
 	// step 2 if it is primary, make a block/pre-prepare package and broadcast it
-	r.block = r.makeBlock()
+	var err error
+	r.block, err = r.makeBlock()
+	if err != nil {
+		return PanicPhase, err
+	}
 	bBlk := r.block.Encode()
 	bHH := r.block.Head.Hash()
 	sig := iosbase.Sign(iosbase.Sha256(bHH), r.Seckey)
@@ -231,14 +257,9 @@ func (r *ReplicaImpl) onStart() (Phase, error) {
 			Body:    bPre}
 	}
 
-	// step 3, as primary, prepare a Prepare pack which is always true
-	r.prepare = r.makePrepare(true)
-
+	r.AcceptCount = 0
+	r.RejectCount = 0
 	return PreparePhase, nil
-}
-
-func (r *ReplicaImpl) Stop() {
-	r.ExitSignal <- true
 }
 
 func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
@@ -248,7 +269,8 @@ func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
 	var sblk SignedBlock
 	_, err := sblk.Unmarshal(req.Body)
 	if err != nil {
-		return PanicPhase, err
+		r.chReply <- syntaxError(req)
+		return PrePreparePhase, nil
 	}
 
 	if !r.view.IsPrimary(iosbase.Base58Encode(iosbase.Hash160(sblk.Pubkey))) ||
@@ -257,61 +279,56 @@ func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
 	}
 
 	// 1. verify block syntax
-	r.prePrepare = &sblk
+	r.sblk = &sblk
+	var prepare Prepare
 	err = r.block.Decode(sblk.Blk)
 	if err != nil {
 		r.chReply <- syntaxError(req)
-		r.prepare = r.makePrepare(true)
+		prepare = r.makePrepare(false)
 	} else {
 		r.chReply <- accept(req)
-		r.prepare = r.makePrepare(false)
+		prepare = r.makePrepare(true)
 	}
 
 	// 2. verify if txs contains tx which validated sign conflict
-	// if ok, r.prepare is Accept, vise versa
-	if err := r.verifyBlockWithCache(r.block); err != nil {
+	// if ok, prepare is Accept, vise versa
+	err = r.verifyBlockWithCache(r.block)
+	if err != nil {
 		r.chReply <- illegalTx(req)
-		r.prepare = r.makePrepare(true)
+		prepare = r.makePrepare(false)
 	} else {
 		r.chReply <- accept(req)
-		r.prepare = r.makePrepare(false)
+		prepare = r.makePrepare(true)
 	}
 
-	// 3. save pre-prepare, block, broadcast prepare
-	bPare, err := r.prepare.Marshal(nil)
+	err = r.broadcastPrepare(prepare)
 	if err != nil {
 		return PanicPhase, err
 	}
 
-	r.chSend <- iosbase.Request{
-		Time:    time.Now().Unix(),
-		From:    r.ID,
-		To:      r.view.GetPrimary().ID,
-		ReqType: int(PreparePhase),
-		Body:    bPare}
-
-	for _, m := range r.view.GetBackup() {
-		if m.ID == r.ID {
-			continue
-		}
-		r.chSend <- iosbase.Request{
-			Time:    time.Now().Unix(),
-			From:    r.ID,
-			To:      r.view.GetPrimary().ID,
-			ReqType: int(PreparePhase),
-			Body:    bPare}
-	}
-
+	// initial next phase at end of previous phase
+	r.AcceptCount = 0
+	r.RejectCount = 0
 	return PreparePhase, nil
 }
 
-// depreciated ====================
+func (r *ReplicaImpl) onPrepare(req iosbase.Request) (Phase, error) {
 
-func (r *ReplicaImpl) Launch() {
-	go r.loop()
-}
+	var prepare Prepare
+	_, err := prepare.Unmarshal(req.Body)
+	if err != nil {
+		r.chReply <- syntaxError(req)
+		return PreparePhase, err
+	}
 
-func (r *ReplicaImpl) onPrepare(prepare Prepare) (Phase, error) {
+	realSender := iosbase.Base58Encode(iosbase.Hash160(prepare.Pubkey))
+
+	if !r.view.IsBackup(realSender) ||
+		!iosbase.VerifySignature(prepare.Rand, prepare.Pubkey, prepare.Sig) {
+		r.chReply <- authorityError(req)
+		return PreparePhase, nil
+	}
+
 	// count accept and reject numbers, if
 	//    1. ac or rj > 2t + 1 , do as it is
 	//    2. ac > t && rj > t, or time expired, the system is in failed and no consensus can reach, so put empty in it
@@ -321,35 +338,33 @@ func (r *ReplicaImpl) onPrepare(prepare Prepare) (Phase, error) {
 		r.RejectCount++
 	}
 
-	if r.AcceptCount > 1+2*r.view.ByzantineTolerance() {
-		r.commit = r.makeCommit()
+	if r.AcceptCount > 2*r.view.ByzantineTolerance() { // the prepare of Primary should be true, so ac + 1
+		commit := r.makeCommit()
 
-		bCmt, err := r.commit.Marshal(nil)
+		bCmt, err := commit.Marshal(nil)
 		if err != nil {
 			return PreparePhase, err
 		}
 		for _, m := range r.view.GetBackup() {
-			if m.ID == r.ID {
-				continue
-			}
-			r.network.Send(iosbase.Request{
+			r.chSend <- iosbase.Request{
 				Time:    time.Now().Unix(),
 				From:    r.ID,
 				To:      m.ID,
 				ReqType: int(PreparePhase),
 				Body:    bCmt,
-			})
+			}
 		}
 		r.AcceptCount = 0
 		r.RejectCount = 0
 		r.commitCounts = make(map[string]int, r.view.ByzantineTolerance())
-		r.commitCounts[iosbase.Base58Encode(r.commit.BlkHeadHash)] = 1
+		r.commitCounts[iosbase.Base58Encode(commit.BlkHeadHash)] = 1
 		return CommitPhase, nil
 	} else if r.RejectCount > 1+2*r.view.ByzantineTolerance() {
 		return r.onPrepareReject()
 	} else if r.RejectCount > r.view.ByzantineTolerance() && r.AcceptCount > r.view.ByzantineTolerance() {
 		return r.onTimeOut(PreparePhase)
 	}
+
 	return PreparePhase, nil
 }
 
@@ -358,7 +373,22 @@ func (r *ReplicaImpl) onPrepareReject() (Phase, error) {
 	return StartPhase, err
 }
 
-func (r *ReplicaImpl) onCommit(commit Commit) (Phase, error) {
+func (r *ReplicaImpl) onCommit(req iosbase.Request) (Phase, error) {
+
+	var commit Commit
+	_, err := commit.Unmarshal(req.Body)
+	if err != nil {
+		r.chReply <- syntaxError(req)
+		return CommitPhase, err
+	}
+
+	realSender := iosbase.Base58Encode(iosbase.Hash160(commit.Pubkey))
+
+	if !r.view.IsBackup(realSender) ||
+		!iosbase.VerifySignature(commit.BlkHeadHash, commit.Pubkey, commit.Sig) {
+		r.chReply <- authorityError(req)
+		return CommitPhase, nil
+	}
 
 	r.commitCounts[iosbase.Base58Encode(commit.BlkHeadHash)]++
 
@@ -392,7 +422,8 @@ func (r *ReplicaImpl) onTimeOut(phase Phase) (Phase, error) {
 	switch phase {
 	case PrePreparePhase:
 		// if backup did not receive PPP pack, simply mark reject and goes to prepare phase
-		r.prepare = r.makePrepare(false)
+		prepare := r.makePrepare(false)
+		r.broadcastPrepare(prepare)
 		return PreparePhase, nil
 	case PreparePhase:
 		// time out means offline committee members or divergence > t
@@ -402,6 +433,31 @@ func (r *ReplicaImpl) onTimeOut(phase Phase) (Phase, error) {
 		return r.onCommitFailed()
 	}
 	return StartPhase, nil
+}
+
+func (r *ReplicaImpl) broadcastPrepare(prepare Prepare) error {
+	// 3. broadcast prepare
+	bPare, err := prepare.Marshal(nil)
+	if err != nil {
+		return err
+	}
+
+	r.chSend <- iosbase.Request{
+		Time:    time.Now().Unix(),
+		From:    r.ID,
+		To:      r.view.GetPrimary().ID,
+		ReqType: int(PreparePhase),
+		Body:    bPare}
+
+	for _, m := range r.view.GetBackup() {
+		r.chSend <- iosbase.Request{
+			Time:    time.Now().Unix(),
+			From:    r.ID,
+			To:      m.ID,
+			ReqType: int(PreparePhase),
+			Body:    bPare}
+	}
+	return nil
 }
 
 func (r *ReplicaImpl) makePrepare(isAccept bool) Prepare {
@@ -431,132 +487,28 @@ func (r *ReplicaImpl) makeCommit() Commit {
 	return cc
 }
 
-func (r *ReplicaImpl) loop() { // TODO : BUG and too many things to be done in one function
-	r.phase = StartPhase
-	var req iosbase.Request
-	var err error = nil
+func (r *ReplicaImpl) makeBlock() (*iosbase.Block, error) {
 
-	to := time.NewTimer(1 * time.Minute)
-
-	for true {
-		switch r.phase {
-		case StartPhase:
-			r.phase, err = r.onStart()
-		case PanicPhase:
-			return
-		case EndPhase:
-			return
-		}
-
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		select {
-		case <-r.reqChan:
-			req = <-r.reqChan
-
-			switch r.phase {
-			case PrePreparePhase:
-				pp := SignedBlock{}
-				pp.Unmarshal(req.Body)
-				// verify sender's identity
-				if iosbase.Base58Encode(pp.Pubkey) != req.From ||
-					!iosbase.VerifySignature(pp.BlkHeadHash, pp.Pubkey, pp.Sig) {
-					err = fmt.Errorf("fake package")
-				} else {
-					r.phase, err = r.onPrePrepare(&pp)
-				}
-			case PreparePhase:
-				p := Prepare{}
-				p.Unmarshal(req.Body)
-				// verify prepare Sign whether comes from right member
-				if iosbase.Base58Encode(p.Pubkey) != req.From ||
-					!iosbase.VerifySignature(p.Rand, p.Pubkey, p.Sig) {
-					err = fmt.Errorf("fake package")
-				} else {
-					r.phase, err = r.onPrepare(p)
-				}
-			case CommitPhase:
-				cm := Commit{}
-				cm.Unmarshal(req.Body)
-				if iosbase.Base58Encode(cm.Pubkey) != req.From ||
-					!iosbase.VerifySignature(cm.BlkHeadHash, cm.Pubkey, cm.Sig) {
-					err = fmt.Errorf("fake package")
-				} else {
-					r.phase, err = r.onCommit(cm)
-
-				}
-			}
-
-			if !to.Stop() {
-				<-to.C
-			}
-			to.Reset(ExpireTime)
-		case <-to.C:
-			r.phase, err = r.onTimeOut(r.phase)
-			if err != nil {
-				return
-			}
-			to.Reset(ExpireTime)
-		case <-r.ExitSignal:
-			return
-		}
+	blockChain, err := r.GetBlockChain()
+	if err != nil {
+		return nil, err
 	}
-}
 
-func (r *ReplicaImpl) OnRequest(req iosbase.Request) iosbase.Response {
-	switch r.phase {
-	case StartPhase:
-		return invalidPhase(req)
-	case PrePreparePhase:
-		if req.ReqType == int(ReqPrePrepare) {
-			r.reqChan <- req
-			return accept(req)
-		} else {
-			return invalidPhase(req)
-		}
-	case PreparePhase:
-		if req.ReqType == int(ReqPrepare) {
-			r.reqChan <- req
-			return accept(req)
-
-		} else {
-			return invalidPhase(req)
-		}
-	case CommitPhase:
-		if req.ReqType == int(ReqCommit) {
-			r.reqChan <- req
-			return accept(req)
-
-		} else {
-			return invalidPhase(req)
-		}
-	case PanicPhase:
-		return internalError(req)
-	case EndPhase:
-		return invalidPhase(req)
-	default:
-		return internalError(req)
-	}
-}
-
-func (r *ReplicaImpl) makeBlock() *iosbase.Block {
 	blockHead := iosbase.BlockHead{
 		Version:   Version,
-		SuperHash: r.blockChain.Top().HeadHash(),
+		SuperHash: blockChain.Top().HeadHash(),
 		TreeHash:  r.txPool.Hash(),
 		Time:      time.Now().Unix(),
 	}
 
 	block := iosbase.Block{
 		Version:   Version,
-		SuperHash: r.blockChain.Top().HeadHash(),
+		SuperHash: blockChain.Top().HeadHash(),
 		Head:      blockHead,
 		Content:   r.txPool.Encode(),
 	}
 
-	return &block
+	return &block, nil
 }
 
 func (r *ReplicaImpl) verifyBlockWithCache(block *iosbase.Block) error {
@@ -576,45 +528,9 @@ func (r *ReplicaImpl) verifyBlockWithCache(block *iosbase.Block) error {
 	return nil
 }
 
-func (r *ReplicaImpl) admitBlock(block *iosbase.Block) error {
-	//r.blockChain.Push(*block)
-	r.network.BroadcastToMembers(iosbase.Request{
-		From:    r.ID,
-		To:      "",
-		ReqType: int(ReqNewBlock),
-		Body:    block.Encode(),
-	})
-	return nil
-}
-
-func (r *ReplicaImpl) admitEmptyBlock() error {
-	baseBlk, err := r.blockChain.Get(r.blockChain.Length())
-	if err != nil {
-		return err
-	}
-	head := iosbase.BlockHead{
-		Version:   Version,
-		SuperHash: baseBlk.Head.Hash(),
-		TreeHash:  make([]byte, 32),
-		Time:      time.Now().Unix(),
-	}
-	r.blockChain.Push(iosbase.Block{
-		Version:   Version,
-		SuperHash: baseBlk.Head.Hash(),
-		Head:      head,
-		Content:   nil,
-	})
-	return nil
-}
-
-func (r *ReplicaImpl) OnTxPack(pool iosbase.TxPool) error {
-
-	return nil
-}
-
 // reject duplicated Tx, which might come from corruption actions
 func (r *ReplicaImpl) verifyTxWithCache(tx iosbase.Tx) error {
-	err := r.RuntimeData.VerifyTx(tx)
+	err := r.VerifyTx(tx)
 	if err != nil {
 		return err
 	}
@@ -629,6 +545,46 @@ func (r *ReplicaImpl) verifyTxWithCache(tx iosbase.Tx) error {
 		} else if sliceIntersect(existedTx.Inputs, tx.Inputs) {
 			return fmt.Errorf("conflicted")
 		}
+	}
+	return nil
+}
+
+func (r *ReplicaImpl) admitBlock(block *iosbase.Block) error {
+	//r.blockChain.Push(*block)
+	r.chBroadcast <- iosbase.Request{
+		From:    r.ID,
+		To:      "",
+		ReqType: int(ReqNewBlock),
+		Body:    block.Encode(),
+	}
+	return nil
+}
+
+func (r *ReplicaImpl) admitEmptyBlock() error {
+	bc, err := r.GetBlockChain()
+	if err != nil {
+		return err
+	}
+	baseBlk := bc.Top()
+
+	head := iosbase.BlockHead{
+		Version:   Version,
+		SuperHash: baseBlk.Head.Hash(),
+		TreeHash:  make([]byte, 32),
+		Time:      time.Now().Unix(),
+	}
+
+	blk := iosbase.Block{
+		Version:   Version,
+		SuperHash: baseBlk.Head.Hash(),
+		Head:      head,
+		Content:   nil,
+	}
+	r.chBroadcast <- iosbase.Request{
+		From:    r.ID,
+		To:      "",
+		ReqType: int(ReqNewBlock),
+		Body:    blk.Encode(),
 	}
 	return nil
 }
