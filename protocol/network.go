@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"IOS/src/iosbase"
+	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
 type ReqType int

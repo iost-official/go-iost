@@ -1,12 +1,12 @@
 package protocol
 
 import (
-	"IOS/src/iosbase"
-	"github.com/golang/mock/gomock"
-	. "github.com/golang/mock/gomock"
-	. "github.com/smartystreets/goconvey/convey"
 	"reflect"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/iost-official/PrototypeWorks/iosbase"
+	"github.com/smartystreets/goconvey/convey"
 )
 
 // MockNetwork is a mock of Network interface

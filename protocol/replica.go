@@ -1,10 +1,11 @@
 package protocol
 
 import (
-	"IOS/src/iosbase"
 	"fmt"
 	"math/rand"
 	"time"
+
+	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
 //go:generate mockgen -destination replica_mock_test.go -package protocol -source replica.go

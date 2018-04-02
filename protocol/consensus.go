@@ -1,9 +1,10 @@
 package protocol
 
 import (
-	"IOS/src/iosbase"
 	"sync"
 	"time"
+
+	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
 type Character int

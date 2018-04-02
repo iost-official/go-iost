@@ -1,8 +1,9 @@
 package protocol
 
 import (
-	"IOS/src/iosbase"
 	"sort"
+
+	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
 //go:generate mockgen -destination view_mock_test.go -package protocol -source view.go
