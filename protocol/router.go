@@ -162,6 +162,7 @@ type Router interface {
 func RouterFactory(target string) (Router, error) {
 	switch target {
 	case "base":
+		return &RouterImpl{}, nil
 	}
 	return nil, fmt.Errorf("target Router not found")
 }
@@ -172,7 +173,8 @@ type RouterImpl struct {
 	chIn, chOut chan iosbase.Request
 	chReply     chan iosbase.Response
 
-	filterMap   map[Filter]chan iosbase.Request
+	filterList  []Filter
+	filterMap   map[int]chan iosbase.Request
 	knownMember []string
 	ExitSignal  chan bool
 }
@@ -181,6 +183,10 @@ func (r *RouterImpl) Init(base iosbase.Network, port uint16) error {
 	var err error
 
 	r.base = base
+	r.filterList = []Filter{}
+	r.filterMap = make(map[int]chan iosbase.Request)
+	r.knownMember = []string{}
+
 	r.chIn, r.chReply, err = r.base.Listen(port)
 	if err != nil {
 		return err
@@ -191,7 +197,9 @@ func (r *RouterImpl) Init(base iosbase.Network, port uint16) error {
 
 func (r *RouterImpl) FilteredChan(filter Filter) (chan iosbase.Request, chan iosbase.Response, error) {
 	chReq := make(chan iosbase.Request)
-	r.filterMap[filter] = chReq
+
+	r.filterList = append(r.filterList, filter)
+	r.filterMap[len(r.filterList)-1] = chReq
 
 	return chReq, r.chReply, nil
 }
@@ -202,9 +210,9 @@ func (r *RouterImpl) receiveLoop() {
 		case <-r.ExitSignal:
 			return
 		case req := <-r.chIn:
-			for k, v := range r.filterMap {
-				if k.check(req) {
-					v <- req
+			for i, f := range r.filterList {
+				if f.check(req) {
+					r.filterMap[i] <- req
 				}
 			}
 		}
