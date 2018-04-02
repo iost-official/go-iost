@@ -10,7 +10,7 @@ const (
 )
 
 type Consensus interface {
-	Init(bc *BlockChain, sp *StatePool, network Network) error
+	Init(bc BlockChain, sp StatePool, network Network) error
 	Run()
 	Stop()
 
