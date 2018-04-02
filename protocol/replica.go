@@ -28,7 +28,7 @@ const (
 )
 
 type Replica interface {
-	Init(db Database, router Router) error
+	Init(self iosbase.Member, db Database, router Router) error
 	Run()
 	Stop()
 }
@@ -46,6 +46,8 @@ type ReplicaImpl struct {
 	txPool iosbase.TxPool
 	block  *iosbase.Block
 	Database
+	iosbase.Member
+
 
 	phase            Phase
 	sblk             *SignedBlock
@@ -54,7 +56,6 @@ type ReplicaImpl struct {
 	commitCounts     map[string]int
 	correctBlockHash []byte
 
-	iosbase.Member
 	chView                            chan View             // in
 	chPrePrepare, chPrepare, chCommit chan iosbase.Request  // in
 	chTxPack                          chan iosbase.Request  // in
@@ -66,7 +67,10 @@ type ReplicaImpl struct {
 	chara Character
 }
 
-func (r *ReplicaImpl) Init(db Database, router Router) error {
+func (r *ReplicaImpl) Init(self iosbase.Member, db Database, router Router) error {
+	r.Member = self
+	r.Database = db
+
 	var err error
 	r.Member, err = db.GetIdentity()
 	if err != nil {
@@ -135,7 +139,7 @@ func (r *ReplicaImpl) collectLoop() {
 				r.chReply <- syntaxError(req)
 			}
 			for _, tx := range txs {
-				if err := r.verifyTxWithCache(tx); err == nil {
+				if err := r.VerifyTxWithCache(tx, r.txPool); err == nil {
 					r.txPool.Add(tx)
 				} else {
 					r.chReply <- illegalTx(req)
@@ -292,7 +296,7 @@ func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
 
 	// 2. verify if txs contains tx which validated sign conflict
 	// if ok, prepare is Accept, vise versa
-	err = r.verifyBlockWithCache(r.block)
+	err = r.VerifyBlockWithCache(r.block, r.txPool)
 	if err != nil {
 		r.chReply <- illegalTx(req)
 		prepare = r.makePrepare(false)
@@ -511,43 +515,43 @@ func (r *ReplicaImpl) makeBlock() (*iosbase.Block, error) {
 	return &block, nil
 }
 
-func (r *ReplicaImpl) verifyBlockWithCache(block *iosbase.Block) error {
-	var blkTxPool iosbase.TxPool
-	blkTxPool.Decode(block.Content)
-
-	txs, _ := blkTxPool.GetSlice()
-	for i, tx := range txs {
-		if i == 0 { // verify coinbase tx
-			continue
-		}
-		err := r.verifyTxWithCache(tx)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
+//func (r *ReplicaImpl) verifyBlockWithCache(block *iosbase.Block) error {
+//	var blkTxPool iosbase.TxPool
+//	blkTxPool.Decode(block.Content)
+//
+//	txs, _ := blkTxPool.GetSlice()
+//	for i, tx := range txs {
+//		if i == 0 { // verify coinbase tx
+//			continue
+//		}
+//		err := r.VerifyTxWithCache(tx)
+//		if err != nil {
+//			return err
+//		}
+//	}
+//	return nil
+//}
 
 // reject duplicated Tx, which might come from corruption actions
-func (r *ReplicaImpl) verifyTxWithCache(tx iosbase.Tx) error {
-	err := r.VerifyTx(tx)
-	if err != nil {
-		return err
-	}
-	txs, _ := r.txPool.GetSlice()
-	for _, existedTx := range txs {
-		if iosbase.Equal(existedTx.Hash(), tx.Hash()) {
-			return fmt.Errorf("has included")
-		}
-		if txConflict(existedTx, tx) {
-			r.txPool.Del(existedTx) // TODO : BUG, if there are three txs with different recorder
-			return fmt.Errorf("conflicted")
-		} else if sliceIntersect(existedTx.Inputs, tx.Inputs) {
-			return fmt.Errorf("conflicted")
-		}
-	}
-	return nil
-}
+//func (r Database) VerifyTxWithCache(tx iosbase.Tx, pool iosbase.TxPool) error {
+//	err := r.VerifyTx(tx)
+//	if err != nil {
+//		return err
+//	}
+//	txs, _ := r.txPool.GetSlice()
+//	for _, existedTx := range txs {
+//		if iosbase.Equal(existedTx.Hash(), tx.Hash()) {
+//			return fmt.Errorf("has included")
+//		}
+//		if txConflict(existedTx, tx) {
+//			r.txPool.Del(existedTx) // TODO : BUG, if there are three txs with different recorder
+//			return fmt.Errorf("conflicted")
+//		} else if sliceIntersect(existedTx.Inputs, tx.Inputs) {
+//			return fmt.Errorf("conflicted")
+//		}
+//	}
+//	return nil
+//}
 
 func (r *ReplicaImpl) admitBlock(block *iosbase.Block) error {
 	//r.blockChain.Push(*block)
@@ -613,23 +617,23 @@ func sliceEqualS(a, b []iosbase.State) bool {
 	return true
 }
 
-func sliceIntersect(a []iosbase.TxInput, b []iosbase.TxInput) bool {
-	for _, ina := range a {
-		for _, inb := range b {
-			if iosbase.Equal(ina.Hash(), inb.Hash()) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func txConflict(a, b iosbase.Tx) bool {
-	if sliceEqualI(a.Inputs, b.Inputs) &&
-		sliceEqualS(a.Outputs, b.Outputs) &&
-		a.Recorder != b.Recorder {
-		return true
-	} else {
-		return false
-	}
-}
+//func sliceIntersect(a []iosbase.TxInput, b []iosbase.TxInput) bool {
+//	for _, ina := range a {
+//		for _, inb := range b {
+//			if iosbase.Equal(ina.Hash(), inb.Hash()) {
+//				return true
+//			}
+//		}
+//	}
+//	return false
+//}
+//
+//func txConflict(a, b iosbase.Tx) bool {
+//	if sliceEqualI(a.Inputs, b.Inputs) &&
+//		sliceEqualS(a.Outputs, b.Outputs) &&
+//		a.Recorder != b.Recorder {
+//		return true
+//	} else {
+//		return false
+//	}
+//}
