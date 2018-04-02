@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/iost-official/prototype/p2p"
+	"p2p"
 )
 
 func main() {
@@ -10,4 +10,5 @@ func main() {
 	network := p2p.NewNaiveNetwork()
 	var myNet p2p.Network
 	myNet = network
+	myNet.Close(1)
 }
