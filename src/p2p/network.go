@@ -31,13 +31,20 @@ type Response struct {
 
 // 最基本网络的模块API，之后gossip协议，虚拟的网络延迟都可以在模块内部实现
 type Network interface {
-	Send(req Request) chan Response
-	Listen(port uint16) (chan Request, chan Response, error)
+	Send(req Request)
+	Listen(port uint16) (chan<- Request, error)
 	Close(port uint16) error
 }
 
 type NaiveNetwork struct {
 	peerList []string
+	listen   net.Listener
+	done     bool
+}
+
+func (network *NaiveNetwork) Close(port uint16) {
+	network.done = true
+	network.listen.Close()
 }
 
 func (network *NaiveNetwork) Send(req Request) {
@@ -58,11 +65,11 @@ func (network *NaiveNetwork) Send(req Request) {
 		}
 		conn.Close()
 	}
-
 }
 
-func (network *NaiveNetwork) Listen(port uint16) (chan Request, error) {
-	ln, err := net.Listen("tcp", ":"+string(port))
+func (network *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
+	var err error
+	network.listen, err = net.Listen("tcp", ":"+string(port))
 	if err != nil {
 		fmt.Println("Error listening:", err.Error())
 		return nil, err
@@ -70,16 +77,20 @@ func (network *NaiveNetwork) Listen(port uint16) (chan Request, error) {
 	fmt.Println("Listening on " + ":" + string(port))
 
 	req := make(chan Request)
-	go func(chan Request) {
+	go func() {
 		for {
 			// Listen for an incoming connection.
-			conn, err := ln.Accept()
+			conn, err := network.listen.Accept()
 			if err != nil {
 				fmt.Println("Error accepting: ", err.Error())
+				if network.done {
+					return
+				}
 				continue
 			}
 			// Handle connections in a new goroutine.
-			go func(conn net.Conn, req chan Request) {
+			go func(conn net.Conn) {
+				defer conn.Close()
 				// Make a buffer to hold incoming data.
 				buf := make([]byte, HEADLENGTH)
 				// Read the incoming connection into the buffer.
@@ -98,11 +109,9 @@ func (network *NaiveNetwork) Listen(port uint16) (chan Request, error) {
 				req <- *(*Request)(unsafe.Pointer(&_buf))
 				// Send a response back to person contacting us.
 				conn.Write([]byte("Message received."))
-				// Close the connection when you're done with it.
-				conn.Close()
-			}(conn, req)
+			}(conn)
 		}
 
-	}(req)
+	}()
 	return req, nil
 }
