@@ -2,12 +2,14 @@ package protocol
 
 import (
 	"github.com/iost-official/PrototypeWorks/iosbase"
+	"fmt"
+	"sync"
 )
 
 type ReqType int
 
 const (
-	ReqPrePrepare ReqType = iota
+	ReqPrePrepare   ReqType = iota
 	ReqPrepare
 	ReqCommit
 	ReqSubmitTxPack
@@ -23,16 +25,9 @@ const (
 	Error
 )
 
-
-type Filter struct {
-	WhiteList  []iosbase.Member
-	BlackList  []iosbase.Member
-	RejectType []ReqType
-	AcceptType []ReqType
-}
-
 func invalidPhase(req iosbase.Request) iosbase.Response {
 	return iosbase.Response{
+		Time:        req.Time,
 		From:        req.To,
 		To:          req.From,
 		Code:        int(Reject),
@@ -42,6 +37,7 @@ func invalidPhase(req iosbase.Request) iosbase.Response {
 
 func accept(req iosbase.Request) iosbase.Response {
 	return iosbase.Response{
+		Time:        req.Time,
 		From:        req.To,
 		To:          req.From,
 		Code:        int(Accepted),
@@ -51,6 +47,7 @@ func accept(req iosbase.Request) iosbase.Response {
 
 func internalError(req iosbase.Request) iosbase.Response {
 	return iosbase.Response{
+		Time:        req.Time,
 		From:        req.To,
 		To:          req.From,
 		Code:        int(Reject),
@@ -60,6 +57,7 @@ func internalError(req iosbase.Request) iosbase.Response {
 
 func authorityError(req iosbase.Request) iosbase.Response {
 	return iosbase.Response{
+		Time:        req.Time,
 		From:        req.To,
 		To:          req.From,
 		Code:        int(Reject),
@@ -78,6 +76,7 @@ func illegalTx(req iosbase.Request) iosbase.Response {
 
 func syntaxError(req iosbase.Request) iosbase.Response {
 	return iosbase.Response{
+		Time:        req.Time,
 		From:        req.To,
 		To:          req.From,
 		Code:        int(Error),
@@ -85,12 +84,157 @@ func syntaxError(req iosbase.Request) iosbase.Response {
 	}
 }
 
+type Filter struct {
+	WhiteList  []iosbase.Member
+	BlackList  []iosbase.Member
+	RejectType []ReqType
+	AcceptType []ReqType
+}
+
+func (f *Filter) check(req iosbase.Request) bool {
+	var memberCheck, typeCheck byte
+	if f.WhiteList == nil && f.BlackList == nil {
+		memberCheck = byte(0)
+	} else if f.WhiteList != nil {
+		memberCheck = byte(1)
+	} else {
+		memberCheck = byte(2)
+	}
+	if f.AcceptType == nil && f.RejectType == nil {
+		typeCheck = byte(0)
+	} else if f.AcceptType != nil {
+		typeCheck = byte(1)
+	} else {
+		typeCheck = byte(2)
+	}
+
+	var m, t bool
+
+	switch memberCheck {
+	case 0:
+		m = true
+	case 1:
+		m = memberContain(req.From, f.WhiteList)
+	case 2:
+		m = !memberContain(req.From, f.BlackList)
+	}
+
+	switch typeCheck {
+	case 0:
+		t = true
+	case 1:
+		t = reqTypeContain(req.ReqType, f.AcceptType)
+	case 2:
+		t = !reqTypeContain(req.ReqType, f.RejectType)
+	}
+
+	return m && t
+}
+
+func memberContain(a string, c []iosbase.Member) bool {
+	for _, m := range c {
+		if m.ID == a {
+			return true
+		}
+	}
+	return false
+}
+
+func reqTypeContain(a int, c []ReqType) bool {
+	for _, t := range c {
+		if int(t) == a {
+			return true
+		}
+	}
+	return false
+
+}
 
 type Router interface {
-	FilteredInChan(filter Filter) (chan iosbase.Request, error)
-	FilteredOutChan(filter Filter) (chan iosbase.Request, error)
+	Init(base iosbase.Network, port uint16) error
+	FilteredChan(filter Filter) (chan iosbase.Request, chan iosbase.Response, error)
 	Run()
-	Stop() error
-	SendChan() (chan iosbase.Request, chan iosbase.Response, error)
-	ReplyChan() (chan iosbase.Response, error)
+	Stop()
+	Send(req iosbase.Request) chan iosbase.Response
+	Broadcast(req iosbase.Request)
+}
+
+func RouterFactory(target string) (Router, error) {
+	switch target {
+	case "base":
+	}
+	return nil, fmt.Errorf("target Router not found")
+}
+
+type RouterImpl struct {
+	base iosbase.Network
+
+	chIn, chOut chan iosbase.Request
+	chReply     chan iosbase.Response
+
+	filterMap   map[Filter]chan iosbase.Request
+	knownMember []string
+	ExitSignal  chan bool
+}
+
+func (r *RouterImpl) Init(base iosbase.Network, port uint16) error {
+	var err error
+
+	r.base = base
+	r.chIn, r.chReply, err = r.base.Listen(port)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *RouterImpl) FilteredChan(filter Filter) (chan iosbase.Request, chan iosbase.Response, error) {
+	chReq := make(chan iosbase.Request)
+	r.filterMap[filter] = chReq
+
+	return chReq, r.chReply, nil
+}
+
+func (r *RouterImpl) receiveLoop() {
+	for true {
+		select {
+		case <-r.ExitSignal:
+			return
+		case req := <-r.chIn:
+			for k, v := range r.filterMap {
+				if k.check(req) {
+					v <- req
+				}
+			}
+		}
+	}
+}
+
+func (r *RouterImpl) Run() {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		r.receiveLoop()
+		defer wg.Done()
+	}()
+
+	wg.Wait()
+
+}
+func (r *RouterImpl) Stop() {
+	r.ExitSignal <- true
+}
+func (r *RouterImpl) Send(req iosbase.Request) chan iosbase.Response {
+	return r.base.Send(req)
+}
+
+func (r *RouterImpl) Broadcast(req iosbase.Request) {
+	for _, to := range r.knownMember {
+		req.To = to
+
+		go func() {
+			r.Send(req)
+		}()
+	}
 }

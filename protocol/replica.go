@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/iost-official/PrototypeWorks/iosbase"
+	"sync"
 )
 
 //go:generate mockgen -destination replica_mock_test.go -package protocol -source replica.go
@@ -27,15 +28,15 @@ const (
 	CommitTimeout     = 20 * time.Second
 )
 
-type Replica interface {
+type Component interface {
 	Init(self iosbase.Member, db Database, router Router) error
 	Run()
 	Stop()
 }
 
-func ReplicaFactory(kind string) (Replica, error) {
-	switch kind {
-	case "base1.0":
+func ReplicaFactory(target string) (Component, error) {
+	switch target {
+	case "pbft":
 		rep := ReplicaImpl{}
 		return &rep, nil
 	}
@@ -45,9 +46,9 @@ func ReplicaFactory(kind string) (Replica, error) {
 type ReplicaImpl struct {
 	txPool iosbase.TxPool
 	block  *iosbase.Block
-	Database
+	db     Database
+	net    Router
 	iosbase.Member
-
 
 	phase            Phase
 	sblk             *SignedBlock
@@ -59,8 +60,7 @@ type ReplicaImpl struct {
 	chView                            chan View             // in
 	chPrePrepare, chPrepare, chCommit chan iosbase.Request  // in
 	chTxPack                          chan iosbase.Request  // in
-	chSend, chBroadcast               chan iosbase.Request  // out
-	chReply, chRes                    chan iosbase.Response // out, in
+	chReply                           chan iosbase.Response // out, in
 	ExitSignal                        chan bool             // in
 
 	view  View
@@ -69,13 +69,11 @@ type ReplicaImpl struct {
 
 func (r *ReplicaImpl) Init(self iosbase.Member, db Database, router Router) error {
 	r.Member = self
-	r.Database = db
+	r.db = db
+	r.net = router
 
 	var err error
-	r.Member, err = db.GetIdentity()
-	if err != nil {
-		return err
-	}
+	r.Member = self
 	r.chView, err = db.NewViewSignal()
 	if err != nil {
 		return err
@@ -84,22 +82,15 @@ func (r *ReplicaImpl) Init(self iosbase.Member, db Database, router Router) erro
 	filter := Filter{
 		AcceptType: []ReqType{ReqSubmitTxPack},
 	}
-	r.chTxPack, err = router.FilteredInChan(filter)
+	r.chTxPack, r.chReply, err = router.FilteredChan(filter)
 	if err != nil {
 		return err
 	}
-	r.chSend, r.chRes, err = router.SendChan()
-	if err != nil {
-		return err
-	}
-	r.chReply, err = router.ReplyChan()
-	if err != nil {
-		return err
-	}
+
 	filter = Filter{
 		AcceptType: []ReqType{ReqPrePrepare},
 	}
-	r.chPrePrepare, err = router.FilteredInChan(filter)
+	r.chPrePrepare, _, err = router.FilteredChan(filter)
 	if err != nil {
 		return err
 	}
@@ -107,7 +98,7 @@ func (r *ReplicaImpl) Init(self iosbase.Member, db Database, router Router) erro
 	filter = Filter{
 		AcceptType: []ReqType{ReqPrepare},
 	}
-	r.chPrepare, err = router.FilteredInChan(filter)
+	r.chPrepare, _, err = router.FilteredChan(filter)
 	if err != nil {
 		return err
 	}
@@ -115,17 +106,32 @@ func (r *ReplicaImpl) Init(self iosbase.Member, db Database, router Router) erro
 	filter = Filter{
 		AcceptType: []ReqType{ReqCommit},
 	}
-	r.chCommit, err = router.FilteredInChan(filter)
+	r.chCommit, _, err = router.FilteredChan(filter)
 	if err != nil {
 		return err
 	}
 
-	r.chBroadcast, err = router.FilteredOutChan(Filter{})
 	return nil
 }
 
 func (r *ReplicaImpl) Run() {
-	go r.collectLoop()
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	go func() {
+		r.collectLoop()
+		defer wg.Done()
+	}()
+	go func() {
+		r.pbftLoop()
+		defer wg.Done()
+	}()
+
+	wg.Wait()
+}
+
+func (r *ReplicaImpl) Stop() {
+	r.ExitSignal <- true
 }
 
 func (r *ReplicaImpl) collectLoop() {
@@ -139,7 +145,7 @@ func (r *ReplicaImpl) collectLoop() {
 				r.chReply <- syntaxError(req)
 			}
 			for _, tx := range txs {
-				if err := r.VerifyTxWithCache(tx, r.txPool); err == nil {
+				if err := r.db.VerifyTxWithCache(tx, r.txPool); err == nil {
 					r.txPool.Add(tx)
 				} else {
 					r.chReply <- illegalTx(req)
@@ -205,10 +211,6 @@ func (r *ReplicaImpl) pbftLoop() {
 	}
 }
 
-func (r *ReplicaImpl) Stop() {
-	r.ExitSignal <- true
-}
-
 func (r *ReplicaImpl) onStart() (Phase, error) {
 	r.block = nil
 	r.AcceptCount = 0
@@ -253,12 +255,13 @@ func (r *ReplicaImpl) onStart() (Phase, error) {
 	}
 
 	for _, m := range r.view.GetBackup() {
-		r.chSend <- iosbase.Request{
+		r.net.Send(iosbase.Request{
 			Time:    time.Now().Unix(),
 			From:    r.ID,
 			To:      m.ID,
 			ReqType: int(PrePreparePhase),
-			Body:    bPre}
+			Body:    bPre,
+		})
 	}
 
 	r.AcceptCount = 0
@@ -277,10 +280,10 @@ func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
 		return PrePreparePhase, nil
 	}
 
-	if !r.view.IsPrimary(iosbase.Base58Encode(iosbase.Hash160(sblk.Pubkey))) ||
-		!iosbase.VerifySignature(sblk.BlkHeadHash, sblk.Pubkey, sblk.Sig) {
-		return PrePreparePhase, nil
-	}
+	//if !r.view.IsPrimary(iosbase.Base58Encode(iosbase.Hash160(sblk.Pubkey))) ||
+	//	!iosbase.VerifySignature(sblk.BlkHeadHash, sblk.Pubkey, sblk.Sig) {
+	//	return PrePreparePhase, nil
+	//}
 
 	// 1. verify block syntax
 	r.sblk = &sblk
@@ -296,7 +299,7 @@ func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
 
 	// 2. verify if txs contains tx which validated sign conflict
 	// if ok, prepare is Accept, vise versa
-	err = r.VerifyBlockWithCache(r.block, r.txPool)
+	err = r.db.VerifyBlockWithCache(r.block, r.txPool)
 	if err != nil {
 		r.chReply <- illegalTx(req)
 		prepare = r.makePrepare(false)
@@ -326,11 +329,10 @@ func (r *ReplicaImpl) onPrepare(req iosbase.Request) (Phase, error) {
 	}
 
 	realSender := iosbase.Base58Encode(iosbase.Hash160(prepare.Pubkey))
-
 	if !r.view.IsBackup(realSender) ||
 		!iosbase.VerifySignature(prepare.Rand, prepare.Pubkey, prepare.Sig) {
-		r.chReply <- authorityError(req)
-		return PreparePhase, nil
+			r.chReply <- authorityError(req)
+			return PreparePhase, nil
 	}
 
 	// count accept and reject numbers, if
@@ -350,13 +352,13 @@ func (r *ReplicaImpl) onPrepare(req iosbase.Request) (Phase, error) {
 			return PreparePhase, err
 		}
 		for _, m := range r.view.GetBackup() {
-			r.chSend <- iosbase.Request{
+			r.net.Send(iosbase.Request{
 				Time:    time.Now().Unix(),
 				From:    r.ID,
 				To:      m.ID,
 				ReqType: int(PreparePhase),
 				Body:    bCmt,
-			}
+			})
 		}
 		r.AcceptCount = 0
 		r.RejectCount = 0
@@ -386,9 +388,9 @@ func (r *ReplicaImpl) onCommit(req iosbase.Request) (Phase, error) {
 		return CommitPhase, err
 	}
 
+	// TODO: ensure sender's identity in iosbase.network
 	realSender := iosbase.Base58Encode(iosbase.Hash160(commit.Pubkey))
-
-	if !r.view.IsBackup(realSender) ||
+	if !(r.view.IsBackup(realSender) || r.view.IsPrimary(realSender)) ||
 		!iosbase.VerifySignature(commit.BlkHeadHash, commit.Pubkey, commit.Sig) {
 		r.chReply <- authorityError(req)
 		return CommitPhase, nil
@@ -446,20 +448,20 @@ func (r *ReplicaImpl) broadcastPrepare(prepare Prepare) error {
 		return err
 	}
 
-	r.chSend <- iosbase.Request{
+	r.net.Send(iosbase.Request{
 		Time:    time.Now().Unix(),
 		From:    r.ID,
 		To:      r.view.GetPrimary().ID,
 		ReqType: int(PreparePhase),
-		Body:    bPare}
+		Body:    bPare})
 
 	for _, m := range r.view.GetBackup() {
-		r.chSend <- iosbase.Request{
+		r.net.Send(iosbase.Request{
 			Time:    time.Now().Unix(),
 			From:    r.ID,
 			To:      m.ID,
 			ReqType: int(PreparePhase),
-			Body:    bPare}
+			Body:    bPare})
 	}
 	return nil
 }
@@ -493,7 +495,7 @@ func (r *ReplicaImpl) makeCommit() Commit {
 
 func (r *ReplicaImpl) makeBlock() (*iosbase.Block, error) {
 
-	blockChain, err := r.GetBlockChain()
+	blockChain, err := r.db.GetBlockChain()
 	if err != nil {
 		return nil, err
 	}
@@ -515,57 +517,19 @@ func (r *ReplicaImpl) makeBlock() (*iosbase.Block, error) {
 	return &block, nil
 }
 
-//func (r *ReplicaImpl) verifyBlockWithCache(block *iosbase.Block) error {
-//	var blkTxPool iosbase.TxPool
-//	blkTxPool.Decode(block.Content)
-//
-//	txs, _ := blkTxPool.GetSlice()
-//	for i, tx := range txs {
-//		if i == 0 { // verify coinbase tx
-//			continue
-//		}
-//		err := r.VerifyTxWithCache(tx)
-//		if err != nil {
-//			return err
-//		}
-//	}
-//	return nil
-//}
-
-// reject duplicated Tx, which might come from corruption actions
-//func (r Database) VerifyTxWithCache(tx iosbase.Tx, pool iosbase.TxPool) error {
-//	err := r.VerifyTx(tx)
-//	if err != nil {
-//		return err
-//	}
-//	txs, _ := r.txPool.GetSlice()
-//	for _, existedTx := range txs {
-//		if iosbase.Equal(existedTx.Hash(), tx.Hash()) {
-//			return fmt.Errorf("has included")
-//		}
-//		if txConflict(existedTx, tx) {
-//			r.txPool.Del(existedTx) // TODO : BUG, if there are three txs with different recorder
-//			return fmt.Errorf("conflicted")
-//		} else if sliceIntersect(existedTx.Inputs, tx.Inputs) {
-//			return fmt.Errorf("conflicted")
-//		}
-//	}
-//	return nil
-//}
-
 func (r *ReplicaImpl) admitBlock(block *iosbase.Block) error {
 	//r.blockChain.Push(*block)
-	r.chBroadcast <- iosbase.Request{
+	r.net.Broadcast(iosbase.Request{
 		From:    r.ID,
 		To:      "",
 		ReqType: int(ReqNewBlock),
 		Body:    block.Encode(),
-	}
+	})
 	return nil
 }
 
 func (r *ReplicaImpl) admitEmptyBlock() error {
-	bc, err := r.GetBlockChain()
+	bc, err := r.db.GetBlockChain()
 	if err != nil {
 		return err
 	}
@@ -584,56 +548,11 @@ func (r *ReplicaImpl) admitEmptyBlock() error {
 		Head:      head,
 		Content:   nil,
 	}
-	r.chBroadcast <- iosbase.Request{
+	r.net.Broadcast(iosbase.Request{
 		From:    r.ID,
 		To:      "",
 		ReqType: int(ReqNewBlock),
 		Body:    blk.Encode(),
-	}
+	})
 	return nil
 }
-
-func sliceEqualI(a, b []iosbase.TxInput) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if !iosbase.Equal(a[i].Hash(), b[i].Hash()) {
-			return false
-		}
-	}
-	return true
-}
-
-func sliceEqualS(a, b []iosbase.State) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if !iosbase.Equal(a[i].Hash(), b[i].Hash()) {
-			return false
-		}
-	}
-	return true
-}
-
-//func sliceIntersect(a []iosbase.TxInput, b []iosbase.TxInput) bool {
-//	for _, ina := range a {
-//		for _, inb := range b {
-//			if iosbase.Equal(ina.Hash(), inb.Hash()) {
-//				return true
-//			}
-//		}
-//	}
-//	return false
-//}
-//
-//func txConflict(a, b iosbase.Tx) bool {
-//	if sliceEqualI(a.Inputs, b.Inputs) &&
-//		sliceEqualS(a.Outputs, b.Outputs) &&
-//		a.Recorder != b.Recorder {
-//		return true
-//	} else {
-//		return false
-//	}
-//}

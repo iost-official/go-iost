@@ -9,43 +9,34 @@ import (
 
 //go:generate mockgen -destination recorder_mock_test.go -package protocol -source recorder.go
 
-type Recorder interface {
-	Init(self iosbase.Member, db Database, router Router) error
-	Run()
-	Stop()
-}
-
-func RecorderFactory(kind string) (Recorder, error) {
-	switch kind {
-	case "base1.0":
+func RecorderFactory(target string) (Component, error) {
+	switch target {
+	case "basic":
 		rec := RecorderImpl{}
 		return &rec, nil
 	}
 	return nil, fmt.Errorf("target recorder not found")
 }
 
-const (
-	RecorderPeriod = time.Minute
-)
-
 type RecorderImpl struct {
-	Database
+
 	iosbase.Member
 
+	db Database
+	net Router
 	view View
 
 	chView      chan View
 	chTx, chBlk chan iosbase.Request
 	chReply     chan iosbase.Response
-	chSend      chan iosbase.Request
-	chReceive   chan iosbase.Response
 	ExitSignal  chan bool
 
 	txPool iosbase.TxPool
 }
 
 func (r *RecorderImpl) Init(self iosbase.Member, db Database, router Router) error {
-	r.Database = db
+	r.db = db
+	r.net = router
 	r.Member = self
 
 	var err error
@@ -55,26 +46,16 @@ func (r *RecorderImpl) Init(self iosbase.Member, db Database, router Router) err
 		return err
 	}
 
-	r.chTx, err = router.FilteredInChan(Filter{
+	r.chTx, r.chReply, err = router.FilteredChan(Filter{
 		AcceptType: []ReqType{ReqPublishTx},
 	})
 	if err != nil {
 		return err
 	}
 
-	r.chBlk, err = router.FilteredInChan(Filter{
+	r.chBlk, _, err = router.FilteredChan(Filter{
 		AcceptType: []ReqType{ReqNewBlock},
 	})
-
-	r.chReply, err = router.ReplyChan()
-	if err != nil {
-		return err
-	}
-
-	r.chSend, r.chReceive, err = router.SendChan()
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -82,6 +63,7 @@ func (r *RecorderImpl) Init(self iosbase.Member, db Database, router Router) err
 func (r *RecorderImpl) Run() {
 	go r.recorderLoop()
 	go r.txLoop()
+	go r.blockLoop()
 }
 
 func (r *RecorderImpl) Stop() {
@@ -100,7 +82,7 @@ func (r *RecorderImpl) txLoop() {
 				r.chReply <- syntaxError(req)
 				continue
 			}
-			err = r.VerifyTxWithCache(tx, r.txPool)
+			err = r.db.VerifyTxWithCache(tx, r.txPool)
 			if err != nil {
 				r.chReply <- illegalTx(req)
 				continue
@@ -127,7 +109,7 @@ func (r *RecorderImpl) recorderLoop() {
 							Time:    time.Now().Unix(),
 						}
 
-						r.chSend <- req
+						r.net.Send(req)
 					}()
 				}
 			}
@@ -147,12 +129,12 @@ func (r *RecorderImpl) blockLoop() {
 				r.chReply <- syntaxError(req)
 				continue
 			}
-			err = r.VerifyBlockWithCache(&blk, r.txPool)
+			err = r.db.VerifyBlockWithCache(&blk, r.txPool)
 			if err != nil {
 				r.chReply <- illegalTx(req)
 				continue
 			}
-			r.PushBlock(&blk)
+			r.db.PushBlock(&blk)
 		}
 	}
 }

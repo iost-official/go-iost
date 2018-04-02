@@ -2,13 +2,15 @@ package protocol
 
 import (
 	"sort"
-
 	"github.com/iost-official/PrototypeWorks/iosbase"
+	"fmt"
 )
 
 //go:generate mockgen -destination view_mock_test.go -package protocol -source view.go
 
 type View interface {
+	Init(chain iosbase.BlockChain)
+
 	GetPrimary() iosbase.Member
 	GetBackup() []iosbase.Member
 	IsPrimary(ID string) bool
@@ -17,13 +19,22 @@ type View interface {
 	ByzantineTolerance() int
 }
 
+
+func ViewFactory(target string) (View, error){
+	switch target {
+	case "dpos":
+		return &DposView{}, nil
+	}
+	return nil, fmt.Errorf("target view not found")
+}
+
+
 type DposView struct {
 	primary iosbase.Member
 	backup  []iosbase.Member
 }
 
-func NewDposView(chain iosbase.BlockChain) DposView {
-	var view DposView
+func (v *DposView)Init(chain iosbase.BlockChain) {
 
 	/*
 		ruler:
@@ -74,10 +85,8 @@ func NewDposView(chain iosbase.BlockChain) DposView {
 	}
 
 	_, oldbus, _ := parseCoinbaseTx(txs[0])
-	view.primary = oldbus[0]
-	view.backup = append(oldbus[1+emptyCount:], winners...)
-
-	return view
+	v.primary = oldbus[0]
+	v.backup = append(oldbus[1+emptyCount:], winners...)
 }
 
 func (v *DposView) GetPrimary() iosbase.Member {
