@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	_ "github.com/iost-official/PrototypeWorks/icobase"
+	_ "github.com/iost-official/PrototypeWorks/iosbase"
 	"github.com/iost-official/PrototypeWorks/protocol"
 )
 
