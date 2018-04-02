@@ -1,8 +1,10 @@
 package main
 
 import (
-	"IOS/src/protocol"
 	"fmt"
+
+	_ "github.com/iost-official/PrototypeWorks/icobase"
+	"github.com/iost-official/PrototypeWorks/protocol"
 )
 
 type Node struct {
