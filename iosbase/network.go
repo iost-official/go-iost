@@ -9,6 +9,7 @@ type Request struct {
 }
 
 type Response struct {
+	Time        int64
 	From        string
 	To          string
 	Code        int
