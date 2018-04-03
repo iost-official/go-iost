@@ -1,6 +1,5 @@
 package iosbase
 
-
 //go:generate mockgen -destination mocks/mock_txpool.go -package iosbase_mock github.com/iost-official/PrototypeWorks/iosbase TxPool
 type TxPool interface {
 	Add(tx Tx) error
