@@ -9,12 +9,12 @@ import (
 	"sync"
 )
 
-//go:generate mockgen -destination replica_mock_test.go -package protocol -source replica.go
+//go:generate mockgen -destination mocks/mock_component.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Component
 
 type Phase int
 
 const (
-	StartPhase      Phase = iota
+	StartPhase Phase = iota
 	PrePreparePhase
 	PreparePhase
 	CommitPhase
@@ -331,8 +331,8 @@ func (r *ReplicaImpl) onPrepare(req iosbase.Request) (Phase, error) {
 	realSender := iosbase.Base58Encode(iosbase.Hash160(prepare.Pubkey))
 	if !r.view.IsBackup(realSender) ||
 		!iosbase.VerifySignature(prepare.Rand, prepare.Pubkey, prepare.Sig) {
-			r.chReply <- authorityError(req)
-			return PreparePhase, nil
+		r.chReply <- authorityError(req)
+		return PreparePhase, nil
 	}
 
 	// count accept and reject numbers, if

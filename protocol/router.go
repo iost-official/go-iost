@@ -1,15 +1,15 @@
 package protocol
 
 import (
-	"github.com/iost-official/PrototypeWorks/iosbase"
 	"fmt"
+	"github.com/iost-official/PrototypeWorks/iosbase"
 	"sync"
 )
 
 type ReqType int
 
 const (
-	ReqPrePrepare   ReqType = iota
+	ReqPrePrepare ReqType = iota
 	ReqPrepare
 	ReqCommit
 	ReqSubmitTxPack
@@ -183,9 +183,9 @@ func (r *RouterImpl) Init(base iosbase.Network, port uint16) error {
 	var err error
 
 	r.base = base
-	r.filterList = make([]Filter,0)
+	r.filterList = make([]Filter, 0)
 	r.filterMap = make(map[int]chan iosbase.Request)
-	r.knownMember = make([]string,0)
+	r.knownMember = make([]string, 0)
 	r.ExitSignal = make(chan bool)
 
 	r.chIn, r.chReply, err = r.base.Listen(port)
