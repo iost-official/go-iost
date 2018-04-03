@@ -72,6 +72,8 @@ func (r *ReplicaImpl) Init(self iosbase.Member, db Database, router Router) erro
 	r.db = db
 	r.net = router
 
+	r.ExitSignal = make(chan bool)
+
 	var err error
 	r.Member = self
 	r.chView, err = db.NewViewSignal()
