@@ -1,7 +1,9 @@
 package protocol
 
-//import "testing"
-//
-//func TestDatabase(t *testing.T) {
-//
-//}
+import "testing"
+
+func TestDatabase(t *testing.T) {
+
+
+
+}

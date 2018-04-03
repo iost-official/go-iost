@@ -6,8 +6,10 @@ import (
 	"reflect"
 	"github.com/iost-official/PrototypeWorks/iosbase"
 	. "github.com/smartystreets/goconvey/convey"
+	. "github.com/golang/mock/gomock"
+	"sync"
+	"time"
 )
-
 
 // MockNetwork is a mock of Network interface
 type MockNetwork struct {
@@ -70,16 +72,76 @@ func (mr *MockNetworkMockRecorder) Close(port interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockNetwork)(nil).Close), port)
 }
 
-
-
-func TestRouter (t *testing.T) {
+func TestRouter(t *testing.T) {
 	Convey("Test of RouterFactory", t, func() {
 		router, err := RouterFactory("base")
 		So(err, ShouldBeNil)
 		So(reflect.TypeOf(router), ShouldEqual, reflect.TypeOf(&RouterImpl{}))
 	})
 
-	//Convey("Test of RouterImpl", t, func() {
-	//	error
-	//})
+	Convey("Test of RouterImpl", t, func() {
+		mockctl := NewController(t)
+		defer mockctl.Finish()
+
+		netBase := NewMockNetwork(mockctl)
+		chRes := make(chan iosbase.Response, 10)
+		chReq := make(chan iosbase.Request, 10)
+		netBase.EXPECT().Listen(Any()).AnyTimes().Return(chReq, chRes, nil)
+		router, err := RouterFactory("base")
+
+		Convey("Init:", func() {
+			err = router.Init(netBase, Port)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Run and stop:", func() {
+			router.Init(netBase, Port)
+
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				router.Run()
+				wg.Done()
+			}()
+			time.Sleep(10*time.Millisecond)
+			router.Stop()
+			wg.Wait()
+			So(true, ShouldBeTrue)
+		})
+
+		Convey("Type Filter white list:", func() {
+			router.Init(netBase, Port)
+
+			typeFilter, _, err := router.FilteredChan(Filter{
+				AcceptType: []ReqType{ReqPublishTx},
+			})
+
+			chReq <- iosbase.Request{
+				ReqType: int(ReqPublishTx),
+			}
+			go router.Run()
+			So(err, ShouldBeNil)
+			req := <-typeFilter
+			So(req.ReqType, ShouldEqual, int(ReqPublishTx))
+		})
+
+		Convey("Type Filter black list:", func() {
+			router.Init(netBase, Port)
+
+			typeFilter, _, err := router.FilteredChan(Filter{
+				RejectType: []ReqType{ReqPublishTx},
+			})
+
+			chReq <- iosbase.Request{
+				ReqType: int(ReqPublishTx),
+			}
+			chReq <- iosbase.Request{
+				ReqType: int(ReqCommit),
+			}
+			go router.Run()
+			So(err, ShouldBeNil)
+			req := <-typeFilter
+			So(req.ReqType, ShouldEqual, int(ReqCommit))
+		})
+	})
 }
