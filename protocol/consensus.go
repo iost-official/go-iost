@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	. "github.com/iost-official/PrototypeWorks/iosbase"
+	"github.com/iost-official/PrototypeWorks/iosbase"
 	"sync"
 )
 
@@ -19,14 +19,14 @@ const (
 )
 
 type ConsensusImpl struct {
-	Member
+	iosbase.Member
 
 	recorder, replica Component
 	db                Database
 	router            Router
 }
 
-func (c *ConsensusImpl) Init(bc BlockChain, sp StatePool, network Network) error {
+func (c *ConsensusImpl) Init(bc iosbase.BlockChain, sp iosbase.StatePool, network iosbase.Network) error {
 	var err error
 
 	c.db, err = DatabaseFactory("base", bc, sp)
@@ -88,8 +88,8 @@ func (c *ConsensusImpl) Stop() {
 	c.router.Stop()
 }
 
-func (c *ConsensusImpl) PublishTx(tx Tx) error {
-	req := Request{
+func (c *ConsensusImpl) PublishTx(tx iosbase.Tx) error {
+	req := iosbase.Request{
 		From:    c.ID,
 		To:      c.ID,
 		ReqType: int(ReqPublishTx),
@@ -99,11 +99,11 @@ func (c *ConsensusImpl) PublishTx(tx Tx) error {
 	return nil
 }
 
-func (c *ConsensusImpl) CheckTx(tx Tx) (TxStatus, error) {
-	return POOL, nil // TODO not complete
+func (c *ConsensusImpl) CheckTx(tx iosbase.Tx) (iosbase.TxStatus, error) {
+	return iosbase.POOL, nil // TODO not complete
 }
 
-func (c *ConsensusImpl) GetStatus() (BlockChain, StatePool, error) {
+func (c *ConsensusImpl) GetStatus() (iosbase.BlockChain, iosbase.StatePool, error) {
 	bc, err := c.db.GetBlockChain()
 	if err != nil {
 		return nil, nil, err
@@ -115,6 +115,6 @@ func (c *ConsensusImpl) GetStatus() (BlockChain, StatePool, error) {
 	return bc, sp, nil
 }
 
-func (c *ConsensusImpl) GetCachedStatus() (BlockChain, StatePool, error) {
+func (c *ConsensusImpl) GetCachedStatus() (iosbase.BlockChain, iosbase.StatePool, error) {
 	return c.GetStatus()
 }
