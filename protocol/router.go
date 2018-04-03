@@ -25,6 +25,106 @@ const (
 	Error
 )
 
+//go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Router
+
+type Router interface {
+	Init(base iosbase.Network, port uint16) error
+	FilteredChan(filter Filter) (chan iosbase.Request, chan iosbase.Response, error)
+	Run()
+	Stop()
+	Send(req iosbase.Request) chan iosbase.Response
+	Broadcast(req iosbase.Request)
+}
+
+func RouterFactory(target string) (Router, error) {
+	switch target {
+	case "base":
+		return &RouterImpl{}, nil
+	}
+	return nil, fmt.Errorf("target Router not found")
+}
+
+type RouterImpl struct {
+	base iosbase.Network
+
+	chIn, chOut chan iosbase.Request
+	chReply     chan iosbase.Response
+
+	filterList  []Filter
+	filterMap   map[int]chan iosbase.Request
+	knownMember []string
+	ExitSignal  chan bool
+}
+
+func (r *RouterImpl) Init(base iosbase.Network, port uint16) error {
+	var err error
+
+	r.base = base
+	r.filterList = make([]Filter, 0)
+	r.filterMap = make(map[int]chan iosbase.Request)
+	r.knownMember = make([]string, 0)
+	r.ExitSignal = make(chan bool)
+
+	r.chIn, r.chReply, err = r.base.Listen(port)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *RouterImpl) FilteredChan(filter Filter) (chan iosbase.Request, chan iosbase.Response, error) {
+	chReq := make(chan iosbase.Request)
+
+	r.filterList = append(r.filterList, filter)
+	r.filterMap[len(r.filterList)-1] = chReq
+
+	return chReq, r.chReply, nil
+}
+
+func (r *RouterImpl) receiveLoop() {
+	for true {
+		select {
+		case <-r.ExitSignal:
+			return
+		case req := <-r.chIn:
+			for i, f := range r.filterList {
+				if f.check(req) {
+					r.filterMap[i] <- req
+				}
+			}
+		}
+	}
+}
+
+func (r *RouterImpl) Run() {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		r.receiveLoop()
+		defer wg.Done()
+	}()
+
+	wg.Wait()
+
+}
+func (r *RouterImpl) Stop() {
+	r.ExitSignal <- true
+}
+func (r *RouterImpl) Send(req iosbase.Request) chan iosbase.Response {
+	return r.base.Send(req)
+}
+
+func (r *RouterImpl) Broadcast(req iosbase.Request) {
+	for _, to := range r.knownMember {
+		req.To = to
+
+		go func() {
+			r.Send(req)
+		}()
+	}
+}
+
 func invalidPhase(req iosbase.Request) iosbase.Response {
 	return iosbase.Response{
 		Time:        req.Time,
@@ -148,102 +248,4 @@ func reqTypeContain(a int, c []ReqType) bool {
 	}
 	return false
 
-}
-
-type Router interface {
-	Init(base iosbase.Network, port uint16) error
-	FilteredChan(filter Filter) (chan iosbase.Request, chan iosbase.Response, error)
-	Run()
-	Stop()
-	Send(req iosbase.Request) chan iosbase.Response
-	Broadcast(req iosbase.Request)
-}
-
-func RouterFactory(target string) (Router, error) {
-	switch target {
-	case "base":
-		return &RouterImpl{}, nil
-	}
-	return nil, fmt.Errorf("target Router not found")
-}
-
-type RouterImpl struct {
-	base iosbase.Network
-
-	chIn, chOut chan iosbase.Request
-	chReply     chan iosbase.Response
-
-	filterList  []Filter
-	filterMap   map[int]chan iosbase.Request
-	knownMember []string
-	ExitSignal  chan bool
-}
-
-func (r *RouterImpl) Init(base iosbase.Network, port uint16) error {
-	var err error
-
-	r.base = base
-	r.filterList = make([]Filter, 0)
-	r.filterMap = make(map[int]chan iosbase.Request)
-	r.knownMember = make([]string, 0)
-	r.ExitSignal = make(chan bool)
-
-	r.chIn, r.chReply, err = r.base.Listen(port)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *RouterImpl) FilteredChan(filter Filter) (chan iosbase.Request, chan iosbase.Response, error) {
-	chReq := make(chan iosbase.Request)
-
-	r.filterList = append(r.filterList, filter)
-	r.filterMap[len(r.filterList)-1] = chReq
-
-	return chReq, r.chReply, nil
-}
-
-func (r *RouterImpl) receiveLoop() {
-	for true {
-		select {
-		case <-r.ExitSignal:
-			return
-		case req := <-r.chIn:
-			for i, f := range r.filterList {
-				if f.check(req) {
-					r.filterMap[i] <- req
-				}
-			}
-		}
-	}
-}
-
-func (r *RouterImpl) Run() {
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		r.receiveLoop()
-		defer wg.Done()
-	}()
-
-	wg.Wait()
-
-}
-func (r *RouterImpl) Stop() {
-	r.ExitSignal <- true
-}
-func (r *RouterImpl) Send(req iosbase.Request) chan iosbase.Response {
-	return r.base.Send(req)
-}
-
-func (r *RouterImpl) Broadcast(req iosbase.Request) {
-	for _, to := range r.knownMember {
-		req.To = to
-
-		go func() {
-			r.Send(req)
-		}()
-	}
 }

@@ -5,6 +5,8 @@ import (
 	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
+//go:generate mockgen -destination mocks/mock_database.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Database
+
 type Database interface {
 	NewViewSignal() (chan View, error)
 
