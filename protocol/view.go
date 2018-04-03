@@ -1,12 +1,12 @@
 package protocol
 
 import (
-	"sort"
-	"github.com/iost-official/PrototypeWorks/iosbase"
 	"fmt"
+	"github.com/iost-official/PrototypeWorks/iosbase"
+	"sort"
 )
 
-//go:generate mockgen -destination view_mock_test.go -package protocol -source view.go
+//go:generate mockgen -destination mocks/mock_view.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol View
 
 type View interface {
 	Init(chain iosbase.BlockChain)
@@ -19,8 +19,7 @@ type View interface {
 	ByzantineTolerance() int
 }
 
-
-func ViewFactory(target string) (View, error){
+func ViewFactory(target string) (View, error) {
 	switch target {
 	case "dpos":
 		return &DposView{}, nil
@@ -28,13 +27,12 @@ func ViewFactory(target string) (View, error){
 	return nil, fmt.Errorf("target view not found")
 }
 
-
 type DposView struct {
 	primary iosbase.Member
 	backup  []iosbase.Member
 }
 
-func (v *DposView)Init(chain iosbase.BlockChain) {
+func (v *DposView) Init(chain iosbase.BlockChain) {
 
 	/*
 		ruler:

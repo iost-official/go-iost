@@ -1,12 +1,11 @@
 package protocol
 
 import (
-	"github.com/iost-official/PrototypeWorks/iosbase"
 	"fmt"
+	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
 type Database interface {
-
 	NewViewSignal() (chan View, error)
 
 	VerifyTx(tx iosbase.Tx) error
@@ -21,14 +20,14 @@ type Database interface {
 	GetCurrentView() (View, error)
 }
 
-func DatabaseFactory(target string, chain iosbase.BlockChain, pool iosbase.StatePool) (Database, error){
+func DatabaseFactory(target string, chain iosbase.BlockChain, pool iosbase.StatePool) (Database, error) {
 	switch target {
 	case "base":
 		return &DatabaseImpl{
-			bc:chain,
-			sp:pool,
-			chViewList:make([]chan View, 2),
-		} , nil
+			bc:         chain,
+			sp:         pool,
+			chViewList: []chan View{},
+		}, nil
 	}
 	return nil, fmt.Errorf("target Database not found")
 }
@@ -50,7 +49,7 @@ func (d *DatabaseImpl) NewViewSignal() (chan View, error) {
 func (d *DatabaseImpl) VerifyTx(tx iosbase.Tx) error {
 	// here only existence of Tx inputs will be verified
 	for _, in := range tx.Inputs {
-		if _, err := d.sp.Find(in.StateHash); err == nil {
+		if _, err := d.sp.Find(in.StateHash); err != nil {
 			return fmt.Errorf("some input not found")
 		}
 	}
@@ -66,9 +65,9 @@ func (d *DatabaseImpl) VerifyTxWithCache(tx iosbase.Tx, cachePool iosbase.TxPool
 		if iosbase.Equal(existedTx.Hash(), tx.Hash()) {
 			return fmt.Errorf("has included")
 		}
-		if txConflict(existedTx, tx) {
+		if TxConflict(existedTx, tx) {
 			return fmt.Errorf("conflicted")
-		} else if sliceIntersect(existedTx.Inputs, tx.Inputs) {
+		} else if SliceIntersect(existedTx.Inputs, tx.Inputs) {
 			return fmt.Errorf("conflicted")
 		}
 	}
@@ -130,7 +129,7 @@ func (d *DatabaseImpl) GetCurrentView() (View, error) {
 	return d.view, nil
 }
 
-func sliceEqualI(a, b []iosbase.TxInput) bool {
+func SliceEqualI(a, b []iosbase.TxInput) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -142,7 +141,7 @@ func sliceEqualI(a, b []iosbase.TxInput) bool {
 	return true
 }
 
-func sliceEqualS(a, b []iosbase.State) bool {
+func SliceEqualS(a, b []iosbase.State) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -154,7 +153,7 @@ func sliceEqualS(a, b []iosbase.State) bool {
 	return true
 }
 
-func sliceIntersect(a []iosbase.TxInput, b []iosbase.TxInput) bool {
+func SliceIntersect(a []iosbase.TxInput, b []iosbase.TxInput) bool {
 	for _, ina := range a {
 		for _, inb := range b {
 			if iosbase.Equal(ina.Hash(), inb.Hash()) {
@@ -165,9 +164,9 @@ func sliceIntersect(a []iosbase.TxInput, b []iosbase.TxInput) bool {
 	return false
 }
 
-func txConflict(a, b iosbase.Tx) bool {
-	if sliceEqualI(a.Inputs, b.Inputs) &&
-		sliceEqualS(a.Outputs, b.Outputs) &&
+func TxConflict(a, b iosbase.Tx) bool {
+	if SliceEqualI(a.Inputs, b.Inputs) &&
+		SliceEqualS(a.Outputs, b.Outputs) &&
 		a.Recorder != b.Recorder {
 		return true
 	} else {

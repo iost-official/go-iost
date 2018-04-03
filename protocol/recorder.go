@@ -7,8 +7,6 @@ import (
 	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
-//go:generate mockgen -destination recorder_mock_test.go -package protocol -source recorder.go
-
 func RecorderFactory(target string) (Component, error) {
 	switch target {
 	case "basic":
@@ -19,11 +17,10 @@ func RecorderFactory(target string) (Component, error) {
 }
 
 type RecorderImpl struct {
-
 	iosbase.Member
 
-	db Database
-	net Router
+	db   Database
+	net  Router
 	view View
 
 	chView      chan View
