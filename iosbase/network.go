@@ -16,7 +16,7 @@ type Response struct {
 	Description string
 }
 
-//go:generate mockgen -destination network_mock_test.go -package iosbase -source network.go
+//go:generate mockgen -destination mocks/mock_network.go -package iosbase_mock -source network.go -imports .=github.com/iost-official/PrototypeWorks/iosbase
 
 type Network interface {
 	Send(req Request) chan Response
