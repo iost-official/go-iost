@@ -1,18 +1,18 @@
 package protocol_test
 
 import (
-	"reflect"
-	"testing"
 	"fmt"
+	. "github.com/bouk/monkey"
 	. "github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
-	. "github.com/bouk/monkey"
+	"reflect"
+	"testing"
 
-	"github.com/iost-official/PrototypeWorks/iosbase/mocks"
 	"github.com/iost-official/PrototypeWorks/iosbase"
+	"github.com/iost-official/PrototypeWorks/iosbase/mocks"
 
-	"github.com/iost-official/PrototypeWorks/protocol/mocks"
 	. "github.com/iost-official/PrototypeWorks/protocol"
+	"github.com/iost-official/PrototypeWorks/protocol/mocks"
 )
 
 func TestDatabase(t *testing.T) {
@@ -111,19 +111,19 @@ func TestDatabase(t *testing.T) {
 				},
 			}
 
-			So(SliceIntersect(a,b), ShouldBeTrue)
-			So(SliceIntersect(a,c), ShouldBeFalse)
+			So(SliceIntersect(a, b), ShouldBeTrue)
+			So(SliceIntersect(a, c), ShouldBeFalse)
 		})
 		Convey("Tx conflict", func() {
 			a := iosbase.Tx{
-				Inputs:[]iosbase.TxInput{
+				Inputs: []iosbase.TxInput{
 					{
 						StateHash: []byte{1, 2, 3},
 					}, {
 						StateHash: []byte{4, 5, 6},
 					},
 				},
-				Outputs:[]iosbase.State{
+				Outputs: []iosbase.State{
 					{
 						Value: 123,
 					}, {
@@ -133,14 +133,14 @@ func TestDatabase(t *testing.T) {
 				Recorder: "somebodyA",
 			}
 			b := iosbase.Tx{
-				Inputs:[]iosbase.TxInput{
+				Inputs: []iosbase.TxInput{
 					{
 						StateHash: []byte{1, 2, 3},
 					}, {
 						StateHash: []byte{4, 5, 6},
 					},
 				},
-				Outputs:[]iosbase.State{
+				Outputs: []iosbase.State{
 					{
 						Value: 123,
 					}, {
@@ -150,14 +150,14 @@ func TestDatabase(t *testing.T) {
 				Recorder: "somebodyB",
 			}
 			c := iosbase.Tx{
-				Inputs:[]iosbase.TxInput{
+				Inputs: []iosbase.TxInput{
 					{
 						StateHash: []byte{1, 2, 3},
 					}, {
 						StateHash: []byte{4, 5, 6},
 					},
 				},
-				Outputs:[]iosbase.State{
+				Outputs: []iosbase.State{
 					{
 						Value: 123,
 					}, {
@@ -167,7 +167,7 @@ func TestDatabase(t *testing.T) {
 				Recorder: "somebodyC",
 			}
 			So(TxConflict(a, b), ShouldBeTrue)
-			So(TxConflict(a,c), ShouldBeFalse)
+			So(TxConflict(a, c), ShouldBeFalse)
 		})
 
 	})
