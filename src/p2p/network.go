@@ -50,12 +50,13 @@ func NewNaiveNetwork() *NaiveNetwork {
 	return nn
 }
 
-func (network *NaiveNetwork) Close(port uint16) error {
-	network.done = true
-	return network.listen.Close()
+func (nn *NaiveNetwork) Close(port uint16) error {
+	port = 3 // 避免出现unused variable
+	nn.done = true
+	return nn.listen.Close()
 }
 
-func (network *NaiveNetwork) Send(req Request) {
+func (nn *NaiveNetwork) Send(req Request) {
 	buf, err := req.Marshal(nil)
 	if err != nil {
 		fmt.Println("Error marshal body:", err.Error())
@@ -66,7 +67,7 @@ func (network *NaiveNetwork) Send(req Request) {
 	for i := 1; i <= 2; i++ {
 		bytesBuffer := bytes.NewBuffer([]byte{})
 		binary.Write(bytesBuffer, binary.BigEndian, int32(i))
-		addr, _ := network.peerList.Get(bytesBuffer.Bytes())
+		addr, _ := nn.peerList.Get(bytesBuffer.Bytes())
 
 		conn, err := net.Dial("tcp", string(addr))
 		if err != nil {
@@ -82,9 +83,9 @@ func (network *NaiveNetwork) Send(req Request) {
 	}
 }
 
-func (network *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
+func (nn *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
 	var err error
-	network.listen, err = net.Listen("tcp", ":"+string(port))
+	nn.listen, err = net.Listen("tcp", ":"+string(port))
 	if err != nil {
 		fmt.Println("Error listening:", err.Error())
 		return nil, err
@@ -95,10 +96,10 @@ func (network *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
 	go func() {
 		for {
 			// Listen for an incoming connection.
-			conn, err := network.listen.Accept()
+			conn, err := nn.listen.Accept()
 			if err != nil {
 				fmt.Println("Error accepting: ", err.Error())
-				if network.done {
+				if nn.done {
 					return
 				}
 				continue
