@@ -6,9 +6,17 @@ import (
 )
 
 func main() {
-	fmt.Println("hello world")
 	network := p2p.NewNaiveNetwork()
 	var myNet p2p.Network
 	myNet = network
-	myNet.Close(1)
+	req,_ := myNet.Listen(11037)
+	myNet.Send(p2p.Request{
+		Time:    1,
+		From:    "test1",
+		To:      "test2",
+		ReqType: 1,
+		Body:    []byte{1,2,3},
+	})
+	message := <-req
+	fmt.Printf("%+v\n", message)
 }

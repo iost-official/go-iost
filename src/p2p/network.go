@@ -27,7 +27,7 @@ type Response struct {
 // 最基本网络的模块API，之后gossip协议，虚拟的网络延迟都可以在模块内部实现
 type Network interface {
 	Send(req Request)
-	Listen(port uint16) (chan<- Request, error)
+	Listen(port uint16) (<-chan Request, error)
 	Close(port uint16) error
 }
 
@@ -46,8 +46,8 @@ func NewNaiveNetwork() *NaiveNetwork {
 		listen:   nil,
 		done:     false,
 	}
-	nn.peerList.Put([]byte("1"), []byte("127.0.0.1"))
-	nn.peerList.Put([]byte("2"), []byte("127.0.0.1"))
+	nn.peerList.Put([]byte("1"), []byte("127.0.0.1:11037"))
+	nn.peerList.Put([]byte("2"), []byte("127.0.0.1:11038"))
 	return nn
 }
 
@@ -62,37 +62,42 @@ func (nn *NaiveNetwork) Send(req Request) {
 	if err != nil {
 		fmt.Println("Error marshal body:", err.Error())
 	}
-	length := len(buf)
+
+
+	var length int32 = int32(len(buf))
 	int32buf := new(bytes.Buffer)
-	binary.Write(int32buf, binary.BigEndian, length)
+
+
+	if err=binary.Write(int32buf, binary.BigEndian, length);err!=nil{
+		fmt.Println(err)
+	}
 	for i := 1; i < 2; i++ {
 		addr, _ := nn.peerList.Get([]byte(strconv.Itoa(i)))
-		fmt.Println(string(addr))
-
 		conn, err := net.Dial("tcp", string(addr))
-		continue
+		defer conn.Close()
 		if err != nil {
 			fmt.Println("Error dialing to ", addr, err.Error())
+			continue
 		}
 		if _, err = conn.Write(int32buf.Bytes()); err != nil {
 			fmt.Println("Error sending request head:", err.Error())
+			continue
 		}
 		if _, err = conn.Write(buf[:]); err != nil {
 			fmt.Println("Error sending request body:", err.Error())
+			continue
 		}
-		conn.Close()
 	}
 }
 
-func (nn *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
+func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {
 	var err error
-	nn.listen, err = net.Listen("tcp", ":"+string(port))
+	nn.listen, err = net.Listen("tcp", ":"+strconv.Itoa(int(port)))
 	if err != nil {
 		fmt.Println("Error listening:", err.Error())
 		return nil, err
 	}
-	fmt.Println("Listening on " + ":" + string(port))
-
+	fmt.Println("Listening on " +":"+strconv.Itoa(int(port)))
 	req := make(chan Request)
 	go func() {
 		for {
