@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"bytes"
 )
+
 type RequestHead struct {
 	Length uint32 // Request的长度信息
 }
@@ -41,20 +42,21 @@ func NewNaiveNetwork() *NaiveNetwork {
 	return nn
 }
 
-func (network *NaiveNetwork) Close(port uint16) error {
-	network.done = true
-	return network.listen.Close()
+func (nn *NaiveNetwork) Close(port uint16) error {
+	port = 3 // 避免出现unused variable
+	nn.done = true
+	return nn.listen.Close()
 }
 
-func (network *NaiveNetwork) Send(req Request) {
-	buf,err := req.Marshal(nil)
-	if err!=nil{
+func (nn *NaiveNetwork) Send(req Request) {
+	buf, err := req.Marshal(nil)
+	if err != nil {
 		fmt.Println("Error marshal body:", err.Error())
 	}
 	length := len(buf)
 	int32buf := new(bytes.Buffer)
 	binary.Write(int32buf, binary.BigEndian, length)
-	for _, addr := range network.peerList {
+	for _, addr := range nn.peerList {
 		conn, err := net.Dial("tcp", addr)
 		if err != nil {
 			fmt.Println("Error dialing to ", addr, err.Error())
@@ -69,9 +71,9 @@ func (network *NaiveNetwork) Send(req Request) {
 	}
 }
 
-func (network *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
+func (nn *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
 	var err error
-	network.listen, err = net.Listen("tcp", ":"+string(port))
+	nn.listen, err = net.Listen("tcp", ":"+string(port))
 	if err != nil {
 		fmt.Println("Error listening:", err.Error())
 		return nil, err
@@ -82,10 +84,10 @@ func (network *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
 	go func() {
 		for {
 			// Listen for an incoming connection.
-			conn, err := network.listen.Accept()
+			conn, err := nn.listen.Accept()
 			if err != nil {
 				fmt.Println("Error accepting: ", err.Error())
-				if network.done {
+				if nn.done {
 					return
 				}
 				continue
@@ -109,7 +111,7 @@ func (network *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
 				}
 				var received Request
 				received.Unmarshal(_buf)
-				req<-received
+				req <- received
 				// Send a response back to person contacting us.
 				//conn.Write([]byte("Message received."))
 			}(conn)
