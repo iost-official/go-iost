@@ -8,6 +8,7 @@ import (
 	"iostdb"
 	"net"
 	"os"
+	"strconv"
 )
 
 type RequestHead struct {
@@ -45,8 +46,8 @@ func NewNaiveNetwork() *NaiveNetwork {
 		listen:   nil,
 		done:     false,
 	}
-	nn.peerList.Put([]byte("1"), []byte("1.1.1.1"))
-	nn.peerList.Put([]byte("2"), []byte("2.2.2.2"))
+	nn.peerList.Put([]byte("1"), []byte("127.0.0.1"))
+	nn.peerList.Put([]byte("2"), []byte("127.0.0.1"))
 	return nn
 }
 
@@ -64,12 +65,12 @@ func (nn *NaiveNetwork) Send(req Request) {
 	length := len(buf)
 	int32buf := new(bytes.Buffer)
 	binary.Write(int32buf, binary.BigEndian, length)
-	for i := 1; i <= 2; i++ {
-		bytesBuffer := bytes.NewBuffer([]byte{})
-		binary.Write(bytesBuffer, binary.BigEndian, int32(i))
-		addr, _ := nn.peerList.Get(bytesBuffer.Bytes())
+	for i := 1; i < 2; i++ {
+		addr, _ := nn.peerList.Get([]byte(strconv.Itoa(i)))
+		fmt.Println(string(addr))
 
 		conn, err := net.Dial("tcp", string(addr))
+		continue
 		if err != nil {
 			fmt.Println("Error dialing to ", addr, err.Error())
 		}
