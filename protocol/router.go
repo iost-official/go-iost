@@ -3,7 +3,6 @@ package protocol
 import (
 	"fmt"
 	"github.com/iost-official/PrototypeWorks/iosbase"
-	"sync"
 )
 
 type ReqType int
@@ -27,6 +26,9 @@ const (
 
 //go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Router
 
+/*
+Forwarding specific request to other components and sending messages for them
+*/
 type Router interface {
 	Init(base iosbase.Network, port uint16) error
 	FilteredChan(filter Filter) (chan iosbase.Request, chan iosbase.Response, error)
@@ -73,6 +75,7 @@ func (r *RouterImpl) Init(base iosbase.Network, port uint16) error {
 	return nil
 }
 
+// Get filtered request channel
 func (r *RouterImpl) FilteredChan(filter Filter) (chan iosbase.Request, chan iosbase.Response, error) {
 	chReq := make(chan iosbase.Request)
 
@@ -98,14 +101,7 @@ func (r *RouterImpl) receiveLoop() {
 }
 
 func (r *RouterImpl) Run() {
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		r.receiveLoop()
-		defer wg.Done()
-	}()
-
-	wg.Wait()
+	go r.receiveLoop()
 
 }
 func (r *RouterImpl) Stop() {

@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/iost-official/PrototypeWorks/iosbase"
-	"sync"
 )
 
-//go:generate mockgen -destination mocks/mock_component.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Component
+//go:generate mockgen -destination mocks/mock_component.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol component
 
 type Phase int
 
@@ -28,16 +27,18 @@ const (
 	CommitTimeout     = 20 * time.Second
 )
 
-type Component interface {
+type component interface {
 	Init(self iosbase.Member, db Database, router Router) error
 	Run()
 	Stop()
 }
 
-func ReplicaFactory(target string) (Component, error) {
+func ReplicaFactory(target string, pool iosbase.TxPool) (component, error) {
 	switch target {
 	case "pbft":
-		rep := ReplicaImpl{}
+		rep := ReplicaImpl{
+			txPool: pool,
+		}
 		return &rep, nil
 	}
 	return nil, fmt.Errorf("target replica not found")
@@ -71,6 +72,7 @@ func (r *ReplicaImpl) Init(self iosbase.Member, db Database, router Router) erro
 	r.Member = self
 	r.db = db
 	r.net = router
+	r.txPool = &iosbase.TxPoolImpl{}
 
 	r.ExitSignal = make(chan bool)
 
@@ -117,19 +119,8 @@ func (r *ReplicaImpl) Init(self iosbase.Member, db Database, router Router) erro
 }
 
 func (r *ReplicaImpl) Run() {
-	var wg sync.WaitGroup
-
-	wg.Add(2)
-	go func() {
-		r.collectLoop()
-		defer wg.Done()
-	}()
-	go func() {
-		r.pbftLoop()
-		defer wg.Done()
-	}()
-
-	wg.Wait()
+	go r.collectLoop()
+	go r.pbftLoop()
 }
 
 func (r *ReplicaImpl) Stop() {
@@ -324,7 +315,7 @@ func (r *ReplicaImpl) onPrePrepare(req iosbase.Request) (Phase, error) {
 func (r *ReplicaImpl) onPrepare(req iosbase.Request) (Phase, error) {
 
 	var prepare Prepare
-	_, err := prepare.Unmarshal(req.Body)
+	err := prepare.parse(req.Body)
 	if err != nil {
 		r.chReply <- syntaxError(req)
 		return PreparePhase, err
@@ -333,6 +324,11 @@ func (r *ReplicaImpl) onPrepare(req iosbase.Request) (Phase, error) {
 	realSender := iosbase.Base58Encode(iosbase.Hash160(prepare.Pubkey))
 	if !r.view.IsBackup(realSender) ||
 		!iosbase.VerifySignature(prepare.Rand, prepare.Pubkey, prepare.Sig) {
+		r.chReply <- authorityError(req)
+		return PreparePhase, nil
+	}
+
+	if time.Now().Unix()-iosbase.GetInt64(prepare.Rand, 1) > 60 {
 		r.chReply <- authorityError(req)
 		return PreparePhase, nil
 	}
@@ -469,9 +465,14 @@ func (r *ReplicaImpl) broadcastPrepare(prepare Prepare) error {
 }
 
 func (r *ReplicaImpl) makePrepare(isAccept bool) Prepare {
-	random := rand.NewSource(time.Now().Unix())
-	bin := iosbase.Binary{}
-	randomByte := bin.PutULong(uint64(random.Int63())).Bytes()
+	rand.Seed(time.Now().UnixNano())
+	tb := iosbase.NewBinary()
+	tb.PutULong(uint64(time.Now().Unix()))
+	bin := iosbase.NewBinary()
+	for i := 0; i < 3; i++ {
+		bin.PutULong(rand.Uint64())
+	}
+	randomByte := bin.Bytes()
 
 	var vote []byte
 	if isAccept {
@@ -479,10 +480,14 @@ func (r *ReplicaImpl) makePrepare(isAccept bool) Prepare {
 	} else {
 		vote = []byte{0xFF}
 	}
-	vote = append(vote, randomByte...)
+	vote = append(vote, tb.Bytes()...)
+	vote = append(vote, randomByte[9:]...)
 
 	pareSig := iosbase.Sign(vote, r.Seckey)
-	prepare := Prepare{pareSig, r.Pubkey, randomByte, isAccept}
+	prepare := Prepare{
+		prepareRaw: prepareRaw{pareSig, r.Pubkey, vote},
+		IsAccept:   isAccept,
+	}
 
 	return prepare
 }
@@ -557,4 +562,28 @@ func (r *ReplicaImpl) admitEmptyBlock() error {
 		Body:    blk.Encode(),
 	})
 	return nil
+}
+
+/*
+Struct to transport vote of prepare phase.
+
+signed to 0x00(vote for accept) or 0xFF(vote for reject) + timestamp + 23 bytes random code.
+Timestamp should bigger than preview block's timestamp.
+*/
+type Prepare struct {
+	prepareRaw
+	IsAccept bool
+}
+
+func (p *Prepare) parse(b []byte) error {
+	p.prepareRaw.Unmarshal(b)
+	if p.Rand[0] == 0x00 {
+		p.IsAccept = true
+		return nil
+	} else if p.Rand[0] == 0xFF {
+		p.IsAccept = false
+		return nil
+	} else {
+		return fmt.Errorf("syntax error")
+	}
 }

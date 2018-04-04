@@ -67,9 +67,9 @@ func (d *DatabaseImpl) VerifyTxWithCache(tx iosbase.Tx, cachePool iosbase.TxPool
 		if iosbase.Equal(existedTx.Hash(), tx.Hash()) {
 			return fmt.Errorf("has included")
 		}
-		if TxConflict(existedTx, tx) {
+		if txConflict(existedTx, tx) {
 			return fmt.Errorf("conflicted")
-		} else if SliceIntersect(existedTx.Inputs, tx.Inputs) {
+		} else if sliceIntersect(existedTx.Inputs, tx.Inputs) {
 			return fmt.Errorf("conflicted")
 		}
 	}
@@ -131,7 +131,7 @@ func (d *DatabaseImpl) GetCurrentView() (View, error) {
 	return d.view, nil
 }
 
-func SliceEqualI(a, b []iosbase.TxInput) bool {
+func sliceEqualI(a, b []iosbase.TxInput) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -143,7 +143,7 @@ func SliceEqualI(a, b []iosbase.TxInput) bool {
 	return true
 }
 
-func SliceEqualS(a, b []iosbase.State) bool {
+func sliceEqualS(a, b []iosbase.State) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -155,7 +155,7 @@ func SliceEqualS(a, b []iosbase.State) bool {
 	return true
 }
 
-func SliceIntersect(a []iosbase.TxInput, b []iosbase.TxInput) bool {
+func sliceIntersect(a []iosbase.TxInput, b []iosbase.TxInput) bool {
 	for _, ina := range a {
 		for _, inb := range b {
 			if iosbase.Equal(ina.Hash(), inb.Hash()) {
@@ -166,9 +166,9 @@ func SliceIntersect(a []iosbase.TxInput, b []iosbase.TxInput) bool {
 	return false
 }
 
-func TxConflict(a, b iosbase.Tx) bool {
-	if SliceEqualI(a.Inputs, b.Inputs) &&
-		SliceEqualS(a.Outputs, b.Outputs) &&
+func txConflict(a, b iosbase.Tx) bool {
+	if sliceEqualI(a.Inputs, b.Inputs) &&
+		sliceEqualS(a.Outputs, b.Outputs) &&
 		a.Recorder != b.Recorder {
 		return true
 	} else {

@@ -39,6 +39,18 @@ func (tp *TxPoolImpl) Size() int {
 	return 0
 }
 
+func (tp *TxPoolImpl) Encode() []byte {
+	return nil
+}
+
+func (tp *TxPoolImpl) Decode(a []byte) error {
+	return nil
+}
+
+func (tp *TxPoolImpl) Hash() []byte {
+	return nil
+}
+
 func FindTxPool(hash []byte) (TxPool, error) {
 	return nil, nil
 }
