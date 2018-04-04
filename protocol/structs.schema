@@ -1,15 +1,14 @@
-struct PrePrepare  {
+struct SignedBlock  {
 	Sig     []byte
 	Pubkey  []byte
 	Blk     []byte
 	BlkHeadHash []byte
 }
 
-struct Prepare {
+struct PrepareRaw {
     Sig      []byte
     Pubkey   []byte
     Rand     []byte
-	isAccept bool
 }
 
 struct Commit {

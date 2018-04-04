@@ -1,8 +1,10 @@
+/*
+ The protocol of iost consensus
+*/
 package protocol
 
 import (
 	"github.com/iost-official/PrototypeWorks/iosbase"
-	"sync"
 )
 
 type Character int
@@ -21,7 +23,7 @@ const (
 type ConsensusImpl struct {
 	iosbase.Member
 
-	recorder, replica Component
+	recorder, replica component
 	db                Database
 	router            Router
 }
@@ -52,7 +54,8 @@ func (c *ConsensusImpl) Init(bc iosbase.BlockChain, sp iosbase.StatePool, networ
 		return err
 	}
 
-	c.replica, err = ReplicaFactory("pbft")
+	pool := &iosbase.TxPoolImpl{}
+	c.replica, err = ReplicaFactory("pbft", pool)
 	if err != nil {
 		return err
 	}
@@ -64,22 +67,9 @@ func (c *ConsensusImpl) Init(bc iosbase.BlockChain, sp iosbase.StatePool, networ
 }
 
 func (c *ConsensusImpl) Run() {
-	var wg sync.WaitGroup
-	wg.Add(3)
-	go func() {
-		c.router.Run()
-		defer wg.Done()
-	}()
-	go func() {
-		c.replica.Run()
-		defer wg.Done()
-	}()
-	go func() {
-		c.recorder.Run()
-		defer wg.Done()
-	}()
-
-	wg.Wait()
+	go c.router.Run()
+	go c.replica.Run()
+	go c.recorder.Run()
 }
 
 func (c *ConsensusImpl) Stop() {

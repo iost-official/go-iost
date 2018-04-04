@@ -12,6 +12,11 @@ var (
 	_ = time.Now()
 )
 
+/*
+Struct to transport pre-prepare info, and distribute new blocks.
+
+sender should sign the block to ensure security
+*/
 type SignedBlock struct {
 	Sig         []byte
 	Pubkey      []byte
@@ -279,14 +284,13 @@ func (d *SignedBlock) Unmarshal(buf []byte) (uint64, error) {
 	return i + 0, nil
 }
 
-type Prepare struct {
-	Sig      []byte
-	Pubkey   []byte
-	Rand     []byte
-	IsAccept bool
+type prepareRaw struct {
+	Sig    []byte
+	Pubkey []byte
+	Rand   []byte
 }
 
-func (d *Prepare) Size() (s uint64) {
+func (d *prepareRaw) Size() (s uint64) {
 
 	{
 		l := uint64(len(d.Sig))
@@ -333,10 +337,9 @@ func (d *Prepare) Size() (s uint64) {
 		}
 		s += l
 	}
-	s += 1
 	return
 }
-func (d *Prepare) Marshal(buf []byte) ([]byte, error) {
+func (d *prepareRaw) Marshal(buf []byte) ([]byte, error) {
 	size := d.Size()
 	{
 		if uint64(cap(buf)) >= size {
@@ -404,17 +407,10 @@ func (d *Prepare) Marshal(buf []byte) ([]byte, error) {
 		copy(buf[i+0:], d.Rand)
 		i += l
 	}
-	{
-		if d.IsAccept {
-			buf[i+0] = 1
-		} else {
-			buf[i+0] = 0
-		}
-	}
-	return buf[:i+1], nil
+	return buf[:i+0], nil
 }
 
-func (d *Prepare) Unmarshal(buf []byte) (uint64, error) {
+func (d *prepareRaw) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
 
 	{
@@ -492,10 +488,7 @@ func (d *Prepare) Unmarshal(buf []byte) (uint64, error) {
 		copy(d.Rand, buf[i+0:])
 		i += l
 	}
-	{
-		d.IsAccept = buf[i+0] == 1
-	}
-	return i + 1, nil
+	return i + 0, nil
 }
 
 type Commit struct {
@@ -517,6 +510,7 @@ func (d *Commit) Size() (s uint64) {
 				s++
 			}
 			s++
+
 		}
 		s += l
 	}

@@ -8,6 +8,9 @@ import (
 
 //go:generate mockgen -destination mocks/mock_view.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol View
 
+/*
+Information of PBFT committee members
+*/
 type View interface {
 	Init(chain iosbase.BlockChain)
 
@@ -27,6 +30,10 @@ func ViewFactory(target string) (View, error) {
 	return nil, fmt.Errorf("target view not found")
 }
 
+/*
+view determined by the preview block's recorder, the best come into committee, and the preview
+primary leaves
+*/
 type DposView struct {
 	primary iosbase.Member
 	backup  []iosbase.Member
@@ -69,10 +76,10 @@ func (v *DposView) Init(chain iosbase.BlockChain) {
 		candidateMap[tx.Recorder]++
 	}
 
-	var candidates CandidateSlice
+	var candidates candidateSlice
 
 	for key, val := range candidateMap {
-		candidates = append(candidates, Candidate{key, val})
+		candidates = append(candidates, candidate{key, val})
 	}
 
 	sort.Sort(candidates)
@@ -129,19 +136,20 @@ func parseCoinbaseTx(tx iosbase.Tx) (primary iosbase.Member, backups []iosbase.M
 	return iosbase.Member{}, nil, nil
 }
 
-type Candidate struct {
+// struct for sorting members
+type candidate struct {
 	ID   string
 	Vote int
 }
 
-type CandidateSlice []Candidate
+type candidateSlice []candidate
 
-func (a CandidateSlice) Len() int {
+func (a candidateSlice) Len() int {
 	return len(a)
 }
-func (a CandidateSlice) Swap(i, j int) {
+func (a candidateSlice) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
-func (a CandidateSlice) Less(i, j int) bool {
+func (a candidateSlice) Less(i, j int) bool {
 	return a[j].Vote < a[i].Vote
 }

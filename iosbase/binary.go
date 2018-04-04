@@ -74,9 +74,16 @@ func (bin *Binary) Put(o Serializable) *Binary {
 	return bin
 }
 
-func GetInt(b []byte, start, end int) int {
+func GetInt(b []byte, start int) int {
 	var ans int
-	bBuf := bytes.NewBuffer(b[start:end])
+	bBuf := bytes.NewBuffer(b[start : start+4])
+	binary.Read(bBuf, binary.BigEndian, &ans)
+	return ans
+}
+
+func GetInt64(b []byte, start int) int64 {
+	var ans int64
+	bBuf := bytes.NewBuffer(b[start : start+8])
 	binary.Read(bBuf, binary.BigEndian, &ans)
 	return ans
 }
