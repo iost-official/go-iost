@@ -63,17 +63,16 @@ func (nn *NaiveNetwork) Send(req Request) {
 		fmt.Println("Error marshal body:", err.Error())
 	}
 
-
 	var length int32 = int32(len(buf))
 	int32buf := new(bytes.Buffer)
 
-
-	if err=binary.Write(int32buf, binary.BigEndian, length);err!=nil{
+	if err = binary.Write(int32buf, binary.BigEndian, length); err != nil {
 		fmt.Println(err)
 	}
-	for i := 1; i < 2; i++ {
+	for i := 1; i < 3; i++ {
 		addr, _ := nn.peerList.Get([]byte(strconv.Itoa(i)))
 		conn, err := net.Dial("tcp", string(addr))
+		fmt.Println(string(addr))
 		defer conn.Close()
 		if err != nil {
 			fmt.Println("Error dialing to ", addr, err.Error())
@@ -97,12 +96,14 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {
 		fmt.Println("Error listening:", err.Error())
 		return nil, err
 	}
-	fmt.Println("Listening on " +":"+strconv.Itoa(int(port)))
+	fmt.Println("Listening on " + ":" + strconv.Itoa(int(port)))
 	req := make(chan Request)
 	go func() {
 		for {
 			// Listen for an incoming connection.
+			fmt.Println("new conn1")
 			conn, err := nn.listen.Accept()
+			fmt.Println("new conn")
 			if err != nil {
 				fmt.Println("Error accepting: ", err.Error())
 				if nn.done {
@@ -129,6 +130,7 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {
 				}
 				var received Request
 				received.Unmarshal(_buf)
+				fmt.Printf("got %+v %+v\n", received, port)
 				req <- received
 				// Send a response back to person contacting us.
 				//conn.Write([]byte("Message received."))
