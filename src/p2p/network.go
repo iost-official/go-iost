@@ -1,11 +1,15 @@
 package p2p
 
 import (
-	"net"
-	"fmt"
-	"encoding/binary"
 	"bytes"
+	"encoding/binary"
+	"fmt"
+	"io/ioutil"
+	"iostdb"
+	"net"
+	"os"
 )
+
 type RequestHead struct {
 	Length uint32 // Request的长度信息
 }
@@ -27,17 +31,22 @@ type Network interface {
 }
 
 type NaiveNetwork struct {
-	peerList []string
+	peerList *iostdb.LDBDatabase
 	listen   net.Listener
 	done     bool
 }
 
 func NewNaiveNetwork() *NaiveNetwork {
+	dirname, _ := ioutil.TempDir(os.TempDir(), "p2p_test_")
+	db, _ := iostdb.NewLDBDatabase(dirname, 0, 0)
 	nn := &NaiveNetwork{
-		peerList: []string{"1.1.1.1", "2.2.2.2"},
+		//peerList: []string{"1.1.1.1", "2.2.2.2"},
+		peerList: db,
 		listen:   nil,
 		done:     false,
 	}
+	nn.peerList.Put([]byte("1"), []byte("1.1.1.1"))
+	nn.peerList.Put([]byte("2"), []byte("2.2.2.2"))
 	return nn
 }
 
@@ -47,15 +56,19 @@ func (network *NaiveNetwork) Close(port uint16) error {
 }
 
 func (network *NaiveNetwork) Send(req Request) {
-	buf,err := req.Marshal(nil)
-	if err!=nil{
+	buf, err := req.Marshal(nil)
+	if err != nil {
 		fmt.Println("Error marshal body:", err.Error())
 	}
 	length := len(buf)
 	int32buf := new(bytes.Buffer)
 	binary.Write(int32buf, binary.BigEndian, length)
-	for _, addr := range network.peerList {
-		conn, err := net.Dial("tcp", addr)
+	for i := 1; i <= 2; i++ {
+		bytesBuffer := bytes.NewBuffer([]byte{})
+		binary.Write(bytesBuffer, binary.BigEndian, int32(i))
+		addr, _ := network.peerList.Get(bytesBuffer.Bytes())
+
+		conn, err := net.Dial("tcp", string(addr))
 		if err != nil {
 			fmt.Println("Error dialing to ", addr, err.Error())
 		}
@@ -109,7 +122,7 @@ func (network *NaiveNetwork) Listen(port uint16) (chan<- Request, error) {
 				}
 				var received Request
 				received.Unmarshal(_buf)
-				req<-received
+				req <- received
 				// Send a response back to person contacting us.
 				//conn.Write([]byte("Message received."))
 			}(conn)
