@@ -1,0 +1,20 @@
+struct SignedBlock  {
+	Sig     []byte
+	Pubkey  []byte
+	Blk     []byte
+	BlkHeadHash []byte
+}
+
+struct PrepareRaw {
+    Sig      []byte
+    Pubkey   []byte
+    Rand     []byte
+}
+
+struct Commit {
+	Sig     []byte
+	Pubkey  []byte
+	BlkHeadHash []byte
+}
+
+
