@@ -7,6 +7,9 @@ import (
 
 //go:generate mockgen -destination mocks/mock_database.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Database
 
+/*
+The runtime database used by protocol
+*/
 type Database interface {
 	NewViewSignal() (chan View, error)
 
@@ -108,7 +111,8 @@ func (d *DatabaseImpl) VerifyBlockWithCache(block *iosbase.Block, cachePool iosb
 	return nil
 }
 func (d *DatabaseImpl) PushBlock(block *iosbase.Block) error {
-	d.bc.Push(*block)
+	d.bc.Push(block)
+	d.sp.Transact(block)
 	var err error
 	d.view, err = ViewFactory("dpos")
 	if err != nil {

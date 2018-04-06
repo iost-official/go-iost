@@ -44,6 +44,14 @@ func ReplicaFactory(target string, pool iosbase.TxPool) (component, error) {
 	return nil, fmt.Errorf("target replica not found")
 }
 
+/*
+Implement of component replica
+
+Replica runs the PBFT protocol to reach consensus with other replicas,
+and make new block to block chain. reward would be given to every replicas
+so members of ios network would be willing to devote their power and network
+to be a replica.
+*/
 type ReplicaImpl struct {
 	txPool iosbase.TxPool
 	block  *iosbase.Block

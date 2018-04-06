@@ -491,6 +491,11 @@ func (d *prepareRaw) Unmarshal(buf []byte) (uint64, error) {
 	return i + 0, nil
 }
 
+/*
+Struct to exchange commit
+
+Signed to block head hash, to ensure sender's identity
+*/
 type Commit struct {
 	Sig         []byte
 	Pubkey      []byte

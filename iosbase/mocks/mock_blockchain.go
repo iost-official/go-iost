@@ -34,9 +34,9 @@ func (m *MockBlockChain) EXPECT() *MockBlockChainMockRecorder {
 }
 
 // Get mocks base method
-func (m *MockBlockChain) Get(layer int) (Block, error) {
+func (m *MockBlockChain) Get(layer int) (*Block, error) {
 	ret := m.ctrl.Call(m, "Get", layer)
-	ret0, _ := ret[0].(Block)
+	ret0, _ := ret[0].(*Block)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -47,7 +47,7 @@ func (mr *MockBlockChainMockRecorder) Get(layer interface{}) *gomock.Call {
 }
 
 // Push mocks base method
-func (m *MockBlockChain) Push(block Block) error {
+func (m *MockBlockChain) Push(block *Block) error {
 	ret := m.ctrl.Call(m, "Push", block)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -82,14 +82,26 @@ func (mr *MockBlockChainMockRecorder) Top() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Top", reflect.TypeOf((*MockBlockChain)(nil).Top))
 }
 
-// SubChain mocks base method
-func (m *MockBlockChain) SubChain(layer int) BlockChain {
-	ret := m.ctrl.Call(m, "SubChain", layer)
-	ret0, _ := ret[0].(BlockChain)
+// Init mocks base method
+func (m *MockBlockChain) Init() error {
+	ret := m.ctrl.Call(m, "Init")
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SubChain indicates an expected call of SubChain
-func (mr *MockBlockChainMockRecorder) SubChain(layer interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubChain", reflect.TypeOf((*MockBlockChain)(nil).SubChain), layer)
+// Init indicates an expected call of Init
+func (mr *MockBlockChainMockRecorder) Init() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockBlockChain)(nil).Init))
+}
+
+// Close mocks base method
+func (m *MockBlockChain) Close() error {
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close
+func (mr *MockBlockChainMockRecorder) Close() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockBlockChain)(nil).Close))
 }

@@ -5,6 +5,9 @@ import (
 	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
+/*
+Marked request types using by protocol
+*/
 type ReqType int
 
 const (
@@ -75,7 +78,9 @@ func (r *RouterImpl) Init(base iosbase.Network, port uint16) error {
 	return nil
 }
 
-// Get filtered request channel
+/*
+Get filtered request channel
+*/
 func (r *RouterImpl) FilteredChan(filter Filter) (chan iosbase.Request, chan iosbase.Response, error) {
 	chReq := make(chan iosbase.Request)
 
@@ -180,6 +185,17 @@ func syntaxError(req iosbase.Request) iosbase.Response {
 	}
 }
 
+/*
+The filter used by Router
+
+Rulers :
+
+1. if both white list and black list are nil, this filter is all-pass
+
+2. if one of those is not nil, filter as it is
+
+3. if both of those list are not nil, filter as white list
+*/
 type Filter struct {
 	WhiteList  []iosbase.Member
 	BlackList  []iosbase.Member

@@ -16,6 +16,16 @@ func RecorderFactory(target string) (component, error) {
 	return nil, fmt.Errorf("target recorder not found")
 }
 
+/*
+Implement of recorder
+
+Recorders collect the Transactions and verify them, signed themselves into
+every Transaction, packed Txs, finally send to Replicas. every tx sent to
+replicas should be sign by exactly one recorder to prevent corruptions. That's
+means common users should send their tx to only one recorder.
+
+
+*/
 type RecorderImpl struct {
 	iosbase.Member
 
