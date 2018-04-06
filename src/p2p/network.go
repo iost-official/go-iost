@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 )
 
 type RequestHead struct {
@@ -82,10 +83,12 @@ func (nn *NaiveNetwork) Send(req Request) {
 			fmt.Println("Error sending request head:", err.Error())
 			continue
 		}
+		//var cnt int
 		if _, err = conn.Write(buf[:]); err != nil {
 			fmt.Println("Error sending request body:", err.Error())
 			continue
 		}
+		//fmt.Println("writed", cnt)
 	}
 }
 
@@ -98,45 +101,63 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {
 	}
 	fmt.Println("Listening on " + ":" + strconv.Itoa(int(port)))
 	req := make(chan Request)
+
+	conn := make(chan net.Conn)
+
+	// For every listener spawn the following routine
+	go func(l net.Listener) {
+		for {
+			fmt.Println("new conn1", port)
+			c, err := l.Accept()
+			fmt.Println("new conn", port)
+			if err != nil {
+				// handle error
+				conn <- nil
+				return
+			}
+			conn <- c
+		}
+	}(nn.listen)
+
 	go func() {
 		for {
-			// Listen for an incoming connection.
-			fmt.Println("new conn1")
-			conn, err := nn.listen.Accept()
-			fmt.Println("new conn")
-			if err != nil {
-				fmt.Println("Error accepting: ", err.Error())
-				if nn.done {
-					return
+			select {
+			case c := <-conn:
+				if c == nil {
+					if nn.done {
+						return
+					}
+					fmt.Println("Error accepting: ")
+					break
 				}
-				continue
+
+				go func(conn net.Conn) {
+					defer conn.Close()
+					// Make a buffer to hold incoming data.
+					buf := make([]byte, HEADLENGTH)
+					// Read the incoming connection into the buffer.
+					_, err := conn.Read(buf)
+					if err != nil {
+						fmt.Println("Error reading request head:", err.Error())
+					}
+					length := binary.BigEndian.Uint32(buf)
+					_buf := make([]byte, length)
+					_, err = conn.Read(_buf)
+
+					if err != nil {
+						fmt.Println("Error reading request body:", err.Error())
+					}
+					var received Request
+					received.Unmarshal(_buf)
+					fmt.Printf("got %+v %+v\n", received, port)
+					req <- received
+					// Send a response back to person contacting us.
+					//conn.Write([]byte("Message received."))
+				}(c)
+			case <-time.After(10.0*time.Second):
+				fmt.Println("accepting time out..")
 			}
-			// Handle connections in a new goroutine.
-			go func(conn net.Conn) {
-				defer conn.Close()
-				// Make a buffer to hold incoming data.
-				buf := make([]byte, HEADLENGTH)
-				// Read the incoming connection into the buffer.
-				_, err := conn.Read(buf)
-				if err != nil {
-					fmt.Println("Error reading request head:", err.Error())
-				}
-				length := binary.BigEndian.Uint32(buf)
-				_buf := make([]byte, length)
-				_, err = conn.Read(_buf)
-
-				if err != nil {
-					fmt.Println("Error reading request body:", err.Error())
-				}
-				var received Request
-				received.Unmarshal(_buf)
-				fmt.Printf("got %+v %+v\n", received, port)
-				req <- received
-				// Send a response back to person contacting us.
-				//conn.Write([]byte("Message received."))
-			}(conn)
 		}
-
 	}()
 	return req, nil
 }

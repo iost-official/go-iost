@@ -8,11 +8,11 @@ import (
 
 func TestNetwork(t *testing.T) {
 	nn := p2p.NewNaiveNetwork()
-	lis2, err := nn.Listen(11038)
+	lis1, err := nn.Listen(11037)
 	if err != nil {
 		fmt.Println(err)
 	}
-	lis1, err := nn.Listen(11037)
+	lis2, err := nn.Listen(11038)
 	if err != nil {
 		fmt.Println(err)
 	}
