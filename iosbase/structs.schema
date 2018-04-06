@@ -18,6 +18,11 @@ struct Tx {
    Time int64
 }
 
+struct TxPoolRaw {
+    Txs []Tx
+    TxHash [][]byte
+}
+
 struct BlockHead {
    Version int8
    SuperHash []byte
