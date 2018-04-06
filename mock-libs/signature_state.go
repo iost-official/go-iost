@@ -1,4 +1,4 @@
-package chain
+package block
 
 type SignatureState struct {
 	available_address_sigs map[Address]PublicKeyType

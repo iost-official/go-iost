@@ -1,4 +1,4 @@
-package chain
+package block
 
 import (
 	"math"
