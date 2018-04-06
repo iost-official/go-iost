@@ -1,5 +1,7 @@
 package iosbase
 
+import "fmt"
+
 //go:generate mockgen -destination mocks/mock_txpool.go -package iosbase_mock github.com/iost-official/PrototypeWorks/iosbase TxPool
 type TxPool interface {
 	Add(tx Tx) error
@@ -12,45 +14,69 @@ type TxPool interface {
 }
 
 type TxPoolImpl struct {
-	txs map[string]Tx
+	TxPoolRaw
+	txMap map[string]Tx
 }
 
 func (tp *TxPoolImpl) Add(tx Tx) error {
+	tp.Txs = append(tp.Txs, tx)
 	return nil
 }
 
 func (tp *TxPoolImpl) Del(tx Tx) error {
+	delete(tp.txMap, Base58Encode(tx.Hash()))
 	return nil
 }
 
 func (tp *TxPoolImpl) Find(txHash []byte) (Tx, error) {
-	return Tx{}, nil
+	tx , ok := tp.txMap[Base58Encode(txHash)]
+	if !ok {
+		return tx, fmt.Errorf("not found")
+	}
+	return tx, nil
 }
 
 func (tp *TxPoolImpl) Has(txHash []byte) (bool, error) {
-	return true, nil
+
+	_, ok := tp.txMap[Base58Encode(txHash)]
+	return ok, nil
 }
 
 func (tp *TxPoolImpl) GetSlice() ([]Tx, error) {
-	return nil, nil
+	var txs []Tx
+	for _, v := range tp.txMap {
+		txs = append(txs, v)
+	}
+
+	return txs, nil
 }
 
 func (tp *TxPoolImpl) Size() int {
-	return 0
+	return len(tp.txMap)
 }
 
 func (tp *TxPoolImpl) Encode() []byte {
-	return nil
+	for k, v := range tp.txMap {
+		tp.TxHash = append(tp.TxHash, Base58Decode(k))
+		tp.Txs = append(tp.Txs, v)
+	}
+	bytes, err := tp.Marshal(nil)
+	if err != nil {
+		panic(err)
+	}
+	tp.TxHash = [][]byte{}
+	tp.Txs = []Tx{}
+	return bytes
 }
 
 func (tp *TxPoolImpl) Decode(a []byte) error {
+	tp.Unmarshal(a)
+	for i, v := range tp.TxHash {
+		tp.txMap[Base58Encode(v)] = tp.Txs[i]
+	}
 	return nil
 }
 
 func (tp *TxPoolImpl) Hash() []byte {
-	return nil
-}
-
-func FindTxPool(hash []byte) (TxPool, error) {
-	return nil, nil
+	return Sha256(tp.Encode())
 }
