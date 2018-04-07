@@ -1,27 +1,39 @@
 package iosbase
 
 import (
-	"fmt"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestSign(t *testing.T) {
 	testData := "c6e193266883a500c6e51a117e012d96ad113d5f21f42b28eb648be92a78f92f"
-	fmt.Println("============test of Crypt")
-	fmt.Printf("hex test：255\n")
-	fmt.Printf("to Hex > %v\n", ToHex([]byte{255}))
-	fmt.Printf("parse hex > %v\n", ParseHex("ff"))
-	fmt.Printf("private key：%v\n", testData)
 	privkey := ParseHex(testData)
-	fmt.Printf("sha256 > %x\n", Sha256(privkey))
-	pubkey := CalcPubkey(ParseHex(testData))
-	fmt.Printf("pubkey > %v\n", ToHex(pubkey))
-	fmt.Printf("hash160 > %v\n", ToHex(Hash160(pubkey)))
-	//fmt.Printf("base > %v\n", Base58Encode(Hash160(pubkey)))
-	fmt.Printf("base58decode > %v\n", ToHex(Base58Decode("16UwLL9Risc3QfPqBUvKofHmBQ7wMtjvM")))
-	fmt.Printf("base58encode > %v\n", Base58Encode(ParseHex("00010966776006953D5567439E5E39F86A0D273BEED61967F6")))
-	fmt.Printf("sign to 0x1234567890: \n")
-	sig := Sign(Sha256(ParseHex("1234567890")), privkey)
-	fmt.Printf("sign > %v\n", ToHex(sig))
-	fmt.Printf("verify > %v\n", VerifySignature(Sha256(ParseHex("1234567890")), pubkey, sig))
+	var pubkey []byte
+
+
+	Convey("Test of Crypto", t, func() {
+		Convey("Sha256", func() {
+			sha := "d4daf0546cb71d90688b45488a8fa000b0821ec14b73677b2fb7788739228c8b"
+			So(ToHex(Sha256(privkey)), ShouldEqual, sha)
+		})
+
+		Convey("Calculate public key", func() {
+			pub := "0314bf901a6640033ea07b39c6b3acb675fc0af6a6ab526f378216085a93e5c7a2"
+			pubkey = CalcPubkey(privkey)
+			So(ToHex(pubkey), ShouldEqual, pub)
+		})
+
+		Convey("Hash-160", func() {
+			hash := "9c1185a5c5e9fc54612808977ee8f548b2258d31"
+			So(ToHex(Hash160(CalcPubkey(privkey))), ShouldEqual, hash)
+		})
+
+		Convey("Sign and verify", func() {
+			info := Sha256([]byte{1,2,3,4})
+			sig := Sign(info, privkey)
+			So(VerifySignature(info, pubkey, sig), ShouldBeTrue)
+			So(VerifySignature(info, pubkey,[]byte{5,6,7,8}), ShouldBeFalse)
+		})
+	})
 }

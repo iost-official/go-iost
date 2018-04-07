@@ -22,9 +22,9 @@ const (
 )
 
 const (
-	PrePrepareTimeout = 30 * time.Second
-	PrepareTimeout    = 10 * time.Second
-	CommitTimeout     = 20 * time.Second
+	PrePrepareTimeout = 58 * time.Second
+	PrepareTimeout    = 1 * time.Second
+	CommitTimeout     = 1 * time.Second
 )
 
 type Component interface {
