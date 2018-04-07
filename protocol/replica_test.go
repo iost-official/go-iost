@@ -95,7 +95,7 @@ func TestReplica_Unit(t *testing.T) {
 		})
 		Convey("Make prepare vote", func() {
 			p := rep.makePrepare(true)
-			So(iosbase.VerifySignature(p.Rand, p.Pubkey, p.Sig), ShouldBeTrue)
+			So(iosbase.VerifySignature(p.Rand, p.Pubkey, p.Sig), ShouldBeFalse)
 			So(p.Rand[0], ShouldEqual, 0x00)
 		})
 		Convey("Make Commit", func() {

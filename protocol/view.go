@@ -2,8 +2,9 @@ package protocol
 
 import (
 	"fmt"
-	"github.com/iost-official/PrototypeWorks/iosbase"
 	"sort"
+
+	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
 //go:generate mockgen -destination mocks/mock_view.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol View
@@ -67,7 +68,8 @@ func (v *DposView) Init(chain iosbase.BlockChain) {
 		}
 	}
 
-	txpool, _ := iosbase.FindTxPool(blk.Content)
+	var txpool iosbase.TxPool
+	txpool.Decode(blk.Content)
 	txs, _ := txpool.GetSlice()
 
 	candidateMap := make(map[string]int)
@@ -128,7 +130,7 @@ func (v *DposView) ByzantineTolerance() int {
 	return len(v.backup) / 3
 }
 
-func isEmptyBlock(block iosbase.Block) bool {
+func isEmptyBlock(block *iosbase.Block) bool {
 	return block.Content == nil
 }
 
