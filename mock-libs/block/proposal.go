@@ -1,10 +1,7 @@
 package block
 
 import (
-	"fmt"
 	"crypto"
-	
-	"github.com/iost-official/PrototypeWorks/iosbase/debug"
 )
 
 func (this *ProposalCreate) c_validate() {
