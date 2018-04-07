@@ -112,6 +112,7 @@ func TestDatabase(t *testing.T) {
 			defer guard.Unpatch()
 
 			bc.EXPECT().Push(Any()).AnyTimes()
+			sp.EXPECT().Transact(Any()).AnyTimes()
 
 			chv1, err := db.NewViewSignal()
 			chv2, err := db.NewViewSignal()

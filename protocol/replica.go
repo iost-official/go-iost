@@ -8,7 +8,7 @@ import (
 	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
-//go:generate mockgen -destination mocks/mock_component.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol component
+//go:generate mockgen -destination mocks/mock_component.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Component
 
 type Phase int
 
@@ -27,13 +27,13 @@ const (
 	CommitTimeout     = 20 * time.Second
 )
 
-type component interface {
+type Component interface {
 	Init(self iosbase.Member, db Database, router Router) error
 	Run()
 	Stop()
 }
 
-func ReplicaFactory(target string, pool iosbase.TxPool) (component, error) {
+func ReplicaFactory(target string, pool iosbase.TxPool) (Component, error) {
 	switch target {
 	case "pbft":
 		rep := ReplicaImpl{
@@ -45,7 +45,7 @@ func ReplicaFactory(target string, pool iosbase.TxPool) (component, error) {
 }
 
 /*
-Implement of component replica
+Implement of Component replica
 
 Replica runs the PBFT protocol to reach consensus with other replicas,
 and make new block to block chain. reward would be given to every replicas

@@ -23,7 +23,7 @@ const (
 type ConsensusImpl struct {
 	iosbase.Member
 
-	recorder, replica component
+	recorder, replica Component
 	db                Database
 	router            Router
 }

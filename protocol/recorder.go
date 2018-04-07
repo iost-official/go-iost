@@ -7,7 +7,7 @@ import (
 	"github.com/iost-official/PrototypeWorks/iosbase"
 )
 
-func RecorderFactory(target string) (component, error) {
+func RecorderFactory(target string) (Component, error) {
 	switch target {
 	case "basic":
 		rec := RecorderImpl{}
