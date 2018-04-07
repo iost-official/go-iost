@@ -3,7 +3,7 @@ package market
 import (
 	"math"
 
-	"mock-lib/asset"
+	"github.com/iost-official/PrototypeWorks/mock-libs/asset"
 )
 
 func (this *CddMarket) calc_benefit(context PolicyObj) int {

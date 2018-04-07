@@ -3,7 +3,6 @@ package block
 import (
 	"fmt"
 	"math"
-
 	"crypto"
 )
 
