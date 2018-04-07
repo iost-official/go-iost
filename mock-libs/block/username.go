@@ -1,7 +1,7 @@
 package block
 
 import (
-	"iosbase/debug/debug"
+	"github.com/iost-official/PrototypeWorks/iosbase/debug"
 )
 
 func (this *NameType) set(s string) {
