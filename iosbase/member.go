@@ -29,7 +29,7 @@ func NewMember(seckey []byte, name string) (Member, error) {
 	if len(name) > 15 || len(name) == 0 {
 		return Member{}, fmt.Errorf("name length error")
 	}
-	for c := range name {
+	for _, c := range name {
 		if !IsValidNameChar(c) {
 			return Member{}, fmt.Errorf("invalid char in name")
 		}
@@ -41,7 +41,7 @@ func NewMember(seckey []byte, name string) (Member, error) {
 	return m, nil
 }
 
-func IsValidNameChar(c rune) bool {
+func IsValidNameChar(c char) bool {
 	str_map := VALID_USERNAME
 	return str_map[c]
 }
