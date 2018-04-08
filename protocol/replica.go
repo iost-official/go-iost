@@ -35,7 +35,7 @@ type Component interface {
 
 func ReplicaFactory(target string, pool iosbase.TxPool) (Component, error) {
 	switch target {
-	case "pbft":
+	case "pob":
 		rep := ReplicaImpl{
 			txPool: pool,
 		}

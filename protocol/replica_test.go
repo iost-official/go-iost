@@ -34,11 +34,11 @@ func TestReplica_Unit(t *testing.T) {
 	tp.EXPECT().Hash().AnyTimes().Return([]byte{1, 2, 3})
 	tp.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
 
-	v := DposView{}
+	v := PobView{}
 	guards = append(guards, PatchInstanceMethod(
 		reflect.TypeOf(&v),
 		"IsPrimary",
-		func(a *DposView, id string) bool {
+		func(a *PobView, id string) bool {
 			if id == "a" {
 				return true
 			}
@@ -47,7 +47,7 @@ func TestReplica_Unit(t *testing.T) {
 	guards = append(guards, PatchInstanceMethod(
 		reflect.TypeOf(&v),
 		"IsBackup",
-		func(a *DposView, id string) bool {
+		func(a *PobView, id string) bool {
 			if id == "b" {
 				return true
 			}

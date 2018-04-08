@@ -25,8 +25,8 @@ type View interface {
 
 func ViewFactory(target string) (View, error) {
 	switch target {
-	case "dpos":
-		return &DposView{}, nil
+	case "pob":
+		return &PobView{}, nil
 	}
 	return nil, fmt.Errorf("target view not found")
 }
@@ -35,12 +35,12 @@ func ViewFactory(target string) (View, error) {
 view determined by the preview block's recorder, the best come into committee, and the preview
 primary leaves
 */
-type DposView struct {
+type PobView struct {
 	primary iosbase.Member
 	backup  []iosbase.Member
 }
 
-func (v *DposView) Init(chain iosbase.BlockChain) {
+func (v *PobView) Init(chain iosbase.BlockChain) {
 
 	/*
 		ruler:
@@ -96,15 +96,15 @@ func (v *DposView) Init(chain iosbase.BlockChain) {
 	v.backup = append(oldbus[1+emptyCount:], winners...)
 }
 
-func (v *DposView) GetPrimary() iosbase.Member {
+func (v *PobView) GetPrimary() iosbase.Member {
 	return v.primary
 }
 
-func (v *DposView) GetBackup() []iosbase.Member {
+func (v *PobView) GetBackup() []iosbase.Member {
 	return v.backup
 }
 
-func (v *DposView) IsPrimary(ID string) bool {
+func (v *PobView) IsPrimary(ID string) bool {
 	if ID == v.primary.ID {
 		return true
 	} else {
@@ -112,7 +112,7 @@ func (v *DposView) IsPrimary(ID string) bool {
 	}
 }
 
-func (v *DposView) IsBackup(ID string) bool {
+func (v *PobView) IsBackup(ID string) bool {
 	ans := false
 	for _, m := range v.backup {
 		if ID == m.ID {
@@ -122,11 +122,11 @@ func (v *DposView) IsBackup(ID string) bool {
 	return ans
 }
 
-func (v *DposView) CommitteeSize() int {
+func (v *PobView) CommitteeSize() int {
 	return len(v.backup) + 1
 }
 
-func (v *DposView) ByzantineTolerance() int {
+func (v *PobView) ByzantineTolerance() int {
 	return len(v.backup) / 3
 }
 
