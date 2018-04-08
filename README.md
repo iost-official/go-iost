@@ -49,7 +49,7 @@ Testnet
 
 The IOS Blockchain is not yet to be used in production. We have deployed a private testnet for early stage testing as planned. We will open the testnet to public after the official release of Janus (v0.5) by the end of Q2 2018. This document will be updated then with instructions for running on the public testnet.
 
-##Contribution
+## Contribution
 
 Contribution of any forms is appreciated!
 
