@@ -10,7 +10,7 @@ This is the first release version (v0.1.0) of IOST, including the prototype of p
 
 >“I could be bounded in a nutshell, and count myself a king of infinite space!”  - Hamlet II.ii
 
-##Components and features
+## Components and features
 
 Considering the seriously waste of power in POW and complex, unrobust implement of POS system, we using an auto devoting POB system to ensure consensus of IOST blockchain.
 
