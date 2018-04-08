@@ -45,7 +45,8 @@ v0.2.0 - Under development.
 Our developers work in their own trees, then submit pull requests when they think their feature or bug fix is ready.
 
 Although we have started to go open source on Github starting April 9th, 2018 and released certain parts of our code/repositories, please note that we have only released a portion of them at this moment.  Since the project is still at its very early stage and some codes are related to our core technology, we have decided to go open source gradually until the launch of the main net.
-Testnet
+
+## Testnet
 
 The IOS Blockchain is not yet to be used in production. We have deployed a private testnet for early stage testing as planned. We will open the testnet to public after the official release of Janus (v0.5) by the end of Q2 2018. This document will be updated then with instructions for running on the public testnet.
 
