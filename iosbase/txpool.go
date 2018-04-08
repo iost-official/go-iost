@@ -29,7 +29,7 @@ func (tp *TxPoolImpl) Del(tx Tx) error {
 }
 
 func (tp *TxPoolImpl) Find(txHash []byte) (Tx, error) {
-	tx , ok := tp.txMap[Base58Encode(txHash)]
+	tx, ok := tp.txMap[Base58Encode(txHash)]
 	if !ok {
 		return tx, fmt.Errorf("not found")
 	}

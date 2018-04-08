@@ -1,7 +1,6 @@
 package asset
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 )

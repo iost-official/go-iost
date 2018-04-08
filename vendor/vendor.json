@@ -28,6 +28,12 @@
 			"revisionTime": "2017-03-29T04:21:07Z"
 		},
 		{
+			"checksumSHA1": "kpDdn8FTTpe3DOSH7qDyfvIIzrY=",
+			"path": "github.com/golang/mock/gomock",
+			"revision": "8b2eeeb0ca5f56c78bec5efde9c4a21d9201126c",
+			"revisionTime": "2018-04-06T15:19:24Z"
+		},
+		{
 			"checksumSHA1": "p/8vSviYF91gFflhrt5vkyksroo=",
 			"path": "github.com/golang/snappy",
 			"revision": "553a641470496b2327abcac10b36396bd98e45c9",
@@ -254,6 +260,12 @@
 			"path": "golang.org/x/crypto/sha3",
 			"revision": "5a033cc77e57eca05bdb50522851d29e03569cbe",
 			"revisionTime": "2017-05-03T15:44:49Z"
+		},
+		{
+			"checksumSHA1": "Y+HGqEkYM15ir+J93MEaHdyFy0c=",
+			"path": "golang.org/x/net/context",
+			"revision": "feeb485667d1fdabe727840fe00adc22431bc86e",
+			"revisionTime": "2017-05-02T17:39:58Z"
 		},
 		{
 			"checksumSHA1": "oS0UZOGWVVsVciOQ8nZJ582mFF8=",

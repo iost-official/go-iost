@@ -1,9 +1,5 @@
 package asset
 
-import (
-	"math"
-)
-
 func (this *PriceObj) max(base AssetIdType, quote AssetIdType) PriceObj {
 	return make(asset(MAX_SUPPLY, base)) / make(asset(1, quote))
 }
