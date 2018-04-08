@@ -2,7 +2,7 @@ package protocol
 
 import (
 	"fmt"
-	"github.com/iost-official/PrototypeWorks/iosbase"
+	"github.com/iost-official/Go-IOS-Protocol/iosbase"
 )
 
 /*
@@ -27,7 +27,7 @@ const (
 	Error
 )
 
-//go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Router
+//go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/Go-IOS-Protocol/protocol Router
 
 /*
 Forwarding specific request to other components and sending messages for them

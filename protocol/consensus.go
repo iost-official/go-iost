@@ -4,7 +4,7 @@
 package protocol
 
 import (
-	"github.com/iost-official/PrototypeWorks/iosbase"
+	"github.com/iost-official/Go-IOS-Protocol/iosbase"
 )
 
 type Character int

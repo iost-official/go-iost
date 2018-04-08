@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"github.com/iost-official/PrototypeWorks/mock-libs/block"
+	"github.com/iost-official/Go-IOS-Protocol/mock-libs/block"
 )
 
 func (this *SignedTransaction) get_signature_keys(chain_id ChainIdType) map[PublicKeyType]bool {

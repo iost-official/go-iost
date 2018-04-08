@@ -6,7 +6,7 @@ package iosbase_mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	. "github.com/iost-official/PrototypeWorks/iosbase"
+	. "github.com/iost-official/Go-IOS-Protocol/iosbase"
 	reflect "reflect"
 )
 

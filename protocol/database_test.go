@@ -8,11 +8,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/iost-official/PrototypeWorks/iosbase"
-	"github.com/iost-official/PrototypeWorks/iosbase/mocks"
+	"github.com/iost-official/Go-IOS-Protocol/iosbase"
+	"github.com/iost-official/Go-IOS-Protocol/iosbase/mocks"
 
-	. "github.com/iost-official/PrototypeWorks/protocol"
-	"github.com/iost-official/PrototypeWorks/protocol/mocks"
+	. "github.com/iost-official/Go-IOS-Protocol/protocol"
+	"github.com/iost-official/Go-IOS-Protocol/protocol/mocks"
 )
 
 func TestDatabase(t *testing.T) {

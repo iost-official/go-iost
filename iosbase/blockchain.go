@@ -8,7 +8,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
-//go:generate mockgen -destination mocks/mock_blockchain.go -package iosbase_mock -source blockchain.go -imports .=github.com/iost-official/PrototypeWorks/iosbase
+//go:generate mockgen -destination mocks/mock_blockchain.go -package iosbase_mock -source blockchain.go -imports .=github.com/iost-official/Go-IOS-Protocol/iosbase
 
 // Block chain
 type BlockChain interface {

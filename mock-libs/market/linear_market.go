@@ -3,7 +3,7 @@ package market
 import (
 	"math"
 
-	"github.com/iost-official/PrototypeWorks/mock-libs/asset"
+	"github.com/iost-official/Go-IOS-Protocol/mock-libs/asset"
 )
 
 func sum_below_max_shares(a AssetObj, b AssetObj) bool {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iost-official/PrototypeWorks/iosbase"
+	"github.com/iost-official/Go-IOS-Protocol/iosbase"
 )
 
 func RecorderFactory(target string) (Component, error) {

@@ -5,7 +5,7 @@ import (
 	"math"
 
 	"crypto"
-	"github.com/iost-official/PrototypeWorks/iosbase/debug"
+	"github.com/iost-official/Go-IOS-Protocol/iosbase/debug"
 )
 
 func (this *TransferTo) validate() {

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/iost-official/PrototypeWorks/iosbase"
+	"github.com/iost-official/Go-IOS-Protocol/iosbase"
 )
 
-//go:generate mockgen -destination mocks/mock_view.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol View
+//go:generate mockgen -destination mocks/mock_view.go -package protocol_mock github.com/iost-official/Go-IOS-Protocol/protocol View
 
 /*
 Information of PBFT committee members

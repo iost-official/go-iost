@@ -5,10 +5,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/iost-official/PrototypeWorks/iosbase"
+	"github.com/iost-official/Go-IOS-Protocol/iosbase"
 )
 
-//go:generate mockgen -destination mocks/mock_component.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Component
+//go:generate mockgen -destination mocks/mock_component.go -package protocol_mock github.com/iost-official/Go-IOS-Protocol/protocol Component
 
 type Phase int
 

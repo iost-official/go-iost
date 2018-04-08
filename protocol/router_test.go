@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iost-official/PrototypeWorks/iosbase"
-	"github.com/iost-official/PrototypeWorks/iosbase/mocks"
+	"github.com/iost-official/Go-IOS-Protocol/iosbase"
+	"github.com/iost-official/Go-IOS-Protocol/iosbase/mocks"
 
 	. "github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
