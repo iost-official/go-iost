@@ -1,10 +1,11 @@
-#IOSBlockchain - A Secure & Scalable Blockchain for Smart Services
+# IOSBlockchain - A Secure & Scalable Blockchain for Smart Services
 
 The Internet of Services (IOS) offers a secure & scalable infrastructure for online service providers. Its high TPS, scalable and secure blockchain, and privacy protection scales social and economic cooperation to a new level. For more information about IOS Blockchain, please refer to our whitepaper
 
 The source codes released in this repo represent part of our early alpha-quality codes, with the purpose to demonstrate our development progress. Currently, there are still parts of our project have been intensively working on in private repos. We will gradually release our code.
 
-##Overview
+## Overview
+
 This is the first release version (v0.1.0) of IOST, including the prototype of protocol, blockchain, database and testing libs.
 
 >“I could be bounded in a nutshell, and count myself a king of infinite space!”  - Hamlet II.ii
@@ -35,7 +36,7 @@ For users, a good recorder can give response fastly and exactly, and user is wil
         ├── router: the wrap of network, in
         └── database: runtime data used in protocol
 
-##Development Progress
+## Development Progress
 
 v0.1.0 - MVP completed and preliminary tests conducted
 
@@ -56,7 +57,7 @@ Currently, our core tech team is working intensively to develop the first stable
 
 If you have any questions, please email to team@iost.io
 
-##Community & Resources
+## Community & Resources
 
 Make sure to check out these resources as well for more information and to keep up to date with all the latest news about IOST project and team.
 
@@ -68,7 +69,7 @@ Make sure to check out these resources as well for more information and to keep 
 
 [Official website](https://iost.io)
 
-##Disclaimer
+## Disclaimer
 
 - IOS Blockchain is unfinished and some parts are highly experimental. Use the code at your own risk.
 
