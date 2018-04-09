@@ -95,7 +95,7 @@ func (tp *TxPoolImpl) Encode() []byte {
 }
 
 func (tp *TxPoolImpl) Decode(a []byte) error {
-	_, err :=tp.Unmarshal(a)
+	_, err := tp.Unmarshal(a)
 	if err != nil {
 		return err
 	}

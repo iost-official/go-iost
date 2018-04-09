@@ -12,7 +12,7 @@ func TestTxPoolImpl(t *testing.T) {
 		txp := TxPoolImpl{}
 		tx := Tx{
 			Version: 1,
-			Time: time.Now().Unix(),
+			Time:    time.Now().Unix(),
 		}
 		Convey("Add", func() {
 			txp.Add(tx)
@@ -55,7 +55,7 @@ func TestTxPoolImpl(t *testing.T) {
 		Convey("Size", func() {
 			txp.Add(tx)
 			l := txp.Size()
-			So(l, ShouldEqual,1)
+			So(l, ShouldEqual, 1)
 		})
 	})
 }
