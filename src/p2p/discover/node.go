@@ -4,7 +4,6 @@ import (
 	"net"
 	"common"
 	"time"
-	"crypto"
 )
 
 type NodeID [NodeIDBits / 8]byte
@@ -38,7 +37,7 @@ func NewNode(id NodeID, ip net.IP, udpPort, tcpPort uint16) *Node {
 		UDP: udpPort,
 		TCP: tcpPort,
 		ID:  id,
-		sha: crypto.Keccak256Hash(id[:]),
+		//sha: crypto.Keccak256Hash(id[:]),
 		//TODO: implement Keccak256
 	}
 }
