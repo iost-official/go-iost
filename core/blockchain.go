@@ -4,8 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/iost-official/prototype/iostdb"
 )
 
 //go:generate mockgen -destination mocks/mock_blockchain.go -package core_mock -source blockchain.go -imports .=github.com/iost-official/prototype/core
@@ -21,7 +20,7 @@ type BlockChain interface {
 }
 
 type BlockChainImpl struct {
-	db     *leveldb.DB
+	db     *iostdb.LDBDatabase
 	redis  redis.Conn
 	length int
 }
@@ -42,7 +41,7 @@ func (bc *BlockChainImpl) Get(layer int) (*Block, error) {
 		return nil, err
 	}
 
-	blk, err := bc.db.Get(headHash, &opt.ReadOptions{})
+	blk, err := bc.db.Get(headHash)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +51,7 @@ func (bc *BlockChainImpl) Get(layer int) (*Block, error) {
 }
 
 func (bc *BlockChainImpl) Push(block *Block) error {
-	err := bc.db.Put(block.HeadHash(), block.Encode(), &opt.WriteOptions{})
+	err := bc.db.Put(block.HeadHash(), block.Encode())
 	if err != nil {
 		return err
 	}
@@ -76,7 +75,7 @@ func (bc *BlockChainImpl) Top() *Block {
 
 func (bc *BlockChainImpl) Init() error {
 	var err error
-	bc.db, err = leveldb.OpenFile(DBPath, nil)
+	bc.db, err = iostdb.NewLDBDatabase(DBPath, 1, 1,)
 	if err != nil {
 		return err
 	}
@@ -95,5 +94,6 @@ func (bc *BlockChainImpl) Init() error {
 }
 
 func (bc *BlockChainImpl) Close() error {
-	return bc.db.Close()
+	bc.db.Close()
+	return nil
 }

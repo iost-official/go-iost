@@ -12,7 +12,6 @@ struct TxInput {
 
 struct Tx {
    Version int32
-   Recorder string
    Inputs []TxInput
    Outputs []UTXO
    Time int64
