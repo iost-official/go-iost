@@ -1,0 +1,37 @@
+struct UTXO  {
+  BirthTxHash []byte
+  Value int64
+  Script string
+}
+
+struct TxInput {
+   TxHash []byte
+   UnlockScript string
+   StateHash []byte
+}
+
+struct Tx {
+   Version int32
+   Inputs []TxInput
+   Outputs []UTXO
+   Time int64
+}
+
+struct TxPoolRaw {
+    Txs []Tx
+    TxHash [][]byte
+}
+
+struct BlockHead {
+   Version int8
+   SuperHash []byte
+   TreeHash []byte
+   Time    int64
+}
+
+struct Block {
+   Version   int32
+   SuperHash []byte
+   Head      BlockHead
+   Content   []byte
+}

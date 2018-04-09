@@ -1,0 +1,170 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "kto0asmOE+Nuhj7T8cvrvIwq2ak=",
+			"path": "github.com/aristanetworks/goarista/monotime",
+			"revision": "bfd6294e8be0d922f04fadaa00b252228d30e3fd",
+			"revisionTime": "2018-04-04T19:08:38Z"
+		},
+		{
+			"checksumSHA1": "oQgLy8KmIOVov04WXH7KgU1bszc=",
+			"path": "github.com/btcsuite/btcutil/base58",
+			"revision": "501929d3d046174c3d39f0ea54ece471aa17238c",
+			"revisionTime": "2017-07-02T00:39:31Z"
+		},
+		{
+			"checksumSHA1": "Hd1Y5DkzYULQzJlSgYv2w5SiEAo=",
+			"path": "github.com/ethereum/go-ethereum/common/math",
+			"revision": "a06387674983d93453b800380f6f55c6406f51e3",
+			"revisionTime": "2018-03-14T09:59:06Z"
+		},
+		{
+			"checksumSHA1": "u8cuRovXF5jNs/xKr4RPnwf7+1U=",
+			"path": "github.com/ethereum/go-ethereum/crypto/secp256k1",
+			"revision": "a06387674983d93453b800380f6f55c6406f51e3",
+			"revisionTime": "2018-03-14T09:59:06Z",
+			"tree": true
+		},
+		{
+			"checksumSHA1": "p/8vSviYF91gFflhrt5vkyksroo=",
+			"path": "github.com/golang/snappy",
+			"revision": "553a641470496b2327abcac10b36396bd98e45c9",
+			"revisionTime": "2017-02-15T23:32:05Z"
+		},
+		{
+			"checksumSHA1": "w3QCCIYHgZzIXQ+xTl7oLfFrXHs=",
+			"path": "github.com/gomodule/redigo/internal",
+			"revision": "9352ab68be133885e31a43661cc42a220cb8e821",
+			"revisionTime": "2018-04-01T19:18:55Z"
+		},
+		{
+			"checksumSHA1": "HgOVOUtWUYHcNe8aipwuEZ7YLow=",
+			"path": "github.com/gomodule/redigo/redis",
+			"revision": "9352ab68be133885e31a43661cc42a220cb8e821",
+			"revisionTime": "2018-04-01T19:18:55Z"
+		},
+		{
+			"checksumSHA1": "Js/yx9fZ3+wH1wZpHNIxSTMIaCg=",
+			"path": "github.com/jtolds/gls",
+			"revision": "77f18212c9c7edc9bd6a33d383a7b545ce62f064",
+			"revisionTime": "2017-05-03T22:40:06Z"
+		},
+		{
+			"checksumSHA1": "wVmkBavCZSwHYTDGxa1xOD3RKe0=",
+			"path": "github.com/smartystreets/assertions",
+			"revision": "7678a5452ebea5b7090a6b163f844c133f523da2",
+			"revisionTime": "2018-03-01T16:12:46Z"
+		},
+		{
+			"checksumSHA1": "v6W3GIQMzr3QSXB2NtBa9X7SwiI=",
+			"path": "github.com/smartystreets/assertions/internal/go-render/render",
+			"revision": "7678a5452ebea5b7090a6b163f844c133f523da2",
+			"revisionTime": "2018-03-01T16:12:46Z"
+		},
+		{
+			"checksumSHA1": "r6FauVdOTFnwYQgrKGFuWUbIAJE=",
+			"path": "github.com/smartystreets/assertions/internal/oglematchers",
+			"revision": "7678a5452ebea5b7090a6b163f844c133f523da2",
+			"revisionTime": "2018-03-01T16:12:46Z"
+		},
+		{
+			"checksumSHA1": "c71WVAQlpp3r4I+BtTxRz1Cq1Lw=",
+			"path": "github.com/smartystreets/goconvey/convey",
+			"revision": "ef6db91d284a0e7badaa1f0c404c30aa7dee3aed",
+			"revisionTime": "2018-02-22T19:45:00Z"
+		},
+		{
+			"checksumSHA1": "6Mgn4H/4vpqYGlaIKZ0UwOmJN0E=",
+			"path": "github.com/smartystreets/goconvey/convey/gotest",
+			"revision": "ef6db91d284a0e7badaa1f0c404c30aa7dee3aed",
+			"revisionTime": "2018-02-22T19:45:00Z"
+		},
+		{
+			"checksumSHA1": "FWDhk37bhAwZ2363D/L2xePwR64=",
+			"path": "github.com/smartystreets/goconvey/convey/reporting",
+			"revision": "ef6db91d284a0e7badaa1f0c404c30aa7dee3aed",
+			"revisionTime": "2018-02-22T19:45:00Z"
+		},
+		{
+			"checksumSHA1": "3QsnhPTXGytTbW3uDvQLgSo9s9M=",
+			"path": "github.com/syndtr/goleveldb/leveldb",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "EKIow7XkgNdWvR/982ffIZxKG8Y=",
+			"path": "github.com/syndtr/goleveldb/leveldb/cache",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "5KPgnvCPlR0ysDAqo6jApzRQ3tw=",
+			"path": "github.com/syndtr/goleveldb/leveldb/comparer",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "1DRAxdlWzS4U0xKN/yQ/fdNN7f0=",
+			"path": "github.com/syndtr/goleveldb/leveldb/errors",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "eqKeD6DS7eNCtxVYZEHHRKkyZrw=",
+			"path": "github.com/syndtr/goleveldb/leveldb/filter",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "weSsccMav4BCerDpSLzh3mMxAYo=",
+			"path": "github.com/syndtr/goleveldb/leveldb/iterator",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "gJY7bRpELtO0PJpZXgPQ2BYFJ88=",
+			"path": "github.com/syndtr/goleveldb/leveldb/journal",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "MtYY1b2234y/MlS+djL8tXVAcQs=",
+			"path": "github.com/syndtr/goleveldb/leveldb/memdb",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "UmQeotV+m8/FduKEfLOhjdp18rs=",
+			"path": "github.com/syndtr/goleveldb/leveldb/opt",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "7H3fa12T7WoMAeXq1+qG5O7LD0w=",
+			"path": "github.com/syndtr/goleveldb/leveldb/storage",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "gWFPMz8OQeul0t54RM66yMTX49g=",
+			"path": "github.com/syndtr/goleveldb/leveldb/table",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "V/Dh7NV0/fy/5jX1KaAjmGcNbzI=",
+			"path": "github.com/syndtr/goleveldb/leveldb/util",
+			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
+			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "TQoVgHqUD72/5ALzi9p5W3oyaug=",
+			"path": "golang.org/x/crypto/ripemd160",
+			"revision": "c4a91bd4f524f10d064139674cf55852e055ad01",
+			"revisionTime": "2018-03-13T19:10:02Z"
+		}
+	],
+	"rootPath": "github.com/iost-official/prototype"
+}
