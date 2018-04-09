@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"sync"
 	"testing"
-
 )
 
 var test_values = []string{"", "a", "123", "\x00"}

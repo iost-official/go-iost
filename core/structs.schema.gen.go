@@ -383,30 +383,14 @@ func (d *TxInput) Unmarshal(buf []byte) (uint64, error) {
 }
 
 type Tx struct {
-	Version  int32
-	Recorder string
-	Inputs   []TxInput
-	Outputs  []UTXO
-	Time     int64
+	Version int32
+	Inputs  []TxInput
+	Outputs []UTXO
+	Time    int64
 }
 
 func (d *Tx) Size() (s uint64) {
 
-	{
-		l := uint64(len(d.Recorder))
-
-		{
-
-			t := l
-			for t >= 0x80 {
-				t >>= 7
-				s++
-			}
-			s++
-
-		}
-		s += l
-	}
 	{
 		l := uint64(len(d.Inputs))
 
@@ -477,25 +461,6 @@ func (d *Tx) Marshal(buf []byte) ([]byte, error) {
 
 		buf[3+0] = byte(d.Version >> 24)
 
-	}
-	{
-		l := uint64(len(d.Recorder))
-
-		{
-
-			t := uint64(l)
-
-			for t >= 0x80 {
-				buf[i+4] = byte(t) | 0x80
-				t >>= 7
-				i++
-			}
-			buf[i+4] = byte(t)
-			i++
-
-		}
-		copy(buf[i+4:], d.Recorder)
-		i += l
 	}
 	{
 		l := uint64(len(d.Inputs))
@@ -582,26 +547,6 @@ func (d *Tx) Unmarshal(buf []byte) (uint64, error) {
 
 		d.Version = 0 | (int32(buf[i+0+0]) << 0) | (int32(buf[i+1+0]) << 8) | (int32(buf[i+2+0]) << 16) | (int32(buf[i+3+0]) << 24)
 
-	}
-	{
-		l := uint64(0)
-
-		{
-
-			bs := uint8(7)
-			t := uint64(buf[i+4] & 0x7F)
-			for buf[i+4]&0x80 == 0x80 {
-				i++
-				t |= uint64(buf[i+4]&0x7F) << bs
-				bs += 7
-			}
-			i++
-
-			l = t
-
-		}
-		d.Recorder = string(buf[i+4 : i+4+l])
-		i += l
 	}
 	{
 		l := uint64(0)
