@@ -11,7 +11,6 @@ func TestSign(t *testing.T) {
 	privkey := ParseHex(testData)
 	var pubkey []byte
 
-
 	Convey("Test of Crypto", t, func() {
 		Convey("Sha256", func() {
 			sha := "d4daf0546cb71d90688b45488a8fa000b0821ec14b73677b2fb7788739228c8b"
@@ -30,10 +29,10 @@ func TestSign(t *testing.T) {
 		})
 
 		Convey("Sign and verify", func() {
-			info := Sha256([]byte{1,2,3,4})
+			info := Sha256([]byte{1, 2, 3, 4})
 			sig := Sign(info, privkey)
 			So(VerifySignature(info, pubkey, sig), ShouldBeTrue)
-			So(VerifySignature(info, pubkey,[]byte{5,6,7,8}), ShouldBeFalse)
+			So(VerifySignature(info, pubkey, []byte{5, 6, 7, 8}), ShouldBeFalse)
 		})
 	})
 }
