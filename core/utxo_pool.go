@@ -7,7 +7,7 @@ import (
 //go:generate mockgen -destination mocks/mock_statepool.go -package core_mock -source utxo_pool.go -imports .=github.com/iost-official/prototype/core
 
 /*
-Current states of system
+Current states of system ALERT: 正在施工，请不要调用
 */
 type UTXOPool interface {
 	Init() error
@@ -16,6 +16,8 @@ type UTXOPool interface {
 	Find(stateHash []byte) (UTXO, error)
 	Del(StateHash []byte) error
 	Transact(block *Block) error
+	Patch(diff UTXOPoolDiff) error
+	Copy() UTXOPool
 }
 
 type StatePoolImpl struct {
@@ -97,4 +99,21 @@ func (sp *StatePoolImpl) Transact(block *Block) error {
 		}
 	}
 	return nil
+}
+
+func (sp *StatePoolImpl) Patch(diff UTXOPoolDiff) error {
+	for _, utxo := range diff.del {
+		err := sp.Del(utxo.Hash())
+		if err != nil {
+			return err
+		}
+	}
+	for _, utxo := range diff.add {
+		sp.Add(utxo)
+	}
+	return nil
+}
+
+func (sp *StatePoolImpl) Copy() UTXOPool {
+	return sp
 }
