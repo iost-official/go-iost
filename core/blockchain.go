@@ -15,8 +15,7 @@ type BlockChain interface {
 	Push(block *Block) error
 	Length() int
 	Top() *Block
-	Init() error
-	Close() error
+	Copy() BlockChain
 }
 
 type BlockChainImpl struct {

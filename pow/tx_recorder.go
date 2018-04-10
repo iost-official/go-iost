@@ -13,12 +13,12 @@ type Recorder struct {
 	pools []core.TxPool
 }
 
-func NewRecorder() *Recorder {
+func NewRecorder() Recorder {
 	txp := core.NewTxPool()
 	rec := Recorder{
 		pools: []core.TxPool{txp},
 	}
-	return &rec
+	return rec
 }
 
 func (r *Recorder) Add(tx core.Tx) error {

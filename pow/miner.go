@@ -60,19 +60,36 @@ func GetDifficulty(chain core.BlockChain) uint64 {
 	return uint64(ans)
 }
 
-func IsLegalBlock(block core.Block) error {
+func IsLegalBlock(block * core.Block, up core.UTXOPool) error {
 	if len (block.Head.Info) < 8 {
 		return fmt.Errorf("syntax error")
 	}
 	ac := binary.BigEndian.Uint64(block.Head.Hash()[0:8])
 	dif := binary.BigEndian.Uint64(block.Head.Info[0:8])
-	if ac > dif {
-		return nil
-	} else {
+	if ac < dif {
 		return fmt.Errorf("unsolved nonce")
 	}
+
+	var txp core.TxPoolImpl
+	txp.Decode(block.Content)
+	txs, err := txp.GetSlice()
+	if err != nil {
+		return fmt.Errorf("syntax error")
+	}
+	for _, tx := range txs {
+		if err := isLegalTx(tx, up); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func isLegalTx(tx core.Tx) error {
-	return nil // TODO : complete it
+func isLegalTx(tx core.Tx, up core.UTXOPool) error {
+	for _, in := range tx.Inputs {
+		if _,err := up.Find(in.StateHash); err != nil {
+			return err
+		}
+	}
+
+	return nil // TODO : run script
 }

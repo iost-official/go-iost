@@ -13,6 +13,7 @@ const (
 type BlockCacheTree struct {
 	depth    int
 	blk      *core.Block
+	pool     core.UTXOPool
 	children []*BlockCacheTree
 	super    *BlockCacheTree
 }
@@ -20,15 +21,19 @@ type BlockCacheTree struct {
 type CacheStatus int
 
 const (
-	Extend   CacheStatus = iota
+	Extend     CacheStatus = iota
 	Fork
 	NotFound
+	ErrorBlock
 )
 
 func newBct(block *core.Block, tree *BlockCacheTree) *BlockCacheTree {
+	pool := tree.pool.Copy()
+	pool.Transact(block)
 	bct := BlockCacheTree{
 		depth:    0,
 		blk:      block,
+		pool:     pool,
 		children: make([]*BlockCacheTree, 0),
 		super:    tree,
 	}
@@ -36,11 +41,6 @@ func newBct(block *core.Block, tree *BlockCacheTree) *BlockCacheTree {
 }
 
 func (b *BlockCacheTree) add(block *core.Block) CacheStatus {
-
-	if b.blk == nil {
-		b.blk = block
-		return Extend
-	}
 
 	var code CacheStatus
 	for _, bct := range b.children {
@@ -54,10 +54,16 @@ func (b *BlockCacheTree) add(block *core.Block) CacheStatus {
 			}
 		} else if code == Fork {
 			return Fork
+		} else if code == ErrorBlock {
+			return ErrorBlock
 		}
 	}
 
 	if bytes.Equal(b.blk.Head.Hash(), block.Head.SuperHash) {
+		if IsLegalBlock(block, b.pool) != nil {
+			return ErrorBlock
+		}
+
 		if len(b.children) == 0 {
 			b.children = append(b.children, newBct(block, b))
 			b.depth ++
@@ -70,15 +76,14 @@ func (b *BlockCacheTree) add(block *core.Block) CacheStatus {
 	return NotFound
 }
 
-func (b *BlockCacheTree) pop() *core.Block {
-	blk := b.blk
+func (b *BlockCacheTree) pop() *BlockCacheTree {
+
 	for _, bct := range b.children {
 		if bct.depth == b.depth-1 {
-			b = bct
-			b.super = nil
+			return bct
 		}
 	}
-	return blk
+	return nil
 }
 
 func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
@@ -106,22 +111,26 @@ func NewHolder(chain core.BlockChain, pool core.UTXOPool) Holder {
 		bc: chain,
 		cachedRoot: &BlockCacheTree{
 			depth:    0,
-			blk:      nil,
+			blk:      chain.Top(),
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
 		},
-		pool:pool,
-		singleBlocks:make([]*core.Block, 0),
+		pool:         pool,
+		singleBlocks: make([]*core.Block, 0),
 	}
+
+	h.cachedRoot.pool = h.pool.Copy()
 	return h
 }
 
-func (h *Holder) Add(block *core.Block) {
+func (h *Holder) Add(block *core.Block) error {
 	code := h.cachedRoot.add(block)
 	switch code {
 	case Extend:
 		if h.cachedRoot.depth > MaxCacheDepth {
-			h.bc.Push(h.cachedRoot.pop())
+			h.cachedRoot = h.cachedRoot.pop()
+			h.cachedRoot.super = nil
+			h.bc.Push(h.cachedRoot.blk)
 		}
 		fallthrough
 	case Fork:
@@ -130,11 +139,18 @@ func (h *Holder) Add(block *core.Block) {
 		}
 	case NotFound:
 		h.singleBlocks = append(h.singleBlocks, block)
+	case ErrorBlock:
+		return fmt.Errorf("error found")
 	}
+	return nil
 }
 
 func (h *Holder) FindTx(txHash []byte) (core.Tx, error) {
 	return core.Tx{}, nil // TODO complete it
+}
+
+func (h *Holder) FindBlockInCache(hash []byte) (*core.Block, error) {
+	return nil, nil
 }
 
 func (h *Holder) FindTxInCache(txHash []byte) (core.Tx, error) {
@@ -162,5 +178,20 @@ func (h *Holder) FindTxInCache(txHash []byte) (core.Tx, error) {
 		return tx, err
 	} else {
 		return tx, fmt.Errorf("not found")
+	}
+}
+
+func (h *Holder) CacheTop() *core.Block {
+	bct := h.cachedRoot
+	for {
+		if bct.depth == 0 {
+			return bct.blk
+		}
+		for _, b := range bct.children {
+			if b.depth == bct.depth-1 {
+				bct = b
+				break
+			}
+		}
 	}
 }
