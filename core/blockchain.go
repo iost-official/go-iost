@@ -15,8 +15,8 @@ type BlockChain interface {
 	Push(block *Block) error
 	Length() int
 	Top() *Block
-	Init() error
-	Close() error
+
+	FindTx(txHash []byte) (Tx, error)
 }
 
 type BlockChainImpl struct {
@@ -75,7 +75,7 @@ func (bc *BlockChainImpl) Top() *Block {
 
 func (bc *BlockChainImpl) Init() error {
 	var err error
-	bc.db, err = iostdb.NewLDBDatabase(DBPath, 1, 1,)
+	bc.db, err = iostdb.NewLDBDatabase(DBPath, 1, 1)
 	if err != nil {
 		return err
 	}
