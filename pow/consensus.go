@@ -3,9 +3,11 @@ package pow
 import (
 	"github.com/iost-official/prototype/core"
 	"encoding/binary"
+	"time"
 )
 
 type Pow struct {
+	core.Member
 	Recorder
 	Holder
 	Router
@@ -45,11 +47,33 @@ func (p *Pow) Run() {
 	go p.Router.Run()
 
 }
-func (p *Pow) Stop()                                                    {}
-func (p *Pow) PublishTx(tx core.Tx) error                               {}
-func (p *Pow) CheckTx(tx core.Tx) (core.TxStatus, error)                {}
-func (p *Pow) GetStatus() (core.BlockChain, core.UTXOPool, error)       {}
-func (p *Pow) GetCachedStatus() (core.BlockChain, core.UTXOPool, error) {}
+func (p *Pow) Stop() {
+	close(p.chBlock)
+	close(p.chTx)
+	p.ExitSignal <- true
+}
+func (p *Pow) PublishTx(tx core.Tx) error {
+	err := p.Recorder.Add(tx)
+	if err != nil {
+		return err
+	}
+	p.Send(core.Request{
+		ReqType: int(ReqPublishTx),
+		From:    p.ID,
+		To:      "ALL",
+		Body:    tx.Encode(),
+	})
+	return nil
+}
+func (p *Pow) CheckTx(tx core.Tx) (core.TxStatus, error) {
+
+}
+func (p *Pow) GetStatus() (core.BlockChain, core.UTXOPool, error) {
+	return p.bc, p.pool, nil
+}
+func (p *Pow) GetCachedStatus() (core.BlockChain, core.UTXOPool, error) {
+	return p.Holder.LongestChain(), p.Holder.LongestPool(), nil
+}
 
 func parseInfo(head core.BlockHead) (difficulty, nonce uint64) {
 	difficulty = binary.BigEndian.Uint64(head.Info[0:8])
@@ -87,7 +111,6 @@ func (p *Pow) blockLoop() {
 		var blk core.Block
 		blk.Decode(req.Body)
 		p.Holder.Add(&blk)
-
 	}
 }
 
@@ -97,7 +120,30 @@ func (p *Pow) mineLoop() {
 		case <-p.ExitSignal:
 			return
 		default:
-			p.Holder.CacheTop()
+			chain := p.Holder.LongestChain()
+			dif := GetDifficulty(chain)
+			content := p.Recorder.Pop()
+			blk := core.Block{
+				Version: Version,
+				Head: core.BlockHead{
+					Version:   Version,
+					SuperHash: chain.Top().HeadHash(),
+					TreeHash:  content.Hash(),
+					Time:      time.Now().UnixNano(),
+				},
+				Content: content.Encode(),
+			}
+			blk.Head = MineHead(blk.Head, dif)
+			p.PublishBlock(&blk)
 		}
 	}
+}
+
+func (p *Pow) PublishBlock(block *core.Block) {
+	p.Send(core.Request{
+		ReqType: int(ReqNewBlock),
+		From:    p.ID,
+		To:      "ALL",
+		Body:    block.Encode(),
+	})
 }

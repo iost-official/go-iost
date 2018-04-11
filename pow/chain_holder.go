@@ -181,11 +181,37 @@ func (h *Holder) FindTxInCache(txHash []byte) (core.Tx, error) {
 	}
 }
 
-func (h *Holder) CacheTop() *core.Block {
+func (h *Holder) LongestChain() core.BlockChain {
+	rtn := CachedBlockChain{
+		BlockChain: h.bc,
+		cachedBlock: make([]*core.Block, 0),
+	}
+	bct := h.cachedRoot
+	if bct.depth == 0 {
+		return h.bc
+	}
+	for {
+		if bct.depth == 0 {
+			rtn.Push(bct.blk)
+			return rtn
+		}
+		for _, b := range bct.children {
+			if b.depth == bct.depth-1 {
+				if bct != h.cachedRoot {
+					rtn.Push(bct.blk)
+				}
+				bct = b
+				break
+			}
+		}
+	}
+}
+
+func (h *Holder) LongestPool() core.UTXOPool {
 	bct := h.cachedRoot
 	for {
 		if bct.depth == 0 {
-			return bct.blk
+			return bct.pool
 		}
 		for _, b := range bct.children {
 			if b.depth == bct.depth-1 {

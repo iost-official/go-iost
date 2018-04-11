@@ -5,6 +5,7 @@ import (
 	"time"
 	"encoding/binary"
 	"fmt"
+	"math"
 )
 
 const (
@@ -12,8 +13,10 @@ const (
 	TargetPeriod = 1 * time.Minute
 )
 
+
+
 func MineHead(bh core.BlockHead, dif uint64) core.BlockHead{
-	for nonce := uint64(0); nonce < 0xFFFFFFFFFFFFFFFF; nonce ++ {
+	for nonce := uint64(0); nonce < math.MaxUint64; nonce ++ {
 		bh.Info = makeInfo(dif, nonce)
 		ac := binary.BigEndian.Uint64(bh.Hash()[0:8])
 		if ac < dif {

@@ -15,7 +15,8 @@ type BlockChain interface {
 	Push(block *Block) error
 	Length() int
 	Top() *Block
-	Copy() BlockChain
+
+	FindTx(txHash []byte) (Tx, error)
 }
 
 type BlockChainImpl struct {
