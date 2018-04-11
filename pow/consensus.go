@@ -1,8 +1,8 @@
 package pow
 
 import (
-	"github.com/iost-official/prototype/core"
 	"encoding/binary"
+	"github.com/iost-official/prototype/core"
 	"time"
 )
 
@@ -43,10 +43,11 @@ func (p *Pow) Init(bc core.BlockChain, sp core.UTXOPool, network core.Network) e
 	return err
 
 }
+
 func (p *Pow) Run() {
 	go p.Router.Run()
-
 }
+
 func (p *Pow) Stop() {
 	close(p.chBlock)
 	close(p.chTx)
@@ -66,7 +67,7 @@ func (p *Pow) PublishTx(tx core.Tx) error {
 	return nil
 }
 func (p *Pow) CheckTx(tx core.Tx) (core.TxStatus, error) {
-
+	return core.POOL, nil
 }
 func (p *Pow) GetStatus() (core.BlockChain, core.UTXOPool, error) {
 	return p.bc, p.pool, nil
@@ -114,6 +115,7 @@ func (p *Pow) blockLoop() {
 	}
 }
 
+// dep
 func (p *Pow) mineLoop() {
 	for {
 		select {

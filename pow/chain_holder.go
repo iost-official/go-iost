@@ -1,9 +1,9 @@
 package pow
 
 import (
-	"github.com/iost-official/prototype/core"
 	"bytes"
 	"fmt"
+	"github.com/iost-official/prototype/core"
 )
 
 const (
@@ -21,7 +21,7 @@ type BlockCacheTree struct {
 type CacheStatus int
 
 const (
-	Extend     CacheStatus = iota
+	Extend CacheStatus = iota
 	Fork
 	NotFound
 	ErrorBlock
@@ -47,7 +47,7 @@ func (b *BlockCacheTree) add(block *core.Block) CacheStatus {
 		code = bct.add(block)
 		if code == Extend {
 			if bct.depth == b.depth {
-				b.depth ++
+				b.depth++
 				return Extend
 			} else {
 				return Fork
@@ -66,7 +66,7 @@ func (b *BlockCacheTree) add(block *core.Block) CacheStatus {
 
 		if len(b.children) == 0 {
 			b.children = append(b.children, newBct(block, b))
-			b.depth ++
+			b.depth++
 			return Extend
 		} else {
 			return Fork
@@ -183,7 +183,7 @@ func (h *Holder) FindTxInCache(txHash []byte) (core.Tx, error) {
 
 func (h *Holder) LongestChain() core.BlockChain {
 	rtn := CachedBlockChain{
-		BlockChain: h.bc,
+		BlockChain:  h.bc,
 		cachedBlock: make([]*core.Block, 0),
 	}
 	bct := h.cachedRoot

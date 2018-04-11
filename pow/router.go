@@ -75,7 +75,7 @@ func (r *RouterImpl) FilteredChan(filter Filter) (chan core.Request, error) {
 	r.filterList = append(r.filterList, filter)
 	r.filterMap[len(r.filterList)-1] = chReq
 
-	return chReq,  nil
+	return chReq, nil
 }
 
 func (r *RouterImpl) receiveLoop() {
@@ -113,7 +113,6 @@ func (r *RouterImpl) Broadcast(req core.Request) {
 		}()
 	}
 }
-
 
 /*
 The filter used by Router
