@@ -869,6 +869,7 @@ type BlockHead struct {
 	Version   int8
 	SuperHash []byte
 	TreeHash  []byte
+	Info      []byte
 	Time      int64
 }
 
@@ -891,6 +892,21 @@ func (d *BlockHead) Size() (s uint64) {
 	}
 	{
 		l := uint64(len(d.TreeHash))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t >>= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.Info))
 
 		{
 
@@ -959,6 +975,25 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 
 		}
 		copy(buf[i+1:], d.TreeHash)
+		i += l
+	}
+	{
+		l := uint64(len(d.Info))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+1] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+1] = byte(t)
+			i++
+
+		}
+		copy(buf[i+1:], d.Info)
 		i += l
 	}
 	{
@@ -1042,6 +1077,31 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		i += l
 	}
 	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+1] & 0x7F)
+			for buf[i+1]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+1]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		if uint64(cap(d.Info)) >= l {
+			d.Info = d.Info[:l]
+		} else {
+			d.Info = make([]byte, l)
+		}
+		copy(d.Info, buf[i+1:])
+		i += l
+	}
+	{
 
 		d.Time = 0 | (int64(buf[i+0+1]) << 0) | (int64(buf[i+1+1]) << 8) | (int64(buf[i+2+1]) << 16) | (int64(buf[i+3+1]) << 24) | (int64(buf[i+4+1]) << 32) | (int64(buf[i+5+1]) << 40) | (int64(buf[i+6+1]) << 48) | (int64(buf[i+7+1]) << 56)
 
@@ -1050,29 +1110,13 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 }
 
 type Block struct {
-	Version   int32
-	SuperHash []byte
-	Head      BlockHead
-	Content   []byte
+	Version int32
+	Head    BlockHead
+	Content []byte
 }
 
 func (d *Block) Size() (s uint64) {
 
-	{
-		l := uint64(len(d.SuperHash))
-
-		{
-
-			t := l
-			for t >= 0x80 {
-				t >>= 7
-				s++
-			}
-			s++
-
-		}
-		s += l
-	}
 	{
 		s += d.Head.Size()
 	}
@@ -1117,26 +1161,7 @@ func (d *Block) Marshal(buf []byte) ([]byte, error) {
 
 	}
 	{
-		l := uint64(len(d.SuperHash))
-
-		{
-
-			t := uint64(l)
-
-			for t >= 0x80 {
-				buf[i+4] = byte(t) | 0x80
-				t >>= 7
-				i++
-			}
-			buf[i+4] = byte(t)
-			i++
-
-		}
-		copy(buf[i+4:], d.SuperHash)
-		i += l
-	}
-	{
-		nbuf, err := d.Head.Marshal(buf[i+4:])
+		nbuf, err := d.Head.Marshal(buf[4:])
 		if err != nil {
 			return nil, err
 		}
@@ -1171,31 +1196,6 @@ func (d *Block) Unmarshal(buf []byte) (uint64, error) {
 
 		d.Version = 0 | (int32(buf[i+0+0]) << 0) | (int32(buf[i+1+0]) << 8) | (int32(buf[i+2+0]) << 16) | (int32(buf[i+3+0]) << 24)
 
-	}
-	{
-		l := uint64(0)
-
-		{
-
-			bs := uint8(7)
-			t := uint64(buf[i+4] & 0x7F)
-			for buf[i+4]&0x80 == 0x80 {
-				i++
-				t |= uint64(buf[i+4]&0x7F) << bs
-				bs += 7
-			}
-			i++
-
-			l = t
-
-		}
-		if uint64(cap(d.SuperHash)) >= l {
-			d.SuperHash = d.SuperHash[:l]
-		} else {
-			d.SuperHash = make([]byte, l)
-		}
-		copy(d.SuperHash, buf[i+4:])
-		i += l
 	}
 	{
 		ni, err := d.Head.Unmarshal(buf[i+4:])

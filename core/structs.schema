@@ -26,12 +26,12 @@ struct BlockHead {
    Version int8
    SuperHash []byte
    TreeHash []byte
+   Info []byte
    Time    int64
 }
 
 struct Block {
    Version   int32
-   SuperHash []byte
    Head      BlockHead
    Content   []byte
 }
