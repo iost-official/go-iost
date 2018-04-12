@@ -45,12 +45,20 @@ func (db *LDBDatabase) Put(key []byte, value []byte) error {
 	return db.db.Put(key, value, nil)
 }
 
+func (db *LDBDatabase) PutHM(key []byte, args ...[]byte) error {
+	return errors.New("Unsupported")
+}
+
 func (db *LDBDatabase) Get(key []byte) ([]byte, error) {
 	value, err := db.db.Get(key, nil)
 	if err != nil {
 		return nil, err
 	}
 	return value, nil
+}
+
+func (db *LDBDatabase) GetHM(key []byte, args ...[]byte) ([][]byte, error) {
+	return nil, errors.New("Unsupported")
 }
 
 func (db *LDBDatabase) Has(key []byte) (bool, error) {
@@ -68,15 +76,14 @@ func (db *LDBDatabase) NewIterator() iterator.Iterator {
 func (db *LDBDatabase) Close() {
 	db.quitLock.Lock()
 	defer db.quitLock.Unlock()
-
 	db.db.Close()
-
 }
 
 func (db *LDBDatabase) DB() *leveldb.DB {
 	return db.db
 }
 
+/*
 func (db *LDBDatabase) NewBatch() Batch {
 	return &ldbBatch{db: db.db, b: new(leveldb.Batch)}
 }
@@ -164,3 +171,4 @@ func (tb *tableBatch) ValueSize() int {
 func (tb *tableBatch) Reset() {
 	tb.batch.Reset()
 }
+*/

@@ -1,7 +1,6 @@
 package iostdb
 
 import (
-	"fmt"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -9,27 +8,49 @@ import (
 
 func TestRedisDatabase(t *testing.T) {
 	Convey("Test of RedisDatabase", t, func() {
-		db, _ := NewRedisDatabase()
+		//db, _ := DatabaseFactor("redis")
+		//db, _ := DatabaseFactor("men")
+		db, _ := DatabaseFactor("ldb")
+
 		Convey("Put", func() {
-			err := db.Put("key", "field1", "value1", "field2", "value2")
+			err := db.Put([]byte("key1"), []byte("value1"))
 			So(err, ShouldBeNil)
+			rtn, _ := db.Get([]byte("key1"))
+			So(string(rtn), ShouldEqual, "value1")
 		})
+
 		Convey("Get", func() {
-			rtn, _ := db.Get("key", "field1", "field2")
-			fmt.Println(rtn)
+			rtn, _ := db.Get([]byte("key1"))
+			So(string(rtn), ShouldEqual, "value1")
 		})
-		Convey("Has", func() {
-			rtn, _ := db.Has("key")
-			So(rtn, ShouldBeTrue)
-		})
-		Convey("Del", func() {
-			err := db.Delete("key")
-			So(err, ShouldBeNil)
-		})
-		Convey("Get_2", func() {
-			rtn, _ := db.Get("key", "field1", "field2")
-			fmt.Println(rtn)
-		})
+		/*
+			Convey("PutHM", func() {
+				err := db.PutHM([]byte("key"), []byte("field1"), []byte("value1"), []byte("field2"), []byte("value2"))
+				So(err, ShouldBeNil)
+			})
+
+			Convey("GetHM", func() {
+				rtn, _ := db.GetHM([]byte("key"), []byte("field1"), []byte("field2"))
+				So(string(rtn[0]), ShouldEqual, "value1")
+				So(string(rtn[1]), ShouldEqual, "value2")
+			})
+
+			Convey("Has", func() {
+				rtn, _ := db.Has([]byte("key"))
+				So(rtn, ShouldBeTrue)
+			})
+
+			Convey("Del", func() {
+				err := db.Delete([]byte("key"))
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Get_2", func() {
+				rtn, _ := db.GetHM([]byte("key"), []byte("field1"), []byte("field2"))
+				So(rtn[0], ShouldBeNil)
+				So(rtn[1], ShouldBeNil)
+			})
+		*/
 	})
 	/*
 		Convey("Test of UTXORedis", t, func() {

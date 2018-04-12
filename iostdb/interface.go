@@ -1,5 +1,11 @@
 package iostdb
 
+import (
+	"errors"
+	"io/ioutil"
+	"os"
+)
+
 type Database interface {
 	Put(key []byte, value []byte) error
 	PutHM(key []byte, args ...[]byte) error
@@ -9,6 +15,21 @@ type Database interface {
 	Delete(key []byte) error
 	Close()
 	//NewBatch() Batch
+}
+
+func DatabaseFactor(target string) (Database, error) {
+	switch target {
+	case "redis":
+		return NewRedisDatabase()
+	case "ldb":
+		dirname, _ := ioutil.TempDir(os.TempDir(), "test_")
+		db, err := NewLDBDatabase(dirname, 0, 0)
+		return db, err
+	case "mem":
+		db, err := NewMemDatabase()
+		return db, err
+	}
+	return nil, errors.New("target Database not found")
 }
 
 /*
