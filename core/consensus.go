@@ -7,6 +7,7 @@ const (
 	CACHED
 	POOL
 	REJECT
+	EXPIRED
 )
 
 type Consensus interface {
