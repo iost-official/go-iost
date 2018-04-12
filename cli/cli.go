@@ -8,17 +8,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-
-func printUsageInMemory(){
-	fmt.Println("Usage:")
-	fmt.Println("  getbalance ADDRESS - Get balance of ADDRESS")
-	fmt.Println("  createblockchain ADDRESS - Create a blockchain and send genesis block reward to ADDRESS")
-	fmt.Println("  printchain - Print all the blocks of the blockchain")
-	fmt.Println("  send FROM TO AMOUNT - Send AMOUNT of coins from FROM address to TO")
-	fmt.Println("  exit - Exit the program")
-}
-
-
 func Run(){
 	app := cli.NewApp()
 	app.Name = "blockchain-tx"
@@ -120,45 +109,24 @@ func Run(){
 	}
 }
 
-func RunInMemory() {
-	printUsageInMemory()
-
-	var input string
-	for {
-		fmt.Scanf("%s", &input)
-		switch input {
-		case "getbalance":
-			var getBalanceAddress string
-			fmt.Scanf("%s", &getBalanceAddress)
-			getBalance(getBalanceAddress)
-		case "createblockchain":
-			var createBlockchainAddress string
-			fmt.Scanf("%s", &createBlockchainAddress)
-			createBlockchain(createBlockchainAddress)
-		case "send":
-			var sendFrom string
-			var sendTo string
-			var sendAmount int
-			fmt.Scanf("%s %s %d", &sendFrom, &sendTo, &sendAmount)
-			send(sendFrom, sendTo, sendAmount)
-		case "printchain":
-			printChain()
-		case "exit":
-			os.Exit(1)
-		default:
-			printUsageInMemory()
-		}
-	}
-}
-
 
 func createBlockchain(address string) {
-	transaction.CreateBlockchain(address)
+	bc, to_print := transaction.CreateBlockchain(address)
+
+	if bc == nil {
+		fmt.Println(to_print)
+		return
+	}
+
 	fmt.Println("Done!")
 }
 
 func getBalance(address string) {
-	bc := transaction.NewBlockchain(address)
+	bc, to_print := transaction.NewBlockchain(address)
+
+	if bc == nil {
+		fmt.Println(to_print)
+	}
 
 	balance := 0
 	UTXOs := bc.FindUTXO(address)
@@ -172,7 +140,12 @@ func getBalance(address string) {
 
 
 func printChain() {
-	bc := transaction.NewBlockchain("")
+	bc, to_print := transaction.NewBlockchain("")
+
+	if bc == nil {
+		fmt.Println(to_print)
+		return
+	}
 
 	if bc == nil {
 		return
@@ -197,9 +170,21 @@ func printChain() {
 }
 
 func send(from, to string, amount int) {
-	bc := transaction.NewBlockchain(from)
+	bc, to_print := transaction.NewBlockchain(from)
 
-	tx := transaction.NewUTXOTransaction(from, to, amount, bc)
+	if bc == nil {
+		fmt.Println(to_print)
+		return
+	}
+
+
+	tx, to_print := transaction.NewUTXOTransaction(from, to, amount, bc)
+
+	if tx == nil {
+		fmt.Println(to_print)
+		return
+	}
+
 	bc.MineBlock([]*transaction.Transaction{tx})
 	fmt.Println("Success!")
 }
