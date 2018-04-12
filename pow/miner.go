@@ -87,7 +87,7 @@ func IsLegalBlock(block *core.Block, up core.UTXOPool) error {
 
 func isLegalTx(tx core.Tx, up core.UTXOPool) error {
 	for _, in := range tx.Inputs {
-		if _, err := up.Find(in.StateHash); err != nil {
+		if _, err := up.Find(in.UTXOHash); err != nil {
 			return err
 		}
 	}

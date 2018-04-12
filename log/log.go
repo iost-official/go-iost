@@ -2,12 +2,12 @@ package log
 
 import (
 	"fmt"
-	"time"
 	"os"
+	"runtime"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
-	"runtime/debug"
-	"runtime"
+	"time"
 )
 
 type Logger struct {
@@ -15,36 +15,39 @@ type Logger struct {
 	logFile *os.File
 }
 
-var instance *Logger
+var instance *os.File
 
 var initialized int32
 var mu sync.Mutex
 
-func GetLogger(tag, path string) (*Logger, error) {
+const Path = "test.log" // TODO : 在命令行内修改
+
+func NewLogger(tag string) (*Logger, error) {
 
 	if atomic.LoadInt32(&initialized) == 1 {
-		return instance, nil
+		return &Logger{
+			logFile: instance,
+		}, nil
 	}
 
 	mu.Lock()
 	defer mu.Unlock()
 
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	file, err := os.OpenFile(Path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
 		return nil, err
 	}
-	instance = &Logger{
-		Tag:     tag,
-		logFile: file,
-	}
+	instance = file
 
-	runtime.SetFinalizer(instance, func(obj *Logger) {
-		obj.logFile.Close()
+	runtime.SetFinalizer(instance, func(obj *os.File) {
+		obj.Close()
 	})
 
 	atomic.StoreInt32(&initialized, 1)
 
-	return instance, nil
+	return &Logger{
+		logFile: instance,
+	}, nil
 
 }
 
