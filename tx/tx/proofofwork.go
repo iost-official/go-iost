@@ -3,7 +3,6 @@ package transaction
 import (
 	"bytes"
 	"crypto/sha256"
-	"fmt"
 	"math"
 	"math/big"
 	"github.com/iost-official/prototype/tx/min_framework"
@@ -47,7 +46,7 @@ func (pow *ProofOfWork) Mine() (int, []byte) {
 	var hash [32]byte
 	nonce := 0
 
-	fmt.Printf("Mining a new block")
+	//fmt.Printf("Mining a new block")
 	for nonce < maxNonce {
 		data := pow.prepareData(nonce)
 
@@ -55,13 +54,13 @@ func (pow *ProofOfWork) Mine() (int, []byte) {
 		hashInt.SetBytes(hash[:])
 
 		if hashInt.Cmp(pow.target) == -1 {
-			fmt.Printf("\r%x", hash)
+			//fmt.Printf("\r%x", hash)
 			break
 		} else {
 			nonce++
 		}
 	}
-	fmt.Print("\n\n")
+	//fmt.Print("\n\n")
 
 	return nonce, hash[:]
 }

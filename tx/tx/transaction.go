@@ -56,7 +56,7 @@ func NewCoinbaseTX(to, data string) *Transaction {
 }
 
 // NewUTXOTransaction 创建一笔新的交易
-func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *Transaction {
+func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) (*Transaction, string) {
 	var inputs []TXInput
 	var outputs []TXOutput
 
@@ -64,7 +64,7 @@ func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *Transactio
 	acc, validOutputs := bc.FindSpendableOutputs(from, amount)
 
 	if acc < amount {
-		log.Panic("ERROR: Not enough funds")
+		return nil, "ERROR: Not enough funds\n"
 	}
 
 	for txid, outs := range validOutputs {
@@ -89,7 +89,7 @@ func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *Transactio
 	tx := Transaction{nil, inputs, outputs}
 	tx.SetID()
 
-	return &tx
+	return &tx, ""
 }
 
 

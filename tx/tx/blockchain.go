@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"fmt"
 	"log"
 	"os"
 	"github.com/iost-official/prototype/iostdb"
@@ -12,30 +11,30 @@ import (
 
 type Blockchain struct {
 	tip []byte
-	db *iostdb.LDBDatabase
+	Db *iostdb.LDBDatabase
 }
 
 type BlockchainIterator struct {
 	currentHash []byte
-	db *iostdb.LDBDatabase
+	Db *iostdb.LDBDatabase
 }
 
 // 改掉
 func (bc *Blockchain) MineBlock(transactions []*Transaction) {
 	var lastHash []byte
 
-	lastHash, err := bc.db.Get([]byte("l"))
+	lastHash, err := bc.Db.Get([]byte("l"))
 	if err != nil {
 		log.Panic(err)
 	}
 
 	newBlock := NewBlock(transactions, lastHash)
 
-	err = bc.db.Put(newBlock.Hash, newBlock.Serialize())
+	err = bc.Db.Put(newBlock.Hash, newBlock.Serialize())
 	if err != nil {
 		log.Panic(err)
 	}
-	err = bc.db.Put([]byte("l"), newBlock.Hash)
+	err = bc.Db.Put([]byte("l"), newBlock.Hash)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -44,7 +43,7 @@ func (bc *Blockchain) MineBlock(transactions []*Transaction) {
 }
 
 func (bc *Blockchain) Iterator() *BlockchainIterator {
-	bci := &BlockchainIterator{bc.tip, bc.db}
+	bci := &BlockchainIterator{bc.tip, bc.Db}
 
 	return bci
 }
@@ -52,7 +51,7 @@ func (bc *Blockchain) Iterator() *BlockchainIterator {
 func (i *BlockchainIterator) Next() *Block {
 	var block *Block
 
-	encodedBlock, err := i.db.Get(i.currentHash)
+	encodedBlock, err := i.Db.Get(i.currentHash)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -72,11 +71,9 @@ func dbExists() bool {
 }
 
 // 创建一个有创世块的新链
-func NewBlockchain(address string) *Blockchain {
+func NewBlockchain(address string) (*Blockchain, string) {
 	if dbExists() == false {
-		fmt.Println("No existing blockchain found. Create one first.")
-		//os.Exit(1)
-		return nil
+		return nil, "No existing blockchain found. Create one first.\n"
 	}
 	var tip []byte
 	db, err := iostdb.NewLDBDatabase(min_framework.DbFile, 0, 0)
@@ -91,15 +88,14 @@ func NewBlockchain(address string) *Blockchain {
 
 	bc := Blockchain{tip, db}
 
-	return &bc
+	return &bc, ""
 }
 
 // CreateBlockchain 创建一个新的区块链数据库
 // address 用来接收挖出创世块的奖励
-func CreateBlockchain(address string) *Blockchain {
+func CreateBlockchain(address string) (*Blockchain, string) {
 	if dbExists() {
-		fmt.Println("Blockchain already exists.")
-		os.Exit(1)
+		return nil, "Blockchain already exists.\n"
 	}
 
 	var tip []byte
@@ -122,7 +118,7 @@ func CreateBlockchain(address string) *Blockchain {
 
 	tip = genesis.Hash
 	bc := Blockchain{tip, db}
-	return &bc
+	return &bc, ""
 }
 
 
