@@ -7,7 +7,7 @@ import (
 
 func TestLogger(t *testing.T) {
 	Convey("Test of Logger\n", t, func() {
-		l, err := GetLogger("IOST", "test.log")
+		l, err := NewLogger("IOST")
 		So(err, ShouldBeNil)
 		l.D("something %v;", "good")
 		l.E("something wrong")
