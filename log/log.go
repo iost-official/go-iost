@@ -2,12 +2,12 @@ package log
 
 import (
 	"fmt"
-	"time"
 	"os"
+	"runtime"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
-	"runtime/debug"
-	"runtime"
+	"time"
 )
 
 type Logger struct {

@@ -1,8 +1,8 @@
 package log
 
 import (
-	"testing"
 	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
 func TestLogger(t *testing.T) {
