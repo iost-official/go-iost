@@ -1,7 +1,16 @@
 package main
 
-import "github.com/iost-official/prototype/console"
+import (
+	"sync"
+	"github.com/iost-official/prototype/console"
+)
 
 func main() {
-	console.Listen();
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		console.Listen()
+		wg.Done()
+	}()
+	wg.Wait()
 }

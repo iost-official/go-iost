@@ -185,4 +185,3 @@ func init() {
 	}
 	RegistCmd(send)
 }
-
