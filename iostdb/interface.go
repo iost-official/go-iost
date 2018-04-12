@@ -8,12 +8,14 @@ type Database interface {
 	Has(key []byte) (bool, error)
 	Delete(key []byte) error
 	Close()
-	NewBatch() Batch
+	//NewBatch() Batch
 }
 
+/*
 type Batch interface {
 	Put(key []byte, value []byte) error
 	ValueSize() int
 	Write() error
 	Reset()
 }
+*/

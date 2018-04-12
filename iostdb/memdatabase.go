@@ -69,6 +69,8 @@ func (db *MemDatabase) Delete(key []byte) error {
 
 func (db *MemDatabase) Close() {}
 
+/*
+
 func (db *MemDatabase) NewBatch() Batch {
 	return &memBatch{db: db}
 }
@@ -104,3 +106,4 @@ func (b *memBatch) Reset() {
 	b.writes = b.writes[:0]
 	b.size = 0
 }
+*/

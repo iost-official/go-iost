@@ -20,25 +20,35 @@ func NewRedisDatabase() (*RedisDatabase, error) {
 	return &RedisDatabase{cli: dial}, nil
 }
 
-func (rdb *RedisDatabase) Put(args ...interface{}) error {
-	_, err := rdb.cli.Do("HMSET", args...)
+func (rdb *RedisDatabase) Put(key string, args ...string) error {
+	newArgs := make([]interface{}, len(args)+1)
+	newArgs[0] = key
+	for i, v := range args {
+		newArgs[i+1] = v
+	}
+	_, err := rdb.cli.Do("HMSET", newArgs...)
 	return err
 }
 
-func (rdb *RedisDatabase) Get(args ...interface{}) (interface{}, error) {
-	value, ok := redis.Values(rdb.cli.Do("HMGET", args...))
+func (rdb *RedisDatabase) Get(key string, args ...string) (interface{}, error) {
+	newArgs := make([]interface{}, len(args)+1)
+	newArgs[0] = key
+	for i, v := range args {
+		newArgs[i+1] = v
+	}
+	value, ok := redis.Values(rdb.cli.Do("HMGET", newArgs...))
 	if ok == nil {
 		return value, nil
 	}
 	return nil, errors.New("Not found")
 }
 
-func (rdb *RedisDatabase) Has(args ...interface{}) (bool, error) {
-	_, ok := redis.Values(rdb.cli.Do("HMGET", args...))
+func (rdb *RedisDatabase) Has(key string) (bool, error) {
+	_, ok := rdb.cli.Do("EXISTS", key)
 	return ok == nil, nil
 }
 
-func (rdb *RedisDatabase) Delete(key interface{}) error {
+func (rdb *RedisDatabase) Delete(key string) error {
 	_, err := rdb.cli.Do("DEL", key)
 	return err
 }
@@ -47,6 +57,7 @@ func (rdb *RedisDatabase) Close() {
 	rdb.cli = nil
 }
 
+/*
 type UTXORedis struct {
 	db      *RedisDatabase
 	subKeys []interface{}
@@ -91,4 +102,4 @@ func (ur *UTXORedis) Has(args ...interface{}) (bool, error) {
 		params = append(params, v)
 	}
 	return ur.db.Has(params...)
-}
+}*/
