@@ -3,11 +3,11 @@ package core
 import "github.com/iost-official/prototype/common"
 
 func (d *Block) Encode() []byte {
-	bin, err := d.Marshal(nil)
-	if err != nil {
-		panic(err)
-	}
-	return bin
+bin, err := d.Marshal(nil)
+if err != nil {
+panic(err)
+}
+return bin
 }
 
 func (d *Block) Decode(bin []byte) error {

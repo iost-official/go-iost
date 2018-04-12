@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/iost-official/prototype/cmd"
+	"github.com/iost-official/prototype/console"
 	_ "github.com/iost-official/prototype/common"
 	_ "github.com/iost-official/prototype/core"
 	_ "github.com/iost-official/prototype/event"
@@ -10,5 +10,5 @@ import (
 )
 
 func main() {
-	cmd.Execute()
+	console.Listen()
 }
