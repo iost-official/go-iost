@@ -1,6 +1,7 @@
 package iostdb
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/syndtr/goleveldb/leveldb"
@@ -25,6 +26,8 @@ func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
 		WriteBuffer:            cache / 4 * opt.MiB,
 		Filter:                 filter.NewBloomFilter(10),
 	})
+
+	fmt.Println(file, err)
 	if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
 		db, err = leveldb.RecoverFile(file, nil)
 	}

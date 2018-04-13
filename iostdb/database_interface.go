@@ -2,8 +2,8 @@ package iostdb
 
 import (
 	"errors"
-	"io/ioutil"
-	"os"
+	//"io/ioutil"
+	//"os"
 )
 
 type Database interface {
@@ -22,7 +22,8 @@ func DatabaseFactor(target string) (Database, error) {
 	case "redis":
 		return NewRedisDatabase()
 	case "ldb":
-		dirname, _ := ioutil.TempDir(os.TempDir(), "test_")
+		//dirname, _ := ioutil.TempDir(os.TempDir(), "test_")
+		dirname := "database"
 		db, err := NewLDBDatabase(dirname, 0, 0)
 		return db, err
 	case "mem":

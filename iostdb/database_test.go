@@ -9,48 +9,51 @@ import (
 func TestRedisDatabase(t *testing.T) {
 	Convey("Test of RedisDatabase", t, func() {
 		//db, _ := DatabaseFactor("redis")
-		//db, _ := DatabaseFactor("men")
+		//db, _ := DatabaseFactor("mem")
 		db, _ := DatabaseFactor("ldb")
+		defer db.Close()
+
+		//db, _ := NewMemDatabase()
 
 		Convey("Put", func() {
 			err := db.Put([]byte("key1"), []byte("value1"))
 			So(err, ShouldBeNil)
-			rtn, _ := db.Get([]byte("key1"))
-			So(string(rtn), ShouldEqual, "value1")
 		})
 
 		Convey("Get", func() {
+			//			db.Put([]byte("key1"), []byte("value1"))
 			rtn, _ := db.Get([]byte("key1"))
 			So(string(rtn), ShouldEqual, "value1")
 		})
-		/*
-			Convey("PutHM", func() {
-				err := db.PutHM([]byte("key"), []byte("field1"), []byte("value1"), []byte("field2"), []byte("value2"))
-				So(err, ShouldBeNil)
-			})
 
-			Convey("GetHM", func() {
-				rtn, _ := db.GetHM([]byte("key"), []byte("field1"), []byte("field2"))
+		Convey("PutHM", func() {
+			err := db.PutHM([]byte("key"), []byte("field1"), []byte("value1"), []byte("field2"), []byte("value2"))
+			So(err, ShouldBeNil)
+		})
+
+		Convey("GetHM", func() {
+			db.PutHM([]byte("key"), []byte("field1"), []byte("value1"), []byte("field2"), []byte("value2"))
+			rtn, err := db.GetHM([]byte("key"), []byte("field1"), []byte("field2"))
+			So(err, ShouldBeNil)
+			if err == nil {
 				So(string(rtn[0]), ShouldEqual, "value1")
 				So(string(rtn[1]), ShouldEqual, "value2")
-			})
+			}
+		})
 
-			Convey("Has", func() {
-				rtn, _ := db.Has([]byte("key"))
-				So(rtn, ShouldBeTrue)
-			})
+		Convey("Has", func() {
+			db.Put([]byte("key1"), []byte("value1"))
+			rtn, _ := db.Has([]byte("key1"))
+			So(rtn, ShouldBeTrue)
+		})
 
-			Convey("Del", func() {
-				err := db.Delete([]byte("key"))
-				So(err, ShouldBeNil)
-			})
-
-			Convey("Get_2", func() {
-				rtn, _ := db.GetHM([]byte("key"), []byte("field1"), []byte("field2"))
-				So(rtn[0], ShouldBeNil)
-				So(rtn[1], ShouldBeNil)
-			})
-		*/
+		Convey("Del&Get", func() {
+			db.Put([]byte("key1"), []byte("value1"))
+			err := db.Delete([]byte("key1"))
+			So(err, ShouldBeNil)
+			rtn, _ := db.Get([]byte("key1"))
+			So(rtn, ShouldBeNil)
+		})
 	})
 	/*
 		Convey("Test of UTXORedis", t, func() {
