@@ -6,12 +6,11 @@ import (
 	"log"
 )
 
-func ReverseBytes(data []byte){
-	for i, j := 0, len(data)-1; i < j; i, j = i + 1, j - 1{
+func ReverseBytes(data []byte) {
+	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
 		data[i], data[j] = data[j], data[i]
 	}
 }
-
 
 // Convert an int64 to a byte array
 func IntToHex(num int64) []byte {

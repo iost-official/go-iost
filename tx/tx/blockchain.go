@@ -8,15 +8,14 @@ import (
 	"github.com/iost-official/prototype/p2p"
 )
 
-
 type Blockchain struct {
 	tip []byte
-	Db *iostdb.LDBDatabase
+	Db  *iostdb.LDBDatabase
 }
 
 type BlockchainIterator struct {
 	currentHash []byte
-	Db *iostdb.LDBDatabase
+	Db          *iostdb.LDBDatabase
 }
 
 // 改掉
@@ -136,7 +135,6 @@ func CreateBlockchain(address string, db *iostdb.LDBDatabase, nn *p2p.NaiveNetwo
 	bc := Blockchain{tip, db}
 	return &bc, ""
 }
-
 
 // 暂缓修改
 // FindUnspentTransactions 找到未花费输出的交易

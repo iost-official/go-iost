@@ -1,32 +1,32 @@
 package cli
 
 import (
-	"os"
 	"fmt"
-	"log"
 	"github.com/iost-official/prototype/tx/tx"
 	"github.com/urfave/cli"
+	"log"
+	"os"
 )
 
-func Run(){
+func Run() {
 	app := cli.NewApp()
 	app.Name = "blockchain-tx"
 	app.Usage = "Test the transaction part of blockchain."
 	app.Commands = []cli.Command{
 		{
-			Name: "getbalance",
+			Name:    "getbalance",
 			Aliases: []string{"a"},
-			Usage: "Get balance of ADDRESS",
+			Usage:   "Get balance of ADDRESS",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:        "address",
-					Value:		  "",
-					Usage:       "address of account",
+					Name:  "address",
+					Value: "",
+					Usage: "address of account",
 				},
 			},
-			Action:  func(c *cli.Context) error {
+			Action: func(c *cli.Context) error {
 				address := c.String("address")
-				if address == ""{
+				if address == "" {
 					fmt.Println("Address can't be empty!")
 					return nil
 				}
@@ -35,19 +35,19 @@ func Run(){
 			},
 		},
 		{
-			Name: "createblockchain",
+			Name:    "createblockchain",
 			Aliases: []string{"c"},
-			Usage: "Create a blockchain and send genesis block reward to ADDRESS",
+			Usage:   "Create a blockchain and send genesis block reward to ADDRESS",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:        "address",
-					Value:		 "",
-					Usage:       "address of account",
+					Name:  "address",
+					Value: "",
+					Usage: "address of account",
 				},
 			},
-			Action:  func(c *cli.Context) error {
+			Action: func(c *cli.Context) error {
 				address := c.String("address")
-				if address == ""{
+				if address == "" {
 					fmt.Println("Address can't be empty!")
 					return nil
 				}
@@ -56,44 +56,44 @@ func Run(){
 			},
 		},
 		{
-			Name: "printchain",
+			Name:    "printchain",
 			Aliases: []string{"p"},
-			Usage: "Print all the blocks of the blockchain",
-			Action:  func(c *cli.Context) error {
+			Usage:   "Print all the blocks of the blockchain",
+			Action: func(c *cli.Context) error {
 				printChain()
 				return nil
 			},
 		},
 		{
-			Name: "send",
+			Name:    "send",
 			Aliases: []string{"s"},
-			Usage: "Send AMOUNT of coins from FROM address to TO",
+			Usage:   "Send AMOUNT of coins from FROM address to TO",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:        "from",
-					Value: 		 "",
-					Usage:       "address of from",
+					Name:  "from",
+					Value: "",
+					Usage: "address of from",
 				},
 				cli.StringFlag{
-					Name:		"to",
-					Value: 		"",
-					Usage: 		"address of to",
+					Name:  "to",
+					Value: "",
+					Usage: "address of to",
 				},
 				cli.IntFlag{
-					Name: 		"amount",
-					Value: 		-1,
-					Usage:		"amount of btc to be sent",
+					Name:  "amount",
+					Value: -1,
+					Usage: "amount of btc to be sent",
 				},
 			},
-			Action:  func(c *cli.Context) error {
+			Action: func(c *cli.Context) error {
 				from := c.String("from")
 				to := c.String("to")
 				amount := c.Int("amount")
-				if from == "" || to == ""{
+				if from == "" || to == "" {
 					fmt.Println("Address can't be empty!")
 					return nil
 				}
-				if amount <= 0{
+				if amount <= 0 {
 					fmt.Println("Amount must be greater than 0.")
 					return nil
 				}
@@ -108,7 +108,6 @@ func Run(){
 		log.Fatal(err)
 	}
 }
-
 
 func createBlockchain(address string) {
 	bc, to_print := transaction.CreateBlockchain(address)
@@ -138,7 +137,6 @@ func getBalance(address string) {
 	fmt.Printf("Balance of '%s': %d\n", address, balance)
 }
 
-
 func printChain() {
 	bc, to_print := transaction.NewBlockchain("")
 
@@ -158,7 +156,7 @@ func printChain() {
 
 		fmt.Printf("Prev hash: %x\n", block.PrevBlockHash)
 		fmt.Printf("Hash: %x\n", block.Hash)
-		for _, tx := range(block.Transactions) {
+		for _, tx := range block.Transactions {
 			fmt.Printf(tx.String())
 		}
 		fmt.Println()
@@ -176,7 +174,6 @@ func send(from, to string, amount int) {
 		fmt.Println(to_print)
 		return
 	}
-
 
 	tx, to_print := transaction.NewUTXOTransaction(from, to, amount, bc)
 

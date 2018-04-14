@@ -2,30 +2,27 @@ package transaction
 
 import (
 	"bytes"
-	"encoding/gob"
-	"log"
 	"crypto/sha256"
+	"encoding/gob"
 	"encoding/hex"
 	"fmt"
 	"github.com/iost-official/prototype/tx/min_framework"
+	"log"
 	"strings"
 )
 
-
 // Transaction 由交易 ID，输入和输出构成
 type Transaction struct {
-	ID []byte
-	Vin []TXInput
+	ID   []byte
+	Vin  []TXInput
 	Vout []TXOutput
 }
 
-
 // Check whether the transaction is coinbase
 // Coinbase: Vin[0].Txid == "" and the index of Vin[0]'s Vout is -1.
-func (tx *Transaction) IsCoinbase() bool{
+func (tx *Transaction) IsCoinbase() bool {
 	return len(tx.Vin) == 1 && len(tx.Vin[0].Txid) == 0 && tx.Vin[0].Vout == -1
 }
-
 
 func (tx *Transaction) SetID() {
 	var encoded bytes.Buffer
@@ -39,7 +36,6 @@ func (tx *Transaction) SetID() {
 	hash = sha256.Sum256(encoded.Bytes())
 	tx.ID = hash[:]
 }
-
 
 // NewCoinbaseTX 构建 coinbase 交易，该没有输入，只有一个输出
 func NewCoinbaseTX(to, data string) *Transaction {
@@ -91,7 +87,6 @@ func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) (*Transacti
 
 	return &tx, ""
 }
-
 
 // String returns a human-readable representation of a transaction
 func (tx Transaction) String() string {
