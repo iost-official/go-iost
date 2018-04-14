@@ -49,6 +49,7 @@ func NewNaiveNetwork() *NaiveNetwork {
 	}
 	nn.peerList.Put([]byte("1"), []byte("127.0.0.1:11037"))
 	nn.peerList.Put([]byte("2"), []byte("127.0.0.1:11038"))
+	nn.peerList.Put([]byte("3"), []byte("127.0.0.1:11039"))
 	return nn
 }
 
@@ -70,7 +71,7 @@ func (nn *NaiveNetwork) Send(req Request) {
 	if err = binary.Write(int32buf, binary.BigEndian, length); err != nil {
 		fmt.Println(err)
 	}
-	for i := 1; i < 3; i++ {
+	for i := 1; i < 4; i++ {
 		addr, _ := nn.peerList.Get([]byte(strconv.Itoa(i)))
 		conn, err := net.Dial("tcp", string(addr))
 		fmt.Println(string(addr))
@@ -107,9 +108,9 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {
 	// For every listener spawn the following routine
 	go func(l net.Listener) {
 		for {
-			fmt.Println("new conn1", port)
+			//fmt.Println("new conn1", port)
 			c, err := l.Accept()
-			fmt.Println("new conn", port)
+			//fmt.Println("new conn", port)
 			if err != nil {
 				// handle error
 				conn <- nil
@@ -149,12 +150,12 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {
 					}
 					var received Request
 					received.Unmarshal(_buf)
-					fmt.Printf("got %+v %+v\n", received, port)
+					//fmt.Printf("got %+v %+v\n", received, port)
 					req <- received
 					// Send a response back to person contacting us.
 					//conn.Write([]byte("Message received."))
 				}(c)
-			case <-time.After(10.0 * time.Second):
+			case <-time.After(1000.0 * time.Second):
 				fmt.Println("accepting time out..")
 			}
 		}
