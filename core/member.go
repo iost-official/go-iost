@@ -18,21 +18,34 @@ type Member struct {
 func NewMember(seckey []byte) (Member, error) {
 	var m Member
 	if seckey == nil {
-		rand.Seed(time.Now().UnixNano())
-		bin := new(bytes.Buffer)
-		for i := 0; i < 4; i++ {
-			b := make([]byte, 8)
-			binary.BigEndian.PutUint64(b, rand.Uint64())
-			bin.Write(b)
-		}
-		seckey = bin.Bytes()
+		seckey = randomSeckey()
 	}
 	if len(seckey) != 32 {
 		return Member{}, fmt.Errorf("seckey length error")
 	}
 
 	m.Seckey = seckey
-	m.Pubkey = common.CalcPubkey(seckey)
-	m.ID = common.Base58Encode(m.Pubkey)
+	m.Pubkey = makePubkey(seckey)
+	m.ID = GetIdByPubkey(m.Pubkey)
 	return m, nil
+}
+
+func randomSeckey() []byte {
+	rand.Seed(time.Now().UnixNano())
+	bin := new(bytes.Buffer)
+	for i := 0; i < 4; i++ {
+		b := make([]byte, 8)
+		binary.BigEndian.PutUint64(b, rand.Uint64())
+		bin.Write(b)
+	}
+	seckey := bin.Bytes()
+	return seckey
+}
+
+func makePubkey(seckey []byte) []byte {
+	return common.CalcPubkey(seckey)
+}
+
+func GetIdByPubkey(pubkey []byte) string {
+	return common.Base58Encode(pubkey)
 }

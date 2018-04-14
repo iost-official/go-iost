@@ -6,11 +6,10 @@ package transaction
 // Vout: 一笔交易可能有多个输出，Vout 为输出的索引
 // ScriptSig: 提供解锁输出 Txid:Vout 的数据
 type TXInput struct {
-	Txid []byte
-	Vout int	// Index of vout
+	Txid      []byte
+	Vout      int // Index of vout
 	ScriptSig string
 }
-
 
 // 这里的 unlockingData 可以理解为地址
 func (in *TXInput) CanUnlockOutputWith(unlockingData string) bool {

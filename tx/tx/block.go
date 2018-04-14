@@ -1,14 +1,13 @@
 package transaction
 
 import (
-	"time"
 	"bytes"
-	"encoding/gob"
-	"log"
 	"crypto/sha256"
+	"encoding/gob"
 	"github.com/iost-official/prototype/tx/min_framework"
+	"log"
+	"time"
 )
-
 
 // datastructure of a block in blockchain
 // 时间戳
@@ -17,13 +16,12 @@ import (
 // 当前块哈希
 // 难度值
 type Block struct {
-	Timestamp int64
-	Transactions []*Transaction
+	Timestamp     int64
+	Transactions  []*Transaction
 	PrevBlockHash []byte
-	Hash []byte
-	Nonce int
+	Hash          []byte
+	Nonce         int
 }
-
 
 func (b *Block) Serialize() []byte {
 	var result bytes.Buffer
@@ -50,8 +48,7 @@ func DeserializeBlock(d []byte) *Block {
 	return &block
 }
 
-
-func (block *Block) HashBlock(nonce int) []byte{
+func (block *Block) HashBlock(nonce int) []byte {
 	data := bytes.Join(
 		[][]byte{
 			block.PrevBlockHash,
@@ -66,7 +63,6 @@ func (block *Block) HashBlock(nonce int) []byte{
 
 	return hash[:]
 }
-
 
 // NewBlock creates and returns Block
 func NewBlock(transactions []*Transaction, prevBlockHash []byte) *Block {
@@ -84,7 +80,6 @@ func NewBlock(transactions []*Transaction, prevBlockHash []byte) *Block {
 
 	return block
 }
-
 
 // NewGenesisBlock creates and returns Genesis Block
 func NewGenesisBlock(coinbase *Transaction) *Block {

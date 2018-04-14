@@ -1,8 +1,8 @@
 package min_framework
 
 import (
-	"math/big"
 	"bytes"
+	"math/big"
 )
 
 var b58Alphabet = []byte("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz")
