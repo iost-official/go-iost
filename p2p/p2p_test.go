@@ -2,12 +2,11 @@ package p2p
 
 import (
 	"fmt"
-	"p2p"
 	"testing"
 )
 
 func TestNetwork(t *testing.T) {
-	nn := p2p.NewNaiveNetwork()
+	nn := NewNaiveNetwork()
 	lis1, err := nn.Listen(11037)
 	if err != nil {
 		fmt.Println(err)
@@ -16,7 +15,7 @@ func TestNetwork(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	nn.Send(p2p.Request{
+	nn.Send(Request{
 		Time:    1,
 		From:    "test1",
 		To:      "test2",
