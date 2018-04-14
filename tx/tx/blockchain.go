@@ -3,9 +3,9 @@ package transaction
 import (
 	"encoding/hex"
 	"log"
-	"os"
 	"github.com/iost-official/prototype/iostdb"
 	"github.com/iost-official/prototype/tx/min_framework"
+	"github.com/iost-official/prototype/p2p"
 )
 
 
@@ -20,7 +20,7 @@ type BlockchainIterator struct {
 }
 
 // 改掉
-func (bc *Blockchain) MineBlock(transactions []*Transaction) {
+func (bc *Blockchain) MineBlock(transactions []*Transaction, nn *p2p.NaiveNetwork) {
 	var lastHash []byte
 
 	lastHash, err := bc.Db.Get([]byte("l"))
@@ -30,14 +30,22 @@ func (bc *Blockchain) MineBlock(transactions []*Transaction) {
 
 	newBlock := NewBlock(transactions, lastHash)
 
-	err = bc.Db.Put(newBlock.Hash, newBlock.Serialize())
+	/*err = bc.Db.Put(newBlock.Hash, newBlock.Serialize())
 	if err != nil {
 		log.Panic(err)
 	}
 	err = bc.Db.Put([]byte("l"), newBlock.Hash)
 	if err != nil {
 		log.Panic(err)
-	}
+	}*/
+
+	nn.Send(p2p.Request{
+		Time:    1,
+		From:    "test1",
+		To:      "test2",
+		ReqType: 1,
+		Body:    newBlock.Serialize(),
+	})
 
 	bc.tip = newBlock.Hash
 }
@@ -62,26 +70,26 @@ func (i *BlockchainIterator) Next() *Block {
 	return block
 }
 
-func dbExists() bool {
-	if _, err := os.Stat(min_framework.DbFile); os.IsNotExist(err) {
+func dbExists(db *iostdb.LDBDatabase) bool {
+	bo, err := db.Has([]byte("l"))
+	if err != nil || !bo {
 		return false
 	}
-
 	return true
 }
 
 // 创建一个有创世块的新链
-func NewBlockchain(address string) (*Blockchain, string) {
-	if dbExists() == false {
+func NewBlockchain(address string, db *iostdb.LDBDatabase) (*Blockchain, string) {
+	if dbExists(db) == false {
 		return nil, "No existing blockchain found. Create one first.\n"
 	}
 	var tip []byte
-	db, err := iostdb.NewLDBDatabase(min_framework.DbFile, 0, 0)
+	/*db, err := iostdb.NewLDBDatabase(min_framework.DbFile, 0, 0)
 	if err != nil {
 		log.Panic(err)
-	}
+	}*/
 
-	tip, err = db.Get([]byte("l"))
+	tip, err := db.Get([]byte("l"))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -93,28 +101,36 @@ func NewBlockchain(address string) (*Blockchain, string) {
 
 // CreateBlockchain 创建一个新的区块链数据库
 // address 用来接收挖出创世块的奖励
-func CreateBlockchain(address string) (*Blockchain, string) {
-	if dbExists() {
+func CreateBlockchain(address string, db *iostdb.LDBDatabase, nn *p2p.NaiveNetwork) (*Blockchain, string) {
+	if dbExists(db) {
 		return nil, "Blockchain already exists.\n"
 	}
 
 	var tip []byte
-	db, err := iostdb.NewLDBDatabase(min_framework.DbFile, 0, 0)
+	/*db, err := iostdb.NewLDBDatabase(min_framework.DbFile, 0, 0)
 	if err != nil {
 		log.Panic(err)
-	}
+	}*/
 
 	cbtx := NewCoinbaseTX(address, min_framework.GenesisCoinbaseData)
 	genesis := NewGenesisBlock(cbtx)
 
-	err = db.Put(genesis.Hash, genesis.Serialize())
+	/*err := db.Put(genesis.Hash, genesis.Serialize())
 	if err != nil {
 		log.Panic(err)
 	}
 	err = db.Put([]byte("l"), genesis.Hash)
 	if err != nil {
 		log.Panic(err)
-	}
+	}*/
+
+	nn.Send(p2p.Request{
+		Time:    1,
+		From:    "test1",
+		To:      "test2",
+		ReqType: 1,
+		Body:    genesis.Serialize(),
+	})
 
 	tip = genesis.Hash
 	bc := Blockchain{tip, db}
