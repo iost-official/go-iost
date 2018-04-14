@@ -3,9 +3,9 @@ package transaction
 import (
 	"bytes"
 	"crypto/sha256"
+	"github.com/iost-official/prototype/tx/min_framework"
 	"math"
 	"math/big"
-	"github.com/iost-official/prototype/tx/min_framework"
 )
 
 var (

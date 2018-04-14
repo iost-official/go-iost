@@ -2,21 +2,20 @@ package transaction
 
 import (
 	"encoding/hex"
-	"log"
-	"os"
 	"github.com/iost-official/prototype/iostdb"
 	"github.com/iost-official/prototype/tx/min_framework"
+	"log"
+	"os"
 )
-
 
 type Blockchain struct {
 	tip []byte
-	Db *iostdb.LDBDatabase
+	Db  *iostdb.LDBDatabase
 }
 
 type BlockchainIterator struct {
 	currentHash []byte
-	Db *iostdb.LDBDatabase
+	Db          *iostdb.LDBDatabase
 }
 
 // 改掉
@@ -120,7 +119,6 @@ func CreateBlockchain(address string) (*Blockchain, string) {
 	bc := Blockchain{tip, db}
 	return &bc, ""
 }
-
 
 // 暂缓修改
 // FindUnspentTransactions 找到未花费输出的交易
