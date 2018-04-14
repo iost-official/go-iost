@@ -1,10 +1,10 @@
 package core
 
 import (
-	"github.com/gomodule/redigo/redis"
-	"sync"
 	"bytes"
 	"fmt"
+	"github.com/gomodule/redigo/redis"
+	"sync"
 )
 
 //go:generate mockgen -destination mocks/mock_statepool.go -package core_mock -source utxo_pool.go -imports .=github.com/iost-official/prototype/core
@@ -23,11 +23,8 @@ type UTXOPool interface {
 
 func BuildStatePoolCore(chain BlockChain) *StatePoolCore {
 	var spc StatePoolCore
-	spc.cli, _ = redis.Dial(Conn, DBAddr)
-}
-
-type StatePoolCore struct {
-	cli redis.Conn
+	spc.cli, _ = redis.Dial(Conn, DBAddr) // TODO : rebuild pool by block chain
+	return &spc
 }
 
 type StatePoolImpl struct {
@@ -40,7 +37,7 @@ type StatePoolImpl struct {
 var pCore *StatePoolCore
 var once sync.Once
 
-func NewUtxoPool(chain BlockChain) StatePoolImpl {
+func NewUtxoPool(chain BlockChain) UTXOPool {
 	if pCore == nil {
 		once.Do(func() {
 			pCore = BuildStatePoolCore(chain)
@@ -52,7 +49,7 @@ func NewUtxoPool(chain BlockChain) StatePoolImpl {
 		delList:       make([][]byte, 0),
 		base:          nil,
 	}
-	return spi
+	return &spi
 }
 
 const (
@@ -82,7 +79,7 @@ func (sp *StatePoolImpl) Find(stateHash []byte) (UTXO, error) {
 		return sp.base.Find(stateHash)
 	}
 
-	return UTXO{}, fmt.Errorf("not found")
+	return sp.StatePoolCore.Find(stateHash)
 
 	//reply, err := redis.Values(sp.cli.Do("HMGET", stateHash, "value", "script", "tx_hash"))
 	//if err != nil {
@@ -108,7 +105,7 @@ func (sp *StatePoolImpl) Transact(block *Block) error {
 	}
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
-			err = sp.Del(in.StateHash)
+			err = sp.Del(in.UTXOHash)
 			if err != nil {
 				return err
 			}
@@ -129,20 +126,11 @@ func (sp *StatePoolImpl) Flush() error {
 	}
 
 	for _, h := range sp.delList {
-		_, err := sp.cli.Do("DEL", h)
-		if err != nil {
-			return err
-		}
+		sp.StatePoolCore.Del(h)
 	}
 
 	for _, u := range sp.addList {
-		_, err := sp.cli.Do("HMSET", u.Hash(),
-			"value", u.Value,
-			"script", u.Script,
-			"tx_hash", u.BirthTxHash)
-		if err != nil {
-			return err
-		}
+		sp.StatePoolCore.Add(u)
 	}
 
 	sp.base = nil
@@ -153,10 +141,48 @@ func (sp *StatePoolImpl) Flush() error {
 
 func (sp *StatePoolImpl) Copy() UTXOPool {
 	spi := StatePoolImpl{
-		base: sp,
-		addList: make([]UTXO, 0),
-		delList: make([][]byte, 0),
+		base:          sp,
+		addList:       make([]UTXO, 0),
+		delList:       make([][]byte, 0),
 		StatePoolCore: sp.StatePoolCore,
 	}
 	return &spi
+}
+
+type StatePoolCore struct {
+	cli redis.Conn
+}
+
+func (spc *StatePoolCore) Add(state UTXO) error {
+	_, err := spc.cli.Do("HMSET", state.Hash(),
+		"value", state.Value,
+		"script", state.Script,
+		"tx_hash", state.BirthTxHash)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (spc *StatePoolCore) Find(stateHash []byte) (UTXO, error) {
+	s := UTXO{}
+	reply, err := redis.Values(spc.cli.Do("HMGET", stateHash, "value", "script", "tx_hash"))
+	if err != nil {
+		return s, err
+	}
+	_, err = redis.Scan(reply, &s.Value, &s.Script, s.BirthTxHash)
+	return s, err
+
+}
+
+func (spc *StatePoolCore) Del(StateHash []byte) error {
+	_, err := spc.cli.Do("DEL", StateHash)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (spc *StatePoolCore) Transact(block *Block) error {
+	return nil
 }

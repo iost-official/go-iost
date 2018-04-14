@@ -7,7 +7,7 @@ struct UTXO  {
 struct TxInput {
    TxHash []byte
    UnlockScript string
-   StateHash []byte
+   UTXOHash []byte
 }
 
 struct Tx {

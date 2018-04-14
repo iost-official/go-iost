@@ -1,8 +1,8 @@
 package pow
 
 import (
-	"github.com/iost-official/prototype/core"
 	"fmt"
+	"github.com/iost-official/prototype/core"
 )
 
 const (
@@ -26,7 +26,7 @@ func (r *Recorder) Add(tx core.Tx) error {
 	if r.pools[last].Size() > 100 {
 		txp := core.NewTxPool()
 		r.pools = append(r.pools, txp)
-		last ++
+		last++
 	}
 	r.pools[last].Add(tx)
 	return nil
