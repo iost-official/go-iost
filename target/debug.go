@@ -9,6 +9,7 @@ func main() {
 	var cli Console
 	cli.Init(
 		Help(),
+		Connect(),
 		Createblockchain(),
 		Getbalance(),
 		Printchain(),

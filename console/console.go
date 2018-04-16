@@ -5,12 +5,21 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"github.com/iost-official/prototype/p2p"
+	"github.com/iost-official/prototype/iostdb"
+	"sync"
 )
 
 type Console struct {
 	cmds    []Cmd
 	running bool
 }
+
+var Wg sync.WaitGroup
+var Done = make(chan struct{})
+var Nn *p2p.NaiveNetwork
+var Db *iostdb.LDBDatabase
+
 
 func (c *Console) Init(cmds ...Cmd) error {
 	c.cmds = make([]Cmd, 0)
@@ -23,7 +32,6 @@ func (c *Console) Init(cmds ...Cmd) error {
 
 func (c *Console) RegisterCmd(cmd Cmd) {
 	c.cmds = append(c.cmds, cmd)
-
 }
 
 func (c *Console) Listen(prompt string) {

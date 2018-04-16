@@ -2,10 +2,10 @@ package transaction
 
 import (
 	"encoding/hex"
-	"github.com/iost-official/prototype/iostdb"
-	"github.com/iost-official/prototype/p2p"
-	"github.com/iost-official/prototype/tx/min_framework"
 	"log"
+	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/tx/min_framework"
+	"github.com/iost-official/prototype/p2p"
 )
 
 type Blockchain struct {

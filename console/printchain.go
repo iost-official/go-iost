@@ -10,31 +10,31 @@ func Printchain() Cmd {
 		Name:  "printchain",
 		Usage: `printchain - Print all the blocks of the blockchain`,
 		Exec: func(host *Console, args []string) string {
-			bc, toPrint := transaction.NewBlockchain("")
+			bc, to_print := transaction.NewBlockchain("", Db)
 
 			if bc == nil {
-				return toPrint
+				return to_print
 			}
 
-			defer bc.Db.Close()
+			//defer bc.Db.Close()
 
 			bci := bc.Iterator()
 
 			for {
 				block := bci.Next()
 
-				toPrint += fmt.Sprintf("Prev hash: %x\n", block.PrevBlockHash)
-				toPrint += fmt.Sprintf("Hash: %x\n", block.Hash)
-				for _, tx := range block.Transactions {
-					toPrint += tx.String()
+				to_print += fmt.Sprintf("Prev hash: %x\n", block.PrevBlockHash)
+				to_print += fmt.Sprintf("Hash: %x\n", block.Hash)
+				for _, tx := range(block.Transactions) {
+					to_print += tx.String()
 				}
-				toPrint += "\n"
+				to_print += "\n"
 
 				if len(block.PrevBlockHash) == 0 {
 					break
 				}
 			}
-			return toPrint
+			return to_print
 		},
 	}
 }

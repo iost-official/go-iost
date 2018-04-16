@@ -20,23 +20,23 @@ func Send() Cmd {
 				return "Invalid arguments!\n"
 			}
 
-			bc, toPrint := transaction.NewBlockchain(from)
+			bc, to_print := transaction.NewBlockchain(from, Db)
 
 			if bc == nil {
-				return toPrint
+				return to_print
 			}
 
-			defer bc.Db.Close()
+			//defer bc.Db.Close()
 
-			tx, toPrint := transaction.NewUTXOTransaction(from, to, amount, bc)
+			tx, to_print := transaction.NewUTXOTransaction(from, to, amount, bc)
 
 			if tx == nil {
-				return toPrint
+				return to_print
 			}
 
-			bc.MineBlock([]*transaction.Transaction{tx})
-			toPrint += "\nSuccess!\n"
-			return toPrint
+			bc.MineBlock([]*transaction.Transaction{tx}, Nn)
+			to_print += "\nSuccess!\n"
+			return to_print
 		},
 	}
 }
