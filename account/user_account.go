@@ -1,8 +1,12 @@
 package account
 
-type UserAccount struct {
-  addr UserAddress
-  nonce uint32
-  balance uint64
-  //current_utxo UTXOPool
+const (
+  UserAccount = iota
+  SuperAccount
+)
+
+type Account struct {
+  priority int
+  addr Address
+  // todo: contract_code, storage_db, current_state
 }
