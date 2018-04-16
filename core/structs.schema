@@ -23,7 +23,7 @@ struct TxPoolRaw {
 }
 
 struct BlockHead {
-   Version int8
+   Version int32
    SuperHash []byte
    TreeHash []byte
    Info []byte

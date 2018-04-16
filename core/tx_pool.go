@@ -6,20 +6,15 @@ import (
 	"github.com/iost-official/prototype/common"
 )
 
-type Serializable interface {
-	Encode() []byte
-	Decode([]byte) error
-	Hash() []byte
-}
-
 //go:generate mockgen -destination mocks/mock_tx_pool.go -package core_mock github.com/iost-official/prototype/core TxPool
+
+// Tx池，因为需要装入Block中所以需要serializable
 type TxPool interface {
 	Add(tx Tx) error
 	Del(tx Tx) error
 	Find(txHash []byte) (Tx, error)
 	GetSlice() ([]Tx, error)
-	Has(txHash []byte) (bool, error)
-	Size() int
+	Has(txHash []byte) (bool, error) // 额外给出has参数，在有merkle tree之后可以做一个比find更快的存在性检查
 	Serializable
 }
 
