@@ -1,4 +1,4 @@
-package pow
+package p2p
 
 import (
 	"fmt"
@@ -27,6 +27,7 @@ type Router interface {
 	Stop()
 	Send(req core.Request)
 	Broadcast(req core.Request)
+	Download (req core.Request) chan []byte
 }
 
 func RouterFactory(target string) (Router, error) {
@@ -103,7 +104,6 @@ func (r *RouterImpl) Stop() {
 func (r *RouterImpl) Send(req core.Request) {
 	r.base.Send(req)
 }
-
 func (r *RouterImpl) Broadcast(req core.Request) {
 	for _, to := range r.knownMember {
 		req.To = to
@@ -112,6 +112,9 @@ func (r *RouterImpl) Broadcast(req core.Request) {
 			r.Send(req)
 		}()
 	}
+}
+func (r *RouterImpl) Download (req core.Request) chan []byte{
+	return nil // TODO 实现
 }
 
 /*
