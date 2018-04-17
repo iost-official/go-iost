@@ -9,6 +9,7 @@ import (
 	"os"
 	"github.com/iost-official/prototype/tx/min_framework"
 	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/core"
 )
 
 func Connect() Cmd {
@@ -38,7 +39,7 @@ func Connect() Cmd {
 		}
 
 		Wg.Add(1)
-		go func(<-chan p2p.Request, ) {
+		go func(<-chan core.Request, ) {
 			defer Wg.Done()
 			for {
 				select{

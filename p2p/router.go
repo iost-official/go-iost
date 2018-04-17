@@ -14,10 +14,6 @@ const (
 	ReqNewBlock
 )
 
-// 节点发现
-// 维护peerSet
-// 底层send数据
-
 //go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Router
 
 //Router Forwarding specific request to other components and sending messages for them
@@ -180,9 +176,9 @@ func memberContain(a string, c []core.Member) bool {
 	return false
 }
 
-func reqTypeContain(a int, c []ReqType) bool {
+func reqTypeContain(a int32, c []ReqType) bool {
 	for _, t := range c {
-		if int(t) == a {
+		if int32(t) == a {
 			return true
 		}
 	}

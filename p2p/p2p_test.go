@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 	"github.com/magiconair/properties/assert"
+	"github.com/iost-official/prototype/core"
 )
 
 func TestNetwork(t *testing.T) {
@@ -16,7 +17,7 @@ func TestNetwork(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	req := Request{
+	req := core.Request{
 		Time:    1,
 		From:    "test1",
 		To:      "test2",
@@ -24,7 +25,7 @@ func TestNetwork(t *testing.T) {
 		Body:    []byte{1, 1, 2},
 	}
 	if err := nn.Send(req); err != nil {
-		t.Log("send request encounter err: %v\n", err)
+		t.Log("send request encounter err: %+v\n", err)
 	}
 
 	message := <-lis1

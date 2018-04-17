@@ -6,6 +6,7 @@ import (
 	"github.com/iost-official/prototype/iostdb"
 	"github.com/iost-official/prototype/tx/min_framework"
 	"github.com/iost-official/prototype/p2p"
+	"github.com/iost-official/prototype/core"
 )
 
 type Blockchain struct {
@@ -38,7 +39,7 @@ func (bc *Blockchain) MineBlock(transactions []*Transaction, nn *p2p.NaiveNetwor
 		log.Panic(err)
 	}*/
 
-	nn.Send(p2p.Request{
+	nn.Send(core.Request{
 		Time:    1,
 		From:    "test1",
 		To:      "test2",
@@ -123,7 +124,7 @@ func CreateBlockchain(address string, db *iostdb.LDBDatabase, nn *p2p.NaiveNetwo
 		log.Panic(err)
 	}*/
 
-	nn.Send(p2p.Request{
+	nn.Send(core.Request{
 		Time:    1,
 		From:    "test1",
 		To:      "test2",

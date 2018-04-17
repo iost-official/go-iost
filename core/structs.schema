@@ -34,3 +34,11 @@ struct Block {
    Head      BlockHead
    Content   []byte
 }
+
+struct Request {
+	Time    int64
+	From    string
+	To      string
+	ReqType int32
+	Body    []byte
+}

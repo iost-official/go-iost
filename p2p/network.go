@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/core"
 )
 
 type RequestHead struct {
@@ -28,8 +29,8 @@ type Response struct {
 
 //Network 最基本网络的模块API，之后gossip协议，虚拟的网络延迟都可以在模块内部实现
 type Network interface {
-	Send(req Request)
-	Listen(port uint16) (<-chan Request, error)
+	Send(req core.Request)
+	Listen(port uint16) (<-chan core.Request, error)
 	Close(port uint16) error
 }
 
@@ -60,7 +61,7 @@ func (nn *NaiveNetwork) Close(port uint16) error {
 	return nn.listen.Close()
 }
 
-func (nn *NaiveNetwork) Send(req Request) error {
+func (nn *NaiveNetwork) Send(req core.Request) error {
 	buf, err := req.Marshal(nil)
 	if err != nil {
 		return err
@@ -92,7 +93,7 @@ func (nn *NaiveNetwork) Send(req Request) error {
 	return nil
 }
 
-func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {
+func (nn *NaiveNetwork) Listen(port uint16) (<-chan core.Request, error) {
 	var err error
 	nn.listen, err = net.Listen("tcp", ":"+strconv.Itoa(int(port)))
 	if err != nil {
@@ -100,7 +101,7 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {
 		return nil, err
 	}
 	fmt.Println("Listening on " + ":" + strconv.Itoa(int(port)))
-	req := make(chan Request)
+	req := make(chan core.Request)
 
 	conn := make(chan net.Conn)
 
@@ -147,7 +148,7 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {
 					if err != nil {
 						fmt.Println("Error reading request body:", err.Error())
 					}
-					var received Request
+					var received core.Request
 					received.Unmarshal(_buf)
 					//fmt.Printf("got %+v %+v\n", received, port)
 					req <- received
@@ -161,3 +162,4 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {
 	}()
 	return req, nil
 }
+
