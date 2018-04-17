@@ -8,7 +8,11 @@ import (
 )
 
 func TestNetwork(t *testing.T) {
-	nn := NewNaiveNetwork()
+	nn, err := NewNaiveNetwork(3)
+	if err != nil {
+		t.Errorf("NewNaiveNetwork encounter err %+v", err)
+		return
+	}
 	lis1, err := nn.Listen(11037)
 	if err != nil {
 		fmt.Println(err)
@@ -24,7 +28,7 @@ func TestNetwork(t *testing.T) {
 		ReqType: 1,
 		Body:    []byte{1, 1, 2},
 	}
-	if err := nn.Send(req); err != nil {
+	if err := nn.Broadcast(req); err != nil {
 		t.Log("send request encounter err: %+v\n", err)
 	}
 

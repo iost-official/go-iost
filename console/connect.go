@@ -32,7 +32,10 @@ func Connect() Cmd {
 			return "Can't open database"
 		}
 
-		Nn = p2p.NewNaiveNetwork()
+		Nn,err = p2p.NewNaiveNetwork(3)
+		if err != nil {
+			return fmt.Sprint(err) + "\n"
+		}
 		lis, err := Nn.Listen(uint16(port))
 		if err != nil {
 			return fmt.Sprint(err) + "\n"

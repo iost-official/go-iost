@@ -92,9 +92,11 @@ func (r *RouterImpl) receiveLoop() {
 func (r *RouterImpl) Run() {
 	go r.receiveLoop()
 }
+
 func (r *RouterImpl) Stop() {
 	r.ExitSignal <- true
 }
+
 func (r *RouterImpl) Send(req core.Request) {
 	r.base.Send(req)
 }

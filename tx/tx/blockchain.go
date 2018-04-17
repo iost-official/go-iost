@@ -39,7 +39,7 @@ func (bc *Blockchain) MineBlock(transactions []*Transaction, nn *p2p.NaiveNetwor
 		log.Panic(err)
 	}*/
 
-	nn.Send(core.Request{
+	nn.Broadcast(core.Request{
 		Time:    1,
 		From:    "test1",
 		To:      "test2",
@@ -124,7 +124,7 @@ func CreateBlockchain(address string, db *iostdb.LDBDatabase, nn *p2p.NaiveNetwo
 		log.Panic(err)
 	}*/
 
-	nn.Send(core.Request{
+	nn.Broadcast(core.Request{
 		Time:    1,
 		From:    "test1",
 		To:      "test2",

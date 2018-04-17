@@ -29,7 +29,7 @@ type Response struct {
 
 //Network 最基本网络的模块API，之后gossip协议，虚拟的网络延迟都可以在模块内部实现
 type Network interface {
-	Send(req core.Request)
+	Broadcast(req core.Request)
 	Listen(port uint16) (<-chan core.Request, error)
 	Close(port uint16) error
 }
@@ -37,22 +37,29 @@ type Network interface {
 type NaiveNetwork struct {
 	peerList *iostdb.LDBDatabase
 	listen   net.Listener
+	conn     net.Conn
 	done     bool
 }
 
-func NewNaiveNetwork() *NaiveNetwork {
-	dirname, _ := ioutil.TempDir(os.TempDir(), "p2p_test_")
-	db, _ := iostdb.NewLDBDatabase(dirname, 0, 0)
+//NewNaiveNetwork create n peers
+func NewNaiveNetwork(n int) (*NaiveNetwork, error) {
+	dirname, err := ioutil.TempDir(os.TempDir(), "p2p_test_")
+	if err != nil {
+		return nil, err
+	}
+	db, err := iostdb.NewLDBDatabase(dirname, 0, 0)
+	if err != nil {
+		return nil, err
+	}
 	nn := &NaiveNetwork{
-		//peerList: []string{"1.1.1.1", "2.2.2.2"},
 		peerList: db,
 		listen:   nil,
 		done:     false,
 	}
-	nn.peerList.Put([]byte("1"), []byte("127.0.0.1:11037"))
-	nn.peerList.Put([]byte("2"), []byte("127.0.0.1:11038"))
-	nn.peerList.Put([]byte("3"), []byte("127.0.0.1:11039"))
-	return nn
+	for i:= 1; i <= n; i++ {
+		nn.peerList.Put([]byte(string(i)), []byte("127.0.0.1:" + strconv.Itoa(11036 + i)))
+	}
+	return nn,nil
 }
 
 func (nn *NaiveNetwork) Close(port uint16) error {
@@ -61,44 +68,47 @@ func (nn *NaiveNetwork) Close(port uint16) error {
 	return nn.listen.Close()
 }
 
-func (nn *NaiveNetwork) Send(req core.Request) error {
-	buf, err := req.Marshal(nil)
-	if err != nil {
-		return err
-	}
-
-	length := int32(len(buf))
-	int32buf := new(bytes.Buffer)
-
-	if err = binary.Write(int32buf, binary.BigEndian, length); err != nil {
-		return err
-	}
-	for i := 1; i < 4; i++ {
-		addr, _ := nn.peerList.Get([]byte(strconv.Itoa(i)))
+func (nn *NaiveNetwork) Broadcast(req core.Request) error {
+	iter := nn.peerList.NewIterator()
+	for iter.Next() {
+		addr, _ := nn.peerList.Get([]byte(string(iter.Key())))
 		conn, err := net.Dial("tcp", string(addr))
 		if err != nil {
 			fmt.Errorf("dialing to %v encounter err : %v\n", addr, err.Error())
 			continue
 		}
-		defer conn.Close()
-		if _, err = conn.Write(int32buf.Bytes()); err != nil {
-			fmt.Errorf("sending request head encounter err :%v\n", err.Error())
-			continue
-		}
-		if _, err = conn.Write(buf[:]); err != nil {
-			fmt.Errorf("sending request body encounter err : %v\n", err.Error())
-			continue
-		}
+		nn.conn = conn
+		go nn.Send(req)
 	}
 	return nil
+}
+
+func (nn *NaiveNetwork) Send(req core.Request) {
+	if nn.conn == nil {
+		fmt.Errorf("no connect in network")
+		return
+	}
+	defer nn.conn.Close()
+
+	reqHeadBytes, reqBodyBytes, err := reqToBytes(req)
+	if err !=nil {
+		fmt.Errorf("reqToBytes encounter err : %v\n", err.Error())
+		return
+	}
+	if _, err = nn.conn.Write(reqHeadBytes); err != nil {
+		fmt.Errorf("sending request head encounter err :%v\n", err.Error())
+	}
+	if _, err = nn.conn.Write(reqBodyBytes[:]); err != nil {
+		fmt.Errorf("sending request body encounter err : %v\n", err.Error())
+	}
+	return
 }
 
 func (nn *NaiveNetwork) Listen(port uint16) (<-chan core.Request, error) {
 	var err error
 	nn.listen, err = net.Listen("tcp", ":"+strconv.Itoa(int(port)))
 	if err != nil {
-		fmt.Println("Error listening:", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("Error listening: %v", err.Error())
 	}
 	fmt.Println("Listening on " + ":" + strconv.Itoa(int(port)))
 	req := make(chan core.Request)
@@ -108,9 +118,7 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan core.Request, error) {
 	// For every listener spawn the following routine
 	go func(l net.Listener) {
 		for {
-			//fmt.Println("new conn1", port)
 			c, err := l.Accept()
-			//fmt.Println("new conn", port)
 			if err != nil {
 				// handle error
 				conn <- nil
@@ -139,14 +147,14 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan core.Request, error) {
 					// Read the incoming connection into the buffer.
 					_, err := conn.Read(buf)
 					if err != nil {
-						fmt.Println("Error reading request head:", err.Error())
+						fmt.Errorf("Error reading request head:%v", err.Error())
 					}
 					length := binary.BigEndian.Uint32(buf)
 					_buf := make([]byte, length)
 					_, err = conn.Read(_buf)
 
 					if err != nil {
-						fmt.Println("Error reading request body:", err.Error())
+						fmt.Errorf("Error reading request body:%v", err.Error())
 					}
 					var received core.Request
 					received.Unmarshal(_buf)
@@ -161,5 +169,17 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan core.Request, error) {
 		}
 	}()
 	return req, nil
+}
+
+func reqToBytes(req core.Request) ( []byte,  []byte, error) {
+	reqBodyBytes, err := req.Marshal(nil)
+	if err != nil {
+		return nil, reqBodyBytes, err
+	}
+	reqHead := new(bytes.Buffer)
+	if err := binary.Write(reqHead, binary.BigEndian, int32(len(reqBodyBytes))); err != nil {
+		return nil, reqBodyBytes, err
+	}
+	return reqHead.Bytes(), reqBodyBytes, nil
 }
 
