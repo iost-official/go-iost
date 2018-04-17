@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/iost-official/prototype/iostdb"
 	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/iost-official/prototype/iostdb"
 )
 
 type RequestHead struct {
@@ -25,7 +26,7 @@ type Response struct {
 	Description string
 }
 
-// 最基本网络的模块API，之后gossip协议，虚拟的网络延迟都可以在模块内部实现
+//Network 最基本网络的模块API，之后gossip协议，虚拟的网络延迟都可以在模块内部实现
 type Network interface {
 	Send(req Request)
 	Listen(port uint16) (<-chan Request, error)
@@ -59,38 +60,36 @@ func (nn *NaiveNetwork) Close(port uint16) error {
 	return nn.listen.Close()
 }
 
-func (nn *NaiveNetwork) Send(req Request) {
+func (nn *NaiveNetwork) Send(req Request) error {
 	buf, err := req.Marshal(nil)
 	if err != nil {
-		fmt.Println("Error marshal body:", err.Error())
+		return err
 	}
 
-	var length int32 = int32(len(buf))
+	length := int32(len(buf))
 	int32buf := new(bytes.Buffer)
 
 	if err = binary.Write(int32buf, binary.BigEndian, length); err != nil {
-		fmt.Println(err)
+		return err
 	}
 	for i := 1; i < 4; i++ {
 		addr, _ := nn.peerList.Get([]byte(strconv.Itoa(i)))
 		conn, err := net.Dial("tcp", string(addr))
-		fmt.Println(string(addr))
-		defer conn.Close()
 		if err != nil {
-			fmt.Println("Error dialing to ", addr, err.Error())
+			fmt.Errorf("dialing to %v encounter err : %v\n", addr, err.Error())
 			continue
 		}
+		defer conn.Close()
 		if _, err = conn.Write(int32buf.Bytes()); err != nil {
-			fmt.Println("Error sending request head:", err.Error())
+			fmt.Errorf("sending request head encounter err :%v\n", err.Error())
 			continue
 		}
-		//var cnt int
 		if _, err = conn.Write(buf[:]); err != nil {
-			fmt.Println("Error sending request body:", err.Error())
+			fmt.Errorf("sending request body encounter err : %v\n", err.Error())
 			continue
 		}
-		//fmt.Println("writed", cnt)
 	}
+	return nil
 }
 
 func (nn *NaiveNetwork) Listen(port uint16) (<-chan Request, error) {

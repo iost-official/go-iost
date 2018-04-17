@@ -2,12 +2,11 @@ package p2p
 
 import (
 	"fmt"
+
 	"github.com/iost-official/prototype/core"
 )
 
-/*
-Marked request types using by protocol
-*/
+//ReqType Marked request types using by protocol
 type ReqType int
 
 const (
@@ -15,11 +14,13 @@ const (
 	ReqNewBlock
 )
 
+// 节点发现
+// 维护peerSet
+// 底层send数据
+
 //go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Router
 
-/*
-Forwarding specific request to other components and sending messages for them
-*/
+//Router Forwarding specific request to other components and sending messages for them
 type Router interface {
 	Init(base core.Network, port uint16) error
 	FilteredChan(filter Filter) (chan core.Request, error)
@@ -27,7 +28,7 @@ type Router interface {
 	Stop()
 	Send(req core.Request)
 	Broadcast(req core.Request)
-	Download (req core.Request) chan []byte
+	Download(req core.Request) chan []byte
 }
 
 func RouterFactory(target string) (Router, error) {
@@ -67,9 +68,7 @@ func (r *RouterImpl) Init(base core.Network, port uint16) error {
 	return nil
 }
 
-/*
-Get filtered request channel
-*/
+//FilteredChan Get filtered request channel
 func (r *RouterImpl) FilteredChan(filter Filter) (chan core.Request, error) {
 	chReq := make(chan core.Request)
 
@@ -96,7 +95,6 @@ func (r *RouterImpl) receiveLoop() {
 
 func (r *RouterImpl) Run() {
 	go r.receiveLoop()
-
 }
 func (r *RouterImpl) Stop() {
 	r.ExitSignal <- true
@@ -104,6 +102,8 @@ func (r *RouterImpl) Stop() {
 func (r *RouterImpl) Send(req core.Request) {
 	r.base.Send(req)
 }
+
+// Broadcast to all known members
 func (r *RouterImpl) Broadcast(req core.Request) {
 	for _, to := range r.knownMember {
 		req.To = to
@@ -113,21 +113,17 @@ func (r *RouterImpl) Broadcast(req core.Request) {
 		}()
 	}
 }
-func (r *RouterImpl) Download (req core.Request) chan []byte{
+
+// Download blocks from a remote peer
+func (r *RouterImpl) Download(req core.Request) chan []byte {
 	return nil // TODO 实现
 }
 
-/*
-The filter used by Router
-
-Rulers :
-
-1. if both white list and black list are nil, this filter is all-pass
-
-2. if one of those is not nil, filter as it is
-
-3. if both of those list are not nil, filter as white list
-*/
+//Filter The filter used by Router
+// Rulers :
+//     1. if both white list and black list are nil, this filter is all-pass
+//     2. if one of those is not nil, filter as it is
+//     3. if both of those list are not nil, filter as white list
 type Filter struct {
 	WhiteList  []core.Member
 	BlackList  []core.Member

@@ -3,6 +3,7 @@ package p2p
 import (
 	"fmt"
 	"testing"
+	"github.com/magiconair/properties/assert"
 )
 
 func TestNetwork(t *testing.T) {
@@ -15,17 +16,20 @@ func TestNetwork(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	nn.Send(Request{
+	req := Request{
 		Time:    1,
 		From:    "test1",
 		To:      "test2",
 		ReqType: 1,
 		Body:    []byte{1, 1, 2},
-	})
+	}
+	if err := nn.Send(req); err != nil {
+		t.Log("send request encounter err: %v\n", err)
+	}
 
 	message := <-lis1
-	fmt.Printf("%+v\n", message)
+	assert.Equal(t, message, req)
 
 	message = <-lis2
-	fmt.Printf("%+v\n", message)
+	assert.Equal(t, message, req)
 }
