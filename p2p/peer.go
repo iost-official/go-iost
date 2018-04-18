@@ -1,15 +1,16 @@
 package p2p
 
 import (
-	"github.com/iost-official/prototype/common/mclock"
-	"github.com/iost-official/prototype/event"
-	"github.com/iost-official/prototype/p2p/discover"
 	"io"
 	"log"
 	"os"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/iost-official/prototype/common/mclock"
+	"github.com/iost-official/prototype/event"
+	"github.com/iost-official/prototype/p2p/discover"
 )
 
 const (
@@ -21,7 +22,8 @@ const (
 )
 
 type Peer struct {
-	rw       *conn
+	rw       *NetworkImpl
+	to       *discover.Node
 	running  map[string]*protoRW
 	log      log.Logger
 	created  mclock.AbsTime
@@ -68,11 +70,6 @@ type protoHandshake struct {
 	Caps       []Cap
 	ListenPort uint64
 	ID         discover.NodeID
-
-	// Ignore additional fields (for forward compatibility).
-
-	//Rest []rlp.RawValue `rlp:"tail"`
-	//Recursive Length Prefix
 }
 
 func (p *Peer) Disconnect(reason DiscReason) {
@@ -104,18 +101,50 @@ Outer:
 	}
 	return result
 }
-func newPeer(conn *conn, protocols []Protocol) *Peer {
-	protomap := matchProtocols(protocols, conn.caps, conn)
+func newPeer(conn *NetworkImpl, dest *discover.Node) *Peer {
 	p := &Peer{
-		rw:       conn,
-		running:  protomap,
-		log:      *log.New(os.Stderr, "", 0), //TODO: 写专门的logger
-		created:  mclock.Now(),
-		wg:       sync.WaitGroup{},
-		protoErr: make(chan error, len(protomap)+1),
-		closed:   make(chan struct{}),
-		disc:     make(chan DiscReason),
-		events:   nil,
+		rw:      conn,
+		to:      dest,
+		running: nil,
+		log:     *log.New(os.Stderr, "", 0), //TODO: 写专门的logger
+		created: mclock.Now(),
+		wg:      sync.WaitGroup{},
+		closed:  make(chan struct{}),
+		disc:    make(chan DiscReason),
+		events:  nil,
 	}
 	return p
+}
+
+// peerSet represents the collection of active peers
+type peerSet struct {
+	peers  map[string]*Peer
+	lock   sync.RWMutex
+	closed bool
+}
+
+func (ps *peerSet) Get(nodeId string) *Peer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+	if ps.peers == nil {
+		return nil
+	}
+	return ps.peers[nodeId]
+}
+
+func (ps *peerSet) Set(nodeId string, p *Peer) {
+	ps.lock.Lock()
+	defer ps.lock.Unlock()
+	if ps.peers == nil {
+		ps.peers = make(map[string]*Peer)
+	}
+	ps.peers[nodeId] = p
+	return
+}
+
+func (ps *peerSet) Remove(nodeId string) {
+	ps.lock.Lock()
+	defer ps.lock.Unlock()
+	delete(ps.peers, nodeId)
+	return
 }
