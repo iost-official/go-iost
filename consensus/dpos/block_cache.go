@@ -1,4 +1,4 @@
-package pow
+package dpos
 
 import (
 	"bytes"
