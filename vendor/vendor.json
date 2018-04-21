@@ -166,6 +166,12 @@
 			"revisionTime": "2018-02-20T23:01:11Z"
 		},
 		{
+			"checksumSHA1": "xVQV61RmXTYef0JBvKVo0EUxlzg=",
+			"path": "github.com/mkmueller/aes256",
+			"revision": "1ce9e9b3f91a55d93f1fe9d208450075a4c748e6",
+			"revisionTime": "2017-11-12T01:59:46Z"
+		},
+		{
 			"checksumSHA1": "qF0v8XQ53MGp26VQBaIu1mpfb14=",
 			"path": "github.com/pelletier/go-toml",
 			"revision": "66540cf1fcd2c3aee6f6787dfa32a6ae9a870f12",

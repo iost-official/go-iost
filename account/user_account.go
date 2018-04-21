@@ -1,12 +1,12 @@
 package account
 
-const (
-  UserAccount = iota
-  SuperAccount
+import (
+  "github.com/iost-official/prototype/account/info"
 )
 
-type Account struct {
-  priority int
-  addr Address
-  // todo: contract_code, storage_db, current_state
+type UserAccount struct {
+  addr *Address
+  balance *info.UserBalance
+  nonce *info.UserNonce
+  // todo: contract_code, storage_db
 }
