@@ -3,22 +3,8 @@ package dpos
 import (
 	"github.com/iost-official/prototype/core"
 	. "github.com/iost-official/prototype/p2p"
+	"sync"
 )
-
-type GlobalStaticProperty struct {
-	Id                 string
-	WitnessList        []string
-	PendingWitnessList []string
-}
-
-type GlobalDynamicProperty struct {
-	LastBlockNumber          int32
-	LastBlockTime            Timestamp
-	LastBLockHash            []byte
-	TotalSlots               int64
-	LastConfirmedBlockNumber int32
-	NextMaintenanceTime      Timestamp
-}
 
 type DPoS struct {
 	core.Member
@@ -28,6 +14,7 @@ type DPoS struct {
 	GlobalStaticProperty
 	GlobalDynamicProperty
 
+	blockUpdateLock sync.RWMutex
 	ExitSignal chan bool
 	chTx       chan core.Request
 	chBlock    chan core.Request
