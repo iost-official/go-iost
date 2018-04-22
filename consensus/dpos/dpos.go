@@ -47,7 +47,8 @@ func (p *DPoS) Init() {
 }
 
 func (p *DPoS) Run() {
-
+	go p.blockLoop()
+	go p.scheduleLoop()
 }
 
 func (p *DPoS) InitGlobalProperty(id string, witnessList []string) {
