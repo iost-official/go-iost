@@ -10,9 +10,12 @@ import (
 type DPoS struct {
 	core.Member
 	BlockCache
-	p2p.Router
+	Router
 	GlobalStaticProperty
 	GlobalDynamicProperty
+
+	//测试用，保存投票状态
+	votedStats map[string][]string
 
 	blockUpdateLock sync.RWMutex
 	ExitSignal      chan bool
