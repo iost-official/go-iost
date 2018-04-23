@@ -3,7 +3,7 @@ package core
 type TxStatus int
 
 const (
-	ACCEPT  TxStatus = iota
+	ACCEPT TxStatus = iota
 	CACHED
 	POOL
 	REJECT
@@ -11,7 +11,7 @@ const (
 )
 
 type Consensus interface {
-	Init(bc BlockChain, network Network) error
+	Init(bc BlockChain, network Network) error // ??
 	Run()
 	Stop()
 

@@ -3,34 +3,29 @@ package dpos
 import (
 	"github.com/iost-official/prototype/core"
 	. "github.com/iost-official/prototype/p2p"
+	. "github.com/iost-official/prototype/pow"
 	"sync"
 )
 
 type DPoS struct {
 	core.Member
-	Recorder //what is this?
-	BlockCacheImpl
+	BlockCache
 	p2p.Router
 	GlobalStaticProperty
 	GlobalDynamicProperty
 
 	blockUpdateLock sync.RWMutex
-	ExitSignal chan bool
-	chTx       chan core.Request
-	chBlock    chan core.Request
+	ExitSignal      chan bool
+	chTx            chan core.Request
+	chBlock         chan core.Request
 }
 
-func NewDPoS() *DPoS {
+func NewDPoS() (*DPoS, error) {
 	p := DPoS{}
-	p.Init()
-	return &p
-}
-
-func (p *DPoS) Init() {
-	p.BlockCacheImpl = NewBlockCache()
+	p.BlockCache = NewBlockCache()
 	p.Router = RouterFactor()
-
 	p.InitGlobalProperty()
+	return &p, nil
 }
 
 func (p *DPoS) Run() {
@@ -38,13 +33,22 @@ func (p *DPoS) Run() {
 	go p.scheduleLoop()
 }
 
-func (p *DPoS) InitGlobalProperty(id string, witnessList []string) {
+func (p *DPoS) Stop() {
+	close(p.chTx)
+	close(p.chBlock)
+	p.ExitSignal <- true
+}
+
+func (p *DPoS) initGlobalProperty(id string, witnessList []string) {
 	p.GlobalStaticProperty = NewGlobalStaticProperty(id, witnessList)
 	p.GlobalDynamicProperty = NewGlobalDynamicProperty()
 }
 
 func (p *DPoS) Add(block *core.Block) {
-	p.BlockCacheImpl.Add(block)
+	p.BlockCache.Add(block)
+}
+
+func (p *DPoS) Genesis(initTime Timestamp, hash []byte) error {
 }
 
 func (p *DPoS) blockLoop() {
