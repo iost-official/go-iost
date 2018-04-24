@@ -866,11 +866,15 @@ func (d *TxPoolRaw) Unmarshal(buf []byte) (uint64, error) {
 }
 
 type BlockHead struct {
-	Version   int8
+	Version   int32
 	SuperHash []byte
 	TreeHash  []byte
+	BlockHash []byte
 	Info      []byte
-	Time      int64
+	Number    int32
+	Witness   string
+	Signature []byte
+	Time      Timestamp
 }
 
 func (d *BlockHead) Size() (s uint64) {
@@ -906,6 +910,21 @@ func (d *BlockHead) Size() (s uint64) {
 		s += l
 	}
 	{
+		l := uint64(len(d.BlockHash))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t >>= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
 		l := uint64(len(d.Info))
 
 		{
@@ -920,7 +939,40 @@ func (d *BlockHead) Size() (s uint64) {
 		}
 		s += l
 	}
-	s += 9
+	{
+		l := uint64(len(d.Witness))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t >>= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.Signature))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t >>= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		s += d.Time.Size()
+	}
+	s += 8
 	return
 }
 func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
@@ -938,6 +990,12 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 
 		buf[0+0] = byte(d.Version >> 0)
 
+		buf[1+0] = byte(d.Version >> 8)
+
+		buf[2+0] = byte(d.Version >> 16)
+
+		buf[3+0] = byte(d.Version >> 24)
+
 	}
 	{
 		l := uint64(len(d.SuperHash))
@@ -947,15 +1005,15 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i+1] = byte(t) | 0x80
+				buf[i+4] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i+1] = byte(t)
+			buf[i+4] = byte(t)
 			i++
 
 		}
-		copy(buf[i+1:], d.SuperHash)
+		copy(buf[i+4:], d.SuperHash)
 		i += l
 	}
 	{
@@ -966,15 +1024,34 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i+1] = byte(t) | 0x80
+				buf[i+4] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i+1] = byte(t)
+			buf[i+4] = byte(t)
 			i++
 
 		}
-		copy(buf[i+1:], d.TreeHash)
+		copy(buf[i+4:], d.TreeHash)
+		i += l
+	}
+	{
+		l := uint64(len(d.BlockHash))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+4] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+4] = byte(t)
+			i++
+
+		}
+		copy(buf[i+4:], d.BlockHash)
 		i += l
 	}
 	{
@@ -985,37 +1062,74 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i+1] = byte(t) | 0x80
+				buf[i+4] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i+1] = byte(t)
+			buf[i+4] = byte(t)
 			i++
 
 		}
-		copy(buf[i+1:], d.Info)
+		copy(buf[i+4:], d.Info)
 		i += l
 	}
 	{
 
-		buf[i+0+1] = byte(d.Time >> 0)
+		buf[i+0+4] = byte(d.Number >> 0)
 
-		buf[i+1+1] = byte(d.Time >> 8)
+		buf[i+1+4] = byte(d.Number >> 8)
 
-		buf[i+2+1] = byte(d.Time >> 16)
+		buf[i+2+4] = byte(d.Number >> 16)
 
-		buf[i+3+1] = byte(d.Time >> 24)
-
-		buf[i+4+1] = byte(d.Time >> 32)
-
-		buf[i+5+1] = byte(d.Time >> 40)
-
-		buf[i+6+1] = byte(d.Time >> 48)
-
-		buf[i+7+1] = byte(d.Time >> 56)
+		buf[i+3+4] = byte(d.Number >> 24)
 
 	}
-	return buf[:i+9], nil
+	{
+		l := uint64(len(d.Witness))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+8] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+8] = byte(t)
+			i++
+
+		}
+		copy(buf[i+8:], d.Witness)
+		i += l
+	}
+	{
+		l := uint64(len(d.Signature))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+8] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+8] = byte(t)
+			i++
+
+		}
+		copy(buf[i+8:], d.Signature)
+		i += l
+	}
+	{
+		nbuf, err := d.Time.Marshal(buf[i+8:])
+		if err != nil {
+			return nil, err
+		}
+		i += uint64(len(nbuf))
+	}
+	return buf[:i+8], nil
 }
 
 func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
@@ -1023,7 +1137,7 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 
 	{
 
-		d.Version = 0 | (int8(buf[i+0+0]) << 0)
+		d.Version = 0 | (int32(buf[i+0+0]) << 0) | (int32(buf[i+1+0]) << 8) | (int32(buf[i+2+0]) << 16) | (int32(buf[i+3+0]) << 24)
 
 	}
 	{
@@ -1032,10 +1146,10 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i+1] & 0x7F)
-			for buf[i+1]&0x80 == 0x80 {
+			t := uint64(buf[i+4] & 0x7F)
+			for buf[i+4]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i+1]&0x7F) << bs
+				t |= uint64(buf[i+4]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -1048,7 +1162,7 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		} else {
 			d.SuperHash = make([]byte, l)
 		}
-		copy(d.SuperHash, buf[i+1:])
+		copy(d.SuperHash, buf[i+4:])
 		i += l
 	}
 	{
@@ -1057,10 +1171,10 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i+1] & 0x7F)
-			for buf[i+1]&0x80 == 0x80 {
+			t := uint64(buf[i+4] & 0x7F)
+			for buf[i+4]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i+1]&0x7F) << bs
+				t |= uint64(buf[i+4]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -1073,7 +1187,7 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		} else {
 			d.TreeHash = make([]byte, l)
 		}
-		copy(d.TreeHash, buf[i+1:])
+		copy(d.TreeHash, buf[i+4:])
 		i += l
 	}
 	{
@@ -1082,10 +1196,35 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i+1] & 0x7F)
-			for buf[i+1]&0x80 == 0x80 {
+			t := uint64(buf[i+4] & 0x7F)
+			for buf[i+4]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i+1]&0x7F) << bs
+				t |= uint64(buf[i+4]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		if uint64(cap(d.BlockHash)) >= l {
+			d.BlockHash = d.BlockHash[:l]
+		} else {
+			d.BlockHash = make([]byte, l)
+		}
+		copy(d.BlockHash, buf[i+4:])
+		i += l
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+4] & 0x7F)
+			for buf[i+4]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+4]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -1098,15 +1237,67 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		} else {
 			d.Info = make([]byte, l)
 		}
-		copy(d.Info, buf[i+1:])
+		copy(d.Info, buf[i+4:])
 		i += l
 	}
 	{
 
-		d.Time = 0 | (int64(buf[i+0+1]) << 0) | (int64(buf[i+1+1]) << 8) | (int64(buf[i+2+1]) << 16) | (int64(buf[i+3+1]) << 24) | (int64(buf[i+4+1]) << 32) | (int64(buf[i+5+1]) << 40) | (int64(buf[i+6+1]) << 48) | (int64(buf[i+7+1]) << 56)
+		d.Number = 0 | (int32(buf[i+0+4]) << 0) | (int32(buf[i+1+4]) << 8) | (int32(buf[i+2+4]) << 16) | (int32(buf[i+3+4]) << 24)
 
 	}
-	return i + 9, nil
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+8] & 0x7F)
+			for buf[i+8]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+8]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		d.Witness = string(buf[i+8 : i+8+l])
+		i += l
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+8] & 0x7F)
+			for buf[i+8]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+8]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		if uint64(cap(d.Signature)) >= l {
+			d.Signature = d.Signature[:l]
+		} else {
+			d.Signature = make([]byte, l)
+		}
+		copy(d.Signature, buf[i+8:])
+		i += l
+	}
+	{
+		ni, err := d.Time.Unmarshal(buf[i+8:])
+		if err != nil {
+			return 0, err
+		}
+		i += ni
+	}
+	return i + 8, nil
 }
 
 type Block struct {
@@ -1230,4 +1421,57 @@ func (d *Block) Unmarshal(buf []byte) (uint64, error) {
 		i += l
 	}
 	return i + 4, nil
+}
+
+type Timestamp struct {
+	Slot int64
+}
+
+func (d *Timestamp) Size() (s uint64) {
+
+	s += 8
+	return
+}
+func (d *Timestamp) Marshal(buf []byte) ([]byte, error) {
+	size := d.Size()
+	{
+		if uint64(cap(buf)) >= size {
+			buf = buf[:size]
+		} else {
+			buf = make([]byte, size)
+		}
+	}
+	i := uint64(0)
+
+	{
+
+		buf[0+0] = byte(d.Slot >> 0)
+
+		buf[1+0] = byte(d.Slot >> 8)
+
+		buf[2+0] = byte(d.Slot >> 16)
+
+		buf[3+0] = byte(d.Slot >> 24)
+
+		buf[4+0] = byte(d.Slot >> 32)
+
+		buf[5+0] = byte(d.Slot >> 40)
+
+		buf[6+0] = byte(d.Slot >> 48)
+
+		buf[7+0] = byte(d.Slot >> 56)
+
+	}
+	return buf[:i+8], nil
+}
+
+func (d *Timestamp) Unmarshal(buf []byte) (uint64, error) {
+	i := uint64(0)
+
+	{
+
+		d.Slot = 0 | (int64(buf[0+0]) << 0) | (int64(buf[1+0]) << 8) | (int64(buf[2+0]) << 16) | (int64(buf[3+0]) << 24) | (int64(buf[4+0]) << 32) | (int64(buf[5+0]) << 40) | (int64(buf[6+0]) << 48) | (int64(buf[7+0]) << 56)
+
+	}
+	return i + 8, nil
 }
