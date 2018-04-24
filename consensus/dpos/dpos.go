@@ -22,12 +22,26 @@ type DPoS struct {
 	chBlock    chan core.Request
 }
 
-func NewDPoS() (*DPoS, error) {
+func NewDPoS(bc core.BlockChain, network core.Network) (*DPoS, error) {
 	p := DPoS{}
-	p.BlockCache = NewBlockCache()
-	p.Router = RouterFactor()
-	p.InitGlobalProperty()
+	p.BlockCache = NewBlockCache(bc)
+
+	p.Router, err = RouterFactor()
+	if err != nil {
+		return err
+	}
+	p.Router.Init(network)
+
+	/*
+		chan init
+	*/
+	p.initGlobalProperty(p.Member, make([]string))
 	return &p, nil
+}
+
+func (p *DPoS) initGlobalProperty(mb core.Member, witnessList []string) {
+	p.GlobalStaticProperty = NewGlobalStaticProperty(mb, witnessList)
+	p.GlobalDynamicProperty = NewGlobalDynamicProperty()
 }
 
 func (p *DPoS) Run() {
@@ -41,20 +55,32 @@ func (p *DPoS) Stop() {
 	p.ExitSignal <- true
 }
 
-func (p *DPoS) initGlobalProperty(id string, witnessList []string) {
-	p.GlobalStaticProperty = NewGlobalStaticProperty(id, witnessList)
-	p.GlobalDynamicProperty = NewGlobalDynamicProperty()
-}
-
-func (p *DPoS) Add(block *core.Block) {
-	p.BlockCache.Add(block)
-}
-
 func (p *DPoS) Genesis(initTime Timestamp, hash []byte) error {
+}
+
+func (p *DPos) txListeniLoop() {
+	for {
+		req, ok := <-p.chTx
+		if !ok {
+			return
+		}
+		var tx core.Tx
+		tx.Decode(req.Body)
+		p.PublishTx(tx)
+	}
 }
 
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
+	for {
+		req, ok := <-p.chBlock
+		if !ok {
+			return
+		}
+		var blk core.Block
+		blk.Decode(req.Body)
+		p.BlockCache.Add(&blk)
+	}
 }
 
 func (p *DPoS) scheduleLoop() {
