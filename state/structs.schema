@@ -1,0 +1,9 @@
+struct ValueRaw {
+    t uint8
+    val string
+}
+
+struct PatchRaw {
+    keys []string
+    vals [][]byte
+}

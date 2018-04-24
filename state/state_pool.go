@@ -17,7 +17,7 @@ type Pool interface {
 }
 
 func NewPool(bc core.BlockChain) Pool {
-	return nil
+	return nil // TODO complete
 }
 
 type PoolImpl struct {
@@ -27,7 +27,11 @@ type PoolImpl struct {
 }
 
 func (p *PoolImpl) Copy() Pool {
-	return nil
+	pp := PoolImpl{
+		db:p.db,
+		parent: p,
+	}
+	return &pp
 }
 func (p *PoolImpl) GetPatch() Patch {
 	return p.patch
@@ -59,6 +63,11 @@ func (p *PoolImpl) Get(key Key) (Value, error) {
 	var err error
 	if p.parent == nil {
 		val1, err = p.db.Get(key)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		val1, err = p.parent.Get(key)
 		if err != nil {
 			return nil, err
 		}

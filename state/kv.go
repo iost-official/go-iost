@@ -1,11 +1,14 @@
 package state
 
 import (
-	"github.com/iost-official/prototype/vm"
 	"fmt"
 	"strconv"
 	"github.com/iost-official/prototype/core"
+	"reflect"
+	"github.com/iost-official/prototype/common"
 )
+
+type Key string
 
 type Value interface {
 	Type() Type
@@ -17,9 +20,30 @@ type Value interface {
 	GetBytes() []byte
 	SetBytes(v []byte) error
 	core.Serializable
+
+	Merge(b Value) (Value, error)
+	Diff(b Value) (Value, error)
 }
 
-type Key string
+func Merge(a, b Value) (Value, error) {
+	if a.Type() != b.Type() {
+		return nil, fmt.Errorf("type error")
+	}
+	return a.Merge(b)
+}
+
+func Diff(a, b Value) (Value, error) {
+	if a == nil {
+		return b, nil
+	} else if b == nil {
+		return a, nil
+	}
+
+	if a.Type() != b.Type() {
+		return nil, fmt.Errorf("type error")
+	}
+	return a.Diff(b)
+}
 
 func (k Key) Encode() []byte {
 	return []byte(k)
@@ -37,9 +61,8 @@ const (
 )
 
 type ValueImpl struct {
-	t       Type
-	val     string
-	methods []*vm.Method
+	t   Type
+	val string
 }
 
 func (v *ValueImpl) Type() Type {
@@ -99,27 +122,74 @@ func (v *ValueImpl) SetBytes(b []byte) error {
 }
 
 func (v *ValueImpl) Encode() []byte {
-	return nil
+	raw := ValueRaw{
+		t:   uint8(v.t),
+		val: v.val,
+	}
+	b, err := raw.Marshal(nil)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
 
 func (v *ValueImpl) Decode(bin []byte) error {
+	var raw ValueRaw
+	_, err := raw.Unmarshal(bin)
+	if err != nil {
+		return err
+	}
+	v.t = Type(raw.t)
+	v.val = raw.val
 	return nil
 }
 
 func (v *ValueImpl) Hash() []byte {
-	return nil
+	b := v.Encode()
+	return common.Sha256(b)
 }
 
-func Merge(a, b Value) (Value, error) {
-	if a.Type() != b.Type() {
+func (v *ValueImpl) Merge(b Value) (Value, error) {
+	if reflect.TypeOf(b) != reflect.TypeOf(v) ||
+		b.Type() != v.Type() {
 		return nil, fmt.Errorf("type error")
 	}
-	return nil, nil
+
+	c := &ValueImpl{
+		t:   b.Type(),
+		val: b.GetString(),
+	}
+	switch v.Type() {
+	case Nil:
+		return c, nil
+	case Int:
+		return c, nil
+	case String:
+		return c, nil
+	}
+
+	return c, nil
+
 }
 
-func Diff(a, b Value) (Value, error) {
-	if a.Type() != b.Type() {
+func (v *ValueImpl) Diff(b Value) (Value, error) {
+	if reflect.TypeOf(b) != reflect.TypeOf(v) ||
+		b.Type() != v.Type() {
 		return nil, fmt.Errorf("type error")
 	}
-	return nil, nil
+
+	c := &ValueImpl{
+		t:   b.Type(),
+		val: b.GetString(),
+	}
+
+	switch v.Type() {
+	case Nil:
+		return c, nil
+	case Int:
+		return c, nil
+	case String:
+		return c, nil
+	}
+	return c, nil
 }
