@@ -5,13 +5,6 @@ import (
 	"time"
 )
 
-const (
-	pingPacket = iota + 1
-	pongPacket
-	findnodePacket
-	storenodePacket
-)
-
 // Msg defines the structure of a p2p message.
 //
 // Note that a Msg can only be sent once since the Payload reader is
@@ -44,12 +37,4 @@ type MsgWriter interface {
 type MsgReadWriter interface {
 	MsgReader
 	MsgWriter
-}
-
-func (m *Msg) Unmarshal(buf []byte) (uint64, error) {
-	return 0, nil //todo generate
-}
-
-func (m *Msg) Marshal(buf []byte) ([]byte, error) {
-	return nil, nil //todo generate
 }

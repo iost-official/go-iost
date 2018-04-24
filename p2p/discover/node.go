@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"math/rand"
-
 	"strings"
 
 	"github.com/iost-official/prototype/common"
@@ -87,12 +85,4 @@ func Addr2Node(addr string) (*Node, error) {
 // NodeID prints as a long hexadecimal number.
 func (n NodeID) String() string {
 	return fmt.Sprintf("%s", string(n))
-}
-
-func GetRandomNode(nodes []*Node) *Node {
-	if len(nodes) <= 0 {
-		return nil
-	}
-	rand.Shuffle(rand.Intn(len(nodes)), func(i, j int) { nodes[i], nodes[j] = nodes[j], nodes[i] })
-	return nodes[0]
 }

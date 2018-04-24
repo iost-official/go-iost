@@ -3,8 +3,9 @@ package p2p
 import (
 	"fmt"
 	"testing"
-	"github.com/magiconair/properties/assert"
+
 	"github.com/iost-official/prototype/core"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNetwork(t *testing.T) {
@@ -21,6 +22,7 @@ func TestNetwork(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	req := core.Request{
 		Time:    1,
 		From:    "test1",

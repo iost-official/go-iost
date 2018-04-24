@@ -3,7 +3,6 @@ package p2p
 import (
 	"fmt"
 
-	common2 "github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/p2p/discover"
 )
 
@@ -63,40 +62,4 @@ func (cs capsByNameAndVersion) Len() int      { return len(cs) }
 func (cs capsByNameAndVersion) Swap(i, j int) { cs[i], cs[j] = cs[j], cs[i] }
 func (cs capsByNameAndVersion) Less(i, j int) bool {
 	return cs[i].Name < cs[j].Name || (cs[i].Name == cs[j].Name && cs[i].Version < cs[j].Version)
-}
-
-const (
-	IOSTHead       = "iost_protocol"
-	IOSTHeadLength = 4
-	IOSTDATALength = 4 //max size of data
-)
-
-func Packet(message []byte) []byte {
-	return append(append([]byte(IOSTHead), common2.IntToBytes(len(message))...), message...)
-}
-
-func Unpack(buffer []byte, readerChannel chan []byte) []byte {
-	length := len(buffer)
-
-	var i int
-	for i = 0; i < length; i++ {
-		if length < i+IOSTHeadLength+IOSTDATALength {
-			break
-		}
-		if string(buffer[i:i+IOSTHeadLength]) == IOSTHead {
-			messageLength := common2.BytesToInt(buffer[i+IOSTHeadLength : i+IOSTHeadLength+IOSTDATALength])
-			if length < i+IOSTHeadLength+IOSTDATALength+messageLength {
-				break
-			}
-			data := buffer[i+IOSTHeadLength+IOSTDATALength : i+IOSTHeadLength+IOSTDATALength+messageLength]
-			readerChannel <- data
-
-			i += IOSTHeadLength + IOSTDATALength + messageLength - 1
-		}
-	}
-
-	if i == length {
-		return make([]byte, 0)
-	}
-	return buffer[i:]
 }

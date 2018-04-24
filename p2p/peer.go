@@ -22,8 +22,7 @@ const (
 )
 
 type Peer struct {
-	rw       *NetworkImpl
-	to       *discover.Node
+	rw       *conn
 	running  map[string]*protoRW
 	log      log.Logger
 	created  mclock.AbsTime
@@ -101,17 +100,18 @@ Outer:
 	}
 	return result
 }
-func newPeer(conn *NetworkImpl, dest *discover.Node) *Peer {
+func newPeer(conn *conn, protocols []Protocol) *Peer {
+	protomap := matchProtocols(protocols, conn.caps, conn)
 	p := &Peer{
-		rw:      conn,
-		to:      dest,
-		running: nil,
-		log:     *log.New(os.Stderr, "", 0), //TODO: 写专门的logger
-		created: mclock.Now(),
-		wg:      sync.WaitGroup{},
-		closed:  make(chan struct{}),
-		disc:    make(chan DiscReason),
-		events:  nil,
+		rw:       conn,
+		running:  protomap,
+		log:      *log.New(os.Stderr, "", 0), //TODO: 写专门的logger
+		created:  mclock.Now(),
+		wg:       sync.WaitGroup{},
+		protoErr: make(chan error, len(protomap)+1),
+		closed:   make(chan struct{}),
+		disc:     make(chan DiscReason),
+		events:   nil,
 	}
 	return p
 }

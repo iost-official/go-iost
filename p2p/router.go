@@ -7,12 +7,6 @@ import (
 )
 
 //ReqType Marked request types using by protocol
-type ReqType int
-
-const (
-	ReqPublishTx ReqType = iota
-	ReqNewBlock
-)
 
 //go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Router
 
@@ -47,15 +41,14 @@ type RouterImpl struct {
 	ExitSignal  chan bool
 }
 
+//todo before init,should NewServer as base
 func (r *RouterImpl) Init(base core.Network, port uint16) error {
 	var err error
-
 	r.base = base
 	r.filterList = make([]Filter, 0)
 	r.filterMap = make(map[int]chan core.Request)
 	r.knownMember = make([]string, 0)
 	r.ExitSignal = make(chan bool)
-
 	r.chIn, err = r.base.Listen(port)
 	if err != nil {
 		return err
