@@ -1,28 +1,148 @@
 package dpos
 
 import (
-	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/iostdb"
-	"sort"
 	"errors"
+	"sort"
+
+	"github.com/iost-official/prototype/core"
+	"strings"
 )
 
-func (p *DPoS) PerformMaintenance() error {
-	//维护过程，主要进行投票结果统计并生成新的witness列表
-	// Lock to avoid new updates
-	p.blockUpdateLock.Lock()
-	defer p.blockUpdateLock.Unlock()
+const (
+	// 测试用常量
+	ReqTypeVoteTest = 100
+	// 维护周期的长度
+	MaintenanceInterval = 28800
+)
 
+func (p *DPoS) VoteForWitness(voter core.Member, witnessId string, voteType bool) {
+	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
+	var reqString string
+	if voteType {
+		reqString = "Vote For " + voter.GetId() + " " + witnessId
+	} else {
+		reqString = "Vote Against " + voter.GetId() + " " + witnessId
+	}
+	req := core.Request{
+		Time: core.GetCurrentTimestamp(),
+		From: voter.GetId(),
+		//To:      p.DPoSSuperMember,
+		To:      "ALL",
+		ReqType: ReqTypeVoteTest,
+		Body:    []byte(reqString),
+	}
+	p.Router.Send(req)
+}
+
+func (p *DPoS) WitnessJoin(witness core.Member) {
+	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
+	reqString := "Join " + witness.GetId()
+	req := core.Request{
+		Time: core.GetCurrentTimestamp(),
+		From: witness.GetId(),
+		//To:      p.DPoSSuperMember,
+		To:      "ALL",
+		ReqType: ReqTypeVoteTest,
+		Body:    []byte(reqString),
+	}
+	p.Router.Send(req)
+}
+
+func (p *DPoS) WitnessQuit(witness core.Member) {
+	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
+	reqString := "Quit " + witness.GetId()
+	req := core.Request{
+		Time: core.GetCurrentTimestamp(),
+		From: witness.GetId(),
+		//To:      p.DPoSSuperMember,
+		To:      "ALL",
+		ReqType: ReqTypeVoteTest,
+		Body:    []byte(reqString),
+	}
+	p.Router.Send(req)
+}
+
+// 测试用函数：p2p收到ReqTypeVoteTest后调用，将消息加入到info的缓存中
+// 在生成块时，将infoCache中的内容序列化后直接加入info，清空infoCache
+func (p *DPoS) AddWitnessMsg(req core.Request) {
+	if req.ReqType != ReqTypeVoteTest {
+		return
+	}
+	for _, request := range p.infoCache {
+		if request.From == req.From && string(request.Body[:]) == string(req.Body[:]) {
+			return
+		}
+	}
+	p.infoCache = append(p.infoCache, req)
+}
+
+// 测试用函数：当块被确认，解码info中的相关消息更新投票状态
+func (p *DPoS) ProcessWitnessTx(req core.Request) error {
+	reqStrings := strings.Split(string(req.Body[:]), " ")
+	switch reqStrings[0] {
+	case "Join":
+		witness := reqStrings[1]
+		return p.AddPendingWitness(witness)
+	case "Quit":
+		witness := reqStrings[1]
+		return p.DeletePendingWitness(witness)
+	case "Vote":
+		if reqStrings[1] == "For" {
+			return p.addVote(reqStrings[2], reqStrings[3])
+		} else if reqStrings[1] == "Against" {
+			return p.deleteVote(reqStrings[2], reqStrings[3])
+		} else {
+			return errors.New("illegal vote msg")
+		}
+	default:
+		return errors.New("illegal msg")
+	}
+}
+
+// 测试用函数，加入投票状态，正式版本中应该在运行合约时维护
+func (p *DPoS) addVote(voter string, witness string) error {
+	if votedList, ok := p.votedStats[voter]; ok {
+		for _, wit := range votedList {
+			if wit == witness {
+				return errors.New("already voted")
+			}
+		}
+		p.votedStats[voter] = append(votedList, witness)
+	} else {
+		p.votedStats[voter] = []string{witness}
+	}
+	return nil
+}
+
+// 测试用函数，删除投票状态，正式版本中应该在运行合约时维护
+func (p *DPoS) deleteVote(voter string, witness string) error {
+	if votedList, ok := p.votedStats[voter]; ok {
+		i := 0
+		for _, wit := range votedList {
+			if wit == witness {
+				p.votedStats[voter] = append(votedList[:i], votedList[i+1:]...)
+				return nil
+			}
+			i++
+		}
+		return errors.New("never voted")
+	} else {
+		return errors.New("voter error")
+	}
+}
+
+func (p *DPoS) PerformMaintenance() error {
+	//Maintenance过程，主要进行投票结果统计并生成新的witness列表
 	votes := make(map[string]int)
-	// Calculate votes from mem stats
-	for _, mem := range iostdb.GetMemList() { //assume GetMemList returns a slice
-		votedList := iostdb.GetVotedWitnessList(mem) //assume GetVotedWitnessList returns the voted list of a mem
+	// 测试用写法，原本应该从core.statspool中读取
+	for _, votedList := range p.votedStats {
 		for _, witness := range votedList {
-			// we don't judge if the witness is in lists, the proc is in stats updating
-			if value, ok := votes[witness]; ok {
-				votes[witness] = value + 1
-			} else {
-				votes[witness] = 1
+			if inList(witness, p.WitnessList) && inList(witness, p.PendingWitnessList) {
+				if value, ok := votes[witness]; ok {
+					votes[witness] = value + 1
+				} else {
+					votes[witness] = 1
+				}
 			}
 		}
 	}
@@ -36,12 +156,12 @@ func (p *DPoS) PerformMaintenance() error {
 
 	// assume maintenance interval is defined in core/timestamp
 	// assume Add() adds a certain number into timestamp
-	p.GlobalDynamicProperty.NextMaintenanceTime.Add(core.MaintenanceInterval)
+	p.GlobalDynamicProperty.NextMaintenanceTime.Add(MaintenanceInterval)
 	return nil
 }
 
 type Pair struct {
-	Key string
+	Key   string
 	Value int
 }
 type PairList []Pair
@@ -68,4 +188,3 @@ func chooseTopN(votes map[string]int, num int) []string {
 	}
 	return list
 }
-
