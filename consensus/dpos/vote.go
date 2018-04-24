@@ -11,8 +11,8 @@ import (
 const (
 	// 测试用常量
 	ReqTypeVoteTest = 100
-	// 维护周期的长度
-	MaintenanceInterval = 28800
+	// 维护周期的长度，以小时为单位
+	MaintenanceInterval = 24
 )
 
 func (p *DPoS) VoteForWitness(voter core.Member, witnessId string, voteType bool) {
@@ -137,7 +137,7 @@ func (p *DPoS) PerformMaintenance() error {
 	// 测试用写法，原本应该从core.statspool中读取
 	for _, votedList := range p.votedStats {
 		for _, witness := range votedList {
-			if inList(witness, p.WitnessList) && inList(witness, p.PendingWitnessList) {
+			if inList(witness, p.WitnessList) || inList(witness, p.PendingWitnessList) {
 				if value, ok := votes[witness]; ok {
 					votes[witness] = value + 1
 				} else {
@@ -154,9 +154,8 @@ func (p *DPoS) PerformMaintenance() error {
 	witnessList := chooseTopN(votes, p.GlobalStaticProperty.NumberOfWitnesses)
 	p.GlobalStaticProperty.UpdateWitnessLists(witnessList)
 
-	// assume maintenance interval is defined in core/timestamp
 	// assume Add() adds a certain number into timestamp
-	p.GlobalDynamicProperty.NextMaintenanceTime.Add(MaintenanceInterval)
+	p.GlobalDynamicProperty.NextMaintenanceTime.AddHour(MaintenanceInterval)
 	return nil
 }
 

@@ -26,12 +26,12 @@ struct BlockHead {
    Version int32
    SuperHash []byte
    TreeHash []byte
+   BlockHash []byte
    Info []byte
    Number  int32
    Witness string
    Signature []byte
-   Time    *Timestamp
-
+   Time    Timestamp
 }
 
 struct Block {

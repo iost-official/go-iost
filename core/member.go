@@ -30,6 +30,10 @@ func NewMember(seckey []byte) (Member, error) {
 	return m, nil
 }
 
+func (member *Member)GetId() string {
+	return member.ID
+}
+
 func randomSeckey() []byte {
 	rand.Seed(time.Now().UnixNano())
 	bin := new(bytes.Buffer)
