@@ -27,7 +27,11 @@ struct BlockHead {
    SuperHash []byte
    TreeHash []byte
    Info []byte
-   Time    int64
+   Number  int32
+   Witness string
+   Signature []byte
+   Time    *Timestamp
+
 }
 
 struct Block {
@@ -35,3 +39,9 @@ struct Block {
    Head      BlockHead
    Content   []byte
 }
+
+struct Timestamp {  
+   Slot int64    
+}
+
+
