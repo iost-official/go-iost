@@ -57,7 +57,7 @@ func (b *BlockCacheTree) add(block *core.Block, verifier func(blk *core.Block, c
 		}
 	}
 
-	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.SuperHash) {
+	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.ParentHash) {
 		if !verifier(block, &b.bc) {
 			return ErrorBlock
 		}
