@@ -1,41 +1,37 @@
 package vm
 
-import "github.com/iost-official/prototype/state"
+import (
+	"github.com/iost-official/prototype/state"
+	"github.com/iost-official/prototype/core"
+)
 
 type Address string
 
 type Privilege int
 
 const (
-	Private Privilege = iota
+	Private       Privilege = iota
 	SignedPrivate
-
 )
 
 type Signature struct {
-	Sig []byte
+	Sig    []byte
 	Pubkey []byte
 }
 
 type Program struct {
-
 }
 
 type Contract struct {
-
 }
 
 type Method struct {
-
 }
 
-
-
-func Exec(program Program) (patch state.Patch, gas uint64) {
-	return state.Patch{}, 0
+func Transition(sp state.Pool, tx core.Tx) (state.Pool, uint64, error) {
+	return nil, 0, nil
 }
 
-
-func getStatus(addr Address, key Key) (Value, error) {
+func getStatus(addr Address, key state.Key) (state.Value, error) {
 	return nil, nil
 }

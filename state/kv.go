@@ -4,6 +4,7 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"fmt"
 	"strconv"
+	"github.com/iost-official/prototype/core"
 )
 
 type Value interface {
@@ -15,14 +16,19 @@ type Value interface {
 	SetString(v string) error
 	GetBytes() []byte
 	SetBytes(v []byte) error
+	core.Serializable
 }
 
 type Key string
 
+func (k Key) Encode() []byte {
+	return []byte(k)
+}
+
 type Type int
 
 const (
-	Nil Type = iota
+	Nil    Type = iota
 	Int
 	String
 	Bytes
@@ -31,25 +37,24 @@ const (
 )
 
 type ValueImpl struct {
-	t Type
-	val string
+	t       Type
+	val     string
 	methods []*vm.Method
 }
 
-
-func (v *ValueImpl)Type() Type{
+func (v *ValueImpl) Type() Type {
 	return v.t
 }
 
-func (v *ValueImpl)GetInt() int{
+func (v *ValueImpl) GetInt() int {
 	if v.t != Int {
 		panic(fmt.Errorf("type error"))
 	}
-	i,_ := strconv.Atoi(v.val)
+	i, _ := strconv.Atoi(v.val)
 	return i
 }
 
-func (v *ValueImpl)SetInt(i int) error{
+func (v *ValueImpl) SetInt(i int) error {
 	if v.t == Nil {
 		v.t = Int
 	} else if v.t != Int {
@@ -59,14 +64,14 @@ func (v *ValueImpl)SetInt(i int) error{
 	return nil
 }
 
-func (v *ValueImpl)GetString() string{
+func (v *ValueImpl) GetString() string {
 	if v.t != Int {
 		panic(fmt.Errorf("type error"))
 	}
 	return v.val
 }
 
-func (v *ValueImpl)SetString(s string) error{
+func (v *ValueImpl) SetString(s string) error {
 	if v.t == Nil {
 		v.t = String
 	} else if v.t != String {
@@ -76,14 +81,14 @@ func (v *ValueImpl)SetString(s string) error{
 	return nil
 }
 
-func (v *ValueImpl)GetBytes() []byte{
+func (v *ValueImpl) GetBytes() []byte {
 	if v.t != Bytes {
 		panic(fmt.Errorf("type error"))
 	}
 	return []byte(v.val)
 }
 
-func (v *ValueImpl)SetBytes(b []byte) error{
+func (v *ValueImpl) SetBytes(b []byte) error {
 	if v.t == Nil {
 		v.t = Bytes
 	} else if v.t != Bytes {
@@ -93,4 +98,28 @@ func (v *ValueImpl)SetBytes(b []byte) error{
 	return nil
 }
 
+func (v *ValueImpl) Encode() []byte {
+	return nil
+}
 
+func (v *ValueImpl) Decode(bin []byte) error {
+	return nil
+}
+
+func (v *ValueImpl) Hash() []byte {
+	return nil
+}
+
+func Merge(a, b Value) (Value, error) {
+	if a.Type() != b.Type() {
+		return nil, fmt.Errorf("type error")
+	}
+	return nil, nil
+}
+
+func Diff(a, b Value) (Value, error) {
+	if a.Type() != b.Type() {
+		return nil, fmt.Errorf("type error")
+	}
+	return nil, nil
+}
