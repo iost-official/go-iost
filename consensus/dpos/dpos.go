@@ -4,7 +4,6 @@ import (
 	"github.com/iost-official/prototype/core"
 	. "github.com/iost-official/prototype/p2p"
 	. "github.com/iost-official/prototype/pow"
-	"sync"
 )
 
 type DPoS struct {
@@ -14,13 +13,13 @@ type DPoS struct {
 	GlobalStaticProperty
 	GlobalDynamicProperty
 
-	//测试用，保存投票状态
+	//测试用，保存投票状态，以及投票消息的缓存
 	votedStats map[string][]string
+	infoCache  []core.Request
 
-	blockUpdateLock sync.RWMutex
-	ExitSignal      chan bool
-	chTx            chan core.Request
-	chBlock         chan core.Request
+	ExitSignal chan bool
+	chTx       chan core.Request
+	chBlock    chan core.Request
 }
 
 func NewDPoS() (*DPoS, error) {

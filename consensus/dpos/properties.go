@@ -1,34 +1,55 @@
 package dpos
 
 import (
-	"github.com/iost-official/prototype/core"
+	"errors"
 	"sort"
+
+	"github.com/iost-official/prototype/core"
 )
 
 type GlobalStaticProperty struct {
-	Id                 string
+	Member             core.Member
 	NumberOfWitnesses  int
 	WitnessList        []string
 	PendingWitnessList []string
 }
 
-func NewGlobalStaticProperty(id string, witnessList []string) *GlobalStaticProperty {
+func NewGlobalStaticProperty(member core.Member, witnessList []string) *GlobalStaticProperty {
 	prop := &GlobalStaticProperty{
-		Id:					id,
-		NumberOfWitnesses:	len(witnessList),
-		WitnessList:		witnessList,
+		Member:             member,
+		NumberOfWitnesses:  len(witnessList),
+		WitnessList:        witnessList,
 		PendingWitnessList: []string{},
 	}
 	return prop
 }
 
-func (prop *GlobalStaticProperty) AddPendingWitness(id string) {
+func (prop *GlobalStaticProperty) AddPendingWitness(id string) error {
+	for _, wit := range prop.WitnessList {
+		if id == wit {
+			return errors.New("already in witness list")
+		}
+	}
 	for _, wit := range prop.PendingWitnessList {
 		if id == wit {
-			return
+			return errors.New("already in pending list")
 		}
 	}
 	prop.PendingWitnessList = append(prop.PendingWitnessList, id)
+	return nil
+}
+
+func (prop *GlobalStaticProperty) DeletePendingWitness(id string) error {
+	i := 0
+	for _, wit := range prop.PendingWitnessList {
+		if id == wit {
+			newList := append(prop.PendingWitnessList[:i], prop.PendingWitnessList[i+1:]...)
+			prop.PendingWitnessList = newList
+			return nil
+		}
+		i++
+	}
+	return errors.New("witness not in pending list")
 }
 
 func (prop *GlobalStaticProperty) UpdateWitnessLists(newList []string) {
