@@ -14,7 +14,7 @@ var (
 
 type ValueRaw struct {
 	t   uint8
-	val string
+	val []byte
 }
 
 func (d *ValueRaw) Size() (s uint64) {
@@ -100,7 +100,12 @@ func (d *ValueRaw) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		d.val = string(buf[i+1 : i+1+l])
+		if uint64(cap(d.val)) >= l {
+			d.val = d.val[:l]
+		} else {
+			d.val = make([]byte, l)
+		}
+		copy(d.val, buf[i+1:])
 		i += l
 	}
 	return i + 1, nil

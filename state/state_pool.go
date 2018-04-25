@@ -101,9 +101,7 @@ func (p *PoolImpl) Has(key Key) (bool, error) {
 }
 func (p *PoolImpl) Delete(key Key) error {
 	if ok, _ := p.Has(key); ok {
-		p.patch.Put(key, &ValueImpl{
-			t: Nil,
-		})
+		p.patch.Put(key, VNil)
 	} else {
 		return fmt.Errorf("not found")
 	}

@@ -1,6 +1,6 @@
 struct ValueRaw {
     t uint8
-    val string
+    val []byte
 }
 
 struct PatchRaw {
