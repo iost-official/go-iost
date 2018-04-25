@@ -34,6 +34,10 @@ func (db *MemDatabase) Put(key []byte, value []byte) error {
 	return nil
 }
 
+func (db *MemDatabase) PutHM(key []byte, args ...[]byte) error {
+	return errors.New("Unsupported")
+}
+
 func (db *MemDatabase) Get(key []byte) ([]byte, error) {
 	db.lock.RLock()
 	defer db.lock.RUnlock()
@@ -41,6 +45,10 @@ func (db *MemDatabase) Get(key []byte) ([]byte, error) {
 		return CopyBytes(value), nil
 	}
 	return nil, errors.New("Not found")
+}
+
+func (db *MemDatabase) GetHM(key []byte, args ...[]byte) ([][]byte, error) {
+	return nil, errors.New("Unsupported")
 }
 
 func (db *MemDatabase) Has(key []byte) (bool, error) {
@@ -68,6 +76,8 @@ func (db *MemDatabase) Delete(key []byte) error {
 }
 
 func (db *MemDatabase) Close() {}
+
+/*
 
 func (db *MemDatabase) NewBatch() Batch {
 	return &memBatch{db: db}
@@ -104,3 +114,4 @@ func (b *memBatch) Reset() {
 	b.writes = b.writes[:0]
 	b.size = 0
 }
+*/
