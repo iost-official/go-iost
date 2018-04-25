@@ -130,7 +130,7 @@ package pow
 //				Version: Version,
 //				Head: core.BlockHead{
 //					Version:   Version,
-//					SuperHash: chain.Top().HeadHash(),
+//					ParentHash: chain.Top().HeadHash(),
 //					TreeHash:  content.Hash(),
 //					Time:      time.Now().UnixNano(),
 //				},

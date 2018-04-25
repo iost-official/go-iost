@@ -24,7 +24,7 @@ struct TxPoolRaw {
 
 struct BlockHead {
    Version int32
-   SuperHash []byte
+   ParentHash []byte
    TreeHash []byte
    Info []byte
    Time    int64
