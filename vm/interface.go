@@ -11,7 +11,8 @@ type Privilege int
 
 const (
 	Private       Privilege = iota
-	SignedPrivate
+	Protected
+	public
 )
 
 type Signature struct {
@@ -19,14 +20,11 @@ type Signature struct {
 	Pubkey []byte
 }
 
-type Program struct {
-}
 
-type Contract struct {
-}
+type Code []byte
 
-type Method struct {
-}
+type Pubkey []byte
+
 
 func Transition(sp state.Pool, tx core.Tx) (state.Pool, uint64, error) {
 	return nil, 0, nil
