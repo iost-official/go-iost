@@ -382,17 +382,31 @@ func (d *TxInput) Unmarshal(buf []byte) (uint64, error) {
 	return i + 0, nil
 }
 
-type Tx struct {
-	Version int32
-	Inputs  []TxInput
-	Outputs []UTXO
-	Time    int64
+type TxRaw struct {
+	Time     int64
+	Contract []byte
+	Signs    [][]byte
 }
 
-func (d *Tx) Size() (s uint64) {
+func (d *TxRaw) Size() (s uint64) {
 
 	{
-		l := uint64(len(d.Inputs))
+		l := uint64(len(d.Contract))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t >>= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.Signs))
 
 		{
 
@@ -405,42 +419,31 @@ func (d *Tx) Size() (s uint64) {
 
 		}
 
-		for k0 := range d.Inputs {
+		for k0 := range d.Signs {
 
 			{
-				s += d.Inputs[k0].Size()
+				l := uint64(len(d.Signs[k0]))
+
+				{
+
+					t := l
+					for t >= 0x80 {
+						t >>= 7
+						s++
+					}
+					s++
+
+				}
+				s += l
 			}
 
 		}
 
 	}
-	{
-		l := uint64(len(d.Outputs))
-
-		{
-
-			t := l
-			for t >= 0x80 {
-				t >>= 7
-				s++
-			}
-			s++
-
-		}
-
-		for k0 := range d.Outputs {
-
-			{
-				s += d.Outputs[k0].Size()
-			}
-
-		}
-
-	}
-	s += 12
+	s += 8
 	return
 }
-func (d *Tx) Marshal(buf []byte) ([]byte, error) {
+func (d *TxRaw) Marshal(buf []byte) ([]byte, error) {
 	size := d.Size()
 	{
 		if uint64(cap(buf)) >= size {
@@ -453,99 +456,91 @@ func (d *Tx) Marshal(buf []byte) ([]byte, error) {
 
 	{
 
-		buf[0+0] = byte(d.Version >> 0)
+		buf[0+0] = byte(d.Time >> 0)
 
-		buf[1+0] = byte(d.Version >> 8)
+		buf[1+0] = byte(d.Time >> 8)
 
-		buf[2+0] = byte(d.Version >> 16)
+		buf[2+0] = byte(d.Time >> 16)
 
-		buf[3+0] = byte(d.Version >> 24)
+		buf[3+0] = byte(d.Time >> 24)
+
+		buf[4+0] = byte(d.Time >> 32)
+
+		buf[5+0] = byte(d.Time >> 40)
+
+		buf[6+0] = byte(d.Time >> 48)
+
+		buf[7+0] = byte(d.Time >> 56)
 
 	}
 	{
-		l := uint64(len(d.Inputs))
+		l := uint64(len(d.Contract))
 
 		{
 
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i+4] = byte(t) | 0x80
+				buf[i+8] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i+4] = byte(t)
+			buf[i+8] = byte(t)
 			i++
 
 		}
-		for k0 := range d.Inputs {
-
-			{
-				nbuf, err := d.Inputs[k0].Marshal(buf[i+4:])
-				if err != nil {
-					return nil, err
-				}
-				i += uint64(len(nbuf))
-			}
-
-		}
+		copy(buf[i+8:], d.Contract)
+		i += l
 	}
 	{
-		l := uint64(len(d.Outputs))
+		l := uint64(len(d.Signs))
 
 		{
 
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i+4] = byte(t) | 0x80
+				buf[i+8] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i+4] = byte(t)
+			buf[i+8] = byte(t)
 			i++
 
 		}
-		for k0 := range d.Outputs {
+		for k0 := range d.Signs {
 
 			{
-				nbuf, err := d.Outputs[k0].Marshal(buf[i+4:])
-				if err != nil {
-					return nil, err
+				l := uint64(len(d.Signs[k0]))
+
+				{
+
+					t := uint64(l)
+
+					for t >= 0x80 {
+						buf[i+8] = byte(t) | 0x80
+						t >>= 7
+						i++
+					}
+					buf[i+8] = byte(t)
+					i++
+
 				}
-				i += uint64(len(nbuf))
+				copy(buf[i+8:], d.Signs[k0])
+				i += l
 			}
 
 		}
 	}
-	{
-
-		buf[i+0+4] = byte(d.Time >> 0)
-
-		buf[i+1+4] = byte(d.Time >> 8)
-
-		buf[i+2+4] = byte(d.Time >> 16)
-
-		buf[i+3+4] = byte(d.Time >> 24)
-
-		buf[i+4+4] = byte(d.Time >> 32)
-
-		buf[i+5+4] = byte(d.Time >> 40)
-
-		buf[i+6+4] = byte(d.Time >> 48)
-
-		buf[i+7+4] = byte(d.Time >> 56)
-
-	}
-	return buf[:i+12], nil
+	return buf[:i+8], nil
 }
 
-func (d *Tx) Unmarshal(buf []byte) (uint64, error) {
+func (d *TxRaw) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
 
 	{
 
-		d.Version = 0 | (int32(buf[i+0+0]) << 0) | (int32(buf[i+1+0]) << 8) | (int32(buf[i+2+0]) << 16) | (int32(buf[i+3+0]) << 24)
+		d.Time = 0 | (int64(buf[i+0+0]) << 0) | (int64(buf[i+1+0]) << 8) | (int64(buf[i+2+0]) << 16) | (int64(buf[i+3+0]) << 24) | (int64(buf[i+4+0]) << 32) | (int64(buf[i+5+0]) << 40) | (int64(buf[i+6+0]) << 48) | (int64(buf[i+7+0]) << 56)
 
 	}
 	{
@@ -554,10 +549,10 @@ func (d *Tx) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i+4] & 0x7F)
-			for buf[i+4]&0x80 == 0x80 {
+			t := uint64(buf[i+8] & 0x7F)
+			for buf[i+8]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i+4]&0x7F) << bs
+				t |= uint64(buf[i+8]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -565,22 +560,13 @@ func (d *Tx) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.Inputs)) >= l {
-			d.Inputs = d.Inputs[:l]
+		if uint64(cap(d.Contract)) >= l {
+			d.Contract = d.Contract[:l]
 		} else {
-			d.Inputs = make([]TxInput, l)
+			d.Contract = make([]byte, l)
 		}
-		for k0 := range d.Inputs {
-
-			{
-				ni, err := d.Inputs[k0].Unmarshal(buf[i+4:])
-				if err != nil {
-					return 0, err
-				}
-				i += ni
-			}
-
-		}
+		copy(d.Contract, buf[i+8:])
+		i += l
 	}
 	{
 		l := uint64(0)
@@ -588,10 +574,10 @@ func (d *Tx) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i+4] & 0x7F)
-			for buf[i+4]&0x80 == 0x80 {
+			t := uint64(buf[i+8] & 0x7F)
+			for buf[i+8]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i+4]&0x7F) << bs
+				t |= uint64(buf[i+8]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -599,33 +585,46 @@ func (d *Tx) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.Outputs)) >= l {
-			d.Outputs = d.Outputs[:l]
+		if uint64(cap(d.Signs)) >= l {
+			d.Signs = d.Signs[:l]
 		} else {
-			d.Outputs = make([]UTXO, l)
+			d.Signs = make([][]byte, l)
 		}
-		for k0 := range d.Outputs {
+		for k0 := range d.Signs {
 
 			{
-				ni, err := d.Outputs[k0].Unmarshal(buf[i+4:])
-				if err != nil {
-					return 0, err
+				l := uint64(0)
+
+				{
+
+					bs := uint8(7)
+					t := uint64(buf[i+8] & 0x7F)
+					for buf[i+8]&0x80 == 0x80 {
+						i++
+						t |= uint64(buf[i+8]&0x7F) << bs
+						bs += 7
+					}
+					i++
+
+					l = t
+
 				}
-				i += ni
+				if uint64(cap(d.Signs[k0])) >= l {
+					d.Signs[k0] = d.Signs[k0][:l]
+				} else {
+					d.Signs[k0] = make([]byte, l)
+				}
+				copy(d.Signs[k0], buf[i+8:])
+				i += l
 			}
 
 		}
 	}
-	{
-
-		d.Time = 0 | (int64(buf[i+0+4]) << 0) | (int64(buf[i+1+4]) << 8) | (int64(buf[i+2+4]) << 16) | (int64(buf[i+3+4]) << 24) | (int64(buf[i+4+4]) << 32) | (int64(buf[i+5+4]) << 40) | (int64(buf[i+6+4]) << 48) | (int64(buf[i+7+4]) << 56)
-
-	}
-	return i + 12, nil
+	return i + 8, nil
 }
 
 type TxPoolRaw struct {
-	Txs    []Tx
+	Txs    []TxRaw
 	TxHash [][]byte
 }
 
@@ -796,7 +795,7 @@ func (d *TxPoolRaw) Unmarshal(buf []byte) (uint64, error) {
 		if uint64(cap(d.Txs)) >= l {
 			d.Txs = d.Txs[:l]
 		} else {
-			d.Txs = make([]Tx, l)
+			d.Txs = make([]TxRaw, l)
 		}
 		for k0 := range d.Txs {
 

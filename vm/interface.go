@@ -15,12 +15,6 @@ const (
 	public
 )
 
-type Signature struct {
-	Sig    []byte
-	Pubkey []byte
-}
-
-
 type Code []byte
 
 type Pubkey []byte

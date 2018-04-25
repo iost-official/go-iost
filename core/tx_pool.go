@@ -6,6 +6,8 @@ import (
 	"github.com/iost-official/prototype/common"
 )
 
+
+
 //go:generate mockgen -destination mocks/mock_tx_pool.go -package core_mock github.com/iost-official/prototype/core TxPool
 
 // Tx池，因为需要装入Block中所以需要serializable
@@ -27,7 +29,7 @@ func NewTxPool() TxPool {
 	txp := TxPoolImpl{
 		txMap: make(map[string]Tx),
 		TxPoolRaw: TxPoolRaw{
-			Txs:    make([]Tx, 0),
+			Txs:    make([]TxRaw, 0),
 			TxHash: make([][]byte, 0),
 		},
 	}
@@ -85,7 +87,7 @@ func (tp *TxPoolImpl) Encode() []byte {
 		panic(err)
 	}
 	tp.TxHash = [][]byte{}
-	tp.Txs = []Tx{}
+	tp.Txs = []TxRaw{}
 	return bytes
 }
 
