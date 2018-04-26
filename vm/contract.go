@@ -1,53 +1,51 @@
 package vm
 
 import (
-	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/common"
 	"fmt"
+	"github.com/iost-official/prototype/common"
 )
 
-type ContractInfo struct {
-	Name     string
-	Language string
-	Version  string
-
-	GasLimit uint64
-	Price    float64
-
-	Signers []Pubkey
-
-	ApiList []string
-}
+//go:generate gencode go -schema=structs.schema -package=vm
 
 type Contract interface {
-	core.Serializable
-
 	Info() ContractInfo
 	Api(apiName string) (Method, error)
 }
 
-type ContractImpl struct {
-	info  ContractInfo
-	apis  map[string]Method
-	signs []common.Signature
+type LuaContract struct {
+	info ContractInfo
+	code string
+	main Method
 }
 
-func (c *ContractImpl) Info() ContractInfo {
+func (c *LuaContract) Info() ContractInfo {
 	return c.info
 }
-func (c *ContractImpl) Api(apiName string) (Method, error) {
-	m, ok := c.apis[apiName]
-	if !ok {
-		return Method{}, fmt.Errorf("not found")
+func (c *LuaContract) Api(apiName string) (Method, error) {
+	if apiName == "main" {
+		return c.main, nil
 	}
-	return m, nil
+	return nil, fmt.Errorf("not found")
 }
-func (c *ContractImpl) Encode() []byte {
-	return nil
+func (c *LuaContract) Encode() []byte {
+	cr := ContractRaw{
+		info: c.info,
+		code: []byte(c.code),
+	}
+	b, err := cr.Marshal(nil)
+	if err != nil {
+		panic(err)
+		return nil
+	}
+	return b
 }
-func (c *ContractImpl) Decode([]byte) error {
-	return nil
+func (c *LuaContract) Decode(b []byte) error {
+	var cr ContractRaw
+	_, err := cr.Unmarshal(b)
+	c.info = cr.info
+	c.code = string(cr.code)
+	return err
 }
-func (c *ContractImpl) Hash() []byte {
-	return nil
+func (c *LuaContract) Hash() []byte {
+	return common.Sha256(c.Encode())
 }

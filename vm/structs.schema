@@ -1,1 +1,15 @@
+struct ContractInfo {
+	Name     string
+	Language string
+	Version  int8
+	GasLimit int64
+	Price    float64
+	Signers [][]byte
 
+	ApiList []string
+}
+
+struct ContractRaw {
+    info ContractInfo
+    code []byte
+}

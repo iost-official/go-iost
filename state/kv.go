@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core"
 	"strconv"
 	"encoding/binary"
 )
@@ -14,7 +13,10 @@ type Key string
 type Value interface {
 	Type() Type
 	String() string
-	core.Serializable
+
+	Encode() []byte
+	Decode([]byte) error
+	Hash() []byte
 
 	merge(b Value) (Value, error)
 	diff(b Value) (Value, error)
@@ -66,28 +68,28 @@ var VNil Value = &VInt{
 }
 
 type VString struct {
-	t Type
+	T Type
 	string
 }
 
 func MakeVString(s string) VString {
 	return VString{
-		t:      String,
+		T:      String,
 		string: s,
 	}
 }
 func (v *VString) Type() Type {
-	return v.t
+	return v.T
 }
 func (v *VString) String() string {
-	if v.t != Int {
+	if v.T != Int {
 		panic(fmt.Errorf("type error"))
 	}
 	return v.string
 }
 func (v *VString) Encode() []byte {
 	raw := ValueRaw{
-		t:   uint8(v.t),
+		t:   uint8(v.T),
 		val: []byte(v.string),
 	}
 	b, err := raw.Marshal(nil)
@@ -102,7 +104,7 @@ func (v *VString) Decode(bin []byte) error {
 	if err != nil {
 		return err
 	}
-	v.t = Type(raw.t)
+	v.T = Type(raw.t)
 	v.string = string(raw.val)
 	return nil
 }
@@ -115,7 +117,7 @@ func (v *VString) merge(b Value) (Value, error) {
 		return nil, fmt.Errorf("type error")
 	}
 	c := &VString{
-		t:      b.Type(),
+		T:      b.Type(),
 		string: b.String(),
 	}
 	switch v.Type() {
@@ -135,7 +137,7 @@ func (v *VString) diff(b Value) (Value, error) {
 		return nil, fmt.Errorf("type error")
 	}
 	c := &VString{
-		t:      b.Type(),
+		T:      b.Type(),
 		string: b.String(),
 	}
 	switch v.Type() {

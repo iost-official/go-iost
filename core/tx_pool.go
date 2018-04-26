@@ -78,27 +78,28 @@ func (tp *TxPoolImpl) Size() int {
 }
 
 func (tp *TxPoolImpl) Encode() []byte {
-	for k, v := range tp.txMap {
-		tp.TxHash = append(tp.TxHash, common.Base58Decode(k))
-		tp.Txs = append(tp.Txs, v)
-	}
-	bytes, err := tp.Marshal(nil)
-	if err != nil {
-		panic(err)
-	}
-	tp.TxHash = [][]byte{}
-	tp.Txs = []TxRaw{}
-	return bytes
+	//for k, v := range tp.txMap {
+	//	tp.TxHash = append(tp.TxHash, common.Base58Decode(k))
+	//	tp.Txs = append(tp.Txs, v)
+	//}
+	//bytes, err := tp.Marshal(nil)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//tp.TxHash = [][]byte{}
+	//tp.Txs = []TxRaw{}
+	//return bytes
+	return nil
 }
 
 func (tp *TxPoolImpl) Decode(a []byte) error {
-	_, err := tp.Unmarshal(a)
-	if err != nil {
-		return err
-	}
-	for i, v := range tp.TxHash {
-		tp.txMap[common.Base58Encode(v)] = tp.Txs[i]
-	}
+	//_, err := tp.Unmarshal(a)
+	//if err != nil {
+	//	return err
+	//}
+	//for i, v := range tp.TxHash {
+	//	tp.txMap[common.Base58Encode(v)] = tp.Txs[i]
+	//}
 	return nil
 }
 
