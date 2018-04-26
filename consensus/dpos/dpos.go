@@ -59,11 +59,11 @@ func (p *DPoS) Stop() {
 	p.ExitSignal <- true
 }
 
-func (p *DPoS) Genesis(initTime Timestamp, hash []byte) error {
+func (p *DPoS) Genesis(initTime core.Timestamp, hash []byte) error {
 	return nil
 }
 
-func (p *DPos) txListeniLoop() {
+func (p *DPoS) txListenLoop() {
 	for {
 		req, ok := <-p.chTx
 		if !ok {
@@ -94,8 +94,8 @@ func (p *DPoS) blockLoop() {
 func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
 	for {
-		currentTimestamp := GetCurrentTimestamp()
-		wid := WitnessOfTime(p.GlobalStaticProperty, p.GlobalDynamicProperty, currentTimestamp)
+		currentTimestamp := core.GetCurrentTimestamp()
+		wid := WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, currentTimestamp)
 		if wid == p.Member.ID {
 			//TODO
 			// 生成blk
