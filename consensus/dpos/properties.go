@@ -14,8 +14,8 @@ type GlobalStaticProperty struct {
 	PendingWitnessList []string
 }
 
-func NewGlobalStaticProperty(member core.Member, witnessList []string) *GlobalStaticProperty {
-	prop := &GlobalStaticProperty{
+func NewGlobalStaticProperty(member core.Member, witnessList []string) GlobalStaticProperty {
+	prop := GlobalStaticProperty{
 		Member:             member,
 		NumberOfWitnesses:  len(witnessList),
 		WitnessList:        witnessList,
@@ -101,8 +101,13 @@ type GlobalDynamicProperty struct {
 	NextMaintenanceTime      core.Timestamp
 }
 
-func NewGlobalDynamicProperty() *GlobalDynamicProperty {
-	return &GlobalDynamicProperty{}
+func NewGlobalDynamicProperty() GlobalDynamicProperty {
+	return GlobalDynamicProperty{
+		LastBlockNumber:          0,
+		LastBlockTime:            core.Timestamp{0},
+		TotalSlots:               0,
+		LastConfirmedBlockNumber: 0,
+	}
 }
 
 func (prop *GlobalDynamicProperty) Update(blockHead *core.BlockHead) {

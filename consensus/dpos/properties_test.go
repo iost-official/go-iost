@@ -50,14 +50,14 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		dp.LastBlockTime = core.Timestamp{0}
 		startTs := core.Timestamp{70000}
 		bh := core.BlockHead{
-			Number: 1,
-			Time: startTs,
+			Number:  1,
+			Time:    startTs,
 			Witness: "id0",
 		}
 		dp.Update(&bh)
 
 		Convey("update first block", func() {
-			So(dp.LastBlockNumber,ShouldEqual, 1)
+			So(dp.LastBlockNumber, ShouldEqual, 1)
 			So(dp.TotalSlots, ShouldEqual, 1)
 		})
 
@@ -84,7 +84,7 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		bh.Witness = "id1"
 		dp.Update(&bh)
 		Convey("update second block", func() {
-			So(dp.LastBlockNumber,ShouldEqual, 2)
+			So(dp.LastBlockNumber, ShouldEqual, 2)
 			So(dp.TotalSlots, ShouldEqual, 2)
 		})
 
@@ -110,7 +110,7 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		bh.Witness = "id1"
 		dp.Update(&bh)
 		Convey("update third block", func() {
-			So(dp.LastBlockNumber,ShouldEqual, 3)
+			So(dp.LastBlockNumber, ShouldEqual, 3)
 			So(dp.TotalSlots, ShouldEqual, 5)
 		})
 	})
