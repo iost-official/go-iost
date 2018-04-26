@@ -22,9 +22,11 @@ type DPoS struct {
 	chBlock    chan core.Request
 }
 
-func NewDPoS(bc core.BlockChain, network core.Network) (*DPoS, error) {
+func NewDPoS(mb core.Member, bc core.BlockChain, network core.Network) (*DPoS, error) {
+	// Member初始化
+	p.Member = mb
 	p := DPoS{}
-	p.BlockCache = NewBlockCache(bc)
+	p.BlockCache = NewBlockCache(bc, 6)
 
 	p.Router, err = RouterFactor()
 	if err != nil {
@@ -56,6 +58,7 @@ func (p *DPoS) Stop() {
 }
 
 func (p *DPoS) Genesis(initTime Timestamp, hash []byte) error {
+	return nil
 }
 
 func (p *DPos) txListeniLoop() {
@@ -85,5 +88,13 @@ func (p *DPoS) blockLoop() {
 
 func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
+	for {
+		currentTimestamp := GetCurrentTimestamp()
+		wid := WitnessOfTime(p.GlobalStaticProperty, p.GlobalDynamicProperty, currentTimestamp)
+		if wid == p.Member.ID {
+			//TODO
+			// 生成blk
+		}
 
+	}
 }
