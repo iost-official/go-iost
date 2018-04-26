@@ -62,10 +62,10 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		})
 
 		curSec := startTs.ToUnixSec() + 1
-		sec := TimeUntilNextSchedule(sp, dp, curSec)
+		sec := TimeUntilNextSchedule(&sp, &dp, curSec)
 		Convey("in other's slot", func() {
 			curTs := core.GetTimestamp(curSec)
-			wit := WitnessOfTime(sp, dp, curTs)
+			wit := WitnessOfTime(&sp, &dp, curTs)
 			So(wit, ShouldEqual, "id0")
 			So(sec, ShouldBeLessThanOrEqualTo, 3)
 		})
@@ -73,9 +73,9 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		curSec += 2
 		timestamp := core.GetTimestamp(curSec)
 		Convey("in self's slot", func() {
-			wit := WitnessOfTime(sp, dp, timestamp)
+			wit := WitnessOfTime(&sp, &dp, timestamp)
 			So(wit, ShouldEqual, "id1")
-			wit = WitnessOfSec(sp, dp, curSec)
+			wit = WitnessOfSec(&sp, &dp, curSec)
 			So(wit, ShouldEqual, "id1")
 		})
 
@@ -89,7 +89,7 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		})
 
 		curSec += 1
-		sec = TimeUntilNextSchedule(sp, dp, curSec)
+		sec = TimeUntilNextSchedule(&sp, &dp, curSec)
 		Convey("in self's slot, but finished", func() {
 			So(sec, ShouldBeGreaterThanOrEqualTo, 6)
 			So(sec, ShouldBeLessThanOrEqualTo, 9)
@@ -98,9 +98,9 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		curSec += 8
 		Convey("in self's slot and lost two previous blocks", func() {
 			curTs := core.GetTimestamp(curSec)
-			wit := WitnessOfTime(sp, dp, curTs)
+			wit := WitnessOfTime(&sp, &dp, curTs)
 			So(wit, ShouldEqual, "id1")
-			wit = WitnessOfSec(sp, dp, curSec)
+			wit = WitnessOfSec(&sp, &dp, curSec)
 			So(wit, ShouldEqual, "id1")
 		})
 
