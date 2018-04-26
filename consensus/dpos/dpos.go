@@ -28,11 +28,13 @@ func NewDPoS(mb core.Member, bc core.BlockChain, network core.Network) (*DPoS, e
 	p := DPoS{}
 	p.BlockCache = NewBlockCache(bc, 6)
 
-	p.Router, err = RouterFactor()
-	if err != nil {
-		return err
-	}
-	p.Router.Init(network)
+	/*
+		p.Router, err = RouterFactor()
+		if err != nil {
+			return err
+		}
+		p.Router.Init(network)
+	*/
 
 	/*
 		chan init
@@ -75,6 +77,9 @@ func (p *DPos) txListeniLoop() {
 
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
+	verifier := func(blk *core.Block, chain core.BlockChain) bool {
+		return true
+	}
 	for {
 		req, ok := <-p.chBlock
 		if !ok {
@@ -82,7 +87,7 @@ func (p *DPoS) blockLoop() {
 		}
 		var blk core.Block
 		blk.Decode(req.Body)
-		p.BlockCache.Add(&blk)
+		p.BlockCache.Add(&blk, verifier)
 	}
 }
 
