@@ -865,23 +865,15 @@ func (d *TxPoolRaw) Unmarshal(buf []byte) (uint64, error) {
 }
 
 type BlockHead struct {
-<<<<<<< HEAD
-	Version   int32
-	SuperHash []byte
-	TreeHash  []byte
-	BlockHash []byte
-	Info      []byte
-	Number    int32
-	Witness   string
-	Signature []byte
-	Time      Timestamp
-=======
 	Version    int32
 	ParentHash []byte
 	TreeHash   []byte
+	BlockHash  []byte
 	Info       []byte
-	Time       int64
->>>>>>> master
+	Number     int32
+	Witness    string
+	Signature  []byte
+	Time       Timestamp
 }
 
 func (d *BlockHead) Size() (s uint64) {
@@ -946,7 +938,6 @@ func (d *BlockHead) Size() (s uint64) {
 		}
 		s += l
 	}
-<<<<<<< HEAD
 	{
 		l := uint64(len(d.Witness))
 
@@ -981,9 +972,6 @@ func (d *BlockHead) Size() (s uint64) {
 		s += d.Time.Size()
 	}
 	s += 8
-=======
-	s += 12
->>>>>>> master
 	return
 }
 func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
@@ -1024,11 +1012,7 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-<<<<<<< HEAD
-		copy(buf[i+4:], d.SuperHash)
-=======
 		copy(buf[i+4:], d.ParentHash)
->>>>>>> master
 		i += l
 	}
 	{
@@ -1040,7 +1024,6 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 
 			for t >= 0x80 {
 				buf[i+4] = byte(t) | 0x80
-<<<<<<< HEAD
 				t >>= 7
 				i++
 			}
@@ -1060,8 +1043,6 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 
 			for t >= 0x80 {
 				buf[i+4] = byte(t) | 0x80
-=======
->>>>>>> master
 				t >>= 7
 				i++
 			}
@@ -1069,11 +1050,7 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-<<<<<<< HEAD
 		copy(buf[i+4:], d.BlockHash)
-=======
-		copy(buf[i+4:], d.TreeHash)
->>>>>>> master
 		i += l
 	}
 	{
@@ -1097,7 +1074,6 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 	}
 	{
 
-<<<<<<< HEAD
 		buf[i+0+4] = byte(d.Number >> 0)
 
 		buf[i+1+4] = byte(d.Number >> 8)
@@ -1121,23 +1097,6 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 			}
 			buf[i+8] = byte(t)
 			i++
-=======
-		buf[i+0+4] = byte(d.Time >> 0)
-
-		buf[i+1+4] = byte(d.Time >> 8)
-
-		buf[i+2+4] = byte(d.Time >> 16)
-
-		buf[i+3+4] = byte(d.Time >> 24)
-
-		buf[i+4+4] = byte(d.Time >> 32)
-
-		buf[i+5+4] = byte(d.Time >> 40)
-
-		buf[i+6+4] = byte(d.Time >> 48)
-
-		buf[i+7+4] = byte(d.Time >> 56)
->>>>>>> master
 
 		}
 		copy(buf[i+8:], d.Witness)
@@ -1169,11 +1128,7 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 		}
 		i += uint64(len(nbuf))
 	}
-<<<<<<< HEAD
 	return buf[:i+8], nil
-=======
-	return buf[:i+12], nil
->>>>>>> master
 }
 
 func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
@@ -1206,11 +1161,7 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		} else {
 			d.ParentHash = make([]byte, l)
 		}
-<<<<<<< HEAD
-		copy(d.SuperHash, buf[i+4:])
-=======
 		copy(d.ParentHash, buf[i+4:])
->>>>>>> master
 		i += l
 	}
 	{
@@ -1248,7 +1199,6 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 			for buf[i+4]&0x80 == 0x80 {
 				i++
 				t |= uint64(buf[i+4]&0x7F) << bs
-<<<<<<< HEAD
 				bs += 7
 			}
 			i++
@@ -1274,8 +1224,6 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 			for buf[i+4]&0x80 == 0x80 {
 				i++
 				t |= uint64(buf[i+4]&0x7F) << bs
-=======
->>>>>>> master
 				bs += 7
 			}
 			i++
@@ -1293,7 +1241,6 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 	}
 	{
 
-<<<<<<< HEAD
 		d.Number = 0 | (int32(buf[i+0+4]) << 0) | (int32(buf[i+1+4]) << 8) | (int32(buf[i+2+4]) << 16) | (int32(buf[i+3+4]) << 24)
 
 	}
@@ -1332,9 +1279,6 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 			i++
 
 			l = t
-=======
-		d.Time = 0 | (int64(buf[i+0+4]) << 0) | (int64(buf[i+1+4]) << 8) | (int64(buf[i+2+4]) << 16) | (int64(buf[i+3+4]) << 24) | (int64(buf[i+4+4]) << 32) | (int64(buf[i+5+4]) << 40) | (int64(buf[i+6+4]) << 48) | (int64(buf[i+7+4]) << 56)
->>>>>>> master
 
 		}
 		if uint64(cap(d.Signature)) >= l {
@@ -1345,7 +1289,6 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		copy(d.Signature, buf[i+8:])
 		i += l
 	}
-<<<<<<< HEAD
 	{
 		ni, err := d.Time.Unmarshal(buf[i+8:])
 		if err != nil {
@@ -1354,9 +1297,6 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		i += ni
 	}
 	return i + 8, nil
-=======
-	return i + 12, nil
->>>>>>> master
 }
 
 type Block struct {

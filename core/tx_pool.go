@@ -17,7 +17,7 @@ type TxPool interface {
 	Find(txHash []byte) (Tx, error)
 	GetSlice() ([]Tx, error)
 	Has(txHash []byte) (bool, error) // 额外给出has参数，在有merkle tree之后可以做一个比find更快的存在性检查
-	Serializable
+	//Serializable
 }
 
 type TxPoolImpl struct {
