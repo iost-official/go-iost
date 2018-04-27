@@ -8,7 +8,7 @@ import (
 
 type DPoS struct {
 	core.Member
-	BlockCache
+	BlockCache BlockCacheImpl
 	Router
 	GlobalStaticProperty
 	GlobalDynamicProperty
@@ -24,11 +24,11 @@ type DPoS struct {
 
 func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DPoS, error) {
 	// Member初始化
-	p.Member = mb
 	p := DPoS{}
+	p.Member = mb
 	p.BlockCache = NewBlockCache(bc, 6)
-	var err error
 
+	var err error
 	p.Router, err = RouterFactory("base")
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DP
 		return nil, err
 	}
 
-	p.initGlobalProperty(p.Member, make([]string))
+	p.initGlobalProperty(p.Member, make([]string, 0))
 	return &p, nil
 }
 
@@ -90,7 +90,7 @@ func (p *DPoS) txListenLoop() {
 		}
 		var tx core.Tx
 		tx.Decode(req.Body)
-		p.PublishTx(tx)
+		//p.PublishTx(tx)
 	}
 }
 
