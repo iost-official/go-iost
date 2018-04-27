@@ -16,12 +16,12 @@ type LuaMethod struct {
 	outputCount int
 }
 
-func NewLuaMethod(name string, value ...lua.LValue) LuaMethod {
+func NewLuaMethod(name string, rtnCount int, value ...lua.LValue) LuaMethod {
 	var m LuaMethod
 	m.name = name
 	m.inputs = make([]lua.LValue, 0)
-
 	m.inputs = append(m.inputs, value...)
+	m.outputCount = rtnCount
 	return m
 }
 
@@ -29,4 +29,8 @@ func (m *LuaMethod) Name() string {
 	return m.name
 }
 func (m *LuaMethod) Input(value ...state.Value) {
+	m.inputs = make([]lua.LValue, 0)
+	for _,v := range value {
+		m.inputs = append(m.inputs, Core2Lua(v))
+	}
 }

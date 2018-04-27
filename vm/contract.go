@@ -10,6 +10,7 @@ import (
 type Contract interface {
 	Info() ContractInfo
 	Api(apiName string) (Method, error)
+	common.Serializable
 }
 
 type LuaContract struct {
