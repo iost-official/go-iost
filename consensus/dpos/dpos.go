@@ -22,7 +22,7 @@ type DPoS struct {
 	chBlock    chan core.Request
 }
 
-func NewDPoS(mb core.Member, bc core.BlockChain, network core.Network) (*DPoS, error) {
+func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DPoS, error) {
 	// Member初始化
 	p.Member = mb
 	p := DPoS{}
