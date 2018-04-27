@@ -11,7 +11,7 @@ func TestTxPoolImpl(t *testing.T) {
 	Convey("Test of TxPool", t, func() {
 		txp := TxPoolImpl{}
 		tx := Tx{
-			Version: 1,
+			//Version: 1,
 			Time:    time.Now().Unix(),
 		}
 		Convey("Add", func() {

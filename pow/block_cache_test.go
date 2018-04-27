@@ -11,42 +11,42 @@ import (
 func TestBlockCache(t *testing.T) {
 	b0 := core.Block{
 		Head: core.BlockHead{
-			SuperHash: []byte("nothing"),
+			ParentHash: []byte("nothing"),
 		},
 		Content: []byte("b0"),
 	}
 
 	b1 := core.Block{
 		Head: core.BlockHead{
-			SuperHash: b0.HeadHash(),
+			ParentHash: b0.HeadHash(),
 		},
 		Content: []byte("b1"),
 	}
 
 	b2 := core.Block{
 		Head: core.BlockHead{
-			SuperHash: b1.HeadHash(),
+			ParentHash: b1.HeadHash(),
 		},
 		Content: []byte("b2"),
 	}
 
 	b2a := core.Block{
 		Head: core.BlockHead{
-			SuperHash: b1.HeadHash(),
+			ParentHash: b1.HeadHash(),
 		},
 		Content: []byte("fake"),
 	}
 
 	b3 := core.Block{
 		Head: core.BlockHead{
-			SuperHash: b2.HeadHash(),
+			ParentHash: b2.HeadHash(),
 		},
 		Content: []byte("b3"),
 	}
 
 	b4 := core.Block{
 		Head: core.BlockHead{
-			SuperHash: b3.HeadHash(),
+			ParentHash: b3.HeadHash(),
 		},
 	}
 
