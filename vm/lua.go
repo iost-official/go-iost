@@ -3,9 +3,7 @@ package vm
 import (
 	"github.com/iost-official/prototype/state"
 	"github.com/iost-official/gopher-lua"
-	"reflect"
 	"fmt"
-	"unsafe"
 )
 
 type LuaAPI struct {
@@ -21,70 +19,82 @@ type LuaVM struct {
 	Contract *LuaContract
 }
 
-func (l *LuaVM) Run(methodName string, args ...state.Value) (state.Pool, error) { // TODO 抛弃输出
-
-	method0, err := l.Contract.Api(methodName)
-	if err != nil {
-		return nil, err
-	}
-
-	method := (*LuaMethod)(unsafe.Pointer(&method0))
-
+func (l *LuaVM) Start() error {
 	for _, api := range l.APIs {
 		l.L.SetGlobal(api.name, l.L.NewFunction(api.function))
 	}
 
 	if err := l.L.DoString(l.Contract.code); err != nil {
-		return nil, err
+		return err
 	}
 
-	err = l.L.CallByParam(method.Entry, method.inputs...)
+	return nil
+}
+func (l *LuaVM) Stop() {
+	l.L.Close()
+}
+func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, state.Pool, error) { // TODO 输出的转换
+
+	method0, err := l.Contract.Api(methodName)
+	if err != nil {
+		fmt.Println(1)
+		return nil, nil, err
+	}
+
+	method := method0.(*LuaMethod)
+
+	err = l.L.CallByParam(lua.P{
+		Fn:      l.L.GetGlobal(method.name),
+		NRet:    method.outputCount,
+		Protect: true,
+	})
+
 
 	if err != nil {
-		return nil, err
+		fmt.Println(2)
+		fmt.Println(method.name)
+		fmt.Println(method.outputCount)
+		return nil, nil, err
 	}
 
+	rtnValue := make([]state.Value, 0, method.outputCount)
+	for i := 0; i < method.outputCount; i ++ {
+		ret := l.L.Get(-1) // returned value
+		l.L.Pop(1)
+		rtnValue = append(rtnValue, Lua2Core(ret))
+	}
 
-	return l.Pool, nil
+	return rtnValue, l.Pool, nil
 }
-func (l *LuaVM) Prepare(contract Contract, pool state.Pool, prefix string) error {
-	if reflect.TypeOf(contract) != reflect.TypeOf(LuaContract{}) {
-		return fmt.Errorf("contract type error")
-	}
-
-	l.Contract = (*LuaContract)(unsafe.Pointer(&contract))
+func (l *LuaVM) Prepare(contract *LuaContract, pool state.Pool, prefix string) error {
+	l.Contract = contract
 
 	l.L = lua.NewState()
 	l.Pool = pool.Copy()
 
 	l.APIs = make([]LuaAPI, 0)
 
-	var Return = LuaAPI{
-		name: "Return",
+	var Put = LuaAPI{
+		name: "Put",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
 			key := state.Key(prefix + l.Contract.Info().Name + k)
-
 			v := L.Get(2)
-
-			switch v.Type() {
-			case lua.LTString:
-				val := state.MakeVString(v.String())
-				l.Pool.Put(key, &val)
-			}
-
+			l.Pool.Put(key, Lua2Core(v))
+			L.Push(lua.LTrue)
 			return 1
 		},
 	}
-	l.APIs = append(l.APIs, Return)
+	l.APIs = append(l.APIs, Put)
 
-	var Finish = LuaAPI{
-		name: "Finish",
+	var Log = LuaAPI{
+		name: "Log",
 		function: func(L *lua.LState) int {
-			defer L.Close()
+			k := L.ToString(1)
+			fmt.Println("From Lua :", k)
 			return 0
 		},
 	}
-	l.APIs = append(l.APIs, Finish)
+	l.APIs = append(l.APIs, Log)
 	return nil
 }
