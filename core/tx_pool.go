@@ -6,8 +6,6 @@ import (
 	"github.com/iost-official/prototype/common"
 )
 
-
-
 //go:generate mockgen -destination mocks/mock_tx_pool.go -package core_mock github.com/iost-official/prototype/core TxPool
 
 // Tx池，因为需要装入Block中所以需要serializable
