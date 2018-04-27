@@ -43,7 +43,10 @@ func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DP
 		WhiteList:  []core.Member{},
 		BlackList:  []core.Member{},
 		RejectType: []ReqType{},
-		AcceptType: []ReqType{ReqPublishTx}})
+		AcceptType: []ReqType{
+			ReqPublishTx,
+			ReqTypeVoteTest, // Only for test
+		}})
 	if err != nil {
 		return nil, err
 	}
@@ -90,13 +93,16 @@ func (p *DPoS) txListenLoop() {
 		if !ok {
 			return
 		}
+		if req.ReqType == ReqTypeVoteTest {
+			p.AddWitnessMsg(req)
+			continue
+		}
 		var tx core.Tx
 		tx.Decode(req.Body)
 		p.Router.Send(req)
 		if verifyTxSig(tx) {
 			// Add to tx pool or recorder
 		}
-		//p.PublishTx(tx)
 	}
 }
 
