@@ -1,16 +1,29 @@
 package vm
 
-type BlockValue interface{}
+import (
+	"github.com/iost-official/prototype/state"
+)
 
-type Program struct {
-	Owner  string
-	Script string
-}
+type Address string
 
-func Exec(program Program) (oldState, newState map[string]BlockValue) {
+type Privilege int
+
+const (
+	Private       Privilege = iota
+	Protected
+	public
+)
+
+type Code []byte
+
+type Pubkey []byte
+
+
+
+func getStatus(addr Address, key state.Key) (state.Value, error) {
 	return nil, nil
 }
 
-func getStatus(addr, key string) (BlockValue, error) {
-	return nil, nil
+type VM interface {
+	RunMethod(method Method, pool state.Pool) (state.Pool, error)
 }

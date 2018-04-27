@@ -1,6 +1,8 @@
 package dpos
 
 import (
+	"encoding/binary"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core"
 	. "github.com/iost-official/prototype/p2p"
 	. "github.com/iost-official/prototype/pow"
@@ -90,8 +92,32 @@ func (p *DPoS) txListenLoop() {
 		}
 		var tx core.Tx
 		tx.Decode(req.Body)
+		p.Router.Send(req)
+		if verifyTxSig(tx) {
+			// Add to tx pool or recorder
+		}
 		//p.PublishTx(tx)
 	}
+}
+
+func verifyTxSig(tx core.Tx) bool {
+	var info []byte
+	binary.BigEndian.PutUint64(info, uint64(tx.Time))
+	info = append(info, tx.Contract.Encode()...)
+	for _, sign := range tx.Signs {
+		if !common.VerifySignature(info, sign) {
+			return false
+		}
+	}
+	for _, sign := range tx.Signs {
+		info = append(info, sign.Encode()...)
+	}
+	for _, sign := range tx.Publisher {
+		if !common.VerifySignature(info, sign) {
+			return false
+		}
+	}
+	return true
 }
 
 func (p *DPoS) blockLoop() {

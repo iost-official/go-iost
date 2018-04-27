@@ -6,6 +6,8 @@ import (
 	"github.com/iost-official/prototype/common"
 )
 
+
+
 //go:generate mockgen -destination mocks/mock_tx_pool.go -package core_mock github.com/iost-official/prototype/core TxPool
 
 // Tx池，因为需要装入Block中所以需要serializable
@@ -27,7 +29,7 @@ func NewTxPool() TxPool {
 	txp := TxPoolImpl{
 		txMap: make(map[string]Tx),
 		TxPoolRaw: TxPoolRaw{
-			Txs:    make([]Tx, 0),
+			Txs:    make([]TxRaw, 0),
 			TxHash: make([][]byte, 0),
 		},
 	}
@@ -76,27 +78,28 @@ func (tp *TxPoolImpl) Size() int {
 }
 
 func (tp *TxPoolImpl) Encode() []byte {
-	for k, v := range tp.txMap {
-		tp.TxHash = append(tp.TxHash, common.Base58Decode(k))
-		tp.Txs = append(tp.Txs, v)
-	}
-	bytes, err := tp.Marshal(nil)
-	if err != nil {
-		panic(err)
-	}
-	tp.TxHash = [][]byte{}
-	tp.Txs = []Tx{}
-	return bytes
+	//for k, v := range tp.txMap {
+	//	tp.TxHash = append(tp.TxHash, common.Base58Decode(k))
+	//	tp.Txs = append(tp.Txs, v)
+	//}
+	//bytes, err := tp.Marshal(nil)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//tp.TxHash = [][]byte{}
+	//tp.Txs = []TxRaw{}
+	//return bytes
+	return nil
 }
 
 func (tp *TxPoolImpl) Decode(a []byte) error {
-	_, err := tp.Unmarshal(a)
-	if err != nil {
-		return err
-	}
-	for i, v := range tp.TxHash {
-		tp.txMap[common.Base58Encode(v)] = tp.Txs[i]
-	}
+	//_, err := tp.Unmarshal(a)
+	//if err != nil {
+	//	return err
+	//}
+	//for i, v := range tp.TxHash {
+	//	tp.txMap[common.Base58Encode(v)] = tp.Txs[i]
+	//}
 	return nil
 }
 
