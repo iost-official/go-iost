@@ -1,9 +1,11 @@
 package state
 
 import (
-	"github.com/iost-official/prototype/core"
 	"fmt"
 )
+
+//go:generate gencode go -schema=structs.schema -package=state
+//go:generate mockgen -destination mocks/mock_pool.go -package state_mock github.com/iost-official/prototype/state Pool
 
 type Pool interface {
 	Copy() Pool
@@ -14,10 +16,6 @@ type Pool interface {
 	Get(key Key) (Value, error)
 	Has(key Key) (bool, error)
 	Delete(key Key) error
-}
-
-func NewPool(bc core.BlockChain) Pool {
-	return nil // TODO complete
 }
 
 type PoolImpl struct {
