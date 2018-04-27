@@ -16,11 +16,25 @@ func TestLuaVM(t *testing.T) {
 
 		var k state.Key
 
-		pool.EXPECT().Put(gomock.Any(),gomock.Any()).AnyTimes().Do(func(key state.Key, value state.Value) error{
+		pool.EXPECT().Put(gomock.Any(), gomock.Any()).AnyTimes().Do(func(key state.Key, value state.Value) error {
 			k = key
 			return nil
 		})
+		pool.EXPECT().Copy().AnyTimes().Do(func() {})
+		main := NewLuaMethod("main")
+		lc := LuaContract{
+			info: ContractInfo{},
+			code: `function main()
+    print("hello world")
+end`,
+			main: &main,
+		}
 
+		lvm := LuaVM{}
+		lvm.Prepare(&lc, pool, "test")
+		lvm.Start()
+		lvm.Call("main")
+		lvm.Stop()
 
 	})
 }
