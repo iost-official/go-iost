@@ -24,21 +24,42 @@ type DPoS struct {
 	chBlock    chan core.Request
 }
 
-func NewDPoS(mb core.Member, bc core.BlockChain, network core.Network) (*DPoS, error) {
+func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DPoS, error) {
 	// Member初始化
 	p.Member = mb
 	p := DPoS{}
 	p.BlockCache = NewBlockCache(bc, 6)
+	var err error
 
-	p.Router, err = RouterFactor()
+	p.Router, err = RouterFactory("base")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	p.Router.Init(network)
 
 	/*
-		chan init
+		Tx chan init
 	*/
+	p.chTx, err = p.Router.FilteredChan(Filter{
+		WhiteList:  []core.Member{},
+		BlackList:  []core.Member{},
+		RejectType: []ReqType{},
+		AcceptType: []ReqType{ReqPublishTx}})
+	if err != nil {
+		return nil, err
+	}
+
+	/*
+		Block chan init
+	*/
+	p.chBlock, err = p.Router.FilteredChan(Filter{
+		WhiteList:  []core.Member{},
+		BlackList:  []core.Member{},
+		RejectType: []ReqType{},
+		AcceptType: []ReqType{ReqNewBlock}})
+	if err != nil {
+		return nil, err
+	}
+
 	p.initGlobalProperty(p.Member, make([]string))
 	return &p, nil
 }
@@ -101,6 +122,9 @@ func verifyTxSig(tx core.Tx) bool {
 
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
+	verifier := func(blk *core.Block, chain core.BlockChain) bool {
+		return true
+	}
 	for {
 		req, ok := <-p.chBlock
 		if !ok {
@@ -108,7 +132,7 @@ func (p *DPoS) blockLoop() {
 		}
 		var blk core.Block
 		blk.Decode(req.Body)
-		p.BlockCache.Add(&blk)
+		p.BlockCache.Add(&blk, verifier)
 	}
 }
 
