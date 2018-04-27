@@ -9,8 +9,8 @@ import (
 
 func TestDPoS(t *testing.T) {
 	Convey("Test of DPos", t, func() {
-		dpos := NewDPoS(core.Member{"id0", []byte{}, []byte{}}, []string{"id1", "id2", "id3"}, core.BlockChain{})
-
+		dpos, _ := NewDPoS(core.Member{"id0", []byte{}, []byte{}}, nil)
+		dpos.Run()
 	})
 
 }

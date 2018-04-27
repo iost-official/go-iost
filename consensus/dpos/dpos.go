@@ -1,16 +1,16 @@
 package dpos
 
 import (
+	"encoding/binary"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core"
 	. "github.com/iost-official/prototype/p2p"
 	. "github.com/iost-official/prototype/pow"
-	"github.com/iost-official/prototype/common"
-	"encoding/binary"
 )
 
 type DPoS struct {
 	core.Member
-	BlockCache
+	BlockCache BlockCacheImpl
 	Router
 	GlobalStaticProperty
 	GlobalDynamicProperty
@@ -26,11 +26,11 @@ type DPoS struct {
 
 func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DPoS, error) {
 	// Member初始化
-	p.Member = mb
 	p := DPoS{}
+	p.Member = mb
 	p.BlockCache = NewBlockCache(bc, 6)
-	var err error
 
+	var err error
 	p.Router, err = RouterFactory("base")
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DP
 		return nil, err
 	}
 
-	p.initGlobalProperty(p.Member, make([]string))
+	p.initGlobalProperty(p.Member, make([]string, 0))
 	return &p, nil
 }
 
