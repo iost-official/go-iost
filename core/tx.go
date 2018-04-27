@@ -1,35 +1,23 @@
 package core
 
-import "github.com/iost-official/prototype/common"
+import (
+	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/common"
+)
 
-func (d *TxInput) Encode() []byte {
-	bin, err := d.Marshal(nil)
-	if err != nil {
-		panic(err)
-	}
-	return bin
-}
-
-func (d *TxInput) Decode(bin []byte) error {
-	_, err := d.Unmarshal(bin)
-	return err
-}
-func (d *TxInput) Hash() []byte {
-	return common.Sha256(d.Encode())
+type Tx struct {
+	Time      int64
+	Contract  vm.Contract
+	Signs     []common.Signature
+	Publisher []common.Signature
 }
 
-func (d *Tx) Encode() []byte {
-	bin, err := d.Marshal(nil)
-	if err != nil {
-		panic(err)
-	}
-	return bin
+func (t *Tx) Encode() []byte {
+	return nil
 }
-
-func (d *Tx) Decode(bin []byte) error {
-	_, err := d.Unmarshal(bin)
-	return err
+func (t *Tx) Decode([]byte) error {
+	return nil
 }
-func (d *Tx) Hash() []byte {
-	return common.Sha256(d.Encode())
+func (t *Tx) Hash() []byte {
+	return nil
 }

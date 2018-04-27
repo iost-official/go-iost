@@ -10,21 +10,20 @@ struct TxInput {
    UTXOHash []byte
 }
 
-struct Tx {
-   Version int32
-   Inputs []TxInput
-   Outputs []UTXO
+struct TxRaw {
    Time int64
+   Contract []byte
+   Signs [][]byte
 }
 
 struct TxPoolRaw {
-    Txs []Tx
+    Txs []TxRaw
     TxHash [][]byte
 }
 
 struct BlockHead {
-   Version int8
-   SuperHash []byte
+   Version int32
+   ParentHash []byte
    TreeHash []byte
    Info []byte
    Time    int64

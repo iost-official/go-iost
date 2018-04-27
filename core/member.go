@@ -43,7 +43,7 @@ func randomSeckey() []byte {
 }
 
 func makePubkey(seckey []byte) []byte {
-	return common.CalcPubkey(seckey)
+	return common.CalcPubkeyInSecp256k1(seckey)
 }
 
 func GetIdByPubkey(pubkey []byte) string {

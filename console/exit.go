@@ -7,6 +7,8 @@ func Exit() Cmd {
 	}
 
 	e.Exec = func(host *Console, args []string) string {
+		close(Done)
+		Wg.Wait()
 		host.Stop()
 		return "bye"
 	}

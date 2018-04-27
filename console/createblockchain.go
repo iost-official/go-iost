@@ -11,16 +11,16 @@ func Createblockchain() Cmd {
 		if len(args) != 1 {
 			return "Invalid arguments!\n"
 		}
-		bc, toPrint := transaction.CreateBlockchain(args[0])
+		bc, to_print := transaction.CreateBlockchain(args[0], Db, Nn)
 
 		if bc == nil {
-			return toPrint
+			return to_print
 		}
 
-		defer bc.Db.Close()
+		//defer bc.Db.Close()
 
-		toPrint += "Done!\n"
-		return toPrint
+		to_print += "Done!\n"
+		return to_print
 	}
 	return c
 }

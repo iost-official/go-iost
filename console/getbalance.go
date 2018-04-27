@@ -14,13 +14,13 @@ func Getbalance() Cmd {
 				return "Invalid arguments!\n"
 			}
 			address := args[0]
-			bc, toPrint := transaction.NewBlockchain(address)
+			bc, to_print := transaction.NewBlockchain(address, Db)
 
 			if bc == nil {
-				return toPrint
+				return to_print
 			}
 
-			defer bc.Db.Close()
+			//defer bc.Db.Close()
 
 			balance := 0
 			UTXOs := bc.FindUTXO(address)

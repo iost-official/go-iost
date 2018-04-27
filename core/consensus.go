@@ -3,7 +3,7 @@ package core
 type TxStatus int
 
 const (
-	ACCEPT TxStatus = iota
+	ACCEPT  TxStatus = iota
 	CACHED
 	POOL
 	REJECT
@@ -11,13 +11,10 @@ const (
 )
 
 type Consensus interface {
-	Init(bc BlockChain, sp UTXOPool, network Network) error
+	Init(bc BlockChain, network Network) error
 	Run()
 	Stop()
 
-	PublishTx(tx Tx) error
-	CheckTx(tx Tx) (TxStatus, error)
-
-	GetStatus() (BlockChain, UTXOPool, error)
-	GetCachedStatus() (BlockChain, UTXOPool, error)
+	GetBlockChain() BlockChain
+	GetCachedBlockChain() BlockChain
 }
