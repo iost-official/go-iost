@@ -23,6 +23,9 @@ func (p *Patch) Delete(key Key) error {
 	delete(p.m, key)
 	return nil
 }
+func (p *Patch) Length() int {
+	return len(p.m)
+}
 func (p *Patch) Encode() []byte {
 	pr := PatchRaw{
 		keys: make([]string, 0),

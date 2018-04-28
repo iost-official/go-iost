@@ -1,4 +1,4 @@
-package core
+package common
 
 type Serializable interface {
 	Encode() []byte
