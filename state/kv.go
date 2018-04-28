@@ -82,9 +82,6 @@ func (v *VString) Type() Type {
 	return v.T
 }
 func (v *VString) String() string {
-	if v.T != Int {
-		panic(fmt.Errorf("type error"))
-	}
 	return v.string
 }
 func (v *VString) Encode() []byte {
