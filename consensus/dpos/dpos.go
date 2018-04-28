@@ -126,6 +126,9 @@ func (p *DPoS) blockLoop() {
 		if !common.VerifySignature(headInfo, signature) {
 			return false
 		}
+		if !common2.VerifyBlockContent(blk, chain) {
+			return false
+		}
 		return true
 	}
 

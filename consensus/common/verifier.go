@@ -6,6 +6,7 @@ import (
 	"github.com/iost-official/prototype/core"
 	"encoding/binary"
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/state"
 )
 
 // 验证块头正确性，调用此函数时块的父亲节点已经找到
@@ -27,19 +28,31 @@ func VerifyBlockHead(blk *core.Block, parentBlk *core.Block) bool {
 	return true
 }
 
-func calcTreeHash(txs []Tx) []byte {
+func calcTreeHash(txs []core.Tx) []byte {
 	return nil
 }
 
 // 验证块内交易的正确性
 func VerifyBlockContent(blk *core.Block, chain core.BlockChain) bool {
-	txs := DecodeTxs(blk.content)
-	return vm.ExecBlockTxs(txs, chain)
+	txs := DecodeTxs(blk.Head.BlockHash)
+	var contracts []vm.Contract
+	for _, tx := range txs {
+		contracts = append(contracts, tx.Contract)
+	}
+	newPool, err := vm.VerifyBlock(contracts, chain.GetStatePool())
+	if err != nil {
+		return false
+	}
+	chain.SetStatePool(newPool)
+	return true
 }
 
 // 验证单个交易的正确性
-func VeirifyTx(tx core.Tx, chain core.BlockChain) bool {
-	return !vm.ExecCachedTxs(tx, chain)
+// 在调用之前需要先调用vm.NewCacheVerifier(pool state.Pool)生成一个cache verifier
+// TODO: 考虑自己生成块到达最后一个交易时，直接用返回的state pool更新block cache中的state
+func VeirifyTx(tx core.Tx, cv *vm.CacheVerifier) (state.Pool, bool) {
+	newPool, err := cv.VerifyContract(tx.Contract, false)
+	return newPool, err == nil
 }
 
 func VerifyTxSig(tx core.Tx) bool {
@@ -60,4 +73,8 @@ func VerifyTxSig(tx core.Tx) bool {
 		}
 	}
 	return true
+}
+
+func DecodeTxs(content []byte) []core.Tx {
+	return nil
 }
