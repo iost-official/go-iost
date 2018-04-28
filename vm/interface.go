@@ -25,5 +25,9 @@ func getStatus(addr Address, key state.Key) (state.Value, error) {
 }
 
 type VM interface {
-	RunMethod(method Method, pool state.Pool) (state.Pool, error)
+	Prepare(contract Contract, pool state.Pool, prefix string) error
+	Start() error
+	Stop()
+	Call(methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
+	SetPool(pool state.Pool)
 }

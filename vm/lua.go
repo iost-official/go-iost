@@ -15,7 +15,8 @@ type LuaVM struct {
 	APIs []LuaAPI
 	L    *lua.LState
 
-	Pool     state.Pool
+	Pool, cachePool state.Pool
+
 	Contract *LuaContract
 }
 
@@ -33,7 +34,9 @@ func (l *LuaVM) Start() error {
 func (l *LuaVM) Stop() {
 	l.L.Close()
 }
-func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, state.Pool, error) { // TODO 输出的转换
+func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
+
+	l.cachePool = l.Pool.Copy()
 
 	method0, err := l.Contract.Api(methodName)
 	if err != nil {
@@ -49,7 +52,6 @@ func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, sta
 		Protect: true,
 	})
 
-
 	if err != nil {
 		fmt.Println(2)
 		fmt.Println(method.name)
@@ -64,13 +66,17 @@ func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, sta
 		rtnValue = append(rtnValue, Lua2Core(ret))
 	}
 
-	return rtnValue, l.Pool, nil
+	return rtnValue, l.cachePool, nil
 }
-func (l *LuaVM) Prepare(contract *LuaContract, pool state.Pool, prefix string) error {
-	l.Contract = contract
+func (l *LuaVM) Prepare(contract Contract, pool state.Pool, prefix string) error {
+	var ok bool
+	l.Contract, ok = contract.(*LuaContract)
+	if !ok {
+		return fmt.Errorf("type error")
+	}
 
 	l.L = lua.NewState()
-	l.Pool = pool.Copy()
+	l.Pool = pool
 
 	l.APIs = make([]LuaAPI, 0)
 
@@ -80,7 +86,7 @@ func (l *LuaVM) Prepare(contract *LuaContract, pool state.Pool, prefix string) e
 			k := L.ToString(1)
 			key := state.Key(prefix + l.Contract.Info().Name + k)
 			v := L.Get(2)
-			l.Pool.Put(key, Lua2Core(v))
+			l.cachePool.Put(key, Lua2Core(v))
 			L.Push(lua.LTrue)
 			return 1
 		},
@@ -96,5 +102,11 @@ func (l *LuaVM) Prepare(contract *LuaContract, pool state.Pool, prefix string) e
 		},
 	}
 	l.APIs = append(l.APIs, Log)
+
+
 	return nil
 }
+func (l *LuaVM) SetPool(pool state.Pool) {
+	l.Pool = pool
+}
+
