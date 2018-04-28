@@ -1,8 +1,8 @@
 package dpos
 
 import (
-	"encoding/binary"
-	"github.com/iost-official/prototype/common"
+	"fmt"
+
 	"github.com/iost-official/prototype/core"
 	. "github.com/iost-official/prototype/p2p"
 	. "github.com/iost-official/prototype/pow"
@@ -39,31 +39,33 @@ func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DP
 	/*
 		Tx chan init
 	*/
-	p.chTx, err = p.Router.FilteredChan(Filter{
-		WhiteList:  []core.Member{},
-		BlackList:  []core.Member{},
-		RejectType: []ReqType{},
-		AcceptType: []ReqType{
-			ReqPublishTx,
-			ReqTypeVoteTest, // Only for test
-		}})
-	if err != nil {
-		return nil, err
-	}
+	/*
+		p.chTx, err = p.Router.FilteredChan(Filter{
+			WhiteList:  []core.Member{},
+			BlackList:  []core.Member{},
+			RejectType: []ReqType{},
+			AcceptType: []ReqType{
+				ReqPublishTx,
+				//	ReqTypeVoteTest, // Only for test
+			}})
+		if err != nil {
+			return nil, err
+		}*/
 
 	/*
 		Block chan init
 	*/
-	p.chBlock, err = p.Router.FilteredChan(Filter{
-		WhiteList:  []core.Member{},
-		BlackList:  []core.Member{},
-		RejectType: []ReqType{},
-		AcceptType: []ReqType{ReqNewBlock}})
-	if err != nil {
-		return nil, err
-	}
+	/*
+		p.chBlock, err = p.Router.FilteredChan(Filter{
+			WhiteList:  []core.Member{},
+			BlackList:  []core.Member{},
+			RejectType: []ReqType{},
+			AcceptType: []ReqType{ReqNewBlock}})
+		if err != nil {
+			return nil, err
+		}*/
 
-	p.initGlobalProperty(p.Member, make([]string, 0))
+	p.initGlobalProperty(p.Member, []string{"id1", "id2", "id3"})
 	return &p, nil
 }
 
@@ -73,8 +75,8 @@ func (p *DPoS) initGlobalProperty(mb core.Member, witnessList []string) {
 }
 
 func (p *DPoS) Run() {
-	go p.blockLoop()
-	go p.scheduleLoop()
+	//go p.blockLoop()
+	p.scheduleLoop()
 }
 
 func (p *DPoS) Stop() {
@@ -87,6 +89,7 @@ func (p *DPoS) Genesis(initTime core.Timestamp, hash []byte) error {
 	return nil
 }
 
+/*
 func (p *DPoS) txListenLoop() {
 	for {
 		req, ok := <-p.chTx
@@ -125,7 +128,7 @@ func verifyTxSig(tx core.Tx) bool {
 	}
 	return true
 }
-
+*/
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
 	verifier := func(blk *core.Block, chain core.BlockChain) bool {
@@ -144,13 +147,21 @@ func (p *DPoS) blockLoop() {
 
 func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
+	fmt.Println("test")
+
 	for {
 		currentTimestamp := core.GetCurrentTimestamp()
+		fmt.Println(currentTimestamp)
 		wid := WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, currentTimestamp)
 		if wid == p.Member.ID {
 			//TODO
 			// 生成blk
 		}
+		curSec := currentTimestamp.ToUnixSec()
+		fmt.Println(curSec)
+		nextSchedule := TimeUntilNextSchedule(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, curSec)
+		fmt.Println(nextSchedule)
+		return
 
 	}
 }
