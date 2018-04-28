@@ -4,8 +4,10 @@ import (
 	"errors"
 	"sort"
 
+	"bytes"
 	"github.com/iost-official/prototype/core"
 	"strings"
+	"time"
 )
 
 const (
@@ -24,7 +26,7 @@ func (p *DPoS) VoteForWitness(voter core.Member, witnessId string, voteType bool
 		reqString = "Vote Against " + voter.GetId() + " " + witnessId
 	}
 	req := core.Request{
-		Time: core.GetCurrentTimestamp(),
+		Time: time.Now().Unix(),
 		From: voter.GetId(),
 		//To:      p.DPoSSuperMember,
 		To:      "ALL",
@@ -38,7 +40,7 @@ func (p *DPoS) WitnessJoin(witness core.Member) {
 	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
 	reqString := "Join " + witness.GetId()
 	req := core.Request{
-		Time: core.GetCurrentTimestamp(),
+		Time: time.Now().Unix(),
 		From: witness.GetId(),
 		//To:      p.DPoSSuperMember,
 		To:      "ALL",
@@ -52,7 +54,7 @@ func (p *DPoS) WitnessQuit(witness core.Member) {
 	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
 	reqString := "Quit " + witness.GetId()
 	req := core.Request{
-		Time: core.GetCurrentTimestamp(),
+		Time: time.Now().Unix(),
 		From: witness.GetId(),
 		//To:      p.DPoSSuperMember,
 		To:      "ALL",
@@ -69,16 +71,16 @@ func (p *DPoS) AddWitnessMsg(req core.Request) {
 		return
 	}
 	for _, request := range p.infoCache {
-		if request.From == req.From && string(request.Body[:]) == string(req.Body[:]) {
+		if bytes.Equal(request, req.Body) {
 			return
 		}
 	}
-	p.infoCache = append(p.infoCache, req)
+	p.infoCache = append(p.infoCache, req.Body)
 }
 
 // 测试用函数：当块被确认，解码info中的相关消息更新投票状态
-func (p *DPoS) ProcessWitnessTx(req core.Request) error {
-	reqStrings := strings.Split(string(req.Body[:]), " ")
+func (p *DPoS) ProcessWitnessTx(req []byte) error {
+	reqStrings := strings.Split(string(req), " ")
 	switch reqStrings[0] {
 	case "Join":
 		witness := reqStrings[1]

@@ -1,8 +1,10 @@
 package dpos
 
 import (
+	"bytes"
 	"encoding/binary"
 	"github.com/iost-official/prototype/common"
+	common2 "github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core"
 	. "github.com/iost-official/prototype/p2p"
 	. "github.com/iost-official/prototype/pow"
@@ -15,9 +17,9 @@ type DPoS struct {
 	GlobalStaticProperty
 	GlobalDynamicProperty
 
-	//测试用，保存投票状态，以及投票消息的缓存
+	//测试用，保存投票状态，以及投票消息内容的缓存
 	votedStats map[string][]string
-	infoCache  []core.Request
+	infoCache  [][]byte
 
 	ExitSignal chan bool
 	chTx       chan core.Request
@@ -100,37 +102,33 @@ func (p *DPoS) txListenLoop() {
 		var tx core.Tx
 		tx.Decode(req.Body)
 		p.Router.Send(req)
-		if verifyTxSig(tx) {
+		if common2.VerifyTxSig(tx) {
 			// Add to tx pool or recorder
 		}
 	}
 }
 
-func verifyTxSig(tx core.Tx) bool {
-	var info []byte
-	binary.BigEndian.PutUint64(info, uint64(tx.Time))
-	info = append(info, tx.Contract.Encode()...)
-	for _, sign := range tx.Signs {
-		if !common.VerifySignature(info, sign) {
-			return false
-		}
-	}
-	for _, sign := range tx.Signs {
-		info = append(info, sign.Encode()...)
-	}
-	for _, sign := range tx.Publisher {
-		if !common.VerifySignature(info, sign) {
-			return false
-		}
-	}
-	return true
-}
-
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
 	verifier := func(blk *core.Block, chain core.BlockChain) bool {
+		// verify block head
+		if !common2.VerifyBlockHead(blk, chain.Top()) {
+			return false
+		}
+		// verify block witness
+		if WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, blk.Head.Time) != blk.Head.Witness {
+			return false
+		}
+		headInfo := generateHeadInfo(blk.Head)
+		var signature common.Signature
+		signature.Decode(blk.Head.Signature)
+		// verify block witness signature
+		if !common.VerifySignature(headInfo, signature) {
+			return false
+		}
 		return true
 	}
+
 	for {
 		req, ok := <-p.chBlock
 		if !ok {
@@ -138,7 +136,10 @@ func (p *DPoS) blockLoop() {
 		}
 		var blk core.Block
 		blk.Decode(req.Body)
-		p.BlockCache.Add(&blk, verifier)
+		err := p.BlockCache.Add(&blk, verifier)
+		if err == nil {
+			p.GlobalDynamicProperty.Update(&blk.Head)
+		}
 	}
 }
 
@@ -153,4 +154,34 @@ func (p *DPoS) scheduleLoop() {
 		}
 
 	}
+}
+
+func generateHeadInfo(head core.BlockHead) []byte {
+	var info, numberInfo, versionInfo []byte
+	binary.BigEndian.PutUint64(info, uint64(head.Time.Slot))
+	binary.BigEndian.PutUint32(versionInfo, uint32(head.Version))
+	binary.BigEndian.PutUint32(numberInfo, uint32(head.Number))
+	info = append(info, versionInfo...)
+	info = append(info, numberInfo...)
+	info = append(info, head.ParentHash...)
+	info = append(info, head.TreeHash...)
+	info = append(info, head.Info...)
+	return info
+}
+
+// 测试函数，用来将info和vote消息进行转换，在块被确认时被调用
+// TODO:找到适当的时机调用
+func decodeDPoSInfo(info []byte) [][]byte {
+	votes := bytes.Split(info, []byte("/"))
+	return votes
+}
+
+// 测试函数，用来将info和vote消息进行转换，在生成块的时候调用
+func encodeDPoSInfo(votes [][]byte) []byte {
+	var info []byte
+	for _, req := range votes {
+		info = append(info, req...)
+		info = append(info, byte('/'))
+	}
+	return info
 }
