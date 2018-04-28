@@ -40,7 +40,6 @@ func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, sta
 
 	method0, err := l.Contract.Api(methodName)
 	if err != nil {
-		fmt.Println(1)
 		return nil, nil, err
 	}
 
@@ -53,9 +52,6 @@ func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, sta
 	})
 
 	if err != nil {
-		fmt.Println(2)
-		fmt.Println(method.name)
-		fmt.Println(method.outputCount)
 		return nil, nil, err
 	}
 
@@ -103,10 +99,11 @@ func (l *LuaVM) Prepare(contract Contract, pool state.Pool, prefix string) error
 	}
 	l.APIs = append(l.APIs, Log)
 
-
 	return nil
 }
 func (l *LuaVM) SetPool(pool state.Pool) {
 	l.Pool = pool
 }
-
+func (l *LuaVM) PC() uint64 {
+	return l.L.PCount
+}

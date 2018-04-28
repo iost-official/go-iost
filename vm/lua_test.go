@@ -23,9 +23,7 @@ func TestLuaVM(t *testing.T) {
 			v = value
 			return nil
 		})
-		pool.EXPECT().Copy().AnyTimes().Do(func() state.Pool {
-			return pool
-		})
+		pool.EXPECT().Copy().AnyTimes().Return(pool)
 		main := NewLuaMethod("main", 1)
 		lc := LuaContract{
 			info: ContractInfo{},
@@ -36,6 +34,7 @@ func TestLuaVM(t *testing.T) {
 end`,
 			main: &main,
 		}
+
 
 		lvm := LuaVM{}
 		lvm.Prepare(&lc, pool, "test")

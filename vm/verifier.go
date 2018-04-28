@@ -6,6 +6,10 @@ import (
 	"fmt"
 )
 
+const (
+	MaxBlockGas uint64 = 1000000
+)
+
 type Verifier struct {
 	Pool   state.Pool
 	Prefix string
@@ -31,15 +35,15 @@ func (v *Verifier) Stop() {
 	}
 }
 
-func (v *Verifier) Verify(contract Contract) (state.Pool, error) {
+func (v *Verifier) Verify(contract Contract) (state.Pool, uint64, error) {
 
 	vm, ok := v.Vms[string(contract.Hash())]
 	if !ok {
-		return nil, fmt.Errorf("not prepared")
+		return nil, 0, fmt.Errorf("not prepared")
 	}
-
 	_, pool, err := vm.Call("main")
-	return pool, err
+
+	return pool, vm.PC(), err
 }
 
 func (v *Verifier) SetPool(pool state.Pool) {
@@ -55,10 +59,17 @@ type CacheVerifier struct {
 
 func (cv *CacheVerifier) VerifyContract(contract Contract, contain bool) (state.Pool, error) {
 	cv.StartVm(contract)
-	pool, err := cv.Verify(contract)
+	pool, gas, err := cv.Verify(contract)
 	if err != nil {
 		return nil, err
 	}
+
+	if gas > uint64(contract.Info().GasLimit) {
+		return nil, fmt.Errorf("gas exceed")
+	}
+
+	// TODO 在这里扣掉发布者的gas
+
 	if contain {
 		cv.SetPool(pool)
 	}
@@ -80,13 +91,28 @@ func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	return cv
 }
 
-func VerifyBlock(contracts []Contract, pool state.Pool) (state.Pool, error) {
-	cv := NewCacheVerifier(pool)
+func VerifyBlock(blockID string, contracts []Contract, pool state.Pool) (state.Pool, error) {
+	cv := Verifier{
+		Pool:pool,
+		Prefix: blockID,
+		Vms: make(map[string]VM),
+	}
+	var totalGas uint64
 	for _, c := range contracts {
-		_, err := cv.VerifyContract(c, true)
+		cv.StartVm(c)
+		_, gas, err := cv.Verify(c)
 		if err != nil {
 			return nil, err
 		}
+		if gas > uint64(c.Info().GasLimit) {
+			return nil, fmt.Errorf("gas exceed")
+		}
+		// TODO 扣钱
+		totalGas += gas
+		if totalGas > MaxBlockGas {
+			return nil, fmt.Errorf("block gas exceed")
+		}
+		cv.StopVm(c)
 	}
 	return cv.Pool, nil
 }

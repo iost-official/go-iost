@@ -13,3 +13,7 @@ struct ContractRaw {
     info ContractInfo
     code []byte
 }
+
+struct VerifyLogRaw {
+    List  [][]int32
+}

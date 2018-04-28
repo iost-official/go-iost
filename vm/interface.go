@@ -30,4 +30,5 @@ type VM interface {
 	Stop()
 	Call(methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
 	SetPool(pool state.Pool)
+	PC() uint64
 }

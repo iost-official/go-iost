@@ -50,3 +50,5 @@ func (c *LuaContract) Decode(b []byte) error {
 func (c *LuaContract) Hash() []byte {
 	return common.Sha256(c.Encode())
 }
+
+
