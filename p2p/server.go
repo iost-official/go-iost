@@ -74,13 +74,13 @@ type transport interface {
 type Server struct {
 	ListenAddr string
 
-	RemoteAddr string
+	RemoteAddr string //启动节点，nodeTable全部失效的时候尝试连接的节点
 	Conn       net.Conn
 
 	// is seedAddr pinged
 	pinged    bool
-	seedAddr  string
-	nodeTable *iostdb.LDBDatabase //key-address,val-retry times
+	seedAddr  string              //nodeTable随机出的节点
+	nodeTable *iostdb.LDBDatabase //除remoteAddr外的，所有已知节点
 	lock      sync.RWMutex
 
 	// the nodes which use our server as the remote addr
@@ -136,10 +136,6 @@ func (s *Server) Listen(port uint16) (<-chan core.Request, error) {
 	if isListenAddrNotInBoot(s.ListenAddr) && s.RemoteAddr == "" {
 		s.RemoteAddr = s.randBootAddr()
 	}
-	if s.RemoteAddr != "" {
-		s.putNode(s.RemoteAddr)
-		s.seedAddr = s.RemoteAddr
-	}
 	//receive msg
 	go func() {
 		for {
@@ -154,9 +150,8 @@ func (s *Server) Listen(port uint16) (<-chan core.Request, error) {
 	//send msg
 	go s.sendLoop()
 	//conn manage
-	errConn := s.manageConnLoop()
-
-	return s.RecvCh, errConn
+	go s.manageConnLoop()
+	return s.RecvCh, nil
 }
 
 func (s *Server) Start() error {
@@ -178,9 +173,11 @@ func (s *Server) Start() error {
 	//send msg
 	go s.sendLoop()
 	//conn manage
-	return s.manageConnLoop()
+	go s.manageConnLoop()
+	return nil
 }
 
+//应用层广播
 func (s *Server) Broadcast(r *core.Request) {
 	data, err := r.Marshal(nil)
 	if err != nil {
@@ -213,6 +210,7 @@ func (s *Server) sendLoop() {
 	}
 }
 
+//网络层广播
 func (s *Server) broadcast(r *Request) {
 	if r.Type == BroadcastMessage {
 		if s.Conn != nil {
@@ -228,6 +226,7 @@ func (s *Server) broadcast(r *Request) {
 		}
 	}
 }
+
 func (s *Server) send(conn net.Conn, body []byte, typ ReqType) {
 	if conn == nil {
 		s.log.E("from %v,send data = %v, conn is nil", s.ListenAddr, body)
@@ -290,61 +289,32 @@ func (s *Server) receiveLoop(conn net.Conn) {
 	s.log.D("recieve loop finish..")
 }
 
-func (s *Server) manageConnLoop() error {
+func (s *Server) manageConnLoop() {
 	if s.RemoteAddr != "" {
 		s.log.I("start manage conn loop: %v", s)
 		go s.ping()
 		//request remote node table
-		go func() {
-			for {
-				if s.Conn != nil {
-					s.log.D("%v request nodetable", s.ListenAddr)
-					s.send(s.Conn, nil, ReqNodeTable)
-				}
-				time.Sleep(ReqNodeTableIntervalSecond * time.Second)
-			}
-		}()
-		if s.Conn == nil {
-			conn, err := net.Dial("tcp", s.RemoteAddr)
-			if err != nil {
-				s.log.E("dial %v got err: %v", s.RemoteAddr, err)
-				return err
-			}
-			s.Conn = conn
-			s.log.I("  conn loop: %+v", s.Conn)
-			s.receiveLoop(s.Conn)
-			//loop for monitor conn
-			go func() {
-				dialRetry := 0
-				for {
-					if s.Conn == nil {
-						if dialRetry >= MaxDialRetry {
-							if ok, _ := s.nodeTable.Has([]byte(s.seedAddr)); ok {
-								s.log.D("delete node: %v", s.seedAddr)
-								s.nodeTable.Delete([]byte(s.seedAddr))
-							}
-							dialRetry = 0
-							nodeBytes, _ := s.allNodesExcludeAddr(s.seedAddr)
-							addr := s.randNodeAddr(string(nodeBytes))
-							if addr != "" {
-								s.seedAddr = addr
-							}
-						}
-						conn, err := net.Dial("tcp", s.seedAddr)
-						if err != nil {
-							s.log.E("monitor: dial %v got err: %v", s, err)
-						} else {
-							s.Conn = conn
-							s.receiveLoop(s.Conn)
-						}
-						dialRetry++
-					}
-					time.Sleep(PingIntervalSecond * time.Second)
-				}
-			}()
-		}
+		//go func() {
+		//	for {
+		//		if s.Conn != nil {
+		//			s.log.D("%v request nodetable", s.ListenAddr)
+		//			s.send(s.Conn, nil, ReqNodeTable)
+		//		}
+		//		time.Sleep(ReqNodeTableIntervalSecond * time.Second)
+		//	}
+		//}()
+		//if s.Conn == nil {
+		//	conn, err := net.Dial("tcp", s.RemoteAddr)
+		//	if err != nil {
+		//		s.log.E("dial %v got err: %v", s.RemoteAddr, err)
+		//		return err
+		//	}
+		//	s.Conn = conn
+		//	s.log.I("  conn loop: %+v", s.Conn)
+		//	s.receiveLoop(s.Conn)
+		//loop for monitor conn
+		go s.randConnSeed()
 	}
-	return nil
 }
 
 func (s *Server) ping() {
@@ -370,6 +340,54 @@ func (s *Server) ping() {
 			n++
 		}
 		time.Sleep(PingIntervalSecond * time.Second)
+	}
+}
+
+func (s *Server) randConnSeed() {
+	dialRetry := 0
+	isSeedConn := false
+	for {
+		time.Sleep(ReqNodeTableIntervalSecond * time.Second)
+		if dialRetry >= MaxDialRetry {
+			dialRetry = 0
+			s.seedAddr = ""
+		}
+		if s.Conn != nil {
+			s.log.D("%v requesting node table", s.ListenAddr)
+			s.send(s.Conn, nil, ReqNodeTable)
+		}
+		dialRetry++
+
+		var err error
+		//conn remote
+		if s.Conn == nil && s.seedAddr == "" {
+			if s.Conn, err = net.Dial("tcp", s.RemoteAddr); err != nil {
+				s.log.E("failed to conn remote address :%v, err:%v", s.RemoteAddr, err)
+				continue
+			}
+			if s.Conn != nil {
+				s.log.D("%v connected to remote :%v", s.ListenAddr, s.RemoteAddr)
+				go s.receiveLoop(s.Conn)
+			}
+		}
+		isEmpty, _ := s.nodeTable.IsEmpty()
+		//conn seed
+		if !isEmpty && !isSeedConn {
+			if s.seedAddr == "" {
+				s.rePickSeedAddr()
+			}
+			conn, err := net.Dial("tcp", s.seedAddr)
+			if err != nil {
+				s.log.D("%v conn to seed :%v, got err:%v", s.ListenAddr, s.seedAddr, err)
+			}
+			if s.Conn != nil {
+				s.log.D("%v connected to seed :%v", s.ListenAddr, s.seedAddr)
+				s.Conn.Close()
+				isSeedConn = true
+				s.Conn = conn
+				go s.receiveLoop(s.Conn)
+			}
+		}
 	}
 }
 
@@ -412,7 +430,6 @@ func (s *Server) AllNodes() (string, error) {
 
 func (s *Server) putNode(addr string) {
 	if addr != "" && addr != s.ListenAddr {
-		s.log.D("%v, append nodetable from remote: %v", s.ListenAddr, addr)
 		s.nodeTable.Put([]byte(addr), common.IntToBytes(0))
 	}
 	return
@@ -431,13 +448,17 @@ func (s *Server) appendNodeTable(addr string) {
 	}
 }
 
-func (s *Server) randNodeAddr(addr string) string {
-	addrs := strings.Split(addr, ",")
+func (s *Server) rePickSeedAddr() {
+	if s.seedAddr != "" {
+		s.nodeTable.Delete([]byte(s.seedAddr))
+	}
+	nodesAddr, _ := s.AllNodes()
+	addrs := strings.Split(nodesAddr, ",")
 	if len(addrs) <= 0 {
-		return ""
+		return
 	}
 	rand.Shuffle(rand.Intn(len(addrs)), func(i, j int) { addrs[i], addrs[j] = addrs[j], addrs[i] })
-	return addrs[0]
+	s.seedAddr = addrs[0]
 }
 
 func (s *Server) randBootAddr() string {
@@ -455,6 +476,7 @@ func (s *Server) randBootAddr() string {
 	return addrs[0]
 }
 
+//将接收的数据通过channel传递给上层应用
 func (s *Server) spreadUp(body []byte) {
 	appReq := &core.Request{}
 	if _, err := appReq.Unmarshal(body); err == nil {

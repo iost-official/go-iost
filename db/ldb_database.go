@@ -86,6 +86,19 @@ func (db *LDBDatabase) DB() *leveldb.DB {
 	return db.db
 }
 
+func (db *LDBDatabase) IsEmpty() (bool, error) {
+	isEmpty := true
+	iter := db.NewIterator()
+	for iter.Next() {
+		isEmpty = false
+		break
+	}
+	iter.Release()
+	err := iter.Error()
+
+	return isEmpty, err
+}
+
 /*
 func (db *LDBDatabase) NewBatch() Batch {
 	return &ldbBatch{db: db.db, b: new(leveldb.Batch)}

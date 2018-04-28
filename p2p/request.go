@@ -50,7 +50,7 @@ func isNetVersionMatch(buf []byte) bool {
 func NewRequest(typ ReqType, from string, data []byte) *Request {
 	r := &Request{
 		Version:   NET_VERSION,
-		Timestamp: time.Now().Unix(),
+		Timestamp: time.Now().UnixNano(),
 		Type:      typ,
 		FromLen:   int16(len(from)),
 		From:      []byte(from),
@@ -110,7 +110,7 @@ func (r *Request) handle(s *Server, conn net.Conn) (string, error) {
 	case BroadcastMessage:
 		s.spreadUp(r.Body)
 		s.broadcast(r)
-		s.send(conn, nil, MessageReceived)
+		s.send(conn, nil, BroadcastMessageReceived)
 	case MessageReceived:
 	case BroadcastMessageReceived:
 	case Ping:

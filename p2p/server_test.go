@@ -71,3 +71,14 @@ func TestServer_allNodesExcludeAddr(t *testing.T) {
 		So(string(nodes), ShouldNotContainSubstring, "test node 1")
 	})
 }
+
+func TestServer_rePickSeedAddr(t *testing.T) {
+	Convey("rePick SeedAddr", t, func() {
+		s1, err := NewServer()
+		s1.Listen(3003)
+		So(err, ShouldEqual, nil)
+		s1.nodeTable.Put([]byte("test node 1"), common.IntToBytes(0))
+		s1.rePickSeedAddr()
+		So(s1.seedAddr, ShouldContainSubstring, "test node 1")
+	})
+}

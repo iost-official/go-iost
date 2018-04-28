@@ -36,7 +36,7 @@ func main() {
 		From:    "from:" + s.ListenAddr,
 		To:      "to:" + s.RemoteAddr,
 		ReqType: 1,
-		Body:    []byte("transaction---" + (*id)),
+		Body:    []byte("transaction-" + (*id)),
 	}
 	data, _ := req.Marshal(nil)
 	go func() {
