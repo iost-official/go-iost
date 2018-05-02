@@ -3,16 +3,19 @@ package dpos
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/iost-official/prototype/common"
-	common2 "github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core"
+	"fmt"
+	"time"
+
+	. "github.com/iost-official/prototype/consensus/common"
 	. "github.com/iost-official/prototype/p2p"
-	. "github.com/iost-official/prototype/pow"
+
+	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/core"
 )
 
 type DPoS struct {
 	core.Member
-	BlockCache BlockCacheImpl
+	BlockCache
 	Router
 	GlobalStaticProperty
 	GlobalDynamicProperty
@@ -38,9 +41,7 @@ func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DP
 		return nil, err
 	}
 
-	/*
-		Tx chan init
-	*/
+	//	Tx chan init
 	p.chTx, err = p.Router.FilteredChan(Filter{
 		WhiteList:  []core.Member{},
 		BlackList:  []core.Member{},
@@ -53,9 +54,7 @@ func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DP
 		return nil, err
 	}
 
-	/*
-		Block chan init
-	*/
+	//	Block chan init
 	p.chBlock, err = p.Router.FilteredChan(Filter{
 		WhiteList:  []core.Member{},
 		BlackList:  []core.Member{},
@@ -65,7 +64,7 @@ func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DP
 		return nil, err
 	}
 
-	p.initGlobalProperty(p.Member, make([]string, 0))
+	p.initGlobalProperty(p.Member, []string{"id0", "id1", "id2", "id3"})
 	return &p, nil
 }
 
@@ -75,8 +74,9 @@ func (p *DPoS) initGlobalProperty(mb core.Member, witnessList []string) {
 }
 
 func (p *DPoS) Run() {
-	go p.blockLoop()
-	go p.scheduleLoop()
+	//go p.blockLoop()
+	//go p.scheduleLoop()
+	genBlock(p.Member, core.Block{})
 }
 
 func (p *DPoS) Stop() {
@@ -102,9 +102,11 @@ func (p *DPoS) txListenLoop() {
 		var tx core.Tx
 		tx.Decode(req.Body)
 		p.Router.Send(req)
-		if common2.VerifyTxSig(tx) {
-			// Add to tx pool or recorder
-		}
+		/*
+			if VerifyTxSig(tx) {
+				// Add to tx pool or recorder
+			}
+		*/
 	}
 }
 
@@ -112,23 +114,27 @@ func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
 	verifier := func(blk *core.Block, chain core.BlockChain) bool {
 		// verify block head
-		if !common2.VerifyBlockHead(blk, chain.Top()) {
-			return false
-		}
+		/*
+			if !VerifyBlockHead(blk, chain.Top()) {
+				return false
+			}
+		*/
 		// verify block witness
 		if WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, blk.Head.Time) != blk.Head.Witness {
 			return false
 		}
-		headInfo := generateHeadInfo(blk.Head)
-		var signature common.Signature
-		signature.Decode(blk.Head.Signature)
-		// verify block witness signature
-		if !common.VerifySignature(headInfo, signature) {
-			return false
-		}
-		if !common2.VerifyBlockContent(blk, chain) {
-			return false
-		}
+		/*
+			headInfo := generateHeadInfo(blk.Head)
+			var signature common.Signature
+			signature.Decode(blk.Head.Signature)
+			// verify block witness signature
+			if !common.VerifySignature(headInfo, signature) {
+				return false
+			}
+			if !VerifyBlockContent(blk, chain) {
+				return false
+			}
+		*/
 		return true
 	}
 
@@ -143,24 +149,69 @@ func (p *DPoS) blockLoop() {
 		if err == nil {
 			p.GlobalDynamicProperty.Update(&blk.Head)
 		}
+		if blk.Head.Time.After(p.GlobalDynamicProperty.NextMaintenanceTime) {
+			p.PerformMaintenance()
+		}
 	}
 }
 
 func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
+
 	for {
 		currentTimestamp := core.GetCurrentTimestamp()
 		wid := WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, currentTimestamp)
 		if wid == p.Member.ID {
-			//TODO
-			// 生成blk
+			//bc := p.BlockCache.LongestChain()
+			//blk := genBlock(p.Member, *bc.Top())
+			//p.Router.Send()
 		}
-
+		nextSchedule := TimeUntilNextSchedule(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, time.Now().Unix())
+		time.Sleep(time.Duration(nextSchedule))
 	}
+}
+
+func genBlock(mb core.Member, lastBlk core.Block) *core.Block {
+	/*
+		if lastBlk == nil {
+			blk := core.Block{Version: 0, Content: make([]byte, 0), Head: core.BlockHead{
+				Version:    0,
+				ParentHash: lastBlk.Head.BlockHash,
+				TreeHash:   make([]byte, 0),
+				BlockHash:  make([]byte, 0),
+				Info:       make([]byte, 0),
+				Number:     0,
+				Witness:    mb.ID, // ?
+				Time:       core.GetCurrentTimestamp(),
+			}}
+			headinfo := generateHeadInfo(blk.Head)
+			sig, _ := common.Sign(common.Secp256k1, headinfo, mb.Seckey)
+			blk.Head.Signature = sig.Encode()
+			return &blk
+		}
+	*/
+	blk := core.Block{Version: 0, Content: make([]byte, 0), Head: core.BlockHead{
+		Version:    0,
+		ParentHash: lastBlk.Head.BlockHash,
+		TreeHash:   make([]byte, 0),
+		BlockHash:  make([]byte, 0),
+		Info:       make([]byte, 0),
+		Number:     lastBlk.Head.Number + 1,
+		Witness:    mb.ID,
+		Time:       core.GetCurrentTimestamp(),
+	}}
+	headinfo := generateHeadInfo(blk.Head)
+	fmt.Println(mb.Seckey)
+	sig, _ := common.Sign(common.Secp256k1, headinfo, mb.Seckey)
+	blk.Head.Signature = sig.Encode()
+	return &blk
 }
 
 func generateHeadInfo(head core.BlockHead) []byte {
 	var info, numberInfo, versionInfo []byte
+	info = make([]byte, 8)
+	versionInfo = make([]byte, 4)
+	numberInfo = make([]byte, 4)
 	binary.BigEndian.PutUint64(info, uint64(head.Time.Slot))
 	binary.BigEndian.PutUint32(versionInfo, uint32(head.Version))
 	binary.BigEndian.PutUint32(numberInfo, uint32(head.Number))

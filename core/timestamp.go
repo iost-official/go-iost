@@ -37,7 +37,7 @@ func (t *Timestamp) Add(intervalSlot int) {
 }
 
 func (t *Timestamp) ToUnixSec() int64 {
-	return t.Slot * SlotLength + Epoch
+	return t.Slot*SlotLength + Epoch
 }
 
 func IntervalSecond(t1 Timestamp, t2 Timestamp) int64 {
@@ -49,5 +49,13 @@ func IntervalSecondBySlot(slot1 int64, slot2 int64) int64 {
 		return (slot2 - slot1) * SlotLength
 	} else {
 		return (slot1 - slot2) * SlotLength
+	}
+}
+
+func (t1 *Timestamp) After(t2 Timestamp) bool {
+	if t1.Slot <= t2.Slot {
+		return true
+	} else {
+		return false
 	}
 }

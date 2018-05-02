@@ -1,5 +1,6 @@
-package common
+package consensus_common
 
+/*
 import (
 	"bytes"
 	"github.com/iost-official/prototype/vm"
@@ -78,3 +79,4 @@ func VerifyTxSig(tx core.Tx) bool {
 func DecodeTxs(content []byte) []core.Tx {
 	return nil
 }
+*/
