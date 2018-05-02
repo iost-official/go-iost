@@ -107,12 +107,14 @@ func NewGlobalDynamicProperty() GlobalDynamicProperty {
 		LastBlockTime:            core.Timestamp{0},
 		TotalSlots:               0,
 		LastConfirmedBlockNumber: 0,
+		NextMaintenanceTime:      core.Timestamp{0},
 	}
 }
 
 func (prop *GlobalDynamicProperty) Update(blockHead *core.BlockHead) {
 	if prop.LastBlockNumber == 0 {
 		prop.TotalSlots = 1
+		prop.NextMaintenanceTime.AddHour(MaintenanceInterval)
 	} else {
 		prop.TotalSlots = prop.timestampToSlot(blockHead.Time) + 1
 	}

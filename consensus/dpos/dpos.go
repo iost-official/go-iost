@@ -3,12 +3,13 @@ package dpos
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"time"
 
 	. "github.com/iost-official/prototype/consensus/common"
 	. "github.com/iost-official/prototype/p2p"
 
-	//"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core"
 )
 
@@ -40,34 +41,28 @@ func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DP
 		return nil, err
 	}
 
-	/*
-		Tx chan init
-	*/
-	/*
-		p.chTx, err = p.Router.FilteredChan(Filter{
-			WhiteList:  []core.Member{},
-			BlackList:  []core.Member{},
-			RejectType: []ReqType{},
-			AcceptType: []ReqType{
-				ReqPublishTx,
-				//	ReqTypeVoteTest, // Only for test
-			}})
-		if err != nil {
-			return nil, err
-		}*/
+	//	Tx chan init
+	p.chTx, err = p.Router.FilteredChan(Filter{
+		WhiteList:  []core.Member{},
+		BlackList:  []core.Member{},
+		RejectType: []ReqType{},
+		AcceptType: []ReqType{
+			ReqPublishTx,
+			ReqTypeVoteTest, // Only for test
+		}})
+	if err != nil {
+		return nil, err
+	}
 
-	/*
-		Block chan init
-	*/
-	/*
-		p.chBlock, err = p.Router.FilteredChan(Filter{
-			WhiteList:  []core.Member{},
-			BlackList:  []core.Member{},
-			RejectType: []ReqType{},
-			AcceptType: []ReqType{ReqNewBlock}})
-		if err != nil {
-			return nil, err
-		}*/
+	//	Block chan init
+	p.chBlock, err = p.Router.FilteredChan(Filter{
+		WhiteList:  []core.Member{},
+		BlackList:  []core.Member{},
+		RejectType: []ReqType{},
+		AcceptType: []ReqType{ReqNewBlock}})
+	if err != nil {
+		return nil, err
+	}
 
 	p.initGlobalProperty(p.Member, []string{"id0", "id1", "id2", "id3"})
 	return &p, nil
@@ -80,7 +75,8 @@ func (p *DPoS) initGlobalProperty(mb core.Member, witnessList []string) {
 
 func (p *DPoS) Run() {
 	//go p.blockLoop()
-	p.scheduleLoop()
+	//go p.scheduleLoop()
+	genBlock(p.Member, core.Block{})
 }
 
 func (p *DPoS) Stop() {
@@ -132,9 +128,12 @@ func (p *DPoS) blockLoop() {
 			var signature common.Signature
 			signature.Decode(blk.Head.Signature)
 			// verify block witness signature
-				if !common.VerifySignature(headInfo, signature) {
-					return false
-				}
+			if !common.VerifySignature(headInfo, signature) {
+				return false
+			}
+			if !VerifyBlockContent(blk, chain) {
+				return false
+			}
 		*/
 		return true
 	}
@@ -163,33 +162,56 @@ func (p *DPoS) scheduleLoop() {
 		currentTimestamp := core.GetCurrentTimestamp()
 		wid := WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, currentTimestamp)
 		if wid == p.Member.ID {
-			bc := p.BlockCache.LongestChain()
-			blk := genBlock(p.Member, bc.Top())
-			p.Router.Send()
+			//bc := p.BlockCache.LongestChain()
+			//blk := genBlock(p.Member, *bc.Top())
+			//p.Router.Send()
 		}
 		nextSchedule := TimeUntilNextSchedule(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, time.Now().Unix())
 		time.Sleep(time.Duration(nextSchedule))
 	}
 }
 
-func genBlock(mb core.Member, lastBlk *Block) *Block {
-	blk := Block{Version: 0, Content: make([]byte), Head: BlockHead{
+func genBlock(mb core.Member, lastBlk core.Block) *core.Block {
+	/*
+		if lastBlk == nil {
+			blk := core.Block{Version: 0, Content: make([]byte, 0), Head: core.BlockHead{
+				Version:    0,
+				ParentHash: lastBlk.Head.BlockHash,
+				TreeHash:   make([]byte, 0),
+				BlockHash:  make([]byte, 0),
+				Info:       make([]byte, 0),
+				Number:     0,
+				Witness:    mb.ID, // ?
+				Time:       core.GetCurrentTimestamp(),
+			}}
+			headinfo := generateHeadInfo(blk.Head)
+			sig, _ := common.Sign(common.Secp256k1, headinfo, mb.Seckey)
+			blk.Head.Signature = sig.Encode()
+			return &blk
+		}
+	*/
+	blk := core.Block{Version: 0, Content: make([]byte, 0), Head: core.BlockHead{
 		Version:    0,
-		ParentHash: lastBlk.Head.Hash,
-		TreeHash:   make([]byte),
-		BlockHash:  make([]byte),
-		Info:       make([]byte),
+		ParentHash: lastBlk.Head.BlockHash,
+		TreeHash:   make([]byte, 0),
+		BlockHash:  make([]byte, 0),
+		Info:       make([]byte, 0),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    mb.ID,
-		Time:       GetCurrentTimestamp(),
+		Time:       core.GetCurrentTimestamp(),
 	}}
 	headinfo := generateHeadInfo(blk.Head)
-	blk.Head.Signature, _ = common.Sign(common.Secp256k1, headinfo, mb.Seckey)
+	fmt.Println(mb.Seckey)
+	sig, _ := common.Sign(common.Secp256k1, headinfo, mb.Seckey)
+	blk.Head.Signature = sig.Encode()
 	return &blk
 }
 
 func generateHeadInfo(head core.BlockHead) []byte {
 	var info, numberInfo, versionInfo []byte
+	info = make([]byte, 8)
+	versionInfo = make([]byte, 4)
+	numberInfo = make([]byte, 4)
 	binary.BigEndian.PutUint64(info, uint64(head.Time.Slot))
 	binary.BigEndian.PutUint32(versionInfo, uint32(head.Version))
 	binary.BigEndian.PutUint32(numberInfo, uint32(head.Number))
