@@ -3,6 +3,7 @@ package dpos
 import (
 	"github.com/iost-official/prototype/core"
 	. "github.com/smartystreets/goconvey/convey"
+	. "github.com/iost-official/prototype/consensus/common"
 	"testing"
 )
 
@@ -47,11 +48,11 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		dp := NewGlobalDynamicProperty()
 		dp.LastBlockNumber = 0
 		dp.TotalSlots = 0
-		dp.LastBlockTime = core.Timestamp{0}
-		startTs := core.Timestamp{70000}
+		dp.LastBlockTime = Timestamp{0}
+		startTs := Timestamp{70000}
 		bh := core.BlockHead{
 			Number:  1,
-			Time:    startTs,
+			Time:    startTs.Slot,
 			Witness: "id0",
 		}
 		dp.Update(&bh)
@@ -64,14 +65,14 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		curSec := startTs.ToUnixSec() + 1
 		sec := TimeUntilNextSchedule(&sp, &dp, curSec)
 		Convey("in other's slot", func() {
-			curTs := core.GetTimestamp(curSec)
+			curTs := GetTimestamp(curSec)
 			wit := WitnessOfTime(&sp, &dp, curTs)
 			So(wit, ShouldEqual, "id0")
 			So(sec, ShouldBeLessThanOrEqualTo, 3)
 		})
 
 		curSec += 2
-		timestamp := core.GetTimestamp(curSec)
+		timestamp := GetTimestamp(curSec)
 		Convey("in self's slot", func() {
 			wit := WitnessOfTime(&sp, &dp, timestamp)
 			So(wit, ShouldEqual, "id1")
@@ -80,7 +81,7 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		})
 
 		bh.Number = 2
-		bh.Time = timestamp
+		bh.Time = timestamp.Slot
 		bh.Witness = "id1"
 		dp.Update(&bh)
 		Convey("update second block", func() {
@@ -97,16 +98,16 @@ func TestGlobalDynamicProperty(t *testing.T) {
 
 		curSec += 8
 		Convey("in self's slot and lost two previous blocks", func() {
-			curTs := core.GetTimestamp(curSec)
+			curTs := GetTimestamp(curSec)
 			wit := WitnessOfTime(&sp, &dp, curTs)
 			So(wit, ShouldEqual, "id1")
 			wit = WitnessOfSec(&sp, &dp, curSec)
 			So(wit, ShouldEqual, "id1")
 		})
 
-		timestamp = core.GetTimestamp(curSec)
+		timestamp = GetTimestamp(curSec)
 		bh.Number = 3
-		bh.Time = timestamp
+		bh.Time = timestamp.Slot
 		bh.Witness = "id1"
 		dp.Update(&bh)
 		Convey("update third block", func() {

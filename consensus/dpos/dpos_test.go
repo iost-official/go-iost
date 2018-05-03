@@ -12,6 +12,7 @@ import (
 	"time"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/common"
+	. "github.com/iost-official/prototype/consensus/common"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -72,7 +73,7 @@ func TestNewDPoS(t *testing.T) {
 
 		p, _ := NewDPoS(core.Member{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
 
-		p.Genesis(core.Timestamp{}, []byte{})
+		p.Genesis(Timestamp{}, []byte{})
 	})
 
 }
@@ -140,7 +141,7 @@ func TestDPoS_Run(t *testing.T) {
 				Number:33,
 				Witness:"test",
 				Signature:[]byte{'a','b'},
-				Time:core.Timestamp{Slot:1111}}}
+				Time: 1111}}
 
 		//构造测试数据
 		blockChan<-core.Request{

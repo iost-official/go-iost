@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/iost-official/prototype/core"
+	. "github.com/iost-official/prototype/consensus/common"
 )
 
 type GlobalStaticProperty struct {
@@ -94,20 +95,20 @@ const (
 
 type GlobalDynamicProperty struct {
 	LastBlockNumber          int32
-	LastBlockTime            core.Timestamp
+	LastBlockTime            Timestamp
 	LastBLockHash            []byte
 	TotalSlots               int64
 	LastConfirmedBlockNumber int32
-	NextMaintenanceTime      core.Timestamp
+	NextMaintenanceTime      Timestamp
 }
 
 func NewGlobalDynamicProperty() GlobalDynamicProperty {
 	return GlobalDynamicProperty{
 		LastBlockNumber:          0,
-		LastBlockTime:            core.Timestamp{0},
+		LastBlockTime:            Timestamp{0},
 		TotalSlots:               0,
 		LastConfirmedBlockNumber: 0,
-		NextMaintenanceTime:      core.Timestamp{0},
+		NextMaintenanceTime:      Timestamp{0},
 	}
 }
 
@@ -116,29 +117,29 @@ func (prop *GlobalDynamicProperty) Update(blockHead *core.BlockHead) {
 		prop.TotalSlots = 1
 		prop.NextMaintenanceTime.AddHour(MaintenanceInterval)
 	} else {
-		prop.TotalSlots = prop.timestampToSlot(blockHead.Time) + 1
+		prop.TotalSlots = prop.timestampToSlot(Timestamp{blockHead.Time}) + 1
 	}
 	prop.LastBlockNumber = blockHead.Number
-	prop.LastBlockTime = blockHead.Time
+	prop.LastBlockTime = Timestamp{blockHead.Time}
 	copy(prop.LastBLockHash, blockHead.BlockHash)
 }
 
-func (prop *GlobalDynamicProperty) timestampToSlot(time core.Timestamp) int64 {
+func (prop *GlobalDynamicProperty) timestampToSlot(time Timestamp) int64 {
 	return time.Slot - prop.LastBlockTime.Slot + prop.TotalSlots - 1
 }
 
-func (prop *GlobalDynamicProperty) slotToTimestamp(slot int64) *core.Timestamp {
-	return &core.Timestamp{Slot: slot - prop.TotalSlots + prop.LastBlockTime.Slot + 1}
+func (prop *GlobalDynamicProperty) slotToTimestamp(slot int64) *Timestamp {
+	return &Timestamp{Slot: slot - prop.TotalSlots + prop.LastBlockTime.Slot + 1}
 }
 
 // 返回对于指定的Unix时间点，应该轮到生产块的节点id
 func WitnessOfSec(sp *GlobalStaticProperty, dp *GlobalDynamicProperty, sec int64) string {
-	time := core.GetTimestamp(sec)
+	time := GetTimestamp(sec)
 	return WitnessOfTime(sp, dp, time)
 }
 
 // 返回对于指定的时间戳，应该轮到生产块的节点id
-func WitnessOfTime(sp *GlobalStaticProperty, dp *GlobalDynamicProperty, time core.Timestamp) string {
+func WitnessOfTime(sp *GlobalStaticProperty, dp *GlobalDynamicProperty, time Timestamp) string {
 	// 当前一个块是创世块，应该让第一个witness产生块
 	// 问题：如果第一个witness失败？
 	if dp.LastBlockNumber == 0 {
@@ -161,7 +162,7 @@ func TimeUntilNextSchedule(sp *GlobalStaticProperty, dp *GlobalDynamicProperty, 
 	if dp.LastBlockNumber == 0 && index == 0 {
 		return 0
 	}
-	time := core.GetTimestamp(timeSec)
+	time := GetTimestamp(timeSec)
 	currentSlot := dp.timestampToSlot(time)
 	slotsEveryTurn := int64(sp.NumberOfWitnesses * SlotPerWitness)
 	k := currentSlot / slotsEveryTurn

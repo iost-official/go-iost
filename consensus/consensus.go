@@ -1,5 +1,7 @@
 package core
 
+import "github.com/iost-official/prototype/core"
+
 type TxStatus int
 
 const (
@@ -11,10 +13,10 @@ const (
 )
 
 type Consensus interface {
-	Init(bc BlockChain, network Network) error // ??
+	Init(bc core.BlockChain, network core.Network) error // ??
 	Run()
 	Stop()
 
-	GetBlockChain() BlockChain
-	GetCachedBlockChain() BlockChain
+	GetBlockChain() core.BlockChain
+	GetCachedBlockChain() core.BlockChain
 }

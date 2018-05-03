@@ -873,7 +873,7 @@ type BlockHead struct {
 	Number     int32
 	Witness    string
 	Signature  []byte
-	Time       Timestamp
+	Time       int64
 }
 
 func (d *BlockHead) Size() (s uint64) {
@@ -968,10 +968,7 @@ func (d *BlockHead) Size() (s uint64) {
 		}
 		s += l
 	}
-	{
-		s += d.Time.Size()
-	}
-	s += 8
+	s += 16
 	return
 }
 func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
@@ -1122,13 +1119,25 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 		i += l
 	}
 	{
-		nbuf, err := d.Time.Marshal(buf[i+8:])
-		if err != nil {
-			return nil, err
-		}
-		i += uint64(len(nbuf))
+
+		buf[i+0+8] = byte(d.Time >> 0)
+
+		buf[i+1+8] = byte(d.Time >> 8)
+
+		buf[i+2+8] = byte(d.Time >> 16)
+
+		buf[i+3+8] = byte(d.Time >> 24)
+
+		buf[i+4+8] = byte(d.Time >> 32)
+
+		buf[i+5+8] = byte(d.Time >> 40)
+
+		buf[i+6+8] = byte(d.Time >> 48)
+
+		buf[i+7+8] = byte(d.Time >> 56)
+
 	}
-	return buf[:i+8], nil
+	return buf[:i+16], nil
 }
 
 func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
@@ -1290,13 +1299,11 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 		i += l
 	}
 	{
-		ni, err := d.Time.Unmarshal(buf[i+8:])
-		if err != nil {
-			return 0, err
-		}
-		i += ni
+
+		d.Time = 0 | (int64(buf[i+0+8]) << 0) | (int64(buf[i+1+8]) << 8) | (int64(buf[i+2+8]) << 16) | (int64(buf[i+3+8]) << 24) | (int64(buf[i+4+8]) << 32) | (int64(buf[i+5+8]) << 40) | (int64(buf[i+6+8]) << 48) | (int64(buf[i+7+8]) << 56)
+
 	}
-	return i + 8, nil
+	return i + 16, nil
 }
 
 type Block struct {
@@ -1420,57 +1427,4 @@ func (d *Block) Unmarshal(buf []byte) (uint64, error) {
 		i += l
 	}
 	return i + 4, nil
-}
-
-type Timestamp struct {
-	Slot int64
-}
-
-func (d *Timestamp) Size() (s uint64) {
-
-	s += 8
-	return
-}
-func (d *Timestamp) Marshal(buf []byte) ([]byte, error) {
-	size := d.Size()
-	{
-		if uint64(cap(buf)) >= size {
-			buf = buf[:size]
-		} else {
-			buf = make([]byte, size)
-		}
-	}
-	i := uint64(0)
-
-	{
-
-		buf[0+0] = byte(d.Slot >> 0)
-
-		buf[1+0] = byte(d.Slot >> 8)
-
-		buf[2+0] = byte(d.Slot >> 16)
-
-		buf[3+0] = byte(d.Slot >> 24)
-
-		buf[4+0] = byte(d.Slot >> 32)
-
-		buf[5+0] = byte(d.Slot >> 40)
-
-		buf[6+0] = byte(d.Slot >> 48)
-
-		buf[7+0] = byte(d.Slot >> 56)
-
-	}
-	return buf[:i+8], nil
-}
-
-func (d *Timestamp) Unmarshal(buf []byte) (uint64, error) {
-	i := uint64(0)
-
-	{
-
-		d.Slot = 0 | (int64(buf[0+0]) << 0) | (int64(buf[1+0]) << 8) | (int64(buf[2+0]) << 16) | (int64(buf[3+0]) << 24) | (int64(buf[4+0]) << 32) | (int64(buf[5+0]) << 40) | (int64(buf[6+0]) << 48) | (int64(buf[7+0]) << 56)
-
-	}
-	return i + 8, nil
 }

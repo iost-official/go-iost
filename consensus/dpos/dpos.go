@@ -85,7 +85,7 @@ func (p *DPoS) Stop() {
 	p.ExitSignal <- true
 }
 
-func (p *DPoS) Genesis(initTime core.Timestamp, hash []byte) error {
+func (p *DPoS) Genesis(initTime Timestamp, hash []byte) error {
 	return nil
 }
 
@@ -118,7 +118,7 @@ func (p *DPoS) blockLoop() {
 		}
 
 		// verify block witness
-		if WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, blk.Head.Time) != blk.Head.Witness {
+		if WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
 			return false
 		}
 
@@ -148,7 +148,8 @@ func (p *DPoS) blockLoop() {
 		if err == nil {
 			p.GlobalDynamicProperty.Update(&blk.Head)
 		}
-		if blk.Head.Time.After(p.GlobalDynamicProperty.NextMaintenanceTime) {
+		ts := Timestamp{blk.Head.Time}
+		if ts.After(p.GlobalDynamicProperty.NextMaintenanceTime) {
 			p.PerformMaintenance()
 		}
 	}
@@ -158,12 +159,12 @@ func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
 
 	for {
-		currentTimestamp := core.GetCurrentTimestamp()
+		currentTimestamp := GetCurrentTimestamp()
 		wid := WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, currentTimestamp)
 		if wid == p.Member.ID {
 			bc := p.BlockCache.LongestChain()
-			blk := genBlock(p.Member, *bc.Top())
-			p.Router.Send(blk.Encode()) //??
+			blk := p.genBlock(p.Member, *bc.Top())
+			p.Router.Send(core.Request{Body: blk.Encode()}) //??
 		}
 		nextSchedule := TimeUntilNextSchedule(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, time.Now().Unix())
 		time.Sleep(time.Duration(nextSchedule))
@@ -181,7 +182,7 @@ func (p *DPoS) genBlock(mb core.Member, lastBlk core.Block) *core.Block {
 				Info:       make([]byte, 0),
 				Number:     0,
 				Witness:    mb.ID, // ?
-				Time:       core.GetCurrentTimestamp(),
+				Time:       GetCurrentTimestamp(),
 			}}
 			headinfo := generateHeadInfo(blk.Head)
 			sig, _ := common.Sign(common.Secp256k1, headinfo, mb.Seckey)
@@ -197,7 +198,7 @@ func (p *DPoS) genBlock(mb core.Member, lastBlk core.Block) *core.Block {
 		Info:       encodeDPoSInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    mb.ID,
-		Time:       core.GetCurrentTimestamp(),
+		Time:       GetCurrentTimestamp().Slot,
 	}}
 	p.infoCache = [][]byte{}
 	headInfo := generateHeadInfo(blk.Head)
@@ -212,7 +213,7 @@ func generateHeadInfo(head core.BlockHead) []byte {
 	info = make([]byte, 8)
 	versionInfo = make([]byte, 4)
 	numberInfo = make([]byte, 4)
-	binary.BigEndian.PutUint64(info, uint64(head.Time.Slot))
+	binary.BigEndian.PutUint64(info, uint64(head.Time))
 	binary.BigEndian.PutUint32(versionInfo, uint32(head.Version))
 	binary.BigEndian.PutUint32(numberInfo, uint32(head.Number))
 	info = append(info, versionInfo...)

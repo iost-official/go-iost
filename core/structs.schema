@@ -30,17 +30,13 @@ struct BlockHead {
    Number  int32
    Witness string
    Signature []byte
-   Time    Timestamp
+   Time    int64
 }
 
 struct Block {
    Version   int32
    Head      BlockHead
    Content   []byte
-}
-
-struct Timestamp {  
-   Slot int64    
 }
 
 

@@ -23,7 +23,7 @@ func (d *Block) HeadHash() []byte {
 }
 
 func (d *Block) TxGet(x int) Tx {
-
+	return Tx{}
 }
 
 func (d *Block) TxLen() int {
