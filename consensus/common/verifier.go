@@ -1,13 +1,11 @@
 package consensus_common
 
-/*
+
 import (
 	"bytes"
-	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/core"
 	"encoding/binary"
 	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/state"
 )
 
 // 验证块头正确性，调用此函数时块的父亲节点已经找到
@@ -33,6 +31,7 @@ func calcTreeHash(txs []core.Tx) []byte {
 	return nil
 }
 
+/*
 // 验证块内交易的正确性
 func VerifyBlockContent(blk *core.Block, chain core.BlockChain) bool {
 	txs := DecodeTxs(blk.Head.BlockHash)
@@ -55,9 +54,10 @@ func VeirifyTx(tx core.Tx, cv *vm.CacheVerifier) (state.Pool, bool) {
 	newPool, err := cv.VerifyContract(tx.Contract, false)
 	return newPool, err == nil
 }
+*/
 
 func VerifyTxSig(tx core.Tx) bool {
-	var info []byte
+	info := make([]byte, 8)
 	binary.BigEndian.PutUint64(info, uint64(tx.Time))
 	info = append(info, tx.Contract.Encode()...)
 	for _, sign := range tx.Signs {
@@ -79,4 +79,4 @@ func VerifyTxSig(tx core.Tx) bool {
 func DecodeTxs(content []byte) []core.Tx {
 	return nil
 }
-*/
+

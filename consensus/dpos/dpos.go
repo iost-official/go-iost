@@ -76,7 +76,7 @@ func (p *DPoS) initGlobalProperty(mb core.Member, witnessList []string) {
 func (p *DPoS) Run() {
 	//go p.blockLoop()
 	//go p.scheduleLoop()
-	genBlock(p.Member, core.Block{})
+	p.genBlock(p.Member, core.Block{})
 }
 
 func (p *DPoS) Stop() {
@@ -102,11 +102,9 @@ func (p *DPoS) txListenLoop() {
 		var tx core.Tx
 		tx.Decode(req.Body)
 		p.Router.Send(req)
-		/*
-			if VerifyTxSig(tx) {
-				// Add to tx pool or recorder
-			}
-		*/
+		if VerifyTxSig(tx) {
+			// Add to tx pool or recorder
+		}
 	}
 }
 
@@ -114,26 +112,27 @@ func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
 	verifier := func(blk *core.Block, chain core.BlockChain) bool {
 		// verify block head
-		/*
-			if !VerifyBlockHead(blk, chain.Top()) {
-				return false
-			}
-		*/
+
+		if !VerifyBlockHead(blk, chain.Top()) {
+			return false
+		}
+
 		// verify block witness
 		if WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, blk.Head.Time) != blk.Head.Witness {
 			return false
 		}
+
+		headInfo := generateHeadInfo(blk.Head)
+		var signature common.Signature
+		signature.Decode(blk.Head.Signature)
+		// verify block witness signature
+		if !common.VerifySignature(headInfo, signature) {
+			return false
+		}
 		/*
-			headInfo := generateHeadInfo(blk.Head)
-			var signature common.Signature
-			signature.Decode(blk.Head.Signature)
-			// verify block witness signature
-			if !common.VerifySignature(headInfo, signature) {
-				return false
-			}
-			if !VerifyBlockContent(blk, chain) {
-				return false
-			}
+		if !VerifyBlockContent(blk, chain) {
+			return false
+		}
 		*/
 		return true
 	}
@@ -171,7 +170,7 @@ func (p *DPoS) scheduleLoop() {
 	}
 }
 
-func genBlock(mb core.Member, lastBlk core.Block) *core.Block {
+func (p *DPoS) genBlock(mb core.Member, lastBlk core.Block) *core.Block {
 	/*
 		if lastBlk == nil {
 			blk := core.Block{Version: 0, Content: make([]byte, 0), Head: core.BlockHead{
@@ -195,14 +194,15 @@ func genBlock(mb core.Member, lastBlk core.Block) *core.Block {
 		ParentHash: lastBlk.Head.BlockHash,
 		TreeHash:   make([]byte, 0),
 		BlockHash:  make([]byte, 0),
-		Info:       make([]byte, 0),
+		Info:       encodeDPoSInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    mb.ID,
 		Time:       core.GetCurrentTimestamp(),
 	}}
-	headinfo := generateHeadInfo(blk.Head)
+	p.infoCache = [][]byte{}
+	headInfo := generateHeadInfo(blk.Head)
 	fmt.Println(mb.Seckey)
-	sig, _ := common.Sign(common.Secp256k1, headinfo, mb.Seckey)
+	sig, _ := common.Sign(common.Secp256k1, headInfo, mb.Seckey)
 	blk.Head.Signature = sig.Encode()
 	return &blk
 }
