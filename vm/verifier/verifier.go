@@ -15,7 +15,7 @@ const (
 //go:generate gencode go -schema=structs.schema -package=verifier
 
 type Verifier struct {
-	Pool   state.StatePool
+	Pool   state.Pool
 	Prefix string
 	Vms    map[string]vm.VM
 }
@@ -39,7 +39,7 @@ func (v *Verifier) Stop() {
 	}
 }
 
-func (v *Verifier) Verify(contract vm.Contract) (state.StatePool, uint64, error) {
+func (v *Verifier) Verify(contract vm.Contract) (state.Pool, uint64, error) {
 
 	vm, ok := v.Vms[string(contract.Hash())]
 	if !ok {
@@ -50,7 +50,7 @@ func (v *Verifier) Verify(contract vm.Contract) (state.StatePool, uint64, error)
 	return pool, vm.PC(), err
 }
 
-func (v *Verifier) SetPool(pool state.StatePool) {
+func (v *Verifier) SetPool(pool state.Pool) {
 	v.Pool = pool
 	for _, vm := range v.Vms {
 		vm.SetPool(pool)
@@ -61,7 +61,7 @@ type CacheVerifier struct {
 	Verifier
 }
 
-func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (state.StatePool, error) {
+func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (state.Pool, error) {
 	sender := contract.Info().Sender
 	var balanceOfSender float64
 	val0, err := cv.Pool.GetHM("iost", state.Key(sender))
@@ -101,7 +101,7 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	return cv.Pool, nil
 }
 
-func NewCacheVerifier(pool state.StatePool) CacheVerifier {
+func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	cv := CacheVerifier{
 		Verifier: Verifier{
 			Pool:   pool.Copy(),
@@ -115,7 +115,7 @@ func NewCacheVerifier(pool state.StatePool) CacheVerifier {
 	return cv
 }
 
-func VerifyBlock(blockID string, contracts []vm.Contract, pool state.StatePool) (state.StatePool, error) { // TODO 使用log控制并发
+func VerifyBlock(blockID string, contracts []vm.Contract, pool state.Pool) (state.Pool, error) { // TODO 使用log控制并发
 	cv := Verifier{
 		Pool:   pool,
 		Prefix: blockID,

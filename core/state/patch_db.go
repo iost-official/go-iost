@@ -1,11 +1,11 @@
 package state
 
 import (
-	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/db"
 	"sync"
 )
 
-var PatchDb *iostdb.LDBDatabase
+var PatchDb *db.LDBDatabase
 
 var o sync.Once
 

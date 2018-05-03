@@ -18,7 +18,7 @@ type VM struct {
 	APIs []API
 	L    *lua.LState
 
-	Pool, cachePool state.StatePool
+	Pool, cachePool state.Pool
 
 	Contract *Contract
 }
@@ -37,7 +37,7 @@ func (l *VM) Start() error {
 func (l *VM) Stop() {
 	l.L.Close()
 }
-func (l *VM) Call(methodName string, args ...state.Value) ([]state.Value, state.StatePool, error) {
+func (l *VM) Call(methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
 
 	l.cachePool = l.Pool.Copy()
 
@@ -67,7 +67,7 @@ func (l *VM) Call(methodName string, args ...state.Value) ([]state.Value, state.
 
 	return rtnValue, l.cachePool, nil
 }
-func (l *VM) Prepare(contract vm.Contract, pool state.StatePool) error {
+func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
 	var ok bool
 	l.Contract, ok = contract.(*Contract)
 	if !ok {
@@ -119,7 +119,7 @@ func (l *VM) Prepare(contract vm.Contract, pool state.StatePool) error {
 
 	return nil
 }
-func (l *VM) SetPool(pool state.StatePool) {
+func (l *VM) SetPool(pool state.Pool) {
 	l.Pool = pool
 }
 func (l *VM) PC() uint64 {

@@ -1,7 +1,7 @@
 package state
 
-type StatePool interface {
-	Copy() StatePool
+type Pool interface {
+	Copy() Pool
 	GetPatch() Patch
 	Flush() error
 

@@ -20,11 +20,11 @@ type Code string
 type Pubkey []byte
 
 type VM interface {
-	Prepare(contract Contract, pool state.StatePool) error
+	Prepare(contract Contract, pool state.Pool) error
 	Start() error
 	Stop()
-	Call(methodName string, args ...state.Value) ([]state.Value, state.StatePool, error)
-	SetPool(pool state.StatePool)
+	Call(methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
+	SetPool(pool state.Pool)
 	PC() uint64
 }
 type Method interface {

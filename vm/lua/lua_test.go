@@ -6,14 +6,15 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/core/state/mocks"
+	"github.com/iost-official/prototype/core/mocks"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/prototype/vm"
 )
 
 func TestLuaVM(t *testing.T) {
 	Convey("Test of Lua VM", t, func() {
 		mockCtl := gomock.NewController(t)
-		pool := state_mock.NewMockPool(mockCtl)
+		pool := core_mock.NewMockPool(mockCtl)
 
 		var k state.Key
 		var v state.Value
@@ -26,16 +27,16 @@ func TestLuaVM(t *testing.T) {
 		pool.EXPECT().Copy().AnyTimes().Return(pool)
 		main := NewLuaMethod("main", 1)
 		lc := Contract{
-			info: ContractInfo{},
+			info: vm.ContractInfo{},
 			code: `function main()
 	Put("hello", "world")
 	return "success"
 end`,
-			main: &main,
+			main: main,
 		}
 
 		lvm := VM{}
-		lvm.Prepare(&lc, pool, "test")
+		lvm.Prepare(&lc, pool)
 		lvm.Pool = pool
 		lvm.Start()
 		ret, _, err := lvm.Call("main")
@@ -43,7 +44,7 @@ end`,
 
 		So(err, ShouldBeNil)
 		So(ret[0].String(), ShouldEqual, "success")
-		So(k, ShouldEqual, "testhello")
+		So(k, ShouldEqual, "hello")
 		So(v.String(), ShouldEqual, "world")
 
 	})

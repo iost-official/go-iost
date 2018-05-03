@@ -35,7 +35,8 @@ func (d *ContractInfoRaw) toC() ContractInfo {
 }
 
 func (c *ContractInfo) Encode() []byte {
-	buf, err := c.toRaw().Marshal(nil)
+	cir := c.toRaw()
+	buf, err := cir.Marshal(nil)
 	if err != nil {
 		panic(err)
 	}

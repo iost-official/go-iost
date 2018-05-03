@@ -1,12 +1,12 @@
 package state
 
-import "github.com/iost-official/prototype/iostdb"
+import "github.com/iost-official/prototype/db"
 
 type Database struct {
-	db iostdb.Database
+	db db.Database
 }
 
-func NewDatabase(db iostdb.Database) Database {
+func NewDatabase(db db.Database) Database {
 	return Database{
 		db: db,
 	}
