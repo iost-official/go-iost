@@ -1,11 +1,12 @@
 package state
 
 import (
-	"fmt"
-	"reflect"
-	"github.com/iost-official/prototype/common"
-	"strconv"
 	"encoding/binary"
+	"fmt"
+	"github.com/iost-official/prototype/common"
+	"math"
+	"reflect"
+	"strconv"
 )
 
 type Key string
@@ -54,8 +55,9 @@ func (k Key) Encode() []byte {
 type Type int
 
 const (
-	Nil    Type = iota
+	Nil Type = iota
 	Int
+	Float
 	String
 	Bytes
 	Array
@@ -63,7 +65,7 @@ const (
 )
 
 var VNil Value = &VInt{
-	t: Nil,
+	t:   Nil,
 	int: 0,
 }
 
@@ -155,6 +157,9 @@ type VInt struct {
 
 func MakeVInt(i int) VInt {
 	return VInt{Int, i}
+}
+func (v *VInt) ToFloat64() int {
+	return v.int
 }
 func (v *VInt) Type() Type {
 	return v.t
@@ -260,4 +265,83 @@ func (v *VBytes) diff(b Value) (Value, error) {
 		val: vv.Interface().([]byte),
 	}
 	return c, nil
+}
+
+type VMap struct {
+	t   Type
+	val map[Key]Value
+}
+
+func MakeVMap(m map[Key]Value) VMap {
+	return VMap{Map, m}
+}
+
+func (v *VMap) Type() Type {
+	return Map
+}
+func (v *VMap) String() string {
+	return ""
+}
+func (v *VMap) Encode() []byte {
+	return nil
+}
+func (v *VMap) Decode([]byte) error {
+	return nil
+}
+func (v *VMap) Hash() []byte {
+	return nil
+}
+func (v *VMap) merge(b Value) (Value, error) {
+	return nil, nil
+}
+func (v *VMap) diff(b Value) (Value, error) {
+	return nil, nil
+}
+func (v *VMap) Set(key Key, value Value) {
+	v.val[key] = value
+}
+func (v *VMap) Get(key Key) (Value, bool) {
+	ret, ok := v.val[key]
+	return ret, ok
+}
+
+type VFloat struct {
+	t Type
+	float64
+}
+
+func MakeVFloat(f float64) VFloat {
+	return VFloat{
+		t:       Float,
+		float64: f,
+	}
+}
+
+func (v *VFloat) Type() Type {
+	return Float
+}
+func (v *VFloat) String() string {
+	return strconv.FormatFloat(v.float64, 'e', 8, 64)
+}
+func (v *VFloat) Encode() []byte {
+	var buf [8]byte
+	binary.BigEndian.PutUint64(buf[:], math.Float64bits(v.float64))
+	return buf[:]
+}
+func (v *VFloat) Decode(b []byte) error {
+	i := binary.BigEndian.Uint64(b)
+	v.float64 = math.Float64frombits(i)
+	return nil
+}
+func (v *VFloat) Hash() []byte {
+	return common.Sha256(v.Encode())
+}
+func (v *VFloat) merge(b Value) (Value, error) {
+	return b, nil
+}
+func (v *VFloat) diff(b Value) (Value, error) {
+	return b, nil
+}
+func (v *VFloat) ToFloat64() float64 {
+	return v.float64
 }

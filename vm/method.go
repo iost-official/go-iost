@@ -1,8 +1,8 @@
 package vm
 
 import (
-	"github.com/iost-official/prototype/state"
 	"github.com/iost-official/gopher-lua"
+	"github.com/iost-official/prototype/state"
 )
 
 type Method interface {
@@ -11,8 +11,8 @@ type Method interface {
 }
 
 type LuaMethod struct {
-	name   string
-	inputs []lua.LValue
+	name        string
+	inputs      []lua.LValue
 	outputCount int
 }
 
@@ -30,7 +30,7 @@ func (m *LuaMethod) Name() string {
 }
 func (m *LuaMethod) Input(value ...state.Value) {
 	m.inputs = make([]lua.LValue, 0)
-	for _,v := range value {
+	for _, v := range value {
 		m.inputs = append(m.inputs, Core2Lua(v))
 	}
 }

@@ -9,6 +9,9 @@ import (
 
 type Contract interface {
 	Info() ContractInfo
+	SetPrefix(prefix string)
+	SetSender(sender []byte)
+	AddSigner(signer []byte)
 	Api(apiName string) (Method, error)
 	common.Serializable
 }
@@ -22,6 +25,15 @@ type LuaContract struct {
 func (c *LuaContract) Info() ContractInfo {
 	return c.info
 }
+func (c *LuaContract) SetPrefix(prefix string) {
+	c.info.Prefix = prefix
+}
+func (c *LuaContract) SetSender(sender []byte) {
+	c.info.Sender = sender
+}
+func (c *LuaContract) AddSigner(signer []byte) {
+	c.info.Signers = append(c.info.Signers, signer)
+}
 func (c *LuaContract) Api(apiName string) (Method, error) {
 	if apiName == "main" {
 		return c.main, nil
@@ -30,7 +42,7 @@ func (c *LuaContract) Api(apiName string) (Method, error) {
 }
 func (c *LuaContract) Encode() []byte {
 	cr := ContractRaw{
-		info: c.info,
+		info: c.info.toRaw(),
 		code: []byte(c.code),
 	}
 	b, err := cr.Marshal(nil)
@@ -43,7 +55,7 @@ func (c *LuaContract) Encode() []byte {
 func (c *LuaContract) Decode(b []byte) error {
 	var cr ContractRaw
 	_, err := cr.Unmarshal(b)
-	c.info = cr.info
+	c.info = cr.info.toC()
 	c.code = string(cr.code)
 	return err
 }

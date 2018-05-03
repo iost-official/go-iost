@@ -16,6 +16,9 @@ type Pool interface {
 	Get(key Key) (Value, error)
 	Has(key Key) (bool, error)
 	Delete(key Key) error
+
+	GetHM(key, field Key) (Value, error)
+	PutHM(key, field Key, value Value) error
 }
 
 type PoolImpl struct {
@@ -26,7 +29,7 @@ type PoolImpl struct {
 
 func (p *PoolImpl) Copy() Pool {
 	pp := PoolImpl{
-		db:p.db,
+		db:     p.db,
 		parent: p,
 	}
 	return &pp
@@ -106,12 +109,12 @@ func (p *PoolImpl) Delete(key Key) error {
 	return nil
 }
 
-func (p *PoolImpl) Flush() error{
+func (p *PoolImpl) Flush() error {
 	p.parent.Flush()
 	for k, v := range p.patch.m {
 		if v.Type() != Nil {
 			val0, err := p.db.Get(k)
-			val, err := Merge(val0,v)
+			val, err := Merge(val0, v)
 			if err != nil {
 				return err
 			}
@@ -120,5 +123,12 @@ func (p *PoolImpl) Flush() error{
 			p.db.Delete(k)
 		}
 	}
+	return nil
+}
+
+func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
+	return nil, nil
+}
+func (p *PoolImpl) PutHM(key, field Key, value Value) error {
 	return nil
 }

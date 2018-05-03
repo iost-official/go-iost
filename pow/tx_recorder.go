@@ -1,4 +1,5 @@
 package pow
+
 //
 //import (
 //	"fmt"
