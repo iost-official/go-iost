@@ -162,9 +162,9 @@ func (p *DPoS) scheduleLoop() {
 		currentTimestamp := core.GetCurrentTimestamp()
 		wid := WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, currentTimestamp)
 		if wid == p.Member.ID {
-			//bc := p.BlockCache.LongestChain()
-			//blk := genBlock(p.Member, *bc.Top())
-			//p.Router.Send()
+			bc := p.BlockCache.LongestChain()
+			blk := genBlock(p.Member, *bc.Top())
+			p.Router.Send(blk.Encode()) //??
 		}
 		nextSchedule := TimeUntilNextSchedule(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, time.Now().Unix())
 		time.Sleep(time.Duration(nextSchedule))
