@@ -2,7 +2,7 @@ package vm
 
 import (
 	"fmt"
-	"github.com/iost-official/prototype/state"
+	"github.com/iost-official/prototype/core/state"
 	"runtime"
 )
 

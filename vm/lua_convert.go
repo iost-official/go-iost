@@ -2,7 +2,7 @@ package vm
 
 import (
 	"github.com/iost-official/gopher-lua"
-	"github.com/iost-official/prototype/state"
+	"github.com/iost-official/prototype/core/state"
 )
 
 type LuaConverter struct {
