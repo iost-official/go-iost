@@ -22,6 +22,14 @@ func (d *Block) HeadHash() []byte {
 	return d.Head.Hash()
 }
 
+func (d *Block) TxGet(x int) Tx {
+
+}
+
+func (d *Block) TxLen() int {
+	return 0
+}
+
 func (d *BlockHead) Encode() []byte {
 	bin, err := d.Marshal(nil)
 	if err != nil {
