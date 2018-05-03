@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/db"
 )
 
 type RequestHead struct {
@@ -36,7 +36,7 @@ type Network interface {
 }
 
 type NaiveNetwork struct {
-	db     *iostdb.LDBDatabase //database of known nodes
+	db     *db.LDBDatabase //database of known nodes
 	listen net.Listener
 	conn   net.Conn
 	done   bool
@@ -48,7 +48,7 @@ func NewNaiveNetwork(n int) (*NaiveNetwork, error) {
 	if err != nil {
 		return nil, err
 	}
-	db, err := iostdb.NewLDBDatabase(dirname, 0, 0)
+	db, err := db.NewLDBDatabase(dirname, 0, 0)
 	if err != nil {
 		return nil, err
 	}

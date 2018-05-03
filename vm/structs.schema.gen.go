@@ -12,17 +12,17 @@ var (
 	_ = time.Now()
 )
 
-type ContractInfo struct {
+type ContractInfoRaw struct {
 	Name     string
 	Language string
 	Version  int8
 	GasLimit int64
 	Price    float64
 	Signers  [][]byte
-	ApiList  []string
+	Sender   []byte
 }
 
-func (d *ContractInfo) Size() (s uint64) {
+func (d *ContractInfoRaw) Size() (s uint64) {
 
 	{
 		l := uint64(len(d.Name))
@@ -90,7 +90,7 @@ func (d *ContractInfo) Size() (s uint64) {
 
 	}
 	{
-		l := uint64(len(d.ApiList))
+		l := uint64(len(d.Sender))
 
 		{
 
@@ -102,32 +102,12 @@ func (d *ContractInfo) Size() (s uint64) {
 			s++
 
 		}
-
-		for k0 := range d.ApiList {
-
-			{
-				l := uint64(len(d.ApiList[k0]))
-
-				{
-
-					t := l
-					for t >= 0x80 {
-						t >>= 7
-						s++
-					}
-					s++
-
-				}
-				s += l
-			}
-
-		}
-
+		s += l
 	}
 	s += 17
 	return
 }
-func (d *ContractInfo) Marshal(buf []byte) ([]byte, error) {
+func (d *ContractInfoRaw) Marshal(buf []byte) ([]byte, error) {
 	size := d.Size()
 	{
 		if uint64(cap(buf)) >= size {
@@ -262,7 +242,7 @@ func (d *ContractInfo) Marshal(buf []byte) ([]byte, error) {
 		}
 	}
 	{
-		l := uint64(len(d.ApiList))
+		l := uint64(len(d.Sender))
 
 		{
 
@@ -277,34 +257,13 @@ func (d *ContractInfo) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		for k0 := range d.ApiList {
-
-			{
-				l := uint64(len(d.ApiList[k0]))
-
-				{
-
-					t := uint64(l)
-
-					for t >= 0x80 {
-						buf[i+17] = byte(t) | 0x80
-						t >>= 7
-						i++
-					}
-					buf[i+17] = byte(t)
-					i++
-
-				}
-				copy(buf[i+17:], d.ApiList[k0])
-				i += l
-			}
-
-		}
+		copy(buf[i+17:], d.Sender)
+		i += l
 	}
 	return buf[:i+17], nil
 }
 
-func (d *ContractInfo) Unmarshal(buf []byte) (uint64, error) {
+func (d *ContractInfoRaw) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
 
 	{
@@ -432,41 +391,19 @@ func (d *ContractInfo) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		if uint64(cap(d.ApiList)) >= l {
-			d.ApiList = d.ApiList[:l]
+		if uint64(cap(d.Sender)) >= l {
+			d.Sender = d.Sender[:l]
 		} else {
-			d.ApiList = make([]string, l)
+			d.Sender = make([]byte, l)
 		}
-		for k0 := range d.ApiList {
-
-			{
-				l := uint64(0)
-
-				{
-
-					bs := uint8(7)
-					t := uint64(buf[i+17] & 0x7F)
-					for buf[i+17]&0x80 == 0x80 {
-						i++
-						t |= uint64(buf[i+17]&0x7F) << bs
-						bs += 7
-					}
-					i++
-
-					l = t
-
-				}
-				d.ApiList[k0] = string(buf[i+17 : i+17+l])
-				i += l
-			}
-
-		}
+		copy(d.Sender, buf[i+17:])
+		i += l
 	}
 	return i + 17, nil
 }
 
 type ContractRaw struct {
-	info ContractInfo
+	info ContractInfoRaw
 	code []byte
 }
 
@@ -566,6 +503,187 @@ func (d *ContractRaw) Unmarshal(buf []byte) (uint64, error) {
 		}
 		copy(d.code, buf[i+0:])
 		i += l
+	}
+	return i + 0, nil
+}
+
+type VerifyLogRaw struct {
+	List [][]int32
+}
+
+func (d *VerifyLogRaw) Size() (s uint64) {
+
+	{
+		l := uint64(len(d.List))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t >>= 7
+				s++
+			}
+			s++
+
+		}
+
+		for k0 := range d.List {
+
+			{
+				l := uint64(len(d.List[k0]))
+
+				{
+
+					t := l
+					for t >= 0x80 {
+						t >>= 7
+						s++
+					}
+					s++
+
+				}
+
+				s += 4 * l
+
+			}
+
+		}
+
+	}
+	return
+}
+func (d *VerifyLogRaw) Marshal(buf []byte) ([]byte, error) {
+	size := d.Size()
+	{
+		if uint64(cap(buf)) >= size {
+			buf = buf[:size]
+		} else {
+			buf = make([]byte, size)
+		}
+	}
+	i := uint64(0)
+
+	{
+		l := uint64(len(d.List))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+0] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+0] = byte(t)
+			i++
+
+		}
+		for k0 := range d.List {
+
+			{
+				l := uint64(len(d.List[k0]))
+
+				{
+
+					t := uint64(l)
+
+					for t >= 0x80 {
+						buf[i+0] = byte(t) | 0x80
+						t >>= 7
+						i++
+					}
+					buf[i+0] = byte(t)
+					i++
+
+				}
+				for k1 := range d.List[k0] {
+
+					{
+
+						buf[i+0+0] = byte(d.List[k0][k1] >> 0)
+
+						buf[i+1+0] = byte(d.List[k0][k1] >> 8)
+
+						buf[i+2+0] = byte(d.List[k0][k1] >> 16)
+
+						buf[i+3+0] = byte(d.List[k0][k1] >> 24)
+
+					}
+
+					i += 4
+
+				}
+			}
+
+		}
+	}
+	return buf[:i+0], nil
+}
+
+func (d *VerifyLogRaw) Unmarshal(buf []byte) (uint64, error) {
+	i := uint64(0)
+
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+0] & 0x7F)
+			for buf[i+0]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+0]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		if uint64(cap(d.List)) >= l {
+			d.List = d.List[:l]
+		} else {
+			d.List = make([][]int32, l)
+		}
+		for k0 := range d.List {
+
+			{
+				l := uint64(0)
+
+				{
+
+					bs := uint8(7)
+					t := uint64(buf[i+0] & 0x7F)
+					for buf[i+0]&0x80 == 0x80 {
+						i++
+						t |= uint64(buf[i+0]&0x7F) << bs
+						bs += 7
+					}
+					i++
+
+					l = t
+
+				}
+				if uint64(cap(d.List[k0])) >= l {
+					d.List[k0] = d.List[k0][:l]
+				} else {
+					d.List[k0] = make([]int32, l)
+				}
+				for k1 := range d.List[k0] {
+
+					{
+
+						d.List[k0][k1] = 0 | (int32(buf[i+0+0]) << 0) | (int32(buf[i+1+0]) << 8) | (int32(buf[i+2+0]) << 16) | (int32(buf[i+3+0]) << 24)
+
+					}
+
+					i += 4
+
+				}
+			}
+
+		}
 	}
 	return i + 0, nil
 }

@@ -5,19 +5,19 @@ import (
 	"log"
 
 	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/tx/min_framework"
 )
 
 type Blockchain struct {
 	tip []byte
-	Db  *iostdb.LDBDatabase
+	Db  *db.LDBDatabase
 }
 
 type BlockchainIterator struct {
 	currentHash []byte
-	Db          *iostdb.LDBDatabase
+	Db          *db.LDBDatabase
 }
 
 // 改掉
@@ -71,7 +71,7 @@ func (i *BlockchainIterator) Next() *Block {
 	return block
 }
 
-func dbExists(db *iostdb.LDBDatabase) bool {
+func dbExists(db *db.LDBDatabase) bool {
 	bo, err := db.Has([]byte("l"))
 	if err != nil || !bo {
 		return false
@@ -80,12 +80,12 @@ func dbExists(db *iostdb.LDBDatabase) bool {
 }
 
 // 创建一个有创世块的新链
-func NewBlockchain(address string, db *iostdb.LDBDatabase) (*Blockchain, string) {
+func NewBlockchain(address string, db *db.LDBDatabase) (*Blockchain, string) {
 	if dbExists(db) == false {
 		return nil, "No existing blockchain found. Create one first.\n"
 	}
 	var tip []byte
-	/*db, err := iostdb.NewLDBDatabase(min_framework.DbFile, 0, 0)
+	/*db, err := db.NewLDBDatabase(min_framework.DbFile, 0, 0)
 	if err != nil {
 		log.Panic(err)
 	}*/
@@ -102,13 +102,13 @@ func NewBlockchain(address string, db *iostdb.LDBDatabase) (*Blockchain, string)
 
 // CreateBlockchain 创建一个新的区块链数据库
 // address 用来接收挖出创世块的奖励
-func CreateBlockchain(address string, db *iostdb.LDBDatabase, nn *network.NaiveNetwork) (*Blockchain, string) {
+func CreateBlockchain(address string, db *db.LDBDatabase, nn *network.NaiveNetwork) (*Blockchain, string) {
 	if dbExists(db) {
 		return nil, "Blockchain already exists.\n"
 	}
 
 	var tip []byte
-	/*db, err := iostdb.NewLDBDatabase(min_framework.DbFile, 0, 0)
+	/*db, err := db.NewLDBDatabase(min_framework.DbFile, 0, 0)
 	if err != nil {
 		log.Panic(err)
 	}*/

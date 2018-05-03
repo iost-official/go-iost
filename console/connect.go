@@ -2,12 +2,13 @@ package console
 
 import (
 	"fmt"
+
 	"io/ioutil"
 	"os"
 	"strconv"
 
 	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/tx/min_framework"
 	"github.com/iost-official/prototype/tx/tx"
@@ -28,7 +29,7 @@ func Connect() Cmd {
 		}
 
 		dirname, _ := ioutil.TempDir(os.TempDir(), min_framework.DbFile)
-		Db, err = iostdb.NewLDBDatabase(dirname, 0, 0)
+		Db, err = db.NewLDBDatabase(dirname, 0, 0)
 		if err != nil {
 			return "Can't open database"
 		}

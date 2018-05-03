@@ -3,7 +3,7 @@ package core
 type TxStatus int
 
 const (
-	ACCEPT  TxStatus = iota
+	ACCEPT TxStatus = iota
 	CACHED
 	POOL
 	REJECT

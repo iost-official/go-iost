@@ -3,6 +3,8 @@ package console
 import (
 	"bufio"
 	"fmt"
+	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/p2p"
 	"os"
 	"strings"
 	"sync"

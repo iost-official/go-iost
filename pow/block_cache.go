@@ -13,7 +13,7 @@ import (
 type CacheStatus int
 
 const (
-	Extend     CacheStatus = iota
+	Extend CacheStatus = iota
 	Fork
 	NotFound
 	ErrorBlock

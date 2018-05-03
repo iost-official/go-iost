@@ -82,6 +82,19 @@ func (mr *MockPoolMockRecorder) Get(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockPool)(nil).Get), arg0)
 }
 
+// GetHM mocks base method
+func (m *MockPool) GetHM(arg0, arg1 state.Key) (state.Value, error) {
+	ret := m.ctrl.Call(m, "GetHM", arg0, arg1)
+	ret0, _ := ret[0].(state.Value)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHM indicates an expected call of GetHM
+func (mr *MockPoolMockRecorder) GetHM(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHM", reflect.TypeOf((*MockPool)(nil).GetHM), arg0, arg1)
+}
+
 // GetPatch mocks base method
 func (m *MockPool) GetPatch() state.Patch {
 	ret := m.ctrl.Call(m, "GetPatch")
@@ -117,4 +130,16 @@ func (m *MockPool) Put(arg0 state.Key, arg1 state.Value) error {
 // Put indicates an expected call of Put
 func (mr *MockPoolMockRecorder) Put(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockPool)(nil).Put), arg0, arg1)
+}
+
+// PutHM mocks base method
+func (m *MockPool) PutHM(arg0, arg1 state.Key, arg2 state.Value) error {
+	ret := m.ctrl.Call(m, "PutHM", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PutHM indicates an expected call of PutHM
+func (mr *MockPoolMockRecorder) PutHM(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutHM", reflect.TypeOf((*MockPool)(nil).PutHM), arg0, arg1, arg2)
 }

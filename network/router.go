@@ -103,10 +103,8 @@ func (r *RouterImpl) Broadcast(req core.Request) {
 		}()
 	}
 }
-
-// Download blocks from a remote peer
 func (r *RouterImpl) Download(req core.Request) chan []byte {
-	return nil // TODO
+	return nil // TODO 实现
 }
 
 //Filter The filter used by Router
