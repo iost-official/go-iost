@@ -7,7 +7,7 @@ import (
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/core"
 	"github.com/iost-official/prototype/p2p"
-	"github.com/iost-official/prototype/p2p/mocks"
+	"github.com/iost-official/prototype/network/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 	"time"
 	"github.com/iost-official/prototype/vm"

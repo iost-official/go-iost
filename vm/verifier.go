@@ -11,7 +11,7 @@ const (
 )
 
 type Verifier struct {
-	Pool   state.Pool
+	Pool   state.StatePool
 	Prefix string
 	Vms    map[string]VM
 }
@@ -35,7 +35,7 @@ func (v *Verifier) Stop() {
 	}
 }
 
-func (v *Verifier) Verify(contract Contract) (state.Pool, uint64, error) {
+func (v *Verifier) Verify(contract Contract) (state.StatePool, uint64, error) {
 
 	vm, ok := v.Vms[string(contract.Hash())]
 	if !ok {
@@ -46,7 +46,7 @@ func (v *Verifier) Verify(contract Contract) (state.Pool, uint64, error) {
 	return pool, vm.PC(), err
 }
 
-func (v *Verifier) SetPool(pool state.Pool) {
+func (v *Verifier) SetPool(pool state.StatePool) {
 	v.Pool = pool
 	for _, vm := range v.Vms {
 		vm.SetPool(pool)
@@ -57,7 +57,7 @@ type CacheVerifier struct {
 	Verifier
 }
 
-func (cv *CacheVerifier) VerifyContract(contract Contract, contain bool) (state.Pool, error) {
+func (cv *CacheVerifier) VerifyContract(contract Contract, contain bool) (state.StatePool, error) {
 	sender := contract.Info().Sender
 	var balanceOfSender float64
 	val0, err := cv.Pool.GetHM("iost", state.Key(sender))
@@ -97,7 +97,7 @@ func (cv *CacheVerifier) VerifyContract(contract Contract, contain bool) (state.
 	return cv.Pool, nil
 }
 
-func NewCacheVerifier(pool state.Pool) CacheVerifier {
+func NewCacheVerifier(pool state.StatePool) CacheVerifier {
 	cv := CacheVerifier{
 		Verifier: Verifier{
 			Pool:   pool.Copy(),
@@ -111,7 +111,7 @@ func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	return cv
 }
 
-func VerifyBlock(blockID string, contracts []Contract, pool state.Pool) (state.Pool, error) { // TODO 使用log控制并发
+func VerifyBlock(blockID string, contracts []Contract, pool state.StatePool) (state.StatePool, error) { // TODO 使用log控制并发
 	cv := Verifier{
 		Pool:   pool,
 		Prefix: blockID,

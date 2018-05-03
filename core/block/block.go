@@ -1,6 +1,11 @@
-package core
+package block
 
-import "github.com/iost-official/prototype/common"
+import (
+	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/core/tx"
+)
+
+//go:generate gencode go -schema=structs.schema -package=block
 
 func (d *Block) Encode() []byte {
 	bin, err := d.Marshal(nil)
@@ -22,8 +27,8 @@ func (d *Block) HeadHash() []byte {
 	return d.Head.Hash()
 }
 
-func (d *Block) TxGet(x int) Tx {
-	return Tx{}
+func (d *Block) TxGet(x int) tx.Tx {
+	return tx.Tx{}
 }
 
 func (d *Block) TxLen() int {
