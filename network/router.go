@@ -3,7 +3,7 @@ package network
 import (
 	"fmt"
 
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/core/message"
 )
 
 //ReqType Marked request types using by protocol
@@ -12,16 +12,16 @@ import (
 
 //Router Forwarding specific request to other components and sending messages for them
 type Router interface {
-	Init(base core.Network, port uint16) error
-	FilteredChan(filter Filter) (chan core.Request, error)
+	Init(base message.Message, port uint16) error
+	FilteredChan(filter Filter) (chan message.Message, error)
 	Run()
 	Stop()
-	Send(req core.Request)
-	Broadcast(req core.Request)
-	Download(req core.Request) chan []byte
+	Send(req message.Message)
+	Broadcast(req message.Message)
+	Download(req message.Message) chan []byte
 }
 
-func RouterFactory(target string) (Router, error) {
+func RouterFactory(target string) (*RouterImpl, error) {
 	switch target {
 	case "base":
 		return &RouterImpl{}, nil
@@ -30,22 +30,22 @@ func RouterFactory(target string) (Router, error) {
 }
 
 type RouterImpl struct {
-	base core.Network
+	base Network
 
-	chIn  <-chan core.Request
-	chOut chan<- core.Request
+	chIn  <-chan message.Message
+	chOut chan<- message.Message
 
 	filterList  []Filter
-	filterMap   map[int]chan core.Request
+	filterMap   map[int]chan message.Message
 	knownMember []string
 	ExitSignal  chan bool
 }
 
-func (r *RouterImpl) Init(base core.Network, port uint16) error {
+func (r *RouterImpl) Init(base Network, port uint16) error {
 	var err error
 	r.base = base
 	r.filterList = make([]Filter, 0)
-	r.filterMap = make(map[int]chan core.Request)
+	r.filterMap = make(map[int]chan message.Message)
 	r.knownMember = make([]string, 0)
 	r.ExitSignal = make(chan bool)
 	r.chIn, err = r.base.Listen(port)
@@ -57,8 +57,8 @@ func (r *RouterImpl) Init(base core.Network, port uint16) error {
 }
 
 //FilteredChan Get filtered request channel
-func (r *RouterImpl) FilteredChan(filter Filter) (chan core.Request, error) {
-	chReq := make(chan core.Request)
+func (r *RouterImpl) FilteredChan(filter Filter) (chan message.Message, error) {
+	chReq := make(chan message.Message)
 
 	r.filterList = append(r.filterList, filter)
 	r.filterMap[len(r.filterList)-1] = chReq
@@ -89,12 +89,12 @@ func (r *RouterImpl) Stop() {
 	r.ExitSignal <- true
 }
 
-func (r *RouterImpl) Send(req core.Request) {
+func (r *RouterImpl) Send(req message.Message) {
 	r.base.Send(req)
 }
 
 // Broadcast to all known members
-func (r *RouterImpl) Broadcast(req core.Request) {
+func (r *RouterImpl) Broadcast(req message.Message) {
 	for _, to := range r.knownMember {
 		req.To = to
 
@@ -103,7 +103,7 @@ func (r *RouterImpl) Broadcast(req core.Request) {
 		}()
 	}
 }
-func (r *RouterImpl) Download(req core.Request) chan []byte {
+func (r *RouterImpl) Download(req message.Message) chan []byte {
 	return nil // TODO 实现
 }
 
@@ -113,13 +113,13 @@ func (r *RouterImpl) Download(req core.Request) chan []byte {
 //     2. if one of those is not nil, filter as it is
 //     3. if both of those list are not nil, filter as white list
 type Filter struct {
-	WhiteList  []core.Member
-	BlackList  []core.Member
+	WhiteList  []message.Message
+	BlackList  []message.Message
 	RejectType []ReqType
 	AcceptType []ReqType
 }
 
-func (f *Filter) check(req core.Request) bool {
+func (f *Filter) check(req message.Message) bool {
 	var memberCheck, typeCheck byte
 	if f.WhiteList == nil && f.BlackList == nil {
 		memberCheck = byte(0)
@@ -159,9 +159,9 @@ func (f *Filter) check(req core.Request) bool {
 	return m && t
 }
 
-func memberContain(a string, c []core.Member) bool {
+func memberContain(a string, c []message.Message) bool {
 	for _, m := range c {
-		if m.ID == a {
+		if m.From == a {
 			return true
 		}
 	}

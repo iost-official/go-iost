@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/core/message"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +23,7 @@ func TestNetwork(t *testing.T) {
 		fmt.Println(err)
 	}
 
-	req := core.Request{
+	req := message.Message{
 		Time:    1,
 		From:    "test1",
 		To:      "test2",
