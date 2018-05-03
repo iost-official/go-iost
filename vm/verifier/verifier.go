@@ -1,31 +1,35 @@
-package vm
+package verifier
 
 import (
 	"fmt"
 	"github.com/iost-official/prototype/core/state"
 	"runtime"
+	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
 )
 
 const (
 	MaxBlockGas uint64 = 1000000
 )
 
+//go:generate gencode go -schema=structs.schema -package=verifier
+
 type Verifier struct {
 	Pool   state.StatePool
 	Prefix string
-	Vms    map[string]VM
+	Vms    map[string]vm.VM
 }
 
-func (v *Verifier) StartVm(contract Contract) {
+func (v *Verifier) StartVm(contract vm.Contract) {
 	switch contract.(type) {
-	case *LuaContract:
-		var lvm LuaVM
-		lvm.Prepare(contract.(*LuaContract), v.Pool)
+	case *lua.Contract:
+		var lvm lua.VM
+		lvm.Prepare(contract.(*lua.Contract), v.Pool)
 		lvm.Start()
 		v.Vms[string(contract.Hash())] = &lvm
 	}
 }
-func (v *Verifier) StopVm(contract Contract) {
+func (v *Verifier) StopVm(contract vm.Contract) {
 	v.Vms[string(contract.Hash())].Stop()
 	delete(v.Vms, string(contract.Hash()))
 }
@@ -35,7 +39,7 @@ func (v *Verifier) Stop() {
 	}
 }
 
-func (v *Verifier) Verify(contract Contract) (state.StatePool, uint64, error) {
+func (v *Verifier) Verify(contract vm.Contract) (state.StatePool, uint64, error) {
 
 	vm, ok := v.Vms[string(contract.Hash())]
 	if !ok {
@@ -57,7 +61,7 @@ type CacheVerifier struct {
 	Verifier
 }
 
-func (cv *CacheVerifier) VerifyContract(contract Contract, contain bool) (state.StatePool, error) {
+func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (state.StatePool, error) {
 	sender := contract.Info().Sender
 	var balanceOfSender float64
 	val0, err := cv.Pool.GetHM("iost", state.Key(sender))
@@ -102,7 +106,7 @@ func NewCacheVerifier(pool state.StatePool) CacheVerifier {
 		Verifier: Verifier{
 			Pool:   pool.Copy(),
 			Prefix: "cache+",
-			Vms:    make(map[string]VM),
+			Vms:    make(map[string]vm.VM),
 		},
 	}
 	runtime.SetFinalizer(cv, func() {
@@ -111,11 +115,11 @@ func NewCacheVerifier(pool state.StatePool) CacheVerifier {
 	return cv
 }
 
-func VerifyBlock(blockID string, contracts []Contract, pool state.StatePool) (state.StatePool, error) { // TODO 使用log控制并发
+func VerifyBlock(blockID string, contracts []vm.Contract, pool state.StatePool) (state.StatePool, error) { // TODO 使用log控制并发
 	cv := Verifier{
 		Pool:   pool,
 		Prefix: blockID,
-		Vms:    make(map[string]VM),
+		Vms:    make(map[string]vm.VM),
 	}
 	var totalGas uint64
 	for _, c := range contracts {

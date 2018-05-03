@@ -1,4 +1,4 @@
-package vm
+package lua
 
 import (
 	"testing"
@@ -25,7 +25,7 @@ func TestLuaVM(t *testing.T) {
 		})
 		pool.EXPECT().Copy().AnyTimes().Return(pool)
 		main := NewLuaMethod("main", 1)
-		lc := LuaContract{
+		lc := Contract{
 			info: ContractInfo{},
 			code: `function main()
 	Put("hello", "world")
@@ -34,7 +34,7 @@ end`,
 			main: &main,
 		}
 
-		lvm := LuaVM{}
+		lvm := VM{}
 		lvm.Prepare(&lc, pool, "test")
 		lvm.Pool = pool
 		lvm.Start()

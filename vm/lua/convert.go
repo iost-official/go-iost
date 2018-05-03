@@ -1,4 +1,4 @@
-package vm
+package lua
 
 import (
 	"github.com/iost-official/gopher-lua"

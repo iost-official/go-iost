@@ -1,4 +1,4 @@
-package vm
+package verifier
 
 import "github.com/iost-official/prototype/common"
 

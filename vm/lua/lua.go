@@ -1,26 +1,29 @@
-package vm
+package lua
 
 import (
 	"fmt"
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/vm"
 )
 
-type LuaAPI struct {
+//go:generate gencode go -schema=structs.schema -package=lua
+
+type API struct {
 	name     string
 	function func(L *lua.LState) int
 }
 
-type LuaVM struct {
-	APIs []LuaAPI
+type VM struct {
+	APIs []API
 	L    *lua.LState
 
 	Pool, cachePool state.StatePool
 
-	Contract *LuaContract
+	Contract *Contract
 }
 
-func (l *LuaVM) Start() error {
+func (l *VM) Start() error {
 	for _, api := range l.APIs {
 		l.L.SetGlobal(api.name, l.L.NewFunction(api.function))
 	}
@@ -31,10 +34,10 @@ func (l *LuaVM) Start() error {
 
 	return nil
 }
-func (l *LuaVM) Stop() {
+func (l *VM) Stop() {
 	l.L.Close()
 }
-func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, state.StatePool, error) {
+func (l *VM) Call(methodName string, args ...state.Value) ([]state.Value, state.StatePool, error) {
 
 	l.cachePool = l.Pool.Copy()
 
@@ -43,7 +46,7 @@ func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, sta
 		return nil, nil, err
 	}
 
-	method := method0.(*LuaMethod)
+	method := method0.(*Method)
 
 	err = l.L.CallByParam(lua.P{
 		Fn:      l.L.GetGlobal(method.name),
@@ -64,9 +67,9 @@ func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, sta
 
 	return rtnValue, l.cachePool, nil
 }
-func (l *LuaVM) Prepare(contract Contract, pool state.StatePool) error {
+func (l *VM) Prepare(contract vm.Contract, pool state.StatePool) error {
 	var ok bool
-	l.Contract, ok = contract.(*LuaContract)
+	l.Contract, ok = contract.(*Contract)
 	if !ok {
 		return fmt.Errorf("type error")
 	}
@@ -74,9 +77,9 @@ func (l *LuaVM) Prepare(contract Contract, pool state.StatePool) error {
 	l.L = lua.NewState()
 	l.Pool = pool
 
-	l.APIs = make([]LuaAPI, 0)
+	l.APIs = make([]API, 0)
 
-	var Put = LuaAPI{
+	var Put = API{
 		name: "Put",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
@@ -89,7 +92,7 @@ func (l *LuaVM) Prepare(contract Contract, pool state.StatePool) error {
 	}
 	l.APIs = append(l.APIs, Put)
 
-	var Log = LuaAPI{
+	var Log = API{
 		name: "Log",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
@@ -99,7 +102,7 @@ func (l *LuaVM) Prepare(contract Contract, pool state.StatePool) error {
 	}
 	l.APIs = append(l.APIs, Log)
 
-	var Get = LuaAPI{
+	var Get = API{
 		name:"Get",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
@@ -116,9 +119,9 @@ func (l *LuaVM) Prepare(contract Contract, pool state.StatePool) error {
 
 	return nil
 }
-func (l *LuaVM) SetPool(pool state.StatePool) {
+func (l *VM) SetPool(pool state.StatePool) {
 	l.Pool = pool
 }
-func (l *LuaVM) PC() uint64 {
+func (l *VM) PC() uint64 {
 	return l.L.PCount
 }

@@ -1,4 +1,4 @@
-package vm
+package host
 
 import (
 	"github.com/iost-official/prototype/core/state"

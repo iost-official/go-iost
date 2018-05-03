@@ -4,12 +4,3 @@ struct ContractInfoRaw {
 	GasLimit int64
 	Price    float64
 }
-
-struct ContractRaw {
-    info ContractInfoRaw
-    code []byte
-}
-
-struct VerifyLogRaw {
-    List  [][]int32
-}

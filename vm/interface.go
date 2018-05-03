@@ -2,6 +2,7 @@ package vm
 
 import (
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/common"
 )
 
 type Address string
@@ -9,18 +10,14 @@ type Address string
 type Privilege int
 
 const (
-	Private Privilege = iota
+	Private   Privilege = iota
 	Protected
 	public
 )
 
-type Code []byte
+type Code string
 
 type Pubkey []byte
-
-func getStatus(addr Address, key state.Key) (state.Value, error) {
-	return nil, nil
-}
 
 type VM interface {
 	Prepare(contract Contract, pool state.StatePool) error
@@ -29,4 +26,19 @@ type VM interface {
 	Call(methodName string, args ...state.Value) ([]state.Value, state.StatePool, error)
 	SetPool(pool state.StatePool)
 	PC() uint64
+}
+type Method interface {
+	Name() string
+	Input(...state.Value)
+}
+
+//go:generate gencode go -schema=structs.schema -package=vm
+
+type Contract interface {
+	Info() ContractInfo
+	SetPrefix(prefix string)
+	SetSender(sender []byte)
+	AddSigner(signer []byte)
+	Api(apiName string) (Method, error)
+	common.Serializable
 }
