@@ -1,1 +1,17 @@
-package block
+struct BlockHead {
+   Version int32
+   ParentHash []byte
+   TreeHash []byte
+   BlockHash []byte
+   Info []byte
+   Number  int32
+   Witness string
+   Signature []byte
+   Time    int64
+}
+
+struct Block {
+   Version   int32
+   Head      BlockHead
+   Content   []byte
+}

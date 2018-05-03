@@ -1,4 +1,4 @@
-package core
+package account
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 )
 
 func TestMember(t *testing.T) {
-	Convey("Test of Member", t, func() {
+	Convey("Test of Account", t, func() {
 		m, err := NewMember(nil)
 		Convey("New member: ", func() {
 			So(err, ShouldBeNil)

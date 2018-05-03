@@ -1,4 +1,4 @@
-package core
+package account
 
 import (
 	"bytes"
@@ -9,19 +9,19 @@ import (
 	"time"
 )
 
-type Member struct {
+type Account struct {
 	ID     string
 	Pubkey []byte
 	Seckey []byte
 }
 
-func NewMember(seckey []byte) (Member, error) {
-	var m Member
+func NewAccount(seckey []byte) (Account, error) {
+	var m Account
 	if seckey == nil {
 		seckey = randomSeckey()
 	}
 	if len(seckey) != 32 {
-		return Member{}, fmt.Errorf("seckey length error")
+		return Account{}, fmt.Errorf("seckey length error")
 	}
 
 	m.Seckey = seckey
@@ -30,7 +30,7 @@ func NewMember(seckey []byte) (Member, error) {
 	return m, nil
 }
 
-func (member *Member)GetId() string {
+func (member *Account)GetId() string {
 	return member.ID
 }
 

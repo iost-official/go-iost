@@ -5,21 +5,9 @@ import (
 )
 
 //go:generate gencode go -schema=structs.schema -package=state
-//go:generate mockgen -destination mocks/mock_pool.go -package state_mock github.com/iost-official/prototype/state Pool
+//go:generate mockgen -destination ../mocks/mock_pool.go -package state_mock github.com/iost-official/prototype/state StatePool
 
-type Pool interface {
-	Copy() Pool
-	GetPatch() Patch
-	Flush() error
 
-	Put(key Key, value Value) error
-	Get(key Key) (Value, error)
-	Has(key Key) (bool, error)
-	Delete(key Key) error
-
-	GetHM(key, field Key) (Value, error)
-	PutHM(key, field Key, value Value) error
-}
 
 type PoolImpl struct {
 	db     Database
@@ -27,7 +15,7 @@ type PoolImpl struct {
 	parent *PoolImpl
 }
 
-func (p *PoolImpl) Copy() Pool {
+func (p *PoolImpl) Copy() StatePool {
 	pp := PoolImpl{
 		db:     p.db,
 		parent: p,
