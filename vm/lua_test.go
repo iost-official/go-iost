@@ -5,8 +5,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/gopher-lua"
-	"github.com/iost-official/prototype/state"
-	"github.com/iost-official/prototype/state/mocks"
+	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/state/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

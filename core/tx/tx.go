@@ -1,9 +1,11 @@
-package core
+package tx
 
 import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/vm"
 )
+
+//go:generate gencode go -schema=structs.schema -package=tx
 
 type Tx struct {
 	Time      int64
