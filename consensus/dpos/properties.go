@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/iost-official/prototype/core"
 	. "github.com/iost-official/prototype/consensus/common"
+	"github.com/iost-official/prototype/core"
 )
 
 type GlobalStaticProperty struct {

@@ -130,9 +130,9 @@ func (p *DPoS) blockLoop() {
 			return false
 		}
 		/*
-		if !VerifyBlockContent(blk, chain) {
-			return false
-		}
+			if !VerifyBlockContent(blk, chain) {
+				return false
+			}
 		*/
 		return true
 	}

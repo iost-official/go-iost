@@ -30,7 +30,7 @@ func NewAccount(seckey []byte) (Account, error) {
 	return m, nil
 }
 
-func (member *Account)GetId() string {
+func (member *Account) GetId() string {
 	return member.ID
 }
 

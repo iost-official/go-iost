@@ -5,9 +5,7 @@ import (
 )
 
 //go:generate gencode go -schema=structs.schema -package=state
-//go:generate mockgen -destination ../mocks/mock_pool.go -package state_mock github.com/iost-official/prototype/state StatePool
-
-
+//go:generate mockgen -destination ../mocks/mock_pool.go -package core_mock github.com/iost-official/prototype/core/state Pool
 
 type PoolImpl struct {
 	db     Database
@@ -15,7 +13,7 @@ type PoolImpl struct {
 	parent *PoolImpl
 }
 
-func (p *PoolImpl) Copy() StatePool {
+func (p *PoolImpl) Copy() Pool {
 	pp := PoolImpl{
 		db:     p.db,
 		parent: p,
