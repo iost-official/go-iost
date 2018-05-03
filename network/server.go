@@ -225,7 +225,7 @@ func (s *Server) broadcast(r *Request) {
 	}
 }
 
-func (s *Server) send(conn net.Conn, body []byte, typ ReqType) {
+func (s *Server) send(conn net.Conn, body []byte, typ NetReqType) {
 	if conn == nil {
 		s.log.E("from %v,send data = %v, conn is nil", s.ListenAddr, body)
 		return

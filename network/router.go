@@ -9,6 +9,12 @@ import (
 //ReqType Marked request types using by protocol
 
 //go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Router
+type ReqType int
+
+const (
+	ReqPublishTx ReqType = iota
+	ReqNewBlock
+)
 
 //Router Forwarding specific request to other components and sending messages for them
 type Router interface {
