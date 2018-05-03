@@ -1,0 +1,7 @@
+struct Message {
+	Time    int64
+	From    string
+	To      string
+	ReqType int32
+	Body    []byte
+}
