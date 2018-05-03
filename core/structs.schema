@@ -40,7 +40,11 @@ struct BlockHead {
    Version int32
    ParentHash []byte
    TreeHash []byte
+   BlockHash []byte
    Info []byte
+   Number  int32
+   Witness string
+   Signature []byte
    Time    int64
 }
 
@@ -49,3 +53,5 @@ struct Block {
    Head      BlockHead
    Content   []byte
 }
+
+
