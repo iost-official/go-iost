@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/db"
 )
 
@@ -29,9 +29,9 @@ type Response struct {
 
 //Network api
 type Network interface {
-	Broadcast(req core.Request)
-	Send(req core.Request)
-	Listen(port uint16) (<-chan core.Request, error)
+	Broadcast(req message.Message)
+	Send(req message.Message)
+	Listen(port uint16) (<-chan message.Message, error)
 	Close(port uint16) error
 }
 
@@ -70,7 +70,7 @@ func (nn *NaiveNetwork) Close(port uint16) error {
 }
 
 //
-func (nn *NaiveNetwork) Broadcast(req core.Request) error {
+func (nn *NaiveNetwork) Broadcast(req message.Message) error {
 	iter := nn.db.NewIterator()
 	for iter.Next() {
 		addr, _ := nn.db.Get([]byte(string(iter.Key())))
@@ -89,7 +89,7 @@ func (nn *NaiveNetwork) Broadcast(req core.Request) error {
 	return iter.Error()
 }
 
-func (nn *NaiveNetwork) Send(req core.Request) {
+func (nn *NaiveNetwork) Send(req message.Message) {
 	if nn.conn == nil {
 		fmt.Errorf("no connect in network")
 		return
@@ -110,14 +110,14 @@ func (nn *NaiveNetwork) Send(req core.Request) {
 	return
 }
 
-func (nn *NaiveNetwork) Listen(port uint16) (<-chan core.Request, error) {
+func (nn *NaiveNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	var err error
 	nn.listen, err = net.Listen("tcp", ":"+strconv.Itoa(int(port)))
 	if err != nil {
 		return nil, fmt.Errorf("Error listening: %v", err.Error())
 	}
 	fmt.Println("Listening on " + ":" + strconv.Itoa(int(port)))
-	req := make(chan core.Request)
+	req := make(chan message.Message)
 
 	conn := make(chan net.Conn)
 
@@ -161,7 +161,7 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan core.Request, error) {
 					if err != nil {
 						fmt.Errorf("Error reading request body:%v", err.Error())
 					}
-					var received core.Request
+					var received message.Message
 					received.Unmarshal(_buf)
 					req <- received
 					// Send a response back to person contacting us.
@@ -175,7 +175,7 @@ func (nn *NaiveNetwork) Listen(port uint16) (<-chan core.Request, error) {
 	return req, nil
 }
 
-func reqToBytes(req core.Request) ([]byte, []byte, error) {
+func reqToBytes(req message.Message) ([]byte, []byte, error) {
 	reqBodyBytes, err := req.Marshal(nil)
 	if err != nil {
 		return nil, reqBodyBytes, err
