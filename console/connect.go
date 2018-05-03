@@ -2,13 +2,16 @@ package console
 
 import (
 	"fmt"
-	"github.com/iost-official/prototype/iostdb"
-	"github.com/iost-official/prototype/p2p"
-	"github.com/iost-official/prototype/tx/min_framework"
-	"github.com/iost-official/prototype/tx/tx"
+
 	"io/ioutil"
 	"os"
 	"strconv"
+
+	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/tx/min_framework"
+	"github.com/iost-official/prototype/tx/tx"
 )
 
 func Connect() Cmd {
@@ -26,19 +29,22 @@ func Connect() Cmd {
 		}
 
 		dirname, _ := ioutil.TempDir(os.TempDir(), min_framework.DbFile)
-		Db, err = iostdb.NewLDBDatabase(dirname, 0, 0)
+		Db, err = db.NewLDBDatabase(dirname, 0, 0)
 		if err != nil {
 			return "Can't open database"
 		}
 
-		Nn = p2p.NewNaiveNetwork()
+		Nn, err = network.NewNaiveNetwork(3)
+		if err != nil {
+			return fmt.Sprint(err) + "\n"
+		}
 		lis, err := Nn.Listen(uint16(port))
 		if err != nil {
 			return fmt.Sprint(err) + "\n"
 		}
 
 		Wg.Add(1)
-		go func(<-chan p2p.Request) {
+		go func(<-chan core.Request) {
 			defer Wg.Done()
 			for {
 				select {

@@ -5,7 +5,7 @@ package pow
 //	"encoding/binary"
 //	"github.com/iost-official/prototype/core"
 //	"time"
-//	. "github.com/iost-official/prototype/p2p"
+//	. "github.com/iost-official/prototype/network"
 //)
 //
 //type Pow struct {
