@@ -6,7 +6,7 @@ package state_mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	state "github.com/iost-official/prototype/state"
+	state "github.com/iost-official/prototype/core/state"
 	reflect "reflect"
 )
 
