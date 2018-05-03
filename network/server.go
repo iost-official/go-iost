@@ -25,8 +25,8 @@ import (
 	"encoding/binary"
 
 	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/params"
 	"github.com/iostio/iost.io/p2p/discover"
@@ -77,8 +77,8 @@ type Server struct {
 
 	// is seedAddr pinged
 	pinged    bool
-	seedAddr  string              //randomly selected from node table
-	nodeTable *iostdb.LDBDatabase //all known node except remoteAddr
+	seedAddr  string          //randomly selected from node table
+	nodeTable *db.LDBDatabase //all known node except remoteAddr
 	lock      sync.RWMutex
 
 	// the nodes which use our server as the remote addr
@@ -87,14 +87,14 @@ type Server struct {
 	SendCh      chan []byte
 	BroadcastCh chan []byte
 
-	RecvCh chan core.Request
+	RecvCh chan message.Message
 
 	log *log.Logger
 }
 
 func NewServer() (*Server, error) {
 	send := make(chan []byte, 1)
-	recv := make(chan core.Request, 1)
+	recv := make(chan message.Message, 1)
 	broadCh := make(chan []byte, 1)
 	srvLog, err := log.NewLogger("log_p2p")
 	if err != nil {
@@ -104,7 +104,7 @@ func NewServer() (*Server, error) {
 	if err != nil {
 		fmt.Errorf("failed to init db path %v", err)
 	}
-	nodeTable, err := iostdb.NewLDBDatabase(dirname, 0, 0)
+	nodeTable, err := db.NewLDBDatabase(dirname, 0, 0)
 	if err != nil {
 		fmt.Errorf("failed to init db %v", err)
 	}
@@ -124,7 +124,7 @@ func (s *Server) Close() {
 	defer s.Conn.Close()
 }
 
-func (s *Server) Listen(port uint16) (<-chan core.Request, error) {
+func (s *Server) Listen(port uint16) (<-chan message.Message, error) {
 	s.ListenAddr = "127.0.0.1:" + strconv.Itoa(int(port))
 	s.log.D("listening %v", s.ListenAddr)
 	l, err := net.Listen("tcp", s.ListenAddr)
@@ -176,7 +176,7 @@ func (s *Server) Start() error {
 }
 
 //broadcast on the application layer
-func (s *Server) Broadcast(r *core.Request) {
+func (s *Server) Broadcast(r *message.Message) {
 	data, err := r.Marshal(nil)
 	if err != nil {
 		s.log.E("marshal request encountered err:%v", err)
@@ -188,7 +188,7 @@ func (s *Server) Broadcast(r *core.Request) {
 	}
 }
 
-func (s *Server) Send(r *core.Request) {
+func (s *Server) Send(r *message.Message) {
 	data, err := r.Marshal(nil)
 	if err != nil {
 		s.log.E("marshal request encountered err:%v", err)
@@ -225,7 +225,7 @@ func (s *Server) broadcast(r *Request) {
 	}
 }
 
-func (s *Server) send(conn net.Conn, body []byte, typ ReqType) {
+func (s *Server) send(conn net.Conn, body []byte, typ NetReqType) {
 	if conn == nil {
 		s.log.E("from %v,send data = %v, conn is nil", s.ListenAddr, body)
 		return
@@ -476,7 +476,7 @@ func (s *Server) randBootAddr() string {
 
 //spreadUp Pass the received data through the channel to the upper application
 func (s *Server) spreadUp(body []byte) {
-	appReq := &core.Request{}
+	appReq := &message.Message{}
 	if _, err := appReq.Unmarshal(body); err == nil {
 		s.RecvCh <- *appReq
 	}

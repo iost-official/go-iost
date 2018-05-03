@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/iost-official/prototype/common/mclock"
-	"github.com/iost-official/prototype/event"
 	"github.com/iost-official/prototype/network/discover"
 )
 
@@ -30,7 +29,6 @@ type Peer struct {
 	protoErr chan error
 	closed   chan struct{}
 	disc     chan DiscReason // diconnect reason
-	events   *event.Feed     // events receives message send / receive events if set
 }
 
 const (
@@ -111,7 +109,6 @@ func newPeer(conn *conn, protocols []Protocol) *Peer {
 		protoErr: make(chan error, len(protomap)+1),
 		closed:   make(chan struct{}),
 		disc:     make(chan DiscReason),
-		events:   nil,
 	}
 	return p
 }
