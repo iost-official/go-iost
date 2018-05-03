@@ -10,6 +10,7 @@ type Contract struct {
 	info vm.ContractInfo
 	code string
 	main Method
+	apis map[string]Method
 }
 
 func (c *Contract) Info() vm.ContractInfo {
@@ -28,10 +29,14 @@ func (c *Contract) Api(apiName string) (vm.Method, error) {
 	if apiName == "main" {
 		return &c.main, nil
 	}
-	return nil, fmt.Errorf("not found")
+	rtn, ok := c.apis[apiName]
+	if !ok {
+		return nil, fmt.Errorf("not found")
+	}
+	return &rtn, nil
 }
 func (c *Contract) Encode() []byte {
-	cr := ContractRaw{
+	cr := contractRaw{
 		info: c.info.Encode(),
 		code: []byte(c.code),
 	}
@@ -43,7 +48,7 @@ func (c *Contract) Encode() []byte {
 	return b
 }
 func (c *Contract) Decode(b []byte) error {
-	var cr ContractRaw
+	var cr contractRaw
 	_, err := cr.Unmarshal(b)
 	var ci vm.ContractInfo
 	err = ci.Decode(cr.info)
@@ -57,4 +62,3 @@ func (c *Contract) Decode(b []byte) error {
 func (c *Contract) Hash() []byte {
 	return common.Sha256(c.Encode())
 }
-

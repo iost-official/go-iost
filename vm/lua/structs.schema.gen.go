@@ -12,12 +12,12 @@ var (
 	_ = time.Now()
 )
 
-type ContractRaw struct {
+type contractRaw struct {
 	info []byte
 	code []byte
 }
 
-func (d *ContractRaw) Size() (s uint64) {
+func (d *contractRaw) Size() (s uint64) {
 
 	{
 		l := uint64(len(d.info))
@@ -51,7 +51,7 @@ func (d *ContractRaw) Size() (s uint64) {
 	}
 	return
 }
-func (d *ContractRaw) Marshal(buf []byte) ([]byte, error) {
+func (d *contractRaw) Marshal(buf []byte) ([]byte, error) {
 	size := d.Size()
 	{
 		if uint64(cap(buf)) >= size {
@@ -103,7 +103,7 @@ func (d *ContractRaw) Marshal(buf []byte) ([]byte, error) {
 	return buf[:i+0], nil
 }
 
-func (d *ContractRaw) Unmarshal(buf []byte) (uint64, error) {
+func (d *contractRaw) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
 
 	{

@@ -3,9 +3,9 @@ package verifier
 import (
 	"fmt"
 	"github.com/iost-official/prototype/core/state"
-	"runtime"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
+	"runtime"
 )
 
 const (

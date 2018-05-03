@@ -13,4 +13,3 @@ type Pool interface {
 	GetHM(key, field Key) (Value, error)
 	PutHM(key, field Key, value Value) error
 }
-

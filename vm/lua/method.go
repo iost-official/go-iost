@@ -1,8 +1,8 @@
 package lua
 
 import (
-	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/gopher-lua"
+	"github.com/iost-official/prototype/core/state"
 )
 
 type Method struct {
@@ -29,4 +29,3 @@ func (m *Method) Input(value ...state.Value) {
 		m.inputs = append(m.inputs, Core2Lua(v))
 	}
 }
-

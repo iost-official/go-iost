@@ -5,10 +5,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/gopher-lua"
-	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/mocks"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestLuaVM(t *testing.T) {

@@ -12,25 +12,21 @@ type ContractInfo struct {
 	Sender  []byte
 }
 
-func (c *ContractInfo) toRaw() ContractInfoRaw {
-	return ContractInfoRaw{
+func (c *ContractInfo) toRaw() contractInfoRaw {
+	return contractInfoRaw{
 		Language: c.Language,
 		Version:  c.Version,
 		GasLimit: c.GasLimit,
 		Price:    c.Price,
-		Signers:  c.Signers,
-		Sender:   c.Sender,
 	}
 }
 
-func (d *ContractInfoRaw) toC() ContractInfo {
+func (d *contractInfoRaw) toC() ContractInfo {
 	return ContractInfo{
 		Language: d.Language,
 		Version:  d.Version,
 		GasLimit: d.GasLimit,
 		Price:    d.Price,
-		Signers:  d.Signers,
-		Sender:   d.Sender,
 	}
 }
 
@@ -44,8 +40,8 @@ func (c *ContractInfo) Encode() []byte {
 }
 
 func (c *ContractInfo) Decode(b []byte) error {
-	cir := ContractInfoRaw{}
-	_, err:=cir.Unmarshal(b)
+	cir := contractInfoRaw{}
+	_, err := cir.Unmarshal(b)
 	if err != nil {
 		return err
 	}

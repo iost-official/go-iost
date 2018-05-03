@@ -5,17 +5,18 @@ import (
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/host"
 )
 
 //go:generate gencode go -schema=structs.schema -package=lua
 
-type API struct {
+type api struct {
 	name     string
 	function func(L *lua.LState) int
 }
 
 type VM struct {
-	APIs []API
+	APIs []api
 	L    *lua.LState
 
 	Pool, cachePool state.Pool
@@ -77,38 +78,38 @@ func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
 	l.L = lua.NewState()
 	l.Pool = pool
 
-	l.APIs = make([]API, 0)
+	l.APIs = make([]api, 0)
 
-	var Put = API{
+	var Put = api{
 		name: "Put",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
 			key := state.Key(l.Contract.Info().Prefix + k)
 			v := L.Get(2)
-			l.cachePool.Put(key, Lua2Core(v))
+			host.Put(l.cachePool, key, Lua2Core(v))
 			L.Push(lua.LTrue)
 			return 1
 		},
 	}
 	l.APIs = append(l.APIs, Put)
 
-	var Log = API{
+	var Log = api{
 		name: "Log",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
-			fmt.Println("From Lua :", k)
+			host.Log(k, l.Contract.info.Prefix)
 			return 0
 		},
 	}
 	l.APIs = append(l.APIs, Log)
 
-	var Get = API{
-		name:"Get",
+	var Get = api{
+		name: "Get",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
-			v, err := l.cachePool.Get(state.Key(k))
+			v, err := host.Get(l.cachePool, state.Key(k))
 			if err != nil {
-				L.Push(lua.LString("not found"))
+				L.Push(lua.LNil)
 				return 1
 			}
 			L.Push(Core2Lua(v))
@@ -116,6 +117,19 @@ func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
 		},
 	}
 	l.APIs = append(l.APIs, Get)
+
+	var Transfer = api{
+		name: "Transfer",
+		function: func(L *lua.LState) int {
+			src := L.ToString(1)
+			des := L.ToString(2)
+			value := L.ToNumber(3)
+			rtn := host.Transfer(l.cachePool, src, des, float64(value))
+			L.Push(Bool2Lua(rtn))
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Transfer)
 
 	return nil
 }
