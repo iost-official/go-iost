@@ -3,7 +3,8 @@ package consensus_common
 import (
 	"bytes"
 	"fmt"
-	"github.com/iost-official/prototype/core"
+
+	"github.com/iost-official/prototype/core/block"
 )
 
 //const (
@@ -26,7 +27,7 @@ type BlockCacheTree struct {
 	super    *BlockCacheTree
 }
 
-func newBct(block *core.Block, tree *BlockCacheTree) *BlockCacheTree {
+func newBct(block *block.Block, tree *BlockCacheTree) *BlockCacheTree {
 	bct := BlockCacheTree{
 		depth:    0,
 		bc:       tree.bc.Copy(),
@@ -38,7 +39,7 @@ func newBct(block *core.Block, tree *BlockCacheTree) *BlockCacheTree {
 	return &bct
 }
 
-func (b *BlockCacheTree) add(block *core.Block, verifier func(blk *core.Block, chain core.BlockChain) bool) CacheStatus {
+func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) bool) CacheStatus {
 
 	var code CacheStatus
 	for _, bct := range b.children {
@@ -98,19 +99,19 @@ func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
 }
 
 type BlockCache interface {
-	Add(block *core.Block, verifier func(blk *core.Block, chain core.BlockChain) bool) error
-	FindBlockInCache(hash []byte) (*core.Block, error)
-	LongestChain() core.BlockChain
+	Add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) bool) error
+	FindBlockInCache(hash []byte) (*block.Block, error)
+	LongestChain() block.Chain
 }
 
 type BlockCacheImpl struct {
-	bc           core.BlockChain
+	bc           block.Chain
 	cachedRoot   *BlockCacheTree
-	singleBlocks []*core.Block
+	singleBlocks []*block.Block
 	maxDepth     int
 }
 
-func NewBlockCache(chain core.BlockChain, maxDepth int) *BlockCacheImpl {
+func NewBlockCache(chain block.Chain, maxDepth int) *BlockCacheImpl {
 	h := BlockCacheImpl{
 		bc: chain,
 		cachedRoot: &BlockCacheTree{
@@ -119,13 +120,13 @@ func NewBlockCache(chain core.BlockChain, maxDepth int) *BlockCacheImpl {
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
 		},
-		singleBlocks: make([]*core.Block, 0),
+		singleBlocks: make([]*block.Block, 0),
 		maxDepth:     maxDepth,
 	}
 	return &h
 }
 
-func (h *BlockCacheImpl) Add(block *core.Block, verifier func(blk *core.Block, chain core.BlockChain) bool) error {
+func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) bool) error {
 	code := h.cachedRoot.add(block, verifier)
 	switch code {
 	case Extend:
@@ -147,8 +148,8 @@ func (h *BlockCacheImpl) Add(block *core.Block, verifier func(blk *core.Block, c
 	return nil
 }
 
-func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*core.Block, error) {
-	var pb *core.Block
+func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
+	var pb *block.Block
 	found := h.cachedRoot.iterate(func(bct *BlockCacheTree) bool {
 		if bytes.Equal(bct.bc.Top().HeadHash(), hash) {
 			pb = bct.bc.Top()
@@ -165,7 +166,7 @@ func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*core.Block, error) {
 	}
 }
 
-func (h *BlockCacheImpl) LongestChain() core.BlockChain {
+func (h *BlockCacheImpl) LongestChain() block.Chain {
 	bct := h.cachedRoot
 	if bct.depth == 0 {
 		return &h.cachedRoot.bc

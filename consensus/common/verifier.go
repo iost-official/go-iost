@@ -3,13 +3,14 @@ package consensus_common
 
 import (
 	"bytes"
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/core/block"
 	"encoding/binary"
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/core/tx"
 )
 
 // 验证块头正确性，调用此函数时块的父亲节点已经找到
-func VerifyBlockHead(blk *core.Block, parentBlk *core.Block) bool {
+func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) bool {
 	bh := blk.Head
 	// parent hash
 	if !bytes.Equal(bh.ParentHash, parentBlk.Head.Hash()) {
@@ -27,7 +28,7 @@ func VerifyBlockHead(blk *core.Block, parentBlk *core.Block) bool {
 	return true
 }
 
-func calcTreeHash(txs []core.Tx) []byte {
+func calcTreeHash(txs []tx.Tx) []byte {
 	return nil
 }
 
@@ -56,7 +57,7 @@ func VeirifyTx(tx core.Tx, cv *vm.CacheVerifier) (state.Pool, bool) {
 }
 */
 
-func VerifyTxSig(tx core.Tx) bool {
+func VerifyTxSig(tx tx.Tx) bool {
 	info := make([]byte, 8)
 	binary.BigEndian.PutUint64(info, uint64(tx.Time))
 	info = append(info, tx.Contract.Encode()...)
@@ -68,15 +69,15 @@ func VerifyTxSig(tx core.Tx) bool {
 	for _, sign := range tx.Signs {
 		info = append(info, sign.Encode()...)
 	}
-	for _, sign := range tx.Publisher {
-		if !common.VerifySignature(info, sign) {
-			return false
-		}
+
+	if !common.VerifySignature(info, tx.Publisher) {
+		return false
 	}
+
 	return true
 }
 
-func DecodeTxs(content []byte) []core.Tx {
+func DecodeTxs(content []byte) []tx.Tx {
 	return nil
 }
 

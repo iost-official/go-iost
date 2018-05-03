@@ -1,18 +1,18 @@
 package consensus_common
 
 import (
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/core/block"
 )
 
 type CachedBlockChain struct {
-	core.BlockChain
-	cachedBlock []*core.Block
+	block.Chain
+	cachedBlock []*block.Block
 }
 
-func NewCBC(chain core.BlockChain) CachedBlockChain {
+func NewCBC(chain block.Chain) CachedBlockChain {
 	return CachedBlockChain{
-		BlockChain:  chain,
-		cachedBlock: make([]*core.Block, 0),
+		Chain:  chain,
+		cachedBlock: make([]*block.Block, 0),
 	}
 }
 
@@ -25,25 +25,25 @@ func NewCBC(chain core.BlockChain) CachedBlockChain {
 //	}
 //	return c.cachedBlock[layer-c.BlockChain.Length()], nil
 //}
-func (c *CachedBlockChain) Push(block *core.Block) error {
+func (c *CachedBlockChain) Push(block *block.Block) error {
 	c.cachedBlock = append(c.cachedBlock, block)
 	return nil
 }
 func (c *CachedBlockChain) Length() int {
-	return c.BlockChain.Length() + len(c.cachedBlock)
+	return c.Chain.Length() + len(c.cachedBlock)
 }
-func (c *CachedBlockChain) Top() *core.Block {
+func (c *CachedBlockChain) Top() *block.Block {
 	l := len(c.cachedBlock)
 	if l == 0 {
-		return c.BlockChain.Top()
+		return c.Chain.Top()
 	}
 	return c.cachedBlock[l-1]
 }
 
 func (c *CachedBlockChain) Copy() CachedBlockChain {
 	cbc := CachedBlockChain{
-		BlockChain:  c.BlockChain,
-		cachedBlock: make([]*core.Block, 0),
+		Chain:  c.Chain,
+		cachedBlock: make([]*block.Block, 0),
 	}
 	copy(cbc.cachedBlock, c.cachedBlock)
 	return cbc
@@ -51,10 +51,10 @@ func (c *CachedBlockChain) Copy() CachedBlockChain {
 
 func (c *CachedBlockChain) Flush() {
 	for _, b := range c.cachedBlock {
-		c.BlockChain.Push(b)
+		c.Chain.Push(b)
 	}
 }
 
-func (c *CachedBlockChain) Iterator() core.BlockChainIterator {
+func (c *CachedBlockChain) Iterator() block.ChainIterator {
 	return nil
 }
