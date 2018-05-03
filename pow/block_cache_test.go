@@ -1,11 +1,11 @@
 package pow
 
 import (
-	"testing"
+	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/core"
 	"github.com/iost-official/prototype/core/mocks"
-	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
 func TestBlockCache(t *testing.T) {

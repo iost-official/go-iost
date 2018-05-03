@@ -1,14 +1,14 @@
 package console
 
 import (
-	"github.com/iost-official/prototype/tx/tx"
 	"fmt"
+	"github.com/iost-official/prototype/iostdb"
 	"github.com/iost-official/prototype/p2p"
-	"strconv"
+	"github.com/iost-official/prototype/tx/min_framework"
+	"github.com/iost-official/prototype/tx/tx"
 	"io/ioutil"
 	"os"
-	"github.com/iost-official/prototype/tx/min_framework"
-	"github.com/iost-official/prototype/iostdb"
+	"strconv"
 )
 
 func Connect() Cmd {
@@ -27,7 +27,7 @@ func Connect() Cmd {
 
 		dirname, _ := ioutil.TempDir(os.TempDir(), min_framework.DbFile)
 		Db, err = iostdb.NewLDBDatabase(dirname, 0, 0)
-		if err != nil{
+		if err != nil {
 			return "Can't open database"
 		}
 
@@ -38,10 +38,10 @@ func Connect() Cmd {
 		}
 
 		Wg.Add(1)
-		go func(<-chan p2p.Request, ) {
+		go func(<-chan p2p.Request) {
 			defer Wg.Done()
 			for {
-				select{
+				select {
 				case message := <-lis:
 					//fmt.Printf("\n%+v\n>", message)
 					encodedBlock := message.Body
@@ -50,7 +50,7 @@ func Connect() Cmd {
 					err2 := Db.Put([]byte("l"), block.Hash)
 					if err1 != nil || err2 != nil {
 						fmt.Printf("Write to database error! \nSync failed.\n>")
-					}else{
+					} else {
 						fmt.Printf("Sync successfully!\n>")
 					}
 				case <-Done:

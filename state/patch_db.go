@@ -8,6 +8,7 @@ import (
 var PatchDb *iostdb.LDBDatabase
 
 var o sync.Once
+
 //
 //func init() {
 //	o.Do(func() {
@@ -18,4 +19,3 @@ var o sync.Once
 //		}
 //	})
 //}
-

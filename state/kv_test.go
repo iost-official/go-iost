@@ -1,8 +1,8 @@
 package state
 
 import (
-	"testing"
 	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
 func TestKV(t *testing.T) {
