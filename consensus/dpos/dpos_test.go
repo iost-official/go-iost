@@ -5,73 +5,70 @@ import (
 
 	. "github.com/bouk/monkey"
 	. "github.com/golang/mock/gomock"
-	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/p2p"
+	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 	"time"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/common"
 	. "github.com/iost-official/prototype/consensus/common"
+	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/tx"
 )
 
 func TestNewDPoS(t *testing.T) {
 	Convey("Test fo NewDPos", t, func() {
 		mockCtr := NewController(t)
-		mockRouter := mock_p2p.NewMockRouter(mockCtr)
+		mockRouter := mock_network.NewMockRouter(mockCtr)
 
 		//获取router实例
-		guard := Patch(p2p.RouterFactory, func(_ string) (p2p.Router, error) {
+		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
 		})
 
 		defer guard.Unpatch()
 
-		txChan := make(chan core.Request, 1)
+		txChan := make(chan message.Message, 1)
 		//设置第一个通道txchan
-		type Request struct {
-			Time    int64
-			From    string
-			To      string
-			ReqType int
-			Body    []byte
-		}
+
 		//构造测试数据
-		txChan <- core.Request{
+		txChan <- message.Message{
 			Time:    20180426111111,
 			From:    "0xaaaaaaaaaaaaa",
 			To:      "0xbbbbbbbbbbbb",
 			ReqType: 1,
 			Body:    []byte{'a', 'b'}}
 
-		mockRouter.EXPECT().FilteredChan(p2p.Filter{
-			WhiteList:  []core.Member{},
-			BlackList:  []core.Member{},
-			RejectType: []p2p.ReqType{},
-			AcceptType: []p2p.ReqType{
-				p2p.ReqPublishTx,
+		mockRouter.EXPECT().FilteredChan(network.Filter{
+			WhiteList:  []account.Account{},
+			BlackList:  []account.Account{},
+			RejectType: []network.ReqType{},
+			AcceptType: []network.ReqType{
+				network.ReqPublishTx,
 				ReqTypeVoteTest, // Only for test
 			}}).Return(txChan,nil)
 
 		//设置第二个通道Blockchan
-		blockChan := make(chan core.Request, 1)
+		blockChan := make(chan message.Message, 1)
 		//设置第一个通道txchan
 		//构造测试数据
 
-		blockChan<-core.Request{
+		blockChan<-message.Message{
 			Time:20180426111111,
 			From:"0xaaaaaaaaaaaaa",
 			To:"0xbbbbbbbbbbbb",
 			ReqType:2,
 			Body:[]byte{'c','d'}}
-		mockRouter.EXPECT().FilteredChan(p2p.Filter{
-			WhiteList:  []core.Member{},
-			BlackList:  []core.Member{},
-			RejectType: []p2p.ReqType{},
-			AcceptType: []p2p.ReqType{
-				p2p.ReqNewBlock}}).Return(blockChan,nil)
+		mockRouter.EXPECT().FilteredChan(network.Filter{
+			WhiteList:  []account.Account{},
+			BlackList:  []account.Account{},
+			RejectType: []network.ReqType{},
+			AcceptType: []network.ReqType{
+				network.ReqNewBlock}}).Return(blockChan,nil)
 
-		p, _ := NewDPoS(core.Member{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
+		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
 
 		p.Genesis(Timestamp{}, []byte{})
 	})
@@ -81,16 +78,16 @@ func TestNewDPoS(t *testing.T) {
 func TestDPoS_Run(t *testing.T) {
 	Convey("Test fo Run", t, func() {
 		mockCtr := NewController(t)
-		mockRouter := mock_p2p.NewMockRouter(mockCtr)
+		mockRouter := mock_network.NewMockRouter(mockCtr)
 
 		//获取router实例
-		guard := Patch(p2p.RouterFactory, func(_ string) (p2p.Router, error) {
+		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
 		})
 
 		defer guard.Unpatch()
 
-		txChan := make(chan core.Request, 1)
+		txChan := make(chan message.Message, 1)
 		//设置第一个通道txchan
 		type Request struct {
 			Time    int64
@@ -104,35 +101,35 @@ func TestDPoS_Run(t *testing.T) {
 		//构造智能合约
 		lac := new(vm.LuaContract)
 		//初始化交易数据
-		var txData core.Tx
-		txData = core.Tx{
+		var txData tx.Tx
+		txData = tx.Tx{
 			Time:     time.Now().Unix(),
 			Contract: lac,
 			Signs:[]common.Signature{},
 			Publisher:[]common.Signature{}}
 
-		txChan<-core.Request{
+		txChan<-message.Message{
 			Time:20180426111111,
 			From:"0xaaaaaaaaaaaaa",
 			To:"0xbbbbbbbbbbbb",
-			ReqType:int(p2p.ReqPublishTx),
+			ReqType:int(network.ReqPublishTx),
 			Body:txData.Encode()}
 
-		mockRouter.EXPECT().FilteredChan(p2p.Filter{
-			WhiteList:  []core.Member{},
-			BlackList:  []core.Member{},
-			RejectType: []p2p.ReqType{},
-			AcceptType: []p2p.ReqType{
-				p2p.ReqPublishTx,
+		mockRouter.EXPECT().FilteredChan(network.Filter{
+			WhiteList:  []account.Account{},
+			BlackList:  []account.Account{},
+			RejectType: []network.ReqType{},
+			AcceptType: []network.ReqType{
+				network.ReqPublishTx,
 				ReqTypeVoteTest, // Only for test
 			}}).Return(txChan,nil)
 
 		//设置第二个通道Blockchan
-		blockChan :=make(chan core.Request,1)
-		var blockData core.Block
-		blockData = core.Block{
+		blockChan :=make(chan message.Message,1)
+		var blockData block.Block
+		blockData = block.Block{
 			Version:1.0,
-			Head:core.BlockHead{
+			Head:block.BlockHead{
 				Version:1,
 				ParentHash:[]byte{'a','b'},
 				TreeHash:[]byte{'a','b'},
@@ -144,21 +141,21 @@ func TestDPoS_Run(t *testing.T) {
 				Time: 1111}}
 
 		//构造测试数据
-		blockChan<-core.Request{
+		blockChan<-message.Message{
 			Time:20180426111111,
 			From:"0xaaaaaaaaaaaaa",
 			To:"0xbbbbbbbbbbbb",
-			ReqType:int(p2p.ReqNewBlock),
+			ReqType:int(network.ReqNewBlock),
 			Body:blockData.Encode()}
 
-		mockRouter.EXPECT().FilteredChan(p2p.Filter{
-			WhiteList:  []core.Member{},
-			BlackList:  []core.Member{},
-			RejectType: []p2p.ReqType{},
-			AcceptType: []p2p.ReqType{
-				p2p.ReqNewBlock}}).Return(blockChan,nil)
+		mockRouter.EXPECT().FilteredChan(network.Filter{
+			WhiteList:  []account.Account{},
+			BlackList:  []account.Account{},
+			RejectType: []network.ReqType{},
+			AcceptType: []network.ReqType{
+				network.ReqNewBlock}}).Return(blockChan,nil)
 
-		p, _ := NewDPoS(core.Member{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
+		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
 
 		p.Run()
 

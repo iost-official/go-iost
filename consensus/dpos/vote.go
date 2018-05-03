@@ -8,6 +8,8 @@ import (
 	"github.com/iost-official/prototype/core"
 	"strings"
 	"time"
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/core/message"
 )
 
 const (
@@ -17,7 +19,7 @@ const (
 	MaintenanceInterval = 24
 )
 
-func (p *DPoS) VoteForWitness(voter core.Member, witnessId string, voteType bool) {
+func (p *DPoS) VoteForWitness(voter account.Account, witnessId string, voteType bool) {
 	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
 	var reqString string
 	if voteType {
@@ -25,7 +27,7 @@ func (p *DPoS) VoteForWitness(voter core.Member, witnessId string, voteType bool
 	} else {
 		reqString = "Vote Against " + voter.GetId() + " " + witnessId
 	}
-	req := core.Request{
+	req := message.Message{
 		Time: time.Now().Unix(),
 		From: voter.GetId(),
 		//To:      p.DPoSSuperMember,
