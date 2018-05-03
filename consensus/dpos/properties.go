@@ -4,20 +4,22 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/iost-official/prototype/core"
+	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
+
+	"github.com/iost-official/prototype/core/block"
 )
 
 type GlobalStaticProperty struct {
-	Member             core.Member
+	Account
 	NumberOfWitnesses  int
 	WitnessList        []string
 	PendingWitnessList []string
 }
 
-func NewGlobalStaticProperty(member core.Member, witnessList []string) GlobalStaticProperty {
+func NewGlobalStaticProperty(acc Account, witnessList []string) GlobalStaticProperty {
 	prop := GlobalStaticProperty{
-		Member:             member,
+		Account:            acc,
 		NumberOfWitnesses:  len(witnessList),
 		WitnessList:        witnessList,
 		PendingWitnessList: []string{},
@@ -112,7 +114,7 @@ func NewGlobalDynamicProperty() GlobalDynamicProperty {
 	}
 }
 
-func (prop *GlobalDynamicProperty) Update(blockHead *core.BlockHead) {
+func (prop *GlobalDynamicProperty) Update(blockHead *block.BlockHead) {
 	if prop.LastBlockNumber == 0 {
 		prop.TotalSlots = 1
 		prop.NextMaintenanceTime.AddHour(MaintenanceInterval)
@@ -155,7 +157,7 @@ func WitnessOfTime(sp *GlobalStaticProperty, dp *GlobalDynamicProperty, time Tim
 // 如果该节点当前不是witness，则返回到达下一次maintenance的时间长度
 func TimeUntilNextSchedule(sp *GlobalStaticProperty, dp *GlobalDynamicProperty, timeSec int64) int64 {
 	var index int
-	if index = getIndex(sp.Member.GetId(), sp.WitnessList); index < 0 {
+	if index = getIndex(sp.Account.GetId(), sp.WitnessList); index < 0 {
 		return dp.NextMaintenanceTime.ToUnixSec() - timeSec
 	}
 	// 如果上一个块是创世块，并且本节点应该首先产生块，无需计算时间
