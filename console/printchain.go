@@ -25,7 +25,7 @@ func Printchain() Cmd {
 
 				to_print += fmt.Sprintf("Prev hash: %x\n", block.PrevBlockHash)
 				to_print += fmt.Sprintf("Hash: %x\n", block.Hash)
-				for _, tx := range(block.Transactions) {
+				for _, tx := range block.Transactions {
 					to_print += tx.String()
 				}
 				to_print += "\n"

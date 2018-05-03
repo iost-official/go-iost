@@ -12,7 +12,7 @@ func TestTxPoolImpl(t *testing.T) {
 		txp := TxPoolImpl{}
 		tx := Tx{
 			//Version: 1,
-			Time:    time.Now().Unix(),
+			Time: time.Now().Unix(),
 		}
 		Convey("Add", func() {
 			txp.Add(tx)

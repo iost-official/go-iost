@@ -27,7 +27,7 @@ type Router interface {
 	Stop()
 	Send(req core.Request)
 	Broadcast(req core.Request)
-	Download (req core.Request) chan []byte
+	Download(req core.Request) chan []byte
 }
 
 func RouterFactory(target string) (Router, error) {
@@ -113,7 +113,7 @@ func (r *RouterImpl) Broadcast(req core.Request) {
 		}()
 	}
 }
-func (r *RouterImpl) Download (req core.Request) chan []byte{
+func (r *RouterImpl) Download(req core.Request) chan []byte {
 	return nil // TODO 实现
 }
 

@@ -1,9 +1,9 @@
 package vm
 
 import (
-	"github.com/iost-official/prototype/state"
-	"github.com/iost-official/gopher-lua"
 	"fmt"
+	"github.com/iost-official/gopher-lua"
+	"github.com/iost-official/prototype/state"
 )
 
 type LuaAPI struct {
@@ -56,7 +56,7 @@ func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, sta
 	}
 
 	rtnValue := make([]state.Value, 0, method.outputCount)
-	for i := 0; i < method.outputCount; i ++ {
+	for i := 0; i < method.outputCount; i++ {
 		ret := l.L.Get(-1) // returned value
 		l.L.Pop(1)
 		rtnValue = append(rtnValue, Lua2Core(ret))
@@ -64,7 +64,7 @@ func (l *LuaVM) Call(methodName string, args ...state.Value) ([]state.Value, sta
 
 	return rtnValue, l.cachePool, nil
 }
-func (l *LuaVM) Prepare(contract Contract, pool state.Pool, prefix string) error {
+func (l *LuaVM) Prepare(contract Contract, pool state.Pool) error {
 	var ok bool
 	l.Contract, ok = contract.(*LuaContract)
 	if !ok {
@@ -80,7 +80,7 @@ func (l *LuaVM) Prepare(contract Contract, pool state.Pool, prefix string) error
 		name: "Put",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
-			key := state.Key(prefix + l.Contract.Info().Name + k)
+			key := state.Key(l.Contract.Info().Prefix + k)
 			v := L.Get(2)
 			l.cachePool.Put(key, Lua2Core(v))
 			L.Push(lua.LTrue)
@@ -98,6 +98,21 @@ func (l *LuaVM) Prepare(contract Contract, pool state.Pool, prefix string) error
 		},
 	}
 	l.APIs = append(l.APIs, Log)
+
+	var Get = LuaAPI{
+		name:"Get",
+		function: func(L *lua.LState) int {
+			k := L.ToString(1)
+			v, err := l.cachePool.Get(state.Key(k))
+			if err != nil {
+				L.Push(lua.LString("not found"))
+				return 1
+			}
+			L.Push(Core2Lua(v))
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Get)
 
 	return nil
 }

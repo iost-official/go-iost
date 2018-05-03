@@ -3,11 +3,11 @@ package vm
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/prototype/state/mocks"
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/prototype/state"
 	"github.com/iost-official/gopher-lua"
+	"github.com/iost-official/prototype/state"
+	"github.com/iost-official/prototype/state/mocks"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestLuaVM(t *testing.T) {
@@ -27,14 +27,12 @@ func TestLuaVM(t *testing.T) {
 		main := NewLuaMethod("main", 1)
 		lc := LuaContract{
 			info: ContractInfo{},
-			code:
-			`function main()
+			code: `function main()
 	Put("hello", "world")
 	return "success"
 end`,
 			main: &main,
 		}
-
 
 		lvm := LuaVM{}
 		lvm.Prepare(&lc, pool, "test")

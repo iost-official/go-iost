@@ -1,9 +1,9 @@
 package vm
 
 import (
+	"fmt"
 	"github.com/iost-official/prototype/state"
 	"runtime"
-	"fmt"
 )
 
 const (
@@ -20,7 +20,7 @@ func (v *Verifier) StartVm(contract Contract) {
 	switch contract.(type) {
 	case *LuaContract:
 		var lvm LuaVM
-		lvm.Prepare(contract.(*LuaContract), v.Pool, v.Prefix)
+		lvm.Prepare(contract.(*LuaContract), v.Pool)
 		lvm.Start()
 		v.Vms[string(contract.Hash())] = &lvm
 	}
@@ -58,22 +58,42 @@ type CacheVerifier struct {
 }
 
 func (cv *CacheVerifier) VerifyContract(contract Contract, contain bool) (state.Pool, error) {
+	sender := contract.Info().Sender
+	var balanceOfSender float64
+	val0, err := cv.Pool.GetHM("iost", state.Key(sender))
+	val, ok := val0.(*state.VFloat)
+	if !ok {
+		return nil, fmt.Errorf("type error")
+	}
+	balanceOfSender = val.ToFloat64()
+
+	if balanceOfSender < 1 {
+		return nil, fmt.Errorf("balance not enough")
+	}
+
 	cv.StartVm(contract)
 	pool, gas, err := cv.Verify(contract)
 	if err != nil {
 		return nil, err
 	}
+	cv.StopVm(contract)
 
 	if gas > uint64(contract.Info().GasLimit) {
 		return nil, fmt.Errorf("gas exceed")
 	}
 
-	// TODO 在这里扣掉发布者的gas
+	balanceOfSender -= float64(gas) * contract.Info().Price
+	if balanceOfSender < 0 {
+		balanceOfSender = 0
+		return nil, fmt.Errorf("can not afford gas")
+	}
+	val1 := state.MakeVFloat(balanceOfSender)
+	cv.Pool.PutHM("iost", state.Key(sender), &val1)
 
 	if contain {
 		cv.SetPool(pool)
 	}
-	cv.StopVm(contract)
+
 	return cv.Pool, nil
 }
 
@@ -91,14 +111,28 @@ func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	return cv
 }
 
-func VerifyBlock(blockID string, contracts []Contract, pool state.Pool) (state.Pool, error) {
+func VerifyBlock(blockID string, contracts []Contract, pool state.Pool) (state.Pool, error) { // TODO 使用log控制并发
 	cv := Verifier{
-		Pool:pool,
+		Pool:   pool,
 		Prefix: blockID,
-		Vms: make(map[string]VM),
+		Vms:    make(map[string]VM),
 	}
 	var totalGas uint64
 	for _, c := range contracts {
+
+		sender := c.Info().Sender
+		var balanceOfSender float64
+		val0, err := cv.Pool.GetHM("iost", state.Key(sender))
+		val, ok := val0.(*state.VFloat)
+		if !ok {
+			return nil, fmt.Errorf("type error")
+		}
+		balanceOfSender = val.ToFloat64()
+
+		if balanceOfSender < 1 {
+			return nil, fmt.Errorf("balance not enough")
+		}
+
 		cv.StartVm(c)
 		_, gas, err := cv.Verify(c)
 		if err != nil {
@@ -107,12 +141,19 @@ func VerifyBlock(blockID string, contracts []Contract, pool state.Pool) (state.P
 		if gas > uint64(c.Info().GasLimit) {
 			return nil, fmt.Errorf("gas exceed")
 		}
-		// TODO 扣钱
+		cv.StopVm(c)
 		totalGas += gas
 		if totalGas > MaxBlockGas {
 			return nil, fmt.Errorf("block gas exceed")
 		}
-		cv.StopVm(c)
+		balanceOfSender -= float64(gas) * c.Info().Price
+		if balanceOfSender < 0 {
+			balanceOfSender = 0
+			return nil, fmt.Errorf("can not afford gas")
+		}
+		val1 := state.MakeVFloat(balanceOfSender)
+		cv.Pool.PutHM("iost", state.Key(sender), &val1)
+
 	}
 	return cv.Pool, nil
 }

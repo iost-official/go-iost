@@ -1,16 +1,12 @@
-struct ContractInfo {
-	Name     string
+struct ContractInfoRaw {
 	Language string
 	Version  int8
 	GasLimit int64
 	Price    float64
-	Signers [][]byte
-
-	ApiList []string
 }
 
 struct ContractRaw {
-    info ContractInfo
+    info ContractInfoRaw
     code []byte
 }
 

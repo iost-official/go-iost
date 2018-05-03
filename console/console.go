@@ -3,10 +3,10 @@ package console
 import (
 	"bufio"
 	"fmt"
+	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/p2p"
 	"os"
 	"strings"
-	"github.com/iost-official/prototype/p2p"
-	"github.com/iost-official/prototype/iostdb"
 	"sync"
 )
 
@@ -19,7 +19,6 @@ var Wg sync.WaitGroup
 var Done = make(chan struct{})
 var Nn *p2p.NaiveNetwork
 var Db *iostdb.LDBDatabase
-
 
 func (c *Console) Init(cmds ...Cmd) error {
 	c.cmds = make([]Cmd, 0)
