@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"github.com/iost-official/prototype/p2p"
-	"github.com/iost-official/prototype/iostdb"
 	"sync"
+
+	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/network"
 )
 
 type Console struct {
@@ -17,9 +18,8 @@ type Console struct {
 
 var Wg sync.WaitGroup
 var Done = make(chan struct{})
-var Nn *p2p.NaiveNetwork
+var Nn *network.NaiveNetwork
 var Db *iostdb.LDBDatabase
-
 
 func (c *Console) Init(cmds ...Cmd) error {
 	c.cmds = make([]Cmd, 0)

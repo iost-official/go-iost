@@ -1,4 +1,4 @@
-package p2p
+package network
 
 import (
 	"crypto/ecdsa"
@@ -67,20 +67,18 @@ type transport interface {
 	close(err error)
 }
 
-//接收其他node的数据，定时同步连接远端的路由表，如果ping-pong心跳检测失败，则从本地路由表中随机一个节点，发起连接，
-//接收到消息，会广播给其他连接本节点的数据，并通过recv队列通知上层应用
-//todo resend
-//todo priority broadcast
+//receive data from other node, synchronize the remote routing table periodically. If the ping-pong heartbeat detection failed, it will select a node from node table randomly.
+// receiving the request, it will broadcast the data to other connections to this node, and notify the upper application through the recv queue.
 type Server struct {
 	ListenAddr string
 
-	RemoteAddr string //启动节点，nodeTable全部失效的时候尝试连接的节点
+	RemoteAddr string //bootstrap node, retry to connect when all known nodes failed to connect
 	Conn       net.Conn
 
 	// is seedAddr pinged
 	pinged    bool
-	seedAddr  string              //nodeTable随机出的节点
-	nodeTable *iostdb.LDBDatabase //除remoteAddr外的，所有已知节点
+	seedAddr  string              //randomly selected from node table
+	nodeTable *iostdb.LDBDatabase //all known node except remoteAddr
 	lock      sync.RWMutex
 
 	// the nodes which use our server as the remote addr
@@ -177,7 +175,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
-//应用层广播
+//broadcast on the application layer
 func (s *Server) Broadcast(r *core.Request) {
 	data, err := r.Marshal(nil)
 	if err != nil {
@@ -210,7 +208,7 @@ func (s *Server) sendLoop() {
 	}
 }
 
-//网络层广播
+//broadcast on the network layer
 func (s *Server) broadcast(r *Request) {
 	if r.Type == BroadcastMessage {
 		if s.Conn != nil {
@@ -242,7 +240,6 @@ func (s *Server) send(conn net.Conn, body []byte, typ ReqType) {
 	s.log.D("%v send data: typ= %v, body=%s, n = %v, err : %v", s.ListenAddr, r.Type, string(r.Body), n, err)
 }
 
-//接收数据
 func (s *Server) receiveLoop(conn net.Conn) {
 	var downStreamAddr string
 	defer func(addr string) {
@@ -411,6 +408,7 @@ func (s *Server) allNodesExcludeAddr(excludeAddr string) ([]byte, error) {
 	return []byte(strings.Join(addrs, ",")), nil
 }
 
+//AllNodes returns all the known node in the network
 func (s *Server) AllNodes() (string, error) {
 	if s.nodeTable == nil {
 		return "", nil
@@ -476,7 +474,7 @@ func (s *Server) randBootAddr() string {
 	return addrs[0]
 }
 
-//将接收的数据通过channel传递给上层应用
+//spreadUp Pass the received data through the channel to the upper application
 func (s *Server) spreadUp(body []byte) {
 	appReq := &core.Request{}
 	if _, err := appReq.Unmarshal(body); err == nil {

@@ -7,12 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"strings"
-
 	"github.com/iost-official/prototype/common"
 )
 
-//后期通过生成的私钥来生成，先直接hash addr
 type NodeID string
 
 const NodeIDBits = 512
@@ -70,16 +67,6 @@ func (n *Node) validateComplete() error {
 
 func (n *Node) String() string {
 	return string(n.ID) + "@" + string(n.IP) + ":" + strconv.Itoa(int(n.TCP))
-}
-
-func Addr2Node(addr string) (*Node, error) {
-	strs := strings.Split(addr, ":")
-	if len(strs) != 2 {
-		return nil, errors.New("wrong addr :" + addr)
-	}
-	port, _ := strconv.Atoi(strs[1])
-	nodeId := common.ToHex(common.Sha256([]byte(addr)))
-	return NewNode(NodeID(nodeId), []byte(strs[0]), uint16(port), uint16(port)), nil
 }
 
 // NodeID prints as a long hexadecimal number.

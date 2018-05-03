@@ -1,4 +1,4 @@
-package p2p
+package network
 
 import (
 	"io"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/iost-official/prototype/common/mclock"
 	"github.com/iost-official/prototype/event"
-	"github.com/iost-official/prototype/p2p/discover"
+	"github.com/iost-official/prototype/network/discover"
 )
 
 const (

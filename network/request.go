@@ -1,4 +1,4 @@
-package p2p
+package network
 
 import (
 	"encoding/binary"
@@ -24,12 +24,12 @@ const (
 	NodeTable
 )
 
-// Request 节点之间交换的数据结构
+// Request data structure exchanged by nodes
 type Request struct {
-	Version   [4]byte // 协议版本，暂定iost
-	Length    int32   // 数据部分长度
-	Timestamp int64   // 时间戳
-	Type      ReqType // 传输数据类型
+	Version   [4]byte
+	Length    int32 // length of request
+	Timestamp int64
+	Type      ReqType
 	FromLen   int16
 	From      []byte
 	Body      []byte
@@ -99,8 +99,6 @@ func (r *Request) String() string {
 	)
 }
 
-//处理接收的数据
-//todo 注册， send or 解析 通道map
 func (r *Request) handle(s *Server, conn net.Conn) (string, error) {
 	s.log.D("handle request = %v", r)
 	switch r.Type {
@@ -118,7 +116,7 @@ func (r *Request) handle(s *Server, conn net.Conn) (string, error) {
 		addr := string(r.Body)
 		s.setPeer(addr, conn)
 		s.putNode(addr)
-		//返回pong
+		//return pong
 		s.send(conn, nil, Pong)
 		return addr, nil
 	case Pong:

@@ -1,4 +1,4 @@
-package p2p
+package network
 
 import (
 	"bufio"
@@ -44,7 +44,7 @@ func TestRequest_Unpack(t *testing.T) {
 			readerCh <- fmt.Sprintf("%s", scannedPack)
 		}
 		if err := scanner.Err(); err != nil {
-			log.Fatal("无效数据包")
+			log.Fatal("invalid data pack")
 		}
 		i := 0
 		for {

@@ -3,10 +3,11 @@ package transaction
 import (
 	"encoding/hex"
 	"log"
-	"github.com/iost-official/prototype/iostdb"
-	"github.com/iost-official/prototype/tx/min_framework"
-	"github.com/iost-official/prototype/p2p"
+
 	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/iostdb"
+	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/tx/min_framework"
 )
 
 type Blockchain struct {
@@ -20,7 +21,7 @@ type BlockchainIterator struct {
 }
 
 // 改掉
-func (bc *Blockchain) MineBlock(transactions []*Transaction, nn *p2p.NaiveNetwork) {
+func (bc *Blockchain) MineBlock(transactions []*Transaction, nn *network.NaiveNetwork) {
 	var lastHash []byte
 
 	lastHash, err := bc.Db.Get([]byte("l"))
@@ -101,7 +102,7 @@ func NewBlockchain(address string, db *iostdb.LDBDatabase) (*Blockchain, string)
 
 // CreateBlockchain 创建一个新的区块链数据库
 // address 用来接收挖出创世块的奖励
-func CreateBlockchain(address string, db *iostdb.LDBDatabase, nn *p2p.NaiveNetwork) (*Blockchain, string) {
+func CreateBlockchain(address string, db *iostdb.LDBDatabase, nn *network.NaiveNetwork) (*Blockchain, string) {
 	if dbExists(db) {
 		return nil, "Blockchain already exists.\n"
 	}

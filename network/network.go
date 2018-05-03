@@ -1,4 +1,4 @@
-package p2p
+package network
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 )
 
 type RequestHead struct {
-	Length uint32 // Request的长度信息
+	Length uint32 // length of Request
 }
 
 const HEADLENGTH = 4
@@ -23,11 +23,11 @@ const HEADLENGTH = 4
 type Response struct {
 	From        string
 	To          string
-	Code        int // http-like的状态码和描述
-	Description string
+	Code        int    // like http status code
+	Description string // code status description
 }
 
-//Network 最基本网络的模块API，之后gossip协议，虚拟的网络延迟都可以在模块内部实现
+//Network api
 type Network interface {
 	Broadcast(req core.Request)
 	Send(req core.Request)

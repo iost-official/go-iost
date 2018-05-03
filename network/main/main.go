@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/p2p"
+	"github.com/iost-official/prototype/network"
 )
 
 var listenPort = flag.String("p", "30302", "go run main.go or go run main.go -p 30305 -s 127.0.0.1:30302")
@@ -17,7 +17,7 @@ var id = flag.String("i", "", "server tag id")
 
 func main() {
 	flag.Parse()
-	s, err := p2p.NewServer()
+	s, err := network.NewServer()
 
 	if err != nil {
 		panic("node start panic:" + err.Error())

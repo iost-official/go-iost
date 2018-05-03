@@ -1,4 +1,4 @@
-package p2p
+package network
 
 import (
 	"errors"
@@ -18,9 +18,6 @@ import (
 )
 
 //for boot test server
-//优化测试参数 ping，同步node
-//启动server 返回数据通道
-//一键启动多个server，
 var servers []*Server
 
 func StartBootServers() error {

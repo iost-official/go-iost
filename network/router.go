@@ -1,4 +1,4 @@
-package p2p
+package network
 
 import (
 	"fmt"
@@ -41,7 +41,6 @@ type RouterImpl struct {
 	ExitSignal  chan bool
 }
 
-//todo before init,should NewServer as base
 func (r *RouterImpl) Init(base core.Network, port uint16) error {
 	var err error
 	r.base = base
@@ -107,7 +106,7 @@ func (r *RouterImpl) Broadcast(req core.Request) {
 
 // Download blocks from a remote peer
 func (r *RouterImpl) Download(req core.Request) chan []byte {
-	return nil // TODO 实现
+	return nil // TODO
 }
 
 //Filter The filter used by Router
