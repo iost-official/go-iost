@@ -1,4 +1,4 @@
-package p2p
+package network
 
 type DiscReason uint
 
@@ -25,7 +25,7 @@ var discReasonToString = [...]string{
 	DiscUselessPeer:         "useless peer",
 	DiscTooManyPeers:        "too many peers",
 	DiscAlreadyConnected:    "already connected",
-	DiscIncompatibleVersion: "incompatible p2p protocol version",
+	DiscIncompatibleVersion: "incompatible network protocol version",
 	DiscInvalidIdentity:     "invalid node identity",
 	DiscQuitting:            "client quitting",
 	DiscUnexpectedIdentity:  "unexpected identity",

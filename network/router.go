@@ -1,25 +1,16 @@
-package p2p
+package network
 
 import (
 	"fmt"
+
 	"github.com/iost-official/prototype/core"
 )
 
-/*
-Marked request types using by protocol
-*/
-type ReqType int
-
-const (
-	ReqPublishTx ReqType = iota
-	ReqNewBlock
-)
+//ReqType Marked request types using by protocol
 
 //go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Router
 
-/*
-Forwarding specific request to other components and sending messages for them
-*/
+//Router Forwarding specific request to other components and sending messages for them
 type Router interface {
 	Init(base core.Network, port uint16) error
 	FilteredChan(filter Filter) (chan core.Request, error)
@@ -52,13 +43,11 @@ type RouterImpl struct {
 
 func (r *RouterImpl) Init(base core.Network, port uint16) error {
 	var err error
-
 	r.base = base
 	r.filterList = make([]Filter, 0)
 	r.filterMap = make(map[int]chan core.Request)
 	r.knownMember = make([]string, 0)
 	r.ExitSignal = make(chan bool)
-
 	r.chIn, err = r.base.Listen(port)
 	if err != nil {
 		return err
@@ -67,9 +56,7 @@ func (r *RouterImpl) Init(base core.Network, port uint16) error {
 	return nil
 }
 
-/*
-Get filtered request channel
-*/
+//FilteredChan Get filtered request channel
 func (r *RouterImpl) FilteredChan(filter Filter) (chan core.Request, error) {
 	chReq := make(chan core.Request)
 
@@ -96,14 +83,17 @@ func (r *RouterImpl) receiveLoop() {
 
 func (r *RouterImpl) Run() {
 	go r.receiveLoop()
-
 }
+
 func (r *RouterImpl) Stop() {
 	r.ExitSignal <- true
 }
+
 func (r *RouterImpl) Send(req core.Request) {
 	r.base.Send(req)
 }
+
+// Broadcast to all known members
 func (r *RouterImpl) Broadcast(req core.Request) {
 	for _, to := range r.knownMember {
 		req.To = to
@@ -117,17 +107,11 @@ func (r *RouterImpl) Download(req core.Request) chan []byte {
 	return nil // TODO 实现
 }
 
-/*
-The filter used by Router
-
-Rulers :
-
-1. if both white list and black list are nil, this filter is all-pass
-
-2. if one of those is not nil, filter as it is
-
-3. if both of those list are not nil, filter as white list
-*/
+//Filter The filter used by Router
+// Rulers :
+//     1. if both white list and black list are nil, this filter is all-pass
+//     2. if one of those is not nil, filter as it is
+//     3. if both of those list are not nil, filter as white list
 type Filter struct {
 	WhiteList  []core.Member
 	BlackList  []core.Member
@@ -184,9 +168,9 @@ func memberContain(a string, c []core.Member) bool {
 	return false
 }
 
-func reqTypeContain(a int, c []ReqType) bool {
+func reqTypeContain(a int32, c []ReqType) bool {
 	for _, t := range c {
-		if int(t) == a {
+		if int32(t) == a {
 			return true
 		}
 	}

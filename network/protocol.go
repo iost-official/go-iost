@@ -1,8 +1,9 @@
-package p2p
+package network
 
 import (
 	"fmt"
-	"github.com/iost-official/prototype/p2p/discover"
+
+	"github.com/iost-official/prototype/network/discover"
 )
 
 // Protocol represents a P2P subprotocol implementation.

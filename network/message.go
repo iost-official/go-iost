@@ -1,11 +1,11 @@
-package p2p
+package network
 
 import (
 	"io"
 	"time"
 )
 
-// Msg defines the structure of a p2p message.
+// Msg defines the structure of a network message.
 //
 // Note that a Msg can only be sent once since the Payload reader is
 // consumed during sending. It is not possible to create a Msg and

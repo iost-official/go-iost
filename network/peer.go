@@ -1,15 +1,16 @@
-package p2p
+package network
 
 import (
-	"github.com/iost-official/prototype/common/mclock"
-	"github.com/iost-official/prototype/event"
-	"github.com/iost-official/prototype/p2p/discover"
 	"io"
 	"log"
 	"os"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/iost-official/prototype/common/mclock"
+	"github.com/iost-official/prototype/event"
+	"github.com/iost-official/prototype/network/discover"
 )
 
 const (
@@ -68,11 +69,6 @@ type protoHandshake struct {
 	Caps       []Cap
 	ListenPort uint64
 	ID         discover.NodeID
-
-	// Ignore additional fields (for forward compatibility).
-
-	//Rest []rlp.RawValue `rlp:"tail"`
-	//Recursive Length Prefix
 }
 
 func (p *Peer) Disconnect(reason DiscReason) {
@@ -118,4 +114,37 @@ func newPeer(conn *conn, protocols []Protocol) *Peer {
 		events:   nil,
 	}
 	return p
+}
+
+// peerSet represents the collection of active peers
+type peerSet struct {
+	peers  map[string]*Peer
+	lock   sync.RWMutex
+	closed bool
+}
+
+func (ps *peerSet) Get(nodeId string) *Peer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+	if ps.peers == nil {
+		return nil
+	}
+	return ps.peers[nodeId]
+}
+
+func (ps *peerSet) Set(nodeId string, p *Peer) {
+	ps.lock.Lock()
+	defer ps.lock.Unlock()
+	if ps.peers == nil {
+		ps.peers = make(map[string]*Peer)
+	}
+	ps.peers[nodeId] = p
+	return
+}
+
+func (ps *peerSet) Remove(nodeId string) {
+	ps.lock.Lock()
+	defer ps.lock.Unlock()
+	delete(ps.peers, nodeId)
+	return
 }
