@@ -914,6 +914,25 @@ func (d *TxRaw) Marshal(buf []byte) ([]byte, error) {
 
 	}
 	{
+
+		buf[0+8] = byte(d.Nonce >> 0)
+
+		buf[1+8] = byte(d.Nonce >> 8)
+
+		buf[2+8] = byte(d.Nonce >> 16)
+
+		buf[3+8] = byte(d.Nonce >> 24)
+
+		buf[4+8] = byte(d.Nonce >> 32)
+
+		buf[5+8] = byte(d.Nonce >> 40)
+
+		buf[6+8] = byte(d.Nonce >> 48)
+
+		buf[7+8] = byte(d.Nonce >> 56)
+
+	}
+	{
 		l := uint64(len(d.Contract))
 
 		{
