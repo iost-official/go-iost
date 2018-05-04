@@ -115,7 +115,7 @@ func TestDPoS_Run(t *testing.T) {
 			Time:20180426111111,
 			From:"0xaaaaaaaaaaaaa",
 			To:"0xbbbbbbbbbbbb",
-			ReqType:network.ReqPublishTx,
+			ReqType:int32(network.ReqPublishTx),
 			Body:txData.Encode()}
 
 
@@ -150,7 +150,7 @@ func TestDPoS_Run(t *testing.T) {
 			Time:20180426111111,
 			From:"0xaaaaaaaaaaaaa",
 			To:"0xbbbbbbbbbbbb",
-			ReqType:network.ReqNewBlock,
+			ReqType:int32(network.ReqNewBlock),
 			Body:blockData.Encode()}
 
 		mockRouter.EXPECT().FilteredChan(network.Filter{
