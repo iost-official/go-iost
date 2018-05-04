@@ -2,10 +2,10 @@ package consensus_common
 
 import (
 	"github.com/golang/mock/gomock"
+	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-	"github.com/iost-official/prototype/core/block"
 )
 
 func TestBlockCache(t *testing.T) {
@@ -56,7 +56,7 @@ func TestBlockCache(t *testing.T) {
 		return true
 	}
 
-	base := core_mock.NewMockBlockChain(ctl)
+	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(&b0)
 
 	Convey("Test of Block Cache", t, func() {
