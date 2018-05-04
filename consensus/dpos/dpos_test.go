@@ -8,15 +8,10 @@ import (
 
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
-	"github.com/iost-official/prototype/vm"
 	. "github.com/smartystreets/goconvey/convey"
-	"time"
-	"github.com/iost-official/prototype/common"
 	. "github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/account"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/tx"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -91,33 +86,14 @@ func TestDPoS_Run(t *testing.T) {
 
 		txChan := make(chan message.Message, 1)
 		//设置第一个通道txchan
-		type Request struct {
-			Time    int64
-			From    string
-			To      string
-			ReqType int
-			Body    []byte
-		}
 
-		//构造交易测试数据
-		//构造智能合约
-		lac := new(vm.Contract)
-		//初始化交易数据
-
-		var txData tx.Tx
-		txData = tx.Tx{
-			Time:     time.Now().Unix(),
-			Contract: lac,
-			Signs:[]common.Signature{},
-			Publisher:common.Signature{}}
-
-		txChan<-message.Message{
-			Time:20180426111111,
-			From:"0xaaaaaaaaaaaaa",
-			To:"0xbbbbbbbbbbbb",
-			ReqType:int32(network.ReqPublishTx),
-			Body:txData.Encode()}
-
+		//构造测试数据
+		txChan <- message.Message{
+			Time:    20180426111111,
+			From:    "0xaaaaaaaaaaaaa",
+			To:      "0xbbbbbbbbbbbb",
+			ReqType: 1,
+			Body:    []byte{'a', 'b'}}
 
 		mockRouter.EXPECT().FilteredChan(network.Filter{
 			WhiteList:  []message.Message{},
@@ -129,30 +105,16 @@ func TestDPoS_Run(t *testing.T) {
 			}}).Return(txChan, nil)
 
 		//设置第二个通道Blockchan
-
-		blockChan :=make(chan message.Message,1)
-		var blockData block.Block
-		blockData = block.Block{
-			Version:1.0,
-			Head:block.BlockHead{
-				Version:1,
-				ParentHash:[]byte{'a','b'},
-				TreeHash:[]byte{'a','b'},
-				BlockHash:[]byte{'a','b'},
-				Info:[]byte{'a','b'},
-				Number:33,
-				Witness:"test",
-				Signature:[]byte{'a','b'},
-				Time: 1111}}
-
+		blockChan := make(chan message.Message, 1)
+		//设置第一个通道txchan
 		//构造测试数据
+
 		blockChan<-message.Message{
 			Time:20180426111111,
 			From:"0xaaaaaaaaaaaaa",
 			To:"0xbbbbbbbbbbbb",
-			ReqType:int32(network.ReqNewBlock),
-			Body:blockData.Encode()}
-
+			ReqType:2,
+			Body:[]byte{'c','d'}}
 		mockRouter.EXPECT().FilteredChan(network.Filter{
 			WhiteList:  []message.Message{},
 			BlackList:  []message.Message{},
@@ -165,7 +127,7 @@ func TestDPoS_Run(t *testing.T) {
 
 		p.Run()
 
-		time.Sleep(20 * time.Second)
+		//time.Sleep(20 * time.Second)
 	})
 
 }
