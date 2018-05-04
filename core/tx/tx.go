@@ -69,7 +69,7 @@ func (t *Tx) Decode(b []byte) error {
 		return err
 	}
 	t.Contract.SetSender(t.Publisher.Pubkey)
-	t.Contract.SetPrefix(string(t.Hash()))
+	t.Contract.SetPrefix(common.Base58Encode(t.Hash()))
 	for _, sign := range t.Signs {
 		t.Contract.AddSigner(sign.Pubkey)
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
 	. "github.com/smartystreets/goconvey/convey"
+	"fmt"
 )
 
 func TestLuaVM(t *testing.T) {
@@ -27,7 +28,7 @@ func TestLuaVM(t *testing.T) {
 		pool.EXPECT().Copy().AnyTimes().Return(pool)
 		main := NewLuaMethod("main", 1)
 		lc := Contract{
-			info: vm.ContractInfo{},
+			info: vm.ContractInfo{Prefix:"test"},
 			code: `function main()
 	Put("hello", "world")
 	return "success"
@@ -41,6 +42,8 @@ end`,
 		lvm.Start()
 		ret, _, err := lvm.Call("main")
 		lvm.Stop()
+
+		fmt.Println(lvm.PC())
 
 		So(err, ShouldBeNil)
 		So(ret[0].String(), ShouldEqual, "success")
