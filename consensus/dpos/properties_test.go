@@ -2,14 +2,15 @@ package dpos
 
 import (
 	. "github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/core/block"
 )
 
 func TestGlobalStaticProperty(t *testing.T) {
 	Convey("Test of witness lists of static property", t, func() {
-		prop := NewGlobalStaticProperty(core.Member{"id0", []byte{}, []byte{}}, []string{"id1", "id2", "id3"})
+		prop := NewGlobalStaticProperty(account.Account{"id0", []byte{}, []byte{}}, []string{"id1", "id2", "id3"})
 		Convey("New", func() {
 			So(prop.NumberOfWitnesses, ShouldEqual, 3)
 		})
@@ -44,13 +45,13 @@ func TestGlobalStaticProperty(t *testing.T) {
 
 func TestGlobalDynamicProperty(t *testing.T) {
 	Convey("Test of global dynamic property", t, func() {
-		sp := NewGlobalStaticProperty(core.Member{"id1", []byte{}, []byte{}}, []string{"id0", "id1", "id2"})
+		sp := NewGlobalStaticProperty(account.Account{"id1", []byte{}, []byte{}}, []string{"id0", "id1", "id2"})
 		dp := NewGlobalDynamicProperty()
 		dp.LastBlockNumber = 0
 		dp.TotalSlots = 0
 		dp.LastBlockTime = Timestamp{0}
 		startTs := Timestamp{70000}
-		bh := core.BlockHead{
+		bh := block.BlockHead{
 			Number:  1,
 			Time:    startTs.Slot,
 			Witness: "id0",

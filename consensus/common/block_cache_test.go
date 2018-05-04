@@ -56,7 +56,7 @@ func TestBlockCache(t *testing.T) {
 		return true
 	}
 
-	base := core_mock.NewMockBlockChain(ctl)
+	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(&b0)
 
 	Convey("Test of Block Cache", t, func() {
