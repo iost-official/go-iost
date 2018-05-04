@@ -8,11 +8,12 @@ import (
 
 	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
-	. "github.com/iost-official/prototype/core/message"
 	. "github.com/iost-official/prototype/core/tx"
+	. "github.com/iost-official/prototype/network"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/message"
 )
 
 type DPoS struct {
@@ -27,8 +28,8 @@ type DPoS struct {
 	infoCache  [][]byte
 
 	ExitSignal chan bool
-	chTx       chan Message
-	chBlock    chan Message
+	chTx       chan message.Message
+	chBlock    chan message.Message
 }
 
 func NewDPoS(acc Account, bc block.Chain /*, network core.Network*/) (*DPoS, error) {
@@ -44,8 +45,8 @@ func NewDPoS(acc Account, bc block.Chain /*, network core.Network*/) (*DPoS, err
 
 	//	Tx chan init
 	p.chTx, err = p.Router.FilteredChan(Filter{
-		WhiteList:  []Account{},
-		BlackList:  []Account{},
+		WhiteList:  []message.Message{},
+		BlackList:  []message.Message{},
 		RejectType: []ReqType{},
 		AcceptType: []ReqType{
 			ReqPublishTx,
@@ -57,8 +58,8 @@ func NewDPoS(acc Account, bc block.Chain /*, network core.Network*/) (*DPoS, err
 
 	//	Block chan init
 	p.chBlock, err = p.Router.FilteredChan(Filter{
-		WhiteList:  []Account{},
-		BlackList:  []Account{},
+		WhiteList:  []message.Message{},
+		BlackList:  []message.Message{},
 		RejectType: []ReqType{},
 		AcceptType: []ReqType{ReqNewBlock}})
 	if err != nil {
@@ -165,7 +166,7 @@ func (p *DPoS) scheduleLoop() {
 		if wid == p.Account.ID {
 			bc := p.BlockCache.LongestChain()
 			blk := p.genBlock(p.Account, *bc.Top())
-			p.Router.Send(Message{Body: blk.Encode()}) //??
+			p.Router.Send(message.Message{Body: blk.Encode()}) //??
 		}
 		nextSchedule := TimeUntilNextSchedule(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, time.Now().Unix())
 		time.Sleep(time.Duration(nextSchedule))

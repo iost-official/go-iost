@@ -1,15 +1,15 @@
 package dpos
 
 import (
+	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
 func TestGlobalStaticProperty(t *testing.T) {
 	Convey("Test of witness lists of static property", t, func() {
-		prop := NewGlobalStaticProperty(core.Member{"id0", []byte{}, []byte{}}, []string{"id1", "id2", "id3"})
+		prop := NewGlobalStaticProperty(Account{"id0", []byte{}, []byte{}}, []string{"id1", "id2", "id3"})
 		Convey("New", func() {
 			So(prop.NumberOfWitnesses, ShouldEqual, 3)
 		})
