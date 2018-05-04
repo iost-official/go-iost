@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"bytes"
-	"github.com/iost-official/prototype/core"
 	"strings"
 	"time"
 	"github.com/iost-official/prototype/account"
