@@ -38,10 +38,10 @@ func (p *DPoS) VoteForWitness(voter account.Account, witnessId string, voteType 
 	p.Router.Send(req)
 }
 
-func (p *DPoS) WitnessJoin(witness core.Member) {
+func (p *DPoS) WitnessJoin(witness account.Account) {
 	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
 	reqString := "Join " + witness.GetId()
-	req := core.Request{
+	req := message.Message{
 		Time: time.Now().Unix(),
 		From: witness.GetId(),
 		//To:      p.DPoSSuperMember,
@@ -52,10 +52,10 @@ func (p *DPoS) WitnessJoin(witness core.Member) {
 	p.Router.Send(req)
 }
 
-func (p *DPoS) WitnessQuit(witness core.Member) {
+func (p *DPoS) WitnessQuit(witness account.Account) {
 	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
 	reqString := "Quit " + witness.GetId()
-	req := core.Request{
+	req := message.Message{
 		Time: time.Now().Unix(),
 		From: witness.GetId(),
 		//To:      p.DPoSSuperMember,
@@ -68,7 +68,7 @@ func (p *DPoS) WitnessQuit(witness core.Member) {
 
 // 测试用函数：p2p收到ReqTypeVoteTest后调用，将消息加入到info的缓存中
 // 在生成块时，将infoCache中的内容序列化后直接加入info，清空infoCache
-func (p *DPoS) AddWitnessMsg(req core.Request) {
+func (p *DPoS) AddWitnessMsg(req message.Message) {
 	if req.ReqType != ReqTypeVoteTest {
 		return
 	}
