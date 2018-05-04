@@ -28,8 +28,8 @@ import (
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
+	"github.com/iost-official/prototype/network/discover"
 	"github.com/iost-official/prototype/params"
-	"github.com/iostio/iost.io/p2p/discover"
 	"github.com/pkg/errors"
 )
 
