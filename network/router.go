@@ -18,7 +18,7 @@ const (
 
 //Router Forwarding specific request to other components and sending messages for them
 type Router interface {
-	Init(base message.Message, port uint16) error
+	Init(base Network, port uint16) error
 	FilteredChan(filter Filter) (chan message.Message, error)
 	Run()
 	Stop()
@@ -27,7 +27,7 @@ type Router interface {
 	Download(req message.Message) chan []byte
 }
 
-func RouterFactory(target string) (*RouterImpl, error) {
+func RouterFactory(target string) (Router, error) {
 	switch target {
 	case "base":
 		return &RouterImpl{}, nil
