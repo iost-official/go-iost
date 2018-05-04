@@ -109,6 +109,7 @@ func (p *PoolImpl) Flush() error {
 			p.db.Delete(k)
 		}
 	}
+	p.parent = nil
 	return nil
 }
 

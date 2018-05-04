@@ -120,7 +120,7 @@ func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
 
 	var Transfer = api{
 		name: "Transfer",
-		function: func(L *lua.LState) int {
+		function: func(L *lua.LState) int { // TODO 权限检查
 			src := L.ToString(1)
 			des := L.ToString(2)
 			value := L.ToNumber(3)
@@ -130,6 +130,8 @@ func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
 		},
 	}
 	l.APIs = append(l.APIs, Transfer)
+
+
 
 	return nil
 }
