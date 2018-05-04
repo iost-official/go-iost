@@ -9,7 +9,7 @@ import (
 //ReqType Marked request types using by protocol
 
 //go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/PrototypeWorks/protocol Router
-type ReqType int
+type ReqType int32
 
 const (
 	ReqPublishTx ReqType = iota
