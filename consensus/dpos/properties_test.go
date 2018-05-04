@@ -1,9 +1,9 @@
 package dpos
 
 import (
+	. "github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core"
 	. "github.com/smartystreets/goconvey/convey"
-	. "github.com/iost-official/prototype/consensus/common"
 	"testing"
 )
 

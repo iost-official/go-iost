@@ -1,7 +1,7 @@
 package state
 
-type StatePool interface {
-	Copy() StatePool
+type Pool interface {
+	Copy() Pool
 	GetPatch() Patch
 	Flush() error
 
@@ -13,4 +13,3 @@ type StatePool interface {
 	GetHM(key, field Key) (Value, error)
 	PutHM(key, field Key, value Value) error
 }
-

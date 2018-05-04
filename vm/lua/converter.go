@@ -1,12 +1,9 @@
-package vm
+package lua
 
 import (
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
 )
-
-type LuaConverter struct {
-}
 
 func Lua2Core(value lua.LValue) state.Value {
 
@@ -20,4 +17,14 @@ func Lua2Core(value lua.LValue) state.Value {
 
 func Core2Lua(value state.Value) lua.LValue {
 	return nil
+}
+
+func Bool2Lua(b bool) lua.LValue {
+	var rtnl lua.LValue
+	if b {
+		rtnl = lua.LTrue
+	} else {
+		rtnl = lua.LFalse
+	}
+	return rtnl
 }

@@ -1,12 +1,13 @@
 package consensus_common
 
-
 import (
 	"bytes"
+
 	"github.com/iost-official/prototype/core/block"
 	"encoding/binary"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
+
 )
 
 // 验证块头正确性，调用此函数时块的父亲节点已经找到
@@ -17,7 +18,7 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) bool {
 		return false
 	}
 	// block number
-	if bh.Number != parentBlk.Head.Number + 1 {
+	if bh.Number != parentBlk.Head.Number+1 {
 		return false
 	}
 	treeHash := calcTreeHash(DecodeTxs(blk.Content))
@@ -80,4 +81,3 @@ func VerifyTxSig(tx tx.Tx) bool {
 func DecodeTxs(content []byte) []tx.Tx {
 	return nil
 }
-

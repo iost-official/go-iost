@@ -7,7 +7,7 @@ import (
 
 	"strconv"
 
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/network"
 )
 
@@ -31,7 +31,7 @@ func main() {
 	}()
 	time.Sleep(5 * time.Second)
 	fmt.Println("server start....")
-	req := core.Request{
+	req := message.Message{
 		Time:    time.Now().Unix(),
 		From:    "from:" + s.ListenAddr,
 		To:      "to:" + s.RemoteAddr,

@@ -5,11 +5,12 @@ import (
 
 	. "github.com/bouk/monkey"
 	. "github.com/golang/mock/gomock"
+
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
+	"github.com/iost-official/prototype/vm"
 	. "github.com/smartystreets/goconvey/convey"
 	"time"
-	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/common"
 	. "github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core/message"
@@ -21,7 +22,7 @@ import (
 func TestNewDPoS(t *testing.T) {
 	Convey("Test fo NewDPos", t, func() {
 		mockCtr := NewController(t)
-		mockRouter := mock_network.NewMockRouter(mockCtr)
+		mockRouter := protocol_mock.NewMockRouter(mockCtr)
 
 		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
@@ -42,13 +43,13 @@ func TestNewDPoS(t *testing.T) {
 			Body:    []byte{'a', 'b'}}
 
 		mockRouter.EXPECT().FilteredChan(network.Filter{
-			WhiteList:  []account.Account{},
-			BlackList:  []account.Account{},
+			WhiteList:  []message.Message{},
+			BlackList:  []message.Message{},
 			RejectType: []network.ReqType{},
 			AcceptType: []network.ReqType{
 				network.ReqPublishTx,
 				ReqTypeVoteTest, // Only for test
-			}}).Return(txChan,nil)
+			}}).Return(txChan, nil)
 
 		//设置第二个通道Blockchan
 		blockChan := make(chan message.Message, 1)
@@ -62,11 +63,12 @@ func TestNewDPoS(t *testing.T) {
 			ReqType:2,
 			Body:[]byte{'c','d'}}
 		mockRouter.EXPECT().FilteredChan(network.Filter{
-			WhiteList:  []account.Account{},
-			BlackList:  []account.Account{},
+			WhiteList:  []message.Message{},
+			BlackList:  []message.Message{},
 			RejectType: []network.ReqType{},
 			AcceptType: []network.ReqType{
 				network.ReqNewBlock}}).Return(blockChan,nil)
+
 
 		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
 
@@ -78,7 +80,7 @@ func TestNewDPoS(t *testing.T) {
 func TestDPoS_Run(t *testing.T) {
 	Convey("Test fo Run", t, func() {
 		mockCtr := NewController(t)
-		mockRouter := mock_network.NewMockRouter(mockCtr)
+		mockRouter := protocol_mock.NewMockRouter(mockCtr)
 
 		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
@@ -99,32 +101,35 @@ func TestDPoS_Run(t *testing.T) {
 
 		//构造交易测试数据
 		//构造智能合约
-		lac := new(vm.LuaContract)
+		lac := new(vm.Contract)
 		//初始化交易数据
+
 		var txData tx.Tx
 		txData = tx.Tx{
 			Time:     time.Now().Unix(),
 			Contract: lac,
 			Signs:[]common.Signature{},
-			Publisher:[]common.Signature{}}
+			Publisher:common.Signature{}}
 
 		txChan<-message.Message{
 			Time:20180426111111,
 			From:"0xaaaaaaaaaaaaa",
 			To:"0xbbbbbbbbbbbb",
-			ReqType:int(network.ReqPublishTx),
+			ReqType:network.ReqPublishTx,
 			Body:txData.Encode()}
 
+
 		mockRouter.EXPECT().FilteredChan(network.Filter{
-			WhiteList:  []account.Account{},
-			BlackList:  []account.Account{},
+			WhiteList:  []message.Message{},
+			BlackList:  []message.Message{},
 			RejectType: []network.ReqType{},
 			AcceptType: []network.ReqType{
 				network.ReqPublishTx,
 				ReqTypeVoteTest, // Only for test
-			}}).Return(txChan,nil)
+			}}).Return(txChan, nil)
 
 		//设置第二个通道Blockchan
+
 		blockChan :=make(chan message.Message,1)
 		var blockData block.Block
 		blockData = block.Block{
@@ -145,15 +150,16 @@ func TestDPoS_Run(t *testing.T) {
 			Time:20180426111111,
 			From:"0xaaaaaaaaaaaaa",
 			To:"0xbbbbbbbbbbbb",
-			ReqType:int(network.ReqNewBlock),
+			ReqType:network.ReqNewBlock,
 			Body:blockData.Encode()}
 
 		mockRouter.EXPECT().FilteredChan(network.Filter{
-			WhiteList:  []account.Account{},
-			BlackList:  []account.Account{},
+			WhiteList:  []message.Message{},
+			BlackList:  []message.Message{},
 			RejectType: []network.ReqType{},
 			AcceptType: []network.ReqType{
 				network.ReqNewBlock}}).Return(blockChan,nil)
+
 
 		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
 

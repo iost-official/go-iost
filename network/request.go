@@ -11,10 +11,10 @@ import (
 	"net"
 )
 
-type ReqType int16
+type NetReqType int16
 
 const (
-	Message ReqType = iota + 1
+	Message NetReqType = iota + 1
 	MessageReceived
 	BroadcastMessage
 	BroadcastMessageReceived
@@ -29,7 +29,7 @@ type Request struct {
 	Version   [4]byte
 	Length    int32 // length of request
 	Timestamp int64
-	Type      ReqType
+	Type      NetReqType
 	FromLen   int16
 	From      []byte
 	Body      []byte
@@ -47,7 +47,7 @@ func isNetVersionMatch(buf []byte) bool {
 	return false
 }
 
-func NewRequest(typ ReqType, from string, data []byte) *Request {
+func NewRequest(typ NetReqType, from string, data []byte) *Request {
 	r := &Request{
 		Version:   NET_VERSION,
 		Timestamp: time.Now().UnixNano(),

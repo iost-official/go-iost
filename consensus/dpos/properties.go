@@ -6,7 +6,6 @@ import (
 
 	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
-
 	"github.com/iost-official/prototype/core/block"
 )
 
