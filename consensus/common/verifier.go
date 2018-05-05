@@ -3,11 +3,10 @@ package consensus_common
 import (
 	"bytes"
 
-	"github.com/iost-official/prototype/core/block"
 	"encoding/binary"
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/tx"
-
 )
 
 // 验证块头正确性，调用此函数时块的父亲节点已经找到
@@ -59,22 +58,17 @@ func VeirifyTx(tx core.Tx, cv *vm.CacheVerifier) (state.Pool, bool) {
 */
 
 func VerifyTxSig(tx tx.Tx) bool {
-	info := make([]byte, 8)
-	binary.BigEndian.PutUint64(info, uint64(tx.Time))
-	info = append(info, tx.Contract.Encode()...)
+	info := tx.PublishHash()
+	if !common.VerifySignature(info, tx.Publisher) {
+		return false
+	}
+
+	info = tx.BaseHash()
 	for _, sign := range tx.Signs {
 		if !common.VerifySignature(info, sign) {
 			return false
 		}
 	}
-	for _, sign := range tx.Signs {
-		info = append(info, sign.Encode()...)
-	}
-
-	if !common.VerifySignature(info, tx.Publisher) {
-		return false
-	}
-
 	return true
 }
 
