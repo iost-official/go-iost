@@ -6,12 +6,12 @@ import (
 	. "github.com/bouk/monkey"
 	. "github.com/golang/mock/gomock"
 
+	"github.com/iost-official/prototype/account"
+	. "github.com/iost-official/prototype/consensus/common"
+	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
 	. "github.com/smartystreets/goconvey/convey"
-	. "github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core/message"
-	"github.com/iost-official/prototype/account"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -51,19 +51,18 @@ func TestNewDPoS(t *testing.T) {
 		//设置第一个通道txchan
 		//构造测试数据
 
-		blockChan<-message.Message{
-			Time:20180426111111,
-			From:"0xaaaaaaaaaaaaa",
-			To:"0xbbbbbbbbbbbb",
-			ReqType:2,
-			Body:[]byte{'c','d'}}
+		blockChan <- message.Message{
+			Time:    20180426111111,
+			From:    "0xaaaaaaaaaaaaa",
+			To:      "0xbbbbbbbbbbbb",
+			ReqType: 2,
+			Body:    []byte{'c', 'd'}}
 		mockRouter.EXPECT().FilteredChan(network.Filter{
 			WhiteList:  []message.Message{},
 			BlackList:  []message.Message{},
 			RejectType: []network.ReqType{},
 			AcceptType: []network.ReqType{
-				network.ReqNewBlock}}).Return(blockChan,nil)
-
+				network.ReqNewBlock}}).Return(blockChan, nil)
 
 		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
 
@@ -109,19 +108,18 @@ func TestDPoS_Run(t *testing.T) {
 		//设置第一个通道txchan
 		//构造测试数据
 
-		blockChan<-message.Message{
-			Time:20180426111111,
-			From:"0xaaaaaaaaaaaaa",
-			To:"0xbbbbbbbbbbbb",
-			ReqType:2,
-			Body:[]byte{'c','d'}}
+		blockChan <- message.Message{
+			Time:    20180426111111,
+			From:    "0xaaaaaaaaaaaaa",
+			To:      "0xbbbbbbbbbbbb",
+			ReqType: 2,
+			Body:    []byte{'c', 'd'}}
 		mockRouter.EXPECT().FilteredChan(network.Filter{
 			WhiteList:  []message.Message{},
 			BlackList:  []message.Message{},
 			RejectType: []network.ReqType{},
 			AcceptType: []network.ReqType{
-				network.ReqNewBlock}}).Return(blockChan,nil)
-
+				network.ReqNewBlock}}).Return(blockChan, nil)
 
 		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
 

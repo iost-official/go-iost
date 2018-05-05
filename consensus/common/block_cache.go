@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/state"
 )
 
 //const (
@@ -39,7 +40,7 @@ func newBct(block *block.Block, tree *BlockCacheTree) *BlockCacheTree {
 	return &bct
 }
 
-func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) bool) CacheStatus {
+func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) (bool, state.Pool)) CacheStatus {
 
 	var code CacheStatus
 	for _, bct := range b.children {
@@ -59,15 +60,19 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 	}
 
 	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.ParentHash) {
-		if !verifier(block, &b.bc) {
+		result, newPool := verifier(block, &b.bc)
+		if !result {
 			return ErrorBlock
 		}
 
+		bct := newBct(block, b)
+		bct.bc.SetStatePool(newPool)
 		if len(b.children) == 0 {
-			b.children = append(b.children, newBct(block, b))
+			b.children = append(b.children, bct)
 			b.depth++
 			return Extend
 		} else {
+			b.children = append(b.children, bct)
 			return Fork
 		}
 	}
@@ -85,6 +90,15 @@ func (b *BlockCacheTree) pop() *BlockCacheTree {
 	return nil
 }
 
+func (b *BlockCacheTree) update() {
+	for _, bct := range b.children {
+		if bct.bc.parent == &b.bc {
+			bct.bc.cachedLength = b.bc.cachedLength + 1
+		}
+		bct.update()
+	}
+}
+
 func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
 	if fun(b) {
 		return true
@@ -99,7 +113,7 @@ func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
 }
 
 type BlockCache interface {
-	Add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) bool) error
+	Add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) (bool, state.Pool)) error
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
 }
@@ -126,17 +140,20 @@ func NewBlockCache(chain block.Chain, maxDepth int) *BlockCacheImpl {
 	return &h
 }
 
-func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) bool) error {
+func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) (bool, state.Pool)) error {
 	code := h.cachedRoot.add(block, verifier)
 	switch code {
 	case Extend:
+		// TODO: 考虑多种共识方式的不同确认方法，建议使用外部传入的函数判断
 		if h.cachedRoot.depth > h.maxDepth {
 			h.cachedRoot = h.cachedRoot.pop()
-			h.cachedRoot.super = nil
 			h.cachedRoot.bc.Flush()
+			h.cachedRoot.super = nil
+			h.cachedRoot.update()
 		}
 		fallthrough
 	case Fork:
+		// TODO: 考虑single的其它情况：先收到后面的块，再收到前面的块，此时不一定是Fork；考虑递归Add情况singleBlocks很多冗余
 		for _, blk := range h.singleBlocks {
 			h.Add(blk, verifier)
 		}

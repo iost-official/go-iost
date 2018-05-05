@@ -455,7 +455,6 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 }
 
 type Block struct {
-	Version int32
 	Head    BlockHead
 	Content []byte
 }
@@ -480,7 +479,6 @@ func (d *Block) Size() (s uint64) {
 		}
 		s += l
 	}
-	s += 4
 	return
 }
 func (d *Block) Marshal(buf []byte) ([]byte, error) {
@@ -495,18 +493,7 @@ func (d *Block) Marshal(buf []byte) ([]byte, error) {
 	i := uint64(0)
 
 	{
-
-		buf[0+0] = byte(d.Version >> 0)
-
-		buf[1+0] = byte(d.Version >> 8)
-
-		buf[2+0] = byte(d.Version >> 16)
-
-		buf[3+0] = byte(d.Version >> 24)
-
-	}
-	{
-		nbuf, err := d.Head.Marshal(buf[4:])
+		nbuf, err := d.Head.Marshal(buf[0:])
 		if err != nil {
 			return nil, err
 		}
@@ -520,30 +507,25 @@ func (d *Block) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i+4] = byte(t) | 0x80
+				buf[i+0] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i+4] = byte(t)
+			buf[i+0] = byte(t)
 			i++
 
 		}
-		copy(buf[i+4:], d.Content)
+		copy(buf[i+0:], d.Content)
 		i += l
 	}
-	return buf[:i+4], nil
+	return buf[:i+0], nil
 }
 
 func (d *Block) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
 
 	{
-
-		d.Version = 0 | (int32(buf[i+0+0]) << 0) | (int32(buf[i+1+0]) << 8) | (int32(buf[i+2+0]) << 16) | (int32(buf[i+3+0]) << 24)
-
-	}
-	{
-		ni, err := d.Head.Unmarshal(buf[i+4:])
+		ni, err := d.Head.Unmarshal(buf[i+0:])
 		if err != nil {
 			return 0, err
 		}
@@ -555,10 +537,10 @@ func (d *Block) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i+4] & 0x7F)
-			for buf[i+4]&0x80 == 0x80 {
+			t := uint64(buf[i+0] & 0x7F)
+			for buf[i+0]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i+4]&0x7F) << bs
+				t |= uint64(buf[i+0]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -571,8 +553,8 @@ func (d *Block) Unmarshal(buf []byte) (uint64, error) {
 		} else {
 			d.Content = make([]byte, l)
 		}
-		copy(d.Content, buf[i+4:])
+		copy(d.Content, buf[i+0:])
 		i += l
 	}
-	return i + 4, nil
+	return i + 0, nil
 }
