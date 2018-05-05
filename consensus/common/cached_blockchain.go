@@ -2,17 +2,23 @@ package consensus_common
 
 import (
 	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/state"
 )
 
 type CachedBlockChain struct {
 	block.Chain
-	cachedBlock []*block.Block
+	block        *block.Block
+	pool         state.Pool
+	cachedLength int
+	parent       *CachedBlockChain
 }
 
 func NewCBC(chain block.Chain) CachedBlockChain {
 	return CachedBlockChain{
-		Chain:  chain,
-		cachedBlock: make([]*block.Block, 0),
+		Chain:        chain,
+		block:        nil,
+		parent:       nil,
+		cachedLength: 0,
 	}
 }
 
@@ -26,33 +32,48 @@ func NewCBC(chain block.Chain) CachedBlockChain {
 //	return c.cachedBlock[layer-c.BlockChain.Length()], nil
 //}
 func (c *CachedBlockChain) Push(block *block.Block) error {
-	c.cachedBlock = append(c.cachedBlock, block)
+	c.block = block
+	c.cachedLength++
 	return nil
 }
 func (c *CachedBlockChain) Length() int {
-	return c.Chain.Length() + len(c.cachedBlock)
+	return c.Chain.Length() + c.cachedLength
 }
 func (c *CachedBlockChain) Top() *block.Block {
-	l := len(c.cachedBlock)
-	if l == 0 {
+	if c.cachedLength == 0 {
 		return c.Chain.Top()
 	}
-	return c.cachedBlock[l-1]
+	return c.block
 }
 
 func (c *CachedBlockChain) Copy() CachedBlockChain {
 	cbc := CachedBlockChain{
-		Chain:  c.Chain,
-		cachedBlock: make([]*block.Block, 0),
+		Chain:        c.Chain,
+		parent:       c,
+		cachedLength: c.cachedLength,
+		pool:         c.pool,
 	}
-	copy(cbc.cachedBlock, c.cachedBlock)
 	return cbc
 }
 
+// 调用时保证只flush未确认块的第一个，如果要flush多个，需多次调用Flush()
 func (c *CachedBlockChain) Flush() {
-	for _, b := range c.cachedBlock {
-		c.Chain.Push(b)
+	if c.block != nil {
+		c.Chain.Push(c.block)
+		//TODO: chain实现后去掉注释
+		//c.Chain.SetStatePool(c.pool)
+		c.block = nil
+		c.cachedLength = 0
+		c.parent = nil
 	}
+}
+
+func (c *CachedBlockChain) GetStatePool() state.Pool {
+	return c.pool
+}
+
+func (c *CachedBlockChain) SetStatePool(pool state.Pool) {
+	c.pool = pool
 }
 
 func (c *CachedBlockChain) Iterator() block.ChainIterator {

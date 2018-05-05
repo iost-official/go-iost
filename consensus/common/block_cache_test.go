@@ -4,6 +4,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/mocks"
+	"github.com/iost-official/prototype/core/state"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -52,8 +53,8 @@ func TestBlockCache(t *testing.T) {
 
 	ctl := gomock.NewController(t)
 
-	verifier := func(blk *block.Block, chain block.Chain) bool {
-		return true
+	verifier := func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
+		return true, nil
 	}
 
 	base := core_mock.NewMockChain(ctl)
@@ -76,8 +77,8 @@ func TestBlockCache(t *testing.T) {
 				bc.Add(&b2a, verifier)
 				So(bc.cachedRoot.depth, ShouldEqual, 2)
 
-				verifier = func(blk *block.Block, chain block.Chain) bool {
-					return false
+				verifier = func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
+					return false, nil
 				}
 				err := bc.Add(&b3, verifier)
 				So(err, ShouldNotBeNil)
@@ -89,8 +90,8 @@ func TestBlockCache(t *testing.T) {
 					ans = string(block.Content)
 					return nil
 				})
-				verifier = func(blk *block.Block, chain block.Chain) bool {
-					return true
+				verifier = func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
+					return true, nil
 				}
 				bc := NewBlockCache(base, 3)
 				bc.Add(&b1, verifier)
