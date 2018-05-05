@@ -1,0 +1,6 @@
+struct contractInfoRaw {
+	Language string
+	Version  int8
+	GasLimit int64
+	Price    float64
+}

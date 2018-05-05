@@ -1,0 +1,20 @@
+struct TxBaseRaw {
+    Time int64
+    Nonce int64
+    Contract []byte
+}
+
+struct TxPublishRaw {
+    Time int64
+    Nonce int64
+    Contract []byte
+    Signs [][]byte
+}
+
+struct TxRaw {
+   Time int64
+   Nonce int64
+   Contract []byte
+   Signs [][]byte
+   Publisher []byte
+}
