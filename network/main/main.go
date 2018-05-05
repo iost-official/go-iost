@@ -42,7 +42,7 @@ func main() {
 	go func() {
 		for {
 			fmt.Println(">>>>>>>>>>>", string(data))
-			s.BroadcastCh <- data
+			s.BroadcastCh <- network.MsgCh{Data: data, Priority: 1}
 			time.Sleep(5 * time.Second)
 		}
 	}()
@@ -50,8 +50,8 @@ func main() {
 	for {
 		select {
 		case r := <-s.RecvCh:
-			fmt.Printf("<<<<<<<<<: %s %v\n", string(r.Body), r.From)
-			nodes, _ := s.AllNodes()
+			fmt.Printf("<<<<<<<<<: %s %v %v\n", string(r.Body), r.From, r.Time)
+			nodes, _ := s.AllNodesExcludeAddr("")
 			fmt.Printf("[nodetabls] =  %+v \n\n", nodes)
 		}
 	}
