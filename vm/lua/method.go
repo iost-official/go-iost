@@ -11,7 +11,7 @@ type Method struct {
 	outputCount int
 }
 
-func NewLuaMethod(name string, rtnCount int, value ...lua.LValue) Method {
+func NewMethod(name string, rtnCount int, value ...lua.LValue) Method {
 	var m Method
 	m.name = name
 	m.inputs = make([]lua.LValue, 0)

@@ -62,3 +62,11 @@ func (c *Contract) Decode(b []byte) error {
 func (c *Contract) Hash() []byte {
 	return common.Sha256(c.Encode())
 }
+
+func NewContract(info vm.ContractInfo, code string, main Method) Contract {
+	return Contract{
+		info: info,
+		code: code,
+		main: main,
+	}
+}
