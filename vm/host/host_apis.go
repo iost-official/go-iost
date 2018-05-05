@@ -32,13 +32,13 @@ func Transfer(pool state.Pool, src, des string, value float64) bool {
 	ba := state.MakeVFloat(val - value)
 	pool.PutHM("iost", state.Key(src), &ba)
 	val1, err := pool.GetHM("iost", state.Key(des))
-	if val1 == state.Nil {
+	if val1.Type() == state.Nil {
 		ba = state.MakeVFloat(value)
 		pool.PutHM("iost", state.Key(des), &ba)
 	} else {
 		val = val1.(*state.VFloat).ToFloat64()
 		ba = state.MakeVFloat(val + value)
-		pool.PutHM("iost", state.Key(des), &ba) // TODO 需要通过增量保存
+		pool.PutHM("iost", state.Key(des), &ba)
 	}
 	return true
 }

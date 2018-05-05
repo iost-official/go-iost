@@ -3,6 +3,7 @@ package lua
 import (
 	"testing"
 
+	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/mocks"
@@ -25,9 +26,9 @@ func TestLuaVM(t *testing.T) {
 			return nil
 		})
 		pool.EXPECT().Copy().AnyTimes().Return(pool)
-		main := NewLuaMethod("main", 1)
+		main := NewMethod("main", 1)
 		lc := Contract{
-			info: vm.ContractInfo{},
+			info: vm.ContractInfo{Prefix: "test"},
 			code: `function main()
 	Put("hello", "world")
 	return "success"
@@ -41,6 +42,8 @@ end`,
 		lvm.Start()
 		ret, _, err := lvm.Call("main")
 		lvm.Stop()
+
+		fmt.Println(lvm.PC())
 
 		So(err, ShouldBeNil)
 		So(ret[0].String(), ShouldEqual, "success")

@@ -16,6 +16,9 @@ const (
 	Public
 )
 
+//go:generate gencode go -schema=structs.schema -package=vm
+//go:generate mockgen -destination mocks/mock_contract.go -package vm_mock github.com/iost-official/prototype/vm Contract
+
 // code type, can be compile to contract
 // 代码类型的别名，可以编译为contract
 type Code string
@@ -37,8 +40,6 @@ type Method interface {
 	Name() string
 	Input(...state.Value)
 }
-
-//go:generate gencode go -schema=structs.schema -package=vm
 
 // 智能合约interface，其中setPrefix，setSender, AddSigner是从tx构建contract的时候使用
 type Contract interface {

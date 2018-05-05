@@ -3,6 +3,7 @@ package lua
 import (
 	"fmt"
 	"github.com/iost-official/gopher-lua"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/host"
@@ -122,6 +123,10 @@ func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
 		name: "Transfer",
 		function: func(L *lua.LState) int {
 			src := L.ToString(1)
+			if CheckPrivilige(l.Contract.info, src) <= 0 {
+				L.Push(lua.LFalse)
+				return 1
+			}
 			des := L.ToString(2)
 			value := L.ToNumber(3)
 			rtn := host.Transfer(l.cachePool, src, des, float64(value))
@@ -138,4 +143,16 @@ func (l *VM) SetPool(pool state.Pool) {
 }
 func (l *VM) PC() uint64 {
 	return l.L.PCount
+}
+
+func CheckPrivilige(info vm.ContractInfo, name string) int {
+	if common.Base58Encode(info.Sender) == name {
+		return 2
+	}
+	for _, signer := range info.Signers {
+		if common.Base58Encode(signer) == name {
+			return 1
+		}
+	}
+	return 0
 }

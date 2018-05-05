@@ -2,10 +2,10 @@ package verifier
 
 import (
 	"fmt"
+	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
-	"runtime"
 )
 
 const (
@@ -14,10 +14,10 @@ const (
 
 //go:generate gencode go -schema=structs.schema -package=verifier
 
+// 底层verifier，用来组织vm，不要直接使用
 type Verifier struct {
-	Pool   state.Pool
-	Prefix string
-	Vms    map[string]vm.VM
+	Pool state.Pool
+	Vms  map[string]vm.VM
 }
 
 func (v *Verifier) StartVm(contract vm.Contract) {
@@ -57,10 +57,14 @@ func (v *Verifier) SetPool(pool state.Pool) {
 	}
 }
 
+// 验证新tx的工具类
 type CacheVerifier struct {
 	Verifier
 }
 
+// 验证contract，返回pool是包含了该contract的pool。如果contain为true则进行合并
+//
+// 取得tx中的Contract的方法： tx.Contract
 func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (state.Pool, error) {
 	sender := contract.Info().Sender
 	var balanceOfSender float64
@@ -71,24 +75,30 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	}
 	balanceOfSender = val.ToFloat64()
 
-	if balanceOfSender < 1 {
+	if balanceOfSender < float64(contract.Info().GasLimit)*contract.Info().Price {
 		return nil, fmt.Errorf("balance not enough")
 	}
 
 	cv.StartVm(contract)
 	pool, gas, err := cv.Verify(contract)
 	if err != nil {
+		cv.StopVm(contract)
 		return nil, err
 	}
 	cv.StopVm(contract)
 
 	if gas > uint64(contract.Info().GasLimit) {
-		return nil, fmt.Errorf("gas exceed")
+		balanceOfSender -= float64(contract.Info().GasLimit) * contract.Info().Price
+		val1 := state.MakeVFloat(balanceOfSender)
+		cv.Pool.PutHM("iost", state.Key(sender), &val1)
+		return nil, fmt.Errorf("gas exceeded")
 	}
 
 	balanceOfSender -= float64(gas) * contract.Info().Price
 	if balanceOfSender < 0 {
 		balanceOfSender = 0
+		val1 := state.MakeVFloat(balanceOfSender)
+		cv.Pool.PutHM("iost", state.Key(sender), &val1)
 		return nil, fmt.Errorf("can not afford gas")
 	}
 	val1 := state.MakeVFloat(balanceOfSender)
@@ -98,66 +108,51 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 		cv.SetPool(pool)
 	}
 
-	return cv.Pool, nil
+	return pool, nil
 }
 
 func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	cv := CacheVerifier{
 		Verifier: Verifier{
-			Pool:   pool.Copy(),
-			Prefix: "cache+",
-			Vms:    make(map[string]vm.VM),
+			Pool: pool.Copy(),
+			Vms:  make(map[string]vm.VM),
 		},
 	}
-	runtime.SetFinalizer(cv, func() {
-		cv.Verifier.Stop()
-	})
 	return cv
 }
 
-func VerifyBlock(blockID string, contracts []vm.Contract, pool state.Pool) (state.Pool, error) { // TODO 使用log控制并发
-	cv := Verifier{
-		Pool:   pool,
-		Prefix: blockID,
-		Vms:    make(map[string]vm.VM),
-	}
-	var totalGas uint64
-	for _, c := range contracts {
+func (cv *CacheVerifier) Close() {
+	cv.Verifier.Stop()
+}
 
-		sender := c.Info().Sender
-		var balanceOfSender float64
-		val0, err := cv.Pool.GetHM("iost", state.Key(sender))
-		val, ok := val0.(*state.VFloat)
-		if !ok {
-			return nil, fmt.Errorf("type error")
-		}
-		balanceOfSender = val.ToFloat64()
+// 验证block的工具类
+type BlockVerifier struct {
+	CacheVerifier
+	oldPool state.Pool
+}
 
-		if balanceOfSender < 1 {
-			return nil, fmt.Errorf("balance not enough")
-		}
-
-		cv.StartVm(c)
-		_, gas, err := cv.Verify(c)
+// 验证block，返回pool是包含了该block的pool。如果contain为true则进行合并
+func (bv *BlockVerifier) VerifyBlock(b block.Block, contain bool) (state.Pool, error) {
+	bv.oldPool = bv.Pool
+	for i := 0; i < b.TxLen(); i++ {
+		c := b.TxGet(i).Contract
+		_, err := bv.VerifyContract(c, true)
 		if err != nil {
 			return nil, err
 		}
-		if gas > uint64(c.Info().GasLimit) {
-			return nil, fmt.Errorf("gas exceed")
-		}
-		cv.StopVm(c)
-		totalGas += gas
-		if totalGas > MaxBlockGas {
-			return nil, fmt.Errorf("block gas exceed")
-		}
-		balanceOfSender -= float64(gas) * c.Info().Price
-		if balanceOfSender < 0 {
-			balanceOfSender = 0
-			return nil, fmt.Errorf("can not afford gas")
-		}
-		val1 := state.MakeVFloat(balanceOfSender)
-		cv.Pool.PutHM("iost", state.Key(sender), &val1)
 
 	}
-	return cv.Pool, nil
+	if contain {
+		return bv.Pool, nil
+	}
+	newPool := bv.Pool
+	bv.Pool = bv.oldPool
+	return newPool, nil
+}
+
+func NewBlockVerifier(pool state.Pool) BlockVerifier {
+	bv := BlockVerifier{
+		CacheVerifier: NewCacheVerifier(pool),
+	}
+	return bv
 }

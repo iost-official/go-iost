@@ -62,6 +62,7 @@ const (
 	Bytes
 	Array
 	Map
+	List
 )
 
 var VNil Value = &VInt{
