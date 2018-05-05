@@ -9,7 +9,7 @@ import (
 
 func TestMember(t *testing.T) {
 	Convey("Test of Account", t, func() {
-		m, err := NewMember(nil)
+		m, err := NewAccount(nil)
 		Convey("New member: ", func() {
 			So(err, ShouldBeNil)
 			So(len(m.Pubkey), ShouldEqual, 33)

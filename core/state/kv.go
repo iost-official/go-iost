@@ -56,18 +56,44 @@ type Type int
 
 const (
 	Nil Type = iota
+	Bool
 	Int
 	Float
 	String
 	Bytes
-	Array
+	Array // wenti
 	Map
 	List
 )
 
-var VNil Value = &VInt{
-	t:   Nil,
-	int: 0,
+var VNil = &VNilType{
+	t: Nil,
+}
+
+type VNilType struct {
+	t Type
+}
+
+func (v *VNilType) Type() Type {
+	return v.t
+}
+func (v *VNilType) String() string {
+	return ""
+}
+func (v *VNilType) Encode() []byte {
+	return nil
+}
+func (v *VNilType) Decode([]byte) error {
+	return nil
+}
+func (v *VNilType) Hash() []byte {
+	return nil
+}
+func (v *VNilType) merge(b Value) (Value, error) {
+	return nil, nil
+}
+func (v *VNilType) diff(b Value) (Value, error) {
+	return nil, nil
 }
 
 type VString struct {
@@ -75,8 +101,8 @@ type VString struct {
 	string
 }
 
-func MakeVString(s string) VString {
-	return VString{
+func MakeVString(s string) *VString {
+	return &VString{
 		T:      String,
 		string: s,
 	}
@@ -156,10 +182,10 @@ type VInt struct {
 	int
 }
 
-func MakeVInt(i int) VInt {
-	return VInt{Int, i}
+func MakeVInt(i int) *VInt {
+	return &VInt{Int, i}
 }
-func (v *VInt) ToFloat64() int {
+func (v *VInt) ToInt() int {
 	return v.int
 }
 func (v *VInt) Type() Type {
@@ -219,8 +245,8 @@ type VBytes struct {
 	val []byte
 }
 
-func MakeVByte(b []byte) VBytes {
-	return VBytes{Bytes, b}
+func MakeVByte(b []byte) *VBytes {
+	return &VBytes{Bytes, b}
 }
 func (v *VBytes) Type() Type {
 	return v.t
@@ -273,10 +299,9 @@ type VMap struct {
 	val map[Key]Value
 }
 
-func MakeVMap(m map[Key]Value) VMap {
-	return VMap{Map, m}
+func MakeVMap(m map[Key]Value) *VMap {
+	return &VMap{Map, m}
 }
-
 func (v *VMap) Type() Type {
 	return Map
 }
@@ -311,13 +336,12 @@ type VFloat struct {
 	float64
 }
 
-func MakeVFloat(f float64) VFloat {
-	return VFloat{
+func MakeVFloat(f float64) *VFloat {
+	return &VFloat{
 		t:       Float,
 		float64: f,
 	}
 }
-
 func (v *VFloat) Type() Type {
 	return Float
 }
@@ -345,4 +369,64 @@ func (v *VFloat) diff(b Value) (Value, error) {
 }
 func (v *VFloat) ToFloat64() float64 {
 	return v.float64
+}
+
+var VTrue = &VBool{
+	t:   Bool,
+	val: true,
+}
+
+var VFalse = &VBool{
+	t:   Bool,
+	val: false,
+}
+
+type VBool struct {
+	t   Type
+	val bool
+}
+
+func MakeVBool(boo bool) *VBool {
+	if boo {
+		return VTrue
+	} else {
+		return VFalse
+	}
+}
+func (v *VBool) Type() Type {
+	return v.t
+}
+func (v *VBool) String() string {
+	if v.val {
+		return "true"
+	} else {
+		return "false"
+	}
+}
+func (v *VBool) Encode() []byte {
+	if v.val {
+		return []byte{0xff}
+	} else {
+		return []byte{0}
+	}
+}
+func (v *VBool) Decode(b []byte) error {
+	if len(b) != 1 {
+		return fmt.Errorf("syntax error")
+	}
+	if b[0] == 0 {
+		v = VFalse
+	} else {
+		v = VTrue
+	}
+	return nil
+}
+func (v *VBool) Hash() []byte {
+	return nil
+}
+func (v *VBool) merge(b Value) (Value, error) {
+	return b, nil
+}
+func (v *VBool) diff(b Value) (Value, error) {
+	return b, nil
 }

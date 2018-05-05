@@ -3,13 +3,13 @@ package lua
 import (
 	"testing"
 
+	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
 	. "github.com/smartystreets/goconvey/convey"
-	"fmt"
 )
 
 func TestLuaVM(t *testing.T) {
@@ -26,9 +26,9 @@ func TestLuaVM(t *testing.T) {
 			return nil
 		})
 		pool.EXPECT().Copy().AnyTimes().Return(pool)
-		main := NewLuaMethod("main", 1)
+		main := NewMethod("main", 1)
 		lc := Contract{
-			info: vm.ContractInfo{Prefix:"test"},
+			info: vm.ContractInfo{Prefix: "test"},
 			code: `function main()
 	Put("hello", "world")
 	return "success"
