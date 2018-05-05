@@ -11,7 +11,6 @@ struct BlockHead {
 }
 
 struct Block {
-   Version   int32
    Head      BlockHead
    Content   []byte
 }

@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/vm"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
@@ -35,6 +36,15 @@ func (d *Block) TxLen() int {
 	return 0
 }
 
+func (d *Block)GetAllContract() []vm.Contract {
+	//todo 解析content,获得所有交易
+
+	var allContract []vm.Contract
+	//todo 将交易中的contract，添加到contractAll中
+
+	return allContract
+}
+
 func (d *BlockHead) Encode() []byte {
 	bin, err := d.Marshal(nil)
 	if err != nil {
@@ -50,3 +60,5 @@ func (d *BlockHead) Decode(bin []byte) error {
 func (d *BlockHead) Hash() []byte {
 	return common.Sha256(d.Encode())
 }
+
+
