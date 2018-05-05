@@ -2,11 +2,10 @@ package verifier
 
 import (
 	"fmt"
+	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
-	"github.com/iost-official/prototype/core/block"
-	"runtime"
 )
 
 const (
@@ -14,7 +13,6 @@ const (
 )
 
 //go:generate gencode go -schema=structs.schema -package=verifier
-
 
 // 底层verifier，用来组织vm，不要直接使用
 type Verifier struct {
@@ -120,12 +118,12 @@ func NewCacheVerifier(pool state.Pool) CacheVerifier {
 			Vms:  make(map[string]vm.VM),
 		},
 	}
-	runtime.SetFinalizer(cv, func() {
-		cv.Verifier.Stop()
-	})
 	return cv
 }
 
+func (cv *CacheVerifier) Close() {
+	cv.Verifier.Stop()
+}
 
 // 验证block的工具类
 type BlockVerifier struct {
