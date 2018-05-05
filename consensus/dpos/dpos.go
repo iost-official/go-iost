@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/core/state"
 )
 
 type DPoS struct {
@@ -35,6 +36,7 @@ type DPoS struct {
 func NewDPoS(acc Account, bc block.Chain /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
 	p.Account = acc
+	// TODO: 考虑DPoS的确认方式，修改maxDepth计算方法（传入一个函数判断？）
 	p.BlockCache = NewBlockCache(bc, 6)
 
 	var err error
@@ -112,16 +114,16 @@ func (p *DPoS) txListenLoop() {
 
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-	verifier := func(blk *block.Block, chain block.Chain) bool {
+	verifier := func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
 		// verify block head
 
 		if !VerifyBlockHead(blk, chain.Top()) {
-			return false
+			return false, nil
 		}
 
 		// verify block witness
 		if WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-			return false
+			return false, nil
 		}
 
 		headInfo := generateHeadInfo(blk.Head)
@@ -129,14 +131,13 @@ func (p *DPoS) blockLoop() {
 		signature.Decode(blk.Head.Signature)
 		// verify block witness signature
 		if !common.VerifySignature(headInfo, signature) {
-			return false
+			return false, nil
 		}
-		/*
-			if !VerifyBlockContent(blk, chain) {
-				return false
-			}
-		*/
-		return true
+		result, newPool := VerifyBlockContent(blk, chain)
+		if !result {
+			return false, nil
+		}
+		return true, newPool
 	}
 
 	for {

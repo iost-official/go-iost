@@ -7,6 +7,7 @@ package core_mock
 import (
 	gomock "github.com/golang/mock/gomock"
 	block "github.com/iost-official/prototype/core/block"
+	state "github.com/iost-official/prototype/core/state"
 	reflect "reflect"
 )
 
@@ -31,6 +32,18 @@ func NewMockChain(ctrl *gomock.Controller) *MockChain {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockChain) EXPECT() *MockChainMockRecorder {
 	return m.recorder
+}
+
+// GetStatePool mocks base method
+func (m *MockChain) GetStatePool() state.Pool {
+	ret := m.ctrl.Call(m, "GetStatePool")
+	ret0, _ := ret[0].(state.Pool)
+	return ret0
+}
+
+// GetStatePool indicates an expected call of GetStatePool
+func (mr *MockChainMockRecorder) GetStatePool() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatePool", reflect.TypeOf((*MockChain)(nil).GetStatePool))
 }
 
 // Iterator mocks base method
@@ -67,6 +80,16 @@ func (m *MockChain) Push(arg0 *block.Block) error {
 // Push indicates an expected call of Push
 func (mr *MockChainMockRecorder) Push(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Push", reflect.TypeOf((*MockChain)(nil).Push), arg0)
+}
+
+// SetStatePool mocks base method
+func (m *MockChain) SetStatePool(arg0 state.Pool) {
+	m.ctrl.Call(m, "SetStatePool", arg0)
+}
+
+// SetStatePool indicates an expected call of SetStatePool
+func (mr *MockChainMockRecorder) SetStatePool(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetStatePool", reflect.TypeOf((*MockChain)(nil).SetStatePool), arg0)
 }
 
 // Top mocks base method
