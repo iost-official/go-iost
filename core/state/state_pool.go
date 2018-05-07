@@ -25,23 +25,7 @@ func (p *PoolImpl) GetPatch() Patch {
 }
 
 func (p *PoolImpl) Put(key Key, value Value) error {
-	exist, err := p.Has(key)
-	if err != nil {
-		return err
-	}
-	if exist {
-		old, err := p.Get(key)
-		if err != nil {
-			return err
-		}
-		ans, err := Diff(old, value)
-		if err != nil {
-			return err
-		}
-		p.patch.Put(key, ans)
-	} else {
-		p.patch.Put(key, value)
-	}
+	p.patch.Put(key, value)
 	return nil
 }
 

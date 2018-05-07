@@ -73,31 +73,24 @@ const (
 var VNil = &VNilType{}
 
 type VNilType struct {}
-
 func (v *VNilType) Type() Type {
 	return Nil
 }
-
 func (v *VNilType) String() string {
 	return ""
 }
-
 func (v *VNilType) Encode() []byte {
 	return nil
 }
-
 func (v *VNilType) Decode([]byte) error {
 	return nil
 }
-
 func (v *VNilType) Hash() []byte {
 	return nil
 }
-
 func (v *VNilType) merge(b Value) (Value, error) {
 	return nil, nil
 }
-
 func (v *VNilType) diff(b Value) (Value, error) {
 	return nil, nil
 }
