@@ -9,9 +9,10 @@ import (
 	"testing"
 )
 
-func TestBlockCache(t *testing.T) {
+func TestBlockCachePoW(t *testing.T) {
 	b0 := block.Block{
 		Head: block.BlockHead{
+			Version: 1,
 			ParentHash: []byte("nothing"),
 		},
 		Content: []byte("b0"),
@@ -19,6 +20,7 @@ func TestBlockCache(t *testing.T) {
 
 	b1 := block.Block{
 		Head: block.BlockHead{
+			Version: 1,
 			ParentHash: b0.HeadHash(),
 		},
 		Content: []byte("b1"),
@@ -26,6 +28,7 @@ func TestBlockCache(t *testing.T) {
 
 	b2 := block.Block{
 		Head: block.BlockHead{
+			Version: 1,
 			ParentHash: b1.HeadHash(),
 		},
 		Content: []byte("b2"),
@@ -33,6 +36,7 @@ func TestBlockCache(t *testing.T) {
 
 	b2a := block.Block{
 		Head: block.BlockHead{
+			Version: 1,
 			ParentHash: b1.HeadHash(),
 		},
 		Content: []byte("fake"),
@@ -40,6 +44,7 @@ func TestBlockCache(t *testing.T) {
 
 	b3 := block.Block{
 		Head: block.BlockHead{
+			Version: 1,
 			ParentHash: b2.HeadHash(),
 		},
 		Content: []byte("b3"),
@@ -47,6 +52,7 @@ func TestBlockCache(t *testing.T) {
 
 	b4 := block.Block{
 		Head: block.BlockHead{
+			Version: 1,
 			ParentHash: b3.HeadHash(),
 		},
 	}
@@ -60,7 +66,7 @@ func TestBlockCache(t *testing.T) {
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(&b0)
 
-	Convey("Test of Block Cache", t, func() {
+	Convey("Test of Block Cache (PoW)", t, func() {
 		Convey("Add:", func() {
 			Convey("normal:", func() {
 				bc := NewBlockCache(base, 4)
@@ -138,6 +144,97 @@ func TestBlockCache(t *testing.T) {
 			ans, err = bc.FindBlockInCache(b3.HeadHash())
 			So(err, ShouldNotBeNil)
 
+		})
+
+	})
+
+}
+
+func TestBlockCacheDPoS(t *testing.T) {
+	b0 := block.Block{
+		Head: block.BlockHead{
+			Version: 0,
+			ParentHash: []byte("nothing"),
+			Witness: "w0",
+		},
+		Content: []byte("b0"),
+	}
+
+	b1 := block.Block{
+		Head: block.BlockHead{
+			Version: 0,
+			ParentHash: b0.HeadHash(),
+			Witness: "w1",
+		},
+		Content: []byte("b1"),
+	}
+
+	b2 := block.Block{
+		Head: block.BlockHead{
+			Version: 0,
+			ParentHash: b1.HeadHash(),
+			Witness: "w2",
+		},
+		Content: []byte("b2"),
+	}
+
+	b2a := block.Block{
+		Head: block.BlockHead{
+			Version: 0,
+			ParentHash: b1.HeadHash(),
+			Witness: "w3",
+		},
+		Content: []byte("b2a"),
+	}
+
+	b3 := block.Block{
+		Head: block.BlockHead{
+			Version: 0,
+			ParentHash: b2.HeadHash(),
+			Witness: "w1",
+		},
+		Content: []byte("b3"),
+	}
+
+	b4 := block.Block{
+		Head: block.BlockHead{
+			Version: 0,
+			ParentHash: b2a.HeadHash(),
+			Witness: "w2",
+		},
+		Content: []byte("b4"),
+	}
+
+	ctl := gomock.NewController(t)
+
+	verifier := func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
+		return true, nil
+	}
+
+	base := core_mock.NewMockChain(ctl)
+	base.EXPECT().Top().AnyTimes().Return(&b0)
+
+	Convey("Test of Block Cache (DPoS)", t, func() {
+		Convey("Add:", func() {
+			Convey("auto push", func() {
+				var ans string
+				base.EXPECT().Push(gomock.Any()).AnyTimes().Do(func(block *block.Block) error {
+					ans = string(block.Content)
+					return nil
+				})
+				bc := NewBlockCache(base, 2)
+				bc.Add(&b1, verifier)
+				t.Log(bc.cachedRoot.bc.confirmed)
+				bc.Add(&b2, verifier)
+				t.Log(bc.cachedRoot.bc.confirmed)
+				bc.Add(&b2a, verifier)
+				t.Log(bc.cachedRoot.bc.confirmed)
+				bc.Add(&b3, verifier)
+				t.Log(bc.cachedRoot.bc.confirmed)
+				bc.Add(&b4, verifier)
+				t.Log(bc.cachedRoot.bc.confirmed)
+				So(ans, ShouldEqual, "b1")
+			})
 		})
 
 	})

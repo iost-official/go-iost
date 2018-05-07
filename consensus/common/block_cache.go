@@ -80,8 +80,7 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 	return NotFound
 }
 
-func (b *BlockCacheTree) pop() *BlockCacheTree {
-
+func (b *BlockCacheTree) popLongest() *BlockCacheTree {
 	for _, bct := range b.children {
 		if bct.depth == b.depth-1 {
 			return bct
@@ -90,12 +89,12 @@ func (b *BlockCacheTree) pop() *BlockCacheTree {
 	return nil
 }
 
-func (b *BlockCacheTree) update() {
+func (b *BlockCacheTree) updateLength() {
 	for _, bct := range b.children {
 		if bct.bc.parent == &b.bc {
 			bct.bc.cachedLength = b.bc.cachedLength + 1
 		}
-		bct.update()
+		bct.updateLength()
 	}
 }
 
@@ -144,12 +143,17 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 	code := h.cachedRoot.add(block, verifier)
 	switch code {
 	case Extend:
-		// TODO: 考虑多种共识方式的不同确认方法，建议使用外部传入的函数判断
-		if h.cachedRoot.depth > h.maxDepth {
-			h.cachedRoot = h.cachedRoot.pop()
-			h.cachedRoot.bc.Flush()
-			h.cachedRoot.super = nil
-			h.cachedRoot.update()
+		for {
+			// 可能进行多次flush
+			need, newRoot := h.needFlush(block.Head.Version)
+			if need {
+				h.cachedRoot = newRoot
+				h.cachedRoot.bc.Flush()
+				h.cachedRoot.super = nil
+				h.cachedRoot.updateLength()
+			} else {
+				break
+			}
 		}
 		fallthrough
 	case Fork:
@@ -163,6 +167,27 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 		return fmt.Errorf("error found")
 	}
 	return nil
+}
+
+func (h *BlockCacheImpl) needFlush(version int32) (bool, *BlockCacheTree) {
+	// TODO: 在底层parameter定义的地方定义各种version的const，可以在块生成、验证、此处用
+	switch version {
+	case 0:
+		// DPoS：确认某块的witness数大于maxDepth
+		for _, bct := range h.cachedRoot.children {
+			if len(bct.bc.confirmed) > h.maxDepth {
+				return true, bct
+			}
+		}
+		return false, nil
+	case 1:
+		// PoW：最长链长度大于maxDepth
+		if h.cachedRoot.depth > h.maxDepth {
+			return true, h.cachedRoot.popLongest()
+		}
+		return false, nil
+	}
+	return false, nil
 }
 
 func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {

@@ -36,7 +36,7 @@ type DPoS struct {
 func NewDPoS(acc Account, bc block.Chain /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
 	p.Account = acc
-	// TODO: 考虑DPoS的确认方式，修改maxDepth计算方法（传入一个函数判断？）
+	// TODO: maxDepth设置为2/3*witness数
 	p.BlockCache = NewBlockCache(bc, 6)
 
 	var err error
