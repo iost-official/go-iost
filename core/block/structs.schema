@@ -1,10 +1,10 @@
 struct BlockHead {
-   Version int32
+   Version int64
    ParentHash []byte
    TreeHash []byte
    BlockHash []byte
    Info []byte
-   Number  int32
+   Number  int64
    Witness string
    Signature []byte
    Time    int64

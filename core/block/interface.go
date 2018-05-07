@@ -9,6 +9,8 @@ type Chain interface {
 	Push(block *Block) error
 	Length() int
 	Top() *Block // 语法糖
+	GetBlockByNumber(number int32) *Block
+	GetBlockByHash(blockHash []byte) *Block
 
 	// chain中的state pool相关
 	GetStatePool() state.Pool
