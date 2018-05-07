@@ -11,6 +11,8 @@ import (
 	"github.com/iost-official/prototype/vm"
 )
 
+//go:generate gencode go -schema=structs.schema -package=consensus_common
+
 // 验证块头正确性，调用此函数时块的父亲节点已经找到
 func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) bool {
 	bh := blk.Head
@@ -36,7 +38,7 @@ func calcTreeHash(txs []tx.Tx) []byte {
 
 // 验证块内交易的正确性
 func VerifyBlockContent(blk *block.Block, chain block.Chain) (bool, state.Pool) {
-	txs := DecodeTxs(blk.Head.BlockHash)
+	txs := blk.Content
 	var contracts []vm.Contract
 	for _, tx := range txs {
 		contracts = append(contracts, tx.Contract)
@@ -60,8 +62,4 @@ func VeirifyTx(tx tx.Tx, cv *verifier.CacheVerifier) (state.Pool, bool) {
 func VerifyTxSig(tx tx.Tx) bool {
 	err := tx.VerifySelf()
 	return err == nil
-}
-
-func DecodeTxs(content []byte) []tx.Tx {
-	return nil
 }
