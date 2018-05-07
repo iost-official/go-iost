@@ -25,6 +25,7 @@ func NewCBC(chain core.BlockChain) CachedBlockChain {
 //	}
 //	return c.cachedBlock[layer-c.BlockChain.Length()], nil
 //}
+
 func (c *CachedBlockChain) Push(block *core.Block) error {
 	c.cachedBlock = append(c.cachedBlock, block)
 	return nil
