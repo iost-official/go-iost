@@ -10,7 +10,7 @@ struct BlockHead {
    Time    int64
 }
 
-struct Block {
+struct BlockRaw {
    Head      BlockHead
-   Content   []byte
+   Content   [][]byte
 }
