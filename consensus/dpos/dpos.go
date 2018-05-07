@@ -18,48 +18,50 @@ import (
 )
 
 type DPoS struct {
-	Account
-	BlockCache
-	Router
-	GlobalStaticProperty
-	GlobalDynamicProperty
+	account    Account
+	blockCache BlockCache
+	router     Router
+	globalStaticProperty
+	globalDynamicProperty
 
 	//测试用，保存投票状态，以及投票消息内容的缓存
 	votedStats map[string][]string
 	infoCache  [][]byte
 
-	ExitSignal chan bool
+	exitSignal chan bool
 	chTx       chan message.Message
 	chBlock    chan message.Message
 }
 
-func NewDPoS(acc Account, bc block.Chain /*, network core.Network*/) (*DPoS, error) {
+// NewDPoS: 新建一个DPoS实例
+// acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), witnessList: 见证节点列表
+func NewDPoS(acc Account, bc block.Chain, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
 	p.Account = acc
-	// TODO: 考虑DPoS的确认方式，修改maxDepth计算方法（传入一个函数判断？）
-	p.BlockCache = NewBlockCache(bc, 6)
+	// TODO: maxDepth设置为2/3*witness数
+	p.blockCache = NewBlockCache(bc, 6)
 
 	var err error
-	p.Router, err = RouterFactory("base")
+	p.router, err = RouterFactory("base")
 	if err != nil {
 		return nil, err
 	}
 
 	//	Tx chan init
-	p.chTx, err = p.Router.FilteredChan(Filter{
+	p.chTx, err = p.router.FilteredChan(Filter{
 		WhiteList:  []message.Message{},
 		BlackList:  []message.Message{},
 		RejectType: []ReqType{},
 		AcceptType: []ReqType{
 			ReqPublishTx,
-			ReqTypeVoteTest, // Only for test
+			reqTypeVoteTest, // Only for test
 		}})
 	if err != nil {
 		return nil, err
 	}
 
 	//	Block chan init
-	p.chBlock, err = p.Router.FilteredChan(Filter{
+	p.chBlock, err = p.router.FilteredChan(Filter{
 		WhiteList:  []message.Message{},
 		BlackList:  []message.Message{},
 		RejectType: []ReqType{},
@@ -68,28 +70,30 @@ func NewDPoS(acc Account, bc block.Chain /*, network core.Network*/) (*DPoS, err
 		return nil, err
 	}
 
-	p.initGlobalProperty(p.Account, []string{"id0", "id1", "id2", "id3"})
+	p.initGlobalProperty(p.Account, witnessList)
 	return &p, nil
 }
 
 func (p *DPoS) initGlobalProperty(acc Account, witnessList []string) {
-	p.GlobalStaticProperty = NewGlobalStaticProperty(acc, witnessList)
-	p.GlobalDynamicProperty = NewGlobalDynamicProperty()
+	p.globalStaticProperty = newGlobalStaticProperty(acc, witnessList)
+	p.globalDynamicProperty = newGlobalDynamicProperty()
 }
 
+// Run: 运行DPoS实例
 func (p *DPoS) Run() {
 	//go p.blockLoop()
 	//go p.scheduleLoop()
 	p.genBlock(p.Account, block.Block{})
 }
 
+// Stop: 停止DPoS实例
 func (p *DPoS) Stop() {
 	close(p.chTx)
 	close(p.chBlock)
-	p.ExitSignal <- true
+	p.exitSignal <- true
 }
 
-func (p *DPoS) Genesis(initTime Timestamp, hash []byte) error {
+func (p *DPoS) genesis(initTime Timestamp, hash []byte) error {
 	return nil
 }
 
@@ -99,13 +103,13 @@ func (p *DPoS) txListenLoop() {
 		if !ok {
 			return
 		}
-		if req.ReqType == ReqTypeVoteTest {
-			p.AddWitnessMsg(req)
+		if req.ReqType == reqTypeVoteTest {
+			p.addWitnessMsg(req)
 			continue
 		}
 		var tx Tx
 		tx.Decode(req.Body)
-		p.Router.Send(req)
+		p.router.Send(req)
 		if VerifyTxSig(tx) {
 			// Add to tx pool or recorder
 		}
@@ -122,7 +126,7 @@ func (p *DPoS) blockLoop() {
 		}
 
 		// verify block witness
-		if WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
+		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
 			return false, nil
 		}
 
@@ -147,13 +151,13 @@ func (p *DPoS) blockLoop() {
 		}
 		var blk block.Block
 		blk.Decode(req.Body)
-		err := p.BlockCache.Add(&blk, verifier)
+		err := p.blockCache.Add(&blk, verifier)
 		if err == nil {
-			p.GlobalDynamicProperty.Update(&blk.Head)
+			p.globalDynamicProperty.update(&blk.Head)
 		}
 		ts := Timestamp{blk.Head.Time}
-		if ts.After(p.GlobalDynamicProperty.NextMaintenanceTime) {
-			p.PerformMaintenance()
+		if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
+			p.performMaintenance()
 		}
 	}
 }
@@ -163,13 +167,13 @@ func (p *DPoS) scheduleLoop() {
 
 	for {
 		currentTimestamp := GetCurrentTimestamp()
-		wid := WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, currentTimestamp)
+		wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 		if wid == p.Account.ID {
-			bc := p.BlockCache.LongestChain()
+			bc := p.blockCache.LongestChain()
 			blk := p.genBlock(p.Account, *bc.Top())
-			p.Router.Send(message.Message{Body: blk.Encode()}) //??
+			p.router.Send(message.Message{Body: blk.Encode()}) //??
 		}
-		nextSchedule := TimeUntilNextSchedule(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, time.Now().Unix())
+		nextSchedule := timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
 		time.Sleep(time.Duration(nextSchedule))
 	}
 }
@@ -193,7 +197,7 @@ func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
 			return &blk
 		}
 	*/
-	blk := block.Block{Version: 0, Content: make([]byte, 0), Head: block.BlockHead{
+	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.Head.BlockHash,
 		TreeHash:   make([]byte, 0),

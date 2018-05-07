@@ -454,12 +454,12 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 	return i + 16, nil
 }
 
-type Block struct {
+type BlockRaw struct {
 	Head    BlockHead
-	Content []byte
+	Content [][]byte
 }
 
-func (d *Block) Size() (s uint64) {
+func (d *BlockRaw) Size() (s uint64) {
 
 	{
 		s += d.Head.Size()
@@ -477,11 +477,31 @@ func (d *Block) Size() (s uint64) {
 			s++
 
 		}
-		s += l
+
+		for k0 := range d.Content {
+
+			{
+				l := uint64(len(d.Content[k0]))
+
+				{
+
+					t := l
+					for t >= 0x80 {
+						t >>= 7
+						s++
+					}
+					s++
+
+				}
+				s += l
+			}
+
+		}
+
 	}
 	return
 }
-func (d *Block) Marshal(buf []byte) ([]byte, error) {
+func (d *BlockRaw) Marshal(buf []byte) ([]byte, error) {
 	size := d.Size()
 	{
 		if uint64(cap(buf)) >= size {
@@ -515,13 +535,34 @@ func (d *Block) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.Content)
-		i += l
+		for k0 := range d.Content {
+
+			{
+				l := uint64(len(d.Content[k0]))
+
+				{
+
+					t := uint64(l)
+
+					for t >= 0x80 {
+						buf[i+0] = byte(t) | 0x80
+						t >>= 7
+						i++
+					}
+					buf[i+0] = byte(t)
+					i++
+
+				}
+				copy(buf[i+0:], d.Content[k0])
+				i += l
+			}
+
+		}
 	}
 	return buf[:i+0], nil
 }
 
-func (d *Block) Unmarshal(buf []byte) (uint64, error) {
+func (d *BlockRaw) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
 
 	{
@@ -551,10 +592,37 @@ func (d *Block) Unmarshal(buf []byte) (uint64, error) {
 		if uint64(cap(d.Content)) >= l {
 			d.Content = d.Content[:l]
 		} else {
-			d.Content = make([]byte, l)
+			d.Content = make([][]byte, l)
 		}
-		copy(d.Content, buf[i+0:])
-		i += l
+		for k0 := range d.Content {
+
+			{
+				l := uint64(0)
+
+				{
+
+					bs := uint8(7)
+					t := uint64(buf[i+0] & 0x7F)
+					for buf[i+0]&0x80 == 0x80 {
+						i++
+						t |= uint64(buf[i+0]&0x7F) << bs
+						bs += 7
+					}
+					i++
+
+					l = t
+
+				}
+				if uint64(cap(d.Content[k0])) >= l {
+					d.Content[k0] = d.Content[k0][:l]
+				} else {
+					d.Content[k0] = make([]byte, l)
+				}
+				copy(d.Content[k0], buf[i+0:])
+				i += l
+			}
+
+		}
 	}
 	return i + 0, nil
 }
