@@ -157,6 +157,19 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 		}
 		fallthrough
 	case Fork:
+		// Fork情况下也可能进行flush-DPoS
+		for {
+			// 可能进行多次flush
+			need, newRoot := h.needFlush(block.Head.Version)
+			if need {
+				h.cachedRoot = newRoot
+				h.cachedRoot.bc.Flush()
+				h.cachedRoot.super = nil
+				h.cachedRoot.updateLength()
+			} else {
+				break
+			}
+		}
 		// TODO: 考虑single的其它情况：先收到后面的块，再收到前面的块，此时不一定是Fork；考虑递归Add情况singleBlocks很多冗余
 		for _, blk := range h.singleBlocks {
 			h.Add(blk, verifier)

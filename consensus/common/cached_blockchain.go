@@ -42,9 +42,9 @@ func (c *CachedBlockChain) Push(block *block.Block) error {
 
 	confirmed := make(map[string]int)
 	confirmed[witness] = 1
-	cbc := c.parent
+	cbc := c
 	for cbc.parent != nil {
-		witness = cbc.block.Head.Witness
+		witness = cbc.parent.Top().Head.Witness
 		if _, ok := confirmed[witness]; !ok {
 			confirmed[witness] = 0
 		}

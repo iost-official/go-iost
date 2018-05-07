@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/prototype/core/state"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	"github.com/iost-official/prototype/core/tx"
 )
 
 func TestBlockCachePoW(t *testing.T) {
@@ -15,7 +16,7 @@ func TestBlockCachePoW(t *testing.T) {
 			Version: 1,
 			ParentHash: []byte("nothing"),
 		},
-		Content: []byte("b0"),
+		Content: []tx.Tx{tx.NewTx(0, nil)},
 	}
 
 	b1 := block.Block{
@@ -23,7 +24,7 @@ func TestBlockCachePoW(t *testing.T) {
 			Version: 1,
 			ParentHash: b0.HeadHash(),
 		},
-		Content: []byte("b1"),
+		Content: []tx.Tx{tx.NewTx(1, nil)},
 	}
 
 	b2 := block.Block{
@@ -31,7 +32,7 @@ func TestBlockCachePoW(t *testing.T) {
 			Version: 1,
 			ParentHash: b1.HeadHash(),
 		},
-		Content: []byte("b2"),
+		Content: []tx.Tx{tx.NewTx(2, nil)},
 	}
 
 	b2a := block.Block{
@@ -39,7 +40,7 @@ func TestBlockCachePoW(t *testing.T) {
 			Version: 1,
 			ParentHash: b1.HeadHash(),
 		},
-		Content: []byte("fake"),
+		Content: []tx.Tx{tx.NewTx(-2, nil)},
 	}
 
 	b3 := block.Block{
@@ -47,7 +48,7 @@ func TestBlockCachePoW(t *testing.T) {
 			Version: 1,
 			ParentHash: b2.HeadHash(),
 		},
-		Content: []byte("b3"),
+		Content: []tx.Tx{tx.NewTx(3, nil)},
 	}
 
 	b4 := block.Block{
@@ -91,9 +92,9 @@ func TestBlockCachePoW(t *testing.T) {
 			})
 
 			Convey("auto push", func() {
-				var ans string
+				var ans int64
 				base.EXPECT().Push(gomock.Any()).AnyTimes().Do(func(block *block.Block) error {
-					ans = string(block.Content)
+					ans = block.Content[0].Nonce
 					return nil
 				})
 				verifier = func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
@@ -105,7 +106,7 @@ func TestBlockCachePoW(t *testing.T) {
 				bc.Add(&b2a, verifier)
 				bc.Add(&b3, verifier)
 				bc.Add(&b4, verifier)
-				So(ans, ShouldEqual, "b1")
+				So(ans, ShouldEqual, 1)
 			})
 		})
 
@@ -114,8 +115,8 @@ func TestBlockCachePoW(t *testing.T) {
 				bc := NewBlockCache(base, 10)
 				bc.Add(&b1, verifier)
 				bc.Add(&b2, verifier)
-				ans := string(bc.LongestChain().Top().Content)
-				So(ans, ShouldEqual, "b2")
+				ans := bc.LongestChain().Top().Content[0].Nonce
+				So(ans, ShouldEqual, 2)
 			})
 
 			Convey("forked", func() {
@@ -124,11 +125,11 @@ func TestBlockCachePoW(t *testing.T) {
 				bc.Add(&b1, verifier)
 				bc.Add(&b2a, verifier)
 				bc.Add(&b2, verifier)
-				ans := string(bc.LongestChain().Top().Content)
-				So(ans, ShouldEqual, "fake")
+				ans := bc.LongestChain().Top().Content[0].Nonce
+				So(ans, ShouldEqual, -2)
 				bc.Add(&b3, verifier)
-				ans = string(bc.LongestChain().Top().Content)
-				So(ans, ShouldEqual, "b3")
+				ans = bc.LongestChain().Top().Content[0].Nonce
+				So(ans, ShouldEqual, 3)
 			})
 		})
 
@@ -139,7 +140,7 @@ func TestBlockCachePoW(t *testing.T) {
 			bc.Add(&b2, verifier)
 			ans, err := bc.FindBlockInCache(b2a.HeadHash())
 			So(err, ShouldBeNil)
-			So(string(ans.Content), ShouldEqual, "fake")
+			So(ans.Content[0].Nonce, ShouldEqual, -2)
 
 			ans, err = bc.FindBlockInCache(b3.HeadHash())
 			So(err, ShouldNotBeNil)
@@ -157,7 +158,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: []byte("nothing"),
 			Witness: "w0",
 		},
-		Content: []byte("b0"),
+		Content: []tx.Tx{tx.NewTx(0, nil)},
 	}
 
 	b1 := block.Block{
@@ -166,7 +167,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: b0.HeadHash(),
 			Witness: "w1",
 		},
-		Content: []byte("b1"),
+		Content: []tx.Tx{tx.NewTx(1, nil)},
 	}
 
 	b2 := block.Block{
@@ -175,7 +176,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: b1.HeadHash(),
 			Witness: "w2",
 		},
-		Content: []byte("b2"),
+		Content: []tx.Tx{tx.NewTx(2, nil)},
 	}
 
 	b2a := block.Block{
@@ -184,7 +185,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: b1.HeadHash(),
 			Witness: "w3",
 		},
-		Content: []byte("b2a"),
+		Content: []tx.Tx{tx.NewTx(-2, nil)},
 	}
 
 	b3 := block.Block{
@@ -193,7 +194,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: b2.HeadHash(),
 			Witness: "w1",
 		},
-		Content: []byte("b3"),
+		Content: []tx.Tx{tx.NewTx(3, nil)},
 	}
 
 	b4 := block.Block{
@@ -202,7 +203,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: b2a.HeadHash(),
 			Witness: "w2",
 		},
-		Content: []byte("b4"),
+		Content: []tx.Tx{tx.NewTx(4, nil)},
 	}
 
 	ctl := gomock.NewController(t)
@@ -217,23 +218,18 @@ func TestBlockCacheDPoS(t *testing.T) {
 	Convey("Test of Block Cache (DPoS)", t, func() {
 		Convey("Add:", func() {
 			Convey("auto push", func() {
-				var ans string
+				var ans int64
 				base.EXPECT().Push(gomock.Any()).AnyTimes().Do(func(block *block.Block) error {
-					ans = string(block.Content)
+					ans = block.Content[0].Nonce
 					return nil
 				})
 				bc := NewBlockCache(base, 2)
 				bc.Add(&b1, verifier)
-				t.Log(bc.cachedRoot.bc.confirmed)
 				bc.Add(&b2, verifier)
-				t.Log(bc.cachedRoot.bc.confirmed)
 				bc.Add(&b2a, verifier)
-				t.Log(bc.cachedRoot.bc.confirmed)
 				bc.Add(&b3, verifier)
-				t.Log(bc.cachedRoot.bc.confirmed)
 				bc.Add(&b4, verifier)
-				t.Log(bc.cachedRoot.bc.confirmed)
-				So(ans, ShouldEqual, "b1")
+				So(ans, ShouldEqual, 1)
 			})
 		})
 
