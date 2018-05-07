@@ -3,8 +3,6 @@ package consensus_common
 import (
 	"bytes"
 
-	"encoding/binary"
-	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/tx"
 
@@ -43,8 +41,8 @@ func VerifyBlockContent(blk *block.Block, chain block.Chain) (bool, state.Pool) 
 	for _, tx := range txs {
 		contracts = append(contracts, tx.Contract)
 	}
-	// TODO: blockID?
-	newPool, err := verifier.VerifyBlock("", contracts, chain.GetStatePool())
+	verify := verifier.NewBlockVerifier(chain.GetStatePool())
+	newPool, err := verify.VerifyBlock(*blk, false)
 	if err != nil {
 		return false, nil
 	}
@@ -60,18 +58,8 @@ func VeirifyTx(tx tx.Tx, cv *verifier.CacheVerifier) (state.Pool, bool) {
 }
 
 func VerifyTxSig(tx tx.Tx) bool {
-	info := tx.PublishHash()
-	if !common.VerifySignature(info, tx.Publisher) {
-		return false
-	}
-
-	info = tx.BaseHash()
-	for _, sign := range tx.Signs {
-		if !common.VerifySignature(info, sign) {
-			return false
-		}
-	}
-	return true
+	err := tx.VerifySelf()
+	return err == nil
 }
 
 func DecodeTxs(content []byte) []tx.Tx {
