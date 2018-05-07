@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/verifier"
 )
 
 //const (
@@ -38,7 +39,7 @@ func newBct(block *core.Block, tree *BlockCacheTree) *BlockCacheTree {
 	return &bct
 }
 
-func (b *BlockCacheTree) add(block *core.Block, verifier func(blk *core.Block, chain core.BlockChain) bool) CacheStatus {
+func (b *BlockCacheTree) add(block *core.Block, verifier verifier.BlockVerifier ) CacheStatus {
 
 	var code CacheStatus
 	for _, bct := range b.children {
