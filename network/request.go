@@ -10,7 +10,10 @@ import (
 
 	"net"
 
+	"strings"
+
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/core/message"
 )
 
 type NetReqType int16
@@ -149,6 +152,35 @@ func (r *Request) handle(s *Server, conn net.Conn) (string, error) {
 		s.log.E("wrong request :", r)
 	}
 	return "", nil
+}
+
+func (r *Request) response(base *BaseNetwork, conn net.Conn) {
+	base.log.D("response request = %v", r)
+	switch r.Type {
+	case Message:
+		appReq := &message.Message{}
+		if _, err := appReq.Unmarshal(r.Body); err == nil {
+			base.RecvCh <- *appReq
+		}
+		base.send(conn, newRequest(MessageReceived, base.ListenAddr, common.Int64ToBytes(r.Timestamp), 0))
+	case MessageReceived:
+		base.log.D("MessageReceived: %v", common.BytesToInt64(r.Body))
+		//base.deleteResend(common.BytesToInt64(r.Body)) todo
+	//request for nodeTable
+	case ReqNodeTable:
+		base.putNode(string(r.From))
+		addrs, err := base.AllNodesExcludeAddr(string(r.From))
+		if err != nil {
+			base.log.E("failed to nodetable ", err)
+		}
+		req := newRequest(NodeTable, base.ListenAddr, []byte(strings.Join(addrs, ",")), 0)
+		base.send(conn, req)
+	//got nodeTable and save
+	case NodeTable:
+		base.putNode(string(r.Body))
+	default:
+		base.log.E("wrong request :", r)
+	}
 }
 
 func (r Request) Less(target interface{}) bool {

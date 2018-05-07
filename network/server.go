@@ -1,28 +1,20 @@
 package network
 
 import (
-	"crypto/ecdsa"
-	"net"
-
-	"sync"
-
-	"fmt"
-
-	"time"
-
-	"math/rand"
-
-	"io/ioutil"
-	"os"
-
-	"strconv"
-
-	"strings"
-
 	"bufio"
 	"bytes"
-
+	"crypto/ecdsa"
 	"encoding/binary"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/message"
@@ -30,7 +22,6 @@ import (
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network/discover"
 	"github.com/iost-official/prototype/params"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -103,19 +94,27 @@ type MsgCh struct {
 	Priority int8
 }
 
-func NewServer() (*Server, error) {
+//Server init a server
+func NewServer(conf *NetConifg) (*Server, error) {
 	send := make(chan MsgCh, 1)
 	recv := make(chan message.Message, 1)
 	broadCh := make(chan MsgCh, 1)
-	srvLog, err := log.NewLogger("log_p2p")
+	if conf.LogPath == "" {
+		conf.LogPath, _ = ioutil.TempDir(os.TempDir(), "iost_log_")
+	}
+	if conf.NodeTablePath == "" {
+		conf.NodeTablePath, _ = ioutil.TempDir(os.TempDir(), "iost_node_table_")
+	}
+	srvLog, err := log.NewLogger(conf.LogPath)
 	if err != nil {
 		fmt.Errorf("failed to init log %v", err)
 	}
-	dirname, err := ioutil.TempDir(os.TempDir(), "p2p_test_")
-	if err != nil {
-		fmt.Errorf("failed to init db path %v", err)
+	_, pErr := os.Stat(conf.NodeTablePath)
+	if pErr != nil {
+		fmt.Errorf("failed to init db path %v", pErr)
+		os.Exit(0)
 	}
-	nodeTable, err := db.NewLDBDatabase(dirname, 0, 0)
+	nodeTable, err := db.NewLDBDatabase(conf.NodeTablePath, 0, 0)
 	if err != nil {
 		fmt.Errorf("failed to init db %v", err)
 	}
@@ -133,10 +132,7 @@ func NewServer() (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) Close() {
-	defer s.Conn.Close()
-}
-
+//Listen starts running the server
 func (s *Server) Listen(port uint16) (<-chan message.Message, error) {
 	s.ListenAddr = "127.0.0.1:" + strconv.Itoa(int(port))
 	s.log.D("listening %v", s.ListenAddr)
@@ -164,36 +160,22 @@ func (s *Server) Listen(port uint16) (<-chan message.Message, error) {
 	return s.RecvCh, nil
 }
 
-func (s *Server) Start() error {
-	l, err := net.Listen("tcp", s.ListenAddr)
-	if err != nil {
-		return errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
+//Close close all connection
+func (s *Server) Close(port uint16) error {
+	s.Conn.Close()
+	for _, peer := range s.peers {
+		peer.Close()
 	}
-	//receive msg
-	go func() {
-		for {
-			conn, err := l.Accept()
-			if err != nil {
-				s.log.E("accept downStream node err:%v", err)
-				continue
-			}
-			go s.receiveLoop(conn)
-		}
-	}()
-	//send msg
-	go s.sendLoop()
-	//conn manage
-	go s.manageConnLoop()
 	return nil
 }
 
 //broadcast on the application layer
-func (s *Server) Broadcast(r *message.Message, priority int8) {
+func (s *Server) Broadcast(r message.Message) {
 	data, err := r.Marshal(nil)
 	if err != nil {
 		s.log.E("marshal request encountered err:%v", err)
 	}
-	req := newRequest(BroadcastMessage, s.ListenAddr, data, priority)
+	req := newRequest(BroadcastMessage, s.ListenAddr, data, r.Priority)
 	request := s.addResend(req)
 	for downAddr, conn := range s.peers {
 		if string(r.From) != downAddr {
@@ -202,12 +184,12 @@ func (s *Server) Broadcast(r *message.Message, priority int8) {
 	}
 }
 
-func (s *Server) Send(r *message.Message, priority int8) {
+func (s *Server) Send(r message.Message) {
 	data, err := r.Marshal(nil)
 	if err != nil {
 		s.log.E("marshal request encountered err:%v", err)
 	}
-	req := newRequest(Message, s.ListenAddr, data, priority)
+	req := newRequest(Message, s.ListenAddr, data, r.Priority)
 	go s.send(s.Conn, s.addResend(req))
 }
 
@@ -327,7 +309,6 @@ func (s *Server) manageConnLoop() {
 	if s.RemoteAddr != "" {
 		s.log.I("start manage conn loop: %v", s)
 		go s.ping()
-		//loop for monitor conn
 		go s.randConnSeed()
 	}
 }
@@ -359,6 +340,8 @@ func (s *Server) ping() {
 	}
 }
 
+//loop for monitor conn, register at the boot node，fetch the node table from boot node,
+// connect to the node selected by randomly from the node table
 func (s *Server) randConnSeed() {
 	dialRetry := 0
 	isSeedConn := false

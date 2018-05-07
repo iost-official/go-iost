@@ -45,6 +45,8 @@ type RouterImpl struct {
 	filterMap   map[int]chan message.Message
 	knownMember []string
 	ExitSignal  chan bool
+
+	port uint16
 }
 
 func (r *RouterImpl) Init(base Network, port uint16) error {
@@ -54,6 +56,7 @@ func (r *RouterImpl) Init(base Network, port uint16) error {
 	r.filterMap = make(map[int]chan message.Message)
 	r.knownMember = make([]string, 0)
 	r.ExitSignal = make(chan bool)
+	r.port = port
 	r.chIn, err = r.base.Listen(port)
 	if err != nil {
 		return err
@@ -76,6 +79,7 @@ func (r *RouterImpl) receiveLoop() {
 	for true {
 		select {
 		case <-r.ExitSignal:
+			r.base.Close(r.port)
 			return
 		case req := <-r.chIn:
 			for i, f := range r.filterList {
@@ -101,13 +105,7 @@ func (r *RouterImpl) Send(req message.Message) {
 
 // Broadcast to all known members
 func (r *RouterImpl) Broadcast(req message.Message) {
-	for _, to := range r.knownMember {
-		req.To = to
-
-		go func() {
-			r.Send(req)
-		}()
-	}
+	r.base.Broadcast(req)
 }
 
 func (r *RouterImpl) Download(req message.Message) chan []byte {
