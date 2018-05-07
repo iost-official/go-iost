@@ -7,13 +7,12 @@ import (
 	"encoding/binary"
 )
 
-const DBPath = "levelDB/"
 
 var (
 	blockLength = []byte("BlockLength") //blockLength -> length of ChainImpl
 
 	blockNumberPrefix = []byte("n") //blockNumberPrefix + block number -> block hash
-	blockHashPrefix   = []byte("H") //blockHashPrefix + block hash -> block data
+	blockPrefix   = []byte("H") //blockHashPrefix + block hash -> block data
 )
 
 type ChainImpl struct {
@@ -22,7 +21,7 @@ type ChainImpl struct {
 	state  state.Pool
 }
 
-//NewBlockChain 创建blockChain实例
+//NewBlockChain 创建一个blockChain实例
 func NewBlockChain() (Chain, error) {
 
 	ldb, err := db.DatabaseFactor("ldb")
@@ -56,43 +55,139 @@ func NewBlockChain() (Chain, error) {
 	return &ChainImpl{db:ldb,length:length,state:nil}, nil
 }
 
-//Push save the block to the db
+//Push 保存一个block到实例
 func (b *ChainImpl) Push(block *Block) error {
+
+	hash := block.Hash()
+	number := uint64(block.Head.Number)
+
+	var tmpByte = make([]byte, 128)
+	binary.BigEndian.PutUint64(tmpByte, number)
+
+	//存储区块hash
+	err:=b.db.Put(append(blockNumberPrefix, tmpByte...),hash)
+	if err!=nil {
+		return fmt.Errorf("failed to Put block hash")
+	}
+
+	//存储区块数据
+	err = b.db.Put(append(blockPrefix, hash...), block.Encode())
+	if err!=nil {
+		return fmt.Errorf("failed to Put block data")
+	}
+
+	err = b.lengthAdd()
+	if err != nil {
+		return fmt.Errorf("failed to lengthAdd %v", err)
+	}
 
 	return nil
 }
 
 //Length return length confirmed
-func (b *ChainImpl) Length() int {
-	return 0
+func (b *ChainImpl) Length() uint64 {
+	return b.length
+}
+
+func (b *ChainImpl) lengthAdd() error {
+	b.length++
+
+	var tmpByte = make([]byte, 128)
+	binary.BigEndian.PutUint64(tmpByte, b.length)
+
+	err := b.db.Put(blockLength, tmpByte)
+	if err!= nil {
+		return fmt.Errorf("failed to Put blockLength")
+	}
+
+	return nil
+}
+
+func (b *ChainImpl) getLengthBytes(length uint64) []byte {
+
+	var tmpByte = make([]byte, 128)
+	binary.BigEndian.PutUint64(tmpByte, length)
+
+	return tmpByte
 }
 
 //Top return the last block
 func (b *ChainImpl) Top() *Block {
-	return &Block{}
+
+	hash,err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(b.length)...))
+	if err != nil {
+		return nil
+	}
+
+	block,err := b.db.Get(append(blockPrefix, hash...))
+	if err != nil {
+		return nil
+	}
+	if len(block) == 0 {
+		return nil
+	}
+
+	rBlock := new(Block)
+	if err:=rBlock.Decode(block);err!=nil{
+		return nil
+	}
+
+	return rBlock
 }
 
 //GetBlockByNumber return the block by block number
-func (b *ChainImpl) GetBlockByNumber(number int32) *Block {
+func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
+
+	hash,err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
+	if err != nil {
+		return nil
+	}
+
+	block,err := b.db.Get(append(blockPrefix, hash...))
+	if err != nil {
+		return nil
+	}
+	if len(block) == 0 {
+		return nil
+	}
+
+	rBlock := new(Block)
+	if err:=rBlock.Decode(block);err!=nil{
+		return nil
+	}
 
 	return nil
 }
 
 //GetBlockByHash return the block by block hash
 func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
+
+	block,err := b.db.Get(append(blockPrefix, blockHash...))
+	if err != nil {
+		return nil
+	}
+	if len(block) == 0 {
+		return nil
+	}
+
+	rBlock := new(Block)
+	if err:=rBlock.Decode(block);err!=nil{
+		return nil
+	}
 	return nil
 }
 
 //GetStatePool return confirmed state pool
 func (b *ChainImpl) GetStatePool() state.Pool {
-	return nil
+	return b.state
 }
 
 //SetStatePool set confirmed state pool
 func (b *ChainImpl) SetStatePool(pool state.Pool) {
-
+	b.state = pool
 }
 
+//暂不实现
 func (b *ChainImpl) Iterator() ChainIterator {
 	return nil
 }

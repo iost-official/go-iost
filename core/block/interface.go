@@ -7,9 +7,9 @@ import "github.com/iost-official/prototype/core/state"
 // Block chain
 type Chain interface {
 	Push(block *Block) error
-	Length() int
+	Length() uint64
 	Top() *Block // 语法糖
-	GetBlockByNumber(number int32) *Block
+	GetBlockByNumber(number uint64) *Block
 	GetBlockByHash(blockHash []byte) *Block
 
 	// chain中的state pool相关
