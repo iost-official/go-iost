@@ -162,10 +162,17 @@ func (r *Request) response(base *BaseNetwork, conn net.Conn) {
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
 			base.RecvCh <- *appReq
 		}
-		base.send(conn, newRequest(MessageReceived, base.ListenAddr, common.Int64ToBytes(r.Timestamp), 0))
+		base.send(conn, newRequest(MessageReceived, base.localNode.String(), common.Int64ToBytes(r.Timestamp), 0))
 	case MessageReceived:
 		base.log.D("MessageReceived: %v", common.BytesToInt64(r.Body))
 		//base.deleteResend(common.BytesToInt64(r.Body)) todo
+	case BroadcastMessage:
+		appReq := &message.Message{}
+		if _, err := appReq.Unmarshal(r.Body); err == nil {
+			base.RecvCh <- *appReq
+			base.Broadcast(*appReq)
+		}
+	case BroadcastMessageReceived:
 	//request for nodeTable
 	case ReqNodeTable:
 		base.putNode(string(r.From))
@@ -173,7 +180,7 @@ func (r *Request) response(base *BaseNetwork, conn net.Conn) {
 		if err != nil {
 			base.log.E("failed to nodetable ", err)
 		}
-		req := newRequest(NodeTable, base.ListenAddr, []byte(strings.Join(addrs, ",")), 0)
+		req := newRequest(NodeTable, base.localNode.String(), []byte(strings.Join(addrs, ",")), 0)
 		base.send(conn, req)
 	//got nodeTable and save
 	case NodeTable:

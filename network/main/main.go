@@ -78,9 +78,10 @@ func testBaseNetwork() {
 		rs = append(rs, router)
 	}
 	go func() {
+		req := message.Message{From: "sender", Time: time.Now().UnixNano(), To: "127.0.0.1:30303", Body: []byte{22, 11, 125}}
 		for {
-			req := message.Message{From: "sender", Time: time.Now().UnixNano(), To: "127.0.0.1:30303", Body: []byte{22, 11, 125}}
 			//rs[1].Send(req)
+			req.Body = append(req.Body, []byte{11}...)
 			rs[2].Broadcast(req)
 			time.Sleep(5 * time.Second)
 		}

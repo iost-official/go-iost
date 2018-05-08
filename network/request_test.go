@@ -7,7 +7,6 @@ import (
 	"log"
 	"testing"
 
-	"fmt"
 	"time"
 
 	"github.com/iost-official/prototype/common"
@@ -49,7 +48,6 @@ func TestRequest_Unpack(t *testing.T) {
 		if err := scanner.Err(); err != nil {
 			log.Fatal("invalid data pack")
 		}
-		fmt.Println(tim)
 		i := 0
 		for {
 			select {

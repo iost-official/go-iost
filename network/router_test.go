@@ -37,7 +37,6 @@ func newRouters(n int) []Router {
 	return rs
 }
 
-//todo register boot
 func TestRouterImpl_Broadcast(t *testing.T) {
 	req := message.Message{From: "sender", Time: time.Now().Unix(), To: "receiver", Body: []byte{22, 11, 125}}
 	newBootRouters()
