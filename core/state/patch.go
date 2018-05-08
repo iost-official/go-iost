@@ -1,31 +1,32 @@
 package state
 
+
+// state pool记录状态转移的结构，可以序列化到其他地方存储
 type Patch struct {
 	m map[Key]Value
 }
 
-func (p *Patch) Put(key Key, value Value) error {
+func (p *Patch) Put(key Key, value Value) {
 	p.m[key] = value
-	return nil
 }
-func (p *Patch) Get(key Key) (Value, error) {
+func (p *Patch) Get(key Key) Value {
 	val, ok := p.m[key]
 	if !ok {
-		return nil, nil
+		return VNil
 	}
-	return val, nil
+	return val
 }
-func (p *Patch) Has(key Key) (bool, error) {
+func (p *Patch) Has(key Key) bool {
 	_, ok := p.m[key]
-	return ok, nil
+	return ok
 }
-func (p *Patch) Delete(key Key) error {
+func (p *Patch) Delete(key Key) {
 	delete(p.m, key)
-	return nil
 }
 func (p *Patch) Length() int {
 	return len(p.m)
 }
+
 func (p *Patch) Encode() []byte {
 	pr := PatchRaw{
 		keys: make([]string, 0),
@@ -33,7 +34,7 @@ func (p *Patch) Encode() []byte {
 	}
 	for k, v := range p.m {
 		pr.keys = append(pr.keys, string(k))
-		pr.vals = append(pr.vals, v.Encode())
+		pr.vals = append(pr.vals, []byte(v.String()))
 	}
 	b, err := pr.Marshal(nil)
 	if err != nil {
@@ -50,7 +51,10 @@ func (p *Patch) Decode(bin []byte) error {
 
 	for i, k := range pr.keys {
 		var v Value
-		v.Decode(pr.vals[i])
+		v, err = ParseValue(string(pr.vals[i]))
+		if err != nil {
+			return err
+		}
 		p.m[Key(k)] = v
 	}
 	return nil
