@@ -26,7 +26,7 @@ func TestLuaVM(t *testing.T) {
 				return nil
 			})
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
-			main := NewMethod("main", 1)
+			main := NewMethod("main", 0, 1)
 			lc := Contract{
 				info: vm.ContractInfo{Prefix: "test", GasLimit: 11},
 				code: `function main()
@@ -37,15 +37,14 @@ end`,
 			}
 
 			lvm := VM{}
-			lvm.Prepare(&lc, pool)
-			lvm.Pool = pool
+			lvm.Prepare(&lc, nil)
 			lvm.Start()
-			ret, _, err := lvm.Call("main")
+			ret, _, err := lvm.Call(pool,"main")
 			lvm.Stop()
 			So(err, ShouldBeNil)
-			So(ret[0].String(), ShouldEqual, "success")
+			So(ret[0].String(), ShouldEqual, "ssuccess")
 			So(k, ShouldEqual, "testhello")
-			So(v.String(), ShouldEqual, "world")
+			So(v.String(), ShouldEqual, "sworld")
 
 		})
 
@@ -62,7 +61,7 @@ end`,
 				return nil
 			})
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
-			main := NewMethod("main", 1)
+			main := NewMethod("main", 0, 1)
 			lc := Contract{
 				info: vm.ContractInfo{Prefix: "test", GasLimit: 7},
 				code: `function ADD()
@@ -73,10 +72,9 @@ end`,
 			}
 
 			lvm := VM{}
-			lvm.Prepare(&lc, pool)
-			lvm.Pool = pool
+			lvm.Prepare(&lc, nil)
 			lvm.Start()
-			_, _, err := lvm.Call("main")
+			_, _, err := lvm.Call(pool,"main")
 			lvm.Stop()
 			So(err, ShouldNotBeNil)
 
@@ -90,7 +88,7 @@ end`,
 				lstr := lua.LString("hello")
 				cstr := Lua2Core(lstr)
 				So(cstr.Type(), ShouldEqual, state.String)
-				So(cstr.String(), ShouldEqual, "hello")
+				So(cstr.String(), ShouldEqual, "shello")
 			})
 		})
 	})

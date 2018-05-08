@@ -27,18 +27,18 @@ type Code string
 //
 // 调用流程为prepare - start - call - stop
 type VM interface {
-	Prepare(contract Contract, pool state.Pool) error
+	Prepare(contract Contract, monitor Monitor) error
 	Start() error
 	Stop()
-	Call(methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
-	SetPool(pool state.Pool)
+	Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
 	PC() uint64
 }
 
 // 方法interface，用来作为接口调用
 type Method interface {
 	Name() string
-	Input(...state.Value)
+	InputCount()int
+	OutputCount()int
 }
 
 // 智能合约interface，其中setPrefix，setSender, AddSigner是从tx构建contract的时候使用
@@ -49,4 +49,14 @@ type Contract interface {
 	AddSigner(signer []byte)
 	Api(apiName string) (Method, error)
 	common.Serializable
+}
+
+
+
+type Monitor interface {
+	StartVM(contract Contract) VM
+	StopVm(contract Contract)
+	Stop()
+	GetMethod(contractPrefix, methodName string) Method
+	Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error)
 }

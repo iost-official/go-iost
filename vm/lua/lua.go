@@ -20,9 +20,13 @@ type VM struct {
 	APIs []api
 	L    *lua.LState
 
-	Pool, cachePool state.Pool
+	cachePool state.Pool
+
+	monitor vm.Monitor
 
 	Contract *Contract
+
+	callerPC uint64
 }
 
 func (l *VM) Start() error {
@@ -39,9 +43,9 @@ func (l *VM) Start() error {
 func (l *VM) Stop() {
 	l.L.Close()
 }
-func (l *VM) Call(methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
+func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
 
-	l.cachePool = l.Pool.Copy()
+	l.cachePool = pool.Copy()
 
 	method0, err := l.Contract.Api(methodName)
 	if err != nil {
@@ -69,7 +73,7 @@ func (l *VM) Call(methodName string, args ...state.Value) ([]state.Value, state.
 
 	return rtnValue, l.cachePool, nil
 }
-func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
+func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var ok bool
 	l.Contract, ok = contract.(*Contract)
 	if !ok {
@@ -78,7 +82,7 @@ func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
 
 	l.L = lua.NewState()
 	l.L.PCLimit = uint64(contract.Info().GasLimit)
-	l.Pool = pool
+	l.monitor = monitor
 
 	l.APIs = make([]api, 0)
 
@@ -124,7 +128,7 @@ func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
 		name: "Transfer",
 		function: func(L *lua.LState) int {
 			src := L.ToString(1)
-			if CheckPrivilige(l.Contract.info, src) <= 0 {
+			if CheckPrivilege(l.Contract.info, src) <= 0 {
 				L.Push(lua.LFalse)
 				return 1
 			}
@@ -137,16 +141,40 @@ func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
 	}
 	l.APIs = append(l.APIs, Transfer)
 
+	var Call = api{
+		name: "Call",
+		function: func(L *lua.LState) int {
+			blockName := L.ToString(1)
+			methodName := L.ToString(2)
+			method := l.monitor.GetMethod(blockName, methodName)
+
+			args := make([]state.Value, 0)
+
+			for i := 1; i <= method.InputCount(); i ++ {
+				args = append(args, Lua2Core(L.Get(i+2)))
+			}
+
+			rtn, pool, gas, err := l.monitor.Call(l.cachePool, blockName, methodName, args...)
+			l.callerPC += gas
+			if err != nil {
+				L.Push(lua.LString(err.Error()))
+			}
+			l.cachePool = pool
+			for _, v := range rtn {
+				L.Push(Core2Lua(v))
+			}
+			return len(rtn)
+		},
+	}
+	l.APIs = append(l.APIs, Call)
+
 	return nil
 }
-func (l *VM) SetPool(pool state.Pool) {
-	l.Pool = pool
-}
 func (l *VM) PC() uint64 {
-	return l.L.PCount
+	return l.L.PCount + l.callerPC
 }
 
-func CheckPrivilige(info vm.ContractInfo, name string) int {
+func CheckPrivilege(info vm.ContractInfo, name string) int {
 	if common.Base58Encode(info.Sender) == name {
 		return 2
 	}
