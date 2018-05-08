@@ -41,17 +41,14 @@ func newBct(block *block.Block, tree *BlockCacheTree) *BlockCacheTree {
 }
 
 func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) (bool, state.Pool)) CacheStatus {
-
 	var code CacheStatus
 	for _, bct := range b.children {
 		code = bct.add(block, verifier)
 		if code == Extend {
 			if bct.depth == b.depth {
 				b.depth++
-				return Extend
-			} else {
-				return Fork
 			}
+			return Extend
 		} else if code == Fork {
 			return Fork
 		} else if code == ErrorBlock {
@@ -67,12 +64,11 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 
 		bct := newBct(block, b)
 		bct.bc.SetStatePool(newPool)
-		if len(b.children) == 0 {
-			b.children = append(b.children, bct)
+		b.children = append(b.children, bct)
+		if len(b.children) == 1 {
 			b.depth++
 			return Extend
 		} else {
-			b.children = append(b.children, bct)
 			return Fork
 		}
 	}
@@ -143,21 +139,9 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 	code := h.cachedRoot.add(block, verifier)
 	switch code {
 	case Extend:
-		for {
-			// 可能进行多次flush
-			need, newRoot := h.needFlush(block.Head.Version)
-			if need {
-				h.cachedRoot = newRoot
-				h.cachedRoot.bc.Flush()
-				h.cachedRoot.super = nil
-				h.cachedRoot.updateLength()
-			} else {
-				break
-			}
-		}
 		fallthrough
 	case Fork:
-		// Fork情况下也可能进行flush-DPoS
+		// 两种情况都可能满足flush
 		for {
 			// 可能进行多次flush
 			need, newRoot := h.needFlush(block.Head.Version)
@@ -170,7 +154,7 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 				break
 			}
 		}
-		// TODO: 考虑single的其它情况：先收到后面的块，再收到前面的块，此时不一定是Fork；考虑递归Add情况singleBlocks很多冗余
+		// TODO 考虑递归Add情况singleBlocks很多冗余
 		for _, blk := range h.singleBlocks {
 			h.Add(blk, verifier)
 		}
@@ -182,13 +166,13 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 	return nil
 }
 
-func (h *BlockCacheImpl) needFlush(version int32) (bool, *BlockCacheTree) {
+func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
 	// TODO: 在底层parameter定义的地方定义各种version的const，可以在块生成、验证、此处用
 	switch version {
 	case 0:
 		// DPoS：确认某块的witness数大于maxDepth
 		for _, bct := range h.cachedRoot.children {
-			if len(bct.bc.confirmed) > h.maxDepth {
+			if bct.bc.confirmed > h.maxDepth {
 				return true, bct
 			}
 		}

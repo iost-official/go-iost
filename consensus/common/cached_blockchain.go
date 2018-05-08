@@ -11,8 +11,8 @@ type CachedBlockChain struct {
 	pool         state.Pool
 	cachedLength int
 	parent       *CachedBlockChain
-	// DPoS中使用，记录该节点被哪些witness确认
-	confirmed map[string]int
+	// DPoS中使用，记录该节点被最多几个witness确认
+	confirmed int
 }
 
 func NewCBC(chain block.Chain) CachedBlockChain {
@@ -21,7 +21,7 @@ func NewCBC(chain block.Chain) CachedBlockChain {
 		block:        nil,
 		parent:       nil,
 		cachedLength: 0,
-		confirmed:    make(map[string]int),
+		confirmed:    0,
 	}
 }
 
@@ -38,7 +38,7 @@ func (c *CachedBlockChain) Push(block *block.Block) error {
 	c.block = block
 	c.cachedLength++
 	witness := block.Head.Witness
-	c.confirmed[witness] = 1
+	c.confirmed = 1
 
 	confirmed := make(map[string]int)
 	confirmed[witness] = 1
@@ -49,19 +49,17 @@ func (c *CachedBlockChain) Push(block *block.Block) error {
 			confirmed[witness] = 0
 		}
 		confirmed[witness]++
-		if len(confirmed) > len(cbc.parent.confirmed) {
+		if len(confirmed) > cbc.parent.confirmed {
 			// 如果当前分支有更多的确认，则更新父亲的confirmed
-			mapCopy(cbc.parent.confirmed, confirmed)
-		} else {
-			break
+			cbc.parent.confirmed = len(confirmed)
 		}
 		cbc = cbc.parent
 	}
 	return nil
 }
 
-func (c *CachedBlockChain) Length() int {
-	return c.Chain.Length() + c.cachedLength
+func (c *CachedBlockChain) Length() uint64 {
+	return c.Chain.Length() + uint64(c.cachedLength)
 }
 func (c *CachedBlockChain) Top() *block.Block {
 	if c.cachedLength == 0 {
@@ -76,7 +74,7 @@ func (c *CachedBlockChain) Copy() CachedBlockChain {
 		parent:       c,
 		cachedLength: c.cachedLength,
 		pool:         c.pool,
-		confirmed:    make(map[string]int),
+		confirmed:    0,
 	}
 	return cbc
 }
@@ -103,10 +101,4 @@ func (c *CachedBlockChain) SetStatePool(pool state.Pool) {
 
 func (c *CachedBlockChain) Iterator() block.ChainIterator {
 	return nil
-}
-
-func mapCopy(to map[string]int, from map[string]int) {
-	for key, value := range from {
-		to[key] = value
-	}
 }
