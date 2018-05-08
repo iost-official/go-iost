@@ -6,6 +6,7 @@ import (
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/db"
 	"strconv"
+	"sync"
 )
 
 var (
@@ -23,45 +24,49 @@ type ChainImpl struct {
 
 var chainImpl *ChainImpl
 
+var varonce sync.Once
+
 //NewBlockChain 创建一个blockChain实例,单例模式
-func NewBlockChain() (Chain, error) {
+func NewBlockChain() (chain Chain, error error) {
 
-	if chainImpl != nil {
-		return chainImpl, nil
-	}
+	//if chainImpl != nil {
+	//	return chainImpl, nil
+	//}
 
-	ldb, err := db.DatabaseFactor("ldb")
-	if err != nil {
-		return nil, fmt.Errorf("failed to init db %v", err)
-	}
-	//defer ldb.Close()
-
-	var length uint64
-	var lenByte = make([]byte, 128)
-
-	if ok, _ := ldb.Has(blockLength); ok {
-		lenByte, err := ldb.Get(blockLength)
+	varonce.Do(func() {
+		ldb, err := db.DatabaseFactor("ldb")
 		if err != nil {
-			return nil, fmt.Errorf("failed to Get blockLength")
+			error = fmt.Errorf("failed to init db %v", err)
+		}
+		//defer ldb.Close()
+
+		var length uint64
+		var lenByte = make([]byte, 128)
+
+		if ok, _ := ldb.Has(blockLength); ok {
+			lenByte, err := ldb.Get(blockLength)
+			if err != nil {
+				error = fmt.Errorf("failed to Get blockLength")
+			}
+
+			length = binary.BigEndian.Uint64(lenByte)
+
+		} else {
+			fmt.Printf("blockLength not exist")
+			length = 0
+			binary.BigEndian.PutUint64(lenByte, length)
+
+			err := ldb.Put(blockLength, lenByte)
+			if err != nil {
+				error = fmt.Errorf("failed to Put blockLength")
+			}
 		}
 
-		length = binary.BigEndian.Uint64(lenByte)
+		chainImpl = new(ChainImpl)
+		chainImpl = &ChainImpl{db: ldb, length: length, state: nil}
+	})
 
-	} else {
-		fmt.Printf("blockLength not exist")
-		length = 0
-		binary.BigEndian.PutUint64(lenByte, length)
-
-		err := ldb.Put(blockLength, lenByte)
-		if err != nil {
-			return nil, fmt.Errorf("failed to Put blockLength")
-		}
-	}
-
-	chainImpl = new(ChainImpl)
-	chainImpl = &ChainImpl{db: ldb, length: length, state: nil}
-
-	return chainImpl, nil
+	return chainImpl, error
 }
 
 //Push 保存一个block到实例
