@@ -34,6 +34,30 @@ func (m *MockChain) EXPECT() *MockChainMockRecorder {
 	return m.recorder
 }
 
+// GetBlockByHash mocks base method
+func (m *MockChain) GetBlockByHash(arg0 []byte) *block.Block {
+	ret := m.ctrl.Call(m, "GetBlockByHash", arg0)
+	ret0, _ := ret[0].(*block.Block)
+	return ret0
+}
+
+// GetBlockByHash indicates an expected call of GetBlockByHash
+func (mr *MockChainMockRecorder) GetBlockByHash(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByHash", reflect.TypeOf((*MockChain)(nil).GetBlockByHash), arg0)
+}
+
+// GetBlockByNumber mocks base method
+func (m *MockChain) GetBlockByNumber(arg0 uint64) *block.Block {
+	ret := m.ctrl.Call(m, "GetBlockByNumber", arg0)
+	ret0, _ := ret[0].(*block.Block)
+	return ret0
+}
+
+// GetBlockByNumber indicates an expected call of GetBlockByNumber
+func (mr *MockChainMockRecorder) GetBlockByNumber(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByNumber", reflect.TypeOf((*MockChain)(nil).GetBlockByNumber), arg0)
+}
+
 // GetStatePool mocks base method
 func (m *MockChain) GetStatePool() state.Pool {
 	ret := m.ctrl.Call(m, "GetStatePool")
@@ -59,9 +83,9 @@ func (mr *MockChainMockRecorder) Iterator() *gomock.Call {
 }
 
 // Length mocks base method
-func (m *MockChain) Length() int {
+func (m *MockChain) Length() uint64 {
 	ret := m.ctrl.Call(m, "Length")
-	ret0, _ := ret[0].(int)
+	ret0, _ := ret[0].(uint64)
 	return ret0
 }
 

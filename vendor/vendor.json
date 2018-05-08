@@ -3,6 +3,42 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "oYSzF/9oJ32QRCeMq1THJeUpICw=",
+			"path": "github.com/InWeCrypto/sha3",
+			"revision": "d0fd118c5827f1029b6b82df91da54acf5a2f145",
+			"revisionTime": "2017-11-23T09:41:27Z"
+		},
+		{
+			"checksumSHA1": "04xbb14cj+VHq0AxAu7PPziqqqI=",
+			"path": "github.com/LoCCS/bliss",
+			"revision": "07585ac9b8172f0327ec4bb4ef66b5c4e421bd70",
+			"revisionTime": "2018-02-23T02:58:23Z"
+		},
+		{
+			"checksumSHA1": "v5waEPaRY4NdVXRdBSUVtJQryMc=",
+			"path": "github.com/LoCCS/bliss/huffman",
+			"revision": "07585ac9b8172f0327ec4bb4ef66b5c4e421bd70",
+			"revisionTime": "2018-02-23T02:58:23Z"
+		},
+		{
+			"checksumSHA1": "UEaalreM/gu0PH1B8K0eNB0bLvg=",
+			"path": "github.com/LoCCS/bliss/params",
+			"revision": "07585ac9b8172f0327ec4bb4ef66b5c4e421bd70",
+			"revisionTime": "2018-02-23T02:58:23Z"
+		},
+		{
+			"checksumSHA1": "1oxvfzwEd0K9FGI7gmGM18lSieg=",
+			"path": "github.com/LoCCS/bliss/poly",
+			"revision": "07585ac9b8172f0327ec4bb4ef66b5c4e421bd70",
+			"revisionTime": "2018-02-23T02:58:23Z"
+		},
+		{
+			"checksumSHA1": "fOrVLu/A4nfuxesfEuuVHj3M5kY=",
+			"path": "github.com/LoCCS/bliss/sampler",
+			"revision": "07585ac9b8172f0327ec4bb4ef66b5c4e421bd70",
+			"revisionTime": "2018-02-23T02:58:23Z"
+		},
+		{
 			"checksumSHA1": "kto0asmOE+Nuhj7T8cvrvIwq2ak=",
 			"path": "github.com/aristanetworks/goarista/monotime",
 			"revision": "bfd6294e8be0d922f04fadaa00b252228d30e3fd",
@@ -134,6 +170,12 @@
 			"path": "github.com/mitchellh/mapstructure",
 			"revision": "00c29f56e2386353d58c599509e8dc3801b0d716",
 			"revisionTime": "2018-02-20T23:01:11Z"
+		},
+		{
+			"checksumSHA1": "xVQV61RmXTYef0JBvKVo0EUxlzg=",
+			"path": "github.com/mkmueller/aes256",
+			"revision": "1ce9e9b3f91a55d93f1fe9d208450075a4c748e6",
+			"revisionTime": "2017-11-12T01:59:46Z"
 		},
 		{
 			"checksumSHA1": "qF0v8XQ53MGp26VQBaIu1mpfb14=",
@@ -320,6 +362,10 @@
 			"path": "gopkg.in/yaml.v2",
 			"revision": "5420a8b6744d3b0345ab293f6fcba19c978f1183",
 			"revisionTime": "2018-03-28T19:50:20Z"
+		},
+		{
+			"path": "ripemd160",
+			"revision": ""
 		}
 	],
 	"rootPath": "github.com/iost-official/prototype"

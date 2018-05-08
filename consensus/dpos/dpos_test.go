@@ -7,7 +7,6 @@ import (
 	. "github.com/golang/mock/gomock"
 
 	"github.com/iost-official/prototype/account"
-	. "github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
@@ -43,7 +42,7 @@ func TestNewDPoS(t *testing.T) {
 			RejectType: []network.ReqType{},
 			AcceptType: []network.ReqType{
 				network.ReqPublishTx,
-				ReqTypeVoteTest, // Only for test
+				reqTypeVoteTest, // Only for test
 			}}).Return(txChan, nil)
 
 		//设置第二个通道Blockchan
@@ -64,9 +63,9 @@ func TestNewDPoS(t *testing.T) {
 			AcceptType: []network.ReqType{
 				network.ReqNewBlock}}).Return(blockChan, nil)
 
-		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
+		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, []string{})
 
-		p.Genesis(Timestamp{}, []byte{})
+		p.genesis(0)
 	})
 
 }
@@ -100,7 +99,7 @@ func TestDPoS_Run(t *testing.T) {
 			RejectType: []network.ReqType{},
 			AcceptType: []network.ReqType{
 				network.ReqPublishTx,
-				ReqTypeVoteTest, // Only for test
+				reqTypeVoteTest, // Only for test
 			}}).Return(txChan, nil)
 
 		//设置第二个通道Blockchan
@@ -121,7 +120,7 @@ func TestDPoS_Run(t *testing.T) {
 			AcceptType: []network.ReqType{
 				network.ReqNewBlock}}).Return(blockChan, nil)
 
-		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil)
+		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, []string{})
 
 		p.Run()
 
