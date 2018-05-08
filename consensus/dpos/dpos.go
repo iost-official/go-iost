@@ -38,8 +38,7 @@ type DPoS struct {
 func NewDPoS(acc Account, bc block.Chain, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
 	p.Account = acc
-	// TODO: maxDepth设置为2/3*witness数
-	p.blockCache = NewBlockCache(bc, 6)
+	p.blockCache = NewBlockCache(bc, len(witnessList)*2/3+1)
 
 	var err error
 	p.router, err = RouterFactory("base")
@@ -93,7 +92,16 @@ func (p *DPoS) Stop() {
 	p.exitSignal <- true
 }
 
-func (p *DPoS) genesis(initTime Timestamp, hash []byte) error {
+func (p *DPoS) genesis(initTime int64) error {
+	genesis := &block.Block{
+		Head: block.BlockHead{
+			Version: 0,
+			Number:  0,
+			Time:    initTime,
+		},
+		Content: make([]Tx, 0),
+	}
+	p.blockCache.AddGenesis(genesis)
 	return nil
 }
 

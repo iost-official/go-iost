@@ -125,6 +125,7 @@ func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
 }
 
 type BlockCache interface {
+	AddGenesis(block *block.Block) error
 	Add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) (bool, state.Pool)) error
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
@@ -155,6 +156,11 @@ func NewBlockCache(chain block.Chain, maxDepth int) *BlockCacheImpl {
 		maxDepth: maxDepth,
 	}
 	return &h
+}
+
+func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
+	h.bc.Push(block)
+	return nil
 }
 
 func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) (bool, state.Pool)) error {
