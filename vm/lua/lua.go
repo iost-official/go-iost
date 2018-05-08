@@ -77,6 +77,7 @@ func (l *VM) Prepare(contract vm.Contract, pool state.Pool) error {
 	}
 
 	l.L = lua.NewState()
+	l.L.PCLimit = uint64(contract.Info().GasLimit)
 	l.Pool = pool
 
 	l.APIs = make([]api, 0)
