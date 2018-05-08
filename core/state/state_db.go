@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// db的适配器
 type Database struct {
 	db db.Database
 }
@@ -28,7 +29,7 @@ func (d *Database) Put(key Key, value Value) error {
 	}
 	return d.db.Put(key.Encode(), []byte(value.String()))
 }
-func (d *Database) Get(key Key) (Value, error) { // TODO Get到hm
+func (d *Database) Get(key Key) (Value, error) {
 	raw, err := d.db.Get(key.Encode())
 	if err != nil {
 		return nil, err
@@ -50,6 +51,6 @@ func (d *Database) GetHM(key, field Key) (Value, error) {
 	}
 	return ParseValue(string(raw[0]))
 }
-func  (d *Database) PutHM(key, field Key, value Value) error {
+func (d *Database) PutHM(key, field Key, value Value) error {
 	return d.db.PutHM(key.Encode(), field.Encode(), []byte(value.String()))
 }

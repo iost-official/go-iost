@@ -13,6 +13,7 @@ type PoolImpl struct {
 	parent *PoolImpl
 }
 
+// 通过一个db生成新的pool
 func NewPool(db Database) Pool {
 	return &PoolImpl{
 		db:     db,
