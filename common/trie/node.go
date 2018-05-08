@@ -5,6 +5,7 @@ import (
 	"io"
 	"github.com/iost-official/prototype/common/rlp"
 	"strings"
+	"github.com/iost-official/prototype/common"
 )
 
 var indices = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "[17]"}
@@ -150,9 +151,7 @@ func decodeFull(hash, buf, elems []byte, cachegen uint16) (*fullNode, error) {
 	return n, nil
 }
 
-const HashLength = 32
-type Hash [HashLength]byte
-const hashLen = len(Hash{})
+const hashLen = len(common.Hash{})
 
 func decodeRef(buf []byte, cachegen uint16) (node, []byte, error) {
 	// 获取RLP编码的变量类型，变量内容，以及编码字节
