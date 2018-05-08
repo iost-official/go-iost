@@ -73,7 +73,7 @@ func TestBlockCachePoW(t *testing.T) {
 				bc := NewBlockCache(base, 4)
 				err := bc.Add(&b1, verifier)
 				So(err, ShouldBeNil)
-				So(bc.cachedRoot.depth, ShouldEqual, 1)
+				So(bc.cachedRoot.bc.depth, ShouldEqual, 1)
 
 			})
 
@@ -82,7 +82,7 @@ func TestBlockCachePoW(t *testing.T) {
 				bc.Add(&b1, verifier)
 				bc.Add(&b2, verifier)
 				bc.Add(&b2a, verifier)
-				So(bc.cachedRoot.depth, ShouldEqual, 2)
+				So(bc.cachedRoot.bc.depth, ShouldEqual, 2)
 
 				verifier = func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
 					return false, nil
@@ -217,12 +217,13 @@ func TestBlockCacheDPoS(t *testing.T) {
 
 	Convey("Test of Block Cache (DPoS)", t, func() {
 		Convey("Add:", func() {
+			var ans int64
+			base.EXPECT().Push(gomock.Any()).Do(func(block *block.Block) error {
+				ans = block.Content[0].Nonce
+				return nil
+			})
 			Convey("auto push", func() {
-				var ans int64
-				base.EXPECT().Push(gomock.Any()).AnyTimes().Do(func(block *block.Block) error {
-					ans = block.Content[0].Nonce
-					return nil
-				})
+				ans = 0
 				bc := NewBlockCache(base, 2)
 				bc.Add(&b1, verifier)
 				bc.Add(&b2, verifier)
@@ -230,6 +231,42 @@ func TestBlockCacheDPoS(t *testing.T) {
 				bc.Add(&b3, verifier)
 				bc.Add(&b4, verifier)
 				So(ans, ShouldEqual, 1)
+			})
+
+			Convey("deal with singles", func() {
+				ans = 0
+				bc := NewBlockCache(base, 2)
+				bc.Add(&b2, verifier)
+				bc.Add(&b2a, verifier)
+				bc.Add(&b3, verifier)
+				bc.Add(&b4, verifier)
+				So(len(bc.singleBlockRoot.children), ShouldEqual, 2)
+				bc.Add(&b1, verifier)
+				So(len(bc.singleBlockRoot.children), ShouldEqual, 0)
+				So(ans, ShouldEqual, 1)
+			})
+		})
+
+		Convey("Longest chain", func() {
+			Convey("no forked", func() {
+				bc := NewBlockCache(base, 10)
+				bc.Add(&b1, verifier)
+				bc.Add(&b2, verifier)
+				ans := bc.LongestChain().Top().Content[0].Nonce
+				So(ans, ShouldEqual, 2)
+			})
+
+			Convey("forked", func() {
+				var bc BlockCache = NewBlockCache(base, 10)
+
+				bc.Add(&b1, verifier)
+				bc.Add(&b2a, verifier)
+				bc.Add(&b2, verifier)
+				ans := bc.LongestChain().Top().Content[0].Nonce
+				So(ans, ShouldEqual, -2)
+				bc.Add(&b3, verifier)
+				ans = bc.LongestChain().Top().Content[0].Nonce
+				So(ans, ShouldEqual, 3)
 			})
 		})
 
