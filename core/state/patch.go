@@ -54,6 +54,7 @@ func (p *Patch) Decode(bin []byte) error {
 		v, err = ParseValue(string(pr.vals[i]))
 		if err != nil {
 			return err
+
 		}
 		p.m[Key(k)] = v
 	}
