@@ -3,10 +3,15 @@ package block
 import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/vm"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
+
+var (
+	txPrefix = []byte("t") //txPrefix+tx hash -> tx data
+)
 
 type Block struct {
 	Head    BlockHead
@@ -59,6 +64,23 @@ func (d *Block) TxGet(x int) tx.Tx {
 
 func (d *Block) TxLen() int {
 	return len(d.Content)
+}
+
+func (d *Block) PushTxs() error {
+	ldb, err := db.DatabaseFactor("ldb")
+	if err != nil {
+		return nil, fmt.Errorf("failed to init db %v", err)
+	}
+	defer ldb.Close()
+
+	for txIndice, tx := range d.Content {
+		hash := tx.Hash()
+		err := ldb.Put(append(txPrefix, hash...), tx.Encode())
+		if err != nil {
+			return fmt.Errorf("failed to Put data of tx ", txIndice)
+		}
+	}
+	return nil
 }
 
 func (d *Block) GetAllContract() []vm.Contract {

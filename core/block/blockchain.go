@@ -81,6 +81,11 @@ func (b *ChainImpl) Push(block *Block) error {
 		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
 
+	//put all the transactions of this block to the ldb
+	err=block.PushTxs()
+	if err!=nil {
+		return fmt.Errorf("%v",err)
+	}
 	return nil
 }
 
