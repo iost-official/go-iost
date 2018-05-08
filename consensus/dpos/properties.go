@@ -95,7 +95,7 @@ const (
 )
 
 type globalDynamicProperty struct {
-	LastBlockNumber          int32
+	LastBlockNumber          int64
 	LastBlockTime            Timestamp
 	LastBLockHash            []byte
 	TotalSlots               int64
