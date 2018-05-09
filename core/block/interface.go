@@ -14,7 +14,7 @@ type Chain interface {
 
 	// chain中的state pool相关
 	GetStatePool() state.Pool
-	SetStatePool(pool state.Pool)
+	SetStatePool(pool state.Pool) error
 
 	Iterator() ChainIterator
 }
