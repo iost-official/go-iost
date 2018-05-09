@@ -5,7 +5,6 @@ import (
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/vm/lua"
 )
 
 const (
@@ -17,44 +16,16 @@ const (
 // 底层verifier，用来组织vm，不要直接使用
 type Verifier struct {
 	Pool state.Pool
-	Vms  map[string]vm.VM
-}
-
-func (v *Verifier) StartVm(contract vm.Contract) {
-	switch contract.(type) {
-	case *lua.Contract:
-		var lvm lua.VM
-		lvm.Prepare(contract.(*lua.Contract), v.Pool)
-		lvm.Start()
-		v.Vms[string(contract.Hash())] = &lvm
-	}
-}
-func (v *Verifier) StopVm(contract vm.Contract) {
-	v.Vms[string(contract.Hash())].Stop()
-	delete(v.Vms, string(contract.Hash()))
-}
-func (v *Verifier) Stop() {
-	for _, vm := range v.Vms {
-		vm.Stop()
-	}
+	VMMonitor
 }
 
 func (v *Verifier) Verify(contract vm.Contract) (state.Pool, uint64, error) {
-
-	vm, ok := v.Vms[string(contract.Hash())]
-	if !ok {
-		return nil, 0, fmt.Errorf("not prepared")
-	}
-	_, pool, err := vm.Call("main")
-
-	return pool, vm.PC(), err
+	_, pool, gas, err := v.Call(v.Pool, contract.Info().Prefix, "main")
+	return pool, gas, err
 }
 
 func (v *Verifier) SetPool(pool state.Pool) {
 	v.Pool = pool
-	for _, vm := range v.Vms {
-		vm.SetPool(pool)
-	}
 }
 
 // 验证新tx的工具类
@@ -79,7 +50,7 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 		return nil, fmt.Errorf("balance not enough")
 	}
 
-	cv.StartVm(contract)
+	cv.StartVM(contract)
 	pool, gas, err := cv.Verify(contract)
 	if err != nil {
 		cv.StopVm(contract)
@@ -90,7 +61,7 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	if gas > uint64(contract.Info().GasLimit) {
 		balanceOfSender -= float64(contract.Info().GasLimit) * contract.Info().Price
 		val1 := state.MakeVFloat(balanceOfSender)
-		cv.Pool.PutHM("iost", state.Key(sender), &val1)
+		cv.Pool.PutHM("iost", state.Key(sender), val1)
 		return nil, fmt.Errorf("gas exceeded")
 	}
 
@@ -98,11 +69,11 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	if balanceOfSender < 0 {
 		balanceOfSender = 0
 		val1 := state.MakeVFloat(balanceOfSender)
-		cv.Pool.PutHM("iost", state.Key(sender), &val1)
+		cv.Pool.PutHM("iost", state.Key(sender), val1)
 		return nil, fmt.Errorf("can not afford gas")
 	}
 	val1 := state.MakeVFloat(balanceOfSender)
-	cv.Pool.PutHM("iost", state.Key(sender), &val1)
+	cv.Pool.PutHM("iost", state.Key(sender), val1)
 
 	if contain {
 		cv.SetPool(pool)
@@ -114,8 +85,8 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	cv := CacheVerifier{
 		Verifier: Verifier{
-			Pool: pool.Copy(),
-			Vms:  make(map[string]vm.VM),
+			Pool:      pool.Copy(),
+			VMMonitor: NewVMMonitor(),
 		},
 	}
 	return cv

@@ -1,11 +1,11 @@
 package state
 
 import (
-	"testing"
-	. "github.com/smartystreets/goconvey/convey"
+	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/db/mocks"
-	"errors"
+	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
 func TestPoolImpl(t *testing.T) {
@@ -48,13 +48,12 @@ func TestPoolImpl(t *testing.T) {
 			mockDB.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, errors.New("not found"))
 			mockDB.EXPECT().Get(gomock.Any()).AnyTimes().Return(nil, errors.New("not found"))
 			err := sp1.PutHM(k1, k2, v1)
-			vvv, err:= sp1.Get(k1)
+			vvv, err := sp1.Get(k1)
 			So(err, ShouldBeNil)
-			So(vvv.String(), ShouldEqual,"{key2:i123,")
+			So(vvv.String(), ShouldEqual, "{key2:i123,")
 			v, err := sp2.GetHM(k1, k2)
 			So(err, ShouldBeNil)
 			So(v, ShouldEqual, v1)
-
 
 			sp2.PutHM(k1, k1, v2)
 			vv, err := sp2.Get(k1)

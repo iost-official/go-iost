@@ -34,9 +34,9 @@ func TestCacheVerifier(t *testing.T) {
 				v2 = value
 			})
 			v3 := state.MakeVFloat(float64(10000))
-			pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).Return(&v3, nil)
+			pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).Return(v3, nil)
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
-			main := lua.NewMethod("main", 1)
+			main := lua.NewMethod("main", 0, 1)
 			code := `function main()
 	Put("hello", "world")
 	return "success"

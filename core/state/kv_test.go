@@ -15,7 +15,7 @@ func TestKV(t *testing.T) {
 			So(f.String(), ShouldEqual, "f3.140000000000000e+00")
 			So(i.String(), ShouldEqual, "i123")
 			So(b.String(), ShouldEqual, "bAQIDBAU=")
-			m := MakeVMap(map[Key]Value{Key("f"): f, Key("i"): i, Key("b"): b,})
+			m := MakeVMap(map[Key]Value{Key("f"): f, Key("i"): i, Key("b"): b})
 			So(len(m.String()), ShouldEqual, 45)
 
 			m2, err := ParseValue("{f:f3.140000000000000e+00,i:i123,b:bAQIDBAU=,")
@@ -27,8 +27,8 @@ func TestKV(t *testing.T) {
 			a, err := Merge(f, i)
 			So(err, ShouldBeNil)
 			So(a.String(), ShouldEqual, "i123")
-			m1 := MakeVMap(map[Key]Value{Key("f"): f, Key("i"): i,})
-			m2 := MakeVMap(map[Key]Value{Key("b"): b,})
+			m1 := MakeVMap(map[Key]Value{Key("f"): f, Key("i"): i})
+			m2 := MakeVMap(map[Key]Value{Key("b"): b})
 
 			m3, err := Merge(m1, m2)
 			So(err, ShouldBeNil)
