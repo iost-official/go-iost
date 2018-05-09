@@ -4,7 +4,6 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
-	"fmt"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block

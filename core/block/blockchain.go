@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 	"strconv"
 	"sync"
