@@ -17,10 +17,14 @@ type node interface {
 }
 
 type (
+	// 分支节点，存储所有分支大于一的节点
 	fullNode struct {
 		Children [17]node // 每个节点的所有儿子
 		flags nodeFlag
 	}
+
+	// 叶子节点 && 扩展节点
+	// 在Key中引入特殊标志，区分两种节点
 	shortNode struct {
 		Key []byte
 		Val node
@@ -36,7 +40,7 @@ func (n *shortNode) copy() *shortNode 	{ copydata := *n; return &copydata }
 // node节点的缓存相关信息
 type nodeFlag struct {
 	hash  hashNode	// 节点缓存的哈希值
-	gen   uint16	// 缓存辈分计数器
+	gen   uint16	// 诞生标志
 	dirty bool	// 数据需要将数据的修改写入数据库
 }
 
