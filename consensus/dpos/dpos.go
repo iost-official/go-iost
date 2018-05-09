@@ -6,86 +6,94 @@ import (
 	"fmt"
 	"time"
 
+	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
-	. "github.com/iost-official/prototype/p2p"
+	. "github.com/iost-official/prototype/core/tx"
+	. "github.com/iost-official/prototype/network"
 
 	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/core/state"
 )
 
 type DPoS struct {
-	core.Member
-	BlockCache
-	Router
-	GlobalStaticProperty
-	GlobalDynamicProperty
+	account    Account
+	blockCache BlockCache
+	router     Router
+	globalStaticProperty
+	globalDynamicProperty
 
 	//测试用，保存投票状态，以及投票消息内容的缓存
 	votedStats map[string][]string
 	infoCache  [][]byte
 
-	ExitSignal chan bool
-	chTx       chan core.Request
-	chBlock    chan core.Request
+	exitSignal chan bool
+	chTx       chan message.Message
+	chBlock    chan message.Message
 }
 
-func NewDPoS(mb core.Member, bc core.BlockChain /*, network core.Network*/) (*DPoS, error) {
-	// Member初始化
+// NewDPoS: 新建一个DPoS实例
+// acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), witnessList: 见证节点列表
+func NewDPoS(acc Account, bc block.Chain, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
-	p.Member = mb
-	p.BlockCache = NewBlockCache(bc, 6)
+	p.Account = acc
+	// TODO: maxDepth设置为2/3*witness数
+	p.blockCache = NewBlockCache(bc, 6)
 
 	var err error
-	p.Router, err = RouterFactory("base")
+	p.router, err = RouterFactory("base")
 	if err != nil {
 		return nil, err
 	}
 
 	//	Tx chan init
-	p.chTx, err = p.Router.FilteredChan(Filter{
-		WhiteList:  []core.Member{},
-		BlackList:  []core.Member{},
+	p.chTx, err = p.router.FilteredChan(Filter{
+		WhiteList:  []message.Message{},
+		BlackList:  []message.Message{},
 		RejectType: []ReqType{},
 		AcceptType: []ReqType{
 			ReqPublishTx,
-			ReqTypeVoteTest, // Only for test
+			reqTypeVoteTest, // Only for test
 		}})
 	if err != nil {
 		return nil, err
 	}
 
 	//	Block chan init
-	p.chBlock, err = p.Router.FilteredChan(Filter{
-		WhiteList:  []core.Member{},
-		BlackList:  []core.Member{},
+	p.chBlock, err = p.router.FilteredChan(Filter{
+		WhiteList:  []message.Message{},
+		BlackList:  []message.Message{},
 		RejectType: []ReqType{},
 		AcceptType: []ReqType{ReqNewBlock}})
 	if err != nil {
 		return nil, err
 	}
 
-	p.initGlobalProperty(p.Member, []string{"id0", "id1", "id2", "id3"})
+	p.initGlobalProperty(p.Account, witnessList)
 	return &p, nil
 }
 
-func (p *DPoS) initGlobalProperty(mb core.Member, witnessList []string) {
-	p.GlobalStaticProperty = NewGlobalStaticProperty(mb, witnessList)
-	p.GlobalDynamicProperty = NewGlobalDynamicProperty()
+func (p *DPoS) initGlobalProperty(acc Account, witnessList []string) {
+	p.globalStaticProperty = newGlobalStaticProperty(acc, witnessList)
+	p.globalDynamicProperty = newGlobalDynamicProperty()
 }
 
+// Run: 运行DPoS实例
 func (p *DPoS) Run() {
 	//go p.blockLoop()
 	//go p.scheduleLoop()
-	p.genBlock(p.Member, core.Block{})
+	p.genBlock(p.Account, block.Block{})
 }
 
+// Stop: 停止DPoS实例
 func (p *DPoS) Stop() {
 	close(p.chTx)
 	close(p.chBlock)
-	p.ExitSignal <- true
+	p.exitSignal <- true
 }
 
-func (p *DPoS) Genesis(initTime Timestamp, hash []byte) error {
+func (p *DPoS) genesis(initTime Timestamp, hash []byte) error {
 	return nil
 }
 
@@ -95,13 +103,13 @@ func (p *DPoS) txListenLoop() {
 		if !ok {
 			return
 		}
-		if req.ReqType == ReqTypeVoteTest {
-			p.AddWitnessMsg(req)
+		if req.ReqType == reqTypeVoteTest {
+			p.addWitnessMsg(req)
 			continue
 		}
-		var tx core.Tx
+		var tx Tx
 		tx.Decode(req.Body)
-		p.Router.Send(req)
+		p.router.Send(req)
 		if VerifyTxSig(tx) {
 			// Add to tx pool or recorder
 		}
@@ -110,16 +118,16 @@ func (p *DPoS) txListenLoop() {
 
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-	verifier := func(blk *core.Block, chain core.BlockChain) bool {
+	verifier := func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
 		// verify block head
 
 		if !VerifyBlockHead(blk, chain.Top()) {
-			return false
+			return false, nil
 		}
 
 		// verify block witness
-		if WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-			return false
+		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
+			return false, nil
 		}
 
 		headInfo := generateHeadInfo(blk.Head)
@@ -127,14 +135,13 @@ func (p *DPoS) blockLoop() {
 		signature.Decode(blk.Head.Signature)
 		// verify block witness signature
 		if !common.VerifySignature(headInfo, signature) {
-			return false
+			return false, nil
 		}
-		/*
-			if !VerifyBlockContent(blk, chain) {
-				return false
-			}
-		*/
-		return true
+		result, newPool := VerifyBlockContent(blk, chain)
+		if !result {
+			return false, nil
+		}
+		return true, newPool
 	}
 
 	for {
@@ -142,15 +149,15 @@ func (p *DPoS) blockLoop() {
 		if !ok {
 			return
 		}
-		var blk core.Block
+		var blk block.Block
 		blk.Decode(req.Body)
-		err := p.BlockCache.Add(&blk, verifier)
+		err := p.blockCache.Add(&blk, verifier)
 		if err == nil {
-			p.GlobalDynamicProperty.Update(&blk.Head)
+			p.globalDynamicProperty.update(&blk.Head)
 		}
 		ts := Timestamp{blk.Head.Time}
-		if ts.After(p.GlobalDynamicProperty.NextMaintenanceTime) {
-			p.PerformMaintenance()
+		if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
+			p.performMaintenance()
 		}
 	}
 }
@@ -160,55 +167,55 @@ func (p *DPoS) scheduleLoop() {
 
 	for {
 		currentTimestamp := GetCurrentTimestamp()
-		wid := WitnessOfTime(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, currentTimestamp)
-		if wid == p.Member.ID {
-			bc := p.BlockCache.LongestChain()
-			blk := p.genBlock(p.Member, *bc.Top())
-			p.Router.Send(core.Request{Body: blk.Encode()}) //??
+		wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
+		if wid == p.Account.ID {
+			bc := p.blockCache.LongestChain()
+			blk := p.genBlock(p.Account, *bc.Top())
+			p.router.Send(message.Message{Body: blk.Encode()}) //??
 		}
-		nextSchedule := TimeUntilNextSchedule(&p.GlobalStaticProperty, &p.GlobalDynamicProperty, time.Now().Unix())
+		nextSchedule := timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
 		time.Sleep(time.Duration(nextSchedule))
 	}
 }
 
-func (p *DPoS) genBlock(mb core.Member, lastBlk core.Block) *core.Block {
+func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
 	/*
 		if lastBlk == nil {
-			blk := core.Block{Version: 0, Content: make([]byte, 0), Head: core.BlockHead{
+			blk := block.Block{Version: 0, Content: make([]byte, 0), Head: block.BlockHead{
 				Version:    0,
 				ParentHash: lastBlk.Head.BlockHash,
 				TreeHash:   make([]byte, 0),
 				BlockHash:  make([]byte, 0),
 				Info:       make([]byte, 0),
 				Number:     0,
-				Witness:    mb.ID, // ?
+				Witness:    acc.ID, // ?
 				Time:       GetCurrentTimestamp(),
 			}}
 			headinfo := generateHeadInfo(blk.Head)
-			sig, _ := common.Sign(common.Secp256k1, headinfo, mb.Seckey)
+			sig, _ := common.Sign(common.Secp256k1, headinfo, acc.Seckey)
 			blk.Head.Signature = sig.Encode()
 			return &blk
 		}
 	*/
-	blk := core.Block{Version: 0, Content: make([]byte, 0), Head: core.BlockHead{
+	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.Head.BlockHash,
 		TreeHash:   make([]byte, 0),
 		BlockHash:  make([]byte, 0),
 		Info:       encodeDPoSInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
-		Witness:    mb.ID,
+		Witness:    acc.ID,
 		Time:       GetCurrentTimestamp().Slot,
 	}}
 	p.infoCache = [][]byte{}
 	headInfo := generateHeadInfo(blk.Head)
-	fmt.Println(mb.Seckey)
-	sig, _ := common.Sign(common.Secp256k1, headInfo, mb.Seckey)
+	fmt.Println(acc.Seckey)
+	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
 	return &blk
 }
 
-func generateHeadInfo(head core.BlockHead) []byte {
+func generateHeadInfo(head block.BlockHead) []byte {
 	var info, numberInfo, versionInfo []byte
 	info = make([]byte, 8)
 	versionInfo = make([]byte, 4)

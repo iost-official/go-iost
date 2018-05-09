@@ -2,13 +2,19 @@ package consensus_common
 
 import (
 	"bytes"
-	"encoding/binary"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core"
+
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/tx"
+
+	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/verifier"
+	"github.com/iost-official/prototype/vm"
 )
 
+//go:generate gencode go -schema=structs.schema -package=consensus_common
+
 // 验证块头正确性，调用此函数时块的父亲节点已经找到
-func VerifyBlockHead(blk *core.Block, parentBlk *core.Block) bool {
+func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) bool {
 	bh := blk.Head
 	// parent hash
 	if !bytes.Equal(bh.ParentHash, parentBlk.Head.Hash()) {
@@ -26,55 +32,34 @@ func VerifyBlockHead(blk *core.Block, parentBlk *core.Block) bool {
 	return true
 }
 
-func calcTreeHash(txs []core.Tx) []byte {
+func calcTreeHash(txs []tx.Tx) []byte {
 	return nil
 }
 
-/*
 // 验证块内交易的正确性
-func VerifyBlockContent(blk *core.Block, chain core.BlockChain) bool {
-	txs := DecodeTxs(blk.Head.BlockHash)
+func VerifyBlockContent(blk *block.Block, chain block.Chain) (bool, state.Pool) {
+	txs := blk.Content
 	var contracts []vm.Contract
 	for _, tx := range txs {
 		contracts = append(contracts, tx.Contract)
 	}
-	newPool, err := vm.VerifyBlock(contracts, chain.GetStatePool())
+	verify := verifier.NewBlockVerifier(chain.GetStatePool())
+	newPool, err := verify.VerifyBlock(*blk, false)
 	if err != nil {
-		return false
+		return false, nil
 	}
-	chain.SetStatePool(newPool)
-	return true
+	return true, newPool
 }
 
 // 验证单个交易的正确性
 // 在调用之前需要先调用vm.NewCacheVerifier(pool state.Pool)生成一个cache verifier
 // TODO: 考虑自己生成块到达最后一个交易时，直接用返回的state pool更新block cache中的state
-func VeirifyTx(tx core.Tx, cv *vm.CacheVerifier) (state.Pool, bool) {
+func VeirifyTx(tx tx.Tx, cv *verifier.CacheVerifier) (state.Pool, bool) {
 	newPool, err := cv.VerifyContract(tx.Contract, false)
 	return newPool, err == nil
 }
-*/
 
-func VerifyTxSig(tx core.Tx) bool {
-	info := make([]byte, 8)
-	binary.BigEndian.PutUint64(info, uint64(tx.Time))
-	info = append(info, tx.Contract.Encode()...)
-	for _, sign := range tx.Signs {
-		if !common.VerifySignature(info, sign) {
-			return false
-		}
-	}
-	for _, sign := range tx.Signs {
-		info = append(info, sign.Encode()...)
-	}
-	for _, sign := range tx.Publisher {
-		if !common.VerifySignature(info, sign) {
-			return false
-		}
-	}
-	return true
-}
-
-func DecodeTxs(content []byte) []core.Tx {
-	return nil
+func VerifyTxSig(tx tx.Tx) bool {
+	err := tx.VerifySelf()
+	return err == nil
 }

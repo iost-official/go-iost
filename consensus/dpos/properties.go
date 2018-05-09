@@ -4,20 +4,21 @@ import (
 	"errors"
 	"sort"
 
+	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/core/block"
 )
 
-type GlobalStaticProperty struct {
-	Member             core.Member
+type globalStaticProperty struct {
+	Account
 	NumberOfWitnesses  int
 	WitnessList        []string
 	PendingWitnessList []string
 }
 
-func NewGlobalStaticProperty(member core.Member, witnessList []string) GlobalStaticProperty {
-	prop := GlobalStaticProperty{
-		Member:             member,
+func newGlobalStaticProperty(acc Account, witnessList []string) globalStaticProperty {
+	prop := globalStaticProperty{
+		Account:            acc,
 		NumberOfWitnesses:  len(witnessList),
 		WitnessList:        witnessList,
 		PendingWitnessList: []string{},
@@ -25,7 +26,7 @@ func NewGlobalStaticProperty(member core.Member, witnessList []string) GlobalSta
 	return prop
 }
 
-func (prop *GlobalStaticProperty) AddPendingWitness(id string) error {
+func (prop *globalStaticProperty) addPendingWitness(id string) error {
 	for _, wit := range prop.WitnessList {
 		if id == wit {
 			return errors.New("already in witness list")
@@ -40,7 +41,7 @@ func (prop *GlobalStaticProperty) AddPendingWitness(id string) error {
 	return nil
 }
 
-func (prop *GlobalStaticProperty) DeletePendingWitness(id string) error {
+func (prop *globalStaticProperty) deletePendingWitness(id string) error {
 	i := 0
 	for _, wit := range prop.PendingWitnessList {
 		if id == wit {
@@ -53,7 +54,7 @@ func (prop *GlobalStaticProperty) DeletePendingWitness(id string) error {
 	return errors.New("witness not in pending list")
 }
 
-func (prop *GlobalStaticProperty) UpdateWitnessLists(newList []string) {
+func (prop *globalStaticProperty) updateWitnessLists(newList []string) {
 	var newPendingList []string
 	for _, wit := range prop.WitnessList {
 		if !inList(wit, newList) {
@@ -90,10 +91,10 @@ func getIndex(element string, list []string) int {
 
 const (
 	// 每个witness做几个slot以后换下一个
-	SlotPerWitness = 1
+	slotPerWitness = 1
 )
 
-type GlobalDynamicProperty struct {
+type globalDynamicProperty struct {
 	LastBlockNumber          int32
 	LastBlockTime            Timestamp
 	LastBLockHash            []byte
@@ -102,8 +103,8 @@ type GlobalDynamicProperty struct {
 	NextMaintenanceTime      Timestamp
 }
 
-func NewGlobalDynamicProperty() GlobalDynamicProperty {
-	return GlobalDynamicProperty{
+func newGlobalDynamicProperty() globalDynamicProperty {
+	return globalDynamicProperty{
 		LastBlockNumber:          0,
 		LastBlockTime:            Timestamp{0},
 		TotalSlots:               0,
@@ -112,10 +113,10 @@ func NewGlobalDynamicProperty() GlobalDynamicProperty {
 	}
 }
 
-func (prop *GlobalDynamicProperty) Update(blockHead *core.BlockHead) {
+func (prop *globalDynamicProperty) update(blockHead *block.BlockHead) {
 	if prop.LastBlockNumber == 0 {
 		prop.TotalSlots = 1
-		prop.NextMaintenanceTime.AddHour(MaintenanceInterval)
+		prop.NextMaintenanceTime.AddHour(maintenanceInterval)
 	} else {
 		prop.TotalSlots = prop.timestampToSlot(Timestamp{blockHead.Time}) + 1
 	}
@@ -124,38 +125,38 @@ func (prop *GlobalDynamicProperty) Update(blockHead *core.BlockHead) {
 	copy(prop.LastBLockHash, blockHead.BlockHash)
 }
 
-func (prop *GlobalDynamicProperty) timestampToSlot(time Timestamp) int64 {
+func (prop *globalDynamicProperty) timestampToSlot(time Timestamp) int64 {
 	return time.Slot - prop.LastBlockTime.Slot + prop.TotalSlots - 1
 }
 
-func (prop *GlobalDynamicProperty) slotToTimestamp(slot int64) *Timestamp {
+func (prop *globalDynamicProperty) slotToTimestamp(slot int64) *Timestamp {
 	return &Timestamp{Slot: slot - prop.TotalSlots + prop.LastBlockTime.Slot + 1}
 }
 
 // 返回对于指定的Unix时间点，应该轮到生产块的节点id
-func WitnessOfSec(sp *GlobalStaticProperty, dp *GlobalDynamicProperty, sec int64) string {
+func witnessOfSec(sp *globalStaticProperty, dp *globalDynamicProperty, sec int64) string {
 	time := GetTimestamp(sec)
-	return WitnessOfTime(sp, dp, time)
+	return witnessOfTime(sp, dp, time)
 }
 
 // 返回对于指定的时间戳，应该轮到生产块的节点id
-func WitnessOfTime(sp *GlobalStaticProperty, dp *GlobalDynamicProperty, time Timestamp) string {
+func witnessOfTime(sp *globalStaticProperty, dp *globalDynamicProperty, time Timestamp) string {
 	// 当前一个块是创世块，应该让第一个witness产生块
 	// 问题：如果第一个witness失败？
 	if dp.LastBlockNumber == 0 {
 		return sp.WitnessList[0]
 	}
 	currentSlot := dp.timestampToSlot(time)
-	index := currentSlot % int64(sp.NumberOfWitnesses*SlotPerWitness)
-	index /= SlotPerWitness
+	index := currentSlot % int64(sp.NumberOfWitnesses*slotPerWitness)
+	index /= slotPerWitness
 	return sp.WitnessList[index]
 }
 
 // 返回到下一次轮到本节点生产块的时间长度，秒为单位
 // 如果该节点当前不是witness，则返回到达下一次maintenance的时间长度
-func TimeUntilNextSchedule(sp *GlobalStaticProperty, dp *GlobalDynamicProperty, timeSec int64) int64 {
+func timeUntilNextSchedule(sp *globalStaticProperty, dp *globalDynamicProperty, timeSec int64) int64 {
 	var index int
-	if index = getIndex(sp.Member.GetId(), sp.WitnessList); index < 0 {
+	if index = getIndex(sp.Account.GetId(), sp.WitnessList); index < 0 {
 		return dp.NextMaintenanceTime.ToUnixSec() - timeSec
 	}
 	// 如果上一个块是创世块，并且本节点应该首先产生块，无需计算时间
@@ -164,25 +165,25 @@ func TimeUntilNextSchedule(sp *GlobalStaticProperty, dp *GlobalDynamicProperty, 
 	}
 	time := GetTimestamp(timeSec)
 	currentSlot := dp.timestampToSlot(time)
-	slotsEveryTurn := int64(sp.NumberOfWitnesses * SlotPerWitness)
+	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
 	k := currentSlot / slotsEveryTurn
-	startSlot := k*slotsEveryTurn + int64(index*SlotPerWitness)
+	startSlot := k*slotsEveryTurn + int64(index*slotPerWitness)
 	// 当前还没到本轮本节点的起始slot
 	if startSlot > currentSlot {
 		return dp.slotToTimestamp(startSlot).ToUnixSec() - timeSec
 	}
 	// 当前slot在本轮中
-	if currentSlot-startSlot < SlotPerWitness {
+	if currentSlot-startSlot < slotPerWitness {
 		if time.Slot > dp.LastBlockTime.Slot {
 			// 当前slot还未产生块，需要立即产生块
 			// TODO: 考虑线程间同步问题，使用另外的方法判断当前slot是否产生块
 			return 0
-		} else if currentSlot+1 < startSlot+SlotPerWitness {
+		} else if currentSlot+1 < startSlot+slotPerWitness {
 			// 当前slot已经产生块，并且下一个slot还是本节点产生
 			return dp.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
 		}
 	}
 	// 本轮本节点已经产生完毕，需要等到下一轮产生
-	nextSlot := (k+1)*slotsEveryTurn + int64(index*SlotPerWitness)
+	nextSlot := (k+1)*slotsEveryTurn + int64(index*slotPerWitness)
 	return dp.slotToTimestamp(nextSlot).ToUnixSec() - timeSec
 }

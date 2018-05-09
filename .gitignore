@@ -91,3 +91,4 @@ vendor/gopkg.in/
 .vscode/
 
 *.log
+/network/router.go

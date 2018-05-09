@@ -1,18 +1,27 @@
 package consensus_common
 
 import (
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/state"
 )
 
 type CachedBlockChain struct {
-	core.BlockChain
-	cachedBlock []*core.Block
+	block.Chain
+	block        *block.Block
+	pool         state.Pool
+	cachedLength int
+	parent       *CachedBlockChain
+	// DPoS中使用，记录该节点被哪些witness确认
+	confirmed map[string]int
 }
 
-func NewCBC(chain core.BlockChain) CachedBlockChain {
+func NewCBC(chain block.Chain) CachedBlockChain {
 	return CachedBlockChain{
-		BlockChain:  chain,
-		cachedBlock: make([]*core.Block, 0),
+		Chain:        chain,
+		block:        nil,
+		parent:       nil,
+		cachedLength: 0,
+		confirmed:    make(map[string]int),
 	}
 }
 
@@ -25,36 +34,79 @@ func NewCBC(chain core.BlockChain) CachedBlockChain {
 //	}
 //	return c.cachedBlock[layer-c.BlockChain.Length()], nil
 //}
-func (c *CachedBlockChain) Push(block *core.Block) error {
-	c.cachedBlock = append(c.cachedBlock, block)
+func (c *CachedBlockChain) Push(block *block.Block) error {
+	c.block = block
+	c.cachedLength++
+	witness := block.Head.Witness
+	c.confirmed[witness] = 1
+
+	confirmed := make(map[string]int)
+	confirmed[witness] = 1
+	cbc := c
+	for cbc.parent != nil {
+		witness = cbc.parent.Top().Head.Witness
+		if _, ok := confirmed[witness]; !ok {
+			confirmed[witness] = 0
+		}
+		confirmed[witness]++
+		if len(confirmed) > len(cbc.parent.confirmed) {
+			// 如果当前分支有更多的确认，则更新父亲的confirmed
+			mapCopy(cbc.parent.confirmed, confirmed)
+		} else {
+			break
+		}
+		cbc = cbc.parent
+	}
 	return nil
 }
+
 func (c *CachedBlockChain) Length() int {
-	return c.BlockChain.Length() + len(c.cachedBlock)
+	return c.Chain.Length() + c.cachedLength
 }
-func (c *CachedBlockChain) Top() *core.Block {
-	l := len(c.cachedBlock)
-	if l == 0 {
-		return c.BlockChain.Top()
+func (c *CachedBlockChain) Top() *block.Block {
+	if c.cachedLength == 0 {
+		return c.Chain.Top()
 	}
-	return c.cachedBlock[l-1]
+	return c.block
 }
 
 func (c *CachedBlockChain) Copy() CachedBlockChain {
 	cbc := CachedBlockChain{
-		BlockChain:  c.BlockChain,
-		cachedBlock: make([]*core.Block, 0),
+		Chain:        c.Chain,
+		parent:       c,
+		cachedLength: c.cachedLength,
+		pool:         c.pool,
+		confirmed:    make(map[string]int),
 	}
-	copy(cbc.cachedBlock, c.cachedBlock)
 	return cbc
 }
 
+// 调用时保证只flush未确认块的第一个，如果要flush多个，需多次调用Flush()
 func (c *CachedBlockChain) Flush() {
-	for _, b := range c.cachedBlock {
-		c.BlockChain.Push(b)
+	if c.block != nil {
+		c.Chain.Push(c.block)
+		//TODO: chain实现后去掉注释
+		//c.Chain.SetStatePool(c.pool)
+		c.block = nil
+		c.cachedLength = 0
+		c.parent = nil
 	}
 }
 
-func (c *CachedBlockChain) Iterator() core.BlockChainIterator {
+func (c *CachedBlockChain) GetStatePool() state.Pool {
+	return c.pool
+}
+
+func (c *CachedBlockChain) SetStatePool(pool state.Pool) {
+	c.pool = pool
+}
+
+func (c *CachedBlockChain) Iterator() block.ChainIterator {
 	return nil
+}
+
+func mapCopy(to map[string]int, from map[string]int) {
+	for key, value := range from {
+		to[key] = value
+	}
 }

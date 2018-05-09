@@ -5,69 +5,71 @@ import (
 	"sort"
 
 	"bytes"
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/core/message"
 	"strings"
 	"time"
 )
 
 const (
 	// 测试用常量
-	ReqTypeVoteTest = 100
+	reqTypeVoteTest = 100
 	// 维护周期的长度，以小时为单位
-	MaintenanceInterval = 24
+	maintenanceInterval = 24
 )
 
-func (p *DPoS) VoteForWitness(voter core.Member, witnessId string, voteType bool) {
-	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
+// VoteForWitness: 生成一个vote交易并发送，测试版本中简单设置为广播一个消息，后续再对接
+// voter: 投票者账户, witnessId: 投给的witness, voteType: 投票或者取消投票
+func (p *DPoS) VoteForWitness(voter account.Account, witnessId string, voteType bool) {
 	var reqString string
 	if voteType {
 		reqString = "Vote For " + voter.GetId() + " " + witnessId
 	} else {
 		reqString = "Vote Against " + voter.GetId() + " " + witnessId
 	}
-	req := core.Request{
+	req := message.Message{
 		Time: time.Now().Unix(),
 		From: voter.GetId(),
 		//To:      p.DPoSSuperMember,
 		To:      "ALL",
-		ReqType: ReqTypeVoteTest,
+		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),
 	}
-	p.Router.Send(req)
+	p.router.Send(req)
 }
 
-func (p *DPoS) WitnessJoin(witness core.Member) {
-	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
+// WitnessJoin: 生成一个witness加入交易并发送，测试版本中简单设置为广播一个消息，后续再对接
+func (p *DPoS) WitnessJoin(witness account.Account) {
 	reqString := "Join " + witness.GetId()
-	req := core.Request{
+	req := message.Message{
 		Time: time.Now().Unix(),
 		From: witness.GetId(),
 		//To:      p.DPoSSuperMember,
 		To:      "ALL",
-		ReqType: ReqTypeVoteTest,
+		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),
 	}
-	p.Router.Send(req)
+	p.router.Send(req)
 }
 
-func (p *DPoS) WitnessQuit(witness core.Member) {
-	//应该生成一个交易并发送，测试版本中简单设置为广播一个消息，后续再对接
+// WitnessQuit: 生成一个witness退出交易并发送，测试版本中简单设置为广播一个消息，后续再对接
+func (p *DPoS) WitnessQuit(witness account.Account) {
 	reqString := "Quit " + witness.GetId()
-	req := core.Request{
+	req := message.Message{
 		Time: time.Now().Unix(),
 		From: witness.GetId(),
 		//To:      p.DPoSSuperMember,
 		To:      "ALL",
-		ReqType: ReqTypeVoteTest,
+		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),
 	}
-	p.Router.Send(req)
+	p.router.Send(req)
 }
 
 // 测试用函数：p2p收到ReqTypeVoteTest后调用，将消息加入到info的缓存中
 // 在生成块时，将infoCache中的内容序列化后直接加入info，清空infoCache
-func (p *DPoS) AddWitnessMsg(req core.Request) {
-	if req.ReqType != ReqTypeVoteTest {
+func (p *DPoS) addWitnessMsg(req message.Message) {
+	if req.ReqType != reqTypeVoteTest {
 		return
 	}
 	for _, request := range p.infoCache {
@@ -79,15 +81,15 @@ func (p *DPoS) AddWitnessMsg(req core.Request) {
 }
 
 // 测试用函数：当块被确认，解码info中的相关消息更新投票状态
-func (p *DPoS) ProcessWitnessTx(req []byte) error {
+func (p *DPoS) processWitnessTx(req []byte) error {
 	reqStrings := strings.Split(string(req), " ")
 	switch reqStrings[0] {
 	case "Join":
 		witness := reqStrings[1]
-		return p.AddPendingWitness(witness)
+		return p.addPendingWitness(witness)
 	case "Quit":
 		witness := reqStrings[1]
-		return p.DeletePendingWitness(witness)
+		return p.deletePendingWitness(witness)
 	case "Vote":
 		if reqStrings[1] == "For" {
 			return p.addVote(reqStrings[2], reqStrings[3])
@@ -133,7 +135,7 @@ func (p *DPoS) deleteVote(voter string, witness string) error {
 	}
 }
 
-func (p *DPoS) PerformMaintenance() error {
+func (p *DPoS) performMaintenance() error {
 	//Maintenance过程，主要进行投票结果统计并生成新的witness列表
 	votes := make(map[string]int)
 	// 测试用写法，原本应该从core.statspool中读取
@@ -148,39 +150,39 @@ func (p *DPoS) PerformMaintenance() error {
 			}
 		}
 	}
-	if len(votes) < p.GlobalStaticProperty.NumberOfWitnesses {
+	if len(votes) < p.globalStaticProperty.NumberOfWitnesses {
 		return errors.New("voted witnesses too few")
 	}
 
 	// choose the top NumberOfWitnesses witnesses and update lists
-	witnessList := chooseTopN(votes, p.GlobalStaticProperty.NumberOfWitnesses)
-	p.GlobalStaticProperty.UpdateWitnessLists(witnessList)
+	witnessList := chooseTopN(votes, p.globalStaticProperty.NumberOfWitnesses)
+	p.globalStaticProperty.updateWitnessLists(witnessList)
 
 	// assume Add() adds a certain number into timestamp
-	p.GlobalDynamicProperty.NextMaintenanceTime.AddHour(MaintenanceInterval)
+	p.globalDynamicProperty.NextMaintenanceTime.AddHour(maintenanceInterval)
 	return nil
 }
 
-type Pair struct {
+type pair struct {
 	Key   string
 	Value int
 }
-type PairList []Pair
+type pairLists []pair
 
-func (pl PairList) Swap(i, j int) {
+func (pl pairLists) Swap(i, j int) {
 	pl[i], pl[j] = pl[j], pl[i]
 }
-func (pl PairList) Len() int {
+func (pl pairLists) Len() int {
 	return len(pl)
 }
-func (pl PairList) Less(i, j int) bool {
+func (pl pairLists) Less(i, j int) bool {
 	return pl[i].Value < pl[j].Value
 }
 
 func chooseTopN(votes map[string]int, num int) []string {
-	var voteList PairList
+	var voteList pairLists
 	for k, v := range votes {
-		voteList = append(voteList, Pair{k, v})
+		voteList = append(voteList, pair{k, v})
 	}
 	sort.Sort(voteList)
 	list := make([]string, num)
