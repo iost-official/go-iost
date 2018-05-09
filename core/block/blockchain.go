@@ -8,10 +8,13 @@ import (
 	"github.com/iost-official/prototype/db"
 	"strconv"
 	"sync"
+	"bytes"
+	"encoding/gob"
 )
 
 var (
-	blockLength = []byte("BlockLength") //blockLength -> length of ChainImpl
+	blockLength    = []byte("BlockLength")    //blockLength -> length of ChainImpl
+	blockStatePool = []byte("BlockStatePool") //blockStatePool -> state pool of the last block
 
 	blockNumberPrefix = []byte("n") //blockNumberPrefix + block number -> block hash
 	blockPrefix       = []byte("H") //blockHashPrefix + block hash -> block data
@@ -25,7 +28,7 @@ type ChainImpl struct {
 
 var chainImpl *ChainImpl
 
-var varonce sync.Once
+var once sync.Once
 
 //NewBlockChain 创建一个blockChain实例,单例模式
 func NewBlockChain() (chain Chain, error error) {
@@ -34,7 +37,7 @@ func NewBlockChain() (chain Chain, error error) {
 	//	return chainImpl, nil
 	//}
 
-	varonce.Do(func() {
+	once.Do(func() {
 		ldb, err := db.DatabaseFactor("ldb")
 		if err != nil {
 			error = fmt.Errorf("failed to init db %v", err)
@@ -191,12 +194,50 @@ func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 
 //GetStatePool 返回已经确定的state pool
 func (b *ChainImpl) GetStatePool() state.Pool {
+
+	if b.state != nil {
+		return b.state
+	}
+
+	statePool, err := b.db.Get(blockStatePool)
+	if err != nil {
+		return nil
+	}
+
+	var value bytes.Buffer
+
+	value.Read(statePool)
+	dec := gob.NewDecoder(&value)
+
+	state := state.PoolImpl{}
+	err = dec.Decode(state)
+	if err != nil {
+		return nil
+	}
+
+	b.state = &state
 	return b.state
 }
 
 //SetStatePool 设置state pool
-func (b *ChainImpl) SetStatePool(pool state.Pool) {
+func (b *ChainImpl) SetStatePool(pool state.Pool) error {
 	b.state = pool
+
+	if err := b.db.Delete(blockStatePool); err != nil {
+		return fmt.Errorf("failed to delete state pool")
+	}
+
+	var value bytes.Buffer
+	enc := gob.NewEncoder(&value)
+
+	err := enc.Encode(b.state)
+	if err != nil {
+		return fmt.Errorf("failed to Encode")
+	}
+
+	b.db.Put(blockStatePool, value.Bytes())
+
+	return nil
 }
 
 //暂不实现

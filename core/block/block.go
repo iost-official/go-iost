@@ -4,6 +4,7 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
+	"fmt"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
@@ -49,7 +50,7 @@ func (d *Block) HeadHash() []byte {
 	return d.Head.Hash()
 }
 
-func (d *Block) TxGet(x int) tx.Tx {
+func (d *Block) GetTx(x int) tx.Tx {
 	if x < len(d.Content) {
 		return d.Content[x]
 	} else {
@@ -57,7 +58,7 @@ func (d *Block) TxGet(x int) tx.Tx {
 	}
 }
 
-func (d *Block) TxLen() int {
+func (d *Block) LenTx() int {
 	return len(d.Content)
 }
 func (d *Block) GetAllContract() []vm.Contract {
