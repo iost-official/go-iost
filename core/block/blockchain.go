@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 	"strconv"
 	"sync"
@@ -92,11 +93,7 @@ func (b *ChainImpl) Push(block *Block) error {
 		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
 
-	//put all the transactions of this block to the ldb
-	err = block.PushTxs()
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
+	//todo:put all the tx of this block to the db
 	return nil
 }
 

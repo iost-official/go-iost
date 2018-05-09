@@ -2,7 +2,7 @@ package sampler
 
 import (
 	"fmt"
-	"github.com/InWeCrypto/sha3"
+	"golang.org/x/crypto/sha3"
 )
 
 const (

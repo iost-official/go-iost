@@ -1,9 +1,9 @@
 package block
 
 import (
-	"testing"
-	. "github.com/smartystreets/goconvey/convey"
 	"fmt"
+	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
 func TestNewBlockChain(t *testing.T) {
@@ -51,7 +51,7 @@ func TestChainImpl(t *testing.T) {
 		Convey("GetBlockByNumber", func() {
 			length := bc.Length()
 			//取出刚存入的块
-			tBlock.Head.Number = int64(length) -1
+			tBlock.Head.Number = int64(length) - 1
 
 			block := bc.GetBlockByNumber(length - 1)
 			So(block, ShouldNotBeNil)

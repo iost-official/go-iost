@@ -33,28 +33,6 @@ func DatabaseFactor(target string) (Database, error) {
 	return nil, errors.New("target Database not found")
 }
 
-func GetTx(hash []byte) (*Tx, error) {
-
-	ldb, err := db.DatabaseFactor("ldb")
-	if err != nil {
-
-		return nil, fmt.Errorf("failed to init db %v", err)
-	}
-	defer ldb.Close()
-	txData, err := ldb.Get(hash)
-	if err != nil {
-
-		return nil, fmt.Errorf("failed to Get the tx:", err)
-	}
-	RetTx := new(Tx)
-	err = RetTx.Decode(txData)
-	if err != nil {
-
-		return nil, fmt.Errorf("failed to Decode the tx:", err)
-	}
-	return RetTx
-}
-
 /*
 type Batch interface {
 	Put(key []byte, value []byte) error

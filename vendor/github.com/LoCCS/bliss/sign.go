@@ -6,7 +6,7 @@ import (
 	"github.com/LoCCS/bliss/params"
 	"github.com/LoCCS/bliss/poly"
 	"github.com/LoCCS/bliss/sampler"
-	"github.com/InWeCrypto/sha3"
+	"golang.org/x/crypto/sha3"
 )
 
 type Signature struct {
