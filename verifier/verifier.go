@@ -2,6 +2,7 @@ package verifier
 
 import (
 	"fmt"
+
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
@@ -16,7 +17,7 @@ const (
 // 底层verifier，用来组织vm，不要直接使用
 type Verifier struct {
 	Pool state.Pool
-	VMMonitor
+	vmMonitor
 }
 
 func (v *Verifier) Verify(contract vm.Contract) (state.Pool, uint64, error) {
@@ -53,10 +54,10 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	cv.StartVM(contract)
 	pool, gas, err := cv.Verify(contract)
 	if err != nil {
-		cv.StopVm(contract)
+		cv.StopVM(contract)
 		return nil, err
 	}
-	cv.StopVm(contract)
+	cv.StopVM(contract)
 
 	if gas > uint64(contract.Info().GasLimit) {
 		balanceOfSender -= float64(contract.Info().GasLimit) * contract.Info().Price
@@ -86,7 +87,7 @@ func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	cv := CacheVerifier{
 		Verifier: Verifier{
 			Pool:      pool.Copy(),
-			VMMonitor: NewVMMonitor(),
+			vmMonitor: newVMMonitor(),
 		},
 	}
 	return cv

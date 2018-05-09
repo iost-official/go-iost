@@ -16,12 +16,12 @@ type Hash [HashLength]byte
 type LongHash [LongHashLength]byte
 
 func NewHash(bs []byte) Hash {
-	b_len := len(bs)
+	bLen := len(bs)
 	var h Hash
 
-	if b_len < HashLength {
+	if bLen < HashLength {
 		for i, b := range bs {
-			h[HashLength-b_len+i] = b
+			h[HashLength-bLen+i] = b
 		}
 	} else {
 		for i, _ := range h {
@@ -33,15 +33,15 @@ func NewHash(bs []byte) Hash {
 }
 
 func NewLongHash(bs []byte) LongHash {
-	b_len := len(bs)
+	bLen := len(bs)
 	var h LongHash
 
-	if b_len < LongHashLength {
+	if bLen < LongHashLength {
 		for i, b := range bs {
-			h[LongHashLength-b_len+i] = b
+			h[LongHashLength-bLen+i] = b
 		}
 	} else {
-		for i, _ := range h {
+		for i := range h {
 			h[i] = bs[i]
 		}
 	}

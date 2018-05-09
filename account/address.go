@@ -2,10 +2,11 @@ package account
 
 import (
 	"fmt"
+
 	"github.com/LoCCS/bliss"
 	"github.com/LoCCS/bliss/params"
 	"github.com/LoCCS/bliss/sampler"
-	"github.com/iost-official/prototype/all_hash"
+	"github.com/iost-official/prototype/common/all_hash"
 )
 
 const (

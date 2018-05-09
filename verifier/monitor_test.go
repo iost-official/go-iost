@@ -42,7 +42,7 @@ end`
 
 		verifier := Verifier{
 			Pool:      pool,
-			VMMonitor: NewVMMonitor(),
+			vmMonitor: newVMMonitor(),
 		}
 		verifier.StartVM(&lc1)
 		verifier.StartVM(&lc2)

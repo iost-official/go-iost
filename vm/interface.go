@@ -53,7 +53,7 @@ type Contract interface {
 
 type Monitor interface {
 	StartVM(contract Contract) VM
-	StopVm(contract Contract)
+	StopVM(contract Contract)
 	Stop()
 	GetMethod(contractPrefix, methodName string) Method
 	Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error)
