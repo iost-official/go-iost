@@ -3,7 +3,6 @@ package trie
 import (
 	"github.com/iost-official/prototype/common"
 	"github.com/go-ethereum/crypto"
-	"github.com/iost-official/prototype/db"
 )
 
 var (
@@ -38,4 +37,24 @@ func (t *Trie) newFlag() nodeFlag {
 	return nodeFlag{ dirty: true, gen: t.cachegen }
 }
 
-func New(root common.Hash, db *Database) ()
+func New(root common.Hash, db *Database) (*Trie, error) {
+	if db == nil {
+		panic("trie.New called without a database")
+	}
+	trie := &Trie{
+		db: db,
+		originalRoot: root,
+	}
+	if (root != common.Hash{}) && root != emptyRoot {
+		rootnode, err := trie
+	}
+}
+
+func (t *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
+	hash := common.BytesToHash(n)
+
+	enc, err := t.db.Node(hash)
+	if err != nil || enc == nil {
+		return nil, &MissingNodeError{}
+	}
+}
