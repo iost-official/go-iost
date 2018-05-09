@@ -63,10 +63,15 @@ func (c *Contract) Hash() []byte {
 	return common.Sha256(c.Encode())
 }
 
-func NewContract(info vm.ContractInfo, code string, main Method) Contract {
-	return Contract{
+func NewContract(info vm.ContractInfo, code string, main Method, apis ...Method) Contract {
+	c := Contract{
 		info: info,
 		code: code,
 		main: main,
 	}
+	c.apis = make(map[string]Method)
+	for _, api := range apis {
+		c.apis[api.name] = api
+	}
+	return c
 }

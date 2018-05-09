@@ -1,6 +1,5 @@
 package state
 
-
 // state pool存储对状态机进行修改的链，可以方便地记录所有的状态同时易于回退
 type Pool interface {
 	Copy() Pool
@@ -15,5 +14,3 @@ type Pool interface {
 	GetHM(key, field Key) (Value, error)
 	PutHM(key, field Key, value Value) error
 }
-
-

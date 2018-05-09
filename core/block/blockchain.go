@@ -1,18 +1,17 @@
 package block
 
 import (
-	"github.com/iost-official/prototype/db"
-	"github.com/iost-official/prototype/core/state"
-	"fmt"
 	"encoding/binary"
+	"fmt"
+	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/db"
 )
-
 
 var (
 	blockLength = []byte("BlockLength") //blockLength -> length of ChainImpl
 
 	blockNumberPrefix = []byte("n") //blockNumberPrefix + block number -> block hash
-	blockPrefix   = []byte("H") //blockHashPrefix + block hash -> block data
+	blockPrefix       = []byte("H") //blockHashPrefix + block hash -> block data
 )
 
 type ChainImpl struct {
@@ -26,33 +25,33 @@ func NewBlockChain() (Chain, error) {
 
 	ldb, err := db.DatabaseFactor("ldb")
 	if err != nil {
-		return nil, fmt.Errorf("failed to init db %v",err)
+		return nil, fmt.Errorf("failed to init db %v", err)
 	}
 	defer ldb.Close()
 
 	var length uint64
 	var lenByte = make([]byte, 128)
 
-	if ok, _:=ldb.Has(blockLength); ok{
-		lenByte ,err:= ldb.Get(blockLength)
-		if err!=nil {
+	if ok, _ := ldb.Has(blockLength); ok {
+		lenByte, err := ldb.Get(blockLength)
+		if err != nil {
 			return nil, fmt.Errorf("failed to Get blockLength")
 		}
 
 		length = binary.BigEndian.Uint64(lenByte)
 
-	}else {
+	} else {
 		fmt.Printf("blockLength not exist")
 		length = 0
 		binary.BigEndian.PutUint64(lenByte, length)
 
 		err := ldb.Put(blockLength, lenByte)
-		if err!= nil {
+		if err != nil {
 			return nil, fmt.Errorf("failed to Put blockLength")
 		}
 	}
 
-	return &ChainImpl{db:ldb,length:length,state:nil}, nil
+	return &ChainImpl{db: ldb, length: length, state: nil}, nil
 }
 
 //Push 保存一个block到实例
@@ -65,14 +64,14 @@ func (b *ChainImpl) Push(block *Block) error {
 	binary.BigEndian.PutUint64(tmpByte, number)
 
 	//存储区块hash
-	err:=b.db.Put(append(blockNumberPrefix, tmpByte...),hash)
-	if err!=nil {
+	err := b.db.Put(append(blockNumberPrefix, tmpByte...), hash)
+	if err != nil {
 		return fmt.Errorf("failed to Put block hash")
 	}
 
 	//存储区块数据
 	err = b.db.Put(append(blockPrefix, hash...), block.Encode())
-	if err!=nil {
+	if err != nil {
 		return fmt.Errorf("failed to Put block data")
 	}
 
@@ -96,7 +95,7 @@ func (b *ChainImpl) lengthAdd() error {
 	binary.BigEndian.PutUint64(tmpByte, b.length)
 
 	err := b.db.Put(blockLength, tmpByte)
-	if err!= nil {
+	if err != nil {
 		return fmt.Errorf("failed to Put blockLength")
 	}
 
@@ -114,12 +113,12 @@ func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 //Top return the last block
 func (b *ChainImpl) Top() *Block {
 
-	hash,err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(b.length)...))
+	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(b.length)...))
 	if err != nil {
 		return nil
 	}
 
-	block,err := b.db.Get(append(blockPrefix, hash...))
+	block, err := b.db.Get(append(blockPrefix, hash...))
 	if err != nil {
 		return nil
 	}
@@ -128,7 +127,7 @@ func (b *ChainImpl) Top() *Block {
 	}
 
 	rBlock := new(Block)
-	if err:=rBlock.Decode(block);err!=nil{
+	if err := rBlock.Decode(block); err != nil {
 		return nil
 	}
 
@@ -138,12 +137,12 @@ func (b *ChainImpl) Top() *Block {
 //GetBlockByNumber return the block by block number
 func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 
-	hash,err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
+	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
 	if err != nil {
 		return nil
 	}
 
-	block,err := b.db.Get(append(blockPrefix, hash...))
+	block, err := b.db.Get(append(blockPrefix, hash...))
 	if err != nil {
 		return nil
 	}
@@ -152,7 +151,7 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 	}
 
 	rBlock := new(Block)
-	if err:=rBlock.Decode(block);err!=nil{
+	if err := rBlock.Decode(block); err != nil {
 		return nil
 	}
 
@@ -162,7 +161,7 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 //GetBlockByHash return the block by block hash
 func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 
-	block,err := b.db.Get(append(blockPrefix, blockHash...))
+	block, err := b.db.Get(append(blockPrefix, blockHash...))
 	if err != nil {
 		return nil
 	}
@@ -171,7 +170,7 @@ func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 	}
 
 	rBlock := new(Block)
-	if err:=rBlock.Decode(block);err!=nil{
+	if err := rBlock.Decode(block); err != nil {
 		return nil
 	}
 	return nil

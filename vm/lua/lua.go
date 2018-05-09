@@ -54,11 +54,23 @@ func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]st
 
 	method := method0.(*Method)
 
-	err = l.L.CallByParam(lua.P{
-		Fn:      l.L.GetGlobal(method.name),
-		NRet:    method.outputCount,
-		Protect: true,
-	})
+	if len(args) == 0 {
+		err = l.L.CallByParam(lua.P{
+			Fn:      l.L.GetGlobal(method.name),
+			NRet:    method.outputCount,
+			Protect: true,
+		})
+	} else {
+		largs := make([]lua.LValue, 0)
+		for _, arg := range args {
+			largs = append(largs, Core2Lua(arg))
+		}
+		err = l.L.CallByParam(lua.P{
+			Fn:      l.L.GetGlobal(method.name),
+			NRet:    method.outputCount,
+			Protect: true,
+		}, largs...)
+	}
 
 	if err != nil {
 		return nil, nil, err
@@ -150,7 +162,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 
 			args := make([]state.Value, 0)
 
-			for i := 1; i <= method.InputCount(); i ++ {
+			for i := 1; i <= method.InputCount(); i++ {
 				args = append(args, Lua2Core(L.Get(i+2)))
 			}
 

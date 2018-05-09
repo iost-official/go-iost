@@ -1,7 +1,7 @@
 package lua
 
 type Method struct {
-	name        string
+	name string
 	inputCount,
 	outputCount int
 }
