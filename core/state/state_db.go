@@ -1,8 +1,8 @@
 package state
 
 import (
-	"github.com/iost-official/prototype/db"
 	"fmt"
+	"github.com/iost-official/prototype/db"
 )
 
 // db的适配器

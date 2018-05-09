@@ -37,8 +37,8 @@ type VM interface {
 // 方法interface，用来作为接口调用
 type Method interface {
 	Name() string
-	InputCount()int
-	OutputCount()int
+	InputCount() int
+	OutputCount() int
 }
 
 // 智能合约interface，其中setPrefix，setSender, AddSigner是从tx构建contract的时候使用
@@ -50,8 +50,6 @@ type Contract interface {
 	Api(apiName string) (Method, error)
 	common.Serializable
 }
-
-
 
 type Monitor interface {
 	StartVM(contract Contract) VM

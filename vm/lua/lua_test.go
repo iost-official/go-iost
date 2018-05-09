@@ -39,7 +39,7 @@ end`,
 			lvm := VM{}
 			lvm.Prepare(&lc, nil)
 			lvm.Start()
-			ret, _, err := lvm.Call(pool,"main")
+			ret, _, err := lvm.Call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldBeNil)
 			So(ret[0].String(), ShouldEqual, "ssuccess")
@@ -74,7 +74,7 @@ end`,
 			lvm := VM{}
 			lvm.Prepare(&lc, nil)
 			lvm.Start()
-			_, _, err := lvm.Call(pool,"main")
+			_, _, err := lvm.Call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldNotBeNil)
 

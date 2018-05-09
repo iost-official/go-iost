@@ -1,9 +1,9 @@
 package state
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strconv"
-	"encoding/base64"
 	"strings"
 )
 
@@ -31,13 +31,13 @@ func (k Key) Encode() []byte {
 type Type int
 
 const (
-	Nil    Type = iota
+	Nil Type = iota
 	Bool
 	Int
 	Float
 	String
 	Bytes
-	Array   // fix length array
+	Array // fix length array
 	Map
 	Stack
 	Queue
@@ -90,7 +90,7 @@ func ParseValue(s string) (Value, error) {
 				continue
 			}
 			kv1 := strings.Split(kv, ":")
-			if len (kv1) != 2 {
+			if len(kv1) != 2 {
 				return nil, fmt.Errorf("syntax error")
 			}
 			v, err := ParseValue(kv1[1])
@@ -136,23 +136,23 @@ func (v *VString) String() string {
 func (v *VString) merge(b Value) (Value, error) {
 	// 允许动态类型，下同
 	/*
-	if reflect.TypeOf(b) != reflect.TypeOf(v) {
-		return nil, fmt.Errorf("type error")
-	}
-	c := &VString{
-		T:      b.Type(),
-		string: b.String(),
-	}
-	switch v.Type() {
-	case Nil:
-		return c, nil
-	case Int:
-		return c, nil
-	case String:
-		return c, nil
-	}
+		if reflect.TypeOf(b) != reflect.TypeOf(v) {
+			return nil, fmt.Errorf("type error")
+		}
+		c := &VString{
+			T:      b.Type(),
+			string: b.String(),
+		}
+		switch v.Type() {
+		case Nil:
+			return c, nil
+		case Int:
+			return c, nil
+		case String:
+			return c, nil
+		}
 
-	return c, nil
+		return c, nil
 	*/
 
 	return b, nil
@@ -178,15 +178,15 @@ func (v *VInt) String() string {
 }
 func (v *VInt) merge(b Value) (Value, error) {
 	/*
-	if reflect.TypeOf(b) != reflect.TypeOf(v) {
-		return nil, fmt.Errorf("type error")
-	}
-	vv := reflect.ValueOf(b)
-	c := &VInt{
-		t:   v.Type(),
-		int: vv.Interface().(int),
-	}
-	return c, nil
+		if reflect.TypeOf(b) != reflect.TypeOf(v) {
+			return nil, fmt.Errorf("type error")
+		}
+		vv := reflect.ValueOf(b)
+		c := &VInt{
+			t:   v.Type(),
+			int: vv.Interface().(int),
+		}
+		return c, nil
 	*/
 
 	return b, nil
@@ -210,15 +210,15 @@ func (v *VBytes) String() string {
 }
 func (v *VBytes) merge(b Value) (Value, error) {
 	/*
-	if reflect.TypeOf(b) != reflect.TypeOf(v) {
-		return nil, fmt.Errorf("type error")
-	}
-	vv := reflect.ValueOf(b)
-	c := &VBytes{
-		t:   v.Type(),
-		val: vv.Interface().([]byte),
-	}
-	return c, nil
+		if reflect.TypeOf(b) != reflect.TypeOf(v) {
+			return nil, fmt.Errorf("type error")
+		}
+		vv := reflect.ValueOf(b)
+		c := &VBytes{
+			t:   v.Type(),
+			val: vv.Interface().([]byte),
+		}
+		return c, nil
 	*/
 
 	return b, nil
