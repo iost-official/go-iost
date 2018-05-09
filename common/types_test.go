@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,4 +23,11 @@ func TestBytesToInt(t *testing.T) {
 		i := BytesToInt(v)
 		assert.Equal(t, intCases[k], i)
 	}
+}
+
+func TestBytesToInt64(t *testing.T) {
+	Convey("", t, func() {
+		var mySlice = []byte{21, 43, 115, 131, 2, 137, 44, 146}
+		So(Int64ToBytes(BytesToInt64(mySlice)), ShouldEqual, mySlice)
+	})
 }
