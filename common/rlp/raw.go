@@ -2,18 +2,25 @@ package rlp
 
 import (
 	"io"
+	"reflect"
 )
 
-// 将RLP的值拆分成类型和内容
+type RawValue []byte
+
+var rawValueType = reflect.TypeOf(RawValue{})
+
+func ListSize(contentSize uint64) uint64 {
+	return uint64(headsize(contentSize)) + contentSize
+}
+
 func Split(b []byte) (k Kind, content, rest []byte, err error) {
 	k, ts, cs, err := readKind(b)
-	if  err  != nil {
+	if err != nil {
 		return 0, nil, b, err
 	}
 	return k, b[ts : ts+cs], b[ts+cs:], nil
 }
 
-// 取出RLP字符串本身及其后面的编码字节
 func SplitString(b []byte) (content, rest []byte, err error) {
 	k, content, rest, err := Split(b)
 	if err != nil {
@@ -25,7 +32,6 @@ func SplitString(b []byte) (content, rest []byte, err error) {
 	return content, rest, nil
 }
 
-// 取出RLP中链表的内容，及其后面编码的字节
 func SplitList(b []byte) (content, rest []byte, err error) {
 	k, content, rest, err := Split(b)
 	if err != nil {
@@ -37,7 +43,6 @@ func SplitList(b []byte) (content, rest []byte, err error) {
 	return content, rest, nil
 }
 
-// 统计b中被编码的值的个数
 func CountValues(b []byte) (int, error) {
 	i := 0
 	for ; len(b) > 0; i++ {
@@ -49,7 +54,6 @@ func CountValues(b []byte) (int, error) {
 	}
 	return i, nil
 }
-
 
 func readKind(buf []byte) (k Kind, tagsize, contentsize uint64, err error) {
 	if len(buf) == 0 {
@@ -65,7 +69,6 @@ func readKind(buf []byte) (k Kind, tagsize, contentsize uint64, err error) {
 		k = String
 		tagsize = 1
 		contentsize = uint64(b - 0x80)
-		// Reject strings that should've been single bytes.
 		if contentsize == 1 && len(buf) > 1 && buf[1] < 128 {
 			return 0, 0, 0, ErrCanonSize
 		}
@@ -85,7 +88,6 @@ func readKind(buf []byte) (k Kind, tagsize, contentsize uint64, err error) {
 	if err != nil {
 		return 0, 0, 0, err
 	}
-	// Reject values larger than the input slice.
 	if contentsize > uint64(len(buf))-tagsize {
 		return 0, 0, 0, ErrValueTooLarge
 	}
@@ -115,8 +117,6 @@ func readSize(b []byte, slen byte) (uint64, error) {
 	case 8:
 		s = uint64(b[0])<<56 | uint64(b[1])<<48 | uint64(b[2])<<40 | uint64(b[3])<<32 | uint64(b[4])<<24 | uint64(b[5])<<16 | uint64(b[6])<<8 | uint64(b[7])
 	}
-	// Reject sizes < 56 (shouldn't have separate size) and sizes with
-	// leading zero bytes.
 	if s < 56 || b[0] == 0 {
 		return 0, ErrCanonSize
 	}
