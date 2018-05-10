@@ -7,12 +7,14 @@ import (
 	"strconv"
 	"time"
 
+	"strings"
+
+	"sort"
+
 	"github.com/iost-official/prototype/common"
 )
 
 type NodeID string
-
-const NodeIDBits = 512
 
 type Node struct {
 	IP       net.IP // len 4 for IPv4 or 16 for IPv6
@@ -69,7 +71,84 @@ func (n *Node) String() string {
 	return string(n.ID) + "@" + string(n.IP) + ":" + strconv.Itoa(int(n.TCP))
 }
 
+func (n *Node) Addr() string {
+	return string(n.IP) + ":" + strconv.Itoa(int(n.TCP))
+}
+
 // NodeID prints as a long hexadecimal number.
 func (n NodeID) String() string {
 	return fmt.Sprintf("%s", string(n))
+}
+
+func GenNodeId() NodeID {
+	id := common.ToHex(common.Sha256(common.Int64ToBytes(time.Now().UnixNano())))
+	return NodeID(id)
+}
+
+//todo regex
+func ParseNode(nodeStr string) (*Node, error) {
+	node := &Node{}
+	nodeIdStrs := strings.Split(nodeStr, "@")
+	if len(nodeIdStrs) < 2 {
+		return node, fmt.Errorf("miss nodeId")
+	}
+	node.ID = NodeID(nodeIdStrs[0])
+	tcpStrs := strings.Split(nodeIdStrs[1], ":")
+	if len(tcpStrs) < 2 {
+		return node, fmt.Errorf("wrong tcp format")
+	}
+	node.IP = []byte(tcpStrs[0])
+	port, err := strconv.Atoi(tcpStrs[1])
+	if err != nil {
+		return node, err
+	}
+	node.TCP = uint16(port)
+	return node, nil
+
+}
+
+const MaxNeighbourNum = 8
+
+func (n *Node) FindNeighbours(ns []*Node) []*Node {
+	if len(ns) < MaxNeighbourNum {
+		return ns
+	}
+	neighbours := make([]*Node, 0)
+	disArr := make([]int, len(ns))
+	for k, v := range ns {
+		disArr[k] = xorDistance(n.ID, v.ID)
+	}
+	sortArr := make([]int, len(ns))
+	copy(sortArr, disArr)
+	sort.Ints(sortArr)
+
+	neighbourKeys := make(map[int]int, 0)
+	for _, v := range sortArr {
+		for k, vd := range disArr {
+			if _, ok := neighbourKeys[k]; !ok && v == vd && len(neighbourKeys) < MaxNeighbourNum {
+				neighbourKeys[k] = 0
+			}
+		}
+	}
+	for k, _ := range neighbourKeys {
+		if len(neighbours) >= MaxNeighbourNum {
+			break
+		}
+		neighbours = append(neighbours, ns[k])
+	}
+	return neighbours
+}
+
+func xorDistance(one, other NodeID) (ret int) {
+	oneBytes := []byte(one)
+	otherBytes := []byte(other)
+	for i := 0; i < len(oneBytes); i++ {
+		xor := oneBytes[i] ^ otherBytes[i]
+		for j := 0; j < 8; j++ {
+			if (xor>>uint8(7-j))&0x01 != 0 {
+				return i*8 + j
+			}
+		}
+	}
+	return len(oneBytes) * 8
 }

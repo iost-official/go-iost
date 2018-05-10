@@ -32,10 +32,6 @@ var once sync.Once
 //NewBlockChain 创建一个blockChain实例,单例模式
 func NewBlockChain() (chain Chain, error error) {
 
-	//if chainImpl != nil {
-	//	return chainImpl, nil
-	//}
-
 	once.Do(func() {
 		ldb, err := db.DatabaseFactor("ldb")
 		if err != nil {
@@ -127,8 +123,9 @@ func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 
 //Top 返回已确定链的最后块
 func (b *ChainImpl) Top() *Block {
-
+	
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(b.length-1)...))
+
 	if err != nil {
 		return nil
 	}
