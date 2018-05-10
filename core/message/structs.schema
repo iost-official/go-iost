@@ -3,6 +3,5 @@ struct Message {
 	From    string
 	To      string
 	ReqType int32
-	Priority int8
 	Body    []byte
 }
