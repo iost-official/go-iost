@@ -7,7 +7,6 @@ import (
 	. "github.com/golang/mock/gomock"
 
 	"github.com/iost-official/prototype/account"
-	. "github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
@@ -66,7 +65,7 @@ func TestNewDPoS(t *testing.T) {
 
 		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, []string{})
 
-		p.genesis(Timestamp{}, []byte{})
+		p.genesis(0)
 	})
 
 }

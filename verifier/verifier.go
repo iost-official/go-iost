@@ -8,26 +8,23 @@ import (
 	"github.com/iost-official/prototype/vm"
 )
 
-var (
-	// MaxBlockGas max gas spent in a block
+const (
 	MaxBlockGas uint64 = 1000000
 )
 
 //go:generate gencode go -schema=structs.schema -package=verifier
 
-// Verifier 底层verifier，用来组织vm，不要直接使用
+// 底层verifier，用来组织vm，不要直接使用
 type Verifier struct {
 	Pool state.Pool
 	vmMonitor
 }
 
-// Verifier ...
 func (v *Verifier) Verify(contract vm.Contract) (state.Pool, uint64, error) {
 	_, pool, gas, err := v.Call(v.Pool, contract.Info().Prefix, "main")
 	return pool, gas, err
 }
 
-// Verifier ...
 func (v *Verifier) SetPool(pool state.Pool) {
 	v.Pool = pool
 }
@@ -86,13 +83,14 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	return pool, nil
 }
 
-// Get a new cache verifier
 func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	cv := CacheVerifier{
 		Verifier: Verifier{
-			Pool:      pool.Copy(),
 			vmMonitor: newVMMonitor(),
 		},
+	}
+	if pool != nil {
+		cv.Pool = pool.Copy()
 	}
 	return cv
 }
@@ -108,10 +106,10 @@ type BlockVerifier struct {
 }
 
 // 验证block，返回pool是包含了该block的pool。如果contain为true则进行合并
-func (bv *BlockVerifier) VerifyBlock(b block.Block, contain bool) (state.Pool, error) {
+func (bv *BlockVerifier) VerifyBlock(b *block.Block, contain bool) (state.Pool, error) {
 	bv.oldPool = bv.Pool
-	for i := 0; i < b.TxLen(); i++ {
-		c := b.TxGet(i).Contract
+	for i := 0; i < b.LenTx(); i++ {
+		c := b.GetTx(i).Contract
 		_, err := bv.VerifyContract(c, true)
 		if err != nil {
 			return nil, err

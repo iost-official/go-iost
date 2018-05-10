@@ -1,13 +1,20 @@
 package verifier
 
 import (
+	"testing"
+
+	"errors"
+
 	"github.com/golang/mock/gomock"
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db/mocks"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestCacheVerifier(t *testing.T) {
@@ -52,5 +59,57 @@ end`
 			vv := v2.(*state.VFloat)
 			So(vv.ToFloat64(), ShouldEqual, float64(10000-9))
 		})
+	})
+}
+
+func TestBlockVerifier(t *testing.T) {
+	Convey("Test of BlockVerifier", t, func() {
+
+		a1, _ := account.NewAccount(nil)
+		a2, _ := account.NewAccount(nil)
+
+		ctl := gomock.NewController(t)
+		mockDB := db_mock.NewMockDatabase(ctl)
+		mockDB.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, errors.New("not found"))
+		mockDB.EXPECT().Get(gomock.Any()).AnyTimes().Return(nil, errors.New("not found"))
+
+		db := state.NewDatabase(mockDB)
+
+		pool := state.NewPool(db)
+		pool.PutHM(state.Key("iost"), state.Key("ahaha"), state.MakeVFloat(10000))
+
+		main := lua.NewMethod("main", 0, 1)
+		code := `function main()
+	Put("hello", "world")
+	return "success"
+end`
+		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: []byte("ahaha")}, code, main)
+
+		code1 := `function main()
+	return Call("con2", "sayHi", "bob")
+end`
+
+		main2 := lua.NewMethod("main", 0, 1)
+
+		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "test2", GasLimit: 1000, Price: 1, Sender: []byte("ahaha")},
+			code1, main2)
+
+		tx1 := tx.NewTx(1, &lc1)
+		tx1, _ = tx.SignTx(tx1, a1)
+		tx2 := tx.NewTx(2, &lc2)
+		tx2, _ = tx.SignTx(tx2, a2)
+
+		blk := block.Block{
+			Content: []tx.Tx{tx1, tx2},
+		}
+
+		bv := NewBlockVerifier(nil)
+		bv.SetPool(pool)
+		pool2, err := bv.VerifyBlock(&blk, false)
+		So(err, ShouldBeNil)
+		So(pool2, ShouldNotBeNil)
+		bal, _ := pool2.GetHM(state.Key("iost"), state.Key("ahaha"))
+		So(bal.(*state.VFloat).ToFloat64(), ShouldEqual, 9976)
+
 	})
 }

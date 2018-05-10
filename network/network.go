@@ -324,7 +324,7 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	if err != nil {
 		bn.log.E("dial tcp %v got err:%v", node.Addr(), err)
 	}
-	req := newRequest(BroadcastMessage, bn.localNode.String(), data, msg.Priority)
+	req := newRequest(BroadcastMessage, bn.localNode.String(), data)
 	defer conn.Close()
 	bn.send(conn, req)
 }
@@ -339,7 +339,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	if err != nil {
 		bn.log.E("marshal request encountered err:%v", err)
 	}
-	req := newRequest(Message, bn.localNode.String(), data, msg.Priority)
+	req := newRequest(Message, bn.localNode.String(), data)
 	defer conn.Close()
 	bn.send(conn, req)
 }
@@ -445,7 +445,7 @@ func (bn *BaseNetwork) registerLoop() {
 		for _, encodeAddr := range params.TestnetBootnodes {
 			addr := extractAddrFromBoot(encodeAddr)
 			if addr != "" && bn.localNode.String() != addr {
-				req := newRequest(ReqNodeTable, bn.localNode.String(), nil, 0)
+				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
 				conn, err := net.Dial("tcp", addr)
 				if err != nil {
 					bn.log.E("failed to connect boot node, err:%v", err)

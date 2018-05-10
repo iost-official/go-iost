@@ -83,8 +83,7 @@ type Server struct {
 
 	RecvCh chan message.Message
 
-	requestQueue *PriorityQueue
-	resendMap    map[int64]Request
+	resendMap map[int64]Request
 
 	log *log.Logger
 }
@@ -119,15 +118,14 @@ func NewServer(conf *NetConifg) (*Server, error) {
 		fmt.Errorf("failed to init db %v", err)
 	}
 	s := &Server{
-		pinged:       false,
-		nodeTable:    nodeTable,
-		peers:        make(map[string]net.Conn),
-		SendCh:       send,
-		RecvCh:       recv,
-		BroadcastCh:  broadCh,
-		log:          srvLog,
-		requestQueue: newQueue(),
-		resendMap:    make(map[int64]Request),
+		pinged:      false,
+		nodeTable:   nodeTable,
+		peers:       make(map[string]net.Conn),
+		SendCh:      send,
+		RecvCh:      recv,
+		BroadcastCh: broadCh,
+		log:         srvLog,
+		resendMap:   make(map[int64]Request),
 	}
 	return s, nil
 }
@@ -175,11 +173,10 @@ func (s *Server) Broadcast(r message.Message) {
 	if err != nil {
 		s.log.E("marshal request encountered err:%v", err)
 	}
-	req := newRequest(BroadcastMessage, s.ListenAddr, data, r.Priority)
-	request := s.addResend(req)
+	req := newRequest(BroadcastMessage, s.ListenAddr, data)
 	for downAddr, conn := range s.peers {
 		if string(r.From) != downAddr {
-			go s.send(conn, request)
+			go s.send(conn, req)
 		}
 	}
 }
@@ -189,8 +186,8 @@ func (s *Server) Send(r message.Message) {
 	if err != nil {
 		s.log.E("marshal request encountered err:%v", err)
 	}
-	req := newRequest(Message, s.ListenAddr, data, r.Priority)
-	go s.send(s.Conn, s.addResend(req))
+	req := newRequest(Message, s.ListenAddr, data)
+	go s.send(s.Conn, req)
 }
 
 func (s *Server) sendLoop() {
@@ -198,11 +195,11 @@ func (s *Server) sendLoop() {
 	for {
 		select {
 		case data := <-s.SendCh:
-			req := newRequest(Message, s.ListenAddr, data.Data, data.Priority)
-			s.send(s.Conn, s.addResend(req))
+			req := newRequest(Message, s.ListenAddr, data.Data)
+			s.send(s.Conn, req)
 		case data := <-s.BroadcastCh:
-			req := newRequest(BroadcastMessage, s.ListenAddr, data.Data, data.Priority)
-			s.broadcast(*(s.addResend(req)))
+			req := newRequest(BroadcastMessage, s.ListenAddr, data.Data)
+			s.broadcast(*req)
 		}
 	}
 }
@@ -214,7 +211,6 @@ func (s *Server) resendLoop() {
 			waitSeconds := now - t/1e9
 
 			if waitSeconds >= MaxResendStaySeconds {
-				s.deleteResend(t)
 				s.log.D("delete req cuz failed to resend,req:%v,  timeout: %v seconds", req, waitSeconds)
 				continue
 			}
@@ -332,7 +328,7 @@ func (s *Server) ping() {
 		}
 
 		if s.Conn != nil {
-			req := newRequest(Ping, s.ListenAddr, []byte(s.ListenAddr), 0)
+			req := newRequest(Ping, s.ListenAddr, []byte(s.ListenAddr))
 			s.send(s.Conn, req)
 			n++
 		}
@@ -353,7 +349,7 @@ func (s *Server) randConnSeed() {
 		}
 		if s.Conn != nil {
 			s.log.D("%v requesting node table", s.ListenAddr)
-			req := newRequest(ReqNodeTable, s.ListenAddr, nil, 0)
+			req := newRequest(ReqNodeTable, s.ListenAddr, nil)
 			s.send(s.Conn, req)
 		}
 		dialRetry++
@@ -481,19 +477,4 @@ func isListenAddrNotInBoot(listenAddr string) bool {
 		}
 	}
 	return true
-}
-
-func (s *Server) addResend(req *Request) *Request {
-	s.requestQueue.Push(*req)
-	r := s.requestQueue.Pop().(Request)
-	s.lock.Lock()
-	s.resendMap[r.Timestamp] = r
-	s.lock.Unlock()
-	return &r
-}
-
-func (s *Server) deleteResend(resendKey int64) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	delete(s.resendMap, resendKey)
 }

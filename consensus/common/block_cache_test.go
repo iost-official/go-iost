@@ -1,16 +1,22 @@
 package consensus_common
 
 import (
+	"testing"
+
+	"errors"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestBlockCachePoW(t *testing.T) {
+	ctl := gomock.NewController(t)
+	pool := core_mock.NewMockPool(ctl)
+
 	b0 := block.Block{
 		Head: block.BlockHead{
 			Version:    1,
@@ -58,10 +64,8 @@ func TestBlockCachePoW(t *testing.T) {
 		},
 	}
 
-	ctl := gomock.NewController(t)
-
-	verifier := func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
-		return true, nil
+	verifier := func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+		return nil, nil
 	}
 
 	base := core_mock.NewMockChain(ctl)
@@ -70,22 +74,22 @@ func TestBlockCachePoW(t *testing.T) {
 	Convey("Test of Block Cache (PoW)", t, func() {
 		Convey("Add:", func() {
 			Convey("normal:", func() {
-				bc := NewBlockCache(base, 4)
+				bc := NewBlockCache(base, pool, 4)
 				err := bc.Add(&b1, verifier)
 				So(err, ShouldBeNil)
-				So(bc.cachedRoot.depth, ShouldEqual, 1)
+				So(bc.cachedRoot.bc.depth, ShouldEqual, 1)
 
 			})
 
 			Convey("fork and error", func() {
-				bc := NewBlockCache(base, 4)
+				bc := NewBlockCache(base, pool, 4)
 				bc.Add(&b1, verifier)
 				bc.Add(&b2, verifier)
 				bc.Add(&b2a, verifier)
-				So(bc.cachedRoot.depth, ShouldEqual, 2)
+				So(bc.cachedRoot.bc.depth, ShouldEqual, 2)
 
-				verifier = func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
-					return false, nil
+				verifier = func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+					return nil, errors.New("test")
 				}
 				err := bc.Add(&b3, verifier)
 				So(err, ShouldNotBeNil)
@@ -97,10 +101,10 @@ func TestBlockCachePoW(t *testing.T) {
 					ans = block.Content[0].Nonce
 					return nil
 				})
-				verifier = func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
-					return true, nil
+				verifier = func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+					return nil, nil
 				}
-				bc := NewBlockCache(base, 3)
+				bc := NewBlockCache(base, pool, 3)
 				bc.Add(&b1, verifier)
 				bc.Add(&b2, verifier)
 				bc.Add(&b2a, verifier)
@@ -112,7 +116,7 @@ func TestBlockCachePoW(t *testing.T) {
 
 		Convey("Longest chain", func() {
 			Convey("no forked", func() {
-				bc := NewBlockCache(base, 10)
+				bc := NewBlockCache(base, pool, 10)
 				bc.Add(&b1, verifier)
 				bc.Add(&b2, verifier)
 				ans := bc.LongestChain().Top().Content[0].Nonce
@@ -120,7 +124,7 @@ func TestBlockCachePoW(t *testing.T) {
 			})
 
 			Convey("forked", func() {
-				var bc BlockCache = NewBlockCache(base, 10)
+				var bc BlockCache = NewBlockCache(base, pool, 10)
 
 				bc.Add(&b1, verifier)
 				bc.Add(&b2a, verifier)
@@ -134,7 +138,7 @@ func TestBlockCachePoW(t *testing.T) {
 		})
 
 		Convey("find blk", func() {
-			bc := NewBlockCache(base, 10)
+			bc := NewBlockCache(base, pool, 10)
 			bc.Add(&b1, verifier)
 			bc.Add(&b2a, verifier)
 			bc.Add(&b2, verifier)
@@ -152,6 +156,9 @@ func TestBlockCachePoW(t *testing.T) {
 }
 
 func TestBlockCacheDPoS(t *testing.T) {
+	ctl := gomock.NewController(t)
+	pool := core_mock.NewMockPool(ctl)
+
 	b0 := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
@@ -206,10 +213,8 @@ func TestBlockCacheDPoS(t *testing.T) {
 		Content: []tx.Tx{tx.NewTx(4, nil)},
 	}
 
-	ctl := gomock.NewController(t)
-
-	verifier := func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
-		return true, nil
+	verifier := func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+		return nil, nil
 	}
 
 	base := core_mock.NewMockChain(ctl)
@@ -217,13 +222,14 @@ func TestBlockCacheDPoS(t *testing.T) {
 
 	Convey("Test of Block Cache (DPoS)", t, func() {
 		Convey("Add:", func() {
+			var ans int64
+			base.EXPECT().Push(gomock.Any()).Do(func(block *block.Block) error {
+				ans = block.Content[0].Nonce
+				return nil
+			})
 			Convey("auto push", func() {
-				var ans int64
-				base.EXPECT().Push(gomock.Any()).AnyTimes().Do(func(block *block.Block) error {
-					ans = block.Content[0].Nonce
-					return nil
-				})
-				bc := NewBlockCache(base, 2)
+				ans = 0
+				bc := NewBlockCache(base, pool, 2)
 				bc.Add(&b1, verifier)
 				bc.Add(&b2, verifier)
 				bc.Add(&b2a, verifier)
@@ -231,8 +237,43 @@ func TestBlockCacheDPoS(t *testing.T) {
 				bc.Add(&b4, verifier)
 				So(ans, ShouldEqual, 1)
 			})
+
+			Convey("deal with singles", func() {
+				ans = 0
+				bc := NewBlockCache(base, pool, 2)
+				bc.Add(&b2, verifier)
+				bc.Add(&b2a, verifier)
+				bc.Add(&b3, verifier)
+				bc.Add(&b4, verifier)
+				So(len(bc.singleBlockRoot.children), ShouldEqual, 2)
+				bc.Add(&b1, verifier)
+				So(len(bc.singleBlockRoot.children), ShouldEqual, 0)
+				So(ans, ShouldEqual, 1)
+			})
+		})
+
+		Convey("Longest chain", func() {
+			Convey("no forked", func() {
+				bc := NewBlockCache(base, pool, 10)
+				bc.Add(&b1, verifier)
+				bc.Add(&b2, verifier)
+				ans := bc.LongestChain().Top().Content[0].Nonce
+				So(ans, ShouldEqual, 2)
+			})
+
+			Convey("forked", func() {
+				var bc BlockCache = NewBlockCache(base, pool, 10)
+
+				bc.Add(&b1, verifier)
+				bc.Add(&b2a, verifier)
+				bc.Add(&b2, verifier)
+				ans := bc.LongestChain().Top().Content[0].Nonce
+				So(ans, ShouldEqual, -2)
+				bc.Add(&b3, verifier)
+				ans = bc.LongestChain().Top().Content[0].Nonce
+				So(ans, ShouldEqual, 3)
+			})
 		})
 
 	})
-
 }
