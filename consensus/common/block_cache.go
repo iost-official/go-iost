@@ -255,12 +255,28 @@ func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 
 func (h *BlockCacheImpl) LongestChain() block.Chain {
 	bct := h.cachedRoot
-	if bct.bc.depth == 0 {
-		return &h.cachedRoot.bc
-	}
 	for {
-		if bct.bc.depth == 0 {
+		if len(bct.children) == 0 {
 			return &bct.bc
+		}
+		for _, b := range bct.children {
+			if b.bc.depth == bct.bc.depth-1 {
+				bct = b
+				break
+			}
+		}
+	}
+}
+
+func (h *BlockCacheImpl) BasePool() state.Pool {
+	return h.cachedRoot.pool
+}
+
+func (h *BlockCacheImpl) LongestPool() state.Pool {
+	bct := h.cachedRoot
+	for {
+		if len(bct.children) == 0 {
+			return bct.pool
 		}
 		for _, b := range bct.children {
 			if b.bc.depth == bct.bc.depth-1 {

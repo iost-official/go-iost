@@ -10,6 +10,7 @@ import (
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -274,6 +275,104 @@ func TestBlockCacheDPoS(t *testing.T) {
 				So(ans, ShouldEqual, 3)
 			})
 		})
+
+	})
+}
+
+func TestStatePool(t *testing.T) {
+	Convey("Test of verifier", t, func() {
+		ctl := gomock.NewController(t)
+		mockDB := db_mock.NewMockDatabase(ctl)
+		mockDB.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, errors.New("not found"))
+		mockDB.EXPECT().Get(gomock.Any()).AnyTimes().Return(nil, errors.New("not found"))
+		db := state.NewDatabase(mockDB)
+		pool := state.NewPool(db)
+		pool.Put(state.Key("a"), state.MakeVInt(int(0)))
+
+		b0 := block.Block{
+			Head: block.BlockHead{
+				Version:    0,
+				ParentHash: []byte("nothing"),
+				Witness:    "w0",
+			},
+			Content: []tx.Tx{tx.NewTx(0, nil)},
+		}
+
+		b1 := block.Block{
+			Head: block.BlockHead{
+				Version:    0,
+				ParentHash: b0.HeadHash(),
+				Witness:    "w1",
+			},
+			Content: []tx.Tx{tx.NewTx(1, nil)},
+		}
+
+		b2 := block.Block{
+			Head: block.BlockHead{
+				Version:    0,
+				ParentHash: b1.HeadHash(),
+				Witness:    "w2",
+			},
+			Content: []tx.Tx{tx.NewTx(2, nil)},
+		}
+
+		b2a := block.Block{
+			Head: block.BlockHead{
+				Version:    0,
+				ParentHash: b1.HeadHash(),
+				Witness:    "w3",
+			},
+			Content: []tx.Tx{tx.NewTx(-2, nil)},
+		}
+
+		b3 := block.Block{
+			Head: block.BlockHead{
+				Version:    0,
+				ParentHash: b2.HeadHash(),
+				Witness:    "w1",
+			},
+			Content: []tx.Tx{tx.NewTx(3, nil)},
+		}
+
+		b4 := block.Block{
+			Head: block.BlockHead{
+				Version:    0,
+				ParentHash: b3.HeadHash(),
+				Witness:    "w2",
+			},
+			Content: []tx.Tx{tx.NewTx(4, nil)},
+		}
+
+		verifier := func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+			p := pool.Copy()
+			p.Put(state.Key("a"), state.MakeVInt(int(blk.Content[0].Nonce)))
+			return p, nil
+		}
+
+		base := core_mock.NewMockChain(ctl)
+		base.EXPECT().Top().AnyTimes().Return(&b0)
+		var ans int64
+		base.EXPECT().Push(gomock.Any()).Do(func(block *block.Block) error {
+			ans = block.Content[0].Nonce
+			return nil
+		})
+
+		bc := NewBlockCache(base, pool, 10)
+
+		bc.Add(&b1, verifier)
+		bc.Add(&b2, verifier)
+		bc.Add(&b2a, verifier)
+		bc.Add(&b3, verifier)
+		bc.Add(&b4, verifier)
+
+		lp := bc.LongestPool()
+		v, err := lp.Get(state.Key("a"))
+		So(err, ShouldBeNil)
+		So(v.(*state.VInt).ToInt(), ShouldEqual, 4)
+		bp := bc.BasePool()
+		v, err = bp.Get(state.Key("a"))
+		So(err, ShouldBeNil)
+		So(v.(*state.VInt).ToInt(), ShouldEqual, 0)
 
 	})
 }
