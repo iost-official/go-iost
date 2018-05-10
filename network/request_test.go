@@ -7,14 +7,16 @@ import (
 	"log"
 	"testing"
 
-	"fmt"
 	"time"
 
+	"github.com/iost-official/prototype/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestRequest_Unpack(t *testing.T) {
-	req := NewRequest(Message, "127.0.0.1", []byte("------------------"))
+	tim := time.Now().UnixNano()
+	req := newRequest(Message, "127.0.0.1", common.Int64ToBytes(tim))
+
 	Convey("test unpack packet splicing", t, func() {
 		testData, err := req.Pack()
 		So(err, ShouldEqual, nil)
@@ -23,7 +25,7 @@ func TestRequest_Unpack(t *testing.T) {
 		buf.Write(testData)
 		buf.Write(testData)
 
-		readerCh := make(chan string, 3)
+		readerCh := make(chan Request, 3)
 		// scanner
 		scanner := bufio.NewScanner(buf)
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -41,7 +43,7 @@ func TestRequest_Unpack(t *testing.T) {
 		for scanner.Scan() {
 			scannedPack := new(Request)
 			scannedPack.Unpack(bytes.NewReader(scanner.Bytes()))
-			readerCh <- fmt.Sprintf("%s", scannedPack)
+			readerCh <- *scannedPack
 		}
 		if err := scanner.Err(); err != nil {
 			log.Fatal("invalid data pack")
@@ -49,9 +51,9 @@ func TestRequest_Unpack(t *testing.T) {
 		i := 0
 		for {
 			select {
-			case str := <-readerCh:
-				if len(str) > 0 {
-					fmt.Println(str)
+			case req := <-readerCh:
+				if len(req.Body) > 0 {
+					So(common.BytesToInt64(req.Body), ShouldEqual, tim)
 					i++
 				}
 				if i == 3 {

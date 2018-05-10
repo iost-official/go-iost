@@ -1,28 +1,20 @@
 package network
 
 import (
-	"crypto/ecdsa"
-	"net"
-
-	"sync"
-
-	"fmt"
-
-	"time"
-
-	"math/rand"
-
-	"io/ioutil"
-	"os"
-
-	"strconv"
-
-	"strings"
-
 	"bufio"
 	"bytes"
-
+	"crypto/ecdsa"
 	"encoding/binary"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/message"
@@ -30,7 +22,6 @@ import (
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network/discover"
 	"github.com/iost-official/prototype/params"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -38,6 +29,9 @@ const (
 	PingIntervalSecond         = 5
 	MaxPing                    = 3
 	MaxDialRetry               = 3
+	ResendWaitSeconds          = 2
+	MaxResendStaySeconds       = 20
+	NeedResendSeconds          = 2
 )
 
 type connFlag int
@@ -84,27 +78,42 @@ type Server struct {
 	// the nodes which use our server as the remote addr
 	peers map[string]net.Conn
 
-	SendCh      chan []byte
-	BroadcastCh chan []byte
+	SendCh      chan MsgCh
+	BroadcastCh chan MsgCh
 
 	RecvCh chan message.Message
+
+	resendMap map[int64]Request
 
 	log *log.Logger
 }
 
-func NewServer() (*Server, error) {
-	send := make(chan []byte, 1)
+type MsgCh struct {
+	Data     []byte
+	Priority int8
+}
+
+//Server init a server
+func NewServer(conf *NetConifg) (*Server, error) {
+	send := make(chan MsgCh, 1)
 	recv := make(chan message.Message, 1)
-	broadCh := make(chan []byte, 1)
-	srvLog, err := log.NewLogger("log_p2p")
+	broadCh := make(chan MsgCh, 1)
+	if conf.LogPath == "" {
+		conf.LogPath, _ = ioutil.TempDir(os.TempDir(), "iost_log_")
+	}
+	if conf.NodeTablePath == "" {
+		conf.NodeTablePath, _ = ioutil.TempDir(os.TempDir(), "iost_node_table_")
+	}
+	srvLog, err := log.NewLogger(conf.LogPath)
 	if err != nil {
 		fmt.Errorf("failed to init log %v", err)
 	}
-	dirname, err := ioutil.TempDir(os.TempDir(), "p2p_test_")
-	if err != nil {
-		fmt.Errorf("failed to init db path %v", err)
+	_, pErr := os.Stat(conf.NodeTablePath)
+	if pErr != nil {
+		fmt.Errorf("failed to init db path %v", pErr)
+		os.Exit(0)
 	}
-	nodeTable, err := db.NewLDBDatabase(dirname, 0, 0)
+	nodeTable, err := db.NewLDBDatabase(conf.NodeTablePath, 0, 0)
 	if err != nil {
 		fmt.Errorf("failed to init db %v", err)
 	}
@@ -116,14 +125,12 @@ func NewServer() (*Server, error) {
 		RecvCh:      recv,
 		BroadcastCh: broadCh,
 		log:         srvLog,
+		resendMap:   make(map[int64]Request),
 	}
 	return s, nil
 }
 
-func (s *Server) Close() {
-	defer s.Conn.Close()
-}
-
+//Listen starts running the server
 func (s *Server) Listen(port uint16) (<-chan message.Message, error) {
 	s.ListenAddr = "127.0.0.1:" + strconv.Itoa(int(port))
 	s.log.D("listening %v", s.ListenAddr)
@@ -134,7 +141,6 @@ func (s *Server) Listen(port uint16) (<-chan message.Message, error) {
 	if isListenAddrNotInBoot(s.ListenAddr) && s.RemoteAddr == "" {
 		s.RemoteAddr = s.randBootAddr()
 	}
-	//receive msg
 	go func() {
 		for {
 			conn, err := l.Accept()
@@ -152,86 +158,95 @@ func (s *Server) Listen(port uint16) (<-chan message.Message, error) {
 	return s.RecvCh, nil
 }
 
-func (s *Server) Start() error {
-	l, err := net.Listen("tcp", s.ListenAddr)
-	if err != nil {
-		return errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
+//Close close all connection
+func (s *Server) Close(port uint16) error {
+	s.Conn.Close()
+	for _, peer := range s.peers {
+		peer.Close()
 	}
-	//receive msg
-	go func() {
-		for {
-			conn, err := l.Accept()
-			if err != nil {
-				s.log.E("accept downStream node err:%v", err)
-				continue
-			}
-			go s.receiveLoop(conn)
-		}
-	}()
-	//send msg
-	go s.sendLoop()
-	//conn manage
-	go s.manageConnLoop()
 	return nil
 }
 
 //broadcast on the application layer
-func (s *Server) Broadcast(r *message.Message) {
+func (s *Server) Broadcast(r message.Message) {
 	data, err := r.Marshal(nil)
 	if err != nil {
 		s.log.E("marshal request encountered err:%v", err)
 	}
+	req := newRequest(BroadcastMessage, s.ListenAddr, data)
 	for downAddr, conn := range s.peers {
 		if string(r.From) != downAddr {
-			go s.send(conn, data, BroadcastMessage)
+			go s.send(conn, req)
 		}
 	}
 }
 
-func (s *Server) Send(r *message.Message) {
+func (s *Server) Send(r message.Message) {
 	data, err := r.Marshal(nil)
 	if err != nil {
 		s.log.E("marshal request encountered err:%v", err)
 	}
-	go s.send(s.Conn, data, Message)
+	req := newRequest(Message, s.ListenAddr, data)
+	go s.send(s.Conn, req)
 }
 
 func (s *Server) sendLoop() {
+	go s.resendLoop()
 	for {
 		select {
 		case data := <-s.SendCh:
-			s.send(s.Conn, data, Message)
+			req := newRequest(Message, s.ListenAddr, data.Data)
+			s.send(s.Conn, req)
 		case data := <-s.BroadcastCh:
-			req := NewRequest(BroadcastMessage, s.ListenAddr, data)
-			s.broadcast(req)
+			req := newRequest(BroadcastMessage, s.ListenAddr, data.Data)
+			s.broadcast(*req)
 		}
+	}
+}
+
+func (s *Server) resendLoop() {
+	for {
+		now := time.Now().Unix()
+		for t, req := range s.resendMap {
+			waitSeconds := now - t/1e9
+
+			if waitSeconds >= MaxResendStaySeconds {
+				s.log.D("delete req cuz failed to resend,req:%v,  timeout: %v seconds", req, waitSeconds)
+				continue
+			}
+			if waitSeconds >= NeedResendSeconds {
+				s.log.D("resend req : %v", req.Timestamp)
+				s.send(s.Conn, &req)
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+		time.Sleep(ResendWaitSeconds * time.Second)
 	}
 }
 
 //broadcast on the network layer
-func (s *Server) broadcast(r *Request) {
-	if r.Type == BroadcastMessage {
+func (s *Server) broadcast(req Request) {
+	if req.Type == BroadcastMessage {
 		if s.Conn != nil {
-			if s.Conn.RemoteAddr().String() != string(r.From) {
-				s.send(s.Conn, r.Body, r.Type)
+			if s.Conn.RemoteAddr().String() != string(req.From) {
+				req.From = []byte(s.ListenAddr)
+				s.send(s.Conn, &req)
 			}
 		}
-
 		for downAddr, conn := range s.peers {
-			if string(r.From) != downAddr {
-				go s.send(conn, r.Body, r.Type)
+			if string(req.From) != downAddr {
+				req.From = []byte(s.ListenAddr)
+				go s.send(conn, &req)
 			}
 		}
 	}
 }
 
-func (s *Server) send(conn net.Conn, body []byte, typ NetReqType) {
+func (s *Server) send(conn net.Conn, r *Request) {
 	if conn == nil {
-		s.log.E("from %v,send data = %v, conn is nil", s.ListenAddr, body)
+		s.log.E("from %v,send data = %v, conn is nil", s.ListenAddr, r)
 		return
 	}
-
-	r := NewRequest(typ, s.ListenAddr, body)
 	pack, err := r.Pack()
 	if err != nil {
 		s.log.E("pack data encountered err:%v", err)
@@ -290,26 +305,6 @@ func (s *Server) manageConnLoop() {
 	if s.RemoteAddr != "" {
 		s.log.I("start manage conn loop: %v", s)
 		go s.ping()
-		//request remote node table
-		//go func() {
-		//	for {
-		//		if s.Conn != nil {
-		//			s.log.D("%v request nodetable", s.ListenAddr)
-		//			s.send(s.Conn, nil, ReqNodeTable)
-		//		}
-		//		time.Sleep(ReqNodeTableIntervalSecond * time.Second)
-		//	}
-		//}()
-		//if s.Conn == nil {
-		//	conn, err := net.Dial("tcp", s.RemoteAddr)
-		//	if err != nil {
-		//		s.log.E("dial %v got err: %v", s.RemoteAddr, err)
-		//		return err
-		//	}
-		//	s.Conn = conn
-		//	s.log.I("  conn loop: %+v", s.Conn)
-		//	s.receiveLoop(s.Conn)
-		//loop for monitor conn
 		go s.randConnSeed()
 	}
 }
@@ -333,13 +328,16 @@ func (s *Server) ping() {
 		}
 
 		if s.Conn != nil {
-			s.send(s.Conn, []byte(s.ListenAddr), Ping)
+			req := newRequest(Ping, s.ListenAddr, []byte(s.ListenAddr))
+			s.send(s.Conn, req)
 			n++
 		}
 		time.Sleep(PingIntervalSecond * time.Second)
 	}
 }
 
+//loop for monitor conn, register at the boot node，fetch the node table from boot node,
+// connect to the node selected by randomly from the node table
 func (s *Server) randConnSeed() {
 	dialRetry := 0
 	isSeedConn := false
@@ -351,7 +349,8 @@ func (s *Server) randConnSeed() {
 		}
 		if s.Conn != nil {
 			s.log.D("%v requesting node table", s.ListenAddr)
-			s.send(s.Conn, nil, ReqNodeTable)
+			req := newRequest(ReqNodeTable, s.ListenAddr, nil)
+			s.send(s.Conn, req)
 		}
 		dialRetry++
 
@@ -388,9 +387,10 @@ func (s *Server) randConnSeed() {
 	}
 }
 
-func (s *Server) allNodesExcludeAddr(excludeAddr string) ([]byte, error) {
+//AllNodesExcludeAddr returns all the known node in the network
+func (s *Server) AllNodesExcludeAddr(excludeAddr string) (string, error) {
 	if s.nodeTable == nil {
-		return nil, nil
+		return "", nil
 	}
 	addrs := make([]string, 0)
 	iter := s.nodeTable.NewIterator()
@@ -402,55 +402,34 @@ func (s *Server) allNodesExcludeAddr(excludeAddr string) ([]byte, error) {
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return nil, err
-	}
-
-	return []byte(strings.Join(addrs, ",")), nil
-}
-
-//AllNodes returns all the known node in the network
-func (s *Server) AllNodes() (string, error) {
-	if s.nodeTable == nil {
-		return "", nil
-	}
-	addrs := make([]string, 0)
-	iter := s.nodeTable.NewIterator()
-	for iter.Next() {
-		addr := string(iter.Key())
-		addrs = append(addrs, addr)
-	}
-	iter.Release()
-	if err := iter.Error(); err != nil {
 		return "", err
 	}
+
 	return strings.Join(addrs, ","), nil
 }
 
-func (s *Server) putNode(addr string) {
-	if addr != "" && addr != s.ListenAddr {
-		s.nodeTable.Put([]byte(addr), common.IntToBytes(0))
+//put node into node table of server
+func (s *Server) putNode(addrs string) {
+	addrArr := strings.Split(addrs, ",")
+	for _, addr := range addrArr {
+		if addr != "" && addr != s.ListenAddr {
+			s.nodeTable.Put([]byte(addr), common.IntToBytes(0))
+		}
 	}
 	return
 }
 
-func (s *Server) setPeer(addr string, conn net.Conn) {
+func (s *Server) addPeer(addr string, conn net.Conn) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.peers[addr] = conn
-}
-
-func (s *Server) appendNodeTable(addr string) {
-	addrs := strings.Split(addr, ",")
-	for _, addr := range addrs {
-		s.putNode(addr)
-	}
 }
 
 func (s *Server) rePickSeedAddr() {
 	if s.seedAddr != "" {
 		s.nodeTable.Delete([]byte(s.seedAddr))
 	}
-	nodesAddr, _ := s.AllNodes()
+	nodesAddr, _ := s.AllNodesExcludeAddr("")
 	addrs := strings.Split(nodesAddr, ",")
 	if len(addrs) <= 0 {
 		return

@@ -24,7 +24,21 @@ func Lua2Core(value lua.LValue) state.Value {
 }
 
 func Core2Lua(value state.Value) lua.LValue {
-	return nil
+	var v lua.LValue
+	switch value.(type) {
+	case *state.VInt:
+		vl := value.(*state.VInt)
+		v = lua.LNumber(vl.ToInt())
+	case *state.VString:
+		v = lua.LString([]rune(value.String())[1:])
+	case *state.VBool:
+		if value == state.VTrue {
+			v = lua.LTrue
+		} else {
+			v = lua.LFalse
+		}
+	}
+	return v
 }
 
 func Bool2Lua(b bool) lua.LValue {

@@ -1,21 +1,15 @@
 package lua
 
-import (
-	"github.com/iost-official/gopher-lua"
-	"github.com/iost-official/prototype/core/state"
-)
-
 type Method struct {
-	name        string
-	inputs      []lua.LValue
+	name string
+	inputCount,
 	outputCount int
 }
 
-func NewMethod(name string, rtnCount int, value ...lua.LValue) Method {
+func NewMethod(name string, inputCount, rtnCount int) Method {
 	var m Method
 	m.name = name
-	m.inputs = make([]lua.LValue, 0)
-	m.inputs = append(m.inputs, value...)
+	m.inputCount = inputCount
 	m.outputCount = rtnCount
 	return m
 }
@@ -23,9 +17,9 @@ func NewMethod(name string, rtnCount int, value ...lua.LValue) Method {
 func (m *Method) Name() string {
 	return m.name
 }
-func (m *Method) Input(value ...state.Value) {
-	m.inputs = make([]lua.LValue, 0)
-	for _, v := range value {
-		m.inputs = append(m.inputs, Core2Lua(v))
-	}
+func (m *Method) InputCount() int {
+	return m.inputCount
+}
+func (m *Method) OutputCount() int {
+	return m.outputCount
 }

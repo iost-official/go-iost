@@ -9,7 +9,7 @@
 			"revisionTime": "2017-11-23T09:41:27Z"
 		},
 		{
-			"checksumSHA1": "04xbb14cj+VHq0AxAu7PPziqqqI=",
+			"checksumSHA1": "u5oFL2HVPiigcmGNJ9jeKRK9V9Y=",
 			"path": "github.com/LoCCS/bliss",
 			"revision": "07585ac9b8172f0327ec4bb4ef66b5c4e421bd70",
 			"revisionTime": "2018-02-23T02:58:23Z"
@@ -33,7 +33,7 @@
 			"revisionTime": "2018-02-23T02:58:23Z"
 		},
 		{
-			"checksumSHA1": "fOrVLu/A4nfuxesfEuuVHj3M5kY=",
+			"checksumSHA1": "ebJE0kQbTPr5julKJ0MjjCMQLCw=",
 			"path": "github.com/LoCCS/bliss/sampler",
 			"revision": "07585ac9b8172f0327ec4bb4ef66b5c4e421bd70",
 			"revisionTime": "2018-02-23T02:58:23Z"
@@ -54,7 +54,8 @@
 			"checksumSHA1": "Hd1Y5DkzYULQzJlSgYv2w5SiEAo=",
 			"path": "github.com/ethereum/go-ethereum/common/math",
 			"revision": "a06387674983d93453b800380f6f55c6406f51e3",
-			"revisionTime": "2018-03-14T09:59:06Z"
+			"revisionTime": "2018-03-14T09:59:06Z",
+			"version": "a06387674983d93453b800380f6f55c6406f51e3"
 		},
 		{
 			"checksumSHA1": "u8cuRovXF5jNs/xKr4RPnwf7+1U=",

@@ -46,10 +46,8 @@ func (mr *MockPoolMockRecorder) Copy() *gomock.Call {
 }
 
 // Delete mocks base method
-func (m *MockPool) Delete(arg0 state.Key) error {
-	ret := m.ctrl.Call(m, "Delete", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+func (m *MockPool) Delete(arg0 state.Key) {
+	m.ctrl.Call(m, "Delete", arg0)
 }
 
 // Delete indicates an expected call of Delete
@@ -108,11 +106,10 @@ func (mr *MockPoolMockRecorder) GetPatch() *gomock.Call {
 }
 
 // Has mocks base method
-func (m *MockPool) Has(arg0 state.Key) (bool, error) {
+func (m *MockPool) Has(arg0 state.Key) bool {
 	ret := m.ctrl.Call(m, "Has", arg0)
 	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // Has indicates an expected call of Has
@@ -121,10 +118,8 @@ func (mr *MockPoolMockRecorder) Has(arg0 interface{}) *gomock.Call {
 }
 
 // Put mocks base method
-func (m *MockPool) Put(arg0 state.Key, arg1 state.Value) error {
-	ret := m.ctrl.Call(m, "Put", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+func (m *MockPool) Put(arg0 state.Key, arg1 state.Value) {
+	m.ctrl.Call(m, "Put", arg0, arg1)
 }
 
 // Put indicates an expected call of Put

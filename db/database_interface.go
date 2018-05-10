@@ -6,6 +6,8 @@ import (
 	//"os"
 )
 
+//go:generate mockgen -destination mocks/mock_database.go -package db_mock github.com/iost-official/prototype/db Database
+
 type Database interface {
 	Put(key []byte, value []byte) error
 	PutHM(key []byte, args ...[]byte) error
@@ -31,28 +33,6 @@ func DatabaseFactor(target string) (Database, error) {
 		return db, err
 	}
 	return nil, errors.New("target Database not found")
-}
-
-func GetTx(hash []byte) (*Tx, error) {
-
-	ldb, err := db.DatabaseFactor("ldb")
-	if err != nil {
-
-		return nil, fmt.Errorf("failed to init db %v", err)
-	}
-	defer ldb.Close()
-	txData, err := ldb.Get(hash)
-	if err != nil {
-
-		return nil, fmt.Errorf("failed to Get the tx:", err)
-	}
-	RetTx := new(Tx)
-	err = RetTx.Decode(txData)
-	if err != nil {
-
-		return nil, fmt.Errorf("failed to Decode the tx:", err)
-	}
-	return RetTx
 }
 
 /*
