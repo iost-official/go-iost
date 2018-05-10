@@ -147,6 +147,7 @@ func (p *DPoS) blockLoop() {
 		headInfo := generateHeadInfo(blk.Head)
 		var signature common.Signature
 		signature.Decode(blk.Head.Signature)
+
 		// verify block witness signature
 		if !common.VerifySignature(headInfo, signature) {
 			return false, nil
