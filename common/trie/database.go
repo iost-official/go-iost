@@ -1,10 +1,10 @@
 package trie
 
 import (
-	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/common"
-	"time"
+	"github.com/iost-official/prototype/db"
 	"sync"
+	"time"
 )
 
 // 数据库关键字前缀，用来存储node信息
@@ -23,30 +23,30 @@ type DatabaseReader interface {
 type Database struct {
 	diskdb db.Database
 
-	nodes map[common.Hash]*cachedNode
+	nodes     map[common.Hash]*cachedNode
 	preimages map[common.Hash][]byte
 	seckeybuf [secureKeyLength]byte
 
-	gctime time.Duration // 上次commit后的垃圾回收时间
-	gcnodes uint64		 // 上次commit后的垃圾回收node节点数量
-	gcsize common.StorageSize
+	gctime  time.Duration // 上次commit后的垃圾回收时间
+	gcnodes uint64        // 上次commit后的垃圾回收node节点数量
+	gcsize  common.StorageSize
 
-	nodesSize common.StorageSize // node 占用的缓存大小
+	nodesSize     common.StorageSize // node 占用的缓存大小
 	preimagesSize common.StorageSize // 镜像占用的缓存大小
 
 	lock sync.RWMutex
 }
 
 type cachedNode struct {
-	blob []byte
-	parents int
+	blob     []byte
+	parents  int
 	children map[common.Hash]int
 }
 
 func NewDatabase(diskdb db.Database) *Database {
-	return &Database {
+	return &Database{
 		diskdb: diskdb,
-		nodes: map[common.Hash]*cachedNode {
+		nodes: map[common.Hash]*cachedNode{
 			{}: {children: make(map[common.Hash]int)},
 		},
 		preimages: make(map[common.Hash][]byte),
@@ -57,7 +57,6 @@ func NewDatabase(diskdb db.Database) *Database {
 func (db *Database) DiskDB() DatabaseReader {
 	return db.diskdb
 }
-
 
 // 将节点插入内存数据库中
 func (db *Database) Insert(hash common.Hash, blob []byte) {
@@ -77,7 +76,6 @@ func (db *Database) insert(hash common.Hash, blob []byte) {
 	}
 	db.nodesSize += common.StorageSize(common.HashLength + len(blob))
 }
-
 
 func (db *Database) insertPreimage(hash common.Hash, preimage []byte) {
 	if _, ok := db.preimages[hash]; ok {

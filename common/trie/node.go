@@ -2,10 +2,10 @@ package trie
 
 import (
 	"fmt"
-	"io"
-	"github.com/iost-official/prototype/common/rlp"
-	"strings"
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/common/rlp"
+	"io"
+	"strings"
 )
 
 var indices = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "[17]"}
@@ -13,51 +13,51 @@ var indices = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b
 type node interface {
 	fstring(string) string
 	cache() (hashNode, bool)
-	canUnload(cachegen, cachelimit uint16)bool
+	canUnload(cachegen, cachelimit uint16) bool
 }
 
 type (
 	// 分支节点，存储所有分支大于一的节点
 	fullNode struct {
 		Children [17]node // 每个节点的所有儿子
-		flags nodeFlag
+		flags    nodeFlag
 	}
 
 	// 叶子节点 && 扩展节点
 	// 在Key中引入特殊标志，区分两种节点
 	shortNode struct {
-		Key []byte
-		Val node
+		Key   []byte
+		Val   node
 		flags nodeFlag
 	}
-	hashNode []byte
+	hashNode  []byte
 	valueNode []byte
 )
 
-func (n *fullNode) copy() *fullNode 	{ copydata := *n; return &copydata }
-func (n *shortNode) copy() *shortNode 	{ copydata := *n; return &copydata }
+func (n *fullNode) copy() *fullNode   { copydata := *n; return &copydata }
+func (n *shortNode) copy() *shortNode { copydata := *n; return &copydata }
 
 // node节点的缓存相关信息
 type nodeFlag struct {
-	hash  hashNode	// 节点缓存的哈希值
-	gen   uint16	// 诞生标志
-	dirty bool	// 数据需要将数据的修改写入数据库
+	hash  hashNode // 节点缓存的哈希值
+	gen   uint16   // 诞生标志
+	dirty bool     // 数据需要将数据的修改写入数据库
 }
 
 // 判断缓存中一个node节点是否可以被删除
 func (n *nodeFlag) canUnload(cachegen, cachelimit uint16) bool {
-	return !n.dirty && cachegen - n.gen >= cachelimit
+	return !n.dirty && cachegen-n.gen >= cachelimit
 }
 
-func (n *fullNode) canUnload(gen, limit uint16) bool	{ return n.flags.canUnload(gen, limit) }
-func (n *shortNode) canUnload(gen, limit uint16) bool 	{ return n.flags.canUnload(gen, limit) }
-func (n hashNode) canUnload(uint16, uint16) bool		{ return false }
-func (n valueNode) canUnload(uint16, uint16) bool 		{ return false }
+func (n *fullNode) canUnload(gen, limit uint16) bool  { return n.flags.canUnload(gen, limit) }
+func (n *shortNode) canUnload(gen, limit uint16) bool { return n.flags.canUnload(gen, limit) }
+func (n hashNode) canUnload(uint16, uint16) bool      { return false }
+func (n valueNode) canUnload(uint16, uint16) bool     { return false }
 
-func (n *fullNode) cache() (hashNode, bool)	{ return n.flags.hash, n.flags.dirty }
-func (n *shortNode) cache() (hashNode, bool)	{ return n.flags.hash, n.flags.dirty }
-func (n hashNode) cache() (hashNode, bool) 	{ return nil, true }
-func (n valueNode) cache() (hashNode, bool) 	{ return nil, true }
+func (n *fullNode) cache() (hashNode, bool)  { return n.flags.hash, n.flags.dirty }
+func (n *shortNode) cache() (hashNode, bool) { return n.flags.hash, n.flags.dirty }
+func (n hashNode) cache() (hashNode, bool)   { return nil, true }
+func (n valueNode) cache() (hashNode, bool)  { return nil, true }
 
 // 格式化打印
 func (n *fullNode) fstring(ind string) string {
@@ -66,13 +66,13 @@ func (n *fullNode) fstring(ind string) string {
 		if node == nil {
 			resp += fmt.Sprintf("%s: <nil>", indices[i])
 		} else {
-			resp += fmt.Sprintf("%s: %v", indices[i], node.fstring(ind + "  "))
+			resp += fmt.Sprintf("%s: %v", indices[i], node.fstring(ind+"  "))
 		}
 	}
 	return resp + fmt.Sprintf("\n%s] ", ind)
 }
 func (n *shortNode) fstring(ind string) string {
-	return fmt.Sprintf("{%x: %v} ", n.Key, n.Val.fstring(ind + "  "))
+	return fmt.Sprintf("{%x: %v} ", n.Key, n.Val.fstring(ind+"  "))
 }
 func (n hashNode) fstring(ind string) string {
 	return fmt.Sprintf("<%x> ", []byte(n))
@@ -81,15 +81,15 @@ func (n valueNode) fstring(ind string) string {
 	return fmt.Sprintf("%x ", []byte(n))
 }
 
-func (n *fullNode) String() string		{ return n.fstring("") }
-func (n *shortNode) String() string 	{ return n.fstring("") }
-func (n hashNode) String() string 		{ return n.fstring("") }
-func (n valueNode) String() string 	{ return n.fstring("") }
+func (n *fullNode) String() string  { return n.fstring("") }
+func (n *shortNode) String() string { return n.fstring("") }
+func (n hashNode) String() string   { return n.fstring("") }
+func (n valueNode) String() string  { return n.fstring("") }
 
 func mustDecodeNode(hash, buf []byte, cachegen uint16) node {
 	n, err := decodeNode(hash, buf, cachegen)
 	if err != nil {
-		panic (fmt.Sprintf("node %x: %v", hash, err))
+		panic(fmt.Sprintf("node %x: %v", hash, err))
 	}
 	return n
 }
@@ -127,13 +127,13 @@ func decodeShort(hash, buf, elems []byte, cachegen uint16) (node, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid value node: %v", err)
 		}
-		return &shortNode{ key,append(valueNode{}, val...), flag}, nil
+		return &shortNode{key, append(valueNode{}, val...), flag}, nil
 	}
 	r, _, err := decodeRef(rest, cachegen)
 	if err != nil {
 		return nil, wrapError(err, "val")
 	}
-	return &shortNode {key, r, flag}, nil
+	return &shortNode{key, r, flag}, nil
 }
 
 func decodeFull(hash, buf, elems []byte, cachegen uint16) (*fullNode, error) {
@@ -182,8 +182,8 @@ func decodeRef(buf []byte, cachegen uint16) (node, []byte, error) {
 }
 
 // 在error类外包一层不合法子节点的路径信息
-type decodeError struct{
-	what error
+type decodeError struct {
+	what  error
 	stack []string
 }
 
@@ -195,7 +195,7 @@ func wrapError(err error, ctx string) error {
 		decErr.stack = append(decErr.stack, ctx)
 		return decErr
 	}
-	return &decodeError { err, []string{ctx}}
+	return &decodeError{err, []string{ctx}}
 }
 
 func (err *decodeError) Error() string {

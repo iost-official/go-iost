@@ -7,7 +7,7 @@ import (
 // 将RLP的值拆分成类型和内容
 func Split(b []byte) (k Kind, content, rest []byte, err error) {
 	k, ts, cs, err := readKind(b)
-	if  err  != nil {
+	if err != nil {
 		return 0, nil, b, err
 	}
 	return k, b[ts : ts+cs], b[ts+cs:], nil
@@ -49,7 +49,6 @@ func CountValues(b []byte) (int, error) {
 	}
 	return i, nil
 }
-
 
 func readKind(buf []byte) (k Kind, tagsize, contentsize uint64, err error) {
 	if len(buf) == 0 {
