@@ -70,6 +70,7 @@ func (m *VMMonitor) Call(pool state.Pool, contractPrefix, methodName string, arg
 		if contract == nil {
 			return nil, nil, 0, fmt.Errorf("contract not found")
 		}
+		m.StartVM(contract)
 		holder = m.vms[contractPrefix]
 	}
 	rtn, pool, err := holder.Call(pool, methodName, args...)
@@ -78,5 +79,11 @@ func (m *VMMonitor) Call(pool state.Pool, contractPrefix, methodName string, arg
 }
 
 func FindContract(contractPrefix string) vm.Contract {
-	return nil
+	code2 := `function sayHi(name)
+	return "hi " .. name
+end`
+	sayHi := lua.NewMethod("sayHi", 1, 1)
+	lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Sender: []byte("ahaha")},
+		code2, sayHi, sayHi)
+	return &lc2
 }

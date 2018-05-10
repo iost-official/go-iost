@@ -2,6 +2,7 @@ package verifier
 
 import (
 	"fmt"
+
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
@@ -85,9 +86,11 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	cv := CacheVerifier{
 		Verifier: Verifier{
-			Pool:      pool.Copy(),
 			VMMonitor: NewVMMonitor(),
 		},
+	}
+	if pool != nil {
+		cv.Pool = pool.Copy()
 	}
 	return cv
 }
@@ -103,7 +106,7 @@ type BlockVerifier struct {
 }
 
 // 验证block，返回pool是包含了该block的pool。如果contain为true则进行合并
-func (bv *BlockVerifier) VerifyBlock(b block.Block, contain bool) (state.Pool, error) {
+func (bv *BlockVerifier) VerifyBlock(b *block.Block, contain bool) (state.Pool, error) {
 	bv.oldPool = bv.Pool
 	for i := 0; i < b.LenTx(); i++ {
 		c := b.GetTx(i).Contract

@@ -70,7 +70,7 @@ func (t *Tx) GetTx(hash []byte) error {
 
 		return fmt.Errorf("failed to Get the tx: %v", err)
 	}
-	err = t.Decode(txData)//something wrong with Decode
+	err = t.Decode(txData) //something wrong with Decode
 	if err != nil {
 
 		return fmt.Errorf("failed to Decode the tx: %v", err)

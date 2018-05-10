@@ -3,10 +3,11 @@ package block
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/db"
 	"strconv"
 	"sync"
+
+	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/db"
 )
 
 var (
@@ -20,7 +21,7 @@ var (
 type ChainImpl struct {
 	db     db.Database
 	length uint64
-	state  state.Pool
+	state  state.Pool // todo 分离这两部分
 }
 
 var chainImpl *ChainImpl
@@ -121,7 +122,7 @@ func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 
 //Top 返回已确定链的最后块
 func (b *ChainImpl) Top() *Block {
-	
+
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(b.length-1)...))
 
 	if err != nil {
