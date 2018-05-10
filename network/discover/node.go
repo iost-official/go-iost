@@ -68,11 +68,11 @@ func (n *Node) validateComplete() error {
 }
 
 func (n *Node) String() string {
-	return string(n.ID) + "@" + string(n.IP) + ":" + strconv.Itoa(int(n.TCP))
+	return string(n.ID) + "@" + n.IP.String() + ":" + strconv.Itoa(int(n.TCP))
 }
 
 func (n *Node) Addr() string {
-	return string(n.IP) + ":" + strconv.Itoa(int(n.TCP))
+	return n.IP.String() + ":" + strconv.Itoa(int(n.TCP))
 }
 
 // NodeID prints as a long hexadecimal number.
@@ -85,24 +85,20 @@ func GenNodeId() NodeID {
 	return NodeID(id)
 }
 
-//todo regex
-func ParseNode(nodeStr string) (*Node, error) {
-	node := &Node{}
+func ParseNode(nodeStr string) (node *Node, err error) {
+	node = &Node{}
 	nodeIdStrs := strings.Split(nodeStr, "@")
 	if len(nodeIdStrs) < 2 {
 		return node, fmt.Errorf("miss nodeId")
 	}
 	node.ID = NodeID(nodeIdStrs[0])
-	tcpStrs := strings.Split(nodeIdStrs[1], ":")
-	if len(tcpStrs) < 2 {
-		return node, fmt.Errorf("wrong tcp format")
-	}
-	node.IP = []byte(tcpStrs[0])
-	port, err := strconv.Atoi(tcpStrs[1])
+	tcpStr := strings.Split(nodeIdStrs[1], ":")
+	node.IP = net.ParseIP(tcpStr[0])
+	tcp, err := strconv.Atoi(tcpStr[1])
 	if err != nil {
-		return node, err
+		return
 	}
-	node.TCP = uint16(port)
+	node.TCP = uint16(tcp)
 	return node, nil
 
 }

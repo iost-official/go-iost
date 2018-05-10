@@ -14,7 +14,8 @@ type ReqType int32
 const (
 	ReqPublishTx ReqType = iota
 	ReqNewBlock
-	ReqBlockHeight
+	ReqBlockHeight  //The height of the request to block
+	RecvBlockHeight //The height of the receiving block
 	ReqDownloadBlock
 )
 
