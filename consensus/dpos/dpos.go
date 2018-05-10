@@ -119,7 +119,7 @@ func (p *DPoS) txListenLoop() {
 		tx.Decode(req.Body)
 		p.router.Send(req)
 		if VerifyTxSig(tx) {
-			// Add to tx pool or recorder
+			p.blockCache.AddTx(tx)
 		}
 	}
 }
@@ -188,24 +188,6 @@ func (p *DPoS) scheduleLoop() {
 }
 
 func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
-	/*
-		if lastBlk == nil {
-			blk := block.Block{Version: 0, Content: make([]byte, 0), Head: block.BlockHead{
-				Version:    0,
-				ParentHash: lastBlk.Head.BlockHash,
-				TreeHash:   make([]byte, 0),
-				BlockHash:  make([]byte, 0),
-				Info:       make([]byte, 0),
-				Number:     0,
-				Witness:    acc.ID, // ?
-				Time:       GetCurrentTimestamp(),
-			}}
-			headinfo := generateHeadInfo(blk.Head)
-			sig, _ := common.Sign(common.Secp256k1, headinfo, acc.Seckey)
-			blk.Head.Signature = sig.Encode()
-			return &blk
-		}
-	*/
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.Head.BlockHash,

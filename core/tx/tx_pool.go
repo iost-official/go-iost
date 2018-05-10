@@ -7,11 +7,11 @@ import (
 type TxPool interface {
 	Add(tx Tx) error
 	Del(tx Tx) error
-	Get([]byte) (Tx, error)
+	Get(hash []byte) (*Tx, error)
 	GetSlice() ([]Tx, error)
 	Has(tx Tx) (bool, error)
-	Copy(ttp TxPool) error
-	Size() int32
+	Copy(ttp *TxPool) error
+	Size() int
 }
 
 type TxPoolImpl struct {
@@ -32,6 +32,11 @@ func (tp *TxPoolImpl) Del(tx Tx) error {
 	return nil
 }
 
+func (tp *TxPoolImpl) Get(hash []byte) (*Tx, error) {
+	tx, ok := tp.txMap[common.Base58Encode(hash)]
+	return &tx, nil
+}
+
 func (tp *TxPoolImpl) GetSlice() ([]Tx, error) {
 	var txs []Tx = make([]Tx, 0)
 	for _, tx := range tp.txMap {
@@ -45,7 +50,13 @@ func (tp *TxPoolImpl) Has(tx Tx) (bool, error) {
 	return ok, nil
 }
 
-func (tp *TxPoolImpl) Copy(ttp TxPoolImpl) error {
+func (tp *TxPoolImpl) Copy(ttp *TxPool) error {
+	var tttp *TxPoolImpl
+	tttp = ttp
+	tp.txMap = make(map[string]Tx)
+	for k, v := range ttp.txMap {
+		tp.txMap[k] = v
+	}
 	return nil
 }
 
