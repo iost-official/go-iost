@@ -7,8 +7,6 @@ import (
 	"github.com/iost-official/prototype/db"
 	"strconv"
 	"sync"
-	"bytes"
-	"encoding/gob"
 )
 
 var (
@@ -186,54 +184,6 @@ func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 		return nil
 	}
 	return rBlock
-}
-
-//GetStatePool 返回已经确定的state pool
-func (b *ChainImpl) GetStatePool() state.Pool {
-
-	if b.state != nil {
-		return b.state
-	}
-
-	statePool, err := b.db.Get(blockStatePool)
-	if err != nil {
-		return nil
-	}
-
-	var value bytes.Buffer
-
-	value.Read(statePool)
-	dec := gob.NewDecoder(&value)
-
-	state := state.PoolImpl{}
-	err = dec.Decode(state)
-	if err != nil {
-		return nil
-	}
-
-	b.state = &state
-	return b.state
-}
-
-//SetStatePool 设置state pool
-func (b *ChainImpl) SetStatePool(pool state.Pool) error {
-	b.state = pool
-
-	if err := b.db.Delete(blockStatePool); err != nil {
-		return fmt.Errorf("failed to delete state pool")
-	}
-
-	var value bytes.Buffer
-	enc := gob.NewEncoder(&value)
-
-	err := enc.Encode(b.state)
-	if err != nil {
-		return fmt.Errorf("failed to Encode")
-	}
-
-	b.db.Put(blockStatePool, value.Bytes())
-
-	return nil
 }
 
 //暂不实现
