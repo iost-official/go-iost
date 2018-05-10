@@ -2,15 +2,15 @@ package tx
 
 import (
 	"github.com/iost-official/prototype/common"
-	. "github.com/iost-official/prototype/core/tx"
 )
 
 type TxPool interface {
 	Add(tx Tx) error
 	Del(tx Tx) error
-	Get([]byte) ([]Tx, error)
+	Get([]byte) (Tx, error)
 	GetSlice() ([]Tx, error)
 	Has(tx Tx) (bool, error)
+	Copy(ttp TxPool) error
 	Size() int32
 }
 
@@ -43,6 +43,10 @@ func (tp *TxPoolImpl) GetSlice() ([]Tx, error) {
 func (tp *TxPoolImpl) Has(tx Tx) (bool, error) {
 	_, ok := tp.txMap[common.Base58Encode(tx.Hash())]
 	return ok, nil
+}
+
+func (tp *TxPoolImpl) Copy(ttp TxPoolImpl) error {
+	return nil
 }
 
 func (tp *TxPoolImpl) Size() int {
