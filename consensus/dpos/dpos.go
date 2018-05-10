@@ -21,6 +21,7 @@ type DPoS struct {
 	account    Account
 	blockCache BlockCache
 	router     Router
+	synchronizer	Synchronizer
 	globalStaticProperty
 	globalDynamicProperty
 
@@ -43,6 +44,11 @@ func NewDPoS(acc Account, bc block.Chain, witnessList []string /*, network core.
 	var err error
 	p.router, err = RouterFactory("base")
 	if err != nil {
+		return nil, err
+	}
+
+	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
+	if p.synchronizer == nil {
 		return nil, err
 	}
 
