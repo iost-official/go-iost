@@ -42,10 +42,10 @@ end`
 
 		verifier := Verifier{
 			Pool:      pool,
-			VMMonitor: NewVMMonitor(),
+			vmMonitor: newVMMonitor(),
 		}
 		verifier.StartVM(&lc1)
-		verifier.StartVM(&lc2)
+		//verifier.StartVM(&lc2)
 		rtn, _, gas, err := verifier.Call(pool, "con2", "sayHi", state.MakeVString("bob"))
 		So(err, ShouldBeNil)
 		So(gas, ShouldEqual, 7)

@@ -2,7 +2,6 @@ package message
 
 //go:generate gencode go -schema=structs.schema -package=message
 
-
 func (d *Message) GetTime() int64 {
 	return d.Time
 }

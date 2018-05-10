@@ -8,22 +8,22 @@ import (
 	"github.com/iost-official/prototype/vm/lua"
 )
 
-type VMHolder struct {
+type vmHolder struct {
 	vm.VM
 	contract vm.Contract
 }
 
-type VMMonitor struct {
-	vms map[string]VMHolder
+type vmMonitor struct {
+	vms map[string]vmHolder
 }
 
-func NewVMMonitor() VMMonitor {
-	return VMMonitor{
-		vms: make(map[string]VMHolder),
+func newVMMonitor() vmMonitor {
+	return vmMonitor{
+		vms: make(map[string]vmHolder),
 	}
 }
 
-func (m *VMMonitor) StartVM(contract vm.Contract) vm.VM {
+func (m *vmMonitor) StartVM(contract vm.Contract) vm.VM {
 	if _, ok := m.vms[contract.Info().Prefix]; ok {
 		return nil
 	}
@@ -31,27 +31,33 @@ func (m *VMMonitor) StartVM(contract vm.Contract) vm.VM {
 	switch contract.(type) {
 	case *lua.Contract:
 		var lvm lua.VM
-		lvm.Prepare(contract.(*lua.Contract), m)
-		lvm.Start()
-		m.vms[contract.Info().Prefix] = VMHolder{&lvm, contract}
+		err := lvm.Prepare(contract.(*lua.Contract), m)
+		if err != nil {
+			panic(err)
+		}
+		err = lvm.Start()
+		if err != nil {
+			panic(err)
+		}
+		m.vms[contract.Info().Prefix] = vmHolder{&lvm, contract}
 		return &lvm
 	}
 	return nil
 }
 
-func (m *VMMonitor) StopVm(contract vm.Contract) {
+func (m *vmMonitor) StopVM(contract vm.Contract) {
 	m.vms[contract.Info().Prefix].Stop()
 	delete(m.vms, string(contract.Hash()))
 }
 
-func (m *VMMonitor) Stop() {
+func (m *vmMonitor) Stop() {
 	for _, vv := range m.vms {
 		vv.Stop()
 	}
-	m.vms = make(map[string]VMHolder)
+	m.vms = make(map[string]vmHolder)
 }
 
-func (m *VMMonitor) GetMethod(contractPrefix, methodName string) vm.Method {
+func (m *vmMonitor) GetMethod(contractPrefix, methodName string) vm.Method {
 	var contract vm.Contract
 	vmh, ok := m.vms[contractPrefix]
 	if !ok {
@@ -63,13 +69,17 @@ func (m *VMMonitor) GetMethod(contractPrefix, methodName string) vm.Method {
 	return method
 }
 
-func (m *VMMonitor) Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
+func (m *vmMonitor) Call(pool state.Pool,
+	contractPrefix,
+	methodName string,
+	args ...state.Value) ([]state.Value, state.Pool, uint64, error) { // todo 权限检查
 	holder, ok := m.vms[contractPrefix]
 	if !ok {
 		contract := FindContract(contractPrefix)
 		if contract == nil {
 			return nil, nil, 0, fmt.Errorf("contract not found")
 		}
+		m.StartVM(contract)
 		holder = m.vms[contractPrefix]
 	}
 	rtn, pool, err := holder.Call(pool, methodName, args...)
@@ -77,6 +87,13 @@ func (m *VMMonitor) Call(pool state.Pool, contractPrefix, methodName string, arg
 	return rtn, pool, gas, err
 }
 
+// FindContract  find contract from tx database
 func FindContract(contractPrefix string) vm.Contract {
-	return nil
+	code2 := `function sayHi(name)
+	return "hi " .. name
+end`
+	sayHi := lua.NewMethod("sayHi", 1, 1)
+	lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Sender: []byte("ahaha")},
+		code2, sayHi, sayHi)
+	return &lc2
 }

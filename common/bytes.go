@@ -8,7 +8,7 @@ func FromHex(s string) []byte {
 			s = s[2:]
 		}
 	}
-	if len(s) % 2 == 1 {
+	if len(s)%2 == 1 {
 		s = "0" + s
 	}
 	return Hex2Bytes(s)

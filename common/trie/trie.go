@@ -1,8 +1,8 @@
 package trie
 
 import (
-	"github.com/iost-official/prototype/common"
 	"github.com/go-ethereum/crypto"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/db"
 )
 
@@ -35,7 +35,7 @@ func (t *Trie) SetCacheLimit(l uint16) {
 }
 
 func (t *Trie) newFlag() nodeFlag {
-	return nodeFlag{ dirty: true, gen: t.cachegen }
+	return nodeFlag{dirty: true, gen: t.cachegen}
 }
 
-func New(root common.Hash, db *Database) ()
+func New(root common.Hash, db *Database)

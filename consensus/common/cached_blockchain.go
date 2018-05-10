@@ -2,13 +2,11 @@ package consensus_common
 
 import (
 	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/state"
 )
 
 type CachedBlockChain struct {
 	block.Chain
 	block        *block.Block
-	pool         state.Pool
 	cachedLength int
 	parent       *CachedBlockChain
 	depth        int
@@ -95,7 +93,6 @@ func (c *CachedBlockChain) Copy() CachedBlockChain {
 		Chain:        c.Chain,
 		parent:       c,
 		cachedLength: c.cachedLength,
-		pool:         c.pool,
 		confirmed:    0,
 	}
 	return cbc
@@ -111,14 +108,6 @@ func (c *CachedBlockChain) Flush() {
 		c.cachedLength = 0
 		c.parent = nil
 	}
-}
-
-func (c *CachedBlockChain) GetStatePool() state.Pool {
-	return c.pool
-}
-
-func (c *CachedBlockChain) SetStatePool(pool state.Pool) {
-	c.pool = pool
 }
 
 func (c *CachedBlockChain) Iterator() block.ChainIterator {
