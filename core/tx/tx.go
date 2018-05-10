@@ -4,16 +4,11 @@ import (
 	"fmt"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/vm"
 	"time"
 )
 
 //go:generate gencode go -schema=structs.schema -package=tx
-
-var (
-	txPrefix = []byte("t") //txPrefix+tx hash -> tx data
-)
 
 // Transaction 的实现
 type Tx struct {
@@ -51,47 +46,6 @@ func SignTx(tx Tx, account account.Account) (Tx, error) {
 	}
 	tx.Publisher = sign
 	return tx, nil
-}
-
-/* get the tx in the db with its hash
-first you should define a Tx instance,and then
-tx.getTx(hash)
-*/
-func (t *Tx) GetTx(hash []byte) error {
-
-	ldb, err := db.DatabaseFactor("ldb")
-	if err != nil {
-
-		return fmt.Errorf("failed to init db %v", err)
-	}
-	defer ldb.Close()
-	txData, err := ldb.Get(append(txPrefix, hash...))
-	if err != nil {
-
-		return fmt.Errorf("failed to Get the tx: %v", err)
-	}
-	err = t.Decode(txData)//something wrong with Decode
-	if err != nil {
-
-		return fmt.Errorf("failed to Decode the tx: %v", err)
-	}
-	return nil
-}
-
-//open and close db every time we store a tx to the db,maybe not efficient
-func (t *Tx) PushTx() error {
-	ldb, err := db.DatabaseFactor("ldb")
-	if err != nil {
-		return fmt.Errorf("failed to init db %v", err)
-	}
-	defer ldb.Close()
-
-	hash := t.Hash()
-	err = ldb.Put(append(txPrefix, hash...), t.Encode())
-	if err != nil {
-		return fmt.Errorf("failed to Put tx: %v", err)
-	}
-	return nil
 }
 
 func (t *Tx) baseHash() []byte {
