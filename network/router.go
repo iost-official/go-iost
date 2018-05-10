@@ -14,6 +14,8 @@ type ReqType int32
 const (
 	ReqPublishTx ReqType = iota
 	ReqNewBlock
+	ReqBlockHeight
+	ReqDownloadBlock
 )
 
 //Router Forwarding specific request to other components and sending messages for them
@@ -24,7 +26,8 @@ type Router interface {
 	Stop()
 	Send(req message.Message)
 	Broadcast(req message.Message)
-	Download(req message.Message) chan []byte
+	Download(start, end uint64) error
+	CancelDownload(start, end uint64) error
 }
 
 func RouterFactory(target string) (Router, error) {
@@ -108,8 +111,17 @@ func (r *RouterImpl) Broadcast(req message.Message) {
 	r.base.Broadcast(req)
 }
 
-func (r *RouterImpl) Download(req message.Message) chan []byte {
-	return nil // TODO 实现
+//download block with height >= start && height <= end
+func (r *RouterImpl) Download(start uint64, end uint64) error {
+	if end < start {
+		return fmt.Errorf("end should be greater than start")
+	}
+	return r.base.Download(start, end)
+}
+
+//CancelDownload cancel download todo del downloading map
+func (r *RouterImpl) CancelDownload(start uint64, end uint64) error {
+	return nil
 }
 
 //Filter The filter used by Router

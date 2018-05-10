@@ -17,6 +17,8 @@ import (
 
 	"strings"
 
+	"math/rand"
+
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/db"
@@ -33,6 +35,7 @@ const (
 	HEADLENGTH               = 4
 	CheckKnownNodeInterval   = 10
 	NodeLiveThresholdSeconds = 30
+	MaxDownloadRetry         = 10
 )
 
 type Response struct {
@@ -48,6 +51,7 @@ type Network interface {
 	Send(req message.Message)
 	Listen(port uint16) (<-chan message.Message, error)
 	Close(port uint16) error
+	Download(start, end uint64) error
 }
 
 type NaiveNetwork struct {
@@ -205,6 +209,8 @@ func reqToBytes(req message.Message) ([]byte, []byte, error) {
 type NetConifg struct {
 	LogPath       string
 	NodeTablePath string
+	NodeID        string
+	ListenAddr    string
 }
 
 func (conf *NetConifg) SetLogPath(path string) *NetConifg {
@@ -223,6 +229,22 @@ func (conf *NetConifg) SetNodeTablePath(path string) *NetConifg {
 	return conf
 }
 
+func (conf *NetConifg) SetNodeID(id string) *NetConifg {
+	if id == "" {
+		fmt.Errorf("node id should not be empty")
+	}
+	conf.NodeID = id
+	return conf
+}
+
+func (conf *NetConifg) SetListenAddr(addr string) *NetConifg {
+	if addr == "" {
+		fmt.Errorf("listen addr should not be empty")
+	}
+	conf.ListenAddr = addr
+	return conf
+}
+
 //BaseNetwork boot node maintain all node table, and distribute the node table to all node
 type BaseNetwork struct {
 	nodeTable  *db.LDBDatabase //all known node except remoteAddr
@@ -232,8 +254,11 @@ type BaseNetwork struct {
 	RecvCh chan message.Message
 
 	recentSentMap map[string]message.Message
+	NodeHeightMap map[string]uint64 //maintain all height of nodes higher than current height
 	localNode     *discover.Node
-	log           *log.Logger
+
+	DownloadHeights map[uint64]uint8 //map[height]retry_times
+	log             *log.Logger
 }
 
 // NewBaseNetwork ...
@@ -259,15 +284,22 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 		return nil, fmt.Errorf("failed to init db %v", err)
 	}
 	sentMap := make(map[string]message.Message, 0)
-	localNode := &discover.Node{ID: discover.GenNodeId(), IP: []byte("127.0.0.1")}
 	neighbours := make(map[string]*discover.Node, 0)
+	NodeHeightMap := make(map[string]uint64, 0)
+	if conf.NodeID == "" {
+		conf.NodeID = string(discover.GenNodeId())
+	}
+	localNode := &discover.Node{ID: discover.NodeID(conf.NodeID), IP: net.ParseIP(conf.ListenAddr)}
+	downloadHeights := make(map[uint64]uint8, 0)
 	s := &BaseNetwork{
-		nodeTable:     nodeTable,
-		RecvCh:        recv,
-		localNode:     localNode,
-		recentSentMap: sentMap,
-		neighbours:    neighbours,
-		log:           srvLog,
+		nodeTable:       nodeTable,
+		RecvCh:          recv,
+		localNode:       localNode,
+		recentSentMap:   sentMap,
+		neighbours:      neighbours,
+		log:             srvLog,
+		NodeHeightMap:   NodeHeightMap,
+		DownloadHeights: downloadHeights,
 	}
 	return s, nil
 }
@@ -319,27 +351,38 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	} else {
 		return
 	}
-	node, _ := discover.ParseNode(msg.To)
-	conn, err := net.Dial("tcp", node.Addr())
-	if err != nil {
-		bn.log.E("dial tcp %v got err:%v", node.Addr(), err)
-	}
 	req := newRequest(BroadcastMessage, bn.localNode.String(), data)
+	conn, err := bn.dial(msg.To)
+	if err != nil {
+		bn.log.E("dial tcp got err:%v", err)
+		return
+	}
 	defer conn.Close()
 	bn.send(conn, req)
 }
 
+func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
+	node, _ := discover.ParseNode(nodeStr)
+	conn, err := net.Dial("tcp", node.Addr())
+	if err != nil {
+		bn.log.E("dial tcp %v got err:%v", node.Addr(), err)
+		return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
+	}
+	return conn, nil
+}
+
 //Send msg to msg.To
 func (bn *BaseNetwork) Send(msg message.Message) {
-	conn, err := net.Dial("tcp", msg.To)
-	if err != nil {
-		bn.log.E("dial tcp %v got err:%v", msg.To, err)
-	}
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("marshal request encountered err:%v", err)
 	}
 	req := newRequest(Message, bn.localNode.String(), data)
+	conn, err := bn.dial(msg.To)
+	if err != nil {
+		bn.log.E("dial tcp got err:%v", err)
+		return
+	}
 	defer conn.Close()
 	bn.send(conn, req)
 }
@@ -446,9 +489,10 @@ func (bn *BaseNetwork) registerLoop() {
 			addr := extractAddrFromBoot(encodeAddr)
 			if addr != "" && bn.localNode.String() != addr {
 				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
-				conn, err := net.Dial("tcp", addr)
+				conn, err := bn.dial(addr)
 				if err != nil {
 					bn.log.E("failed to connect boot node, err:%v", err)
+					continue
 				}
 				defer conn.Close()
 				go bn.receiveLoop(conn)
@@ -494,4 +538,77 @@ func (bn *BaseNetwork) setNeighbour(node *discover.Node) {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
 	bn.neighbours[node.String()] = node
+}
+
+//Download block by height from which node in NodeHeightMap
+func (bn *BaseNetwork) Download(start, end uint64) error {
+	if len(bn.NodeHeightMap) <= 0 {
+		return nil
+	}
+
+	for i := start; i <= end; i++ {
+		bn.DownloadHeights[i] = 0
+	}
+
+	for len(bn.DownloadHeights) > 0 {
+		matchNum := 1
+		var targetNode string
+		for downloadHeight, retryTimes := range bn.DownloadHeights {
+			if retryTimes > MaxDownloadRetry {
+				continue
+			}
+			//select one node randomly which height is greater than start
+			for nodeStr, height := range bn.NodeHeightMap {
+				if height >= downloadHeight {
+					randNum := rand.New(rand.NewSource(time.Now().UnixNano())).Int31n(int32(matchNum))
+					if randNum == 0 {
+						targetNode = nodeStr
+					}
+					matchNum++
+				}
+			}
+			//download block which height equal start
+			msg := message.Message{
+				Body:    common.Uint64ToBytes(start),
+				ReqType: int32(ReqDownloadBlock),
+				From:    bn.localNode.String(),
+				To:      targetNode,
+				Time:    time.Now().UnixNano()}
+			body, err := msg.Marshal(nil)
+			if err != nil {
+				return fmt.Errorf("msg marshal got err %v", err)
+			}
+			req := newRequest(Message, bn.localNode.String(), body)
+			//send download request
+
+			bn.DownloadHeights[downloadHeight] = retryTimes + 1
+			go bn.sendTo(msg.To, req)
+		}
+	}
+
+	return nil
+}
+
+func (bn *BaseNetwork) sendTo(addr string, req *Request) {
+	conn, err := bn.dial(addr)
+	if err != nil {
+		bn.log.E("dial tcp got err:%v", err)
+		return
+	}
+	defer conn.Close()
+	bn.send(conn, req)
+}
+
+//SetNodeHeightMap ...
+func (bn *BaseNetwork) SetNodeHeightMap(nodeStr string, height uint64) {
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
+	bn.NodeHeightMap[nodeStr] = height
+}
+
+//GetNodeHeightMap ...
+func (bn *BaseNetwork) GetNodeHeightMap(nodeStr string) uint64 {
+	bn.lock.RLock()
+	defer bn.lock.RUnlock()
+	return bn.NodeHeightMap[nodeStr]
 }
