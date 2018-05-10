@@ -12,6 +12,7 @@ type TxPool interface {
 	Get([]byte) (*Tx, error)
 	GetSlice() ([]Tx, error)
 	Has(tx Tx) (bool, error)
+	Copy(ttp TxPool) error
 	Size() int32
 }
 
@@ -44,6 +45,10 @@ func (tp *TxPoolImpl) GetSlice() ([]Tx, error) {
 func (tp *TxPoolImpl) Has(tx Tx) (bool, error) {
 	_, ok := tp.txMap[common.Base58Encode(tx.Hash())]
 	return ok, nil
+}
+
+func (tp *TxPoolImpl) Copy(ttp TxPoolImpl) error {
+	return nil
 }
 
 func (tp *TxPoolImpl) Size() int {
