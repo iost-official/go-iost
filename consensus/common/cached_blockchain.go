@@ -3,6 +3,7 @@ package consensus_common
 import (
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
+	"bytes"
 )
 
 type CachedBlockChain struct {
@@ -123,4 +124,32 @@ func (c *CachedBlockChain) SetStatePool(pool state.Pool) {
 
 func (c *CachedBlockChain) Iterator() block.ChainIterator {
 	return nil
+}
+
+func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
+	if number <= c.Chain.Length() {
+		return c.Chain.GetBlockByNumber(number)
+	}
+	if number > c.Length() {
+		return nil
+	}
+	cbc := c
+	for cbc.block != nil {
+		if uint64(cbc.block.Head.Number) == number {
+			return cbc.block
+		}
+		cbc = cbc.parent
+	}
+	return nil
+}
+
+func (c *CachedBlockChain) GetBlockByHash(blockHash []byte) *block.Block {
+	cbc := c
+	for cbc.block != nil {
+		if bytes.Equal(cbc.block.Head.Hash(), blockHash) {
+			return cbc.block
+		}
+		cbc = cbc.parent
+	}
+	return c.Chain.GetBlockByHash(blockHash)
 }

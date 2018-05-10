@@ -7,27 +7,30 @@ import (
 	"testing"
 )
 
-func TestPushAndGetTx(t *testing.T) {
-	Convey("Test of PushAndGetTx", t, func() {
+func TestTxPoolDb(t *testing.T) {
+	Convey("Test of TestTxPoolDb", t, func() {
 		ctl := gomock.NewController(t)
 
 		mockContract := vm_mock.NewMockContract(ctl)
 		mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
-		Convey("Test of PushTx", func() {
+		Convey("Test of Add", func() {
+			txpooldb, err := NewTxPoolDbImpl()
 			tx := NewTx(int64(0), mockContract)
-			err := tx.PushTx()
+
+			err = txpooldb.Add(tx)
 			So(err, ShouldBeNil)
+			txpooldb.Close()
 		})
-		Convey("Test of GetTx", func() {
+		Convey("Test of Get", func() {
+			txpooldb, err := NewTxPoolDbImpl()
 			tx := NewTx(int64(0), mockContract)
-			err := tx.PushTx()
+			err = txpooldb.Add(tx)
 			hash := tx.Hash()
 
-			_tx := NewTx(int64(0), mockContract)
-			err = _tx.GetTx(hash)
+			_, err = txpooldb.Get(hash)
 			So(err, ShouldBeNil)
-			So(_tx, ShouldNotBeNil)
-			//todo: test tx==_tx
+			//todo: test *txPtr==tx
+			txpooldb.Close()
 		})
 	})
 }
