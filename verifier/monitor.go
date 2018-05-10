@@ -31,8 +31,14 @@ func (m *vmMonitor) StartVM(contract vm.Contract) vm.VM {
 	switch contract.(type) {
 	case *lua.Contract:
 		var lvm lua.VM
-		lvm.Prepare(contract.(*lua.Contract), m)
-		lvm.Start()
+		err := lvm.Prepare(contract.(*lua.Contract), m)
+		if err != nil {
+			panic(err)
+		}
+		err = lvm.Start()
+		if err != nil {
+			panic(err)
+		}
 		m.vms[contract.Info().Prefix] = vmHolder{&lvm, contract}
 		return &lvm
 	}
@@ -63,7 +69,10 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string) vm.Method {
 	return method
 }
 
-func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
+func (m *vmMonitor) Call(pool state.Pool,
+	contractPrefix,
+	methodName string,
+	args ...state.Value) ([]state.Value, state.Pool, uint64, error) { // todo 权限检查
 	holder, ok := m.vms[contractPrefix]
 	if !ok {
 		contract := FindContract(contractPrefix)
@@ -77,6 +86,7 @@ func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, arg
 	return rtn, pool, gas, err
 }
 
+// FindContract  find contract from tx database
 func FindContract(contractPrefix string) vm.Contract {
 	return nil
 }

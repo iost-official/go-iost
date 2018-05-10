@@ -6,7 +6,7 @@ import (
 	"github.com/LoCCS/bliss"
 	"github.com/LoCCS/bliss/params"
 	"github.com/LoCCS/bliss/sampler"
-	"github.com/iost-official/prototype/common/all_hash"
+	"github.com/iost-official/prototype/common/hash"
 )
 
 const (
@@ -57,7 +57,7 @@ func GenerateAddress(passphrase string) (*Address, error) {
 	}
 
 	pk := sk.PublicKey()
-	tmp_txt := ([]byte)((all_hash.Sha3_256(pk.Encode())).ToBase32Hex()) // or ToBase64URL
+	tmp_txt := ([]byte)((hash.Sha3_256(pk.Encode())).ToBase32Hex()) // or ToBase64URL
 	var txt [AddressLength]byte
 	for i := AddressLength - 1; i >= 0; i-- {
 		txt[i] = tmp_txt[i]

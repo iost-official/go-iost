@@ -8,23 +8,26 @@ import (
 	"github.com/iost-official/prototype/vm"
 )
 
-const (
+var (
+	// MaxBlockGas max gas spent in a block
 	MaxBlockGas uint64 = 1000000
 )
 
 //go:generate gencode go -schema=structs.schema -package=verifier
 
-// 底层verifier，用来组织vm，不要直接使用
+// Verifier 底层verifier，用来组织vm，不要直接使用
 type Verifier struct {
 	Pool state.Pool
 	vmMonitor
 }
 
+// Verifier ...
 func (v *Verifier) Verify(contract vm.Contract) (state.Pool, uint64, error) {
 	_, pool, gas, err := v.Call(v.Pool, contract.Info().Prefix, "main")
 	return pool, gas, err
 }
 
+// Verifier ...
 func (v *Verifier) SetPool(pool state.Pool) {
 	v.Pool = pool
 }
@@ -83,6 +86,7 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	return pool, nil
 }
 
+// Get a new cache verifier
 func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	cv := CacheVerifier{
 		Verifier: Verifier{

@@ -1,4 +1,4 @@
-package all_hash
+package hash
 
 import (
 	//"fmt"
@@ -24,7 +24,7 @@ func NewHash(bs []byte) Hash {
 			h[HashLength-bLen+i] = b
 		}
 	} else {
-		for i, _ := range h {
+		for i := range h {
 			h[i] = bs[i]
 		}
 	}

@@ -1,4 +1,4 @@
-package all_hash
+package hash
 
 import (
 	"github.com/InWeCrypto/sha3"
