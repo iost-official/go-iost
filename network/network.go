@@ -253,7 +253,8 @@ type BaseNetwork struct {
 
 	RecvCh chan message.Message
 
-	recentSentMap map[string]message.Message
+	recentSentMap sync.Map //map[string]message.Message
+
 	NodeHeightMap map[string]uint64 //maintain all height of nodes higher than current height
 	localNode     *discover.Node
 
@@ -264,11 +265,18 @@ type BaseNetwork struct {
 // NewBaseNetwork ...
 func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 	recv := make(chan message.Message, 1)
+	var err error
 	if conf.LogPath == "" {
-		conf.LogPath, _ = ioutil.TempDir(os.TempDir(), "iost_log_")
+		conf.LogPath, err = ioutil.TempDir(os.TempDir(), "iost_log_")
+		if err != nil {
+			return nil, fmt.Errorf("iost_log_path err: %v", err)
+		}
 	}
 	if conf.NodeTablePath == "" {
-		conf.NodeTablePath, _ = ioutil.TempDir(os.TempDir(), "iost_node_table_")
+		conf.NodeTablePath, err = ioutil.TempDir(os.TempDir(), "iost_node_table_")
+		if err != nil {
+			return nil, fmt.Errorf("iost_node_table_path err: %v", err)
+		}
 	}
 	srvLog, err := log.NewLogger(conf.LogPath)
 	if err != nil {
@@ -277,13 +285,13 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 	_, pErr := os.Stat(conf.NodeTablePath)
 	if pErr != nil {
 		return nil, fmt.Errorf("failed to init db path %v", pErr)
-
 	}
+
 	nodeTable, err := db.NewLDBDatabase(conf.NodeTablePath, 0, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init db %v", err)
 	}
-	sentMap := make(map[string]message.Message, 0)
+	sentMap := sync.Map{}
 	neighbours := make(map[string]*discover.Node, 0)
 	NodeHeightMap := make(map[string]uint64, 0)
 	if conf.NodeID == "" {
@@ -307,7 +315,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 // Listen listen local port, find neighbours
 func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
-	bn.log.D("listening %v", bn.localNode.Addr())
+	bn.log.D("listening %v", bn.localNode)
 	l, err := net.Listen("tcp", bn.localNode.Addr())
 	if err != nil {
 		return bn.RecvCh, errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
@@ -346,15 +354,16 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 		bn.log.E("marshal request encountered err:%v", err)
 	}
 	msgHash := common.Base58Encode(common.Sha256(msg.Body))
-	if _, ok := bn.recentSentMap[msgHash]; !ok {
-		bn.recentSentMap[msgHash] = msg
+
+	if _, ok := bn.recentSentMap.Load(msgHash); !ok {
+		bn.recentSentMap.Store(msgHash, msg)
 	} else {
 		return
 	}
 	req := newRequest(BroadcastMessage, bn.localNode.String(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
-		bn.log.E("dial tcp got err:%v", err)
+		bn.log.E("broadcast dial tcp got err:%v", err)
 		return
 	}
 	defer conn.Close()
@@ -380,7 +389,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	req := newRequest(Message, bn.localNode.String(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
-		bn.log.E("dial tcp got err:%v", err)
+		bn.log.E("Send, dial tcp got err:%v", err)
 		return
 	}
 	defer conn.Close()
@@ -486,17 +495,16 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 func (bn *BaseNetwork) registerLoop() {
 	for {
 		for _, encodeAddr := range params.TestnetBootnodes {
-			addr := extractAddrFromBoot(encodeAddr)
-			if addr != "" && bn.localNode.String() != addr {
+			if encodeAddr != "" && bn.localNode.String() != encodeAddr {
 				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
-				conn, err := bn.dial(addr)
+				conn, err := bn.dial(encodeAddr)
 				if err != nil {
 					bn.log.E("failed to connect boot node, err:%v", err)
 					continue
 				}
 				defer conn.Close()
 				go bn.receiveLoop(conn)
-				bn.log.D("%v request node table from %v", bn.localNode.String(), addr)
+				bn.log.D("%v request node table from %v", bn.localNode.String(), encodeAddr)
 				bn.send(conn, req)
 			}
 		}
@@ -509,15 +517,13 @@ const validitySentSeconds = 90
 //cleanRecentSentLoop
 func (bn *BaseNetwork) cleanRecentSentLoop() {
 	for {
-		msgs := bn.recentSentMap
 		now := time.Now().UnixNano()
-		for k, msg := range msgs {
-			if (now-msg.Time)/1e9 > validitySentSeconds {
-				bn.lock.Lock()
-				delete(bn.recentSentMap, k)
-				bn.lock.Unlock()
+		bn.recentSentMap.Range(func(ki, vi interface{}) bool {
+			if (now-vi.(message.Message).Time)/1e9 > validitySentSeconds {
+				bn.recentSentMap.Delete(ki)
 			}
-		}
+			return true
+		})
 		time.Sleep(validitySentSeconds * time.Second)
 	}
 }

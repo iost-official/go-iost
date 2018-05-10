@@ -8,6 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"io/ioutil"
+	"os"
+
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/params"
 	. "github.com/smartystreets/goconvey/convey"
@@ -16,12 +19,12 @@ import (
 
 //for boot test server
 var servers []*Server
-var conf = initNetConf()
 
 func initNetConf() *NetConifg {
 	conf := &NetConifg{}
-	conf.SetLogPath("/tmp")
-	conf.SetNodeTablePath("/tmp")
+	conf.SetLogPath("iost_log_")
+	tablePath, _ := ioutil.TempDir(os.TempDir(), "iost_node_table_"+strconv.Itoa(int(time.Now().UnixNano())))
+	conf.SetNodeTablePath(tablePath)
 	conf.SetListenAddr("127.0.0.1")
 	return conf
 }
@@ -30,7 +33,7 @@ func StartBootBaseNetWorks() error {
 	for _, encodeAddr := range params.TestnetBootnodes {
 		addr := extractAddrFromBoot(encodeAddr)
 		if addr != "" {
-			s, err := NewServer(conf)
+			s, err := NewServer(initNetConf())
 			if err != nil {
 				return errors.New("new server encountered err " + fmt.Sprintf("%v", err))
 			}
@@ -62,7 +65,7 @@ func TestBaseNetWork_Listen(t *testing.T) {
 
 func TestBaseNetWork_allNodesExcludeAddr(t *testing.T) {
 	Convey("", t, func() {
-		s1, err := NewServer(conf)
+		s1, err := NewServer(initNetConf())
 		s1.Listen(3003)
 		So(err, ShouldEqual, nil)
 		s1.nodeTable.Put([]byte("test node 1"), common.IntToBytes(0))
@@ -76,7 +79,7 @@ func TestBaseNetWork_allNodesExcludeAddr(t *testing.T) {
 
 func TestBaseNetWork_rePickSeedAddr(t *testing.T) {
 	Convey("rePick SeedAddr", t, func() {
-		s1, err := NewServer(conf)
+		s1, err := NewServer(initNetConf())
 		s1.Listen(3003)
 		So(err, ShouldEqual, nil)
 		s1.nodeTable.Put([]byte("test node 1"), common.IntToBytes(0))
