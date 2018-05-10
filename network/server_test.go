@@ -22,6 +22,7 @@ func initNetConf() *NetConifg {
 	conf := &NetConifg{}
 	conf.SetLogPath("/tmp")
 	conf.SetNodeTablePath("/tmp")
+	conf.SetListenAddr("127.0.0.1")
 	return conf
 }
 
