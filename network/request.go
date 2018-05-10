@@ -160,7 +160,7 @@ func (r *Request) response(base *BaseNetwork, conn net.Conn) {
 		base.send(conn, newRequest(MessageReceived, base.localNode.String(), common.Int64ToBytes(r.Timestamp)))
 	case MessageReceived:
 		base.log.D("MessageReceived: %v", common.BytesToInt64(r.Body))
-		//base.deleteResend(common.BytesToInt64(r.Body)) todo
+		r.broadcastMsgHandle(base)
 	case BroadcastMessage:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
@@ -182,5 +182,18 @@ func (r *Request) response(base *BaseNetwork, conn net.Conn) {
 		base.putNode(string(r.Body))
 	default:
 		base.log.E("wrong request :", r)
+	}
+}
+
+//handle broadcast node's height
+func (r *Request) broadcastMsgHandle(net *BaseNetwork) {
+	msg := &message.Message{}
+	if _, err := msg.Unmarshal(r.Body); err == nil {
+		switch msg.ReqType {
+		case int32(ReqBlockHeight):
+			net.SetNodeHeightMap(string(r.From), common.BytesToUint64(msg.Body))
+		default:
+
+		}
 	}
 }
