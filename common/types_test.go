@@ -27,7 +27,7 @@ func TestBytesToInt(t *testing.T) {
 
 func TestBytesToInt64(t *testing.T) {
 	Convey("", t, func() {
-		var mySlice = []byte{21, 43, 115, 131, 2, 137, 44, 146}
-		So(Int64ToBytes(BytesToInt64(mySlice)), ShouldEqual, mySlice)
+		So(BytesToInt64(Int64ToBytes(math.MaxInt64)), ShouldEqual, math.MaxInt64)
+		So(BytesToUint64(Uint64ToBytes(uint64(math.MaxUint64))), ShouldEqual, uint64(math.MaxUint64))
 	})
 }
