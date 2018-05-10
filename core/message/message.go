@@ -19,10 +19,6 @@ func (d *Message) GetReqType() int32 {
 	return d.ReqType
 }
 
-func (d *Message) GetPriority() int8 {
-	return d.Priority
-}
-
 func (d *Message) GetBody() []byte {
 	return d.Body
 }

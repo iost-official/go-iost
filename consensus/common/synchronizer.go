@@ -3,6 +3,7 @@ package consensus_common
 import (
 	"github.com/iost-official/prototype/core/message"
 	. "github.com/iost-official/prototype/network"
+	"time"
 )
 
 type Synchronizer interface {
@@ -11,16 +12,16 @@ type Synchronizer interface {
 }
 
 type SyncImpl struct {
-	blockCache BlockCache
-	router	Router
-	heightChan chan message.Message
+	blockCache   BlockCache
+	router       Router
+	heightChan   chan message.Message
 	blkSyncChain chan message.Message
 }
 
 func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 	sync := &SyncImpl{
 		blockCache: bc,
-		router: router,
+		router:     router,
 	}
 	var err error
 	sync.heightChan, err = sync.router.FilteredChan(Filter{
@@ -28,7 +29,7 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 		BlackList:  []message.Message{},
 		RejectType: []ReqType{},
 		AcceptType: []ReqType{
-			ReqHeight,
+			ReqBlockHeight,
 		}})
 	if err != nil {
 		return nil
@@ -39,7 +40,7 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 		BlackList:  []message.Message{},
 		RejectType: []ReqType{},
 		AcceptType: []ReqType{
-			ReqBlockSync,
+			ReqDownloadBlock,
 		}})
 	if err != nil {
 		return nil
@@ -47,23 +48,45 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 	return sync
 }
 
-type HeightRequest struct {
-	localHeight int
-	needHeight  int
-}
-
-type HeightResponse struct {
-	height  int
-}
-
-type BlockRequest struct {
-	number  int
-}
-
+//开始监听同步任务
 func (sync *SyncImpl) StartListen() error {
+
 	return nil
 }
 
 func (sync *SyncImpl) RunSync() error {
 	return nil
+}
+
+func (sync *SyncImpl) heightLoop() {
+
+	for {
+		req, ok := <-sync.heightChan
+		if !ok {
+			return
+		}
+		var rh message.RequestHeight
+
+		rh.Decode(req.Body)
+
+		chain := sync.blockCache.LongestChain()
+		localLength := chain.Length()
+
+		//本地链长度小于等于远端，忽略远端的同步链请求
+		if localLength <= rh.LocalBlockHeight {
+			continue
+		}
+
+		//回复当前块的高度
+		hr :=message.ResponseHeight{BlockHeight:localLength}
+		resMsg := message.Message{
+			Time:time.Now().Unix(),
+			From:req.To,
+			To:req.From,
+			ReqType:1,
+			Body:hr.Encode(),
+		}
+
+		sync.router.Send(resMsg)
+	}
 }
