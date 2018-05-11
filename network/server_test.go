@@ -43,7 +43,7 @@ func StartBootBaseNetWorks() error {
 			recvCh, err := s.Listen(uint16(port))
 			go func() {
 				for v := range recvCh {
-					fmt.Println("== %v", v)
+					fmt.Println("recv msg = ", v)
 				}
 			}()
 
