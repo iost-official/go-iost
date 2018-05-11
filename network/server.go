@@ -50,7 +50,6 @@ type conn struct {
 type transport interface {
 	// The two handshakes.
 	doEncHandshake(prv *ecdsa.PrivateKey, dialDest *discover.Node) (discover.NodeID, error)
-	doProtoHandshake(our *protoHandshake) (*protoHandshake, error)
 	// The MsgReadWriter can only be used after the encryption
 	// handshake has completed. The code uses conn.id to track this
 	// by setting it to a non-nil value after the encryption handshake.

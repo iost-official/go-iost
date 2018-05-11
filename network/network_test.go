@@ -36,4 +36,24 @@ func TestNetwork(t *testing.T) {
 		message = <-lis2
 		So(message.ReqType, ShouldEqual, req.ReqType)
 	})
+	Convey("test rand pick node in all node which height greater than download height", t, func() {
+		m := map[string]uint64{
+			"node1": uint64(10),
+			"node2": uint64(8),
+			"node3": uint64(6),
+			"node4": uint64(4),
+			"node5": uint64(4),
+			"node6": uint64(5),
+		}
+		randMap := make(map[string]int, 0)
+		for i := 0; i < 1000; i++ {
+			targetNode := randNodeMatchHeight(m, 2)
+			randMap[targetNode] = randMap[targetNode] + 1
+		}
+		for nodeStr, _ := range m {
+			times, ok := randMap[nodeStr]
+			So(ok, ShouldBeTrue)
+			So(times, ShouldBeGreaterThan, 100)
+		}
+	})
 }

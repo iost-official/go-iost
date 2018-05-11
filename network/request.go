@@ -148,7 +148,7 @@ func (r *Request) handle(s *Server, conn net.Conn) (string, error) {
 }
 
 func (r *Request) response(base *BaseNetwork, conn net.Conn) {
-	base.log.D("response request = %v", r)
+	base.log.D("%v response request = %v", base.localNode.String(), r)
 	switch r.Type {
 	case Message:
 		appReq := &message.Message{}
