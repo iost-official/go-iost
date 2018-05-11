@@ -117,7 +117,7 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 		return val1, nil
 	} else {
 		if val2.Type() != Map {
-			return nil, fmt.Errorf("type error")
+			return nil, fmt.Errorf("type error : %v is not a hashmap", key)
 		}
 		val3, err := val2.(*VMap).Get(field)
 		if err != nil {
@@ -133,6 +133,7 @@ func (p *PoolImpl) PutHM(key, field Key, value Value) error {
 
 		if m.Type() == Map {
 			m.(*VMap).Set(field, value)
+			return nil
 		}
 	}
 	m := MakeVMap(nil)

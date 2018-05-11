@@ -30,7 +30,7 @@ func Core2Lua(value state.Value) lua.LValue {
 		vl := value.(*state.VInt)
 		v = lua.LNumber(vl.ToInt())
 	case *state.VString:
-		v = lua.LString([]rune(value.String())[1:])
+		v = lua.LString([]rune(value.EncodeString())[1:])
 	case *state.VBool:
 		if value == state.VTrue {
 			v = lua.LTrue

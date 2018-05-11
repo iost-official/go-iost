@@ -2,8 +2,8 @@ package lua
 
 import (
 	"fmt"
+
 	"github.com/iost-official/gopher-lua"
-	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/host"
@@ -44,8 +44,9 @@ func (l *VM) Stop() {
 	l.L.Close()
 }
 func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
-
-	l.cachePool = pool.Copy()
+	if pool != nil {
+		l.cachePool = pool.Copy()
+	}
 
 	method0, err := l.Contract.Api(methodName)
 	if err != nil {
@@ -89,7 +90,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var ok bool
 	l.Contract, ok = contract.(*Contract)
 	if !ok {
-		return fmt.Errorf("type error")
+		return fmt.Errorf("prepare contract %v : contract type error", contract.Info().Prefix)
 	}
 
 	l.L = lua.NewState()
@@ -136,7 +137,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	}
 	l.APIs = append(l.APIs, Get)
 
-	var Transfer = api{
+	var Transfer = api{ // TODO 对地址编码方法混乱，需要集中处理
 		name: "Transfer",
 		function: func(L *lua.LState) int {
 			src := L.ToString(1)
@@ -158,7 +159,12 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		function: func(L *lua.LState) int {
 			blockName := L.ToString(1)
 			methodName := L.ToString(2)
-			method := l.monitor.GetMethod(blockName, methodName)
+			method, err := l.monitor.GetMethod(blockName, methodName)
+
+			if err != nil {
+				L.Push(lua.LString("api not found"))
+				return 1
+			}
 
 			args := make([]state.Value, 0)
 
@@ -187,11 +193,11 @@ func (l *VM) PC() uint64 {
 }
 
 func CheckPrivilege(info vm.ContractInfo, name string) int {
-	if common.Base58Encode(info.Sender) == name {
+	if vm.IOSTAccount(name) == info.Sender {
 		return 2
 	}
 	for _, signer := range info.Signers {
-		if common.Base58Encode(signer) == name {
+		if vm.IOSTAccount(name) == signer {
 			return 1
 		}
 	}

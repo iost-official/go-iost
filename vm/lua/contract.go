@@ -2,6 +2,7 @@ package lua
 
 import (
 	"fmt"
+
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/vm"
 )
@@ -19,10 +20,10 @@ func (c *Contract) Info() vm.ContractInfo {
 func (c *Contract) SetPrefix(prefix string) {
 	c.info.Prefix = prefix
 }
-func (c *Contract) SetSender(sender []byte) {
+func (c *Contract) SetSender(sender vm.IOSTAccount) {
 	c.info.Sender = sender
 }
-func (c *Contract) AddSigner(signer []byte) {
+func (c *Contract) AddSigner(signer vm.IOSTAccount) {
 	c.info.Signers = append(c.info.Signers, signer)
 }
 func (c *Contract) Api(apiName string) (vm.Method, error) {
@@ -31,7 +32,7 @@ func (c *Contract) Api(apiName string) (vm.Method, error) {
 	}
 	rtn, ok := c.apis[apiName]
 	if !ok {
-		return nil, fmt.Errorf("not found")
+		return nil, fmt.Errorf("api %v : not found", apiName)
 	}
 	return &rtn, nil
 }
