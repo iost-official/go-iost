@@ -46,11 +46,11 @@ func (c *Contract) Encode() []byte {
 		panic(err)
 		return nil
 	}
-	return b
+	return append([]byte{0}, b...)
 }
 func (c *Contract) Decode(b []byte) error {
 	var cr contractRaw
-	_, err := cr.Unmarshal(b)
+	_, err := cr.Unmarshal(b[1:])
 	var ci vm.ContractInfo
 	err = ci.Decode(cr.info)
 	if err != nil {
