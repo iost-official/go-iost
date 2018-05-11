@@ -6,6 +6,7 @@ import (
 
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/tx"
 )
 
 //const (
@@ -128,6 +129,10 @@ func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
 type BlockCache interface {
 	AddGenesis(block *block.Block) error
 	Add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) error
+	AddTx(tx *tx.Tx) error
+	GetTx() (*tx.Tx, error)
+	ResetTxPoool() error
+
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
 	ConfirmedLength() uint64
@@ -138,6 +143,9 @@ type BlockCacheImpl struct {
 	bc              block.Chain
 	cachedRoot      *BlockCacheTree
 	singleBlockRoot *BlockCacheTree
+	txPool          *tx.TxPool
+	delTxPool       *tx.TxPool
+	txPoolCache     *tx.TxPool
 	maxDepth        int
 }
 
@@ -157,7 +165,9 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
 		},
-		maxDepth: maxDepth,
+		txPool:    NewTxPoolImpl(),
+		delTxPool: NewTxPoolImpl(),
+		maxDepth:  maxDepth,
 	}
 	return &h
 }
@@ -199,6 +209,9 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 				h.cachedRoot.bc.Flush()
 				h.cachedRoot.super = nil
 				h.cachedRoot.updateLength()
+				for _, tx := range h.cachedRoot.bc.Top().Content {
+					h.txPool.Del(tx)
+				}
 			} else {
 				break
 			}
@@ -221,6 +234,30 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 		return fmt.Errorf("error found")
 	}
 	return nil
+}
+
+func (h *BlockCacheImpl) AddTx(tx *tx.Tx) error {
+	//TODO 验证tx是否在blockchain上
+	h.txPool.Add(tx)
+	return nil
+}
+
+func (h *BlockCacheImpl) GetTx() (*tx.Tx, error) {
+	for {
+		tx := h.txPool.Get()
+		h.txPoolCache.Add(tx)
+		if ok, _ := h.delTxPool.Has(tx); !ok {
+			return tx, nil
+		}
+	}
+}
+
+func (h *BlockCacheImpl) ResetTxPoool() error {
+	for h.txPoolCache.Size() > 0 {
+		tx := h.txPoolCache.Get()
+		h.AddTx(tx)
+		h.txPoolCache.Del(tx)
+	}
 }
 
 func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
@@ -264,6 +301,7 @@ func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 
 func (h *BlockCacheImpl) LongestChain() block.Chain {
 	bct := h.cachedRoot
+	h.delTxPool = NewTxPoolImpl()
 	for {
 		if len(bct.children) == 0 {
 			return &bct.bc
@@ -271,6 +309,9 @@ func (h *BlockCacheImpl) LongestChain() block.Chain {
 		for _, b := range bct.children {
 			if b.bc.depth == bct.bc.depth-1 {
 				bct = b
+				for _, tx := range bct.bc.Top().Content {
+					h.delTxPool.Add(tx)
+				}
 				break
 			}
 		}
