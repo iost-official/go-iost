@@ -41,7 +41,7 @@ func newBct(block *block.Block, tree *BlockCacheTree) *BlockCacheTree {
 	return &bct
 }
 
-func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
+func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
 	for _, bct := range b.children {
 		code, newTree := bct.add(block, verifier)
 		if code != NotFound {
@@ -50,7 +50,7 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 	}
 
 	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.ParentHash) {
-		newPool, err := verifier(block, b.pool)
+		newPool, err := verifier(block, b.bc.Top(), b.pool)
 		if err != nil {
 			return ErrorBlock, nil
 		}
@@ -81,9 +81,9 @@ func (b *BlockCacheTree) findSingles(block *block.Block) (bool, *BlockCacheTree)
 	return false, nil
 }
 
-func (b *BlockCacheTree) addSubTree(root *BlockCacheTree, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) {
+func (b *BlockCacheTree) addSubTree(root *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
 	block := root.bc.block
-	newPool, err := verifier(block, b.pool)
+	newPool, err := verifier(block, b.bc.Top(), b.pool)
 	if err != nil {
 		return
 	}
@@ -134,7 +134,7 @@ var (
 
 type BlockCache interface {
 	AddGenesis(block *block.Block) error
-	Add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) error
+	Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error
 	AddTx(tx *tx.Tx) error
 	GetTx() (*tx.Tx, error)
 	ResetTxPoool() error
@@ -186,7 +186,7 @@ func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	return nil
 }
 
-func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) error {
+func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error {
 	code, newTree := h.cachedRoot.add(block, verifier)
 	switch code {
 	case Extend:

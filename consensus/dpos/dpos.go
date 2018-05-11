@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
+	"errors"
 )
 
 type DPoS struct {
@@ -132,16 +133,16 @@ func (p *DPoS) txListenLoop() {
 
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-	verifier := func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
+	verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 		// verify block head
 
-		if !VerifyBlockHead(blk, chain.Top()) {
-			return false, nil
+		if err := VerifyBlockHead(blk, parent); err != nil {
+			return nil, err
 		}
 
 		// verify block witness
 		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-			return false, nil
+			return nil, errors.New("wrong witness")
 		}
 
 		headInfo := generateHeadInfo(blk.Head)
@@ -150,13 +151,13 @@ func (p *DPoS) blockLoop() {
 
 		// verify block witness signature
 		if !common.VerifySignature(headInfo, signature) {
-			return false, nil
+			return nil, errors.New("wrong signature")
 		}
-		result, newPool := VerifyBlockContent(blk, chain)
-		if !result {
-			return false, nil
+		newPool, err := StdBlockVerifier(blk, pool)
+		if err != nil {
+			return nil, err
 		}
-		return true, newPool
+		return newPool, nil
 	}
 
 	for {
