@@ -56,8 +56,8 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 
 //开始监听同步任务
 func (sync *SyncImpl) StartListen() error {
-	go sync.heightLoop()
-	go sync.blockLoop()
+	go sync.requestBlockHeightLoop()
+	go sync.requestBlockLoop()
 
 	return nil
 }
@@ -91,7 +91,7 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	return nil
 }
 
-func (sync *SyncImpl) heightLoop() {
+func (sync *SyncImpl) requestBlockHeightLoop() {
 
 	for {
 		req, ok := <-sync.heightChan
@@ -113,7 +113,7 @@ func (sync *SyncImpl) heightLoop() {
 			Time:time.Now().Unix(),
 			From:req.To,
 			To:req.From,
-			ReqType:1, //todo 后补类型
+			ReqType:int32(RecvBlockHeight),
 			Body:hr.Encode(),
 		}
 
@@ -121,7 +121,7 @@ func (sync *SyncImpl) heightLoop() {
 	}
 }
 
-func (sync *SyncImpl) blockLoop() {
+func (sync *SyncImpl) requestBlockLoop() {
 
 	for {
 		req, ok := <-sync.blkSyncChain
