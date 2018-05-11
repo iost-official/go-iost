@@ -1,6 +1,7 @@
 package lua
 
 import (
+	"bytes"
 	"errors"
 	"regexp"
 	"strconv"
@@ -16,7 +17,7 @@ type DocCommentParser struct {
 func NewDocCommentParser(text string) (*DocCommentParser, error) {
 	parser := new(DocCommentParser)
 	if strings.Contains(text, "\\0") {
-		return nil, errors.New("Text contains character \\0, Parse failed")
+		return nil, errors.New("Text contains character \\0, parse failed")
 	}
 	parser.text = text + "\\0"
 	return parser, nil
@@ -38,6 +39,9 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 	hasMain := false
 	var contract Contract
+
+	var buffer bytes.Buffer
+
 	for _, submatches := range re.FindAllStringSubmatchIndex(content, -1) {
 		/*
 			--- <functionName>  summary
@@ -76,18 +80,20 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 			contract.info.GasLimit = gas
 			contract.info.Price = price
 			contract.main = method
-			contract.code = content[submatches[1]:][:endPos[1]]
+			//contract.code = content[submatches[1]:][:endPos[1]]
 		} else {
 
 			contract.apis[funcName] = method
 		}
+		buffer.WriteString(content[submatches[1]:][:endPos[1]])
+		buffer.WriteString("\n")
 
 	}
 
 	if !hasMain {
-		return nil, errors.New("No main function!, Parse failed")
+		return nil, errors.New("No main function!, parse failed")
 	}
-
+	contract.code = buffer.String()
 	return &contract, nil
 
 }
