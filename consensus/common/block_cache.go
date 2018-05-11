@@ -197,6 +197,7 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 			if need {
 				h.cachedRoot = newRoot
 				h.cachedRoot.bc.Flush()
+				h.cachedRoot.pool.Flush()
 				h.cachedRoot.super = nil
 				h.cachedRoot.updateLength()
 			} else {
