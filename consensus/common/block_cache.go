@@ -148,9 +148,9 @@ type BlockCacheImpl struct {
 	bc              block.Chain
 	cachedRoot      *BlockCacheTree
 	singleBlockRoot *BlockCacheTree
-	txPool          *tx.TxPool
-	delTxPool       *tx.TxPool
-	txPoolCache     *tx.TxPool
+	txPool          tx.TxPool
+	delTxPool       tx.TxPool
+	txPoolCache     tx.TxPool
 	maxDepth        int
 }
 
@@ -170,8 +170,8 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
 		},
-		txPool:    NewTxPoolImpl(),
-		delTxPool: NewTxPoolImpl(),
+		txPool:    tx.NewTxPoolImpl(),
+		delTxPool: tx.NewTxPoolImpl(),
 		maxDepth:  maxDepth,
 	}
 	return &h
@@ -305,7 +305,7 @@ func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 
 func (h *BlockCacheImpl) LongestChain() block.Chain {
 	bct := h.cachedRoot
-	h.delTxPool = NewTxPoolImpl()
+	h.delTxPool = tx.NewTxPoolImpl()
 	for {
 		if len(bct.children) == 0 {
 			return &bct.bc

@@ -126,7 +126,7 @@ func (p *DPoS) txListenLoop() {
 		tx.Decode(req.Body)
 		p.router.Send(req)
 		if VerifyTxSig(tx) {
-			p.blockCache.AddTx(tx)
+			p.blockCache.AddTx(&tx)
 		}
 	}
 }
