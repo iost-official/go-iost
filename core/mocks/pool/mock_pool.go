@@ -2,12 +2,13 @@
 // Source: github.com/iost-official/prototype/core/state (interfaces: Pool)
 
 // Package core_mock is a generated GoMock package.
-package core_mock
+package mock_pool
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	state "github.com/iost-official/prototype/core/state"
-	reflect "reflect"
 )
 
 // MockPool is a mock of Pool interface

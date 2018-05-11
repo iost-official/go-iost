@@ -90,10 +90,10 @@ func (m *vmMonitor) Call(pool state.Pool,
 		m.StartVM(contract)
 		holder = m.vms[contractPrefix]
 	}
-	switch holder.VM.(type) {
-	case *lua.VM:
-		holder.VM.(*lua.VM).L.PCount = 0 // TODO 进一步清理
-	}
+	//switch holder.VM.(type) {
+	//case *lua.VM:
+	//	holder.VM.(*lua.VM).L.PCount = 0 // 注意：L会复用因此会保留PCount，需要在
+	//}
 	rtn, pool, err := holder.Call(pool, methodName, args...)
 	gas := holder.PC()
 	return rtn, pool, gas, err

@@ -79,7 +79,6 @@ func (c *CachedBlockChain) Push(block *block.Block) error {
 
 	return nil
 }
-
 func (c *CachedBlockChain) Length() uint64 {
 	return c.Chain.Length() + uint64(c.cachedLength)
 }
@@ -113,9 +112,27 @@ func (c *CachedBlockChain) Flush() {
 }
 
 func (c *CachedBlockChain) Iterator() block.ChainIterator {
-	return nil
+	return &CBCIterator{c, nil}
 }
 
+type CBCIterator struct {
+	pc       *CachedBlockChain
+	iterator block.ChainIterator
+}
+
+func (ci *CBCIterator) Next() *block.Block {
+	if ci.iterator != nil {
+		return ci.iterator.Next()
+	}
+	p := ci.pc.block
+	if ci.pc.parent == nil {
+		ci.iterator = ci.pc.Chain.Iterator()
+	}
+	ci.pc = ci.pc.parent
+	return p
+}
+
+// depreciate : 请使用iterator
 func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
 	if number <= c.Chain.Length() {
 		return c.Chain.GetBlockByNumber(number)
@@ -133,6 +150,7 @@ func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
 	return nil
 }
 
+// depreciate : 请使用iterator
 func (c *CachedBlockChain) GetBlockByHash(blockHash []byte) *block.Block {
 	cbc := c
 	for cbc.block != nil {

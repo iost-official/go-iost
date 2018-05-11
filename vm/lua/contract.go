@@ -36,21 +36,39 @@ func (c *Contract) Api(apiName string) (vm.Method, error) {
 	}
 	return &rtn, nil
 }
+func (c *Contract) Code() string {
+	return c.code
+}
 func (c *Contract) Encode() []byte {
 	cr := contractRaw{
 		info: c.info.Encode(),
 		code: []byte(c.code),
 	}
+	mr := methodRaw{
+		name: c.main.name,
+		ic:   int32(c.main.inputCount),
+		oc:   int32(c.main.outputCount),
+	}
+	cr.methods = []methodRaw{mr}
+	for _, val := range c.apis {
+		mr = methodRaw{
+			name: val.name,
+			ic:   int32(val.inputCount),
+			oc:   int32(val.outputCount),
+		}
+		cr.methods = append(cr.methods, mr)
+	}
+
 	b, err := cr.Marshal(nil)
 	if err != nil {
 		panic(err)
 		return nil
 	}
-	return b
+	return append([]byte{0}, b...)
 }
 func (c *Contract) Decode(b []byte) error {
 	var cr contractRaw
-	_, err := cr.Unmarshal(b)
+	_, err := cr.Unmarshal(b[1:])
 	var ci vm.ContractInfo
 	err = ci.Decode(cr.info)
 	if err != nil {
@@ -58,6 +76,19 @@ func (c *Contract) Decode(b []byte) error {
 	}
 	c.info = ci
 	c.code = string(cr.code)
+	c.main = Method{
+		cr.methods[0].name,
+		int(cr.methods[0].ic),
+		int(cr.methods[0].oc),
+	}
+	for i := 1; i < len(cr.methods); i++ {
+		c.apis[cr.methods[i].name] = Method{
+			cr.methods[i].name,
+			int(cr.methods[i].ic),
+			int(cr.methods[i].oc),
+		}
+	}
+
 	return err
 }
 func (c *Contract) Hash() []byte {

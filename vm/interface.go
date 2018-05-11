@@ -14,13 +14,13 @@ import (
 // Privilege 设定智能合约的接口权限
 type Privilege int
 
-type IOSTAccount string
-
 const (
 	Private Privilege = iota
 	Protected
 	Public
 )
+
+type IOSTAccount string
 
 //go:generate gencode go -schema=structs.schema -package=vm
 //go:generate mockgen -destination mocks/mock_contract.go -package vm_mock github.com/iost-official/prototype/vm Contract
@@ -54,10 +54,11 @@ type Contract interface {
 	SetSender(sender IOSTAccount)
 	AddSigner(signer IOSTAccount)
 	Api(apiName string) (Method, error)
+	Code() string
 	common.Serializable
 }
 
-// Monitor ...
+// Monitor 管理虚拟机的管理者，实现在verifier模块
 type Monitor interface {
 	StartVM(contract Contract) VM
 	StopVM(contract Contract)

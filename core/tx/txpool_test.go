@@ -6,7 +6,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/vm/mocks"
 
-	. "github.com/iost-official/prototype/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
