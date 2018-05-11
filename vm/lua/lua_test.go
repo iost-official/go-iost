@@ -285,3 +285,45 @@ end`,
 	}
 
 }
+
+func TestCompilerNaive(t *testing.T) {
+	Convey("parse结果应该返回一个contract，code部分去掉注释，api部分保存函数的参数信息，info保存gas，price信息", t, func() {
+		parser, _ := NewDocCommentParser(
+			`--- main 合约主入口
+-- 输出hello world
+-- @gas_limit 11
+-- @gas_price 0.0001
+-- @param_cnt 0
+-- @return_cnt 1
+function main()
+ Put("hello", "world")
+ return "success"
+end
+--- foo 乱七八糟的函数
+-- 不知道在干啥
+-- @gas_limit 12345678910
+-- @gas_price 3.14159
+-- @param_cnt 3
+-- @return_cnt 2
+fucntion foo(a,b,c)
+	return a,b
+end
+`)
+		contract, _ := parser.parse()
+		So(contract.info.Language, ShouldEqual, "lua")
+		So(contract.info.GasLimit, ShouldEqual, 11)
+		So(contract.info.Price, ShouldEqual, 0.0001)
+		So(contract.code, ShouldEqual, `function main()
+ Put("hello", "world")
+ return "success"
+end
+fucntion foo(a,b,c)
+	return a,b
+end
+`)
+		So(contract.main, ShouldResemble, Method{"main", 0, 1})
+		So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2}})
+
+	})
+
+}
