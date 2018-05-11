@@ -142,6 +142,7 @@ type BlockCache interface {
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
 	ConfirmedLength() uint64
+	BlockConfirmChan() chan uint64
 }
 
 type BlockCacheImpl struct {
@@ -152,6 +153,7 @@ type BlockCacheImpl struct {
 	delTxPool       tx.TxPool
 	txPoolCache     tx.TxPool
 	maxDepth        int
+	blkConfirmChan  chan uint64
 }
 
 func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCacheImpl {
@@ -210,6 +212,7 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 				h.cachedRoot = newRoot
 				h.cachedRoot.bc.Flush()
 				h.cachedRoot.pool.Flush()
+				h.blkConfirmChan <- uint64(h.cachedRoot.bc.Top().Head.Number)
 				h.cachedRoot.super = nil
 				h.cachedRoot.updateLength()
 				for _, tx := range h.cachedRoot.bc.Top().Content {
@@ -339,6 +342,10 @@ func (h *BlockCacheImpl) LongestPool() state.Pool {
 			}
 		}
 	}
+}
+
+func (h *BlockCacheImpl) BlockConfirmChan() chan uint64 {
+	return h.blkConfirmChan
 }
 
 //func (h *BlockCacheImpl) FindTx(txHash []byte) (core.Tx, error) {

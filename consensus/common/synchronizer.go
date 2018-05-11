@@ -18,10 +18,10 @@ type Synchronizer interface {
 }
 
 type SyncImpl struct {
-	blockCache   BlockCache
-	router       Router
-	heightChan   chan message.Message
-	blkSyncChain chan message.Message
+	blockCache  BlockCache
+	router      Router
+	heightChan  chan message.Message
+	blkSyncChan chan message.Message
 }
 
 func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
@@ -41,7 +41,7 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 		return nil
 	}
 
-	sync.blkSyncChain, err = sync.router.FilteredChan(Filter{
+	sync.blkSyncChan, err = sync.router.FilteredChan(Filter{
 		WhiteList:  []message.Message{},
 		BlackList:  []message.Message{},
 		RejectType: []ReqType{},
@@ -58,6 +58,7 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 func (sync *SyncImpl) StartListen() error {
 	go sync.requestBlockHeightLoop()
 	go sync.requestBlockLoop()
+	go sync.blockConfirmLoop()
 
 	return nil
 }
@@ -122,7 +123,7 @@ func (sync *SyncImpl) requestBlockHeightLoop() {
 func (sync *SyncImpl) requestBlockLoop() {
 
 	for {
-		req, ok := <-sync.blkSyncChain
+		req, ok := <-sync.blkSyncChan
 		if !ok {
 			return
 		}
@@ -147,5 +148,15 @@ func (sync *SyncImpl) requestBlockLoop() {
 		}
 
 		sync.router.Send(resMsg)
+	}
+}
+
+func (sync *SyncImpl) blockConfirmLoop() {
+	for {
+		num, ok := <-sync.blockCache.BlockConfirmChan()
+		if !ok {
+			return
+		}
+		sync.router.CancelDownload(num, num)
 	}
 }
