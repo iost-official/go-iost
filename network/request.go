@@ -37,7 +37,6 @@ type Request struct {
 	Type      NetReqType
 	FromLen   int16
 	From      []byte
-	Priority  int8
 	Body      []byte
 }
 
@@ -96,13 +95,12 @@ func (r *Request) Unpack(reader io.Reader) error {
 }
 
 func (r *Request) String() string {
-	return fmt.Sprintf("version:%s length:%d type:%d timestamp:%d from:%s priority %v Body:%v",
+	return fmt.Sprintf("version:%s length:%d type:%d timestamp:%d from:%s Body:%v",
 		r.Version,
 		r.Length,
 		r.Type,
 		r.Timestamp,
 		r.From,
-		r.Priority,
 		r.Body,
 	)
 }
@@ -158,15 +156,16 @@ func (r *Request) response(base *BaseNetwork, conn net.Conn) {
 			base.RecvCh <- *appReq
 		}
 		base.send(conn, newRequest(MessageReceived, base.localNode.String(), common.Int64ToBytes(r.Timestamp)))
+		r.msgHandle(base)
 	case MessageReceived:
 		base.log.D("MessageReceived: %v", common.BytesToInt64(r.Body))
-		//base.deleteResend(common.BytesToInt64(r.Body)) todo
 	case BroadcastMessage:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
 			base.RecvCh <- *appReq
 			base.Broadcast(*appReq)
 		}
+		r.msgHandle(base)
 	case BroadcastMessageReceived:
 	//request for nodeTable
 	case ReqNodeTable:
@@ -182,5 +181,20 @@ func (r *Request) response(base *BaseNetwork, conn net.Conn) {
 		base.putNode(string(r.Body))
 	default:
 		base.log.E("wrong request :", r)
+	}
+}
+
+//handle broadcast node's height
+func (r *Request) msgHandle(net *BaseNetwork) {
+	msg := &message.Message{}
+	if _, err := msg.Unmarshal(r.Body); err == nil {
+		switch msg.ReqType {
+		case int32(ReqBlockHeight):
+			net.SetNodeHeightMap(string(msg.From), common.BytesToUint64(msg.Body))
+		case int32(RecvBlockHeight):
+			net.SetNodeHeightMap(string(msg.From), common.BytesToUint64(msg.Body))
+		default:
+
+		}
 	}
 }

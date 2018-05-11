@@ -130,6 +130,8 @@ type BlockCache interface {
 	Add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) error
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
+	ConfirmedLength() uint64
+	MaxHeight() uint64
 }
 
 type BlockCacheImpl struct {
@@ -160,6 +162,13 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 	return &h
 }
 
+func (h *BlockCacheImpl) ConfirmedLength() uint64 {
+	return 1
+}
+
+func (h *BlockCacheImpl) MaxHeight() uint64 {
+	return 1
+}
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	h.bc.Push(block)
 	return nil

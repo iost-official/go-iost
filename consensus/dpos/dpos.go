@@ -21,6 +21,7 @@ type DPoS struct {
 	account    Account
 	blockCache BlockCache
 	router     Router
+	synchronizer	Synchronizer
 	globalStaticProperty
 	globalDynamicProperty
 
@@ -43,6 +44,11 @@ func NewDPoS(acc Account, bc block.Chain, witnessList []string /*, network core.
 	var err error
 	p.router, err = RouterFactory("base")
 	if err != nil {
+		return nil, err
+	}
+
+	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
+	if p.synchronizer == nil {
 		return nil, err
 	}
 
@@ -119,7 +125,7 @@ func (p *DPoS) txListenLoop() {
 		tx.Decode(req.Body)
 		p.router.Send(req)
 		if VerifyTxSig(tx) {
-			// Add to tx pool or recorder
+			p.blockCache.AddTx(tx)
 		}
 	}
 }
@@ -141,6 +147,7 @@ func (p *DPoS) blockLoop() {
 		headInfo := generateHeadInfo(blk.Head)
 		var signature common.Signature
 		signature.Decode(blk.Head.Signature)
+
 		// verify block witness signature
 		if !common.VerifySignature(headInfo, signature) {
 			return false, nil
@@ -187,24 +194,6 @@ func (p *DPoS) scheduleLoop() {
 }
 
 func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
-	/*
-		if lastBlk == nil {
-			blk := block.Block{Version: 0, Content: make([]byte, 0), Head: block.BlockHead{
-				Version:    0,
-				ParentHash: lastBlk.Head.BlockHash,
-				TreeHash:   make([]byte, 0),
-				BlockHash:  make([]byte, 0),
-				Info:       make([]byte, 0),
-				Number:     0,
-				Witness:    acc.ID, // ?
-				Time:       GetCurrentTimestamp(),
-			}}
-			headinfo := generateHeadInfo(blk.Head)
-			sig, _ := common.Sign(common.Secp256k1, headinfo, acc.Seckey)
-			blk.Head.Signature = sig.Encode()
-			return &blk
-		}
-	*/
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.Head.BlockHash,
