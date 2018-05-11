@@ -93,7 +93,31 @@ func (s *TrieSync) AddRawEntry(hash common.Hash, depth int, parent common.Hash) 
 	if _, ok := s.membatch.batch[hash]; ok {
 		return
 	}
+	if ok, _ := s.database.Has(hash.Bytes()); ok {
+		return
+	}
+	req := &request{
+		hash: hash,
+		raw: true,
+		depth: depth,
+	}
+	if parent != (common.Hash{}) {
+		ancestor := s.requests[parent]
+		if ancestor == nil {
+			panic(fmt.Sprintf("raw-entry ancestor not found: %x", parent))
+		}
+		ancestor.deps++
+		req.parents = append(req.parents, ancestor)
+	}
+	s.schedule(req)
+}
 
+func (s *TrieSync) Missing(max int) []common.Hash {
+	requests := []common.Hash{}
+	for !s.queue.Empty() && (max == 0 || len(requests) < max) {
+		requests = append(requests, s.queue.PopItem().(common.Hash))
+	}
+	return requests
 }
 
 func (s *TrieSync) schedule(req *request) {
