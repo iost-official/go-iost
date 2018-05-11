@@ -33,7 +33,7 @@ func (p *Patch) Encode() []byte {
 	}
 	for k, v := range p.m {
 		pr.keys = append(pr.keys, string(k))
-		pr.vals = append(pr.vals, []byte(v.String()))
+		pr.vals = append(pr.vals, []byte(v.EncodeString()))
 	}
 	b, err := pr.Marshal(nil)
 	if err != nil {

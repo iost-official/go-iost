@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
+	"errors"
 )
 
 type DPoS struct {
@@ -39,7 +40,7 @@ type DPoS struct {
 func NewDPoS(acc Account, bc block.Chain, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
 	p.Account = acc
-	p.blockCache = NewBlockCache(bc, len(witnessList)*2/3+1)
+	p.blockCache = NewBlockCache(bc, nil, len(witnessList)*2/3+1)
 
 	var err error
 	p.router, err = RouterFactory("base")
@@ -125,23 +126,23 @@ func (p *DPoS) txListenLoop() {
 		tx.Decode(req.Body)
 		p.router.Send(req)
 		if VerifyTxSig(tx) {
-			p.blockCache.AddTx(tx)
+			p.blockCache.AddTx(&tx)
 		}
 	}
 }
 
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-	verifier := func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
+	verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 		// verify block head
 
-		if !VerifyBlockHead(blk, chain.Top()) {
-			return false, nil
+		if err := VerifyBlockHead(blk, parent); err != nil {
+			return nil, err
 		}
 
 		// verify block witness
 		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-			return false, nil
+			return nil, errors.New("wrong witness")
 		}
 
 		headInfo := generateHeadInfo(blk.Head)
@@ -150,13 +151,13 @@ func (p *DPoS) blockLoop() {
 
 		// verify block witness signature
 		if !common.VerifySignature(headInfo, signature) {
-			return false, nil
+			return nil, errors.New("wrong signature")
 		}
-		result, newPool := VerifyBlockContent(blk, chain)
-		if !result {
-			return false, nil
+		newPool, err := StdBlockVerifier(blk, pool)
+		if err != nil {
+			return nil, err
 		}
-		return true, newPool
+		return newPool, nil
 	}
 
 	for {
@@ -167,8 +168,15 @@ func (p *DPoS) blockLoop() {
 		var blk block.Block
 		blk.Decode(req.Body)
 		err := p.blockCache.Add(&blk, verifier)
-		if err == nil {
+		if err != ErrBlock {
 			p.globalDynamicProperty.update(&blk.Head)
+			if err == ErrNotFound {
+				// New block is a single block
+				need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
+				if need {
+					go p.synchronizer.SyncBlocks(start, end)
+				}
+			}
 		}
 		ts := Timestamp{blk.Head.Time}
 		if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
