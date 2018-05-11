@@ -2,10 +2,11 @@ package tx
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/vm"
-	"time"
 )
 
 //go:generate gencode go -schema=structs.schema -package=tx

@@ -26,6 +26,7 @@ type BlockCacheTree struct {
 	bc       CachedBlockChain
 	children []*BlockCacheTree
 	super    *BlockCacheTree
+	pool     state.Pool
 }
 
 func newBct(block *block.Block, tree *BlockCacheTree) *BlockCacheTree {
@@ -39,7 +40,7 @@ func newBct(block *block.Block, tree *BlockCacheTree) *BlockCacheTree {
 	return &bct
 }
 
-func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) (bool, state.Pool)) (CacheStatus, *BlockCacheTree) {
+func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
 	for _, bct := range b.children {
 		code, newTree := bct.add(block, verifier)
 		if code != NotFound {
@@ -48,13 +49,13 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 	}
 
 	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.ParentHash) {
-		result, newPool := verifier(block, &b.bc)
-		if !result {
+		newPool, err := verifier(block, b.pool)
+		if err != nil {
 			return ErrorBlock, nil
 		}
 
 		bct := newBct(block, b)
-		bct.bc.SetStatePool(newPool)
+		bct.pool = newPool
 		b.children = append(b.children, bct)
 		if len(b.children) == 1 {
 			return Extend, bct
@@ -79,15 +80,15 @@ func (b *BlockCacheTree) findSingles(block *block.Block) (bool, *BlockCacheTree)
 	return false, nil
 }
 
-func (b *BlockCacheTree) addSubTree(root *BlockCacheTree, verifier func(blk *block.Block, chain block.Chain) (bool, state.Pool)) {
+func (b *BlockCacheTree) addSubTree(root *BlockCacheTree, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) {
 	block := root.bc.block
-	result, newPool := verifier(block, &b.bc)
-	if !result {
+	newPool, err := verifier(block, b.pool)
+	if err != nil {
 		return
 	}
 
 	newTree := newBct(block, b)
-	newTree.bc.SetStatePool(newPool)
+	newTree.pool = newPool
 	b.children = append(b.children, newTree)
 	for _, bct := range root.children {
 		newTree.addSubTree(bct, verifier)
@@ -127,13 +128,15 @@ func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
 
 type BlockCache interface {
 	AddGenesis(block *block.Block) error
-	Add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) (bool, state.Pool)) error
+	Add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) error
 	AddTx(tx *tx.Tx) error
 	GetTx() (*tx.Tx, error)
 	ResetTxPoool() error
 
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
+	ConfirmedLength() uint64
+	MaxHeight() uint64
 }
 
 type BlockCacheImpl struct {
@@ -146,13 +149,14 @@ type BlockCacheImpl struct {
 	maxDepth        int
 }
 
-func NewBlockCache(chain block.Chain, maxDepth int) *BlockCacheImpl {
+func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCacheImpl {
 	h := BlockCacheImpl{
 		bc: chain,
 		cachedRoot: &BlockCacheTree{
 			bc:       NewCBC(chain),
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
+			pool:     pool,
 		},
 		singleBlockRoot: &BlockCacheTree{
 			bc: CachedBlockChain{
@@ -168,12 +172,19 @@ func NewBlockCache(chain block.Chain, maxDepth int) *BlockCacheImpl {
 	return &h
 }
 
+func (h *BlockCacheImpl) ConfirmedLength() uint64 {
+	return 1
+}
+
+func (h *BlockCacheImpl) MaxHeight() uint64 {
+	return 1
+}
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	h.bc.Push(block)
 	return nil
 }
 
-func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, chain block.Chain) (bool, state.Pool)) error {
+func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) error {
 	code, newTree := h.cachedRoot.add(block, verifier)
 	switch code {
 	case Extend:
@@ -241,6 +252,14 @@ func (h *BlockCacheImpl) GetTx() (*tx.Tx, error) {
 	}
 }
 
+func (h *BlockCacheImpl) ResetTxPoool() error {
+	for h.txPoolCache.Size() > 0 {
+		tx := h.txPoolCache.Get()
+		h.AddTx(tx)
+		h.txPoolCache.Del(tx)
+	}
+}
+
 func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
 	// TODO: 在底层parameter定义的地方定义各种version的const，可以在块生成、验证、此处用
 	switch version {
@@ -283,11 +302,8 @@ func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 func (h *BlockCacheImpl) LongestChain() block.Chain {
 	bct := h.cachedRoot
 	h.delTxPool = NewTxPoolImpl()
-	if bct.bc.depth == 0 {
-		return &h.cachedRoot.bc
-	}
 	for {
-		if bct.bc.depth == 0 {
+		if len(bct.children) == 0 {
 			return &bct.bc
 		}
 		for _, b := range bct.children {
@@ -296,6 +312,25 @@ func (h *BlockCacheImpl) LongestChain() block.Chain {
 				for _, tx := range bct.bc.Top().Content {
 					h.delTxPool.Add(tx)
 				}
+				break
+			}
+		}
+	}
+}
+
+func (h *BlockCacheImpl) BasePool() state.Pool {
+	return h.cachedRoot.pool
+}
+
+func (h *BlockCacheImpl) LongestPool() state.Pool {
+	bct := h.cachedRoot
+	for {
+		if len(bct.children) == 0 {
+			return bct.pool
+		}
+		for _, b := range bct.children {
+			if b.bc.depth == bct.bc.depth-1 {
+				bct = b
 				break
 			}
 		}
