@@ -15,7 +15,6 @@ func TestTx(t *testing.T) {
 
 		mockContract := vm_mock.NewMockContract(ctl)
 		mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
-		mockContract.EXPECT().Decode(gomock.Any()).AnyTimes().Return(nil)
 
 		a1, _ := account.NewAccount(nil)
 		a2, _ := account.NewAccount(nil)
@@ -43,11 +42,5 @@ func TestTx(t *testing.T) {
 			So(err.Error(), ShouldEqual, "signer error")
 		})
 
-		Convey("encode and decode", func() {
-			tx := NewTx(int64(0), mockContract)
-			serial := tx.Encode()
-			err := tx.Decode(serial)
-			So(err, ShouldBeNil)
-		})
 	})
 }
