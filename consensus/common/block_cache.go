@@ -144,8 +144,8 @@ type BlockCacheImpl struct {
 	cachedRoot      *BlockCacheTree
 	singleBlockRoot *BlockCacheTree
 	txPool          *tx.TxPool
-	delTxPool       *tx.TxPool
 	txPoolCache     *tx.TxPool
+	delTxPool       *tx.TxPool
 	maxDepth        int
 }
 
@@ -165,9 +165,11 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
 		},
-		txPool:    NewTxPoolImpl(),
-		delTxPool: NewTxPoolImpl(),
-		maxDepth:  maxDepth,
+		txPool:      NewTxPoolImpl(),
+		txPoolCache: NewTxPoolImpl(),
+		delTxPool:   NewTxPoolImpl(),
+
+		maxDepth: maxDepth,
 	}
 	return &h
 }
@@ -179,6 +181,7 @@ func (h *BlockCacheImpl) ConfirmedLength() uint64 {
 func (h *BlockCacheImpl) MaxHeight() uint64 {
 	return 1
 }
+
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	h.bc.Push(block)
 	return nil

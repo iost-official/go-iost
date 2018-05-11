@@ -18,10 +18,10 @@ import (
 )
 
 type DPoS struct {
-	account    Account
-	blockCache BlockCache
-	router     Router
-	synchronizer	Synchronizer
+	account      Account
+	blockCache   BlockCache
+	router       Router
+	synchronizer Synchronizer
 	globalStaticProperty
 	globalDynamicProperty
 
@@ -186,7 +186,8 @@ func (p *DPoS) scheduleLoop() {
 		if wid == p.Account.ID {
 			bc := p.blockCache.LongestChain()
 			blk := p.genBlock(p.Account, *bc.Top())
-			p.router.Send(message.Message{Body: blk.Encode()}) //??
+			p.blockCache.ResetTxPoool()
+			p.router.Broadcast(message.Message{ReqType: ReqNewBlock, Body: blk.Encode()}) //??
 		}
 		nextSchedule := timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
 		time.Sleep(time.Duration(nextSchedule))
@@ -209,6 +210,12 @@ func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
 	fmt.Println(acc.Seckey)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
+	//TODO Content大小控制
+	for len(blk.Content) < 2 {
+		tx := p.blockCache.GetTx()
+		//TODO 验算tx能否放进block
+		blk.Content = append(blk.Content, &tx)
+	}
 	return &blk
 }
 

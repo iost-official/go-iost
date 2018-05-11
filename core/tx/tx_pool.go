@@ -1,7 +1,9 @@
 package tx
 
 import (
+	"errors"
 	"fmt"
+
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/db"
 )
@@ -10,8 +12,8 @@ type TxPool interface {
 	Add(tx *Tx) error
 	Del(tx *Tx) error
 	Get(hash []byte) (*Tx, error)
+	Top() (*Tx, error)
 	Has(tx *Tx) (bool, error)
-	Pop() (*Tx, error)
 	Size() int
 }
 
@@ -35,11 +37,14 @@ func (tp *TxPoolImpl) Del(tx *Tx) error {
 
 func (tp *TxPoolImpl) Get(hash []byte) (*Tx, error) {
 	tx, _ := tp.txMap[common.Base58Encode(hash)]
-	return &tx, nil
+	return tx, nil
 }
 
-func (tp *TxPoolImpl) Pop() (*Tx, error) {
-	return nil, nil
+func (tp *TxPoolImpl) Top() (*Tx, error) {
+	for _, tx := range tp.txMap {
+		return tx, nil
+	}
+	return nil, errors.New("Empty")
 }
 
 func (tp *TxPoolImpl) Has(tx *Tx) (bool, error) {
