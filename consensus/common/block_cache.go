@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"errors"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
@@ -126,6 +127,11 @@ func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
 	return false
 }
 
+var (
+	ErrNotFound = errors.New("not found")
+	ErrBlock    = errors.New("error block")
+)
+
 type BlockCache interface {
 	AddGenesis(block *block.Block) error
 	Add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) error
@@ -136,7 +142,6 @@ type BlockCache interface {
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
 	ConfirmedLength() uint64
-	MaxHeight() uint64
 }
 
 type BlockCacheImpl struct {
@@ -173,12 +178,9 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 }
 
 func (h *BlockCacheImpl) ConfirmedLength() uint64 {
-	return 1
+	return h.bc.Length()
 }
 
-func (h *BlockCacheImpl) MaxHeight() uint64 {
-	return 1
-}
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	h.bc.Push(block)
 	return nil
@@ -207,6 +209,7 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 			if need {
 				h.cachedRoot = newRoot
 				h.cachedRoot.bc.Flush()
+				h.cachedRoot.pool.Flush()
 				h.cachedRoot.super = nil
 				h.cachedRoot.updateLength()
 				for _, tx := range h.cachedRoot.bc.Top().Content {
@@ -230,8 +233,9 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 			children: make([]*BlockCacheTree, 0),
 		}
 		bct.children = append(bct.children, newTree)
+		return ErrNotFound
 	case ErrorBlock:
-		return fmt.Errorf("error found")
+		return ErrBlock
 	}
 	return nil
 }

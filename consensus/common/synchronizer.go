@@ -13,7 +13,7 @@ var (
 
 type Synchronizer interface {
 	StartListen() error
-	NeedSync() (bool, uint64, uint64)
+	NeedSync(maxHeight uint64) (bool, uint64, uint64)
 	SyncBlocks(startNumber uint64, endNumber uint64) error
 }
 
@@ -62,21 +62,19 @@ func (sync *SyncImpl) StartListen() error {
 	return nil
 }
 
-func (sync *SyncImpl) NeedSync() (bool, uint64, uint64) {
+func (sync *SyncImpl) NeedSync(maxHeight uint64) (bool, uint64, uint64) {
 	height := sync.blockCache.ConfirmedLength()
-	maxCachedHeight := sync.blockCache.MaxHeight()
-	if height < maxCachedHeight-uint64(SyncNumber) {
+	if height < maxHeight-uint64(SyncNumber) {
 		body := message.RequestHeight{
 			LocalBlockHeight: height,
-			NeedBlockHeight:  maxCachedHeight,
+			NeedBlockHeight:  maxHeight,
 		}
 		heightReq := message.Message{
-			From:    "",
 			ReqType: int32(ReqBlockHeight),
 			Body:    body.Encode(),
 		}
 		sync.router.Broadcast(heightReq)
-		return true, height + 1, maxCachedHeight
+		return true, height + 1, maxHeight
 	}
 	return false, 0, 0
 }
@@ -101,20 +99,20 @@ func (sync *SyncImpl) requestBlockHeightLoop() {
 		var rh message.RequestHeight
 		rh.Decode(req.Body)
 
-		localLength := sync.blockCache.MaxHeight()
+		localLength := sync.blockCache.LongestChain().Length()
 
 		//本地链长度小于等于远端，忽略远端的同步链请求
 		if localLength <= rh.LocalBlockHeight {
 			continue
 		}
 		//回复当前块的高度
-		hr :=message.ResponseHeight{BlockHeight:localLength}
+		hr := message.ResponseHeight{BlockHeight: localLength}
 		resMsg := message.Message{
-			Time:time.Now().Unix(),
-			From:req.To,
-			To:req.From,
-			ReqType:int32(RecvBlockHeight),
-			Body:hr.Encode(),
+			Time:    time.Now().Unix(),
+			From:    req.To,
+			To:      req.From,
+			ReqType: int32(RecvBlockHeight),
+			Body:    hr.Encode(),
 		}
 
 		sync.router.Send(resMsg)
@@ -141,14 +139,13 @@ func (sync *SyncImpl) requestBlockLoop() {
 
 		//回复当前块的高度
 		resMsg := message.Message{
-			Time:time.Now().Unix(),
-			From:req.To,
-			To:req.From,
-			ReqType:int32(ReqNewBlock), //todo 后补类型
-			Body:block.Encode(),
+			Time:    time.Now().Unix(),
+			From:    req.To,
+			To:      req.From,
+			ReqType: int32(ReqNewBlock), //todo 后补类型
+			Body:    block.Encode(),
 		}
 
 		sync.router.Send(resMsg)
 	}
 }
-
