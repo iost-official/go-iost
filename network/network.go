@@ -52,6 +52,7 @@ type Network interface {
 	Listen(port uint16) (<-chan message.Message, error)
 	Close(port uint16) error
 	Download(start, end uint64) error
+	CancelDownload(start, end uint64) error
 }
 
 type NaiveNetwork struct {
@@ -588,10 +589,22 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			//send download request
 
 			bn.DownloadHeights[downloadHeight] = retryTimes + 1
-			go bn.sendTo(msg.To, req)
+			go func() {
+				time.Sleep(time.Duration(retryTimes*100) * time.Millisecond)
+				bn.sendTo(msg.To, req)
+			}()
 		}
 	}
 
+	return nil
+}
+
+func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
+	for ; start <= end; start++ {
+		delete(bn.DownloadHeights, start)
+	}
 	return nil
 }
 

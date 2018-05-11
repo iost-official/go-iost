@@ -13,9 +13,13 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-var recv chan message.Message
+var recvHeightChMap map[int]chan message.Message
+var recvDownloadChMap map[int]chan message.Message
 
+//start boot node
 func newBootRouters() []Router {
+	recvHeightChMap = make(map[int]chan message.Message, 0)
+	recvDownloadChMap = make(map[int]chan message.Message, 0)
 	rs := make([]Router, 0)
 	for _, encodeAddr := range params.TestnetBootnodes {
 		node, err := discover.ParseNode(encodeAddr)
@@ -37,6 +41,8 @@ func newBootRouters() []Router {
 	}
 	return rs
 }
+
+//create n nodes
 func newRouters(n int) []Router {
 	newBootRouters()
 	rs := make([]Router, 0)
@@ -47,32 +53,53 @@ func newRouters(n int) []Router {
 		router.Run()
 
 		rs = append(rs, router)
+		recv, _ := router.FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
+		down, _ := router.FilteredChan(Filter{AcceptType: []ReqType{ReqDownloadBlock}})
+		recvHeightChMap[i] = recv
+		recvDownloadChMap[i] = down
 	}
 	time.Sleep(15 * time.Second)
-	recv, _ = rs[1].FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
+
 	return rs
 }
+
 func TestRouterImpl_Broadcast(t *testing.T) {
+	routers := newRouters(3)
+	height := uint64(32)
+	net0 := routers[0].(*RouterImpl).base.(*BaseNetwork)
+	net1 := routers[1].(*RouterImpl).base.(*BaseNetwork)
+	net2 := routers[2].(*RouterImpl).base.(*BaseNetwork)
+	broadHeight := message.Message{Body: common.Uint64ToBytes(height), ReqType: int32(ReqBlockHeight), From: net2.localNode.String()}
 
 	Convey("broadcast block height test", t, func() {
-		routers := newRouters(3)
-		net2 := routers[2].(*RouterImpl).base.(*BaseNetwork)
-		height := uint64(32)
-		broadHeight := message.Message{Body: common.Uint64ToBytes(height), ReqType: int32(ReqBlockHeight), From: net2.localNode.String()}
 
 		routers[2].Broadcast(broadHeight)
 		time.Sleep(10 * time.Second)
 		//check app msg chan
 		select {
-		case data := <-recv:
+		case data := <-recvHeightChMap[1]:
 			fmt.Println("recv msg = %v", data)
 		}
 
 		So(len(routers[1].(*RouterImpl).base.(*BaseNetwork).NodeHeightMap), ShouldEqual, 1)
 	})
 
-	Convey("download block", t, func() {
+	Convey("download block request test", t, func() {
+		net2.SetNodeHeightMap(net0.localNode.String(), height+2)
+		net2.SetNodeHeightMap(net1.localNode.String(), height+5)
 
+		routers[2].Download(height, height+5)
+		select {
+		case data := <-recvDownloadChMap[0]:
+			fmt.Println("node 0 receive download request (<=height+2) %v", data)
+		case data := <-recvDownloadChMap[1]:
+			fmt.Println("node 1 receive download request (<=height+5)%v", data)
+		}
+
+	})
+
+	Convey("cancel download block test", t, func() {
+		//todo
 	})
 
 }
