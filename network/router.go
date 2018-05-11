@@ -122,7 +122,7 @@ func (r *RouterImpl) Download(start uint64, end uint64) error {
 
 //CancelDownload cancel download todo del downloading map
 func (r *RouterImpl) CancelDownload(start uint64, end uint64) error {
-	return nil
+	return r.base.CancelDownload(start, end)
 }
 
 //Filter The filter used by Router

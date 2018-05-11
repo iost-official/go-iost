@@ -52,6 +52,7 @@ type Network interface {
 	Listen(port uint16) (<-chan message.Message, error)
 	Close(port uint16) error
 	Download(start, end uint64) error
+	CancelDownload(start, end uint64) error
 }
 
 type NaiveNetwork struct {
@@ -354,7 +355,6 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 		bn.log.E("marshal request encountered err:%v", err)
 	}
 	msgHash := common.Base58Encode(common.Sha256(msg.Body))
-
 	if _, ok := bn.recentSentMap.Load(msgHash); !ok {
 		bn.recentSentMap.Store(msgHash, msg)
 	} else {
@@ -551,10 +551,11 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 	if len(bn.NodeHeightMap) <= 0 {
 		return nil
 	}
-
+	bn.lock.Lock()
 	for i := start; i <= end; i++ {
 		bn.DownloadHeights[i] = 0
 	}
+	bn.lock.Unlock()
 
 	for len(bn.DownloadHeights) > 0 {
 		matchNum := 1
@@ -587,11 +588,25 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			req := newRequest(Message, bn.localNode.String(), body)
 			//send download request
 
+			bn.lock.Lock()
 			bn.DownloadHeights[downloadHeight] = retryTimes + 1
-			go bn.sendTo(msg.To, req)
+			bn.lock.Unlock()
+			go func() {
+				time.Sleep(time.Duration(retryTimes*100) * time.Millisecond)
+				bn.sendTo(msg.To, req)
+			}()
 		}
 	}
 
+	return nil
+}
+
+func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
+	for ; start <= end; start++ {
+		delete(bn.DownloadHeights, start)
+	}
 	return nil
 }
 
