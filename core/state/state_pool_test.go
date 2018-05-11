@@ -2,10 +2,11 @@ package state
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/db/mocks"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestPoolImpl(t *testing.T) {
@@ -50,7 +51,7 @@ func TestPoolImpl(t *testing.T) {
 			err := sp1.PutHM(k1, k2, v1)
 			vvv, err := sp1.Get(k1)
 			So(err, ShouldBeNil)
-			So(vvv.String(), ShouldEqual, "{key2:i123,")
+			So(vvv.EncodeString(), ShouldEqual, "{key2:i123,")
 			v, err := sp2.GetHM(k1, k2)
 			So(err, ShouldBeNil)
 			So(v, ShouldEqual, v1)
@@ -59,7 +60,20 @@ func TestPoolImpl(t *testing.T) {
 			vv, err := sp2.Get(k1)
 			So(err, ShouldBeNil)
 			So(vv.Type(), ShouldEqual, Map)
-			So(len(vv.String()), ShouldEqual, 39)
+			So(len(vv.EncodeString()), ShouldEqual, 39)
+
+			sp2.PutHM(k1, k2, v2)
+			v3, err := sp2.GetHM(k1, k1)
+			So(err, ShouldBeNil)
+			So(v3, ShouldEqual, v2)
+			v4, err := sp2.GetHM(k1, k2)
+			So(err, ShouldBeNil)
+			So(v4, ShouldEqual, v2)
+
+			//sp2.PutHM(Key("iost"), Key("a"), MakeVFloat(1000000))
+			//vxx, err := sp2.GetHM(Key("iost"), Key("a"))
+			//So(err, ShouldBeNil)
+			//So(vxx.Type(), ShouldEqual, Float)
 		})
 	})
 

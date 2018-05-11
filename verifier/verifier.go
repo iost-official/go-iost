@@ -3,6 +3,8 @@ package verifier
 import (
 	"fmt"
 
+	"reflect"
+
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
@@ -41,9 +43,13 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	sender := contract.Info().Sender
 	var balanceOfSender float64
 	val0, err := cv.Pool.GetHM("iost", state.Key(sender))
+	if err != nil {
+		return nil, err
+	}
 	val, ok := val0.(*state.VFloat)
 	if !ok {
-		return nil, fmt.Errorf("type error")
+		return nil, fmt.Errorf("pool type error: should VFloat, acture %v; in iost.%v",
+			reflect.TypeOf(val0).String(), string(sender))
 	}
 	balanceOfSender = val.ToFloat64()
 

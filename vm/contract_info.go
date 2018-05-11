@@ -8,8 +8,8 @@ type ContractInfo struct {
 	GasLimit int64
 	Price    float64
 
-	Signers [][]byte
-	Sender  []byte
+	Signers []IOSTAccount
+	Sender  IOSTAccount
 }
 
 func (c *ContractInfo) toRaw() contractInfoRaw {

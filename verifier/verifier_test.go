@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/db/mocks"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
@@ -48,7 +49,7 @@ func TestCacheVerifier(t *testing.T) {
 	Put("hello", "world")
 	return "success"
 end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: []byte("ahaha")}, code, main)
+			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
 
 			cv := NewCacheVerifier(pool)
 			_, err := cv.VerifyContract(&lc, true)
@@ -57,7 +58,7 @@ end`
 			So(string(k2), ShouldEqual, "iost")
 			So(string(f2), ShouldEqual, "ahaha")
 			vv := v2.(*state.VFloat)
-			So(vv.ToFloat64(), ShouldEqual, float64(10000-9))
+			So(vv.ToFloat64(), ShouldEqual, float64(10000-6))
 		})
 	})
 }
@@ -83,7 +84,7 @@ func TestBlockVerifier(t *testing.T) {
 	Put("hello", "world")
 	return "success"
 end`
-		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: []byte("ahaha")}, code, main)
+		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
 
 		code1 := `function main()
 	return Call("con2", "sayHi", "bob")
@@ -91,7 +92,7 @@ end`
 
 		main2 := lua.NewMethod("main", 0, 1)
 
-		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "test2", GasLimit: 1000, Price: 1, Sender: []byte("ahaha")},
+		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "test2", GasLimit: 1000, Price: 1, Sender: vm.IOSTAccount("ahaha")},
 			code1, main2)
 
 		tx1 := tx.NewTx(1, &lc1)
@@ -109,7 +110,33 @@ end`
 		So(err, ShouldBeNil)
 		So(pool2, ShouldNotBeNil)
 		bal, _ := pool2.GetHM(state.Key("iost"), state.Key("ahaha"))
-		So(bal.(*state.VFloat).ToFloat64(), ShouldEqual, 9976)
+		So(bal.(*state.VFloat).ToFloat64(), ShouldEqual, 9985)
 
 	})
+}
+
+func BenchmarkCacheVerifier_TransferOnly(b *testing.B) {
+	main := lua.NewMethod("main", 0, 1)
+	code := `function main()
+	Transfer("a", "b", 50)
+end`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("a")}, code, main)
+
+	dbx, err := db.DatabaseFactor("redis")
+	if err != nil {
+		panic(err.Error())
+	}
+	sdb := state.NewDatabase(dbx)
+	pool := state.NewPool(sdb)
+	pool.PutHM(state.Key("iost"), state.Key("a"), state.MakeVFloat(1000000))
+	pool.PutHM(state.Key("iost"), state.Key("b"), state.MakeVFloat(1000000))
+
+	cv := NewCacheVerifier(pool)
+	for i := 0; i < b.N; i++ {
+		_, err = cv.VerifyContract(&lc, false)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 }
