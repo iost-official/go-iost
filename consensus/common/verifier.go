@@ -1,12 +1,12 @@
 package consensus_common
 
 import (
+	"bytes"
+	"errors"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/verifier"
-	"bytes"
-	"errors"
 )
 
 //go:generate gencode go -schema=structs.schema -package=consensus_common
@@ -22,14 +22,13 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 	if bh.Number != parentBlk.Head.Number+1 {
 		return errors.New("wrong number")
 	}
-//	treeHash := calcTreeHash(DecodeTxs(blk.Content))
-//	// merkle tree hash
-//	if !bytes.Equal(treeHash, bh.TreeHash) {
-//		return false
-//	}
+	//	treeHash := calcTreeHash(DecodeTxs(blk.Content))
+	//	// merkle tree hash
+	//	if !bytes.Equal(treeHash, bh.TreeHash) {
+	//		return false
+	//	}
 	return nil
 }
-
 
 var ver *verifier.BlockVerifier
 
