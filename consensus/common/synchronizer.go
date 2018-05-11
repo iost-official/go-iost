@@ -56,6 +56,8 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 
 //开始监听同步任务
 func (sync *SyncImpl) StartListen() error {
+	go sync.requestBlockHeightLoop()
+	go sync.requestBlockLoop()
 
 	return nil
 }
@@ -89,7 +91,7 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	return nil
 }
 
-func (sync *SyncImpl) heightLoop() {
+func (sync *SyncImpl) requestBlockHeightLoop() {
 
 	for {
 		req, ok := <-sync.heightChan
@@ -97,27 +99,56 @@ func (sync *SyncImpl) heightLoop() {
 			return
 		}
 		var rh message.RequestHeight
-
 		rh.Decode(req.Body)
 
-		chain := sync.blockCache.LongestChain()
-		localLength := chain.Length()
+		localLength := sync.blockCache.MaxHeight()
 
 		//本地链长度小于等于远端，忽略远端的同步链请求
 		if localLength <= rh.LocalBlockHeight {
 			continue
 		}
-
 		//回复当前块的高度
 		hr :=message.ResponseHeight{BlockHeight:localLength}
 		resMsg := message.Message{
 			Time:time.Now().Unix(),
 			From:req.To,
 			To:req.From,
-			ReqType:1,
+			ReqType:int32(RecvBlockHeight),
 			Body:hr.Encode(),
 		}
 
 		sync.router.Send(resMsg)
 	}
 }
+
+func (sync *SyncImpl) requestBlockLoop() {
+
+	for {
+		req, ok := <-sync.blkSyncChain
+		if !ok {
+			return
+		}
+		var rh message.RequestBlock
+		rh.Decode(req.Body)
+
+		chain := sync.blockCache.LongestChain()
+
+		//todo 需要确定如何获取
+		block := chain.GetBlockByNumber(rh.BlockNumber)
+		if block == nil {
+			continue
+		}
+
+		//回复当前块的高度
+		resMsg := message.Message{
+			Time:time.Now().Unix(),
+			From:req.To,
+			To:req.From,
+			ReqType:int32(ReqNewBlock), //todo 后补类型
+			Body:block.Encode(),
+		}
+
+		sync.router.Send(resMsg)
+	}
+}
+
