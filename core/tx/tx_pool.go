@@ -2,11 +2,9 @@ package tx
 
 import (
 	"fmt"
-	"github.com/bouk/monkey"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/db"
-	"github.com/iost-official/prototype/vm"
 )
 
 type TxPool interface {
@@ -60,7 +58,11 @@ type TxPoolDbImpl struct {
 
 var txPrefix = []byte("t") //txPrefix+tx hash -> tx data
 
-func NewTxPoolDbImpl() (*TxPoolDbImpl, error) {
+/*
+	if you call NewTxPoolDbImpl() to generate a instance tp of TxPoolDbImpl
+	then you must call tp.Close() to close the db at last
+*/
+func NewTxPoolDbImpl() (TxPool, error) {
 	ldb, err := db.DatabaseFactor("ldb")
 	if err != nil {
 		return nil, fmt.Errorf("failed to init db %v", err)
@@ -81,10 +83,6 @@ func (tp *TxPoolDbImpl) Add(tx *Tx) error {
 func (tp *TxPoolDbImpl) Del(tx *Tx) error {
 	return nil
 }
-func (tp *TxPoolDbImpl) Get(hash []byte) (*Tx, error) {
-	return nil, nil
-}
-
 /*
 func (tp *TxPoolDbImpl) Get(hash []byte) (*Tx, error) {
 	tx := Tx{}
@@ -99,7 +97,7 @@ func (tp *TxPoolDbImpl) Get(hash []byte) (*Tx, error) {
 
 		return nil, fmt.Errorf("failed to Decode the tx: %v", err)
 	}
-	return tx, nil
+	return &tx, nil
 }
 */
 //todo
@@ -115,5 +113,9 @@ func (tp *TxPoolDbImpl) Close() {
 	tp.db.Close()
 }
 func Pop() (*Tx, error) {
+	return nil, nil
+}
+
+func (tp *TxPoolDbImpl) Pop() (*Tx, error) {
 	return nil, nil
 }
