@@ -78,7 +78,7 @@ func TestRouterImpl_Broadcast(t *testing.T) {
 		//check app msg chan
 		select {
 		case data := <-recvHeightChMap[1]:
-			fmt.Println("recv msg = %v", data)
+			fmt.Printf("recv msg = %v\n", data)
 		}
 
 		So(len(routers[1].(*RouterImpl).base.(*BaseNetwork).NodeHeightMap), ShouldEqual, 1)
@@ -91,9 +91,9 @@ func TestRouterImpl_Broadcast(t *testing.T) {
 		routers[2].Download(height, height+5)
 		select {
 		case data := <-recvDownloadChMap[0]:
-			fmt.Println("node 0 receive download request (<=height+2) %v", data)
+			fmt.Printf("node 0 receive download request (<=height+2) %v\n", data)
 		case data := <-recvDownloadChMap[1]:
-			fmt.Println("node 1 receive download request (<=height+5)%v", data)
+			fmt.Printf("node 1 receive download request (<=height+5)%v\n", data)
 		}
 
 	})
