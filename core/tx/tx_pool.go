@@ -5,6 +5,7 @@ import (
 	"github.com/bouk/monkey"
 	
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/db"
 )
 
@@ -84,6 +85,7 @@ func (tp *TxPoolDbImpl) Del(tx *Tx) error {
 
 func (tp *TxPoolDbImpl) Get(hash []byte) (*Tx, error) {
 	txPtr := new(Tx)
+	txPtr.Contract=*new(vm.Contract)
 	txData, err := tp.db.Get(append(txPrefix, hash...))
 	if err != nil {
 

@@ -13,6 +13,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+var recv chan message.Message
+
 func newBootRouters() []Router {
 	rs := make([]Router, 0)
 	for _, encodeAddr := range params.TestnetBootnodes {
@@ -43,24 +45,34 @@ func newRouters(n int) []Router {
 		baseNet, _ := NewBaseNetwork(&NetConifg{ListenAddr: "127.0.0.1"})
 		router.Init(baseNet, uint16(30600+i))
 		router.Run()
+
 		rs = append(rs, router)
 	}
 	time.Sleep(15 * time.Second)
+	recv, _ = rs[1].FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
 	return rs
 }
-
 func TestRouterImpl_Broadcast(t *testing.T) {
+
 	Convey("broadcast block height test", t, func() {
 		routers := newRouters(3)
 		net2 := routers[2].(*RouterImpl).base.(*BaseNetwork)
 		height := uint64(32)
 		broadHeight := message.Message{Body: common.Uint64ToBytes(height), ReqType: int32(ReqBlockHeight), From: net2.localNode.String()}
+
 		routers[2].Broadcast(broadHeight)
-		net1 := routers[1].(*RouterImpl).base.(*BaseNetwork)
 		time.Sleep(10 * time.Second)
-		fmt.Println(fmt.Sprintf("net1 node heights = %v", net1.NodeHeightMap))
-		_, err := routers[2].FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
-		So(err, ShouldBeNil)
-		So(len(net1.NodeHeightMap), ShouldEqual, 1)
+		//check app msg chan
+		select {
+		case data := <-recv:
+			fmt.Println("recv msg = %v", data)
+		}
+
+		So(len(routers[1].(*RouterImpl).base.(*BaseNetwork).NodeHeightMap), ShouldEqual, 1)
 	})
+
+	Convey("download block", t, func() {
+
+	})
+
 }
