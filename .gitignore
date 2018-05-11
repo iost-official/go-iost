@@ -93,3 +93,6 @@ vendor/gopkg.in/
 *.log
 /network/router.go
 /core/block/database/
+
+# ctags
+tags
