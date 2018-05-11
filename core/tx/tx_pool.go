@@ -83,7 +83,7 @@ func (tp *TxPoolDbImpl) Add(tx *Tx) error {
 func (tp *TxPoolDbImpl) Del(tx *Tx) error {
 	return nil
 }
-/*
+
 func (tp *TxPoolDbImpl) Get(hash []byte) (*Tx, error) {
 	tx := Tx{}
 	txData, err := tp.db.Get(append(txPrefix, hash...))
@@ -99,7 +99,7 @@ func (tp *TxPoolDbImpl) Get(hash []byte) (*Tx, error) {
 	}
 	return &tx, nil
 }
-*/
+
 //todo
 func (tp *TxPoolDbImpl) Has(tx *Tx) (bool, error) {
 	return false, nil

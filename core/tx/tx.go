@@ -107,7 +107,7 @@ func (t *Tx) Decode(b []byte) error {
 		default:
 			return fmt.Errorf("Tx.Decode:tx.Contract syntax error")
 		}
-	}else{
+	} else {
 		err = t.Contract.Decode(tr.Contract)
 	}
 	if err != nil {
