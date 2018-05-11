@@ -2,57 +2,13 @@ package tx
 
 import (
 	"testing"
-	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/vm/lua"
-	"github.com/golang/mock/gomock"
-	"github.com/iost-official/prototype/vm/mocks"
-
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/prototype/vm/lua"
+	"github.com/iost-official/prototype/vm"
 )
 
 func TestTxPoolImpl(t *testing.T) {
 	Convey("Test of TxPool", t, func() {
-		Convey("Test of TestTxPoolDb", func() {
-
-			Convey("Test of Add", func() {
-				txpooldb, err := NewTxPoolDbImpl()
-
-				main := lua.NewMethod("main", 0, 1)
-				code := `function main()
-							Put("hello", "world")
-							return "success"
-						end`
-				lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
-
-				tx := NewTx(int64(0), &lc)
-				err = txpooldb.Add(&tx)
-				So(err, ShouldBeNil)
-				txpooldb.(*TxPoolDbImpl).Close()
-			})
-
-			Convey("Test of Get", func() {
-				txpooldb, err := NewTxPoolDbImpl()
-				main := lua.NewMethod("main", 0, 1)
-				code := `function main()
-								Put("hello", "world")
-								return "success"
-							end`
-				lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
-
-				tx := NewTx(int64(0), &lc)
-				err = txpooldb.Add(&tx)
-				hash := tx.Hash()
-
-				tx1, err := txpooldb.Get(hash)
-				So(err, ShouldBeNil)
-				So(tx.Time, ShouldEqual, (*tx1).Time)
-				txpooldb.(*TxPoolDbImpl).Close()
-			})
-
-		})
-
-
-
 
 /**
 		var txp TxPool
@@ -113,6 +69,50 @@ func TestTxPoolImpl(t *testing.T) {
 			tpp.Copy(txp)
 			//	So(len(txp.txMap), ShouldEqual, 1)
 		})
-	})
 **/
+	})
+
+}
+
+func TestTxPoolDbImpl(t *testing.T) {
+	Convey("Test of TxPool", t, func() {
+		Convey("Test of TestTxPoolDb", func() {
+
+			Convey("Test of Add", func() {
+				txpooldb, err := NewTxPoolDbImpl()
+
+				main := lua.NewMethod("main", 0, 1)
+				code := `function main()
+							Put("hello", "world")
+							return "success"
+						end`
+				lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+
+				tx := NewTx(int64(0), &lc)
+				err = txpooldb.Add(&tx)
+				So(err, ShouldBeNil)
+				txpooldb.(*TxPoolDbImpl).Close()
+			})
+
+			Convey("Test of Get", func() {
+				txpooldb, err := NewTxPoolDbImpl()
+				main := lua.NewMethod("main", 0, 1)
+				code := `function main()
+								Put("hello", "world")
+								return "success"
+							end`
+				lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+
+				tx := NewTx(int64(0), &lc)
+				err = txpooldb.Add(&tx)
+				hash := tx.Hash()
+
+				tx1, err := txpooldb.Get(hash)
+				So(err, ShouldBeNil)
+				So(tx.Time, ShouldEqual, (*tx1).Time)
+				txpooldb.(*TxPoolDbImpl).Close()
+			})
+
+		})
+	})
 }
