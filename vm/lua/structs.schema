@@ -1,4 +1,11 @@
 struct contractRaw {
     info []byte
     code []byte
+    methods []methodRaw
+}
+
+struct methodRaw {
+    name string
+    ic int32
+    oc int32
 }

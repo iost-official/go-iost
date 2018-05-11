@@ -16,22 +16,24 @@ package cmd
 
 import (
 	"fmt"
+
 	"io/ioutil"
 	"os"
 
-	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/spf13/cobra"
 )
 
-// compileCmd represents the compile command
-var compileCmd = &cobra.Command{
-	Use:   "compile",
-	Short: "Compile contract files to smart contract",
-	Long: `Compile contract files to smart contract. 
-Useage : 
+// checkCmd represents the check command
+var checkCmd = &cobra.Command{
+	Use:   "check",
+	Short: "A brief description of your command",
+	Long: `A longer description that spans multiple lines and likely contains examples
+and usage of using your command. For example:
 
-iwallet compile -l lua SRC`,
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println(`Error: source file not given`)
@@ -48,19 +50,9 @@ iwallet compile -l lua SRC`,
 			fmt.Println(err.Error())
 			return
 		}
-		rawCode := string(fd)
 
-		var contract vm.Contract
-		switch Language {
-		case "lua":
-			parser, _ := lua.NewDocCommentParser(rawCode)
-			contract, err = parser.Parse()
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-		}
-
+		var contract lua.Contract // todo 解析tx而不是contract
+		contract.Decode(fd)
 		fmt.Printf(`Transaction : 
 Time: xx
 Nonce: xx
@@ -73,40 +65,19 @@ Code:
 ----
 `, contract.Info().Price, contract.Info().GasLimit, contract.Code())
 
-		bytes := contract.Encode() // todo 在这里直接生成tx， 而不是contract
-		f, err := os.Create(Dist)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		defer f.Close()
-
-		_, err = f.Write(bytes)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
 	},
 }
 
-var Language string
-var Dist string
-var Nonce int
-
 func init() {
-	rootCmd.AddCommand(compileCmd)
-
-	compileCmd.Flags().StringVarP(&Language, "language", "l", "lua", "Set language of contract, Support lua")
-	compileCmd.Flags().StringVarP(&Dist, "dest", "d", "./untitled.sc", "Set destination of build file")
-	compileCmd.Flags().IntVarP(&Nonce, "nonce", "n", 1, "Set Nonce of this Transaction")
+	rootCmd.AddCommand(checkCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// compileCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// checkCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// compileCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// checkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -54,6 +54,7 @@ type Contract interface {
 	SetSender(sender IOSTAccount)
 	AddSigner(signer IOSTAccount)
 	Api(apiName string) (Method, error)
+	Code() string
 	common.Serializable
 }
 
