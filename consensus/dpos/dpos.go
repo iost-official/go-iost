@@ -18,10 +18,10 @@ import (
 )
 
 type DPoS struct {
-	account    Account
-	blockCache BlockCache
-	router     Router
-	synchronizer	Synchronizer
+	account      Account
+	blockCache   BlockCache
+	router       Router
+	synchronizer Synchronizer
 	globalStaticProperty
 	globalDynamicProperty
 
@@ -39,7 +39,7 @@ type DPoS struct {
 func NewDPoS(acc Account, bc block.Chain, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
 	p.Account = acc
-	p.blockCache = NewBlockCache(bc, len(witnessList)*2/3+1)
+	p.blockCache = NewBlockCache(bc, nil, len(witnessList)*2/3+1)
 
 	var err error
 	p.router, err = RouterFactory("base")
@@ -167,8 +167,15 @@ func (p *DPoS) blockLoop() {
 		var blk block.Block
 		blk.Decode(req.Body)
 		err := p.blockCache.Add(&blk, verifier)
-		if err == nil {
+		if err != ErrBlock {
 			p.globalDynamicProperty.update(&blk.Head)
+			if err == ErrNotFound {
+				// New block is a single block
+				need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
+				if need {
+					go p.synchronizer.SyncBlocks(start, end)
+				}
+			}
 		}
 		ts := Timestamp{blk.Head.Time}
 		if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
