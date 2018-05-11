@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
+	"bytes"
 )
 
 type DocCommentParser struct {
@@ -38,6 +39,9 @@ func (p *DocCommentParser) parse() (*Contract, error) {
 
 	hasMain := false
 	var contract Contract
+
+	var buffer bytes.Buffer
+
 	for _, submatches := range re.FindAllStringSubmatchIndex(content, -1) {
 		/*
 		--- <functionName>  summary
@@ -76,18 +80,20 @@ func (p *DocCommentParser) parse() (*Contract, error) {
 			contract.info.GasLimit = gas
 			contract.info.Price = price
 			contract.main = method
-			contract.code = content[submatches[1]:][:endPos[1]]
+			//contract.code = content[submatches[1]:][:endPos[1]]
 		} else {
 
 			contract.apis[funcName] = method
 		}
+		buffer.WriteString(content[submatches[1]:][:endPos[1]])
+		buffer.WriteString("\n")
 
 	}
 
 	if !hasMain {
 		return nil, errors.New("No main function!, parse failed")
 	}
-
+	contract.code=buffer.String()
 	return &contract, nil
 
 }
