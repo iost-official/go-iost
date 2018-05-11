@@ -17,6 +17,7 @@ func TestTxPoolImpl(t *testing.T) {
 
 		mockContract := vm_mock.NewMockContract(ctl)
 		mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
+		mockContract.EXPECT().Decode().AnyTimes().Return([]byte{1, 2, 3})
 		tx := NewTx(int64(0), mockContract)
 		Convey("Add", func() {
 			txp.Add(tx)

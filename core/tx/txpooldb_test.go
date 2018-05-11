@@ -12,7 +12,8 @@ func TestTxPoolDb(t *testing.T) {
 		ctl := gomock.NewController(t)
 
 		mockContract := vm_mock.NewMockContract(ctl)
-		mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
+		mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3, 4})
+
 		Convey("Test of Add", func() {
 			txpooldb, err := NewTxPoolDbImpl()
 			tx := NewTx(int64(0), mockContract)

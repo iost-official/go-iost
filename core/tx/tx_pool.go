@@ -2,6 +2,7 @@ package tx
 
 import (
 	"fmt"
+	"github.com/bouk/monkey"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/db"
 )
@@ -34,6 +35,7 @@ func (tp *TxPoolImpl) Del(tx Tx) error {
 	return nil
 }
 
+
 func (tp *TxPoolImpl) Get(hash []byte) (*Tx, error) {
 	tx, ok := tp.txMap[common.Base58Encode(hash)]
 	return &tx, nil
@@ -52,6 +54,7 @@ func (tp *TxPoolImpl) Has(tx Tx) (bool, error) {
 	return ok, nil
 }
 
+/*
 func (tp *TxPoolImpl) Copy(ttp *TxPool) error {
 	var tttp *TxPoolImpl
 	tttp = ttp
@@ -61,7 +64,10 @@ func (tp *TxPoolImpl) Copy(ttp *TxPool) error {
 	}
 	return nil
 }
-
+*/
+func (tp *TxPoolImpl) Copy(ttp *TxPool) error {
+	return nil
+}
 func (tp *TxPoolImpl) Size() int {
 	return len(tp.txMap)
 }
@@ -71,6 +77,7 @@ type TxPoolDbImpl struct {
 }
 
 var txPrefix = []byte("t") //txPrefix+tx hash -> tx data
+
 func NewTxPoolDbImpl() (*TxPoolDbImpl, error) {
 	ldb, err := db.DatabaseFactor("ldb")
 	if err != nil {
@@ -80,21 +87,6 @@ func NewTxPoolDbImpl() (*TxPoolDbImpl, error) {
 	return &TxPoolDbImpl{db: ldb}, nil
 }
 
-func (tp *TxPoolDbImpl) Get(hash []byte) (*Tx, error) {
-	txPtr := new(Tx)
-	txData, err := tp.db.Get(append(txPrefix, hash...))
-	if err != nil {
-
-		return nil, fmt.Errorf("failed to Get the tx: %v", err)
-	}
-	err = txPtr.Decode(txData) //something wrong with Decode
-	if err != nil {
-
-		return nil, fmt.Errorf("failed to Decode the tx: %v", err)
-	}
-	return txPtr, nil
-}
-
 func (tp *TxPoolDbImpl) Add(tx Tx) error {
 	hash := tx.Hash()
 	err := tp.db.Put(append(txPrefix, hash...), tx.Encode())
@@ -102,6 +94,47 @@ func (tp *TxPoolDbImpl) Add(tx Tx) error {
 		return fmt.Errorf("failed to Put tx: %v", err)
 	}
 	return nil
+}
+
+func (tp *TxPoolDbImpl) Del(tx Tx) error {
+	return nil
+}
+
+func (tp *TxPoolDbImpl) Get(hash []byte) (*Tx, error) {
+	txPtr := new(Tx)
+	txData, err := tp.db.Get(append(txPrefix, hash...))
+	if err != nil {
+
+		return nil, fmt.Errorf("failed to Get the tx: %v", err)
+	}
+
+	guard := monkey.Patch(txPtr.Decode, func(_ []byte) error {
+		return nil
+	})
+	defer guard.Unpatch()
+
+	err = txPtr.Decode(txData) //something go wrong when call txPtr.Decode()
+	if err != nil {
+
+		return nil, fmt.Errorf("failed to Decode the tx: %v", err)
+	}
+	return txPtr, nil
+}
+
+func (tp *TxPoolDbImpl) GetSlice() ([]Tx, error) {
+	return nil, nil
+}
+
+func (tp *TxPoolDbImpl) has(tx Tx) (bool, error) {
+	return false, nil
+}
+
+func (tp *TxPoolDbImpl) Copy(ttp *TxPool) error {
+	return nil
+}
+
+func (tp *TxPoolDbImpl) Size() int {
+	return 0
 }
 
 func (tp *TxPoolDbImpl) Close() {
