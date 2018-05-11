@@ -96,3 +96,6 @@ vendor/gopkg.in/
 
 # ctags
 tags
+
+# .swap file
+*.swap
