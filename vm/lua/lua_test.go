@@ -285,3 +285,30 @@ end`,
 	}
 
 }
+
+func Test_Compiler_1(t *testing.T){
+	fmt.Println("hello")
+	parser,_:=NewDocCommentParser(
+		`--- main 合约主入口
+-- 输出hello world
+-- @gas_limit 11
+-- @gas_price 0.0001
+-- @param_cnt 0
+-- @return_cnt 1
+function main()
+ Put("hello", "world")
+ return "success"
+end
+--- foo 乱七八糟的函数
+-- 不知道在干啥
+-- @gas_limit 12345678910
+-- @gas_price 3.14159
+-- @param_cnt 3
+-- @return_cnt 2
+fucntion foo(a,b,c)
+	return a,b
+end
+`)
+	contract,_:=parser.parse()
+	fmt.Println(contract)
+}
