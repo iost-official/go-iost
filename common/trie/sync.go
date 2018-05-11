@@ -3,6 +3,8 @@ package trie
 import (
 	"errors"
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/common/trie/prque"
+	"fmt"
 )
 
 var ErrNotRequested = errors.New("not requested")
@@ -43,4 +45,62 @@ type TrieSync struct {
 	membatch *syncMemBatch
 	requests map[common.Hash]*request
 	queue *prque.Prque
+}
+
+func NewTrieSync(root common.Hash, database DatabaseReader, callback LeafCallback) *TrieSync {
+	ts := &TrieSync {
+		database: database,
+		membatch: newSyncMemBatch(),
+		requests: make(map[common.Hash]*request),
+		queue: prque.New(),
+	}
+	ts.AddSubTrie(root, 0, common.Hash{}, callback)
+	return ts
+}
+
+func (s *TrieSync) AddSubTrie(root common.Hash, depth int, parent common.Hash, callback LeafCallback) {
+	if root == emptyRoot {
+		return
+	}
+	if _, ok := s.membatch.batch[root]; ok {
+		return
+	}
+	key := root.Bytes()
+	blob, _ := s.database.Get(key)
+	if local, err := decodeNode(key, blob, 0); local != nil && err == nil {
+		return
+	}
+	req := &request {
+		hash: root,
+		depth: depth,
+		callback: callback,
+	}
+	if parent != (common.Hash{}) {
+		ancestor := s.requests[parent]
+		if ancestor == nil {
+			panic(fmt.Sprintf("sub-trie ancestor not found: %x", parent))
+		}
+		ancestor.deps++
+		req.parents = append(req.parents, ancestor)
+	}
+	s.schedule(req)
+}
+
+func (s *TrieSync) AddRawEntry(hash common.Hash, depth int, parent common.Hash) {
+	if hash == emptyState {
+		return
+	}
+	if _, ok := s.membatch.batch[hash]; ok {
+		return
+	}
+
+}
+
+func (s *TrieSync) schedule(req *request) {
+	if old, ok := s.requests[req.hash]; ok {
+		old.parents = append(old.parents, req.parents...)
+		return
+	}
+	s.queue.Push(req.hash, float32(req.depth))
+	s.requests[req.hash] = req
 }
