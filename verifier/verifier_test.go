@@ -5,6 +5,8 @@ import (
 
 	"errors"
 
+	"fmt"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/core/block"
@@ -138,5 +140,7 @@ end`
 			panic(err)
 		}
 	}
+	fmt.Println(pool.GetHM("iost", "a"))
+	fmt.Println(pool.GetHM("iost", "b"))
 
 }

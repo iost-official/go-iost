@@ -137,7 +137,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	}
 	l.APIs = append(l.APIs, Get)
 
-	var Transfer = api{ // TODO 对地址编码方法混乱，需要集中处理
+	var Transfer = api{
 		name: "Transfer",
 		function: func(L *lua.LState) int {
 			src := L.ToString(1)
