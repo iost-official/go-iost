@@ -378,10 +378,71 @@ func TestStatePool(t *testing.T) {
 }
 
 func TestTxPool(t *testing.T) {
-	ctl := gomock.NewController(t)
+	Convey("Test of Block Cache (PoW)", t, func() {
+		ctl := gomock.NewController(t)
+		pool := core_mock.NewMockPool(ctl)
 
-	mockContract := vm_mock.NewMockContract(ctl)
-	mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
-	mockContract.EXPECT().Decode(gomock.Any()).AnyTimes().Return(nil)
-	tx := NewTx(int64(0), mockContract)
+		b0 := block.Block{
+			Head: block.BlockHead{
+				Version:    1,
+				ParentHash: []byte("nothing"),
+			},
+			Content: []tx.Tx{tx.NewTx(0, nil)},
+		}
+
+		b1 := block.Block{
+			Head: block.BlockHead{
+				Version:    1,
+				ParentHash: b0.HeadHash(),
+			},
+			Content: []tx.Tx{tx.NewTx(1, nil)},
+		}
+
+		b2 := block.Block{
+			Head: block.BlockHead{
+				Version:    1,
+				ParentHash: b1.HeadHash(),
+			},
+			Content: []tx.Tx{tx.NewTx(2, nil)},
+		}
+
+		b2a := block.Block{
+			Head: block.BlockHead{
+				Version:    1,
+				ParentHash: b1.HeadHash(),
+			},
+			Content: []tx.Tx{tx.NewTx(-2, nil)},
+		}
+
+		b3 := block.Block{
+			Head: block.BlockHead{
+				Version:    1,
+				ParentHash: b2.HeadHash(),
+			},
+			Content: []tx.Tx{tx.NewTx(3, nil)},
+		}
+
+		b4 := block.Block{
+			Head: block.BlockHead{
+				Version:    1,
+				ParentHash: b3.HeadHash(),
+			},
+		}
+
+		verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+			return nil, nil
+		}
+		base := core_mock.NewMockChain(ctl)
+		base.EXPECT().Top().AnyTimes().Return(&b0)
+
+		mockContract := vm_mock.NewMockContract(ctl)
+		mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
+		mockContract.EXPECT().Decode(gomock.Any()).AnyTimes().Return(nil)
+		tx := NewTx(int64(0), mockContract)
+
+		bc := NewBlockCache(base, pool, 4)
+		Convey("AddTx:", func() {
+			bc.AddTx(tx)
+		})
+	})
 }

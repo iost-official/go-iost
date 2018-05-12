@@ -172,11 +172,11 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
 		},
-		txPool:      NewTxPoolImpl(),
-		txPoolCache: NewTxPoolImpl(),
-		delTxPool:   NewTxPoolImpl(),
-		maxDepth:    maxDepth,
+		maxDepth: maxDepth,
 	}
+	h.txPool, _ = tx.TxPoolFactory("mem")
+	h.txPoolCache, _ = tx.TxPoolFactory("mem")
+	h.delTxPool, _ = tx.TxPoolFactory("mem")
 	return &h
 }
 
@@ -217,7 +217,7 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 				h.cachedRoot.super = nil
 				h.cachedRoot.updateLength()
 				for _, tx := range h.cachedRoot.bc.Top().Content {
-					h.txPool.Del(tx)
+					h.txPool.Del(&tx)
 				}
 			} else {
 				break
@@ -246,6 +246,9 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 
 func (h *BlockCacheImpl) AddTx(tx *tx.Tx) error {
 	//TODO 验证tx是否在blockchain上
+	if ok, _ := h.bc.HasTx(tx); ok {
+		return fmt.Errorf("Tx in BlockChain")
+	}
 	h.txPool.Add(tx)
 	return nil
 }
@@ -266,10 +269,11 @@ func (h *BlockCacheImpl) GetTx() (*tx.Tx, error) {
 
 func (h *BlockCacheImpl) ResetTxPoool() error {
 	for h.txPoolCache.Size() > 0 {
-		tx := h.txPoolCache.Top()
+		tx, _ := h.txPoolCache.Top()
 		h.AddTx(tx)
 		h.txPoolCache.Del(tx)
 	}
+	return nil
 }
 
 func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
@@ -322,7 +326,7 @@ func (h *BlockCacheImpl) LongestChain() block.Chain {
 			if b.bc.depth == bct.bc.depth-1 {
 				bct = b
 				for _, tx := range bct.bc.Top().Content {
-					h.delTxPool.Add(tx)
+					h.delTxPool.Add(&tx)
 				}
 				break
 			}

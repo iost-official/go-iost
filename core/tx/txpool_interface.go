@@ -9,7 +9,7 @@ type TxPool interface {
 	Del(tx *Tx) error
 	Get(hash []byte) (*Tx, error)
 	Has(tx *Tx) (bool, error)
-	Pop() (*Tx, error)
+	Top() (*Tx, error)
 	Size() int
 }
 
