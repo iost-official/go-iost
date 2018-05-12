@@ -173,6 +173,7 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 			super:    nil,
 		},
 		maxDepth: maxDepth,
+		blkConfirmChan:make(chan uint64, 10),
 	}
 	h.txPool, _ = tx.TxPoolFactory("mem")
 	h.txPoolCache, _ = tx.TxPoolFactory("mem")
