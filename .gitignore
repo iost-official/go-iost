@@ -93,9 +93,9 @@ vendor/gopkg.in/
 *.log
 /network/router.go
 /core/block/database/
-
+/core/tx/database/
 # ctags
 tags
 
 # .swap file
-*.swap
+*.swp
