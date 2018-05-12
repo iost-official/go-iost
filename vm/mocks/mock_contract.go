@@ -34,7 +34,7 @@ func (m *MockContract) EXPECT() *MockContractMockRecorder {
 }
 
 // AddSigner mocks base method
-func (m *MockContract) AddSigner(arg0 []byte) {
+func (m *MockContract) AddSigner(arg0 vm.IOSTAccount) {
 	m.ctrl.Call(m, "AddSigner", arg0)
 }
 
@@ -115,7 +115,7 @@ func (mr *MockContractMockRecorder) SetPrefix(arg0 interface{}) *gomock.Call {
 }
 
 // SetSender mocks base method
-func (m *MockContract) SetSender(arg0 []byte) {
+func (m *MockContract) SetSender(arg0 vm.IOSTAccount) {
 	m.ctrl.Call(m, "SetSender", arg0)
 }
 

@@ -65,7 +65,7 @@ func TestBlockCachePoW(t *testing.T) {
 		},
 	}
 
-	verifier := func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+	verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 		return nil, nil
 	}
 
@@ -89,7 +89,7 @@ func TestBlockCachePoW(t *testing.T) {
 				bc.Add(&b2a, verifier)
 				So(bc.cachedRoot.bc.depth, ShouldEqual, 2)
 
-				verifier = func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+				verifier = func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 					return nil, errors.New("test")
 				}
 				err := bc.Add(&b3, verifier)
@@ -102,7 +102,7 @@ func TestBlockCachePoW(t *testing.T) {
 					ans = block.Content[0].Nonce
 					return nil
 				})
-				verifier = func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+				verifier = func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 					return nil, nil
 				}
 				bc := NewBlockCache(base, pool, 3)
@@ -214,7 +214,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 		Content: []tx.Tx{tx.NewTx(4, nil)},
 	}
 
-	verifier := func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+	verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 		return nil, nil
 	}
 
@@ -343,7 +343,7 @@ func TestStatePool(t *testing.T) {
 			Content: []tx.Tx{tx.NewTx(4, nil)},
 		}
 
-		verifier := func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+		verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 			p := pool.Copy()
 			p.Put(state.Key("a"), state.MakeVInt(int(blk.Content[0].Nonce)))
 			return p, nil

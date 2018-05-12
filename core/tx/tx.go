@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
 )
 
 //go:generate gencode go -schema=structs.schema -package=tx
@@ -98,7 +99,17 @@ func (t *Tx) Decode(b []byte) error {
 		}
 		t.Signs = append(t.Signs, sign)
 	}
-	err = t.Contract.Decode(tr.Contract)
+	if t.Contract == nil {
+		switch tr.Contract[0] {
+		case 0:
+			t.Contract = &lua.Contract{}
+			t.Contract.Decode(tr.Contract)
+		default:
+			return fmt.Errorf("Tx.Decode:tx.Contract syntax error")
+		}
+	} else {
+		err = t.Contract.Decode(tr.Contract)
+	}
 	if err != nil {
 		return err
 	}
