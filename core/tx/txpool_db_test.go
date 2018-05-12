@@ -23,7 +23,7 @@ func TestTxPoolDb(t *testing.T) {
 			tx := NewTx(int64(0), &lc)
 			err = txpooldb.Add(&tx)
 			So(err, ShouldBeNil)
-			txpooldb.(*TxPoolDb).Close()
+			//txpooldb.(*TxPoolDb).Close()
 		})
 
 		Convey("Test of Has", func() {
@@ -43,7 +43,7 @@ func TestTxPoolDb(t *testing.T) {
 
 			_, err = txpooldb.Has(&tx)
 			So(err, ShouldBeNil)
-			txpooldb.(*TxPoolDb).Close()
+			//txpooldb.(*TxPoolDb).Close()
 		})
 
 		Convey("Test of Get", func() {
@@ -62,7 +62,7 @@ func TestTxPoolDb(t *testing.T) {
 			tx1, err := txpooldb.Get(hash)
 			So(err, ShouldBeNil)
 			So(tx.Time, ShouldEqual, (*tx1).Time)
-			txpooldb.(*TxPoolDb).Close()
+			//txpooldb.(*TxPoolDb).Close()
 		})
 
 	})
