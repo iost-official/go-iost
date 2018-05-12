@@ -56,6 +56,18 @@ func (mr *MockContractMockRecorder) Api(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Api", reflect.TypeOf((*MockContract)(nil).Api), arg0)
 }
 
+// Code mocks base method
+func (m *MockContract) Code() string {
+	ret := m.ctrl.Call(m, "Code")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Code indicates an expected call of Code
+func (mr *MockContractMockRecorder) Code() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Code", reflect.TypeOf((*MockContract)(nil).Code))
+}
+
 // Decode mocks base method
 func (m *MockContract) Decode(arg0 []byte) error {
 	ret := m.ctrl.Call(m, "Decode", arg0)
