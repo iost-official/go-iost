@@ -11,7 +11,7 @@ func TestTxPoolDb(t *testing.T) {
 	Convey("Test of TxPoolDb", t, func() {
 
 		Convey("Test of Add", func() {
-			dbtxpool, err := TxPoolFactory("db")
+			txpooldb, err := TxPoolFactory("db")
 
 			main := lua.NewMethod("main", 0, 1)
 			code := `function main()
@@ -21,13 +21,33 @@ func TestTxPoolDb(t *testing.T) {
 			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
 
 			tx := NewTx(int64(0), &lc)
-			err = dbtxpool.Add(&tx)
+			err = txpooldb.Add(&tx)
 			So(err, ShouldBeNil)
-			dbtxpool.(*TxPoolDb).Close()
+			txpooldb.(*TxPoolDb).Close()
+		})
+
+		Convey("Test of Has", func() {
+			txpooldb, err := TxPoolFactory("db")
+
+			main := lua.NewMethod("main", 0, 1)
+			code := `function main()
+						Put("hello", "world")
+						return "success"
+					end`
+			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+
+			tx := NewTx(int64(0), &lc)
+			_, err = txpooldb.Has(&tx)
+			So(err, ShouldBeNil)
+			txpooldb.Add(&tx)
+
+			_, err = txpooldb.Has(&tx)
+			So(err, ShouldBeNil)
+			txpooldb.(*TxPoolDb).Close()
 		})
 
 		Convey("Test of Get", func() {
-			dbtxpool, err := NewTxPoolDb()
+			txpooldb, err := NewTxPoolDb()
 			main := lua.NewMethod("main", 0, 1)
 			code := `function main()
 							Put("hello", "world")
@@ -36,13 +56,13 @@ func TestTxPoolDb(t *testing.T) {
 			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
 
 			tx := NewTx(int64(0), &lc)
-			err = dbtxpool.Add(&tx)
+			err = txpooldb.Add(&tx)
 			hash := tx.Hash()
 
-			tx1, err := dbtxpool.Get(hash)
+			tx1, err := txpooldb.Get(hash)
 			So(err, ShouldBeNil)
 			So(tx.Time, ShouldEqual, (*tx1).Time)
-			dbtxpool.(*TxPoolDb).Close()
+			txpooldb.(*TxPoolDb).Close()
 		})
 
 	})
