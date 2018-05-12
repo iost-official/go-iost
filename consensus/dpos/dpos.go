@@ -195,7 +195,7 @@ func (p *DPoS) scheduleLoop() {
 			bc := p.blockCache.LongestChain()
 			blk := p.genBlock(p.Account, *bc.Top())
 			p.blockCache.ResetTxPoool()
-			p.router.Broadcast(message.Message{ReqType: ReqNewBlock, Body: blk.Encode()}) //??
+			p.router.Broadcast(message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}) //??
 		}
 		nextSchedule := timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
 		time.Sleep(time.Duration(nextSchedule))
@@ -220,9 +220,12 @@ func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
 	blk.Head.Signature = sig.Encode()
 	//TODO Content大小控制
 	for len(blk.Content) < 2 {
-		tx := p.blockCache.GetTx()
+		tx, err:= p.blockCache.GetTx()
+		if err!=nil{
+			break
+		}
 		//TODO 验算tx能否放进block
-		blk.Content = append(blk.Content, &tx)
+		blk.Content = append(blk.Content, *tx)
 	}
 	return &blk
 }

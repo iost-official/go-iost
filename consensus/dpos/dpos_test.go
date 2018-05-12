@@ -63,7 +63,7 @@ func TestNewDPoS(t *testing.T) {
 			AcceptType: []network.ReqType{
 				network.ReqNewBlock}}).Return(blockChan, nil)
 
-		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, []string{})
+		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23},[]byte{23, 23}}, nil,nil, []string{})
 
 		p.genesis(0)
 	})
@@ -120,7 +120,7 @@ func TestDPoS_Run(t *testing.T) {
 			AcceptType: []network.ReqType{
 				network.ReqNewBlock}}).Return(blockChan, nil)
 
-		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, []string{})
+		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil,nil, []string{})
 
 		p.Run()
 
