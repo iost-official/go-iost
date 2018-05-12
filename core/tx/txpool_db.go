@@ -12,10 +12,6 @@ type TxPoolDb struct {
 
 var txPrefix = []byte("t") //txPrefix+tx hash -> tx data
 
-/*
-	if you call NewTxPoolDb() to generate a instance tp of TxPoolDb
-	then you must call tp.Close() to close the db at last
-*/
 func NewTxPoolDb() (TxPool, error) {
 	ldb, err := db.DatabaseFactor("ldb")
 	if err != nil {
@@ -66,13 +62,16 @@ func (tp *TxPoolDb) Size() int {
 	return 0
 }
 
+/*
+no need to Close ldb any more,cause we changed db.DatabaseFactor() to sync.Once.
+So,the ldb would be always open...
 func (tp *TxPoolDb) Close() {
 	tp.db.Close()
 }
 func Pop() (*Tx, error) {
 	return nil, nil
 }
-
+*/
 func (tp *TxPoolDb) Top() (*Tx, error) {
 	return nil, nil
 }
