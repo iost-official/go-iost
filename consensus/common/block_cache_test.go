@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db/mocks"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/prototype/vm/mocks"
 )
 
 func TestBlockCachePoW(t *testing.T) {
@@ -390,59 +391,18 @@ func TestTxPool(t *testing.T) {
 			Content: []tx.Tx{tx.NewTx(0, nil)},
 		}
 
-		b1 := block.Block{
-			Head: block.BlockHead{
-				Version:    1,
-				ParentHash: b0.HeadHash(),
-			},
-			Content: []tx.Tx{tx.NewTx(1, nil)},
-		}
-
-		b2 := block.Block{
-			Head: block.BlockHead{
-				Version:    1,
-				ParentHash: b1.HeadHash(),
-			},
-			Content: []tx.Tx{tx.NewTx(2, nil)},
-		}
-
-		b2a := block.Block{
-			Head: block.BlockHead{
-				Version:    1,
-				ParentHash: b1.HeadHash(),
-			},
-			Content: []tx.Tx{tx.NewTx(-2, nil)},
-		}
-
-		b3 := block.Block{
-			Head: block.BlockHead{
-				Version:    1,
-				ParentHash: b2.HeadHash(),
-			},
-			Content: []tx.Tx{tx.NewTx(3, nil)},
-		}
-
-		b4 := block.Block{
-			Head: block.BlockHead{
-				Version:    1,
-				ParentHash: b3.HeadHash(),
-			},
-		}
-
-		verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-			return nil, nil
-		}
 		base := core_mock.NewMockChain(ctl)
 		base.EXPECT().Top().AnyTimes().Return(&b0)
+		base.EXPECT().HasTx(gomock.Any()).AnyTimes().Return(false,nil)
 
 		mockContract := vm_mock.NewMockContract(ctl)
 		mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
 		mockContract.EXPECT().Decode(gomock.Any()).AnyTimes().Return(nil)
-		tx := NewTx(int64(0), mockContract)
+		tx := tx.NewTx(int64(0), mockContract)
 
 		bc := NewBlockCache(base, pool, 4)
 		Convey("AddTx:", func() {
-			bc.AddTx(tx)
+			bc.AddTx(&tx)
 		})
 	})
 }

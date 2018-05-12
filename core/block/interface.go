@@ -1,8 +1,6 @@
 package block
 
-import (
-	"github.com/iost-official/prototype/core/tx"
-)
+import "github.com/iost-official/prototype/core/tx"
 
 //go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/prototype/core/block Chain
 
