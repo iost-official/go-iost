@@ -72,6 +72,6 @@ func Pop() (*Tx, error) {
 	return nil, nil
 }
 
-func (tp *TxPoolDb) Pop() (*Tx, error) {
+func (tp *TxPoolDb) Top() (*Tx, error) {
 	return nil, nil
 }
