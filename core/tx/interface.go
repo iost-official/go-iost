@@ -18,7 +18,7 @@ func TxPoolFactory(kind string) (TxPool, error) {
 	case "mem":
 		return NewTxPoolImpl(), nil
 	case "db":
-		return NewDbTxPool()
+		return NewTxPoolDb()
 	}
 	return nil, errors.New("this kind of TxPool not found")
 }

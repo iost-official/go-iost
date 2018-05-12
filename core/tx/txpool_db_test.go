@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-func TestDbTxPool(t *testing.T) {
-	Convey("Test of TestDbTxPool", t, func() {
+func TestTxPoolDb(t *testing.T) {
+	Convey("Test of TxPoolDb", t, func() {
 
 		Convey("Test of Add", func() {
 			dbtxpool, err := TxPoolFactory("db")
@@ -23,11 +23,11 @@ func TestDbTxPool(t *testing.T) {
 			tx := NewTx(int64(0), &lc)
 			err = dbtxpool.Add(&tx)
 			So(err, ShouldBeNil)
-			dbtxpool.(*DbTxPool).Close()
+			dbtxpool.(*TxPoolDb).Close()
 		})
 
 		Convey("Test of Get", func() {
-			dbtxpool, err := NewDbTxPool()
+			dbtxpool, err := NewTxPoolDb()
 			main := lua.NewMethod("main", 0, 1)
 			code := `function main()
 							Put("hello", "world")
@@ -42,7 +42,7 @@ func TestDbTxPool(t *testing.T) {
 			tx1, err := dbtxpool.Get(hash)
 			So(err, ShouldBeNil)
 			So(tx.Time, ShouldEqual, (*tx1).Time)
-			dbtxpool.(*DbTxPool).Close()
+			dbtxpool.(*TxPoolDb).Close()
 		})
 
 	})

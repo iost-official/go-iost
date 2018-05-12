@@ -6,26 +6,26 @@ import (
 	"github.com/iost-official/prototype/db"
 )
 
-type DbTxPool struct {
+type TxPoolDb struct {
 	db db.Database
 }
 
 var txPrefix = []byte("t") //txPrefix+tx hash -> tx data
 
 /*
-	if you call NewDbTxPool() to generate a instance tp of DbTxPool
+	if you call NewTxPoolDb() to generate a instance tp of TxPoolDb
 	then you must call tp.Close() to close the db at last
 */
-func NewDbTxPool() (TxPool, error) {
+func NewTxPoolDb() (TxPool, error) {
 	ldb, err := db.DatabaseFactor("ldb")
 	if err != nil {
 		return nil, fmt.Errorf("failed to init db %v", err)
 	}
 
-	return &DbTxPool{db: ldb}, nil
+	return &TxPoolDb{db: ldb}, nil
 }
 
-func (tp *DbTxPool) Add(tx *Tx) error {
+func (tp *TxPoolDb) Add(tx *Tx) error {
 	hash := tx.Hash()
 	err := tp.db.Put(append(txPrefix, hash...), tx.Encode())
 	if err != nil {
@@ -34,11 +34,11 @@ func (tp *DbTxPool) Add(tx *Tx) error {
 	return nil
 }
 
-func (tp *DbTxPool) Del(tx *Tx) error {
+func (tp *TxPoolDb) Del(tx *Tx) error {
 	return nil
 }
 
-func (tp *DbTxPool) Get(hash []byte) (*Tx, error) {
+func (tp *TxPoolDb) Get(hash []byte) (*Tx, error) {
 	tx := Tx{}
 	txData, err := tp.db.Get(append(txPrefix, hash...))
 	if err != nil {
@@ -55,21 +55,21 @@ func (tp *DbTxPool) Get(hash []byte) (*Tx, error) {
 }
 
 //todo
-func (tp *DbTxPool) Has(tx *Tx) (bool, error) {
+func (tp *TxPoolDb) Has(tx *Tx) (bool, error) {
 	return false, nil
 }
 
-func (tp *DbTxPool) Size() int {
+func (tp *TxPoolDb) Size() int {
 	return 0
 }
 
-func (tp *DbTxPool) Close() {
+func (tp *TxPoolDb) Close() {
 	tp.db.Close()
 }
 func Pop() (*Tx, error) {
 	return nil, nil
 }
 
-func (tp *DbTxPool) Pop() (*Tx, error) {
+func (tp *TxPoolDb) Pop() (*Tx, error) {
 	return nil, nil
 }
