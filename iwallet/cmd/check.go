@@ -16,22 +16,18 @@ package cmd
 
 import (
 	"fmt"
+
 	"io/ioutil"
 	"os"
 
-	"strings"
-
-	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/vm/lua"
 	"github.com/spf13/cobra"
 )
 
-var Identity string
-var kpPath string
-
-// signCmd represents the sign command
-var signCmd = &cobra.Command{
-	Use:   "sign",
-	Short: "Sign to .sc file",
+// checkCmd represents the check command
+var checkCmd = &cobra.Command{
+	Use:   "check",
+	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -55,56 +51,33 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		fpk, err := os.Open(kpPath + "/" + Identity + "_secp")
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		defer fpk.Close()
-		pubkey, err := ioutil.ReadAll(fpk)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		sig, err := common.Sign(common.Secp256k1, common.Sha256(fd), LoadBytes(string(pubkey)))
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
+		var contract lua.Contract // todo 解析tx而不是contract
+		contract.Decode(fd)
+		fmt.Printf(`Transaction : 
+Time: xx
+Nonce: xx
+Contract:
+    Price: %v
+    Gas limit: %v
+Code:
+----
+%v
+----
+`, contract.Info().Price, contract.Info().GasLimit, contract.Code())
 
-		if len(args) < 2 {
-			Dist = args[0][:strings.LastIndex(args[0], ".")]
-			Dist = Dist + ".sig"
-		} else {
-			Dist = args[1]
-		}
-
-		f, err := os.Create(Dist)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		defer f.Close()
-
-		_, err = f.Write(sig.Encode())
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(signCmd)
-	signCmd.Flags().StringVarP(&Identity, "id", "i", "id", "Set language of contract, Support lua")
-	signCmd.Flags().StringVarP(&kpPath, "key-path", "k", "test", "Set path of sec-key")
+	rootCmd.AddCommand(checkCmd)
 
 	// Here you will define your flags and configuration settings.
+
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// signCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// checkCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// signCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// checkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -2,6 +2,7 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+*/.DS_Store
 
 # Icon must end with two \r
 Icon
@@ -93,9 +94,14 @@ vendor/gopkg.in/
 *.log
 /network/router.go
 /core/block/database/
+
 /core/tx/database/
 # ctags
 tags
 
 # .swap file
 *.swp
+
+iwallet/test
+iwallet/iwallet
+
