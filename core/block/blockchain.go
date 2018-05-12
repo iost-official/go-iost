@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db"
 )
 
 var (
@@ -64,7 +64,7 @@ func NewBlockChain() (chain Chain, error error) {
 
 		tx, err := tx.NewTxPoolDb()
 		if err != nil {
-			error = fmt.Errorf("failed to NewTxPoolDb")
+			error = fmt.Errorf("failed to NewTxPoolDb: [%v]", err)
 		}
 
 		chainImpl = new(ChainImpl)
@@ -146,7 +146,7 @@ func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 //Top 返回已确定链的最后块
 func (b *ChainImpl) Top() *Block {
 
-	return b.GetBlockByNumber(b.length -1)
+	return b.GetBlockByNumber(b.length - 1)
 }
 
 //GetBlockByNumber 通过区块编号查询块
