@@ -61,17 +61,17 @@ iwallet compile -l lua SRC`,
 			}
 		}
 
-		fmt.Printf(`Transaction : 
-Time: xx
-Nonce: xx
-Contract:
-    Price: %v
-    Gas limit: %v
-Code:
-----
-%v
-----
-`, contract.Info().Price, contract.Info().GasLimit, contract.Code())
+		//		fmt.Printf(`Transaction :
+		//Time: xx
+		//Nonce: xx
+		//Contract:
+		//    Price: %v
+		//    Gas limit: %v
+		//Code:
+		//----
+		//%v
+		//----
+		//`, contract.Info().Price, contract.Info().GasLimit, contract.Code())
 
 		bytes := contract.Encode() // todo 在这里直接生成tx， 而不是contract
 		f, err := os.Create(Dist)
