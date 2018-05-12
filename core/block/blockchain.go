@@ -146,26 +146,7 @@ func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 //Top 返回已确定链的最后块
 func (b *ChainImpl) Top() *Block {
 
-	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(b.length-1)...))
-
-	if err != nil {
-		return nil
-	}
-
-	block, err := b.db.Get(append(blockPrefix, hash...))
-	if err != nil {
-		return nil
-	}
-	if len(block) == 0 {
-		return nil
-	}
-
-	rBlock := new(Block)
-	if err := rBlock.Decode(block); err != nil {
-		return nil
-	}
-
-	return rBlock
+	return b.GetBlockByNumber(b.length -1)
 }
 
 //GetBlockByNumber 通过区块编号查询块
