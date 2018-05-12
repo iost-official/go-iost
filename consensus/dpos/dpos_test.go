@@ -25,6 +25,12 @@ func TestNewDPoS(t *testing.T) {
 
 		defer guard.Unpatch()
 
+		heightChain := make(chan message.Message, 1)
+		blkChain := make(chan message.Message, 1)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(heightChain, nil)
+
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blkChain, nil)
+
 		txChan := make(chan message.Message, 1)
 		//设置第一个通道txchan
 
@@ -36,14 +42,8 @@ func TestNewDPoS(t *testing.T) {
 			ReqType: 1,
 			Body:    []byte{'a', 'b'}}
 
-		mockRouter.EXPECT().FilteredChan(network.Filter{
-			WhiteList:  []message.Message{},
-			BlackList:  []message.Message{},
-			RejectType: []network.ReqType{},
-			AcceptType: []network.ReqType{
-				network.ReqPublishTx,
-				reqTypeVoteTest, // Only for test
-			}}).Return(txChan, nil)
+		//
+		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
 
 		//设置第二个通道Blockchan
 		blockChan := make(chan message.Message, 1)
@@ -56,16 +56,17 @@ func TestNewDPoS(t *testing.T) {
 			To:      "0xbbbbbbbbbbbb",
 			ReqType: 2,
 			Body:    []byte{'c', 'd'}}
-		mockRouter.EXPECT().FilteredChan(network.Filter{
-			WhiteList:  []message.Message{},
-			BlackList:  []message.Message{},
-			RejectType: []network.ReqType{},
-			AcceptType: []network.ReqType{
-				network.ReqNewBlock}}).Return(blockChan, nil)
+		//mockRouter.EXPECT().FilteredChan(network.Filter{
+		//	WhiteList:  []message.Message{},
+		//	BlackList:  []message.Message{},
+		//	RejectType: []network.ReqType{},
+		//	AcceptType: []network.ReqType{network.ReqNewBlock}}).Return(blockChan, nil)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil)
 
-		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23},[]byte{23, 23}}, nil,nil, []string{})
+		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, nil, []string{})
 
-		p.genesis(0)
+		So(p.Account.GetId(), ShouldEqual, "id0")
+
 	})
 
 }
@@ -82,6 +83,12 @@ func TestDPoS_Run(t *testing.T) {
 
 		defer guard.Unpatch()
 
+		heightChain := make(chan message.Message, 1)
+		blkChain := make(chan message.Message, 1)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(heightChain, nil)
+
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blkChain, nil)
+
 		txChan := make(chan message.Message, 1)
 		//设置第一个通道txchan
 
@@ -93,14 +100,7 @@ func TestDPoS_Run(t *testing.T) {
 			ReqType: 1,
 			Body:    []byte{'a', 'b'}}
 
-		mockRouter.EXPECT().FilteredChan(network.Filter{
-			WhiteList:  []message.Message{},
-			BlackList:  []message.Message{},
-			RejectType: []network.ReqType{},
-			AcceptType: []network.ReqType{
-				network.ReqPublishTx,
-				reqTypeVoteTest, // Only for test
-			}}).Return(txChan, nil)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
 
 		//设置第二个通道Blockchan
 		blockChan := make(chan message.Message, 1)
@@ -113,14 +113,9 @@ func TestDPoS_Run(t *testing.T) {
 			To:      "0xbbbbbbbbbbbb",
 			ReqType: 2,
 			Body:    []byte{'c', 'd'}}
-		mockRouter.EXPECT().FilteredChan(network.Filter{
-			WhiteList:  []message.Message{},
-			BlackList:  []message.Message{},
-			RejectType: []network.ReqType{},
-			AcceptType: []network.ReqType{
-				network.ReqNewBlock}}).Return(blockChan, nil)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil)
 
-		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil,nil, []string{})
+		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, nil, []string{})
 
 		p.Run()
 

@@ -7,8 +7,8 @@ import (
 )
 
 //ReqType Marked request types using by protocol
+//go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/prototype/network Router
 
-//go:generate mockgen -destination network/mocks/mock_router.go -package protocol_mock github.com/iost-official/prototype/network Router
 type ReqType int32
 
 const (
