@@ -25,6 +25,7 @@ func NewTxPoolDb() (TxPool, error) {
 	return &TxPoolDb{db: ldb}, nil
 }
 
+//Add tx to db
 func (tp *TxPoolDb) Add(tx *Tx) error {
 	hash := tx.Hash()
 	err := tp.db.Put(append(txPrefix, hash...), tx.Encode())
@@ -38,6 +39,7 @@ func (tp *TxPoolDb) Del(tx *Tx) error {
 	return nil
 }
 
+//Get tx from db
 func (tp *TxPoolDb) Get(hash []byte) (*Tx, error) {
 	tx := Tx{}
 	txData, err := tp.db.Get(append(txPrefix, hash...))
@@ -46,7 +48,7 @@ func (tp *TxPoolDb) Get(hash []byte) (*Tx, error) {
 		return nil, fmt.Errorf("failed to Get the tx: %v", err)
 	}
 
-	err = tx.Decode(txData) //something go wrong when call txPtr.Decode()
+	err = tx.Decode(txData)
 	if err != nil {
 
 		return nil, fmt.Errorf("failed to Decode the tx: %v", err)
@@ -56,7 +58,8 @@ func (tp *TxPoolDb) Get(hash []byte) (*Tx, error) {
 
 //todo
 func (tp *TxPoolDb) Has(tx *Tx) (bool, error) {
-	return false, nil
+	hash := tx.Hash()
+	return tp.db.Has(append(txPrefix, hash...))
 }
 
 func (tp *TxPoolDb) Size() int {
