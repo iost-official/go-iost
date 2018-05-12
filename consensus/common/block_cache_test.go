@@ -376,3 +376,12 @@ func TestStatePool(t *testing.T) {
 
 	})
 }
+
+func TestTxPool(t *testing.T) {
+	ctl := gomock.NewController(t)
+
+	mockContract := vm_mock.NewMockContract(ctl)
+	mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
+	mockContract.EXPECT().Decode(gomock.Any()).AnyTimes().Return(nil)
+	tx := NewTx(int64(0), mockContract)
+}

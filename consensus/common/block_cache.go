@@ -172,9 +172,10 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
 		},
-		txPool:    tx.NewTxPoolImpl(),
-		delTxPool: tx.NewTxPoolImpl(),
-		maxDepth:  maxDepth,
+		txPool:      NewTxPoolImpl(),
+		txPoolCache: NewTxPoolImpl(),
+		delTxPool:   NewTxPoolImpl(),
+		maxDepth:    maxDepth,
 	}
 	return &h
 }
@@ -251,7 +252,11 @@ func (h *BlockCacheImpl) AddTx(tx *tx.Tx) error {
 
 func (h *BlockCacheImpl) GetTx() (*tx.Tx, error) {
 	for {
-		tx := h.txPool.Get()
+		tx, err := h.txPool.Top()
+		if err != nil {
+			return nil, err
+		}
+		h.txPool.Del(tx)
 		h.txPoolCache.Add(tx)
 		if ok, _ := h.delTxPool.Has(tx); !ok {
 			return tx, nil
@@ -261,7 +266,7 @@ func (h *BlockCacheImpl) GetTx() (*tx.Tx, error) {
 
 func (h *BlockCacheImpl) ResetTxPoool() error {
 	for h.txPoolCache.Size() > 0 {
-		tx := h.txPoolCache.Get()
+		tx := h.txPoolCache.Top()
 		h.AddTx(tx)
 		h.txPoolCache.Del(tx)
 	}
