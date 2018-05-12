@@ -58,7 +58,8 @@ func (tp *TxPoolDb) Get(hash []byte) (*Tx, error) {
 
 //todo
 func (tp *TxPoolDb) Has(tx *Tx) (bool, error) {
-	return false, nil
+	hash := tx.Hash()
+	return tp.db.Has(append(txPrefix, hash...))
 }
 
 func (tp *TxPoolDb) Size() int {

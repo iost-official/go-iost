@@ -8,6 +8,7 @@ import (
 
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/prototype/core/tx"
 )
 
 var (
@@ -21,6 +22,7 @@ var (
 type ChainImpl struct {
 	db     db.Database
 	length uint64
+	tx     tx.TxPool
 	state  state.Pool // todo 分离这两部分
 }
 
@@ -60,8 +62,13 @@ func NewBlockChain() (chain Chain, error error) {
 			}
 		}
 
+		tx, err := tx.NewTxPoolDb()
+		if err != nil {
+			error = fmt.Errorf("failed to NewTxPoolDb")
+		}
+
 		chainImpl = new(ChainImpl)
-		chainImpl = &ChainImpl{db: ldb, length: length, state: nil}
+		chainImpl = &ChainImpl{db: ldb, length: length, state: nil, tx: tx}
 	})
 
 	return chainImpl, error
@@ -91,12 +98,28 @@ func (b *ChainImpl) Push(block *Block) error {
 	}
 
 	//todo:put all the tx of this block to the db
+	for _, ctx := range block.Content {
+		if err := b.tx.Add(&ctx); err != nil {
+			return fmt.Errorf("failed to add tx %v", err)
+		}
+	}
+
 	return nil
 }
 
 //Length 返回已经确定链的长度
 func (b *ChainImpl) Length() uint64 {
 	return b.length
+}
+
+//判断tx是否存在于db中
+func (b *ChainImpl) HasTx(tx *tx.Tx) (bool, error) {
+	return b.tx.Has(tx)
+}
+
+//通过hash获取tx
+func (b *ChainImpl) GetTx(hash []byte) (*tx.Tx, error) {
+	return b.tx.Get(hash)
 }
 
 //链长度加1
