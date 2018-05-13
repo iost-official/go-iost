@@ -254,6 +254,7 @@ type BaseNetwork struct {
 	lock       sync.RWMutex
 	peers      peerSet // manage all connection
 	RecvCh     chan message.Message
+	listener   net.Listener
 
 	recentSentMap sync.Map //map[string]message.Message
 
@@ -266,7 +267,7 @@ type BaseNetwork struct {
 
 // NewBaseNetwork ...
 func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
-	recv := make(chan message.Message, 1)
+	recv := make(chan message.Message, 24)
 	var err error
 	if conf.LogPath == "" {
 		conf.LogPath, err = ioutil.TempDir(os.TempDir(), "iost_log_")
@@ -318,13 +319,14 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
 	bn.log.D("listening %v", bn.localNode)
-	l, err := net.Listen("tcp", bn.localNode.Addr())
+	var err error
+	bn.listener, err = net.Listen("tcp", bn.localNode.Addr())
 	if err != nil {
 		return bn.RecvCh, errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
 	}
 	go func() {
 		for {
-			conn, err := l.Accept()
+			conn, err := bn.listener.Accept()
 			if err != nil {
 				bn.log.E("accept downStream node err:%v", err)
 				continue
@@ -371,6 +373,8 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 }
 
 func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
 	node, _ := discover.ParseNode(nodeStr)
 	peer := bn.peers.Get(node)
 	if peer == nil {
@@ -404,6 +408,9 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 
 // Close all connection
 func (bn *BaseNetwork) Close(port uint16) error {
+	if bn.listener != nil {
+		bn.listener.Close()
+	}
 	return nil
 }
 
