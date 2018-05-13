@@ -95,11 +95,11 @@ func (r *Request) Unpack(reader io.Reader) error {
 }
 
 func (r *Request) String() string {
-	return fmt.Sprintf("version:%s length:%d type:%d timestamp:%d from:%s Body:%v",
+	return fmt.Sprintf("version:%s length:%d type:%d timestamp:%s from:%s Body:%v",
 		r.Version,
 		r.Length,
 		r.Type,
-		r.Timestamp,
+		time.Unix(r.Timestamp/1e9, r.Timestamp%1e9).Format("2006-01-02 15:04:05"),
 		r.From,
 		r.Body,
 	)
@@ -107,10 +107,13 @@ func (r *Request) String() string {
 
 func (r *Request) handle(s *Server, conn net.Conn) (string, error) {
 	s.log.D("handle request = %v", r)
+
 	switch r.Type {
 	case Message:
 		s.spreadUp(r.Body)
+
 		req := newRequest(MessageReceived, s.ListenAddr, common.Int64ToBytes(r.Timestamp))
+
 		s.send(conn, req)
 	case BroadcastMessage:
 		s.spreadUp(r.Body)
@@ -154,6 +157,8 @@ func (r *Request) response(base *BaseNetwork, conn net.Conn) {
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
 			base.RecvCh <- *appReq
+		} else {
+			base.log.E("failed to unmarshal recv msg:%v, err:%v", r, err)
 		}
 		base.send(conn, newRequest(MessageReceived, base.localNode.String(), common.Int64ToBytes(r.Timestamp)))
 		r.msgHandle(base)
