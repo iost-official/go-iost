@@ -21,6 +21,7 @@ type Peer struct {
 }
 
 func (p *Peer) Disconnect() {
+
 	select {
 	case <-p.closed:
 		p.conn.Close()
@@ -51,7 +52,11 @@ func (ps *peerSet) Get(node *discover.Node) *Peer {
 	if ps.peers == nil {
 		return nil
 	}
-	return ps.peers[node.String()]
+	peer, ok := ps.peers[node.String()]
+	if !ok {
+		return nil
+	}
+	return peer
 }
 
 func (ps *peerSet) Set(node *discover.Node, p *Peer) {
