@@ -95,65 +95,25 @@ func (r *Request) Unpack(reader io.Reader) error {
 }
 
 func (r *Request) String() string {
-	return fmt.Sprintf("version:%s length:%d type:%d timestamp:%d from:%s Body:%v",
+	return fmt.Sprintf("version:%s length:%d type:%d timestamp:%s from:%s Body:%v",
 		r.Version,
 		r.Length,
 		r.Type,
-		r.Timestamp,
+		time.Unix(r.Timestamp/1e9, r.Timestamp%1e9).Format("2006-01-02 15:04:05"),
 		r.From,
 		r.Body,
 	)
 }
 
-func (r *Request) handle(s *Server, conn net.Conn) (string, error) {
-	s.log.D("handle request = %v", r)
-	switch r.Type {
-	case Message:
-		s.spreadUp(r.Body)
-		req := newRequest(MessageReceived, s.ListenAddr, common.Int64ToBytes(r.Timestamp))
-		s.send(conn, req)
-	case BroadcastMessage:
-		s.spreadUp(r.Body)
-		s.broadcast(*r)
-		req := newRequest(BroadcastMessageReceived, s.ListenAddr, common.Int64ToBytes(r.Timestamp))
-		s.send(conn, req)
-	case MessageReceived:
-		s.log.D("MessageReceived: %v", common.BytesToInt64(r.Body))
-	case BroadcastMessageReceived:
-		s.log.D("BroadcastMessageReceived: %v", common.BytesToInt64(r.Body))
-	case Ping:
-		// a downstream node sends its address to its seed node(our node)
-		addr := string(r.Body)
-		s.addPeer(addr, conn)
-		s.putNode(addr)
-		//return pong
-		req := newRequest(Pong, s.ListenAddr, nil)
-		s.send(conn, req)
-		return addr, nil
-	case Pong:
-		s.pinged = true
-	case NodeTable: //got nodeTable and save
-		s.putNode(string(r.Body))
-	case ReqNodeTable: //request for nodeTable
-		addrs, err := s.AllNodesExcludeAddr(string(r.From))
-		if err != nil {
-			s.log.E("failed to nodetable ", err)
-		}
-		req := newRequest(NodeTable, s.ListenAddr, []byte(addrs))
-		s.send(conn, req)
-	default:
-		s.log.E("wrong request :", r)
-	}
-	return "", nil
-}
-
 func (r *Request) response(base *BaseNetwork, conn net.Conn) {
-	base.log.D("response request = %v", r)
+	base.log.D("%v response request = %v", base.localNode.String(), r)
 	switch r.Type {
 	case Message:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
 			base.RecvCh <- *appReq
+		} else {
+			base.log.E("failed to unmarshal recv msg:%v, err:%v", r, err)
 		}
 		base.send(conn, newRequest(MessageReceived, base.localNode.String(), common.Int64ToBytes(r.Timestamp)))
 		r.msgHandle(base)
