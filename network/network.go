@@ -208,6 +208,7 @@ func reqToBytes(req message.Message) ([]byte, []byte, error) {
 	return reqHead.Bytes(), reqBodyBytes, nil
 }
 
+//NetConfig p2p net config
 type NetConifg struct {
 	LogPath       string
 	NodeTablePath string
@@ -267,7 +268,7 @@ type BaseNetwork struct {
 
 // NewBaseNetwork ...
 func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
-	recv := make(chan message.Message, 24)
+	recv := make(chan message.Message, 1)
 	var err error
 	if conf.LogPath == "" {
 		conf.LogPath, err = ioutil.TempDir(os.TempDir(), "iost_log_")
@@ -539,6 +540,8 @@ func (bn *BaseNetwork) cleanRecentSentLoop() {
 		time.Sleep(validitySentSeconds * time.Second)
 	}
 }
+
+//findNeighbours find neighbour nodes in the node table
 func (bn *BaseNetwork) findNeighbours() {
 	nodesStr, _ := bn.AllNodesExcludeAddr(bn.localNode.String())
 	nodes := make([]*discover.Node, 0)
@@ -604,6 +607,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 	return nil
 }
 
+//CancelDownload cancel downloading block with height between start and end
 func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
@@ -613,6 +617,7 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 	return nil
 }
 
+//sendTo send request to the address
 func (bn *BaseNetwork) sendTo(addr string, req *Request) {
 	conn, err := bn.dial(addr)
 	if err != nil {
