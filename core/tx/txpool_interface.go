@@ -17,6 +17,8 @@ func TxPoolFactory(kind string) (TxPool, error) {
 	switch kind {
 	case "mem":
 		return NewTxPoolImpl(), nil
+	case "stack":
+		return NewTxPoolStack()
 	case "db":
 		return NewTxPoolDb()
 	}
