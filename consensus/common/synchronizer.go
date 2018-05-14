@@ -7,16 +7,18 @@ import (
 )
 
 var (
-	SyncNumber        = 10
-	MaxDownloadNumber = 10
+	SyncNumber        = 10 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
+	MaxDownloadNumber = 10 // 一次同步下载的最多块数
 )
 
+// Synchronizer 同步器接口
 type Synchronizer interface {
 	StartListen() error
 	NeedSync(maxHeight uint64) (bool, uint64, uint64)
 	SyncBlocks(startNumber uint64, endNumber uint64) error
 }
 
+// SyncImpl 同步器实现
 type SyncImpl struct {
 	blockCache  BlockCache
 	router      Router
@@ -24,6 +26,8 @@ type SyncImpl struct {
 	blkSyncChan chan message.Message
 }
 
+// NewSynchronizer 新建同步器
+// bc 块缓存, router 网络处理器
 func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 	sync := &SyncImpl{
 		blockCache: bc,
@@ -54,7 +58,7 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 	return sync
 }
 
-//开始监听同步任务
+// StartListen 开始监听同步任务
 func (sync *SyncImpl) StartListen() error {
 	go sync.requestBlockHeightLoop()
 	go sync.requestBlockLoop()
@@ -63,23 +67,26 @@ func (sync *SyncImpl) StartListen() error {
 	return nil
 }
 
-func (sync *SyncImpl) NeedSync(maxHeight uint64) (bool, uint64, uint64) {
+// NeedSync 判断是否需要同步
+// netHeight 当前网络收到的无法上链的块号
+func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	height := sync.blockCache.ConfirmedLength()
-	if height < maxHeight-uint64(SyncNumber) {
+	if height < netHeight-uint64(SyncNumber) {
 		body := message.RequestHeight{
 			LocalBlockHeight: height,
-			NeedBlockHeight:  maxHeight,
+			NeedBlockHeight:  netHeight,
 		}
 		heightReq := message.Message{
 			ReqType: int32(ReqBlockHeight),
 			Body:    body.Encode(),
 		}
 		sync.router.Broadcast(heightReq)
-		return true, height + 1, maxHeight
+		return true, height + 1, netHeight
 	}
 	return false, 0, 0
 }
 
+// SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	for endNumber-startNumber > uint64(MaxDownloadNumber) {
 		sync.router.Download(startNumber, startNumber+uint64(MaxDownloadNumber))

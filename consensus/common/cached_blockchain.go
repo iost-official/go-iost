@@ -6,6 +6,7 @@ import (
 	"bytes"
 )
 
+// CachedBlockChain 代表缓存的链
 type CachedBlockChain struct {
 	block.Chain
 	block        *block.Block
@@ -16,6 +17,7 @@ type CachedBlockChain struct {
 	confirmed int
 }
 
+// NewCBC 新建一个缓存链
 func NewCBC(chain block.Chain) CachedBlockChain {
 	return CachedBlockChain{
 		Chain:        chain,
@@ -37,6 +39,7 @@ func NewCBC(chain block.Chain) CachedBlockChain {
 //	return c.cachedBlock[layer-c.BlockChain.Length()], nil
 //}
 
+// Push 把新块加入缓存链尾部
 func (c *CachedBlockChain) Push(block *block.Block) error {
 	c.block = block
 	c.cachedLength++
@@ -79,9 +82,13 @@ func (c *CachedBlockChain) Push(block *block.Block) error {
 
 	return nil
 }
+
+// Length 返回缓存链的总长度
 func (c *CachedBlockChain) Length() uint64 {
 	return c.Chain.Length() + uint64(c.cachedLength)
 }
+
+// Top 返回缓存链的最新块
 func (c *CachedBlockChain) Top() *block.Block {
 	if c.cachedLength == 0 {
 		return c.Chain.Top()
@@ -99,27 +106,29 @@ func (c *CachedBlockChain) Copy() CachedBlockChain {
 	return cbc
 }
 
+// Flush 把缓存的链存入数据库
 // 调用时保证只flush未确认块的第一个，如果要flush多个，需多次调用Flush()
 func (c *CachedBlockChain) Flush() {
 	if c.block != nil {
 		c.Chain.Push(c.block)
-		//TODO: chain实现后去掉注释
-		//c.Chain.SetStatePool(c.pool)
 		c.block = nil
 		c.cachedLength = 0
 		c.parent = nil
 	}
 }
 
+// Iterator 生成一个链迭代器
 func (c *CachedBlockChain) Iterator() block.ChainIterator {
 	return &CBCIterator{c, nil}
 }
 
+// CBCIterator 缓存链的迭代器
 type CBCIterator struct {
 	pc       *CachedBlockChain
 	iterator block.ChainIterator
 }
 
+// Next 返回下一个块
 func (ci *CBCIterator) Next() *block.Block {
 	if ci.iterator != nil {
 		return ci.iterator.Next()
@@ -132,7 +141,8 @@ func (ci *CBCIterator) Next() *block.Block {
 	return p
 }
 
-// depreciate : 请使用iterator
+// GetBlockByNumber 从缓存链里找对应块号的块
+// deprecate : 请使用iterator
 func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
 	if number <= c.Chain.Length() {
 		return c.Chain.GetBlockByNumber(number)
@@ -150,7 +160,8 @@ func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
 	return nil
 }
 
-// depreciate : 请使用iterator
+// GetBlockByHash 从缓存链里找对应hash的块
+// deprecate : 请使用iterator
 func (c *CachedBlockChain) GetBlockByHash(blockHash []byte) *block.Block {
 	cbc := c
 	for cbc.block != nil {

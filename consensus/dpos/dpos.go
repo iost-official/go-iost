@@ -11,11 +11,11 @@ import (
 	. "github.com/iost-official/prototype/core/tx"
 	. "github.com/iost-official/prototype/network"
 
+	"errors"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
-	"errors"
 )
 
 type DPoS struct {
@@ -36,7 +36,7 @@ type DPoS struct {
 }
 
 // NewDPoS: 新建一个DPoS实例
-// acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), witnessList: 见证节点列表
+// acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
 	p.Account = acc
@@ -87,9 +87,10 @@ func (p *DPoS) initGlobalProperty(acc Account, witnessList []string) {
 
 // Run: 运行DPoS实例
 func (p *DPoS) Run() {
-	//go p.blockLoop()
-	//go p.scheduleLoop()
-	p.genBlock(p.Account, block.Block{})
+	p.synchronizer.StartListen()
+	go p.blockLoop()
+	go p.scheduleLoop()
+	//p.genBlock(p.Account, block.Block{})
 }
 
 // Stop: 停止DPoS实例
@@ -220,8 +221,8 @@ func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
 	blk.Head.Signature = sig.Encode()
 	//TODO Content大小控制
 	for len(blk.Content) < 2 {
-		tx, err:= p.blockCache.GetTx()
-		if err!=nil{
+		tx, err := p.blockCache.GetTx()
+		if err != nil {
 			break
 		}
 		//TODO 验算tx能否放进block

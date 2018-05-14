@@ -115,7 +115,7 @@ func TestDPoS_Run(t *testing.T) {
 			Body:    []byte{'c', 'd'}}
 		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil)
 
-		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, nil, []string{})
+		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, nil, []string{"id1"})
 
 		p.Run()
 

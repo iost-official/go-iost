@@ -11,10 +11,10 @@ import (
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db/mocks"
-	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/prototype/vm/mocks"
-	"github.com/iost-official/prototype/vm/lua"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
+	"github.com/iost-official/prototype/vm/mocks"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestBlockCachePoW(t *testing.T) {
@@ -311,7 +311,6 @@ func TestStatePool(t *testing.T) {
 		pool := state.NewPool(db)
 		pool.Put(state.Key("a"), state.MakeVInt(int(0)))
 
-
 		main := lua.NewMethod("main", 0, 1)
 		code := `function main()
 						Put("hello", "world")
@@ -429,7 +428,7 @@ func TestTxPool(t *testing.T) {
 
 		base := core_mock.NewMockChain(ctl)
 		base.EXPECT().Top().AnyTimes().Return(&b0)
-		base.EXPECT().HasTx(gomock.Any()).AnyTimes().Return(false,nil)
+		base.EXPECT().HasTx(gomock.Any()).AnyTimes().Return(false, nil)
 
 		mockContract := vm_mock.NewMockContract(ctl)
 		mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
