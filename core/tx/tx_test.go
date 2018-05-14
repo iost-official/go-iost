@@ -41,5 +41,6 @@ func TestTx(t *testing.T) {
 			err = tx1.VerifySelf()
 			So(err.Error(), ShouldEqual, "signer error")
 		})
+
 	})
 }

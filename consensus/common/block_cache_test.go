@@ -12,18 +12,30 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db/mocks"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/prototype/vm/mocks"
+	"github.com/iost-official/prototype/vm/lua"
+	"github.com/iost-official/prototype/vm"
 )
 
 func TestBlockCachePoW(t *testing.T) {
 	ctl := gomock.NewController(t)
 	pool := core_mock.NewMockPool(ctl)
 
+	pool.EXPECT().Flush().AnyTimes().Return(nil)
+
+	main := lua.NewMethod("main", 0, 1)
+	code := `function main()
+						Put("hello", "world")
+						return "success"
+					end`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+
 	b0 := block.Block{
 		Head: block.BlockHead{
 			Version:    1,
 			ParentHash: []byte("nothing"),
 		},
-		Content: []tx.Tx{tx.NewTx(0, nil)},
+		Content: []tx.Tx{tx.NewTx(0, &lc)},
 	}
 
 	b1 := block.Block{
@@ -31,7 +43,7 @@ func TestBlockCachePoW(t *testing.T) {
 			Version:    1,
 			ParentHash: b0.HeadHash(),
 		},
-		Content: []tx.Tx{tx.NewTx(1, nil)},
+		Content: []tx.Tx{tx.NewTx(1, &lc)},
 	}
 
 	b2 := block.Block{
@@ -39,7 +51,7 @@ func TestBlockCachePoW(t *testing.T) {
 			Version:    1,
 			ParentHash: b1.HeadHash(),
 		},
-		Content: []tx.Tx{tx.NewTx(2, nil)},
+		Content: []tx.Tx{tx.NewTx(2, &lc)},
 	}
 
 	b2a := block.Block{
@@ -47,7 +59,7 @@ func TestBlockCachePoW(t *testing.T) {
 			Version:    1,
 			ParentHash: b1.HeadHash(),
 		},
-		Content: []tx.Tx{tx.NewTx(-2, nil)},
+		Content: []tx.Tx{tx.NewTx(-2, &lc)},
 	}
 
 	b3 := block.Block{
@@ -55,7 +67,7 @@ func TestBlockCachePoW(t *testing.T) {
 			Version:    1,
 			ParentHash: b2.HeadHash(),
 		},
-		Content: []tx.Tx{tx.NewTx(3, nil)},
+		Content: []tx.Tx{tx.NewTx(3, &lc)},
 	}
 
 	b4 := block.Block{
@@ -63,10 +75,11 @@ func TestBlockCachePoW(t *testing.T) {
 			Version:    1,
 			ParentHash: b3.HeadHash(),
 		},
+		Content: []tx.Tx{tx.NewTx(4, &lc)},
 	}
 
-	verifier := func(blk *block.Block, pool state.Pool) (state.Pool, error) {
-		return nil, nil
+	verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+		return pool, nil
 	}
 
 	base := core_mock.NewMockChain(ctl)
@@ -89,7 +102,7 @@ func TestBlockCachePoW(t *testing.T) {
 				bc.Add(&b2a, verifier)
 				So(bc.cachedRoot.bc.depth, ShouldEqual, 2)
 
-				verifier = func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+				verifier = func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 					return nil, errors.New("test")
 				}
 				err := bc.Add(&b3, verifier)
@@ -102,8 +115,8 @@ func TestBlockCachePoW(t *testing.T) {
 					ans = block.Content[0].Nonce
 					return nil
 				})
-				verifier = func(blk *block.Block, pool state.Pool) (state.Pool, error) {
-					return nil, nil
+				verifier = func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+					return pool, nil
 				}
 				bc := NewBlockCache(base, pool, 3)
 				bc.Add(&b1, verifier)
@@ -160,13 +173,22 @@ func TestBlockCacheDPoS(t *testing.T) {
 	ctl := gomock.NewController(t)
 	pool := core_mock.NewMockPool(ctl)
 
+	pool.EXPECT().Flush().AnyTimes().Return(nil)
+
+	main := lua.NewMethod("main", 0, 1)
+	code := `function main()
+						Put("hello", "world")
+						return "success"
+					end`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+
 	b0 := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
 			ParentHash: []byte("nothing"),
 			Witness:    "w0",
 		},
-		Content: []tx.Tx{tx.NewTx(0, nil)},
+		Content: []tx.Tx{tx.NewTx(0, &lc)},
 	}
 
 	b1 := block.Block{
@@ -175,7 +197,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: b0.HeadHash(),
 			Witness:    "w1",
 		},
-		Content: []tx.Tx{tx.NewTx(1, nil)},
+		Content: []tx.Tx{tx.NewTx(1, &lc)},
 	}
 
 	b2 := block.Block{
@@ -184,7 +206,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: b1.HeadHash(),
 			Witness:    "w2",
 		},
-		Content: []tx.Tx{tx.NewTx(2, nil)},
+		Content: []tx.Tx{tx.NewTx(2, &lc)},
 	}
 
 	b2a := block.Block{
@@ -193,7 +215,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: b1.HeadHash(),
 			Witness:    "w3",
 		},
-		Content: []tx.Tx{tx.NewTx(-2, nil)},
+		Content: []tx.Tx{tx.NewTx(-2, &lc)},
 	}
 
 	b3 := block.Block{
@@ -202,7 +224,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: b2.HeadHash(),
 			Witness:    "w1",
 		},
-		Content: []tx.Tx{tx.NewTx(3, nil)},
+		Content: []tx.Tx{tx.NewTx(3, &lc)},
 	}
 
 	b4 := block.Block{
@@ -211,11 +233,11 @@ func TestBlockCacheDPoS(t *testing.T) {
 			ParentHash: b2a.HeadHash(),
 			Witness:    "w2",
 		},
-		Content: []tx.Tx{tx.NewTx(4, nil)},
+		Content: []tx.Tx{tx.NewTx(4, &lc)},
 	}
 
-	verifier := func(blk *block.Block, pool state.Pool) (state.Pool, error) {
-		return nil, nil
+	verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+		return pool, nil
 	}
 
 	base := core_mock.NewMockChain(ctl)
@@ -289,13 +311,21 @@ func TestStatePool(t *testing.T) {
 		pool := state.NewPool(db)
 		pool.Put(state.Key("a"), state.MakeVInt(int(0)))
 
+
+		main := lua.NewMethod("main", 0, 1)
+		code := `function main()
+						Put("hello", "world")
+						return "success"
+					end`
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+
 		b0 := block.Block{
 			Head: block.BlockHead{
 				Version:    0,
 				ParentHash: []byte("nothing"),
 				Witness:    "w0",
 			},
-			Content: []tx.Tx{tx.NewTx(0, nil)},
+			Content: []tx.Tx{tx.NewTx(0, &lc)},
 		}
 
 		b1 := block.Block{
@@ -304,7 +334,7 @@ func TestStatePool(t *testing.T) {
 				ParentHash: b0.HeadHash(),
 				Witness:    "w1",
 			},
-			Content: []tx.Tx{tx.NewTx(1, nil)},
+			Content: []tx.Tx{tx.NewTx(1, &lc)},
 		}
 
 		b2 := block.Block{
@@ -313,7 +343,7 @@ func TestStatePool(t *testing.T) {
 				ParentHash: b1.HeadHash(),
 				Witness:    "w2",
 			},
-			Content: []tx.Tx{tx.NewTx(2, nil)},
+			Content: []tx.Tx{tx.NewTx(2, &lc)},
 		}
 
 		b2a := block.Block{
@@ -322,7 +352,7 @@ func TestStatePool(t *testing.T) {
 				ParentHash: b1.HeadHash(),
 				Witness:    "w3",
 			},
-			Content: []tx.Tx{tx.NewTx(-2, nil)},
+			Content: []tx.Tx{tx.NewTx(-2, &lc)},
 		}
 
 		b3 := block.Block{
@@ -331,7 +361,7 @@ func TestStatePool(t *testing.T) {
 				ParentHash: b2.HeadHash(),
 				Witness:    "w1",
 			},
-			Content: []tx.Tx{tx.NewTx(3, nil)},
+			Content: []tx.Tx{tx.NewTx(3, &lc)},
 		}
 
 		b4 := block.Block{
@@ -340,10 +370,10 @@ func TestStatePool(t *testing.T) {
 				ParentHash: b3.HeadHash(),
 				Witness:    "w2",
 			},
-			Content: []tx.Tx{tx.NewTx(4, nil)},
+			Content: []tx.Tx{tx.NewTx(4, &lc)},
 		}
 
-		verifier := func(blk *block.Block, pool state.Pool) (state.Pool, error) {
+		verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 			p := pool.Copy()
 			p.Put(state.Key("a"), state.MakeVInt(int(blk.Content[0].Nonce)))
 			return p, nil
@@ -374,5 +404,41 @@ func TestStatePool(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(v.(*state.VInt).ToInt(), ShouldEqual, 0)
 
+	})
+}
+
+func TestTxPool(t *testing.T) {
+	Convey("Test of Block Cache (PoW)", t, func() {
+		ctl := gomock.NewController(t)
+		pool := core_mock.NewMockPool(ctl)
+
+		main := lua.NewMethod("main", 0, 1)
+		code := `function main()
+						Put("hello", "world")
+						return "success"
+					end`
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+
+		b0 := block.Block{
+			Head: block.BlockHead{
+				Version:    1,
+				ParentHash: []byte("nothing"),
+			},
+			Content: []tx.Tx{tx.NewTx(0, &lc)},
+		}
+
+		base := core_mock.NewMockChain(ctl)
+		base.EXPECT().Top().AnyTimes().Return(&b0)
+		base.EXPECT().HasTx(gomock.Any()).AnyTimes().Return(false,nil)
+
+		mockContract := vm_mock.NewMockContract(ctl)
+		mockContract.EXPECT().Encode().AnyTimes().Return([]byte{1, 2, 3})
+		mockContract.EXPECT().Decode(gomock.Any()).AnyTimes().Return(nil)
+		tx := tx.NewTx(int64(0), mockContract)
+
+		bc := NewBlockCache(base, pool, 4)
+		Convey("AddTx:", func() {
+			bc.AddTx(&tx)
+		})
 	})
 }

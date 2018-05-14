@@ -92,11 +92,19 @@ vendor/gopkg.in/
 .vscode/
 
 *.log
-/network/router.go
 /core/block/database/
 core/tx/database/
 db/database/
 
 
+/core/tx/database/
+# ctags
+tags
+
+# .swap file
+*.swp
+
 iwallet/test
 iwallet/iwallet
+
+

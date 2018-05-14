@@ -11,7 +11,6 @@ func TestRedisDatabase(t *testing.T) {
 		//db, _ := DatabaseFactor("redis")
 		//db, _ := DatabaseFactor("mem")
 		db, _ := DatabaseFactor("ldb")
-		defer db.Close()
 
 		//db, _ := NewMemDatabase()
 
@@ -25,22 +24,22 @@ func TestRedisDatabase(t *testing.T) {
 			rtn, _ := db.Get([]byte("key1"))
 			So(string(rtn), ShouldEqual, "value1")
 		})
+		/*
+			Convey("PutHM", func() {
+				err := db.PutHM([]byte("key"), []byte("field1"), []byte("value1"), []byte("field2"), []byte("value2"))
+				So(err, ShouldBeNil)
+			})
 
-		Convey("PutHM", func() {
-			err := db.PutHM([]byte("key"), []byte("field1"), []byte("value1"), []byte("field2"), []byte("value2"))
-			So(err, ShouldBeNil)
-		})
-
-		Convey("GetHM", func() {
-			db.PutHM([]byte("key"), []byte("field1"), []byte("value1"), []byte("field2"), []byte("value2"))
-			rtn, err := db.GetHM([]byte("key"), []byte("field1"), []byte("field2"))
-			So(err, ShouldBeNil)
-			if err == nil {
-				So(string(rtn[0]), ShouldEqual, "value1")
-				So(string(rtn[1]), ShouldEqual, "value2")
-			}
-		})
-
+			Convey("GetHM", func() {
+				db.PutHM([]byte("key"), []byte("field1"), []byte("value1"), []byte("field2"), []byte("value2"))
+				rtn, err := db.GetHM([]byte("key"), []byte("field1"), []byte("field2"))
+				So(err, ShouldBeNil)
+				if err == nil {
+					So(string(rtn[0]), ShouldEqual, "value1")
+					So(string(rtn[1]), ShouldEqual, "value2")
+				}
+			})
+		*/
 		Convey("Has", func() {
 			db.Put([]byte("key1"), []byte("value1"))
 			rtn, _ := db.Has([]byte("key1"))
