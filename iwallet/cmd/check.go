@@ -20,7 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/iost-official/prototype/vm/lua"
+	"github.com/iost-official/prototype/core/tx"
 	"github.com/spf13/cobra"
 )
 
@@ -51,11 +51,11 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		var contract lua.Contract // todo 解析tx而不是contract
-		contract.Decode(fd)
+		var mTx tx.Tx
+		mTx.Decode(fd)
 		fmt.Printf(`Transaction : 
-Time: xx
-Nonce: xx
+Time: %v
+Nonce: %v
 Contract:
     Price: %v
     Gas limit: %v
@@ -63,7 +63,7 @@ Code:
 ----
 %v
 ----
-`, contract.Info().Price, contract.Info().GasLimit, contract.Code())
+`, mTx.Time, mTx.Nonce, mTx.Contract.Info().Price, mTx.Contract.Info().GasLimit, mTx.Contract.Code())
 
 	},
 }

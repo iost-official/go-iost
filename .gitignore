@@ -94,6 +94,9 @@ vendor/gopkg.in/
 *.log
 /network/router.go
 /core/block/database/
+core/tx/database/
+db/database/
+
 
 iwallet/test
 iwallet/iwallet
