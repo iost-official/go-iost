@@ -52,12 +52,13 @@ func (tp *TxPoolDb) Get(hash []byte) (*Tx, error) {
 	return &tx, nil
 }
 
-//todo
+// 判断一个Tx是否在Tx Pool
 func (tp *TxPoolDb) Has(tx *Tx) (bool, error) {
 	hash := tx.Hash()
 	return tp.db.Has(append(txPrefix, hash...))
 }
 
+// 获取TxPool中tx的数量
 func (tp *TxPoolDb) Size() int {
 	return 0
 }
@@ -68,10 +69,9 @@ So,the ldb would be always open...
 func (tp *TxPoolDb) Close() {
 	tp.db.Close()
 }
-func Pop() (*Tx, error) {
-	return nil, nil
-}
 */
+
+// 在Tx Pool 获取第一个Tx
 func (tp *TxPoolDb) Top() (*Tx, error) {
 	return nil, nil
 }
