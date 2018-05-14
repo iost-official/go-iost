@@ -95,13 +95,13 @@ func TestRouterImpl_Broadcast(t *testing.T) {
 		case data := <-routers[1].(*RouterImpl).filterMap[1]:
 			So(common.BytesToUint64(data.Body), ShouldEqual, height)
 		}
-		So(len(routers[1].(*RouterImpl).base.(*BaseNetwork).NodeHeightMap), ShouldEqual, 1)
+		So(len(routers[1].(*RouterImpl).base.(*BaseNetwork).NodeHeightMap), ShouldBeGreaterThanOrEqualTo, 1)
 		//download block request test
 
 		net2.SetNodeHeightMap(net0.localNode.String(), height+uint64(rand.Int63n(int64(deltaHeight))))
 		net2.SetNodeHeightMap(net1.localNode.String(), height+deltaHeight)
 		go net2.Download(height, height+deltaHeight)
-		for i := 0; i < (int(deltaHeight)+1)*MaxDownloadRetry; i++ {
+		for i := 0; i < (int(deltaHeight)); i++ {
 			select {
 			case data := <-routers[0].(*RouterImpl).filterMap[0]:
 				So(common.BytesToUint64(data.Body), ShouldBeGreaterThan, height-1)
