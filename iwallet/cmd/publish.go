@@ -19,16 +19,22 @@ import (
 	"io/ioutil"
 	"os"
 
+	"context"
+
+	"errors"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
+	pb "github.com/iost-official/prototype/rpc"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 // publishCmd represents the publish command
 var publishCmd = &cobra.Command{
 	Use:   "publish",
-	Short: "A brief description of your command",
+	Short: "sign to a .sc file with .sig files, and publish it",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -39,9 +45,8 @@ to quickly create a Cobra application.`,
 		if len(args) < 1 {
 			fmt.Println(`invalid input, check
 	iwallet publish -h`)
-		} else if len(args) < 2 {
-			fmt.Println(true) // TODO :签名之后发布
 		}
+
 		scf, err := os.Open(args[0])
 		if err != nil {
 			fmt.Printf("Error in File %v: %v\n", args[0], err.Error())
@@ -89,7 +94,6 @@ to quickly create a Cobra application.`,
 			}
 			mtx.Signs = append(mtx.Signs, sign)
 		}
-
 		fsk, err := os.Open(kpPath)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -114,20 +118,29 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		Dist = ChangeSuffix(args[0], ".tx")
+		dest = ChangeSuffix(args[0], ".tx")
 
-		SaveTo(Dist, stx.Encode())
+		SaveTo(dest, stx.Encode())
 
-		fmt.Println(true)
+		if !isLocal {
+			err = sendTx(stx)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}
+
+		fmt.Println("ok")
 	},
 }
+
+var isLocal bool
+var server string
 
 func init() {
 	rootCmd.AddCommand(publishCmd)
 
-	publishCmd.Flags().StringVarP(&Dist, "dest", "d", "default", "Set destination of tx file")
 	publishCmd.Flags().StringVarP(&kpPath, "key-path", "k", "~/.ssh/id_secp", "Set path of sec-key")
-
+	publishCmd.Flags().BoolVar(&isLocal, "local", false, "Set to not send tx to server")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
@@ -137,4 +150,25 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// publishCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func sendTx(stx tx.Tx) error {
+	conn, err := grpc.Dial(server, grpc.WithDefaultCallOptions())
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	client := pb.NewCliClient(conn)
+	resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
+	if err != nil {
+		return err
+	}
+	switch resp.Code {
+	case 0:
+		return nil
+	case -1:
+		return errors.New("tx rejected")
+	default:
+		return errors.New("unknown return")
+	}
 }

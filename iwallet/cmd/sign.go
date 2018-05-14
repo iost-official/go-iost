@@ -86,13 +86,13 @@ to quickly create a Cobra application.`,
 		}
 
 		if len(args) < 2 {
-			Dist = args[0][:strings.LastIndex(args[0], ".")]
-			Dist = Dist + ".sig"
+			dest = args[0][:strings.LastIndex(args[0], ".")]
+			dest = dest + ".sig"
 		} else {
-			Dist = args[1]
+			dest = args[1]
 		}
 
-		err = SaveTo(Dist, sig.Encode())
+		err = SaveTo(dest, sig.Encode())
 		if err != nil {
 			fmt.Println(err.Error())
 			return
