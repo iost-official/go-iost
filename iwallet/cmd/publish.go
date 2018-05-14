@@ -19,7 +19,9 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/core/tx"
 	"github.com/spf13/cobra"
 )
 
@@ -53,6 +55,12 @@ to quickly create a Cobra application.`,
 			return
 
 		}
+		var mtx tx.Tx
+		err = mtx.Decode(sc)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+
 		for i, v := range args {
 			if i == 0 {
 				continue
@@ -60,33 +68,65 @@ to quickly create a Cobra application.`,
 			sigf, err := os.Open(v)
 			if err != nil {
 				fmt.Printf("Error in File %v: %v\n", args[0], err.Error())
+				sigf.Close()
 				return
-
 			}
-			defer scf.Close()
 			sig, err := ioutil.ReadAll(sigf)
+			sigf.Close()
 			if err != nil {
-				fmt.Println("Read error", err)
+				fmt.Println("Error: Illegal sig file", err)
 				return
 			}
 			var sign common.Signature
 			err = sign.Decode(sig)
 			if err != nil {
-				fmt.Println("Illegal sig file", err)
+				fmt.Println("Error: Illegal sig file", err)
 				return
 			}
-			if !common.VerifySignature(common.Sha256(sc), sign) {
-				fmt.Printf("Sign %v error\n", v)
+			if !mtx.VerifySigner(sign) {
+				fmt.Printf("Error: Sign %v wrong\n", v)
 				return
 			}
+			mtx.Signs = append(mtx.Signs, sign)
 		}
-		fmt.Println(true)
 
+		fsk, err := os.Open(kpPath)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		defer fsk.Close()
+		seckey, err := ioutil.ReadAll(fsk)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		acc, err := account.NewAccount(LoadBytes(string(seckey)))
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		stx, err := tx.SignTx(mtx, acc)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		Dist = ChangeSuffix(args[0], ".tx")
+
+		SaveTo(Dist, stx.Encode())
+
+		fmt.Println(true)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(publishCmd)
+
+	publishCmd.Flags().StringVarP(&Dist, "dest", "d", "default", "Set destination of tx file")
+	publishCmd.Flags().StringVarP(&kpPath, "key-path", "k", "~/.ssh/id_secp", "Set path of sec-key")
 
 	// Here you will define your flags and configuration settings.
 

@@ -19,8 +19,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"strings"
-
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
@@ -81,21 +79,12 @@ iwallet compile -l lua SRC`,
 		bytes := mTx.Encode()
 
 		if Dist == "default" {
-			Dist = args[0][:strings.LastIndex(args[0], ".")]
-			Dist = Dist + ".sc"
+			Dist = ChangeSuffix(args[0], "sc")
 		}
 
-		f, err := os.Create(Dist)
+		err = SaveTo(Dist, bytes)
 		if err != nil {
 			fmt.Println(err.Error())
-			return
-		}
-		defer f.Close()
-
-		_, err = f.Write(bytes)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
 		}
 	},
 }
