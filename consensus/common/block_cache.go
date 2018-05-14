@@ -144,6 +144,7 @@ type BlockCache interface {
 
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
+	LongestPool() state.Pool
 	ConfirmedLength() uint64
 	BlockConfirmChan() chan uint64
 }

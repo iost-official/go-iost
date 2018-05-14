@@ -13,8 +13,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/core/block"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -87,11 +87,10 @@ func TestDPoS_Run(t *testing.T) {
 
 		defer guard.Unpatch()
 
-		heightChain := make(chan message.Message, 1)
-		blkChain := make(chan message.Message, 1)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(heightChain, nil)
-
-		mockRouter.EXPECT().FilteredChan(Any()).Return(blkChain, nil)
+		heightChan := make(chan message.Message, 1)
+		blkChan := make(chan message.Message, 1)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
 
 		txChan := make(chan message.Message, 1)
 		//设置第一个通道txchan
@@ -140,6 +139,7 @@ func TestDPoS_Run(t *testing.T) {
 		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, nil, []string{"id1"})
 
 		p.Run()
+		p.Stop()
 
 		//time.Sleep(20 * time.Second)
 	})

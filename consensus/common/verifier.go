@@ -43,11 +43,11 @@ func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 	return ver.VerifyBlock(block, false)
 }
 
-// VeirifyTx 验证单个交易的正确性
+// VerifyTx 验证单个交易的正确性
 // 在调用之前需要先调用vm.NewCacheVerifier(pool state.Pool)生成一个cache verifier
 // TODO: 考虑自己生成块到达最后一个交易时，直接用返回的state pool更新block cache中的state
-func VeirifyTx(tx tx.Tx, cv *verifier.CacheVerifier) (state.Pool, bool) {
-	newPool, err := cv.VerifyContract(tx.Contract, false)
+func VerifyTx(tx *tx.Tx, txVer *verifier.CacheVerifier) (state.Pool, bool) {
+	newPool, err := txVer.VerifyContract(tx.Contract, false)
 	return newPool, err == nil
 }
 
