@@ -447,7 +447,7 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 		for scanner.Scan() {
 			req := new(Request)
 			req.Unpack(bytes.NewReader(scanner.Bytes()))
-			req.response(bn, conn)
+			req.handle(bn, conn)
 		}
 		if err := scanner.Err(); err != nil {
 			bn.log.E("invalid data packets: %v", err)

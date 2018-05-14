@@ -18,8 +18,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-//for boot test server
-
 func initNetConf() *NetConifg {
 	conf := &NetConifg{}
 	conf.SetLogPath("iost_log_")
@@ -73,13 +71,20 @@ func newRouters(n int) []Router {
 }
 func TestRouterImpl_Broadcast(t *testing.T) {
 
-	routers := newRouters(3)
 	height := uint64(32)
 	deltaHeight := uint64(5)
+
+	routers := newRouters(3)
 	net0 := routers[0].(*RouterImpl).base.(*BaseNetwork)
 	net1 := routers[1].(*RouterImpl).base.(*BaseNetwork)
 	net2 := routers[2].(*RouterImpl).base.(*BaseNetwork)
-	broadHeight := message.Message{Body: common.Uint64ToBytes(height), ReqType: int32(ReqBlockHeight), From: net2.localNode.String()}
+
+	requestHeight := message.RequestHeight{LocalBlockHeight: height}
+	broadHeight := message.Message{
+		Body:    requestHeight.Encode(),
+		ReqType: int32(ReqBlockHeight),
+		From:    net2.localNode.String(),
+	}
 
 	Convey("broadcast block", t, func() {
 		//broadcast block height test

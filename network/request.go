@@ -105,7 +105,7 @@ func (r *Request) String() string {
 	)
 }
 
-func (r *Request) response(base *BaseNetwork, conn net.Conn) {
+func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	base.log.D("%v response request = %v", base.localNode.String(), r)
 	switch r.Type {
 	case Message:
@@ -150,11 +150,14 @@ func (r *Request) msgHandle(net *BaseNetwork) {
 	if _, err := msg.Unmarshal(r.Body); err == nil {
 		switch msg.ReqType {
 		case int32(ReqBlockHeight):
-			net.SetNodeHeightMap(string(msg.From), common.BytesToUint64(msg.Body))
+			var rbh message.RequestHeight
+			rbh.Decode(msg.Body)
+			net.SetNodeHeightMap(string(r.From), rbh.LocalBlockHeight)
 		case int32(RecvBlockHeight):
-			net.SetNodeHeightMap(string(msg.From), common.BytesToUint64(msg.Body))
+			var rh message.ResponseHeight
+			rh.Decode(msg.Body)
+			net.SetNodeHeightMap(string(r.From), rh.BlockHeight)
 		default:
-
 		}
 	}
 }
