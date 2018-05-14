@@ -237,7 +237,19 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 			super:    bct,
 			children: make([]*BlockCacheTree, 0),
 		}
+
 		bct.children = append(bct.children, newTree)
+
+		newChildren := make([]*BlockCacheTree, 0)
+		for _, bct := range h.singleBlockRoot.children {
+			if bytes.Equal(bct.bc.block.Head.ParentHash, block.Head.Hash()) {
+				newTree.children = append(newTree.children, btc)
+				bct.super = newTree
+			} else {
+				newChildren = append(newChildren, bct)
+			}
+		}
+		h.singleBlockRoot.children = newChildren
 		return ErrNotFound
 	case ErrorBlock:
 		return ErrBlock
