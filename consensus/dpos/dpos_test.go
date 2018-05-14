@@ -11,6 +11,10 @@ import (
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/prototype/vm/lua"
+	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/tx"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -92,13 +96,31 @@ func TestDPoS_Run(t *testing.T) {
 		txChan := make(chan message.Message, 1)
 		//设置第一个通道txchan
 
+		main := lua.NewMethod("main", 0, 1)
+		code := `function main()
+						Put("hello", "world")
+						return "success"
+					end`
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+
+		b0 := block.Block{
+			Head: block.BlockHead{
+				Version:    0,
+				ParentHash: []byte("nothing"),
+				Witness:    "w0",
+			},
+			Content: []tx.Tx{tx.NewTx(0, &lc)},
+		}
+
+		tx:=tx.NewTx(0, &lc)
+
 		//构造测试数据
 		txChan <- message.Message{
 			Time:    20180426111111,
 			From:    "0xaaaaaaaaaaaaa",
 			To:      "0xbbbbbbbbbbbb",
 			ReqType: 1,
-			Body:    []byte{'a', 'b'}}
+			Body:    tx.Encode()}
 
 		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
 
@@ -112,7 +134,7 @@ func TestDPoS_Run(t *testing.T) {
 			From:    "0xaaaaaaaaaaaaa",
 			To:      "0xbbbbbbbbbbbb",
 			ReqType: 2,
-			Body:    []byte{'c', 'd'}}
+			Body:    b0.Encode()}
 		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil)
 
 		p, _ := NewDPoS(account.Account{"id0", []byte{23, 23, 23, 23, 23, 23}, []byte{23, 23}}, nil, nil, []string{"id1"})
