@@ -17,6 +17,7 @@ func TestRedisDatabase(t *testing.T) {
 		Convey("Put", func() {
 			err := db.Put([]byte("key1"), []byte("value1"))
 			So(err, ShouldBeNil)
+			defer db.Close()
 		})
 
 		Convey("Get", func() {
