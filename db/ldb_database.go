@@ -81,6 +81,7 @@ func (db *LDBDatabase) Close() {
 	db.quitLock.Lock()
 	defer db.quitLock.Unlock()
 	db.db.Close()
+	Db = nil
 }
 
 func (db *LDBDatabase) DB() *leveldb.DB {
