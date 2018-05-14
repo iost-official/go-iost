@@ -87,8 +87,8 @@ func (p *DPoS) initGlobalProperty(acc Account, witnessList []string) {
 
 // Run: 运行DPoS实例
 func (p *DPoS) Run() {
-	//go p.blockLoop()
-	//go p.scheduleLoop()
+	go p.blockLoop()
+	go p.scheduleLoop()
 	p.genBlock(p.Account, block.Block{})
 }
 
