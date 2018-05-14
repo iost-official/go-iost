@@ -70,10 +70,12 @@ func (d *Block) LenTx() int {
 
 // GetAllContract 获取一个block中，所有Contract的集合
 func (d *Block) GetAllContract() []vm.Contract {
-	//todo 解析content,获得所有交易
 
 	var allContract []vm.Contract
-	//todo 将交易中的contract，添加到contractAll中
+
+	for _, tx := range d.Content{
+		allContract = append(allContract, tx.Contract)
+	}
 
 	return allContract
 }
