@@ -11,7 +11,8 @@ import (
 
 //go:generate gencode go -schema=structs.schema -package=consensus_common
 
-// 验证块头正确性，调用此函数时块的父亲节点已经找到
+// VerifyBlockHead 验证块头正确性
+// blk 需要验证的块, parentBlk 父块
 func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 	bh := blk.Head
 	// parent hash
@@ -32,6 +33,7 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 
 var ver *verifier.BlockVerifier
 
+// StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 	if ver == nil {
 		veri := verifier.NewBlockVerifier(pool)
@@ -41,14 +43,15 @@ func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 	return ver.VerifyBlock(block, false)
 }
 
-// 验证单个交易的正确性
+// VerifyTx 验证单个交易的正确性
 // 在调用之前需要先调用vm.NewCacheVerifier(pool state.Pool)生成一个cache verifier
 // TODO: 考虑自己生成块到达最后一个交易时，直接用返回的state pool更新block cache中的state
-func VeirifyTx(tx tx.Tx, cv *verifier.CacheVerifier) (state.Pool, bool) {
-	newPool, err := cv.VerifyContract(tx.Contract, false)
+func VerifyTx(tx *tx.Tx, txVer *verifier.CacheVerifier) (state.Pool, bool) {
+	newPool, err := txVer.VerifyContract(tx.Contract, false)
 	return newPool, err == nil
 }
 
+// VerifyTxSig 验证交易的签名
 func VerifyTxSig(tx tx.Tx) bool {
 	err := tx.VerifySelf()
 	return err == nil

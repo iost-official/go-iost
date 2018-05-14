@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"time"
-
 	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
 	. "github.com/iost-official/prototype/core/tx"
 	. "github.com/iost-official/prototype/network"
 
+	"errors"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
-	"errors"
+	"time"
+	"github.com/iost-official/prototype/verifier"
 )
 
 type DPoS struct {
@@ -36,7 +36,7 @@ type DPoS struct {
 }
 
 // NewDPoS: 新建一个DPoS实例
-// acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), witnessList: 见证节点列表
+// acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
 	p.Account = acc
@@ -87,9 +87,10 @@ func (p *DPoS) initGlobalProperty(acc Account, witnessList []string) {
 
 // Run: 运行DPoS实例
 func (p *DPoS) Run() {
-	//go p.blockLoop()
-	//go p.scheduleLoop()
-	p.genBlock(p.Account, block.Block{})
+	p.synchronizer.StartListen()
+	go p.blockLoop()
+	go p.scheduleLoop()
+	//p.genBlock(p.Account, block.Block{})
 }
 
 // Stop: 停止DPoS实例
@@ -114,19 +115,23 @@ func (p *DPoS) genesis(initTime int64) error {
 
 func (p *DPoS) txListenLoop() {
 	for {
-		req, ok := <-p.chTx
-		if !ok {
+		select {
+		case req, ok := <-p.chTx:
+			if !ok {
+				return
+			}
+			if req.ReqType == reqTypeVoteTest {
+				p.addWitnessMsg(req)
+				continue
+			}
+			var tx Tx
+			tx.Decode(req.Body)
+			p.router.Send(req)
+			if VerifyTxSig(tx) {
+				p.blockCache.AddTx(&tx)
+			}
+		case <-p.exitSignal:
 			return
-		}
-		if req.ReqType == reqTypeVoteTest {
-			p.addWitnessMsg(req)
-			continue
-		}
-		var tx Tx
-		tx.Decode(req.Body)
-		p.router.Send(req)
-		if VerifyTxSig(tx) {
-			p.blockCache.AddTx(&tx)
 		}
 	}
 }
@@ -161,48 +166,60 @@ func (p *DPoS) blockLoop() {
 	}
 
 	for {
-		req, ok := <-p.chBlock
-		if !ok {
-			return
-		}
-		var blk block.Block
-		blk.Decode(req.Body)
-		err := p.blockCache.Add(&blk, verifier)
-		if err != ErrBlock {
-			p.globalDynamicProperty.update(&blk.Head)
-			if err == ErrNotFound {
-				// New block is a single block
-				need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
-				if need {
-					go p.synchronizer.SyncBlocks(start, end)
+		select {
+		case req, ok := <-p.chBlock:
+			if !ok {
+				return
+			}
+			var blk block.Block
+			blk.Decode(req.Body)
+			err := p.blockCache.Add(&blk, verifier)
+			if err != ErrBlock {
+				p.globalDynamicProperty.update(&blk.Head)
+				if err == ErrNotFound {
+					// New block is a single block
+					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
+					if need {
+						go p.synchronizer.SyncBlocks(start, end)
+					}
 				}
 			}
-		}
-		ts := Timestamp{blk.Head.Time}
-		if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
-			p.performMaintenance()
+			ts := Timestamp{blk.Head.Time}
+			if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
+				p.performMaintenance()
+			}
+		case <- p.exitSignal:
+			return
 		}
 	}
 }
 
 func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
-
 	for {
-		currentTimestamp := GetCurrentTimestamp()
-		wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
-		if wid == p.Account.ID {
-			bc := p.blockCache.LongestChain()
-			blk := p.genBlock(p.Account, *bc.Top())
-			p.blockCache.ResetTxPoool()
-			p.router.Broadcast(message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}) //??
+		select {
+		case <- p.exitSignal:
+			return
+		default:
+			currentTimestamp := GetCurrentTimestamp()
+			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
+			if wid == p.Account.ID {
+				bc := p.blockCache.LongestChain()
+				pool := p.blockCache.LongestPool()
+				blk := p.genBlock(p.Account, bc, pool)
+				p.blockCache.ResetTxPoool()
+				msg := message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}
+				p.router.Broadcast(msg)
+				p.chBlock <- msg
+			}
+			nextSchedule := timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
+			time.Sleep(time.Second * time.Duration(nextSchedule))
 		}
-		nextSchedule := timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
-		time.Sleep(time.Duration(nextSchedule))
 	}
 }
 
-func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
+func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Block {
+	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.Head.BlockHash,
@@ -218,14 +235,17 @@ func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
 	fmt.Println(acc.Seckey)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
+	veri := verifier.NewCacheVerifier(pool)
+	var result bool
 	//TODO Content大小控制
 	for len(blk.Content) < 2 {
-		tx, err:= p.blockCache.GetTx()
-		if err!=nil{
+		tx, err := p.blockCache.GetTx()
+		if err != nil {
 			break
 		}
-		//TODO 验算tx能否放进block
-		blk.Content = append(blk.Content, *tx)
+		if _, result = VerifyTx(tx, &veri); result {
+			blk.Content = append(blk.Content, *tx)
+		}
 	}
 	return &blk
 }

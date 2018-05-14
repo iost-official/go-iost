@@ -14,15 +14,17 @@ import (
 //	MaxCacheDepth = 6
 //)
 
+// CacheStatus 代表缓存块的状态
 type CacheStatus int
 
 const (
-	Extend CacheStatus = iota
-	Fork
-	NotFound
-	ErrorBlock
+	Extend     CacheStatus = iota // 链增长
+	Fork                          // 分叉
+	NotFound                      // 无法上链，成为孤块
+	ErrorBlock                    // 块有错误
 )
 
+// BlockCacheTree 缓存链分叉的树结构
 type BlockCacheTree struct {
 	bc       CachedBlockChain
 	children []*BlockCacheTree
@@ -128,10 +130,11 @@ func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
 }
 
 var (
-	ErrNotFound = errors.New("not found")
-	ErrBlock    = errors.New("error block")
+	ErrNotFound = errors.New("not found")   // 没有上链，成为孤块
+	ErrBlock    = errors.New("error block") // 块有错误
 )
 
+// BlockCache 操作块缓存的接口
 type BlockCache interface {
 	AddGenesis(block *block.Block) error
 	Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error
@@ -141,10 +144,12 @@ type BlockCache interface {
 
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
+	LongestPool() state.Pool
 	ConfirmedLength() uint64
 	BlockConfirmChan() chan uint64
 }
 
+// BlockCacheImpl 块缓存实现
 type BlockCacheImpl struct {
 	bc              block.Chain
 	cachedRoot      *BlockCacheTree
@@ -156,6 +161,8 @@ type BlockCacheImpl struct {
 	blkConfirmChan  chan uint64
 }
 
+// NewBlockCache 新建块缓存
+// chain 已确认链部分, pool 已确认状态池, maxDepth 和共识相关的确认块参数
 func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCacheImpl {
 	h := BlockCacheImpl{
 		bc: chain,
@@ -181,15 +188,19 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 	return &h
 }
 
+// ConfirmedLength 返回确认链长度
 func (h *BlockCacheImpl) ConfirmedLength() uint64 {
 	return h.bc.Length()
 }
 
+// AddGenesis 加入创世块
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	h.bc.Push(block)
 	return nil
 }
 
+// Add 把块加入缓存
+// block 块, verifier 块的验证函数
 func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error {
 	code, newTree := h.cachedRoot.add(block, verifier)
 	switch code {
@@ -257,6 +268,7 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 	return nil
 }
 
+// AddTx 把交易加入链
 func (h *BlockCacheImpl) AddTx(tx *tx.Tx) error {
 	//TODO 验证tx是否在blockchain上
 	if ok, _ := h.bc.HasTx(tx); ok {
@@ -266,6 +278,7 @@ func (h *BlockCacheImpl) AddTx(tx *tx.Tx) error {
 	return nil
 }
 
+// GetTx 从链中取交易
 func (h *BlockCacheImpl) GetTx() (*tx.Tx, error) {
 	for {
 		tx, err := h.txPool.Top()
@@ -310,6 +323,7 @@ func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
 	return false, nil
 }
 
+// FindBlockInCache 在缓存中找一个块，根据块的hash
 func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 	var pb *block.Block
 	found := h.cachedRoot.iterate(func(bct *BlockCacheTree) bool {
@@ -328,6 +342,7 @@ func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 	}
 }
 
+// LongestChain 返回缓存的最长链
 func (h *BlockCacheImpl) LongestChain() block.Chain {
 	bct := h.cachedRoot
 	h.delTxPool = tx.NewTxPoolImpl()
@@ -366,6 +381,7 @@ func (h *BlockCacheImpl) LongestPool() state.Pool {
 	}
 }
 
+// BlockConfirmChan 返回块确认通道
 func (h *BlockCacheImpl) BlockConfirmChan() chan uint64 {
 	return h.blkConfirmChan
 }

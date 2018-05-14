@@ -426,7 +426,6 @@ func TestTxPool(t *testing.T) {
 		},
 		Content: []tx.Tx{tx.NewTx(0, &lc)},
 	}
-
 	b1 := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
