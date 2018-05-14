@@ -21,11 +21,11 @@ import (
 
 	"strings"
 
-	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/core/tx"
 	"github.com/spf13/cobra"
 )
 
-var Identity string
 var kpPath string
 
 // signCmd represents the sign command
@@ -55,18 +55,31 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		fpk, err := os.Open(kpPath + "/" + Identity + "_secp")
+		var mtx tx.Tx
+		err = mtx.Decode(fd)
+		if err != nil {
+			fmt.Println("file broken: ", err.Error())
+		}
+
+		fsk, err := os.Open(kpPath)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
-		defer fpk.Close()
-		pubkey, err := ioutil.ReadAll(fpk)
+		defer fsk.Close()
+		seckey, err := ioutil.ReadAll(fsk)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
-		sig, err := common.Sign(common.Secp256k1, common.Sha256(fd), LoadBytes(string(pubkey)))
+
+		acc, err := account.NewAccount(LoadBytes(string(seckey)))
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		sig, err := tx.SignContract(mtx, acc)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -79,14 +92,7 @@ to quickly create a Cobra application.`,
 			Dist = args[1]
 		}
 
-		f, err := os.Create(Dist)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		defer f.Close()
-
-		_, err = f.Write(sig.Encode())
+		err = SaveTo(Dist, sig.Encode())
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -96,8 +102,7 @@ to quickly create a Cobra application.`,
 
 func init() {
 	rootCmd.AddCommand(signCmd)
-	signCmd.Flags().StringVarP(&Identity, "id", "i", "id", "Set language of contract, Support lua")
-	signCmd.Flags().StringVarP(&kpPath, "key-path", "k", "test", "Set path of sec-key")
+	signCmd.Flags().StringVarP(&kpPath, "key-path", "k", "~/.ssh/id_secp", "Set path of sec-key")
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports Persistent Flags which will work for this command
