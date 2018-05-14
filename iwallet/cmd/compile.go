@@ -78,11 +78,11 @@ iwallet compile -l lua SRC`,
 
 		bytes := mTx.Encode()
 
-		if Dist == "default" {
-			Dist = ChangeSuffix(args[0], "sc")
+		if dest == "default" {
+			dest = ChangeSuffix(args[0], "sc")
 		}
 
-		err = SaveTo(Dist, bytes)
+		err = SaveTo(dest, bytes)
 		if err != nil {
 			fmt.Println(err.Error())
 		}
@@ -90,14 +90,13 @@ iwallet compile -l lua SRC`,
 }
 
 var Language string
-var Dist string
+var dest string
 var Nonce int
 
 func init() {
 	rootCmd.AddCommand(compileCmd)
 
 	compileCmd.Flags().StringVarP(&Language, "language", "l", "lua", "Set language of contract, Support lua")
-	compileCmd.Flags().StringVarP(&Dist, "dest", "d", "default", "Set destination of build file")
 	compileCmd.Flags().IntVarP(&Nonce, "nonce", "n", 1, "Set Nonce of this Transaction")
 
 	// Here you will define your flags and configuration settings.
