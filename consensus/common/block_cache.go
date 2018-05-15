@@ -202,6 +202,7 @@ func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 // Add 把块加入缓存
 // block 块, verifier 块的验证函数
 func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error {
+	// TODO block去重
 	code, newTree := h.cachedRoot.add(block, verifier)
 	switch code {
 	case Extend:

@@ -25,6 +25,7 @@ type SyncImpl struct {
 	router      Router
 	heightChan  chan message.Message
 	blkSyncChan chan message.Message
+	// TODO 修改signal类型和结束方式
 	exitSignal chan bool
 }
 
