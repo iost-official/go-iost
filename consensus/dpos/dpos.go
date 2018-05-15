@@ -118,7 +118,7 @@ func (p *DPoS) StatePool() state.Pool{
 }
 
 // CacheStatePool 返回缓存中最新的state pool
-func (p *DPoS) CacheStatePool() state.Pool{
+func (p *DPoS) CachedStatePool() state.Pool{
 	return p.blockCache.LongestPool()
 }
 
