@@ -12,11 +12,11 @@ import (
 type ReqType int32
 
 const (
-	ReqPublishTx ReqType = iota
-	ReqNewBlock
-	ReqBlockHeight  //The height of the request to block
-	RecvBlockHeight //The height of the receiving block
-	ReqDownloadBlock
+	ReqPublishTx     ReqType = iota
+	ReqBlockHeight           //The height of the request to block
+	RecvBlockHeight          //The height of the receiving block
+	ReqNewBlock              // recieve a new block or a response for download block
+	ReqDownloadBlock         // request for the height of block is equal to target
 )
 
 //Router Forwarding specific request to other components and sending messages for them
@@ -71,7 +71,7 @@ func (r *RouterImpl) Init(base Network, port uint16) error {
 
 //FilteredChan Get filtered request channel
 func (r *RouterImpl) FilteredChan(filter Filter) (chan message.Message, error) {
-	chReq := make(chan message.Message)
+	chReq := make(chan message.Message, 1)
 
 	r.filterList = append(r.filterList, filter)
 	r.filterMap[len(r.filterList)-1] = chReq
@@ -120,7 +120,7 @@ func (r *RouterImpl) Download(start uint64, end uint64) error {
 	return r.base.Download(start, end)
 }
 
-//CancelDownload cancel download todo del downloading map
+//CancelDownload cancel download
 func (r *RouterImpl) CancelDownload(start uint64, end uint64) error {
 	return r.base.CancelDownload(start, end)
 }

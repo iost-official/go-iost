@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/iost-official/prototype/core/message"
@@ -23,49 +21,6 @@ func initNetConf() *network.NetConifg {
 }
 func main() {
 	testBaseNetwork()
-	//testServer()
-}
-
-func testServer() {
-	flag.Parse()
-	s, err := network.NewServer(conf)
-
-	if err != nil {
-		panic("node start panic:" + err.Error())
-	}
-	s.RemoteAddr = (*serverAddr)
-	port, _ := strconv.Atoi(*listenPort)
-	go func() {
-		if _, err := s.Listen(uint16(port)); err != nil {
-			panic(err)
-		}
-	}()
-	time.Sleep(5 * time.Second)
-	fmt.Println("server start....")
-	req := message.Message{
-		Time:    time.Now().Unix(),
-		From:    "from:" + s.ListenAddr,
-		To:      "to:" + s.RemoteAddr,
-		ReqType: 1,
-		Body:    []byte("transaction-" + (*id)),
-	}
-	data, _ := req.Marshal(nil)
-	go func() {
-		for {
-			fmt.Println(">>>>>>>>>>>", string(data))
-			s.BroadcastCh <- network.MsgCh{Data: data, Priority: 1}
-			time.Sleep(5 * time.Second)
-		}
-	}()
-	// receive message from other nodes
-	for {
-		select {
-		case r := <-s.RecvCh:
-			fmt.Printf("<<<<<<<<<: %s %v %v\n", string(r.Body), r.From, r.Time)
-			nodes, _ := s.AllNodesExcludeAddr("")
-			fmt.Printf("[nodetabls] =  %+v \n\n", nodes)
-		}
-	}
 }
 
 func testBaseNetwork() {

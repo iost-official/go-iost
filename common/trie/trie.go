@@ -1,9 +1,8 @@
 package trie
 
 import (
-	"github.com/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/db"
 )
 
 var (
@@ -38,4 +37,4 @@ func (t *Trie) newFlag() nodeFlag {
 	return nodeFlag{dirty: true, gen: t.cachegen}
 }
 
-func New(root common.Hash, db *Database)
+func New(root common.Hash, db *Database) {}

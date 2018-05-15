@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/spf13/cobra"
@@ -73,31 +74,29 @@ iwallet compile -l lua SRC`,
 		//----
 		//`, contract.Info().Price, contract.Info().GasLimit, contract.Code())
 
-		bytes := contract.Encode() // todo 在这里直接生成tx， 而不是contract
-		f, err := os.Create(Dist)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		defer f.Close()
+		mTx := tx.NewTx(int64(Nonce), contract)
 
-		_, err = f.Write(bytes)
+		bytes := mTx.Encode()
+
+		if dest == "default" {
+			dest = ChangeSuffix(args[0], "sc")
+		}
+
+		err = SaveTo(dest, bytes)
 		if err != nil {
 			fmt.Println(err.Error())
-			return
 		}
 	},
 }
 
 var Language string
-var Dist string
+var dest string
 var Nonce int
 
 func init() {
 	rootCmd.AddCommand(compileCmd)
 
 	compileCmd.Flags().StringVarP(&Language, "language", "l", "lua", "Set language of contract, Support lua")
-	compileCmd.Flags().StringVarP(&Dist, "dest", "d", "./untitled.sc", "Set destination of build file")
 	compileCmd.Flags().IntVarP(&Nonce, "nonce", "n", 1, "Set Nonce of this Transaction")
 
 	// Here you will define your flags and configuration settings.
