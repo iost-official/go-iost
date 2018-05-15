@@ -103,6 +103,26 @@ func (p *DPoS) Stop() {
 	p.exitSignal <- true
 }
 
+// BlockChain 返回已确认的block chain
+func (p *DPoS) BlockChain() block.Chain{
+	return p.blockCache.BlockChain()
+}
+
+// CachedBlockChain 返回缓存中的最长block chain
+func (p *DPoS) CachedBlockChain() block.Chain{
+	return p.blockCache.LongestChain()
+}
+
+// StatePool 返回已确认的state pool
+func (p *DPoS) StatePool() state.Pool{
+	return p.blockCache.BasePool()
+}
+
+// CacheStatePool 返回缓存中最新的state pool
+func (p *DPoS) CacheStatePool() state.Pool{
+	return p.blockCache.LongestPool()
+}
+
 func (p *DPoS) genesis(initTime int64) error {
 	genesis := &block.Block{
 		Head: block.BlockHead{
