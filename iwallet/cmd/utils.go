@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/base64"
+	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -32,4 +33,17 @@ func SaveTo(Dist string, file []byte) error {
 	_, err = f.Write(file)
 	defer f.Close()
 	return err
+}
+
+func ReadFile(src string) ([]byte, error) {
+	fi, err := os.Open(src)
+	if err != nil {
+		return nil, err
+	}
+	defer fi.Close()
+	fd, err := ioutil.ReadAll(fi)
+	if err != nil {
+		return nil, err
+	}
+	return fd, nil
 }

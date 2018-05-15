@@ -16,8 +16,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
@@ -39,14 +37,9 @@ iwallet compile -l lua SRC`,
 			return
 		}
 		path := args[0]
-		fi, err := os.Open(path)
+		fd, err := ReadFile(path)
 		if err != nil {
-			fmt.Println("Error: input file not found")
-		}
-		defer fi.Close()
-		fd, err := ioutil.ReadAll(fi)
-		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println("Read file failed: ", err.Error())
 			return
 		}
 		rawCode := string(fd)
@@ -79,7 +72,7 @@ iwallet compile -l lua SRC`,
 		bytes := mTx.Encode()
 
 		if dest == "default" {
-			dest = ChangeSuffix(args[0], "sc")
+			dest = ChangeSuffix(args[0], ".sc")
 		}
 
 		err = SaveTo(dest, bytes)

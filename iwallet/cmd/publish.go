@@ -15,11 +15,8 @@
 package cmd
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
-
 	"context"
+	"fmt"
 
 	"errors"
 
@@ -47,19 +44,12 @@ to quickly create a Cobra application.`,
 	iwallet publish -h`)
 		}
 
-		scf, err := os.Open(args[0])
+		sc, err := ReadFile(args[0])
 		if err != nil {
-			fmt.Printf("Error in File %v: %v\n", args[0], err.Error())
+			fmt.Println("Read file failed: ", err.Error())
 			return
-
 		}
-		defer scf.Close()
-		sc, err := ioutil.ReadAll(scf)
-		if err != nil {
-			fmt.Println("Read error", err)
-			return
 
-		}
 		var mtx tx.Tx
 		err = mtx.Decode(sc)
 		if err != nil {
@@ -70,16 +60,9 @@ to quickly create a Cobra application.`,
 			if i == 0 {
 				continue
 			}
-			sigf, err := os.Open(v)
+			sig, err := ReadFile(v)
 			if err != nil {
-				fmt.Printf("Error in File %v: %v\n", args[0], err.Error())
-				sigf.Close()
-				return
-			}
-			sig, err := ioutil.ReadAll(sigf)
-			sigf.Close()
-			if err != nil {
-				fmt.Println("Error: Illegal sig file", err)
+				fmt.Println("Read file failed: ", err.Error())
 				return
 			}
 			var sign common.Signature
@@ -94,19 +77,13 @@ to quickly create a Cobra application.`,
 			}
 			mtx.Signs = append(mtx.Signs, sign)
 		}
-		fsk, err := os.Open(kpPath)
+		fsk, err := ReadFile(kpPath)
 		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		defer fsk.Close()
-		seckey, err := ioutil.ReadAll(fsk)
-		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println("Read file failed: ", err.Error())
 			return
 		}
 
-		acc, err := account.NewAccount(LoadBytes(string(seckey)))
+		acc, err := account.NewAccount(LoadBytes(string(fsk)))
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -153,7 +130,7 @@ func init() {
 }
 
 func sendTx(stx tx.Tx) error {
-	conn, err := grpc.Dial(server, grpc.WithDefaultCallOptions())
+	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
