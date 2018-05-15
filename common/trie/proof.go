@@ -23,6 +23,7 @@ func (t *Trie) Prove(key []byte, fromLevel uint, proofDb db.Database) error {
 				tn = n.Val
 				key = key[len(n.Key):]
 			}
+			nodes = append(nodes, n)
 		case *fullNode:
 			tn = n.Children[key[0]]
 			key = key[1:]
