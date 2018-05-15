@@ -7,15 +7,15 @@ import (
 	. "github.com/golang/mock/gomock"
 
 	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/core/mocks"
+	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
-	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/prototype/vm/lua"
 	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/mocks"
+	"github.com/iost-official/prototype/vm/lua"
+	. "github.com/smartystreets/goconvey/convey"
 	"time"
 )
 
@@ -62,7 +62,7 @@ func TestNewDPoS(t *testing.T) {
 
 		So(p.Account.GetId(), ShouldEqual, "id0")
 		So(getNumber, ShouldEqual, 0)
-		So(pushNumber, ShouldEqual,0)
+		So(pushNumber, ShouldEqual, 0)
 	})
 
 }
@@ -108,7 +108,7 @@ func TestRunGenerateBlock(t *testing.T) {
 						return "success"
 					end`
 		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
-		newTx:=tx.NewTx(0, &lc)
+		newTx := tx.NewTx(0, &lc)
 		//构造测试数据
 		txChan <- message.Message{
 			Time:    20180426111111,

@@ -22,6 +22,7 @@ const (
 	Fork                          // 分叉
 	NotFound                      // 无法上链，成为孤块
 	ErrorBlock                    // 块有错误
+	Duplicate                     // 重复块
 )
 
 // BlockCacheTree 缓存链分叉的树结构
@@ -52,6 +53,11 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 	}
 
 	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.ParentHash) {
+		for _, bct := range b.children {
+			if bytes.Equal(bct.bc.Top().Head.Hash(), block.Head.Hash()) {
+				return Duplicate, nil
+			}
+		}
 		newPool, err := verifier(block, b.bc.Top(), b.pool)
 		if err != nil {
 			return ErrorBlock, nil
@@ -130,8 +136,10 @@ func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
 }
 
 var (
-	ErrNotFound = errors.New("not found")   // 没有上链，成为孤块
-	ErrBlock    = errors.New("error block") // 块有错误
+	ErrNotFound = errors.New("not found")       // 没有上链，成为孤块
+	ErrBlock    = errors.New("error block")     // 块有错误
+	ErrTooOld   = errors.New("block too old")   // 块太老
+	ErrDup      = errors.New("block duplicate") // 重复块
 )
 
 // BlockCache 操作块缓存的接口
@@ -202,7 +210,11 @@ func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 // Add 把块加入缓存
 // block 块, verifier 块的验证函数
 func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error {
-	// TODO block去重
+	/*
+	if uint64(block.Head.Number) < h.bc.Length() {
+		return ErrTooOld
+	}
+	*/
 	code, newTree := h.cachedRoot.add(block, verifier)
 	switch code {
 	case Extend:
@@ -263,6 +275,8 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 		}
 		h.singleBlockRoot.children = newChildren
 		return ErrNotFound
+	case Duplicate:
+		return ErrDup
 	case ErrorBlock:
 		return ErrBlock
 	}

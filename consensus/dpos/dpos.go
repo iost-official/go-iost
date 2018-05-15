@@ -176,7 +176,7 @@ func (p *DPoS) blockLoop() {
 			var blk block.Block
 			blk.Decode(req.Body)
 			err := p.blockCache.Add(&blk, verifyFunc)
-			if err != ErrBlock {
+			if err != ErrBlock && err != ErrTooOld {
 				p.globalDynamicProperty.update(&blk.Head)
 				if err == ErrNotFound {
 					// New block is a single block
@@ -190,7 +190,7 @@ func (p *DPoS) blockLoop() {
 			if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
 				p.performMaintenance()
 			}
-		case <- p.exitSignal:
+		case <-p.exitSignal:
 			return
 		}
 	}
@@ -201,9 +201,9 @@ func (p *DPoS) scheduleLoop() {
 	var nextSchedule int64
 	for {
 		select {
-		case <- p.exitSignal:
+		case <-p.exitSignal:
 			return
-		case <- time.After(time.Second * time.Duration(nextSchedule)):
+		case <-time.After(time.Second * time.Duration(nextSchedule)):
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			if wid == p.Account.ID {
@@ -241,19 +241,19 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	blk.Head.Signature = sig.Encode()
 	return &blk
 	/*
-	veri := verifier.NewCacheVerifier(pool)
-	var result bool
-	//TODO Content大小控制
-	for len(blk.Content) < 2 {
-		tx, err := p.blockCache.GetTx()
-		if tx == nil || err != nil {
-			break
+		veri := verifier.NewCacheVerifier(pool)
+		var result bool
+		//TODO Content大小控制
+		for len(blk.Content) < 2 {
+			tx, err := p.blockCache.GetTx()
+			if tx == nil || err != nil {
+				break
+			}
+			if _, result = VerifyTx(tx, &veri); result {
+				blk.Content = append(blk.Content, *tx)
+			}
 		}
-		if _, result = VerifyTx(tx, &veri); result {
-			blk.Content = append(blk.Content, *tx)
-		}
-	}
-	return &blk
+		return &blk
 	*/
 }
 
