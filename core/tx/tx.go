@@ -137,6 +137,7 @@ func (t *Tx) VerifySelf() error {
 			return fmt.Errorf("signer error")
 		}
 	}
+
 	ok := common.VerifySignature(t.publishHash(), t.Publisher)
 	if !ok {
 		return fmt.Errorf("publisher error")

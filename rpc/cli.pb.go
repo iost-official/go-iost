@@ -34,7 +34,7 @@ func (m *Transaction) Reset()         { *m = Transaction{} }
 func (m *Transaction) String() string { return proto.CompactTextString(m) }
 func (*Transaction) ProtoMessage()    {}
 func (*Transaction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_97b262c526778278, []int{0}
+	return fileDescriptor_cli_7f181ac8c7362e80, []int{0}
 }
 func (m *Transaction) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Transaction.Unmarshal(m, b)
@@ -72,7 +72,7 @@ func (m *Response) Reset()         { *m = Response{} }
 func (m *Response) String() string { return proto.CompactTextString(m) }
 func (*Response) ProtoMessage()    {}
 func (*Response) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_97b262c526778278, []int{1}
+	return fileDescriptor_cli_7f181ac8c7362e80, []int{1}
 }
 func (m *Response) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Response.Unmarshal(m, b)
@@ -99,7 +99,7 @@ func (m *Response) GetCode() int32 {
 	return 0
 }
 
-type ContractKey struct {
+type TransactionKey struct {
 	Publisher            string   `protobuf:"bytes,1,opt,name=publisher" json:"publisher,omitempty"`
 	Nonce                int64    `protobuf:"varint,2,opt,name=nonce" json:"nonce,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -107,80 +107,42 @@ type ContractKey struct {
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ContractKey) Reset()         { *m = ContractKey{} }
-func (m *ContractKey) String() string { return proto.CompactTextString(m) }
-func (*ContractKey) ProtoMessage()    {}
-func (*ContractKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_97b262c526778278, []int{2}
+func (m *TransactionKey) Reset()         { *m = TransactionKey{} }
+func (m *TransactionKey) String() string { return proto.CompactTextString(m) }
+func (*TransactionKey) ProtoMessage()    {}
+func (*TransactionKey) Descriptor() ([]byte, []int) {
+	return fileDescriptor_cli_7f181ac8c7362e80, []int{2}
 }
-func (m *ContractKey) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ContractKey.Unmarshal(m, b)
+func (m *TransactionKey) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TransactionKey.Unmarshal(m, b)
 }
-func (m *ContractKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ContractKey.Marshal(b, m, deterministic)
+func (m *TransactionKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TransactionKey.Marshal(b, m, deterministic)
 }
-func (dst *ContractKey) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ContractKey.Merge(dst, src)
+func (dst *TransactionKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TransactionKey.Merge(dst, src)
 }
-func (m *ContractKey) XXX_Size() int {
-	return xxx_messageInfo_ContractKey.Size(m)
+func (m *TransactionKey) XXX_Size() int {
+	return xxx_messageInfo_TransactionKey.Size(m)
 }
-func (m *ContractKey) XXX_DiscardUnknown() {
-	xxx_messageInfo_ContractKey.DiscardUnknown(m)
+func (m *TransactionKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_TransactionKey.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ContractKey proto.InternalMessageInfo
+var xxx_messageInfo_TransactionKey proto.InternalMessageInfo
 
-func (m *ContractKey) GetPublisher() string {
+func (m *TransactionKey) GetPublisher() string {
 	if m != nil {
 		return m.Publisher
 	}
 	return ""
 }
 
-func (m *ContractKey) GetNonce() int64 {
+func (m *TransactionKey) GetNonce() int64 {
 	if m != nil {
 		return m.Nonce
 	}
 	return 0
-}
-
-type Contract struct {
-	Info                 string   `protobuf:"bytes,1,opt,name=info" json:"info,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Contract) Reset()         { *m = Contract{} }
-func (m *Contract) String() string { return proto.CompactTextString(m) }
-func (*Contract) ProtoMessage()    {}
-func (*Contract) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_97b262c526778278, []int{3}
-}
-func (m *Contract) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Contract.Unmarshal(m, b)
-}
-func (m *Contract) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Contract.Marshal(b, m, deterministic)
-}
-func (dst *Contract) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Contract.Merge(dst, src)
-}
-func (m *Contract) XXX_Size() int {
-	return xxx_messageInfo_Contract.Size(m)
-}
-func (m *Contract) XXX_DiscardUnknown() {
-	xxx_messageInfo_Contract.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Contract proto.InternalMessageInfo
-
-func (m *Contract) GetInfo() string {
-	if m != nil {
-		return m.Info
-	}
-	return ""
 }
 
 type Key struct {
@@ -194,7 +156,7 @@ func (m *Key) Reset()         { *m = Key{} }
 func (m *Key) String() string { return proto.CompactTextString(m) }
 func (*Key) ProtoMessage()    {}
 func (*Key) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_97b262c526778278, []int{4}
+	return fileDescriptor_cli_7f181ac8c7362e80, []int{3}
 }
 func (m *Key) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Key.Unmarshal(m, b)
@@ -222,7 +184,6 @@ func (m *Key) GetS() string {
 }
 
 type Value struct {
-	Type                 int32    `protobuf:"varint,1,opt,name=type" json:"type,omitempty"`
 	Sv                   string   `protobuf:"bytes,2,opt,name=sv" json:"sv,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -233,7 +194,7 @@ func (m *Value) Reset()         { *m = Value{} }
 func (m *Value) String() string { return proto.CompactTextString(m) }
 func (*Value) ProtoMessage()    {}
 func (*Value) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_97b262c526778278, []int{5}
+	return fileDescriptor_cli_7f181ac8c7362e80, []int{4}
 }
 func (m *Value) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Value.Unmarshal(m, b)
@@ -253,13 +214,6 @@ func (m *Value) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Value proto.InternalMessageInfo
 
-func (m *Value) GetType() int32 {
-	if m != nil {
-		return m.Type
-	}
-	return 0
-}
-
 func (m *Value) GetSv() string {
 	if m != nil {
 		return m.Sv
@@ -278,7 +232,7 @@ func (m *BlockKey) Reset()         { *m = BlockKey{} }
 func (m *BlockKey) String() string { return proto.CompactTextString(m) }
 func (*BlockKey) ProtoMessage()    {}
 func (*BlockKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_97b262c526778278, []int{6}
+	return fileDescriptor_cli_7f181ac8c7362e80, []int{5}
 }
 func (m *BlockKey) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BlockKey.Unmarshal(m, b)
@@ -316,7 +270,7 @@ func (m *BlockInfo) Reset()         { *m = BlockInfo{} }
 func (m *BlockInfo) String() string { return proto.CompactTextString(m) }
 func (*BlockInfo) ProtoMessage()    {}
 func (*BlockInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_97b262c526778278, []int{7}
+	return fileDescriptor_cli_7f181ac8c7362e80, []int{6}
 }
 func (m *BlockInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BlockInfo.Unmarshal(m, b)
@@ -346,8 +300,7 @@ func (m *BlockInfo) GetJson() string {
 func init() {
 	proto.RegisterType((*Transaction)(nil), "rpc.Transaction")
 	proto.RegisterType((*Response)(nil), "rpc.Response")
-	proto.RegisterType((*ContractKey)(nil), "rpc.ContractKey")
-	proto.RegisterType((*Contract)(nil), "rpc.Contract")
+	proto.RegisterType((*TransactionKey)(nil), "rpc.TransactionKey")
 	proto.RegisterType((*Key)(nil), "rpc.Key")
 	proto.RegisterType((*Value)(nil), "rpc.Value")
 	proto.RegisterType((*BlockKey)(nil), "rpc.BlockKey")
@@ -367,7 +320,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type CliClient interface {
 	PublishTx(ctx context.Context, in *Transaction, opts ...grpc.CallOption) (*Response, error)
-	GetContract(ctx context.Context, in *ContractKey, opts ...grpc.CallOption) (*Contract, error)
+	GetTransaction(ctx context.Context, in *TransactionKey, opts ...grpc.CallOption) (*Transaction, error)
 	GetBalance(ctx context.Context, in *Key, opts ...grpc.CallOption) (*Value, error)
 	GetState(ctx context.Context, in *Key, opts ...grpc.CallOption) (*Value, error)
 	GetBlock(ctx context.Context, in *BlockKey, opts ...grpc.CallOption) (*BlockInfo, error)
@@ -390,9 +343,9 @@ func (c *cliClient) PublishTx(ctx context.Context, in *Transaction, opts ...grpc
 	return out, nil
 }
 
-func (c *cliClient) GetContract(ctx context.Context, in *ContractKey, opts ...grpc.CallOption) (*Contract, error) {
-	out := new(Contract)
-	err := c.cc.Invoke(ctx, "/rpc.Cli/GetContract", in, out, opts...)
+func (c *cliClient) GetTransaction(ctx context.Context, in *TransactionKey, opts ...grpc.CallOption) (*Transaction, error) {
+	out := new(Transaction)
+	err := c.cc.Invoke(ctx, "/rpc.Cli/GetTransaction", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +383,7 @@ func (c *cliClient) GetBlock(ctx context.Context, in *BlockKey, opts ...grpc.Cal
 
 type CliServer interface {
 	PublishTx(context.Context, *Transaction) (*Response, error)
-	GetContract(context.Context, *ContractKey) (*Contract, error)
+	GetTransaction(context.Context, *TransactionKey) (*Transaction, error)
 	GetBalance(context.Context, *Key) (*Value, error)
 	GetState(context.Context, *Key) (*Value, error)
 	GetBlock(context.Context, *BlockKey) (*BlockInfo, error)
@@ -458,20 +411,20 @@ func _Cli_PublishTx_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Cli_GetContract_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ContractKey)
+func _Cli_GetTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransactionKey)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CliServer).GetContract(ctx, in)
+		return srv.(CliServer).GetTransaction(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rpc.Cli/GetContract",
+		FullMethod: "/rpc.Cli/GetTransaction",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CliServer).GetContract(ctx, req.(*ContractKey))
+		return srv.(CliServer).GetTransaction(ctx, req.(*TransactionKey))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -539,8 +492,8 @@ var _Cli_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Cli_PublishTx_Handler,
 		},
 		{
-			MethodName: "GetContract",
-			Handler:    _Cli_GetContract_Handler,
+			MethodName: "GetTransaction",
+			Handler:    _Cli_GetTransaction_Handler,
 		},
 		{
 			MethodName: "GetBalance",
@@ -559,30 +512,28 @@ var _Cli_serviceDesc = grpc.ServiceDesc{
 	Metadata: "cli.proto",
 }
 
-func init() { proto.RegisterFile("cli.proto", fileDescriptor_cli_97b262c526778278) }
+func init() { proto.RegisterFile("cli.proto", fileDescriptor_cli_7f181ac8c7362e80) }
 
-var fileDescriptor_cli_97b262c526778278 = []byte{
-	// 337 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x52, 0x4d, 0x4b, 0x03, 0x31,
-	0x10, 0xdd, 0x0f, 0x57, 0x76, 0xa7, 0xb5, 0x48, 0xec, 0xa1, 0x14, 0x3f, 0x4a, 0xf0, 0x50, 0x28,
-	0x2c, 0xa2, 0xbf, 0xc0, 0xf6, 0x50, 0xc4, 0x8b, 0xc4, 0xe2, 0x3d, 0x8d, 0x29, 0xae, 0x86, 0x64,
-	0xd9, 0xa4, 0xa5, 0xfb, 0x67, 0xfd, 0x2d, 0x92, 0xd9, 0xdd, 0xb6, 0x17, 0x6f, 0x6f, 0x26, 0x6f,
-	0x66, 0xde, 0x7b, 0x04, 0x32, 0xa1, 0x8a, 0xbc, 0xac, 0x8c, 0x33, 0x24, 0xae, 0x4a, 0x41, 0x6f,
-	0xa0, 0xb7, 0xaa, 0xb8, 0xb6, 0x5c, 0xb8, 0xc2, 0x68, 0x32, 0x80, 0xc8, 0xed, 0x47, 0xe1, 0x24,
-	0x9c, 0xf6, 0x59, 0xe4, 0xf6, 0xf4, 0x16, 0x52, 0x26, 0x6d, 0x69, 0xb4, 0x95, 0x84, 0xc0, 0x99,
-	0x30, 0x9f, 0x12, 0x5f, 0x13, 0x86, 0x98, 0x3e, 0x43, 0x6f, 0x61, 0xb4, 0xab, 0xb8, 0x70, 0xaf,
-	0xb2, 0x26, 0xd7, 0x90, 0x95, 0xdb, 0xb5, 0x2a, 0xec, 0x97, 0xac, 0x90, 0x97, 0xb1, 0x63, 0x83,
-	0x0c, 0x21, 0xd1, 0x46, 0x0b, 0x39, 0x8a, 0x26, 0xe1, 0x34, 0x66, 0x4d, 0xe1, 0x4f, 0x74, 0x2b,
-	0xfc, 0x89, 0x42, 0x6f, 0x4c, 0x3b, 0x8a, 0x98, 0x5e, 0x41, 0xec, 0x57, 0xf7, 0x21, 0xb4, 0x6d,
-	0x3f, 0xb4, 0x74, 0x06, 0xc9, 0x07, 0x57, 0x5b, 0x14, 0xe5, 0xea, 0xf2, 0x20, 0xca, 0x63, 0x6f,
-	0xc2, 0xee, 0xf0, 0x48, 0xc6, 0x22, 0xbb, 0xa3, 0x13, 0x48, 0xe7, 0xca, 0x88, 0x1f, 0xbf, 0x66,
-	0x08, 0x89, 0xe2, 0x75, 0xab, 0x2e, 0x66, 0x4d, 0x41, 0xef, 0x20, 0x43, 0xc6, 0x8b, 0xde, 0x18,
-	0xbf, 0xf2, 0xdb, 0x1a, 0xdd, 0x89, 0xf0, 0xf8, 0xf1, 0x37, 0x84, 0x78, 0xa1, 0x0a, 0x92, 0x43,
-	0xf6, 0xd6, 0xf8, 0x59, 0xed, 0xc9, 0x65, 0x5e, 0x95, 0x22, 0x3f, 0x89, 0x6f, 0x7c, 0x81, 0x9d,
-	0x2e, 0x31, 0x1a, 0x90, 0x07, 0xe8, 0x2d, 0xa5, 0x3b, 0xf8, 0x6b, 0x26, 0x4e, 0x12, 0x6b, 0x27,
-	0xba, 0x0e, 0x0d, 0xc8, 0x3d, 0xc0, 0x52, 0xba, 0x39, 0x57, 0x5c, 0x0b, 0x49, 0x52, 0x7c, 0xf6,
-	0x44, 0x40, 0x84, 0xa6, 0x69, 0x40, 0x28, 0xa4, 0x4b, 0xe9, 0xde, 0x1d, 0x77, 0xff, 0x73, 0x66,
-	0xc8, 0x41, 0x5f, 0xa4, 0x39, 0xd3, 0xa5, 0x30, 0x1e, 0x1c, 0x4b, 0x6f, 0x99, 0x06, 0xeb, 0x73,
-	0xfc, 0x13, 0x4f, 0x7f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x4d, 0xb0, 0xf0, 0x22, 0x20, 0x02, 0x00,
-	0x00,
+var fileDescriptor_cli_7f181ac8c7362e80 = []byte{
+	// 318 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x91, 0x4d, 0x4b, 0xfb, 0x40,
+	0x10, 0xc6, 0xf3, 0xf2, 0xcf, 0x9f, 0x64, 0xac, 0x41, 0xa6, 0x05, 0x4b, 0xf1, 0xa5, 0x2c, 0x1e,
+	0x0a, 0x42, 0x0e, 0x7a, 0xf2, 0x5a, 0x85, 0x22, 0xbd, 0xc8, 0x5a, 0xbc, 0x6f, 0xd7, 0x15, 0xa3,
+	0xcb, 0x6e, 0xc8, 0x6e, 0x4b, 0xfb, 0x89, 0xfd, 0x1a, 0x92, 0x49, 0x4b, 0x83, 0xe2, 0x6d, 0x66,
+	0xf2, 0xfc, 0x26, 0xcf, 0x33, 0x0b, 0x99, 0xd4, 0x65, 0x51, 0xd5, 0xd6, 0x5b, 0x8c, 0xeb, 0x4a,
+	0xb2, 0x73, 0x38, 0x5a, 0xd4, 0xc2, 0x38, 0x21, 0x7d, 0x69, 0x0d, 0xe6, 0x10, 0xf9, 0xcd, 0x30,
+	0x1c, 0x87, 0x93, 0x1e, 0x8f, 0xfc, 0x86, 0x5d, 0x40, 0xca, 0x95, 0xab, 0xac, 0x71, 0x0a, 0x11,
+	0xfe, 0x49, 0xfb, 0xaa, 0xe8, 0x6b, 0xc2, 0xa9, 0x66, 0x0f, 0x90, 0x77, 0xf0, 0xb9, 0xda, 0xe2,
+	0x19, 0x64, 0xd5, 0x6a, 0xa9, 0x4b, 0xf7, 0xae, 0x6a, 0x92, 0x66, 0xfc, 0x30, 0xc0, 0x01, 0x24,
+	0xc6, 0x1a, 0xa9, 0x86, 0xd1, 0x38, 0x9c, 0xc4, 0xbc, 0x6d, 0x58, 0x1f, 0xe2, 0x06, 0xed, 0x41,
+	0xe8, 0x76, 0x48, 0xe8, 0xd8, 0x29, 0x24, 0x2f, 0x42, 0xaf, 0x54, 0xe3, 0xc9, 0xad, 0x09, 0xc8,
+	0x78, 0xe4, 0xd6, 0x6c, 0x0c, 0xe9, 0x54, 0x5b, 0xf9, 0xd9, 0x20, 0x03, 0x48, 0xb4, 0xd8, 0xee,
+	0xfe, 0x14, 0xf3, 0xb6, 0x61, 0x97, 0x90, 0x91, 0xe2, 0xd1, 0xbc, 0xd9, 0xc6, 0xf6, 0x87, 0xb3,
+	0x66, 0xb7, 0x98, 0xea, 0x9b, 0xaf, 0x10, 0xe2, 0x7b, 0x5d, 0x62, 0x01, 0xd9, 0x53, 0xeb, 0x6d,
+	0xb1, 0xc1, 0x93, 0xa2, 0xae, 0x64, 0xd1, 0x89, 0x33, 0x3a, 0xa6, 0xc9, 0xfe, 0x00, 0x2c, 0xc0,
+	0x3b, 0xc8, 0x67, 0xca, 0x77, 0x0f, 0xd6, 0xff, 0x09, 0xcd, 0xd5, 0x76, 0xf4, 0x6b, 0x13, 0x0b,
+	0xf0, 0x0a, 0x60, 0xa6, 0xfc, 0x54, 0x68, 0x61, 0xa4, 0xc2, 0x94, 0x14, 0x8d, 0x16, 0xa8, 0xa2,
+	0xa4, 0x2c, 0x40, 0x06, 0xe9, 0x4c, 0xf9, 0x67, 0x2f, 0xfc, 0xdf, 0x9a, 0x6b, 0xd2, 0x50, 0x40,
+	0x6c, 0x1d, 0xee, 0xcf, 0x31, 0xca, 0x0f, 0x6d, 0x93, 0x9d, 0x05, 0xcb, 0xff, 0xf4, 0xd6, 0xb7,
+	0xdf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x46, 0xb9, 0xca, 0xed, 0xf8, 0x01, 0x00, 0x00,
 }
