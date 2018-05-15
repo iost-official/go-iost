@@ -2,9 +2,9 @@ package trie
 
 import (
 	"github.com/iost-official/prototype/common"
-	"github.com/go-ethereum/crypto"
 	"fmt"
 	"bytes"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 )
 
 var (
@@ -12,8 +12,17 @@ var (
 	emptyRoot = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 
 	// 规定空state树的哈希值
-	emptyState = crypto.Keccak256Hash(nil)
+	emptyState = Keccak256Hash(nil)
 )
+
+func Keccak256Hash(data ...[]byte) (h common.Hash) {
+	d := sha3.NewKeccak256()
+	for _, b := range data {
+		d.Write(b)
+	}
+	d.Sum(h[:0])
+	return h
+}
 
 // 遍历到trie叶节点时的回调函数
 type LeafCallback func(leaf []byte, parent common.Hash) error

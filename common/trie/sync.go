@@ -120,6 +120,48 @@ func (s *TrieSync) Missing(max int) []common.Hash {
 	return requests
 }
 
+func (s *TrieSync) Process(results []SyncResult) (bool, int, error) {
+	committed := false
+
+	for i, item := range results {
+		request := s.requests[item.Hash]
+		if request == nil {
+			return committed, i, ErrNotRequested
+		}
+		if request.data != nil {
+			return committed, i, ErrAlreadyProcessed
+		}
+
+		if request.raw {
+			request.data = item.Data
+			s.commit(request)
+			committed = true
+			continue
+		}
+
+		node, err := decodeNode(item.Hash[:], item.Data, 0)
+		if err != nil {
+			return committed, i, err
+		}
+		request.data = item.Data
+
+		requests, err := s.children(request, node)
+		if err != nil {
+			return committed, i, err
+		}
+		if len(requests) == 0 && request.deps == 0 {
+			s.commit(request)
+			committed = true
+			continue
+		}
+		request.deps += len(requests)
+		for _, child := range requests {
+			s.schedule(child)
+		}
+	}
+	return committed, 0, nil
+}
+
 func (s *TrieSync) schedule(req *request) {
 	if old, ok := s.requests[req.hash]; ok {
 		old.parents = append(old.parents, req.parents...)
@@ -127,4 +169,77 @@ func (s *TrieSync) schedule(req *request) {
 	}
 	s.queue.Push(req.hash, float32(req.depth))
 	s.requests[req.hash] = req
+}
+
+func (s *TrieSync) children(req *request, object node) ([]*request, error) {
+	type child struct {
+		node node
+		depth int
+	}
+	children := []child{}
+
+	switch node := (object).(type) {
+	case *shortNode:
+		children = []child{{
+			node: node.Val,
+			depth: req.depth + len(node.Key),
+		}}
+	case *fullNode:
+		for i := 0; i < 17; i++ {
+			if node.Children[i] != nil {
+				children = append(children, child{
+					node: node.Children[i],
+					depth: req.depth + 1,
+				})
+			}
+		}
+	default:
+		panic(fmt.Sprintf("unknown node: %+v", node))
+	}
+
+	requests := make([]*request, 0, len(children))
+	for _, child := range children {
+		if req.callback != nil {
+			if node, ok := (child.node).(valueNode); ok {
+				if err := req.callback(node, req.hash); err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		if node, ok := (child.node).(hashNode); ok {
+			hash := common.BytesToHash(node)
+			if _, ok := s.membatch.batch[hash]; ok {
+				continue
+			}
+			if ok, _ := s.database.Has(node); ok {
+				continue
+			}
+			requests = append(requests, &request {
+				hash: hash,
+				parents: []*request{req},
+				depth: child.depth,
+				callback: req.callback,
+			})
+		}
+	}
+	return requests, nil
+}
+
+func (s *TrieSync) commit(req *request) (err error) {
+	s.membatch.batch[req.hash] = req.data
+	s.membatch.order = append(s.membatch.order, req.hash)
+
+	delete(s.requests, req.hash)
+
+	for _, parent := range req.parents {
+		parent.deps--
+		if parent.deps == 0 {
+			if err := s.commit(parent); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

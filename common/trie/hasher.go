@@ -50,7 +50,24 @@ func (h *hasher) hash(n node, db *Database, force bool) (node, node, error) {
 		return hashNode{}, n, err
 	}
 	hashed, err := h.store(collapsed, db, force)
+	if err != nil {
+		return hashNode{}, n, err
+	}
 
+	cachedHash, _ := hashed.(hashNode)
+	switch cn := cached.(type) {
+	case *shortNode:
+		cn.flags.hash = cachedHash
+		if db != nil {
+			cn.flags.dirty = false
+		}
+	case *fullNode:
+		cn.flags.hash = cachedHash
+		if db != nil {
+			cn.flags.dirty = false
+		}
+	}
+	return hashed, cached, nil
 }
 
 func (h *hasher) hashChildren(original node, db *Database) (node, node, error) {
