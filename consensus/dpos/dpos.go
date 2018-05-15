@@ -41,6 +41,9 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	p := DPoS{}
 	p.Account = acc
 	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3+1)
+	if bc.GetBlockByNumber(0) == nil {
+		p.genesis(0)
+	}
 
 	var err error
 	p.router, err = RouterFactory("base")
@@ -138,7 +141,7 @@ func (p *DPoS) txListenLoop() {
 
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-	verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+	verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 		// verify block head
 
 		if err := VerifyBlockHead(blk, parent); err != nil {
@@ -173,7 +176,7 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
-			err := p.blockCache.Add(&blk, verifier)
+			err := p.blockCache.Add(&blk, verifyFunc)
 			if err != ErrBlock {
 				p.globalDynamicProperty.update(&blk.Head)
 				if err == ErrNotFound {
@@ -204,6 +207,7 @@ func (p *DPoS) scheduleLoop() {
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			if wid == p.Account.ID {
+				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 				bc := p.blockCache.LongestChain()
 				pool := p.blockCache.LongestPool()
 				blk := p.genBlock(p.Account, bc, pool)

@@ -254,7 +254,7 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 		newChildren := make([]*BlockCacheTree, 0)
 		for _, bct := range h.singleBlockRoot.children {
 			if bytes.Equal(bct.bc.block.Head.ParentHash, block.Head.Hash()) {
-				newTree.children = append(newTree.children, btc)
+				newTree.children = append(newTree.children, bct)
 				bct.super = newTree
 			} else {
 				newChildren = append(newChildren, bct)
@@ -366,6 +366,7 @@ func (h *BlockCacheImpl) BasePool() state.Pool {
 	return h.cachedRoot.pool
 }
 
+// LongestPool 返回最长链对应的state池
 func (h *BlockCacheImpl) LongestPool() state.Pool {
 	bct := h.cachedRoot
 	for {
