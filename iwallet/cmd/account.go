@@ -79,7 +79,7 @@ func init() {
 	rootCmd.AddCommand(accountCmd)
 
 	accountCmd.Flags().StringVarP(&nickName, "create", "c", "no", "Create new account, using input as nickname")
-	accountCmd.Flags().StringVarP(&kvPath, "path", "p", "./test", "Set path of key pair file")
+	accountCmd.Flags().StringVarP(&kvPath, "path", "p", "~/.ssh/", "Set path of key pair file")
 
 	// Here you will define your flags and configuration settings.
 

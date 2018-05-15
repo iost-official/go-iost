@@ -1,12 +1,13 @@
 package tx
 
 import (
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/vm/mocks"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestTx(t *testing.T) {
@@ -22,23 +23,24 @@ func TestTx(t *testing.T) {
 
 		Convey("sign and verify", func() {
 			tx := NewTx(int64(0), mockContract)
-			tx1, err := SignContract(tx, a1)
-			So(err, ShouldBeNil)
-			So(len(tx1.Signs), ShouldEqual, 1)
-			tx2, err := SignContract(tx1, a2)
-			So(err, ShouldBeNil)
-			So(len(tx2.Signs), ShouldEqual, 2)
+			sig1, err := SignContract(tx, a1)
 
-			err = tx2.VerifySelf()
+			So(tx.VerifySigner(sig1), ShouldBeTrue)
+
+			tx.Signs = append(tx.Signs, sig1)
+			sig2, err := SignContract(tx, a2)
+			tx.Signs = append(tx.Signs, sig2)
+
+			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "publisher error")
 
-			tx3, err := SignTx(tx2, a3)
+			tx3, err := SignTx(tx, a3)
 			So(err, ShouldBeNil)
 			err = tx3.VerifySelf()
 			So(err, ShouldBeNil)
 
-			tx1.Signs[0] = common.Signature{common.Secp256k1, []byte("hello"), []byte("world")}
-			err = tx1.VerifySelf()
+			tx.Signs[0] = common.Signature{common.Secp256k1, []byte("hello"), []byte("world")}
+			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "signer error")
 		})
 

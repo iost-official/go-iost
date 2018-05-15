@@ -31,17 +31,17 @@ func NewTx(nonce int64, contract vm.Contract) Tx {
 }
 
 // 合约的参与者进行签名
-func SignContract(tx Tx, account account.Account) (Tx, error) {
+func SignContract(tx Tx, account account.Account) (common.Signature, error) {
 	sign, err := common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey)
 	if err != nil {
-		return tx, err
+		return sign, err
 	}
-	tx.Signs = append(tx.Signs, sign)
-	return tx, nil
+	return sign, nil
 }
 
 // 合约的发布者进行签名，此签名的用户用于支付gas
-func SignTx(tx Tx, account account.Account) (Tx, error) {
+func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, error) {
+	tx.Signs = append(tx.Signs, signs...)
 	sign, err := common.Sign(common.Secp256k1, tx.publishHash(), account.Seckey)
 	if err != nil {
 		return tx, err
@@ -130,7 +130,7 @@ func (t *Tx) Hash() []byte {
 
 // 验证签名的函数
 func (t *Tx) VerifySelf() error {
-	baseHash := t.baseHash()
+	baseHash := t.baseHash() // todo 在basehash内缓存，不需要在应用进行缓存
 	for _, sign := range t.Signs {
 		ok := common.VerifySignature(baseHash, sign)
 		if !ok {
@@ -142,4 +142,8 @@ func (t *Tx) VerifySelf() error {
 		return fmt.Errorf("publisher error")
 	}
 	return nil
+}
+
+func (t *Tx) VerifySigner(sig common.Signature) bool {
+	return common.VerifySignature(t.baseHash(), sig)
 }
