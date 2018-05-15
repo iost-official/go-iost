@@ -3,7 +3,6 @@ package dpos
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
 	. "github.com/iost-official/prototype/core/tx"
@@ -15,7 +14,6 @@ import (
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"time"
-	"github.com/iost-official/prototype/verifier"
 )
 
 type DPoS struct {
@@ -30,7 +28,7 @@ type DPoS struct {
 	votedStats map[string][]string
 	infoCache  [][]byte
 
-	exitSignal chan bool
+	exitSignal chan struct{}
 	chTx       chan message.Message
 	chBlock    chan message.Message
 }
@@ -78,6 +76,7 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	if err != nil {
 		return nil, err
 	}
+	p.exitSignal = make(chan struct{})
 
 	p.initGlobalProperty(p.Account, witnessList)
 	return &p, nil
@@ -100,7 +99,7 @@ func (p *DPoS) Run() {
 func (p *DPoS) Stop() {
 	close(p.chTx)
 	close(p.chBlock)
-	p.exitSignal <- true
+	close(p.exitSignal)
 }
 
 // BlockChain 返回已确认的block chain
@@ -197,7 +196,7 @@ func (p *DPoS) blockLoop() {
 			var blk block.Block
 			blk.Decode(req.Body)
 			err := p.blockCache.Add(&blk, verifyFunc)
-			if err != ErrBlock {
+			if err != ErrBlock && err != ErrTooOld {
 				p.globalDynamicProperty.update(&blk.Head)
 				if err == ErrNotFound {
 					// New block is a single block
@@ -211,7 +210,7 @@ func (p *DPoS) blockLoop() {
 			if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
 				p.performMaintenance()
 			}
-		case <- p.exitSignal:
+		case <-p.exitSignal:
 			return
 		}
 	}
@@ -219,11 +218,12 @@ func (p *DPoS) blockLoop() {
 
 func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
+	var nextSchedule int64
 	for {
 		select {
-		case <- p.exitSignal:
+		case <-p.exitSignal:
 			return
-		default:
+		case <-time.After(time.Second * time.Duration(nextSchedule)):
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			if wid == p.Account.ID {
@@ -235,9 +235,10 @@ func (p *DPoS) scheduleLoop() {
 				msg := message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}
 				p.router.Broadcast(msg)
 				p.chBlock <- msg
+				p.globalDynamicProperty.update(&blk.Head)
 			}
-			nextSchedule := timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
-			time.Sleep(time.Second * time.Duration(nextSchedule))
+			nextSchedule = timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
+			//time.Sleep(time.Second * time.Duration(nextSchedule))
 		}
 	}
 }
@@ -246,7 +247,7 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
-		ParentHash: lastBlk.Head.BlockHash,
+		ParentHash: lastBlk.Head.Hash(),
 		TreeHash:   make([]byte, 0),
 		BlockHash:  make([]byte, 0),
 		Info:       encodeDPoSInfo(p.infoCache),
@@ -256,22 +257,24 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	}}
 	p.infoCache = [][]byte{}
 	headInfo := generateHeadInfo(blk.Head)
-	fmt.Println(acc.Seckey)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
-	veri := verifier.NewCacheVerifier(pool)
-	var result bool
-	//TODO Content大小控制
-	for len(blk.Content) < 2 {
-		tx, err := p.blockCache.GetTx()
-		if err != nil {
-			break
-		}
-		if _, result = VerifyTx(tx, &veri); result {
-			blk.Content = append(blk.Content, *tx)
-		}
-	}
 	return &blk
+	/*
+		veri := verifier.NewCacheVerifier(pool)
+		var result bool
+		//TODO Content大小控制
+		for len(blk.Content) < 2 {
+			tx, err := p.blockCache.GetTx()
+			if tx == nil || err != nil {
+				break
+			}
+			if _, result = VerifyTx(tx, &veri); result {
+				blk.Content = append(blk.Content, *tx)
+			}
+		}
+		return &blk
+	*/
 }
 
 func generateHeadInfo(head block.BlockHead) []byte {

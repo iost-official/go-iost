@@ -25,7 +25,7 @@ type SyncImpl struct {
 	router      Router
 	heightChan  chan message.Message
 	blkSyncChan chan message.Message
-	exitSignal chan bool
+	exitSignal  chan struct{}
 }
 
 // NewSynchronizer 新建同步器
@@ -72,7 +72,8 @@ func (sync *SyncImpl) StartListen() error {
 func (sync *SyncImpl) StopListen() error {
 	close(sync.heightChan)
 	close(sync.blkSyncChan)
-	sync.exitSignal <- true
+	close(sync.blockCache.BlockConfirmChan())
+	close(sync.exitSignal)
 	return nil
 }
 
