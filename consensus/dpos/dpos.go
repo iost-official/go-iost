@@ -15,12 +15,14 @@ import (
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
+	"errors"
 )
 
 type DPoS struct {
-	account    Account
-	blockCache BlockCache
-	router     Router
+	account      Account
+	blockCache   BlockCache
+	router       Router
+	synchronizer Synchronizer
 	globalStaticProperty
 	globalDynamicProperty
 
@@ -35,15 +37,19 @@ type DPoS struct {
 
 // NewDPoS: 新建一个DPoS实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), witnessList: 见证节点列表
-func NewDPoS(acc Account, bc block.Chain, witnessList []string /*, network core.Network*/) (*DPoS, error) {
+func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
 	p.Account = acc
-	// TODO: maxDepth设置为2/3*witness数
-	p.blockCache = NewBlockCache(bc, 6)
+	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3+1)
 
 	var err error
 	p.router, err = RouterFactory("base")
 	if err != nil {
+		return nil, err
+	}
+
+	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
+	if p.synchronizer == nil {
 		return nil, err
 	}
 
@@ -93,7 +99,16 @@ func (p *DPoS) Stop() {
 	p.exitSignal <- true
 }
 
-func (p *DPoS) genesis(initTime Timestamp, hash []byte) error {
+func (p *DPoS) genesis(initTime int64) error {
+	genesis := &block.Block{
+		Head: block.BlockHead{
+			Version: 0,
+			Number:  0,
+			Time:    initTime,
+		},
+		Content: make([]Tx, 0),
+	}
+	p.blockCache.AddGenesis(genesis)
 	return nil
 }
 
@@ -111,37 +126,38 @@ func (p *DPoS) txListenLoop() {
 		tx.Decode(req.Body)
 		p.router.Send(req)
 		if VerifyTxSig(tx) {
-			// Add to tx pool or recorder
+			p.blockCache.AddTx(&tx)
 		}
 	}
 }
 
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-	verifier := func(blk *block.Block, chain block.Chain) (bool, state.Pool) {
+	verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 		// verify block head
 
-		if !VerifyBlockHead(blk, chain.Top()) {
-			return false, nil
+		if err := VerifyBlockHead(blk, parent); err != nil {
+			return nil, err
 		}
 
 		// verify block witness
 		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-			return false, nil
+			return nil, errors.New("wrong witness")
 		}
 
 		headInfo := generateHeadInfo(blk.Head)
 		var signature common.Signature
 		signature.Decode(blk.Head.Signature)
+
 		// verify block witness signature
 		if !common.VerifySignature(headInfo, signature) {
-			return false, nil
+			return nil, errors.New("wrong signature")
 		}
-		result, newPool := VerifyBlockContent(blk, chain)
-		if !result {
-			return false, nil
+		newPool, err := StdBlockVerifier(blk, pool)
+		if err != nil {
+			return nil, err
 		}
-		return true, newPool
+		return newPool, nil
 	}
 
 	for {
@@ -152,8 +168,15 @@ func (p *DPoS) blockLoop() {
 		var blk block.Block
 		blk.Decode(req.Body)
 		err := p.blockCache.Add(&blk, verifier)
-		if err == nil {
+		if err != ErrBlock {
 			p.globalDynamicProperty.update(&blk.Head)
+			if err == ErrNotFound {
+				// New block is a single block
+				need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
+				if need {
+					go p.synchronizer.SyncBlocks(start, end)
+				}
+			}
 		}
 		ts := Timestamp{blk.Head.Time}
 		if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
@@ -171,7 +194,8 @@ func (p *DPoS) scheduleLoop() {
 		if wid == p.Account.ID {
 			bc := p.blockCache.LongestChain()
 			blk := p.genBlock(p.Account, *bc.Top())
-			p.router.Send(message.Message{Body: blk.Encode()}) //??
+			p.blockCache.ResetTxPoool()
+			p.router.Broadcast(message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}) //??
 		}
 		nextSchedule := timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
 		time.Sleep(time.Duration(nextSchedule))
@@ -179,24 +203,6 @@ func (p *DPoS) scheduleLoop() {
 }
 
 func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
-	/*
-		if lastBlk == nil {
-			blk := block.Block{Version: 0, Content: make([]byte, 0), Head: block.BlockHead{
-				Version:    0,
-				ParentHash: lastBlk.Head.BlockHash,
-				TreeHash:   make([]byte, 0),
-				BlockHash:  make([]byte, 0),
-				Info:       make([]byte, 0),
-				Number:     0,
-				Witness:    acc.ID, // ?
-				Time:       GetCurrentTimestamp(),
-			}}
-			headinfo := generateHeadInfo(blk.Head)
-			sig, _ := common.Sign(common.Secp256k1, headinfo, acc.Seckey)
-			blk.Head.Signature = sig.Encode()
-			return &blk
-		}
-	*/
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.Head.BlockHash,
@@ -212,6 +218,15 @@ func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
 	fmt.Println(acc.Seckey)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
+	//TODO Content大小控制
+	for len(blk.Content) < 2 {
+		tx, err:= p.blockCache.GetTx()
+		if err!=nil{
+			break
+		}
+		//TODO 验算tx能否放进block
+		blk.Content = append(blk.Content, *tx)
+	}
 	return &blk
 }
 

@@ -23,7 +23,7 @@ func (h Hash) Bytes() []byte { return h[:] }
 
 func (h *Hash) SetBytes(b []byte) {
 	if len(b) > len(h) {
-		b = b[len(b) - HashLength:]
+		b = b[len(b)-HashLength:]
 	}
 
 	copy(h[HashLength-len(b):], b)
@@ -54,4 +54,14 @@ func BytesToInt64(b []byte) int64 {
 	var x int64
 	binary.Read(bytesBuffer, binary.BigEndian, &x)
 	return int64(x)
+}
+
+func Uint64ToBytes(i uint64) []byte {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, uint64(i))
+	return buf
+}
+
+func BytesToUint64(b []byte) uint64 {
+	return binary.LittleEndian.Uint64(b)
 }

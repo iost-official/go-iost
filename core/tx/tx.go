@@ -2,10 +2,12 @@ package tx
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/vm"
-	"time"
+	"github.com/iost-official/prototype/vm/lua"
 )
 
 //go:generate gencode go -schema=structs.schema -package=tx
@@ -29,17 +31,17 @@ func NewTx(nonce int64, contract vm.Contract) Tx {
 }
 
 // 合约的参与者进行签名
-func SignContract(tx Tx, account account.Account) (Tx, error) {
+func SignContract(tx Tx, account account.Account) (common.Signature, error) {
 	sign, err := common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey)
 	if err != nil {
-		return tx, err
+		return sign, err
 	}
-	tx.Signs = append(tx.Signs, sign)
-	return tx, nil
+	return sign, nil
 }
 
 // 合约的发布者进行签名，此签名的用户用于支付gas
-func SignTx(tx Tx, account account.Account) (Tx, error) {
+func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, error) {
+	tx.Signs = append(tx.Signs, signs...)
 	sign, err := common.Sign(common.Secp256k1, tx.publishHash(), account.Seckey)
 	if err != nil {
 		return tx, err
@@ -97,14 +99,26 @@ func (t *Tx) Decode(b []byte) error {
 		}
 		t.Signs = append(t.Signs, sign)
 	}
-	err = t.Contract.Decode(tr.Contract)
+	if t.Contract == nil {
+		switch tr.Contract[0] {
+		case 0:
+			t.Contract = &lua.Contract{}
+			t.Contract.Decode(tr.Contract)
+
+		default:
+			return fmt.Errorf("Tx.Decode:tx.Contract syntax error")
+		}
+	} else {
+		err = t.Contract.Decode(tr.Contract)
+	}
+
 	if err != nil {
 		return err
 	}
-	t.Contract.SetSender(t.Publisher.Pubkey)
-	t.Contract.SetPrefix(common.Base58Encode(t.Hash()))
+	t.Contract.SetSender(vm.PubkeyToIOSTAccount(t.Publisher.Pubkey))
+	t.Contract.SetPrefix(vm.HashToPrefix(t.Hash()))
 	for _, sign := range t.Signs {
-		t.Contract.AddSigner(sign.Pubkey)
+		t.Contract.AddSigner(vm.PubkeyToIOSTAccount(sign.Pubkey))
 	}
 	t.Nonce = tr.Nonce
 	t.Time = tr.Time
@@ -116,7 +130,7 @@ func (t *Tx) Hash() []byte {
 
 // 验证签名的函数
 func (t *Tx) VerifySelf() error {
-	baseHash := t.baseHash()
+	baseHash := t.baseHash() // todo 在basehash内缓存，不需要在应用进行缓存
 	for _, sign := range t.Signs {
 		ok := common.VerifySignature(baseHash, sign)
 		if !ok {
@@ -128,4 +142,8 @@ func (t *Tx) VerifySelf() error {
 		return fmt.Errorf("publisher error")
 	}
 	return nil
+}
+
+func (t *Tx) VerifySigner(sig common.Signature) bool {
+	return common.VerifySignature(t.baseHash(), sig)
 }

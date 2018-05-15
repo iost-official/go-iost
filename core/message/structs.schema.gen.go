@@ -13,12 +13,11 @@ var (
 )
 
 type Message struct {
-	Time     int64
-	From     string
-	To       string
-	ReqType  int32
-	Priority int8
-	Body     []byte
+	Time    int64
+	From    string
+	To      string
+	ReqType int32
+	Body    []byte
 }
 
 func (d *Message) Size() (s uint64) {
@@ -68,7 +67,7 @@ func (d *Message) Size() (s uint64) {
 		}
 		s += l
 	}
-	s += 13
+	s += 12
 	return
 }
 func (d *Message) Marshal(buf []byte) ([]byte, error) {
@@ -151,11 +150,6 @@ func (d *Message) Marshal(buf []byte) ([]byte, error) {
 
 	}
 	{
-
-		buf[i+0+12] = byte(d.Priority >> 0)
-
-	}
-	{
 		l := uint64(len(d.Body))
 
 		{
@@ -163,18 +157,18 @@ func (d *Message) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i+13] = byte(t) | 0x80
+				buf[i+12] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i+13] = byte(t)
+			buf[i+12] = byte(t)
 			i++
 
 		}
-		copy(buf[i+13:], d.Body)
+		copy(buf[i+12:], d.Body)
 		i += l
 	}
-	return buf[:i+13], nil
+	return buf[:i+12], nil
 }
 
 func (d *Message) Unmarshal(buf []byte) (uint64, error) {
@@ -231,20 +225,15 @@ func (d *Message) Unmarshal(buf []byte) (uint64, error) {
 
 	}
 	{
-
-		d.Priority = 0 | (int8(buf[i+0+12]) << 0)
-
-	}
-	{
 		l := uint64(0)
 
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i+13] & 0x7F)
-			for buf[i+13]&0x80 == 0x80 {
+			t := uint64(buf[i+12] & 0x7F)
+			for buf[i+12]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i+13]&0x7F) << bs
+				t |= uint64(buf[i+12]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -257,8 +246,192 @@ func (d *Message) Unmarshal(buf []byte) (uint64, error) {
 		} else {
 			d.Body = make([]byte, l)
 		}
-		copy(d.Body, buf[i+13:])
+		copy(d.Body, buf[i+12:])
 		i += l
 	}
-	return i + 13, nil
+	return i + 12, nil
+}
+
+type RequestHeight struct {
+	LocalBlockHeight uint64
+	NeedBlockHeight  uint64
+}
+
+func (d *RequestHeight) Size() (s uint64) {
+
+	s += 16
+	return
+}
+func (d *RequestHeight) Marshal(buf []byte) ([]byte, error) {
+	size := d.Size()
+	{
+		if uint64(cap(buf)) >= size {
+			buf = buf[:size]
+		} else {
+			buf = make([]byte, size)
+		}
+	}
+	i := uint64(0)
+
+	{
+
+		buf[0+0] = byte(d.LocalBlockHeight >> 0)
+
+		buf[1+0] = byte(d.LocalBlockHeight >> 8)
+
+		buf[2+0] = byte(d.LocalBlockHeight >> 16)
+
+		buf[3+0] = byte(d.LocalBlockHeight >> 24)
+
+		buf[4+0] = byte(d.LocalBlockHeight >> 32)
+
+		buf[5+0] = byte(d.LocalBlockHeight >> 40)
+
+		buf[6+0] = byte(d.LocalBlockHeight >> 48)
+
+		buf[7+0] = byte(d.LocalBlockHeight >> 56)
+
+	}
+	{
+
+		buf[0+8] = byte(d.NeedBlockHeight >> 0)
+
+		buf[1+8] = byte(d.NeedBlockHeight >> 8)
+
+		buf[2+8] = byte(d.NeedBlockHeight >> 16)
+
+		buf[3+8] = byte(d.NeedBlockHeight >> 24)
+
+		buf[4+8] = byte(d.NeedBlockHeight >> 32)
+
+		buf[5+8] = byte(d.NeedBlockHeight >> 40)
+
+		buf[6+8] = byte(d.NeedBlockHeight >> 48)
+
+		buf[7+8] = byte(d.NeedBlockHeight >> 56)
+
+	}
+	return buf[:i+16], nil
+}
+
+func (d *RequestHeight) Unmarshal(buf []byte) (uint64, error) {
+	i := uint64(0)
+
+	{
+
+		d.LocalBlockHeight = 0 | (uint64(buf[0+0]) << 0) | (uint64(buf[1+0]) << 8) | (uint64(buf[2+0]) << 16) | (uint64(buf[3+0]) << 24) | (uint64(buf[4+0]) << 32) | (uint64(buf[5+0]) << 40) | (uint64(buf[6+0]) << 48) | (uint64(buf[7+0]) << 56)
+
+	}
+	{
+
+		d.NeedBlockHeight = 0 | (uint64(buf[0+8]) << 0) | (uint64(buf[1+8]) << 8) | (uint64(buf[2+8]) << 16) | (uint64(buf[3+8]) << 24) | (uint64(buf[4+8]) << 32) | (uint64(buf[5+8]) << 40) | (uint64(buf[6+8]) << 48) | (uint64(buf[7+8]) << 56)
+
+	}
+	return i + 16, nil
+}
+
+type ResponseHeight struct {
+	BlockHeight uint64
+}
+
+func (d *ResponseHeight) Size() (s uint64) {
+
+	s += 8
+	return
+}
+func (d *ResponseHeight) Marshal(buf []byte) ([]byte, error) {
+	size := d.Size()
+	{
+		if uint64(cap(buf)) >= size {
+			buf = buf[:size]
+		} else {
+			buf = make([]byte, size)
+		}
+	}
+	i := uint64(0)
+
+	{
+
+		buf[0+0] = byte(d.BlockHeight >> 0)
+
+		buf[1+0] = byte(d.BlockHeight >> 8)
+
+		buf[2+0] = byte(d.BlockHeight >> 16)
+
+		buf[3+0] = byte(d.BlockHeight >> 24)
+
+		buf[4+0] = byte(d.BlockHeight >> 32)
+
+		buf[5+0] = byte(d.BlockHeight >> 40)
+
+		buf[6+0] = byte(d.BlockHeight >> 48)
+
+		buf[7+0] = byte(d.BlockHeight >> 56)
+
+	}
+	return buf[:i+8], nil
+}
+
+func (d *ResponseHeight) Unmarshal(buf []byte) (uint64, error) {
+	i := uint64(0)
+
+	{
+
+		d.BlockHeight = 0 | (uint64(buf[0+0]) << 0) | (uint64(buf[1+0]) << 8) | (uint64(buf[2+0]) << 16) | (uint64(buf[3+0]) << 24) | (uint64(buf[4+0]) << 32) | (uint64(buf[5+0]) << 40) | (uint64(buf[6+0]) << 48) | (uint64(buf[7+0]) << 56)
+
+	}
+	return i + 8, nil
+}
+
+type RequestBlock struct {
+	BlockNumber uint64
+}
+
+func (d *RequestBlock) Size() (s uint64) {
+
+	s += 8
+	return
+}
+func (d *RequestBlock) Marshal(buf []byte) ([]byte, error) {
+	size := d.Size()
+	{
+		if uint64(cap(buf)) >= size {
+			buf = buf[:size]
+		} else {
+			buf = make([]byte, size)
+		}
+	}
+	i := uint64(0)
+
+	{
+
+		buf[0+0] = byte(d.BlockNumber >> 0)
+
+		buf[1+0] = byte(d.BlockNumber >> 8)
+
+		buf[2+0] = byte(d.BlockNumber >> 16)
+
+		buf[3+0] = byte(d.BlockNumber >> 24)
+
+		buf[4+0] = byte(d.BlockNumber >> 32)
+
+		buf[5+0] = byte(d.BlockNumber >> 40)
+
+		buf[6+0] = byte(d.BlockNumber >> 48)
+
+		buf[7+0] = byte(d.BlockNumber >> 56)
+
+	}
+	return buf[:i+8], nil
+}
+
+func (d *RequestBlock) Unmarshal(buf []byte) (uint64, error) {
+	i := uint64(0)
+
+	{
+
+		d.BlockNumber = 0 | (uint64(buf[0+0]) << 0) | (uint64(buf[1+0]) << 8) | (uint64(buf[2+0]) << 16) | (uint64(buf[3+0]) << 24) | (uint64(buf[4+0]) << 32) | (uint64(buf[5+0]) << 40) | (uint64(buf[6+0]) << 48) | (uint64(buf[7+0]) << 56)
+
+	}
+	return i + 8, nil
 }

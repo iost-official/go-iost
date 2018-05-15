@@ -1,6 +1,6 @@
 package block
 
-import "github.com/iost-official/prototype/core/state"
+import "github.com/iost-official/prototype/core/tx"
 
 //go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/prototype/core/block Chain
 
@@ -12,9 +12,8 @@ type Chain interface {
 	GetBlockByNumber(number uint64) *Block
 	GetBlockByHash(blockHash []byte) *Block
 
-	// chain中的state pool相关
-	GetStatePool() state.Pool
-	SetStatePool(pool state.Pool)
+	HasTx(tx *tx.Tx) (bool, error)
+	GetTx(hash []byte) (*tx.Tx, error)
 
 	Iterator() ChainIterator
 }

@@ -1,42 +1,59 @@
 package network
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/iost-official/prototype/core/message"
-	"github.com/stretchr/testify/assert"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNetwork(t *testing.T) {
-	nn, err := NewNaiveNetwork(3)
-	if err != nil {
-		t.Errorf("NewNaiveNetwork encounter err %+v", err)
-		return
-	}
-	lis1, err := nn.Listen(11037)
-	if err != nil {
-		fmt.Println(err)
-	}
-	lis2, err := nn.Listen(11038)
-	if err != nil {
-		fmt.Println(err)
-	}
+	Convey("", t, func() {
+		nn, err := NewNaiveNetwork(3)
+		if err != nil {
+			t.Errorf("NewNaiveNetwork encounter err %+v", err)
+			return
+		}
+		lis1, err := nn.Listen(11037)
+		So(err, ShouldBeNil)
 
-	req := message.Message{
-		Time:    1,
-		From:    "test1",
-		To:      "test2",
-		ReqType: 1,
-		Body:    []byte{1, 1, 2},
-	}
-	if err := nn.Broadcast(req); err != nil {
-		t.Log("send request encounter err: %+v\n", err)
-	}
+		lis2, err := nn.Listen(11038)
+		So(err, ShouldBeNil)
 
-	message := <-lis1
-	assert.Equal(t, message, req)
+		req := message.Message{
+			Time:    1,
+			From:    "test1",
+			To:      "test2",
+			ReqType: 1,
+			Body:    []byte{1, 1, 2},
+		}
+		err = nn.Broadcast(req)
+		So(err, ShouldBeNil)
 
-	message = <-lis2
-	assert.Equal(t, message, req)
+		message := <-lis1
+		So(message.From, ShouldEqual, req.From)
+
+		message = <-lis2
+		So(message.ReqType, ShouldEqual, req.ReqType)
+	})
+	Convey("test rand pick node in all node which height greater than download height", t, func() {
+		m := map[string]uint64{
+			"node1": uint64(10),
+			"node2": uint64(8),
+			"node3": uint64(6),
+			"node4": uint64(4),
+			"node5": uint64(4),
+			"node6": uint64(5),
+		}
+		randMap := make(map[string]int, 0)
+		for i := 0; i < 1000; i++ {
+			targetNode := randNodeMatchHeight(m, 2)
+			randMap[targetNode] = randMap[targetNode] + 1
+		}
+		for nodeStr, _ := range m {
+			times, ok := randMap[nodeStr]
+			So(ok, ShouldBeTrue)
+			So(times, ShouldBeGreaterThan, 100)
+		}
+	})
 }

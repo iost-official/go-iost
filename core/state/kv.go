@@ -11,15 +11,15 @@ type Key string
 
 type Value interface {
 	Type() Type
-	String() string
+	EncodeString() string
 	merge(b Value) (Value, error)
 }
 
 func Merge(a, b Value) (Value, error) {
-	if a == nil || a.Type() == Nil {
+	if a == nil || a == VNil {
 		return b, nil
-	} else if b == nil || b.Type() == Nil {
-		return a, nil
+	} else if b == nil || b == VNil {
+		return VNil, nil
 	}
 	return a.merge(b)
 }
@@ -44,54 +44,51 @@ const (
 )
 
 func ParseValue(s string) (Value, error) {
-	if s == "nil" {
-		return VNil, nil
-	}
-	if s == "true" {
-		return VTrue, nil
-	}
-	if s == "false " {
-		return VFalse, nil
-	}
+
 	s1 := string([]rune(s)[1:])
-	if strings.HasPrefix(s, "i") {
+
+	switch {
+	case s == "nil":
+		return VNil, nil
+	case s == "true":
+		return VTrue, nil
+
+	case s == "false ":
+		return VFalse, nil
+	case strings.HasPrefix(s, "i"):
 		i, err := strconv.Atoi(s1)
 		if err != nil {
 			return nil, err
 		}
 		return MakeVInt(i), nil
-	}
-
-	if strings.HasPrefix(s, "f") {
+	case strings.HasPrefix(s, "f"):
 		f, err := strconv.ParseFloat(s1, 64)
 		if err != nil {
 			return nil, err
 		}
 		return MakeVFloat(f), nil
-	}
-	if strings.HasPrefix(s, "b") {
+
+	case strings.HasPrefix(s, "b"):
 		b, err := base64.StdEncoding.DecodeString(s1)
 		if err != nil {
 			return nil, err
 		}
 		return MakeVByte(b), nil
-	}
-	if strings.HasPrefix(s, "s") {
+	case strings.HasPrefix(s, "s"):
 		return MakeVString(s), nil
-	}
-	if strings.HasPrefix(s, "{") {
+	case strings.HasPrefix(s, "{"):
 		ss := strings.Split(s1, ",")
 		if len(ss) <= 0 {
 			return MakeVMap(nil), nil
 		}
-		vmap := VMap{}
+		vmap := MakeVMap(nil)
 		for _, kv := range ss {
 			if kv == "" {
 				continue
 			}
 			kv1 := strings.Split(kv, ":")
 			if len(kv1) != 2 {
-				return nil, fmt.Errorf("syntax error")
+				return nil, fmt.Errorf("parsing %v : syntax error", s)
 			}
 			v, err := ParseValue(kv1[1])
 			if err != nil {
@@ -99,9 +96,9 @@ func ParseValue(s string) (Value, error) {
 			}
 			vmap.Set(Key(kv1[0]), v)
 		}
-		return &vmap, nil
+		return vmap, nil
 	}
-	return nil, fmt.Errorf("syntax error")
+	return nil, fmt.Errorf("parsing %v : syntax error", s)
 }
 
 var VNil = &VNilType{}
@@ -111,7 +108,7 @@ type VNilType struct{}
 func (v *VNilType) Type() Type {
 	return Nil
 }
-func (v *VNilType) String() string {
+func (v *VNilType) EncodeString() string {
 	return "nil"
 }
 func (v *VNilType) merge(b Value) (Value, error) {
@@ -130,7 +127,7 @@ func MakeVString(s string) *VString {
 func (v *VString) Type() Type {
 	return String
 }
-func (v *VString) String() string {
+func (v *VString) EncodeString() string {
 	return "s" + v.string
 }
 func (v *VString) merge(b Value) (Value, error) {
@@ -173,7 +170,7 @@ func (v *VInt) ToInt() int {
 func (v *VInt) Type() Type {
 	return Int
 }
-func (v *VInt) String() string {
+func (v *VInt) EncodeString() string {
 	return "i" + strconv.Itoa(v.int)
 }
 func (v *VInt) merge(b Value) (Value, error) {
@@ -205,7 +202,7 @@ func MakeVByte(b []byte) *VBytes {
 func (v *VBytes) Type() Type {
 	return Bytes
 }
-func (v *VBytes) String() string {
+func (v *VBytes) EncodeString() string {
 	return "b" + base64.StdEncoding.EncodeToString(v.val)
 }
 func (v *VBytes) merge(b Value) (Value, error) {
@@ -237,7 +234,7 @@ func MakeVFloat(f float64) *VFloat {
 func (v *VFloat) Type() Type {
 	return Float
 }
-func (v *VFloat) String() string {
+func (v *VFloat) EncodeString() string {
 	return "f" + strconv.FormatFloat(v.float64, 'e', 15, 64)
 }
 func (v *VFloat) merge(b Value) (Value, error) {
@@ -271,7 +268,7 @@ func MakeVBool(boo bool) *VBool {
 func (v *VBool) Type() Type {
 	return Bool
 }
-func (v *VBool) String() string {
+func (v *VBool) EncodeString() string {
 	if v.val {
 		return "true"
 	} else {
@@ -287,6 +284,9 @@ type VMap struct {
 }
 
 func MakeVMap(nm map[Key]Value) *VMap {
+	if nm == nil {
+		nm = make(map[Key]Value)
+	}
 	return &VMap{
 		m: nm,
 	}
@@ -295,10 +295,10 @@ func MakeVMap(nm map[Key]Value) *VMap {
 func (v *VMap) Type() Type {
 	return Map
 }
-func (v *VMap) String() string {
+func (v *VMap) EncodeString() string {
 	str := "{"
 	for k, val := range v.m {
-		str += string(k) + ":" + val.String() + ","
+		str += string(k) + ":" + val.EncodeString() + ","
 	}
 	return str
 }
@@ -315,16 +315,13 @@ func (v VMap) merge(b Value) (Value, error) {
 }
 
 func (v *VMap) Set(key Key, value Value) {
-	if v.m == nil {
-		v.m = make(map[Key]Value)
-	}
 	v.m[key] = value
 }
 
 func (v *VMap) Get(key Key) (Value, error) {
 	ret, ok := v.m[key]
 	if !ok {
-		return nil, fmt.Errorf("not found")
+		return VNil, nil
 	}
 	return ret, nil
 }

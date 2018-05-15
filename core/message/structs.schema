@@ -3,6 +3,18 @@ struct Message {
 	From    string
 	To      string
 	ReqType int32
-	Priority int8
 	Body    []byte
+}
+
+struct RequestHeight  {
+	LocalBlockHeight uint64
+	NeedBlockHeight  uint64
+}
+
+struct ResponseHeight  {
+	BlockHeight  uint64
+}
+
+struct RequestBlock {
+	BlockNumber  uint64
 }

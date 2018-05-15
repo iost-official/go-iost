@@ -1,8 +1,9 @@
 package db
 
 import (
-	"fmt"
 	"sync"
+
+	"fmt"
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"

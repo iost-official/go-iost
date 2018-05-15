@@ -1,0 +1,26 @@
+{
+  "Skip": ["model"],
+  "Cyclo": 15,
+  "Enable": [
+    "errcheck",
+    "deadcode",
+    "gas",
+    "goconst",
+    "gocyclo",
+    "golint",
+    "gotype",
+    "ineffassign",
+    "interfacer",
+    "megacheck",
+    "structcheck",
+    "unconvert",
+    "varcheck",
+    "vet",
+    "vetshadow",
+    "gofmt",
+    "goimports",
+    "unparam",
+    "misspell"
+  ],
+  "Deadline": "120s"
+}

@@ -3,12 +3,17 @@ package block
 import (
 	"encoding/binary"
 	"fmt"
+	"strconv"
+	"sync"
+
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 )
 
 var (
-	blockLength = []byte("BlockLength") //blockLength -> length of ChainImpl
+	blockLength    = []byte("BlockLength")    //blockLength -> length of ChainImpl
+	blockStatePool = []byte("BlockStatePool") //blockStatePool -> state pool of the last block
 
 	blockNumberPrefix = []byte("n") //blockNumberPrefix + block number -> block hash
 	blockPrefix       = []byte("H") //blockHashPrefix + block hash -> block data
@@ -17,41 +22,56 @@ var (
 type ChainImpl struct {
 	db     db.Database
 	length uint64
-	state  state.Pool
+	tx     tx.TxPool
+	state  state.Pool // todo 分离这两部分
 }
 
-//NewBlockChain 创建一个blockChain实例
-func NewBlockChain() (Chain, error) {
+var chainImpl *ChainImpl
 
-	ldb, err := db.DatabaseFactor("ldb")
-	if err != nil {
-		return nil, fmt.Errorf("failed to init db %v", err)
-	}
-	defer ldb.Close()
+var once sync.Once
 
-	var length uint64
-	var lenByte = make([]byte, 128)
+//NewBlockChain 创建一个blockChain实例,单例模式
+func NewBlockChain() (chain Chain, error error) {
 
-	if ok, _ := ldb.Has(blockLength); ok {
-		lenByte, err := ldb.Get(blockLength)
+	once.Do(func() {
+		ldb, err := db.DatabaseFactor("ldb")
 		if err != nil {
-			return nil, fmt.Errorf("failed to Get blockLength")
+			error = fmt.Errorf("failed to init db %v", err)
+		}
+		//defer ldb.Close()
+
+		var length uint64
+		var lenByte = make([]byte, 128)
+
+		if ok, _ := ldb.Has(blockLength); ok {
+			lenByte, err := ldb.Get(blockLength)
+			if err != nil {
+				error = fmt.Errorf("failed to Get blockLength")
+			}
+
+			length = binary.BigEndian.Uint64(lenByte)
+
+		} else {
+			fmt.Printf("blockLength not exist")
+			length = 0
+			binary.BigEndian.PutUint64(lenByte, length)
+
+			err := ldb.Put(blockLength, lenByte)
+			if err != nil {
+				error = fmt.Errorf("failed to Put blockLength")
+			}
 		}
 
-		length = binary.BigEndian.Uint64(lenByte)
-
-	} else {
-		fmt.Printf("blockLength not exist")
-		length = 0
-		binary.BigEndian.PutUint64(lenByte, length)
-
-		err := ldb.Put(blockLength, lenByte)
+		tx, err := tx.NewTxPoolDb()
 		if err != nil {
-			return nil, fmt.Errorf("failed to Put blockLength")
+			error = fmt.Errorf("failed to NewTxPoolDb: [%v]", err)
 		}
-	}
 
-	return &ChainImpl{db: ldb, length: length, state: nil}, nil
+		chainImpl = new(ChainImpl)
+		chainImpl = &ChainImpl{db: ldb, length: length, state: nil, tx: tx}
+	})
+
+	return chainImpl, error
 }
 
 //Push 保存一个block到实例
@@ -60,13 +80,10 @@ func (b *ChainImpl) Push(block *Block) error {
 	hash := block.Hash()
 	number := uint64(block.Head.Number)
 
-	var tmpByte = make([]byte, 128)
-	binary.BigEndian.PutUint64(tmpByte, number)
-
 	//存储区块hash
-	err := b.db.Put(append(blockNumberPrefix, tmpByte...), hash)
+	err := b.db.Put(append(blockNumberPrefix, strconv.FormatUint(number, 10)...), hash)
 	if err != nil {
-		return fmt.Errorf("failed to Put block hash")
+		return fmt.Errorf("failed to Put block hash err[%v]", err)
 	}
 
 	//存储区块数据
@@ -80,14 +97,32 @@ func (b *ChainImpl) Push(block *Block) error {
 		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
 
+	//todo:put all the tx of this block to the db
+	for _, ctx := range block.Content {
+		if err := b.tx.Add(&ctx); err != nil {
+			return fmt.Errorf("failed to add tx %v", err)
+		}
+	}
+
 	return nil
 }
 
-//Length return length confirmed
+//Length 返回已经确定链的长度
 func (b *ChainImpl) Length() uint64 {
 	return b.length
 }
 
+//判断tx是否存在于db中
+func (b *ChainImpl) HasTx(tx *tx.Tx) (bool, error) {
+	return b.tx.Has(tx)
+}
+
+//通过hash获取tx
+func (b *ChainImpl) GetTx(hash []byte) (*tx.Tx, error) {
+	return b.tx.Get(hash)
+}
+
+//链长度加1
 func (b *ChainImpl) lengthAdd() error {
 	b.length++
 
@@ -96,6 +131,7 @@ func (b *ChainImpl) lengthAdd() error {
 
 	err := b.db.Put(blockLength, tmpByte)
 	if err != nil {
+		b.length--
 		return fmt.Errorf("failed to Put blockLength")
 	}
 
@@ -104,37 +140,16 @@ func (b *ChainImpl) lengthAdd() error {
 
 func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 
-	var tmpByte = make([]byte, 128)
-	binary.BigEndian.PutUint64(tmpByte, length)
-
-	return tmpByte
+	return []byte(strconv.FormatUint(length, 10))
 }
 
-//Top return the last block
+//Top 返回已确定链的最后块
 func (b *ChainImpl) Top() *Block {
 
-	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(b.length)...))
-	if err != nil {
-		return nil
-	}
-
-	block, err := b.db.Get(append(blockPrefix, hash...))
-	if err != nil {
-		return nil
-	}
-	if len(block) == 0 {
-		return nil
-	}
-
-	rBlock := new(Block)
-	if err := rBlock.Decode(block); err != nil {
-		return nil
-	}
-
-	return rBlock
+	return b.GetBlockByNumber(b.length - 1)
 }
 
-//GetBlockByNumber return the block by block number
+//GetBlockByNumber 通过区块编号查询块
 func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
@@ -155,10 +170,10 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 		return nil
 	}
 
-	return nil
+	return rBlock
 }
 
-//GetBlockByHash return the block by block hash
+//GetBlockByHash 通过区块hash查询块
 func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 
 	block, err := b.db.Get(append(blockPrefix, blockHash...))
@@ -173,17 +188,7 @@ func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 	if err := rBlock.Decode(block); err != nil {
 		return nil
 	}
-	return nil
-}
-
-//GetStatePool return confirmed state pool
-func (b *ChainImpl) GetStatePool() state.Pool {
-	return b.state
-}
-
-//SetStatePool set confirmed state pool
-func (b *ChainImpl) SetStatePool(pool state.Pool) {
-	b.state = pool
+	return rBlock
 }
 
 //暂不实现

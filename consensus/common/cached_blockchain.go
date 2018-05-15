@@ -2,17 +2,18 @@ package consensus_common
 
 import (
 	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/state"
+
+	"bytes"
 )
 
 type CachedBlockChain struct {
 	block.Chain
 	block        *block.Block
-	pool         state.Pool
 	cachedLength int
 	parent       *CachedBlockChain
-	// DPoS中使用，记录该节点被哪些witness确认
-	confirmed map[string]int
+	depth        int
+	// DPoS中使用，记录该节点被最多几个witness确认
+	confirmed int
 }
 
 func NewCBC(chain block.Chain) CachedBlockChain {
@@ -21,7 +22,8 @@ func NewCBC(chain block.Chain) CachedBlockChain {
 		block:        nil,
 		parent:       nil,
 		cachedLength: 0,
-		confirmed:    make(map[string]int),
+		depth:        0,
+		confirmed:    0,
 	}
 }
 
@@ -34,34 +36,51 @@ func NewCBC(chain block.Chain) CachedBlockChain {
 //	}
 //	return c.cachedBlock[layer-c.BlockChain.Length()], nil
 //}
+
 func (c *CachedBlockChain) Push(block *block.Block) error {
 	c.block = block
 	c.cachedLength++
-	witness := block.Head.Witness
-	c.confirmed[witness] = 1
 
-	confirmed := make(map[string]int)
-	confirmed[witness] = 1
-	cbc := c
-	for cbc.parent != nil {
-		witness = cbc.parent.Top().Head.Witness
-		if _, ok := confirmed[witness]; !ok {
-			confirmed[witness] = 0
+	// push的时候更新共识相关变量
+	switch block.Head.Version {
+	case 0:
+		// DPoS
+		c.confirmed = 1
+		witness := block.Head.Witness
+		confirmed := make(map[string]int)
+		confirmed[witness] = 1
+		cbc := c
+		for cbc.parent != nil {
+			witness = cbc.parent.Top().Head.Witness
+			if _, ok := confirmed[witness]; !ok {
+				confirmed[witness] = 0
+			}
+			confirmed[witness]++
+			if len(confirmed) > cbc.parent.confirmed {
+				// 如果当前分支有更多的确认，则更新父亲的confirmed
+				cbc.parent.confirmed = len(confirmed)
+			}
+			cbc = cbc.parent
 		}
-		confirmed[witness]++
-		if len(confirmed) > len(cbc.parent.confirmed) {
-			// 如果当前分支有更多的确认，则更新父亲的confirmed
-			mapCopy(cbc.parent.confirmed, confirmed)
-		} else {
-			break
+		fallthrough
+	case 1:
+		// PoW
+		c.depth = 0
+		cbc := c
+		depth := 0
+		for cbc.parent != nil {
+			depth++
+			if depth > cbc.parent.depth {
+				cbc.parent.depth = depth
+			}
+			cbc = cbc.parent
 		}
-		cbc = cbc.parent
 	}
+
 	return nil
 }
-
-func (c *CachedBlockChain) Length() int {
-	return c.Chain.Length() + c.cachedLength
+func (c *CachedBlockChain) Length() uint64 {
+	return c.Chain.Length() + uint64(c.cachedLength)
 }
 func (c *CachedBlockChain) Top() *block.Block {
 	if c.cachedLength == 0 {
@@ -75,8 +94,7 @@ func (c *CachedBlockChain) Copy() CachedBlockChain {
 		Chain:        c.Chain,
 		parent:       c,
 		cachedLength: c.cachedLength,
-		pool:         c.pool,
-		confirmed:    make(map[string]int),
+		confirmed:    0,
 	}
 	return cbc
 }
@@ -93,20 +111,53 @@ func (c *CachedBlockChain) Flush() {
 	}
 }
 
-func (c *CachedBlockChain) GetStatePool() state.Pool {
-	return c.pool
-}
-
-func (c *CachedBlockChain) SetStatePool(pool state.Pool) {
-	c.pool = pool
-}
-
 func (c *CachedBlockChain) Iterator() block.ChainIterator {
+	return &CBCIterator{c, nil}
+}
+
+type CBCIterator struct {
+	pc       *CachedBlockChain
+	iterator block.ChainIterator
+}
+
+func (ci *CBCIterator) Next() *block.Block {
+	if ci.iterator != nil {
+		return ci.iterator.Next()
+	}
+	p := ci.pc.block
+	if ci.pc.parent == nil {
+		ci.iterator = ci.pc.Chain.Iterator()
+	}
+	ci.pc = ci.pc.parent
+	return p
+}
+
+// depreciate : 请使用iterator
+func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
+	if number <= c.Chain.Length() {
+		return c.Chain.GetBlockByNumber(number)
+	}
+	if number > c.Length() {
+		return nil
+	}
+	cbc := c
+	for cbc.block != nil {
+		if uint64(cbc.block.Head.Number) == number {
+			return cbc.block
+		}
+		cbc = cbc.parent
+	}
 	return nil
 }
 
-func mapCopy(to map[string]int, from map[string]int) {
-	for key, value := range from {
-		to[key] = value
+// depreciate : 请使用iterator
+func (c *CachedBlockChain) GetBlockByHash(blockHash []byte) *block.Block {
+	cbc := c
+	for cbc.block != nil {
+		if bytes.Equal(cbc.block.Head.Hash(), blockHash) {
+			return cbc.block
+		}
+		cbc = cbc.parent
 	}
+	return c.Chain.GetBlockByHash(blockHash)
 }

@@ -8,8 +8,8 @@ type ContractInfo struct {
 	GasLimit int64
 	Price    float64
 
-	Signers [][]byte
-	Sender  []byte
+	Signers []IOSTAccount
+	Sender  IOSTAccount
 }
 
 func (c *ContractInfo) toRaw() contractInfoRaw {
@@ -45,7 +45,9 @@ func (c *ContractInfo) Decode(b []byte) error {
 	if err != nil {
 		return err
 	}
-	cc := cir.toC()
-	c = &cc
+	c.Language = cir.Language
+	c.Version = cir.Version
+	c.GasLimit = cir.GasLimit
+	c.Price = cir.Price
 	return nil
 }

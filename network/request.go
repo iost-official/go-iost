@@ -37,7 +37,6 @@ type Request struct {
 	Type      NetReqType
 	FromLen   int16
 	From      []byte
-	Priority  int8
 	Body      []byte
 }
 
@@ -53,18 +52,17 @@ func isNetVersionMatch(buf []byte) bool {
 	return false
 }
 
-func newRequest(typ NetReqType, from string, data []byte, priority int8) *Request {
+func newRequest(typ NetReqType, from string, data []byte) *Request {
 	r := &Request{
 		Version:   NET_VERSION,
 		Timestamp: time.Now().UnixNano(),
 		Type:      typ,
 		FromLen:   int16(len(from)),
 		From:      []byte(from),
-		Priority:  priority,
 		Body:      data,
 	}
 	//len(timestamp) + len(type) + len(fromLen) + len(from) + len(body)
-	r.Length = int32(8 + 2 + 2 + len(r.From) + 1 + len(data))
+	r.Length = int32(8 + 2 + 2 + len(r.From) + len(data))
 
 	return r
 }
@@ -78,7 +76,6 @@ func (r *Request) Pack() ([]byte, error) {
 	err = binary.Write(buf, binary.BigEndian, &r.Type)
 	err = binary.Write(buf, binary.BigEndian, &r.FromLen)
 	err = binary.Write(buf, binary.BigEndian, &r.From)
-	err = binary.Write(buf, binary.BigEndian, &r.Priority)
 	err = binary.Write(buf, binary.BigEndian, &r.Body)
 	return buf.Bytes(), err
 }
@@ -92,86 +89,43 @@ func (r *Request) Unpack(reader io.Reader) error {
 	err = binary.Read(reader, binary.BigEndian, &r.FromLen)
 	r.From = make([]byte, r.FromLen)
 	err = binary.Read(reader, binary.BigEndian, &r.From)
-	err = binary.Read(reader, binary.BigEndian, &r.Priority)
-	r.Body = make([]byte, r.Length-8-2-2-int32(r.FromLen)-1)
+	r.Body = make([]byte, r.Length-8-2-2-int32(r.FromLen))
 	err = binary.Read(reader, binary.BigEndian, &r.Body)
 	return err
 }
 
 func (r *Request) String() string {
-	return fmt.Sprintf("version:%s length:%d type:%d timestamp:%d from:%s priority %v Body:%v",
+	return fmt.Sprintf("version:%s length:%d type:%d timestamp:%s from:%s Body:%v",
 		r.Version,
 		r.Length,
 		r.Type,
-		r.Timestamp,
+		time.Unix(r.Timestamp/1e9, r.Timestamp%1e9).Format("2006-01-02 15:04:05"),
 		r.From,
-		r.Priority,
 		r.Body,
 	)
 }
 
-func (r *Request) handle(s *Server, conn net.Conn) (string, error) {
-	s.log.D("handle request = %v", r)
-	switch r.Type {
-	case Message:
-		s.spreadUp(r.Body)
-		req := newRequest(MessageReceived, s.ListenAddr, common.Int64ToBytes(r.Timestamp), 0)
-		s.send(conn, req)
-	case BroadcastMessage:
-		s.spreadUp(r.Body)
-		s.broadcast(*r)
-		req := newRequest(BroadcastMessageReceived, s.ListenAddr, common.Int64ToBytes(r.Timestamp), 0)
-		s.send(conn, req)
-	case MessageReceived:
-		s.log.D("MessageReceived: %v", common.BytesToInt64(r.Body))
-		s.deleteResend(common.BytesToInt64(r.Body))
-	case BroadcastMessageReceived:
-		s.log.D("BroadcastMessageReceived: %v", common.BytesToInt64(r.Body))
-		s.deleteResend(common.BytesToInt64(r.Body))
-	case Ping:
-		// a downstream node sends its address to its seed node(our node)
-		addr := string(r.Body)
-		s.addPeer(addr, conn)
-		s.putNode(addr)
-		//return pong
-		req := newRequest(Pong, s.ListenAddr, nil, 0)
-		s.send(conn, req)
-		return addr, nil
-	case Pong:
-		s.pinged = true
-	case NodeTable: //got nodeTable and save
-		s.putNode(string(r.Body))
-	case ReqNodeTable: //request for nodeTable
-		addrs, err := s.AllNodesExcludeAddr(string(r.From))
-		if err != nil {
-			s.log.E("failed to nodetable ", err)
-		}
-		req := newRequest(NodeTable, s.ListenAddr, []byte(addrs), 0)
-		s.send(conn, req)
-	default:
-		s.log.E("wrong request :", r)
-	}
-	return "", nil
-}
-
-func (r *Request) response(base *BaseNetwork, conn net.Conn) {
-	base.log.D("response request = %v", r)
+func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
+	base.log.D("%v response request = %v", base.localNode.String(), r)
 	switch r.Type {
 	case Message:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
 			base.RecvCh <- *appReq
+		} else {
+			base.log.E("failed to unmarshal recv msg:%v, err:%v", r, err)
 		}
-		base.send(conn, newRequest(MessageReceived, base.localNode.String(), common.Int64ToBytes(r.Timestamp), 0))
+		base.send(conn, newRequest(MessageReceived, base.localNode.String(), common.Int64ToBytes(r.Timestamp)))
+		r.msgHandle(base)
 	case MessageReceived:
 		base.log.D("MessageReceived: %v", common.BytesToInt64(r.Body))
-		//base.deleteResend(common.BytesToInt64(r.Body)) todo
 	case BroadcastMessage:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
 			base.RecvCh <- *appReq
 			base.Broadcast(*appReq)
 		}
+		r.msgHandle(base)
 	case BroadcastMessageReceived:
 	//request for nodeTable
 	case ReqNodeTable:
@@ -180,7 +134,7 @@ func (r *Request) response(base *BaseNetwork, conn net.Conn) {
 		if err != nil {
 			base.log.E("failed to nodetable ", err)
 		}
-		req := newRequest(NodeTable, base.localNode.String(), []byte(strings.Join(addrs, ",")), 0)
+		req := newRequest(NodeTable, base.localNode.String(), []byte(strings.Join(addrs, ",")))
 		base.send(conn, req)
 	//got nodeTable and save
 	case NodeTable:
@@ -190,16 +144,20 @@ func (r *Request) response(base *BaseNetwork, conn net.Conn) {
 	}
 }
 
-func (r Request) Less(target interface{}) bool {
-	return r.Priority < target.(Request).Priority || (r.Priority < target.(Request).Priority && r.Timestamp < target.(Request).Timestamp)
-}
-
-type Requests []Request
-
-func (rs *Requests) Len() int { return len(*rs) }
-
-func (rs *Requests) Swap(i, j int) { (*rs)[i], (*rs)[j] = (*rs)[j], (*rs)[i] }
-
-func (rs *Requests) Less(i, j int) bool {
-	return (*rs)[i].Priority < (*rs)[j].Priority || ((*rs)[i].Priority == (*rs)[j].Priority && (*rs)[i].Timestamp < (*rs)[j].Timestamp)
+//handle broadcast node's height
+func (r *Request) msgHandle(net *BaseNetwork) {
+	msg := &message.Message{}
+	if _, err := msg.Unmarshal(r.Body); err == nil {
+		switch msg.ReqType {
+		case int32(ReqBlockHeight):
+			var rbh message.RequestHeight
+			rbh.Decode(msg.Body)
+			net.SetNodeHeightMap(string(r.From), rbh.LocalBlockHeight)
+		case int32(RecvBlockHeight):
+			var rh message.ResponseHeight
+			rh.Decode(msg.Body)
+			net.SetNodeHeightMap(string(r.From), rh.BlockHeight)
+		default:
+		}
+	}
 }

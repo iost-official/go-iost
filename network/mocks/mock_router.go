@@ -44,16 +44,28 @@ func (mr *MockRouterMockRecorder) Broadcast(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Broadcast", reflect.TypeOf((*MockRouter)(nil).Broadcast), arg0)
 }
 
+// CancelDownload mocks base method
+func (m *MockRouter) CancelDownload(arg0, arg1 uint64) error {
+	ret := m.ctrl.Call(m, "CancelDownload", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CancelDownload indicates an expected call of CancelDownload
+func (mr *MockRouterMockRecorder) CancelDownload(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelDownload", reflect.TypeOf((*MockRouter)(nil).CancelDownload), arg0, arg1)
+}
+
 // Download mocks base method
-func (m *MockRouter) Download(arg0 message.Message) chan []byte {
-	ret := m.ctrl.Call(m, "Download", arg0)
-	ret0, _ := ret[0].(chan []byte)
+func (m *MockRouter) Download(arg0, arg1 uint64) error {
+	ret := m.ctrl.Call(m, "Download", arg0, arg1)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Download indicates an expected call of Download
-func (mr *MockRouterMockRecorder) Download(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockRouter)(nil).Download), arg0)
+func (mr *MockRouterMockRecorder) Download(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockRouter)(nil).Download), arg0, arg1)
 }
 
 // FilteredChan mocks base method

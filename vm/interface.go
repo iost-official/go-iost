@@ -1,13 +1,17 @@
 /*
-Vm package define vm of smart contract. Use verifier/ to verify txs and blocks
+Package vm  define vm of smart contract. Use verifier/ to verify txs and blocks
 */
 package vm
 
 import (
+	"encoding/base64"
+
+	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 )
 
+// Privilege 设定智能合约的接口权限
 type Privilege int
 
 const (
@@ -16,6 +20,8 @@ const (
 	Public
 )
 
+type IOSTAccount string
+
 //go:generate gencode go -schema=structs.schema -package=vm
 //go:generate mockgen -destination mocks/mock_contract.go -package vm_mock github.com/iost-official/prototype/vm Contract
 
@@ -23,7 +29,7 @@ const (
 // 代码类型的别名，可以编译为contract
 type Code string
 
-// 虚拟机interface，定义了虚拟机的接口
+// VM 虚拟机interface，定义了虚拟机的接口
 //
 // 调用流程为prepare - start - call - stop
 type VM interface {
@@ -34,27 +40,37 @@ type VM interface {
 	PC() uint64
 }
 
-// 方法interface，用来作为接口调用
+// Method 方法interface，用来作为接口调用
 type Method interface {
 	Name() string
 	InputCount() int
 	OutputCount() int
 }
 
-// 智能合约interface，其中setPrefix，setSender, AddSigner是从tx构建contract的时候使用
+// Contract 智能合约interface，其中setPrefix，setSender, AddSigner是从tx构建contract的时候使用
 type Contract interface {
 	Info() ContractInfo
 	SetPrefix(prefix string)
-	SetSender(sender []byte)
-	AddSigner(signer []byte)
+	SetSender(sender IOSTAccount)
+	AddSigner(signer IOSTAccount)
 	Api(apiName string) (Method, error)
+	Code() string
 	common.Serializable
 }
 
+// Monitor 管理虚拟机的管理者，实现在verifier模块
 type Monitor interface {
 	StartVM(contract Contract) VM
-	StopVm(contract Contract)
+	StopVM(contract Contract)
 	Stop()
-	GetMethod(contractPrefix, methodName string) Method
+	GetMethod(contractPrefix, methodName string) (Method, error)
 	Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error)
+}
+
+func PubkeyToIOSTAccount(pubkey []byte) IOSTAccount {
+	return IOSTAccount(account.GetIdByPubkey(pubkey))
+}
+
+func HashToPrefix(hash []byte) string {
+	return base64.StdEncoding.EncodeToString(hash)
 }

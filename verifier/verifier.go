@@ -2,6 +2,9 @@ package verifier
 
 import (
 	"fmt"
+
+	"reflect"
+
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
@@ -16,7 +19,7 @@ const (
 // 底层verifier，用来组织vm，不要直接使用
 type Verifier struct {
 	Pool state.Pool
-	VMMonitor
+	vmMonitor
 }
 
 func (v *Verifier) Verify(contract vm.Contract) (state.Pool, uint64, error) {
@@ -40,9 +43,13 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	sender := contract.Info().Sender
 	var balanceOfSender float64
 	val0, err := cv.Pool.GetHM("iost", state.Key(sender))
+	if err != nil {
+		return nil, err
+	}
 	val, ok := val0.(*state.VFloat)
 	if !ok {
-		return nil, fmt.Errorf("type error")
+		return nil, fmt.Errorf("pool type error: should VFloat, acture %v; in iost.%v",
+			reflect.TypeOf(val0).String(), string(sender))
 	}
 	balanceOfSender = val.ToFloat64()
 
@@ -53,10 +60,10 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	cv.StartVM(contract)
 	pool, gas, err := cv.Verify(contract)
 	if err != nil {
-		cv.StopVm(contract)
+		cv.StopVM(contract)
 		return nil, err
 	}
-	cv.StopVm(contract)
+	cv.StopVM(contract)
 
 	if gas > uint64(contract.Info().GasLimit) {
 		balanceOfSender -= float64(contract.Info().GasLimit) * contract.Info().Price
@@ -85,9 +92,11 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 func NewCacheVerifier(pool state.Pool) CacheVerifier {
 	cv := CacheVerifier{
 		Verifier: Verifier{
-			Pool:      pool.Copy(),
-			VMMonitor: NewVMMonitor(),
+			vmMonitor: newVMMonitor(),
 		},
+	}
+	if pool != nil {
+		cv.Pool = pool.Copy()
 	}
 	return cv
 }
@@ -103,10 +112,10 @@ type BlockVerifier struct {
 }
 
 // 验证block，返回pool是包含了该block的pool。如果contain为true则进行合并
-func (bv *BlockVerifier) VerifyBlock(b block.Block, contain bool) (state.Pool, error) {
+func (bv *BlockVerifier) VerifyBlock(b *block.Block, contain bool) (state.Pool, error) {
 	bv.oldPool = bv.Pool
-	for i := 0; i < b.TxLen(); i++ {
-		c := b.TxGet(i).Contract
+	for i := 0; i < b.LenTx(); i++ {
+		c := b.GetTx(i).Contract
 		_, err := bv.VerifyContract(c, true)
 		if err != nil {
 			return nil, err

@@ -34,7 +34,7 @@ func (m *MockContract) EXPECT() *MockContractMockRecorder {
 }
 
 // AddSigner mocks base method
-func (m *MockContract) AddSigner(arg0 []byte) {
+func (m *MockContract) AddSigner(arg0 vm.IOSTAccount) {
 	m.ctrl.Call(m, "AddSigner", arg0)
 }
 
@@ -54,6 +54,18 @@ func (m *MockContract) Api(arg0 string) (vm.Method, error) {
 // Api indicates an expected call of Api
 func (mr *MockContractMockRecorder) Api(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Api", reflect.TypeOf((*MockContract)(nil).Api), arg0)
+}
+
+// Code mocks base method
+func (m *MockContract) Code() string {
+	ret := m.ctrl.Call(m, "Code")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Code indicates an expected call of Code
+func (mr *MockContractMockRecorder) Code() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Code", reflect.TypeOf((*MockContract)(nil).Code))
 }
 
 // Decode mocks base method
@@ -115,7 +127,7 @@ func (mr *MockContractMockRecorder) SetPrefix(arg0 interface{}) *gomock.Call {
 }
 
 // SetSender mocks base method
-func (m *MockContract) SetSender(arg0 []byte) {
+func (m *MockContract) SetSender(arg0 vm.IOSTAccount) {
 	m.ctrl.Call(m, "SetSender", arg0)
 }
 

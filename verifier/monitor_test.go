@@ -3,7 +3,6 @@ package verifier
 import (
 	"testing"
 
-	"github.com/bouk/monkey"
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
@@ -26,34 +25,34 @@ func TestContractCall(t *testing.T) {
 	return Call("con2", "sayHi", "bob")
 end`
 		code2 := `function sayHi(name)
-	return "hi " .. name
-end`
+			return "hi " .. name
+		end`
 		sayHi := lua.NewMethod("sayHi", 1, 1)
 		main := lua.NewMethod("main", 0, 1)
 
-		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "con1", GasLimit: 1000, Price: 1, Sender: []byte("ahaha")},
+		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "con1", GasLimit: 1000, Price: 1, Sender: vm.IOSTAccount("ahaha")},
 			code1, main)
 
-		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Sender: []byte("ahaha")},
+		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Sender: vm.IOSTAccount("ahaha")},
 			code2, sayHi, sayHi)
-
-		guard := monkey.Patch(FindContract, func(prefix string) vm.Contract { return &lc2 })
-		defer guard.Unpatch()
+		//
+		//guard := monkey.Patch(FindContract, func(prefix string) vm.Contract { return &lc2 })
+		//defer guard.Unpatch()
 
 		verifier := Verifier{
 			Pool:      pool,
-			VMMonitor: NewVMMonitor(),
+			vmMonitor: newVMMonitor(),
 		}
 		verifier.StartVM(&lc1)
 		verifier.StartVM(&lc2)
 		rtn, _, gas, err := verifier.Call(pool, "con2", "sayHi", state.MakeVString("bob"))
 		So(err, ShouldBeNil)
-		So(gas, ShouldEqual, 7)
-		So(rtn[0].String(), ShouldEqual, "shi bob")
+		So(gas, ShouldEqual, 4)
+		So(rtn[0].EncodeString(), ShouldEqual, "shi bob")
 		rtn, _, gas, err = verifier.Call(pool, "con1", "main")
 		So(err, ShouldBeNil)
-		So(gas, ShouldEqual, 19)
-		So(rtn[0].String(), ShouldEqual, "shi bob")
+		So(gas, ShouldEqual, 9)
+		So(rtn[0].EncodeString(), ShouldEqual, "shi bob")
 
 	})
 }

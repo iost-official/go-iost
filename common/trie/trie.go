@@ -36,7 +36,7 @@ func (t *Trie) SetCacheLimit(l uint16) {
 }
 
 func (t *Trie) newFlag() nodeFlag {
-	return nodeFlag{ dirty: true, gen: t.cachegen }
+	return nodeFlag{dirty: true, gen: t.cachegen}
 }
 
 func New(root common.Hash, db *Database) (*Trie, error) {
