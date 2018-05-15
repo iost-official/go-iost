@@ -153,6 +153,8 @@ type BlockCache interface {
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
 	LongestPool() state.Pool
+	BlockChain() block.Chain
+	BasePool() state.Pool
 	ConfirmedLength() uint64
 	BlockConfirmChan() chan uint64
 }
@@ -199,6 +201,11 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 // ConfirmedLength 返回确认链长度
 func (h *BlockCacheImpl) ConfirmedLength() uint64 {
 	return h.bc.Length()
+}
+
+// BlockChain 返回确认
+func (h *BlockCacheImpl) BlockChain() block.Chain {
+	return h.bc
 }
 
 // AddGenesis 加入创世块

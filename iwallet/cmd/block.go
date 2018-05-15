@@ -15,79 +15,77 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"strconv"
 
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/rpc"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
-// checkCmd represents the check command
-var checkCmd = &cobra.Command{
-	Use:   "check",
-	Short: "A brief description of your command",
+// blockCmd represents the block command
+var blockCmd = &cobra.Command{
+	Use:   "block",
+	Short: "print block info, default find by block number reversed",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println(`Error: source file not given`)
+		switch {
+		case *byHash:
+			fallthrough
+		case *byNumber:
+			fmt.Println("not support yet")
 			return
+		case *byNumberR:
+			fallthrough
+		default:
 		}
-		path := args[0]
-		fd, err := ReadFile(path)
+
+		i, err := strconv.Atoi(args[0])
 		if err != nil {
-			fmt.Println("Read file failed: ", err.Error())
+			fmt.Println(err.Error())
 			return
 		}
-
-		var mTx tx.Tx
-		mTx.Decode(fd)
-		PrintTx(mTx)
-
+		conn, err := grpc.Dial(server, grpc.WithInsecure())
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		defer conn.Close()
+		client := rpc.NewCliClient(conn)
+		blockInfo, err := client.GetBlock(context.Background(), &rpc.BlockKey{Layer: int64(i)})
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		fmt.Println(blockInfo.Json)
 	},
 }
 
+var byNumberR *bool
+var byHash *bool
+var byNumber *bool
+
 func init() {
-	rootCmd.AddCommand(checkCmd)
+	rootCmd.AddCommand(blockCmd)
+
+	byNumber = blockCmd.Flags().Bool("by-number-reverse", false, "find by layer")
+	byHash = blockCmd.Flags().Bool("by-hash", false, "find by block head hash")
+	byNumberR = blockCmd.Flags().Bool("by-number", false, "find by block head hash")
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// checkCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// blockCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// checkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-func PrintTx(mTx tx.Tx) {
-	signer := make([]string, len(mTx.Signs))
-	for _, s := range mTx.Signs {
-		signer = append(signer, string(vm.PubkeyToIOSTAccount(s.Pubkey)))
-	}
-	var publisher string
-	if mTx.Publisher.Pubkey == nil {
-		publisher = ""
-	} else {
-		publisher = string(vm.PubkeyToIOSTAccount(mTx.Publisher.Pubkey))
-
-	}
-	fmt.Printf(`Transaction : 
-Time: %v
-Nonce: %v
-Contract:
-    Price: %v
-    Gas limit: %v
-Code:
-----
-%v
-----
-Signer: %v
-Publisher: %v 
-`, mTx.Time, mTx.Nonce, mTx.Contract.Info().Price, mTx.Contract.Info().GasLimit, mTx.Contract.Code(), signer, publisher)
+	// blockCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
