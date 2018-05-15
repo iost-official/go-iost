@@ -24,7 +24,7 @@ type Consensus interface {
 	BlockChain() block.Chain
 	CachedBlockChain() block.Chain
 	StatePool() state.Pool
-	CacheStatePool() state.Pool
+	CachedStatePool() state.Pool
 }
 
 const (

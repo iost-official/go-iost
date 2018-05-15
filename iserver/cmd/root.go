@@ -38,6 +38,7 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+
 		fmt.Println(viper.GetString("net.log-path"))
 		fmt.Println(viper.GetStringSlice("net.node-table"))
 		fmt.Println(viper.GetString("nothing") == "") // 注意这里
