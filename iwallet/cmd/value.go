@@ -15,16 +15,17 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/rpc"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
-// checkCmd represents the check command
-var checkCmd = &cobra.Command{
-	Use:   "check",
+// valueCmd represents the value command
+var valueCmd = &cobra.Command{
+	Use:   "value",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -32,62 +33,43 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println(`Error: source file not given`)
-			return
-		}
-		path := args[0]
-		fd, err := ReadFile(path)
-		if err != nil {
-			fmt.Println("Read file failed: ", err.Error())
-			return
-		}
 
-		var mTx tx.Tx
-		mTx.Decode(fd)
-		PrintTx(mTx)
+		conn, err := grpc.Dial(server, grpc.WithInsecure())
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		defer conn.Close()
+		client := rpc.NewCliClient(conn)
+		for _, arg := range args {
+			key := *prefix + arg
+			st, err := client.GetState(context.Background(), &rpc.Key{S: key})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			fmt.Println(st.Sv[1:])
+		}
 
 	},
 }
 
+var prefix *string
+
 func init() {
-	rootCmd.AddCommand(checkCmd)
+	rootCmd.AddCommand(valueCmd)
+
+	prefix = valueCmd.Flags().StringP("prefix", "p", "", "Set prefix of key")
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// checkCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// valueCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// checkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-func PrintTx(mTx tx.Tx) {
-	signer := make([]string, len(mTx.Signs))
-	for _, s := range mTx.Signs {
-		signer = append(signer, string(vm.PubkeyToIOSTAccount(s.Pubkey)))
-	}
-	var publisher string
-	if mTx.Publisher.Pubkey == nil {
-		publisher = ""
-	} else {
-		publisher = string(vm.PubkeyToIOSTAccount(mTx.Publisher.Pubkey))
-
-	}
-	fmt.Printf(`Transaction : 
-Time: %v
-Nonce: %v
-Contract:
-    Price: %v
-    Gas limit: %v
-Code:
-----
-%v
-----
-Signer: %v
-Publisher: %v 
-`, mTx.Time, mTx.Nonce, mTx.Contract.Info().Price, mTx.Contract.Info().GasLimit, mTx.Contract.Code(), signer, publisher)
+	// valueCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
