@@ -1,8 +1,8 @@
 package tx
 
 import (
-	"fmt"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/db"
@@ -14,8 +14,9 @@ type TxPoolDb struct {
 
 var txPrefix = []byte("t") //txPrefix+tx hash -> tx data
 var PNPrefix = []byte("p")
+
 func NewTxPoolDb() (TxPool, error) {
-	ldb, err := db.DatabaseFactor("ldb")
+	ldb, err := db.NewLDBDatabase("tx", 0, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init db %v", err)
 	}

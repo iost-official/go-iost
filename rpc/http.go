@@ -34,8 +34,10 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 		return &Response{Code: -1}, err
 	}
 	//broadcast the tx
-	router, _ := network.RouterFactory("base")
-
+	router := network.Route
+	if router == nil {
+		panic(fmt.Errorf("network.Router shouldn't be nil"))
+	}
 	broadTx := message.Message{
 		Body:    tx1.Encode(),
 		ReqType: int32(network.ReqPublishTx),
@@ -49,14 +51,20 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 
 func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (*Transaction, error) {
 
-	if txkey==nil{
+	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
+	Pub := txkey.Publisher
+	Nonce := txkey.Nonce
 	//check Publisher and Nonce in txkey
-	txDb:=tx.NewTxPoolDb()
-	txDb.	
 
-	return nil, nil
+	txDb, err := tx.NewTxPoolDb() //TODO:in fact,we should find the txpool_db,not create a new txpool_db
+	tx, err := txDb.GetByPN(Nonce, Pub)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Transaction{Tx: tx.Encode()}, nil
 }
 
 func (s *HttpServer) GetBalance(ctx context.Context, tx *Key) (*Value, error) {
@@ -70,7 +78,7 @@ func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
 	}
 	key := stkey.S
 
-	stPool := state.NewPool(db) //we should get the instance of Chain,not to Create it again in the real version
+	stPool := state.StdPool //we should get the instance of Chain,not to Create it again in the real version
 	stValue, err := stPool.Get(state.Key(key))
 	if err != nil {
 		return nil, fmt.Errorf("GetState Error: [%v]", err)
