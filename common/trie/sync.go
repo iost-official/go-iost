@@ -5,6 +5,8 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/common/trie/prque"
 	"fmt"
+
+	"github.com/iost-official/prototype/db"
 )
 
 var ErrNotRequested = errors.New("not requested")
@@ -224,6 +226,20 @@ func (s *TrieSync) children(req *request, object node) ([]*request, error) {
 		}
 	}
 	return requests, nil
+}
+
+func (s *TrieSync) Commit(dbw db.Database) (int, error) {
+	// Dump the membatch into a database dbw
+	for i, key := range s.membatch.order {
+		if err := dbw.Put(key[:], s.membatch.batch[key]); err != nil {
+			return i, err
+		}
+	}
+	written := len(s.membatch.order)
+
+	// Drop the membatch data and return
+	s.membatch = newSyncMemBatch()
+	return written, nil
 }
 
 func (s *TrieSync) commit(req *request) (err error) {
