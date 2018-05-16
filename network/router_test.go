@@ -7,20 +7,20 @@ import (
 	"fmt"
 
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"strconv"
+
+	"math/rand"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/network/discover"
 	"github.com/iost-official/prototype/params"
-	"github.com/smartystreets/assertions"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestRouterImpl_Init(t *testing.T) {
-	//broadcast()
+	//broadcast(t)
 	router, _ := RouterFactory("base")
 	baseNet, _ := NewBaseNetwork(&NetConifg{ListenAddr: "127.0.0.1"})
 	router.Init(baseNet, 30601)
@@ -81,7 +81,7 @@ func newRouters(n int) []Router {
 	return rs
 }
 
-func broadcast() {
+func broadcast(t *testing.T) {
 	height := uint64(32)
 	deltaHeight := uint64(5)
 
@@ -96,28 +96,30 @@ func broadcast() {
 		ReqType: int32(ReqBlockHeight),
 		From:    net2.localNode.String(),
 	}
-
-	//broadcast block height test
-	go routers[2].Broadcast(broadHeight)
-	time.Sleep(10 * time.Second)
-	//check app msg chan
-	select {
-	case data := <-routers[1].(*RouterImpl).filterMap[1]:
-		assertions.ShouldEqual(common.BytesToUint64(data.Body), height)
-	}
-	assertions.ShouldBeGreaterThanOrEqualTo(len(routers[1].(*RouterImpl).base.(*BaseNetwork).NodeHeightMap), 1)
-	//download block request test
-
-	net2.SetNodeHeightMap(net0.localNode.String(), height+uint64(rand.Int63n(int64(deltaHeight))))
-	net2.SetNodeHeightMap(net1.localNode.String(), height+deltaHeight)
-	go net2.Download(height, height+deltaHeight)
-	for i := 0; i < (int(deltaHeight)); i++ {
+	Convey("", t, func() {
+		//broadcast block height test
+		go routers[2].Broadcast(broadHeight)
+		time.Sleep(10 * time.Second)
+		//check app msg chan
 		select {
-		case data := <-routers[0].(*RouterImpl).filterMap[0]:
-			assertions.ShouldBeGreaterThan(common.BytesToUint64(data.Body), height-1)
-		case data := <-routers[1].(*RouterImpl).filterMap[0]:
-			assertions.ShouldBeGreaterThan(common.BytesToUint64(data.Body), height-1)
+		case data := <-routers[1].(*RouterImpl).filterMap[1]:
+			So(common.BytesToUint64(data.Body), ShouldEqual, height)
 		}
-	}
-	//	cancel download block test
+		So(len(routers[1].(*RouterImpl).base.(*BaseNetwork).NodeHeightMap), ShouldBeGreaterThanOrEqualTo, 1)
+
+		//download block request test
+		net2.SetNodeHeightMap(net0.localNode.String(), height+uint64(rand.Int63n(int64(deltaHeight))))
+		net2.SetNodeHeightMap(net1.localNode.String(), height+deltaHeight)
+		go net2.Download(height, height+deltaHeight)
+		for i := 0; i < (int(deltaHeight)); i++ {
+			select {
+			case data := <-routers[0].(*RouterImpl).filterMap[0]:
+				So(common.BytesToUint64(data.Body), ShouldBeGreaterThan, height-1)
+			case data := <-routers[1].(*RouterImpl).filterMap[0]:
+				So(common.BytesToUint64(data.Body), ShouldBeGreaterThan, height-1)
+			}
+		}
+		//	cancel download block test
+	})
+
 }
