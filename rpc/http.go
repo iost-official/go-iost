@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
@@ -44,7 +45,10 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	}
 	router.Broadcast(broadTx)
 	//add this tx to txpool
-	tp, _ := tx.TxPoolFactory("mem") //TODO:in fact,we should find the txpool_mem,not create a new txpool_mem
+	tp, err := tx.TxPoolFactory("mem") //TODO:in fact,we should find the txpool_mem,not create a new txpool_mem
+	if err != nil {
+		panic(err)
+	}
 	tp.Add(&tx1)
 	return &Response{Code: 0}, nil
 }
@@ -54,12 +58,13 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	Pub := txkey.Publisher
+	var Pub common.Signature
+	Pub.Decode([]byte(txkey.Publisher))
 	Nonce := txkey.Nonce
 	//check Publisher and Nonce in txkey
 
 	txDb, err := tx.NewTxPoolDb() //TODO:in fact,we should find the txpool_db,not create a new txpool_db
-	tx, err := txDb.GetByPN(Nonce, Pub)
+	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, Pub)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +83,10 @@ func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
 	}
 	key := stkey.S
 
-	stPool := state.StdPool //we should get the instance of Chain,not to Create it again in the real version
+	stPool := state.StdPool
+	if stPool == nil {
+		panic(fmt.Errorf("state.StdPool shouldn't be nil"))
+	}
 	stValue, err := stPool.Get(state.Key(key))
 	if err != nil {
 		return nil, fmt.Errorf("GetState Error: [%v]", err)
