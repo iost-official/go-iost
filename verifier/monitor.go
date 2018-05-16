@@ -77,10 +77,7 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, err
 	return contract.Api(methodName)
 }
 
-func (m *vmMonitor) Call(pool state.Pool,
-	contractPrefix,
-	methodName string,
-	args ...state.Value) ([]state.Value, state.Pool, uint64, error) { // todo 权限检查
+func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) { // todo 权限检查
 	holder, ok := m.vms[contractPrefix]
 	if !ok {
 		contract, err := FindContract(contractPrefix)
@@ -90,10 +87,6 @@ func (m *vmMonitor) Call(pool state.Pool,
 		m.StartVM(contract)
 		holder = m.vms[contractPrefix]
 	}
-	//switch holder.VM.(type) {
-	//case *lua.VM:
-	//	holder.VM.(*lua.VM).L.PCount = 0 // 注意：L会复用因此会保留PCount，需要在
-	//}
 	rtn, pool, err := holder.Call(pool, methodName, args...)
 	gas := holder.PC()
 	return rtn, pool, gas, err
