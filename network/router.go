@@ -32,10 +32,10 @@ type Router interface {
 	CancelDownload(start, end uint64) error
 }
 
-var Route *Router
+var Route Router
 var once sync.Once
 
-func GetInstance(conf *NetConifg, target string, port uint16) (Route *Router, err error) {
+func GetInstance(conf *NetConifg, target string, port uint16) (Route Router, err error) {
 	once.Do(func() {
 		baseNet, err := NewBaseNetwork(conf)
 		if err != nil {
