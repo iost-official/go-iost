@@ -2,6 +2,10 @@ package state
 
 import (
 	"fmt"
+
+	"sync"
+
+	"github.com/iost-official/prototype/db"
 )
 
 //go:generate gencode go -schema=structs.schema -package=state
@@ -140,4 +144,21 @@ func (p *PoolImpl) PutHM(key, field Key, value Value) error {
 	m.Set(field, value)
 	p.patch.Put(key, m)
 	return nil
+}
+
+var StdPool Pool
+
+var once sync.Once
+
+func init() {
+	bdb, err := db.DatabaseFactor("redis")
+	if err != nil {
+		panic(err)
+	}
+	mdb := NewDatabase(bdb)
+	if StdPool == nil {
+		once.Do(func() {
+			StdPool = NewPool(mdb)
+		})
+	}
 }
