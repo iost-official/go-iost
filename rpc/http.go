@@ -7,6 +7,7 @@ import (
 
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/network"
 )
@@ -46,7 +47,14 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	return &Response{Code: 0}, nil
 }
 
-func (s *HttpServer) GetContract(ctx context.Context, tx *ContractKey) (*Contract, error) {
+func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (*Transaction, error) {
+
+	if txkey==nil{
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	//check Publisher and Nonce in txkey
+	txDb:=tx.NewTxPoolDb()
+	txDb.	
 
 	return nil, nil
 }
@@ -56,12 +64,25 @@ func (s *HttpServer) GetBalance(ctx context.Context, tx *Key) (*Value, error) {
 	return nil, nil
 }
 
-func (s *HttpServer) GetState(ctx context.Context, tx *Key) (*Value, error) {
+func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
+	if stkey == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	key := stkey.S
 
-	return nil, nil
+	stPool := state.NewPool(db) //we should get the instance of Chain,not to Create it again in the real version
+	stValue, err := stPool.Get(state.Key(key))
+	if err != nil {
+		return nil, fmt.Errorf("GetState Error: [%v]", err)
+	}
+	return &Value{Sv: stValue.EncodeString()}, nil
 }
 
 func (s *HttpServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, error) {
+	if bk == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+
 	bc, err := block.NewBlockChain() //we should get the instance of Chain,not to Create it again in the real version
 	if err != nil {
 		return nil, err

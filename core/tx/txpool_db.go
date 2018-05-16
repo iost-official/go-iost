@@ -2,7 +2,9 @@ package tx
 
 import (
 	"fmt"
+	"encoding/binary"
 
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/db"
 )
 
@@ -11,7 +13,7 @@ type TxPoolDb struct {
 }
 
 var txPrefix = []byte("t") //txPrefix+tx hash -> tx data
-
+var PNPrefix = []byte("p")
 func NewTxPoolDb() (TxPool, error) {
 	ldb, err := db.DatabaseFactor("ldb")
 	if err != nil {
@@ -26,8 +28,18 @@ func (tp *TxPoolDb) Add(tx *Tx) error {
 	hash := tx.Hash()
 	err := tp.db.Put(append(txPrefix, hash...), tx.Encode())
 	if err != nil {
-		return fmt.Errorf("failed to Put tx: %v", err)
+		return fmt.Errorf("failed to Put hash->tx: %v", err)
 	}
+	//no need to check Pblisher here,it was checked earlier
+	PubRaw := tx.Publisher.Encode()
+	NonceRaw := make([]byte, 8)
+	binary.BigEndian.PutUint64(NonceRaw, uint64(tx.Nonce))
+
+	err = tp.db.Put(append(PNPrefix, append(NonceRaw, PubRaw...)...), hash)
+	if err != nil {
+		return fmt.Errorf("failed to Put NP->hash: %v", err)
+	}
+
 	return nil
 }
 
@@ -50,6 +62,24 @@ func (tp *TxPoolDb) Get(hash []byte) (*Tx, error) {
 		return nil, fmt.Errorf("failed to Decode the tx: %v", err)
 	}
 	return &tx, nil
+}
+
+//Get Tx by its Publisher and Nonce
+func (tp *TxPoolDb) GetByPN(Nonce int64, Publisher common.Signature) (*Tx, error) {
+	tx := new(Tx)
+	PubRaw := tx.Publisher.Encode()
+	NonceRaw := make([]byte, 8)
+	binary.BigEndian.PutUint64(NonceRaw, uint64(tx.Nonce))
+	hash, err := tp.db.Get(append(PNPrefix, append(NonceRaw, PubRaw...)...))
+	if err != nil {
+
+		return nil, fmt.Errorf("failed to Get the tx hash: %v", err)
+	}
+	tx, err = tp.Get(hash)
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
 }
 
 // 判断一个Tx是否在Tx Pool
