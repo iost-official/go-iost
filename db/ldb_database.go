@@ -20,25 +20,39 @@ type LDBDatabase struct {
 	quitChan chan chan error
 }
 
-func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
-	db, err := leveldb.OpenFile(file, &opt.Options{
-		OpenFilesCacheCapacity: handles,
-		BlockCacheCapacity:     cache / 2 * opt.MiB,
-		WriteBuffer:            cache / 4 * opt.MiB,
-		Filter:                 filter.NewBloomFilter(10),
-	})
+var ldbMap map[string]*LDBDatabase
 
-	fmt.Println(file, err)
-	if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
-		db, err = leveldb.RecoverFile(file, nil)
+func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
+	if ldbMap == nil {
+		ldbMap = make(map[string]*LDBDatabase)
 	}
-	if err != nil {
-		return nil, err
+	if _, ok := ldbMap[file]; !ok {
+		if cache < 16 {
+			cache = 16
+		}
+		if handles < 16 {
+			handles = 16
+		}
+		db, err := leveldb.OpenFile(file, &opt.Options{
+			OpenFilesCacheCapacity: handles,
+			BlockCacheCapacity:     cache / 2 * opt.MiB,
+			WriteBuffer:            cache / 4 * opt.MiB,
+			Filter:                 filter.NewBloomFilter(10),
+		})
+
+		fmt.Println(file, err)
+		if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
+			db, err = leveldb.RecoverFile(file, nil)
+		}
+		if err != nil {
+			return nil, err
+		}
+		ldbMap[file] = &LDBDatabase{
+			fn: file,
+			db: db,
+		}
 	}
-	return &LDBDatabase{
-		fn: file,
-		db: db,
-	}, nil
+	return ldbMap[file], nil
 }
 
 func (db *LDBDatabase) Path() string {
@@ -81,7 +95,6 @@ func (db *LDBDatabase) Close() {
 	db.quitLock.Lock()
 	defer db.quitLock.Unlock()
 	db.db.Close()
-	Db = nil
 }
 
 func (db *LDBDatabase) DB() *leveldb.DB {

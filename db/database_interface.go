@@ -19,19 +19,14 @@ type Database interface {
 	//NewBatch() Batch
 }
 
-var Db Database
-
 func DatabaseFactor(target string) (Database, error) {
 	switch target {
 	case "redis":
 		return NewRedisDatabase()
 	case "ldb":
 		//dirname, _ := ioutil.TempDir(os.TempDir(), "test_")
-		var err error = nil
-		if Db == nil {
-			dirname := "database"
-			Db, err = NewLDBDatabase(dirname, 0, 0)
-		}
+		dirname := "database"
+		Db, err := NewLDBDatabase(dirname, 0, 0)
 		return Db, err
 	case "mem":
 		db, err := NewMemDatabase()
