@@ -32,7 +32,7 @@ type Router interface {
 	CancelDownload(start, end uint64) error
 }
 
-var Route *Router
+var Route Router
 var once sync.Once
 
 func GetInstance(conf *NetConifg, target string, port uint16) (router *Router, err error) {
