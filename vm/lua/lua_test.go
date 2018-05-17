@@ -134,7 +134,7 @@ end`,
 	})
 
 	Convey("Test of Lua value converter", t, func() {
-		Convey("Lua to core", func() {
+		Convey("Lua to core", func() { // todo core2lua的测试平台
 			Convey("string", func() {
 				lstr := lua.LString("hello")
 				cstr := Lua2Core(lstr)
