@@ -7,10 +7,10 @@ import (
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
-	//"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
-	//"github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/network"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/prototype/rpc CliServer
@@ -32,22 +32,22 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	if err != nil {
 		return &Response{Code: -1}, err
 	}
-	/*
-		err = tx1.VerifySelf() //verify Publisher and Signers
-		if err != nil {
-			return &Response{Code: -1}, err
-		}
-		//broadcast the tx
-		router := network.Route
-		if router == nil {
-			panic(fmt.Errorf("network.Router shouldn't be nil"))
-		}
-		broadTx := message.Message{
-			Body:    tx1.Encode(),
-			ReqType: int32(network.ReqPublishTx),
-		}
-		router.Broadcast(broadTx)
-	*/
+
+	err = tx1.VerifySelf() //verify Publisher and Signers
+	if err != nil {
+		return &Response{Code: -1}, err
+	}
+	//broadcast the tx
+	router := network.Route
+	if router == nil {
+		panic(fmt.Errorf("network.Router shouldn't be nil"))
+	}
+	broadTx := message.Message{
+		Body:    tx1.Encode(),
+		ReqType: int32(network.ReqPublishTx),
+	}
+	router.Broadcast(broadTx)
+
 	//add this tx to txpool
 	tp, err := tx.TxPoolFactory("mem") //TODO:in fact,we should find the txpool_mem,not create a new txpool_mem
 	if err != nil {
