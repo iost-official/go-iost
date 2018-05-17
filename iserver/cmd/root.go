@@ -114,7 +114,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		blockChain, err := block.GetInstance()
+		blockChain, err := block.Instance()
 		if err != nil {
 			fmt.Printf("NewBlockChain failed, stop the program! err:%v", err)
 			os.Exit(1)
