@@ -125,9 +125,9 @@ func (s *HttpServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, er
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 
-	bc, err := block.NewBlockChain() //we should get the instance of Chain,not to Create it again in the real version
-	if err != nil {
-		return nil, err
+	bc := block.BChain //we should get the instance of Chain,not to Create it again in the real version
+	if bc == nil {
+		panic(fmt.Errorf("block.BChain cannot be nil"))
 	}
 	layer := bk.Layer //I think bk.Layer should be uint64,because bc.Length() is uint64
 	curLen := bc.Length()
