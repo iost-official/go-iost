@@ -25,11 +25,19 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/account"
+	"os/signal"
+	"syscall"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/consensus"
 )
 
 var cfgFile string
+
+type ServerExit interface {
+	Stop()
+}
+
+var serverExit []ServerExit
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -41,8 +49,8 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		fmt.Printf("Version:  %v\n", "1.0")
-		//初始化网络
 
+		//初始化网络
 		fmt.Println("1.Start the P2P networks")
 
 		logPath := viper.GetString("net.log-path")
@@ -64,18 +72,20 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if _, err := network.GetInstance(
+		net, err := network.GetInstance(
 			&network.NetConifg{
 				LogPath:       logPath,
 				NodeTablePath: nodeTablePath,
 				NodeID:        nodeID,
 				ListenAddr:    listenAddr},
 			target,
-			uint16(port)); err != nil {
+			uint16(port))
+		if err != nil {
 
 			fmt.Printf("Network initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
+		serverExit = append(serverExit, net)
 
 		//启动共识
 		fmt.Println("2.Start Consensus Services")
@@ -92,14 +102,14 @@ var rootCmd = &cobra.Command{
 		//fmt.Printf("account SecKey = %v\n", common.Base58Encode(acc.Seckey))
 		fmt.Printf("account ID = %v\n", acc.ID)
 
-		blockChain, err := block.NewBlockChain()
-		if err != nil {
-			fmt.Printf("NewBlockChain failed, stop the program! err:%v", err)
+		if state.StdPool == nil {
+			fmt.Printf("StdPool initialization failed, stop the program!")
 			os.Exit(1)
 		}
 
-		if state.StdPool == nil {
-			fmt.Printf("StdPool initialization failed, stop the program!")
+		blockChain, err := block.NewBlockChain()
+		if err != nil {
+			fmt.Printf("NewBlockChain failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 
@@ -116,12 +126,37 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("consensus initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-		consensus.Stop()
+
+		serverExit = append(serverExit, consensus)
 		//启动RPC
+		//rpc.Server()
 
 		//等待推出信号
-
+		exitLoop()
 	},
+}
+
+func exitLoop() {
+	exit := make(chan bool)
+	c := make(chan os.Signal, 1)
+
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+	defer signal.Stop(c)
+	defer close(exit)
+
+	go func() {
+
+		<- c
+		fmt.Printf("iserver received interrupt, shutting down...")
+
+		for _, s := range serverExit {
+			s.Stop()
+		}
+
+		os.Exit(0)
+	}()
+
+	<-exit
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

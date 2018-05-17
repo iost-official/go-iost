@@ -6,14 +6,12 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 )
 
 var (
 	blockLength    = []byte("BlockLength")    //blockLength -> length of ChainImpl
-	blockStatePool = []byte("BlockStatePool") //blockStatePool -> state pool of the last block
 
 	blockNumberPrefix = []byte("n") //blockNumberPrefix + block number -> block hash
 	blockPrefix       = []byte("H") //blockHashPrefix + block hash -> block data
@@ -24,7 +22,6 @@ type ChainImpl struct {
 	db     db.Database
 	length uint64
 	tx     tx.TxPool
-	state  state.Pool // todo 分离这两部分
 }
 
 var chainImpl *ChainImpl
@@ -35,7 +32,7 @@ var once sync.Once
 func NewBlockChain() (chain Chain, error error) {
 
 	once.Do(func() {
-		ldb, err := db.DatabaseFactor("ldb")
+		ldb, err := db.NewLDBDatabase("blockDB", 0, 0)
 		if err != nil {
 			error = fmt.Errorf("failed to init db %v", err)
 		}
@@ -69,7 +66,7 @@ func NewBlockChain() (chain Chain, error error) {
 		}
 
 		chainImpl = new(ChainImpl)
-		chainImpl = &ChainImpl{db: ldb, length: length, state: nil, tx: tx}
+		chainImpl = &ChainImpl{db: ldb, length: length, tx: tx}
 	})
 
 	return chainImpl, error
