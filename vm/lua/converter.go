@@ -3,6 +3,8 @@ package lua
 import (
 	"fmt"
 
+	"reflect"
+
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
 )
@@ -11,10 +13,12 @@ func Lua2Core(value lua.LValue) state.Value {
 	var v state.Value
 	switch value.(type) {
 	case lua.LNumber:
-		vl := value.(*lua.LNumber)
-		v = state.MakeVFloat(float64(*vl))
+		vl := value.(lua.LNumber)
+		v = state.MakeVFloat(float64(vl))
+		return v
 	case lua.LString:
 		v = state.MakeVString(value.String())
+		return v
 	case lua.LBool:
 		if value == lua.LTrue {
 			v = state.VTrue
@@ -23,7 +27,7 @@ func Lua2Core(value lua.LValue) state.Value {
 		}
 		return v
 	}
-	panic(fmt.Errorf("not support convertion: %v", value.Type()))
+	panic(fmt.Errorf("not support convertion: %v", reflect.TypeOf(value).String()))
 
 }
 
@@ -33,8 +37,10 @@ func Core2Lua(value state.Value) lua.LValue {
 	case *state.VInt:
 		vl := value.(*state.VInt)
 		v = lua.LNumber(vl.ToInt())
+		return v
 	case *state.VString:
 		v = lua.LString([]rune(value.EncodeString())[1:])
+		return v
 	case *state.VBool:
 		if value == state.VTrue {
 			v = lua.LTrue

@@ -74,7 +74,7 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, err
 	} else {
 		contract = vmh.contract
 	}
-	return contract.Api(methodName)
+	return contract.API(methodName)
 }
 
 func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) { // todo 权限检查
@@ -98,7 +98,7 @@ func FindContract(contractPrefix string) (vm.Contract, error) {
 	return "hi " .. name
 end`
 	sayHi := lua.NewMethod("sayHi", 1, 1)
-	lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Sender: vm.IOSTAccount("ahaha")},
+	lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
 		code2, sayHi, sayHi)
 	return &lc2, nil
 }

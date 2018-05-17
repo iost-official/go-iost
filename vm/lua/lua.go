@@ -16,6 +16,7 @@ type api struct {
 	function func(L *lua.LState) int
 }
 
+// VM lua 虚拟机的实现
 type VM struct {
 	APIs []api
 	L    *lua.LState
@@ -45,7 +46,7 @@ func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]st
 		l.cachePool = pool.Copy()
 	}
 
-	method0, err := l.Contract.Api(methodName)
+	method0, err := l.Contract.API(methodName)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -190,7 +191,7 @@ func (l *VM) PC() uint64 {
 }
 
 func CheckPrivilege(info vm.ContractInfo, name string) int {
-	if vm.IOSTAccount(name) == info.Sender {
+	if vm.IOSTAccount(name) == info.Publisher {
 		return 2
 	}
 	for _, signer := range info.Signers {
