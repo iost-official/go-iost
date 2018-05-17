@@ -9,7 +9,9 @@ import (
 )
 
 var (
-	ErrNoMain      = errors.New("parse failed: no main function")
+	// ErrNoMain 代码中未包含main函数
+	ErrNoMain = errors.New("parse failed: no main function")
+	// ErrIllegalCode 代码中包含\\0字符
 	ErrIllegalCode = errors.New("parse failed: Text contains character \\0")
 )
 
