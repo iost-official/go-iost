@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	blockLength    = []byte("BlockLength")    //blockLength -> length of ChainImpl
+	blockLength = []byte("BlockLength") //blockLength -> length of ChainImpl
 
 	blockNumberPrefix = []byte("n") //blockNumberPrefix + block number -> block hash
 	blockPrefix       = []byte("H") //blockHashPrefix + block hash -> block data
@@ -24,17 +24,17 @@ type ChainImpl struct {
 	tx     tx.TxPool
 }
 
-var chainImpl *ChainImpl
-
+var BChain Chain
 var once sync.Once
 
-// NewBlockChain 创建一个blockChain实例,单例模式
-func NewBlockChain() (chain Chain, error error) {
-
+// GetInstance 创建一个blockChain实例,单例模式
+func GetInstance() (BChain Chain, err error) {
 	once.Do(func() {
-		ldb, err := db.NewLDBDatabase("blockDB", 0, 0)
-		if err != nil {
-			error = fmt.Errorf("failed to init db %v", err)
+
+		ldb, er := db.NewLDBDatabase("blockDB", 0, 0)
+		if er != nil {
+			 err = fmt.Errorf("failed to init db %v", err)
+			 return
 		}
 		//defer ldb.Close()
 
@@ -42,9 +42,10 @@ func NewBlockChain() (chain Chain, error error) {
 		var lenByte = make([]byte, 128)
 
 		if ok, _ := ldb.Has(blockLength); ok {
-			lenByte, err := ldb.Get(blockLength)
-			if err != nil {
-				error = fmt.Errorf("failed to Get blockLength")
+			lenByte, er := ldb.Get(blockLength)
+			if er != nil {
+				err = fmt.Errorf("failed to Get blockLength")
+				return
 			}
 
 			length = binary.BigEndian.Uint64(lenByte)
@@ -54,22 +55,23 @@ func NewBlockChain() (chain Chain, error error) {
 			length = 0
 			binary.BigEndian.PutUint64(lenByte, length)
 
-			err := ldb.Put(blockLength, lenByte)
-			if err != nil {
-				error = fmt.Errorf("failed to Put blockLength")
+			er := ldb.Put(blockLength, lenByte)
+			if er != nil {
+				err = fmt.Errorf("failed to Put blockLength")
+				return
 			}
 		}
 
-		tx, err := tx.NewTxPoolDb()
-		if err != nil {
-			error = fmt.Errorf("failed to NewTxPoolDb: [%v]", err)
+		tx, er := tx.NewTxPoolDb()
+		if er != nil {
+			err = fmt.Errorf("failed to NewTxPoolDb: [%v]", err)
+			return
 		}
 
-		chainImpl = new(ChainImpl)
-		chainImpl = &ChainImpl{db: ldb, length: length, tx: tx}
+		BChain = &ChainImpl{db: ldb, length: length, tx: tx}
 	})
 
-	return chainImpl, error
+	return
 }
 
 // Push 保存一个block到实例

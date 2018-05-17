@@ -27,8 +27,6 @@ import (
 	"github.com/iost-official/prototype/account"
 	"os/signal"
 	"syscall"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/consensus"
 )
 
 var cfgFile string
@@ -92,8 +90,12 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("Network initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
+		//net.Stop()
 		serverExit = append(serverExit, net)
 
+		for _, s := range serverExit {
+			s.Stop()
+		}
 		//启动共识
 		fmt.Println("2.Start Consensus Services")
 		accSecKey := viper.GetString("account.sec-key")
@@ -114,11 +116,11 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		blockChain, err := block.NewBlockChain()
-		if err != nil {
-			fmt.Printf("NewBlockChain failed, stop the program! err:%v", err)
-			os.Exit(1)
-		}
+		//blockChain, err := block.GetInstance()
+		//if err != nil {
+		//	fmt.Printf("NewBlockChain failed, stop the program! err:%v", err)
+		//	os.Exit(1)
+		//}
 
 		witnessList := viper.GetStringSlice("consensus.witness-list")
 
@@ -126,15 +128,15 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("witnessList[%v] = %v\n", i, witness)
 		}
 
-		consensus, err := consensus.ConsensusFactory(
-			consensus.CONSENSUS_DPOS,
-			acc, blockChain, state.StdPool, witnessList)
-		if err != nil {
-			fmt.Printf("consensus initialization failed, stop the program! err:%v", err)
-			os.Exit(1)
-		}
-
-		serverExit = append(serverExit, consensus)
+		//consensus, err := consensus.ConsensusFactory(
+		//	consensus.CONSENSUS_DPOS,
+		//	acc, blockChain, state.StdPool, witnessList)
+		//if err != nil {
+		//	fmt.Printf("consensus initialization failed, stop the program! err:%v", err)
+		//	os.Exit(1)
+		//}
+		//
+		//serverExit = append(serverExit, consensus)
 		//启动RPC
 		//rpc.Server()
 
