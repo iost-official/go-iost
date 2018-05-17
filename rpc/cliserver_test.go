@@ -3,9 +3,11 @@ package rpc
 import (
 	"context"
 
-	//"github.com/golang/mock/gomock"
-	//"github.com/iost-official/prototype/rpc/mock_rpc"
+	"github.com/golang/mock/gomock"
+	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/network/mocks"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
@@ -14,47 +16,49 @@ import (
 
 func TestHttpServer(t *testing.T) {
 	Convey("Test of HttpServer", t, func() {
-		/*
-			ctl := gomock.NewController(t)
-			mockCtx := rpc_mock.mockContext(ctl)
-		*/
+		main := lua.NewMethod("main", 0, 1)
+		code := `function main()
+					Put("hello", "world")
+					return "success"
+				end`
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+
+		_tx := tx.NewTx(int64(0), &lc)
+		acc, _ := account.NewAccount(nil)
+		a1, _ := account.NewAccount(nil)
+		sig1, _ := tx.SignContract(_tx, a1)
+		_tx, _ = tx.SignTx(_tx, acc, sig1)
+
 		Convey("Test of PublishTx", func() {
 
-			main := lua.NewMethod("main", 0, 1)
-			code := `function main()
-						Put("hello", "world")
-						return "success"
-					end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+			ctl := gomock.NewController(t)
+			mockRouter := protocol_mock.NewMockRouter(ctl)
+			mockRouter.EXPECT().Broadcast(gomock.Any()).AnyTimes().Return()
+			network.Route = mockRouter
 
-			tx := tx.NewTx(int64(0), &lc)
-			txpb := Transaction{Tx: tx.Encode()}
+			txpb := Transaction{Tx: _tx.Encode()}
+
 			hs := new(HttpServer)
 			res, err := hs.PublishTx(context.Background(), &txpb)
 			So(err, ShouldBeNil)
 			So(res.Code, ShouldEqual, 0)
 		})
+
+		Convey("Test of GetTransaction", func() {
+			txdb, err := tx.NewTxPoolDb()
+
+			err = txdb.Add(&_tx)
+			So(err, ShouldBeNil)
+
+			txkey := TransactionKey{
+				Publisher: string(_tx.Publisher.Encode()),
+				Nonce:     _tx.Nonce,
+			}
+			hs := new(HttpServer)
+			_, err = hs.GetTransaction(context.Background(), &txkey)
+			So(err, ShouldBeNil)
+		})
 		/*
-			Convey("Test of GetTransaction", func() {
-				txpooldb, err := TxPoolFactory("db")
-
-				main := lua.NewMethod("main", 0, 1)
-				code := `function main()
-							Put("hello", "world")
-							return "success"
-						end`
-				lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
-
-				tx := NewTx(int64(0), &lc)
-				_, err = txpooldb.Has(&tx)
-				So(err, ShouldBeNil)
-				txpooldb.Add(&tx)
-
-				_, err = txpooldb.Has(&tx)
-				So(err, ShouldBeNil)
-				//txpooldb.(*TxPoolDb).Close()
-			})
-
 			Convey("Test of GetBalance", func() {
 				txpooldb, err := NewTxPoolDb()
 				main := lua.NewMethod("main", 0, 1)

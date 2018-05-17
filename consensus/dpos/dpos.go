@@ -162,7 +162,6 @@ func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
 	verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 		// verify block head
-
 		if err := VerifyBlockHead(blk, parent); err != nil {
 			return nil, err
 		}
@@ -204,6 +203,9 @@ func (p *DPoS) blockLoop() {
 					if need {
 						go p.synchronizer.SyncBlocks(start, end)
 					}
+				}
+				if err == nil {
+					p.router.Broadcast(req)
 				}
 			}
 			ts := Timestamp{blk.Head.Time}
@@ -290,7 +292,7 @@ func generateHeadInfo(head block.BlockHead) []byte {
 	info = append(info, head.ParentHash...)
 	info = append(info, head.TreeHash...)
 	info = append(info, head.Info...)
-	return info
+	return common.Sha256(info)
 }
 
 // 测试函数，用来将info和vote消息进行转换，在块被确认时被调用

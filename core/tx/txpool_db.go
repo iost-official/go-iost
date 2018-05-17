@@ -37,6 +37,9 @@ func (tp *TxPoolDb) Add(tx *Tx) error {
 	binary.BigEndian.PutUint64(NonceRaw, uint64(tx.Nonce))
 
 	err = tp.db.Put(append(PNPrefix, append(NonceRaw, PubRaw...)...), hash)
+
+	//fmt.Println(append(PNPrefix, append(NonceRaw, PubRaw...)...))
+
 	if err != nil {
 		return fmt.Errorf("failed to Put NP->hash: %v", err)
 	}
@@ -67,16 +70,18 @@ func (tp *TxPoolDb) Get(hash []byte) (*Tx, error) {
 
 //Get Tx by its Publisher and Nonce
 func (tp *TxPoolDb) GetByPN(Nonce int64, Publisher common.Signature) (*Tx, error) {
-	tx := new(Tx)
-	PubRaw := tx.Publisher.Encode()
+	PubRaw := Publisher.Encode()
 	NonceRaw := make([]byte, 8)
-	binary.BigEndian.PutUint64(NonceRaw, uint64(tx.Nonce))
+	binary.BigEndian.PutUint64(NonceRaw, uint64(Nonce))
 	hash, err := tp.db.Get(append(PNPrefix, append(NonceRaw, PubRaw...)...))
+	
+	//fmt.Println(append(PNPrefix, append(NonceRaw, PubRaw...)...))
+	
 	if err != nil {
 
 		return nil, fmt.Errorf("failed to Get the tx hash: %v", err)
 	}
-	tx, err = tp.Get(hash)
+	tx, err := tp.Get(hash)
 	if err != nil {
 		return nil, err
 	}

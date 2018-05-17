@@ -17,6 +17,8 @@ import (
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
 	"time"
+	"github.com/iost-official/prototype/consensus/common"
+	"github.com/iost-official/prototype/common"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -82,9 +84,9 @@ func TestRunGenerateBlock(t *testing.T) {
 		defer guard.Unpatch()
 
 		heightChan := make(chan message.Message, 1)
-		blkChan := make(chan message.Message, 1)
+		blkSyncChan := make(chan message.Message, 1)
 		mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blkSyncChan, nil)
 
 		//设置第一个通道txchan
 		txChan := make(chan message.Message, 1)
@@ -100,7 +102,9 @@ func TestRunGenerateBlock(t *testing.T) {
 			genesis = block
 			return nil
 		})
-		p, _ := NewDPoS(account.Account{"id0", []byte("pubkey"), []byte("seckey")}, mockBc, mockPool, []string{"id0", "id1", "id2"})
+		seckey := common.Sha256([]byte("SeckeyId0"))
+		pubkey := common.CalcPubkeyInSecp256k1(seckey)
+		p, _ := NewDPoS(account.Account{"id0", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
 
 		main := lua.NewMethod("main", 0, 1)
 		code := `function main()
@@ -118,6 +122,7 @@ func TestRunGenerateBlock(t *testing.T) {
 			Body:    newTx.Encode()}
 
 		mockBc.EXPECT().Top().Return(genesis).AnyTimes()
+		mockPool.EXPECT().Copy().Return(nil).AnyTimes()
 
 		var blk block.Block
 		var reqType network.ReqType
@@ -128,6 +133,100 @@ func TestRunGenerateBlock(t *testing.T) {
 		p.Run()
 
 		time.Sleep(time.Second * 2)
+		So(reqType, ShouldEqual, network.ReqNewBlock)
+		So(blk.Head.Number, ShouldEqual, 1)
+		So(string(blk.Head.ParentHash), ShouldEqual, string(genesis.Head.Hash()))
+		So(blk.Head.Witness, ShouldEqual, "id0")
+
+		p.Stop()
+
+	})
+
+}
+
+func TestRunReceiveBlock(t *testing.T) {
+	Convey("Test of Run (Receive Block)", t, func() {
+		mockCtr := NewController(t)
+		mockRouter := protocol_mock.NewMockRouter(mockCtr)
+		mockBc := core_mock.NewMockChain(mockCtr)
+		mockPool := core_mock.NewMockPool(mockCtr)
+
+		//获取router实例
+		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
+			return mockRouter, nil
+		})
+
+		defer guard.Unpatch()
+
+		heightChan := make(chan message.Message, 1)
+		blkSyncChan := make(chan message.Message, 1)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blkSyncChan, nil)
+
+		//设置第一个通道txchan
+		txChan := make(chan message.Message, 1)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
+
+		//设置第二个通道Blockchan
+		blkChan := make(chan message.Message, 1)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
+
+		mockBc.EXPECT().GetBlockByNumber(Eq(uint64(0))).Return(nil)
+		var genesis *block.Block
+		mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
+			genesis = block
+			return nil
+		})
+		seckey := common.Sha256([]byte("SeckeyId1"))
+		pubkey := common.CalcPubkeyInSecp256k1(seckey)
+		p, _ := NewDPoS(account.Account{"id1", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
+
+		main := lua.NewMethod("main", 0, 1)
+		code := `function main()
+						Put("hello", "world")
+						return "success"
+					end`
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+		newTx := tx.NewTx(0, &lc)
+		//构造测试数据
+		txChan <- message.Message{
+			Time:    20180426111111,
+			From:    "0xaaaaaaaaaaaaa",
+			To:      "0xbbbbbbbbbbbb",
+			ReqType: 1,
+			Body:    newTx.Encode()}
+
+		mockBc.EXPECT().Top().Return(genesis).AnyTimes()
+		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
+		mockPool.EXPECT().Copy().Return(nil).AnyTimes()
+
+		blk := block.Block{
+			Head: block.BlockHead{
+				Number: 1,
+				ParentHash: genesis.Head.Hash(),
+				Witness: "id0",
+				Time: consensus_common.GetCurrentTimestamp().Slot,
+			},
+		}
+		headInfo := generateHeadInfo(blk.Head)
+		sig, _ := common.Sign(common.Secp256k1, headInfo, common.Sha256([]byte("SeckeyId0")))
+		blk.Head.Signature = sig.Encode()
+		blkChan <- message.Message{
+			Time: time.Now().Unix(),
+			From: "id0",
+			To:	"id1",
+			ReqType: int32(network.ReqNewBlock),
+			Body: blk.Encode(),
+		}
+
+		var reqType network.ReqType
+		mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
+			reqType = network.ReqType(req.ReqType)
+			blk.Decode(req.Body)
+		}).AnyTimes()
+		p.Run()
+
+		time.Sleep(time.Second)
 		So(reqType, ShouldEqual, network.ReqNewBlock)
 		So(blk.Head.Number, ShouldEqual, 1)
 		So(string(blk.Head.ParentHash), ShouldEqual, string(genesis.Head.Hash()))
