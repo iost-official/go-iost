@@ -1,4 +1,4 @@
-package core
+package consensus
 
 import (
 	"github.com/iost-official/prototype/core/block"
