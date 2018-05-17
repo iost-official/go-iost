@@ -38,7 +38,7 @@ type DPoS struct {
 func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
 	p.Account = acc
-	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3+1)
+	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
 	if bc.GetBlockByNumber(0) == nil {
 		p.genesis(0)
 	}
@@ -196,7 +196,9 @@ func (p *DPoS) blockLoop() {
 			blk.Decode(req.Body)
 			err := p.blockCache.Add(&blk, verifyFunc)
 			if err != ErrBlock && err != ErrTooOld {
-				p.globalDynamicProperty.update(&blk.Head)
+				if blk.Head.Witness != p.account.ID {
+					p.globalDynamicProperty.update(&blk.Head)
+				}
 				if err == ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
