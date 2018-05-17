@@ -32,6 +32,8 @@ import (
 )
 
 var cfgFile string
+var logFile string
+var dbFile string
 
 type ServerExit interface {
 	Stop()
@@ -42,13 +44,18 @@ var serverExit []ServerExit
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "iserver",
-	Short: "Blockchain system",
-	Long:  `Blockchain system`,
+	Short: "IOST server",
+	Long: `IOST server`,
+
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
 
 		fmt.Printf("Version:  %v\n", "1.0")
+
+		fmt.Println("cfgFile: ",viper.GetString("config"))
+		fmt.Println("logFile: ",viper.GetString("log"))
+		fmt.Println("dbFile: ",viper.GetString("db"))
 
 		//初始化网络
 		fmt.Println("1.Start the P2P networks")
@@ -133,6 +140,7 @@ var rootCmd = &cobra.Command{
 
 		//等待推出信号
 		exitLoop()
+
 	},
 }
 
@@ -145,7 +153,6 @@ func exitLoop() {
 	defer close(exit)
 
 	go func() {
-
 		<- c
 		fmt.Printf("iserver received interrupt, shutting down...")
 
@@ -175,6 +182,11 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.iserver.yaml)")
+	rootCmd.PersistentFlags().StringVar(&logFile,"log","","log file (default is ./iserver.log)")
+	rootCmd.PersistentFlags().StringVar(&dbFile,"db","","database file (default is ./data.db)")
+	viper.BindPFlag("config",rootCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag("log",rootCmd.PersistentFlags().Lookup("log"))
+	viper.BindPFlag("db",rootCmd.PersistentFlags().Lookup("db"))
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -201,9 +213,12 @@ func initConfig() {
 
 	viper.AutomaticEnv() // read in environment variables that match
 
+	//fmt.Println(cfgFile)
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}else{
+		fmt.Println(err)
 	}
 
 }
