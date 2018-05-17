@@ -25,8 +25,8 @@ type HttpServer struct {
 }
 
 // newHttpServer 初始Http RPC结构体
-func newHttpServer() *HttpServer{
-	s:= &HttpServer{}
+func newHttpServer() *HttpServer {
+	s := &HttpServer{}
 	return s
 }
 
@@ -75,7 +75,10 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 	Nonce := txkey.Nonce
 	//check Publisher and Nonce in txkey
 
-	txDb, err := tx.NewTxPoolDb() //TODO:in fact,we should find the txpool_db,not create a new txpool_db
+	txDb := tx.TxDb
+	if txDb == nil {
+		panic(fmt.Errorf("TxDb should be nil"))
+	}
 	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, Pub)
 	if err != nil {
 		return nil, err
