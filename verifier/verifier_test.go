@@ -51,7 +51,7 @@ func TestCacheVerifier(t *testing.T) {
 	Put("hello", "world")
 	return "success"
 end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 			cv := NewCacheVerifier(pool)
 			_, err := cv.VerifyContract(&lc, true)
@@ -86,7 +86,7 @@ func TestBlockVerifier(t *testing.T) {
 	Put("hello", "world")
 	return "success"
 end`
-		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 		code1 := `function main()
 	return Call("con2", "sayHi", "bob")
@@ -94,7 +94,7 @@ end`
 
 		main2 := lua.NewMethod("main", 0, 1)
 
-		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "test2", GasLimit: 1000, Price: 1, Sender: vm.IOSTAccount("ahaha")},
+		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "test2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
 			code1, main2)
 
 		tx1 := tx.NewTx(1, &lc1)
@@ -122,7 +122,7 @@ func BenchmarkCacheVerifier_TransferOnly(b *testing.B) {
 	code := `function main()
 	Transfer("a", "b", 50)
 end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("a")}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 
 	dbx, err := db.DatabaseFactor("redis")
 	if err != nil {

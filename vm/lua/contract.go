@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/prototype/vm"
 )
 
+// Contract lua智能合约的实现
 type Contract struct {
 	info vm.ContractInfo
 	code string
@@ -21,12 +22,12 @@ func (c *Contract) SetPrefix(prefix string) {
 	c.info.Prefix = prefix
 }
 func (c *Contract) SetSender(sender vm.IOSTAccount) {
-	c.info.Sender = sender
+	c.info.Publisher = sender
 }
 func (c *Contract) AddSigner(signer vm.IOSTAccount) {
 	c.info.Signers = append(c.info.Signers, signer)
 }
-func (c *Contract) Api(apiName string) (vm.Method, error) {
+func (c *Contract) API(apiName string) (vm.Method, error) {
 	if apiName == "main" {
 		return &c.main, nil
 	}

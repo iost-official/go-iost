@@ -40,7 +40,7 @@ type CacheVerifier struct {
 //
 // 取得tx中的Contract的方法： tx.Contract
 func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (state.Pool, error) {
-	sender := contract.Info().Sender
+	sender := contract.Info().Publisher
 	var balanceOfSender float64
 	val0, err := cv.Pool.GetHM("iost", state.Key(sender))
 	if err != nil {

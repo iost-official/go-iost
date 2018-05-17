@@ -30,10 +30,10 @@ end`
 		sayHi := lua.NewMethod("sayHi", 1, 1)
 		main := lua.NewMethod("main", 0, 1)
 
-		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "con1", GasLimit: 1000, Price: 1, Sender: vm.IOSTAccount("ahaha")},
+		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "con1", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
 			code1, main)
 
-		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Sender: vm.IOSTAccount("ahaha")},
+		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
 			code2, sayHi, sayHi)
 		//
 		//guard := monkey.Patch(FindContract, func(prefix string) vm.Contract { return &lc2 })
