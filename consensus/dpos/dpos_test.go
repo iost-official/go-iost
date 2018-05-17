@@ -19,6 +19,7 @@ import (
 	"time"
 	"github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/common"
+	"bytes"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -200,24 +201,8 @@ func TestRunReceiveBlock(t *testing.T) {
 		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
 		mockPool.EXPECT().Copy().Return(nil).AnyTimes()
 
-		blk := block.Block{
-			Head: block.BlockHead{
-				Number: 1,
-				ParentHash: genesis.Head.Hash(),
-				Witness: "id0",
-				Time: consensus_common.GetCurrentTimestamp().Slot,
-			},
-		}
-		headInfo := generateHeadInfo(blk.Head)
-		sig, _ := common.Sign(common.Secp256k1, headInfo, common.Sha256([]byte("SeckeyId0")))
-		blk.Head.Signature = sig.Encode()
-		blkChan <- message.Message{
-			Time: time.Now().Unix(),
-			From: "id0",
-			To:	"id1",
-			ReqType: int32(network.ReqNewBlock),
-			Body: blk.Encode(),
-		}
+		blk, msg := generateTestBlockMsg("id0", "seckeyId0", 1, genesis.Head.Hash())
+		blkChan <- msg
 
 		var reqType network.ReqType
 		mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
@@ -236,4 +221,132 @@ func TestRunReceiveBlock(t *testing.T) {
 
 	})
 
+}
+
+func TestRunMultipleBlocks(t *testing.T) {
+	Convey("Test of Run (Multiple Blocks)", t, func() {
+		mockCtr := NewController(t)
+		mockRouter := protocol_mock.NewMockRouter(mockCtr)
+		mockBc := core_mock.NewMockChain(mockCtr)
+		mockPool := core_mock.NewMockPool(mockCtr)
+
+		//获取router实例
+		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
+			return mockRouter, nil
+		})
+
+		defer guard.Unpatch()
+
+		heightChan := make(chan message.Message, 1)
+		blkSyncChan := make(chan message.Message, 1)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blkSyncChan, nil)
+
+		//设置第一个通道txchan
+		txChan := make(chan message.Message, 1)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
+
+		//设置第二个通道Blockchan
+		blkChan := make(chan message.Message, 1)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
+
+		mockBc.EXPECT().GetBlockByNumber(Eq(uint64(0))).Return(nil)
+		var genesis *block.Block
+		mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
+			genesis = block
+			return nil
+		})
+		seckey := common.Sha256([]byte("SeckeyId1"))
+		pubkey := common.CalcPubkeyInSecp256k1(seckey)
+		p, _ := NewDPoS(account.Account{"id1", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
+
+		main := lua.NewMethod("main", 0, 1)
+		code := `function main()
+						Put("hello", "world")
+						return "success"
+					end`
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+		newTx := tx.NewTx(0, &lc)
+		//构造测试数据
+		txChan <- message.Message{
+			Time:    20180426111111,
+			From:    "0xaaaaaaaaaaaaa",
+			To:      "0xbbbbbbbbbbbb",
+			ReqType: 1,
+			Body:    newTx.Encode()}
+
+		mockBc.EXPECT().Top().Return(genesis).AnyTimes()
+		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
+		mockPool.EXPECT().Copy().Return(nil).AnyTimes()
+		mockPool.EXPECT().Flush().Return(nil).AnyTimes()
+		mockRouter.EXPECT().CancelDownload(Any(), Any()).Return(nil).AnyTimes()
+
+		blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
+		blkChan <- msg
+
+		var reqType network.ReqType
+		var reqBlk block.Block
+		mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
+			reqType = network.ReqType(req.ReqType)
+			reqBlk.Decode(req.Body)
+		}).AnyTimes()
+
+		var pushed int64
+		mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
+			pushed = block.Head.Number
+			return nil
+		})
+		p.Run()
+
+		time.Sleep(time.Second / 2)
+		// block 1 by id0
+		So(reqType, ShouldEqual, network.ReqNewBlock)
+		So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+
+		time.Sleep(time.Second * consensus_common.SlotLength)
+		// block 2 by id1, the node itself
+		So(reqType, ShouldEqual, network.ReqNewBlock)
+		So(reqBlk.Head.Number, ShouldEqual, 2)
+		So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
+		So(reqBlk.Head.Witness, ShouldEqual, "id1")
+
+		ts := consensus_common.GetCurrentTimestamp()
+		ts.Add(1)
+		len := ts.ToUnixSec() - time.Now().Unix()
+		time.Sleep(time.Second * time.Duration(len))
+		blk, msg = generateTestBlockMsg("id2", "SeckeyId2", 3, reqBlk.Head.Hash())
+		blkChan <- msg
+
+		time.Sleep(time.Second/2)
+		// block 3 by id2
+		So(reqType, ShouldEqual, network.ReqNewBlock)
+		So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+
+		So(pushed, ShouldEqual, 1)
+
+		p.Stop()
+
+	})
+}
+
+func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parentHash []byte) (block.Block, message.Message){
+	blk := block.Block{
+		Head: block.BlockHead{
+			Number: number,
+			ParentHash: parentHash,
+			Witness: witness,
+			Time: consensus_common.GetCurrentTimestamp().Slot,
+		},
+	}
+	headInfo := generateHeadInfo(blk.Head)
+	sig, _ := common.Sign(common.Secp256k1, headInfo, common.Sha256([]byte(secKeyRaw)))
+	blk.Head.Signature = sig.Encode()
+	msg := message.Message{
+		Time: time.Now().Unix(),
+		From: "",
+		To:	"",
+		ReqType: int32(network.ReqNewBlock),
+		Body: blk.Encode(),
+	}
+	return blk, msg
 }
