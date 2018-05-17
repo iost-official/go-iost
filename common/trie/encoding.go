@@ -7,10 +7,10 @@ func hexToCompact(hex []byte) []byte {
 		hex = hex[:len(hex)-1]
 	}
 	buf := make([]byte, len(hex)/2+1)
-	buf[0] = terminator << 5 // the flag byte
+	buf[0] = terminator << 5
 	if len(hex)&1 == 1 {
-		buf[0] |= 1 << 4 // odd flag
-		buf[0] |= hex[0] // first nibble is contained in the first byte
+		buf[0] |= 1 << 4
+		buf[0] |= hex[0]
 		hex = hex[1:]
 	}
 	decodeNibbles(hex, buf[1:])
@@ -40,8 +40,6 @@ func keybytesToHex(str []byte) []byte {
 	return nibbles
 }
 
-// hexToKeybytes ttes turns hex nibbles into key bytes.
-// This can only be used for keys of even length.
 func hexToKeybytes(hex []byte) []byte {
 	if hasTerm(hex) {
 		hex = hex[:len(hex)-1]
@@ -74,7 +72,6 @@ func prefixLen(a, b []byte) int {
 	return i
 }
 
-// hasTerm returns whether a hex key has the terminator flag.
 func hasTerm(s []byte) bool {
 	return len(s) > 0 && s[len(s)-1] == 16
 }
