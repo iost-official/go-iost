@@ -27,6 +27,9 @@ import (
 	"github.com/iost-official/prototype/account"
 	"os/signal"
 	"syscall"
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/consensus"
+	"github.com/iost-official/prototype/rpc"
 )
 
 var cfgFile string
@@ -43,7 +46,7 @@ var serverExit []ServerExit
 var rootCmd = &cobra.Command{
 	Use:   "iserver",
 	Short: "IOST server",
-	Long: `IOST server`,
+	Long:  `IOST server`,
 
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
@@ -51,9 +54,9 @@ var rootCmd = &cobra.Command{
 
 		fmt.Printf("Version:  %v\n", "1.0")
 
-		fmt.Println("cfgFile: ",viper.GetString("config"))
-		fmt.Println("logFile: ",viper.GetString("log"))
-		fmt.Println("dbFile: ",viper.GetString("db"))
+		fmt.Println("cfgFile: ", viper.GetString("config"))
+		fmt.Println("logFile: ", viper.GetString("log"))
+		fmt.Println("dbFile: ", viper.GetString("db"))
 
 		//初始化网络
 		fmt.Println("1.Start the P2P networks")
@@ -86,16 +89,11 @@ var rootCmd = &cobra.Command{
 			target,
 			uint16(port))
 		if err != nil {
-
 			fmt.Printf("Network initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-		//net.Stop()
 		serverExit = append(serverExit, net)
 
-		for _, s := range serverExit {
-			s.Stop()
-		}
 		//启动共识
 		fmt.Println("2.Start Consensus Services")
 		accSecKey := viper.GetString("account.sec-key")
@@ -116,11 +114,11 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		//blockChain, err := block.GetInstance()
-		//if err != nil {
-		//	fmt.Printf("NewBlockChain failed, stop the program! err:%v", err)
-		//	os.Exit(1)
-		//}
+		blockChain, err := block.GetInstance()
+		if err != nil {
+			fmt.Printf("NewBlockChain failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
 
 		witnessList := viper.GetStringSlice("consensus.witness-list")
 
@@ -128,17 +126,21 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("witnessList[%v] = %v\n", i, witness)
 		}
 
-		//consensus, err := consensus.ConsensusFactory(
-		//	consensus.CONSENSUS_DPOS,
-		//	acc, blockChain, state.StdPool, witnessList)
-		//if err != nil {
-		//	fmt.Printf("consensus initialization failed, stop the program! err:%v", err)
-		//	os.Exit(1)
-		//}
-		//
-		//serverExit = append(serverExit, consensus)
+		consensus, err := consensus.ConsensusFactory(
+			consensus.CONSENSUS_DPOS,
+			acc, blockChain, state.StdPool, witnessList)
+		if err != nil {
+			fmt.Printf("consensus initialization failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
+		serverExit = append(serverExit, consensus)
 		//启动RPC
-		//rpc.Server()
+		err = rpc.Server()
+		if err != nil {
+			fmt.Printf("RPC initialization failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
 
 		//等待推出信号
 		exitLoop()
@@ -155,11 +157,13 @@ func exitLoop() {
 	defer close(exit)
 
 	go func() {
-		<- c
+		<-c
 		fmt.Printf("iserver received interrupt, shutting down...")
 
 		for _, s := range serverExit {
-			s.Stop()
+			if s != nil {
+				s.Stop()
+			}
 		}
 
 		os.Exit(0)
@@ -184,11 +188,11 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.iserver.yaml)")
-	rootCmd.PersistentFlags().StringVar(&logFile,"log","","log file (default is ./iserver.log)")
-	rootCmd.PersistentFlags().StringVar(&dbFile,"db","","database file (default is ./data.db)")
-	viper.BindPFlag("config",rootCmd.PersistentFlags().Lookup("config"))
-	viper.BindPFlag("log",rootCmd.PersistentFlags().Lookup("log"))
-	viper.BindPFlag("db",rootCmd.PersistentFlags().Lookup("db"))
+	rootCmd.PersistentFlags().StringVar(&logFile, "log", "", "log file (default is ./iserver.log)")
+	rootCmd.PersistentFlags().StringVar(&dbFile, "db", "", "database file (default is ./data.db)")
+	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag("log", rootCmd.PersistentFlags().Lookup("log"))
+	viper.BindPFlag("db", rootCmd.PersistentFlags().Lookup("db"))
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -219,7 +223,7 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}else{
+	} else {
 		fmt.Println(err)
 	}
 

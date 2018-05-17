@@ -24,6 +24,12 @@ type BInfo struct {
 type HttpServer struct {
 }
 
+// newHttpServer 初始Http RPC结构体
+func newHttpServer() *HttpServer{
+	s:= &HttpServer{}
+	return s
+}
+
 func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response, error) {
 
 	var tx1 tx.Tx
