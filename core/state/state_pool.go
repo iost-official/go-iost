@@ -83,7 +83,9 @@ func (p *PoolImpl) Delete(key Key) {
 }
 
 func (p *PoolImpl) Flush() error {
-	p.parent.Flush()
+	if p.parent != nil {
+		p.parent.Flush()
+	}
 	for k, v := range p.patch.m {
 		if v.Type() != Nil {
 			val0, err := p.db.Get(k)
