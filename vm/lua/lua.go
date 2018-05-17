@@ -21,12 +21,9 @@ type VM struct {
 	L    *lua.LState
 
 	cachePool state.Pool
-
-	monitor vm.Monitor
-
-	Contract *Contract
-
-	callerPC uint64
+	monitor   vm.Monitor
+	Contract  *Contract
+	callerPC  uint64
 }
 
 func (l *VM) Start() error {
@@ -162,7 +159,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 			method, err := l.monitor.GetMethod(blockName, methodName)
 
 			if err != nil {
-				L.Push(lua.LString("api not found"))
+				L.Push(lua.LString("api not found")) // todo 明确到底是什么错再返回
 				return 1
 			}
 

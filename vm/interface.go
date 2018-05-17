@@ -25,7 +25,7 @@ type IOSTAccount string
 //go:generate gencode go -schema=structs.schema -package=vm
 //go:generate mockgen -destination mocks/mock_contract.go -package vm_mock github.com/iost-official/prototype/vm Contract
 
-// code type, can be compile to contract
+// Code type, can be compile to contract
 // 代码类型的别名，可以编译为contract
 type Code string
 

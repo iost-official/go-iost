@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+var (
+	NoMainErr      = errors.New("parse failed: no main function")
+	IllegalCodeErr = errors.New("parse failed: Text contains character \\0")
+)
+
 type DocCommentParser struct {
 	text string // always ends with \0, which doesn't appear elsewhere
 
@@ -17,7 +22,7 @@ type DocCommentParser struct {
 func NewDocCommentParser(text string) (*DocCommentParser, error) {
 	parser := new(DocCommentParser)
 	if strings.Contains(text, "\\0") {
-		return nil, errors.New("Text contains character \\0, parse failed")
+		return nil, IllegalCodeErr
 	}
 	parser.text = text + "\\0"
 	return parser, nil
@@ -91,7 +96,7 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 	}
 
 	if !hasMain {
-		return nil, errors.New("No main function!, parse failed")
+		return nil, NoMainErr
 	}
 	contract.code = buffer.String()
 	return &contract, nil

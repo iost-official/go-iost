@@ -21,15 +21,6 @@ func (c *ContractInfo) toRaw() contractInfoRaw {
 	}
 }
 
-func (d *contractInfoRaw) toC() ContractInfo {
-	return ContractInfo{
-		Language: d.Language,
-		Version:  d.Version,
-		GasLimit: d.GasLimit,
-		Price:    d.Price,
-	}
-}
-
 func (c *ContractInfo) Encode() []byte {
 	cir := c.toRaw()
 	buf, err := cir.Marshal(nil)

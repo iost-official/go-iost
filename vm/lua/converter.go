@@ -1,6 +1,8 @@
 package lua
 
 import (
+	"fmt"
+
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
 )
@@ -19,8 +21,10 @@ func Lua2Core(value lua.LValue) state.Value {
 		} else {
 			v = state.VFalse
 		}
+		return v
 	}
-	return v
+	panic(fmt.Errorf("not support convertion: %v", value.Type()))
+
 }
 
 func Core2Lua(value state.Value) lua.LValue {
@@ -37,8 +41,9 @@ func Core2Lua(value state.Value) lua.LValue {
 		} else {
 			v = lua.LFalse
 		}
+		return v
 	}
-	return v
+	panic(fmt.Errorf("not support convertion: %v", value.Type()))
 }
 
 func Bool2Lua(b bool) lua.LValue {
@@ -49,4 +54,5 @@ func Bool2Lua(b bool) lua.LValue {
 		rtnl = lua.LFalse
 	}
 	return rtnl
+
 }
