@@ -28,7 +28,7 @@ var BChain Chain
 var once sync.Once
 
 // GetInstance 创建一个blockChain实例,单例模式
-func GetInstance() (BChain Chain, err error) {
+func Instance() (Chain Chain, err error) {
 	once.Do(func() {
 
 		ldb, er := db.NewLDBDatabase("blockDB", 0, 0)
@@ -68,7 +68,8 @@ func GetInstance() (BChain Chain, err error) {
 			return
 		}
 
-		BChain = &ChainImpl{db: ldb, length: length, tx: tx}
+		Chain = &ChainImpl{db: ldb, length: length, tx: tx}
+		BChain = Chain
 	})
 
 	return
