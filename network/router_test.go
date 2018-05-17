@@ -68,7 +68,7 @@ func newRouters(n int) []Router {
 	rs := make([]Router, 0)
 	for i := 0; i < n; i++ {
 		router, _ := RouterFactory("base")
-		baseNet, _ := NewBaseNetwork(&NetConifg{ListenAddr: "127.0.0.1"})
+		baseNet, _ := NewBaseNetwork(&NetConifg{ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_" + strconv.Itoa(i)})
 		router.Init(baseNet, uint16(30600+i))
 
 		router.FilteredChan(Filter{AcceptType: []ReqType{ReqDownloadBlock}})
