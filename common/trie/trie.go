@@ -2,7 +2,7 @@ package trie
 
 import (
 	"github.com/iost-official/prototype/common"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"github.com/InWeCrypto/sha3"
 	"fmt"
 	"bytes"
 )

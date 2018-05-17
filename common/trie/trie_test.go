@@ -15,7 +15,7 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/common/rlp"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"github.com/InWeCrypto/sha3"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing/quick"
 )
