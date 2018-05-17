@@ -3,6 +3,7 @@ package tx
 import (
 	"encoding/binary"
 	"fmt"
+	"sync"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/db"
@@ -15,13 +16,21 @@ type TxPoolDb struct {
 var txPrefix = []byte("t") //txPrefix+tx hash -> tx data
 var PNPrefix = []byte("p")
 
-func NewTxPoolDb() (TxPool, error) {
+var TxDb TxPool
+var once sync.Once
+
+func init() {
 	ldb, err := db.NewLDBDatabase("tx", 0, 0)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init db %v", err)
+		panic(err)
 	}
-
-	return &TxPoolDb{db: ldb}, nil
+	if TxDb == nil {
+		once.Do(func() {
+			TxDb = &TxPoolDb{
+				db: ldb,
+			}
+		})
+	}
 }
 
 //Add tx to db
@@ -74,9 +83,9 @@ func (tp *TxPoolDb) GetByPN(Nonce int64, Publisher common.Signature) (*Tx, error
 	NonceRaw := make([]byte, 8)
 	binary.BigEndian.PutUint64(NonceRaw, uint64(Nonce))
 	hash, err := tp.db.Get(append(PNPrefix, append(NonceRaw, PubRaw...)...))
-	
+
 	//fmt.Println(append(PNPrefix, append(NonceRaw, PubRaw...)...))
-	
+
 	if err != nil {
 
 		return nil, fmt.Errorf("failed to Get the tx hash: %v", err)
