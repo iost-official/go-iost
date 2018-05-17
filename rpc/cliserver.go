@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
@@ -11,6 +12,7 @@ import (
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/vm"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/prototype/rpc CliServer
@@ -76,9 +78,23 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 	return &Transaction{Tx: tx.Encode()}, nil
 }
 
-func (s *HttpServer) GetBalance(ctx context.Context, tx *Key) (*Value, error) {
+func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
+	if iak == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	ia := iak.S
+	val0, err := state.StdPool.GetHM("iost", state.Key(ia))
+	if err != nil {
+		return nil, err
+	}
+	val, ok := val0.(*state.VFloat)
+	if !ok {
+		return nil, fmt.Errorf("pool type error: should VFloat, acture %v; in iost.%v",
+			reflect.TypeOf(val0).String(), vm.IOSTAccount(ia))
+	}
+	balance := val.EncodeString()
 
-	return nil, nil
+	return &Value{Sv: balance}, nil
 }
 
 func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
