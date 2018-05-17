@@ -4,20 +4,21 @@ import (
 	"bytes"
 	"hash"
 	"sync"
-	"github.com/InWeCrypto/sha3"
+
 	"github.com/iost-official/prototype/common"
+	"github.com/InWeCrypto/sha3"
 	"github.com/iost-official/prototype/common/rlp"
 )
 
 type hasher struct {
-	tmp *bytes.Buffer
-	sha hash.Hash
-	cachegen uint16
+	tmp        *bytes.Buffer
+	sha        hash.Hash
+	cachegen   uint16
 	cachelimit uint16
-	onleaf LeafCallback
+	onleaf     LeafCallback
 }
 
-var hasherPool = sync.Pool {
+var hasherPool = sync.Pool{
 	New: func() interface{} {
 		return &hasher{tmp: new(bytes.Buffer), sha: sha3.NewKeccak256()}
 	},
@@ -41,7 +42,7 @@ func (h *hasher) hash(n node, db *Database, force bool) (node, node, error) {
 		if n.canUnload(h.cachegen, h.cachelimit) {
 			return hash, hash, nil
 		}
-		if !dirty{
+		if !dirty {
 			return hash, n, nil
 		}
 	}
@@ -53,7 +54,6 @@ func (h *hasher) hash(n node, db *Database, force bool) (node, node, error) {
 	if err != nil {
 		return hashNode{}, n, err
 	}
-
 	cachedHash, _ := hashed.(hashNode)
 	switch cn := cached.(type) {
 	case *shortNode:

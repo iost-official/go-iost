@@ -1,19 +1,3 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package trie
 
 import (
@@ -24,6 +8,7 @@ import (
 	"time"
 
 	"github.com/iost-official/prototype/db"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func init() {
@@ -31,59 +16,50 @@ func init() {
 }
 
 func TestProof(t *testing.T) {
-	trie, vals := randomTrie(500)
-	root := trie.Hash()
-	for _, kv := range vals {
-		proofs, _ := db.NewMemDatabase()
-		if trie.Prove(kv.k, 0, proofs) != nil {
-			t.Fatalf("missing key %x while constructing proof", kv.k)
+	Convey("Test Proof", t, func(){
+		trie, vals := randomTrie(500)
+		root := trie.Hash()
+		for _, kv := range vals {
+			proofs, _ := db.NewMemDatabase()
+			So(nil, ShouldEqual, trie.Prove(kv.k, 0, proofs))
+			val, err, _ := VerifyProof(root, kv.k, proofs)
+			So(nil, ShouldEqual, err)
+			So(true, ShouldEqual, bytes.Equal(val, kv.v))
 		}
-		val, err, _ := VerifyProof(root, kv.k, proofs)
-		if err != nil {
-			t.Fatalf("VerifyProof error for key %x: %v\nraw proof: %v", kv.k, err, proofs)
-		}
-		if !bytes.Equal(val, kv.v) {
-			t.Fatalf("VerifyProof returned wrong value for key %x: got %x, want %x", kv.k, val, kv.v)
-		}
-	}
+	})
 }
 
 func TestOneElementProof(t *testing.T) {
-	trie := new(Trie)
-	updateString(trie, "k", "v")
-	proofs, _ := db.NewMemDatabase()
-	trie.Prove([]byte("k"), 0, proofs)
-	if len(proofs.Keys()) != 1 {
-		t.Error("proof should have one element")
-	}
-	val, err, _ := VerifyProof(trie.Hash(), []byte("k"), proofs)
-	if err != nil {
-		t.Fatalf("VerifyProof error: %v\nproof hashes: %v", err, proofs.Keys())
-	}
-	if !bytes.Equal(val, []byte("v")) {
-		t.Fatalf("VerifyProof returned wrong value: got %x, want 'k'", val)
-	}
+	Convey("Test OneElementProof", t, func(){
+		trie := new(Trie)
+		updateString(trie, "k", "v")
+		proofs, _ := db.NewMemDatabase()
+		trie.Prove([]byte("k"), 0, proofs)
+		So(1, ShouldEqual, len(proofs.Keys()))
+		val, err, _ := VerifyProof(trie.Hash(), []byte("k"), proofs)
+		So(nil, ShouldEqual, err)
+		So(true, ShouldEqual, bytes.Equal(val, []byte("v")))
+	})
 }
 
 func TestVerifyBadProof(t *testing.T) {
-	trie, vals := randomTrie(800)
-	root := trie.Hash()
-	for _, kv := range vals {
-		proofs, _ := db.NewMemDatabase()
-		trie.Prove(kv.k, 0, proofs)
-		if len(proofs.Keys()) == 0 {
-			t.Fatal("zero length proof")
+	Convey("Test VerifyBadProof", t, func(){
+		trie, vals := randomTrie(800)
+		root := trie.Hash()
+		for _, kv := range vals {
+			proofs, _ := db.NewMemDatabase()
+			trie.Prove(kv.k, 0, proofs)
+			So(0, ShouldNotEqual, len(proofs.Keys()))
+			keys := proofs.Keys()
+			key := keys[mrand.Intn(len(keys))]
+			node, _ := proofs.Get(key)
+			proofs.Delete(key)
+			mutateByte(node)
+			proofs.Put(Keccak256(node), node)
+			_, err, _ := VerifyProof(root, kv.k, proofs)
+			So(nil, ShouldNotEqual, err)
 		}
-		keys := proofs.Keys()
-		key := keys[mrand.Intn(len(keys))]
-		node, _ := proofs.Get(key)
-		proofs.Delete(key)
-		mutateByte(node)
-		proofs.Put(Keccak256(node), node)
-		if _, err, _ := VerifyProof(root, kv.k, proofs); err == nil {
-			t.Fatalf("expected proof to fail for key %x", kv.k)
-		}
-	}
+	})
 }
 
 // mutateByte changes one byte in b.

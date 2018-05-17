@@ -1,21 +1,21 @@
 package trie
 
 import (
-	"github.com/iost-official/prototype/common"
-	"errors"
-	"container/heap"
 	"bytes"
+	"container/heap"
+	"errors"
+
+	"github.com/iost-official/prototype/common"
 )
 
 type Iterator struct {
 	nodeIt NodeIterator
 
-	Key []byte
+	Key   []byte
 	Value []byte
-	Err error
+	Err   error
 }
 
-// Iterator is a key-value trie iterator that traverses a Trie.
 func NewIterator(it NodeIterator) *Iterator {
 	return &Iterator{
 		nodeIt: it,
@@ -36,10 +36,10 @@ func (it *Iterator) Next() bool {
 	return false
 }
 
-// pre-order
 type NodeIterator interface {
 	Next(bool) bool
 	Error() error
+
 	Hash() common.Hash
 	Parent() common.Hash
 	Path() []byte
@@ -49,19 +49,20 @@ type NodeIterator interface {
 	LeafKey() []byte
 }
 
+
 type nodeIteratorState struct {
-	hash common.Hash
-	node node
-	parent common.Hash
-	index int
+	hash    common.Hash
+	node    node
+	parent  common.Hash
+	index   int
 	pathlen int
 }
 
 type nodeIterator struct {
-	trie *Trie
+	trie  *Trie
 	stack []*nodeIteratorState
-	path []byte
-	err error
+	path  []byte
+	err   error
 }
 
 var iteratorEnd = errors.New("end of iteration")
@@ -195,7 +196,6 @@ func (it *nodeIterator) peek(descend bool) (*nodeIteratorState, *int, []byte, er
 			}
 			return state, &parent.index, path, nil
 		}
-		// No more child nodes, move back up.
 		it.pop()
 	}
 	return nil, nil, nil, iteratorEnd
@@ -216,7 +216,6 @@ func (st *nodeIteratorState) resolve(tr *Trie, path []byte) error {
 func (it *nodeIterator) nextChild(parent *nodeIteratorState, ancestor common.Hash) (*nodeIteratorState, []byte, bool) {
 	switch node := parent.node.(type) {
 	case *fullNode:
-		// Full node, move to the first non-nil child.
 		for i := parent.index + 1; i < len(node.Children); i++ {
 			child := node.Children[i]
 			if child != nil {
@@ -234,7 +233,6 @@ func (it *nodeIterator) nextChild(parent *nodeIteratorState, ancestor common.Has
 			}
 		}
 	case *shortNode:
-		// Short node, return the pointer singleton child
 		if parent.index < 0 {
 			hash, _ := node.Val.cache()
 			state := &nodeIteratorState{
@@ -284,9 +282,9 @@ func compareNodes(a, b NodeIterator) int {
 }
 
 type differenceIterator struct {
-	a, b  NodeIterator // Nodes returned are those in b - a.
-	eof   bool         // Indicates a has run out of elements
-	count int          // Number of nodes scanned on either trie
+	a, b  NodeIterator
+	eof   bool
+	count int
 }
 
 func NewDifferenceIterator(a, b NodeIterator) (NodeIterator, *int) {
@@ -378,8 +376,8 @@ func (h *nodeIteratorHeap) Pop() interface{} {
 }
 
 type unionIterator struct {
-	items *nodeIteratorHeap // Nodes returned are the union of the ones in these iterators
-	count int               // Number of nodes scanned across all tries
+	items *nodeIteratorHeap
+	count int
 }
 
 func NewUnionIterator(iters []NodeIterator) (NodeIterator, *int) {

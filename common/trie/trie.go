@@ -2,9 +2,9 @@ package trie
 
 import (
 	"github.com/iost-official/prototype/common"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"fmt"
 	"bytes"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 )
 
 var (
@@ -24,22 +24,18 @@ func Keccak256Hash(data ...[]byte) (h common.Hash) {
 	return h
 }
 
-// 遍历到trie叶节点时的回调函数
+
 type LeafCallback func(leaf []byte, parent common.Hash) error
 
-// 空值用空树表示，不存储在数据库中
-// New 可以创建一个Trie，会存储在数据库的顶端
-// 线程不安全
+
 type Trie struct {
 	db           *Database
 	root         node
 	originalRoot common.Hash
 
-	// 每commit一次，版本号+1
 	cachegen, cachelimit uint16
 }
 
-// 设置cache保存的哈希版本数
 func (t *Trie) SetCacheLimit(l uint16) {
 	t.cachelimit = l
 }
@@ -53,7 +49,7 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 		panic("trie.New called without a database")
 	}
 	trie := &Trie{
-		db: db,
+		db:           db,
 		originalRoot: root,
 	}
 	if (root != common.Hash{}) && root != emptyRoot {
@@ -76,6 +72,15 @@ func (t *Trie) Get(key []byte) []byte {
 		panic(fmt.Sprintf("Unhandled trie error: %v", err))
 	}
 	return res
+}
+
+func (t *Trie) TryGet(key []byte) ([]byte, error) {
+	key = keybytesToHex(key)
+	value, newroot, didResolve, err := t.tryGet(t.root, key, 0)
+	if err == nil && didResolve {
+		t.root = newroot
+	}
+	return value, err
 }
 
 func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newnode node, didResolve bool, err error) {
@@ -114,15 +119,6 @@ func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newnode
 	default:
 		panic(fmt.Sprintf("%T: invalid node: %v", origNode, origNode))
 	}
-}
-
-func (t *Trie) TryGet(key []byte) ([]byte, error) {
-	key = keybytesToHex(key)
-	value, newroot, didResolve, err := t.tryGet(t.root, key, 0)
-	if err == nil && didResolve {
-		t.root = newroot
-	}
-	return value, err
 }
 
 func (t *Trie) Update(key, value []byte) {
@@ -329,7 +325,6 @@ func (t *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
 }
 
 func (t *Trie) Root() []byte { return t.Hash().Bytes() }
-
 
 func (t *Trie) Hash() common.Hash {
 	hash, cached, _ := t.hashRoot(nil, nil)
