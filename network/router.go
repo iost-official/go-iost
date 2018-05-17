@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/iost-official/prototype/core/message"
 )
@@ -29,6 +30,28 @@ type Router interface {
 	Broadcast(req message.Message)
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
+}
+
+var Route Router
+var once sync.Once
+
+func GetInstance(conf *NetConifg, target string, port uint16) (Route Router, err error) {
+	once.Do(func() {
+		baseNet, err := NewBaseNetwork(conf)
+		if err != nil {
+			return
+		}
+		if target == "" {
+			target = "base"
+		}
+		Route, err := RouterFactory(target)
+		if err != nil {
+			return
+		}
+		Route.Init(baseNet, port)
+		Route.Run()
+	})
+	return
 }
 
 func RouterFactory(target string) (Router, error) {
@@ -65,7 +88,6 @@ func (r *RouterImpl) Init(base Network, port uint16) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

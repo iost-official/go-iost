@@ -24,24 +24,24 @@ import (
 )
 
 var cfgFile string
+var logFile string
+var dbFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "iserver",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "IOST server",
+	Long: `IOST server`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("net.log-path: ",viper.GetString("net.log-path"))
+		fmt.Println("net.node-table: ",viper.GetStringSlice("net.node-table"))
+		fmt.Println("cfgFile: ",viper.GetString("config"))
+		fmt.Println("logFile: ",viper.GetString("log"))
+		fmt.Println("dbFile: ",viper.GetString("db"))
 
-		fmt.Println(viper.GetString("net.log-path"))
-		fmt.Println(viper.GetStringSlice("net.node-table"))
-		fmt.Println(viper.GetString("nothing") == "") // 注意这里
+		//Main function start
 	},
 }
 
@@ -61,6 +61,11 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.iserver.yaml)")
+	rootCmd.PersistentFlags().StringVar(&logFile,"log","","log file (default is ./iserver.log)")
+	rootCmd.PersistentFlags().StringVar(&dbFile,"db","","database file (default is ./data.db)")
+	viper.BindPFlag("config",rootCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag("log",rootCmd.PersistentFlags().Lookup("log"))
+	viper.BindPFlag("db",rootCmd.PersistentFlags().Lookup("db"))
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -87,8 +92,11 @@ func initConfig() {
 
 	viper.AutomaticEnv() // read in environment variables that match
 
+	//fmt.Println(cfgFile)
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}else{
+		fmt.Println(err)
 	}
 }
