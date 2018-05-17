@@ -21,6 +21,12 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/consensus"
 )
 
 var cfgFile string
@@ -28,20 +34,93 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "iserver",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Blockchain system",
+	Long:  `Blockchain system`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
 
-		fmt.Println(viper.GetString("net.log-path"))
-		fmt.Println(viper.GetStringSlice("net.node-table"))
-		fmt.Println(viper.GetString("nothing") == "") // 注意这里
+		fmt.Printf("Version:  %v\n", "1.0")
+		//初始化网络
+
+		fmt.Println("1.Start the P2P networks")
+
+		logPath := viper.GetString("net.log-path")
+		nodeTablePath := viper.GetString("net.node-table-path")
+		nodeID := viper.GetString("net.node-id") //optional
+		listenAddr := viper.GetString("net.listen-addr")
+		target := viper.GetString("net.target") //optional
+		port := viper.GetInt64("net.port")
+
+		fmt.Printf("net.log-path:  %v\n", logPath)
+		fmt.Printf("net.node-table-path:  %v\n", nodeTablePath)
+		fmt.Printf("net.node-id:   %v\n", nodeID)
+		fmt.Printf("net.listen-addr:  %v\n", listenAddr)
+		fmt.Printf("net.target:  %v\n", target)
+		fmt.Printf("net.port:  %v\n", port)
+
+		if logPath == "" || nodeTablePath == "" || listenAddr == "" || port <= 0 {
+			fmt.Println("Network config initialization failed, stop the program!")
+			os.Exit(1)
+		}
+
+		if _, err := network.GetInstance(
+			&network.NetConifg{
+				LogPath:       logPath,
+				NodeTablePath: nodeTablePath,
+				NodeID:        nodeID,
+				ListenAddr:    listenAddr},
+			target,
+			uint16(port)); err != nil {
+
+			fmt.Printf("Network initialization failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
+		//启动共识
+		fmt.Println("2.Start Consensus Services")
+		accSecKey := viper.GetString("account.sec-key")
+		//fmt.Printf("account.sec-key:  %v\n", accSecKey)
+
+		acc, err := account.NewAccount(common.Base58Decode(accSecKey))
+		if err != nil {
+			fmt.Printf("NewAccount failed, stop the program! err:%v\n", err)
+			os.Exit(1)
+		}
+
+		//fmt.Printf("account PubKey = %v\n", common.Base58Encode(acc.Pubkey))
+		//fmt.Printf("account SecKey = %v\n", common.Base58Encode(acc.Seckey))
+		fmt.Printf("account ID = %v\n", acc.ID)
+
+		blockChain, err := block.NewBlockChain()
+		if err != nil {
+			fmt.Printf("NewBlockChain failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
+		if state.StdPool == nil {
+			fmt.Printf("StdPool initialization failed, stop the program!")
+			os.Exit(1)
+		}
+
+		witnessList := viper.GetStringSlice("consensus.witness-list")
+
+		for i, witness := range witnessList {
+			fmt.Printf("witnessList[%v] = %v\n", i, witness)
+		}
+
+		consensus, err := consensus.ConsensusFactory(
+			consensus.CONSENSUS_DPOS,
+			acc, blockChain, state.StdPool, witnessList)
+		if err != nil {
+			fmt.Printf("consensus initialization failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+		consensus.Stop()
+		//启动RPC
+
+		//等待推出信号
+
 	},
 }
 
@@ -91,4 +170,5 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+
 }
