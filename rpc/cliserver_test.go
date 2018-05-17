@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
@@ -72,27 +73,31 @@ func TestHttpServer(t *testing.T) {
 			_, err := hs.GetState(context.Background(), &Key{S: "HowHsu"})
 			So(err, ShouldBeNil)
 		})
+		Convey("Test of GetBlock", func() {
+			ctl := gomock.NewController(t)
+			mockChain := core_mock.NewMockChain(ctl)
+			mockChain.EXPECT().Length().AnyTimes().Return(uint64(100))
+			mockChain.EXPECT().GetBlockByNumber(gomock.Any()).AnyTimes().Return(&block.Block{
+				Head: block.BlockHead{
+					Version:    2,
+					ParentHash: []byte("parent Hash"),
+					TreeHash:   []byte("tree hash"),
+					BlockHash:  []byte("block hash"),
+					Info:       []byte("info "),
+					Number:     int64(0),
+					Witness:    "id2,id3,id5,id6",
+					Signature:  []byte("Signatrue"),
+					Time:       201222,
+				},
+			})
+			block.BChain = mockChain
 
+			hs := new(HttpServer)
+			_, err := hs.GetBlock(context.Background(), &BlockKey{Layer: 10})
+			So(err, ShouldBeNil)
+		})
 		/*
-				Convey("Test of GetBalance", func() {
-					txpooldb, err := NewTxPoolDb()
-					main := lua.NewMethod("main", 0, 1)
-					code := `function main()
-									Put("hello", "world")
-									return "success"
-								end`
-					lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
-
-					tx := NewTx(int64(0), &lc)
-					err = txpooldb.Add(&tx)
-					hash := tx.Hash()
-
-					tx1, err := txpooldb.Get(hash)
-					So(err, ShouldBeNil)
-					So(tx.Time, ShouldEqual, (*tx1).Time)
-					//txpooldb.(*TxPoolDb).Close()
-				})
-			Convey("Test of GetBlock", func() {
+			Convey("Test of GetBalance", func() {
 				txpooldb, err := NewTxPoolDb()
 				main := lua.NewMethod("main", 0, 1)
 				code := `function main()
@@ -103,9 +108,12 @@ func TestHttpServer(t *testing.T) {
 
 				tx := NewTx(int64(0), &lc)
 				err = txpooldb.Add(&tx)
-				tx1, err := txpooldb.(*TxPoolDb).GetByPN(tx.Nonce,tx.Publisher)
+				hash := tx.Hash()
+
+				tx1, err := txpooldb.Get(hash)
 				So(err, ShouldBeNil)
 				So(tx.Time, ShouldEqual, (*tx1).Time)
+				//txpooldb.(*TxPoolDb).Close()
 			})
 		*/
 	})
