@@ -73,7 +73,7 @@ func (d *Block) GetAllContract() []vm.Contract {
 
 	var allContract []vm.Contract
 
-	for _, tx := range d.Content{
+	for _, tx := range d.Content {
 		allContract = append(allContract, tx.Contract)
 	}
 

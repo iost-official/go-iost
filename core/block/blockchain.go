@@ -33,8 +33,8 @@ func Instance() (Chain Chain, err error) {
 
 		ldb, er := db.NewLDBDatabase("blockDB", 0, 0)
 		if er != nil {
-			 err = fmt.Errorf("failed to init db %v", err)
-			 return
+			err = fmt.Errorf("failed to init db %v", err)
+			return
 		}
 		//defer ldb.Close()
 
@@ -62,13 +62,16 @@ func Instance() (Chain Chain, err error) {
 			}
 		}
 
-		tx, er := tx.NewTxPoolDb()
+		txDb := tx.TxDb
+		if txDb == nil {
+			panic(fmt.Errorf("TxDb shouldn't be nil"))
+		}
 		if er != nil {
 			err = fmt.Errorf("failed to NewTxPoolDb: [%v]", err)
 			return
 		}
 
-		Chain = &ChainImpl{db: ldb, length: length, tx: tx}
+		Chain = &ChainImpl{db: ldb, length: length, tx: txDb}
 		BChain = Chain
 	})
 
