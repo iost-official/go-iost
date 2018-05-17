@@ -2,10 +2,10 @@ package trie
 
 import (
 	"fmt"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/common/rlp"
 	"io"
 	"strings"
+	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/common/rlp"
 )
 
 var indices = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "[17]"}
@@ -17,14 +17,10 @@ type node interface {
 }
 
 type (
-	// 分支节点，存储所有分支大于一的节点
 	fullNode struct {
-		Children [17]node // 每个节点的所有儿子
+		Children [17]node
 		flags    nodeFlag
 	}
-
-	// 叶子节点 && 扩展节点
-	// 在Key中引入特殊标志，区分两种节点
 	shortNode struct {
 		Key   []byte
 		Val   node
@@ -34,17 +30,19 @@ type (
 	valueNode []byte
 )
 
-func (n *fullNode) copy() *fullNode   { copydata := *n; return &copydata }
-func (n *shortNode) copy() *shortNode { copydata := *n; return &copydata }
-
-// node节点的缓存相关信息
-type nodeFlag struct {
-	hash  hashNode // 节点缓存的哈希值
-	gen   uint16   // 诞生标志
-	dirty bool     // 数据需要将数据的修改写入数据库
+func (n *fullNode) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, n.Children)
 }
 
-// 判断缓存中一个node节点是否可以被删除
+func (n *fullNode) copy() *fullNode   { copy := *n; return &copy }
+func (n *shortNode) copy() *shortNode { copy := *n; return &copy }
+
+type nodeFlag struct {
+	hash  hashNode
+	gen   uint16
+	dirty bool
+}
+
 func (n *nodeFlag) canUnload(cachegen, cachelimit uint16) bool {
 	return !n.dirty && cachegen-n.gen >= cachelimit
 }
@@ -59,12 +57,16 @@ func (n *shortNode) cache() (hashNode, bool) { return n.flags.hash, n.flags.dirt
 func (n hashNode) cache() (hashNode, bool)   { return nil, true }
 func (n valueNode) cache() (hashNode, bool)  { return nil, true }
 
-// 格式化打印
+func (n *fullNode) String() string  { return n.fstring("") }
+func (n *shortNode) String() string { return n.fstring("") }
+func (n hashNode) String() string   { return n.fstring("") }
+func (n valueNode) String() string  { return n.fstring("") }
+
 func (n *fullNode) fstring(ind string) string {
 	resp := fmt.Sprintf("[\n%s  ]", ind)
 	for i, node := range n.Children {
 		if node == nil {
-			resp += fmt.Sprintf("%s: <nil>", indices[i])
+			resp += fmt.Sprintf("%s: <nil> ", indices[i])
 		} else {
 			resp += fmt.Sprintf("%s: %v", indices[i], node.fstring(ind+"  "))
 		}
@@ -81,11 +83,6 @@ func (n valueNode) fstring(ind string) string {
 	return fmt.Sprintf("%x ", []byte(n))
 }
 
-func (n *fullNode) String() string  { return n.fstring("") }
-func (n *shortNode) String() string { return n.fstring("") }
-func (n hashNode) String() string   { return n.fstring("") }
-func (n valueNode) String() string  { return n.fstring("") }
-
 func mustDecodeNode(hash, buf []byte, cachegen uint16) node {
 	n, err := decodeNode(hash, buf, cachegen)
 	if err != nil {
@@ -94,7 +91,6 @@ func mustDecodeNode(hash, buf []byte, cachegen uint16) node {
 	return n
 }
 
-// 解码一个已用RLP编码的Trie的node节点
 func decodeNode(hash, buf []byte, cachegen uint16) (node, error) {
 	if len(buf) == 0 {
 		return nil, io.ErrUnexpectedEOF
@@ -123,6 +119,7 @@ func decodeShort(hash, buf, elems []byte, cachegen uint16) (node, error) {
 	flag := nodeFlag{hash: hash, gen: cachegen}
 	key := compactToHex(kbuf)
 	if hasTerm(key) {
+		// value node
 		val, _, err := rlp.SplitString(rest)
 		if err != nil {
 			return nil, fmt.Errorf("invalid value node: %v", err)
@@ -158,7 +155,6 @@ func decodeFull(hash, buf, elems []byte, cachegen uint16) (*fullNode, error) {
 const hashLen = len(common.Hash{})
 
 func decodeRef(buf []byte, cachegen uint16) (node, []byte, error) {
-	// 获取RLP编码的变量类型，变量内容，以及编码字节
 	kind, val, rest, err := rlp.Split(buf)
 	if err != nil {
 		return nil, buf, err
@@ -166,13 +162,13 @@ func decodeRef(buf []byte, cachegen uint16) (node, []byte, error) {
 	switch {
 	case kind == rlp.List:
 		if size := len(buf) - len(rest); size > hashLen {
-			err := fmt.Errorf("oversized embedded node (")
+			err := fmt.Errorf("oversized embedded node (size is %d bytes, want size < %d)", size, hashLen)
 			return nil, buf, err
 		}
 		n, err := decodeNode(nil, buf, cachegen)
 		return n, rest, err
 	case kind == rlp.String && len(val) == 0:
-		// 空节点
+		// empty node
 		return nil, rest, nil
 	case kind == rlp.String && len(val) == 32:
 		return append(hashNode{}, val...), rest, nil
@@ -181,14 +177,13 @@ func decodeRef(buf []byte, cachegen uint16) (node, []byte, error) {
 	}
 }
 
-// 在error类外包一层不合法子节点的路径信息
 type decodeError struct {
 	what  error
 	stack []string
 }
 
 func wrapError(err error, ctx string) error {
-	if err != nil {
+	if err == nil {
 		return nil
 	}
 	if decErr, ok := err.(*decodeError); ok {
