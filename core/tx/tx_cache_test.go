@@ -13,6 +13,7 @@ func TestTxPoolImpl(t *testing.T) {
 	Convey("Test of TxPool", t, func() {
 		var txp TxPool
 		txp = NewTxPoolImpl()
+		//txp, _ = NewTxPoolStack()
 		ctl := gomock.NewController(t)
 
 		mockContract := vm_mock.NewMockContract(ctl)
@@ -22,7 +23,6 @@ func TestTxPoolImpl(t *testing.T) {
 			txp.Add(&tx)
 			So(txp.Size(), ShouldEqual, 1)
 		})
-
 		Convey("Del", func() {
 			txp.Add(&tx)
 			So(txp.Size(), ShouldEqual, 1)
@@ -35,6 +35,9 @@ func TestTxPoolImpl(t *testing.T) {
 			ttx, ok := txp.Get(tx.Hash())
 			So(ok, ShouldBeNil)
 			So(string(ttx.Encode()), ShouldEqual, string(tx.Encode()))
+			tx2 := NewTx(int64(1), mockContract)
+			ttx, ok = txp.Get(tx2.Hash())
+			So(ttx, ShouldBeNil)
 		})
 
 		Convey("Top", func() {

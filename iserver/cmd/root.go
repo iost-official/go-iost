@@ -21,28 +21,159 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/account"
+	"os/signal"
+	"syscall"
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/consensus"
+	"github.com/iost-official/prototype/rpc"
 )
 
 var cfgFile string
 var logFile string
 var dbFile string
 
+type ServerExit interface {
+	Stop()
+}
+
+var serverExit []ServerExit
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "iserver",
 	Short: "IOST server",
-	Long: `IOST server`,
+	Long:  `IOST server`,
+
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("net.log-path: ",viper.GetString("net.log-path"))
-		fmt.Println("net.node-table: ",viper.GetStringSlice("net.node-table"))
-		fmt.Println("cfgFile: ",viper.GetString("config"))
-		fmt.Println("logFile: ",viper.GetString("log"))
-		fmt.Println("dbFile: ",viper.GetString("db"))
 
-		//Main function start
+		fmt.Printf("Version:  %v\n", "1.0")
+
+		fmt.Println("cfgFile: ", viper.GetString("config"))
+		fmt.Println("logFile: ", viper.GetString("log"))
+		fmt.Println("dbFile: ", viper.GetString("db"))
+
+		//初始化网络
+		fmt.Println("1.Start the P2P networks")
+
+		logPath := viper.GetString("net.log-path")
+		nodeTablePath := viper.GetString("net.node-table-path")
+		nodeID := viper.GetString("net.node-id") //optional
+		listenAddr := viper.GetString("net.listen-addr")
+		target := viper.GetString("net.target") //optional
+		port := viper.GetInt64("net.port")
+
+		fmt.Printf("net.log-path:  %v\n", logPath)
+		fmt.Printf("net.node-table-path:  %v\n", nodeTablePath)
+		fmt.Printf("net.node-id:   %v\n", nodeID)
+		fmt.Printf("net.listen-addr:  %v\n", listenAddr)
+		fmt.Printf("net.target:  %v\n", target)
+		fmt.Printf("net.port:  %v\n", port)
+
+		if logPath == "" || nodeTablePath == "" || listenAddr == "" || port <= 0 {
+			fmt.Println("Network config initialization failed, stop the program!")
+			os.Exit(1)
+		}
+
+		net, err := network.GetInstance(
+			&network.NetConifg{
+				LogPath:       logPath,
+				NodeTablePath: nodeTablePath,
+				NodeID:        nodeID,
+				ListenAddr:    listenAddr},
+			target,
+			uint16(port))
+		if err != nil {
+			fmt.Printf("Network initialization failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
+		net.Run()
+		serverExit = append(serverExit, net)
+
+		//启动共识
+		fmt.Println("2.Start Consensus Services")
+		accSecKey := viper.GetString("account.sec-key")
+		//fmt.Printf("account.sec-key:  %v\n", accSecKey)
+
+		acc, err := account.NewAccount(common.Base58Decode(accSecKey))
+		if err != nil {
+			fmt.Printf("NewAccount failed, stop the program! err:%v\n", err)
+			os.Exit(1)
+		}
+
+		//fmt.Printf("account PubKey = %v\n", common.Base58Encode(acc.Pubkey))
+		//fmt.Printf("account SecKey = %v\n", common.Base58Encode(acc.Seckey))
+		fmt.Printf("account ID = %v\n", acc.ID)
+
+		if state.StdPool == nil {
+			fmt.Printf("StdPool initialization failed, stop the program!")
+			os.Exit(1)
+		}
+
+		blockChain, err := block.Instance()
+		if err != nil {
+			fmt.Printf("NewBlockChain failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
+		witnessList := viper.GetStringSlice("consensus.witness-list")
+
+		for i, witness := range witnessList {
+			fmt.Printf("witnessList[%v] = %v\n", i, witness)
+		}
+
+		consensus, err := consensus.ConsensusFactory(
+			consensus.CONSENSUS_DPOS,
+			acc, blockChain, state.StdPool, witnessList)
+		if err != nil {
+			fmt.Printf("consensus initialization failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
+		consensus.Run()
+		serverExit = append(serverExit, consensus)
+
+		//启动RPC
+		err = rpc.Server()
+		if err != nil {
+			fmt.Printf("RPC initialization failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
+		//等待推出信号
+		exitLoop()
+
 	},
+}
+
+func exitLoop() {
+	exit := make(chan bool)
+	c := make(chan os.Signal, 1)
+
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+	defer signal.Stop(c)
+	defer close(exit)
+
+	go func() {
+		<-c
+		fmt.Printf("IOST server received interrupt, shutting down...")
+
+		for _, s := range serverExit {
+			if s != nil {
+				s.Stop()
+			}
+		}
+
+		os.Exit(0)
+	}()
+
+	<-exit
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -61,11 +192,11 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.iserver.yaml)")
-	rootCmd.PersistentFlags().StringVar(&logFile,"log","","log file (default is ./iserver.log)")
-	rootCmd.PersistentFlags().StringVar(&dbFile,"db","","database file (default is ./data.db)")
-	viper.BindPFlag("config",rootCmd.PersistentFlags().Lookup("config"))
-	viper.BindPFlag("log",rootCmd.PersistentFlags().Lookup("log"))
-	viper.BindPFlag("db",rootCmd.PersistentFlags().Lookup("db"))
+	rootCmd.PersistentFlags().StringVar(&logFile, "log", "", "log file (default is ./iserver.log)")
+	rootCmd.PersistentFlags().StringVar(&dbFile, "db", "", "database file (default is ./data.db)")
+	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag("log", rootCmd.PersistentFlags().Lookup("log"))
+	viper.BindPFlag("db", rootCmd.PersistentFlags().Lookup("db"))
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -96,7 +227,8 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}else{
+	} else {
 		fmt.Println(err)
 	}
+
 }

@@ -31,7 +31,9 @@ func TestRouterImpl_Init(t *testing.T) {
 
 func TestGetInstance(t *testing.T) {
 	Convey("", t, func() {
+
 		router, err := GetInstance(&NetConifg{NodeTablePath: "tale_test"}, "base", 30304)
+
 		So(err, ShouldBeNil)
 		So(router.(*RouterImpl).port, ShouldEqual, uint16(30304))
 		So(Route.(*RouterImpl).port, ShouldEqual, uint16(30304))

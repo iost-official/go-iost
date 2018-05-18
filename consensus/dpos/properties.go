@@ -159,9 +159,13 @@ func timeUntilNextSchedule(sp *globalStaticProperty, dp *globalDynamicProperty, 
 	if index = getIndex(sp.Account.GetId(), sp.WitnessList); index < 0 {
 		return dp.NextMaintenanceTime.ToUnixSec() - timeSec
 	}
-	// 如果上一个块是创世块，并且本节点应该首先产生块，无需计算时间
-	if dp.LastBlockNumber == 0 && index == 0 {
-		return 0
+	// 如果上一个块是创世块
+	if dp.LastBlockNumber == 0 {
+		if index == 0 {
+			return 0
+		} else {
+			return SlotLength
+		}
 	}
 	time := GetTimestamp(timeSec)
 	currentSlot := dp.timestampToSlot(time)
