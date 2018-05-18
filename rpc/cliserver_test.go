@@ -2,9 +2,10 @@ package rpc
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
@@ -48,13 +49,15 @@ func TestHttpServer(t *testing.T) {
 		})
 		Convey("Test of GetTransaction", func() {
 			txdb := tx.TxDb
+			fmt.Println(txdb)
 			err := txdb.Add(&_tx)
 			So(err, ShouldBeNil)
 
 			txkey := TransactionKey{
-				Publisher: string(_tx.Publisher.Encode()),
+				Publisher: common.Base58Encode(_tx.Publisher.Pubkey),
 				Nonce:     _tx.Nonce,
 			}
+			fmt.Println(txkey.Publisher)
 			hs := new(HttpServer)
 			_, err = hs.GetTransaction(context.Background(), &txkey)
 			So(err, ShouldBeNil)
