@@ -79,7 +79,7 @@ func NewNaiveNetwork(n int) (*NaiveNetwork, error) {
 		done:   false,
 	}
 	for i := 1; i <= n; i++ {
-		nn.db.Put([]byte(string(i)), []byte("127.0.0.1:"+strconv.Itoa(11036+i)))
+		nn.db.Put([]byte(string(i)), []byte("0.0.0.0:"+strconv.Itoa(11036+i)))
 	}
 	return nn, nil
 }
@@ -277,18 +277,11 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 		}
 	}
 	if conf.NodeTablePath == "" {
-		conf.NodeTablePath, err = ioutil.TempDir(os.TempDir(), "iost_node_table_")
-		if err != nil {
-			return nil, fmt.Errorf("iost_node_table_path err: %v", err)
-		}
+		conf.NodeTablePath = "iost_node_table_"
 	}
 	srvLog, err := log.NewLogger(conf.LogPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init log %v", err)
-	}
-	_, pErr := os.Stat(conf.NodeTablePath)
-	if pErr != nil {
-		return nil, fmt.Errorf("failed to init db path %v", pErr)
 	}
 
 	nodeTable, err := db.NewLDBDatabase(conf.NodeTablePath, 0, 0)
@@ -509,8 +502,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 func (bn *BaseNetwork) registerLoop() {
 	for {
 		for _, encodeAddr := range params.TestnetBootnodes {
-			if encodeAddr != "" && bn.localNode.String() != encodeAddr {
-				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
+			if bn.localNode.TCP != 30304 {
 				conn, err := bn.dial(encodeAddr)
 				if err != nil {
 					bn.log.E("failed to connect boot node, err:%v", err)
@@ -518,6 +510,7 @@ func (bn *BaseNetwork) registerLoop() {
 				}
 				defer bn.peers.RemoveByNodeStr(encodeAddr)
 				bn.log.D("%v request node table from %v", bn.localNode.String(), encodeAddr)
+				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
 				bn.send(conn, req)
 			}
 		}

@@ -1,10 +1,11 @@
 package tx
 
 import (
+	"testing"
+
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestTxPoolDb(t *testing.T) {
@@ -18,7 +19,7 @@ func TestTxPoolDb(t *testing.T) {
 						Put("hello", "world")
 						return "success"
 					end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 			tx := NewTx(int64(0), &lc)
 			err = txpooldb.Add(&tx)
@@ -34,7 +35,7 @@ func TestTxPoolDb(t *testing.T) {
 						Put("hello", "world")
 						return "success"
 					end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 			tx := NewTx(int64(0), &lc)
 			_, err = txpooldb.Has(&tx)
@@ -53,7 +54,7 @@ func TestTxPoolDb(t *testing.T) {
 							Put("hello", "world")
 							return "success"
 						end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 			tx := NewTx(int64(0), &lc)
 			err = txpooldb.Add(&tx)
