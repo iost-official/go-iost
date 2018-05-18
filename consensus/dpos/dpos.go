@@ -3,6 +3,7 @@ package dpos
 import (
 	"bytes"
 	"encoding/binary"
+
 	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
 	. "github.com/iost-official/prototype/core/tx"
@@ -10,12 +11,13 @@ import (
 
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/verifier"
-	"time"
 )
 
 type DPoS struct {
@@ -58,9 +60,6 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 
 	//	Tx chan init
 	p.chTx, err = p.router.FilteredChan(Filter{
-		WhiteList:  []message.Message{},
-		BlackList:  []message.Message{},
-		RejectType: []ReqType{},
 		AcceptType: []ReqType{
 			ReqPublishTx,
 			reqTypeVoteTest, // Only for test
@@ -71,9 +70,6 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 
 	//	Block chan init
 	p.chBlock, err = p.router.FilteredChan(Filter{
-		WhiteList:  []message.Message{},
-		BlackList:  []message.Message{},
-		RejectType: []ReqType{},
 		AcceptType: []ReqType{ReqNewBlock}})
 	if err != nil {
 		return nil, err
@@ -218,10 +214,10 @@ func (p *DPoS) blockLoop() {
 				}
 			}
 			/*
-			ts := Timestamp{blk.Head.Time}
-			if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
-				p.performMaintenance()
-			}
+				ts := Timestamp{blk.Head.Time}
+				if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
+					p.performMaintenance()
+				}
 			*/
 		case <-p.exitSignal:
 			return
