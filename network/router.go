@@ -35,7 +35,10 @@ type Router interface {
 var Route Router
 var once sync.Once
 
-func GetInstance(conf *NetConifg, target string, port uint16) (Router Router, err error) {
+
+func GetInstance(conf *NetConifg, target string, port uint16) (Router, error) {
+	var err error
+
 	once.Do(func() {
 		baseNet, er := NewBaseNetwork(conf)
 		if er != nil {
@@ -45,15 +48,15 @@ func GetInstance(conf *NetConifg, target string, port uint16) (Router Router, er
 		if target == "" {
 			target = "base"
 		}
-		Router, err = RouterFactory(target)
+		Route, err = RouterFactory(target)
 		if err != nil {
 			return
 		}
-		Router.Init(baseNet, port)
-		Router.Run()
-		Route = Router
+		Route.Init(baseNet, port)
+		Route.Run()
+
 	})
-	return
+	return Route, err
 }
 
 func RouterFactory(target string) (Router, error) {

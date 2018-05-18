@@ -1,26 +1,8 @@
 {
-  "Skip": ["model"],
+  "Skip": ["vendor"],
   "Cyclo": 15,
   "Enable": [
-    "errcheck",
-    "deadcode",
-    "gas",
-    "goconst",
-    "gocyclo",
-    "golint",
-    "gotype",
-    "ineffassign",
-    "interfacer",
-    "megacheck",
-    "structcheck",
-    "unconvert",
-    "varcheck",
-    "vet",
-    "vetshadow",
-    "gofmt",
-    "goimports",
-    "unparam",
-    "misspell"
+    "golint"
   ],
   "Deadline": "120s"
 }

@@ -22,7 +22,7 @@ import (
 func TestRouterImpl_Init(t *testing.T) {
 	//broadcast(t)
 	router, _ := RouterFactory("base")
-	baseNet, _ := NewBaseNetwork(&NetConifg{ListenAddr: "127.0.0.1"})
+	baseNet, _ := NewBaseNetwork(&NetConifg{ListenAddr: "0.0.0.0"})
 	router.Init(baseNet, 30601)
 	Convey("init", t, func() {
 		So(router.(*RouterImpl).port, ShouldEqual, 30601)
@@ -31,7 +31,9 @@ func TestRouterImpl_Init(t *testing.T) {
 
 func TestGetInstance(t *testing.T) {
 	Convey("", t, func() {
-		router, err := GetInstance(&NetConifg{}, "base", 30304)
+
+		router, err := GetInstance(&NetConifg{NodeTablePath: "tale_test"}, "base", 30304)
+
 		So(err, ShouldBeNil)
 		So(router.(*RouterImpl).port, ShouldEqual, uint16(30304))
 		So(Route.(*RouterImpl).port, ShouldEqual, uint16(30304))
@@ -43,7 +45,7 @@ func initNetConf() *NetConifg {
 	conf.SetLogPath("iost_log_")
 	tablePath, _ := ioutil.TempDir(os.TempDir(), "iost_node_table_"+strconv.Itoa(int(time.Now().UnixNano())))
 	conf.SetNodeTablePath(tablePath)
-	conf.SetListenAddr("127.0.0.1")
+	conf.SetListenAddr("0.0.0.0")
 	return conf
 }
 
@@ -77,7 +79,7 @@ func newRouters(n int) []Router {
 	rs := make([]Router, 0)
 	for i := 0; i < n; i++ {
 		router, _ := RouterFactory("base")
-		baseNet, _ := NewBaseNetwork(&NetConifg{ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_" + strconv.Itoa(i)})
+		baseNet, _ := NewBaseNetwork(&NetConifg{ListenAddr: "0.0.0.0", NodeTablePath: "iost_db_" + strconv.Itoa(i)})
 		router.Init(baseNet, uint16(30600+i))
 
 		router.FilteredChan(Filter{AcceptType: []ReqType{ReqDownloadBlock}})
