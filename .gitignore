@@ -108,4 +108,11 @@ iwallet/test
 iwallet/iwallet
 
 consensus/common/tx/
-consensus/dpos/tx/
+/consensus/dpos/tx/
+/core/block/blockDB/
+/core/block/tx/
+/core/tx/tx/
+/rpc/tx/
+/verifier/tx/
+/network/tale_test/
+/network/iost_node_table_/
