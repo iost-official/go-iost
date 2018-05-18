@@ -396,7 +396,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 
 			p.Stop()
 		})
-/*
+
 		Convey("need sync", func() {
 			consensus_common.SyncNumber = 2
 			p.account.ID = "id3"
@@ -412,7 +412,9 @@ func TestRunMultipleBlocks(t *testing.T) {
 			var bcBlk block.Block
 			mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
 				bcType = network.ReqType(req.ReqType)
-				bcBlk.Decode(req.Body)
+				if bcType == network.ReqNewBlock {
+					bcBlk.Decode(req.Body)
+				}
 			}).AnyTimes()
 
 			var pushedBlk *block.Block
@@ -446,7 +448,6 @@ func TestRunMultipleBlocks(t *testing.T) {
 
 			p.Stop()
 		})
-*/
 	})
 }
 

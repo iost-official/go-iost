@@ -198,18 +198,16 @@ func (p *DPoS) blockLoop() {
 			blk.Decode(req.Body)
 			err := p.blockCache.Add(&blk, verifyFunc)
 			if err != ErrBlock && err != ErrTooOld {
-				if blk.Head.Witness != p.account.ID {
+				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
-				}
-				if err == ErrNotFound {
+					p.blockCache.AddSingles(verifyFunc)
+					p.router.Broadcast(req)
+				} else if err == ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
 					if need {
 						go p.synchronizer.SyncBlocks(start, end)
 					}
-				}
-				if err == nil {
-					p.router.Broadcast(req)
 				}
 			}
 			ts := Timestamp{blk.Head.Time}

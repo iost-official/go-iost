@@ -146,6 +146,7 @@ var (
 type BlockCache interface {
 	AddGenesis(block *block.Block) error
 	Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error
+	AddSingles(verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error))
 	AddTx(tx *tx.Tx) error
 	GetTx() (*tx.Tx, error)
 	ResetTxPoool() error
@@ -164,6 +165,7 @@ type BlockCacheImpl struct {
 	bc              block.Chain
 	cachedRoot      *BlockCacheTree
 	singleBlockRoot *BlockCacheTree
+	recentTree	    *BlockCacheTree
 	txPool          tx.TxPool
 	delTxPool       tx.TxPool
 	txPoolCache     tx.TxPool
@@ -223,38 +225,12 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 	}
 	*/
 	code, newTree := h.cachedRoot.add(block, verifier)
+	h.recentTree = newTree
 	switch code {
 	case Extend:
 		fallthrough
 	case Fork:
-		// 尝试把single blocks上链
-		newChildren := make([]*BlockCacheTree, 0)
-		for _, bct := range h.singleBlockRoot.children {
-			if bytes.Equal(bct.bc.block.Head.ParentHash, block.Head.Hash()) {
-				newTree.addSubTree(bct, verifier)
-			} else {
-				newChildren = append(newChildren, bct)
-			}
-		}
-		h.singleBlockRoot.children = newChildren
-		// 两种情况都可能满足flush
-		for {
-			// 可能进行多次flush
-			need, newRoot := h.needFlush(block.Head.Version)
-			if need {
-				h.cachedRoot = newRoot
-				h.cachedRoot.bc.Flush()
-				h.cachedRoot.pool.Flush()
-				h.blkConfirmChan <- uint64(h.cachedRoot.bc.Top().Head.Number)
-				h.cachedRoot.super = nil
-				h.cachedRoot.updateLength()
-				for _, tx := range h.cachedRoot.bc.Top().Content {
-					h.txPool.Del(&tx)
-				}
-			} else {
-				break
-			}
-		}
+		h.tryFlush(block.Head.Version)
 	case NotFound:
 		// Add to single block tree
 		found, bct := h.singleBlockRoot.findSingles(block)
@@ -290,6 +266,22 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 	return nil
 }
 
+// AddSingles 尝试把single blocks上链
+func (h *BlockCacheImpl) AddSingles(verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
+	newTree := h.recentTree
+	block := newTree.bc.block
+	newChildren := make([]*BlockCacheTree, 0)
+	for _, bct := range h.singleBlockRoot.children {
+		if bytes.Equal(bct.bc.block.Head.ParentHash, block.Head.Hash()) {
+			newTree.addSubTree(bct, verifier)
+		} else {
+			newChildren = append(newChildren, bct)
+		}
+	}
+	h.singleBlockRoot.children = newChildren
+	h.tryFlush(block.Head.Version)
+}
+
 // AddTx 把交易加入链
 func (h *BlockCacheImpl) AddTx(tx *tx.Tx) error {
 	//TODO 验证tx是否在blockchain上
@@ -322,6 +314,26 @@ func (h *BlockCacheImpl) ResetTxPoool() error {
 		h.txPoolCache.Del(tx)
 	}
 	return nil
+}
+
+func (h *BlockCacheImpl) tryFlush(version int64) {
+	for {
+		// 可能进行多次flush
+		need, newRoot := h.needFlush(version)
+		if need {
+			h.cachedRoot = newRoot
+			h.cachedRoot.bc.Flush()
+			h.cachedRoot.pool.Flush()
+			h.blkConfirmChan <- uint64(h.cachedRoot.bc.Top().Head.Number)
+			h.cachedRoot.super = nil
+			h.cachedRoot.updateLength()
+			for _, tx := range h.cachedRoot.bc.Top().Content {
+				h.txPool.Del(&tx)
+			}
+		} else {
+			break
+		}
+	}
 }
 
 func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
