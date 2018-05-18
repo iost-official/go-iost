@@ -8,6 +8,8 @@ import (
 
 	"net"
 
+	"strconv"
+
 	"github.com/iost-official/prototype/core/message"
 	. "github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/discover"
@@ -25,8 +27,8 @@ func initNetConf() *NetConifg {
 }
 
 func main() {
-	bootnodeStart()
-	//testBaseNetwork()
+	//bootnodeStart()
+	testBaseNetwork()
 	//testBootNodeConn()
 }
 
@@ -71,19 +73,24 @@ func bootnodeStart() {
 
 func testBaseNetwork() {
 	rs := make([]Router, 0)
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 2; i++ {
 		router, _ := RouterFactory("base")
-		baseNet, _ := NewBaseNetwork(&NetConifg{})
-		router.Init(baseNet, uint16(30302+i))
+		baseNet, _ := NewBaseNetwork(&NetConifg{NodeTablePath: "node_table_" + strconv.Itoa(i), ListenAddr: "0.0.0.0"})
+		err := router.Init(baseNet, uint16(20002+i))
+		if err != nil {
+			fmt.Println("init net got err", err)
+			return
+		}
 		router.Run()
 		rs = append(rs, router)
 	}
+	time.Sleep(15 * time.Second)
 	go func() {
-		req := message.Message{From: "sender", Time: time.Now().UnixNano(), To: "0.0.0.0:30303", Body: []byte{22, 11, 125}}
+		req := message.Message{From: "sender", Time: time.Now().UnixNano(), To: "0.0.0.0:20003", Body: []byte{22, 11, 125}}
 		for {
 			//rs[1].Send(req)
 			req.Body = append(req.Body, []byte{11}...)
-			rs[2].Broadcast(req)
+			rs[0].Broadcast(req)
 			time.Sleep(5 * time.Second)
 		}
 	}()
