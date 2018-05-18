@@ -273,7 +273,8 @@ func TestRunMultipleBlocks(t *testing.T) {
 			From:    "0xaaaaaaaaaaaaa",
 			To:      "0xbbbbbbbbbbbb",
 			ReqType: 1,
-			Body:    newTx.Encode()}
+			Body:    newTx.Encode(),
+		}
 
 		mockBc.EXPECT().Top().Return(genesis).AnyTimes()
 		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
@@ -281,51 +282,116 @@ func TestRunMultipleBlocks(t *testing.T) {
 		mockPool.EXPECT().Flush().Return(nil).AnyTimes()
 		mockRouter.EXPECT().CancelDownload(Any(), Any()).Return(nil).AnyTimes()
 
-		blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
-		blkChan <- msg
+		Convey("correct blocks", func() {
+			blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
+			blkChan <- msg
 
-		var reqType network.ReqType
-		var reqBlk block.Block
-		mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
-			reqType = network.ReqType(req.ReqType)
-			reqBlk.Decode(req.Body)
-		}).AnyTimes()
+			var reqType network.ReqType
+			var reqBlk block.Block
+			mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
+				reqType = network.ReqType(req.ReqType)
+				reqBlk.Decode(req.Body)
+			}).AnyTimes()
 
-		var pushed int64
-		mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
-			pushed = block.Head.Number
-			return nil
+			var pushed int64
+			mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
+				pushed = block.Head.Number
+				return nil
+			})
+			p.Run()
+
+			time.Sleep(time.Second / 2)
+			// block 1 by id0
+			So(reqType, ShouldEqual, network.ReqNewBlock)
+			So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+
+			time.Sleep(time.Second * consensus_common.SlotLength)
+			// block 2 by id1, the node itself
+			So(reqType, ShouldEqual, network.ReqNewBlock)
+			So(reqBlk.Head.Number, ShouldEqual, 2)
+			So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
+			So(reqBlk.Head.Witness, ShouldEqual, "id1")
+
+			ts := consensus_common.GetCurrentTimestamp()
+			ts.Add(1)
+			len := ts.ToUnixSec() - time.Now().Unix()
+			time.Sleep(time.Second * time.Duration(len))
+			blk, msg = generateTestBlockMsg("id2", "SeckeyId2", 3, reqBlk.Head.Hash())
+			blkChan <- msg
+
+			time.Sleep(time.Second/2)
+			// block 3 by id2
+			So(reqType, ShouldEqual, network.ReqNewBlock)
+			So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+
+			So(pushed, ShouldEqual, 1)
+
+			p.Stop()
 		})
-		p.Run()
 
-		time.Sleep(time.Second / 2)
-		// block 1 by id0
-		So(reqType, ShouldEqual, network.ReqNewBlock)
-		So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+		Convey("with fork", func() {
+			blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
+			blkChan <- msg
 
-		time.Sleep(time.Second * consensus_common.SlotLength)
-		// block 2 by id1, the node itself
-		So(reqType, ShouldEqual, network.ReqNewBlock)
-		So(reqBlk.Head.Number, ShouldEqual, 2)
-		So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
-		So(reqBlk.Head.Witness, ShouldEqual, "id1")
+			var reqType network.ReqType
+			var reqBlk block.Block
+			mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
+				reqType = network.ReqType(req.ReqType)
+				reqBlk.Decode(req.Body)
+			}).AnyTimes()
 
-		ts := consensus_common.GetCurrentTimestamp()
-		ts.Add(1)
-		len := ts.ToUnixSec() - time.Now().Unix()
-		time.Sleep(time.Second * time.Duration(len))
-		blk, msg = generateTestBlockMsg("id2", "SeckeyId2", 3, reqBlk.Head.Hash())
-		blkChan <- msg
+			var pushed int64
+			mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
+				pushed = block.Head.Number
+				return nil
+			}).AnyTimes()
+			p.Run()
 
-		time.Sleep(time.Second/2)
-		// block 3 by id2
-		So(reqType, ShouldEqual, network.ReqNewBlock)
-		So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+			time.Sleep(time.Second / 2)
+			// block 1 by id0
+			So(reqType, ShouldEqual, network.ReqNewBlock)
+			So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+			blk1 := blk
 
-		So(pushed, ShouldEqual, 1)
+			time.Sleep(time.Second * consensus_common.SlotLength)
+			// block 2 by id1, the node itself
+			So(reqBlk.Head.Number, ShouldEqual, 2)
+			So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
+			So(reqBlk.Head.Witness, ShouldEqual, "id1")
 
-		p.Stop()
+			ts := consensus_common.GetCurrentTimestamp()
+			ts.Add(1)
+			len := ts.ToUnixSec() - time.Now().Unix()
+			time.Sleep(time.Second * time.Duration(len))
+			blk, msg = generateTestBlockMsg("id2", "SeckeyId2", 2, blk1.Head.Hash())
+			blkChan <- msg
 
+			time.Sleep(time.Second/2)
+			// block 2' by id2, is a fork
+			So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+
+			ts = consensus_common.GetCurrentTimestamp()
+			ts.Add(1)
+			len = ts.ToUnixSec() - time.Now().Unix()
+			time.Sleep(time.Second * time.Duration(len))
+			blk, msg = generateTestBlockMsg("id0", "SeckeyId0", 3, reqBlk.Head.Hash())
+			blkChan <- msg
+			time.Sleep(time.Second/2)
+			// block 3 by id0
+			So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+			// nothing is pushed until now
+			So(pushed, ShouldEqual, 0)
+
+			time.Sleep(time.Second * consensus_common.SlotLength)
+			// block 4 by id1, the node itself
+			So(reqBlk.Head.Number, ShouldEqual, 4)
+			So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
+			So(reqBlk.Head.Witness, ShouldEqual, "id1")
+			// block 1 and 2 should be pushed
+			So(pushed, ShouldEqual, 2)
+
+			p.Stop()
+		})
 	})
 }
 
