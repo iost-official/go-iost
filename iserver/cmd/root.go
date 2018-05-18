@@ -92,6 +92,8 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("Network initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
+
+		net.Run()
 		serverExit = append(serverExit, net)
 
 		//启动共识
@@ -134,6 +136,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		consensus.Run()
 		serverExit = append(serverExit, consensus)
 
 		//启动RPC
