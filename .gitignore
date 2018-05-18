@@ -108,6 +108,16 @@ iwallet/test
 iwallet/iwallet
 
 # build and test
+consensus/common/tx/
+/consensus/dpos/tx/
+/core/block/blockDB/
+/core/block/tx/
+/core/tx/tx/
+/rpc/tx/
+/verifier/tx/
+/network/tale_test/
+/network/iost_node_table_/
+
 playground/playground
 playground/test
 

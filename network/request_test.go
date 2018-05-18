@@ -15,7 +15,7 @@ import (
 
 func TestRequest_Unpack(t *testing.T) {
 	tim := time.Now().UnixNano()
-	req := newRequest(Message, "127.0.0.1", common.Int64ToBytes(tim))
+	req := newRequest(Message, "0.0.0.0", common.Int64ToBytes(tim))
 
 	Convey("test unpack packet splicing", t, func() {
 		testData, err := req.Pack()

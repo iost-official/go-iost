@@ -7,7 +7,7 @@ import (
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
-		bc, err := NewBlockChain()
+		bc, err := Instance()
 		Convey("New", func() {
 			So(err, ShouldBeNil)
 			So(bc.Length(), ShouldEqual, bc.Length())
@@ -17,7 +17,7 @@ func TestNewBlockChain(t *testing.T) {
 
 func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
-		bc, err := NewBlockChain()
+		bc, err := Instance()
 
 		Convey("New", func() {
 			So(err, ShouldBeNil)

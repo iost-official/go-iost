@@ -50,6 +50,7 @@ func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, erro
 	return tx, nil
 }
 
+// Time,Noce,Contract形成的基本哈希值
 func (t *Tx) baseHash() []byte {
 	tbr := TxBaseRaw{t.Time, t.Nonce, t.Contract.Encode()}
 	b, err := tbr.Marshal(nil)
@@ -59,6 +60,7 @@ func (t *Tx) baseHash() []byte {
 	return common.Sha256(b)
 }
 
+// 发布者使用的hash值，包含参与者的签名
 func (t *Tx) publishHash() []byte {
 	s := make([][]byte, 0)
 	for _, sign := range t.Signs {
@@ -72,6 +74,7 @@ func (t *Tx) publishHash() []byte {
 	return common.Sha256(b)
 }
 
+// 对Tx进行编码
 func (t *Tx) Encode() []byte {
 	s := make([][]byte, 0)
 	for _, sign := range t.Signs {
@@ -84,6 +87,8 @@ func (t *Tx) Encode() []byte {
 	}
 	return b
 }
+
+// 对Tx进行解码
 func (t *Tx) Decode(b []byte) error {
 	var tr TxRaw
 	_, err := tr.Unmarshal(b)
@@ -124,6 +129,8 @@ func (t *Tx) Decode(b []byte) error {
 	t.Time = tr.Time
 	return nil
 }
+
+// 计算Tx的哈希值
 func (t *Tx) Hash() []byte {
 	return common.Sha256(t.Encode())
 }
@@ -137,6 +144,7 @@ func (t *Tx) VerifySelf() error {
 			return fmt.Errorf("signer error")
 		}
 	}
+
 	ok := common.VerifySignature(t.publishHash(), t.Publisher)
 	if !ok {
 		return fmt.Errorf("publisher error")

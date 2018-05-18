@@ -4,10 +4,18 @@ import (
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/common/rlp"
 	"github.com/iost-official/prototype/common"
+	"github.com/InWeCrypto/sha3"
 	"bytes"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
 )
+
+func Keccak256(data ...[]byte) []byte {
+	d := sha3.NewKeccak256()
+	for _, b := range data {
+		d.Write(b)
+	}
+	return d.Sum(nil)
+}
 
 // MPT证明，即验证一笔交易是否存在
 func (t *Trie) Prove(key []byte, fromLevel uint, proofDb db.Database) error {
@@ -49,7 +57,7 @@ func (t *Trie) Prove(key []byte, fromLevel uint, proofDb db.Database) error {
 			} else {
 				enc, _ := rlp.EncodeToBytes(n)
 				if !ok {
-					hash = crypto.Keccak256(enc)
+					hash = Keccak256(enc)
 				}
 				proofDb.Put(hash, enc)
 			}

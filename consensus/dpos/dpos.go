@@ -3,19 +3,19 @@ package dpos
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
-	"time"
-
 	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
 	. "github.com/iost-official/prototype/core/tx"
 	. "github.com/iost-official/prototype/network"
 
+	"errors"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
-	"errors"
+	"time"
+	"github.com/iost-official/prototype/verifier"
+	"fmt"
 )
 
 type DPoS struct {
@@ -30,22 +30,25 @@ type DPoS struct {
 	votedStats map[string][]string
 	infoCache  [][]byte
 
-	exitSignal chan bool
+	exitSignal chan struct{}
 	chTx       chan message.Message
 	chBlock    chan message.Message
 }
 
 // NewDPoS: 新建一个DPoS实例
-// acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), witnessList: 见证节点列表
+// acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
-	p.Account = acc
-	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3+1)
+	p.account = acc
+	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
+	if bc.GetBlockByNumber(0) == nil {
+		p.genesis(0)
+	}
 
 	var err error
-	p.router, err = RouterFactory("base")
-	if err != nil {
-		return nil, err
+	p.router = Route
+	if p.router == nil {
+		return nil, fmt.Errorf("failed to network.Route is nil")
 	}
 
 	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
@@ -75,8 +78,9 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	if err != nil {
 		return nil, err
 	}
+	p.exitSignal = make(chan struct{})
 
-	p.initGlobalProperty(p.Account, witnessList)
+	p.initGlobalProperty(p.account, witnessList)
 	return &p, nil
 }
 
@@ -87,16 +91,37 @@ func (p *DPoS) initGlobalProperty(acc Account, witnessList []string) {
 
 // Run: 运行DPoS实例
 func (p *DPoS) Run() {
-	//go p.blockLoop()
-	//go p.scheduleLoop()
-	p.genBlock(p.Account, block.Block{})
+	p.synchronizer.StartListen()
+	go p.blockLoop()
+	go p.scheduleLoop()
+	//p.genBlock(p.Account, block.Block{})
 }
 
 // Stop: 停止DPoS实例
 func (p *DPoS) Stop() {
 	close(p.chTx)
 	close(p.chBlock)
-	p.exitSignal <- true
+	close(p.exitSignal)
+}
+
+// BlockChain 返回已确认的block chain
+func (p *DPoS) BlockChain() block.Chain{
+	return p.blockCache.BlockChain()
+}
+
+// CachedBlockChain 返回缓存中的最长block chain
+func (p *DPoS) CachedBlockChain() block.Chain{
+	return p.blockCache.LongestChain()
+}
+
+// StatePool 返回已确认的state pool
+func (p *DPoS) StatePool() state.Pool{
+	return p.blockCache.BasePool()
+}
+
+// CacheStatePool 返回缓存中最新的state pool
+func (p *DPoS) CachedStatePool() state.Pool{
+	return p.blockCache.LongestPool()
 }
 
 func (p *DPoS) genesis(initTime int64) error {
@@ -114,28 +139,31 @@ func (p *DPoS) genesis(initTime int64) error {
 
 func (p *DPoS) txListenLoop() {
 	for {
-		req, ok := <-p.chTx
-		if !ok {
+		select {
+		case req, ok := <-p.chTx:
+			if !ok {
+				return
+			}
+			if req.ReqType == reqTypeVoteTest {
+				p.addWitnessMsg(req)
+				continue
+			}
+			var tx Tx
+			tx.Decode(req.Body)
+			p.router.Send(req)
+			if VerifyTxSig(tx) {
+				p.blockCache.AddTx(&tx)
+			}
+		case <-p.exitSignal:
 			return
-		}
-		if req.ReqType == reqTypeVoteTest {
-			p.addWitnessMsg(req)
-			continue
-		}
-		var tx Tx
-		tx.Decode(req.Body)
-		p.router.Send(req)
-		if VerifyTxSig(tx) {
-			p.blockCache.AddTx(&tx)
 		}
 	}
 }
 
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-	verifier := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+	verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 		// verify block head
-
 		if err := VerifyBlockHead(blk, parent); err != nil {
 			return nil, err
 		}
@@ -161,51 +189,69 @@ func (p *DPoS) blockLoop() {
 	}
 
 	for {
-		req, ok := <-p.chBlock
-		if !ok {
-			return
-		}
-		var blk block.Block
-		blk.Decode(req.Body)
-		err := p.blockCache.Add(&blk, verifier)
-		if err != ErrBlock {
-			p.globalDynamicProperty.update(&blk.Head)
-			if err == ErrNotFound {
-				// New block is a single block
-				need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
-				if need {
-					go p.synchronizer.SyncBlocks(start, end)
+		select {
+		case req, ok := <-p.chBlock:
+			if !ok {
+				return
+			}
+			var blk block.Block
+			blk.Decode(req.Body)
+			err := p.blockCache.Add(&blk, verifyFunc)
+			if err != ErrBlock && err != ErrTooOld {
+				if err == nil {
+					p.globalDynamicProperty.update(&blk.Head)
+					p.blockCache.AddSingles(verifyFunc)
+					p.router.Broadcast(req)
+				} else if err == ErrNotFound {
+					// New block is a single block
+					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
+					if need {
+						go p.synchronizer.SyncBlocks(start, end)
+					}
 				}
 			}
-		}
-		ts := Timestamp{blk.Head.Time}
-		if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
-			p.performMaintenance()
+			ts := Timestamp{blk.Head.Time}
+			if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
+				p.performMaintenance()
+			}
+		case <-p.exitSignal:
+			return
 		}
 	}
 }
 
 func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
-
+	var nextSchedule int64
 	for {
-		currentTimestamp := GetCurrentTimestamp()
-		wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
-		if wid == p.Account.ID {
-			bc := p.blockCache.LongestChain()
-			blk := p.genBlock(p.Account, *bc.Top())
-			p.blockCache.ResetTxPoool()
-			p.router.Broadcast(message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}) //??
+		select {
+		case <-p.exitSignal:
+			return
+		case <-time.After(time.Second * time.Duration(nextSchedule)):
+			currentTimestamp := GetCurrentTimestamp()
+			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
+			if wid == p.account.ID {
+				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
+				bc := p.blockCache.LongestChain()
+				pool := p.blockCache.LongestPool()
+				blk := p.genBlock(p.account, bc, pool)
+				p.blockCache.ResetTxPoool()
+				msg := message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}
+				p.router.Broadcast(msg)
+				p.chBlock <- msg
+				p.globalDynamicProperty.update(&blk.Head)
+			}
+			nextSchedule = timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
+			//time.Sleep(time.Second * time.Duration(nextSchedule))
 		}
-		nextSchedule := timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
-		time.Sleep(time.Duration(nextSchedule))
 	}
 }
 
-func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
+func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Block {
+	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
-		ParentHash: lastBlk.Head.BlockHash,
+		ParentHash: lastBlk.Head.Hash(),
 		TreeHash:   make([]byte, 0),
 		BlockHash:  make([]byte, 0),
 		Info:       encodeDPoSInfo(p.infoCache),
@@ -215,17 +261,20 @@ func (p *DPoS) genBlock(acc Account, lastBlk block.Block) *block.Block {
 	}}
 	p.infoCache = [][]byte{}
 	headInfo := generateHeadInfo(blk.Head)
-	fmt.Println(acc.Seckey)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
+	//return &blk
+	veri := verifier.NewCacheVerifier(pool)
+	var result bool
 	//TODO Content大小控制
 	for len(blk.Content) < 2 {
-		tx, err:= p.blockCache.GetTx()
-		if err!=nil{
+		tx, err := p.blockCache.GetTx()
+		if tx == nil || err != nil {
 			break
 		}
-		//TODO 验算tx能否放进block
-		blk.Content = append(blk.Content, *tx)
+		if _, result = VerifyTx(tx, &veri); result {
+			blk.Content = append(blk.Content, *tx)
+		}
 	}
 	return &blk
 }
@@ -243,7 +292,7 @@ func generateHeadInfo(head block.BlockHead) []byte {
 	info = append(info, head.ParentHash...)
 	info = append(info, head.TreeHash...)
 	info = append(info, head.Info...)
-	return info
+	return common.Sha256(info)
 }
 
 // 测试函数，用来将info和vote消息进行转换，在块被确认时被调用
