@@ -21,6 +21,7 @@ var initialized int32
 var mu sync.Mutex
 
 const Path = "test.log" // TODO : 在命令行内修改
+const needPrint = true
 
 func NewLogger(tag string) (*Logger, error) {
 
@@ -54,6 +55,9 @@ func NewLogger(tag string) (*Logger, error) {
 func (l *Logger) log(level, s string, attr ...interface{}) {
 	a := fmt.Sprintf(s, attr...)
 	str := fmt.Sprintf("%v %v/%v: %v", time.Now().Format("2006-01-02 15:04:05.000"), level, l.Tag, a)
+	if needPrint {
+		fmt.Println(str)
+	}
 	l.logFile.Write([]byte(str))
 	l.logFile.Write([]byte("\n"))
 }
