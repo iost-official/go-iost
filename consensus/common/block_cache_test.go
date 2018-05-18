@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/prototype/db/mocks"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -27,7 +28,7 @@ func TestBlockCachePoW(t *testing.T) {
 						Put("hello", "world")
 						return "success"
 					end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 	b0 := block.Block{
 		Head: block.BlockHead{
@@ -179,7 +180,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 						Put("hello", "world")
 						return "success"
 					end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 	b0 := block.Block{
 		Head: block.BlockHead{
@@ -315,7 +316,7 @@ func TestStatePool(t *testing.T) {
 						Put("hello", "world")
 						return "success"
 					end`
-		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 		b0 := block.Block{
 			Head: block.BlockHead{
@@ -416,7 +417,9 @@ func TestTxPool(t *testing.T) {
 						Put("hello", "world")
 						return "success"
 					end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+	//lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
+
 
 	b0 := block.Block{
 		Head: block.BlockHead{

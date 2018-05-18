@@ -16,17 +16,15 @@ type api struct {
 	function func(L *lua.LState) int
 }
 
+// VM lua 虚拟机的实现
 type VM struct {
 	APIs []api
 	L    *lua.LState
 
 	cachePool state.Pool
-
-	monitor vm.Monitor
-
-	Contract *Contract
-
-	callerPC uint64
+	monitor   vm.Monitor
+	Contract  *Contract
+	callerPC  uint64
 }
 
 func (l *VM) Start() error {
@@ -48,7 +46,7 @@ func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]st
 		l.cachePool = pool.Copy()
 	}
 
-	method0, err := l.Contract.Api(methodName)
+	method0, err := l.Contract.API(methodName)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -162,7 +160,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 			method, err := l.monitor.GetMethod(blockName, methodName)
 
 			if err != nil {
-				L.Push(lua.LString("api not found"))
+				L.Push(lua.LString("api not found")) // todo 明确到底是什么错再返回
 				return 1
 			}
 
@@ -193,7 +191,7 @@ func (l *VM) PC() uint64 {
 }
 
 func CheckPrivilege(info vm.ContractInfo, name string) int {
-	if vm.IOSTAccount(name) == info.Sender {
+	if vm.IOSTAccount(name) == info.Publisher {
 		return 2
 	}
 	for _, signer := range info.Signers {

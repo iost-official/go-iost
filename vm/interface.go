@@ -4,8 +4,6 @@ Package vm  define vm of smart contract. Use verifier/ to verify txs and blocks
 package vm
 
 import (
-	"encoding/base64"
-
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
@@ -15,17 +13,21 @@ import (
 type Privilege int
 
 const (
+	// Private 接口只能被发布者访问
 	Private Privilege = iota
+	// Protected 接口只能被签名者访问
 	Protected
+	// Public 接口谁都能访问
 	Public
 )
 
+// IOSTAccount iost账户，为base58编码的pubkey
 type IOSTAccount string
 
 //go:generate gencode go -schema=structs.schema -package=vm
 //go:generate mockgen -destination mocks/mock_contract.go -package vm_mock github.com/iost-official/prototype/vm Contract
 
-// code type, can be compile to contract
+// Code type, can be compile to contract
 // 代码类型的别名，可以编译为contract
 type Code string
 
@@ -53,7 +55,7 @@ type Contract interface {
 	SetPrefix(prefix string)
 	SetSender(sender IOSTAccount)
 	AddSigner(signer IOSTAccount)
-	Api(apiName string) (Method, error)
+	API(apiName string) (Method, error)
 	Code() string
 	common.Serializable
 }
@@ -72,5 +74,5 @@ func PubkeyToIOSTAccount(pubkey []byte) IOSTAccount {
 }
 
 func HashToPrefix(hash []byte) string {
-	return base64.StdEncoding.EncodeToString(hash)
+	return common.Base58Encode(hash)
 }

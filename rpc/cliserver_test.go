@@ -24,7 +24,7 @@ func TestHttpServer(t *testing.T) {
 			 		Put("hello", "world")
 					return "success"
 				end`
-		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 		_tx := tx.NewTx(int64(0), &lc)
 		acc, _ := account.NewAccount(nil)
@@ -47,7 +47,7 @@ func TestHttpServer(t *testing.T) {
 			So(res.Code, ShouldEqual, 0)
 		})
 		Convey("Test of GetTransaction", func() {
-			txdb:=tx.TxDb
+			txdb := tx.TxDb
 			err := txdb.Add(&_tx)
 			So(err, ShouldBeNil)
 
@@ -93,25 +93,21 @@ func TestHttpServer(t *testing.T) {
 			_, err := hs.GetBlock(context.Background(), &BlockKey{Layer: 10})
 			So(err, ShouldBeNil)
 		})
-		/*
-			Convey("Test of GetBalance", func() {
-				txpooldb, err := NewTxPoolDb()
-				main := lua.NewMethod("main", 0, 1)
-				code := `function main()
-								Put("hello", "world")
-								return "success"
-							end`
-				lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
 
-				tx := NewTx(int64(0), &lc)
-				err = txpooldb.Add(&tx)
-				hash := tx.Hash()
+		Convey("Test of GetBalance", func() {
+			ctl := gomock.NewController(t)
+			mockPool := core_mock.NewMockPool(ctl)
+			mockPool.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(state.MakeVFloat(18.0), nil)
+			state.StdPool = mockPool
 
-				tx1, err := txpooldb.Get(hash)
-				So(err, ShouldBeNil)
-				So(tx.Time, ShouldEqual, (*tx1).Time)
-				//txpooldb.(*TxPoolDb).Close()
-			})
-		*/
+			hs := new(HttpServer)
+			balance, err := hs.GetBalance(context.Background(), &Key{S: "HowHsu"})
+			So(err, ShouldBeNil)
+
+			vf := state.MakeVFloat(18.0)
+			So(balance.Sv, ShouldEqual, vf.EncodeString())
+
+		})
+
 	})
 }

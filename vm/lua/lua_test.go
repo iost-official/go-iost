@@ -76,7 +76,7 @@ end`,
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
 			main := NewMethod("main", 0, 1)
 			lc := Contract{
-				info: vm.ContractInfo{Prefix: "test", GasLimit: 11, Sender: vm.IOSTAccount("a")},
+				info: vm.ContractInfo{Prefix: "test", GasLimit: 11, Publisher: vm.IOSTAccount("a")},
 
 				code: `function main()
 	return Transfer("a", "b", 50)
@@ -134,12 +134,20 @@ end`,
 	})
 
 	Convey("Test of Lua value converter", t, func() {
-		Convey("Lua to core", func() {
+		Convey("Lua to core", func() { // todo core2lua的测试平台
 			Convey("string", func() {
 				lstr := lua.LString("hello")
 				cstr := Lua2Core(lstr)
 				So(cstr.Type(), ShouldEqual, state.String)
 				So(cstr.EncodeString(), ShouldEqual, "shello")
+				lbool := lua.LTrue
+				cbool := Lua2Core(lbool)
+				So(cbool.Type(), ShouldEqual, state.Bool)
+				So(cbool.EncodeString(), ShouldEqual, "true")
+				lnum := lua.LNumber(3.14)
+				cnum := Lua2Core(lnum)
+				So(cnum.Type(), ShouldEqual, state.Float)
+				So(cnum.EncodeString(), ShouldEqual, "f3.140000000000000e+00")
 			})
 		})
 	})
@@ -259,7 +267,7 @@ end`,
 func BenchmarkLuaVM_Transfer(b *testing.B) {
 	main := NewMethod("main", 0, 1)
 	lc := Contract{
-		info: vm.ContractInfo{Prefix: "test", GasLimit: 1000, Sender: vm.IOSTAccount("a")},
+		info: vm.ContractInfo{Prefix: "test", GasLimit: 1000, Publisher: vm.IOSTAccount("a")},
 		code: `function main()
 	Transfer("a", "b", 50)
 	return "success"

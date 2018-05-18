@@ -79,7 +79,7 @@ func NewNaiveNetwork(n int) (*NaiveNetwork, error) {
 		done:   false,
 	}
 	for i := 1; i <= n; i++ {
-		nn.db.Put([]byte(string(i)), []byte("127.0.0.1:"+strconv.Itoa(11036+i)))
+		nn.db.Put([]byte(string(i)), []byte("0.0.0.0:"+strconv.Itoa(11036+i)))
 	}
 	return nn, nil
 }
