@@ -487,7 +487,6 @@ func (bn *BaseNetwork) putNode(addrs string) {
 func (bn *BaseNetwork) nodeCheckLoop() {
 	for {
 		now := time.Now().Unix()
-		bn.lock.Lock()
 		iter := bn.nodeTable.NewIterator()
 		for iter.Next() {
 			if (now - common.BytesToInt64(iter.Value())) > NodeLiveThresholdSeconds {
@@ -496,7 +495,6 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 				bn.delNeighbour(string(iter.Key()))
 			}
 		}
-		bn.lock.Unlock()
 		time.Sleep(CheckKnownNodeInterval * time.Second)
 	}
 }
