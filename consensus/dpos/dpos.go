@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"time"
+	"fmt"
 )
 
 type DPoS struct {
@@ -44,9 +45,9 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	}
 
 	var err error
-	p.router, err = RouterFactory("base")
-	if err != nil {
-		return nil, err
+	p.router = Route
+	if p.router == nil {
+		return nil, fmt.Errorf("failed to network.Route is nil")
 	}
 
 	p.synchronizer = NewSynchronizer(p.blockCache, p.router)

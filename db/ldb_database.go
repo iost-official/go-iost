@@ -3,8 +3,6 @@ package db
 import (
 	"sync"
 
-	"fmt"
-
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
@@ -42,7 +40,7 @@ func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
 			Filter:                 filter.NewBloomFilter(10),
 		})
 
-		fmt.Println(file, err)
+		//fmt.Println(file, err)
 		if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
 			db, err = leveldb.RecoverFile(file, nil)
 		}

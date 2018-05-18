@@ -135,6 +135,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		serverExit = append(serverExit, consensus)
+
 		//启动RPC
 		err = rpc.Server()
 		if err != nil {
@@ -158,7 +159,7 @@ func exitLoop() {
 
 	go func() {
 		<-c
-		fmt.Printf("iserver received interrupt, shutting down...")
+		fmt.Printf("IOST server received interrupt, shutting down...")
 
 		for _, s := range serverExit {
 			if s != nil {
