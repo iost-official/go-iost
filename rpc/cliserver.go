@@ -55,13 +55,14 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 		ReqType: int32(network.ReqPublishTx),
 	}
 	router.Broadcast(broadTx)
-
+/*
 	//add this tx to txpool
 	tp, err := tx.TxPoolFactory("mem") //TODO:in fact,we should find the txpool_mem,not create a new txpool_mem
 	if err != nil {
 		panic(err)
 	}
 	tp.Add(&tx1)
+*/
 	return &Response{Code: 0}, nil
 }
 
