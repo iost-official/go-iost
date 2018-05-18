@@ -27,8 +27,8 @@ func initNetConf() *NetConifg {
 }
 
 func main() {
-	//bootnodeStart()
-	testBaseNetwork()
+	bootnodeStart()
+	//testBaseNetwork()
 	//testBootNodeConn()
 }
 
@@ -75,7 +75,7 @@ func testBaseNetwork() {
 	rs := make([]Router, 0)
 	for i := 0; i < 2; i++ {
 		router, _ := RouterFactory("base")
-		baseNet, _ := NewBaseNetwork(&NetConifg{NodeTablePath: "node_table_" + strconv.Itoa(i), ListenAddr: "0.0.0.0"})
+		baseNet, _ := NewBaseNetwork(&NetConifg{NodeTablePath: "node_table_" + strconv.Itoa(i), ListenAddr: "192.168.1.34"})
 		err := router.Init(baseNet, uint16(20002+i))
 		if err != nil {
 			fmt.Println("init net got err", err)
@@ -86,10 +86,10 @@ func testBaseNetwork() {
 	}
 	time.Sleep(15 * time.Second)
 	go func() {
-		req := message.Message{From: "sender", Time: time.Now().UnixNano(), To: "0.0.0.0:20003", Body: []byte{22, 11, 125}}
+		req := message.Message{From: "sender", Time: time.Now().UnixNano(), To: "192.168.1.34:20003", Body: []byte{22, 11, 125}}
 		for {
 			//rs[1].Send(req)
-			req.Body = append(req.Body, []byte{11}...)
+			req.Body = append(req.Body, []byte{111}...)
 			rs[0].Broadcast(req)
 			time.Sleep(5 * time.Second)
 		}
