@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"time"
+	"github.com/iost-official/prototype/verifier"
 	"fmt"
 )
 
@@ -38,7 +39,7 @@ type DPoS struct {
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*DPoS, error) {
 	p := DPoS{}
-	p.Account = acc
+	p.account = acc
 	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
 	if bc.GetBlockByNumber(0) == nil {
 		p.genesis(0)
@@ -79,7 +80,7 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	}
 	p.exitSignal = make(chan struct{})
 
-	p.initGlobalProperty(p.Account, witnessList)
+	p.initGlobalProperty(p.account, witnessList)
 	return &p, nil
 }
 
@@ -231,11 +232,11 @@ func (p *DPoS) scheduleLoop() {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
-			if wid == p.Account.ID {
+			if wid == p.account.ID {
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 				bc := p.blockCache.LongestChain()
 				pool := p.blockCache.LongestPool()
-				blk := p.genBlock(p.Account, bc, pool)
+				blk := p.genBlock(p.account, bc, pool)
 				p.blockCache.ResetTxPoool()
 				msg := message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}
 				p.router.Broadcast(msg)
@@ -264,22 +265,20 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
-	return &blk
-	/*
-		veri := verifier.NewCacheVerifier(pool)
-		var result bool
-		//TODO Content大小控制
-		for len(blk.Content) < 2 {
-			tx, err := p.blockCache.GetTx()
-			if tx == nil || err != nil {
-				break
-			}
-			if _, result = VerifyTx(tx, &veri); result {
-				blk.Content = append(blk.Content, *tx)
-			}
+	//return &blk
+	veri := verifier.NewCacheVerifier(pool)
+	var result bool
+	//TODO Content大小控制
+	for len(blk.Content) < 2 {
+		tx, err := p.blockCache.GetTx()
+		if tx == nil || err != nil {
+			break
 		}
-		return &blk
-	*/
+		if _, result = VerifyTx(tx, &veri); result {
+			blk.Content = append(blk.Content, *tx)
+		}
+	}
+	return &blk
 }
 
 func generateHeadInfo(head block.BlockHead) []byte {

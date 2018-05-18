@@ -83,7 +83,7 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	height := sync.blockCache.ConfirmedLength()
 	if height < netHeight-uint64(SyncNumber) {
 		body := message.RequestHeight{
-			LocalBlockHeight: height,
+			LocalBlockHeight: height + 1,
 			NeedBlockHeight:  netHeight,
 		}
 		heightReq := message.Message{

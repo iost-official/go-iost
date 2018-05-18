@@ -29,6 +29,7 @@ func TestNewDPoS(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 
+		network.Route = mockRouter
 		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
@@ -77,6 +78,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 
+		network.Route = mockRouter
 		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
@@ -152,6 +154,7 @@ func TestRunReceiveBlock(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 
+		network.Route = mockRouter
 		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
@@ -230,6 +233,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 
+		network.Route = mockRouter
 		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
@@ -392,6 +396,57 @@ func TestRunMultipleBlocks(t *testing.T) {
 
 			p.Stop()
 		})
+/*
+		Convey("need sync", func() {
+			consensus_common.SyncNumber = 2
+			p.account.ID = "id3"
+			blk1, msg1 := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
+			time.Sleep(time.Second * consensus_common.SlotLength)
+			blk2, msg2 := generateTestBlockMsg("id1", "SeckeyId1", 2, blk1.Head.Hash())
+			time.Sleep(time.Second * consensus_common.SlotLength)
+			_, msg3 := generateTestBlockMsg("id2", "SeckeyId2", 3, blk2.Head.Hash())
+
+			blkChan <- msg3
+
+			var bcType network.ReqType
+			var bcBlk block.Block
+			mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
+				bcType = network.ReqType(req.ReqType)
+				bcBlk.Decode(req.Body)
+			}).AnyTimes()
+
+			var pushedBlk *block.Block
+			mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
+				pushedBlk = block
+				return nil
+			}).AnyTimes()
+
+			var dlSt, dlEd uint64
+			mockRouter.EXPECT().Download(Any(), Any()).Do(func(start, end uint64) error {
+				dlSt = start
+				dlEd = end
+				return nil
+			})
+			p.Run()
+
+			time.Sleep(time.Second / 2)
+			// need sync from 1 to 2
+			So(bcType, ShouldEqual, network.ReqBlockHeight)
+			So(dlSt, ShouldEqual, 1)
+			So(dlEd, ShouldEqual, 3)
+
+			blkChan <- msg2
+			time.Sleep(time.Second / 2)
+
+			blkChan <- msg1
+			time.Sleep(time.Second / 2)
+
+			// After block1 and block2 received, block 1-3 all set, and block 1 will be pushed
+			So(bytes.Equal(pushedBlk.Head.Hash(), blk1.Head.Hash()), ShouldBeTrue)
+
+			p.Stop()
+		})
+*/
 	})
 }
 
