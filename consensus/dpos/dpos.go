@@ -139,6 +139,7 @@ func (p *DPoS) genesis(initTime int64) error {
 }
 
 func (p *DPoS) txListenLoop() {
+	fmt.Println("Start to listen tx")
 	for {
 		select {
 		case req, ok := <-p.chTx:
@@ -187,7 +188,7 @@ func (p *DPoS) blockLoop() {
 		}
 		return newPool, nil
 	}
-
+	fmt.Println("Start to listen block")
 	for {
 		select {
 		case req, ok := <-p.chBlock:
@@ -197,6 +198,12 @@ func (p *DPoS) blockLoop() {
 			var blk block.Block
 			blk.Decode(req.Body)
 			err := p.blockCache.Add(&blk, verifyFunc)
+			fmt.Println("Received block:", blk.Head.Number, ", timestamp:", blk.Head.Time)
+			if err == nil {
+				fmt.Println("Link it onto cached chain")
+			} else {
+				fmt.Println("Error:", err)
+			}
 			if err != ErrBlock && err != ErrTooOld {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
@@ -210,10 +217,12 @@ func (p *DPoS) blockLoop() {
 					}
 				}
 			}
+			/*
 			ts := Timestamp{blk.Head.Time}
 			if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
 				p.performMaintenance()
 			}
+			*/
 		case <-p.exitSignal:
 			return
 		}
@@ -223,6 +232,7 @@ func (p *DPoS) blockLoop() {
 func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
 	var nextSchedule int64
+	fmt.Println("Start to schedule")
 	for {
 		select {
 		case <-p.exitSignal:
@@ -231,6 +241,7 @@ func (p *DPoS) scheduleLoop() {
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			if wid == p.account.ID {
+				fmt.Println("Generating block, current timestamp:", currentTimestamp)
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 				bc := p.blockCache.LongestChain()
 				pool := p.blockCache.LongestPool()
