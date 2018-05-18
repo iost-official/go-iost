@@ -274,6 +274,18 @@ func TestBlockCacheDPoS(t *testing.T) {
 				So(len(bc.singleBlockRoot.children), ShouldEqual, 0)
 				So(ans, ShouldEqual, 1)
 			})
+
+			Convey("deal with dups", func() {
+				bc := NewBlockCache(base, pool, 2)
+				bc.Add(&b1, verifier)
+				bc.Add(&b2, verifier)
+				err := bc.Add(&b2, verifier)
+				So(err, ShouldEqual, ErrDup)
+				err = bc.Add(&b4, verifier)
+				So(err, ShouldEqual, ErrNotFound)
+				err = bc.Add(&b4, verifier)
+				So(err, ShouldEqual, ErrDup)
+			})
 		})
 
 		Convey("Longest chain", func() {

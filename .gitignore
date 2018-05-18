@@ -108,3 +108,4 @@ iwallet/test
 iwallet/iwallet
 
 consensus/common/tx/
+consensus/dpos/tx/
