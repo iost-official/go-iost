@@ -15,8 +15,8 @@ func TestGenNodeId(t *testing.T) {
 		So(len(GenNodeId()), ShouldEqual, 64)
 		node, err := ParseNode(params.TestnetBootnodes[0])
 		So(err, ShouldBeNil)
-		So(node.TCP, ShouldEqual, uint16(30302))
-		So(node.IP.String(), ShouldEqual, "0.0.0.0")
+		So(node.TCP, ShouldEqual, uint16(30304))
+		So(node.IP.String(), ShouldEqual, "18.219.254.124")
 		So(node.ID, ShouldEqual, "84a8ecbeeb6d3f676da1b261c35c7cd15ae17f32b659a6f5ce7be2d60f6c16f9")
 		//	xor distance
 		dis := xorDistance("0056847afe9799739b3d9677972a3b58ef609ba78332428f85ed2534d0b49610", "0056847afe9799739b3d9677972a3b58ef4d92ae0b48d32d9c67dc9a302bfc76")

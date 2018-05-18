@@ -502,8 +502,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 func (bn *BaseNetwork) registerLoop() {
 	for {
 		for _, encodeAddr := range params.TestnetBootnodes {
-			if encodeAddr != "" && bn.localNode.String() != encodeAddr {
-				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
+			if bn.localNode.TCP != 30304 {
 				conn, err := bn.dial(encodeAddr)
 				if err != nil {
 					bn.log.E("failed to connect boot node, err:%v", err)
@@ -511,6 +510,7 @@ func (bn *BaseNetwork) registerLoop() {
 				}
 				defer bn.peers.RemoveByNodeStr(encodeAddr)
 				bn.log.D("%v request node table from %v", bn.localNode.String(), encodeAddr)
+				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
 				bn.send(conn, req)
 			}
 		}
