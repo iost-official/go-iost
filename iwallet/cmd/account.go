@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/iost-official/prototype/account"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
 
@@ -78,8 +79,14 @@ var nickName string
 func init() {
 	rootCmd.AddCommand(accountCmd)
 
-	accountCmd.Flags().StringVarP(&nickName, "create", "c", "no", "Create new account, using input as nickname")
-	accountCmd.Flags().StringVarP(&kvPath, "path", "p", "~/.ssh/", "Set path of key pair file")
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	accountCmd.Flags().StringVarP(&nickName, "create", "c", "id", "Create new account, using input as nickname")
+	accountCmd.Flags().StringVarP(&kvPath, "path", "p", home+"/.ssh", "Set path of key pair file")
 
 	// Here you will define your flags and configuration settings.
 
