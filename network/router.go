@@ -35,6 +35,7 @@ type Router interface {
 var Route Router
 var once sync.Once
 
+//GetInstance get singleton of network, [NOTE] conf.ListenAddr = your ip, port = !30304
 func GetInstance(conf *NetConifg, target string, port uint16) (Router, error) {
 	var err error
 	once.Do(func() {
