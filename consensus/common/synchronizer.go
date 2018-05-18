@@ -1,9 +1,10 @@
 package consensus_common
 
 import (
+	"time"
+
 	"github.com/iost-official/prototype/core/message"
 	. "github.com/iost-official/prototype/network"
-	"time"
 )
 
 var (
@@ -37,9 +38,6 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 	}
 	var err error
 	sync.heightChan, err = sync.router.FilteredChan(Filter{
-		WhiteList:  []message.Message{},
-		BlackList:  []message.Message{},
-		RejectType: []ReqType{},
 		AcceptType: []ReqType{
 			ReqBlockHeight,
 		}})
@@ -48,9 +46,6 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 	}
 
 	sync.blkSyncChan, err = sync.router.FilteredChan(Filter{
-		WhiteList:  []message.Message{},
-		BlackList:  []message.Message{},
-		RejectType: []ReqType{},
 		AcceptType: []ReqType{
 			ReqDownloadBlock,
 		}})
