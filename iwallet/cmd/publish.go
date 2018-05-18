@@ -20,10 +20,13 @@ import (
 
 	"errors"
 
+	"os"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
 	pb "github.com/iost-official/prototype/rpc"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -116,7 +119,13 @@ var server string
 func init() {
 	rootCmd.AddCommand(publishCmd)
 
-	publishCmd.Flags().StringVarP(&kpPath, "key-path", "k", "~/.ssh/id_secp", "Set path of sec-key")
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	publishCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.ssh/id_secp", "Set path of sec-key")
 	publishCmd.Flags().BoolVar(&isLocal, "local", false, "Set to not send tx to server")
 	// Here you will define your flags and configuration settings.
 

@@ -23,6 +23,7 @@ import (
 
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
 
@@ -102,7 +103,14 @@ to quickly create a Cobra application.`,
 
 func init() {
 	rootCmd.AddCommand(signCmd)
-	signCmd.Flags().StringVarP(&kpPath, "key-path", "k", "~/.ssh/id_secp", "Set path of sec-key")
+
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	signCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.ssh/id_secp", "Set path of sec-key")
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports Persistent Flags which will work for this command

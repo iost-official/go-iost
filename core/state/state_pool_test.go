@@ -18,6 +18,8 @@ func TestPoolImpl(t *testing.T) {
 
 		ctl := gomock.NewController(t)
 		mockDB := db_mock.NewMockDatabase(ctl)
+		mockDB.EXPECT().Get(gomock.Any()).Return(nil, errors.New("not found"))
+
 		db := NewDatabase(mockDB)
 
 		Convey("copy", func() {
@@ -30,6 +32,8 @@ func TestPoolImpl(t *testing.T) {
 			sp2 := sp1.Copy()
 			sp1.Put(k1, v1)
 			So(sp2.Has(k1), ShouldBeTrue)
+			vt, _ := sp2.Get(k1)
+			So(vt.EncodeString(), ShouldEqual, v1.EncodeString())
 			sp2.Put(k2, v2)
 			mockDB.EXPECT().Has(gomock.Any()).Return(false, nil)
 			So(sp1.Has(k2), ShouldBeFalse)
