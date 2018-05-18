@@ -29,6 +29,7 @@ func TestNewDPoS(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 
+		network.Route = mockRouter
 		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
@@ -77,6 +78,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 
+		network.Route = mockRouter
 		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
@@ -112,7 +114,7 @@ func TestRunGenerateBlock(t *testing.T) {
 						Put("hello", "world")
 						return "success"
 					end`
-		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 		newTx := tx.NewTx(0, &lc)
 		//构造测试数据
 		txChan <- message.Message{
@@ -152,6 +154,7 @@ func TestRunReceiveBlock(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 
+		network.Route = mockRouter
 		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
@@ -187,7 +190,7 @@ func TestRunReceiveBlock(t *testing.T) {
 						Put("hello", "world")
 						return "success"
 					end`
-		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 		newTx := tx.NewTx(0, &lc)
 		//构造测试数据
 		txChan <- message.Message{
@@ -230,6 +233,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 
+		network.Route = mockRouter
 		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
@@ -265,7 +269,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 						Put("hello", "world")
 						return "success"
 					end`
-		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 		newTx := tx.NewTx(0, &lc)
 		//构造测试数据
 		txChan <- message.Message{
@@ -441,7 +445,8 @@ func TestRunMultipleBlocks(t *testing.T) {
 			So(bytes.Equal(pushedBlk.Head.Hash(), blk1.Head.Hash()), ShouldBeTrue)
 
 			p.Stop()
-		})*/
+		})
+*/
 	})
 }
 
