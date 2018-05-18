@@ -34,7 +34,7 @@ type RequestHead struct {
 const (
 	HEADLENGTH               = 4
 	CheckKnownNodeInterval   = 10
-	NodeLiveThresholdSeconds = 30
+	NodeLiveThresholdSeconds = 20
 	MaxDownloadRetry         = 3
 	DownloadRetryInterval    = 2
 )
@@ -487,13 +487,16 @@ func (bn *BaseNetwork) putNode(addrs string) {
 func (bn *BaseNetwork) nodeCheckLoop() {
 	for {
 		now := time.Now().Unix()
+		bn.lock.Lock()
 		iter := bn.nodeTable.NewIterator()
 		for iter.Next() {
 			if (now - common.BytesToInt64(iter.Value())) > NodeLiveThresholdSeconds {
 				bn.log.D("delete node %v, cuz its last register time is %v", common.BytesToInt64(iter.Value()))
 				bn.nodeTable.Delete(iter.Key())
+				bn.delNeighbour(string(iter.Key()))
 			}
 		}
+		bn.lock.Unlock()
 		time.Sleep(CheckKnownNodeInterval * time.Second)
 	}
 }
@@ -552,6 +555,12 @@ func (bn *BaseNetwork) setNeighbour(node *discover.Node) {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
 	bn.neighbours[node.String()] = node
+}
+
+func (bn *BaseNetwork) delNeighbour(nodeStr string) {
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
+	delete(bn.neighbours, nodeStr)
 }
 
 //Download block by height from which node in NodeHeightMap
