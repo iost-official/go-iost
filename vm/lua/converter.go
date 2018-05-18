@@ -12,6 +12,8 @@ import (
 func Lua2Core(value lua.LValue) state.Value {
 	var v state.Value
 	switch value.(type) {
+	case *lua.LNilType:
+		return state.VNil
 	case lua.LNumber:
 		vl := value.(lua.LNumber)
 		v = state.MakeVFloat(float64(vl))
@@ -34,9 +36,11 @@ func Lua2Core(value lua.LValue) state.Value {
 func Core2Lua(value state.Value) lua.LValue {
 	var v lua.LValue
 	switch value.(type) {
-	case *state.VInt:
-		vl := value.(*state.VInt)
-		v = lua.LNumber(vl.ToInt())
+	case *state.VNilType:
+		return lua.LNil
+	case *state.VFloat:
+		vl := value.(*state.VFloat)
+		v = lua.LNumber(vl.ToFloat64())
 		return v
 	case *state.VString:
 		v = lua.LString([]rune(value.EncodeString())[1:])
@@ -49,7 +53,7 @@ func Core2Lua(value state.Value) lua.LValue {
 		}
 		return v
 	}
-	panic(fmt.Errorf("not support convertion: %v", value.Type()))
+	panic(fmt.Errorf("not support convertion: %v", reflect.TypeOf(value).String()))
 }
 
 func Bool2Lua(b bool) lua.LValue {

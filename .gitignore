@@ -107,4 +107,7 @@ tags
 iwallet/test
 iwallet/iwallet
 
+# build and test
+playground/playground
+playground/test
 

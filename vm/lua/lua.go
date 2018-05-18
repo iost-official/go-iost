@@ -187,7 +187,9 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	return nil
 }
 func (l *VM) PC() uint64 {
-	return l.L.PCount + l.callerPC
+	rtn := l.L.PCount + l.callerPC
+	l.L.PCount = 0
+	return rtn
 }
 
 func CheckPrivilege(info vm.ContractInfo, name string) int {

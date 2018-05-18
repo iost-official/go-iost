@@ -71,9 +71,8 @@ to quickly create a Cobra application.`,
 		fmt.Println("======Report")
 		fmt.Println("gas spend:", gas)
 		fmt.Println("state trasition:")
-		fmt.Println("state trasition:")
 		for k, v := range db.Normal {
-			fmt.Printf("  %v: %v\n", k, v)
+			fmt.Printf("  %v: %v\n", k, string(v))
 		}
 
 	},

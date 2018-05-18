@@ -35,6 +35,8 @@ func TestCacheVerifier(t *testing.T) {
 				return nil
 			})
 
+			pool.EXPECT().Get(gomock.Any()).AnyTimes().Return(state.MakeVFloat(3.14), nil)
+
 			var k2 state.Key
 			var f2 state.Key
 			var v2 state.Value
@@ -48,7 +50,8 @@ func TestCacheVerifier(t *testing.T) {
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
 			main := lua.NewMethod("main", 0, 1)
 			code := `function main()
-	Put("hello", "world")
+	a = Get("pi")
+	Put("hello", a)
 	return "success"
 end`
 			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
@@ -57,10 +60,11 @@ end`
 			_, err := cv.VerifyContract(&lc, true)
 			So(err, ShouldBeNil)
 			So(string(k), ShouldEqual, "testhello")
+			So(v.EncodeString(), ShouldEqual, "f3.140000000000000e+00")
 			So(string(k2), ShouldEqual, "iost")
 			So(string(f2), ShouldEqual, "ahaha")
 			vv := v2.(*state.VFloat)
-			So(vv.ToFloat64(), ShouldEqual, float64(10000-6))
+			So(vv.ToFloat64(), ShouldEqual, float64(10000-10))
 		})
 	})
 }
@@ -80,22 +84,24 @@ func TestBlockVerifier(t *testing.T) {
 
 		pool := state.NewPool(db)
 		pool.PutHM(state.Key("iost"), state.Key("ahaha"), state.MakeVFloat(10000))
+		pool.Put(state.Key("a"), state.MakeVFloat(3.14))
 
 		main := lua.NewMethod("main", 0, 1)
 		code := `function main()
-	Put("hello", "world")
-	return "success"
+	a = Get("a")
+	Put("hello", a)
+	return a
 end`
 		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
-		code1 := `function main()
+		code2 := `function main()
 	return Call("con2", "sayHi", "bob")
 end`
 
 		main2 := lua.NewMethod("main", 0, 1)
 
 		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "test2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
-			code1, main2)
+			code2, main2)
 
 		tx1 := tx.NewTx(1, &lc1)
 		tx1, _ = tx.SignTx(tx1, a1)
@@ -111,8 +117,12 @@ end`
 		pool2, err := bv.VerifyBlock(&blk, false)
 		So(err, ShouldBeNil)
 		So(pool2, ShouldNotBeNil)
+		vt, err := pool2.Get("testhello")
+		So(err, ShouldBeNil)
+		So(vt, ShouldNotBeNil)
+		So(vt.EncodeString(), ShouldEqual, "f3.140000000000000e+00")
 		bal, _ := pool2.GetHM(state.Key("iost"), state.Key("ahaha"))
-		So(bal.(*state.VFloat).ToFloat64(), ShouldEqual, 9985)
+		So(bal.(*state.VFloat).ToFloat64(), ShouldEqual, 9981)
 
 	})
 }

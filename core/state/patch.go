@@ -11,7 +11,7 @@ func (p *Patch) Put(key Key, value Value) {
 func (p *Patch) Get(key Key) Value {
 	val, ok := p.m[key]
 	if !ok {
-		return VNil
+		return nil
 	}
 	return val
 }

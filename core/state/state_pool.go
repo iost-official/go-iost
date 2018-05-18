@@ -57,6 +57,9 @@ func (p *PoolImpl) Get(key Key) (Value, error) {
 		}
 	}
 	val2 := p.patch.Get(key)
+	if val2 == nil {
+		return val1, nil
+	}
 	return Merge(val1, val2)
 }
 func (p *PoolImpl) Has(key Key) bool {
@@ -119,6 +122,9 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 	}
 
 	val2 := p.patch.Get(key)
+	if val2 == nil {
+		return val1, nil
+	}
 	if val2 == VNil {
 		return val1, nil
 	} else {

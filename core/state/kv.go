@@ -16,11 +16,15 @@ type Value interface {
 }
 
 func Merge(a, b Value) (Value, error) {
-	if a == nil || a == VNil {
-		return b, nil
-	} else if b == nil || b == VNil {
-		return VNil, nil
+
+	if a == nil {
+		panic("Merge from nil, means Get function wrong!")
 	}
+
+	if b == nil {
+		return a, nil
+	}
+
 	return a.merge(b)
 }
 
