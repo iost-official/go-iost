@@ -15,7 +15,6 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/common/rlp"
-	"github.com/InWeCrypto/sha3"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing/quick"
 )
@@ -502,14 +501,6 @@ func benchUpdate(b *testing.B, e binary.ByteOrder) *Trie {
 		trie.Update(k, k)
 	}
 	return trie
-}
-
-func Keccak256(data ...[]byte) []byte {
-	d := sha3.NewKeccak256()
-	for _, b := range data {
-		d.Write(b)
-	}
-	return d.Sum(nil)
 }
 
 func BenchmarkHash(b *testing.B) {
