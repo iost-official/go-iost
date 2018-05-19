@@ -580,12 +580,14 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 		bn.DownloadHeights[i] = 0
 	}
 	bn.lock.Unlock()
-
-	for len(bn.DownloadHeights) > 0 {
+	retry := 0
+	for retry < MaxDownloadRetry {
+		retry++
 		for downloadHeight, retryTimes := range bn.DownloadHeights {
 			if retryTimes > MaxDownloadRetry {
 				continue
 			}
+			time.Sleep(time.Duration(retryTimes*1) * time.Second)
 			//select one node randomly which height is greater than start
 			bn.lock.Lock()
 			targetNode := randNodeMatchHeight(bn.NodeHeightMap, downloadHeight)
@@ -613,7 +615,6 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			bn.DownloadHeights[downloadHeight] = retryTimes + 1
 			bn.lock.Unlock()
 			go func() {
-				time.Sleep(time.Duration(retryTimes*1) * time.Second)
 				bn.sendTo(msg.To, req)
 			}()
 		}
