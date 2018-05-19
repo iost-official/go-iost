@@ -35,7 +35,7 @@ const (
 	HEADLENGTH               = 4
 	CheckKnownNodeInterval   = 10
 	NodeLiveThresholdSeconds = 20
-	MaxDownloadRetry         = 3
+	MaxDownloadRetry         = 2
 	DownloadRetryInterval    = 2
 )
 
@@ -613,7 +613,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			bn.DownloadHeights[downloadHeight] = retryTimes + 1
 			bn.lock.Unlock()
 			go func() {
-				time.Sleep(time.Duration(retryTimes*100) * time.Millisecond)
+				time.Sleep(time.Duration(retryTimes*1) * time.Second)
 				bn.sendTo(msg.To, req)
 			}()
 		}
