@@ -135,6 +135,7 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("consensus initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
+		//time.Sleep(30*time.Second)
 		consensus.Run()
 		serverExit = append(serverExit, consensus)
 
