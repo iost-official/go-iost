@@ -339,10 +339,13 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	neighbours := bn.neighbours
 	bn.lock.Lock()
-	for _, node := range neighbours {
-		bn.log.D("broad msg: %v to node: %v", msg, node.String())
-		msg.To = node.String()
-		go bn.broadcast(msg)
+	for i := 0; i < 3; i++ {
+		for _, node := range neighbours {
+			bn.log.D("broad msg: %v to node: %v", msg, node.String())
+			msg.To = node.String()
+			go bn.broadcast(msg)
+		}
+		time.Sleep(300 * time.Millisecond)
 	}
 	bn.lock.Unlock()
 }
@@ -577,9 +580,9 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 		bn.DownloadHeights[i] = 0
 	}
 	bn.lock.Unlock()
-	retry := 0
-	for retry < MaxDownloadRetry {
-		retry++
+
+	for retry := 0; retry < MaxDownloadRetry; retry++ {
+		time.Sleep(time.Duration(retry*100) * time.Millisecond)
 		for downloadHeight, retryTimes := range bn.DownloadHeights {
 			if retryTimes > MaxDownloadRetry {
 				continue
@@ -596,11 +599,10 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			bn.DownloadHeights[downloadHeight] = retryTimes + 1
 			bn.lock.Unlock()
 			go func() {
-				time.Sleep(time.Duration(retryTimes) * time.Second)
 				bn.Broadcast(msg)
 			}()
+
 		}
-		time.Sleep(DownloadRetryInterval * time.Second)
 	}
 
 	return nil

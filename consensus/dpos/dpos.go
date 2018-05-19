@@ -214,7 +214,6 @@ func (p *DPoS) blockLoop() {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 					p.blockCache.AddSingles(verifyFunc)
-					p.blockCache.BlockConfirmChan() <- uint64(blk.Head.Number)
 					p.router.Broadcast(req)
 				} else if err == ErrNotFound {
 					// New block is a single block
@@ -250,6 +249,19 @@ func (p *DPoS) scheduleLoop() {
 			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
 			if wid == p.account.ID {
 				p.log.I("Generating block, current timestamp: %v", currentTimestamp)
+
+				//todo test
+				chain := p.blockCache.LongestChain()
+				iter := chain.Iterator()
+				for ;; {
+					block := iter.Next()
+					if block == nil {
+						break
+					}
+					p.log.I("##CBC ConfirmedLength: %v, block Number: %v, witness: %v",p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
+				}
+				// end test
+				
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 				bc := p.blockCache.LongestChain()
 				pool := p.blockCache.LongestPool()
