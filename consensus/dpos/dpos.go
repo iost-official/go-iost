@@ -18,6 +18,7 @@ import (
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/verifier"
+	"github.com/iost-official/prototype/log"
 )
 
 type DPoS struct {
@@ -35,6 +36,8 @@ type DPoS struct {
 	exitSignal chan struct{}
 	chTx       chan message.Message
 	chBlock    chan message.Message
+
+	log *log.Logger
 }
 
 // NewDPoS: 新建一个DPoS实例
@@ -75,6 +78,11 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 		return nil, err
 	}
 	p.exitSignal = make(chan struct{})
+
+	p.log, err = log.NewLogger("consensus.log")
+	if err != nil{
+		return nil, err
+	}
 
 	p.initGlobalProperty(p.account, witnessList)
 	return &p, nil
@@ -135,7 +143,7 @@ func (p *DPoS) genesis(initTime int64) error {
 }
 
 func (p *DPoS) txListenLoop() {
-	fmt.Println("Start to listen tx")
+	p.log.I("Start to listen tx")
 	for {
 		select {
 		case req, ok := <-p.chTx:
@@ -184,7 +192,7 @@ func (p *DPoS) blockLoop() {
 		}
 		return newPool, nil
 	}
-	fmt.Println("Start to listen block")
+	p.log.I("Start to listen block")
 	for {
 		select {
 		case req, ok := <-p.chBlock:
@@ -193,12 +201,12 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
-			fmt.Println("Received block:", blk.Head.Number, ", timestamp:", blk.Head.Time, ", Witness:", blk.Head.Witness)
+			p.log.I("Received block:", blk.Head.Number, ", timestamp:", blk.Head.Time, ", Witness:", blk.Head.Witness)
 			err := p.blockCache.Add(&blk, verifyFunc)
 			if err == nil {
-				fmt.Println("Link it onto cached chain")
+				p.log.I("Link it onto cached chain")
 			} else {
-				fmt.Println("Error:", err)
+				p.log.I("Error:", err)
 			}
 			if err != ErrBlock && err != ErrTooOld {
 				if err == nil {
@@ -229,7 +237,7 @@ func (p *DPoS) blockLoop() {
 func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
 	var nextSchedule int64
-	fmt.Println("Start to schedule")
+	p.log.I("Start to schedule")
 	for {
 		select {
 		case <-p.exitSignal:
@@ -237,9 +245,9 @@ func (p *DPoS) scheduleLoop() {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
-			fmt.Println("currentTimestamp:", currentTimestamp,", wid:", wid, ", p.account.ID:", p.account.ID)
+			p.log.I("currentTimestamp:", currentTimestamp, ", wid:", wid, ", p.account.ID:", p.account.ID)
 			if wid == p.account.ID {
-				fmt.Println("Generating block, current timestamp:", currentTimestamp)
+				p.log.I("Generating block, current timestamp:", currentTimestamp)
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 				bc := p.blockCache.LongestChain()
 				pool := p.blockCache.LongestPool()

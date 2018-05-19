@@ -3,10 +3,9 @@ package consensus_common
 import (
 	"time"
 
-	"fmt"
-
 	"github.com/iost-official/prototype/core/message"
 	. "github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/log"
 )
 
 var (
@@ -29,6 +28,8 @@ type SyncImpl struct {
 	heightChan  chan message.Message
 	blkSyncChan chan message.Message
 	exitSignal  chan struct{}
+
+	log *log.Logger
 }
 
 // NewSynchronizer 新建同步器
@@ -52,6 +53,11 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 			ReqDownloadBlock,
 		}})
 	if err != nil {
+		return nil
+	}
+
+	sync.log, err = log.NewLogger("synchronizer.log")
+	if err != nil{
 		return nil
 	}
 	return sync
@@ -120,8 +126,8 @@ func (sync *SyncImpl) requestBlockHeightLoop() {
 			if localLength <= rh.LocalBlockHeight {
 				continue
 			}
-			fmt.Println("requset height - LocalBlockHeight:", rh.LocalBlockHeight, ", NeedBlockHeight:", rh.NeedBlockHeight)
-			fmt.Println("local height:", localLength)
+			sync.log.I("requset height - LocalBlockHeight:", rh.LocalBlockHeight, ", NeedBlockHeight:", rh.NeedBlockHeight)
+			sync.log.I("local height:", localLength)
 
 			//回复当前块的高度
 			hr := message.ResponseHeight{BlockHeight: localLength}
@@ -156,11 +162,10 @@ func (sync *SyncImpl) requestBlockLoop() {
 			//todo 需要确定如何获取
 			block := chain.GetBlockByNumber(rh.BlockNumber)
 			if block == nil {
-				fmt.Println("requset block==nil - BlockNumber:", rh.BlockNumber)
 				continue
 			}
-			fmt.Println("requset block - BlockNumber:", rh.BlockNumber)
-			fmt.Println("response block - BlockNumber:", block.Head.Number, ", witness:", block.Head.Witness)
+			sync.log.I("requset block - BlockNumber:", rh.BlockNumber)
+			sync.log.I("response block - BlockNumber:", block.Head.Number, ", witness:", block.Head.Witness)
 			//回复当前块的高度
 			resMsg := message.Message{
 				Time:    time.Now().Unix(),
