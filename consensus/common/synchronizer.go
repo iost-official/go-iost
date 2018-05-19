@@ -19,12 +19,14 @@ type Synchronizer interface {
 	StopListen() error
 	NeedSync(maxHeight uint64) (bool, uint64, uint64)
 	SyncBlocks(startNumber uint64, endNumber uint64) error
+	ReceiveSyncBlock(number uint64)
 }
 
 // SyncImpl 同步器实现
 type SyncImpl struct {
 	blockCache  BlockCache
 	router      Router
+	syncBlk     map[uint64]int
 	heightChan  chan message.Message
 	blkSyncChan chan message.Message
 	exitSignal  chan struct{}
@@ -102,11 +104,25 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	return false, 0, 0
 }
 
+func (sync *SyncImpl) ReceiveSyncBlock(number uint64) {
+	if _, ok := sync.syncBlk[number]; !ok {
+		return
+	}
+	sync.router.CancelDownload(number, number)
+	delete(sync.syncBlk, number)
+}
+
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	for endNumber > startNumber+uint64(MaxDownloadNumber) {
 		sync.router.Download(startNumber, startNumber+uint64(MaxDownloadNumber))
 		//TODO 等待所有区间里的块都收到
+		time.Sleep(time.Second * 2)
+		for number := range sync.syncBlk {
+			if number <= startNumber+uint64(MaxDownloadNumber) && number >= startNumber {
+				sync.router.Download(number, number)
+			}
+		}
 		startNumber += uint64(MaxDownloadNumber + 1)
 	}
 	sync.router.Download(startNumber, endNumber)

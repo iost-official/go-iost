@@ -214,7 +214,7 @@ func (p *DPoS) blockLoop() {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 					p.blockCache.AddSingles(verifyFunc)
-					p.blockCache.BlockConfirmChan() <- uint64(blk.Head.Number)
+					p.synchronizer.ReceiveSyncBlock(uint64(blk.Head.Number))
 					p.router.Broadcast(req)
 				} else if err == ErrNotFound {
 					// New block is a single block
