@@ -1,7 +1,6 @@
 package db
 
 import (
-	"errors"
 
 	"github.com/gomodule/redigo/redis"
 )

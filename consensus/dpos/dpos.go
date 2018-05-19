@@ -80,9 +80,11 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	p.exitSignal = make(chan struct{})
 
 	p.log, err = log.NewLogger("consensus.log")
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
+
+	p.log.NeedPrint = true
 
 	p.initGlobalProperty(p.account, witnessList)
 	return &p, nil
@@ -201,7 +203,7 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
-			p.log.I("Received block:", blk.Head.Number, ", timestamp:", blk.Head.Time, ", Witness:", blk.Head.Witness)
+			p.log.I("Received block:%v , timestamp: %v, Witness: %v",blk.Head.Number,  blk.Head.Time, blk.Head.Witness)
 			err := p.blockCache.Add(&blk, verifyFunc)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
@@ -245,9 +247,9 @@ func (p *DPoS) scheduleLoop() {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
-			p.log.I("currentTimestamp:", currentTimestamp, ", wid:", wid, ", p.account.ID:", p.account.ID)
+			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
 			if wid == p.account.ID {
-				p.log.I("Generating block, current timestamp:", currentTimestamp)
+				p.log.I("Generating block, current timestamp: %v", currentTimestamp)
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 				bc := p.blockCache.LongestChain()
 				pool := p.blockCache.LongestPool()

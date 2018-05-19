@@ -126,7 +126,7 @@ func (sync *SyncImpl) requestBlockHeightLoop() {
 			if localLength <= rh.LocalBlockHeight {
 				continue
 			}
-			sync.log.I("requset height - LocalBlockHeight:", rh.LocalBlockHeight, ", NeedBlockHeight:", rh.NeedBlockHeight)
+			sync.log.I("requset height - LocalBlockHeight: %v, NeedBlockHeight: %v", rh.LocalBlockHeight, rh.NeedBlockHeight)
 			sync.log.I("local height:", localLength)
 
 			//回复当前块的高度
@@ -165,7 +165,7 @@ func (sync *SyncImpl) requestBlockLoop() {
 				continue
 			}
 			sync.log.I("requset block - BlockNumber:", rh.BlockNumber)
-			sync.log.I("response block - BlockNumber:", block.Head.Number, ", witness:", block.Head.Witness)
+			sync.log.I("response block - BlockNumber: %v, witness: %v", block.Head.Number, block.Head.Witness)
 			//回复当前块的高度
 			resMsg := message.Message{
 				Time:    time.Now().Unix(),
