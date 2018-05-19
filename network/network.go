@@ -368,6 +368,7 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 		bn.log.E("broadcast dial tcp got err:%v", err)
 		return
 	}
+	defer conn.Close()
 	bn.send(conn, req)
 }
 
@@ -375,19 +376,20 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
 	node, _ := discover.ParseNode(nodeStr)
-	peer := bn.peers.Get(node)
-	if peer == nil {
-		conn, err := net.Dial("tcp", node.Addr())
-		if err != nil {
-			bn.log.E("dial tcp %v got err:%v", node.Addr(), err)
-			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
-		}
-		go bn.receiveLoop(conn)
-		peer := newPeer(conn, bn.localNode.String(), nodeStr)
-		bn.peers.Set(node, peer)
+	//peer := bn.peers.Get(node)
+	//if peer == nil {
+	bn.log.D("dial to %v", node.Addr())
+	conn, err := net.Dial("tcp", node.Addr())
+	if err != nil {
+		bn.log.E("dial tcp %v got err:%v", node.Addr(), err)
+		return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 	}
+	go bn.receiveLoop(conn)
+	//peer := newPeer(conn, bn.localNode.String(), nodeStr)
+	//bn.peers.Set(node, peer)
+	//}
 
-	return bn.peers.Get(node).conn, nil
+	return conn, nil
 }
 
 //Send msg to msg.To
@@ -409,6 +411,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		bn.log.E("Send, dial tcp got err:%v", err)
 		return
 	}
+	defer conn.Close()
 	bn.send(conn, req)
 }
 
@@ -521,6 +524,7 @@ func (bn *BaseNetwork) registerLoop() {
 					bn.log.E("failed to connect boot node, err:%v", err)
 					continue
 				}
+				defer conn.Close()
 				defer bn.peers.RemoveByNodeStr(encodeAddr)
 				bn.log.D("%v request node table from %v", bn.localNode.String(), encodeAddr)
 				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
@@ -625,6 +629,7 @@ func (bn *BaseNetwork) sendTo(addr string, req *Request) {
 		bn.log.E("dial tcp got err:%v", err)
 		return
 	}
+	defer conn.Close()
 	bn.send(conn, req)
 }
 
