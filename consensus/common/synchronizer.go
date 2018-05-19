@@ -77,7 +77,7 @@ func (sync *SyncImpl) StopListen() error {
 // netHeight 当前网络收到的无法上链的块号
 func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	height := sync.blockCache.ConfirmedLength() - 1
-	if height < netHeight-uint64(SyncNumber) {
+	if netHeight > height + uint64(SyncNumber) {
 		body := message.RequestHeight{
 			LocalBlockHeight: height + 1,
 			NeedBlockHeight:  netHeight,
@@ -94,7 +94,7 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
-	for endNumber-startNumber > uint64(MaxDownloadNumber) {
+	for endNumber > startNumber + uint64(MaxDownloadNumber) {
 		sync.router.Download(startNumber, startNumber+uint64(MaxDownloadNumber))
 		//TODO 等待所有区间里的块都收到
 		startNumber += uint64(MaxDownloadNumber + 1)
