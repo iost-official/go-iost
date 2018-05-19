@@ -577,9 +577,8 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 		bn.DownloadHeights[i] = 0
 	}
 	bn.lock.Unlock()
-	retry := 0
-	for retry < MaxDownloadRetry {
-		retry++
+
+	for retry := 0; retry < MaxDownloadRetry; retry++ {
 		for downloadHeight, retryTimes := range bn.DownloadHeights {
 			if retryTimes > MaxDownloadRetry {
 				continue
@@ -596,11 +595,11 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			bn.DownloadHeights[downloadHeight] = retryTimes + 1
 			bn.lock.Unlock()
 			go func() {
-				time.Sleep(time.Duration(retryTimes) * time.Second)
 				bn.Broadcast(msg)
 			}()
+
 		}
-		time.Sleep(DownloadRetryInterval * time.Second)
+		time.Sleep(time.Duration(retry+1) * time.Second)
 	}
 
 	return nil
