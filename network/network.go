@@ -358,7 +358,6 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 		bn.log.E("broadcast dial tcp got err:%v", err)
 		return
 	}
-	//defer conn.Close()
 	bn.send(conn, req)
 }
 
@@ -399,7 +398,6 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		bn.log.E("Send, dial tcp got err:%v", err)
 		return
 	}
-	//defer conn.Close()
 	bn.send(conn, req)
 }
 
@@ -420,8 +418,8 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) {
 	if err != nil {
 		bn.log.E("pack data encountered err:%v", err)
 	}
-	n, err := conn.Write(pack)
-	bn.log.D("%v send data: typ= %v, body=%s, n = %v, err : %v", bn.localNode.String(), r.Type, string(r.Body), n, err)
+	_, err = conn.Write(pack)
+	bn.log.D("%v send data: typ= %v, body=%s,  err : %v", bn.localNode.String(), r.Type, string(r.Body), err)
 }
 
 func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
@@ -512,7 +510,6 @@ func (bn *BaseNetwork) registerLoop() {
 					bn.log.E("failed to connect boot node, err:%v", err)
 					continue
 				}
-				//defer conn.Close()
 				defer bn.peers.RemoveByNodeStr(encodeAddr)
 				bn.log.D("%v request node table from %v", bn.localNode.String(), encodeAddr)
 				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
@@ -558,32 +555,28 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 		bn.DownloadHeights[i] = 0
 	}
 	bn.lock.Unlock()
-
 	for retry := 0; retry < MaxDownloadRetry; retry++ {
 		time.Sleep(time.Duration(retry*100) * time.Millisecond)
 		for downloadHeight, retryTimes := range bn.DownloadHeights {
 			if retryTimes > MaxDownloadRetry {
 				continue
 			}
-			//select one node randomly which height is greater than start
 			msg := message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
 				TTL:     MsgMaxTTL,
 				From:    bn.localNode.String(),
-				Time:    time.Now().UnixNano()}
+				Time:    time.Now().UnixNano(),
+			}
 			bn.log.D("download height = %v  nodeMap = %v", downloadHeight, bn.NodeHeightMap)
-
 			bn.lock.Lock()
 			bn.DownloadHeights[downloadHeight] = retryTimes + 1
 			bn.lock.Unlock()
 			go func() {
 				bn.Broadcast(msg)
 			}()
-
 		}
 	}
-
 	return nil
 }
 
@@ -604,7 +597,6 @@ func (bn *BaseNetwork) sendTo(addr string, req *Request) {
 		bn.log.E("dial tcp got err:%v", err)
 		return
 	}
-	//defer conn.Close()
 	bn.send(conn, req)
 }
 
