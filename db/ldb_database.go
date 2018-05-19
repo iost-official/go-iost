@@ -25,8 +25,8 @@ func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
 	if ldbMap == nil {
 		ldbMap = make(map[string]*LDBDatabase)
 	}
+	mutex.Lock()
 	if _, ok := ldbMap[file]; !ok {
-		mutex.Lock()
 		if cache < 16 {
 			cache = 16
 		}
@@ -51,8 +51,8 @@ func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
 			fn: file,
 			db: db,
 		}
-		mutex.Unlock()
 	}
+	mutex.Unlock()
 	return ldbMap[file], nil
 }
 
