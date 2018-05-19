@@ -19,7 +19,7 @@ const (
 	ReqNewBlock              // recieve a new block or a response for download block
 	ReqDownloadBlock         // request for the height of block is equal to target
 
-	MsgMaxTTL = 6
+	MsgMaxTTL = 4
 )
 
 //Router Forwarding specific request to other components and sending messages for them

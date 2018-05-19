@@ -111,7 +111,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	case Message:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
-			base.log.D("msg from =%v, to = %v, typ = %v, body =%v", appReq.From, appReq.To, appReq.ReqType, appReq.Body)
+			base.log.D("msg from =%v, to = %v, typ = %v,  ttl = %v, body =%v", appReq.From, appReq.To, appReq.ReqType, appReq.TTL, appReq.Body)
 			base.RecvCh <- *appReq
 		} else {
 			base.log.E("failed to unmarshal recv msg:%v, err:%v", r, err)
@@ -123,7 +123,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	case BroadcastMessage:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
-			base.log.D("msg from =%v, to = %v, typ = %v, body =%v", appReq.From, appReq.To, appReq.ReqType, appReq.Body)
+			base.log.D("msg from =%v, to = %v, typ = %v,  ttl = %v, body =%v", appReq.From, appReq.To, appReq.ReqType, appReq.TTL, appReq.Body)
 			if appReq.ReqType == int32(ReqBlockHeight) {
 				appReq.From = string(r.From)
 			}

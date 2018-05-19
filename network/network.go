@@ -334,14 +334,12 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	neighbours := bn.neighbours
 	bn.lock.Lock()
-	for i := 0; i < 3; i++ {
-		for _, node := range neighbours {
-			bn.log.D("broad msg: %v to node: %v", msg, node.String())
-			msg.To = node.String()
-			go bn.broadcast(msg)
-		}
-		time.Sleep(300 * time.Millisecond)
+	for _, node := range neighbours {
+		bn.log.D("broad msg: %v to node: %v", msg, node.String())
+		msg.To = node.String()
+		go bn.broadcast(msg)
 	}
+	time.Sleep(300 * time.Millisecond)
 	bn.lock.Unlock()
 }
 
