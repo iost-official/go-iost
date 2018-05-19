@@ -31,7 +31,7 @@ func newHttpServer() *HttpServer {
 }
 
 func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response, error) {
-
+	fmt.Println("PublishTx begin")
 	var tx1 tx.Tx
 	if _tx == nil {
 		return &Response{Code: -1}, fmt.Errorf("argument cannot be nil pointer")
@@ -55,32 +55,32 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 		ReqType: int32(network.ReqPublishTx),
 	}
 	router.Broadcast(broadTx)
-/*
-	//add this tx to txpool
-	tp, err := tx.TxPoolFactory("mem") //TODO:in fact,we should find the txpool_mem,not create a new txpool_mem
-	if err != nil {
-		panic(err)
-	}
-	tp.Add(&tx1)
-*/
+	/*
+		//add this tx to txpool
+		tp, err := tx.TxPoolFactory("mem") //TODO:in fact,we should find the txpool_mem,not create a new txpool_mem
+		if err != nil {
+			panic(err)
+		}
+		tp.Add(&tx1)
+	*/
 	return &Response{Code: 0}, nil
 }
 
 func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (*Transaction, error) {
-
+	fmt.Println("GetTransaction begin")
 	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	var Pub common.Signature
-	Pub.Decode([]byte(txkey.Publisher))
+	PubKey := common.Base58Decode(txkey.Publisher)
+	//check length of Pubkey here
 	Nonce := txkey.Nonce
-	//check Publisher and Nonce in txkey
+	//check Nonce here
 
 	txDb := tx.TxDb
 	if txDb == nil {
 		panic(fmt.Errorf("TxDb should be nil"))
 	}
-	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, Pub)
+	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, []byte(PubKey))
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +89,7 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 }
 
 func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
+	fmt.Println("GetBalance begin")
 	if iak == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -108,6 +109,7 @@ func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
 }
 
 func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
+	fmt.Println("GetState begin")
 	if stkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
