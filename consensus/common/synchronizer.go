@@ -75,7 +75,7 @@ func (sync *SyncImpl) StopListen() error {
 // NeedSync 判断是否需要同步
 // netHeight 当前网络收到的无法上链的块号
 func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
-	height := sync.blockCache.ConfirmedLength()
+	height := sync.blockCache.ConfirmedLength() - 1
 	if height < netHeight-uint64(SyncNumber) {
 		body := message.RequestHeight{
 			LocalBlockHeight: height + 1,
