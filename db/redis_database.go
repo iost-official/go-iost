@@ -65,7 +65,7 @@ func (rdb *RedisDatabase) GetHM(key []byte, args ...[]byte) ([][]byte, error) {
 		}
 		return params, nil
 	}
-	return nil, errors.New("Not found")
+	return nil, nil
 }
 
 func (rdb *RedisDatabase) Has(key []byte) (bool, error) {
