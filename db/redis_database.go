@@ -37,6 +37,13 @@ func (rdb *RedisDatabase) PutHM(key []byte, args ...[]byte) error {
 
 func (rdb *RedisDatabase) Get(key []byte) ([]byte, error) {
 	rtn, err := rdb.cli.Do("GET", interface{}(key))
+	if err != nil {
+
+		return nil, err
+	}
+	if rtn == nil {
+		return nil, nil
+	}
 	return rtn.([]byte), err
 }
 
