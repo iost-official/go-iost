@@ -155,9 +155,9 @@ func (r *Request) msgHandle(net *BaseNetwork) {
 	if _, err := msg.Unmarshal(r.Body); err == nil {
 		switch msg.ReqType {
 		case int32(ReqBlockHeight):
-			var rbh message.RequestHeight
-			rbh.Decode(msg.Body)
-			net.SetNodeHeightMap(string(r.From), rbh.LocalBlockHeight)
+			//var rbh message.RequestHeight
+			//rbh.Decode(msg.Body)
+			//net.SetNodeHeightMap(string(r.From), rbh.LocalBlockHeight)
 		case int32(RecvBlockHeight):
 			var rh message.ResponseHeight
 			rh.Decode(msg.Body)
