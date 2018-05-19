@@ -35,7 +35,7 @@ const (
 	HEADLENGTH               = 4
 	CheckKnownNodeInterval   = 10
 	NodeLiveThresholdSeconds = 20
-	MaxDownloadRetry         = 2
+	MaxDownloadRetry         = 10
 	DownloadRetryInterval    = 2
 )
 
@@ -585,8 +585,6 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 				continue
 			}
 			//select one node randomly which height is greater than start
-			bn.lock.Lock()
-			bn.lock.Unlock()
 			msg := message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
