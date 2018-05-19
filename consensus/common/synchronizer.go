@@ -57,8 +57,6 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 		return nil
 	}
 
-	sync.maxSyncNumber = sync.blockCache.ConfirmedLength() - 1
-
 	sync.log, err = log.NewLogger("synchronizer.log")
 	if err != nil{
 		return nil
