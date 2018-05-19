@@ -262,7 +262,7 @@ type BaseNetwork struct {
 	NodeHeightMap map[string]uint64 //maintain all height of nodes higher than current height
 	localNode     *discover.Node
 
-	DownloadHeights map[uint64]uint8 //map[height]retry_times
+	DownloadHeights sync.Map //map[height]retry_times
 	log             *log.Logger
 }
 
@@ -295,7 +295,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 		conf.NodeID = string(discover.GenNodeId())
 	}
 	localNode := &discover.Node{ID: discover.NodeID(conf.NodeID), IP: net.ParseIP(conf.ListenAddr)}
-	downloadHeights := make(map[uint64]uint8, 0)
+	downloadHeights := sync.Map{}
 	s := &BaseNetwork{
 		nodeTable:       nodeTable,
 		RecvCh:          recv,
@@ -575,16 +575,16 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 	if len(bn.NodeHeightMap) <= 0 {
 		return nil
 	}
-	bn.lock.Lock()
 	for i := start; i <= end; i++ {
-		bn.DownloadHeights[i] = 0
+		bn.DownloadHeights.Store(i, 0)
 	}
-	bn.lock.Unlock()
-
-	for len(bn.DownloadHeights) > 0 {
-		for downloadHeight, retryTimes := range bn.DownloadHeights {
+	currentRetry := 0
+	for currentRetry < MaxDownloadRetry {
+		bn.DownloadHeights.Range(func(k, v interface{}) bool {
+			downloadHeight := k.(uint64)
+			retryTimes := v.(int)
 			if retryTimes > MaxDownloadRetry {
-				continue
+				return true
 			}
 			//select one node randomly which height is greater than start
 			bn.lock.Lock()
@@ -592,7 +592,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			bn.lock.Unlock()
 			if targetNode == "" {
 				bn.log.D("no target node has height = %v ", downloadHeight)
-				continue
+				return true
 			}
 			//download block which height equal start
 			msg := message.Message{
@@ -604,19 +604,19 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			body, err := msg.Marshal(nil)
 			bn.log.D("download height = %v from %v, nodeMap = %v", downloadHeight, targetNode, bn.NodeHeightMap)
 			if err != nil {
-				return fmt.Errorf("msg marshal got err %v", err)
+				bn.log.E("msg marshal got err %v", err)
+				return true
 			}
 			req := newRequest(Message, bn.localNode.String(), body)
 			//send download request
 
-			bn.lock.Lock()
-			bn.DownloadHeights[downloadHeight] = retryTimes + 1
-			bn.lock.Unlock()
+			bn.DownloadHeights.Store(downloadHeight, retryTimes+1)
 			go func() {
 				time.Sleep(time.Duration(retryTimes*1) * time.Second)
 				bn.sendTo(msg.To, req)
 			}()
-		}
+			return true
+		})
 		time.Sleep(DownloadRetryInterval * time.Second)
 	}
 
@@ -625,10 +625,8 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 
 //CancelDownload cancel downloading block with height between start and end
 func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
-	bn.lock.Lock()
-	defer bn.lock.Unlock()
 	for ; start <= end; start++ {
-		delete(bn.DownloadHeights, start)
+		bn.DownloadHeights.Delete(start)
 	}
 	return nil
 }
