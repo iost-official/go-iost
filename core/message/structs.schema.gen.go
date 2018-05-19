@@ -17,6 +17,7 @@ type Message struct {
 	From    string
 	To      string
 	ReqType int32
+	TTL     int8
 	Body    []byte
 }
 
@@ -67,7 +68,7 @@ func (d *Message) Size() (s uint64) {
 		}
 		s += l
 	}
-	s += 12
+	s += 13
 	return
 }
 func (d *Message) Marshal(buf []byte) ([]byte, error) {
@@ -150,6 +151,11 @@ func (d *Message) Marshal(buf []byte) ([]byte, error) {
 
 	}
 	{
+
+		buf[i+0+12] = byte(d.TTL >> 0)
+
+	}
+	{
 		l := uint64(len(d.Body))
 
 		{
@@ -157,18 +163,18 @@ func (d *Message) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i+12] = byte(t) | 0x80
+				buf[i+13] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i+12] = byte(t)
+			buf[i+13] = byte(t)
 			i++
 
 		}
-		copy(buf[i+12:], d.Body)
+		copy(buf[i+13:], d.Body)
 		i += l
 	}
-	return buf[:i+12], nil
+	return buf[:i+13], nil
 }
 
 func (d *Message) Unmarshal(buf []byte) (uint64, error) {
@@ -225,15 +231,20 @@ func (d *Message) Unmarshal(buf []byte) (uint64, error) {
 
 	}
 	{
+
+		d.TTL = 0 | (int8(buf[i+0+12]) << 0)
+
+	}
+	{
 		l := uint64(0)
 
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i+12] & 0x7F)
-			for buf[i+12]&0x80 == 0x80 {
+			t := uint64(buf[i+13] & 0x7F)
+			for buf[i+13]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i+12]&0x7F) << bs
+				t |= uint64(buf[i+13]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -246,10 +257,10 @@ func (d *Message) Unmarshal(buf []byte) (uint64, error) {
 		} else {
 			d.Body = make([]byte, l)
 		}
-		copy(d.Body, buf[i+12:])
+		copy(d.Body, buf[i+13:])
 		i += l
 	}
-	return i + 12, nil
+	return i + 13, nil
 }
 
 type RequestHeight struct {

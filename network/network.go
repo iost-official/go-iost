@@ -257,8 +257,6 @@ type BaseNetwork struct {
 	RecvCh     chan message.Message
 	listener   net.Listener
 
-	recentSentMap sync.Map //map[string]message.Message
-
 	NodeHeightMap map[string]uint64 //maintain all height of nodes higher than current height
 	localNode     *discover.Node
 
@@ -288,7 +286,6 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init db %v", err)
 	}
-	sentMap := sync.Map{}
 	neighbours := make(map[string]*discover.Node, 0)
 	NodeHeightMap := make(map[string]uint64, 0)
 	if conf.NodeID == "" {
@@ -300,7 +297,6 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 		nodeTable:       nodeTable,
 		RecvCh:          recv,
 		localNode:       localNode,
-		recentSentMap:   sentMap,
 		neighbours:      neighbours,
 		log:             srvLog,
 		NodeHeightMap:   NodeHeightMap,
@@ -331,7 +327,6 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	//register
 	go bn.registerLoop()
 	go bn.nodeCheckLoop()
-	go bn.cleanRecentSentLoop()
 	return bn.RecvCh, nil
 }
 
@@ -352,15 +347,14 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 
 //broadcast broadcast to all neighbours, stop broadcast when msg already broadcast
 func (bn *BaseNetwork) broadcast(msg message.Message) {
+	if msg.TTL == 0 {
+		return
+	} else {
+		msg.TTL = msg.TTL - 1
+	}
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("marshal request encountered err:%v", err)
-	}
-	msgHash := common.Base58Encode(common.Sha256(msg.Body))
-	if _, ok := bn.recentSentMap.Load(msgHash); !ok {
-		bn.recentSentMap.Store(msgHash, msg)
-	} else {
-		return
 	}
 	req := newRequest(BroadcastMessage, bn.localNode.String(), data)
 	conn, err := bn.dial(msg.To)
@@ -394,16 +388,14 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 
 //Send msg to msg.To
 func (bn *BaseNetwork) Send(msg message.Message) {
+	if msg.TTL == 0 {
+		return
+	} else {
+		msg.TTL = msg.TTL - 1
+	}
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("marshal request encountered err:%v", err)
-	}
-	msgHash := common.Base58Encode(common.Sha256(msg.Body))
-	if _, ok := bn.recentSentMap.Load(msgHash); !ok {
-		bn.recentSentMap.Store(msgHash, msg)
-	} else {
-		bn.log.D("msg has been sent: %v", msg)
-		return
 	}
 	req := newRequest(Message, bn.localNode.String(), data)
 	conn, err := bn.dial(msg.To)
@@ -537,20 +529,6 @@ func (bn *BaseNetwork) registerLoop() {
 
 const validitySentSeconds = 90
 
-//cleanRecentSentLoop
-func (bn *BaseNetwork) cleanRecentSentLoop() {
-	for {
-		now := time.Now().UnixNano()
-		bn.recentSentMap.Range(func(ki, vi interface{}) bool {
-			if (now-vi.(message.Message).Time)/1e9 > validitySentSeconds {
-				bn.recentSentMap.Delete(ki)
-			}
-			return true
-		})
-		time.Sleep(validitySentSeconds * time.Second)
-	}
-}
-
 //findNeighbours find neighbour nodes in the node table
 func (bn *BaseNetwork) findNeighbours() {
 	nodesStr, _ := bn.AllNodesExcludeAddr(bn.localNode.String())
@@ -595,6 +573,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			msg := message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
+				TTL:     MsgMaxTTL,
 				From:    bn.localNode.String(),
 				Time:    time.Now().UnixNano()}
 			bn.log.D("download height = %v  nodeMap = %v", downloadHeight, bn.NodeHeightMap)

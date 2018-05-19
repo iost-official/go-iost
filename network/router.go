@@ -18,6 +18,8 @@ const (
 	RecvBlockHeight          //The height of the receiving block
 	ReqNewBlock              // recieve a new block or a response for download block
 	ReqDownloadBlock         // request for the height of block is equal to target
+
+	MsgMaxTTL = 4
 )
 
 //Router Forwarding specific request to other components and sending messages for them
@@ -129,17 +131,19 @@ func (r *RouterImpl) Stop() {
 }
 
 func (r *RouterImpl) Send(req message.Message) {
+	req.TTL = MsgMaxTTL
 	r.base.Send(req)
 }
 
 // Broadcast to all known members
 func (r *RouterImpl) Broadcast(req message.Message) {
+	req.TTL = MsgMaxTTL
 	r.base.Broadcast(req)
 }
 
 //download block with height >= start && height <= end
 func (r *RouterImpl) Download(start uint64, end uint64) error {
-	fmt.Println("sync:",start,end)
+	fmt.Println("sync:", start, end)
 	if end < start {
 		return fmt.Errorf("end should be greater than start")
 	}

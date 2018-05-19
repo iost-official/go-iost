@@ -106,7 +106,7 @@ func (r *Request) String() string {
 }
 
 func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
-	base.log.D("%v response request from= %v, time = %v, body = %v", base.localNode.String(), r.From, r.Timestamp, r.Body)
+	base.log.D("%v response request from= %v, time = %v, body = %v", base.localNode.String(), string(r.From), r.Timestamp, r.Body)
 	switch r.Type {
 	case Message:
 		appReq := &message.Message{}
