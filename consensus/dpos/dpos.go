@@ -208,7 +208,7 @@ func (p *DPoS) blockLoop() {
 			if err == nil {
 				p.log.I("Link it onto cached chain")
 			} else {
-				p.log.I("Error:", err)
+				p.log.I("Error: %v", err)
 			}
 			if err != ErrBlock && err != ErrTooOld {
 				if err == nil {
