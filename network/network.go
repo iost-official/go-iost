@@ -572,9 +572,6 @@ func (bn *BaseNetwork) delNeighbour(nodeStr string) {
 
 //Download block by height from which node in NodeHeightMap
 func (bn *BaseNetwork) Download(start, end uint64) error {
-	if len(bn.NodeHeightMap) <= 0 {
-		return nil
-	}
 	bn.lock.Lock()
 	for i := start; i <= end; i++ {
 		bn.DownloadHeights[i] = 0
@@ -587,35 +584,22 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			if retryTimes > MaxDownloadRetry {
 				continue
 			}
-			time.Sleep(time.Duration(retryTimes*1) * time.Second)
 			//select one node randomly which height is greater than start
 			bn.lock.Lock()
-			targetNode := randNodeMatchHeight(bn.NodeHeightMap, downloadHeight)
 			bn.lock.Unlock()
-			if targetNode == "" {
-				bn.log.D("no target node has height = %v ", downloadHeight)
-				continue
-			}
-			//download block which height equal start
 			msg := message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
 				From:    bn.localNode.String(),
-				To:      targetNode,
 				Time:    time.Now().UnixNano()}
-			body, err := msg.Marshal(nil)
-			bn.log.D("download height = %v from %v, nodeMap = %v", downloadHeight, targetNode, bn.NodeHeightMap)
-			if err != nil {
-				return fmt.Errorf("msg marshal got err %v", err)
-			}
-			req := newRequest(Message, bn.localNode.String(), body)
-			//send download request
+			bn.log.D("download height = %v  nodeMap = %v", downloadHeight, bn.NodeHeightMap)
 
 			bn.lock.Lock()
 			bn.DownloadHeights[downloadHeight] = retryTimes + 1
 			bn.lock.Unlock()
 			go func() {
-				bn.sendTo(msg.To, req)
+				time.Sleep(time.Duration(retryTimes) * time.Second)
+				bn.Broadcast(msg)
 			}()
 		}
 		time.Sleep(DownloadRetryInterval * time.Second)
