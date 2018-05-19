@@ -391,6 +391,13 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	if err != nil {
 		bn.log.E("marshal request encountered err:%v", err)
 	}
+	msgHash := common.Base58Encode(common.Sha256(msg.Body))
+	if _, ok := bn.recentSentMap.Load(msgHash); !ok {
+		bn.recentSentMap.Store(msgHash, msg)
+	} else {
+		bn.log.D("msg has been sent: %v", msg)
+		return
+	}
 	req := newRequest(Message, bn.localNode.String(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
@@ -578,7 +585,13 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 				continue
 			}
 			//select one node randomly which height is greater than start
+			bn.lock.Lock()
 			targetNode := randNodeMatchHeight(bn.NodeHeightMap, downloadHeight)
+			bn.lock.Unlock()
+			if targetNode == "" {
+				bn.log.D("no target node has height = %v ", downloadHeight)
+				continue
+			}
 			//download block which height equal start
 			msg := message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
@@ -587,6 +600,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 				To:      targetNode,
 				Time:    time.Now().UnixNano()}
 			body, err := msg.Marshal(nil)
+			bn.log.D("download height = %v from %v, nodeMap = %v", downloadHeight, targetNode, bn.NodeHeightMap)
 			if err != nil {
 				return fmt.Errorf("msg marshal got err %v", err)
 			}

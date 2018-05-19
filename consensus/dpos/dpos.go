@@ -193,8 +193,8 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
+			fmt.Println("Received block:", blk.Head.Number, ", timestamp:", blk.Head.Time, ", Witness:", blk.Head.Witness)
 			err := p.blockCache.Add(&blk, verifyFunc)
-			fmt.Println("Received block:", blk.Head.Number, ", timestamp:", blk.Head.Time)
 			if err == nil {
 				fmt.Println("Link it onto cached chain")
 			} else {
@@ -236,6 +236,7 @@ func (p *DPoS) scheduleLoop() {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
+			fmt.Println("currentTimestamp:", currentTimestamp,", wid:", wid, ", p.account.ID:", p.account.ID)
 			if wid == p.account.ID {
 				fmt.Println("Generating block, current timestamp:", currentTimestamp)
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择

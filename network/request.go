@@ -106,11 +106,12 @@ func (r *Request) String() string {
 }
 
 func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
-	base.log.D("%v response request = %v", base.localNode.String(), r)
+	base.log.D("%v response request from= %v, time = %v, body = %v", base.localNode.String(), r.From, r.Timestamp, r.Body)
 	switch r.Type {
 	case Message:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
+			base.log.D("msg from =%v, to = %v, typ = %v, body =%v", appReq.From, appReq.To, appReq.ReqType, appReq.Body)
 			base.RecvCh <- *appReq
 		} else {
 			base.log.E("failed to unmarshal recv msg:%v, err:%v", r, err)
@@ -118,10 +119,14 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 		base.send(conn, newRequest(MessageReceived, base.localNode.String(), common.Int64ToBytes(r.Timestamp)))
 		r.msgHandle(base)
 	case MessageReceived:
-		base.log.D("MessageReceived: %v", common.BytesToInt64(r.Body))
+		base.log.D("MessageReceived: %v", r.From, common.BytesToInt64(r.Body))
 	case BroadcastMessage:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
+			base.log.D("msg from =%v, to = %v, typ = %v, body =%v", appReq.From, appReq.To, appReq.ReqType, appReq.Body)
+			if appReq.ReqType == int32(ReqBlockHeight) {
+				appReq.From = string(r.From)
+			}
 			base.RecvCh <- *appReq
 			base.Broadcast(*appReq)
 		}
