@@ -60,6 +60,9 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 	if err != nil{
 		return nil
 	}
+
+	sync.log.NeedPrint = true
+	
 	return sync
 }
 
