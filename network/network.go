@@ -35,7 +35,7 @@ const (
 	HEADLENGTH               = 4
 	CheckKnownNodeInterval   = 10
 	NodeLiveThresholdSeconds = 20
-	MaxDownloadRetry         = 10
+	MaxDownloadRetry         = 3
 	DownloadRetryInterval    = 2
 )
 
