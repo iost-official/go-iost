@@ -257,7 +257,7 @@ func (p *DPoS) scheduleLoop() {
 					if block == nil {
 						break
 					}
-					p.log.I("##CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
+					p.log.I("CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
 				}
 				// end test
 
