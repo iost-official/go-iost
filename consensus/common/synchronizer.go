@@ -115,6 +115,7 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	if startNumber <= sync.maxSyncNumber {
 		startNumber = sync.maxSyncNumber + 1
 	}
+	sync.maxSyncNumber = endNumber
 	for endNumber > startNumber+uint64(MaxDownloadNumber) {
 		sync.router.Download(startNumber, startNumber+uint64(MaxDownloadNumber))
 		//TODO 等待所有区间里的块都收到
@@ -124,7 +125,6 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	if startNumber <= endNumber {
 		sync.router.Download(startNumber, endNumber)
 	}
-	sync.maxSyncNumber = endNumber
 	return nil
 }
 
@@ -182,7 +182,7 @@ func (sync *SyncImpl) requestBlockLoop() {
 			if block == nil {
 				continue
 			}
-			sync.log.I("requset block - BlockNumber:", rh.BlockNumber)
+			sync.log.I("requset block - BlockNumber: %v", rh.BlockNumber)
 			sync.log.I("response block - BlockNumber: %v, witness: %v", block.Head.Number, block.Head.Witness)
 			//回复当前块的高度
 			resMsg := message.Message{

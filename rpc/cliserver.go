@@ -7,6 +7,8 @@ import (
 	"reflect"
 
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/consensus"
+	"github.com/iost-official/prototype/consensus/dpos"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
@@ -55,14 +57,15 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 		ReqType: int32(network.ReqPublishTx),
 	}
 	router.Broadcast(broadTx)
-	/*
-		//add this tx to txpool
-		tp, err := tx.TxPoolFactory("mem") //TODO:in fact,we should find the txpool_mem,not create a new txpool_mem
-		if err != nil {
-			panic(err)
+
+	go func() {
+		Cons := consensus.Cons
+		if Cons == nil {
+			panic(fmt.Errorf("Consensus is nil"))
 		}
-		tp.Add(&tx1)
-	*/
+		Cons.(*dpos.DPoS).ChTx <- broadTx
+		fmt.Println("[rpc.PublishTx]:add tx to TxPool")
+	}()
 	return &Response{Code: 0}, nil
 }
 
@@ -126,6 +129,7 @@ func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
 	if err != nil {
 		return nil, fmt.Errorf("GetState Error: [%v]", err)
 	}
+
 	return &Value{Sv: stValue.EncodeString()}, nil
 }
 
