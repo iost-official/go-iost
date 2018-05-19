@@ -31,19 +31,18 @@ const (
 	CONSENSUS_DPOS = "dpos"
 )
 
+var Cons Consensus
 func ConsensusFactory(consensusType string,acc account.Account, bc block.Chain, pool state.Pool, witnessList []string) (Consensus, error) {
 
 	if consensusType == ""{
 		consensusType = CONSENSUS_DPOS
 	}
 
-	var consensus Consensus
 	var err error
 
 	switch consensusType {
 	case CONSENSUS_DPOS:
-		consensus, err = dpos.NewDPoS(acc, bc, pool, witnessList)
+		Cons, err = dpos.NewDPoS(acc, bc, pool, witnessList)
 	}
-
-	return consensus,err
+	return Cons,err
 }
