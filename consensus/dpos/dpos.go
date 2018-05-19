@@ -34,7 +34,7 @@ type DPoS struct {
 	infoCache  [][]byte
 
 	exitSignal chan struct{}
-	chTx       chan message.Message
+	ChTx       chan message.Message
 	chBlock    chan message.Message
 
 	log *log.Logger
@@ -62,7 +62,7 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	}
 
 	//	Tx chan init
-	p.chTx, err = p.router.FilteredChan(Filter{
+	p.ChTx, err = p.router.FilteredChan(Filter{
 		AcceptType: []ReqType{
 			ReqPublishTx,
 			reqTypeVoteTest, // Only for test
@@ -106,7 +106,7 @@ func (p *DPoS) Run() {
 
 // Stop: 停止DPoS实例
 func (p *DPoS) Stop() {
-	close(p.chTx)
+	close(p.ChTx)
 	close(p.chBlock)
 	close(p.exitSignal)
 }
@@ -148,7 +148,7 @@ func (p *DPoS) txListenLoop() {
 	p.log.I("Start to listen tx")
 	for {
 		select {
-		case req, ok := <-p.chTx:
+		case req, ok := <-p.ChTx:
 			if !ok {
 				return
 			}
@@ -214,7 +214,7 @@ func (p *DPoS) blockLoop() {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 					p.blockCache.AddSingles(verifyFunc)
-					p.synchronizer.ReceiveSyncBlock(uint64(blk.Head.Number))
+					p.blockCache.BlockConfirmChan() <- uint64(blk.Head.Number)
 					p.router.Broadcast(req)
 				} else if err == ErrNotFound {
 					// New block is a single block
