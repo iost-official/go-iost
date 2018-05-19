@@ -18,18 +18,18 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/consensus"
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/rpc"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/iost-official/prototype/network"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/account"
 	"os/signal"
 	"syscall"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/consensus"
-	"github.com/iost-official/prototype/rpc"
 )
 
 var cfgFile string
