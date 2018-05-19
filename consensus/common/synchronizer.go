@@ -94,8 +94,9 @@ func max(x, y uint64) uint64 {
 // NeedSync 判断是否需要同步
 // netHeight 当前网络收到的无法上链的块号
 func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
-	height := sync.blockCache.LongestChain().Length() - 1
-	if netHeight > max(height, sync.maxSyncNumber)+uint64(SyncNumber) {
+	//height := sync.blockCache.LongestChain().Length() - 1
+	if netHeight > sync.maxSyncNumber+uint64(SyncNumber) {
+		/*
 		body := message.RequestHeight{
 			LocalBlockHeight: height + 1,
 			NeedBlockHeight:  netHeight,
@@ -105,16 +106,14 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 			Body:    body.Encode(),
 		}
 		sync.router.Broadcast(heightReq)
-		return true, height + 1, netHeight
+		*/
+		return true, sync.maxSyncNumber + 1, netHeight
 	}
 	return false, 0, 0
 }
 
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
-	if startNumber <= sync.maxSyncNumber {
-		startNumber = sync.maxSyncNumber + 1
-	}
 	sync.maxSyncNumber = endNumber
 	for endNumber > startNumber+uint64(MaxDownloadNumber) {
 		sync.router.Download(startNumber, startNumber+uint64(MaxDownloadNumber))
