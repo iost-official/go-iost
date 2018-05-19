@@ -146,7 +146,7 @@ func (sync *SyncImpl) requestBlockHeightLoop() {
 				continue
 			}
 			sync.log.I("requset height - LocalBlockHeight: %v, NeedBlockHeight: %v", rh.LocalBlockHeight, rh.NeedBlockHeight)
-			sync.log.I("local height:", localLength)
+			sync.log.I("local height: %v", localLength)
 
 			//回复当前块的高度
 			hr := message.ResponseHeight{BlockHeight: localLength}
