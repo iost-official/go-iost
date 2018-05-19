@@ -585,7 +585,9 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 				continue
 			}
 			//select one node randomly which height is greater than start
+			bn.lock.Lock()
 			targetNode := randNodeMatchHeight(bn.NodeHeightMap, downloadHeight)
+			bn.lock.Unlock()
 			//download block which height equal start
 			msg := message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
@@ -594,6 +596,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 				To:      targetNode,
 				Time:    time.Now().UnixNano()}
 			body, err := msg.Marshal(nil)
+			bn.log.D("download height = %v from %v", downloadHeight, targetNode)
 			if err != nil {
 				return fmt.Errorf("msg marshal got err %v", err)
 			}

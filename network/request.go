@@ -106,11 +106,12 @@ func (r *Request) String() string {
 }
 
 func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
-	base.log.D("%v response request = %v", base.localNode.String(), r)
+	base.log.D("%v response request from= %v, time = %v, body = %v", base.localNode.String(), r.From, r.Timestamp, r.Body)
 	switch r.Type {
 	case Message:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
+			base.log.D("msg from =%v, to = %v, typ = %v, body =%v", appReq.From, appReq.To, appReq.ReqType, appReq.Body)
 			base.RecvCh <- *appReq
 		} else {
 			base.log.E("failed to unmarshal recv msg:%v, err:%v", r, err)
@@ -122,6 +123,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	case BroadcastMessage:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
+			base.log.D("msg from =%v, to = %v, typ = %v, body =%v", appReq.From, appReq.To, appReq.ReqType, appReq.Body)
 			base.RecvCh <- *appReq
 			base.Broadcast(*appReq)
 		}

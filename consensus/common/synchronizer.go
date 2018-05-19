@@ -5,6 +5,7 @@ import (
 
 	"github.com/iost-official/prototype/core/message"
 	. "github.com/iost-official/prototype/network"
+	"fmt"
 )
 
 var (
@@ -118,6 +119,9 @@ func (sync *SyncImpl) requestBlockHeightLoop() {
 			if localLength <= rh.LocalBlockHeight {
 				continue
 			}
+			fmt.Println("requset height - LocalBlockHeight:", rh.LocalBlockHeight, ", NeedBlockHeight:",rh.NeedBlockHeight)
+			fmt.Println("local height:", localLength)
+
 			//回复当前块的高度
 			hr := message.ResponseHeight{BlockHeight: localLength}
 			resMsg := message.Message{
@@ -153,7 +157,8 @@ func (sync *SyncImpl) requestBlockLoop() {
 			if block == nil {
 				continue
 			}
-
+			fmt.Println("requset block - BlockNumber:", rh.BlockNumber)
+			fmt.Println("response block - BlockNumber:", block.Head.Number, ", witness:", block.Head.Witness)
 			//回复当前块的高度
 			resMsg := message.Message{
 				Time:    time.Now().Unix(),
