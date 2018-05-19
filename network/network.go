@@ -338,11 +338,13 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 //Broadcast msg to all node in the node table
 func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	neighbours := bn.neighbours
+	bn.lock.Lock()
 	for _, node := range neighbours {
 		bn.log.D("broad msg: %v to node: %v", msg, node.String())
 		msg.To = node.String()
 		go bn.broadcast(msg)
 	}
+	bn.lock.Unlock()
 }
 
 //broadcast broadcast to all neighbours, stop broadcast when msg already broadcast
