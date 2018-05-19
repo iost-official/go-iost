@@ -331,7 +331,6 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 			h.cachedRoot = newRoot
 			h.cachedRoot.bc.Flush()
 			h.cachedRoot.pool.Flush()
-			h.blkConfirmChan <- uint64(h.cachedRoot.bc.Top().Head.Number)
 			h.cachedRoot.super = nil
 			h.cachedRoot.updateLength()
 			for _, tx := range h.cachedRoot.bc.Top().Content {
