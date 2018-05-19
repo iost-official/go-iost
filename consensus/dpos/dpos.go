@@ -17,8 +17,8 @@ import (
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/log"
+	"github.com/iost-official/prototype/verifier"
 )
 
 type DPoS struct {
@@ -203,7 +203,7 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
-			p.log.I("Received block:%v , timestamp: %v, Witness: %v",blk.Head.Number,  blk.Head.Time, blk.Head.Witness)
+			p.log.I("Received block:%v , timestamp: %v, Witness: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness)
 			err := p.blockCache.Add(&blk, verifyFunc)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
@@ -214,7 +214,6 @@ func (p *DPoS) blockLoop() {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 					p.blockCache.AddSingles(verifyFunc)
-					p.router.Broadcast(req)
 				} else if err == ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
@@ -253,15 +252,15 @@ func (p *DPoS) scheduleLoop() {
 				//todo test
 				chain := p.blockCache.LongestChain()
 				iter := chain.Iterator()
-				for ;; {
+				for {
 					block := iter.Next()
 					if block == nil {
 						break
 					}
-					p.log.I("##CBC ConfirmedLength: %v, block Number: %v, witness: %v",p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
+					p.log.I("##CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
 				}
 				// end test
-				
+
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 				bc := p.blockCache.LongestChain()
 				pool := p.blockCache.LongestPool()
