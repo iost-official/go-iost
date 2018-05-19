@@ -391,6 +391,13 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	if err != nil {
 		bn.log.E("marshal request encountered err:%v", err)
 	}
+	msgHash := common.Base58Encode(common.Sha256(msg.Body))
+	if _, ok := bn.recentSentMap.Load(msgHash); !ok {
+		bn.recentSentMap.Store(msgHash, msg)
+	} else {
+		bn.log.D("msg has been sent: %v", msg)
+		return
+	}
 	req := newRequest(Message, bn.localNode.String(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
