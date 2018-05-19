@@ -119,11 +119,14 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 		base.send(conn, newRequest(MessageReceived, base.localNode.String(), common.Int64ToBytes(r.Timestamp)))
 		r.msgHandle(base)
 	case MessageReceived:
-		base.log.D("MessageReceived: %v", common.BytesToInt64(r.Body))
+		base.log.D("MessageReceived: %v", r.From, common.BytesToInt64(r.Body))
 	case BroadcastMessage:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
 			base.log.D("msg from =%v, to = %v, typ = %v, body =%v", appReq.From, appReq.To, appReq.ReqType, appReq.Body)
+			if appReq.ReqType == int32(ReqBlockHeight) {
+				appReq.From = string(r.From)
+			}
 			base.RecvCh <- *appReq
 			base.Broadcast(*appReq)
 		}
