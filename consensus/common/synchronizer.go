@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	SyncNumber        = 10 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
+	SyncNumber        = 2 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
 	MaxDownloadNumber = 10 // 一次同步下载的最多块数
 )
 
