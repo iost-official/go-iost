@@ -14,8 +14,17 @@
 
 package main
 
-import "github.com/iost-official/prototype/iserver/cmd"
+import (
+	_ "net/http/pprof"
+	"os"
+	"runtime/pprof"
+
+	"github.com/iost-official/prototype/iserver/cmd"
+)
 
 func main() {
+	f, _ := os.Create("profile")
+	pprof.StartCPUProfile(f)     // 开始cpu profile，结果写到文件f中
+	defer pprof.StopCPUProfile() // 结束profile
 	cmd.Execute()
 }
