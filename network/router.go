@@ -53,7 +53,10 @@ func GetInstance(conf *NetConifg, target string, port uint16) (Router, error) {
 		if err != nil {
 			return
 		}
-		Route.Init(baseNet, port)
+		err = Route.Init(baseNet, port)
+		if err != nil {
+			return
+		}
 		Route.Run()
 	})
 	return Route, err
