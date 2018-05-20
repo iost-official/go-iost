@@ -79,9 +79,9 @@ var rootCmd = &cobra.Command{
 			fmt.Println("Network config initialization failed, stop the program!")
 			os.Exit(1)
 		}
-
+fmt.Println("network instance")
 		net, err := network.GetInstance(
-			&network.NetConifg{
+			&network.NetConifg{ 
 				LogPath:       logPath,
 				NodeTablePath: nodeTablePath,
 				NodeID:        nodeID,
