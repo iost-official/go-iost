@@ -48,7 +48,10 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 		return nil, err
 	}
 	val, ok := val0.(*state.VFloat)
-	if !ok {
+	if val0 == state.VNil {
+		val = state.MakeVFloat(0)
+	} else if !ok {
+
 		return nil, fmt.Errorf("pool type error: should VFloat, acture %v; in iost.%v",
 			reflect.TypeOf(val0).String(), string(sender))
 	}
