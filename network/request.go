@@ -106,24 +106,23 @@ func (r *Request) String() string {
 }
 
 func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
-	base.log.D("%v response request from= %v,type= %v, time = %v", base.localNode.Addr(), string(r.From), r.Type, r.Timestamp)
 	switch r.Type {
 	case Message:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
-			base.log.D("msg from =%v, to = %v, typ = %v,  ttl = %v", appReq.From, appReq.To, appReq.ReqType, appReq.TTL)
+			base.log.D("[net] msg from =%v, to = %v, typ = %v,  ttl = %v", appReq.From, appReq.To, appReq.ReqType, appReq.TTL)
 			base.RecvCh <- *appReq
 		} else {
-			base.log.E("failed to unmarshal recv msg:%v, err:%v", r, err)
+			base.log.E("[net] failed to unmarshal recv msg:%v, err:%v", r, err)
 		}
 		base.send(conn, newRequest(MessageReceived, base.localNode.String(), common.Int64ToBytes(r.Timestamp)))
 		r.msgHandle(base)
 	case MessageReceived:
-		base.log.D("MessageReceived: %v", r.From, common.BytesToInt64(r.Body))
+		base.log.D("[net] MessageReceived: %v", string(r.From), common.BytesToInt64(r.Body))
 	case BroadcastMessage:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
-			base.log.D("msg from =%v, to = %v, typ = %v,  ttl = %v", appReq.From, appReq.To, appReq.ReqType, appReq.TTL)
+			base.log.D("[net] msg from =%v, to = %v, typ = %v,  ttl = %v", appReq.From, appReq.To, appReq.ReqType, appReq.TTL)
 			if appReq.ReqType == int32(ReqBlockHeight) {
 				appReq.From = string(r.From)
 			}
@@ -137,7 +136,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 		base.putNode(string(r.From))
 		addrs, err := base.AllNodesExcludeAddr(string(r.From))
 		if err != nil {
-			base.log.E("failed to nodetable ", err)
+			base.log.E("[net] failed to nodetable ", err)
 		}
 		req := newRequest(NodeTable, base.localNode.String(), []byte(strings.Join(addrs, ",")))
 		base.send(conn, req)
@@ -145,7 +144,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	case NodeTable:
 		base.putNode(string(r.Body))
 	default:
-		base.log.E("wrong request :", r)
+		base.log.E("[net] wrong request :", r)
 	}
 }
 

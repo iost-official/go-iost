@@ -307,7 +307,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 // Listen listen local port, find neighbours
 func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
-	bn.log.D("listening %v", bn.localNode)
+	bn.log.D("[net] listening %v", bn.localNode)
 	var err error
 	bn.listener, err = net.Listen("tcp", bn.localNode.Addr())
 	if err != nil {
@@ -317,7 +317,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 		for {
 			conn, err := bn.listener.Accept()
 			if err != nil {
-				bn.log.E("accept downStream node err:%v", err)
+				bn.log.E("[net] accept downStream node err:%v", err)
 				continue
 			}
 			go bn.receiveLoop(conn)
@@ -334,7 +334,7 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	neighbours := bn.neighbours
 	bn.lock.Lock()
 	for _, node := range neighbours {
-		bn.log.D("broad msg: %v to node: %v", msg, node.String())
+		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.String())
 		msg.To = node.String()
 		go bn.broadcast(msg)
 	}
@@ -350,12 +350,12 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	}
 	data, err := msg.Marshal(nil)
 	if err != nil {
-		bn.log.E("marshal request encountered err:%v", err)
+		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
 	req := newRequest(BroadcastMessage, bn.localNode.String(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
-		bn.log.E("broadcast dial tcp got err:%v", err)
+		bn.log.E("[net] broadcast dial tcp got err:%v", err)
 		return
 	}
 	bn.send(conn, req)
@@ -367,10 +367,10 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 	node, _ := discover.ParseNode(nodeStr)
 	peer := bn.peers.Get(node)
 	if peer == nil {
-		bn.log.D("dial to %v", node.Addr())
+		bn.log.D("[net] dial to %v", node.Addr())
 		conn, err := net.Dial("tcp", node.Addr())
 		if err != nil {
-			bn.log.E("dial tcp %v got err:%v", node.Addr(), err)
+			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
 		go bn.receiveLoop(conn)
@@ -390,12 +390,13 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	}
 	data, err := msg.Marshal(nil)
 	if err != nil {
-		bn.log.E("marshal request encountered err:%v", err)
+		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
+	bn.log.D("[net] send msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time)
 	req := newRequest(Message, bn.localNode.String(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
-		bn.log.E("Send, dial tcp got err:%v", err)
+		bn.log.E("[net] Send, dial tcp got err:%v", err)
 		return
 	}
 	bn.send(conn, req)
@@ -411,15 +412,17 @@ func (bn *BaseNetwork) Close(port uint16) error {
 
 func (bn *BaseNetwork) send(conn net.Conn, r *Request) {
 	if conn == nil {
-		bn.log.E("from %v,send data = %v, conn is nil", bn.localNode.String(), r)
+		bn.log.E("[net] from %v,send data = %v, conn is nil", bn.localNode.String(), r)
 		return
 	}
 	pack, err := r.Pack()
 	if err != nil {
-		bn.log.E("pack data encountered err:%v", err)
+		bn.log.E("[net] pack data encountered err:%v", err)
 	}
 	_, err = conn.Write(pack)
-	bn.log.D("%v send data: typ= %v, body=%s,  err : %v", bn.localNode.String(), r.Type, string(r.Body), err)
+	if err != nil {
+		bn.log.E("[net] conn write got err:%v", err)
+	}
 }
 
 func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
@@ -444,11 +447,11 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 			req.handle(bn, conn)
 		}
 		if err := scanner.Err(); err != nil {
-			bn.log.E("invalid data packets: %v", err)
+			bn.log.E("[net] invalid data packets: %v", err)
 			return
 		}
 	}
-	bn.log.D("recieve loop finish..")
+	bn.log.D("[net] recieve loop finish..")
 }
 
 //AllNodesExcludeAddr returns all the known node in the network
@@ -491,7 +494,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 		iter := bn.nodeTable.NewIterator()
 		for iter.Next() {
 			if (now - common.BytesToInt64(iter.Value())) > NodeLiveThresholdSeconds {
-				bn.log.D("delete node %v, cuz its last register time is %v", common.BytesToInt64(iter.Value()))
+				bn.log.D("[net] delete node %v, cuz its last register time is %v", common.BytesToInt64(iter.Value()))
 				bn.nodeTable.Delete(iter.Key())
 				bn.delNeighbour(string(iter.Key()))
 			}
@@ -507,11 +510,11 @@ func (bn *BaseNetwork) registerLoop() {
 			if bn.localNode.TCP != 30304 {
 				conn, err := bn.dial(encodeAddr)
 				if err != nil {
-					bn.log.E("failed to connect boot node, err:%v", err)
+					bn.log.E("[net] failed to connect boot node, err:%v", err)
 					continue
 				}
 				defer bn.peers.RemoveByNodeStr(encodeAddr)
-				bn.log.D("%v request node table from %v", bn.localNode.String(), encodeAddr)
+				bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), encodeAddr)
 				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
 				bn.send(conn, req)
 			}
@@ -555,8 +558,10 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 		bn.DownloadHeights[i] = 0
 	}
 	bn.lock.Unlock()
+
 	for retry := 0; retry < MaxDownloadRetry; retry++ {
-		time.Sleep(time.Duration(retry*100) * time.Millisecond)
+		wg := sync.WaitGroup{}
+		time.Sleep(time.Duration(retry) * time.Second)
 		for downloadHeight, retryTimes := range bn.DownloadHeights {
 			if retryTimes > MaxDownloadRetry {
 				continue
@@ -568,14 +573,17 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 				From:    bn.localNode.String(),
 				Time:    time.Now().UnixNano(),
 			}
-			bn.log.D("download height = %v  nodeMap = %v", downloadHeight, bn.NodeHeightMap)
+			bn.log.D("[net] download height = %v  nodeMap = %v", downloadHeight, bn.NodeHeightMap)
 			bn.lock.Lock()
 			bn.DownloadHeights[downloadHeight] = retryTimes + 1
 			bn.lock.Unlock()
+			wg.Add(1)
 			go func() {
 				bn.Broadcast(msg)
+				wg.Done()
 			}()
 		}
+		wg.Wait()
 	}
 	return nil
 }
@@ -594,7 +602,7 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 func (bn *BaseNetwork) sendTo(addr string, req *Request) {
 	conn, err := bn.dial(addr)
 	if err != nil {
-		bn.log.E("dial tcp got err:%v", err)
+		bn.log.E("[net] dial tcp got err:%v", err)
 		return
 	}
 	bn.send(conn, req)
