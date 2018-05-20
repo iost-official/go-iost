@@ -203,7 +203,7 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
-			p.log.I("Received block:%v , timestamp: %v, Witness: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness)
+			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, verifyFunc)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
