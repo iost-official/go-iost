@@ -76,7 +76,7 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 	}
 	PubKey := common.Base58Decode(txkey.Publisher)
 	//check length of Pubkey here
-	if len(PubKey) != 32 {
+	if len(PubKey) != 33 {
 		return nil, fmt.Errorf("PubKey invalid")
 	}
 	Nonce := txkey.Nonce
@@ -86,7 +86,7 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 	if txDb == nil {
 		panic(fmt.Errorf("TxDb should be nil"))
 	}
-	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, []byte(PubKey))
+	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, PubKey)
 	if err != nil {
 		return nil, err
 	}
