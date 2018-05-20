@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
+	"regexp"
 )
 
 const (
@@ -135,4 +136,29 @@ func NewBlockVerifier(pool state.Pool) BlockVerifier {
 		CacheVerifier: NewCacheVerifier(pool),
 	}
 	return bv
+}
+
+func ParseGenesis(c vm.Contract, pool state.Pool) (state.Pool, error) {
+	cachePool := pool.Copy()
+	// TODO 应在这里初始化一个全新的state pool
+	code := c.Code()
+	rePutHM := regexp.MustCompile(`@PutHM[\t ]*([^\t ]*)[\t ]*([^\t ]*)[\t ]*([^\n\t ]*)[\n\t ]*`)
+	rePut := regexp.MustCompile(`@Put[\t ]+([^\t ]*)[\t ]*([^\n\t ]*)[\n\t ]*`)
+	allHM := rePutHM.FindAllStringSubmatch(code, -1)
+	allPut := rePut.FindAllStringSubmatch(code, -1)
+	for _, hm := range allHM {
+		v, err := state.ParseValue(hm[3])
+		if err != nil {
+			panic(err)
+		}
+		cachePool.PutHM(state.Key(hm[1]), state.Key(hm[2]), v)
+	}
+	for _, put := range allPut {
+		v, err := state.ParseValue(put[2])
+		if err != nil {
+			panic(err)
+		}
+		cachePool.Put(state.Key(put[1]),  v)
+	}
+	return cachePool , nil
 }
