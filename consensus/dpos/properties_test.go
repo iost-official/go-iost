@@ -70,10 +70,10 @@ func TestGlobalDynamicProperty(t *testing.T) {
 			curTs := GetTimestamp(curSec)
 			wit := witnessOfTime(&sp, &dp, curTs)
 			So(wit, ShouldEqual, "id0")
-			So(sec, ShouldBeLessThanOrEqualTo, 3)
+			So(sec, ShouldBeLessThanOrEqualTo, SlotLength)
 		})
 
-		curSec += 2
+		curSec += SlotLength - 1
 		timestamp := GetTimestamp(curSec)
 		Convey("in self's slot", func() {
 			wit := witnessOfTime(&sp, &dp, timestamp)
@@ -94,11 +94,11 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		curSec += 1
 		sec = timeUntilNextSchedule(&sp, &dp, curSec)
 		Convey("in self's slot, but finished", func() {
-			So(sec, ShouldBeGreaterThanOrEqualTo, 6)
-			So(sec, ShouldBeLessThanOrEqualTo, 9)
+			So(sec, ShouldBeGreaterThanOrEqualTo, SlotLength*2)
+			So(sec, ShouldBeLessThanOrEqualTo, SlotLength*3)
 		})
 
-		curSec += 8
+		curSec += SlotLength *3 -1
 		Convey("in self's slot and lost two previous blocks", func() {
 			curTs := GetTimestamp(curSec)
 			wit := witnessOfTime(&sp, &dp, curTs)

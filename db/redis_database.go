@@ -1,22 +1,23 @@
 package db
 
 import (
-	"errors"
 
 	"github.com/gomodule/redigo/redis"
+	"strconv"
 )
 
 const (
 	Conn   = "tcp"
-	DBAddr = "localhost:6379"
 )
+var DBAddr string
+var DBPort int16
 
 type RedisDatabase struct {
 	cli redis.Conn
 }
 
 func NewRedisDatabase() (*RedisDatabase, error) {
-	dial, _ := redis.Dial(Conn, DBAddr)
+	dial, _ := redis.Dial(Conn, DBAddr+":"+strconv.FormatUint(uint64(DBPort), 10))
 	return &RedisDatabase{cli: dial}, nil
 }
 
@@ -37,6 +38,13 @@ func (rdb *RedisDatabase) PutHM(key []byte, args ...[]byte) error {
 
 func (rdb *RedisDatabase) Get(key []byte) ([]byte, error) {
 	rtn, err := rdb.cli.Do("GET", interface{}(key))
+	if err != nil {
+
+		return nil, err
+	}
+	if rtn == nil {
+		return nil, nil
+	}
 	return rtn.([]byte), err
 }
 
@@ -58,7 +66,7 @@ func (rdb *RedisDatabase) GetHM(key []byte, args ...[]byte) ([][]byte, error) {
 		}
 		return params, nil
 	}
-	return nil, errors.New("Not found")
+	return nil, nil
 }
 
 func (rdb *RedisDatabase) Has(key []byte) (bool, error) {

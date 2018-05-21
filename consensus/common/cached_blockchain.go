@@ -144,10 +144,10 @@ func (ci *CBCIterator) Next() *block.Block {
 // GetBlockByNumber 从缓存链里找对应块号的块
 // deprecate : 请使用iterator
 func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
-	if number <= c.Chain.Length() {
+	if number < c.Chain.Length() {
 		return c.Chain.GetBlockByNumber(number)
 	}
-	if number > c.Length() {
+	if number >= c.Length() {
 		return nil
 	}
 	cbc := c

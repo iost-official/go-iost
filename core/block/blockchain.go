@@ -27,13 +27,15 @@ type ChainImpl struct {
 var BChain Chain
 var once sync.Once
 
+var LdbPath string
+
 // GetInstance 创建一个blockChain实例,单例模式
 func Instance() (Chain, error) {
 	var err error
 
 	once.Do(func() {
 
-		ldb, er := db.NewLDBDatabase("blockDB", 0, 0)
+		ldb, er := db.NewLDBDatabase(LdbPath+"blockDB", 0, 0)
 		if er != nil {
 			err = fmt.Errorf("failed to init db %v", err)
 			return
