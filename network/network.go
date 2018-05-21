@@ -500,7 +500,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 		iter := bn.nodeTable.NewIterator()
 		for iter.Next() {
 			if (now - common.BytesToInt64(iter.Value())) > NodeLiveThresholdSeconds {
-				bn.log.D("[net] delete node %v, cuz its last register time is %v", common.BytesToInt64(iter.Value()))
+				bn.log.D("[net] delete node %v, cuz its last register time is %v", string(iter.Key()), common.BytesToInt64(iter.Value()))
 				bn.nodeTable.Delete(iter.Key())
 				bn.peers.RemoveByNodeStr(string(iter.Key()))
 				bn.delNeighbour(string(iter.Key()))
@@ -530,8 +530,6 @@ func (bn *BaseNetwork) registerLoop() {
 		time.Sleep(CheckKnownNodeInterval * time.Second)
 	}
 }
-
-const validitySentSeconds = 90
 
 //findNeighbours find neighbour nodes in the node table
 func (bn *BaseNetwork) findNeighbours() {
