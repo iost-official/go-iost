@@ -20,6 +20,8 @@ import (
 
 func TestHttpServer(t *testing.T) {
 	Convey("Test of HttpServer", t, func() {
+		txDb:=tx.TxDbInstance()
+		So(txDb, ShouldNotBeNil)
 		main := lua.NewMethod("main", 0, 1)
 		code := `function main()
 			 		Put("hello", "world")
