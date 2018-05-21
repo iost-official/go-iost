@@ -21,9 +21,7 @@ type Peer struct {
 }
 
 func (p *Peer) Disconnect() {
-
-	select {
-	case <-p.closed:
+	if p != nil && p.conn != nil {
 		p.conn.Close()
 	}
 }
@@ -57,6 +55,17 @@ func (ps *peerSet) Get(node *discover.Node) *Peer {
 		return nil
 	}
 	return peer
+}
+
+func (ps *peerSet) SetAddr(addr string, p *Peer) {
+	ps.lock.Lock()
+	defer ps.lock.Unlock()
+	p.remote = addr
+	if ps.peers == nil {
+		ps.peers = make(map[string]*Peer)
+	}
+	ps.peers[addr] = p
+	return
 }
 
 func (ps *peerSet) Set(node *discover.Node, p *Peer) {

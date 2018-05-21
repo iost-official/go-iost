@@ -194,6 +194,7 @@ func (p *DPoS) blockLoop() {
 		}
 
 		// verify block witness
+		// TODO currentSlot is negative
 		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
 			return nil, errors.New("wrong witness")
 		}
