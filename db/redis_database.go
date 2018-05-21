@@ -9,16 +9,18 @@ import (
 const (
 	Conn   = "tcp"
 )
-var DBAddr string
-var DBPort int16
+var DBAddr string = "127.0.0.1"
+var DBPort int16 = 6379
 
 type RedisDatabase struct {
 	cli redis.Conn
 }
 
 func NewRedisDatabase() (*RedisDatabase, error) {
-	dial, _ := redis.Dial(Conn, DBAddr+":"+strconv.FormatUint(uint64(DBPort), 10))
-	return &RedisDatabase{cli: dial}, nil
+	//fmt.Println(strings.TrimSpace(DBAddr),":",strconv.FormatUint(uint64(DBPort),10))
+	dial, err := redis.Dial(Conn, DBAddr+":"+strconv.FormatUint(uint64(DBPort), 10))
+
+	return &RedisDatabase{cli: dial}, err
 }
 
 func (rdb *RedisDatabase) Put(key []byte, value []byte) error {

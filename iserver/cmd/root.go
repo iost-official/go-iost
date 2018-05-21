@@ -60,7 +60,6 @@ var rootCmd = &cobra.Command{
 		fmt.Println("logFile: ", viper.GetString("log"))
 		fmt.Println("dbFile: ", viper.GetString("db"))
 
-
 		//初始化数据库
 		ldbPath := viper.GetString("ldb.path")
 		redisAddr := viper.GetString("redis.addr") //optional
@@ -75,9 +74,15 @@ var rootCmd = &cobra.Command{
 		db.DBAddr = redisAddr
 		db.DBPort = int16(redisPort)
 
-		txDb:=tx.TxDbInstance()
-		if txDb==nil{
+		txDb := tx.TxDbInstance()
+		if txDb == nil {
 			fmt.Println("TxDbInstance failed, stop the program!")
+			os.Exit(1)
+		}
+
+		err := state.PoolInstance()
+		if err != nil {
+			fmt.Println("PoolInstance failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 
@@ -105,7 +110,7 @@ var rootCmd = &cobra.Command{
 
 		fmt.Println("network instance")
 		net, err := network.GetInstance(
-			&network.NetConifg{ 
+			&network.NetConifg{
 				LogPath:       logPath,
 				NodeTablePath: nodeTablePath,
 				NodeID:        nodeID,
