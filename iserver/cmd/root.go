@@ -82,7 +82,7 @@ var rootCmd = &cobra.Command{
 
 		err := state.PoolInstance()
 		if err != nil {
-			fmt.Println("PoolInstance failed, stop the program! err:%v", err)
+			fmt.Printf("PoolInstance failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 
