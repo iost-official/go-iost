@@ -33,7 +33,7 @@ func (d *Database) Get(key Key) (Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(raw) < 1 {
+	if raw == nil {
 		return VNil, nil
 	}
 	return ParseValue(string(raw))

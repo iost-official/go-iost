@@ -18,7 +18,41 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/prototype/vm/mocks"
 )
+
+func TestGenesisVerify(t *testing.T) {
+	Convey("Test of Genesis verify", t, func() {
+		Convey("Parse Contract", func() {
+			mockCtl := gomock.NewController(t)
+			pool := core_mock.NewMockPool(mockCtl)
+			var count int
+			var k, f, k2 state.Key
+			var v, v2 state.Value
+			pool.EXPECT().PutHM(gomock.Any(),gomock.Any(),gomock.Any()).Times(2).Do(func(key, field state.Key, value state.Value) error {
+				k ,f ,v = key, field, value
+				count ++
+				return nil
+			})
+			pool.EXPECT().Put(gomock.Any(), gomock.Any()).Do(func(key state.Key, value state.Value){
+				k2, v2 = key, value
+			})
+			pool.EXPECT().Copy().Return(pool)
+			contract := vm_mock.NewMockContract(mockCtl)
+			contract.EXPECT().Code().Return(`
+-- @PutHM iost abc f10000
+-- @PutHM iost def f1000
+-- @Put hello sworld
+`)
+			_, err := ParseGenesis(contract, pool)
+			So(err, ShouldBeNil)
+			So(count, ShouldEqual, 2)
+			So(k, ShouldEqual, state.Key("iost"))
+			So(v2.EncodeString(), ShouldEqual, "sworld")
+
+		})
+	})
+}
 
 func TestCacheVerifier(t *testing.T) {
 	Convey("Test of CacheVerifier", t, func() {
@@ -65,6 +99,50 @@ end`
 			So(string(f2), ShouldEqual, "ahaha")
 			vv := v2.(*state.VFloat)
 			So(vv.ToFloat64(), ShouldEqual, float64(10000-10))
+		})
+		Convey("Verify free contract", func() {
+			mockCtl := gomock.NewController(t)
+			pool := core_mock.NewMockPool(mockCtl)
+
+			var k state.Key
+			var v state.Value
+
+			pool.EXPECT().Put(gomock.Any(), gomock.Any()).AnyTimes().Do(func(key state.Key, value state.Value) error {
+				k = key
+				v = value
+				return nil
+			})
+
+			pool.EXPECT().Get(gomock.Any()).AnyTimes().Return(state.MakeVFloat(3.14), nil)
+
+			var k2 state.Key
+			var f2 state.Key
+			var v2 state.Value
+			pool.EXPECT().PutHM(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(key, field state.Key, value state.Value) {
+				k2 = key
+				f2 = field
+				v2 = value
+			})
+			//v3 := state.MakeVFloat(float64(10000))
+			pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).Return(state.VNil, nil)
+			pool.EXPECT().Copy().AnyTimes().Return(pool)
+			main := lua.NewMethod("main", 0, 1)
+			code := `function main()
+	a = Get("pi")
+	Put("hello", a)
+	return "success"
+end`
+			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 0, Publisher: vm.IOSTAccount("ahaha")}, code, main)
+
+			cv := NewCacheVerifier(pool)
+			_, err := cv.VerifyContract(&lc, true)
+			So(err, ShouldBeNil)
+			So(string(k), ShouldEqual, "testhello")
+			So(v.EncodeString(), ShouldEqual, "f3.140000000000000e+00")
+			So(string(k2), ShouldEqual, "iost")
+			So(string(f2), ShouldEqual, "ahaha")
+			vv := v2.(*state.VFloat)
+			So(vv.ToFloat64(), ShouldEqual, float64(0))
 		})
 	})
 }
