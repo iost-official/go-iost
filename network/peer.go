@@ -21,7 +21,9 @@ type Peer struct {
 }
 
 func (p *Peer) Disconnect() {
-	p.conn.Close()
+	if p != nil && p.conn != nil {
+		p.conn.Close()
+	}
 }
 
 func newPeer(conn net.Conn, local, remote string) *Peer {

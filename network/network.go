@@ -502,6 +502,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 			if (now - common.BytesToInt64(iter.Value())) > NodeLiveThresholdSeconds {
 				bn.log.D("[net] delete node %v, cuz its last register time is %v", common.BytesToInt64(iter.Value()))
 				bn.nodeTable.Delete(iter.Key())
+				bn.peers.RemoveByNodeStr(string(iter.Key()))
 				bn.delNeighbour(string(iter.Key()))
 			}
 		}
