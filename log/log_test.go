@@ -13,7 +13,7 @@ func TestLogger(t *testing.T) {
 		l.D("something %v;", "good")
 		l.E("something wrong")
 		l.I("something should be record")
-		l.Crash("Test of Crash")
+		//l.Crash("Test of Crash")
 		So(true, ShouldBeTrue)
 	})
 }
