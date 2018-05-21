@@ -1,21 +1,19 @@
 package cmd
 
 import (
-	"encoding/base64"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/iost-official/prototype/common"
 )
 
 func SaveBytes(buf []byte) string {
-	return base64.StdEncoding.EncodeToString(buf)
+	return common.Base58Encode(buf)
 }
 
 func LoadBytes(s string) []byte {
-	buf, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		panic(err)
-	}
+	buf := common.Base58Decode(s)
 	return buf
 }
 

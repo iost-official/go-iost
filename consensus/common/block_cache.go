@@ -161,6 +161,7 @@ type BlockCache interface {
 	LongestPool() state.Pool
 	BlockChain() block.Chain
 	BasePool() state.Pool
+	SetBasePool(statePool state.Pool) error
 	ConfirmedLength() uint64
 	BlockConfirmChan() chan uint64
 }
@@ -404,6 +405,11 @@ func (h *BlockCacheImpl) LongestChain() block.Chain {
 
 func (h *BlockCacheImpl) BasePool() state.Pool {
 	return h.cachedRoot.pool
+}
+
+func (h *BlockCacheImpl) SetBasePool(statePool state.Pool) error {
+	h.cachedRoot.pool = statePool
+	return nil
 }
 
 // LongestPool 返回最长链对应的state池

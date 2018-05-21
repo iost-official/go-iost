@@ -21,9 +21,7 @@ type Peer struct {
 }
 
 func (p *Peer) Disconnect() {
-
-	select {
-	case <-p.closed:
+	if p != nil && p.conn != nil {
 		p.conn.Close()
 	}
 }

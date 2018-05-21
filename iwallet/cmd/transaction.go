@@ -20,7 +20,6 @@ import (
 
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/rpc"
-	"github.com/iost-official/prototype/common"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -48,7 +47,7 @@ to quickly create a Cobra application.`,
 		}
 		defer conn.Close()
 		client := rpc.NewCliClient(conn)
-		txRaw, err := client.GetTransaction(context.Background(), &rpc.TransactionKey{Publisher: common.Base58Encode(LoadBytes(*publisher)), Nonce: int64(*nonce)})
+		txRaw, err := client.GetTransaction(context.Background(), &rpc.TransactionKey{Publisher: *publisher, Nonce: int64(*nonce)})
 		if err != nil {
 			fmt.Println(err.Error())
 			return

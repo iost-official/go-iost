@@ -358,7 +358,9 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 		bn.log.E("[net] broadcast dial tcp got err:%v", err)
 		return
 	}
-	bn.send(conn, req)
+	if er := bn.send(conn, req); er != nil {
+		bn.peers.RemoveByNodeStr(msg.To)
+	}
 }
 
 func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
@@ -399,7 +401,9 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		bn.log.E("[net] Send, dial tcp got err:%v", err)
 		return
 	}
-	bn.send(conn, req)
+	if er := bn.send(conn, req); er != nil {
+		bn.peers.RemoveByNodeStr(msg.To)
+	}
 }
 
 // Close all connection
@@ -410,19 +414,21 @@ func (bn *BaseNetwork) Close(port uint16) error {
 	return nil
 }
 
-func (bn *BaseNetwork) send(conn net.Conn, r *Request) {
+func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 	if conn == nil {
 		bn.log.E("[net] from %v,send data = %v, conn is nil", bn.localNode.String(), r)
-		return
+		return nil
 	}
 	pack, err := r.Pack()
 	if err != nil {
 		bn.log.E("[net] pack data encountered err:%v", err)
+		return nil
 	}
 	_, err = conn.Write(pack)
 	if err != nil {
 		bn.log.E("[net] conn write got err:%v", err)
 	}
+	return err
 }
 
 func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
@@ -496,6 +502,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 			if (now - common.BytesToInt64(iter.Value())) > NodeLiveThresholdSeconds {
 				bn.log.D("[net] delete node %v, cuz its last register time is %v", common.BytesToInt64(iter.Value()))
 				bn.nodeTable.Delete(iter.Key())
+				bn.peers.RemoveByNodeStr(string(iter.Key()))
 				bn.delNeighbour(string(iter.Key()))
 			}
 		}
@@ -513,10 +520,11 @@ func (bn *BaseNetwork) registerLoop() {
 					bn.log.E("[net] failed to connect boot node, err:%v", err)
 					continue
 				}
-				defer bn.peers.RemoveByNodeStr(encodeAddr)
 				bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), encodeAddr)
 				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
-				bn.send(conn, req)
+				if er := bn.send(conn, req); er != nil {
+					bn.peers.RemoveByNodeStr(encodeAddr)
+				}
 			}
 		}
 		time.Sleep(CheckKnownNodeInterval * time.Second)
@@ -605,7 +613,9 @@ func (bn *BaseNetwork) sendTo(addr string, req *Request) {
 		bn.log.E("[net] dial tcp got err:%v", err)
 		return
 	}
-	bn.send(conn, req)
+	if er := bn.send(conn, req); er != nil {
+		bn.peers.RemoveByNodeStr(addr)
+	}
 }
 
 //SetNodeHeightMap ...
