@@ -26,8 +26,8 @@ func DatabaseFactor(target string) (Database, error) {
 	case "ldb":
 		//dirname, _ := ioutil.TempDir(os.TempDir(), "test_")
 		dirname := "database"
-		db, err := NewLDBDatabase(dirname, 0, 0)
-		return db, err
+		Db, err := NewLDBDatabase(dirname, 0, 0)
+		return Db, err
 	case "mem":
 		db, err := NewMemDatabase()
 		return db, err

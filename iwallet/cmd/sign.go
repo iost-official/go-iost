@@ -16,14 +16,23 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 
+	"strings"
+
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/core/tx"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
+
+var kpPath string
 
 // signCmd represents the sign command
 var signCmd = &cobra.Command{
 	Use:   "sign",
-	Short: "A brief description of your command",
+	Short: "Sign to .sc file",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -31,15 +40,79 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("sign called")
+		if len(args) < 1 {
+			fmt.Println(`Error: source file not given`)
+			return
+		}
+		path := args[0]
+		fi, err := os.Open(path)
+		if err != nil {
+			fmt.Println("Error: input file not found")
+		}
+		defer fi.Close()
+		fd, err := ioutil.ReadAll(fi)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		var mtx tx.Tx
+		err = mtx.Decode(fd)
+		if err != nil {
+			fmt.Println("file broken: ", err.Error())
+		}
+
+		fsk, err := os.Open(kpPath)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		defer fsk.Close()
+		seckey, err := ioutil.ReadAll(fsk)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		acc, err := account.NewAccount(LoadBytes(string(seckey)))
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		sig, err := tx.SignContract(mtx, acc)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		if len(args) < 2 {
+			dest = args[0][:strings.LastIndex(args[0], ".")]
+			dest = dest + ".sig"
+		} else {
+			dest = args[1]
+		}
+
+		err = SaveTo(dest, sig.Encode())
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(signCmd)
 
-	// Here you will define your flags and configuration settings.
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
+	signCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.ssh/id_secp", "Set path of sec-key")
+
+	// Here you will define your flags and configuration settings.
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// signCmd.PersistentFlags().String("foo", "", "A help for foo")

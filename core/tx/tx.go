@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
 )
 
 //go:generate gencode go -schema=structs.schema -package=tx
@@ -30,17 +31,17 @@ func NewTx(nonce int64, contract vm.Contract) Tx {
 }
 
 // 合约的参与者进行签名
-func SignContract(tx Tx, account account.Account) (Tx, error) {
+func SignContract(tx Tx, account account.Account) (common.Signature, error) {
 	sign, err := common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey)
 	if err != nil {
-		return tx, err
+		return sign, err
 	}
-	tx.Signs = append(tx.Signs, sign)
-	return tx, nil
+	return sign, nil
 }
 
 // 合约的发布者进行签名，此签名的用户用于支付gas
-func SignTx(tx Tx, account account.Account) (Tx, error) {
+func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, error) {
+	tx.Signs = append(tx.Signs, signs...)
 	sign, err := common.Sign(common.Secp256k1, tx.publishHash(), account.Seckey)
 	if err != nil {
 		return tx, err
@@ -49,6 +50,7 @@ func SignTx(tx Tx, account account.Account) (Tx, error) {
 	return tx, nil
 }
 
+// Time,Noce,Contract形成的基本哈希值
 func (t *Tx) baseHash() []byte {
 	tbr := TxBaseRaw{t.Time, t.Nonce, t.Contract.Encode()}
 	b, err := tbr.Marshal(nil)
@@ -58,6 +60,7 @@ func (t *Tx) baseHash() []byte {
 	return common.Sha256(b)
 }
 
+// 发布者使用的hash值，包含参与者的签名
 func (t *Tx) publishHash() []byte {
 	s := make([][]byte, 0)
 	for _, sign := range t.Signs {
@@ -71,6 +74,7 @@ func (t *Tx) publishHash() []byte {
 	return common.Sha256(b)
 }
 
+// 对Tx进行编码
 func (t *Tx) Encode() []byte {
 	s := make([][]byte, 0)
 	for _, sign := range t.Signs {
@@ -83,6 +87,8 @@ func (t *Tx) Encode() []byte {
 	}
 	return b
 }
+
+// 对Tx进行解码
 func (t *Tx) Decode(b []byte) error {
 	var tr TxRaw
 	_, err := tr.Unmarshal(b)
@@ -98,7 +104,19 @@ func (t *Tx) Decode(b []byte) error {
 		}
 		t.Signs = append(t.Signs, sign)
 	}
-	err = t.Contract.Decode(tr.Contract)
+	if t.Contract == nil {
+		switch tr.Contract[0] {
+		case 0:
+			t.Contract = &lua.Contract{}
+			t.Contract.Decode(tr.Contract)
+
+		default:
+			return fmt.Errorf("Tx.Decode:tx.Contract syntax error")
+		}
+	} else {
+		err = t.Contract.Decode(tr.Contract)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -111,22 +129,29 @@ func (t *Tx) Decode(b []byte) error {
 	t.Time = tr.Time
 	return nil
 }
+
+// 计算Tx的哈希值
 func (t *Tx) Hash() []byte {
 	return common.Sha256(t.Encode())
 }
 
 // 验证签名的函数
 func (t *Tx) VerifySelf() error {
-	baseHash := t.baseHash()
+	baseHash := t.baseHash() // todo 在basehash内缓存，不需要在应用进行缓存
 	for _, sign := range t.Signs {
 		ok := common.VerifySignature(baseHash, sign)
 		if !ok {
 			return fmt.Errorf("signer error")
 		}
 	}
+
 	ok := common.VerifySignature(t.publishHash(), t.Publisher)
 	if !ok {
 		return fmt.Errorf("publisher error")
 	}
 	return nil
+}
+
+func (t *Tx) VerifySigner(sig common.Signature) bool {
+	return common.VerifySignature(t.baseHash(), sig)
 }

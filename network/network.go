@@ -34,8 +34,9 @@ type RequestHead struct {
 const (
 	HEADLENGTH               = 4
 	CheckKnownNodeInterval   = 10
-	NodeLiveThresholdSeconds = 30
-	MaxDownloadRetry         = 10
+	NodeLiveThresholdSeconds = 20
+	MaxDownloadRetry         = 3
+	DownloadRetryInterval    = 2
 )
 
 type Response struct {
@@ -78,7 +79,7 @@ func NewNaiveNetwork(n int) (*NaiveNetwork, error) {
 		done:   false,
 	}
 	for i := 1; i <= n; i++ {
-		nn.db.Put([]byte(string(i)), []byte("127.0.0.1:"+strconv.Itoa(11036+i)))
+		nn.db.Put([]byte(string(i)), []byte("0.0.0.0:"+strconv.Itoa(11036+i)))
 	}
 	return nn, nil
 }
@@ -207,6 +208,7 @@ func reqToBytes(req message.Message) ([]byte, []byte, error) {
 	return reqHead.Bytes(), reqBodyBytes, nil
 }
 
+//NetConfig p2p net config
 type NetConifg struct {
 	LogPath       string
 	NodeTablePath string
@@ -251,8 +253,9 @@ type BaseNetwork struct {
 	nodeTable  *db.LDBDatabase //all known node except remoteAddr
 	neighbours map[string]*discover.Node
 	lock       sync.RWMutex
-
-	RecvCh chan message.Message
+	peers      peerSet // manage all connection
+	RecvCh     chan message.Message
+	listener   net.Listener
 
 	recentSentMap sync.Map //map[string]message.Message
 
@@ -274,18 +277,11 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 		}
 	}
 	if conf.NodeTablePath == "" {
-		conf.NodeTablePath, err = ioutil.TempDir(os.TempDir(), "iost_node_table_")
-		if err != nil {
-			return nil, fmt.Errorf("iost_node_table_path err: %v", err)
-		}
+		conf.NodeTablePath = "iost_node_table_"
 	}
 	srvLog, err := log.NewLogger(conf.LogPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init log %v", err)
-	}
-	_, pErr := os.Stat(conf.NodeTablePath)
-	if pErr != nil {
-		return nil, fmt.Errorf("failed to init db path %v", pErr)
 	}
 
 	nodeTable, err := db.NewLDBDatabase(conf.NodeTablePath, 0, 0)
@@ -317,13 +313,14 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
 	bn.log.D("listening %v", bn.localNode)
-	l, err := net.Listen("tcp", bn.localNode.Addr())
+	var err error
+	bn.listener, err = net.Listen("tcp", bn.localNode.Addr())
 	if err != nil {
 		return bn.RecvCh, errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
 	}
 	go func() {
 		for {
-			conn, err := l.Accept()
+			conn, err := bn.listener.Accept()
 			if err != nil {
 				bn.log.E("accept downStream node err:%v", err)
 				continue
@@ -366,18 +363,26 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 		bn.log.E("broadcast dial tcp got err:%v", err)
 		return
 	}
-	defer conn.Close()
 	bn.send(conn, req)
 }
 
 func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
 	node, _ := discover.ParseNode(nodeStr)
-	conn, err := net.Dial("tcp", node.Addr())
-	if err != nil {
-		bn.log.E("dial tcp %v got err:%v", node.Addr(), err)
-		return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
+	peer := bn.peers.Get(node)
+	if peer == nil {
+		conn, err := net.Dial("tcp", node.Addr())
+		if err != nil {
+			bn.log.E("dial tcp %v got err:%v", node.Addr(), err)
+			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
+		}
+		go bn.receiveLoop(conn)
+		peer := newPeer(conn, bn.localNode.String(), nodeStr)
+		bn.peers.Set(node, peer)
 	}
-	return conn, nil
+
+	return bn.peers.Get(node).conn, nil
 }
 
 //Send msg to msg.To
@@ -392,12 +397,14 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		bn.log.E("Send, dial tcp got err:%v", err)
 		return
 	}
-	defer conn.Close()
 	bn.send(conn, req)
 }
 
 // Close all connection
 func (bn *BaseNetwork) Close(port uint16) error {
+	if bn.listener != nil {
+		bn.listener.Close()
+	}
 	return nil
 }
 
@@ -433,7 +440,7 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 		for scanner.Scan() {
 			req := new(Request)
 			req.Unpack(bytes.NewReader(scanner.Bytes()))
-			req.response(bn, conn)
+			req.handle(bn, conn)
 		}
 		if err := scanner.Err(); err != nil {
 			bn.log.E("invalid data packets: %v", err)
@@ -485,6 +492,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 			if (now - common.BytesToInt64(iter.Value())) > NodeLiveThresholdSeconds {
 				bn.log.D("delete node %v, cuz its last register time is %v", common.BytesToInt64(iter.Value()))
 				bn.nodeTable.Delete(iter.Key())
+				bn.delNeighbour(string(iter.Key()))
 			}
 		}
 		time.Sleep(CheckKnownNodeInterval * time.Second)
@@ -495,16 +503,15 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 func (bn *BaseNetwork) registerLoop() {
 	for {
 		for _, encodeAddr := range params.TestnetBootnodes {
-			if encodeAddr != "" && bn.localNode.String() != encodeAddr {
-				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
+			if bn.localNode.TCP != 30304 {
 				conn, err := bn.dial(encodeAddr)
 				if err != nil {
 					bn.log.E("failed to connect boot node, err:%v", err)
 					continue
 				}
-				defer conn.Close()
-				go bn.receiveLoop(conn)
+				defer bn.peers.RemoveByNodeStr(encodeAddr)
 				bn.log.D("%v request node table from %v", bn.localNode.String(), encodeAddr)
+				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
 				bn.send(conn, req)
 			}
 		}
@@ -527,6 +534,8 @@ func (bn *BaseNetwork) cleanRecentSentLoop() {
 		time.Sleep(validitySentSeconds * time.Second)
 	}
 }
+
+//findNeighbours find neighbour nodes in the node table
 func (bn *BaseNetwork) findNeighbours() {
 	nodesStr, _ := bn.AllNodesExcludeAddr(bn.localNode.String())
 	nodes := make([]*discover.Node, 0)
@@ -546,6 +555,12 @@ func (bn *BaseNetwork) setNeighbour(node *discover.Node) {
 	bn.neighbours[node.String()] = node
 }
 
+func (bn *BaseNetwork) delNeighbour(nodeStr string) {
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
+	delete(bn.neighbours, nodeStr)
+}
+
 //Download block by height from which node in NodeHeightMap
 func (bn *BaseNetwork) Download(start, end uint64) error {
 	if len(bn.NodeHeightMap) <= 0 {
@@ -558,25 +573,15 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 	bn.lock.Unlock()
 
 	for len(bn.DownloadHeights) > 0 {
-		matchNum := 1
-		var targetNode string
 		for downloadHeight, retryTimes := range bn.DownloadHeights {
 			if retryTimes > MaxDownloadRetry {
 				continue
 			}
 			//select one node randomly which height is greater than start
-			for nodeStr, height := range bn.NodeHeightMap {
-				if height >= downloadHeight {
-					randNum := rand.New(rand.NewSource(time.Now().UnixNano())).Int31n(int32(matchNum))
-					if randNum == 0 {
-						targetNode = nodeStr
-					}
-					matchNum++
-				}
-			}
+			targetNode := randNodeMatchHeight(bn.NodeHeightMap, downloadHeight)
 			//download block which height equal start
 			msg := message.Message{
-				Body:    common.Uint64ToBytes(start),
+				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
 				From:    bn.localNode.String(),
 				To:      targetNode,
@@ -596,11 +601,13 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 				bn.sendTo(msg.To, req)
 			}()
 		}
+		time.Sleep(DownloadRetryInterval * time.Second)
 	}
 
 	return nil
 }
 
+//CancelDownload cancel downloading block with height between start and end
 func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
@@ -610,13 +617,13 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 	return nil
 }
 
+//sendTo send request to the address
 func (bn *BaseNetwork) sendTo(addr string, req *Request) {
 	conn, err := bn.dial(addr)
 	if err != nil {
 		bn.log.E("dial tcp got err:%v", err)
 		return
 	}
-	defer conn.Close()
 	bn.send(conn, req)
 }
 
@@ -632,4 +639,19 @@ func (bn *BaseNetwork) GetNodeHeightMap(nodeStr string) uint64 {
 	bn.lock.RLock()
 	defer bn.lock.RUnlock()
 	return bn.NodeHeightMap[nodeStr]
+}
+
+func randNodeMatchHeight(m map[string]uint64, downloadHeight uint64) (targetNode string) {
+	rand.Seed(time.Now().UnixNano())
+	matchNum := 1
+	for nodeStr, height := range m {
+		if height >= downloadHeight {
+			randNum := rand.Int31n(int32(matchNum))
+			if randNum == 0 {
+				targetNode = nodeStr
+			}
+			matchNum++
+		}
+	}
+	return targetNode
 }

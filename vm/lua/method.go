@@ -1,5 +1,6 @@
 package lua
 
+// Method lua方法接口的实现
 type Method struct {
 	name string
 	inputCount,

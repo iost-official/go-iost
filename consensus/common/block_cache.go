@@ -4,23 +4,28 @@ import (
 	"bytes"
 	"fmt"
 
+	"errors"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/tx"
 )
 
 //const (
 //	MaxCacheDepth = 6
 //)
 
+// CacheStatus 代表缓存块的状态
 type CacheStatus int
 
 const (
-	Extend CacheStatus = iota
-	Fork
-	NotFound
-	ErrorBlock
+	Extend     CacheStatus = iota // 链增长
+	Fork                          // 分叉
+	NotFound                      // 无法上链，成为孤块
+	ErrorBlock                    // 块有错误
+	Duplicate                     // 重复块
 )
 
+// BlockCacheTree 缓存链分叉的树结构
 type BlockCacheTree struct {
 	bc       CachedBlockChain
 	children []*BlockCacheTree
@@ -39,7 +44,7 @@ func newBct(block *block.Block, tree *BlockCacheTree) *BlockCacheTree {
 	return &bct
 }
 
-func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
+func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
 	for _, bct := range b.children {
 		code, newTree := bct.add(block, verifier)
 		if code != NotFound {
@@ -48,7 +53,12 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 	}
 
 	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.ParentHash) {
-		newPool, err := verifier(block, b.pool)
+		for _, bct := range b.children {
+			if bytes.Equal(bct.bc.Top().Head.Hash(), block.Head.Hash()) {
+				return Duplicate, nil
+			}
+		}
+		newPool, err := verifier(block, b.bc.Top(), b.pool)
 		if err != nil {
 			return ErrorBlock, nil
 		}
@@ -79,9 +89,9 @@ func (b *BlockCacheTree) findSingles(block *block.Block) (bool, *BlockCacheTree)
 	return false, nil
 }
 
-func (b *BlockCacheTree) addSubTree(root *BlockCacheTree, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) {
+func (b *BlockCacheTree) addSubTree(root *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
 	block := root.bc.block
-	newPool, err := verifier(block, b.pool)
+	newPool, err := verifier(block, b.bc.Top(), b.pool)
 	if err != nil {
 		return
 	}
@@ -125,22 +135,46 @@ func (b *BlockCacheTree) iterate(fun func(bct *BlockCacheTree) bool) bool {
 	return false
 }
 
+var (
+	ErrNotFound = errors.New("not found")       // 没有上链，成为孤块
+	ErrBlock    = errors.New("error block")     // 块有错误
+	ErrTooOld   = errors.New("block too old")   // 块太老
+	ErrDup      = errors.New("block duplicate") // 重复块
+)
+
+// BlockCache 操作块缓存的接口
 type BlockCache interface {
 	AddGenesis(block *block.Block) error
-	Add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) error
+	Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error
+	AddSingles(verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error))
+	AddTx(tx *tx.Tx) error
+	GetTx() (*tx.Tx, error)
+	ResetTxPoool() error
+
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
+	LongestPool() state.Pool
+	BlockChain() block.Chain
+	BasePool() state.Pool
 	ConfirmedLength() uint64
-	MaxHeight() uint64
+	BlockConfirmChan() chan uint64
 }
 
+// BlockCacheImpl 块缓存实现
 type BlockCacheImpl struct {
 	bc              block.Chain
 	cachedRoot      *BlockCacheTree
 	singleBlockRoot *BlockCacheTree
+	recentTree	    *BlockCacheTree
+	txPool          tx.TxPool
+	delTxPool       tx.TxPool
+	txPoolCache     tx.TxPool
 	maxDepth        int
+	blkConfirmChan  chan uint64
 }
 
+// NewBlockCache 新建块缓存
+// chain 已确认链部分, pool 已确认状态池, maxDepth 和共识相关的确认块参数
 func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCacheImpl {
 	h := BlockCacheImpl{
 		bc: chain,
@@ -157,53 +191,46 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
 		},
-		maxDepth: maxDepth,
+		maxDepth:       maxDepth,
+		blkConfirmChan: make(chan uint64, 10),
 	}
+	h.txPool, _ = tx.TxPoolFactory("mem")
+	h.txPoolCache, _ = tx.TxPoolFactory("mem")
+	h.delTxPool, _ = tx.TxPoolFactory("mem")
 	return &h
 }
 
+// ConfirmedLength 返回确认链长度
 func (h *BlockCacheImpl) ConfirmedLength() uint64 {
-	return 1
+	return h.bc.Length()
 }
 
-func (h *BlockCacheImpl) MaxHeight() uint64 {
-	return 1
+// BlockChain 返回确认
+func (h *BlockCacheImpl) BlockChain() block.Chain {
+	return h.bc
 }
+
+// AddGenesis 加入创世块
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	h.bc.Push(block)
 	return nil
 }
 
-func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, pool state.Pool) (state.Pool, error)) error {
+// Add 把块加入缓存
+// block 块, verifier 块的验证函数
+func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error {
+	/*
+	if uint64(block.Head.Number) < h.bc.Length() {
+		return ErrTooOld
+	}
+	*/
 	code, newTree := h.cachedRoot.add(block, verifier)
+	h.recentTree = newTree
 	switch code {
 	case Extend:
 		fallthrough
 	case Fork:
-		// 尝试把single blocks上链
-		newChildren := make([]*BlockCacheTree, 0)
-		for _, bct := range h.singleBlockRoot.children {
-			if bytes.Equal(bct.bc.block.Head.ParentHash, block.Head.Hash()) {
-				newTree.addSubTree(bct, verifier)
-			} else {
-				newChildren = append(newChildren, bct)
-			}
-		}
-		h.singleBlockRoot.children = newChildren
-		// 两种情况都可能满足flush
-		for {
-			// 可能进行多次flush
-			need, newRoot := h.needFlush(block.Head.Version)
-			if need {
-				h.cachedRoot = newRoot
-				h.cachedRoot.bc.Flush()
-				h.cachedRoot.pool.Flush()
-				h.cachedRoot.super = nil
-				h.cachedRoot.updateLength()
-			} else {
-				break
-			}
-		}
+		h.tryFlush(block.Head.Version)
 	case NotFound:
 		// Add to single block tree
 		found, bct := h.singleBlockRoot.findSingles(block)
@@ -217,11 +244,96 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 			super:    bct,
 			children: make([]*BlockCacheTree, 0),
 		}
+
 		bct.children = append(bct.children, newTree)
+
+		newChildren := make([]*BlockCacheTree, 0)
+		for _, bct := range h.singleBlockRoot.children {
+			if bytes.Equal(bct.bc.block.Head.ParentHash, block.Head.Hash()) {
+				newTree.children = append(newTree.children, bct)
+				bct.super = newTree
+			} else {
+				newChildren = append(newChildren, bct)
+			}
+		}
+		h.singleBlockRoot.children = newChildren
+		return ErrNotFound
+	case Duplicate:
+		return ErrDup
 	case ErrorBlock:
-		return fmt.Errorf("error found")
+		return ErrBlock
 	}
 	return nil
+}
+
+// AddSingles 尝试把single blocks上链
+func (h *BlockCacheImpl) AddSingles(verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
+	newTree := h.recentTree
+	block := newTree.bc.block
+	newChildren := make([]*BlockCacheTree, 0)
+	for _, bct := range h.singleBlockRoot.children {
+		if bytes.Equal(bct.bc.block.Head.ParentHash, block.Head.Hash()) {
+			newTree.addSubTree(bct, verifier)
+		} else {
+			newChildren = append(newChildren, bct)
+		}
+	}
+	h.singleBlockRoot.children = newChildren
+	h.tryFlush(block.Head.Version)
+}
+
+// AddTx 把交易加入链
+func (h *BlockCacheImpl) AddTx(tx *tx.Tx) error {
+	//TODO 验证tx是否在blockchain上
+	if ok, _ := h.bc.HasTx(tx); ok {
+		return fmt.Errorf("Tx in BlockChain")
+	}
+	h.txPool.Add(tx)
+	return nil
+}
+
+// GetTx 从链中取交易
+func (h *BlockCacheImpl) GetTx() (*tx.Tx, error) {
+	for {
+		tx, err := h.txPool.Top()
+		if err != nil {
+			return nil, err
+		}
+		h.txPool.Del(tx)
+		h.txPoolCache.Add(tx)
+		if ok, _ := h.delTxPool.Has(tx); !ok {
+			return tx, nil
+		}
+	}
+}
+
+func (h *BlockCacheImpl) ResetTxPoool() error {
+	for h.txPoolCache.Size() > 0 {
+		tx, _ := h.txPoolCache.Top()
+		h.AddTx(tx)
+		h.txPoolCache.Del(tx)
+	}
+	return nil
+}
+
+func (h *BlockCacheImpl) tryFlush(version int64) {
+	for {
+		// 可能进行多次flush
+		need, newRoot := h.needFlush(version)
+		if need {
+			h.cachedRoot = newRoot
+			h.cachedRoot.bc.Flush()
+			h.cachedRoot.pool.Flush()
+			h.blkConfirmChan <- uint64(h.cachedRoot.bc.Top().Head.Number)
+			h.cachedRoot.super = nil
+			h.cachedRoot.updateLength()
+			for _, tx := range h.cachedRoot.bc.Top().Content {
+				h.txPool.Del(&tx)
+			}
+		} else {
+			break
+		}
+	}
 }
 
 func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
@@ -245,6 +357,7 @@ func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
 	return false, nil
 }
 
+// FindBlockInCache 在缓存中找一个块，根据块的hash
 func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 	var pb *block.Block
 	found := h.cachedRoot.iterate(func(bct *BlockCacheTree) bool {
@@ -263,8 +376,10 @@ func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 	}
 }
 
+// LongestChain 返回缓存的最长链
 func (h *BlockCacheImpl) LongestChain() block.Chain {
 	bct := h.cachedRoot
+	h.delTxPool = tx.NewTxPoolImpl()
 	for {
 		if len(bct.children) == 0 {
 			return &bct.bc
@@ -272,6 +387,9 @@ func (h *BlockCacheImpl) LongestChain() block.Chain {
 		for _, b := range bct.children {
 			if b.bc.depth == bct.bc.depth-1 {
 				bct = b
+				for _, tx := range bct.bc.Top().Content {
+					h.delTxPool.Add(&tx)
+				}
 				break
 			}
 		}
@@ -282,6 +400,7 @@ func (h *BlockCacheImpl) BasePool() state.Pool {
 	return h.cachedRoot.pool
 }
 
+// LongestPool 返回最长链对应的state池
 func (h *BlockCacheImpl) LongestPool() state.Pool {
 	bct := h.cachedRoot
 	for {
@@ -295,6 +414,11 @@ func (h *BlockCacheImpl) LongestPool() state.Pool {
 			}
 		}
 	}
+}
+
+// BlockConfirmChan 返回块确认通道
+func (h *BlockCacheImpl) BlockConfirmChan() chan uint64 {
+	return h.blkConfirmChan
 }
 
 //func (h *BlockCacheImpl) FindTx(txHash []byte) (core.Tx, error) {

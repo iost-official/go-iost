@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/gopher-lua"
-	"github.com/iost-official/prototype/core/mocks"
+	"github.com/iost-official/prototype/core/mocks/pool"
 	"github.com/iost-official/prototype/core/state"
 	db2 "github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/vm"
@@ -18,7 +18,7 @@ func TestLuaVM(t *testing.T) {
 	Convey("Test of Lua VM", t, func() {
 		Convey("Normal", func() {
 			mockCtl := gomock.NewController(t)
-			pool := core_mock.NewMockPool(mockCtl)
+			pool := mock_pool.NewMockPool(mockCtl)
 
 			var k state.Key
 			var v state.Value
@@ -53,7 +53,7 @@ end`,
 
 		Convey("Transfer", func() {
 			mockCtl := gomock.NewController(t)
-			pool := core_mock.NewMockPool(mockCtl)
+			pool := mock_pool.NewMockPool(mockCtl)
 
 			var va, vb state.Value
 			var eeee error
@@ -76,7 +76,7 @@ end`,
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
 			main := NewMethod("main", 0, 1)
 			lc := Contract{
-				info: vm.ContractInfo{Prefix: "test", GasLimit: 11, Sender: vm.IOSTAccount("a")},
+				info: vm.ContractInfo{Prefix: "test", GasLimit: 11, Publisher: vm.IOSTAccount("a")},
 
 				code: `function main()
 	return Transfer("a", "b", 50)
@@ -101,7 +101,7 @@ end`,
 
 		Convey("Out of gas", func() {
 			mockCtl := gomock.NewController(t)
-			pool := core_mock.NewMockPool(mockCtl)
+			pool := mock_pool.NewMockPool(mockCtl)
 
 			var k state.Key
 			var v state.Value
@@ -114,7 +114,7 @@ end`,
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
 			main := NewMethod("main", 0, 1)
 			lc := Contract{
-				info: vm.ContractInfo{Prefix: "test", GasLimit: 7},
+				info: vm.ContractInfo{Prefix: "test", GasLimit: 3},
 				code: `function main()
 	Put("hello", "world")
 	return "success"
@@ -134,12 +134,20 @@ end`,
 	})
 
 	Convey("Test of Lua value converter", t, func() {
-		Convey("Lua to core", func() {
+		Convey("Lua to core", func() { // todo core2lua的测试平台
 			Convey("string", func() {
 				lstr := lua.LString("hello")
 				cstr := Lua2Core(lstr)
 				So(cstr.Type(), ShouldEqual, state.String)
 				So(cstr.EncodeString(), ShouldEqual, "shello")
+				lbool := lua.LTrue
+				cbool := Lua2Core(lbool)
+				So(cbool.Type(), ShouldEqual, state.Bool)
+				So(cbool.EncodeString(), ShouldEqual, "true")
+				lnum := lua.LNumber(3.14)
+				cnum := Lua2Core(lnum)
+				So(cnum.Type(), ShouldEqual, state.Float)
+				So(cnum.EncodeString(), ShouldEqual, "f3.140000000000000e+00")
 			})
 		})
 	})
@@ -259,7 +267,7 @@ end`,
 func BenchmarkLuaVM_Transfer(b *testing.B) {
 	main := NewMethod("main", 0, 1)
 	lc := Contract{
-		info: vm.ContractInfo{Prefix: "test", GasLimit: 1000, Sender: vm.IOSTAccount("a")},
+		info: vm.ContractInfo{Prefix: "test", GasLimit: 1000, Publisher: vm.IOSTAccount("a")},
 		code: `function main()
 	Transfer("a", "b", 50)
 	return "success"
@@ -309,7 +317,7 @@ fucntion foo(a,b,c)
 	return a,b
 end
 `)
-		contract, _ := parser.parse()
+		contract, _ := parser.Parse()
 		So(contract.info.Language, ShouldEqual, "lua")
 		So(contract.info.GasLimit, ShouldEqual, 11)
 		So(contract.info.Price, ShouldEqual, 0.0001)
@@ -326,4 +334,24 @@ end
 
 	})
 
+}
+
+func TestContract(t *testing.T) {
+	main := NewMethod("main", 0, 1)
+	Convey("Test of lua Contract", t, func() {
+		lc := Contract{
+			info: vm.ContractInfo{GasLimit: 1000, Price: 0.1},
+			code: `function main()
+	Transfer("a", "b", 50)
+	return "success"
+end`,
+			main: main,
+		}
+		buf := lc.Encode()
+		var lc2 Contract
+		err := lc2.Decode(buf)
+		So(err, ShouldBeNil)
+		So(lc2.info.GasLimit, ShouldEqual, lc.info.GasLimit)
+		So(lc2.Code(), ShouldEqual, lc.code)
+	})
 }

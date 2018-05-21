@@ -2,21 +2,22 @@ package network
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/iost-official/prototype/core/message"
 )
 
 //ReqType Marked request types using by protocol
+//go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/prototype/network Router
 
-//go:generate mockgen -destination network/mocks/mock_router.go -package protocol_mock github.com/iost-official/prototype/network Router
 type ReqType int32
 
 const (
-	ReqPublishTx ReqType = iota
-	ReqNewBlock
-	ReqBlockHeight  //The height of the request to block
-	RecvBlockHeight //The height of the receiving block
-	ReqDownloadBlock
+	ReqPublishTx     ReqType = iota
+	ReqBlockHeight           //The height of the request to block
+	RecvBlockHeight          //The height of the receiving block
+	ReqNewBlock              // recieve a new block or a response for download block
+	ReqDownloadBlock         // request for the height of block is equal to target
 )
 
 //Router Forwarding specific request to other components and sending messages for them
@@ -29,6 +30,31 @@ type Router interface {
 	Broadcast(req message.Message)
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
+}
+
+var Route Router
+var once sync.Once
+
+//GetInstance get singleton of network, [NOTE] conf.ListenAddr = your ip, port = !30304
+func GetInstance(conf *NetConifg, target string, port uint16) (Router, error) {
+	var err error
+	once.Do(func() {
+		baseNet, er := NewBaseNetwork(conf)
+		if er != nil {
+			err = er
+			return
+		}
+		if target == "" {
+			target = "base"
+		}
+		Route, err = RouterFactory(target)
+		if err != nil {
+			return
+		}
+		Route.Init(baseNet, port)
+		Route.Run()
+	})
+	return Route, err
 }
 
 func RouterFactory(target string) (Router, error) {
@@ -65,13 +91,12 @@ func (r *RouterImpl) Init(base Network, port uint16) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
 //FilteredChan Get filtered request channel
 func (r *RouterImpl) FilteredChan(filter Filter) (chan message.Message, error) {
-	chReq := make(chan message.Message)
+	chReq := make(chan message.Message, 1)
 
 	r.filterList = append(r.filterList, filter)
 	r.filterMap[len(r.filterList)-1] = chReq
@@ -120,7 +145,7 @@ func (r *RouterImpl) Download(start uint64, end uint64) error {
 	return r.base.Download(start, end)
 }
 
-//CancelDownload cancel download todo del downloading map
+//CancelDownload cancel download
 func (r *RouterImpl) CancelDownload(start uint64, end uint64) error {
 	return r.base.CancelDownload(start, end)
 }

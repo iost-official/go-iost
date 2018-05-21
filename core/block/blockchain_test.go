@@ -1,14 +1,13 @@
 package block
 
 import (
-	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
-		bc, err := NewBlockChain()
+		bc, err := Instance()
 		Convey("New", func() {
 			So(err, ShouldBeNil)
 			So(bc.Length(), ShouldEqual, bc.Length())
@@ -18,7 +17,7 @@ func TestNewBlockChain(t *testing.T) {
 
 func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
-		bc, err := NewBlockChain()
+		bc, err := Instance()
 
 		Convey("New", func() {
 			So(err, ShouldBeNil)
@@ -40,7 +39,6 @@ func TestChainImpl(t *testing.T) {
 		Convey("Push", func() {
 			length := bc.Length()
 
-			fmt.Printf("Push ###length = %d\n", length)
 			tBlock.Head.Number = int64(length)
 
 			err = bc.Push(&tBlock)
@@ -55,7 +53,6 @@ func TestChainImpl(t *testing.T) {
 
 			block := bc.GetBlockByNumber(length - 1)
 			So(block, ShouldNotBeNil)
-			fmt.Printf("###block = %s\n", block)
 			So(block.Head.Version, ShouldEqual, 2)
 			So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
 			So(string(block.Head.TreeHash), ShouldEqual, string(tBlock.Head.TreeHash))
@@ -68,7 +65,6 @@ func TestChainImpl(t *testing.T) {
 
 			block = bc.Top()
 			So(block, ShouldNotBeNil)
-			fmt.Printf("###Top() block = %s\n", block)
 			So(block.Head.Version, ShouldEqual, 2)
 			So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
 			So(string(block.Head.TreeHash), ShouldEqual, string(tBlock.Head.TreeHash))

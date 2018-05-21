@@ -1,13 +1,21 @@
 package lua
 
 import (
-	"strings"
+	"bytes"
 	"errors"
 	"regexp"
 	"strconv"
-	"bytes"
+	"strings"
 )
 
+var (
+	// ErrNoMain 代码中未包含main函数
+	ErrNoMain = errors.New("parse failed: no main function")
+	// ErrIllegalCode 代码中包含\\0字符
+	ErrIllegalCode = errors.New("parse failed: Text contains character \\0")
+)
+
+// DocCommentParser 装入text之后调用parse即可得到contract
 type DocCommentParser struct {
 	text string // always ends with \0, which doesn't appear elsewhere
 
@@ -17,18 +25,18 @@ type DocCommentParser struct {
 func NewDocCommentParser(text string) (*DocCommentParser, error) {
 	parser := new(DocCommentParser)
 	if strings.Contains(text, "\\0") {
-		return nil, errors.New("Text contains character \\0, parse failed")
+		return nil, ErrIllegalCode
 	}
 	parser.text = text + "\\0"
 	return parser, nil
 }
 
-func (p *DocCommentParser) parse() (*Contract, error) {
+func (p *DocCommentParser) Parse() (*Contract, error) {
 	//0. preprocess
 	//
 	//1. checking exsistence of main function
 	//2. detecting all functions and split them.
-	//3. parse doccomment for each function.
+	//3. Parse doccomment for each function.
 	//4. return contract
 
 	// 没有doc comment的代码将被忽略
@@ -44,15 +52,15 @@ func (p *DocCommentParser) parse() (*Contract, error) {
 
 	for _, submatches := range re.FindAllStringSubmatchIndex(content, -1) {
 		/*
-		--- <functionName>  summary
-		-- some description
-		-- ...
-		-- ...
-		-- @gas_limit <gasLimit>
-		-- @gas_price <gasPrice>
-		-- @param_cnt <paramCnt>
-		-- @return_cnt <returnCnt>
- 		*/
+			--- <functionName>  summary
+			-- some description
+			-- ...
+			-- ...
+			-- @gas_limit <gasLimit>
+			-- @gas_price <gasPrice>
+			-- @param_cnt <paramCnt>
+			-- @return_cnt <returnCnt>
+		*/
 		funcName := strings.Split(content[submatches[0]:submatches[1]], " ")[1]
 
 		inputCountRe := regexp.MustCompile("@param_cnt (\\d+)")
@@ -91,9 +99,9 @@ func (p *DocCommentParser) parse() (*Contract, error) {
 	}
 
 	if !hasMain {
-		return nil, errors.New("No main function!, parse failed")
+		return nil, ErrNoMain
 	}
-	contract.code=buffer.String()
+	contract.code = buffer.String()
 	return &contract, nil
 
 }

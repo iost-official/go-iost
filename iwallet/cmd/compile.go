@@ -17,30 +17,80 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
 	"github.com/spf13/cobra"
 )
 
 // compileCmd represents the compile command
 var compileCmd = &cobra.Command{
 	Use:   "compile",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Compile contract files to smart contract",
+	Long: `Compile contract files to smart contract. 
+Useage : 
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+iwallet compile -l lua SRC`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("compile called", Language)
+		if len(args) < 1 {
+			fmt.Println(`Error: source file not given`)
+			return
+		}
+		path := args[0]
+		fd, err := ReadFile(path)
+		if err != nil {
+			fmt.Println("Read file failed: ", err.Error())
+			return
+		}
+		rawCode := string(fd)
+
+		var contract vm.Contract
+		switch Language {
+		case "lua":
+			parser, _ := lua.NewDocCommentParser(rawCode)
+			contract, err = parser.Parse()
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+		}
+
+		//		fmt.Printf(`Transaction :
+		//Time: xx
+		//Nonce: xx
+		//Contract:
+		//    Price: %v
+		//    Gas limit: %v
+		//Code:
+		//----
+		//%v
+		//----
+		//`, contract.Info().Price, contract.Info().GasLimit, contract.Code())
+
+		mTx := tx.NewTx(int64(Nonce), contract)
+
+		bytes := mTx.Encode()
+
+		if dest == "default" {
+			dest = ChangeSuffix(args[0], ".sc")
+		}
+
+		err = SaveTo(dest, bytes)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 	},
 }
 
 var Language string
+var dest string
+var Nonce int
 
 func init() {
 	rootCmd.AddCommand(compileCmd)
 
 	compileCmd.Flags().StringVarP(&Language, "language", "l", "lua", "Set language of contract, Support lua")
+	compileCmd.Flags().IntVarP(&Nonce, "nonce", "n", 1, "Set Nonce of this Transaction")
 
 	// Here you will define your flags and configuration settings.
 

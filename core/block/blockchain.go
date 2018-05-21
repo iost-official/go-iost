@@ -6,35 +6,37 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 )
 
 var (
-	blockLength    = []byte("BlockLength")    //blockLength -> length of ChainImpl
-	blockStatePool = []byte("BlockStatePool") //blockStatePool -> state pool of the last block
+	blockLength = []byte("BlockLength") //blockLength -> length of ChainImpl
 
 	blockNumberPrefix = []byte("n") //blockNumberPrefix + block number -> block hash
 	blockPrefix       = []byte("H") //blockHashPrefix + block hash -> block data
 )
 
+// ChainImpl 是已经确定block chain的结构体
 type ChainImpl struct {
 	db     db.Database
 	length uint64
-	state  state.Pool // todo 分离这两部分
+	tx     tx.TxPool
 }
 
-var chainImpl *ChainImpl
-
+var BChain Chain
 var once sync.Once
 
-//NewBlockChain 创建一个blockChain实例,单例模式
-func NewBlockChain() (chain Chain, error error) {
+// GetInstance 创建一个blockChain实例,单例模式
+func Instance() (Chain, error) {
+	var err error
 
 	once.Do(func() {
-		ldb, err := db.DatabaseFactor("ldb")
-		if err != nil {
-			error = fmt.Errorf("failed to init db %v", err)
+
+		ldb, er := db.NewLDBDatabase("blockDB", 0, 0)
+		if er != nil {
+			err = fmt.Errorf("failed to init db %v", err)
+			return
 		}
 		//defer ldb.Close()
 
@@ -42,9 +44,10 @@ func NewBlockChain() (chain Chain, error error) {
 		var lenByte = make([]byte, 128)
 
 		if ok, _ := ldb.Has(blockLength); ok {
-			lenByte, err := ldb.Get(blockLength)
-			if err != nil {
-				error = fmt.Errorf("failed to Get blockLength")
+			lenByte, er := ldb.Get(blockLength)
+			if er != nil {
+				err = fmt.Errorf("failed to Get blockLength")
+				return
 			}
 
 			length = binary.BigEndian.Uint64(lenByte)
@@ -54,20 +57,29 @@ func NewBlockChain() (chain Chain, error error) {
 			length = 0
 			binary.BigEndian.PutUint64(lenByte, length)
 
-			err := ldb.Put(blockLength, lenByte)
-			if err != nil {
-				error = fmt.Errorf("failed to Put blockLength")
+			er := ldb.Put(blockLength, lenByte)
+			if er != nil {
+				err = fmt.Errorf("failed to Put blockLength")
+				return
 			}
 		}
 
-		chainImpl = new(ChainImpl)
-		chainImpl = &ChainImpl{db: ldb, length: length, state: nil}
+		txDb := tx.TxDb
+		if txDb == nil {
+			panic(fmt.Errorf("TxDb shouldn't be nil"))
+		}
+		if er != nil {
+			err = fmt.Errorf("failed to NewTxPoolDb: [%v]", err)
+			return
+		}
+
+		BChain = &ChainImpl{db: ldb, length: length, tx: txDb}
 	})
 
-	return chainImpl, error
+	return BChain, err
 }
 
-//Push 保存一个block到实例
+// Push 保存一个block到实例
 func (b *ChainImpl) Push(block *Block) error {
 
 	hash := block.Hash()
@@ -91,15 +103,31 @@ func (b *ChainImpl) Push(block *Block) error {
 	}
 
 	//todo:put all the tx of this block to the db
+	for _, ctx := range block.Content {
+		if err := b.tx.Add(&ctx); err != nil {
+			return fmt.Errorf("failed to add tx %v", err)
+		}
+	}
+
 	return nil
 }
 
-//Length 返回已经确定链的长度
+// Length 返回已经确定链的长度
 func (b *ChainImpl) Length() uint64 {
 	return b.length
 }
 
-//链长度加1
+// HasTx 判断tx是否存在于db中
+func (b *ChainImpl) HasTx(tx *tx.Tx) (bool, error) {
+	return b.tx.Has(tx)
+}
+
+// GetTx 通过hash获取tx
+func (b *ChainImpl) GetTx(hash []byte) (*tx.Tx, error) {
+	return b.tx.Get(hash)
+}
+
+// lengthAdd 链长度加1
 func (b *ChainImpl) lengthAdd() error {
 	b.length++
 
@@ -115,37 +143,19 @@ func (b *ChainImpl) lengthAdd() error {
 	return nil
 }
 
+// getLengthBytes 得到链长度的bytes类型
 func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 
 	return []byte(strconv.FormatUint(length, 10))
 }
 
-//Top 返回已确定链的最后块
+// Top 返回已确定链的最后block
 func (b *ChainImpl) Top() *Block {
 
-	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(b.length-1)...))
-
-	if err != nil {
-		return nil
-	}
-
-	block, err := b.db.Get(append(blockPrefix, hash...))
-	if err != nil {
-		return nil
-	}
-	if len(block) == 0 {
-		return nil
-	}
-
-	rBlock := new(Block)
-	if err := rBlock.Decode(block); err != nil {
-		return nil
-	}
-
-	return rBlock
+	return b.GetBlockByNumber(b.length - 1)
 }
 
-//GetBlockByNumber 通过区块编号查询块
+// GetBlockByNumber 通过区块编号查询块
 func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
@@ -169,7 +179,7 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 	return rBlock
 }
 
-//GetBlockByHash 通过区块hash查询块
+// GetBlockByHash 通过区块hash查询块
 func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 
 	block, err := b.db.Get(append(blockPrefix, blockHash...))
@@ -187,7 +197,7 @@ func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 	return rBlock
 }
 
-//暂不实现
+// Iterator 暂不实现
 func (b *ChainImpl) Iterator() ChainIterator {
 	return nil
 }

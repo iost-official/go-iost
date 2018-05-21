@@ -2,6 +2,10 @@ package state
 
 import (
 	"fmt"
+
+	"sync"
+
+	"github.com/iost-official/prototype/db"
 )
 
 //go:generate gencode go -schema=structs.schema -package=state
@@ -53,6 +57,9 @@ func (p *PoolImpl) Get(key Key) (Value, error) {
 		}
 	}
 	val2 := p.patch.Get(key)
+	if val2 == nil {
+		return val1, nil
+	}
 	return Merge(val1, val2)
 }
 func (p *PoolImpl) Has(key Key) bool {
@@ -79,7 +86,9 @@ func (p *PoolImpl) Delete(key Key) {
 }
 
 func (p *PoolImpl) Flush() error {
-	p.parent.Flush()
+	if p.parent != nil {
+		p.parent.Flush()
+	}
 	for k, v := range p.patch.m {
 		if v.Type() != Nil {
 			val0, err := p.db.Get(k)
@@ -113,6 +122,9 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 	}
 
 	val2 := p.patch.Get(key)
+	if val2 == nil {
+		return val1, nil
+	}
 	if val2 == VNil {
 		return val1, nil
 	} else {
@@ -140,4 +152,21 @@ func (p *PoolImpl) PutHM(key, field Key, value Value) error {
 	m.Set(field, value)
 	p.patch.Put(key, m)
 	return nil
+}
+
+var StdPool Pool
+
+var once sync.Once
+
+func init() {
+	bdb, err := db.DatabaseFactor("redis")
+	if err != nil {
+		panic(err)
+	}
+	mdb := NewDatabase(bdb)
+	if StdPool == nil {
+		once.Do(func() {
+			StdPool = NewPool(mdb)
+		})
+	}
 }

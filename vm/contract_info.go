@@ -1,5 +1,9 @@
 package vm
 
+// ContractInfo 是智能合约的相关信息
+// 编译之后Language，version, gas limit， price有值，
+// 打包tx后signer，publisher有值
+// 被block chain收录之后prefix有值（=txhash的base58编码）
 type ContractInfo struct {
 	Prefix   string
 	Language string
@@ -8,8 +12,8 @@ type ContractInfo struct {
 	GasLimit int64
 	Price    float64
 
-	Signers []IOSTAccount
-	Sender  IOSTAccount
+	Signers   []IOSTAccount
+	Publisher IOSTAccount
 }
 
 func (c *ContractInfo) toRaw() contractInfoRaw {
@@ -18,15 +22,6 @@ func (c *ContractInfo) toRaw() contractInfoRaw {
 		Version:  c.Version,
 		GasLimit: c.GasLimit,
 		Price:    c.Price,
-	}
-}
-
-func (d *contractInfoRaw) toC() ContractInfo {
-	return ContractInfo{
-		Language: d.Language,
-		Version:  d.Version,
-		GasLimit: d.GasLimit,
-		Price:    d.Price,
 	}
 }
 
@@ -45,7 +40,9 @@ func (c *ContractInfo) Decode(b []byte) error {
 	if err != nil {
 		return err
 	}
-	cc := cir.toC()
-	c = &cc
+	c.Language = cir.Language
+	c.Version = cir.Version
+	c.GasLimit = cir.GasLimit
+	c.Price = cir.Price
 	return nil
 }
