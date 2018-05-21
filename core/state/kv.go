@@ -79,7 +79,7 @@ func ParseValue(s string) (Value, error) {
 		}
 		return MakeVByte(b), nil
 	case strings.HasPrefix(s, "s"):
-		return MakeVString(s), nil
+		return MakeVString(s[1:]), nil
 	case strings.HasPrefix(s, "{"):
 		ss := strings.Split(s1, ",")
 		if len(ss) <= 0 {

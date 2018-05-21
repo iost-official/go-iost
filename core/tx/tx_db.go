@@ -18,8 +18,10 @@ var PNPrefix = []byte("p")
 var TxDb TxPool
 var once sync.Once
 
-func init() {
-	ldb, err := db.NewLDBDatabase("tx", 0, 0)
+var LdbPath string
+
+func TxDbInstance() TxPool {
+	ldb, err := db.NewLDBDatabase(LdbPath+"txDB", 0, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -30,6 +32,7 @@ func init() {
 			}
 		})
 	}
+	return TxDb
 }
 
 //Add tx to db

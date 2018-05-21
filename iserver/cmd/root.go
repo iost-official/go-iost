@@ -30,6 +30,8 @@ import (
 	"github.com/spf13/viper"
 	"os/signal"
 	"syscall"
+	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db"
 )
 
 var cfgFile string
@@ -58,6 +60,27 @@ var rootCmd = &cobra.Command{
 		fmt.Println("logFile: ", viper.GetString("log"))
 		fmt.Println("dbFile: ", viper.GetString("db"))
 
+
+		//初始化数据库
+		ldbPath := viper.GetString("ldb.path")
+		redisAddr := viper.GetString("redis.addr") //optional
+		redisPort := viper.GetInt64("redis.port")
+
+		fmt.Printf("ldb.path: %v\n", ldbPath)
+		fmt.Printf("redis.addr: %v\n", redisAddr)
+		fmt.Printf("redis.port: %v\n", redisPort)
+
+		tx.LdbPath = ldbPath
+		block.LdbPath = ldbPath
+		db.DBAddr = redisAddr
+		db.DBPort = int16(redisPort)
+
+		txDb:=tx.TxDbInstance()
+		if txDb==nil{
+			fmt.Println("TxDbInstance failed, stop the program!")
+			os.Exit(1)
+		}
+
 		//初始化网络
 		fmt.Println("1.Start the P2P networks")
 
@@ -79,7 +102,8 @@ var rootCmd = &cobra.Command{
 			fmt.Println("Network config initialization failed, stop the program!")
 			os.Exit(1)
 		}
-fmt.Println("network instance")
+
+		fmt.Println("network instance")
 		net, err := network.GetInstance(
 			&network.NetConifg{ 
 				LogPath:       logPath,

@@ -3,19 +3,21 @@ package db
 import (
 
 	"github.com/gomodule/redigo/redis"
+	"strconv"
 )
 
 const (
 	Conn   = "tcp"
-	DBAddr = "localhost:6379"
 )
+var DBAddr string
+var DBPort int16
 
 type RedisDatabase struct {
 	cli redis.Conn
 }
 
 func NewRedisDatabase() (*RedisDatabase, error) {
-	dial, _ := redis.Dial(Conn, DBAddr)
+	dial, _ := redis.Dial(Conn, DBAddr+":"+strconv.FormatUint(uint64(DBPort), 10))
 	return &RedisDatabase{cli: dial}, nil
 }
 
