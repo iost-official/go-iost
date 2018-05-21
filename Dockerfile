@@ -1,17 +1,18 @@
 FROM golang:1.10
 
 RUN go get github.com/kardianos/govendor
-# 复制代码
+# copy source code
 COPY . /go/src/github.com/iost-official/prototype/
-# 安装依赖
+# install modules
 RUN cd /go/src/github.com/iost-official/prototype/ && govendor sync -v
 RUN go get github.com/golang/protobuf/proto github.com/iost-official/gopher-lua github.com/mitchellh/go-homedir
-# RUN go get golang.org/x/net/context google.golang.org/grpc
+RUN go get golang.org/x/net/context google.golang.org/grpc
 
+# build iwallet cmd
 RUN go build -o $GOPATH/bin/iwallet github.com/iost-official/prototype/iwallet
+# build iserver
 RUN go build  -o $GOPATH/bin/iserver github.com/iost-official/prototype/iserver
 
-# 暴露端口
 EXPOSE 30302
 EXPOSE 30303
 
