@@ -21,11 +21,7 @@ type Peer struct {
 }
 
 func (p *Peer) Disconnect() {
-
-	select {
-	case <-p.closed:
-		p.conn.Close()
-	}
+	p.conn.Close()
 }
 
 func newPeer(conn net.Conn, local, remote string) *Peer {
