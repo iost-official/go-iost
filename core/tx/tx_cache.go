@@ -19,7 +19,7 @@ func NewTxPoolImpl() *TxPoolImpl {
 
 // 在Tx Pool 插入一个 Tx
 func (tp *TxPoolImpl) Add(tx *Tx) error {
-	fmt.Println("[tx_cache.Add]: ",tx.Nonce)	
+	//fmt.Println("[tx_cache.Add]: ",tx.Nonce)
 	tp.txMap[common.Base58Encode(tx.Hash())] = tx
 	return nil
 }

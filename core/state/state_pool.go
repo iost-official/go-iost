@@ -158,10 +158,10 @@ var StdPool Pool
 
 var once sync.Once
 
-func init() {
+func PoolInstance() error {
 	bdb, err := db.DatabaseFactor("redis")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	mdb := NewDatabase(bdb)
 	if StdPool == nil {
@@ -169,4 +169,6 @@ func init() {
 			StdPool = NewPool(mdb)
 		})
 	}
+
+	return nil
 }

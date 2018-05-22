@@ -148,7 +148,7 @@ func witnessOfTime(sp *globalStaticProperty, dp *globalDynamicProperty, time Tim
 	}
 	currentSlot := dp.timestampToSlot(time)
 	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
-	index := ((currentSlot % slotsEveryTurn) + slotPerWitness) % slotsEveryTurn
+	index := ((currentSlot % slotsEveryTurn) + slotsEveryTurn) % slotsEveryTurn
 	index /= slotPerWitness
 	return sp.WitnessList[index]
 }

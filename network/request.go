@@ -136,6 +136,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	//request for nodeTable
 	case ReqNodeTable:
 		base.putNode(string(r.From))
+		base.peers.SetAddr(string(r.From), newPeer(conn, base.localNode.String(), conn.RemoteAddr().String()))
 		addrs, err := base.AllNodesExcludeAddr(string(r.From))
 		if err != nil {
 			base.log.E("[net] failed to nodetable ", err)
