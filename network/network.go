@@ -325,7 +325,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	}()
 	//register
 	go bn.registerLoop()
-	//go bn.nodeCheckLoop()
+	go bn.nodeCheckLoop()
 	return bn.RecvCh, nil
 }
 
@@ -486,7 +486,7 @@ func (bn *BaseNetwork) putNode(addrs string) {
 	addrArr := strings.Split(addrs, ",")
 	for _, addr := range addrArr {
 		if addr != "" && addr != bn.localNode.String() {
-			bn.nodeTable.Put([]byte(addr), common.Int64ToBytes(time.Now().Unix()))
+			bn.nodeTable.Put([]byte(addr), common.IntToBytes(2))
 		}
 	}
 	bn.findNeighbours()
@@ -496,14 +496,17 @@ func (bn *BaseNetwork) putNode(addrs string) {
 //nodeCheckLoop inspection Last registration time of node
 func (bn *BaseNetwork) nodeCheckLoop() {
 	for {
-		now := time.Now().Unix()
 		iter := bn.nodeTable.NewIterator()
 		for iter.Next() {
-			if (now - common.BytesToInt64(iter.Value())) > NodeLiveThresholdSeconds {
+			k := iter.Key()
+			v := common.BytesToInt(iter.Value())
+			if v <= 0 {
 				bn.log.D("[net] delete node %v, cuz its last register time is %v", string(iter.Key()), common.BytesToInt64(iter.Value()))
 				bn.nodeTable.Delete(iter.Key())
 				bn.peers.RemoveByNodeStr(string(iter.Key()))
 				bn.delNeighbour(string(iter.Key()))
+			} else {
+				bn.nodeTable.Put(k, common.IntToBytes(v-1))
 			}
 		}
 		time.Sleep(CheckKnownNodeInterval * time.Second)
@@ -608,6 +611,9 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 func (bn *BaseNetwork) sendTo(addr string, req *Request) {
 	conn, err := bn.dial(addr)
 	if err != nil {
+		if conn != nil {
+			conn.Close()
+		}
 		bn.log.E("[net] dial tcp got err:%v", err)
 		return
 	}
