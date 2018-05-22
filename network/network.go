@@ -495,22 +495,25 @@ func (bn *BaseNetwork) putNode(addrs string) {
 
 //nodeCheckLoop inspection Last registration time of node
 func (bn *BaseNetwork) nodeCheckLoop() {
-	for {
-		iter := bn.nodeTable.NewIterator()
-		for iter.Next() {
-			k := iter.Key()
-			v := common.BytesToInt(iter.Value())
-			if v <= 0 {
-				bn.log.D("[net] delete node %v, cuz its last register time is %v", string(iter.Key()), common.BytesToInt64(iter.Value()))
-				bn.nodeTable.Delete(iter.Key())
-				bn.peers.RemoveByNodeStr(string(iter.Key()))
-				bn.delNeighbour(string(iter.Key()))
-			} else {
-				bn.nodeTable.Put(k, common.IntToBytes(v-1))
+	if bn.localNode.TCP == 30304 {
+		for {
+			iter := bn.nodeTable.NewIterator()
+			for iter.Next() {
+				k := iter.Key()
+				v := common.BytesToInt(iter.Value())
+				if v <= 0 {
+					bn.log.D("[net] delete node %v, cuz its last register time is %v", string(iter.Key()), common.BytesToInt64(iter.Value()))
+					bn.nodeTable.Delete(iter.Key())
+					bn.peers.RemoveByNodeStr(string(iter.Key()))
+					bn.delNeighbour(string(iter.Key()))
+				} else {
+					bn.nodeTable.Put(k, common.IntToBytes(v-1))
+				}
 			}
+			time.Sleep(CheckKnownNodeInterval * time.Second)
 		}
-		time.Sleep(CheckKnownNodeInterval * time.Second)
 	}
+
 }
 
 //registerLoop register local address to boot nodes
