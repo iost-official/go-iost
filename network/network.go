@@ -325,7 +325,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	}()
 	//register
 	go bn.registerLoop()
-	go bn.nodeCheckLoop()
+	//go bn.nodeCheckLoop()
 	return bn.RecvCh, nil
 }
 
