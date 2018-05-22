@@ -49,6 +49,7 @@ func (d *Database) GetHM(key, field Key) (Value, error) {
 	if err != nil {
 		return nil, err
 	}
+	//fmt.Println("in state.db: ", raw)
 	if raw == nil || raw[0] == nil {
 		return VNil, nil
 	}

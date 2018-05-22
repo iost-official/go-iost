@@ -90,15 +90,29 @@ func (p *PoolImpl) Flush() error {
 		p.parent.Flush()
 	}
 	for k, v := range p.patch.m {
-		if v.Type() != Nil {
+		switch {
+		case v == VNil:
+			p.db.Delete(k)
+		case v.Type() == Map:
+			vm := v.(*VMap)
+			for f, v := range vm.m {
+				v0, err := p.db.GetHM(k, f)
+				if err != nil {
+					return err
+				}
+				val, err := Merge(v0, v)
+				if err != nil {
+					return err
+				}
+				p.db.PutHM(k, f, val)
+			}
+		default:
 			val0, err := p.db.Get(k)
 			val, err := Merge(val0, v)
 			if err != nil {
 				return err
 			}
 			p.db.Put(k, val)
-		} else {
-			p.db.Delete(k)
 		}
 	}
 	p.parent = nil
@@ -112,14 +126,17 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 	if p.parent == nil {
 		val1, err = p.db.GetHM(key, field)
 		if err != nil {
+			fmt.Println(err)
 			val1 = VNil
 		}
 	} else {
 		val1, err = p.parent.GetHM(key, field)
 		if err != nil {
+			fmt.Println(err)
 			val1 = VNil
 		}
 	}
+	fmt.Println("in pool GetHM", val1.EncodeString())
 
 	val2 := p.patch.Get(key)
 	if val2 == nil {

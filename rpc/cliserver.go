@@ -106,7 +106,7 @@ func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
 	}
 	val, ok := val0.(*state.VFloat)
 	if !ok {
-		return nil, fmt.Errorf("pool type error: should VFloat, acture %v; in iost.%v",
+		return nil, fmt.Errorf("RPC : pool type error: should VFloat, acture %v; in iost.%v",
 			reflect.TypeOf(val0).String(), vm.IOSTAccount(ia))
 	}
 	balance := val.EncodeString()

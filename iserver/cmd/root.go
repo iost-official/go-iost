@@ -93,6 +93,7 @@ var rootCmd = &cobra.Command{
 		nodeTablePath := viper.GetString("net.node-table-path")
 		nodeID := viper.GetString("net.node-id") //optional
 		listenAddr := viper.GetString("net.listen-addr")
+		regAddr := viper.GetString("net.register-addr")
 		target := viper.GetString("net.target") //optional
 		port := viper.GetInt64("net.port")
 
@@ -100,10 +101,11 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("net.node-table-path:  %v\n", nodeTablePath)
 		fmt.Printf("net.node-id:   %v\n", nodeID)
 		fmt.Printf("net.listen-addr:  %v\n", listenAddr)
+		fmt.Printf("net.register-addr:  %v\n", regAddr)
 		fmt.Printf("net.target:  %v\n", target)
 		fmt.Printf("net.port:  %v\n", port)
 
-		if logPath == "" || nodeTablePath == "" || listenAddr == "" || port <= 0 {
+		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 {
 			fmt.Println("Network config initialization failed, stop the program!")
 			os.Exit(1)
 		}
@@ -114,6 +116,7 @@ var rootCmd = &cobra.Command{
 				LogPath:       logPath,
 				NodeTablePath: nodeTablePath,
 				NodeID:        nodeID,
+				RegisterAddr:  regAddr,
 				ListenAddr:    listenAddr},
 			target,
 			uint16(port))

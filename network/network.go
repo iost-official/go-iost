@@ -24,7 +24,6 @@ import (
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network/discover"
-	"github.com/iost-official/prototype/params"
 )
 
 type RequestHead struct {
@@ -213,6 +212,7 @@ type NetConifg struct {
 	NodeTablePath string
 	NodeID        string
 	ListenAddr    string
+	RegisterAddr string
 }
 
 func (conf *NetConifg) SetLogPath(path string) *NetConifg {
@@ -260,6 +260,7 @@ type BaseNetwork struct {
 	localNode     *discover.Node
 
 	DownloadHeights map[uint64]uint8 //map[height]retry_times
+	regAddr         string
 	log             *log.Logger
 }
 
@@ -300,6 +301,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 		log:             srvLog,
 		NodeHeightMap:   NodeHeightMap,
 		DownloadHeights: downloadHeights,
+		regAddr:         conf.RegisterAddr,
 	}
 	return s, nil
 }
@@ -309,7 +311,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
 	bn.log.D("[net] listening %v", bn.localNode)
 	var err error
-	bn.listener, err = net.Listen("tcp", bn.localNode.Addr())
+	bn.listener, err = net.Listen("tcp", "0.0.0.0:"+strconv.Itoa(int(bn.localNode.TCP)))
 	if err != nil {
 		return bn.RecvCh, errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
 	}
@@ -486,7 +488,7 @@ func (bn *BaseNetwork) putNode(addrs string) {
 	addrArr := strings.Split(addrs, ",")
 	for _, addr := range addrArr {
 		if addr != "" && addr != bn.localNode.String() {
-			bn.nodeTable.Put([]byte(addr), common.Int64ToBytes(time.Now().Unix()))
+			bn.nodeTable.Put([]byte(addr), common.IntToBytes(2))
 		}
 	}
 	bn.findNeighbours()
@@ -495,36 +497,40 @@ func (bn *BaseNetwork) putNode(addrs string) {
 
 //nodeCheckLoop inspection Last registration time of node
 func (bn *BaseNetwork) nodeCheckLoop() {
-	for {
-		now := time.Now().Unix()
-		iter := bn.nodeTable.NewIterator()
-		for iter.Next() {
-			if (now - common.BytesToInt64(iter.Value())) > NodeLiveThresholdSeconds {
-				bn.log.D("[net] delete node %v, cuz its last register time is %v", string(iter.Key()), common.BytesToInt64(iter.Value()))
-				bn.nodeTable.Delete(iter.Key())
-				bn.peers.RemoveByNodeStr(string(iter.Key()))
-				bn.delNeighbour(string(iter.Key()))
+	if bn.localNode.TCP == 30304 {
+		for {
+			iter := bn.nodeTable.NewIterator()
+			for iter.Next() {
+				k := iter.Key()
+				v := common.BytesToInt(iter.Value())
+				if v <= 0 {
+					bn.log.D("[net] delete node %v, cuz its last register time is %v", string(iter.Key()), common.BytesToInt64(iter.Value()))
+					bn.nodeTable.Delete(iter.Key())
+					bn.peers.RemoveByNodeStr(string(iter.Key()))
+					bn.delNeighbour(string(iter.Key()))
+				} else {
+					bn.nodeTable.Put(k, common.IntToBytes(v-1))
+				}
 			}
+			time.Sleep(CheckKnownNodeInterval * time.Second)
 		}
-		time.Sleep(CheckKnownNodeInterval * time.Second)
 	}
+
 }
 
 //registerLoop register local address to boot nodes
 func (bn *BaseNetwork) registerLoop() {
 	for {
-		for _, encodeAddr := range params.TestnetBootnodes {
-			if bn.localNode.TCP != 30304 {
-				conn, err := bn.dial(encodeAddr)
-				if err != nil {
-					bn.log.E("[net] failed to connect boot node, err:%v", err)
-					continue
-				}
-				bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), encodeAddr)
-				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
-				if er := bn.send(conn, req); er != nil {
-					bn.peers.RemoveByNodeStr(encodeAddr)
-				}
+		if bn.localNode.TCP != 30304 {
+			conn, err := bn.dial(bn.regAddr)
+			if err != nil {
+				bn.log.E("[net] failed to connect boot node, err:%v", err)
+				continue
+			}
+			bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), bn.regAddr)
+			req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
+			if er := bn.send(conn, req); er != nil {
+				bn.peers.RemoveByNodeStr(bn.regAddr)
 			}
 		}
 		time.Sleep(CheckKnownNodeInterval * time.Second)
@@ -608,6 +614,9 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 func (bn *BaseNetwork) sendTo(addr string, req *Request) {
 	conn, err := bn.dial(addr)
 	if err != nil {
+		if conn != nil {
+			conn.Close()
+		}
 		bn.log.E("[net] dial tcp got err:%v", err)
 		return
 	}
