@@ -19,9 +19,11 @@ import (
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
-	"github.com/iost-official/prototype/vm/lua"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
 )
+
+var TxPerBlk int
 
 type DPoS struct {
 	account      Account
@@ -45,6 +47,7 @@ type DPoS struct {
 // NewDPoS: 新建一个DPoS实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*DPoS, error) {
+	TxPerBlk = 1000
 	p := DPoS{}
 	p.account = acc
 	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
@@ -137,7 +140,9 @@ func (p *DPoS) genesis(initTime int64) error {
 
 	main := lua.NewMethod("", 0, 0)
 	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
-@PutHM iost tB4Bc8G7bMEJ3SqFPJtsuXXixbEUDXrYfE5xH4uFmHaV f10000`
+@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f100000
+@PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000
+@PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f100000`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
 
 	tx := NewTx(0, &lc)
@@ -151,8 +156,8 @@ func (p *DPoS) genesis(initTime int64) error {
 		Content: make([]Tx, 0),
 	}
 	genesis.Content = append(genesis.Content, tx)
-	stp,err := verifier.ParseGenesis(tx.Contract, p.StatePool())
-	if err!=nil {
+	stp, err := verifier.ParseGenesis(tx.Contract, p.StatePool())
+	if err != nil {
 		panic("failed to ParseGenesis")
 	}
 
@@ -316,7 +321,7 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	veri := verifier.NewCacheVerifier(pool)
 	var result bool
 	//TODO Content大小控制
-	for len(blk.Content) < 2 {
+	for len(blk.Content) < TxPerBlk {
 		tx, err := p.blockCache.GetTx()
 		if tx == nil || err != nil {
 			break

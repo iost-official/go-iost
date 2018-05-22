@@ -23,6 +23,8 @@ import (
 	"github.com/iost-official/prototype/consensus"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/rpc"
 	"github.com/mitchellh/go-homedir"
@@ -30,8 +32,6 @@ import (
 	"github.com/spf13/viper"
 	"os/signal"
 	"syscall"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/db"
 )
 
 var cfgFile string
@@ -190,8 +190,8 @@ func exitLoop() {
 	defer close(exit)
 
 	go func() {
-		<-c
-		fmt.Printf("IOST server received interrupt, shutting down...")
+		i := <-c
+		fmt.Printf("IOST server received interrupt[%v], shutting down...\n", i)
 
 		for _, s := range serverExit {
 			if s != nil {
