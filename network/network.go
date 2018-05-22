@@ -24,7 +24,6 @@ import (
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network/discover"
-	"github.com/iost-official/prototype/params"
 )
 
 type RequestHead struct {
@@ -213,6 +212,7 @@ type NetConifg struct {
 	NodeTablePath string
 	NodeID        string
 	ListenAddr    string
+	RegisterAddr string
 }
 
 func (conf *NetConifg) SetLogPath(path string) *NetConifg {
@@ -260,6 +260,7 @@ type BaseNetwork struct {
 	localNode     *discover.Node
 
 	DownloadHeights map[uint64]uint8 //map[height]retry_times
+	regAddr         string
 	log             *log.Logger
 }
 
@@ -300,6 +301,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 		log:             srvLog,
 		NodeHeightMap:   NodeHeightMap,
 		DownloadHeights: downloadHeights,
+		regAddr:         conf.RegisterAddr,
 	}
 	return s, nil
 }
@@ -519,18 +521,16 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 //registerLoop register local address to boot nodes
 func (bn *BaseNetwork) registerLoop() {
 	for {
-		for _, encodeAddr := range params.TestnetBootnodes {
-			if bn.localNode.TCP != 30304 {
-				conn, err := bn.dial(encodeAddr)
-				if err != nil {
-					bn.log.E("[net] failed to connect boot node, err:%v", err)
-					continue
-				}
-				bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), encodeAddr)
-				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
-				if er := bn.send(conn, req); er != nil {
-					bn.peers.RemoveByNodeStr(encodeAddr)
-				}
+		if bn.localNode.TCP != 30304 {
+			conn, err := bn.dial(bn.regAddr)
+			if err != nil {
+				bn.log.E("[net] failed to connect boot node, err:%v", err)
+				continue
+			}
+			bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), bn.regAddr)
+			req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
+			if er := bn.send(conn, req); er != nil {
+				bn.peers.RemoveByNodeStr(bn.regAddr)
 			}
 		}
 		time.Sleep(CheckKnownNodeInterval * time.Second)
