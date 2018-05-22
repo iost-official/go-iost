@@ -19,8 +19,8 @@ import (
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
-	"github.com/iost-official/prototype/vm/lua"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
 )
 
 type DPoS struct {
@@ -151,8 +151,8 @@ func (p *DPoS) genesis(initTime int64) error {
 		Content: make([]Tx, 0),
 	}
 	genesis.Content = append(genesis.Content, tx)
-	stp,err := verifier.ParseGenesis(tx.Contract, p.StatePool())
-	if err!=nil {
+	stp, err := verifier.ParseGenesis(tx.Contract, p.StatePool())
+	if err != nil {
 		panic("failed to ParseGenesis")
 	}
 
