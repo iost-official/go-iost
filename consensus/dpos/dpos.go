@@ -19,8 +19,8 @@ import (
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
-	"github.com/iost-official/prototype/vm/lua"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
 )
 
 type DPoS struct {
@@ -136,9 +136,9 @@ func (p *DPoS) CachedStatePool() state.Pool {
 func (p *DPoS) genesis(initTime int64) error {
 
 	main := lua.NewMethod("", 0, 0)
-	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
-@PutHM iost tB4Bc8G7bMEJ3SqFPJtsuXXixbEUDXrYfE5xH4uFmHaV f10000`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
+	code := `-- @PutHM iost tB4Bc8G7bMEJ3SqFPJtsuXXixbEUDXrYfE5xH4uFmHaV f10000`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0,
+		Publisher: vm.PubkeyToIOSTAccount(p.account.Pubkey)}, code, main)
 
 	tx := NewTx(0, &lc)
 
@@ -151,8 +151,8 @@ func (p *DPoS) genesis(initTime int64) error {
 		Content: make([]Tx, 0),
 	}
 	genesis.Content = append(genesis.Content, tx)
-	stp,err := verifier.ParseGenesis(tx.Contract, p.StatePool())
-	if err!=nil {
+	stp, err := verifier.ParseGenesis(tx.Contract, p.StatePool())
+	if err != nil {
 		panic("failed to ParseGenesis")
 	}
 

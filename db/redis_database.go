@@ -1,14 +1,15 @@
 package db
 
 import (
+	"strconv"
 
 	"github.com/gomodule/redigo/redis"
-	"strconv"
 )
 
 const (
-	Conn   = "tcp"
+	Conn = "tcp"
 )
+
 var DBAddr string = "127.0.0.1"
 var DBPort int16 = 6379
 
