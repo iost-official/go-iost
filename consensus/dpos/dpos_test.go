@@ -26,7 +26,7 @@ import (
 )
 
 func TestNewDPoS(t *testing.T) {
-	Convey("Test fo NewDPos", t, func() {
+	Convey("Test of NewDPos", t, func() {
 		mockCtr := NewController(t)
 		mockRouter := protocol_mock.NewMockRouter(mockCtr)
 		mockBc := core_mock.NewMockChain(mockCtr)
@@ -37,7 +37,6 @@ func TestNewDPoS(t *testing.T) {
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
 		})
-
 		defer guard.Unpatch()
 
 		heightChan := make(chan message.Message, 1)
