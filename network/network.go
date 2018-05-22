@@ -212,7 +212,7 @@ type NetConifg struct {
 	NodeTablePath string
 	NodeID        string
 	ListenAddr    string
-	RegisterAddr string
+	RegisterAddr  string
 }
 
 func (conf *NetConifg) SetLogPath(path string) *NetConifg {
@@ -358,6 +358,7 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	conn, err := bn.dial(msg.To)
 	if err != nil {
 		bn.log.E("[net] broadcast dial tcp got err:%v", err)
+		bn.nodeTable.Delete([]byte(msg.To))
 		return
 	}
 	if er := bn.send(conn, req); er != nil {
@@ -374,12 +375,17 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 		bn.log.D("[net] dial to %v", node.Addr())
 		conn, err := net.Dial("tcp", node.Addr())
 		if err != nil {
+			if conn != nil {
+				conn.Close()
+			}
 			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
-		go bn.receiveLoop(conn)
-		peer := newPeer(conn, bn.localNode.String(), nodeStr)
-		bn.peers.Set(node, peer)
+		if conn != nil {
+			go bn.receiveLoop(conn)
+			peer := newPeer(conn, bn.localNode.String(), nodeStr)
+			bn.peers.Set(node, peer)
+		}
 	}
 
 	return bn.peers.Get(node).conn, nil
@@ -400,6 +406,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	req := newRequest(Message, bn.localNode.String(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
+		bn.nodeTable.Delete([]byte(msg.To))
 		bn.log.E("[net] Send, dial tcp got err:%v", err)
 		return
 	}
@@ -614,9 +621,7 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 func (bn *BaseNetwork) sendTo(addr string, req *Request) {
 	conn, err := bn.dial(addr)
 	if err != nil {
-		if conn != nil {
-			conn.Close()
-		}
+		bn.nodeTable.Delete([]byte(addr))
 		bn.log.E("[net] dial tcp got err:%v", err)
 		return
 	}
