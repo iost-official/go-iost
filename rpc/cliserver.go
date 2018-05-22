@@ -13,6 +13,8 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/vm"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/prototype/rpc CliServer
@@ -88,6 +90,9 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 }
 
 func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
+	fmt.Println("read balance", iak.S)
+	grpc.SendHeader(ctx, metadata.Pairs("Pre-Response-Metadata", "Is-sent-as-headers-unary"))
+	grpc.SetTrailer(ctx, metadata.Pairs("Post-Response-Metadata", "Is-sent-as-trailers-unary"))
 	if iak == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}

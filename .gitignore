@@ -120,4 +120,6 @@ consensus/common/tx/
 tx/
 playground/playground
 playground/test
-
+iserver/netpath/
+rpc/js/node_modules/
+rpc/js/package-lock.json
