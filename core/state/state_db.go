@@ -49,7 +49,7 @@ func (d *Database) GetHM(key, field Key) (Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(raw[0]) < 1 {
+	if raw == nil || raw[0] == nil {
 		return VNil, nil
 	}
 	return ParseValue(string(raw[0]))

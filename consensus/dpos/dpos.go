@@ -3,6 +3,7 @@ package dpos
 import (
 	"bytes"
 	"encoding/binary"
+
 	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
 	. "github.com/iost-official/prototype/core/tx"
@@ -10,12 +11,16 @@ import (
 
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
-	"time"
+	"github.com/iost-official/prototype/vm/lua"
+	"github.com/iost-official/prototype/vm"
 )
 
 type DPoS struct {
@@ -31,8 +36,10 @@ type DPoS struct {
 	infoCache  [][]byte
 
 	exitSignal chan struct{}
-	chTx       chan message.Message
+	ChTx       chan message.Message
 	chBlock    chan message.Message
+
+	log *log.Logger
 }
 
 // NewDPoS: 新建一个DPoS实例
@@ -57,10 +64,7 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	}
 
 	//	Tx chan init
-	p.chTx, err = p.router.FilteredChan(Filter{
-		WhiteList:  []message.Message{},
-		BlackList:  []message.Message{},
-		RejectType: []ReqType{},
+	p.ChTx, err = p.router.FilteredChan(Filter{
 		AcceptType: []ReqType{
 			ReqPublishTx,
 			reqTypeVoteTest, // Only for test
@@ -71,14 +75,18 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 
 	//	Block chan init
 	p.chBlock, err = p.router.FilteredChan(Filter{
-		WhiteList:  []message.Message{},
-		BlackList:  []message.Message{},
-		RejectType: []ReqType{},
 		AcceptType: []ReqType{ReqNewBlock}})
 	if err != nil {
 		return nil, err
 	}
 	p.exitSignal = make(chan struct{})
+
+	p.log, err = log.NewLogger("consensus.log")
+	if err != nil {
+		return nil, err
+	}
+
+	p.log.NeedPrint = true
 
 	p.initGlobalProperty(p.account, witnessList)
 	return &p, nil
@@ -100,7 +108,7 @@ func (p *DPoS) Run() {
 
 // Stop: 停止DPoS实例
 func (p *DPoS) Stop() {
-	close(p.chTx)
+	close(p.ChTx)
 	close(p.chBlock)
 	close(p.exitSignal)
 }
@@ -126,6 +134,14 @@ func (p *DPoS) CachedStatePool() state.Pool {
 }
 
 func (p *DPoS) genesis(initTime int64) error {
+
+	main := lua.NewMethod("", 0, 0)
+	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
+@PutHM iost tB4Bc8G7bMEJ3SqFPJtsuXXixbEUDXrYfE5xH4uFmHaV f10000`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
+
+	tx := NewTx(0, &lc)
+
 	genesis := &block.Block{
 		Head: block.BlockHead{
 			Version: 0,
@@ -134,15 +150,23 @@ func (p *DPoS) genesis(initTime int64) error {
 		},
 		Content: make([]Tx, 0),
 	}
+	genesis.Content = append(genesis.Content, tx)
+	stp,err := verifier.ParseGenesis(tx.Contract, p.StatePool())
+	if err!=nil {
+		panic("failed to ParseGenesis")
+	}
+
+	p.blockCache.SetBasePool(stp)
+
 	p.blockCache.AddGenesis(genesis)
 	return nil
 }
 
 func (p *DPoS) txListenLoop() {
-	fmt.Println("Start to listen tx")
+	p.log.I("Start to listen tx")
 	for {
 		select {
-		case req, ok := <-p.chTx:
+		case req, ok := <-p.ChTx:
 			if !ok {
 				return
 			}
@@ -170,6 +194,7 @@ func (p *DPoS) blockLoop() {
 		}
 
 		// verify block witness
+		// TODO currentSlot is negative
 		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
 			return nil, errors.New("wrong witness")
 		}
@@ -188,7 +213,7 @@ func (p *DPoS) blockLoop() {
 		}
 		return newPool, nil
 	}
-	fmt.Println("Start to listen block")
+	p.log.I("Start to listen block")
 	for {
 		select {
 		case req, ok := <-p.chBlock:
@@ -197,18 +222,17 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
+			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, verifyFunc)
-			fmt.Println("Received block:", blk.Head.Number, ", timestamp:", blk.Head.Time)
 			if err == nil {
-				fmt.Println("Link it onto cached chain")
+				p.log.I("Link it onto cached chain")
 			} else {
-				fmt.Println("Error:", err)
+				p.log.I("Error: %v", err)
 			}
 			if err != ErrBlock && err != ErrTooOld {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 					p.blockCache.AddSingles(verifyFunc)
-					p.router.Broadcast(req)
 				} else if err == ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
@@ -218,10 +242,10 @@ func (p *DPoS) blockLoop() {
 				}
 			}
 			/*
-			ts := Timestamp{blk.Head.Time}
-			if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
-				p.performMaintenance()
-			}
+				ts := Timestamp{blk.Head.Time}
+				if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
+					p.performMaintenance()
+				}
 			*/
 		case <-p.exitSignal:
 			return
@@ -232,7 +256,7 @@ func (p *DPoS) blockLoop() {
 func (p *DPoS) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
 	var nextSchedule int64
-	fmt.Println("Start to schedule")
+	p.log.I("Start to schedule")
 	for {
 		select {
 		case <-p.exitSignal:
@@ -240,8 +264,22 @@ func (p *DPoS) scheduleLoop() {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
+			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
 			if wid == p.account.ID {
-				fmt.Println("Generating block, current timestamp:", currentTimestamp)
+				p.log.I("Generating block, current timestamp: %v", currentTimestamp)
+
+				//todo test
+				chain := p.blockCache.LongestChain()
+				iter := chain.Iterator()
+				for {
+					block := iter.Next()
+					if block == nil {
+						break
+					}
+					p.log.I("CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
+				}
+				// end test
+
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 				bc := p.blockCache.LongestChain()
 				pool := p.blockCache.LongestPool()
@@ -283,6 +321,7 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 		if tx == nil || err != nil {
 			break
 		}
+		fmt.Println(VerifyTx(tx, &veri))
 		if _, result = VerifyTx(tx, &veri); result {
 			blk.Content = append(blk.Content, *tx)
 		}

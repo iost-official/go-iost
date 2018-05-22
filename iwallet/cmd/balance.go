@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	"context"
@@ -50,12 +49,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		pk, err := base64.StdEncoding.DecodeString(string(pubkey))
-		if err != nil {
-			fmt.Println(".pub file error")
-		}
-		ia := vm.PubkeyToIOSTAccount(pk)
-		b, err := CheckBalance(ia)
+		b, err := CheckBalance(vm.IOSTAccount(pubkey))
 		if err != nil {
 			fmt.Println(err)
 		}

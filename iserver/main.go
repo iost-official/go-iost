@@ -14,7 +14,9 @@
 
 package main
 
-import "github.com/iost-official/prototype/iserver/cmd"
+import (
+	"github.com/iost-official/prototype/iserver/cmd"
+)
 
 func main() {
 	cmd.Execute()

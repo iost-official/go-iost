@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/db"
 )
 
@@ -19,8 +18,10 @@ var PNPrefix = []byte("p")
 var TxDb TxPool
 var once sync.Once
 
-func init() {
-	ldb, err := db.NewLDBDatabase("tx", 0, 0)
+var LdbPath string
+
+func TxDbInstance() TxPool {
+	ldb, err := db.NewLDBDatabase(LdbPath+"txDB", 0, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -31,6 +32,7 @@ func init() {
 			}
 		})
 	}
+	return TxDb
 }
 
 //Add tx to db
@@ -41,11 +43,11 @@ func (tp *TxPoolDb) Add(tx *Tx) error {
 		return fmt.Errorf("failed to Put hash->tx: %v", err)
 	}
 	//no need to check Pblisher here,it was checked earlier
-	PubRaw := tx.Publisher.Encode()
+	PubKey := tx.Publisher.Pubkey
 	NonceRaw := make([]byte, 8)
 	binary.BigEndian.PutUint64(NonceRaw, uint64(tx.Nonce))
 
-	err = tp.db.Put(append(PNPrefix, append(NonceRaw, PubRaw...)...), hash)
+	err = tp.db.Put(append(PNPrefix, append(NonceRaw, PubKey...)...), hash)
 
 	//fmt.Println(append(PNPrefix, append(NonceRaw, PubRaw...)...))
 
@@ -78,11 +80,10 @@ func (tp *TxPoolDb) Get(hash []byte) (*Tx, error) {
 }
 
 //Get Tx by its Publisher and Nonce
-func (tp *TxPoolDb) GetByPN(Nonce int64, Publisher common.Signature) (*Tx, error) {
-	PubRaw := Publisher.Encode()
+func (tp *TxPoolDb) GetByPN(Nonce int64, PubKey []byte) (*Tx, error) {
 	NonceRaw := make([]byte, 8)
 	binary.BigEndian.PutUint64(NonceRaw, uint64(Nonce))
-	hash, err := tp.db.Get(append(PNPrefix, append(NonceRaw, PubRaw...)...))
+	hash, err := tp.db.Get(append(PNPrefix, append(NonceRaw, PubKey...)...))
 
 	//fmt.Println(append(PNPrefix, append(NonceRaw, PubRaw...)...))
 

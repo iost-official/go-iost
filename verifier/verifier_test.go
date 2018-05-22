@@ -176,6 +176,7 @@ end`
 	return Call("con2", "sayHi", "bob")
 end`
 
+
 		main2 := lua.NewMethod("main", 0, 1)
 
 		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "test2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
