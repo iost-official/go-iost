@@ -135,6 +135,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	case BroadcastMessageReceived:
 	//request for nodeTable
 	case ReqNodeTable:
+		base.log.D("[net] req node table from: %v", string(r.From))
 		base.putNode(string(r.From))
 		base.peers.SetAddr(string(r.From), newPeer(conn, base.localNode.String(), conn.RemoteAddr().String()))
 		addrs, err := base.AllNodesExcludeAddr(string(r.From))
@@ -147,6 +148,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 		}
 	//got nodeTable and save
 	case NodeTable:
+		base.log.D("[net] response node table: %v", string(r.Body))
 		base.putNode(string(r.Body))
 	default:
 		base.log.E("[net] wrong request :", r)
