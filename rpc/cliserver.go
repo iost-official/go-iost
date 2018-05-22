@@ -21,7 +21,7 @@ import (
 
 type BInfo struct {
 	Head  block.BlockHead
-	txCnt int
+	TxCnt int
 }
 type HttpServer struct {
 }
@@ -154,7 +154,7 @@ func (s *HttpServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, er
 	//better to Encode BlockHead first?
 	binfo := BInfo{
 		Head:  block.Head,
-		txCnt: block.LenTx(),
+		TxCnt: block.LenTx(),
 	}
 	b, err := json.Marshal(binfo)
 	if err != nil {
