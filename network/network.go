@@ -24,7 +24,6 @@ import (
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network/discover"
-	"github.com/iost-official/prototype/params"
 )
 
 type RequestHead struct {
@@ -213,6 +212,7 @@ type NetConifg struct {
 	NodeTablePath string
 	NodeID        string
 	ListenAddr    string
+	RegisterAddr  string
 }
 
 func (conf *NetConifg) SetLogPath(path string) *NetConifg {
@@ -260,6 +260,7 @@ type BaseNetwork struct {
 	localNode     *discover.Node
 
 	DownloadHeights map[uint64]uint8 //map[height]retry_times
+	regAddr         string
 	log             *log.Logger
 }
 
@@ -300,6 +301,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 		log:             srvLog,
 		NodeHeightMap:   NodeHeightMap,
 		DownloadHeights: downloadHeights,
+		regAddr:         conf.RegisterAddr,
 	}
 	return s, nil
 }
@@ -356,6 +358,7 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	conn, err := bn.dial(msg.To)
 	if err != nil {
 		bn.log.E("[net] broadcast dial tcp got err:%v", err)
+		bn.nodeTable.Delete([]byte(msg.To))
 		return
 	}
 	if er := bn.send(conn, req); er != nil {
@@ -372,12 +375,17 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 		bn.log.D("[net] dial to %v", node.Addr())
 		conn, err := net.Dial("tcp", node.Addr())
 		if err != nil {
+			if conn != nil {
+				conn.Close()
+			}
 			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
-		go bn.receiveLoop(conn)
-		peer := newPeer(conn, bn.localNode.String(), nodeStr)
-		bn.peers.Set(node, peer)
+		if conn != nil {
+			go bn.receiveLoop(conn)
+			peer := newPeer(conn, bn.localNode.String(), nodeStr)
+			bn.peers.Set(node, peer)
+		}
 	}
 
 	return bn.peers.Get(node).conn, nil
@@ -398,6 +406,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	req := newRequest(Message, bn.localNode.String(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
+		bn.nodeTable.Delete([]byte(msg.To))
 		bn.log.E("[net] Send, dial tcp got err:%v", err)
 		return
 	}
@@ -519,18 +528,16 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 //registerLoop register local address to boot nodes
 func (bn *BaseNetwork) registerLoop() {
 	for {
-		for _, encodeAddr := range params.TestnetBootnodes {
-			if bn.localNode.TCP != 30304 {
-				conn, err := bn.dial(encodeAddr)
-				if err != nil {
-					bn.log.E("[net] failed to connect boot node, err:%v", err)
-					continue
-				}
-				bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), encodeAddr)
-				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
-				if er := bn.send(conn, req); er != nil {
-					bn.peers.RemoveByNodeStr(encodeAddr)
-				}
+		if bn.localNode.TCP != 30304 {
+			conn, err := bn.dial(bn.regAddr)
+			if err != nil {
+				bn.log.E("[net] failed to connect boot node, err:%v", err)
+				continue
+			}
+			bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), bn.regAddr)
+			req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
+			if er := bn.send(conn, req); er != nil {
+				bn.peers.RemoveByNodeStr(bn.regAddr)
 			}
 		}
 		time.Sleep(CheckKnownNodeInterval * time.Second)
@@ -614,9 +621,7 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 func (bn *BaseNetwork) sendTo(addr string, req *Request) {
 	conn, err := bn.dial(addr)
 	if err != nil {
-		if conn != nil {
-			conn.Close()
-		}
+		bn.nodeTable.Delete([]byte(addr))
 		bn.log.E("[net] dial tcp got err:%v", err)
 		return
 	}

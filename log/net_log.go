@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var Server = "127.0.0.1:1001"
+var Server = "http://127.0.0.1:30333"
 var LocalID = "default"
 
 func Report(msg Msg) error {
@@ -63,8 +63,8 @@ func (m *MsgBlock) Form() url.Values {
 		"from":            {LocalID},
 		"time":            {Now().String()},
 		"type":            {"Block", m.SubType},
-		"block-head-hash": {m.BlockHeadHash},
-		"block-number":    {strconv.FormatUint(m.BlockNum, 10)},
+		"block_head_hash": {m.BlockHeadHash},
+		"block_number":    {strconv.FormatUint(m.BlockNum, 10)},
 	}
 }
 
@@ -103,10 +103,10 @@ func (m *MsgNode) Form() url.Values {
 func ParseMsg(v url.Values) Msg {
 	switch v["type"][0] {
 	case "Block":
-		num, _ := strconv.ParseUint(v["block-number"][0], 10, 64)
+		num, _ := strconv.ParseUint(v["block_number"][0], 10, 64)
 		return &MsgBlock{
 			SubType:       v["type"][1],
-			BlockHeadHash: v["block-head-hash"][0],
+			BlockHeadHash: v["block_head_hash"][0],
 			BlockNum:      num,
 		}
 	case "Tx":

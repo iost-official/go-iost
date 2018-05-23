@@ -88,17 +88,26 @@ func GenNodeId() NodeID {
 func ParseNode(nodeStr string) (node *Node, err error) {
 	node = &Node{}
 	nodeIdStrs := strings.Split(nodeStr, "@")
-	if len(nodeIdStrs) < 2 {
-		return node, fmt.Errorf("miss nodeId")
+	if len(nodeIdStrs)== 2 {
+		node.ID = NodeID(nodeIdStrs[0])
+		tcpStr := strings.Split(nodeIdStrs[1], ":")
+		node.IP = net.ParseIP(tcpStr[0])
+		tcp, err := strconv.Atoi(tcpStr[1])
+		if err != nil {
+			return node,err
+		}
+		node.TCP = uint16(tcp)
 	}
-	node.ID = NodeID(nodeIdStrs[0])
-	tcpStr := strings.Split(nodeIdStrs[1], ":")
-	node.IP = net.ParseIP(tcpStr[0])
-	tcp, err := strconv.Atoi(tcpStr[1])
-	if err != nil {
-		return
+	if len(nodeIdStrs)== 1 {
+		tcpStr := strings.Split(nodeIdStrs[0], ":")
+		node.IP = net.ParseIP(tcpStr[0])
+		tcp, err := strconv.Atoi(tcpStr[1])
+		if err != nil {
+			return node,err
+		}
+		node.TCP = uint16(tcp)
 	}
-	node.TCP = uint16(tcp)
+
 	return node, nil
 
 }
