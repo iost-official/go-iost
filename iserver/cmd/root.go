@@ -32,6 +32,7 @@ import (
 	"github.com/spf13/viper"
 	"os/signal"
 	"syscall"
+
 )
 
 var cfgFile string
@@ -94,6 +95,7 @@ var rootCmd = &cobra.Command{
 		nodeID := viper.GetString("net.node-id") //optional
 		listenAddr := viper.GetString("net.listen-addr")
 		regAddr := viper.GetString("net.register-addr")
+		rpcPort := viper.GetString("net.rpc-port")
 		target := viper.GetString("net.target") //optional
 		port := viper.GetInt64("net.port")
 
@@ -104,8 +106,9 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("net.register-addr:  %v\n", regAddr)
 		fmt.Printf("net.target:  %v\n", target)
 		fmt.Printf("net.port:  %v\n", port)
+		fmt.Printf("net.rpcPort:  %v\n", rpcPort)
 
-		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 {
+		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 || rpcPort == "" {
 			fmt.Println("Network config initialization failed, stop the program!")
 			os.Exit(1)
 		}
@@ -172,7 +175,7 @@ var rootCmd = &cobra.Command{
 		serverExit = append(serverExit, consensus)
 
 		//启动RPC
-		err = rpc.Server()
+		err = rpc.Server(rpcPort)
 		if err != nil {
 			fmt.Printf("RPC initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
