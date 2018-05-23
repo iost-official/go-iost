@@ -392,11 +392,11 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	}
 
 	////////////probe//////////////////
-	msgBlock:=log.MsgBlock{
+	log.Report(&log.MsgBlock{
 		SubType:"[dpos.genBlock]",
 		BlockHeadHash:base64.StdEncoding.EncodeToString(blk.HeadHash()),
 		BlockNum:blk.Head.Number,
-	}
+	})
 	///////////////////////////////////
 
 	return &blk
