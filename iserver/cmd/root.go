@@ -18,18 +18,20 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/consensus"
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/rpc"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/iost-official/prototype/network"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/account"
 	"os/signal"
 	"syscall"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/consensus"
-	"github.com/iost-official/prototype/rpc"
+	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db"
 )
 
 var cfgFile string
@@ -58,6 +60,32 @@ var rootCmd = &cobra.Command{
 		fmt.Println("logFile: ", viper.GetString("log"))
 		fmt.Println("dbFile: ", viper.GetString("db"))
 
+		//初始化数据库
+		ldbPath := viper.GetString("ldb.path")
+		redisAddr := viper.GetString("redis.addr") //optional
+		redisPort := viper.GetInt64("redis.port")
+
+		fmt.Printf("ldb.path: %v\n", ldbPath)
+		fmt.Printf("redis.addr: %v\n", redisAddr)
+		fmt.Printf("redis.port: %v\n", redisPort)
+
+		tx.LdbPath = ldbPath
+		block.LdbPath = ldbPath
+		db.DBAddr = redisAddr
+		db.DBPort = int16(redisPort)
+
+		txDb := tx.TxDbInstance()
+		if txDb == nil {
+			fmt.Println("TxDbInstance failed, stop the program!")
+			os.Exit(1)
+		}
+
+		err := state.PoolInstance()
+		if err != nil {
+			fmt.Printf("PoolInstance failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
 		//初始化网络
 		fmt.Println("1.Start the P2P networks")
 
@@ -65,6 +93,7 @@ var rootCmd = &cobra.Command{
 		nodeTablePath := viper.GetString("net.node-table-path")
 		nodeID := viper.GetString("net.node-id") //optional
 		listenAddr := viper.GetString("net.listen-addr")
+		regAddr := viper.GetString("net.register-addr")
 		target := viper.GetString("net.target") //optional
 		port := viper.GetInt64("net.port")
 
@@ -72,19 +101,22 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("net.node-table-path:  %v\n", nodeTablePath)
 		fmt.Printf("net.node-id:   %v\n", nodeID)
 		fmt.Printf("net.listen-addr:  %v\n", listenAddr)
+		fmt.Printf("net.register-addr:  %v\n", regAddr)
 		fmt.Printf("net.target:  %v\n", target)
 		fmt.Printf("net.port:  %v\n", port)
 
-		if logPath == "" || nodeTablePath == "" || listenAddr == "" || port <= 0 {
+		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 {
 			fmt.Println("Network config initialization failed, stop the program!")
 			os.Exit(1)
 		}
 
+		fmt.Println("network instance")
 		net, err := network.GetInstance(
 			&network.NetConifg{
 				LogPath:       logPath,
 				NodeTablePath: nodeTablePath,
 				NodeID:        nodeID,
+				RegisterAddr:  regAddr,
 				ListenAddr:    listenAddr},
 			target,
 			uint16(port))

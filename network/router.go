@@ -18,6 +18,8 @@ const (
 	RecvBlockHeight          //The height of the receiving block
 	ReqNewBlock              // recieve a new block or a response for download block
 	ReqDownloadBlock         // request for the height of block is equal to target
+
+	MsgMaxTTL = 2
 )
 
 //Router Forwarding specific request to other components and sending messages for them
@@ -51,7 +53,10 @@ func GetInstance(conf *NetConifg, target string, port uint16) (Router, error) {
 		if err != nil {
 			return
 		}
-		Route.Init(baseNet, port)
+		err = Route.Init(baseNet, port)
+		if err != nil {
+			return
+		}
 		Route.Run()
 	})
 	return Route, err
@@ -96,7 +101,7 @@ func (r *RouterImpl) Init(base Network, port uint16) error {
 
 //FilteredChan Get filtered request channel
 func (r *RouterImpl) FilteredChan(filter Filter) (chan message.Message, error) {
-	chReq := make(chan message.Message, 1)
+	chReq := make(chan message.Message, 100)
 
 	r.filterList = append(r.filterList, filter)
 	r.filterMap[len(r.filterList)-1] = chReq
@@ -129,16 +134,19 @@ func (r *RouterImpl) Stop() {
 }
 
 func (r *RouterImpl) Send(req message.Message) {
+	req.TTL = MsgMaxTTL
 	r.base.Send(req)
 }
 
 // Broadcast to all known members
 func (r *RouterImpl) Broadcast(req message.Message) {
+	req.TTL = MsgMaxTTL
 	r.base.Broadcast(req)
 }
 
 //download block with height >= start && height <= end
 func (r *RouterImpl) Download(start uint64, end uint64) error {
+	fmt.Println("sync:", start, end)
 	if end < start {
 		return fmt.Errorf("end should be greater than start")
 	}

@@ -76,17 +76,22 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 	return NotFound, nil
 }
 
-func (b *BlockCacheTree) findSingles(block *block.Block) (bool, *BlockCacheTree) {
+func (b *BlockCacheTree) findSingles(block *block.Block) (error, *BlockCacheTree) {
+	if b.bc.block != nil && bytes.Equal(b.bc.block.Head.Hash(), block.Head.Hash()) {
+		return ErrDup, nil
+	}
 	for _, bct := range b.children {
-		found, ret := bct.findSingles(block)
-		if found {
-			return found, ret
+		err, ret := bct.findSingles(block)
+		if err == nil {
+			return err, ret
+		} else if err == ErrDup {
+			return err, nil
 		}
 	}
 	if b.bc.block != nil && bytes.Equal(b.bc.block.Head.Hash(), block.Head.ParentHash) {
-		return true, b
+		return nil, b
 	}
-	return false, nil
+	return ErrNotFound, nil
 }
 
 func (b *BlockCacheTree) addSubTree(root *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
@@ -156,6 +161,7 @@ type BlockCache interface {
 	LongestPool() state.Pool
 	BlockChain() block.Chain
 	BasePool() state.Pool
+	SetBasePool(statePool state.Pool) error
 	ConfirmedLength() uint64
 	BlockConfirmChan() chan uint64
 }
@@ -233,9 +239,11 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 		h.tryFlush(block.Head.Version)
 	case NotFound:
 		// Add to single block tree
-		found, bct := h.singleBlockRoot.findSingles(block)
-		if !found {
+		err, bct := h.singleBlockRoot.findSingles(block)
+		if err == ErrNotFound {
 			bct = h.singleBlockRoot
+		} else if err == ErrDup {
+			return ErrDup
 		}
 		newTree := &BlockCacheTree{
 			bc: CachedBlockChain{
@@ -286,7 +294,7 @@ func (h *BlockCacheImpl) AddSingles(verifier func(blk *block.Block, parent *bloc
 func (h *BlockCacheImpl) AddTx(tx *tx.Tx) error {
 	//TODO 验证tx是否在blockchain上
 	if ok, _ := h.bc.HasTx(tx); ok {
-		return fmt.Errorf("Tx in BlockChain")
+		return fmt.Errorf("tx in BlockChain")
 	}
 	h.txPool.Add(tx)
 	return nil
@@ -324,7 +332,6 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 			h.cachedRoot = newRoot
 			h.cachedRoot.bc.Flush()
 			h.cachedRoot.pool.Flush()
-			h.blkConfirmChan <- uint64(h.cachedRoot.bc.Top().Head.Number)
 			h.cachedRoot.super = nil
 			h.cachedRoot.updateLength()
 			for _, tx := range h.cachedRoot.bc.Top().Content {
@@ -398,6 +405,11 @@ func (h *BlockCacheImpl) LongestChain() block.Chain {
 
 func (h *BlockCacheImpl) BasePool() state.Pool {
 	return h.cachedRoot.pool
+}
+
+func (h *BlockCacheImpl) SetBasePool(statePool state.Pool) error {
+	h.cachedRoot.pool = statePool
+	return nil
 }
 
 // LongestPool 返回最长链对应的state池

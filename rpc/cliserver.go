@@ -7,14 +7,14 @@ import (
 	"reflect"
 
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/consensus"
+	"github.com/iost-official/prototype/consensus/dpos"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/vm"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/prototype/rpc CliServer
@@ -33,7 +33,7 @@ func newHttpServer() *HttpServer {
 }
 
 func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response, error) {
-
+	fmt.Println("PublishTx begin")
 	var tx1 tx.Tx
 	if _tx == nil {
 		return &Response{Code: -1}, fmt.Errorf("argument cannot be nil pointer")
@@ -58,30 +58,35 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	}
 	router.Broadcast(broadTx)
 
-	//add this tx to txpool
-	tp, err := tx.TxPoolFactory("mem") //TODO:in fact,we should find the txpool_mem,not create a new txpool_mem
-	if err != nil {
-		panic(err)
-	}
-	tp.Add(&tx1)
+	go func() {
+		Cons := consensus.Cons
+		if Cons == nil {
+			panic(fmt.Errorf("Consensus is nil"))
+		}
+		Cons.(*dpos.DPoS).ChTx <- broadTx
+		fmt.Println("[rpc.PublishTx]:add tx to TxPool")
+	}()
 	return &Response{Code: 0}, nil
 }
 
 func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (*Transaction, error) {
-
+	fmt.Println("GetTransaction begin")
 	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	var Pub common.Signature
-	Pub.Decode([]byte(txkey.Publisher))
+	PubKey := common.Base58Decode(txkey.Publisher)
+	//check length of Pubkey here
+	if len(PubKey) != 33 {
+		return nil, fmt.Errorf("PubKey invalid")
+	}
 	Nonce := txkey.Nonce
-	//check Publisher and Nonce in txkey
+	//check Nonce here
 
 	txDb := tx.TxDb
 	if txDb == nil {
 		panic(fmt.Errorf("TxDb should be nil"))
 	}
-	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, Pub)
+	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, PubKey)
 	if err != nil {
 		return nil, err
 	}
@@ -90,9 +95,7 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 }
 
 func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
-	fmt.Println("read balance", iak.S)
-	grpc.SendHeader(ctx, metadata.Pairs("Pre-Response-Metadata", "Is-sent-as-headers-unary"))
-	grpc.SetTrailer(ctx, metadata.Pairs("Post-Response-Metadata", "Is-sent-as-trailers-unary"))
+	fmt.Println("GetBalance begin")
 	if iak == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -103,7 +106,7 @@ func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
 	}
 	val, ok := val0.(*state.VFloat)
 	if !ok {
-		return nil, fmt.Errorf("pool type error: should VFloat, acture %v; in iost.%v",
+		return nil, fmt.Errorf("RPC : pool type error: should VFloat, acture %v; in iost.%v",
 			reflect.TypeOf(val0).String(), vm.IOSTAccount(ia))
 	}
 	balance := val.EncodeString()
@@ -112,6 +115,7 @@ func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
 }
 
 func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
+	fmt.Println("GetState begin")
 	if stkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -125,6 +129,7 @@ func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
 	if err != nil {
 		return nil, fmt.Errorf("GetState Error: [%v]", err)
 	}
+
 	return &Value{Sv: stValue.EncodeString()}, nil
 }
 

@@ -3,6 +3,7 @@ struct Message {
 	From    string
 	To      string
 	ReqType int32
+	TTL     int8
 	Body    []byte
 }
 
