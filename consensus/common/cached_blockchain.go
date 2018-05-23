@@ -65,6 +65,7 @@ func (c *CachedBlockChain) Push(block *block.Block) error {
 			}
 			cbc = cbc.parent
 		}
+		fallthrough
 	case 1:
 		// PoW
 		c.depth = 0

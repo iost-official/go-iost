@@ -136,7 +136,7 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 			val1 = VNil
 		}
 	}
-	fmt.Println("in pool GetHM", val1.EncodeString())
+	//fmt.Println("in pool GetHM", val1.EncodeString())
 
 	val2 := p.patch.Get(key)
 	if val2 == nil {

@@ -47,7 +47,7 @@ type DPoS struct {
 // NewDPoS: 新建一个DPoS实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*DPoS, error) {
-	TxPerBlk = 1000
+	TxPerBlk = 3000
 	p := DPoS{}
 	p.account = acc
 	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
