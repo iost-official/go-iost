@@ -3,6 +3,7 @@ package tx
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/iost-official/prototype/common"
 )
@@ -10,6 +11,7 @@ import (
 // Transaction Pool 实现内存Map存储
 type TxPoolImpl struct {
 	txMap map[string]*Tx
+	lock  sync.RWMutex
 }
 
 // Tx Pool 初始化
@@ -19,6 +21,8 @@ func NewTxPoolImpl() *TxPoolImpl {
 
 // 在Tx Pool 插入一个 Tx
 func (tp *TxPoolImpl) Add(tx *Tx) error {
+	tp.lock.Lock()
+	defer tp.lock.Unlock()
 	//fmt.Println("[tx_cache.Add]: ",tx.Nonce)
 	tp.txMap[common.Base58Encode(tx.Hash())] = tx
 	return nil
@@ -26,12 +30,16 @@ func (tp *TxPoolImpl) Add(tx *Tx) error {
 
 // 在Tx Pool 删除Tx
 func (tp *TxPoolImpl) Del(tx *Tx) error {
+	tp.lock.Lock()
+	defer tp.lock.Unlock()
 	delete(tp.txMap, common.Base58Encode(tx.Hash()))
 	return nil
 }
 
 // 在Tx Pool 获取Tx, 需要Tx的hash值
 func (tp *TxPoolImpl) Get(hash []byte) (*Tx, error) {
+	tp.lock.RLock()
+	defer tp.lock.RUnlock()
 	tx, ok := tp.txMap[common.Base58Encode(hash)]
 	if !ok {
 		return nil, errors.New("Not Found")
@@ -41,6 +49,8 @@ func (tp *TxPoolImpl) Get(hash []byte) (*Tx, error) {
 
 // 在Tx Pool 获取第一个Tx
 func (tp *TxPoolImpl) Top() (*Tx, error) {
+	tp.lock.RLock()
+	defer tp.lock.RUnlock()
 	for _, tx := range tp.txMap {
 		return tx, nil
 	}
@@ -49,6 +59,8 @@ func (tp *TxPoolImpl) Top() (*Tx, error) {
 
 // 判断一个Tx是否在Tx Pool
 func (tp *TxPoolImpl) Has(tx *Tx) (bool, error) {
+	tp.lock.RLock()
+	defer tp.lock.RUnlock()
 	_, ok := tp.txMap[common.Base58Encode(tx.Hash())]
 	return ok, nil
 }
@@ -62,6 +74,7 @@ func (tp *TxPoolImpl) Size() int {
 type TxPoolStack struct {
 	txMap   map[string]int
 	txStack []*Tx
+	lock    sync.RWMutex
 }
 
 func NewTxPoolStack() (*TxPoolStack, error) {
@@ -75,6 +88,8 @@ func NewTxPoolStack() (*TxPoolStack, error) {
 
 // 在Tx Pool 插入一个 Tx
 func (tp *TxPoolStack) Add(tx *Tx) error {
+	tp.lock.Lock()
+	defer tp.lock.Unlock()
 	tp.txStack = append(tp.txStack, nil)
 	j := len(tp.txStack) - 1
 	for j > 1 {
@@ -95,6 +110,8 @@ func (tp *TxPoolStack) Add(tx *Tx) error {
 
 // 在Tx Pool 删除Tx
 func (tp *TxPoolStack) Del(tx *Tx) error {
+	tp.lock.Lock()
+	defer tp.lock.Unlock()
 	j := tp.txMap[common.Base58Encode(tx.Hash())]
 	for j*2 < len(tp.txStack) {
 		fmt.Println(j)
@@ -115,6 +132,8 @@ func (tp *TxPoolStack) Del(tx *Tx) error {
 
 // 在Tx Pool 获取Tx, 需要Tx的hash值
 func (tp *TxPoolStack) Get(hash []byte) (*Tx, error) {
+	tp.lock.RLock()
+	defer tp.lock.RUnlock()
 	j, ok := tp.txMap[common.Base58Encode(hash)]
 	if !ok {
 		return nil, errors.New("Not Found")
@@ -124,6 +143,8 @@ func (tp *TxPoolStack) Get(hash []byte) (*Tx, error) {
 
 // 在Tx Pool 获取第一个Tx
 func (tp *TxPoolStack) Top() (*Tx, error) {
+	tp.lock.RLock()
+	defer tp.lock.RUnlock()
 	if len(tp.txStack) == 1 {
 		return nil, errors.New("Empty")
 	}
@@ -132,6 +153,8 @@ func (tp *TxPoolStack) Top() (*Tx, error) {
 
 // 判断一个Tx是否在Tx Pool
 func (tp *TxPoolStack) Has(tx *Tx) (bool, error) {
+	tp.lock.RLock()
+	defer tp.lock.RUnlock()
 	_, ok := tp.txMap[common.Base58Encode(tx.Hash())]
 	return ok, nil
 }
