@@ -251,7 +251,7 @@ func (conf *NetConifg) SetListenAddr(addr string) *NetConifg {
 type BaseNetwork struct {
 	nodeTable  *db.LDBDatabase //all known node except remoteAddr
 	neighbours map[string]*discover.Node
-	lock       sync.RWMutex
+	lock       sync.Mutex
 	peers      peerSet // manage all connection
 	RecvCh     chan message.Message
 	listener   net.Listener
@@ -281,7 +281,6 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init log %v", err)
 	}
-
 	nodeTable, err := db.NewLDBDatabase(conf.NodeTablePath, 0, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init db %v", err)
@@ -334,18 +333,17 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 //Broadcast msg to all node in the node table
 func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	neighbours := bn.neighbours
-	bn.lock.Lock()
 	for _, node := range neighbours {
 		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.String())
 		msg.To = node.String()
-		go bn.broadcast(msg)
+		bn.broadcast(msg)
 	}
-	bn.lock.Unlock()
 }
 
 //broadcast broadcast to all neighbours, stop broadcast when msg already broadcast
 func (bn *BaseNetwork) broadcast(msg message.Message) {
-	if msg.TTL == 0 {
+	node, _ := discover.ParseNode(msg.To)
+	if msg.TTL == 0 || bn.localNode.Addr() == node.Addr() {
 		return
 	} else {
 		msg.TTL = msg.TTL - 1
@@ -370,6 +368,9 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
 	node, _ := discover.ParseNode(nodeStr)
+	if bn.localNode.Addr() == node.Addr() {
+		return nil, fmt.Errorf("dial local %v", node.Addr())
+	}
 	peer := bn.peers.Get(node)
 	if peer == nil {
 		bn.log.D("[net] dial to %v", node.Addr())
@@ -393,6 +394,9 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 
 //Send msg to msg.To
 func (bn *BaseNetwork) Send(msg message.Message) {
+	if msg.To == bn.localNode.String() || msg.To == bn.localNode.Addr() {
+		return
+	}
 	if msg.TTL == 0 {
 		return
 	} else {
@@ -494,7 +498,7 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 func (bn *BaseNetwork) putNode(addrs string) {
 	addrArr := strings.Split(addrs, ",")
 	for _, addr := range addrArr {
-		if addr != "" && addr != bn.localNode.String() {
+		if addr != "" && addr != bn.localNode.String() && addr != bn.localNode.Addr() {
 			bn.nodeTable.Put([]byte(addr), common.IntToBytes(2))
 		}
 	}
@@ -639,8 +643,8 @@ func (bn *BaseNetwork) SetNodeHeightMap(nodeStr string, height uint64) {
 
 //GetNodeHeightMap ...
 func (bn *BaseNetwork) GetNodeHeightMap(nodeStr string) uint64 {
-	bn.lock.RLock()
-	defer bn.lock.RUnlock()
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
 	return bn.NodeHeightMap[nodeStr]
 }
 

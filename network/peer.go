@@ -40,13 +40,13 @@ func newPeer(conn net.Conn, local, remote string) *Peer {
 // peerSet represents the collection of active peers
 type peerSet struct {
 	peers  map[string]*Peer
-	lock   sync.RWMutex
+	lock   sync.Mutex
 	closed bool
 }
 
 func (ps *peerSet) Get(node *discover.Node) *Peer {
-	ps.lock.RLock()
-	defer ps.lock.RUnlock()
+	ps.lock.Lock()
+	defer ps.lock.Unlock()
 	if ps.peers == nil {
 		return nil
 	}
