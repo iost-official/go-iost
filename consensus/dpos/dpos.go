@@ -3,6 +3,7 @@ package dpos
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/base64"
 
 	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
@@ -181,9 +182,20 @@ func (p *DPoS) txListenLoop() {
 			}
 			var tx Tx
 			tx.Decode(req.Body)
+
+			////////////probe//////////////////
+			log.Report(&log.MsgTx{
+				SubType:"[dpos.txListenLoop]:receive",
+				TxHash:string(tx.Hash()),
+				Publisher:string(tx.Publisher.Pubkey),
+				Nonce:tx.Nonce,
+			})
+			///////////////////////////////////
+
 			if VerifyTxSig(tx) {
 				p.blockCache.AddTx(&tx)
 			}
+
 		case <-p.exitSignal:
 			return
 		}
@@ -193,14 +205,34 @@ func (p *DPoS) txListenLoop() {
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
 	verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+		////////////probe//////////////////
+		msgBlock:=log.MsgBlock{
+			SubType:"[dpos.blockLoop.verifyFunc]:err=",
+			BlockHeadHash:base64.StdEncoding.EncodeToString(blk.HeadHash()),
+			BlockNum:blk.Head.Number,
+		}
+		///////////////////////////////////
+
 		// verify block head
 		if err := VerifyBlockHead(blk, parent); err != nil {
+
+			////////////probe//////////////////
+			msgBlock.SubType+=fmt.Sprintf("%v",err)
+			log.Report(&msgBlock)
+			///////////////////////////////////
+			
 			return nil, err
 		}
 
 		// verify block witness
 		// TODO currentSlot is negative
 		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
+			
+			////////////probe//////////////////
+			msgBlock.SubType+=fmt.Sprintf("%v", errors.New("wrong witness"))
+			log.Report(&msgBlock)
+			///////////////////////////////////
+	
 			return nil, errors.New("wrong witness")
 		}
 
@@ -210,12 +242,30 @@ func (p *DPoS) blockLoop() {
 
 		// verify block witness signature
 		if !common.VerifySignature(headInfo, signature) {
+			
+			////////////probe//////////////////
+			msgBlock.SubType+=fmt.Sprintf("%v", errors.New("wrong signature"))
+			log.Report(&msgBlock)
+			///////////////////////////////////
+			
 			return nil, errors.New("wrong signature")
 		}
 		newPool, err := StdBlockVerifier(blk, pool)
 		if err != nil {
+
+			////////////probe//////////////////
+			msgBlock.SubType+=fmt.Sprintf("%v", err)
+			log.Report(&msgBlock)
+			///////////////////////////////////
+			
 			return nil, err
 		}
+
+		////////////probe//////////////////
+		msgBlock.SubType+=fmt.Sprintf("%v",nil)
+		log.Report(&msgBlock)
+		///////////////////////////////////
+		
 		return newPool, nil
 	}
 	p.log.I("Start to listen block")
@@ -227,6 +277,15 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
+
+			////////////probe//////////////////
+			log.Report(&log.MsgBlock{
+				SubType:"[dpos.blockLoop]:receive",
+				BlockHeadHash:base64.StdEncoding.EncodeToString(blk.HeadHash()),
+		 		BlockNum:blk.Head.Number,
+			})
+			///////////////////////////////////
+
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, verifyFunc)
 			if err == nil {
@@ -331,6 +390,15 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 			blk.Content = append(blk.Content, *tx)
 		}
 	}
+
+	////////////probe//////////////////
+	msgBlock:=log.MsgBlock{
+		SubType:"[dpos.genBlock]",
+		BlockHeadHash:base64.StdEncoding.EncodeToString(blk.HeadHash()),
+		BlockNum:blk.Head.Number,
+	}
+	///////////////////////////////////
+
 	return &blk
 }
 

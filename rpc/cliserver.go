@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/consensus"
 	"github.com/iost-official/prototype/consensus/dpos"
 	"github.com/iost-official/prototype/core/block"
@@ -47,6 +48,16 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	if err != nil {
 		return &Response{Code: -1}, err
 	}
+
+	////////////probe//////////////////
+	log.Report(&log.MsgTx{
+		SubType:"[rpc.PublishTx]:receive",
+		TxHash:string(tx1.Hash()),
+		Publisher:string(tx1.Publisher.Pubkey),
+		Nonce:tx1.Nonce,
+	})
+	///////////////////////////////////
+	
 	//broadcast the tx
 	router := network.Route
 	if router == nil {

@@ -55,7 +55,7 @@ type Msg interface {
 type MsgBlock struct {
 	SubType       string
 	BlockHeadHash string // base64
-	BlockNum      uint64
+	BlockNum      int64
 }
 
 func (m *MsgBlock) Form() url.Values {
@@ -64,7 +64,7 @@ func (m *MsgBlock) Form() url.Values {
 		"time":            {Now().String()},
 		"type":            {"Block", m.SubType},
 		"block_head_hash": {m.BlockHeadHash},
-		"block_number":    {strconv.FormatUint(m.BlockNum, 10)},
+		"block_number":    {strconv.FormatInt(m.BlockNum, 10)},
 	}
 }
 
@@ -103,7 +103,7 @@ func (m *MsgNode) Form() url.Values {
 func ParseMsg(v url.Values) Msg {
 	switch v["type"][0] {
 	case "Block":
-		num, _ := strconv.ParseUint(v["block_number"][0], 10, 64)
+		num, _ := strconv.ParseInt(v["block_number"][0], 10, 64)
 		return &MsgBlock{
 			SubType:       v["type"][1],
 			BlockHeadHash: v["block_head_hash"][0],

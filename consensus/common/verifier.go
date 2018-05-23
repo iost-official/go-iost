@@ -3,10 +3,12 @@ package consensus_common
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/verifier"
+	"github.com/iost-official/prototype/log"
 )
 
 //go:generate gencode go -schema=structs.schema -package=consensus_common
@@ -48,6 +50,16 @@ func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 // TODO: 考虑自己生成块到达最后一个交易时，直接用返回的state pool更新block cache中的state
 func VerifyTx(tx *tx.Tx, txVer *verifier.CacheVerifier) (state.Pool, bool) {
 	newPool, err := txVer.VerifyContract(tx.Contract, false)
+
+	////////////probe//////////////////
+	log.Report(&log.MsgTx{
+		SubType:fmt.Sprintf("[verifier.VerifyTx]:error=%v",err),
+		TxHash:string(tx.Hash()),
+		Publisher:string(tx.Publisher.Pubkey),
+		Nonce:tx.Nonce,
+	})
+	///////////////////////////////////
+
 	return newPool, err == nil
 }
 
