@@ -190,34 +190,36 @@ func (p *DPoS) txListenLoop() {
 	}
 }
 
-func (p *DPoS) blockLoop() {
-	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-	verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-		// verify block head
-		if err := VerifyBlockHead(blk, parent); err != nil {
-			return nil, err
-		}
-
-		// verify block witness
-		// TODO currentSlot is negative
-		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-			return nil, errors.New("wrong witness")
-		}
-
-		headInfo := generateHeadInfo(blk.Head)
-		var signature common.Signature
-		signature.Decode(blk.Head.Signature)
-
-		// verify block witness signature
-		if !common.VerifySignature(headInfo, signature) {
-			return nil, errors.New("wrong signature")
-		}
-		newPool, err := StdBlockVerifier(blk, pool)
-		if err != nil {
-			return nil, err
-		}
-		return newPool, nil
+//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
+func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+	// verify block head
+	if err := VerifyBlockHead(blk, parent); err != nil {
+		return nil, err
 	}
+
+	// verify block witness
+	// TODO currentSlot is negative
+	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
+		return nil, errors.New("wrong witness")
+	}
+
+	headInfo := generateHeadInfo(blk.Head)
+	var signature common.Signature
+	signature.Decode(blk.Head.Signature)
+
+	// verify block witness signature
+	if !common.VerifySignature(headInfo, signature) {
+		return nil, errors.New("wrong signature")
+	}
+	newPool, err := StdBlockVerifier(blk, pool)
+	if err != nil {
+		return nil, err
+	}
+	return newPool, nil
+}
+func (p *DPoS) blockLoop() {
+
+
 	p.log.I("Start to listen block")
 	for {
 		select {
@@ -228,7 +230,7 @@ func (p *DPoS) blockLoop() {
 			var blk block.Block
 			blk.Decode(req.Body)
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
-			err := p.blockCache.Add(&blk, verifyFunc)
+			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
 			} else {
@@ -237,7 +239,7 @@ func (p *DPoS) blockLoop() {
 			if err != ErrBlock && err != ErrTooOld {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
-					p.blockCache.AddSingles(verifyFunc)
+					p.blockCache.AddSingles(p.blockVerify)
 				} else if err == ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))

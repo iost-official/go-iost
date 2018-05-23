@@ -23,6 +23,7 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
+	"fmt"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -32,7 +33,7 @@ func TestNewDPoS(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
-		mockPool.EXPECT().PutHM(Any(),Any(),Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
 
 		network.Route = mockRouter
 		//获取router实例
@@ -84,7 +85,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		mockPool := core_mock.NewMockPool(mockCtr)
 
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
-		mockPool.EXPECT().PutHM(Any(),Any(),Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
 
 		mockBc.EXPECT().Iterator().AnyTimes().Return(nil)
 		network.Route = mockRouter
@@ -193,7 +194,7 @@ func TestRunReceiveBlock(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
-		mockPool.EXPECT().PutHM(Any(),Any(),Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
 
 		network.Route = mockRouter
 		//获取router实例
@@ -248,10 +249,9 @@ func TestRunReceiveBlock(t *testing.T) {
 		blk, msg := generateTestBlockMsg("id0", "seckeyId0", 1, genesis.Head.Hash())
 		blkChan <- msg
 
-
 		p.Run()
 
-		time.Sleep(time.Second*1)
+		time.Sleep(time.Second * 1)
 		So(blk.Head.Number, ShouldEqual, 1)
 		So(string(blk.Head.ParentHash), ShouldEqual, string(genesis.Head.Hash()))
 		So(blk.Head.Witness, ShouldEqual, "id0")
@@ -269,7 +269,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
-		mockPool.EXPECT().PutHM(Any(),Any(),Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
 
 		mockBc.EXPECT().Iterator().AnyTimes().Return(nil)
 
@@ -509,4 +509,151 @@ func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parent
 		Body:    blk.Encode(),
 	}
 	return blk, msg
+}
+
+func BenchmarkAddBlockCache(b *testing.B) { benchAddBlockCache(b) }
+func BenchmarkGetBlockCache(b *testing.B) { benchGetBlockCache(b) }
+func BenchmarkBlockVerifier(b *testing.B) { benchBlockVerifier(b) }
+func BenchmarkTxPool(b *testing.B)        { benchTxPool(b) }
+func BenchmarkBlockHead(b *testing.B)     { benchBlockHead(b) }
+func BenchmarkGenerateBlock(b *testing.B) { benchGenerateBlock(b) }
+
+// cache中添加block性能测试
+func benchAddBlockCache(b *testing.B) {
+	var accountList []account.Account
+
+	var witnessList []string
+
+	for i:=0;i<3 ;i++  {
+		account, err:=account.NewAccount(nil)
+		if err!=nil{
+			panic("account.NewAccount error")
+		}
+		accountList = append(accountList, account)
+		witnessList = append(witnessList, account.ID)
+	}
+
+	tx.LdbPath = ""
+
+	mockCtr := NewController(b)
+	mockRouter := protocol_mock.NewMockRouter(mockCtr)
+
+	network.Route = mockRouter
+	//获取router实例
+	guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
+		return mockRouter, nil
+	})
+
+	heightChan := make(chan message.Message, 1)
+	blkSyncChan := make(chan message.Message, 1)
+	mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
+	mockRouter.EXPECT().FilteredChan(Any()).Return(blkSyncChan, nil)
+
+	//设置第一个通道txchan
+	txChan := make(chan message.Message, 1)
+	mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
+
+	//设置第二个通道Blockchan
+	blkChan := make(chan message.Message, 1)
+	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
+
+	defer guard.Unpatch()
+
+	txDb := tx.TxDbInstance()
+	if txDb == nil {
+		panic("txDB error")
+	}
+
+	blockChain, err := block.Instance()
+	if err != nil {
+		panic("block.Instance error")
+	}
+
+	err = state.PoolInstance()
+	if err != nil {
+		panic("state.PoolInstance error")
+	}
+
+	//verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+	//	return pool, nil
+	//}
+
+	//blockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
+	//seckey := common.Sha256([]byte("SeckeyId0"))
+	//pubkey := common.CalcPubkeyInSecp256k1(seckey)
+	p, err := NewDPoS(accountList[0], blockChain, state.StdPool, witnessList)
+	if err != nil {
+		b.Errorf("NewDPoS error")
+	}
+
+	//生成block
+
+	var blockPool []*block.Block
+	confChain := p.blockCache.BlockChain()
+	tblock := confChain.Top() //获取创世块
+
+	blockLen := p.blockCache.ConfirmedLength()
+	fmt.Println(blockLen)
+
+	//blockNum := 1000
+	slot := consensus_common.GetCurrentTimestamp().Slot
+
+	for i := 0; i < b.N; i++ {
+		var hash []byte
+		if len(blockPool) == 0 {
+			//用创世块的头hash赋值
+			hash =tblock.Head.Hash()
+		} else {
+			hash = blockPool[len(blockPool)-1].Head.Hash()
+		}
+		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
+			Version:    0,
+			ParentHash: hash,
+			TreeHash:   make([]byte, 0),
+			BlockHash:  make([]byte, 0),
+			Info:       []byte("test"),
+			Number:     int64(i+1),
+			Witness:    witnessList[i%3],
+			Time:       slot + int64(i),
+		}}
+
+		headInfo := generateHeadInfo(blk.Head)
+		sig, _ := common.Sign(common.Secp256k1, headInfo, accountList[i%3].Seckey)
+		blk.Head.Signature = sig.Encode()
+
+		blockPool = append(blockPool, &blk)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, bl := range blockPool {
+			p.blockCache.Add(bl, p.blockVerify)
+		}
+
+	}
+
+}
+
+// cache中获取block性能测试
+func benchGetBlockCache(b *testing.B) {
+
+}
+
+// block验证性能测试
+func benchBlockVerifier(b *testing.B) {
+
+}
+
+// 交易添加Pool性能测试
+func benchTxPool(b *testing.B) {
+
+}
+
+// 生成block head性能测试
+func benchBlockHead(b *testing.B) {
+
+}
+
+// 生成块性能测试
+func benchGenerateBlock(b *testing.B) {
+
 }

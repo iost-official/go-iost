@@ -153,8 +153,11 @@ func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 
 // Top 返回已确定链的最后block
 func (b *ChainImpl) Top() *Block {
-
-	return b.GetBlockByNumber(b.length - 1)
+	if b.length == 0{
+		return b.GetBlockByNumber(b.length)
+	}else{
+		return b.GetBlockByNumber(b.length - 1)
+	}
 }
 
 // GetBlockByNumber 通过区块编号查询块
