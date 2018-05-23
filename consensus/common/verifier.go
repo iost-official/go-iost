@@ -52,10 +52,14 @@ func VerifyTx(tx *tx.Tx, txVer *verifier.CacheVerifier) (state.Pool, bool) {
 	newPool, err := txVer.VerifyContract(tx.Contract, false)
 
 	////////////probe//////////////////
+	var ret string="pass"
+	if err!=nil{
+		ret="fail"
+	}
 	log.Report(&log.MsgTx{
-		SubType:fmt.Sprintf("[verifier.VerifyTx]:error=%v",err),
-		TxHash:string(tx.Hash()),
-		Publisher:string(tx.Publisher.Pubkey),
+		SubType:"verify."+ret,
+		TxHash:tx.Hash(),
+		Publisher:tx.Publisher.Pubkey,
 		Nonce:tx.Nonce,
 	})
 	///////////////////////////////////

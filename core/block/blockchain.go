@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
-
+	"encoding/base64"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 )
@@ -103,12 +103,30 @@ func (b *ChainImpl) Push(block *Block) error {
 	if err != nil {
 		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
+	
+	////////////probe//////////////////
+	log.Report(&log.MsgBlock{
+		SubType:"confirm",
+		BlockHeadHash:base64.StdEncoding.EncodeToString(block.HeadHash()),
+		BlockNum:block.Head.Number,
+	})
+	///////////////////////////////////
 
-	//todo:put all the tx of this block to the db
+
+	//put all the tx of this block to txdb
 	for _, ctx := range block.Content {
 		if err := b.tx.Add(&ctx); err != nil {
 			return fmt.Errorf("failed to add tx %v", err)
 		}
+
+		////////////probe//////////////////
+		log.Report(&log.MsgTx{
+			SubType:"confirm",
+			TxHash:base64.StdEncoding.EncodeToString(ctx.Hash()),
+			Publisher:base64.StdEncoding.EncodeToString(tx.Publisher.Pubkey),
+			Nonce:ctx.Nonce,
+		})
+		///////////////////////////////////
 	}
 
 	return nil
