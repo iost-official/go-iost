@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/network"
 	"strings"
 	"time"
 )
@@ -35,7 +36,7 @@ func (p *DPoS) VoteForWitness(voter account.Account, witnessId string, voteType 
 		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),
 	}
-	p.router.Send(req)
+	network.Route.Send(req)
 }
 
 // WitnessJoin: 生成一个witness加入交易并发送，测试版本中简单设置为广播一个消息，后续再对接
@@ -49,7 +50,7 @@ func (p *DPoS) WitnessJoin(witness account.Account) {
 		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),
 	}
-	p.router.Send(req)
+	network.Route.Send(req)
 }
 
 // WitnessQuit: 生成一个witness退出交易并发送，测试版本中简单设置为广播一个消息，后续再对接
@@ -63,7 +64,7 @@ func (p *DPoS) WitnessQuit(witness account.Account) {
 		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),
 	}
-	p.router.Send(req)
+	network.Route.Send(req)
 }
 
 // 测试用函数：p2p收到ReqTypeVoteTest后调用，将消息加入到info的缓存中

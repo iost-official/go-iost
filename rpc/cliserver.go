@@ -21,7 +21,7 @@ import (
 
 type BInfo struct {
 	Head  block.BlockHead
-	txCnt int
+	TxCnt int
 }
 type HttpServer struct {
 }
@@ -47,6 +47,16 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	if err != nil {
 		return &Response{Code: -1}, err
 	}
+/*
+	////////////probe//////////////////
+	log.Report(&log.MsgTx{
+		SubType:"receive",
+		TxHash:tx1.Hash(),
+		Publisher:tx1.Publisher.Pubkey,
+		Nonce:tx1.Nonce,
+	})
+	///////////////////////////////////
+*/	
 	//broadcast the tx
 	router := network.Route
 	if router == nil {
@@ -154,7 +164,7 @@ func (s *HttpServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, er
 	//better to Encode BlockHead first?
 	binfo := BInfo{
 		Head:  block.Head,
-		txCnt: block.LenTx(),
+		TxCnt: block.LenTx(),
 	}
 	b, err := json.Marshal(binfo)
 	if err != nil {

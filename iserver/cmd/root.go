@@ -30,9 +30,11 @@ import (
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/rpc"
+	"github.com/iost-official/prototype/log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 )
 
 var cfgFile string
@@ -180,6 +182,14 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		////////////probe//////////////////
+		log.Report(&log.MsgNode{
+			SubType:"online",
+		})
+		///////////////////////////////////
+
+
+
 		//等待推出信号
 		exitLoop()
 
@@ -195,14 +205,21 @@ func exitLoop() {
 	defer close(exit)
 
 	go func() {
-		<-c
-		fmt.Printf("IOST server received interrupt, shutting down...")
+		i := <-c
+		fmt.Printf("IOST server received interrupt[%v], shutting down...\n", i)
 
 		for _, s := range serverExit {
 			if s != nil {
 				s.Stop()
 			}
 		}
+
+		////////////probe//////////////////
+		log.Report(&log.MsgNode{
+			SubType:"offline",
+		})
+		///////////////////////////////////
+
 
 		os.Exit(0)
 	}()
