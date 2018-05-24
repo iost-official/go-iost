@@ -41,7 +41,9 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 		blockCache: bc,
 		router:     router,
 	}
-	sync.maxSyncNumber = block.BChain.Length() - 1
+	if block.BChain != nil {
+		sync.maxSyncNumber = block.BChain.Length() - 1
+	}
 	var err error
 	sync.heightChan, err = sync.router.FilteredChan(Filter{
 		AcceptType: []ReqType{

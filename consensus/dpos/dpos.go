@@ -92,6 +92,9 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	p.log.NeedPrint = true
 
 	p.initGlobalProperty(p.account, witnessList)
+	if block.BChain != nil && block.BChain.Length() != 0 {
+		p.update(&block.BChain.Top().Head)
+	}
 	return &p, nil
 }
 
@@ -218,7 +221,6 @@ func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Poo
 	return newPool, nil
 }
 func (p *DPoS) blockLoop() {
-
 
 	p.log.I("Start to listen block")
 	for {
