@@ -3,9 +3,12 @@ package lua
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/iost-official/prototype/vm"
 )
 
 var (
@@ -17,7 +20,8 @@ var (
 
 // DocCommentParser 装入text之后调用parse即可得到contract
 type DocCommentParser struct {
-	text string // always ends with \0, which doesn't appear elsewhere
+	Debug bool
+	text  string // always ends with \0, which doesn't appear elsewhere
 
 	index int
 }
@@ -28,6 +32,7 @@ func NewDocCommentParser(text string) (*DocCommentParser, error) {
 		return nil, ErrIllegalCode
 	}
 	parser.text = text + "\\0"
+	parser.Debug = false
 	return parser, nil
 }
 
@@ -79,11 +84,18 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 		contract.apis = make(map[string]Method)
 		if funcName == "main" {
 			hasMain = true
+			// 匹配关键字
 			gasRe := regexp.MustCompile("@gas_limit (\\d+)")
 			priceRe := regexp.MustCompile("@gas_price ([+-]?([0-9]*[.])?[0-9]+)")
+			publisherRe := regexp.MustCompile("@publisher ([a-zA-Z1-9]+)")
 
 			gas, _ := strconv.ParseInt(gasRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 10, 64)
 			price, _ := strconv.ParseFloat(priceRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 64)
+			if p.Debug {
+				match := publisherRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
+				fmt.Println("compile publisher:", match[1])
+				contract.info.Publisher = vm.IOSTAccount(match[1])
+			}
 			contract.info.Language = "lua"
 			contract.info.GasLimit = gas
 			contract.info.Price = price

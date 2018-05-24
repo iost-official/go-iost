@@ -1,2 +1,5 @@
 ---
 b: f10
+iost:
+ walleta: f10000
+ walletb: f10000
