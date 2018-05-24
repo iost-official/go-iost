@@ -216,12 +216,15 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 			if conn != nil {
 				conn.Close()
 			}
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: node.Addr()})
 			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
 		if conn != nil {
 			go bn.receiveLoop(conn)
 			peer := newPeer(conn, bn.localNode.String(), nodeStr)
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][3], Log: node.Addr()})
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][4], Log: strconv.Itoa(len(bn.peers.peers))})
 			bn.peers.Set(node, peer)
 		}
 	}

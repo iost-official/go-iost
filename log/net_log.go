@@ -1,13 +1,13 @@
 package log
 
 import (
+	"encoding/base64"
 	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
-	"encoding/base64"
 )
 
 var Server = "http://127.0.0.1:30333"
@@ -18,7 +18,7 @@ func toBase64(hash []byte) string {
 }
 
 func fromBase64(str string) []byte {
-	ret,_:=base64.StdEncoding.DecodeString(str)
+	ret, _ := base64.StdEncoding.DecodeString(str)
 	return ret
 }
 
@@ -62,11 +62,12 @@ type Msg interface {
 	Form() url.Values
 }
 
-var Subtypes map[string][]string=map[string][]string{
-	"MsgBlock":[]string{"confirm","verify.pass","verify.fail"},
-	"MsgTx":[]string{"confirm","verify.pass","verify.fail"},
-	"MsgNode":[]string{"online","offline"},
+var Subtypes map[string][]string = map[string][]string{
+	"MsgBlock": []string{"confirm", "verify.pass", "verify.fail"},
+	"MsgTx":    []string{"confirm", "verify.pass", "verify.fail"},
+	"MsgNode":  []string{"online", "offline", "conn.fail", "conn.succ", "conn.count"},
 }
+
 type MsgBlock struct {
 	SubType       string
 	BlockHeadHash []byte
