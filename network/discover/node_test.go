@@ -6,7 +6,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"strings"
-
 )
 
 func TestGenNodeId(t *testing.T) {
@@ -52,7 +51,6 @@ func TestGenNodeId(t *testing.T) {
 
 		So(result, ShouldNotContainSubstring, nodeIds[1])
 		So(result, ShouldNotContainSubstring, nodeIds[0])
-		So(result, ShouldContainSubstring, nodeIds[3])
 
 	})
 }
