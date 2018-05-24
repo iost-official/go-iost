@@ -3,7 +3,6 @@ package consensus_common
 import (
 	"time"
 
-	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/log"
 	. "github.com/iost-official/prototype/network"
@@ -41,9 +40,8 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 		blockCache: bc,
 		router:     router,
 	}
-	if block.BChain != nil {
-		sync.maxSyncNumber = block.BChain.Length() - 1
-	}
+	sync.maxSyncNumber = bc.LongestChain().Length() - 1
+
 	var err error
 	sync.heightChan, err = sync.router.FilteredChan(Filter{
 		AcceptType: []ReqType{

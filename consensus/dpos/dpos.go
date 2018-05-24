@@ -92,9 +92,7 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	p.log.NeedPrint = true
 
 	p.initGlobalProperty(p.account, witnessList)
-	if block.BChain != nil && block.BChain.Length() != 0 {
-		p.update(&block.BChain.Top().Head)
-	}
+	p.update(&bc.Top().Head)
 	return &p, nil
 }
 
