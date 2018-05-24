@@ -5,9 +5,14 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
+	"strings"
 )
 
 func Server(port string) error {
+
+	if !strings.HasPrefix(port, ":") {
+		port = ":" + port
+	}
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {

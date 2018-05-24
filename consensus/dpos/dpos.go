@@ -328,7 +328,6 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 		if tx == nil || err != nil {
 			break
 		}
-		fmt.Println(VerifyTx(tx, &veri))
 		if _, result = VerifyTx(tx, &veri); result {
 			blk.Content = append(blk.Content, *tx)
 		}
