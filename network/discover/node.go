@@ -88,22 +88,22 @@ func GenNodeId() NodeID {
 func ParseNode(nodeStr string) (node *Node, err error) {
 	node = &Node{}
 	nodeIdStrs := strings.Split(nodeStr, "@")
-	if len(nodeIdStrs)== 2 {
+	if len(nodeIdStrs) == 2 {
 		node.ID = NodeID(nodeIdStrs[0])
 		tcpStr := strings.Split(nodeIdStrs[1], ":")
 		node.IP = net.ParseIP(tcpStr[0])
 		tcp, err := strconv.Atoi(tcpStr[1])
 		if err != nil {
-			return node,err
+			return node, err
 		}
 		node.TCP = uint16(tcp)
 	}
-	if len(nodeIdStrs)== 1 {
+	if len(nodeIdStrs) == 1 {
 		tcpStr := strings.Split(nodeIdStrs[0], ":")
 		node.IP = net.ParseIP(tcpStr[0])
 		tcp, err := strconv.Atoi(tcpStr[1])
 		if err != nil {
-			return node,err
+			return node, err
 		}
 		node.TCP = uint16(tcp)
 	}
@@ -136,7 +136,7 @@ func (n *Node) FindNeighbours(ns []*Node) []*Node {
 		}
 	}
 	for k, _ := range neighbourKeys {
-		if len(neighbours) >= MaxNeighbourNum {
+		if len(neighbours) >= MaxNeighbourNum || n.Addr() == ns[k].Addr() {
 			break
 		}
 		neighbours = append(neighbours, ns[k])
