@@ -1,16 +1,13 @@
 package rpc
 
 import (
-	"net"
-	"google.golang.org/grpc"
 	"fmt"
+	"net"
+
+	"google.golang.org/grpc"
 )
 
-const (
-	port = ":30303"
-)
-
-func Server() error {
+func Server(port string) error {
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {

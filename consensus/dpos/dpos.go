@@ -23,6 +23,8 @@ import (
 	"github.com/iost-official/prototype/vm/lua"
 )
 
+var TxPerBlk int
+
 type DPoS struct {
 	account      Account
 	blockCache   BlockCache
@@ -45,6 +47,7 @@ type DPoS struct {
 // NewDPoS: 新建一个DPoS实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*DPoS, error) {
+	TxPerBlk = 1000
 	p := DPoS{}
 	p.account = acc
 	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
@@ -136,9 +139,11 @@ func (p *DPoS) CachedStatePool() state.Pool {
 func (p *DPoS) genesis(initTime int64) error {
 
 	main := lua.NewMethod("", 0, 0)
-	code := `-- @PutHM iost tB4Bc8G7bMEJ3SqFPJtsuXXixbEUDXrYfE5xH4uFmHaV f10000`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0,
-		Publisher: vm.PubkeyToIOSTAccount(p.account.Pubkey)}, code, main)
+	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
+@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f100000
+@PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000
+@PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f100000`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
 
 	tx := NewTx(0, &lc)
 
@@ -179,6 +184,7 @@ func (p *DPoS) txListenLoop() {
 			if VerifyTxSig(tx) {
 				p.blockCache.AddTx(&tx)
 			}
+
 		case <-p.exitSignal:
 			return
 		}
@@ -188,15 +194,36 @@ func (p *DPoS) txListenLoop() {
 func (p *DPoS) blockLoop() {
 	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
 	verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+
+		////////////probe//////////////////
+		msgBlock:=log.MsgBlock{
+			SubType:"verify.fail",
+			BlockHeadHash:blk.HeadHash(),
+			BlockNum:blk.Head.Number,
+		}
+		///////////////////////////////////
+
 		// verify block head
 		if err := VerifyBlockHead(blk, parent); err != nil {
-			return nil, err
+
+			////////////probe//////////////////
+			log.Report(&msgBlock)
+			///////////////////////////////////
+			
+ 			return nil, err
+
 		}
 
 		// verify block witness
 		// TODO currentSlot is negative
 		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-			return nil, errors.New("wrong witness")
+			
+			////////////probe//////////////////
+			log.Report(&msgBlock)
+			///////////////////////////////////
+	
+			return nil, errors.New( "wrong witness")
+		
 		}
 
 		headInfo := generateHeadInfo(blk.Head)
@@ -205,12 +232,28 @@ func (p *DPoS) blockLoop() {
 
 		// verify block witness signature
 		if !common.VerifySignature(headInfo, signature) {
+			
+		 	////////////probe//////////////////
+			log.Report(&msgBlock)
+			///////////////////////////////////
+			
 			return nil, errors.New("wrong signature")
 		}
 		newPool, err := StdBlockVerifier(blk, pool)
 		if err != nil {
-			return nil, err
+
+			////////////probe//////////////////
+			log.Report(&msgBlock)
+			///////////////////////////////////
+			
+			return nil, err 
 		}
+
+		////////////probe//////////////////
+		msgBlock.SubType="verify.pass"
+		log.Report(&msgBlock)
+		///////////////////////////////////
+		
 		return newPool, nil
 	}
 	p.log.I("Start to listen block")
@@ -222,6 +265,15 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
+/*
+			////////////probe//////////////////
+			log.Report(&log.MsgBlock{
+				SubType:"receive",
+				BlockHeadHash:blk.HeadHash(),
+		 		BlockNum:blk.Head.Number,
+			})
+			///////////////////////////////////
+*/
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, verifyFunc)
 			if err == nil {
@@ -232,20 +284,20 @@ func (p *DPoS) blockLoop() {
 			if err != ErrBlock && err != ErrTooOld {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
-					p.blockCache.AddSingles(verifyFunc)
+ 					p.blockCache.AddSingles(verifyFunc)
 				} else if err == ErrNotFound {
-					// New block is a single block
+ 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
 					if need {
 						go p.synchronizer.SyncBlocks(start, end)
 					}
-				}
+ 				}
 			}
 			/*
 				ts := Timestamp{blk.Head.Time}
 				if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
 					p.performMaintenance()
-				}
+ 				}
 			*/
 		case <-p.exitSignal:
 			return
@@ -316,7 +368,7 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	veri := verifier.NewCacheVerifier(pool)
 	var result bool
 	//TODO Content大小控制
-	for len(blk.Content) < 2 {
+	for len(blk.Content) < TxPerBlk {
 		tx, err := p.blockCache.GetTx()
 		if tx == nil || err != nil {
 			break
@@ -326,6 +378,15 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 			blk.Content = append(blk.Content, *tx)
 		}
 	}
+
+	////////////probe//////////////////
+	log.Report(&log.MsgBlock{
+		SubType:"gen",
+		BlockHeadHash:blk.HeadHash(),
+		BlockNum:blk.Head.Number,
+	})
+	///////////////////////////////////
+
 	return &blk
 }
 

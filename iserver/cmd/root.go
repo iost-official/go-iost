@@ -18,20 +18,23 @@ import (
 	"fmt"
 	"os"
 
+	"os/signal"
+	"syscall"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/consensus"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/rpc"
+	"github.com/iost-official/prototype/log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os/signal"
-	"syscall"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/db"
+
 )
 
 var cfgFile string
@@ -94,6 +97,7 @@ var rootCmd = &cobra.Command{
 		nodeID := viper.GetString("net.node-id") //optional
 		listenAddr := viper.GetString("net.listen-addr")
 		regAddr := viper.GetString("net.register-addr")
+		rpcPort := viper.GetString("net.rpc-port")
 		target := viper.GetString("net.target") //optional
 		port := viper.GetInt64("net.port")
 
@@ -104,8 +108,9 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("net.register-addr:  %v\n", regAddr)
 		fmt.Printf("net.target:  %v\n", target)
 		fmt.Printf("net.port:  %v\n", port)
+		fmt.Printf("net.rpcPort:  %v\n", rpcPort)
 
-		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 {
+		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 || rpcPort == "" {
 			fmt.Println("Network config initialization failed, stop the program!")
 			os.Exit(1)
 		}
@@ -125,7 +130,6 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		net.Run()
 		serverExit = append(serverExit, net)
 
 		//启动共识
@@ -172,11 +176,19 @@ var rootCmd = &cobra.Command{
 		serverExit = append(serverExit, consensus)
 
 		//启动RPC
-		err = rpc.Server()
+		err = rpc.Server(rpcPort)
 		if err != nil {
 			fmt.Printf("RPC initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
+
+		////////////probe//////////////////
+		log.Report(&log.MsgNode{
+			SubType:"online",
+		})
+		///////////////////////////////////
+
+
 
 		//等待推出信号
 		exitLoop()
@@ -193,14 +205,21 @@ func exitLoop() {
 	defer close(exit)
 
 	go func() {
-		<-c
-		fmt.Printf("IOST server received interrupt, shutting down...")
+		i := <-c
+		fmt.Printf("IOST server received interrupt[%v], shutting down...\n", i)
 
 		for _, s := range serverExit {
 			if s != nil {
 				s.Stop()
 			}
 		}
+
+		////////////probe//////////////////
+		log.Report(&log.MsgNode{
+			SubType:"offline",
+		})
+		///////////////////////////////////
+
 
 		os.Exit(0)
 	}()
