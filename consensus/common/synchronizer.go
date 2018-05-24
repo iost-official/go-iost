@@ -4,12 +4,12 @@ import (
 	"time"
 
 	"github.com/iost-official/prototype/core/message"
-	. "github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/log"
+	. "github.com/iost-official/prototype/network"
 )
 
 var (
-	SyncNumber        = 2 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
+	SyncNumber        = 2  // 当本地链长度和网络中最新块相差SyncNumber时需要同步
 	MaxDownloadNumber = 10 // 一次同步下载的最多块数
 )
 
@@ -23,12 +23,12 @@ type Synchronizer interface {
 
 // SyncImpl 同步器实现
 type SyncImpl struct {
-	blockCache  BlockCache
-	router      Router
+	blockCache    BlockCache
+	router        Router
 	maxSyncNumber uint64
-	heightChan  chan message.Message
-	blkSyncChan chan message.Message
-	exitSignal  chan struct{}
+	heightChan    chan message.Message
+	blkSyncChan   chan message.Message
+	exitSignal    chan struct{}
 
 	log *log.Logger
 }
@@ -40,6 +40,7 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 		blockCache: bc,
 		router:     router,
 	}
+	sync.maxSyncNumber = bc.LongestChain().Length() - 1
 	var err error
 	sync.heightChan, err = sync.router.FilteredChan(Filter{
 		AcceptType: []ReqType{
@@ -58,12 +59,13 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 	}
 
 	sync.log, err = log.NewLogger("synchronizer.log")
-	if err != nil{
+	if err != nil {
 		return nil
 	}
 
 	sync.log.NeedPrint = true
-	
+	sync.log.I("maxSyncNumber:%v", sync.maxSyncNumber)
+
 	return sync
 }
 
@@ -97,15 +99,15 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	//height := sync.blockCache.LongestChain().Length() - 1
 	if netHeight > sync.maxSyncNumber+uint64(SyncNumber) {
 		/*
-		body := message.RequestHeight{
-			LocalBlockHeight: height + 1,
-			NeedBlockHeight:  netHeight,
-		}
-		heightReq := message.Message{
-			ReqType: int32(ReqBlockHeight),
-			Body:    body.Encode(),
-		}
-		sync.router.Broadcast(heightReq)
+			body := message.RequestHeight{
+				LocalBlockHeight: height + 1,
+				NeedBlockHeight:  netHeight,
+			}
+			heightReq := message.Message{
+				ReqType: int32(ReqBlockHeight),
+				Body:    body.Encode(),
+			}
+			sync.router.Broadcast(heightReq)
 		*/
 		return true, sync.maxSyncNumber + 1, netHeight
 	}
