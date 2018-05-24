@@ -10,12 +10,12 @@ type Method struct {
 	privilege vm.Privilege
 }
 
-func NewMethod(priv vm.Privilege, name string, inputCount, rtnCount int) Method {
+func NewMethod(name string, inputCount, rtnCount int) Method {
 	var m Method
 	m.name = name
 	m.inputCount = inputCount
 	m.outputCount = rtnCount
-	m.privilege = priv
+	m.privilege = vm.Public
 	return m
 }
 
