@@ -128,7 +128,6 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		net.Run()
 		serverExit = append(serverExit, net)
 
 		//启动共识
