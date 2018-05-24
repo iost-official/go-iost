@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
-	"encoding/base64"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/prototype/log"
 )
 
 var (
@@ -107,7 +107,7 @@ func (b *ChainImpl) Push(block *Block) error {
 	////////////probe//////////////////
 	log.Report(&log.MsgBlock{
 		SubType:"confirm",
-		BlockHeadHash:base64.StdEncoding.EncodeToString(block.HeadHash()),
+		BlockHeadHash:block.HeadHash(),
 		BlockNum:block.Head.Number,
 	})
 	///////////////////////////////////
@@ -122,8 +122,8 @@ func (b *ChainImpl) Push(block *Block) error {
 		////////////probe//////////////////
 		log.Report(&log.MsgTx{
 			SubType:"confirm",
-			TxHash:base64.StdEncoding.EncodeToString(ctx.Hash()),
-			Publisher:base64.StdEncoding.EncodeToString(tx.Publisher.Pubkey),
+			TxHash:ctx.Hash(),
+			Publisher:ctx.Publisher.Pubkey,
 			Nonce:ctx.Nonce,
 		})
 		///////////////////////////////////

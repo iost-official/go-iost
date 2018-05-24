@@ -3,7 +3,6 @@ package consensus_common
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"

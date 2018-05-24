@@ -3,7 +3,6 @@ package dpos
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/base64"
 
 	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"

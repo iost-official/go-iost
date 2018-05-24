@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/consensus"
 	"github.com/iost-official/prototype/consensus/dpos"
 	"github.com/iost-official/prototype/core/block"
