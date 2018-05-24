@@ -129,7 +129,9 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 				appReq.From = string(r.From)
 			}
 			base.RecvCh <- *appReq
-			base.Broadcast(*appReq)
+			if appReq.ReqType != int32(ReqDownloadBlock) {
+				base.Broadcast(*appReq)
+			}
 		}
 		r.msgHandle(base)
 	case BroadcastMessageReceived:
