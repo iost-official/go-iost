@@ -32,7 +32,7 @@ func TestNewDPoS(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
-		mockPool.EXPECT().PutHM(Any(),Any(),Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
 
 		network.Route = mockRouter
 		//获取router实例
@@ -84,7 +84,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		mockPool := core_mock.NewMockPool(mockCtr)
 
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
-		mockPool.EXPECT().PutHM(Any(),Any(),Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
 
 		mockBc.EXPECT().Iterator().AnyTimes().Return(nil)
 		network.Route = mockRouter
@@ -132,7 +132,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		pubkey := common.CalcPubkeyInSecp256k1(seckey)
 		p, _ := NewDPoS(account.Account{"id0", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
 
-		main := lua.NewMethod("main", 0, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 						Put("hello", "world")
 						return "success"
@@ -193,7 +193,7 @@ func TestRunReceiveBlock(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
-		mockPool.EXPECT().PutHM(Any(),Any(),Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
 
 		network.Route = mockRouter
 		//获取router实例
@@ -226,7 +226,7 @@ func TestRunReceiveBlock(t *testing.T) {
 		pubkey := common.CalcPubkeyInSecp256k1(seckey)
 		p, _ := NewDPoS(account.Account{"id1", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
 
-		main := lua.NewMethod("main", 0, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 						Put("hello", "world")
 						return "success"
@@ -248,10 +248,9 @@ func TestRunReceiveBlock(t *testing.T) {
 		blk, msg := generateTestBlockMsg("id0", "seckeyId0", 1, genesis.Head.Hash())
 		blkChan <- msg
 
-
 		p.Run()
 
-		time.Sleep(time.Second*1)
+		time.Sleep(time.Second * 1)
 		So(blk.Head.Number, ShouldEqual, 1)
 		So(string(blk.Head.ParentHash), ShouldEqual, string(genesis.Head.Hash()))
 		So(blk.Head.Witness, ShouldEqual, "id0")
@@ -269,7 +268,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
-		mockPool.EXPECT().PutHM(Any(),Any(),Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
 
 		mockBc.EXPECT().Iterator().AnyTimes().Return(nil)
 
@@ -304,7 +303,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		pubkey := common.CalcPubkeyInSecp256k1(seckey)
 		p, _ := NewDPoS(account.Account{"id1", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
 
-		main := lua.NewMethod("main", 0, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 						Put("hello", "world")
 						return "success"

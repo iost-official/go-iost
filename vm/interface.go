@@ -47,6 +47,7 @@ type Method interface {
 	Name() string
 	InputCount() int
 	OutputCount() int
+	Privilege() Privilege
 }
 
 // Contract 智能合约interface，其中setPrefix，setSender, AddSigner是从tx构建contract的时候使用
@@ -65,7 +66,7 @@ type Monitor interface {
 	StartVM(contract Contract) VM
 	StopVM(contract Contract)
 	Stop()
-	GetMethod(contractPrefix, methodName string) (Method, error)
+	GetMethod(contractPrefix, methodName string, caller IOSTAccount) (Method, error)
 	Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error)
 }
 
@@ -75,4 +76,16 @@ func PubkeyToIOSTAccount(pubkey []byte) IOSTAccount {
 
 func HashToPrefix(hash []byte) string {
 	return common.Base58Encode(hash)
+}
+
+func CheckPrivilege(info ContractInfo, name string) int {
+	if IOSTAccount(name) == info.Publisher {
+		return 2
+	}
+	for _, signer := range info.Signers {
+		if IOSTAccount(name) == signer {
+			return 1
+		}
+	}
+	return 0
 }

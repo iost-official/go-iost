@@ -116,6 +116,8 @@ func (m *MsgNode) Form() url.Values {
 	}
 }
 
+var BlockSubType = []string{"receive"}
+
 func ParseMsg(v url.Values) Msg {
 	switch v["type"][0] {
 	case "Block":

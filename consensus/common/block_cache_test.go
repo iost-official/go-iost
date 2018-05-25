@@ -23,7 +23,7 @@ func TestBlockCachePoW(t *testing.T) {
 
 	pool.EXPECT().Flush().AnyTimes().Return(nil)
 
-	main := lua.NewMethod("main", 0, 1)
+	main := lua.NewMethod(vm.Public, "main", 0, 1)
 	code := `function main()
 						Put("hello", "world")
 						return "success"
@@ -175,7 +175,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 
 	pool.EXPECT().Flush().AnyTimes().Return(nil)
 
-	main := lua.NewMethod("main", 0, 1)
+	main := lua.NewMethod(vm.Public, "main", 0, 1)
 	code := `function main()
 						Put("hello", "world")
 						return "success"
@@ -324,7 +324,7 @@ func TestStatePool(t *testing.T) {
 		pool := state.NewPool(db)
 		pool.Put(state.Key("a"), state.MakeVInt(int(0)))
 
-		main := lua.NewMethod("main", 0, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 						Put("hello", "world")
 						return "success"
@@ -425,14 +425,13 @@ func TestTxPool(t *testing.T) {
 
 	pool.EXPECT().Flush().AnyTimes().Return(nil)
 
-	main := lua.NewMethod("main", 0, 1)
+	main := lua.NewMethod(vm.Public, "main", 0, 1)
 	code := `function main()
 						Put("hello", "world")
 						return "success"
 					end`
 	//lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
-
 
 	b0 := block.Block{
 		Head: block.BlockHead{

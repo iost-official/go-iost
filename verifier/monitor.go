@@ -1,10 +1,14 @@
 package verifier
 
 import (
+	"errors"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 )
+
+var ErrForbiddenCall = errors.New("forbidden call")
 
 type vmHolder struct {
 	vm.VM
@@ -62,7 +66,7 @@ func (m *vmMonitor) Stop() {
 	m.vms = make(map[string]vmHolder)
 }
 
-func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, error) {
+func (m *vmMonitor) GetMethod(contractPrefix, methodName string, caller vm.IOSTAccount) (vm.Method, error) {
 	var contract vm.Contract
 	var err error
 	vmh, ok := m.vms[contractPrefix]
@@ -74,30 +78,50 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, err
 	} else {
 		contract = vmh.contract
 	}
-	return contract.API(methodName)
+	rtn, err := contract.API(methodName)
+	if err != nil {
+		return nil, err
+	}
+	p := vm.CheckPrivilege(contract.Info(), string(caller))
+	pri := rtn.Privilege()
+	switch {
+	case pri == vm.Private && p > 1:
+		fallthrough
+	case pri == vm.Protected && p >= 0:
+		fallthrough
+	case pri == vm.Public:
+		return rtn, nil
+	default:
+		return nil, ErrForbiddenCall
+	}
+
 }
 
-func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) { // todo 权限检查
+func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
 	holder, ok := m.vms[contractPrefix]
 	if !ok {
 		contract, err := FindContract(contractPrefix)
 		if err != nil {
 			return nil, nil, 0, err
 		}
+
 		m.StartVM(contract)
 		holder = m.vms[contractPrefix]
 	}
-	rtn, pool, err := holder.Call(pool, methodName, args...)
+	//fmt.Println(pool.GetHM("iost", "b"))
+	rtn, pool2, err := holder.Call(pool, methodName, args...)
+	//fmt.Println(pool2.GetHM("iost", "b"))
+
 	gas := holder.PC()
-	return rtn, pool, gas, err
+	return rtn, pool2, gas, err
 }
 
 // FindContract  find contract from tx database
-func FindContract(contractPrefix string) (vm.Contract, error) {
+func FindContract(contractPrefix string) (vm.Contract, error) { // todo 真的去找contract！
 	code2 := `function sayHi(name)
 	return "hi " .. name
 end`
-	sayHi := lua.NewMethod("sayHi", 1, 1)
+	sayHi := lua.NewMethod(vm.Public, "sayHi", 1, 1)
 	lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
 		code2, sayHi, sayHi)
 	return &lc2, nil

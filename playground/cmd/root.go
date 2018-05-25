@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"strings"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
@@ -36,7 +38,13 @@ to quickly create a Cobra application.`,
 		for _, k := range viper.AllKeys() {
 			v := viper.GetString(k)
 			val, _ := state.ParseValue(v)
-			pool.Put(state.Key(k), val)
+			if strings.Contains(k, ".") {
+				kf := strings.Split(k, ".")
+				fmt.Println(kf)
+				pool.PutHM(state.Key(kf[0]), state.Key(kf[1]), val)
+			} else {
+				pool.Put(state.Key(k), val)
+			}
 		}
 
 		v := verifier.NewCacheVerifier(pool)
@@ -50,6 +58,7 @@ to quickly create a Cobra application.`,
 				if err != nil {
 					panic(err)
 				}
+				parser.Debug = true
 				sc, err := parser.Parse()
 				if err != nil {
 					panic(err)
