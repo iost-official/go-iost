@@ -103,7 +103,7 @@ type BaseNetwork struct {
 
 // NewBaseNetwork ...
 func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
-	recv := make(chan message.Message, 100)
+	recv := make(chan message.Message, 10000)
 	var err error
 	if conf.LogPath == "" {
 		conf.LogPath, err = ioutil.TempDir(os.TempDir(), "iost_log_")
