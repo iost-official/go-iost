@@ -227,7 +227,8 @@ func(p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 		////////////probe//////////////////
 		log.Report(&msgBlock)
 		///////////////////////////////////
-
+		p.log.I("error witness - blk.time: %v blk.Head.Witness: %v witnessOfTime: %v\n", blk.Head.Time, blk.Head.Witness,
+			witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}))
 		return nil, errors.New( "wrong witness")
 
 	}
