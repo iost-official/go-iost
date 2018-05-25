@@ -183,7 +183,6 @@ end`,
 		_, pool, err = lvm.Call(pool, "main")
 		lvm.Stop()
 
-		fmt.Println("------------")
 		ab, err := pool.GetHM("iost", "a")
 		bb, err := pool.GetHM("iost", "b")
 		So(err, ShouldBeNil)

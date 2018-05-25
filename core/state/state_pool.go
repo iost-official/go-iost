@@ -57,32 +57,32 @@ func (p *PoolImpl) Get(key Key) (Value, error) {
 		}
 	}
 	val2 := p.patch.Get(key)
-	if val2 == nil {
+	if val2 == VNil {
 		return val1, nil
 	}
 	return Merge(val1, val2)
 }
 func (p *PoolImpl) Has(key Key) bool {
 	ok := p.patch.Has(key)
-	if !ok {
-		if p.parent != nil {
-			return p.parent.Has(key)
-		} else {
-			ok, _ := p.db.Has(key)
-			return ok
-		}
-	} else {
+	if ok {
 		val := p.patch.Get(key)
-		if val == VNil {
+		if val == VDelete {
 			return false
-		} else {
+		} else if val != VNil {
 			return true
 		}
 	}
 
+	if p.parent != nil {
+		return p.parent.Has(key)
+	} else {
+		ok, _ := p.db.Has(key)
+		return ok
+	}
+
 }
 func (p *PoolImpl) Delete(key Key) {
-	p.patch.Put(key, VNil)
+	p.patch.Put(key, VDelete)
 }
 
 func (p *PoolImpl) Flush() error {
@@ -140,24 +140,17 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 	}
 
 	val2 := p.patch.Get(key)
-	if val2 == nil {
-		//fmt.Println("axx")
-		return val1, nil
-	}
 	if val2 == VNil {
-		//fmt.Println("bxx")
-
 		return val1, nil
 	} else {
 		if val2.Type() != Map {
 			return nil, fmt.Errorf("type error : %v is not a hashmap", key)
 		}
-		val3, err := val2.(*VMap).Get(field)
-		if err == ErrNotFound {
-			return val1, nil
-		}
-		//fmt.Print("cxx ")
-		//fmt.Println(val1, val3)
+		val3 := val2.(*VMap).Get(field)
+
+		fmt.Println("in gethm :", val1, val3)
+		fmt.Println(Merge(val1, val3))
+
 		return Merge(val1, val3)
 	}
 }

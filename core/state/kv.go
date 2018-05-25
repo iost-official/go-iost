@@ -2,7 +2,6 @@ package state
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -23,7 +22,15 @@ func Merge(a, b Value) (Value, error) {
 	}
 
 	if b == nil {
+		panic("Merge from nil, means Get function wrong!")
+	}
+
+	if b == VNil {
 		return a, nil
+	}
+
+	if b == VDelete {
+		return VNil, nil
 	}
 
 	return a.merge(b)
@@ -37,6 +44,7 @@ type Type int
 
 const (
 	Nil Type = iota
+	Delete
 	Bool
 	Int
 	Float
@@ -117,6 +125,21 @@ func (v *VNilType) EncodeString() string {
 	return "nil"
 }
 func (v *VNilType) merge(b Value) (Value, error) {
+	return b, nil
+}
+
+var VDelete = &VDeleteType{}
+
+type VDeleteType struct{}
+
+func (v *VDeleteType) Type() Type {
+	return Delete
+}
+func (v *VDeleteType) EncodeString() string {
+	return "delete"
+}
+func (v *VDeleteType) merge(b Value) (Value, error) {
+	panic("SHOULD NOT MERGE DELETE CMD TO VALUE!!")
 	return b, nil
 }
 
@@ -323,14 +346,12 @@ func (v *VMap) Set(key Key, value Value) {
 	v.m[key] = value
 }
 
-var ErrNotFound = errors.New("not found")
-
-func (v *VMap) Get(key Key) (Value, error) {
+func (v *VMap) Get(key Key) Value {
 	ret, ok := v.m[key]
 	if !ok {
-		return nil, ErrNotFound
+		return VNil
 	}
-	return ret, nil
+	return ret
 }
 
 //const stack_size_limit uint32 = 65536
