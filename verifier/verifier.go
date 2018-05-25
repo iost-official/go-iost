@@ -59,12 +59,11 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 			reflect.TypeOf(val0).String(), string(sender))
 	}
 	balanceOfSender = val.ToFloat64()
+	fmt.Println(balanceOfSender)
 
 	if balanceOfSender < float64(contract.Info().GasLimit)*contract.Info().Price {
 		return nil, fmt.Errorf("balance not enough")
 	}
-
-	//fmt.Println(cv.Pool.GetHM("iost", "b")) // 正确
 
 	cv.StartVM(contract)
 	pool, gas, err := cv.Verify(contract)
@@ -73,7 +72,13 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 		return nil, err
 	}
 	cv.StopVM(contract)
-	//fmt.Println(pool.GetHM("iost", "b")) // 错误
+
+	if contract.Info().Price == 0 {
+		if contain {
+			cv.SetPool(pool)
+		}
+		return pool, nil
+	}
 
 	val1, err := pool.GetHM("iost", state.Key(sender))
 	if err != nil {
@@ -82,9 +87,15 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 
 	if gas > uint64(contract.Info().GasLimit) {
 		balanceOfSender -= float64(contract.Info().GasLimit) * contract.Info().Price
+		if balanceOfSender < 0 {
+			panic("balance of sender to be zero!!")
+		}
 		val1 := state.MakeVFloat(balanceOfSender)
 		pool2 := cv.Pool.Copy()
 		pool2.PutHM("iost", state.Key(sender), val1)
+		if contain {
+			cv.SetPool(pool)
+		}
 		return pool2, nil
 	}
 
@@ -96,6 +107,9 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 		val1 := state.MakeVFloat(balanceOfSender)
 		pool2 := cv.Pool.Copy()
 		pool2.PutHM("iost", state.Key(sender), val1)
+		if contain {
+			cv.SetPool(pool)
+		}
 		return nil, fmt.Errorf("can not afford gas")
 	}
 

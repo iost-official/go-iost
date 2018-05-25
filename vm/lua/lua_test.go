@@ -151,6 +151,46 @@ end`,
 			})
 		})
 	})
+
+}
+
+func TestTransfer(t *testing.T) {
+	Convey("Test lua transfer", t, func() {
+		main := NewMethod(vm.Public, "main", 0, 1)
+		lc := Contract{
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 1000, Publisher: vm.IOSTAccount("a")},
+			code: `function main()
+	Transfer("a", "b", 50)
+	return "success"
+end`,
+			main: main,
+		}
+		lvm := VM{}
+
+		db, err := db2.DatabaseFactor("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(db)
+		pool := state.NewPool(sdb)
+		pool.PutHM("iost", "a", state.MakeVFloat(5000))
+		pool.PutHM("iost", "b", state.MakeVFloat(1000))
+
+		lvm.Prepare(&lc, nil)
+		lvm.Start()
+		//fmt.Print("0 ")
+		//fmt.Println(pool.GetHM("iost", "b"))
+		_, pool, err = lvm.Call(pool, "main")
+		lvm.Stop()
+
+		fmt.Println("------------")
+		ab, err := pool.GetHM("iost", "a")
+		bb, err := pool.GetHM("iost", "b")
+		So(err, ShouldBeNil)
+		So(ab.(*state.VFloat).ToFloat64(), ShouldEqual, 4950)
+		So(bb.(*state.VFloat).ToFloat64(), ShouldEqual, 1050)
+
+	})
 }
 
 func BenchmarkLuaVM_SetupAndCalc(b *testing.B) {

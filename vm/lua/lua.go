@@ -42,9 +42,13 @@ func (l *VM) Stop() {
 	l.L.Close()
 }
 func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
+
 	if pool != nil {
 		l.cachePool = pool.Copy()
 	}
+
+	//fmt.Print("1 ")
+	//fmt.Println(l.cachePool.GetHM("iost", "b"))
 
 	method0, err := l.Contract.API(methodName)
 	if err != nil {
@@ -70,6 +74,9 @@ func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]st
 			Protect: true,
 		}, largs...)
 	}
+
+	//fmt.Print("3 ")
+	//fmt.Println(l.cachePool.GetHM("iost", "b"))
 
 	if err != nil {
 		return nil, nil, err
@@ -145,11 +152,11 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 			}
 			des := L.ToString(2)
 			value := L.ToNumber(3)
-			fmt.Print("0 ")
-			fmt.Println(l.cachePool.GetHM("iost", state.Key(des)))
+			//fmt.Print("0 ")
+			//fmt.Println(l.cachePool.GetHM("iost", state.Key(des)))
 			rtn := host.Transfer(l.cachePool, src, des, float64(value))
-			fmt.Print("4 ")
-			fmt.Println(l.cachePool.GetHM("iost", state.Key(des)))
+			//fmt.Print("4 ")
+			//fmt.Println(l.cachePool.GetHM("iost", state.Key(des)))
 			L.Push(Bool2Lua(rtn))
 			return 1
 		},

@@ -1,8 +1,6 @@
 package host
 
 import (
-	"fmt"
-
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
 )
@@ -23,8 +21,8 @@ func Log(s, cid string) {
 }
 
 func Transfer(pool state.Pool, src, des string, value float64) bool {
-	fmt.Print("1 ")
-	fmt.Println(pool.GetHM("iost", state.Key(des)))
+	//fmt.Print("1 ")
+	//fmt.Println(pool.GetHM("iost", state.Key(des)))
 
 	val0, err := pool.GetHM("iost", state.Key(src))
 	if err != nil {
@@ -36,13 +34,18 @@ func Transfer(pool state.Pool, src, des string, value float64) bool {
 	}
 	ba := state.MakeVFloat(val - value)
 
-	fmt.Print("1.5 ")
-	fmt.Println(pool.GetHM("iost", state.Key(des)))
+	//fmt.Print("1.5 ")
+	//fmt.Println(pool.GetHM("iost", state.Key(des)))
+
+	//pool.PutHM("iost", "ahaha", state.MakeVFloat(250))
 
 	pool.PutHM("iost", state.Key(src), ba)
 
-	fmt.Print("2 ")
-	fmt.Println(pool.GetHM("iost", state.Key(des)))
+	//fmt.Print("2 ")
+	//fmt.Println(pool.GetHM("iost", state.Key(src)))
+	//
+	//fmt.Print("2.1 ")
+	//fmt.Println(pool.GetHM("iost", state.Key(des)))
 
 	val1, err := pool.GetHM("iost", state.Key(des))
 	if val1 == state.VNil {
@@ -54,8 +57,8 @@ func Transfer(pool state.Pool, src, des string, value float64) bool {
 		ba = state.MakeVFloat(val + value)
 		pool.PutHM("iost", state.Key(des), ba)
 	}
-	fmt.Print("3 ")
-	fmt.Println(pool.GetHM("iost", state.Key(des)))
+	//fmt.Print("3 ")
+	//fmt.Println(pool.GetHM("iost", state.Key(des)))
 
 	return true
 }
