@@ -59,7 +59,6 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 			reflect.TypeOf(val0).String(), string(sender))
 	}
 	balanceOfSender = val.ToFloat64()
-	fmt.Println(balanceOfSender)
 
 	if balanceOfSender < float64(contract.Info().GasLimit)*contract.Info().Price {
 		return nil, fmt.Errorf("balance not enough")
