@@ -186,6 +186,9 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 
 //broadcast broadcast to all neighbours, stop broadcast when msg already broadcast
 func (bn *BaseNetwork) broadcast(msg message.Message) {
+	if msg.To == "" {
+		return
+	}
 	node, _ := discover.ParseNode(msg.To)
 	if msg.TTL == 0 || bn.localNode.Addr() == node.Addr() {
 		return
@@ -241,7 +244,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 
 //Send msg to msg.To
 func (bn *BaseNetwork) Send(msg message.Message) {
-	if msg.To == bn.localNode.Addr() {
+	if msg.To == bn.localNode.Addr() || msg.To == "" {
 		return
 	}
 	if msg.TTL == 0 {
@@ -395,7 +398,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 //registerLoop register local address to boot nodes
 func (bn *BaseNetwork) registerLoop() {
 	for {
-		if bn.localNode.TCP != 30304 {
+		if bn.localNode.TCP != 30304 && bn.regAddr != "" {
 			conn, err := bn.dial(bn.regAddr)
 			if err != nil {
 				bn.log.E("[net] failed to connect boot node, err:%v", err)
@@ -487,6 +490,9 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 
 //sendTo send request to the address
 func (bn *BaseNetwork) sendTo(addr string, req *Request) {
+	if addr == "" {
+		return
+	}
 	conn, err := bn.dial(addr)
 	if err != nil {
 		bn.nodeTable.Delete([]byte(addr))
