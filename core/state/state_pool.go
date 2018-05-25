@@ -60,7 +60,7 @@ func (p *PoolImpl) Get(key Key) (Value, error) {
 	if val2 == VNil {
 		return val1, nil
 	}
-	return Merge(val1, val2)
+	return Merge(val1, val2), nil
 }
 func (p *PoolImpl) Has(key Key) bool {
 	ok := p.patch.Has(key)
@@ -100,18 +100,16 @@ func (p *PoolImpl) Flush() error {
 				if err != nil {
 					return err
 				}
-				val, err := Merge(v0, v)
-				if err != nil {
-					return err
-				}
+				val := Merge(v0, v)
 				p.db.PutHM(k, f, val)
 			}
 		default:
 			val0, err := p.db.Get(k)
-			val, err := Merge(val0, v)
 			if err != nil {
 				return err
 			}
+			val := Merge(val0, v)
+
 			p.db.Put(k, val)
 		}
 	}
@@ -148,10 +146,10 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 		}
 		val3 := val2.(*VMap).Get(field)
 
-		fmt.Println("in gethm :", val1, val3)
-		fmt.Println(Merge(val1, val3))
+		//fmt.Println("in gethm :", val1, val3)
+		//fmt.Println(Merge(val1, val3))
 
-		return Merge(val1, val3)
+		return Merge(val1, val3), nil
 	}
 }
 func (p *PoolImpl) PutHM(key, field Key, value Value) error {
