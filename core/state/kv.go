@@ -30,6 +30,7 @@ func Merge(a, b Value) Value {
 		for k, val := range bI.m {
 			a.(*VMap).m[k] = val
 		}
+		return a
 	}
 
 	return b

@@ -3,6 +3,8 @@ package state
 import (
 	"testing"
 
+	"fmt"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -25,14 +27,15 @@ func TestKV(t *testing.T) {
 		})
 		Convey("Test of merge", func() {
 
-			a, err := Merge(f, i)
-			So(err, ShouldBeNil)
+			a := Merge(f, i)
+
 			So(a.EncodeString(), ShouldEqual, "i123")
 			m1 := MakeVMap(map[Key]Value{Key("f"): f, Key("i"): i})
 			m2 := MakeVMap(map[Key]Value{Key("b"): b})
 
-			m3, err := Merge(m1, m2)
-			So(err, ShouldBeNil)
+			fmt.Println(m1.Type(), m2.Type())
+			m3 := Merge(m1, m2)
+			fmt.Println(m3.EncodeString())
 			So(len(m3.EncodeString()), ShouldEqual, 45)
 		})
 	})
