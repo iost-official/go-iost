@@ -145,7 +145,7 @@ func (p *DPoS) CachedStatePool() state.Pool {
 
 func (p *DPoS) genesis(initTime int64) error {
 
-	main := lua.NewMethod("", 0, 0)
+	main := lua.NewMethod(vm.Public, "", 0, 0)
 	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
 @PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f100000
 @PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000

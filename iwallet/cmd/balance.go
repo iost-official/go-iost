@@ -49,7 +49,9 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		b, err := CheckBalance(vm.IOSTAccount(pubkey))
+		pk := LoadBytes(string(pubkey))
+		ia := vm.PubkeyToIOSTAccount(pk)
+		b, err := CheckBalance(ia)
 		if err != nil {
 			fmt.Println(err)
 		}

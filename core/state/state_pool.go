@@ -120,51 +120,62 @@ func (p *PoolImpl) Flush() error {
 }
 
 func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
+
 	var err error
 
 	var val1 Value
 	if p.parent == nil {
 		val1, err = p.db.GetHM(key, field)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(err) // TODO 消灭多余输出
 			val1 = VNil
 		}
 	} else {
 		val1, err = p.parent.GetHM(key, field)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(err) // todo 消灭多余输出
 			val1 = VNil
 		}
+		//fmt.Println("in GetHM get parent: ", key, field, val1)
 	}
-	//fmt.Println("in pool GetHM", val1.EncodeString())
 
 	val2 := p.patch.Get(key)
 	if val2 == nil {
+		//fmt.Println("axx")
 		return val1, nil
 	}
 	if val2 == VNil {
+		//fmt.Println("bxx")
+
 		return val1, nil
 	} else {
 		if val2.Type() != Map {
 			return nil, fmt.Errorf("type error : %v is not a hashmap", key)
 		}
 		val3, err := val2.(*VMap).Get(field)
-		if err != nil {
-			return nil, err
+		if err == ErrNotFound {
+			return val1, nil
 		}
-
+		//fmt.Print("cxx ")
+		//fmt.Println(val1, val3)
 		return Merge(val1, val3)
 	}
 }
 func (p *PoolImpl) PutHM(key, field Key, value Value) error {
+	//fmt.Println("call put hm", key, field, value)
+	//fmt.Println("len:", p.patch.Length())
+	//fmt.Println("parent:", p.parent)
 	if ok := p.patch.Has(key); ok {
 		m := p.patch.Get(key)
-
+		//fmt.Println("1.8", m)
 		if m.Type() == Map {
 			m.(*VMap).Set(field, value)
+			//fmt.Println("1.9", m)
+			p.patch.Put(key, m)
 			return nil
 		}
 	}
+	//fmt.Println("new map")
 	m := MakeVMap(nil)
 	m.Set(field, value)
 	p.patch.Put(key, m)

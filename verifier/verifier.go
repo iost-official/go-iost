@@ -5,10 +5,11 @@ import (
 
 	"reflect"
 
+	"regexp"
+
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
-	"regexp"
 )
 
 const (
@@ -24,7 +25,10 @@ type Verifier struct {
 }
 
 func (v *Verifier) Verify(contract vm.Contract) (state.Pool, uint64, error) {
+	//fmt.Println(v.Pool.GetHM("iost", "b"))
+
 	_, pool, gas, err := v.Call(v.Pool, contract.Info().Prefix, "main")
+	//fmt.Println(pool.GetHM("iost", "b"))
 	return pool, gas, err
 }
 
@@ -51,11 +55,11 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	if val0 == state.VNil {
 		val = state.MakeVFloat(0)
 	} else if !ok {
-
 		return nil, fmt.Errorf("pool type error: should VFloat, acture %v; in iost.%v",
 			reflect.TypeOf(val0).String(), string(sender))
 	}
 	balanceOfSender = val.ToFloat64()
+	fmt.Println(balanceOfSender)
 
 	if balanceOfSender < float64(contract.Info().GasLimit)*contract.Info().Price {
 		return nil, fmt.Errorf("balance not enough")
@@ -69,27 +73,52 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	}
 	cv.StopVM(contract)
 
+	if contract.Info().Price == 0 {
+		if contain {
+			cv.SetPool(pool)
+		}
+		return pool, nil
+	}
+
+	val1, err := pool.GetHM("iost", state.Key(sender))
+	if err != nil {
+		return nil, err
+	}
+
 	if gas > uint64(contract.Info().GasLimit) {
 		balanceOfSender -= float64(contract.Info().GasLimit) * contract.Info().Price
+		if balanceOfSender < 0 {
+			panic("balance of sender to be zero!!")
+		}
 		val1 := state.MakeVFloat(balanceOfSender)
-		cv.Pool.PutHM("iost", state.Key(sender), val1)
-		return nil, fmt.Errorf("gas exceeded")
+		pool2 := cv.Pool.Copy()
+		pool2.PutHM("iost", state.Key(sender), val1)
+		if contain {
+			cv.SetPool(pool)
+		}
+		return pool2, nil
 	}
+
+	balanceOfSender = val1.(*state.VFloat).ToFloat64()
 
 	balanceOfSender -= float64(gas) * contract.Info().Price
 	if balanceOfSender < 0 {
 		balanceOfSender = 0
 		val1 := state.MakeVFloat(balanceOfSender)
-		cv.Pool.PutHM("iost", state.Key(sender), val1)
+		pool2 := cv.Pool.Copy()
+		pool2.PutHM("iost", state.Key(sender), val1)
+		if contain {
+			cv.SetPool(pool)
+		}
 		return nil, fmt.Errorf("can not afford gas")
 	}
-	val1 := state.MakeVFloat(balanceOfSender)
-	cv.Pool.PutHM("iost", state.Key(sender), val1)
+
+	val2 := state.MakeVFloat(balanceOfSender)
+	pool.PutHM("iost", state.Key(sender), val2)
 
 	if contain {
 		cv.SetPool(pool)
 	}
-
 	return pool, nil
 }
 
@@ -161,7 +190,7 @@ func ParseGenesis(c vm.Contract, pool state.Pool) (state.Pool, error) {
 		if err != nil {
 			panic(err)
 		}
-		cachePool.Put(state.Key(put[1]),  v)
+		cachePool.Put(state.Key(put[1]), v)
 	}
-	return cachePool , nil
+	return cachePool, nil
 }

@@ -161,7 +161,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		pubkey := common.CalcPubkeyInSecp256k1(seckey)
 		p, _ := NewDPoS(account.Account{"id0", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
 
-		main := lua.NewMethod("main", 0, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 						Put("hello", "world")
 						return "success"
@@ -222,6 +222,7 @@ func TestRunReceiveBlock(t *testing.T) {
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
+
 		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
 		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
 		mockBc.EXPECT().GetBlockByNumber(Any()).Return(nil).AnyTimes()
@@ -270,7 +271,7 @@ func TestRunReceiveBlock(t *testing.T) {
 		pubkey := common.CalcPubkeyInSecp256k1(seckey)
 		p, _ := NewDPoS(account.Account{"id1", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
 
-		main := lua.NewMethod("main", 0, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 						Put("hello", "world")
 						return "success"
@@ -360,7 +361,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		pubkey := common.CalcPubkeyInSecp256k1(seckey)
 		p, _ := NewDPoS(account.Account{"id1", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
 
-		main := lua.NewMethod("main", 0, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 						Put("hello", "world")
 						return "success"
