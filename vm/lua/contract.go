@@ -81,12 +81,14 @@ func (c *Contract) Decode(b []byte) error {
 		cr.methods[0].name,
 		int(cr.methods[0].ic),
 		int(cr.methods[0].oc),
+		vm.Public,
 	}
 	for i := 1; i < len(cr.methods); i++ {
 		c.apis[cr.methods[i].name] = Method{
 			cr.methods[i].name,
 			int(cr.methods[i].ic),
 			int(cr.methods[i].oc),
+			vm.Public,
 		}
 	}
 

@@ -27,8 +27,8 @@ end`
 		code2 := `function sayHi(name)
 			return "hi " .. name
 		end`
-		sayHi := lua.NewMethod("sayHi", 1, 1)
-		main := lua.NewMethod("main", 0, 1)
+		sayHi := lua.NewMethod(vm.Public, "sayHi", 1, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
 
 		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "con1", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
 			code1, main)

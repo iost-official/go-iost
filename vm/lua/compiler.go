@@ -73,7 +73,7 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 		inputCount, _ := strconv.Atoi(inputCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1])
 		rtnCount, _ := strconv.Atoi(rtnCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1])
-		method := NewMethod(funcName, inputCount, rtnCount)
+		method := NewMethod(vm.Public, funcName, inputCount, rtnCount) // TODO 从代码中获取权限信息
 
 		//匹配代码部分
 

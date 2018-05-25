@@ -126,15 +126,16 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 	if p.parent == nil {
 		val1, err = p.db.GetHM(key, field)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(err) // TODO 消灭多余输出
 			val1 = VNil
 		}
 	} else {
 		val1, err = p.parent.GetHM(key, field)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(err) // todo 消灭多余输出
 			val1 = VNil
 		}
+
 	}
 
 	val2 := p.patch.Get(key)
@@ -158,9 +159,11 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 func (p *PoolImpl) PutHM(key, field Key, value Value) error {
 	if ok := p.patch.Has(key); ok {
 		m := p.patch.Get(key)
-
+		fmt.Println("1.8", m)
 		if m.Type() == Map {
 			m.(*VMap).Set(field, value)
+			fmt.Println("1.9", m)
+			p.patch.Put(key, m)
 			return nil
 		}
 	}

@@ -10,7 +10,7 @@ type Method struct {
 	privilege vm.Privilege
 }
 
-func NewMethod(name string, inputCount, rtnCount int) Method {
+func NewMethod(priv vm.Privilege, name string, inputCount, rtnCount int) Method {
 	var m Method
 	m.name = name
 	m.inputCount = inputCount

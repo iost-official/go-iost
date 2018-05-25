@@ -3,8 +3,6 @@ package verifier
 import (
 	"testing"
 
-	"errors"
-
 	"fmt"
 
 	"github.com/golang/mock/gomock"
@@ -17,8 +15,8 @@ import (
 	"github.com/iost-official/prototype/db/mocks"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
-	. "github.com/smartystreets/goconvey/convey"
 	"github.com/iost-official/prototype/vm/mocks"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestGenesisVerify(t *testing.T) {
@@ -29,12 +27,12 @@ func TestGenesisVerify(t *testing.T) {
 			var count int
 			var k, f, k2 state.Key
 			var v, v2 state.Value
-			pool.EXPECT().PutHM(gomock.Any(),gomock.Any(),gomock.Any()).Times(2).Do(func(key, field state.Key, value state.Value) error {
-				k ,f ,v = key, field, value
-				count ++
+			pool.EXPECT().PutHM(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Do(func(key, field state.Key, value state.Value) error {
+				k, f, v = key, field, value
+				count++
 				return nil
 			})
-			pool.EXPECT().Put(gomock.Any(), gomock.Any()).Do(func(key state.Key, value state.Value){
+			pool.EXPECT().Put(gomock.Any(), gomock.Any()).Do(func(key state.Key, value state.Value) {
 				k2, v2 = key, value
 			})
 			pool.EXPECT().Copy().Return(pool)
@@ -80,9 +78,9 @@ func TestCacheVerifier(t *testing.T) {
 				v2 = value
 			})
 			v3 := state.MakeVFloat(float64(10000))
-			pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).Return(v3, nil)
+			pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(v3, nil)
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
-			main := lua.NewMethod("main", 0, 1)
+			main := lua.NewMethod(vm.Public, "main", 0, 1)
 			code := `function main()
 	a = Get("pi")
 	Put("hello", a)
@@ -124,9 +122,9 @@ end`
 				v2 = value
 			})
 			//v3 := state.MakeVFloat(float64(10000))
-			pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).Return(state.VNil, nil)
+			pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(state.VNil, nil)
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
-			main := lua.NewMethod("main", 0, 1)
+			main := lua.NewMethod(vm.Public, "main", 0, 1)
 			code := `function main()
 	a = Get("pi")
 	Put("hello", a)
@@ -155,8 +153,8 @@ func TestBlockVerifier(t *testing.T) {
 
 		ctl := gomock.NewController(t)
 		mockDB := db_mock.NewMockDatabase(ctl)
-		mockDB.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, errors.New("not found"))
-		mockDB.EXPECT().Get(gomock.Any()).AnyTimes().Return(nil, errors.New("not found"))
+		mockDB.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+		mockDB.EXPECT().Get(gomock.Any()).AnyTimes().Return(nil, nil)
 
 		db := state.NewDatabase(mockDB)
 
@@ -164,7 +162,7 @@ func TestBlockVerifier(t *testing.T) {
 		pool.PutHM(state.Key("iost"), state.Key("ahaha"), state.MakeVFloat(10000))
 		pool.Put(state.Key("a"), state.MakeVFloat(3.14))
 
-		main := lua.NewMethod("main", 0, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 	a = Get("a")
 	Put("hello", a)
@@ -176,8 +174,7 @@ end`
 	return Call("con2", "sayHi", "bob")
 end`
 
-
-		main2 := lua.NewMethod("main", 0, 1)
+		main2 := lua.NewMethod(vm.Public, "main", 0, 1)
 
 		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "test2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
 			code2, main2)
@@ -206,8 +203,41 @@ end`
 	})
 }
 
+func TestCacheVerifier_TransferOnly(t *testing.T) {
+	Convey("System test of transfer", t, func() {
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
+		code := `function main()
+	Transfer("a", "b", 50)
+end`
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
+
+		dbx, err := db.DatabaseFactor("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(dbx)
+		pool := state.NewPool(sdb)
+		pool.PutHM(state.Key("iost"), state.Key("a"), state.MakeVFloat(1000000))
+		pool.PutHM(state.Key("iost"), state.Key("b"), state.MakeVFloat(1000000))
+		//fmt.Println(pool.GetHM("iost", "b"))
+		var pool2 state.Pool
+
+		cv := NewCacheVerifier(pool)
+		pool2, err = cv.VerifyContract(&lc, false)
+		if err != nil {
+			panic(err)
+		}
+		aa, err := pool2.GetHM("iost", "a")
+		ba, err := pool2.GetHM("iost", "b")
+		So(err, ShouldBeNil)
+		So(aa.(*state.VFloat).ToFloat64(), ShouldEqual, 999944)
+		So(ba.(*state.VFloat).ToFloat64(), ShouldEqual, 1000050)
+	})
+
+}
+
 func BenchmarkCacheVerifier_TransferOnly(b *testing.B) {
-	main := lua.NewMethod("main", 0, 1)
+	main := lua.NewMethod(vm.Public, "main", 0, 1)
 	code := `function main()
 	Transfer("a", "b", 50)
 end`
@@ -222,14 +252,19 @@ end`
 	pool.PutHM(state.Key("iost"), state.Key("a"), state.MakeVFloat(1000000))
 	pool.PutHM(state.Key("iost"), state.Key("b"), state.MakeVFloat(1000000))
 
+	var pool2 state.Pool
+
 	cv := NewCacheVerifier(pool)
 	for i := 0; i < b.N; i++ {
-		_, err = cv.VerifyContract(&lc, false)
+		pool2, err = cv.VerifyContract(&lc, false)
 		if err != nil {
 			panic(err)
 		}
 	}
-	fmt.Println(pool.GetHM("iost", "a"))
-	fmt.Println(pool.GetHM("iost", "b"))
+	fmt.Println()
+	fmt.Print("a: ")
+	fmt.Println(pool2.GetHM("iost", "a"))
+	fmt.Print("b: ")
+	fmt.Println(pool2.GetHM("iost", "b"))
 
 }
