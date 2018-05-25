@@ -198,74 +198,71 @@ func (p *DPoS) txListenLoop() {
 	}
 }
 
-func (p *DPoS) blockLoop() {
-	//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-	verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
+func(p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+
+	////////////probe//////////////////
+	msgBlock:=log.MsgBlock{
+		SubType:"verify.fail",
+		BlockHeadHash:blk.HeadHash(),
+		BlockNum:blk.Head.Number,
+	}
+	///////////////////////////////////
+
+	// verify block head
+	if err := VerifyBlockHead(blk, parent); err != nil {
 
 		////////////probe//////////////////
-		msgBlock := log.MsgBlock{
-			SubType:       "verify.fail",
-			BlockHeadHash: blk.HeadHash(),
-			BlockNum:      blk.Head.Number,
-		}
+		log.Report(&msgBlock)
 		///////////////////////////////////
 
-		// verify block head
-		if err := VerifyBlockHead(blk, parent); err != nil {
+		return nil, err
 
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
-
-			return nil, err
-
-		}
-
-		// verify block witness
-		// TODO currentSlot is negative
-		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
-
-			return nil, errors.New("wrong witness")
-
-		}
 	}
+
+	// verify block witness
+	// TODO currentSlot is negative
+	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
+
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
+
+		return nil, errors.New( "wrong witness")
+
+	}
+
 	headInfo := generateHeadInfo(blk.Head)
 	var signature common.Signature
 	signature.Decode(blk.Head.Signature)
 
-		// verify block witness signature
-		if !common.VerifySignature(headInfo, signature) {
-			
-		 	////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
-			
-			return nil, errors.New("wrong signature")
-		}
-		newPool, err := StdBlockVerifier(blk, pool)
-		if err != nil {
-
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
-			
-			return nil, err 
-		}
+	// verify block witness signature
+	if !common.VerifySignature(headInfo, signature) {
 
 		////////////probe//////////////////
-		msgBlock.SubType="verify.pass"
 		log.Report(&msgBlock)
 		///////////////////////////////////
-		
-		return newPool, nil
 
+		return nil, errors.New("wrong signature")
 	}
+	newPool, err := StdBlockVerifier(blk, pool)
+	if err != nil {
+
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
+
+		return nil, err
+	}
+
+	////////////probe//////////////////
+	msgBlock.SubType="verify.pass"
+	log.Report(&msgBlock)
+	///////////////////////////////////
+
 	return newPool, nil
 }
+
 func (p *DPoS) blockLoop() {
 
 	p.log.I("Start to listen block")
@@ -277,39 +274,33 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
-/*
-			////////////probe//////////////////
-			log.Report(&log.MsgBlock{
-				SubType:"receive",
-				BlockHeadHash:blk.HeadHash(),
-		 		BlockNum:blk.Head.Number,
-			})
-			///////////////////////////////////
-*/
+			/*
+						////////////probe//////////////////
+						log.Report(&log.MsgBlock{
+							SubType:"receive",
+							BlockHeadHash:blk.HeadHash(),
+							 BlockNum:blk.Head.Number,
+						})
+						///////////////////////////////////
+			*/
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
-			err := p.blockCache.Add(&blk, verifyFunc)
-
+			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
-				p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 				p.log.I("Link it onto cached chain")
 			} else {
-				if err != ErrDup {
-					p.log.I("Error: %v", err)
-				}
+				p.log.I("Error: %v", err)
 			}
 			if err != ErrBlock && err != ErrTooOld {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
-
- 					p.blockCache.AddSingles(verifyFunc)
-
+					p.blockCache.AddSingles(p.blockVerify)
 				} else if err == ErrNotFound {
- 					// New block is a single block
+					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
 					if need {
 						go p.synchronizer.SyncBlocks(start, end)
 					}
- 				}
+				}
 			}
 			/*
 				ts := Timestamp{blk.Head.Time}
