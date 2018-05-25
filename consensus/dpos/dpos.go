@@ -196,10 +196,10 @@ func (p *DPoS) blockLoop() {
 	verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 
 		////////////probe//////////////////
-		msgBlock:=log.MsgBlock{
-			SubType:"verify.fail",
-			BlockHeadHash:blk.HeadHash(),
-			BlockNum:blk.Head.Number,
+		msgBlock := log.MsgBlock{
+			SubType:       "verify.fail",
+			BlockHeadHash: blk.HeadHash(),
+			BlockNum:      blk.Head.Number,
 		}
 		///////////////////////////////////
 
@@ -209,21 +209,21 @@ func (p *DPoS) blockLoop() {
 			////////////probe//////////////////
 			log.Report(&msgBlock)
 			///////////////////////////////////
-			
- 			return nil, err
+
+			return nil, err
 
 		}
 
 		// verify block witness
 		// TODO currentSlot is negative
 		if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-			
+
 			////////////probe//////////////////
 			log.Report(&msgBlock)
 			///////////////////////////////////
-	
-			return nil, errors.New( "wrong witness")
-		
+
+			return nil, errors.New("wrong witness")
+
 		}
 
 		headInfo := generateHeadInfo(blk.Head)
@@ -232,11 +232,11 @@ func (p *DPoS) blockLoop() {
 
 		// verify block witness signature
 		if !common.VerifySignature(headInfo, signature) {
-			
-		 	////////////probe//////////////////
+
+			////////////probe//////////////////
 			log.Report(&msgBlock)
 			///////////////////////////////////
-			
+
 			return nil, errors.New("wrong signature")
 		}
 		newPool, err := StdBlockVerifier(blk, pool)
@@ -245,15 +245,15 @@ func (p *DPoS) blockLoop() {
 			////////////probe//////////////////
 			log.Report(&msgBlock)
 			///////////////////////////////////
-			
-			return nil, err 
+
+			return nil, err
 		}
 
 		////////////probe//////////////////
-		msgBlock.SubType="verify.pass"
+		msgBlock.SubType = "verify.pass"
 		log.Report(&msgBlock)
 		///////////////////////////////////
-		
+
 		return newPool, nil
 	}
 	p.log.I("Start to listen block")
@@ -265,15 +265,13 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
-/*
 			////////////probe//////////////////
 			log.Report(&log.MsgBlock{
-				SubType:"receive",
-				BlockHeadHash:blk.HeadHash(),
-		 		BlockNum:blk.Head.Number,
+				SubType:       "receive",
+				BlockHeadHash: blk.HeadHash(),
+				BlockNum:      blk.Head.Number,
 			})
 			///////////////////////////////////
-*/
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, verifyFunc)
 			if err == nil {
@@ -284,20 +282,20 @@ func (p *DPoS) blockLoop() {
 			if err != ErrBlock && err != ErrTooOld {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
- 					p.blockCache.AddSingles(verifyFunc)
+					p.blockCache.AddSingles(verifyFunc)
 				} else if err == ErrNotFound {
- 					// New block is a single block
+					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
 					if need {
 						go p.synchronizer.SyncBlocks(start, end)
 					}
- 				}
+				}
 			}
 			/*
-				ts := Timestamp{blk.Head.Time}
-				if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
-					p.performMaintenance()
- 				}
+								ts := Timestamp{blk.Head.Time}
+								if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
+									p.performMaintenance()
+				 				}
 			*/
 		case <-p.exitSignal:
 			return
@@ -381,9 +379,9 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 
 	////////////probe//////////////////
 	log.Report(&log.MsgBlock{
-		SubType:"gen",
-		BlockHeadHash:blk.HeadHash(),
-		BlockNum:blk.Head.Number,
+		SubType:       "gen",
+		BlockHeadHash: blk.HeadHash(),
+		BlockNum:      blk.Head.Number,
 	})
 	///////////////////////////////////
 

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var Server = "http://127.0.0.1:30333"
+var Server = "http://18.219.254.124:30333"
 var LocalID = "default"
 
 func toBase64(hash []byte) string {
@@ -63,7 +63,7 @@ type Msg interface {
 }
 
 var Subtypes map[string][]string = map[string][]string{
-	"MsgBlock": []string{"confirm", "verify.pass", "verify.fail"},
+	"MsgBlock": []string{"confirm", "verify.pass", "verify.fail", "receive", "send"},
 	"MsgTx":    []string{"confirm", "verify.pass", "verify.fail"},
 	"MsgNode":  []string{"online", "offline", "conn.fail", "conn.succ", "conn.count"},
 }
