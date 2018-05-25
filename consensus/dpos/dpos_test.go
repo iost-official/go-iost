@@ -519,7 +519,7 @@ func BenchmarkBlockHead(b *testing.B)     { benchBlockHead(b) }
 func BenchmarkGenerateBlock(b *testing.B) { benchGenerateBlock(b) }
 
 // cache中添加block性能测试
-func benchAddBlockCache(b *testing.B) {
+func benchAddBlockCache(b *testing.B,continuity bool) {
 	var accountList []account.Account
 
 	var witnessList []string
@@ -605,6 +605,10 @@ func benchAddBlockCache(b *testing.B) {
 			hash =tblock.Head.Hash()
 		} else {
 			hash = blockPool[len(blockPool)-1].Head.Hash()
+		}
+		//make every block has no parent
+		if continuity==false{
+			hash[i%len(hash)]=i%len(hash)
 		}
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 			Version:    0,
