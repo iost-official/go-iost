@@ -1,6 +1,7 @@
 package log
 
 import (
+	"encoding/base64"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -9,8 +10,17 @@ import (
 	"time"
 )
 
-var Server = "http://127.0.0.1:30333"
+var Server = "http://18.219.254.124:30333"
 var LocalID = "default"
+
+func toBase64(hash []byte) string {
+	return base64.StdEncoding.EncodeToString(hash)
+}
+
+func fromBase64(str string) []byte {
+	ret, _ := base64.StdEncoding.DecodeString(str)
+	return ret
+}
 
 func Report(msg Msg) error {
 	resp, err := http.PostForm(Server+"/report",
@@ -52,10 +62,16 @@ type Msg interface {
 	Form() url.Values
 }
 
+var Subtypes map[string][]string = map[string][]string{
+	"MsgBlock": []string{"confirm", "verify.pass", "verify.fail", "receive", "send"},
+	"MsgTx":    []string{"confirm", "verify.pass", "verify.fail"},
+	"MsgNode":  []string{"online", "offline", "conn.fail", "conn.succ", "conn.count"},
+}
+
 type MsgBlock struct {
 	SubType       string
-	BlockHeadHash string // base64
-	BlockNum      uint64
+	BlockHeadHash []byte
+	BlockNum      int64
 }
 
 func (m *MsgBlock) Form() url.Values {
@@ -63,15 +79,15 @@ func (m *MsgBlock) Form() url.Values {
 		"from":            {LocalID},
 		"time":            {Now().String()},
 		"type":            {"Block", m.SubType},
-		"block_head_hash": {m.BlockHeadHash},
-		"block_number":    {strconv.FormatUint(m.BlockNum, 10)},
+		"block_head_hash": {toBase64(m.BlockHeadHash)},
+		"block_number":    {strconv.FormatInt(m.BlockNum, 10)},
 	}
 }
 
 type MsgTx struct {
 	SubType   string
-	TxHash    string
-	Publisher string
+	TxHash    []byte
+	Publisher []byte
 	Nonce     int64
 }
 
@@ -80,8 +96,8 @@ func (m *MsgTx) Form() url.Values {
 		"from":      {LocalID},
 		"time":      {Now().String()},
 		"type":      {"Tx", m.SubType},
-		"hash":      {m.TxHash},
-		"publisher": {m.Publisher},
+		"hash":      {toBase64(m.TxHash)},
+		"publisher": {toBase64(m.Publisher)},
 		"nonce":     {strconv.FormatInt(m.Nonce, 10)},
 	}
 }
@@ -100,21 +116,23 @@ func (m *MsgNode) Form() url.Values {
 	}
 }
 
+var BlockSubType = []string{"receive"}
+
 func ParseMsg(v url.Values) Msg {
 	switch v["type"][0] {
 	case "Block":
-		num, _ := strconv.ParseUint(v["block_number"][0], 10, 64)
+		num, _ := strconv.ParseInt(v["block_number"][0], 10, 64)
 		return &MsgBlock{
 			SubType:       v["type"][1],
-			BlockHeadHash: v["block_head_hash"][0],
+			BlockHeadHash: fromBase64(v["block_head_hash"][0]),
 			BlockNum:      num,
 		}
 	case "Tx":
 		num, _ := strconv.ParseInt(v["nonce"][0], 10, 64)
 		return &MsgTx{
 			SubType:   v["type"][1],
-			TxHash:    v["hash"][0],
-			Publisher: v["publisher"][0],
+			TxHash:    fromBase64(v["hash"][0]),
+			Publisher: fromBase64(v["publisher"][0]),
 			Nonce:     num,
 		}
 	case "Node":

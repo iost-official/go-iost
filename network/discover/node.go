@@ -121,7 +121,7 @@ func (n *Node) FindNeighbours(ns []*Node) []*Node {
 	neighbours := make([]*Node, 0)
 	disArr := make([]int, len(ns))
 	for k, v := range ns {
-		disArr[k] = xorDistance(n.ID, v.ID)
+		disArr[k] = xorDistance(n.Addr(), v.Addr())
 	}
 	sortArr := make([]int, len(ns))
 	copy(sortArr, disArr)
@@ -144,7 +144,7 @@ func (n *Node) FindNeighbours(ns []*Node) []*Node {
 	return neighbours
 }
 
-func xorDistance(one, other NodeID) (ret int) {
+func xorDistance(one, other string) (ret int) {
 	oneBytes := []byte(one)
 	otherBytes := []byte(other)
 	for i := 0; i < len(oneBytes); i++ {

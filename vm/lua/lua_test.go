@@ -29,7 +29,7 @@ func TestLuaVM(t *testing.T) {
 				return nil
 			})
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
-			main := NewMethod("main", 0, 1)
+			main := NewMethod(vm.Public, "main", 0, 1)
 			lc := Contract{
 				info: vm.ContractInfo{Prefix: "test", GasLimit: 11},
 				code: `function main()
@@ -74,7 +74,7 @@ end`,
 				return nil
 			})
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
-			main := NewMethod("main", 0, 1)
+			main := NewMethod(vm.Public, "main", 0, 1)
 			lc := Contract{
 				info: vm.ContractInfo{Prefix: "test", GasLimit: 11, Publisher: vm.IOSTAccount("a")},
 
@@ -112,7 +112,7 @@ end`,
 				return nil
 			})
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
-			main := NewMethod("main", 0, 1)
+			main := NewMethod(vm.Public, "main", 0, 1)
 			lc := Contract{
 				info: vm.ContractInfo{Prefix: "test", GasLimit: 3},
 				code: `function main()
@@ -151,10 +151,50 @@ end`,
 			})
 		})
 	})
+
+}
+
+func TestTransfer(t *testing.T) {
+	Convey("Test lua transfer", t, func() {
+		main := NewMethod(vm.Public, "main", 0, 1)
+		lc := Contract{
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 1000, Publisher: vm.IOSTAccount("a")},
+			code: `function main()
+	Transfer("a", "b", 50)
+	return "success"
+end`,
+			main: main,
+		}
+		lvm := VM{}
+
+		db, err := db2.DatabaseFactor("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(db)
+		pool := state.NewPool(sdb)
+		pool.PutHM("iost", "a", state.MakeVFloat(5000))
+		pool.PutHM("iost", "b", state.MakeVFloat(1000))
+
+		lvm.Prepare(&lc, nil)
+		lvm.Start()
+		//fmt.Print("0 ")
+		//fmt.Println(pool.GetHM("iost", "b"))
+		_, pool, err = lvm.Call(pool, "main")
+		lvm.Stop()
+
+		fmt.Println("------------")
+		ab, err := pool.GetHM("iost", "a")
+		bb, err := pool.GetHM("iost", "b")
+		So(err, ShouldBeNil)
+		So(ab.(*state.VFloat).ToFloat64(), ShouldEqual, 4950)
+		So(bb.(*state.VFloat).ToFloat64(), ShouldEqual, 1050)
+
+	})
 }
 
 func BenchmarkLuaVM_SetupAndCalc(b *testing.B) {
-	main := NewMethod("main", 0, 1)
+	main := NewMethod(vm.Public, "main", 0, 1)
 	lc := Contract{
 		info: vm.ContractInfo{Prefix: "test", GasLimit: 11},
 		code: `function main()
@@ -180,7 +220,7 @@ end`,
 }
 
 func BenchmarkLuaVM_10000LuaGas(b *testing.B) {
-	main := NewMethod("main", 0, 1)
+	main := NewMethod(vm.Public, "main", 0, 1)
 	lc := Contract{
 		info: vm.ContractInfo{Prefix: "test", GasLimit: 10000},
 		code: `function main()
@@ -210,7 +250,7 @@ end`,
 }
 
 func BenchmarkLuaVM_GetInPatch(b *testing.B) {
-	main := NewMethod("main", 0, 1)
+	main := NewMethod(vm.Public, "main", 0, 1)
 	lc := Contract{
 		info: vm.ContractInfo{Prefix: "test", GasLimit: 11},
 		code: `function main()
@@ -238,7 +278,7 @@ end`,
 }
 
 func BenchmarkLuaVM_PutToPatch(b *testing.B) {
-	main := NewMethod("main", 0, 1)
+	main := NewMethod(vm.Public, "main", 0, 1)
 	lc := Contract{
 		info: vm.ContractInfo{Prefix: "test", GasLimit: 11},
 		code: `function main()
@@ -265,7 +305,7 @@ end`,
 }
 
 func BenchmarkLuaVM_Transfer(b *testing.B) {
-	main := NewMethod("main", 0, 1)
+	main := NewMethod(vm.Public, "main", 0, 1)
 	lc := Contract{
 		info: vm.ContractInfo{Prefix: "test", GasLimit: 1000, Publisher: vm.IOSTAccount("a")},
 		code: `function main()
@@ -329,15 +369,15 @@ fucntion foo(a,b,c)
 	return a,b
 end
 `)
-		So(contract.main, ShouldResemble, Method{"main", 0, 1})
-		So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2}})
+		So(contract.main, ShouldResemble, Method{"main", 0, 1, vm.Public})
+		So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2, vm.Public}})
 
 	})
 
 }
 
 func TestContract(t *testing.T) {
-	main := NewMethod("main", 0, 1)
+	main := NewMethod(vm.Public, "main", 0, 1)
 	Convey("Test of lua Contract", t, func() {
 		lc := Contract{
 			info: vm.ContractInfo{GasLimit: 1000, Price: 0.1},
@@ -354,4 +394,8 @@ end`,
 		So(lc2.info.GasLimit, ShouldEqual, lc.info.GasLimit)
 		So(lc2.Code(), ShouldEqual, lc.code)
 	})
+}
+
+func TestCallback(t *testing.T) {
+
 }

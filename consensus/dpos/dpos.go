@@ -93,8 +93,8 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 
 	p.initGlobalProperty(p.account, witnessList)
 
-	block:=bc.GetBlockByNumber(1)
-	if block != nil{
+	block := bc.GetBlockByNumber(1)
+	if block != nil {
 		p.update(&block.Head)
 	}
 
@@ -145,7 +145,7 @@ func (p *DPoS) CachedStatePool() state.Pool {
 
 func (p *DPoS) genesis(initTime int64) error {
 
-	main := lua.NewMethod("", 0, 0)
+	main := lua.NewMethod(vm.Public, "", 0, 0)
 	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
 @PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f100000
 @PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000
@@ -168,9 +168,15 @@ func (p *DPoS) genesis(initTime int64) error {
 		panic("failed to ParseGenesis")
 	}
 
-	p.blockCache.SetBasePool(stp)
+	err = p.blockCache.SetBasePool(stp)
+	if err != nil {
+		panic("failed to SetBasePool")
+	}
 
-	p.blockCache.AddGenesis(genesis)
+	err = p.blockCache.AddGenesis(genesis)
+	if err != nil {
+		panic("failed to AddGenesis")
+	}
 	return nil
 }
 
@@ -191,41 +197,13 @@ func (p *DPoS) txListenLoop() {
 			if VerifyTxSig(tx) {
 				p.blockCache.AddTx(&tx)
 			}
+
 		case <-p.exitSignal:
 			return
 		}
 	}
 }
 
-//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-	// verify block head
-	if err := VerifyBlockHead(blk, parent); err != nil {
-		return nil, err
-	}
-
-	// verify block witness
-	// TODO currentSlot is negative
-	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-		p.log.I("error witness - blk.time: %v blk.Head.Witness: %v witnessOfTime: %v\n", blk.Head.Time, blk.Head.Witness,
-			witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}))
-		return nil, errors.New("wrong witness")
-	}
-
-	headInfo := generateHeadInfo(blk.Head)
-	var signature common.Signature
-	signature.Decode(blk.Head.Signature)
-
-	// verify block witness signature
-	if !common.VerifySignature(headInfo, signature) {
-		return nil, errors.New("wrong signature")
-	}
-	newPool, err := StdBlockVerifier(blk, pool)
-	if err != nil {
-		return nil, err
-	}
-	return newPool, nil
-}
 func (p *DPoS) blockLoop() {
 
 	p.log.I("Start to listen block")
@@ -237,19 +215,38 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
+
+			/*
+						////////////probe//////////////////
+						log.Report(&log.MsgBlock{
+							SubType:"receive",
+							BlockHeadHash:blk.HeadHash(),
+							 BlockNum:blk.Head.Number,
+						})
+						///////////////////////////////////
+			*/
+
+			////////////probe//////////////////
+			log.Report(&log.MsgBlock{
+				SubType:       "receive",
+				BlockHeadHash: blk.HeadHash(),
+				BlockNum:      blk.Head.Number,
+			})
+			///////////////////////////////////
+
+			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
-				p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 				p.log.I("Link it onto cached chain")
 			} else {
-				if err != ErrDup {
-					p.log.I("Error: %v", err)
-				}
+				p.log.I("Error: %v", err)
 			}
 			if err != ErrBlock && err != ErrTooOld {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
+
 					p.blockCache.AddSingles(p.blockVerify)
+
 				} else if err == ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
@@ -259,10 +256,10 @@ func (p *DPoS) blockLoop() {
 				}
 			}
 			/*
-				ts := Timestamp{blk.Head.Time}
-				if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
-					p.performMaintenance()
-				}
+								ts := Timestamp{blk.Head.Time}
+								if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
+									p.performMaintenance()
+				 				}
 			*/
 		case <-p.exitSignal:
 			return
@@ -342,6 +339,15 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 			blk.Content = append(blk.Content, *tx)
 		}
 	}
+
+	////////////probe//////////////////
+	log.Report(&log.MsgBlock{
+		SubType:       "gen",
+		BlockHeadHash: blk.HeadHash(),
+		BlockNum:      blk.Head.Number,
+	})
+	///////////////////////////////////
+
 	return &blk
 }
 
@@ -376,4 +382,69 @@ func encodeDPoSInfo(votes [][]byte) []byte {
 		info = append(info, byte('/'))
 	}
 	return info
+}
+
+//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
+func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+
+	////////////probe//////////////////
+	msgBlock := log.MsgBlock{
+		SubType:       "verify.fail",
+		BlockHeadHash: blk.HeadHash(),
+		BlockNum:      blk.Head.Number,
+	}
+	///////////////////////////////////
+
+	// verify block head
+	if err := VerifyBlockHead(blk, parent); err != nil {
+
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
+
+		return nil, err
+
+	}
+
+	// verify block witness
+	// TODO currentSlot is negative
+	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
+
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
+
+		return nil, errors.New("wrong witness")
+
+	}
+
+	headInfo := generateHeadInfo(blk.Head)
+	var signature common.Signature
+	signature.Decode(blk.Head.Signature)
+
+	// verify block witness signature
+	if !common.VerifySignature(headInfo, signature) {
+
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
+
+		return nil, errors.New("wrong signature")
+	}
+	newPool, err := StdBlockVerifier(blk, pool)
+	if err != nil {
+
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
+
+		return nil, err
+	}
+
+	////////////probe//////////////////
+	msgBlock.SubType = "verify.pass"
+	log.Report(&msgBlock)
+	///////////////////////////////////
+
+	return newPool, nil
 }

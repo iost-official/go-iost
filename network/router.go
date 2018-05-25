@@ -101,7 +101,7 @@ func (r *RouterImpl) Init(base Network, port uint16) error {
 
 //FilteredChan Get filtered request channel
 func (r *RouterImpl) FilteredChan(filter Filter) (chan message.Message, error) {
-	chReq := make(chan message.Message, 100)
+	chReq := make(chan message.Message, 10000)
 
 	r.filterList = append(r.filterList, filter)
 	r.filterMap[len(r.filterList)-1] = chReq
@@ -142,6 +142,10 @@ func (r *RouterImpl) Send(req message.Message) {
 func (r *RouterImpl) Broadcast(req message.Message) {
 	req.TTL = MsgMaxTTL
 	r.base.Broadcast(req)
+}
+
+func (r *RouterImpl) LocalID() string {
+	return r.base.(*BaseNetwork).localNode.Addr()
 }
 
 //download block with height >= start && height <= end

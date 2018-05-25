@@ -42,9 +42,13 @@ func (l *VM) Stop() {
 	l.L.Close()
 }
 func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
+
 	if pool != nil {
 		l.cachePool = pool.Copy()
 	}
+
+	//fmt.Print("1 ")
+	//fmt.Println(l.cachePool.GetHM("iost", "b"))
 
 	method0, err := l.Contract.API(methodName)
 	if err != nil {
@@ -70,6 +74,9 @@ func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]st
 			Protect: true,
 		}, largs...)
 	}
+
+	//fmt.Print("3 ")
+	//fmt.Println(l.cachePool.GetHM("iost", "b"))
 
 	if err != nil {
 		return nil, nil, err
@@ -139,13 +146,17 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		name: "Transfer",
 		function: func(L *lua.LState) int {
 			src := L.ToString(1)
-			if CheckPrivilege(l.Contract.info, src) <= 0 {
+			if vm.CheckPrivilege(l.Contract.info, src) <= 0 {
 				L.Push(lua.LFalse)
 				return 1
 			}
 			des := L.ToString(2)
 			value := L.ToNumber(3)
+			//fmt.Print("0 ")
+			//fmt.Println(l.cachePool.GetHM("iost", state.Key(des)))
 			rtn := host.Transfer(l.cachePool, src, des, float64(value))
+			//fmt.Print("4 ")
+			//fmt.Println(l.cachePool.GetHM("iost", state.Key(des)))
 			L.Push(Bool2Lua(rtn))
 			return 1
 		},
@@ -157,10 +168,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		function: func(L *lua.LState) int {
 			blockName := L.ToString(1)
 			methodName := L.ToString(2)
-			method, err := l.monitor.GetMethod(blockName, methodName)
+			method, err := l.monitor.GetMethod(blockName, methodName, l.Contract.Info().Publisher)
 
 			if err != nil {
-				L.Push(lua.LString("api not found")) // todo 明确到底是什么错再返回
+				L.Push(lua.LString(err.Error()))
 				return 1
 			}
 
@@ -190,16 +201,4 @@ func (l *VM) PC() uint64 {
 	rtn := l.L.PCount + l.callerPC
 	l.L.PCount = 0
 	return rtn
-}
-
-func CheckPrivilege(info vm.ContractInfo, name string) int {
-	if vm.IOSTAccount(name) == info.Publisher {
-		return 2
-	}
-	for _, signer := range info.Signers {
-		if vm.IOSTAccount(name) == signer {
-			return 1
-		}
-	}
-	return 0
 }

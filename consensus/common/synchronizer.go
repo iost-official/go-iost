@@ -64,6 +64,7 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 	}
 
 	sync.log.NeedPrint = true
+
 	sync.log.I("maxSyncNumber:%v", sync.maxSyncNumber)
 
 	return sync
@@ -193,6 +194,13 @@ func (sync *SyncImpl) requestBlockLoop() {
 				ReqType: int32(ReqNewBlock), //todo 后补类型
 				Body:    block.Encode(),
 			}
+			////////////probe//////////////////
+			log.Report(&log.MsgBlock{
+				SubType:       "send",
+				BlockHeadHash: block.HeadHash(),
+				BlockNum:      block.Head.Number,
+			})
+			///////////////////////////////////
 			sync.router.Send(resMsg)
 		case <-sync.exitSignal:
 			return

@@ -26,23 +26,12 @@ import (
 	"github.com/iost-official/prototype/network/discover"
 )
 
-type RequestHead struct {
-	Length uint32 // length of Request
-}
-
 const (
 	HEADLENGTH               = 4
 	CheckKnownNodeInterval   = 10
 	NodeLiveThresholdSeconds = 20
 	MaxDownloadRetry         = 2
 )
-
-type Response struct {
-	From        string
-	To          string
-	Code        int    // like http status code
-	Description string // code status description
-}
 
 //Network api
 type Network interface {
@@ -52,158 +41,6 @@ type Network interface {
 	Close(port uint16) error
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
-}
-
-type NaiveNetwork struct {
-	db     *db.LDBDatabase //database of known nodes
-	listen net.Listener
-	conn   net.Conn
-	done   bool
-}
-
-//NewNaiveNetwork create n peers
-func NewNaiveNetwork(n int) (*NaiveNetwork, error) {
-	dirname, err := ioutil.TempDir(os.TempDir(), "p2p_test_")
-	if err != nil {
-		return nil, err
-	}
-	db, err := db.NewLDBDatabase(dirname, 0, 0)
-	if err != nil {
-		return nil, err
-	}
-	nn := &NaiveNetwork{
-		db:     db,
-		listen: nil,
-		done:   false,
-	}
-	for i := 1; i <= n; i++ {
-		nn.db.Put([]byte(string(i)), []byte("0.0.0.0:"+strconv.Itoa(11036+i)))
-	}
-	return nn, nil
-}
-
-func (nn *NaiveNetwork) Close(port uint16) error {
-	port = 3 // 避免出现unused variable
-	nn.done = true
-	return nn.listen.Close()
-}
-
-//
-func (nn *NaiveNetwork) Broadcast(req message.Message) error {
-	iter := nn.db.NewIterator()
-	for iter.Next() {
-		addr, _ := nn.db.Get([]byte(string(iter.Key())))
-		conn, err := net.Dial("tcp", string(addr))
-		if err != nil {
-			if dErr := nn.db.Delete([]byte(string(iter.Key()))); dErr != nil {
-				fmt.Errorf("failed to delete peer : k= %v, v = %v, err:%v\n", iter.Key(), addr, err.Error())
-			}
-			fmt.Errorf("dialing to %v encounter err : %v\n", addr, err.Error())
-			continue
-		}
-		nn.conn = conn
-		go nn.Send(req)
-	}
-	iter.Release()
-	return iter.Error()
-}
-
-func (nn *NaiveNetwork) Send(req message.Message) {
-	if nn.conn == nil {
-		fmt.Errorf("no connect in network")
-		return
-	}
-	defer nn.conn.Close()
-
-	reqHeadBytes, reqBodyBytes, err := reqToBytes(req)
-	if err != nil {
-		fmt.Errorf("reqToBytes encounter err : %v\n", err.Error())
-		return
-	}
-	if _, err = nn.conn.Write(reqHeadBytes); err != nil {
-		fmt.Errorf("sending request head encounter err :%v\n", err.Error())
-	}
-	if _, err = nn.conn.Write(reqBodyBytes[:]); err != nil {
-		fmt.Errorf("sending request body encounter err : %v\n", err.Error())
-	}
-	return
-}
-
-func (nn *NaiveNetwork) Listen(port uint16) (<-chan message.Message, error) {
-	var err error
-	nn.listen, err = net.Listen("tcp", ":"+strconv.Itoa(int(port)))
-	if err != nil {
-		return nil, fmt.Errorf("Error listening: %v", err.Error())
-	}
-	fmt.Println("Listening on " + ":" + strconv.Itoa(int(port)))
-	req := make(chan message.Message, 100)
-
-	conn := make(chan net.Conn, 10)
-
-	// For every listener spawn the following routine
-	go func(l net.Listener) {
-		for {
-			c, err := l.Accept()
-			if err != nil {
-				// handle error
-				conn <- nil
-				return
-			}
-			conn <- c
-		}
-	}(nn.listen)
-	go func() {
-		for {
-			select {
-			case c := <-conn:
-				if c == nil {
-					if nn.done {
-						return
-					}
-					fmt.Println("Error accepting: ")
-					break
-				}
-
-				go func(conn net.Conn) {
-					defer conn.Close()
-					// Make a buffer to hold incoming data.
-					buf := make([]byte, HEADLENGTH)
-					// Read the incoming connection into the buffer.
-					_, err := conn.Read(buf)
-					if err != nil {
-						fmt.Errorf("Error reading request head:%v", err.Error())
-					}
-					length := binary.BigEndian.Uint32(buf)
-					_buf := make([]byte, length)
-					_, err = conn.Read(_buf)
-
-					if err != nil {
-						fmt.Errorf("Error reading request body:%v", err.Error())
-					}
-					var received message.Message
-					received.Unmarshal(_buf)
-					req <- received
-					// Send a response back to person contacting us.
-					//conn.Write([]byte("Message received."))
-				}(c)
-			case <-time.After(1000.0 * time.Second):
-				fmt.Println("accepting time out..")
-			}
-		}
-	}()
-	return req, nil
-}
-
-func reqToBytes(req message.Message) ([]byte, []byte, error) {
-	reqBodyBytes, err := req.Marshal(nil)
-	if err != nil {
-		return nil, reqBodyBytes, err
-	}
-	reqHead := new(bytes.Buffer)
-	if err := binary.Write(reqHead, binary.BigEndian, int32(len(reqBodyBytes))); err != nil {
-		return nil, reqBodyBytes, err
-	}
-	return reqHead.Bytes(), reqBodyBytes, nil
 }
 
 //NetConfig p2p net config
@@ -266,7 +103,7 @@ type BaseNetwork struct {
 
 // NewBaseNetwork ...
 func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
-	recv := make(chan message.Message, 100)
+	recv := make(chan message.Message, 10000)
 	var err error
 	if conf.LogPath == "" {
 		conf.LogPath, err = ioutil.TempDir(os.TempDir(), "iost_log_")
@@ -333,15 +170,25 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 //Broadcast msg to all node in the node table
 func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	neighbours := bn.neighbours
+	if msg.From == "" {
+		msg.From = bn.localNode.Addr()
+	}
+	from := msg.From
 	for _, node := range neighbours {
-		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.String())
-		msg.To = node.String()
+		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
+		if node.Addr() == from {
+			continue
+		}
+		msg.To = node.Addr()
 		bn.broadcast(msg)
 	}
 }
 
 //broadcast broadcast to all neighbours, stop broadcast when msg already broadcast
 func (bn *BaseNetwork) broadcast(msg message.Message) {
+	if msg.To == "" {
+		return
+	}
 	node, _ := discover.ParseNode(msg.To)
 	if msg.TTL == 0 || bn.localNode.Addr() == node.Addr() {
 		return
@@ -352,7 +199,7 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
-	req := newRequest(BroadcastMessage, bn.localNode.String(), data)
+	req := newRequest(BroadcastMessage, bn.localNode.Addr(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
 		bn.log.E("[net] broadcast dial tcp got err:%v", err)
@@ -379,12 +226,15 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 			if conn != nil {
 				conn.Close()
 			}
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: node.Addr()})
 			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
 		if conn != nil {
 			go bn.receiveLoop(conn)
-			peer := newPeer(conn, bn.localNode.String(), nodeStr)
+			peer := newPeer(conn, bn.localNode.Addr(), nodeStr)
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][3], Log: node.Addr()})
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][4], Log: strconv.Itoa(len(bn.peers.peers))})
 			bn.peers.Set(node, peer)
 		}
 	}
@@ -394,7 +244,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 
 //Send msg to msg.To
 func (bn *BaseNetwork) Send(msg message.Message) {
-	if msg.To == bn.localNode.String() || msg.To == bn.localNode.Addr() {
+	if msg.To == bn.localNode.Addr() || msg.To == "" {
 		return
 	}
 	if msg.TTL == 0 {
@@ -407,7 +257,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
 	bn.log.D("[net] send msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time)
-	req := newRequest(Message, bn.localNode.String(), data)
+	req := newRequest(Message, bn.localNode.Addr(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
 		bn.nodeTable.Delete([]byte(msg.To))
@@ -429,7 +279,7 @@ func (bn *BaseNetwork) Close(port uint16) error {
 
 func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 	if conn == nil {
-		bn.log.E("[net] from %v,send data = %v, conn is nil", bn.localNode.String(), r)
+		bn.log.E("[net] from %v,send data = %v, conn is nil", bn.localNode.Addr(), r)
 		return nil
 	}
 	pack, err := r.Pack()
@@ -496,10 +346,26 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 
 //put node into node table of server
 func (bn *BaseNetwork) putNode(addrs string) {
+	if addrs == "" {
+		return
+	}
 	addrArr := strings.Split(addrs, ",")
 	for _, addr := range addrArr {
-		if addr != "" && addr != bn.localNode.String() && addr != bn.localNode.Addr() {
-			bn.nodeTable.Put([]byte(addr), common.IntToBytes(2))
+		node, err := discover.ParseNode(addr)
+		if err != nil {
+			bn.log.E("failed to ParseNode  %v,err: %v", addr, err)
+			continue
+		}
+		if addr != "" && addr != bn.localNode.Addr() {
+			ok, err := bn.nodeTable.Has([]byte(addr))
+			if err != nil {
+				bn.log.E("failed to nodetable has %v, err: %v", addr, err)
+				continue
+			}
+			if !ok {
+
+				bn.nodeTable.Put([]byte(node.Addr()), common.IntToBytes(2))
+			}
 		}
 	}
 	bn.findNeighbours()
@@ -532,14 +398,15 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 //registerLoop register local address to boot nodes
 func (bn *BaseNetwork) registerLoop() {
 	for {
-		if bn.localNode.TCP != 30304 {
+		if bn.localNode.TCP != 30304 && bn.regAddr != "" {
 			conn, err := bn.dial(bn.regAddr)
 			if err != nil {
 				bn.log.E("[net] failed to connect boot node, err:%v", err)
+				time.Sleep(CheckKnownNodeInterval * time.Second)
 				continue
 			}
 			bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), bn.regAddr)
-			req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
+			req := newRequest(ReqNodeTable, bn.localNode.Addr(), nil)
 			if er := bn.send(conn, req); er != nil {
 				bn.peers.RemoveByNodeStr(bn.regAddr)
 			}
@@ -550,7 +417,7 @@ func (bn *BaseNetwork) registerLoop() {
 
 //findNeighbours find neighbour nodes in the node table
 func (bn *BaseNetwork) findNeighbours() {
-	nodesStr, _ := bn.AllNodesExcludeAddr(bn.localNode.String())
+	nodesStr, _ := bn.AllNodesExcludeAddr(bn.localNode.Addr())
 	nodes := make([]*discover.Node, 0)
 	for _, nodeStr := range nodesStr {
 		node, _ := discover.ParseNode(nodeStr)
@@ -593,7 +460,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
 				TTL:     MsgMaxTTL,
-				From:    bn.localNode.String(),
+				From:    bn.localNode.Addr(),
 				Time:    time.Now().UnixNano(),
 			}
 			bn.log.D("[net] download height = %v  nodeMap = %v", downloadHeight, bn.NodeHeightMap)
@@ -623,6 +490,9 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 
 //sendTo send request to the address
 func (bn *BaseNetwork) sendTo(addr string, req *Request) {
+	if addr == "" {
+		return
+	}
 	conn, err := bn.dial(addr)
 	if err != nil {
 		bn.nodeTable.Delete([]byte(addr))

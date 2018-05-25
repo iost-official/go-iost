@@ -2,6 +2,7 @@ package state
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -322,10 +323,12 @@ func (v *VMap) Set(key Key, value Value) {
 	v.m[key] = value
 }
 
+var ErrNotFound = errors.New("not found")
+
 func (v *VMap) Get(key Key) (Value, error) {
 	ret, ok := v.m[key]
 	if !ok {
-		return VNil, nil
+		return nil, ErrNotFound
 	}
 	return ret, nil
 }

@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"fmt"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
@@ -12,17 +13,18 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	//"github.com/iost-official/prototype/network"
 	//"github.com/iost-official/prototype/network/mocks"
+	"testing"
+
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestHttpServer(t *testing.T) {
 	Convey("Test of HttpServer", t, func() {
-		txDb:=tx.TxDbInstance()
+		txDb := tx.TxDbInstance()
 		So(txDb, ShouldNotBeNil)
-		main := lua.NewMethod("main", 0, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 			 		Put("hello", "world")
 					return "success"
@@ -34,22 +36,22 @@ func TestHttpServer(t *testing.T) {
 		a1, _ := account.NewAccount(nil)
 		sig1, _ := tx.SignContract(_tx, a1)
 		_tx, _ = tx.SignTx(_tx, acc, sig1)
-/*
-		Convey("Test of PublishTx", func() {
+		/*
+			Convey("Test of PublishTx", func() {
 
-			ctl := gomock.NewController(t)
-			mockRouter := protocol_mock.NewMockRouter(ctl)
-			mockRouter.EXPECT().Broadcast(gomock.Any()).AnyTimes().Return()
-			network.Route = mockRouter
+				ctl := gomock.NewController(t)
+				mockRouter := protocol_mock.NewMockRouter(ctl)
+				mockRouter.EXPECT().Broadcast(gomock.Any()).AnyTimes().Return()
+				network.Route = mockRouter
 
-			txpb := Transaction{Tx: _tx.Encode()}
+				txpb := Transaction{Tx: _tx.Encode()}
 
-			hs := new(HttpServer)
-			res, err := hs.PublishTx(context.Background(), &txpb)
-			So(err, ShouldBeNil)
-			So(res.Code, ShouldEqual, 0)
-		})
-*/
+				hs := new(HttpServer)
+				res, err := hs.PublishTx(context.Background(), &txpb)
+				So(err, ShouldBeNil)
+				So(res.Code, ShouldEqual, 0)
+			})
+		*/
 		Convey("Test of GetTransaction", func() {
 			txdb := tx.TxDb
 			fmt.Println(txdb)
