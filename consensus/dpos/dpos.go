@@ -93,8 +93,8 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 
 	p.initGlobalProperty(p.account, witnessList)
 
-	block:=bc.GetBlockByNumber(1)
-	if block != nil{
+	block := bc.GetBlockByNumber(1)
+	if block != nil {
 		p.update(&block.Head)
 	}
 
@@ -168,9 +168,15 @@ func (p *DPoS) genesis(initTime int64) error {
 		panic("failed to ParseGenesis")
 	}
 
-	p.blockCache.SetBasePool(stp)
+	err = p.blockCache.SetBasePool(stp)
+	if err != nil {
+		panic("failed to SetBasePool")
+	}
 
-	p.blockCache.AddGenesis(genesis)
+	err = p.blockCache.AddGenesis(genesis)
+	if err != nil {
+		panic("failed to AddGenesis")
+	}
 	return nil
 }
 
@@ -379,7 +385,7 @@ func encodeDPoSInfo(votes [][]byte) []byte {
 }
 
 //收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
-func(p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 
 	////////////probe//////////////////
 	msgBlock := log.MsgBlock{
