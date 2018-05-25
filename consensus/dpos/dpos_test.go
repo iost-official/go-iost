@@ -512,15 +512,21 @@ func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parent
 }
 
 //go test -bench=. -benchmem -run=nonce
-func BenchmarkAddBlockCache(b *testing.B) { benchAddBlockCache(b) }
-func BenchmarkGetBlockCache(b *testing.B) { benchGetBlockCache(b) }
+func BenchmarkAddBlockCache(b *testing.B) { 
+	//benchAddBlockCache(b,true)
+	benchAddBlockCache(b,false)
+}
+func BenchmarkGetBlockCache(b *testing.B) { 
+//	benchGetBlockCache(b,true) 
+	benchGetBlockCache(b,false) 
+}
 func BenchmarkBlockVerifier(b *testing.B) { benchBlockVerifier(b) }
 func BenchmarkTxPool(b *testing.B)        { benchTxPool(b) }
 func BenchmarkBlockHead(b *testing.B)     { benchBlockHead(b) }
 func BenchmarkGenerateBlock(b *testing.B) { benchGenerateBlock(b) }
 
-// cache中添加block性能测试
-func benchAddBlockCache(b *testing.B,continuity bool) {
+
+func envInit(b *testing.B) (*DPoS,[]account.Account,[]string) {
 	var accountList []account.Account
 
 	var witnessList []string
@@ -586,10 +592,10 @@ func benchAddBlockCache(b *testing.B,continuity bool) {
 	if err != nil {
 		b.Errorf("NewDPoS error")
 	}
-
-	//生成block
-
-	var blockPool []*block.Block
+	return p,accountList,witnessList
+}
+// cache中添加block性能测试
+func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,continuity bool) (blockPool []*block.Block) {
 	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
 
@@ -599,8 +605,8 @@ func benchAddBlockCache(b *testing.B,continuity bool) {
 	//blockNum := 1000
 	slot := consensus_common.GetCurrentTimestamp().Slot
 
-	for i := 0; i < b.N; i++ {
-		var hash []byte
+	for i := 0; i < n; i++ {
+ 		var hash []byte
 		if len(blockPool) == 0 {
 			//用创世块的头hash赋值
 			hash =tblock.Head.Hash()
@@ -609,7 +615,7 @@ func benchAddBlockCache(b *testing.B,continuity bool) {
 		}
 		//make every block has no parent
 		if continuity==false{
-			hash[i%len(hash)]=i%len(hash)
+			hash[i%len(hash)]=byte(i%256)
 		}
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 			Version:    0,
@@ -628,19 +634,40 @@ func benchAddBlockCache(b *testing.B,continuity bool) {
 
 		blockPool = append(blockPool, &blk)
 	}
+	return
+}
+func benchAddBlockCache(b *testing.B,continuity bool) {
+	
+	p,accountList,witnessList:=envInit(b)
+	//生成block
+	blockPool:=genBlocks(p,accountList,witnessList,b.N,continuity)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, bl := range blockPool {
 			p.blockCache.Add(bl, p.blockVerify)
 		}
-
 	}
 
 }
 
 // cache中获取block性能测试
-func benchGetBlockCache(b *testing.B) {
+func benchGetBlockCache(b *testing.B,continuity bool) {
+	p,accountList,witnessList:=envInit(b)
+	//生成block
+	blockPool:=genBlocks(p,accountList,witnessList,b.N,continuity)
+	for i := 0; i < b.N; i++ {
+		for _, bl := range blockPool {
+			p.blockCache.Add(bl, p.blockVerify)
+		}
+	}
 
+	//get block
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+	for _, bl := range blockPool {
+			p.blockCache.Add(bl, p.blockVerify)
+		}
+	}
 }
 
 // block验证性能测试
