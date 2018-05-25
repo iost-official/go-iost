@@ -92,6 +92,12 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	p.log.NeedPrint = true
 
 	p.initGlobalProperty(p.account, witnessList)
+
+	block:=bc.GetBlockByNumber(1)
+	if block != nil{
+		p.update(&block.Head)
+	}
+
 	p.update(&bc.Top().Head)
 	return &p, nil
 }
@@ -201,6 +207,8 @@ func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Poo
 	// verify block witness
 	// TODO currentSlot is negative
 	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
+		p.log.I("error witness - blk.time: %v blk.Head.Witness: %v witnessOfTime: %v\n", blk.Head.Time, blk.Head.Witness,
+			witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}))
 		return nil, errors.New("wrong witness")
 	}
 
@@ -229,12 +237,14 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
-			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
+				p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 				p.log.I("Link it onto cached chain")
 			} else {
-				p.log.I("Error: %v", err)
+				if err != ErrDup {
+					p.log.I("Error: %v", err)
+				}
 			}
 			if err != ErrBlock && err != ErrTooOld {
 				if err == nil {
@@ -273,7 +283,6 @@ func (p *DPoS) scheduleLoop() {
 			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
 			if wid == p.account.ID {
-				p.log.I("Generating block, current timestamp: %v", currentTimestamp)
 
 				//todo test
 				chain := p.blockCache.LongestChain()
@@ -296,6 +305,7 @@ func (p *DPoS) scheduleLoop() {
 				p.router.Broadcast(msg)
 				p.chBlock <- msg
 				p.globalDynamicProperty.update(&blk.Head)
+				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 			}
 			nextSchedule = timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
 			//time.Sleep(time.Second * time.Duration(nextSchedule))

@@ -183,8 +183,8 @@ func (sync *SyncImpl) requestBlockLoop() {
 			if block == nil {
 				continue
 			}
-			sync.log.I("requset block - BlockNumber: %v", rh.BlockNumber)
-			sync.log.I("response block - BlockNumber: %v, witness: %v", block.Head.Number, block.Head.Witness)
+			//sync.log.I("requset block - BlockNumber: %v", rh.BlockNumber)
+			//sync.log.I("response block - BlockNumber: %v, witness: %v", block.Head.Number, block.Head.Witness)
 			//回复当前块的高度
 			resMsg := message.Message{
 				Time:    time.Now().Unix(),

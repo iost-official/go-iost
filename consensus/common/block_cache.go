@@ -60,6 +60,8 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 		}
 		newPool, err := verifier(block, b.bc.Top(), b.pool)
 		if err != nil {
+			fmt.Printf("ErrorBlock: %v\n", err)
+
 			return ErrorBlock, nil
 		}
 
