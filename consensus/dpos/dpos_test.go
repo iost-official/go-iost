@@ -513,31 +513,40 @@ func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parent
 
 //go test -bench=. -benchmem -run=nonce
 func BenchmarkAddBlockCache(b *testing.B) { 
-	//benchAddBlockCache(b,true)
-	benchAddBlockCache(b,false)
+	//benchAddBlockCache(b,10,true)
+	benchAddBlockCache(b,10,false)
 }
 func BenchmarkGetBlockCache(b *testing.B) { 
-//	benchGetBlockCache(b,true) 
-	benchGetBlockCache(b,false) 
+//	benchGetBlockCache(b,10,true) 
+	benchGetBlockCache(b,10,false) 
 }
 func BenchmarkBlockVerifier(b *testing.B) { benchBlockVerifier(b) }
 func BenchmarkTxPool(b *testing.B)        { benchTxPool(b) }
 func BenchmarkBlockHead(b *testing.B)     { benchBlockHead(b) }
-func BenchmarkGenerateBlock(b *testing.B) { benchGenerateBlock(b) }
+func BenchmarkGenerateBlock(b *testing.B) { 
+	benchGenerateBlock(b,10) 
+}
 
 
 func envInit(b *testing.B) (*DPoS,[]account.Account,[]string) {
-	var accountList []account.Account
-
+	var accountList []account.Account 
 	var witnessList []string
 
-	for i:=0;i<3 ;i++  {
-		account, err:=account.NewAccount(nil)
+	acc:=common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9")
+	_account, err:=account.NewAccount(acc)
+	if err!=nil{
+		panic("account.NewAccount error")
+	}
+	accountList = append(accountList, _account)
+	witnessList = append(witnessList, _account.ID)
+	
+	for i:=1;i<3;i++ {
+		_account, err:=account.NewAccount(nil)
 		if err!=nil{
 			panic("account.NewAccount error")
 		}
-		accountList = append(accountList, account)
-		witnessList = append(witnessList, account.ID)
+		accountList = append(accountList, _account)
+		witnessList = append(witnessList, _account.ID)
 	}
 
 	tx.LdbPath = ""
@@ -594,8 +603,21 @@ func envInit(b *testing.B) (*DPoS,[]account.Account,[]string) {
 	}
 	return p,accountList,witnessList
 }
-// cache中添加block性能测试
-func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,continuity bool) (blockPool []*block.Block) {
+
+func genTx(p *DPoS) tx.Tx{
+	main := lua.NewMethod("main", 0, 1)
+	code := `function main()
+				Put("hello", "world")
+				return "success"
+			end`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
+
+	_tx:=tx.NewTx(int64(0), &lc)
+	_tx,_=tx.SignTx(_tx,p.account)
+	return _tx
+}
+
+func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,txCnt int,continuity bool) (blockPool []*block.Block) {
 	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
 
@@ -618,7 +640,7 @@ func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,
 			hash[i%len(hash)]=byte(i%256)
 		}
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
-			Version:    0,
+			Version:    0, 
 			ParentHash: hash,
 			TreeHash:   make([]byte, 0),
 			BlockHash:  make([]byte, 0),
@@ -632,15 +654,18 @@ func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,
 		sig, _ := common.Sign(common.Secp256k1, headInfo, accountList[i%3].Seckey)
 		blk.Head.Signature = sig.Encode()
 
+		for i:=0;i<txCnt;i++{
+			blk.Content = append(blk.Content, genTx(p))
+		}
 		blockPool = append(blockPool, &blk)
 	}
 	return
 }
-func benchAddBlockCache(b *testing.B,continuity bool) {
+func benchAddBlockCache(b *testing.B,txCnt int,continuity bool) {
 	
-	p,accountList,witnessList:=envInit(b)
+ 	p,accountList,witnessList:=envInit(b)
 	//生成block
-	blockPool:=genBlocks(p,accountList,witnessList,b.N,continuity)
+	blockPool:=genBlocks(p,accountList,witnessList,b.N,txCnt,continuity)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, bl := range blockPool {
@@ -651,10 +676,10 @@ func benchAddBlockCache(b *testing.B,continuity bool) {
 }
 
 // cache中获取block性能测试
-func benchGetBlockCache(b *testing.B,continuity bool) {
+func benchGetBlockCache(b *testing.B,txCnt int,continuity bool) {
 	p,accountList,witnessList:=envInit(b)
 	//生成block
-	blockPool:=genBlocks(p,accountList,witnessList,b.N,continuity)
+	blockPool:=genBlocks(p,accountList,witnessList,b.N,txCnt,continuity)
 	for i := 0; i < b.N; i++ {
 		for _, bl := range blockPool {
 			p.blockCache.Add(bl, p.blockVerify)
@@ -664,12 +689,12 @@ func benchGetBlockCache(b *testing.B,continuity bool) {
 	//get block
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-	for _, bl := range blockPool {
+		for _, bl := range blockPool {
 			p.blockCache.Add(bl, p.blockVerify)
 		}
 	}
 }
-
+//验证block是在blockcache.add(block,verfunc)过程中，遍历blockcache进行验证，verfunc(blk,parent,pool)中的pool是当前pool，也就是blockCacheTree的pool，所以验证是要把block接到某个blockcacheTree节点后面去的
 // block验证性能测试
 func benchBlockVerifier(b *testing.B) {
 
@@ -677,7 +702,7 @@ func benchBlockVerifier(b *testing.B) {
 
 // 交易添加Pool性能测试
 func benchTxPool(b *testing.B) {
-
+	
 }
 
 // 生成block head性能测试
@@ -686,6 +711,18 @@ func benchBlockHead(b *testing.B) {
 }
 
 // 生成块性能测试
-func benchGenerateBlock(b *testing.B) {
+func benchGenerateBlock(b *testing.B,txCnt int) {
+	p,_,_:=envInit(b)
+	TxPerBlk=txCnt
+	for i:=0;i<TxPerBlk*b.N+10;i++{
+		_tx:=genTx(p)
+		p.blockCache.AddTx(&_tx)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bc := p.blockCache.LongestChain()
+		pool := p.blockCache.LongestPool()
+		p.genBlock(p.account, bc, pool)
+	}
 
 }
