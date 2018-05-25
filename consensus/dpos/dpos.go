@@ -265,15 +265,13 @@ func (p *DPoS) blockLoop() {
 			}
 			var blk block.Block
 			blk.Decode(req.Body)
-			/*
-					////////////probe//////////////////
-					log.Report(&log.MsgBlock{
-						SubType:"receive",
-						BlockHeadHash:blk.HeadHash(),
-				 		BlockNum:blk.Head.Number,
-					})
-					///////////////////////////////////
-			*/
+			////////////probe//////////////////
+			log.Report(&log.MsgBlock{
+				SubType:       "receive",
+				BlockHeadHash: blk.HeadHash(),
+				BlockNum:      blk.Head.Number,
+			})
+			///////////////////////////////////
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, verifyFunc)
 			if err == nil {

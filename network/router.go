@@ -144,6 +144,10 @@ func (r *RouterImpl) Broadcast(req message.Message) {
 	r.base.Broadcast(req)
 }
 
+func (r *RouterImpl) LocalID() string {
+	return r.base.(*BaseNetwork).localNode.Addr()
+}
+
 //download block with height >= start && height <= end
 func (r *RouterImpl) Download(start uint64, end uint64) error {
 	fmt.Println("sync:", start, end)
