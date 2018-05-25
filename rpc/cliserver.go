@@ -47,16 +47,16 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	if err != nil {
 		return &Response{Code: -1}, err
 	}
-/*
-	////////////probe//////////////////
-	log.Report(&log.MsgTx{
-		SubType:"receive",
-		TxHash:tx1.Hash(),
-		Publisher:tx1.Publisher.Pubkey,
-		Nonce:tx1.Nonce,
-	})
-	///////////////////////////////////
-*/	
+	/*
+		////////////probe//////////////////
+		log.Report(&log.MsgTx{
+			SubType:"receive",
+			TxHash:tx1.Hash(),
+			Publisher:tx1.Publisher.Pubkey,
+			Nonce:tx1.Nonce,
+		})
+		///////////////////////////////////
+	*/
 	//broadcast the tx
 	router := network.Route
 	if router == nil {
@@ -74,7 +74,7 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 			panic(fmt.Errorf("Consensus is nil"))
 		}
 		Cons.(*dpos.DPoS).ChTx <- broadTx
-		fmt.Println("[rpc.PublishTx]:add tx to TxPool")
+		//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
 	}()
 	return &Response{Code: 0}, nil
 }
