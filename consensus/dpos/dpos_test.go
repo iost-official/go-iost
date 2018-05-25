@@ -511,6 +511,7 @@ func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parent
 	return blk, msg
 }
 
+//go test -bench=. -benchmem -run=nonce
 func BenchmarkAddBlockCache(b *testing.B) { benchAddBlockCache(b) }
 func BenchmarkGetBlockCache(b *testing.B) { benchGetBlockCache(b) }
 func BenchmarkBlockVerifier(b *testing.B) { benchBlockVerifier(b) }
