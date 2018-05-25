@@ -25,16 +25,15 @@ import (
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/rpc"
-	"github.com/iost-official/prototype/log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"os/signal"
 	"syscall"
-
 
 )
 
@@ -130,7 +129,7 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("Network initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-
+		log.LocalID = net.(*network.RouterImpl).LocalID()
 		serverExit = append(serverExit, net)
 
 		//启动共识
@@ -185,11 +184,9 @@ var rootCmd = &cobra.Command{
 
 		////////////probe//////////////////
 		log.Report(&log.MsgNode{
-			SubType:"online",
+			SubType: "online",
 		})
 		///////////////////////////////////
-
-
 
 		//等待推出信号
 		exitLoop()
@@ -217,10 +214,9 @@ func exitLoop() {
 
 		////////////probe//////////////////
 		log.Report(&log.MsgNode{
-			SubType:"offline",
+			SubType: "offline",
 		})
 		///////////////////////////////////
-
 
 		os.Exit(0)
 	}()
