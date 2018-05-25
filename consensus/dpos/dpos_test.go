@@ -662,7 +662,7 @@ func envInit(b *testing.B) (*DPoS,[]account.Account,[]string) {
 }
 
 func genTx(p *DPoS) tx.Tx{
-	main := lua.NewMethod("main", 0, 1)
+	main := lua.NewMethod(2,"main", 0, 1)
 	code := `function main()
 				Put("hello", "world")
 				return "success"
