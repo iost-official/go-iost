@@ -129,3 +129,12 @@ rpc/txDB/
 
 
 
+blockDB/
+bak/
+dump.rdb
+iserver/blockDB/
+iserver/netpath2/
+iserver/netpath3/
+iserver/txDB/
+netpath3/
+txDB/
