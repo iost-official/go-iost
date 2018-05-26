@@ -115,9 +115,9 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 		} else {
 			base.log.E("[net] failed to unmarshal recv msg:%v, err:%v", r, err)
 		}
-		if er := base.send(conn, newRequest(MessageReceived, base.localNode.Addr(), common.Int64ToBytes(r.Timestamp))); er != nil {
-			conn.Close()
-		}
+		//if er := base.send(conn, newRequest(MessageReceived, base.localNode.Addr(), common.Int64ToBytes(r.Timestamp))); er != nil {
+		//	conn.Close()
+		//}
 		r.msgHandle(base)
 	case MessageReceived:
 		base.log.D("[net] MessageReceived: %v", string(r.From), common.BytesToInt64(r.Body))
@@ -138,7 +138,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	case ReqNodeTable:
 		base.log.D("[net] req node table from: %v", string(r.From))
 		base.putNode(string(r.From))
-		base.peers.SetAddr(string(r.From), newPeer(conn, base.localNode.Addr(), conn.RemoteAddr().String()))
+		base.peers.SetAddr(string(r.From), newPeer(conn, nil, base.localNode.Addr(), conn.RemoteAddr().String()))
 		addrs, err := base.AllNodesExcludeAddr(string(r.From))
 		if err != nil {
 			base.log.E("[net] failed to nodetable ", err)
