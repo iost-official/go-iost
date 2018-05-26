@@ -30,7 +30,7 @@ const (
 	HEADLENGTH               = 4
 	CheckKnownNodeInterval   = 10
 	NodeLiveThresholdSeconds = 20
-	MaxDownloadRetry         = 2
+	MaxDownloadRetry         = 1
 )
 
 //Network api
