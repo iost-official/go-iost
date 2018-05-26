@@ -487,7 +487,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			msg := message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
-				TTL:     MsgMaxTTL,
+				TTL:     1,
 				From:    bn.localNode.Addr(),
 				Time:    time.Now().UnixNano(),
 			}
