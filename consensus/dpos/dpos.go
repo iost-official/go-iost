@@ -296,6 +296,7 @@ func (p *DPoS) scheduleLoop() {
 
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 				bc := p.blockCache.LongestChain()
+				p.blockCache.UpdateTxPoolOnBC(bc)
 				pool := p.blockCache.LongestPool()
 				blk := p.genBlock(p.account, bc, pool)
 				p.blockCache.ResetTxPoool()
