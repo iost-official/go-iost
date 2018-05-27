@@ -217,13 +217,13 @@ func (p *DPoS) blockLoop() {
 			blk.Decode(req.Body)
 
 			/*
-						////////////probe//////////////////
-						log.Report(&log.MsgBlock{
-							SubType:"receive",
-							BlockHeadHash:blk.HeadHash(),
-							 BlockNum:blk.Head.Number,
-						})
-						///////////////////////////////////
+				////////////probe//////////////////
+				log.Report(&log.MsgBlock{
+					SubType:"receive",
+					BlockHeadHash:blk.HeadHash(),
+					 BlockNum:blk.Head.Number,
+				})
+				///////////////////////////////////
 			*/
 
 			////////////probe//////////////////
@@ -242,6 +242,7 @@ func (p *DPoS) blockLoop() {
 				p.log.I("Error: %v", err)
 			}
 			if err != ErrBlock && err != ErrTooOld {
+				p.synchronizer.BlockConfirmed(blk.Head.Number)
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 
