@@ -34,7 +34,6 @@ import (
 
 	"os/signal"
 	"syscall"
-
 )
 
 var cfgFile string
@@ -56,7 +55,7 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-
+		log.NewLogger("iost")
 		fmt.Printf("Version:  %v\n", "1.0")
 
 		fmt.Println("cfgFile: ", viper.GetString("config"))

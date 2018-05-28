@@ -22,8 +22,16 @@ func fromBase64(str string) []byte {
 	return ret
 }
 
-//TODO:modify to go func
 func Report(msg Msg) error {
+	go func() {
+		if err := report(msg); err != nil {
+			Log.E("failed to post log msg, :%v", err)
+		}
+	}()
+	return nil
+}
+
+func report(msg Msg) error {
 	resp, err := http.PostForm(Server+"/report",
 		msg.Form())
 
