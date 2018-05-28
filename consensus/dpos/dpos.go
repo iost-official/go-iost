@@ -219,13 +219,13 @@ func (p *DPoS) blockLoop() {
 			blk.Decode(req.Body)
 
 			/*
-						////////////probe//////////////////
-						log.Report(&log.MsgBlock{
-							SubType:"receive",
-							BlockHeadHash:blk.HeadHash(),
-							 BlockNum:blk.Head.Number,
-						})
-						///////////////////////////////////
+				////////////probe//////////////////
+				log.Report(&log.MsgBlock{
+					SubType:"receive",
+					BlockHeadHash:blk.HeadHash(),
+					 BlockNum:blk.Head.Number,
+				})
+				///////////////////////////////////
 			*/
 
 			////////////probe//////////////////
@@ -244,6 +244,7 @@ func (p *DPoS) blockLoop() {
 				p.log.I("Error: %v", err)
 			}
 			if err != ErrBlock && err != ErrTooOld {
+				p.synchronizer.BlockConfirmed(blk.Head.Number)
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 
@@ -297,6 +298,7 @@ func (p *DPoS) scheduleLoop() {
 
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 				bc := p.blockCache.LongestChain()
+				p.blockCache.UpdateTxPoolOnBC(bc)
 				pool := p.blockCache.LongestPool()
 				blk := p.genBlock(p.account, bc, pool)
 				p.blockCache.ResetTxPoool()

@@ -1,6 +1,7 @@
 package consensus_common
 
 import (
+	sy "sync"
 	"time"
 
 	"github.com/iost-official/prototype/core/message"
@@ -11,6 +12,8 @@ import (
 var (
 	SyncNumber        = 2  // 当本地链长度和网络中最新块相差SyncNumber时需要同步
 	MaxDownloadNumber = 10 // 一次同步下载的最多块数
+	RetryTime         = 8
+	WaitTime          = 2
 )
 
 // Synchronizer 同步器接口
@@ -19,6 +22,7 @@ type Synchronizer interface {
 	StopListen() error
 	NeedSync(maxHeight uint64) (bool, uint64, uint64)
 	SyncBlocks(startNumber uint64, endNumber uint64) error
+	BlockConfirmed(num int64)
 }
 
 // SyncImpl 同步器实现
@@ -29,6 +33,8 @@ type SyncImpl struct {
 	heightChan    chan message.Message
 	blkSyncChan   chan message.Message
 	exitSignal    chan struct{}
+	requestMap    map[uint64]bool
+	reqMapLock    sy.RWMutex
 
 	log *log.Logger
 }
@@ -37,10 +43,11 @@ type SyncImpl struct {
 // bc 块缓存, router 网络处理器
 func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 	sync := &SyncImpl{
-		blockCache: bc,
-		router:     router,
+		blockCache:    bc,
+		router:        router,
+		requestMap:    make(map[uint64]bool),
+		maxSyncNumber: 0,
 	}
-	sync.maxSyncNumber = bc.LongestChain().Length() - 1
 	var err error
 	sync.heightChan, err = sync.router.FilteredChan(Filter{
 		AcceptType: []ReqType{
@@ -72,17 +79,17 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 
 // StartListen 开始监听同步任务
 func (sync *SyncImpl) StartListen() error {
-	go sync.requestBlockHeightLoop()
+	//go sync.requestBlockHeightLoop()
 	go sync.requestBlockLoop()
-	go sync.blockConfirmLoop()
-
+	//go sync.blockConfirmLoop()
+	go sync.retryDownloadLoop()
 	return nil
 }
 
 func (sync *SyncImpl) StopListen() error {
-	close(sync.heightChan)
+	//close(sync.heightChan)
 	close(sync.blkSyncChan)
-	close(sync.blockCache.BlockConfirmChan())
+	//close(sync.blockCache.BlockConfirmChan())
 	close(sync.exitSignal)
 	return nil
 }
@@ -97,20 +104,9 @@ func max(x, y uint64) uint64 {
 // NeedSync 判断是否需要同步
 // netHeight 当前网络收到的无法上链的块号
 func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
-	//height := sync.blockCache.LongestChain().Length() - 1
-	if netHeight > sync.maxSyncNumber+uint64(SyncNumber) {
-		/*
-			body := message.RequestHeight{
-				LocalBlockHeight: height + 1,
-				NeedBlockHeight:  netHeight,
-			}
-			heightReq := message.Message{
-				ReqType: int32(ReqBlockHeight),
-				Body:    body.Encode(),
-			}
-			sync.router.Broadcast(heightReq)
-		*/
-		return true, sync.maxSyncNumber + 1, netHeight
+	height := sync.blockCache.LongestChain().Length() - 1
+	if netHeight > height+uint64(SyncNumber) {
+		return true, max(sync.maxSyncNumber, sync.blockCache.ConfirmedLength()-1) + 1, netHeight
 	}
 	return false, 0, 0
 }
@@ -118,11 +114,15 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	sync.maxSyncNumber = endNumber
-	for endNumber > startNumber+uint64(MaxDownloadNumber) {
-		sync.router.Download(startNumber, startNumber+uint64(MaxDownloadNumber))
-		//TODO 等待所有区间里的块都收到
+	for endNumber > startNumber+uint64(MaxDownloadNumber)-1 {
+		sync.router.Download(startNumber, startNumber+uint64(MaxDownloadNumber)-1)
+		sync.reqMapLock.Lock()
+		for i := startNumber; i < startNumber+uint64(MaxDownloadNumber); i++ {
+			sync.requestMap[i] = true
+		}
+		sync.reqMapLock.Unlock()
 		time.Sleep(time.Second * 2)
-		startNumber += uint64(MaxDownloadNumber + 1)
+		startNumber += uint64(MaxDownloadNumber)
 	}
 	if startNumber <= endNumber {
 		sync.router.Download(startNumber, endNumber)
@@ -130,6 +130,7 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	return nil
 }
 
+//弃用
 func (sync *SyncImpl) requestBlockHeightLoop() {
 	for {
 		select {
@@ -209,6 +210,7 @@ func (sync *SyncImpl) requestBlockLoop() {
 	}
 }
 
+/// 未调用
 func (sync *SyncImpl) blockConfirmLoop() {
 	for {
 		select {
@@ -220,6 +222,26 @@ func (sync *SyncImpl) blockConfirmLoop() {
 		case <-sync.exitSignal:
 			return
 		}
+	}
+}
 
+func (sync *SyncImpl) BlockConfirmed(num int64) {
+	sync.reqMapLock.Lock()
+	defer sync.reqMapLock.Unlock()
+	delete(sync.requestMap, uint64(num))
+}
+
+func (sync *SyncImpl) retryDownloadLoop() {
+	for {
+		select {
+		case <-time.After(time.Second * time.Duration(RetryTime)):
+			sync.reqMapLock.RLock()
+			for num, _ := range sync.requestMap {
+				sync.router.Download(num, num)
+			}
+			sync.reqMapLock.RUnlock()
+		case <-sync.exitSignal:
+			return
+		}
 	}
 }

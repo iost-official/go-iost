@@ -22,6 +22,7 @@ func fromBase64(str string) []byte {
 	return ret
 }
 
+//TODO:modify to go func
 func Report(msg Msg) error {
 	resp, err := http.PostForm(Server+"/report",
 		msg.Form())

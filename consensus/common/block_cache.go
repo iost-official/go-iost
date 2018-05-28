@@ -156,6 +156,7 @@ type BlockCache interface {
 	AddSingles(verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error))
 	AddTx(tx *tx.Tx) error
 	GetTx() (*tx.Tx, error)
+	UpdateTxPoolOnBC(bc block.Chain)
 	ResetTxPoool() error
 
 	FindBlockInCache(hash []byte) (*block.Block, error)
@@ -173,7 +174,7 @@ type BlockCacheImpl struct {
 	bc              block.Chain
 	cachedRoot      *BlockCacheTree
 	singleBlockRoot *BlockCacheTree
-	recentTree	    *BlockCacheTree
+	recentTree      *BlockCacheTree
 	txPool          tx.TxPool
 	delTxPool       tx.TxPool
 	txPoolCache     tx.TxPool
@@ -228,9 +229,9 @@ func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 // block 块, verifier 块的验证函数
 func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error {
 	/*
-	if uint64(block.Head.Number) < h.bc.Length() {
-		return ErrTooOld
-	}
+		if uint64(block.Head.Number) < h.bc.Length() {
+			return ErrTooOld
+		}
 	*/
 	code, newTree := h.cachedRoot.add(block, verifier)
 	h.recentTree = newTree
@@ -317,6 +318,20 @@ func (h *BlockCacheImpl) GetTx() (*tx.Tx, error) {
 	}
 }
 
+func (h *BlockCacheImpl) UpdateTxPoolOnBC(bc block.Chain) {
+	h.delTxPool = tx.NewTxPoolImpl()
+	iter := bc.Iterator()
+	for {
+		block := iter.Next()
+		if block == nil {
+			break
+		}
+		for _, tx := range block.Content {
+			h.delTxPool.Add(&tx)
+		}
+	}
+}
+
 func (h *BlockCacheImpl) ResetTxPoool() error {
 	for h.txPoolCache.Size() > 0 {
 		tx, _ := h.txPoolCache.Top()
@@ -388,7 +403,6 @@ func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 // LongestChain 返回缓存的最长链
 func (h *BlockCacheImpl) LongestChain() block.Chain {
 	bct := h.cachedRoot
-	h.delTxPool = tx.NewTxPoolImpl()
 	for {
 		if len(bct.children) == 0 {
 			return &bct.bc
@@ -396,9 +410,6 @@ func (h *BlockCacheImpl) LongestChain() block.Chain {
 		for _, b := range bct.children {
 			if b.bc.depth == bct.bc.depth-1 {
 				bct = b
-				for _, tx := range bct.bc.Top().Content {
-					h.delTxPool.Add(&tx)
-				}
 				break
 			}
 		}
