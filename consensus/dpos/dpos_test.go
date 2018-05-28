@@ -2,7 +2,7 @@ package dpos
 
 import (
 	"testing"
-
+	"fmt"
 	. "github.com/bouk/monkey"
 	. "github.com/golang/mock/gomock"
 
@@ -591,7 +591,7 @@ func BenchmarkTxDb(b *testing.B) {
 */
 func BenchmarkBlockHead(b *testing.B)     { benchBlockHead(b) }
 func BenchmarkGenerateBlock(b *testing.B) { 
-	benchGenerateBlock(b,1000) 
+	benchGenerateBlock(b,10000) 
 }
 
 
@@ -606,6 +606,7 @@ func envInit(b *testing.B) (*DPoS,[]account.Account,[]string) {
 	}
 	accountList = append(accountList, _account)
 	witnessList = append(witnessList, _account.ID)
+	_accId:=_account.ID
 	
 	for i:=1;i<3;i++ {
 		_account, err:=account.NewAccount(nil)
@@ -613,7 +614,7 @@ func envInit(b *testing.B) (*DPoS,[]account.Account,[]string) {
 			panic("account.NewAccount error")
 		}
 		accountList = append(accountList, _account)
-		witnessList = append(witnessList, _account.ID)
+		witnessList = append(witnessList, _accId)
 	}
 
 	tx.LdbPath = ""
@@ -730,7 +731,7 @@ func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,
 			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
 			Number:     int64(i+1),
-			Witness:    witnessList[i%3],
+			Witness:    witnessList[0],
 			Time:       slot + int64(i),
 		}}
 
@@ -783,13 +784,17 @@ func benchGetBlock(b *testing.B,txCnt int,continuity bool) {
 func benchBlockVerifier(b *testing.B) {
 	p,accountList,witnessList:=envInit(b)
 	//生成block
-	blockPool:=genBlocks(p,accountList,witnessList,2,1000,true)
-	p.update(&blockPool[0].Head)
+	blockPool:=genBlocks(p,accountList,witnessList,2,6000,true)
+	//p.update(&blockPool[0].Head)
+	confChain := p.blockCache.BlockChain()
+	tblock := confChain.Top() //获取创世块
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		b.StartTimer()
-		p.blockVerify(blockPool[1],blockPool[0],state.StdPool)
-		b.StopTimer()
+		_,err:=p.blockVerify(blockPool[0],tblock,state.StdPool)
+		if err!=nil{
+			fmt.Println(err)
+		}
 	}
 }
 
@@ -871,7 +876,7 @@ func benchGenerateBlock(b *testing.B,txCnt int) {
  		_tx:=genTx(p,i)
 		p.blockCache.AddTx(&_tx)
 	}
-
+	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
  		bc := p.blockCache.LongestChain()
