@@ -117,20 +117,21 @@ func (prop *globalDynamicProperty) update(blockHead *block.BlockHead) {
 	if prop.LastBlockNumber == 0 {
 		prop.TotalSlots = 1
 		prop.NextMaintenanceTime.AddHour(maintenanceInterval)
-	} else {
-		prop.TotalSlots = prop.timestampToSlot(Timestamp{blockHead.Time}) + 1
 	}
+	//else {
+	//	prop.TotalSlots = prop.timestampToSlot(Timestamp{blockHead.Time}) + 1
+	//}
 	prop.LastBlockNumber = blockHead.Number
 	prop.LastBlockTime = Timestamp{blockHead.Time}
 	copy(prop.LastBLockHash, blockHead.BlockHash)
 }
 
 func (prop *globalDynamicProperty) timestampToSlot(time Timestamp) int64 {
-	return time.Slot - prop.LastBlockTime.Slot + prop.TotalSlots - 1
+	return time.Slot
 }
 
 func (prop *globalDynamicProperty) slotToTimestamp(slot int64) *Timestamp {
-	return &Timestamp{Slot: slot - prop.TotalSlots + prop.LastBlockTime.Slot + 1}
+	return &Timestamp{Slot: slot}
 }
 
 // 返回对于指定的Unix时间点，应该轮到生产块的节点id
@@ -141,11 +142,7 @@ func witnessOfSec(sp *globalStaticProperty, dp *globalDynamicProperty, sec int64
 
 // 返回对于指定的时间戳，应该轮到生产块的节点id
 func witnessOfTime(sp *globalStaticProperty, dp *globalDynamicProperty, time Timestamp) string {
-	// 当前一个块是创世块，应该让第一个witness产生块
-	// 问题：如果第一个witness失败？
-	if dp.LastBlockNumber == 0 {
-		return sp.WitnessList[0]
-	}
+
 	currentSlot := dp.timestampToSlot(time)
 	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
 	index := ((currentSlot % slotsEveryTurn) + slotsEveryTurn) % slotsEveryTurn
@@ -160,14 +157,7 @@ func timeUntilNextSchedule(sp *globalStaticProperty, dp *globalDynamicProperty, 
 	if index = getIndex(sp.Account.GetId(), sp.WitnessList); index < 0 {
 		return dp.NextMaintenanceTime.ToUnixSec() - timeSec
 	}
-	// 如果上一个块是创世块
-	if dp.LastBlockNumber == 0 {
-		if index == 0 {
-			return 0
-		} else {
-			return SlotLength
-		}
-	}
+
 	time := GetTimestamp(timeSec)
 	currentSlot := dp.timestampToSlot(time)
 	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
