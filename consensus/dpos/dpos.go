@@ -52,7 +52,9 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	p.account = acc
 	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
 	if bc.GetBlockByNumber(0) == nil {
-		p.genesis(0)
+
+		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+		p.genesis(GetTimestamp(t.Unix()).Slot)
 	}
 
 	var err error
