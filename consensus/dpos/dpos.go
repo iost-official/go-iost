@@ -302,11 +302,12 @@ func (p *DPoS) scheduleLoop() {
 				pool := p.blockCache.LongestPool()
 				blk := p.genBlock(p.account, bc, pool)
 				p.blockCache.ResetTxPoool()
-				msg := message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}
-				p.router.Broadcast(msg)
-				p.chBlock <- msg
 				p.globalDynamicProperty.update(&blk.Head)
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
+				msg := message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}
+				go p.router.Broadcast(msg)
+				p.chBlock <- msg
+				p.log.I("Broadcasted block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 			}
 			nextSchedule = timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
 			//time.Sleep(time.Second * time.Duration(nextSchedule))
