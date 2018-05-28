@@ -16,6 +16,8 @@ type Logger struct {
 	NeedPrint bool
 }
 
+// global Logger instance
+var Log *Logger
 var instance *os.File
 
 var initialized int32
@@ -26,9 +28,10 @@ const Path = "test.log" // TODO : 在命令行内修改
 func NewLogger(tag string) (*Logger, error) {
 
 	if atomic.LoadInt32(&initialized) == 1 {
-		return &Logger{
+		Log = &Logger{
 			logFile: instance,
-		}, nil
+		}
+		return Log, nil
 	}
 
 	mu.Lock()
@@ -45,11 +48,11 @@ func NewLogger(tag string) (*Logger, error) {
 	})
 
 	atomic.StoreInt32(&initialized, 1)
-
-	return &Logger{
+	Log = &Logger{
 		logFile:   instance,
 		NeedPrint: false,
-	}, nil
+	}
+	return Log, nil
 
 }
 
