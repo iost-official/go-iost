@@ -591,7 +591,7 @@ func BenchmarkTxDb(b *testing.B) {
 */
 func BenchmarkBlockHead(b *testing.B)     { benchBlockHead(b) }
 func BenchmarkGenerateBlock(b *testing.B) { 
-	benchGenerateBlock(b,10) 
+	benchGenerateBlock(b,1000) 
 }
 
 
@@ -783,7 +783,7 @@ func benchGetBlock(b *testing.B,txCnt int,continuity bool) {
 func benchBlockVerifier(b *testing.B) {
 	p,accountList,witnessList:=envInit(b)
 	//生成block
-	blockPool:=genBlocks(p,accountList,witnessList,2,0,true)
+	blockPool:=genBlocks(p,accountList,witnessList,2,1000,true)
 	p.update(&blockPool[0].Head)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -866,12 +866,12 @@ func benchBlockHead(b *testing.B) {
 func benchGenerateBlock(b *testing.B,txCnt int) {
 	p,_,_:=envInit(b)
 	TxPerBlk=txCnt
-/*
-	for i:=0;i<TxPerBlk*10;i++{
+
+	for i:=0;i<TxPerBlk*b.N;i++{
  		_tx:=genTx(p,i)
 		p.blockCache.AddTx(&_tx)
 	}
-*/
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
  		bc := p.blockCache.LongestChain()
