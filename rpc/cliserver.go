@@ -33,7 +33,6 @@ func newHttpServer() *HttpServer {
 }
 
 func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response, error) {
-	fmt.Println("PublishTx begin")
 	var tx1 tx.Tx
 	if _tx == nil {
 		return &Response{Code: -1}, fmt.Errorf("argument cannot be nil pointer")
@@ -42,6 +41,7 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	if err != nil {
 		return &Response{Code: -1}, err
 	}
+	//fmt.Println("PublishTx begin, tx.Nonce", tx1.Nonce)
 
 	err = tx1.VerifySelf() //verify Publisher and Signers
 	if err != nil {
