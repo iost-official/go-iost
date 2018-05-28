@@ -752,7 +752,9 @@ func benchAddBlockCache(b *testing.B,txCnt int,continuity bool) {
 	blockPool:=genBlocks(p,accountList,witnessList,b.N,txCnt,continuity)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		b.StartTimer()
 		p.blockCache.Add(blockPool[i], p.blockVerify)
+		b.StopTimer()
 	}
 
 }
@@ -772,7 +774,9 @@ func benchGetBlock(b *testing.B,txCnt int,continuity bool) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		chain:=p.blockCache.LongestChain()
+		b.StartTimer()
 		chain.GetBlockByNumber(uint64(i))
+		b.StopTimer()
 	}
 }
 // block验证性能测试
@@ -783,7 +787,9 @@ func benchBlockVerifier(b *testing.B) {
 	p.update(&blockPool[0].Head)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		b.StartTimer()
 		p.blockVerify(blockPool[1],blockPool[0],state.StdPool)
+		b.StopTimer()
 	}
 }
 
@@ -797,18 +803,21 @@ func benchTxCache(b *testing.B,f bool) {
 		txs=append(txs,_tx)
 	}
 	
+	b.ResetTimer()
 	if f==true {
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
+			b.StartTimer()
 			txCache.Add(&txs[i])
+			b.StopTimer()
 		}
 	}else{
 		for i := 0; i < b.N; i++ {
 			txCache.Add(&txs[i])
 		}
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
+			b.StartTimer()
 			txCache.Del(&txs[i])
+			b.StopTimer()
 		}
 	
 	}
@@ -823,18 +832,21 @@ func benchTxDb(b *testing.B,f bool) {
 		txs=append(txs,_tx)
 	}
 	
+	b.ResetTimer()
 	if f==true {
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
+			b.StartTimer()
 			txDb.Add(&txs[i])
+			b.StopTimer()
 		}
 	}else{
 		for i := 0; i < b.N; i++ {
 			txDb.Add(&txs[i])
 		}
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
+			b.StartTimer()
 			txDb.Del(&txs[i])
+			b.StopTimer()
 		}
 	
 	}
@@ -844,7 +856,9 @@ func benchBlockHead(b *testing.B) {
 	p,_,_:=envInit(b)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		b.StartTimer()
 		genBlockHead(p)
+		b.StopTimer()
 	}
 }
 
@@ -852,16 +866,18 @@ func benchBlockHead(b *testing.B) {
 func benchGenerateBlock(b *testing.B,txCnt int) {
 	p,_,_:=envInit(b)
 	TxPerBlk=txCnt
-	for i:=0;i<TxPerBlk*b.N+10;i++{
-		_tx:=genTx(p,i)
+/*
+	for i:=0;i<TxPerBlk*10;i++{
+ 		_tx:=genTx(p,i)
 		p.blockCache.AddTx(&_tx)
 	}
+*/
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-
-		bc := p.blockCache.LongestChain()
+ 		bc := p.blockCache.LongestChain()
 		pool := p.blockCache.LongestPool()
+		b.StartTimer()
 		p.genBlock(p.account, bc, pool)
+		b.StopTimer()
 	}
-
 }
