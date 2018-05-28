@@ -53,7 +53,6 @@ func bootnodeStart() {
 	if err != nil {
 		fmt.Errorf("parse boot node got err:%v", err)
 	}
-	router, _ := RouterFactory("base")
 	conf := initNetConf()
 	conf.SetNodeID(string(node.ID))
 	baseNet, err := NewBaseNetwork(conf)
@@ -61,14 +60,18 @@ func bootnodeStart() {
 		fmt.Println("NewBaseNetwork ", err)
 		return
 	}
-	err = router.Init(baseNet, node.TCP)
+	ch, err := baseNet.Listen(node.TCP)
 	if err != nil {
 		fmt.Println("Init ", err)
 		return
 	}
-	go router.Run()
 	fmt.Println("server starting", node.Addr())
-	select {}
+	for {
+		select {
+		case <-ch:
+		}
+	}
+
 }
 
 func testBaseNetwork() {
