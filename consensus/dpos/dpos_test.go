@@ -22,7 +22,6 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
-	"fmt"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -582,7 +581,7 @@ func BenchmarkGetBlock(b *testing.B) {
 func BenchmarkBlockVerifier(b *testing.B) { benchBlockVerifier(b) }
 func BenchmarkTxCache(b *testing.B) { 
 	//benchTxCache(b,true)
-	benchTxCache(b,false)
+	benchTxCache(b,true)
 }
 /*
 func BenchmarkTxDb(b *testing.B) { 
@@ -706,8 +705,8 @@ func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,
 	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
 
-	blockLen := p.blockCache.ConfirmedLength()
-	fmt.Println(blockLen)
+	//blockLen := p.blockCache.ConfirmedLength()
+	//fmt.Println(blockLen)
 
 	//blockNum := 1000
 	slot := consensus_common.GetCurrentTimestamp().Slot
@@ -753,9 +752,7 @@ func benchAddBlockCache(b *testing.B,txCnt int,continuity bool) {
 	blockPool:=genBlocks(p,accountList,witnessList,b.N,txCnt,continuity)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		for _, bl := range blockPool {
-			p.blockCache.Add(bl, p.blockVerify)
-		}
+		p.blockCache.Add(blockPool[i], p.blockVerify)
 	}
 
 }
@@ -774,10 +771,8 @@ func benchGetBlock(b *testing.B,txCnt int,continuity bool) {
 	//get block
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		for j:= range blockPool {
-			chain:=p.blockCache.LongestChain()
-			chain.GetBlockByNumber(uint64(j))
-		}
+		chain:=p.blockCache.LongestChain()
+		chain.GetBlockByNumber(uint64(i))
 	}
 }
 // block验证性能测试
@@ -797,7 +792,7 @@ func benchTxCache(b *testing.B,f bool) {
 	p,_,_:=envInit(b)
 	var txs []tx.Tx
 	txCache:=tx.NewTxPoolImpl()
-	for j:=0;j<1000;j++ {
+	for j:=0;j<b.N;j++ {
 		_tx:=genTx(p,j)
 		txs=append(txs,_tx)
 	}
@@ -805,24 +800,15 @@ func benchTxCache(b *testing.B,f bool) {
 	if f==true {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			for j:=0;j<1000;j++ {
-				_tx:=txs[j]
-				txCache.Add(&_tx)
-			}
+			txCache.Add(&txs[i])
 		}
 	}else{
 		for i := 0; i < b.N; i++ {
-			for j:=0;j<1000;j++ {
-				_tx:=txs[j]
-				txCache.Add(&_tx)
-			}
+			txCache.Add(&txs[i])
 		}
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			for j:=0;j<1000;j++ {
-				_tx:=txs[j]
-				txCache.Del(&_tx)
-			}
+			txCache.Del(&txs[i])
 		}
 	
 	}
@@ -832,7 +818,7 @@ func benchTxDb(b *testing.B,f bool) {
 	p,_,_:=envInit(b)
 	var txs []tx.Tx
 	txDb:=tx.TxDbInstance()
-	for j:=0;j<1000;j++ {
+	for j:=0;j<b.N;j++ {
 		_tx:=genTx(p,j)
 		txs=append(txs,_tx)
 	}
@@ -840,24 +826,15 @@ func benchTxDb(b *testing.B,f bool) {
 	if f==true {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			for j:=0;j<10;j++ {
-				_tx:=txs[j]
-				txDb.Add(&_tx)
-			}
+			txDb.Add(&txs[i])
 		}
 	}else{
 		for i := 0; i < b.N; i++ {
-			for j:=0;j<10;j++ {
-				_tx:=txs[j]
-				txDb.Add(&_tx)
-			}
+			txDb.Add(&txs[i])
 		}
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			for j:=0;j<10;j++ {
-				_tx:=txs[j]
-				txDb.Del(&_tx)
-			}
+			txDb.Del(&txs[i])
 		}
 	
 	}
@@ -867,9 +844,7 @@ func benchBlockHead(b *testing.B) {
 	p,_,_:=envInit(b)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		for j:=0;j<1000;j++{
-			genBlockHead(p)
-		}
+		genBlockHead(p)
 	}
 }
 
@@ -883,11 +858,10 @@ func benchGenerateBlock(b *testing.B,txCnt int) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		for j:=0;j<100;j++{
-			bc := p.blockCache.LongestChain()
-			pool := p.blockCache.LongestPool()
-			p.genBlock(p.account, bc, pool)
-		}
+
+		bc := p.blockCache.LongestChain()
+		pool := p.blockCache.LongestPool()
+		p.genBlock(p.account, bc, pool)
 	}
 
 }
