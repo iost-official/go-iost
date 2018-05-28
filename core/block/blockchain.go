@@ -7,7 +7,7 @@ import (
 	"sync"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
-	"github.com/iost-official/prototype/log"
+	//"github.com/iost-official/prototype/log"
 )
 
 var (
@@ -103,7 +103,7 @@ func (b *ChainImpl) Push(block *Block) error {
 	if err != nil {
 		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
-	
+/*	
 	////////////probe//////////////////
 	log.Report(&log.MsgBlock{
 		SubType:"confirm",
@@ -111,14 +111,14 @@ func (b *ChainImpl) Push(block *Block) error {
 		BlockNum:block.Head.Number,
 	})
 	///////////////////////////////////
-
+*/
 
 	//put all the tx of this block to txdb
 	for _, ctx := range block.Content {
 		if err := b.tx.Add(&ctx); err != nil {
 			return fmt.Errorf("failed to add tx %v", err)
 		}
-
+/*
 		////////////probe//////////////////
 		log.Report(&log.MsgTx{
 			SubType:"confirm",
@@ -127,6 +127,7 @@ func (b *ChainImpl) Push(block *Block) error {
 			Nonce:ctx.Nonce,
 		})
 		///////////////////////////////////
+*/
 	}
 
 	return nil

@@ -180,13 +180,13 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("RPC initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-
+/*
 		////////////probe//////////////////
 		log.Report(&log.MsgNode{
 			SubType: "online",
 		})
 		///////////////////////////////////
-
+*/
 		//等待推出信号
 		exitLoop()
 
@@ -210,13 +210,13 @@ func exitLoop() {
 				s.Stop()
 			}
 		}
-
+/*
 		////////////probe//////////////////
 		log.Report(&log.MsgNode{
 			SubType: "offline",
 		})
 		///////////////////////////////////
-
+*/
 		os.Exit(0)
 	}()
 
