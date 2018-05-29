@@ -33,7 +33,7 @@ func (v *Verifier) Verify(contract vm.Contract) (state.Pool, uint64, error) {
 }
 
 func (v *Verifier) SetPool(pool state.Pool) {
-	v.Pool = pool
+	v.Pool = pool.Copy()
 }
 
 // 验证新tx的工具类
@@ -118,6 +118,70 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, contain bool) (sta
 	if contain {
 		cv.SetPool(pool)
 	}
+	return pool, nil
+}
+
+// 验证contract，返回pool是包含了该contract的pool。如果contain为true则进行合并
+//
+// 取得tx中的Contract的方法： tx.Contract
+func (cv *CacheVerifier) VerifyContractWithPool(contract vm.Contract, pool state.Pool) (state.Pool, error) {
+	sender := contract.Info().Publisher
+	var balanceOfSender float64
+	val0, err := pool.GetHM("iost", state.Key(sender))
+	if err != nil {
+		return nil, err
+	}
+	val, ok := val0.(*state.VFloat)
+	if val0 == state.VNil {
+		val = state.MakeVFloat(0)
+	} else if !ok {
+		return nil, fmt.Errorf("pool type error: should VFloat, acture %v; in iost.%v",
+			reflect.TypeOf(val0).String(), string(sender))
+	}
+	balanceOfSender = val.ToFloat64()
+
+	if balanceOfSender < float64(contract.Info().GasLimit)*contract.Info().Price {
+		return nil, fmt.Errorf("balance not enough")
+	}
+
+	cv.StartVM(contract)
+	pool, gas, err := cv.Verify(contract)
+	if err != nil {
+		cv.StopVM(contract)
+		return nil, err
+	}
+	cv.StopVM(contract)
+
+	val1, err := pool.GetHM("iost", state.Key(sender))
+	if err != nil {
+		return nil, err
+	}
+
+	if gas > uint64(contract.Info().GasLimit) {
+		balanceOfSender -= float64(contract.Info().GasLimit) * contract.Info().Price
+		if balanceOfSender < 0 {
+			panic("balance of sender to be zero!!")
+		}
+		val1 := state.MakeVFloat(balanceOfSender)
+		pool2 := pool.Copy()
+		pool2.PutHM("iost", state.Key(sender), val1)
+		return pool2, nil
+	}
+
+	balanceOfSender = val1.(*state.VFloat).ToFloat64()
+
+	balanceOfSender -= float64(gas) * contract.Info().Price
+	if balanceOfSender < 0 {
+		balanceOfSender = 0
+		val1 := state.MakeVFloat(balanceOfSender)
+		pool2 := pool.Copy()
+		pool2.PutHM("iost", state.Key(sender), val1)
+		return nil, fmt.Errorf("can not afford gas")
+	}
+
+	val2 := state.MakeVFloat(balanceOfSender)
+	pool2 := pool.Copy()
+	pool2.PutHM("iost", state.Key(sender), val2)
 	return pool, nil
 }
 

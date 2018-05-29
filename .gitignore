@@ -124,17 +124,19 @@ iserver/netpath/
 rpc/js/node_modules/
 rpc/js/package-lock.json
 core/block/txDB/
-rpc/txDB/
 
-
-
-
-blockDB/
 bak/
+blockDB/
+
 dump.rdb
 iserver/blockDB/
 iserver/netpath2/
 iserver/netpath3/
 iserver/txDB/
+
+iwallet/sc/
+iwallet/testTX.py
+netpath/
 netpath3/
+rpc/txDB/
 txDB/

@@ -2,7 +2,6 @@ package state
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,20 +12,28 @@ type Key string
 type Value interface {
 	Type() Type
 	EncodeString() string
-	merge(b Value) (Value, error)
 }
 
-func Merge(a, b Value) (Value, error) {
+func Merge(a, b Value) Value {
 
-	if a == nil {
+	switch {
+	case a == nil:
 		panic("Merge from nil, means Get function wrong!")
+	case b == nil:
+		panic("Merge from nil, means Get function wrong!")
+	case b == VNil:
+		return a
+	case b == VDelete:
+		return VNil
+	case a.Type() == Map && b.Type() == Map:
+		bI := b.(*VMap)
+		for k, val := range bI.m {
+			a.(*VMap).m[k] = val
+		}
+		return a
 	}
 
-	if b == nil {
-		return a, nil
-	}
-
-	return a.merge(b)
+	return b
 }
 
 func (k Key) Encode() []byte {
@@ -37,6 +44,7 @@ type Type int
 
 const (
 	Nil Type = iota
+	Delete
 	Bool
 	Int
 	Float
@@ -116,8 +124,16 @@ func (v *VNilType) Type() Type {
 func (v *VNilType) EncodeString() string {
 	return "nil"
 }
-func (v *VNilType) merge(b Value) (Value, error) {
-	return b, nil
+
+var VDelete = &VDeleteType{}
+
+type VDeleteType struct{}
+
+func (v *VDeleteType) Type() Type {
+	return Delete
+}
+func (v *VDeleteType) EncodeString() string {
+	return "delete"
 }
 
 type VString struct {
@@ -134,30 +150,6 @@ func (v *VString) Type() Type {
 }
 func (v *VString) EncodeString() string {
 	return "s" + v.string
-}
-func (v *VString) merge(b Value) (Value, error) {
-	// 允许动态类型，下同
-	/*
-		if reflect.TypeOf(b) != reflect.TypeOf(v) {
-			return nil, fmt.Errorf("type error")
-		}
-		c := &VString{
-			T:      b.Type(),
-			string: b.String(),
-		}
-		switch v.Type() {
-		case Nil:
-			return c, nil
-		case Int:
-			return c, nil
-		case String:
-			return c, nil
-		}
-
-		return c, nil
-	*/
-
-	return b, nil
 }
 
 type VInt struct {
@@ -178,21 +170,6 @@ func (v *VInt) Type() Type {
 func (v *VInt) EncodeString() string {
 	return "i" + strconv.Itoa(v.int)
 }
-func (v *VInt) merge(b Value) (Value, error) {
-	/*
-		if reflect.TypeOf(b) != reflect.TypeOf(v) {
-			return nil, fmt.Errorf("type error")
-		}
-		vv := reflect.ValueOf(b)
-		c := &VInt{
-			t:   v.Type(),
-			int: vv.Interface().(int),
-		}
-		return c, nil
-	*/
-
-	return b, nil
-}
 
 type VBytes struct {
 	val []byte
@@ -210,21 +187,6 @@ func (v *VBytes) Type() Type {
 func (v *VBytes) EncodeString() string {
 	return "b" + base64.StdEncoding.EncodeToString(v.val)
 }
-func (v *VBytes) merge(b Value) (Value, error) {
-	/*
-		if reflect.TypeOf(b) != reflect.TypeOf(v) {
-			return nil, fmt.Errorf("type error")
-		}
-		vv := reflect.ValueOf(b)
-		c := &VBytes{
-			t:   v.Type(),
-			val: vv.Interface().([]byte),
-		}
-		return c, nil
-	*/
-
-	return b, nil
-}
 
 type VFloat struct {
 	float64
@@ -241,9 +203,6 @@ func (v *VFloat) Type() Type {
 }
 func (v *VFloat) EncodeString() string {
 	return "f" + strconv.FormatFloat(v.float64, 'e', 15, 64)
-}
-func (v *VFloat) merge(b Value) (Value, error) {
-	return b, nil
 }
 
 func (v *VFloat) ToFloat64() float64 {
@@ -280,9 +239,6 @@ func (v *VBool) EncodeString() string {
 		return "false"
 	}
 }
-func (v *VBool) merge(b Value) (Value, error) {
-	return b, nil
-}
 
 type VMap struct {
 	m map[Key]Value
@@ -307,30 +263,16 @@ func (v *VMap) EncodeString() string {
 	}
 	return str
 }
-func (v VMap) merge(b Value) (Value, error) {
-	if b.Type() != Map {
-		return b, nil
-	} else {
-		bI := b.(*VMap)
-		for k, val := range bI.m {
-			v.m[k] = val
-		}
-	}
-	return &v, nil
-}
-
 func (v *VMap) Set(key Key, value Value) {
 	v.m[key] = value
 }
 
-var ErrNotFound = errors.New("not found")
-
-func (v *VMap) Get(key Key) (Value, error) {
+func (v *VMap) Get(key Key) Value {
 	ret, ok := v.m[key]
 	if !ok {
-		return nil, ErrNotFound
+		return VNil
 	}
-	return ret, nil
+	return ret
 }
 
 //const stack_size_limit uint32 = 65536
