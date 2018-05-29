@@ -11,7 +11,7 @@ import (
 // Block 是一个区块的结构体定义
 type Block struct {
 	Head    BlockHead
-	Content []tx.Tx
+	Content []tx.Tx//TODO:make it general for other structs
 }
 
 // Encode 是区块的序列化方法
