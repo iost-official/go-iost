@@ -160,7 +160,6 @@ func (p *DPoS) genesis(initTime int64) error {
 	if err != nil {
 		panic("failed to ParseGenesis")
 	}
-
 	p.blockCache.SetBasePool(stp)
 
 	p.blockCache.AddGenesis(genesis)

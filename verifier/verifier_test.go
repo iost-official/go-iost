@@ -3,8 +3,6 @@ package verifier
 import (
 	"testing"
 
-	"fmt"
-
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/core/block"
@@ -240,6 +238,7 @@ func BenchmarkCacheVerifier_TransferOnly(b *testing.B) {
 	main := lua.NewMethod(vm.Public, "main", 0, 1)
 	code := `function main()
 	Transfer("a", "b", 50)
+    return "success"
 end`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 
@@ -260,11 +259,51 @@ end`
 		if err != nil {
 			panic(err)
 		}
+		//cv.SetPool(pool2)
 	}
-	fmt.Println()
-	fmt.Print("a: ")
-	fmt.Println(pool2.GetHM("iost", "a"))
-	fmt.Print("b: ")
-	fmt.Println(pool2.GetHM("iost", "b"))
+
+	_ = pool2
+	//fmt.Println()
+	//fmt.Print("1.a: ")
+	//fmt.Println(pool2.GetHM("iost", "a"))
+	//fmt.Print("1.b: ")
+	//fmt.Println(pool2.GetHM("iost", "b"))
+
+}
+
+func BenchmarkCacheVerifierWithCache_TransferOnly(b *testing.B) {
+	main := lua.NewMethod(vm.Public, "main", 0, 1)
+	code := `function main()
+	Transfer("a", "b", 50)
+    return "success"
+end`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
+
+	dbx, err := db.DatabaseFactor("redis")
+	if err != nil {
+		panic(err.Error())
+	}
+	sdb := state.NewDatabase(dbx)
+	pool := state.NewPool(sdb)
+	pool.PutHM(state.Key("iost"), state.Key("a"), state.MakeVFloat(1000000))
+	pool.PutHM(state.Key("iost"), state.Key("b"), state.MakeVFloat(1000000))
+
+	var pool2 state.Pool
+
+	cv := NewCacheVerifier(pool)
+	for i := 0; i < b.N; i++ {
+		pool2, err = cv.VerifyContractWithPool(&lc, pool)
+		if err != nil {
+			panic(err)
+		}
+		pool = pool2
+	}
+
+	_ = pool2
+	//fmt.Println()
+	//fmt.Print("1.a: ")
+	//fmt.Println(pool2.GetHM("iost", "a"))
+	//fmt.Print("1.b: ")
+	//fmt.Println(pool2.GetHM("iost", "b"))
 
 }
