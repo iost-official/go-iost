@@ -222,6 +222,7 @@ func (h *BlockCacheImpl) BlockChain() block.Chain {
 // AddGenesis 加入创世块
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	h.bc.Push(block)
+	h.cachedRoot.pool.Flush()
 	return nil
 }
 
