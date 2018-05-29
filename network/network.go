@@ -208,7 +208,7 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	}
 	if msg.ReqType == int32(ReqDownloadBlock) || msg.ReqType == int32(ReqNewBlock) {
 		if er := bn.send(peer.blockConn, req); er != nil {
-			bn.log.D("[net] block conn sent")
+			bn.log.D("[net] block conn sent", er)
 			bn.peers.RemoveByNodeStr(msg.To)
 		}
 	} else {
@@ -245,7 +245,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (*Peer, error) {
 }
 
 func dial(nodeAddr string) (net.Conn, net.Conn, error) {
-	conn, err := net.Dial("tcp", nodeAddr)
+	conn, err := net.DialTimeout("tcp", nodeAddr, 1*time.Second)
 	if err != nil {
 		if conn != nil {
 			conn.Close()
@@ -253,7 +253,7 @@ func dial(nodeAddr string) (net.Conn, net.Conn, error) {
 		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: nodeAddr})
 		return nil, nil, fmt.Errorf("dial tcp %v got err:%v", nodeAddr, err)
 	}
-	blockConn, err := net.Dial("tcp", nodeAddr)
+	blockConn, err := net.DialTimeout("tcp", nodeAddr, 1*time.Second)
 	if err != nil {
 		if conn != nil {
 			conn.Close()
@@ -315,10 +315,13 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 		bn.log.E("[net] pack data encountered err:%v", err)
 		return nil
 	}
-	_, err = conn.Write(pack)
+	n, err := conn.Write(pack)
 	if err != nil {
 		bn.log.E("[net] conn write got err:%v", err)
+	} else if n < len(pack) {
+		return errors.New("failed to write conn")
 	}
+
 	return err
 }
 
@@ -326,6 +329,7 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 	defer conn.Close()
 	for {
 		scanner := bufio.NewScanner(conn)
+		scanner.Buffer([]byte{}, bufio.MaxScanTokenSize*200)
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			if !atEOF && isNetVersionMatch(data) {
 				if len(data) > 8 {
