@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	SyncNumber        = 2  // 当本地链长度和网络中最新块相差SyncNumber时需要同步
-	MaxDownloadNumber = 10 // 一次同步下载的最多块数
-	RetryTime         = 8
-	WaitTime          = 2
+	SyncNumber            = 2  // 当本地链长度和网络中最新块相差SyncNumber时需要同步
+	MaxDownloadNumber     = 10 // 一次同步下载的最多块数
+	RetryTime             = 8
+	continuousBlockNumber = 2 //一个节点连续生产2个块，强制同步区块
+
 )
 
 // Synchronizer 同步器接口
@@ -108,6 +109,33 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	if netHeight > height+uint64(SyncNumber) {
 		return true, max(sync.maxSyncNumber, sync.blockCache.ConfirmedLength()-1) + 1, netHeight
 	}
+
+	// 如果生产两个连续的块，强制同步区块，避免所有节点长度相同
+	bc := sync.blockCache.LongestChain()
+	ter := bc.Iterator()
+	var witness string
+	var i int
+	for i = 0; i < continuousBlockNumber; i++ {
+		block := ter.Next()
+		if block == nil {
+			break
+		}
+
+		if i == 0 {
+			witness = block.Head.Witness
+			continue
+		}
+
+		if witness != block.Head.Witness{
+			break
+		}
+	}
+
+	// 强制同步
+	if i == continuousBlockNumber{
+		return true, max(sync.maxSyncNumber, sync.blockCache.ConfirmedLength()-1) + 1, netHeight
+	}
+
 	return false, 0, 0
 }
 
@@ -195,15 +223,15 @@ func (sync *SyncImpl) requestBlockLoop() {
 				ReqType: int32(ReqNewBlock), //todo 后补类型
 				Body:    block.Encode(),
 			}
-/*
-			////////////probe//////////////////
-			log.Report(&log.MsgBlock{
-				SubType:       "send",
-				BlockHeadHash: block.HeadHash(),
-				BlockNum:      block.Head.Number,
-			})
-			///////////////////////////////////
-*/
+			/*
+						////////////probe//////////////////
+						log.Report(&log.MsgBlock{
+							SubType:       "send",
+							BlockHeadHash: block.HeadHash(),
+							BlockNum:      block.Head.Number,
+						})
+						///////////////////////////////////
+			*/
 			sync.router.Send(resMsg)
 		case <-sync.exitSignal:
 			return
