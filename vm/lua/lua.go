@@ -145,7 +145,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Transfer = api{
 		name: "Transfer",
 		function: func(L *lua.LState) int {
-			src := L.ToString(1)
+			src := L.ToString(1) // todo 验证输入
 			if vm.CheckPrivilege(l.Contract.info, src) <= 0 {
 				L.Push(lua.LFalse)
 				return 1

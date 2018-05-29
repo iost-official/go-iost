@@ -251,7 +251,7 @@ end`,
 func BenchmarkLuaVM_GetInPatch(b *testing.B) {
 	main := NewMethod(vm.Public, "main", 0, 1)
 	lc := Contract{
-		info: vm.ContractInfo{Prefix: "test", GasLimit: 11},
+		info: vm.ContractInfo{Prefix: "test", GasLimit: 1000},
 		code: `function main()
 	Get("hello")
 	return "success"
@@ -279,7 +279,7 @@ end`,
 func BenchmarkLuaVM_PutToPatch(b *testing.B) {
 	main := NewMethod(vm.Public, "main", 0, 1)
 	lc := Contract{
-		info: vm.ContractInfo{Prefix: "test", GasLimit: 11},
+		info: vm.ContractInfo{Prefix: "test", GasLimit: 1000},
 		code: `function main()
 	Put("hello", "world")
 	return "success"

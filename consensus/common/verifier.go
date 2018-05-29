@@ -3,11 +3,12 @@ package consensus_common
 import (
 	"bytes"
 	"errors"
+
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/log"
+	"github.com/iost-official/prototype/verifier"
 )
 
 //go:generate gencode go -schema=structs.schema -package=consensus_common
@@ -32,16 +33,23 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 	return nil
 }
 
-var ver *verifier.BlockVerifier
+var ver *verifier.CacheVerifier
 
 // StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 	if ver == nil {
-		veri := verifier.NewBlockVerifier(pool)
+		veri := verifier.NewCacheVerifier(pool)
 		ver = &veri
 	}
-	ver.SetPool(pool)
-	return ver.VerifyBlock(block, false)
+	pool2 := pool.Copy()
+	for _, txx := range block.Content { // TODO
+		pool3, err := ver.VerifyContractWithPool(txx.Contract, pool2)
+		if err != nil {
+			return pool3, err
+		}
+		pool2 = pool3
+	}
+	return pool2, nil
 }
 
 // VerifyTx 验证单个交易的正确性
@@ -51,15 +59,15 @@ func VerifyTx(tx *tx.Tx, txVer *verifier.CacheVerifier) (state.Pool, bool) {
 	newPool, err := txVer.VerifyContract(tx.Contract, false)
 
 	////////////probe//////////////////
-	var ret string="pass"
-	if err!=nil{
-		ret="fail"
+	var ret string = "pass"
+	if err != nil {
+		ret = "fail"
 	}
 	log.Report(&log.MsgTx{
-		SubType:"verify."+ret,
-		TxHash:tx.Hash(),
-		Publisher:tx.Publisher.Pubkey,
-		Nonce:tx.Nonce,
+		SubType:   "verify." + ret,
+		TxHash:    tx.Hash(),
+		Publisher: tx.Publisher.Pubkey,
+		Nonce:     tx.Nonce,
 	})
 	///////////////////////////////////
 
