@@ -23,6 +23,7 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
+	"fmt"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -508,4 +509,325 @@ func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parent
 		Body:    blk.Encode(),
 	}
 	return blk, msg
+}
+
+
+//go test -bench=. -benchmem -run=nonce
+func BenchmarkAddBlockCache(b *testing.B) {
+	//benchAddBlockCache(b,10,true)
+	benchAddBlockCache(b,10,false)
+}
+/*
+func BenchmarkGetBlock(b *testing.B) {
+//	benchGetBlock(b,10,true)
+	benchGetBlock(b,10,false)
+}
+*/
+func BenchmarkBlockVerifier(b *testing.B) { benchBlockVerifier(b) }
+func BenchmarkTxCache(b *testing.B) {
+	//benchTxCache(b,true)
+	benchTxCache(b,true)
+}
+/*
+func BenchmarkTxDb(b *testing.B) {
+	//benchTxDb(b,true)
+	benchTxDb(b,false)
+}
+*/
+func BenchmarkBlockHead(b *testing.B)     { benchBlockHead(b) }
+func BenchmarkGenerateBlock(b *testing.B) {
+	benchGenerateBlock(b,10000)
+}
+
+
+func envInit(b *testing.B) (*DPoS,[]account.Account,[]string) {
+	var accountList []account.Account
+	var witnessList []string
+
+	acc:=common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9")
+	_account, err:=account.NewAccount(acc)
+	if err!=nil{
+		panic("account.NewAccount error")
+	}
+	accountList = append(accountList, _account)
+	witnessList = append(witnessList, _account.ID)
+	_accId:=_account.ID
+
+	for i:=1;i<3;i++ {
+		_account, err:=account.NewAccount(nil)
+		if err!=nil{
+			panic("account.NewAccount error")
+		}
+		accountList = append(accountList, _account)
+		witnessList = append(witnessList, _accId)
+	}
+
+	tx.LdbPath = ""
+
+	mockCtr := NewController(b)
+	mockRouter := protocol_mock.NewMockRouter(mockCtr)
+
+	network.Route = mockRouter
+	//获取router实例
+	guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
+		return mockRouter, nil
+	})
+
+	heightChan := make(chan message.Message, 1)
+	blkSyncChan := make(chan message.Message, 1)
+	mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
+	mockRouter.EXPECT().FilteredChan(Any()).Return(blkSyncChan, nil)
+
+	//设置第一个通道txchan
+	txChan := make(chan message.Message, 1)
+	mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
+
+	//设置第二个通道Blockchan
+	blkChan := make(chan message.Message, 1)
+	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
+
+	defer guard.Unpatch()
+
+	txDb := tx.TxDbInstance()
+	if txDb == nil {
+		panic("txDB error")
+	}
+
+	blockChain, err := block.Instance()
+	if err != nil {
+		panic("block.Instance error")
+	}
+
+	err = state.PoolInstance()
+	if err != nil {
+		panic("state.PoolInstance error")
+	}
+
+	//verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+	//	return pool, nil
+	//}
+
+	//blockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
+	//seckey := common.Sha256([]byte("SeckeyId0"))
+	//pubkey := common.CalcPubkeyInSecp256k1(seckey)
+	p, err := NewDPoS(accountList[0], blockChain, state.StdPool, witnessList)
+	if err != nil {
+		b.Errorf("NewDPoS error")
+	}
+	return p,accountList,witnessList
+}
+
+func genTx(p *DPoS,nonce int) tx.Tx{
+	main := lua.NewMethod(2,"main", 0, 1)
+	code := `function main()
+				Put("hello", "world")
+				return "success"
+			end`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
+
+	_tx:=tx.NewTx(int64(nonce), &lc)
+	_tx,_=tx.SignTx(_tx,p.account)
+	return _tx
+}
+
+func genBlockHead(p *DPoS){
+	blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
+		Version:    0,
+		ParentHash: nil,
+		TreeHash:   make([]byte, 0),
+		BlockHash:  make([]byte, 0),
+		Info:       []byte("test"),
+		Number:     int64(1),
+		Witness:    p.account.ID,
+		Time:       int64(0),
+	}}
+
+	headInfo := generateHeadInfo(blk.Head)
+	sig, _ := common.Sign(common.Secp256k1, headInfo, p.account.Seckey)
+	blk.Head.Signature = sig.Encode()
+}
+
+func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,txCnt int,continuity bool) (blockPool []*block.Block) {
+	confChain := p.blockCache.BlockChain()
+	tblock := confChain.Top() //获取创世块
+
+	//blockLen := p.blockCache.ConfirmedLength()
+	//fmt.Println(blockLen)
+
+	//blockNum := 1000
+	slot := consensus_common.GetCurrentTimestamp().Slot
+
+	for i := 0; i < n; i++ {
+		var hash []byte
+		if len(blockPool) == 0 {
+			//用创世块的头hash赋值
+			hash =tblock.Head.Hash()
+		} else {
+			hash = blockPool[len(blockPool)-1].Head.Hash()
+		}
+		//make every block has no parent
+		if continuity==false{
+			hash[i%len(hash)]=byte(i%256)
+		}
+		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
+			Version:    0,
+			ParentHash: hash,
+			TreeHash:   make([]byte, 0),
+			BlockHash:  make([]byte, 0),
+			Info:       []byte("test"),
+			Number:     int64(i+1),
+			Witness:    witnessList[0],
+			Time:       slot + int64(i),
+		}}
+
+		headInfo := generateHeadInfo(blk.Head)
+		sig, _ := common.Sign(common.Secp256k1, headInfo, accountList[i%3].Seckey)
+		blk.Head.Signature = sig.Encode()
+
+		for i:=0;i<txCnt;i++{
+			blk.Content = append(blk.Content, genTx(p,i))
+		}
+		blockPool = append(blockPool, &blk)
+	}
+	return
+}
+func benchAddBlockCache(b *testing.B,txCnt int,continuity bool) {
+
+	p,accountList,witnessList:=envInit(b)
+	//生成block
+	blockPool:=genBlocks(p,accountList,witnessList,b.N,txCnt,continuity)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StartTimer()
+		p.blockCache.Add(blockPool[i], p.blockVerify)
+		b.StopTimer()
+	}
+
+}
+
+// 获取block性能测试
+func benchGetBlock(b *testing.B,txCnt int,continuity bool) {
+	p,accountList,witnessList:=envInit(b)
+	//生成block
+	blockPool:=genBlocks(p,accountList,witnessList,b.N,txCnt,continuity)
+	for i := 0; i < b.N; i++ {
+		for _, bl := range blockPool {
+			p.blockCache.Add(bl, p.blockVerify)
+		}
+	}
+
+	//get block
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		chain:=p.blockCache.LongestChain()
+		b.StartTimer()
+		chain.GetBlockByNumber(uint64(i))
+		b.StopTimer()
+	}
+}
+// block验证性能测试
+func benchBlockVerifier(b *testing.B) {
+	p,accountList,witnessList:=envInit(b)
+	//生成block
+	blockPool:=genBlocks(p,accountList,witnessList,2,6000,true)
+	//p.update(&blockPool[0].Head)
+	confChain := p.blockCache.BlockChain()
+	tblock := confChain.Top() //获取创世块
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_,err:=p.blockVerify(blockPool[0],tblock,state.StdPool)
+		if err!=nil{
+			fmt.Println(err)
+		}
+	}
+}
+
+
+func benchTxCache(b *testing.B,f bool) {
+	p,_,_:=envInit(b)
+	var txs []tx.Tx
+	txCache:=tx.NewTxPoolImpl()
+	for j:=0;j<b.N;j++ {
+		_tx:=genTx(p,j)
+		txs=append(txs,_tx)
+	}
+
+	b.ResetTimer()
+	if f==true {
+		for i := 0; i < b.N; i++ {
+			b.StartTimer()
+			txCache.Add(&txs[i])
+			b.StopTimer()
+		}
+	}else{
+		for i := 0; i < b.N; i++ {
+			txCache.Add(&txs[i])
+		}
+		for i := 0; i < b.N; i++ {
+			b.StartTimer()
+			txCache.Del(&txs[i])
+			b.StopTimer()
+		}
+
+	}
+}
+
+func benchTxDb(b *testing.B,f bool) {
+	p,_,_:=envInit(b)
+	var txs []tx.Tx
+	txDb:=tx.TxDbInstance()
+	for j:=0;j<b.N;j++ {
+		_tx:=genTx(p,j)
+		txs=append(txs,_tx)
+	}
+
+	b.ResetTimer()
+	if f==true {
+		for i := 0; i < b.N; i++ {
+			b.StartTimer()
+			txDb.Add(&txs[i])
+			b.StopTimer()
+		}
+	}else{
+		for i := 0; i < b.N; i++ {
+			txDb.Add(&txs[i])
+		}
+		for i := 0; i < b.N; i++ {
+			b.StartTimer()
+			txDb.Del(&txs[i])
+			b.StopTimer()
+		}
+
+	}
+}
+// 生成block head性能测试
+func benchBlockHead(b *testing.B) {
+	p,_,_:=envInit(b)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StartTimer()
+		genBlockHead(p)
+		b.StopTimer()
+	}
+}
+
+// 生成块性能测试
+func benchGenerateBlock(b *testing.B,txCnt int) {
+	p,_,_:=envInit(b)
+	TxPerBlk=txCnt
+
+	for i:=0;i<TxPerBlk;i++{
+		_tx:=genTx(p,i)
+		p.blockCache.AddTx(&_tx)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < 1; i++ {
+		bc := p.blockCache.LongestChain()
+		pool := p.blockCache.LongestPool()
+		b.StartTimer()
+		p.genBlock(p.account, bc, pool)
+		b.StopTimer()
+	}
 }
