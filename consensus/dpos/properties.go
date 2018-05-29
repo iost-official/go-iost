@@ -147,7 +147,19 @@ func witnessOfTime(sp *globalStaticProperty, dp *globalDynamicProperty, time Tim
 	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
 	index := ((currentSlot % slotsEveryTurn) + slotsEveryTurn) % slotsEveryTurn
 	index /= slotPerWitness
-	return sp.WitnessList[index]
+	witness := sp.WitnessList[index]
+
+	// 当前一个块是创世块，应该让第一个witness产生块
+	// 问题：如果第一个witness失败？
+	if dp.LastBlockNumber == 0  {
+		if witness == sp.WitnessList[0]{
+			return witness
+		}else{
+			return "wait for the first witness"
+		}
+	}
+
+	return witness
 }
 
 // 返回到下一次轮到本节点生产块的时间长度，秒为单位
@@ -157,7 +169,12 @@ func timeUntilNextSchedule(sp *globalStaticProperty, dp *globalDynamicProperty, 
 	if index = getIndex(sp.Account.GetId(), sp.WitnessList); index < 0 {
 		return dp.NextMaintenanceTime.ToUnixSec() - timeSec
 	}
-
+	// 如果上一个块是创世块
+	if dp.LastBlockNumber == 0 {
+		if index != 0 {
+			return SlotLength
+		}
+	}
 	time := GetTimestamp(timeSec)
 	currentSlot := dp.timestampToSlot(time)
 	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
