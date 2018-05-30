@@ -105,7 +105,7 @@ func max(x, y uint64) uint64 {
 // NeedSync 判断是否需要同步
 // netHeight 当前网络收到的无法上链的块号
 func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
-	height := sync.blockCache.LongestChain().ConfirmedLength() - 1
+	height := sync.blockCache.ConfirmedLength() - 1
 	if netHeight > height+uint64(SyncNumber) {
 		return true, max(sync.maxSyncNumber, height) + 1, netHeight
 	}
