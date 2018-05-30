@@ -78,6 +78,10 @@ func HashToPrefix(hash []byte) string {
 	return common.Base58Encode(hash)
 }
 
+func PrefixToHash(prefix string) []byte {
+	return common.Base58Decode(prefix)
+}
+
 func CheckPrivilege(info ContractInfo, name string) int {
 	if IOSTAccount(name) == info.Publisher {
 		return 2
