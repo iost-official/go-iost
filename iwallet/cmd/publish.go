@@ -45,6 +45,7 @@ to quickly create a Cobra application.`,
 		if len(args) < 1 {
 			fmt.Println(`invalid input, check
 	iwallet publish -h`)
+			return
 		}
 
 		sc, err := ReadFile(args[0])
@@ -57,6 +58,7 @@ to quickly create a Cobra application.`,
 		err = mtx.Decode(sc)
 		if err != nil {
 			fmt.Println(err.Error())
+			return
 		}
 
 		for i, v := range args {
@@ -106,6 +108,7 @@ to quickly create a Cobra application.`,
 			err = sendTx(stx)
 			if err != nil {
 				fmt.Println(err.Error())
+				return
 			}
 		}
 
