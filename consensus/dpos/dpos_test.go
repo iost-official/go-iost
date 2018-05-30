@@ -7,6 +7,7 @@ import (
 	. "github.com/golang/mock/gomock"
 
 	"time"
+	"sync"
 
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
@@ -580,9 +581,14 @@ func BenchmarkGetBlock(b *testing.B) {
 */
 func BenchmarkBlockVerifier(b *testing.B) { benchBlockVerifier(b) }
 func BenchmarkTxCache(b *testing.B) { 
-	//benchTxCache(b,true)
+ 	//benchTxCache(b,true)
 	benchTxCache(b,true)
 }
+/*
+func BenchmarkTxCachePara(b *testing.B) { 
+	benchTxCachePara(b)
+}
+*/
 /*
 func BenchmarkTxDb(b *testing.B) { 
 	//benchTxDb(b,true)
@@ -591,7 +597,7 @@ func BenchmarkTxDb(b *testing.B) {
 */
 func BenchmarkBlockHead(b *testing.B)     { benchBlockHead(b) }
 func BenchmarkGenerateBlock(b *testing.B) { 
-	benchGenerateBlock(b,10000) 
+	benchGenerateBlock(b,6000) 
 }
 
 
@@ -784,7 +790,7 @@ func benchGetBlock(b *testing.B,txCnt int,continuity bool) {
 func benchBlockVerifier(b *testing.B) {
 	p,accountList,witnessList:=envInit(b)
 	//生成block
-	blockPool:=genBlocks(p,accountList,witnessList,2,6000,true)
+	blockPool:=genBlocks(p,accountList,witnessList,2,10000,true)
 	//p.update(&blockPool[0].Head)
 	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
@@ -826,6 +832,42 @@ func benchTxCache(b *testing.B,f bool) {
 		}
 	
 	}
+}
+
+func benchTxCachePara(b *testing.B) {
+	p,_,_:=envInit(b)
+	var txs []tx.Tx
+
+	b.ResetTimer()
+	txCache:=tx.NewTxPoolImpl()
+	for j:=0;j<2000;j++ {
+		_tx:=genTx(p,j)
+		txs=append(txs,_tx)
+		if j<1000{
+			txCache.Add(&_tx)
+		}
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		start:=time.Now().UnixNano()
+		for j:=0;j<1000;j++ {
+			txCache.Del(&txs[j])
+		}
+		end:=time.Now().UnixNano()
+		fmt.Println((end-start)/1000," ns/op")
+		wg.Done()
+	}()
+	go func() {
+		start:=time.Now().UnixNano()
+		for j:=1000;j<2000;j++ {
+			txCache.Add(&txs[j])
+		}
+		end:=time.Now().UnixNano()
+		fmt.Println((end-start)/1000," ns/op")
+		wg.Done()
+	}()
+	wg.Wait()
 }
 
 func benchTxDb(b *testing.B,f bool) {
@@ -878,6 +920,7 @@ func benchGenerateBlock(b *testing.B,txCnt int) {
 	}
 	
 	b.ResetTimer()
+	b.StopTimer()
 	for i := 0; i < b.N; i++ {
  		bc := p.blockCache.LongestChain()
 		pool := p.blockCache.LongestPool()

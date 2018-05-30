@@ -240,6 +240,8 @@ func (p *DPoS) blockLoop() {
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
+				bc := p.blockCache.LongestChain()
+				p.blockCache.UpdateTxPoolOnBC(bc)
 			} else {
 				p.log.I("Error: %v", err)
 			}
@@ -285,8 +287,8 @@ func (p *DPoS) scheduleLoop() {
 			if wid == p.account.ID {
 
 				//todo test
-				chain := p.blockCache.LongestChain()
-				iter := chain.Iterator()
+				bc := p.blockCache.LongestChain()
+				iter := bc.Iterator()
 				for {
 					block := iter.Next()
 					if block == nil {
@@ -297,13 +299,13 @@ func (p *DPoS) scheduleLoop() {
 				// end test
 
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
-				bc := p.blockCache.LongestChain()
-				p.blockCache.UpdateTxPoolOnBC(bc)
+
 				pool := p.blockCache.LongestPool()
 				blk := p.genBlock(p.account, bc, pool)
-				p.blockCache.ResetTxPoool()
+				go p.blockCache.ResetTxPoool()
 				p.globalDynamicProperty.update(&blk.Head)
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
+
 				msg := message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}
 				go p.router.Broadcast(msg)
 				p.chBlock <- msg
