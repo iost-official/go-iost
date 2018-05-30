@@ -83,6 +83,9 @@ func (c *Contract) Decode(b []byte) error {
 		int(cr.methods[0].oc),
 		vm.Public,
 	}
+	if c.apis == nil {
+		c.apis = make(map[string]Method)
+	}
 	for i := 1; i < len(cr.methods); i++ {
 		c.apis[cr.methods[i].name] = Method{
 			cr.methods[i].name,

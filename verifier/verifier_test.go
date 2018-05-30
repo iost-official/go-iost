@@ -196,7 +196,7 @@ end`
 		So(vt, ShouldNotBeNil)
 		So(vt.EncodeString(), ShouldEqual, "f3.140000000000000e+00")
 		bal, _ := pool2.GetHM(state.Key("iost"), state.Key("ahaha"))
-		So(bal.(*state.VFloat).ToFloat64(), ShouldEqual, 9981)
+		So(bal.(*state.VFloat).ToFloat64(), ShouldEqual, 9985)
 
 	})
 }
