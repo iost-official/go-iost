@@ -105,9 +105,9 @@ func max(x, y uint64) uint64 {
 // NeedSync 判断是否需要同步
 // netHeight 当前网络收到的无法上链的块号
 func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
-	height := sync.blockCache.LongestChain().Length() - 1
+	height := sync.blockCache.ConfirmedLength() - 1
 	if netHeight > height+uint64(SyncNumber) {
-		return true, max(sync.maxSyncNumber, sync.blockCache.ConfirmedLength()-1) + 1, netHeight
+		return true, max(sync.maxSyncNumber, height) + 1, netHeight
 	}
 
 	// 如果生产两个连续的块，强制同步区块，避免所有节点长度相同
@@ -126,13 +126,13 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 			continue
 		}
 
-		if witness != block.Head.Witness{
+		if witness != block.Head.Witness {
 			break
 		}
 	}
 
 	// 强制同步
-	if i == continuousBlockNumber{
+	if i == continuousBlockNumber {
 		return true, max(sync.maxSyncNumber, sync.blockCache.ConfirmedLength()-1) + 1, netHeight
 	}
 
@@ -141,7 +141,7 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
-	sync.maxSyncNumber = endNumber
+	sync.maxSyncNumber = max(sync.maxSyncNumber, endNumber)
 	for endNumber > startNumber+uint64(MaxDownloadNumber)-1 {
 		sync.router.Download(startNumber, startNumber+uint64(MaxDownloadNumber)-1)
 		sync.reqMapLock.Lock()
@@ -154,6 +154,11 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	}
 	if startNumber <= endNumber {
 		sync.router.Download(startNumber, endNumber)
+		sync.reqMapLock.Lock()
+		for i := startNumber; i <= endNumber; i++ {
+			sync.requestMap[i] = true
+		}
+		sync.reqMapLock.Unlock()
 	}
 	return nil
 }
@@ -224,13 +229,13 @@ func (sync *SyncImpl) requestBlockLoop() {
 				Body:    block.Encode(),
 			}
 			/*
-						////////////probe//////////////////
-						log.Report(&log.MsgBlock{
-							SubType:       "send",
-							BlockHeadHash: block.HeadHash(),
-							BlockNum:      block.Head.Number,
-						})
-						///////////////////////////////////
+				////////////probe//////////////////
+				log.Report(&log.MsgBlock{
+					SubType:       "send",
+					BlockHeadHash: block.HeadHash(),
+					BlockNum:      block.Head.Number,
+				})
+				///////////////////////////////////
 			*/
 			sync.router.Send(resMsg)
 		case <-sync.exitSignal:
