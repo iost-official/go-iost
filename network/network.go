@@ -27,12 +27,12 @@ import (
 )
 
 const (
-	HEADLENGTH               = 4
-	CheckKnownNodeInterval   = 10
-	NodeLiveThresholdSeconds = 20
-	MaxDownloadRetry         = 2
-	MsgLiveThresholdSeconds  = 120
-	RegisterServerPort       = 30304
+	HEADLENGTH              = 4
+	CheckKnownNodeInterval  = 10
+	NodeLiveCycle           = 2
+	MaxDownloadRetry        = 2
+	MsgLiveThresholdSeconds = 120
+	RegisterServerPort      = 30304
 )
 
 //Network api
@@ -377,7 +377,7 @@ func (bn *BaseNetwork) putNode(addrs string) {
 				bn.log.E("failed to nodetable has %v, err: %v", addr, err)
 				continue
 			}
-			bn.nodeTable.Put([]byte(node.Addr()), common.IntToBytes(2))
+			bn.nodeTable.Put([]byte(node.Addr()), common.IntToBytes(NodeLiveCycle))
 		}
 	}
 	bn.findNeighbours()
@@ -436,6 +436,9 @@ func (bn *BaseNetwork) findNeighbours() {
 		nodes = append(nodes, node)
 	}
 	neighbours := bn.localNode.FindNeighbours(nodes)
+	for k, _ := range bn.neighbours {
+		bn.delNeighbour(string(k))
+	}
 	for _, n := range neighbours {
 		bn.setNeighbour(n)
 	}
@@ -532,7 +535,6 @@ func randNodeMatchHeight(m map[string]uint64, downloadHeight uint64) (targetNode
 //recentSentLoop clean up recent sent
 func (bn *BaseNetwork) recentSentLoop() {
 	for {
-		time.Sleep(MsgLiveThresholdSeconds * time.Second)
 		bn.log.D("[net] clean up recent sent loop")
 		now := time.Now()
 		for k, t := range bn.RecentSent {
@@ -542,6 +544,7 @@ func (bn *BaseNetwork) recentSentLoop() {
 				bn.lock.Unlock()
 			}
 		}
+		time.Sleep(MsgLiveThresholdSeconds * time.Second)
 	}
 }
 
