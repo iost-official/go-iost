@@ -189,7 +189,9 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 			continue
 		}
 		msg.To = node.Addr()
-		bn.broadcast(msg)
+		if !bn.isRecentSent(msg) {
+			bn.broadcast(msg)
+		}
 	}
 }
 
@@ -253,6 +255,10 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 
 //Send msg to msg.To
 func (bn *BaseNetwork) Send(msg message.Message) {
+	//if bn.isRecentSent(msg) {
+	//	bn.log.D("[net] recent send")
+	//	return
+	//}
 	if msg.To == bn.localNode.Addr() || msg.To == "" {
 		return
 	}
@@ -294,10 +300,6 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 	pack, err := r.Pack()
 	if err != nil {
 		bn.log.E("[net] pack data encountered err:%v", err)
-		return nil
-	}
-	if bn.isRecentSent(pack) {
-		bn.log.D("[net] recent sent")
 		return nil
 	}
 	_, err = conn.Write(pack)
@@ -498,22 +500,6 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 	return nil
 }
 
-//sendTo send request to the address
-func (bn *BaseNetwork) sendTo(addr string, req *Request) {
-	if addr == "" {
-		return
-	}
-	conn, err := bn.dial(addr)
-	if err != nil {
-		bn.nodeTable.Delete([]byte(addr))
-		bn.log.E("[net] dial tcp got err:%v", err)
-		return
-	}
-	if er := bn.send(conn, req); er != nil {
-		bn.peers.RemoveByNodeStr(addr)
-	}
-}
-
 //SetNodeHeightMap ...
 func (bn *BaseNetwork) SetNodeHeightMap(nodeStr string, height uint64) {
 	bn.lock.Lock()
@@ -559,8 +545,13 @@ func (bn *BaseNetwork) recentSentLoop() {
 	}
 }
 
-func (bn *BaseNetwork) isRecentSent(request []byte) bool {
-	h := string(common.Sha256(request))
+func (bn *BaseNetwork) isRecentSent(msg message.Message) bool {
+	msg.TTL = 0
+	data, err := msg.Marshal(nil)
+	if err != nil {
+		bn.log.E("[net] marshal request encountered err:%v", err)
+	}
+	h := string(common.Sha256(data))
 
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
