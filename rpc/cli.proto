@@ -9,6 +9,7 @@ service Cli {
     rpc GetBalance (Key) returns (Value){}
     rpc GetState (Key) returns (Value){}
     rpc GetBlock (BlockKey) returns (BlockInfo){}
+    rpc GetBlockByHeight (BlockKey) returns (BlockInfo){}
 }
 
 message Transaction {
