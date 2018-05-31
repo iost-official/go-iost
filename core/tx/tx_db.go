@@ -21,17 +21,19 @@ var once sync.Once
 var LdbPath string
 
 func TxDbInstance() TxPool {
+	if TxDb!=nil{
+		return TxDb
+	}
 	ldb, err := db.NewLDBDatabase(LdbPath+"txDB", 0, 0)
 	if err != nil {
 		panic(err)
 	}
-	if TxDb == nil {
-		once.Do(func() {
-			TxDb = &TxPoolDb{
-				db: ldb,
-			}
-		})
-	}
+	once.Do(func() {
+		TxDb = &TxPoolDb{
+			db: ldb,
+		}
+	})
+
 	return TxDb
 }
 
