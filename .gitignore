@@ -116,6 +116,9 @@ consensus/common/tx/
 /rpc/tx/
 /verifier/tx/
 /network/tale_test/
+/network/iost_db_0/
+/network/iost_db_1/
+/network/iost_db_2/
 /network/iost_node_table_/
 tx/
 playground/playground
@@ -139,3 +142,4 @@ netpath/
 netpath3/
 rpc/txDB/
 txDB/
+
