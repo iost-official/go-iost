@@ -299,7 +299,7 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
 	//return &blk
-	veri := verifier.NewCacheVerifier(pool)
+	veri := verifier.NewCacheVerifier()
 	var result bool
 	//TODO Content大小控制
 	for len(blk.Content) < TxPerBlk {
@@ -322,6 +322,7 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 
 	return &blk
 }
+
 //收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
 func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 
@@ -419,4 +420,3 @@ func encodeDPoSInfo(votes [][]byte) []byte {
 	}
 	return info
 }
-
