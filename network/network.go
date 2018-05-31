@@ -357,15 +357,12 @@ func (bn *BaseNetwork) putNode(addrs string) {
 			continue
 		}
 		if addr != "" && addr != bn.localNode.Addr() {
-			ok, err := bn.nodeTable.Has([]byte(addr))
+			_, err := bn.nodeTable.Has([]byte(addr))
 			if err != nil {
 				bn.log.E("failed to nodetable has %v, err: %v", addr, err)
 				continue
 			}
-			if !ok {
-
-				bn.nodeTable.Put([]byte(node.Addr()), common.IntToBytes(2))
-			}
+			bn.nodeTable.Put([]byte(node.Addr()), common.IntToBytes(2))
 		}
 	}
 	bn.findNeighbours()
