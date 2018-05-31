@@ -44,7 +44,9 @@ func (l *VM) Stop() {
 func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
 
 	if pool != nil {
-		l.cachePool = pool.Copy()
+		l.cachePool = pool
+	} else {
+		panic("input pool is nill")
 	}
 
 	//fmt.Print("1 ")

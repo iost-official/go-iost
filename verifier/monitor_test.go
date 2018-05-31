@@ -41,7 +41,6 @@ end`
 		//defer guard.Unpatch()
 
 		verifier := Verifier{
-			Pool:      pool,
 			vmMonitor: newVMMonitor(),
 		}
 		verifier.StartVM(&lc1)
@@ -98,7 +97,6 @@ end`
 		//fmt.Println(tx2.Contract.Info().Prefix)
 
 		verifier := Verifier{
-			Pool:      pool,
 			vmMonitor: newVMMonitor(),
 		}
 		verifier.StartVM(&lc1)

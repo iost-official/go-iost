@@ -47,7 +47,7 @@ to quickly create a Cobra application.`,
 			}
 		}
 
-		v := verifier.NewCacheVerifier(pool)
+		v := verifier.NewCacheVerifier()
 		var sc0 vm.Contract
 
 		switch language {
@@ -72,7 +72,7 @@ to quickly create a Cobra application.`,
 		default:
 			fmt.Println(language, "not supported")
 		}
-		pool2, gas, err := v.Verify(sc0)
+		pool2, gas, err := v.Verify(sc0, pool.Copy())
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}

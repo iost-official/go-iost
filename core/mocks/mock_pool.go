@@ -5,9 +5,10 @@
 package core_mock
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	state "github.com/iost-official/prototype/core/state"
-	reflect "reflect"
 )
 
 // MockPool is a mock of Pool interface
@@ -115,6 +116,19 @@ func (m *MockPool) Has(arg0 state.Key) bool {
 // Has indicates an expected call of Has
 func (mr *MockPoolMockRecorder) Has(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockPool)(nil).Has), arg0)
+}
+
+// MergeParent mocks base method
+func (m *MockPool) MergeParent() (state.Pool, error) {
+	ret := m.ctrl.Call(m, "MergeParent")
+	ret0, _ := ret[0].(state.Pool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MergeParent indicates an expected call of MergeParent
+func (mr *MockPoolMockRecorder) MergeParent() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeParent", reflect.TypeOf((*MockPool)(nil).MergeParent))
 }
 
 // Put mocks base method

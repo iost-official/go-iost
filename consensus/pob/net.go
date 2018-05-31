@@ -37,7 +37,7 @@ func (n Net) txLoop() {
 		case <-n.exit:
 			return
 		case msgTx := <-n.chTx:
-
+			_ = msgTx
 		}
 	}
 }

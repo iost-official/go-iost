@@ -120,6 +120,7 @@ consensus/common/tx/
 /network/iost_db_1/
 /network/iost_db_2/
 /network/iost_node_table_/
+network/iost_db_*
 tx/
 playground/playground
 playground/test
