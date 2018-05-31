@@ -117,6 +117,7 @@ consensus/common/tx/
 /verifier/tx/
 /network/tale_test/
 /network/iost_node_table_/
+network/iost_db_*
 tx/
 playground/playground
 playground/test

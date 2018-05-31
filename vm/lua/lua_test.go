@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/gopher-lua"
-	"github.com/iost-official/prototype/core/mocks/pool"
+	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
 	db2 "github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/vm"
@@ -18,7 +18,7 @@ func TestLuaVM(t *testing.T) {
 	Convey("Test of Lua VM", t, func() {
 		Convey("Normal", func() {
 			mockCtl := gomock.NewController(t)
-			pool := mock_pool.NewMockPool(mockCtl)
+			pool := core_mock.NewMockPool(mockCtl)
 
 			var k state.Key
 			var v state.Value
@@ -53,7 +53,7 @@ end`,
 
 		Convey("Transfer", func() {
 			mockCtl := gomock.NewController(t)
-			pool := mock_pool.NewMockPool(mockCtl)
+			pool := core_mock.NewMockPool(mockCtl)
 
 			var va, vb state.Value
 			var eeee error
@@ -101,7 +101,7 @@ end`,
 
 		Convey("Out of gas", func() {
 			mockCtl := gomock.NewController(t)
-			pool := mock_pool.NewMockPool(mockCtl)
+			pool := core_mock.NewMockPool(mockCtl)
 
 			var k state.Key
 			var v state.Value

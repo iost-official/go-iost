@@ -37,42 +37,52 @@ var ver *verifier.CacheVerifier
 
 // StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
+	txs := block.Content
+	pool2, _, err := StdTxsVerifier(txs, pool.Copy())
+	if err != nil {
+		return pool, err
+	}
+	return pool2.MergeParent()
+}
+
+func StdTxsVerifier(txs []tx.Tx, pool state.Pool) (state.Pool, int, error) {
 	if ver == nil {
-		veri := verifier.NewCacheVerifier(pool)
+		veri := verifier.NewCacheVerifier()
 		ver = &veri
 	}
 	pool2 := pool.Copy()
-	for _, txx := range block.Content { // TODO
-		pool3, err := ver.VerifyContractWithPool(txx.Contract, pool2)
+	for i, txx := range txs {
+		pool2, err := ver.VerifyContract(txx.Contract, pool2.Copy())
 		if err != nil {
-			return pool3, err
+			return pool2, i, err
 		}
-		pool2 = pool3
+		pool2, err = pool2.MergeParent()
+		if err != nil {
+			panic(err)
+		}
 	}
-	return pool2, nil
+	return pool2, len(txs), nil
 }
 
-// VerifyTx 验证单个交易的正确性
-// 在调用之前需要先调用vm.NewCacheVerifier(pool state.Pool)生成一个cache verifier
-// TODO: 考虑自己生成块到达最后一个交易时，直接用返回的state pool更新block cache中的state
-func VerifyTx(tx *tx.Tx, txVer *verifier.CacheVerifier) (state.Pool, bool) {
-	newPool, err := txVer.VerifyContract(tx.Contract, false)
-/*
-	////////////probe//////////////////
-	var ret string = "pass"
-	if err != nil {
-		ret = "fail"
-	}
-	log.Report(&log.MsgTx{
-		SubType:   "verify." + ret,
-		TxHash:    tx.Hash(),
-		Publisher: tx.Publisher.Pubkey,
-		Nonce:     tx.Nonce,
-	})
-	///////////////////////////////////
-*/
-	return newPool, err == nil
-}
+// TODO： 请别用这个了
+//func VerifyTx(tx *tx.Tx, txVer *verifier.CacheVerifier) (state.Pool, bool) {
+//	newPool, err := txVer.VerifyContract(tx.Contract, false)
+//
+//	////////////probe//////////////////
+//	var ret string = "pass"
+//	if err != nil {
+//		ret = "fail"
+//	}
+//	log.Report(&log.MsgTx{
+//		SubType:   "verify." + ret,
+//		TxHash:    tx.Hash(),
+//		Publisher: tx.Publisher.Pubkey,
+//		Nonce:     tx.Nonce,
+//	})
+//	///////////////////////////////////
+//
+//	return newPool, err == nil
+//}
 
 // VerifyTxSig 验证交易的签名
 func VerifyTxSig(tx tx.Tx) bool {
