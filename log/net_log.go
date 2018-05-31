@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var Server = "http://18.219.254.124:30333"
+var Server = "http://18.191.77.190:30333"
 var LocalID = "default"
 
 func toBase64(hash []byte) string {
