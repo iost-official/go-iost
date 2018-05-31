@@ -199,7 +199,7 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 	if err := rBlock.Decode(block); err != nil {
 		return nil
 	}
-
+	//TODO:should calc sth after decode?
 	return rBlock
 }
 

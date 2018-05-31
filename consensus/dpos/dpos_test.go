@@ -33,6 +33,7 @@ func TestNewDPoS(t *testing.T) {
 		mockPool := core_mock.NewMockPool(mockCtr)
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
 		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().Flush().AnyTimes().Return(nil)
 
 		network.Route = mockRouter
 		//获取router实例
@@ -102,6 +103,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
 		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
 
+		mockPool.EXPECT().Flush().AnyTimes().Return(nil)
 		mockBc.EXPECT().Iterator().AnyTimes().Return(nil)
 		network.Route = mockRouter
 		//获取router实例
@@ -225,6 +227,7 @@ func TestRunReceiveBlock(t *testing.T) {
 
 		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
 		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().Flush().AnyTimes().Return(nil)
 		mockBc.EXPECT().GetBlockByNumber(Any()).Return(nil).AnyTimes()
 		mockBc.EXPECT().Iterator().AnyTimes().Return(nil)
 
@@ -314,6 +317,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		mockPool := core_mock.NewMockPool(mockCtr)
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
 		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
+		mockPool.EXPECT().Flush().AnyTimes().Return(nil)
 
 		mockBc.EXPECT().Iterator().AnyTimes().Return(nil)
 
