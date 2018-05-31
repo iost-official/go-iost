@@ -121,12 +121,12 @@ func (t *Tx) Decode(b []byte) error {
 		return err
 	}
 	t.Contract.SetSender(vm.PubkeyToIOSTAccount(t.Publisher.Pubkey))
-	t.Contract.SetPrefix(vm.HashToPrefix(t.Hash()))
 	for _, sign := range t.Signs {
 		t.Contract.AddSigner(vm.PubkeyToIOSTAccount(sign.Pubkey))
 	}
 	t.Nonce = tr.Nonce
 	t.Time = tr.Time
+	t.Contract.SetPrefix(vm.HashToPrefix(t.Hash()))
 	return nil
 }
 

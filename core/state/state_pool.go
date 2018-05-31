@@ -9,7 +9,7 @@ import (
 )
 
 //go:generate gencode go -schema=structs.schema -package=state
-//go:generate mockgen -destination ../mocks/mock_pool.go -package core_mock github.com/iost-official/prototype/core/state Pool
+//go:generate mockgen -destination ../mocks/pool/mock_pool.go -package core_mock github.com/iost-official/prototype/core/state Pool
 
 type PoolImpl struct {
 	db     Database
@@ -91,7 +91,7 @@ func (p *PoolImpl) Flush() error {
 	}
 	for k, v := range p.patch.m {
 		switch {
-		case v == VNil:
+		case v == VDelete:
 			p.db.Delete(k)
 		case v.Type() == Map:
 			vm := v.(*VMap)
@@ -171,6 +171,34 @@ func (p *PoolImpl) PutHM(key, field Key, value Value) error {
 	m.Set(field, value)
 	p.patch.Put(key, m)
 	return nil
+}
+
+func (p *PoolImpl) MergeParent() (Pool, error) {
+	bak := *(p.parent)
+	for k, v := range p.patch.m {
+		switch {
+		case v == VDelete:
+			bak.Delete(k)
+		case v.Type() == Map:
+			vm := v.(*VMap)
+			for f, v := range vm.m {
+				v0, err := bak.GetHM(k, f)
+				if err != nil {
+					return nil, err
+				}
+				val := Merge(v0, v)
+				bak.PutHM(k, f, val)
+			}
+		default:
+			val0, err := bak.Get(k)
+			if err != nil {
+				return nil, err
+			}
+			val := Merge(val0, v)
+			bak.Put(k, val)
+		}
+	}
+	return &bak, nil
 }
 
 var StdPool Pool

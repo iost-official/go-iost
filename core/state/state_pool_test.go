@@ -38,7 +38,7 @@ func TestPoolImpl(t *testing.T) {
 			mockDB.EXPECT().Has(gomock.Any()).Return(false, nil)
 			So(sp1.Has(k2), ShouldBeFalse)
 			So(sp2.Has(k2), ShouldBeTrue)
-			sp2.Put(k1, VNil)
+			sp2.Delete(k1)
 			So(sp2.Has(k1), ShouldBeFalse)
 			So(sp1.Has(k1), ShouldBeTrue)
 			mockDB.EXPECT().Get(gomock.Any()).Return(nil, nil)
@@ -83,6 +83,18 @@ func TestPoolImpl(t *testing.T) {
 			val2, _ := sp3.GetHM("iost", "b")
 			So(val2.(*VFloat).ToFloat64(), ShouldEqual, 1000000)
 
+		})
+
+		Convey("merge parent", func() {
+			sp1 := NewPool(db)
+			sp2 := sp1.Copy()
+			sp2.Put(k2, v2)
+			sp3 := sp2.Copy()
+			sp3.Put(k1, v1)
+			sp4, err := sp3.MergeParent()
+			So(err, ShouldBeNil)
+			patch := sp4.GetPatch()
+			So(patch.Length(), ShouldEqual, 2)
 		})
 	})
 

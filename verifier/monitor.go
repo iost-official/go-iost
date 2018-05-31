@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 )
@@ -106,7 +107,7 @@ func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, arg
 		}
 
 		m.StartVM(contract)
-		holder = m.vms[contractPrefix]
+		holder, ok = m.vms[contractPrefix]
 	}
 	//fmt.Println(pool.GetHM("iost", "b"))
 	rtn, pool2, err := holder.Call(pool, methodName, args...)
@@ -118,11 +119,13 @@ func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, arg
 
 // FindContract  find contract from tx database
 func FindContract(contractPrefix string) (vm.Contract, error) { // todo 真的去找contract！
-	code2 := `function sayHi(name)
-	return "hi " .. name
-end`
-	sayHi := lua.NewMethod(vm.Public, "sayHi", 1, 1)
-	lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
-		code2, sayHi, sayHi)
-	return &lc2, nil
+	hash := vm.PrefixToHash(contractPrefix)
+
+	txdb := tx.TxDbInstance()
+	txx, err := txdb.Get(hash)
+	if err != nil {
+		return nil, err
+	}
+	//fmt.Println("found tx hash: ", common.Base58Encode(txx.Hash()))
+	return txx.Contract, nil
 }
