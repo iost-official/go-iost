@@ -91,6 +91,7 @@ func TestPoolImpl(t *testing.T) {
 			sp2.Put(k2, v2)
 			sp3 := sp2.Copy()
 			sp3.Put(k1, v1)
+			So(sp3.(*PoolImpl).parent, ShouldEqual, sp2)
 			sp4, err := sp3.MergeParent()
 			So(err, ShouldBeNil)
 			patch := sp4.GetPatch()

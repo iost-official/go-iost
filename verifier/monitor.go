@@ -17,12 +17,14 @@ type vmHolder struct {
 }
 
 type vmMonitor struct {
-	vms map[string]vmHolder
+	vms   map[string]vmHolder
+	hotVM *vmHolder
 }
 
 func newVMMonitor() vmMonitor {
 	return vmMonitor{
-		vms: make(map[string]vmHolder),
+		vms:   make(map[string]vmHolder),
+		hotVM: nil,
 	}
 }
 
@@ -49,10 +51,13 @@ func (m *vmMonitor) StartVM(contract vm.Contract) vm.VM {
 }
 
 func (m *vmMonitor) RestartVM(contract vm.Contract) vm.VM {
-	if _, ok := m.vms[contract.Info().Prefix]; ok {
-		m.StopVM(contract)
+	if m.hotVM == nil {
+		m.hotVM = &vmHolder{m.StartVM(contract), contract}
+		return m.hotVM
 	}
-	return m.StartVM(contract)
+	m.hotVM.Restart(contract)
+	m.hotVM.contract = contract
+	return m.hotVM
 }
 
 func (m *vmMonitor) StopVM(contract vm.Contract) {
@@ -99,6 +104,14 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string, caller vm.IOSTA
 }
 
 func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
+	if contractPrefix == m.hotVM.contract.Info().Prefix {
+		//fmt.Println(pool.GetHM("iost", "b"))
+		rtn, pool2, err := m.hotVM.Call(pool, methodName, args...)
+		//fmt.Println(pool2.GetHM("iost", "b"))
+
+		gas := m.hotVM.PC()
+		return rtn, pool2, gas, err
+	}
 	holder, ok := m.vms[contractPrefix]
 	if !ok {
 		contract, err := FindContract(contractPrefix)
@@ -124,6 +137,7 @@ func FindContract(contractPrefix string) (vm.Contract, error) { // todo 真的�
 	txdb := tx.TxDbInstance()
 	txx, err := txdb.Get(hash)
 	if err != nil {
+		panic(err)
 		return nil, err
 	}
 	//fmt.Println("found tx hash: ", common.Base58Encode(txx.Hash()))

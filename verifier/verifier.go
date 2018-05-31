@@ -23,6 +23,7 @@ type Verifier struct {
 }
 
 func (v *Verifier) Verify(contract vm.Contract, pool state.Pool) (state.Pool, uint64, error) {
+	v.RestartVM(contract)
 	//fmt.Println(v.Pool.GetHM("iost", "b"))
 	_, pool, gas, err := v.Call(pool, contract.Info().Prefix, "main")
 	//fmt.Println(pool.GetHM("iost", "b"))
@@ -138,43 +139,47 @@ func setBalanceOfSender(sender vm.IOSTAccount, pool state.Pool, amount float64) 
 // 取得tx中的Contract的方法： tx.Contract
 func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (state.Pool, error) {
 	sender := contract.Info().Publisher
-	bos := balanceOfSender(sender, pool)
-
-	if bos < float64(contract.Info().GasLimit)*contract.Info().Price {
-		return pool, fmt.Errorf("balance not enough")
+	if contract.Info().Price != 0 {
+		bos := balanceOfSender(sender, pool)
+		if bos < float64(contract.Info().GasLimit)*contract.Info().Price {
+			return pool, fmt.Errorf("balance not enough")
+		}
 	}
 
-	cv.StartVM(contract)
+	cv.RestartVM(contract)
 	pool, gas, err := cv.Verify(contract, pool)
 	if err != nil {
-		cv.StopVM(contract)
+		//cv.StopVM(contract)
 		return nil, err
 	}
-	cv.StopVM(contract)
+	//cv.StopVM(contract)
 
-	bos2 := balanceOfSender(sender, pool)
+	if contract.Info().Price != 0 {
 
-	if gas > uint64(contract.Info().GasLimit) { // TODO 不应该发生的分支
-		panic("gas overflow!")
-		//bos -= float64(contract.Info().GasLimit) * contract.Info().Price
-		//if bos < 0 {
-		//	panic("balance of sender to be zero!!")
-		//}
-		//val1 := state.MakeVFloat(bos)
-		//pool.PutHM("iost", state.Key(sender), val1)
-		//return pool, nil
+		bos2 := balanceOfSender(sender, pool)
+
+		if gas > uint64(contract.Info().GasLimit) { // TODO 不应该发生的分支
+			panic("gas overflow!")
+			//bos -= float64(contract.Info().GasLimit) * contract.Info().Price
+			//if bos < 0 {
+			//	panic("balance of sender to be zero!!")
+			//}
+			//val1 := state.MakeVFloat(bos)
+			//pool.PutHM("iost", state.Key(sender), val1)
+			//return pool, nil
+		}
+
+		bos2 -= float64(gas) * contract.Info().Price
+		if bos2 < 0 {
+			//bos -= float64(gas) * contract.Info().Price
+			//val1 := state.MakeVFloat(bos)
+			//pool2 := pool.Copy()
+			//pool2.PutHM("iost", state.Key(sender), val1)
+			return pool, fmt.Errorf("can not afford gas")
+		}
+
+		setBalanceOfSender(sender, pool, bos2)
 	}
-
-	bos2 -= float64(gas) * contract.Info().Price
-	if bos2 < 0 {
-		//bos -= float64(gas) * contract.Info().Price
-		//val1 := state.MakeVFloat(bos)
-		//pool2 := pool.Copy()
-		//pool2.PutHM("iost", state.Key(sender), val1)
-		return pool, fmt.Errorf("can not afford gas")
-	}
-
-	setBalanceOfSender(sender, pool, bos2)
 	return pool, nil
 }
 

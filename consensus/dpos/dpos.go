@@ -314,13 +314,13 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 		}
 	}
 
-	////////////probe//////////////////
-	log.Report(&log.MsgBlock{
-		SubType:       "gen",
-		BlockHeadHash: blk.HeadHash(),
-		BlockNum:      blk.Head.Number,
-	})
-	///////////////////////////////////
+	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine
+	//log.Report(&log.MsgBlock{
+	//	SubType:       "gen",
+	//	BlockHeadHash: blk.HeadHash(),
+	//	BlockNum:      blk.Head.Number,
+	//})
+	/////////////////////////////////////
 
 	return &blk
 }

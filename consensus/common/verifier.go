@@ -51,14 +51,16 @@ func StdTxsVerifier(txs []tx.Tx, pool state.Pool) (state.Pool, int, error) {
 	}
 	pool2 := pool.Copy()
 	for i, txx := range txs {
-		pool2, err := ver.VerifyContract(txx.Contract, pool2.Copy())
-		if err != nil {
-			return pool2, i, err
-		}
-		pool2, err = pool2.MergeParent()
+		var err error
+		pool2, err = ver.VerifyContract(txx.Contract, pool2)
 		if err != nil {
 			panic(err)
+			return pool2, i, err
 		}
+		//pool2, err = pool2.MergeParent()
+		//if err != nil {
+		//	panic(err)
+		//}
 	}
 	return pool2, len(txs), nil
 }
