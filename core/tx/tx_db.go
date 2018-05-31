@@ -21,7 +21,7 @@ var once sync.Once
 var LdbPath string
 
 func TxDbInstance() TxPool {
-	if TxDb!=nil{
+	if TxDb != nil {
 		return TxDb
 	}
 	ldb, err := db.NewLDBDatabase(LdbPath+"txDB", 0, 0)
