@@ -117,6 +117,19 @@ func (mr *MockPoolMockRecorder) Has(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockPool)(nil).Has), arg0)
 }
 
+// MergeParent mocks base method
+func (m *MockPool) MergeParent() (state.Pool, error) {
+	ret := m.ctrl.Call(m, "MergeParent")
+	ret0, _ := ret[0].(state.Pool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MergeParent indicates an expected call of MergeParent
+func (mr *MockPoolMockRecorder) MergeParent() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeParent", reflect.TypeOf((*MockPool)(nil).MergeParent))
+}
+
 // Put mocks base method
 func (m *MockPool) Put(arg0 state.Key, arg1 state.Value) {
 	m.ctrl.Call(m, "Put", arg0, arg1)

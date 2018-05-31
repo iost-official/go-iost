@@ -5,6 +5,7 @@ type Pool interface {
 	Copy() Pool
 	GetPatch() Patch
 	Flush() error
+	MergeParent() (Pool, error)
 
 	Put(key Key, value Value)
 	Get(key Key) (Value, error)
