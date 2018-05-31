@@ -9,7 +9,7 @@ import (
 )
 
 //go:generate gencode go -schema=structs.schema -package=state
-//go:generate mockgen -destination ../mocks/mock_pool.go -package core_mock github.com/iost-official/prototype/core/state Pool
+//go:generate mockgen -destination ../mocks/pool/mock_pool.go -package core_mock github.com/iost-official/prototype/core/state Pool
 
 type PoolImpl struct {
 	db     Database
