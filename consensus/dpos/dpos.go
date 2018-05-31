@@ -299,16 +299,18 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
 	//return &blk
-	veri := verifier.NewCacheVerifier()
-	var result bool
+	spool1 := pool.Copy()
 	//TODO Content大小控制
 	for len(blk.Content) < TxPerBlk {
 		tx, err := p.blockCache.GetTx()
 		if tx == nil || err != nil {
 			break
 		}
-		if _, result = VerifyTx(tx, &veri); result {
+
+		if sp, _, err := StdTxsVerifier([]Tx{*tx}, spool1); err == nil {
 			blk.Content = append(blk.Content, *tx)
+		} else {
+			spool1 = sp
 		}
 	}
 
