@@ -118,7 +118,7 @@ var rootCmd = &cobra.Command{
 
 		fmt.Println("network instance")
 		publicIP := common.GetPulicIP()
-		if publicIP != "" && common.IsPublicIP(net.ParseIP(publicIP)) {
+		if publicIP != "" && common.IsPublicIP(net.ParseIP(publicIP)) && listenAddr != "127.0.0.1" {
 			listenAddr = publicIP
 		}
 		net, err := network.GetInstance(
