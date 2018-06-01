@@ -143,4 +143,7 @@ netpath/
 netpath3/
 rpc/txDB/
 txDB/
+*.prof
+*.test
+*.svg
 
