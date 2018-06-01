@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -84,7 +83,7 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	PubKey := common.Base58Decode(txkey.Publisher)
+	PubKey := common.Base58Decode(string(txkey.Publisher))
 	//check length of Pubkey here
 	if len(PubKey) != 33 {
 		return nil, fmt.Errorf("PubKey invalid")
@@ -161,14 +160,76 @@ func (s *HttpServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, er
 	if block == nil {
 		return nil, fmt.Errorf("cannot get BlockInfo")
 	}
-	//better to Encode BlockHead first?
-	binfo := BInfo{
-		Head:  block.Head,
-		TxCnt: block.LenTx(),
+
+	head := &Head{
+		Version:    block.Head.Version,
+		ParentHash: block.Head.ParentHash,
+		TreeHash:   block.Head.TreeHash,
+		BlockHash:  block.Head.BlockHash,
+		Info:       block.Head.Info,
+		Number:     block.Head.Number,
+		Witness:    block.Head.Witness,
+		Signature:  block.Head.Signature,
+		Time:       block.Head.Time,
 	}
-	b, err := json.Marshal(binfo)
-	if err != nil {
-		return nil, fmt.Errorf("json.Marshal failed: [%v]", err)
+
+	txList := make([]*TransactionKey, block.LenTx())
+	for k, v := range block.Content {
+		txList[k] = &TransactionKey{
+			Publisher: v.Publisher.Pubkey,
+			Nonce:     v.Nonce,
+		}
 	}
-	return &BlockInfo{Json: string(b)}, nil
+
+	return &BlockInfo{
+		Head:   head,
+		Txcnt:  int64(block.LenTx()),
+		TxList: txList,
+	}, nil
+}
+
+func (s *HttpServer) GetBlockByHeight(ctx context.Context, bk *BlockKey) (*BlockInfo, error) {
+	if bk == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+
+	bc := block.BChain //we should get the instance of Chain,not to Create it again in the real version
+	if bc == nil {
+		panic(fmt.Errorf("block.BChain cannot be nil"))
+	}
+	height := bk.Layer //I think bk.Layer should be uint64,because bc.Length() is uint64
+	curLen := bc.Length()
+	if (height < 0) || (uint64(height) > curLen-1) {
+		return nil, fmt.Errorf("out of bound")
+	}
+	block := bc.GetBlockByNumber(uint64(height))
+	if block == nil {
+		return nil, fmt.Errorf("cannot get BlockInfo")
+	}
+
+	head := &Head{
+		Version:    block.Head.Version,
+		ParentHash: block.Head.ParentHash,
+		TreeHash:   block.Head.TreeHash,
+		BlockHash:  block.Head.BlockHash,
+		Info:       block.Head.Info,
+		Number:     block.Head.Number,
+		Witness:    block.Head.Witness,
+		Signature:  block.Head.Signature,
+		Time:       block.Head.Time,
+	}
+
+	txList := make([]*TransactionKey, block.LenTx())
+	for k, v := range block.Content {
+		txList[k] = &TransactionKey{
+			Publisher: v.Publisher.Pubkey,
+			Nonce:     v.Nonce,
+		}
+	}
+
+	return &BlockInfo{
+		Head:   head,
+		Txcnt:  int64(block.LenTx()),
+		TxList: txList,
+	}, nil
 }

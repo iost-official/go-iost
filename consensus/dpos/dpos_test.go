@@ -7,7 +7,6 @@ import (
 	. "github.com/golang/mock/gomock"
 
 	"time"
-	"sync"
 
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
@@ -19,7 +18,6 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
-	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
@@ -117,8 +115,8 @@ func TestRunGenerateBlock(t *testing.T) {
 		})
 		defer guard1.Unpatch()
 
-		guard2 := Patch(consensus_common.VerifyTx, func(_ *tx.Tx, _ *verifier.CacheVerifier) (state.Pool, bool) {
-			return nil, true
+		guard2 := Patch(consensus_common.StdTxsVerifier, func(_ []*tx.Tx, _ state.Pool) (state.Pool, int, error) {
+			return nil, 0, nil
 		})
 		defer guard2.Unpatch()
 
@@ -207,6 +205,7 @@ func TestRunGenerateBlock(t *testing.T) {
 
 		time.Sleep(time.Second * 2)
 
+		//So(reqType, ShouldEqual, network.ReqNewBlock)
 		So(blk.Head.Number, ShouldEqual, 1)
 		So(string(blk.Head.ParentHash), ShouldEqual, string(genesis.Head.Hash()))
 		So(blk.Head.Witness, ShouldEqual, "id0")
@@ -223,6 +222,7 @@ func TestRunReceiveBlock(t *testing.T) {
 		mockRouter := protocol_mock.NewMockRouter(mockCtr)
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
+		mockPool.EXPECT().MergeParent().Return(mockPool, nil).AnyTimes()
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
 
 		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
@@ -366,7 +366,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		seckey := common.Sha256([]byte("SeckeyId1"))
 		pubkey := common.CalcPubkeyInSecp256k1(seckey)
 		p, _ := NewDPoS(account.Account{"id1", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
-
+		fmt.Println("p:", p)
 		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 						Put("hello", "world")
@@ -389,6 +389,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		mockPool.EXPECT().Flush().Return(nil).AnyTimes()
 		mockRouter.EXPECT().CancelDownload(Any(), Any()).Return(nil).AnyTimes()
 
+<<<<<<< HEAD
 		Convey("correct blocks", func() {
 			blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
 			blkChan <- msg
@@ -498,6 +499,117 @@ func TestRunMultipleBlocks(t *testing.T) {
 			p.Stop()
 		})
 
+=======
+		//Convey("correct blocks", func() {
+		//	blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
+		//	blkChan <- msg
+		//	fmt.Println("blk", blk)
+		//	var reqType network.ReqType
+		//	var reqBlk block.Block
+		//	mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
+		//		reqType = network.ReqType(req.ReqType)
+		//		reqBlk.Decode(req.Body)
+		//	}).AnyTimes()
+		//
+		//	var pushed int64
+		//	mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
+		//		pushed = block.Head.Number
+		//		return nil
+		//	})
+		//	p.Run()
+		//
+		//	time.Sleep(time.Second)
+		//	// block 1 by id0
+		//
+		//	time.Sleep(time.Second * consensus_common.SlotLength)
+		//	// block 2 by id1, the node itself
+		//	//So(reqType, ShouldEqual, network.ReqNewBlock)
+		//	//So(reqBlk.Head.Number, ShouldEqual, 2)
+		//	//So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
+		//	//So(reqBlk.Head.Witness, ShouldEqual, "id1")
+		//
+		//	ts := consensus_common.GetCurrentTimestamp()
+		//	ts.Add(1)
+		//	len := ts.ToUnixSec() - time.Now().Unix()
+		//	time.Sleep(time.Second * time.Duration(len))
+		//	//blk, msg = generateTestBlockMsg("id2", "SeckeyId2", 3, reqBlk.Head.Hash())
+		//	//blkChan <- msg
+		//	//
+		//	//time.Sleep(time.Second*consensus_common.SlotLength+time.Second*2)
+		//	//fmt.Println("### ")
+		//	//// block 3 by id2
+		//	//So(reqType, ShouldEqual, network.ReqNewBlock)
+		//	//So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+		//	//
+		//	//So(pushed, ShouldEqual, 1)
+		//
+		//	p.Stop()
+		//})
+		//
+		//Convey("with fork", func() {
+		//	blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
+		//	blkChan <- msg
+		//
+		//	var reqType network.ReqType
+		//	var reqBlk block.Block
+		//	mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
+		//		reqType = network.ReqType(req.ReqType)
+		//		reqBlk.Decode(req.Body)
+		//	}).AnyTimes()
+		//
+		//	var pushed int64
+		//	mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
+		//		pushed = block.Head.Number
+		//		return nil
+		//	}).AnyTimes()
+		//	p.Run()
+		//
+		//	time.Sleep(time.Second / 2)
+		//	// block 1 by id0
+		//
+		//	blk1 := blk
+		//
+		//	time.Sleep(time.Second * consensus_common.SlotLength)
+		//	// block 2 by id1, the node itself
+		//	//So(reqBlk.Head.Number, ShouldEqual, 2)
+		//	//So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
+		//	//So(reqBlk.Head.Witness, ShouldEqual, "id1")
+		//
+		//	ts := consensus_common.GetCurrentTimestamp()
+		//	ts.Add(1)
+		//	len := ts.ToUnixSec() - time.Now().Unix()
+		//	time.Sleep(time.Second * time.Duration(len))
+		//	blk, msg = generateTestBlockMsg("id2", "SeckeyId2", 2, blk1.Head.Hash())
+		//	blkChan <- msg
+		//
+		//	time.Sleep(time.Second / 2)
+		//	// block 2' by id2, is a fork
+		//	//So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+		//
+		//	ts = consensus_common.GetCurrentTimestamp()
+		//	ts.Add(1)
+		//	len = ts.ToUnixSec() - time.Now().Unix()
+		//	time.Sleep(time.Second * time.Duration(len))
+		//	blk, msg = generateTestBlockMsg("id0", "SeckeyId0", 3, reqBlk.Head.Hash())
+		//	blkChan <- msg
+		//	time.Sleep(time.Second / 2)
+		//	//// block 3 by id0
+		//	//So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
+		//	//// nothing is pushed until now
+		//	//So(pushed, ShouldEqual, 0)
+		//
+		//	time.Sleep(time.Second * consensus_common.SlotLength)
+		//	// block 4 by id1, the node itself
+		//	So(reqBlk.Head.Number, ShouldEqual, 4)
+		//	So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
+		//	So(reqBlk.Head.Witness, ShouldEqual, "id1")
+		//	// block 1 and 2 should be pushed
+		//	//So(pushed, ShouldEqual, 2)
+		//
+		//	p.Stop()
+		//})
+		//
+>>>>>>> develop
 		//Convey("need sync", func() {
 		//	consensus_common.SyncNumber = 2
 		//	p.account.ID = "id3"
@@ -545,7 +657,11 @@ func TestRunMultipleBlocks(t *testing.T) {
 		//	time.Sleep(time.Second / 2)
 		//
 		//	// After block1 and block2 received, block 1-3 all set, and block 1 will be pushed
+<<<<<<< HEAD
 		//	So(bytes.Equal(pushedBlk.Head.Hash(), blk1.Head.Hash()), ShouldBeTrue)
+=======
+		//	//So(bytes.Equal(pushedBlk.Head.Hash(), blk1.Head.Hash()), ShouldBeTrue)
+>>>>>>> develop
 		//
 		//	p.Stop()
 		//})
@@ -575,7 +691,7 @@ func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parent
 }
 
 //go test -bench=. -benchmem -run=nonce
-func BenchmarkAddBlockCache(b *testing.B) { 
+func BenchmarkAddBlockCache(b *testing.B) {
 	//benchAddBlockCache(b,10,true)
 	benchAddBlockCache(b,10,false)
 }
@@ -590,39 +706,29 @@ func BenchmarkTxCache(b *testing.B) {
  	//benchTxCache(b,true)
 	benchTxCache(b,true)
 }
-/*
-func BenchmarkTxCachePara(b *testing.B) { 
-	benchTxCachePara(b)
-}
-*/
-/*
-func BenchmarkTxDb(b *testing.B) { 
-	//benchTxDb(b,true)
-	benchTxDb(b,false)
-}
-*/
+
 func BenchmarkBlockHead(b *testing.B)     { benchBlockHead(b) }
 func BenchmarkGenerateBlock(b *testing.B) { 
 	benchGenerateBlock(b,6000) 
 }
 
 
-func envInit(b *testing.B) (*DPoS,[]account.Account,[]string) {
-	var accountList []account.Account 
+func envInit(b *testing.B) (*DPoS, []account.Account, []string) {
+	var accountList []account.Account
 	var witnessList []string
 
-	acc:=common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9")
-	_account, err:=account.NewAccount(acc)
-	if err!=nil{
+	acc := common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9")
+	_account, err := account.NewAccount(acc)
+	if err != nil {
 		panic("account.NewAccount error")
 	}
 	accountList = append(accountList, _account)
 	witnessList = append(witnessList, _account.ID)
 	_accId:=_account.ID
-	
-	for i:=1;i<3;i++ {
-		_account, err:=account.NewAccount(nil)
-		if err!=nil{
+
+	for i := 1; i < 3; i++ {
+		_account, err := account.NewAccount(nil)
+		if err != nil {
 			panic("account.NewAccount error")
 		}
 		accountList = append(accountList, _account)
@@ -684,8 +790,10 @@ func envInit(b *testing.B) (*DPoS,[]account.Account,[]string) {
 	return p,accountList,witnessList
 }
 
-func genTx(p *DPoS,nonce int) tx.Tx{
-	main := lua.NewMethod(2,"main", 0, 1)
+
+
+func genTx(p *DPoS, nonce int) tx.Tx {
+	main := lua.NewMethod(2, "main", 0, 1)
 	code := `function main()
 				Put("hello", "world")
 				return "success"
@@ -714,7 +822,7 @@ func genBlockHead(p *DPoS){
 	blk.Head.Signature = sig.Encode()
 }
 
-func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,txCnt int,continuity bool) (blockPool []*block.Block) {
+func genBlocks(p *DPoS, accountList []account.Account, witnessList []string, n int, txCnt int, continuity bool) (blockPool []*block.Block) {
 	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
 
@@ -725,24 +833,25 @@ func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,
 	slot := consensus_common.GetCurrentTimestamp().Slot
 
 	for i := 0; i < n; i++ {
- 		var hash []byte
+		var hash []byte
 		if len(blockPool) == 0 {
 			//用创世块的头hash赋值
-			hash =tblock.Head.Hash()
+			hash = tblock.Head.Hash()
 		} else {
 			hash = blockPool[len(blockPool)-1].Head.Hash()
 		}
 		//make every block has no parent
-		if continuity==false{
-			hash[i%len(hash)]=byte(i%256)
+
+		if continuity == false {
+			hash[i%len(hash)] = byte(i % 256)
 		}
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
-			Version:    0, 
+			Version:    0,
 			ParentHash: hash,
 			TreeHash:   make([]byte, 0),
 			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
-			Number:     int64(i+1),
+			Number:     int64(i + 1),
 			Witness:    witnessList[0],
 			Time:       slot + int64(i),
 		}}
@@ -751,18 +860,19 @@ func genBlocks(p *DPoS,accountList []account.Account,witnessList []string,n int,
 		sig, _ := common.Sign(common.Secp256k1, headInfo, accountList[i%3].Seckey)
 		blk.Head.Signature = sig.Encode()
 
-		for i:=0;i<txCnt;i++{
-			blk.Content = append(blk.Content, genTx(p,i))
+		for i := 0; i < txCnt; i++ {
+			blk.Content = append(blk.Content, genTx(p, i))
 		}
 		blockPool = append(blockPool, &blk)
 	}
 	return
 }
-func benchAddBlockCache(b *testing.B,txCnt int,continuity bool) {
-	
- 	p,accountList,witnessList:=envInit(b)
+
+func benchAddBlockCache(b *testing.B, txCnt int, continuity bool) {
+
+	p, accountList, witnessList := envInit(b)
 	//生成block
-	blockPool:=genBlocks(p,accountList,witnessList,b.N,txCnt,continuity)
+	blockPool := genBlocks(p, accountList, witnessList, b.N, txCnt, continuity)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StartTimer()
@@ -773,10 +883,12 @@ func benchAddBlockCache(b *testing.B,txCnt int,continuity bool) {
 }
 
 // 获取block性能测试
-func benchGetBlock(b *testing.B,txCnt int,continuity bool) {
-	p,accountList,witnessList:=envInit(b)
+
+
+func benchGetBlock(b *testing.B, txCnt int, continuity bool) {
+	p, accountList, witnessList := envInit(b)
 	//生成block
-	blockPool:=genBlocks(p,accountList,witnessList,b.N,txCnt,continuity)
+	blockPool := genBlocks(p, accountList, witnessList, b.N, txCnt, continuity)
 	for i := 0; i < b.N; i++ {
 		for _, bl := range blockPool {
 			p.blockCache.Add(bl, p.blockVerify)
@@ -786,48 +898,49 @@ func benchGetBlock(b *testing.B,txCnt int,continuity bool) {
 	//get block
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		chain:=p.blockCache.LongestChain()
+		chain := p.blockCache.LongestChain()
 		b.StartTimer()
 		chain.GetBlockByNumber(uint64(i))
 		b.StopTimer()
 	}
 }
+
 // block验证性能测试
 func benchBlockVerifier(b *testing.B) {
-	p,accountList,witnessList:=envInit(b)
+	p, accountList, witnessList := envInit(b)
 	//生成block
-	blockPool:=genBlocks(p,accountList,witnessList,2,10000,true)
+	blockPool := genBlocks(p, accountList, witnessList, 2, 6000, true)
 	//p.update(&blockPool[0].Head)
 	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_,err:=p.blockVerify(blockPool[0],tblock,state.StdPool)
-		if err!=nil{
+		_, err := p.blockVerify(blockPool[0], tblock, state.StdPool)
+		if err != nil {
 			fmt.Println(err)
 		}
 	}
 }
 
 
-func benchTxCache(b *testing.B,f bool) {
-	p,_,_:=envInit(b)
+func benchTxCache(b *testing.B, f bool) {
+	p, _, _ := envInit(b)
 	var txs []tx.Tx
-	txCache:=tx.NewTxPoolImpl()
-	for j:=0;j<b.N;j++ {
-		_tx:=genTx(p,j)
-		txs=append(txs,_tx)
+	txCache := tx.NewTxPoolImpl()
+	for j := 0; j < b.N; j++ {
+		_tx := genTx(p, j)
+		txs = append(txs, _tx)
 	}
-	
+
 	b.ResetTimer()
-	if f==true {
+	if f == true {
 		for i := 0; i < b.N; i++ {
 			b.StartTimer()
 			txCache.Add(&txs[i])
 			b.StopTimer()
 		}
-	}else{
+	} else {
 		for i := 0; i < b.N; i++ {
 			txCache.Add(&txs[i])
 		}
@@ -836,63 +949,28 @@ func benchTxCache(b *testing.B,f bool) {
 			txCache.Del(&txs[i])
 			b.StopTimer()
 		}
-	
+
+
 	}
 }
 
-func benchTxCachePara(b *testing.B) {
-	p,_,_:=envInit(b)
+func benchTxDb(b *testing.B, f bool) {
+	p, _, _ := envInit(b)
 	var txs []tx.Tx
+	txDb := tx.TxDbInstance()
+	for j := 0; j < b.N; j++ {
+		_tx := genTx(p, j)
+		txs = append(txs, _tx)
+	}
 
 	b.ResetTimer()
-	txCache:=tx.NewTxPoolImpl()
-	for j:=0;j<2000;j++ {
-		_tx:=genTx(p,j)
-		txs=append(txs,_tx)
-		if j<1000{
-			txCache.Add(&_tx)
-		}
-	}
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		start:=time.Now().UnixNano()
-		for j:=0;j<1000;j++ {
-			txCache.Del(&txs[j])
-		}
-		end:=time.Now().UnixNano()
-		fmt.Println((end-start)/1000," ns/op")
-		wg.Done()
-	}()
-	go func() {
-		start:=time.Now().UnixNano()
-		for j:=1000;j<2000;j++ {
-			txCache.Add(&txs[j])
-		}
-		end:=time.Now().UnixNano()
-		fmt.Println((end-start)/1000," ns/op")
-		wg.Done()
-	}()
-	wg.Wait()
-}
-
-func benchTxDb(b *testing.B,f bool) {
-	p,_,_:=envInit(b)
-	var txs []tx.Tx
-	txDb:=tx.TxDbInstance()
-	for j:=0;j<b.N;j++ {
-		_tx:=genTx(p,j)
-		txs=append(txs,_tx)
-	}
-	
-	b.ResetTimer()
-	if f==true {
+	if f == true {
 		for i := 0; i < b.N; i++ {
 			b.StartTimer()
 			txDb.Add(&txs[i])
 			b.StopTimer()
 		}
-	}else{
+	} else {
 		for i := 0; i < b.N; i++ {
 			txDb.Add(&txs[i])
 		}
@@ -901,12 +979,13 @@ func benchTxDb(b *testing.B,f bool) {
 			txDb.Del(&txs[i])
 			b.StopTimer()
 		}
-	
+
 	}
 }
+
 // 生成block head性能测试
 func benchBlockHead(b *testing.B) {
-	p,_,_:=envInit(b)
+	p, _, _ := envInit(b)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StartTimer()
@@ -916,19 +995,18 @@ func benchBlockHead(b *testing.B) {
 }
 
 // 生成块性能测试
-func benchGenerateBlock(b *testing.B,txCnt int) {
-	p,_,_:=envInit(b)
-	TxPerBlk=txCnt
+func benchGenerateBlock(b *testing.B, txCnt int) {
+	p, _, _ := envInit(b)
+	TxPerBlk = txCnt
 
-	for i:=0;i<TxPerBlk*b.N;i++{
- 		_tx:=genTx(p,i)
+	for i := 0; i < TxPerBlk; i++ {
+		_tx := genTx(p, i)
 		p.blockCache.AddTx(&_tx)
 	}
-	
+
 	b.ResetTimer()
-	b.StopTimer()
-	for i := 0; i < b.N; i++ {
- 		bc := p.blockCache.LongestChain()
+	for i := 0; i < 1; i++ {
+		bc := p.blockCache.LongestChain()
 		pool := p.blockCache.LongestPool()
 		b.StartTimer()
 		p.genBlock(p.account, bc, pool)

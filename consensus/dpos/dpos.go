@@ -251,7 +251,6 @@ func (p *DPoS) blockLoop() {
 					p.globalDynamicProperty.update(&blk.Head)
 
 					p.blockCache.AddSingles(p.blockVerify)
-
 				} else if err == ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
@@ -342,21 +341,23 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 			break
 		}
 
-		if sp, _, err := StdTxsVerifier([]Tx{*tx}, spool1); err == nil {
+		if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
 			blk.Content = append(blk.Content, *tx)
 		} else {
 			spool1 = sp
 		}
 	}
-	/*
-		////////////probe//////////////////
-		log.Report(&log.MsgBlock{
-			SubType:       "gen",
-			BlockHeadHash: blk.HeadHash(),
-			BlockNum:      blk.Head.Number,
-		})
-		///////////////////////////////////
-	*/
+
+	CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
+
+	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine
+	//log.Report(&log.MsgBlock{
+	//	SubType:       "gen",
+	//	BlockHeadHash: blk.HeadHash(),
+	//	BlockNum:      blk.Head.Number,
+	//})
+	/////////////////////////////////////
+
 	return &blk
 }
 

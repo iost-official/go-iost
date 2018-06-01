@@ -37,6 +37,7 @@ type Code string
 type VM interface {
 	Prepare(contract Contract, monitor Monitor) error
 	Start() error
+	Restart(contract Contract) error
 	Stop()
 	Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
 	PC() uint64
