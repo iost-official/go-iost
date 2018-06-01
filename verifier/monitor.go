@@ -29,10 +29,14 @@ func newVMMonitor() vmMonitor {
 }
 
 func (m *vmMonitor) StartVM(contract vm.Contract) vm.VM {
-	if _, ok := m.vms[contract.Info().Prefix]; ok {
-		return nil
+	if vm, ok := m.vms[contract.Info().Prefix]; ok {
+		return vm
 	}
 
+	return m.startVM(contract)
+}
+
+func (m *vmMonitor) startVM(contract vm.Contract) vm.VM {
 	switch contract.(type) {
 	case *lua.Contract:
 		var lvm lua.VM
@@ -52,7 +56,7 @@ func (m *vmMonitor) StartVM(contract vm.Contract) vm.VM {
 
 func (m *vmMonitor) RestartVM(contract vm.Contract) vm.VM {
 	if m.hotVM == nil {
-		m.hotVM = &vmHolder{m.StartVM(contract), contract}
+		m.hotVM = &vmHolder{m.startVM(contract), contract}
 		return m.hotVM
 	}
 	m.hotVM.Restart(contract)
@@ -104,7 +108,8 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string, caller vm.IOSTA
 }
 
 func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
-	if contractPrefix == m.hotVM.contract.Info().Prefix {
+
+	if m.hotVM != nil && contractPrefix == m.hotVM.contract.Info().Prefix {
 		//fmt.Println(pool.GetHM("iost", "b"))
 		rtn, pool2, err := m.hotVM.Call(pool, methodName, args...)
 		//fmt.Println(pool2.GetHM("iost", "b"))

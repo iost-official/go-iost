@@ -29,8 +29,8 @@ end`
 	//fmt.Println(pool.GetHM("iost", "b"))
 	var pool2 state.Pool
 
-	cv := verifier.NewCacheVerifier(pool)
-	pool2, err = cv.VerifyContract(&lc, false)
+	cv := verifier.NewCacheVerifier()
+	pool2, err = cv.VerifyContract(&lc, pool)
 	if err != nil {
 		panic(err)
 	}
