@@ -49,10 +49,6 @@ func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 }
 
 func StdTxsVerifier(txs []*tx.Tx, pool state.Pool) (state.Pool, int, error) {
-	if ver == nil {
-		veri := verifier.NewCacheVerifier()
-		ver = &veri
-	}
 	pool2 := pool.Copy()
 	for i, txx := range txs {
 		var err error
@@ -93,4 +89,9 @@ func CleanStdVerifier() {
 func VerifyTxSig(tx tx.Tx) bool {
 	err := tx.VerifySelf()
 	return err == nil
+}
+
+func init() {
+	veri := verifier.NewCacheVerifier()
+	ver = &veri
 }
