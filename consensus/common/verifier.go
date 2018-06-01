@@ -37,14 +37,18 @@ var ver *verifier.CacheVerifier
 // StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 	txs := block.Content
-	pool2, _, err := StdTxsVerifier(txs, pool.Copy())
+	ptxs := make([]*tx.Tx, 0)
+	for _, txx := range txs {
+		ptxs = append(ptxs, &txx)
+	}
+	pool2, _, err := StdTxsVerifier(ptxs, pool.Copy())
 	if err != nil {
 		return pool, err
 	}
 	return pool2.MergeParent()
 }
 
-func StdTxsVerifier(txs []tx.Tx, pool state.Pool) (state.Pool, int, error) {
+func StdTxsVerifier(txs []*tx.Tx, pool state.Pool) (state.Pool, int, error) {
 	if ver == nil {
 		veri := verifier.NewCacheVerifier()
 		ver = &veri
@@ -57,12 +61,12 @@ func StdTxsVerifier(txs []tx.Tx, pool state.Pool) (state.Pool, int, error) {
 			panic(err)
 			return pool2, i, err
 		}
-		//pool2, err = pool2.MergeParent()
-		//if err != nil {
-		//	panic(err)
-		//}
 	}
 	return pool2, len(txs), nil
+}
+
+func CleanStdVerifier() {
+	ver.CleanUp()
 }
 
 // TODO： 请别用这个了

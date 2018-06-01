@@ -100,7 +100,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		})
 		defer guard1.Unpatch()
 
-		guard2 := Patch(consensus_common.StdTxsVerifier, func(_ []tx.Tx, _ state.Pool) (state.Pool, int, error) {
+		guard2 := Patch(consensus_common.StdTxsVerifier, func(_ []*tx.Tx, _ state.Pool) (state.Pool, int, error) {
 			return nil, 0, nil
 		})
 		defer guard2.Unpatch()

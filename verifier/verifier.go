@@ -192,7 +192,7 @@ func NewCacheVerifier() CacheVerifier {
 	return cv
 }
 
-func (cv *CacheVerifier) Close() {
+func (cv *CacheVerifier) CleanUp() {
 	cv.Verifier.Stop()
 }
 

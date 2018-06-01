@@ -74,6 +74,8 @@ func (m *vmMonitor) Stop() {
 		vv.Stop()
 	}
 	m.vms = make(map[string]vmHolder)
+	m.hotVM.Stop()
+	m.hotVM = nil
 }
 
 func (m *vmMonitor) GetMethod(contractPrefix, methodName string, caller vm.IOSTAccount) (vm.Method, error) {
