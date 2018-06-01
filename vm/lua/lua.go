@@ -28,9 +28,6 @@ type VM struct {
 }
 
 func (l *VM) Start() error {
-	for _, api := range l.APIs {
-		l.L.SetGlobal(api.name, l.L.NewFunction(api.function))
-	}
 
 	if err := l.L.DoString(l.Contract.code); err != nil {
 		return err
@@ -197,10 +194,20 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	}
 	l.APIs = append(l.APIs, Call)
 
+	for _, api := range l.APIs {
+		l.L.SetGlobal(api.name, l.L.NewFunction(api.function))
+	}
 	return nil
 }
 func (l *VM) PC() uint64 {
 	rtn := l.L.PCount + l.callerPC
 	l.L.PCount = 0
 	return rtn
+}
+func (l *VM) Restart(contract vm.Contract) error {
+	l.Contract = contract.(*Contract)
+	if err := l.L.DoString(l.Contract.code); err != nil {
+		return err
+	}
+	return nil
 }

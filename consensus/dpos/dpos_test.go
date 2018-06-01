@@ -8,6 +8,9 @@ import (
 
 	"time"
 
+	"fmt"
+	"strconv"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/consensus/common"
@@ -21,7 +24,6 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
-	"fmt"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -98,7 +100,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		})
 		defer guard1.Unpatch()
 
-		guard2 := Patch(consensus_common.StdTxsVerifier, func(_ []tx.Tx, _ state.Pool) (state.Pool, int, error) {
+		guard2 := Patch(consensus_common.StdTxsVerifier, func(_ []*tx.Tx, _ state.Pool) (state.Pool, int, error) {
 			return nil, 0, nil
 		})
 		defer guard2.Unpatch()
@@ -622,7 +624,7 @@ func genTx(p *DPoS, nonce int) tx.Tx {
 				Put("hello", "world")
 				return "success"
 			end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: strconv.Itoa(nonce), GasLimit: 100, Price: 0, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
 
 	_tx := tx.NewTx(int64(nonce), &lc)
 	_tx, _ = tx.SignTx(_tx, p.account)

@@ -3,6 +3,7 @@ package log
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -22,23 +23,39 @@ func fromBase64(str string) []byte {
 	return ret
 }
 
-func Report(msg Msg) error {
-	resp, err := http.PostForm(Server+"/report",
-		msg.Form())
+func Report(msg Msg) {
 
-	if err != nil {
-		return err
-	}
+	go func() {
 
-	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
-		body, err := ioutil.ReadAll(resp.Body)
+		resp, err := http.PostForm(Server+"/report",
+			msg.Form())
+
+		defer func() {
+			if err != nil {
+				log, err2 := NewLogger("NET_LOG")
+				if err2 != nil {
+					fmt.Println("error :", err2)
+				}
+				log.E(err.Error())
+			}
+		}()
+
 		if err != nil {
-			return err
+			return
 		}
-		return errors.New(strconv.Itoa(resp.StatusCode) + " " + string(body))
-	}
-	return nil
+
+		defer resp.Body.Close()
+		if resp.StatusCode >= 400 {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return
+			}
+			err = errors.New(strconv.Itoa(resp.StatusCode) + " " + string(body))
+			return
+		}
+
+	}()
+
 }
 
 type Timestamp struct {
