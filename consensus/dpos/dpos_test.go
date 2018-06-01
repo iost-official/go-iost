@@ -1,10 +1,10 @@
 package dpos
 
 import (
-	"testing"
 	"fmt"
 	. "github.com/bouk/monkey"
 	. "github.com/golang/mock/gomock"
+	"testing"
 
 	"time"
 
@@ -73,7 +73,7 @@ func TestNewDPoS(t *testing.T) {
 		//	getNumber = number
 		//	return &blk
 		//})
-		mockBc.EXPECT().Length().AnyTimes().Do(func() uint64 {var r uint64 = 0; return r})
+		mockBc.EXPECT().Length().AnyTimes().Do(func() uint64 { var r uint64 = 0; return r })
 		mockBc.EXPECT().Top().AnyTimes().Return(&blk)
 		mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
 			pushNumber = block.Head.Number
@@ -215,6 +215,7 @@ func TestRunGenerateBlock(t *testing.T) {
 	})
 
 }
+
 /*
 func TestRunReceiveBlock(t *testing.T) {
 	Convey("Test of Run (Receive Block)", t, func() {
@@ -693,25 +694,25 @@ func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parent
 //go test -bench=. -benchmem -run=nonce
 func BenchmarkAddBlockCache(b *testing.B) {
 	//benchAddBlockCache(b,10,true)
-	benchAddBlockCache(b,10,false)
+	benchAddBlockCache(b, 10, false)
 }
+
 /*
-func BenchmarkGetBlock(b *testing.B) { 
-//	benchGetBlock(b,10,true) 
-	benchGetBlock(b,10,false) 
+func BenchmarkGetBlock(b *testing.B) {
+//	benchGetBlock(b,10,true)
+	benchGetBlock(b,10,false)
 }
 */
 func BenchmarkBlockVerifier(b *testing.B) { benchBlockVerifier(b) }
-func BenchmarkTxCache(b *testing.B) { 
- 	//benchTxCache(b,true)
-	benchTxCache(b,true)
+func BenchmarkTxCache(b *testing.B) {
+	//benchTxCache(b,true)
+	benchTxCache(b, true)
 }
 
-func BenchmarkBlockHead(b *testing.B)     { benchBlockHead(b) }
-func BenchmarkGenerateBlock(b *testing.B) { 
-	benchGenerateBlock(b,6000) 
+func BenchmarkBlockHead(b *testing.B) { benchBlockHead(b) }
+func BenchmarkGenerateBlock(b *testing.B) {
+	benchGenerateBlock(b, 6000)
 }
-
 
 func envInit(b *testing.B) (*DPoS, []account.Account, []string) {
 	var accountList []account.Account
@@ -724,7 +725,7 @@ func envInit(b *testing.B) (*DPoS, []account.Account, []string) {
 	}
 	accountList = append(accountList, _account)
 	witnessList = append(witnessList, _account.ID)
-	_accId:=_account.ID
+	_accId := _account.ID
 
 	for i := 1; i < 3; i++ {
 		_account, err := account.NewAccount(nil)
@@ -787,10 +788,8 @@ func envInit(b *testing.B) (*DPoS, []account.Account, []string) {
 	if err != nil {
 		b.Errorf("NewDPoS error")
 	}
-	return p,accountList,witnessList
+	return p, accountList, witnessList
 }
-
-
 
 func genTx(p *DPoS, nonce int) tx.Tx {
 	main := lua.NewMethod(2, "main", 0, 1)
@@ -800,14 +799,14 @@ func genTx(p *DPoS, nonce int) tx.Tx {
 			end`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
 
-	_tx:=tx.NewTx(int64(nonce), &lc)
-	_tx,_=tx.SignTx(_tx,p.account)
+	_tx := tx.NewTx(int64(nonce), &lc)
+	_tx, _ = tx.SignTx(_tx, p.account)
 	return _tx
 }
 
-func genBlockHead(p *DPoS){
+func genBlockHead(p *DPoS) {
 	blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
-		Version:    0, 
+		Version:    0,
 		ParentHash: nil,
 		TreeHash:   make([]byte, 0),
 		BlockHash:  make([]byte, 0),
@@ -884,7 +883,6 @@ func benchAddBlockCache(b *testing.B, txCnt int, continuity bool) {
 
 // 获取block性能测试
 
-
 func benchGetBlock(b *testing.B, txCnt int, continuity bool) {
 	p, accountList, witnessList := envInit(b)
 	//生成block
@@ -923,7 +921,6 @@ func benchBlockVerifier(b *testing.B) {
 	}
 }
 
-
 func benchTxCache(b *testing.B, f bool) {
 	p, _, _ := envInit(b)
 	var txs []tx.Tx
@@ -949,7 +946,6 @@ func benchTxCache(b *testing.B, f bool) {
 			txCache.Del(&txs[i])
 			b.StopTimer()
 		}
-
 
 	}
 }

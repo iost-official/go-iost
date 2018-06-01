@@ -228,13 +228,13 @@ func (p *DPoS) blockLoop() {
 				///////////////////////////////////
 			*/
 			/*
-						////////////probe//////////////////
-						log.Report(&log.MsgBlock{
-							SubType:       "receive",
-							BlockHeadHash: blk.HeadHash(),
-							BlockNum:      blk.Head.Number,
-						})
-						///////////////////////////////////
+				////////////probe//////////////////
+				log.Report(&log.MsgBlock{
+					SubType:       "receive",
+					BlockHeadHash: blk.HeadHash(),
+					BlockNum:      blk.Head.Number,
+				})
+				///////////////////////////////////
 			*/
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, p.blockVerify)
@@ -408,9 +408,9 @@ func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Poo
 	// verify block head
 	if err := VerifyBlockHead(blk, parent); err != nil {
 		/*
-				////////////probe//////////////////
-				log.Report(&msgBlock)
-				///////////////////////////////////
+			////////////probe//////////////////
+			log.Report(&msgBlock)
+			///////////////////////////////////
 		*/
 		return nil, err
 
@@ -420,9 +420,9 @@ func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Poo
 	// TODO currentSlot is negative
 	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
 		/*
-				////////////probe//////////////////
-				log.Report(&msgBlock)
-				///////////////////////////////////
+			////////////probe//////////////////
+			log.Report(&msgBlock)
+			///////////////////////////////////
 		*/
 		return nil, errors.New("wrong witness")
 
@@ -435,18 +435,18 @@ func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Poo
 	// verify block witness signature
 	if !common.VerifySignature(headInfo, signature) {
 		/*
-				////////////probe//////////////////
-				log.Report(&msgBlock)
-				///////////////////////////////////
+			////////////probe//////////////////
+			log.Report(&msgBlock)
+			///////////////////////////////////
 		*/
 		return nil, errors.New("wrong signature")
 	}
 	newPool, err := StdBlockVerifier(blk, pool)
 	if err != nil {
 		/*
-				////////////probe//////////////////
-				log.Report(&msgBlock)
-				///////////////////////////////////
+			////////////probe//////////////////
+			log.Report(&msgBlock)
+			///////////////////////////////////
 		*/
 		return nil, err
 	}
