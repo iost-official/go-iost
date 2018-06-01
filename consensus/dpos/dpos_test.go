@@ -330,7 +330,6 @@ func TestRunMultipleBlocks(t *testing.T) {
 		p.blockCache.Draw()
 	})
 }
-
 /*
 func TestRunReceiveBlock(t *testing.T) {
 	Convey("Test of Run (Receive Block)", t, func() {
@@ -505,7 +504,6 @@ func TestRunMultipleBlocks(t *testing.T) {
 		mockPool.EXPECT().Flush().Return(nil).AnyTimes()
 		mockRouter.EXPECT().CancelDownload(Any(), Any()).Return(nil).AnyTimes()
 
-<<<<<<< HEAD
 		Convey("correct blocks", func() {
 			blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
 			blkChan <- msg
@@ -709,7 +707,6 @@ func BenchmarkTxCache(b *testing.B) {
 	benchTxCache(b, true)
 }
 
-<<<<<<< HEAD
 /*
 func BenchmarkTxCachePara(b *testing.B) {
 	benchTxCachePara(b)
