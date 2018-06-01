@@ -53,8 +53,13 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 	}
 
 	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.ParentHash) {
+		fmt.Println(block.Head.ParentHash)
+		fmt.Println(b.bc.GetBlockByNumber(0).Head.Hash())
 		for _, bct := range b.children {
 			if bytes.Equal(bct.bc.Top().Head.Hash(), block.Head.Hash()) {
+				fmt.Println("bct: ", bct.bc.Top().Head.Hash())
+				fmt.Println("bct: ", block.Head.Hash())
+				//fmt.Println(block.Head.Hash())
 				return Duplicate, nil
 			}
 		}
@@ -167,6 +172,7 @@ type BlockCache interface {
 	SetBasePool(statePool state.Pool) error
 	ConfirmedLength() uint64
 	BlockConfirmChan() chan uint64
+	Draw()
 }
 
 // BlockCacheImpl 块缓存实现
@@ -493,3 +499,46 @@ func (h *BlockCacheImpl) BlockConfirmChan() chan uint64 {
 //		}
 //	}
 //}
+
+//for debug
+//draw the blockcache
+var pic [10][10]byte
+
+func calcTree(root *BlockCacheTree, x int, y int) int {
+	if y != 0 {
+		pic[x][y-1] = '-'
+		for i := x; i >= 0; i-- {
+			if pic[i][y-2] != ' ' {
+				break
+			}
+			pic[i][y-2] = '|'
+		}
+	}
+	pic[x][y] = 'N'
+	var width int = 0
+	for i := 0; i < len(root.children); i++ {
+		width = calcTree(root.children[i], x+width, y+2)
+	}
+	return x + width + 2
+}
+func (b *BlockCacheTree) DrawTree() {
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 10; j++ {
+			pic[i][j] = ' '
+		}
+	}
+	calcTree(b, 0, 0)
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 10; j++ {
+			fmt.Printf("%c", pic[i][j])
+		}
+		fmt.Printf("\n")
+	}
+}
+
+func (h *BlockCacheImpl) Draw() {
+	fmt.Println("\ncachedTree:")
+	h.cachedRoot.DrawTree()
+	//	fmt.Println("cachedSingle:")
+	//	h.singleBlockRoot.DrawTree()
+}

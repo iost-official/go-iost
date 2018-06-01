@@ -97,7 +97,7 @@ func TestGlobalDynamicProperty(t *testing.T) {
 			So(sec, ShouldBeLessThanOrEqualTo, SlotLength*3)
 		})
 
-		curSec += SlotLength *3 -1
+		curSec += SlotLength*3 - 1
 		Convey("in self's slot and lost two previous blocks", func() {
 			curTs := GetTimestamp(curSec)
 			wit := witnessOfTime(&sp, &dp, curTs)
