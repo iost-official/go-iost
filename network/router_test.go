@@ -6,14 +6,12 @@ import (
 
 	"fmt"
 
-	"io/ioutil"
 	"os"
 	"strconv"
 
 	"sync"
 
 	"github.com/iost-official/prototype/core/message"
-	"github.com/iost-official/prototype/network/discover"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -30,50 +28,22 @@ func TestRouterImpl_Init(t *testing.T) {
 func TestGetInstance(t *testing.T) {
 	Convey("", t, func() {
 
-		router, err := GetInstance(&NetConifg{NodeTablePath: "tale_test", ListenAddr: "127.0.0.1"}, "base", 30304)
+		router, err := GetInstance(&NetConifg{NodeTablePath: "tale_test", ListenAddr: "127.0.0.1"}, "base", 30305)
 
 		So(err, ShouldBeNil)
-		So(router.(*RouterImpl).port, ShouldEqual, uint16(30304))
-		So(Route.(*RouterImpl).port, ShouldEqual, uint16(30304))
+		So(router.(*RouterImpl).port, ShouldEqual, uint16(30305))
+		So(Route.(*RouterImpl).port, ShouldEqual, uint16(30305))
+		router.Stop()
 	})
-}
-
-func initNetConf() *NetConifg {
-	conf := &NetConifg{}
-	conf.SetLogPath("iost_log_")
-	tablePath, _ := ioutil.TempDir(os.TempDir(), "iost_node_table_"+strconv.Itoa(int(time.Now().UnixNano())))
-	conf.SetNodeTablePath(tablePath)
-	conf.SetListenAddr("0.0.0.0")
-	return conf
-}
-
-//start boot node
-func newBootRouters() []Router {
-	rs := make([]Router, 0)
-	node, err := discover.ParseNode("@127.0.0.1:30304")
-	if err != nil {
-		fmt.Errorf("parse boot node got err:%v", err)
-	}
-	router, _ := RouterFactory("base")
-	conf := initNetConf()
-	conf.SetNodeID(string(node.ID))
-	baseNet, err := NewBaseNetwork(conf)
-	if err != nil {
-		fmt.Println("NewBaseNetwork ", err)
-	}
-	err = router.Init(baseNet, node.TCP)
-	if err != nil {
-		fmt.Println("Init ", err)
-	}
-	go router.Run()
-	return rs
 }
 
 //create n nodes
 func newRouters(n int) []Router {
 	rs := make([]Router, 0)
+	os.RemoveAll("iost_db_")
 	for i := 0; i < n; i++ {
 		router, _ := RouterFactory("base")
+		os.RemoveAll("iost_db_" + strconv.Itoa(i))
 		baseNet, _ := NewBaseNetwork(&NetConifg{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_" + strconv.Itoa(i)})
 		router.Init(baseNet, uint16(20900+i))
 
@@ -94,6 +64,7 @@ var m = message.Message{
 
 //3 ms
 func TestRouterImpl_Send(t *testing.T) {
+	cleanLDB()
 	rs := newRouters(2)
 	net0 := rs[0].(*RouterImpl).base.(*BaseNetwork)
 	net1 := rs[1].(*RouterImpl).base.(*BaseNetwork)
@@ -117,10 +88,12 @@ Finish:
 	for _, r := range rs {
 		r.Stop()
 	}
+	cleanLDB()
 }
 
 //14ms
 func TestRouterImpl_Broadcast(t *testing.T) {
+	cleanLDB()
 	rs := newRouters(3)
 	for k, route := range rs {
 		for k2, route2 := range rs {
@@ -152,4 +125,5 @@ func TestRouterImpl_Broadcast(t *testing.T) {
 	for _, r := range rs {
 		r.Stop()
 	}
+	cleanLDB()
 }

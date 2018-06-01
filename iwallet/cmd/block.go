@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -64,7 +65,12 @@ to quickly create a Cobra application.`,
 			fmt.Println(err.Error())
 			return
 		}
-		fmt.Println(blockInfo.Json)
+		blockInfoJson, err := json.Marshal(blockInfo)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		fmt.Println(blockInfoJson)
 	},
 }
 

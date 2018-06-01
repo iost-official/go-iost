@@ -5,9 +5,10 @@
 package core_mock
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	state "github.com/iost-official/prototype/core/state"
-	reflect "reflect"
 )
 
 // MockPool is a mock of Pool interface

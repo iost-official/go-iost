@@ -18,6 +18,9 @@ import (
 	"fmt"
 	"os"
 
+
+	"net"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/consensus"
@@ -115,6 +118,10 @@ var rootCmd = &cobra.Command{
 		}
 
 		fmt.Println("network instance")
+		publicIP := common.GetPulicIP()
+		if publicIP != "" && common.IsPublicIP(net.ParseIP(publicIP)) && listenAddr != "127.0.0.1" {
+			listenAddr = publicIP
+		}
 		net, err := network.GetInstance(
 			&network.NetConifg{
 				LogPath:       logPath,

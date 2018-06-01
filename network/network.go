@@ -27,10 +27,12 @@ import (
 )
 
 const (
-	HEADLENGTH               = 4
-	CheckKnownNodeInterval   = 10
-	NodeLiveThresholdSeconds = 20
-	MaxDownloadRetry         = 1
+	HEADLENGTH              = 4
+	CheckKnownNodeInterval  = 10
+	NodeLiveCycle           = 2
+	MaxDownloadRetry        = 2
+	MsgLiveThresholdSeconds = 120
+	RegisterServerPort      = 30304
 )
 
 //Network api
@@ -86,13 +88,13 @@ func (conf *NetConifg) SetListenAddr(addr string) *NetConifg {
 
 //BaseNetwork boot node maintain all node table, and distribute the node table to all node
 type BaseNetwork struct {
-	nodeTable  *db.LDBDatabase //all known node except remoteAddr
-	neighbours map[string]*discover.Node
-	lock       sync.Mutex
-	peers      peerSet // manage all connection
-	RecvCh     chan message.Message
-	listener   net.Listener
-
+	nodeTable     *db.LDBDatabase //all known node except remoteAddr
+	neighbours    map[string]*discover.Node
+	lock          sync.Mutex
+	peers         peerSet // manage all connection
+	RecvCh        chan message.Message
+	listener      net.Listener
+	RecentSent    map[string]time.Time
 	NodeHeightMap map[string]uint64 //maintain all height of nodes higher than current height
 	localNode     *discover.Node
 
@@ -129,6 +131,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 	}
 	localNode := &discover.Node{ID: discover.NodeID(conf.NodeID), IP: net.ParseIP(conf.ListenAddr)}
 	downloadHeights := make(map[uint64]uint8, 0)
+	rsm := make(map[string]time.Time, 0)
 	s := &BaseNetwork{
 		nodeTable:       nodeTable,
 		RecvCh:          recv,
@@ -138,6 +141,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 		NodeHeightMap:   NodeHeightMap,
 		DownloadHeights: downloadHeights,
 		regAddr:         conf.RegisterAddr,
+		RecentSent:      rsm,
 	}
 	return s, nil
 }
@@ -156,14 +160,19 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 			conn, err := bn.listener.Accept()
 			if err != nil {
 				bn.log.E("[net] accept downStream node err:%v", err)
+				time.Sleep(2 * time.Second)
 				continue
 			}
 			go bn.receiveLoop(conn)
 		}
 	}()
 	//register
-	go bn.registerLoop()
-	go bn.nodeCheckLoop()
+	if bn.localNode.TCP == RegisterServerPort {
+		go bn.nodeCheckLoop()
+	} else {
+		go bn.registerLoop()
+		go bn.recentSentLoop()
+	}
 	return bn.RecvCh, nil
 }
 
@@ -180,7 +189,9 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 			continue
 		}
 		msg.To = node.Addr()
-		bn.broadcast(msg)
+		if !bn.isRecentSent(msg) {
+			bn.broadcast(msg)
+		}
 	}
 }
 
@@ -266,6 +277,10 @@ func dial(nodeAddr string) (net.Conn, net.Conn, error) {
 
 //Send msg to msg.To
 func (bn *BaseNetwork) Send(msg message.Message) {
+	//if bn.isRecentSent(msg) {
+	//	bn.log.D("[net] recent send")
+	//	return
+	//}
 	if msg.To == bn.localNode.Addr() || msg.To == "" {
 		return
 	}
@@ -389,15 +404,12 @@ func (bn *BaseNetwork) putNode(addrs string) {
 			continue
 		}
 		if addr != "" && addr != bn.localNode.Addr() {
-			ok, err := bn.nodeTable.Has([]byte(addr))
+			_, err := bn.nodeTable.Has([]byte(addr))
 			if err != nil {
 				bn.log.E("failed to nodetable has %v, err: %v", addr, err)
 				continue
 			}
-			if !ok {
-
-				bn.nodeTable.Put([]byte(node.Addr()), common.IntToBytes(2))
-			}
+			bn.nodeTable.Put([]byte(node.Addr()), common.IntToBytes(NodeLiveCycle))
 		}
 	}
 	bn.findNeighbours()
@@ -406,7 +418,7 @@ func (bn *BaseNetwork) putNode(addrs string) {
 
 //nodeCheckLoop inspection Last registration time of node
 func (bn *BaseNetwork) nodeCheckLoop() {
-	if bn.localNode.TCP == 30304 {
+	if bn.localNode.TCP == RegisterServerPort {
 		for {
 			iter := bn.nodeTable.NewIterator()
 			for iter.Next() {
@@ -430,7 +442,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 //registerLoop register local address to boot nodes
 func (bn *BaseNetwork) registerLoop() {
 	for {
-		if bn.localNode.TCP != 30304 && bn.regAddr != "" {
+		if bn.localNode.TCP != RegisterServerPort && bn.regAddr != "" {
 			peer, err := bn.dial(bn.regAddr)
 			if err != nil {
 				bn.log.E("[net] failed to connect boot node, err:%v", err)
@@ -457,6 +469,9 @@ func (bn *BaseNetwork) findNeighbours() {
 		nodes = append(nodes, node)
 	}
 	neighbours := bn.localNode.FindNeighbours(nodes)
+	for k, _ := range bn.neighbours {
+		bn.delNeighbour(string(k))
+	}
 	for _, n := range neighbours {
 		bn.setNeighbour(n)
 	}
@@ -521,22 +536,6 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 	return nil
 }
 
-//sendTo send request to the address
-func (bn *BaseNetwork) sendTo(addr string, req *Request) {
-	if addr == "" {
-		return
-	}
-	peer, err := bn.dial(addr)
-	if err != nil {
-		bn.nodeTable.Delete([]byte(addr))
-		bn.log.E("[net] dial tcp got err:%v", err)
-		return
-	}
-	if er := bn.send(peer.conn, req); er != nil {
-		bn.peers.RemoveByNodeStr(addr)
-	}
-}
-
 //SetNodeHeightMap ...
 func (bn *BaseNetwork) SetNodeHeightMap(nodeStr string, height uint64) {
 	bn.lock.Lock()
@@ -564,4 +563,38 @@ func randNodeMatchHeight(m map[string]uint64, downloadHeight uint64) (targetNode
 		}
 	}
 	return targetNode
+}
+
+//recentSentLoop clean up recent sent
+func (bn *BaseNetwork) recentSentLoop() {
+	for {
+		bn.log.D("[net] clean up recent sent loop")
+		now := time.Now()
+		for k, t := range bn.RecentSent {
+			if t.Add(MsgLiveThresholdSeconds * time.Second).Before(now) {
+				bn.lock.Lock()
+				delete(bn.RecentSent, k)
+				bn.lock.Unlock()
+			}
+		}
+		time.Sleep(MsgLiveThresholdSeconds * time.Second)
+	}
+}
+
+func (bn *BaseNetwork) isRecentSent(msg message.Message) bool {
+	msg.TTL = 0
+	data, err := msg.Marshal(nil)
+	if err != nil {
+		bn.log.E("[net] marshal request encountered err:%v", err)
+	}
+	h := string(common.Sha256(data))
+
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
+
+	if _, ok := bn.RecentSent[h]; !ok {
+		bn.RecentSent[string(h)] = time.Now()
+		return false
+	}
+	return true
 }

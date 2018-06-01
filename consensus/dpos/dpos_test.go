@@ -19,7 +19,6 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
-	//"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
@@ -118,8 +117,8 @@ func TestRunGenerateBlock(t *testing.T) {
 		})
 		defer guard1.Unpatch()
 
-		guard2 := Patch(consensus_common.VerifyTx, func(_ *tx.Tx, _ *verifier.CacheVerifier) (state.Pool, bool) {
-			return nil, true
+		guard2 := Patch(consensus_common.StdTxsVerifier, func(_ []*tx.Tx, _ state.Pool) (state.Pool, int, error) {
+			return nil, 0, nil
 		})
 		defer guard2.Unpatch()
 
@@ -208,6 +207,7 @@ func TestRunGenerateBlock(t *testing.T) {
 
 		time.Sleep(time.Second * 2)
 
+		//So(reqType, ShouldEqual, network.ReqNewBlock)
 		So(blk.Head.Number, ShouldEqual, 1)
 		So(string(blk.Head.ParentHash), ShouldEqual, string(genesis.Head.Hash()))
 		So(blk.Head.Witness, ShouldEqual, "id0")
@@ -338,6 +338,7 @@ func TestRunReceiveBlock(t *testing.T) {
 		mockRouter := protocol_mock.NewMockRouter(mockCtr)
 		mockBc := core_mock.NewMockChain(mockCtr)
 		mockPool := core_mock.NewMockPool(mockCtr)
+		mockPool.EXPECT().MergeParent().Return(mockPool, nil).AnyTimes()
 		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
 
 		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
@@ -481,7 +482,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		seckey := common.Sha256([]byte("SeckeyId1"))
 		pubkey := common.CalcPubkeyInSecp256k1(seckey)
 		p, _ := NewDPoS(account.Account{"id1", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
-
+		fmt.Println("p:", p)
 		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		code := `function main()
 						Put("hello", "world")
@@ -504,6 +505,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		mockPool.EXPECT().Flush().Return(nil).AnyTimes()
 		mockRouter.EXPECT().CancelDownload(Any(), Any()).Return(nil).AnyTimes()
 
+<<<<<<< HEAD
 		Convey("correct blocks", func() {
 			blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
 			blkChan <- msg
@@ -707,6 +709,7 @@ func BenchmarkTxCache(b *testing.B) {
 	benchTxCache(b, true)
 }
 
+<<<<<<< HEAD
 /*
 func BenchmarkTxCachePara(b *testing.B) {
 	benchTxCachePara(b)
@@ -913,7 +916,7 @@ func benchGetBlock(b *testing.B, txCnt int, continuity bool) {
 func benchBlockVerifier(b *testing.B) {
 	p, accountList, witnessList := envInit(b)
 	//生成block
-	blockPool := genBlocks(p, accountList, witnessList, 2, 10000, true)
+	blockPool := genBlocks(p, accountList, witnessList, 2, 6000, true)
 	//p.update(&blockPool[0].Head)
 	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块

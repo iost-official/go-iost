@@ -3,6 +3,7 @@ package log
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -32,8 +33,16 @@ func Report(msg Msg) error {
 }
 
 func report(msg Msg) error {
-	resp, err := http.PostForm(Server+"/report",
-		msg.Form())
+	resp, err := http.PostForm(Server+"/report", msg.Form())
+	defer func() {
+		if err != nil {
+			log, err2 := NewLogger("NET_LOG")
+			if err2 != nil {
+				fmt.Println("error :", err2)
+			}
+			log.E(err.Error())
+		}
+	}()
 
 	if err != nil {
 		return err
@@ -45,7 +54,8 @@ func report(msg Msg) error {
 		if err != nil {
 			return err
 		}
-		return errors.New(strconv.Itoa(resp.StatusCode) + " " + string(body))
+		err = errors.New(strconv.Itoa(resp.StatusCode) + " " + string(body))
+		return err
 	}
 	return nil
 }

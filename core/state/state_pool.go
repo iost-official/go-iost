@@ -201,6 +201,10 @@ func (p *PoolImpl) MergeParent() (Pool, error) {
 	return &bak, nil
 }
 
+func (p *PoolImpl) Parent() *PoolImpl {
+	return p.parent
+}
+
 var StdPool Pool
 
 var once sync.Once
