@@ -6,12 +6,13 @@ import (
 )
 
 type Holder struct {
-	self     account.Account
-	pool     state.Pool
-	spool    ServiPool
-	recorder Recorder
+	self  account.Account
+	pool  state.Pool
+	spool ServiPool
 }
 
 type Watcher struct {
 	hp *Holder
 }
+
+var Data Holder

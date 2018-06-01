@@ -15,6 +15,7 @@ type Recorder interface {
 	Pop() tx.Tx
 	Listen()
 	Close()
+	Exist(tx2 tx.Tx) bool
 }
 
 func NewRecorder() Recorder {
@@ -25,19 +26,33 @@ func NewRecorder() Recorder {
 
 type RecorderImpl struct {
 	TxHeap
+	storage     map[string]bool
 	isClose     bool
 	isListening sync.Mutex
 }
 
-func (p *RecorderImpl) Record(tx2 tx.Tx) error {
+func (p *RecorderImpl) Record(tx2 tx.Tx) error { // TODO 去重
 	p.isListening.Lock()
 	defer p.isListening.Unlock()
-	if common.VerifyTxSig(tx2) {
+	if common.VerifyTxSig(tx2) { // 移到外面做
+		tx.RecordTx(tx2, Data.self)
+		p.storage[string(tx2.Hash())] = true
 		p.Push(tx2)
 		return nil
 	} else {
 		return ErrIllegalTx
 	}
+}
+
+func (p *RecorderImpl) Pop() tx.Tx {
+	tx2 := p.TxHeap.Pop()
+	delete(p.storage, string(tx2.Hash()))
+	return tx2
+}
+
+func (p *RecorderImpl) Exist(tx2 tx.Tx) bool {
+	_, ok := p.storage[string(tx2.Hash())]
+	return ok
 }
 
 func (p *RecorderImpl) Listen() {

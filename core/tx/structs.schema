@@ -17,4 +17,5 @@ struct TxRaw {
    Contract []byte
    Signs [][]byte
    Publisher []byte
+   Recorder []byte
 }
