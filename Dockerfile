@@ -20,7 +20,7 @@ RUN \
   rm -rf /tmp/redis-stable* && \
   sed -i 's/^\(bind .*\)$/# \1/' /etc/redis/redis.conf && \
   sed -i 's/^\(daemonize .*\)$/# \1/' /etc/redis/redis.conf && \
-  sed -i 's/^\(logfile .*\)$/# \1/' /etc/redis/redis.conf# Expose ports.
+  sed -i 's/^\(logfile .*\)$/# \1/' /etc/redis/redis.conf
 
 EXPOSE 6379
 
@@ -46,4 +46,8 @@ EXPOSE 30302
 EXPOSE 30303
 
 WORKDIR $GOPATH/src/github.com/iost-official/prototype/iserver
+
+## docker deploy
+## docker build -t iost .
+## docker run --name iost_container -p 30302:30302 -p 30303:30303 -d iost ./start.sh
 
