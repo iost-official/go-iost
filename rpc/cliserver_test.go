@@ -6,7 +6,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/account"
-	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
@@ -59,7 +58,7 @@ func TestHttpServer(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			txkey := TransactionKey{
-				Publisher: common.Base58Encode(_tx.Publisher.Pubkey),
+				Publisher: _tx.Publisher.Pubkey,
 				Nonce:     _tx.Nonce,
 			}
 			fmt.Println(txkey.Publisher)
