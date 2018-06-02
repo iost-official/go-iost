@@ -169,7 +169,7 @@ func TestBlockCachePoW(t *testing.T) {
 
 }
 
-func TestBlockCacheDPoS(t *testing.T) {
+func TestBlockCachePoB(t *testing.T) {
 	ctl := gomock.NewController(t)
 	pool := core_mock.NewMockPool(ctl)
 
@@ -243,7 +243,7 @@ func TestBlockCacheDPoS(t *testing.T) {
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(&b0)
 
-	Convey("Test of Block Cache (DPoS)", t, func() {
+	Convey("Test of Block Cache (PoB)", t, func() {
 		Convey("Add:", func() {
 			var ans int64
 			base.EXPECT().Push(gomock.Any()).Do(func(block *block.Block) error {

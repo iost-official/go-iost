@@ -290,7 +290,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string) {
 	//pubkey := common.CalcPubkeyInSecp256k1(seckey)
 	p, err := NewPoB(accountList[0], blockChain, state.StdPool, witnessList)
 	if err != nil {
-		t.Errorf("NewDPoS error")
+		t.Errorf("NewPoB error")
 	}
 	return p, accountList, witnessList
 }
@@ -803,7 +803,7 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string) {
 	//pubkey := common.CalcPubkeyInSecp256k1(seckey)
 	p, err := NewPoB(accountList[0], blockChain, state.StdPool, witnessList)
 	if err != nil {
-		b.Errorf("NewDPoS error")
+		b.Errorf("NewPoB error")
 	}
 	return p, accountList, witnessList
 }

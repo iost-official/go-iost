@@ -171,7 +171,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		consensus, err := consensus.ConsensusFactory(
-			consensus.CONSENSUS_DPOS,
+			consensus.CONSENSUS_POB,
 			acc, blockChain, state.StdPool, witnessList)
 		if err != nil {
 			fmt.Printf("consensus initialization failed, stop the program! err:%v", err)

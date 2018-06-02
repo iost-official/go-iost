@@ -367,7 +367,7 @@ func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
 	// TODO: 在底层parameter定义的地方定义各种version的const，可以在块生成、验证、此处用
 	switch version {
 	case 0:
-		// DPoS：确认某块的witness数大于maxDepth
+		// PoB：确认某块的witness数大于maxDepth
 		for _, bct := range h.cachedRoot.children {
 			if bct.bc.confirmed > h.maxDepth {
 				return true, bct

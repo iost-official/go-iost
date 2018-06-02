@@ -4,7 +4,7 @@ package consensus_common
 import "time"
 
 const (
-	SlotLength    = 6         //一个slot设为3秒
+	SlotLength    = 3	      //一个slot设为3秒
 	SecondsInHour = 3600      //一小时
 	SecondsInDay  = 24 * 3600 //一天
 	Epoch         = 0         //设为1970-01-01 00:00:00的Unix秒数

@@ -13,7 +13,7 @@ type CachedBlockChain struct {
 	cachedLength int
 	parent       *CachedBlockChain
 	depth        int
-	// DPoS中使用，记录该节点被最多几个witness确认
+	// PoB中使用，记录该节点被最多几个witness确认
 	confirmed int
 }
 
@@ -47,7 +47,7 @@ func (c *CachedBlockChain) Push(block *block.Block) error {
 	// push的时候更新共识相关变量
 	switch block.Head.Version {
 	case 0:
-		// DPoS
+		// PoB
 		c.confirmed = 1
 		witness := block.Head.Witness
 		confirmed := make(map[string]int)

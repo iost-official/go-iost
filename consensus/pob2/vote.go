@@ -31,7 +31,6 @@ func (p *PoB) VoteForWitness(voter account.Account, witnessId string, voteType b
 	req := message.Message{
 		Time: time.Now().Unix(),
 		From: voter.GetId(),
-		//To:      p.DPoSSuperMember,
 		To:      "ALL",
 		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),
@@ -45,7 +44,6 @@ func (p *PoB) WitnessJoin(witness account.Account) {
 	req := message.Message{
 		Time: time.Now().Unix(),
 		From: witness.GetId(),
-		//To:      p.DPoSSuperMember,
 		To:      "ALL",
 		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),
@@ -59,7 +57,6 @@ func (p *PoB) WitnessQuit(witness account.Account) {
 	req := message.Message{
 		Time: time.Now().Unix(),
 		From: witness.GetId(),
-		//To:      p.DPoSSuperMember,
 		To:      "ALL",
 		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),

@@ -109,7 +109,7 @@ func (p *PoB) initGlobalProperty(acc Account, witnessList []string) {
 	p.globalDynamicProperty = newGlobalDynamicProperty()
 }
 
-// Run: 运行DPoS实例
+// Run: 运行PoB实例
 func (p *PoB) Run() {
 	p.synchronizer.StartListen()
 	go p.txListenLoop()
@@ -118,7 +118,7 @@ func (p *PoB) Run() {
 	//p.genBlock(p.Account, block.Block{})
 }
 
-// Stop: 停止DPoS实例
+// Stop: 停止PoB实例
 func (p *PoB) Stop() {
 	close(p.ChTx)
 	close(p.chBlock)
@@ -323,7 +323,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		ParentHash: lastBlk.Head.Hash(),
 		TreeHash:   make([]byte, 0),
 		BlockHash:  make([]byte, 0),
-		Info:       encodeDPoSInfo(p.infoCache),
+		Info:       encodePoBInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    acc.ID,
 		Time:       GetCurrentTimestamp().Slot,
@@ -379,13 +379,13 @@ func generateHeadInfo(head block.BlockHead) []byte {
 
 // 测试函数，用来将info和vote消息进行转换，在块被确认时被调用
 // TODO:找到适当的时机调用
-func decodeDPoSInfo(info []byte) [][]byte {
+func decodePoBInfo(info []byte) [][]byte {
 	votes := bytes.Split(info, []byte("/"))
 	return votes
 }
 
 // 测试函数，用来将info和vote消息进行转换，在生成块的时候调用
-func encodeDPoSInfo(votes [][]byte) []byte {
+func encodePoBInfo(votes [][]byte) []byte {
 	var info []byte
 	for _, req := range votes {
 		info = append(info, req...)
@@ -394,7 +394,7 @@ func encodeDPoSInfo(votes [][]byte) []byte {
 	return info
 }
 
-//收到新块，验证新块，如果验证成功，更新DPoS全局动态属性类并将其加入block cache，再广播
+//收到新块，验证新块，如果验证成功，更新PoB全局动态属性类并将其加入block cache，再广播
 func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 	/*
 		////////////probe//////////////////

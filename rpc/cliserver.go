@@ -6,13 +6,13 @@ import (
 	"reflect"
 
 	"github.com/iost-official/prototype/consensus"
-	"github.com/iost-official/prototype/consensus/dpos"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/consensus/pob2"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/prototype/rpc CliServer
@@ -71,7 +71,7 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 		if Cons == nil {
 			panic(fmt.Errorf("Consensus is nil"))
 		}
-		Cons.(*dpos.DPoS).ChTx <- broadTx
+		Cons.(*pob2.PoB).ChTx <- broadTx
 		//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
 	}()
 	return &Response{Code: 0}, nil
