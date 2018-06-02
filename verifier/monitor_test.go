@@ -3,6 +3,8 @@ package verifier
 import (
 	"testing"
 
+	"fmt"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
@@ -66,18 +68,12 @@ end`
 		pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).Return(v3, nil)
 		pool.EXPECT().Get(gomock.Any()).Return(v3, nil)
 
-		code1 := `function main()
-	return Call("2uXMjwSgRMCpMwmifCKq5rEPdkDmKmgQxfKfnNrxYGDr", "sayHi", "bob")
-end`
 		code2 := `function sayHi(name)
 			return "hi " .. name
 		end`
 		sayHi := lua.NewMethod(vm.Public, "sayHi", 1, 1)
 		main := lua.NewMethod(vm.Public, "main", 0, 1)
 		main3 := lua.NewMethod(vm.Public, "main", 0, 1)
-
-		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "con1", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
-			code1, main)
 
 		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
 			code2, sayHi, sayHi)
@@ -101,8 +97,16 @@ end`, main3)
 
 		tx.TxDbInstance().Add(&txx)
 
+		code1 := fmt.Sprintf(`function main()
+	return Call("%v", "sayHi", "bob")
+end`, prefix)
+
+		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "con1", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
+			code1, main)
+
 		//tx2, _ := tx.TxDbInstance().Get(hash)
 		//fmt.Println(tx2.Contract.Info().Prefix)
+		//fmt.Println(prefix)
 
 		verifier := Verifier{
 			vmMonitor: newVMMonitor(),
