@@ -31,7 +31,7 @@ type RecorderImpl struct {
 	isListening sync.Mutex
 }
 
-func (p *RecorderImpl) Record(tx2 tx.Tx) error { // TODO 去重
+func (p *RecorderImpl) Record(tx2 tx.Tx) error {
 	p.isListening.Lock()
 	defer p.isListening.Unlock()
 	if common.VerifyTxSig(tx2) { // 移到外面做

@@ -1,6 +1,8 @@
 package pob
 
 import (
+	"math"
+
 	"github.com/iost-official/prototype/vm"
 )
 
@@ -16,7 +18,8 @@ func (s *Servi) Incr(time int) {
 }
 
 func (s *Servi) Clear() {
-	s.v = 0
+	s.v = s.v / 2
+	s.v = math.Floor(s.v)
 }
 
 type ServiPool struct {

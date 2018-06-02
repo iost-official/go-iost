@@ -8,23 +8,21 @@ type GenLooper interface {
 }
 
 type genLoopImpl struct {
-	net                        *Net
-	gen                        Generator
-	holder                     *Holder
-	view                       WitnessView
-	Period, WitnessSize, Order time.Duration
-	Exit                       chan bool
+	net  *Net
+	gen  Generator
+	view WitnessView
+	Exit chan bool
 }
 
 func (gl *genLoopImpl) waitTime() time.Duration {
-	if !gl.view.IsWitness(gl.holder.self) {
+	if !gl.view.IsWitness(Data.self) {
 		return gl.view.NextDue()
 	} else {
-		now := time.Duration(time.Now().UnixNano() % (gl.Period * gl.WitnessSize).Nanoseconds())
-		if now < gl.Period*gl.Order {
-			now += gl.Period * gl.WitnessSize
+		now := time.Duration(time.Now().UnixNano() % (Period * WitnessSize).Nanoseconds())
+		if now < Period*Order {
+			now += Period * WitnessSize
 		}
-		return now - gl.Period*gl.Order
+		return now - Period*Order
 	}
 }
 
@@ -36,6 +34,7 @@ func (gl *genLoopImpl) Run() {
 			return
 		case <-time.After(gl.waitTime()):
 			gl.genBlockAndSend()
+			gl.view.Next()
 		}
 	}
 }
@@ -45,7 +44,7 @@ func (gl *genLoopImpl) Stop() {
 }
 
 func (gl *genLoopImpl) genBlockAndSend() {
-	if gl.view.IsPrimary(gl.holder.self) {
+	if gl.view.IsPrimary(Data.self) {
 		block := gl.gen.NewBlock()
 		gl.net.BroadcastBlock(&block)
 	}
