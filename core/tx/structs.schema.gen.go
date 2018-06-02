@@ -422,6 +422,7 @@ type TxRaw struct {
 	Contract  []byte
 	Signs     [][]byte
 	Publisher []byte
+	Recorder  []byte
 }
 
 func (d *TxRaw) Size() (s uint64) {
@@ -478,6 +479,21 @@ func (d *TxRaw) Size() (s uint64) {
 	}
 	{
 		l := uint64(len(d.Publisher))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t >>= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.Recorder))
 
 		{
 
@@ -621,6 +637,25 @@ func (d *TxRaw) Marshal(buf []byte) ([]byte, error) {
 		copy(buf[i+16:], d.Publisher)
 		i += l
 	}
+	{
+		l := uint64(len(d.Recorder))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+16] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+16] = byte(t)
+			i++
+
+		}
+		copy(buf[i+16:], d.Recorder)
+		i += l
+	}
 	return buf[:i+16], nil
 }
 
@@ -737,6 +772,31 @@ func (d *TxRaw) Unmarshal(buf []byte) (uint64, error) {
 			d.Publisher = make([]byte, l)
 		}
 		copy(d.Publisher, buf[i+16:])
+		i += l
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+16] & 0x7F)
+			for buf[i+16]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+16]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		if uint64(cap(d.Recorder)) >= l {
+			d.Recorder = d.Recorder[:l]
+		} else {
+			d.Recorder = make([]byte, l)
+		}
+		copy(d.Recorder, buf[i+16:])
 		i += l
 	}
 	return i + 16, nil

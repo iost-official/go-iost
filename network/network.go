@@ -330,6 +330,7 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 		bn.log.E("[net] pack data encountered err:%v", err)
 		return nil
 	}
+
 	n, err := conn.Write(pack)
 	if err != nil {
 		bn.log.E("[net] conn write got err:%v", err)

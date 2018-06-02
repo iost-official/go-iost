@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/consensus"
 	"github.com/iost-official/prototype/consensus/dpos"
 	"github.com/iost-official/prototype/core/block"
@@ -83,11 +82,12 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	PubKey := common.Base58Decode(string(txkey.Publisher))
+	// bytes array do not need to encode or decode
+	/*PubKey := common.Base58Decode(string(txkey.Publisher))
 	//check length of Pubkey here
 	if len(PubKey) != 33 {
 		return nil, fmt.Errorf("PubKey invalid")
-	}
+	}*/
 	Nonce := txkey.Nonce
 	//check Nonce here
 
@@ -95,7 +95,7 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 	if txDb == nil {
 		panic(fmt.Errorf("TxDb should be nil"))
 	}
-	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, PubKey)
+	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, txkey.Publisher)
 	if err != nil {
 		return nil, err
 	}

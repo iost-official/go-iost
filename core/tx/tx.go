@@ -19,6 +19,7 @@ type Tx struct {
 	Contract  vm.Contract
 	Signs     []common.Signature
 	Publisher common.Signature
+	Recorder  common.Signature
 }
 
 // 新建一个Tx，需要通过编译器得到一个contract
@@ -47,6 +48,15 @@ func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, erro
 		return tx, err
 	}
 	tx.Publisher = sign
+	return tx, nil
+}
+
+func RecordTx(tx Tx, account account.Account) (Tx, error) {
+	sign, err := common.Sign(common.Secp256k1, tx.Hash(), account.Seckey)
+	if err != nil {
+		return tx, err
+	}
+	tx.Recorder = sign
 	return tx, nil
 }
 
@@ -80,7 +90,7 @@ func (t *Tx) Encode() []byte {
 	for _, sign := range t.Signs {
 		s = append(s, sign.Encode())
 	}
-	tr := TxRaw{t.Time, t.Nonce, t.Contract.Encode(), s, t.Publisher.Encode()}
+	tr := TxRaw{t.Time, t.Nonce, t.Contract.Encode(), s, t.Publisher.Encode(), []byte{}}
 	b, err := tr.Marshal(nil)
 	if err != nil {
 		panic(err)
