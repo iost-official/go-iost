@@ -315,9 +315,16 @@ func TestRunMultipleBlocks(t *testing.T) {
 
 		bc := p.blockCache.LongestChain()
 		pool := p.blockCache.LongestPool()
-		blk := p.genBlock(p.account, bc, pool)
 		go p.blockCache.ResetTxPoool()
+
 		for i := 100; i < 105; i++ {
+
+			if i == 103 {
+				bc = p.blockCache.LongestChain()
+				pool = p.blockCache.LongestPool()
+			}
+
+			blk := p.genBlock(p.account, bc, pool)
 			blk.Head.Time = int64(i)
 
 			headInfo := generateHeadInfo(blk.Head)
@@ -330,6 +337,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 		p.blockCache.Draw()
 	})
 }
+
 /*
 func TestRunReceiveBlock(t *testing.T) {
 	Convey("Test of Run (Receive Block)", t, func() {

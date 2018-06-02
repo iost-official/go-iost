@@ -53,12 +53,8 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 	}
 
 	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.ParentHash) {
-		fmt.Println(block.Head.ParentHash)
-		fmt.Println(b.bc.GetBlockByNumber(0).Head.Hash())
 		for _, bct := range b.children {
 			if bytes.Equal(bct.bc.Top().Head.Hash(), block.Head.Hash()) {
-				fmt.Println("bct: ", bct.bc.Top().Head.Hash())
-				fmt.Println("bct: ", block.Head.Hash())
 				//fmt.Println(block.Head.Hash())
 				return Duplicate, nil
 			}
