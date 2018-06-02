@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/iost-official/prototype/common"
 	"math/rand"
 	"time"
+
+	"github.com/iost-official/prototype/common"
 )
 
 type Account struct {
@@ -52,4 +53,8 @@ func makePubkey(seckey []byte) []byte {
 
 func GetIdByPubkey(pubkey []byte) string {
 	return common.Base58Encode(pubkey)
+}
+
+func GetPubkeyByID(ID string) []byte {
+	return common.Base58Decode(ID)
 }
