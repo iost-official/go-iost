@@ -6,6 +6,7 @@ package rpc;
 service Cli {
     rpc PublishTx (Transaction) returns (Response) {}
     rpc GetTransaction (TransactionKey) returns (Transaction) {}
+    rpc GetTransactionByHash (TransactionHash) returns (Transaction) {}
     rpc GetBalance (Key) returns (Value){}
     rpc GetState (Key) returns (Value){}
     rpc GetBlock (BlockKey) returns (BlockInfo){}
@@ -25,6 +26,9 @@ message TransactionKey {
     int64 nonce = 2;
 }
 
+message TransactionHash{
+	bytes hash=1; 
+}
 message Key {
     string s = 1;
 }

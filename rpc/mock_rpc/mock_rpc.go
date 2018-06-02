@@ -60,6 +60,19 @@ func (mr *MockCliServerMockRecorder) GetBlock(arg0, arg1 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlock", reflect.TypeOf((*MockCliServer)(nil).GetBlock), arg0, arg1)
 }
 
+// GetBlockByHeight mocks base method
+func (m *MockCliServer) GetBlockByHeight(arg0 context.Context, arg1 *rpc.BlockKey) (*rpc.BlockInfo, error) {
+	ret := m.ctrl.Call(m, "GetBlockByHeight", arg0, arg1)
+	ret0, _ := ret[0].(*rpc.BlockInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBlockByHeight indicates an expected call of GetBlockByHeight
+func (mr *MockCliServerMockRecorder) GetBlockByHeight(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByHeight", reflect.TypeOf((*MockCliServer)(nil).GetBlockByHeight), arg0, arg1)
+}
+
 // GetState mocks base method
 func (m *MockCliServer) GetState(arg0 context.Context, arg1 *rpc.Key) (*rpc.Value, error) {
 	ret := m.ctrl.Call(m, "GetState", arg0, arg1)

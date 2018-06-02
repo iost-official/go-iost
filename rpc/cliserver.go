@@ -103,6 +103,27 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 	return &Transaction{Tx: tx.Encode()}, nil
 }
 
+//TODO:test this func
+func (s *HttpServer) GetTransactionByHash(ctx context.Context, txhash *TransactionHash) (*Transaction, error) {
+	fmt.Println("GetTransaction begin")
+	if txhash == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	txHash := txhash.Hash
+	//check txHash here
+
+	txDb := tx.TxDb
+	if txDb == nil {
+		panic(fmt.Errorf("TxDb should be nil"))
+	}
+	tx, err := txDb.(*tx.TxPoolDb).Get(txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Transaction{Tx: tx.Encode()}, nil
+}
+
 func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
 	fmt.Println("GetBalance begin")
 	if iak == nil {
