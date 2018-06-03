@@ -498,9 +498,17 @@ func (h *BlockCacheImpl) BlockConfirmChan() chan uint64 {
 
 //for debug
 //draw the blockcache
-var pic [10][10]byte
+const PICSIZE int=100
+var pic [PICSIZE][PICSIZE]byte
+var picX,picY int
 
 func calcTree(root *BlockCacheTree, x int, y int, isLast bool) int {
+	if x>picX {
+		picX=x
+	}
+	if y>picY {
+		picY=y
+	}
 	if y != 0 {
 		pic[x][y-1] = '-'
 		for i := x; i >= 0; i-- {
@@ -517,7 +525,7 @@ func calcTree(root *BlockCacheTree, x int, y int, isLast bool) int {
 		if i == len(root.children)-1 {
 			f = true
 		}
-		width = calcTree(root.children[i], x+width, y+2, f)
+		width = calcTree( root.children[i], x+width, y+2, f)
 	}
 	if isLast {
 		return x + width
@@ -526,14 +534,14 @@ func calcTree(root *BlockCacheTree, x int, y int, isLast bool) int {
 	}
 }
 func (b *BlockCacheTree) DrawTree() {
-	for i := 0; i < 10; i++ {
-		for j := 0; j < 10; j++ {
+	for i := 0; i < PICSIZE; i++ {
+		for j := 0; j < PICSIZE; j++ {
 			pic[i][j] = ' '
 		}
 	}
 	calcTree(b, 0, 0, true)
-	for i := 0; i < 10; i++ {
-		for j := 0; j < 10; j++ {
+	for i := 0; i <= picX; i++ {
+		for j := 0; j <= picY; j++ {
 			fmt.Printf("%c", pic[i][j])
 		}
 		fmt.Printf("\n")
