@@ -6,9 +6,6 @@ import (
 	. "github.com/golang/mock/gomock"
 	"testing"
 
-	"sync"
-	"time"
-
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/consensus/common"
@@ -22,6 +19,9 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
+	"os/exec"
+	"sync"
+	"time"
 )
 
 func TestNewPoB(t *testing.T) {
@@ -183,6 +183,8 @@ func TestRunGenerateBlock(t *testing.T) {
 //clear BlockDB and TxDB files before running this test
 func TestRunConfirmBlock(t *testing.T) {
 	Convey("Test of Run ConfirmBlock", t, func() {
+		cmd := exec.Command("/bin/bash", "-c", "cd $GOPATH/src/github.com/iost-official/prototype/consensus/pob2 && rm -rf blockDB txDB")
+		cmd.Run()
 		p, accList, witnessList := envinit(t)
 		_tx := genTx(p, 998)
 		p.blockCache.AddTx(&_tx)
