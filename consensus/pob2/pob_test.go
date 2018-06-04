@@ -307,20 +307,20 @@ func TestRunGenerateBlock(t *testing.T) {
 		p.blockCache.Draw()
 	})
 }
+
 //clear BlockDB and TxDB files before running this test
 func TestRunConfirmBlock(t *testing.T) {
 	Convey("Test of Run ConfirmBlock", t, func() {
 		p, accList, witnessList := envinit(t)
 		_tx := genTx(p, 998)
 		p.blockCache.AddTx(&_tx)
-		
+
 		for i := 0; i < 5; i++ {
-			wit:=""
-			for wit!=witnessList[0] {
+			wit := ""
+			for wit != witnessList[0] {
 				currentTimestamp := consensus_common.GetCurrentTimestamp()
 				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			}
-
 
 			bc := p.blockCache.LongestChain()
 			pool := p.blockCache.LongestPool()
@@ -332,10 +332,10 @@ func TestRunConfirmBlock(t *testing.T) {
 			fmt.Println(err)
 		}
 
-		So(p.blockCache.ConfirmedLength(),ShouldEqual,1)
+		So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
 		for i := 1; i < 3; i++ {
-			wit:=""
-			for wit!=witnessList[i] {
+			wit := ""
+			for wit != witnessList[i] {
 				currentTimestamp := consensus_common.GetCurrentTimestamp()
 				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			}
@@ -345,25 +345,26 @@ func TestRunConfirmBlock(t *testing.T) {
 			blk := p.genBlock(accList[i], bc, pool)
 			p.blockCache.ResetTxPoool()
 			p.globalDynamicProperty.update(&blk.Head)
-/*
-			guard := Patch(witnessOfTime, func(_ *globalStaticProperty, _ *globalDynamicProperty, _ consensus_common.Timestamp) string {
-				return witnessList[i]
-			})
-			defer guard.Unpatch()
-*/
+			/*
+				guard := Patch(witnessOfTime, func(_ *globalStaticProperty, _ *globalDynamicProperty, _ consensus_common.Timestamp) string {
+					return witnessList[i]
+				})
+				defer guard.Unpatch()
+			*/
 			err := p.blockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
-			if i==1 {
-				So(p.blockCache.ConfirmedLength(),ShouldEqual,1)
+			if i == 1 {
+				So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
 			}
-			if i==2 {
-				So(p.blockCache.ConfirmedLength(),ShouldEqual,6)
+			if i == 2 {
+				So(p.blockCache.ConfirmedLength(), ShouldEqual, 6)
 			}
 		}
 
 		p.blockCache.Draw()
 	})
 }
+
 //this need to be checked again
 func TestRunMultipleBlocks(t *testing.T) {
 	Convey("Test of Run (Multiple Blocks)", t, func() {
@@ -379,9 +380,8 @@ func TestRunMultipleBlocks(t *testing.T) {
 				bc = p.blockCache.LongestChain()
 				pool = p.blockCache.LongestPool()
 			}
-			wit:=""
-			for wit!=witnessList[0] {
-
+			wit := ""
+			for wit != witnessList[0] {
 
 				currentTimestamp := consensus_common.GetCurrentTimestamp()
 				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
@@ -390,7 +390,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 			blk := p.genBlock(p.account, bc, pool)
 			p.blockCache.ResetTxPoool()
 			p.globalDynamicProperty.update(&blk.Head)
-			
+
 			blk.Head.Time = int64(i)
 
 			headInfo := generateHeadInfo(blk.Head)
@@ -404,343 +404,6 @@ func TestRunMultipleBlocks(t *testing.T) {
 	})
 }
 
-/*
-func TestRunReceiveBlock(t *testing.T) {
-	Convey("Test of Run (Receive Block)", t, func() {
-		mockCtr := NewController(t)
-		mockRouter := protocol_mock.NewMockRouter(mockCtr)
-		mockBc := core_mock.NewMockChain(mockCtr)
-		mockPool := core_mock.NewMockPool(mockCtr)
-		mockPool.EXPECT().MergeParent().Return(mockPool, nil).AnyTimes()
-		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
-
-		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
-		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
-		mockPool.EXPECT().Flush().AnyTimes().Return(nil)
-		mockBc.EXPECT().GetBlockByNumber(Any()).Return(nil).AnyTimes()
-		mockBc.EXPECT().Iterator().AnyTimes().Return(nil)
-
-		iblk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
-			Version:    0,
-			ParentHash: []byte("111"),
-			TreeHash:   make([]byte, 0),
-			BlockHash:  make([]byte, 0),
-			Info:       []byte("test"),
-			Number:     int64(1),
-			Witness:    "11111",
-			Time:       1111,
-		}}
-		mockBc.EXPECT().Top().Return(&iblk)
-
-		network.Route = mockRouter
-		//获取router实例
-		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
-			return mockRouter, nil
-		})
-
-		defer guard.Unpatch()
-
-		heightChan := make(chan message.Message, 1)
-		blkSyncChan := make(chan message.Message, 1)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(blkSyncChan, nil)
-
-		//设置第一个通道txchan
-		txChan := make(chan message.Message, 1)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
-
-		//设置第二个通道Blockchan
-		blkChan := make(chan message.Message, 1)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
-
-		mockBc.EXPECT().GetBlockByNumber(Eq(uint64(0))).Return(nil)
-		var genesis *block.Block
-		mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
-			genesis = block
-			return nil
-		})
-		seckey := common.Sha256([]byte("SeckeyId1"))
-		pubkey := common.CalcPubkeyInSecp256k1(seckey)
-		p, _ := NewDPoS(account.Account{"id1", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
-
-		main := lua.NewMethod(vm.Public, "main", 0, 1)
-		code := `function main()
-						Put("hello", "world")
-						return "success"
-					end`
-		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
-		newTx := tx.NewTx(0, &lc)
-		//构造测试数据
-		txChan <- message.Message{
-			Time:    20180426111111,
-			From:    "0xaaaaaaaaaaaaa",
-			To:      "0xbbbbbbbbbbbb",
-			ReqType: 1,
-			Body:    newTx.Encode()}
-
-		mockBc.EXPECT().Top().Return(genesis).AnyTimes()
-		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
-		//mockPool.EXPECT().Copy().Return(nil).AnyTimes()
-
-		blk, msg := generateTestBlockMsg("id0", "seckeyId0", 1, genesis.Head.Hash())
-		blkChan <- msg
-
-		p.Run()
-
-		time.Sleep(time.Second * 1)
-		So(blk.Head.Number, ShouldEqual, 1)
-		So(string(blk.Head.ParentHash), ShouldEqual, string(genesis.Head.Hash()))
-		So(blk.Head.Witness, ShouldEqual, "id0")
-
-		p.Stop()
-
-	})
-
-}
-*/
-
-/*
-func TestRunMultipleBlocks(t *testing.T) {
-	Convey("Test of Run (Multiple Blocks)", t, func() {
-		mockCtr := NewController(t)
-		mockRouter := protocol_mock.NewMockRouter(mockCtr)
-		mockBc := core_mock.NewMockChain(mockCtr)
-		mockPool := core_mock.NewMockPool(mockCtr)
-		mockPool.EXPECT().Copy().Return(mockPool).AnyTimes()
-		mockPool.EXPECT().PutHM(Any(), Any(), Any()).AnyTimes().Return(nil)
-		mockPool.EXPECT().Flush().AnyTimes().Return(nil)
-
-		mockBc.EXPECT().Iterator().AnyTimes().Return(nil)
-
-		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
-		mockBc.EXPECT().GetBlockByNumber(Any()).Return(nil).AnyTimes()
-
-		genesisBlock := &block.Block{
-			Head: block.BlockHead{
-				Version: 0,
-				Number:  0,
-				Time:    0,
-			},
-			Content: make([]tx.Tx, 0),
-		}
-		mockBc.EXPECT().Top().Return(genesisBlock)
-
-		network.Route = mockRouter
-		//获取router实例
-		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
-			return mockRouter, nil
-		})
-
-		defer guard.Unpatch()
-
-		heightChan := make(chan message.Message, 1)
-		blkSyncChan := make(chan message.Message, 1)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(blkSyncChan, nil)
-
-		//设置第一个通道txchan
-		txChan := make(chan message.Message, 1)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
-
-		//设置第二个通道Blockchan
-		blkChan := make(chan message.Message, 1)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
-
-		mockBc.EXPECT().GetBlockByNumber(Eq(uint64(0))).Return(nil)
-		var genesis *block.Block
-		mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
-			genesis = block
-			return nil
-		})
-		seckey := common.Sha256([]byte("SeckeyId1"))
-		pubkey := common.CalcPubkeyInSecp256k1(seckey)
-		p, _ := NewDPoS(account.Account{"id1", pubkey, seckey}, mockBc, mockPool, []string{"id0", "id1", "id2"})
-		fmt.Println("p:", p)
-		main := lua.NewMethod(vm.Public, "main", 0, 1)
-		code := `function main()
-						Put("hello", "world")
-						return "success"
-					end`
-		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
-		newTx := tx.NewTx(0, &lc)
-		//构造测试数据
-		txChan <- message.Message{
-			Time:    20180426111111,
-			From:    "0xaaaaaaaaaaaaa",
-			To:      "0xbbbbbbbbbbbb",
-			ReqType: 1,
-			Body:    newTx.Encode(),
-		}
-
-		mockBc.EXPECT().Top().Return(genesis).AnyTimes()
-		mockBc.EXPECT().Length().Return(uint64(0)).AnyTimes()
-		mockPool.EXPECT().Copy().Return(nil).AnyTimes()
-		mockPool.EXPECT().Flush().Return(nil).AnyTimes()
-		mockRouter.EXPECT().CancelDownload(Any(), Any()).Return(nil).AnyTimes()
-
-		Convey("correct blocks", func() {
-			blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
-			blkChan <- msg
-
-			var reqType network.ReqType
-			var reqBlk block.Block
-			mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
-				reqType = network.ReqType(req.ReqType)
-				reqBlk.Decode(req.Body)
-			}).AnyTimes()
-
-			var pushed int64
-			mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
-				pushed = block.Head.Number
-				return nil
-			})
-			p.Run()
-
-			time.Sleep(time.Second)
-			// block 1 by id0
-
-			time.Sleep(time.Second * consensus_common.SlotLength)
-			// block 2 by id1, the node itself
-			So(reqType, ShouldEqual, network.ReqNewBlock)
-			So(reqBlk.Head.Number, ShouldEqual, 2)
-			So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
-			So(reqBlk.Head.Witness, ShouldEqual, "id1")
-
-			ts := consensus_common.GetCurrentTimestamp()
-			ts.Add(1)
-			len := ts.ToUnixSec() - time.Now().Unix()
-			time.Sleep(time.Second * time.Duration(len))
-			//blk, msg = generateTestBlockMsg("id2", "SeckeyId2", 3, reqBlk.Head.Hash())
-			//blkChan <- msg
-			//
-			//time.Sleep(time.Second*consensus_common.SlotLength+time.Second*2)
-			//fmt.Println("### ")
-			//// block 3 by id2
-			//So(reqType, ShouldEqual, network.ReqNewBlock)
-			//So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
-			//
-			//So(pushed, ShouldEqual, 1)
-
-			p.Stop()
-		})
-
-		Convey("with fork", func() {
-			blk, msg := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
-			blkChan <- msg
-
-			var reqType network.ReqType
-			var reqBlk block.Block
-			mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
-				reqType = network.ReqType(req.ReqType)
-				reqBlk.Decode(req.Body)
-			}).AnyTimes()
-
-//			var pushed int64
-//			mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
-//				pushed = block.Head.Number
-//				return nil
-//			}).AnyTimes()
-			p.Run()
-
-			time.Sleep(time.Second / 2)
-			// block 1 by id0
-
-			blk1 := blk
-
-			time.Sleep(time.Second * consensus_common.SlotLength)
-			// block 2 by id1, the node itself
-			So(reqBlk.Head.Number, ShouldEqual, 1)
-			So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
-			So(reqBlk.Head.Witness, ShouldEqual, "id1")
-
-			ts := consensus_common.GetCurrentTimestamp()
-			ts.Add(1)
-			len := ts.ToUnixSec() - time.Now().Unix()
-			time.Sleep(time.Second * time.Duration(len))
-			blk, msg = generateTestBlockMsg("id2", "SeckeyId2", 2, blk1.Head.Hash())
-			blkChan <- msg
-
-			time.Sleep(time.Second / 2)
-			// block 2' by id2, is a fork
-			//So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
-
-			ts = consensus_common.GetCurrentTimestamp()
-			ts.Add(1)
-			len = ts.ToUnixSec() - time.Now().Unix()
-			time.Sleep(time.Second * time.Duration(len))
-			blk, msg = generateTestBlockMsg("id0", "SeckeyId0", 3, reqBlk.Head.Hash())
-			blkChan <- msg
-			time.Sleep(time.Second / 2)
-			//// block 3 by id0
-			//So(bytes.Equal(reqBlk.Head.Hash(), blk.Head.Hash()), ShouldBeTrue)
-			//// nothing is pushed until now
-			//So(pushed, ShouldEqual, 0)
-
-			time.Sleep(time.Second * consensus_common.SlotLength)
-			// block 4 by id1, the node itself
-			So(reqBlk.Head.Number, ShouldEqual, 4)
-			So(string(reqBlk.Head.ParentHash), ShouldEqual, string(blk.Head.Hash()))
-			So(reqBlk.Head.Witness, ShouldEqual, "id1")
-			// block 1 and 2 should be pushed
-			//So(pushed, ShouldEqual, 2)
-
-			p.Stop()
-		})
-
-		//Convey("need sync", func() {
-		//	consensus_common.SyncNumber = 2
-		//	p.account.ID = "id3"
-		//	blk1, msg1 := generateTestBlockMsg("id0", "SeckeyId0", 1, genesis.Head.Hash())
-		//	time.Sleep(time.Second * consensus_common.SlotLength)
-		//	blk2, msg2 := generateTestBlockMsg("id1", "SeckeyId1", 2, blk1.Head.Hash())
-		//	time.Sleep(time.Second * consensus_common.SlotLength)
-		//	_, msg3 := generateTestBlockMsg("id2", "SeckeyId2", 3, blk2.Head.Hash())
-		//
-		//	blkChan <- msg3
-		//
-		//	var bcType network.ReqType
-		//	var bcBlk block.Block
-		//	mockRouter.EXPECT().Broadcast(Any()).Do(func(req message.Message) {
-		//		bcType = network.ReqType(req.ReqType)
-		//		if bcType == network.ReqNewBlock {
-		//			bcBlk.Decode(req.Body)
-		//		}
-		//	}).AnyTimes()
-		//
-		//	var pushedBlk *block.Block
-		//	mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
-		//		pushedBlk = block
-		//		return nil
-		//	}).AnyTimes()
-		//
-		//	var dlSt, dlEd uint64
-		//	mockRouter.EXPECT().Download(Any(), Any()).Do(func(start, end uint64) error {
-		//		dlSt = start
-		//		dlEd = end
-		//		return nil
-		//	})
-		//	p.Run()
-		//
-		//	time.Sleep(time.Second / 2)
-		//	// need sync from 1 to 2
-		//	//So(bcType, ShouldEqual, network.ReqBlockHeight)
-		//	//So(dlSt, ShouldEqual, 1)
-		//	//So(dlEd, ShouldEqual, 3)
-		//
-		//	blkChan <- msg2
-		//	time.Sleep(time.Second / 2)
-		//
-		//	blkChan <- msg1
-		//	time.Sleep(time.Second / 2)
-		//
-		//	// After block1 and block2 received, block 1-3 all set, and block 1 will be pushed
-		//	So(bytes.Equal(pushedBlk.Head.Hash(), blk1.Head.Hash()), ShouldBeTrue)
-		//
-		//	p.Stop()
-		//})
-	})
-}
-*/
 func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parentHash []byte) (block.Block, message.Message) {
 	blk := block.Block{
 		Head: block.BlockHead{
