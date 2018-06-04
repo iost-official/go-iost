@@ -58,20 +58,20 @@ var rootCmd = &cobra.Command{
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
 		log.NewLogger("iost")
-		fmt.Printf("Version:  %v\n", "1.0")
+		log.Log.I("Version:  %v", "1.0")
 
-		fmt.Println("cfgFile: ", viper.GetString("config"))
-		fmt.Println("logFile: ", viper.GetString("log"))
-		fmt.Println("dbFile: ", viper.GetString("db"))
+		log.Log.I("cfgFile: %v", viper.GetString("config"))
+		log.Log.I("logFile: %v", viper.GetString("log"))
+		log.Log.I("dbFile: %v", viper.GetString("db"))
 
 		//初始化数据库
 		ldbPath := viper.GetString("ldb.path")
 		redisAddr := viper.GetString("redis.addr") //optional
 		redisPort := viper.GetInt64("redis.port")
 
-		fmt.Printf("ldb.path: %v\n", ldbPath)
-		fmt.Printf("redis.addr: %v\n", redisAddr)
-		fmt.Printf("redis.port: %v\n", redisPort)
+		log.Log.I("ldb.path: %v", ldbPath)
+		log.Log.I("redis.addr: %v", redisAddr)
+		log.Log.I("redis.port: %v", redisPort)
 
 		tx.LdbPath = ldbPath
 		block.LdbPath = ldbPath
@@ -80,18 +80,18 @@ var rootCmd = &cobra.Command{
 
 		txDb := tx.TxDbInstance()
 		if txDb == nil {
-			fmt.Println("TxDbInstance failed, stop the program!")
+			log.Log.E("TxDbInstance failed, stop the program!")
 			os.Exit(1)
 		}
 
 		err := state.PoolInstance()
 		if err != nil {
-			fmt.Printf("PoolInstance failed, stop the program! err:%v", err)
+			log.Log.E("PoolInstance failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 
 		//初始化网络
-		fmt.Println("1.Start the P2P networks")
+		log.Log.I("1.Start the P2P networks")
 
 		logPath := viper.GetString("net.log-path")
 		nodeTablePath := viper.GetString("net.node-table-path")
@@ -102,21 +102,21 @@ var rootCmd = &cobra.Command{
 		target := viper.GetString("net.target") //optional
 		port := viper.GetInt64("net.port")
 
-		fmt.Printf("net.log-path:  %v\n", logPath)
-		fmt.Printf("net.node-table-path:  %v\n", nodeTablePath)
-		fmt.Printf("net.node-id:   %v\n", nodeID)
-		fmt.Printf("net.listen-addr:  %v\n", listenAddr)
-		fmt.Printf("net.register-addr:  %v\n", regAddr)
-		fmt.Printf("net.target:  %v\n", target)
-		fmt.Printf("net.port:  %v\n", port)
-		fmt.Printf("net.rpcPort:  %v\n", rpcPort)
+		log.Log.I("net.log-path:  %v", logPath)
+		log.Log.I("net.node-table-path:  %v", nodeTablePath)
+		log.Log.I("net.node-id:   %v", nodeID)
+		log.Log.I("net.listen-addr:  %v", listenAddr)
+		log.Log.I("net.register-addr:  %v", regAddr)
+		log.Log.I("net.target:  %v", target)
+		log.Log.I("net.port:  %v", port)
+		log.Log.I("net.rpcPort:  %v", rpcPort)
 
 		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 || rpcPort == "" {
-			fmt.Println("Network config initialization failed, stop the program!")
+			log.Log.E("Network config initialization failed, stop the program!")
 			os.Exit(1)
 		}
 
-		fmt.Println("network instance")
+		log.Log.I("network instance")
 		publicIP := common.GetPulicIP()
 		if publicIP != "" && common.IsPublicIP(net.ParseIP(publicIP)) && listenAddr != "127.0.0.1" {
 			listenAddr = publicIP
@@ -131,49 +131,49 @@ var rootCmd = &cobra.Command{
 			target,
 			uint16(port))
 		if err != nil {
-			fmt.Printf("Network initialization failed, stop the program! err:%v", err)
+			log.Log.E("Network initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 		log.LocalID = net.(*network.RouterImpl).LocalID()
 		serverExit = append(serverExit, net)
 
 		//启动共识
-		fmt.Println("2.Start Consensus Services")
+		log.Log.I("2.Start Consensus Services")
 		accSecKey := viper.GetString("account.sec-key")
 		//fmt.Printf("account.sec-key:  %v\n", accSecKey)
 
 		acc, err := account.NewAccount(common.Base58Decode(accSecKey))
 		if err != nil {
-			fmt.Printf("NewAccount failed, stop the program! err:%v\n", err)
+			log.Log.E("NewAccount failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 
 		//fmt.Printf("account PubKey = %v\n", common.Base58Encode(acc.Pubkey))
 		//fmt.Printf("account SecKey = %v\n", common.Base58Encode(acc.Seckey))
-		fmt.Printf("account ID = %v\n", acc.ID)
+		log.Log.I("account ID = %v", acc.ID)
 
 		if state.StdPool == nil {
-			fmt.Printf("StdPool initialization failed, stop the program!")
+			log.Log.E("StdPool initialization failed, stop the program!")
 			os.Exit(1)
 		}
 
 		blockChain, err := block.Instance()
 		if err != nil {
-			fmt.Printf("NewBlockChain failed, stop the program! err:%v", err)
+			log.Log.E("NewBlockChain failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 
 		witnessList := viper.GetStringSlice("consensus.witness-list")
 
 		for i, witness := range witnessList {
-			fmt.Printf("witnessList[%v] = %v\n", i, witness)
+			log.Log.I("witnessList[%v] = %v", i, witness)
 		}
 
 		consensus, err := consensus.ConsensusFactory(
 			consensus.CONSENSUS_POB,
 			acc, blockChain, state.StdPool, witnessList)
 		if err != nil {
-			fmt.Printf("consensus initialization failed, stop the program! err:%v", err)
+			log.Log.E("consensus initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 
@@ -183,7 +183,7 @@ var rootCmd = &cobra.Command{
 		//启动RPC
 		err = rpc.Server(rpcPort)
 		if err != nil {
-			fmt.Printf("RPC initialization failed, stop the program! err:%v", err)
+			log.Log.E("RPC initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 		/*
@@ -209,7 +209,7 @@ func exitLoop() {
 
 	go func() {
 		i := <-c
-		fmt.Printf("IOST server received interrupt[%v], shutting down...\n", i)
+		log.Log.I("IOST server received interrupt[%v], shutting down...", i)
 
 		for _, s := range serverExit {
 			if s != nil {
@@ -233,7 +233,7 @@ func exitLoop() {
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Log.E("Execute err: %v",err)
 		os.Exit(1)
 	}
 }
@@ -281,7 +281,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	} else {
-		fmt.Println(err)
+		panic(err)
 	}
 
 }
