@@ -14,8 +14,12 @@ def wCommand(com):
 	return ret
 
 def upgrade():
-	ret=wCommand("cd $GOPATH/src/github.com/iost-official/prototype && git checkout develop && git pull")
-	ret=wCommand("cd $GOPATH/src/github.com/iost-official/prototype/iserver && go build")
+	pwd="$GOPATH/src/github.com/iost-official/prototype"
+	ret=wCommand("cd "+pwd+" && git checkout develop && git pull")
+	ret=wCommand("cd "+pwd+"/iserver && go build")
+	ret=wCommand("nohup redis-server &")
+	ret=wCommand("cd "+pwd+"/iserver && nohup ./iserver &")
+
 	return "SUCCESS"		
 
 if __name__ == "__main__":
