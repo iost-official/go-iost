@@ -4,9 +4,9 @@ import (
 	"sync"
 
 	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/consensus/pob2"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/consensus/pob2"
 )
 
 type TxStatus int

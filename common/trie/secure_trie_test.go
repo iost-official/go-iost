@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/db"
 	. "github.com/smartystreets/goconvey/convey"
 	"runtime"
 	"sync"
@@ -53,7 +53,7 @@ func makeTestSecureTrie() (*Database, *SecureTrie, map[string][]byte) {
 }
 
 func TestSecureDelete(t *testing.T) {
-	Convey("Test SecureDelete", t, func(){
+	Convey("Test SecureDelete", t, func() {
 		trie := newEmptySecure()
 		vals := []struct{ k, v string }{
 			{"do", "verb"},
@@ -79,7 +79,7 @@ func TestSecureDelete(t *testing.T) {
 }
 
 func TestSecureGetKey(t *testing.T) {
-	Convey("Test SecureGet", t, func(){
+	Convey("Test SecureGet", t, func() {
 		trie := newEmptySecure()
 		trie.Update([]byte("foo"), []byte("bar"))
 
@@ -94,7 +94,7 @@ func TestSecureGetKey(t *testing.T) {
 }
 
 func TestSecureTrieConcurrency(t *testing.T) {
-	Convey("Test SecureTrieConcurrency", t, func(){
+	Convey("Test SecureTrieConcurrency", t, func() {
 		// Create an initial trie and copy if for concurrent access
 		_, trie, _ := makeTestSecureTrie()
 

@@ -1,6 +1,5 @@
 package message
 
-
 func (d *RequestHeight) Encode() []byte {
 	b, err := d.Marshal(nil)
 	if err != nil {

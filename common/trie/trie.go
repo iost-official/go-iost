@@ -1,10 +1,10 @@
 package trie
 
 import (
-	"github.com/iost-official/prototype/common"
-	"github.com/InWeCrypto/sha3"
-	"fmt"
 	"bytes"
+	"fmt"
+	"github.com/InWeCrypto/sha3"
+	"github.com/iost-official/prototype/common"
 )
 
 var (
@@ -24,9 +24,7 @@ func Keccak256Hash(data ...[]byte) (h common.Hash) {
 	return h
 }
 
-
 type LeafCallback func(leaf []byte, parent common.Hash) error
-
 
 type Trie struct {
 	db           *Database

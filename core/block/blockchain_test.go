@@ -1,14 +1,14 @@
 package block
 
 import (
+	"github.com/iost-official/prototype/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-	"github.com/iost-official/prototype/core/tx"
 )
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
-		txDb:=tx.TxDbInstance()
+		txDb := tx.TxDbInstance()
 		So(txDb, ShouldNotBeNil)
 
 		bc, err := Instance()
@@ -21,7 +21,7 @@ func TestNewBlockChain(t *testing.T) {
 
 func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
-		txDb:=tx.TxDbInstance()
+		txDb := tx.TxDbInstance()
 		So(txDb, ShouldNotBeNil)
 
 		bc, err := Instance()

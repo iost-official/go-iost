@@ -498,16 +498,17 @@ func (h *BlockCacheImpl) BlockConfirmChan() chan uint64 {
 
 //for debug
 //draw the blockcache
-const PICSIZE int=100
+const PICSIZE int = 100
+
 var pic [PICSIZE][PICSIZE]byte
-var picX,picY int
+var picX, picY int
 
 func calcTree(root *BlockCacheTree, x int, y int, isLast bool) int {
-	if x>picX {
-		picX=x
+	if x > picX {
+		picX = x
 	}
-	if y>picY {
-		picY=y
+	if y > picY {
+		picY = y
 	}
 	if y != 0 {
 		pic[x][y-1] = '-'
@@ -525,7 +526,7 @@ func calcTree(root *BlockCacheTree, x int, y int, isLast bool) int {
 		if i == len(root.children)-1 {
 			f = true
 		}
-		width = calcTree( root.children[i], x+width, y+2, f)
+		width = calcTree(root.children[i], x+width, y+2, f)
 	}
 	if isLast {
 		return x + width

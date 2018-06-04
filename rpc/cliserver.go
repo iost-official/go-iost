@@ -6,13 +6,13 @@ import (
 	"reflect"
 
 	"github.com/iost-official/prototype/consensus"
+	"github.com/iost-official/prototype/consensus/pob2"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/consensus/pob2"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/prototype/rpc CliServer

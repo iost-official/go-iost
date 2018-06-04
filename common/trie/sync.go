@@ -2,9 +2,9 @@ package trie
 
 import (
 	"errors"
+	"fmt"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/common/trie/prque"
-	"fmt"
 
 	"github.com/iost-official/prototype/db"
 )
@@ -16,11 +16,11 @@ var ErrAlreadyProcessed = errors.New("already processed")
 type request struct {
 	hash common.Hash
 	data []byte
-	raw bool
+	raw  bool
 
 	parents []*request
-	depth int
-	deps int
+	depth   int
+	deps    int
 
 	callback LeafCallback
 }
@@ -46,15 +46,15 @@ type TrieSync struct {
 	database DatabaseReader
 	membatch *syncMemBatch
 	requests map[common.Hash]*request
-	queue *prque.Prque
+	queue    *prque.Prque
 }
 
 func NewTrieSync(root common.Hash, database DatabaseReader, callback LeafCallback) *TrieSync {
-	ts := &TrieSync {
+	ts := &TrieSync{
 		database: database,
 		membatch: newSyncMemBatch(),
 		requests: make(map[common.Hash]*request),
-		queue: prque.New(),
+		queue:    prque.New(),
 	}
 	ts.AddSubTrie(root, 0, common.Hash{}, callback)
 	return ts
@@ -72,9 +72,9 @@ func (s *TrieSync) AddSubTrie(root common.Hash, depth int, parent common.Hash, c
 	if local, err := decodeNode(key, blob, 0); local != nil && err == nil {
 		return
 	}
-	req := &request {
-		hash: root,
-		depth: depth,
+	req := &request{
+		hash:     root,
+		depth:    depth,
 		callback: callback,
 	}
 	if parent != (common.Hash{}) {
@@ -99,8 +99,8 @@ func (s *TrieSync) AddRawEntry(hash common.Hash, depth int, parent common.Hash) 
 		return
 	}
 	req := &request{
-		hash: hash,
-		raw: true,
+		hash:  hash,
+		raw:   true,
 		depth: depth,
 	}
 	if parent != (common.Hash{}) {
@@ -175,7 +175,7 @@ func (s *TrieSync) schedule(req *request) {
 
 func (s *TrieSync) children(req *request, object node) ([]*request, error) {
 	type child struct {
-		node node
+		node  node
 		depth int
 	}
 	children := []child{}
@@ -183,14 +183,14 @@ func (s *TrieSync) children(req *request, object node) ([]*request, error) {
 	switch node := (object).(type) {
 	case *shortNode:
 		children = []child{{
-			node: node.Val,
+			node:  node.Val,
 			depth: req.depth + len(node.Key),
 		}}
 	case *fullNode:
 		for i := 0; i < 17; i++ {
 			if node.Children[i] != nil {
 				children = append(children, child{
-					node: node.Children[i],
+					node:  node.Children[i],
 					depth: req.depth + 1,
 				})
 			}
@@ -217,10 +217,10 @@ func (s *TrieSync) children(req *request, object node) ([]*request, error) {
 			if ok, _ := s.database.Has(node); ok {
 				continue
 			}
-			requests = append(requests, &request {
-				hash: hash,
-				parents: []*request{req},
-				depth: child.depth,
+			requests = append(requests, &request{
+				hash:     hash,
+				parents:  []*request{req},
+				depth:    child.depth,
 				callback: req.callback,
 			})
 		}

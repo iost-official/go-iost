@@ -3,14 +3,14 @@ package prque
 const blockSize = 4096
 
 type item struct {
-	value interface{}
+	value    interface{}
 	priority float32
 }
 
 type sstack struct {
-	size int
+	size     int
 	capacity int
-	offset int
+	offset   int
 
 	blocks [][]*item
 	active []*item
@@ -31,7 +31,7 @@ func (s *sstack) Push(data interface{}) {
 		s.capacity += blockSize
 		s.offset = 0
 	} else if s.offset == blockSize {
-		s.active = s.blocks[s.size / blockSize]
+		s.active = s.blocks[s.size/blockSize]
 		s.offset = 0
 	}
 	s.active[s.offset] = data.(*item)

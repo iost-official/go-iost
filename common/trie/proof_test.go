@@ -16,7 +16,7 @@ func init() {
 }
 
 func TestProof(t *testing.T) {
-	Convey("Test Proof", t, func(){
+	Convey("Test Proof", t, func() {
 		trie, vals := randomTrie(500)
 		root := trie.Hash()
 		for _, kv := range vals {
@@ -30,7 +30,7 @@ func TestProof(t *testing.T) {
 }
 
 func TestOneElementProof(t *testing.T) {
-	Convey("Test OneElementProof", t, func(){
+	Convey("Test OneElementProof", t, func() {
 		trie := new(Trie)
 		updateString(trie, "k", "v")
 		proofs, _ := db.NewMemDatabase()
@@ -43,7 +43,7 @@ func TestOneElementProof(t *testing.T) {
 }
 
 func TestVerifyBadProof(t *testing.T) {
-	Convey("Test VerifyBadProof", t, func(){
+	Convey("Test VerifyBadProof", t, func() {
 		trie, vals := randomTrie(800)
 		root := trie.Hash()
 		for _, kv := range vals {

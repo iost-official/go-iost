@@ -49,7 +49,6 @@ type NodeIterator interface {
 	LeafKey() []byte
 }
 
-
 type nodeIteratorState struct {
 	hash    common.Hash
 	node    node
