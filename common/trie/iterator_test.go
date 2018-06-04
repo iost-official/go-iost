@@ -12,7 +12,7 @@ import (
 )
 
 func TestIterator(t *testing.T) {
-	Convey("Test Iterator", t, func(){
+	Convey("Test Iterator", t, func() {
 		trie := newEmpty()
 		vals := []struct{ k, v string }{
 			{"do", "verb"},
@@ -59,7 +59,7 @@ func LeftPadBytes(slice []byte, l int) []byte {
 }
 
 func TestIteratorLargeData(t *testing.T) {
-	Convey("Test IteratorLargedata", t, func(){
+	Convey("Test IteratorLargedata", t, func() {
 		trie := newEmpty()
 		vals := make(map[string]*kv)
 
@@ -89,7 +89,7 @@ func TestIteratorLargeData(t *testing.T) {
 }
 
 func TestNodeIteratorCoverage(t *testing.T) {
-	Convey("Test NodeIteratorCoverage", t, func(){
+	Convey("Test NodeIteratorCoverage", t, func() {
 		db, trie, _ := makeTestTrie()
 
 		hashes := make(map[common.Hash]struct{})
@@ -137,7 +137,7 @@ var testdata2 = []kvs{
 }
 
 func TestIteratorSeek(t *testing.T) {
-	Convey("Test IteratorSeek", t, func(){
+	Convey("Test IteratorSeek", t, func() {
 		trie := newEmpty()
 		for _, val := range testdata1 {
 			trie.Update([]byte(val.k), []byte(val.v))
@@ -177,7 +177,7 @@ func checkIteratorOrder(want []kvs, it *Iterator) error {
 }
 
 func TestDifferenceIterator(t *testing.T) {
-	Convey("Test DifferenceIterator", t, func(){
+	Convey("Test DifferenceIterator", t, func() {
 		triea := newEmpty()
 		for _, val := range testdata1 {
 			triea.Update([]byte(val.k), []byte(val.v))
@@ -211,7 +211,7 @@ func TestDifferenceIterator(t *testing.T) {
 }
 
 func TestUnionIterator(t *testing.T) {
-	Convey("Test UnionIterator", t, func(){
+	Convey("Test UnionIterator", t, func() {
 		triea := newEmpty()
 		for _, val := range testdata1 {
 			triea.Update([]byte(val.k), []byte(val.v))
@@ -252,7 +252,7 @@ func TestUnionIterator(t *testing.T) {
 }
 
 func TestIteratorNoDups(t *testing.T) {
-	Convey("Test IteratorNoDups", t, func(){
+	Convey("Test IteratorNoDups", t, func() {
 		var tr Trie
 		for _, val := range testdata1 {
 			tr.Update([]byte(val.k), []byte(val.v))
@@ -266,7 +266,7 @@ func TestIteratorContinueAfterErrorDisk(t *testing.T)    { testIteratorContinueA
 func TestIteratorContinueAfterErrorMemonly(t *testing.T) { testIteratorContinueAfterError(t, true) }
 
 func testIteratorContinueAfterError(t *testing.T, memonly bool) {
-	Convey("Test IteratorContinueAfterError", t, func(){
+	Convey("Test IteratorContinueAfterError", t, func() {
 		diskdb, _ := db.NewMemDatabase()
 		triedb := NewDatabase(diskdb)
 
@@ -349,7 +349,7 @@ func TestIteratorContinueAfterSeekErrorMemonly(t *testing.T) {
 }
 
 func testIteratorContinueAfterSeekError(t *testing.T, memonly bool) {
-	Convey("Test IteratorContinueAfterSeekError", t, func(){
+	Convey("Test IteratorContinueAfterSeekError", t, func() {
 		diskdb, _ := db.NewMemDatabase()
 		triedb := NewDatabase(diskdb)
 

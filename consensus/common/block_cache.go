@@ -171,7 +171,7 @@ type BlockCacheImpl struct {
 	bc              block.Chain
 	cachedRoot      *BlockCacheTree
 	singleBlockRoot *BlockCacheTree
-	recentTree	    *BlockCacheTree
+	recentTree      *BlockCacheTree
 	txPool          tx.TxPool
 	delTxPool       tx.TxPool
 	txPoolCache     tx.TxPool
@@ -226,9 +226,9 @@ func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 // block 块, verifier 块的验证函数
 func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error {
 	/*
-	if uint64(block.Head.Number) < h.bc.Length() {
-		return ErrTooOld
-	}
+		if uint64(block.Head.Number) < h.bc.Length() {
+			return ErrTooOld
+		}
 	*/
 	code, newTree := h.cachedRoot.add(block, verifier)
 	h.recentTree = newTree

@@ -1,8 +1,8 @@
 package trie
 
 import (
-	"github.com/iost-official/prototype/common"
 	"fmt"
+	"github.com/iost-official/prototype/common"
 )
 
 type MissingNodeError struct {

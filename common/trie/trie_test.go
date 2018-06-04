@@ -5,17 +5,17 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/common/rlp"
+	"github.com/iost-official/prototype/db"
+	. "github.com/smartystreets/goconvey/convey"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
 	"os"
 	"reflect"
 	"testing"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/db"
-	"github.com/iost-official/prototype/common/rlp"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing/quick"
 )
 
@@ -32,7 +32,7 @@ func newEmpty() *Trie {
 }
 
 func TestEmptyTrie(t *testing.T) {
-	Convey("Test EmptyTrie", t, func(){
+	Convey("Test EmptyTrie", t, func() {
 		var trie Trie
 		res := trie.Hash()
 		exp := emptyRoot
@@ -41,7 +41,7 @@ func TestEmptyTrie(t *testing.T) {
 }
 
 func TestNull(t *testing.T) {
-	Convey("Test Null", t, func(){
+	Convey("Test Null", t, func() {
 		var trie Trie
 		key := make([]byte, 32)
 		value := []byte("test")
@@ -51,7 +51,7 @@ func TestNull(t *testing.T) {
 }
 
 func TestMissingRoot(t *testing.T) {
-	Convey("Test MissingRoot", t, func(){
+	Convey("Test MissingRoot", t, func() {
 		diskdb, _ := db.NewMemDatabase()
 		trie, err := New(common.HexToHash("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"), NewDatabase(diskdb))
 		if trie != nil {
@@ -63,11 +63,11 @@ func TestMissingRoot(t *testing.T) {
 	})
 }
 
-func TestMissingNodeDisk(t *testing.T)    {testMissingNode(t, false) }
+func TestMissingNodeDisk(t *testing.T)    { testMissingNode(t, false) }
 func TestMissingNodeMemonly(t *testing.T) { testMissingNode(t, true) }
 
 func testMissingNode(t *testing.T, memonly bool) {
-	Convey("Test MissingNode", t, func(){
+	Convey("Test MissingNode", t, func() {
 		diskdb, _ := db.NewMemDatabase()
 		triedb := NewDatabase(diskdb)
 
@@ -125,7 +125,7 @@ func testMissingNode(t *testing.T, memonly bool) {
 }
 
 func TestInsert(t *testing.T) {
-	Convey("Test Insert", t, func(){
+	Convey("Test Insert", t, func() {
 		trie := newEmpty()
 
 		updateString(trie, "doe", "reindeer")
@@ -147,7 +147,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	Convey("Test Get", t, func(){
+	Convey("Test Get", t, func() {
 		trie := newEmpty()
 		updateString(trie, "doe", "reindeer")
 		updateString(trie, "dog", "puppy")
@@ -169,7 +169,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	Convey("Test Delete", t, func(){
+	Convey("Test Delete", t, func() {
 		trie := newEmpty()
 		vals := []struct{ k, v string }{
 			{"do", "verb"},
@@ -196,7 +196,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestEmptyValues(t *testing.T) {
-	Convey("Test EmptyValues", t, func(){
+	Convey("Test EmptyValues", t, func() {
 		trie := newEmpty()
 
 		vals := []struct{ k, v string }{
@@ -220,7 +220,7 @@ func TestEmptyValues(t *testing.T) {
 }
 
 func TestReplication(t *testing.T) {
-	Convey("Test Replication", t, func(){
+	Convey("Test Replication", t, func() {
 		trie := newEmpty()
 		vals := []struct{ k, v string }{
 			{"do", "verb"},
@@ -262,7 +262,7 @@ func TestReplication(t *testing.T) {
 }
 
 func TestLargeValue(t *testing.T) {
-	Convey("Test LargeValue", t, func(){
+	Convey("Test LargeValue", t, func() {
 		trie := newEmpty()
 		trie.Update([]byte("key1"), []byte{99, 99, 99, 99})
 		trie.Update([]byte("key2"), bytes.Repeat([]byte{1}, 32))
@@ -281,7 +281,7 @@ func (db *countingDB) Get(key []byte) ([]byte, error) {
 }
 
 func TestCacheUnload(t *testing.T) {
-	Convey("Test CacheUnload", t, func(){
+	Convey("Test CacheUnload", t, func() {
 		// Create test trie with two branches.
 		trie := newEmpty()
 		key1 := "---------------------------------"
@@ -449,7 +449,7 @@ func checkCacheInvariant(n, parent node, parentCachegen uint16, parentDirty bool
 }
 
 func TestRandom(t *testing.T) {
-	Convey("Test Random", t, func(){
+	Convey("Test Random", t, func() {
 		err := quick.Check(runRandTest, nil)
 		So(err, ShouldEqual, nil)
 		_, ok := err.(*quick.CheckError)

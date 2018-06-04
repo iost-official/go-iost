@@ -1,14 +1,14 @@
 package trie
 
 import (
-	"github.com/iost-official/prototype/common"
 	"fmt"
+	"github.com/iost-official/prototype/common"
 )
 
 type SecureTrie struct {
-	trie Trie
-	hashKeyBuf [common.HashLength]byte
-	secKeyCache map[string][]byte
+	trie             Trie
+	hashKeyBuf       [common.HashLength]byte
+	secKeyCache      map[string][]byte
 	secKeyCacheOwner *SecureTrie
 }
 
@@ -21,7 +21,7 @@ func NewSecure(root common.Hash, db *Database, cachelimit uint16) (*SecureTrie, 
 		return nil, err
 	}
 	trie.SetCacheLimit(cachelimit)
-	return &SecureTrie{trie:*trie}, nil
+	return &SecureTrie{trie: *trie}, nil
 }
 
 func (t *SecureTrie) Get(key []byte) []byte {

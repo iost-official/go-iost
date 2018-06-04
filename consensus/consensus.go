@@ -36,6 +36,7 @@ const (
 var Cons Consensus
 
 var once sync.Once
+
 func ConsensusFactory(consensusType string, acc account.Account, bc block.Chain, pool state.Pool, witnessList []string) (Consensus, error) {
 
 	if consensusType == "" {
@@ -46,7 +47,7 @@ func ConsensusFactory(consensusType string, acc account.Account, bc block.Chain,
 
 	switch consensusType {
 	case CONSENSUS_DPOS:
-		if Cons==nil{
+		if Cons == nil {
 			once.Do(func() {
 				Cons, err = dpos.NewDPoS(acc, bc, pool, witnessList)
 			})

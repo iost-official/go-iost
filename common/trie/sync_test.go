@@ -85,7 +85,7 @@ func TestIterativeTrieSyncIndividual(t *testing.T) { testIterativeTrieSync(t, 1)
 func TestIterativeTrieSyncBatched(t *testing.T)    { testIterativeTrieSync(t, 100) }
 
 func testIterativeTrieSync(t *testing.T, batch int) {
-	Convey("Test IterativeTrieSync", t, func(){
+	Convey("Test IterativeTrieSync", t, func() {
 		// Create a random trie to copy
 		srcDb, srcTrie, srcData := makeTestTrie()
 
@@ -114,7 +114,7 @@ func testIterativeTrieSync(t *testing.T, batch int) {
 }
 
 func TestIterativeDelayedTrieSync(t *testing.T) {
-	Convey("Test IterativeDelayedTrieSync", t, func(){
+	Convey("Test IterativeDelayedTrieSync", t, func() {
 		// Create a random trie to copy
 		srcDb, srcTrie, srcData := makeTestTrie()
 
@@ -150,7 +150,7 @@ func TestIterativeRandomTrieSyncIndividual(t *testing.T) { testIterativeRandomTr
 func TestIterativeRandomTrieSyncBatched(t *testing.T)    { testIterativeRandomTrieSync(t, 100) }
 
 func testIterativeRandomTrieSync(t *testing.T, batch int) {
-	Convey("Test IterativeRandomTrieSync", t, func(){
+	Convey("Test IterativeRandomTrieSync", t, func() {
 		// Create a random trie to copy
 		srcDb, srcTrie, srcData := makeTestTrie()
 
@@ -187,7 +187,7 @@ func testIterativeRandomTrieSync(t *testing.T, batch int) {
 }
 
 func TestIterativeRandomDelayedTrieSync(t *testing.T) {
-	Convey("Test IterativeRandomDelayedTrieSync", t, func(){
+	Convey("Test IterativeRandomDelayedTrieSync", t, func() {
 		// Create a random trie to copy
 		srcDb, srcTrie, srcData := makeTestTrie()
 
@@ -230,7 +230,7 @@ func TestIterativeRandomDelayedTrieSync(t *testing.T) {
 }
 
 func TestDuplicateAvoidanceTrieSync(t *testing.T) {
-	Convey("Test DuplicateAvoidanceTrieSync", t, func(){
+	Convey("Test DuplicateAvoidanceTrieSync", t, func() {
 		// Create a random trie to copy
 		srcDb, srcTrie, srcData := makeTestTrie()
 
@@ -265,7 +265,7 @@ func TestDuplicateAvoidanceTrieSync(t *testing.T) {
 }
 
 func TestIncompleteTrieSync(t *testing.T) {
-	Convey("Test IncompleteTrieSync", t, func(){
+	Convey("Test IncompleteTrieSync", t, func() {
 		// Create a random trie to copy
 		srcDb, srcTrie, _ := makeTestTrie()
 

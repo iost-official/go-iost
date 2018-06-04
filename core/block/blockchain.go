@@ -3,11 +3,11 @@ package block
 import (
 	"encoding/binary"
 	"fmt"
-	"strconv"
-	"sync"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
+	"strconv"
+	"sync"
 )
 
 var (
@@ -103,15 +103,14 @@ func (b *ChainImpl) Push(block *Block) error {
 	if err != nil {
 		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
-	
+
 	////////////probe//////////////////
 	log.Report(&log.MsgBlock{
-		SubType:"confirm",
-		BlockHeadHash:block.HeadHash(),
-		BlockNum:block.Head.Number,
+		SubType:       "confirm",
+		BlockHeadHash: block.HeadHash(),
+		BlockNum:      block.Head.Number,
 	})
 	///////////////////////////////////
-
 
 	//put all the tx of this block to txdb
 	for _, ctx := range block.Content {
@@ -121,10 +120,10 @@ func (b *ChainImpl) Push(block *Block) error {
 
 		////////////probe//////////////////
 		log.Report(&log.MsgTx{
-			SubType:"confirm",
-			TxHash:ctx.Hash(),
-			Publisher:ctx.Publisher.Pubkey,
-			Nonce:ctx.Nonce,
+			SubType:   "confirm",
+			TxHash:    ctx.Hash(),
+			Publisher: ctx.Publisher.Pubkey,
+			Nonce:     ctx.Nonce,
 		})
 		///////////////////////////////////
 	}

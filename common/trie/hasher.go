@@ -5,8 +5,8 @@ import (
 	"hash"
 	"sync"
 
-	"github.com/iost-official/prototype/common"
 	"github.com/InWeCrypto/sha3"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/common/rlp"
 )
 

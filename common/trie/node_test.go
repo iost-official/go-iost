@@ -1,12 +1,12 @@
 package trie
 
 import (
-	"testing"
 	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
 func TestCanUnload(t *testing.T) {
-	Convey("Test CanUnload", t, func(){
+	Convey("Test CanUnload", t, func() {
 		tests := []struct {
 			flag                 nodeFlag
 			cachegen, cachelimit uint16
