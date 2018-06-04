@@ -91,7 +91,7 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 		return nil, err
 	}
 
-	p.log.NeedPrint = true
+	p.log.NeedPrint = false
 
 	p.initGlobalProperty(p.account, witnessList)
 

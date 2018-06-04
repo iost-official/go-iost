@@ -71,7 +71,7 @@ func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
 		return nil
 	}
 
-	sync.log.NeedPrint = true
+	sync.log.NeedPrint = false
 
 	sync.log.I("maxSyncNumber:%v", sync.maxSyncNumber)
 
