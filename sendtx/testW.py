@@ -6,6 +6,7 @@ import sys
 import random 
 
 HOME=os.environ['HOME']
+
 def wCommand(com):
 	obj = subprocess.Popen([com], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
 	obj.wait()
@@ -18,6 +19,9 @@ def has(fn):
 
 def Contract():
 	#open acc_list.txt
+	#pubkey
+	#seckey
+	#...
 	fd=open("./acc_list.txt")
 	lines=fd.readlines()
 	fd.close()
@@ -54,7 +58,7 @@ def Contract():
 
 def Compile():
 	print "[iwallet compile]:",
-	wCommand("./iwallet compile ./test/1to2.lua")
+	wCommand("./iwallet compile -n "+str(random.randint(0,sys.maxint))+" ./test/1to2.lua")
 	if has("./test/1to2.sc"):
 		print("ok")
 		return True 
