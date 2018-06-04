@@ -110,6 +110,7 @@ func (c *CachedBlockChain) Copy() CachedBlockChain {
 // 调用时保证只flush未确认块的第一个，如果要flush多个，需多次调用Flush()
 func (c *CachedBlockChain) Flush() {
 	if c.block != nil {
+		//[HowHsu]:I think this operation should be done in a new goroutine
 		c.Chain.Push(c.block)
 		c.block = nil
 		c.cachedLength = 0
