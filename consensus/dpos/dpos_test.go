@@ -307,20 +307,20 @@ func TestRunGenerateBlock(t *testing.T) {
 		p.blockCache.Draw()
 	})
 }
+
 //clear BlockDB and TxDB files before running this test
 func TestRunConfirmBlock(t *testing.T) {
 	Convey("Test of Run ConfirmBlock", t, func() {
 		p, accList, witnessList := envinit(t)
 		_tx := genTx(p, 998)
 		p.blockCache.AddTx(&_tx)
-		
+
 		for i := 0; i < 5; i++ {
-			wit:=""
-			for wit!=witnessList[0] {
+			wit := ""
+			for wit != witnessList[0] {
 				currentTimestamp := consensus_common.GetCurrentTimestamp()
 				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			}
-
 
 			bc := p.blockCache.LongestChain()
 			pool := p.blockCache.LongestPool()
@@ -332,10 +332,10 @@ func TestRunConfirmBlock(t *testing.T) {
 			fmt.Println(err)
 		}
 
-		So(p.blockCache.ConfirmedLength(),ShouldEqual,1)
+		So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
 		for i := 1; i < 3; i++ {
-			wit:=""
-			for wit!=witnessList[i] {
+			wit := ""
+			for wit != witnessList[i] {
 				currentTimestamp := consensus_common.GetCurrentTimestamp()
 				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			}
@@ -345,25 +345,26 @@ func TestRunConfirmBlock(t *testing.T) {
 			blk := p.genBlock(accList[i], bc, pool)
 			p.blockCache.ResetTxPoool()
 			p.globalDynamicProperty.update(&blk.Head)
-/*
-			guard := Patch(witnessOfTime, func(_ *globalStaticProperty, _ *globalDynamicProperty, _ consensus_common.Timestamp) string {
-				return witnessList[i]
-			})
-			defer guard.Unpatch()
-*/
+			/*
+				guard := Patch(witnessOfTime, func(_ *globalStaticProperty, _ *globalDynamicProperty, _ consensus_common.Timestamp) string {
+					return witnessList[i]
+				})
+				defer guard.Unpatch()
+			*/
 			err := p.blockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
-			if i==1 {
-				So(p.blockCache.ConfirmedLength(),ShouldEqual,1)
+			if i == 1 {
+				So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
 			}
-			if i==2 {
-				So(p.blockCache.ConfirmedLength(),ShouldEqual,6)
+			if i == 2 {
+				So(p.blockCache.ConfirmedLength(), ShouldEqual, 6)
 			}
 		}
 
 		p.blockCache.Draw()
 	})
 }
+
 //this need to be checked again
 func TestRunMultipleBlocks(t *testing.T) {
 	Convey("Test of Run (Multiple Blocks)", t, func() {
@@ -379,9 +380,8 @@ func TestRunMultipleBlocks(t *testing.T) {
 				bc = p.blockCache.LongestChain()
 				pool = p.blockCache.LongestPool()
 			}
-			wit:=""
-			for wit!=witnessList[0] {
-
+			wit := ""
+			for wit != witnessList[0] {
 
 				currentTimestamp := consensus_common.GetCurrentTimestamp()
 				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
@@ -390,7 +390,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 			blk := p.genBlock(p.account, bc, pool)
 			p.blockCache.ResetTxPoool()
 			p.globalDynamicProperty.update(&blk.Head)
-			
+
 			blk.Head.Time = int64(i)
 
 			headInfo := generateHeadInfo(blk.Head)
