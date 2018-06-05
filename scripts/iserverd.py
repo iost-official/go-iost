@@ -6,6 +6,7 @@ import time
 import sys
 
 HOME=os.environ['HOME']
+GOPATH=os.environ['GOPATH']
 pwd="$GOPATH/src/github.com/iost-official/prototype"
 
 def wCommand(com):
@@ -14,9 +15,13 @@ def wCommand(com):
 	return stdoutdata
 
 def has_proc(pn):
-	ret=wCommand("ps -e|grep "+pn)
+	ret=wCommand("ps -e|grep "+pn+"|grep -v grep")
 	if ret!="":return 1
 	return 0
+
+def has_binary():
+	return os.path.exists(GOPATH+"/src/github.com/iost-official/prototype/iserver/iserver")
+
 
 def start():
 	if has_proc("iserver")!=0:
