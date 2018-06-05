@@ -15,13 +15,12 @@ def wCommand(com):
 	return stdoutdata
 
 def has_proc(pn):
-	ret=wCommand("ps -e|grep "+pn+"|grep -v grep")
-	if ret!="":return 1
-	return 0
-
-def has_binary():
-	return os.path.exists(GOPATH+"/src/github.com/iost-official/prototype/iserver/iserver")
-
+	ret=wCommand("ps -e|grep "+pn+"|grep -v grep|grep -v iserverd.py")
+	lines=ret.split("\n")
+	for line in lines:
+		if line.endswith("iserver"):
+			return 1
+	return 0 
 
 def start():
 	if has_proc("iserver")!=0:
