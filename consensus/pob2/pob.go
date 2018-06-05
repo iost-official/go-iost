@@ -27,7 +27,7 @@ var TxPerBlk int
 
 type PoB struct {
 	account      Account
-	blockCache   BlockCache
+	BlockCache   BlockCache
 	router       Router
 	synchronizer Synchronizer
 	globalStaticProperty
@@ -50,7 +50,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 	TxPerBlk = 3000
 	p := PoB{}
 	p.account = acc
-	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
+	p.BlockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
 	if bc.GetBlockByNumber(0) == nil {
 
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -63,7 +63,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 		return nil, fmt.Errorf("failed to network.Route is nil")
 	}
 
-	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
+	p.synchronizer = NewSynchronizer(p.BlockCache, p.router)
 	if p.synchronizer == nil {
 		return nil, err
 	}
@@ -127,22 +127,22 @@ func (p *PoB) Stop() {
 
 // BlockChain 返回已确认的block chain
 func (p *PoB) BlockChain() block.Chain {
-	return p.blockCache.BlockChain()
+	return p.BlockCache.BlockChain()
 }
 
 // CachedBlockChain 返回缓存中的最长block chain
 func (p *PoB) CachedBlockChain() block.Chain {
-	return p.blockCache.LongestChain()
+	return p.BlockCache.LongestChain()
 }
 
 // StatePool 返回已确认的state pool
 func (p *PoB) StatePool() state.Pool {
-	return p.blockCache.BasePool()
+	return p.BlockCache.BasePool()
 }
 
 // CacheStatePool 返回缓存中最新的state pool
 func (p *PoB) CachedStatePool() state.Pool {
-	return p.blockCache.LongestPool()
+	return p.BlockCache.LongestPool()
 }
 
 func (p *PoB) genesis(initTime int64) error {
@@ -170,12 +170,12 @@ func (p *PoB) genesis(initTime int64) error {
 		panic("failed to ParseGenesis")
 	}
 
-	err = p.blockCache.SetBasePool(stp)
+	err = p.BlockCache.SetBasePool(stp)
 	if err != nil {
 		panic("failed to SetBasePool")
 	}
 
-	err = p.blockCache.AddGenesis(genesis)
+	err = p.BlockCache.AddGenesis(genesis)
 	if err != nil {
 		panic("failed to AddGenesis")
 	}
@@ -197,7 +197,7 @@ func (p *PoB) txListenLoop() {
 			var tx Tx
 			tx.Decode(req.Body)
 			if VerifyTxSig(tx) {
-				p.blockCache.AddTx(&tx)
+				p.BlockCache.AddTx(&tx)
 			}
 
 		case <-p.exitSignal:
@@ -237,11 +237,11 @@ func (p *PoB) blockLoop() {
 				///////////////////////////////////
 			*/
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
-			err := p.blockCache.Add(&blk, p.blockVerify)
+			err := p.BlockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
-				bc := p.blockCache.LongestChain()
-				p.blockCache.UpdateTxPoolOnBC(bc)
+				bc := p.BlockCache.LongestChain()
+				p.BlockCache.UpdateTxPoolOnBC(bc)
 			} else {
 				p.log.I("Error: %v", err)
 			}
@@ -250,7 +250,7 @@ func (p *PoB) blockLoop() {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 
-					p.blockCache.AddSingles(p.blockVerify)
+					p.BlockCache.AddSingles(p.blockVerify)
 				} else if err == ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
@@ -286,22 +286,22 @@ func (p *PoB) scheduleLoop() {
 			if wid == p.account.ID {
 
 				//todo test
-				bc := p.blockCache.LongestChain()
+				bc := p.BlockCache.LongestChain()
 				iter := bc.Iterator()
 				for {
 					block := iter.Next()
 					if block == nil {
 						break
 					}
-					p.log.I("CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
+					p.log.I("CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.BlockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
 				}
 				// end test
 
 				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 
-				pool := p.blockCache.LongestPool()
+				pool := p.BlockCache.LongestPool()
 				blk := p.genBlock(p.account, bc, pool)
-				go p.blockCache.ResetTxPoool()
+				go p.BlockCache.ResetTxPoool()
 				p.globalDynamicProperty.update(&blk.Head)
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 
@@ -336,7 +336,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	spool1 := pool.Copy()
 	//TODO Content大小控制
 	for len(blk.Content) < TxPerBlk {
-		tx, err := p.blockCache.GetTx()
+		tx, err := p.BlockCache.GetTx()
 		if tx == nil || err != nil {
 			break
 		}

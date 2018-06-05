@@ -145,6 +145,10 @@ func (t *Tx) Hash() []byte {
 	return common.Sha256(t.Encode())
 }
 
+func (t *Tx) HashString() string {
+	return string(common.Sha256(t.Encode()))
+}
+
 // 验证签名的函数
 func (t *Tx) VerifySelf() error {
 	baseHash := t.baseHash() // todo 在basehash内缓存，不需要在应用进行缓存
@@ -171,6 +175,7 @@ type TransactionsList []*Tx
 func (s TransactionsList) Len() int           { return len(s) }
 func (s TransactionsList) Less(i, j int) bool { return s[i].Contract.Info().Price < s[j].Contract.Info().Price }
 func (s TransactionsList) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
 
 func DiffTxList(a, b TransactionsList) (keep TransactionsList) {
 	keep = make(TransactionsList, 0, len(a))

@@ -157,7 +157,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string) {
 	//	return pool, nil
 	//}
 
-	//blockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
+	//BlockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
 	//seckey := common.Sha256([]byte("SeckeyId0"))
 	//pubkey := common.CalcPubkeyInSecp256k1(seckey)
 	p, err := NewPoB(accountList[0], blockChain, state.StdPool, witnessList)
@@ -170,13 +170,13 @@ func TestRunGenerateBlock(t *testing.T) {
 	Convey("Test of Run (Generate Block)", t, func() {
 		p, _, _ := envinit(t)
 		_tx := genTx(p, 998)
-		p.blockCache.AddTx(&_tx)
-		bc := p.blockCache.LongestChain()
-		pool := p.blockCache.LongestPool()
+		p.BlockCache.AddTx(&_tx)
+		bc := p.BlockCache.LongestChain()
+		pool := p.BlockCache.LongestPool()
 		blk := p.genBlock(p.account, bc, pool)
 		So(len(blk.Content), ShouldEqual, 1)
 		So(blk.Content[0].Nonce, ShouldEqual, 998)
-		p.blockCache.Draw()
+		p.BlockCache.Draw()
 	})
 }
 
@@ -187,7 +187,7 @@ func TestRunConfirmBlock(t *testing.T) {
 		cmd.Run()
 		p, accList, witnessList := envinit(t)
 		_tx := genTx(p, 998)
-		p.blockCache.AddTx(&_tx)
+		p.BlockCache.AddTx(&_tx)
 
 		for i := 0; i < 5; i++ {
 			wit := ""
@@ -196,17 +196,17 @@ func TestRunConfirmBlock(t *testing.T) {
 				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			}
 
-			bc := p.blockCache.LongestChain()
-			pool := p.blockCache.LongestPool()
+			bc := p.BlockCache.LongestChain()
+			pool := p.BlockCache.LongestPool()
 
 			blk := p.genBlock(p.account, bc, pool)
-			p.blockCache.ResetTxPoool()
+			p.BlockCache.ResetTxPoool()
 			p.globalDynamicProperty.update(&blk.Head)
-			err := p.blockCache.Add(blk, p.blockVerify)
+			err := p.BlockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
 		}
 
-		So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
+		So(p.BlockCache.ConfirmedLength(), ShouldEqual, 1)
 		for i := 1; i < 3; i++ {
 			wit := ""
 			for wit != witnessList[i] {
@@ -214,10 +214,10 @@ func TestRunConfirmBlock(t *testing.T) {
 				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			}
 
-			bc := p.blockCache.LongestChain()
-			pool := p.blockCache.LongestPool()
+			bc := p.BlockCache.LongestChain()
+			pool := p.BlockCache.LongestPool()
 			blk := p.genBlock(accList[i], bc, pool)
-			p.blockCache.ResetTxPoool()
+			p.BlockCache.ResetTxPoool()
 			p.globalDynamicProperty.update(&blk.Head)
 			/*
 				guard := Patch(witnessOfTime, func(_ *globalStaticProperty, _ *globalDynamicProperty, _ consensus_common.Timestamp) string {
@@ -225,17 +225,17 @@ func TestRunConfirmBlock(t *testing.T) {
 				})
 				defer guard.Unpatch()
 			*/
-			err := p.blockCache.Add(blk, p.blockVerify)
+			err := p.BlockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
 			if i == 1 {
-				So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
+				So(p.BlockCache.ConfirmedLength(), ShouldEqual, 1)
 			}
 			if i == 2 {
-				So(p.blockCache.ConfirmedLength(), ShouldEqual, 6)
+				So(p.BlockCache.ConfirmedLength(), ShouldEqual, 6)
 			}
 		}
 
-		p.blockCache.Draw()
+		p.BlockCache.Draw()
 	})
 }
 
@@ -244,15 +244,15 @@ func TestRunMultipleBlocks(t *testing.T) {
 	Convey("Test of Run (Multiple Blocks)", t, func() {
 		p, _, witnessList := envinit(t)
 		_tx := genTx(p, 998)
-		p.blockCache.AddTx(&_tx)
+		p.BlockCache.AddTx(&_tx)
 
-		bc := p.blockCache.LongestChain()
-		pool := p.blockCache.LongestPool()
+		bc := p.BlockCache.LongestChain()
+		pool := p.BlockCache.LongestPool()
 
 		for i := 100; i < 105; i++ {
 			if i == 103 {
-				bc = p.blockCache.LongestChain()
-				pool = p.blockCache.LongestPool()
+				bc = p.BlockCache.LongestChain()
+				pool = p.BlockCache.LongestPool()
 			}
 			wit := ""
 			for wit != witnessList[0] {
@@ -262,7 +262,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 			}
 
 			blk := p.genBlock(p.account, bc, pool)
-			p.blockCache.ResetTxPoool()
+			p.BlockCache.ResetTxPoool()
 			p.globalDynamicProperty.update(&blk.Head)
 
 			blk.Head.Time = int64(i)
@@ -271,10 +271,10 @@ func TestRunMultipleBlocks(t *testing.T) {
 			sig, _ := common.Sign(common.Secp256k1, headInfo, p.account.Seckey)
 			blk.Head.Signature = sig.Encode()
 
-			err := p.blockCache.Add(blk, p.blockVerify)
+			err := p.BlockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
 		}
-		p.blockCache.Draw()
+		p.BlockCache.Draw()
 	})
 }
 
@@ -401,7 +401,7 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string) {
 	//	return pool, nil
 	//}
 
-	//blockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
+	//BlockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
 	//seckey := common.Sha256([]byte("SeckeyId0"))
 	//pubkey := common.CalcPubkeyInSecp256k1(seckey)
 	p, err := NewPoB(accountList[0], blockChain, state.StdPool, witnessList)
@@ -442,10 +442,10 @@ func genBlockHead(p *PoB) {
 }
 
 func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n int, txCnt int, continuity bool) (blockPool []*block.Block) {
-	confChain := p.blockCache.BlockChain()
+	confChain := p.BlockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
 
-	//blockLen := p.blockCache.ConfirmedLength()
+	//blockLen := p.BlockCache.ConfirmedLength()
 	//fmt.Println(blockLen)
 
 	//blockNum := 1000
@@ -493,7 +493,7 @@ func benchAddBlockCache(b *testing.B, txCnt int, continuity bool) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StartTimer()
-		p.blockCache.Add(blockPool[i], p.blockVerify)
+		p.BlockCache.Add(blockPool[i], p.blockVerify)
 		b.StopTimer()
 	}
 
@@ -506,14 +506,14 @@ func benchGetBlock(b *testing.B, txCnt int, continuity bool) {
 	blockPool := genBlocks(p, accountList, witnessList, b.N, txCnt, continuity)
 	for i := 0; i < b.N; i++ {
 		for _, bl := range blockPool {
-			p.blockCache.Add(bl, p.blockVerify)
+			p.BlockCache.Add(bl, p.blockVerify)
 		}
 	}
 
 	//get block
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		chain := p.blockCache.LongestChain()
+		chain := p.BlockCache.LongestChain()
 		b.StartTimer()
 		chain.GetBlockByNumber(uint64(i))
 		b.StopTimer()
@@ -526,7 +526,7 @@ func benchBlockVerifier(b *testing.B) {
 	//生成block
 	blockPool := genBlocks(p, accountList, witnessList, 2, 6000, true)
 	//p.update(&blockPool[0].Head)
-	confChain := p.blockCache.BlockChain()
+	confChain := p.BlockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
 
 	b.ResetTimer()
@@ -650,14 +650,14 @@ func benchGenerateBlock(b *testing.B, txCnt int) {
 
 	for i := 0; i < TxPerBlk*b.N; i++ {
 		_tx := genTx(p, i)
-		p.blockCache.AddTx(&_tx)
+		p.BlockCache.AddTx(&_tx)
 	}
 
 	b.ResetTimer()
 	b.StopTimer()
 	for i := 0; i < b.N; i++ {
-		bc := p.blockCache.LongestChain()
-		pool := p.blockCache.LongestPool()
+		bc := p.BlockCache.LongestChain()
+		pool := p.BlockCache.LongestPool()
 		b.StartTimer()
 		p.genBlock(p.account, bc, pool)
 		b.StopTimer()

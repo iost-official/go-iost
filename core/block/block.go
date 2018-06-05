@@ -49,6 +49,10 @@ func (d *Block) Hash() []byte {
 	return common.Sha256(d.Encode())
 }
 
+func (d *Block) HashString() string {
+	return string(common.Sha256(d.Encode()))
+}
+
 // HeadHash 返回区块头部的Hash值
 func (d *Block) HeadHash() []byte {
 	return d.Head.Hash()
