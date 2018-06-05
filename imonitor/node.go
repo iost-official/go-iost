@@ -10,6 +10,8 @@ import (
 
 	"log"
 
+	"bytes"
+
 	"github.com/astaxie/beego/config/env"
 )
 
@@ -26,9 +28,12 @@ func main() {
 	}
 	go func() {
 		for {
-			iserver = exec.Command(gopath + "/src/github.com/iost-official/prototype/iserver/iserver")
-			b, err := iserver.CombinedOutput()
-			fmt.Println(string(b), err.Error())
+			iserver := exec.Command("iserver")
+			var b bytes.Buffer
+			iserver.Stdout = &b
+			iserver.Stderr = &b
+			iserver.Start()
+			fmt.Println(b.String(), err.Error())
 		}
 	}()
 
@@ -111,5 +116,4 @@ func init() {
 	makeScripts()
 
 	redis = exec.Command("redis-server")
-	iserver = exec.Command(gopath + "/src/github.com/iost-official/prototype/iserver/iserver")
 }

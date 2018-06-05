@@ -1,5 +1,6 @@
 package trie
 
+/*
 import (
 	"bytes"
 	"encoding/binary"
@@ -557,3 +558,4 @@ func updateString(trie *Trie, k, v string) {
 func deleteString(trie *Trie, k string) {
 	trie.Delete([]byte(k))
 }
+*/

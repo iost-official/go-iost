@@ -53,7 +53,7 @@ end`
 		So(rtn[0].EncodeString(), ShouldEqual, "shi bob")
 		rtn, _, gas, err = verifier.Call(pool, "con1", "main")
 		So(err, ShouldBeNil)
-		So(gas, ShouldEqual, 9)
+		So(gas, ShouldEqual, 1009)
 		So(rtn[0].EncodeString(), ShouldEqual, "shi bob")
 
 	})
@@ -119,12 +119,12 @@ end`, prefix)
 		So(rtn[0].EncodeString(), ShouldEqual, "shi bob")
 		rtn, _, gas, err = verifier.Call(pool, "con1", "main")
 		So(err, ShouldBeNil)
-		So(gas, ShouldEqual, 9)
+		So(gas, ShouldEqual, 1009)
 		So(rtn[0].EncodeString(), ShouldEqual, "shi bob")
 		verifier.RestartVM(&lc3)
 		rtn, _, gas, err = verifier.Call(pool, "con3", "main")
 		So(err, ShouldBeNil)
-		So(gas, ShouldEqual, 7)
+		So(gas, ShouldEqual, 1007)
 
 	})
 }

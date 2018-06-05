@@ -54,7 +54,6 @@ func StdTxsVerifier(txs []*tx.Tx, pool state.Pool) (state.Pool, int, error) {
 		var err error
 		pool2, err = ver.VerifyContract(txx.Contract, pool2)
 		if err != nil {
-			panic(err)
 			return pool2, i, err
 		}
 	}

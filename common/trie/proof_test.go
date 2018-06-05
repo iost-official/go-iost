@@ -1,5 +1,6 @@
 package trie
 
+/*
 import (
 	"bytes"
 	crand "crypto/rand"
@@ -135,3 +136,4 @@ func randBytes(n int) []byte {
 	crand.Read(r)
 	return r
 }
+*/
