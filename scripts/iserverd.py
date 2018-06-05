@@ -33,7 +33,7 @@ def start():
 def restart():
 	for i in range(0,3):
 		if(start()!=0):
-			wCommand("killall -s SIGTERM iserver")
+			wCommand("killall -s TERM iserver")
 			time.sleep(1)
 		else:
 			return 0
