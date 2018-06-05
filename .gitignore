@@ -133,6 +133,7 @@ bak/
 blockDB/
 
 dump.rdb
+iserver/iserver
 iserver/blockDB/
 iserver/netpath2/
 iserver/netpath3/
