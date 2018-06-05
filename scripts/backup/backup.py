@@ -8,7 +8,8 @@ config_path = sys.argv[1]
 with open(config_path, 'rt') as f:
     config = json.load(f)
 
-redis_url = config["redis_url"]
+redis_host = config["redis_host"]
+redis_port = config["redis_port"]
 backup_dir = config["backup_dir"]
 project = config["project"]
 gopath = os.environ.get("GOPATH") or config["gopath"]
@@ -27,10 +28,10 @@ def backup_db(src):
     if os.system(command) != 0:
         res = "FAIL"
 
-def backup_redis(url):
-    filename = "redis.json"
+def backup_redis():
+    filename = "dump.rdb"
     dst = os.path.join(dst_path, filename)
-    command = "redis-dump -u '{0}' > '{1}'".format(url, dst)
+    command = "redis-cli -h {0} -p {1} --rdb '{2}'".format(redis_host, redis_port, dst)
     print("Runing: " + command)
     if os.system(command) != 0:
         res = "FAIL"
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     os.mkdir(dst_path)
     backup_db(block_db)
     backup_db(tx_db)
-    backup_redis(redis_url)
+    backup_redis()
 
 print(res)
 
