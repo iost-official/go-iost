@@ -35,10 +35,15 @@ ENV GOPATH /gopath
 ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 
+# Install Python
+RUN yum install -y epel-release
+RUN yum install -y python python-devel python-pip
+
 # Install project
 RUN mkdir -p $GOPATH/src/github.com/iost-official && cd $GOPATH/src/github.com/iost-official && \
 git clone https://445789ea93ff81d814c78fccae8e25000f96e539@github.com/iost-official/prototype && \
 cd prototype && git checkout develop && go get github.com/kardianos/govendor && govendor sync -v && \
+pip install -r scripts/backup/requirements.txt && \
 cd iserver && go build
 
 
