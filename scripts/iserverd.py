@@ -33,7 +33,9 @@ def start():
 def restart():
 	for i in range(0,3):
 		if(start()!=0):
-			wCommand("killall -s TERM iserver")
+			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|awk 'NR==1{print $1}'")
+			wCommand("kill TERM "+a)
+
 			time.sleep(1)
 		else:
 			return 0
@@ -42,7 +44,8 @@ def restart():
 def stop():
 	for i in range(0,3):
 		if(has_proc("iserver")!=0):
-			wCommand("killall -s TERM iserver")
+			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|awk 'NR==1{print $1}'")
+			wCommand("kill TERM "+a)
 			time.sleep(1)
 		else:
 			return 0
