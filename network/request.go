@@ -10,8 +10,6 @@ import (
 
 	"net"
 
-	"strings"
-
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/message"
 )
@@ -136,15 +134,12 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	case BroadcastMessageReceived:
 	//request for nodeTable
 	case ReqNodeTable:
-		base.log.D("[net] req node table from: %v", string(r.From))
-		base.putNode(string(r.From))
-		base.peers.SetAddr(string(r.From), newPeer(conn, nil, base.localNode.Addr(), conn.RemoteAddr().String()))
-		addrs, err := base.AllNodesExcludeAddr(string(r.From))
-		if err != nil {
-			base.log.E("[net] failed to nodetable ", err)
-		}
-		req := newRequest(NodeTable, base.localNode.Addr(), []byte(strings.Join(addrs, ",")))
-		if er := base.send(conn, req); er != nil {
+
+		if isValidNode(r, base) {
+			base.putNode(string(r.From))
+			base.peers.SetAddr(string(r.From), newPeer(conn, nil,base.localNode.Addr(), conn.RemoteAddr().String()))
+			base.sendNodeTable(r.From, conn)
+		} else {
 			conn.Close()
 		}
 	//got nodeTable and save
@@ -154,6 +149,18 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	default:
 		base.log.E("[net] wrong request :", r)
 	}
+}
+
+func isValidNode(r *Request, base *BaseNetwork) bool {
+	if NetMode == PublicMode && !common.IsPublicIP(net.ParseIP(string(r.From))) {
+		base.log.D("[net] the node's ip is not public ip")
+		return false
+	}
+	if NetMode == CommitteeMode && !base.isInCommittee(r.From) {
+		base.log.D("[net] the node's ip is not in committee")
+		return false
+	}
+	return true
 }
 
 //handle broadcast node's height

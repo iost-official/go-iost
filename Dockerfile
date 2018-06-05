@@ -52,3 +52,7 @@ EXPOSE 30303
 
 WORKDIR $GOPATH/src/github.com/iost-official/prototype/iserver
 
+## docker deploy
+## docker build -t iost .
+## docker run --name iost_container -p 30302:30302 -p 30303:30303 -d iost ./start.sh
+

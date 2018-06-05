@@ -24,6 +24,7 @@ import (
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network/discover"
+	"github.com/iost-official/prototype/params"
 )
 
 const (
@@ -33,7 +34,11 @@ const (
 	MaxDownloadRetry        = 2
 	MsgLiveThresholdSeconds = 120
 	RegisterServerPort      = 30304
+	PublicMode              = "public"
+	CommitteeMode           = "committee"
 )
+
+var NetMode string
 
 //Network api
 type Network interface {
@@ -598,4 +603,27 @@ func (bn *BaseNetwork) isRecentSent(msg message.Message) bool {
 		return false
 	}
 	return true
+}
+
+func (bn *BaseNetwork) sendNodeTable(from []byte, conn net.Conn) {
+	bn.log.D("[net] req node table from: %s", from)
+	addrs, err := bn.AllNodesExcludeAddr(string(from))
+	if err != nil {
+		bn.log.E("[net] failed to get node table, %v", err)
+	}
+	req := newRequest(NodeTable, bn.localNode.Addr(), []byte(strings.Join(addrs, ",")))
+	if er := bn.send(conn, req); er != nil {
+		bn.log.E("[net] failed to send node table,%v ", err)
+		conn.Close()
+	}
+	return
+}
+
+func (bn *BaseNetwork) isInCommittee(from []byte) bool {
+	for _, ip := range params.CommitteeNodes {
+		if net.ParseIP(string(from)).String() == ip {
+			return true
+		}
+	}
+	return false
 }
