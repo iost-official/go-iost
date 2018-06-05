@@ -10,7 +10,6 @@ pwd="$GOPATH/src/github.com/iost-official/prototype"
 
 def wCommand(com):
 	obj = subprocess.Popen([com], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,close_fds=True,shell=True)
-	obj.stdin.write('\n')
 	stdoutdata, stderrdata = obj.communicate()
 	return stdoutdata
 
@@ -22,7 +21,7 @@ def has_proc(pn):
 def start():
 	if has_proc("iserver")!=0:
 		return 1
-	wCommand("cd "+pwd+"/iserver && nohup ./iserver >> test.log 2>&1 &")
+	wCommand("cd "+pwd+"/iserver;nohup ./iserver >> test.log 2>&1 &")
 	return 0
 
 #0:success
@@ -68,5 +67,5 @@ if __name__ == "__main__":
 	if com not in func.keys():
 		sys.exit(2)
 	
-	func[com]()
+	print(func[com]())
 	sys.exit(0)
