@@ -165,3 +165,26 @@ func (t *Tx) VerifySelf() error {
 func (t *Tx) VerifySigner(sig common.Signature) bool {
 	return common.VerifySignature(t.baseHash(), sig)
 }
+
+type TransactionsList []*Tx
+
+func (s TransactionsList) Len() int           { return len(s) }
+func (s TransactionsList) Less(i, j int) bool { return s[i].Contract.Info().Price < s[j].Contract.Info().Price }
+func (s TransactionsList) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+func DiffTxList(a, b TransactionsList) (keep TransactionsList) {
+	keep = make(TransactionsList, 0, len(a))
+
+	remove := make(map[string]struct{})
+	for _, tx := range b {
+		remove[string(tx.Hash())] = struct{}{}
+	}
+
+	for _, tx := range a {
+		if _, ok := remove[string(tx.Hash())]; !ok {
+			keep = append(keep, tx)
+		}
+	}
+
+	return keep
+}
