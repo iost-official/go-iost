@@ -25,7 +25,7 @@ func main() {
 		log.Fatal("redis err:\n", err)
 	}
 	http.HandleFunc("/scripts", handleScripts)
-	fmt.Println(http.ListenAndServe("127.0.0.1:30310", nil))
+	fmt.Println(http.ListenAndServe("0.0.0.0:30310", nil))
 }
 
 func handleScripts(w http.ResponseWriter, r *http.Request) {
