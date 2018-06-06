@@ -108,6 +108,7 @@ iwallet/test
 iwallet/iwallet
 
 # build and test
+imonitor/imonitor
 consensus/common/tx/
 /consensus/dpos/tx/
 /core/block/blockDB/

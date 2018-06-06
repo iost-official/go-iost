@@ -25,7 +25,7 @@ def has_proc(pn):
 def start():
 	if has_proc("iserver")!=0:
 		return 1
-	wCommand("nohup iserver --config "+pwd+"/imonitor/iserver.yaml >> test.log 2>&1 &")
+	wCommand("nohup iserver --config "+pwd+"/iserver/iserver.yml >> test.log 2>&1 &")
 	return 0
 
 #0:success
