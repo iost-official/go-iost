@@ -218,7 +218,6 @@ func (p *PoB) blockLoop() {
 			var blk block.Block
 			blk.Decode(req.Body)
 
-			/*
 				////////////probe//////////////////
 				log.Report(&log.MsgBlock{
 					SubType:"receive",
@@ -226,8 +225,6 @@ func (p *PoB) blockLoop() {
 					 BlockNum:blk.Head.Number,
 				})
 				///////////////////////////////////
-			*/
-			/*
 				////////////probe//////////////////
 				log.Report(&log.MsgBlock{
 					SubType:       "receive",
@@ -235,7 +232,6 @@ func (p *PoB) blockLoop() {
 					BlockNum:      blk.Head.Number,
 				})
 				///////////////////////////////////
-			*/
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
@@ -352,11 +348,11 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
 
 	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine
-	//log.Report(&log.MsgBlock{
-	//	SubType:       "gen",
-	//	BlockHeadHash: blk.HeadHash(),
-	//	BlockNum:      blk.Head.Number,
-	//})
+	log.Report(&log.MsgBlock{
+		SubType:       "gen",
+		BlockHeadHash: blk.HeadHash(),
+		BlockNum:      blk.Head.Number,
+	})
 	/////////////////////////////////////
 
 	return &blk
@@ -397,7 +393,6 @@ func encodePoBInfo(votes [][]byte) []byte {
 
 //收到新块，验证新块，如果验证成功，更新PoB全局动态属性类并将其加入block cache，再广播
 func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-	/*
 		////////////probe//////////////////
 		msgBlock := log.MsgBlock{
 			SubType:       "verify.fail",
@@ -405,14 +400,11 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 			BlockNum:      blk.Head.Number,
 		}
 		///////////////////////////////////
-	*/
 	// verify block head
 	if err := VerifyBlockHead(blk, parent); err != nil {
-		/*
 			////////////probe//////////////////
 			log.Report(&msgBlock)
 			///////////////////////////////////
-		*/
 		return nil, err
 
 	}
@@ -420,11 +412,9 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 	// verify block witness
 	// TODO currentSlot is negative
 	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-		/*
 			////////////probe//////////////////
 			log.Report(&msgBlock)
 			///////////////////////////////////
-		*/
 		return nil, errors.New("wrong witness")
 
 	}
@@ -435,27 +425,21 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 
 	// verify block witness signature
 	if !common.VerifySignature(headInfo, signature) {
-		/*
 			////////////probe//////////////////
 			log.Report(&msgBlock)
 			///////////////////////////////////
-		*/
 		return nil, errors.New("wrong signature")
 	}
 	newPool, err := StdBlockVerifier(blk, pool)
 	if err != nil {
-		/*
 			////////////probe//////////////////
 			log.Report(&msgBlock)
 			///////////////////////////////////
-		*/
 		return nil, err
 	}
-	/*
 		////////////probe//////////////////
 		msgBlock.SubType = "verify.pass"
 		log.Report(&msgBlock)
 		///////////////////////////////////
-	*/
 	return newPool, nil
 }

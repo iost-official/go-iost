@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/consensus"
 	"github.com/iost-official/prototype/consensus/pob2"
 	"github.com/iost-official/prototype/core/block"
@@ -31,6 +32,7 @@ func newHttpServer() *HttpServer {
 }
 
 func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response, error) {
+	fmt.Println("publish")
 	var tx1 tx.Tx
 	if _tx == nil {
 		return &Response{Code: -1}, fmt.Errorf("argument cannot be nil pointer")
@@ -45,16 +47,14 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	if err != nil {
 		return &Response{Code: -1}, err
 	}
-	/*
-		////////////probe//////////////////
-		log.Report(&log.MsgTx{
-			SubType:"receive",
-			TxHash:tx1.Hash(),
-			Publisher:tx1.Publisher.Pubkey,
-			Nonce:tx1.Nonce,
-		})
-		///////////////////////////////////
-	*/
+	////////////probe//////////////////
+	log.Report(&log.MsgTx{
+		SubType:"receive",
+		TxHash:tx1.Hash(),
+		Publisher:tx1.Publisher.Pubkey,
+		Nonce:tx1.Nonce,
+	})
+	///////////////////////////////////
 	//broadcast the tx
 	router := network.Route
 	if router == nil {
