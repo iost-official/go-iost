@@ -46,10 +46,12 @@ def has_proc(pn):
 #1:proc exist
 #0:proc not exist
 def exist():
-	return has_proc("iserver")
+	if has_proc("iserver")==1:
+		return 0
+	return 1
 
 def start():
-	if has_proc("iserver")!=0:
+	if exist()==0:
 		return 1
 	wCommand("nohup iserver --config "+HOME+"/.iserver.yml >> test.log 2>&1 &")
 	return 0
@@ -70,7 +72,7 @@ def restart():
 
 def stop():
 	for i in range(0,3):
-		if(has_proc("iserver")!=0):
+		if exist()==0:
 			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|awk 'NR==1{print $1}'")
 			wCommand("kill TERM "+a)
 			time.sleep(1)
@@ -103,5 +105,5 @@ if __name__ == "__main__":
 	if com not in func.keys():
 		sys.exit(2)
 
-	print(func[com]())
+	print("FAIL" if func[com]()!=0 else "SUCCESS")
 	sys.exit(0)
