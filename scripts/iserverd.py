@@ -14,16 +14,44 @@ def wCommand(com):
 	stdoutdata, stderrdata = obj.communicate()
 	return stdoutdata
 
+#need to be updated
+#you can just check the ports owned by youself if you are not root
+#0:port is occupied
+#1:port isn't occupied
+def check_port(port):
+	ret=wCommand("netstat -tunlp|grep "+str(port))
+	ret=ret.split("\n")
+	cnt=0
+	for line in ret:
+		li=line.strip()
+		if li.endswith("iserver"):
+			cnt+=1
+			for status in li.split(" "):
+				if status.endswith("LISTEN"):
+					cnt+=1
+	return (0 if cnt==2 else 1)
+
+
 def has_proc(pn):
 	ret=wCommand("ps -e|grep "+pn+"|grep -v grep|grep -v iserverd.py")
 	lines=ret.split("\n")
 	for line in lines:
-		if line.endswith("iserver"):
-			return 1
+		if line.strip().endswith("iserver"):
+			if check_port(30301)+check_port(30303)==0:
+				return 1
+			else:
+				return 0
 	return 0
 
+#1:proc exist
+#0:proc not exist
+def exist():
+	if has_proc("iserver")==1:
+		return 0
+	return 1
+
 def start():
-	if has_proc("iserver")!=0:
+	if exist()==0:
 		return 1
 	wCommand("nohup iserver --config "+pwd+"/iserver/iserver.yml >> test.log 2>&1 &")
 	return 0
@@ -44,7 +72,7 @@ def restart():
 
 def stop():
 	for i in range(0,3):
-		if(has_proc("iserver")!=0):
+		if exist()==0:
 			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|awk 'NR==1{print $1}'")
 			wCommand("kill TERM "+a)
 			time.sleep(1)
@@ -58,6 +86,9 @@ def upgrade():
 		return 1
 	wCommand("cd "+pwd+" && git checkout testnet && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
+	#stop iserver now
+	if(stop()!=0):
+		return 1
 	#ret=wCommand("nohup redis-server &")
 	#delete dump.rdb
 	return start()
@@ -67,6 +98,7 @@ func={
 	"stop":stop,
 	"restart":restart,
 	"upgrade":upgrade,
+	"exist":exist,
 }
 if __name__ == "__main__":
 	if(len(sys.argv)!=2):
@@ -75,5 +107,5 @@ if __name__ == "__main__":
 	if com not in func.keys():
 		sys.exit(2)
 
-	print(func[com]())
+	print("FAIL" if func[com]()!=0 else "SUCCESS")
 	sys.exit(0)

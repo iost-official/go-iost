@@ -78,7 +78,6 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 }
 
 func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (*Transaction, error) {
-	fmt.Println("GetTransaction begin")
 	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
