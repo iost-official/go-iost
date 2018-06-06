@@ -56,7 +56,7 @@ def stop():
 def upgrade():
 	if(stop()!=0):
 		return 1
-	wCommand("cd "+pwd+" && git checkout develop && git pull")
+	wCommand("cd "+pwd+" && git checkout testnet && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
 	#ret=wCommand("nohup redis-server &")
 	#delete dump.rdb
