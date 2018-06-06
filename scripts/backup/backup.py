@@ -37,7 +37,7 @@ def backup_redis():
         res = "FAIL"
 
 if __name__ == "__main__":
-    os.mkdir(dst_path)
+    os.makedirs(dst_path)
     backup_db(block_db)
     backup_db(tx_db)
     backup_redis()
