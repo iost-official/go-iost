@@ -61,7 +61,8 @@ def Contract():
 #TODO 所有文件路径都应该是绝对地址，用函数封装一下
 def Compile():
 	#print "[iwallet compile]:",
-	wCommand(cur_path+"iwallet compile -n "+str(random.randint(0,sys.maxint))+" ./test/1to2.lua")
+	wCommand("rm -f "+cur_path+"test/1to2.sc")
+	wCommand(cur_path+"iwallet compile -n "+str(random.randint(0,sys.maxint))+" "+cur_path+"test/1to2.lua")
 	if has(cur_path+"test/1to2.sc"):
 		#print("ok")
 		return True 
@@ -70,7 +71,8 @@ def Compile():
 
 def Sign():
 	#print "[iwallet sign]:",
-	ret=wCommand(cur_path+"iwallet sign ./test/1to2.sc -k ~/.ssh/test_secp")
+	wCommand("rm -f "+cur_path+"test/1to2.sig")
+	ret=wCommand(cur_path+"iwallet sign "+cur_path+"test/1to2.sc -k ~/.ssh/test_secp")
 	if has(cur_path+"test/1to2.sig"):
 		#print("ok")
 		return True 
@@ -79,7 +81,7 @@ def Sign():
 
 def Publish():
 	#print "[iwallet publish]:",
-	ret=wCommand(cur_path+"iwallet publish ./test/1to2.sc ./test/1to2.sig -k ~/.ssh/test_secp")
+	ret=wCommand(cur_path+"iwallet publish "+cur_path+"test/1to2.sc "+cur_path+"test/1to2.sig -k ~/.ssh/test_secp")
 	if ret.startswith("ok"):
 		#check balance here
 		#print("ok")
