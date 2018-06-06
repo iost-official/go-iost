@@ -24,11 +24,6 @@ func main() {
 	if err != nil {
 		log.Fatal("redis err:\n", err)
 	}
-	err = iserver.Start()
-	if err != nil {
-		log.Fatal("iserver err:\n", err)
-	}
-
 	http.HandleFunc("/scripts", handleScripts)
 	fmt.Println(http.ListenAndServe("127.0.0.1:30310", nil))
 }
@@ -100,8 +95,31 @@ var gopath = env.Get("GOPATH", "")
 func makeScripts() {
 	scripts = make(map[string]script)
 	scripts["restart-iserver"] = script{
+		run: func(args string) []byte {
+			iserver := exec.Command(scriptPath+"iserverd.py", "restart")
+			err := iserver.Start()
+			if err != nil {
+				return []byte(err.Error())
+			}
+			return []byte("ok")
+		},
 		daemon: func(args string) error {
 			iserver := exec.Command(scriptPath+"iserverd.py", "restart")
+			err := iserver.Start()
+			return err
+		},
+	}
+	scripts["start-iserver"] = script{
+		run: func(args string) []byte {
+			iserver := exec.Command(scriptPath+"iserverd.py", "start")
+			err := iserver.Start()
+			if err != nil {
+				return []byte(err.Error())
+			}
+			return []byte("ok")
+		},
+		daemon: func(args string) error {
+			iserver := exec.Command(scriptPath+"iserverd.py", "start")
 			err := iserver.Start()
 			return err
 		},
@@ -133,5 +151,5 @@ func init() {
 	makeScripts()
 
 	redis = exec.Command("redis-server")
-	iserver = exec.Command(scriptPath+"iserverd.py", "start")
+	//iserver = exec.Command(scriptPath+"iserverd.py", "start")
 }

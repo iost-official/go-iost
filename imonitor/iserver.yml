@@ -1,7 +1,7 @@
 account:
-  id: 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT
-  pub-key: 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT
-  sec-key: BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9
+  id: s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB
+  pub-key: s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB
+  sec-key: Hkaw3rY7Y4St4SP3jgQgFXPGnQ8HzTnKHmffPB8JHPnH
 consensus:
   witness-list:
   - 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT
@@ -11,11 +11,11 @@ net:
   log-path: iostlog
   node-table-path: netpath
   node-id:
-  register-addr: 13.232.79.7:30304
+  register-addr: 127.0.0.1:30304
   listen-addr: 127.0.0.1
   target: base
-  port: 30301
-  rpc-port: :30303
+  port: 30307
+  rpc-port: :30308
 vm:
   max-block-gas:
 ldb:

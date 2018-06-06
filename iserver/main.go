@@ -18,6 +18,6 @@ import (
 	"github.com/iost-official/prototype/iserver/cmd"
 )
 
-func main() {
+func main() { // todo 现在的默认配置文件
 	cmd.Execute()
 }

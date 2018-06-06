@@ -1,7 +1,7 @@
 account:
-  id: oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XUn
-  pub-key: oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XUn
-  sec-key: FZvGnhHNHyjA6Lsjt4Hu2sxyPuMqqJfZkybpsCBEFGL1n
+  id: ByfQfTwFx5C4Y2Ee5QUecmevqGaodcBqKtPo9P4QYsWC
+  pub-key: ByfQfTwFx5C4Y2Ee5QUecmevqGaodcBqKtPo9P4QYsWC
+  sec-key: 22wTb2i8jJQMdLqP5sfjXdKcVu7jb4puakhFBcmGRh5k7
 consensus:
   witness-list:
   - 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT
