@@ -119,8 +119,22 @@ func (pool *TxPoolServer) loop() {
 	}
 }
 
-func (pool *TxPoolServer) initBlockTx(){
-	pool.chain.BlockConfirmChan()
+func (pool *TxPoolServer) initBlockTx() {
+	chain := pool.chain.BlockChain()
+	ntime := time.Now().Unix()
+
+	for i := chain.Length() - 1; i > 0; i-- {
+		block := chain.GetBlockByNumber(i)
+		if block == nil {
+			return
+		}
+
+		btime := consensus_common.Timestamp{Slot: block.Head.Time}.ToUnixSec()
+		if ntime - btime > pool.filterTime{
+			
+		}
+	}
+
 }
 
 func (pool *TxPoolServer) addListTx(tx *Tx) {
