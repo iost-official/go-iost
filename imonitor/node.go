@@ -10,8 +10,6 @@ import (
 
 	"log"
 
-	"bytes"
-
 	"github.com/astaxie/beego/config/env"
 )
 
@@ -26,16 +24,10 @@ func main() {
 	if err != nil {
 		log.Fatal("redis err:\n", err)
 	}
-	go func() {
-		for {
-			iserver := exec.Command("iserver")
-			var b bytes.Buffer
-			iserver.Stdout = &b
-			iserver.Stderr = &b
-			iserver.Start()
-			fmt.Println(b.String(), err.Error())
-		}
-	}()
+	err = iserver.Start()
+	if err != nil {
+		log.Fatal("iserver err:\n", err)
+	}
 
 	http.HandleFunc("/scripts", handleScripts)
 	fmt.Println(http.ListenAndServe("127.0.0.1:30310", nil))
@@ -43,62 +35,85 @@ func main() {
 
 func handleScripts(w http.ResponseWriter, r *http.Request) {
 	cmd := r.FormValue("cmd")
+	daemon := r.FormValue("daemon")
+	args := r.FormValue("args")
+
 	script, ok := scripts[cmd]
 	if !ok {
 		w.Write([]byte("cmd not found"))
+		return
 	}
-	rsp := script.run()
-	fmt.Println(string(rsp))
-
+	var rsp []byte
+	if daemon != "true" {
+		rsp = script.run(args)
+	} else {
+		err := script.daemon(args)
+		if err != nil {
+			rsp = []byte(err.Error())
+		}
+	}
 	w.Write(rsp)
 }
 
 var scripts map[string]script
 
 type script struct {
-	run func() []byte
+	run    func(args string) []byte
+	daemon func(args string) error
 }
 
 var redis, iserver *exec.Cmd
 
 func NewScript(sh string) script {
 	return script{
-		run: func() []byte {
-			fmt.Println("running", sh)
-			cmd := exec.Command(sh)
+		run: func(args string) []byte {
+			var cmd *exec.Cmd
+			if len(args) == 0 {
+				cmd = exec.Command(sh)
+			} else {
+				cmd = exec.Command(sh + " " + args)
+			}
 			rtn, err := cmd.CombinedOutput()
 			if err != nil {
-				return []byte(err.Error())
+				return append([]byte(err.Error()+"\n"), rtn...)
 			}
 			return rtn
+		},
+		daemon: func(args string) error {
+			var cmd *exec.Cmd
+			if len(args) == 0 {
+				cmd = exec.Command(sh)
+			} else {
+				cmd = exec.Command(sh + " " + args)
+			}
+			err := cmd.Start()
+			return err
 		},
 	}
 }
 
-var scriptPath = gopath + "/src/github.com/iost-official/prototype/"
+var scriptPath = gopath + "/src/github.com/iost-official/prototype/scripts/"
 var gopath = env.Get("GOPATH", "")
 
 func makeScripts() {
 	scripts = make(map[string]script)
 	scripts["restart-iserver"] = script{
-		run: func() []byte {
-			err := iserver.Process.Kill()
-			if err != nil {
-				return []byte(err.Error())
-			}
-			return []byte("ok")
+		daemon: func(args string) error {
+			iserver := exec.Command(scriptPath+"iserverd.py", "restart")
+			err := iserver.Start()
+			return err
 		},
 	}
 	scripts["reload"] = script{
-		run: func() []byte {
+		run: func(args string) []byte {
 			makeScripts()
 			return []byte("ok")
 		},
 	}
 
-	files, err := ioutil.ReadDir(scriptPath)
+	files, err := ioutil.ReadDir(scriptPath + "entries/")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	for _, file := range files {
 		if file.IsDir() {
@@ -106,7 +121,7 @@ func makeScripts() {
 		} else {
 			sp := file.Name()
 			if !strings.HasPrefix(sp, ".") && strings.HasSuffix(sp, ".sh") {
-				scripts[sp] = NewScript(scriptPath + sp)
+				scripts[sp] = NewScript(scriptPath + "entries/" + sp)
 			}
 		}
 	}
@@ -116,4 +131,5 @@ func init() {
 	makeScripts()
 
 	redis = exec.Command("redis-server")
+	iserver = exec.Command(scriptPath+"iserverd.py", "start")
 }
