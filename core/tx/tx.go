@@ -176,6 +176,17 @@ func (s TransactionsList) Len() int           { return len(s) }
 func (s TransactionsList) Less(i, j int) bool { return s[i].Contract.Info().Price < s[j].Contract.Info().Price }
 func (s TransactionsList) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
+func (s *TransactionsList) Push(x interface{}) {
+	*s = append(*s, x.(*Tx))
+}
+
+func (s *TransactionsList) Pop() interface{} {
+	old := *s
+	n := len(old)
+	x := old[n-1]
+	*s = old[0 : n-1]
+	return x
+}
 
 func DiffTxList(a, b TransactionsList) (keep TransactionsList) {
 	keep = make(TransactionsList, 0, len(a))

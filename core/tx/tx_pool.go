@@ -17,6 +17,7 @@ var (
 	filterTime         = 30
 )
 
+
 type TxPoolServer struct {
 	ChTx    chan message.Message // transactions of RPC and NET
 	chBlock chan message.Message // 上链的block数据
@@ -24,9 +25,11 @@ type TxPoolServer struct {
 	chain  consensus_common.BlockCache // blockCache
 	router network.Router
 
-	blockTx   map[string][]string // 缓存中block的交易
-	listTx    map[string]*Tx              // 所有的缓存交易
-	pendingTx map[string]*Tx              // 最长链上，去重的交易
+	blockTx   blockTx // 缓存中block的交易
+	listTx    listTx  // 所有的缓存交易
+	pendingTx listTx  // 最长链上，去重的交易
+
+	longestBlockHash blockHashList
 
 	filterTime int64 // 过滤交易的时间间隔
 	mu         sync.RWMutex
@@ -36,9 +39,9 @@ func NewTxPoolServer(chain consensus_common.BlockCache) (*TxPoolServer, error) {
 
 	p := &TxPoolServer{
 		chain:      chain,
-		blockTx:    make(map[string][]string),
-		listTx:     make(map[string]*Tx),
-		pendingTx:  make(map[string]*Tx),
+		blockTx:    make(blockTx),
+		listTx:     make(listTx),
+		pendingTx:  make(listTx),
 		filterTime: int64(filterTime),
 	}
 	p.router = network.Route
@@ -84,6 +87,8 @@ func (pool *TxPoolServer) loop() {
 			blk.Decode(bl.Body)
 
 			pool.addBlockTx(&blk)
+			// 根据最长链计算 pending tx
+			pool.chain.LongestChain()
 		}
 	}
 }
@@ -92,39 +97,85 @@ func (pool *TxPoolServer) addListTx(tx *Tx) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
-	if _, bool := pool.listTx[tx.HashString()]; !bool {
-		pool.listTx[tx.HashString()] = tx
+	if !pool.listTx.Exist(tx.HashString()) {
+		pool.listTx.Add(tx)
 	}
 
 }
+
+func (pool *TxPoolServer) getLongestChainBlockHash(chain block.Chain) blockHashList {
+
+	iter := chain.Iterator()
+	for {
+		block := iter.Next()
+		if block == nil {
+			break
+		}
+		log.Log.I("getLongestChainBlockHash , block Number: %v, witness: %v", block.Head.Number, block.Head.Witness)
+
+	}
+}
+
 
 // 保存一个block的所有交易数据
 func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
-	if _, bool := pool.blockTx[bl.HashString()]; bool {
-		return
+	if !pool.blockTx.Exist(bl.HashString()) {
+		pool.blockTx.Add(bl)
 	}
-
-	trHash := make([]string, 0)
-	for _, tr:=range bl.Content{
-		trHash = append(trHash, tr.HashString())
-	}
-
-	pool.blockTx[bl.HashString()] = trHash
-
 }
-
 
 type blockTx map[string][]string
 
-func (b *blockTx) Add(bl *block.Block){
+func (b blockTx) Add(bl *block.Block) {
+	trHash := make([]string, 0)
+	for _, tr := range bl.Content {
+		trHash = append(trHash, tr.HashString())
+	}
 
+	b[bl.HashString()] = trHash
 }
 
-func (b *blockTx) IsHas(hash string) bool{
+func (b blockTx) Exist(hash string) bool {
 	if _, bool := b[hash]; bool {
-		return
+		return true
 	}
+
+	return false
+}
+
+func (b blockTx) Get(hash string) []string {
+
+	return b[hash]
+}
+
+type listTx map[string]*Tx
+
+func (l listTx) Add(tx *Tx) {
+
+	l[tx.HashString()] = tx
+}
+
+func (l listTx) Exist(hash string) bool {
+	if _, bool := l[hash]; bool {
+		return true
+	}
+
+	return false
+}
+
+func (l listTx) Get(hash string) *Tx {
+
+	return l[hash]
+}
+
+type blockHashList struct{
+	blockList []string
+}
+
+func (b *blockHashList) Add(hash string) {
+
+	b.blockList = append(b.blockList, hash)
 }
