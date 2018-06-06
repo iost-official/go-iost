@@ -30,6 +30,7 @@ def start():
 
 #0:success
 #1:fail
+#todo 判断iserver是否存在，用PID
 def restart():
 	for i in range(0,3):
 		if(start()!=0):

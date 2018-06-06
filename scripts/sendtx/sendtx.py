@@ -57,7 +57,8 @@ def Contract():
 	f2.write(lines[id0][:-1])
 	f2.close()
 	return True
-
+#TODO iwallet 应该使用最新版本编译的
+#TODO 所有文件路径都应该是绝对地址，用函数封装一下
 def Compile():
 	#print "[iwallet compile]:",
 	wCommand(cur_path+"iwallet compile -n "+str(random.randint(0,sys.maxint))+" ./test/1to2.lua")
