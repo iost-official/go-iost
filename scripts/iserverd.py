@@ -14,6 +14,7 @@ def wCommand(com):
 	stdoutdata, stderrdata = obj.communicate()
 	return stdoutdata
 
+#need to be updated
 def has_proc(pn):
 	ret=wCommand("ps -e|grep "+pn+"|grep -v grep|grep -v iserverd.py")
 	lines=ret.split("\n")
@@ -54,10 +55,11 @@ def stop():
 
 
 def upgrade():
-	if(stop()!=0):
-		return 1
 	wCommand("cd "+pwd+" && git checkout develop && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
+	#stop iserver now
+	if(stop()!=0):
+		return 1
 	#ret=wCommand("nohup redis-server &")
 	#delete dump.rdb
 	return start()
