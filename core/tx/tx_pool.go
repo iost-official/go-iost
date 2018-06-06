@@ -119,6 +119,10 @@ func (pool *TxPoolServer) loop() {
 	}
 }
 
+func (pool *TxPoolServer) initBlockTx(){
+	pool.chain.BlockConfirmChan()
+}
+
 func (pool *TxPoolServer) addListTx(tx *Tx) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
