@@ -20,12 +20,12 @@ def has_proc(pn):
 	for line in lines:
 		if line.endswith("iserver"):
 			return 1
-	return 0 
+	return 0
 
 def start():
 	if has_proc("iserver")!=0:
 		return 1
-	wCommand("cd "+pwd+"/iserver;nohup ./iserver >> test.log 2>&1 &")
+	wCommand("nohup iserver --config "+HOME+"/.iserver.yml >> test.log 2>&1 &")
 	return 0
 
 #0:success
@@ -56,7 +56,7 @@ def upgrade():
 	if(stop()!=0):
 		return 1
 	wCommand("cd "+pwd+" && git checkout develop && git pull")
-	wCommand("cd "+pwd+"/iserver && go build")
+	wCommand("cd "+pwd+"/iserver && go install")
 	#ret=wCommand("nohup redis-server &")
 	#delete dump.rdb
 	return start()
@@ -73,6 +73,6 @@ if __name__ == "__main__":
 	com=sys.argv[1]
 	if com not in func.keys():
 		sys.exit(2)
-	
+
 	print(func[com]())
 	sys.exit(0)
