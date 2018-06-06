@@ -106,11 +106,13 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Put = api{
 		name: "Put",
 		function: func(L *lua.LState) int {
+
 			k := L.ToString(1)
 			key := state.Key(l.Contract.Info().Prefix + k)
 			v := L.Get(2)
 			host.Put(l.cachePool, key, Lua2Core(v))
 			L.Push(lua.LTrue)
+			L.PCount += 1000
 			return 1
 		},
 	}
@@ -136,6 +138,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 				return 1
 			}
 			L.Push(Core2Lua(v))
+			L.PCount += 1000
 			return 1
 		},
 	}
@@ -165,6 +168,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Call = api{
 		name: "Call",
 		function: func(L *lua.LState) int {
+			L.PCount += 1000
 			blockName := L.ToString(1)
 			methodName := L.ToString(2)
 			method, err := l.monitor.GetMethod(blockName, methodName, l.Contract.Info().Publisher)

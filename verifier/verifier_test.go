@@ -80,7 +80,7 @@ func TestCacheVerifier(t *testing.T) {
 	Put("hello", a)
 	return "success"
 end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
+			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 			cv := NewCacheVerifier()
 			_, err := cv.VerifyContract(&lc, pool)
@@ -90,7 +90,7 @@ end`
 			So(string(k2), ShouldEqual, "iost")
 			So(string(f2), ShouldEqual, "ahaha")
 			vv := v2.(*state.VFloat)
-			So(vv.ToFloat64(), ShouldEqual, float64(10000-10))
+			So(vv.ToFloat64(), ShouldEqual, float64(10000-2010))
 		})
 		Convey("Verify free contract", func() {
 			mockCtl := gomock.NewController(t)
@@ -124,7 +124,7 @@ end`
 	Put("hello", a)
 	return "success"
 end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 0, Publisher: vm.IOSTAccount("ahaha")}, code, main)
+			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 0, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
 			cv := NewCacheVerifier()
 			_, err := cv.VerifyContract(&lc, pool)
@@ -203,7 +203,7 @@ func TestCacheVerifier_TransferOnly(t *testing.T) {
 		code := `function main()
 	Transfer("a", "b", 50)
 end`
-		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 
 		dbx, err := db.DatabaseFactor("redis")
 		if err != nil {
@@ -236,7 +236,7 @@ func BenchmarkCacheVerifier_TransferOnly(b *testing.B) {
 	Transfer("a", "b", 50)
     return "success"
 end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 
 	dbx, err := db.DatabaseFactor("redis")
 	if err != nil {
@@ -273,7 +273,7 @@ func BenchmarkCacheVerifierWithCache_TransferOnly(b *testing.B) {
 	Transfer("a", "b", 50)
     return "success"
 end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 
 	dbx, err := db.DatabaseFactor("redis")
 	if err != nil {

@@ -125,6 +125,7 @@ tx/
 playground/playground
 playground/test
 iserver/netpath/
+iserver/iserver
 rpc/js/node_modules/
 rpc/js/package-lock.json
 core/block/txDB/
@@ -141,6 +142,7 @@ iserver/txDB/
 
 iwallet/sc/
 iwallet/testTX.py
+imonitor/iserver.yml
 netpath/
 netpath3/
 rpc/txDB/
