@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 
+	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
@@ -54,10 +55,25 @@ func StdTxsVerifier(txs []*tx.Tx, pool state.Pool) (state.Pool, int, error) {
 	for i, txx := range txs {
 		var err error
 		pool2, err = ver.VerifyContract(txx.Contract, pool2)
+		////////////probe//////////////////
+		var ret string = "pass"
+		if err != nil {
+			ret = "fail"
+		}
+		log.Report(&log.MsgTx{
+			SubType:   "verify." + ret,
+			TxHash:    txx.Hash(),
+			Publisher: txx.Publisher.Pubkey,
+			Nonce:     txx.Nonce,
+		})
+		///////////////////////////////////
+
 		if err != nil {
 			return pool2, i, err
 		}
+
 	}
+
 	return pool2, len(txs), nil
 }
 

@@ -228,7 +228,6 @@ func (sync *SyncImpl) requestBlockLoop() {
 				ReqType: int32(ReqNewBlock), //todo 后补类型
 				Body:    block.Encode(),
 			}
-			/*
 				////////////probe//////////////////
 				log.Report(&log.MsgBlock{
 					SubType:       "send",
@@ -236,7 +235,6 @@ func (sync *SyncImpl) requestBlockLoop() {
 					BlockNum:      block.Head.Number,
 				})
 				///////////////////////////////////
-			*/
 			sync.router.Send(resMsg)
 		case <-sync.exitSignal:
 			return
