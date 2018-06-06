@@ -49,12 +49,28 @@ func NewTxPoolServer(chain consensus_common.BlockCache) (*TxPoolServer, error) {
 		return nil, fmt.Errorf("failed to network.Route is nil")
 	}
 
+	//	Tx chan init
+	var err error
+	p.ChTx, err = p.router.FilteredChan(network.Filter{
+		AcceptType: []network.ReqType{
+			network.ReqPublishTx,
+		}})
+	if err != nil {
+		return nil, err
+	}
+
 	return p, nil
 }
 
 func (pool *TxPoolServer) Start() {
 	log.Log.I("TxPoolServer Start")
 	go pool.loop()
+}
+
+func (pool *TxPoolServer) Stop() {
+	log.Log.I("TxPoolServer Stop")
+	close(pool.ChTx)
+	close(pool.chBlock)
 }
 
 func (pool *TxPoolServer) loop() {
@@ -84,7 +100,7 @@ func (pool *TxPoolServer) loop() {
 				pool.addListTx(&tx)
 			}
 
-		case bl, ok := <-pool.chBlock:
+		case bl, ok := <-pool.chBlock: // 可以上链的block
 			if !ok {
 				return
 			}
@@ -96,6 +112,8 @@ func (pool *TxPoolServer) loop() {
 			// 根据最长链计算 pending tx
 			bhl := pool.getLongestChainBlockHash(pool.chain.LongestChain())
 			pool.updateLongestChainBlockHash(bhl)
+			// todo 可以在外部要集合的时候在调用
+			pool.updatePending()
 
 		}
 	}
@@ -141,17 +159,23 @@ func (pool *TxPoolServer) updatePending() {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
+	pool.pendingTx = nil
 	pool.delTimeOutTx()
 
+	for hash, tr := range pool.listTx {
+		if !pool.txExistTxPool(hash) {
+			pool.pendingTx.Add(tr)
+		}
+	}
 }
 
-func (pool *TxPoolServer) txExistTxPool(tx *Tx) bool {
+func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
 	for hash := range pool.longestBlockHash.GetList() {
 		txList := pool.blockTx.Get(string(hash))
-		if _, bool := txList[tx.HashString()]; bool{
+		if _, bool := txList[string(hash)]; bool {
 			return true
 		}
 	}
