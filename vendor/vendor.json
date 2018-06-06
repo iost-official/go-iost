@@ -45,6 +45,18 @@
 			"revisionTime": "2018-04-04T19:08:38Z"
 		},
 		{
+			"checksumSHA1": "RL5aSp7jD3wWOrkv2cxqVoRBRRI=",
+			"path": "github.com/astaxie/beego/config/env",
+			"revision": "f16688817aa428d10361394015b40d096b680542",
+			"revisionTime": "2017-12-18T11:18:59Z"
+		},
+		{
+			"checksumSHA1": "W7HBzu7HlF18vCfNPgax7xvHXB0=",
+			"path": "github.com/astaxie/beego/utils",
+			"revision": "f16688817aa428d10361394015b40d096b680542",
+			"revisionTime": "2017-12-18T11:18:59Z"
+		},
+		{
 			"checksumSHA1": "/RRYXxtvwVq7FC9iVHrUoq8T6A0=",
 			"path": "github.com/bouk/monkey",
 			"revision": "5df1f207ff77e025801505ae4d903133a0b4353f",

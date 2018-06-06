@@ -44,16 +44,15 @@ RUN mkdir -p $GOPATH/src/github.com/iost-official && cd $GOPATH/src/github.com/i
 git clone https://445789ea93ff81d814c78fccae8e25000f96e539@github.com/iost-official/prototype && \
 cd prototype && git checkout testnet && go get github.com/kardianos/govendor && govendor sync -v && \
 pip install -r scripts/backup/requirements.txt && \
-cd iserver && go build \
-cd $GOPATH/src/github.com/iost-official/scripts && pip install -r backup/requirements.txt
+cd iserver && go install && cd ../imonitor && go install && cd .. && mkdir workdir
 
 EXPOSE 30302
 EXPOSE 30303
 EXPOSE 30310
 
-WORKDIR $GOPATH/src/github.com/iost-official/prototype/iserver
+WORKDIR $GOPATH/src/github.com/iost-official/prototype/workdir
 
 ## docker deploy
 ## docker build -t iost .
-## docker run --name iost_container -p 30302:30302 -p 30303:30303 -p 30310:30310 -d iost ./start.sh
+## docker run --name iost_container -p 30302:30302 -p 30303:30303 -p 30310:30310 -d iost imonitor
 
