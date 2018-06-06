@@ -17,7 +17,6 @@ var (
 	filterTime         = 30
 )
 
-
 type TxPoolServer struct {
 	ChTx    chan message.Message // transactions of RPC and NET
 	chBlock chan message.Message // 上链的block数据
@@ -38,11 +37,12 @@ type TxPoolServer struct {
 func NewTxPoolServer(chain consensus_common.BlockCache) (*TxPoolServer, error) {
 
 	p := &TxPoolServer{
-		chain:      chain,
-		blockTx:    make(blockTx),
-		listTx:     make(listTx),
-		pendingTx:  make(listTx),
-		filterTime: int64(filterTime),
+		chain:            chain,
+		blockTx:          make(blockTx),
+		listTx:           make(listTx),
+		pendingTx:        make(listTx),
+		longestBlockHash: blockHashList{},
+		filterTime:       int64(filterTime),
 	}
 	p.router = network.Route
 	if p.router == nil {
@@ -74,6 +74,12 @@ func (pool *TxPoolServer) loop() {
 
 			var tx Tx
 			tx.Decode(tr.Body)
+
+			// 超时交易丢弃
+			if pool.txTimeOut(&tx) {
+				continue
+			}
+
 			if consensus_common.VerifyTxSig(tx) {
 				pool.addListTx(&tx)
 			}
@@ -88,7 +94,9 @@ func (pool *TxPoolServer) loop() {
 
 			pool.addBlockTx(&blk)
 			// 根据最长链计算 pending tx
-			pool.chain.LongestChain()
+			bhl := pool.getLongestChainBlockHash(pool.chain.LongestChain())
+			pool.updateLongestChainBlockHash(bhl)
+
 		}
 	}
 }
@@ -103,8 +111,57 @@ func (pool *TxPoolServer) addListTx(tx *Tx) {
 
 }
 
-func (pool *TxPoolServer) getLongestChainBlockHash(chain block.Chain) blockHashList {
+func (pool *TxPoolServer) txTimeOut(tx *Tx) bool {
 
+	nTime := time.Now().Unix()
+	txTime := tx.Time / 1e9
+
+	if nTime-txTime > pool.filterTime {
+		return true
+	}
+	return false
+}
+
+// 删除超时的交易
+func (pool *TxPoolServer) delTimeOutTx() {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	nTime := time.Now().Unix()
+
+	for hash, tx := range pool.listTx {
+		txTime := tx.Time / 1e9
+		if nTime-txTime > pool.filterTime {
+			delete(pool.listTx, hash)
+		}
+	}
+}
+
+func (pool *TxPoolServer) updatePending() {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	pool.delTimeOutTx()
+
+}
+
+func (pool *TxPoolServer) txExistTxPool(tx *Tx) bool {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	for hash := range pool.longestBlockHash.GetList() {
+		txList := pool.blockTx.Get(string(hash))
+		if _, bool := txList[tx.HashString()]; bool{
+			return true
+		}
+	}
+
+	return false
+}
+
+func (pool *TxPoolServer) getLongestChainBlockHash(chain block.Chain) *blockHashList {
+
+	bhl := &blockHashList{}
 	iter := chain.Iterator()
 	for {
 		block := iter.Next()
@@ -112,10 +169,23 @@ func (pool *TxPoolServer) getLongestChainBlockHash(chain block.Chain) blockHashL
 			break
 		}
 		log.Log.I("getLongestChainBlockHash , block Number: %v, witness: %v", block.Head.Number, block.Head.Witness)
-
+		bhl.Add(block.HashString())
 	}
+	return bhl
 }
 
+func (pool *TxPoolServer) updateLongestChainBlockHash(bhl *blockHashList) {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	// todo 增量更新判断，不用重新生成pending
+	pool.longestBlockHash.Clear()
+
+	for _, hash := range bhl.GetList() {
+		pool.longestBlockHash.Add(hash)
+	}
+
+}
 
 // 保存一个block的所有交易数据
 func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
@@ -127,12 +197,12 @@ func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 	}
 }
 
-type blockTx map[string][]string
+type blockTx map[string]map[string]struct{}
 
 func (b blockTx) Add(bl *block.Block) {
-	trHash := make([]string, 0)
+	trHash := make(map[string]struct{}, 0)
 	for _, tr := range bl.Content {
-		trHash = append(trHash, tr.HashString())
+		trHash[tr.HashString()] = struct{}{}
 	}
 
 	b[bl.HashString()] = trHash
@@ -146,7 +216,7 @@ func (b blockTx) Exist(hash string) bool {
 	return false
 }
 
-func (b blockTx) Get(hash string) []string {
+func (b blockTx) Get(hash string) map[string]struct{} {
 
 	return b[hash]
 }
@@ -171,11 +241,21 @@ func (l listTx) Get(hash string) *Tx {
 	return l[hash]
 }
 
-type blockHashList struct{
+type blockHashList struct {
 	blockList []string
 }
 
 func (b *blockHashList) Add(hash string) {
 
 	b.blockList = append(b.blockList, hash)
+}
+
+func (b *blockHashList) Clear() {
+
+	b.blockList = []string{}
+}
+
+func (b *blockHashList) GetList() []string {
+
+	return b.blockList
 }
