@@ -9,6 +9,7 @@ import random
 HOME=os.environ['HOME']
 GOPATH=os.environ['GOPATH']
 cur_path=GOPATH+"/src/github.com/iost-official/prototype/scripts/sendtx/"
+project_path=GOPATH+"/src/github.com/iost-official/prototype/"
 def wCommand(com):
 	obj = subprocess.Popen([com], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
 	obj.wait()
@@ -19,6 +20,10 @@ def wCommand(com):
 def has(fn):
 	return os.path.exists(fn)
 
+def Buildwallet():
+	ret=wCommand("cd "+project_path+"iwallet;go build")
+	ret=wCommand("cp "+project_path+"iwallet/iwallet "+cur_path)
+	return True
 def Contract():
 	#open acc_list.txt
 	#pubkey
@@ -91,7 +96,7 @@ def Publish():
 
 if __name__ == "__main__":
 	ans="SUCCESS"
-	func_list=[Contract,Compile,Sign,Publish,]
+	func_list=[Buildwallet,Contract,Compile,Sign,Publish,]
 	for func in func_list:
 		if func()==False:
 			ans="FAIL"
