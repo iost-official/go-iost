@@ -3,13 +3,13 @@ package block
 import (
 	"encoding/binary"
 	"fmt"
+	"strconv"
+	"sync"
+
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
-	"strconv"
-	"sync"
+	"github.com/iost-official/prototype/log"
 	//"github.com/iost-official/prototype/log"
-	"strconv"
-	"sync"
 )
 
 var (
