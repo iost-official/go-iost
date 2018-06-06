@@ -38,7 +38,7 @@ func NewTxPoolServer(chain consensus_common.BlockCache) (*TxPoolServer, error) {
 
 	p := &TxPoolServer{
 		chain:            chain,
-		blockTx:          make(blockTx),
+		blockTx:          blockTx{},
 		listTx:           make(listTx),
 		pendingTx:        make(listTx),
 		longestBlockHash: blockHashList{},
@@ -74,6 +74,8 @@ func (pool *TxPoolServer) Stop() {
 }
 
 func (pool *TxPoolServer) loop() {
+
+	pool.initBlockTx()
 
 	clearTx := time.NewTicker(clearTxInterval)
 	defer clearTx.Stop()
@@ -119,6 +121,7 @@ func (pool *TxPoolServer) loop() {
 	}
 }
 
+// 初始化blocktx,缓存验证一笔交易，是否已经存在
 func (pool *TxPoolServer) initBlockTx() {
 	chain := pool.chain.BlockChain()
 	ntime := time.Now().Unix()
@@ -129,12 +132,16 @@ func (pool *TxPoolServer) initBlockTx() {
 			return
 		}
 
-		btime := consensus_common.Timestamp{Slot: block.Head.Time}.ToUnixSec()
-		if ntime - btime > pool.filterTime{
-			
+		btime := pool.slotToSec(block.Head.Time)
+		if ntime - btime >= pool.filterTime{
+			pool.blockTx.Add(block)
 		}
 	}
 
+}
+
+func (pool *TxPoolServer) slotToSec(t int64) int64{
+	return consensus_common.Timestamp{Slot: t}.ToUnixSec()
 }
 
 func (pool *TxPoolServer) addListTx(tx *Tx) {
@@ -173,6 +180,29 @@ func (pool *TxPoolServer) delTimeOutTx() {
 	}
 }
 
+// 删除超时的交易
+// 小于区块确定时间 && 小于当前减去过滤时间
+func (pool *TxPoolServer) delTimeOutBlockTx() {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	nTime := time.Now().Unix()
+	chain := pool.chain.BlockChain()
+	blk:=chain.Top()
+
+	var confirmTime int64
+	if blk != nil{
+		confirmTime = pool.slotToSec(blk.Head.Time)
+	}
+
+	for hash, t := range pool.blockTx.blkTime {
+
+		if t < confirmTime && nTime - pool.filterTime > t {
+
+		}
+	}
+}
+
 func (pool *TxPoolServer) updatePending() {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
@@ -192,7 +222,7 @@ func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 	defer pool.mu.Unlock()
 
 	for hash := range pool.longestBlockHash.GetList() {
-		txList := pool.blockTx.Get(string(hash))
+		txList := pool.blockTx.Tx(string(hash))
 		if _, bool := txList[string(hash)]; bool {
 			return true
 		}
@@ -239,28 +269,43 @@ func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 	}
 }
 
-type blockTx map[string]map[string]struct{}
+type blockTx struct {
+	blkTx map[string]map[string]struct{}
+	blkTime map[string]int64
+}
 
-func (b blockTx) Add(bl *block.Block) {
+func (b *blockTx) Add(bl *block.Block) {
 	trHash := make(map[string]struct{}, 0)
 	for _, tr := range bl.Content {
 		trHash[tr.HashString()] = struct{}{}
 	}
 
-	b[bl.HashString()] = trHash
+	b.blkTx[bl.HashString()] = trHash
+	b.blkTime[bl.HashString()] = consensus_common.Timestamp{Slot: bl.Head.Time}.ToUnixSec()
 }
 
-func (b blockTx) Exist(hash string) bool {
-	if _, bool := b[hash]; bool {
+func (b *blockTx) Exist(hash string) bool {
+	if _, bool := b.blkTx[hash]; bool {
 		return true
 	}
 
 	return false
 }
 
-func (b blockTx) Get(hash string) map[string]struct{} {
+func (b blockTx) Tx(hash string) map[string]struct{} {
 
-	return b[hash]
+	return b.blkTx[hash]
+}
+
+func (b blockTx) Time(hash string) int64 {
+
+	return b.blkTime[hash]
+}
+
+func (b blockTx) Del(hash string) {
+
+	delete(b.blkTime, hash)
+	delete(b.blkTx, hash)
 }
 
 type listTx map[string]*Tx
