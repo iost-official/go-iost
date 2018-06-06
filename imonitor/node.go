@@ -50,6 +50,8 @@ func handleScripts(w http.ResponseWriter, r *http.Request) {
 		err := script.daemon(args)
 		if err != nil {
 			rsp = []byte(err.Error())
+		} else {
+			rsp = []byte("ok")
 		}
 	}
 	w.Write(rsp)
@@ -71,7 +73,7 @@ func NewScript(sh string) script {
 			if len(args) == 0 {
 				cmd = exec.Command(sh)
 			} else {
-				cmd = exec.Command(sh + " " + args)
+				cmd = exec.Command(sh, args)
 			}
 			rtn, err := cmd.CombinedOutput()
 			if err != nil {
@@ -84,7 +86,7 @@ func NewScript(sh string) script {
 			if len(args) == 0 {
 				cmd = exec.Command(sh)
 			} else {
-				cmd = exec.Command(sh + " " + args)
+				cmd = exec.Command(sh, args)
 			}
 			err := cmd.Start()
 			return err
