@@ -40,6 +40,7 @@ type PoB struct {
 	exitSignal chan struct{}
 	ChTx       chan message.Message
 	chBlock    chan message.Message
+	chConfirmBlock 	chan block.Block
 
 	log *log.Logger
 }
@@ -47,9 +48,12 @@ type PoB struct {
 // NewPoB: 新建一个PoB实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
-	TxPerBlk = 3000
-	p := PoB{}
-	p.account = acc
+	TxPerBlk = 200
+	p := PoB{
+		account:acc,
+		chConfirmBlock: make(chan block.Block, 100),
+	}
+
 	p.BlockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
 	if bc.GetBlockByNumber(0) == nil {
 
@@ -123,6 +127,10 @@ func (p *PoB) Stop() {
 	close(p.ChTx)
 	close(p.chBlock)
 	close(p.exitSignal)
+}
+
+func (p *PoB) ChConfirmBlock() chan block.Block  {
+	return p.chConfirmBlock
 }
 
 // BlockChain 返回已确认的block chain

@@ -19,8 +19,9 @@ var (
 )
 
 type TxPoolServer struct {
-	chTx    chan message.Message // transactions of RPC and NET
-	chBlock chan message.Message // 上链的block数据
+	chTx           chan message.Message // transactions of RPC and NET
+	chBlock        chan message.Message // 上链的block数据
+	chConfirmBlock chan block.Block
 
 	chain  consensus_common.BlockCache // blockCache
 	router network.Router
@@ -35,10 +36,11 @@ type TxPoolServer struct {
 	mu         sync.RWMutex
 }
 
-func NewTxPoolServer(chain consensus_common.BlockCache) (*TxPoolServer, error) {
+func NewTxPoolServer(chain consensus_common.BlockCache, chConfirmBlock chan block.Block) (*TxPoolServer, error) {
 
 	p := &TxPoolServer{
 		chain:            chain,
+		chConfirmBlock:   chConfirmBlock,
 		blockTx:          blockTx{},
 		listTx:           make(listTx),
 		pendingTx:        make(listTx),
@@ -70,7 +72,7 @@ func (pool *TxPoolServer) Start() {
 
 func (pool *TxPoolServer) Stop() {
 	log.Log.I("TxPoolServer Stop")
-	close(pool.ChTx)
+	close(pool.chTx)
 	close(pool.chBlock)
 }
 
@@ -86,7 +88,7 @@ func (pool *TxPoolServer) loop() {
 
 	for {
 		select {
-		case tr, ok := <-pool.ChTx:
+		case tr, ok := <-pool.chTx:
 			if !ok {
 				return
 			}
