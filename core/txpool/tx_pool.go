@@ -11,6 +11,7 @@ import (
 	"time"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/core/blockcache"
+	"github.com/iost-official/prototype/consensus/common"
 )
 
 var (
@@ -115,8 +116,8 @@ func (pool *TxPoolServer) loop() {
 
 			pool.addBlockTx(&blk)
 			// 根据最长链计算 pending tx
-			bhl := pool.getLongestChainBlockHash(pool.chain.LongestChain())
-			pool.updateLongestChainBlockHash(bhl)
+			bhl := pool.blockHash(pool.chain.LongestChain())
+			pool.updateBlockHash(bhl)
 			// todo 可以在外部要集合的时候在调用
 			pool.updatePending()
 		case <-clearBlock.C:
@@ -150,6 +151,18 @@ func (pool *TxPoolServer) ExistTransaction(hash string) bool {
 	return pool.listTx.Exist(hash)
 }
 
+func (pool *TxPoolServer) TransactionNum() int {
+	return len(pool.listTx)
+}
+
+func (pool *TxPoolServer) PendingTransactionNum() int {
+	return len(pool.pendingTx)
+}
+
+func (pool *TxPoolServer) BlockTxNum() int {
+	return len(pool.blockTx.blkTx)
+}
+
 // 初始化blocktx,缓存验证一笔交易，是否已经存在
 func (pool *TxPoolServer) initBlockTx() {
 	chain := pool.chain.BlockChain()
@@ -170,7 +183,8 @@ func (pool *TxPoolServer) initBlockTx() {
 }
 
 func (pool *TxPoolServer) slotToSec(t int64) int64 {
-	return 0//consensus_common.Timestamp{Slot: t}.ToUnixSec()
+	slot := consensus_common.Timestamp{Slot: t}
+	return slot.ToUnixSec()
 }
 
 func (pool *TxPoolServer) addListTx(tx *tx.Tx) {
@@ -260,7 +274,7 @@ func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 	return false
 }
 
-func (pool *TxPoolServer) getLongestChainBlockHash(chain block.Chain) *blockHashList {
+func (pool *TxPoolServer) blockHash(chain block.Chain) *blockHashList {
 
 	bhl := &blockHashList{}
 	iter := chain.Iterator()
@@ -275,7 +289,7 @@ func (pool *TxPoolServer) getLongestChainBlockHash(chain block.Chain) *blockHash
 	return bhl
 }
 
-func (pool *TxPoolServer) updateLongestChainBlockHash(bhl *blockHashList) {
+func (pool *TxPoolServer) updateBlockHash(bhl *blockHashList) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -310,7 +324,9 @@ func (b *blockTx) Add(bl *block.Block) {
 	}
 
 	b.blkTx[bl.HashString()] = trHash
-	b.blkTime[bl.HashString()] = 0//consensus_common.Timestamp{Slot: bl.Head.Time}.ToUnixSec()
+	slot :=consensus_common.Timestamp{Slot: bl.Head.Time}
+	b.blkTime[bl.HashString()] = slot.ToUnixSec()
+
 }
 
 func (b *blockTx) Exist(hash string) bool {
