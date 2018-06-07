@@ -1,14 +1,15 @@
 package tx
 
 import (
-	"github.com/iost-official/prototype/core/message"
-	"sync"
-	"github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/network"
 	"fmt"
-	"github.com/iost-official/prototype/log"
-	"time"
+	"github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/log"
+	"github.com/iost-official/prototype/network"
+	"sort"
+	"sync"
+	"time"
 )
 
 var (
@@ -116,9 +117,35 @@ func (pool *TxPoolServer) loop() {
 			pool.updateLongestChainBlockHash(bhl)
 			// todo 可以在外部要集合的时候在调用
 			pool.updatePending()
-
+		case <-clearBlock.C:
+			pool.delTimeOutBlockTx()
+		case <-clearTx.C:
+			pool.delTimeOutTx()
 		}
 	}
+}
+
+func (pool *TxPoolServer) PendingTransactions() TransactionsList {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	var pendingList TransactionsList
+	for _, tx := range pool.pendingTx {
+		pendingList = append(pendingList, tx)
+	}
+
+	// 排序
+	sort.Sort(pendingList)
+
+	return pendingList
+}
+
+func (pool *TxPoolServer) Transaction(hash string) *Tx {
+	return pool.listTx.Get(hash)
+}
+
+func (pool *TxPoolServer) ExistTransaction(hash string) bool {
+	return pool.listTx.Exist(hash)
 }
 
 // 初始化blocktx,缓存验证一笔交易，是否已经存在
@@ -133,14 +160,14 @@ func (pool *TxPoolServer) initBlockTx() {
 		}
 
 		btime := pool.slotToSec(block.Head.Time)
-		if ntime - btime >= pool.filterTime{
+		if ntime-btime >= pool.filterTime {
 			pool.blockTx.Add(block)
 		}
 	}
 
 }
 
-func (pool *TxPoolServer) slotToSec(t int64) int64{
+func (pool *TxPoolServer) slotToSec(t int64) int64 {
 	return consensus_common.Timestamp{Slot: t}.ToUnixSec()
 }
 
@@ -188,17 +215,17 @@ func (pool *TxPoolServer) delTimeOutBlockTx() {
 
 	nTime := time.Now().Unix()
 	chain := pool.chain.BlockChain()
-	blk:=chain.Top()
+	blk := chain.Top()
 
 	var confirmTime int64
-	if blk != nil{
+	if blk != nil {
 		confirmTime = pool.slotToSec(blk.Head.Time)
 	}
 
 	for hash, t := range pool.blockTx.blkTime {
 
-		if t < confirmTime && nTime - pool.filterTime > t {
-
+		if t < confirmTime && nTime-pool.filterTime > t {
+			pool.blockTx.Del(hash)
 		}
 	}
 }
@@ -270,7 +297,7 @@ func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 }
 
 type blockTx struct {
-	blkTx map[string]map[string]struct{}
+	blkTx   map[string]map[string]struct{}
 	blkTime map[string]int64
 }
 
