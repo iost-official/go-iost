@@ -28,6 +28,7 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
+	"github.com/iost-official/prototype/metrics"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/rpc"
 	"github.com/mitchellh/go-homedir"
@@ -101,6 +102,7 @@ var rootCmd = &cobra.Command{
 		rpcPort := viper.GetString("net.rpc-port")
 		target := viper.GetString("net.target") //optional
 		port := viper.GetInt64("net.port")
+		metricsPort := viper.GetString("net.metrics-port")
 
 		log.Log.I("net.log-path:  %v", logPath)
 		log.Log.I("net.node-table-path:  %v", nodeTablePath)
@@ -110,6 +112,7 @@ var rootCmd = &cobra.Command{
 		log.Log.I("net.target:  %v", target)
 		log.Log.I("net.port:  %v", port)
 		log.Log.I("net.rpcPort:  %v", rpcPort)
+		log.Log.I("net.metricsPort:  %v", metricsPort)
 
 		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 || rpcPort == "" {
 			log.Log.E("Network config initialization failed, stop the program!")
@@ -186,6 +189,10 @@ var rootCmd = &cobra.Command{
 			log.Log.E("RPC initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
+
+		// Start Metrics Server
+		metrics.NewServer(metricsPort)
+
 		////////////probe//////////////////
 		log.Report(&log.MsgNode{
 			SubType: "online",
@@ -229,7 +236,7 @@ func exitLoop() {
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Log.E("Execute err: %v",err)
+		log.Log.E("Execute err: %v", err)
 		os.Exit(1)
 	}
 }
