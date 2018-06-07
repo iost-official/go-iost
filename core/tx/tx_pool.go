@@ -19,7 +19,7 @@ var (
 )
 
 type TxPoolServer struct {
-	ChTx    chan message.Message // transactions of RPC and NET
+	chTx    chan message.Message // transactions of RPC and NET
 	chBlock chan message.Message // 上链的block数据
 
 	chain  consensus_common.BlockCache // blockCache
@@ -52,7 +52,7 @@ func NewTxPoolServer(chain consensus_common.BlockCache) (*TxPoolServer, error) {
 
 	//	Tx chan init
 	var err error
-	p.ChTx, err = p.router.FilteredChan(network.Filter{
+	p.chTx, err = p.router.FilteredChan(network.Filter{
 		AcceptType: []network.ReqType{
 			network.ReqPublishTx,
 		}})
@@ -98,7 +98,6 @@ func (pool *TxPoolServer) loop() {
 			if pool.txTimeOut(&tx) {
 				continue
 			}
-
 			if consensus_common.VerifyTxSig(tx) {
 				pool.addListTx(&tx)
 			}
@@ -151,17 +150,17 @@ func (pool *TxPoolServer) ExistTransaction(hash string) bool {
 // 初始化blocktx,缓存验证一笔交易，是否已经存在
 func (pool *TxPoolServer) initBlockTx() {
 	chain := pool.chain.BlockChain()
-	ntime := time.Now().Unix()
+	timeNow := time.Now().Unix()
 
 	for i := chain.Length() - 1; i > 0; i-- {
-		block := chain.GetBlockByNumber(i)
-		if block == nil {
+		blk := chain.GetBlockByNumber(i)
+		if blk == nil {
 			return
 		}
 
-		btime := pool.slotToSec(block.Head.Time)
-		if ntime-btime >= pool.filterTime {
-			pool.blockTx.Add(block)
+		t := pool.slotToSec(blk.Head.Time)
+		if timeNow-t >= pool.filterTime {
+			pool.blockTx.Add(blk)
 		}
 	}
 
@@ -250,7 +249,7 @@ func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 
 	for hash := range pool.longestBlockHash.GetList() {
 		txList := pool.blockTx.Tx(string(hash))
-		if _, bool := txList[string(hash)]; bool {
+		if _, b := txList[string(hash)]; b {
 			return true
 		}
 	}
@@ -263,12 +262,12 @@ func (pool *TxPoolServer) getLongestChainBlockHash(chain block.Chain) *blockHash
 	bhl := &blockHashList{}
 	iter := chain.Iterator()
 	for {
-		block := iter.Next()
-		if block == nil {
+		blk := iter.Next()
+		if blk == nil {
 			break
 		}
-		log.Log.I("getLongestChainBlockHash , block Number: %v, witness: %v", block.Head.Number, block.Head.Witness)
-		bhl.Add(block.HashString())
+		log.Log.I("getLongestChainBlockHash , blk Number: %v, witness: %v", blk.Head.Number, blk.Head.Witness)
+		bhl.Add(blk.HashString())
 	}
 	return bhl
 }
@@ -312,7 +311,7 @@ func (b *blockTx) Add(bl *block.Block) {
 }
 
 func (b *blockTx) Exist(hash string) bool {
-	if _, bool := b.blkTx[hash]; bool {
+	if _, b := b.blkTx[hash]; b {
 		return true
 	}
 
@@ -343,7 +342,7 @@ func (l listTx) Add(tx *Tx) {
 }
 
 func (l listTx) Exist(hash string) bool {
-	if _, bool := l[hash]; bool {
+	if _, b := l[hash]; b {
 		return true
 	}
 
