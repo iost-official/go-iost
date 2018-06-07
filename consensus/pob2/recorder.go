@@ -4,7 +4,7 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"sync"
 	"errors"
-	common "github.com/iost-official/prototype/consensus/common"
+	"github.com/iost-official/prototype/core/block"
 )
 
 var ErrIllegalTx = errors.New("illegal tx")
@@ -33,7 +33,7 @@ type RecorderImpl struct {
 func (p *RecorderImpl) Record(tx2 tx.Tx) error {
 	p.isListening.Lock()
 	defer p.isListening.Unlock()
-	if common.VerifyTxSig(tx2) { // 移到外面做
+	if block.VerifyTxSig(tx2) { // 移到外面做
 		tx.RecordTx(tx2, Data.self)
 		p.storage[string(tx2.Hash())] = true
 		p.Push(tx2)

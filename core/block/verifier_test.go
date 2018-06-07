@@ -1,4 +1,4 @@
-package consensus_common
+package block
 
 import (
 	"fmt"

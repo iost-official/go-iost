@@ -1,8 +1,7 @@
-package tx
+package txpool
 
 import (
 	"fmt"
-	"github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/log"
@@ -10,6 +9,7 @@ import (
 	"sort"
 	"sync"
 	"time"
+	"github.com/iost-official/prototype/core/tx"
 )
 
 var (
@@ -23,7 +23,7 @@ type TxPoolServer struct {
 	chBlock        chan message.Message // 上链的block数据
 	chConfirmBlock chan block.Block
 
-	chain  consensus_common.BlockCache // blockCache
+	chain  block.BlockCache // blockCache
 	router network.Router
 
 	blockTx   blockTx // 缓存中block的交易
@@ -36,7 +36,7 @@ type TxPoolServer struct {
 	mu         sync.RWMutex
 }
 
-func NewTxPoolServer(chain consensus_common.BlockCache, chConfirmBlock chan block.Block) (*TxPoolServer, error) {
+func NewTxPoolServer(chain block.BlockCache, chConfirmBlock chan block.Block) (*TxPoolServer, error) {
 
 	p := &TxPoolServer{
 		chain:            chain,
@@ -93,14 +93,14 @@ func (pool *TxPoolServer) loop() {
 				return
 			}
 
-			var tx Tx
+			var tx tx.Tx
 			tx.Decode(tr.Body)
 
 			// 超时交易丢弃
 			if pool.txTimeOut(&tx) {
 				continue
 			}
-			if consensus_common.VerifyTxSig(tx) {
+			if block.VerifyTxSig(tx) {
 				pool.addListTx(&tx)
 			}
 
@@ -126,11 +126,11 @@ func (pool *TxPoolServer) loop() {
 	}
 }
 
-func (pool *TxPoolServer) PendingTransactions() TransactionsList {
+func (pool *TxPoolServer) PendingTransactions() tx.TransactionsList {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
-	var pendingList TransactionsList
+	var pendingList tx.TransactionsList
 	for _, tx := range pool.pendingTx {
 		pendingList = append(pendingList, tx)
 	}
@@ -141,7 +141,7 @@ func (pool *TxPoolServer) PendingTransactions() TransactionsList {
 	return pendingList
 }
 
-func (pool *TxPoolServer) Transaction(hash string) *Tx {
+func (pool *TxPoolServer) Transaction(hash string) *tx.Tx {
 	return pool.listTx.Get(hash)
 }
 
@@ -169,10 +169,10 @@ func (pool *TxPoolServer) initBlockTx() {
 }
 
 func (pool *TxPoolServer) slotToSec(t int64) int64 {
-	return consensus_common.Timestamp{Slot: t}.ToUnixSec()
+	return 0//consensus_common.Timestamp{Slot: t}.ToUnixSec()
 }
 
-func (pool *TxPoolServer) addListTx(tx *Tx) {
+func (pool *TxPoolServer) addListTx(tx *tx.Tx) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -182,7 +182,7 @@ func (pool *TxPoolServer) addListTx(tx *Tx) {
 
 }
 
-func (pool *TxPoolServer) txTimeOut(tx *Tx) bool {
+func (pool *TxPoolServer) txTimeOut(tx *tx.Tx) bool {
 
 	nTime := time.Now().Unix()
 	txTime := tx.Time / 1e9
@@ -309,7 +309,7 @@ func (b *blockTx) Add(bl *block.Block) {
 	}
 
 	b.blkTx[bl.HashString()] = trHash
-	b.blkTime[bl.HashString()] = consensus_common.Timestamp{Slot: bl.Head.Time}.ToUnixSec()
+	b.blkTime[bl.HashString()] = 0//consensus_common.Timestamp{Slot: bl.Head.Time}.ToUnixSec()
 }
 
 func (b *blockTx) Exist(hash string) bool {
@@ -336,9 +336,9 @@ func (b blockTx) Del(hash string) {
 	delete(b.blkTx, hash)
 }
 
-type listTx map[string]*Tx
+type listTx map[string]*tx.Tx
 
-func (l listTx) Add(tx *Tx) {
+func (l listTx) Add(tx *tx.Tx) {
 
 	l[tx.HashString()] = tx
 }
@@ -351,7 +351,7 @@ func (l listTx) Exist(hash string) bool {
 	return false
 }
 
-func (l listTx) Get(hash string) *Tx {
+func (l listTx) Get(hash string) *tx.Tx {
 
 	return l[hash]
 }

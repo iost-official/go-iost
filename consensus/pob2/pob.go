@@ -27,7 +27,7 @@ var TxPerBlk int
 
 type PoB struct {
 	account      Account
-	BlockCache   BlockCache
+	BlockCache   block.BlockCache
 	router       Router
 	synchronizer Synchronizer
 	globalStaticProperty
@@ -54,7 +54,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 		chConfirmBlock: make(chan block.Block, 100),
 	}
 
-	p.BlockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
+	p.BlockCache = block.NewBlockCache(bc, pool, len(witnessList)*2/3)
 	if bc.GetBlockByNumber(0) == nil {
 
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -204,7 +204,7 @@ func (p *PoB) txListenLoop() {
 			}
 			var tx Tx
 			tx.Decode(req.Body)
-			if VerifyTxSig(tx) {
+			if block.VerifyTxSig(tx) {
 				p.BlockCache.AddTx(&tx)
 			}
 
@@ -253,13 +253,13 @@ func (p *PoB) blockLoop() {
 			} else {
 				p.log.I("Error: %v", err)
 			}
-			if err != ErrBlock && err != ErrTooOld {
+			if err != block.ErrBlock && err != block.ErrTooOld {
 				p.synchronizer.BlockConfirmed(blk.Head.Number)
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 
 					p.BlockCache.AddSingles(p.blockVerify)
-				} else if err == ErrNotFound {
+				} else if err == block.ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
 					if need {
@@ -349,14 +349,14 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 			break
 		}
 
-		if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
+		if sp, _, err := block.StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
 			blk.Content = append(blk.Content, *tx)
 		} else {
 			spool1 = sp
 		}
 	}
 
-	CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
+	block.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
 
 	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine
 	//log.Report(&log.MsgBlock{
@@ -414,7 +414,7 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 		///////////////////////////////////
 	*/
 	// verify block head
-	if err := VerifyBlockHead(blk, parent); err != nil {
+	if err := block.VerifyBlockHead(blk, parent); err != nil {
 		/*
 			////////////probe//////////////////
 			log.Report(&msgBlock)
@@ -449,7 +449,7 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 		*/
 		return nil, errors.New("wrong signature")
 	}
-	newPool, err := StdBlockVerifier(blk, pool)
+	newPool, err := block.StdBlockVerifier(blk, pool)
 	if err != nil {
 		/*
 			////////////probe//////////////////

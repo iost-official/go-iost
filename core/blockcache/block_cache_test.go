@@ -1,4 +1,4 @@
-package consensus_common
+package blockcache
 
 import (
 	"testing"
@@ -6,7 +6,6 @@ import (
 	"errors"
 
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
@@ -15,6 +14,7 @@ import (
 	"github.com/iost-official/prototype/vm/lua"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/prototype/core/block"
 )
 
 func TestBlockCachePoW(t *testing.T) {

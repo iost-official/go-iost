@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/log"
 	. "github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/core/block"
 )
 
 var (
@@ -28,7 +29,7 @@ type Synchronizer interface {
 
 // SyncImpl 同步器实现
 type SyncImpl struct {
-	blockCache    BlockCache
+	blockCache    block.BlockCache
 	router        Router
 	maxSyncNumber uint64
 	heightChan    chan message.Message
@@ -42,7 +43,7 @@ type SyncImpl struct {
 
 // NewSynchronizer 新建同步器
 // bc 块缓存, router 网络处理器
-func NewSynchronizer(bc BlockCache, router Router) *SyncImpl {
+func NewSynchronizer(bc block.BlockCache, router Router) *SyncImpl {
 	sync := &SyncImpl{
 		blockCache:    bc,
 		router:        router,

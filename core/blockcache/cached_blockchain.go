@@ -1,15 +1,13 @@
-package consensus_common
+package blockcache
 
 import (
-	"github.com/iost-official/prototype/core/block"
-
 	"bytes"
 )
 
 // CachedBlockChain 代表缓存的链
 type CachedBlockChain struct {
-	block.Chain
-	block        *block.Block
+	Chain
+	block        *Block
 	cachedLength int
 	parent       *CachedBlockChain
 	depth        int
@@ -18,7 +16,7 @@ type CachedBlockChain struct {
 }
 
 // NewCBC 新建一个缓存链
-func NewCBC(chain block.Chain) CachedBlockChain {
+func NewCBC(chain Chain) CachedBlockChain {
 	return CachedBlockChain{
 		Chain:        chain,
 		block:        nil,
@@ -40,7 +38,7 @@ func NewCBC(chain block.Chain) CachedBlockChain {
 //}
 
 // Push 把新块加入缓存链尾部
-func (c *CachedBlockChain) Push(block *block.Block) error {
+func (c *CachedBlockChain) Push(block *Block) error {
 	c.block = block
 	c.cachedLength++
 
@@ -89,7 +87,7 @@ func (c *CachedBlockChain) Length() uint64 {
 }
 
 // Top 返回缓存链的最新块
-func (c *CachedBlockChain) Top() *block.Block {
+func (c *CachedBlockChain) Top() *Block {
 	if c.cachedLength == 0 {
 		return c.Chain.Top()
 	}
@@ -119,18 +117,18 @@ func (c *CachedBlockChain) Flush() {
 }
 
 // Iterator 生成一个链迭代器
-func (c *CachedBlockChain) Iterator() block.ChainIterator {
+func (c *CachedBlockChain) Iterator() ChainIterator {
 	return &CBCIterator{c, nil}
 }
 
 // CBCIterator 缓存链的迭代器
 type CBCIterator struct {
 	pc       *CachedBlockChain
-	iterator block.ChainIterator
+	iterator ChainIterator
 }
 
 // Next 返回下一个块
-func (ci *CBCIterator) Next() *block.Block {
+func (ci *CBCIterator) Next() *Block {
 	if ci.iterator != nil {
 		return ci.iterator.Next()
 	}
@@ -144,7 +142,7 @@ func (ci *CBCIterator) Next() *block.Block {
 
 // GetBlockByNumber 从缓存链里找对应块号的块
 // deprecate : 请使用iterator
-func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
+func (c *CachedBlockChain) GetBlockByNumber(number uint64) *Block {
 	if number < c.Chain.Length() {
 		return c.Chain.GetBlockByNumber(number)
 	}
@@ -163,7 +161,7 @@ func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
 
 // GetBlockByHash 从缓存链里找对应hash的块
 // deprecate : 请使用iterator
-func (c *CachedBlockChain) GetBlockByHash(blockHash []byte) *block.Block {
+func (c *CachedBlockChain) GetBlockByHash(blockHash []byte) *Block {
 	cbc := c
 	for cbc.block != nil {
 		if bytes.Equal(cbc.block.Head.Hash(), blockHash) {
