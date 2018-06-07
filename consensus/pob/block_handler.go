@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/core/blockcache"
 )
 
 const MaxTxInBlock = 1000
@@ -18,7 +19,7 @@ type Generator interface {
 
 type GeneratorImpl struct {
 	holder *Holder
-	bc     block.BlockCache
+	bc     blockcache.BlockCache
 	rec    *Recorder
 }
 

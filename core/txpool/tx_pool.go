@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/core/blockcache"
 )
 
 var (
@@ -23,7 +24,7 @@ type TxPoolServer struct {
 	chBlock        chan message.Message // 上链的block数据
 	chConfirmBlock chan block.Block
 
-	chain  block.BlockCache // blockCache
+	chain  blockcache.BlockCache // blockCache
 	router network.Router
 
 	blockTx   blockTx // 缓存中block的交易
@@ -36,7 +37,7 @@ type TxPoolServer struct {
 	mu         sync.RWMutex
 }
 
-func NewTxPoolServer(chain block.BlockCache, chConfirmBlock chan block.Block) (*TxPoolServer, error) {
+func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan block.Block) (*TxPoolServer, error) {
 
 	p := &TxPoolServer{
 		chain:            chain,
@@ -100,7 +101,7 @@ func (pool *TxPoolServer) loop() {
 			if pool.txTimeOut(&tx) {
 				continue
 			}
-			if block.VerifyTxSig(tx) {
+			if blockcache.VerifyTxSig(tx) {
 				pool.addListTx(&tx)
 			}
 

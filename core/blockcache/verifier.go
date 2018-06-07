@@ -1,4 +1,4 @@
-package block
+package blockcache
 
 import (
 	"bytes"
@@ -8,13 +8,14 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 
 	"github.com/iost-official/prototype/verifier"
+	"github.com/iost-official/prototype/core/block"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
 
 // VerifyBlockHead 验证块头正确性
 // blk 需要验证的块, parentBlk 父块
-func VerifyBlockHead(blk *Block, parentBlk *Block) error {
+func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 	bh := blk.Head
 	// parent hash
 	if !bytes.Equal(bh.ParentHash, parentBlk.Head.Hash()) {
@@ -35,7 +36,7 @@ func VerifyBlockHead(blk *Block, parentBlk *Block) error {
 var ver *verifier.CacheVerifier
 
 // StdBlockVerifier 块内交易的验证函数
-func StdBlockVerifier(block *Block, pool state.Pool) (state.Pool, error) {
+func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 	txs := block.Content
 	ptxs := make([]*tx.Tx, 0)
 	for _, txx := range txs {

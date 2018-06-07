@@ -1,4 +1,4 @@
-package block
+package blockcache
 
 import (
 	"fmt"

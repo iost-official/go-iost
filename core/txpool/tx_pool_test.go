@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/prototype/core/message"
 	"fmt"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/core/blockcache"
 )
 
 func TestNewTxPoolServer(t *testing.T) {
@@ -63,7 +64,7 @@ func TestNewTxPoolServer(t *testing.T) {
 			panic("state.PoolInstance error")
 		}
 
-		BlockCache := block.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
+		BlockCache := blockcache.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
 
 		chConfirmBlock := make(chan block.Block, 10)
 		fmt.Println(BlockCache, chConfirmBlock)
