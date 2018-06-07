@@ -433,7 +433,7 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 	var signature common.Signature
 	signature.Decode(blk.Head.Signature)
 
-	if blk.Head.Witness != string(signature.Pubkey){
+	if blk.Head.Witness != common.Base58Encode(signature.Pubkey){
 		return nil, errors.New("wrong pubkey")
 	}
 
