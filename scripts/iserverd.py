@@ -53,7 +53,7 @@ def exist():
 def start():
 	if exist()==0:
 		return 1
-	wCommand("nohup iserver --config "+HOME+"/.iserver.yml >> test.log 2>&1 &")
+	wCommand("nohup iserver --config "+pwd+"/iserver/iserver.yml >> test.log 2>&1 &")
 	return 0
 
 #0:success
@@ -82,15 +82,15 @@ def stop():
 
 
 def upgrade():
-	wCommand("cd "+pwd+" && git checkout develop && git pull")
+	wCommand("cd "+pwd+" && git checkout testnet && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
 	#stop iserver now
-	if(stop()!=0):
-		return 1
+#	if(stop()!=0):
+#		return 1
 	#ret=wCommand("nohup redis-server &")
 	#delete dump.rdb
-	return start()
-
+#	return start()
+	return 0
 func={
 	"start":start,
 	"stop":stop,
