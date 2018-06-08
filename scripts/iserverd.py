@@ -19,7 +19,7 @@ def wCommand(com):
 #0:port is occupied
 #1:port isn't occupied
 def check_port(port):
-    return 0
+	return 0
 	ret=wCommand("netstat -tunlp|grep "+str(port))
 	ret=ret.split("\n")
 	cnt=0
