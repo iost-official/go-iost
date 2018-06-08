@@ -21,7 +21,6 @@ var (
 
 type TxPoolServer struct {
 	chTx           chan message.Message // transactions of RPC and NET
-	chBlock        chan message.Message // 上链的block数据
 	chConfirmBlock chan *block.Block
 
 	chain  blockcache.BlockCache // blockCache
@@ -36,6 +35,7 @@ type TxPoolServer struct {
 	filterTime int64 // 过滤交易的时间间隔
 	mu         sync.RWMutex
 }
+var TxPoolS *TxPoolServer
 
 func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan *block.Block) (*TxPoolServer, error) {
 
@@ -66,6 +66,7 @@ func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan *block.Blo
 		return nil, err
 	}
 
+	TxPoolS = p
 	return p, nil
 }
 
@@ -77,7 +78,7 @@ func (pool *TxPoolServer) Start() {
 func (pool *TxPoolServer) Stop() {
 	log.Log.I("TxPoolServer Stop")
 	close(pool.chTx)
-	close(pool.chBlock)
+	close(pool.chConfirmBlock)
 }
 
 func (pool *TxPoolServer) loop() {
@@ -105,15 +106,12 @@ func (pool *TxPoolServer) loop() {
 				pool.addListTx(&tx)
 			}
 
-		case bl, ok := <-pool.chBlock: // 可以上链的block
+		case bl, ok := <-pool.chConfirmBlock: // 可以上链的block
 			if !ok {
 				return
 			}
 
-			var blk block.Block
-			blk.Decode(bl.Body)
-
-			pool.addBlockTx(&blk)
+			pool.addBlockTx(bl)
 			// 根据最长链计算 pending tx
 			bhl := pool.blockHash(pool.chain.LongestChain())
 			pool.updateBlockHash(bhl)
@@ -124,6 +122,10 @@ func (pool *TxPoolServer) loop() {
 			pool.delTimeOutBlockTx()
 		}
 	}
+}
+
+func (pool *TxPoolServer) AddTransaction(tx message.Message)  {
+	pool.chTx<-tx
 }
 
 func (pool *TxPoolServer) PendingTransactions() tx.TransactionsList {
@@ -335,6 +337,7 @@ func (h *hashMap) Del(hash string) {
 
 func (h *hashMap) Clear() {
 	h.hashList = nil
+	h.hashList = make(map[string]struct{})
 }
 
 type blockTx struct {

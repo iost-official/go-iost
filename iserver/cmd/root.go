@@ -181,7 +181,7 @@ var rootCmd = &cobra.Command{
 		consensus.Run()
 		serverExit = append(serverExit, consensus)
 		blockCache := consensus.BlockCache()
-		txPool, err := txpool.NewTxPoolServer(blockCache, blockCache.BlockConfirmDataChan())
+		txPool, err := txpool.NewTxPoolServer(blockCache, blockCache.OnBlockChan())
 		if err != nil {
 			log.Log.E("NewTxPoolServer failed, stop the program! err:%v", err)
 			os.Exit(1)

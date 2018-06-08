@@ -155,10 +155,6 @@ type BlockCache interface {
 	AddGenesis(block *block.Block) error
 	Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error
 	AddSingles(verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error))
-	AddTx(tx *tx.Tx) error
-	GetTx() (*tx.Tx, error)
-	UpdateTxPoolOnBC(bc block.Chain)
-	ResetTxPoool() error
 
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
@@ -168,7 +164,8 @@ type BlockCache interface {
 	SetBasePool(statePool state.Pool) error
 	ConfirmedLength() uint64
 	BlockConfirmChan() chan uint64
-	BlockConfirmDataChan() chan *block.Block
+	OnBlockChan() chan *block.Block
+	SendOnBlock(blk *block.Block)
 	Draw()
 }
 
@@ -208,9 +205,7 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 		blkConfirmChan: make(chan uint64, 10),
 		chConfirmBlockData: make(chan *block.Block, 100),
 	}
-	h.txPool, _ = tx.TxPoolFactory("mem")
-	h.txPoolCache, _ = tx.TxPoolFactory("mem")
-	h.delTxPool, _ = tx.TxPoolFactory("mem")
+
 	return &h
 }
 
@@ -297,54 +292,6 @@ func (h *BlockCacheImpl) AddSingles(verifier func(blk *block.Block, parent *bloc
 	}
 	h.singleBlockRoot.children = newChildren
 	h.tryFlush(block.Head.Version)
-}
-
-// AddTx 把交易加入链
-func (h *BlockCacheImpl) AddTx(tx *tx.Tx) error {
-	//TODO 验证tx是否在blockchain上
-	if ok, _ := h.bc.HasTx(tx); ok {
-		return fmt.Errorf("tx in BlockChain")
-	}
-	h.txPool.Add(tx)
-	return nil
-}
-
-// GetTx 从链中取交易
-func (h *BlockCacheImpl) GetTx() (*tx.Tx, error) {
-	for {
-		tx, err := h.txPool.Top()
-		if err != nil {
-			return nil, err
-		}
-		h.txPool.Del(tx)
-		h.txPoolCache.Add(tx)
-		if ok, _ := h.delTxPool.Has(tx); !ok {
-			return tx, nil
-		}
-	}
-}
-
-func (h *BlockCacheImpl) UpdateTxPoolOnBC(bc block.Chain) {
-	h.delTxPool = tx.NewTxPoolImpl()
-	iter := bc.Iterator()
-	for {
-		block := iter.Next()
-		if block == nil {
-			break
-		}
-		for _, tx := range block.Content {
-			h.delTxPool.Add(&tx)
-		}
-	}
-}
-
-func (h *BlockCacheImpl) ResetTxPoool() error {
-	for h.txPoolCache.Size() > 0 {
-		tx, _ := h.txPoolCache.Top()
-		h.AddTx(tx)
-		h.txPoolCache.Del(tx)
-	}
-	return nil
 }
 
 func (h *BlockCacheImpl) tryFlush(version int64) {
@@ -452,8 +399,12 @@ func (h *BlockCacheImpl) BlockConfirmChan() chan uint64 {
 	return h.blkConfirmChan
 }
 
-func (h *BlockCacheImpl) BlockConfirmDataChan() chan *block.Block {
+func (h *BlockCacheImpl) OnBlockChan() chan *block.Block {
 	return h.chConfirmBlockData
+}
+
+func (h *BlockCacheImpl) SendOnBlock(blk *block.Block) {
+	h.chConfirmBlockData<-blk
 }
 
 //func (h *BlockCacheImpl) FindTx(txHash []byte) (core.Tx, error) {

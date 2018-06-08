@@ -22,6 +22,7 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/iost-official/prototype/core/blockcache"
+	"github.com/iost-official/prototype/core/txpool"
 )
 
 var TxPerBlk int
@@ -39,7 +40,6 @@ type PoB struct {
 	infoCache  [][]byte
 
 	exitSignal chan struct{}
-	ChTx       chan message.Message
 	chBlock    chan message.Message
 
 	log *log.Logger
@@ -50,7 +50,7 @@ type PoB struct {
 func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
 	TxPerBlk = 200
 	p := PoB{
-		account:acc,
+		account: acc,
 	}
 
 	p.blockCache = blockcache.NewBlockCache(bc, pool, len(witnessList)*2/3)
@@ -68,16 +68,6 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 
 	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
 	if p.synchronizer == nil {
-		return nil, err
-	}
-
-	//	Tx chan init
-	p.ChTx, err = p.router.FilteredChan(Filter{
-		AcceptType: []ReqType{
-			ReqPublishTx,
-			reqTypeVoteTest, // Only for test
-		}})
-	if err != nil {
 		return nil, err
 	}
 
@@ -115,7 +105,6 @@ func (p *PoB) initGlobalProperty(acc Account, witnessList []string) {
 // Run: 运行PoB实例
 func (p *PoB) Run() {
 	p.synchronizer.StartListen()
-	go p.txListenLoop()
 	go p.blockLoop()
 	go p.scheduleLoop()
 	//p.genBlock(p.Account, block.Block{})
@@ -123,12 +112,11 @@ func (p *PoB) Run() {
 
 // Stop: 停止PoB实例
 func (p *PoB) Stop() {
-	close(p.ChTx)
 	close(p.chBlock)
 	close(p.exitSignal)
 }
 
-func (p *PoB) BlockCache() blockcache.BlockCache{
+func (p *PoB) BlockCache() blockcache.BlockCache {
 	return p.blockCache
 }
 
@@ -189,30 +177,6 @@ func (p *PoB) genesis(initTime int64) error {
 	return nil
 }
 
-func (p *PoB) txListenLoop() {
-	p.log.I("Start to listen tx")
-	for {
-		select {
-		case req, ok := <-p.ChTx:
-			if !ok {
-				return
-			}
-			if req.ReqType == reqTypeVoteTest {
-				p.addWitnessMsg(req)
-				continue
-			}
-			var tx Tx
-			tx.Decode(req.Body)
-			if blockcache.VerifyTxSig(tx) {
-				p.blockCache.AddTx(&tx)
-			}
-
-		case <-p.exitSignal:
-			return
-		}
-	}
-}
-
 func (p *PoB) blockLoop() {
 
 	p.log.I("Start to listen block")
@@ -247,8 +211,7 @@ func (p *PoB) blockLoop() {
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
-				bc := p.blockCache.LongestChain()
-				p.blockCache.UpdateTxPoolOnBC(bc)
+				p.blockCache.SendOnBlock(&blk)
 			} else {
 				p.log.I("Error: %v", err)
 			}
@@ -308,7 +271,7 @@ func (p *PoB) scheduleLoop() {
 
 				pool := p.blockCache.LongestPool()
 				blk := p.genBlock(p.account, bc, pool)
-				go p.blockCache.ResetTxPoool()
+
 				p.globalDynamicProperty.update(&blk.Head)
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 
@@ -342,16 +305,20 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	//return &blk
 	spool1 := pool.Copy()
 	//TODO Content大小控制
-	for len(blk.Content) < TxPerBlk {
-		tx, err := p.blockCache.GetTx()
-		if tx == nil || err != nil {
-			break
-		}
+	tx := txpool.TxPoolS.PendingTransactions()
+	if len(tx) != 0 {
 
-		if sp, _, err := blockcache.StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
-			blk.Content = append(blk.Content, *tx)
-		} else {
-			spool1 = sp
+		for _,t := range tx{
+
+			if len(blk.Content) > TxPerBlk{
+				break
+			}
+
+			if sp, _, err := blockcache.StdTxsVerifier([]*Tx{t}, spool1); err == nil {
+				blk.Content = append(blk.Content, *t)
+			} else {
+				spool1 = sp
+			}
 		}
 	}
 
