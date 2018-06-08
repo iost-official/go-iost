@@ -21,7 +21,7 @@ register:
 check: vet lint
 
 vet:
-	@go vet $(go list ./...)
+	@go vet $$(go list ./...)
 
 lint:
 	@gometalinter --config=.gometalinter.json ./...
