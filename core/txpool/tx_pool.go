@@ -41,12 +41,15 @@ type TxPoolServer struct {
 func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan block.Block) (*TxPoolServer, error) {
 
 	p := &TxPoolServer{
-		chain:            chain,
-		chConfirmBlock:   chConfirmBlock,
-		blockTx:          blockTx{},
-		listTx:           make(listTx),
-		pendingTx:        make(listTx),
-		longestBlockHash: blockHashList{},
+		chain:          chain,
+		chConfirmBlock: chConfirmBlock,
+		blockTx: blockTx{
+			blkTx:   make(map[string]*hashMap),
+			blkTime: make(map[string]int64),
+		},
+		listTx:           listTx{list: make(map[string]*tx.Tx)},
+		pendingTx:        listTx{list: make(map[string]*tx.Tx)},
+		longestBlockHash: blockHashList{blockList: make([]string, 0)},
 		filterTime:       int64(filterTime),
 	}
 	p.router = network.Route
@@ -133,7 +136,7 @@ func (pool *TxPoolServer) PendingTransactions() tx.TransactionsList {
 	defer pool.mu.Unlock()
 
 	var pendingList tx.TransactionsList
-	for _, tx := range pool.pendingTx {
+	for _, tx := range pool.pendingTx.list {
 		pendingList = append(pendingList, tx)
 	}
 
@@ -152,11 +155,11 @@ func (pool *TxPoolServer) ExistTransaction(hash string) bool {
 }
 
 func (pool *TxPoolServer) TransactionNum() int {
-	return len(pool.listTx)
+	return len(pool.listTx.list)
 }
 
 func (pool *TxPoolServer) PendingTransactionNum() int {
-	return len(pool.pendingTx)
+	return len(pool.pendingTx.list)
 }
 
 func (pool *TxPoolServer) BlockTxNum() int {
@@ -215,10 +218,10 @@ func (pool *TxPoolServer) delTimeOutTx() {
 
 	nTime := time.Now().Unix()
 
-	for hash, tx := range pool.listTx {
+	for hash, tx := range pool.listTx.list {
 		txTime := tx.Time / 1e9
 		if nTime-txTime > pool.filterTime {
-			delete(pool.listTx, hash)
+			delete(pool.listTx.list, hash)
 		}
 	}
 }
@@ -247,27 +250,31 @@ func (pool *TxPoolServer) delTimeOutBlockTx() {
 }
 
 func (pool *TxPoolServer) updatePending() {
+
+	pool.delTimeOutTx()
+
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
-	pool.pendingTx = nil
-	pool.delTimeOutTx()
+	pool.pendingTx.list = make(map[string]*tx.Tx, 0)
 
-	for hash, tr := range pool.listTx {
+	for hash, tr := range pool.listTx.list {
 		if !pool.txExistTxPool(hash) {
+			//fmt.Println("Add pending tr hash:",tr.HashString(), " tr nonce:", tr.Nonce)
 			pool.pendingTx.Add(tr)
 		}
 	}
 }
 
 func (pool *TxPoolServer) txExistTxPool(hash string) bool {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
 
-	for hash := range pool.longestBlockHash.GetList() {
-		txList := pool.blockTx.Tx(string(hash))
-		if _, b := txList[string(hash)]; b {
-			return true
+	for _, blockHash := range pool.longestBlockHash.GetList() {
+		//fmt.Println("##blockhash: ", blockHash)
+		txList := pool.blockTx.TxList(string(blockHash))
+		if txList != nil {
+			if b := txList.Exist(hash); b {
+				return true
+			}
 		}
 	}
 
@@ -276,7 +283,7 @@ func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 
 func (pool *TxPoolServer) blockHash(chain block.Chain) *blockHashList {
 
-	bhl := &blockHashList{}
+	bhl := &blockHashList{blockList: make([]string, 0)}
 	iter := chain.Iterator()
 	for {
 		blk := iter.Next()
@@ -312,20 +319,50 @@ func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 	}
 }
 
+type hashMap struct {
+	hashList map[string]struct{}
+}
+
+func (h *hashMap) Add(hash string) {
+	h.hashList[hash] = struct{}{}
+}
+
+func (h *hashMap) Exist(txHash string) bool {
+	if _, b := h.hashList[txHash]; b {
+		return true
+	}
+
+	return false
+}
+
+func (h *hashMap) Del(hash string) {
+	delete(h.hashList, hash)
+}
+
+func (h *hashMap) Clear() {
+	h.hashList = nil
+}
+
 type blockTx struct {
-	blkTx   map[string]map[string]struct{}
-	blkTime map[string]int64
+	blkTx   map[string]*hashMap // 按block hash 记录交易
+	blkTime map[string]int64    // 记录区块的时间，用于清理区块
 }
 
 func (b *blockTx) Add(bl *block.Block) {
-	trHash := make(map[string]struct{}, 0)
-	for _, tr := range bl.Content {
-		trHash[tr.HashString()] = struct{}{}
+
+	blochHash := bl.HashString()
+
+	if _, e := b.blkTx[blochHash]; !e {
+		b.blkTx[blochHash] = &hashMap{hashList: make(map[string]struct{})}
 	}
 
-	b.blkTx[bl.HashString()] = trHash
-	slot :=consensus_common.Timestamp{Slot: bl.Head.Time}
-	b.blkTime[bl.HashString()] = slot.ToUnixSec()
+	txList := b.blkTx[blochHash]
+	for _, tr := range bl.Content {
+		txList.Add(tr.HashString())
+	}
+
+	slot := consensus_common.Timestamp{Slot: bl.Head.Time}
+	b.blkTime[blochHash] = slot.ToUnixSec()
 
 }
 
@@ -337,31 +374,44 @@ func (b *blockTx) Exist(hash string) bool {
 	return false
 }
 
-func (b blockTx) Tx(hash string) map[string]struct{} {
+func (b *blockTx) TxList(blockHash string) *hashMap {
 
-	return b.blkTx[hash]
+	return b.blkTx[blockHash]
 }
 
-func (b blockTx) Time(hash string) int64 {
+func (b *blockTx) Time(hash string) int64 {
 
 	return b.blkTime[hash]
 }
 
 func (b blockTx) Del(hash string) {
-
+	blk := b.blkTx[hash]
+	blk.Clear()
 	delete(b.blkTime, hash)
 	delete(b.blkTx, hash)
 }
 
-type listTx map[string]*tx.Tx
+type listTx struct {
+	list map[string]*tx.Tx
+}
 
-func (l listTx) Add(tx *tx.Tx) {
+func (l *listTx) Add(Tx *tx.Tx) {
+	if _, ok := l.list[Tx.HashString()]; ok {
+		return
+	}
 
-	l[tx.HashString()] = tx
+	l.list[Tx.HashString()] = &tx.Tx{
+		Time:      Tx.Time,
+		Nonce:     Tx.Nonce,
+		Contract:  Tx.Contract,
+		Signs:     Tx.Signs,
+		Publisher: Tx.Publisher,
+		Recorder:  Tx.Recorder,
+	}
 }
 
 func (l listTx) Exist(hash string) bool {
-	if _, b := l[hash]; b {
+	if _, b := l.list[hash]; b {
 		return true
 	}
 
@@ -370,7 +420,7 @@ func (l listTx) Exist(hash string) bool {
 
 func (l listTx) Get(hash string) *tx.Tx {
 
-	return l[hash]
+	return l.list[hash]
 }
 
 type blockHashList struct {

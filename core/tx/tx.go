@@ -146,7 +146,7 @@ func (t *Tx) Hash() []byte {
 }
 
 func (t *Tx) HashString() string {
-	return string(common.Sha256(t.Encode()))
+	return common.ToHex(common.Sha256(t.Encode()))
 }
 
 // 验证签名的函数

@@ -50,7 +50,7 @@ func (d *Block) Hash() []byte {
 }
 
 func (d *Block) HashString() string {
-	return string(common.Sha256(d.Encode()))
+	return common.ToHex(common.Sha256(d.Encode()))
 }
 
 // HeadHash 返回区块头部的Hash值
