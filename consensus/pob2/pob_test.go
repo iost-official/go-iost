@@ -157,7 +157,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string) {
 	//	return pool, nil
 	//}
 
-	//BlockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
+	//blockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
 	//seckey := common.Sha256([]byte("SeckeyId0"))
 	//pubkey := common.CalcPubkeyInSecp256k1(seckey)
 	p, err := NewPoB(accountList[0], blockChain, state.StdPool, witnessList)
@@ -401,7 +401,7 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string) {
 	//	return pool, nil
 	//}
 
-	//BlockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
+	//blockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
 	//seckey := common.Sha256([]byte("SeckeyId0"))
 	//pubkey := common.CalcPubkeyInSecp256k1(seckey)
 	p, err := NewPoB(accountList[0], blockChain, state.StdPool, witnessList)
@@ -445,7 +445,7 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 	confChain := p.BlockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
 
-	//blockLen := p.BlockCache.ConfirmedLength()
+	//blockLen := p.blockCache.ConfirmedLength()
 	//fmt.Println(blockLen)
 
 	//blockNum := 1000

@@ -150,7 +150,7 @@ var (
 	ErrDup      = errors.New("block duplicate") // 重复块
 )
 
-// BlockCache 操作块缓存的接口
+// blockCache 操作块缓存的接口
 type BlockCache interface {
 	AddGenesis(block *block.Block) error
 	Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error
@@ -168,6 +168,7 @@ type BlockCache interface {
 	SetBasePool(statePool state.Pool) error
 	ConfirmedLength() uint64
 	BlockConfirmChan() chan uint64
+	BlockConfirmDataChan() chan *block.Block
 	Draw()
 }
 
@@ -182,6 +183,7 @@ type BlockCacheImpl struct {
 	txPoolCache     tx.TxPool
 	maxDepth        int
 	blkConfirmChan  chan uint64
+	chConfirmBlockData 	chan *block.Block
 }
 
 // NewBlockCache 新建块缓存
@@ -204,6 +206,7 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 		},
 		maxDepth:       maxDepth,
 		blkConfirmChan: make(chan uint64, 10),
+		chConfirmBlockData: make(chan *block.Block, 100),
 	}
 	h.txPool, _ = tx.TxPoolFactory("mem")
 	h.txPoolCache, _ = tx.TxPoolFactory("mem")
@@ -447,6 +450,10 @@ func (h *BlockCacheImpl) LongestPool() state.Pool {
 // BlockConfirmChan 返回块确认通道
 func (h *BlockCacheImpl) BlockConfirmChan() chan uint64 {
 	return h.blkConfirmChan
+}
+
+func (h *BlockCacheImpl) BlockConfirmDataChan() chan *block.Block {
+	return h.chConfirmBlockData
 }
 
 //func (h *BlockCacheImpl) FindTx(txHash []byte) (core.Tx, error) {

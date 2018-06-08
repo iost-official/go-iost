@@ -36,6 +36,7 @@ import (
 
 	"os/signal"
 	"syscall"
+	"github.com/iost-official/prototype/core/txpool"
 )
 
 var cfgFile string
@@ -179,6 +180,15 @@ var rootCmd = &cobra.Command{
 
 		consensus.Run()
 		serverExit = append(serverExit, consensus)
+		blockCache := consensus.BlockCache()
+		txPool, err := txpool.NewTxPoolServer(blockCache, blockCache.BlockConfirmDataChan())
+		if err != nil {
+			log.Log.E("NewTxPoolServer failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
+		txPool.Start()
+		serverExit = append(serverExit, txPool)
 
 		//启动RPC
 		err = rpc.Server(rpcPort)
@@ -233,7 +243,7 @@ func exitLoop() {
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Log.E("Execute err: %v",err)
+		log.Log.E("Execute err: %v", err)
 		os.Exit(1)
 	}
 }
