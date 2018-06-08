@@ -195,7 +195,10 @@ func (p *PoB) txListenLoop() {
 				continue
 			}
 			var tx Tx
-			tx.Decode(req.Body)
+			err:=tx.Decode(req.Body)
+			if err!=nil{
+				continue
+			}
 			if VerifyTxSig(tx) {
 				p.blockCache.AddTx(&tx)
 			}
