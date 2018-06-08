@@ -16,7 +16,7 @@ net:
   node-table-path: netpath
   node-id:
   register-addr: 13.232.79.7:30304
-  listen-addr: 127.0.0.1
+  listen-addr: 52.79.185.204
   target: base
   port: 30301
   rpc-port: :30303
