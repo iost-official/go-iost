@@ -99,9 +99,15 @@ func (t *Tx) Encode() []byte {
 }
 
 // 对Tx进行解码
-func (t *Tx) Decode(b []byte) error {
+func (t *Tx) Decode(b []byte) (err error) {
 	var tr TxRaw
-	_, err := tr.Unmarshal(b)
+	defer func() {
+    	if r := recover(); r != nil {
+			err=fmt.Errorf("%v",r)
+		}
+	}()
+
+	_, err = tr.Unmarshal(b)
 	if err != nil {
 		return err
 	}
