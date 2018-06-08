@@ -226,7 +226,7 @@ func exitLoop() {
 			SubType: "offline",
 		})
 		///////////////////////////////////
-		os.Exit(0)
+		// os.Exit(0)
 	}()
 
 	<-exit
