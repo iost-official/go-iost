@@ -2,11 +2,11 @@ FROM centos:7
 
 ENV GOVERSION 1.10.1
 
-## install git
+# Install Git
 RUN yum update -y && yum install wget git make gcc gcc-c++ kernel-devel redis -y
 RUN git config --global user.name "IOST" && git config --global user.email "chain@iost.io"
 
-# Install Redis.
+# Install Redis
 RUN \
   cd /tmp && \
   wget http://download.redis.io/redis-stable.tar.gz && \
@@ -22,7 +22,7 @@ RUN \
   sed -i 's/^\(daemonize .*\)$/# \1/' /etc/redis/redis.conf && \
   sed -i 's/^\(logfile .*\)$/# \1/' /etc/redis/redis.conf
 
-## install go
+# Install Go
 RUN mkdir /goroot && \
     mkdir /gopath && \
     curl https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
@@ -37,10 +37,15 @@ ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 RUN yum install -y epel-release
 RUN yum install -y python python-devel python-pip
 
+# Change redis conf
+RUN sed -i 's/\#\ daemonize\ no/daemonize\ yes/g' /etc/redis/redis.conf
+
 # Install project
 COPY prototype $GOPATH/src/github.com/iost-official/prototype
-RUN cd $GOPATH/src/github.com/iost-official/prototype && make \
-&& cp -r build /workdir
-
+RUN cd $GOPATH/src/github.com/iost-official/prototype && make && \
+    cp -r build /workdir && cp start.sh /workdir/ && \
+    mkdir /var/lib/iserver && cp iserver/iserver.yml /var/lib/iserver/
 
 WORKDIR /workdir
+
+CMD ["./start.sh"]
