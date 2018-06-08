@@ -176,6 +176,7 @@ iwallet/test
 iwallet/iwallet
 
 # build and test
+/build
 imonitor/imonitor
 consensus/common/tx/
 /consensus/dpos/tx/
