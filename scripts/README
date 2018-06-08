@@ -10,7 +10,7 @@ iserverd.py
 		更新develop分支代码，go install。
 	查询iserver进程是否运行:  python iserverd.py exist
 		上述函数均是基于本函数判断当前系统中iserver是否正在运行，目前只是调用ps命令判断进程名是否存在，以及检查相应端口是否处于LISTEN状态。
-sendtx.py
+sendtx/sendtx.py
 	python sendtx.py genaccounts
 		生成100个账户（存储到acc_list.txt中），格式为：
 		pubkey0
@@ -30,3 +30,15 @@ sendtx.py
 
 	python sendtx.py sendtransaction
 	    每次发一笔交易（随机from，to,money,nonce）
+
+testWallet/testW.py
+	python testW.py
+		clear()				:clear files before test
+		installWallet()		:go install iwallet
+		checkAccount()		:test "iwallet account -c test"
+		checkBlock()		:test "iwaallet block 0"
+		checkCompile()		:test compile contract
+		checkSign()			:test sign contract
+		checkPublish()		:test publish tx
+		checkValue()		:test get value from statepool
+		checkBalance()		:test get balance
