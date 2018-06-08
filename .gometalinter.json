@@ -1,0 +1,5 @@
+{
+    "Vendor": true,
+    "Exclude": ["should have comment"],
+    "Skip": ["test"]
+}
