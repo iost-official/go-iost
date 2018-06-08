@@ -1,0 +1,46 @@
+FROM centos:7
+
+ENV GOVERSION 1.10.1
+
+## install git
+RUN yum update -y && yum install wget git make gcc gcc-c++ kernel-devel redis -y
+RUN git config --global user.name "IOST" && git config --global user.email "chain@iost.io"
+
+# Install Redis.
+RUN \
+  cd /tmp && \
+  wget http://download.redis.io/redis-stable.tar.gz && \
+  tar xvzf redis-stable.tar.gz && \
+  cd redis-stable && \
+  make && \
+  make install && \
+  cp -f src/redis-sentinel /usr/local/bin && \
+  mkdir -p /etc/redis && \
+  cp -f *.conf /etc/redis && \
+  rm -rf /tmp/redis-stable* && \
+  sed -i 's/^\(bind .*\)$/# \1/' /etc/redis/redis.conf && \
+  sed -i 's/^\(daemonize .*\)$/# \1/' /etc/redis/redis.conf && \
+  sed -i 's/^\(logfile .*\)$/# \1/' /etc/redis/redis.conf
+
+## install go
+RUN mkdir /goroot && \
+    mkdir /gopath && \
+    curl https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
+         tar xzf - -C /goroot --strip-components=1
+
+ENV CGO_ENABLED 1
+ENV GOPATH /gopath
+ENV GOROOT /goroot
+ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
+
+# Install Python
+RUN yum install -y epel-release
+RUN yum install -y python python-devel python-pip
+
+# Install project
+COPY prototype $GOPATH/src/github.com/iost-official/prototype
+RUN cd $GOPATH/src/github.com/iost-official/prototype && make \
+&& cp -r build /workdir
+
+
+WORKDIR /workdir
