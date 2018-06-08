@@ -71,7 +71,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 		BlockCache := blockcache.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
 
-		chConfirmBlock := make(chan block.Block, 10)
+		chConfirmBlock := make(chan *block.Block, 10)
 		txPool, err := NewTxPoolServer(BlockCache, chConfirmBlock)
 		So(err, ShouldBeNil)
 
@@ -146,7 +146,7 @@ func TestNewTxPoolServer(t *testing.T) {
 			//	fmt.Println("0.hashList - tr hash:",hash)
 			//
 			//}
-			txPool.longestBlockHash.Add(bl[0].HashString())
+			txPool.checkIterateBlockHash.Add(bl[0].HashString())
 			txPool.updatePending()
 
 			//txList:=txPool.PendingTransactions()
@@ -164,18 +164,18 @@ func TestNewTxPoolServer(t *testing.T) {
 func BenchmarkUpdatePending(b *testing.B) {
 	BlockCache, accountList, witnessList, txPool := envInit(b)
 
-	blockList := genBlocks(BlockCache, accountList, witnessList, 2, 10000, true)
+	blockList := genBlocks(BlockCache, accountList, witnessList, 2, 500, true)
 
-	listTxCnt := 10000
+	listTxCnt := 500
 	for i := 0; i < listTxCnt; i++ {
 		tx := genTx(accountList[0], 30+i)
 		txPool.addListTx(&tx)
 	}
 
 	txPool.addBlockTx(blockList[0])
-	txPool.longestBlockHash.Add(blockList[0].HashString())
+	txPool.checkIterateBlockHash.Add(blockList[0].HashString())
 	txPool.addBlockTx(blockList[1])
-	txPool.longestBlockHash.Add(blockList[1].HashString())
+	txPool.checkIterateBlockHash.Add(blockList[1].HashString())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -235,7 +235,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 
 	BlockCache := blockcache.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
 
-	chConfirmBlock := make(chan block.Block, 10)
+	chConfirmBlock := make(chan *block.Block, 10)
 	txPool, err := NewTxPoolServer(BlockCache, chConfirmBlock)
 	if err != nil {
 		panic("NewTxPoolServer error")
@@ -259,7 +259,7 @@ func genTx(a account.Account, nonce int) tx.Tx {
 
 func genBlocks(p blockcache.BlockCache, accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
-	//blockLen := p.BlockCache.ConfirmedLength()
+	//blockLen := p.blockCache.ConfirmedLength()
 	//fmt.Println(blockLen)
 
 	//blockNum := 1000

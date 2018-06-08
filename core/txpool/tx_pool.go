@@ -15,15 +15,14 @@ import (
 )
 
 var (
-	clearTxInterval    = 8 * time.Second
-	clearBlockInterval = 12 * time.Second
-	filterTime         = 30
+	clearInterval = 8 * time.Second
+	filterTime    = 30
 )
 
 type TxPoolServer struct {
 	chTx           chan message.Message // transactions of RPC and NET
 	chBlock        chan message.Message // 上链的block数据
-	chConfirmBlock chan block.Block
+	chConfirmBlock chan *block.Block
 
 	chain  blockcache.BlockCache // blockCache
 	router network.Router
@@ -32,13 +31,13 @@ type TxPoolServer struct {
 	listTx    listTx  // 所有的缓存交易
 	pendingTx listTx  // 最长链上，去重的交易
 
-	longestBlockHash blockHashList
+	checkIterateBlockHash blockHashList
 
 	filterTime int64 // 过滤交易的时间间隔
 	mu         sync.RWMutex
 }
 
-func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan block.Block) (*TxPoolServer, error) {
+func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan *block.Block) (*TxPoolServer, error) {
 
 	p := &TxPoolServer{
 		chain:          chain,
@@ -47,10 +46,10 @@ func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan block.Bloc
 			blkTx:   make(map[string]*hashMap),
 			blkTime: make(map[string]int64),
 		},
-		listTx:           listTx{list: make(map[string]*tx.Tx)},
-		pendingTx:        listTx{list: make(map[string]*tx.Tx)},
-		longestBlockHash: blockHashList{blockList: make([]string, 0)},
-		filterTime:       int64(filterTime),
+		listTx:                listTx{list: make(map[string]*tx.Tx)},
+		pendingTx:             listTx{list: make(map[string]*tx.Tx)},
+		checkIterateBlockHash: blockHashList{blockList: make(map[string]struct{}, 0)},
+		filterTime:            int64(filterTime),
 	}
 	p.router = network.Route
 	if p.router == nil {
@@ -85,11 +84,8 @@ func (pool *TxPoolServer) loop() {
 
 	pool.initBlockTx()
 
-	clearTx := time.NewTicker(clearTxInterval)
+	clearTx := time.NewTicker(clearInterval)
 	defer clearTx.Stop()
-
-	clearBlock := time.NewTicker(clearBlockInterval)
-	defer clearBlock.Stop()
 
 	for {
 		select {
@@ -123,10 +119,9 @@ func (pool *TxPoolServer) loop() {
 			pool.updateBlockHash(bhl)
 			// todo 可以在外部要集合的时候在调用
 			pool.updatePending()
-		case <-clearBlock.C:
-			pool.delTimeOutBlockTx()
 		case <-clearTx.C:
 			pool.delTimeOutTx()
+			pool.delTimeOutBlockTx()
 		}
 	}
 }
@@ -180,6 +175,7 @@ func (pool *TxPoolServer) initBlockTx() {
 		t := pool.slotToSec(blk.Head.Time)
 		if timeNow-t >= pool.filterTime {
 			pool.blockTx.Add(blk)
+			pool.checkIterateBlockHash.Add(blk.HashString())
 		}
 	}
 
@@ -245,6 +241,7 @@ func (pool *TxPoolServer) delTimeOutBlockTx() {
 
 		if t < confirmTime && nTime-pool.filterTime > t {
 			pool.blockTx.Del(hash)
+			pool.checkIterateBlockHash.Del(hash)
 		}
 	}
 }
@@ -268,7 +265,7 @@ func (pool *TxPoolServer) updatePending() {
 
 func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 
-	for _, blockHash := range pool.longestBlockHash.GetList() {
+	for blockHash := range pool.checkIterateBlockHash.GetList() {
 		//fmt.Println("##blockhash: ", blockHash)
 		txList := pool.blockTx.TxList(string(blockHash))
 		if txList != nil {
@@ -283,7 +280,7 @@ func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 
 func (pool *TxPoolServer) blockHash(chain block.Chain) *blockHashList {
 
-	bhl := &blockHashList{blockList: make([]string, 0)}
+	bhl := &blockHashList{blockList: make(map[string]struct{}, 0)}
 	iter := chain.Iterator()
 	for {
 		blk := iter.Next()
@@ -300,11 +297,8 @@ func (pool *TxPoolServer) updateBlockHash(bhl *blockHashList) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
-	// todo 增量更新判断，不用重新生成pending
-	pool.longestBlockHash.Clear()
-
-	for _, hash := range bhl.GetList() {
-		pool.longestBlockHash.Add(hash)
+	for hash := range bhl.GetList() {
+		pool.checkIterateBlockHash.Add(hash)
 	}
 
 }
@@ -424,20 +418,29 @@ func (l listTx) Get(hash string) *tx.Tx {
 }
 
 type blockHashList struct {
-	blockList []string
+	blockList map[string]struct{}
 }
 
 func (b *blockHashList) Add(hash string) {
+	if _,ok:=b.blockList[hash];ok{
+		return
+	}
+	b.blockList[hash]= struct{}{}
+}
 
-	b.blockList = append(b.blockList, hash)
+func (b *blockHashList) Del(hash string) {
+	if _,ok:=b.blockList[hash];ok{
+		delete(b.blockList, hash)
+	}
 }
 
 func (b *blockHashList) Clear() {
 
-	b.blockList = []string{}
+	b.blockList = nil
+	b.blockList = make(map[string]struct{})
 }
 
-func (b *blockHashList) GetList() []string {
+func (b *blockHashList) GetList() map[string]struct{} {
 
 	return b.blockList
 }
