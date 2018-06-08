@@ -82,17 +82,15 @@ def stop():
 
 
 def upgrade():
-	if(stop()!=0):
-		return 1
 	wCommand("cd "+pwd+" && git checkout testnet && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
 	#stop iserver now
-	if(stop()!=0):
-		return 1
+#	if(stop()!=0):
+#		return 1
 	#ret=wCommand("nohup redis-server &")
 	#delete dump.rdb
-	return start()
-
+#	return start()
+	return 0
 func={
 	"start":start,
 	"stop":stop,
