@@ -102,8 +102,8 @@ func (t *Tx) Encode() []byte {
 func (t *Tx) Decode(b []byte) (err error) {
 	var tr TxRaw
 	defer func() {
-    	if r := recover(); r != nil {
-			err=fmt.Errorf("%v",r)
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
 		}
 	}()
 
