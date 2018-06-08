@@ -6,7 +6,7 @@ PROJECT = github.com/iost-official/prototype
 DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
 TARGET_DIR = build
 
-.PHONY: all build iserver register check vet lint image clean
+.PHONY: all build iserver register check vet lint image install clean
 
 all: build
 
@@ -28,6 +28,10 @@ lint:
 
 image:
 	docker build -f Dockerfile.dev -t $(DOCKER_IMAGE) ..
+
+install:
+	go install ./iwallet/
+	go install ./iserver/
 
 clean:
 	rm -f ${TARGET_DIR}

@@ -209,8 +209,6 @@ func exitLoop() {
 	c := make(chan os.Signal, 1)
 
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	defer signal.Stop(c)
-	defer close(exit)
 
 	go func() {
 		i := <-c
@@ -226,10 +224,14 @@ func exitLoop() {
 			SubType: "offline",
 		})
 		///////////////////////////////////
-		os.Exit(0)
+		exit <- true
+		// os.Exit(0)
 	}()
 
 	<-exit
+	signal.Stop(c)
+	close(exit)
+	os.Exit(0)
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
