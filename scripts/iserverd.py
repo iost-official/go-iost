@@ -63,7 +63,7 @@ def restart():
 	for i in range(0,3):
 		if(start()!=0):
 			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|awk 'NR==1{print $1}'")
-			wCommand("kill TERM "+a)
+			wCommand("kill -TERM "+a)
 
 			time.sleep(1)
 		else:
@@ -74,7 +74,7 @@ def stop():
 	for i in range(0,3):
 		if exist()==0:
 			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|awk 'NR==1{print $1}'")
-			wCommand("kill TERM "+a)
+			wCommand("kill -TERM "+a)
 			time.sleep(1)
 		else:
 			return 0
