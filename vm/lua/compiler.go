@@ -16,6 +16,10 @@ var (
 	ErrNoMain = errors.New("parse failed: no main function")
 	// ErrIllegalCode 代码中包含\\0字符
 	ErrIllegalCode = errors.New("parse failed: Text contains character \\0")
+	// 代码没指定输入参数数量
+	ErrNoParamCnt = errors.New("parse failed: param count not given \\0")
+	// 代码没指定返回参数数量
+	ErrNoRtnCnt = errors.New("parse failed: return count not given \\0")
 )
 
 // DocCommentParser 装入text之后调用parse即可得到contract
@@ -70,12 +74,27 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 		inputCountRe := regexp.MustCompile("@param_cnt (\\d+)")
 		rtnCountRe := regexp.MustCompile("@return_cnt (\\d+)")
-
-		inputCount, _ := strconv.Atoi(inputCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1])
-		rtnCount, _ := strconv.Atoi(rtnCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1])
-
 		privRe := regexp.MustCompile("@privilege ([a-z]+)")
-		privS := privRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1]
+
+		var inputCount, rtnCount int
+		var privS string
+
+		ics := inputCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
+		if len(ics) < 1 {
+			return nil, ErrNoParamCnt
+		}
+		rcs := rtnCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
+		if len(rcs) < 1 {
+			return nil, ErrNoRtnCnt
+		}
+		ps := privRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
+		if len(ps) < 1 {
+			privS = ""
+		} else {
+			privS = ps[1]
+		}
+		inputCount, _ = strconv.Atoi(ics[1])
+		rtnCount, _ = strconv.Atoi(rcs[1])
 		var priv vm.Privilege
 		switch privS {
 		case "public":
