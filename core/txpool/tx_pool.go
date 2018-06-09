@@ -16,8 +16,8 @@ import (
 
 var (
 	clearInterval = 8 * time.Second
-	filterTime    = 40
-	//filterTime    = 60*60*24*7
+	//filterTime    = 40
+	filterTime    = 60*60*24*7
 )
 
 type TxPoolServer struct {
@@ -184,7 +184,7 @@ func (pool *TxPoolServer) initBlockTx() {
 		t := pool.slotToSec(blk.Head.Time)
 		if timeNow-t >= pool.filterTime {
 			pool.blockTx.Add(blk)
-			pool.checkIterateBlockHash.Add(blk.HashString())
+			pool.checkIterateBlockHash.Add(blk.HashID())
 		}
 	}
 
@@ -197,7 +197,7 @@ func (pool *TxPoolServer) slotToSec(t int64) int64 {
 
 func (pool *TxPoolServer) addListTx(tx *tx.Tx) {
 
-	if !pool.listTx.Exist(tx.HashString()) {
+	if !pool.listTx.Exist(tx.TxID()) {
 		pool.listTx.Add(tx)
 	}
 
@@ -260,7 +260,7 @@ func (pool *TxPoolServer) updatePending() {
 
 	for hash, tr := range pool.listTx.list {
 		if !pool.txExistTxPool(hash) {
-			//fmt.Println("Add pending tr hash:",tr.HashString(), " tr nonce:", tr.Nonce)
+			//fmt.Println("Add pending tr hash:",tr.TxID(), " tr nonce:", tr.Nonce)
 			pool.pendingTx.Add(tr)
 		}
 	}
@@ -291,7 +291,7 @@ func (pool *TxPoolServer) blockHash(chain block.Chain) *blockHashList {
 			break
 		}
 		//log.Log.I("getLongestChainBlockHash , blk Number: %v, witness: %v", blk.Head.Number, blk.Head.Witness)
-		bhl.Add(blk.HashString())
+		bhl.Add(blk.HashID())
 	}
 	return bhl
 }
@@ -307,7 +307,7 @@ func (pool *TxPoolServer) updateBlockHash(bhl *blockHashList) {
 // 保存一个block的所有交易数据
 func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 
-	if !pool.blockTx.Exist(bl.HashString()) {
+	if !pool.blockTx.Exist(bl.HashID()) {
 		pool.blockTx.Add(bl)
 	}
 }
@@ -347,7 +347,7 @@ func (b *blockTx) Add(bl *block.Block) {
 	b.smu.Lock()
 	defer b.smu.Unlock()
 
-	blochHash := bl.HashString()
+	blochHash := bl.HashID()
 
 	if _, e := b.blkTx[blochHash]; !e {
 		b.blkTx[blochHash] = &hashMap{hashList: make(map[string]struct{})}
@@ -355,7 +355,7 @@ func (b *blockTx) Add(bl *block.Block) {
 
 	txList := b.blkTx[blochHash]
 	for _, tr := range bl.Content {
-		txList.Add(tr.HashString())
+		txList.Add(tr.TxID())
 	}
 
 	slot := consensus_common.Timestamp{Slot: bl.Head.Time}
@@ -400,11 +400,11 @@ func (l *listTx) Add(Tx *tx.Tx) {
 	l.smu.Lock()
 	defer l.smu.Unlock()
 
-	if _, ok := l.list[Tx.HashString()]; ok {
+	if _, ok := l.list[Tx.TxID()]; ok {
 		return
 	}
 
-	l.list[Tx.HashString()] = &tx.Tx{
+	l.list[Tx.TxID()] = &tx.Tx{
 		Time:      Tx.Time,
 		Nonce:     Tx.Nonce,
 		Contract:  Tx.Contract,

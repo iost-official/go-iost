@@ -119,8 +119,8 @@ func TestNewTxPoolServer(t *testing.T) {
 			txPool.addBlockTx(bl[0])
 			txPool.addBlockTx(bl[1])
 			So(txPool.BlockTxNum(), ShouldEqual, 2)
-			So(len(txPool.blockTx.blkTx[bl[0].HashString()].hashList), ShouldEqual, txCnt)
-			So(len(txPool.blockTx.blkTx[bl[1].HashString()].hashList), ShouldEqual, txCnt)
+			So(len(txPool.blockTx.blkTx[bl[0].HashID()].hashList), ShouldEqual, txCnt)
+			So(len(txPool.blockTx.blkTx[bl[1].HashID()].hashList), ShouldEqual, txCnt)
 
 			listTxCnt := 2
 			for i := 0; i < listTxCnt; i++ {
@@ -132,7 +132,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 			So(txPool.PendingTransactionNum(), ShouldEqual, listTxCnt)
 			for _, tx := range bl[0].Content {
-				//fmt.Println("add List tr hash:",tx.HashString(), " tr nonce:", tx.Nonce)
+				//fmt.Println("add List tr hash:",tx.TxID(), " tr nonce:", tx.Nonce)
 				txPool.addListTx(&tx)
 			}
 
@@ -142,16 +142,16 @@ func TestNewTxPoolServer(t *testing.T) {
 			//
 			//}
 			//
-			//for hash, _ := range txPool.blockTx.blkTx[bl[0].HashString()].hashList {
+			//for hash, _ := range txPool.blockTx.blkTx[bl[0].TxID()].hashList {
 			//	fmt.Println("0.hashList - tr hash:",hash)
 			//
 			//}
-			txPool.checkIterateBlockHash.Add(bl[0].HashString())
+			txPool.checkIterateBlockHash.Add(bl[0].HashID())
 			txPool.updatePending()
 
 			//txList:=txPool.PendingTransactions()
 			//for _,tx:=range txList {
-			//	fmt.Println(tx.Nonce, ", tr hash:",tx.HashString())
+			//	fmt.Println(tx.Nonce, ", tr hash:",tx.TxID())
 			//}
 			So(txPool.PendingTransactionNum(), ShouldEqual, listTxCnt)
 			//So(txPool.PendingTransactionNum(), ShouldEqual, listTxCnt)
@@ -173,9 +173,9 @@ func BenchmarkUpdatePending(b *testing.B) {
 	}
 
 	txPool.addBlockTx(blockList[0])
-	txPool.checkIterateBlockHash.Add(blockList[0].HashString())
+	txPool.checkIterateBlockHash.Add(blockList[0].HashID())
 	txPool.addBlockTx(blockList[1])
-	txPool.checkIterateBlockHash.Add(blockList[1].HashString())
+	txPool.checkIterateBlockHash.Add(blockList[1].HashID())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

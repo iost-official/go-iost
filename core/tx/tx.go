@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
+	"strconv"
 )
 
 //go:generate gencode go -schema=structs.schema -package=tx
@@ -33,7 +34,7 @@ func NewTx(nonce int64, contract vm.Contract) Tx {
 
 // 合约的参与者进行签名
 func SignContract(tx Tx, account account.Account) (common.Signature, error) {
-	sign, err := common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey)
+	sign, err := common.Sign(common.Secp256k1, tx.BaseHash(), account.Seckey)
 	if err != nil {
 		return sign, err
 	}
@@ -52,7 +53,7 @@ func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, erro
 }
 
 func RecordTx(tx Tx, account account.Account) (Tx, error) {
-	sign, err := common.Sign(common.Secp256k1, tx.Hash(), account.Seckey)
+	sign, err := common.Sign(common.Secp256k1, tx.BaseHash(), account.Seckey)
 	if err != nil {
 		return tx, err
 	}
@@ -61,7 +62,7 @@ func RecordTx(tx Tx, account account.Account) (Tx, error) {
 }
 
 // Time,Noce,Contract形成的基本哈希值
-func (t *Tx) baseHash() []byte {
+func (t *Tx) BaseHash() []byte {
 	tbr := TxBaseRaw{t.Time, t.Nonce, t.Contract.Encode()}
 	b, err := tbr.Marshal(nil)
 	if err != nil {
@@ -145,13 +146,15 @@ func (t *Tx) Hash() []byte {
 	return common.Sha256(t.Encode())
 }
 
-func (t *Tx) HashString() string {
-	return common.ToHex(common.Sha256(t.Encode()))
+// 公钥+nonoc 可用于交易判重
+func (t *Tx) TxID() string {
+	hash := string(t.Publisher.Pubkey)+strconv.FormatInt(t.Nonce,10)
+	return hash
 }
 
 // 验证签名的函数
 func (t *Tx) VerifySelf() error {
-	baseHash := t.baseHash() // todo 在basehash内缓存，不需要在应用进行缓存
+	baseHash := t.BaseHash() // todo 在basehash内缓存，不需要在应用进行缓存
 	for _, sign := range t.Signs {
 		ok := common.VerifySignature(baseHash, sign)
 		if !ok {
@@ -167,7 +170,7 @@ func (t *Tx) VerifySelf() error {
 }
 
 func (t *Tx) VerifySigner(sig common.Signature) bool {
-	return common.VerifySignature(t.baseHash(), sig)
+	return common.VerifySignature(t.BaseHash(), sig)
 }
 
 type TransactionsList []*Tx

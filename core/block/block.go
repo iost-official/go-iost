@@ -4,6 +4,7 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
+	"strconv"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
@@ -49,8 +50,13 @@ func (d *Block) Hash() []byte {
 	return common.Sha256(d.Encode())
 }
 
-func (d *Block) HashString() string {
-	return common.ToHex(common.Sha256(d.Encode()))
+//
+func (d *Block) HashID() string {
+	id := d.Head.Witness +
+		strconv.FormatInt(d.Head.Time, 10) +
+		strconv.FormatInt(d.Head.Number, 10) +
+		strconv.FormatInt(d.Head.Version, 10)
+	return id
 }
 
 // HeadHash 返回区块头部的Hash值
