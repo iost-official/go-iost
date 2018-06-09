@@ -1,16 +1,16 @@
 account:
   id: wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZGn
-  pub-key: wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZGn
-  sec-key: DMfcVpYp71U9rBsuWMN4CrJP8K1QuAB8RhJsQHLpu4vT%
+  pub-key: wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG
+  sec-key: DMfcVpYp71U9rBsuWMN4CrJP8K1QuAB8RhJsQHLpu4vT
 consensus:
   witness-list:
   - 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT
   - tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU
   - s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB
   - ByfQfTwFx5C4Y2Ee5QUecmevqGaodcBqKtPo9P4QYsWC
-  - wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZGn
-  - oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XUn
-  - 28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRymn
+  - wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG
+  - oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU
+  - 28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym
 net:
   log-path: iostlog
   node-table-path: netpath

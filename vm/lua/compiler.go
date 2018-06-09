@@ -73,7 +73,19 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 		inputCount, _ := strconv.Atoi(inputCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1])
 		rtnCount, _ := strconv.Atoi(rtnCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1])
-		method := NewMethod(vm.Public, funcName, inputCount, rtnCount) // TODO 从代码中获取权限信息
+
+		privRe := regexp.MustCompile("@privilege ([a-z]+)")
+		privS := privRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1]
+		var priv vm.Privilege
+		switch privS {
+		case "public":
+			priv = vm.Public
+		default:
+			priv = vm.Private
+
+		}
+
+		method := NewMethod(priv, funcName, inputCount, rtnCount) // TODO 从代码中获取权限信息
 
 		//匹配代码部分
 
