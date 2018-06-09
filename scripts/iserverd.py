@@ -54,7 +54,7 @@ def exist():
 def start():
 	if exist()==0:
 		return 1
-	wCommand("nohup iserver --config "+pwd+"/iserver/iserver.yml >> test.log 2>&1 &")
+	wCommand("nohup iserver --config /workdir/iserver.yml >> test.log 2>&1 &")
 	return 0
 
 #0:success
