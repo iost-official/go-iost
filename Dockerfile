@@ -54,5 +54,5 @@ WORKDIR /workdir
 
 ## docker deploy
 ## docker build -t iost .
-## docker run --name iost_container -p 30302:30302 -p 30303:30303 -p 30310:30310 -v /home/ec2-user/workdir:/workdir  -d iost imonitor
+## docker run --name iost_container -p 30301:30301 -p 30303:30303 -p 30310:30310 -v /home/ec2-user/workdir:/workdir  -d iost imonitor
 
