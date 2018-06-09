@@ -241,8 +241,6 @@ func (p *DPoS) blockLoop() {
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
-				bc := p.blockCache.LongestChain()
-				p.blockCache.UpdateTxPoolOnBC(bc)
 			} else {
 				p.log.I("Error: %v", err)
 			}

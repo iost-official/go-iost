@@ -17,6 +17,7 @@ import (
 var (
 	clearInterval = 8 * time.Second
 	filterTime    = 40
+	//filterTime    = 60*60*24*7
 )
 
 type TxPoolServer struct {

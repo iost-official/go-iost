@@ -304,9 +304,7 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 			h.cachedRoot.pool.Flush()
 			h.cachedRoot.super = nil
 			h.cachedRoot.updateLength()
-			for _, tx := range h.cachedRoot.bc.Top().Content {
-				h.txPool.Del(&tx)
-			}
+
 		} else {
 			break
 		}
