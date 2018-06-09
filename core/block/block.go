@@ -1,6 +1,7 @@
 package block
 
 import (
+	"fmt"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
