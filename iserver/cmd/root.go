@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"os"
 
-	"net"
-
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/consensus"
@@ -28,6 +26,7 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
+	"github.com/iost-official/prototype/metrics"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/rpc"
 	"github.com/mitchellh/go-homedir"
@@ -102,6 +101,7 @@ var rootCmd = &cobra.Command{
 		rpcPort := viper.GetString("net.rpc-port")
 		target := viper.GetString("net.target") //optional
 		port := viper.GetInt64("net.port")
+		metricsPort := viper.GetString("net.metrics-port")
 
 		log.Log.I("net.log-path:  %v", logPath)
 		log.Log.I("net.node-table-path:  %v", nodeTablePath)
@@ -111,6 +111,7 @@ var rootCmd = &cobra.Command{
 		log.Log.I("net.target:  %v", target)
 		log.Log.I("net.port:  %v", port)
 		log.Log.I("net.rpcPort:  %v", rpcPort)
+		log.Log.I("net.metricsPort:  %v", metricsPort)
 
 		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 || rpcPort == "" {
 			log.Log.E("Network config initialization failed, stop the program!")
@@ -118,10 +119,10 @@ var rootCmd = &cobra.Command{
 		}
 
 		log.Log.I("network instance")
-		publicIP := common.GetPulicIP()
-		if publicIP != "" && common.IsPublicIP(net.ParseIP(publicIP)) && listenAddr != "127.0.0.1" {
-			listenAddr = publicIP
-		}
+		/*      publicIP := common.GetPulicIP() */
+		// if publicIP != "" && common.IsPublicIP(net.ParseIP(publicIP)) && listenAddr != "127.0.0.1" {
+		// listenAddr = publicIP
+		/* } */
 		net, err := network.GetInstance(
 			&network.NetConifg{
 				LogPath:       logPath,
@@ -196,13 +197,15 @@ var rootCmd = &cobra.Command{
 			log.Log.E("RPC initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-		/*
-			////////////probe//////////////////
-			log.Report(&log.MsgNode{
-				SubType: "online",
-			})
-			///////////////////////////////////
-		*/
+
+		// Start Metrics Server
+		metrics.NewServer(metricsPort)
+
+		////////////probe//////////////////
+		log.Report(&log.MsgNode{
+			SubType: "online",
+		})
+		///////////////////////////////////
 		//等待推出信号
 		exitLoop()
 
@@ -213,9 +216,7 @@ func exitLoop() {
 	exit := make(chan bool)
 	c := make(chan os.Signal, 1)
 
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
-	defer signal.Stop(c)
-	defer close(exit)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go func() {
 		i := <-c
@@ -226,17 +227,19 @@ func exitLoop() {
 				s.Stop()
 			}
 		}
-		/*
-			////////////probe//////////////////
-			log.Report(&log.MsgNode{
-				SubType: "offline",
-			})
-			///////////////////////////////////
-		*/
-		os.Exit(0)
+		////////////probe//////////////////
+		log.Report(&log.MsgNode{
+			SubType: "offline",
+		})
+		///////////////////////////////////
+		exit <- true
+		// os.Exit(0)
 	}()
 
 	<-exit
+	signal.Stop(c)
+	close(exit)
+	os.Exit(0)
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

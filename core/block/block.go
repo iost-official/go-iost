@@ -1,6 +1,7 @@
 package block
 
 import (
+	"fmt"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
@@ -30,9 +31,15 @@ func (d *Block) Encode() []byte {
 }
 
 // Decode 是区块的反序列方法
-func (d *Block) Decode(bin []byte) error {
+func (d *Block) Decode(bin []byte) (err error) {
 	var br BlockRaw
-	_, err := br.Unmarshal(bin)
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
+	_, err = br.Unmarshal(bin)
 	d.Head = br.Head
 	for _, t := range br.Content {
 		var tt tx.Tx

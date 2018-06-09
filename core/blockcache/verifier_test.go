@@ -27,7 +27,7 @@ func TestStdTxsVerifier(t *testing.T) {
 
 	txs := make([]*tx.Tx, 0)
 	for j := 0; j < 100; j++ {
-		lc := lua.NewContract(vm.ContractInfo{Prefix: strconv.Itoa(j), GasLimit: 100, Price: 0, Publisher: vm.IOSTAccount("a")}, code, main)
+		lc := lua.NewContract(vm.ContractInfo{Prefix: strconv.Itoa(j), GasLimit: 10000, Price: 0, Publisher: vm.IOSTAccount("a")}, code, main)
 		txx := tx.NewTx(int64(j), &lc)
 		txs = append(txs, &txx)
 	}

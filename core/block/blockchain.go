@@ -3,10 +3,12 @@ package block
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/db"
 	"strconv"
 	"sync"
+
+	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/prototype/log"
 	//"github.com/iost-official/prototype/log"
 )
 
@@ -103,31 +105,29 @@ func (b *ChainImpl) Push(block *Block) error {
 	if err != nil {
 		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
-	/*
-		////////////probe//////////////////
-		log.Report(&log.MsgBlock{
-			SubType:"confirm",
-			BlockHeadHash:block.HeadHash(),
-			BlockNum:block.Head.Number,
-		})
-		///////////////////////////////////
-	*/
+
+	////////////probe//////////////////
+	log.Report(&log.MsgBlock{
+		SubType:       "confirm",
+		BlockHeadHash: block.HeadHash(),
+		BlockNum:      block.Head.Number,
+	})
+	///////////////////////////////////
 
 	//put all the tx of this block to txdb
 	for _, ctx := range block.Content {
 		if err := b.tx.Add(&ctx); err != nil {
 			return fmt.Errorf("failed to add tx %v", err)
 		}
-		/*
-			////////////probe//////////////////
-			log.Report(&log.MsgTx{
-				SubType:"confirm",
-				TxHash:ctx.Hash(),
-				Publisher:ctx.Publisher.Pubkey,
-				Nonce:ctx.Nonce,
-			})
-			///////////////////////////////////
-		*/
+
+		////////////probe//////////////////
+		log.Report(&log.MsgTx{
+			SubType:   "confirm",
+			TxHash:    ctx.Hash(),
+			Publisher: ctx.Publisher.Pubkey,
+			Nonce:     ctx.Nonce,
+		})
+		///////////////////////////////////
 	}
 
 	return nil
@@ -199,7 +199,7 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 	if err := rBlock.Decode(block); err != nil {
 		return nil
 	}
-	//TODO:should calc sth after decode?
+
 	return rBlock
 }
 

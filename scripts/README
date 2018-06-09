@@ -1,0 +1,44 @@
+iserverd.py
+	启动iserver：python iserverd.py start
+		当iserver正在运行时，返回1
+		否则启动iserver，返回0
+	停止iserver：python iserverd.py stop
+		当iserver正在运行时，尝试三次关闭iserver，若失败返回1，成功返回0.每次尝试之间睡眠1秒
+	重启iserver：python iserverd.py restart
+		当iserver正在运行时，尝试三次关闭iserver并启动，若失败返回1，成功返回0.每次尝试之间睡眠1秒
+	更新iserver：python iserverd.py upgrade
+		更新develop分支代码，go install。
+	查询iserver进程是否运行:  python iserverd.py exist
+		上述函数均是基于本函数判断当前系统中iserver是否正在运行，目前只是调用ps命令判断进程名是否存在，以及检查相应端口是否处于LISTEN状态。
+sendtx/sendtx.py
+	python sendtx.py genaccounts
+		生成100个账户（存储到acc_list.txt中），格式为：
+		pubkey0
+		seckey0
+		pubkey1
+		seckey1
+		pubkey2
+		seckey2
+		   .
+		   .
+		   .
+
+	python sendtx.py sendtoall
+		给acc_list.txt中的账户各打1000000个iost
+		
+	上述两个命令是在测试网启动的时候做
+
+	python sendtx.py sendtransaction
+	    每次发一笔交易（随机from，to,money,nonce）
+
+testWallet/testW.py
+	python testW.py
+		clear()				:clear files before test
+		installWallet()		:go install iwallet
+		checkAccount()		:test "iwallet account -c test"
+		checkBlock()		:test "iwaallet block 0"
+		checkCompile()		:test compile contract
+		checkSign()			:test sign contract
+		checkPublish()		:test publish tx
+		checkValue()		:test get value from statepool
+		checkBalance()		:test get balance

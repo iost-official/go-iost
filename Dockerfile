@@ -20,7 +20,7 @@ RUN \
   rm -rf /tmp/redis-stable* && \
   sed -i 's/^\(bind .*\)$/# \1/' /etc/redis/redis.conf && \
   sed -i 's/^\(daemonize .*\)$/# \1/' /etc/redis/redis.conf && \
-  sed -i 's/^\(logfile .*\)$/# \1/' /etc/redis/redis.conf# Expose ports.
+  sed -i 's/^\(logfile .*\)$/# \1/' /etc/redis/redis.conf
 
 EXPOSE 6379
 
@@ -35,15 +35,24 @@ ENV GOPATH /gopath
 ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 
+# Install Python
+RUN yum install -y epel-release
+RUN yum install -y python python-devel python-pip
+
 # Install project
 RUN mkdir -p $GOPATH/src/github.com/iost-official && cd $GOPATH/src/github.com/iost-official && \
 git clone https://445789ea93ff81d814c78fccae8e25000f96e539@github.com/iost-official/prototype && \
-cd prototype && git checkout develop && go get github.com/kardianos/govendor && govendor sync -v && \
-cd iserver && go build
-
+cd prototype && git checkout testnet && go get github.com/kardianos/govendor && govendor sync -v && \
+pip install -r scripts/backup/requirements.txt && \
+cd iserver && go install && cd ../imonitor && go install && mkdir /workdir
 
 EXPOSE 30302
 EXPOSE 30303
+EXPOSE 30310
 
-WORKDIR $GOPATH/src/github.com/iost-official/prototype/iserver
+WORKDIR /workdir
+
+## docker deploy
+## docker build -t iost .
+## docker run --name iost_container -p 30302:30302 -p 30303:30303 -p 30310:30310 -v /home/ec2-user/workdir:/workdir  -d iost imonitor
 
