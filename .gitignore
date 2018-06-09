@@ -153,9 +153,6 @@ fabric.properties
 
 prototype
 
-vendor/github.com/
-vendor/golang.org/
-vendor/gopkg.in/
 
 .vscode/
 
