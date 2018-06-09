@@ -148,7 +148,7 @@ func (t *Tx) Hash() []byte {
 
 // 公钥+nonoc 可用于交易判重
 func (t *Tx) TxID() string {
-	hash := string(t.Publisher.Pubkey)+strconv.FormatInt(t.Nonce,10)
+	hash := string(t.Publisher.Pubkey)+strconv.FormatInt(t.Nonce,10)+strconv.FormatInt(t.Time,10)
 	return hash
 }
 
