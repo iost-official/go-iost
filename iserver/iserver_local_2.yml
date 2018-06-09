@@ -18,7 +18,7 @@ net:
   register-addr: 18.179.83.17:30304
   listen-addr: 52.56.118.10
   target: base
-  port: 30305
+  port: 30301
   rpc-port: :30306
 vm:
   max-block-gas:
