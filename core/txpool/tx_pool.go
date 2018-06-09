@@ -16,7 +16,7 @@ import (
 
 var (
 	clearInterval = 8 * time.Second
-	filterTime    = 30
+	filterTime    = 40
 )
 
 type TxPoolServer struct {
@@ -35,6 +35,7 @@ type TxPoolServer struct {
 	filterTime int64 // 过滤交易的时间间隔
 	mu         sync.RWMutex
 }
+
 var TxPoolS *TxPoolServer
 
 func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan *block.Block) (*TxPoolServer, error) {
@@ -100,23 +101,25 @@ func (pool *TxPoolServer) loop() {
 
 			// 超时交易丢弃
 			if pool.txTimeOut(&tx) {
+				//log.Log.I("tx timeout:%v", tx.Time)
 				continue
 			}
 			if blockcache.VerifyTxSig(tx) {
+				pool.mu.Lock()
 				pool.addListTx(&tx)
+				pool.mu.Unlock()
 			}
 
 		case bl, ok := <-pool.chConfirmBlock: // 可以上链的block
 			if !ok {
 				return
 			}
-
 			pool.addBlockTx(bl)
 			// 根据最长链计算 pending tx
 			bhl := pool.blockHash(pool.chain.LongestChain())
 			pool.updateBlockHash(bhl)
 			// todo 可以在外部要集合的时候在调用
-			pool.updatePending()
+			//pool.updatePending()
 		case <-clearTx.C:
 			pool.delTimeOutTx()
 			pool.delTimeOutBlockTx()
@@ -124,11 +127,14 @@ func (pool *TxPoolServer) loop() {
 	}
 }
 
-func (pool *TxPoolServer) AddTransaction(tx message.Message)  {
-	pool.chTx<-tx
+func (pool *TxPoolServer) AddTransaction(tx message.Message) {
+	pool.chTx <- tx
 }
 
 func (pool *TxPoolServer) PendingTransactions() tx.TransactionsList {
+
+	pool.updatePending()
+
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -189,8 +195,6 @@ func (pool *TxPoolServer) slotToSec(t int64) int64 {
 }
 
 func (pool *TxPoolServer) addListTx(tx *tx.Tx) {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
 
 	if !pool.listTx.Exist(tx.HashString()) {
 		pool.listTx.Add(tx)
@@ -219,7 +223,7 @@ func (pool *TxPoolServer) delTimeOutTx() {
 	for hash, tx := range pool.listTx.list {
 		txTime := tx.Time / 1e9
 		if nTime-txTime > pool.filterTime {
-			delete(pool.listTx.list, hash)
+			pool.listTx.Del(hash)
 		}
 	}
 }
@@ -227,8 +231,6 @@ func (pool *TxPoolServer) delTimeOutTx() {
 // 删除超时的交易
 // 小于区块确定时间 && 小于当前减去过滤时间
 func (pool *TxPoolServer) delTimeOutBlockTx() {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
 
 	nTime := time.Now().Unix()
 	chain := pool.chain.BlockChain()
@@ -249,8 +251,6 @@ func (pool *TxPoolServer) delTimeOutBlockTx() {
 }
 
 func (pool *TxPoolServer) updatePending() {
-
-	pool.delTimeOutTx()
 
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
@@ -289,15 +289,13 @@ func (pool *TxPoolServer) blockHash(chain block.Chain) *blockHashList {
 		if blk == nil {
 			break
 		}
-		log.Log.I("getLongestChainBlockHash , blk Number: %v, witness: %v", blk.Head.Number, blk.Head.Witness)
+		//log.Log.I("getLongestChainBlockHash , blk Number: %v, witness: %v", blk.Head.Number, blk.Head.Witness)
 		bhl.Add(blk.HashString())
 	}
 	return bhl
 }
 
 func (pool *TxPoolServer) updateBlockHash(bhl *blockHashList) {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
 
 	for hash := range bhl.GetList() {
 		pool.checkIterateBlockHash.Add(hash)
@@ -307,8 +305,6 @@ func (pool *TxPoolServer) updateBlockHash(bhl *blockHashList) {
 
 // 保存一个block的所有交易数据
 func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
 
 	if !pool.blockTx.Exist(bl.HashString()) {
 		pool.blockTx.Add(bl)
@@ -343,9 +339,12 @@ func (h *hashMap) Clear() {
 type blockTx struct {
 	blkTx   map[string]*hashMap // 按block hash 记录交易
 	blkTime map[string]int64    // 记录区块的时间，用于清理区块
+	smu     sync.RWMutex
 }
 
 func (b *blockTx) Add(bl *block.Block) {
+	b.smu.Lock()
+	defer b.smu.Unlock()
 
 	blochHash := bl.HashString()
 
@@ -382,6 +381,9 @@ func (b *blockTx) Time(hash string) int64 {
 }
 
 func (b blockTx) Del(hash string) {
+	b.smu.Lock()
+	defer b.smu.Unlock()
+
 	blk := b.blkTx[hash]
 	blk.Clear()
 	delete(b.blkTime, hash)
@@ -390,9 +392,13 @@ func (b blockTx) Del(hash string) {
 
 type listTx struct {
 	list map[string]*tx.Tx
+	smu  sync.RWMutex
 }
 
 func (l *listTx) Add(Tx *tx.Tx) {
+	l.smu.Lock()
+	defer l.smu.Unlock()
+
 	if _, ok := l.list[Tx.HashString()]; ok {
 		return
 	}
@@ -404,6 +410,15 @@ func (l *listTx) Add(Tx *tx.Tx) {
 		Signs:     Tx.Signs,
 		Publisher: Tx.Publisher,
 		Recorder:  Tx.Recorder,
+	}
+}
+
+func (l listTx) Del(hash string) {
+	l.smu.Lock()
+	defer l.smu.Unlock()
+
+	if l.Exist(hash) {
+		delete(l.list, hash)
 	}
 }
 
@@ -422,22 +437,31 @@ func (l listTx) Get(hash string) *tx.Tx {
 
 type blockHashList struct {
 	blockList map[string]struct{}
+	smu       sync.RWMutex
 }
 
 func (b *blockHashList) Add(hash string) {
-	if _,ok:=b.blockList[hash];ok{
+	b.smu.Lock()
+	defer b.smu.Unlock()
+
+	if _, ok := b.blockList[hash]; ok {
 		return
 	}
-	b.blockList[hash]= struct{}{}
+	b.blockList[hash] = struct{}{}
 }
 
 func (b *blockHashList) Del(hash string) {
-	if _,ok:=b.blockList[hash];ok{
+	b.smu.Lock()
+	defer b.smu.Unlock()
+
+	if _, ok := b.blockList[hash]; ok {
 		delete(b.blockList, hash)
 	}
 }
 
 func (b *blockHashList) Clear() {
+	b.smu.Lock()
+	defer b.smu.Unlock()
 
 	b.blockList = nil
 	b.blockList = make(map[string]struct{})
