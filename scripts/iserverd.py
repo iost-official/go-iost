@@ -83,7 +83,10 @@ def stop():
 
 
 def upgrade():
-	wCommand("cd "+pwd+" && git checkout testnet && git pull")
+	wCommand("cd "+pwd+" && git checkout .")
+	wCommand("cd "+pwd+" && git checkout testnet")
+	wCommand("cd "+pwd+" && git reset --hard origin/testnet")
+	wCommand("cd "+pwd+" && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
 	#stop iserver now
 #	if(stop()!=0):
