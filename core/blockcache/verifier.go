@@ -54,11 +54,25 @@ func StdTxsVerifier(txs []*tx.Tx, pool state.Pool) (state.Pool, int, error) {
 	for i, txx := range txs {
 		var err error
 		pool2, err = ver.VerifyContract(txx.Contract, pool2)
+		////////////probe//////////////////
+		var ret string = "pass"
 		if err != nil {
-			panic(err)
+			ret = "fail"
+		}
+		log.Report(&log.MsgTx{
+			SubType:   "verify." + ret,
+			TxHash:    txx.Hash(),
+			Publisher: txx.Publisher.Pubkey,
+			Nonce:     txx.Nonce,
+		})
+		///////////////////////////////////
+
+		if err != nil {
 			return pool2, i, err
 		}
+
 	}
+
 	return pool2, len(txs), nil
 }
 

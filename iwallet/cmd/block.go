@@ -70,7 +70,7 @@ to quickly create a Cobra application.`,
 			fmt.Println(err.Error())
 			return
 		}
-		fmt.Println(blockInfoJson)
+		fmt.Println(string(blockInfoJson))
 	},
 }
 

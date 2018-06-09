@@ -3,12 +3,10 @@
 ## install vendor
 govendor sync -v
 
-## docker deploy
+## 启动本地测试网络
+cd network/main/main && go run main.go --mode private [public,committee]
 
-docker build -t iost .
-
-docker run --name iost_container -p 30302:30302 -p 30303:30303 -d iost ./start.sh
-
+cd iserver && go run main.go --config iserver_local.yml
 
 
 

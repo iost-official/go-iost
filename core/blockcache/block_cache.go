@@ -5,10 +5,26 @@ import (
 	"fmt"
 
 	"errors"
+
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 )
+
+var (
+	blockCachedLength = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "block_cached_length",
+			Help: "Length of cached block chain",
+		},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(blockCachedLength)
+}
 
 //const (
 //	MaxCacheDepth = 6
@@ -304,7 +320,6 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 			h.cachedRoot.pool.Flush()
 			h.cachedRoot.super = nil
 			h.cachedRoot.updateLength()
-
 		} else {
 			break
 		}

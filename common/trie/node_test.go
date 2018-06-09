@@ -1,5 +1,6 @@
 package trie
 
+/*
 import (
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -43,3 +44,4 @@ func TestCanUnload(t *testing.T) {
 		}
 	})
 }
+*/
