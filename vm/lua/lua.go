@@ -5,6 +5,7 @@ import (
 
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/host"
 )
@@ -56,23 +57,31 @@ func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]st
 
 	method := method0.(*Method)
 
-	if len(args) == 0 {
-		err = l.L.CallByParam(lua.P{
-			Fn:      l.L.GetGlobal(method.name),
-			NRet:    method.outputCount,
-			Protect: true,
-		})
-	} else {
-		largs := make([]lua.LValue, 0)
-		for _, arg := range args {
-			largs = append(largs, Core2Lua(arg))
+	func() {
+		if len(args) == 0 {
+			err = l.L.CallByParam(lua.P{
+				Fn:      l.L.GetGlobal(method.name),
+				NRet:    method.outputCount,
+				Protect: true,
+			})
+		} else {
+			largs := make([]lua.LValue, 0)
+			for _, arg := range args {
+				largs = append(largs, Core2Lua(arg))
+			}
+			err = l.L.CallByParam(lua.P{
+				Fn:      l.L.GetGlobal(method.name),
+				NRet:    method.outputCount,
+				Protect: true,
+			}, largs...)
 		}
-		err = l.L.CallByParam(lua.P{
-			Fn:      l.L.GetGlobal(method.name),
-			NRet:    method.outputCount,
-			Protect: true,
-		}, largs...)
-	}
+
+		defer func() {
+			if err2 := recover(); err2 != nil {
+				log.Log.E("something wrong in call:", err.Error())
+			}
+		}()
+	}()
 
 	//fmt.Print("3 ")
 	//fmt.Println(l.cachePool.GetHM("iost", "b"))
@@ -106,7 +115,6 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Put = api{
 		name: "Put",
 		function: func(L *lua.LState) int {
-
 			k := L.ToString(1)
 			key := state.Key(l.Contract.Info().Prefix + k)
 			v := L.Get(2)
