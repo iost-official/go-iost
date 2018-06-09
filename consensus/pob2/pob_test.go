@@ -2,9 +2,14 @@ package pob2
 
 import (
 	"fmt"
+	"testing"
+
 	. "github.com/bouk/monkey"
 	. "github.com/golang/mock/gomock"
-	"testing"
+
+	"os/exec"
+	"sync"
+	"time"
 
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
@@ -19,9 +24,6 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
-	"os/exec"
-	"sync"
-	"time"
 )
 
 func TestNewPoB(t *testing.T) {
@@ -417,7 +419,7 @@ func genTx(p *PoB, nonce int) tx.Tx {
 				Put("hello", "world")
 				return "success"
 			end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
 
 	_tx := tx.NewTx(int64(nonce), &lc)
 	_tx, _ = tx.SignTx(_tx, p.account)

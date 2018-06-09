@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"bytes"
@@ -137,7 +138,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 
 		if isValidNode(r, base) {
 			base.putNode(string(r.From))
-			base.peers.SetAddr(string(r.From), newPeer(conn,base.localNode.Addr(), conn.RemoteAddr().String()))
+			base.peers.SetAddr(string(r.From), newPeer(conn, base.localNode.Addr(), conn.RemoteAddr().String()))
 			base.sendNodeTable(r.From, conn)
 		} else {
 			conn.Close()
@@ -152,8 +153,9 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 }
 
 func isValidNode(r *Request, base *BaseNetwork) bool {
-	if NetMode == PublicMode && !common.IsPublicIP(net.ParseIP(string(r.From))) {
-		base.log.D("[net] the node's ip is not public ip")
+	strs := strings.Split(string(r.From), ":")
+	if NetMode == PublicMode && !common.IsPublicIP(net.ParseIP(strs[0])) {
+		base.log.D("[net] the node's ip is not public ip: %v", strs[0])
 		return false
 	}
 	if NetMode == CommitteeMode && !base.isInCommittee(r.From) {

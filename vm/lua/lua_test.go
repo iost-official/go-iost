@@ -22,7 +22,7 @@ func TestLuaVM(t *testing.T) {
 
 			main := NewMethod(vm.Public, "main", 0, 1)
 			lc := Contract{
-				info: vm.ContractInfo{Prefix: "test", GasLimit: 11},
+				info: vm.ContractInfo{Prefix: "test", GasLimit: 10000},
 				code: `function main()
 	Put("hello", "world")
 	return "success"

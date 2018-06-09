@@ -7,14 +7,18 @@ consensus:
   - 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT
   - tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU
   - s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB
+  - ByfQfTwFx5C4Y2Ee5QUecmevqGaodcBqKtPo9P4QYsWC
+  - wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG
+  - oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU
+  - 28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym
 net:
   log-path: iostlog
   node-table-path: netpath
   node-id:
-  register-addr: 127.0.0.1:30304
-  listen-addr: 127.0.0.1
+  register-addr: 18.179.83.17:30304
+  listen-addr: 52.56.118.10
   target: base
-  port: 30305
+  port: 30301
   rpc-port: :30306
 vm:
   max-block-gas:

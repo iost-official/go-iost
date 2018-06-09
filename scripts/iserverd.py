@@ -19,6 +19,7 @@ def wCommand(com):
 #0:port is occupied
 #1:port isn't occupied
 def check_port(port):
+	return 0
 	ret=wCommand("netstat -tunlp|grep "+str(port))
 	ret=ret.split("\n")
 	cnt=0
@@ -53,7 +54,7 @@ def exist():
 def start():
 	if exist()==0:
 		return 1
-	wCommand("nohup iserver --config "+pwd+"/iserver/iserver.yml >> test.log 2>&1 &")
+	wCommand("nohup iserver --config /workdir/iserver.yml >> test.log 2>&1 &")
 	return 0
 
 #0:success
@@ -62,8 +63,8 @@ def start():
 def restart():
 	for i in range(0,3):
 		if(start()!=0):
-			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|awk 'NR==1{print $1}'")
-			wCommand("kill TERM "+a)
+			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|grep -v defunct|awk 'NR==1{print $1}'")
+			wCommand("kill -9 "+a)
 
 			time.sleep(1)
 		else:
@@ -73,8 +74,8 @@ def restart():
 def stop():
 	for i in range(0,3):
 		if exist()==0:
-			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|awk 'NR==1{print $1}'")
-			wCommand("kill TERM "+a)
+			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|grep -v defunct|awk 'NR==1{print $1}'")
+			wCommand("kill -9 "+a)
 			time.sleep(1)
 		else:
 			return 0
@@ -82,7 +83,10 @@ def stop():
 
 
 def upgrade():
-	wCommand("cd "+pwd+" && git checkout testnet && git pull")
+	wCommand("cd "+pwd+" && git checkout .")
+	wCommand("cd "+pwd+" && git checkout testnet")
+	wCommand("cd "+pwd+" && git reset --hard origin/testnet")
+	wCommand("cd "+pwd+" && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
 	#stop iserver now
 #	if(stop()!=0):
