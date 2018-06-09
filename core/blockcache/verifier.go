@@ -9,6 +9,7 @@ import (
 
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/log"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
