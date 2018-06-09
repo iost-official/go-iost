@@ -196,6 +196,7 @@ playground/playground
 playground/test
 iserver/netpath/
 iserver/iserver
+iserver/iserver.yml
 rpc/js/node_modules/
 rpc/js/package-lock.json
 core/block/txDB/
