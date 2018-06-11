@@ -2,7 +2,7 @@ package tx
 
 import (
 	"testing"
-	//	"fmt"
+//	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
@@ -33,13 +33,13 @@ func TestTx(t *testing.T) {
 		a1, _ := account.NewAccount(nil)
 		a2, _ := account.NewAccount(nil)
 		a3, _ := account.NewAccount(nil)
-		/*
-			Convey("string", func() {
-			 	tx := gentx()
-				fmt.Println(tx.String())
-				//So(err.Error(), ShouldEqual, "signer error")
-			})
-		*/
+/*
+		Convey("string", func() {
+			tx := gentx()
+			fmt.Printf("%s",&tx)
+			//So(err.Error(), ShouldEqual, "signer error")
+		})
+*/
 		Convey("sign and verify", func() {
 			tx := NewTx(int64(0), mockContract)
 			sig1, err := SignContract(tx, a1)
