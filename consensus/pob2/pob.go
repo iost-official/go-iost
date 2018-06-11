@@ -218,20 +218,13 @@ func (p *PoB) blockLoop() {
 			var blk block.Block
 			blk.Decode(req.Body)
 
-				////////////probe//////////////////
-				log.Report(&log.MsgBlock{
-					SubType:"receive",
-					BlockHeadHash:blk.HeadHash(),
-					 BlockNum:blk.Head.Number,
-				})
-				///////////////////////////////////
-				////////////probe//////////////////
-				log.Report(&log.MsgBlock{
-					SubType:       "receive",
-					BlockHeadHash: blk.HeadHash(),
-					BlockNum:      blk.Head.Number,
-				})
-				///////////////////////////////////
+			////////////probe//////////////////
+			log.Report(&log.MsgBlock{
+				SubType:       "receive",
+				BlockHeadHash: blk.HeadHash(),
+				BlockNum:      blk.Head.Number,
+			})
+			///////////////////////////////////
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
@@ -240,6 +233,8 @@ func (p *PoB) blockLoop() {
 				p.blockCache.UpdateTxPoolOnBC(bc)
 			} else {
 				p.log.I("Error: %v", err)
+				//HowHsu_Debug
+				fmt.Printf("[blockloop]:verify blk faild\n%s\n", &blk)
 			}
 			if err != ErrBlock && err != ErrTooOld {
 				p.synchronizer.BlockConfirmed(blk.Head.Number)
@@ -338,6 +333,8 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		}
 
 		if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
+			//HowHsu_Debug
+			fmt.Printf("[genBlock %d]: tx packed\n %s\n", blk.Head.Number, tx)
 			blk.Content = append(blk.Content, *tx)
 			spool1 = sp
 		}
@@ -392,18 +389,18 @@ func encodePoBInfo(votes [][]byte) []byte {
 
 //收到新块，验证新块，如果验证成功，更新PoB全局动态属性类并将其加入block cache，再广播
 func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-		////////////probe//////////////////
-		msgBlock := log.MsgBlock{
-			SubType:       "verify.fail",
-			BlockHeadHash: blk.HeadHash(),
-			BlockNum:      blk.Head.Number,
-		}
-		///////////////////////////////////
+	////////////probe//////////////////
+	msgBlock := log.MsgBlock{
+		SubType:       "verify.fail",
+		BlockHeadHash: blk.HeadHash(),
+		BlockNum:      blk.Head.Number,
+	}
+	///////////////////////////////////
 	// verify block head
 	if err := VerifyBlockHead(blk, parent); err != nil {
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
 		return nil, err
 
 	}
@@ -411,9 +408,9 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 	// verify block witness
 	// TODO currentSlot is negative
 	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
 		return nil, errors.New("wrong witness")
 
 	}
@@ -424,21 +421,21 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 
 	// verify block witness signature
 	if !common.VerifySignature(headInfo, signature) {
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
 		return nil, errors.New("wrong signature")
 	}
 	newPool, err := StdBlockVerifier(blk, pool)
 	if err != nil {
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
-		return nil, err
-	}
 		////////////probe//////////////////
-		msgBlock.SubType = "verify.pass"
 		log.Report(&msgBlock)
 		///////////////////////////////////
+		return nil, err
+	}
+	////////////probe//////////////////
+	msgBlock.SubType = "verify.pass"
+	log.Report(&msgBlock)
+	///////////////////////////////////
 	return newPool, nil
 }
