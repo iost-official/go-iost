@@ -39,7 +39,11 @@ func TestTx(t *testing.T) {
 			err = tx3.VerifySelf()
 			So(err, ShouldBeNil)
 
-			tx.Signs[0] = common.Signature{common.Secp256k1, []byte("hello"), []byte("world")}
+			tx.Signs[0] = common.Signature{
+				Algorithm: common.Secp256k1,
+				Sig:       []byte("hello"),
+				Pubkey:    []byte("world"),
+			}
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "signer error")
 		})
