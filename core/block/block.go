@@ -17,17 +17,17 @@ type Block struct {
 
 func (d *Block) String() string {
 	str := "Block{\n"
-	str += "BlockHead{\n"
-	str += "Number: " + strconv.FormatInt(d.Head.Number, 10) + ",\n"
-	str += "Time: " + strconv.FormatInt(d.Head.Time, 10) + ",\n"
-	str += "Witness: " + d.Head.Witness + ",\n"
-	str += "}\n"
+	str += "	BlockHead{\n"
+	str += "		Number: " + strconv.FormatInt(d.Head.Number, 10) + ",\n"
+	str += "		Time: " + strconv.FormatInt(d.Head.Time, 10) + ",\n"
+	str += "		Witness: " + d.Head.Witness + ",\n"
+	str += "	}\n"
 
-	str += "Content{\n"
+	str += "	Content{\n"
 	for _, tx := range d.Content {
 		str += tx.String()
 	}
-	str += "}\n"
+	str += "	}\n"
 	str += "}\n"
 	return str
 }

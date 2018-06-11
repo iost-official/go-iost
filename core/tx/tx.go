@@ -62,10 +62,10 @@ func RecordTx(tx Tx, account account.Account) (Tx, error) {
 
 func (t *Tx) String() string {
 	str := "Tx{\n"
-	str += "Time: " + strconv.FormatInt(t.Time, 10) + ",\n"
-	str += "Nonce: " + strconv.FormatInt(t.Nonce, 10) + ",\n"
-	str += "Pubkey: " + string(t.Publisher.Pubkey) + ",\n"
-	str += "Code: " + t.Contract.Code() + "\n"
+	str += "	Time: " + strconv.FormatInt(t.Time, 10) + ",\n"
+	str += "	Nonce: " + strconv.FormatInt(t.Nonce, 10) + ",\n"
+	str += "	Pubkey: " + string(t.Publisher.Pubkey) + ",\n"
+	str += "	Code:\n		" + t.Contract.Code() + "\n"
 	str += "}\n"
 	return str
 }
