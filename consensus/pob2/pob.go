@@ -339,7 +339,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 
 		if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
 			blk.Content = append(blk.Content, *tx)
-		} else {
 			spool1 = sp
 		}
 	}
