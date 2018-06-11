@@ -4,6 +4,7 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
+	"strconv"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
@@ -12,6 +13,23 @@ import (
 type Block struct {
 	Head    BlockHead
 	Content []tx.Tx //TODO:make it general for other structs
+}
+
+func (d *Block) String() string {
+	str := "Block{\n"
+	str += "BlockHead{\n"
+	str += "Number: " + strconv.FormatInt(d.Head.Number, 10) + ",\n"
+	str += "Time: " + strconv.FormatInt(d.Head.Time, 10) + ",\n"
+	str += "Witness: " + d.Head.Witness + ",\n"
+	str += "}\n"
+
+	str += "Content{\n"
+	for _, tx := range d.Content {
+		str += tx.String()
+	}
+	str += "}\n"
+	str += "}\n"
+	return str
 }
 
 // Encode 是区块的序列化方法
