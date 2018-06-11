@@ -305,15 +305,14 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	tx := txpool.TxPoolS.PendingTransactions()
 	if len(tx) != 0 {
 
-		for _,t := range tx{
+		for _,t := range tx {
 
-			if len(blk.Content) > TxPerBlk{
+			if len(blk.Content) >= TxPerBlk {
 				break
 			}
 
 			if sp, _, err := blockcache.StdTxsVerifier([]*Tx{t}, spool1); err == nil {
 				blk.Content = append(blk.Content, *t)
-			} else {
 				spool1 = sp
 			}
 		}
