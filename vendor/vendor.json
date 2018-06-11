@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "oYSzF/9oJ32QRCeMq1THJeUpICw=",
+			"path": "github.com/InWeCrypto/sha3",
+			"revision": "d0fd118c5827f1029b6b82df91da54acf5a2f145",
+			"revisionTime": "2017-11-23T09:41:27Z"
+		},
+		{
 			"checksumSHA1": "LLVyR2dAgkihu0+HdZF+JK0gMMs=",
 			"path": "github.com/agl/ed25519",
 			"revision": "5312a61534124124185d41f09206b9fef1d88403",
@@ -25,6 +31,18 @@
 			"path": "github.com/aristanetworks/goarista/monotime",
 			"revision": "59652c8de980f3fef4d4f996665828d89574dbef",
 			"revisionTime": "2018-05-22T20:04:30Z"
+		},
+		{
+			"checksumSHA1": "RL5aSp7jD3wWOrkv2cxqVoRBRRI=",
+			"path": "github.com/astaxie/beego/config/env",
+			"revision": "f16688817aa428d10361394015b40d096b680542",
+			"revisionTime": "2017-12-18T11:18:59Z"
+		},
+		{
+			"checksumSHA1": "W7HBzu7HlF18vCfNPgax7xvHXB0=",
+			"path": "github.com/astaxie/beego/utils",
+			"revision": "f16688817aa428d10361394015b40d096b680542",
+			"revisionTime": "2017-12-18T11:18:59Z"
 		},
 		{
 			"checksumSHA1": "0rido7hYHQtfq3UJzVT5LClLAWc=",
@@ -67,6 +85,12 @@
 			"path": "github.com/gogo/protobuf/proto",
 			"revision": "30cf7ac33676b5786e78c746683f0d4cd64fa75b",
 			"revisionTime": "2018-05-09T16:24:41Z"
+		},
+		{
+			"checksumSHA1": "kpDdn8FTTpe3DOSH7qDyfvIIzrY=",
+			"path": "github.com/golang/mock/gomock",
+			"revision": "22bbf0ddf08105dfa364d0a2fa619dfa71014af5",
+			"revisionTime": "2018-05-03T01:48:54Z"
 		},
 		{
 			"checksumSHA1": "8e94vVGc8ssfxcpgDSGLmp1hRJM=",
@@ -313,6 +337,12 @@
 			"path": "github.com/mitchellh/mapstructure",
 			"revision": "bb74f1db0675b241733089d5a1faa5dd8b0ef57b",
 			"revisionTime": "2018-05-11T14:21:26Z"
+		},
+		{
+			"checksumSHA1": "xVQV61RmXTYef0JBvKVo0EUxlzg=",
+			"path": "github.com/mkmueller/aes256",
+			"revision": "1ce9e9b3f91a55d93f1fe9d208450075a4c748e6",
+			"revisionTime": "2017-11-12T01:59:46Z"
 		},
 		{
 			"checksumSHA1": "3mf6G9NWxo5UakHoJrzyGaoqiHc=",
