@@ -113,7 +113,6 @@ func (p *DPoS) initGlobalProperty(acc Account, witnessList []string) {
 // Run: 运行DPoS实例
 func (p *DPoS) Run() {
 	p.synchronizer.StartListen()
-	go p.txListenLoop()
 	go p.blockLoop()
 	go p.scheduleLoop()
 	//p.genBlock(p.Account, block.Block{})
@@ -183,29 +182,6 @@ func (p *DPoS) genesis(initTime int64) error {
 	return nil
 }
 
-func (p *DPoS) txListenLoop() {
-	p.log.I("Start to listen tx")
-	for {
-		select {
-		case req, ok := <-p.ChTx:
-			if !ok {
-				return
-			}
-			if req.ReqType == reqTypeVoteTest {
-				p.addWitnessMsg(req)
-				continue
-			}
-			var tx Tx
-			tx.Decode(req.Body)
-			if blockcache.VerifyTxSig(tx) {
-				p.blockCache.AddTx(&tx)
-			}
-
-		case <-p.exitSignal:
-			return
-		}
-	}
-}
 
 func (p *DPoS) blockLoop() {
 
@@ -300,7 +276,6 @@ func (p *DPoS) scheduleLoop() {
 
 				pool := p.blockCache.LongestPool()
 				blk := p.genBlock(p.account, bc, pool)
-				go p.blockCache.ResetTxPoool()
 				p.globalDynamicProperty.update(&blk.Head)
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 
@@ -332,20 +307,20 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
 	//return &blk
-	spool1 := pool.Copy()
-	//TODO Content大小控制
-	for len(blk.Content) < TxPerBlk {
-		tx, err := p.blockCache.GetTx()
-		if tx == nil || err != nil {
-			break
-		}
-
-		if sp, _, err := blockcache.StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
-			blk.Content = append(blk.Content, *tx)
-		} else {
-			spool1 = sp
-		}
-	}
+	//spool1 := pool.Copy()
+	////TODO Content大小控制
+	//for len(blk.Content) < TxPerBlk {
+	//	tx, err := p.blockCache.GetTx()
+	//	if tx == nil || err != nil {
+	//		break
+	//	}
+	//
+	//	if sp, _, err := blockcache.StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
+	//		blk.Content = append(blk.Content, *tx)
+	//	} else {
+	//		spool1 = sp
+	//	}
+	//}
 
 	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
 

@@ -19,7 +19,6 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
-	"os/exec"
 	"sync"
 	"time"
 )
@@ -164,120 +163,122 @@ func envinit(t *testing.T) (*DPoS, []account.Account, []string) {
 	if err != nil {
 		t.Errorf("NewDPoS error")
 	}
+
 	return p, accountList, witnessList
 }
-func TestRunGenerateBlock(t *testing.T) {
-	Convey("Test of Run (Generate Block)", t, func() {
-		p, _, _ := envinit(t)
-		_tx := genTx(p, 998)
-		p.blockCache.AddTx(&_tx)
-		bc := p.blockCache.LongestChain()
-		pool := p.blockCache.LongestPool()
-		blk := p.genBlock(p.account, bc, pool)
-		So(len(blk.Content), ShouldEqual, 1)
-		So(blk.Content[0].Nonce, ShouldEqual, 998)
-		p.blockCache.Draw()
-	})
-}
 
-//clear BlockDB and TxDB files before running this test
-func TestRunConfirmBlock(t *testing.T) {
-	Convey("Test of Run ConfirmBlock", t, func() {
-		cmd := exec.Command("/bin/bash", "-c", "cd $GOPATH/src/github.com/iost-official/prototype/consensus/dpos && rm -rf blockDB txDB")
-		cmd.Run()
-
-		p, accList, witnessList := envinit(t)
-		_tx := genTx(p, 998)
-		p.blockCache.AddTx(&_tx)
-
-		for i := 0; i < 5; i++ {
-			wit := ""
-			for wit != witnessList[0] {
-				currentTimestamp := consensus_common.GetCurrentTimestamp()
-				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
-			}
-
-			bc := p.blockCache.LongestChain()
-			pool := p.blockCache.LongestPool()
-
-			blk := p.genBlock(p.account, bc, pool)
-			p.blockCache.ResetTxPoool()
-			p.globalDynamicProperty.update(&blk.Head)
-			err := p.blockCache.Add(blk, p.blockVerify)
-			fmt.Println(err)
-		}
-
-		So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
-		for i := 1; i < 3; i++ {
-			wit := ""
-			for wit != witnessList[i] {
-				currentTimestamp := consensus_common.GetCurrentTimestamp()
-				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
-			}
-
-			bc := p.blockCache.LongestChain()
-			pool := p.blockCache.LongestPool()
-			blk := p.genBlock(accList[i], bc, pool)
-			p.blockCache.ResetTxPoool()
-			p.globalDynamicProperty.update(&blk.Head)
-			/*
-				guard := Patch(witnessOfTime, func(_ *globalStaticProperty, _ *globalDynamicProperty, _ consensus_common.Timestamp) string {
-					return witnessList[i]
-				})
-				defer guard.Unpatch()
-			*/
-			err := p.blockCache.Add(blk, p.blockVerify)
-			fmt.Println(err)
-			if i == 1 {
-				So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
-			}
-			if i == 2 {
-				So(p.blockCache.ConfirmedLength(), ShouldEqual, 6)
-			}
-		}
-
-		p.blockCache.Draw()
-	})
-}
-
-//this need to be checked again
-func TestRunMultipleBlocks(t *testing.T) {
-	Convey("Test of Run (Multiple Blocks)", t, func() {
-		p, _, witnessList := envinit(t)
-		_tx := genTx(p, 998)
-		p.blockCache.AddTx(&_tx)
-
-		bc := p.blockCache.LongestChain()
-		pool := p.blockCache.LongestPool()
-
-		for i := 100; i < 105; i++ {
-			if i == 103 {
-				bc = p.blockCache.LongestChain()
-				pool = p.blockCache.LongestPool()
-			}
-			wit := ""
-			for wit != witnessList[0] {
-
-				currentTimestamp := consensus_common.GetCurrentTimestamp()
-				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
-			}
-
-			blk := p.genBlock(p.account, bc, pool)
-			p.blockCache.ResetTxPoool()
-			p.globalDynamicProperty.update(&blk.Head)
-
-			blk.Head.Time = int64(i)
-
-			headInfo := generateHeadInfo(blk.Head)
-			sig, _ := common.Sign(common.Secp256k1, headInfo, p.account.Seckey)
-			blk.Head.Signature = sig.Encode()
-
-			err := p.blockCache.Add(blk, p.blockVerify)
-			fmt.Println(err)
-		}
-		p.blockCache.Draw()
-	})
-}
+//func TestRunGenerateBlock(t *testing.T) {
+//	Convey("Test of Run (Generate Block)", t, func() {
+//		p, _, _ := envinit(t)
+//		_tx := genTx(p, 998)
+//		p.blockCache.AddTx(&_tx)
+//		bc := p.blockCache.LongestChain()
+//		pool := p.blockCache.LongestPool()
+//		blk := p.genBlock(p.account, bc, pool)
+//		So(len(blk.Content), ShouldEqual, 1)
+//		So(blk.Content[0].Nonce, ShouldEqual, 998)
+//		p.blockCache.Draw()
+//	})
+//}
+//
+////clear BlockDB and TxDB files before running this test
+//func TestRunConfirmBlock(t *testing.T) {
+//	Convey("Test of Run ConfirmBlock", t, func() {
+//		cmd := exec.Command("/bin/bash", "-c", "cd $GOPATH/src/github.com/iost-official/prototype/consensus/dpos && rm -rf blockDB txDB")
+//		cmd.Run()
+//
+//		p, accList, witnessList := envinit(t)
+//		_tx := genTx(p, 998)
+//		p.blockCache.AddTx(&_tx)
+//
+//		for i := 0; i < 5; i++ {
+//			wit := ""
+//			for wit != witnessList[0] {
+//				currentTimestamp := consensus_common.GetCurrentTimestamp()
+//				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
+//			}
+//
+//			bc := p.blockCache.LongestChain()
+//			pool := p.blockCache.LongestPool()
+//
+//			blk := p.genBlock(p.account, bc, pool)
+//			p.blockCache.ResetTxPoool()
+//			p.globalDynamicProperty.update(&blk.Head)
+//			err := p.blockCache.Add(blk, p.blockVerify)
+//			fmt.Println(err)
+//		}
+//
+//		So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
+//		for i := 1; i < 3; i++ {
+//			wit := ""
+//			for wit != witnessList[i] {
+//				currentTimestamp := consensus_common.GetCurrentTimestamp()
+//				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
+//			}
+//
+//			bc := p.blockCache.LongestChain()
+//			pool := p.blockCache.LongestPool()
+//			blk := p.genBlock(accList[i], bc, pool)
+//			p.blockCache.ResetTxPoool()
+//			p.globalDynamicProperty.update(&blk.Head)
+//			/*
+//				guard := Patch(witnessOfTime, func(_ *globalStaticProperty, _ *globalDynamicProperty, _ consensus_common.Timestamp) string {
+//					return witnessList[i]
+//				})
+//				defer guard.Unpatch()
+//			*/
+//			err := p.blockCache.Add(blk, p.blockVerify)
+//			fmt.Println(err)
+//			if i == 1 {
+//				So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
+//			}
+//			if i == 2 {
+//				So(p.blockCache.ConfirmedLength(), ShouldEqual, 6)
+//			}
+//		}
+//
+//		p.blockCache.Draw()
+//	})
+//}
+//
+////this need to be checked again
+//func TestRunMultipleBlocks(t *testing.T) {
+//	Convey("Test of Run (Multiple Blocks)", t, func() {
+//		p, _, witnessList := envinit(t)
+//		_tx := genTx(p, 998)
+//		p.blockCache.AddTx(&_tx)
+//
+//		bc := p.blockCache.LongestChain()
+//		pool := p.blockCache.LongestPool()
+//
+//		for i := 100; i < 105; i++ {
+//			if i == 103 {
+//				bc = p.blockCache.LongestChain()
+//				pool = p.blockCache.LongestPool()
+//			}
+//			wit := ""
+//			for wit != witnessList[0] {
+//
+//				currentTimestamp := consensus_common.GetCurrentTimestamp()
+//				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
+//			}
+//
+//			blk := p.genBlock(p.account, bc, pool)
+//			p.blockCache.ResetTxPoool()
+//			p.globalDynamicProperty.update(&blk.Head)
+//
+//			blk.Head.Time = int64(i)
+//
+//			headInfo := generateHeadInfo(blk.Head)
+//			sig, _ := common.Sign(common.Secp256k1, headInfo, p.account.Seckey)
+//			blk.Head.Signature = sig.Encode()
+//
+//			err := p.blockCache.Add(blk, p.blockVerify)
+//			fmt.Println(err)
+//		}
+//		p.blockCache.Draw()
+//	})
+//}
 func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parentHash []byte) (block.Block, message.Message) {
 	blk := block.Block{
 		Head: block.BlockHead{
@@ -645,21 +646,21 @@ func benchBlockHead(b *testing.B) {
 
 // 生成块性能测试
 func benchGenerateBlock(b *testing.B, txCnt int) {
-	p, _, _ := envInit(b)
-	TxPerBlk = txCnt
-
-	for i := 0; i < TxPerBlk*b.N; i++ {
-		_tx := genTx(p, i)
-		p.blockCache.AddTx(&_tx)
-	}
-
-	b.ResetTimer()
-	b.StopTimer()
-	for i := 0; i < b.N; i++ {
-		bc := p.blockCache.LongestChain()
-		pool := p.blockCache.LongestPool()
-		b.StartTimer()
-		p.genBlock(p.account, bc, pool)
-		b.StopTimer()
-	}
+	//p, _, _ := envInit(b)
+	//TxPerBlk = txCnt
+	//
+	//for i := 0; i < TxPerBlk*b.N; i++ {
+	//	_tx := genTx(p, i)
+	//	p.blockCache.AddTx(&_tx)
+	//}
+	//
+	//b.ResetTimer()
+	//b.StopTimer()
+	//for i := 0; i < b.N; i++ {
+	//	bc := p.blockCache.LongestChain()
+	//	pool := p.blockCache.LongestPool()
+	//	b.StartTimer()
+	//	p.genBlock(p.account, bc, pool)
+	//	b.StopTimer()
+	//}
 }

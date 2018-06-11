@@ -24,6 +24,9 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/prototype/core/txpool"
+	"github.com/iost-official/prototype/log"
+	"os"
 )
 
 func TestNewPoB(t *testing.T) {
@@ -92,7 +95,7 @@ func TestNewPoB(t *testing.T) {
 
 }
 
-func envinit(t *testing.T) (*PoB, []account.Account, []string) {
+func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolServer) {
 	var accountList []account.Account
 	var witnessList []string
 
@@ -166,19 +169,30 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string) {
 	if err != nil {
 		t.Errorf("NewPoB error")
 	}
-	return p, accountList, witnessList
+
+	blockCache := p.BlockCache()
+	txPool, err := txpool.NewTxPoolServer(blockCache, blockCache.OnBlockChan())
+	if err != nil {
+		log.Log.E("NewTxPoolServer failed, stop the program! err:%v", err)
+		os.Exit(1)
+	}
+
+	txPool.Start()
+	return p, accountList, witnessList, txPool
 }
+
 func TestRunGenerateBlock(t *testing.T) {
 	Convey("Test of Run (Generate Block)", t, func() {
-		p, _, _ := envinit(t)
-		_tx := genTx(p, 998)
-		p.BlockCache.AddTx(&_tx)
-		bc := p.BlockCache.LongestChain()
-		pool := p.BlockCache.LongestPool()
+		p, _, _ , txpool:= envinit(t)
+		_tx := genTxMsg(p, 998)
+		txpool.AddTransaction(_tx)
+
+		bc := p.blockCache.LongestChain()
+		pool := p.blockCache.LongestPool()
 		blk := p.genBlock(p.account, bc, pool)
 		So(len(blk.Content), ShouldEqual, 1)
 		So(blk.Content[0].Nonce, ShouldEqual, 998)
-		p.BlockCache.Draw()
+		p.blockCache.Draw()
 	})
 }
 
@@ -187,9 +201,9 @@ func TestRunConfirmBlock(t *testing.T) {
 	Convey("Test of Run ConfirmBlock", t, func() {
 		cmd := exec.Command("/bin/bash", "-c", "cd $GOPATH/src/github.com/iost-official/prototype/consensus/pob2 && rm -rf blockDB txDB")
 		cmd.Run()
-		p, accList, witnessList := envinit(t)
-		_tx := genTx(p, 998)
-		p.BlockCache.AddTx(&_tx)
+		p, accList, witnessList ,txpool:= envinit(t)
+		_tx := genTxMsg(p, 998)
+		txpool.AddTransaction(_tx)
 
 		for i := 0; i < 5; i++ {
 			wit := ""
@@ -198,17 +212,16 @@ func TestRunConfirmBlock(t *testing.T) {
 				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			}
 
-			bc := p.BlockCache.LongestChain()
-			pool := p.BlockCache.LongestPool()
+			bc := p.blockCache.LongestChain()
+			pool := p.blockCache.LongestPool()
 
 			blk := p.genBlock(p.account, bc, pool)
-			p.BlockCache.ResetTxPoool()
 			p.globalDynamicProperty.update(&blk.Head)
-			err := p.BlockCache.Add(blk, p.blockVerify)
+			err := p.blockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
 		}
 
-		So(p.BlockCache.ConfirmedLength(), ShouldEqual, 1)
+		So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
 		for i := 1; i < 3; i++ {
 			wit := ""
 			for wit != witnessList[i] {
@@ -216,10 +229,9 @@ func TestRunConfirmBlock(t *testing.T) {
 				wit = witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
 			}
 
-			bc := p.BlockCache.LongestChain()
-			pool := p.BlockCache.LongestPool()
+			bc := p.blockCache.LongestChain()
+			pool := p.blockCache.LongestPool()
 			blk := p.genBlock(accList[i], bc, pool)
-			p.BlockCache.ResetTxPoool()
 			p.globalDynamicProperty.update(&blk.Head)
 			/*
 				guard := Patch(witnessOfTime, func(_ *globalStaticProperty, _ *globalDynamicProperty, _ consensus_common.Timestamp) string {
@@ -227,34 +239,34 @@ func TestRunConfirmBlock(t *testing.T) {
 				})
 				defer guard.Unpatch()
 			*/
-			err := p.BlockCache.Add(blk, p.blockVerify)
+			err := p.blockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
 			if i == 1 {
-				So(p.BlockCache.ConfirmedLength(), ShouldEqual, 1)
+				So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
 			}
 			if i == 2 {
-				So(p.BlockCache.ConfirmedLength(), ShouldEqual, 6)
+				So(p.blockCache.ConfirmedLength(), ShouldEqual, 6)
 			}
 		}
 
-		p.BlockCache.Draw()
+		p.blockCache.Draw()
 	})
 }
 
 //this need to be checked again
 func TestRunMultipleBlocks(t *testing.T) {
 	Convey("Test of Run (Multiple Blocks)", t, func() {
-		p, _, witnessList := envinit(t)
-		_tx := genTx(p, 998)
-		p.BlockCache.AddTx(&_tx)
+		p, _, witnessList, txpool := envinit(t)
+		_tx := genTxMsg(p, 998)
+		txpool.AddTransaction(_tx)
 
-		bc := p.BlockCache.LongestChain()
-		pool := p.BlockCache.LongestPool()
+		bc := p.blockCache.LongestChain()
+		pool := p.blockCache.LongestPool()
 
 		for i := 100; i < 105; i++ {
 			if i == 103 {
-				bc = p.BlockCache.LongestChain()
-				pool = p.BlockCache.LongestPool()
+				bc = p.blockCache.LongestChain()
+				pool = p.blockCache.LongestPool()
 			}
 			wit := ""
 			for wit != witnessList[0] {
@@ -264,7 +276,6 @@ func TestRunMultipleBlocks(t *testing.T) {
 			}
 
 			blk := p.genBlock(p.account, bc, pool)
-			p.BlockCache.ResetTxPoool()
 			p.globalDynamicProperty.update(&blk.Head)
 
 			blk.Head.Time = int64(i)
@@ -273,10 +284,10 @@ func TestRunMultipleBlocks(t *testing.T) {
 			sig, _ := common.Sign(common.Secp256k1, headInfo, p.account.Seckey)
 			blk.Head.Signature = sig.Encode()
 
-			err := p.BlockCache.Add(blk, p.blockVerify)
+			err := p.blockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
 		}
-		p.BlockCache.Draw()
+		p.blockCache.Draw()
 	})
 }
 
@@ -336,7 +347,7 @@ func BenchmarkGenerateBlock(b *testing.B) {
 	benchGenerateBlock(b, 6000)
 }
 
-func envInit(b *testing.B) (*PoB, []account.Account, []string) {
+func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolServer) {
 	var accountList []account.Account
 	var witnessList []string
 
@@ -410,7 +421,17 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string) {
 	if err != nil {
 		b.Errorf("NewPoB error")
 	}
-	return p, accountList, witnessList
+
+	blockCache := p.BlockCache()
+	txPool, err := txpool.NewTxPoolServer(blockCache, blockCache.OnBlockChan())
+	if err != nil {
+		log.Log.E("NewTxPoolServer failed, stop the program! err:%v", err)
+		os.Exit(1)
+	}
+
+	txPool.Start()
+
+	return p, accountList, witnessList, txPool
 }
 
 func genTx(p *PoB, nonce int) tx.Tx {
@@ -424,6 +445,16 @@ func genTx(p *PoB, nonce int) tx.Tx {
 	_tx := tx.NewTx(int64(nonce), &lc)
 	_tx, _ = tx.SignTx(_tx, p.account)
 	return _tx
+}
+
+func genTxMsg(p *PoB, nonce int) message.Message {
+	tx := genTx(p, nonce)
+
+	txMsg := message.Message{
+		Body:    tx.Encode(),
+		ReqType: int32(network.ReqPublishTx),
+	}
+	return txMsg
 }
 
 func genBlockHead(p *PoB) {
@@ -444,7 +475,7 @@ func genBlockHead(p *PoB) {
 }
 
 func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n int, txCnt int, continuity bool) (blockPool []*block.Block) {
-	confChain := p.BlockCache.BlockChain()
+	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
 
 	//blockLen := p.blockCache.ConfirmedLength()
@@ -489,13 +520,13 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 }
 func benchAddBlockCache(b *testing.B, txCnt int, continuity bool) {
 
-	p, accountList, witnessList := envInit(b)
+	p, accountList, witnessList, _ := envInit(b)
 	//生成block
 	blockPool := genBlocks(p, accountList, witnessList, b.N, txCnt, continuity)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StartTimer()
-		p.BlockCache.Add(blockPool[i], p.blockVerify)
+		p.blockCache.Add(blockPool[i], p.blockVerify)
 		b.StopTimer()
 	}
 
@@ -503,19 +534,19 @@ func benchAddBlockCache(b *testing.B, txCnt int, continuity bool) {
 
 // 获取block性能测试
 func benchGetBlock(b *testing.B, txCnt int, continuity bool) {
-	p, accountList, witnessList := envInit(b)
+	p, accountList, witnessList, _ := envInit(b)
 	//生成block
 	blockPool := genBlocks(p, accountList, witnessList, b.N, txCnt, continuity)
 	for i := 0; i < b.N; i++ {
 		for _, bl := range blockPool {
-			p.BlockCache.Add(bl, p.blockVerify)
+			p.blockCache.Add(bl, p.blockVerify)
 		}
 	}
 
 	//get block
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		chain := p.BlockCache.LongestChain()
+		chain := p.blockCache.LongestChain()
 		b.StartTimer()
 		chain.GetBlockByNumber(uint64(i))
 		b.StopTimer()
@@ -524,11 +555,11 @@ func benchGetBlock(b *testing.B, txCnt int, continuity bool) {
 
 // block验证性能测试
 func benchBlockVerifier(b *testing.B) {
-	p, accountList, witnessList := envInit(b)
+	p, accountList, witnessList, _ := envInit(b)
 	//生成block
 	blockPool := genBlocks(p, accountList, witnessList, 2, 6000, true)
 	//p.update(&blockPool[0].Head)
-	confChain := p.BlockCache.BlockChain()
+	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top() //获取创世块
 
 	b.ResetTimer()
@@ -541,62 +572,42 @@ func benchBlockVerifier(b *testing.B) {
 }
 
 func benchTxCache(b *testing.B, f bool) {
-	p, _, _ := envInit(b)
-	var txs []tx.Tx
-	txCache := tx.NewTxPoolImpl()
+	p, _, _ , txpool:= envInit(b)
+	var txs []message.Message
+
 	for j := 0; j < b.N; j++ {
-		_tx := genTx(p, j)
-		txs = append(txs, _tx)
+		_tx := genTxMsg(p, j)
+		txpool.AddTransaction(_tx)
 	}
 
 	b.ResetTimer()
-	if f == true {
-		for i := 0; i < b.N; i++ {
-			b.StartTimer()
-			txCache.Add(&txs[i])
-			b.StopTimer()
-		}
-	} else {
-		for i := 0; i < b.N; i++ {
-			txCache.Add(&txs[i])
-		}
-		for i := 0; i < b.N; i++ {
-			b.StartTimer()
-			txCache.Del(&txs[i])
-			b.StopTimer()
-		}
-
+	for i := 0; i < b.N; i++ {
+		b.StartTimer()
+		txpool.AddTransaction(txs[i])
+		b.StopTimer()
 	}
+
 }
 
 func benchTxCachePara(b *testing.B) {
-	p, _, _ := envInit(b)
-	var txs []tx.Tx
+	p, _, _ , txpool:= envInit(b)
+	var txs []message.Message
 
 	b.ResetTimer()
-	txCache := tx.NewTxPoolImpl()
 	for j := 0; j < 2000; j++ {
-		_tx := genTx(p, j)
+		_tx := genTxMsg(p, j)
 		txs = append(txs, _tx)
 		if j < 1000 {
-			txCache.Add(&_tx)
+			txpool.AddTransaction(_tx)
 		}
 	}
 	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		start := time.Now().UnixNano()
-		for j := 0; j < 1000; j++ {
-			txCache.Del(&txs[j])
-		}
-		end := time.Now().UnixNano()
-		fmt.Println((end-start)/1000, " ns/op")
-		wg.Done()
-	}()
+	wg.Add(1)
+
 	go func() {
 		start := time.Now().UnixNano()
 		for j := 1000; j < 2000; j++ {
-			txCache.Add(&txs[j])
+			txpool.AddTransaction(txs[j])
 		}
 		end := time.Now().UnixNano()
 		fmt.Println((end-start)/1000, " ns/op")
@@ -606,12 +617,12 @@ func benchTxCachePara(b *testing.B) {
 }
 
 func benchTxDb(b *testing.B, f bool) {
-	p, _, _ := envInit(b)
+	p, _, _ ,txpool:= envInit(b)
 	var txs []tx.Tx
 	txDb := tx.TxDbInstance()
 	for j := 0; j < b.N; j++ {
-		_tx := genTx(p, j)
-		txs = append(txs, _tx)
+		_tx := genTxMsg(p, j)
+		txpool.AddTransaction(_tx)
 	}
 
 	b.ResetTimer()
@@ -636,7 +647,7 @@ func benchTxDb(b *testing.B, f bool) {
 
 // 生成block head性能测试
 func benchBlockHead(b *testing.B) {
-	p, _, _ := envInit(b)
+	p, _, _,_:= envInit(b)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StartTimer()
@@ -647,19 +658,19 @@ func benchBlockHead(b *testing.B) {
 
 // 生成块性能测试
 func benchGenerateBlock(b *testing.B, txCnt int) {
-	p, _, _ := envInit(b)
+	p, _, _, txpool := envInit(b)
 	TxPerBlk = txCnt
 
 	for i := 0; i < TxPerBlk*b.N; i++ {
-		_tx := genTx(p, i)
-		p.BlockCache.AddTx(&_tx)
+		_tx := genTxMsg(p, 998)
+		txpool.AddTransaction(_tx)
 	}
 
 	b.ResetTimer()
 	b.StopTimer()
 	for i := 0; i < b.N; i++ {
-		bc := p.BlockCache.LongestChain()
-		pool := p.BlockCache.LongestPool()
+		bc := p.blockCache.LongestChain()
+		pool := p.blockCache.LongestPool()
 		b.StartTimer()
 		p.genBlock(p.account, bc, pool)
 		b.StopTimer()
