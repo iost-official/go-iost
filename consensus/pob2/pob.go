@@ -234,7 +234,7 @@ func (p *PoB) blockLoop() {
 			} else {
 				p.log.I("Error: %v", err)
 				//HowHsu_Debug
-				fmt.Printf("[blockloop]:verify blk faild\n%s\n", &blk)
+				p.log.I("[blockloop]:verify blk faild\n%s\n", &blk)
 			}
 			if err != ErrBlock && err != ErrTooOld {
 				p.synchronizer.BlockConfirmed(blk.Head.Number)
@@ -334,7 +334,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 
 		if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
 			//HowHsu_Debug
-			fmt.Printf("[genBlock %d]: tx packed\n %s\n", blk.Head.Number, tx)
+			p.log.I("[genBlock %d]: tx packed\n %s\n", blk.Head.Number, tx)
 			blk.Content = append(blk.Content, *tx)
 			spool1 = sp
 		}
