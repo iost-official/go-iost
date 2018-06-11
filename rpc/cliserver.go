@@ -47,6 +47,10 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	if err != nil {
 		return &Response{Code: -1}, err
 	}
+
+	// add servi
+	tx.RecordTx(tx1, tx.Data.Self())
+
 	////////////probe//////////////////
 	log.Report(&log.MsgTx{
 		SubType:"receive",
