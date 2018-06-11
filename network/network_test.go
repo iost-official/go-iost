@@ -103,17 +103,30 @@ func TestBaseNetwork_findNeighbours(t *testing.T) {
 		for _, addr := range addresses {
 			bn.putNode(addr)
 		}
-		So(len(bn.neighbours), ShouldEqual, discover.MaxNeighbourNum)
-		_, ok1 := bn.neighbours["@"+addresses[7]]
+		var neighbourLen int
+		bn.neighbours.Range(func(k, v interface{}) bool {
+			neighbourLen++
+			return true
+		})
+		So(neighbourLen, ShouldEqual, discover.MaxNeighbourNum)
+		_, ok1 := bn.neighbours.Load("@" + addresses[7])
 		So(ok1, ShouldBeFalse)
-		_, ok2 := bn.neighbours["@"+addresses[6]]
+		_, ok2 := bn.neighbours.Load("@" + addresses[6])
 		So(ok2, ShouldBeFalse)
 
-		for _, v := range bn.neighbours {
-			bn.delNeighbour(v.String())
-			bn.nodeTable.Delete([]byte(v.Addr()))
-		}
-		So(len(bn.neighbours), ShouldEqual, 0)
+		bn.neighbours.Range(func(k, v interface{}) bool {
+			node := v.(*discover.Node)
+			bn.neighbours.Delete(node.String())
+			bn.nodeTable.Delete([]byte(node.Addr()))
+			return true
+		})
+
+		neighbourLen = 0
+		bn.neighbours.Range(func(k, v interface{}) bool {
+			neighbourLen++
+			return true
+		})
+		So(neighbourLen, ShouldEqual, 0)
 		cleanLDB()
 	})
 
