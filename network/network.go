@@ -94,7 +94,7 @@ func (conf *NetConifg) SetListenAddr(addr string) *NetConifg {
 //BaseNetwork boot node maintain all node table, and distribute the node table to all node
 type BaseNetwork struct {
 	nodeTable     *db.LDBDatabase //all known node except remoteAddr
-	neighbours    map[string]*discover.Node
+	neighbours    sync.Map
 	lock          sync.Mutex
 	peers         peerSet // manage all connection
 	RecvCh        chan message.Message
@@ -129,7 +129,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init db %v", err)
 	}
-	neighbours := make(map[string]*discover.Node, 0)
+	neighbours := sync.Map{}
 	NodeHeightMap := make(map[string]uint64, 0)
 	if conf.NodeID == "" {
 		conf.NodeID = string(discover.GenNodeId())
@@ -183,21 +183,23 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 
 //Broadcast msg to all node in the node table
 func (bn *BaseNetwork) Broadcast(msg message.Message) {
-	neighbours := bn.neighbours
 	if msg.From == "" {
 		msg.From = bn.localNode.Addr()
 	}
 	from := msg.From
-	for _, node := range neighbours {
-		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
+
+	bn.neighbours.Range(func(k, v interface{}) bool {
+		node := v.(*discover.Node)
 		if node.Addr() == from {
-			continue
+			return true
 		}
 		msg.To = node.Addr()
+		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
 		if !bn.isRecentSent(msg) {
 			bn.broadcast(msg)
 		}
-	}
+		return true
+	})
 }
 
 //broadcast broadcast to all neighbours, stop broadcast when msg already broadcast
@@ -401,7 +403,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 					bn.log.D("[net] delete node %v, cuz its last register time is %v", string(iter.Key()), common.BytesToInt64(iter.Value()))
 					bn.nodeTable.Delete(iter.Key())
 					bn.peers.RemoveByNodeStr(string(iter.Key()))
-					bn.delNeighbour(string(iter.Key()))
+					bn.neighbours.Delete(string(iter.Key()))
 				} else {
 					bn.nodeTable.Put(k, common.IntToBytes(v-1))
 				}
@@ -441,24 +443,15 @@ func (bn *BaseNetwork) findNeighbours() {
 		nodes = append(nodes, node)
 	}
 	neighbours := bn.localNode.FindNeighbours(nodes)
-	for k, _ := range bn.neighbours {
-		bn.delNeighbour(string(k))
-	}
+
+	bn.neighbours.Range(func(k, v interface{}) bool {
+		bn.neighbours.Delete(k)
+		return true
+	})
+
 	for _, n := range neighbours {
-		bn.setNeighbour(n)
+		bn.neighbours.Store(n.String(), n)
 	}
-}
-
-func (bn *BaseNetwork) setNeighbour(node *discover.Node) {
-	bn.lock.Lock()
-	defer bn.lock.Unlock()
-	bn.neighbours[node.String()] = node
-}
-
-func (bn *BaseNetwork) delNeighbour(nodeStr string) {
-	bn.lock.Lock()
-	defer bn.lock.Unlock()
-	delete(bn.neighbours, nodeStr)
 }
 
 //Download block by height from which node in NodeHeightMap
