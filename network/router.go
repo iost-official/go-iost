@@ -7,11 +7,12 @@ import (
 	"github.com/iost-official/prototype/core/message"
 )
 
-//ReqType Marked request types using by protocol
-//go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/prototype/network Router
+// go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/prototype/network Router
 
+// ReqType Marked request types using by protocol.
 type ReqType int32
 
+// const
 const (
 	ReqPublishTx     ReqType = iota
 	ReqBlockHeight           //The height of the request to block
@@ -22,7 +23,7 @@ const (
 	MsgMaxTTL = 2
 )
 
-//Router Forwarding specific request to other components and sending messages for them
+// Router sends specific request and response to other node.
 type Router interface {
 	Init(base Network, port uint16) error
 	FilteredChan(filter Filter) (chan message.Message, error)
@@ -34,11 +35,12 @@ type Router interface {
 	CancelDownload(start, end uint64) error
 }
 
+// Route is a global Router instance.
 var Route Router
 var once sync.Once
 
-//GetInstance get singleton of network, [NOTE] conf.ListenAddr = your ip, port = !30304
-func GetInstance(conf *NetConifg, target string, port uint16) (Router, error) {
+// GetInstance returns singleton of Router.
+func GetInstance(conf *NetConfig, target string, port uint16) (Router, error) {
 	var err error
 	once.Do(func() {
 		baseNet, er := NewBaseNetwork(conf)
@@ -62,6 +64,7 @@ func GetInstance(conf *NetConifg, target string, port uint16) (Router, error) {
 	return Route, err
 }
 
+// RouterFactory returns different Router instance by target argument.
 func RouterFactory(target string) (Router, error) {
 	switch target {
 	case "base":
@@ -70,6 +73,7 @@ func RouterFactory(target string) (Router, error) {
 	return nil, fmt.Errorf("target Router not found")
 }
 
+// RouterImpl is a Router's implement.
 type RouterImpl struct {
 	base Network
 
@@ -84,6 +88,7 @@ type RouterImpl struct {
 	port uint16
 }
 
+// Init inits a RouterImpl.
 func (r *RouterImpl) Init(base Network, port uint16) error {
 	var err error
 	r.base = base
@@ -99,7 +104,7 @@ func (r *RouterImpl) Init(base Network, port uint16) error {
 	return nil
 }
 
-//FilteredChan Get filtered request channel
+// FilteredChan returns a filtered request channel.
 func (r *RouterImpl) FilteredChan(filter Filter) (chan message.Message, error) {
 	chReq := make(chan message.Message, 10000)
 
@@ -125,30 +130,34 @@ func (r *RouterImpl) receiveLoop() {
 	}
 }
 
+// Run runs a router.
 func (r *RouterImpl) Run() {
 	go r.receiveLoop()
 }
 
+// Stop stops a router.
 func (r *RouterImpl) Stop() {
 	r.ExitSignal <- true
 }
 
+// Send sends a message by router.
 func (r *RouterImpl) Send(req message.Message) {
 	req.TTL = MsgMaxTTL
 	r.base.Send(req)
 }
 
-// Broadcast to all known members
+// Broadcast to all known members.
 func (r *RouterImpl) Broadcast(req message.Message) {
 	req.TTL = MsgMaxTTL
 	r.base.Broadcast(req)
 }
 
+// LocalID returns local node's ID.
 func (r *RouterImpl) LocalID() string {
 	return r.base.(*BaseNetwork).localNode.Addr()
 }
 
-//download block with height >= start && height <= end
+// Download downloads blocks whose height is greater than start argument and less than end argument.
 func (r *RouterImpl) Download(start uint64, end uint64) error {
 	fmt.Println("sync:", start, end)
 	if end < start {
@@ -157,12 +166,12 @@ func (r *RouterImpl) Download(start uint64, end uint64) error {
 	return r.base.Download(start, end)
 }
 
-//CancelDownload cancel download
+// CancelDownload cancels downloading blocks.
 func (r *RouterImpl) CancelDownload(start uint64, end uint64) error {
 	return r.base.CancelDownload(start, end)
 }
 
-//Filter The filter used by Router
+//Filter is filter used by Router.
 // Rulers :
 //     1. if both white list and black list are nil, this filter is all-pass
 //     2. if one of those is not nil, filter as it is

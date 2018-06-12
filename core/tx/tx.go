@@ -2,13 +2,12 @@ package tx
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"strconv"
+	"time"
 )
 
 //go:generate gencode go -schema=structs.schema -package=tx
@@ -59,6 +58,16 @@ func RecordTx(tx Tx, account account.Account) (Tx, error) {
 	}
 	tx.Recorder = sign
 	return tx, nil
+}
+
+func (t *Tx) String() string {
+	str := "Tx{\n"
+	str += "	Time: " + strconv.FormatInt(t.Time, 10) + ",\n"
+	str += "	Nonce: " + strconv.FormatInt(t.Nonce, 10) + ",\n"
+	str += "	Pubkey: " + string(t.Publisher.Pubkey) + ",\n"
+	str += "	Code:\n		" + t.Contract.Code() + "\n"
+	str += "}\n"
+	return str
 }
 
 // Time,Noce,Contract形成的基本哈希值

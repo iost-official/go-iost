@@ -2,9 +2,13 @@ package dpos
 
 import (
 	"fmt"
+	"testing"
+
 	. "github.com/bouk/monkey"
 	. "github.com/golang/mock/gomock"
-	"testing"
+
+	"sync"
+	"time"
 
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
@@ -19,8 +23,6 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
-	"sync"
-	"time"
 )
 
 func TestNewDPoS(t *testing.T) {
@@ -80,7 +82,16 @@ func TestNewDPoS(t *testing.T) {
 			return nil
 		})
 
-		p, _ := NewDPoS(account.Account{"id0", []byte("pubkey"), []byte("seckey")}, mockBc, mockPool, []string{})
+		p, _ := NewDPoS(
+			account.Account{
+				ID:     "id0",
+				Pubkey: []byte("pubkey"),
+				Seckey: []byte("seckey"),
+			},
+			mockBc,
+			mockPool,
+			[]string{},
+		)
 
 		So(p.Account.GetId(), ShouldEqual, "id0")
 		So(getNumber, ShouldEqual, 0)

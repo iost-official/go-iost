@@ -86,7 +86,16 @@ func TestNewPoB(t *testing.T) {
 			return nil
 		})
 
-		p, _ := NewPoB(account.Account{"id0", []byte("pubkey"), []byte("seckey")}, mockBc, mockPool, []string{})
+		p, _ := NewPoB(
+			account.Account{
+				ID:     "id0",
+				Pubkey: []byte("pubkey"),
+				Seckey: []byte("seckey"),
+			},
+			mockBc,
+			mockPool,
+			[]string{},
+		)
 
 		So(p.Account.GetId(), ShouldEqual, "id0")
 		So(getNumber, ShouldEqual, 0)

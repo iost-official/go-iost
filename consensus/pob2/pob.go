@@ -145,7 +145,7 @@ func (p *PoB) genesis(initTime int64) error {
 
 	main := lua.NewMethod(vm.Public, "", 0, 0)
 	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
-@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f100000
+@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f100000000
 @PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000
 @PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f100000`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
@@ -190,20 +190,13 @@ func (p *PoB) blockLoop() {
 			var blk block.Block
 			blk.Decode(req.Body)
 
-				////////////probe//////////////////
-				log.Report(&log.MsgBlock{
-					SubType:"receive",
-					BlockHeadHash:blk.HeadHash(),
-					 BlockNum:blk.Head.Number,
-				})
-				///////////////////////////////////
-				////////////probe//////////////////
-				log.Report(&log.MsgBlock{
-					SubType:       "receive",
-					BlockHeadHash: blk.HeadHash(),
-					BlockNum:      blk.Head.Number,
-				})
-				///////////////////////////////////
+			////////////probe//////////////////
+			log.Report(&log.MsgBlock{
+				SubType:       "receive",
+				BlockHeadHash: blk.HeadHash(),
+				BlockNum:      blk.Head.Number,
+			})
+			///////////////////////////////////
 			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
@@ -214,6 +207,8 @@ func (p *PoB) blockLoop() {
 				Data.AddServi(blk.Content)
 			} else {
 				p.log.I("Error: %v", err)
+				//HowHsu_Debug
+				p.log.I("[blockloop]:verify blk faild\n%s\n", &blk)
 			}
 			if err != blockcache.ErrBlock && err != blockcache.ErrTooOld {
 				p.synchronizer.BlockConfirmed(blk.Head.Number)
@@ -372,29 +367,28 @@ func encodePoBInfo(votes [][]byte) []byte {
 
 //收到新块，验证新块，如果验证成功，更新PoB全局动态属性类并将其加入block cache，再广播
 func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-		////////////probe//////////////////
-		msgBlock := log.MsgBlock{
-			SubType:       "verify.fail",
-			BlockHeadHash: blk.HeadHash(),
-			BlockNum:      blk.Head.Number,
-		}
-		///////////////////////////////////
+	////////////probe//////////////////
+	msgBlock := log.MsgBlock{
+		SubType:       "verify.fail",
+		BlockHeadHash: blk.HeadHash(),
+		BlockNum:      blk.Head.Number,
+	}
+	///////////////////////////////////
 	// verify block head
+
 	if err := blockcache.VerifyBlockHead(blk, parent); err != nil {
-		/*
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
-		*/
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
 		return nil, err
 	}
 
 	// verify block witness
 	// TODO currentSlot is negative
-	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
+	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
 		return nil, errors.New("wrong witness")
 
 	}
@@ -409,21 +403,21 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 
 	// verify block witness signature
 	if !common.VerifySignature(headInfo, signature) {
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
+		////////////probe//////////////////
+		log.Report(&msgBlock)
+		///////////////////////////////////
 		return nil, errors.New("wrong signature")
 	}
 	newPool, err := blockcache.StdBlockVerifier(blk, pool)
 	if err != nil {
-			////////////probe//////////////////
-			log.Report(&msgBlock)
-			///////////////////////////////////
-		return nil, err
-	}
 		////////////probe//////////////////
-		msgBlock.SubType = "verify.pass"
 		log.Report(&msgBlock)
 		///////////////////////////////////
+		return nil, err
+	}
+	////////////probe//////////////////
+	msgBlock.SubType = "verify.pass"
+	log.Report(&msgBlock)
+	///////////////////////////////////
 	return newPool, nil
 }

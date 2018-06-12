@@ -18,7 +18,7 @@ import (
 func TestRouterImpl_Init(t *testing.T) {
 	//broadcast(t)
 	router, _ := RouterFactory("base")
-	baseNet, _ := NewBaseNetwork(&NetConifg{ListenAddr: "0.0.0.0"})
+	baseNet, _ := NewBaseNetwork(&NetConfig{ListenAddr: "0.0.0.0"})
 	router.Init(baseNet, 30601)
 	Convey("init", t, func() {
 		So(router.(*RouterImpl).port, ShouldEqual, 30601)
@@ -28,7 +28,7 @@ func TestRouterImpl_Init(t *testing.T) {
 func TestGetInstance(t *testing.T) {
 	Convey("", t, func() {
 
-		router, err := GetInstance(&NetConifg{NodeTablePath: "tale_test", ListenAddr: "127.0.0.1"}, "base", 30305)
+		router, err := GetInstance(&NetConfig{NodeTablePath: "tale_test", ListenAddr: "127.0.0.1"}, "base", 30305)
 
 		So(err, ShouldBeNil)
 		So(router.(*RouterImpl).port, ShouldEqual, uint16(30305))
@@ -44,7 +44,7 @@ func newRouters(n int) []Router {
 	for i := 0; i < n; i++ {
 		router, _ := RouterFactory("base")
 		os.RemoveAll("iost_db_" + strconv.Itoa(i))
-		baseNet, _ := NewBaseNetwork(&NetConifg{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_" + strconv.Itoa(i)})
+		baseNet, _ := NewBaseNetwork(&NetConfig{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_" + strconv.Itoa(i)})
 		router.Init(baseNet, uint16(20900+i))
 
 		router.FilteredChan(Filter{AcceptType: []ReqType{ReqDownloadBlock}})
@@ -59,7 +59,7 @@ var m = message.Message{
 	Time:    time.Now().Unix(),
 	From:    "from",
 	ReqType: int32(ReqBlockHeight),
-	Body:    []byte("&network.NetConifg{LogPath:       logPath, NodeTablePath: nodeTablePath, NodeID:        nodeID, RegisterAddr:  regAddr, ListenAddr:    listenAddr},&network.NetConifg{LogPath:       logPath, NodeTablePath: nodeTablePath, NodeID:        nodeID, RegisterAddr:  regAddr, ListenAddr:    listenAddr},"),
+	Body:    []byte("&network.NetConfig{LogPath:       logPath, NodeTablePath: nodeTablePath, NodeID:        nodeID, RegisterAddr:  regAddr, ListenAddr:    listenAddr},&network.NetConfig{LogPath:       logPath, NodeTablePath: nodeTablePath, NodeID:        nodeID, RegisterAddr:  regAddr, ListenAddr:    listenAddr},"),
 }
 
 //3 ms

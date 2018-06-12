@@ -6,7 +6,7 @@ PROJECT = github.com/iost-official/prototype
 DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
 TARGET_DIR = build
 
-.PHONY: all build iserver register check vet lint image install clean
+.PHONY: all build iserver register lint image install clean
 
 all: build
 
@@ -17,11 +17,6 @@ iserver:
 
 register:
 	$(GO) build -o $(TARGET_DIR)/register $(PROJECT)/network/main/
-
-check: vet lint
-
-vet:
-	@go vet $$(go list ./...)
 
 lint:
 	@gometalinter --config=.gometalinter.json ./...

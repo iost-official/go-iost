@@ -106,10 +106,10 @@ type globalDynamicProperty struct {
 func newGlobalDynamicProperty() globalDynamicProperty {
 	return globalDynamicProperty{
 		LastBlockNumber:          0,
-		LastBlockTime:            Timestamp{0},
+		LastBlockTime:            Timestamp{Slot: 0},
 		TotalSlots:               0,
 		LastConfirmedBlockNumber: 0,
-		NextMaintenanceTime:      Timestamp{0},
+		NextMaintenanceTime:      Timestamp{Slot: 0},
 	}
 }
 
@@ -122,7 +122,7 @@ func (prop *globalDynamicProperty) update(blockHead *block.BlockHead) {
 	//	prop.TotalSlots = prop.timestampToSlot(Timestamp{blockHead.Time}) + 1
 	//}
 	prop.LastBlockNumber = blockHead.Number
-	prop.LastBlockTime = Timestamp{blockHead.Time}
+	prop.LastBlockTime = Timestamp{Slot: blockHead.Time}
 	copy(prop.LastBLockHash, blockHead.BlockHash)
 }
 

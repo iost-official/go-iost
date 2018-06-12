@@ -16,7 +16,7 @@ import (
 
 func TestRequest_isValidNode(t *testing.T) {
 	Convey("register", t, func() {
-		bn, _ := NewBaseNetwork(&NetConifg{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		bn, _ := NewBaseNetwork(&NetConfig{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
 		isValid := isValidNode(&Request{From: []byte("127.0.0.1")}, bn)
 		So(isValid, ShouldBeTrue)
 		isValid = isValidNode(&Request{From: []byte("192.168.1.34")}, bn)

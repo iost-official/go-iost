@@ -1,9 +1,10 @@
 package network
 
-type DiscReason uint
+type discReason uint
 
+// const
 const (
-	DiscRequested DiscReason = iota
+	DiscRequested discReason = iota
 	DiscNetworkError
 	DiscProtocolError
 	DiscUselessPeer

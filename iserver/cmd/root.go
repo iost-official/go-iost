@@ -125,7 +125,7 @@ var rootCmd = &cobra.Command{
 		// listenAddr = publicIP
 		/* } */
 		net, err := network.GetInstance(
-			&network.NetConifg{
+			&network.NetConfig{
 				LogPath:       logPath,
 				NodeTablePath: nodeTablePath,
 				NodeID:        nodeID,

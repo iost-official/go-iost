@@ -3,13 +3,12 @@ package blockcache
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
-
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/log"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
@@ -43,8 +42,11 @@ func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 	for _, txx := range txs {
 		ptxs = append(ptxs, &txx)
 	}
-	pool2, _, err := StdTxsVerifier(ptxs, pool.Copy())
+	//pool2, _, err := StdTxsVerifier(ptxs, pool.Copy())
+	pool2, failTx, err := StdTxsVerifier(ptxs, pool.Copy())
 	if err != nil {
+		//HowHsu_Debug
+		fmt.Printf("[StdBlockVerifier]:broken tx in block,index:\n%s\n", ptxs[failTx])
 		return pool, err
 	}
 	return pool2.MergeParent()
@@ -55,17 +57,17 @@ func StdTxsVerifier(txs []*tx.Tx, pool state.Pool) (state.Pool, int, error) {
 	for i, txx := range txs {
 		var err error
 		pool2, err = ver.VerifyContract(txx.Contract, pool2)
-		////////////probe//////////////////
-		var ret string = "pass"
-		if err != nil {
-			ret = "fail"
-		}
-		log.Report(&log.MsgTx{
-			SubType:   "verify." + ret,
-			TxHash:    txx.Hash(),
-			Publisher: txx.Publisher.Pubkey,
-			Nonce:     txx.Nonce,
-		})
+		////////////probe//////////////////TODO 严重影响性能，不应该在这里测试
+		//var ret string = "pass"
+		//if err != nil {
+		//	ret = "fail"
+		//}
+		//log.Report(&log.MsgTx{
+		//	SubType:   "verify." + ret,
+		//	TxHash:    txx.Hash(),
+		//	Publisher: txx.Publisher.Pubkey,
+		//	Nonce:     txx.Nonce,
+		//})
 		///////////////////////////////////
 
 		if err != nil {
@@ -79,6 +81,15 @@ func StdTxsVerifier(txs []*tx.Tx, pool state.Pool) (state.Pool, int, error) {
 
 func CleanStdVerifier() {
 	ver.CleanUp()
+}
+
+func StdCacheVerifier(txx *tx.Tx, pool state.Pool) error {
+	p2, err := ver.VerifyContract(txx.Contract, pool.Copy())
+	if err != nil {
+		return err
+	}
+	p2.MergeParent()
+	return nil
 }
 
 // TODO： 请别用这个了
