@@ -303,6 +303,7 @@ func (h *BlockCacheImpl) AddSingles(verifier func(blk *block.Block, parent *bloc
 	block := newTree.bc.block
 	newChildren := make([]*BlockCacheTree, 0)
 	for _, bct := range h.singleBlockRoot.children {
+		fmt.Println(bct.bc.block.Head.ParentHash)
 		if bytes.Equal(bct.bc.block.Head.ParentHash, block.Head.Hash()) {
 			newTree.addSubTree(bct, verifier)
 		} else {
