@@ -13,6 +13,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+// nolint
 func TestGenesisVerify(t *testing.T) {
 	Convey("Test of Genesis verify", t, func() {
 		Convey("Parse Contract", func() {
@@ -46,6 +47,7 @@ func TestGenesisVerify(t *testing.T) {
 	})
 }
 
+// nolint
 func TestCacheVerifier(t *testing.T) {
 	Convey("Test of CacheVerifier", t, func() {
 		Convey("Verify contract", func() {
