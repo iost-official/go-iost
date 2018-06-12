@@ -1,6 +1,10 @@
 package common
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/iost-official/prototype/log"
+)
 
 //go:generate gencode go -schema=structs.schema -package=common
 
@@ -41,7 +45,7 @@ func (s *Signature) Encode() []byte {
 	sr := SignatureRaw{int8(s.Algorithm), s.Sig, s.Pubkey}
 	b, err := sr.Marshal(nil)
 	if err != nil {
-		panic(err)
+		log.Log.E("Error in Encode of signature ", s.Pubkey, err.Error())
 		return nil
 	}
 	return b

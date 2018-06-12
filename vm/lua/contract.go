@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/vm"
 )
 
@@ -62,7 +63,7 @@ func (c *Contract) Encode() []byte {
 
 	b, err := cr.Marshal(nil)
 	if err != nil {
-		panic(err)
+		log.Log.E("Error in Encode of ", c.info.Prefix, err.Error())
 		return nil
 	}
 	return append([]byte{0}, b...)
