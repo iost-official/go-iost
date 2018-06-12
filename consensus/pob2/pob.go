@@ -149,7 +149,7 @@ func (p *PoB) genesis(initTime int64) error {
 
 	main := lua.NewMethod(vm.Public, "", 0, 0)
 	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
-@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f100000
+@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f100000000
 @PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000
 @PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f100000`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
@@ -331,7 +331,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		if tx == nil || err != nil {
 			break
 		}
-
+		//Stdtxsverifier的内部会pool=spool1.copy,如果这个交易验证失败，则pool造成内存浪费
 		if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
 			//HowHsu_Debug
 			p.log.I("[genBlock %d]: tx packed\n %s\n", blk.Head.Number, tx)
@@ -407,7 +407,7 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 
 	// verify block witness
 	// TODO currentSlot is negative
-	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
+	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
 		////////////probe//////////////////
 		log.Report(&msgBlock)
 		///////////////////////////////////

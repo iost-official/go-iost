@@ -1,12 +1,13 @@
 package pob2
 
 import (
+	"testing"
+
 	"github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/account"
 	. "github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core/block"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestGlobalStaticProperty(t *testing.T) {
@@ -50,8 +51,8 @@ func TestGlobalDynamicProperty(t *testing.T) {
 		dp := newGlobalDynamicProperty()
 		dp.LastBlockNumber = 0
 		dp.TotalSlots = 0
-		dp.LastBlockTime = Timestamp{0}
-		startTs := Timestamp{70002}
+		dp.LastBlockTime = Timestamp{Slot: 0}
+		startTs := Timestamp{Slot: 70002}
 		bh := block.BlockHead{
 			Number:  1,
 			Time:    startTs.Slot,
