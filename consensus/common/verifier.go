@@ -88,7 +88,7 @@ func StdCacheVerifier(txx *tx.Tx, pool state.Pool) error {
 	if err != nil {
 		return err
 	}
-	//p2.MergeParent()
+	p2.MergeParent()
 	return nil
 }
 
