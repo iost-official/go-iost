@@ -309,9 +309,8 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 				break
 			}
 
-			if sp, _, err := blockcache.StdTxsVerifier([]*Tx{t}, spool1); err == nil {
+			if err := blockcache.StdCacheVerifier(t, spool1); err == nil {
 				blk.Content = append(blk.Content, *t)
-				spool1 = sp
 			}
 		}
 	}
