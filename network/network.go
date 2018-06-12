@@ -1,23 +1,19 @@
 package network
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"os"
 	"strconv"
-	"time"
-
-	"sync"
-
-	"bufio"
-
 	"strings"
-
-	"math/rand"
+	"sync"
+	"time"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/message"
@@ -27,6 +23,7 @@ import (
 	"github.com/iost-official/prototype/params"
 )
 
+// const
 const (
 	HEADLENGTH              = 4
 	CheckKnownNodeInterval  = 10
@@ -38,9 +35,10 @@ const (
 	CommitteeMode           = "committee"
 )
 
+// NetMode is the bootnode's mode.
 var NetMode string
 
-//Network api
+// Network defines network's API.
 type Network interface {
 	Broadcast(req message.Message)
 	Send(req message.Message)
@@ -50,8 +48,8 @@ type Network interface {
 	CancelDownload(start, end uint64) error
 }
 
-//NetConfig p2p net config
-type NetConifg struct {
+// NetConfig defines p2p net config.
+type NetConfig struct {
 	LogPath       string
 	NodeTablePath string
 	NodeID        string
@@ -59,39 +57,7 @@ type NetConifg struct {
 	RegisterAddr  string
 }
 
-func (conf *NetConifg) SetLogPath(path string) *NetConifg {
-	if path == "" {
-		fmt.Errorf("path of log should not be empty")
-	}
-	conf.LogPath = path
-	return conf
-}
-
-func (conf *NetConifg) SetNodeTablePath(path string) *NetConifg {
-	if path == "" {
-		fmt.Errorf("path of node table should not be empty")
-	}
-	conf.NodeTablePath = path
-	return conf
-}
-
-func (conf *NetConifg) SetNodeID(id string) *NetConifg {
-	if id == "" {
-		fmt.Errorf("node id should not be empty")
-	}
-	conf.NodeID = id
-	return conf
-}
-
-func (conf *NetConifg) SetListenAddr(addr string) *NetConifg {
-	if addr == "" {
-		fmt.Errorf("listen addr should not be empty")
-	}
-	conf.ListenAddr = addr
-	return conf
-}
-
-//BaseNetwork boot node maintain all node table, and distribute the node table to all node
+// BaseNetwork maintains all node table, and distributes the node table to all node.
 type BaseNetwork struct {
 	nodeTable     *db.LDBDatabase //all known node except remoteAddr
 	neighbours    sync.Map
@@ -108,8 +74,8 @@ type BaseNetwork struct {
 	log             *log.Logger
 }
 
-// NewBaseNetwork ...
-func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
+// NewBaseNetwork returns a new BaseNetword instance.
+func NewBaseNetwork(conf *NetConfig) (*BaseNetwork, error) {
 	recv := make(chan message.Message, 100)
 	var err error
 	if conf.LogPath == "" {
@@ -129,10 +95,9 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init db %v", err)
 	}
-	neighbours := sync.Map{}
 	NodeHeightMap := make(map[string]uint64, 0)
 	if conf.NodeID == "" {
-		conf.NodeID = string(discover.GenNodeId())
+		conf.NodeID = string(discover.GenNodeID())
 	}
 	localNode := &discover.Node{ID: discover.NodeID(conf.NodeID), IP: net.ParseIP(conf.ListenAddr)}
 	downloadHeights := make(map[uint64]uint8, 0)
@@ -141,7 +106,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 		nodeTable:       nodeTable,
 		RecvCh:          recv,
 		localNode:       localNode,
-		neighbours:      neighbours,
+		neighbours:      sync.Map{},
 		log:             srvLog,
 		NodeHeightMap:   NodeHeightMap,
 		DownloadHeights: downloadHeights,
@@ -151,7 +116,7 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 	return s, nil
 }
 
-// Listen listen local port, find neighbours
+// Listen listens local port, find neighbours.
 func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
 	bn.log.D("[net] listening %v", bn.localNode)
@@ -181,7 +146,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	return bn.RecvCh, nil
 }
 
-//Broadcast msg to all node in the node table
+// Broadcast broadcasts msg to all node in the node table.
 func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	if msg.From == "" {
 		msg.From = bn.localNode.Addr()
@@ -202,7 +167,7 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	})
 }
 
-//broadcast broadcast to all neighbours, stop broadcast when msg already broadcast
+// broadcast broadcasts to all neighbours, stop broadcast when msg already broadcast
 func (bn *BaseNetwork) broadcast(msg message.Message) {
 	if msg.To == "" {
 		return
@@ -210,9 +175,8 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	node, _ := discover.ParseNode(msg.To)
 	if msg.TTL == 0 || bn.localNode.Addr() == node.Addr() {
 		return
-	} else {
-		msg.TTL = msg.TTL - 1
 	}
+	msg.TTL = msg.TTL - 1
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
@@ -260,7 +224,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 	return bn.peers.Get(node).conn, nil
 }
 
-//Send msg to msg.To
+// Send sends msg to msg.To.
 func (bn *BaseNetwork) Send(msg message.Message) {
 	//if bn.isRecentSent(msg) {
 	//	bn.log.D("[net] recent send")
@@ -271,9 +235,8 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	}
 	if msg.TTL == 0 {
 		return
-	} else {
-		msg.TTL = msg.TTL - 1
 	}
+	msg.TTL = msg.TTL - 1
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
@@ -291,7 +254,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	}
 }
 
-// Close all connection
+// Close closes all connection.
 func (bn *BaseNetwork) Close(port uint16) error {
 	if bn.listener != nil {
 		bn.listener.Close()
@@ -343,10 +306,9 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 		// EOF also need to return.
 		return
 	}
-	bn.log.D("[net] recieve loop finish..")
 }
 
-//AllNodesExcludeAddr returns all the known node in the network
+// AllNodesExcludeAddr returns all the known node in the network.
 func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error) {
 	if bn.nodeTable == nil {
 		return nil, nil
@@ -367,7 +329,7 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 	return addrs, nil
 }
 
-//put node into node table of server
+// putnode puts node into node table of server.
 func (bn *BaseNetwork) putNode(addrs string) {
 	if addrs == "" {
 		return
@@ -392,7 +354,7 @@ func (bn *BaseNetwork) putNode(addrs string) {
 	return
 }
 
-//nodeCheckLoop inspection Last registration time of node
+// nodeCheckLoop inspections last registration time of node.
 func (bn *BaseNetwork) nodeCheckLoop() {
 	if bn.localNode.TCP == RegisterServerPort {
 		for {
@@ -415,7 +377,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 
 }
 
-//registerLoop register local address to boot nodes
+// registerLoop registers local address to boot nodes.
 func (bn *BaseNetwork) registerLoop() {
 	for {
 		if bn.localNode.TCP != RegisterServerPort && bn.regAddr != "" {
@@ -435,7 +397,7 @@ func (bn *BaseNetwork) registerLoop() {
 	}
 }
 
-//findNeighbours find neighbour nodes in the node table
+// findNeighbours finds neighbour nodes in the node table.
 func (bn *BaseNetwork) findNeighbours() {
 	nodesStr, _ := bn.AllNodesExcludeAddr(bn.localNode.Addr())
 	nodes := make([]*discover.Node, 0)
@@ -455,7 +417,7 @@ func (bn *BaseNetwork) findNeighbours() {
 	}
 }
 
-//Download block by height from which node in NodeHeightMap
+// Download downloads blocks by height.
 func (bn *BaseNetwork) Download(start, end uint64) error {
 	bn.lock.Lock()
 	for i := start; i <= end; i++ {
@@ -492,7 +454,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 	return nil
 }
 
-//CancelDownload cancel downloading block with height between start and end
+// CancelDownload cancels downloading block with height between start and end.
 func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
@@ -502,14 +464,14 @@ func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
 	return nil
 }
 
-//SetNodeHeightMap ...
+// SetNodeHeightMap sets a node's block height.
 func (bn *BaseNetwork) SetNodeHeightMap(nodeStr string, height uint64) {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
 	bn.NodeHeightMap[nodeStr] = height
 }
 
-//GetNodeHeightMap ...
+// GetNodeHeightMap gets a node's block height.
 func (bn *BaseNetwork) GetNodeHeightMap(nodeStr string) uint64 {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
@@ -531,7 +493,7 @@ func randNodeMatchHeight(m map[string]uint64, downloadHeight uint64) (targetNode
 	return targetNode
 }
 
-//recentSentLoop clean up recent sent
+// recentSentLoop cleans up recent sent time.
 func (bn *BaseNetwork) recentSentLoop() {
 	for {
 		bn.log.D("[net] clean up recent sent loop")
