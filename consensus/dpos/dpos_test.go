@@ -177,19 +177,19 @@ func envinit(t *testing.T) (*DPoS, []account.Account, []string) {
 	}
 	return p, accountList, witnessList
 }
-func TestRunGenerateBlock(t *testing.T) {
-	Convey("Test of Run (Generate Block)", t, func() {
-		p, _, _ := envinit(t)
-		_tx := genTx(p, 998)
-		p.blockCache.AddTx(&_tx)
-		bc := p.blockCache.LongestChain()
-		pool := p.blockCache.LongestPool()
-		blk := p.genBlock(p.account, bc, pool)
-		So(len(blk.Content), ShouldEqual, 1)
-		So(blk.Content[0].Nonce, ShouldEqual, 998)
-		p.blockCache.Draw()
-	})
-}
+//func TestRunGenerateBlock(t *testing.T) {
+//	Convey("Test of Run (Generate Block)", t, func() {
+//		p, _, _ := envinit(t)
+//		_tx := genTx(p, 998)
+//		p.blockCache.AddTx(&_tx)
+//		bc := p.blockCache.LongestChain()
+//		pool := p.blockCache.LongestPool()
+//		blk := p.genBlock(p.account, bc, pool)
+//		So(len(blk.Content), ShouldEqual, 1)
+//		So(blk.Content[0].Nonce, ShouldEqual, 998)
+//		p.blockCache.Draw()
+//	})
+//}
 
 //clear BlockDB and TxDB files before running this test
 func TestRunConfirmBlock(t *testing.T) {
