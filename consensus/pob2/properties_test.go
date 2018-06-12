@@ -12,7 +12,14 @@ import (
 
 func TestGlobalStaticProperty(t *testing.T) {
 	Convey("Test of witness lists of static property", t, func() {
-		prop := newGlobalStaticProperty(Account{"id0", []byte{}, []byte{}}, []string{"id1", "id2", "id3"})
+		prop := newGlobalStaticProperty(
+			Account{
+				ID:     "id0",
+				Pubkey: []byte{},
+				Seckey: []byte{},
+			},
+			[]string{"id1", "id2", "id3"},
+		)
 		Convey("New", func() {
 			So(prop.NumberOfWitnesses, ShouldEqual, 3)
 		})
@@ -47,7 +54,14 @@ func TestGlobalStaticProperty(t *testing.T) {
 
 func TestGlobalDynamicProperty(t *testing.T) {
 	Convey("Test of global dynamic property", t, func() {
-		sp := newGlobalStaticProperty(account.Account{"id1", []byte{}, []byte{}}, []string{"id0", "id1", "id2"})
+		sp := newGlobalStaticProperty(
+			account.Account{
+				ID:     "id1",
+				Pubkey: []byte{},
+				Seckey: []byte{},
+			},
+			[]string{"id0", "id1", "id2"},
+		)
 		dp := newGlobalDynamicProperty()
 		dp.LastBlockNumber = 0
 		dp.TotalSlots = 0
