@@ -96,6 +96,7 @@ type field struct {
 }
 
 func structFields(typ reflect.Type) ([]field, error) {
+	fields := make([]field, 0)
 	for i := 0; i < typ.NumField(); i++ {
 		if f := typ.Field(i); f.PkgPath == "" { // exported
 			tags, err := parseStructTag(typ, i)
@@ -109,7 +110,7 @@ func structFields(typ reflect.Type) ([]field, error) {
 			if err != nil {
 				return nil, err
 			}
-			fields = append(fields, field{i, info})
+			fields = append(fields, field{index: i, info: info})
 		}
 	}
 	return fields, nil
