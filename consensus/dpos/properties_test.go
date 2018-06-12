@@ -56,11 +56,11 @@ func TestGlobalDynamicProperty(t *testing.T) {
 	Convey("Test of global dynamic property", t, func() {
 		sp := newGlobalStaticProperty(
 			account.Account{
-				ID: "id1",
+				ID:     "id1",
 				Pubkey: []byte{},
 				Seckey: []byte{},
 			},
-			[]string{"id0", "id1", "id2"}
+			[]string{"id0", "id1", "id2"},
 		)
 		dp := newGlobalDynamicProperty()
 		dp.LastBlockNumber = 0
