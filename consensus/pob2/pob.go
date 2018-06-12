@@ -209,6 +209,9 @@ func (p *PoB) blockLoop() {
 			if err == nil {
 				p.log.I("Link it onto cached chain")
 				p.blockCache.SendOnBlock(&blk)
+
+				// add servi
+				Data.AddServi(blk.Content)
 			} else {
 				p.log.I("Error: %v", err)
 			}
@@ -327,6 +330,9 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		BlockNum:      blk.Head.Number,
 	})
 	/////////////////////////////////////
+
+	//Clear Servi
+	Data.ClearServi(tx)
 
 	return &blk
 }
