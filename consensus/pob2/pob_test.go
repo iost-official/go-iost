@@ -186,6 +186,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		p, _, _ , txpool:= envinit(t)
 		_tx := genTxMsg(p, 998)
 		txpool.AddTransaction(_tx)
+		time.Sleep(time.Second*1)
 
 		bc := p.blockCache.LongestChain()
 		pool := p.blockCache.LongestPool()
