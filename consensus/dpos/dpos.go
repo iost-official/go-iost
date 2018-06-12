@@ -418,7 +418,7 @@ func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Poo
 
 	// verify block witness
 	// TODO currentSlot is negative
-	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{blk.Head.Time}) != blk.Head.Witness {
+	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
 		/*
 			////////////probe//////////////////
 			log.Report(&msgBlock)
