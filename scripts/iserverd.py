@@ -88,7 +88,7 @@ def upgrade():
 	wCommand("cd "+pwd+" && git reset --hard origin/testnet")
 	wCommand("cd "+pwd+" && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
-	wCommand("cd /workdir;rm -rf blockDB/ txDB/ netpath/ test.log dump.rdb")
+	wCommand("rm -rf /workdir/blockDB /workdir/txDB/ /workdir/netpath /workdir/test.log /workdir/dump.rdb")
 	#stop iserver now
 #	if(stop()!=0):
 #		return 1
