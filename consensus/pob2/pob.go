@@ -332,11 +332,12 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 			break
 		}
 		//Stdtxsverifier的内部会pool=spool1.copy,如果这个交易验证失败，则pool造成内存浪费
-		if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
+		//if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
+		if err := StdCacheVerifier(tx, spool1); err == nil {
 			//HowHsu_Debug
 			p.log.I("[genBlock %d]: tx packed\n %s\n", blk.Head.Number, tx)
 			blk.Content = append(blk.Content, *tx)
-			spool1 = sp
+			//spool1 = sp
 		}
 	}
 
