@@ -190,15 +190,18 @@ func (w *encbuf) toWriter(out io.Writer) error {
 		}
 		// write the header
 		enc := head.encode(w.sizebuf)
-		if _, err = out.Write(enc); err != nil {
+		if _, err := out.Write(enc); err != nil {
 			return err
 		}
 	}
 	if strpos < len(w.str) {
 		// write string data after the last list header
-		_, err = out.Write(w.str[strpos:])
+		_, err := out.Write(w.str[strpos:])
+		if err != nil {
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // encReader is the io.Reader returned by EncodeToReader.
