@@ -118,10 +118,6 @@ def Contract():
 		id1=random.randint(0,len(lines)-1)
 		id1=id1-(id1&1)
 
-#for debug
-	id0=0
-	id1=2
-
 	construct(lines[id0][:-1],lines[id1][:-1],money)
 	_fd=open("./sendtx.log","w+")
 	_fd.write(lines[id0][:-1]+"  "+lines[id1][:-1]+"  "+str(money)+'\n')
@@ -182,7 +178,7 @@ if __name__ == "__main__":
 	if com=="sendtransaction":
 		ans="SUCCESS"
 		func_list=[Buildwallet,Contract,Compile,Sign,Publish,]
-		for i in range(0,10):
+		for i in range(0,5):
 			for func in func_list:
 				if func()==False:
 					ans="FAIL"
