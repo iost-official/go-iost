@@ -84,6 +84,7 @@ func TestBlockCachePoW(t *testing.T) {
 
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(&b0)
+	base.EXPECT().Length().AnyTimes().Return(uint64(1))
 
 	Convey("Test of Block Cache (PoW)", t, func() {
 		Convey("Add:", func() {
@@ -242,6 +243,7 @@ func TestBlockCachePoB(t *testing.T) {
 
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(&b0)
+	base.EXPECT().Length().AnyTimes().Return(uint64(1))
 
 	Convey("Test of Block Cache (PoB)", t, func() {
 		Convey("Add:", func() {
@@ -493,6 +495,7 @@ func TestTxPool(t *testing.T) {
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(&b0)
 	base.EXPECT().HasTx(gomock.Any()).AnyTimes().Return(false, nil)
+	base.EXPECT().Length().AnyTimes().Return(uint64(1))
 
 	Convey("Test of TxPool", t, func() {
 		Convey("Add:", func() {

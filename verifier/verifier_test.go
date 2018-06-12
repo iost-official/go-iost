@@ -230,6 +230,42 @@ end`
 
 }
 
+func TestCacheVerifier_Multiple(t *testing.T) {
+	Convey("System test of transfer", t, func() {
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
+		code := `function main()
+	Transfer("a", "b", 50)
+end`
+		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
+
+		dbx, err := db.DatabaseFactor("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(dbx)
+		pool := state.NewPool(sdb)
+		pool.PutHM(state.Key("iost"), state.Key("a"), state.MakeVFloat(1000000))
+		pool.PutHM(state.Key("iost"), state.Key("b"), state.MakeVFloat(1000000))
+		//fmt.Println(pool.GetHM("iost", "b"))
+		var pool2 state.Pool
+
+		cv := NewCacheVerifier()
+		pool2, err = cv.VerifyContract(&lc, pool)
+		pool3, err := cv.VerifyContract(&lc, pool2)
+		if err != nil {
+			panic(err)
+		}
+		_, err = pool2.GetHM("iost", "a")
+		ba, err := pool2.GetHM("iost", "b")
+
+		aa2, err := pool3.GetHM("iost", "a")
+		So(err, ShouldBeNil)
+		So(aa2.(*state.VFloat).ToFloat64(), ShouldEqual, 999888)
+		So(ba.(*state.VFloat).ToFloat64(), ShouldEqual, 1000100)
+	})
+
+}
+
 func BenchmarkCacheVerifier_TransferOnly(b *testing.B) {
 	main := lua.NewMethod(vm.Public, "main", 0, 1)
 	code := `function main()

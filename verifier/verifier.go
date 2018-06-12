@@ -150,7 +150,7 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (
 	pool, gas, err := cv.Verify(contract, pool)
 	if err != nil {
 		//cv.StopVM(contract)
-		return nil, err
+		return pool, err
 	}
 	//cv.StopVM(contract)
 
