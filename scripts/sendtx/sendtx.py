@@ -124,7 +124,7 @@ def Contract():
 
 	construct(lines[id0][:-1],lines[id1][:-1],money)
 	_fd=open("./sendtx.log","w+")
-	_fd.write(lines[id0][:-1]+"  "+lines[id1][:-1]+"  "+str(money)+'   ')
+	_fd.write(lines[id0][:-1]+"  "+lines[id1][:-1]+"  "+str(money)+'\n')
 	_fd.close()
 
 	#write pubkey and seckey to ~/.ssh/test_secp
