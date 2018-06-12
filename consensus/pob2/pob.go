@@ -300,7 +300,11 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	//return &blk
 	spool1 := pool.Copy()
 	//TODO Content大小控制
-	tx := txpool.TxPoolS.PendingTransactions()
+	var tx TransactionsList
+	if txpool.TxPoolS != nil{
+		tx = txpool.TxPoolS.PendingTransactions()
+	}
+
 	if len(tx) != 0 {
 
 		for _,t := range tx {
