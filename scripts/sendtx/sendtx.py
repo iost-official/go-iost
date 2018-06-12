@@ -178,7 +178,7 @@ if __name__ == "__main__":
 	if com=="sendtransaction":
 		ans="SUCCESS"
 		func_list=[Buildwallet,Contract,Compile,Sign,Publish,]
-		for i in range(0,5):
+		for i in range(0,2):
 			for func in func_list:
 				if func()==False:
 					ans="FAIL"
