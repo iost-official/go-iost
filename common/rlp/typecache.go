@@ -95,7 +95,7 @@ type field struct {
 	info  *typeinfo
 }
 
-func structFields(typ reflect.Type) (fields []field, err error) {
+func structFields(typ reflect.Type) ([]field, error) {
 	for i := 0; i < typ.NumField(); i++ {
 		if f := typ.Field(i); f.PkgPath == "" { // exported
 			tags, err := parseStructTag(typ, i)

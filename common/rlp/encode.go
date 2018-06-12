@@ -177,7 +177,7 @@ func (w *encbuf) toBytes() []byte {
 	return out
 }
 
-func (w *encbuf) toWriter(out io.Writer) (err error) {
+func (w *encbuf) toWriter(out io.Writer) error {
 	strpos := 0
 	for _, head := range w.lheads {
 		// write string data before header
