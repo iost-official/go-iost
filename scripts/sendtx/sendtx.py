@@ -52,7 +52,7 @@ def Sendmoney():
 		lto.append(lines[i][:-1])
 	genesisPubkey="2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 	genesisSeckey="BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"
-	constructAll(genesisPubkey,lto,0.1)
+	constructAll(genesisPubkey,lto,10)
 	f1=open(HOME+"/.ssh/test_secp","w")
 	f1.write(genesisSeckey)
 	f1.close()
