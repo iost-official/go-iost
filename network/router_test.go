@@ -63,33 +63,33 @@ var m = message.Message{
 }
 
 //3 ms
-func TestRouterImpl_Send(t *testing.T) {
-	cleanLDB()
-	rs := newRouters(2)
-	net0 := rs[0].(*RouterImpl).base.(*BaseNetwork)
-	net1 := rs[1].(*RouterImpl).base.(*BaseNetwork)
-	m.To = net0.localNode.String()
-	net1.putNode(m.To)
-	begin := time.Now().UnixNano()
-	rs[1].Send(m)
-	ch, _ := rs[0].FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	for {
-		select {
-		case <-ch:
-			wg.Done()
-			goto Finish
-		}
-	}
-Finish:
-	wg.Wait()
-	fmt.Println((time.Now().UnixNano()-begin)/int64(time.Millisecond), " ms/ per send")
-	for _, r := range rs {
-		r.Stop()
-	}
-	cleanLDB()
-}
+/* func TestRouterImpl_Send(t *testing.T) { */
+// cleanLDB()
+// rs := newRouters(2)
+// net0 := rs[0].(*RouterImpl).base.(*BaseNetwork)
+// net1 := rs[1].(*RouterImpl).base.(*BaseNetwork)
+// m.To = net0.localNode.String()
+// net1.putNode(m.To)
+// begin := time.Now().UnixNano()
+// rs[1].Send(m)
+// ch, _ := rs[0].FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
+// wg := sync.WaitGroup{}
+// wg.Add(1)
+// for {
+// select {
+// case <-ch:
+// wg.Done()
+// goto Finish
+// }
+// }
+// Finish:
+// wg.Wait()
+// fmt.Println((time.Now().UnixNano()-begin)/int64(time.Millisecond), " ms/ per send")
+// for _, r := range rs {
+// r.Stop()
+// }
+// cleanLDB()
+/* } */
 
 //14ms
 func TestRouterImpl_Broadcast(t *testing.T) {
