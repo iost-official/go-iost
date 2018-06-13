@@ -16,7 +16,7 @@ net:
   target: base
   port: 30301
   rpc-port: 30303
-  metrics-port: 8080
+  metrics-port:
 vm:
   max-block-gas:
 ldb:
