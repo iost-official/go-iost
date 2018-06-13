@@ -62,8 +62,9 @@ do
     fi
     if [ "$1" = "restart" ]
     then
-        echo -e "\033[34m     sleep 60s... \033[0m"
-        sleep 10
+        sleepTime=10
+        echo -e "\033[34m     sleep ${sleepTime}s... \033[0m"
+        sleep $sleepTime
     fi
 done
 
