@@ -317,6 +317,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		}
 	}
 
+	blk.Head.BlockHash = blk.Head.Hash()
 	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
 
 	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine
