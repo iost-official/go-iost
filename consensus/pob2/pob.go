@@ -305,7 +305,7 @@ func (p *PoB) scheduleLoop() {
 					if block == nil {
 						break
 					}
-					confirmedBlockchainLength.Set(p.blockCache.ConfirmedLength())
+					confirmedBlockchainLength.Set(float64(p.blockCache.ConfirmedLength()))
 					p.log.I("CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
 				}
 				// end test
