@@ -21,7 +21,28 @@ import (
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+var (
+	generatedBlockCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "generated_block_count",
+			Help: "Count of generated block by current node",
+		},
+	)
+	confirmedBlockchainLength = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "confirmed_blockchain_length",
+			Help: "Length of confirmed blockchain on current node",
+		},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(generatedBlockCount)
+	prometheus.MustRegister(confirmedBlockchainLength)
+}
 
 var TxPerBlk int
 
@@ -284,6 +305,7 @@ func (p *PoB) scheduleLoop() {
 					if block == nil {
 						break
 					}
+					confirmedBlockchainLength.Set(p.blockCache.ConfirmedLength())
 					p.log.I("CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
 				}
 				// end test
@@ -351,6 +373,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		BlockNum:      blk.Head.Number,
 	})
 	/////////////////////////////////////
+	generatedBlockCount.Inc()
 
 	return &blk
 }
