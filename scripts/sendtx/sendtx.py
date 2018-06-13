@@ -119,7 +119,7 @@ def Contract():
 		id1=id1-(id1&1)
 
 	construct(lines[id0][:-1],lines[id1][:-1],money)
-	_f=open("/workdir/sendtx.log","w+")
+	_f=open("/workdir/sendtx.log","a+")
 	_f.write(lines[id0][:-1]+"  "+lines[id1][:-1]+"  "+str(money)+"\n")
 	_f.close()
 
