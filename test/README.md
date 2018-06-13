@@ -3,7 +3,6 @@
 
 ## Build Image
 ```
-docker run -it --rm -v `pwd`:/gopath/src/github.com/iost-official/prototype iost-dev make
 make image
 ```
 
