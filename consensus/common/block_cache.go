@@ -258,7 +258,6 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 	case Extend:
 		fallthrough
 	case Fork:
-		h.AddSingles(verifier) 
 		h.tryFlush(block.Head.Version)
 	case NotFound:
 		// Add to single block tree
@@ -311,7 +310,7 @@ func (h *BlockCacheImpl) AddSingles(verifier func(blk *block.Block, parent *bloc
 		}
 	}
 	h.singleBlockRoot.children = newChildren
-	//h.tryFlush(block.Head.Version)
+	h.tryFlush(block.Head.Version)
 }
 
 // AddTx 把交易加入链
