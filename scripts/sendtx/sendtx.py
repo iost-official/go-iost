@@ -52,7 +52,7 @@ def Sendmoney():
 		lto.append(lines[i][:-1])
 	genesisPubkey="2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 	genesisSeckey="BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"
-	constructAll(genesisPubkey,lto,10)
+	constructAll(genesisPubkey,lto,10000000000)
 	f1=open(HOME+"/.ssh/test_secp","w")
 	f1.write(genesisSeckey)
 	f1.close()
@@ -119,9 +119,6 @@ def Contract():
 		id1=id1-(id1&1)
 
 	construct(lines[id0][:-1],lines[id1][:-1],money)
-	_fd=open("./sendtx.log","w+")
-	_fd.write(lines[id0][:-1]+"  "+lines[id1][:-1]+"  "+str(money)+'\n')
-	_fd.close()
 
 	#write pubkey and seckey to ~/.ssh/test_secp
 	f1=open(HOME+"/.ssh/test_secp","w")
@@ -184,8 +181,4 @@ if __name__ == "__main__":
 					ans="FAIL"
 					break
 			print(ans)
-
-			_fd=open("./sendtx.log","w+")
-			_fd.write(ans+'\n')
-			_fd.close()
 

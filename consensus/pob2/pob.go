@@ -149,7 +149,7 @@ func (p *PoB) genesis(initTime int64) error {
 
 	main := lua.NewMethod(vm.Public, "", 0, 0)
 	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
-@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f100000000
+@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f10000000000000000
 @PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000
 @PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f100000`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
