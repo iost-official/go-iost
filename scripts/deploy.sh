@@ -16,6 +16,7 @@ echoHelp(){
     echo 'usage:
     ./deploy.sh init        ----- 初始化节点配置
     ./deploy.sh restart     ----- 重启所有服务
+    ./deploy.sh reload      ----- 重启 imonitor
     ./deploy.sh pushonline  ----- 部署 testnet 分支最新代码'
 }
 
@@ -31,6 +32,9 @@ then
 elif [ "$1" = "pushonline" ]
 then
     cmd="upgrade.sh"
+elif [ "$1" = "reload" ]
+then
+    cmd="reload"
 elif [ "$1" = "init" ]
 then
     cmd="init.sh"
@@ -62,7 +66,7 @@ do
     fi
     if [ "$1" = "restart" ]
     then
-        sleepTime=10
+        sleepTime=1
         echo -e "\033[34m     sleep ${sleepTime}s... \033[0m"
         sleep $sleepTime
     fi
