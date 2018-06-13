@@ -241,7 +241,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
-	bn.log.D("[net] send msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time)
+	bn.log.D("[net] send msg: type= %v, from=%v,to=%v,time=%v", msg.ReqType, msg.From, msg.To, msg.Time)
 	req := newRequest(Message, bn.localNode.Addr(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {

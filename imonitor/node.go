@@ -124,6 +124,21 @@ func makeScripts() {
 			return err
 		},
 	}
+	scripts["stop-iserver"] = script{
+		run: func(args string) []byte {
+			iserver := exec.Command(scriptPath+"iserverd.py", "stop")
+			err := iserver.Start()
+			if err != nil {
+				return []byte(err.Error())
+			}
+			return []byte("ok")
+		},
+		daemon: func(args string) error {
+			iserver := exec.Command(scriptPath+"iserverd.py", "stop")
+			err := iserver.Start()
+			return err
+		},
+	}
 	scripts["reload"] = script{
 		run: func(args string) []byte {
 			makeScripts()

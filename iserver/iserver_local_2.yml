@@ -19,7 +19,8 @@ net:
   listen-addr: 52.56.118.10
   target: base
   port: 30301
-  rpc-port: :30303
+  rpc-port: 30303
+  metrics-port: 8080
 vm:
   max-block-gas:
 ldb:
