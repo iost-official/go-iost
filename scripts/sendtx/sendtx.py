@@ -52,7 +52,7 @@ def Sendmoney():
 		lto.append(lines[i][:-1])
 	genesisPubkey="2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 	genesisSeckey="BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"
-	constructAll(genesisPubkey,lto,10000000000)
+	constructAll(genesisPubkey,lto,1000000)
 	f1=open(HOME+"/.ssh/test_secp","w")
 	f1.write(genesisSeckey)
 	f1.close()
@@ -175,10 +175,9 @@ if __name__ == "__main__":
 	if com=="sendtransaction":
 		ans="SUCCESS"
 		func_list=[Buildwallet,Contract,Compile,Sign,Publish,]
-		for i in range(0,2):
-			for func in func_list:
-				if func()==False:
-					ans="FAIL"
-					break
-			print(ans)
+		for func in func_list:
+			if func()==False:
+				ans="FAIL"
+				break
+		print(ans)
 
