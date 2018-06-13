@@ -246,14 +246,14 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 	/*
 		if uint64(block.Head.Number) < h.bc.Length() {
 			return ErrTooOld
-		}
+		}v
 	*/
 	code, newTree := h.cachedRoot.add(block, verifier)
 	switch code {
 	case Extend:
 		fallthrough
 	case Fork:
-		h.addSingles(newTree, Verifier)
+		h.addSingles(newTree, verifier)
 		h.tryFlush(block.Head.Version)
 	case NotFound:
 		// Add to single block tree
