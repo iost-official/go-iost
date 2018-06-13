@@ -206,6 +206,50 @@ func TestRunGenerateBlock(t *testing.T) {
 	})
 }
 
+
+func TestAddSinglesBlock(t *testing.T)  {
+	Convey("Test of Add singles block", t, func() {
+		cmd := exec.Command("/bin/bash", "-c", "cd $GOPATH/src/github.com/iost-official/prototype/consensus/pob2 && rm -rf blockDB txDB")
+		cmd.Run()
+
+		verify:=func (blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+			return pool, nil
+		}
+
+		p, accountList, witnessList, _ := envinit(t)
+
+		blockCnt := 10
+		//生成block
+		blockPool := genBlocks(p, accountList, witnessList, blockCnt, 0, true)
+
+		var block *block.Block
+		for i, blk := range blockPool{
+			if i == 3{
+				So(p.blockCache.ConfirmedLength(), ShouldEqual, 2)
+				block = blk
+			}else {
+				err := p.blockCache.Add(blk, verify)
+				fmt.Println(err)
+			}
+		}
+
+		So(p.blockCache.ConfirmedLength(), ShouldEqual, 2)
+		// 最后上链丢失的交易
+		err := p.blockCache.Add(block, verify)
+		fmt.Println(err)
+
+		// 创世块 + blockCnt - 2
+		So(p.blockCache.ConfirmedLength(), ShouldEqual, blockCnt-1)
+
+
+		//err := p.blockCache.Add(lastBlock, p.blockVerify)
+		//fmt.Println(err)
+		//
+		//So(p.blockCache.ConfirmedLength(), ShouldEqual, 6)
+		//p.blockCache.Draw()
+	})
+}
+
 //clear BlockDB and TxDB files before running this test
 func TestRunConfirmBlock(t *testing.T) {
 	Convey("Test of Run ConfirmBlock", t, func() {
@@ -513,7 +557,7 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
 			Number:     int64(i + 1),
-			Witness:    witnessList[0],
+			Witness:    account.GetIdByPubkey(accountList[i%3].Pubkey),
 			Time:       slot + int64(i),
 		}}
 
