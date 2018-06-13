@@ -104,13 +104,14 @@ type globalDynamicProperty struct {
 }
 
 func newGlobalDynamicProperty() globalDynamicProperty {
-	return globalDynamicProperty{
+	prop:=globalDynamicProperty{
 		LastBlockNumber:          0,
 		LastBlockTime:            Timestamp{Slot: 0},
 		TotalSlots:               0,
 		LastConfirmedBlockNumber: 0,
-		NextMaintenanceTime:      Timestamp{Slot: 0},
 	}
+	prop.NextMaintenanceTime.AddHour(maintenanceInterval)
+	return prop
 }
 
 func (prop *globalDynamicProperty) update(blockHead *block.BlockHead) {
@@ -157,7 +158,7 @@ func witnessOfTime(sp *globalStaticProperty, dp *globalDynamicProperty, time Tim
 func timeUntilNextSchedule(sp *globalStaticProperty, dp *globalDynamicProperty, timeSec int64) int64 {
 	var index int
 	if index = getIndex(sp.Account.GetId(), sp.WitnessList); index < 0 {
-		return dp.NextMaintenanceTime.ToUnixSec() - timeSec
+		return dp.NextMaintenanceTime.ToUnixSec() 
 	}
 
 	time := GetTimestamp(timeSec)
