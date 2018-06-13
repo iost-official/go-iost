@@ -14,7 +14,7 @@ AllNodes=("$Tokyo" "$London" "$Singapore" "$Mumbai" "$Frankfort" "$Seoul" "$Mont
 
 echoHelp(){
     echo 'usage:
-    ./deploy.sh redis        ----- 初始化节点配置
+    ./deploy.sh redis        ----- 初始化节点配置'
 }
 
 
