@@ -41,8 +41,10 @@ RUN yum install -y python python-devel python-pip
 RUN sed -i 's/\#\ daemonize\ no/daemonize\ yes/g' /etc/redis/redis.conf
 
 # Install project
-COPY prototype $GOPATH/src/github.com/iost-official/prototype
-RUN cd $GOPATH/src/github.com/iost-official/prototype && make && \
+RUN mkdir -p $GOPATH/src/github.com/iost-official && \
+    cd $GOPATH/src/github.com/iost-official && \
+    git clone https://445789ea93ff81d814c78fccae8e25000f96e539@github.com/iost-official/prototype && \
+    cd prototype && git checkout testnet && make && \
     cp -r build /workdir && cp start.sh /workdir/ && \
     mkdir /var/lib/iserver && cp iserver/iserver.yml /var/lib/iserver/
 
