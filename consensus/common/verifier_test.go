@@ -13,7 +13,7 @@ import (
 )
 
 func TestStdTxsVerifier(t *testing.T) {
-	dbx, err := db.DatabaseFactor("redis")
+	dbx, err := db.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -57,7 +57,7 @@ func TestStdBlockVerifier(t *testing.T) {
 }
 
 func TestStdCacheVerifier(t *testing.T) {
-	dbx, err := db.DatabaseFactor("redis")
+	dbx, err := db.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -91,7 +91,7 @@ func TestStdCacheVerifier(t *testing.T) {
 }
 
 func BenchmarkStdTxsVerifier(b *testing.B) {
-	dbx, err := db.DatabaseFactor("redis")
+	dbx, err := db.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -122,7 +122,7 @@ func BenchmarkStdTxsVerifier(b *testing.B) {
 }
 
 func BenchmarkStdCacheVerifier(b *testing.B) {
-	dbx, err := db.DatabaseFactor("redis")
+	dbx, err := db.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}
