@@ -22,7 +22,7 @@ lint:
 	@gometalinter --config=.gometalinter.json ./...
 
 image:
-	docker build -f Dockerfile.dev -t $(DOCKER_IMAGE) ..
+	docker build -f Dockerfile.dev -t $(DOCKER_IMAGE) .
 
 install:
 	go install ./iwallet/
