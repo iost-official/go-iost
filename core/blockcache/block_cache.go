@@ -170,7 +170,6 @@ var (
 type BlockCache interface {
 	AddGenesis(block *block.Block) error
 	Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error
-	AddSingles(verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error))
 
 	FindBlockInCache(hash []byte) (*block.Block, error)
 	LongestChain() block.Chain
@@ -187,16 +186,15 @@ type BlockCache interface {
 
 // BlockCacheImpl 块缓存实现
 type BlockCacheImpl struct {
-	bc              block.Chain
-	cachedRoot      *BlockCacheTree
-	singleBlockRoot *BlockCacheTree
-	recentTree      *BlockCacheTree
-	txPool          tx.TxPool
-	delTxPool       tx.TxPool
-	txPoolCache     tx.TxPool
-	maxDepth        int
-	blkConfirmChan  chan uint64
-	chConfirmBlockData 	chan *block.Block
+	bc                 block.Chain
+	cachedRoot         *BlockCacheTree
+	singleBlockRoot    *BlockCacheTree
+	txPool             tx.TxPool
+	delTxPool          tx.TxPool
+	txPoolCache        tx.TxPool
+	maxDepth           int
+	blkConfirmChan     chan uint64
+	chConfirmBlockData chan *block.Block
 }
 
 // NewBlockCache 新建块缓存
@@ -217,8 +215,8 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
 		},
-		maxDepth:       maxDepth,
-		blkConfirmChan: make(chan uint64, 10),
+		maxDepth:           maxDepth,
+		blkConfirmChan:     make(chan uint64, 10),
 		chConfirmBlockData: make(chan *block.Block, 100),
 	}
 
@@ -251,11 +249,11 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 		}
 	*/
 	code, newTree := h.cachedRoot.add(block, verifier)
-	h.recentTree = newTree
 	switch code {
 	case Extend:
 		fallthrough
 	case Fork:
+		h.addSingles(newTree, Verifier)
 		h.tryFlush(block.Head.Version)
 	case NotFound:
 		// Add to single block tree
@@ -294,9 +292,8 @@ func (h *BlockCacheImpl) Add(block *block.Block, verifier func(blk *block.Block,
 	return nil
 }
 
-// AddSingles 尝试把single blocks上链
-func (h *BlockCacheImpl) AddSingles(verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
-	newTree := h.recentTree
+// addSingles 尝试把single blocks上链
+func (h *BlockCacheImpl) addSingles(newTree *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
 	block := newTree.bc.block
 	newChildren := make([]*BlockCacheTree, 0)
 	for _, bct := range h.singleBlockRoot.children {
@@ -307,7 +304,6 @@ func (h *BlockCacheImpl) AddSingles(verifier func(blk *block.Block, parent *bloc
 		}
 	}
 	h.singleBlockRoot.children = newChildren
-	h.tryFlush(block.Head.Version)
 }
 
 func (h *BlockCacheImpl) tryFlush(version int64) {
@@ -417,7 +413,7 @@ func (h *BlockCacheImpl) OnBlockChan() chan *block.Block {
 }
 
 func (h *BlockCacheImpl) SendOnBlock(blk *block.Block) {
-	h.chConfirmBlockData<-blk
+	h.chConfirmBlockData <- blk
 }
 
 //func (h *BlockCacheImpl) FindTx(txHash []byte) (core.Tx, error) {

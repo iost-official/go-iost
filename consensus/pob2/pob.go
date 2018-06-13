@@ -11,19 +11,19 @@ import (
 
 	"errors"
 	"fmt"
-	"time"
 	"math/rand"
+	"time"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/blockcache"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/txpool"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
-	"github.com/iost-official/prototype/core/blockcache"
-	"github.com/iost-official/prototype/core/txpool"
 )
 
 var TxPerBlk int
@@ -49,7 +49,7 @@ type PoB struct {
 // NewPoB: 新建一个PoB实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
-	TxPerBlk = 100+rand.Intn(900)
+	TxPerBlk = 100 + rand.Intn(900)
 	p := PoB{
 		account: acc,
 	}
@@ -211,11 +211,9 @@ func (p *PoB) blockLoop() {
 				p.log.I("[blockloop]:verify blk faild\n%s\n", &blk)
 			}
 			if err != blockcache.ErrBlock && err != blockcache.ErrTooOld {
-				p.synchronizer.BlockConfirmed(blk.Head.Number)
+				go p.synchronizer.BlockConfirmed(blk.Head.Number)
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
-
-					p.blockCache.AddSingles(p.blockVerify)
 				} else if err == blockcache.ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
@@ -301,13 +299,13 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	spool1 := pool.Copy()
 	//TODO Content大小控制
 	var tx TransactionsList
-	if txpool.TxPoolS != nil{
+	if txpool.TxPoolS != nil {
 		tx = txpool.TxPoolS.PendingTransactions()
 	}
 
 	if len(tx) != 0 {
 
-		for _,t := range tx {
+		for _, t := range tx {
 
 			if len(blk.Content) >= TxPerBlk {
 				break
@@ -400,7 +398,7 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 	var signature common.Signature
 	signature.Decode(blk.Head.Signature)
 
-	if blk.Head.Witness != common.Base58Encode(signature.Pubkey){
+	if blk.Head.Witness != common.Base58Encode(signature.Pubkey) {
 		return nil, errors.New("wrong pubkey")
 	}
 
