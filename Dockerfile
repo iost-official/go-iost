@@ -46,8 +46,15 @@ cd prototype && git checkout testnet && go get github.com/kardianos/govendor && 
 pip install -r scripts/backup/requirements.txt && \
 cd iserver && go install && cd ../imonitor && go install && mkdir /workdir
 
+EXPOSE 30301
 EXPOSE 30302
 EXPOSE 30303
+EXPOSE 30304
+EXPOSE 30305
+EXPOSE 30306
+EXPOSE 30307
+EXPOSE 30308
+EXPOSE 30309
 EXPOSE 30310
 
 WORKDIR /workdir
