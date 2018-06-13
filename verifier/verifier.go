@@ -142,7 +142,7 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (
 	if contract.Info().Price != 0 {
 		bos := balanceOfSender(sender, pool)
 		if bos < float64(contract.Info().GasLimit)*contract.Info().Price {
-			return pool, fmt.Errorf("balance not enough:balance %f gaslimit*price:%f", bos, float64(contract.Info().GasLimit)*contract.Info().Price)
+			return pool, fmt.Errorf("balance not enough")
 		}
 	}
 

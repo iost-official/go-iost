@@ -241,7 +241,6 @@ func (p *PoB) txListenLoop() {
 }
 
 func (p *PoB) blockLoop() {
-
 	p.log.I("Start to listen block")
 	for {
 		select {
@@ -268,8 +267,6 @@ func (p *PoB) blockLoop() {
 				receivedBlockCount.Inc()
 			} else {
 				p.log.I("Error: %v", err)
-				//HowHsu_Debug
-				p.log.I("[blockloop]:verify blk faild\n%s\n", &blk)
 			}
 			if err != ErrBlock && err != ErrTooOld {
 				p.synchronizer.BlockConfirmed(blk.Head.Number)
