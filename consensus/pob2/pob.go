@@ -31,6 +31,18 @@ var (
 			Help: "Count of generated block by current node",
 		},
 	)
+	receivedBlockCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "received_block_count",
+			Help: "Count of received block by current node",
+		},
+	)
+	receivedTransactionCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "received_transaction_count",
+			Help: "Count of received transaction by current node",
+		},
+	)
 	confirmedBlockchainLength = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "confirmed_blockchain_length",
@@ -219,6 +231,7 @@ func (p *PoB) txListenLoop() {
 			tx.Decode(req.Body)
 			if VerifyTxSig(tx) {
 				p.blockCache.AddTx(&tx)
+				receivedTransactionCount.Inc()
 			}
 
 		case <-p.exitSignal:
@@ -252,6 +265,7 @@ func (p *PoB) blockLoop() {
 				p.log.I("Link it onto cached chain")
 				bc := p.blockCache.LongestChain()
 				p.blockCache.UpdateTxPoolOnBC(bc)
+				receivedBlockCount.Inc()
 			} else {
 				p.log.I("Error: %v", err)
 				//HowHsu_Debug
