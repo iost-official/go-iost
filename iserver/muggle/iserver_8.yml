@@ -19,7 +19,7 @@ net:
   listen-addr: 18.179.143.193
   target: base
   port: 30305
-  rpc-port: :30307
+  rpc-port: 30307
 vm:
   max-block-gas:
 ldb:
