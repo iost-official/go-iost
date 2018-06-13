@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
@@ -53,6 +54,8 @@ var (
 
 func init() {
 	prometheus.MustRegister(generatedBlockCount)
+	prometheus.MustRegister(receivedBlockCount)
+	prometheus.MustRegister(receivedTransactionCount)
 	prometheus.MustRegister(confirmedBlockchainLength)
 }
 
@@ -367,8 +370,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		//Stdtxsverifier的内部会pool=spool1.copy,如果这个交易验证失败，则pool造成内存浪费
 		//if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
 		if err := StdCacheVerifier(tx, spool1); err == nil {
-			//HowHsu_Debug
-			p.log.I("[genBlock %d]: tx packed\n %s\n", blk.Head.Number, tx)
 			blk.Content = append(blk.Content, *tx)
 			//spool1 = sp
 		}

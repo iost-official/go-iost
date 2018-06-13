@@ -52,7 +52,7 @@ def Sendmoney():
 		lto.append(lines[i][:-1])
 	genesisPubkey="2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 	genesisSeckey="BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"
-	constructAll(genesisPubkey,lto,1000000)
+	constructAll(genesisPubkey,lto,10000000000)
 	f1=open(HOME+"/.ssh/test_secp","w")
 	f1.write(genesisSeckey)
 	f1.close()
@@ -119,6 +119,9 @@ def Contract():
 		id1=id1-(id1&1)
 
 	construct(lines[id0][:-1],lines[id1][:-1],money)
+	_f=open("/workdir/sendtx.log","a+")
+	_f.write(lines[id0][:-1]+"  "+lines[id1][:-1]+"  "+str(money)+"\n")
+	_f.close()
 
 	#write pubkey and seckey to ~/.ssh/test_secp
 	f1=open(HOME+"/.ssh/test_secp","w")
@@ -175,9 +178,11 @@ if __name__ == "__main__":
 	if com=="sendtransaction":
 		ans="SUCCESS"
 		func_list=[Buildwallet,Contract,Compile,Sign,Publish,]
-		for func in func_list:
-			if func()==False:
-				ans="FAIL"
-				break
-		print(ans)
+		while True:
+			for func in func_list:
+				if func()==False:
+					ans="FAIL"
+					break
+			print(ans)
+			time.sleep(0.1)
 
