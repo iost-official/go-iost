@@ -6,7 +6,7 @@ PROJECT = github.com/iost-official/prototype
 DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
 TARGET_DIR = build
 
-.PHONY: all build iserver register lint image install clean
+.PHONY: all build iserver register lint image devimage install clean
 
 all: build
 
@@ -21,8 +21,12 @@ register:
 lint:
 	@gometalinter --config=.gometalinter.json ./...
 
-image:
-	docker build -f Dockerfile.dev -t $(DOCKER_IMAGE) .
+image: devimage
+	docker run -it --rm -v `pwd`:/gopath/src/github.com/iost-official/prototype iost-dev make
+	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
+
+devimage:
+	docker build -f Dockerfile.dev -t iost-dev .
 
 install:
 	go install ./iwallet/

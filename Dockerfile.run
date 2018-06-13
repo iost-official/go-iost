@@ -40,6 +40,13 @@ RUN yum install -y python python-devel python-pip
 # Change redis conf
 RUN sed -i 's/\#\ daemonize\ no/daemonize\ yes/g' /etc/redis/redis.conf
 
-WORKDIR $GOPATH/src/github.com/iost-official/prototype
+# Install project
+RUN mkdir /workdir && mkdir /var/lib/iserver
+COPY build/iserver /workdir/iserver
+COPY build/register /workdir/register
+COPY start.sh /workdir/start.sh
+COPY iserver/iserver.yml /var/lib/iserver/iserver.yml
 
-CMD ["make"]
+WORKDIR /workdir
+
+CMD ["./start.sh"]
