@@ -1,7 +1,7 @@
 account:
-  id: s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB
-  pub-key: s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB
-  sec-key: Hkaw3rY7Y4St4SP3jgQgFXPGnQ8HzTnKHmffPB8JHPnH
+  id: 2633QeuxwkcXWq1fV7BZUp6noMD8rh6gDXCdgNh9JoCys
+  pub-key: 2633QeuxwkcXWq1fV7BZUp6noMD8rh6gDXCdgNh9JoCys
+  sec-key: u2p2qLBtbFjpm2Ro39YXsXQbpqJXc5NiDCqyoCsCJ4A
 consensus:
   witness-list:
   - 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT
@@ -16,10 +16,10 @@ net:
   node-table-path: netpath
   node-id:
   register-addr: 18.179.83.17:30304
-  listen-addr: 13.228.206.188
+  listen-addr: 13.124.172.86
   target: base
-  port: 30301
-  rpc-port: :30303
+  port: 32301
+  rpc-port: :32303
 vm:
   max-block-gas:
 ldb:
