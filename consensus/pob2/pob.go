@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
@@ -53,6 +54,8 @@ var (
 
 func init() {
 	prometheus.MustRegister(generatedBlockCount)
+	prometheus.MustRegister(receivedBlockCount)
+	prometheus.MustRegister(receivedTransactionCount)
 	prometheus.MustRegister(confirmedBlockchainLength)
 }
 
