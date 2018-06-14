@@ -11,7 +11,7 @@ import (
 
 func TestTransfer(t *testing.T) {
 	Convey("Test of transfer", t, func() {
-		db, _ := db.DatabaseFactor("redis")
+		db, _ := db.DatabaseFactory("redis")
 		mdb := state.NewDatabase(db)
 		pool := state.NewPool(mdb)
 		pool.PutHM("iost", "a", state.MakeVFloat(100))

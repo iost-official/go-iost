@@ -8,9 +8,9 @@ import (
 
 func TestRedisDatabase(t *testing.T) {
 	Convey("Test of RedisDatabase", t, func() {
-		//db, _ := DatabaseFactor("redis")
-		//db, _ := DatabaseFactor("mem")
-		db, _ := DatabaseFactor("ldb")
+		//db, _ := DatabaseFactory("redis")
+		//db, _ := DatabaseFactory("mem")
+		db, _ := DatabaseFactory("ldb")
 
 		//db, _ := NewMemDatabase()
 

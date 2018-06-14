@@ -19,7 +19,7 @@ type Database interface {
 	//NewBatch() Batch
 }
 
-func DatabaseFactor(target string) (Database, error) {
+func DatabaseFactory(target string) (Database, error) {
 	switch target {
 	case "redis":
 		return NewRedisDatabase()

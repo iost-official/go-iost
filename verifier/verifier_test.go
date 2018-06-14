@@ -13,6 +13,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+// nolint
 func TestGenesisVerify(t *testing.T) {
 	Convey("Test of Genesis verify", t, func() {
 		Convey("Parse Contract", func() {
@@ -46,6 +47,7 @@ func TestGenesisVerify(t *testing.T) {
 	})
 }
 
+// nolint
 func TestCacheVerifier(t *testing.T) {
 	Convey("Test of CacheVerifier", t, func() {
 		Convey("Verify contract", func() {
@@ -205,7 +207,7 @@ func TestCacheVerifier_TransferOnly(t *testing.T) {
 end`
 		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 
-		dbx, err := db.DatabaseFactor("redis")
+		dbx, err := db.DatabaseFactory("redis")
 		if err != nil {
 			panic(err.Error())
 		}
@@ -238,7 +240,7 @@ func TestCacheVerifier_Multiple(t *testing.T) {
 end`
 		lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 
-		dbx, err := db.DatabaseFactor("redis")
+		dbx, err := db.DatabaseFactory("redis")
 		if err != nil {
 			panic(err.Error())
 		}
@@ -274,7 +276,7 @@ func BenchmarkCacheVerifier_TransferOnly(b *testing.B) {
 end`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 
-	dbx, err := db.DatabaseFactor("redis")
+	dbx, err := db.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -311,7 +313,7 @@ func BenchmarkCacheVerifierWithCache_TransferOnly(b *testing.B) {
 end`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 
-	dbx, err := db.DatabaseFactor("redis")
+	dbx, err := db.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}

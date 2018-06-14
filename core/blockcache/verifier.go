@@ -3,7 +3,6 @@ package blockcache
 import (
 	"bytes"
 	"errors"
-	"fmt"
 
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
@@ -37,16 +36,18 @@ var ver *verifier.CacheVerifier
 
 // StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
+
+	ver.Context = &VerifyContext{
+		VParentHash: block.Head.ParentHash,
+	}
+
 	txs := block.Content
 	ptxs := make([]*tx.Tx, 0)
-	for _, txx := range txs {
-		ptxs = append(ptxs, &txx)
+	for i := range txs {
+		ptxs = append(ptxs, &(txs[i]))
 	}
-	//pool2, _, err := StdTxsVerifier(ptxs, pool.Copy())
-	pool2, failTx, err := StdTxsVerifier(ptxs, pool.Copy())
+	pool2, _, err := StdTxsVerifier(ptxs, pool.Copy())
 	if err != nil {
-		//HowHsu_Debug
-		fmt.Printf("[StdBlockVerifier]:broken tx in block,index:\n%s\n", ptxs[failTx])
 		return pool, err
 	}
 	return pool2.MergeParent()
@@ -83,7 +84,9 @@ func CleanStdVerifier() {
 	ver.CleanUp()
 }
 
-func StdCacheVerifier(txx *tx.Tx, pool state.Pool) error {
+func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context VerifyContext) error {
+	ver.Context = context
+
 	p2, err := ver.VerifyContract(txx.Contract, pool.Copy())
 	if err != nil {
 		return err
@@ -92,25 +95,13 @@ func StdCacheVerifier(txx *tx.Tx, pool state.Pool) error {
 	return nil
 }
 
-// TODO： 请别用这个了
-//func VerifyTx(tx *tx.Tx, txVer *verifier.CacheVerifier) (state.Pool, bool) {
-//	newPool, err := txVer.VerifyContract(tx.Contract, false)
-//
-//	////////////probe//////////////////
-//	var ret string = "pass"
-//	if err != nil {
-//		ret = "fail"
-//	}
-//	log.Report(&log.MsgTx{
-//		SubType:   "verify." + ret,
-//		TxHash:    tx.Hash(),
-//		Publisher: tx.Publisher.Pubkey,
-//		Nonce:     tx.Nonce,
-//	})
-//	///////////////////////////////////
-//
-//	return newPool, err == nil
-//}
+type VerifyContext struct {
+	VParentHash []byte
+}
+
+func (v VerifyContext) ParentHash() []byte {
+	return v.VParentHash
+}
 
 // VerifyTxSig 验证交易的签名
 func VerifyTxSig(tx tx.Tx) bool {

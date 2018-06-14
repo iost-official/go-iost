@@ -2,15 +2,14 @@ package blockcache
 
 import (
 	"bytes"
-	"fmt"
-
 	"errors"
-
-	"github.com/prometheus/client_golang/prometheus"
+	"fmt"
 
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/log"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -77,7 +76,7 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 		}
 		newPool, err := verifier(block, b.bc.Top(), b.pool)
 		if err != nil {
-			fmt.Printf("ErrorBlock: %v\n", err)
+			log.Log.I("ErrorBlock: %v\n", err)
 
 			return ErrorBlock, nil
 		}
@@ -297,6 +296,7 @@ func (h *BlockCacheImpl) addSingles(newTree *BlockCacheTree, verifier func(blk *
 	block := newTree.bc.block
 	newChildren := make([]*BlockCacheTree, 0)
 	for _, bct := range h.singleBlockRoot.children {
+		fmt.Println(bct.bc.block.Head.ParentHash)
 		if bytes.Equal(bct.bc.block.Head.ParentHash, block.Head.Hash()) {
 			newTree.addSubTree(bct, verifier)
 		} else {
@@ -316,6 +316,7 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 			h.cachedRoot.pool.Flush()
 			h.cachedRoot.super = nil
 			h.cachedRoot.updateLength()
+
 		} else {
 			break
 		}

@@ -42,3 +42,8 @@ testWallet/testW.py
 		checkPublish()		:test publish tx
 		checkValue()		:test get value from statepool
 		checkBalance()		:test get balance
+
+deploy.sh
+    ./deploy pushonline     -----   部署 testnet 分支最新代码
+    ./deploy restart        -----   重启所有服务
+    ./deploy init           -----   初始化配置文件

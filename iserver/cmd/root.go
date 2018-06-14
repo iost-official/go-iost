@@ -167,7 +167,10 @@ var rootCmd = &cobra.Command{
 			log.Log.E("NewBlockChain failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-
+		
+		//HowHsu_Debug
+		log.Log.I("blockchain db length:%d\n",blockChain.Length())
+	
 		witnessList := viper.GetStringSlice("consensus.witness-list")
 
 		for i, witness := range witnessList {
@@ -208,7 +211,9 @@ var rootCmd = &cobra.Command{
 		recorder.Listen()
 
 		// Start Metrics Server
-		metrics.NewServer(metricsPort)
+		if metricsPort != "" {
+			metrics.NewServer(metricsPort)
+		}
 
 		////////////probe//////////////////
 		log.Report(&log.MsgNode{

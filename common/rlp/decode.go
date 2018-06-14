@@ -900,8 +900,10 @@ func (s *Stream) readUint(size byte) (uint64, error) {
 	}
 }
 
-func (s *Stream) readFull(buf []byte) (err error) {
-	if err := s.willRead(uint64(len(buf))); err != nil {
+// nolint
+func (s *Stream) readFull(buf []byte) error {
+	err := s.willRead(uint64(len(buf)))
+	if err != nil {
 		return err
 	}
 	var nn, n int

@@ -39,7 +39,8 @@ type VM interface {
 	Start() error
 	Restart(contract Contract) error
 	Stop()
-	Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
+	//Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
+	Call(ctx Context, pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
 	PC() uint64
 }
 
@@ -49,6 +50,11 @@ type Method interface {
 	InputCount() int
 	OutputCount() int
 	Privilege() Privilege
+}
+
+// Context using by vm
+type Context interface {
+	ParentHash() []byte
 }
 
 // Contract 智能合约interface，其中setPrefix，setSender, AddSigner是从tx构建contract的时候使用
@@ -68,7 +74,7 @@ type Monitor interface {
 	StopVM(contract Contract)
 	Stop()
 	GetMethod(contractPrefix, methodName string, caller IOSTAccount) (Method, error)
-	Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error)
+	Call(ctx Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error)
 }
 
 func PubkeyToIOSTAccount(pubkey []byte) IOSTAccount {

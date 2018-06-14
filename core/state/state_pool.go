@@ -210,7 +210,7 @@ var StdPool Pool
 var once sync.Once
 
 func PoolInstance() error {
-	bdb, err := db.DatabaseFactor("redis")
+	bdb, err := db.DatabaseFactory("redis")
 	if err != nil {
 		return err
 	}

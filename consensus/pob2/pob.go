@@ -18,13 +18,49 @@ import (
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/blockcache"
 	"github.com/iost-official/prototype/core/message"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/txpool"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+var (
+	generatedBlockCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "generated_block_count",
+			Help: "Count of generated block by current node",
+		},
+	)
+	receivedBlockCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "received_block_count",
+			Help: "Count of received block by current node",
+		},
+	)
+	receivedTransactionCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "received_transaction_count",
+			Help: "Count of received transaction by current node",
+		},
+	)
+	confirmedBlockchainLength = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "confirmed_blockchain_length",
+			Help: "Length of confirmed blockchain on current node",
+		},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(generatedBlockCount)
+	prometheus.MustRegister(receivedBlockCount)
+	prometheus.MustRegister(receivedTransactionCount)
+	prometheus.MustRegister(confirmedBlockchainLength)
+}
 
 var TxPerBlk int
 
@@ -145,7 +181,7 @@ func (p *PoB) genesis(initTime int64) error {
 
 	main := lua.NewMethod(vm.Public, "", 0, 0)
 	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
-@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f100000000
+@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f10000000000000000
 @PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000
 @PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f100000`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
@@ -179,7 +215,6 @@ func (p *PoB) genesis(initTime int64) error {
 }
 
 func (p *PoB) blockLoop() {
-
 	p.log.I("Start to listen block")
 	for {
 		select {
@@ -205,9 +240,9 @@ func (p *PoB) blockLoop() {
 
 				// add servi
 				Data.AddServi(blk.Content)
+				receivedBlockCount.Inc()
 			} else {
 				p.log.I("Error: %v", err)
-				//HowHsu_Debug
 				p.log.I("[blockloop]:verify blk faild\n%s\n", &blk)
 			}
 			if err != blockcache.ErrBlock && err != blockcache.ErrTooOld {
@@ -256,6 +291,7 @@ func (p *PoB) scheduleLoop() {
 					if block == nil {
 						break
 					}
+					confirmedBlockchainLength.Set(float64(p.blockCache.ConfirmedLength()))
 					p.log.I("CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
 				}
 				// end test
@@ -297,6 +333,10 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	blk.Head.Signature = sig.Encode()
 	//return &blk
 	spool1 := pool.Copy()
+
+	var vc blockcache.VerifyContext
+	vc.VParentHash = lastBlk.Head.Hash()
+
 	//TODO Content大小控制
 	var tx TransactionsList
 	if txpool.TxPoolS != nil {
@@ -311,7 +351,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 				break
 			}
 
-			if err := blockcache.StdCacheVerifier(t, spool1); err == nil {
+			if err := blockcache.StdCacheVerifier(t, spool1, vc); err == nil {
 				blk.Content = append(blk.Content, *t)
 			}
 		}
@@ -327,6 +367,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		BlockNum:      blk.Head.Number,
 	})
 	/////////////////////////////////////
+	generatedBlockCount.Inc()
 
 	//Clear Servi
 	Data.ClearServi(tx)
