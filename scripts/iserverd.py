@@ -90,6 +90,8 @@ def upgrade():
 	wCommand("cd "+pwd+" && git reset --hard origin/consensus")
 	wCommand("cd "+pwd+" && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
+	
+	wCommand("redis-cli -h 127.0.0.1 -p 6379 shutdown")
 	wCommand("rm -rf /workdir/blockDB /workdir/txDB/ /workdir/netpath /workdir/test.log /workdir/dump.rdb")
 
 	#stop iserver now
