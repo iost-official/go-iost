@@ -36,9 +36,14 @@ var ver *verifier.CacheVerifier
 
 // StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
+
+	ver.Context = &VerifyContext{
+		VParentHash: block.Head.ParentHash,
+	}
+
 	txs := block.Content
 	ptxs := make([]*tx.Tx, 0)
-	for i, _ := range txs {
+	for i := range txs {
 		ptxs = append(ptxs, &(txs[i]))
 	}
 	pool2, _, err := StdTxsVerifier(ptxs, pool.Copy())
@@ -80,6 +85,8 @@ func CleanStdVerifier() {
 }
 
 func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context VerifyContext) error {
+	ver.Context = context
+
 	p2, err := ver.VerifyContract(txx.Contract, pool.Copy())
 	if err != nil {
 		return err
@@ -89,7 +96,11 @@ func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context VerifyContext) error 
 }
 
 type VerifyContext struct {
-	ParentHash []byte
+	VParentHash []byte
+}
+
+func (v VerifyContext) ParentHash() []byte {
+	return v.VParentHash
 }
 
 // VerifyTxSig 验证交易的签名

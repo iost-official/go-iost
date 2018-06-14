@@ -26,6 +26,7 @@ type VM struct {
 	monitor   vm.Monitor
 	Contract  *Contract
 	callerPC  uint64
+	ctx       vm.Context
 }
 
 func (l *VM) Start() error {
@@ -39,7 +40,7 @@ func (l *VM) Start() error {
 func (l *VM) Stop() {
 	l.L.Close()
 }
-func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
+func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
 
 	if pool != nil {
 		l.cachePool = pool
@@ -96,10 +97,17 @@ func (l *VM) Call(pool state.Pool, methodName string, args ...state.Value) ([]st
 		l.L.Pop(1)
 		rtnValue = append(rtnValue, Lua2Core(ret))
 	}
-
 	return rtnValue, l.cachePool, nil
 }
+func (l *VM) Call(ctx vm.Context, pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
+	if ctx == nil {
+		ctx = mBaseContext
+	}
+	l.ctx = ctx
+	return l.call(pool, methodName, args...)
+}
 func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
+	l.ctx = mBaseContext
 	var ok bool
 	l.Contract, ok = contract.(*Contract)
 	if !ok {
@@ -192,7 +200,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 				args = append(args, Lua2Core(L.Get(i+2)))
 			}
 
-			rtn, pool, gas, err := l.monitor.Call(l.cachePool, blockName, methodName, args...)
+			rtn, pool, gas, err := l.monitor.Call(l.ctx, l.cachePool, blockName, methodName, args...)
 			l.callerPC += gas
 			if err != nil {
 				L.Push(lua.LString(err.Error()))
@@ -223,3 +231,12 @@ func (l *VM) Restart(contract vm.Contract) error {
 	}
 	return nil
 }
+
+type baseContext struct {
+}
+
+func (b baseContext) ParentHash() []byte {
+	return []byte{0}
+}
+
+var mBaseContext = &baseContext{}

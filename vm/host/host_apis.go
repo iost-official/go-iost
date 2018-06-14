@@ -1,11 +1,18 @@
 package host
 
 import (
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
+	"github.com/iost-official/prototype/vm"
+	"github.com/pkg/errors"
 )
 
 var l log.Logger
+
+var (
+	ErrBalanceNotEnough = errors.New("balance not enough")
+)
 
 func Put(pool state.Pool, key state.Key, value state.Value) bool {
 	pool.Put(key, value)
@@ -21,44 +28,71 @@ func Log(s, cid string) {
 }
 
 func Transfer(pool state.Pool, src, des string, value float64) bool {
-	//fmt.Print("1 ")
-	//fmt.Println(pool.GetHM("iost", state.Key(des)))
 
-	val0, err := pool.GetHM("iost", state.Key(src))
+	err := changeToken(pool, "iost", state.Key(src), -value)
+
 	if err != nil {
 		return false
 	}
-	val := val0.(*state.VFloat).ToFloat64()
-	if val < value {
+
+	err = changeToken(pool, "iost", state.Key(des), value)
+	if err != nil {
 		return false
 	}
-	ba := state.MakeVFloat(val - value)
-
-	//fmt.Print("1.5 ")
-	//fmt.Println(pool.GetHM("iost", state.Key(des)))
-
-	//pool.PutHM("iost", "ahaha", state.MakeVFloat(250))
-
-	pool.PutHM("iost", state.Key(src), ba)
-
-	//fmt.Print("2 ")
-	//fmt.Println(pool.GetHM("iost", state.Key(src)))
-	//
-	//fmt.Print("2.1 ")
-	//fmt.Println(pool.GetHM("iost", state.Key(des)))
-
-	val1, err := pool.GetHM("iost", state.Key(des))
-	if val1 == state.VNil {
-		//fmt.Println("hello")
-		ba = state.MakeVFloat(value)
-		pool.PutHM("iost", state.Key(des), ba)
-	} else {
-		val = val1.(*state.VFloat).ToFloat64()
-		ba = state.MakeVFloat(val + value)
-		pool.PutHM("iost", state.Key(des), ba)
-	}
-	//fmt.Print("3 ")
-	//fmt.Println(pool.GetHM("iost", state.Key(des)))
 
 	return true
+}
+
+func Deposit(pool state.Pool, contractPrefix, payer string, value float64) bool {
+	err := changeToken(pool, "iost", state.Key(payer), -value)
+	if err != nil {
+		return false
+	}
+
+	err = changeToken(pool, "iost-contract", state.Key(contractPrefix), value)
+	if err != nil {
+		return false
+	}
+
+	return true
+
+}
+
+func Withdraw(pool state.Pool, contractPrefix, payer string, value float64) bool {
+	err := changeToken(pool, "iost-contract", state.Key(contractPrefix), -value)
+	if err != nil {
+		return false
+	}
+	err = changeToken(pool, "iost", state.Key(payer), value)
+	if err != nil {
+		return false
+	}
+
+	return true
+
+}
+
+func RandomByParentHash(ctx vm.Context, probability float64) bool {
+	seed := ctx.ParentHash()
+
+	return common.Sha256(seed)[10] < 127
+}
+
+func Publisher(contract vm.Contract) string {
+	return string(contract.Info().Publisher)
+}
+
+func changeToken(pool state.Pool, key, field state.Key, delta float64) error {
+	val0, err := pool.GetHM(state.Key(key), state.Key(field))
+	if err != nil {
+		return err
+	}
+	val := val0.(*state.VFloat).ToFloat64()
+	if val+delta < 0 {
+		return ErrBalanceNotEnough
+	}
+	ba := state.MakeVFloat(val + delta)
+
+	pool.PutHM(state.Key(key), state.Key(field), ba)
+	return nil
 }

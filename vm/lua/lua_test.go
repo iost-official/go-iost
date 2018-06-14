@@ -33,7 +33,7 @@ end`,
 			lvm := VM{}
 			lvm.Prepare(&lc, nil)
 			lvm.Start()
-			ret, _, err := lvm.Call(pool, "main")
+			ret, _, err := lvm.call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldBeNil)
 
@@ -68,7 +68,7 @@ end`,
 			lvm := VM{}
 			lvm.Prepare(&lc, nil)
 			lvm.Start()
-			rtn, _, err := lvm.Call(pool, "main")
+			rtn, _, err := lvm.call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldBeNil)
 
@@ -97,7 +97,7 @@ end`,
 			lvm := VM{}
 			lvm.Prepare(&lc, nil)
 			lvm.Start()
-			_, _, err = lvm.Call(pool, "main")
+			_, _, err = lvm.call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldNotBeNil)
 
@@ -152,7 +152,7 @@ end`,
 		lvm.Start()
 		//fmt.Print("0 ")
 		//fmt.Println(pool.GetHM("iost", "b"))
-		_, pool, err = lvm.Call(pool, "main")
+		_, pool, err = lvm.call(pool, "main")
 		lvm.Stop()
 
 		ab, err := pool.GetHM("iost", "a")
@@ -185,7 +185,7 @@ end`,
 	for i := 0; i < b.N; i++ {
 		lvm.Prepare(&lc, nil)
 		lvm.Start()
-		lvm.Call(pool, "main")
+		lvm.call(pool, "main")
 		lvm.Stop()
 	}
 }
@@ -215,7 +215,7 @@ end`,
 	for i := 0; i < b.N; i++ {
 		lvm.Prepare(&lc, nil)
 		lvm.Start()
-		lvm.Call(pool, "main")
+		lvm.call(pool, "main")
 		lvm.Stop()
 	}
 }
@@ -243,7 +243,7 @@ end`,
 	for i := 0; i < b.N; i++ {
 		lvm.Prepare(&lc, nil)
 		lvm.Start()
-		lvm.Call(pool, "main")
+		lvm.call(pool, "main")
 		lvm.Stop()
 	}
 }
@@ -270,7 +270,7 @@ end`,
 	for i := 0; i < b.N; i++ {
 		lvm.Prepare(&lc, nil)
 		lvm.Start()
-		lvm.Call(pool, "main")
+		lvm.call(pool, "main")
 		lvm.Stop()
 	}
 }
@@ -299,7 +299,7 @@ end`,
 	for i := 0; i < b.N; i++ {
 		lvm.Prepare(&lc, nil)
 		lvm.Start()
-		_, _, err = lvm.Call(pool, "main")
+		_, _, err = lvm.call(pool, "main")
 		lvm.Stop()
 	}
 

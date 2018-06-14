@@ -74,7 +74,7 @@ func TestStdCacheVerifier(t *testing.T) {
 	for j := 0; j < 90; j++ {
 		lc := lua.NewContract(vm.ContractInfo{Prefix: strconv.Itoa(j), GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 		txx := tx.NewTx(int64(j), &lc)
-		err := StdCacheVerifier(&txx, pool)
+		err := StdCacheVerifier(&txx, pool, VerifyContext{})
 		if err != nil {
 			t.Fatal("err:", err)
 		}
