@@ -71,11 +71,10 @@ func Withdraw(pool state.Pool, contractPrefix, payer string, value float64) bool
 	return true
 
 }
-
 func RandomByParentHash(ctx vm.Context, probability float64) bool {
 	seed := ctx.ParentHash()
 
-	return common.Sha256(seed)[10] < 127
+	return float64(common.Sha256(seed)[10]) > probability*255
 }
 
 func Publisher(contract vm.Contract) string {
@@ -87,7 +86,14 @@ func changeToken(pool state.Pool, key, field state.Key, delta float64) error {
 	if err != nil {
 		return err
 	}
-	val := val0.(*state.VFloat).ToFloat64()
+	var val float64
+	switch val0.(type) {
+	case *state.VFloat:
+		val = val0.(*state.VFloat).ToFloat64()
+	default:
+		val = 0
+	}
+
 	if val+delta < 0 {
 		return ErrBalanceNotEnough
 	}

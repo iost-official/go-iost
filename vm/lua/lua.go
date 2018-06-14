@@ -170,16 +170,52 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 			}
 			des := L.ToString(2)
 			value := L.ToNumber(3)
-			//fmt.Print("0 ")
-			//fmt.Println(l.cachePool.GetHM("iost", state.Key(des)))
 			rtn := host.Transfer(l.cachePool, src, des, float64(value))
-			//fmt.Print("4 ")
-			//fmt.Println(l.cachePool.GetHM("iost", state.Key(des)))
 			L.Push(Bool2Lua(rtn))
 			return 1
 		},
 	}
 	l.APIs = append(l.APIs, Transfer)
+
+	var Deposit = api{
+		name: "Deposit",
+		function: func(L *lua.LState) int {
+			src := L.ToString(1) // todo 验证输入
+			if vm.CheckPrivilege(l.Contract.info, src) <= 0 {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			value := L.ToNumber(2)
+			rtn := host.Deposit(l.cachePool, l.Contract.Info().Prefix, src, float64(value))
+			L.Push(Bool2Lua(rtn))
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Deposit)
+
+	var Withdraw = api{
+		name: "Withdraw",
+		function: func(L *lua.LState) int {
+			des := L.ToString(1)
+			value := L.ToNumber(2)
+			rtn := host.Withdraw(l.cachePool, l.Contract.Info().Prefix, des, float64(value))
+			L.Push(Bool2Lua(rtn))
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Withdraw)
+
+	var Random = api{
+		name: "Random",
+		function: func(L *lua.LState) int {
+			pro := L.ToNumber(1)
+			prof := float64(pro)
+			rtn := host.RandomByParentHash(l.ctx, prof)
+			L.Push(Bool2Lua(rtn))
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Random)
 
 	var Call = api{
 		name: "Call",

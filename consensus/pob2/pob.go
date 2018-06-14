@@ -363,7 +363,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	spool1 := pool.Copy()
 
 	var vc VerifyContext
-	vc.ParentHash = lastBlk.Head.Hash()
+	vc.VParentHash = lastBlk.Head.Hash()
 
 	//TODO Content大小控制
 	for len(blk.Content) < TxPerBlk {
