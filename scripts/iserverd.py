@@ -61,7 +61,7 @@ def start():
 #1:fail
 #todo 判断iserver是否存在，用PID
 def restart():
-	wCommand("nohup redis-server &")
+	wCommand("nohup redis-server >> redis.log 2>&1  &")
 	time.sleep(2)
 	for i in range(0,3):
 		if(start()!=0):
