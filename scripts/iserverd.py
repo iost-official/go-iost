@@ -85,7 +85,9 @@ def stop():
 def upgrade():
 	wCommand("cd "+pwd+" && git checkout .")
 	wCommand("cd "+pwd+" && git checkout testnet")
-	wCommand("cd "+pwd+" && git reset --hard origin/testnet")
+	wCommand("cd "+pwd+" && git checkout consensus")
+	#wCommand("cd "+pwd+" && git reset --hard origin/testnet")
+	wCommand("cd "+pwd+" && git reset --hard origin/consensus")
 	wCommand("cd "+pwd+" && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
 #	wCommand("rm -rf /workdir/blockDB /workdir/txDB/ /workdir/netpath /workdir/test.log /workdir/dump.rdb")
