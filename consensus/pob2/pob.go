@@ -41,12 +41,6 @@ var (
 			Help: "Count of received block by current node",
 		},
 	)
-	receivedTransactionCount = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "received_transaction_count",
-			Help: "Count of received transaction by current node",
-		},
-	)
 	confirmedBlockchainLength = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "confirmed_blockchain_length",
@@ -58,7 +52,6 @@ var (
 func init() {
 	prometheus.MustRegister(generatedBlockCount)
 	prometheus.MustRegister(receivedBlockCount)
-	prometheus.MustRegister(receivedTransactionCount)
 	prometheus.MustRegister(confirmedBlockchainLength)
 }
 

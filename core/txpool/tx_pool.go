@@ -12,13 +12,24 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/core/blockcache"
 	"github.com/iost-official/prototype/consensus/common"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
 	clearInterval = 8 * time.Second
-	//filterTime    = 40
-	filterTime    = 60*60*24*7
+	filterTime    = 40
+	//filterTime    = 60*60*24*7
+
+	receivedTransactionCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "received_transaction_count",
+			Help: "Count of received transaction by current node",
+		},
+	)
 )
+func init() {
+	prometheus.MustRegister(receivedTransactionCount)
+}
 
 type TxPoolServer struct {
 	chTx           chan message.Message // transactions of RPC and NET
@@ -105,9 +116,11 @@ func (pool *TxPoolServer) loop() {
 				//log.Log.I("tx timeout:%v", tx.Time)
 				continue
 			}
+
 			if blockcache.VerifyTxSig(tx) {
 				pool.mu.Lock()
 				pool.addListTx(&tx)
+				receivedTransactionCount.Inc()
 				pool.mu.Unlock()
 			}
 
