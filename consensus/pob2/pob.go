@@ -94,7 +94,10 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 	if bc.GetBlockByNumber(0) == nil {
 
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-		p.genesis(GetTimestamp(t.Unix()).Slot)
+		err :=p.genesis(GetTimestamp(t.Unix()).Slot)
+		if err != nil{
+			return nil, fmt.Errorf("failed to genesis is nil")
+		}
 	}
 
 	var err error

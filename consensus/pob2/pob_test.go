@@ -209,8 +209,19 @@ func TestRunGenerateBlock(t *testing.T) {
 
 func TestAddSinglesBlock(t *testing.T)  {
 	Convey("Test of Add singles block", t, func() {
-		cmd := exec.Command("/bin/bash", "-c", "cd $GOPATH/src/github.com/iost-official/prototype/consensus/pob2 && rm -rf blockDB txDB")
-		cmd.Run()
+		cmd := exec.Command("cd $GOPATH/src/github.com/iost-official/prototype/consensus/pob2 && rm -rf blockDB txDB")
+		out, err0 := cmd.CombinedOutput()
+		if err0 != nil {
+			fmt.Println(err0)
+		}
+		fmt.Println(string(out))
+
+		cmd1 := exec.Command("cd $GOPATH/src/github.com/iost-official && rm -rf blockDB txDB")
+		out1, err1 := cmd1.CombinedOutput()
+		if err1 != nil {
+			fmt.Println(err1)
+		}
+		fmt.Println(string(out1))
 
 		verify:=func (blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 			return pool, nil
@@ -232,8 +243,8 @@ func TestAddSinglesBlock(t *testing.T)  {
 				fmt.Println(err)
 			}
 		}
-
 		So(p.blockCache.ConfirmedLength(), ShouldEqual, 2)
+
 		// 最后上链丢失的交易
 		err := p.blockCache.Add(block, verify)
 		fmt.Println(err)
@@ -253,8 +264,19 @@ func TestAddSinglesBlock(t *testing.T)  {
 //clear BlockDB and TxDB files before running this test
 func TestRunConfirmBlock(t *testing.T) {
 	Convey("Test of Run ConfirmBlock", t, func() {
-		cmd := exec.Command("/bin/bash", "-c", "cd $GOPATH/src/github.com/iost-official/prototype/consensus/pob2 && rm -rf blockDB txDB")
-		cmd.Run()
+		cmd := exec.Command("cd $GOPATH/src/github.com/iost-official/prototype/consensus/pob2 && rm -rf blockDB txDB")
+		out, err0 := cmd.CombinedOutput()
+		if err0 != nil {
+			fmt.Println(err0)
+		}
+		fmt.Println(string(out))
+		cmd1 := exec.Command("cd $GOPATH/src/github.com/iost-official && rm -rf blockDB txDB")
+		out1, err1 := cmd1.CombinedOutput()
+		if err1 != nil {
+			fmt.Println(err1)
+		}
+		fmt.Println(string(out1))
+
 		p, accList, witnessList ,txpool:= envinit(t)
 		_tx := genTxMsg(p, 998)
 		txpool.AddTransaction(_tx)
