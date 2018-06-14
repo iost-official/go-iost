@@ -83,7 +83,7 @@ func CleanStdVerifier() {
 	ver.CleanUp()
 }
 
-func StdCacheVerifier(txx *tx.Tx, pool state.Pool) error {
+func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context VerifyContext) error {
 	p2, err := ver.VerifyContract(txx.Contract, pool.Copy())
 	if err != nil {
 		return err
@@ -92,25 +92,9 @@ func StdCacheVerifier(txx *tx.Tx, pool state.Pool) error {
 	return nil
 }
 
-// TODO： 请别用这个了
-//func VerifyTx(tx *tx.Tx, txVer *verifier.CacheVerifier) (state.Pool, bool) {
-//	newPool, err := txVer.VerifyContract(tx.Contract, false)
-//
-//	////////////probe//////////////////
-//	var ret string = "pass"
-//	if err != nil {
-//		ret = "fail"
-//	}
-//	log.Report(&log.MsgTx{
-//		SubType:   "verify." + ret,
-//		TxHash:    tx.Hash(),
-//		Publisher: tx.Publisher.Pubkey,
-//		Nonce:     tx.Nonce,
-//	})
-//	///////////////////////////////////
-//
-//	return newPool, err == nil
-//}
+type VerifyContext struct {
+	ParentHash []byte
+}
 
 // VerifyTxSig 验证交易的签名
 func VerifyTxSig(tx tx.Tx) bool {
