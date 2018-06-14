@@ -70,7 +70,13 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 			-- @param_cnt <paramCnt>
 			-- @return_cnt <returnCnt>
 		*/
-		funcName := strings.Split(content[submatches[0]:submatches[1]], " ")[1]
+
+		funcNameRe := regexp.MustCompile("---[ \t\n]*([a-zA-Z0-9_]+)")
+		funcNameR := funcNameRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
+		if len(funcNameR) < 1 {
+			return nil, errors.New("syntax error, function name not found")
+		}
+		funcName := funcNameR[1]
 
 		inputCountRe := regexp.MustCompile("@param_cnt (\\d+)")
 		rtnCountRe := regexp.MustCompile("@return_cnt (\\d+)")
@@ -81,11 +87,11 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 		ics := inputCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
 		if len(ics) < 1 {
-			return nil, ErrNoParamCnt
+			return nil, fmt.Errorf("function %v: input count not given", funcName)
 		}
 		rcs := rtnCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
 		if len(rcs) < 1 {
-			return nil, ErrNoRtnCnt
+			return nil, fmt.Errorf("function %v: return count not given", funcName)
 		}
 		ps := privRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
 		if len(ps) < 1 {
@@ -104,7 +110,7 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 		}
 
-		method := NewMethod(priv, funcName, inputCount, rtnCount) // TODO 从代码中获取权限信息
+		method := NewMethod(priv, funcName, inputCount, rtnCount)
 
 		//匹配代码部分
 
