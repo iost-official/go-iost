@@ -2,13 +2,13 @@ package consensus_common
 
 import (
 	"bytes"
-	"fmt"
-
 	"errors"
+	"fmt"
 
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/log"
 )
 
 //const (
@@ -62,7 +62,7 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 		}
 		newPool, err := verifier(block, b.bc.Top(), b.pool)
 		if err != nil {
-			fmt.Printf("ErrorBlock: %v\n", err)
+			log.Log.I("ErrorBlock: %v\n", err)
 
 			return ErrorBlock, nil
 		}
