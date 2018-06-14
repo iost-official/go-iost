@@ -61,9 +61,8 @@ def start():
 #1:fail
 #todo 判断iserver是否存在，用PID
 def restart():
-    wCommand("nohup redis-server &")
-    time.sleep(2)
-
+	wCommand("nohup redis-server &")
+	time.sleep(2)
 	for i in range(0,3):
 		if(start()!=0):
 			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|grep -v defunct|awk 'NR==1{print $1}'")
@@ -87,14 +86,14 @@ def stop():
 
 def upgrade():
 	wCommand("cd "+pwd+" && git checkout .")
-	wCommand("cd "+pwd+" && git checkout testnet")
-	wCommand("cd "+pwd+" && git checkout consensus")
+	#wCommand("cd "+pwd+" && git checkout testnet")
+	wCommand("cd "+pwd+" && git checkout -b consensus origin/consensus")
 	#wCommand("cd "+pwd+" && git reset --hard origin/testnet")
 	wCommand("cd "+pwd+" && git reset --hard origin/consensus")
 	wCommand("cd "+pwd+" && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
-	
-	wCommand("redis-cli -h 127.0.0.1 -p 6379 shutdown")
+
+	wCommand("redis-cli -h 127.0.0.1 -p 6379 shutdown")	
 	wCommand("rm -rf /workdir/blockDB /workdir/txDB/ /workdir/netpath /workdir/test.log /workdir/dump.rdb")
 
 	#stop iserver now
