@@ -9,7 +9,6 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
-	//"github.com/iost-official/prototype/log"
 )
 
 var (

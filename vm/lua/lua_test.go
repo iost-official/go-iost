@@ -13,7 +13,7 @@ import (
 func TestLuaVM(t *testing.T) {
 	Convey("Test of Lua VM", t, func() {
 		Convey("Normal", func() {
-			db, err := db2.DatabaseFactor("redis")
+			db, err := db2.DatabaseFactory("redis")
 			if err != nil {
 				panic(err.Error())
 			}
@@ -45,7 +45,7 @@ end`,
 		})
 
 		Convey("Transfer", func() {
-			db, err := db2.DatabaseFactor("redis")
+			db, err := db2.DatabaseFactory("redis")
 			if err != nil {
 				panic(err.Error())
 			}
@@ -77,7 +77,7 @@ end`,
 		})
 
 		Convey("Out of gas", func() {
-			db, err := db2.DatabaseFactor("redis")
+			db, err := db2.DatabaseFactory("redis")
 			if err != nil {
 				panic(err.Error())
 			}
@@ -139,7 +139,7 @@ end`,
 		}
 		lvm := VM{}
 
-		db, err := db2.DatabaseFactor("redis")
+		db, err := db2.DatabaseFactory("redis")
 		if err != nil {
 			panic(err.Error())
 		}
@@ -175,7 +175,7 @@ end`,
 	}
 	lvm := VM{}
 
-	db, err := db2.DatabaseFactor("redis")
+	db, err := db2.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -205,7 +205,7 @@ end`,
 	}
 	lvm := VM{}
 
-	db, err := db2.DatabaseFactor("redis")
+	db, err := db2.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -232,7 +232,7 @@ end`,
 	}
 	lvm := VM{}
 
-	db, err := db2.DatabaseFactor("redis")
+	db, err := db2.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -260,7 +260,7 @@ end`,
 	}
 	lvm := VM{}
 
-	db, err := db2.DatabaseFactor("redis")
+	db, err := db2.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -287,7 +287,7 @@ end`,
 	}
 	lvm := VM{}
 
-	db, err := db2.DatabaseFactor("redis")
+	db, err := db2.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}

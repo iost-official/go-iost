@@ -119,6 +119,9 @@ def Contract():
 		id1=id1-(id1&1)
 
 	construct(lines[id0][:-1],lines[id1][:-1],money)
+	_f=open("/workdir/sendtx.log","a+")
+	_f.write(lines[id0][:-1]+"  "+lines[id1][:-1]+"  "+str(money)+"\n")
+	_f.close()
 
 	#write pubkey and seckey to ~/.ssh/test_secp
 	f1=open(HOME+"/.ssh/test_secp","w")
@@ -175,10 +178,11 @@ if __name__ == "__main__":
 	if com=="sendtransaction":
 		ans="SUCCESS"
 		func_list=[Buildwallet,Contract,Compile,Sign,Publish,]
-		for i in range(0,2):
+		while True:
 			for func in func_list:
 				if func()==False:
 					ans="FAIL"
 					break
 			print(ans)
+			time.sleep(0.1)
 

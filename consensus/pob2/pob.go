@@ -16,12 +16,48 @@ import (
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+var (
+	generatedBlockCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "generated_block_count",
+			Help: "Count of generated block by current node",
+		},
+	)
+	receivedBlockCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "received_block_count",
+			Help: "Count of received block by current node",
+		},
+	)
+	receivedTransactionCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "received_transaction_count",
+			Help: "Count of received transaction by current node",
+		},
+	)
+	confirmedBlockchainLength = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "confirmed_blockchain_length",
+			Help: "Length of confirmed blockchain on current node",
+		},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(generatedBlockCount)
+	prometheus.MustRegister(receivedBlockCount)
+	prometheus.MustRegister(receivedTransactionCount)
+	prometheus.MustRegister(confirmedBlockchainLength)
+}
 
 var TxPerBlk int
 
@@ -198,6 +234,7 @@ func (p *PoB) txListenLoop() {
 			tx.Decode(req.Body)
 			if VerifyTxSig(tx) {
 				p.blockCache.AddTx(&tx)
+				receivedTransactionCount.Inc()
 			}
 
 		case <-p.exitSignal:
@@ -207,7 +244,6 @@ func (p *PoB) txListenLoop() {
 }
 
 func (p *PoB) blockLoop() {
-
 	p.log.I("Start to listen block")
 	for {
 		select {
@@ -231,10 +267,9 @@ func (p *PoB) blockLoop() {
 				p.log.I("Link it onto cached chain")
 				bc := p.blockCache.LongestChain()
 				p.blockCache.UpdateTxPoolOnBC(bc)
+				receivedBlockCount.Inc()
 			} else {
 				p.log.I("Error: %v", err)
-				//HowHsu_Debug
-				p.log.I("[blockloop]:verify blk faild\n%s\n", &blk)
 			}
 			if err != ErrBlock && err != ErrTooOld {
 				p.synchronizer.BlockConfirmed(blk.Head.Number)
@@ -284,6 +319,7 @@ func (p *PoB) scheduleLoop() {
 					if block == nil {
 						break
 					}
+					confirmedBlockchainLength.Set(float64(p.blockCache.ConfirmedLength()))
 					p.log.I("CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
 				}
 				// end test
@@ -334,8 +370,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		//Stdtxsverifier的内部会pool=spool1.copy,如果这个交易验证失败，则pool造成内存浪费
 		//if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
 		if err := StdCacheVerifier(tx, spool1); err == nil {
-			//HowHsu_Debug
-			p.log.I("[genBlock %d]: tx packed\n %s\n", blk.Head.Number, tx)
 			blk.Content = append(blk.Content, *tx)
 			//spool1 = sp
 		}
@@ -351,6 +385,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		BlockNum:      blk.Head.Number,
 	})
 	/////////////////////////////////////
+	generatedBlockCount.Inc()
 
 	return &blk
 }

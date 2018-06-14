@@ -3,7 +3,6 @@ package consensus_common
 import (
 	"bytes"
 	"errors"
-	"fmt"
 
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
@@ -39,14 +38,11 @@ var ver *verifier.CacheVerifier
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 	txs := block.Content
 	ptxs := make([]*tx.Tx, 0)
-	for _, txx := range txs {
-		ptxs = append(ptxs, &txx)
+	for i, _ := range txs {
+		ptxs = append(ptxs, &(txs[i]))
 	}
-	//pool2, _, err := StdTxsVerifier(ptxs, pool.Copy())
-	pool2, failTx, err := StdTxsVerifier(ptxs, pool.Copy())
+	pool2, _, err := StdTxsVerifier(ptxs, pool.Copy())
 	if err != nil {
-		//HowHsu_Debug
-		fmt.Printf("[StdBlockVerifier]:broken tx in block,index:\n%s\n", ptxs[failTx])
 		return pool, err
 	}
 	return pool2.MergeParent()

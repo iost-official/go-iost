@@ -112,7 +112,7 @@ func (tp *TxPoolDb) Size() int {
 }
 
 /*
-no need to Close ldb any more,cause we changed db.DatabaseFactor() to sync.Once.
+no need to Close ldb any more,cause we changed db.DatabaseFactory() to sync.Once.
 So,the ldb would be always open...
 func (tp *TxPoolDb) Close() {
 	tp.db.Close()

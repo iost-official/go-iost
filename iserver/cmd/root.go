@@ -189,7 +189,9 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Start Metrics Server
-		metrics.NewServer(metricsPort)
+		if metricsPort != "" {
+			metrics.NewServer(metricsPort)
+		}
 
 		////////////probe//////////////////
 		log.Report(&log.MsgNode{
