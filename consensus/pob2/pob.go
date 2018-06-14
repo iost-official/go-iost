@@ -361,6 +361,10 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	blk.Head.Signature = sig.Encode()
 	//return &blk
 	spool1 := pool.Copy()
+
+	var vc VerifyContext
+	vc.ParentHash = lastBlk.Head.Hash()
+
 	//TODO Content大小控制
 	for len(blk.Content) < TxPerBlk {
 		tx, err := p.blockCache.GetTx()
@@ -369,7 +373,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		}
 		//Stdtxsverifier的内部会pool=spool1.copy,如果这个交易验证失败，则pool造成内存浪费
 		//if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
-		if err := StdCacheVerifier(tx, spool1); err == nil {
+		if err := StdCacheVerifier(tx, spool1, vc); err == nil {
 			blk.Content = append(blk.Content, *tx)
 			//spool1 = sp
 		}
