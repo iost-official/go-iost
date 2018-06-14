@@ -65,7 +65,7 @@ type BaseNetwork struct {
 	peers         peerSet // manage all connection
 	RecvCh        chan message.Message
 	listener      net.Listener
-	RecentSent    map[string]time.Time
+	RecentSent    sync.Map
 	NodeHeightMap map[string]uint64 //maintain all height of nodes higher than current height
 	localNode     *discover.Node
 
@@ -100,7 +100,6 @@ func NewBaseNetwork(conf *NetConfig) (*BaseNetwork, error) {
 		conf.NodeID = string(discover.GenNodeID())
 	}
 	localNode := &discover.Node{ID: discover.NodeID(conf.NodeID), IP: net.ParseIP(conf.ListenAddr)}
-	rsm := make(map[string]time.Time, 0)
 	s := &BaseNetwork{
 		nodeTable:       nodeTable,
 		RecvCh:          recv,
@@ -110,7 +109,7 @@ func NewBaseNetwork(conf *NetConfig) (*BaseNetwork, error) {
 		NodeHeightMap:   NodeHeightMap,
 		DownloadHeights: sync.Map{},
 		regAddr:         conf.RegisterAddr,
-		RecentSent:      rsm,
+		RecentSent:      sync.Map{},
 	}
 	return s, nil
 }
@@ -519,13 +518,18 @@ func (bn *BaseNetwork) recentSentLoop() {
 	for {
 		bn.log.D("[net] clean up recent sent loop")
 		now := time.Now()
-		for k, t := range bn.RecentSent {
-			if t.Add(MsgLiveThresholdSeconds * time.Second).Before(now) {
-				bn.lock.Lock()
-				delete(bn.RecentSent, k)
-				bn.lock.Unlock()
+		bn.RecentSent.Range(func(k, v interface{}) bool {
+			data, ok1 := k.(string)
+			t, ok2 := v.(time.Time)
+			if !ok1 || !ok2 {
+				return true
 			}
-		}
+			if t.Add(MsgLiveThresholdSeconds * time.Second).Before(now) {
+				bn.RecentSent.Delete(data)
+			}
+			return true
+		})
+
 		time.Sleep(MsgLiveThresholdSeconds * time.Second)
 	}
 }
@@ -538,11 +542,8 @@ func (bn *BaseNetwork) isRecentSent(msg message.Message) bool {
 	}
 	h := string(common.Sha256(data))
 
-	bn.lock.Lock()
-	defer bn.lock.Unlock()
-
-	if _, ok := bn.RecentSent[h]; !ok {
-		bn.RecentSent[string(h)] = time.Now()
+	if _, ok := bn.RecentSent.Load(h); !ok {
+		bn.RecentSent.Store(h, time.Now())
 		return false
 	}
 	return true

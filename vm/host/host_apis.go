@@ -1,11 +1,12 @@
 package host
 
 import (
+	"errors"
+
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/vm"
-	"github.com/pkg/errors"
 )
 
 var l log.Logger

@@ -8,7 +8,6 @@ import (
 
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/verifier"
-	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -48,11 +47,16 @@ to quickly create a Cobra application.`,
 		}
 
 		v := verifier.NewCacheVerifier()
-		var sc0 vm.Contract
+		//var sc0 vm.Contract
+
+		var (
+			pool2 state.Pool
+			gas   uint64
+		)
 
 		switch language {
 		case "lua":
-			for i, file := range args {
+			for _, file := range args {
 				code := ReadSourceFile(file)
 				parser, err := lua.NewDocCommentParser(code)
 				if err != nil {
@@ -63,19 +67,21 @@ to quickly create a Cobra application.`,
 				if err != nil {
 					panic(err)
 				}
-				if i == 0 {
-					sc0 = sc
-				}
+				//if i == 0 {
+				//	sc0 = sc
+				//}
 
 				v.StartVM(sc)
+
+				pool2, gas, err = v.Verify(sc, pool.Copy())
+				if err != nil {
+					fmt.Println("error:", err.Error())
+				}
 			}
 		default:
 			fmt.Println(language, "not supported")
 		}
-		pool2, gas, err := v.Verify(sc0, pool.Copy())
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
+
 		pool2.Flush()
 		fmt.Println("======Report")
 		fmt.Println("gas spend:", gas)
