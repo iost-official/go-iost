@@ -17,9 +17,9 @@ var (
 	// ErrIllegalCode 代码中包含\\0字符
 	ErrIllegalCode = errors.New("parse failed: Text contains character \\0")
 	// 代码没指定输入参数数量
-	ErrNoParamCnt = errors.New("parse failed: param count not given \\0")
+	ErrNoParamCnt = errors.New("parse failed: param count not given")
 	// 代码没指定返回参数数量
-	ErrNoRtnCnt = errors.New("parse failed: return count not given \\0")
+	ErrNoRtnCnt = errors.New("parse failed: return count not given")
 )
 
 // DocCommentParser 装入text之后调用parse即可得到contract
@@ -114,7 +114,7 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 		//匹配代码部分
 
-		endRe := regexp.MustCompile("end")
+		endRe := regexp.MustCompile("^end--f")
 		endPos := endRe.FindStringIndex(content[submatches[1]:])
 
 		//code part: content[submatches[1]:][:endPos[1]
