@@ -112,11 +112,11 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string, caller vm.IOSTA
 
 }
 
-func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
+func (m *vmMonitor) Call(ctx vm.Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
 
 	if m.hotVM != nil && contractPrefix == m.hotVM.contract.Info().Prefix {
 		//fmt.Println(pool.GetHM("iost", "b"))
-		rtn, pool2, err := m.hotVM.Call(pool, methodName, args...)
+		rtn, pool2, err := m.hotVM.Call(ctx, pool, methodName, args...)
 		//fmt.Println(pool2.GetHM("iost", "b"))
 
 		gas := m.hotVM.PC()
@@ -133,7 +133,7 @@ func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, arg
 		holder, ok = m.vms[contractPrefix]
 	}
 	//fmt.Println(pool.GetHM("iost", "b"))
-	rtn, pool2, err := holder.Call(pool, methodName, args...)
+	rtn, pool2, err := holder.Call(ctx, pool, methodName, args...)
 	//fmt.Println(pool2.GetHM("iost", "b"))
 
 	gas := holder.PC()
@@ -141,7 +141,7 @@ func (m *vmMonitor) Call(pool state.Pool, contractPrefix, methodName string, arg
 }
 
 // FindContract  find contract from tx database
-func FindContract(contractPrefix string) (vm.Contract, error) { // todo 真的去找contract！
+func FindContract(contractPrefix string) (vm.Contract, error) {
 	hash := vm.PrefixToHash(contractPrefix)
 
 	txdb := tx.TxDbInstance()
