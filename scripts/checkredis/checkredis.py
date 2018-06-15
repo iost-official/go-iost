@@ -20,6 +20,7 @@ for item in server_addr:
     rtn = subprocess.check_output("curl -s --connect-timeout 3 -XPOST {}:{}/scripts -d \"cmd=checkredis.sh\"".format(item[1], 30310), 
             shell=True, stderr=subprocess.DEVNULL)
     lines = rtn.decode().split("\n")
+    print(lines)
     for i in range(0, len(lines)-1, 2):
         key, val = lines[i:i+2]
         if not key in balance_Map[1]:
@@ -31,6 +32,5 @@ for item in server_addr:
 for key in balance_Map[1]:
     if len(balance_Map[1][key]) > 1:
         print(key, balance_Map[1][key])
-        
 
     #print(rtn.decode(), file=fout)
