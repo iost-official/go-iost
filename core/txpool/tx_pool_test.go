@@ -50,7 +50,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 		network.Route = mockRouter
 		// 设置第一个通道txchan
-		txChan := make(chan message.Message, 1)
+		txChan := make(chan message.Message, 100000)
 		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
 
 		txDb := tx.TxDbInstance()
@@ -72,7 +72,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 		BlockCache := blockcache.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
 
-		chConfirmBlock := make(chan *block.Block, 10)
+		chConfirmBlock := make(chan *block.Block, 10000)
 		txPool, err := NewTxPoolServer(BlockCache, chConfirmBlock)
 		So(err, ShouldBeNil)
 
@@ -113,7 +113,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 		Convey("concurrent", func() {
 			txCnt := 100
-			blockCnt := 10000
+			blockCnt := 1000
 			bl := genBlocks(BlockCache, accountList, witnessList, blockCnt, txCnt, true)
 			ch := make(chan int, 11)
 
@@ -126,7 +126,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 			txx := genTx(accountList[0], 10000)
 			go func() {
-				for i := 0; i < 40000; i++ {
+				for i := 0; i < 10000; i++ {
 					tx := genTx(accountList[0], 100000+i)
 					txPool.addListTx(&tx)
 				}
@@ -144,7 +144,7 @@ func TestNewTxPoolServer(t *testing.T) {
 				}
 				ch<-3
 			}()
-			//time.Sleep(5*time.Second)
+			////time.Sleep(5*time.Second)
 			runCnt := 100
 			go func() {
 				for i:=0; i<runCnt ;i++  {
