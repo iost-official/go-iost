@@ -25,7 +25,7 @@ const (
 type IOSTAccount string
 
 //go:generate gencode go -schema=structs.schema -package=vm
-//go:generate mockgen -destination mocks/mock_contract.go -package vm_mock github.com/iost-official/prototype/vm Contract
+//go:generate mockgen -destination mocks/mock_contract.go -package vm_mock github.com/iost-official/prototype/vm contract
 
 // Code type, can be compile to contract
 // 代码类型的别名，可以编译为contract
@@ -40,8 +40,9 @@ type VM interface {
 	Restart(contract Contract) error
 	Stop()
 	//Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
-	Call(ctx Context, pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
+	Call(ctx *Context, pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
 	PC() uint64
+	Contract() Contract
 }
 
 // Method 方法interface，用来作为接口调用
@@ -53,11 +54,12 @@ type Method interface {
 }
 
 // Context using by vm
-type Context interface {
-	ParentHash() []byte
-}
+//type Context interface {
+//	ParentHash() []byte
+//	Base() Context
+//}
 
-// Contract 智能合约interface，其中setPrefix，setSender, AddSigner是从tx构建contract的时候使用
+// contract 智能合约interface，其中setPrefix，setSender, AddSigner是从tx构建contract的时候使用
 type Contract interface {
 	Info() ContractInfo
 	SetPrefix(prefix string)
@@ -73,8 +75,8 @@ type Monitor interface {
 	StartVM(contract Contract) VM
 	StopVM(contract Contract)
 	Stop()
-	GetMethod(contractPrefix, methodName string, caller IOSTAccount) (Method, error)
-	Call(ctx Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error)
+	GetMethod(contractPrefix, methodName string) (Method, error)
+	Call(ctx *Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error)
 }
 
 func PubkeyToIOSTAccount(pubkey []byte) IOSTAccount {
@@ -89,7 +91,26 @@ func PrefixToHash(prefix string) []byte {
 	return common.Base58Decode(prefix)
 }
 
-func CheckPrivilege(info ContractInfo, name string) int {
+func CheckPrivilege(ctx *Context, info ContractInfo, name string) int {
+	//fmt.Println(ctx)
+	//fmt.Print("name", name)
+
+	for {
+		if ctx != nil {
+			if IOSTAccount(name) == ctx.Publisher {
+				return 2
+			}
+			for _, signer := range ctx.Signers {
+				if IOSTAccount(name) == signer {
+					return 1
+				}
+			}
+			ctx = ctx.Base
+		} else {
+			break
+		}
+	}
+
 	if IOSTAccount(name) == info.Publisher {
 		return 2
 	}

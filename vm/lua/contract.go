@@ -8,7 +8,7 @@ import (
 	"github.com/iost-official/prototype/vm"
 )
 
-// Contract lua智能合约的实现
+// contract lua智能合约的实现
 type Contract struct {
 	info vm.ContractInfo
 	code string

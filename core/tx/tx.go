@@ -2,12 +2,13 @@ package tx
 
 import (
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
-	"strconv"
-	"time"
 )
 
 //go:generate gencode go -schema=structs.schema -package=tx
@@ -131,7 +132,7 @@ func (t *Tx) Decode(b []byte) error {
 			t.Contract.Decode(tr.Contract)
 
 		default:
-			return fmt.Errorf("Tx.Decode:tx.Contract syntax error")
+			return fmt.Errorf("Tx.Decode:tx.contract syntax error")
 		}
 	} else {
 		err = t.Contract.Decode(tr.Contract)

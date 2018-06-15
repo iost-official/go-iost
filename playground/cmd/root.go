@@ -45,7 +45,7 @@ Playground runs lua script by turns.
 		}
 
 		v := verifier.NewCacheVerifier()
-		//var sc0 vm.Contract
+		//var sc0 vm.contract
 
 		var (
 			pool2 state.Pool

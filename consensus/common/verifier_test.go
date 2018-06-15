@@ -37,7 +37,7 @@ func TestStdTxsVerifier(t *testing.T) {
 	}
 
 	fmt.Println("len", len(txs))
-	//fmt.Println(txs[0].Contract)
+	//fmt.Println(txs[0].contract)
 	p2, i, err := StdTxsVerifier(txs, pool)
 	fmt.Println(i)
 	fmt.Println("error", err.Error())
@@ -74,7 +74,7 @@ func TestStdCacheVerifier(t *testing.T) {
 		for j := 0; j < 90; j++ {
 			lc := lua.NewContract(vm.ContractInfo{Prefix: strconv.Itoa(j), GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 			txx := tx.NewTx(int64(j), &lc)
-			StdCacheVerifier(&txx, pool, VerifyContext{})
+			StdCacheVerifier(&txx, pool, &vm.Context{})
 		}
 		fmt.Println(pool.GetHM("iost", "a"))
 		p := pool.(*state.PoolImpl)
@@ -104,7 +104,7 @@ func TestStdCacheVerifier(t *testing.T) {
 
 		lc := lua.NewContract(vm.ContractInfo{Prefix: "ahaha", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 		txx := tx.NewTx(1, &lc)
-		err = StdCacheVerifier(&txx, pool, VerifyContext{VParentHash: []byte{1}})
+		err = StdCacheVerifier(&txx, pool, &vm.Context{ParentHash: []byte{1}})
 		So(err, ShouldBeNil)
 
 		balance, err := pool.GetHM("iost", "a")
@@ -112,7 +112,7 @@ func TestStdCacheVerifier(t *testing.T) {
 
 		So(balance.(*state.VFloat).ToFloat64() > 90000, ShouldBeTrue)
 
-		err = StdCacheVerifier(&txx, pool, VerifyContext{})
+		err = StdCacheVerifier(&txx, pool, &vm.Context{})
 		So(err, ShouldBeNil)
 		balance, err = pool.GetHM("iost", "a")
 		So(err, ShouldBeNil)
@@ -140,7 +140,7 @@ func BenchmarkStdTxsVerifier(b *testing.B) {
 		txs = append(txs, &txx)
 	}
 
-	//fmt.Println(txs[500].Contract)
+	//fmt.Println(txs[500].contract)
 	//var k int
 	for i := 0; i < b.N; i++ {
 		pool, _, _ = StdTxsVerifier(txs, pool)
