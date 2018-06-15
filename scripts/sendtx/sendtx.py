@@ -22,11 +22,12 @@ def has(fn):
 
 def Buildwallet():
  	ret=wCommand("cd "+project_path+"iwallet;go build")
+	ret=wCommand("rm -f "+cur_path+"iwallet")
 	ret=wCommand("cp "+project_path+"iwallet/iwallet "+cur_path)
 	return True
 
 def GenAccounts():
-	if Buildwallet()==False:return False
+	if Buildwallet()==False:return "FAIL"
 	accounts=[]
 	for i in range(0,100):
 		wCommand(cur_path+"iwallet account -c test")
@@ -43,6 +44,8 @@ def GenAccounts():
 	fd.close()
 	return "SUCCESS"
 
+genesisPubkey="2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
+genesisSeckey="BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"
 def Sendmoney():
 	fd=open(cur_path+"acc_list.txt","r")
 	lines=fd.readlines()
@@ -50,9 +53,7 @@ def Sendmoney():
 	lto=[]
 	for i in range(0,len(lines),2):
 		lto.append(lines[i][:-1])
-	genesisPubkey="2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
-	genesisSeckey="BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"
-	constructAll(genesisPubkey,lto,10000000000)
+	constructAll(lto,10000000000)
 	f1=open(HOME+"/.ssh/test_secp","w")
 	f1.write(genesisSeckey)
 	f1.close()
@@ -84,7 +85,7 @@ def construct(_from,_to,money):
 	])
 	f.close()
 
-def constructAll(genesisPubkey,lto,money):
+def constructAll(lto,money):
 	f=open(cur_path+"test/1to2.lua","w")
 	lines=[
 		'--- main 合约主入口\n',
@@ -164,10 +165,35 @@ def Publish():
 	#print("fail")
 	return False
 
-if __name__ == "__main__":
-	if(len(sys.argv)!=2):
-		sys.exit(1)
+def sendtransaction():
+	ans="SUCCESS"
+	func_list=[Buildwallet,Contract,Compile,Sign,Publish,]
+	while True:
+		for func in func_list:
+			if func()==False:
+				ans="FAIL"
+				break
+		print(ans)
+		time.sleep(0.1)
 
+#send money for someone,used in blockchain explorer
+def sendonetx(_to,money):
+	construct(genesisPubkey,_to,money)
+	f1=open(HOME+"/.ssh/test_secp","w")
+	f1.write(genesisSeckey)
+	f1.close()
+	
+	f2=open(HOME+"/.ssh/test_secp.pub","w")
+	f2.write(genesisPubkey)
+	f2.close()
+
+	flist=[Buildwallet,Compile,Sign,Publish,]
+	for func in flist:
+		if func()==False:
+			return "FAIL"
+	return "SUCCESS"
+
+if __name__ == "__main__":
 	com=sys.argv[1]
 	if com=="genaccounts":
 		print(GenAccounts())
@@ -176,13 +202,12 @@ if __name__ == "__main__":
 		print(Sendmoney())
 		sys.exit(0)
 	if com=="sendtransaction":
-		ans="SUCCESS"
-		func_list=[Buildwallet,Contract,Compile,Sign,Publish,]
-		while True:
-			for func in func_list:
-				if func()==False:
-					ans="FAIL"
-					break
-			print(ans)
-			time.sleep(0.1)
+		sendtransaction()
+
+	if com=="sendonetx":
+		if(len(sys.argv)<4):
+			sys.exit(1)
+		user=sys.argv[2]
+		money=float(sys.argv[3])
+		print(sendonetx(user,money))
 
