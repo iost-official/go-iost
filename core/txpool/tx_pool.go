@@ -153,10 +153,13 @@ func (pool *TxPoolServer) PendingTransactions() tx.TransactionsList {
 	defer pool.mu.Unlock()
 
 	var pendingList tx.TransactionsList
-	for _, tx := range pool.pendingTx.list {
+	list:= pool.pendingTx.GetList()
+	pool.pendingTx.Lock()
+
+	for _, tx := range list {
 		pendingList = append(pendingList, tx)
 	}
-
+	pool.pendingTx.UnLock()
 	// 排序
 	sort.Sort(pendingList)
 
@@ -164,23 +167,30 @@ func (pool *TxPoolServer) PendingTransactions() tx.TransactionsList {
 }
 
 func (pool *TxPoolServer) Transaction(hash string) *tx.Tx {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
 	return pool.listTx.Get(hash)
 }
 
 func (pool *TxPoolServer) ExistTransaction(hash string) bool {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
 	return pool.listTx.Exist(hash)
 }
 
 func (pool *TxPoolServer) TransactionNum() int {
-	return len(pool.listTx.list)
+
+	return pool.listTx.Len()
 }
 
 func (pool *TxPoolServer) PendingTransactionNum() int {
-	return len(pool.pendingTx.list)
+	return pool.pendingTx.Len()
 }
 
 func (pool *TxPoolServer) BlockTxNum() int {
-	return len(pool.blockTx.blkTx)
+	return pool.blockTx.Len()
 }
 
 // 初始化blocktx,缓存验证一笔交易，是否已经存在
@@ -209,6 +219,8 @@ func (pool *TxPoolServer) slotToSec(t int64) int64 {
 }
 
 func (pool *TxPoolServer) addListTx(tx *tx.Tx) {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
 
 	if !pool.listTx.Exist(tx.TxID()) {
 		pool.listTx.Add(tx)
@@ -245,6 +257,8 @@ func (pool *TxPoolServer) delTimeOutTx() {
 // 删除超时的交易
 // 小于区块确定时间 && 小于当前减去过滤时间
 func (pool *TxPoolServer) delTimeOutBlockTx() {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
 
 	nTime := time.Now().Unix()
 	chain := pool.chain.BlockChain()
@@ -269,14 +283,17 @@ func (pool *TxPoolServer) updatePending() {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
-	pool.pendingTx.list = make(map[string]*tx.Tx, 0)
+	pool.pendingTx.Clear()
 
-	for hash, tr := range pool.listTx.list {
+	list:= pool.listTx.GetList()
+	pool.listTx.Lock()
+	for hash, tr := range list {
 		if !pool.txExistTxPool(hash) {
 			//fmt.Println("Add pending tr hash:",tr.TxID(), " tr nonce:", tr.Nonce)
 			pool.pendingTx.Add(tr)
 		}
 	}
+	pool.listTx.UnLock()
 }
 
 func (pool *TxPoolServer) txExistTxPool(hash string) bool {
@@ -327,13 +344,20 @@ func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 
 type hashMap struct {
 	hashList map[string]struct{}
+	smu     sync.RWMutex
 }
 
 func (h *hashMap) Add(hash string) {
+	h.smu.Lock()
+	defer h.smu.Unlock()
+
 	h.hashList[hash] = struct{}{}
 }
 
 func (h *hashMap) Exist(txHash string) bool {
+	h.smu.Lock()
+	defer h.smu.Unlock()
+
 	if _, b := h.hashList[txHash]; b {
 		return true
 	}
@@ -342,10 +366,16 @@ func (h *hashMap) Exist(txHash string) bool {
 }
 
 func (h *hashMap) Del(hash string) {
+	h.smu.Lock()
+	defer h.smu.Unlock()
+
 	delete(h.hashList, hash)
 }
 
 func (h *hashMap) Clear() {
+	h.smu.Lock()
+	defer h.smu.Unlock()
+
 	h.hashList = nil
 	h.hashList = make(map[string]struct{})
 }
@@ -376,7 +406,17 @@ func (b *blockTx) Add(bl *block.Block) {
 
 }
 
+func (b *blockTx) Len() int {
+	b.smu.Lock()
+	defer b.smu.Unlock()
+
+	return len(b.blkTx)
+}
+
 func (b *blockTx) Exist(hash string) bool {
+	b.smu.Lock()
+	defer b.smu.Unlock()
+
 	if _, b := b.blkTx[hash]; b {
 		return true
 	}
@@ -385,11 +425,15 @@ func (b *blockTx) Exist(hash string) bool {
 }
 
 func (b *blockTx) TxList(blockHash string) *hashMap {
+	b.smu.Lock()
+	defer b.smu.Unlock()
 
 	return b.blkTx[blockHash]
 }
 
 func (b *blockTx) Time(hash string) int64 {
+	b.smu.Lock()
+	defer b.smu.Unlock()
 
 	return b.blkTime[hash]
 }
@@ -407,6 +451,20 @@ func (b blockTx) Del(hash string) {
 type listTx struct {
 	list map[string]*tx.Tx
 	smu  sync.RWMutex
+}
+
+func (l *listTx) Lock()  {
+	l.smu.Lock()
+}
+func (l *listTx) UnLock()  {
+	l.smu.Unlock()
+}
+
+func (l *listTx) GetList() map[string]*tx.Tx {
+	l.smu.Lock()
+	defer l.smu.Unlock()
+
+	return l.list
 }
 
 func (l *listTx) Add(Tx *tx.Tx) {
@@ -427,16 +485,23 @@ func (l *listTx) Add(Tx *tx.Tx) {
 	}
 }
 
+func (l listTx) Len() int {
+
+	return  len(l.list)
+}
+
 func (l listTx) Del(hash string) {
 	l.smu.Lock()
 	defer l.smu.Unlock()
 
-	if l.Exist(hash) {
-		delete(l.list, hash)
-	}
+	delete(l.list, hash)
+
 }
 
 func (l listTx) Exist(hash string) bool {
+	l.smu.Lock()
+	defer l.smu.Unlock()
+
 	if _, b := l.list[hash]; b {
 		return true
 	}
@@ -446,7 +511,18 @@ func (l listTx) Exist(hash string) bool {
 
 func (l listTx) Get(hash string) *tx.Tx {
 
+	l.smu.Lock()
+	defer l.smu.Unlock()
+
 	return l.list[hash]
+}
+
+func (l listTx) Clear() {
+
+	l.smu.Lock()
+	defer l.smu.Unlock()
+
+	l.list = make(map[string]*tx.Tx, 0)
 }
 
 type blockHashList struct {
@@ -482,6 +558,7 @@ func (b *blockHashList) Clear() {
 }
 
 func (b *blockHashList) GetList() map[string]struct{} {
-
+	b.smu.Lock()
+	defer b.smu.Unlock()
 	return b.blockList
 }

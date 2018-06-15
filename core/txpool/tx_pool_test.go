@@ -17,6 +17,7 @@ import (
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/consensus/common"
+	"fmt"
 )
 
 func TestNewTxPoolServer(t *testing.T) {
@@ -107,6 +108,92 @@ func TestNewTxPoolServer(t *testing.T) {
 
 			txPool.delTimeOutTx()
 			So(txPool.TransactionNum(), ShouldEqual, 0)
+
+		})
+
+		Convey("concurrent", func() {
+			txCnt := 100
+			blockCnt := 10000
+			bl := genBlocks(BlockCache, accountList, witnessList, blockCnt, txCnt, true)
+			ch := make(chan int, 9)
+
+			go func() {
+				for _, blk := range bl {
+					txPool.addBlockTx(blk)
+				}
+				ch <- 1
+			}()
+
+			txx := genTx(accountList[0], 10000)
+			go func() {
+				for i := 0; i < 100000; i++ {
+					tx := genTx(accountList[0], 100000+i)
+					txPool.addListTx(&tx)
+				}
+				ch <- 2
+			}()
+
+			go func() {
+				for i := 0; i < 10000; i++ {
+					tx := genTx(accountList[0], 1000000+i)
+					broadTx := message.Message{
+						Body:    tx.Encode(),
+						ReqType: int32(network.ReqPublishTx),
+					}
+					txPool.AddTransaction(broadTx)
+				}
+				ch<-3
+			}()
+			//time.Sleep(5*time.Second)
+			runCnt := 1000
+			go func() {
+				for i:=0; i<runCnt ;i++  {
+					//time.Sleep(1*time.Millisecond)
+					txPool.BlockTxNum()
+				}
+				ch <- 4
+			}()
+			go func() {
+				for i:=0; i<runCnt ;i++  {
+					//time.Sleep(1*time.Millisecond)
+					txPool.PendingTransactions()
+				}
+				ch <- 5
+			}()
+			go func() {
+				for i:=0; i<runCnt ;i++  {
+					//time.Sleep(1*time.Millisecond)
+					txPool.TransactionNum()
+				}
+				ch <- 6
+			}()
+			go func() {
+				for i:=0; i<runCnt ;i++  {
+					//time.Sleep(1*time.Millisecond)
+					txPool.PendingTransactionNum()
+				}
+				ch <- 7
+			}()
+			go func() {
+				for i:=0; i<runCnt ;i++  {
+					//time.Sleep(1*time.Millisecond)
+					txPool.Transaction(txx.TxID())
+
+				}
+				ch <- 8
+			}()
+			go func() {
+				for i:=0; i<runCnt ;i++  {
+					//time.Sleep(1*time.Millisecond)
+					txPool.ExistTransaction(txx.TxID())
+				}
+				ch <- 9
+			}()
+
+			for i := 0; i < 9; i++ {
+				c:=<-ch
+				fmt.Println("结束并发 i=", i, ", c=", c)
+			}
 
 		})
 
@@ -214,7 +301,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 	// 设置第一个通道txchan
 	txChan := make(chan message.Message, 1)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
-
 
 	txDb := tx.TxDbInstance()
 	if txDb == nil {
