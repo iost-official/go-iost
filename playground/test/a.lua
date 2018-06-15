@@ -11,4 +11,4 @@ function main()
     Put("b", b)
     Transfer("walleta", "walletb", 100)
     return "success"
-end
+end--f
