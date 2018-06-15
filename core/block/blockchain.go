@@ -21,6 +21,7 @@ var (
 // ChainImpl 是已经确定block chain的结构体
 type ChainImpl struct {
 	db     db.Database
+	rds    db.Database
 	length uint64
 	tx     tx.TxPool
 }
@@ -76,7 +77,13 @@ func Instance() (Chain, error) {
 			return
 		}
 
-		BChain = &ChainImpl{db: ldb, length: length, tx: txDb}
+		redis, er := db.DatabaseFactory("redis")
+		if er != nil {
+			err = fmt.Errorf("failed to init redis %v", err)
+			return
+		}
+
+		BChain = &ChainImpl{db: ldb, rds: redis, length: length, tx: txDb}
 	})
 
 	return BChain, err
@@ -128,6 +135,9 @@ func (b *ChainImpl) Push(block *Block) error {
 		})
 		///////////////////////////////////
 	}
+
+	b.rds.Put([]byte("BlockNum"), []byte(strconv.FormatInt(block.Head.Number, 10)))
+	b.rds.Put([]byte("BlockHash"), []byte(block.Hash()))
 
 	return nil
 }
