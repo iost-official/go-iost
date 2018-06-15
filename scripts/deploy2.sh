@@ -25,7 +25,7 @@ fi
 
 if [ "$1" = "redis" ]
 then
-    cmd="checkredis"
+    cmd="checkredis.sh"
 else
     echoHelp
     exit 1
@@ -40,9 +40,6 @@ do
     node=(${AllNodes[$i]})
     echo -e "  "${node[0]}" "${node[1]}":  \c"
     res=$(curl -s --connect-timeout 3  -XPOST ${node[1]}:${node[3]}/scripts -d "cmd=$cmd")
-    if [ "$res" = "ok" -o "$res" = "SUCCESS" ]
-    then
-        echo -e "\033[31m     result=$res \033[0m"
-    fi
+    echo -e "\033[31m     result=$res \033[0m"
 done
 
