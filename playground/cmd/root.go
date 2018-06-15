@@ -67,11 +67,6 @@ Playground runs lua script by turns.
 				if err != nil {
 					panic(err)
 				}
-				//if i == 0 {
-				//	sc0 = sc
-				//}
-
-				//fmt.Println("load contract as:", file[strings.LastIndex(file, "/")+1:], "end")
 
 				sc.SetPrefix(file[strings.LastIndex(file, "/")+1 : strings.LastIndex(file, ".")])
 

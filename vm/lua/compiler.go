@@ -59,6 +59,32 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 	var buffer bytes.Buffer
 
+	// 匹配关键字
+	gasRe := regexp.MustCompile("@gas_limit (\\d+)")
+	priceRe := regexp.MustCompile("@gas_price ([+-]?([0-9]*[.])?[0-9]+)")
+	publisherRe := regexp.MustCompile("@publisher ([a-zA-Z1-9]+)")
+
+	gas0, ok := optionalMatch1(gasRe, content)
+	if !ok {
+		return nil, errors.New("gas undefined")
+	}
+	gas, _ := strconv.ParseInt(gas0, 10, 64)
+
+	price0, ok := optionalMatch1(priceRe, content)
+	if !ok {
+		return nil, errors.New("price undefined")
+	}
+	price, _ := strconv.ParseFloat(price0, 64)
+	if p.Debug {
+		match, ok := optionalMatch1(publisherRe, content)
+		if !ok {
+			return nil, errors.New("publisher undefined")
+		}
+		contract.info.Publisher = vm.IOSTAccount(match)
+	}
+
+	contract.apis = make(map[string]Method)
+
 	for _, submatches := range re.FindAllStringSubmatchIndex(content, -1) {
 
 		/*
@@ -119,19 +145,7 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 		//endPos := endRe.FindStringIndex(content[submatches[1]:])
 
 		//code part: content[submatches[1]:][:endPos[1]
-		contract.apis = make(map[string]Method)
 
-		// 匹配关键字
-		gasRe := regexp.MustCompile("@gas_limit (\\d+)")
-		priceRe := regexp.MustCompile("@gas_price ([+-]?([0-9]*[.])?[0-9]+)")
-		publisherRe := regexp.MustCompile("@publisher ([a-zA-Z1-9]+)")
-
-		gas, _ := strconv.ParseInt(gasRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 10, 64)
-		price, _ := strconv.ParseFloat(priceRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 64)
-		if p.Debug {
-			match := publisherRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
-			contract.info.Publisher = vm.IOSTAccount(match[1])
-		}
 		contract.info.Language = "lua"
 		contract.info.GasLimit = gas
 		contract.info.Price = price
@@ -154,4 +168,15 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 	contract.code = buffer.String()
 	return &contract, nil
 
+}
+
+func optionalMatch1(re *regexp.Regexp, s string) (sub string, ok bool) {
+	ss := re.FindStringSubmatch(s)
+	if len(ss) < 1 {
+		return "", false
+	} else {
+		sub = ss[1]
+		ok = true
+		return
+	}
 }
