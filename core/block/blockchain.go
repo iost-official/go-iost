@@ -77,7 +77,11 @@ func Instance() (Chain, error) {
 			return
 		}
 
-		redis, err := db.DatabaseFactory("redis")
+		redis, er := db.DatabaseFactory("redis")
+		if er != nil {
+			err = fmt.Errorf("failed to init redis %v", err)
+			return
+		}
 
 		BChain = &ChainImpl{db: ldb, rds: redis, length: length, tx: txDb}
 	})
@@ -132,7 +136,7 @@ func (b *ChainImpl) Push(block *Block) error {
 		///////////////////////////////////
 	}
 
-	b.rds.Put([]byte("BlockNum"), []byte(block.Head.Number))
+	b.rds.Put([]byte("BlockNum"), []byte(strconv.FormatInt(block.Head.Number, 10)))
 	b.rds.Put([]byte("BlockHash"), []byte(block.Hash()))
 
 	return nil
@@ -171,7 +175,6 @@ func (b *ChainImpl) lengthAdd() error {
 
 // getLengthBytes 得到链长度的bytes类型
 func (b *ChainImpl) getLengthBytes(length uint64) []byte {
-
 	return []byte(strconv.FormatUint(length, 10))
 }
 
