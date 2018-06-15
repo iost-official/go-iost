@@ -115,7 +115,7 @@ func TestNewTxPoolServer(t *testing.T) {
 			txCnt := 100
 			blockCnt := 10000
 			bl := genBlocks(BlockCache, accountList, witnessList, blockCnt, txCnt, true)
-			ch := make(chan int, 9)
+			ch := make(chan int, 11)
 
 			go func() {
 				for _, blk := range bl {
@@ -126,7 +126,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 			txx := genTx(accountList[0], 10000)
 			go func() {
-				for i := 0; i < 100000; i++ {
+				for i := 0; i < 40000; i++ {
 					tx := genTx(accountList[0], 100000+i)
 					txPool.addListTx(&tx)
 				}
@@ -145,7 +145,7 @@ func TestNewTxPoolServer(t *testing.T) {
 				ch<-3
 			}()
 			//time.Sleep(5*time.Second)
-			runCnt := 1000
+			runCnt := 100
 			go func() {
 				for i:=0; i<runCnt ;i++  {
 					//time.Sleep(1*time.Millisecond)
@@ -189,8 +189,22 @@ func TestNewTxPoolServer(t *testing.T) {
 				}
 				ch <- 9
 			}()
+			go func() {
+				for i:=0; i<runCnt ;i++  {
+					//time.Sleep(1*time.Millisecond)
+					txPool.delTimeOutTx()
+				}
+				ch <- 10
+			}()
+			go func() {
+				for i:=0; i<runCnt ;i++  {
+					//time.Sleep(1*time.Millisecond)
+					txPool.delTimeOutBlockTx()
+				}
+				ch <- 11
+			}()
 
-			for i := 0; i < 9; i++ {
+			for i := 0; i < 11; i++ {
 				c:=<-ch
 				fmt.Println("结束并发 i=", i, ", c=", c)
 			}

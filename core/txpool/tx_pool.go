@@ -27,6 +27,7 @@ var (
 		},
 	)
 )
+
 func init() {
 	prometheus.MustRegister(receivedTransactionCount)
 }
@@ -153,7 +154,7 @@ func (pool *TxPoolServer) PendingTransactions() tx.TransactionsList {
 	defer pool.mu.Unlock()
 
 	var pendingList tx.TransactionsList
-	list:= pool.pendingTx.GetList()
+	list := pool.pendingTx.GetList()
 	pool.pendingTx.Lock()
 
 	for _, tx := range list {
@@ -241,24 +242,28 @@ func (pool *TxPoolServer) txTimeOut(tx *tx.Tx) bool {
 
 // 删除超时的交易
 func (pool *TxPoolServer) delTimeOutTx() {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
 
 	nTime := time.Now().Unix()
+	hashList := make([]string, 0)
 
-	for hash, tx := range pool.listTx.list {
+	list := pool.listTx.GetList()
+	pool.listTx.Lock()
+	for hash, tx := range list {
 		txTime := tx.Time / 1e9
 		if nTime-txTime > pool.filterTime {
-			pool.listTx.Del(hash)
+			hashList = append(hashList, hash)
 		}
 	}
+	pool.listTx.UnLock()
+	for _, hash := range hashList {
+		pool.listTx.Del(hash)
+	}
+
 }
 
 // 删除超时的交易
 // 小于区块确定时间 && 小于当前减去过滤时间
 func (pool *TxPoolServer) delTimeOutBlockTx() {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
 
 	nTime := time.Now().Unix()
 	chain := pool.chain.BlockChain()
@@ -269,12 +274,22 @@ func (pool *TxPoolServer) delTimeOutBlockTx() {
 		confirmTime = pool.slotToSec(blk.Head.Time)
 	}
 
-	for hash, t := range pool.blockTx.blkTime {
+	list := pool.blockTx.GetListTime()
+
+	hashList := make([]string, 0)
+	pool.blockTx.Lock()
+	for hash, t := range list {
 
 		if t < confirmTime && nTime-pool.filterTime > t {
-			pool.blockTx.Del(hash)
-			pool.checkIterateBlockHash.Del(hash)
+			hashList = append(hashList, hash)
 		}
+	}
+	pool.blockTx.UnLock()
+
+	for _, hash := range hashList {
+
+		pool.blockTx.Del(hash)
+		pool.checkIterateBlockHash.Del(hash)
 	}
 }
 
@@ -285,7 +300,7 @@ func (pool *TxPoolServer) updatePending() {
 
 	pool.pendingTx.Clear()
 
-	list:= pool.listTx.GetList()
+	list := pool.listTx.GetList()
 	pool.listTx.Lock()
 	for hash, tr := range list {
 		if !pool.txExistTxPool(hash) {
@@ -337,6 +352,9 @@ func (pool *TxPoolServer) updateBlockHash(bhl *blockHashList) {
 // 保存一个block的所有交易数据
 func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
 	if !pool.blockTx.Exist(bl.HashID()) {
 		pool.blockTx.Add(bl)
 	}
@@ -344,7 +362,7 @@ func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 
 type hashMap struct {
 	hashList map[string]struct{}
-	smu     sync.RWMutex
+	smu      sync.RWMutex
 }
 
 func (h *hashMap) Add(hash string) {
@@ -386,6 +404,20 @@ type blockTx struct {
 	smu     sync.RWMutex
 }
 
+func (b *blockTx) Lock() {
+	b.smu.Lock()
+}
+func (b *blockTx) UnLock() {
+	b.smu.Unlock()
+}
+
+func (b *blockTx) GetListTime() map[string]int64 {
+	b.smu.Lock()
+	defer b.smu.Unlock()
+
+	return b.blkTime
+
+}
 func (b *blockTx) Add(bl *block.Block) {
 	b.smu.Lock()
 	defer b.smu.Unlock()
@@ -453,10 +485,10 @@ type listTx struct {
 	smu  sync.RWMutex
 }
 
-func (l *listTx) Lock()  {
+func (l *listTx) Lock() {
 	l.smu.Lock()
 }
-func (l *listTx) UnLock()  {
+func (l *listTx) UnLock() {
 	l.smu.Unlock()
 }
 
@@ -487,7 +519,7 @@ func (l *listTx) Add(Tx *tx.Tx) {
 
 func (l listTx) Len() int {
 
-	return  len(l.list)
+	return len(l.list)
 }
 
 func (l listTx) Del(hash string) {
