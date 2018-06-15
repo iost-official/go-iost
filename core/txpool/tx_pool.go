@@ -310,7 +310,7 @@ func (pool *TxPoolServer) updatePending() {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
-	pool.pendingTx.Clear()
+	pool.pendingTx.list = make(map[string]*tx.Tx, 0)
 
 	list := pool.listTx.GetList()
 	//pool.listTx.Lock()
@@ -326,7 +326,6 @@ func (pool *TxPoolServer) updatePending() {
 func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 
 	for blockHash := range pool.checkIterateBlockHash.GetList() {
-		//fmt.Println("##blockhash: ", blockHash)
 		txList := pool.blockTx.TxList(string(blockHash))
 		if txList != nil {
 			if b := txList.Exist(hash); b {
@@ -334,7 +333,6 @@ func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 			}
 		}
 	}
-
 	return false
 }
 
