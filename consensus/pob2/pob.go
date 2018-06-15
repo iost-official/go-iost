@@ -87,8 +87,8 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 	if bc.GetBlockByNumber(0) == nil {
 
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-		err :=p.genesis(GetTimestamp(t.Unix()).Slot)
-		if err != nil{
+		err := p.genesis(GetTimestamp(t.Unix()).Slot)
+		if err != nil {
 			return nil, fmt.Errorf("failed to genesis is nil")
 		}
 	}
@@ -176,8 +176,7 @@ func (p *PoB) CachedStatePool() state.Pool {
 func (p *PoB) genesis(initTime int64) error {
 
 	main := lua.NewMethod(vm.Public, "", 0, 0)
-	code := `-- @PutHM iost 用户pubkey的base58编码 f10000
-@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f10000000000000000
+	code := `@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f10000000000000000
 @PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000
 @PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f100000`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
