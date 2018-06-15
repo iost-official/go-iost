@@ -53,7 +53,7 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 
 	method0, err := l.Contract.API(methodName)
 	if err != nil {
-		return nil, nil, err
+		return nil, pool, err
 	}
 
 	method := method0.(*Method)
@@ -88,7 +88,7 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 	//fmt.Println(l.cachePool.GetHM("iost", "b"))
 
 	if err != nil {
-		return nil, nil, err
+		return nil, pool, err
 	}
 
 	rtnValue := make([]state.Value, 0, method.outputCount)
@@ -148,7 +148,8 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		name: "Get",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
-			v, err := host.Get(l.cachePool, state.Key(k))
+			key := state.Key(l.Contract.Info().Prefix + k)
+			v, err := host.Get(l.cachePool, key)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -221,11 +222,15 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		name: "Call",
 		function: func(L *lua.LState) int {
 			L.PCount += 1000
-			blockName := L.ToString(1)
+			contractPrefix := L.ToString(1)
 			methodName := L.ToString(2)
-			method, err := l.monitor.GetMethod(blockName, methodName, l.Contract.Info().Publisher)
+			method, err := l.monitor.GetMethod(contractPrefix, methodName, l.Contract.Info().Publisher)
 
+			//fmt.Println("call occur")
+			//fmt.Println(contractPrefix)
+			//fmt.Println(method)
 			if err != nil {
+				fmt.Println("err:", err.Error())
 				L.Push(lua.LString(err.Error()))
 				return 1
 			}
@@ -236,9 +241,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 				args = append(args, Lua2Core(L.Get(i+2)))
 			}
 
-			rtn, pool, gas, err := l.monitor.Call(l.ctx, l.cachePool, blockName, methodName, args...)
+			rtn, pool, gas, err := l.monitor.Call(l.ctx, l.cachePool, contractPrefix, methodName, args...)
 			l.callerPC += gas
 			if err != nil {
+				fmt.Println("err:", err.Error())
 				L.Push(lua.LString(err.Error()))
 			}
 			l.cachePool = pool

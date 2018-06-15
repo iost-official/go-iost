@@ -52,7 +52,7 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 	content := p.text
 
-	re := regexp.MustCompile("--- .*\n(-- .*\n)*") //匹配全部注释代码
+	re := regexp.MustCompile("--- .*\n(-- .*\n)*function(.*\n)*?end--f") //匹配代码块
 
 	hasMain := false
 	var contract Contract
@@ -60,6 +60,7 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 	var buffer bytes.Buffer
 
 	for _, submatches := range re.FindAllStringSubmatchIndex(content, -1) {
+
 		/*
 			--- <functionName>  summary
 			-- some description
@@ -114,35 +115,35 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 		//匹配代码部分
 
-		endRe := regexp.MustCompile("^end--f")
-		endPos := endRe.FindStringIndex(content[submatches[1]:])
+		//endRe := regexp.MustCompile("^end--f")
+		//endPos := endRe.FindStringIndex(content[submatches[1]:])
 
 		//code part: content[submatches[1]:][:endPos[1]
 		contract.apis = make(map[string]Method)
+
+		// 匹配关键字
+		gasRe := regexp.MustCompile("@gas_limit (\\d+)")
+		priceRe := regexp.MustCompile("@gas_price ([+-]?([0-9]*[.])?[0-9]+)")
+		publisherRe := regexp.MustCompile("@publisher ([a-zA-Z1-9]+)")
+
+		gas, _ := strconv.ParseInt(gasRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 10, 64)
+		price, _ := strconv.ParseFloat(priceRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 64)
+		if p.Debug {
+			match := publisherRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
+			contract.info.Publisher = vm.IOSTAccount(match[1])
+		}
+		contract.info.Language = "lua"
+		contract.info.GasLimit = gas
+		contract.info.Price = price
 		if funcName == "main" {
 			hasMain = true
-			// 匹配关键字
-			gasRe := regexp.MustCompile("@gas_limit (\\d+)")
-			priceRe := regexp.MustCompile("@gas_price ([+-]?([0-9]*[.])?[0-9]+)")
-			publisherRe := regexp.MustCompile("@publisher ([a-zA-Z1-9]+)")
-
-			gas, _ := strconv.ParseInt(gasRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 10, 64)
-			price, _ := strconv.ParseFloat(priceRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 64)
-			if p.Debug {
-				match := publisherRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
-				fmt.Println("compile publisher:", match[1])
-				contract.info.Publisher = vm.IOSTAccount(match[1])
-			}
-			contract.info.Language = "lua"
-			contract.info.GasLimit = gas
-			contract.info.Price = price
 			contract.main = method
 			//contract.code = content[submatches[1]:][:endPos[1]]
 		} else {
 
 			contract.apis[funcName] = method
 		}
-		buffer.WriteString(content[submatches[1]:][:endPos[1]])
+		buffer.WriteString(content[submatches[0]:submatches[1]])
 		buffer.WriteString("\n")
 
 	}

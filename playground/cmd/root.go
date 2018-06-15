@@ -52,6 +52,8 @@ Playground runs lua script by turns.
 			gas   uint64
 		)
 
+		pool2 = pool.Copy()
+
 		switch language {
 		case "lua":
 			for _, file := range args {
@@ -69,9 +71,13 @@ Playground runs lua script by turns.
 				//	sc0 = sc
 				//}
 
+				//fmt.Println("load contract as:", file[strings.LastIndex(file, "/")+1:], "end")
+
+				sc.SetPrefix(file[strings.LastIndex(file, "/")+1 : strings.LastIndex(file, ".")])
+
 				v.StartVM(sc)
 
-				pool2, gas, err = v.Verify(sc, pool.Copy())
+				pool2, gas, err = v.Verify(sc, pool2)
 				if err != nil {
 					fmt.Println("error:", err.Error())
 				}
