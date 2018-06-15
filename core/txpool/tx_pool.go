@@ -2,17 +2,17 @@ package txpool
 
 import (
 	"fmt"
+	"github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/blockcache"
 	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network"
+	"github.com/prometheus/client_golang/prometheus"
 	"sort"
 	"sync"
 	"time"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/core/blockcache"
-	"github.com/iost-official/prototype/consensus/common"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -148,17 +148,15 @@ func (pool *TxPoolServer) PendingTransactions() tx.TransactionsList {
 
 	pool.updatePending()
 
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
 
 	var pendingList tx.TransactionsList
 	list := pool.pendingTx.GetList()
-	//pool.pendingTx.Lock()
 
 	for _, tx := range list {
 		pendingList = append(pendingList, tx)
 	}
-	//pool.pendingTx.UnLock()
 	// 排序
 	sort.Sort(pendingList)
 
@@ -166,36 +164,36 @@ func (pool *TxPoolServer) PendingTransactions() tx.TransactionsList {
 }
 
 func (pool *TxPoolServer) Transaction(hash string) *tx.Tx {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
 
 	return pool.listTx.Get(hash)
 }
 
 func (pool *TxPoolServer) ExistTransaction(hash string) bool {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
 
 	return pool.listTx.Exist(hash)
 }
 
 func (pool *TxPoolServer) TransactionNum() int {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
 
 	return pool.listTx.Len()
 }
 
 func (pool *TxPoolServer) PendingTransactionNum() int {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
 
 	return pool.pendingTx.Len()
 }
 
 func (pool *TxPoolServer) BlockTxNum() int {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
 
 	return pool.blockTx.Len()
 }
@@ -226,7 +224,6 @@ func (pool *TxPoolServer) slotToSec(t int64) int64 {
 }
 
 func (pool *TxPoolServer) addListTx(tx *tx.Tx) {
-
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -256,14 +253,12 @@ func (pool *TxPoolServer) delTimeOutTx() {
 	hashList := make([]string, 0)
 
 	list := pool.listTx.GetList()
-	//pool.listTx.Lock()
 	for hash, tx := range list {
 		txTime := tx.Time / 1e9
 		if nTime-txTime > pool.filterTime {
 			hashList = append(hashList, hash)
 		}
 	}
-	//pool.listTx.UnLock()
 	for _, hash := range hashList {
 		pool.listTx.Del(hash)
 	}
@@ -288,15 +283,12 @@ func (pool *TxPoolServer) delTimeOutBlockTx() {
 	list := pool.blockTx.GetListTime()
 
 	hashList := make([]string, 0)
-	//pool.blockTx.Lock()
 	for hash, t := range list {
 
 		if t < confirmTime && nTime-pool.filterTime > t {
 			hashList = append(hashList, hash)
 		}
 	}
-	//pool.blockTx.UnLock()
-
 	for _, hash := range hashList {
 
 		pool.blockTx.Del(hash)
@@ -305,26 +297,20 @@ func (pool *TxPoolServer) delTimeOutBlockTx() {
 }
 
 func (pool *TxPoolServer) updatePending() {
-
-
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
 	pool.pendingTx.list = make(map[string]*tx.Tx, 0)
 
 	list := pool.listTx.GetList()
-	//pool.listTx.Lock()
 	for hash, tr := range list {
 		if !pool.txExistTxPool(hash) {
-			//fmt.Println("Add pending tr hash:",tr.TxID(), " tr nonce:", tr.Nonce)
 			pool.pendingTx.Add(tr)
 		}
 	}
-	//pool.listTx.UnLock()
 }
 
 func (pool *TxPoolServer) txExistTxPool(hash string) bool {
-
 	for blockHash := range pool.checkIterateBlockHash.GetList() {
 		txList := pool.blockTx.TxList(string(blockHash))
 		if txList != nil {
@@ -337,8 +323,8 @@ func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 }
 
 func (pool *TxPoolServer) blockHash(chain block.Chain) *blockHashList {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
 
 	bhl := &blockHashList{blockList: make(map[string]struct{}, 0)}
 	iter := chain.Iterator()
@@ -347,25 +333,22 @@ func (pool *TxPoolServer) blockHash(chain block.Chain) *blockHashList {
 		if blk == nil {
 			break
 		}
-		//log.Log.I("getLongestChainBlockHash , blk Number: %v, witness: %v", blk.Head.Number, blk.Head.Witness)
 		bhl.Add(blk.HashID())
 	}
 	return bhl
 }
 
 func (pool *TxPoolServer) updateBlockHash(bhl *blockHashList) {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
 
 	for hash := range bhl.GetList() {
 		pool.checkIterateBlockHash.Add(hash)
 	}
-
 }
 
 // 保存一个block的所有交易数据
 func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
-
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -376,20 +359,13 @@ func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 
 type hashMap struct {
 	hashList map[string]struct{}
-	smu      sync.RWMutex
 }
 
 func (h *hashMap) Add(hash string) {
-	//h.smu.Lock()
-	//defer h.smu.Unlock()
-
 	h.hashList[hash] = struct{}{}
 }
 
 func (h *hashMap) Exist(txHash string) bool {
-	//h.smu.Lock()
-	//defer h.smu.Unlock()
-
 	if _, b := h.hashList[txHash]; b {
 		return true
 	}
@@ -398,16 +374,10 @@ func (h *hashMap) Exist(txHash string) bool {
 }
 
 func (h *hashMap) Del(hash string) {
-	//h.smu.Lock()
-	//defer h.smu.Unlock()
-
 	delete(h.hashList, hash)
 }
 
 func (h *hashMap) Clear() {
-	//h.smu.Lock()
-	//defer h.smu.Unlock()
-
 	h.hashList = nil
 	h.hashList = make(map[string]struct{})
 }
@@ -415,27 +385,13 @@ func (h *hashMap) Clear() {
 type blockTx struct {
 	blkTx   map[string]*hashMap // 按block hash 记录交易
 	blkTime map[string]int64    // 记录区块的时间，用于清理区块
-	smu     sync.RWMutex
-}
-
-func (b *blockTx) Lock() {
-	b.smu.Lock()
-}
-func (b *blockTx) UnLock() {
-	b.smu.Unlock()
 }
 
 func (b *blockTx) GetListTime() map[string]int64 {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
-
 	return b.blkTime
-
 }
-func (b *blockTx) Add(bl *block.Block) {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
 
+func (b *blockTx) Add(bl *block.Block) {
 	blochHash := bl.HashID()
 
 	if _, e := b.blkTx[blochHash]; !e {
@@ -453,41 +409,25 @@ func (b *blockTx) Add(bl *block.Block) {
 }
 
 func (b *blockTx) Len() int {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
-
 	return len(b.blkTx)
 }
 
 func (b *blockTx) Exist(hash string) bool {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
-
 	if _, b := b.blkTx[hash]; b {
 		return true
 	}
-
 	return false
 }
 
 func (b *blockTx) TxList(blockHash string) *hashMap {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
-
 	return b.blkTx[blockHash]
 }
 
 func (b *blockTx) Time(hash string) int64 {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
-
 	return b.blkTime[hash]
 }
 
 func (b blockTx) Del(hash string) {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
-
 	blk := b.blkTx[hash]
 	blk.Clear()
 	delete(b.blkTime, hash)
@@ -496,27 +436,13 @@ func (b blockTx) Del(hash string) {
 
 type listTx struct {
 	list map[string]*tx.Tx
-	smu  sync.RWMutex
-}
-
-func (l *listTx) Lock() {
-	l.smu.Lock()
-}
-func (l *listTx) UnLock() {
-	l.smu.Unlock()
 }
 
 func (l *listTx) GetList() map[string]*tx.Tx {
-	//l.smu.Lock()
-	//defer l.smu.Unlock()
-
 	return l.list
 }
 
 func (l *listTx) Add(Tx *tx.Tx) {
-	//l.smu.Lock()
-	//defer l.smu.Unlock()
-
 	if _, ok := l.list[Tx.TxID()]; ok {
 		return
 	}
@@ -532,24 +458,15 @@ func (l *listTx) Add(Tx *tx.Tx) {
 }
 
 func (l listTx) Len() int {
-	//l.smu.Lock()
-	//defer l.smu.Unlock()
-
 	return len(l.list)
 }
 
 func (l listTx) Del(hash string) {
-	//l.smu.Lock()
-	//defer l.smu.Unlock()
-
 	delete(l.list, hash)
 
 }
 
 func (l listTx) Exist(hash string) bool {
-	//l.smu.Lock()
-	//defer l.smu.Unlock()
-
 	if _, b := l.list[hash]; b {
 		return true
 	}
@@ -558,30 +475,18 @@ func (l listTx) Exist(hash string) bool {
 }
 
 func (l listTx) Get(hash string) *tx.Tx {
-
-	//l.smu.Lock()
-	//defer l.smu.Unlock()
-
 	return l.list[hash]
 }
 
 func (l listTx) Clear() {
-
-	//l.smu.Lock()
-	//defer l.smu.Unlock()
-
 	l.list = make(map[string]*tx.Tx, 0)
 }
 
 type blockHashList struct {
 	blockList map[string]struct{}
-	smu       sync.RWMutex
 }
 
 func (b *blockHashList) Add(hash string) {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
-
 	if _, ok := b.blockList[hash]; ok {
 		return
 	}
@@ -589,24 +494,16 @@ func (b *blockHashList) Add(hash string) {
 }
 
 func (b *blockHashList) Del(hash string) {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
-
 	if _, ok := b.blockList[hash]; ok {
 		delete(b.blockList, hash)
 	}
 }
 
 func (b *blockHashList) Clear() {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
-
 	b.blockList = nil
 	b.blockList = make(map[string]struct{})
 }
 
 func (b *blockHashList) GetList() map[string]struct{} {
-	//b.smu.Lock()
-	//defer b.smu.Unlock()
 	return b.blockList
 }
