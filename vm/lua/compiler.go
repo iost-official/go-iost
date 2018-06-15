@@ -16,6 +16,8 @@ var (
 	ErrNoMain = errors.New("parse failed: no main function")
 	// ErrIllegalCode 代码中包含\\0字符
 	ErrIllegalCode = errors.New("parse failed: Text contains character \\0")
+	// ErrWrongFormat 代码格式错误
+	ErrWrongFormat = errors.New("parse failed: code wrong format")
 	// 代码没指定输入参数数量
 	ErrNoParamCnt = errors.New("parse failed: param count not given")
 	// 代码没指定返回参数数量
@@ -114,8 +116,12 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 		//匹配代码部分
 
-		endRe := regexp.MustCompile("^end--f")
+		endRe := regexp.MustCompile("end--f")
 		endPos := endRe.FindStringIndex(content[submatches[1]:])
+		if len(endPos) == 0 {
+			fmt.Println("function end--f index not found, endPos = ", endPos)
+			return nil, ErrWrongFormat
+		}
 
 		//code part: content[submatches[1]:][:endPos[1]
 		contract.apis = make(map[string]Method)
