@@ -16,8 +16,10 @@ echoHelp(){
     echo 'usage:
     ./deploy.sh init        ----- 初始化节点配置
     ./deploy.sh restart     ----- 重启所有服务
-    ./deploy.sh reload      ----- 重启 imonitor
-    ./deploy.sh pushonline  ----- 部署 testnet 分支最新代码'
+    ./deploy.sh reload     	----- 重启 imonitor
+    ./deploy.sh pushonline  ----- 部署 testnet 分支最新代码
+    ./deploy.sh start  	    ----- 启动所有服务
+    ./deploy.sh stop  		----- 停止所有服务并删除数据'
 }
 
 
@@ -38,6 +40,12 @@ then
 elif [ "$1" = "init" ]
 then
     cmd="init.sh"
+elif [ "$1" = "start" ]
+then
+    cmd="start.sh"
+elif [ "$1" = "stop" ]
+then
+    cmd="stop.sh"
 else
     echoHelp
     exit 1
