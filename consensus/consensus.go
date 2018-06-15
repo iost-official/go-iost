@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/prototype/consensus/pob2"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/blockcache"
 )
 
 type TxStatus int
@@ -25,6 +26,7 @@ type Consensus interface {
 
 	BlockChain() block.Chain
 	CachedBlockChain() block.Chain
+	BlockCache() blockcache.BlockCache
 	StatePool() state.Pool
 	CachedStatePool() state.Pool
 }

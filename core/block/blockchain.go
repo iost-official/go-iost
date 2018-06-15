@@ -137,7 +137,7 @@ func (b *ChainImpl) Push(block *Block) error {
 	}
 
 	b.rds.Put([]byte("BlockNum"), []byte(strconv.FormatInt(block.Head.Number, 10)))
-	b.rds.Put([]byte("BlockHash"), []byte(block.Hash()))
+	b.rds.Put([]byte("BlockHash"), block.Hash())
 
 	return nil
 }

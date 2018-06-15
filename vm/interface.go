@@ -83,6 +83,10 @@ func PubkeyToIOSTAccount(pubkey []byte) IOSTAccount {
 	return IOSTAccount(account.GetIdByPubkey(pubkey))
 }
 
+func IOSTAccountToPubkey(id IOSTAccount) []byte {
+	return account.GetPubkeyByID(string(id))
+}
+
 func HashToPrefix(hash []byte) string {
 	return common.Base58Encode(hash)
 }

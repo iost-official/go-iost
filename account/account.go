@@ -10,6 +10,8 @@ import (
 	"github.com/iost-official/prototype/common"
 )
 
+var MainAccount Account
+
 type Account struct {
 	ID     string
 	Pubkey []byte

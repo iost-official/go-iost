@@ -34,7 +34,7 @@ func NewTx(nonce int64, contract vm.Contract) Tx {
 
 // 合约的参与者进行签名
 func SignContract(tx Tx, account account.Account) (common.Signature, error) {
-	sign, err := common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey)
+	sign, err := common.Sign(common.Secp256k1, tx.BaseHash(), account.Seckey)
 	if err != nil {
 		return sign, err
 	}
@@ -53,7 +53,7 @@ func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, erro
 }
 
 func RecordTx(tx Tx, account account.Account) (Tx, error) {
-	sign, err := common.Sign(common.Secp256k1, tx.Hash(), account.Seckey)
+	sign, err := common.Sign(common.Secp256k1, tx.BaseHash(), account.Seckey)
 	if err != nil {
 		return tx, err
 	}
@@ -72,7 +72,7 @@ func (t *Tx) String() string {
 }
 
 // Time,Noce,Contract形成的基本哈希值
-func (t *Tx) baseHash() []byte {
+func (t *Tx) BaseHash() []byte {
 	tbr := TxBaseRaw{t.Time, t.Nonce, t.Contract.Encode()}
 	b, err := tbr.Marshal(nil)
 	if err != nil {
@@ -110,9 +110,15 @@ func (t *Tx) Encode() []byte {
 }
 
 // 对Tx进行解码
-func (t *Tx) Decode(b []byte) error {
+func (t *Tx) Decode(b []byte) (err error) {
 	var tr TxRaw
-	_, err := tr.Unmarshal(b)
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
+	_, err = tr.Unmarshal(b)
 	if err != nil {
 		return err
 	}
@@ -156,9 +162,15 @@ func (t *Tx) Hash() []byte {
 	return common.Sha256(t.Encode())
 }
 
+// 公钥+nonoc 可用于交易判重
+func (t *Tx) TxID() string {
+	hash := string(t.Publisher.Pubkey)+strconv.FormatInt(t.Nonce,10)+strconv.FormatInt(t.Time,10)
+	return hash
+}
+
 // 验证签名的函数
 func (t *Tx) VerifySelf() error {
-	baseHash := t.baseHash() // todo 在basehash内缓存，不需要在应用进行缓存
+	baseHash := t.BaseHash() // todo 在basehash内缓存，不需要在应用进行缓存
 	for _, sign := range t.Signs {
 		ok := common.VerifySignature(baseHash, sign)
 		if !ok {
@@ -174,5 +186,40 @@ func (t *Tx) VerifySelf() error {
 }
 
 func (t *Tx) VerifySigner(sig common.Signature) bool {
-	return common.VerifySignature(t.baseHash(), sig)
+	return common.VerifySignature(t.BaseHash(), sig)
+}
+
+type TransactionsList []*Tx
+
+func (s TransactionsList) Len() int           { return len(s) }
+func (s TransactionsList) Less(i, j int) bool { return s[i].Contract.Info().Price < s[j].Contract.Info().Price }
+func (s TransactionsList) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+func (s *TransactionsList) Push(x interface{}) {
+	*s = append(*s, x.(*Tx))
+}
+
+func (s *TransactionsList) Pop() interface{} {
+	old := *s
+	n := len(old)
+	x := old[n-1]
+	*s = old[0 : n-1]
+	return x
+}
+
+func DiffTxList(a, b TransactionsList) (keep TransactionsList) {
+	keep = make(TransactionsList, 0, len(a))
+
+	remove := make(map[string]struct{})
+	for _, tx := range b {
+		remove[string(tx.Hash())] = struct{}{}
+	}
+
+	for _, tx := range a {
+		if _, ok := remove[string(tx.Hash())]; !ok {
+			keep = append(keep, tx)
+		}
+	}
+
+	return keep
 }

@@ -11,13 +11,16 @@ import (
 
 	"errors"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/blockcache"
 	"github.com/iost-official/prototype/core/message"
 
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/txpool"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
@@ -38,12 +41,6 @@ var (
 			Help: "Count of received block by current node",
 		},
 	)
-	receivedTransactionCount = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "received_transaction_count",
-			Help: "Count of received transaction by current node",
-		},
-	)
 	confirmedBlockchainLength = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "confirmed_blockchain_length",
@@ -55,7 +52,6 @@ var (
 func init() {
 	prometheus.MustRegister(generatedBlockCount)
 	prometheus.MustRegister(receivedBlockCount)
-	prometheus.MustRegister(receivedTransactionCount)
 	prometheus.MustRegister(confirmedBlockchainLength)
 }
 
@@ -63,7 +59,7 @@ var TxPerBlk int
 
 type PoB struct {
 	account      Account
-	blockCache   BlockCache
+	blockCache   blockcache.BlockCache
 	router       Router
 	synchronizer Synchronizer
 	globalStaticProperty
@@ -74,7 +70,6 @@ type PoB struct {
 	infoCache  [][]byte
 
 	exitSignal chan struct{}
-	ChTx       chan message.Message
 	chBlock    chan message.Message
 
 	log *log.Logger
@@ -83,14 +78,19 @@ type PoB struct {
 // NewPoB: 新建一个PoB实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
-	TxPerBlk = 3000
-	p := PoB{}
-	p.account = acc
-	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
+	TxPerBlk = 100 + rand.Intn(900)
+	p := PoB{
+		account: acc,
+	}
+
+	p.blockCache = blockcache.NewBlockCache(bc, pool, len(witnessList)*2/3)
 	if bc.GetBlockByNumber(0) == nil {
 
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-		p.genesis(GetTimestamp(t.Unix()).Slot)
+		err := p.genesis(GetTimestamp(t.Unix()).Slot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to genesis is nil")
+		}
 	}
 
 	var err error
@@ -101,16 +101,6 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 
 	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
 	if p.synchronizer == nil {
-		return nil, err
-	}
-
-	//	Tx chan init
-	p.ChTx, err = p.router.FilteredChan(Filter{
-		AcceptType: []ReqType{
-			ReqPublishTx,
-			reqTypeVoteTest, // Only for test
-		}})
-	if err != nil {
 		return nil, err
 	}
 
@@ -148,7 +138,6 @@ func (p *PoB) initGlobalProperty(acc Account, witnessList []string) {
 // Run: 运行PoB实例
 func (p *PoB) Run() {
 	p.synchronizer.StartListen()
-	go p.txListenLoop()
 	go p.blockLoop()
 	go p.scheduleLoop()
 	//p.genBlock(p.Account, block.Block{})
@@ -156,9 +145,12 @@ func (p *PoB) Run() {
 
 // Stop: 停止PoB实例
 func (p *PoB) Stop() {
-	close(p.ChTx)
 	close(p.chBlock)
 	close(p.exitSignal)
+}
+
+func (p *PoB) BlockCache() blockcache.BlockCache {
+	return p.blockCache
 }
 
 // BlockChain 返回已确认的block chain
@@ -184,9 +176,14 @@ func (p *PoB) CachedStatePool() state.Pool {
 func (p *PoB) genesis(initTime int64) error {
 
 	main := lua.NewMethod(vm.Public, "", 0, 0)
-	code := `@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f10000000000000000
-@PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000
-@PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f100000`
+	code := `@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f3000000000
+@PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f2900000000
+@PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f2800000000
+@PutHM iost 22zr9ows3qndmAjnkiPFex26taATEaEfjGkatVCr5akSU f2700000000
+@PutHM iost wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG f2600000000
+@PutHM iost oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU f2500000000
+@PutHM iost 28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym f2300000000
+@PutHM iost x9uhGBw3tyDzNkNFM7hcXeGdEpbAHdasgGyhfcMmonYq f2200000000`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
 
 	tx := NewTx(0, &lc)
@@ -217,31 +214,6 @@ func (p *PoB) genesis(initTime int64) error {
 	return nil
 }
 
-func (p *PoB) txListenLoop() {
-	p.log.I("Start to listen tx")
-	for {
-		select {
-		case req, ok := <-p.ChTx:
-			if !ok {
-				return
-			}
-			if req.ReqType == reqTypeVoteTest {
-				p.addWitnessMsg(req)
-				continue
-			}
-			var tx Tx
-			tx.Decode(req.Body)
-			if VerifyTxSig(tx) {
-				p.blockCache.AddTx(&tx)
-				receivedTransactionCount.Inc()
-			}
-
-		case <-p.exitSignal:
-			return
-		}
-	}
-}
-
 func (p *PoB) blockLoop() {
 	p.log.I("Start to listen block")
 	for {
@@ -264,19 +236,20 @@ func (p *PoB) blockLoop() {
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
-				bc := p.blockCache.LongestChain()
-				p.blockCache.UpdateTxPoolOnBC(bc)
+				p.blockCache.SendOnBlock(&blk)
+
+				// add servi
+				Data.AddServi(blk.Content)
 				receivedBlockCount.Inc()
 			} else {
 				p.log.I("Error: %v", err)
+				p.log.I("[blockloop]:verify blk faild\n%s\n", &blk)
 			}
-			if err != ErrBlock && err != ErrTooOld {
-				p.synchronizer.BlockConfirmed(blk.Head.Number)
+			if err != blockcache.ErrBlock && err != blockcache.ErrTooOld {
+				go p.synchronizer.BlockConfirmed(blk.Head.Number)
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
-
-					p.blockCache.AddSingles(p.blockVerify)
-				} else if err == ErrNotFound {
+				} else if err == blockcache.ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
 					if need {
@@ -327,7 +300,7 @@ func (p *PoB) scheduleLoop() {
 
 				pool := p.blockCache.LongestPool()
 				blk := p.genBlock(p.account, bc, pool)
-				go p.blockCache.ResetTxPoool()
+
 				p.globalDynamicProperty.update(&blk.Head)
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 
@@ -361,25 +334,31 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	//return &blk
 	spool1 := pool.Copy()
 
-	var vc vm.Context
-	vc.ParentHash = lastBlk.Head.Hash()
+	var vc blockcache.VerifyContext
+	vc.VParentHash = lastBlk.Head.Hash()
 
 	//TODO Content大小控制
-	for len(blk.Content) < TxPerBlk {
-		tx, err := p.blockCache.GetTx()
-		if tx == nil || err != nil {
-			break
-		}
-		//Stdtxsverifier的内部会pool=spool1.copy,如果这个交易验证失败，则pool造成内存浪费
-		//if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
-		if err := StdCacheVerifier(tx, spool1, &vc); err == nil {
-			blk.Content = append(blk.Content, *tx)
-			//spool1 = sp
+	var tx TransactionsList
+	if txpool.TxPoolS != nil {
+		tx = txpool.TxPoolS.PendingTransactions()
+	}
+
+	if len(tx) != 0 {
+
+		for _, t := range tx {
+
+			if len(blk.Content) >= TxPerBlk {
+				break
+			}
+
+			if err := blockcache.StdCacheVerifier(t, spool1, vc); err == nil {
+				blk.Content = append(blk.Content, *t)
+			}
 		}
 	}
 
 	blk.Head.BlockHash = blk.Head.Hash()
-	CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
+	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
 
 	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine
 	log.Report(&log.MsgBlock{
@@ -389,6 +368,9 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	})
 	/////////////////////////////////////
 	generatedBlockCount.Inc()
+
+	//Clear Servi
+	Data.ClearServi(tx)
 
 	return &blk
 }
@@ -436,12 +418,12 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 	}
 	///////////////////////////////////
 	// verify block head
-	if err := VerifyBlockHead(blk, parent); err != nil {
+
+	if err := blockcache.VerifyBlockHead(blk, parent); err != nil {
 		////////////probe//////////////////
 		log.Report(&msgBlock)
 		///////////////////////////////////
 		return nil, err
-
 	}
 
 	// verify block witness
@@ -458,6 +440,10 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 	var signature common.Signature
 	signature.Decode(blk.Head.Signature)
 
+	if blk.Head.Witness != common.Base58Encode(signature.Pubkey) {
+		return nil, errors.New("wrong pubkey")
+	}
+
 	// verify block witness signature
 	if !common.VerifySignature(headInfo, signature) {
 		////////////probe//////////////////
@@ -465,7 +451,7 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 		///////////////////////////////////
 		return nil, errors.New("wrong signature")
 	}
-	newPool, err := StdBlockVerifier(blk, pool)
+	newPool, err := blockcache.StdBlockVerifier(blk, pool)
 	if err != nil {
 		////////////probe//////////////////
 		log.Report(&msgBlock)

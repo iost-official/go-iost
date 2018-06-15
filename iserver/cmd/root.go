@@ -35,6 +35,8 @@ import (
 
 	"os/signal"
 	"syscall"
+	"github.com/iost-official/prototype/core/txpool"
+	"github.com/iost-official/prototype/consensus/pob2"
 )
 
 var cfgFile string
@@ -149,6 +151,8 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		account.MainAccount = acc
+
 		//fmt.Printf("account PubKey = %v\n", common.Base58Encode(acc.Pubkey))
 		//fmt.Printf("account SecKey = %v\n", common.Base58Encode(acc.Seckey))
 		log.Log.I("account ID = %v", acc.ID)
@@ -183,6 +187,18 @@ var rootCmd = &cobra.Command{
 
 		consensus.Run()
 		serverExit = append(serverExit, consensus)
+		blockCache := consensus.BlockCache()
+		txPool, err := txpool.NewTxPoolServer(blockCache, blockCache.OnBlockChan())
+		if err != nil {
+			log.Log.E("NewTxPoolServer failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
+		txPool.Start()
+		serverExit = append(serverExit, txPool)
+
+		// init servi
+		tx.Data = tx.NewHolder(acc, state.StdPool, tx.StdServiPool)
 
 		//启动RPC
 		err = rpc.Server(rpcPort)
@@ -190,6 +206,9 @@ var rootCmd = &cobra.Command{
 			log.Log.E("RPC initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
+
+		recorder := pob2.NewRecorder()
+		recorder.Listen()
 
 		// Start Metrics Server
 		if metricsPort != "" {

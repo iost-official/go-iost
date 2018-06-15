@@ -21,13 +21,14 @@ import (
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
+	"github.com/iost-official/prototype/core/blockcache"
 )
 
 var TxPerBlk int
 
 type DPoS struct {
 	account      Account
-	blockCache   BlockCache
+	blockCache   blockcache.BlockCache
 	router       Router
 	synchronizer Synchronizer
 	globalStaticProperty
@@ -50,7 +51,7 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 	TxPerBlk = 3000
 	p := DPoS{}
 	p.account = acc
-	p.blockCache = NewBlockCache(bc, pool, len(witnessList)*2/3)
+	p.blockCache = blockcache.NewBlockCache(bc, pool, len(witnessList)*2/3)
 	if bc.GetBlockByNumber(0) == nil {
 
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -112,7 +113,6 @@ func (p *DPoS) initGlobalProperty(acc Account, witnessList []string) {
 // Run: 运行DPoS实例
 func (p *DPoS) Run() {
 	p.synchronizer.StartListen()
-	go p.txListenLoop()
 	go p.blockLoop()
 	go p.scheduleLoop()
 	//p.genBlock(p.Account, block.Block{})
@@ -182,29 +182,6 @@ func (p *DPoS) genesis(initTime int64) error {
 	return nil
 }
 
-func (p *DPoS) txListenLoop() {
-	p.log.I("Start to listen tx")
-	for {
-		select {
-		case req, ok := <-p.ChTx:
-			if !ok {
-				return
-			}
-			if req.ReqType == reqTypeVoteTest {
-				p.addWitnessMsg(req)
-				continue
-			}
-			var tx Tx
-			tx.Decode(req.Body)
-			if VerifyTxSig(tx) {
-				p.blockCache.AddTx(&tx)
-			}
-
-		case <-p.exitSignal:
-			return
-		}
-	}
-}
 
 func (p *DPoS) blockLoop() {
 
@@ -240,18 +217,16 @@ func (p *DPoS) blockLoop() {
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
-				bc := p.blockCache.LongestChain()
-				p.blockCache.UpdateTxPoolOnBC(bc)
 			} else {
 				p.log.I("Error: %v", err)
 			}
-			if err != ErrBlock && err != ErrTooOld {
+			if err != blockcache.ErrBlock && err != blockcache.ErrTooOld {
 				p.synchronizer.BlockConfirmed(blk.Head.Number)
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 
 					p.blockCache.AddSingles(p.blockVerify)
-				} else if err == ErrNotFound {
+				} else if err == blockcache.ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
 					if need {
@@ -301,7 +276,6 @@ func (p *DPoS) scheduleLoop() {
 
 				pool := p.blockCache.LongestPool()
 				blk := p.genBlock(p.account, bc, pool)
-				go p.blockCache.ResetTxPoool()
 				p.globalDynamicProperty.update(&blk.Head)
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 
@@ -333,22 +307,22 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
 	//return &blk
-	spool1 := pool.Copy()
-	//TODO Content大小控制
-	for len(blk.Content) < TxPerBlk {
-		tx, err := p.blockCache.GetTx()
-		if tx == nil || err != nil {
-			break
-		}
+	//spool1 := pool.Copy()
+	////TODO Content大小控制
+	//for len(blk.Content) < TxPerBlk {
+	//	tx, err := p.blockCache.GetTx()
+	//	if tx == nil || err != nil {
+	//		break
+	//	}
+	//
+	//	if sp, _, err := blockcache.StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
+	//		blk.Content = append(blk.Content, *tx)
+	//	} else {
+	//		spool1 = sp
+	//	}
+	//}
 
-		if sp, _, err := StdTxsVerifier([]*Tx{tx}, spool1); err == nil {
-			blk.Content = append(blk.Content, *tx)
-		} else {
-			spool1 = sp
-		}
-	}
-
-	CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
+	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
 
 	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine
 	//log.Report(&log.MsgBlock{
@@ -406,7 +380,7 @@ func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Poo
 		///////////////////////////////////
 	*/
 	// verify block head
-	if err := VerifyBlockHead(blk, parent); err != nil {
+	if err := blockcache.VerifyBlockHead(blk, parent); err != nil {
 		/*
 			////////////probe//////////////////
 			log.Report(&msgBlock)
@@ -441,7 +415,7 @@ func (p *DPoS) blockVerify(blk *block.Block, parent *block.Block, pool state.Poo
 		*/
 		return nil, errors.New("wrong signature")
 	}
-	newPool, err := StdBlockVerifier(blk, pool)
+	newPool, err := blockcache.StdBlockVerifier(blk, pool)
 	if err != nil {
 		/*
 			////////////probe//////////////////

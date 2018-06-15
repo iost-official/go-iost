@@ -1,6 +1,7 @@
 package block
 
 import (
+	"fmt"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
@@ -47,9 +48,15 @@ func (d *Block) Encode() []byte {
 }
 
 // Decode 是区块的反序列方法
-func (d *Block) Decode(bin []byte) error {
+func (d *Block) Decode(bin []byte) (err error) {
 	var br BlockRaw
-	_, err := br.Unmarshal(bin)
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
+	_, err = br.Unmarshal(bin)
 	d.Head = br.Head
 	for _, t := range br.Content {
 		var tt tx.Tx
@@ -65,6 +72,15 @@ func (d *Block) Decode(bin []byte) error {
 // Hash 返回区块的Hash值
 func (d *Block) Hash() []byte {
 	return common.Sha256(d.Encode())
+}
+
+//
+func (d *Block) HashID() string {
+	id := d.Head.Witness +
+		strconv.FormatInt(d.Head.Time, 10) +
+		strconv.FormatInt(d.Head.Number, 10) +
+		strconv.FormatInt(d.Head.Version, 10)
+	return id
 }
 
 // HeadHash 返回区块头部的Hash值
