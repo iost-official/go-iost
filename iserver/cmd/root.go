@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"encoding/binary"
 	"fmt"
 	"os"
 	"strconv"
@@ -104,29 +103,40 @@ var rootCmd = &cobra.Command{
 			log.Log.E("NewBlockChain failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-		/*
-			//检查db和redis数据是否合法
-			rds, _ := db.DatabaseFactory("redis")
-			var blockNum uint64
-			bn, _ := rds.Get([]byte("BlockNum"))
-
-			blockNum = binary.BigEndian.Uint64(bn)
-			bcLen := blockChain.Length()
-			log.Log.I("BlockNum on Redis: %v", blockNum)
-			log.Log.I("BCLen: %v", bcLen)
-			if bcLen-1 >= blockNum {
-				for i := blockNum + 1; i < bcLen; i++ {
-					blk := blockChain.GetBlockByNumber(i)
-					newPool, err := blockcache.StdBlockVerifier(blk, state.StdPool)
-					if err != nil {
-						log.Log.E("Update StatePool failed, stop the program! err:%v", err)
-						os.Exit(1)
-					}
-					newPool.Flush()
+		//检查db和redis数据是否合法
+		rds, _ := db.DatabaseFactory("redis")
+		bn, _ := rds.Get([]byte("BlockNum"))
+		var blockNum uint64
+		blockNum = 0
+		if bn != nil {
+			blockNum, _ = strconv.ParseUint(string(bn), 10, 64)
+			blockNum = blockNum + 1
+		}
+		log.Log.I("BlockNum on Redis: %v", blockNum)
+		bcLen := blockChain.Length()
+		if bcLen < blockNum {
+			blockNum = 0
+			rds.Delete([]byte("iost"))
+			rds.Delete([]byte("BlockNum"))
+		}
+		log.Log.I("BlockNum on Redis: %v", blockNum)
+		log.Log.I("BCLen: %v", bcLen)
+		if bcLen-1 >= blockNum {
+			var blk *block.Block
+			for i := blockNum; i < bcLen; i++ {
+				blk = blockChain.GetBlockByNumber(i)
+				newPool, err := blockcache.StdBlockVerifier(blk, state.StdPool)
+				if err != nil {
+					log.Log.E("Update StatePool failed, stop the program! err:%v", err)
+					os.Exit(1)
 				}
+				newPool.Flush()
 			}
-			rds.Put([]byte("BlockNum"), []byte(strconv.FormatUint(bcLen-1, 10)))
-		*/
+			if bcLen > 0 {
+				rds.Put([]byte("BlockNum"), []byte(strconv.FormatUint(bcLen-1, 10)))
+				rds.Put([]byte("BlockNum"), []byte(blk.Hash()))
+			}
+		}
 		//初始化网络
 		log.Log.I("1.Start the P2P networks")
 
