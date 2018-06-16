@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 
+	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/verifier"
-	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/vm"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block

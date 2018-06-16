@@ -137,7 +137,7 @@ func (b *ChainImpl) Push(block *Block) error {
 	}
 
 	b.rds.Put([]byte("BlockNum"), []byte(strconv.FormatInt(block.Head.Number, 10)))
-	b.rds.Put([]byte("BlockHash"), block.Hash())
+	b.rds.Put([]byte("BlockHash"), []byte(block.Hash()))
 
 	return nil
 }
@@ -175,6 +175,7 @@ func (b *ChainImpl) lengthAdd() error {
 
 // getLengthBytes 得到链长度的bytes类型
 func (b *ChainImpl) getLengthBytes(length uint64) []byte {
+
 	return []byte(strconv.FormatUint(length, 10))
 }
 
