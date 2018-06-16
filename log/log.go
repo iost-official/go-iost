@@ -30,7 +30,7 @@ var Log *Logger
 
 const (
 	ExpireTime = 24 * 60 * 60
-	RotateTime = 15 * 60
+	RotateTime = 60 * 60
 )
 
 func NewLogger(tag string) (*Logger, error) {
