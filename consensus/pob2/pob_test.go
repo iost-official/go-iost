@@ -109,21 +109,39 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 
 	gopath := os.Getenv("GOPATH")
 	fmt.Println(gopath)
-	delDir := os.RemoveAll(gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB");
+	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
+	txdb1:= gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
+	blockDb2:=gopath + "/src/github.com/iost-official/blockDB"
+	txdb2:=gopath + "/src/github.com/iost-official/txDB"
+
+	delDir := os.RemoveAll(blockDb1)
 	if delDir != nil {
-		fmt.Println(delDir);
+		fmt.Println(delDir)
 	}
-	delDir = os.RemoveAll(gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB");
+
+	delDir = os.RemoveAll(txdb1)
 	if delDir != nil {
-		fmt.Println(delDir);
+		fmt.Println(delDir)
 	}
-	delDir = os.RemoveAll(gopath + "/src/github.com/iost-official/blockDB");
+	delDir = os.RemoveAll(blockDb2)
 	if delDir != nil {
-		fmt.Println(delDir);
+		fmt.Println(delDir)
 	}
-	delDir = os.RemoveAll(gopath + "/src/github.com/iost-official/txDB");
+	delDir = os.RemoveAll(txdb2)
 	if delDir != nil {
-		fmt.Println(delDir);
+		fmt.Println(delDir)
+	}
+	if Exists(blockDb1) {
+		fmt.Println(" Del blockDb1 Failed")
+	}
+	if Exists(blockDb2) {
+		fmt.Println(" Del blockDb2 Failed")
+	}
+	if Exists(txdb1) {
+		fmt.Println(" Del txdb1 Failed")
+	}
+	if Exists(txdb2) {
+		fmt.Println(" Del txdb2 Failed")
 	}
 
 	acc := common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9")
@@ -196,7 +214,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	if err != nil {
 		t.Errorf("NewPoB error")
 	}
-
+	fmt.Println("envinit ConfirmedLength:", p.blockCache.ConfirmedLength())
 	blockCache := p.BlockCache()
 	txPool, err := txpool.NewTxPoolServer(blockCache, blockCache.OnBlockChan())
 	if err != nil {
@@ -221,6 +239,7 @@ func TestRunGenerateBlock(t *testing.T) {
 		So(len(blk.Content), ShouldEqual, 1)
 		So(blk.Content[0].Nonce, ShouldEqual, 998)
 		p.blockCache.Draw()
+
 	})
 }
 
@@ -269,8 +288,10 @@ func TestAddSinglesBlock(t *testing.T)  {
 func TestRunConfirmBlock(t *testing.T) {
 	Convey("Test of Run ConfirmBlock", t, func() {
 		p, accList, witnessList ,txpool:= envinit(t)
+		fmt.Println("0.TestRunConfirmBlock ConfirmedLength: ",p.blockCache.ConfirmedLength())
 		_tx := genTxMsg(p, 998)
 		txpool.AddTransaction(_tx)
+		fmt.Println("1.TestRunConfirmBlock ConfirmedLength: ",p.blockCache.ConfirmedLength())
 
 		for i := 0; i < 5; i++ {
 			wit := ""
@@ -378,6 +399,17 @@ func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parent
 		Body:    blk.Encode(),
 	}
 	return blk, msg
+}
+
+func Exists(path string) bool {
+	_, err := os.Stat(path)    //os.Stat获取文件信息
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return true
 }
 
 //go test -bench=. -benchmem -run=nonce

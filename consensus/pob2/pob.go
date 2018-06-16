@@ -176,9 +176,14 @@ func (p *PoB) CachedStatePool() state.Pool {
 func (p *PoB) genesis(initTime int64) error {
 
 	main := lua.NewMethod(vm.Public, "", 0, 0)
-	code := `@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f10000000000000000
-@PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f100000
-@PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f100000`
+	code := `@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f3000000000
+@PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f2900000000
+@PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f2800000000
+@PutHM iost 22zr9ows3qndmAjnkiPFex26taATEaEfjGkatVCr5akSU f2700000000
+@PutHM iost wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG f2600000000
+@PutHM iost oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU f2500000000
+@PutHM iost 28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym f2300000000
+@PutHM iost x9uhGBw3tyDzNkNFM7hcXeGdEpbAHdasgGyhfcMmonYq f2200000000`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
 
 	tx := NewTx(0, &lc)
