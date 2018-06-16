@@ -175,7 +175,6 @@ func (b *ChainImpl) lengthAdd() error {
 
 // getLengthBytes 得到链长度的bytes类型
 func (b *ChainImpl) getLengthBytes(length uint64) []byte {
-
 	return []byte(strconv.FormatUint(length, 10))
 }
 

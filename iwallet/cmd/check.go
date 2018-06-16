@@ -80,7 +80,7 @@ func PrintTx(mTx tx.Tx) {
 	fmt.Printf(`Transaction : 
 Time: %v
 Nonce: %v
-Contract:
+contract:
     Price: %v
     Gas limit: %v
 Code:

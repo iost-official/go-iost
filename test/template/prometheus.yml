@@ -22,3 +22,11 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets: ['{{LOCAL_IP}}:8080', '{{LOCAL_IP}}:8081', '{{LOCAL_IP}}:8082']
+
+rule_files:
+  - /etc/prometheus/iserver_rule.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+      - targets: ["{{LOCAL_IP}}:9093"]

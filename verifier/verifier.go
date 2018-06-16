@@ -20,7 +20,7 @@ const (
 // 底层verifier，用来组织vm，不要直接使用
 type Verifier struct {
 	vmMonitor
-	Context vm.Context
+	Context *vm.Context
 }
 
 func (v *Verifier) Verify(contract vm.Contract, pool state.Pool) (state.Pool, uint64, error) {
@@ -57,13 +57,13 @@ func setBalanceOfSender(sender vm.IOSTAccount, pool state.Pool, amount float64) 
 
 // 验证contract，返回pool是包含了该contract的pool。传入时要注意是传入pool还是pool.copy()
 //
-// 取得tx中的Contract的方法： tx.Contract
+// 取得tx中的Contract的方法： tx.contract
 func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (state.Pool, error) {
 	sender := contract.Info().Publisher
 	if contract.Info().Price != 0 {
 		bos := balanceOfSender(sender, pool)
 		if bos < float64(contract.Info().GasLimit)*contract.Info().Price {
-			return pool, fmt.Errorf("balance not enough: sender:%v balance:%f\n",string(sender),bos)
+			return pool, fmt.Errorf("balance not enough: sender:%v balance:%f\n", string(sender), bos)
 		}
 	}
 

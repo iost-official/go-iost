@@ -72,8 +72,8 @@ func Withdraw(pool state.Pool, contractPrefix, payer string, value float64) bool
 	return true
 
 }
-func RandomByParentHash(ctx vm.Context, probability float64) bool {
-	seed := ctx.ParentHash()
+func RandomByParentHash(ctx *vm.Context, probability float64) bool {
+	seed := ctx.ParentHash
 
 	return float64(common.Sha256(seed)[10]) > probability*255
 }

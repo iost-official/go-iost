@@ -16,6 +16,14 @@ type Logger struct {
 	NeedPrint bool
 }
 
+func init() {
+	var err error
+	Log, err = NewLogger("iost")
+	if err != nil {
+		panic(err)
+	}
+}
+
 // global Logger instance
 var Log *Logger
 var instance *os.File
