@@ -76,16 +76,18 @@ def restart():
 	return 1
 
 def stop():
+        rtn = 1
 	for i in range(0,3):
 		if exist()==0:
 			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|grep -v defunct|awk 'NR==1{print $1}'")
 			wCommand("kill -9 "+a)
 			time.sleep(1)
+                rtn = 0 
 	wCommand("redis-cli -h 127.0.0.1 -p 6379 shutdown")	
 	time.sleep(1)
-	wCommand("rm -rf /workdir/blockDB /workdir/txDB/ /workdir/netpath /workdir/test.log /workdir/dump.rdb /workdir/sendtx.log")
-	time.sleep(1)
-	return 1
+	wCommand("rm -rf ./blockDB ./txDB/ ./netpath ./test.log ./dump.rdb ./sendtx.log")
+        time.sleep(1)
+	return rtn
 
 
 def upgrade():

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"net/http"
+	"time"
 
 	"fmt"
 
@@ -26,6 +29,56 @@ func initNetConf() *network.NetConfig {
 	return conf
 }
 
+type ipInfo struct {
+	IP           string `json:"ip"`
+	RegisterTime int64  `json:"register_time"`
+	ConnTime     int64  `json:"conn_time"`
+}
+
+func dumpNodeServer(baseNet *network.BaseNetwork) {
+	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("pong"))
+	})
+	http.HandleFunc("/nodes", func(w http.ResponseWriter, r *http.Request) {
+		ips, err := baseNet.AllNodesExcludeAddr("")
+		resp := make(map[string]interface{})
+		if err != nil {
+			fmt.Println("get all nodes failed. err=", err)
+			resp = map[string]interface{}{
+				"status":  10001,
+				"message": fmt.Sprintf("error=%v", err),
+			}
+		} else {
+			ipInfos := make([]*ipInfo, 0, len(ips))
+			for _, ip := range ips {
+				ipInfo := &ipInfo{
+					IP:           ip,
+					RegisterTime: 0,
+				}
+				if regTime, ok := baseNet.NodeAddedTime.Load(ip); ok {
+					ipInfo.RegisterTime = regTime.(int64)
+				}
+				ipInfo.ConnTime = time.Now().Unix() - ipInfo.RegisterTime
+				ipInfos = append(ipInfos, ipInfo)
+			}
+			resp = map[string]interface{}{
+				"status":  0,
+				"message": "success",
+				"ips":     ipInfos,
+			}
+		}
+
+		b, err := json.Marshal(resp)
+		if err != nil {
+			fmt.Println("json marshal error:", err)
+		}
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Write(b)
+	})
+	go http.ListenAndServe(":30306", nil)
+
+}
+
 func bootnodeStart() {
 	node, err := discover.ParseNode("84a8ecbeeb6d3f676da1b261c35c7cd15ae17f32b659a6f5ce7be2d60f6c16f9@0.0.0.0:30304")
 	if err != nil {
@@ -44,6 +97,7 @@ func bootnodeStart() {
 		return
 	}
 	fmt.Println("server starting", node.Addr())
+	dumpNodeServer(baseNet)
 	for {
 		select {
 		case <-ch:

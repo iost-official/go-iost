@@ -194,6 +194,8 @@ def sendonetx(_to,money):
 	return "SUCCESS"
 
 if __name__ == "__main__":
+	if has(HOME+"/.ssh")==False:
+		wCommand("mkdir ~/.ssh")
 	com=sys.argv[1]
 	if com=="genaccounts":
 		print(GenAccounts())
