@@ -53,7 +53,6 @@ while True:
 
         for i in range(2, len(lines), 2):
             key, val = lines[i:i+2]
-            val = float(val)
             #print key, val
             if not key in balance_map[bn][bh]:
                 balance_map[bn][bh][key] = {}
