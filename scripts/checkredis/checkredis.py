@@ -20,10 +20,13 @@ balance_map = {}
 bn_map = {}
 while True:
     min_bn = -1
+    obj = []
     for item in server_addr:
-        obj = subprocess.Popen("curl -s --connect-timeout 3 -XPOST {}:{}/scripts -d \"cmd=checkredis.sh\"".format(item[1], 30310), 
-            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        rtn, _ =obj.communicate()
+        obj.append(subprocess.Popen("curl -s --connect-timeout 3 -XPOST {}:{}/scripts -d \"cmd=checkredis.sh\"".format(item[1], 30310), 
+            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
+    for k in range(len(server_addr)):
+        item  = server_addr[k]
+        rtn, _ =obj[k].communicate()
         lines = rtn.split("\n")[:-1]
         if len(lines)%2 ==1:
             lines[1] += "\n"+lines[2]
@@ -74,7 +77,7 @@ while True:
             for key in balance_map[bn][bh]:
                 if len(balance_map[bn][bh][key])>1:
                     boo = False
-                    print key
+                    print bn, key
                     print balance_map[bn][bh][key]
     for bn in del_map:
         bn_map.pop(bn)
