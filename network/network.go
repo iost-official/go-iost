@@ -286,6 +286,7 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 	defer conn.Close()
 	for {
 		scanner := bufio.NewScanner(conn)
+		scanner.Buffer([]byte{}, bufio.MaxScanTokenSize*100)
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			if !atEOF && isNetVersionMatch(data) {
 				if len(data) > 8 {
