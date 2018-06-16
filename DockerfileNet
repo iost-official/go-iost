@@ -1,0 +1,17 @@
+FROM golang:1.10
+
+RUN go get github.com/kardianos/govendor
+# 复制代码
+COPY . /go/src/github.com/iost-official/prototype/
+# 安装依赖
+RUN cd /go/src/github.com/iost-official/prototype/ && govendor sync -v
+
+RUN go build -o $GOPATH/bin/network github.com/iost-official/prototype/network/main/
+
+# 暴露端口
+EXPOSE  30304
+
+CMD /go/bin/network > /tmp/server.log
+
+# run: docker run -d -v /tmp:/tmp -p 30304:30304 iost-net
+# build: docker build -t iost-net .

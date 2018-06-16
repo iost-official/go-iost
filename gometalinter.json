@@ -1,0 +1,8 @@
+{
+  "Skip": ["vendor"],
+  "Cyclo": 15,
+  "Enable": [
+    "golint"
+  ],
+  "Deadline": "120s"
+}
