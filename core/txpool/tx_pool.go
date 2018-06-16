@@ -17,8 +17,8 @@ import (
 
 var (
 	clearInterval = 40 * time.Second
-	//filterTime    = 40
-	filterTime    = 60*60*24*7
+	filterTime    = 40
+	//filterTime    = 60*60*24*7
 
 	receivedTransactionCount = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -109,7 +109,7 @@ func (pool *TxPoolServer) loop() {
 				return
 			}
 
-			log.Log.I("### chTx: %v", len(pool.chTx))
+			//log.Log.I("### chTx: %v", len(pool.chTx))
 
 			var tx tx.Tx
 			tx.Decode(tr.Body)
