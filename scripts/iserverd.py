@@ -63,8 +63,6 @@ def start():
 #1:fail
 #todo 判断iserver是否存在，用PID
 def restart():
-	wCommand("nohup redis-server &")
-	time.sleep(2)
 	for i in range(0,3):
 		if(start()!=0):
 			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|grep -v defunct|awk 'NR==1{print $1}'")
@@ -76,7 +74,7 @@ def restart():
 	return 1
 
 def stop():
-    rtn = 1
+	rtn = 1
 	for i in range(0,3):
 		if exist()==0:
 			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|grep -v defunct|awk 'NR==1{print $1}'")
