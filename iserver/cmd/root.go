@@ -112,7 +112,8 @@ var rootCmd = &cobra.Command{
 
 		blockNum = binary.BigEndian.Uint64(bn)
 		bcLen := blockChain.Length()
-		log.Log.I("BlockNum on Redis: %v, BCLen: %v", blockNum, bcLen)
+		log.Log.I("BlockNum on Redis: %v", blockNum)
+		log.Log.I("BCLen: %v", bcLen)
 		if bcLen-1 >= blockNum {
 			for i := blockNum + 1; i < bcLen; i++ {
 				blk := blockChain.GetBlockByNumber(i)
