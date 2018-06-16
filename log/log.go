@@ -100,7 +100,10 @@ func clearOldLogs(now time.Time) {
 			//fmt.Println(timestamp)
 			mtime, err := time.Parse(FmtTime, timestamp)
 			if err != nil {
-				fmt.Println(err)
+				err := os.Remove("logs/" + f.Name())
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 			//ts := now.Format(FmtTime)
 			//now2, _ := time.Parse(FmtTime, ts)
