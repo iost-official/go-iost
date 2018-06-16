@@ -213,82 +213,10 @@
 			"revisionTime": "2018-05-12T05:51:46Z"
 		},
 		{
-			"checksumSHA1": "VVE/aQfaDZrwXwCI2bolNZrI3hA=",
-			"path": "github.com/ipfs/go-ipfs-util",
-			"revision": "9ed527918c2f20abdf0adfab0553cd87db34f656",
-			"revisionTime": "2018-01-02T21:56:04Z"
-		},
-		{
-			"checksumSHA1": "FFoaA0UKWgjjaIkXj3SLady/DRI=",
-			"path": "github.com/ipfs/go-log",
-			"revision": "b9df188d0fae32d69c1a519fa81741668a12f55a",
-			"revisionTime": "2018-05-16T17:08:58Z"
-		},
-		{
-			"checksumSHA1": "Jvuy3q38Nvu7w/pLSmdueIkoAoc=",
-			"path": "github.com/ipfs/go-log/tracer",
-			"revision": "b9df188d0fae32d69c1a519fa81741668a12f55a",
-			"revisionTime": "2018-05-16T17:08:58Z"
-		},
-		{
-			"checksumSHA1": "/l/t7EfaI9XkWcHU2gFxx+RIsk8=",
-			"path": "github.com/ipfs/go-log/tracer/wire",
-			"revision": "b9df188d0fae32d69c1a519fa81741668a12f55a",
-			"revisionTime": "2018-05-16T17:08:58Z"
-		},
-		{
-			"checksumSHA1": "bl9JfF5EYfN40i+L1PnuabCunYw=",
-			"path": "github.com/ipfs/go-log/writer",
-			"revision": "b9df188d0fae32d69c1a519fa81741668a12f55a",
-			"revisionTime": "2018-05-16T17:08:58Z"
-		},
-		{
 			"checksumSHA1": "Js/yx9fZ3+wH1wZpHNIxSTMIaCg=",
 			"path": "github.com/jtolds/gls",
 			"revision": "77f18212c9c7edc9bd6a33d383a7b545ce62f064",
 			"revisionTime": "2017-05-03T22:40:06Z"
-		},
-		{
-			"checksumSHA1": "qFZGrTTZrD4Ig2unapZ8v4BOJ3E=",
-			"path": "github.com/libp2p/go-libp2p-crypto",
-			"revision": "18915b5467c77ad8c07a35328c2cab468667a4e8",
-			"revisionTime": "2018-03-18T23:46:59Z"
-		},
-		{
-			"checksumSHA1": "p58EbrGYdgxUchiHd7eHvWpVoGg=",
-			"path": "github.com/libp2p/go-libp2p-crypto/pb",
-			"revision": "18915b5467c77ad8c07a35328c2cab468667a4e8",
-			"revisionTime": "2018-03-18T23:46:59Z"
-		},
-		{
-			"checksumSHA1": "O9jB9eAaYXKwCilRnF4P+NYYpq0=",
-			"path": "github.com/libp2p/go-libp2p-kbucket",
-			"revision": "598ae830061e727066151686ad7b5d4afde1b2ba",
-			"revisionTime": "2018-04-16T04:48:14Z"
-		},
-		{
-			"checksumSHA1": "JIQbChSVvDy8AEjaD0iLlbti+3g=",
-			"path": "github.com/libp2p/go-libp2p-kbucket/keyspace",
-			"revision": "598ae830061e727066151686ad7b5d4afde1b2ba",
-			"revisionTime": "2018-04-16T04:48:14Z"
-		},
-		{
-			"checksumSHA1": "3/HLKmB1GTkhNBwYq1Dnn4ow2Gw=",
-			"path": "github.com/libp2p/go-libp2p-peer",
-			"revision": "aa0e03e559bde9d4749ad8e38595e15a6fe808fa",
-			"revisionTime": "2018-04-16T04:36:06Z"
-		},
-		{
-			"checksumSHA1": "deHqCdyNOHmQP1mmGpxiA57v9W4=",
-			"path": "github.com/libp2p/go-libp2p-peerstore",
-			"revision": "7ac092e7f77f5bda1cb6e4ef95efbe911e97db41",
-			"revisionTime": "2018-04-16T04:36:07Z"
-		},
-		{
-			"checksumSHA1": "LkRCDjjSJJW8AGYrn//7hlxgu5E=",
-			"path": "github.com/libp2p/go-libp2p-peerstore/addr",
-			"revision": "7ac092e7f77f5bda1cb6e4ef95efbe911e97db41",
-			"revisionTime": "2018-04-16T04:36:07Z"
 		},
 		{
 			"checksumSHA1": "AYZGozgchqe4WcKH/jCZI1flnP8=",
