@@ -88,6 +88,7 @@ var ldb db.Database
 
 func init() {
 	var err error
+
 	ldb, err = db.NewLDBDatabase("servi_db.ldb", 0, 0)
 	if err != nil {
 		panic(err)

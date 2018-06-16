@@ -24,14 +24,14 @@ type VM struct {
 
 	cachePool state.Pool
 	monitor   vm.Monitor
-	Contract  *Contract
+	contract  *Contract
 	callerPC  uint64
-	ctx       vm.Context
+	ctx       *vm.Context
 }
 
 func (l *VM) Start() error {
 
-	if err := l.L.DoString(l.Contract.code); err != nil {
+	if err := l.L.DoString(l.contract.code); err != nil {
 		return err
 	}
 
@@ -51,9 +51,9 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 	//fmt.Print("1 ")
 	//fmt.Println(l.cachePool.GetHM("iost", "b"))
 
-	method0, err := l.Contract.API(methodName)
+	method0, err := l.contract.API(methodName)
 	if err != nil {
-		return nil, nil, err
+		return nil, pool, err
 	}
 
 	method := method0.(*Method)
@@ -88,7 +88,7 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 	//fmt.Println(l.cachePool.GetHM("iost", "b"))
 
 	if err != nil {
-		return nil, nil, err
+		return nil, pool, err
 	}
 
 	rtnValue := make([]state.Value, 0, method.outputCount)
@@ -99,17 +99,20 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 	}
 	return rtnValue, l.cachePool, nil
 }
-func (l *VM) Call(ctx vm.Context, pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
+func (l *VM) Call(ctx *vm.Context, pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error) {
 	if ctx == nil {
-		ctx = mBaseContext
+		ctx = vm.BaseContext()
 	}
 	l.ctx = ctx
+	defer func() {
+		l.ctx = vm.BaseContext()
+	}()
 	return l.call(pool, methodName, args...)
 }
 func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
-	l.ctx = mBaseContext
+	l.ctx = vm.BaseContext()
 	var ok bool
-	l.Contract, ok = contract.(*Contract)
+	l.contract, ok = contract.(*Contract)
 	if !ok {
 		return fmt.Errorf("prepare contract %v : contract type error", contract.Info().Prefix)
 	}
@@ -124,7 +127,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		name: "Put",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
-			key := state.Key(l.Contract.Info().Prefix + k)
+			key := state.Key(l.contract.Info().Prefix + k)
 			v := L.Get(2)
 			host.Put(l.cachePool, key, Lua2Core(v))
 			L.Push(lua.LTrue)
@@ -138,7 +141,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		name: "Log",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
-			host.Log(k, l.Contract.info.Prefix)
+			host.Log(k, l.contract.info.Prefix)
 			return 0
 		},
 	}
@@ -148,7 +151,8 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		name: "Get",
 		function: func(L *lua.LState) int {
 			k := L.ToString(1)
-			v, err := host.Get(l.cachePool, state.Key(k))
+			key := state.Key(l.contract.Info().Prefix + k)
+			v, err := host.Get(l.cachePool, key)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -164,8 +168,9 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		name: "Transfer",
 		function: func(L *lua.LState) int {
 			src := L.ToString(1) // todo 验证输入
-			if vm.CheckPrivilege(l.Contract.info, src) <= 0 {
-				L.Push(lua.LFalse)
+			//fmt.Print("transfer call check")
+			if vm.CheckPrivilege(l.ctx, l.contract.info, src) <= 0 {
+				L.Push(lua.LString("privilege error"))
 				return 1
 			}
 			des := L.ToString(2)
@@ -181,12 +186,12 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		name: "Deposit",
 		function: func(L *lua.LState) int {
 			src := L.ToString(1) // todo 验证输入
-			if vm.CheckPrivilege(l.Contract.info, src) <= 0 {
-				L.Push(lua.LFalse)
+			if vm.CheckPrivilege(l.ctx, l.contract.info, src) <= 0 {
+				L.Push(lua.LString("privilege error"))
 				return 1
 			}
 			value := L.ToNumber(2)
-			rtn := host.Deposit(l.cachePool, l.Contract.Info().Prefix, src, float64(value))
+			rtn := host.Deposit(l.cachePool, l.contract.Info().Prefix, src, float64(value))
 			L.Push(Bool2Lua(rtn))
 			return 1
 		},
@@ -198,7 +203,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		function: func(L *lua.LState) int {
 			des := L.ToString(1)
 			value := L.ToNumber(2)
-			rtn := host.Withdraw(l.cachePool, l.Contract.Info().Prefix, des, float64(value))
+			rtn := host.Withdraw(l.cachePool, l.contract.Info().Prefix, des, float64(value))
 			L.Push(Bool2Lua(rtn))
 			return 1
 		},
@@ -221,31 +226,49 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		name: "Call",
 		function: func(L *lua.LState) int {
 			L.PCount += 1000
-			blockName := L.ToString(1)
+			contractPrefix := L.ToString(1)
 			methodName := L.ToString(2)
-			method, err := l.monitor.GetMethod(blockName, methodName, l.Contract.Info().Publisher)
-
+			method, err := l.monitor.GetMethod(contractPrefix, methodName)
 			if err != nil {
+				fmt.Println("err:", err.Error())
 				L.Push(lua.LString(err.Error()))
 				return 1
 			}
 
-			args := make([]state.Value, 0)
+			//fmt.Print("outer call check:")
+			p := vm.CheckPrivilege(l.ctx, contract.Info(), string(l.contract.Info().Publisher))
+			pri := method.Privilege()
+			switch {
+			case pri == vm.Private && p > 1:
+				fallthrough
+			case pri == vm.Protected && p >= 0:
+				fallthrough
+			case pri == vm.Public:
+				args := make([]state.Value, 0)
 
-			for i := 1; i <= method.InputCount(); i++ {
-				args = append(args, Lua2Core(L.Get(i+2)))
-			}
+				for i := 1; i <= method.InputCount(); i++ {
+					args = append(args, Lua2Core(L.Get(i+2)))
+				}
 
-			rtn, pool, gas, err := l.monitor.Call(l.ctx, l.cachePool, blockName, methodName, args...)
-			l.callerPC += gas
-			if err != nil {
+				ctx := vm.NewContext(l.ctx)
+				ctx.Publisher = l.contract.Info().Publisher
+				ctx.Signers = l.contract.Info().Signers
+
+				rtn, pool, gas, err := l.monitor.Call(ctx, l.cachePool, contractPrefix, methodName, args...)
+				l.callerPC += gas
+				if err != nil {
+					fmt.Println("err:", err.Error())
+					L.Push(lua.LString(err.Error()))
+				}
+				l.cachePool = pool
+				for _, v := range rtn {
+					L.Push(Core2Lua(v))
+				}
+				return len(rtn)
+			default:
 				L.Push(lua.LString(err.Error()))
+				return 1
 			}
-			l.cachePool = pool
-			for _, v := range rtn {
-				L.Push(Core2Lua(v))
-			}
-			return len(rtn)
 		},
 	}
 	l.APIs = append(l.APIs, Call)
@@ -261,18 +284,13 @@ func (l *VM) PC() uint64 {
 	return rtn
 }
 func (l *VM) Restart(contract vm.Contract) error {
-	l.Contract = contract.(*Contract)
-	if err := l.L.DoString(l.Contract.code); err != nil {
+	l.contract = contract.(*Contract)
+	if err := l.L.DoString(l.contract.code); err != nil {
 		return err
 	}
 	return nil
 }
 
-type baseContext struct {
+func (l *VM) Contract() vm.Contract {
+	return l.contract
 }
-
-func (b baseContext) ParentHash() []byte {
-	return []byte{0}
-}
-
-var mBaseContext = &baseContext{}

@@ -1,7 +1,6 @@
 package host
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/iost-official/prototype/core/state"
@@ -18,8 +17,10 @@ func TestTransfer(t *testing.T) {
 		pool.PutHM("iost", "b", state.MakeVFloat(100))
 
 		Transfer(pool, "a", "b", 20)
-		fmt.Println(pool.GetHM("iost", "a"))
-		fmt.Println(pool.GetHM("iost", "b"))
+		aa, _ := pool.GetHM("iost", "a")
+		So(aa.(*state.VFloat).ToFloat64(), ShouldEqual, 80)
+		bb, _ := pool.GetHM("iost", "b")
+		So(bb.(*state.VFloat).ToFloat64(), ShouldEqual, 120)
 
 	})
 }

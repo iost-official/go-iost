@@ -8,7 +8,7 @@ import (
 	"github.com/iost-official/prototype/vm"
 )
 
-// Contract lua智能合约的实现
+// contract lua智能合约的实现
 type Contract struct {
 	info vm.ContractInfo
 	code string
@@ -34,7 +34,7 @@ func (c *Contract) API(apiName string) (vm.Method, error) {
 	}
 	rtn, ok := c.apis[apiName]
 	if !ok {
-		return nil, fmt.Errorf("api %v : not found", apiName)
+		return nil, fmt.Errorf("api %v: not found", apiName)
 	}
 	return &rtn, nil
 }

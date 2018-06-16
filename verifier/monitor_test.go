@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
@@ -39,7 +40,7 @@ end`
 		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
 			code2, sayHi, sayHi)
 		//
-		//guard := monkey.Patch(FindContract, func(prefix string) vm.Contract { return &lc2 })
+		//guard := monkey.Patch(FindContract, func(prefix string) vm.contract { return &lc2 })
 		//defer guard.Unpatch()
 
 		verifier := Verifier{
@@ -84,18 +85,19 @@ end`
 end`, main3)
 
 		//
-		//guard := monkey.Patch(FindContract, func(prefix string) vm.Contract { return &lc2 })
+		//guard := monkey.Patch(FindContract, func(prefix string) vm.contract { return &lc2 })
 		//defer guard.Unpatch()
 
 		txx := tx.NewTx(123, &lc2)
 		txx.Time = 1000000
-		//fmt.Println("a", txx.Contract.Info().Prefix)
+		//fmt.Println("a", txx.contract.Info().Prefix)
 		hash := txx.Hash()
 		prefix := vm.HashToPrefix(hash)
 		//fmt.Println("b", prefix)
-		//txx.Contract.SetPrefix("GmPtEhGJEKH96ieakmfkrXbXiYrZj2xh76XLdnkJxXvi")
+		//txx.contract.SetPrefix("GmPtEhGJEKH96ieakmfkrXbXiYrZj2xh76XLdnkJxXvi")
 
-		tx.TxDbInstance().Add(&txx)
+		tx.TxDbInstance()
+		tx.TxDb.Add(&txx)
 
 		code1 := fmt.Sprintf(`function main()
 	return Call("%v", "sayHi", "bob")
@@ -105,7 +107,7 @@ end`, prefix)
 			code1, main)
 
 		//tx2, _ := tx.TxDbInstance().Get(hash)
-		//fmt.Println(tx2.Contract.Info().Prefix)
+		//fmt.Println(tx2.contract.Info().Prefix)
 		//fmt.Println(prefix)
 
 		verifier := Verifier{
@@ -126,5 +128,46 @@ end`, prefix)
 		So(err, ShouldBeNil)
 		So(gas, ShouldEqual, 1007)
 
+	})
+}
+
+func TestContext(t *testing.T) {
+	Convey("Test of context privilege", t, func() {
+
+		mdb, _ := db.DatabaseFactory("redis")
+		mmdb := state.NewDatabase(mdb)
+		pool := state.NewPool(mmdb)
+
+		pool.PutHM("iost", "payer", state.MakeVFloat(10000))
+		pool.PutHM("iost", "receiver", state.MakeVFloat(10000))
+
+		code1 := `function main()
+	return Call("con2", "pay", "payer")
+end`
+		code2 := `function pay(a)
+			print(Transfer(a, "receiver", 10))
+		end`
+		sayHi := lua.NewMethod(vm.Public, "pay", 1, 1)
+		main := lua.NewMethod(vm.Public, "main", 0, 1)
+
+		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "con1", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("payer")},
+			code1, main)
+
+		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("receiver")},
+			code2, sayHi, sayHi)
+		//
+		//guard := monkey.Patch(FindContract, func(prefix string) vm.contract { return &lc2 })
+		//defer guard.Unpatch()
+
+		verifier := Verifier{
+			vmMonitor: newVMMonitor(),
+		}
+		verifier.StartVM(&lc1)
+		verifier.StartVM(&lc2)
+		_, _, gas, err := verifier.Call(nil, pool, "con1", "main")
+		So(err, ShouldBeNil)
+		So(gas, ShouldEqual, 1013)
+		pb, _ := pool.GetHM("iost", "payer")
+		So(pb.(*state.VFloat).ToFloat64(), ShouldEqual, 9990)
 	})
 }

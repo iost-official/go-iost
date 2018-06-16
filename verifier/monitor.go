@@ -3,6 +3,8 @@ package verifier
 import (
 	"errors"
 
+	"fmt"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
@@ -13,7 +15,7 @@ var ErrForbiddenCall = errors.New("forbidden call")
 
 type vmHolder struct {
 	vm.VM
-	contract vm.Contract
+	//contract vm.contract
 }
 
 type vmMonitor struct {
@@ -30,10 +32,11 @@ func newVMMonitor() vmMonitor {
 
 func (m *vmMonitor) StartVM(contract vm.Contract) vm.VM {
 	if vm, ok := m.vms[contract.Info().Prefix]; ok {
-		return vm
+		return vm.VM
 	}
-
-	return m.startVM(contract)
+	vm := m.startVM(contract)
+	m.vms[contract.Info().Prefix] = vmHolder{vm}
+	return m.vms[contract.Info().Prefix].VM
 }
 
 func (m *vmMonitor) startVM(contract vm.Contract) vm.VM {
@@ -48,7 +51,7 @@ func (m *vmMonitor) startVM(contract vm.Contract) vm.VM {
 		if err != nil {
 			panic(err)
 		}
-		m.vms[contract.Info().Prefix] = vmHolder{&lvm, contract}
+
 		return &lvm
 	}
 	return nil
@@ -56,11 +59,10 @@ func (m *vmMonitor) startVM(contract vm.Contract) vm.VM {
 
 func (m *vmMonitor) RestartVM(contract vm.Contract) vm.VM {
 	if m.hotVM == nil {
-		m.hotVM = &vmHolder{m.startVM(contract), contract}
+		m.hotVM = &vmHolder{m.startVM(contract)}
 		return m.hotVM
 	}
 	m.hotVM.Restart(contract)
-	m.hotVM.contract = contract
 	return m.hotVM
 }
 
@@ -78,10 +80,9 @@ func (m *vmMonitor) Stop() {
 		m.hotVM.Stop()
 		m.hotVM = nil
 	}
-
 }
 
-func (m *vmMonitor) GetMethod(contractPrefix, methodName string, caller vm.IOSTAccount) (vm.Method, error) {
+func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, error) {
 	var contract vm.Contract
 	var err error
 	vmh, ok := m.vms[contractPrefix]
@@ -91,30 +92,20 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string, caller vm.IOSTA
 			return nil, err
 		}
 	} else {
-		contract = vmh.contract
+		contract = vmh.VM.Contract()
 	}
 	rtn, err := contract.API(methodName)
 	if err != nil {
 		return nil, err
 	}
-	p := vm.CheckPrivilege(contract.Info(), string(caller))
-	pri := rtn.Privilege()
-	switch {
-	case pri == vm.Private && p > 1:
-		fallthrough
-	case pri == vm.Protected && p >= 0:
-		fallthrough
-	case pri == vm.Public:
-		return rtn, nil
-	default:
-		return nil, ErrForbiddenCall
-	}
+
+	return rtn, nil
 
 }
 
-func (m *vmMonitor) Call(ctx vm.Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
+func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
 
-	if m.hotVM != nil && contractPrefix == m.hotVM.contract.Info().Prefix {
+	if m.hotVM != nil && contractPrefix == m.hotVM.Contract().Info().Prefix {
 		//fmt.Println(pool.GetHM("iost", "b"))
 		rtn, pool2, err := m.hotVM.Call(ctx, pool, methodName, args...)
 		//fmt.Println(pool2.GetHM("iost", "b"))
@@ -123,7 +114,9 @@ func (m *vmMonitor) Call(ctx vm.Context, pool state.Pool, contractPrefix, method
 		return rtn, pool2, gas, err
 	}
 	holder, ok := m.vms[contractPrefix]
+	//fmt.Println("call contract:", contractPrefix)
 	if !ok {
+		//fmt.Println("error vm not start up")
 		contract, err := FindContract(contractPrefix)
 		if err != nil {
 			return nil, nil, 0, err
@@ -142,12 +135,12 @@ func (m *vmMonitor) Call(ctx vm.Context, pool state.Pool, contractPrefix, method
 
 // FindContract  find contract from tx database
 func FindContract(contractPrefix string) (vm.Contract, error) {
+	fmt.Println("error vm not start up:", contractPrefix)
 	hash := vm.PrefixToHash(contractPrefix)
 
 	txdb := tx.TxDbInstance()
 	txx, err := txdb.Get(hash)
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 	//fmt.Println("found tx hash: ", common.Base58Encode(txx.Hash()))

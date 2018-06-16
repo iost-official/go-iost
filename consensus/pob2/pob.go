@@ -334,8 +334,8 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	//return &blk
 	spool1 := pool.Copy()
 
-	var vc blockcache.VerifyContext
-	vc.VParentHash = lastBlk.Head.Hash()
+	vc := &vm.Context{}
+	vc.ParentHash = lastBlk.Head.Hash()
 
 	//TODO Content大小控制
 	var tx TransactionsList

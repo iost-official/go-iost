@@ -17,9 +17,9 @@ var (
 	// ErrIllegalCode 代码中包含\\0字符
 	ErrIllegalCode = errors.New("parse failed: Text contains character \\0")
 	// 代码没指定输入参数数量
-	ErrNoParamCnt = errors.New("parse failed: param count not given \\0")
+	ErrNoParamCnt = errors.New("parse failed: param count not given")
 	// 代码没指定返回参数数量
-	ErrNoRtnCnt = errors.New("parse failed: return count not given \\0")
+	ErrNoRtnCnt = errors.New("parse failed: return count not given")
 )
 
 // DocCommentParser 装入text之后调用parse即可得到contract
@@ -52,14 +52,41 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 	content := p.text
 
-	re := regexp.MustCompile("--- .*\n(-- .*\n)*") //匹配全部注释代码
+	re := regexp.MustCompile("--- .*\n(-- .*\n)*function(.*\n)*?end--f") //匹配代码块
 
 	hasMain := false
 	var contract Contract
 
 	var buffer bytes.Buffer
 
+	// 匹配关键字
+	gasRe := regexp.MustCompile("@gas_limit (\\d+)")
+	priceRe := regexp.MustCompile("@gas_price ([+-]?([0-9]*[.])?[0-9]+)")
+	publisherRe := regexp.MustCompile("@publisher ([a-zA-Z1-9]+)")
+
+	gas0, ok := optionalMatch1(gasRe, content)
+	if !ok {
+		return nil, errors.New("gas undefined")
+	}
+	gas, _ := strconv.ParseInt(gas0, 10, 64)
+
+	price0, ok := optionalMatch1(priceRe, content)
+	if !ok {
+		return nil, errors.New("price undefined")
+	}
+	price, _ := strconv.ParseFloat(price0, 64)
+	if p.Debug {
+		match, ok := optionalMatch1(publisherRe, content)
+		if !ok {
+			return nil, errors.New("publisher undefined")
+		}
+		contract.info.Publisher = vm.IOSTAccount(match)
+	}
+
+	contract.apis = make(map[string]Method)
+
 	for _, submatches := range re.FindAllStringSubmatchIndex(content, -1) {
+
 		/*
 			--- <functionName>  summary
 			-- some description
@@ -70,7 +97,13 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 			-- @param_cnt <paramCnt>
 			-- @return_cnt <returnCnt>
 		*/
-		funcName := strings.Split(content[submatches[0]:submatches[1]], " ")[1]
+
+		funcNameRe := regexp.MustCompile("---[ \t\n]*([a-zA-Z0-9_]+)")
+		funcNameR := funcNameRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
+		if len(funcNameR) < 1 {
+			return nil, errors.New("syntax error, function name not found")
+		}
+		funcName := funcNameR[1]
 
 		inputCountRe := regexp.MustCompile("@param_cnt (\\d+)")
 		rtnCountRe := regexp.MustCompile("@return_cnt (\\d+)")
@@ -81,11 +114,11 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 		ics := inputCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
 		if len(ics) < 1 {
-			return nil, ErrNoParamCnt
+			return nil, fmt.Errorf("function %v: input count not given", funcName)
 		}
 		rcs := rtnCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
 		if len(rcs) < 1 {
-			return nil, ErrNoRtnCnt
+			return nil, fmt.Errorf("function %v: return count not given", funcName)
 		}
 		ps := privRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
 		if len(ps) < 1 {
@@ -104,39 +137,27 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 
 		}
 
-		method := NewMethod(priv, funcName, inputCount, rtnCount) // TODO 从代码中获取权限信息
+		method := NewMethod(priv, funcName, inputCount, rtnCount)
 
 		//匹配代码部分
 
-		endRe := regexp.MustCompile("end")
-		endPos := endRe.FindStringIndex(content[submatches[1]:])
+		//endRe := regexp.MustCompile("^end--f")
+		//endPos := endRe.FindStringIndex(content[submatches[1]:])
 
 		//code part: content[submatches[1]:][:endPos[1]
-		contract.apis = make(map[string]Method)
+
+		contract.info.Language = "lua"
+		contract.info.GasLimit = gas
+		contract.info.Price = price
 		if funcName == "main" {
 			hasMain = true
-			// 匹配关键字
-			gasRe := regexp.MustCompile("@gas_limit (\\d+)")
-			priceRe := regexp.MustCompile("@gas_price ([+-]?([0-9]*[.])?[0-9]+)")
-			publisherRe := regexp.MustCompile("@publisher ([a-zA-Z1-9]+)")
-
-			gas, _ := strconv.ParseInt(gasRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 10, 64)
-			price, _ := strconv.ParseFloat(priceRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 64)
-			if p.Debug {
-				match := publisherRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
-				fmt.Println("compile publisher:", match[1])
-				contract.info.Publisher = vm.IOSTAccount(match[1])
-			}
-			contract.info.Language = "lua"
-			contract.info.GasLimit = gas
-			contract.info.Price = price
 			contract.main = method
 			//contract.code = content[submatches[1]:][:endPos[1]]
 		} else {
 
 			contract.apis[funcName] = method
 		}
-		buffer.WriteString(content[submatches[1]:][:endPos[1]])
+		buffer.WriteString(content[submatches[0]:submatches[1]])
 		buffer.WriteString("\n")
 
 	}
@@ -147,4 +168,15 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 	contract.code = buffer.String()
 	return &contract, nil
 
+}
+
+func optionalMatch1(re *regexp.Regexp, s string) (sub string, ok bool) {
+	ss := re.FindStringSubmatch(s)
+	if len(ss) < 1 {
+		return "", false
+	} else {
+		sub = ss[1]
+		ok = true
+		return
+	}
 }

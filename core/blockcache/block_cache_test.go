@@ -13,8 +13,8 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 
-	. "github.com/smartystreets/goconvey/convey"
 	"github.com/iost-official/prototype/core/block"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestBlockCachePoW(t *testing.T) {
@@ -272,7 +272,7 @@ func TestBlockCachePoB(t *testing.T) {
 				bc.Add(&b4, verifier)
 				So(len(bc.singleBlockRoot.children), ShouldEqual, 2)
 				bc.Add(&b1, verifier)
-				bc.AddSingles(verifier)
+				//bc.AddSingles(verifier)
 				So(len(bc.singleBlockRoot.children), ShouldEqual, 0)
 				So(ans, ShouldEqual, 1)
 			})
