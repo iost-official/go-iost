@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 
 	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/vm"
 )
 
@@ -53,6 +54,15 @@ func (sp *ServiPool) BestUser() *Servi {
 var StdServiPool = ServiPool{}
 
 func (sp *ServiPool) Flush(headhash []byte) {
+	if ldb == nil {
+		var err error
+
+		ldb, err = db.NewLDBDatabase("servi_db.ldb", 0, 0)
+		if err != nil {
+			log.Log.E("flush db", err)
+		}
+	}
+
 	var sbuf []byte
 	for _, s := range sp.hm {
 		var buf = make([]byte, 8)
@@ -67,6 +77,14 @@ func (sp *ServiPool) Flush(headhash []byte) {
 }
 
 func (sp *ServiPool) Restore(headhash []byte) error {
+	if ldb == nil {
+		var err error
+
+		ldb, err = db.NewLDBDatabase("servi_db.ldb", 0, 0)
+		if err != nil {
+			log.Log.E("flush db", err)
+		}
+	}
 	sbuf, err := ldb.Get(headhash)
 	if err != nil {
 		return err
@@ -87,11 +105,6 @@ func (sp *ServiPool) Restore(headhash []byte) error {
 var ldb db.Database
 
 func init() {
-	var err error
 
-	ldb, err = db.NewLDBDatabase("servi_db.ldb", 0, 0)
-	if err != nil {
-		panic(err)
-	}
 	StdServiPool.hm = make(map[string]*Servi)
 }
