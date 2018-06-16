@@ -279,24 +279,6 @@
 			"revisionTime": "2017-12-18T00:50:42Z"
 		},
 		{
-			"checksumSHA1": "qW/BEoFpiQMx88HJY3MZTZCgW7I=",
-			"path": "github.com/multiformats/go-multiaddr",
-			"revision": "123a717755e0559ec8fda308019cd24e0a37bb07",
-			"revisionTime": "2018-01-20T04:50:56Z"
-		},
-		{
-			"checksumSHA1": "vO83dis1hXNvFDLimQh+EzRwaVY=",
-			"path": "github.com/multiformats/go-multiaddr-net",
-			"revision": "97d80565f68c5df715e6ba59c2f6a03d1fc33aaf",
-			"revisionTime": "2018-03-08T21:36:10Z"
-		},
-		{
-			"checksumSHA1": "4bqIfu2x/JV7DsCHtZa4irFt22w=",
-			"path": "github.com/multiformats/go-multihash",
-			"revision": "c5fd85e75c6c9888b604e8f94459631bc626dc07",
-			"revisionTime": "2018-05-19T07:26:12Z"
-		},
-		{
 			"checksumSHA1": "ELL+JyJIjcZq9Ss+o43mwPmYz98=",
 			"path": "github.com/opentracing/opentracing-go",
 			"revision": "6c572c00d1830223701e155de97408483dfcd14a",
