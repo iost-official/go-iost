@@ -53,7 +53,7 @@ def Sendmoney():
 	lto=[]
 	for i in range(0,len(lines),2):
 		lto.append(lines[i][:-1])
-	constructAll(lto,10000000000)
+	constructAll(lto,100000)
 	f1=open(HOME+"/.ssh/test_secp","w")
 	f1.write(genesisSeckey)
 	f1.close()
