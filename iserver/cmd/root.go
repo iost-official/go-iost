@@ -31,6 +31,7 @@ import (
 	"github.com/iost-official/prototype/metrics"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/rpc"
+	"github.com/iost-official/prototype/verifier"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -125,16 +126,25 @@ var rootCmd = &cobra.Command{
 			var blk *block.Block
 			for i := blockNum; i < bcLen; i++ {
 				blk = blockChain.GetBlockByNumber(i)
-				newPool, err := blockcache.StdBlockVerifier(blk, state.StdPool)
-				if err != nil {
-					log.Log.E("Update StatePool failed, stop the program! err:%v", err)
-					os.Exit(1)
+				if i == 0 {
+					newPool, err := verifier.ParseGenesis(blk.Content[0].Contract, state.StdPool)
+					if err != nil {
+						log.Log.E("Update StatePool failed, stop the program! err:%v", err)
+						os.Exit(1)
+					}
+					newPool.Flush()
+				} else {
+					newPool, err := blockcache.StdBlockVerifier(blk, state.StdPool)
+					if err != nil {
+						log.Log.E("Update StatePool failed, stop the program! err:%v", err)
+						os.Exit(1)
+					}
+					newPool.Flush()
 				}
-				newPool.Flush()
 			}
 			if bcLen > 0 {
 				rds.Put([]byte("BlockNum"), []byte(strconv.FormatUint(bcLen-1, 10)))
-				rds.Put([]byte("BlockNum"), []byte(blk.Hash()))
+				rds.Put([]byte("BlockHash"), []byte(blk.Hash()))
 			}
 		}
 		//初始化网络
