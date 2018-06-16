@@ -54,7 +54,7 @@ func (sp *ServiPool) User(iostAccount vm.IOSTAccount) *Servi {
 	if len(sp.btu) <= 7 {
 		s = sp.userBtu(iostAccount)
 	} else {
-		s = sp.addHm(iostAccount)
+		s = sp.userHm(iostAccount)
 	}
 
 	return s
@@ -70,8 +70,8 @@ func (sp *ServiPool) userBtu(iostAccount vm.IOSTAccount) *Servi {
 	}
 }
 
-//addHm 添加普通账户
-func (sp *ServiPool) addHm(iostAccount vm.IOSTAccount) *Servi {
+//userHm 添加普通账户
+func (sp *ServiPool) userHm(iostAccount vm.IOSTAccount) *Servi {
 
 	if servi, ok := sp.hm[string(iostAccount)]; ok {
 		return servi
