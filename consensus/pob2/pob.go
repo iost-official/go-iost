@@ -237,9 +237,6 @@ func (p *PoB) blockLoop() {
 			if err == nil {
 				p.log.I("Link it onto cached chain")
 				p.blockCache.SendOnBlock(&blk)
-
-				// add servi
-				Data.AddServi(blk.Content)
 				receivedBlockCount.Inc()
 			} else {
 				p.log.I("Error: %v", err)

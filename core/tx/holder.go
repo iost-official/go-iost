@@ -9,7 +9,7 @@ import (
 type Holder struct {
 	self  account.Account
 	pool  state.Pool
-	spool ServiPool
+	Spool ServiPool
 }
 
 func (h *Holder) Self() account.Account {
@@ -22,9 +22,9 @@ func (h *Holder) AddServi(tx []Tx) {
 		if len(t.Recorder.Pubkey) == 0 {
 			continue
 		}
-		servi := h.spool.User(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey))
+		servi := h.Spool.User(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey))
 		if servi != nil {
-			servi.Incr(1)
+			servi.IncrBehavior(1)
 		}
 	}
 }
@@ -34,7 +34,7 @@ func (h *Holder) ClearServi(tx []*Tx) {
 		if len(t.Recorder.Pubkey) == 0 {
 			continue
 		}
-		servi := h.spool.User(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey))
+		servi := h.Spool.User(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey))
 		if servi != nil {
 			servi.Clear()
 		}
