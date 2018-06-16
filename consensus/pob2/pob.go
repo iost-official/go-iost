@@ -11,7 +11,6 @@ import (
 
 	"errors"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/iost-official/prototype/common"
