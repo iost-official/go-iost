@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"net/http"
+	"time"
 
 	"fmt"
 
@@ -28,6 +29,12 @@ func initNetConf() *network.NetConfig {
 	return conf
 }
 
+type ipInfo struct {
+	IP           string `json:"ip"`
+	RegisterTime int64  `json:"register_time"`
+	ConnTime     int64  `json:"conn_time"`
+}
+
 func dumpNodeServer(baseNet *network.BaseNetwork) {
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("pong"))
@@ -42,10 +49,22 @@ func dumpNodeServer(baseNet *network.BaseNetwork) {
 				"message": fmt.Sprintf("error=%v", err),
 			}
 		} else {
+			ipInfos := make([]*ipInfo, 0, len(ips))
+			for _, ip := range ips {
+				ipInfo := &ipInfo{
+					IP:           ip,
+					RegisterTime: 0,
+				}
+				if regTime, ok := baseNet.NodeAddedTime.Load(ip); ok {
+					ipInfo.RegisterTime = regTime.(int64)
+				}
+				ipInfo.ConnTime = time.Now().Unix() - ipInfo.RegisterTime
+				ipInfos = append(ipInfos, ipInfo)
+			}
 			resp = map[string]interface{}{
 				"status":  0,
 				"message": "success",
-				"ips":     ips,
+				"ips":     ipInfos,
 			}
 		}
 
@@ -53,6 +72,7 @@ func dumpNodeServer(baseNet *network.BaseNetwork) {
 		if err != nil {
 			fmt.Println("json marshal error:", err)
 		}
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Write(b)
 	})
 	go http.ListenAndServe(":30306", nil)
