@@ -70,7 +70,7 @@ func (l *Logger) Crash(s string, attr ...interface{}) {
 	l.logFile.Write(debug.Stack())
 }
 
-const FmtTime = "2006-01-02_15:04:05.000"
+const FmtTime = "2006-01-02_15:04:05.000-0700"
 
 func (l *Logger) handleFiles() {
 	now := time.Now()
@@ -102,9 +102,9 @@ func clearOldLogs(now time.Time) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			ts := now.Format(FmtTime)
-			now2, _ := time.Parse(FmtTime, ts)
-			if now2.Unix()-mtime.Unix() > ExpireTime {
+			//ts := now.Format(FmtTime)
+			//now2, _ := time.Parse(FmtTime, ts)
+			if now.Unix()-mtime.Unix() > ExpireTime {
 				err := os.Remove("logs/" + f.Name())
 				if err != nil {
 					fmt.Println(err)

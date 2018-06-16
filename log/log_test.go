@@ -23,7 +23,6 @@ func TestLogger(t *testing.T) {
 	//		time.Sleep(3 * time.Second)
 	//	}
 	//	So(true, ShouldBeTrue)
-	//
 	//})
 }
 
