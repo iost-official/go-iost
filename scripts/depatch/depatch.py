@@ -94,6 +94,9 @@ def sendonetx(_to,money):
 	return "SUCCESS"
 
 app = Flask(__name__)
+@app.route('/')
+def indexpage():
+	return "hello iost"
 @app.route('/givemoney',methods=['GET',])
 def givemoney():
 	print("givemoney begin")
