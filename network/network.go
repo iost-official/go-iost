@@ -351,7 +351,9 @@ func (bn *BaseNetwork) putNode(addrs string) {
 				continue
 			}
 			bn.nodeTable.Put([]byte(node.Addr()), common.IntToBytes(NodeLiveCycle))
-			bn.NodeAddedTime.Store(node.Addr(), time.Now().Unix())
+			if _, exist := bn.NodeAddedTime.Load(node.Addr()); !exist {
+				bn.NodeAddedTime.Store(node.Addr(), time.Now().Unix())
+			}
 		}
 	}
 	bn.findNeighbours()
