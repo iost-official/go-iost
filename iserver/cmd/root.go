@@ -17,11 +17,13 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/consensus"
 	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/blockcache"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
@@ -29,14 +31,15 @@ import (
 	"github.com/iost-official/prototype/metrics"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/rpc"
+	"github.com/iost-official/prototype/verifier"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/iost-official/prototype/consensus/pob2"
+	"github.com/iost-official/prototype/core/txpool"
 	"os/signal"
 	"syscall"
-	"github.com/iost-official/prototype/core/txpool"
-	"github.com/iost-official/prototype/consensus/pob2"
 )
 
 var cfgFile string
@@ -91,6 +94,59 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if state.StdPool == nil {
+			log.Log.E("StdPool initialization failed, stop the program!")
+			os.Exit(1)
+		}
+
+		blockChain, err := block.Instance()
+		if err != nil {
+			log.Log.E("NewBlockChain failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+		//检查db和redis数据是否合法
+		rds, _ := db.DatabaseFactory("redis")
+		bn, _ := rds.Get([]byte("BlockNum"))
+		var blockNum uint64
+		blockNum = 0
+		if bn != nil {
+			blockNum, _ = strconv.ParseUint(string(bn), 10, 64)
+			blockNum = blockNum + 1
+		}
+		log.Log.I("BlockNum on Redis: %v", blockNum)
+		bcLen := blockChain.Length()
+		if bcLen < blockNum {
+			blockNum = 0
+			rds.Delete([]byte("iost"))
+			rds.Delete([]byte("BlockNum"))
+		}
+		log.Log.I("BlockNum on Redis: %v", blockNum)
+		log.Log.I("BCLen: %v", bcLen)
+		if bcLen-1 >= blockNum {
+			var blk *block.Block
+			for i := blockNum; i < bcLen; i++ {
+				blk = blockChain.GetBlockByNumber(i)
+				if i == 0 {
+					newPool, err := verifier.ParseGenesis(blk.Content[0].Contract, state.StdPool)
+					if err != nil {
+						log.Log.E("Update StatePool failed, stop the program! err:%v", err)
+						os.Exit(1)
+					}
+					newPool.Flush()
+				} else {
+					newPool, err := blockcache.StdBlockVerifier(blk, state.StdPool)
+					if err != nil {
+						log.Log.E("Update StatePool failed, stop the program! err:%v", err)
+						os.Exit(1)
+					}
+					newPool.Flush()
+				}
+			}
+			if bcLen > 0 {
+				rds.Put([]byte("BlockNum"), []byte(strconv.FormatUint(bcLen-1, 10)))
+				rds.Put([]byte("BlockHash"), []byte(blk.Hash()))
+			}
+		}
 		//初始化网络
 		log.Log.I("1.Start the P2P networks")
 
@@ -141,7 +197,6 @@ var rootCmd = &cobra.Command{
 		serverExit = append(serverExit, net)
 
 		//启动共识
-		log.Log.I("2.Start Consensus Services")
 		accSecKey := viper.GetString("account.sec-key")
 		//fmt.Printf("account.sec-key:  %v\n", accSecKey)
 
@@ -157,20 +212,9 @@ var rootCmd = &cobra.Command{
 		//fmt.Printf("account SecKey = %v\n", common.Base58Encode(acc.Seckey))
 		log.Log.I("account ID = %v", acc.ID)
 
-		if state.StdPool == nil {
-			log.Log.E("StdPool initialization failed, stop the program!")
-			os.Exit(1)
-		}
-
-		blockChain, err := block.Instance()
-		if err != nil {
-			log.Log.E("NewBlockChain failed, stop the program! err:%v", err)
-			os.Exit(1)
-		}
-		
 		//HowHsu_Debug
-		log.Log.I("blockchain db length:%d\n",blockChain.Length())
-	
+		log.Log.I("blockchain db length:%d\n", blockChain.Length())
+
 		witnessList := viper.GetStringSlice("consensus.witness-list")
 
 		for i, witness := range witnessList {

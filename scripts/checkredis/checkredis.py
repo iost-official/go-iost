@@ -4,6 +4,7 @@
 import subprocess
 import os
 import time
+import json
 
 server_addr = [["Tokyo", "18.179.143.193","1"],
 ["London", "52.56.118.10", "2"],
@@ -19,16 +20,24 @@ balance_map = {}
 bn_map = {}
 while True:
     min_bn = -1
+    obj = []
     for item in server_addr:
-        obj = subprocess.Popen("curl -s --connect-timeout 3 -XPOST {}:{}/scripts -d \"cmd=checkredis.sh\"".format(item[1], 30310), 
-            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        rtn, _ =obj.communicate()
-        lines = rtn.split("\n")
+        obj.append(subprocess.Popen("curl -s --connect-timeout 3 -XPOST {}:{}/scripts -d \"cmd=checkredis.sh\"".format(item[1], 30310), 
+            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
+    for k in range(len(server_addr)):
+        item  = server_addr[k]
+        rtn, _ =obj[k].communicate()
+        lines = rtn.split("\n")[:-1]
+        if len(lines)%2 ==1:
+            lines[1] += "\n"+lines[2]
+            lines[2:-1] = lines[3:]
+            lines = lines[:-1]
         if len(lines) < 2:
             print("Error: %s ", item[0])
             continue
+
         bn = int(lines[0])
-        print item[0], bn
+        print item[0], bn, len(lines)/2 -1
 
         if not bn in bn_map:
             bn_map[bn] = {}
@@ -45,9 +54,9 @@ while True:
         if not bh in balance_map[bn]:
             balance_map[bn][bh] = {}
 
-        #print lines[2:]
-        for i in range(2, len(lines)-1, 2):
+        for i in range(2, len(lines), 2):
             key, val = lines[i:i+2]
+            #print key, val
             if not key in balance_map[bn][bh]:
                 balance_map[bn][bh][key] = {}
             if not val in balance_map[bn][bh][key]:
@@ -55,10 +64,10 @@ while True:
             balance_map[bn][bh][key][val].append(item[2])
     
     boo = True
+    del_map = []
     for bn in balance_map:
         if bn < min_bn:
-            balance_map.pop(bn)
-            bn_map.pop(bn)
+            del_map.append(bn)
             continue
         #print balance_map[bn]
         if len(balance_map[bn]) >1:
@@ -68,9 +77,14 @@ while True:
             for key in balance_map[bn][bh]:
                 if len(balance_map[bn][bh][key])>1:
                     boo = False
-                    print(key, balance_map[bn][bh][key])
+                    print bn, key
+                    print balance_map[bn][bh][key]
+    for bn in del_map:
+        bn_map.pop(bn)
+        balance_map.pop(bn)
+    print(len(balance_map))
     if boo:
         print "OK!"
     print 
 
-    time.sleep(6)
+    time.sleep(2)
