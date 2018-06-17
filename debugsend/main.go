@@ -19,6 +19,7 @@ import (
 var server string = "127.0.0.1"
 var acc string = "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 var servers []string = []string{
+	"127.0.0.1",
 	"18.179.143.193",
 	"52.56.118.10",
 	"13.228.206.188",
