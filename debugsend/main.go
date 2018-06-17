@@ -61,8 +61,9 @@ func main() {
 	serverId := flag.Int("server", 0, "server_id")
 	accId := flag.Int("account", 0, "account_id")
 	money := flag.Int("money", 1, "money")
+	nums := flag.Int("routines", 10, "number of routines")
 	flag.Parse()
-	if serverId == nil || accId == nil || money == nil {
+	if serverId == nil || accId == nil || money == nil || nums == nil {
 		return
 	}
 	server = servers[*serverId] + ":30303"
@@ -94,7 +95,7 @@ end--f
 	}
 	var wg sync.WaitGroup
 	wg.Add(10)
-	for i := 0; i < 10; i++ {
+	for i := 0; i < *nums; i++ {
 		go send(&wg, mtx, acc, int64(i)*int64(10000000000))
 	}
 	wg.Wait()
