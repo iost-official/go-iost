@@ -271,6 +271,7 @@ func (p *PoB) blockLoop() {
 func (p *PoB) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
 	var nextSchedule int64
+	nextSchedule = 0
 	p.log.I("Start to schedule")
 	for {
 		select {
@@ -309,12 +310,12 @@ func (p *PoB) scheduleLoop() {
 				p.log.I("Broadcasted block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 			}
 			nextSchedule = timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
-			//time.Sleep(time.Second * time.Duration(nextSchedule))
 		}
 	}
 }
 
 func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Block {
+	limitTime := time.NewTicker(((SlotLength/3 - 1) + 1) * time.Second)
 	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
@@ -339,19 +340,24 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	//TODO Content大小控制
 	var tx TransactionsList
 	if txpool.TxPoolS != nil {
+		p.log.I("PendingTransactions Begin...")
 		tx = txpool.TxPoolS.PendingTransactions()
+		p.log.I("PendingTransactions End.")
 	}
 
 	if len(tx) != 0 {
-
 		for _, t := range tx {
-
-			if len(blk.Content) >= TxPerBlk {
+			select {
+			case <-limitTime.C:
 				break
-			}
+			default:
+				if len(blk.Content) >= TxPerBlk {
+					break
+				}
+				if err := blockcache.StdCacheVerifier(t, spool1, vc); err == nil {
+					blk.Content = append(blk.Content, *t)
 
-			if err := blockcache.StdCacheVerifier(t, spool1, vc); err == nil {
-				blk.Content = append(blk.Content, *t)
+				}
 			}
 		}
 	}
