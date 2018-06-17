@@ -11,10 +11,30 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"google.golang.org/grpc"
+	"sync"
 )
 
 var server string = "127.0.0.1:30303"
 
+func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64) {
+	defer wg.Done()
+	for i := startNonce; i != -1; i++ {
+		mtx.Nonce = i
+		fmt.Println(mtx.Nonce)
+		stx, err := tx.SignTx(mtx, acc)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		err = sendTx(&stx)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+	}
+	return
+}
 func main() {
 	rawCode := `
 --- main 合约主入口
@@ -41,21 +61,13 @@ end--f
 		fmt.Println(err.Error())
 		return
 	}
-	for mtx.Nonce != 0 {
-		mtx.Nonce++
-		fmt.Println(mtx.Nonce)
-		stx, err := tx.SignTx(mtx, acc)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-
-		err = sendTx(&stx)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
+	var wg sync.WaitGroup
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		go send(&wg, mtx, acc, int64(i)*int64(10000000000))
 	}
+	wg.Wait()
+	fmt.Println("main")
 }
 
 func sendTx(stx *tx.Tx) error {
