@@ -50,7 +50,7 @@ end--f
 			return
 		}
 
-		err = sendTx(stx)
+		err = sendTx(&stx)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -58,7 +58,7 @@ end--f
 	}
 }
 
-func sendTx(stx tx.Tx) error {
+func sendTx(stx *tx.Tx) error {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
 		return err
