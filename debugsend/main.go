@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/core/tx"
@@ -11,10 +12,30 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"google.golang.org/grpc"
+	"strconv"
 	"sync"
 )
 
-var server string = "127.0.0.1:30303"
+var server string = "127.0.0.1"
+var acc string = "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
+var servers []string = []string{
+	"18.179.143.193",
+	"52.56.118.10",
+	"13.228.206.188",
+	"13.232.96.221",
+	"18.184.239.232",
+	"13.124.172.86",
+	"52.60.163.60",
+}
+var accounts []string = []string{
+	"2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT",
+	"tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU",
+	"s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB",
+	"22zr9ows3qndmAjnkiPFex26taATEaEfjGkatVCr5akSU",
+	"wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG",
+	"oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU",
+	"28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym",
+}
 
 func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64) {
 	defer wg.Done()
@@ -36,6 +57,15 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64) 
 	return
 }
 func main() {
+	serverId := flag.Int("server", 0, "server_id")
+	accId := flag.Int("account", 0, "account_id")
+	money := flag.Int("money", 1, "money")
+	flag.Parse()
+	if serverId == nil || accId == nil || money == nil {
+		return
+	}
+	server = servers[*serverId] + ":30303"
+	acc = accounts[*accId]
 	rawCode := `
 --- main 合约主入口
 -- server1转账server2
@@ -44,7 +74,7 @@ func main() {
 -- @param_cnt 0
 -- @return_cnt 0
 function main()
-	Transfer("2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K",0.5)
+	Transfer("` + acc + `","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K",` + strconv.Itoa(*money) + `)
 end--f
 `
 	var contract vm.Contract
