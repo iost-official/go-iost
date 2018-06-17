@@ -349,9 +349,11 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		for _, t := range tx {
 			select {
 			case <-limitTime.C:
+				p.log.I("Gen Block Time Limit.")
 				break
 			default:
 				if len(blk.Content) >= TxPerBlk {
+					p.log.I("Gen Block Tx Number Limit.")
 					break
 				}
 				if err := blockcache.StdCacheVerifier(t, spool1, vc); err == nil {
