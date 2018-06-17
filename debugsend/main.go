@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"time"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/iwallet/cmd"
@@ -15,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"strconv"
 	"sync"
+	"time"
 )
 
 var server string = "127.0.0.1"
@@ -44,7 +44,7 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64) 
 	for i := startNonce; i != -1; i++ {
 		mtx.Nonce = i
 		fmt.Println(mtx.Nonce)
-		mtx.Time=time.Now().UnixNano()
+		mtx.Time = time.Now().UnixNano()
 		stx, err := tx.SignTx(mtx, acc)
 		if err != nil {
 			fmt.Println(err.Error())
