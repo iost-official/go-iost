@@ -343,6 +343,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		p.log.I("PendingTransactions Begin...")
 		tx = txpool.TxPoolS.PendingTransactions()
 		p.log.I("PendingTransactions End.")
+		p.log.I("PendingTransactions Size: %v.", txpool.TxPoolS.PendingTransactionNum())
 	}
 
 	if len(tx) != 0 {
