@@ -155,13 +155,14 @@ func (sp *ServiPool) Flush() {
 
 }
 
+// updateBtu 更新btu
 func (sp *ServiPool) updateBtu() {
 
 	for k, v := range sp.hm {
 		for k1,v1:=range sp.btu{
 			if v.Total() > v1.Total(){
 				sp.delBtu(vm.IOSTAccount(k1))
-				sp.userBtu()
+				sp.addBtu(vm.IOSTAccount(k), v)
 			}
 		}
 	}
