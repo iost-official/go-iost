@@ -29,15 +29,44 @@ type VM struct {
 	contract  *Contract
 	callerPC  uint64
 	ctx       *vm.Context
+	isInit    bool
+	initGas   uint64
 }
 
 func (l *VM) Start() error {
-
 	if err := l.L.DoString(l.contract.code); err != nil {
 		return err
 	}
+	var err error
+	func() {
+		if l.isInit {
+			err = nil
+			return
+		}
+		initFn := l.L.GetGlobal("init")
+		if initFn.Type() != lua.LTFunction {
+			err = nil
+			l.isInit = true
+			l.initGas = 0
+			return
+		}
+		l.L.CallByParam(lua.P{
+			Fn:      initFn,
+			NRet:    0,
+			Protect: false,
+		})
 
-	return nil
+		l.isInit = true
+		l.initGas = l.PC()
+
+		defer func() {
+			if err0 := recover(); err0 != nil {
+				err = err0.(error)
+			}
+		}()
+	}()
+
+	return err
 }
 func (l *VM) Stop() {
 	l.L.Close()
@@ -47,7 +76,7 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 	if pool != nil {
 		l.cachePool = pool
 	} else {
-		panic("input pool is nill")
+		panic("input pool is nil")
 	}
 
 	//fmt.Print("1 ")
@@ -122,6 +151,7 @@ func (l *VM) Call(ctx *vm.Context, pool state.Pool, methodName string, args ...s
 	return l.call(pool, methodName, args...)
 }
 func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
+	l.isInit = false
 	l.ctx = vm.BaseContext()
 	var ok bool
 	l.contract, ok = contract.(*Contract)
@@ -138,6 +168,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Put = api{
 		name: "Put",
 		function: func(L *lua.LState) int {
+			if l.isInit == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
 			k := L.ToString(1)
 			key := state.Key(l.contract.Info().Prefix + k)
 			v := L.Get(2)
@@ -162,6 +196,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Get = api{
 		name: "Get",
 		function: func(L *lua.LState) int {
+			if l.isInit == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
 			k := L.ToString(1)
 			key := state.Key(l.contract.Info().Prefix + k)
 			v, err := host.Get(l.cachePool, key)
@@ -179,6 +217,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Transfer = api{
 		name: "Transfer",
 		function: func(L *lua.LState) int {
+			if l.isInit == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
 			src := L.ToString(1) // todo 验证输入
 			//fmt.Print("transfer call check")
 			if vm.CheckPrivilege(l.ctx, l.contract.info, src) <= 0 {
@@ -197,6 +239,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Deposit = api{
 		name: "Deposit",
 		function: func(L *lua.LState) int {
+			if l.isInit == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
 			src := L.ToString(1) // todo 验证输入
 			if vm.CheckPrivilege(l.ctx, l.contract.info, src) <= 0 {
 				L.Push(lua.LString("privilege error"))
@@ -213,6 +259,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Withdraw = api{
 		name: "Withdraw",
 		function: func(L *lua.LState) int {
+			if l.isInit == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
 			des := L.ToString(1)
 			value := L.ToNumber(2)
 			rtn := host.Withdraw(l.cachePool, l.contract.Info().Prefix, des, float64(value))
@@ -225,6 +275,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Random = api{
 		name: "Random",
 		function: func(L *lua.LState) int {
+			if l.isInit == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
 			pro := L.ToNumber(1)
 			prof := float64(pro)
 			rtn := host.RandomByParentHash(l.ctx, prof)
@@ -237,6 +291,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Call = api{
 		name: "Call",
 		function: func(L *lua.LState) int {
+			if l.isInit == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
 			L.PCount += 1000
 			contractPrefix := L.ToString(1)
 			methodName := L.ToString(2)
@@ -297,10 +355,7 @@ func (l *VM) PC() uint64 {
 }
 func (l *VM) Restart(contract vm.Contract) error {
 	l.contract = contract.(*Contract)
-	if err := l.L.DoString(l.contract.code); err != nil {
-		return err
-	}
-	return nil
+	return l.Start()
 }
 
 func (l *VM) Contract() vm.Contract {
