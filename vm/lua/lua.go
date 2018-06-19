@@ -96,8 +96,11 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 	//fmt.Print("3 ")
 	//fmt.Println(l.cachePool.GetHM("iost", "b"))
 
-	if err != nil || errCrash != nil {
+	if err != nil {
 		return nil, pool, err
+	}
+	if errCrash != nil {
+		return nil, pool, errCrash
 	}
 
 	rtnValue := make([]state.Value, 0, method.outputCount)
