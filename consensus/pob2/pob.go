@@ -346,15 +346,16 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	}
 
 	if len(tx) != 0 {
+		ForEnd:
 		for _, t := range tx {
 			select {
 			case <-limitTime.C:
 				p.log.I("Gen Block Time Limit.")
-				break
+				break ForEnd
 			default:
 				if len(blk.Content) >= TxPerBlk {
 					p.log.I("Gen Block Tx Number Limit.")
-					break
+					break ForEnd
 				}
 				if err := blockcache.StdCacheVerifier(t, spool1, vc); err == nil {
 					blk.Content = append(blk.Content, *t)
