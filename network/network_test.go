@@ -50,14 +50,14 @@ func TestBaseNetwork_recentSentLoop(t *testing.T) {
 	Convey("recentSentLoop", t, func() {
 		cleanLDB()
 		baseNet, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
-		baseNet.RecentSent["test_expired"] = time.Now().Add(-(MsgLiveThresholdSeconds + 1) * time.Second)
-		baseNet.RecentSent["test_not_expired"] = time.Now()
+		baseNet.RecentSent.Store("test_expired", time.Now().Add(-(MsgLiveThresholdSeconds+1)*time.Second))
+		baseNet.RecentSent.Store("test_not_expired", time.Now())
 		go func() {
 			baseNet.recentSentLoop()
 		}()
 		time.Sleep(20 * time.Millisecond)
-		_, ok1 := baseNet.RecentSent["test_expired"]
-		_, ok2 := baseNet.RecentSent["test_not_expired"]
+		_, ok1 := baseNet.RecentSent.Load("test_expired")
+		_, ok2 := baseNet.RecentSent.Load("test_not_expired")
 		So(ok1, ShouldBeFalse)
 		So(ok2, ShouldBeTrue)
 		cleanLDB()

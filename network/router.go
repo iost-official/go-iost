@@ -19,6 +19,8 @@ const (
 	RecvBlockHeight          //The height of the receiving block
 	ReqNewBlock              // recieve a new block or a response for download block
 	ReqDownloadBlock         // request for the height of block is equal to target
+	BlockHashQuery
+	BlockHashResponse
 
 	MsgMaxTTL = 2
 )
@@ -33,6 +35,8 @@ type Router interface {
 	Broadcast(req message.Message)
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
+	AskABlock(height uint64, to string) error
+	QueryBlockHash(start uint64, end uint64) error
 }
 
 // Route is a global Router instance.
@@ -169,6 +173,16 @@ func (r *RouterImpl) Download(start uint64, end uint64) error {
 // CancelDownload cancels downloading blocks.
 func (r *RouterImpl) CancelDownload(start uint64, end uint64) error {
 	return r.base.CancelDownload(start, end)
+}
+
+// AskABlock asks a node for a block.
+func (r *RouterImpl) AskABlock(height uint64, to string) error {
+	return r.base.AskABlock(height, to)
+}
+
+// QueryBlockHash queries blocks' hash by broadcast.
+func (r *RouterImpl) QueryBlockHash(start uint64, end uint64) error {
+	return r.base.QueryBlockHash(start, end)
 }
 
 //Filter is filter used by Router.

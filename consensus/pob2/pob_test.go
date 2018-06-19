@@ -58,6 +58,8 @@ func TestNewPoB(t *testing.T) {
 		blockChan := make(chan message.Message, 1)
 		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil)
 
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil).AnyTimes()
+
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 			Version:    0,
 			ParentHash: []byte("111"),
@@ -185,6 +187,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	//设置第二个通道Blockchan
 	blkChan := make(chan message.Message, 1)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
+	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil).AnyTimes()
 
 	defer guard.Unpatch()
 
