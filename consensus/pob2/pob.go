@@ -341,7 +341,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	var tx TransactionsList
 	if txpool.TxPoolS != nil {
 		p.log.I("PendingTransactions Begin...")
-		tx = txpool.TxPoolS.PendingTransactions()
+		tx = txpool.TxPoolS.PendingTransactions(TxPerBlk)
 		p.log.I("PendingTransactions End.")
 	}
 
