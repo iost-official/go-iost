@@ -156,7 +156,7 @@ func TestNewTxPoolServer(t *testing.T) {
 			go func() {
 				for i:=0; i<runCnt ;i++  {
 					//time.Sleep(1*time.Millisecond)
-					txPool.PendingTransactions()
+					txPool.PendingTransactions(100000)
 				}
 				ch <- 5
 			}()
@@ -229,7 +229,7 @@ func TestNewTxPoolServer(t *testing.T) {
 				txPool.addListTx(&tx)
 			}
 
-			txPool.updatePending()
+			txPool.updatePending(txCnt)
 
 			So(txPool.PendingTransactionNum(), ShouldEqual, listTxCnt)
 			for _, tx := range bl[0].Content {
@@ -248,7 +248,7 @@ func TestNewTxPoolServer(t *testing.T) {
 			//
 			//}
 			txPool.checkIterateBlockHash.Add(bl[0].HashID())
-			txPool.updatePending()
+			txPool.updatePending(500)
 
 			//txList:=txPool.PendingTransactions()
 			//for _,tx:=range txList {
@@ -280,7 +280,7 @@ func BenchmarkUpdatePending(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		txPool.updatePending()
+		txPool.updatePending(500)
 	}
 
 }

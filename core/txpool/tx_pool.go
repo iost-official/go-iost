@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	clearInterval = 40 * time.Second
+	clearInterval = 11 * time.Second
 	filterTime    = 40
 	//filterTime    = 60*60*24*7
 
@@ -146,9 +146,9 @@ func (pool *TxPoolServer) AddTransaction(tx message.Message) {
 	pool.chTx <- tx
 }
 
-func (pool *TxPoolServer) PendingTransactions() tx.TransactionsList {
+func (pool *TxPoolServer) PendingTransactions(maxCnt int) tx.TransactionsList {
 
-	pool.updatePending()
+	pool.updatePending(maxCnt)
 
 	pool.mu.RLock()
 	defer pool.mu.RUnlock()
@@ -298,7 +298,7 @@ func (pool *TxPoolServer) delTimeOutBlockTx() {
 	}
 }
 
-func (pool *TxPoolServer) updatePending() {
+func (pool *TxPoolServer) updatePending(maxCnt int) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -308,6 +308,9 @@ func (pool *TxPoolServer) updatePending() {
 	for hash, tr := range list {
 		if !pool.txExistTxPool(hash) {
 			pool.pendingTx.Add(tr)
+			if pool.pendingTx.Len() >= maxCnt{
+				break
+			}
 		}
 	}
 }
