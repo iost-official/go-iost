@@ -25,11 +25,10 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 	if bh.Number != parentBlk.Head.Number+1 {
 		return errors.New("wrong number")
 	}
-	//	treeHash := calcTreeHash(DecodeTxs(blk.Content))
-	//	// merkle tree hash
-	//	if !bytes.Equal(treeHash, bh.TreeHash) {
-	//		return false
-	//	}
+	treeHash := blk.CalculateTreeHash()
+	if !bytes.Equal(treeHash, bh.TreeHash) {
+		return errors.New("wrong tree hash")
+	}
 	return nil
 }
 

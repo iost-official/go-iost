@@ -320,7 +320,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.Head.Hash(),
-		TreeHash:   make([]byte, 0),
 		BlockHash:  make([]byte, 0),
 		Info:       encodePoBInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
@@ -328,9 +327,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		Time:       GetCurrentTimestamp().Slot,
 	}}
 	p.infoCache = [][]byte{}
-	headInfo := generateHeadInfo(blk.Head)
-	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
-	blk.Head.Signature = sig.Encode()
 	//return &blk
 	spool1 := pool.Copy()
 
@@ -363,6 +359,10 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 			}
 		}
 	}
+	blk.Head.TreeHash = blk.CalculateTreeHash()
+	headInfo := generateHeadInfo(blk.Head)
+	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
+	blk.Head.Signature = sig.Encode()
 
 	blk.Head.BlockHash = blk.Head.Hash()
 	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
