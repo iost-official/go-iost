@@ -22,7 +22,7 @@ var (
 
 // Synchronizer 同步器接口
 type Synchronizer interface {
-	StartListen() error
+	StartListen(func([]byte) bool) error
 	StopListen() error
 	NeedSync(maxHeight uint64) (bool, uint64, uint64)
 	SyncBlocks(startNumber uint64, endNumber uint64) error
@@ -102,12 +102,12 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router) *SyncImpl {
 }
 
 // StartListen 开始监听同步任务
-func (sync *SyncImpl) StartListen() error {
+func (sync *SyncImpl) StartListen(checkHash func([]byte) bool) error {
 	//go sync.requestBlockHeightLoop()
 	go sync.requestBlockLoop()
 	go sync.retryDownloadLoop()
 	go sync.handleHashQuery()
-	go sync.handleHashResp()
+	go sync.handleHashResp(checkHash)
 	go sync.recentAskedBlocksClean()
 	return nil
 }
@@ -190,43 +190,6 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	return nil
 }
 
-//弃用
-func (sync *SyncImpl) requestBlockHeightLoop() {
-	for {
-		select {
-		case req, ok := <-sync.heightChan:
-			if !ok {
-				return
-			}
-			var rh message.RequestHeight
-			rh.Decode(req.Body)
-
-			localLength := sync.blockCache.LongestChain().Length()
-
-			//本地链长度小于等于远端，忽略远端的同步链请求
-			if localLength <= rh.LocalBlockHeight {
-				continue
-			}
-			sync.log.I("requset height - LocalBlockHeight: %v, NeedBlockHeight: %v", rh.LocalBlockHeight, rh.NeedBlockHeight)
-			sync.log.I("local height: %v", localLength)
-
-			//回复当前块的高度
-			hr := message.ResponseHeight{BlockHeight: localLength}
-			resMsg := message.Message{
-				Time:    time.Now().Unix(),
-				From:    req.To,
-				To:      req.From,
-				ReqType: int32(RecvBlockHeight),
-				Body:    hr.Encode(),
-			}
-			sync.router.Send(resMsg)
-		case <-sync.exitSignal:
-			return
-		}
-
-	}
-}
-
 func (sync *SyncImpl) requestBlockLoop() {
 
 	for {
@@ -292,7 +255,6 @@ func (sync *SyncImpl) retryDownloadLoop() {
 }
 
 func (sync *SyncImpl) handleHashQuery() {
-
 	for {
 		select {
 		case req, ok := <-sync.blkHashQueryChan:
@@ -346,7 +308,7 @@ func (sync *SyncImpl) handleHashQuery() {
 	}
 }
 
-func (sync *SyncImpl) handleHashResp() {
+func (sync *SyncImpl) handleHashResp(checkHash func(hash []byte) bool) {
 
 	for {
 		select {
@@ -366,8 +328,10 @@ func (sync *SyncImpl) handleHashResp() {
 					continue
 				}
 				// TODO: 判断本地是否有这个区块
-				sync.router.AskABlock(blkHash.Height, req.From)
-				sync.recentAskedBlocks.Store(string(blkHash.Hash), time.Now().Unix())
+				if checkHash(blkHash.Hash) {
+					sync.router.AskABlock(blkHash.Height, req.From)
+					sync.recentAskedBlocks.Store(string(blkHash.Hash), time.Now().Unix())
+				}
 			}
 
 		case <-sync.exitSignal:

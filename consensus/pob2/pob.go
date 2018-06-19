@@ -136,7 +136,7 @@ func (p *PoB) initGlobalProperty(acc Account, witnessList []string) {
 
 // Run: 运行PoB实例
 func (p *PoB) Run() {
-	p.synchronizer.StartListen()
+	p.synchronizer.StartListen(p.checkHash)
 	go p.blockLoop()
 	go p.scheduleLoop()
 	//p.genBlock(p.Account, block.Block{})
@@ -343,7 +343,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	}
 
 	if len(tx) != 0 {
-		ForEnd:
+	ForEnd:
 		for _, t := range tx {
 			select {
 			case <-limitTime.C:
@@ -472,4 +472,8 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 	log.Report(&msgBlock)
 	///////////////////////////////////
 	return newPool, nil
+}
+
+func (p *PoB) checkHash(hash []byte) bool {
+	return p.blockCache.CheckBlock(hash)
 }

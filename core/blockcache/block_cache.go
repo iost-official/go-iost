@@ -123,6 +123,7 @@ type BlockCache interface {
 	Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error
 
 	FindBlockInCache(hash []byte) (*block.Block, error)
+	CheckBlock(hash []byte) bool
 	LongestChain() block.Chain
 	LongestPool() state.Pool
 	BlockChain() block.Chain
@@ -342,6 +343,18 @@ func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 	} else {
 		return nil, fmt.Errorf("not found")
 	}
+}
+
+func (h *BlockCacheImpl) CheckBlock(hash []byte) bool {
+	_, ok := h.getHashMap(hash)
+	if ok {
+		return true
+	}
+	blk := h.cachedRoot.bc.GetBlockByHash(hash)
+	if blk != nil {
+		return true
+	}
+	return false
 }
 
 // LongestChain 返回缓存的最长链
