@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	clearInterval = 40 * time.Second
+	clearInterval = 11 * time.Second
 	filterTime    = 40
 	//filterTime    = 60*60*24*7
 
