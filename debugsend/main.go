@@ -38,7 +38,7 @@ var accounts []string = []string{
 	"28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym",
 }
 
-func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64,routineId int) {
+func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, routineId int) {
 	defer wg.Done()
 	for i := startNonce; i != -1; i++ {
 		mtx.Nonce = i
@@ -50,7 +50,7 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64,r
 			return
 		}
 
-		err = sendTx(&stx,routineId)
+		err = sendTx(&stx, routineId)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -95,14 +95,14 @@ end--f
 	var wg sync.WaitGroup
 	wg.Add(10)
 	for i := 0; i < *nums; i++ {
-		go send(&wg, mtx, acc, int64(i)*int64(10000000000),i)
+		go send(&wg, mtx, acc, int64(i)*int64(10000000000), i)
 	}
 	wg.Wait()
 	fmt.Println("main")
 }
 
-func sendTx(stx *tx.Tx,routineId int) error {
-	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303",grpc.WithInsecure())
+func sendTx(stx *tx.Tx, routineId int) error {
+	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303", grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
