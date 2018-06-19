@@ -3,6 +3,8 @@ package lua
 import (
 	"fmt"
 
+	"errors"
+
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
@@ -58,6 +60,8 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 
 	method := method0.(*Method)
 
+	var errCrash error = nil
+
 	func() {
 		if len(args) == 0 {
 			err = l.L.CallByParam(lua.P{
@@ -79,7 +83,12 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 
 		defer func() {
 			if err2 := recover(); err2 != nil {
-				log.Log.E("something wrong in call:", err.Error())
+				err3, ok := err2.(error)
+				if !ok {
+					errCrash = errors.New("recover returns non error value")
+				}
+				log.Log.E("something wrong in call:", err3.Error())
+				errCrash = err3
 			}
 		}()
 	}()
@@ -87,7 +96,7 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 	//fmt.Print("3 ")
 	//fmt.Println(l.cachePool.GetHM("iost", "b"))
 
-	if err != nil {
+	if err != nil || errCrash != nil {
 		return nil, pool, err
 	}
 
