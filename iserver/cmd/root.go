@@ -242,7 +242,12 @@ var rootCmd = &cobra.Command{
 		serverExit = append(serverExit, txPool)
 
 		// init servi
-		tx.Data = tx.NewHolder(acc, state.StdPool, tx.StdServiPool)
+		sp, err := tx.NewServiPool()
+		if err != nil {
+			log.Log.E("NewServiPool failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+		tx.Data = tx.NewHolder(acc, state.StdPool, sp)
 
 		//启动RPC
 		err = rpc.Server(rpcPort)

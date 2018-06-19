@@ -9,7 +9,7 @@ import (
 type Holder struct {
 	self  account.Account
 	pool  state.Pool
-	Spool ServiPool
+	Spool *ServiPool
 }
 
 func (h *Holder) Self() account.Account {
@@ -41,7 +41,7 @@ func (h *Holder) ClearServi(tx []*Tx) {
 	}
 }
 
-func NewHolder(acc account.Account, pool state.Pool, spool ServiPool) *Holder {
+func NewHolder(acc account.Account, pool state.Pool, spool *ServiPool) *Holder {
 	return &Holder{acc, pool, spool}
 }
 

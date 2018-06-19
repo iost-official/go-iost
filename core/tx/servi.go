@@ -137,8 +137,6 @@ func (sp *ServiPool) BestUser() []*Servi {
 	return slist
 }
 
-var StdServiPool = ServiPool{}
-
 func (sp *ServiPool) Flush() {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
@@ -258,13 +256,22 @@ func (sp *ServiPool) Restore() error {
 
 var ldb db.Database
 
-func init() {
-	var err error
-	ldb, err = db.NewLDBDatabase("servi_db.ldb", 0, 0)
-	if err != nil {
-		panic(err)
-	}
-	StdServiPool.btu = make(map[string]*Servi)
-	StdServiPool.hm = make(map[string]*Servi)
+var StdServiPool *ServiPool
+var sonce sync.Once
 
+func NewServiPool() (*ServiPool, error) {
+
+	var err error
+	sonce.Do(func() {
+		ldb, err = db.NewLDBDatabase("servi_db.ldb", 0, 0)
+		if err != nil {
+			panic(err)
+		}
+
+		StdServiPool = &ServiPool{
+			btu: make(map[string]*Servi),
+			hm:  make(map[string]*Servi),
+		}
+	})
+	return StdServiPool, nil
 }
