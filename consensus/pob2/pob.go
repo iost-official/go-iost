@@ -320,7 +320,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.Head.Hash(),
-		TreeHash:   make([]byte, 0),
 		BlockHash:  make([]byte, 0),
 		Info:       encodePoBInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
@@ -328,9 +327,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		Time:       GetCurrentTimestamp().Slot,
 	}}
 	p.infoCache = [][]byte{}
-	headInfo := generateHeadInfo(blk.Head)
-	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
-	blk.Head.Signature = sig.Encode()
 	//return &blk
 	spool1 := pool.Copy()
 
@@ -341,20 +337,22 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	var tx TransactionsList
 	if txpool.TxPoolS != nil {
 		p.log.I("PendingTransactions Begin...")
-		tx = txpool.TxPoolS.PendingTransactions()
+		tx = txpool.TxPoolS.PendingTransactions(TxPerBlk)
 		p.log.I("PendingTransactions End.")
+		p.log.I("PendingTransactions Size: %v.", txpool.TxPoolS.PendingTransactionNum())
 	}
 
 	if len(tx) != 0 {
+		ForEnd:
 		for _, t := range tx {
 			select {
 			case <-limitTime.C:
 				p.log.I("Gen Block Time Limit.")
-				break
+				break ForEnd
 			default:
 				if len(blk.Content) >= TxPerBlk {
 					p.log.I("Gen Block Tx Number Limit.")
-					break
+					break ForEnd
 				}
 				if err := blockcache.StdCacheVerifier(t, spool1, vc); err == nil {
 					blk.Content = append(blk.Content, *t)
@@ -363,6 +361,10 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 			}
 		}
 	}
+	blk.Head.TreeHash = blk.CalculateTreeHash()
+	headInfo := generateHeadInfo(blk.Head)
+	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
+	blk.Head.Signature = sig.Encode()
 
 	blk.Head.BlockHash = blk.Head.Hash()
 	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机

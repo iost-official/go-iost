@@ -61,13 +61,13 @@ func TestNewPoB(t *testing.T) {
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 			Version:    0,
 			ParentHash: []byte("111"),
-			TreeHash:   make([]byte, 0),
 			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
 			Number:     int64(1),
 			Witness:    "11111",
 			Time:       1111,
 		}}
+		blk.Head.TreeHash = blk.CalculateTreeHash()
 
 		// 创世块的询问和插入
 		var getNumber uint64
@@ -108,7 +108,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	var witnessList []string
 
 	gopath := os.Getenv("GOPATH")
-	fmt.Println(gopath)
+	//fmt.Println(gopath)
 	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
 	txdb1:= gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
 	blockDb2:=gopath + "/src/github.com/iost-official/blockDB"
@@ -203,6 +203,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 		panic("state.PoolInstance error")
 	}
 
+	blockChain.Top()
 	//verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 	//	return pool, nil
 	//}
@@ -560,14 +561,13 @@ func genBlockHead(p *PoB) {
 	blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: nil,
-		TreeHash:   make([]byte, 0),
 		BlockHash:  make([]byte, 0),
 		Info:       []byte("test"),
 		Number:     int64(1),
 		Witness:    p.account.ID,
 		Time:       int64(0),
 	}}
-
+	blk.Head.TreeHash = blk.CalculateTreeHash()
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, p.account.Seckey)
 	blk.Head.Signature = sig.Encode()
@@ -598,7 +598,6 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 			Version:    0,
 			ParentHash: hash,
-			TreeHash:   make([]byte, 0),
 			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
 			Number:     int64(i + 1),
@@ -606,13 +605,13 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 			Time:       slot + int64(i),
 		}}
 
-		headInfo := generateHeadInfo(blk.Head)
-		sig, _ := common.Sign(common.Secp256k1, headInfo, accountList[i%3].Seckey)
-		blk.Head.Signature = sig.Encode()
-
 		for i := 0; i < txCnt; i++ {
 			blk.Content = append(blk.Content, genTx(p, i))
 		}
+		blk.Head.TreeHash = blk.CalculateTreeHash()
+		headInfo := generateHeadInfo(blk.Head)
+		sig, _ := common.Sign(common.Secp256k1, headInfo, accountList[i%3].Seckey)
+		blk.Head.Signature = sig.Encode()
 		blockPool = append(blockPool, &blk)
 	}
 	return

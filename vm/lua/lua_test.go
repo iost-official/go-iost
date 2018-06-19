@@ -3,6 +3,8 @@ package lua
 import (
 	"testing"
 
+	"fmt"
+
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
 	db2 "github.com/iost-official/prototype/db"
@@ -318,40 +320,21 @@ function main()
  Put("hello", "world")
  return "success"
 end--f
---- foo 乱七八糟的函数
--- 不知道在干啥
--- @gas_limit 12345678910
--- @gas_price 3.14159
+
+--- foo
 -- @param_cnt 3
 -- @return_cnt 2
 function foo(a,b,c)
 	return a,b
 end--f
+
 `)
-		contract, _ := parser.Parse()
+		contract, err := parser.Parse()
+		So(err, ShouldBeNil)
 		So(contract.info.Language, ShouldEqual, "lua")
 		So(contract.info.GasLimit, ShouldEqual, 11)
 		So(contract.info.Price, ShouldEqual, 0.0001)
-		//		So(contract.code, ShouldEqual, `--- main 合约主入口
-		//-- 输出hello world
-		//-- @gas_limit 11
-		//-- @gas_price 0.0001
-		//-- @param_cnt 0
-		//-- @return_cnt 1
-		//function main()
-		// Put("hello", "world")
-		// return "success"
-		//end
-		//--- foo 乱七八糟的函数
-		//-- 不知道在干啥
-		//-- @gas_limit 12345678910
-		//-- @gas_price 3.14159
-		//-- @param_cnt 3
-		//-- @return_cnt 2
-		//function foo(a,b,c)
-		//	return a,b
-		//end--f
-		//`)
+		fmt.Println(contract.code)
 		So(contract.main, ShouldResemble, Method{"main", 0, 1, vm.Public})
 		So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2, vm.Public}})
 
