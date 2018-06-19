@@ -86,9 +86,7 @@ end--f
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println(contract)
 	mtx := tx.NewTx(1, contract)
-
 	acc, err := account.NewAccount(cmd.LoadBytes("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
 	if err != nil {
 		fmt.Println(err.Error())
