@@ -11,11 +11,13 @@ import (
 )
 
 var (
-	SyncNumber            = 2 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
-	MaxDownloadNumber     = 3 // 一次同步下载的最多块数
-	RetryTime             = 8
-	continuousBlockNumber = 2 //一个节点连续生产2个块，强制同步区块
-
+	SyncNumber                    = 2 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
+	MaxDownloadNumber             = 3 // 一次同步下载的最多块数
+	MaxBlockHashQueryNumber       = 10
+	RetryTime                     = 8
+	continuousBlockNumber         = 2 //一个节点连续生产2个块，强制同步区块
+	blockDownloadTimeout    int64 = 10
+	cleanInterval                 = 5 * time.Second
 )
 
 // Synchronizer 同步器接口
@@ -29,14 +31,17 @@ type Synchronizer interface {
 
 // SyncImpl 同步器实现
 type SyncImpl struct {
-	blockCache    blockcache.BlockCache
-	router        Router
-	maxSyncNumber uint64
-	heightChan    chan message.Message
-	blkSyncChan   chan message.Message
-	exitSignal    chan struct{}
-	requestMap    map[uint64]bool
-	reqMapLock    sy.RWMutex
+	blockCache        blockcache.BlockCache
+	router            Router
+	maxSyncNumber     uint64
+	heightChan        chan message.Message
+	blkSyncChan       chan message.Message
+	blkHashQueryChan  chan message.Message
+	blkHashRespChan   chan message.Message
+	exitSignal        chan struct{}
+	requestMap        map[uint64]bool
+	reqMapLock        sy.RWMutex
+	recentAskedBlocks *sy.Map
 
 	log *log.Logger
 }
@@ -45,10 +50,11 @@ type SyncImpl struct {
 // bc 块缓存, router 网络处理器
 func NewSynchronizer(bc blockcache.BlockCache, router Router) *SyncImpl {
 	sync := &SyncImpl{
-		blockCache:    bc,
-		router:        router,
-		requestMap:    make(map[uint64]bool),
-		maxSyncNumber: 0,
+		blockCache:        bc,
+		router:            router,
+		requestMap:        make(map[uint64]bool),
+		maxSyncNumber:     0,
+		recentAskedBlocks: new(sy.Map),
 	}
 	var err error
 	sync.heightChan, err = sync.router.FilteredChan(Filter{
@@ -62,6 +68,22 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router) *SyncImpl {
 	sync.blkSyncChan, err = sync.router.FilteredChan(Filter{
 		AcceptType: []ReqType{
 			ReqDownloadBlock,
+		}})
+	if err != nil {
+		return nil
+	}
+
+	sync.blkHashQueryChan, err = sync.router.FilteredChan(Filter{
+		AcceptType: []ReqType{
+			BlockHashQuery,
+		}})
+	if err != nil {
+		return nil
+	}
+
+	sync.blkHashRespChan, err = sync.router.FilteredChan(Filter{
+		AcceptType: []ReqType{
+			BlockHashResponse,
 		}})
 	if err != nil {
 		return nil
@@ -83,8 +105,10 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router) *SyncImpl {
 func (sync *SyncImpl) StartListen() error {
 	//go sync.requestBlockHeightLoop()
 	go sync.requestBlockLoop()
-	//go sync.blockConfirmLoop()
 	go sync.retryDownloadLoop()
+	go sync.handleHashQuery()
+	go sync.handleHashResp()
+	go sync.recentAskedBlocksClean()
 	return nil
 }
 
@@ -93,6 +117,8 @@ func (sync *SyncImpl) StopListen() error {
 	close(sync.blkSyncChan)
 	//close(sync.blockCache.BlockConfirmChan())
 	close(sync.exitSignal)
+	close(sync.blkHashQueryChan)
+	close(sync.blkHashRespChan)
 	return nil
 }
 
@@ -143,18 +169,18 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	sync.maxSyncNumber = max(sync.maxSyncNumber, endNumber)
-	for endNumber > startNumber+uint64(MaxDownloadNumber)-1 {
-		sync.router.Download(startNumber, startNumber+uint64(MaxDownloadNumber)-1)
+	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
+		sync.router.QueryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
 		sync.reqMapLock.Lock()
-		for i := startNumber; i < startNumber+uint64(MaxDownloadNumber); i++ {
+		for i := startNumber; i < startNumber+uint64(MaxBlockHashQueryNumber); i++ {
 			sync.requestMap[i] = true
 		}
 		sync.reqMapLock.Unlock()
 		time.Sleep(time.Second * 1)
-		startNumber += uint64(MaxDownloadNumber)
+		startNumber += uint64(MaxBlockHashQueryNumber)
 	}
 	if startNumber <= endNumber {
-		sync.router.Download(startNumber, endNumber)
+		sync.router.QueryBlockHash(startNumber, endNumber)
 		sync.reqMapLock.Lock()
 		for i := startNumber; i <= endNumber; i++ {
 			sync.requestMap[i] = true
@@ -221,7 +247,7 @@ func (sync *SyncImpl) requestBlockLoop() {
 			}
 			//sync.log.I("requset block - BlockNumber: %v", rh.BlockNumber)
 			//sync.log.I("response block - BlockNumber: %v, witness: %v", block.Head.Number, block.Head.Witness)
-			//回复当前块的高度
+			//回复当前高度的块
 			resMsg := message.Message{
 				Time:    time.Now().Unix(),
 				From:    req.To,
@@ -244,21 +270,6 @@ func (sync *SyncImpl) requestBlockLoop() {
 	}
 }
 
-/// 未调用
-func (sync *SyncImpl) blockConfirmLoop() {
-	for {
-		select {
-		case num, ok := <-sync.blockCache.BlockConfirmChan():
-			if !ok {
-				return
-			}
-			sync.router.CancelDownload(num, num)
-		case <-sync.exitSignal:
-			return
-		}
-	}
-}
-
 func (sync *SyncImpl) BlockConfirmed(num int64) {
 	sync.reqMapLock.Lock()
 	defer sync.reqMapLock.Unlock()
@@ -271,9 +282,115 @@ func (sync *SyncImpl) retryDownloadLoop() {
 		case <-time.After(time.Second * time.Duration(RetryTime)):
 			sync.reqMapLock.RLock()
 			for num, _ := range sync.requestMap {
-				sync.router.Download(num, num)
+				sync.router.QueryBlockHash(num, num)
 			}
 			sync.reqMapLock.RUnlock()
+		case <-sync.exitSignal:
+			return
+		}
+	}
+}
+
+func (sync *SyncImpl) handleHashQuery() {
+
+	for {
+		select {
+		case req, ok := <-sync.blkHashQueryChan:
+			if !ok {
+				break
+			}
+			var rh message.BlockHashQuery
+			_, err := rh.Unmarshal(req.Body)
+			if err != nil {
+				sync.log.E("unmarshal BlockHashQuery failed:%v", err)
+				break
+			}
+
+			if rh.End < rh.Start {
+				break
+			}
+
+			chain := sync.blockCache.LongestChain()
+
+			resp := &message.BlockHashResponse{
+				BlockHashes: make([]message.BlockHash, 0, rh.End-rh.Start+1),
+			}
+			for i := rh.Start; i <= rh.End; i++ {
+				block := chain.GetBlockByNumber(i)
+				if block == nil {
+					continue
+				}
+				blkHash := message.BlockHash{
+					Height: i,
+					Hash:   block.HeadHash(),
+				}
+				resp.BlockHashes = append(resp.BlockHashes, blkHash)
+			}
+			bytes, err := resp.Marshal(nil)
+			if err != nil {
+				sync.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
+				break
+			}
+			resMsg := message.Message{
+				Time:    time.Now().Unix(),
+				From:    req.To,
+				To:      req.From,
+				ReqType: int32(BlockHashResponse),
+				Body:    bytes,
+			}
+			sync.router.Send(resMsg)
+		case <-sync.exitSignal:
+			return
+		}
+
+	}
+}
+
+func (sync *SyncImpl) handleHashResp() {
+
+	for {
+		select {
+		case req, ok := <-sync.blkHashRespChan:
+			if !ok {
+				break
+			}
+			var rh message.BlockHashResponse
+			_, err := rh.Unmarshal(req.Body)
+			if err != nil {
+				sync.log.E("unmarshal BlockHashResponse failed:%v", err)
+				break
+			}
+
+			for _, blkHash := range rh.BlockHashes {
+				if _, exist := sync.recentAskedBlocks.Load(string(blkHash.Hash)); exist {
+					continue
+				}
+				// TODO: 判断本地是否有这个区块
+				sync.router.AskABlock(blkHash.Height, req.From)
+				sync.recentAskedBlocks.Store(string(blkHash.Hash), time.Now().Unix())
+			}
+
+		case <-sync.exitSignal:
+			return
+		}
+	}
+}
+
+func (sync *SyncImpl) recentAskedBlocksClean() {
+	for {
+		select {
+		case <-time.After(cleanInterval):
+			sync.recentAskedBlocks.Range(func(k, v interface{}) bool {
+				t, ok := v.(int64)
+				if !ok {
+					sync.recentAskedBlocks.Delete(k)
+					return true
+				}
+				if time.Now().Unix()-t > blockDownloadTimeout {
+					sync.recentAskedBlocks.Delete(k)
+				}
+				return true
+			})
 		case <-sync.exitSignal:
 			return
 		}
