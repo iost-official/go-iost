@@ -17,7 +17,6 @@ import (
 	"time"
 )
 
-var server string = "127.0.0.1"
 var acc string = "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 var servers []string = []string{
 	"127.0.0.1",
@@ -39,7 +38,7 @@ var accounts []string = []string{
 	"28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym",
 }
 
-func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64) {
+func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64,routineId int) {
 	defer wg.Done()
 	for i := startNonce; i != -1; i++ {
 		mtx.Nonce = i
@@ -51,7 +50,7 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64) 
 			return
 		}
 
-		err = sendTx(&stx)
+		err = sendTx(&stx,routineId)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -60,15 +59,13 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64) 
 	return
 }
 func main() {
-	serverId := flag.Int("server", 0, "server_id")
 	accId := flag.Int("account", 0, "account_id")
 	money := flag.Int("money", 1, "money")
 	nums := flag.Int("routines", 10, "number of routines")
 	flag.Parse()
-	if serverId == nil || accId == nil || money == nil || nums == nil {
+	if accId == nil || money == nil || nums == nil {
 		return
 	}
-	server = servers[*serverId] + ":30303"
 	acc = accounts[*accId]
 	rawCode := `
 --- main 合约主入口
@@ -98,14 +95,14 @@ end--f
 	var wg sync.WaitGroup
 	wg.Add(10)
 	for i := 0; i < *nums; i++ {
-		go send(&wg, mtx, acc, int64(i)*int64(10000000000))
+		go send(&wg, mtx, acc, int64(i)*int64(10000000000),i)
 	}
 	wg.Wait()
 	fmt.Println("main")
 }
 
-func sendTx(stx *tx.Tx) error {
-	conn, err := grpc.Dial(server, grpc.WithInsecure())
+func sendTx(stx *tx.Tx,routineId int) error {
+	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303",grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
