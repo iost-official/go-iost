@@ -46,6 +46,28 @@ type ServiPool struct {
 	mu  sync.RWMutex
 }
 
+var ldb db.Database
+
+var StdServiPool *ServiPool
+var sonce sync.Once
+
+func NewServiPool() (*ServiPool, error) {
+
+	var err error
+	sonce.Do(func() {
+		ldb, err = db.NewLDBDatabase(LdbPath+"serviDb", 0, 0)
+		if err != nil {
+			panic(err)
+		}
+
+		StdServiPool = &ServiPool{
+			btu: make(map[string]*Servi),
+			hm:  make(map[string]*Servi),
+		}
+	})
+	return StdServiPool, nil
+}
+
 // 没有则添加该节点
 func (sp *ServiPool) User(iostAccount vm.IOSTAccount) *Servi {
 	sp.mu.Lock()
@@ -59,6 +81,58 @@ func (sp *ServiPool) User(iostAccount vm.IOSTAccount) *Servi {
 	}
 
 	return s
+}
+
+func (sp *ServiPool) BestUser() []*Servi {
+	sp.mu.Lock()
+	defer sp.mu.Unlock()
+
+	slist := make([]*Servi, 1)
+	for _, s := range sp.btu {
+		slist = append(slist, s)
+	}
+
+	return slist
+}
+
+func (sp *ServiPool) Flush() {
+	sp.mu.Lock()
+	defer sp.mu.Unlock()
+
+	err := sp.flushHm()
+	if err != nil {
+		log.Log.D("Failed to ServiPool flushHm")
+	}
+
+	err = sp.flushBtu()
+	if err != nil {
+		log.Log.D("Failed to ServiPool flushBtu")
+	}
+
+}
+
+func (sp *ServiPool) Restore() error {
+	sp.mu.Lock()
+	defer sp.mu.Unlock()
+
+	sbuf, err := ldb.Get(bestUser)
+
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(sbuf); i += 49 {
+		servi := Servi{}
+		bufnum := sbuf[i : i+8]
+		servi.v = math.Float64frombits(binary.BigEndian.Uint64(bufnum))
+		bufbln := sbuf[i+8 : i+16]
+		servi.b = math.Float64frombits(binary.BigEndian.Uint64(bufbln))
+		bufkey := sbuf[i+16 : i+49]
+		servi.owner = vm.PubkeyToIOSTAccount(bufkey)
+		sp.btu[string(servi.owner)] = &servi
+	}
+
+	return nil
 }
 
 func (sp *ServiPool) userBtu(iostAccount vm.IOSTAccount) *Servi {
@@ -77,8 +151,8 @@ func (sp *ServiPool) userHm(iostAccount vm.IOSTAccount) *Servi {
 	if servi, ok := sp.hm[string(iostAccount)]; ok {
 		return servi
 	} else {
-		s, err := sp.restoreHm(string(iostAccount))
-		if err != nil {
+		s, _ := sp.restoreHm(string(iostAccount))
+		if s == nil {
 			sp.hm[string(iostAccount)] = &Servi{owner: iostAccount}
 		} else {
 			sp.hm[string(iostAccount)] = s
@@ -123,34 +197,6 @@ func (sp *ServiPool) delHm(iostAccount vm.IOSTAccount) {
 	if _, ok := sp.hm[string(iostAccount)]; ok {
 		delete(sp.hm, string(iostAccount))
 	}
-}
-
-func (sp *ServiPool) BestUser() []*Servi {
-	sp.mu.Lock()
-	defer sp.mu.Unlock()
-
-	slist := make([]*Servi, 1)
-	for _, s := range sp.btu {
-		slist = append(slist, s)
-	}
-
-	return slist
-}
-
-func (sp *ServiPool) Flush() {
-	sp.mu.Lock()
-	defer sp.mu.Unlock()
-
-	err := sp.flushHm()
-	if err != nil {
-		log.Log.D("Failed to ServiPool flushHm")
-	}
-
-	err = sp.flushBtu()
-	if err != nil {
-		log.Log.D("Failed to ServiPool flushBtu")
-	}
-
 }
 
 // updateBtu 更新btu
@@ -228,50 +274,4 @@ func (sp *ServiPool) restoreHm(key string) (*Servi, error) {
 	servi.owner = vm.PubkeyToIOSTAccount(bufkey)
 
 	return &servi, nil
-}
-
-func (sp *ServiPool) Restore() error {
-	sp.mu.Lock()
-	defer sp.mu.Unlock()
-
-	sbuf, err := ldb.Get(bestUser)
-
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < len(sbuf); i += 49 {
-		servi := Servi{}
-		bufnum := sbuf[i : i+8]
-		servi.v = math.Float64frombits(binary.BigEndian.Uint64(bufnum))
-		bufbln := sbuf[i+8 : i+16]
-		servi.b = math.Float64frombits(binary.BigEndian.Uint64(bufbln))
-		bufkey := sbuf[i+16 : i+49]
-		servi.owner = vm.PubkeyToIOSTAccount(bufkey)
-		sp.btu[string(servi.owner)] = &servi
-	}
-
-	return nil
-}
-
-var ldb db.Database
-
-var StdServiPool *ServiPool
-var sonce sync.Once
-
-func NewServiPool() (*ServiPool, error) {
-
-	var err error
-	sonce.Do(func() {
-		ldb, err = db.NewLDBDatabase("servi_db.ldb", 0, 0)
-		if err != nil {
-			panic(err)
-		}
-
-		StdServiPool = &ServiPool{
-			btu: make(map[string]*Servi),
-			hm:  make(map[string]*Servi),
-		}
-	})
-	return StdServiPool, nil
 }
