@@ -28,6 +28,8 @@ func init() {
 // global Logger instance
 var Log *Logger
 
+var Path = "logs/"
+
 const (
 	ExpireTime = 24 * 60 * 60
 	RotateTime = 60 * 60
@@ -83,8 +85,8 @@ func (l *Logger) handleFiles() {
 
 func newLogFile(now time.Time) *os.File {
 	path := now.Format(FmtTime) + ".log"
-	os.Mkdir("logs/", 0777)
-	file, err := os.OpenFile("logs/"+path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	os.Mkdir(Path, 0777)
+	file, err := os.OpenFile(Path+path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +94,7 @@ func newLogFile(now time.Time) *os.File {
 }
 
 func clearOldLogs(now time.Time) {
-	files, _ := ioutil.ReadDir("logs/")
+	files, _ := ioutil.ReadDir(Path)
 	for _, f := range files {
 		name := f.Name()
 		if strings.HasSuffix(name, ".log") {
@@ -100,7 +102,7 @@ func clearOldLogs(now time.Time) {
 			//fmt.Println(timestamp)
 			mtime, err := time.Parse(FmtTime, timestamp)
 			if err != nil {
-				err := os.Remove("logs/" + f.Name())
+				err := os.Remove(Path + f.Name())
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -108,7 +110,7 @@ func clearOldLogs(now time.Time) {
 			//ts := now.Format(FmtTime)
 			//now2, _ := time.Parse(FmtTime, ts)
 			if now.Unix()-mtime.Unix() > ExpireTime {
-				err := os.Remove("logs/" + f.Name())
+				err := os.Remove(Path + f.Name())
 				if err != nil {
 					fmt.Println(err)
 				}

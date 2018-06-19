@@ -22,7 +22,8 @@ var servers []string = []string{
 	"127.0.0.1",
 	"18.179.143.193",
 	"52.56.118.10",
-	"13.228.206.188",
+	"52.56.118.10",
+	//"13.228.206.188",
 	"13.232.96.221",
 	"18.184.239.232",
 	"13.124.172.86",
@@ -86,7 +87,6 @@ end--f
 		return
 	}
 	mtx := tx.NewTx(1, contract)
-
 	acc, err := account.NewAccount(cmd.LoadBytes("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
 	if err != nil {
 		fmt.Println(err.Error())
