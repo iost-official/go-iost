@@ -4,15 +4,15 @@ import (
 	sy "sync"
 	"time"
 
+	"github.com/iost-official/prototype/core/blockcache"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/log"
 	. "github.com/iost-official/prototype/network"
-	"github.com/iost-official/prototype/core/blockcache"
 )
 
 var (
-	SyncNumber            = 2  // 当本地链长度和网络中最新块相差SyncNumber时需要同步
-	MaxDownloadNumber     = 10 // 一次同步下载的最多块数
+	SyncNumber            = 2 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
+	MaxDownloadNumber     = 3 // 一次同步下载的最多块数
 	RetryTime             = 8
 	continuousBlockNumber = 2 //一个节点连续生产2个块，强制同步区块
 
@@ -150,7 +150,7 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 			sync.requestMap[i] = true
 		}
 		sync.reqMapLock.Unlock()
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 1)
 		startNumber += uint64(MaxDownloadNumber)
 	}
 	if startNumber <= endNumber {
