@@ -21,7 +21,8 @@ var acc string = "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 var servers []string = []string{
 	"127.0.0.1",
 	"18.179.143.193",
-	"52.56.118.10",
+	"18.179.143.193",
+	//"52.56.118.10",
 	"13.228.206.188",
 	"13.232.96.221",
 	"18.184.239.232",
@@ -85,6 +86,7 @@ end--f
 		fmt.Println(err.Error())
 		return
 	}
+	fmt.Println(contract)
 	mtx := tx.NewTx(1, contract)
 
 	acc, err := account.NewAccount(cmd.LoadBytes("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
