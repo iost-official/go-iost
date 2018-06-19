@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/consensus"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/core/txpool"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/core/txpool"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/prototype/rpc CliServer
@@ -30,35 +29,29 @@ func newHttpServer() *HttpServer {
 	s := &HttpServer{}
 	return s
 }
-
-func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response, error) {
+func handlePublish(_tx *Transaction) {
 	fmt.Println("publish")
 	var tx1 tx.Tx
 	if _tx == nil {
-		return &Response{Code: -1}, fmt.Errorf("argument cannot be nil pointer")
+		//return &Response{Code: -1}, fmt.Errorf("argument cannot be nil pointer")
+		return
 	}
 	err := tx1.Decode(_tx.Tx)
 	if err != nil {
-		return &Response{Code: -1}, err
+		//return &Response{Code: -1}, err
+		return
 	}
 	//fmt.Println("PublishTx begin, tx.Nonce", tx1.Nonce)
 
 	err = tx1.VerifySelf() //verify Publisher and Signers
 	if err != nil {
-		return &Response{Code: -1}, err
+		//return &Response{Code: -1}, err
+		return
 	}
 
 	// add servi
 	tx.RecordTx(tx1, tx.Data.Self())
 
-	////////////probe//////////////////
-	log.Report(&log.MsgTx{
-		SubType:"receive",
-		TxHash:tx1.Hash(),
-		Publisher:tx1.Publisher.Pubkey,
-		Nonce:tx1.Nonce,
-	})
-	///////////////////////////////////
 	//broadcast the tx
 	router := network.Route
 	if router == nil {
@@ -70,15 +63,17 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 	}
 	router.Broadcast(broadTx)
 
-	go func() {
-		Cons := consensus.Cons
-		if Cons == nil {
-			panic(fmt.Errorf("Consensus is nil"))
-		}
+	Cons := consensus.Cons
+	if Cons == nil {
+		panic(fmt.Errorf("Consensus is nil"))
+	}
 
-		txpool.TxPoolS.AddTransaction(broadTx)
-		//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
-	}()
+	txpool.TxPoolS.AddTransaction(broadTx)
+	//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
+	return
+}
+func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response, error) {
+	go handlePublish(_tx)
 	return &Response{Code: 0}, nil
 }
 

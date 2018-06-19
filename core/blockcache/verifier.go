@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 
+	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/verifier"
-	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/vm"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
@@ -37,8 +38,8 @@ var ver *verifier.CacheVerifier
 // StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 
-	ver.Context = &VerifyContext{
-		VParentHash: block.Head.ParentHash,
+	ver.Context = &vm.Context{
+		ParentHash: block.Head.ParentHash,
 	}
 
 	txs := block.Content
@@ -84,7 +85,7 @@ func CleanStdVerifier() {
 	ver.CleanUp()
 }
 
-func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context VerifyContext) error {
+func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context *vm.Context) error {
 	ver.Context = context
 
 	p2, err := ver.VerifyContract(txx.Contract, pool.Copy())

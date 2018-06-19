@@ -11,7 +11,6 @@ import (
 
 	"errors"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/iost-official/prototype/common"
@@ -78,7 +77,7 @@ type PoB struct {
 // NewPoB: 新建一个PoB实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
-	TxPerBlk = 100 + rand.Intn(900)
+	TxPerBlk = 2000
 	p := PoB{
 		account: acc,
 	}
@@ -269,6 +268,7 @@ func (p *PoB) blockLoop() {
 func (p *PoB) scheduleLoop() {
 	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
 	var nextSchedule int64
+	nextSchedule = 0
 	p.log.I("Start to schedule")
 	for {
 		select {
@@ -307,12 +307,12 @@ func (p *PoB) scheduleLoop() {
 				p.log.I("Broadcasted block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 			}
 			nextSchedule = timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
-			//time.Sleep(time.Second * time.Duration(nextSchedule))
 		}
 	}
 }
 
 func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Block {
+	limitTime := time.NewTicker(((SlotLength/3 - 1) + 1) * time.Second)
 	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
@@ -331,25 +331,32 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	//return &blk
 	spool1 := pool.Copy()
 
-	var vc blockcache.VerifyContext
-	vc.VParentHash = lastBlk.Head.Hash()
+	vc := &vm.Context{}
+	vc.ParentHash = lastBlk.Head.Hash()
 
 	//TODO Content大小控制
 	var tx TransactionsList
 	if txpool.TxPoolS != nil {
+		p.log.I("PendingTransactions Begin...")
 		tx = txpool.TxPoolS.PendingTransactions()
+		p.log.I("PendingTransactions End.")
 	}
 
 	if len(tx) != 0 {
-
 		for _, t := range tx {
-
-			if len(blk.Content) >= TxPerBlk {
+			select {
+			case <-limitTime.C:
+				p.log.I("Gen Block Time Limit.")
 				break
-			}
+			default:
+				if len(blk.Content) >= TxPerBlk {
+					p.log.I("Gen Block Tx Number Limit.")
+					break
+				}
+				if err := blockcache.StdCacheVerifier(t, spool1, vc); err == nil {
+					blk.Content = append(blk.Content, *t)
 
-			if err := blockcache.StdCacheVerifier(t, spool1, vc); err == nil {
-				blk.Content = append(blk.Content, *t)
+				}
 			}
 		}
 	}

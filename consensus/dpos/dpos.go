@@ -15,13 +15,13 @@ import (
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/blockcache"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
-	"github.com/iost-official/prototype/core/blockcache"
 )
 
 var TxPerBlk int
@@ -182,7 +182,6 @@ func (p *DPoS) genesis(initTime int64) error {
 	return nil
 }
 
-
 func (p *DPoS) blockLoop() {
 
 	p.log.I("Start to listen block")
@@ -225,7 +224,7 @@ func (p *DPoS) blockLoop() {
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
 
-					p.blockCache.AddSingles(p.blockVerify)
+					//p.blockCache.AddSingles(p.blockVerify)
 				} else if err == blockcache.ErrNotFound {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))

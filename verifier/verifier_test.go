@@ -16,7 +16,7 @@ import (
 // nolint
 func TestGenesisVerify(t *testing.T) {
 	Convey("Test of Genesis verify", t, func() {
-		Convey("Parse Contract", func() {
+		Convey("Parse contract", func() {
 			mockCtl := gomock.NewController(t)
 			pool := core_mock.NewMockPool(mockCtl)
 			var count int
@@ -220,9 +220,7 @@ end`
 
 		cv := NewCacheVerifier()
 		pool2, err = cv.VerifyContract(&lc, pool)
-		if err != nil {
-			panic(err)
-		}
+		So(err, ShouldBeNil)
 		aa, err := pool2.GetHM("iost", "a")
 		ba, err := pool2.GetHM("iost", "b")
 		So(err, ShouldBeNil)
@@ -253,6 +251,9 @@ end`
 
 		cv := NewCacheVerifier()
 		pool2, err = cv.VerifyContract(&lc, pool)
+		if err != nil {
+			panic(err)
+		}
 		pool3, err := cv.VerifyContract(&lc, pool2)
 		if err != nil {
 			panic(err)

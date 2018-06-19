@@ -6,9 +6,9 @@ import (
 	"encoding/binary"
 
 	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/vm"
 	"sync"
-	"github.com/iost-official/prototype/log"
 )
 
 const base float64 = 1.0
@@ -137,7 +137,7 @@ func (sp *ServiPool) updateBtu() {
 		for k1,v1:=range sp.btu{
 			if v.Total() > v1.Total(){
 				sp.delBtu(vm.IOSTAccount(k1))
-				sp.userBtu()
+				//sp.userBtu()
 			}
 		}
 	}
@@ -212,6 +212,7 @@ func (sp *ServiPool) Restore() error {
 	defer sp.mu.Unlock()
 
 	sbuf, err := ldb.Get(bestUser)
+
 	if err != nil {
 		return err
 	}
@@ -239,4 +240,5 @@ func init() {
 		panic(err)
 	}
 	StdServiPool.btu = make(map[string]*Servi)
+
 }

@@ -58,7 +58,7 @@ iwallet compile -l lua SRC`,
 		//		fmt.Printf(`Transaction :
 		//Time: xx
 		//Nonce: xx
-		//Contract:
+		//contract:
 		//    Price: %v
 		//    Gas limit: %v
 		//Code:

@@ -60,18 +60,20 @@ type NetConfig struct {
 // BaseNetwork maintains all node table, and distributes the node table to all node.
 type BaseNetwork struct {
 	nodeTable     *db.LDBDatabase //all known node except remoteAddr
-	neighbours    sync.Map
+	neighbours    *sync.Map
 	lock          sync.Mutex
 	peers         peerSet // manage all connection
 	RecvCh        chan message.Message
 	listener      net.Listener
-	RecentSent    sync.Map
+	RecentSent    *sync.Map
 	NodeHeightMap map[string]uint64 //maintain all height of nodes higher than current height
 	localNode     *discover.Node
 
-	DownloadHeights sync.Map //map[height]retry_times
+	DownloadHeights *sync.Map //map[height]retry_times
 	regAddr         string
 	log             *log.Logger
+
+	NodeAddedTime *sync.Map
 }
 
 // NewBaseNetwork returns a new BaseNetword instance.
@@ -104,12 +106,13 @@ func NewBaseNetwork(conf *NetConfig) (*BaseNetwork, error) {
 		nodeTable:       nodeTable,
 		RecvCh:          recv,
 		localNode:       localNode,
-		neighbours:      sync.Map{},
+		neighbours:      new(sync.Map),
 		log:             srvLog,
 		NodeHeightMap:   NodeHeightMap,
-		DownloadHeights: sync.Map{},
+		DownloadHeights: new(sync.Map),
 		regAddr:         conf.RegisterAddr,
-		RecentSent:      sync.Map{},
+		RecentSent:      new(sync.Map),
+		NodeAddedTime:   new(sync.Map),
 	}
 	return s, nil
 }
@@ -184,6 +187,7 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	if err != nil {
 		bn.log.E("[net] broadcast dial tcp got err:%v", err)
 		bn.nodeTable.Delete([]byte(msg.To))
+		bn.NodeAddedTime.Delete(msg.To)
 		return
 	}
 	if er := bn.send(conn, req); er != nil {
@@ -244,6 +248,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	conn, err := bn.dial(msg.To)
 	if err != nil {
 		bn.nodeTable.Delete([]byte(msg.To))
+		bn.NodeAddedTime.Delete(msg.To)
 		bn.log.E("[net] Send, dial tcp got err:%v", err)
 		return
 	}
@@ -281,6 +286,7 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 	defer conn.Close()
 	for {
 		scanner := bufio.NewScanner(conn)
+		scanner.Buffer([]byte{}, bufio.MaxScanTokenSize*100)
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			if !atEOF && isNetVersionMatch(data) {
 				if len(data) > 8 {
@@ -346,6 +352,9 @@ func (bn *BaseNetwork) putNode(addrs string) {
 				continue
 			}
 			bn.nodeTable.Put([]byte(node.Addr()), common.IntToBytes(NodeLiveCycle))
+			if _, exist := bn.NodeAddedTime.Load(node.Addr()); !exist {
+				bn.NodeAddedTime.Store(node.Addr(), time.Now().Unix())
+			}
 		}
 	}
 	bn.findNeighbours()
@@ -365,6 +374,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 					bn.nodeTable.Delete(iter.Key())
 					bn.peers.RemoveByNodeStr(string(iter.Key()))
 					bn.neighbours.Delete(string(iter.Key()))
+					bn.NodeAddedTime.Delete(string(iter.Key()))
 				} else {
 					bn.nodeTable.Put(k, common.IntToBytes(v-1))
 				}
