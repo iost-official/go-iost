@@ -46,6 +46,7 @@ type ServiPool struct {
 	mu  sync.RWMutex
 }
 
+// 没有则添加该节点
 func (sp *ServiPool) User(iostAccount vm.IOSTAccount) *Servi {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
@@ -86,6 +87,29 @@ func (sp *ServiPool) userHm(iostAccount vm.IOSTAccount) *Servi {
 		return sp.hm[string(iostAccount)]
 	}
 }
+
+func (sp *ServiPool) addBtu(iostAccount vm.IOSTAccount,s *Servi) error {
+
+	if _, ok := sp.btu[string(iostAccount)]; ok {
+		delete(sp.btu, string(iostAccount))
+	}
+
+	sp.btu[string(iostAccount)] = s
+	return nil
+
+}
+
+//userHm 添加普通账户
+func (sp *ServiPool) addHm(iostAccount vm.IOSTAccount, s *Servi) error {
+
+	if _, ok := sp.hm[string(iostAccount)]; ok {
+		delete(sp.hm, string(iostAccount))
+	}
+
+	sp.hm[string(iostAccount)] = s
+	return nil
+}
+
 
 func (sp *ServiPool) delBtu(iostAccount vm.IOSTAccount) {
 
@@ -137,7 +161,7 @@ func (sp *ServiPool) updateBtu() {
 		for k1,v1:=range sp.btu{
 			if v.Total() > v1.Total(){
 				sp.delBtu(vm.IOSTAccount(k1))
-				//sp.userBtu()
+				sp.userBtu()
 			}
 		}
 	}
@@ -240,5 +264,6 @@ func init() {
 		panic(err)
 	}
 	StdServiPool.btu = make(map[string]*Servi)
+	StdServiPool.hm = make(map[string]*Servi)
 
 }
