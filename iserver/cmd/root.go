@@ -17,6 +17,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime"
+	"runtime/pprof"
 	"strconv"
 
 	"github.com/iost-official/prototype/account"
@@ -36,15 +38,18 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/iost-official/prototype/consensus/pob2"
-	"github.com/iost-official/prototype/core/txpool"
 	"os/signal"
 	"syscall"
+
+	"github.com/iost-official/prototype/consensus/pob2"
+	"github.com/iost-official/prototype/core/txpool"
 )
 
 var cfgFile string
 var logFile string
 var dbFile string
+var cpuprofile string
+var memprofile string
 
 type ServerExit interface {
 	Stop()
@@ -61,12 +66,24 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+		// Log Server Information
 		log.NewLogger("iost")
 		log.Log.I("Version:  %v", "1.0")
 
 		log.Log.I("cfgFile: %v", viper.GetString("config"))
 		log.Log.I("logFile: %v", viper.GetString("log"))
 		log.Log.I("dbFile: %v", viper.GetString("db"))
+
+		// Start CPU Profile
+		if cpuprofile != "" {
+			f, err := os.Create(cpuprofile)
+			if err != nil {
+				log.Log.E("could not create CPU profile: ", err)
+			}
+			if err := pprof.StartCPUProfile(f); err != nil {
+				log.Log.E("could not start CPU profile: ", err)
+			}
+		}
 
 		//初始化数据库
 		ldbPath := viper.GetString("ldb.path")
@@ -295,6 +312,23 @@ func exitLoop() {
 	}()
 
 	<-exit
+	// Stop Cpu Profile
+	if cpuprofile != "" {
+		pprof.StopCPUProfile()
+	}
+	// Start Memory Profile
+	if memprofile != "" {
+		f, err := os.Create(memprofile)
+		if err != nil {
+			log.Log.E("could not create memory profile: ", err)
+		}
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Log.E("could not write memory profile: ", err)
+		}
+		f.Close()
+	}
+
 	signal.Stop(c)
 	close(exit)
 	os.Exit(0)
@@ -318,9 +352,14 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "iserver.yml", "config file (default is $HOME/.iserver.yaml)")
 	rootCmd.PersistentFlags().StringVar(&logFile, "log", "", "log file (default is ./iserver.log)")
 	rootCmd.PersistentFlags().StringVar(&dbFile, "db", "", "database file (default is ./data.db)")
+	rootCmd.PersistentFlags().StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to `file`")
+	rootCmd.PersistentFlags().StringVar(&memprofile, "memprofile", "", "write memory profile to `file`")
+
 	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	viper.BindPFlag("log", rootCmd.PersistentFlags().Lookup("log"))
 	viper.BindPFlag("db", rootCmd.PersistentFlags().Lookup("db"))
+	viper.BindPFlag("cpuprofile", rootCmd.PersistentFlags().Lookup("cpuprofile"))
+	viper.BindPFlag("memprofile", rootCmd.PersistentFlags().Lookup("memprofile"))
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
