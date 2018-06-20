@@ -57,8 +57,6 @@ func (d *Database) Get(key Key) (Value, error) {
 			}
 			return m, nil
 		}
-	} else {
-		panic("can not get hashmap")
 	}
 	raw, err := d.db.Get(key.Encode())
 	if err != nil {

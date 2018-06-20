@@ -111,15 +111,15 @@ end`,
 		Convey("Lua to core", func() { // todo core2lua的测试平台
 			Convey("string", func() {
 				lstr := lua.LString("hello")
-				cstr := Lua2Core(lstr)
+				cstr, _ := Lua2Core(lstr)
 				So(cstr.Type(), ShouldEqual, state.String)
 				So(cstr.EncodeString(), ShouldEqual, "shello")
 				lbool := lua.LTrue
-				cbool := Lua2Core(lbool)
+				cbool, _ := Lua2Core(lbool)
 				So(cbool.Type(), ShouldEqual, state.Bool)
 				So(cbool.EncodeString(), ShouldEqual, "true")
 				lnum := lua.LNumber(3.14)
-				cnum := Lua2Core(lnum)
+				cnum, _ := Lua2Core(lnum)
 				So(cnum.Type(), ShouldEqual, state.Float)
 				So(cnum.EncodeString(), ShouldEqual, "f3.140000000000000e+00")
 			})

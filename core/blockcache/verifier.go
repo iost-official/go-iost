@@ -35,8 +35,6 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 var ver *verifier.CacheVerifier
 var verb *verifier.CacheVerifier
 
-var verb *verifier.CacheVerifier
-
 // StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 
