@@ -165,7 +165,7 @@ func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
 // deprecate : 请使用iterator
 func (c *CachedBlockChain) GetBlockByHash(blockHash []byte) *block.Block {
 	cbc := c
-	for cbc.block != nil {
+	for cbc != nil && cbc.block != nil {
 		if bytes.Equal(cbc.block.HeadHash(), blockHash) {
 			return cbc.block
 		}

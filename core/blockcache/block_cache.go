@@ -379,7 +379,7 @@ func (h *BlockCacheImpl) CheckBlock(hash []byte) bool {
 	if ok {
 		return true
 	}
-	blk := h.cachedRoot.bc.GetBlockByHash(hash)
+	blk := h.bc.GetBlockByHash(hash)
 	if blk != nil {
 		return true
 	}
