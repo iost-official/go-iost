@@ -45,13 +45,13 @@ sed -i '.bak' "s/{{LOCAL_IP}}/${LOCAL_IP}/g" test/data/iserver2/iserver.yml
 
 docker run -d -p 30302:30302 -p 30303:30303 -p 8080:8080 --name iost_iserver0 \
        -v $PROJECT/test/data/iserver0:/var/lib/iserver \
-       $DOCKER_IMAGE ./start.sh
+       $DOCKER_IMAGE ./start.sh --cpuprofile /var/lib/iserver/cpu.prof
 docker run -d -p 30312:30312 -p 30313:30313 -p 8081:8080 --name iost_iserver1 \
        -v $PROJECT/test/data/iserver1:/var/lib/iserver \
-       $DOCKER_IMAGE ./start.sh
+       $DOCKER_IMAGE ./start.sh --cpuprofile /var/lib/iserver/cpu.prof
 docker run -d -p 30322:30322 -p 30323:30323 -p 8082:8080 --name iost_iserver2 \
        -v $PROJECT/test/data/iserver2:/var/lib/iserver \
-       $DOCKER_IMAGE ./start.sh
+       $DOCKER_IMAGE ./start.sh --cpuprofile /var/lib/iserver/cpu.prof
 ```
 
 ## Browser prometheus

@@ -46,6 +46,8 @@ type Network interface {
 	Close(port uint16) error
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
+	QueryBlockHash(start, end uint64) error
+	AskABlock(height uint64, to string) error
 }
 
 // NetConfig defines p2p net config.
@@ -235,10 +237,6 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	if msg.To == bn.localNode.Addr() || msg.To == "" {
 		return
 	}
-	if msg.TTL == 0 {
-		return
-	}
-	msg.TTL = msg.TTL - 1
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
@@ -423,6 +421,39 @@ func (bn *BaseNetwork) findNeighbours() {
 	for _, n := range neighbours {
 		bn.neighbours.Store(n.String(), n)
 	}
+}
+
+// AskABlock asks a node for a block.
+func (bn *BaseNetwork) AskABlock(height uint64, to string) error {
+	msg := message.Message{
+		Body:    common.Uint64ToBytes(height),
+		ReqType: int32(ReqDownloadBlock),
+		From:    bn.localNode.Addr(),
+		Time:    time.Now().UnixNano(),
+		To:      to,
+	}
+	bn.Send(msg)
+	return nil
+}
+
+// QueryBlockHash queries blocks' hash by broadcast.
+func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
+	hr := message.BlockHashQuery{Start: start, End: end}
+	bytes, err := hr.Marshal(nil)
+	if err != nil {
+		bn.log.D("marshal BlockHashQuery failed. err=%v", err)
+		return err
+	}
+	msg := message.Message{
+		Body:    bytes,
+		ReqType: int32(BlockHashQuery),
+		TTL:     MsgMaxTTL,
+		From:    bn.localNode.Addr(),
+		Time:    time.Now().UnixNano(),
+	}
+	bn.log.D("[net] query block hash. start=%v, end=%v, from=%v", start, end, bn.localNode.Addr())
+	bn.Broadcast(msg)
+	return nil
 }
 
 // Download downloads blocks by height.

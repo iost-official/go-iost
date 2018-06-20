@@ -19,3 +19,17 @@ struct ResponseHeight  {
 struct RequestBlock {
 	BlockNumber  uint64
 }
+
+struct BlockHashQuery {
+    Start   uint64
+    End     uint64
+}
+
+struct BlockHash {
+    Height  uint64
+    Hash    []byte
+}
+
+struct BlockHashResponse {
+    BlockHashes []BlockHash
+}

@@ -3,6 +3,8 @@ package lua
 import (
 	"testing"
 
+	"fmt"
+
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
 	db2 "github.com/iost-official/prototype/db"
@@ -308,52 +310,26 @@ end`,
 func TestCompilerNaive(t *testing.T) {
 	Convey("test of parse", t, func() {
 		parser, _ := NewDocCommentParser(
-			`--- main 合约主入口
--- 输出hello world
+			`
+--- main 合约主入口
+-- server1转账server2
 -- @gas_limit 11
 -- @gas_price 0.0001
 -- @param_cnt 0
 -- @return_cnt 1
 function main()
- Put("hello", "world")
- return "success"
-end--f
---- foo 乱七八糟的函数
--- 不知道在干啥
--- @gas_limit 12345678910
--- @gas_price 3.14159
--- @param_cnt 3
--- @return_cnt 2
-function foo(a,b,c)
-	return a,b
+	print("hello")
+	Transfer("abc","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K", 10)
 end--f
 `)
-		contract, _ := parser.Parse()
+		contract, err := parser.Parse()
+		So(err, ShouldBeNil)
 		So(contract.info.Language, ShouldEqual, "lua")
 		So(contract.info.GasLimit, ShouldEqual, 11)
 		So(contract.info.Price, ShouldEqual, 0.0001)
-		//		So(contract.code, ShouldEqual, `--- main 合约主入口
-		//-- 输出hello world
-		//-- @gas_limit 11
-		//-- @gas_price 0.0001
-		//-- @param_cnt 0
-		//-- @return_cnt 1
-		//function main()
-		// Put("hello", "world")
-		// return "success"
-		//end
-		//--- foo 乱七八糟的函数
-		//-- 不知道在干啥
-		//-- @gas_limit 12345678910
-		//-- @gas_price 3.14159
-		//-- @param_cnt 3
-		//-- @return_cnt 2
-		//function foo(a,b,c)
-		//	return a,b
-		//end--f
-		//`)
+		fmt.Println(contract.code)
 		So(contract.main, ShouldResemble, Method{"main", 0, 1, vm.Public})
-		So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2, vm.Public}})
+		//So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2, vm.Public}})
 
 	})
 
@@ -383,7 +359,7 @@ func TestContext(t *testing.T) {
 	Convey("Test context privilege", t, func() {
 		main := NewMethod(vm.Public, "main", 0, 1)
 		lc := Contract{
-			info: vm.ContractInfo{Prefix: "test", GasLimit: 1000, Publisher: vm.IOSTAccount("b")},
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 10000, Publisher: vm.IOSTAccount("b")},
 			code: `function main()
 	Transfer("a", "b", 50)
 	return "success"
@@ -418,6 +394,57 @@ end`,
 		So(err, ShouldBeNil)
 		So(ab.(*state.VFloat).ToFloat64(), ShouldEqual, 4950)
 		So(bb.(*state.VFloat).ToFloat64(), ShouldEqual, 1050)
+
+	})
+}
+
+func TestVM_Restart(t *testing.T) {
+	Convey("test of restart a vm", t, func() {
+		db, err := db2.DatabaseFactory("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(db)
+		pool := state.NewPool(sdb)
+		pool.PutHM("iost", "a", state.MakeVFloat(5000))
+		pool.PutHM("iost", "b", state.MakeVFloat(1000))
+
+		main := NewMethod(vm.Public, "main", 0, 1)
+		lc := Contract{
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 3, Publisher: vm.IOSTAccount("a")},
+			code: `function main()
+	Transfer("a", "b", 50)
+	return "success"
+end`,
+			main: main,
+		}
+
+		lc2 := Contract{
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 100, Publisher: vm.IOSTAccount("a")},
+			code: `function main()
+	Transfer("a", "b", 100)
+	return "success"
+end`,
+			main: main,
+		}
+
+		var lvm VM
+
+		lvm.Prepare(&lc, nil)
+		lvm.Start()
+		fmt.Println(*lvm.L)
+		fmt.Println("gas after start: ", lvm.PC())
+
+		fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
+		//fmt.Println(pool.GetHM("iost", "b"))
+		fmt.Println("gas after lvm call: ", lvm.PC())
+
+		fmt.Println(*lvm.L)
+
+		lvm.Restart(&lc2)
+		fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
+		//fmt.Println(pool.GetHM("iost", "b"))
+		fmt.Println(*lvm.L)
 
 	})
 }

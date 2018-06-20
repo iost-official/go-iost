@@ -33,6 +33,14 @@ func (d *Block) String() string {
 	return str
 }
 
+func (d *Block) CalculateTreeHash() []byte {
+	treeHash := make([]byte, 0)
+	for _, tx := range d.Content {
+		treeHash = append(treeHash, tx.Publisher.Sig...)
+	}
+	return common.Sha256(treeHash)
+}
+
 // Encode 是区块的序列化方法
 func (d *Block) Encode() []byte {
 	c := make([][]byte, 0)

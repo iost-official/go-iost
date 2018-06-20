@@ -47,7 +47,7 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 	if pool != nil {
 		l.cachePool = pool
 	} else {
-		panic("input pool is nill")
+		return nil, nil, errors.New("input pool is nil")
 	}
 
 	//fmt.Print("1 ")
@@ -130,6 +130,9 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	}
 
 	l.L = lua.NewState()
+	if contract.Info().GasLimit < 3 {
+		return errors.New("gas limit less than 3")
+	}
 	l.L.PCLimit = uint64(contract.Info().GasLimit)
 	l.monitor = monitor
 
@@ -234,6 +237,36 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	}
 	l.APIs = append(l.APIs, Random)
 
+	var Now = api{
+		name: "Now",
+		function: func(L *lua.LState) int {
+			rtn := lua.LNumber(host.Now(l.ctx))
+			L.Push(rtn)
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Now)
+
+	var Height = api{
+		name: "Height",
+		function: func(L *lua.LState) int {
+			rtn := lua.LNumber(host.BlockHeight(l.ctx))
+			L.Push(rtn)
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Height)
+
+	var Witness = api{
+		name: "Witness",
+		function: func(L *lua.LState) int {
+			rtn := lua.LString(host.Witness(l.ctx))
+			L.Push(rtn)
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Witness)
+
 	var Call = api{
 		name: "Call",
 		function: func(L *lua.LState) int {
@@ -297,6 +330,10 @@ func (l *VM) PC() uint64 {
 }
 func (l *VM) Restart(contract vm.Contract) error {
 	l.contract = contract.(*Contract)
+	if contract.Info().GasLimit < 3 {
+		return errors.New("gas limit less than 3")
+	}
+	l.L.PCLimit = uint64(contract.Info().GasLimit)
 	if err := l.L.DoString(l.contract.code); err != nil {
 		return err
 	}

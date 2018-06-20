@@ -5,6 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/iwallet/cmd"
@@ -12,9 +16,6 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"google.golang.org/grpc"
-	"strconv"
-	"sync"
-	"time"
 )
 
 var acc string = "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
@@ -22,8 +23,7 @@ var servers []string = []string{
 	"127.0.0.1",
 	"18.179.143.193",
 	"52.56.118.10",
-	"52.56.118.10",
-	//"13.228.206.188",
+	"13.228.206.188",
 	"13.232.96.221",
 	"18.184.239.232",
 	"13.124.172.86",
@@ -86,9 +86,7 @@ end--f
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println(contract)
 	mtx := tx.NewTx(1, contract)
-
 	acc, err := account.NewAccount(cmd.LoadBytes("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
 	if err != nil {
 		fmt.Println(err.Error())
@@ -105,10 +103,10 @@ end--f
 
 func sendTx(stx *tx.Tx, routineId int) error {
 	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303", grpc.WithInsecure())
+	defer conn.Close()
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 	client := pb.NewCliClient(conn)
 	resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
 	if err != nil {

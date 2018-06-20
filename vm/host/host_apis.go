@@ -82,6 +82,39 @@ func Publisher(contract vm.Contract) string {
 	return string(contract.Info().Publisher)
 }
 
+func Now(ctx *vm.Context) int64 {
+	for ctx != nil {
+		if ctx.Timestamp <= int64(0) {
+			ctx = ctx.Base
+		} else {
+			return ctx.Timestamp
+		}
+	}
+	return 0
+}
+
+func BlockHeight(ctx *vm.Context) int64 {
+	for ctx != nil {
+		if ctx.BlockHeight <= int64(0) {
+			ctx = ctx.Base
+		} else {
+			return ctx.BlockHeight
+		}
+	}
+	return 0
+}
+
+func Witness(ctx *vm.Context) string {
+	for ctx != nil {
+		if len(ctx.Witness) <= 0 {
+			ctx = ctx.Base
+		} else {
+			return string(ctx.Witness)
+		}
+	}
+	return ""
+}
+
 func changeToken(pool state.Pool, key, field state.Key, delta float64) error {
 	val0, err := pool.GetHM(state.Key(key), state.Key(field))
 	if err != nil {

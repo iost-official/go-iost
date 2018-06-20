@@ -64,7 +64,7 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 		return nil, fmt.Errorf("failed to network.Route is nil")
 	}
 
-	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
+	p.synchronizer = NewSynchronizer(p.blockCache, p.router, len(witnessList)*2/3)
 	if p.synchronizer == nil {
 		return nil, err
 	}
@@ -212,7 +212,7 @@ func (p *DPoS) blockLoop() {
 				})
 				///////////////////////////////////
 			*/
-			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
+			p.log.I("Received block:%v,dpos, timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
@@ -293,9 +293,8 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
-		ParentHash: lastBlk.Head.Hash(),
+		ParentHash: lastBlk.HeadHash(),
 		TreeHash:   make([]byte, 0),
-		BlockHash:  make([]byte, 0),
 		Info:       encodeDPoSInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    acc.ID,

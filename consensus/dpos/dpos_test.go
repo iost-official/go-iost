@@ -59,7 +59,6 @@ func TestNewDPoS(t *testing.T) {
 			Version:    0,
 			ParentHash: []byte("111"),
 			TreeHash:   make([]byte, 0),
-			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
 			Number:     int64(1),
 			Witness:    "11111",
@@ -441,7 +440,6 @@ func genBlockHead(p *DPoS) {
 		Version:    0,
 		ParentHash: nil,
 		TreeHash:   make([]byte, 0),
-		BlockHash:  make([]byte, 0),
 		Info:       []byte("test"),
 		Number:     int64(1),
 		Witness:    p.account.ID,
@@ -467,9 +465,9 @@ func genBlocks(p *DPoS, accountList []account.Account, witnessList []string, n i
 		var hash []byte
 		if len(blockPool) == 0 {
 			//用创世块的头hash赋值
-			hash = tblock.Head.Hash()
+			hash = tblock.HeadHash()
 		} else {
-			hash = blockPool[len(blockPool)-1].Head.Hash()
+			hash = blockPool[len(blockPool)-1].HeadHash()
 		}
 		//make every block has no parent
 		if continuity == false {
@@ -479,7 +477,6 @@ func genBlocks(p *DPoS, accountList []account.Account, witnessList []string, n i
 			Version:    0,
 			ParentHash: hash,
 			TreeHash:   make([]byte, 0),
-			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
 			Number:     int64(i + 1),
 			Witness:    witnessList[0],

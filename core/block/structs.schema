@@ -2,7 +2,6 @@ struct BlockHead {
    Version int64
    ParentHash []byte
    TreeHash []byte
-   BlockHash []byte
    Info []byte
    Number  int64
    Witness string

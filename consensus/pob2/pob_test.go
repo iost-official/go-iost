@@ -58,16 +58,17 @@ func TestNewPoB(t *testing.T) {
 		blockChan := make(chan message.Message, 1)
 		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil)
 
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil).AnyTimes()
+
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 			Version:    0,
 			ParentHash: []byte("111"),
-			TreeHash:   make([]byte, 0),
-			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
 			Number:     int64(1),
 			Witness:    "11111",
 			Time:       1111,
 		}}
+		blk.Head.TreeHash = blk.CalculateTreeHash()
 
 		// 创世块的询问和插入
 		var getNumber uint64
@@ -108,7 +109,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	var witnessList []string
 
 	gopath := os.Getenv("GOPATH")
-	fmt.Println(gopath)
+	//fmt.Println(gopath)
 	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
 	txdb1:= gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
 	blockDb2:=gopath + "/src/github.com/iost-official/blockDB"
@@ -185,6 +186,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	//设置第二个通道Blockchan
 	blkChan := make(chan message.Message, 1)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
+	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil).AnyTimes()
 
 	defer guard.Unpatch()
 
@@ -203,6 +205,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 		panic("state.PoolInstance error")
 	}
 
+	blockChain.Top()
 	//verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 	//	return pool, nil
 	//}
@@ -447,6 +450,43 @@ func BenchmarkGenerateBlock(b *testing.B) {
 }
 
 func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolServer) {
+	gopath := os.Getenv("GOPATH")
+	//fmt.Println(gopath)
+	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
+	txdb1:= gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
+	blockDb2:=gopath + "/src/github.com/iost-official/blockDB"
+	txdb2:=gopath + "/src/github.com/iost-official/txDB"
+
+	delDir := os.RemoveAll(blockDb1)
+	if delDir != nil {
+		fmt.Println(delDir)
+	}
+
+	delDir = os.RemoveAll(txdb1)
+	if delDir != nil {
+		fmt.Println(delDir)
+	}
+	delDir = os.RemoveAll(blockDb2)
+	if delDir != nil {
+		fmt.Println(delDir)
+	}
+	delDir = os.RemoveAll(txdb2)
+	if delDir != nil {
+		fmt.Println(delDir)
+	}
+	if Exists(blockDb1) {
+		fmt.Println(" Del blockDb1 Failed")
+	}
+	if Exists(blockDb2) {
+		fmt.Println(" Del blockDb2 Failed")
+	}
+	if Exists(txdb1) {
+		fmt.Println(" Del txdb1 Failed")
+	}
+	if Exists(txdb2) {
+		fmt.Println(" Del txdb2 Failed")
+	}
+
 	var accountList []account.Account
 	var witnessList []string
 
@@ -491,7 +531,7 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	//设置第二个通道Blockchan
 	blkChan := make(chan message.Message, 1)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
-
+	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil).AnyTimes()
 	defer guard.Unpatch()
 
 	txDb := tx.TxDbInstance()
@@ -536,10 +576,9 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 func genTx(p *PoB, nonce int) tx.Tx {
 	main := lua.NewMethod(2, "main", 0, 1)
 	code := `function main()
-				Put("hello", "world")
 				return "success"
-			end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
+			end--f`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 0, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
 
 	_tx := tx.NewTx(int64(nonce), &lc)
 	_tx, _ = tx.SignTx(_tx, p.account)
@@ -560,14 +599,12 @@ func genBlockHead(p *PoB) {
 	blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: nil,
-		TreeHash:   make([]byte, 0),
-		BlockHash:  make([]byte, 0),
 		Info:       []byte("test"),
 		Number:     int64(1),
 		Witness:    p.account.ID,
 		Time:       int64(0),
 	}}
-
+	blk.Head.TreeHash = blk.CalculateTreeHash()
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, p.account.Seckey)
 	blk.Head.Signature = sig.Encode()
@@ -587,9 +624,9 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 		var hash []byte
 		if len(blockPool) == 0 {
 			//用创世块的头hash赋值
-			hash = tblock.Head.Hash()
+			hash = tblock.HeadHash()
 		} else {
-			hash = blockPool[len(blockPool)-1].Head.Hash()
+			hash = blockPool[len(blockPool)-1].HeadHash()
 		}
 		//make every block has no parent
 		if continuity == false {
@@ -598,21 +635,19 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 			Version:    0,
 			ParentHash: hash,
-			TreeHash:   make([]byte, 0),
-			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
 			Number:     int64(i + 1),
 			Witness:    account.GetIdByPubkey(accountList[i%3].Pubkey),
 			Time:       slot + int64(i),
 		}}
 
-		headInfo := generateHeadInfo(blk.Head)
-		sig, _ := common.Sign(common.Secp256k1, headInfo, accountList[i%3].Seckey)
-		blk.Head.Signature = sig.Encode()
-
 		for i := 0; i < txCnt; i++ {
 			blk.Content = append(blk.Content, genTx(p, i))
 		}
+		blk.Head.TreeHash = blk.CalculateTreeHash()
+		headInfo := generateHeadInfo(blk.Head)
+		sig, _ := common.Sign(common.Secp256k1, headInfo, accountList[i%3].Seckey)
+		blk.Head.Signature = sig.Encode()
 		blockPool = append(blockPool, &blk)
 	}
 	return

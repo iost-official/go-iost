@@ -7,6 +7,8 @@ import (
 
 	"regexp"
 
+	"errors"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
 )
@@ -79,8 +81,8 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (
 
 		bos2 := balanceOfSender(sender, pool)
 
-		if gas > uint64(contract.Info().GasLimit) { // TODO 不应该发生的分支
-			panic("gas overflow!")
+		if gas > uint64(contract.Info().GasLimit) {
+			return pool, errors.New("gas overflow!")
 		}
 
 		bos2 -= float64(gas) * contract.Info().Price

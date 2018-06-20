@@ -98,7 +98,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 		return nil, fmt.Errorf("failed to network.Route is nil")
 	}
 
-	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
+	p.synchronizer = NewSynchronizer(p.blockCache, p.router, len(witnessList)*2/3)
 	if p.synchronizer == nil {
 		return nil, err
 	}
@@ -222,14 +222,7 @@ func (p *PoB) blockLoop() {
 			var blk block.Block
 			blk.Decode(req.Body)
 
-			////////////probe//////////////////
-			log.Report(&log.MsgBlock{
-				SubType:       "receive",
-				BlockHeadHash: blk.HeadHash(),
-				BlockNum:      blk.Head.Number,
-			})
-			///////////////////////////////////
-			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
+			p.log.I("Received block:%v ,from=%v, timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, req.From, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
@@ -314,23 +307,21 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
-		ParentHash: lastBlk.Head.Hash(),
-		TreeHash:   make([]byte, 0),
-		BlockHash:  make([]byte, 0),
+		ParentHash: lastBlk.HeadHash(),
 		Info:       encodePoBInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    acc.ID,
 		Time:       GetCurrentTimestamp().Slot,
 	}}
 	p.infoCache = [][]byte{}
-	headInfo := generateHeadInfo(blk.Head)
-	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
-	blk.Head.Signature = sig.Encode()
 	//return &blk
 	spool1 := pool.Copy()
 
-	vc := &vm.Context{}
-	vc.ParentHash = lastBlk.Head.Hash()
+	vc := vm.NewContext(vm.BaseContext())
+	vc.Timestamp = blk.Head.Time
+	vc.ParentHash = lastBlk.HeadHash()
+	vc.BlockHeight = blk.Head.Number
+	vc.Witness = vm.IOSTAccount(acc.ID)
 
 	//TODO Content大小控制
 	var tx TransactionsList
@@ -338,6 +329,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		p.log.I("PendingTransactions Begin...")
 		tx = txpool.TxPoolS.PendingTransactions(TxPerBlk)
 		p.log.I("PendingTransactions End.")
+		p.log.I("PendingTransactions Size: %v.", txpool.TxPoolS.PendingTransactionNum())
 	}
 
 	if len(tx) != 0 {
@@ -359,17 +351,13 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 			}
 		}
 	}
+	blk.Head.TreeHash = blk.CalculateTreeHash()
+	headInfo := generateHeadInfo(blk.Head)
+	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
+	blk.Head.Signature = sig.Encode()
 
-	blk.Head.BlockHash = blk.Head.Hash()
 	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
 
-	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine
-	log.Report(&log.MsgBlock{
-		SubType:       "gen",
-		BlockHeadHash: blk.HeadHash(),
-		BlockNum:      blk.Head.Number,
-	})
-	/////////////////////////////////////
 	generatedBlockCount.Inc()
 
 	//Clear Servi
@@ -413,28 +401,15 @@ func encodePoBInfo(votes [][]byte) []byte {
 
 //收到新块，验证新块，如果验证成功，更新PoB全局动态属性类并将其加入block cache，再广播
 func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-	////////////probe//////////////////
-	msgBlock := log.MsgBlock{
-		SubType:       "verify.fail",
-		BlockHeadHash: blk.HeadHash(),
-		BlockNum:      blk.Head.Number,
-	}
-	///////////////////////////////////
 	// verify block head
 
 	if err := blockcache.VerifyBlockHead(blk, parent); err != nil {
-		////////////probe//////////////////
-		log.Report(&msgBlock)
-		///////////////////////////////////
 		return nil, err
 	}
 
 	// verify block witness
 	// TODO currentSlot is negative
 	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
-		////////////probe//////////////////
-		log.Report(&msgBlock)
-		///////////////////////////////////
 		return nil, errors.New("wrong witness")
 
 	}
@@ -449,21 +424,11 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 
 	// verify block witness signature
 	if !common.VerifySignature(headInfo, signature) {
-		////////////probe//////////////////
-		log.Report(&msgBlock)
-		///////////////////////////////////
 		return nil, errors.New("wrong signature")
 	}
 	newPool, err := blockcache.StdBlockVerifier(blk, pool)
 	if err != nil {
-		////////////probe//////////////////
-		log.Report(&msgBlock)
-		///////////////////////////////////
 		return nil, err
 	}
-	////////////probe//////////////////
-	msgBlock.SubType = "verify.pass"
-	log.Report(&msgBlock)
-	///////////////////////////////////
 	return newPool, nil
 }

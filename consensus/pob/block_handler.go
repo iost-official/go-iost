@@ -36,7 +36,6 @@ func (g *GeneratorImpl) NewBlock() block.Block {
 		Version:    1,
 		ParentHash: base.HeadHash(),
 		TreeHash:   nil,
-		BlockHash:  nil,
 		Time:       time.Now().Unix(),
 		Witness:    g.holder.self.ID,
 	}

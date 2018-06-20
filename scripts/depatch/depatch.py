@@ -25,7 +25,7 @@ def Buildwallet():
  	ret=wCommand("cd "+project_path+"iwallet;go build")
 	ret=wCommand("rm -f "+cur_path+"iwallet")
 	ret=wCommand("cp "+project_path+"iwallet/iwallet "+cur_path)
-	return True
+	return (True,"build iwallet success")
 
 genesisPubkey="2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 genesisSeckey="BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"
@@ -41,19 +41,17 @@ def construct(_from,_to,money):
 		'-- @return_cnt 0\n',
 		'function main()\n',
 		'	Transfer("'+_from+'","'+_to+'",'+str(money)+')\n',
-		'end\n',
+		'end--f\n',
 	])
 	f.close()
 
 def Compile():
 	#print "[iwallet compile]:",
 	wCommand("rm -f "+cur_path+"test/1to2.sc")
-	wCommand(cur_path+"iwallet compile -n "+str(random.randint(0,sys.maxint))+" "+cur_path+"test/1to2.lua")
+	ret=wCommand(cur_path+"iwallet compile -n "+str(random.randint(0,sys.maxint))+" "+cur_path+"test/1to2.lua")
 	if has(cur_path+"test/1to2.sc"):
-		#print("ok")
-		return True 
-	#print("fail")
-	return False
+		return (True,ret)
+	return (False,ret)
 
 def Sign():
 	#print "[iwallet sign]:",
@@ -61,19 +59,17 @@ def Sign():
 	ret=wCommand(cur_path+"iwallet sign "+cur_path+"test/1to2.sc -k ~/.ssh/genesis_secp")
 	if has(cur_path+"test/1to2.sig"):
 		#print("ok")
-		return True 
+		return (True,ret)
 	#print("fail")
-	return False
+	return (False,ret)
 
 def Publish():
 	#print "[iwallet publish]:",
-	ret=wCommand(cur_path+"iwallet publish "+cur_path+"test/1to2.sc "+cur_path+"test/1to2.sig -k ~/.ssh/genesis_secp")
+	ret=wCommand(cur_path+"iwallet publish -s 52.56.118.10:30303 "+cur_path+"test/1to2.sc "+cur_path+"test/1to2.sig -k ~/.ssh/genesis_secp")
 	if ret.startswith("ok"):
 		#check balance here
-		#print("ok")
-		return True
-	#print("fail")
-	return False
+		return (True,ret[2:])
+	return (False,ret)
 
 #send money for someone,used in blockchain explorer
 def sendonetx(_to,money):
@@ -86,12 +82,15 @@ def sendonetx(_to,money):
 	f2.write(genesisPubkey)
 	f2.close()
 
-	flist=[Buildwallet,Compile,Sign,Publish,]
+	if has(cur_path+"iwallet")==False:Buildwallet()
+	flist=[Compile,Sign,Publish,]
+	ret=(True,"")
 	for func in flist:
-		if func()==False:
+		ret=func()
+		if ret[0]==False:
 			print(func)
-			return "FAIL"
-	return "SUCCESS"
+			return ret
+	return ret
 
 app = Flask(__name__)
 @app.route('/')
@@ -104,7 +103,8 @@ def givemoney():
 		args=request.args.to_dict()
 		user=args['user']
 		money=args['money']
-		return sendonetx(user,float(money))
+		ret=sendonetx(user,float(money))
+		return ret[1]
 
 
 if __name__ == '__main__':
