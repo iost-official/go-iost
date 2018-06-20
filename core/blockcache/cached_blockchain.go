@@ -166,7 +166,7 @@ func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
 func (c *CachedBlockChain) GetBlockByHash(blockHash []byte) *block.Block {
 	cbc := c
 	for cbc.block != nil {
-		if bytes.Equal(cbc.block.Head.Hash(), blockHash) {
+		if bytes.Equal(cbc.block.HeadHash(), blockHash) {
 			return cbc.block
 		}
 		cbc = cbc.parent
