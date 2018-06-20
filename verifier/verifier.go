@@ -7,9 +7,10 @@ import (
 
 	"regexp"
 
+	"errors"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/vm"
-	"github.com/pkg/errors"
 )
 
 const (
