@@ -67,7 +67,7 @@ def Sign():
 
 def Publish():
 	#print "[iwallet publish]:",
-	ret=wCommand(cur_path+"iwallet publish "+cur_path+"test/1to2.sc "+cur_path+"test/1to2.sig -k ~/.ssh/genesis_secp")
+	ret=wCommand(cur_path+"iwallet publish -s 52.56.118.10:30303 "+cur_path+"test/1to2.sc "+cur_path+"test/1to2.sig -k ~/.ssh/genesis_secp")
 	if ret.startswith("ok"):
 		#check balance here
 		#print("ok")
