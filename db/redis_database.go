@@ -110,6 +110,13 @@ func (rdb *RedisDatabase) Delete(key []byte) error {
 	return err
 }
 
+func (rdb *RedisDatabase) Type(key []byte) string {
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	rtn, _ := conn.Do("TYPE", key)
+	return rtn.(string)
+}
+
 func (rdb *RedisDatabase) Close() {
 	// rdb.cli = nil
 	rdb.connPool.Close()
