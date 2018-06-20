@@ -451,6 +451,43 @@ func BenchmarkGenerateBlock(b *testing.B) {
 }
 
 func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolServer) {
+	gopath := os.Getenv("GOPATH")
+	//fmt.Println(gopath)
+	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
+	txdb1:= gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
+	blockDb2:=gopath + "/src/github.com/iost-official/blockDB"
+	txdb2:=gopath + "/src/github.com/iost-official/txDB"
+
+	delDir := os.RemoveAll(blockDb1)
+	if delDir != nil {
+		fmt.Println(delDir)
+	}
+
+	delDir = os.RemoveAll(txdb1)
+	if delDir != nil {
+		fmt.Println(delDir)
+	}
+	delDir = os.RemoveAll(blockDb2)
+	if delDir != nil {
+		fmt.Println(delDir)
+	}
+	delDir = os.RemoveAll(txdb2)
+	if delDir != nil {
+		fmt.Println(delDir)
+	}
+	if Exists(blockDb1) {
+		fmt.Println(" Del blockDb1 Failed")
+	}
+	if Exists(blockDb2) {
+		fmt.Println(" Del blockDb2 Failed")
+	}
+	if Exists(txdb1) {
+		fmt.Println(" Del txdb1 Failed")
+	}
+	if Exists(txdb2) {
+		fmt.Println(" Del txdb2 Failed")
+	}
+
 	var accountList []account.Account
 	var witnessList []string
 
@@ -495,7 +532,7 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	//设置第二个通道Blockchan
 	blkChan := make(chan message.Message, 1)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
-
+	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil).AnyTimes()
 	defer guard.Unpatch()
 
 	txDb := tx.TxDbInstance()
@@ -540,10 +577,9 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 func genTx(p *PoB, nonce int) tx.Tx {
 	main := lua.NewMethod(2, "main", 0, 1)
 	code := `function main()
-				Put("hello", "world")
 				return "success"
-			end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
+			end--f`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 0.001, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
 
 	_tx := tx.NewTx(int64(nonce), &lc)
 	_tx, _ = tx.SignTx(_tx, p.account)
