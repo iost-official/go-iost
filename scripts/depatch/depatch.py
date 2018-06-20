@@ -41,7 +41,7 @@ def construct(_from,_to,money):
 		'-- @return_cnt 0\n',
 		'function main()\n',
 		'	Transfer("'+_from+'","'+_to+'",'+str(money)+')\n',
-		'end\n',
+		'end--f\n',
 	])
 	f.close()
 
