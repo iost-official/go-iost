@@ -5,6 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/iwallet/cmd"
@@ -12,9 +16,6 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"google.golang.org/grpc"
-	"strconv"
-	"sync"
-	"time"
 )
 
 var acc string = "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
@@ -22,8 +23,7 @@ var servers []string = []string{
 	"127.0.0.1",
 	"18.179.143.193",
 	"52.56.118.10",
-	"52.56.118.10",
-	//"13.228.206.188",
+	"13.228.206.188",
 	"13.232.96.221",
 	"18.184.239.232",
 	"13.124.172.86",
