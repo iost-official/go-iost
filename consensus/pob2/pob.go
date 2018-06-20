@@ -46,6 +46,17 @@ var (
 			Help: "Length of confirmed blockchain on current node",
 		},
 	)
+
+	GenesisAccount = map[string]int64{
+		"BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT":  3000000000,
+		"tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU":  2900000000,
+		"s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB":  2800000000,
+		"22zr9ows3qndmAjnkiPFex26taATEaEfjGkatVCr5akSU": 2700000000,
+		"wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG":  2600000000,
+		"oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU":  2500000000,
+		"28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym": 2300000000,
+		"x9uhGBw3tyDzNkNFM7hcXeGdEpbAHdasgGyhfcMmonYq":  2200000000,
+	}
 )
 
 func init() {
@@ -175,14 +186,12 @@ func (p *PoB) CachedStatePool() state.Pool {
 func (p *PoB) genesis(initTime int64) error {
 
 	main := lua.NewMethod(vm.Public, "", 0, 0)
-	code := `@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f3000000000
-@PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f2900000000
-@PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f2800000000
-@PutHM iost 22zr9ows3qndmAjnkiPFex26taATEaEfjGkatVCr5akSU f2700000000
-@PutHM iost wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG f2600000000
-@PutHM iost oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU f2500000000
-@PutHM iost 28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym f2300000000
-@PutHM iost x9uhGBw3tyDzNkNFM7hcXeGdEpbAHdasgGyhfcMmonYq f2200000000`
+
+	var code string
+	for k, v := range GenesisAccount {
+		code += fmt.Sprintf("@PutHM iost %s f%d\n", k, v)
+	}
+
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
 
 	tx := NewTx(0, &lc)
@@ -343,7 +352,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	}
 
 	if len(tx) != 0 {
-		ForEnd:
+	ForEnd:
 		for _, t := range tx {
 			select {
 			case <-limitTime.C:
