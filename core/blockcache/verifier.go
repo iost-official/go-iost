@@ -37,9 +37,9 @@ var ver *verifier.CacheVerifier
 // StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 
-	ver.Context = &vm.Context{
-		ParentHash: block.Head.ParentHash,
-	}
+	ver.Context = vm.NewContext(vm.BaseContext())
+	ver.Context.ParentHash = block.Head.ParentHash
+	ver.Context.Timestamp = block.Head.Time
 
 	txs := block.Content
 	ptxs := make([]*tx.Tx, 0)

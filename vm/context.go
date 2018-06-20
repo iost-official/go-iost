@@ -5,6 +5,7 @@ type Context struct {
 	Publisher  IOSTAccount
 	Signers    []IOSTAccount
 	ParentHash []byte
+	Timestamp  int64
 }
 
 func NewContext(ctx *Context) *Context {
