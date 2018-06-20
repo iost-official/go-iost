@@ -72,7 +72,11 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 		} else {
 			largs := make([]lua.LValue, 0)
 			for _, arg := range args {
-				largs = append(largs, Core2Lua(arg))
+				v, err0 := Core2Lua(arg)
+				if err0 != nil {
+					err = err0
+				}
+				largs = append(largs, v)
 			}
 			err = l.L.CallByParam(lua.P{
 				Fn:      l.L.GetGlobal(method.name),
@@ -107,7 +111,11 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 	for i := 0; i < method.outputCount; i++ {
 		ret := l.L.Get(-1) // returned value
 		l.L.Pop(1)
-		rtnValue = append(rtnValue, Lua2Core(ret))
+		v2, err := Lua2Core(ret)
+		if err != nil {
+			return nil, pool, err
+		}
+		rtnValue = append(rtnValue, v2)
 	}
 	return rtnValue, l.cachePool, nil
 }
@@ -144,7 +152,12 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 			k := L.ToString(1)
 			key := state.Key(l.contract.Info().Prefix + k)
 			v := L.Get(2)
-			host.Put(l.cachePool, key, Lua2Core(v))
+			v2, err := Lua2Core(v)
+			if err != nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			host.Put(l.cachePool, key, v2)
 			L.Push(lua.LTrue)
 			L.PCount += 1000
 			return 1
@@ -172,7 +185,14 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(Core2Lua(v))
+			//fmt.Println("get:", v)
+			v2, err := Core2Lua(v)
+			//fmt.Println(v2.(*lua.LTable).Len())
+			if err != nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(v2)
 			L.PCount += 1000
 			return 1
 		},
@@ -212,6 +232,16 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 		},
 	}
 	l.APIs = append(l.APIs, Deposit)
+
+	var ParentHash = api{
+		name: "ParentHash",
+		function: func(L *lua.LState) int {
+			rtn := host.ParentHashLast(l.ctx)
+			L.Push(lua.LNumber(float64(rtn)))
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, ParentHash)
 
 	var Withdraw = api{
 		name: "Withdraw",
@@ -292,7 +322,13 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 				args := make([]state.Value, 0)
 
 				for i := 1; i <= method.InputCount(); i++ {
-					args = append(args, Lua2Core(L.Get(i+2)))
+					v2, err := Lua2Core(L.Get(i + 2))
+					if err != nil {
+						L.Push(lua.LString(err.Error()))
+						return 1
+					}
+
+					args = append(args, v2)
 				}
 
 				ctx := vm.NewContext(l.ctx)
@@ -307,7 +343,12 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 				}
 				l.cachePool = pool
 				for _, v := range rtn {
-					L.Push(Core2Lua(v))
+					v2, err := Core2Lua(v)
+					if err != nil {
+						L.Push(lua.LString(err.Error()))
+						return 1
+					}
+					L.Push(v2)
 				}
 				return len(rtn)
 			default:

@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -89,9 +90,14 @@ func chainServer(chain block.Chain) {
 		if len(num) > 0 {
 			n, _ := strconv.ParseUint(num[0], 10, 64)
 			blk := chain.GetBlockByNumber(n)
+			blkStr := blk.String()
+			md5Ctx := md5.New()
+			md5Ctx.Write([]byte(blkStr))
+			cipherStr := md5Ctx.Sum(nil)
 			resp := map[string]interface{}{
 				"number": n,
-				"block":  blk,
+				"block":  blkStr,
+				"md5":    string(cipherStr),
 			}
 			bytes, err := json.Marshal(resp)
 			if err != nil {
@@ -102,9 +108,14 @@ func chainServer(chain block.Chain) {
 		}
 		if len(has) > 0 {
 			blk := chain.GetBlockByHash([]byte(has[0]))
+			blkStr := blk.String()
+			md5Ctx := md5.New()
+			md5Ctx.Write([]byte(blkStr))
+			cipherStr := md5Ctx.Sum(nil)
 			resp := map[string]interface{}{
 				"hash":  has[0],
-				"block": blk,
+				"block": blkStr,
+				"md5":   string(cipherStr),
 			}
 			bytes, err := json.Marshal(resp)
 			if err != nil {

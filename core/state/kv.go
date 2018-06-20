@@ -275,6 +275,10 @@ func (v *VMap) Get(key Key) Value {
 	return ret
 }
 
+func (v *VMap) Map() map[Key]Value {
+	return v.m
+}
+
 //const stack_size_limit uint32 = 65536
 //
 //type VStack struct {
