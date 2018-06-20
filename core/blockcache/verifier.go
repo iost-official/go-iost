@@ -33,6 +33,7 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 }
 
 var ver *verifier.CacheVerifier
+var verb *verifier.CacheVerifier
 
 var verb *verifier.CacheVerifier
 
@@ -85,13 +86,13 @@ func StdTxsVerifier(txs []*tx.Tx, pool state.Pool) (state.Pool, int, error) {
 }
 
 func CleanStdVerifier() {
-	ver.CleanUp()
+	verb.CleanUp()
 }
 
 func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context *vm.Context) error {
-	ver.Context = context
+	verb.Context = context
 
-	p2, err := ver.VerifyContract(txx.Contract, pool.Copy())
+	p2, err := verb.VerifyContract(txx.Contract, pool.Copy())
 	if err != nil {
 		return err
 	}
@@ -116,4 +117,7 @@ func VerifyTxSig(tx tx.Tx) bool {
 func init() {
 	veri := verifier.NewCacheVerifier()
 	ver = &veri
+
+	veri = verifier.NewCacheVerifier()
+	verb = &veri
 }

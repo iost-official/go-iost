@@ -15,7 +15,9 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -56,6 +58,99 @@ type ServerExit interface {
 }
 
 var serverExit []ServerExit
+
+func chainServer(chain block.Chain) {
+	http.HandleFunc("/blockchain/length", func(w http.ResponseWriter, r *http.Request) {
+		len := chain.Length()
+		resp := map[string]interface{}{
+			"len": len,
+		}
+		bytes, err := json.Marshal(resp)
+		if err != nil {
+			fmt.Println("json encode error. err=", err)
+		}
+		w.Write(bytes)
+	})
+	http.HandleFunc("/blockchain", func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		num := r.Form["number"]
+		has := r.Form["hash"]
+		if len(num) == 0 && len(has) == 0 {
+			resp := map[string]interface{}{
+				"message": "wrong parameter. missing hash or number!",
+			}
+			bytes, err := json.Marshal(resp)
+			if err != nil {
+				fmt.Println("json encode error. err=", err)
+			}
+			w.Write(bytes)
+			return
+		}
+		if len(num) > 0 {
+			n, _ := strconv.ParseUint(num[0], 10, 64)
+			blk := chain.GetBlockByNumber(n)
+			resp := map[string]interface{}{
+				"number": n,
+				"block":  blk,
+			}
+			bytes, err := json.Marshal(resp)
+			if err != nil {
+				fmt.Println("json encode error. err=", err)
+			}
+			w.Write(bytes)
+			return
+		}
+		if len(has) > 0 {
+			blk := chain.GetBlockByHash([]byte(has[0]))
+			resp := map[string]interface{}{
+				"hash":  has[0],
+				"block": blk,
+			}
+			bytes, err := json.Marshal(resp)
+			if err != nil {
+				fmt.Println("json encode error. err=", err)
+			}
+			w.Write(bytes)
+			return
+		}
+	})
+	http.HandleFunc("/transaction", func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		if len(r.Form["hash"]) == 0 {
+			resp := map[string]interface{}{
+				"message": "wrong parameter. missing hash!",
+			}
+			bytes, err := json.Marshal(resp)
+			if err != nil {
+				fmt.Println("get blockchain length failed. err=", err)
+			}
+			w.Write(bytes)
+			return
+		}
+		has := r.Form["hash"][0]
+		tx, err := chain.GetTx([]byte(has))
+		resp := map[string]interface{}{
+			"err": err,
+			"tx":  tx,
+		}
+		bytes, err := json.Marshal(resp)
+		if err != nil {
+			fmt.Println("json encode error. err=", err)
+		}
+		w.Write(bytes)
+	})
+	/*  http.HandleFunc("/blockchain/length", func(w http.ResponseWriter, r *http.Request) { */
+	// len := chain.Length()
+	// resp := map[string]interface{}{
+	// "len": len,
+	// }
+	// bytes, err := json.Marshal(resp)
+	// if err != nil {
+	// fmt.Println("get blockchain length failed. err=", err)
+	// }
+	// w.Write(bytes)
+	/* }) */
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -139,7 +234,7 @@ var rootCmd = &cobra.Command{
 		}
 		log.Log.I("BlockNum on Redis: %v", blockNum)
 		log.Log.I("BCLen: %v", bcLen)
-		if bcLen-1 >= blockNum {
+		if bcLen >= blockNum+1 {
 			var blk *block.Block
 			for i := blockNum; i < bcLen; i++ {
 				blk = blockChain.GetBlockByNumber(i)
@@ -281,6 +376,9 @@ var rootCmd = &cobra.Command{
 			SubType: "online",
 		})
 		///////////////////////////////////
+
+		chainServer(blockChain)
+
 		//等待推出信号
 		exitLoop()
 

@@ -24,11 +24,11 @@ func fromBase64(str string) []byte {
 }
 
 func Report(msg Msg) error {
-	go func() {
-		if err := report(msg); err != nil {
-			Log.E("failed to post log msg, :%v", err)
-		}
-	}()
+	/*  go func() { */
+	// if err := report(msg); err != nil {
+	// Log.E("failed to post log msg, :%v", err)
+	// }
+	/* }() */
 	return nil
 }
 
