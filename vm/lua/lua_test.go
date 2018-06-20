@@ -366,7 +366,7 @@ func TestContext(t *testing.T) {
 	Convey("Test context privilege", t, func() {
 		main := NewMethod(vm.Public, "main", 0, 1)
 		lc := Contract{
-			info: vm.ContractInfo{Prefix: "test", GasLimit: 1000, Publisher: vm.IOSTAccount("b")},
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 10000, Publisher: vm.IOSTAccount("b")},
 			code: `function main()
 	Transfer("a", "b", 50)
 	return "success"
@@ -401,6 +401,57 @@ end`,
 		So(err, ShouldBeNil)
 		So(ab.(*state.VFloat).ToFloat64(), ShouldEqual, 4950)
 		So(bb.(*state.VFloat).ToFloat64(), ShouldEqual, 1050)
+
+	})
+}
+
+func TestVM_Restart(t *testing.T) {
+	Convey("test of restart a vm", t, func() {
+		db, err := db2.DatabaseFactory("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(db)
+		pool := state.NewPool(sdb)
+		pool.PutHM("iost", "a", state.MakeVFloat(5000))
+		pool.PutHM("iost", "b", state.MakeVFloat(1000))
+
+		main := NewMethod(vm.Public, "main", 0, 1)
+		lc := Contract{
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 3, Publisher: vm.IOSTAccount("a")},
+			code: `function main()
+	Transfer("a", "b", 50)
+	return "success"
+end`,
+			main: main,
+		}
+
+		lc2 := Contract{
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 100, Publisher: vm.IOSTAccount("a")},
+			code: `function main()
+	Transfer("a", "b", 100)
+	return "success"
+end`,
+			main: main,
+		}
+
+		var lvm VM
+
+		lvm.Prepare(&lc, nil)
+		lvm.Start()
+		fmt.Println(*lvm.L)
+		fmt.Println("gas after start: ", lvm.PC())
+
+		fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
+		//fmt.Println(pool.GetHM("iost", "b"))
+		fmt.Println("gas after lvm call: ", lvm.PC())
+
+		fmt.Println(*lvm.L)
+
+		lvm.Restart(&lc2)
+		fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
+		//fmt.Println(pool.GetHM("iost", "b"))
+		fmt.Println(*lvm.L)
 
 	})
 }
