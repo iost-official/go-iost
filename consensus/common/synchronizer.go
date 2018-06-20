@@ -176,7 +176,6 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 			sync.requestMap[i] = true
 		}
 		sync.reqMapLock.Unlock()
-		time.Sleep(time.Second * 1)
 		startNumber += uint64(MaxBlockHashQueryNumber)
 	}
 	if startNumber <= endNumber {
