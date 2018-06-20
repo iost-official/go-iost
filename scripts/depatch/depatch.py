@@ -68,7 +68,7 @@ def Publish():
 	ret=wCommand(cur_path+"iwallet publish -s 52.56.118.10:30303 "+cur_path+"test/1to2.sc "+cur_path+"test/1to2.sig -k ~/.ssh/genesis_secp")
 	if ret.startswith("ok"):
 		#check balance here
-		return (True,ret[2:])
+		return (True,ret[3:-1])
 	return (False,ret)
 
 #send money for someone,used in blockchain explorer
