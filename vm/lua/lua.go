@@ -237,6 +237,36 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	}
 	l.APIs = append(l.APIs, Random)
 
+	var Now = api{
+		name: "Now",
+		function: func(L *lua.LState) int {
+			rtn := lua.LNumber(host.Now(l.ctx))
+			L.Push(rtn)
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Now)
+
+	var Height = api{
+		name: "Height",
+		function: func(L *lua.LState) int {
+			rtn := lua.LNumber(host.BlockHeight(l.ctx))
+			L.Push(rtn)
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Height)
+
+	var Witness = api{
+		name: "Witness",
+		function: func(L *lua.LState) int {
+			rtn := lua.LString(host.Witness(l.ctx))
+			L.Push(rtn)
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Witness)
+
 	var Call = api{
 		name: "Call",
 		function: func(L *lua.LState) int {

@@ -231,7 +231,7 @@ func (p *PoB) blockLoop() {
 				BlockNum:      blk.Head.Number,
 			})
 			///////////////////////////////////
-			p.log.I("Received block:%v , timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(blk.Content))
+			p.log.I("Received block:%v ,from=%v, timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, req.From, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			err := p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
@@ -320,7 +320,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.Head.Hash(),
-		BlockHash:  make([]byte, 0),
 		Info:       encodePoBInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    acc.ID,
@@ -330,8 +329,11 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	//return &blk
 	spool1 := pool.Copy()
 
-	vc := &vm.Context{}
+	vc := vm.NewContext(vm.BaseContext())
+	vc.Timestamp = blk.Head.Time
 	vc.ParentHash = lastBlk.Head.Hash()
+	vc.BlockHeight = blk.Head.Number
+	vc.Witness = vm.IOSTAccount(acc.ID)
 
 	//TODO Content大小控制
 	var tx TransactionsList
@@ -366,7 +368,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
 
-	blk.Head.BlockHash = blk.Head.Hash()
 	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
 
 	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine

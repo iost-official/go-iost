@@ -182,7 +182,9 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 		blkConfirmChan:     make(chan uint64, 10),
 		chConfirmBlockData: make(chan *block.Block, 100),
 	}
-	h.hashMap[string(h.cachedRoot.bc.Top().Head.Hash())] = h.cachedRoot
+	if h.cachedRoot.bc.Top() != nil {
+		h.hashMap[string(h.cachedRoot.bc.Top().Head.Hash())] = h.cachedRoot
+	}
 	return &h
 }
 
@@ -200,6 +202,7 @@ func (h *BlockCacheImpl) BlockChain() block.Chain {
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	h.bc.Push(block)
 	h.cachedRoot.pool.Flush()
+	h.hashMap[string(h.cachedRoot.bc.Top().Head.Hash())] = h.cachedRoot
 	return nil
 }
 
@@ -260,11 +263,11 @@ func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, p
 
 // addSingles 尝试把single blocks上链
 func (h *BlockCacheImpl) addSingles(newTree *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
-	block := newTree.bc.block
+	block := newTree.bc.Top()
 	newChildren := make([]*BlockCacheTree, 0)
 	for k, _ := range h.singleBlockRoot.children {
 		//fmt.Println(bct.bc.block.Head.ParentHash)
-		if bytes.Equal(h.singleBlockRoot.children[k].bc.block.Head.ParentHash, block.Head.Hash()) {
+		if bytes.Equal(h.singleBlockRoot.children[k].bc.Top().Head.ParentHash, block.Head.Hash()) {
 			h.addSubTree(newTree, h.singleBlockRoot.children[k], verifier)
 		} else {
 			newChildren = append(newChildren, h.singleBlockRoot.children[k])
@@ -274,7 +277,7 @@ func (h *BlockCacheImpl) addSingles(newTree *BlockCacheTree, verifier func(blk *
 }
 
 func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
-	blk := child.bc.block
+	blk := child.bc.Top()
 	newTree := newBct(blk, root)
 	if root.bctType == OnCache {
 		newPool, err := verifier(blk, root.bc.Top(), root.pool)
@@ -300,7 +303,7 @@ func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree,
 }
 
 func (h *BlockCacheImpl) delSubTree(root *BlockCacheTree) {
-	delete(h.hashMap, string(root.bc.block.Head.Hash()))
+	delete(h.hashMap, string(root.bc.Top().Head.Hash()))
 	for _, bct := range root.children {
 		h.delSubTree(bct)
 	}
@@ -317,6 +320,7 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 					h.delSubTree(bct)
 				}
 			}
+			delete(h.hashMap, string(h.cachedRoot.bc.Top().Head.Hash()))
 			h.hmlock.Unlock()
 			h.cachedRoot = newRoot
 			h.cachedRoot.bc.Flush()
