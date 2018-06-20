@@ -84,12 +84,10 @@ func (l *Logger) handleFiles() {
 }
 
 func newLogFile(now time.Time) *os.File {
-	path := now.Format(FmtTime) + ".log"
+	filename := now.Format(FmtTime) + ".log"
 	os.Mkdir(Path, 0777)
-	file, err := os.OpenFile(Path+path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
-	if err != nil {
-		panic(err)
-	}
+	file, _ := os.OpenFile(Path+filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	os.Symlink(Path+filename, Path+"current.log")
 	return file
 }
 

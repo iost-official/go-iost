@@ -237,10 +237,6 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	if msg.To == bn.localNode.Addr() || msg.To == "" {
 		return
 	}
-	if msg.TTL == 0 {
-		return
-	}
-	msg.TTL = msg.TTL - 1
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)

@@ -237,6 +237,16 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	}
 	l.APIs = append(l.APIs, Random)
 
+	var Now = api{
+		name: "Now",
+		function: func(L *lua.LState) int {
+			rtn := L.ToNumber(int(l.ctx.Timestamp))
+			L.Push(rtn)
+			return 1
+		},
+	}
+	l.APIs = append(l.APIs, Now)
+
 	var Call = api{
 		name: "Call",
 		function: func(L *lua.LState) int {
