@@ -136,7 +136,7 @@ func (p *PoB) initGlobalProperty(acc Account, witnessList []string) {
 
 // Run: 运行PoB实例
 func (p *PoB) Run() {
-	p.synchronizer.StartListen(p.checkHash)
+	p.synchronizer.StartListen()
 	go p.blockLoop()
 	go p.scheduleLoop()
 	//p.genBlock(p.Account, block.Block{})
@@ -319,8 +319,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
-		ParentHash: lastBlk.Head.Hash(),
-		BlockHash:  make([]byte, 0),
+		ParentHash: lastBlk.HeadHash(),
 		Info:       encodePoBInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    acc.ID,
@@ -332,7 +331,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 
 	vc := vm.NewContext(vm.BaseContext())
 	vc.Timestamp = blk.Head.Time
-	vc.ParentHash = lastBlk.Head.Hash()
+	vc.ParentHash = lastBlk.HeadHash()
 	vc.BlockHeight = blk.Head.Number
 	vc.Witness = vm.IOSTAccount(acc.ID)
 
@@ -369,7 +368,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
 
-	blk.Head.BlockHash = blk.Head.Hash()
 	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
 
 	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine
@@ -475,8 +473,4 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 	log.Report(&msgBlock)
 	///////////////////////////////////
 	return newPool, nil
-}
-
-func (p *PoB) checkHash(hash []byte) bool {
-	return p.blockCache.CheckBlock(hash)
 }

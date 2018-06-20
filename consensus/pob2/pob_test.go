@@ -63,7 +63,6 @@ func TestNewPoB(t *testing.T) {
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 			Version:    0,
 			ParentHash: []byte("111"),
-			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
 			Number:     int64(1),
 			Witness:    "11111",
@@ -579,7 +578,7 @@ func genTx(p *PoB, nonce int) tx.Tx {
 	code := `function main()
 				return "success"
 			end--f`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 0.001, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 10000, Price: 0, Publisher: vm.IOSTAccount(p.account.ID)}, code, main)
 
 	_tx := tx.NewTx(int64(nonce), &lc)
 	_tx, _ = tx.SignTx(_tx, p.account)
@@ -600,7 +599,6 @@ func genBlockHead(p *PoB) {
 	blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: nil,
-		BlockHash:  make([]byte, 0),
 		Info:       []byte("test"),
 		Number:     int64(1),
 		Witness:    p.account.ID,
@@ -626,9 +624,9 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 		var hash []byte
 		if len(blockPool) == 0 {
 			//用创世块的头hash赋值
-			hash = tblock.Head.Hash()
+			hash = tblock.HeadHash()
 		} else {
-			hash = blockPool[len(blockPool)-1].Head.Hash()
+			hash = blockPool[len(blockPool)-1].HeadHash()
 		}
 		//make every block has no parent
 		if continuity == false {
@@ -637,7 +635,6 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 			Version:    0,
 			ParentHash: hash,
-			BlockHash:  make([]byte, 0),
 			Info:       []byte("test"),
 			Number:     int64(i + 1),
 			Witness:    account.GetIdByPubkey(accountList[i%3].Pubkey),
