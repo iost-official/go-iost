@@ -47,7 +47,7 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 	if pool != nil {
 		l.cachePool = pool
 	} else {
-		panic("input pool is nill")
+		return nil, nil, errors.New("input pool is nil")
 	}
 
 	//fmt.Print("1 ")
