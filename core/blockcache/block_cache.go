@@ -182,7 +182,9 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 		blkConfirmChan:     make(chan uint64, 10),
 		chConfirmBlockData: make(chan *block.Block, 100),
 	}
-	h.hashMap[string(h.cachedRoot.bc.Top().Head.Hash())] = h.cachedRoot
+	if h.cachedRoot.bc.Top() != nil {
+		h.hashMap[string(h.cachedRoot.bc.Top().Head.Hash())] = h.cachedRoot
+	}
 	return &h
 }
 
@@ -200,6 +202,7 @@ func (h *BlockCacheImpl) BlockChain() block.Chain {
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	h.bc.Push(block)
 	h.cachedRoot.pool.Flush()
+	h.hashMap[string(h.cachedRoot.bc.Top().Head.Hash())] = h.cachedRoot
 	return nil
 }
 
