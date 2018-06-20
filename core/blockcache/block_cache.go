@@ -8,6 +8,7 @@ import (
 
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/log"
 	//"github.com/iost-official/prototype/log"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -285,6 +286,7 @@ func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree,
 			h.hmlock.Lock()
 			h.delSubTree(child)
 			h.hmlock.Unlock()
+			log.Log.I("verify block failed. err=%v", err)
 			return ErrorBlock, nil
 		}
 		newTree.pool = newPool

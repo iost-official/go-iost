@@ -99,6 +99,19 @@ func (mr *MockCliServerMockRecorder) GetTransaction(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransaction", reflect.TypeOf((*MockCliServer)(nil).GetTransaction), arg0, arg1)
 }
 
+// GetTransactionByHash mocks base method
+func (m *MockCliServer) GetTransactionByHash(arg0 context.Context, arg1 *rpc.TransactionHash) (*rpc.Transaction, error) {
+	ret := m.ctrl.Call(m, "GetTransactionByHash", arg0, arg1)
+	ret0, _ := ret[0].(*rpc.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTransactionByHash indicates an expected call of GetTransactionByHash
+func (mr *MockCliServerMockRecorder) GetTransactionByHash(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionByHash", reflect.TypeOf((*MockCliServer)(nil).GetTransactionByHash), arg0, arg1)
+}
+
 // PublishTx mocks base method
 func (m *MockCliServer) PublishTx(arg0 context.Context, arg1 *rpc.Transaction) (*rpc.Response, error) {
 	ret := m.ctrl.Call(m, "PublishTx", arg0, arg1)

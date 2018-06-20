@@ -29,24 +29,22 @@ func newHttpServer() *HttpServer {
 	s := &HttpServer{}
 	return s
 }
-func handlePublish(_tx *Transaction) {
+func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRet, error) {
 	fmt.Println("publish")
+	ret := PublishRet{Code: -1}
 	var tx1 tx.Tx
 	if _tx == nil {
-		//return &Response{Code: -1}, fmt.Errorf("argument cannot be nil pointer")
-		return
+		return &ret, fmt.Errorf("argument cannot be nil pointer")
 	}
 	err := tx1.Decode(_tx.Tx)
 	if err != nil {
-		//return &Response{Code: -1}, err
-		return
+		return &ret, err
 	}
 	//fmt.Println("PublishTx begin, tx.Nonce", tx1.Nonce)
 
 	err = tx1.VerifySelf() //verify Publisher and Signers
 	if err != nil {
-		//return &Response{Code: -1}, err
-		return
+		return &ret, err
 	}
 
 	// add servi
@@ -61,22 +59,21 @@ func handlePublish(_tx *Transaction) {
 		Body:    tx1.Encode(),
 		ReqType: int32(network.ReqPublishTx),
 	}
-	router.Broadcast(broadTx)
-
+	go func() {
+		router.Broadcast(broadTx)
+	}()
 	Cons := consensus.Cons
 	if Cons == nil {
 		panic(fmt.Errorf("Consensus is nil"))
 	}
-
-	txpool.TxPoolS.AddTransaction(broadTx)
+	go func() {
+		txpool.TxPoolS.AddTransaction(broadTx)
+	}()
 	//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
-	return
+	ret.Code = 0
+	ret.Hash = tx1.Hash()
+	return &ret, nil
 }
-func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response, error) {
-	go handlePublish(_tx)
-	return &Response{Code: 0}, nil
-}
-
 func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (*Transaction, error) {
 	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
