@@ -465,9 +465,9 @@ func genBlocks(p *DPoS, accountList []account.Account, witnessList []string, n i
 		var hash []byte
 		if len(blockPool) == 0 {
 			//用创世块的头hash赋值
-			hash = tblock.Head.Hash()
+			hash = tblock.HeadHash()
 		} else {
-			hash = blockPool[len(blockPool)-1].Head.Hash()
+			hash = blockPool[len(blockPool)-1].HeadHash()
 		}
 		//make every block has no parent
 		if continuity == false {

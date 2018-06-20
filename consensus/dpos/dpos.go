@@ -64,7 +64,7 @@ func NewDPoS(acc Account, bc block.Chain, pool state.Pool, witnessList []string 
 		return nil, fmt.Errorf("failed to network.Route is nil")
 	}
 
-	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
+	p.synchronizer = NewSynchronizer(p.blockCache, p.router, len(witnessList)*2/3)
 	if p.synchronizer == nil {
 		return nil, err
 	}
@@ -293,7 +293,7 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
-		ParentHash: lastBlk.Head.Hash(),
+		ParentHash: lastBlk.HeadHash(),
 		TreeHash:   make([]byte, 0),
 		Info:       encodeDPoSInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,

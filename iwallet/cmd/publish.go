@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"errors"
-
 	"os"
 
 	"github.com/iost-official/prototype/account"
@@ -104,15 +103,16 @@ to quickly create a Cobra application.`,
 
 		SaveTo(dest, stx.Encode())
 
+		var txHash []byte
 		if !isLocal {
-			err = sendTx(stx)
+			txHash,err = sendTx(stx)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
 		}
-
 		fmt.Println("ok")
+		fmt.Println(string(txHash))
 	},
 }
 
@@ -141,23 +141,23 @@ func init() {
 	// publishCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func sendTx(stx tx.Tx) error {
+func sendTx(stx tx.Tx) ([]byte,error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
-		return err
+		return nil,err
 	}
 	defer conn.Close()
 	client := pb.NewCliClient(conn)
 	resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
 	if err != nil {
-		return err
+		return nil,err
 	}
 	switch resp.Code {
 	case 0:
-		return nil
+		return resp.Hash,nil
 	case -1:
-		return errors.New("tx rejected")
+		return nil,errors.New("tx rejected")
 	default:
-		return errors.New("unknown return")
+		return nil,errors.New("unknown return")
 	}
 }

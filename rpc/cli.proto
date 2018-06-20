@@ -4,7 +4,7 @@ package rpc;
 
 
 service Cli {
-    rpc PublishTx (Transaction) returns (Response) {}
+    rpc PublishTx (Transaction) returns (PublishRet) {}
     rpc GetTransaction (TransactionKey) returns (Transaction) {}
     rpc GetTransactionByHash (TransactionHash) returns (Transaction) {}
     rpc GetBalance (Key) returns (Value){}
@@ -17,6 +17,10 @@ message Transaction {
     bytes tx = 1;
 }
 
+message PublishRet{
+	int32 code = 1;
+	bytes hash =2;
+}
 message Response {
     int32 code = 1;
 }

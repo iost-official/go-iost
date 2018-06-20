@@ -46,6 +46,10 @@ then
 elif [ "$1" = "stop" ]
 then
     cmd="stop.sh"
+elif [ "$1" = "reset" ]
+then
+    cmd="reset.sh"
+
 else
     echoHelp
     exit 1

@@ -12,10 +12,8 @@ import (
 
 var (
 	SyncNumber                    = 2 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
-	MaxDownloadNumber             = 3 // 一次同步下载的最多块数
 	MaxBlockHashQueryNumber       = 10
 	RetryTime                     = 8
-	continuousBlockNumber         = 2 //一个节点连续生产2个块，强制同步区块
 	blockDownloadTimeout    int64 = 10
 	cleanInterval                 = 5 * time.Second
 )
@@ -34,6 +32,7 @@ type SyncImpl struct {
 	blockCache        blockcache.BlockCache
 	router            Router
 	maxSyncNumber     uint64
+	confirmNumber     int
 	heightChan        chan message.Message
 	blkSyncChan       chan message.Message
 	blkHashQueryChan  chan message.Message
@@ -48,12 +47,13 @@ type SyncImpl struct {
 
 // NewSynchronizer 新建同步器
 // bc 块缓存, router 网络处理器
-func NewSynchronizer(bc blockcache.BlockCache, router Router) *SyncImpl {
+func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int) *SyncImpl {
 	sync := &SyncImpl{
 		blockCache:        bc,
 		router:            router,
 		requestMap:        make(map[uint64]bool),
 		maxSyncNumber:     0,
+		confirmNumber:     confirmNumber,
 		recentAskedBlocks: new(sy.Map),
 	}
 	var err error
@@ -137,29 +137,22 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 		return true, max(sync.maxSyncNumber, height) + 1, netHeight
 	}
 
-	// 如果生产两个连续的块，强制同步区块，避免所有节点长度相同
+	// 如果在2/3长度的未确认链中出现了两次同一个witness，强制同步区块
 	bc := sync.blockCache.LongestChain()
 	ter := bc.Iterator()
-	var witness string
-	var i int
-	for i = 0; i < continuousBlockNumber; i++ {
+	witness := bc.Top().Head.Witness
+	num := 0
+	for i := 0; i < sync.confirmNumber; i++ {
 		block := ter.Next()
 		if block == nil {
 			break
 		}
-
-		if i == 0 {
-			witness = block.Head.Witness
-			continue
-		}
-
-		if witness != block.Head.Witness {
-			break
+		if witness == block.Head.Witness {
+			num++
 		}
 	}
-
 	// 强制同步
-	if i == continuousBlockNumber {
+	if num > 0 {
 		return true, max(sync.maxSyncNumber, sync.blockCache.ConfirmedLength()-1) + 1, netHeight
 	}
 
@@ -176,7 +169,6 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 			sync.requestMap[i] = true
 		}
 		sync.reqMapLock.Unlock()
-		time.Sleep(time.Second * 1)
 		startNumber += uint64(MaxBlockHashQueryNumber)
 	}
 	if startNumber <= endNumber {

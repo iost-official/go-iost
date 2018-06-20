@@ -18,7 +18,7 @@ import (
 func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 	bh := blk.Head
 	// parent hash
-	if !bytes.Equal(bh.ParentHash, parentBlk.Head.Hash()) {
+	if !bytes.Equal(bh.ParentHash, parentBlk.HeadHash()) {
 		return errors.New("wrong parent hash")
 	}
 	// block number
@@ -33,6 +33,7 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 }
 
 var ver *verifier.CacheVerifier
+var verb *verifier.CacheVerifier
 
 // StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
@@ -83,13 +84,13 @@ func StdTxsVerifier(txs []*tx.Tx, pool state.Pool) (state.Pool, int, error) {
 }
 
 func CleanStdVerifier() {
-	ver.CleanUp()
+	verb.CleanUp()
 }
 
 func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context *vm.Context) error {
-	ver.Context = context
+	verb.Context = context
 
-	p2, err := ver.VerifyContract(txx.Contract, pool.Copy())
+	p2, err := verb.VerifyContract(txx.Contract, pool.Copy())
 	if err != nil {
 		return err
 	}
@@ -114,4 +115,7 @@ func VerifyTxSig(tx tx.Tx) bool {
 func init() {
 	veri := verifier.NewCacheVerifier()
 	ver = &veri
+
+	veri = verifier.NewCacheVerifier()
+	verb = &veri
 }
