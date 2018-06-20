@@ -69,7 +69,7 @@ func newBct(block *block.Block, tree *BlockCacheTree) *BlockCacheTree {
 
 /*
 func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
-	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.ParentHash) {
+	if bytes.Equal(b.bc.Top().HeadHash(), block.Head.ParentHash) {
 		bct := newBct(block, b)
 		if b.bctType == OnCache {
 			newPool, err := verifier(block, b.bc.Top(), b.pool)
@@ -183,7 +183,7 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 		chConfirmBlockData: make(chan *block.Block, 100),
 	}
 	if h.cachedRoot.bc.Top() != nil {
-		h.hashMap[string(h.cachedRoot.bc.Top().Head.Hash())] = h.cachedRoot
+		h.hashMap[string(h.cachedRoot.bc.Top().HeadHash())] = h.cachedRoot
 	}
 	return &h
 }
@@ -202,7 +202,7 @@ func (h *BlockCacheImpl) BlockChain() block.Chain {
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	h.bc.Push(block)
 	h.cachedRoot.pool.Flush()
-	h.hashMap[string(h.cachedRoot.bc.Top().Head.Hash())] = h.cachedRoot
+	h.hashMap[string(h.cachedRoot.bc.Top().HeadHash())] = h.cachedRoot
 	return nil
 }
 
@@ -224,7 +224,7 @@ func (h *BlockCacheImpl) setHashMap(hash []byte, bct *BlockCacheTree) {
 func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error {
 	var code CacheStatus
 	var newTree *BlockCacheTree
-	bct, ok := h.getHashMap(blk.Head.Hash())
+	bct, ok := h.getHashMap(blk.HeadHash())
 	if ok {
 		code, newTree = Duplicate, nil
 	} else {
@@ -240,7 +240,7 @@ func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, p
 	case Extend:
 		fallthrough
 	case Fork:
-		h.setHashMap(blk.Head.Hash(), newTree)
+		h.setHashMap(blk.HeadHash(), newTree)
 		h.addSingles(newTree, verifier)
 		if newTree.bctType == Singles {
 			return ErrNotFound
@@ -250,7 +250,7 @@ func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, p
 		// Add to single block tree
 		newTree = newBct(blk, h.singleBlockRoot)
 		h.singleBlockRoot.children = append(h.singleBlockRoot.children, newTree)
-		h.setHashMap(blk.Head.Hash(), newTree)
+		h.setHashMap(blk.HeadHash(), newTree)
 		h.addSingles(newTree, verifier)
 		return ErrNotFound
 	case Duplicate:
@@ -267,7 +267,7 @@ func (h *BlockCacheImpl) addSingles(newTree *BlockCacheTree, verifier func(blk *
 	newChildren := make([]*BlockCacheTree, 0)
 	for k, _ := range h.singleBlockRoot.children {
 		//fmt.Println(bct.bc.block.Head.ParentHash)
-		if bytes.Equal(h.singleBlockRoot.children[k].bc.Top().Head.ParentHash, block.Head.Hash()) {
+		if bytes.Equal(h.singleBlockRoot.children[k].bc.Top().Head.ParentHash, block.HeadHash()) {
 			h.addSubTree(newTree, h.singleBlockRoot.children[k], verifier)
 		} else {
 			newChildren = append(newChildren, h.singleBlockRoot.children[k])
@@ -290,7 +290,7 @@ func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree,
 		newTree.pool = newPool
 	}
 	newTree.bctType = root.bctType
-	h.setHashMap(blk.Head.Hash(), newTree)
+	h.setHashMap(blk.HeadHash(), newTree)
 	for k, _ := range child.children {
 		h.addSubTree(newTree, child.children[k], verifier)
 	}
@@ -303,7 +303,7 @@ func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree,
 }
 
 func (h *BlockCacheImpl) delSubTree(root *BlockCacheTree) {
-	delete(h.hashMap, string(root.bc.Top().Head.Hash()))
+	delete(h.hashMap, string(root.bc.Top().HeadHash()))
 	for _, bct := range root.children {
 		h.delSubTree(bct)
 	}
@@ -320,7 +320,7 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 					h.delSubTree(bct)
 				}
 			}
-			delete(h.hashMap, string(h.cachedRoot.bc.Top().Head.Hash()))
+			delete(h.hashMap, string(h.cachedRoot.bc.Top().HeadHash()))
 			h.hmlock.Unlock()
 			h.cachedRoot = newRoot
 			h.cachedRoot.bc.Flush()

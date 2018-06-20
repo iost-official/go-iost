@@ -319,7 +319,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
-		ParentHash: lastBlk.Head.Hash(),
+		ParentHash: lastBlk.HeadHash(),
 		Info:       encodePoBInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    acc.ID,
@@ -331,7 +331,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 
 	vc := vm.NewContext(vm.BaseContext())
 	vc.Timestamp = blk.Head.Time
-	vc.ParentHash = lastBlk.Head.Hash()
+	vc.ParentHash = lastBlk.HeadHash()
 	vc.BlockHeight = blk.Head.Number
 	vc.Witness = vm.IOSTAccount(acc.ID)
 
