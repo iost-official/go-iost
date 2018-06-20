@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"strconv"
@@ -41,6 +40,13 @@ var accounts []string = []string{
 
 func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, routineId int) {
 	defer wg.Done()
+	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303", grpc.WithInsecure())
+	if err != nil {
+		return 
+	}
+	defer conn.Close()
+	pclient := pb.NewCliClient(conn)
+	
 	for i := startNonce; i != -1; i++ {
 		mtx.Nonce = i
 		fmt.Println(mtx.Nonce)
@@ -51,7 +57,7 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, 
 			return
 		}
 
-		err = sendTx(&stx, routineId)
+		err = sendTx(&stx,pclient)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -101,17 +107,14 @@ end--f
 	fmt.Println("main")
 }
 
-func sendTx(stx *tx.Tx, routineId int) error {
-	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303", grpc.WithInsecure())
+func sendTx(stx *tx.Tx,pclient pb.CliClient) error {
+	//resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
+	_, err := pclient.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-	client := pb.NewCliClient(conn)
-	resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
-	if err != nil {
-		return err
-	}
+	return nil
+	/*
 	switch resp.Code {
 	case 0:
 		return nil
@@ -120,4 +123,5 @@ func sendTx(stx *tx.Tx, routineId int) error {
 	default:
 		return errors.New("unknown return")
 	}
+	*/
 }
