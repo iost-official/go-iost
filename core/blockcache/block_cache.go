@@ -8,7 +8,7 @@ import (
 
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/log"
+	//"github.com/iost-official/prototype/log"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -40,12 +40,20 @@ const (
 	Duplicate                     // 重复块
 )
 
+type BCTType int
+
+const (
+	OnCache BCTType = iota
+	Singles
+)
+
 // BlockCacheTree 缓存链分叉的树结构
 type BlockCacheTree struct {
 	bc       CachedBlockChain
 	children []*BlockCacheTree
 	super    *BlockCacheTree
 	pool     state.Pool
+	bctType  BCTType
 }
 
 func newBct(block *block.Block, tree *BlockCacheTree) *BlockCacheTree {
@@ -53,21 +61,24 @@ func newBct(block *block.Block, tree *BlockCacheTree) *BlockCacheTree {
 		bc:       tree.bc.Copy(),
 		children: make([]*BlockCacheTree, 0),
 		super:    tree,
+		bctType:  Singles,
 	}
 	bct.bc.Push(block)
 	return &bct
 }
 
+/*
 func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
 	if bytes.Equal(b.bc.Top().Head.Hash(), block.Head.ParentHash) {
-		newPool, err := verifier(block, b.bc.Top(), b.pool)
-		if err != nil {
-			log.Log.I("ErrorBlock: %v\n", err)
-			return ErrorBlock, nil
-		}
-
 		bct := newBct(block, b)
-		bct.pool = newPool
+		if b.bctType == OnCache {
+			newPool, err := verifier(block, b.bc.Top(), b.pool)
+			if err != nil {
+				log.Log.I("ErrorBlock: %v\n", err)
+				return ErrorBlock, nil
+			}
+			bct.pool = newPool
+		}
 		b.children = append(b.children, bct)
 		if len(b.children) == 1 {
 			return Extend, bct
@@ -75,9 +86,9 @@ func (b *BlockCacheTree) add(block *block.Block, verifier func(blk *block.Block,
 			return Fork, bct
 		}
 	}
-
 	return NotFound, nil
 }
+*/
 
 func (b *BlockCacheTree) popLongest() *BlockCacheTree {
 	for _, bct := range b.children {
@@ -158,11 +169,13 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
 			pool:     pool,
+			bctType:  OnCache,
 		},
 		singleBlockRoot: &BlockCacheTree{
 			bc:       NewCBC(chain),
 			children: make([]*BlockCacheTree, 0),
 			super:    nil,
+			bctType:  Singles,
 		},
 		hashMap:            make(map[string]*BlockCacheTree),
 		maxDepth:           maxDepth,
@@ -214,7 +227,7 @@ func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, p
 	} else {
 		bct, ok = h.getHashMap(blk.Head.ParentHash)
 		if ok {
-			code, newTree = bct.add(blk, verifier)
+			code, newTree = h.addSubTree(bct, newBct(blk, bct), verifier)
 		} else {
 			code, newTree = NotFound, nil
 		}
@@ -226,6 +239,9 @@ func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, p
 	case Fork:
 		h.setHashMap(blk.Head.Hash(), newTree)
 		h.addSingles(newTree, verifier)
+		if newTree.bctType == Singles {
+			return ErrNotFound
+		}
 		h.tryFlush(blk.Head.Version)
 	case NotFound:
 		// Add to single block tree
@@ -246,30 +262,40 @@ func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, p
 func (h *BlockCacheImpl) addSingles(newTree *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
 	block := newTree.bc.block
 	newChildren := make([]*BlockCacheTree, 0)
-	for _, bct := range h.singleBlockRoot.children {
+	for k, _ := range h.singleBlockRoot.children {
 		//fmt.Println(bct.bc.block.Head.ParentHash)
-		if bytes.Equal(bct.bc.block.Head.ParentHash, block.Head.Hash()) {
-			h.addSubTree(newTree, bct, verifier)
+		if bytes.Equal(h.singleBlockRoot.children[k].bc.block.Head.ParentHash, block.Head.Hash()) {
+			h.addSubTree(newTree, h.singleBlockRoot.children[k], verifier)
 		} else {
-			newChildren = append(newChildren, bct)
+			newChildren = append(newChildren, h.singleBlockRoot.children[k])
 		}
 	}
 	h.singleBlockRoot.children = newChildren
 }
 
-func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
+func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
 	blk := child.bc.block
-	newPool, err := verifier(blk, root.bc.Top(), root.pool)
-	if err != nil {
-		return
-	}
-
 	newTree := newBct(blk, root)
-	newTree.pool = newPool
+	if root.bctType == OnCache {
+		newPool, err := verifier(blk, root.bc.Top(), root.pool)
+		if err != nil {
+			h.hmlock.Lock()
+			h.delSubTree(child)
+			h.hmlock.Unlock()
+			return ErrorBlock, nil
+		}
+		newTree.pool = newPool
+	}
+	newTree.bctType = root.bctType
 	h.setHashMap(blk.Head.Hash(), newTree)
+	for k, _ := range child.children {
+		h.addSubTree(newTree, child.children[k], verifier)
+	}
 	root.children = append(root.children, newTree)
-	for _, bct := range child.children {
-		h.addSubTree(newTree, bct, verifier)
+	if len(root.children) == 1 {
+		return Extend, newTree
+	} else {
+		return Fork, newTree
 	}
 }
 
@@ -278,7 +304,6 @@ func (h *BlockCacheImpl) delSubTree(root *BlockCacheTree) {
 	for _, bct := range root.children {
 		h.delSubTree(bct)
 	}
-
 }
 
 func (h *BlockCacheImpl) tryFlush(version int64) {
