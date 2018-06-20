@@ -87,7 +87,7 @@ func newLogFile(now time.Time) *os.File {
 	filename := now.Format(FmtTime) + ".log"
 	os.Mkdir(Path, 0777)
 	file, _ := os.OpenFile(Path+filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
-	os.Symlink(Path+filename, Path+"current.log")
+	os.Symlink(filename, Path+"current.log")
 	return file
 }
 
