@@ -91,7 +91,7 @@ func chainServer(chain block.Chain) {
 			blk := chain.GetBlockByNumber(n)
 			resp := map[string]interface{}{
 				"number": n,
-				"block":  blk,
+				"block":  blk.String(),
 			}
 			bytes, err := json.Marshal(resp)
 			if err != nil {
@@ -104,7 +104,7 @@ func chainServer(chain block.Chain) {
 			blk := chain.GetBlockByHash([]byte(has[0]))
 			resp := map[string]interface{}{
 				"hash":  has[0],
-				"block": blk,
+				"block": blk.String(),
 			}
 			bytes, err := json.Marshal(resp)
 			if err != nil {
