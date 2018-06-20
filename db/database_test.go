@@ -72,3 +72,17 @@ func TestRedisDatabase(t *testing.T) {
 
 		})*/
 }
+
+func TestRedisDatabase_Hash(t *testing.T) {
+	Convey("Test of type cmd", t, func() {
+		db, err := DatabaseFactory("redis")
+		So(err, ShouldBeNil)
+		s, err := db.(*RedisDatabase).Type("iost")
+		So(err, ShouldBeNil)
+		So(s, ShouldEqual, "hash")
+
+		_, err = db.(*RedisDatabase).GetAll("iost")
+
+		So(err, ShouldBeNil)
+	})
+}

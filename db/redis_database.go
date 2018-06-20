@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -113,4 +114,24 @@ func (rdb *RedisDatabase) Delete(key []byte) error {
 func (rdb *RedisDatabase) Close() {
 	// rdb.cli = nil
 	rdb.connPool.Close()
+}
+
+func (rdb *RedisDatabase) Type(key string) (string, error) {
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	rtn, err := conn.Do("TYPE", key)
+	if err != nil {
+		return "", err
+	}
+	s, ok := rtn.(string)
+	if !ok {
+		return "", errors.New("return no string")
+	}
+	return s, nil
+}
+
+func (rdb *RedisDatabase) GetAll(key string) (map[string]string, error) {
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	return redis.StringMap(conn.Do("HGETALL", key))
 }

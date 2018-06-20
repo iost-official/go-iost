@@ -9,6 +9,12 @@ type Database struct {
 	db db.Database
 }
 
+type HashDatabase interface {
+	db.Database
+	Type(key string) (string, error)
+	GetAll(key string) (map[string]string, error)
+}
+
 func NewDatabase(db db.Database) Database {
 	return Database{
 		db: db,
@@ -29,6 +35,31 @@ func (d *Database) Put(key Key, value Value) error {
 	return d.db.Put(key.Encode(), []byte(value.EncodeString()))
 }
 func (d *Database) Get(key Key) (Value, error) {
+	rdb, ok := d.db.(HashDatabase)
+	if ok {
+		t, err := rdb.Type(string(key))
+		if err != nil {
+			return nil, err
+		}
+		//fmt.Println(t)
+		if t == "hash" {
+			ms, err := rdb.GetAll(string(key))
+			if err != nil {
+				return nil, err
+			}
+			m := MakeVMap(nil)
+			for k, v := range ms {
+				val, err := ParseValue(v)
+				if err != nil {
+					return nil, err
+				}
+				m.Set(Key(k), val)
+			}
+			return m, nil
+		}
+	} else {
+		panic("can not get hashmap")
+	}
 	raw, err := d.db.Get(key.Encode())
 	if err != nil {
 		return nil, err
