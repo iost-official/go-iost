@@ -22,7 +22,7 @@ var (
 
 // Synchronizer 同步器接口
 type Synchronizer interface {
-	StartListen(func([]byte) bool) error
+	StartListen() error
 	StopListen() error
 	NeedSync(maxHeight uint64) (bool, uint64, uint64)
 	SyncBlocks(startNumber uint64, endNumber uint64) error
@@ -102,12 +102,12 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router) *SyncImpl {
 }
 
 // StartListen 开始监听同步任务
-func (sync *SyncImpl) StartListen(checkHash func([]byte) bool) error {
+func (sync *SyncImpl) StartListen() error {
 	//go sync.requestBlockHeightLoop()
 	go sync.requestBlockLoop()
 	go sync.retryDownloadLoop()
 	go sync.handleHashQuery()
-	go sync.handleHashResp(checkHash)
+	go sync.handleHashResp()
 	go sync.recentAskedBlocksClean()
 	return nil
 }
@@ -308,7 +308,7 @@ func (sync *SyncImpl) handleHashQuery() {
 	}
 }
 
-func (sync *SyncImpl) handleHashResp(checkHash func(hash []byte) bool) {
+func (sync *SyncImpl) handleHashResp() {
 
 	for {
 		select {
@@ -328,7 +328,7 @@ func (sync *SyncImpl) handleHashResp(checkHash func(hash []byte) bool) {
 					continue
 				}
 				// TODO: 判断本地是否有这个区块
-				if checkHash(blkHash.Hash) {
+				if sync.blockCache.CheckBlock(blkHash.Hash) {
 					sync.router.AskABlock(blkHash.Height, req.From)
 					sync.recentAskedBlocks.Store(string(blkHash.Hash), time.Now().Unix())
 				}
