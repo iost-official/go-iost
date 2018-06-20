@@ -25,7 +25,7 @@ def Buildwallet():
  	ret=wCommand("cd "+project_path+"iwallet;go build")
 	ret=wCommand("rm -f "+cur_path+"iwallet")
 	ret=wCommand("cp "+project_path+"iwallet/iwallet "+cur_path)
-	return True
+	return (True,"build iwallet success")
 
 genesisPubkey="2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 genesisSeckey="BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"
@@ -82,7 +82,8 @@ def sendonetx(_to,money):
 	f2.write(genesisPubkey)
 	f2.close()
 
-	flist=[Buildwallet,Compile,Sign,Publish,]
+	if has(cur_path+"iwallet")==False:Buildwallet()
+	flist=[Compile,Sign,Publish,]
 	ret=(True,"")
 	for func in flist:
 		ret=func()
