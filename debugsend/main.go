@@ -29,6 +29,17 @@ var servers []string = []string{
 	"13.124.172.86",
 	"52.60.163.60",
 }
+var servers1 []string = []string{
+        "127.0.0.1",
+        "13.236.207.159",
+        "13.236.209.209",
+        "54.206.55.116",
+        "54.206.49.230",
+        "13.236.177.85",
+        "13.236.153.25",
+        "13.211.188.83",
+}
+
 var accounts []string = []string{
 	"2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT",
 	"tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU",
