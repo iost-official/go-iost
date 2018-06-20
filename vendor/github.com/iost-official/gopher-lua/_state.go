@@ -432,9 +432,9 @@ func (ls *LState) where(level int, skipg bool) string {
 		return ls.where(level+1, skipg)
 	}
 	line := ""
-	if proto != nil {
-		line = fmt.Sprintf("%v:", proto.DbgSourcePositions[cf.Pc-1])
-	}
+	//if proto != nil {
+	//	line = fmt.Sprintf("%v:", proto.DbgSourcePositions[cf.Pc-1])
+	//}
 	return fmt.Sprintf("%v:%v", sourcename, line)
 }
 

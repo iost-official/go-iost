@@ -80,7 +80,7 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (
 
 		bos2 := balanceOfSender(sender, pool)
 
-		if gas > uint64(contract.Info().GasLimit) { // TODO 不应该发生的分支
+		if gas > uint64(contract.Info().GasLimit) {
 			return pool, errors.New("gas overflow!")
 		}
 

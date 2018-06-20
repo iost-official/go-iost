@@ -130,6 +130,9 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	}
 
 	l.L = lua.NewState()
+	if contract.Info().GasLimit < 3 {
+		return errors.New("gas limit less than 3")
+	}
 	l.L.PCLimit = uint64(contract.Info().GasLimit)
 	l.monitor = monitor
 
@@ -297,6 +300,10 @@ func (l *VM) PC() uint64 {
 }
 func (l *VM) Restart(contract vm.Contract) error {
 	l.contract = contract.(*Contract)
+	if contract.Info().GasLimit < 3 {
+		return errors.New("gas limit less than 3")
+	}
+	l.L.PCLimit = uint64(contract.Info().GasLimit)
 	if err := l.L.DoString(l.contract.code); err != nil {
 		return err
 	}
