@@ -242,7 +242,7 @@ var rootCmd = &cobra.Command{
 		serverExit = append(serverExit, txPool)
 
 		// init servi
-		sp, err := tx.NewServiPool()
+		sp, err := tx.NewServiPool(len(account.GenesisAccount))
 		if err != nil {
 			log.Log.E("NewServiPool failed, stop the program! err:%v", err)
 			os.Exit(1)

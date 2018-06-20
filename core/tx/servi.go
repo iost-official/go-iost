@@ -41,9 +41,10 @@ func (s *Servi) Clear() {
 }
 
 type ServiPool struct {
-	btu map[string]*Servi // 贡献最大的账户集合
-	hm  map[string]*Servi // 普通账户
-	mu  sync.RWMutex
+	btu    map[vm.IOSTAccount]*Servi // 贡献最大的账户集合
+	hm     map[vm.IOSTAccount]*Servi // 普通账户
+	btuCnt int               // 贡献最大账户的集合
+	mu     sync.RWMutex
 }
 
 var ldb db.Database
@@ -51,7 +52,7 @@ var ldb db.Database
 var StdServiPool *ServiPool
 var sonce sync.Once
 
-func NewServiPool() (*ServiPool, error) {
+func NewServiPool(num int) (*ServiPool, error) {
 
 	var err error
 	sonce.Do(func() {
@@ -61,8 +62,9 @@ func NewServiPool() (*ServiPool, error) {
 		}
 
 		StdServiPool = &ServiPool{
-			btu: make(map[string]*Servi),
-			hm:  make(map[string]*Servi),
+			btu:    make(map[vm.IOSTAccount]*Servi, 0),
+			hm:     make(map[vm.IOSTAccount]*Servi, 0),
+			btuCnt: num,
 		}
 	})
 	return StdServiPool, nil
@@ -74,9 +76,19 @@ func (sp *ServiPool) User(iostAccount vm.IOSTAccount) *Servi {
 	defer sp.mu.Unlock()
 
 	var s *Servi
-	if len(sp.btu) <= 7 {
+
+	if servi, ok := sp.btu[iostAccount]; ok {
+		return servi
+	}
+
+	if servi, ok := sp.hm[iostAccount]; ok {
+		return servi
+	}
+
+	if len(sp.btu) < sp.btuCnt {
 		s = sp.userBtu(iostAccount)
 	} else {
+
 		s = sp.userHm(iostAccount)
 	}
 
@@ -87,9 +99,9 @@ func (sp *ServiPool) BestUser() []*Servi {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
 
-	slist := make([]*Servi, 1)
-	for _, s := range sp.btu {
-		slist = append(slist, s)
+	slist := make([]*Servi, 0)
+	for i, _ := range sp.btu {
+		slist = append(slist, sp.btu[i])
 	}
 
 	return slist
@@ -111,6 +123,23 @@ func (sp *ServiPool) Flush() {
 
 }
 
+// updateBtu 更新btu
+func (sp *ServiPool) UpdateBtu() {
+	sp.mu.Lock()
+	defer sp.mu.Unlock()
+
+	for k, v := range sp.hm {
+		for k1, v1 := range sp.btu {
+			if v.Total() > v1.Total() {
+				sp.delBtu(k1)
+				sp.delHm(k)
+				sp.addBtu(k, v)
+				break
+			}
+		}
+	}
+}
+
 func (sp *ServiPool) Restore() error {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
@@ -129,7 +158,7 @@ func (sp *ServiPool) Restore() error {
 		servi.b = math.Float64frombits(binary.BigEndian.Uint64(bufbln))
 		bufkey := sbuf[i+16 : i+49]
 		servi.owner = vm.PubkeyToIOSTAccount(bufkey)
-		sp.btu[string(servi.owner)] = &servi
+		sp.btu[servi.owner] = &servi
 	}
 
 	return nil
@@ -137,38 +166,38 @@ func (sp *ServiPool) Restore() error {
 
 func (sp *ServiPool) userBtu(iostAccount vm.IOSTAccount) *Servi {
 
-	if servi, ok := sp.btu[string(iostAccount)]; ok {
+	if servi, ok := sp.btu[iostAccount]; ok {
 		return servi
 	} else {
-		sp.btu[string(iostAccount)] = &Servi{owner: iostAccount}
-		return sp.btu[string(iostAccount)]
+		sp.btu[iostAccount] = &Servi{owner: iostAccount}
+		return sp.btu[iostAccount]
 	}
 }
 
 //userHm 添加普通账户
 func (sp *ServiPool) userHm(iostAccount vm.IOSTAccount) *Servi {
 
-	if servi, ok := sp.hm[string(iostAccount)]; ok {
+	if servi, ok := sp.hm[iostAccount]; ok {
 		return servi
 	} else {
-		s, _ := sp.restoreHm(string(iostAccount))
+		s, _ := sp.restoreHm(vm.IOSTAccount(iostAccount))
 		if s == nil {
-			sp.hm[string(iostAccount)] = &Servi{owner: iostAccount}
+			sp.hm[iostAccount] = &Servi{owner: iostAccount}
 		} else {
-			sp.hm[string(iostAccount)] = s
+			sp.hm[iostAccount] = &Servi{owner: s.owner, b: s.b, v: s.v}
 		}
 
-		return sp.hm[string(iostAccount)]
+		return sp.hm[iostAccount]
 	}
 }
 
-func (sp *ServiPool) addBtu(iostAccount vm.IOSTAccount,s *Servi) error {
+func (sp *ServiPool) addBtu(iostAccount vm.IOSTAccount, s *Servi) error {
 
-	if _, ok := sp.btu[string(iostAccount)]; ok {
-		delete(sp.btu, string(iostAccount))
+	if _, ok := sp.btu[iostAccount]; ok {
+		delete(sp.btu, iostAccount)
 	}
 
-	sp.btu[string(iostAccount)] = s
+	sp.btu[iostAccount] = &Servi{owner: s.owner, b: s.b, v: s.v}
 	return nil
 
 }
@@ -176,40 +205,34 @@ func (sp *ServiPool) addBtu(iostAccount vm.IOSTAccount,s *Servi) error {
 //userHm 添加普通账户
 func (sp *ServiPool) addHm(iostAccount vm.IOSTAccount, s *Servi) error {
 
-	if _, ok := sp.hm[string(iostAccount)]; ok {
-		delete(sp.hm, string(iostAccount))
+	if _, ok := sp.hm[iostAccount]; ok {
+		delete(sp.hm, iostAccount)
 	}
 
-	sp.hm[string(iostAccount)] = s
+	sp.hm[iostAccount] = &Servi{owner: s.owner, b: s.b, v: s.v}
 	return nil
 }
 
+func (sp *ServiPool) delBtu(iostAccount vm.IOSTAccount) error {
 
-func (sp *ServiPool) delBtu(iostAccount vm.IOSTAccount) {
-
-	if _, ok := sp.btu[string(iostAccount)]; ok {
-		delete(sp.btu, string(iostAccount))
+	if _, ok := sp.btu[iostAccount]; ok {
+		delete(sp.btu, iostAccount)
 	}
+
+	return nil
 }
 
-func (sp *ServiPool) delHm(iostAccount vm.IOSTAccount) {
+func (sp *ServiPool) delHm(iostAccount vm.IOSTAccount) error {
 
-	if _, ok := sp.hm[string(iostAccount)]; ok {
-		delete(sp.hm, string(iostAccount))
-	}
-}
-
-// updateBtu 更新btu
-func (sp *ServiPool) updateBtu() {
-
-	for k, v := range sp.hm {
-		for k1,v1:=range sp.btu{
-			if v.Total() > v1.Total(){
-				sp.delBtu(vm.IOSTAccount(k1))
-				sp.addBtu(vm.IOSTAccount(k), v)
-			}
+	if _, ok := sp.hm[iostAccount]; ok {
+		delete(sp.hm, iostAccount)
+		err := ldb.Delete(vm.IOSTAccountToPubkey(iostAccount))
+		if err != nil {
+			return err
 		}
 	}
+
+	return nil
 }
 
 func (sp *ServiPool) flushBtu() error {
@@ -221,7 +244,7 @@ func (sp *ServiPool) flushBtu() error {
 		var buf1 = make([]byte, 8)
 		binary.BigEndian.PutUint64(buf1, math.Float64bits(s.b))
 		buf = append(buf, buf1...)
-		buf = append(buf, []byte(s.owner)...)
+		buf = append(buf, vm.IOSTAccountToPubkey(s.owner)...)
 		if len(buf) != 49 {
 			panic("buf length error!")
 		}
@@ -239,7 +262,7 @@ func (sp *ServiPool) flushHm() error {
 		var buf1 = make([]byte, 8)
 		binary.BigEndian.PutUint64(buf1, math.Float64bits(s.b))
 		buf = append(buf, buf1...)
-		buf = append(buf, []byte(s.owner)...)
+		buf = append(buf, vm.IOSTAccountToPubkey(s.owner)...)
 		if len(buf) != 49 {
 			panic("buf length error!")
 		}
@@ -251,16 +274,14 @@ func (sp *ServiPool) flushHm() error {
 	return nil
 }
 
-func (sp *ServiPool) restoreHm(key string) (*Servi, error) {
-	sp.mu.Lock()
-	defer sp.mu.Unlock()
+func (sp *ServiPool) restoreHm(key vm.IOSTAccount) (*Servi, error) {
 
-	bl, err := ldb.Has([]byte(key))
+	bl, err := ldb.Has(vm.IOSTAccountToPubkey(key))
 	if err != nil || !bl {
 		return nil, err
 	}
 
-	sbuf, err := ldb.Get([]byte(key))
+	sbuf, err := ldb.Get(vm.IOSTAccountToPubkey(key))
 	if err != nil {
 		return nil, err
 	}

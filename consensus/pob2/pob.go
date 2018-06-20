@@ -46,17 +46,6 @@ var (
 			Help: "Length of confirmed blockchain on current node",
 		},
 	)
-
-	GenesisAccount = map[string]int64{
-		"BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT":  3000000000,
-		"tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU":  2900000000,
-		"s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB":  2800000000,
-		"22zr9ows3qndmAjnkiPFex26taATEaEfjGkatVCr5akSU": 2700000000,
-		"wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG":  2600000000,
-		"oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU":  2500000000,
-		"28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym": 2300000000,
-		"x9uhGBw3tyDzNkNFM7hcXeGdEpbAHdasgGyhfcMmonYq":  2200000000,
-	}
 )
 
 func init() {
