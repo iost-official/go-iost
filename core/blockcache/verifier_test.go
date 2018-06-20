@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"testing"
 
+	"time"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
@@ -97,6 +99,10 @@ func TestStdCacheVerifier(t *testing.T) {
 				then 
 					Transfer("a", "b", 10000)
 				end
+print("time:")
+print(Now())
+print("height:")
+print(Height())
 				return "success"
 			end`
 
@@ -104,7 +110,12 @@ func TestStdCacheVerifier(t *testing.T) {
 
 		lc := lua.NewContract(vm.ContractInfo{Prefix: "ahaha", GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 		txx := tx.NewTx(1, &lc)
-		err = StdCacheVerifier(&txx, pool, &vm.Context{ParentHash: []byte{1}})
+
+		ctx := vm.NewContext(vm.BaseContext())
+		ctx.ParentHash = []byte{1}
+		ctx.BlockHeight = 10
+		ctx.Timestamp = time.Now().Unix()
+		err = StdCacheVerifier(&txx, pool, ctx)
 		So(err, ShouldBeNil)
 
 		balance, err := pool.GetHM("iost", "a")
@@ -112,7 +123,10 @@ func TestStdCacheVerifier(t *testing.T) {
 
 		So(balance.(*state.VFloat).ToFloat64() > 90000, ShouldBeTrue)
 
-		err = StdCacheVerifier(&txx, pool, &vm.Context{})
+		ctx2 := vm.NewContext(ctx)
+		ctx2.ParentHash = []byte{}
+
+		err = StdCacheVerifier(&txx, pool, ctx2)
 		So(err, ShouldBeNil)
 		balance, err = pool.GetHM("iost", "a")
 		So(err, ShouldBeNil)

@@ -333,6 +333,8 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	vc := vm.NewContext(vm.BaseContext())
 	vc.Timestamp = blk.Head.Time
 	vc.ParentHash = lastBlk.Head.Hash()
+	vc.BlockHeight = blk.Head.Number
+	vc.Witness = vm.IOSTAccount(acc.ID)
 
 	//TODO Content大小控制
 	var tx TransactionsList
