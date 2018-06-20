@@ -139,7 +139,7 @@ var rootCmd = &cobra.Command{
 		}
 		log.Log.I("BlockNum on Redis: %v", blockNum)
 		log.Log.I("BCLen: %v", bcLen)
-		if bcLen-1 >= blockNum {
+		if bcLen >= blockNum+1 {
 			var blk *block.Block
 			for i := blockNum; i < bcLen; i++ {
 				blk = blockChain.GetBlockByNumber(i)

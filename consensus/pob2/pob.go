@@ -98,7 +98,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 		return nil, fmt.Errorf("failed to network.Route is nil")
 	}
 
-	p.synchronizer = NewSynchronizer(p.blockCache, p.router)
+	p.synchronizer = NewSynchronizer(p.blockCache, p.router, len(witnessList)*2/3)
 	if p.synchronizer == nil {
 		return nil, err
 	}
