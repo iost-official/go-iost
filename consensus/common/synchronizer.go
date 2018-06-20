@@ -288,6 +288,9 @@ func (sync *SyncImpl) handleHashQuery() {
 				}
 				resp.BlockHashes = append(resp.BlockHashes, blkHash)
 			}
+			if len(resp.BlockHashes) == 0 {
+				break
+			}
 			bytes, err := resp.Marshal(nil)
 			if err != nil {
 				sync.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
