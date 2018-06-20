@@ -18,7 +18,7 @@ import (
 func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 	bh := blk.Head
 	// parent hash
-	if !bytes.Equal(bh.ParentHash, parentBlk.Head.Hash()) {
+	if !bytes.Equal(bh.ParentHash, parentBlk.HeadHash()) {
 		return errors.New("wrong parent hash")
 	}
 	// block number
