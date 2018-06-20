@@ -72,6 +72,7 @@ func chainServer(chain block.Chain) {
 		w.Write(bytes)
 	})
 	http.HandleFunc("/blockchain", func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
 		num := r.Form["number"]
 		has := r.Form["hash"]
 		if len(num) == 0 && len(has) == 0 {
