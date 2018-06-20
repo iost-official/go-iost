@@ -7,6 +7,8 @@ import (
 
 	"time"
 
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
@@ -203,5 +205,51 @@ func BenchmarkStdCacheVerifier(b *testing.B) {
 		fmt.Println("depth:", count)
 		fmt.Println(p2.GetHM("iost", "a"))
 	}
+
+}
+
+func TestStdCacheVerifier2(t *testing.T) {
+	Convey("test of a bug called 0", t, func() {
+		dbx, err := db.DatabaseFactory("redis")
+		So(err, ShouldBeNil)
+		sdb := state.NewDatabase(dbx)
+		pool := state.NewPool(sdb)
+		pool.PutHM("iost", "BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9", state.MakeVFloat(10000))
+
+		acc, err := account.NewAccount(common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		rawCode := `
+--- main 合约主入口
+-- server1转账server2
+-- @gas_limit 10000
+-- @gas_price 0.001
+-- @param_cnt 0
+-- @return_cnt 1
+function main()
+	print("hello")
+	Transfer("` + acc.GetId() + `","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K", 10)
+end--f
+`
+		var contract vm.Contract
+		parser, _ := lua.NewDocCommentParser(rawCode)
+		contract, err = parser.Parse()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		mtx := tx.NewTx(1, contract)
+		stx, err := tx.SignTx(mtx, acc)
+		So(err, ShouldBeNil)
+		buf := stx.Encode()
+		var atx tx.Tx
+		err = atx.Decode(buf)
+		So(err, ShouldBeNil)
+		err = StdCacheVerifier(&atx, pool, vm.BaseContext())
+		So(err, ShouldBeNil)
+	})
 
 }

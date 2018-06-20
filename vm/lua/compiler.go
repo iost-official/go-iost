@@ -32,10 +32,8 @@ type DocCommentParser struct {
 
 func NewDocCommentParser(text string) (*DocCommentParser, error) {
 	parser := new(DocCommentParser)
-	if strings.Contains(text, "\\0") {
-		return nil, ErrIllegalCode
-	}
-	parser.text = text + "\\0"
+	strings.Replace(text, "\\0", "", -1)
+	parser.text = text
 	parser.Debug = false
 	return parser, nil
 }
@@ -315,6 +313,7 @@ func (p *DocCommentParser) Parse() (*Contract, error) {
 	}
 
 	var contract Contract
+	contract.code = p.text
 
 	hasMain := false
 

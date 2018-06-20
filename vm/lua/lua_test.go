@@ -310,24 +310,17 @@ end`,
 func TestCompilerNaive(t *testing.T) {
 	Convey("test of parse", t, func() {
 		parser, _ := NewDocCommentParser(
-			`--- main 合约主入口
--- 输出hello world
+			`
+--- main 合约主入口
+-- server1转账server2
 -- @gas_limit 11
 -- @gas_price 0.0001
 -- @param_cnt 0
 -- @return_cnt 1
 function main()
- Put("hello", "world")
- return "success"
+	print("hello")
+	Transfer("abc","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K", 10)
 end--f
-
---- foo
--- @param_cnt 3
--- @return_cnt 2
-function foo(a,b,c)
-	return a,b
-end--f
-
 `)
 		contract, err := parser.Parse()
 		So(err, ShouldBeNil)
@@ -336,7 +329,7 @@ end--f
 		So(contract.info.Price, ShouldEqual, 0.0001)
 		fmt.Println(contract.code)
 		So(contract.main, ShouldResemble, Method{"main", 0, 1, vm.Public})
-		So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2, vm.Public}})
+		//So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2, vm.Public}})
 
 	})
 
