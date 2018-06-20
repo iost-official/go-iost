@@ -320,7 +320,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.Head.Hash(),
-		BlockHash:  make([]byte, 0),
 		Info:       encodePoBInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    acc.ID,
@@ -369,7 +368,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
 
-	blk.Head.BlockHash = blk.Head.Hash()
 	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
 
 	//////////////probe////////////////// // hpj: 拿掉之后省了0.5秒，探针有问题，没有使用goroutine

@@ -35,7 +35,6 @@ func TestChainImpl(t *testing.T) {
 			Version:    2,
 			ParentHash: []byte("parent Hash"),
 			TreeHash:   []byte("tree hash"),
-			BlockHash:  []byte("block hash"),
 			Info:       []byte("info "),
 			Number:     int64(0),
 			Witness:    "id2,id3,id5,id6",
@@ -63,7 +62,6 @@ func TestChainImpl(t *testing.T) {
 			So(block.Head.Version, ShouldEqual, 2)
 			So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
 			So(string(block.Head.TreeHash), ShouldEqual, string(tBlock.Head.TreeHash))
-			So(string(block.Head.BlockHash), ShouldEqual, string(tBlock.Head.BlockHash))
 			So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 			So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
 			So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
@@ -75,7 +73,6 @@ func TestChainImpl(t *testing.T) {
 			So(block.Head.Version, ShouldEqual, 2)
 			So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
 			So(string(block.Head.TreeHash), ShouldEqual, string(tBlock.Head.TreeHash))
-			So(string(block.Head.BlockHash), ShouldEqual, string(tBlock.Head.BlockHash))
 			So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 			So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
 			So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
@@ -88,7 +85,6 @@ func TestChainImpl(t *testing.T) {
 			So(block.Head.Version, ShouldEqual, 2)
 			So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
 			So(string(block.Head.TreeHash), ShouldEqual, string(tBlock.Head.TreeHash))
-			So(string(block.Head.BlockHash), ShouldEqual, string(tBlock.Head.BlockHash))
 			So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 			So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
 			So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))

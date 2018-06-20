@@ -376,7 +376,6 @@ func genBlocks(p blockcache.BlockCache, accountList []account.Account, witnessLi
 			Version:    0,
 			ParentHash: hash,
 			TreeHash:   make([]byte, 0),
-			BlockHash:  make([]byte, 0),
 			Info:       []byte(""),
 			Number:     int64(i + 1),
 			Witness:    witnessList[0],

@@ -295,7 +295,6 @@ func (p *DPoS) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Blo
 		Version:    0,
 		ParentHash: lastBlk.Head.Hash(),
 		TreeHash:   make([]byte, 0),
-		BlockHash:  make([]byte, 0),
 		Info:       encodeDPoSInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    acc.ID,

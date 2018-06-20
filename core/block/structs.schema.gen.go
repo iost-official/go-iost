@@ -16,7 +16,6 @@ type BlockHead struct {
 	Version    int64
 	ParentHash []byte
 	TreeHash   []byte
-	BlockHash  []byte
 	Info       []byte
 	Number     int64
 	Witness    string
@@ -43,21 +42,6 @@ func (d *BlockHead) Size() (s uint64) {
 	}
 	{
 		l := uint64(len(d.TreeHash))
-
-		{
-
-			t := l
-			for t >= 0x80 {
-				t >>= 7
-				s++
-			}
-			s++
-
-		}
-		s += l
-	}
-	{
-		l := uint64(len(d.BlockHash))
 
 		{
 
@@ -185,25 +169,6 @@ func (d *BlockHead) Marshal(buf []byte) ([]byte, error) {
 
 		}
 		copy(buf[i+8:], d.TreeHash)
-		i += l
-	}
-	{
-		l := uint64(len(d.BlockHash))
-
-		{
-
-			t := uint64(l)
-
-			for t >= 0x80 {
-				buf[i+8] = byte(t) | 0x80
-				t >>= 7
-				i++
-			}
-			buf[i+8] = byte(t)
-			i++
-
-		}
-		copy(buf[i+8:], d.BlockHash)
 		i += l
 	}
 	{
@@ -360,31 +325,6 @@ func (d *BlockHead) Unmarshal(buf []byte) (uint64, error) {
 			d.TreeHash = make([]byte, l)
 		}
 		copy(d.TreeHash, buf[i+8:])
-		i += l
-	}
-	{
-		l := uint64(0)
-
-		{
-
-			bs := uint8(7)
-			t := uint64(buf[i+8] & 0x7F)
-			for buf[i+8]&0x80 == 0x80 {
-				i++
-				t |= uint64(buf[i+8]&0x7F) << bs
-				bs += 7
-			}
-			i++
-
-			l = t
-
-		}
-		if uint64(cap(d.BlockHash)) >= l {
-			d.BlockHash = d.BlockHash[:l]
-		} else {
-			d.BlockHash = make([]byte, l)
-		}
-		copy(d.BlockHash, buf[i+8:])
 		i += l
 	}
 	{
