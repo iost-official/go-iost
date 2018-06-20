@@ -103,10 +103,10 @@ end--f
 
 func sendTx(stx *tx.Tx, routineId int) error {
 	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303", grpc.WithInsecure())
-	defer conn.Close()
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 	client := pb.NewCliClient(conn)
 	resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
 	if err != nil {
