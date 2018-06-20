@@ -36,7 +36,7 @@ func (d *Block) String() string {
 func (d *Block) CalculateTreeHash() []byte {
 	treeHash := make([]byte, 0)
 	for _, tx := range d.Content {
-		treeHash = append(treeHash, tx.Encode()...)
+		treeHash = append(treeHash, tx.Publisher.Sig...)
 	}
 	return common.Sha256(treeHash)
 }
