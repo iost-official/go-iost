@@ -21,6 +21,7 @@ const (
 	ReqDownloadBlock         // request for the height of block is equal to target
 	BlockHashQuery
 	BlockHashResponse
+	ReqSyncBlock
 
 	MsgMaxTTL = 2
 )
