@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/consensus"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
@@ -13,6 +15,7 @@ import (
 	"github.com/iost-official/prototype/core/txpool"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/prototype/rpc CliServer
@@ -28,6 +31,55 @@ type HttpServer struct {
 func newHttpServer() *HttpServer {
 	s := &HttpServer{}
 	return s
+}
+
+func (s *HttpServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRet, error) {
+	ret := PublishRet{Code: -1}
+	seckey := txinfo.Seckey
+	nonce := txinfo.Nonce
+	code := txinfo.Contract
+	acc, err := account.NewAccount(common.Base58Decode(seckey))
+	if err != nil {
+		return &ret, err
+	}
+
+	var contract vm.Contract
+	parser, _ := lua.NewDocCommentParser(code)
+	contract, err = parser.Parse()
+	if err != nil {
+		return &ret, err
+	}
+	mtx := tx.NewTx(nonce, contract)
+	stx, err := tx.SignTx(mtx, acc)
+	if err != nil {
+		return &ret, err
+	}
+	// add servi
+	tx.RecordTx(stx, tx.Data.Self())
+
+	//broadcast the tx
+	router := network.Route
+	if router == nil {
+		panic(fmt.Errorf("network.Router shouldn't be nil"))
+	}
+	broadTx := message.Message{
+		Body:    stx.Encode(),
+		ReqType: int32(network.ReqPublishTx),
+	}
+	go func() {
+		router.Broadcast(broadTx)
+	}()
+	Cons := consensus.Cons
+	if Cons == nil {
+		panic(fmt.Errorf("Consensus is nil"))
+	}
+	go func() {
+		txpool.TxPoolS.AddTransaction(broadTx)
+	}()
+	//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
+	ret.Code = 0
+	ret.Hash = stx.Hash()
+	return &ret, nil
 }
 func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRet, error) {
 	fmt.Println("publish")

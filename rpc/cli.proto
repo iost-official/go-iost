@@ -11,8 +11,14 @@ service Cli {
     rpc GetState (Key) returns (Value){}
     rpc GetBlock (BlockKey) returns (BlockInfo){}
     rpc GetBlockByHeight (BlockKey) returns (BlockInfo){}
+    rpc Transfer (TransInfo) returns (PublishRet){}
 }
 
+message TransInfo {
+	string seckey=1;
+	int64 nonce=2;
+	string contract=3;
+}
 message Transaction {
     bytes tx = 1;
 }
