@@ -297,7 +297,9 @@ func (p *PoB) scheduleLoop() {
 				p.globalDynamicProperty.update(&blk.Head)
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 
-				msg := message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}
+				bb := blk.Encode()
+				msg := message.Message{ReqType: int32(ReqNewBlock), Body: bb}
+				log.Log.I("Block size: %v, TrNum: %v", len(bb), len(blk.Content))
 				go p.router.Broadcast(msg)
 				p.chBlock <- msg
 				p.log.I("Broadcasted block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
