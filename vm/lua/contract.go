@@ -3,6 +3,8 @@ package lua
 import (
 	"fmt"
 
+	"sort"
+
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/vm"
@@ -59,8 +61,8 @@ func (c *Contract) Encode() []byte {
 			oc:   int32(val.outputCount),
 		}
 		cr.methods = append(cr.methods, mr)
+		sort.Sort(methodRawSlice(cr.methods))
 	}
-
 	b, err := cr.Marshal(nil)
 	if err != nil {
 		log.Log.E("Error in Encode of ", c.info.Prefix, err.Error())
@@ -113,4 +115,16 @@ func NewContract(info vm.ContractInfo, code string, main Method, apis ...Method)
 		c.apis[api.name] = api
 	}
 	return c
+}
+
+type methodRawSlice []methodRaw
+
+func (m methodRawSlice) Len() int {
+	return len(m)
+}
+func (m methodRawSlice) Less(i, j int) bool {
+	return m[i].name < m[j].name
+}
+func (m methodRawSlice) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
 }

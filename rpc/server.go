@@ -24,7 +24,7 @@ func Server(port string) error {
 		return fmt.Errorf("failed to rpc NewServer")
 	}
 
-	RegisterCliServer(s, newHttpServer())
+	RegisterCliServer(s, newRpcServer())
 
 	go s.Serve(lis)
 

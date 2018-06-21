@@ -6,17 +6,20 @@ PROJECT = github.com/iost-official/prototype
 DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
 TARGET_DIR = build
 
-.PHONY: all build iserver register lint image devimage install clean
+.PHONY: all build iserver register txsender lint image devimage install clean
 
 all: build
 
-build: iserver register
+build: iserver register txsender
 
 iserver:
 	$(GO) build -o $(TARGET_DIR)/iserver $(PROJECT)/iserver
 
 register:
 	$(GO) build -o $(TARGET_DIR)/register $(PROJECT)/network/main/
+
+txsender:
+	$(GO) build -o $(TARGET_DIR)/txsender $(PROJECT)/txsender
 
 lint:
 	@gometalinter --config=.gometalinter.json ./...
