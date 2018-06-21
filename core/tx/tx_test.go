@@ -212,7 +212,7 @@ end--f
 		//bytes := mTx.Encode()
 
 		seckey := common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9")
-		fmt.Println(common.Base58Encode(seckey))
+		//fmt.Println(common.Base58Encode(seckey))
 		acc, err := account.NewAccount(seckey)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -226,6 +226,8 @@ end--f
 			return
 		}
 		//fmt.Println(common.Base58Encode(stx.publishHash()))
+
+		//fmt.Println(stx.Contract)
 
 		So(common.Base58Encode(mTx.publishHash()), ShouldEqual, common.Base58Encode(stx.publishHash()))
 

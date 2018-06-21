@@ -8,4 +8,5 @@ struct methodRaw {
     name string
     ic int32
     oc int32
+    priv int32
 }
