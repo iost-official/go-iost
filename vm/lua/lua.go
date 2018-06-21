@@ -297,6 +297,18 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	}
 	l.APIs = append(l.APIs, Witness)
 
+	var Assert = api{
+		name: "Assert",
+		function: func(L *lua.LState) int {
+			is := L.ToBool(1)
+			if is == false {
+				panic("")
+			}
+			return 0
+		},
+	}
+	l.APIs = append(l.APIs, Assert)
+
 	var Call = api{
 		name: "Call",
 		function: func(L *lua.LState) int {
