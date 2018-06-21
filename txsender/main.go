@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -14,29 +13,52 @@ import (
 	pb "github.com/iost-official/prototype/rpc"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
+var log = logrus.New()
+
 var acc string = "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
-var servers []string = []string{
-	"127.0.0.1",
-	"18.179.143.193",
-	"52.56.118.10",
-	"13.228.206.188",
-	"13.232.96.221",
-	"18.184.239.232",
-	"13.124.172.86",
-	"52.60.163.60",
+
+var (
+	accId   = flag.Int("account", 0, "account_id")
+	money   = flag.Int("money", 1, "money")
+	nums    = flag.Int("routines", 10, "number of routines")
+	cluster = flag.String("cluster", "testnet", "cluster name, example: test, testnet, local")
+)
+
+var servers = map[string][]string{
+	"testnet": []string{
+		"18.179.143.193:30303",
+		"52.56.118.10:30303",
+		"13.228.206.188:30303",
+
+		"13.232.96.221:30303",
+		"18.184.239.232:30303",
+		"13.124.172.86:30303",
+		"52.60.163.60:30303",
+	},
+	"test": []string{
+		"13.236.207.159:30303",
+		"13.236.209.209:30303",
+		"54.206.55.116:30303",
+		"54.206.49.230:30303",
+		"13.236.177.85:30303",
+		"13.236.153.25:30303",
+		"13.211.188.83:30303",
+	},
+	"local": []string{
+		"127.0.0.1:30303",
+		"127.0.0.1:30313",
+		"127.0.0.1:30323",
+	},
 }
-var servers1 []string = []string{
-	"127.0.0.1",
-	"13.236.207.159",
-	"13.236.209.209",
-	"54.206.55.116",
-	"54.206.49.230",
-	"13.236.177.85",
-	"13.236.153.25",
-	"13.211.188.83",
+
+var server_num = map[string]int{
+	"testnet": 7,
+	"test":    7,
+	"local":   3,
 }
 
 var accounts []string = []string{
@@ -56,7 +78,8 @@ func LoadBytes(s string) []byte {
 
 func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, routineId int) {
 	defer wg.Done()
-	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303", grpc.WithInsecure())
+	log.Info("cluster: %v, routineId: %v, server_num: %v", *cluster, routineId, server_num[*cluster])
+	conn, err := grpc.Dial(servers[*cluster][(routineId%server_num[*cluster])], grpc.WithInsecure())
 	if err != nil {
 		return
 	}
@@ -65,26 +88,24 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, 
 
 	for i := startNonce; i != -1; i++ {
 		mtx.Nonce = i
-		fmt.Println(mtx.Nonce)
+		log.Debugf("Now Nonce: %v", mtx.Nonce)
 		mtx.Time = time.Now().UnixNano()
 		stx, err := tx.SignTx(mtx, acc)
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Errorf("Sign transaction error:", err)
 			return
 		}
 
 		err = sendTx(&stx, pclient)
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Errorf("Send transaction error:", err)
 			return
 		}
 	}
 	return
 }
+
 func main() {
-	accId := flag.Int("account", 0, "account_id")
-	money := flag.Int("money", 1, "money")
-	nums := flag.Int("routines", 10, "number of routines")
 	flag.Parse()
 	if accId == nil || money == nil || nums == nil {
 		return
@@ -105,14 +126,12 @@ end--f
 	parser, _ := lua.NewDocCommentParser(rawCode)
 	contract, err := parser.Parse()
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		log.Fatalf("Contract parse error:", err)
 	}
 	mtx := tx.NewTx(1, contract)
 	acc, err := account.NewAccount(LoadBytes("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		log.Fatalf("New account error:", err)
 	}
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -120,7 +139,7 @@ end--f
 		go send(&wg, mtx, acc, int64(i)*int64(10000000000), i)
 	}
 	wg.Wait()
-	fmt.Println("main")
+	log.Fatal("Func main finished")
 }
 
 func sendTx(stx *tx.Tx, pclient pb.CliClient) error {
