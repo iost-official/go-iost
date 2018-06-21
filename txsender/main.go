@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -157,6 +158,7 @@ end--f
 	curtps /= 3
 	curtps = float64(1e9) / curtps
 	routineNum := int(float64(*tps) / curtps)
+	fmt.Printf("number of routines: %d", routineNum)
 	var wg sync.WaitGroup
 	wg.Add(routineNum)
 	for i := 0; i < routineNum; i++ {
