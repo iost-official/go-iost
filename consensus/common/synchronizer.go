@@ -37,8 +37,7 @@ type SyncImpl struct {
 	blkHashQueryChan  chan message.Message
 	blkHashRespChan   chan message.Message
 	exitSignal        chan struct{}
-	requestMap        map[uint64]bool
-	reqMapLock        sy.RWMutex
+	requestMap        *sy.Map
 	recentAskedBlocks *sy.Map
 
 	log *log.Logger
@@ -50,7 +49,7 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int)
 	sync := &SyncImpl{
 		blockCache:        bc,
 		router:            router,
-		requestMap:        make(map[uint64]bool),
+		requestMap:        new(sy.Map),
 		confirmNumber:     confirmNumber,
 		recentAskedBlocks: new(sy.Map),
 	}
@@ -159,20 +158,16 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
 		sync.router.QueryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
-		sync.reqMapLock.Lock()
 		for i := startNumber; i < startNumber+uint64(MaxBlockHashQueryNumber); i++ {
-			sync.requestMap[i] = true
+			sync.requestMap.LoadOrStore(i, true)
 		}
-		sync.reqMapLock.Unlock()
 		startNumber += uint64(MaxBlockHashQueryNumber)
 	}
 	if startNumber <= endNumber {
 		sync.router.QueryBlockHash(startNumber, endNumber)
-		sync.reqMapLock.Lock()
 		for i := startNumber; i <= endNumber; i++ {
-			sync.requestMap[i] = true
+			sync.requestMap.LoadOrStore(i, true)
 		}
-		sync.reqMapLock.Unlock()
 	}
 	return nil
 }
@@ -221,20 +216,21 @@ func (sync *SyncImpl) requestBlockLoop() {
 }
 
 func (sync *SyncImpl) BlockConfirmed(num int64) {
-	sync.reqMapLock.Lock()
-	defer sync.reqMapLock.Unlock()
-	delete(sync.requestMap, uint64(num))
+	sync.requestMap.Delete(uint64(num))
 }
 
 func (sync *SyncImpl) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(time.Second * time.Duration(RetryTime)):
-			sync.reqMapLock.RLock()
-			for num, _ := range sync.requestMap {
+			sync.requestMap.Range(func(k, v interface{}) bool {
+				num, ok := k.(uint64)
+				if !ok {
+					return false
+				}
 				sync.router.QueryBlockHash(num, num)
-			}
-			sync.reqMapLock.RUnlock()
+				return true
+			})
 		case <-sync.exitSignal:
 			return
 		}
