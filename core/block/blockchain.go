@@ -8,7 +8,6 @@ import (
 
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
-	"github.com/iost-official/prototype/log"
 )
 
 var (
@@ -112,28 +111,12 @@ func (b *ChainImpl) Push(block *Block) error {
 		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
 
-	////////////probe//////////////////
-	log.Report(&log.MsgBlock{
-		SubType:       "confirm",
-		BlockHeadHash: block.HeadHash(),
-		BlockNum:      block.Head.Number,
-	})
-	///////////////////////////////////
-
 	//put all the tx of this block to txdb
 	for _, ctx := range block.Content {
 		if err := b.tx.Add(&ctx); err != nil {
 			return fmt.Errorf("failed to add tx %v", err)
 		}
 
-		////////////probe//////////////////
-		log.Report(&log.MsgTx{
-			SubType:   "confirm",
-			TxHash:    ctx.Hash(),
-			Publisher: ctx.Publisher.Pubkey,
-			Nonce:     ctx.Nonce,
-		})
-		///////////////////////////////////
 	}
 
 	b.rds.Put([]byte("BlockNum"), []byte(strconv.FormatInt(block.Head.Number, 10)))
@@ -192,23 +175,26 @@ func (b *ChainImpl) Top() *Block {
 func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
+	fmt.Println(err)
 	if err != nil {
 		return nil
 	}
 
 	block, err := b.db.Get(append(blockPrefix, hash...))
+	fmt.Println(err)
 	if err != nil {
 		return nil
 	}
 	if len(block) == 0 {
 		return nil
 	}
-
+	fmt.Println(len(block))
 	rBlock := new(Block)
 	if err := rBlock.Decode(block); err != nil {
+		fmt.Println(err)
 		return nil
 	}
-
+	fmt.Printf("block:%s", rBlock)
 	return rBlock
 }
 
