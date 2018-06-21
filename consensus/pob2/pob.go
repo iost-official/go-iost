@@ -235,7 +235,7 @@ func (p *PoB) blockLoop() {
 				receivedBlockCount.Inc()
 			} else {
 				p.log.I("Error: %v", err)
-				p.log.I("[blockloop]:verify blk faild\n%s\n", &blk)
+				//p.log.I("[blockloop]:verify blk faild\n%s\n", &blk)
 			}
 			if err != blockcache.ErrBlock && err != blockcache.ErrTooOld {
 				go p.synchronizer.BlockConfirmed(blk.Head.Number)
