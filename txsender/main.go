@@ -55,6 +55,7 @@ func LoadBytes(s string) []byte {
 }
 
 func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, routineId int) {
+	wg.Add(1)
 	defer wg.Done()
 	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303", grpc.WithInsecure())
 	if err != nil {
@@ -115,7 +116,6 @@ end--f
 		return
 	}
 	var wg sync.WaitGroup
-	wg.Add(10)
 	for i := 0; i < *nums; i++ {
 		go send(&wg, mtx, acc, int64(i)*int64(10000000000), i)
 	}
