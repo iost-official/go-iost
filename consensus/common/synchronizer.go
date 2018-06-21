@@ -319,9 +319,9 @@ func (sync *SyncImpl) handleHashResp() {
 					continue
 				}
 				// TODO: 判断本地是否有这个区块
-				sync.log.I("chech hash:%s, height:%v", blkHash.Hash, blkHash.Height)
+				//sync.log.I("check hash:%s, height:%v", blkHash.Hash, blkHash.Height)
 				if !sync.blockCache.CheckBlock(blkHash.Hash) {
-					sync.log.I("check hash success")
+					//sync.log.I("check hash success")
 					sync.router.AskABlock(blkHash.Height, req.From)
 					sync.recentAskedBlocks.Store(string(blkHash.Hash), time.Now().Unix())
 				}
