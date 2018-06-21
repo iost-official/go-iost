@@ -230,8 +230,18 @@ end--f
 		//fmt.Println(stx.Contract)
 
 		So(common.Base58Encode(mTx.publishHash()), ShouldEqual, common.Base58Encode(stx.publishHash()))
+		bytes := stx.Encode()
+		var ptx Tx
+		err = ptx.Decode(bytes)
+		So(err, ShouldBeNil)
 
-		err = stx.VerifySelf()
+		So(stx.Contract.Code(), ShouldEqual, ptx.Contract.Code())
+		//fmt.Println(stx.Contract.Info())
+		//fmt.Println(ptx.Contract.Info())
+
+		So(common.Base58Encode(ptx.publishHash()), ShouldEqual, common.Base58Encode(stx.publishHash()))
+
+		err = ptx.VerifySelf()
 		So(err, ShouldBeNil)
 	})
 }

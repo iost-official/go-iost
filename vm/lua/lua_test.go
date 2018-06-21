@@ -5,6 +5,8 @@ import (
 
 	"fmt"
 
+	"bytes"
+
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
 	db2 "github.com/iost-official/prototype/db"
@@ -385,6 +387,134 @@ end`,
 		So(lc2.info.GasLimit, ShouldEqual, lc.info.GasLimit)
 		So(lc2.Code(), ShouldEqual, lc.code)
 	})
+}
+
+func TestContract2(t *testing.T) {
+	errlua := `--- main 一元夺宝
+-- snatch treasure with 1 coin !
+-- @gas_limit 100000
+-- @gas_price 0.01
+-- @param_cnt 0
+-- @return_cnt 1
+-- @publisher walleta
+function main()
+	Put("max_user_number", 20)
+	Put("user_number", 0)
+	Put("winner", "")
+	Put("claimed", "false")
+    return "success"
+end--f
+
+--- BuyCoin buy coins
+-- buy some coins
+-- @param_cnt 2
+-- @return_cnt 1
+function BuyCoin(account, buyNumber)
+	if (buyNumber <= 0)
+	then
+	    return "buy number should be more than zero"
+	end
+
+	maxUserNumber = Get("max_user_number")
+    number = Get("user_number")
+	if (number >= maxUserNumber or number + buyNumber > maxUserNumber)
+	then
+	    return string.format("max user number exceed, only %d coins left", maxUserNumber - number)
+	end
+
+	-- print(string.format("deposit account = %s, number = %d", account, buyNumber))
+	Deposit(account, buyNumber)
+
+	win = false
+	for i = 0, buyNumber - 1, 1 do
+	    win = win or winAfterBuyOne(number)
+	    number = number + 1
+	end
+	Put("user_number", number)
+
+	if (win)
+	then
+	    Put("winner", account)
+	end
+
+    return "success"
+end--f
+
+--- winAfterBuyOne win after buy one
+-- @param_cnt 1
+-- @return_cnt 1
+function winAfterBuyOne(number)
+	win = Random(1 - 1.0 / (number + 1))
+	return win
+end--f
+
+--- QueryWinner query winner
+-- @param_cnt 0
+-- @return_cnt 1
+function QueryWinner()
+	return Get("winner")
+end--f
+
+--- QueryClaimed query claimed
+-- @param_cnt 0
+-- @return_cnt 1
+function QueryClaimed()
+	return Get("claimed")
+end--f
+
+--- QueryUserNumber query user number 
+-- @param_cnt 0
+-- @return_cnt 1
+function QueryUserNumber()
+	return Get("user_number")
+end--f
+
+--- QueryMaxUserNumber query max user number 
+-- @param_cnt 0
+-- @return_cnt 1
+function QueryMaxUserNumber()
+	return Get("max_user_number")
+end--f
+
+--- Claim claim prize
+-- @param_cnt 0
+-- @return_cnt 1
+function Claim()
+	claimed = Get("claimed")
+	if (claimed == "true")
+	then
+		return "price has been claimed"
+	end
+	number = Get("user_number")
+	maxUserNumber = Get("max_user_number")
+	if (number < maxUserNumber)
+	then
+		return string.format("game not end yet! user_number = %d, max_user_number = %d", number, maxUserNumber)
+	end
+	winner = Get("winner")
+
+	Put("claimed", "true")
+
+	Withdraw(winner, number)
+	return "success"
+end--f
+`
+
+	Convey("test of encode", t, func() {
+		parser, err := NewDocCommentParser(errlua)
+		So(err, ShouldBeNil)
+		sc, err := parser.Parse()
+		So(err, ShouldBeNil)
+		buf := sc.Encode()
+
+		var sc2 Contract
+		sc2.Decode(buf)
+		fmt.Println()
+		//fmt.Println(sc.Encode())
+		//fmt.Println(sc2.Encode())
+		So(bytes.Equal(sc.Encode(), sc2.Encode()), ShouldBeTrue)
+	})
+
 }
 
 func TestContext(t *testing.T) {
