@@ -8,6 +8,7 @@ HOME=os.environ['HOME']
 GOPATH=os.environ['GOPATH']
 project_path=GOPATH+"/src/github.com/iost-official/prototype"
 testDir=project_path+"/scripts/testWallet/test"
+ip_port="127.0.0.1:30303"
 def wCommand(com):
 	obj = subprocess.Popen([com], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
 	obj.wait()
@@ -75,7 +76,7 @@ def checkSign():
 
 def checkPublish():
 	print "[iwallet publish]:",
-	ret=wCommand("iwallet publish "+testDir+"/1to2.sc "+testDir+"/1to2.sig -k ~/.ssh/test_secp")
+	ret=wCommand("iwallet -s "+ip_port+" publish "+testDir+"/1to2.sc "+testDir+"/1to2.sig -k ~/.ssh/test_secp")
 	if ret.startswith("ok"):
 		#check balance here
 		print("ok")
@@ -102,6 +103,10 @@ def checkBalance():
 	
 if __name__ == "__main__":
 	print("check iwallet functions:")
+	global ip_port
+	if(len(sys.argv)==2):
+		ip_port=sys.argv[1]
+
 	clear()
 	func_list=[installWallet,checkAccount,checkBlock,checkCompile,checkSign,checkPublish,checkValue,checkBalance,]
 	for func in func_list:

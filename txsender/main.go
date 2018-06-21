@@ -158,6 +158,11 @@ end--f
 	curtps /= 3
 	curtps = float64(1e9) / curtps
 	routineNum := int(float64(*tps) / curtps)
+	if routineNum < 1 {
+		routineNum = 1
+	} else if routineNum > 5000 {
+		routineNum = 5000
+	}
 	fmt.Printf("number of routines: %d", routineNum)
 	var wg sync.WaitGroup
 	wg.Add(routineNum)

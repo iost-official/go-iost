@@ -62,7 +62,15 @@ type ServerExit interface {
 
 var serverExit []ServerExit
 
+func goroutineHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+
+	p := pprof.Lookup("goroutine")
+	p.WriteTo(w, 1)
+}
+
 func chainServer(chain block.Chain) {
+	http.HandleFunc("/debug/goroutine", goroutineHandler)
 	http.HandleFunc("/blockchain/length", func(w http.ResponseWriter, r *http.Request) {
 		len := chain.Length()
 		resp := map[string]interface{}{
