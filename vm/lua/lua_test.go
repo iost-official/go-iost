@@ -78,6 +78,38 @@ end`,
 
 		})
 
+		Convey("Fatal", func() {
+			db, err := db2.DatabaseFactory("redis")
+			if err != nil {
+				panic(err.Error())
+			}
+			sdb := state.NewDatabase(db)
+			pool := state.NewPool(sdb)
+
+			pool.PutHM("iost", "a", state.MakeVFloat(10))
+			pool.PutHM("iost", "b", state.MakeVFloat(100))
+
+			main := NewMethod(vm.Public, "main", 0, 0)
+			lc := Contract{
+				info: vm.ContractInfo{Prefix: "test", GasLimit: 10000, Publisher: vm.IOSTAccount("a")},
+
+				code: `function main()
+	Assert(Transfer("a", "b", 50))
+end`,
+				main: main,
+			}
+
+			lvm := VM{}
+			lvm.Prepare(&lc, nil)
+			lvm.Start()
+			_, _, err = lvm.call(pool, "main")
+			lvm.Stop()
+			So(err, ShouldNotBeNil)
+
+			//So(rtn[0].EncodeString(), ShouldEqual, "true")
+
+		})
+
 		Convey("Out of gas", func() {
 			db, err := db2.DatabaseFactory("redis")
 			if err != nil {
@@ -448,4 +480,5 @@ end`,
 		fmt.Println(*lvm.L)
 
 	})
+
 }
