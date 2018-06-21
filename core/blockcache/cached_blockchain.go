@@ -111,7 +111,10 @@ func (c *CachedBlockChain) Copy() CachedBlockChain {
 func (c *CachedBlockChain) Flush() {
 	if c.block != nil {
 		//[HowHsu]:I think this operation should be done in a new goroutine
-		c.Chain.Push(c.block)
+		err := c.Chain.Push(c.block)
+		if err != nil {
+			panic("Failed to CachedBlockChain Flush")
+		}
 		c.block = nil
 		c.cachedLength = 0
 		c.parent = nil
