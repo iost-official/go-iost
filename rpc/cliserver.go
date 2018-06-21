@@ -24,16 +24,16 @@ type BInfo struct {
 	Head  block.BlockHead
 	TxCnt int
 }
-type HttpServer struct {
+type RpcServer struct {
 }
 
-// newHttpServer 初始Http RPC结构体
-func newHttpServer() *HttpServer {
-	s := &HttpServer{}
+// newRpcServer 初始 RPC结构体
+func newRpcServer() *RpcServer {
+	s := &RpcServer{}
 	return s
 }
 
-func (s *HttpServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRet, error) {
+func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRet, error) {
 	ret := PublishRet{Code: -1}
 	seckey := txinfo.Seckey
 	nonce := txinfo.Nonce
@@ -81,7 +81,7 @@ func (s *HttpServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishR
 	ret.Hash = stx.Hash()
 	return &ret, nil
 }
-func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRet, error) {
+func (s *RpcServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRet, error) {
 	fmt.Println("publish")
 	ret := PublishRet{Code: -1}
 	var tx1 tx.Tx
@@ -126,7 +126,7 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishR
 	ret.Hash = tx1.Hash()
 	return &ret, nil
 }
-func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (*Transaction, error) {
+func (s *RpcServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (*Transaction, error) {
 	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -152,7 +152,7 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 }
 
 //TODO:test this func
-func (s *HttpServer) GetTransactionByHash(ctx context.Context, txhash *TransactionHash) (*Transaction, error) {
+func (s *RpcServer) GetTransactionByHash(ctx context.Context, txhash *TransactionHash) (*Transaction, error) {
 	fmt.Println("GetTransaction begin")
 	if txhash == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
@@ -172,7 +172,7 @@ func (s *HttpServer) GetTransactionByHash(ctx context.Context, txhash *Transacti
 	return &Transaction{Tx: tx.Encode()}, nil
 }
 
-func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
+func (s *RpcServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
 	fmt.Println("GetBalance begin")
 	if iak == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
@@ -192,7 +192,7 @@ func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
 	return &Value{Sv: balance}, nil
 }
 
-func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
+func (s *RpcServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
 	fmt.Println("GetState begin")
 	if stkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
@@ -211,7 +211,7 @@ func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
 	return &Value{Sv: stValue.EncodeString()}, nil
 }
 
-func (s *HttpServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, error) {
+func (s *RpcServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, error) {
 	if bk == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -257,7 +257,7 @@ func (s *HttpServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, er
 	}, nil
 }
 
-func (s *HttpServer) GetBlockByHeight(ctx context.Context, bk *BlockKey) (*BlockInfo, error) {
+func (s *RpcServer) GetBlockByHeight(ctx context.Context, bk *BlockKey) (*BlockInfo, error) {
 	if bk == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
