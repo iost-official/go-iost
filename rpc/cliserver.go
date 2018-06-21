@@ -57,7 +57,7 @@ func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRe
 	}
 
 	//consider to remove this
-	err = mtx.VerifySelf() //verify Publisher and Signers
+	err = stx.VerifySelf() //verify Publisher and Signers
 	if err != nil {
 		return &ret, fmt.Errorf("VerifySelf:%v", err)
 
