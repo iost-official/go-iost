@@ -209,20 +209,117 @@ func BenchmarkStdCacheVerifier(b *testing.B) {
 }
 
 func TestStdCacheVerifier2(t *testing.T) {
-	Convey("test of a bug called 0", t, func() {
-		dbx, err := db.DatabaseFactory("redis")
-		So(err, ShouldBeNil)
-		sdb := state.NewDatabase(dbx)
-		pool := state.NewPool(sdb)
-		pool.PutHM("iost", "BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9", state.MakeVFloat(10000))
 
-		acc, err := account.NewAccount(common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
+	codeA := `--- main 一元夺宝
+-- snatch treasure with 1 coin !
+-- @gas_limit 100000
+-- @gas_price 0.001
+-- @param_cnt 0
+-- @return_cnt 0
+-- @publisher walleta
+function main()
+	Put("max_user_number", 20)
+	Put("user_number", 0)
+	Put("winner", "")
+	Put("claimed", "false")
+end--f
 
-		rawCode := `
+--- BuyCoin buy coins
+-- buy some coins
+-- @param_cnt 2
+-- @return_cnt 1
+function BuyCoin(account, buyNumber)
+	if (buyNumber <= 0)
+	then
+	    return "buy number should be more than zero"
+	end
+
+	maxUserNumber = Get("max_user_number")
+    number = Get("user_number")
+	if (number >= maxUserNumber or number + buyNumber > maxUserNumber)
+	then
+	    return string.format("max user number exceed, only %d coins left", maxUserNumber - number)
+	end
+
+	-- print(string.format("deposit account = %s, number = %d", account, buyNumber))
+	Deposit(account, buyNumber)
+
+	win = false
+	for i = 0, buyNumber - 1, 1 do
+	    win = win or winAfterBuyOne(number)
+	    number = number + 1
+	end
+	Put("user_number", number)
+
+	if (win)
+	then
+	    Put("winner", account)
+	end
+
+    return "success"
+end--f
+
+--- winAfterBuyOne win after buy one
+-- @param_cnt 1
+-- @return_cnt 1
+function winAfterBuyOne(number)
+	win = Random(1 - 1.0 / (number + 1))
+	return win
+end--f
+
+--- QueryWinner query winner
+-- @param_cnt 0
+-- @return_cnt 1
+function QueryWinner()
+	return Get("winner")
+end--f
+
+--- QueryClaimed query claimed
+-- @param_cnt 0
+-- @return_cnt 1
+function QueryClaimed()
+	return Get("claimed")
+end--f
+
+--- QueryUserNumber query user number 
+-- @param_cnt 0
+-- @return_cnt 1
+function QueryUserNumber()
+	return Get("user_number")
+end--f
+
+--- QueryMaxUserNumber query max user number 
+-- @param_cnt 0
+-- @return_cnt 1
+function QueryMaxUserNumber()
+	return Get("max_user_number")
+end--f
+
+--- Claim claim prize
+-- @param_cnt 0
+-- @return_cnt 1
+function Claim()
+	claimed = Get("claimed")
+	if (claimed == "true")
+	then
+		return "price has been claimed"
+	end
+	number = Get("user_number")
+	maxUserNumber = Get("max_user_number")
+	if (number < maxUserNumber)
+	then
+		return string.format("game not end yet! user_number = %d, max_user_number = %d", number, maxUserNumber)
+	end
+	winner = Get("winner")
+
+	Put("claimed", "true")
+
+	Withdraw(winner, number)
+	return "success"
+end--f
+`
+
+	codeB := `
 --- main 合约主入口
 -- server1转账server2
 -- @gas_limit 10000
@@ -231,9 +328,27 @@ func TestStdCacheVerifier2(t *testing.T) {
 -- @return_cnt 1
 function main()
 	print("hello")
-	Transfer("` + acc.GetId() + `","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K", 10)
+	Transfer("2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K", 10)
 end--f
 `
+
+	Convey("test of a bug called 0", t, func() {
+		dbx, err := db.DatabaseFactory("redis")
+		So(err, ShouldBeNil)
+		sdb := state.NewDatabase(dbx)
+		pool := state.NewPool(sdb)
+		pool.PutHM("iost", "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT", state.MakeVFloat(10000))
+
+		acc, err := account.NewAccount(common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		_ = codeA
+		_ = codeB
+
+		rawCode := codeA
 		var contract vm.Contract
 		parser, _ := lua.NewDocCommentParser(rawCode)
 		contract, err = parser.Parse()
@@ -247,6 +362,7 @@ end--f
 		buf := stx.Encode()
 		var atx tx.Tx
 		err = atx.Decode(buf)
+		fmt.Println(atx.Contract)
 		So(err, ShouldBeNil)
 		err = StdCacheVerifier(&atx, pool, vm.BaseContext())
 		So(err, ShouldBeNil)

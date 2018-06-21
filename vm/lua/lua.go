@@ -315,6 +315,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 			L.PCount += 1000
 			contractPrefix := L.ToString(1)
 			methodName := L.ToString(2)
+			if methodName == "main" {
+				L.Push(lua.LFalse)
+				return 1
+			}
 			method, err := l.monitor.GetMethod(contractPrefix, methodName)
 			if err != nil {
 				fmt.Println("err:", err.Error())
