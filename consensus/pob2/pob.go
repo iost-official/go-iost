@@ -363,7 +363,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	generatedBlockCount.Inc()
 
 	//Clear Servi
-	Data.ClearServi(tx)
+	Data.ClearServi(blk.Head.Witness)
 
 	return &blk
 }

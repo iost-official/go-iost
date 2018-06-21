@@ -25,19 +25,28 @@ func (h *Holder) AddServi(tx []Tx) {
 		servi := h.Spool.User(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey))
 		if servi != nil {
 			servi.IncrBehavior(1)
+			// balance
+			val0, err := state.StdPool.GetHM("iost", state.Key(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey)))
+			if err != nil {
+				continue
+			}
+			val, ok := val0.(*state.VFloat)
+			if !ok {
+				continue
+			}
+
+			servi.SetBalance(val.ToFloat64())
 		}
 	}
+	h.Spool.Flush()
+
 }
 
-func (h *Holder) ClearServi(tx []*Tx) {
-	for _, t := range tx {
-		if len(t.Recorder.Pubkey) == 0 {
-			continue
-		}
-		servi := h.Spool.User(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey))
-		if servi != nil {
-			servi.Clear()
-		}
+func (h *Holder) ClearServi(acc string) {
+
+	servi := h.Spool.User(vm.IOSTAccount(acc))
+	if servi != nil {
+		servi.Clear()
 	}
 }
 
