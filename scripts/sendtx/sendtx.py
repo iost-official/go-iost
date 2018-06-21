@@ -62,7 +62,7 @@ def Sendmoney():
 	f2.write(genesisPubkey)
 	f2.close()
 
-	flist=[Compile,Sign,Publish,]
+	flist=[Compile,Publish,]
 	for func in flist:
 		if func()==False:
 			return "FAIL"
@@ -81,7 +81,7 @@ def construct(_from,_to,money):
 		'-- @return_cnt 0\n',
 		'function main()\n',
 		'	Transfer("'+_from+'","'+_to+'",'+str(money)+')\n',
-		'end\n',
+		'end--f\n',
 	])
 	f.close()
 
@@ -98,7 +98,7 @@ def constructAll(lto,money):
 	]
 	for i in range(0,len(lto)):
 		lines.append('	Transfer("'+genesisPubkey+'","'+lto[i]+'",'+str(money)+')\n')
-	lines.append('end\n')
+	lines.append('end--f\n')
 	f.writelines(lines)
 	f.close()
 
@@ -142,7 +142,7 @@ def Compile():
 	if has(cur_path+"test/1to2.sc"):
 		#print("ok")
 		return True 
-	#print("fail")
+	print("compile fail")
 	return False
 
 def Sign():
@@ -152,7 +152,7 @@ def Sign():
 	if has(cur_path+"test/1to2.sig"):
 		#print("ok")
 		return True 
-	#print("fail")
+	print("sign fail")
 	return False
 
 def Publish():
@@ -162,7 +162,7 @@ def Publish():
 		#check balance here
 		#print("ok")
 		return True
-	#print("fail")
+	print("publish fail")
 	return False
 
 def sendtransaction():

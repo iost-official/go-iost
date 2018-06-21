@@ -6,14 +6,18 @@ import (
 
 	"strings"
 
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/verifier"
+	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 var cfgFile string
+var valuesFile string
 var language string
 
 // rootCmd represents the base command when called without any subcommands
@@ -32,19 +36,74 @@ Playground runs lua script by turns.
 		db := Database{make(map[string][]byte)}
 		mdb := state.NewDatabase(&db)
 		pool := state.NewPool(mdb)
-		for _, k := range viper.AllKeys() {
-			v := viper.GetString(k)
-			val, _ := state.ParseValue(v)
-			if strings.Contains(k, ".") {
-				kf := strings.Split(k, ".")
-				fmt.Println(kf)
-				pool.PutHM(state.Key(kf[0]), state.Key(kf[1]), val)
-			} else {
-				pool.Put(state.Key(k), val)
+
+		m := make(map[interface{}]interface{})
+
+		vf, err := ReadFile(valuesFile)
+		if err != nil {
+			panic(err)
+		}
+
+		err = yaml.Unmarshal(vf, &m)
+		if err != nil {
+			panic(err)
+		}
+
+		for k, v := range m {
+			switch v.(type) {
+			case map[interface{}]interface{}:
+				for k2, v2 := range v.(map[interface{}]interface{}) {
+					vc, err := state.ParseValue(v2.(string))
+					if err != nil {
+						panic(err)
+					}
+					pool.PutHM(state.Key(k.(string)), state.Key(k2.(string)), vc)
+				}
+			case string:
+				vc, err := state.ParseValue(v.(string))
+				if err != nil {
+					panic(err)
+				}
+				pool.Put(state.Key(k.(string)), vc)
 			}
 		}
 
+		//for _, k := range viper.AllKeys() {
+		//	v := viper.GetString(k)
+		//	val, _ := state.ParseValue(v)
+		//	if strings.Contains(k, ".") {
+		//		kf := strings.Split(k, ".")
+		//		fmt.Println(kf)
+		//		pool.PutHM(state.Key(kf[0]), state.Key(kf[1]), val)
+		//	} else {
+		//		pool.Put(state.Key(k), val)
+		//	}
+		//}
+
 		v := verifier.NewCacheVerifier()
+		v.Context = vm.BaseContext()
+		ph, err := pool.GetHM("context", "parent-hash")
+		if err != nil {
+			panic(err)
+		}
+		wit, err := pool.GetHM("context", "witness")
+		if err != nil {
+			panic(err)
+		}
+		height, err := pool.GetHM("context", "height")
+		if err != nil {
+			panic(err)
+		}
+		timestamp, err := pool.GetHM("context", "timestamp")
+		if err != nil {
+			panic(err)
+		}
+
+		v.Context.ParentHash = common.Base58Decode(ph.(*state.VString).EncodeString()[1:])
+		v.Context.Witness = vm.IOSTAccount(wit.EncodeString()[1:])
+		v.Context.BlockHeight = int64(height.(*state.VFloat).ToFloat64())
+		v.Context.Timestamp = int64(timestamp.(*state.VFloat).ToFloat64())
+
 		//var sc0 vm.contract
 
 		var (
@@ -107,7 +166,8 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "values", "", "get values of test environment, default ./values.yaml")
+	rootCmd.PersistentFlags().StringVarP(&valuesFile, "values", "v", "values.yaml", "set init values, default ./values.yaml")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "set config default ./values.yaml")
 	rootCmd.PersistentFlags().StringVarP(&language, "lang", "l", "lua", "set language of contract, default lua")
 
 }
@@ -120,7 +180,6 @@ func initConfig() {
 	} else {
 		viper.SetConfigName("./values.yaml")
 	}
-
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
