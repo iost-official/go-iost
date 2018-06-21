@@ -5,6 +5,8 @@ import (
 
 	"fmt"
 
+	"sync"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
@@ -15,6 +17,7 @@ var ErrForbiddenCall = errors.New("forbidden call")
 
 type vmHolder struct {
 	vm.VM
+	Lock sync.Mutex
 	//contract vm.contract
 }
 
@@ -35,7 +38,7 @@ func (m *vmMonitor) StartVM(contract vm.Contract) vm.VM {
 		return vm.VM
 	}
 	vm := m.startVM(contract)
-	m.vms[contract.Info().Prefix] = vmHolder{vm}
+	m.vms[contract.Info().Prefix] = vmHolder{VM: vm, Lock: sync.Mutex{}}
 	return m.vms[contract.Info().Prefix].VM
 }
 
@@ -59,7 +62,7 @@ func (m *vmMonitor) startVM(contract vm.Contract) vm.VM {
 
 func (m *vmMonitor) RestartVM(contract vm.Contract) vm.VM {
 	if m.hotVM == nil {
-		m.hotVM = &vmHolder{m.startVM(contract)}
+		m.hotVM = &vmHolder{VM: m.startVM(contract), Lock: sync.Mutex{}}
 		return m.hotVM
 	}
 	m.hotVM.Restart(contract)
@@ -67,16 +70,24 @@ func (m *vmMonitor) RestartVM(contract vm.Contract) vm.VM {
 }
 
 func (m *vmMonitor) StopVM(contract vm.Contract) {
-	m.vms[contract.Info().Prefix].Stop()
+	holder, ok := m.vms[contract.Info().Prefix]
+	if !ok {
+		return
+	}
+	holder.Lock.Lock()
+	holder.Stop()
 	delete(m.vms, string(contract.Hash()))
+	holder.Lock.Unlock()
 }
 
 func (m *vmMonitor) Stop() {
 	for _, vv := range m.vms {
+		vv.Lock.Lock()
 		vv.Stop()
 	}
 	m.vms = make(map[string]vmHolder)
 	if m.hotVM != nil {
+		m.hotVM.Lock.Lock()
 		m.hotVM.Stop()
 		m.hotVM = nil
 	}
@@ -106,11 +117,11 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, err
 func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
 
 	if m.hotVM != nil && contractPrefix == m.hotVM.Contract().Info().Prefix {
-		//fmt.Println(pool.GetHM("iost", "b"))
+		m.hotVM.Lock.Lock()
 		rtn, pool2, err := m.hotVM.Call(ctx, pool, methodName, args...)
-		//fmt.Println(pool2.GetHM("iost", "b"))
-
 		gas := m.hotVM.PC()
+		m.hotVM.Lock.Unlock()
+
 		return rtn, pool2, gas, err
 	}
 	holder, ok := m.vms[contractPrefix]
@@ -121,15 +132,13 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 		if err != nil {
 			return nil, nil, 0, err
 		}
-
 		m.StartVM(contract)
 		holder, ok = m.vms[contractPrefix]
 	}
-	//fmt.Println(pool.GetHM("iost", "b"))
+	holder.Lock.Lock()
 	rtn, pool2, err := holder.Call(ctx, pool, methodName, args...)
-	//fmt.Println(pool2.GetHM("iost", "b"))
-
 	gas := holder.PC()
+	holder.Lock.Unlock()
 	return rtn, pool2, gas, err
 }
 

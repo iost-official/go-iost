@@ -78,6 +78,10 @@ func RandomByParentHash(ctx *vm.Context, probability float64) bool {
 	return float64(common.Sha256(seed)[10]) > probability*255
 }
 
+func ParentHashLast(ctx *vm.Context) byte {
+	return ctx.ParentHash[len(ctx.ParentHash)-1]
+}
+
 func Publisher(contract vm.Contract) string {
 	return string(contract.Info().Publisher)
 }

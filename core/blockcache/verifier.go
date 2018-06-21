@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 
+	"sync"
+
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
@@ -35,9 +37,12 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 var ver *verifier.CacheVerifier
 var verb *verifier.CacheVerifier
 
+var blockLock sync.Mutex
+
 // StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
-
+	blockLock.Lock()
+	defer blockLock.Unlock()
 	ver.Context = vm.NewContext(vm.BaseContext())
 	ver.Context.ParentHash = block.Head.ParentHash
 	ver.Context.Timestamp = block.Head.Time
@@ -87,7 +92,12 @@ func CleanStdVerifier() {
 	verb.CleanUp()
 }
 
+var cacheLock sync.Mutex
+
 func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context *vm.Context) error {
+	cacheLock.Lock()
+	defer cacheLock.Unlock()
+
 	verb.Context = context
 
 	p2, err := verb.VerifyContract(txx.Contract, pool.Copy())

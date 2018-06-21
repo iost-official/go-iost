@@ -20,7 +20,8 @@ import (
 
 	"errors"
 	"os"
-
+	"encoding/hex"
+	
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
@@ -112,7 +113,7 @@ to quickly create a Cobra application.`,
 			}
 		}
 		fmt.Println("ok")
-		fmt.Println(string(txHash))
+		fmt.Println(hex.EncodeToString(txHash))
 	},
 }
 
