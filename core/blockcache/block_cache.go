@@ -201,8 +201,16 @@ func (h *BlockCacheImpl) BlockChain() block.Chain {
 
 // AddGenesis 加入创世块
 func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
-	h.bc.Push(block)
-	h.cachedRoot.pool.Flush()
+
+	err := h.bc.Push(block)
+	if err != nil {
+		return err
+	}
+
+	err = h.cachedRoot.pool.Flush()
+	if err != nil {
+		return err
+	}
 	h.hashMap[string(h.cachedRoot.bc.Top().HeadHash())] = h.cachedRoot
 	return nil
 }
