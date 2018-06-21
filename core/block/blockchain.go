@@ -8,7 +8,6 @@ import (
 
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
-	"github.com/iost-official/prototype/log"
 )
 
 var (
@@ -112,28 +111,12 @@ func (b *ChainImpl) Push(block *Block) error {
 		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
 
-	////////////probe//////////////////
-	log.Report(&log.MsgBlock{
-		SubType:       "confirm",
-		BlockHeadHash: block.HeadHash(),
-		BlockNum:      block.Head.Number,
-	})
-	///////////////////////////////////
-
 	//put all the tx of this block to txdb
 	for _, ctx := range block.Content {
 		if err := b.tx.Add(&ctx); err != nil {
 			return fmt.Errorf("failed to add tx %v", err)
 		}
 
-		////////////probe//////////////////
-		log.Report(&log.MsgTx{
-			SubType:   "confirm",
-			TxHash:    ctx.Hash(),
-			Publisher: ctx.Publisher.Pubkey,
-			Nonce:     ctx.Nonce,
-		})
-		///////////////////////////////////
 	}
 
 	b.rds.Put([]byte("BlockNum"), []byte(strconv.FormatInt(block.Head.Number, 10)))
@@ -211,7 +194,7 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 		fmt.Println(err)
 		return nil
 	}
-	fmt.Printf("block:%s",rBlock)
+	fmt.Printf("block:%s", rBlock)
 	return rBlock
 }
 
