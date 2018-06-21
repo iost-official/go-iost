@@ -440,6 +440,7 @@ end`,
 		fmt.Println("gas after lvm call: ", lvm.PC())
 
 		fmt.Println(*lvm.L)
+		fmt.Println(*lvm.L)
 
 		lvm.Restart(&lc2)
 		fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))

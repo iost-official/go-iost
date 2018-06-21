@@ -164,7 +164,7 @@ func (t *Tx) Hash() []byte {
 
 // 公钥+nonoc 可用于交易判重
 func (t *Tx) TxID() string {
-	hash := string(t.Publisher.Pubkey)+strconv.FormatInt(t.Nonce,10)+strconv.FormatInt(t.Time,10)
+	hash := string(t.Publisher.Pubkey) + strconv.FormatInt(t.Nonce, 10) + strconv.FormatInt(t.Time, 10)
 	return hash
 }
 
@@ -191,9 +191,11 @@ func (t *Tx) VerifySigner(sig common.Signature) bool {
 
 type TransactionsList []*Tx
 
-func (s TransactionsList) Len() int           { return len(s) }
-func (s TransactionsList) Less(i, j int) bool { return s[i].Contract.Info().Price < s[j].Contract.Info().Price }
-func (s TransactionsList) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s TransactionsList) Len() int { return len(s) }
+func (s TransactionsList) Less(i, j int) bool {
+	return s[i].Contract.Info().Price < s[j].Contract.Info().Price
+}
+func (s TransactionsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
 func (s *TransactionsList) Push(x interface{}) {
 	*s = append(*s, x.(*Tx))
