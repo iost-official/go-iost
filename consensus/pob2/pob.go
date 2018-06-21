@@ -241,7 +241,7 @@ func (p *PoB) blockLoop() {
 				go p.synchronizer.BlockConfirmed(blk.Head.Number)
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
-				} else if err == blockcache.ErrNotFound && req.ReqType == ReqNewBlock {
+				} else if err == blockcache.ErrNotFound && req.ReqType == int32(ReqNewBlock) {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
 					if need {
