@@ -3,6 +3,7 @@ ab: f10
 iost:
  walleta: f10000
  walletb: f10000
+ 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT: f100000000
 context:
  parent-hash: sabc
  witness: sabc
