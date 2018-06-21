@@ -334,7 +334,10 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 			h.hmlock.Unlock()
 			h.cachedRoot = newRoot
 			h.cachedRoot.bc.Flush()
-			h.cachedRoot.pool.Flush()
+			err := h.cachedRoot.pool.Flush()
+			if err != nil {
+				log.Log.E("Database error，failed to tryFlush err:%v", err)
+			}
 			h.cachedRoot.super = nil
 			h.cachedRoot.updateLength()
 
