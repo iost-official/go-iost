@@ -60,6 +60,7 @@ func (c *Contract) Encode() []byte {
 			name: val.name,
 			ic:   int32(val.inputCount),
 			oc:   int32(val.outputCount),
+			priv: int32(val.privilege),
 		}
 		cr.methods = append(cr.methods, mr2)
 		sort.Sort(methodRawSlice(cr.methods))
