@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -24,7 +25,7 @@ var acc string = "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 var (
 	accId   = flag.Int("account", 0, "account_id")
 	money   = flag.Int("money", 1, "money")
-	nums    = flag.Int("routines", 10, "number of routines")
+	tps     = flag.Int("tps", 10, "tps you want")
 	cluster = flag.String("cluster", "testnet", "cluster name, example: test, testnet, local")
 )
 
@@ -87,6 +88,7 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, 
 	pclient := pb.NewCliClient(conn)
 
 	for i := startNonce; i != -1; i++ {
+
 		mtx.Nonce = i
 		log.Debugf("Now Nonce: %v", mtx.Nonce)
 		mtx.Time = time.Now().UnixNano()
@@ -101,13 +103,14 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, 
 			log.Errorf("Send transaction error:", err)
 			return
 		}
+
 	}
 	return
 }
 
 func main() {
 	flag.Parse()
-	if accId == nil || money == nil || nums == nil {
+	if accId == nil || money == nil || tps == nil {
 		return
 	}
 	acc = accounts[*accId]
@@ -133,9 +136,32 @@ end--f
 	if err != nil {
 		log.Fatalf("New account error:", err)
 	}
+	//test time of sending one tx
+	var curtps float64 = 0.0
+	for i := 0; i < 3; i++ {
+		start := time.Now().UnixNano()
+		stx, err := tx.SignTx(mtx, acc)
+		if err != nil {
+			log.Errorf("Sign transaction error:", err)
+			return
+		}
+		conn, err := grpc.Dial(servers[*cluster][0], grpc.WithInsecure())
+		if err != nil {
+			return
+		}
+		pclient := pb.NewCliClient(conn)
+		sendTx(&stx, pclient)
+		conn.Close()
+		end := time.Now().UnixNano()
+		curtps += float64(end - start)
+	}
+	curtps /= 3
+	curtps = float64(1e9) / curtps
+	routineNum := int(float64(*tps) / curtps)
+	fmt.Printf("number of routines: %d", routineNum)
 	var wg sync.WaitGroup
-	wg.Add(*nums)
-	for i := 0; i < *nums; i++ {
+	wg.Add(routineNum)
+	for i := 0; i < routineNum; i++ {
 		go send(&wg, mtx, acc, int64(i)*int64(10000000000), i)
 	}
 	wg.Wait()
