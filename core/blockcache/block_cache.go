@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
@@ -39,6 +38,10 @@ const (
 	NotFound                      // 无法上链，成为孤块
 	ErrorBlock                    // 块有错误
 	Duplicate                     // 重复块
+)
+
+const (
+	DelSingleBlockTime uint64 = 10
 )
 
 type BCTType int
@@ -154,7 +157,6 @@ type BlockCacheImpl struct {
 	cachedRoot         *BlockCacheTree
 	singleBlockRoot    *BlockCacheTree
 	hashMap            map[string]*BlockCacheTree
-	hmlock             sync.RWMutex
 	maxDepth           int
 	blkConfirmChan     chan uint64
 	chConfirmBlockData chan *block.Block
@@ -208,15 +210,11 @@ func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 }
 
 func (h *BlockCacheImpl) getHashMap(hash []byte) (*BlockCacheTree, bool) {
-	h.hmlock.RLock()
-	defer h.hmlock.RUnlock()
 	rtn, ok := h.hashMap[string(hash)]
 	return rtn, ok
 }
 
 func (h *BlockCacheImpl) setHashMap(hash []byte, bct *BlockCacheTree) {
-	h.hmlock.Lock()
-	defer h.hmlock.Unlock()
 	h.hashMap[string(hash)] = bct
 }
 
@@ -266,12 +264,28 @@ func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, p
 func (h *BlockCacheImpl) addSingles(newTree *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
 	block := newTree.bc.Top()
 	newChildren := make([]*BlockCacheTree, 0)
-	for k, _ := range h.singleBlockRoot.children {
+	for _, bct := range h.singleBlockRoot.children {
 		//fmt.Println(bct.bc.block.Head.ParentHash)
-		if bytes.Equal(h.singleBlockRoot.children[k].bc.Top().Head.ParentHash, block.HeadHash()) {
-			h.addSubTree(newTree, h.singleBlockRoot.children[k], verifier)
+		if bytes.Equal(bct.bc.Top().Head.ParentHash, block.HeadHash()) {
+			h.addSubTree(newTree, bct, verifier)
 		} else {
-			newChildren = append(newChildren, h.singleBlockRoot.children[k])
+			newChildren = append(newChildren, bct)
+		}
+	}
+	h.singleBlockRoot.children = newChildren
+}
+
+func (h *BlockCacheImpl) delSingles() {
+	height := h.ConfirmedLength() - 1
+	if height%DelSingleBlockTime != 0 {
+		return
+	}
+	newChildren := make([]*BlockCacheTree, 0)
+	for _, bct := range h.singleBlockRoot.children {
+		if uint64(bct.bc.Top().Head.Number) <= height {
+			h.delSubTree(bct)
+		} else {
+			newChildren = append(newChildren, bct)
 		}
 	}
 	h.singleBlockRoot.children = newChildren
@@ -283,9 +297,7 @@ func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree,
 	if root.bctType == OnCache {
 		newPool, err := verifier(blk, root.bc.Top(), root.pool)
 		if err != nil {
-			h.hmlock.Lock()
 			h.delSubTree(child)
-			h.hmlock.Unlock()
 			log.Log.I("verify block failed. err=%v", err)
 			return ErrorBlock, nil
 		}
@@ -293,8 +305,8 @@ func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree,
 	}
 	newTree.bctType = root.bctType
 	h.setHashMap(blk.HeadHash(), newTree)
-	for k, _ := range child.children {
-		h.addSubTree(newTree, child.children[k], verifier)
+	for _, bct := range child.children {
+		h.addSubTree(newTree, bct, verifier)
 	}
 	root.children = append(root.children, newTree)
 	if len(root.children) == 1 {
@@ -316,20 +328,18 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 		// 可能进行多次flush
 		need, newRoot := h.needFlush(version)
 		if need {
-			h.hmlock.Lock()
 			for _, bct := range h.cachedRoot.children {
 				if bct != newRoot {
 					h.delSubTree(bct)
 				}
 			}
 			delete(h.hashMap, string(h.cachedRoot.bc.Top().HeadHash()))
-			h.hmlock.Unlock()
 			h.cachedRoot = newRoot
 			h.cachedRoot.bc.Flush()
 			h.cachedRoot.pool.Flush()
 			h.cachedRoot.super = nil
 			h.cachedRoot.updateLength()
-
+			h.delSingles() //内部实现上链DelSingleBlockTime个block后清理一次SinglesBlock
 		} else {
 			break
 		}
