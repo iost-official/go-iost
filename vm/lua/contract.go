@@ -52,7 +52,7 @@ func (c *Contract) Encode() []byte {
 		name: c.main.name,
 		ic:   int32(c.main.inputCount),
 		oc:   int32(c.main.outputCount),
-		priv: int32(c.main.privilege),
+		priv: int32(vm.Public),
 	}
 	cr.methods = []methodRaw{}
 	for _, val := range c.apis {
@@ -63,8 +63,8 @@ func (c *Contract) Encode() []byte {
 			priv: int32(val.privilege),
 		}
 		cr.methods = append(cr.methods, mr2)
-		sort.Sort(methodRawSlice(cr.methods))
 	}
+	sort.Sort(methodRawSlice(cr.methods))
 	cr.methods = append(cr.methods, mr)
 	b, err := cr.Marshal(nil)
 	if err != nil {
@@ -86,7 +86,7 @@ func (c *Contract) Decode(b []byte) error {
 	if c.apis == nil {
 		c.apis = make(map[string]Method)
 	}
-	for i := 1; i < len(cr.methods); i++ {
+	for i := 0; i < len(cr.methods); i++ {
 		if cr.methods[i].name == "main" {
 			c.main = Method{
 				cr.methods[i].name,
@@ -94,6 +94,7 @@ func (c *Contract) Decode(b []byte) error {
 				int(cr.methods[i].oc),
 				vm.Public,
 			}
+			continue
 		}
 
 		c.apis[cr.methods[i].name] = Method{
