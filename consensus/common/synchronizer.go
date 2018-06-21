@@ -197,7 +197,7 @@ func (sync *SyncImpl) requestBlockLoop() {
 				Time:    time.Now().Unix(),
 				From:    req.To,
 				To:      req.From,
-				ReqType: int32(ReqNewBlock), //todo 后补类型
+				ReqType: int32(ReqSyncBlock),
 				Body:    block.Encode(),
 			}
 			////////////probe//////////////////

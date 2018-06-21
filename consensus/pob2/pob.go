@@ -105,7 +105,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 
 	//	Block chan init
 	p.chBlock, err = p.router.FilteredChan(Filter{
-		AcceptType: []ReqType{ReqNewBlock}})
+		AcceptType: []ReqType{ReqNewBlock, ReqSyncBlock}})
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func (p *PoB) blockLoop() {
 				go p.synchronizer.BlockConfirmed(blk.Head.Number)
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
-				} else if err == blockcache.ErrNotFound {
+				} else if err == blockcache.ErrNotFound && req.ReqType == ReqNewBlock {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
 					if need {
