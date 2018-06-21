@@ -6,8 +6,10 @@ import (
 
 	"strings"
 
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/verifier"
+	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -45,6 +47,29 @@ Playground runs lua script by turns.
 		}
 
 		v := verifier.NewCacheVerifier()
+		v.Context = vm.BaseContext()
+		ph, err := pool.GetHM("context", "parent-hash")
+		if err != nil {
+			panic(err)
+		}
+		wit, err := pool.GetHM("context", "witness")
+		if err != nil {
+			panic(err)
+		}
+		height, err := pool.GetHM("context", "height")
+		if err != nil {
+			panic(err)
+		}
+		timestamp, err := pool.GetHM("context", "timestamp")
+		if err != nil {
+			panic(err)
+		}
+
+		v.Context.ParentHash = common.Base58Decode(ph.(*state.VString).EncodeString()[1:])
+		v.Context.Witness = vm.IOSTAccount(wit.EncodeString()[1:])
+		v.Context.BlockHeight = int64(height.(*state.VFloat).ToFloat64())
+		v.Context.Timestamp = int64(timestamp.(*state.VFloat).ToFloat64())
+
 		//var sc0 vm.contract
 
 		var (

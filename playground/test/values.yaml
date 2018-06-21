@@ -3,3 +3,8 @@ ab: f10
 iost:
  walleta: f10000
  walletb: f10000
+context:
+ parent-hash: sabc
+ witness: sabc
+ height: f10
+ timestamp: f15000000
