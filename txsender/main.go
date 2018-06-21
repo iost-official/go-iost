@@ -77,7 +77,6 @@ func LoadBytes(s string) []byte {
 }
 
 func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, routineId int) {
-	wg.Add(1)
 	defer wg.Done()
 	log.Info("cluster: %v, routineId: %v, server_num: %v", *cluster, routineId, server_num[*cluster])
 	conn, err := grpc.Dial(servers[*cluster][(routineId%server_num[*cluster])], grpc.WithInsecure())
@@ -135,6 +134,7 @@ end--f
 		log.Fatalf("New account error:", err)
 	}
 	var wg sync.WaitGroup
+	wg.Add(*nums)
 	for i := 0; i < *nums; i++ {
 		go send(&wg, mtx, acc, int64(i)*int64(10000000000), i)
 	}

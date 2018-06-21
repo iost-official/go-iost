@@ -1,6 +1,13 @@
 
 # Test
 
+## Build
+根据当前代码编译各个模块，然后移动至build.local目录
+```
+make
+mv build build.local
+```
+
 ## Build Image
 根据当前代码编译生成docker image，注意：build下的binary会变成centos下的
 ```
@@ -50,29 +57,34 @@ sed -i '.bak' "s/{{LOCAL_IP}}/${LOCAL_IP}/g" test/data/iserver2/iserver.yml
 
 docker run -d -p 30302:30302 -p 30303:30303 -p 8080:8080 --name iost_iserver0 \
        -v $PROJECT/test/data/iserver0:/var/lib/iserver \
-       $DOCKER_IMAGE ./start.sh --cpuprofile /var/lib/iserver/cpu.prof
+       $DOCKER_IMAGE ./start.sh
 docker run -d -p 30312:30312 -p 30313:30313 -p 8081:8080 --name iost_iserver1 \
        -v $PROJECT/test/data/iserver1:/var/lib/iserver \
-       $DOCKER_IMAGE ./start.sh --cpuprofile /var/lib/iserver/cpu.prof
+       $DOCKER_IMAGE ./start.sh
 docker run -d -p 30322:30322 -p 30323:30323 -p 8082:8080 --name iost_iserver2 \
        -v $PROJECT/test/data/iserver2:/var/lib/iserver \
-       $DOCKER_IMAGE ./start.sh --cpuprofile /var/lib/iserver/cpu.prof
+       $DOCKER_IMAGE ./start.sh
+```
+
+## Run txsender
+执行txsender，产生负载
+```
+./build.local/txsender -cluster local
 ```
 
 ## Browser prometheus
 通过本地prometheus查看关键metrics
 [http://127.0.0.1:9090](http://127.0.0.1:9090/graph?g0.range_input=1h&g0.expr=rate(generated_block_count%5B1m%5D)&g0.tab=0&g1.range_input=1h&g1.expr=rate(received_block_count%5B1m%5D)&g1.tab=0&g2.range_input=1h&g2.expr=rate(received_transaction_count%5B1m%5D)&g2.tab=0&g3.range_input=1h&g3.expr=confirmed_blockchain_length&g3.tab=0)
 
-## Build txsender
-因为`make image`时会使用centos环境编译所有cmd，所以想在本机执行，需要重新编译，文件会在build目录下：
+## Browser pprof
+### 使用pprof工具查看实时性能检测，通过函数调用图，火焰图等进行性能调优
 ```
-make txsender
+pprof -http "127.0.0.1:12345" build/iserver http://127.0.0.1:8080/debug/pprof/profile
 ```
 
-## Run txsender
-执行一段时间txsender，产生负载，然后关闭txsender
+### 使用pprof工具查看实时内存占用，通过函数调用图、火焰图等进行内存调优与内存泄漏问题排查
 ```
-./build/txsender -cluster local
+pprof -http "127.0.0.1:12345" build/iserver http://127.0.0.1:8080/debug/pprof/heap
 ```
 
 ## Exit all server
@@ -83,13 +95,6 @@ docker stop iost_iserver1
 docker stop iost_iserver2
 docker stop iost_register
 docker stop prometheus
-```
-
-## View cpu.prof
-使用pprof工具查看性能检测结果，通过函数调用图，火焰图等进行性能调优（因为binary需要使用centos下的，所以需要重新用`make image`编译txsender）
-```
-make image
-pprof -http "127.0.0.1:12345" build/iserver test/data/iserver0/cpu.prof 
 ```
 
 ## Remove all server
