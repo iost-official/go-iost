@@ -52,17 +52,20 @@ func (c *Contract) Encode() []byte {
 		name: c.main.name,
 		ic:   int32(c.main.inputCount),
 		oc:   int32(c.main.outputCount),
+		priv: int32(c.main.privilege),
 	}
-	cr.methods = []methodRaw{mr}
+	cr.methods = []methodRaw{}
 	for _, val := range c.apis {
-		mr = methodRaw{
+		mr2 := methodRaw{
 			name: val.name,
 			ic:   int32(val.inputCount),
 			oc:   int32(val.outputCount),
+			priv: int32(val.privilege),
 		}
-		cr.methods = append(cr.methods, mr)
+		cr.methods = append(cr.methods, mr2)
 		sort.Sort(methodRawSlice(cr.methods))
 	}
+	cr.methods = append(cr.methods, mr)
 	b, err := cr.Marshal(nil)
 	if err != nil {
 		log.Log.E("Error in Encode of ", c.info.Prefix, err.Error())
@@ -80,21 +83,24 @@ func (c *Contract) Decode(b []byte) error {
 	}
 	c.info = ci
 	c.code = string(cr.code)
-	c.main = Method{
-		cr.methods[0].name,
-		int(cr.methods[0].ic),
-		int(cr.methods[0].oc),
-		vm.Public,
-	}
 	if c.apis == nil {
 		c.apis = make(map[string]Method)
 	}
 	for i := 1; i < len(cr.methods); i++ {
+		if cr.methods[i].name == "main" {
+			c.main = Method{
+				cr.methods[i].name,
+				int(cr.methods[i].ic),
+				int(cr.methods[i].oc),
+				vm.Public,
+			}
+		}
+
 		c.apis[cr.methods[i].name] = Method{
 			cr.methods[i].name,
 			int(cr.methods[i].ic),
 			int(cr.methods[i].oc),
-			vm.Public,
+			vm.Privilege(cr.methods[i].priv),
 		}
 	}
 

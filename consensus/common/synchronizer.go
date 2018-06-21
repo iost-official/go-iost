@@ -200,13 +200,6 @@ func (sync *SyncImpl) requestBlockLoop() {
 				ReqType: int32(ReqSyncBlock),
 				Body:    block.Encode(),
 			}
-			////////////probe//////////////////
-			log.Report(&log.MsgBlock{
-				SubType:       "send",
-				BlockHeadHash: block.HeadHash(),
-				BlockNum:      block.Head.Number,
-			})
-			///////////////////////////////////
 			sync.router.Send(resMsg)
 		case <-sync.exitSignal:
 			return
