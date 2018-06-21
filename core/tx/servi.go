@@ -35,6 +35,10 @@ func (s *Servi) Total() float64 {
 	return s.b + s.v
 }
 
+func (s *Servi) Owner() vm.IOSTAccount {
+	return s.owner
+}
+
 func (s *Servi) Clear() {
 	s.v = s.v * 0.9
 	s.v = math.Floor(s.v)
@@ -43,7 +47,7 @@ func (s *Servi) Clear() {
 type ServiPool struct {
 	btu    map[vm.IOSTAccount]*Servi // 贡献最大的账户集合
 	hm     map[vm.IOSTAccount]*Servi // 普通账户
-	btuCnt int               // 贡献最大账户的集合
+	btuCnt int                       // 贡献最大账户的集合
 	mu     sync.RWMutex
 }
 
@@ -105,6 +109,16 @@ func (sp *ServiPool) BestUser() []*Servi {
 	}
 
 	return slist
+}
+
+func (sp *ServiPool) ClearBtu() {
+	sp.mu.Lock()
+	defer sp.mu.Unlock()
+
+	for k, _ := range sp.btu {
+		sp.delBtu(k)
+	}
+
 }
 
 func (sp *ServiPool) Flush() {
@@ -287,9 +301,9 @@ func (sp *ServiPool) restoreHm(key vm.IOSTAccount) (*Servi, error) {
 	}
 
 	servi := Servi{}
-	bufnum := sbuf[ 0:8]
+	bufnum := sbuf[0:8]
 	servi.v = math.Float64frombits(binary.BigEndian.Uint64(bufnum))
-	bufbln := sbuf[ 8:16]
+	bufbln := sbuf[8:16]
 	servi.b = math.Float64frombits(binary.BigEndian.Uint64(bufbln))
 	bufkey := sbuf[16:49]
 	servi.owner = vm.PubkeyToIOSTAccount(bufkey)

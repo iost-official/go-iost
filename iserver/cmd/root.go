@@ -46,6 +46,7 @@ import (
 
 	"github.com/iost-official/prototype/consensus/pob2"
 	"github.com/iost-official/prototype/core/txpool"
+	"github.com/iost-official/prototype/vm"
 )
 
 var cfgFile string
@@ -338,7 +339,30 @@ var rootCmd = &cobra.Command{
 		//HowHsu_Debug
 		log.Log.I("blockchain db length:%d\n", blockChain.Length())
 
-		witnessList := viper.GetStringSlice("consensus.witness-list")
+		// init servi
+		sp, err := tx.NewServiPool(len(account.GenesisAccount))
+		if err != nil {
+			log.Log.E("NewServiPool failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+		tx.Data = tx.NewHolder(acc, state.StdPool, sp)
+		tx.Data.Spool.Restore()
+		bu := tx.Data.Spool.BestUser()
+
+		if len(bu) != len(account.GenesisAccount) {
+			tx.Data.Spool.ClearBtu()
+			for k, v := range account.GenesisAccount {
+				ser := tx.Data.Spool.User(vm.IOSTAccount(k))
+				ser.SetBalance(v)
+			}
+			tx.Data.Spool.Flush()
+		}
+		witnessList := make([]string, 0)
+
+		bu = tx.Data.Spool.BestUser()
+		for _, v := range bu {
+			witnessList = append(witnessList, string(v.Owner()))
+		}
 
 		for i, witness := range witnessList {
 			log.Log.I("witnessList[%v] = %v", i, witness)
@@ -363,14 +387,6 @@ var rootCmd = &cobra.Command{
 
 		txPool.Start()
 		serverExit = append(serverExit, txPool)
-
-		// init servi
-		sp, err := tx.NewServiPool(len(account.GenesisAccount))
-		if err != nil {
-			log.Log.E("NewServiPool failed, stop the program! err:%v", err)
-			os.Exit(1)
-		}
-		tx.Data = tx.NewHolder(acc, state.StdPool, sp)
 
 		//启动RPC
 		err = rpc.Server(rpcPort)
