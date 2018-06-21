@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"strconv"
@@ -10,8 +9,8 @@ import (
 	"time"
 
 	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/iwallet/cmd"
 	pb "github.com/iost-official/prototype/rpc"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
@@ -29,6 +28,17 @@ var servers []string = []string{
 	"13.124.172.86",
 	"52.60.163.60",
 }
+var servers1 []string = []string{
+	"127.0.0.1",
+	"13.236.207.159",
+	"13.236.209.209",
+	"54.206.55.116",
+	"54.206.49.230",
+	"13.236.177.85",
+	"13.236.153.25",
+	"13.211.188.83",
+}
+
 var accounts []string = []string{
 	"2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT",
 	"tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU",
@@ -39,8 +49,20 @@ var accounts []string = []string{
 	"28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym",
 }
 
+func LoadBytes(s string) []byte {
+	buf := common.Base58Decode(s)
+	return buf
+}
+
 func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, routineId int) {
 	defer wg.Done()
+	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303", grpc.WithInsecure())
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+	pclient := pb.NewCliClient(conn)
+
 	for i := startNonce; i != -1; i++ {
 		mtx.Nonce = i
 		fmt.Println(mtx.Nonce)
@@ -51,7 +73,7 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, 
 			return
 		}
 
-		err = sendTx(&stx, routineId)
+		err = sendTx(&stx, pclient)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -87,7 +109,7 @@ end--f
 		return
 	}
 	mtx := tx.NewTx(1, contract)
-	acc, err := account.NewAccount(cmd.LoadBytes("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
+	acc, err := account.NewAccount(LoadBytes("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -101,23 +123,21 @@ end--f
 	fmt.Println("main")
 }
 
-func sendTx(stx *tx.Tx, routineId int) error {
-	conn, err := grpc.Dial(servers[(routineId%7)+1]+":30303", grpc.WithInsecure())
+func sendTx(stx *tx.Tx, pclient pb.CliClient) error {
+	//resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
+	_, err := pclient.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-	client := pb.NewCliClient(conn)
-	resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
-	if err != nil {
-		return err
-	}
-	switch resp.Code {
-	case 0:
-		return nil
-	case -1:
-		return errors.New("tx rejected")
-	default:
-		return errors.New("unknown return")
-	}
+	return nil
+	/*
+		switch resp.Code {
+		case 0:
+			return nil
+		case -1:
+			return errors.New("tx rejected")
+		default:
+			return errors.New("unknown return")
+		}
+	*/
 }

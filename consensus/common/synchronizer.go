@@ -31,7 +31,6 @@ type Synchronizer interface {
 type SyncImpl struct {
 	blockCache        blockcache.BlockCache
 	router            Router
-	maxSyncNumber     uint64
 	confirmNumber     int
 	heightChan        chan message.Message
 	blkSyncChan       chan message.Message
@@ -52,7 +51,6 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int)
 		blockCache:        bc,
 		router:            router,
 		requestMap:        make(map[uint64]bool),
-		maxSyncNumber:     0,
 		confirmNumber:     confirmNumber,
 		recentAskedBlocks: new(sy.Map),
 	}
@@ -96,8 +94,6 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int)
 
 	sync.log.NeedPrint = false
 
-	sync.log.I("maxSyncNumber:%v", sync.maxSyncNumber)
-
 	return sync
 }
 
@@ -134,7 +130,7 @@ func max(x, y uint64) uint64 {
 func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	height := sync.blockCache.ConfirmedLength() - 1
 	if netHeight > height+uint64(SyncNumber) {
-		return true, max(sync.maxSyncNumber, height) + 1, netHeight
+		return true, height + 1, netHeight
 	}
 
 	// 如果在2/3长度的未确认链中出现了两次同一个witness，强制同步区块
@@ -153,7 +149,7 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	}
 	// 强制同步
 	if num > 0 {
-		return true, max(sync.maxSyncNumber, sync.blockCache.ConfirmedLength()-1) + 1, netHeight
+		return true, height + 1, netHeight
 	}
 
 	return false, 0, 0
@@ -161,7 +157,6 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
-	sync.maxSyncNumber = max(sync.maxSyncNumber, endNumber)
 	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
 		sync.router.QueryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
 		sync.reqMapLock.Lock()

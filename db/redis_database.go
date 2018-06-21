@@ -4,8 +4,9 @@ import (
 	"strconv"
 	"time"
 
+	"errors"
+
 	"github.com/gomodule/redigo/redis"
-	"github.com/pkg/errors"
 )
 
 const (
