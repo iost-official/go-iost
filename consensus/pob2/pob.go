@@ -217,10 +217,13 @@ func (p *PoB) blockLoop() {
 				return
 			}
 			var blk block.Block
-			blk.Decode(req.Body)
+			err := blk.Decode(req.Body)
+			if err != nil {
+				continue
+			}
 
 			p.log.I("Received block:%v ,from=%v, timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, req.From, blk.Head.Time, blk.Head.Witness, len(blk.Content))
-			err := p.blockCache.Add(&blk, p.blockVerify)
+			err = p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
 				p.blockCache.SendOnBlock(&blk)
