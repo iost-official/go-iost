@@ -178,7 +178,7 @@ func (p *PoB) genesis(initTime int64) error {
 @PutHM iost oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU f2500000000
 @PutHM iost 28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym f2300000000
 @PutHM iost x9uhGBw3tyDzNkNFM7hcXeGdEpbAHdasgGyhfcMmonYq f2200000000`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 10000, Price: 0, Publisher: ""}, code, main)
 
 	tx := NewTx(0, &lc)
 
