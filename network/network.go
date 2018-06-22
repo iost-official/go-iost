@@ -165,6 +165,7 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
 		if !bn.isRecentSent(msg) {
 			bn.broadcast(msg)
+			prometheusSendBlockTx(msg)
 		}
 		return true
 	})
@@ -250,9 +251,12 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		bn.log.E("[net] Send, dial tcp got err:%v", err)
 		return
 	}
+
 	if er := bn.send(conn, req); er != nil {
 		bn.peers.RemoveByNodeStr(msg.To)
 	}
+
+	prometheusSendBlockTx(msg)
 }
 
 // Close closes all connection.
@@ -273,6 +277,7 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 		bn.log.E("[net] pack data encountered err:%v", err)
 		return nil
 	}
+
 	_, err = conn.Write(pack)
 	if err != nil {
 		bn.log.E("[net] conn write got err:%v", err)
@@ -611,4 +616,15 @@ func (bn *BaseNetwork) isInCommittee(from []byte) bool {
 		}
 	}
 	return false
+}
+
+func prometheusSendBlockTx(req message.Message) {
+	if req.ReqType == int32(ReqPublishTx) {
+		sendTransactionSize.Observe(float64(req.Size()))
+		sendTransactionCount.Inc()
+	}
+	if req.ReqType == int32(ReqNewBlock) {
+		sendBlockSize.Observe(float64(req.Size()))
+		sendBlockCount.Inc()
+	}
 }
