@@ -198,10 +198,24 @@ end--f
 
 `
 
+	syntaxlua := `
+--- main 买1元
+-- snatch treasure with 1 coin
+-- @gas_limit 1000000
+-- @gas_price 0.0001
+-- @param_cnt 0
+-- @return_cnt 1
+-- @publisher walleta
+function main()
+    return 15 != 20;
+end--f`
+
 	Convey("test 1", t, func() {
 		_ = commonlua
 		_ = errlua
-		parser, err := lua.NewDocCommentParser(errlua)
+		_ = syntaxlua
+
+		parser, err := lua.NewDocCommentParser(syntaxlua)
 
 		So(err, ShouldBeNil)
 
@@ -231,11 +245,16 @@ end--f
 
 		So(common.Base58Encode(mTx.publishHash()), ShouldEqual, common.Base58Encode(stx.publishHash()))
 		bytes := stx.Encode()
-		var ptx Tx
+		var ptx, p2tx Tx
 		err = ptx.Decode(bytes)
 		So(err, ShouldBeNil)
 
+		buf2 := ptx.Encode()
+		p2tx.Decode(buf2)
+
 		So(stx.Contract.Code(), ShouldEqual, ptx.Contract.Code())
+		So(p2tx.Contract.Info().Prefix, ShouldEqual, ptx.Contract.Info().Prefix)
+
 		//fmt.Println(stx.Contract.Info())
 		//fmt.Println(ptx.Contract.Info())
 

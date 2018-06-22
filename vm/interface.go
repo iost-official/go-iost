@@ -35,8 +35,8 @@ type Code string
 //
 // 调用流程为prepare - start - call - stop
 type VM interface {
-	Prepare(contract Contract, monitor Monitor) error
-	Start() error
+	Prepare(monitor Monitor) error
+	Start(contract Contract) error
 	Restart(contract Contract) error
 	Stop()
 	//Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
@@ -72,7 +72,7 @@ type Contract interface {
 
 // Monitor 管理虚拟机的管理者，实现在verifier模块
 type Monitor interface {
-	StartVM(contract Contract) VM
+	StartVM(contract Contract) (VM, error)
 	StopVM(contract Contract)
 	Stop()
 	GetMethod(contractPrefix, methodName string) (Method, error)

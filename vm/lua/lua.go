@@ -31,12 +31,15 @@ type VM struct {
 	ctx       *vm.Context
 }
 
-func (l *VM) Start() error {
-
+func (l *VM) Start(contract vm.Contract) error {
+	l.contract = contract.(*Contract)
+	if contract.Info().GasLimit < 3 {
+		return errors.New("gas limit less than 3")
+	}
+	l.L.PCLimit = uint64(contract.Info().GasLimit)
 	if err := l.L.DoString(l.contract.code); err != nil {
 		return err
 	}
-
 	return nil
 }
 func (l *VM) Stop() {
@@ -129,19 +132,19 @@ func (l *VM) Call(ctx *vm.Context, pool state.Pool, methodName string, args ...s
 	}()
 	return l.call(pool, methodName, args...)
 }
-func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
+func (l *VM) Prepare(monitor vm.Monitor) error {
 	l.ctx = vm.BaseContext()
-	var ok bool
-	l.contract, ok = contract.(*Contract)
-	if !ok {
-		return fmt.Errorf("prepare contract %v : contract type error", contract.Info().Prefix)
-	}
+	//var ok bool
+	//l.contract, ok = contract.(*Contract)
+	//if !ok {
+	//	return fmt.Errorf("prepare contract %v : contract type error", contract.Info().Prefix)
+	//}
 
 	l.L = lua.NewState()
-	if contract.Info().GasLimit < 3 {
-		return errors.New("gas limit less than 3")
-	}
-	l.L.PCLimit = uint64(contract.Info().GasLimit)
+	//if contract.Info().GasLimit < 3 {
+	//	return errors.New("gas limit less than 3")
+	//}
+	//l.L.PCLimit = uint64(contract.Info().GasLimit)
 	l.monitor = monitor
 
 	l.APIs = make([]api, 0)
@@ -323,12 +326,12 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 			method, err := l.monitor.GetMethod(contractPrefix, methodName)
 			if err != nil {
 				fmt.Println("err:", err.Error())
-				L.Push(lua.LString(err.Error()))
+				L.Push(lua.LFalse)
 				return 1
 			}
 
 			//fmt.Print("outer call check:")
-			p := vm.CheckPrivilege(l.ctx, contract.Info(), string(l.contract.Info().Publisher))
+			p := vm.CheckPrivilege(l.ctx, l.contract.Info(), string(l.contract.Info().Publisher))
 			pri := method.Privilege()
 			switch {
 			case pri == vm.Private && p > 1:
@@ -357,6 +360,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 				if err != nil {
 					fmt.Println("err:", err.Error())
 					L.Push(lua.LString(err.Error()))
+					return 1
 				}
 				l.cachePool = pool
 				for _, v := range rtn {
@@ -392,6 +396,7 @@ func (l *VM) Restart(contract vm.Contract) error {
 		return errors.New("gas limit less than 3")
 	}
 	l.L.PCLimit = uint64(contract.Info().GasLimit)
+	l.L.PCount = 0
 	if err := l.L.DoString(l.contract.code); err != nil {
 		return err
 	}

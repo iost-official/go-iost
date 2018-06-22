@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 )
@@ -20,7 +21,6 @@ var (
 // ChainImpl 是已经确定block chain的结构体
 type ChainImpl struct {
 	db     db.Database
-	rds    db.Database
 	length uint64
 	tx     tx.TxPool
 }
@@ -76,13 +76,7 @@ func Instance() (Chain, error) {
 			return
 		}
 
-		redis, er := db.DatabaseFactory("redis")
-		if er != nil {
-			err = fmt.Errorf("failed to init redis %v", err)
-			return
-		}
-
-		BChain = &ChainImpl{db: ldb, rds: redis, length: length, tx: txDb}
+		BChain = &ChainImpl{db: ldb, length: length, tx: txDb}
 	})
 
 	return BChain, err
@@ -119,8 +113,8 @@ func (b *ChainImpl) Push(block *Block) error {
 
 	}
 
-	b.rds.Put([]byte("BlockNum"), []byte(strconv.FormatInt(block.Head.Number, 10)))
-	b.rds.Put([]byte("BlockHash"), []byte(block.Hash()))
+	state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(block.Head.Number)))
+	state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(block.Hash()))
 
 	return nil
 }
@@ -175,26 +169,25 @@ func (b *ChainImpl) Top() *Block {
 func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
-	fmt.Println(err)
 	if err != nil {
+		fmt.Println("Get block hash error:", err, "; number:", number)
 		return nil
 	}
 
 	block, err := b.db.Get(append(blockPrefix, hash...))
-	fmt.Println(err)
 	if err != nil {
+		fmt.Println("Get block error:", err)
 		return nil
 	}
 	if len(block) == 0 {
+		fmt.Println("Block empty!")
 		return nil
 	}
-	fmt.Println(len(block))
 	rBlock := new(Block)
 	if err := rBlock.Decode(block); err != nil {
 		fmt.Println(err)
 		return nil
 	}
-	fmt.Printf("block:%s", rBlock)
 	return rBlock
 }
 

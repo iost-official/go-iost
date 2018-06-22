@@ -20,8 +20,8 @@ import (
 
 	"errors"
 	"os"
-	"encoding/hex"
-	
+	//"encoding/hex"
+
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
@@ -106,14 +106,15 @@ to quickly create a Cobra application.`,
 
 		var txHash []byte
 		if !isLocal {
-			txHash,err = sendTx(stx)
+			txHash, err = sendTx(stx)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
 		}
 		fmt.Println("ok")
-		fmt.Println(hex.EncodeToString(txHash))
+		//fmt.Println(hex.EncodeToString(txHash))
+		fmt.Println(SaveBytes(txHash))
 	},
 }
 
@@ -142,23 +143,23 @@ func init() {
 	// publishCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func sendTx(stx tx.Tx) ([]byte,error) {
+func sendTx(stx tx.Tx) ([]byte, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	defer conn.Close()
 	client := pb.NewCliClient(conn)
 	resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	switch resp.Code {
 	case 0:
-		return resp.Hash,nil
+		return resp.Hash, nil
 	case -1:
-		return nil,errors.New("tx rejected")
+		return nil, errors.New("tx rejected")
 	default:
-		return nil,errors.New("unknown return")
+		return nil, errors.New("unknown return")
 	}
 }
