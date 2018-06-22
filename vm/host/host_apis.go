@@ -3,6 +3,11 @@ package host
 import (
 	"errors"
 
+	"os"
+
+	"fmt"
+	"time"
+
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
@@ -10,6 +15,16 @@ import (
 )
 
 var l log.Logger
+
+var logFile *os.File
+
+func init() {
+	var err error
+	logFile, err = os.OpenFile("vm.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	if err != nil {
+		panic(err)
+	}
+}
 
 var (
 	ErrBalanceNotEnough = errors.New("balance not enough")
@@ -25,7 +40,9 @@ func Get(pool state.Pool, key state.Key) (state.Value, error) {
 }
 
 func Log(s, cid string) {
-	l.D("From Lua %v > %v", cid, s)
+	str := fmt.Sprintf("%v %v/%v: %v", time.Now().Format("2006-01-02 15:04:05.000"), "lua", cid, s)
+	logFile.Write([]byte(str))
+	logFile.Write([]byte("\n"))
 }
 
 func Transfer(pool state.Pool, src, des string, value float64) bool {
