@@ -5,6 +5,7 @@
 根据当前代码编译各个模块，然后移动至build.local目录
 ```
 make
+rm -r build.local
 mv build build.local
 ```
 
@@ -18,7 +19,7 @@ make image
 设置一些关键环境变量
 ```
 export DOCKER_IMAGE="iost-node:1.0.0-$(git rev-parse --short HEAD)"
-export PROJECT="$GOPATH/src/github.com/iost-official/prototype"
+export PROJECT=`pwd`
 export LOCAL_IP="$(ipconfig getifaddr en0)"
 ```
 
@@ -69,7 +70,7 @@ docker run -d -p 30322:30322 -p 30323:30323 -p 8082:8080 --name iost_iserver2 \
 ## Run txsender
 执行txsender，产生负载
 ```
-./build.local/txsender -cluster local
+./build.local/txsender -cluster local -routines 1
 ```
 
 ## Browser prometheus
@@ -100,9 +101,9 @@ docker stop prometheus
 ## Remove all server
 清理所有服务docker container，方便之后重新测试
 ```
-docker rm iost_iserver0
-docker rm iost_iserver1
-docker rm iost_iserver2
-docker rm iost_register
-docker rm prometheus
+docker rm -f iost_iserver0
+docker rm -f iost_iserver1
+docker rm -f iost_iserver2
+docker rm -f iost_register
+docker rm -f prometheus
 ```

@@ -84,7 +84,7 @@ var eps float64 = (1e-6)
 
 func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, routineId int) {
 	defer wg.Done()
-	log.Info("cluster: %v, routineId: %v, server_num: %v", *cluster, routineId, server_num[*cluster])
+	log.Infof("cluster: %v, routineId: %v, server_num: %v", *cluster, routineId, server_num[*cluster])
 	conn, err := grpc.Dial(servers[*cluster][(routineId%server_num[*cluster])], grpc.WithInsecure())
 	if err != nil {
 		return

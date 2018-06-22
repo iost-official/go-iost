@@ -90,13 +90,28 @@ func Withdraw(pool state.Pool, contractPrefix, payer string, value float64) bool
 
 }
 func RandomByParentHash(ctx *vm.Context, probability float64) bool {
-	seed := ctx.ParentHash
+	var seed []byte
+	for ctx != nil {
+		if ctx.ParentHash == nil {
+			ctx = ctx.Base
+		} else {
+			seed = ctx.ParentHash
+		}
+	}
+	seed = ctx.ParentHash
 
 	return float64(common.Sha256(seed)[10]) > probability*255
 }
 
 func ParentHashLast(ctx *vm.Context) byte {
-	return ctx.ParentHash[len(ctx.ParentHash)-1]
+	for ctx != nil {
+		if ctx.ParentHash == nil {
+			ctx = ctx.Base
+		} else {
+			return ctx.ParentHash[len(ctx.ParentHash)-1]
+		}
+	}
+	return 0
 }
 
 func Publisher(contract vm.Contract) string {

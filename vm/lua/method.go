@@ -15,7 +15,7 @@ func NewMethod(priv vm.Privilege, name string, inputCount, rtnCount int) Method 
 	m.name = name
 	m.inputCount = inputCount
 	m.outputCount = rtnCount
-	m.privilege = vm.Public
+	m.privilege = priv
 	return m
 }
 

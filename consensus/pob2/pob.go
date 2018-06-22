@@ -324,7 +324,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 
 	vc := vm.NewContext(vm.BaseContext())
 	vc.Timestamp = blk.Head.Time
-	vc.ParentHash = lastBlk.HeadHash()
+	vc.ParentHash = blk.Head.ParentHash
 	vc.BlockHeight = blk.Head.Number
 	vc.Witness = vm.IOSTAccount(acc.ID)
 
