@@ -643,3 +643,69 @@ end`,
 	})
 
 }
+
+func TestTable(t *testing.T) {
+	Convey("test of table", t, func() {
+		db, err := db2.DatabaseFactory("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(db)
+		pool := state.NewPool(sdb)
+
+		main := NewMethod(vm.Public, "main", 0, 1)
+		lc := Contract{
+			info: vm.ContractInfo{GasLimit: 1000, Price: 0.1},
+			code: `function main()
+	test = {}
+	test["a"] = 1
+	test["b"] = 2
+	Put("test", test)
+	return "success"
+end`,
+			main: main,
+		}
+
+		lvm := VM{}
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
+		_, pool, err = lvm.call(pool, "main")
+		lvm.Stop()
+		So(err, ShouldNotBeNil)
+
+		pool.Flush()
+
+		fmt.Println(pool.GetHM("test", "a"))
+
+	})
+}
+
+func TestLog(t *testing.T) {
+	Convey("test of table", t, func() {
+		db, err := db2.DatabaseFactory("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(db)
+		pool := state.NewPool(sdb)
+
+		main := NewMethod(vm.Public, "main", 0, 1)
+		lc := Contract{
+			info: vm.ContractInfo{GasLimit: 1000, Price: 0.1},
+			code: `function main()
+	Log("hello world")
+end`,
+			main: main,
+		}
+
+		lvm := VM{}
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
+		_, pool, err = lvm.call(pool, "main")
+		lvm.Stop()
+		So(err, ShouldBeNil)
+
+		pool.Flush()
+
+	})
+}

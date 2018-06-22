@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/prototype/log"
 )
 
 var (
@@ -100,11 +101,6 @@ func (b *ChainImpl) Push(block *Block) error {
 		return fmt.Errorf("failed to Put block data")
 	}
 
-	err = b.lengthAdd()
-	if err != nil {
-		return fmt.Errorf("failed to lengthAdd %v", err)
-	}
-
 	//put all the tx of this block to txdb
 	for _, ctx := range block.Content {
 		if err := b.tx.Add(&ctx); err != nil {
@@ -113,9 +109,14 @@ func (b *ChainImpl) Push(block *Block) error {
 
 	}
 
+	err = b.lengthAdd()
+	if err != nil {
+		return fmt.Errorf("failed to lengthAdd %v", err)
+	}
+
 	state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(block.Head.Number)))
 	state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(block.Hash()))
-
+	state.StdPool.Flush()
 	return nil
 }
 
@@ -170,22 +171,22 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
 	if err != nil {
-		fmt.Println("Get block hash error:", err, "; number:", number)
+		log.Log.E("Get block hash error: %v number: %v", err, number)
 		return nil
 	}
 
 	block, err := b.db.Get(append(blockPrefix, hash...))
 	if err != nil {
-		fmt.Println("Get block error:", err)
+		log.Log.E("Get block error: %v number: %v", err, number)
 		return nil
 	}
 	if len(block) == 0 {
-		fmt.Println("Block empty!")
+		log.Log.E("GetBlockByNumber Block empty! number: %v", number)
 		return nil
 	}
 	rBlock := new(Block)
 	if err := rBlock.Decode(block); err != nil {
-		fmt.Println(err)
+		log.Log.E("Failed to GetBlockByNumber Decode err: %v", err)
 		return nil
 	}
 	return rBlock
