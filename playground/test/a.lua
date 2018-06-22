@@ -18,7 +18,5 @@ end--f
 -- @return_cnt 1
 -- @publisher walleta
 function hello()
-    b = Get("b")
-    b = b + 1
-    Put("b", b)
+    print("world")
 end--f

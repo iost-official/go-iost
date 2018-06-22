@@ -1,8 +1,6 @@
 package lua
 
 import (
-	"fmt"
-
 	"errors"
 
 	"github.com/iost-official/gopher-lua"
@@ -326,7 +324,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 			}
 			method, err := l.monitor.GetMethod(contractPrefix, methodName)
 			if err != nil {
-				fmt.Println("err:", err.Error())
+				host.Log(err.Error(), contractPrefix)
 				L.Push(lua.LFalse)
 				return 1
 			}
@@ -359,8 +357,8 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				rtn, pool, gas, err := l.monitor.Call(ctx, l.cachePool, contractPrefix, methodName, args...)
 				l.callerPC += gas
 				if err != nil {
-					fmt.Println("err:", err.Error())
-					L.Push(lua.LString(err.Error()))
+					host.Log(err.Error(), contractPrefix)
+					L.Push(lua.LFalse)
 					return 1
 				}
 				l.cachePool = pool
@@ -368,14 +366,15 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				for _, v := range rtn {
 					v2, err := Core2Lua(v)
 					if err != nil {
-						L.Push(lua.LString(err.Error()))
+						host.Log(err.Error(), contractPrefix)
+						L.Push(lua.LFalse)
 						return 1
 					}
 					L.Push(v2)
 				}
 				return len(rtn) + 1
 			default:
-				L.Push(lua.LString(err.Error()))
+				L.Push(lua.LFalse)
 				return 1
 			}
 		},

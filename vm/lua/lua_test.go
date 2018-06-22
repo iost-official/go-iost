@@ -709,3 +709,41 @@ end`,
 
 	})
 }
+
+func TestPrivilege(t *testing.T) {
+	Convey("test of privilege", t, func() {
+		Convey("privilege in contract info", func() {
+			a := vm.CheckPrivilege(vm.BaseContext(), vm.ContractInfo{Publisher: "a", Signers: []vm.IOSTAccount{"b", "c"}}, "a")
+			b := vm.CheckPrivilege(vm.BaseContext(), vm.ContractInfo{Publisher: "a", Signers: []vm.IOSTAccount{"b", "c"}}, "b")
+			d := vm.CheckPrivilege(vm.BaseContext(), vm.ContractInfo{Publisher: "a", Signers: []vm.IOSTAccount{"b", "c"}}, "d")
+
+			So(a, ShouldEqual, 2)
+			So(b, ShouldEqual, 1)
+			So(d, ShouldEqual, 0)
+
+		})
+
+		Convey("privilege in context", func() {
+			ctx := vm.BaseContext()
+			ctx.Publisher = "a"
+			ctx.Signers = []vm.IOSTAccount{"b", "c"}
+			a := vm.CheckPrivilege(ctx, vm.ContractInfo{Publisher: "c"}, "a")
+			b := vm.CheckPrivilege(ctx, vm.ContractInfo{Publisher: "c"}, "b")
+			d := vm.CheckPrivilege(ctx, vm.ContractInfo{Publisher: "c"}, "d")
+			So(a, ShouldEqual, 2)
+			So(b, ShouldEqual, 1)
+			So(d, ShouldEqual, 0)
+
+			ctx2 := vm.NewContext(ctx)
+			a = vm.CheckPrivilege(ctx2, vm.ContractInfo{Publisher: "c"}, "a")
+			b = vm.CheckPrivilege(ctx2, vm.ContractInfo{Publisher: "c"}, "b")
+			d = vm.CheckPrivilege(ctx2, vm.ContractInfo{Publisher: "c"}, "d")
+
+			So(a, ShouldEqual, 2)
+			So(b, ShouldEqual, 1)
+			So(d, ShouldEqual, 0)
+
+		})
+
+	})
+}
