@@ -195,9 +195,10 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				L.Push(lua.LNil)
 				return 1
 			}
+			L.Push(lua.LTrue)
 			L.Push(v2)
 			L.PCount += 1000
-			return 1
+			return 2
 		},
 	}
 	l.APIs = append(l.APIs, Get)
@@ -363,6 +364,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 					return 1
 				}
 				l.cachePool = pool
+				L.Push(lua.LTrue)
 				for _, v := range rtn {
 					v2, err := Core2Lua(v)
 					if err != nil {
@@ -371,7 +373,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 					}
 					L.Push(v2)
 				}
-				return len(rtn)
+				return len(rtn) + 1
 			default:
 				L.Push(lua.LString(err.Error()))
 				return 1
