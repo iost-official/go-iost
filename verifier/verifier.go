@@ -26,7 +26,10 @@ type Verifier struct {
 }
 
 func (v *Verifier) Verify(contract vm.Contract, pool state.Pool) (state.Pool, uint64, error) {
-	v.RestartVM(contract)
+	_, err := v.RestartVM(contract)
+	if err != nil {
+		return pool, 0, err
+	}
 	//fmt.Println(v.Pool.GetHM("iost", "b"))
 	_, pool, gas, err := v.Call(v.Context, pool, contract.Info().Prefix, "main")
 	//fmt.Println(pool.GetHM("iost", "b"))
@@ -69,7 +72,10 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (
 		}
 	}
 
-	cv.RestartVM(contract)
+	_, err := cv.RestartVM(contract)
+	if err != nil {
+		return pool, err
+	}
 	pool, gas, err := cv.Verify(contract, pool)
 	if err != nil {
 		//cv.StopVM(contract)
