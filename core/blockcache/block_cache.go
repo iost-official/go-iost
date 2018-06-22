@@ -330,7 +330,7 @@ func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree,
 }
 
 func (h *BlockCacheImpl) delSubTree(root *BlockCacheTree) {
-	h.hashMap.Delete(root.bc.Top().HeadHash())
+	h.hashMap.Delete(string(root.bc.Top().HeadHash()))
 	for _, bct := range root.children {
 		h.delSubTree(bct)
 	}
