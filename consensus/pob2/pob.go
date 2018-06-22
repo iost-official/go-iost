@@ -120,11 +120,6 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 
 	p.initGlobalProperty(p.account, witnessList)
 
-	block := bc.GetBlockByNumber(1)
-	if block != nil {
-		p.update(&block.Head)
-	}
-
 	p.update(&bc.Top().Head)
 	return &p, nil
 }

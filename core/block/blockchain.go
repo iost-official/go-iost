@@ -169,26 +169,25 @@ func (b *ChainImpl) Top() *Block {
 func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
-	fmt.Println(err)
 	if err != nil {
+		fmt.Println("Get block hash error:", err, "; number:", number)
 		return nil
 	}
 
 	block, err := b.db.Get(append(blockPrefix, hash...))
-	fmt.Println(err)
 	if err != nil {
+		fmt.Println("Get block error:", err)
 		return nil
 	}
 	if len(block) == 0 {
+		fmt.Println("Block empty!")
 		return nil
 	}
-	fmt.Println(len(block))
 	rBlock := new(Block)
 	if err := rBlock.Decode(block); err != nil {
 		fmt.Println(err)
 		return nil
 	}
-	fmt.Printf("block:%s", rBlock)
 	return rBlock
 }
 
