@@ -29,6 +29,7 @@ def Buildwallet():
 
 def Compile(fileName, account):
 	wCommand("rm -f "+cur_path+"test/"+fileName+".sc")
+        print(cur_path+"iwallet -s "+server_addr+" compile -n "+str(random.randint(0,sys.maxint))+" "+cur_path+"test/"+fileName+".lua")
         wCommand(cur_path+"iwallet -s "+server_addr+" compile -n "+str(random.randint(0,sys.maxint))+" "+cur_path+"test/"+fileName+".lua")
 	if has(cur_path+"test/"+fileName+".sc"):
 		#print("ok")

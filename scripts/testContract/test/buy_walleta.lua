@@ -8,13 +8,12 @@
 function main()
     print("buy wallet")
     for i=0,9 do
-        print(Call("main", "BuyCoin", "walleta", 1))
+        Assert(Call("7tvZekXE5eQvupDf28nMJi2Dct8kMMT2hg3NUVrtZPrY", "BuyCoin", "gvCQNmkuA6AwdddRMSUg6jr8W7swKWAnhEY3cAthj9bX", 1) == 0)
     end
-    print(Call("main", "QueryWinner"))
-    print(Call("main", "QueryClaimed"))
-    print(Call("main", "Claim"))
-    print(Call("main", "Claim"))
-    print(Call("main", "QueryClaimed"))
+    Assert(Call("7tvZekXE5eQvupDf28nMJi2Dct8kMMT2hg3NUVrtZPrY", "QueryWinner") == "gvCQNmkuA6AwdddRMSUg6jr8W7swKWAnhEY3cAthj9bX")
+    Assert(Call("7tvZekXE5eQvupDf28nMJi2Dct8kMMT2hg3NUVrtZPrY", "QueryClaimed") == "false")
+    Assert(Call("7tvZekXE5eQvupDf28nMJi2Dct8kMMT2hg3NUVrtZPrY", "Claim") ~= 0)
+    Assert(Call("7tvZekXE5eQvupDf28nMJi2Dct8kMMT2hg3NUVrtZPrY", "QueryClaimed") == "false")
 
-    return "success";
+	return 0
 end--f
