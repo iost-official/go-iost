@@ -23,10 +23,11 @@ var log = logrus.New()
 var acc string = "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT"
 
 var (
-	accId   = flag.Int("account", 0, "account_id")
-	money   = flag.Int("money", 1, "money")
-	tps     = flag.Int("tps", 10, "tps you want")
+	accId   = flag.Int("account", 0, "money sender in the contract")
+	money   = flag.Int("money", 1, "money you send in one tx")
+	tps     = flag.Int("tps", 10, "txs per second you send")
 	cluster = flag.String("cluster", "testnet", "cluster name, example: test, testnet, local")
+	rout    = flag.Int("routines", 1, "number of routines you create")
 )
 
 var servers = map[string][]string{
@@ -158,6 +159,8 @@ end--f
 	curtps /= 3
 	curtps = float64(1e9) / curtps
 	routineNum := int(float64(*tps) / curtps)
+
+	routineNum = *rout
 	if routineNum < 1 {
 		routineNum = 1
 	} else if routineNum > 5000 {

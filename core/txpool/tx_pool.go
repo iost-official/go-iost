@@ -112,7 +112,10 @@ func (pool *TxPoolServer) loop() {
 			//log.Log.I("### chTx: %v", len(pool.chTx))
 
 			var tx tx.Tx
-			tx.Decode(tr.Body)
+			err := tx.Decode(tr.Body)
+			if err != nil {
+				continue
+			}
 
 			// 超时交易丢弃
 			if pool.txTimeOut(&tx) {
@@ -308,7 +311,7 @@ func (pool *TxPoolServer) updatePending(maxCnt int) {
 	for hash, tr := range list {
 		if !pool.txExistTxPool(hash) {
 			pool.pendingTx.Add(tr)
-			if pool.pendingTx.Len() >= maxCnt{
+			if pool.pendingTx.Len() >= maxCnt {
 				break
 			}
 		}
