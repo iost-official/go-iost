@@ -18,13 +18,13 @@ import (
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/core/txpool"
+	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/network/mocks"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/prototype/core/txpool"
-	"github.com/iost-official/prototype/log"
 	"os"
 )
 
@@ -111,9 +111,9 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	gopath := os.Getenv("GOPATH")
 	//fmt.Println(gopath)
 	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
-	txdb1:= gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
-	blockDb2:=gopath + "/src/github.com/iost-official/blockDB"
-	txdb2:=gopath + "/src/github.com/iost-official/txDB"
+	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
+	blockDb2 := gopath + "/src/github.com/iost-official/blockDB"
+	txdb2 := gopath + "/src/github.com/iost-official/txDB"
 
 	delDir := os.RemoveAll(blockDb1)
 	if delDir != nil {
@@ -231,10 +231,10 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 
 func TestRunGenerateBlock(t *testing.T) {
 	Convey("Test of Run (Generate Block)", t, func() {
-		p, _, _ , txpool:= envinit(t)
+		p, _, _, txpool := envinit(t)
 		_tx := genTxMsg(p, 998)
 		txpool.AddTransaction(_tx)
-		time.Sleep(time.Second*1)
+		time.Sleep(time.Second * 1)
 
 		bc := p.blockCache.LongestChain()
 		pool := p.blockCache.LongestPool()
@@ -246,10 +246,9 @@ func TestRunGenerateBlock(t *testing.T) {
 	})
 }
 
-
-func TestAddSinglesBlock(t *testing.T)  {
+func TestAddSinglesBlock(t *testing.T) {
 	Convey("Test of Add singles block", t, func() {
-		verify:=func (blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
+		verify := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 			return pool, nil
 		}
 
@@ -260,11 +259,11 @@ func TestAddSinglesBlock(t *testing.T)  {
 		blockPool := genBlocks(p, accountList, witnessList, blockCnt, 0, true)
 
 		var block *block.Block
-		for i, blk := range blockPool{
-			if i == 3{
+		for i, blk := range blockPool {
+			if i == 3 {
 				So(p.blockCache.ConfirmedLength(), ShouldEqual, 2)
 				block = blk
-			}else {
+			} else {
 				err := p.blockCache.Add(blk, verify)
 				fmt.Println(err)
 			}
@@ -278,7 +277,6 @@ func TestAddSinglesBlock(t *testing.T)  {
 		// 创世块 + blockCnt - 2
 		So(p.blockCache.ConfirmedLength(), ShouldEqual, blockCnt-1)
 
-
 		//err := p.blockCache.Add(lastBlock, p.blockVerify)
 		//fmt.Println(err)
 		//
@@ -290,11 +288,13 @@ func TestAddSinglesBlock(t *testing.T)  {
 //clear BlockDB and TxDB files before running this test
 func TestRunConfirmBlock(t *testing.T) {
 	Convey("Test of Run ConfirmBlock", t, func() {
-		p, accList, witnessList ,txpool:= envinit(t)
-		fmt.Println("0.TestRunConfirmBlock ConfirmedLength: ",p.blockCache.ConfirmedLength())
+		p, accList, witnessList, txpool := envinit(t)
+		fmt.Println("0.TestRunConfirmBlock ConfirmedLength: ", p.blockCache.ConfirmedLength())
 		_tx := genTxMsg(p, 998)
 		txpool.AddTransaction(_tx)
-		fmt.Println("1.TestRunConfirmBlock ConfirmedLength: ",p.blockCache.ConfirmedLength())
+		fmt.Println("1.TestRunConfirmBlock ConfirmedLength: ", p.blockCache.ConfirmedLength())
+		// block database delete failed
+		initConfLength := p.blockCache.ConfirmedLength()
 
 		for i := 0; i < 5; i++ {
 			wit := ""
@@ -312,7 +312,7 @@ func TestRunConfirmBlock(t *testing.T) {
 			fmt.Println(err)
 		}
 
-		So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
+		So(p.blockCache.ConfirmedLength(), ShouldEqual, initConfLength)
 		for i := 1; i < 3; i++ {
 			wit := ""
 			for wit != witnessList[i] {
@@ -333,10 +333,10 @@ func TestRunConfirmBlock(t *testing.T) {
 			err := p.blockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
 			if i == 1 {
-				So(p.blockCache.ConfirmedLength(), ShouldEqual, 1)
+				So(p.blockCache.ConfirmedLength(), ShouldEqual, initConfLength)
 			}
 			if i == 2 {
-				So(p.blockCache.ConfirmedLength(), ShouldEqual, 6)
+				So(p.blockCache.ConfirmedLength(), ShouldEqual, initConfLength+5)
 			}
 		}
 
@@ -405,7 +405,7 @@ func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parent
 }
 
 func Exists(path string) bool {
-	_, err := os.Stat(path)    //os.Stat获取文件信息
+	_, err := os.Stat(path) //os.Stat获取文件信息
 	if err != nil {
 		if os.IsExist(err) {
 			return true
@@ -453,9 +453,9 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	gopath := os.Getenv("GOPATH")
 	//fmt.Println(gopath)
 	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
-	txdb1:= gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
-	blockDb2:=gopath + "/src/github.com/iost-official/blockDB"
-	txdb2:=gopath + "/src/github.com/iost-official/txDB"
+	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
+	blockDb2 := gopath + "/src/github.com/iost-official/blockDB"
+	txdb2 := gopath + "/src/github.com/iost-official/txDB"
 
 	delDir := os.RemoveAll(blockDb1)
 	if delDir != nil {
@@ -706,7 +706,7 @@ func benchBlockVerifier(b *testing.B) {
 }
 
 func benchTxCache(b *testing.B, f bool) {
-	p, _, _ , txpool:= envInit(b)
+	p, _, _, txpool := envInit(b)
 	var txs []message.Message
 
 	for j := 0; j < b.N; j++ {
@@ -724,7 +724,7 @@ func benchTxCache(b *testing.B, f bool) {
 }
 
 func benchTxCachePara(b *testing.B) {
-	p, _, _ , txpool:= envInit(b)
+	p, _, _, txpool := envInit(b)
 	var txs []message.Message
 
 	b.ResetTimer()
@@ -751,7 +751,7 @@ func benchTxCachePara(b *testing.B) {
 }
 
 func benchTxDb(b *testing.B, f bool) {
-	p, _, _ ,txpool:= envInit(b)
+	p, _, _, txpool := envInit(b)
 	var txs []tx.Tx
 	txDb := tx.TxDbInstance()
 	for j := 0; j < b.N; j++ {
@@ -781,7 +781,7 @@ func benchTxDb(b *testing.B, f bool) {
 
 // 生成block head性能测试
 func benchBlockHead(b *testing.B) {
-	p, _, _,_:= envInit(b)
+	p, _, _, _ := envInit(b)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StartTimer()

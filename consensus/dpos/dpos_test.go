@@ -53,7 +53,7 @@ func TestNewDPoS(t *testing.T) {
 
 		// 设置第二个通道Blockchan
 		blockChan := make(chan message.Message, 1)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil)
+		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil).AnyTimes()
 
 		blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
 			Version:    0,
