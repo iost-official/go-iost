@@ -300,7 +300,8 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Assert = api{
 		name: "Assert",
 		function: func(L *lua.LState) int {
-			is := L.ToBool(1)
+			iis := L.Get(1)
+			is := iis.Type() == lua.LTBool && iis == lua.LTrue
 			if is == false {
 				panic("")
 			}
