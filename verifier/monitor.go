@@ -112,24 +112,25 @@ func (m *vmMonitor) Stop() {
 	}
 }
 
-func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, error) {
+func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, *vm.ContractInfo, error) {
 	var contract vm.Contract
 	var err error
 	vmh, ok := m.vms[contractPrefix]
 	if !ok {
 		contract, err = FindContract(contractPrefix)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	} else {
 		contract = vmh.VM.Contract()
 	}
 	rtn, err := contract.API(methodName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return rtn, nil
+	info := contract.Info()
+	return rtn, &info, nil
 
 }
 

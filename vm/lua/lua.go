@@ -3,6 +3,8 @@ package lua
 import (
 	"errors"
 
+	"fmt"
+
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
@@ -207,7 +209,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 			src := L.ToString(1) // todo 验证输入
 			//fmt.Print("transfer call check")
 			if vm.CheckPrivilege(l.ctx, l.contract.info, src) <= 0 {
-				L.Push(lua.LString("privilege error"))
+				L.Push(lua.LFalse)
 				return 1
 			}
 			des := L.ToString(2)
@@ -322,7 +324,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			method, err := l.monitor.GetMethod(contractPrefix, methodName)
+			method, info, err := l.monitor.GetMethod(contractPrefix, methodName)
 			if err != nil {
 				host.Log(err.Error(), contractPrefix)
 				L.Push(lua.LFalse)
@@ -330,7 +332,8 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 			}
 
 			//fmt.Print("outer call check:")
-			p := vm.CheckPrivilege(l.ctx, l.contract.Info(), string(l.contract.Info().Publisher))
+			p := vm.CheckPrivilege(l.ctx, *info, string(l.contract.Info().Publisher))
+			fmt.Println("check result:", p)
 			pri := method.Privilege()
 			switch {
 			case pri == vm.Private && p > 1:

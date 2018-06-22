@@ -16,7 +16,7 @@ end--f
 -- @gas_price 0.0001
 -- @param_cnt 0
 -- @return_cnt 1
--- @publisher walleta
 function hello()
     print("world")
+    return true
 end--f

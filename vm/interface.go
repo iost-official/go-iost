@@ -75,7 +75,7 @@ type Monitor interface {
 	StartVM(contract Contract) (VM, error)
 	StopVM(contract Contract)
 	Stop()
-	GetMethod(contractPrefix, methodName string) (Method, error)
+	GetMethod(contractPrefix, methodName string) (Method, *ContractInfo, error)
 	Call(ctx *Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error)
 }
 
