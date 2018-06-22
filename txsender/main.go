@@ -27,7 +27,7 @@ var (
 	money   = flag.Int("money", 1, "money you send in one tx")
 	tps     = flag.Int("tps", 10, "txs per second you send")
 	cluster = flag.String("cluster", "testnet", "cluster name, example: test, testnet, local")
-	rout    = flag.Int("routines", 1, "number of routines you create")
+	rout    = flag.Int("routines", -1, "number of routines you create")
 )
 
 var servers = map[string][]string{
@@ -78,6 +78,10 @@ func LoadBytes(s string) []byte {
 	return buf
 }
 
+var needsleep bool = false
+var duration int = 0
+var eps float64 = (1e-6)
+
 func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, routineId int) {
 	defer wg.Done()
 	log.Info("cluster: %v, routineId: %v, server_num: %v", *cluster, routineId, server_num[*cluster])
@@ -89,7 +93,7 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, 
 	pclient := pb.NewCliClient(conn)
 
 	for i := startNonce; i != -1; i++ {
-
+		start := time.Now().UnixNano()
 		mtx.Nonce = i
 		log.Debugf("Now Nonce: %v", mtx.Nonce)
 		mtx.Time = time.Now().UnixNano()
@@ -104,7 +108,19 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, 
 			log.Errorf("Send transaction error:", err)
 			return
 		}
-
+		end := time.Now().UnixNano()
+		curtps := float64(1e9) / float64(end-start)
+		if needsleep {
+			if curtps > float64(*tps)+eps {
+				duration += 10
+			} else if curtps < float64(*tps)-eps {
+				duration -= 10
+			}
+			if duration < 0 {
+				duration = 0
+			}
+			time.Sleep(time.Duration(duration))
+		}
 	}
 	return
 }
@@ -137,34 +153,40 @@ end--f
 	if err != nil {
 		log.Fatalf("New account error:", err)
 	}
-	//test time of sending one tx
-	var curtps float64 = 0.0
-	for i := 0; i < 3; i++ {
-		start := time.Now().UnixNano()
-		stx, err := tx.SignTx(mtx, acc)
-		if err != nil {
-			log.Errorf("Sign transaction error:", err)
-			return
+	var routineNum int
+	if *rout == -1 {
+		//test time of sending one tx
+		var curtps float64 = 0.0
+		for i := 0; i < 3; i++ {
+			start := time.Now().UnixNano()
+			stx, err := tx.SignTx(mtx, acc)
+			if err != nil {
+				log.Errorf("Sign transaction error:", err)
+				return
+			}
+			conn, err := grpc.Dial(servers[*cluster][0], grpc.WithInsecure())
+			if err != nil {
+				return
+			}
+			pclient := pb.NewCliClient(conn)
+			sendTx(&stx, pclient)
+			conn.Close()
+			end := time.Now().UnixNano()
+			curtps += float64(end - start)
 		}
-		conn, err := grpc.Dial(servers[*cluster][0], grpc.WithInsecure())
-		if err != nil {
-			return
+		curtps /= 3
+		curtps = float64(1e9) / curtps
+		routineNum = int(float64(*tps) / curtps)
+		if routineNum < 1 {
+			routineNum = 1
+		} else if routineNum > 5000 {
+			routineNum = 5000
 		}
-		pclient := pb.NewCliClient(conn)
-		sendTx(&stx, pclient)
-		conn.Close()
-		end := time.Now().UnixNano()
-		curtps += float64(end - start)
-	}
-	curtps /= 3
-	curtps = float64(1e9) / curtps
-	routineNum := int(float64(*tps) / curtps)
-
-	routineNum = *rout
-	if routineNum < 1 {
-		routineNum = 1
-	} else if routineNum > 5000 {
-		routineNum = 5000
+		if routineNum == 1 && curtps > float64(*tps) {
+			needsleep = true
+		}
+	} else {
+		routineNum = *rout
 	}
 	fmt.Printf("number of routines: %d", routineNum)
 	var wg sync.WaitGroup
