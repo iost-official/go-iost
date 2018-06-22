@@ -28,6 +28,17 @@ const (
 )
 
 func NewLogger(tag string) (*Logger, error) {
+	if Log == nil {
+		once.Do(func() {
+			Log = &Logger{
+				Tag:          "init",
+				logFile:      newLogFile(time.Now()),
+				NeedPrint:    false,
+				logFileStart: time.Now(),
+			}
+		})
+	}
+
 	Log.Tag = tag
 	return Log, nil
 
