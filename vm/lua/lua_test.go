@@ -35,8 +35,8 @@ end`,
 			}
 
 			lvm := VM{}
-			lvm.Prepare(&lc, nil)
-			lvm.Start()
+			lvm.Prepare(nil)
+			lvm.Start(&lc)
 			ret, _, err := lvm.call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldBeNil)
@@ -70,8 +70,8 @@ end`,
 			}
 
 			lvm := VM{}
-			lvm.Prepare(&lc, nil)
-			lvm.Start()
+			lvm.Prepare(nil)
+			lvm.Start(&lc)
 			rtn, _, err := lvm.call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldBeNil)
@@ -102,8 +102,8 @@ end`,
 			}
 
 			lvm := VM{}
-			lvm.Prepare(&lc, nil)
-			lvm.Start()
+			lvm.Prepare(nil)
+			lvm.Start(&lc)
 			_, _, err = lvm.call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldNotBeNil)
@@ -134,8 +134,8 @@ end`,
 			}
 
 			lvm := VM{}
-			lvm.Prepare(&lc, nil)
-			lvm.Start()
+			lvm.Prepare(nil)
+			lvm.Start(&lc)
 			_, _, err = lvm.call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldNotBeNil)
@@ -163,8 +163,8 @@ end`,
 			}
 
 			lvm := VM{}
-			lvm.Prepare(&lc, nil)
-			lvm.Start()
+			lvm.Prepare(nil)
+			lvm.Start(&lc)
 			_, _, err = lvm.call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldNotBeNil)
@@ -216,8 +216,8 @@ end`,
 		pool.PutHM("iost", "a", state.MakeVFloat(5000))
 		pool.PutHM("iost", "b", state.MakeVFloat(1000))
 
-		lvm.Prepare(&lc, nil)
-		lvm.Start()
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
 		//fmt.Print("0 ")
 		//fmt.Println(pool.GetHM("iost", "b"))
 		_, pool, err = lvm.call(pool, "main")
@@ -251,8 +251,8 @@ end`,
 	pool := state.NewPool(sdb)
 
 	for i := 0; i < b.N; i++ {
-		lvm.Prepare(&lc, nil)
-		lvm.Start()
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
 		lvm.call(pool, "main")
 		lvm.Stop()
 	}
@@ -281,8 +281,8 @@ end`,
 	pool := state.NewPool(sdb)
 
 	for i := 0; i < b.N; i++ {
-		lvm.Prepare(&lc, nil)
-		lvm.Start()
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
 		lvm.call(pool, "main")
 		lvm.Stop()
 	}
@@ -309,8 +309,8 @@ end`,
 	pool.Put("hello", state.MakeVString("world"))
 
 	for i := 0; i < b.N; i++ {
-		lvm.Prepare(&lc, nil)
-		lvm.Start()
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
 		lvm.call(pool, "main")
 		lvm.Stop()
 	}
@@ -336,8 +336,8 @@ end`,
 	pool := state.NewPool(sdb)
 
 	for i := 0; i < b.N; i++ {
-		lvm.Prepare(&lc, nil)
-		lvm.Start()
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
 		lvm.call(pool, "main")
 		lvm.Stop()
 	}
@@ -365,8 +365,8 @@ end`,
 	pool.PutHM("iost", "b", state.MakeVFloat(50))
 
 	for i := 0; i < b.N; i++ {
-		lvm.Prepare(&lc, nil)
-		lvm.Start()
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
 		_, _, err = lvm.call(pool, "main")
 		lvm.Stop()
 	}
@@ -571,8 +571,8 @@ end`,
 		pool.PutHM("iost", "a", state.MakeVFloat(5000))
 		pool.PutHM("iost", "b", state.MakeVFloat(1000))
 
-		lvm.Prepare(&lc, nil)
-		lvm.Start()
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
 		//fmt.Print("0 ")
 		//fmt.Println(pool.GetHM("iost", "b"))
 
@@ -624,8 +624,8 @@ end`,
 
 		var lvm VM
 
-		lvm.Prepare(&lc, nil)
-		lvm.Start()
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
 		fmt.Println(*lvm.L)
 		fmt.Println("gas after start: ", lvm.PC())
 

@@ -47,6 +47,7 @@ import (
 
 	"github.com/iost-official/prototype/consensus/pob2"
 	"github.com/iost-official/prototype/core/txpool"
+	"reflect"
 )
 
 var cfgFile string
@@ -237,27 +238,39 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		//检查db和redis数据是否合法
-		rds, _ := db.DatabaseFactory("redis")
-		bn, _ := rds.Get([]byte("BlockNum"))
-		var blockNum uint64
-		blockNum = 0
-		if bn != nil {
-			blockNum, _ = strconv.ParseUint(string(bn), 10, 64)
-			blockNum = blockNum + 1
+		var resBlockLength uint64
+		// 最少有个创世块
+		resBlockLength = 1
+		bn, err := state.StdPool.Get(state.Key("BlockNum"))
+		if err == nil {
+
+			val, ok := bn.(*state.VInt)
+			if !ok {
+				log.Log.E("Redis BlockNum empty",
+					reflect.TypeOf(val).String())
+				state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(1))
+				state.StdPool.Flush()
+			} else {
+				resBlockLength = uint64(val.ToInt()) + 1
+			}
+
 		}
-		log.Log.I("BlockNum on Redis: %v", blockNum)
+
 		bcLen := blockChain.Length()
-		if bcLen < blockNum {
-			blockNum = 0
-			rds.Delete([]byte("iost"))
-			rds.Delete([]byte("BlockNum"))
-		}
-		log.Log.I("BlockNum on Redis: %v", blockNum)
+		log.Log.I("BlockNum on Redis: %v", resBlockLength-1)
 		log.Log.I("BCLen: %v", bcLen)
-		if bcLen >= blockNum+1 {
+		if bcLen < resBlockLength {
+			// 重算
+			resBlockLength = 0
+			state.StdPool.Delete(state.Key("iost"))
+			state.StdPool.Delete(state.Key("BlockNum"))
+			state.StdPool.Flush()
+		}
+
+		if bcLen > resBlockLength {
 			var blk *block.Block
-			for i := blockNum; i < bcLen; i++ {
-				blk = blockChain.GetBlockByNumber(i)
+			for i := resBlockLength; i < bcLen; i++ {
+				blk = blockChain.GetBlockByNumber(i - 1)
 				if i == 0 {
 					newPool, err := verifier.ParseGenesis(blk.Content[0].Contract, state.StdPool)
 					if err != nil {
@@ -275,8 +288,9 @@ var rootCmd = &cobra.Command{
 				}
 			}
 			if bcLen > 0 {
-				rds.Put([]byte("BlockNum"), []byte(strconv.FormatUint(bcLen-1, 10)))
-				rds.Put([]byte("BlockHash"), []byte(blk.Hash()))
+				state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(bcLen-1)))
+				state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(blk.Hash()))
+				state.StdPool.Flush()
 			}
 		}
 		//初始化网络
