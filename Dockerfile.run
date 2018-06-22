@@ -38,7 +38,8 @@ RUN yum install -y epel-release
 RUN yum install -y python python-devel python-pip
 
 # Change redis conf
-RUN sed -i 's/\#\ daemonize\ no/daemonize\ yes/g' /etc/redis/redis.conf
+RUN sed -i 's/dir\ \.\//dir\ \/var\/lib\/iserver\//g' /etc/redis/redis.conf
+#RUN sed -i 's/\#\ daemonize\ no/daemonize\ yes/g' /etc/redis/redis.conf
 
 # Install project
 RUN mkdir /workdir && mkdir /var/lib/iserver
