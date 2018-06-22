@@ -326,7 +326,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 			method, err := l.monitor.GetMethod(contractPrefix, methodName)
 			if err != nil {
 				fmt.Println("err:", err.Error())
-				L.Push(lua.LString(err.Error()))
+				L.Push(lua.LFalse)
 				return 1
 			}
 
@@ -360,6 +360,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				if err != nil {
 					fmt.Println("err:", err.Error())
 					L.Push(lua.LString(err.Error()))
+					return 1
 				}
 				l.cachePool = pool
 				for _, v := range rtn {
