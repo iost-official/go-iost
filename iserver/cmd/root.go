@@ -47,7 +47,6 @@ import (
 
 	"github.com/iost-official/prototype/consensus/pob2"
 	"github.com/iost-official/prototype/core/txpool"
-	"reflect"
 )
 
 var cfgFile string
@@ -246,8 +245,7 @@ var rootCmd = &cobra.Command{
 
 			val, ok := bn.(*state.VInt)
 			if !ok {
-				log.Log.E("Redis BlockNum empty",
-					reflect.TypeOf(val).String())
+				log.Log.E("Redis BlockNum empty")
 				state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(1))
 				state.StdPool.Flush()
 			} else {
