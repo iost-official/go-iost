@@ -17,8 +17,13 @@ var ErrForbiddenCall = errors.New("forbidden call")
 
 type vmHolder struct {
 	vm.VM
-	Lock sync.Mutex
+	Lock      sync.Mutex
+	IsRunning bool
 	//contract vm.contract
+}
+
+func NewHolder(vmm vm.VM) *vmHolder {
+	return &vmHolder{VM: vmm, Lock: sync.Mutex{}, IsRunning: false}
 }
 
 type vmMonitor struct {
@@ -41,7 +46,8 @@ func (m *vmMonitor) StartVM(contract vm.Contract) (vm.VM, error) {
 	if err != nil {
 		return nil, err
 	}
-	m.vms[contract.Info().Prefix] = vmHolder{VM: vmx, Lock: sync.Mutex{}}
+	holder := NewHolder(vmx)
+	m.vms[contract.Info().Prefix] = *holder
 	return m.vms[contract.Info().Prefix].VM, nil
 }
 
@@ -70,7 +76,7 @@ func (m *vmMonitor) RestartVM(contract vm.Contract) (vm.VM, error) {
 		if err != nil {
 			return nil, err
 		}
-		m.hotVM = &vmHolder{VM: vmx, Lock: sync.Mutex{}}
+		m.hotVM = NewHolder(vmx)
 		return m.hotVM, nil
 	}
 	m.hotVM.Restart(contract)
@@ -82,20 +88,25 @@ func (m *vmMonitor) StopVM(contract vm.Contract) {
 	if !ok {
 		return
 	}
-	holder.Lock.Lock()
+	if holder.IsRunning {
+		return
+	}
 	holder.Stop()
 	delete(m.vms, string(contract.Hash()))
-	holder.Lock.Unlock()
 }
 
 func (m *vmMonitor) Stop() {
 	for _, vv := range m.vms {
-		vv.Lock.Lock()
+		if vv.IsRunning {
+			return
+		}
 		vv.Stop()
 	}
 	m.vms = make(map[string]vmHolder)
 	if m.hotVM != nil {
-		m.hotVM.Lock.Lock()
+		if m.hotVM.IsRunning {
+			return
+		}
 		m.hotVM.Stop()
 		m.hotVM = nil
 	}
@@ -125,10 +136,10 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, err
 func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
 
 	if m.hotVM != nil && contractPrefix == m.hotVM.Contract().Info().Prefix {
-		m.hotVM.Lock.Lock()
+		m.hotVM.IsRunning = true
 		rtn, pool2, err := m.hotVM.Call(ctx, pool, methodName, args...)
 		gas := m.hotVM.PC()
-		m.hotVM.Lock.Unlock()
+		m.hotVM.IsRunning = false
 
 		return rtn, pool2, gas, err
 	}

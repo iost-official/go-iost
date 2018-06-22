@@ -614,7 +614,7 @@ end`,
 		}
 
 		lc2 := Contract{
-			info: vm.ContractInfo{Prefix: "test", GasLimit: 100, Publisher: vm.IOSTAccount("a")},
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 10000, Publisher: vm.IOSTAccount("a")},
 			code: `function main()
 	Transfer("a", "b", 100)
 	return "success"
@@ -626,21 +626,20 @@ end`,
 
 		lvm.Prepare(nil)
 		lvm.Start(&lc)
-		fmt.Println(*lvm.L)
-		fmt.Println("gas after start: ", lvm.PC())
+		//fmt.Println(*lvm.L)
+		So(lvm.PC(), ShouldEqual, 3)
 
-		fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
+		lvm.Call(vm.BaseContext(), pool, "main")
 		//fmt.Println(pool.GetHM("iost", "b"))
-		fmt.Println("gas after lvm call: ", lvm.PC())
+		So(lvm.PC(), ShouldEqual, 4)
 
-		fmt.Println(*lvm.L)
-		fmt.Println(*lvm.L)
-
+		//fmt.Println(*lvm.L)
+		So(lvm.L.PCLimit, ShouldEqual, 3)
 		lvm.Restart(&lc2)
-		fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
+		//fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
 		//fmt.Println(pool.GetHM("iost", "b"))
-		fmt.Println(*lvm.L)
 
+		So(lvm.L.PCLimit, ShouldEqual, 10000)
 	})
 
 }
