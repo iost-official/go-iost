@@ -117,5 +117,13 @@ func TestPoolHM(t *testing.T) {
 		vmap, _ := pool.Get("iost")
 		fmt.Println(vmap.(*VMap).Get("a"))
 
+		vmap2 := MakeVMap(nil)
+		vmap2.Set("hello", MakeVString("world"))
+		vmap2.Set("hi", MakeVFloat(123))
+
+		pool.Put("testvmap", vmap2)
+		pool.Flush()
+		fmt.Println(pool.GetHM("testvmap", "hello"))
+		fmt.Println(pool.GetHM("testvmap", "hi"))
 	})
 }
