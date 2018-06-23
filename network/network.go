@@ -143,7 +143,6 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 				time.Sleep(2 * time.Second)
 				continue
 			}
-			conn.SetReadDeadline(time.Now().Add(readTimeout))
 			go bn.receiveLoop(conn)
 		}
 	}()
@@ -216,7 +215,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 	peer := bn.peers.Get(node)
 	if peer == nil {
 		bn.log.D("[net] dial to %v", node.Addr())
-		conn, err := net.DialTimeout("tcp", node.Addr(), dialTimeout)
+		conn, err := net.Dial("tcp", node.Addr())
 		if err != nil {
 			if conn != nil {
 				conn.Close()
@@ -225,15 +224,13 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
 		if conn != nil {
-			conn.SetReadDeadline(time.Now().Add(readTimeout))
-			conn.SetWriteDeadline(time.Now().Add(writeTimeout))
 			go bn.receiveLoop(conn)
-			peer := newPeer(conn, bn.localNode.Addr(), nodeStr)
+			peer = newPeer(conn, bn.localNode.Addr(), nodeStr)
 			bn.peers.Set(node, peer)
 		}
 	}
 
-	return bn.peers.Get(node).conn, nil
+	return peer.conn, nil
 }
 
 // Send sends msg to msg.To.
@@ -320,8 +317,8 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 		}
 		if err := scanner.Err(); err != nil {
 			bn.log.E("[net] invalid data packets: %v", err)
-			return
 		}
+		return
 	}
 }
 

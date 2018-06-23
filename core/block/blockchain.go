@@ -196,6 +196,28 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 	return rBlock
 }
 
+// GetBlockByNumber 通过区块编号查询块
+func (b *ChainImpl) GetBlockByteByNumber(number uint64) ([]byte, error) {
+
+	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
+	if err != nil {
+		log.Log.E("Get block hash error: %v number: %v", err, number)
+		return nil, err
+	}
+
+	block, err := b.db.Get(append(blockPrefix, hash...))
+	if err != nil {
+		log.Log.E("Get block error: %v number: %v", err, number)
+		return nil, err
+	}
+	if len(block) == 0 {
+		log.Log.E("GetBlockByNumber Block empty! number: %v", number)
+		return nil, fmt.Errorf("block empty")
+	}
+
+	return block, nil
+}
+
 // GetBlockByHash 通过区块hash查询块
 func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 
