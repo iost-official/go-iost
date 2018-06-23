@@ -7,11 +7,12 @@ import (
 
 	"sync"
 
+	"runtime/debug"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
-	"runtime/debug"
 )
 
 var ErrForbiddenCall = errors.New("forbidden call")
@@ -136,11 +137,12 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, *vm
 }
 
 func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
-	m.hotVM.IsRunning = true
-	defer func() {
-		m.hotVM.IsRunning = false
-	}()
+
 	if m.hotVM != nil && contractPrefix == m.hotVM.Contract().Info().Prefix {
+		m.hotVM.IsRunning = true
+		defer func() {
+			m.hotVM.IsRunning = false
+		}()
 		rtn, pool2, err := m.hotVM.Call(ctx, pool, methodName, args...)
 
 		var gas uint64
@@ -150,7 +152,6 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 		} else {
 			gas = m.hotVM.PC()
 		}
-		m.hotVM.IsRunning = false
 
 		return rtn, pool2, gas, err
 	}
