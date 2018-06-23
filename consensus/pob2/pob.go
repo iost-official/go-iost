@@ -173,7 +173,7 @@ func (p *PoB) genesis(initTime int64) error {
 
 	var code string
 	for k, v := range GenesisAccount {
-		code += fmt.Sprintf("@PutHM iost %s f%d\n", k, v)
+		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
 	}
 
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
