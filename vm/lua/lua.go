@@ -1,9 +1,9 @@
 package lua
 
 import (
-	"fmt"
-
 	"errors"
+
+	"fmt"
 
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
@@ -31,12 +31,15 @@ type VM struct {
 	ctx       *vm.Context
 }
 
-func (l *VM) Start() error {
-
+func (l *VM) Start(contract vm.Contract) error {
+	l.contract = contract.(*Contract)
+	if contract.Info().GasLimit < 3 {
+		return errors.New("gas limit less than 3")
+	}
+	l.L.PCLimit = uint64(contract.Info().GasLimit)
 	if err := l.L.DoString(l.contract.code); err != nil {
 		return err
 	}
-
 	return nil
 }
 func (l *VM) Stop() {
@@ -129,19 +132,19 @@ func (l *VM) Call(ctx *vm.Context, pool state.Pool, methodName string, args ...s
 	}()
 	return l.call(pool, methodName, args...)
 }
-func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
+func (l *VM) Prepare(monitor vm.Monitor) error {
 	l.ctx = vm.BaseContext()
-	var ok bool
-	l.contract, ok = contract.(*Contract)
-	if !ok {
-		return fmt.Errorf("prepare contract %v : contract type error", contract.Info().Prefix)
-	}
+	//var ok bool
+	//l.contract, ok = contract.(*Contract)
+	//if !ok {
+	//	return fmt.Errorf("prepare contract %v : contract type error", contract.Info().Prefix)
+	//}
 
 	l.L = lua.NewState()
-	if contract.Info().GasLimit < 3 {
-		return errors.New("gas limit less than 3")
-	}
-	l.L.PCLimit = uint64(contract.Info().GasLimit)
+	//if contract.Info().GasLimit < 3 {
+	//	return errors.New("gas limit less than 3")
+	//}
+	//l.L.PCLimit = uint64(contract.Info().GasLimit)
 	l.monitor = monitor
 
 	l.APIs = make([]api, 0)
@@ -192,9 +195,10 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 				L.Push(lua.LNil)
 				return 1
 			}
+			L.Push(lua.LTrue)
 			L.Push(v2)
 			L.PCount += 1000
-			return 1
+			return 2
 		},
 	}
 	l.APIs = append(l.APIs, Get)
@@ -205,7 +209,7 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 			src := L.ToString(1) // todo 验证输入
 			//fmt.Print("transfer call check")
 			if vm.CheckPrivilege(l.ctx, l.contract.info, src) <= 0 {
-				L.Push(lua.LString("privilege error"))
+				L.Push(lua.LFalse)
 				return 1
 			}
 			des := L.ToString(2)
@@ -300,7 +304,8 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 	var Assert = api{
 		name: "Assert",
 		function: func(L *lua.LState) int {
-			is := L.ToBool(1)
+			iis := L.Get(1)
+			is := iis.Type() == lua.LTBool && iis == lua.LTrue
 			if is == false {
 				panic("")
 			}
@@ -315,15 +320,20 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 			L.PCount += 1000
 			contractPrefix := L.ToString(1)
 			methodName := L.ToString(2)
-			method, err := l.monitor.GetMethod(contractPrefix, methodName)
+			if methodName == "main" {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			method, info, err := l.monitor.GetMethod(contractPrefix, methodName)
 			if err != nil {
-				fmt.Println("err:", err.Error())
-				L.Push(lua.LString(err.Error()))
+				host.Log(err.Error(), contractPrefix)
+				L.Push(lua.LFalse)
 				return 1
 			}
 
 			//fmt.Print("outer call check:")
-			p := vm.CheckPrivilege(l.ctx, contract.Info(), string(l.contract.Info().Publisher))
+			p := vm.CheckPrivilege(l.ctx, *info, string(l.contract.Info().Publisher))
+			fmt.Println("check result:", p)
 			pri := method.Privilege()
 			switch {
 			case pri == vm.Private && p > 1:
@@ -350,21 +360,24 @@ func (l *VM) Prepare(contract vm.Contract, monitor vm.Monitor) error {
 				rtn, pool, gas, err := l.monitor.Call(ctx, l.cachePool, contractPrefix, methodName, args...)
 				l.callerPC += gas
 				if err != nil {
-					fmt.Println("err:", err.Error())
-					L.Push(lua.LString(err.Error()))
+					host.Log(err.Error(), contractPrefix)
+					L.Push(lua.LFalse)
+					return 1
 				}
 				l.cachePool = pool
+				L.Push(lua.LTrue)
 				for _, v := range rtn {
 					v2, err := Core2Lua(v)
 					if err != nil {
-						L.Push(lua.LString(err.Error()))
+						host.Log(err.Error(), contractPrefix)
+						L.Push(lua.LFalse)
 						return 1
 					}
 					L.Push(v2)
 				}
-				return len(rtn)
+				return len(rtn) + 1
 			default:
-				L.Push(lua.LString(err.Error()))
+				L.Push(lua.LFalse)
 				return 1
 			}
 		},
@@ -387,6 +400,7 @@ func (l *VM) Restart(contract vm.Contract) error {
 		return errors.New("gas limit less than 3")
 	}
 	l.L.PCLimit = uint64(contract.Info().GasLimit)
+	l.L.PCount = 0
 	if err := l.L.DoString(l.contract.code); err != nil {
 		return err
 	}

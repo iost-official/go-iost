@@ -3,6 +3,11 @@ package host
 import (
 	"errors"
 
+	"os"
+
+	"fmt"
+	"time"
+
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
@@ -10,6 +15,16 @@ import (
 )
 
 var l log.Logger
+
+var logFile *os.File
+
+func init() {
+	var err error
+	logFile, err = os.OpenFile("vm.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	if err != nil {
+		panic(err)
+	}
+}
 
 var (
 	ErrBalanceNotEnough = errors.New("balance not enough")
@@ -25,7 +40,9 @@ func Get(pool state.Pool, key state.Key) (state.Value, error) {
 }
 
 func Log(s, cid string) {
-	l.D("From Lua %v > %v", cid, s)
+	str := fmt.Sprintf("%v %v/%v: %v", time.Now().Format("2006-01-02 15:04:05.000"), "lua", cid, s)
+	logFile.Write([]byte(str))
+	logFile.Write([]byte("\n"))
 }
 
 func Transfer(pool state.Pool, src, des string, value float64) bool {
@@ -73,13 +90,28 @@ func Withdraw(pool state.Pool, contractPrefix, payer string, value float64) bool
 
 }
 func RandomByParentHash(ctx *vm.Context, probability float64) bool {
-	seed := ctx.ParentHash
+	var seed []byte
+	for ctx != nil {
+		if ctx.ParentHash == nil {
+			ctx = ctx.Base
+		} else {
+			seed = ctx.ParentHash
+		}
+	}
+	seed = ctx.ParentHash
 
 	return float64(common.Sha256(seed)[10]) > probability*255
 }
 
 func ParentHashLast(ctx *vm.Context) byte {
-	return ctx.ParentHash[len(ctx.ParentHash)-1]
+	for ctx != nil {
+		if ctx.ParentHash == nil {
+			ctx = ctx.Base
+		} else {
+			return ctx.ParentHash[len(ctx.ParentHash)-1]
+		}
+	}
+	return 0
 }
 
 func Publisher(contract vm.Contract) string {

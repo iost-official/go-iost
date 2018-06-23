@@ -77,7 +77,7 @@ type PoB struct {
 // NewPoB: 新建一个PoB实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
-	TxPerBlk = 2000
+	TxPerBlk = 10000
 	p := PoB{
 		account: acc,
 	}
@@ -105,7 +105,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 
 	//	Block chan init
 	p.chBlock, err = p.router.FilteredChan(Filter{
-		AcceptType: []ReqType{ReqNewBlock}})
+		AcceptType: []ReqType{ReqNewBlock, ReqSyncBlock}})
 	if err != nil {
 		return nil, err
 	}
@@ -119,11 +119,6 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 	p.log.NeedPrint = false
 
 	p.initGlobalProperty(p.account, witnessList)
-
-	block := bc.GetBlockByNumber(1)
-	if block != nil {
-		p.update(&block.Head)
-	}
 
 	p.update(&bc.Top().Head)
 	return &p, nil
@@ -220,10 +215,13 @@ func (p *PoB) blockLoop() {
 				return
 			}
 			var blk block.Block
-			blk.Decode(req.Body)
+			err := blk.Decode(req.Body)
+			if err != nil {
+				continue
+			}
 
 			p.log.I("Received block:%v ,from=%v, timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, req.From, blk.Head.Time, blk.Head.Witness, len(blk.Content))
-			err := p.blockCache.Add(&blk, p.blockVerify)
+			err = p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
 				p.blockCache.SendOnBlock(&blk)
@@ -236,7 +234,7 @@ func (p *PoB) blockLoop() {
 				go p.synchronizer.BlockConfirmed(blk.Head.Number)
 				if err == nil {
 					p.globalDynamicProperty.update(&blk.Head)
-				} else if err == blockcache.ErrNotFound {
+				} else if err == blockcache.ErrNotFound && req.ReqType == int32(ReqNewBlock) {
 					// New block is a single block
 					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
 					if need {
@@ -321,7 +319,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 
 	vc := vm.NewContext(vm.BaseContext())
 	vc.Timestamp = blk.Head.Time
-	vc.ParentHash = lastBlk.HeadHash()
+	vc.ParentHash = blk.Head.ParentHash
 	vc.BlockHeight = blk.Head.Number
 	vc.Witness = vm.IOSTAccount(acc.ID)
 

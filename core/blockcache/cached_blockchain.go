@@ -4,6 +4,7 @@ import (
 	"github.com/iost-official/prototype/core/block"
 
 	"bytes"
+	"github.com/iost-official/prototype/log"
 )
 
 // CachedBlockChain 代表缓存的链
@@ -111,7 +112,10 @@ func (c *CachedBlockChain) Copy() CachedBlockChain {
 func (c *CachedBlockChain) Flush() {
 	if c.block != nil {
 		//[HowHsu]:I think this operation should be done in a new goroutine
-		c.Chain.Push(c.block)
+		err := c.Chain.Push(c.block)
+		if err != nil {
+			log.Log.E("Database error, CachedBlockChain Flush err:%v", err)
+		}
 		c.block = nil
 		c.cachedLength = 0
 		c.parent = nil

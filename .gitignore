@@ -220,3 +220,5 @@ txDB/
 *.test
 *.svg
 servi_db.ldb
+*/test.log
+*/vm.log

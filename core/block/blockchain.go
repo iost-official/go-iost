@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
@@ -21,7 +22,6 @@ var (
 // ChainImpl 是已经确定block chain的结构体
 type ChainImpl struct {
 	db     db.Database
-	rds    db.Database
 	length uint64
 	tx     tx.TxPool
 }
@@ -77,13 +77,7 @@ func Instance() (Chain, error) {
 			return
 		}
 
-		redis, er := db.DatabaseFactory("redis")
-		if er != nil {
-			err = fmt.Errorf("failed to init redis %v", err)
-			return
-		}
-
-		BChain = &ChainImpl{db: ldb, rds: redis, length: length, tx: txDb}
+		BChain = &ChainImpl{db: ldb, length: length, tx: txDb}
 	})
 
 	return BChain, err
@@ -107,40 +101,25 @@ func (b *ChainImpl) Push(block *Block) error {
 		return fmt.Errorf("failed to Put block data")
 	}
 
-	err = b.lengthAdd()
-	if err != nil {
-		return fmt.Errorf("failed to lengthAdd %v", err)
-	}
-
-	////////////probe//////////////////
-	log.Report(&log.MsgBlock{
-		SubType:       "confirm",
-		BlockHeadHash: block.HeadHash(),
-		BlockNum:      block.Head.Number,
-	})
-	///////////////////////////////////
-
 	//put all the tx of this block to txdb
 	for _, ctx := range block.Content {
 		if err := b.tx.Add(&ctx); err != nil {
 			return fmt.Errorf("failed to add tx %v", err)
 		}
 
-		////////////probe//////////////////
-		log.Report(&log.MsgTx{
-			SubType:   "confirm",
-			TxHash:    ctx.Hash(),
-			Publisher: ctx.Publisher.Pubkey,
-			Nonce:     ctx.Nonce,
-		})
-		///////////////////////////////////
 	}
+
+	err = b.lengthAdd()
+	if err != nil {
+		return fmt.Errorf("failed to lengthAdd %v", err)
+	}
+
+	state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(block.Head.Number)))
+	state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(block.Hash()))
+	state.StdPool.Flush()
 
 	// add servi
 	tx.Data.AddServi(block.Content)
-
-	b.rds.Put([]byte("BlockNum"), []byte(strconv.FormatInt(block.Head.Number, 10)))
-	b.rds.Put([]byte("BlockHash"), []byte(block.Hash()))
 
 	return nil
 }
@@ -196,22 +175,24 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
 	if err != nil {
+		log.Log.E("Get block hash error: %v number: %v", err, number)
 		return nil
 	}
 
 	block, err := b.db.Get(append(blockPrefix, hash...))
 	if err != nil {
+		log.Log.E("Get block error: %v number: %v", err, number)
 		return nil
 	}
 	if len(block) == 0 {
+		log.Log.E("GetBlockByNumber Block empty! number: %v", number)
 		return nil
 	}
-
 	rBlock := new(Block)
 	if err := rBlock.Decode(block); err != nil {
+		log.Log.E("Failed to GetBlockByNumber Decode err: %v", err)
 		return nil
 	}
-
 	return rBlock
 }
 

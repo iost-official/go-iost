@@ -40,25 +40,27 @@ func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRe
 	code := txinfo.Contract
 	acc, err := account.NewAccount(common.Base58Decode(seckey))
 	if err != nil {
-		return &ret, err
+		return &ret, fmt.Errorf("NewAccount:%v", err)
 	}
 
 	var contract vm.Contract
 	parser, _ := lua.NewDocCommentParser(code)
 	contract, err = parser.Parse()
 	if err != nil {
-		return &ret, err
+		return &ret, fmt.Errorf("Parse:%v", err)
 	}
 	mtx := tx.NewTx(nonce, contract)
 	stx, err := tx.SignTx(mtx, acc)
 	if err != nil {
-		return &ret, err
+		return &ret, fmt.Errorf("SignTx:%v", err)
+
 	}
 
 	//consider to remove this
-	err = mtx.VerifySelf() //verify Publisher and Signers
+	err = stx.VerifySelf() //verify Publisher and Signers
 	if err != nil {
-		return &ret, err
+		return &ret, fmt.Errorf("VerifySelf:%v", err)
+
 	}
 
 	// add servi

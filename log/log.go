@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -14,15 +15,6 @@ type Logger struct {
 	logFile      *os.File
 	logFileStart time.Time
 	NeedPrint    bool
-}
-
-func init() {
-	Log = &Logger{
-		Tag:          "init",
-		logFile:      newLogFile(time.Now()),
-		NeedPrint:    false,
-		logFileStart: time.Now(),
-	}
 }
 
 // global Logger instance
@@ -36,12 +28,37 @@ const (
 )
 
 func NewLogger(tag string) (*Logger, error) {
+	if Log == nil {
+		once.Do(func() {
+			Log = &Logger{
+				Tag:          "init",
+				logFile:      newLogFile(time.Now()),
+				NeedPrint:    false,
+				logFileStart: time.Now(),
+			}
+		})
+	}
+
 	Log.Tag = tag
 	return Log, nil
 
 }
 
+var once sync.Once
+
 func (l *Logger) log(level, s string, attr ...interface{}) {
+
+	if Log == nil {
+		once.Do(func() {
+			Log = &Logger{
+				Tag:          "init",
+				logFile:      newLogFile(time.Now()),
+				NeedPrint:    false,
+				logFileStart: time.Now(),
+			}
+		})
+	}
+
 	a := fmt.Sprintf(s, attr...)
 	str := fmt.Sprintf("%v %v/%v: %v", time.Now().Format("2006-01-02 15:04:05.000"), level, l.Tag, a)
 	if l.NeedPrint {

@@ -136,7 +136,6 @@ func (t *Tx) Decode(b []byte) (err error) {
 		case 0:
 			t.Contract = &lua.Contract{}
 			t.Contract.Decode(tr.Contract)
-
 		default:
 			return fmt.Errorf("Tx.Decode:tx.contract syntax error")
 		}

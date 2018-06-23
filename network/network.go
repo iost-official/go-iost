@@ -35,6 +35,13 @@ const (
 	CommitteeMode           = "committee"
 )
 
+// var
+var (
+	readTimeout  = 2 * time.Second
+	writeTimeout = 2 * time.Second
+	dialTimeout  = time.Second
+)
+
 // NetMode is the bootnode's mode.
 var NetMode string
 
@@ -136,6 +143,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 				time.Sleep(2 * time.Second)
 				continue
 			}
+			conn.SetReadDeadline(time.Now().Add(readTimeout))
 			go bn.receiveLoop(conn)
 		}
 	}()
@@ -165,6 +173,7 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
 		if !bn.isRecentSent(msg) {
 			bn.broadcast(msg)
+			prometheusSendBlockTx(msg)
 		}
 		return true
 	})
@@ -207,20 +216,19 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 	peer := bn.peers.Get(node)
 	if peer == nil {
 		bn.log.D("[net] dial to %v", node.Addr())
-		conn, err := net.Dial("tcp", node.Addr())
+		conn, err := net.DialTimeout("tcp", node.Addr(), dialTimeout)
 		if err != nil {
 			if conn != nil {
 				conn.Close()
 			}
-			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: node.Addr()})
 			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
 		if conn != nil {
+			conn.SetReadDeadline(time.Now().Add(readTimeout))
+			conn.SetWriteDeadline(time.Now().Add(writeTimeout))
 			go bn.receiveLoop(conn)
 			peer := newPeer(conn, bn.localNode.Addr(), nodeStr)
-			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][3], Log: node.Addr()})
-			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][4], Log: strconv.Itoa(len(bn.peers.peers))})
 			bn.peers.Set(node, peer)
 		}
 	}
@@ -250,9 +258,12 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		bn.log.E("[net] Send, dial tcp got err:%v", err)
 		return
 	}
+
 	if er := bn.send(conn, req); er != nil {
 		bn.peers.RemoveByNodeStr(msg.To)
 	}
+
+	prometheusSendBlockTx(msg)
 }
 
 // Close closes all connection.
@@ -273,6 +284,7 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 		bn.log.E("[net] pack data encountered err:%v", err)
 		return nil
 	}
+
 	_, err = conn.Write(pack)
 	if err != nil {
 		bn.log.E("[net] conn write got err:%v", err)
@@ -299,14 +311,17 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 		})
 		for scanner.Scan() {
 			req := new(Request)
-			req.Unpack(bytes.NewReader(scanner.Bytes()))
+			err := req.Unpack(bytes.NewReader(scanner.Bytes()))
+			if err != nil {
+				bn.log.E("[net] unpack request failed. err=%v", err)
+				return
+			}
 			req.handle(bn, conn)
 		}
 		if err := scanner.Err(); err != nil {
 			bn.log.E("[net] invalid data packets: %v", err)
+			return
 		}
-		// EOF also need to return.
-		return
 	}
 }
 
@@ -611,4 +626,15 @@ func (bn *BaseNetwork) isInCommittee(from []byte) bool {
 		}
 	}
 	return false
+}
+
+func prometheusSendBlockTx(req message.Message) {
+	if req.ReqType == int32(ReqPublishTx) {
+		sendTransactionSize.Observe(float64(req.Size()))
+		sendTransactionCount.Inc()
+	}
+	if req.ReqType == int32(ReqNewBlock) {
+		sendBlockSize.Observe(float64(req.Size()))
+		sendBlockCount.Inc()
+	}
 }

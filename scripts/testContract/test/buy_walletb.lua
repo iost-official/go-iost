@@ -6,15 +6,12 @@
 -- @return_cnt 1
 -- @publisher walletb
 function main()
-    print("buy wallet")
     for i=0,9 do
-        print(Call("main", "BuyCoin", "walletb", 1))
+        Assert(Call("7tvZekXE5eQvupDf28nMJi2Dct8kMMT2hg3NUVrtZPrY", "BuyCoin", "2538yUDuKTLaXqCTFS1tfVmMEL4dVnzLDWChoMdoxgCa4", 1) == 0)
     end
-    print(Call("main", "QueryWinner"))
-    print(Call("main", "QueryClaimed"))
-    print(Call("main", "Claim"))
-    print(Call("main", "Claim"))
-    print(Call("main", "QueryClaimed"))
+    Assert(Call("7tvZekXE5eQvupDf28nMJi2Dct8kMMT2hg3NUVrtZPrY", "QueryClaimed") == "false")
+    Assert(Call("7tvZekXE5eQvupDf28nMJi2Dct8kMMT2hg3NUVrtZPrY", "Claim") == 0)
+    Assert(Call("7tvZekXE5eQvupDf28nMJi2Dct8kMMT2hg3NUVrtZPrY", "QueryClaimed") == "true")
 
     return "success";
 end--f
