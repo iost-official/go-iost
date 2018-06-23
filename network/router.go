@@ -101,8 +101,8 @@ type Router interface {
 	FilteredChan(filter Filter) (chan message.Message, error)
 	Run()
 	Stop()
-	Send(req message.Message)
-	Broadcast(req message.Message)
+	Send(req *message.Message)
+	Broadcast(req *message.Message)
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
 	QueryBlockHash(start uint64, end uint64) error
@@ -214,14 +214,14 @@ func (r *RouterImpl) Stop() {
 }
 
 // Send sends a message by router.
-func (r *RouterImpl) Send(req message.Message) {
+func (r *RouterImpl) Send(req *message.Message) {
 	req.TTL = MsgMaxTTL
 
 	r.base.Send(req)
 }
 
 // Broadcast to all known members.
-func (r *RouterImpl) Broadcast(req message.Message) {
+func (r *RouterImpl) Broadcast(req *message.Message) {
 	req.TTL = MsgMaxTTL
 
 	r.base.Broadcast(req)

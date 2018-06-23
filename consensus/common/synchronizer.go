@@ -208,7 +208,7 @@ func (sync *SyncImpl) requestBlockLoop() {
 			//sync.log.I("requset block - BlockNumber: %v", rh.BlockNumber)
 			//sync.log.I("response block - BlockNumber: %v, witness: %v", block.Head.Number, block.Head.Witness)
 			//回复当前高度的块
-			resMsg := message.Message{
+			resMsg := &message.Message{
 				Time:    time.Now().Unix(),
 				From:    req.To,
 				To:      req.From,
@@ -287,7 +287,7 @@ func (sync *SyncImpl) handleHashQuery() {
 				sync.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
 				break
 			}
-			resMsg := message.Message{
+			resMsg := &message.Message{
 				Time:    time.Now().Unix(),
 				From:    req.To,
 				To:      req.From,
@@ -340,7 +340,7 @@ func (sync *SyncImpl) handleHashResp() {
 						ReqType: int32(ReqDownloadBlock),
 						Body:    blkReq.Encode(),
 					}
-					sync.router.Send(reqMsg)
+					sync.router.Send(&reqMsg)
 					sync.recentAskedBlocks.Store(string(blkHash.Hash), time.Now().Unix())
 				}
 			}
