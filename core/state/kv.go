@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Key string
@@ -241,7 +242,8 @@ func (v *VBool) EncodeString() string {
 }
 
 type VMap struct {
-	m map[Key]Value
+	m     map[Key]Value
+	mutex sync.RWMutex
 }
 
 func MakeVMap(nm map[Key]Value) *VMap {
@@ -263,11 +265,16 @@ func (v *VMap) EncodeString() string {
 	}
 	return str
 }
+
 func (v *VMap) Set(key Key, value Value) {
+	v.mutex.Lock()
+	defer v.mutex.Unlock()
 	v.m[key] = value
 }
 
 func (v *VMap) Get(key Key) Value {
+	v.mutex.RLock()
+	defer v.mutex.RUnlock()
 	ret, ok := v.m[key]
 	if !ok {
 		return VNil
