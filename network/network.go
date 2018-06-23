@@ -123,7 +123,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
 	bn.log.D("[net] listening %v", bn.localNode)
 	var err error
-	bn.listener, err = net.Listen("tcp", "0.0.0.0:"+strconv.Itoa(int(bn.localNode.TCP)))
+	bn.listener, err = net.Listen("tcp4", "0.0.0.0:"+strconv.Itoa(int(bn.localNode.TCP)))
 	if err != nil {
 		return bn.RecvCh, errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
 	}
@@ -207,7 +207,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 	peer := bn.peers.Get(node)
 	if peer == nil {
 		bn.log.D("[net] dial to %v", node.Addr())
-		conn, err := net.Dial("tcp", node.Addr())
+		conn, err := net.Dial("tcp4", node.Addr())
 		if err != nil {
 			if conn != nil {
 				conn.Close()
