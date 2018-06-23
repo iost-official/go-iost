@@ -233,7 +233,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 		}
 	}
 
-	return bn.peers.Get(node).conn, nil
+	return peer.conn, nil
 }
 
 // Send sends msg to msg.To.
@@ -294,34 +294,32 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 
 func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 	defer conn.Close()
-	for {
-		scanner := bufio.NewScanner(conn)
-		scanner.Buffer([]byte{}, bufio.MaxScanTokenSize*100)
-		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-			if !atEOF && isNetVersionMatch(data) {
-				if len(data) > 8 {
-					length := int32(0)
-					binary.Read(bytes.NewReader(data[4:8]), binary.BigEndian, &length)
-					if int(length)+8 <= len(data) {
-						return int(length) + 8, data[:int(length)+8], nil
-					}
+	scanner := bufio.NewScanner(conn)
+	scanner.Buffer([]byte{}, bufio.MaxScanTokenSize*100)
+	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if !atEOF && isNetVersionMatch(data) {
+			if len(data) > 8 {
+				length := int32(0)
+				binary.Read(bytes.NewReader(data[4:8]), binary.BigEndian, &length)
+				if int(length)+8 <= len(data) {
+					return int(length) + 8, data[:int(length)+8], nil
 				}
 			}
-			return
-		})
-		for scanner.Scan() {
-			req := new(Request)
-			err := req.Unpack(bytes.NewReader(scanner.Bytes()))
-			if err != nil {
-				bn.log.E("[net] unpack request failed. err=%v", err)
-				return
-			}
-			req.handle(bn, conn)
 		}
-		if err := scanner.Err(); err != nil {
-			bn.log.E("[net] invalid data packets: %v", err)
+		return
+	})
+	for scanner.Scan() {
+		req := new(Request)
+		err := req.Unpack(bytes.NewReader(scanner.Bytes()))
+		if err != nil {
+			bn.log.E("[net] unpack request failed. err=%v", err)
 			return
 		}
+		req.handle(bn, conn)
+	}
+	if err := scanner.Err(); err != nil {
+		bn.log.E("[net] invalid data packets: %v", err)
+		return
 	}
 }
 
