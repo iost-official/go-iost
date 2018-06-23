@@ -12,6 +12,7 @@ type Chain interface {
 	Top() *Block // 语法糖
 	GetBlockByNumber(number uint64) *Block
 	GetBlockByHash(blockHash []byte) *Block
+	GetBlockByteByNumber(number uint64) ([]byte, error)
 
 	HasTx(tx *tx.Tx) (bool, error)
 	GetTx(hash []byte) (*tx.Tx, error)
