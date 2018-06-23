@@ -5,7 +5,8 @@
 -- @return_cnt 0
 -- @publisher walletb
 function main()
-	tx = "2RQqYfcfviN349Zx9q4mTRui6CWCHf3Rihkm7VXWmxfo"
+	nonce = 0
+	tx = "4TKrbjmyoY77F2WdpVn3cxqGWipkMGzGKQ7YcAQ45LtJ"
 	-- tx = "main"
 	b = "2538yUDuKTLaXqCTFS1tfVmMEL4dVnzLDWChoMdoxgCa4"
 	-- b = "walletb"
@@ -21,7 +22,7 @@ function main()
 	Assert(r == 0)
 
     for i=0,0 do
-		ok, r = Call(tx, "Bet", b, 0, 1)
+		ok, r = Call(tx, "Bet", b, 0, 1, nonce)
 		Log(string.format("bet %s", tostring(ok)))
 		Log(string.format("bet r = %s", tostring(r)))
 		Assert(ok)
