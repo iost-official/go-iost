@@ -47,7 +47,6 @@ func NewLogger(tag string) (*Logger, error) {
 var once sync.Once
 
 func (l *Logger) log(level, s string, attr ...interface{}) {
-
 	if Log == nil {
 		once.Do(func() {
 			Log = &Logger{
@@ -57,6 +56,9 @@ func (l *Logger) log(level, s string, attr ...interface{}) {
 				logFileStart: time.Now(),
 			}
 		})
+	}
+	if l == nil {
+		l = Log
 	}
 
 	a := fmt.Sprintf(s, attr...)

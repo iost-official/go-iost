@@ -1,23 +1,22 @@
 package txpool
 
 import (
-	"testing"
-	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/state"
+	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/network"
-	. "github.com/golang/mock/gomock"
-	"github.com/iost-official/prototype/network/mocks"
-	"github.com/iost-official/prototype/core/message"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/core/blockcache"
-	"github.com/iost-official/prototype/log"
-	"github.com/iost-official/prototype/vm/lua"
-	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/consensus/common"
-	"fmt"
+	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/prototype/core/blockcache"
+	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/log"
+	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/prototype/network/mocks"
+	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
+	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
 func TestNewTxPoolServer(t *testing.T) {
@@ -142,40 +141,40 @@ func TestNewTxPoolServer(t *testing.T) {
 					}
 					txPool.AddTransaction(broadTx)
 				}
-				ch<-3
+				ch <- 3
 			}()
 			////time.Sleep(5*time.Second)
 			runCnt := 100
 			go func() {
-				for i:=0; i<runCnt ;i++  {
+				for i := 0; i < runCnt; i++ {
 					//time.Sleep(1*time.Millisecond)
 					txPool.BlockTxNum()
 				}
 				ch <- 4
 			}()
 			go func() {
-				for i:=0; i<runCnt ;i++  {
+				for i := 0; i < runCnt; i++ {
 					//time.Sleep(1*time.Millisecond)
 					txPool.PendingTransactions(100000)
 				}
 				ch <- 5
 			}()
 			go func() {
-				for i:=0; i<runCnt ;i++  {
+				for i := 0; i < runCnt; i++ {
 					//time.Sleep(1*time.Millisecond)
 					txPool.TransactionNum()
 				}
 				ch <- 6
 			}()
 			go func() {
-				for i:=0; i<runCnt ;i++  {
+				for i := 0; i < runCnt; i++ {
 					//time.Sleep(1*time.Millisecond)
 					txPool.PendingTransactionNum()
 				}
 				ch <- 7
 			}()
 			go func() {
-				for i:=0; i<runCnt ;i++  {
+				for i := 0; i < runCnt; i++ {
 					//time.Sleep(1*time.Millisecond)
 					txPool.Transaction(txx.TxID())
 
@@ -183,21 +182,21 @@ func TestNewTxPoolServer(t *testing.T) {
 				ch <- 8
 			}()
 			go func() {
-				for i:=0; i<runCnt ;i++  {
+				for i := 0; i < runCnt; i++ {
 					//time.Sleep(1*time.Millisecond)
 					txPool.ExistTransaction(txx.TxID())
 				}
 				ch <- 9
 			}()
 			go func() {
-				for i:=0; i<runCnt ;i++  {
+				for i := 0; i < runCnt; i++ {
 					//time.Sleep(1*time.Millisecond)
 					txPool.delTimeOutTx()
 				}
 				ch <- 10
 			}()
 			go func() {
-				for i:=0; i<runCnt ;i++  {
+				for i := 0; i < runCnt; i++ {
 					//time.Sleep(1*time.Millisecond)
 					txPool.delTimeOutBlockTx()
 				}
@@ -205,8 +204,9 @@ func TestNewTxPoolServer(t *testing.T) {
 			}()
 
 			for i := 0; i < 11; i++ {
-				c:=<-ch
-				fmt.Println("结束并发 i=", i, ", c=", c)
+				<-ch
+				//c := <-ch
+				//fmt.Println("结束并发 i=", i, ", c=", c)
 			}
 
 		})

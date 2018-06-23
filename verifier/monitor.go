@@ -7,6 +7,8 @@ import (
 
 	"sync"
 
+	"runtime/debug"
+
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
@@ -18,7 +20,7 @@ var ErrForbiddenCall = errors.New("forbidden call")
 type vmHolder struct {
 	vm.VM
 	Lock      sync.Mutex
-	IsRunning bool
+	IsRunning bool // todo 为了修复hotvm变成nil的问题所做的暂时性修复，要在下一个版本中清理干净
 	//contract vm.contract
 }
 
@@ -27,14 +29,16 @@ func NewHolder(vmm vm.VM) *vmHolder {
 }
 
 type vmMonitor struct {
-	vms   map[string]vmHolder
-	hotVM *vmHolder
+	vms              map[string]vmHolder
+	hotVM            *vmHolder
+	needRestartHotVM bool
 }
 
 func newVMMonitor() vmMonitor {
 	return vmMonitor{
-		vms:   make(map[string]vmHolder),
-		hotVM: nil,
+		vms:              make(map[string]vmHolder),
+		hotVM:            nil,
+		needRestartHotVM: false,
 	}
 }
 
@@ -71,7 +75,8 @@ func (m *vmMonitor) startVM(contract vm.Contract) (vm.VM, error) {
 }
 
 func (m *vmMonitor) RestartVM(contract vm.Contract) (vm.VM, error) {
-	if m.hotVM == nil {
+	if m.hotVM == nil || m.needRestartHotVM {
+		m.needRestartHotVM = false
 		vmx, err := m.startVM(contract)
 		if err != nil {
 			return nil, err
@@ -108,7 +113,8 @@ func (m *vmMonitor) Stop() {
 			return
 		}
 		m.hotVM.Stop()
-		m.hotVM = nil
+		m.needRestartHotVM = true
+		//m.hotVM = nil
 	}
 }
 
@@ -138,9 +144,18 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 
 	if m.hotVM != nil && contractPrefix == m.hotVM.Contract().Info().Prefix {
 		m.hotVM.IsRunning = true
+		defer func() {
+			m.hotVM.IsRunning = false
+		}()
 		rtn, pool2, err := m.hotVM.Call(ctx, pool, methodName, args...)
-		gas := m.hotVM.PC()
-		m.hotVM.IsRunning = false
+
+		var gas uint64
+		if m.hotVM == nil {
+			debug.PrintStack()
+			gas = 0
+		} else {
+			gas = m.hotVM.PC()
+		}
 
 		return rtn, pool2, gas, err
 	}
@@ -157,10 +172,10 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 		holder, ok = m.vms[contract.Info().Prefix] // TODO 有危险的bug
 		//return nil, pool, 0, fmt.Errorf("cannot find contract %v", contractPrefix)
 	}
-	holder.Lock.Lock()
+	holder.IsRunning = true
+	defer func() { holder.IsRunning = false }()
 	rtn, pool2, err := holder.Call(ctx, pool, methodName, args...)
 	gas := holder.PC()
-	holder.Lock.Unlock()
 	return rtn, pool2, gas, err
 }
 
