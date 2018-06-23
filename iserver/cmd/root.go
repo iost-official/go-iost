@@ -181,6 +181,10 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+		lp := viper.GetString("log.path")
+		if lp != "" {
+			log.Path = lp
+		}
 		// Log Server Information
 		log.NewLogger("iost")
 		log.Log.I("Version:  %v", "1.0")

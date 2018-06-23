@@ -17,6 +17,9 @@ net:
   port: 30301
   rpc-port: 30303
   metrics-port:
+log:
+  level: debug
+  path: logs/
 vm:
   max-block-gas:
 ldb:

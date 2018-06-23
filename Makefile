@@ -6,14 +6,17 @@ PROJECT = github.com/iost-official/prototype
 DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
 TARGET_DIR = build
 
-.PHONY: all build iserver register txsender lint image devimage install clean
+.PHONY: all build iserver iwallet register txsender lint image devimage install clean
 
 all: build
 
-build: iserver register txsender
+build: iserver iwallet register txsender
 
 iserver:
 	$(GO) build -o $(TARGET_DIR)/iserver $(PROJECT)/iserver
+
+iwallet:
+	$(GO) build -o $(TARGET_DIR)/iwallet $(PROJECT)/iwallet
 
 register:
 	$(GO) build -o $(TARGET_DIR)/register $(PROJECT)/network/main/
