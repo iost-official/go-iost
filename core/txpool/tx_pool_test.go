@@ -139,7 +139,7 @@ func TestNewTxPoolServer(t *testing.T) {
 						Body:    tx.Encode(),
 						ReqType: int32(network.ReqPublishTx),
 					}
-					txPool.AddTransaction(broadTx)
+					txPool.AddTransaction(&broadTx)
 				}
 				ch <- 3
 			}()
