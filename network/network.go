@@ -228,7 +228,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 			conn.SetReadDeadline(time.Now().Add(readTimeout))
 			conn.SetWriteDeadline(time.Now().Add(writeTimeout))
 			go bn.receiveLoop(conn)
-			peer := newPeer(conn, bn.localNode.Addr(), nodeStr)
+			peer = newPeer(conn, bn.localNode.Addr(), nodeStr)
 			bn.peers.Set(node, peer)
 		}
 	}
