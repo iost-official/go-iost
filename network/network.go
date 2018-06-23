@@ -143,7 +143,6 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 				time.Sleep(2 * time.Second)
 				continue
 			}
-			conn.SetReadDeadline(time.Now().Add(readTimeout))
 			go bn.receiveLoop(conn)
 		}
 	}()
@@ -207,36 +206,31 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 }
 
 func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
 	node, _ := discover.ParseNode(nodeStr)
 	if bn.localNode.Addr() == node.Addr() {
 		return nil, fmt.Errorf("dial local %v", node.Addr())
 	}
-	return net.DialTimeout("tcp", node.Addr(), dialTimeout)
-	/* bn.lock.Lock() */
-	// defer bn.lock.Unlock()
-	// node, _ := discover.ParseNode(nodeStr)
-	// if bn.localNode.Addr() == node.Addr() {
-	// return nil, fmt.Errorf("dial local %v", node.Addr())
-	// }
-	// peer := bn.peers.Get(node)
-	// if peer == nil {
-	// bn.log.D("[net] dial to %v", node.Addr())
-	// conn, err := net.DialTimeout("tcp", node.Addr(), dialTimeout)
-	// if err != nil {
-	// if conn != nil {
-	// conn.Close()
-	// }
-	// bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
-	// return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
-	// }
-	// if conn != nil {
-	// conn.SetWriteDeadline(time.Now().Add(writeTimeout))
-	// peer = newPeer(conn, bn.localNode.Addr(), nodeStr)
-	// bn.peers.Set(node, peer)
-	// }
-	// }
+	peer := bn.peers.Get(node)
+	if peer == nil {
+		bn.log.D("[net] dial to %v", node.Addr())
+		conn, err := net.Dial("tcp", node.Addr())
+		if err != nil {
+			if conn != nil {
+				conn.Close()
+			}
+			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
+			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
+		}
+		if conn != nil {
+			go bn.receiveLoop(conn)
+			peer = newPeer(conn, bn.localNode.Addr(), nodeStr)
+			bn.peers.Set(node, peer)
+		}
+	}
 
-	/* return peer.conn, nil */
+	return peer.conn, nil
 }
 
 // Send sends msg to msg.To.
@@ -297,31 +291,33 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 
 func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 	defer conn.Close()
-	scanner := bufio.NewScanner(conn)
-	scanner.Buffer([]byte{}, bufio.MaxScanTokenSize*100)
-	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if !atEOF && isNetVersionMatch(data) {
-			if len(data) > 8 {
-				length := int32(0)
-				binary.Read(bytes.NewReader(data[4:8]), binary.BigEndian, &length)
-				if int(length)+8 <= len(data) {
-					return int(length) + 8, data[:int(length)+8], nil
+	for {
+		scanner := bufio.NewScanner(conn)
+		scanner.Buffer([]byte{}, bufio.MaxScanTokenSize*100)
+		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+			if !atEOF && isNetVersionMatch(data) {
+				if len(data) > 8 {
+					length := int32(0)
+					binary.Read(bytes.NewReader(data[4:8]), binary.BigEndian, &length)
+					if int(length)+8 <= len(data) {
+						return int(length) + 8, data[:int(length)+8], nil
+					}
 				}
 			}
-		}
-		return
-	})
-	for scanner.Scan() {
-		req := new(Request)
-		err := req.Unpack(bytes.NewReader(scanner.Bytes()))
-		if err != nil {
-			bn.log.E("[net] unpack request failed. err=%v", err)
 			return
+		})
+		for scanner.Scan() {
+			req := new(Request)
+			err := req.Unpack(bytes.NewReader(scanner.Bytes()))
+			if err != nil {
+				bn.log.E("[net] unpack request failed. err=%v", err)
+				return
+			}
+			req.handle(bn, conn)
 		}
-		req.handle(bn, conn)
-	}
-	if err := scanner.Err(); err != nil {
-		bn.log.E("[net] invalid data packets: %v", err)
+		if err := scanner.Err(); err != nil {
+			bn.log.E("[net] invalid data packets: %v", err)
+		}
 		return
 	}
 }
