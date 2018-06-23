@@ -71,7 +71,7 @@ func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRe
 	if router == nil {
 		panic(fmt.Errorf("network.Router shouldn't be nil"))
 	}
-	broadTx := message.Message{
+	broadTx := &message.Message{
 		Body:    stx.Encode(),
 		ReqType: int32(network.ReqPublishTx),
 	}
@@ -116,7 +116,7 @@ func (s *RpcServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRe
 	if router == nil {
 		panic(fmt.Errorf("network.Router shouldn't be nil"))
 	}
-	broadTx := message.Message{
+	broadTx := &message.Message{
 		Body:    tx1.Encode(),
 		ReqType: int32(network.ReqPublishTx),
 	}

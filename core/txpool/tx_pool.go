@@ -2,6 +2,10 @@ package txpool
 
 import (
 	"fmt"
+	"sort"
+	"sync"
+	"time"
+
 	"github.com/iost-official/prototype/consensus/common"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/blockcache"
@@ -10,9 +14,6 @@ import (
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network"
 	"github.com/prometheus/client_golang/prometheus"
-	"sort"
-	"sync"
-	"time"
 )
 
 var (
@@ -145,8 +146,8 @@ func (pool *TxPoolServer) loop() {
 	}
 }
 
-func (pool *TxPoolServer) AddTransaction(tx message.Message) {
-	pool.chTx <- tx
+func (pool *TxPoolServer) AddTransaction(tx *message.Message) {
+	pool.chTx <- *tx
 }
 
 func (pool *TxPoolServer) PendingTransactions(maxCnt int) tx.TransactionsList {
