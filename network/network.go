@@ -581,8 +581,10 @@ func (bn *BaseNetwork) recentSentLoop() {
 }
 
 func (bn *BaseNetwork) isRecentSent(msg *message.Message) bool {
+	originTTL = msg.TTL
 	msg.TTL = 0
 	data, err := msg.Marshal(nil)
+	msg.TTL = originTTL
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
