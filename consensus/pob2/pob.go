@@ -77,7 +77,7 @@ type PoB struct {
 // NewPoB: 新建一个PoB实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
-	TxPerBlk = 2000
+	TxPerBlk = 10000
 	p := PoB{
 		account: acc,
 	}
@@ -178,7 +178,7 @@ func (p *PoB) genesis(initTime int64) error {
 @PutHM iost oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU f2500000000
 @PutHM iost 28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym f2300000000
 @PutHM iost x9uhGBw3tyDzNkNFM7hcXeGdEpbAHdasgGyhfcMmonYq f2200000000`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 10000, Price: 0, Publisher: ""}, code, main)
 
 	tx := NewTx(0, &lc)
 
@@ -296,10 +296,10 @@ func (p *PoB) scheduleLoop() {
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 
 				bb := blk.Encode()
-				msg := message.Message{ReqType: int32(ReqNewBlock), Body: bb}
+				msg := &message.Message{ReqType: int32(ReqNewBlock), Body: bb}
 				log.Log.I("Block size: %v, TrNum: %v", len(bb), len(blk.Content))
 				go p.router.Broadcast(msg)
-				p.chBlock <- msg
+				p.chBlock <- *msg
 				p.log.I("Broadcasted block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 			}
 			nextSchedule = timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())
@@ -324,7 +324,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 
 	vc := vm.NewContext(vm.BaseContext())
 	vc.Timestamp = blk.Head.Time
-	vc.ParentHash = lastBlk.HeadHash()
+	vc.ParentHash = blk.Head.ParentHash
 	vc.BlockHeight = blk.Head.Number
 	vc.Witness = vm.IOSTAccount(acc.ID)
 

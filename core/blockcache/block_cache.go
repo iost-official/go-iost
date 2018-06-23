@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
@@ -156,7 +157,7 @@ type BlockCacheImpl struct {
 	bc                 block.Chain
 	cachedRoot         *BlockCacheTree
 	singleBlockRoot    *BlockCacheTree
-	hashMap            map[string]*BlockCacheTree
+	hashMap            *sync.Map
 	maxDepth           int
 	blkConfirmChan     chan uint64
 	chConfirmBlockData chan *block.Block
@@ -180,13 +181,13 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 			super:    nil,
 			bctType:  Singles,
 		},
-		hashMap:            make(map[string]*BlockCacheTree),
+		hashMap:            new(sync.Map),
 		maxDepth:           maxDepth,
 		blkConfirmChan:     make(chan uint64, 10),
 		chConfirmBlockData: make(chan *block.Block, 100),
 	}
 	if h.cachedRoot.bc.Top() != nil {
-		h.hashMap[string(h.cachedRoot.bc.Top().HeadHash())] = h.cachedRoot
+		h.hashMap.Store(string(h.cachedRoot.bc.Top().HeadHash()), h.cachedRoot)
 	}
 	return &h
 }
@@ -213,17 +214,21 @@ func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	if err != nil {
 		return err
 	}
-	h.hashMap[string(h.cachedRoot.bc.Top().HeadHash())] = h.cachedRoot
+	h.hashMap.Store(string(h.cachedRoot.bc.Top().HeadHash()), h.cachedRoot)
 	return nil
 }
 
 func (h *BlockCacheImpl) getHashMap(hash []byte) (*BlockCacheTree, bool) {
-	rtn, ok := h.hashMap[string(hash)]
+	rtnI, ok := h.hashMap.Load(string(hash))
+	if !ok {
+		return nil, false
+	}
+	rtn, ok := rtnI.(*BlockCacheTree)
 	return rtn, ok
 }
 
 func (h *BlockCacheImpl) setHashMap(hash []byte, bct *BlockCacheTree) {
-	h.hashMap[string(hash)] = bct
+	h.hashMap.Store(string(hash), bct)
 }
 
 // Add 把块加入缓存
@@ -325,7 +330,7 @@ func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree,
 }
 
 func (h *BlockCacheImpl) delSubTree(root *BlockCacheTree) {
-	delete(h.hashMap, string(root.bc.Top().HeadHash()))
+	h.hashMap.Delete(string(root.bc.Top().HeadHash()))
 	for _, bct := range root.children {
 		h.delSubTree(bct)
 	}
@@ -341,7 +346,7 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 					h.delSubTree(bct)
 				}
 			}
-			delete(h.hashMap, string(h.cachedRoot.bc.Top().HeadHash()))
+			h.hashMap.Delete(string(h.cachedRoot.bc.Top().HeadHash()))
 			h.cachedRoot = newRoot
 			h.cachedRoot.bc.Flush()
 			err := h.cachedRoot.pool.Flush()

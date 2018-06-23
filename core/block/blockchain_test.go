@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -41,6 +42,11 @@ func TestChainImpl(t *testing.T) {
 			Signature:  []byte("Signatrue"),
 			Time:       201222,
 		}}
+
+		err = state.PoolInstance()
+		if err != nil {
+			panic("state.PoolInstance error")
+		}
 
 		Convey("Push", func() {
 			length := bc.Length()

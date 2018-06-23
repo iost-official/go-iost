@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/golang/mock/gomock"
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/mocks"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
@@ -59,7 +61,7 @@ end`
 
 	})
 
-	Convey("Test of find contract and call", t, func() {
+	Convey("Test of find contract and call", t, func() { // TODO : contract问题：当没有main，没有publisher的时候contract的编解码会出问题
 
 		mockCtl := gomock.NewController(t)
 		pool := core_mock.NewMockPool(mockCtl)
@@ -77,7 +79,7 @@ end`
 		main3 := lua.NewMethod(vm.Public, "main", 0, 1)
 
 		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "con2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
-			code2, sayHi, sayHi)
+			code2, main, sayHi)
 
 		lc3 := lua.NewContract(vm.ContractInfo{Prefix: "con3", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
 			`function main()
@@ -90,16 +92,19 @@ end`, main3)
 
 		txx := tx.NewTx(123, &lc2)
 		txx.Time = 1000000
-		//fmt.Println("a", txx.Contract.Info().Prefix)
-		//hash := txx.Hash()
-		//prefix := vm.HashToPrefix(hash)
-		//fmt.Println("b", prefix)
-		//txx.contract.SetPrefix("GmPtEhGJEKH96ieakmfkrXbXiYrZj2xh76XLdnkJxXvi")
+		seckey := common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9")
+		//fmt.Println(common.Base58Encode(seckey))
+		acc, err := account.NewAccount(seckey)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
 
-		buf := txx.Encode()
+		stx, err := tx.SignTx(txx, acc)
+		So(err, ShouldBeNil)
+		buf := stx.Encode()
 		var tx2 tx.Tx
 		tx2.Decode(buf)
-		fmt.Println("tx2", tx2.Contract.Info())
 
 		tx.TxDbInstance()
 		tx.TxDb.Add(&tx2)
@@ -113,7 +118,11 @@ end`, tx2.Contract.Info().Prefix)
 			code1, main)
 
 		tx3, _ := tx.TxDb.Get(vm.PrefixToHash(tx2.Contract.Info().Prefix))
-		fmt.Println("tx3", tx3.Contract.Info().Prefix)
+
+		fmt.Println("tx2", tx2.Contract)
+		fmt.Println(".tx3", tx3.Contract)
+
+		So(tx2.Contract.Info().Prefix, ShouldEqual, tx3.Contract.Info().Prefix)
 
 		verifier := Verifier{
 			vmMonitor: newVMMonitor(),

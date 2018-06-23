@@ -614,7 +614,7 @@ end`,
 		}
 
 		lc2 := Contract{
-			info: vm.ContractInfo{Prefix: "test", GasLimit: 100, Publisher: vm.IOSTAccount("a")},
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 10000, Publisher: vm.IOSTAccount("a")},
 			code: `function main()
 	Transfer("a", "b", 100)
 	return "success"
@@ -626,21 +626,124 @@ end`,
 
 		lvm.Prepare(nil)
 		lvm.Start(&lc)
-		fmt.Println(*lvm.L)
-		fmt.Println("gas after start: ", lvm.PC())
+		//fmt.Println(*lvm.L)
+		So(lvm.PC(), ShouldEqual, 3)
 
-		fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
+		lvm.Call(vm.BaseContext(), pool, "main")
 		//fmt.Println(pool.GetHM("iost", "b"))
-		fmt.Println("gas after lvm call: ", lvm.PC())
+		So(lvm.PC(), ShouldEqual, 4)
 
-		fmt.Println(*lvm.L)
-		fmt.Println(*lvm.L)
-
+		//fmt.Println(*lvm.L)
+		So(lvm.L.PCLimit, ShouldEqual, 3)
 		lvm.Restart(&lc2)
-		fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
+		//fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
 		//fmt.Println(pool.GetHM("iost", "b"))
-		fmt.Println(*lvm.L)
 
+		So(lvm.L.PCLimit, ShouldEqual, 10000)
 	})
 
+}
+
+func TestTable(t *testing.T) {
+	Convey("test of table", t, func() {
+		db, err := db2.DatabaseFactory("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(db)
+		pool := state.NewPool(sdb)
+
+		main := NewMethod(vm.Public, "main", 0, 1)
+		lc := Contract{
+			info: vm.ContractInfo{GasLimit: 1000, Price: 0.1},
+			code: `function main()
+	test = {}
+	test["a"] = 1
+	test["b"] = 2
+	Put("test", test)
+	return "success"
+end`,
+			main: main,
+		}
+
+		lvm := VM{}
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
+		_, pool, err = lvm.call(pool, "main")
+		lvm.Stop()
+		So(err, ShouldNotBeNil)
+
+		pool.Flush()
+
+		fmt.Println(pool.GetHM("test", "a"))
+
+	})
+}
+
+func TestLog(t *testing.T) {
+	Convey("test of table", t, func() {
+		db, err := db2.DatabaseFactory("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(db)
+		pool := state.NewPool(sdb)
+
+		main := NewMethod(vm.Public, "main", 0, 1)
+		lc := Contract{
+			info: vm.ContractInfo{GasLimit: 1000, Price: 0.1},
+			code: `function main()
+	Log("hello world")
+end`,
+			main: main,
+		}
+
+		lvm := VM{}
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
+		_, pool, err = lvm.call(pool, "main")
+		lvm.Stop()
+		So(err, ShouldBeNil)
+
+		pool.Flush()
+
+	})
+}
+
+func TestPrivilege(t *testing.T) {
+	Convey("test of privilege", t, func() {
+		Convey("privilege in contract info", func() {
+			a := vm.CheckPrivilege(vm.BaseContext(), vm.ContractInfo{Publisher: "a", Signers: []vm.IOSTAccount{"b", "c"}}, "a")
+			b := vm.CheckPrivilege(vm.BaseContext(), vm.ContractInfo{Publisher: "a", Signers: []vm.IOSTAccount{"b", "c"}}, "b")
+			d := vm.CheckPrivilege(vm.BaseContext(), vm.ContractInfo{Publisher: "a", Signers: []vm.IOSTAccount{"b", "c"}}, "d")
+
+			So(a, ShouldEqual, 2)
+			So(b, ShouldEqual, 1)
+			So(d, ShouldEqual, 0)
+
+		})
+
+		Convey("privilege in context", func() {
+			ctx := vm.BaseContext()
+			ctx.Publisher = "a"
+			ctx.Signers = []vm.IOSTAccount{"b", "c"}
+			a := vm.CheckPrivilege(ctx, vm.ContractInfo{Publisher: "c"}, "a")
+			b := vm.CheckPrivilege(ctx, vm.ContractInfo{Publisher: "c"}, "b")
+			d := vm.CheckPrivilege(ctx, vm.ContractInfo{Publisher: "c"}, "d")
+			So(a, ShouldEqual, 2)
+			So(b, ShouldEqual, 1)
+			So(d, ShouldEqual, 0)
+
+			ctx2 := vm.NewContext(ctx)
+			a = vm.CheckPrivilege(ctx2, vm.ContractInfo{Publisher: "c"}, "a")
+			b = vm.CheckPrivilege(ctx2, vm.ContractInfo{Publisher: "c"}, "b")
+			d = vm.CheckPrivilege(ctx2, vm.ContractInfo{Publisher: "c"}, "d")
+
+			So(a, ShouldEqual, 2)
+			So(b, ShouldEqual, 1)
+			So(d, ShouldEqual, 0)
+
+		})
+
+	})
 }

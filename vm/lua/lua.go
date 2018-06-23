@@ -1,9 +1,9 @@
 package lua
 
 import (
-	"fmt"
-
 	"errors"
+
+	"fmt"
 
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
@@ -195,9 +195,10 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				L.Push(lua.LNil)
 				return 1
 			}
+			L.Push(lua.LTrue)
 			L.Push(v2)
 			L.PCount += 1000
-			return 1
+			return 2
 		},
 	}
 	l.APIs = append(l.APIs, Get)
@@ -208,7 +209,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 			src := L.ToString(1) // todo 验证输入
 			//fmt.Print("transfer call check")
 			if vm.CheckPrivilege(l.ctx, l.contract.info, src) <= 0 {
-				L.Push(lua.LString("privilege error"))
+				L.Push(lua.LFalse)
 				return 1
 			}
 			des := L.ToString(2)
@@ -323,15 +324,16 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			method, err := l.monitor.GetMethod(contractPrefix, methodName)
+			method, info, err := l.monitor.GetMethod(contractPrefix, methodName)
 			if err != nil {
-				fmt.Println("err:", err.Error())
-				L.Push(lua.LString(err.Error()))
+				host.Log(err.Error(), contractPrefix)
+				L.Push(lua.LFalse)
 				return 1
 			}
 
 			//fmt.Print("outer call check:")
-			p := vm.CheckPrivilege(l.ctx, l.contract.Info(), string(l.contract.Info().Publisher))
+			p := vm.CheckPrivilege(l.ctx, *info, string(l.contract.Info().Publisher))
+			fmt.Println("check result:", p)
 			pri := method.Privilege()
 			switch {
 			case pri == vm.Private && p > 1:
@@ -358,21 +360,24 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				rtn, pool, gas, err := l.monitor.Call(ctx, l.cachePool, contractPrefix, methodName, args...)
 				l.callerPC += gas
 				if err != nil {
-					fmt.Println("err:", err.Error())
-					L.Push(lua.LString(err.Error()))
+					host.Log(err.Error(), contractPrefix)
+					L.Push(lua.LFalse)
+					return 1
 				}
 				l.cachePool = pool
+				L.Push(lua.LTrue)
 				for _, v := range rtn {
 					v2, err := Core2Lua(v)
 					if err != nil {
-						L.Push(lua.LString(err.Error()))
+						host.Log(err.Error(), contractPrefix)
+						L.Push(lua.LFalse)
 						return 1
 					}
 					L.Push(v2)
 				}
-				return len(rtn)
+				return len(rtn) + 1
 			default:
-				L.Push(lua.LString(err.Error()))
+				L.Push(lua.LFalse)
 				return 1
 			}
 		},

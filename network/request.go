@@ -108,13 +108,24 @@ func (r *Request) String() string {
 	)
 }
 
+func prometheusReceivedBlockTx(req *message.Message) {
+	if req.ReqType == int32(ReqPublishTx) {
+		receivedBroadTransactionSize.Observe(float64(req.Size()))
+		receivedBroadTransactionCount.Inc()
+	}
+	if req.ReqType == int32(ReqNewBlock) {
+		receivedBlockSize.Observe(float64(req.Size()))
+	}
+}
+
 func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	switch r.Type {
 	case Message:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
-			base.log.D("[net] msg from =%v, to = %v, typ = %v,  ttl = %v", appReq.From, appReq.To, appReq.ReqType, appReq.TTL)
 			base.RecvCh <- *appReq
+			prometheusReceivedBlockTx(appReq)
+
 		} else {
 			base.log.E("[net] failed to unmarshal recv msg:%v, err:%v", r, err)
 		}
@@ -131,8 +142,10 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 				appReq.From = string(r.From)
 			}
 			base.RecvCh <- *appReq
+
+			prometheusReceivedBlockTx(appReq)
 			if appReq.ReqType != int32(ReqDownloadBlock) {
-				base.Broadcast(*appReq)
+				base.Broadcast(appReq)
 			}
 		}
 		r.msgHandle(base)

@@ -35,13 +35,20 @@ const (
 	CommitteeMode           = "committee"
 )
 
+// var
+var (
+	readTimeout  = 2 * time.Second
+	writeTimeout = 2 * time.Second
+	dialTimeout  = time.Second
+)
+
 // NetMode is the bootnode's mode.
 var NetMode string
 
 // Network defines network's API.
 type Network interface {
-	Broadcast(req message.Message)
-	Send(req message.Message)
+	Broadcast(req *message.Message)
+	Send(req *message.Message)
 	Listen(port uint16) (<-chan message.Message, error)
 	Close(port uint16) error
 	Download(start, end uint64) error
@@ -150,7 +157,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 }
 
 // Broadcast broadcasts msg to all node in the node table.
-func (bn *BaseNetwork) Broadcast(msg message.Message) {
+func (bn *BaseNetwork) Broadcast(msg *message.Message) {
 	if msg.From == "" {
 		msg.From = bn.localNode.Addr()
 	}
@@ -162,16 +169,16 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 			return true
 		}
 		msg.To = node.Addr()
-		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
 		if !bn.isRecentSent(msg) {
 			bn.broadcast(msg)
+			prometheusSendBlockTx(msg)
 		}
 		return true
 	})
 }
 
 // broadcast broadcasts to all neighbours, stop broadcast when msg already broadcast
-func (bn *BaseNetwork) broadcast(msg message.Message) {
+func (bn *BaseNetwork) broadcast(msg *message.Message) {
 	if msg.To == "" {
 		return
 	}
@@ -212,24 +219,21 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 			if conn != nil {
 				conn.Close()
 			}
-			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: node.Addr()})
 			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
 		if conn != nil {
 			go bn.receiveLoop(conn)
-			peer := newPeer(conn, bn.localNode.Addr(), nodeStr)
-			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][3], Log: node.Addr()})
-			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][4], Log: strconv.Itoa(len(bn.peers.peers))})
+			peer = newPeer(conn, bn.localNode.Addr(), nodeStr)
 			bn.peers.Set(node, peer)
 		}
 	}
 
-	return bn.peers.Get(node).conn, nil
+	return peer.conn, nil
 }
 
 // Send sends msg to msg.To.
-func (bn *BaseNetwork) Send(msg message.Message) {
+func (bn *BaseNetwork) Send(msg *message.Message) {
 	//if bn.isRecentSent(msg) {
 	//	bn.log.D("[net] recent send")
 	//	return
@@ -241,7 +245,6 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
-	bn.log.D("[net] send msg: type= %v, from=%v,to=%v,time=%v", msg.ReqType, msg.From, msg.To, msg.Time)
 	req := newRequest(Message, bn.localNode.Addr(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
@@ -250,9 +253,12 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		bn.log.E("[net] Send, dial tcp got err:%v", err)
 		return
 	}
+
 	if er := bn.send(conn, req); er != nil {
 		bn.peers.RemoveByNodeStr(msg.To)
 	}
+
+	prometheusSendBlockTx(msg)
 }
 
 // Close closes all connection.
@@ -273,6 +279,7 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 		bn.log.E("[net] pack data encountered err:%v", err)
 		return nil
 	}
+
 	_, err = conn.Write(pack)
 	if err != nil {
 		bn.log.E("[net] conn write got err:%v", err)
@@ -299,13 +306,16 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 		})
 		for scanner.Scan() {
 			req := new(Request)
-			req.Unpack(bytes.NewReader(scanner.Bytes()))
+			err := req.Unpack(bytes.NewReader(scanner.Bytes()))
+			if err != nil {
+				bn.log.E("[net] unpack request failed. err=%v", err)
+				return
+			}
 			req.handle(bn, conn)
 		}
 		if err := scanner.Err(); err != nil {
 			bn.log.E("[net] invalid data packets: %v", err)
 		}
-		// EOF also need to return.
 		return
 	}
 }
@@ -425,7 +435,7 @@ func (bn *BaseNetwork) findNeighbours() {
 
 // AskABlock asks a node for a block.
 func (bn *BaseNetwork) AskABlock(height uint64, to string) error {
-	msg := message.Message{
+	msg := &message.Message{
 		Body:    common.Uint64ToBytes(height),
 		ReqType: int32(ReqDownloadBlock),
 		From:    bn.localNode.Addr(),
@@ -444,7 +454,7 @@ func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 		bn.log.D("marshal BlockHashQuery failed. err=%v", err)
 		return err
 	}
-	msg := message.Message{
+	msg := &message.Message{
 		Body:    bytes,
 		ReqType: int32(BlockHashQuery),
 		TTL:     MsgMaxTTL,
@@ -474,7 +484,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			if retryTimes > MaxDownloadRetry {
 				return true
 			}
-			msg := message.Message{
+			msg := &message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
 				TTL:     MsgMaxTTL,
@@ -575,7 +585,7 @@ func (bn *BaseNetwork) recentSentLoop() {
 	}
 }
 
-func (bn *BaseNetwork) isRecentSent(msg message.Message) bool {
+func (bn *BaseNetwork) isRecentSent(msg *message.Message) bool {
 	msg.TTL = 0
 	data, err := msg.Marshal(nil)
 	if err != nil {
@@ -611,4 +621,15 @@ func (bn *BaseNetwork) isInCommittee(from []byte) bool {
 		}
 	}
 	return false
+}
+
+func prometheusSendBlockTx(req *message.Message) {
+	if req.ReqType == int32(ReqPublishTx) {
+		sendTransactionSize.Observe(float64(req.Size()))
+		sendTransactionCount.Inc()
+	}
+	if req.ReqType == int32(ReqNewBlock) {
+		sendBlockSize.Observe(float64(req.Size()))
+		sendBlockCount.Inc()
+	}
 }

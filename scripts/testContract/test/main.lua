@@ -30,7 +30,7 @@ function BuyCoin(account, buyNumber)
 	end
 
 	-- print(string.format("deposit account = %s, number = %d", account, buyNumber))
-	Deposit(account, buyNumber)
+	Assert(Deposit(account, buyNumber) == 1)
 
 	win = false
 	for i = 0, buyNumber - 1, 1 do
@@ -44,7 +44,7 @@ function BuyCoin(account, buyNumber)
 	    Put("winner", account)
 	end
 
-    return "success"
+	return 0
 end--f
 
 --- winAfterBuyOne win after buy one
@@ -102,6 +102,6 @@ function Claim()
 
 	Put("claimed", "true")
 
-	Withdraw(winner, number)
-	return "success"
+	Assert(Withdraw(winner, number) == 1)
+	return 0
 end--f
