@@ -96,6 +96,7 @@ func RandomByParentHash(ctx *vm.Context, probability float64) bool {
 			ctx = ctx.Base
 		} else {
 			seed = ctx.ParentHash
+			break
 		}
 	}
 	seed = ctx.ParentHash

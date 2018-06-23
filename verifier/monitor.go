@@ -147,6 +147,7 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 		defer func() {
 			m.hotVM.IsRunning = false
 		}()
+
 		rtn, pool2, err := m.hotVM.Call(ctx, pool, methodName, args...)
 
 		var gas uint64
@@ -159,6 +160,7 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 
 		return rtn, pool2, gas, err
 	}
+
 	holder, ok := m.vms[contractPrefix]
 	if !ok {
 		contract, err := FindContract(contractPrefix)

@@ -73,6 +73,7 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 				Protect: true,
 			})
 		} else {
+
 			largs := make([]lua.LValue, 0)
 			for _, arg := range args {
 				v, err0 := Core2Lua(arg)
