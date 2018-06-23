@@ -40,8 +40,8 @@ var NetMode string
 
 // Network defines network's API.
 type Network interface {
-	Broadcast(req message.Message)
-	Send(req message.Message)
+	Broadcast(req *message.Message)
+	Send(req *message.Message)
 	Listen(port uint16) (<-chan message.Message, error)
 	Close(port uint16) error
 	Download(start, end uint64) error
@@ -150,7 +150,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 }
 
 // Broadcast broadcasts msg to all node in the node table.
-func (bn *BaseNetwork) Broadcast(msg message.Message) {
+func (bn *BaseNetwork) Broadcast(msg *message.Message) {
 	if msg.From == "" {
 		msg.From = bn.localNode.Addr()
 	}
@@ -172,7 +172,7 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 }
 
 // broadcast broadcasts to all neighbours, stop broadcast when msg already broadcast
-func (bn *BaseNetwork) broadcast(msg message.Message) {
+func (bn *BaseNetwork) broadcast(msg *message.Message) {
 	if msg.To == "" {
 		return
 	}
@@ -230,7 +230,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 }
 
 // Send sends msg to msg.To.
-func (bn *BaseNetwork) Send(msg message.Message) {
+func (bn *BaseNetwork) Send(msg *message.Message) {
 	//if bn.isRecentSent(msg) {
 	//	bn.log.D("[net] recent send")
 	//	return
@@ -430,7 +430,7 @@ func (bn *BaseNetwork) findNeighbours() {
 
 // AskABlock asks a node for a block.
 func (bn *BaseNetwork) AskABlock(height uint64, to string) error {
-	msg := message.Message{
+	msg := &message.Message{
 		Body:    common.Uint64ToBytes(height),
 		ReqType: int32(ReqDownloadBlock),
 		From:    bn.localNode.Addr(),
@@ -449,7 +449,7 @@ func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 		bn.log.D("marshal BlockHashQuery failed. err=%v", err)
 		return err
 	}
-	msg := message.Message{
+	msg := &message.Message{
 		Body:    bytes,
 		ReqType: int32(BlockHashQuery),
 		TTL:     MsgMaxTTL,
@@ -479,7 +479,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			if retryTimes > MaxDownloadRetry {
 				return true
 			}
-			msg := message.Message{
+			msg := &message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
 				TTL:     MsgMaxTTL,
@@ -580,7 +580,7 @@ func (bn *BaseNetwork) recentSentLoop() {
 	}
 }
 
-func (bn *BaseNetwork) isRecentSent(msg message.Message) bool {
+func (bn *BaseNetwork) isRecentSent(msg *message.Message) bool {
 	msg.TTL = 0
 	data, err := msg.Marshal(nil)
 	if err != nil {
@@ -618,7 +618,7 @@ func (bn *BaseNetwork) isInCommittee(from []byte) bool {
 	return false
 }
 
-func prometheusSendBlockTx(req message.Message) {
+func prometheusSendBlockTx(req *message.Message) {
 	if req.ReqType == int32(ReqPublishTx) {
 		sendTransactionSize.Observe(float64(req.Size()))
 		sendTransactionCount.Inc()
