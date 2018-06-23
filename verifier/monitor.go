@@ -135,13 +135,13 @@ func (m *vmMonitor) GetMethod(contractPrefix, methodName string) (vm.Method, *vm
 }
 
 func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, methodName string, args ...state.Value) ([]state.Value, state.Pool, uint64, error) {
-
+	m.hotVM.IsRunning = true
+	defer func() {
+		m.hotVM.IsRunning = false
+	}()
 	if m.hotVM != nil && contractPrefix == m.hotVM.Contract().Info().Prefix {
-		m.hotVM.IsRunning = true
 		rtn, pool2, err := m.hotVM.Call(ctx, pool, methodName, args...)
 		gas := m.hotVM.PC()
-		m.hotVM.IsRunning = false
-
 		return rtn, pool2, gas, err
 	}
 	holder, ok := m.vms[contractPrefix]
@@ -157,10 +157,10 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 		holder, ok = m.vms[contract.Info().Prefix] // TODO 有危险的bug
 		//return nil, pool, 0, fmt.Errorf("cannot find contract %v", contractPrefix)
 	}
-	holder.Lock.Lock()
+	holder.IsRunning = true
+	defer func() { holder.IsRunning = false }()
 	rtn, pool2, err := holder.Call(ctx, pool, methodName, args...)
 	gas := holder.PC()
-	holder.Lock.Unlock()
 	return rtn, pool2, gas, err
 }
 
