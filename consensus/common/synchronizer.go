@@ -269,13 +269,13 @@ func (sync *SyncImpl) handleHashQuery() {
 				BlockHashes: make([]message.BlockHash, 0, rh.End-rh.Start+1),
 			}
 			for i := rh.Start; i <= rh.End; i++ {
-				block := chain.GetBlockByNumber(i)
-				if block == nil {
+				hash := chain.GetHashByNumber(i)
+				if hash == nil {
 					continue
 				}
 				blkHash := message.BlockHash{
 					Height: i,
-					Hash:   block.HeadHash(),
+					Hash:   hash,
 				}
 				resp.BlockHashes = append(resp.BlockHashes, blkHash)
 			}
