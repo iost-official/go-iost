@@ -233,7 +233,7 @@ func TestRunGenerateBlock(t *testing.T) {
 	Convey("Test of Run (Generate Block)", t, func() {
 		p, _, _, txpool := envinit(t)
 		_tx := genTxMsg(p, 998)
-		txpool.AddTransaction(_tx)
+		txpool.AddTransaction(&_tx)
 		time.Sleep(time.Second * 1)
 
 		bc := p.blockCache.LongestChain()
@@ -291,7 +291,7 @@ func TestRunConfirmBlock(t *testing.T) {
 		p, accList, witnessList, txpool := envinit(t)
 		fmt.Println("0.TestRunConfirmBlock ConfirmedLength: ", p.blockCache.ConfirmedLength())
 		_tx := genTxMsg(p, 998)
-		txpool.AddTransaction(_tx)
+		txpool.AddTransaction(&_tx)
 		fmt.Println("1.TestRunConfirmBlock ConfirmedLength: ", p.blockCache.ConfirmedLength())
 		// block database delete failed
 		initConfLength := p.blockCache.ConfirmedLength()
@@ -349,7 +349,7 @@ func TestRunMultipleBlocks(t *testing.T) {
 	Convey("Test of Run (Multiple Blocks)", t, func() {
 		p, _, witnessList, txpool := envinit(t)
 		_tx := genTxMsg(p, 998)
-		txpool.AddTransaction(_tx)
+		txpool.AddTransaction(&_tx)
 
 		bc := p.blockCache.LongestChain()
 		pool := p.blockCache.LongestPool()
@@ -711,13 +711,13 @@ func benchTxCache(b *testing.B, f bool) {
 
 	for j := 0; j < b.N; j++ {
 		_tx := genTxMsg(p, j)
-		txpool.AddTransaction(_tx)
+		txpool.AddTransaction(&_tx)
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StartTimer()
-		txpool.AddTransaction(txs[i])
+		txpool.AddTransaction(&txs[i])
 		b.StopTimer()
 	}
 
@@ -732,7 +732,7 @@ func benchTxCachePara(b *testing.B) {
 		_tx := genTxMsg(p, j)
 		txs = append(txs, _tx)
 		if j < 1000 {
-			txpool.AddTransaction(_tx)
+			txpool.AddTransaction(&_tx)
 		}
 	}
 	var wg sync.WaitGroup
@@ -741,7 +741,7 @@ func benchTxCachePara(b *testing.B) {
 	go func() {
 		start := time.Now().UnixNano()
 		for j := 1000; j < 2000; j++ {
-			txpool.AddTransaction(txs[j])
+			txpool.AddTransaction(&txs[j])
 		}
 		end := time.Now().UnixNano()
 		fmt.Println((end-start)/1000, " ns/op")
@@ -756,7 +756,7 @@ func benchTxDb(b *testing.B, f bool) {
 	txDb := tx.TxDbInstance()
 	for j := 0; j < b.N; j++ {
 		_tx := genTxMsg(p, j)
-		txpool.AddTransaction(_tx)
+		txpool.AddTransaction(&_tx)
 	}
 
 	b.ResetTimer()
@@ -797,7 +797,7 @@ func benchGenerateBlock(b *testing.B, txCnt int) {
 
 	for i := 0; i < TxPerBlk*b.N; i++ {
 		_tx := genTxMsg(p, 998)
-		txpool.AddTransaction(_tx)
+		txpool.AddTransaction(&_tx)
 	}
 
 	b.ResetTimer()
