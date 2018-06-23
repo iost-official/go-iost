@@ -112,9 +112,9 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, 
 		curtps := float64(1e9) / float64(end-start)
 		if needsleep {
 			if curtps > float64(*tps)+eps {
-				duration += 10
+				duration += 1000
 			} else if curtps < float64(*tps)-eps {
-				duration -= 10
+				duration -= 1000
 			}
 			if duration < 0 {
 				duration = 0
