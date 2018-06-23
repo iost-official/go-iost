@@ -8,6 +8,11 @@ import (
 	"fmt"
 	"time"
 
+	"encoding/json"
+
+	"strconv"
+
+	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
@@ -96,6 +101,7 @@ func RandomByParentHash(ctx *vm.Context, probability float64) bool {
 			ctx = ctx.Base
 		} else {
 			seed = ctx.ParentHash
+			break
 		}
 	}
 	seed = ctx.ParentHash
@@ -149,6 +155,85 @@ func Witness(ctx *vm.Context) string {
 		}
 	}
 	return ""
+}
+
+func TableToJson(table *lua.LTable) (string, error) { // todo let state.pool works well
+	m := tableIterator(table)
+
+	rtn, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+	return string(rtn), nil
+}
+
+func tableIterator(table *lua.LTable) map[string]interface{} {
+	m := make(map[string]interface{})
+	table.ForEach(func(key lua.LValue, val lua.LValue) {
+		var k0 string
+		if key.Type() == lua.LTNumber {
+			k0 = strconv.Itoa(int(float64(key.(lua.LNumber))))
+		} else {
+			k0 = key.String()
+		}
+
+		switch val.(type) {
+		case lua.LNumber:
+			f := float64(val.(lua.LNumber))
+			m[k0] = f
+		case lua.LString:
+			s := val.String()
+			m[k0] = s
+		case lua.LBool:
+			m[k0] = val == lua.LTrue
+		case *lua.LTable:
+			m[k0] = tableIterator(val.(*lua.LTable))
+		}
+	})
+	return m
+}
+
+func ParseJson(jsonStr []byte) (*lua.LTable, error) {
+	var mapResult map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonStr), &mapResult); err != nil {
+		return nil, err
+	}
+	//fmt.Println("in ParseJson:", mapResult)
+
+	return mapIterator(mapResult), nil
+}
+
+func mapIterator(m map[string]interface{}) *lua.LTable {
+	lt := lua.LTable{}
+
+	for k, v := range m {
+		var l lua.LValue
+		switch v.(type) {
+		case float64:
+			l = lua.LNumber(v.(float64))
+		case string:
+			l = lua.LString(v.(string))
+		case bool:
+			l = lua.LBool(v.(bool))
+		case map[string]interface{}:
+			l = mapIterator(v.(map[string]interface{}))
+		}
+		//fmt.Println(k, l)
+		setTable(&lt, k, l)
+	}
+	//lt.ForEach(func(value lua.LValue, value2 lua.LValue) {
+	//	fmt.Println("in lt:", value, value2)
+	//})
+	return &lt
+}
+
+func setTable(lt *lua.LTable, k string, v lua.LValue) {
+	i, err := strconv.Atoi(k)
+	if err == nil {
+		lt.RawSetInt(i, v)
+	} else {
+		lt.RawSetString(k, v)
+	}
 }
 
 func changeToken(pool state.Pool, key, field state.Key, delta float64) error {

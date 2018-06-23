@@ -86,7 +86,7 @@ func Instance() (Chain, error) {
 // Push 保存一个block到实例
 func (b *ChainImpl) Push(block *Block) error {
 
-	hash := block.Hash()
+	hash := block.HeadHash()
 	number := uint64(block.Head.Number)
 
 	//存储区块hash
@@ -115,7 +115,7 @@ func (b *ChainImpl) Push(block *Block) error {
 	}
 
 	state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(block.Head.Number)))
-	state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(block.Hash()))
+	state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(block.HeadHash()))
 	state.StdPool.Flush()
 	return nil
 }
@@ -192,28 +192,6 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 	return rBlock
 }
 
-// GetBlockByNumber 通过区块编号查询块
-func (b *ChainImpl) GetBlockByteByNumber(number uint64) ([]byte, error) {
-
-	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
-	if err != nil {
-		log.Log.E("Get block hash error: %v number: %v", err, number)
-		return nil, err
-	}
-
-	block, err := b.db.Get(append(blockPrefix, hash...))
-	if err != nil {
-		log.Log.E("Get block error: %v number: %v", err, number)
-		return nil, err
-	}
-	if len(block) == 0 {
-		log.Log.E("GetBlockByNumber Block empty! number: %v", number)
-		return nil, fmt.Errorf("block empty")
-	}
-
-	return block, nil
-}
-
 // GetBlockByHash 通过区块hash查询块
 func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 
@@ -230,6 +208,22 @@ func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 		return nil
 	}
 	return rBlock
+}
+
+// GetBlockByNumber 通过区块hash查询块
+func (b *ChainImpl) GetBlockByteByHash(blockHash []byte) ([]byte, error) {
+
+	block, err := b.db.Get(append(blockPrefix, blockHash...))
+	if err != nil {
+		log.Log.E("Get block error: %v hash: %v", err, string(blockHash))
+		return nil, err
+	}
+	if len(block) == 0 {
+		log.Log.E("GetBlockByteByHash Block empty! : %v", string(blockHash))
+		return nil, fmt.Errorf("block empty")
+	}
+
+	return block, nil
 }
 
 // Iterator 暂不实现

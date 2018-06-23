@@ -67,7 +67,7 @@ func (p *PoB) WitnessQuit(witness account.Account) {
 
 // 测试用函数：p2p收到ReqTypeVoteTest后调用，将消息加入到info的缓存中
 // 在生成块时，将infoCache中的内容序列化后直接加入info，清空infoCache
-func (p *PoB) addWitnessMsg(req message.Message) {
+func (p *PoB) addWitnessMsg(req *message.Message) {
 	if req.ReqType != reqTypeVoteTest {
 		return
 	}

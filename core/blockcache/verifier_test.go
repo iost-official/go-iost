@@ -18,47 +18,43 @@ import (
 )
 
 func TestStdTxsVerifier(t *testing.T) {
-	dbx, err := db.DatabaseFactory("redis")
-	if err != nil {
-		panic(err.Error())
-	}
-	sdb := state.NewDatabase(dbx)
-	pool := state.NewPool(sdb)
-	main := lua.NewMethod(2, "main", 0, 1)
-	code := `function main()
+	Convey("test of txs bench", t, func() {
+		dbx, err := db.DatabaseFactory("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(dbx)
+		pool := state.NewPool(sdb)
+		main := lua.NewMethod(2, "main", 0, 1)
+		code := `function main()
 				Put("hello", "world")
 				return "success"
 			end`
 
-	txs := make([]*tx.Tx, 0)
+		txs := make([]*tx.Tx, 0)
 
-	pool.PutHM("iost", "a", state.MakeVFloat(100000))
+		pool.PutHM("iost", "a", state.MakeVFloat(100000))
 
-	for j := 0; j < 100; j++ {
-		lc := lua.NewContract(vm.ContractInfo{Prefix: strconv.Itoa(j), GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
-		txx := tx.NewTx(int64(j), &lc)
-		txs = append(txs, &txx)
-	}
+		for j := 0; j < 100; j++ {
+			lc := lua.NewContract(vm.ContractInfo{Prefix: strconv.Itoa(j), GasLimit: 10000, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
+			txx := tx.NewTx(int64(j), &lc)
+			txs = append(txs, &txx)
+		}
 
-	fmt.Println("len", len(txs))
-	//fmt.Println(txs[0].contract)
-	p2, i, err := StdTxsVerifier(txs, pool)
-	fmt.Println(i)
-	fmt.Println("error", err.Error())
-	fmt.Println(p2.GetHM("iost", "a"))
-	//fmt.Println(p2.GetPatch())
-	//fmt.Println(p2.Get("mark"))
-	p := p2.(*state.PoolImpl)
-	count := 0
-	for p != nil {
-		p = p.Parent()
-		count++
-	}
-	fmt.Println("depth:", count)
-}
-
-func TestStdBlockVerifier(t *testing.T) {
-
+		So(len(txs), ShouldEqual, 100)
+		//fmt.Println(txs[0].contract)
+		p2, i, err := StdTxsVerifier(txs, pool)
+		fmt.Println(i)
+		fmt.Println("error", err.Error())
+		fmt.Println(p2.GetHM("iost", "a"))
+		p := p2.(*state.PoolImpl)
+		count := 0
+		for p != nil {
+			p = p.Parent()
+			count++
+		}
+		So(count, ShouldEqual, 2)
+	})
 }
 
 func TestStdCacheVerifier(t *testing.T) {
@@ -80,7 +76,9 @@ func TestStdCacheVerifier(t *testing.T) {
 			txx := tx.NewTx(int64(j), &lc)
 			StdCacheVerifier(&txx, pool, &vm.Context{})
 		}
-		fmt.Println(pool.GetHM("iost", "a"))
+		v, err := pool.GetHM("iost", "a")
+		So(err, ShouldBeNil)
+		So(v.EncodeString(), ShouldEqual, "f9.460000000000000e+03")
 		p := pool.(*state.PoolImpl)
 		count := 0
 		for p != nil {
@@ -101,12 +99,12 @@ func TestStdCacheVerifier(t *testing.T) {
 				then 
 					Transfer("a", "b", 10000)
 				end
-print("time:")
-print(Now())
-print("height:")
-print(Height())
-				return "success"
-			end`
+	print("time:")
+	print(Now())
+	print("height:")
+	print(Height())
+	return "success"
+end`
 
 		pool.PutHM("iost", "a", state.MakeVFloat(100000))
 
@@ -117,7 +115,9 @@ print(Height())
 		ctx.ParentHash = []byte{1}
 		ctx.BlockHeight = 10
 		ctx.Timestamp = time.Now().Unix()
+
 		err = StdCacheVerifier(&txx, pool, ctx)
+
 		So(err, ShouldBeNil)
 
 		balance, err := pool.GetHM("iost", "a")

@@ -180,7 +180,11 @@ func (p *PoB) genesis(initTime int64) error {
 @PutHM iost x9uhGBw3tyDzNkNFM7hcXeGdEpbAHdasgGyhfcMmonYq f2200000000`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 10000, Price: 0, Publisher: ""}, code, main)
 
-	tx := NewTx(0, &lc)
+	tx := Tx{
+		Time:     0,
+		Nonce:    0,
+		Contract: &lc,
+	}
 
 	genesis := &block.Block{
 		Head: block.BlockHead{

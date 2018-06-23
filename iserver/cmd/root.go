@@ -181,6 +181,10 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+		lp := viper.GetString("log.path")
+		if lp != "" {
+			log.Path = lp
+		}
 		// Log Server Information
 		log.NewLogger("iost")
 		log.Log.I("Version:  %v", "1.0")
@@ -268,8 +272,8 @@ var rootCmd = &cobra.Command{
 		if bcLen > resBlockLength {
 			var blk *block.Block
 			for i := resBlockLength; i < bcLen; i++ {
-				log.Log.I("Update StatePool for number:", i)
-				blk = blockChain.GetBlockByNumber(i - 1)
+				log.Log.I("Update StatePool for number: %v", i)
+				blk = blockChain.GetBlockByNumber(i)
 				if i == 0 {
 					newPool, err := verifier.ParseGenesis(blk.Content[0].Contract, state.StdPool)
 					if err != nil {
@@ -288,7 +292,7 @@ var rootCmd = &cobra.Command{
 			}
 			if bcLen > 0 {
 				state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(bcLen-1)))
-				state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(blk.Hash()))
+				state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(blk.HeadHash()))
 				state.StdPool.Flush()
 			}
 		}

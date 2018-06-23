@@ -25,5 +25,5 @@ func NewContext(ctx *Context) *Context {
 //}
 
 func BaseContext() *Context {
-	return &Context{}
+	return &Context{Base: nil}
 }

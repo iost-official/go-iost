@@ -147,18 +147,20 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 		defer func() {
 			m.hotVM.IsRunning = false
 		}()
+
 		rtn, pool2, err := m.hotVM.Call(ctx, pool, methodName, args...)
 
 		var gas uint64
 		if m.hotVM == nil {
 			debug.PrintStack()
-			gas = 0
+			return nil, pool, 0, errors.New("runtime error")
 		} else {
 			gas = m.hotVM.PC()
 		}
 
 		return rtn, pool2, gas, err
 	}
+
 	holder, ok := m.vms[contractPrefix]
 	if !ok {
 		contract, err := FindContract(contractPrefix)
