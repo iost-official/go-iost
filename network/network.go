@@ -218,7 +218,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
 		if conn != nil {
-			// go bn.receiveLoop(conn)
+			go bn.receiveLoop(conn)
 			peer := newPeer(conn, bn.localNode.Addr(), nodeStr)
 			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][3], Log: node.Addr()})
 			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][4], Log: strconv.Itoa(len(bn.peers.peers))})
@@ -309,8 +309,8 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 		}
 		if err := scanner.Err(); err != nil {
 			bn.log.E("[net] invalid data packets: %v", err)
-			return
 		}
+		return
 		// EOF also need to return.
 	}
 }
