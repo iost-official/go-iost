@@ -152,7 +152,7 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 		var gas uint64
 		if m.hotVM == nil {
 			debug.PrintStack()
-			gas = 0
+			return nil, pool, 0, errors.New("runtime error")
 		} else {
 			gas = m.hotVM.PC()
 		}
