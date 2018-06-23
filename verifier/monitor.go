@@ -20,7 +20,7 @@ var ErrForbiddenCall = errors.New("forbidden call")
 type vmHolder struct {
 	vm.VM
 	Lock      sync.Mutex
-	IsRunning bool
+	IsRunning bool // todo 为了修复hotvm变成nil的问题所做的暂时性修复，要在下一个版本中清理干净
 	//contract vm.contract
 }
 
@@ -29,14 +29,16 @@ func NewHolder(vmm vm.VM) *vmHolder {
 }
 
 type vmMonitor struct {
-	vms   map[string]vmHolder
-	hotVM *vmHolder
+	vms              map[string]vmHolder
+	hotVM            *vmHolder
+	needRestartHotVM bool
 }
 
 func newVMMonitor() vmMonitor {
 	return vmMonitor{
-		vms:   make(map[string]vmHolder),
-		hotVM: nil,
+		vms:              make(map[string]vmHolder),
+		hotVM:            nil,
+		needRestartHotVM: false,
 	}
 }
 
@@ -73,7 +75,8 @@ func (m *vmMonitor) startVM(contract vm.Contract) (vm.VM, error) {
 }
 
 func (m *vmMonitor) RestartVM(contract vm.Contract) (vm.VM, error) {
-	if m.hotVM == nil {
+	if m.hotVM == nil || m.needRestartHotVM {
+		m.needRestartHotVM = false
 		vmx, err := m.startVM(contract)
 		if err != nil {
 			return nil, err
@@ -110,7 +113,8 @@ func (m *vmMonitor) Stop() {
 			return
 		}
 		m.hotVM.Stop()
-		m.hotVM = nil
+		m.needRestartHotVM = true
+		//m.hotVM = nil
 	}
 }
 
