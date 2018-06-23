@@ -35,13 +35,6 @@ const (
 	CommitteeMode           = "committee"
 )
 
-// var
-var (
-	readTimeout  = 2 * time.Second
-	writeTimeout = 2 * time.Second
-	dialTimeout  = time.Second
-)
-
 // NetMode is the bootnode's mode.
 var NetMode string
 
@@ -169,6 +162,7 @@ func (bn *BaseNetwork) Broadcast(msg *message.Message) {
 			return true
 		}
 		msg.To = node.Addr()
+		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
 		if !bn.isRecentSent(msg) {
 			bn.broadcast(msg)
 			prometheusSendBlockTx(msg)
@@ -219,17 +213,20 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 			if conn != nil {
 				conn.Close()
 			}
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: node.Addr()})
 			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
 		if conn != nil {
 			go bn.receiveLoop(conn)
-			peer = newPeer(conn, bn.localNode.Addr(), nodeStr)
+			peer := newPeer(conn, bn.localNode.Addr(), nodeStr)
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][3], Log: node.Addr()})
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][4], Log: strconv.Itoa(len(bn.peers.peers))})
 			bn.peers.Set(node, peer)
 		}
 	}
 
-	return peer.conn, nil
+	return bn.peers.Get(node).conn, nil
 }
 
 // Send sends msg to msg.To.
@@ -245,6 +242,7 @@ func (bn *BaseNetwork) Send(msg *message.Message) {
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
+	bn.log.D("[net] send msg: type= %v, from=%v,to=%v,time=%v", msg.ReqType, msg.From, msg.To, msg.Time)
 	req := newRequest(Message, bn.localNode.Addr(), data)
 	conn, err := bn.dial(msg.To)
 	if err != nil {
@@ -306,16 +304,13 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 		})
 		for scanner.Scan() {
 			req := new(Request)
-			err := req.Unpack(bytes.NewReader(scanner.Bytes()))
-			if err != nil {
-				bn.log.E("[net] unpack request failed. err=%v", err)
-				return
-			}
+			req.Unpack(bytes.NewReader(scanner.Bytes()))
 			req.handle(bn, conn)
 		}
 		if err := scanner.Err(); err != nil {
 			bn.log.E("[net] invalid data packets: %v", err)
 		}
+		// EOF also need to return.
 		return
 	}
 }
