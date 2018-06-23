@@ -180,16 +180,32 @@ func (sync *SyncImpl) requestBlockLoop() {
 			if !ok {
 				return
 			}
+			var err error
+
 			var rh message.RequestBlock
-			rh.Decode(req.Body)
+			err = rh.Decode(req.Body)
+			if err != nil {
+				continue
+			}
 
 			chain := sync.blockCache.LongestChain()
 
-			//todo 需要确定如何获取
-			block := chain.GetBlockByNumber(rh.BlockNumber)
-			if block == nil {
-				continue
+			b := make([]byte, 0)
+			if rh.BlockNumber < chain.Length() { // 加速block的获取，减少encode
+				b, err = chain.GetBlockByteByNumber(rh.BlockNumber)
+				if err != nil {
+					log.Log.E("Database error: block empty %v", rh.BlockNumber)
+					continue
+				}
+			} else {
+				block := chain.GetBlockByNumber(rh.BlockNumber)
+				if block == nil {
+					log.Log.E("Cache block empty %v", rh.BlockNumber)
+					continue
+				}
+				b = block.Encode()
 			}
+
 			//sync.log.I("requset block - BlockNumber: %v", rh.BlockNumber)
 			//sync.log.I("response block - BlockNumber: %v, witness: %v", block.Head.Number, block.Head.Witness)
 			//回复当前高度的块
@@ -198,7 +214,7 @@ func (sync *SyncImpl) requestBlockLoop() {
 				From:    req.To,
 				To:      req.From,
 				ReqType: int32(ReqSyncBlock),
-				Body:    block.Encode(),
+				Body:    b,
 			}
 			sync.router.Send(resMsg)
 		case <-sync.exitSignal:

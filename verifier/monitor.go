@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
+	"runtime/debug"
 )
 
 var ErrForbiddenCall = errors.New("forbidden call")
@@ -141,7 +142,16 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 	}()
 	if m.hotVM != nil && contractPrefix == m.hotVM.Contract().Info().Prefix {
 		rtn, pool2, err := m.hotVM.Call(ctx, pool, methodName, args...)
-		gas := m.hotVM.PC()
+
+		var gas uint64
+		if m.hotVM == nil {
+			debug.PrintStack()
+			gas = 0
+		} else {
+			gas = m.hotVM.PC()
+		}
+		m.hotVM.IsRunning = false
+
 		return rtn, pool2, gas, err
 	}
 	holder, ok := m.vms[contractPrefix]
