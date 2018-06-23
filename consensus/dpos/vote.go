@@ -36,7 +36,7 @@ func (p *DPoS) VoteForWitness(voter account.Account, witnessId string, voteType 
 		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),
 	}
-	network.Route.Send(req)
+	network.Route.Send(&req)
 }
 
 // WitnessJoin: 生成一个witness加入交易并发送，测试版本中简单设置为广播一个消息，后续再对接
@@ -50,13 +50,13 @@ func (p *DPoS) WitnessJoin(witness account.Account) {
 		ReqType: reqTypeVoteTest,
 		Body:    []byte(reqString),
 	}
-	network.Route.Send(req)
+	network.Route.Send(&req)
 }
 
 // WitnessQuit: 生成一个witness退出交易并发送，测试版本中简单设置为广播一个消息，后续再对接
 func (p *DPoS) WitnessQuit(witness account.Account) {
 	reqString := "Quit " + witness.GetId()
-	req := message.Message{
+	req := &message.Message{
 		Time: time.Now().Unix(),
 		From: witness.GetId(),
 		//To:      p.DPoSSuperMember,
