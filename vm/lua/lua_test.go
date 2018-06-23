@@ -394,7 +394,7 @@ end--f
 		So(contract.info.GasLimit, ShouldEqual, 11)
 		So(contract.info.Price, ShouldEqual, 0.0001)
 		fmt.Println(contract.code)
-		So(contract.main, ShouldResemble, Method{"main", 0, 1, vm.Public})
+		So(contract.main, ShouldResemble, Method{"main", 0, 1, vm.Private})
 		//So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2, vm.Public}})
 
 	})

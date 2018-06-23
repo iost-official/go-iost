@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/host"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
@@ -102,6 +103,7 @@ func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context *vm.Context) error {
 
 	p2, err := verb.VerifyContract(txx.Contract, pool.Copy())
 	if err != nil {
+		host.Log(err.Error(), txx.Contract.Info().Prefix)
 		return err
 	}
 	p2.MergeParent()
