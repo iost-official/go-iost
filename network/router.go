@@ -101,8 +101,8 @@ type Router interface {
 	FilteredChan(filter Filter) (chan message.Message, error)
 	Run()
 	Stop()
-	Send(req *message.Message)
-	Broadcast(req *message.Message)
+	Send(req message.Message)
+	Broadcast(req message.Message)
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
 	AskABlock(height uint64, to string) error
@@ -196,7 +196,7 @@ func (r *RouterImpl) receiveLoop() {
 			return
 		case req := <-r.chIn:
 			for i, f := range r.filterList {
-				if f.check(&req) {
+				if f.check(req) {
 					r.filterMap[i] <- req
 				}
 			}
@@ -215,14 +215,14 @@ func (r *RouterImpl) Stop() {
 }
 
 // Send sends a message by router.
-func (r *RouterImpl) Send(req *message.Message) {
+func (r *RouterImpl) Send(req message.Message) {
 	req.TTL = MsgMaxTTL
 
 	r.base.Send(req)
 }
 
 // Broadcast to all known members.
-func (r *RouterImpl) Broadcast(req *message.Message) {
+func (r *RouterImpl) Broadcast(req message.Message) {
 	req.TTL = MsgMaxTTL
 
 	r.base.Broadcast(req)
@@ -263,11 +263,50 @@ func (r *RouterImpl) QueryBlockHash(start uint64, end uint64) error {
 //     2. if one of those is not nil, filter as it is
 //     3. if both of those list are not nil, filter as white list
 type Filter struct {
+	WhiteList  []message.Message
+	BlackList  []message.Message
+	RejectType []ReqType
 	AcceptType []ReqType
 }
 
-func (f *Filter) check(req *message.Message) bool {
-	return reqTypeContain(req.ReqType, f.AcceptType)
+func (f *Filter) check(req message.Message) bool {
+	var memberCheck, typeCheck byte
+	if f.WhiteList == nil && f.BlackList == nil {
+		memberCheck = byte(0)
+	} else if f.WhiteList != nil {
+		memberCheck = byte(1)
+	} else {
+		memberCheck = byte(2)
+	}
+	if f.AcceptType == nil && f.RejectType == nil {
+		typeCheck = byte(0)
+	} else if f.AcceptType != nil {
+		typeCheck = byte(1)
+	} else {
+		typeCheck = byte(2)
+	}
+
+	var m, t bool
+
+	switch memberCheck {
+	case 0:
+		m = true
+	case 1:
+		m = memberContain(req.From, f.WhiteList)
+	case 2:
+		m = !memberContain(req.From, f.BlackList)
+	}
+
+	switch typeCheck {
+	case 0:
+		t = true
+	case 1:
+		t = reqTypeContain(req.ReqType, f.AcceptType)
+	case 2:
+		t = !reqTypeContain(req.ReqType, f.RejectType)
+	}
+
+	return m && t
 }
 
 func memberContain(a string, c []message.Message) bool {
