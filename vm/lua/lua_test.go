@@ -698,7 +698,13 @@ end`,
 	test2[1] = "ahaha"
 	test2[2] = "ohoho"
 	test["t"] = test2
-	print(ToJson(test))
+	ok, str = ToJson(test)
+	print(str)
+	ok, tab = ParseJson(str)
+	for key, value in pairs(tab) do  
+    	print(key, value)
+	end 
+	
 	return "success"
 end`,
 			main: main,

@@ -193,6 +193,49 @@ func tableIterator(table *lua.LTable) map[string]interface{} {
 	return m
 }
 
+func ParseJson(jsonStr []byte) (*lua.LTable, error) {
+	var mapResult map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonStr), &mapResult); err != nil {
+		return nil, err
+	}
+	//fmt.Println("in ParseJson:", mapResult)
+
+	return mapIterator(mapResult), nil
+}
+
+func mapIterator(m map[string]interface{}) *lua.LTable {
+	lt := lua.LTable{}
+
+	for k, v := range m {
+		var l lua.LValue
+		switch v.(type) {
+		case float64:
+			l = lua.LNumber(v.(float64))
+		case string:
+			l = lua.LString(v.(string))
+		case bool:
+			l = lua.LBool(v.(bool))
+		case map[string]interface{}:
+			l = mapIterator(v.(map[string]interface{}))
+		}
+		//fmt.Println(k, l)
+		setTable(&lt, k, l)
+	}
+	//lt.ForEach(func(value lua.LValue, value2 lua.LValue) {
+	//	fmt.Println("in lt:", value, value2)
+	//})
+	return &lt
+}
+
+func setTable(lt *lua.LTable, k string, v lua.LValue) {
+	i, err := strconv.Atoi(k)
+	if err == nil {
+		lt.RawSetInt(i, v)
+	} else {
+		lt.RawSetString(k, v)
+	}
+}
+
 func changeToken(pool state.Pool, key, field state.Key, delta float64) error {
 	val0, err := pool.GetHM(state.Key(key), state.Key(field))
 	if err != nil {
