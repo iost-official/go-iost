@@ -103,7 +103,7 @@ func TestRouterImpl_Broadcast(t *testing.T) {
 		}
 	}
 	begin := time.Now().UnixNano()
-	rs[0].Broadcast(m)
+	rs[0].Broadcast(&m)
 	ch1, _ := rs[1].FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
 	ch2, _ := rs[2].FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
 
