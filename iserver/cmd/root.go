@@ -288,7 +288,7 @@ var rootCmd = &cobra.Command{
 			}
 			if bcLen > 0 {
 				state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(bcLen-1)))
-				state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(blk.Hash()))
+				state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(blk.HeadHash()))
 				state.StdPool.Flush()
 			}
 		}

@@ -85,7 +85,7 @@ func TestChainImpl(t *testing.T) {
 			So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
 			So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 
-			block = bc.GetBlockByHash(tBlock.Hash())
+			block = bc.GetBlockByHash(tBlock.HeadHash())
 			So(block, ShouldNotBeNil)
 			//fmt.Printf("###Top() block = %s\n", block)
 			So(block.Head.Version, ShouldEqual, 2)

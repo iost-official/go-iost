@@ -86,7 +86,7 @@ func Instance() (Chain, error) {
 // Push 保存一个block到实例
 func (b *ChainImpl) Push(block *Block) error {
 
-	hash := block.Hash()
+	hash := block.HeadHash()
 	number := uint64(block.Head.Number)
 
 	//存储区块hash
@@ -115,7 +115,7 @@ func (b *ChainImpl) Push(block *Block) error {
 	}
 
 	state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(block.Head.Number)))
-	state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(block.Hash()))
+	state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(block.HeadHash()))
 	state.StdPool.Flush()
 	return nil
 }
