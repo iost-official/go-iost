@@ -315,6 +315,23 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 	}
 	l.APIs = append(l.APIs, Assert)
 
+	var TableToJson = api{
+		name: "ToJson",
+		function: func(L *lua.LState) int {
+			L.PCount += 100
+			table := L.ToTable(1)
+			jsonStr, err := host.TableToJson(table)
+			if err != nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LTrue)
+			L.Push(lua.LString(jsonStr))
+			return 2
+		},
+	}
+	l.APIs = append(l.APIs, TableToJson)
+
 	var Call = api{
 		name: "Call",
 		function: func(L *lua.LState) int {
