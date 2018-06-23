@@ -50,6 +50,16 @@ func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRe
 		return &ret, fmt.Errorf("Parse:%v", err)
 	}
 	mtx := tx.NewTx(nonce, contract)
+	sig, err := tx.SignContract(mtx, acc)
+	if !mtx.VerifySigner(sig) {
+		return &ret, fmt.Errorf("VerifySigner:%v", err)
+	}
+	mtx.Signs = append(mtx.Signs, sig)
+
+	if err != nil {
+		return &ret, fmt.Errorf("SignContract:%v", err)
+	}
+
 	stx, err := tx.SignTx(mtx, acc)
 	if err != nil {
 		return &ret, fmt.Errorf("SignTx:%v", err)
@@ -71,20 +81,16 @@ func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRe
 	if router == nil {
 		panic(fmt.Errorf("network.Router shouldn't be nil"))
 	}
-	broadTx := message.Message{
+	broadTx := &message.Message{
 		Body:    stx.Encode(),
 		ReqType: int32(network.ReqPublishTx),
 	}
-	go func() {
-		router.Broadcast(broadTx)
-	}()
+	router.Broadcast(broadTx)
 	Cons := consensus.Cons
 	if Cons == nil {
 		panic(fmt.Errorf("Consensus is nil"))
 	}
-	go func() {
-		txpool.TxPoolS.AddTransaction(broadTx)
-	}()
+	txpool.TxPoolS.AddTransaction(broadTx)
 	//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
 	ret.Code = 0
 	ret.Hash = stx.Hash()
@@ -116,20 +122,16 @@ func (s *RpcServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRe
 	if router == nil {
 		panic(fmt.Errorf("network.Router shouldn't be nil"))
 	}
-	broadTx := message.Message{
+	broadTx := &message.Message{
 		Body:    tx1.Encode(),
 		ReqType: int32(network.ReqPublishTx),
 	}
-	go func() {
-		router.Broadcast(broadTx)
-	}()
+	router.Broadcast(broadTx)
 	Cons := consensus.Cons
 	if Cons == nil {
 		panic(fmt.Errorf("Consensus is nil"))
 	}
-	go func() {
-		txpool.TxPoolS.AddTransaction(broadTx)
-	}()
+	txpool.TxPoolS.AddTransaction(broadTx)
 	//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
 	ret.Code = 0
 	ret.Hash = tx1.Hash()

@@ -123,7 +123,6 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	case Message:
 		appReq := &message.Message{}
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
-			base.log.D("[net] msg from =%v, to = %v, typ = %v,  ttl = %v", appReq.From, appReq.To, appReq.ReqType, appReq.TTL)
 			base.RecvCh <- *appReq
 			prometheusReceivedBlockTx(appReq)
 
@@ -146,7 +145,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 
 			prometheusReceivedBlockTx(appReq)
 			if appReq.ReqType != int32(ReqDownloadBlock) {
-				base.Broadcast(*appReq)
+				base.Broadcast(appReq)
 			}
 		}
 		r.msgHandle(base)
