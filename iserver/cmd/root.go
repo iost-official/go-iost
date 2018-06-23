@@ -268,8 +268,8 @@ var rootCmd = &cobra.Command{
 		if bcLen > resBlockLength {
 			var blk *block.Block
 			for i := resBlockLength; i < bcLen; i++ {
-				log.Log.I("Update StatePool for number:", i)
-				blk = blockChain.GetBlockByNumber(i - 1)
+				log.Log.I("Update StatePool for number: %v", i)
+				blk = blockChain.GetBlockByNumber(i)
 				if i == 0 {
 					newPool, err := verifier.ParseGenesis(blk.Content[0].Contract, state.StdPool)
 					if err != nil {

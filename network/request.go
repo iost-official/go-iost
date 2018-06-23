@@ -146,7 +146,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 
 			prometheusReceivedBlockTx(appReq)
 			if appReq.ReqType != int32(ReqDownloadBlock) {
-				base.Broadcast(*appReq)
+				base.Broadcast(appReq)
 			}
 		}
 		r.msgHandle(base)
