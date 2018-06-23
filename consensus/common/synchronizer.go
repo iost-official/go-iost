@@ -188,19 +188,18 @@ func (sync *SyncImpl) requestBlockLoop() {
 				continue
 			}
 
-			chain := sync.blockCache.LongestChain()
-
-			b := make([]byte, 0)
+			chain := sync.blockCache.BlockChain()
+			var b []byte
 			if rh.BlockNumber < chain.Length() { // 加速block的获取，减少encode
-				b, err = chain.GetBlockByteByNumber(rh.BlockNumber)
+				b, err = chain.GetBlockByteByHash(rh.BlockHash)
 				if err != nil {
 					log.Log.E("Database error: block empty %v", rh.BlockNumber)
 					continue
 				}
 			} else {
-				block := chain.GetBlockByNumber(rh.BlockNumber)
-				if block == nil {
-					log.Log.E("Cache block empty %v", rh.BlockNumber)
+				block, err := sync.blockCache.FindBlockInCache(rh.BlockHash)
+				if err != nil{
+					log.Log.E("Block not in cache: %v", rh.BlockNumber)
 					continue
 				}
 				b = block.Encode()
@@ -323,11 +322,25 @@ func (sync *SyncImpl) handleHashResp() {
 				if _, exist := sync.recentAskedBlocks.Load(string(blkHash.Hash)); exist {
 					continue
 				}
-				// TODO: 判断本地是否有这个区块
 				//sync.log.I("check hash:%s, height:%v", blkHash.Hash, blkHash.Height)
 				if !sync.blockCache.CheckBlock(blkHash.Hash) {
 					//sync.log.I("check hash success")
-					sync.router.AskABlock(blkHash.Height, req.From)
+					blkReq := &message.RequestBlock{
+						BlockHash: blkHash.Hash,
+						BlockNumber: blkHash.Height,
+					}
+					if err != nil {
+						sync.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", blkReq, err)
+						break
+					}
+					reqMsg := message.Message{
+						Time:    time.Now().Unix(),
+						From:    req.To,
+						To:      req.From,
+						ReqType: int32(ReqDownloadBlock),
+						Body:    blkReq.Encode(),
+					}
+					sync.router.Send(reqMsg)
 					sync.recentAskedBlocks.Store(string(blkHash.Hash), time.Now().Unix())
 				}
 			}

@@ -54,7 +54,6 @@ type Network interface {
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
 	QueryBlockHash(start, end uint64) error
-	AskABlock(height uint64, to string) error
 }
 
 // NetConfig defines p2p net config.
@@ -435,19 +434,6 @@ func (bn *BaseNetwork) findNeighbours() {
 	}
 }
 
-// AskABlock asks a node for a block.
-func (bn *BaseNetwork) AskABlock(height uint64, to string) error {
-	msg := message.Message{
-		Body:    common.Uint64ToBytes(height),
-		ReqType: int32(ReqDownloadBlock),
-		From:    bn.localNode.Addr(),
-		Time:    time.Now().UnixNano(),
-		To:      to,
-	}
-	bn.Send(msg)
-	return nil
-}
-
 // QueryBlockHash queries blocks' hash by broadcast.
 func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 	hr := message.BlockHashQuery{Start: start, End: end}
@@ -469,6 +455,7 @@ func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 }
 
 // Download downloads blocks by height.
+// Deprecated: use hash to download blocks now.
 func (bn *BaseNetwork) Download(start, end uint64) error {
 	for i := start; i <= end; i++ {
 		bn.DownloadHeights.Store(uint64(i), 0)
