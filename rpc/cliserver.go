@@ -81,7 +81,7 @@ func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRe
 	if router == nil {
 		panic(fmt.Errorf("network.Router shouldn't be nil"))
 	}
-	broadTx := &message.Message{
+	broadTx := message.Message{
 		Body:    stx.Encode(),
 		ReqType: int32(network.ReqPublishTx),
 	}
@@ -90,7 +90,7 @@ func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRe
 	if Cons == nil {
 		panic(fmt.Errorf("Consensus is nil"))
 	}
-	txpool.TxPoolS.AddTransaction(broadTx)
+	txpool.TxPoolS.AddTransaction(&broadTx)
 	//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
 	ret.Code = 0
 	ret.Hash = stx.Hash()
@@ -122,7 +122,7 @@ func (s *RpcServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRe
 	if router == nil {
 		panic(fmt.Errorf("network.Router shouldn't be nil"))
 	}
-	broadTx := &message.Message{
+	broadTx := message.Message{
 		Body:    tx1.Encode(),
 		ReqType: int32(network.ReqPublishTx),
 	}
@@ -131,7 +131,7 @@ func (s *RpcServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRe
 	if Cons == nil {
 		panic(fmt.Errorf("Consensus is nil"))
 	}
-	txpool.TxPoolS.AddTransaction(broadTx)
+	txpool.TxPoolS.AddTransaction(&broadTx)
 	//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
 	ret.Code = 0
 	ret.Hash = tx1.Hash()

@@ -40,13 +40,14 @@ var NetMode string
 
 // Network defines network's API.
 type Network interface {
-	Broadcast(req *message.Message)
-	Send(req *message.Message)
+	Broadcast(req message.Message)
+	Send(req message.Message)
 	Listen(port uint16) (<-chan message.Message, error)
 	Close(port uint16) error
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
 	QueryBlockHash(start, end uint64) error
+	AskABlock(height uint64, to string) error
 }
 
 // NetConfig defines p2p net config.
@@ -123,7 +124,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
 	bn.log.D("[net] listening %v", bn.localNode)
 	var err error
-	bn.listener, err = net.Listen("tcp4", "0.0.0.0:"+strconv.Itoa(int(bn.localNode.TCP)))
+	bn.listener, err = net.Listen("tcp", "0.0.0.0:"+strconv.Itoa(int(bn.localNode.TCP)))
 	if err != nil {
 		return bn.RecvCh, errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
 	}
@@ -149,7 +150,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 }
 
 // Broadcast broadcasts msg to all node in the node table.
-func (bn *BaseNetwork) Broadcast(msg *message.Message) {
+func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	if msg.From == "" {
 		msg.From = bn.localNode.Addr()
 	}
@@ -171,7 +172,7 @@ func (bn *BaseNetwork) Broadcast(msg *message.Message) {
 }
 
 // broadcast broadcasts to all neighbours, stop broadcast when msg already broadcast
-func (bn *BaseNetwork) broadcast(msg *message.Message) {
+func (bn *BaseNetwork) broadcast(msg message.Message) {
 	if msg.To == "" {
 		return
 	}
@@ -207,7 +208,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 	peer := bn.peers.Get(node)
 	if peer == nil {
 		bn.log.D("[net] dial to %v", node.Addr())
-		conn, err := net.Dial("tcp4", node.Addr())
+		conn, err := net.Dial("tcp", node.Addr())
 		if err != nil {
 			if conn != nil {
 				conn.Close()
@@ -229,7 +230,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 }
 
 // Send sends msg to msg.To.
-func (bn *BaseNetwork) Send(msg *message.Message) {
+func (bn *BaseNetwork) Send(msg message.Message) {
 	//if bn.isRecentSent(msg) {
 	//	bn.log.D("[net] recent send")
 	//	return
@@ -427,6 +428,19 @@ func (bn *BaseNetwork) findNeighbours() {
 	}
 }
 
+// AskABlock asks a node for a block.
+func (bn *BaseNetwork) AskABlock(height uint64, to string) error {
+	msg := message.Message{
+		Body:    common.Uint64ToBytes(height),
+		ReqType: int32(ReqDownloadBlock),
+		From:    bn.localNode.Addr(),
+		Time:    time.Now().UnixNano(),
+		To:      to,
+	}
+	bn.Send(msg)
+	return nil
+}
+
 // QueryBlockHash queries blocks' hash by broadcast.
 func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 	hr := message.BlockHashQuery{Start: start, End: end}
@@ -435,7 +449,7 @@ func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 		bn.log.D("marshal BlockHashQuery failed. err=%v", err)
 		return err
 	}
-	msg := &message.Message{
+	msg := message.Message{
 		Body:    bytes,
 		ReqType: int32(BlockHashQuery),
 		TTL:     MsgMaxTTL,
@@ -448,7 +462,6 @@ func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 }
 
 // Download downloads blocks by height.
-// Deprecated: use hash to download blocks now.
 func (bn *BaseNetwork) Download(start, end uint64) error {
 	for i := start; i <= end; i++ {
 		bn.DownloadHeights.Store(uint64(i), 0)
@@ -466,7 +479,7 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			if retryTimes > MaxDownloadRetry {
 				return true
 			}
-			msg := &message.Message{
+			msg := message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
 				TTL:     MsgMaxTTL,
@@ -567,7 +580,7 @@ func (bn *BaseNetwork) recentSentLoop() {
 	}
 }
 
-func (bn *BaseNetwork) isRecentSent(msg *message.Message) bool {
+func (bn *BaseNetwork) isRecentSent(msg message.Message) bool {
 	msg.TTL = 0
 	data, err := msg.Marshal(nil)
 	if err != nil {
@@ -605,7 +618,7 @@ func (bn *BaseNetwork) isInCommittee(from []byte) bool {
 	return false
 }
 
-func prometheusSendBlockTx(req *message.Message) {
+func prometheusSendBlockTx(req message.Message) {
 	if req.ReqType == int32(ReqPublishTx) {
 		sendTransactionSize.Observe(float64(req.Size()))
 		sendTransactionCount.Inc()

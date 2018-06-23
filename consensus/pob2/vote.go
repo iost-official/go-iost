@@ -29,7 +29,7 @@ func (p *PoB) VoteForWitness(voter account.Account, witnessId string, voteType b
 	} else {
 		reqString = "Vote Against " + voter.GetId() + " " + witnessId
 	}
-	req := &message.Message{
+	req := message.Message{
 		Time:    time.Now().Unix(),
 		From:    voter.GetId(),
 		To:      "ALL",
@@ -42,7 +42,7 @@ func (p *PoB) VoteForWitness(voter account.Account, witnessId string, voteType b
 // WitnessJoin: 生成一个witness加入交易并发送，测试版本中简单设置为广播一个消息，后续再对接
 func (p *PoB) WitnessJoin(witness account.Account) {
 	reqString := "Join " + witness.GetId()
-	req := &message.Message{
+	req := message.Message{
 		Time:    time.Now().Unix(),
 		From:    witness.GetId(),
 		To:      "ALL",
@@ -55,7 +55,7 @@ func (p *PoB) WitnessJoin(witness account.Account) {
 // WitnessQuit: 生成一个witness退出交易并发送，测试版本中简单设置为广播一个消息，后续再对接
 func (p *PoB) WitnessQuit(witness account.Account) {
 	reqString := "Quit " + witness.GetId()
-	req := &message.Message{
+	req := message.Message{
 		Time:    time.Now().Unix(),
 		From:    witness.GetId(),
 		To:      "ALL",
