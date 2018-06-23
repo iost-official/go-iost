@@ -136,7 +136,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 				time.Sleep(2 * time.Second)
 				continue
 			}
-			go bn.receiveLoop(conn)
+			// go bn.receiveLoop(conn)
 		}
 	}()
 	//register
