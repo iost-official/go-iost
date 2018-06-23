@@ -92,7 +92,7 @@ const (
 	BlockHashResponse
 	ReqSyncBlock
 
-	MsgMaxTTL = 1
+	MsgMaxTTL = 2
 )
 
 // Router sends specific request and response to other node.
