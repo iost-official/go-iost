@@ -65,19 +65,19 @@ func TestBaseNetwork_recentSentLoop(t *testing.T) {
 }
 
 func TestBaseNetwork_isRecentSent(t *testing.T) {
-	Convey("isRecentSeDisconnectnt", t, func() {
+	Convey("isRecentSent", t, func() {
 		cleanLDB()
 		baseNet, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
 		msg := message.Message{From: "sender", Time: time.Now().UnixNano(), To: "192.168.1.34:20003", Body: []byte{22, 11, 125}, TTL: 2}
-		is := baseNet.isRecentSent(msg)
+		is := baseNet.isRecentSent(&msg)
 		So(is, ShouldBeFalse)
-		is = baseNet.isRecentSent(msg)
+		is = baseNet.isRecentSent(&msg)
 		So(is, ShouldBeTrue)
 		msg.TTL = msg.TTL - 1
-		is = baseNet.isRecentSent(msg)
+		is = baseNet.isRecentSent(&msg)
 		So(is, ShouldBeTrue)
 		msg.To = msg.To + msg.To
-		is = baseNet.isRecentSent(msg)
+		is = baseNet.isRecentSent(&msg)
 		So(is, ShouldBeFalse)
 		cleanLDB()
 	})

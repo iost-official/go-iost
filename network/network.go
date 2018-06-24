@@ -186,29 +186,19 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
 	req := newRequest(BroadcastMessage, bn.localNode.Addr(), data)
-	peer, err := bn.dial(msg.To)
+	conn, err := bn.dial(msg.To)
 	if err != nil {
 		bn.log.E("[net] broadcast dial tcp got err:%v", err)
 		bn.nodeTable.Delete([]byte(msg.To))
 		bn.NodeAddedTime.Delete(msg.To)
 		return
 	}
-	//if er := bn.send(conn, req); er != nil {
-	//	bn.peers.RemoveByNodeStr(msg.To)
-	//}
-	if msg.ReqType == int32(ReqSyncBlock) || msg.ReqType == int32(ReqNewBlock) {
-		if er := bn.send(peer.blockConn, req); er != nil {
-			bn.log.D("[net] block conn sent")
-			bn.peers.RemoveByNodeStr(msg.To)
-		}
-	} else {
-		if er := bn.send(peer.conn, req); er != nil {
-			bn.peers.RemoveByNodeStr(msg.To)
-		}
+	if er := bn.send(conn, req); er != nil {
+		bn.peers.RemoveByNodeStr(msg.To)
 	}
 }
 
-func (bn *BaseNetwork) dial(nodeStr string) (*Peer, error) {
+func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
 	node, _ := discover.ParseNode(nodeStr)
@@ -218,39 +208,25 @@ func (bn *BaseNetwork) dial(nodeStr string) (*Peer, error) {
 	peer := bn.peers.Get(node)
 	if peer == nil {
 		bn.log.D("[net] dial to %v", node.Addr())
-		conn, blockConn, err := dial(node.Addr())
+		conn, err := net.Dial("tcp", node.Addr())
 		if err != nil {
-			bn.log.E("failed to dial %v", err)
+			if conn != nil {
+				conn.Close()
+			}
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: node.Addr()})
+			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
+			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
-		go bn.receiveLoop(conn)
-		go bn.receiveLoop(blockConn)
-		peer := newPeer(conn, blockConn, bn.localNode.Addr(), nodeStr)
-		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][3], Log: node.Addr()})
-		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][4], Log: strconv.Itoa(len(bn.peers.peers))})
-		bn.peers.Set(node, peer)
+		if conn != nil {
+			go bn.receiveLoop(conn)
+			peer := newPeer(conn, bn.localNode.Addr(), nodeStr)
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][3], Log: node.Addr()})
+			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][4], Log: strconv.Itoa(len(bn.peers.peers))})
+			bn.peers.Set(node, peer)
+		}
 	}
 
-	return bn.peers.Get(node), nil
-}
-
-func dial(nodeAddr string) (net.Conn, net.Conn, error) {
-	conn, err := net.Dial("tcp", nodeAddr)
-	if err != nil {
-		if conn != nil {
-			conn.Close()
-		}
-		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: nodeAddr})
-		return nil, nil, fmt.Errorf("dial tcp %v got err:%v", nodeAddr, err)
-	}
-	blockConn, err := net.Dial("tcp", nodeAddr)
-	if err != nil {
-		if conn != nil {
-			conn.Close()
-		}
-		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: nodeAddr})
-		return nil, nil, fmt.Errorf("dial tcp %v got err:%v", nodeAddr, err)
-	}
-	return conn, blockConn, nil
+	return bn.peers.Get(node).conn, nil
 }
 
 // Send sends msg to msg.To.
@@ -268,7 +244,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	}
 	bn.log.D("[net] send msg: type= %v, from=%v,to=%v,time=%v", msg.ReqType, msg.From, msg.To, msg.Time)
 	req := newRequest(Message, bn.localNode.Addr(), data)
-	peer, err := bn.dial(msg.To)
+	conn, err := bn.dial(msg.To)
 	if err != nil {
 		bn.nodeTable.Delete([]byte(msg.To))
 		bn.NodeAddedTime.Delete(msg.To)
@@ -276,14 +252,8 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		return
 	}
 
-	if msg.ReqType == int32(ReqSyncBlock) || msg.ReqType == int32(ReqNewBlock) {
-		if er := bn.send(peer.blockConn, req); er != nil {
-			bn.peers.RemoveByNodeStr(msg.To)
-		}
-	} else {
-		if er := bn.send(peer.conn, req); er != nil {
-			bn.peers.RemoveByNodeStr(msg.To)
-		}
+	if er := bn.send(conn, req); er != nil {
+		bn.peers.RemoveByNodeStr(msg.To)
 	}
 
 	prometheusSendBlockTx(msg)
@@ -422,7 +392,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 func (bn *BaseNetwork) registerLoop() {
 	for {
 		if bn.localNode.TCP != RegisterServerPort && bn.regAddr != "" {
-			peer, err := bn.dial(bn.regAddr)
+			conn, err := bn.dial(bn.regAddr)
 			if err != nil {
 				bn.log.E("[net] failed to connect boot node, err:%v", err)
 				time.Sleep(CheckKnownNodeInterval * time.Second)
@@ -430,7 +400,7 @@ func (bn *BaseNetwork) registerLoop() {
 			}
 			bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), bn.regAddr)
 			req := newRequest(ReqNodeTable, bn.localNode.Addr(), nil)
-			if er := bn.send(peer.conn, req); er != nil {
+			if er := bn.send(conn, req); er != nil {
 				bn.peers.RemoveByNodeStr(bn.regAddr)
 			}
 		}

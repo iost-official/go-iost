@@ -156,7 +156,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 
 		if isValidNode(r, base) {
 			base.putNode(string(r.From))
-			base.peers.SetAddr(string(r.From), newPeer(conn, nil, base.localNode.Addr(), conn.RemoteAddr().String()))
+			base.peers.SetAddr(string(r.From), newPeer(conn, base.localNode.Addr(), conn.RemoteAddr().String()))
 			base.sendNodeTable(r.From, conn)
 		} else {
 			conn.Close()
