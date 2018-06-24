@@ -1,7 +1,6 @@
 package network
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
@@ -21,6 +20,7 @@ import (
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network/discover"
 	"github.com/iost-official/prototype/params"
+	"io"
 )
 
 // const
@@ -284,35 +284,76 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 	}
 	return err
 }
+func (bn *BaseNetwork) readMsg(conn net.Conn) ([]byte, error) {
 
+	length := int(0)
+	revHL := make([]byte, 4)
+
+	for {
+		conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+		if _, err := io.ReadFull(conn, revHL); err != nil {
+			return nil, err
+		}
+
+		if !isNetVersionMatch(revHL) {
+			return nil, errors.New("[net] Receive head error")
+		}
+
+		revHL = []byte{}
+		if _, err := io.ReadFull(conn, revHL); err != nil {
+			return nil, err
+		}
+
+		if err := binary.Read(bytes.NewReader(revHL), binary.BigEndian, &length); err != nil {
+			return nil, err
+		}
+
+		rbuf := make([]byte, length)
+		var n int
+		var err error
+		var rLen int
+
+		for {
+
+			if n, err = io.ReadFull(conn, rbuf[rLen:]); err != nil {
+				return nil, err
+			}
+
+			if n != len(rbuf) {
+				rLen += n
+				continue
+			} else {
+				break
+			}
+
+		}
+
+		return rbuf, nil
+	}
+
+}
 func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 	defer conn.Close()
+
 	for {
-		scanner := bufio.NewScanner(conn)
-		scanner.Buffer([]byte{}, bufio.MaxScanTokenSize*100)
-		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-			if !atEOF && isNetVersionMatch(data) {
-				if len(data) > 8 {
-					length := int32(0)
-					binary.Read(bytes.NewReader(data[4:8]), binary.BigEndian, &length)
-					if int(length)+8 <= len(data) {
-						return int(length) + 8, data[:int(length)+8], nil
-					}
-				}
-			}
+
+		buf, err := bn.readMsg(conn)
+		if err != nil {
+			log.Log.E("[net] readMsg error")
 			return
-		})
-		for scanner.Scan() {
+		}
+
+		go func() {
 			req := new(Request)
-			req.Unpack(bytes.NewReader(scanner.Bytes()))
+			if err := req.Unpack(bytes.NewReader(buf)); err != nil {
+				log.Log.E("[net] req.Unpack error")
+				return
+			}
+
 			req.handle(bn, conn)
-		}
-		if err := scanner.Err(); err != nil {
-			bn.log.E("[net] invalid data packets: %v", err)
-		}
-		return
-		// EOF also need to return.
+		}()
 	}
+
 }
 
 // AllNodesExcludeAddr returns all the known node in the network.
