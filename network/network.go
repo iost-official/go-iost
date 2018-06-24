@@ -186,7 +186,7 @@ func (bn *BaseNetwork) randomBroadcast(msg message.Message) {
 		}
 		msg.To = node.Addr()
 		rnd := rand.Float64()
-		if !bn.isRecentSent(msg) && rnd > RndBcastThreshold {
+		if rnd > RndBcastThreshold && !bn.isRecentSent(msg) {
 			bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
 			bn.broadcast(msg)
 			prometheusSendBlockTx(msg)
