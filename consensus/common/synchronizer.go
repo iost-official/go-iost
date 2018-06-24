@@ -157,16 +157,28 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
-		sync.router.QueryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
+		need := false
 		for i := startNumber; i < startNumber+uint64(MaxBlockHashQueryNumber); i++ {
-			sync.requestMap.LoadOrStore(i, true)
+			_, ok := sync.requestMap.LoadOrStore(i, true)
+			if !ok {
+				need = true
+			}
+		}
+		if need {
+			sync.router.QueryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
 		}
 		startNumber += uint64(MaxBlockHashQueryNumber)
 	}
 	if startNumber <= endNumber {
-		sync.router.QueryBlockHash(startNumber, endNumber)
-		for i := startNumber; i <= endNumber; i++ {
-			sync.requestMap.LoadOrStore(i, true)
+		need := false
+		for i := startNumber; i < endNumber; i++ {
+			_, ok := sync.requestMap.LoadOrStore(i, true)
+			if !ok {
+				need = true
+			}
+		}
+		if need {
+			sync.router.QueryBlockHash(startNumber, endNumber)
 		}
 	}
 	return nil
@@ -208,7 +220,7 @@ func (sync *SyncImpl) requestBlockLoop() {
 			//sync.log.I("requset block - BlockNumber: %v", rh.BlockNumber)
 			//sync.log.I("response block - BlockNumber: %v, witness: %v", block.Head.Number, block.Head.Witness)
 			//回复当前高度的块
-			resMsg := &message.Message{
+			resMsg := message.Message{
 				Time:    time.Now().Unix(),
 				From:    req.To,
 				To:      req.From,
@@ -287,7 +299,7 @@ func (sync *SyncImpl) handleHashQuery() {
 				sync.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
 				break
 			}
-			resMsg := &message.Message{
+			resMsg := message.Message{
 				Time:    time.Now().Unix(),
 				From:    req.To,
 				To:      req.From,
@@ -333,7 +345,7 @@ func (sync *SyncImpl) handleHashResp() {
 						sync.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", blkReq, err)
 						break
 					}
-					reqMsg := &message.Message{
+					reqMsg := message.Message{
 						Time:    time.Now().Unix(),
 						From:    req.To,
 						To:      req.From,
