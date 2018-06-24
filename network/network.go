@@ -316,7 +316,11 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 }
 
 func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
-	defer conn.Close()
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+	}()
 	for {
 		scanner := bufio.NewScanner(conn)
 		scanner.Buffer([]byte{}, bufio.MaxScanTokenSize*100)
