@@ -33,6 +33,7 @@ const (
 	RegisterServerPort      = 30304
 	PublicMode              = "public"
 	CommitteeMode           = "committee"
+	RndBcastThreshold       = 0.5
 )
 
 // NetMode is the bootnode's mode.
@@ -171,6 +172,29 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	})
 }
 
+func (bn *BaseNetwork) randomBroadcast(msg message.Message) {
+	if msg.From == "" {
+		msg.From = bn.localNode.Addr()
+	}
+	from := msg.From
+
+	bn.neighbours.Range(func(k, v interface{}) bool {
+		node := v.(*discover.Node)
+		if node.Addr() == from {
+			return true
+		}
+		msg.To = node.Addr()
+		rand.Seed(time.Now().Unix())
+		rnd := rand.Float64()
+		if !bn.isRecentSent(msg) && rnd > RndBcastThreshold {
+			bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
+			bn.broadcast(msg)
+			prometheusSendBlockTx(msg)
+		}
+		return true
+	})
+}
+
 // broadcast broadcasts to all neighbours, stop broadcast when msg already broadcast
 func (bn *BaseNetwork) broadcast(msg message.Message) {
 	if msg.To == "" {
@@ -221,6 +245,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (*Peer, error) {
 		conn, blockConn, err := dial(node.Addr())
 		if err != nil {
 			bn.log.E("failed to dial %v", err)
+			return nil, err
 		}
 		go bn.receiveLoop(conn)
 		go bn.receiveLoop(blockConn)
@@ -534,7 +559,7 @@ func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 		Time:    time.Now().UnixNano(),
 	}
 	bn.log.D("[net] query block hash. start=%v, end=%v, from=%v", start, end, bn.localNode.Addr())
-	bn.Broadcast(msg)
+	bn.randomBroadcast(msg)
 	return nil
 }
 
