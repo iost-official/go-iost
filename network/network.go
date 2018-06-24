@@ -316,40 +316,40 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 }
 func (bn *BaseNetwork) readMsg(conn net.Conn) ([]byte, error) {
 
-	length := int(0)
-	revHL := make([]byte, 4)
-
 	for {
-		conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
-		if _, err := io.ReadFull(conn, revHL); err != nil {
+		//conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+		length := int32(0)
+		revH := make([]byte, 4)
+		revL := make([]byte, 4)
+
+		if _, err := io.ReadFull(conn, revH); err != nil {
 			return nil, err
 		}
 
-		if !isNetVersionMatch(revHL) {
+		if !isNetVersionMatch(revH) {
 			return nil, errors.New("[net] Receive head error")
 		}
 
-		revHL = []byte{}
-		if _, err := io.ReadFull(conn, revHL); err != nil {
+		if _, err := io.ReadFull(conn, revL); err != nil {
 			return nil, err
 		}
 
-		if err := binary.Read(bytes.NewReader(revHL), binary.BigEndian, &length); err != nil {
+		if err := binary.Read(bytes.NewReader(revL), binary.BigEndian, &length); err != nil {
 			return nil, err
 		}
 
-		rbuf := make([]byte, length)
+		rbuf := make([]byte, length+8)
 		var n int
 		var err error
 		var rLen int
 
 		for {
 
-			if n, err = io.ReadFull(conn, rbuf[rLen:]); err != nil {
+			if n, err = io.ReadFull(conn, rbuf[rLen+8:]); err != nil {
 				return nil, err
 			}
 
-			if n != len(rbuf) {
+			if n != len(rbuf)-8 {
 				rLen += n
 				continue
 			} else {
@@ -357,6 +357,9 @@ func (bn *BaseNetwork) readMsg(conn net.Conn) ([]byte, error) {
 			}
 
 		}
+
+		copy(rbuf[0:4], revH)
+		copy(rbuf[4:8], revL)
 
 		return rbuf, nil
 	}
@@ -373,7 +376,7 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 
 		buf, err := bn.readMsg(conn)
 		if err != nil {
-			log.Log.E("[net] readMsg error")
+			log.Log.E("[net] readMsg error:%v", err)
 			return
 		}
 
