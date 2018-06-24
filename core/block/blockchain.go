@@ -166,6 +166,15 @@ func (b *ChainImpl) Top() *Block {
 	}
 }
 
+func (b *ChainImpl) GetHashByNumber(number uint64) []byte {
+	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
+	if err != nil {
+		log.Log.E("Get block hash error: %v number: %v", err, number)
+		return nil
+	}
+	return hash
+}
+
 // GetBlockByNumber 通过区块编号查询块
 func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 
