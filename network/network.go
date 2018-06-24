@@ -408,7 +408,7 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 		req := new(Request)
 		if err := req.Unpack(bytes.NewReader(buf)); err != nil {
 			log.Log.E("[net] req.Unpack error")
-			return
+			continue
 		}
 
 		req.handle(bn, conn)
