@@ -380,15 +380,14 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 			return
 		}
 
-		go func() {
-			req := new(Request)
-			if err := req.Unpack(bytes.NewReader(buf)); err != nil {
-				log.Log.E("[net] req.Unpack error")
-				return
-			}
+		req := new(Request)
+		if err := req.Unpack(bytes.NewReader(buf)); err != nil {
+			log.Log.E("[net] req.Unpack error")
+			return
+		}
 
-			req.handle(bn, conn)
-		}()
+		req.handle(bn, conn)
+
 	}
 
 }
