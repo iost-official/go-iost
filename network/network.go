@@ -178,13 +178,13 @@ func (bn *BaseNetwork) randomBroadcast(msg message.Message) {
 	}
 	from := msg.From
 
+	rand.Seed(time.Now().UnixNano())
 	bn.neighbours.Range(func(k, v interface{}) bool {
 		node := v.(*discover.Node)
 		if node.Addr() == from {
 			return true
 		}
 		msg.To = node.Addr()
-		rand.Seed(time.Now().Unix())
 		rnd := rand.Float64()
 		if !bn.isRecentSent(msg) && rnd > RndBcastThreshold {
 			bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
