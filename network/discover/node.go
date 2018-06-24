@@ -131,6 +131,7 @@ func (n *Node) FindNeighbours(ns []*Node) []*Node {
 
 	disArr := make([]int, len(ns))
 	neighbourKeys := make(map[int]int, 0)
+	rand.Seed(time.Now().UnixNano())
 	for k, v := range ns {
 		if len(neighbours) >= MaxNeighbourNum {
 			return neighbours
@@ -147,7 +148,6 @@ func (n *Node) FindNeighbours(ns []*Node) []*Node {
 			}
 		} else { // for ordinary nodes
 			if spnodes[v.Addr()] {
-				rand.Seed(time.Now().Unix())
 				rnd := rand.Float64()
 				if rnd > Threshold {
 					neighbours = append(neighbours, v)
