@@ -319,7 +319,7 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 	}
 	addrs := make([]string, 0)
 	witness := params.WitnessNodes
-	spnode := params.SpNode
+	spnode := params.SpNodes
 	_, isW := witness[excludeAddr]
 	_, isS := spnode[excludeAddr]
 

@@ -15,7 +15,7 @@ var WitnessNodes = map[string]bool{
 	"127.0.0.1:30301": true,
 }
 
-var SpNode = map[string]bool{
+var SpNodes = map[string]bool{
 	"127.0.0.1:30305": true,
 	//"explorer": true,
 }

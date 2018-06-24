@@ -10,6 +10,7 @@ import (
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/params"
+	"math/rand"
 )
 
 // NodeID is a node's identity.
@@ -118,6 +119,7 @@ func ParseNode(nodeStr string) (node *Node, err error) {
 
 // MaxNeighbourNum is the max count of a node's neighbours.
 const MaxNeighbourNum = 10 //assume 7 witness node and 5 sp node
+const Threshold = 0.3
 // FindNeighbours returns a node's neighbours from a given list of nodes.
 func (n *Node) FindNeighbours(ns []*Node) []*Node {
 	if len(ns) < MaxNeighbourNum {
@@ -125,6 +127,7 @@ func (n *Node) FindNeighbours(ns []*Node) []*Node {
 	}
 	neighbours := make([]*Node, 0)
 	witness := params.WitnessNodes
+	spnodes := params.SpNodes
 
 	disArr := make([]int, len(ns))
 	neighbourKeys := make(map[int]int, 0)
@@ -132,9 +135,25 @@ func (n *Node) FindNeighbours(ns []*Node) []*Node {
 		if len(neighbours) >= MaxNeighbourNum {
 			return neighbours
 		}
-		if witness[v.Addr()] {
-			neighbours = append(neighbours, v)
-			neighbourKeys[k] = 1
+		if witness[n.Addr()] { // for witness nodes
+			if witness[v.Addr()] {
+				neighbours = append(neighbours, v)
+				neighbourKeys[k] = 1
+			}
+		} else if spnodes[n.Addr()] { // for sp nodes
+			if witness[v.Addr()] {
+				neighbours = append(neighbours, v)
+				neighbourKeys[k] = 1
+			}
+		} else { // for ordinary nodes
+			if spnodes[v.Addr()] {
+				rand.Seed(time.Now().Unix())
+				rnd := rand.Float64()
+				if rnd > Threshold {
+					neighbours = append(neighbours, v)
+					neighbourKeys[k] = 1
+				}
+			}
 		}
 		disArr[k] = xorDistance(n.Addr(), v.Addr())
 	}
