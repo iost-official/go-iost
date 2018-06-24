@@ -80,8 +80,8 @@ def stop():
 			a=wCommand("ps -ax|grep iserver|grep -v grep|grep -v iserverd.py|grep -v defunct|awk 'NR==1{print $1}'")
 			wCommand("kill -9 "+a)
 			time.sleep(1)
-			rtn = 0
-	wCommand("redis-cli -h 127.0.0.1 -p 6379 shutdown")
+			rtn = 0 
+	wCommand("redis-cli -h 127.0.0.1 -p 6379 shutdown")	
 	time.sleep(1)
 	wCommand("rm -rf ./blockDB ./txDB/ ./netpath ./test.log ./dump.rdb ./sendtx.log")
         time.sleep(1)
@@ -90,9 +90,9 @@ def stop():
 
 def upgrade():
 	wCommand("cd "+pwd+" && git checkout .")
-	wCommand("cd "+pwd+" && git checkout newtestnet")
+	wCommand("cd "+pwd+" && git checkout testnet")
 	#wCommand("cd "+pwd+" && git checkout -b consensus origin/consensus")
-	wCommand("cd "+pwd+" && git reset --hard origin/newtestnet")
+	wCommand("cd "+pwd+" && git reset --hard origin/testnet")
 	#wCommand("cd "+pwd+" && git reset --hard origin/consensus")
 	wCommand("cd "+pwd+" && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
