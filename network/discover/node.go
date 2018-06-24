@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/prototype/params"
 )
 
 // NodeID is a node's identity.
@@ -116,23 +117,30 @@ func ParseNode(nodeStr string) (node *Node, err error) {
 }
 
 // MaxNeighbourNum is the max count of a node's neighbours.
-const MaxNeighbourNum = 8
-
+const MaxNeighbourNum = 10 //assume 7 witness node and 5 sp node
 // FindNeighbours returns a node's neighbours from a given list of nodes.
 func (n *Node) FindNeighbours(ns []*Node) []*Node {
 	if len(ns) < MaxNeighbourNum {
 		return ns
 	}
 	neighbours := make([]*Node, 0)
+	witness := params.WitnessNodes
+
 	disArr := make([]int, len(ns))
+	neighbourKeys := make(map[int]int, 0)
 	for k, v := range ns {
+		if len(neighbours) >= MaxNeighbourNum {
+			return neighbours
+		}
+		if witness[v.Addr()] {
+			neighbours = append(neighbours, v)
+			neighbourKeys[k] = 1
+		}
 		disArr[k] = xorDistance(n.Addr(), v.Addr())
 	}
 	sortArr := make([]int, len(ns))
 	copy(sortArr, disArr)
 	sort.Ints(sortArr)
-
-	neighbourKeys := make(map[int]int, 0)
 	for _, v := range sortArr {
 		for k, vd := range disArr {
 			if _, ok := neighbourKeys[k]; !ok && v == vd && len(neighbourKeys) < MaxNeighbourNum {
@@ -142,6 +150,9 @@ func (n *Node) FindNeighbours(ns []*Node) []*Node {
 	}
 	for k := range neighbourKeys {
 		if len(neighbours) >= MaxNeighbourNum || n.Addr() == ns[k].Addr() {
+			continue
+		}
+		if neighbourKeys[k] == 1 {
 			continue
 		}
 		neighbours = append(neighbours, ns[k])
