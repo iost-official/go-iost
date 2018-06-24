@@ -309,8 +309,8 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 		}
 		if err := scanner.Err(); err != nil {
 			bn.log.E("[net] invalid data packets: %v", err)
-			return
 		}
+		return
 		// EOF also need to return.
 	}
 }
