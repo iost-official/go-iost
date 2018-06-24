@@ -95,7 +95,7 @@ def upgrade():
 	wCommand("cd "+pwd+" && git reset --hard origin/testnet")
 	#wCommand("cd "+pwd+" && git reset --hard origin/consensus")
 	
-	os.system("cd "+pwd+" && git checkout testnet_bootnode")
+	#os.system("cd "+pwd+" && git checkout testnet_bootnode")
 	
 	wCommand("cd "+pwd+" && git pull")
 	wCommand("cd "+pwd+"/iserver && go install")
