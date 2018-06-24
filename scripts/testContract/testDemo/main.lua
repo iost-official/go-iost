@@ -22,7 +22,15 @@ function clearUserValue()
 	clearTable = {}
 	for i = 0, 9, 1 do
 		userTableKey = string.format("user_value%d", i)
-		Assert(Put(userTableKey, clearTable))
+		Log(string.format("clear user value : %s", userTableKey))
+		print(string.format("clear user value : %s", userTableKey))
+		ok, json = ToJson(clearTable)
+		Assert(ok)
+		Assert(Put(userTableKey, json))
+		ok, tmpValue = Get(userTableKey)
+		Assert(ok)
+		Log(string.format("cleared user value : %v", tmpValue))
+		print(string.format("cleared user value : %v", tmpValue))
 	end
 	return 0
 end--f
@@ -41,18 +49,27 @@ function Bet(account, luckyNumber, coins, nonce)
 	then
 	    return "bet lucky number should be >=0 and <= 9"
 	end
+	Log(string.format("before account = %s, lucky = %d, coin = %f, nonce = %d", account, luckyNumber, coins, nonce))
+	Assert(nonce ~= nil)
 
-	_, maxUserNumber = Get("max_user_number")
-    _, number = Get("user_number")
-    _, totalCoins = Get("total_coins")
+	ok, maxUserNumber = Get("max_user_number")
+	Assert(ok)
+    ok, number = Get("user_number")
+	Assert(ok)
+    ok, totalCoins = Get("total_coins")
+	Assert(ok)
 
-	Log(string.format("account = %s, lucky = %d, coin = %f", account, luckyNumber, coins))
+	Log(string.format("account = %s, lucky = %d, coin = %f, nonce = %d", account, luckyNumber, coins, nonce))
 
 	Assert(Deposit(account, coins) == true)
 	userTableKey = string.format("user_value%d", luckyNumber)
 	Log("after deposit, usertablekey = "..userTableKey)
 
-	_, valTable = Get(userTableKey)
+	ok, json = Get(userTableKey)
+	Assert(ok)
+	Log(string.format("val json: %v", json))
+	ok, valTable = ParseJson(json)
+	Assert(ok)
 	Log(string.format("val table: %v", valTable))
 	if (valTable == nil)
 	then
@@ -65,13 +82,11 @@ function Bet(account, luckyNumber, coins, nonce)
 	valTable[len + 1] = account
 	valTable[len + 2] = coins 
 	valTable[len + 3] = nonce 
-	-- print("len = ", len)
-	-- print(valTable[len + 1])
-	-- print(valTable[len + 2])
-	-- print(valTable[len + 3])
 
 	Log(string.format("val = %v", valTable))
-	Assert(Put(userTableKey, valTable))
+	ok, json = ToJson(valTable)
+	Assert(ok)
+	Assert(Put(userTableKey, json))
 
 	Log("after put table")
 	number = number + 1
@@ -84,7 +99,8 @@ function Bet(account, luckyNumber, coins, nonce)
 	then
 		Log("number enough")
 		blockNumber = Height()
-		_, lastLuckyBlock = Get("last_lucky_block")
+		ok, lastLuckyBlock = Get("last_lucky_block")
+		Assert(ok)
 		pHash = ParentHash()
 
 		if (lastLuckyBlock < 0 or blockNumber - lastLuckyBlock >= 16 or blockNumber > lastLuckyBlock and pHash % 16 == 0)
@@ -107,31 +123,62 @@ function getReward(blockNumber, totalCoins, userNumber)
 	print(string.format("get reward blockNumber = %d, coins = %f, user = %d", blockNumber, totalCoins, userNumber))
 	Log(string.format("get reward blockNumber = %d, coins = %f, user = %d", blockNumber, totalCoins, userNumber))
 	luckyNumber = blockNumber % 10
-	_, round = Get("round")
+	ok, round = Get("round")
+	Assert(ok)
 	round = round + 1
 	roundKey = string.format("round%d", round)
 	roundValue = ""
 
 	userTableKey = string.format("user_value%d", luckyNumber)
-	_, valTable = Get(userTableKey)
+	ok, json = Get(userTableKey)
+	Assert(ok)
+	ok, valTable = ParseJson(json)
+	Assert(ok)
 	if (valTable == nil)
 	then
 		valTable = {}
 	end
+
+	res = {}
+	res["UnwinUserList"] = {}
+	for i = 0, 9, 1 do
+		if (i ~= luckyNumber)
+		then
+			userTableKey = string.format("user_value%d", i)
+			ok, json = Get(userTableKey)
+			Assert(ok)
+			ok, tmpTable = ParseJson(json)
+			Assert(ok)
+
+			tn = #tmpTable
+			kn = math.floor((tn + 1) / 3)
+			for j = 0, kn - 1, 1 do
+				a0 = tmpTable[j * 3 + 1]
+				a1 = tmpTable[j * 3 + 2]
+				a2 = tmpTable[j * 3 + 3]
+				unwinUser = {}
+				unwinUser["Address"] = a0
+				unwinUser["Amount"] = a1
+				unwinUser["Nonce"] = a2
+				l0 = #(res["UnwinUserList"])
+				res["UnwinUserList"][l0 + 1] = unwinUser
+			end
+		end
+	end
+
 	Assert(clearUserValue() == 0)
 
 	totalCoins = totalCoins * 0.95
 	totalVal = 0
 	len = #valTable
 	kNumber = math.floor((len + 1) / 3)
-	print("win len = ", len, ", key len = ", kNumber)
+	Log(string.format("win len = ", len, ", key len = ", kNumber))
 
 	for i = 0, kNumber - 1, 1 do
 		totalVal = totalVal + valTable[i * 3 + 2]
 	end
 	print("totalval = ", totalVal)
 
-	res = {}
 	res["BlockHeight"] = blockNumber
 	res["TotalUserNumber"] = userNumber
 	res["WinUserNumber"] = kNumber
@@ -154,8 +201,8 @@ function getReward(blockNumber, totalCoins, userNumber)
 		res["WinUserList"][len + 1] = winUser
 	end
 
+
 	Log(string.format("res = %v", res))
-	print("res = ", res)
 
 	ok, roundValue = ToJson(res)
 	Assert(ok)
