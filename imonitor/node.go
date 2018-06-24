@@ -24,10 +24,12 @@ func main() {
 	if err != nil {
 		log.Fatal("redis err:\n", err)
 	}
-	err = mInit.Start()
-	if err != nil {
-		log.Fatal("init err:\n", err)
-	}
+	/*
+		err = mInit.Start()
+		if err != nil {
+			log.Fatal("init err:\n", err)
+		}
+	*/
 	http.HandleFunc("/scripts", handleScripts)
 	fmt.Println(http.ListenAndServe("0.0.0.0:30310", nil))
 }
@@ -171,5 +173,5 @@ func init() {
 
 	redis = exec.Command("redis-server")
 	//iserver = exec.Command(scriptPath+"iserverd.py", "start")
-	mInit = exec.Command(scriptPath + "init.sh")
+	//mInit = exec.Command(scriptPath + "init.sh")
 }

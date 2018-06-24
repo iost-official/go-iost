@@ -5,7 +5,7 @@
 -- @return_cnt 0
 -- @publisher walleta
 function main()
-	tx = "2RQqYfcfviN349Zx9q4mTRui6CWCHf3Rihkm7VXWmxfo"
+	tx = "4TKrbjmyoY77F2WdpVn3cxqGWipkMGzGKQ7YcAQ45LtJ"
 	-- tx = "main"
 	a = "gvCQNmkuA6AwdddRMSUg6jr8W7swKWAnhEY3cAthj9bX"
 	-- a = "walleta"
@@ -15,8 +15,10 @@ function main()
 	Assert(ok)
 	Assert(r == -1)
 
+	nonce = 0
     for i=0,48 do
-		ok, r = Call(tx, "Bet", a, i % 10, 1)
+		ok, r = Call(tx, "Bet", a, i % 10, 1, nonce)
+		nonce = nonce + 1
 		Log(string.format("bet %s", tostring(ok)))
 		Log(string.format("bet r = %s", tostring(r)))
 		Assert(ok)
@@ -30,7 +32,8 @@ function main()
 	Assert(r == 49)
 
     for i=0,49 do
-		ok, r = Call(tx, "Bet", a, i % 10, 2)
+		ok, r = Call(tx, "Bet", a, i % 10, 2, nonce)
+		nonce = nonce + 1
 		Assert(ok)
 		Assert(r == 0)
     end
