@@ -33,7 +33,7 @@ const (
 	RegisterServerPort      = 30304
 	PublicMode              = "public"
 	CommitteeMode           = "committee"
-	RndBcastThreshold		= 0.5
+	RndBcastThreshold       = 0.5
 )
 
 // NetMode is the bootnode's mode.
@@ -245,6 +245,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (*Peer, error) {
 		conn, blockConn, err := dial(node.Addr())
 		if err != nil {
 			bn.log.E("failed to dial %v", err)
+			return nil, err
 		}
 		go bn.receiveLoop(conn)
 		go bn.receiveLoop(blockConn)
