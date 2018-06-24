@@ -178,21 +178,28 @@ func (bn *BaseNetwork) randomBroadcast(msg message.Message) {
 	}
 	from := msg.From
 
-	rand.Seed(time.Now().UnixNano())
+	targetAddrs := make([]string, 0)
 	bn.neighbours.Range(func(k, v interface{}) bool {
 		node := v.(*discover.Node)
 		if node.Addr() == from {
-			return true
+			return false
 		}
-		msg.To = node.Addr()
-		rnd := rand.Float64()
-		if rnd > RndBcastThreshold && !bn.isRecentSent(msg) {
-			bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
+		targetAddrs = append(targetAddrs, node.Addr())
+		return true
+	})
+	if len(targetAddrs) == 0 {
+		return
+	}
+	rand.Seed(time.Now().UnixNano())
+	randomSlice := rand.Perm(len(targetAddrs))
+	for i := 0; i < len(randomSlice)/2; i++ {
+		msg.To = targetAddrs[randomSlice[i]]
+		if !bn.isRecentSent(msg) {
+			bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v", msg.ReqType, msg.From, msg.To, msg.Time)
 			bn.broadcast(msg)
 			prometheusSendBlockTx(msg)
 		}
-		return true
-	})
+	}
 }
 
 // broadcast broadcasts to all neighbours, stop broadcast when msg already broadcast
