@@ -196,7 +196,7 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	//if er := bn.send(conn, req); er != nil {
 	//	bn.peers.RemoveByNodeStr(msg.To)
 	//}
-	if msg.ReqType == int32(ReqDownloadBlock) || msg.ReqType == int32(ReqNewBlock) {
+	if msg.ReqType == int32(ReqSyncBlock) || msg.ReqType == int32(ReqNewBlock) {
 		if er := bn.send(peer.blockConn, req); er != nil {
 			bn.log.D("[net] block conn sent")
 			bn.peers.RemoveByNodeStr(msg.To)
@@ -276,7 +276,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		return
 	}
 
-	if msg.ReqType == int32(ReqDownloadBlock) || msg.ReqType == int32(ReqNewBlock) {
+	if msg.ReqType == int32(ReqSyncBlock) || msg.ReqType == int32(ReqNewBlock) {
 		if er := bn.send(peer.blockConn, req); er != nil {
 			bn.peers.RemoveByNodeStr(msg.To)
 		}
