@@ -92,13 +92,8 @@ func (b *ChainImpl) Push(block *Block) error {
 	hash := block.HeadHash()
 	number := uint64(block.Head.Number)
 
-	err := b.lengthAdd(number)
-	if err != nil {
-		return fmt.Errorf("failed to lengthAdd %v", err)
-	}
-
 	//存储区块hash
-	err = b.db.Put(append(blockNumberPrefix, strconv.FormatUint(number, 10)...), hash)
+	err := b.db.Put(append(blockNumberPrefix, strconv.FormatUint(number, 10)...), hash)
 	if err != nil {
 		return fmt.Errorf("failed to Put block hash err[%v]", err)
 	}
@@ -115,6 +110,11 @@ func (b *ChainImpl) Push(block *Block) error {
 			return fmt.Errorf("failed to add tx %v", err)
 		}
 
+	}
+
+	err = b.lengthAdd(number)
+	if err != nil {
+		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
 
 	state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(block.Head.Number)))
@@ -137,6 +137,7 @@ func (b *ChainImpl) CheckLength() error {
 	for i = dbLen; i > 0; i-- {
 		bb := b.GetBlockByNumber(i - 1)
 		if bb != nil {
+			log.Log.I("[block] set block length %v", i)
 			b.setLength(i)
 			break
 		} else {
