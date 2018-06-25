@@ -192,7 +192,18 @@ type TransactionsList []*Tx
 
 func (s TransactionsList) Len() int { return len(s) }
 func (s TransactionsList) Less(i, j int) bool {
-	return s[i].Contract.Info().Price < s[j].Contract.Info().Price
+	if s[i].Contract.Info().Price < s[j].Contract.Info().Price {
+		return true
+	}
+
+	if s[i].Contract.Info().Price == s[j].Contract.Info().Price {
+		if s[i].Time < s[j].Time { //时间小排到前面
+			return false
+		} else {
+			return true
+		}
+	}
+	return false
 }
 func (s TransactionsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 

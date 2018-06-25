@@ -46,12 +46,19 @@ var (
 			Help: "Length of confirmed blockchain on current node",
 		},
 	)
+	txPoolSize = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "tx_poo_size",
+			Help: "size of tx pool on current node",
+		},
+	)
 )
 
 func init() {
 	prometheus.MustRegister(generatedBlockCount)
 	prometheus.MustRegister(receivedBlockCount)
 	prometheus.MustRegister(confirmedBlockchainLength)
+	prometheus.MustRegister(txPoolSize)
 }
 
 var TxPerBlk int
@@ -338,6 +345,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		p.log.I("PendingTransactions Begin...")
 		tx = txpool.TxPoolS.PendingTransactions(TxPerBlk)
 		p.log.I("PendingTransactions End.")
+		txPoolSize.Set(float64(txpool.TxPoolS.TransactionNum()))
 		p.log.I("PendingTransactions Size: %v.", txpool.TxPoolS.PendingTransactionNum())
 	}
 
