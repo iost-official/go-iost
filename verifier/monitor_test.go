@@ -145,6 +145,102 @@ end`, tx2.Contract.Info().Prefix)
 	})
 }
 
+func TestContractCallPrice(t *testing.T) {
+
+	luaMain := `
+--- main
+-- 输出hello world
+-- @gas_limit 10000
+-- @gas_price 0.0001
+-- @param_cnt 0
+-- @return_cnt 1
+-- @publisher walleta
+function main()
+    Transfer("walleta", "walletb", 100)
+    return "success"
+end--f
+
+--- hello
+-- 输出hello
+-- @gas_limit 10000
+-- @gas_price 0.0001
+-- @param_cnt 0
+-- @return_cnt 1
+-- @privilege public
+function hello()
+	Put("a", "b")
+    print("world")
+    return true
+end--f
+
+`
+
+	luaCall := `
+--- main
+-- 输出hello world
+-- @gas_limit 10000
+-- @gas_price 0.0001
+-- @param_cnt 0
+-- @return_cnt 1
+-- @publisher walletb
+function main()
+    if (Call("main", "hello"))
+        then
+        print("call success")
+        else
+        print("call failed")
+    end
+end--f
+
+`
+
+	Convey("test contract fee", t, func() {
+		bdb, err := db.DatabaseFactory("redis")
+		So(err, ShouldBeNil)
+		pdb := state.NewDatabase(bdb)
+		pool := state.NewPool(pdb)
+
+		pmain, _ := lua.NewDocCommentParser(luaMain)
+		pcall, _ := lua.NewDocCommentParser(luaCall)
+
+		cmain, err := pmain.Parse()
+		cmain.SetSender("publisher")
+		So(err, ShouldBeNil)
+		ccall, err := pcall.Parse()
+		ccall.SetSender("caller")
+		So(err, ShouldBeNil)
+
+		//tmain := tx.NewTx(123, cmain)
+		//tcall := tx.NewTx(456, ccall)
+
+		pool.PutHM("iost", "publisher", state.MakeVFloat(10000))
+		pool.PutHM("iost", "caller", state.MakeVFloat(10000))
+
+		verifier := CacheVerifier{
+			Verifier: Verifier{vmMonitor: newVMMonitor(), Context: vm.BaseContext()},
+		}
+
+		cmain.SetPrefix("main")
+
+		verifier.StartVM(cmain)
+		pool2, err := verifier.VerifyContract(ccall, pool)
+		fmt.Println(pool2.GetHM("iost", "caller"))
+		fmt.Println()
+		pool2, err = verifier.VerifyContract(ccall, pool)
+		fmt.Println(pool2.GetHM("iost", "caller"))
+		fmt.Println()
+
+		pool2, err = verifier.VerifyContract(ccall, pool)
+		fmt.Println(pool2.GetHM("iost", "caller"))
+		fmt.Println()
+
+		pool2, err = verifier.VerifyContract(ccall, pool)
+		fmt.Println(pool2.GetHM("iost", "caller"))
+		fmt.Println()
+
+	})
+}
+
 func TestContext(t *testing.T) {
 	Convey("Test of context privilege", t, func() {
 
