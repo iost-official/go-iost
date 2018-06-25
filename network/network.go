@@ -342,7 +342,7 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 func (bn *BaseNetwork) readMsg(conn net.Conn) ([]byte, error) {
 
 	for {
-		//conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+
 		length := int32(0)
 		revH := make([]byte, 4)
 		revL := make([]byte, 4)
@@ -354,6 +354,8 @@ func (bn *BaseNetwork) readMsg(conn net.Conn) ([]byte, error) {
 		if !isNetVersionMatch(revH) {
 			return nil, errors.New("[net] Receive head error")
 		}
+
+		conn.SetReadDeadline(time.Now().Add(600 * time.Millisecond))
 
 		if _, err := io.ReadFull(conn, revL); err != nil {
 			return nil, err
