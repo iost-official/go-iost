@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 
+	"errors"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
@@ -78,6 +79,8 @@ func Instance() (Chain, error) {
 		}
 
 		BChain = &ChainImpl{db: ldb, length: length, tx: txDb}
+
+		BChain.CheckLength()
 	})
 
 	return BChain, err
@@ -109,7 +112,7 @@ func (b *ChainImpl) Push(block *Block) error {
 
 	}
 
-	err = b.lengthAdd()
+	err = b.lengthAdd(number)
 	if err != nil {
 		return fmt.Errorf("failed to lengthAdd %v", err)
 	}
@@ -125,6 +128,42 @@ func (b *ChainImpl) Length() uint64 {
 	return b.length
 }
 
+// CheckLength 设置block 高度
+func (b *ChainImpl) CheckLength() error {
+
+	dbLen := b.Length()
+
+	var i uint64
+	for i = dbLen; i > 0; i-- {
+		bb := b.GetBlockByNumber(i - 1)
+		if bb != nil {
+			log.Log.I("[block] set block length %v", i)
+			b.setLength(i)
+			break
+		} else {
+			log.Log.E("[block] Length error %v", i)
+		}
+	}
+
+	return nil
+}
+
+// Length 返回已经确定链的长度
+func (b *ChainImpl) setLength(l uint64) error {
+
+	var lenB = make([]byte, 128)
+	binary.BigEndian.PutUint64(lenB, l)
+
+	er := b.db.Put(blockLength, lenB)
+	if er != nil {
+		return fmt.Errorf("failed to Put blockLength err:%v", er)
+	}
+
+	b.length = l
+
+	return nil
+}
+
 // HasTx 判断tx是否存在于db中
 func (b *ChainImpl) HasTx(tx *tx.Tx) (bool, error) {
 	return b.tx.Has(tx)
@@ -136,7 +175,13 @@ func (b *ChainImpl) GetTx(hash []byte) (*tx.Tx, error) {
 }
 
 // lengthAdd 链长度加1
-func (b *ChainImpl) lengthAdd() error {
+func (b *ChainImpl) lengthAdd(blockNum uint64) error {
+
+	if b.length != blockNum+1 {
+		log.Log.E("[block] block num error ")
+		return errors.New("block num error")
+	}
+
 	b.length++
 
 	var tmpByte = make([]byte, 128)
@@ -145,7 +190,7 @@ func (b *ChainImpl) lengthAdd() error {
 	err := b.db.Put(blockLength, tmpByte)
 	if err != nil {
 		b.length--
-		return fmt.Errorf("failed to Put blockLength")
+		return errors.New("[block] failed to Put blockLength")
 	}
 
 	return nil
