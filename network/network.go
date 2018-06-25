@@ -125,7 +125,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
 	bn.log.D("[net] listening %v", bn.localNode)
 	var err error
-	bn.listener, err = net.Listen("tcp", "0.0.0.0:"+strconv.Itoa(int(bn.localNode.TCP)))
+	bn.listener, err = net.Listen("tcp4", "0.0.0.0:"+strconv.Itoa(int(bn.localNode.TCP)))
 	if err != nil {
 		return bn.RecvCh, errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
 	}
@@ -160,7 +160,7 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	bn.neighbours.Range(func(k, v interface{}) bool {
 		node := v.(*discover.Node)
 		if node.Addr() == from {
-			return true
+			return false
 		}
 		msg.To = node.Addr()
 		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
@@ -178,21 +178,28 @@ func (bn *BaseNetwork) randomBroadcast(msg message.Message) {
 	}
 	from := msg.From
 
+	targetAddrs := make([]string, 0)
 	bn.neighbours.Range(func(k, v interface{}) bool {
 		node := v.(*discover.Node)
 		if node.Addr() == from {
-			return true
+			return false
 		}
-		msg.To = node.Addr()
-		rand.Seed(time.Now().Unix())
-		rnd := rand.Float64()
-		if !bn.isRecentSent(msg) && rnd > RndBcastThreshold {
-			bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
+		targetAddrs = append(targetAddrs, node.Addr())
+		return true
+	})
+	if len(targetAddrs) == 0 {
+		return
+	}
+	rand.Seed(time.Now().UnixNano())
+	randomSlice := rand.Perm(len(targetAddrs))
+	for i := 0; i < len(randomSlice)/2; i++ {
+		msg.To = targetAddrs[randomSlice[i]]
+		if !bn.isRecentSent(msg) {
+			bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v", msg.ReqType, msg.From, msg.To, msg.Time)
 			bn.broadcast(msg)
 			prometheusSendBlockTx(msg)
 		}
-		return true
-	})
+	}
 }
 
 // broadcast broadcasts to all neighbours, stop broadcast when msg already broadcast
@@ -222,11 +229,12 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 	//}
 	if msg.ReqType == int32(ReqSyncBlock) || msg.ReqType == int32(ReqNewBlock) {
 		if er := bn.send(peer.blockConn, req); er != nil {
-			bn.log.D("[net] block conn sent")
+			bn.log.E("[net] block conn sent error:%v", err)
 			bn.peers.RemoveByNodeStr(msg.To)
 		}
 	} else {
 		if er := bn.send(peer.conn, req); er != nil {
+			bn.log.E("[net] normal conn sent error:%v", err)
 			bn.peers.RemoveByNodeStr(msg.To)
 		}
 	}
@@ -250,8 +258,6 @@ func (bn *BaseNetwork) dial(nodeStr string) (*Peer, error) {
 		go bn.receiveLoop(conn)
 		go bn.receiveLoop(blockConn)
 		peer := newPeer(conn, blockConn, bn.localNode.Addr(), nodeStr)
-		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][3], Log: node.Addr()})
-		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][4], Log: strconv.Itoa(len(bn.peers.peers))})
 		bn.peers.Set(node, peer)
 	}
 
@@ -259,7 +265,7 @@ func (bn *BaseNetwork) dial(nodeStr string) (*Peer, error) {
 }
 
 func dial(nodeAddr string) (net.Conn, net.Conn, error) {
-	conn, err := net.Dial("tcp", nodeAddr)
+	conn, err := net.Dial("tcp4", nodeAddr)
 	if err != nil {
 		if conn != nil {
 			conn.Close()
@@ -267,10 +273,10 @@ func dial(nodeAddr string) (net.Conn, net.Conn, error) {
 		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: nodeAddr})
 		return nil, nil, fmt.Errorf("dial tcp %v got err:%v", nodeAddr, err)
 	}
-	blockConn, err := net.Dial("tcp", nodeAddr)
+	blockConn, err := net.Dial("tcp4", nodeAddr)
 	if err != nil {
-		if conn != nil {
-			conn.Close()
+		if blockConn != nil {
+			blockConn.Close()
 		}
 		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: nodeAddr})
 		return nil, nil, fmt.Errorf("dial tcp %v got err:%v", nodeAddr, err)
@@ -398,6 +404,7 @@ func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
 			conn.Close()
 		}
 	}()
+
 	for {
 
 		buf, err := bn.readMsg(conn)

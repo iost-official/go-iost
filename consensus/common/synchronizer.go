@@ -156,6 +156,7 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
+	var syncNum int
 	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
 		need := false
 		for i := startNumber; i < startNumber+uint64(MaxBlockHashQueryNumber); i++ {
@@ -165,9 +166,13 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 			}
 		}
 		if need {
+			syncNum++
 			sync.router.QueryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
 		}
 		startNumber += uint64(MaxBlockHashQueryNumber)
+		if syncNum%10 == 0 {
+			time.Sleep(time.Second)
+		}
 	}
 	if startNumber <= endNumber {
 		need := false
