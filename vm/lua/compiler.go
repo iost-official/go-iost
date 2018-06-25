@@ -10,19 +10,16 @@ import (
 )
 
 var (
-	// ErrNoMain 代码中未包含main函数
-	ErrNoMain = errors.New("parse failed: no main function")
-	// ErrIllegalCode 代码中包含\\0字符
+	// compile errors
+	ErrNoMain      = errors.New("parse failed: no main function")
 	ErrIllegalCode = errors.New("parse failed: non function code included")
 	ErrNoGasPrice  = errors.New("parse failed: no gas price")
 	ErrNoGasLimit  = errors.New("parse failed: no gas limit")
-	// 代码没指定输入参数数量
-	ErrNoParamCnt = errors.New("parse failed: param count not given")
-	// 代码没指定返回参数数量
-	ErrNoRtnCnt = errors.New("parse failed: return count not given")
+	ErrNoParamCnt  = errors.New("parse failed: param count not given")
+	ErrNoRtnCnt    = errors.New("parse failed: return count not given")
 )
 
-// DocCommentParser 装入text之后调用parse即可得到contract
+// DocCommentParser parser of codes
 type DocCommentParser struct {
 	Debug bool
 	text  string // always ends with \0, which doesn't appear elsewhere

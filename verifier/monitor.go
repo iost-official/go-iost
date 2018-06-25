@@ -171,8 +171,7 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 		if err != nil {
 			return nil, pool, 0, err
 		}
-		holder, ok = m.vms[contract.Info().Prefix] // TODO 有危险的bug
-		//return nil, pool, 0, fmt.Errorf("cannot find contract %v", contractPrefix)
+		holder, ok = m.vms[contract.Info().Prefix]
 	}
 	holder.IsRunning = true
 	defer func() { holder.IsRunning = false }()
@@ -183,7 +182,6 @@ func (m *vmMonitor) Call(ctx *vm.Context, pool state.Pool, contractPrefix, metho
 
 // FindContract  find contract from tx database
 func FindContract(contractPrefix string) (vm.Contract, error) {
-	//fmt.Println("error vm not start up:", contractPrefix)
 	hash := vm.PrefixToHash(contractPrefix)
 
 	txdb := tx.TxDbInstance()
@@ -191,6 +189,5 @@ func FindContract(contractPrefix string) (vm.Contract, error) {
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println("found tx hash: ", common.Base58Encode(txx.Hash()))
 	return txx.Contract, nil
 }

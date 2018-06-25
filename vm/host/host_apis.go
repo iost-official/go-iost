@@ -1,3 +1,6 @@
+/*
+Define host api
+*/
 package host
 
 import (

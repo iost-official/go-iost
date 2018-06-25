@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	// convert errors
 	ErrNotBaseType = fmt.Errorf("not base type")
 )
 

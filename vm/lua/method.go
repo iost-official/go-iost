@@ -2,7 +2,7 @@ package lua
 
 import "github.com/iost-official/prototype/vm"
 
-// Method lua方法接口的实现
+// Method ...
 type Method struct {
 	name string
 	inputCount,

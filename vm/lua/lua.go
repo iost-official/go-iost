@@ -1,3 +1,6 @@
+/*
+Package lua, implement of lua VM, contract, method etc.
+*/
 package lua
 
 import (
@@ -17,7 +20,7 @@ type api struct {
 	function func(L *lua.LState) int
 }
 
-// VM lua 虚拟机的实现
+// VM implement of lua VM
 type VM struct {
 	APIs []api
 	L    *lua.LState
