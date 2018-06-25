@@ -343,6 +343,9 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 		}
 	}
 	iter.Release()
+	if err := iter.Error(); err != nil {
+		return nil, err
+	}
 
 	if excludeAddr == "" {
 		return addrs, nil
@@ -388,7 +391,7 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 		for _, addr := range addrs {
 			rnd := rand.Float64()
 			if spnode[addr] {
-				if rnd > WitnessThreshold {
+				if rnd > SpThreshold {
 					retAddrs = append(retAddrs, addr)
 				}
 			} else {
@@ -402,10 +405,6 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 			}
 			retAddrs = append(retAddrs, optAddrs[index])
 		}
-	}
-
-	if err := iter.Error(); err != nil {
-		return nil, err
 	}
 
 	return retAddrs, nil
