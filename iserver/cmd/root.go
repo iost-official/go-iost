@@ -296,9 +296,10 @@ var rootCmd = &cobra.Command{
 			}
 
 			if bcLen > 0 {
+
+				blockChain.CheckLength()
 				b := blockChain.Top()
 				if b != nil {
-					blockChain.SetLength(uint64(b.Head.Number + 1))
 					state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(b.Head.Number)))
 					state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(b.HeadHash()))
 					state.StdPool.Flush()

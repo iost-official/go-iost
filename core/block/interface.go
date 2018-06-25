@@ -9,7 +9,7 @@ import "github.com/iost-official/prototype/core/tx"
 type Chain interface {
 	Push(block *Block) error
 	Length() uint64
-	SetLength(l uint64) error
+	CheckLength() error
 	Top() *Block // 语法糖
 	GetHashByNumber(number uint64) []byte
 	GetBlockByNumber(number uint64) *Block

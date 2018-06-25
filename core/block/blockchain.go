@@ -80,21 +80,7 @@ func Instance() (Chain, error) {
 
 		BChain = &ChainImpl{db: ldb, length: length, tx: txDb}
 
-		b := BChain.Top()
-		if b != nil {
-			if length != uint64(b.Head.Number+1) {
-				log.Log.E("[block] length error, db length:%v top block number:%v", length, b.Head.Number)
-
-				var lenB = make([]byte, 128)
-				binary.BigEndian.PutUint64(lenB, uint64(b.Head.Number+1))
-
-				er := ldb.Put(blockLength, lenB)
-				if er != nil {
-					err = fmt.Errorf("failed to Put blockLength")
-					return
-				}
-			}
-		}
+		BChain.CheckLength()
 	})
 
 	return BChain, err
@@ -142,15 +128,27 @@ func (b *ChainImpl) Length() uint64 {
 	return b.length
 }
 
-// SetLength 设置block 高度
-func (b *ChainImpl) SetLength(l uint64) error {
+// CheckLength 设置block 高度
+func (b *ChainImpl) CheckLength() error {
 
-	bb := BChain.Top()
-	if bb != nil {
-		if l != uint64(bb.Head.Number+1) {
-			return fmt.Errorf("failed to Put blockLength length:%v Top block num:%v", l, bb.Head.Number)
+	dbLen := b.Length()
+
+	var i uint64
+	for i = dbLen; i > 0; i-- {
+		bb := b.GetBlockByNumber(i - 1)
+		if bb != nil {
+			b.setLength(i)
+			break
+		} else {
+			log.Log.E("[block] Length error %v", i)
 		}
 	}
+
+	return nil
+}
+
+// Length 返回已经确定链的长度
+func (b *ChainImpl) setLength(l uint64) error {
 
 	var lenB = make([]byte, 128)
 	binary.BigEndian.PutUint64(lenB, l)
@@ -159,7 +157,6 @@ func (b *ChainImpl) SetLength(l uint64) error {
 	if er != nil {
 		return fmt.Errorf("failed to Put blockLength err:%v", er)
 	}
-
 	return nil
 }
 
