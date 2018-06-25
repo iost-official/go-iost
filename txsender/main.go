@@ -50,6 +50,16 @@ var servers = map[string][]string{
 		"13.236.153.25:30303",
 		"13.211.188.83:30303",
 	},
+	"california": []string{
+		"13.56.255.143:30303",
+		"18.144.11.65:30303",
+		"13.57.176.233:30303",
+		"54.183.115.79:30303",
+		"13.56.223.196:30303",
+		"18.144.42.61:30303",
+		"13.57.185.234:30303",
+	},
+
 	"local": []string{
 		"127.0.0.1:30303",
 		"127.0.0.1:30313",
@@ -58,9 +68,10 @@ var servers = map[string][]string{
 }
 
 var server_num = map[string]int{
-	"testnet": 7,
-	"test":    7,
-	"local":   3,
+	"testnet":    7,
+	"test":       7,
+	"california": 7,
+	"local":      3,
 }
 
 var accounts []string = []string{
