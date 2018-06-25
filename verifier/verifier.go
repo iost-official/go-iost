@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	MaxBlockGas uint64 = 1000000
+	MaxBlockGas uint64  = 1000000
+	TxBaseFee   float64 = 0.1
 )
 
 //go:generate gencode go -schema=structs.schema -package=verifier
@@ -44,7 +45,7 @@ type CacheVerifier struct {
 func balanceOfSender(sender vm.IOSTAccount, pool state.Pool) float64 {
 	val0, err := pool.GetHM("iost", state.Key(sender))
 	if err != nil {
-		panic(err)
+		return 0
 	}
 	val, ok := val0.(*state.VFloat)
 	if val0 == state.VNil {
@@ -64,13 +65,17 @@ func setBalanceOfSender(sender vm.IOSTAccount, pool state.Pool, amount float64) 
 //
 // 取得tx中的Contract的方法： tx.contract
 func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (state.Pool, error) {
-	sender := contract.Info().Publisher
-	if contract.Info().Price != 0 {
-		bos := balanceOfSender(sender, pool)
-		if bos < float64(contract.Info().GasLimit)*contract.Info().Price {
-			return pool, fmt.Errorf("balance not enough: sender:%v balance:%f\n", string(sender), bos)
-		}
+	if contract.Info().Price < 0 {
+		return pool, errors.New("illegal gas price")
 	}
+
+	sender := contract.Info().Publisher
+	//if contract.Info().Price != 0 {
+	bos := balanceOfSender(sender, pool)
+	if bos < float64(contract.Info().GasLimit)*contract.Info().Price+TxBaseFee {
+		return pool, fmt.Errorf("balance not enough: sender:%v balance:%f\n", string(sender), bos)
+	}
+	//}
 
 	_, err := cv.RestartVM(contract)
 	if err != nil {
@@ -83,21 +88,21 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (
 	}
 	//cv.StopVM(contract)
 
-	if contract.Info().Price != 0 {
+	//if contract.Info().Price != 0 {
 
-		bos2 := balanceOfSender(sender, pool)
+	bos2 := balanceOfSender(sender, pool)
 
-		if gas > uint64(contract.Info().GasLimit) {
-			return pool, errors.New("gas overflow")
-		}
-
-		bos2 -= float64(gas) * contract.Info().Price
-		if bos2 < 0 {
-			return pool, fmt.Errorf("can not afford gas")
-		}
-
-		setBalanceOfSender(sender, pool, bos2)
+	if gas > uint64(contract.Info().GasLimit) {
+		return pool, errors.New("gas overflow")
 	}
+
+	bos2 -= float64(gas)*contract.Info().Price + TxBaseFee
+	if bos2 < 0 {
+		return pool, fmt.Errorf("can not afford gas")
+	}
+
+	setBalanceOfSender(sender, pool, bos2)
+	//}
 	return pool, nil
 }
 
