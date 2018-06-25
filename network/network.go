@@ -526,7 +526,7 @@ func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 	msg := message.Message{
 		Body:    bytes,
 		ReqType: int32(BlockHashQuery),
-		TTL:     MsgMaxTTL,
+		TTL:     1,
 		From:    bn.localNode.Addr(),
 		Time:    time.Now().UnixNano(),
 	}
