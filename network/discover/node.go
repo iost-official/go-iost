@@ -3,12 +3,14 @@ package discover
 import (
 	"errors"
 	"net"
-	"sort"
+	//	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/iost-official/prototype/common"
+	//	"github.com/iost-official/prototype/params"
+	//	"math/rand"
 )
 
 // NodeID is a node's identity.
@@ -117,36 +119,71 @@ func ParseNode(nodeStr string) (node *Node, err error) {
 
 // MaxNeighbourNum is the max count of a node's neighbours.
 const MaxNeighbourNum = 8
+const Threshold = 0.3
 
-// FindNeighbours returns a node's neighbours from a given list of nodes.
+// FindNeighbours returns a node's neighbours
 func (n *Node) FindNeighbours(ns []*Node) []*Node {
-	if len(ns) < MaxNeighbourNum {
-		return ns
-	}
-	neighbours := make([]*Node, 0)
-	disArr := make([]int, len(ns))
+	neighbours := make([]*Node, len(ns))
 	for k, v := range ns {
-		disArr[k] = xorDistance(n.Addr(), v.Addr())
-	}
-	sortArr := make([]int, len(ns))
-	copy(sortArr, disArr)
-	sort.Ints(sortArr)
-
-	neighbourKeys := make(map[int]int, 0)
-	for _, v := range sortArr {
-		for k, vd := range disArr {
-			if _, ok := neighbourKeys[k]; !ok && v == vd && len(neighbourKeys) < MaxNeighbourNum {
-				neighbourKeys[k] = 0
-			}
-		}
-	}
-	for k := range neighbourKeys {
-		if len(neighbours) >= MaxNeighbourNum || n.Addr() == ns[k].Addr() {
-			continue
-		}
-		neighbours = append(neighbours, ns[k])
+		neighbours[k] = v
 	}
 	return neighbours
+	/*
+		if len(ns) < MaxNeighbourNum {
+			return ns
+		}
+		neighbours := make([]*Node, 0)
+		witness := params.WitnessNodes
+		spnodes := params.SpNodes
+
+		disArr := make([]int, len(ns))
+		neighbourKeys := make(map[int]int, 0)
+		rand.Seed(time.Now().UnixNano())
+		for k, v := range ns {
+			if len(neighbours) >= MaxNeighbourNum {
+				return neighbours
+			}
+			if witness[n.Addr()] { // for witness nodes
+				if witness[v.Addr()] {
+					neighbours = append(neighbours, v)
+					neighbourKeys[k] = 1
+				}
+			} else if spnodes[n.Addr()] { // for sp nodes
+				if witness[v.Addr()] {
+					neighbours = append(neighbours, v)
+					neighbourKeys[k] = 1
+				}
+			} else { // for ordinary nodes
+				if spnodes[v.Addr()] {
+					rnd := rand.Float64()
+					if rnd > Threshold {
+						neighbours = append(neighbours, v)
+						neighbourKeys[k] = 1
+					}
+				}
+			}
+			disArr[k] = xorDistance(n.Addr(), v.Addr())
+		}
+		sortArr := make([]int, len(ns))
+		copy(sortArr, disArr)
+		sort.Ints(sortArr)
+		for _, v := range sortArr {
+			for k, vd := range disArr {
+				if _, ok := neighbourKeys[k]; !ok && v == vd && len(neighbourKeys) < MaxNeighbourNum {
+					neighbourKeys[k] = 0
+				}
+			}
+		}
+		for k := range neighbourKeys {
+			if len(neighbours) >= MaxNeighbourNum || n.Addr() == ns[k].Addr() {
+				continue
+			}
+			if neighbourKeys[k] == 1 {
+				continue
+			}
+			neighbours = append(neighbours, ns[k])
+		}
+	*/
 }
 
 func xorDistance(one, other string) (ret int) {
