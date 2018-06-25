@@ -13,6 +13,8 @@ var CommitteeNodes = []string{
 
 var WitnessNodes = map[string]bool{
 	"13.56.255.143:30301": true,
+	"18.144.11.65:30301": true,
+	"13.57.176.233:30301": true,
 }
 
 var SpNodes = map[string]bool{
