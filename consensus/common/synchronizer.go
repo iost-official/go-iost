@@ -160,9 +160,11 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
 		need := false
 		for i := startNumber; i < startNumber+uint64(MaxBlockHashQueryNumber); i++ {
-			_, ok := sync.requestMap.LoadOrStore(i, true)
-			if !ok {
+			n, _ := sync.requestMap.LoadOrStore(i, 1)
+			t := n.(int)
+			if t < 3 {
 				need = true
+				sync.requestMap.Store(i, t+1)
 			}
 		}
 		if need {
@@ -177,9 +179,11 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	if startNumber <= endNumber {
 		need := false
 		for i := startNumber; i < endNumber; i++ {
-			_, ok := sync.requestMap.LoadOrStore(i, true)
-			if !ok {
+			n, _ := sync.requestMap.LoadOrStore(i, i)
+			t := n.(int)
+			if t < 3 {
 				need = true
+				sync.requestMap.Store(i, t+1)
 			}
 		}
 		if need {
