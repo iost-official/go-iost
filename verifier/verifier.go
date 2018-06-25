@@ -15,7 +15,7 @@ import (
 
 const (
 	MaxBlockGas uint64  = 1000000
-	TxBaseFee   float64 = 0.1
+	TxBaseFee   float64 = 0.01
 )
 
 //go:generate gencode go -schema=structs.schema -package=verifier
