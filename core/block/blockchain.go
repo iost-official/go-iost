@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"sync"
 
-	"errors"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/db"
@@ -177,12 +176,9 @@ func (b *ChainImpl) GetTx(hash []byte) (*tx.Tx, error) {
 // lengthAdd 链长度加1
 func (b *ChainImpl) lengthAdd(blockNum uint64) error {
 
-	if b.length != blockNum+1 {
-		log.Log.E("[block] block num error ")
-		return errors.New("block num error")
-	}
+	log.Log.E("[block] lengthAdd length:%v block num:%v ", b.length, blockNum)
 
-	b.length++
+	b.length = blockNum + 1
 
 	var tmpByte = make([]byte, 128)
 	binary.BigEndian.PutUint64(tmpByte, b.length)
@@ -190,7 +186,6 @@ func (b *ChainImpl) lengthAdd(blockNum uint64) error {
 	err := b.db.Put(blockLength, tmpByte)
 	if err != nil {
 		b.length--
-		return errors.New("[block] failed to Put blockLength")
 	}
 
 	return nil
