@@ -33,6 +33,8 @@ const (
 	RegisterServerPort      = 30304
 	PublicMode              = "public"
 	CommitteeMode           = "committee"
+	WitnessThreshold		= 0.7
+	SpThreshold				= 0.7
 )
 
 // NetMode is the bootnode's mode.
@@ -326,7 +328,10 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 	iter := bn.nodeTable.NewIterator()
 	for iter.Next() {
 		addr := string(iter.Key())
-
+		if excludeAddr == "" {
+			addrs = append(addrs, addr)
+			continue
+		}
 		if addr != excludeAddr {
 			if !isW && !isS && witness[addr] {
 				continue
@@ -338,6 +343,67 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 		}
 	}
 	iter.Release()
+
+	if excludeAddr == "" {
+		return addrs, nil
+	}
+	retAddrs := make([]string, 0)
+	optAddrs := make([]string, 0)
+	if isW { // for witness: all witness + some sp
+		for _, addr := range addrs {
+			if witness[addr] {
+				retAddrs = append(retAddrs, addr)
+			} else {
+				optAddrs = append(optAddrs, addr)
+			}
+		}
+		r := rand.Perm(len(optAddrs))
+		for _, index := range r {
+			if len(retAddrs) >= discover.MaxNeighbourNum {
+				break
+			}
+			retAddrs = append(retAddrs, optAddrs[index])
+		}
+	} else if isS { // for sp: some witness + some sp + some others
+		rand.Seed(time.Now().UnixNano())
+		for _, addr := range addrs {
+			rnd := rand.Float64()
+			if witness[addr] {
+				if rnd > WitnessThreshold {
+					retAddrs = append(retAddrs, addr)
+				}
+			} else {
+				optAddrs = append(optAddrs, addr)
+			}
+		}
+		r := rand.Perm(len(optAddrs))
+		for _, index := range r {
+			if len(retAddrs) >= discover.MaxNeighbourNum {
+				break
+			}
+			retAddrs = append(retAddrs, optAddrs[index])
+		}
+	} else { // for others: some sp + some others
+		rand.Seed(time.Now().UnixNano())
+		for _, addr := range addrs {
+			rnd := rand.Float64()
+			if spnode[addr] {
+				if rnd > WitnessThreshold {
+					retAddrs = append(retAddrs, addr)
+				}
+			} else {
+				optAddrs = append(optAddrs, addr)
+			}
+		}
+		r := rand.Perm(len(optAddrs))
+		for _, index := range r {
+			if len(retAddrs) >= discover.MaxNeighbourNum {
+				break
+			}
+			retAddrs = append(retAddrs, optAddrs[index])
+		}
+	}
+
 	if err := iter.Error(); err != nil {
 		return nil, err
 	}
