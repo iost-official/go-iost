@@ -33,6 +33,8 @@ const (
 	RegisterServerPort      = 30304
 	PublicMode              = "public"
 	CommitteeMode           = "committee"
+	WitnessThreshold		= 0.7
+	SpThreshold				= 0.7
 )
 
 // NetMode is the bootnode's mode.
@@ -213,15 +215,12 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 			if conn != nil {
 				conn.Close()
 			}
-			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: node.Addr()})
 			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
 			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
 		}
 		if conn != nil {
 			go bn.receiveLoop(conn)
 			peer := newPeer(conn, bn.localNode.Addr(), nodeStr)
-			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][3], Log: node.Addr()})
-			log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][4], Log: strconv.Itoa(len(bn.peers.peers))})
 			bn.peers.Set(node, peer)
 		}
 	}
@@ -321,10 +320,25 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 		return nil, nil
 	}
 	addrs := make([]string, 0)
+	witness := params.WitnessNodes
+	spnode := params.SpNodes
+	_, isW := witness[excludeAddr]
+	_, isS := spnode[excludeAddr]
+
 	iter := bn.nodeTable.NewIterator()
 	for iter.Next() {
 		addr := string(iter.Key())
+		if excludeAddr == "" {
+			addrs = append(addrs, addr)
+			continue
+		}
 		if addr != excludeAddr {
+			if !isW && !isS && witness[addr] {
+				continue
+			}
+			if isW && (!witness[addr] && !spnode[addr]) {
+				continue
+			}
 			addrs = append(addrs, addr)
 		}
 	}
@@ -333,7 +347,67 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 		return nil, err
 	}
 
-	return addrs, nil
+	if excludeAddr == "" {
+		return addrs, nil
+	}
+	retAddrs := make([]string, 0)
+	optAddrs := make([]string, 0)
+	if isW { // for witness: all witness + some sp
+		for _, addr := range addrs {
+			if witness[addr] {
+				retAddrs = append(retAddrs, addr)
+			} else {
+				optAddrs = append(optAddrs, addr)
+			}
+		}
+		r := rand.Perm(len(optAddrs))
+		for _, index := range r {
+			if len(retAddrs) >= discover.MaxNeighbourNum {
+				break
+			}
+			retAddrs = append(retAddrs, optAddrs[index])
+		}
+	} else if isS { // for sp: some witness + some sp + some others
+		rand.Seed(time.Now().UnixNano())
+		for _, addr := range addrs {
+			rnd := rand.Float64()
+			if witness[addr] {
+				if rnd > WitnessThreshold {
+					retAddrs = append(retAddrs, addr)
+				}
+			} else {
+				optAddrs = append(optAddrs, addr)
+			}
+		}
+		r := rand.Perm(len(optAddrs))
+		for _, index := range r {
+			if len(retAddrs) >= discover.MaxNeighbourNum {
+				break
+			}
+			retAddrs = append(retAddrs, optAddrs[index])
+		}
+	} else { // for others: some sp + some others
+		rand.Seed(time.Now().UnixNano())
+		for _, addr := range addrs {
+			rnd := rand.Float64()
+			if spnode[addr] {
+				if rnd > SpThreshold {
+					retAddrs = append(retAddrs, addr)
+				}
+			} else {
+				optAddrs = append(optAddrs, addr)
+			}
+		}
+		r := rand.Perm(len(optAddrs))
+		for _, index := range r {
+			if len(retAddrs) >= discover.MaxNeighbourNum {
+				break
+			}
+			retAddrs = append(retAddrs, optAddrs[index])
+		}
+	}
+
+	return retAddrs, nil
 }
 
 // putnode puts node into node table of server.
