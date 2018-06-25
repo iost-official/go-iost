@@ -408,7 +408,7 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 		return nil, err
 	}
 
-	return addrs, nil
+	return retAddrs, nil
 }
 
 // putnode puts node into node table of server.
