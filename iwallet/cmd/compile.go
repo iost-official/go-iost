@@ -27,10 +27,7 @@ import (
 var compileCmd = &cobra.Command{
 	Use:   "compile",
 	Short: "Compile contract files to smart contract",
-	Long: `Compile contract files to smart contract. 
-Useage : 
-
-iwallet compile -l lua SRC`,
+	Long:  `Compile contract files to smart contract. `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println(`Error: source file not given`)

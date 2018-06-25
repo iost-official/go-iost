@@ -29,12 +29,7 @@ import (
 var transactionCmd = &cobra.Command{
 	Use:   "transaction",
 	Short: "find transactions",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Long:  `find transaction by publisher and nonce`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if publisher == nil || nonce == nil {
 			fmt.Println("input publisher and nonce")
