@@ -158,6 +158,9 @@ func (b *ChainImpl) setLength(l uint64) error {
 	if er != nil {
 		return fmt.Errorf("failed to Put blockLength err:%v", er)
 	}
+
+	b.length = l
+
 	return nil
 }
 
