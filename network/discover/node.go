@@ -118,7 +118,7 @@ func ParseNode(nodeStr string) (node *Node, err error) {
 }
 
 // MaxNeighbourNum is the max count of a node's neighbours.
-const MaxNeighbourNum = 10
+const MaxNeighbourNum = 8
 const Threshold = 0.3
 
 // FindNeighbours returns a node's neighbours
