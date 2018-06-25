@@ -619,11 +619,11 @@ func (bn *BaseNetwork) isInCommittee(from []byte) bool {
 
 func prometheusSendBlockTx(req message.Message) {
 	if req.ReqType == int32(ReqPublishTx) {
-		sendTransactionSize.Observe(float64(req.Size()))
+		// sendTransactionSize.Observe(float64(req.Size()))
 		sendTransactionCount.Inc()
 	}
 	if req.ReqType == int32(ReqNewBlock) {
-		sendBlockSize.Observe(float64(req.Size()))
+		// sendBlockSize.Observe(float64(req.Size()))
 		sendBlockCount.Inc()
 	}
 }
