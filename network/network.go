@@ -340,7 +340,7 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 		return nil
 	}
 
-	conn.SetWriteDeadline(time.Now().Add(300 * time.Millisecond))
+	conn.SetWriteDeadline(time.Now().Add(800 * time.Millisecond))
 	_, err = conn.Write(pack)
 	if err != nil {
 		bn.log.E("[net] conn write got err:%v", err)
@@ -564,7 +564,7 @@ func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 	msg := message.Message{
 		Body:    bytes,
 		ReqType: int32(BlockHashQuery),
-		TTL:     1,//BlockHashQuery req just broadcast to its neibour
+		TTL:     1, //BlockHashQuery req just broadcast to its neibour
 		From:    bn.localNode.Addr(),
 		Time:    time.Now().UnixNano(),
 	}
