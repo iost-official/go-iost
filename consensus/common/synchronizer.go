@@ -180,7 +180,7 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 		need := false
 		for i := startNumber; i < endNumber; i++ {
 			n, _ := sync.requestMap.LoadOrStore(i, i)
-			t := n.(int)
+			t := n.(uint64)
 			if t < 3 {
 				need = true
 				sync.requestMap.Store(i, t+1)
