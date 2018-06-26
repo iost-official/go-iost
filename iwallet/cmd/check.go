@@ -26,7 +26,7 @@ import (
 var checkCmd = &cobra.Command{
 	Use:   "check",
 	Short: "check .sc file",
-	Long:  `review and check .sc file, code and limits will beprinted`,
+	Long:  `review and check .sc file, code and limits will be printed`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println(`Error: source file not given`)
