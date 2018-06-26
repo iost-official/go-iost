@@ -36,7 +36,7 @@ func handleLBase(value lua.LValue) (rtn state.Value, err error) {
 	var v0 state.Value
 	switch value.(type) {
 	case *lua.LNilType:
-		v0 = state.VNil
+		v0 = state.VDelete
 	case lua.LNumber:
 		vl := value.(lua.LNumber)
 		v0 = state.MakeVFloat(float64(vl))

@@ -178,7 +178,11 @@ func (p *PoB) genesis(initTime int64) error {
 
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
 
-	tx := NewTx(0, &lc)
+	tx := Tx{
+		Time:     0,
+		Nonce:    0,
+		Contract: &lc,
+	}
 
 	genesis := &block.Block{
 		Head: block.BlockHead{
@@ -291,10 +295,10 @@ func (p *PoB) scheduleLoop() {
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 
 				bb := blk.Encode()
-				msg := &message.Message{ReqType: int32(ReqNewBlock), Body: bb}
+				msg := message.Message{ReqType: int32(ReqNewBlock), Body: bb}
 				log.Log.I("Block size: %v, TrNum: %v", len(bb), len(blk.Content))
 				go p.router.Broadcast(msg)
-				p.chBlock <- *msg
+				p.chBlock <- msg
 				p.log.I("Broadcasted block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 			}
 			nextSchedule = timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())

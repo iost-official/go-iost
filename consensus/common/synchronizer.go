@@ -156,17 +156,38 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
+	var syncNum int
 	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
-		sync.router.QueryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
+		need := false
 		for i := startNumber; i < startNumber+uint64(MaxBlockHashQueryNumber); i++ {
-			sync.requestMap.LoadOrStore(i, true)
+			n, _ := sync.requestMap.LoadOrStore(i, 1)
+			t := n.(int)
+			if t < 3 {
+				need = true
+				sync.requestMap.Store(i, t+1)
+			}
+		}
+		if need {
+			syncNum++
+			sync.router.QueryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
 		}
 		startNumber += uint64(MaxBlockHashQueryNumber)
+		if syncNum%10 == 0 {
+			time.Sleep(time.Second)
+		}
 	}
 	if startNumber <= endNumber {
-		sync.router.QueryBlockHash(startNumber, endNumber)
-		for i := startNumber; i <= endNumber; i++ {
-			sync.requestMap.LoadOrStore(i, true)
+		need := false
+		for i := startNumber; i < endNumber; i++ {
+			n, _ := sync.requestMap.LoadOrStore(i, i)
+			t := n.(int)
+			if t < 3 {
+				need = true
+				sync.requestMap.Store(i, t+1)
+			}
+		}
+		if need {
+			sync.router.QueryBlockHash(startNumber, endNumber)
 		}
 	}
 	return nil
@@ -188,19 +209,18 @@ func (sync *SyncImpl) requestBlockLoop() {
 				continue
 			}
 
-			chain := sync.blockCache.LongestChain()
-
-			b := make([]byte, 0)
+			chain := sync.blockCache.BlockChain()
+			var b []byte
 			if rh.BlockNumber < chain.Length() { // 加速block的获取，减少encode
-				b, err = chain.GetBlockByteByNumber(rh.BlockNumber)
+				b, err = chain.GetBlockByteByHash(rh.BlockHash)
 				if err != nil {
 					log.Log.E("Database error: block empty %v", rh.BlockNumber)
 					continue
 				}
 			} else {
-				block := chain.GetBlockByNumber(rh.BlockNumber)
-				if block == nil {
-					log.Log.E("Cache block empty %v", rh.BlockNumber)
+				block, err := sync.blockCache.FindBlockInCache(rh.BlockHash)
+				if err != nil {
+					log.Log.E("Block not in cache: %v", rh.BlockNumber)
 					continue
 				}
 				b = block.Encode()
@@ -209,7 +229,7 @@ func (sync *SyncImpl) requestBlockLoop() {
 			//sync.log.I("requset block - BlockNumber: %v", rh.BlockNumber)
 			//sync.log.I("response block - BlockNumber: %v, witness: %v", block.Head.Number, block.Head.Witness)
 			//回复当前高度的块
-			resMsg := &message.Message{
+			resMsg := message.Message{
 				Time:    time.Now().Unix(),
 				From:    req.To,
 				To:      req.From,
@@ -270,13 +290,13 @@ func (sync *SyncImpl) handleHashQuery() {
 				BlockHashes: make([]message.BlockHash, 0, rh.End-rh.Start+1),
 			}
 			for i := rh.Start; i <= rh.End; i++ {
-				block := chain.GetBlockByNumber(i)
-				if block == nil {
+				hash := chain.GetHashByNumber(i)
+				if hash == nil {
 					continue
 				}
 				blkHash := message.BlockHash{
 					Height: i,
-					Hash:   block.HeadHash(),
+					Hash:   hash,
 				}
 				resp.BlockHashes = append(resp.BlockHashes, blkHash)
 			}
@@ -288,7 +308,7 @@ func (sync *SyncImpl) handleHashQuery() {
 				sync.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
 				break
 			}
-			resMsg := &message.Message{
+			resMsg := message.Message{
 				Time:    time.Now().Unix(),
 				From:    req.To,
 				To:      req.From,
@@ -323,11 +343,25 @@ func (sync *SyncImpl) handleHashResp() {
 				if _, exist := sync.recentAskedBlocks.Load(string(blkHash.Hash)); exist {
 					continue
 				}
-				// TODO: 判断本地是否有这个区块
 				//sync.log.I("check hash:%s, height:%v", blkHash.Hash, blkHash.Height)
 				if !sync.blockCache.CheckBlock(blkHash.Hash) {
 					//sync.log.I("check hash success")
-					sync.router.AskABlock(blkHash.Height, req.From)
+					blkReq := &message.RequestBlock{
+						BlockHash:   blkHash.Hash,
+						BlockNumber: blkHash.Height,
+					}
+					if err != nil {
+						sync.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", blkReq, err)
+						break
+					}
+					reqMsg := message.Message{
+						Time:    time.Now().Unix(),
+						From:    req.To,
+						To:      req.From,
+						ReqType: int32(ReqDownloadBlock),
+						Body:    blkReq.Encode(),
+					}
+					sync.router.Send(reqMsg)
 					sync.recentAskedBlocks.Store(string(blkHash.Hash), time.Now().Unix())
 				}
 			}

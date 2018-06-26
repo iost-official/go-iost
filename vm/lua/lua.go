@@ -73,6 +73,7 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 				Protect: true,
 			})
 		} else {
+
 			largs := make([]lua.LValue, 0)
 			for _, arg := range args {
 				v, err0 := Core2Lua(arg)
@@ -313,6 +314,40 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 		},
 	}
 	l.APIs = append(l.APIs, Assert)
+
+	var TableToJson = api{
+		name: "ToJson",
+		function: func(L *lua.LState) int {
+			L.PCount += 100
+			table := L.ToTable(1)
+			jsonStr, err := host.TableToJson(table)
+			if err != nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LTrue)
+			L.Push(lua.LString(jsonStr))
+			return 2
+		},
+	}
+	l.APIs = append(l.APIs, TableToJson)
+
+	var ParseJson = api{
+		name: "ParseJson",
+		function: func(L *lua.LState) int {
+			L.PCount += 100
+			jsonStr := L.ToString(1)
+			table, err := host.ParseJson([]byte(string(jsonStr)))
+			if err != nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LTrue)
+			L.Push(table)
+			return 2
+		},
+	}
+	l.APIs = append(l.APIs, ParseJson)
 
 	var Call = api{
 		name: "Call",

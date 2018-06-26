@@ -110,11 +110,11 @@ func (r *Request) String() string {
 
 func prometheusReceivedBlockTx(req *message.Message) {
 	if req.ReqType == int32(ReqPublishTx) {
-		receivedBroadTransactionSize.Observe(float64(req.Size()))
+		// receivedBroadTransactionSize.Observe(float64(req.Size()))
 		receivedBroadTransactionCount.Inc()
 	}
 	if req.ReqType == int32(ReqNewBlock) {
-		receivedBlockSize.Observe(float64(req.Size()))
+		// receivedBlockSize.Observe(float64(req.Size()))
 	}
 }
 
@@ -146,7 +146,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 
 			prometheusReceivedBlockTx(appReq)
 			if appReq.ReqType != int32(ReqDownloadBlock) {
-				base.Broadcast(appReq)
+				base.Broadcast(*appReq)
 			}
 		}
 		r.msgHandle(base)
@@ -156,7 +156,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 
 		if isValidNode(r, base) {
 			base.putNode(string(r.From))
-			base.peers.SetAddr(string(r.From), newPeer(conn, base.localNode.Addr(), conn.RemoteAddr().String()))
+			base.peers.SetAddr(string(r.From), newPeer(conn, nil, base.localNode.Addr(), conn.RemoteAddr().String()))
 			base.sendNodeTable(r.From, conn)
 		} else {
 			conn.Close()

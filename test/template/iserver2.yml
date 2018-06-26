@@ -17,6 +17,9 @@ net:
   port: 30322
   rpc-port: 30323
   metrics-port: 8080
+log:
+  level: debug
+  path: /var/lib/iserver/logs/
 vm:
   max-block-gas:
 ldb:

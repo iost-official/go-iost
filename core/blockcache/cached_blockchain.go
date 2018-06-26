@@ -165,6 +165,23 @@ func (c *CachedBlockChain) GetBlockByNumber(number uint64) *block.Block {
 	return nil
 }
 
+func (c *CachedBlockChain) GetHashByNumber(number uint64) []byte {
+	if number < c.Chain.Length() {
+		return c.Chain.GetHashByNumber(number)
+	}
+	if number >= c.Length() {
+		return nil
+	}
+	cbc := c
+	for cbc.block != nil {
+		if uint64(cbc.block.Head.Number) == number {
+			return cbc.block.HeadHash()
+		}
+		cbc = cbc.parent
+	}
+	return nil
+}
+
 // GetBlockByHash 从缓存链里找对应hash的块
 // deprecate : 请使用iterator
 func (c *CachedBlockChain) GetBlockByHash(blockHash []byte) *block.Block {

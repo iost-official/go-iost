@@ -394,7 +394,7 @@ end--f
 		So(contract.info.GasLimit, ShouldEqual, 11)
 		So(contract.info.Price, ShouldEqual, 0.0001)
 		fmt.Println(contract.code)
-		So(contract.main, ShouldResemble, Method{"main", 0, 1, vm.Public})
+		So(contract.main, ShouldResemble, Method{"main", 0, 1, vm.Private})
 		//So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2, vm.Public}})
 
 	})
@@ -677,6 +677,43 @@ end`,
 
 		fmt.Println(pool.GetHM("test", "a"))
 
+	})
+
+	Convey("test of table encode", t, func() {
+		db, err := db2.DatabaseFactory("redis")
+		if err != nil {
+			panic(err.Error())
+		}
+		sdb := state.NewDatabase(db)
+		pool := state.NewPool(sdb)
+
+		main := NewMethod(vm.Public, "main", 0, 1)
+		lc := Contract{
+			info: vm.ContractInfo{GasLimit: 1000, Price: 0.1},
+			code: `function main()
+	test = {}
+	test["a"] = 1
+	test["b"] = 2
+	test2 = {}
+	test2[1] = "ahaha"
+	test2[2] = "ohoho"
+	test["t"] = test2
+	ok, str = ToJson(test)
+	print(str)
+	ok, tab = ParseJson(str)
+	for key, value in pairs(tab) do  
+    	print(key, value)
+	end 
+	
+	return "success"
+end`,
+			main: main,
+		}
+		lvm := VM{}
+		lvm.Prepare(nil)
+		lvm.Start(&lc)
+		_, pool, err = lvm.call(pool, "main")
+		lvm.Stop()
 	})
 }
 

@@ -9,26 +9,26 @@ import (
 )
 
 var (
-	sendBlockSize = prometheus.NewSummary(
-		prometheus.SummaryOpts{
-			Name:       "send_block_size",
-			Help:       "size of send block by current node",
-			Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
-		},
-	)
+	/*  sendBlockSize = prometheus.NewSummary( */
+	// prometheus.SummaryOpts{
+	// Name:       "send_block_size",
+	// Help:       "size of send block by current node",
+	// Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
+	// },
+	/* ) */
 	sendBlockCount = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Name: "send_block_count",
 			Help: "Count of send block by current node",
 		},
 	)
-	sendTransactionSize = prometheus.NewSummary(
-		prometheus.SummaryOpts{
-			Name:       "send_transaction_size",
-			Help:       "size of send transaction by current node",
-			Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
-		},
-	)
+	/* sendTransactionSize = prometheus.NewSummary( */
+	// prometheus.SummaryOpts{
+	// Name:       "send_transaction_size",
+	// Help:       "size of send transaction by current node",
+	// Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
+	// },
+	/* ) */
 	sendTransactionCount = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Name: "send_transaction_count",
@@ -36,13 +36,13 @@ var (
 		},
 	)
 
-	receivedBlockSize = prometheus.NewSummary(
-		prometheus.SummaryOpts{
-			Name:       "received_block_size",
-			Help:       "size of received block by current node",
-			Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
-		},
-	)
+	/*  receivedBlockSize = prometheus.NewSummary( */
+	// prometheus.SummaryOpts{
+	// Name:       "received_block_size",
+	// Help:       "size of received block by current node",
+	// Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
+	// },
+	/* ) */
 	//receivedBlockCount = prometheus.NewCounter(
 	//	prometheus.CounterOpts{
 	//		Name: "received_block_count",
@@ -50,13 +50,13 @@ var (
 	//	},
 	//)
 
-	receivedBroadTransactionSize = prometheus.NewSummary(
-		prometheus.SummaryOpts{
-			Name:       "received_broad_transaction_size",
-			Help:       "size of received broad transaction by current node",
-			Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
-		},
-	)
+	/* receivedBroadTransactionSize = prometheus.NewSummary( */
+	// prometheus.SummaryOpts{
+	// Name:       "received_broad_transaction_size",
+	// Help:       "size of received broad transaction by current node",
+	// Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
+	// },
+	/* ) */
 	receivedBroadTransactionCount = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Name: "received_broad_transaction_count",
@@ -66,13 +66,13 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(sendBlockSize)
+	// prometheus.MustRegister(sendBlockSize)
 	prometheus.MustRegister(sendBlockCount)
-	prometheus.MustRegister(sendTransactionSize)
+	// prometheus.MustRegister(sendTransactionSize)
 	prometheus.MustRegister(sendTransactionCount)
-	prometheus.MustRegister(receivedBlockSize)
+	// prometheus.MustRegister(receivedBlockSize)
 	//prometheus.MustRegister(receivedBlockCount)
-	prometheus.MustRegister(receivedBroadTransactionSize)
+	// prometheus.MustRegister(receivedBroadTransactionSize)
 	prometheus.MustRegister(receivedBroadTransactionCount)
 }
 
@@ -101,8 +101,8 @@ type Router interface {
 	FilteredChan(filter Filter) (chan message.Message, error)
 	Run()
 	Stop()
-	Send(req *message.Message)
-	Broadcast(req *message.Message)
+	Send(req message.Message)
+	Broadcast(req message.Message)
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
 	AskABlock(height uint64, to string) error
@@ -215,14 +215,14 @@ func (r *RouterImpl) Stop() {
 }
 
 // Send sends a message by router.
-func (r *RouterImpl) Send(req *message.Message) {
+func (r *RouterImpl) Send(req message.Message) {
 	req.TTL = MsgMaxTTL
 
 	r.base.Send(req)
 }
 
 // Broadcast to all known members.
-func (r *RouterImpl) Broadcast(req *message.Message) {
+func (r *RouterImpl) Broadcast(req message.Message) {
 	req.TTL = MsgMaxTTL
 
 	r.base.Broadcast(req)

@@ -9,10 +9,12 @@ import "github.com/iost-official/prototype/core/tx"
 type Chain interface {
 	Push(block *Block) error
 	Length() uint64
+	CheckLength() error
 	Top() *Block // 语法糖
+	GetHashByNumber(number uint64) []byte
 	GetBlockByNumber(number uint64) *Block
 	GetBlockByHash(blockHash []byte) *Block
-	GetBlockByteByNumber(number uint64) ([]byte, error)
+	GetBlockByteByHash(blockHash []byte) ([]byte, error)
 
 	HasTx(tx *tx.Tx) (bool, error)
 	GetTx(hash []byte) (*tx.Tx, error)

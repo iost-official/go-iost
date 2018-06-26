@@ -385,30 +385,18 @@ func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
 
 // FindBlockInCache 在缓存中找一个块，根据块的hash
 func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
-	var pb *block.Block
-	found := h.cachedRoot.iterate(func(bct *BlockCacheTree) bool {
-		if bytes.Equal(bct.bc.Top().HeadHash(), hash) {
-			pb = bct.bc.Top()
-			return true
-		} else {
-			return false
-		}
-	})
-
-	if found {
-		return pb, nil
-	} else {
-		return nil, fmt.Errorf("not found")
+	bct, ok := h.getHashMap(hash)
+	if ok {
+		return bct.bc.Top(), nil
 	}
+	return nil, errors.New("block not found")
 }
 
 func (h *BlockCacheImpl) CheckBlock(hash []byte) bool {
-	_, ok := h.getHashMap(hash)
-	if ok {
+	if _, err:= h.FindBlockInCache(hash); err == nil {
 		return true
 	}
-	blk := h.bc.GetBlockByHash(hash)
-	if blk != nil {
+	if _, err := h.bc.GetBlockByteByHash(hash); err == nil {
 		return true
 	}
 	return false
