@@ -1,3 +1,6 @@
+/*
+Package verifier, adapter and monitor of vm to IOST node
+*/
 package verifier
 
 import (
@@ -70,12 +73,10 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (
 	}
 
 	sender := contract.Info().Publisher
-	//if contract.Info().Price != 0 {
 	bos := balanceOfSender(sender, pool)
 	if bos < float64(contract.Info().GasLimit)*contract.Info().Price+TxBaseFee {
 		return pool, fmt.Errorf("balance not enough: sender:%v balance:%f\n", string(sender), bos)
 	}
-	//}
 
 	_, err := cv.RestartVM(contract)
 	if err != nil {
@@ -83,12 +84,8 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (
 	}
 	pool, gas, err := cv.Verify(contract, pool)
 	if err != nil {
-		//cv.StopVM(contract)
 		return pool, err
 	}
-	//cv.StopVM(contract)
-
-	//if contract.Info().Price != 0 {
 
 	bos2 := balanceOfSender(sender, pool)
 
@@ -102,7 +99,6 @@ func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (
 	}
 
 	setBalanceOfSender(sender, pool, bos2)
-	//}
 	return pool, nil
 }
 

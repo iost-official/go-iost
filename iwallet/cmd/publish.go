@@ -35,12 +35,7 @@ import (
 var publishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "sign to a .sc file with .sig files, and publish it",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Long:  `sign to a .sc file with .sig files, and publish it`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println(`invalid input, check
