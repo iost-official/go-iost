@@ -34,6 +34,18 @@ func (m *MockChain) EXPECT() *MockChainMockRecorder {
 	return m.recorder
 }
 
+// CheckLength mocks base method
+func (m *MockChain) CheckLength() error {
+	ret := m.ctrl.Call(m, "CheckLength")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckLength indicates an expected call of CheckLength
+func (mr *MockChainMockRecorder) CheckLength() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckLength", reflect.TypeOf((*MockChain)(nil).CheckLength))
+}
+
 // GetBlockByHash mocks base method
 func (m *MockChain) GetBlockByHash(arg0 []byte) *block.Block {
 	ret := m.ctrl.Call(m, "GetBlockByHash", arg0)
