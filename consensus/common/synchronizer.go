@@ -13,9 +13,10 @@ import (
 var (
 	SyncNumber                    = 2 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
 	MaxBlockHashQueryNumber       = 10
-	RetryTime                     = 8
+	RetryTime                     = 5
 	blockDownloadTimeout    int64 = 10
 	cleanInterval                 = 5 * time.Second
+	MaxAcceptableLength     int64 = 100
 )
 
 // Synchronizer 同步器接口
