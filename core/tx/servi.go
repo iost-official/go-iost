@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/vm"
+	"sort"
 	"sync"
 )
 
@@ -99,14 +100,25 @@ func (sp *ServiPool) User(iostAccount vm.IOSTAccount) *Servi {
 	return s
 }
 
+type BestUserList []*Servi
+
+func (s BestUserList) Len() int { return len(s) }
+func (s BestUserList) Less(i, j int) bool {
+	//fmt.Println("")
+	return s[i].Total() > s[j].Total()
+}
+func (s BestUserList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
 func (sp *ServiPool) BestUser() []*Servi {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
 
-	slist := make([]*Servi, 0)
+	var slist BestUserList
 	for i, _ := range sp.btu {
 		slist = append(slist, sp.btu[i])
 	}
+
+	sort.Sort(slist)
 
 	return slist
 }

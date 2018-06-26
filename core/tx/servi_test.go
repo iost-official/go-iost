@@ -47,8 +47,12 @@ func TestNewServi(t *testing.T) {
 			for k, v := range account.GenesisAccount {
 				ser := s.User(vm.IOSTAccount(k))
 				So(ser.b, ShouldEqual, v)
-				fmt.Println("Account id:", vm.IOSTAccount(k), ", value:", ser.b)
+				//fmt.Println("Account id:", vm.IOSTAccount(k), ", value:", ser.b)
 			}
+
+			//for _, v := range bu {
+			//	fmt.Println("Account id:", v.owner, ", value:", v.b)
+			//}
 
 			s.Flush()
 		})
@@ -115,7 +119,7 @@ func TestInitServi(t *testing.T) {
 			if v.owner == vm.IOSTAccount(testAcc) {
 				So(v.b, ShouldEqual, 66666666666666666)
 			}
-			fmt.Println("Account id:", v.owner, ", value:", v.b)
+			//fmt.Println("Account id:", v.owner, ", value:", v.b)
 		}
 
 		ser = s.User(vm.IOSTAccount(testAcc))
