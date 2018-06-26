@@ -166,7 +166,6 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 				need = true
 			}
 		}
-
 		if need {
 			syncNum++
 			sync.router.QueryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
