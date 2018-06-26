@@ -50,7 +50,7 @@ func TestChainImpl(t *testing.T) {
 			panic("state.PoolInstance error")
 		}
 
-		sp, e := tx.NewServiPool(len(account.GenesisAccount))
+		sp, e := tx.NewServiPool(len(account.GenesisAccount), 1000)
 		So(e, ShouldBeNil)
 		acc, err := account.NewAccount(common.Base58Decode("4PpkMbuJauTeqX1VZw4qeYrc9jNbdAbBUi3q6dVR7sMC"))
 		So(err, ShouldBeNil)

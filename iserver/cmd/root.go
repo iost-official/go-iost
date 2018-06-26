@@ -376,28 +376,37 @@ var rootCmd = &cobra.Command{
 		log.Log.I("blockchain db length:%d\n", blockChain.Length())
 
 		// init servi
-		sp, err := tx.NewServiPool(len(account.GenesisAccount))
+		sp, err := tx.NewServiPool(len(account.GenesisAccount), 100)
 		if err != nil {
 			log.Log.E("NewServiPool failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 		tx.Data = tx.NewHolder(acc, state.StdPool, sp)
 		tx.Data.Spool.Restore()
-		bu := tx.Data.Spool.BestUser()
+		bu, _ := tx.Data.Spool.BestUser()
 
 		if len(bu) != len(account.GenesisAccount) {
 			tx.Data.Spool.ClearBtu()
 			for k, v := range account.GenesisAccount {
-				ser := tx.Data.Spool.User(vm.IOSTAccount(k))
-				ser.SetBalance(v)
+				ser, err := tx.Data.Spool.User(vm.IOSTAccount(k))
+				if err == nil {
+					ser.SetBalance(v)
+				}
+
 			}
 			tx.Data.Spool.Flush()
 		}
 		witnessList := make([]string, 0)
 
-		bu = tx.Data.Spool.BestUser()
-		for _, v := range bu {
-			witnessList = append(witnessList, string(v.Owner()))
+		bu, err = tx.Data.Spool.BestUser()
+		if err != nil {
+			for k, _ := range account.GenesisAccount {
+				witnessList = append(witnessList, k)
+			}
+		} else {
+			for _, v := range bu {
+				witnessList = append(witnessList, string(v.Owner()))
+			}
 		}
 
 		for i, witness := range witnessList {

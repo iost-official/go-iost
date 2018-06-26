@@ -46,10 +46,11 @@ func (s *Servi) Clear() {
 }
 
 type ServiPool struct {
-	btu    map[vm.IOSTAccount]*Servi // 贡献最大的账户集合
-	hm     map[vm.IOSTAccount]*Servi // 普通账户
-	btuCnt int                       // 贡献最大账户的集合
-	mu     sync.RWMutex
+	btu       map[vm.IOSTAccount]*Servi // 贡献最大的账户集合
+	hm        map[vm.IOSTAccount]*Servi // 普通账户
+	btuCnt    int                       // 贡献最大账户的集合
+	cacheSize int                       // 缓存大小
+	mu        sync.RWMutex
 }
 
 var ldb db.Database
@@ -57,7 +58,7 @@ var ldb db.Database
 var StdServiPool *ServiPool
 var sonce sync.Once
 
-func NewServiPool(num int) (*ServiPool, error) {
+func NewServiPool(num int, cacheSize int) (*ServiPool, error) {
 
 	var err error
 	sonce.Do(func() {
@@ -67,27 +68,28 @@ func NewServiPool(num int) (*ServiPool, error) {
 		}
 
 		StdServiPool = &ServiPool{
-			btu:    make(map[vm.IOSTAccount]*Servi, 0),
-			hm:     make(map[vm.IOSTAccount]*Servi, 0),
-			btuCnt: num,
+			btu:       make(map[vm.IOSTAccount]*Servi, 0),
+			hm:        make(map[vm.IOSTAccount]*Servi, 0),
+			btuCnt:    num,
+			cacheSize: cacheSize,
 		}
 	})
 	return StdServiPool, nil
 }
 
 // 没有则添加该节点
-func (sp *ServiPool) User(iostAccount vm.IOSTAccount) *Servi {
+func (sp *ServiPool) User(iostAccount vm.IOSTAccount) (*Servi, error) {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
 
 	var s *Servi
 
 	if servi, ok := sp.btu[iostAccount]; ok {
-		return servi
+		return servi, nil
 	}
 
 	if servi, ok := sp.hm[iostAccount]; ok {
-		return servi
+		return servi, nil
 	}
 
 	if len(sp.btu) < sp.btuCnt {
@@ -97,19 +99,10 @@ func (sp *ServiPool) User(iostAccount vm.IOSTAccount) *Servi {
 		s = sp.userHm(iostAccount)
 	}
 
-	return s
+	return s, nil
 }
 
-type BestUserList []*Servi
-
-func (s BestUserList) Len() int { return len(s) }
-func (s BestUserList) Less(i, j int) bool {
-	//fmt.Println("")
-	return s[i].Total() > s[j].Total()
-}
-func (s BestUserList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-
-func (sp *ServiPool) BestUser() []*Servi {
+func (sp *ServiPool) BestUser() ([]*Servi, error) {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
 
@@ -120,7 +113,7 @@ func (sp *ServiPool) BestUser() []*Servi {
 
 	sort.Sort(slist)
 
-	return slist
+	return slist, nil
 }
 
 func (sp *ServiPool) ClearBtu() {
@@ -294,7 +287,14 @@ func (sp *ServiPool) flushHm() error {
 		}
 		sbuf = append(sbuf, buf...)
 
-		return ldb.Put([]byte(key), sbuf)
+		err := ldb.Put(vm.IOSTAccountToPubkey(key), sbuf)
+		if err != nil {
+			log.Log.I("Failed to flushHm db", err)
+		}
+	}
+
+	if len(sp.hm) > sp.cacheSize {
+		sp.hm = make(map[vm.IOSTAccount]*Servi, 0)
 	}
 
 	return nil
@@ -322,3 +322,12 @@ func (sp *ServiPool) restoreHm(key vm.IOSTAccount) (*Servi, error) {
 
 	return &servi, nil
 }
+
+type BestUserList []*Servi
+
+func (s BestUserList) Len() int { return len(s) }
+func (s BestUserList) Less(i, j int) bool {
+	//fmt.Println("")
+	return s[i].Total() > s[j].Total()
+}
+func (s BestUserList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }

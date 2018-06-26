@@ -205,7 +205,7 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 		panic("state.PoolInstance error")
 	}
 
-	sp, e := tx.NewServiPool(len(account.GenesisAccount))
+	sp, e := tx.NewServiPool(len(account.GenesisAccount), 1000)
 	So(e, ShouldBeNil)
 
 	tx.Data = tx.NewHolder(_account, state.StdPool, sp)
