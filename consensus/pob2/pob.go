@@ -225,6 +225,14 @@ func (p *PoB) blockLoop() {
 			}
 
 			p.log.I("Received block:%v ,from=%v, timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, req.From, blk.Head.Time, blk.Head.Witness, len(blk.Content))
+			localLength := p.blockCache.ConfirmedLength()
+			if blk.Head.Number > int64(localLength) + MaxAcceptableLength {
+				// Do not accept block of too height, must wait for synchronization
+				if req.ReqType == int32(ReqNewBlock) {
+					go p.synchronizer.SyncBlocks(localLength, localLength + uint64(MaxAcceptableLength))
+				}
+				continue
+			}
 			err = p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")

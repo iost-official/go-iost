@@ -16,6 +16,7 @@ var (
 	RetryTime                     = 8
 	blockDownloadTimeout    int64 = 10
 	cleanInterval                 = 5 * time.Second
+	MaxAcceptableLength     int64 = 1000
 )
 
 // Synchronizer 同步器接口
