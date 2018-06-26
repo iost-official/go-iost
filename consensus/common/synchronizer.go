@@ -249,14 +249,22 @@ func (sync *SyncImpl) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(time.Second * time.Duration(RetryTime)):
+			delList := make([]uint64, 0)
 			sync.requestMap.Range(func(k, v interface{}) bool {
 				num, ok := k.(uint64)
 				if !ok {
 					return false
 				}
-				sync.router.QueryBlockHash(num, num)
+				if num < sync.blockCache.ConfirmedLength() {
+					delList = append(delList, num)
+				} else {
+					sync.router.QueryBlockHash(num, num)
+				}
 				return true
 			})
+			for _, num := range delList {
+				sync.requestMap.Delete(num)
+			}
 		case <-sync.exitSignal:
 			return
 		}
