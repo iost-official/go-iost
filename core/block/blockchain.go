@@ -121,7 +121,7 @@ func (b *ChainImpl) Push(block *Block) error {
 	state.StdPool.Flush()
 
 	// add servi
-	tx.Data.AddServi(block.Content)
+	go tx.Data.AddServi(block.Content)
 
 	return nil
 }
