@@ -4,10 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"strconv"
-	"sync"
-	"time"
-	"math/rand"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
@@ -16,6 +12,10 @@ import (
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"math/rand"
+	"strconv"
+	"sync"
+	"time"
 )
 
 var log = logrus.New()
@@ -96,14 +96,6 @@ var eps float64 = (1e-6)
 func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, routineId int) {
 	defer wg.Done()
 	log.Infof("cluster: %v, routineId: %v, server_num: %v", *cluster, routineId, server_num[*cluster])
-	id:=rand.Intn(server_num[*cluster]-1)
-	fmt.Println("sendto: "+string(id))
-	conn, err := grpc.Dial(servers[*cluster][id], grpc.WithInsecure())
-	if err != nil {
-		return
-	}
-	defer conn.Close()
-	pclient := pb.NewCliClient(conn)
 
 	for i := startNonce; i != -1; i++ {
 		start := time.Now().UnixNano()
@@ -116,10 +108,10 @@ func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, 
 			return
 		}
 
-		err = sendTx(&stx, pclient)
+		err = sendTx(&stx)
 		if err != nil {
 			log.Errorf("Send transaction error:", err)
-			return
+			continue
 		}
 		end := time.Now().UnixNano()
 		curtps := float64(1e9) / float64(end-start)
@@ -178,13 +170,7 @@ end--f
 				log.Errorf("Sign transaction error:", err)
 				return
 			}
-			conn, err := grpc.Dial(servers[*cluster][0], grpc.WithInsecure())
-			if err != nil {
-				return
-			}
-			pclient := pb.NewCliClient(conn)
-			sendTx(&stx, pclient)
-			conn.Close()
+			sendTx(&stx)
 			end := time.Now().UnixNano()
 			curtps += float64(end - start)
 		}
@@ -212,9 +198,18 @@ end--f
 	log.Fatal("Func main finished")
 }
 
-func sendTx(stx *tx.Tx, pclient pb.CliClient) error {
+func sendTx(stx *tx.Tx) error {
+	id := rand.Intn(server_num[*cluster] - 1)
+	fmt.Printf("sendto: %v\n", id)
+	conn, err := grpc.Dial(servers[*cluster][id], grpc.WithInsecure())
+	if err != nil {
+		return fmt.Errorf("conn err")
+	}
+	defer conn.Close()
+	pclient := pb.NewCliClient(conn)
+
 	//resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
-	_, err := pclient.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
+	_, err = pclient.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
 	if err != nil {
 		return err
 	}
