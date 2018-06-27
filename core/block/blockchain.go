@@ -203,10 +203,19 @@ func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 
 // Top 返回已确定链的最后block
 func (b *ChainImpl) Top() *Block {
+
+	var blk *Block
 	if b.length == 0 {
 		return b.GetBlockByNumber(b.length)
 	} else {
-		return b.GetBlockByNumber(b.length - 1)
+		for i := b.length; i > 0; i-- {
+			blk = b.GetBlockByNumber(i - 1)
+			if blk != nil {
+				break
+			}
+		}
+
+		return blk
 	}
 }
 

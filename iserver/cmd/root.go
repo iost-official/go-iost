@@ -100,6 +100,10 @@ func chainServer(chain block.Chain) {
 		if len(num) > 0 {
 			n, _ := strconv.ParseUint(num[0], 10, 64)
 			blk := chain.GetBlockByNumber(n)
+			if blk == nil {
+				fmt.Println("GetBlockByNumber error.")
+				return
+			}
 			blkStr := blk.String()
 			md5Ctx := md5.New()
 			md5Ctx.Write([]byte(blkStr))
@@ -118,6 +122,10 @@ func chainServer(chain block.Chain) {
 		}
 		if len(has) > 0 {
 			blk := chain.GetBlockByHash([]byte(has[0]))
+			if blk == nil {
+				fmt.Println("GetBlockByNumber error.")
+				return
+			}
 			blkStr := blk.String()
 			md5Ctx := md5.New()
 			md5Ctx.Write([]byte(blkStr))

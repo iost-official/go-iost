@@ -192,7 +192,9 @@ func TestClearHm(t *testing.T) {
 		So(ser.b, ShouldEqual, 10)
 
 		So(len(s3.hm), ShouldEqual, 1)
-
+		//
+		//ser1, _ = s3.User(vm.IOSTAccount(testAcc1))
+		//So(ser.b, ShouldEqual, 11)
 	})
 }
 
@@ -261,7 +263,7 @@ func TestStoreServi(t *testing.T) {
 		}
 		So(len(bu), ShouldEqual, len(account.GenesisAccount))
 
-		testAcc := "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+		testAcc := "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn1"
 		sr, _ := s.User(vm.IOSTAccount(testAcc))
 		sr.SetBalance(10000)
 		sr.IncrBehavior(10)
