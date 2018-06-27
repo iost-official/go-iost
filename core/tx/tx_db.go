@@ -87,7 +87,6 @@ func (tp *TxPoolDb) GetByPN(Nonce int64, PubKey []byte) (*Tx, error) {
 	binary.BigEndian.PutUint64(NonceRaw, uint64(Nonce))
 	hash, err := tp.db.Get(append(PNPrefix, append(NonceRaw, PubKey...)...))
 
-	//fmt.Println(append(PNPrefix, append(NonceRaw, PubRaw...)...))
 
 	if err != nil {
 
@@ -100,26 +99,15 @@ func (tp *TxPoolDb) GetByPN(Nonce int64, PubKey []byte) (*Tx, error) {
 	return tx, nil
 }
 
-// 判断一个Tx是否在Tx Pool
 func (tp *TxPoolDb) Has(tx *Tx) (bool, error) {
 	hash := tx.Hash()
 	return tp.db.Has(append(txPrefix, hash...))
 }
 
-// 获取TxPool中tx的数量
 func (tp *TxPoolDb) Size() int {
 	return 0
 }
 
-/*
-no need to Close ldb any more,cause we changed db.DatabaseFactory() to sync.Once.
-So,the ldb would be always open...
-func (tp *TxPoolDb) Close() {
-	tp.db.Close()
-}
-*/
-
-// 在Tx Pool 获取第一个Tx
 func (tp *TxPoolDb) Top() (*Tx, error) {
 	return nil, nil
 }
