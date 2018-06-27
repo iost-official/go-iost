@@ -9,7 +9,7 @@ import (
 type Holder struct {
 	self  account.Account
 	pool  state.Pool
-	spool ServiPool
+	Spool *ServiPool
 }
 
 func (h *Holder) Self() account.Account {
@@ -22,26 +22,35 @@ func (h *Holder) AddServi(tx []Tx) {
 		if len(t.Recorder.Pubkey) == 0 {
 			continue
 		}
-		servi := h.spool.User(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey))
-		if servi != nil {
-			servi.Incr(1)
+		servi, err := h.Spool.User(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey))
+		if err != nil {
+			servi.IncrBehavior(1)
+			// balance
+			val0, err := state.StdPool.GetHM("iost", state.Key(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey)))
+			if err != nil {
+				continue
+			}
+			val, ok := val0.(*state.VFloat)
+			if !ok {
+				continue
+			}
+
+			servi.SetBalance(val.ToFloat64())
 		}
+	}
+	h.Spool.Flush()
+
+}
+
+func (h *Holder) ClearServi(acc string) {
+
+	servi, err := h.Spool.User(vm.IOSTAccount(acc))
+	if err != nil {
+		servi.Clear()
 	}
 }
 
-func (h *Holder) ClearServi(tx []*Tx) {
-	for _, t := range tx {
-		if len(t.Recorder.Pubkey) == 0 {
-			continue
-		}
-		servi := h.spool.User(vm.PubkeyToIOSTAccount(t.Recorder.Pubkey))
-		if servi != nil {
-			servi.Clear()
-		}
-	}
-}
-
-func NewHolder(acc account.Account, pool state.Pool, spool ServiPool) *Holder {
+func NewHolder(acc account.Account, pool state.Pool, spool *ServiPool) *Holder {
 	return &Holder{acc, pool, spool}
 }
 

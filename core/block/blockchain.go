@@ -119,6 +119,10 @@ func (b *ChainImpl) Push(block *Block) error {
 	state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(block.Head.Number)))
 	state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(block.HeadHash()))
 	state.StdPool.Flush()
+
+	// add servi
+	go tx.Data.AddServi(block.Content)
+
 	return nil
 }
 
