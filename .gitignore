@@ -223,7 +223,5 @@ servi_db.ldb
 */test.log
 */vm.log
 test/data
-core/block/serviDb/CURRENT
-core/block/serviDb/LOCK
-core/block/serviDb/LOG
-core/block/serviDb/MANIFEST-000000
+/consensus/pob/serviDb/
+/core/block/serviDb/
