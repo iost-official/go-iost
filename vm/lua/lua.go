@@ -3,8 +3,6 @@ package lua
 import (
 	"errors"
 
-	"fmt"
-
 	"github.com/iost-official/gopher-lua"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/log"
@@ -33,10 +31,11 @@ type VM struct {
 
 func (l *VM) Start(contract vm.Contract) error {
 	l.contract = contract.(*Contract)
-	if contract.Info().GasLimit < 3 {
-		return errors.New("gas limit less than 3")
+	if contract.Info().GasLimit < 1000 {
+		return errors.New("gas limit less than 1000")
 	}
 	l.L.PCLimit = uint64(contract.Info().GasLimit)
+	l.L.PCount = 0
 	if err := l.L.DoString(l.contract.code); err != nil {
 		return err
 	}
@@ -131,6 +130,7 @@ func (l *VM) Call(ctx *vm.Context, pool state.Pool, methodName string, args ...s
 	defer func() {
 		l.ctx = vm.BaseContext()
 	}()
+	l.L.PCount = 0
 	return l.call(pool, methodName, args...)
 }
 func (l *VM) Prepare(monitor vm.Monitor) error {
@@ -353,6 +353,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 		name: "Call",
 		function: func(L *lua.LState) int {
 			L.PCount += 1000
+			l.callerPC = 0
 			contractPrefix := L.ToString(1)
 			methodName := L.ToString(2)
 			if methodName == "main" {
@@ -368,7 +369,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 
 			//fmt.Print("outer call check:")
 			p := vm.CheckPrivilege(l.ctx, *info, string(l.contract.Info().Publisher))
-			fmt.Println("check result:", p)
+			//fmt.Println("check result:", p)
 			pri := method.Privilege()
 			switch {
 			case pri == vm.Private && p > 1:
@@ -393,6 +394,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				ctx.Signers = l.contract.Info().Signers
 
 				rtn, pool, gas, err := l.monitor.Call(ctx, l.cachePool, contractPrefix, methodName, args...)
+				//fmt.Println("caller gas is", gas)
 				l.callerPC += gas
 				if err != nil {
 					host.Log(err.Error(), contractPrefix)
@@ -431,8 +433,8 @@ func (l *VM) PC() uint64 {
 }
 func (l *VM) Restart(contract vm.Contract) error {
 	l.contract = contract.(*Contract)
-	if contract.Info().GasLimit < 3 {
-		return errors.New("gas limit less than 3")
+	if contract.Info().GasLimit < 1000 {
+		return errors.New("gas limit less than 1000")
 	}
 	l.L.PCLimit = uint64(contract.Info().GasLimit)
 	l.L.PCount = 0
