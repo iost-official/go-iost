@@ -6,11 +6,9 @@ import (
 	"encoding/binary"
 	"log"
 	"testing"
-
 	"time"
 
 	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/params"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -32,13 +30,6 @@ func TestRequest_isValidNode(t *testing.T) {
 		isValid = isValidNode(&Request{From: []byte("13.232.79.7")}, bn)
 		So(isValid, ShouldBeTrue)
 
-		NetMode = CommitteeMode
-		isValid = isValidNode(&Request{From: []byte(params.CommitteeNodes[0])}, bn)
-		So(isValid, ShouldBeTrue)
-		isValid = isValidNode(&Request{From: []byte("192.168.1.34")}, bn)
-		So(isValid, ShouldBeFalse)
-		isValid = isValidNode(&Request{From: []byte("13.232.79.7")}, bn)
-		So(isValid, ShouldBeFalse)
 	})
 }
 

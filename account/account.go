@@ -10,7 +10,18 @@ import (
 	"github.com/iost-official/prototype/common"
 )
 
-var MainAccount Account
+var (
+	MainAccount    Account
+	GenesisAccount = map[string]float64{
+		"2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT": 3400000000,
+		"tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU":  3200000000,
+		"s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB":  3100000000,
+		"22zr9ows3qndmAjnkiPFex26taATEaEfjGkatVCr5akSU": 3000000000,
+		"wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG":  2900000000,
+		"oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU":  2800000000,
+		"28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym": 2600000000,
+	}
+)
 
 type Account struct {
 	ID     string

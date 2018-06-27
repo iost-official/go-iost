@@ -1,11 +1,11 @@
 package network
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -20,7 +20,6 @@ import (
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network/discover"
-	"github.com/iost-official/prototype/params"
 )
 
 // const
@@ -33,8 +32,7 @@ const (
 	RegisterServerPort      = 30304
 	PublicMode              = "public"
 	CommitteeMode           = "committee"
-	WitnessThreshold		= 0.7
-	SpThreshold				= 0.7
+	RndBcastThreshold       = 0.5
 )
 
 // NetMode is the bootnode's mode.
@@ -126,7 +124,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
 	bn.log.D("[net] listening %v", bn.localNode)
 	var err error
-	bn.listener, err = net.Listen("tcp", "0.0.0.0:"+strconv.Itoa(int(bn.localNode.TCP)))
+	bn.listener, err = net.Listen("tcp4", "0.0.0.0:"+strconv.Itoa(int(bn.localNode.TCP)))
 	if err != nil {
 		return bn.RecvCh, errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
 	}
@@ -161,7 +159,7 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 	bn.neighbours.Range(func(k, v interface{}) bool {
 		node := v.(*discover.Node)
 		if node.Addr() == from {
-			return true
+			return false
 		}
 		msg.To = node.Addr()
 		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
@@ -171,6 +169,36 @@ func (bn *BaseNetwork) Broadcast(msg message.Message) {
 		}
 		return true
 	})
+}
+
+func (bn *BaseNetwork) randomBroadcast(msg message.Message) {
+	if msg.From == "" {
+		msg.From = bn.localNode.Addr()
+	}
+	from := msg.From
+
+	targetAddrs := make([]string, 0)
+	bn.neighbours.Range(func(k, v interface{}) bool {
+		node := v.(*discover.Node)
+		if node.Addr() == from {
+			return false
+		}
+		targetAddrs = append(targetAddrs, node.Addr())
+		return true
+	})
+	if len(targetAddrs) == 0 {
+		return
+	}
+	rand.Seed(time.Now().UnixNano())
+	randomSlice := rand.Perm(len(targetAddrs))
+	for i := 0; i < len(randomSlice)/2; i++ {
+		msg.To = targetAddrs[randomSlice[i]]
+		if !bn.isRecentSent(msg) {
+			bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v", msg.ReqType, msg.From, msg.To, msg.Time)
+			bn.broadcast(msg)
+			prometheusSendBlockTx(msg)
+		}
+	}
 }
 
 // broadcast broadcasts to all neighbours, stop broadcast when msg already broadcast
@@ -188,19 +216,27 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
 	req := newRequest(BroadcastMessage, bn.localNode.Addr(), data)
-	conn, err := bn.dial(msg.To)
+	peer, err := bn.dial(msg.To)
 	if err != nil {
 		bn.log.E("[net] broadcast dial tcp got err:%v", err)
 		bn.nodeTable.Delete([]byte(msg.To))
 		bn.NodeAddedTime.Delete(msg.To)
 		return
 	}
-	if er := bn.send(conn, req); er != nil {
-		bn.peers.RemoveByNodeStr(msg.To)
+	if msg.ReqType == int32(ReqSyncBlock) || msg.ReqType == int32(ReqNewBlock) {
+		if er := bn.send(peer.blockConn, req); er != nil {
+			bn.log.E("[net] block conn sent error:%v", err)
+			bn.peers.RemoveByNodeStr(msg.To)
+		}
+	} else {
+		if er := bn.send(peer.conn, req); er != nil {
+			bn.log.E("[net] normal conn sent error:%v", err)
+			bn.peers.RemoveByNodeStr(msg.To)
+		}
 	}
 }
 
-func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
+func (bn *BaseNetwork) dial(nodeStr string) (*Peer, error) {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
 	node, _ := discover.ParseNode(nodeStr)
@@ -210,30 +246,42 @@ func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
 	peer := bn.peers.Get(node)
 	if peer == nil {
 		bn.log.D("[net] dial to %v", node.Addr())
-		conn, err := net.Dial("tcp", node.Addr())
+		conn, blockConn, err := dial(node.Addr())
 		if err != nil {
-			if conn != nil {
-				conn.Close()
-			}
-			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
-			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
+			bn.log.E("failed to dial %v", err)
+			return nil, err
 		}
-		if conn != nil {
-			go bn.receiveLoop(conn)
-			peer := newPeer(conn, bn.localNode.Addr(), nodeStr)
-			bn.peers.Set(node, peer)
-		}
+		go bn.receiveLoop(conn)
+		go bn.receiveLoop(blockConn)
+		peer := newPeer(conn, blockConn, bn.localNode.Addr(), nodeStr)
+		bn.peers.Set(node, peer)
 	}
 
-	return bn.peers.Get(node).conn, nil
+	return bn.peers.Get(node), nil
+}
+
+func dial(nodeAddr string) (net.Conn, net.Conn, error) {
+	conn, err := net.Dial("tcp4", nodeAddr)
+	if err != nil {
+		if conn != nil {
+			conn.Close()
+		}
+		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: nodeAddr})
+		return nil, nil, fmt.Errorf("dial tcp %v got err:%v", nodeAddr, err)
+	}
+	blockConn, err := net.Dial("tcp4", nodeAddr)
+	if err != nil {
+		if blockConn != nil {
+			blockConn.Close()
+		}
+		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: nodeAddr})
+		return nil, nil, fmt.Errorf("dial tcp %v got err:%v", nodeAddr, err)
+	}
+	return conn, blockConn, nil
 }
 
 // Send sends msg to msg.To.
 func (bn *BaseNetwork) Send(msg message.Message) {
-	//if bn.isRecentSent(msg) {
-	//	bn.log.D("[net] recent send")
-	//	return
-	//}
 	if msg.To == bn.localNode.Addr() || msg.To == "" {
 		return
 	}
@@ -243,7 +291,7 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 	}
 	bn.log.D("[net] send msg: type= %v, from=%v,to=%v,time=%v", msg.ReqType, msg.From, msg.To, msg.Time)
 	req := newRequest(Message, bn.localNode.Addr(), data)
-	conn, err := bn.dial(msg.To)
+	peer, err := bn.dial(msg.To)
 	if err != nil {
 		bn.nodeTable.Delete([]byte(msg.To))
 		bn.NodeAddedTime.Delete(msg.To)
@@ -251,8 +299,14 @@ func (bn *BaseNetwork) Send(msg message.Message) {
 		return
 	}
 
-	if er := bn.send(conn, req); er != nil {
-		bn.peers.RemoveByNodeStr(msg.To)
+	if msg.ReqType == int32(ReqSyncBlock) || msg.ReqType == int32(ReqNewBlock) {
+		if er := bn.send(peer.blockConn, req); er != nil {
+			bn.peers.RemoveByNodeStr(msg.To)
+		}
+	} else {
+		if er := bn.send(peer.conn, req); er != nil {
+			bn.peers.RemoveByNodeStr(msg.To)
+		}
 	}
 
 	prometheusSendBlockTx(msg)
@@ -277,41 +331,90 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 		return nil
 	}
 
+	conn.SetWriteDeadline(time.Now().Add(800 * time.Millisecond))
 	_, err = conn.Write(pack)
 	if err != nil {
 		bn.log.E("[net] conn write got err:%v", err)
+		conn.Close()
 	}
 	return err
 }
+func (bn *BaseNetwork) readMsg(conn net.Conn) ([]byte, error) {
 
-func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
-	defer conn.Close()
 	for {
-		scanner := bufio.NewScanner(conn)
-		scanner.Buffer([]byte{}, bufio.MaxScanTokenSize*100)
-		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-			if !atEOF && isNetVersionMatch(data) {
-				if len(data) > 8 {
-					length := int32(0)
-					binary.Read(bytes.NewReader(data[4:8]), binary.BigEndian, &length)
-					if int(length)+8 <= len(data) {
-						return int(length) + 8, data[:int(length)+8], nil
-					}
-				}
+
+		length := int32(0)
+		revH := make([]byte, 4)
+		revL := make([]byte, 4)
+		if _, err := io.ReadFull(conn, revH); err != nil {
+			return nil, err
+		}
+
+		if !isNetVersionMatch(revH) {
+			return nil, errors.New("[net] Receive head error")
+		}
+
+		if _, err := io.ReadFull(conn, revL); err != nil {
+			return nil, err
+		}
+
+		if err := binary.Read(bytes.NewReader(revL), binary.BigEndian, &length); err != nil {
+			return nil, err
+		}
+
+		rbuf := make([]byte, length+8)
+		var n int
+		var err error
+		var rLen int
+
+		for {
+
+			if n, err = io.ReadFull(conn, rbuf[rLen+8:]); err != nil {
+				return nil, err
 			}
-			return
-		})
-		for scanner.Scan() {
-			req := new(Request)
-			req.Unpack(bytes.NewReader(scanner.Bytes()))
-			req.handle(bn, conn)
+
+			if n != len(rbuf)-8 {
+				rLen += n
+				continue
+			} else {
+				break
+			}
+
 		}
-		if err := scanner.Err(); err != nil {
-			bn.log.E("[net] invalid data packets: %v", err)
-		}
-		return
-		// EOF also need to return.
+
+		copy(rbuf[0:4], revH)
+		copy(rbuf[4:8], revL)
+
+		return rbuf, nil
 	}
+
+}
+func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+	}()
+
+	for {
+
+		buf, err := bn.readMsg(conn)
+		if err != nil {
+			log.Log.E("[net] readMsg error:%v", err)
+			return
+		}
+
+		req := new(Request)
+		if err := req.Unpack(bytes.NewReader(buf)); err != nil {
+			log.Log.E("[net] req.Unpack error")
+			continue
+		}
+
+		req.handle(bn, conn)
+
+	}
+
 }
 
 // AllNodesExcludeAddr returns all the known node in the network.
@@ -320,25 +423,10 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 		return nil, nil
 	}
 	addrs := make([]string, 0)
-	witness := params.WitnessNodes
-	spnode := params.SpNodes
-	_, isW := witness[excludeAddr]
-	_, isS := spnode[excludeAddr]
-
 	iter := bn.nodeTable.NewIterator()
 	for iter.Next() {
 		addr := string(iter.Key())
-		if excludeAddr == "" {
-			addrs = append(addrs, addr)
-			continue
-		}
 		if addr != excludeAddr {
-			if !isW && !isS && witness[addr] {
-				continue
-			}
-			if isW && (!witness[addr] && !spnode[addr]) {
-				continue
-			}
 			addrs = append(addrs, addr)
 		}
 	}
@@ -347,67 +435,7 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 		return nil, err
 	}
 
-	if excludeAddr == "" {
-		return addrs, nil
-	}
-	retAddrs := make([]string, 0)
-	optAddrs := make([]string, 0)
-	if isW { // for witness: all witness + some sp
-		for _, addr := range addrs {
-			if witness[addr] {
-				retAddrs = append(retAddrs, addr)
-			} else {
-				optAddrs = append(optAddrs, addr)
-			}
-		}
-		r := rand.Perm(len(optAddrs))
-		for _, index := range r {
-			if len(retAddrs) >= discover.MaxNeighbourNum {
-				break
-			}
-			retAddrs = append(retAddrs, optAddrs[index])
-		}
-	} else if isS { // for sp: some witness + some sp + some others
-		rand.Seed(time.Now().UnixNano())
-		for _, addr := range addrs {
-			rnd := rand.Float64()
-			if witness[addr] {
-				if rnd > WitnessThreshold {
-					retAddrs = append(retAddrs, addr)
-				}
-			} else {
-				optAddrs = append(optAddrs, addr)
-			}
-		}
-		r := rand.Perm(len(optAddrs))
-		for _, index := range r {
-			if len(retAddrs) >= discover.MaxNeighbourNum {
-				break
-			}
-			retAddrs = append(retAddrs, optAddrs[index])
-		}
-	} else { // for others: some sp + some others
-		rand.Seed(time.Now().UnixNano())
-		for _, addr := range addrs {
-			rnd := rand.Float64()
-			if spnode[addr] {
-				if rnd > SpThreshold {
-					retAddrs = append(retAddrs, addr)
-				}
-			} else {
-				optAddrs = append(optAddrs, addr)
-			}
-		}
-		r := rand.Perm(len(optAddrs))
-		for _, index := range r {
-			if len(retAddrs) >= discover.MaxNeighbourNum {
-				break
-			}
-			retAddrs = append(retAddrs, optAddrs[index])
-		}
-	}
-
-	return retAddrs, nil
+	return addrs, nil
 }
 
 // putnode puts node into node table of server.
@@ -466,7 +494,7 @@ func (bn *BaseNetwork) nodeCheckLoop() {
 func (bn *BaseNetwork) registerLoop() {
 	for {
 		if bn.localNode.TCP != RegisterServerPort && bn.regAddr != "" {
-			conn, err := bn.dial(bn.regAddr)
+			peer, err := bn.dial(bn.regAddr)
 			if err != nil {
 				bn.log.E("[net] failed to connect boot node, err:%v", err)
 				time.Sleep(CheckKnownNodeInterval * time.Second)
@@ -474,7 +502,7 @@ func (bn *BaseNetwork) registerLoop() {
 			}
 			bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), bn.regAddr)
 			req := newRequest(ReqNodeTable, bn.localNode.Addr(), nil)
-			if er := bn.send(conn, req); er != nil {
+			if er := bn.send(peer.conn, req); er != nil {
 				bn.peers.RemoveByNodeStr(bn.regAddr)
 			}
 		}
@@ -526,12 +554,12 @@ func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
 	msg := message.Message{
 		Body:    bytes,
 		ReqType: int32(BlockHashQuery),
-		TTL:     1,
+		TTL:     1, //BlockHashQuery req just broadcast to its neibour
 		From:    bn.localNode.Addr(),
 		Time:    time.Now().UnixNano(),
 	}
 	bn.log.D("[net] query block hash. start=%v, end=%v, from=%v", start, end, bn.localNode.Addr())
-	bn.Broadcast(msg)
+	bn.randomBroadcast(msg)
 	return nil
 }
 
@@ -570,27 +598,6 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			return true
 		})
 
-		/*      for downloadHeight, retryTimes := range bn.DownloadHeights { */
-		// if retryTimes > MaxDownloadRetry {
-		// continue
-		// }
-		// msg := message.Message{
-		// Body:    common.Uint64ToBytes(downloadHeight),
-		// ReqType: int32(ReqDownloadBlock),
-		// TTL:     MsgMaxTTL,
-		// From:    bn.localNode.Addr(),
-		// Time:    time.Now().UnixNano(),
-		// }
-		// bn.log.D("[net] download height = %v  nodeMap = %v", downloadHeight, bn.NodeHeightMap)
-		// bn.lock.Lock()
-		// bn.DownloadHeights[downloadHeight] = retryTimes + 1
-		// bn.lock.Unlock()
-		// wg.Add(1)
-		// go func() {
-		// bn.Broadcast(msg)
-		// wg.Done()
-		// }()
-		/* } */
 		wg.Wait()
 	}
 	return nil
@@ -655,6 +662,7 @@ func (bn *BaseNetwork) recentSentLoop() {
 }
 
 func (bn *BaseNetwork) isRecentSent(msg message.Message) bool {
+	msg.TTL = 0
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
@@ -680,15 +688,6 @@ func (bn *BaseNetwork) sendNodeTable(from []byte, conn net.Conn) {
 		conn.Close()
 	}
 	return
-}
-
-func (bn *BaseNetwork) isInCommittee(from []byte) bool {
-	for _, ip := range params.CommitteeNodes {
-		if net.ParseIP(string(from)).String() == ip {
-			return true
-		}
-	}
-	return false
 }
 
 func prometheusSendBlockTx(req message.Message) {

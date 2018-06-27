@@ -80,7 +80,7 @@ func (mr *MockRouterMockRecorder) Stop() *gomock.Call {
 }
 
 // Send mocks base method
-func (m *MockRouter) Send(req *message.Message) {
+func (m *MockRouter) Send(req message.Message) {
 	m.ctrl.Call(m, "Send", req)
 }
 
@@ -90,7 +90,7 @@ func (mr *MockRouterMockRecorder) Send(req interface{}) *gomock.Call {
 }
 
 // Broadcast mocks base method
-func (m *MockRouter) Broadcast(req *message.Message) {
+func (m *MockRouter) Broadcast(req message.Message) {
 	m.ctrl.Call(m, "Broadcast", req)
 }
 

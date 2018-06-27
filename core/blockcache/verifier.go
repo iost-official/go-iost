@@ -6,6 +6,9 @@ import (
 
 	"sync"
 
+	"time"
+
+	"github.com/flybikeGx/easy-timeout/timelimit"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
@@ -101,13 +104,26 @@ func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context *vm.Context) error {
 
 	verb.Context = context
 
-	p2, err := verb.VerifyContract(txx.Contract, pool.Copy())
-	if err != nil {
-		host.Log(err.Error(), txx.Contract.Info().Prefix)
-		return err
+	var p2 state.Pool = nil
+	var err error = nil
+
+	if timelimit.Run(200*time.Millisecond, func() {
+		defer func() {
+			if err0 := recover(); err0 != nil {
+				err = err0.(error)
+			}
+		}()
+		p2, err = verb.VerifyContract(txx.Contract, pool.Copy())
+	}) {
+		if err != nil {
+			host.Log(err.Error(), txx.Contract.Info().Prefix)
+			return err
+		}
+		p2.MergeParent()
+		return nil
+	} else {
+		return errors.New("time out")
 	}
-	p2.MergeParent()
-	return nil
 }
 
 type VerifyContext struct {

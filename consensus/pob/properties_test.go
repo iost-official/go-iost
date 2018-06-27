@@ -1,4 +1,4 @@
-package dpos
+package pob
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package pob2
+package pob
 
 import (
 	"fmt"
@@ -39,7 +39,6 @@ func TestNewPoB(t *testing.T) {
 		mockPool.EXPECT().Flush().AnyTimes().Return(nil)
 
 		network.Route = mockRouter
-		//获取router实例
 		guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 			return mockRouter, nil
 		})
@@ -50,11 +49,9 @@ func TestNewPoB(t *testing.T) {
 		mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
 		mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
 
-		// 设置第一个通道txchan
 		txChan := make(chan message.Message, 1)
 		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
 
-		// 设置第二个通道Blockchan
 		blockChan := make(chan message.Message, 1)
 		mockRouter.EXPECT().FilteredChan(Any()).Return(blockChan, nil)
 
@@ -70,7 +67,6 @@ func TestNewPoB(t *testing.T) {
 		}}
 		blk.Head.TreeHash = blk.CalculateTreeHash()
 
-		// 创世块的询问和插入
 		var getNumber uint64
 		var pushNumber int64
 		mockBc.EXPECT().GetBlockByNumber(Any()).Return(nil).AnyTimes()
@@ -110,8 +106,8 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 
 	gopath := os.Getenv("GOPATH")
 	//fmt.Println(gopath)
-	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
-	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
+	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/blockDB"
+	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/txDB"
 	blockDb2 := gopath + "/src/github.com/iost-official/blockDB"
 	txdb2 := gopath + "/src/github.com/iost-official/txDB"
 
@@ -169,7 +165,6 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	mockRouter := protocol_mock.NewMockRouter(mockCtr)
 
 	network.Route = mockRouter
-	//获取router实例
 	guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 		return mockRouter, nil
 	})
@@ -179,11 +174,9 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(blkSyncChan, nil)
 
-	//设置第一个通道txchan
 	txChan := make(chan message.Message, 1)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
 
-	//设置第二个通道Blockchan
 	blkChan := make(chan message.Message, 1)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil).AnyTimes()
@@ -204,6 +197,11 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	if err != nil {
 		panic("state.PoolInstance error")
 	}
+
+	sp, e := tx.NewServiPool(len(account.GenesisAccount), 1000)
+	So(e, ShouldBeNil)
+
+	tx.Data = tx.NewHolder(_account, state.StdPool, sp)
 
 	blockChain.Top()
 	//verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
@@ -255,7 +253,6 @@ func TestAddSinglesBlock(t *testing.T) {
 		p, accountList, witnessList, _ := envinit(t)
 
 		blockCnt := 10
-		//生成block
 		blockPool := genBlocks(p, accountList, witnessList, blockCnt, 0, true)
 
 		var block *block.Block
@@ -270,11 +267,9 @@ func TestAddSinglesBlock(t *testing.T) {
 		}
 		So(p.blockCache.ConfirmedLength(), ShouldEqual, 2)
 
-		// 最后上链丢失的交易
 		err := p.blockCache.Add(block, verify)
 		fmt.Println(err)
 
-		// 创世块 + blockCnt - 2
 		So(p.blockCache.ConfirmedLength(), ShouldEqual, blockCnt-1)
 
 		//err := p.blockCache.Add(lastBlock, p.blockVerify)
@@ -405,7 +400,7 @@ func generateTestBlockMsg(witness string, secKeyRaw string, number int64, parent
 }
 
 func Exists(path string) bool {
-	_, err := os.Stat(path) //os.Stat获取文件信息
+	_, err := os.Stat(path)
 	if err != nil {
 		if os.IsExist(err) {
 			return true
@@ -452,8 +447,8 @@ func BenchmarkGenerateBlock(b *testing.B) {
 func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolServer) {
 	gopath := os.Getenv("GOPATH")
 	//fmt.Println(gopath)
-	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
-	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
+	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/blockDB"
+	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/txDB"
 	blockDb2 := gopath + "/src/github.com/iost-official/blockDB"
 	txdb2 := gopath + "/src/github.com/iost-official/txDB"
 
@@ -514,7 +509,6 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	mockRouter := protocol_mock.NewMockRouter(mockCtr)
 
 	network.Route = mockRouter
-	//获取router实例
 	guard := Patch(network.RouterFactory, func(_ string) (network.Router, error) {
 		return mockRouter, nil
 	})
@@ -524,11 +518,9 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	mockRouter.EXPECT().FilteredChan(Any()).Return(heightChan, nil)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(blkSyncChan, nil)
 
-	//设置第一个通道txchan
 	txChan := make(chan message.Message, 1)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
 
-	//设置第二个通道Blockchan
 	blkChan := make(chan message.Message, 1)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(blkChan, nil).AnyTimes()
@@ -612,7 +604,7 @@ func genBlockHead(p *PoB) {
 
 func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n int, txCnt int, continuity bool) (blockPool []*block.Block) {
 	confChain := p.blockCache.BlockChain()
-	tblock := confChain.Top() //获取创世块
+	tblock := confChain.Top()
 
 	//blockLen := p.blockCache.ConfirmedLength()
 	//fmt.Println(blockLen)
@@ -623,7 +615,6 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 	for i := 0; i < n; i++ {
 		var hash []byte
 		if len(blockPool) == 0 {
-			//用创世块的头hash赋值
 			hash = tblock.HeadHash()
 		} else {
 			hash = blockPool[len(blockPool)-1].HeadHash()
@@ -655,7 +646,6 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 func benchAddBlockCache(b *testing.B, txCnt int, continuity bool) {
 
 	p, accountList, witnessList, _ := envInit(b)
-	//生成block
 	blockPool := genBlocks(p, accountList, witnessList, b.N, txCnt, continuity)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -666,10 +656,8 @@ func benchAddBlockCache(b *testing.B, txCnt int, continuity bool) {
 
 }
 
-// 获取block性能测试
 func benchGetBlock(b *testing.B, txCnt int, continuity bool) {
 	p, accountList, witnessList, _ := envInit(b)
-	//生成block
 	blockPool := genBlocks(p, accountList, witnessList, b.N, txCnt, continuity)
 	for i := 0; i < b.N; i++ {
 		for _, bl := range blockPool {
@@ -687,14 +675,12 @@ func benchGetBlock(b *testing.B, txCnt int, continuity bool) {
 	}
 }
 
-// block验证性能测试
 func benchBlockVerifier(b *testing.B) {
 	p, accountList, witnessList, _ := envInit(b)
-	//生成block
 	blockPool := genBlocks(p, accountList, witnessList, 2, 6000, true)
 	//p.update(&blockPool[0].Head)
 	confChain := p.blockCache.BlockChain()
-	tblock := confChain.Top() //获取创世块
+	tblock := confChain.Top()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -779,7 +765,6 @@ func benchTxDb(b *testing.B, f bool) {
 	}
 }
 
-// 生成block head性能测试
 func benchBlockHead(b *testing.B) {
 	p, _, _, _ := envInit(b)
 	b.ResetTimer()
@@ -790,7 +775,6 @@ func benchBlockHead(b *testing.B) {
 	}
 }
 
-// 生成块性能测试
 func benchGenerateBlock(b *testing.B, txCnt int) {
 	p, _, _, txpool := envInit(b)
 	TxPerBlk = txCnt

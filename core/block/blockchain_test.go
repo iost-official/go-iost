@@ -1,6 +1,8 @@
 package block
 
 import (
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
@@ -47,6 +49,12 @@ func TestChainImpl(t *testing.T) {
 		if err != nil {
 			panic("state.PoolInstance error")
 		}
+
+		sp, e := tx.NewServiPool(len(account.GenesisAccount), 1000)
+		So(e, ShouldBeNil)
+		acc, err := account.NewAccount(common.Base58Decode("4PpkMbuJauTeqX1VZw4qeYrc9jNbdAbBUi3q6dVR7sMC"))
+		So(err, ShouldBeNil)
+		tx.Data = tx.NewHolder(acc, state.StdPool, sp)
 
 		Convey("Push", func() {
 			length := bc.Length()
