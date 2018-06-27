@@ -78,7 +78,7 @@ func TestStdCacheVerifier(t *testing.T) {
 		}
 		v, err := pool.GetHM("iost", "a")
 		So(err, ShouldBeNil)
-		So(v.EncodeString(), ShouldEqual, "f9.460000000000000e+03")
+		So(v.EncodeString(), ShouldEqual, "f9.459100000000139e+03")
 		p := pool.(*state.PoolImpl)
 		count := 0
 		for p != nil {
@@ -352,20 +352,78 @@ end--f
 		var contract vm.Contract
 		parser, _ := lua.NewDocCommentParser(rawCode)
 		contract, err = parser.Parse()
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
+		So(err, ShouldBeNil)
 		mtx := tx.NewTx(1, contract)
 		stx, err := tx.SignTx(mtx, acc)
 		So(err, ShouldBeNil)
 		buf := stx.Encode()
 		var atx tx.Tx
 		err = atx.Decode(buf)
-		fmt.Println(atx.Contract)
+		//fmt.Println(atx.Contract)
 		So(err, ShouldBeNil)
 		err = StdCacheVerifier(&atx, pool, vm.BaseContext())
 		So(err, ShouldBeNil)
 	})
 
+}
+
+func TestStdCacheVerifierTimeout(t *testing.T) {
+	Convey("test of timeout", t, func() {
+		fib := `
+--- main 
+-- @gas_limit 10000000
+-- @gas_price 0.00001
+-- @param_cnt 0
+-- @return_cnt 1
+function main()
+  n = 100
+  local function inner(m)
+    if m < 2 then
+      return m
+    end
+    return inner(m-1) + inner(m-2)
+  end
+  print(inner(n))
+end--f
+`
+		workable := `
+--- main 合约主入口
+-- server1转账server2
+-- @gas_limit 10000
+-- @gas_price 0.001
+-- @param_cnt 0
+-- @return_cnt 1
+function main()
+	print("hello")
+end--f
+`
+
+		dbx, err := db.DatabaseFactory("redis")
+		So(err, ShouldBeNil)
+		sdb := state.NewDatabase(dbx)
+		pool := state.NewPool(sdb)
+		pool.PutHM("iost", "a", state.MakeVFloat(1000000000))
+
+		parser, err := lua.NewDocCommentParser(fib)
+		So(err, ShouldBeNil)
+		contract, err := parser.Parse()
+		So(err, ShouldBeNil)
+		contract.SetSender("a")
+		So(err, ShouldBeNil)
+		mtx := tx.NewTx(1, contract)
+		err = StdCacheVerifier(&mtx, pool, vm.BaseContext())
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, "time out")
+
+		parser, err = lua.NewDocCommentParser(workable)
+		So(err, ShouldBeNil)
+		contract, err = parser.Parse()
+		So(err, ShouldBeNil)
+		contract.SetSender("a")
+		So(err, ShouldBeNil)
+		mtx = tx.NewTx(1, contract)
+		err = StdCacheVerifier(&mtx, pool, vm.BaseContext())
+		So(err, ShouldBeNil)
+
+	})
 }
