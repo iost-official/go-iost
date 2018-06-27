@@ -13,10 +13,10 @@ import (
 var (
 	SyncNumber                    = 2 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
 	MaxBlockHashQueryNumber       = 10
-	RetryTime                     = 8
+	RetryTime                     = 5
 	blockDownloadTimeout    int64 = 10
 	cleanInterval                 = 5 * time.Second
-	MaxAcceptableLength     int64 = 1000
+	MaxAcceptableLength     int64 = 100
 )
 
 // Synchronizer 同步器接口
@@ -249,14 +249,22 @@ func (sync *SyncImpl) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(time.Second * time.Duration(RetryTime)):
+			delList := make([]uint64, 0)
 			sync.requestMap.Range(func(k, v interface{}) bool {
 				num, ok := k.(uint64)
 				if !ok {
 					return false
 				}
-				sync.router.QueryBlockHash(num, num)
+				if num < sync.blockCache.ConfirmedLength() {
+					delList = append(delList, num)
+				} else {
+					sync.router.QueryBlockHash(num, num)
+				}
 				return true
 			})
+			for _, num := range delList {
+				sync.requestMap.Delete(num)
+			}
 		case <-sync.exitSignal:
 			return
 		}
