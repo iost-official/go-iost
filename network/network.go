@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -14,14 +15,11 @@ import (
 	"sync"
 	"time"
 
-	"io"
-
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network/discover"
-	"github.com/iost-official/prototype/params"
 )
 
 // const
@@ -225,9 +223,6 @@ func (bn *BaseNetwork) broadcast(msg message.Message) {
 		bn.NodeAddedTime.Delete(msg.To)
 		return
 	}
-	//if er := bn.send(conn, req); er != nil {
-	//	bn.peers.RemoveByNodeStr(msg.To)
-	//}
 	if msg.ReqType == int32(ReqSyncBlock) || msg.ReqType == int32(ReqNewBlock) {
 		if er := bn.send(peer.blockConn, req); er != nil {
 			bn.log.E("[net] block conn sent error:%v", err)
@@ -287,10 +282,6 @@ func dial(nodeAddr string) (net.Conn, net.Conn, error) {
 
 // Send sends msg to msg.To.
 func (bn *BaseNetwork) Send(msg message.Message) {
-	//if bn.isRecentSent(msg) {
-	//	bn.log.D("[net] recent send")
-	//	return
-	//}
 	if msg.To == bn.localNode.Addr() || msg.To == "" {
 		return
 	}
@@ -355,7 +346,6 @@ func (bn *BaseNetwork) readMsg(conn net.Conn) ([]byte, error) {
 		length := int32(0)
 		revH := make([]byte, 4)
 		revL := make([]byte, 4)
-		//conn.SetReadDeadline(time.Now().Add(600 * time.Millisecond))
 		if _, err := io.ReadFull(conn, revH); err != nil {
 			return nil, err
 		}
@@ -608,27 +598,6 @@ func (bn *BaseNetwork) Download(start, end uint64) error {
 			return true
 		})
 
-		/*      for downloadHeight, retryTimes := range bn.DownloadHeights { */
-		// if retryTimes > MaxDownloadRetry {
-		// continue
-		// }
-		// msg := message.Message{
-		// Body:    common.Uint64ToBytes(downloadHeight),
-		// ReqType: int32(ReqDownloadBlock),
-		// TTL:     MsgMaxTTL,
-		// From:    bn.localNode.Addr(),
-		// Time:    time.Now().UnixNano(),
-		// }
-		// bn.log.D("[net] download height = %v  nodeMap = %v", downloadHeight, bn.NodeHeightMap)
-		// bn.lock.Lock()
-		// bn.DownloadHeights[downloadHeight] = retryTimes + 1
-		// bn.lock.Unlock()
-		// wg.Add(1)
-		// go func() {
-		// bn.Broadcast(msg)
-		// wg.Done()
-		// }()
-		/* } */
 		wg.Wait()
 	}
 	return nil
@@ -693,6 +662,7 @@ func (bn *BaseNetwork) recentSentLoop() {
 }
 
 func (bn *BaseNetwork) isRecentSent(msg message.Message) bool {
+	msg.TTL = 0
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
@@ -718,15 +688,6 @@ func (bn *BaseNetwork) sendNodeTable(from []byte, conn net.Conn) {
 		conn.Close()
 	}
 	return
-}
-
-func (bn *BaseNetwork) isInCommittee(from []byte) bool {
-	for _, ip := range params.CommitteeNodes {
-		if net.ParseIP(string(from)).String() == ip {
-			return true
-		}
-	}
-	return false
 }
 
 func prometheusSendBlockTx(req message.Message) {

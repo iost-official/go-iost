@@ -176,10 +176,6 @@ func isValidNode(r *Request, base *BaseNetwork) bool {
 		base.log.D("[net] the node's ip is not public ip: %v", strs[0])
 		return false
 	}
-	if NetMode == CommitteeMode && !base.isInCommittee(r.From) {
-		base.log.D("[net] the node's ip is not in committee")
-		return false
-	}
 	return true
 }
 
