@@ -33,7 +33,7 @@ type RecorderImpl struct {
 func (p *RecorderImpl) Record(tx2 tx.Tx) error {
 	p.isListening.Lock()
 	defer p.isListening.Unlock()
-	if blockcache.VerifyTxSig(tx2) { // 移到外面做
+	if blockcache.VerifyTxSig(tx2) {
 		tx.RecordTx(tx2, tx.Data.Self())
 		p.storage[string(tx2.Hash())] = true
 		p.Push(tx2)

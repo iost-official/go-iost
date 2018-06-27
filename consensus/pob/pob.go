@@ -1,7 +1,6 @@
 package pob
 
 import (
-	"bytes"
 	"encoding/binary"
 
 	. "github.com/iost-official/prototype/account"
@@ -72,18 +71,13 @@ type PoB struct {
 	globalStaticProperty
 	globalDynamicProperty
 
-	//测试用，保存投票状态，以及投票消息内容的缓存
-	votedStats map[string][]string
-	infoCache  [][]byte
-
 	exitSignal chan struct{}
 	chBlock    chan message.Message
 
 	log *log.Logger
 }
 
-// NewPoB: 新建一个PoB实例
-// acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
+// NewPoB
 func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
 	TxPerBlk = 800
 	p := PoB{
@@ -137,15 +131,14 @@ func (p *PoB) initGlobalProperty(acc Account, witnessList []string) {
 	p.globalDynamicProperty = newGlobalDynamicProperty()
 }
 
-// Run: 运行PoB实例
+// Run
 func (p *PoB) Run() {
 	p.synchronizer.StartListen()
 	go p.blockLoop()
 	go p.scheduleLoop()
-	//p.genBlock(p.Account, block.Block{})
 }
 
-// Stop: 停止PoB实例
+// Stop
 func (p *PoB) Stop() {
 	close(p.chBlock)
 	close(p.exitSignal)
@@ -155,22 +148,22 @@ func (p *PoB) BlockCache() blockcache.BlockCache {
 	return p.blockCache
 }
 
-// BlockChain 返回已确认的block chain
+// BlockChain
 func (p *PoB) BlockChain() block.Chain {
 	return p.blockCache.BlockChain()
 }
 
-// CachedBlockChain 返回缓存中的最长block chain
+// CachedBlockChain
 func (p *PoB) CachedBlockChain() block.Chain {
 	return p.blockCache.LongestChain()
 }
 
-// StatePool 返回已确认的state pool
+// StatePool
 func (p *PoB) StatePool() state.Pool {
 	return p.blockCache.BasePool()
 }
 
-// CacheStatePool 返回缓存中最新的state pool
+// CacheStatePool
 func (p *PoB) CachedStatePool() state.Pool {
 	return p.blockCache.LongestPool()
 }
@@ -248,7 +241,6 @@ func (p *PoB) blockLoop() {
 				receivedBlockCount.Inc()
 			} else {
 				p.log.I("Error: %v", err)
-				//p.log.I("[blockloop]:verify blk faild\n%s\n", &blk)
 			}
 			if err != blockcache.ErrBlock && err != blockcache.ErrTooOld {
 				go p.synchronizer.BlockConfirmed(blk.Head.Number)
@@ -275,7 +267,6 @@ func (p *PoB) blockLoop() {
 }
 
 func (p *PoB) scheduleLoop() {
-	//通过时间判定是否是本节点的slot，如果是，调用产生块的函数，如果不是，设定一定长的timer睡眠一段时间
 	var nextSchedule int64
 	nextSchedule = 0
 	p.log.I("Start to schedule")
@@ -289,7 +280,6 @@ func (p *PoB) scheduleLoop() {
 			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
 			if wid == p.account.ID {
 
-				//todo test
 				bc := p.blockCache.LongestChain()
 				iter := bc.Iterator()
 				for {
@@ -300,9 +290,6 @@ func (p *PoB) scheduleLoop() {
 					confirmedBlockchainLength.Set(float64(p.blockCache.ConfirmedLength()))
 					p.log.I("CBC ConfirmedLength: %v, block Number: %v, witness: %v", p.blockCache.ConfirmedLength(), block.Head.Number, block.Head.Witness)
 				}
-				// end test
-
-				// TODO 考虑更好的解决方法，因为两次调用之间可能会进入新块影响最长链选择
 
 				pool := p.blockCache.LongestPool()
 				blk := p.genBlock(p.account, bc, pool)
@@ -328,12 +315,10 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
 		ParentHash: lastBlk.HeadHash(),
-		Info:       encodePoBInfo(p.infoCache),
 		Number:     lastBlk.Head.Number + 1,
 		Witness:    acc.ID,
 		Time:       GetCurrentTimestamp().Slot,
 	}}
-	p.infoCache = [][]byte{}
 	//return &blk
 	spool1 := pool.Copy()
 
@@ -342,8 +327,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	vc.ParentHash = blk.Head.ParentHash
 	vc.BlockHeight = blk.Head.Number
 	vc.Witness = vm.IOSTAccount(acc.ID)
-
-	//TODO Content大小控制
 
 	txCnt := TxPerBlk + rand.Intn(500)
 	var tx TransactionsList
@@ -379,7 +362,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
 
-	blockcache.CleanStdVerifier() // hpj: 现在需要手动清理缓存的虚拟机
+	blockcache.CleanStdVerifier()
 
 	generatedBlockCount.Inc()
 
@@ -405,24 +388,6 @@ func generateHeadInfo(head block.BlockHead) []byte {
 	return common.Sha256(info)
 }
 
-// 测试函数，用来将info和vote消息进行转换，在块被确认时被调用
-// TODO:找到适当的时机调用
-func decodePoBInfo(info []byte) [][]byte {
-	votes := bytes.Split(info, []byte("/"))
-	return votes
-}
-
-// 测试函数，用来将info和vote消息进行转换，在生成块的时候调用
-func encodePoBInfo(votes [][]byte) []byte {
-	var info []byte
-	for _, req := range votes {
-		info = append(info, req...)
-		info = append(info, byte('/'))
-	}
-	return info
-}
-
-//收到新块，验证新块，如果验证成功，更新PoB全局动态属性类并将其加入block cache，再广播
 func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 	// verify block head
 
@@ -431,7 +396,6 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 	}
 
 	// verify block witness
-	// TODO currentSlot is negative
 	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
 		return nil, errors.New("wrong witness")
 
