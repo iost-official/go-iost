@@ -279,7 +279,7 @@ func (p *DPoS) scheduleLoop() {
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 
 				msg := message.Message{ReqType: int32(ReqNewBlock), Body: blk.Encode()}
-				go p.router.Broadcast(&msg)
+				go p.router.Broadcast(msg)
 				p.chBlock <- msg
 				p.log.I("Broadcasted block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 			}
