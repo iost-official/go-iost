@@ -45,8 +45,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/iost-official/prototype/consensus/pob2"
+	"github.com/iost-official/prototype/consensus/pob"
 	"github.com/iost-official/prototype/core/txpool"
+	"github.com/iost-official/prototype/vm"
 )
 
 var cfgFile string
@@ -99,6 +100,10 @@ func chainServer(chain block.Chain) {
 		if len(num) > 0 {
 			n, _ := strconv.ParseUint(num[0], 10, 64)
 			blk := chain.GetBlockByNumber(n)
+			if blk == nil {
+				fmt.Println("GetBlockByNumber error.")
+				return
+			}
 			blkStr := blk.String()
 			md5Ctx := md5.New()
 			md5Ctx.Write([]byte(blkStr))
@@ -117,6 +122,10 @@ func chainServer(chain block.Chain) {
 		}
 		if len(has) > 0 {
 			blk := chain.GetBlockByHash([]byte(has[0]))
+			if blk == nil {
+				fmt.Println("GetBlockByNumber error.")
+				return
+			}
 			blkStr := blk.String()
 			md5Ctx := md5.New()
 			md5Ctx.Write([]byte(blkStr))
@@ -271,9 +280,13 @@ var rootCmd = &cobra.Command{
 
 		if bcLen > resBlockLength {
 			var blk *block.Block
-			for i := resBlockLength; i < bcLen; i++ {
+			var i uint64
+			for i = resBlockLength; i < bcLen; i++ {
 				log.Log.I("Update StatePool for number: %v", i)
 				blk = blockChain.GetBlockByNumber(i)
+				if blk == nil {
+					break
+				}
 				if i == 0 {
 					newPool, err := verifier.ParseGenesis(blk.Content[0].Contract, state.StdPool)
 					if err != nil {
@@ -290,10 +303,16 @@ var rootCmd = &cobra.Command{
 					newPool.Flush()
 				}
 			}
+
 			if bcLen > 0 {
-				state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(bcLen-1)))
-				state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(blk.HeadHash()))
-				state.StdPool.Flush()
+
+				blockChain.CheckLength()
+				b := blockChain.Top()
+				if b != nil {
+					state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(b.Head.Number)))
+					state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(b.HeadHash()))
+					state.StdPool.Flush()
+				}
 			}
 		}
 		//初始化网络
@@ -364,7 +383,39 @@ var rootCmd = &cobra.Command{
 		//HowHsu_Debug
 		log.Log.I("blockchain db length:%d\n", blockChain.Length())
 
-		witnessList := viper.GetStringSlice("consensus.witness-list")
+		// init servi
+		sp, err := tx.NewServiPool(len(account.GenesisAccount), 100)
+		if err != nil {
+			log.Log.E("NewServiPool failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+		tx.Data = tx.NewHolder(acc, state.StdPool, sp)
+		tx.Data.Spool.Restore()
+		bu, _ := tx.Data.Spool.BestUser()
+
+		if len(bu) != len(account.GenesisAccount) {
+			tx.Data.Spool.ClearBtu()
+			for k, v := range account.GenesisAccount {
+				ser, err := tx.Data.Spool.User(vm.IOSTAccount(k))
+				if err == nil {
+					ser.SetBalance(v)
+				}
+
+			}
+			tx.Data.Spool.Flush()
+		}
+		witnessList := make([]string, 0)
+
+		bu, err = tx.Data.Spool.BestUser()
+		if err != nil {
+			for k, _ := range account.GenesisAccount {
+				witnessList = append(witnessList, k)
+			}
+		} else {
+			for _, v := range bu {
+				witnessList = append(witnessList, string(v.Owner()))
+			}
+		}
 
 		for i, witness := range witnessList {
 			log.Log.I("witnessList[%v] = %v", i, witness)
@@ -390,9 +441,6 @@ var rootCmd = &cobra.Command{
 		txPool.Start()
 		serverExit = append(serverExit, txPool)
 
-		// init servi
-		tx.Data = tx.NewHolder(acc, state.StdPool, tx.StdServiPool)
-
 		//启动RPC
 		err = rpc.Server(rpcPort)
 		if err != nil {
@@ -400,7 +448,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		recorder := pob2.NewRecorder()
+		recorder := pob.NewRecorder()
 		recorder.Listen()
 
 		// Start Metrics Server

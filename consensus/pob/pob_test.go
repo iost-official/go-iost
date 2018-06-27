@@ -1,4 +1,4 @@
-package pob2
+package pob
 
 import (
 	"fmt"
@@ -110,8 +110,8 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 
 	gopath := os.Getenv("GOPATH")
 	//fmt.Println(gopath)
-	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
-	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
+	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/blockDB"
+	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/txDB"
 	blockDb2 := gopath + "/src/github.com/iost-official/blockDB"
 	txdb2 := gopath + "/src/github.com/iost-official/txDB"
 
@@ -204,6 +204,11 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	if err != nil {
 		panic("state.PoolInstance error")
 	}
+
+	sp, e := tx.NewServiPool(len(account.GenesisAccount), 1000)
+	So(e, ShouldBeNil)
+
+	tx.Data = tx.NewHolder(_account, state.StdPool, sp)
 
 	blockChain.Top()
 	//verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
@@ -452,8 +457,8 @@ func BenchmarkGenerateBlock(b *testing.B) {
 func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolServer) {
 	gopath := os.Getenv("GOPATH")
 	//fmt.Println(gopath)
-	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/blockDB"
-	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob2/txDB"
+	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/blockDB"
+	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/txDB"
 	blockDb2 := gopath + "/src/github.com/iost-official/blockDB"
 	txdb2 := gopath + "/src/github.com/iost-official/txDB"
 

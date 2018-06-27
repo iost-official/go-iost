@@ -1,4 +1,4 @@
-package pob
+package pob3
 
 import (
 	"github.com/iost-official/prototype/account"

@@ -252,18 +252,22 @@ func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, p
 	case Extend:
 		fallthrough
 	case Fork:
+		// Added to cached tree or added to single tree
 		h.setHashMap(blk.HeadHash(), newTree)
-		h.addSingles(newTree, verifier)
-		if newTree.bctType == Singles {
+		if newTree.bctType == OnCache {
+			h.addSingles(newTree, verifier)
+		} else {
+			h.mergeSingles(newTree)
 			return ErrNotFound
 		}
 		h.tryFlush(blk.Head.Version)
 	case NotFound:
-		// Add to single block tree
+		// Added as a child of single root
 		newTree = newBct(blk, h.singleBlockRoot)
 		h.singleBlockRoot.children = append(h.singleBlockRoot.children, newTree)
 		h.setHashMap(blk.HeadHash(), newTree)
-		h.addSingles(newTree, verifier)
+		//h.addSingles(newTree, verifier)
+		h.mergeSingles(newTree)
 		return ErrNotFound
 	case Duplicate:
 		return ErrDup
@@ -279,8 +283,22 @@ func (h *BlockCacheImpl) addSingles(newTree *BlockCacheTree, verifier func(blk *
 	newChildren := make([]*BlockCacheTree, 0)
 	for _, bct := range h.singleBlockRoot.children {
 		//fmt.Println(bct.bc.block.Head.ParentHash)
-		if bytes.Equal(bct.bc.Top().Head.ParentHash, block.HeadHash()) {
+		if bytes.Equal(bct.bc.block.Head.ParentHash, block.HeadHash()) {
 			h.addSubTree(newTree, bct, verifier)
+		} else {
+			newChildren = append(newChildren, bct)
+		}
+	}
+	h.singleBlockRoot.children = newChildren
+}
+
+func (h *BlockCacheImpl) mergeSingles(newTree *BlockCacheTree) {
+	block := newTree.bc.block
+	newChildren := make([]*BlockCacheTree, 0)
+	for _, bct := range h.singleBlockRoot.children {
+		if bytes.Equal(bct.bc.block.Head.ParentHash, block.HeadHash()) {
+			bct.super = newTree
+			newTree.children = append(newTree.children, bct)
 		} else {
 			newChildren = append(newChildren, bct)
 		}

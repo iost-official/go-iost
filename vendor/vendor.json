@@ -75,6 +75,12 @@
 			"revisionTime": "2018-05-23T12:55:42Z"
 		},
 		{
+			"checksumSHA1": "EHNlDzFOqjmLMo1TQHXMmMR/k8Y=",
+			"path": "github.com/flybikeGx/easy-timeout/timelimit",
+			"revision": "ce7eb94f6c8b86d9df7a871d38274aa330a17e26",
+			"revisionTime": "2018-06-26T08:58:45Z"
+		},
+		{
 			"checksumSHA1": "7NP1qUMF8Kx1y0zANxx0e+oq9Oo=",
 			"path": "github.com/fsnotify/fsnotify",
 			"revision": "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9",

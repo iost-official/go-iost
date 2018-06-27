@@ -13,9 +13,10 @@ import (
 var (
 	SyncNumber                    = 2 // 当本地链长度和网络中最新块相差SyncNumber时需要同步
 	MaxBlockHashQueryNumber       = 10
-	RetryTime                     = 8
+	RetryTime                     = 5
 	blockDownloadTimeout    int64 = 10
 	cleanInterval                 = 5 * time.Second
+	MaxAcceptableLength     int64 = 100
 )
 
 // Synchronizer 同步器接口
@@ -156,6 +157,7 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 
 // SyncBlocks 执行块同步操作
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
+	var syncNum int
 	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
 		need := false
 		for i := startNumber; i < startNumber+uint64(MaxBlockHashQueryNumber); i++ {
@@ -165,9 +167,13 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 			}
 		}
 		if need {
+			syncNum++
 			sync.router.QueryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
 		}
 		startNumber += uint64(MaxBlockHashQueryNumber)
+		if syncNum%10 == 0 {
+			time.Sleep(time.Second)
+		}
 	}
 	if startNumber <= endNumber {
 		need := false
@@ -243,14 +249,22 @@ func (sync *SyncImpl) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(time.Second * time.Duration(RetryTime)):
+			delList := make([]uint64, 0)
 			sync.requestMap.Range(func(k, v interface{}) bool {
 				num, ok := k.(uint64)
 				if !ok {
 					return false
 				}
-				sync.router.QueryBlockHash(num, num)
+				if num < sync.blockCache.ConfirmedLength() {
+					delList = append(delList, num)
+				} else {
+					sync.router.QueryBlockHash(num, num)
+				}
 				return true
 			})
+			for _, num := range delList {
+				sync.requestMap.Delete(num)
+			}
 		case <-sync.exitSignal:
 			return
 		}

@@ -1,4 +1,4 @@
-package pob
+package pob3
 
 import (
 	"time"
@@ -7,8 +7,8 @@ import (
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/core/blockcache"
+	"github.com/iost-official/prototype/core/tx"
 )
 
 const MaxTxInBlock = 1000

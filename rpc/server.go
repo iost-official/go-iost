@@ -14,7 +14,7 @@ func Server(port string) error {
 		port = ":" + port
 	}
 
-	lis, err := net.Listen("tcp", port)
+	lis, err := net.Listen("tcp4", port)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %v", err)
 	}

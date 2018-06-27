@@ -1,4 +1,4 @@
-package pob2
+package pob
 
 import (
 	"bytes"
@@ -25,6 +25,7 @@ import (
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/prometheus/client_golang/prometheus"
+	"math/rand"
 )
 
 var (
@@ -84,7 +85,7 @@ type PoB struct {
 // NewPoB: 新建一个PoB实例
 // acc: 节点的Coinbase账户, bc: 基础链(从数据库读取), pool: 基础state池（从数据库读取）, witnessList: 见证节点列表
 func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
-	TxPerBlk = 10000
+	TxPerBlk = 800
 	p := PoB{
 		account: acc,
 	}
@@ -177,15 +178,13 @@ func (p *PoB) CachedStatePool() state.Pool {
 func (p *PoB) genesis(initTime int64) error {
 
 	main := lua.NewMethod(vm.Public, "", 0, 0)
-	code := `@PutHM iost 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT f3000000000
-@PutHM iost tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU f2900000000
-@PutHM iost s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB f2800000000
-@PutHM iost 22zr9ows3qndmAjnkiPFex26taATEaEfjGkatVCr5akSU f2700000000
-@PutHM iost wSKjLjqWbhH2LcJFwTW9Nfq9XPdhb4pw9KCM7QGtemZG f2600000000
-@PutHM iost oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU f2500000000
-@PutHM iost 28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym f2300000000
-@PutHM iost x9uhGBw3tyDzNkNFM7hcXeGdEpbAHdasgGyhfcMmonYq f2200000000`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 10000, Price: 0, Publisher: ""}, code, main)
+
+	var code string
+	for k, v := range GenesisAccount {
+		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
+	}
+
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
 
 	tx := Tx{
 		Time:     0,
@@ -234,13 +233,18 @@ func (p *PoB) blockLoop() {
 			}
 
 			p.log.I("Received block:%v ,from=%v, timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, req.From, blk.Head.Time, blk.Head.Witness, len(blk.Content))
+			localLength := p.blockCache.ConfirmedLength()
+			if blk.Head.Number > int64(localLength)+MaxAcceptableLength {
+				// Do not accept block of too height, must wait for synchronization
+				if req.ReqType == int32(ReqNewBlock) {
+					go p.synchronizer.SyncBlocks(localLength, localLength+uint64(MaxAcceptableLength))
+				}
+				continue
+			}
 			err = p.blockCache.Add(&blk, p.blockVerify)
 			if err == nil {
 				p.log.I("Link it onto cached chain")
 				p.blockCache.SendOnBlock(&blk)
-
-				// add servi
-				Data.AddServi(blk.Content)
 				receivedBlockCount.Inc()
 			} else {
 				p.log.I("Error: %v", err)
@@ -340,10 +344,12 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	vc.Witness = vm.IOSTAccount(acc.ID)
 
 	//TODO Content大小控制
+
+	txCnt := TxPerBlk + rand.Intn(500)
 	var tx TransactionsList
 	if txpool.TxPoolS != nil {
 		p.log.I("PendingTransactions Begin...")
-		tx = txpool.TxPoolS.PendingTransactions(TxPerBlk)
+		tx = txpool.TxPoolS.PendingTransactions(txCnt)
 		p.log.I("PendingTransactions End.")
 		txPoolSize.Set(float64(txpool.TxPoolS.TransactionNum()))
 		p.log.I("PendingTransactions Size: %v.", txpool.TxPoolS.PendingTransactionNum())
@@ -357,7 +363,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 				p.log.I("Gen Block Time Limit.")
 				break ForEnd
 			default:
-				if len(blk.Content) >= TxPerBlk {
+				if len(blk.Content) >= txCnt {
 					p.log.I("Gen Block Tx Number Limit.")
 					break ForEnd
 				}
@@ -378,7 +384,7 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 	generatedBlockCount.Inc()
 
 	//Clear Servi
-	Data.ClearServi(tx)
+	Data.ClearServi(blk.Head.Witness)
 
 	return &blk
 }
