@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"log"
 	"testing"
-
 	"time"
 
 	"github.com/iost-official/prototype/common"

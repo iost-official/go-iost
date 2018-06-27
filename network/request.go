@@ -110,11 +110,9 @@ func (r *Request) String() string {
 
 func prometheusReceivedBlockTx(req *message.Message) {
 	if req.ReqType == int32(ReqPublishTx) {
-		// receivedBroadTransactionSize.Observe(float64(req.Size()))
 		receivedBroadTransactionCount.Inc()
 	}
 	if req.ReqType == int32(ReqNewBlock) {
-		// receivedBlockSize.Observe(float64(req.Size()))
 	}
 }
 
@@ -130,9 +128,6 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 		} else {
 			base.log.E("[net] failed to unmarshal recv msg:%v, err:%v", r, err)
 		}
-		//if er := base.send(conn, newRequest(MessageReceived, base.localNode.Addr(), common.Int64ToBytes(r.Timestamp))); er != nil {
-		//	conn.Close()
-		//}
 		r.msgHandle(base)
 	case MessageReceived:
 		base.log.D("[net] MessageReceived: %v", string(r.From), common.BytesToInt64(r.Body))

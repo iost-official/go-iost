@@ -1,11 +1,9 @@
 package network
 
 import (
-	"testing"
-
-	"time"
-
 	"os"
+	"testing"
+	"time"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/message"
@@ -157,39 +155,6 @@ func TestBaseNetwork_putNode(t *testing.T) {
 func TestBaseNetwork_registerLoop(t *testing.T) {
 	Convey("registerLoop", t, func() {
 		cleanLDB()
-		//server, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
-		//server.Listen(RegisterServerPort)
-		//
-		//net1, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_1"})
-		//net1.Listen(30311)
-		//
-		//net2, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_2"})
-		//net2.Listen(30312)
-		//
-		//time.Sleep(2000 * time.Millisecond)
-		//
-		//ok, _ := net2.nodeTable.Has([]byte("127.0.0.1:30311"))
-		//
-		//So(ok, ShouldBeTrue)
-		//ok, _ = net1.nodeTable.Has([]byte("127.0.0.1:30312"))
-		//So(ok, ShouldBeTrue)
-		//
-		//net1.nodeTable.Delete([]byte("127.0.0.1:30312"))
-		//net2.nodeTable.Delete([]byte("127.0.0.1:30311"))
-		//
-		//net1.peers.RemoveByNodeStr("127.0.0.1:30312")
-		//net1.peers.RemoveByNodeStr("127.0.0.1:30304")
-		//net2.peers.RemoveByNodeStr("127.0.0.1:30311")
-		//net2.peers.RemoveByNodeStr("127.0.0.1:30304")
-		//
-		//iter := server.nodeTable.NewIterator()
-		//for iter.Next() {
-		//	server.nodeTable.Delete(iter.Key())
-		//}
-		//iter.Release()
-		//server.listener.Close()
-		//net1.listener.Close()
-		//net2.listener.Close()
 		cleanLDB()
 	})
 }

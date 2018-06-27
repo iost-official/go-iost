@@ -1,10 +1,11 @@
 package network
 
 import (
-	"github.com/iost-official/prototype/common/mclock"
-	"github.com/iost-official/prototype/network/discover"
 	"net"
 	"sync"
+
+	"github.com/iost-official/prototype/common/mclock"
+	"github.com/iost-official/prototype/network/discover"
 )
 
 // Peer manages connections with other nodes.
