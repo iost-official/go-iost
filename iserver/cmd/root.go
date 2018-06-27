@@ -45,7 +45,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/iost-official/prototype/consensus/pob2"
+	"github.com/iost-official/prototype/consensus/pob"
 	"github.com/iost-official/prototype/core/txpool"
 	"github.com/iost-official/prototype/vm"
 )
@@ -440,7 +440,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		recorder := pob2.NewRecorder()
+		recorder := pob.NewRecorder()
 		recorder.Listen()
 
 		// Start Metrics Server

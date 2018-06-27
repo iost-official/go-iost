@@ -2,10 +2,9 @@ package pob
 
 import (
 	"errors"
-	"sync"
-
-	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/core/blockcache"
+	"github.com/iost-official/prototype/core/tx"
+	"sync"
 )
 
 var ErrIllegalTx = errors.New("illegal tx")
@@ -35,7 +34,7 @@ func (p *RecorderImpl) Record(tx2 tx.Tx) error {
 	p.isListening.Lock()
 	defer p.isListening.Unlock()
 	if blockcache.VerifyTxSig(tx2) { // 移到外面做
-		tx.RecordTx(tx2, Data.self)
+		tx.RecordTx(tx2, tx.Data.Self())
 		p.storage[string(tx2.Hash())] = true
 		p.Push(tx2)
 		return nil

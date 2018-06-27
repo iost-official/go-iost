@@ -1,4 +1,4 @@
-package pob2
+package pob
 
 import (
 	"errors"
