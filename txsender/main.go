@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
+	"math/rand"
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
@@ -96,7 +96,9 @@ var eps float64 = (1e-6)
 func send(wg *sync.WaitGroup, mtx tx.Tx, acc account.Account, startNonce int64, routineId int) {
 	defer wg.Done()
 	log.Infof("cluster: %v, routineId: %v, server_num: %v", *cluster, routineId, server_num[*cluster])
-	conn, err := grpc.Dial(servers[*cluster][(routineId%server_num[*cluster])], grpc.WithInsecure())
+	id:=rand.Intn(server_num[*cluster]-1)
+	fmt.Println("sendto: "+string(id))
+	conn, err := grpc.Dial(servers[*cluster][id], grpc.WithInsecure())
 	if err != nil {
 		return
 	}
@@ -141,6 +143,7 @@ func main() {
 	if accId == nil || money == nil || tps == nil {
 		return
 	}
+	rand.Seed(time.Now().UnixNano())
 	acc = accounts[*accId]
 	rawCode := `
 --- main 合约主入口
