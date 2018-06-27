@@ -78,7 +78,7 @@ func TestStdCacheVerifier(t *testing.T) {
 		}
 		v, err := pool.GetHM("iost", "a")
 		So(err, ShouldBeNil)
-		So(v.EncodeString(), ShouldEqual, "f9.460000000000000e+03")
+		So(v.EncodeString(), ShouldEqual, "f9.459100000000139e+03")
 		p := pool.(*state.PoolImpl)
 		count := 0
 		for p != nil {
