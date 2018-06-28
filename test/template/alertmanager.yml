@@ -36,7 +36,7 @@ route:
   repeat_interval: 3h 
 
   # A default receiver
-  receiver: menglaijun
+  receiver: admin
 
   # All the above attributes are inherited by all child routes and can 
   # overwritten on each.
@@ -47,11 +47,11 @@ route:
   # catch alerts that are related to a list of services.
   - match_re:
       service: ^(iost_node|prometheus)$
-    receiver: menglaijun
+    receiver: admin
     routes:
     - match:
         severity: critical
-      receiver: menglaijun
+      receiver: admin
 
 # Inhibition rules allow to mute a set of alerts given that another alert is
 # firing.
@@ -67,9 +67,9 @@ inhibit_rules:
 
 
 receivers:
-- name: 'menglaijun'
+- name: 'admin'
   email_configs:
-  - to: 'mlj1991@gmail.com'
+  - to: 'admin@iost.io'
 
 - name: 'team-X-hipchat'
   hipchat_configs:
