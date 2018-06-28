@@ -56,12 +56,12 @@ end`,
 			sdb := state.NewDatabase(db)
 			pool := state.NewPool(sdb)
 
-			pool.PutHM("iost", "a", state.MakeVFloat(100))
-			pool.PutHM("iost", "b", state.MakeVFloat(100))
+			pool.PutHM("iost", "a", state.MakeVFloat(100000))
+			pool.PutHM("iost", "b", state.MakeVFloat(100000))
 
 			main := NewMethod(vm.Public, "main", 0, 1)
 			lc := Contract{
-				info: vm.ContractInfo{Prefix: "test", GasLimit: 11, Publisher: vm.IOSTAccount("a")},
+				info: vm.ContractInfo{Prefix: "test", GasLimit: 100000, Publisher: vm.IOSTAccount("a")},
 
 				code: `function main()
 	return Transfer("a", "b", 50)
@@ -591,7 +591,7 @@ func TestVM_Restart(t *testing.T) {
 
 		main := NewMethod(vm.Public, "main", 0, 1)
 		lc := Contract{
-			info: vm.ContractInfo{Prefix: "test", GasLimit: 3, Publisher: vm.IOSTAccount("a")},
+			info: vm.ContractInfo{Prefix: "test", GasLimit: 1000, Publisher: vm.IOSTAccount("a")},
 			code: `function main()
 	Transfer("a", "b", 50)
 	return "success"
@@ -611,13 +611,14 @@ end`,
 		var lvm VM
 
 		lvm.Prepare(nil)
-		lvm.Start(&lc)
+		err = lvm.Start(&lc)
+		So(err, ShouldBeNil)
 		So(lvm.PC(), ShouldEqual, 3)
 
 		lvm.Call(vm.BaseContext(), pool, "main")
-		So(lvm.PC(), ShouldEqual, 4)
+		So(lvm.PC(), ShouldEqual, 7)
 
-		So(lvm.L.PCLimit, ShouldEqual, 3)
+		So(lvm.L.PCLimit, ShouldEqual, 1000)
 		lvm.Restart(&lc2)
 
 		So(lvm.L.PCLimit, ShouldEqual, 10000)

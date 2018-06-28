@@ -73,7 +73,7 @@ func TestCacheVerifier(t *testing.T) {
 				f2 = field
 				v2 = value
 			})
-			v3 := state.MakeVFloat(float64(10000))
+			v3 := state.MakeVFloat(float64(1000000))
 			pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(v3, nil)
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
 			main := lua.NewMethod(vm.Public, "main", 0, 1)
@@ -92,7 +92,7 @@ end`
 			So(string(k2), ShouldEqual, "iost")
 			So(string(f2), ShouldEqual, "ahaha")
 			vv := v2.(*state.VFloat)
-			So(vv.ToFloat64(), ShouldEqual, float64(10000-2010))
+			So(vv.ToFloat64(), ShouldEqual, float64(997989.99))
 		})
 		Convey("Verify free contract", func() {
 			mockCtl := gomock.NewController(t)
@@ -118,7 +118,7 @@ end`
 				v2 = value
 			})
 			//v3 := state.MakeVFloat(float64(10000))
-			pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(state.VNil, nil)
+			pool.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(state.MakeVFloat(1000000), nil)
 			pool.EXPECT().Copy().AnyTimes().Return(pool)
 			main := lua.NewMethod(vm.Public, "main", 0, 1)
 			code := `function main()
@@ -161,7 +161,7 @@ end`
 		aa, err := pool2.GetHM("iost", "a")
 		ba, err := pool2.GetHM("iost", "b")
 		So(err, ShouldBeNil)
-		So(aa.(*state.VFloat).ToFloat64(), ShouldEqual, 999944)
+		So(aa.(*state.VFloat).ToFloat64(), ShouldEqual, 999943.99)
 		So(ba.(*state.VFloat).ToFloat64(), ShouldEqual, 1000050)
 	})
 
@@ -199,7 +199,7 @@ end`
 
 		aa2, err := pool3.GetHM("iost", "a")
 		So(err, ShouldBeNil)
-		So(aa2.(*state.VFloat).ToFloat64(), ShouldEqual, 999888)
+		So(aa2.(*state.VFloat).ToFloat64(), ShouldEqual, 999887.98)
 		So(ba.(*state.VFloat).ToFloat64(), ShouldEqual, 1000100)
 	})
 
