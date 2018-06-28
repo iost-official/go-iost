@@ -1,16 +1,16 @@
 GO = go
 
-VERSION = 1.0.0
+VERSION = 1.0.3
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/prototype
 DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
 TARGET_DIR = build
 
-.PHONY: all build iserver iwallet register txsender lint image devimage install clean
+.PHONY: all build iserver iwallet register lint image devimage install clean
 
 all: build
 
-build: iserver iwallet register txsender
+build: iserver iwallet register
 
 iserver:
 	$(GO) build -o $(TARGET_DIR)/iserver $(PROJECT)/iserver
@@ -20,9 +20,6 @@ iwallet:
 
 register:
 	$(GO) build -o $(TARGET_DIR)/register $(PROJECT)/network/main/
-
-txsender:
-	$(GO) build -o $(TARGET_DIR)/txsender $(PROJECT)/txsender
 
 lint:
 	@gometalinter --config=.gometalinter.json ./...
