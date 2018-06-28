@@ -1,12 +1,7 @@
 account:
-  id: 2538yUDuKTLaXqCTFS1tfVmMEL4dVnzLDWChoMdoxgCa4
-  pub-key: 2538yUDuKTLaXqCTFS1tfVmMEL4dVnzLDWChoMdoxgCa4
-  sec-key: YJXWyJkMiSAYeHkUJukCUPW8srfXmCFF148isFz2RdY
-consensus:
-  witness-list:
-  - 2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT
-  - gvCQNmkuA6AwdddRMSUg6jr8W7swKWAnhEY3cAthj9bX
-  - 2538yUDuKTLaXqCTFS1tfVmMEL4dVnzLDWChoMdoxgCa4
+  id: bj38rN9xdqBa4eiMi1vPjcUwdMyZmQhvYbVA6cnHyQCH
+  pub-key: bj38rN9xdqBa4eiMi1vPjcUwdMyZmQhvYbVA6cnHyQCH
+  sec-key: HmzokeaKBBFZHZogPP2F98LqkheG5LB2dD8euBA5EaVn
 net:
   log-path: iostlog
   node-table-path: netpath
