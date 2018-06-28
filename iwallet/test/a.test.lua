@@ -7,4 +7,4 @@
 function main()
     Put("hello", "world")
     return "success"
-end
+end--f
