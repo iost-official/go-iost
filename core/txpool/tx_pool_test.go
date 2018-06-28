@@ -24,7 +24,7 @@ func TestNewTxPoolServer(t *testing.T) {
 		var accountList []account.Account
 		var witnessList []string
 
-		acc := common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9")
+		acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 		_account, err := account.NewAccount(acc)
 		if err != nil {
 			panic("account.NewAccount error")
@@ -289,7 +289,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 	var accountList []account.Account
 	var witnessList []string
 
-	acc := common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9")
+	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 	_account, err := account.NewAccount(acc)
 	if err != nil {
 		panic("account.NewAccount error")

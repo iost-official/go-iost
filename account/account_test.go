@@ -30,7 +30,7 @@ func TestMember(t *testing.T) {
 
 		})
 		Convey("sec to pub", func() {
-			m, err := NewAccount(Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
+			m, err := NewAccount(Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4"))
 			So(err, ShouldBeNil)
 			fmt.Println(Base58Encode(m.Pubkey))
 		})

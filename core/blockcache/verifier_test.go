@@ -328,7 +328,7 @@ end--f
 -- @return_cnt 1
 function main()
 	print("hello")
-	Transfer("2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K", 10)
+	Transfer("iWgLQj3VTPN4dZnomuJMMCggv22LFw4nAkA6bmrVsmCo","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K", 10)
 end--f
 `
 
@@ -337,9 +337,9 @@ end--f
 		So(err, ShouldBeNil)
 		sdb := state.NewDatabase(dbx)
 		pool := state.NewPool(sdb)
-		pool.PutHM("iost", "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT", state.MakeVFloat(10000))
+		pool.PutHM("iost", "iWgLQj3VTPN4dZnomuJMMCggv22LFw4nAkA6bmrVsmCo", state.MakeVFloat(10000))
 
-		acc, err := account.NewAccount(common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
+		acc, err := account.NewAccount(common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4"))
 		if err != nil {
 			fmt.Println(err.Error())
 			return

@@ -92,7 +92,7 @@ end`, main3)
 
 		txx := tx.NewTx(123, &lc2)
 		txx.Time = 1000000
-		seckey := common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9")
+		seckey := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 		//fmt.Println(common.Base58Encode(seckey))
 		acc, err := account.NewAccount(seckey)
 		if err != nil {
