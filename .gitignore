@@ -219,7 +219,11 @@ txDB/
 *.prof
 *.test
 *.svg
+*.tx
+*.sc
+serviDb
 servi_db.ldb
 */test.log
 */vm.log
 test/data
+scripts/sendtx/iwallet

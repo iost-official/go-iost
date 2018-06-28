@@ -116,6 +116,8 @@ func Core2Lua(value state.Value) (lua.LValue, error) {
 			}
 		}
 		return &vt, nil
+	case *state.VDeleteType:
+		return lua.LNil, nil
 	}
 	panic(fmt.Errorf("not support convertion: %v", reflect.TypeOf(value).String()))
 }
