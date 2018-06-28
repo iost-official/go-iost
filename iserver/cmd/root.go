@@ -98,9 +98,8 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		//初始化数据库
 		ldbPath := viper.GetString("ldb.path")
-		redisAddr := viper.GetString("redis.addr") //optional
+		redisAddr := viper.GetString("redis.addr")
 		redisPort := viper.GetInt64("redis.port")
 
 		log.Log.I("ldb.path: %v", ldbPath)
@@ -134,9 +133,7 @@ var rootCmd = &cobra.Command{
 			log.Log.E("NewBlockChain failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-		//检查db和redis数据是否合法
 		var resBlockLength uint64
-		// 最少有个创世块
 		resBlockLength = 1
 		bn, err := state.StdPool.Get(state.Key("BlockNum"))
 		if err == nil {
@@ -156,7 +153,6 @@ var rootCmd = &cobra.Command{
 		log.Log.I("BlockNum on Redis: %v", resBlockLength-1)
 		log.Log.I("BCLen: %v", bcLen)
 		if bcLen < resBlockLength {
-			// 重算
 			resBlockLength = 0
 			state.StdPool.Delete(state.Key("iost"))
 			state.StdPool.Delete(state.Key("BlockNum"))
@@ -200,7 +196,6 @@ var rootCmd = &cobra.Command{
 				}
 			}
 		}
-		//初始化网络
 		log.Log.I("1.Start the P2P networks")
 
 		logPath := viper.GetString("net.log-path")
@@ -229,10 +224,6 @@ var rootCmd = &cobra.Command{
 		}
 
 		log.Log.I("network instance")
-		/*      publicIP := common.GetPulicIP() */
-		// if publicIP != "" && common.IsPublicIP(net.ParseIP(publicIP)) && listenAddr != "127.0.0.1" {
-		// listenAddr = publicIP
-		/* } */
 		net, err := network.GetInstance(
 			&network.NetConfig{
 				LogPath:       logPath,
@@ -249,7 +240,6 @@ var rootCmd = &cobra.Command{
 		log.LocalID = net.(*network.RouterImpl).LocalID()
 		serverExit = append(serverExit, net)
 
-		//启动共识
 		accSecKey := viper.GetString("account.sec-key")
 		//fmt.Printf("account.sec-key:  %v\n", accSecKey)
 
@@ -261,12 +251,7 @@ var rootCmd = &cobra.Command{
 
 		account.MainAccount = acc
 
-		//fmt.Printf("account PubKey = %v\n", common.Base58Encode(acc.Pubkey))
-		//fmt.Printf("account SecKey = %v\n", common.Base58Encode(acc.Seckey))
 		log.Log.I("account ID = %v", acc.ID)
-
-		//HowHsu_Debug
-		log.Log.I("blockchain db length:%d\n", blockChain.Length())
 
 		// init servi
 		sp, err := tx.NewServiPool(len(account.GenesisAccount), 100)
@@ -326,7 +311,6 @@ var rootCmd = &cobra.Command{
 		txPool.Start()
 		serverExit = append(serverExit, txPool)
 
-		//启动RPC
 		err = rpc.Server(rpcPort)
 		if err != nil {
 			log.Log.E("RPC initialization failed, stop the program! err:%v", err)
@@ -347,7 +331,6 @@ var rootCmd = &cobra.Command{
 		})
 		///////////////////////////////////
 
-		//等待推出信号
 		exitLoop()
 
 	},
@@ -452,7 +435,6 @@ func initConfig() {
 
 	viper.AutomaticEnv() // read in environment variables that match
 
-	//fmt.Println(cfgFile)
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())

@@ -52,18 +52,6 @@ var compileCmd = &cobra.Command{
 			}
 		}
 
-		//		fmt.Printf(`Transaction :
-		//Time: xx
-		//Nonce: xx
-		//contract:
-		//    Price: %v
-		//    Gas limit: %v
-		//Code:
-		//----
-		//%v
-		//----
-		//`, contract.Info().Price, contract.Info().GasLimit, contract.Code())
-
 		mTx := tx.NewTx(int64(Nonce), contract)
 
 		bytes := mTx.Encode()

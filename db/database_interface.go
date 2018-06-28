@@ -34,12 +34,3 @@ func DatabaseFactory(target string) (Database, error) {
 	}
 	return nil, errors.New("target Database not found")
 }
-
-/*
-type Batch interface {
-	Put(key []byte, value []byte) error
-	ValueSize() int
-	Write() error
-	Reset()
-}
-*/

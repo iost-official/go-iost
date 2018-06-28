@@ -9,43 +9,32 @@ import (
 	"github.com/iost-official/prototype/core/state"
 )
 
-// Privilege 设定智能合约的接口权限
 type Privilege int
 
 const (
-	// Private 接口只能被发布者访问
 	Private Privilege = iota
-	// Protected 接口只能被签名者访问
 	Protected
-	// Public 接口谁都能访问
 	Public
 )
 
-// IOSTAccount iost账户，为base58编码的pubkey
 type IOSTAccount string
 
 //go:generate gencode go -schema=structs.schema -package=vm
 //go:generate mockgen -destination mocks/mock_contract.go -package vm_mock github.com/iost-official/prototype/vm contract
 
 // Code type, can be compile to contract
-// 代码类型的别名，可以编译为contract
 type Code string
 
-// VM 虚拟机interface，定义了虚拟机的接口
-//
-// 调用流程为prepare - start - call - stop
 type VM interface {
 	Prepare(monitor Monitor) error
 	Start(contract Contract) error
 	Restart(contract Contract) error
 	Stop()
-	//Call(pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
 	Call(ctx *Context, pool state.Pool, methodName string, args ...state.Value) ([]state.Value, state.Pool, error)
 	PC() uint64
 	Contract() Contract
 }
 
-// Method 方法interface，用来作为接口调用
 type Method interface {
 	Name() string
 	InputCount() int
@@ -53,13 +42,6 @@ type Method interface {
 	Privilege() Privilege
 }
 
-// Context using by vm
-//type Context interface {
-//	ParentHash() []byte
-//	Base() Context
-//}
-
-// contract 智能合约interface，其中setPrefix，setSender, AddSigner是从tx构建contract的时候使用
 type Contract interface {
 	Info() ContractInfo
 	SetPrefix(prefix string)
@@ -70,7 +52,6 @@ type Contract interface {
 	common.Serializable
 }
 
-// Monitor 管理虚拟机的管理者，实现在verifier模块
 type Monitor interface {
 	StartVM(contract Contract) (VM, error)
 	StopVM(contract Contract)
@@ -96,9 +77,6 @@ func PrefixToHash(prefix string) []byte {
 }
 
 func CheckPrivilege(ctx *Context, info ContractInfo, name string) int {
-	//fmt.Println(ctx)
-	//fmt.Print("name", name)
-
 	for {
 		if ctx != nil {
 			if IOSTAccount(name) == ctx.Publisher {

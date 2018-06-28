@@ -35,13 +35,7 @@ func TestTx(t *testing.T) {
 		a1, _ := account.NewAccount(nil)
 		a2, _ := account.NewAccount(nil)
 		a3, _ := account.NewAccount(nil)
-		/*
-			Convey("string", func() {
-				tx := gentx()
-				fmt.Printf("%s",&tx)
-				//So(err.Error(), ShouldEqual, "signer error")
-			})
-		*/
+
 		Convey("sign and verify", func() {
 			tx := NewTx(int64(0), mockContract)
 			sig1, err := SignContract(tx, a1)
@@ -232,16 +226,12 @@ end--f`
 			fmt.Println(err.Error())
 			return
 		}
-		//fmt.Println(common.Base58Encode(mTx.publishHash()))
 
 		stx, err := SignTx(mTx, acc)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
-		//fmt.Println(common.Base58Encode(stx.publishHash()))
-
-		//fmt.Println(stx.Contract)
 
 		So(common.Base58Encode(mTx.publishHash()), ShouldEqual, common.Base58Encode(stx.publishHash()))
 		bytes := stx.Encode()
@@ -254,9 +244,6 @@ end--f`
 
 		So(stx.Contract.Code(), ShouldEqual, ptx.Contract.Code())
 		So(p2tx.Contract.Info().Prefix, ShouldEqual, ptx.Contract.Info().Prefix)
-
-		//fmt.Println(stx.Contract.Info())
-		//fmt.Println(ptx.Contract.Info())
 
 		So(common.Base58Encode(ptx.publishHash()), ShouldEqual, common.Base58Encode(stx.publishHash()))
 

@@ -51,8 +51,6 @@ func (tp *TxPoolDb) Add(tx *Tx) error {
 
 	err = tp.db.Put(append(PNPrefix, append(NonceRaw, PubKey...)...), hash)
 
-	//fmt.Println(append(PNPrefix, append(NonceRaw, PubRaw...)...))
-
 	if err != nil {
 		return fmt.Errorf("failed to Put NP->hash: %v", err)
 	}
@@ -86,7 +84,6 @@ func (tp *TxPoolDb) GetByPN(Nonce int64, PubKey []byte) (*Tx, error) {
 	NonceRaw := make([]byte, 8)
 	binary.BigEndian.PutUint64(NonceRaw, uint64(Nonce))
 	hash, err := tp.db.Get(append(PNPrefix, append(NonceRaw, PubKey...)...))
-
 
 	if err != nil {
 

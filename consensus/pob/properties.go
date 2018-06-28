@@ -119,9 +119,6 @@ func (prop *globalDynamicProperty) update(blockHead *block.BlockHead) {
 		prop.TotalSlots = 1
 		prop.NextMaintenanceTime.AddHour(maintenanceInterval)
 	}
-	//else {
-	//	prop.TotalSlots = prop.timestampToSlot(Timestamp{blockHead.Time}) + 1
-	//}
 	prop.LastBlockNumber = blockHead.Number
 	prop.LastBlockTime = Timestamp{Slot: blockHead.Time}
 	copy(prop.LastBLockHash, blockHead.Hash())

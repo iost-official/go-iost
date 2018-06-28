@@ -46,10 +46,10 @@ func (s *Servi) Clear() {
 }
 
 type ServiPool struct {
-	btu       map[vm.IOSTAccount]*Servi // 贡献最大的账户集合
-	hm        map[vm.IOSTAccount]*Servi // 普通账户
-	btuCnt    int                       // 贡献最大账户的集合
-	cacheSize int                       // 缓存大小
+	btu       map[vm.IOSTAccount]*Servi
+	hm        map[vm.IOSTAccount]*Servi
+	btuCnt    int
+	cacheSize int
 	mu        sync.RWMutex
 }
 
@@ -77,7 +77,6 @@ func NewServiPool(num int, cacheSize int) (*ServiPool, error) {
 	return StdServiPool, nil
 }
 
-// 没有则添加该节点
 func (sp *ServiPool) User(iostAccount vm.IOSTAccount) (*Servi, error) {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
@@ -142,7 +141,6 @@ func (sp *ServiPool) Flush() {
 
 }
 
-// updateBtu 更新btu
 func (sp *ServiPool) UpdateBtu() {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
@@ -193,7 +191,6 @@ func (sp *ServiPool) userBtu(iostAccount vm.IOSTAccount) *Servi {
 	}
 }
 
-//userHm 添加普通账户
 func (sp *ServiPool) userHm(iostAccount vm.IOSTAccount) *Servi {
 
 	if servi, ok := sp.hm[iostAccount]; ok {
@@ -221,7 +218,6 @@ func (sp *ServiPool) addBtu(iostAccount vm.IOSTAccount, s *Servi) error {
 
 }
 
-//userHm 添加普通账户
 func (sp *ServiPool) addHm(iostAccount vm.IOSTAccount, s *Servi) error {
 
 	if _, ok := sp.hm[iostAccount]; ok {
@@ -327,7 +323,6 @@ type BestUserList []*Servi
 
 func (s BestUserList) Len() int { return len(s) }
 func (s BestUserList) Less(i, j int) bool {
-	//fmt.Println("")
 	return s[i].Total() > s[j].Total()
 }
 func (s BestUserList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }

@@ -19,7 +19,6 @@ var (
 	MaxAcceptableLength     int64 = 100
 )
 
-// Synchronizer
 type Synchronizer interface {
 	StartListen() error
 	StopListen() error
@@ -28,7 +27,6 @@ type Synchronizer interface {
 	BlockConfirmed(num int64)
 }
 
-// SyncImpl
 type SyncImpl struct {
 	blockCache        blockcache.BlockCache
 	router            Router
@@ -44,7 +42,6 @@ type SyncImpl struct {
 	log *log.Logger
 }
 
-// NewSynchronizer
 func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int) *SyncImpl {
 	sync := &SyncImpl{
 		blockCache:        bc,
@@ -96,7 +93,6 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int)
 	return sync
 }
 
-// StartListen
 func (sync *SyncImpl) StartListen() error {
 	go sync.requestBlockLoop()
 	go sync.retryDownloadLoop()
@@ -114,14 +110,6 @@ func (sync *SyncImpl) StopListen() error {
 	return nil
 }
 
-func max(x, y uint64) uint64 {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-// NeedSync
 func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	height := sync.blockCache.ConfirmedLength() - 1
 	if netHeight > height+uint64(SyncNumber) {
@@ -148,7 +136,6 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	return false, 0, 0
 }
 
-// SyncBlocks
 func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	var syncNum int
 	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {

@@ -35,22 +35,6 @@ func TestRpcServer(t *testing.T) {
 		a1, _ := account.NewAccount(nil)
 		sig1, _ := tx.SignContract(_tx, a1)
 		_tx, _ = tx.SignTx(_tx, acc, sig1)
-		/*
-			Convey("Test of PublishTx", func() {
-
-				ctl := gomock.NewController(t)
-				mockRouter := protocol_mock.NewMockRouter(ctl)
-				mockRouter.EXPECT().Broadcast(gomock.Any()).AnyTimes().Return()
-				network.Route = mockRouter
-
-				txpb := Transaction{Tx: _tx.Encode()}
-
-				hs := new(RpcServer)
-				res, err := hs.PublishTx(context.Background(), &txpb)
-				So(err, ShouldBeNil)
-				So(res.Code, ShouldEqual, 0)
-			})
-		*/
 		Convey("Test of GetTransaction", func() {
 			txdb := tx.TxDb
 			fmt.Println(txdb)

@@ -77,7 +77,6 @@ type PoB struct {
 	log *log.Logger
 }
 
-// NewPoB
 func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
 	TxPerBlk = 800
 	p := PoB{
@@ -105,7 +104,6 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 		return nil, err
 	}
 
-	//	Block chan init
 	p.chBlock, err = p.router.FilteredChan(Filter{
 		AcceptType: []ReqType{ReqNewBlock, ReqSyncBlock}})
 	if err != nil {
@@ -131,14 +129,12 @@ func (p *PoB) initGlobalProperty(acc Account, witnessList []string) {
 	p.globalDynamicProperty = newGlobalDynamicProperty()
 }
 
-// Run
 func (p *PoB) Run() {
 	p.synchronizer.StartListen()
 	go p.blockLoop()
 	go p.scheduleLoop()
 }
 
-// Stop
 func (p *PoB) Stop() {
 	close(p.chBlock)
 	close(p.exitSignal)
@@ -148,22 +144,18 @@ func (p *PoB) BlockCache() blockcache.BlockCache {
 	return p.blockCache
 }
 
-// BlockChain
 func (p *PoB) BlockChain() block.Chain {
 	return p.blockCache.BlockChain()
 }
 
-// CachedBlockChain
 func (p *PoB) CachedBlockChain() block.Chain {
 	return p.blockCache.LongestChain()
 }
 
-// StatePool
 func (p *PoB) StatePool() state.Pool {
 	return p.blockCache.BasePool()
 }
 
-// CacheStatePool
 func (p *PoB) CachedStatePool() state.Pool {
 	return p.blockCache.LongestPool()
 }
@@ -228,7 +220,6 @@ func (p *PoB) blockLoop() {
 			p.log.I("Received block:%v ,from=%v, timestamp: %v, Witness: %v, trNum: %v", blk.Head.Number, req.From, blk.Head.Time, blk.Head.Witness, len(blk.Content))
 			localLength := p.blockCache.ConfirmedLength()
 			if blk.Head.Number > int64(localLength)+MaxAcceptableLength {
-				// Do not accept block of too height, must wait for synchronization
 				if req.ReqType == int32(ReqNewBlock) {
 					go p.synchronizer.SyncBlocks(localLength, localLength+uint64(MaxAcceptableLength))
 				}
@@ -254,12 +245,6 @@ func (p *PoB) blockLoop() {
 					}
 				}
 			}
-			/*
-								ts := Timestamp{blk.Head.Time}
-								if ts.After(p.globalDynamicProperty.NextMaintenanceTime) {
-									p.performMaintenance()
-				 				}
-			*/
 		case <-p.exitSignal:
 			return
 		}
@@ -319,7 +304,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 		Witness:    acc.ID,
 		Time:       GetCurrentTimestamp().Slot,
 	}}
-	//return &blk
 	spool1 := pool.Copy()
 
 	vc := vm.NewContext(vm.BaseContext())
@@ -352,7 +336,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 				}
 				if err := blockcache.StdCacheVerifier(t, spool1, vc); err == nil {
 					blk.Content = append(blk.Content, *t)
-
 				}
 			}
 		}
@@ -366,7 +349,6 @@ func (p *PoB) genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Bloc
 
 	generatedBlockCount.Inc()
 
-	//Clear Servi
 	Data.ClearServi(blk.Head.Witness)
 
 	return &blk
@@ -390,7 +372,6 @@ func generateHeadInfo(head block.BlockHead) []byte {
 
 func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
 	// verify block head
-
 	if err := blockcache.VerifyBlockHead(blk, parent); err != nil {
 		return nil, err
 	}

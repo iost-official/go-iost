@@ -19,7 +19,6 @@ var (
 	blockPrefix       = []byte("H") //blockHashPrefix + block hash -> block data
 )
 
-// ChainImpl 是已经确定block chain的结构体
 type ChainImpl struct {
 	db     db.Database
 	length uint64
@@ -31,7 +30,6 @@ var once sync.Once
 
 var LdbPath string
 
-// GetInstance 创建一个blockChain实例,单例模式
 func Instance() (Chain, error) {
 	var err error
 
@@ -85,19 +83,16 @@ func Instance() (Chain, error) {
 	return BChain, err
 }
 
-// Push 保存一个block到实例
 func (b *ChainImpl) Push(block *Block) error {
 
 	hash := block.HeadHash()
 	number := uint64(block.Head.Number)
 
-	//存储区块hash
 	err := b.db.Put(append(blockNumberPrefix, strconv.FormatUint(number, 10)...), hash)
 	if err != nil {
 		return fmt.Errorf("failed to Put block hash err[%v]", err)
 	}
 
-	//存储区块数据
 	err = b.db.Put(append(blockPrefix, hash...), block.Encode())
 	if err != nil {
 		return fmt.Errorf("failed to Put block data")
@@ -126,12 +121,10 @@ func (b *ChainImpl) Push(block *Block) error {
 	return nil
 }
 
-// Length 返回已经确定链的长度
 func (b *ChainImpl) Length() uint64 {
 	return b.length
 }
 
-// CheckLength 设置block 高度
 func (b *ChainImpl) CheckLength() error {
 
 	dbLen := b.Length()
@@ -151,7 +144,6 @@ func (b *ChainImpl) CheckLength() error {
 	return nil
 }
 
-// Length 返回已经确定链的长度
 func (b *ChainImpl) setLength(l uint64) error {
 
 	var lenB = make([]byte, 128)
@@ -167,17 +159,14 @@ func (b *ChainImpl) setLength(l uint64) error {
 	return nil
 }
 
-// HasTx 判断tx是否存在于db中
 func (b *ChainImpl) HasTx(tx *tx.Tx) (bool, error) {
 	return b.tx.Has(tx)
 }
 
-// GetTx 通过hash获取tx
 func (b *ChainImpl) GetTx(hash []byte) (*tx.Tx, error) {
 	return b.tx.Get(hash)
 }
 
-// lengthAdd 链长度加1
 func (b *ChainImpl) lengthAdd(blockNum uint64) error {
 
 	log.Log.E("[block] lengthAdd length:%v block num:%v ", b.length, blockNum)
@@ -195,13 +184,11 @@ func (b *ChainImpl) lengthAdd(blockNum uint64) error {
 	return nil
 }
 
-// getLengthBytes 得到链长度的bytes类型
 func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 
 	return []byte(strconv.FormatUint(length, 10))
 }
 
-// Top 返回已确定链的最后block
 func (b *ChainImpl) Top() *Block {
 
 	var blk *Block
@@ -228,7 +215,6 @@ func (b *ChainImpl) GetHashByNumber(number uint64) []byte {
 	return hash
 }
 
-// GetBlockByNumber 通过区块编号查询块
 func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
@@ -254,7 +240,6 @@ func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
 	return rBlock
 }
 
-// GetBlockByHash 通过区块hash查询块
 func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 
 	block, err := b.db.Get(append(blockPrefix, blockHash...))
@@ -272,7 +257,6 @@ func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
 	return rBlock
 }
 
-// GetBlockByNumber 通过区块hash查询块
 func (b *ChainImpl) GetBlockByteByHash(blockHash []byte) ([]byte, error) {
 
 	block, err := b.db.Get(append(blockPrefix, blockHash...))
@@ -288,7 +272,6 @@ func (b *ChainImpl) GetBlockByteByHash(blockHash []byte) ([]byte, error) {
 	return block, nil
 }
 
-// Iterator 暂不实现
 func (b *ChainImpl) Iterator() ChainIterator {
 	return nil
 }

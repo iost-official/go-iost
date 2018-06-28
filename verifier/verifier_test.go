@@ -133,71 +133,9 @@ end`
 			So(err, ShouldBeNil)
 			So(string(k), ShouldEqual, "testhello")
 			So(v.EncodeString(), ShouldEqual, "true")
-			//So(string(k2), ShouldEqual, "iost")
-			//So(string(f2), ShouldEqual, "ahaha")
-			//vv := v2.(*state.VFloat)
-			//So(vv.ToFloat64(), ShouldEqual, float64(0))
 		})
 	})
 }
-
-//func TestBlockVerifier(t *testing.T) {
-//	Convey("Test of BlockVerifier", t, func() {
-//
-//		a1, _ := account.NewAccount(nil)
-//		a2, _ := account.NewAccount(nil)
-//
-//		ctl := gomock.NewController(t)
-//		mockDB := db_mock.NewMockDatabase(ctl)
-//		mockDB.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
-//		mockDB.EXPECT().Get(gomock.Any()).AnyTimes().Return(nil, nil)
-//
-//		db := state.NewDatabase(mockDB)
-//
-//		pool := state.NewPool(db)
-//		pool.PutHM(state.Key("iost"), state.Key("ahaha"), state.MakeVFloat(10000))
-//		pool.Put(state.Key("a"), state.MakeVFloat(3.14))
-//
-//		main := lua.NewMethod(vm.Public, "main", 0, 1)
-//		code := `function main()
-//	a = Get("a")
-//	Put("hello", a)
-//	return a
-//end`
-//		lc1 := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
-//
-//		code2 := `function main()
-//	return Call("con2", "sayHi", "bob")
-//end`
-//
-//		main2 := lua.NewMethod(vm.Public, "main", 0, 1)
-//
-//		lc2 := lua.NewContract(vm.ContractInfo{Prefix: "test2", GasLimit: 1000, Price: 1, Publisher: vm.IOSTAccount("ahaha")},
-//			code2, main2)
-//
-//		tx1 := tx.NewTx(1, &lc1)
-//		tx1, _ = tx.SignTx(tx1, a1)
-//		tx2 := tx.NewTx(2, &lc2)
-//		tx2, _ = tx.SignTx(tx2, a2)
-//
-//		blk := block.Block{
-//			Content: []tx.Tx{tx1, tx2},
-//		}
-//
-//		bv := NewBlockVerifier(nil)
-//		bv.SetPool(pool)
-//		pool2, err := bv.VerifyBlock(&blk, false)
-//		So(err, ShouldBeNil)
-//		So(pool2, ShouldNotBeNil)
-//		vt, err := pool2.Get("testhello")
-//		So(err, ShouldBeNil)
-//		So(vt, ShouldNotBeNil)
-//		So(vt.EncodeString(), ShouldEqual, "f3.140000000000000e+00")
-//		bal, _ := pool2.GetHM(state.Key("iost"), state.Key("ahaha"))
-//		So(bal.(*state.VFloat).ToFloat64(), ShouldEqual, 9985)
-//
-//	})
-//}
 
 func TestCacheVerifier_TransferOnly(t *testing.T) {
 	Convey("System test of transfer", t, func() {
@@ -215,7 +153,6 @@ end`
 		pool := state.NewPool(sdb)
 		pool.PutHM(state.Key("iost"), state.Key("a"), state.MakeVFloat(1000000))
 		pool.PutHM(state.Key("iost"), state.Key("b"), state.MakeVFloat(1000000))
-		//fmt.Println(pool.GetHM("iost", "b"))
 		var pool2 state.Pool
 
 		cv := NewCacheVerifier()
@@ -246,7 +183,6 @@ end`
 		pool := state.NewPool(sdb)
 		pool.PutHM(state.Key("iost"), state.Key("a"), state.MakeVFloat(1000000))
 		pool.PutHM(state.Key("iost"), state.Key("b"), state.MakeVFloat(1000000))
-		//fmt.Println(pool.GetHM("iost", "b"))
 		var pool2 state.Pool
 
 		cv := NewCacheVerifier()
@@ -294,15 +230,9 @@ end`
 		if err != nil {
 			panic(err)
 		}
-		//cv.SetPool(pool2)
 	}
 
 	_ = pool2
-	//fmt.Println()
-	//fmt.Print("1.a: ")
-	//fmt.Println(pool2.GetHM("iost", "a"))
-	//fmt.Print("1.b: ")
-	//fmt.Println(pool2.GetHM("iost", "b"))
 
 }
 
@@ -335,11 +265,6 @@ end`
 	}
 
 	_ = pool2
-	//fmt.Println()
-	//fmt.Print("1.a: ")
-	//fmt.Println(pool2.GetHM("iost", "a"))
-	//fmt.Print("1.b: ")
-	//fmt.Println(pool2.GetHM("iost", "b"))
 
 }
 
@@ -665,10 +590,6 @@ end--f
 	if err != nil {
 		panic(err)
 	}
-	//_, err = verifier.VerifyContract(ccall, pool)
-	//if err != nil {
-	//	panic(err)
-	//}
 
 	for i := 0; i < b.N; i++ {
 		_, err = verifier.VerifyContract(ccall, pool)

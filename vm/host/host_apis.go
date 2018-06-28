@@ -160,7 +160,7 @@ func Witness(ctx *vm.Context) string {
 	return ""
 }
 
-func TableToJson(table *lua.LTable) (string, error) { // todo let state.pool works well
+func TableToJson(table *lua.LTable) (string, error) {
 	m := tableIterator(table)
 
 	rtn, err := json.Marshal(m)
@@ -201,7 +201,6 @@ func ParseJson(jsonStr []byte) (*lua.LTable, error) {
 	if err := json.Unmarshal([]byte(jsonStr), &mapResult); err != nil {
 		return nil, err
 	}
-	//fmt.Println("in ParseJson:", mapResult)
 
 	return mapIterator(mapResult), nil
 }
@@ -221,12 +220,8 @@ func mapIterator(m map[string]interface{}) *lua.LTable {
 		case map[string]interface{}:
 			l = mapIterator(v.(map[string]interface{}))
 		}
-		//fmt.Println(k, l)
 		setTable(&lt, k, l)
 	}
-	//lt.ForEach(func(value lua.LValue, value2 lua.LValue) {
-	//	fmt.Println("in lt:", value, value2)
-	//})
 	return &lt
 }
 

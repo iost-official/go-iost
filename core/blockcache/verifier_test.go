@@ -42,7 +42,6 @@ func TestStdTxsVerifier(t *testing.T) {
 		}
 
 		So(len(txs), ShouldEqual, 100)
-		//fmt.Println(txs[0].contract)
 		p2, i, err := StdTxsVerifier(txs, pool)
 		fmt.Println(i)
 		fmt.Println("error", err.Error())
@@ -156,12 +155,9 @@ func BenchmarkStdTxsVerifier(b *testing.B) {
 		txs = append(txs, &txx)
 	}
 
-	//fmt.Println(txs[500].contract)
-	//var k int
 	for i := 0; i < b.N; i++ {
 		pool, _, _ = StdTxsVerifier(txs, pool)
 	}
-	//fmt.Println(pool.GetPatch())
 
 	fmt.Println(pool.GetHM("iost", "a"))
 
@@ -189,7 +185,6 @@ func BenchmarkStdCacheVerifier(b *testing.B) {
 		p2 = pool
 		b.StartTimer()
 		for j := 0; j < 10000; j++ {
-			//err := StdCacheVerifier(&txx, p2)
 			p2, _, err = StdTxsVerifier([]*tx.Tx{&txx}, p2)
 			if err != nil {
 				fmt.Println(err)
@@ -359,7 +354,6 @@ end--f
 		buf := stx.Encode()
 		var atx tx.Tx
 		err = atx.Decode(buf)
-		//fmt.Println(atx.Contract)
 		So(err, ShouldBeNil)
 		err = StdCacheVerifier(&atx, pool, vm.BaseContext())
 		So(err, ShouldBeNil)

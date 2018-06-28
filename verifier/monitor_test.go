@@ -61,7 +61,7 @@ end`
 
 	})
 
-	Convey("Test of find contract and call", t, func() { // TODO : contract问题：当没有main，没有publisher的时候contract的编解码会出问题
+	Convey("Test of find contract and call", t, func() {
 
 		mockCtl := gomock.NewController(t)
 		pool := core_mock.NewMockPool(mockCtl)
@@ -108,7 +108,6 @@ end`, main3)
 
 		tx.TxDbInstance()
 		tx.TxDb.Add(&tx2)
-		//fmt.Println("a", tx2.Contract.Info().Prefix)
 
 		code1 := fmt.Sprintf(`function main()
 	return Call("%v", "sayHi", "bob")
@@ -118,9 +117,6 @@ end`, tx2.Contract.Info().Prefix)
 			code1, main)
 
 		tx3, _ := tx.TxDb.Get(vm.PrefixToHash(tx2.Contract.Info().Prefix))
-
-		//fmt.Println("tx2", tx2.Contract)
-		//fmt.Println(".tx3", tx3.Contract)
 
 		So(tx2.Contract.Info().Prefix, ShouldEqual, tx3.Contract.Info().Prefix)
 

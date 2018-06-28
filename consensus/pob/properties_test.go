@@ -76,7 +76,6 @@ func TestGlobalDynamicProperty(t *testing.T) {
 
 		Convey("update first block", func() {
 			So(dp.LastBlockNumber, ShouldEqual, 1)
-			//So(dp.TotalSlots, ShouldEqual, 1)
 		})
 
 		curSec := startTs.ToUnixSec() + 1

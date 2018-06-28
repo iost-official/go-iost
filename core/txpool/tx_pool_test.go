@@ -48,7 +48,6 @@ func TestNewTxPoolServer(t *testing.T) {
 		mockRouter := protocol_mock.NewMockRouter(mockCtr)
 
 		network.Route = mockRouter
-		// 设置第一个通道txchan
 		txChan := make(chan message.Message, 100000)
 		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
 
@@ -205,8 +204,6 @@ func TestNewTxPoolServer(t *testing.T) {
 
 			for i := 0; i < 11; i++ {
 				<-ch
-				//c := <-ch
-				//fmt.Println("结束并发 i=", i, ", c=", c)
 			}
 
 		})
@@ -238,25 +235,10 @@ func TestNewTxPoolServer(t *testing.T) {
 			}
 
 			So(txPool.TransactionNum(), ShouldEqual, len(bl[0].Content)+listTxCnt)
-			//for hash, tx := range txPool.listTx.list {
-			//	fmt.Println("print ListTx - tr hash:",hash, " nonoc:", tx.Nonce)
-			//
-			//}
-			//
-			//for hash, _ := range txPool.blockTx.blkTx[bl[0].TxID()].hashList {
-			//	fmt.Println("0.hashList - tr hash:",hash)
-			//
-			//}
 			txPool.checkIterateBlockHash.Add(bl[0].HashID())
 			txPool.updatePending(500)
 
-			//txList:=txPool.PendingTransactions()
-			//for _,tx:=range txList {
-			//	fmt.Println(tx.Nonce, ", tr hash:",tx.TxID())
-			//}
 			So(txPool.PendingTransactionNum(), ShouldEqual, listTxCnt)
-			//So(txPool.PendingTransactionNum(), ShouldEqual, listTxCnt)
-			//So(txPool.PendingTransactionNum(), ShouldEqual, listTxCnt)
 
 		})
 	})
@@ -312,7 +294,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 	mockRouter := protocol_mock.NewMockRouter(mockCtr)
 
 	network.Route = mockRouter
-	// 设置第一个通道txchan
 	txChan := make(chan message.Message, 1)
 	mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
 
@@ -359,16 +340,11 @@ func genTx(a account.Account, nonce int) tx.Tx {
 
 func genBlocks(p blockcache.BlockCache, accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
-	//blockLen := p.blockCache.ConfirmedLength()
-	//fmt.Println(blockLen)
-
-	//blockNum := 1000
 	slot := consensus_common.GetCurrentTimestamp().Slot
 
 	for i := 0; i < blockCnt; i++ {
 		var hash []byte
 
-		//make every block has no parent
 		if continuity == false {
 			hash[i%len(hash)] = byte(i % 256)
 		}

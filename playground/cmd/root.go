@@ -72,18 +72,6 @@ Playground runs lua script by turns.
 			}
 		}
 
-		//for _, k := range viper.AllKeys() {
-		//	v := viper.GetString(k)
-		//	val, _ := state.ParseValue(v)
-		//	if strings.Contains(k, ".") {
-		//		kf := strings.Split(k, ".")
-		//		fmt.Println(kf)
-		//		pool.PutHM(state.Key(kf[0]), state.Key(kf[1]), val)
-		//	} else {
-		//		pool.Put(state.Key(k), val)
-		//	}
-		//}
-
 		v := verifier.NewCacheVerifier()
 		v.Context = vm.BaseContext()
 		ph, err := pool.GetHM("context", "parent-hash")
@@ -107,8 +95,6 @@ Playground runs lua script by turns.
 		v.Context.Witness = vm.IOSTAccount(wit.EncodeString()[1:])
 		v.Context.BlockHeight = int64(height.(*state.VFloat).ToFloat64())
 		v.Context.Timestamp = int64(timestamp.(*state.VFloat).ToFloat64())
-
-		//var sc0 vm.contract
 
 		var (
 			pool2 state.Pool

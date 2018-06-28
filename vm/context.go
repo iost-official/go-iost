@@ -16,14 +16,6 @@ func NewContext(ctx *Context) *Context {
 	}
 }
 
-//func (b Context) ParentHash() []byte {
-//	return []byte{0}
-//}
-//
-//func (b Context) Base() *Context {
-//	return b.base
-//}
-
 func BaseContext() *Context {
 	return &Context{Base: nil}
 }

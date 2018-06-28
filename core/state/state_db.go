@@ -4,7 +4,6 @@ import (
 	"github.com/iost-official/prototype/db"
 )
 
-// db的适配器
 type Database struct {
 	db db.Database
 }
@@ -78,7 +77,6 @@ func (d *Database) GetHM(key, field Key) (Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println("in state.db: ", raw)
 	if raw == nil || raw[0] == nil {
 		return VNil, nil
 	}

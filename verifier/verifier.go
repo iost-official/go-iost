@@ -23,7 +23,6 @@ const (
 
 //go:generate gencode go -schema=structs.schema -package=verifier
 
-// 底层verifier，用来组织vm，不要直接使用
 type Verifier struct {
 	vmMonitor
 	Context *vm.Context
@@ -34,13 +33,10 @@ func (v *Verifier) Verify(contract vm.Contract, pool state.Pool) (state.Pool, ui
 	if err != nil {
 		return pool, 0, err
 	}
-	//fmt.Println(v.Pool.GetHM("iost", "b"))
 	_, pool, gas, err := v.Call(v.Context, pool, contract.Info().Prefix, "main")
-	//fmt.Println(pool.GetHM("iost", "b"))
 	return pool, gas, err
 }
 
-// 验证新tx的工具类
 type CacheVerifier struct {
 	Verifier
 }
@@ -64,9 +60,6 @@ func setBalanceOfSender(sender vm.IOSTAccount, pool state.Pool, amount float64) 
 	pool.PutHM("iost", state.Key(sender), state.MakeVFloat(amount))
 }
 
-// 验证contract，返回pool是包含了该contract的pool。传入时要注意是传入pool还是pool.copy()
-//
-// 取得tx中的Contract的方法： tx.contract
 func (cv *CacheVerifier) VerifyContract(contract vm.Contract, pool state.Pool) (state.Pool, error) {
 	if contract.Info().Price < 0 {
 		return pool, errors.New("illegal gas price")
@@ -117,7 +110,6 @@ func (cv *CacheVerifier) CleanUp() {
 
 func ParseGenesis(c vm.Contract, pool state.Pool) (state.Pool, error) {
 	cachePool := pool.Copy()
-	// TODO 应在这里初始化一个全新的state pool
 	code := c.Code()
 	rePutHM := regexp.MustCompile(`@PutHM[\t ]*([^\t ]*)[\t ]*([^\t ]*)[\t ]*([^\n\t ]*)[\n\t ]*`)
 	rePut := regexp.MustCompile(`@Put[\t ]+([^\t ]*)[\t ]*([^\n\t ]*)[\n\t ]*`)

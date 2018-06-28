@@ -47,12 +47,7 @@ func TestNewServi(t *testing.T) {
 			for k, v := range account.GenesisAccount {
 				ser, _ := s.User(vm.IOSTAccount(k))
 				So(ser.b, ShouldEqual, v)
-				//fmt.Println("Account id:", vm.IOSTAccount(k), ", value:", ser.b)
 			}
-
-			//for _, v := range bu {
-			//	fmt.Println("Account id:", v.owner, ", value:", v.b)
-			//}
 
 			s.Flush()
 		})
@@ -82,8 +77,6 @@ func TestInitServi(t *testing.T) {
 		s.Restore()
 		bu, _ := s.BestUser()
 
-		// So(len(bu), ShouldEqual, 0)
-
 		for k, v := range account.GenesisAccount {
 			ser, _ := s.User(vm.IOSTAccount(k))
 			ser.SetBalance(v)
@@ -92,11 +85,6 @@ func TestInitServi(t *testing.T) {
 		s.UpdateBtu()
 		bu, _ = s.BestUser()
 		So(len(bu), ShouldEqual, len(account.GenesisAccount))
-		//for _, v := range bu {
-		//
-		//	fmt.Println("Account id:", v.owner, ", value:", v.b)
-		//
-		//}
 		testAcc := "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
 
 		ser, _ := s.User(vm.IOSTAccount(testAcc))
@@ -108,7 +96,6 @@ func TestInitServi(t *testing.T) {
 			if v.owner == vm.IOSTAccount(testAcc) {
 				So(v.b, ShouldEqual, 1000000000000000)
 			}
-			//fmt.Println("Account id:", v.owner, ", value:", v.b)
 		}
 		s.Flush()
 
@@ -119,7 +106,6 @@ func TestInitServi(t *testing.T) {
 			if v.owner == vm.IOSTAccount(testAcc) {
 				So(v.b, ShouldEqual, 66666666666666666)
 			}
-			//fmt.Println("Account id:", v.owner, ", value:", v.b)
 		}
 
 		ser, _ = s.User(vm.IOSTAccount(testAcc))
@@ -152,8 +138,6 @@ func TestClearHm(t *testing.T) {
 		s3.Restore()
 		bu, _ := s3.BestUser()
 
-		// So(len(bu), ShouldEqual, 0)
-
 		for k, v := range account.GenesisAccount {
 			ser, _ := s3.User(vm.IOSTAccount(k))
 			ser.SetBalance(v)
@@ -162,11 +146,6 @@ func TestClearHm(t *testing.T) {
 		s3.UpdateBtu()
 		bu, _ = s3.BestUser()
 		So(len(bu), ShouldEqual, len(account.GenesisAccount))
-		//for _, v := range bu {
-		//
-		//	fmt.Println("Account id:", v.owner, ", value:", v.b)
-		//
-		//}
 		s3.hm = make(map[vm.IOSTAccount]*Servi, 0)
 		s3.cacheSize = 1
 		So(len(s3.hm), ShouldEqual, 0)
@@ -192,9 +171,6 @@ func TestClearHm(t *testing.T) {
 		So(ser.b, ShouldEqual, 10)
 
 		So(len(s3.hm), ShouldEqual, 1)
-		//
-		//ser1, _ = s3.User(vm.IOSTAccount(testAcc1))
-		//So(ser.b, ShouldEqual, 11)
 	})
 }
 
@@ -223,7 +199,6 @@ func TestStoreServi(t *testing.T) {
 		s.Restore()
 		bu, _ := s.BestUser()
 
-		// So(len(bu), ShouldEqual, 0)
 		s.ClearBtu()
 		for k, v := range account.GenesisAccount {
 			ser, _ := s.User(vm.IOSTAccount(k))
@@ -233,19 +208,12 @@ func TestStoreServi(t *testing.T) {
 		s.UpdateBtu()
 		bu, _ = s.BestUser()
 		So(len(bu), ShouldEqual, len(account.GenesisAccount))
-		//for _, v := range bu {
-		//
-		//	fmt.Println("Account id:", v.owner, ", value:", v.b)
-		//
-		//}
 		s.Flush()
 		for k, v := range account.GenesisAccount {
 			ser, _ := s.User(vm.IOSTAccount(k))
 			So(ser.b, ShouldEqual, v)
-			//fmt.Println("Account id:", vm.IOSTAccount(k), ", value:", ser.b)
 		}
 
-		// 清空数据
 		for k, _ := range s.btu {
 			s.delBtu(vm.IOSTAccount(k))
 		}
@@ -259,7 +227,6 @@ func TestStoreServi(t *testing.T) {
 		for k, v := range account.GenesisAccount {
 			ser, _ := s.User(vm.IOSTAccount(k))
 			So(ser.b, ShouldEqual, v)
-			//fmt.Println("Account id:", vm.IOSTAccount(k), ", value:", ser.b)
 		}
 		So(len(bu), ShouldEqual, len(account.GenesisAccount))
 

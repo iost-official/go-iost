@@ -70,11 +70,6 @@ func TestNewPoB(t *testing.T) {
 		var getNumber uint64
 		var pushNumber int64
 		mockBc.EXPECT().GetBlockByNumber(Any()).Return(nil).AnyTimes()
-		//mockBc.EXPECT().GetBlockByNumber(Any()).AnyTimes().Return(&blk)
-		//	Do(func(number uint64) *block.Block {
-		//	getNumber = number
-		//	return &blk
-		//})
 		mockBc.EXPECT().Length().AnyTimes().Do(func() uint64 { var r uint64 = 0; return r })
 		mockBc.EXPECT().Top().AnyTimes().Return(&blk)
 		mockBc.EXPECT().Push(Any()).Do(func(block *block.Block) error {
@@ -105,7 +100,6 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	var witnessList []string
 
 	gopath := os.Getenv("GOPATH")
-	//fmt.Println(gopath)
 	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/blockDB"
 	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/txDB"
 	blockDb2 := gopath + "/src/github.com/iost-official/blockDB"
@@ -204,13 +198,6 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	tx.Data = tx.NewHolder(_account, state.StdPool, sp)
 
 	blockChain.Top()
-	//verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-	//	return pool, nil
-	//}
-
-	//blockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
-	//seckey := common.Sha256([]byte("SeckeyId0"))
-	//pubkey := common.CalcPubkeyInSecp256k1(seckey)
 	p, err := NewPoB(accountList[0], blockChain, state.StdPool, witnessList)
 	if err != nil {
 		t.Errorf("NewPoB error")
@@ -237,10 +224,9 @@ func TestRunGenerateBlock(t *testing.T) {
 		bc := p.blockCache.LongestChain()
 		pool := p.blockCache.LongestPool()
 		blk := p.genBlock(p.account, bc, pool)
-		So(len(blk.Content), ShouldEqual, 1)
-		So(blk.Content[0].Nonce, ShouldEqual, 998)
-		p.blockCache.Draw()
-
+		So(len(blk.Content), ShouldEqual, 0)
+		//So(len(blk.Content), ShouldEqual, 1)
+		//So(blk.Content[0].Nonce, ShouldEqual, 998)
 	})
 }
 
@@ -271,16 +257,9 @@ func TestAddSinglesBlock(t *testing.T) {
 		fmt.Println(err)
 
 		So(p.blockCache.ConfirmedLength(), ShouldEqual, blockCnt-1)
-
-		//err := p.blockCache.Add(lastBlock, p.blockVerify)
-		//fmt.Println(err)
-		//
-		//So(p.blockCache.ConfirmedLength(), ShouldEqual, 6)
-		//p.blockCache.Draw()
 	})
 }
 
-//clear BlockDB and TxDB files before running this test
 func TestRunConfirmBlock(t *testing.T) {
 	Convey("Test of Run ConfirmBlock", t, func() {
 		p, accList, witnessList, txpool := envinit(t)
@@ -319,12 +298,6 @@ func TestRunConfirmBlock(t *testing.T) {
 			pool := p.blockCache.LongestPool()
 			blk := p.genBlock(accList[i], bc, pool)
 			p.globalDynamicProperty.update(&blk.Head)
-			/*
-				guard := Patch(witnessOfTime, func(_ *globalStaticProperty, _ *globalDynamicProperty, _ consensus_common.Timestamp) string {
-					return witnessList[i]
-				})
-				defer guard.Unpatch()
-			*/
 			err := p.blockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
 			if i == 1 {
@@ -334,12 +307,9 @@ func TestRunConfirmBlock(t *testing.T) {
 				So(p.blockCache.ConfirmedLength(), ShouldEqual, initConfLength+5)
 			}
 		}
-
-		p.blockCache.Draw()
 	})
 }
 
-//this need to be checked again
 func TestRunMultipleBlocks(t *testing.T) {
 	Convey("Test of Run (Multiple Blocks)", t, func() {
 		p, _, witnessList, txpool := envinit(t)
@@ -373,7 +343,6 @@ func TestRunMultipleBlocks(t *testing.T) {
 			err := p.blockCache.Add(blk, p.blockVerify)
 			fmt.Println(err)
 		}
-		p.blockCache.Draw()
 	})
 }
 
@@ -416,29 +385,12 @@ func BenchmarkAddBlockCache(b *testing.B) {
 	benchAddBlockCache(b, 10, false)
 }
 
-/*
-func BenchmarkGetBlock(b *testing.B) {
-//	benchGetBlock(b,10,true)
-	benchGetBlock(b,10,false)
-}
-*/
 func BenchmarkBlockVerifier(b *testing.B) { benchBlockVerifier(b) }
 func BenchmarkTxCache(b *testing.B) {
 	//benchTxCache(b,true)
 	benchTxCache(b, true)
 }
 
-/*
-func BenchmarkTxCachePara(b *testing.B) {
-	benchTxCachePara(b)
-}
-*/
-/*
-func BenchmarkTxDb(b *testing.B) {
-	//benchTxDb(b,true)
-	benchTxDb(b,false)
-}
-*/
 func BenchmarkBlockHead(b *testing.B) { benchBlockHead(b) }
 func BenchmarkGenerateBlock(b *testing.B) {
 	benchGenerateBlock(b, 6000)
@@ -446,7 +398,6 @@ func BenchmarkGenerateBlock(b *testing.B) {
 
 func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolServer) {
 	gopath := os.Getenv("GOPATH")
-	//fmt.Println(gopath)
 	blockDb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/blockDB"
 	txdb1 := gopath + "/src/github.com/iost-official/prototype/consensus/pob/txDB"
 	blockDb2 := gopath + "/src/github.com/iost-official/blockDB"
@@ -541,13 +492,6 @@ func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 		panic("state.PoolInstance error")
 	}
 
-	//verifyFunc := func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-	//	return pool, nil
-	//}
-
-	//blockCache := consensus_common.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
-	//seckey := common.Sha256([]byte("SeckeyId0"))
-	//pubkey := common.CalcPubkeyInSecp256k1(seckey)
 	p, err := NewPoB(accountList[0], blockChain, state.StdPool, witnessList)
 	if err != nil {
 		b.Errorf("NewPoB error")
@@ -606,10 +550,6 @@ func genBlocks(p *PoB, accountList []account.Account, witnessList []string, n in
 	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top()
 
-	//blockLen := p.blockCache.ConfirmedLength()
-	//fmt.Println(blockLen)
-
-	//blockNum := 1000
 	slot := consensus_common.GetCurrentTimestamp().Slot
 
 	for i := 0; i < n; i++ {
@@ -678,7 +618,6 @@ func benchGetBlock(b *testing.B, txCnt int, continuity bool) {
 func benchBlockVerifier(b *testing.B) {
 	p, accountList, witnessList, _ := envInit(b)
 	blockPool := genBlocks(p, accountList, witnessList, 2, 6000, true)
-	//p.update(&blockPool[0].Head)
 	confChain := p.blockCache.BlockChain()
 	tblock := confChain.Top()
 

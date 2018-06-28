@@ -34,19 +34,19 @@ func init() {
 }
 
 type TxPoolServer struct {
-	chTx           chan message.Message // transactions of RPC and NET
+	chTx           chan message.Message
 	chConfirmBlock chan *block.Block
 
-	chain  blockcache.BlockCache // blockCache
+	chain  blockcache.BlockCache
 	router network.Router
 
-	blockTx   blockTx // 缓存中block的交易
-	listTx    listTx  // 所有的缓存交易
-	pendingTx listTx  // 最长链上，去重的交易
+	blockTx   blockTx
+	listTx    listTx
+	pendingTx listTx
 
 	checkIterateBlockHash blockHashList
 
-	filterTime int64 // 过滤交易的时间间隔
+	filterTime int64
 	mu         sync.RWMutex
 }
 
@@ -71,7 +71,6 @@ func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan *block.Blo
 		return nil, fmt.Errorf("failed to network.Route is nil")
 	}
 
-	//	Tx chan init
 	var err error
 	p.chTx, err = p.router.FilteredChan(network.Filter{
 		AcceptType: []network.ReqType{
@@ -110,17 +109,13 @@ func (pool *TxPoolServer) loop() {
 				return
 			}
 
-			//log.Log.I("### chTx: %v", len(pool.chTx))
-
 			var tx tx.Tx
 			err := tx.Decode(tr.Body)
 			if err != nil {
 				continue
 			}
 
-			// 超时交易丢弃
 			if pool.txTimeOut(&tx) {
-				//log.Log.I("tx timeout:%v", tx.Time)
 				continue
 			}
 
@@ -129,16 +124,13 @@ func (pool *TxPoolServer) loop() {
 				receivedTransactionCount.Inc()
 			}
 
-		case bl, ok := <-pool.chConfirmBlock: // 可以上链的block
+		case bl, ok := <-pool.chConfirmBlock:
 			if !ok {
 				return
 			}
 			pool.addBlockTx(bl)
-			// 根据最长链计算 pending tx
 			bhl := pool.blockHash(pool.chain.LongestChain())
 			pool.updateBlockHash(bhl)
-			// todo 可以在外部要集合的时候在调用
-			//pool.updatePending()
 		case <-clearTx.C:
 			pool.delTimeOutTx()
 			pool.delTimeOutBlockTx()
@@ -163,7 +155,6 @@ func (pool *TxPoolServer) PendingTransactions(maxCnt int) tx.TransactionsList {
 	for _, tx := range list {
 		pendingList = append(pendingList, tx)
 	}
-	// 排序
 	sort.Sort(pendingList)
 
 	return pendingList
@@ -204,7 +195,6 @@ func (pool *TxPoolServer) BlockTxNum() int {
 	return pool.blockTx.Len()
 }
 
-// 初始化blocktx,缓存验证一笔交易，是否已经存在
 func (pool *TxPoolServer) initBlockTx() {
 	chain := pool.chain.BlockChain()
 	timeNow := time.Now().Unix()
@@ -250,7 +240,6 @@ func (pool *TxPoolServer) txTimeOut(tx *tx.Tx) bool {
 	return false
 }
 
-// 删除超时的交易
 func (pool *TxPoolServer) delTimeOutTx() {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
@@ -271,8 +260,6 @@ func (pool *TxPoolServer) delTimeOutTx() {
 
 }
 
-// 删除超时的交易
-// 小于区块确定时间 && 小于当前减去过滤时间
 func (pool *TxPoolServer) delTimeOutBlockTx() {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
@@ -356,7 +343,6 @@ func (pool *TxPoolServer) updateBlockHash(bhl *blockHashList) {
 	}
 }
 
-// 保存一个block的所有交易数据
 func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
@@ -392,8 +378,8 @@ func (h *hashMap) Clear() {
 }
 
 type blockTx struct {
-	blkTx   map[string]*hashMap // 按block hash 记录交易
-	blkTime map[string]int64    // 记录区块的时间，用于清理区块
+	blkTx   map[string]*hashMap
+	blkTime map[string]int64
 }
 
 func (b *blockTx) GetListTime() map[string]int64 {

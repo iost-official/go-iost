@@ -68,7 +68,6 @@ func TestChainImpl(t *testing.T) {
 
 		Convey("GetBlockByNumber", func() {
 			length := bc.Length()
-			//取出刚存入的块
 			tBlock.Head.Number = int64(length) - 1
 
 			block := bc.GetBlockByNumber(length - 1)
@@ -95,7 +94,6 @@ func TestChainImpl(t *testing.T) {
 
 			block = bc.GetBlockByHash(tBlock.HeadHash())
 			So(block, ShouldNotBeNil)
-			//fmt.Printf("###Top() block = %s\n", block)
 			So(block.Head.Version, ShouldEqual, 2)
 			So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
 			So(string(block.Head.TreeHash), ShouldEqual, string(tBlock.Head.TreeHash))

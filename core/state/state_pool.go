@@ -17,7 +17,6 @@ type PoolImpl struct {
 	parent *PoolImpl
 }
 
-// 通过一个db生成新的pool
 func NewPool(db Database) Pool {
 	return &PoolImpl{
 		db:     db,
@@ -144,9 +143,6 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 			return nil, fmt.Errorf("type error : %v is not a hashmap", key)
 		}
 		val3 := val2.(*VMap).Get(field)
-
-		//fmt.Println("in gethm :", val1, val3)
-		//fmt.Println(Merge(val1, val3))
 
 		return Merge(val1, val3), nil
 	}
