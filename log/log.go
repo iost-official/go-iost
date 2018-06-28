@@ -120,7 +120,6 @@ func clearOldLogs(now time.Time) {
 		name := f.Name()
 		if strings.HasSuffix(name, ".log") {
 			timestamp := name[:strings.LastIndex(name, ".")]
-			//fmt.Println(timestamp)
 			mtime, err := time.Parse(FmtTime, timestamp)
 			if err != nil {
 				err := os.Remove(Path + f.Name())
@@ -128,8 +127,6 @@ func clearOldLogs(now time.Time) {
 					fmt.Println(err)
 				}
 			}
-			//ts := now.Format(FmtTime)
-			//now2, _ := time.Parse(FmtTime, ts)
 			if now.Unix()-mtime.Unix() > ExpireTime {
 				err := os.Remove(Path + f.Name())
 				if err != nil {

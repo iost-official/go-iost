@@ -1,6 +1,8 @@
 package block
 
 import (
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
@@ -48,6 +50,12 @@ func TestChainImpl(t *testing.T) {
 			panic("state.PoolInstance error")
 		}
 
+		sp, e := tx.NewServiPool(len(account.GenesisAccount), 1000)
+		So(e, ShouldBeNil)
+		acc, err := account.NewAccount(common.Base58Decode("4PpkMbuJauTeqX1VZw4qeYrc9jNbdAbBUi3q6dVR7sMC"))
+		So(err, ShouldBeNil)
+		tx.Data = tx.NewHolder(acc, state.StdPool, sp)
+
 		Convey("Push", func() {
 			length := bc.Length()
 
@@ -60,7 +68,6 @@ func TestChainImpl(t *testing.T) {
 
 		Convey("GetBlockByNumber", func() {
 			length := bc.Length()
-			//取出刚存入的块
 			tBlock.Head.Number = int64(length) - 1
 
 			block := bc.GetBlockByNumber(length - 1)
@@ -87,7 +94,6 @@ func TestChainImpl(t *testing.T) {
 
 			block = bc.GetBlockByHash(tBlock.HeadHash())
 			So(block, ShouldNotBeNil)
-			//fmt.Printf("###Top() block = %s\n", block)
 			So(block.Head.Version, ShouldEqual, 2)
 			So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
 			So(string(block.Head.TreeHash), ShouldEqual, string(tBlock.Head.TreeHash))

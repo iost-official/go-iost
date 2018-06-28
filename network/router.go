@@ -9,26 +9,13 @@ import (
 )
 
 var (
-	/*  sendBlockSize = prometheus.NewSummary( */
-	// prometheus.SummaryOpts{
-	// Name:       "send_block_size",
-	// Help:       "size of send block by current node",
-	// Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
-	// },
-	/* ) */
 	sendBlockCount = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Name: "send_block_count",
 			Help: "Count of send block by current node",
 		},
 	)
-	/* sendTransactionSize = prometheus.NewSummary( */
-	// prometheus.SummaryOpts{
-	// Name:       "send_transaction_size",
-	// Help:       "size of send transaction by current node",
-	// Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
-	// },
-	/* ) */
+
 	sendTransactionCount = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Name: "send_transaction_count",
@@ -36,27 +23,6 @@ var (
 		},
 	)
 
-	/*  receivedBlockSize = prometheus.NewSummary( */
-	// prometheus.SummaryOpts{
-	// Name:       "received_block_size",
-	// Help:       "size of received block by current node",
-	// Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
-	// },
-	/* ) */
-	//receivedBlockCount = prometheus.NewCounter(
-	//	prometheus.CounterOpts{
-	//		Name: "received_block_count",
-	//		Help: "Count of received block by current node",
-	//	},
-	//)
-
-	/* receivedBroadTransactionSize = prometheus.NewSummary( */
-	// prometheus.SummaryOpts{
-	// Name:       "received_broad_transaction_size",
-	// Help:       "size of received broad transaction by current node",
-	// Objectives: map[float64]float64{0.5: 0.005, 0.9: 0.01, 0.99: 0.001},
-	// },
-	/* ) */
 	receivedBroadTransactionCount = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Name: "received_broad_transaction_count",
@@ -66,13 +32,8 @@ var (
 )
 
 func init() {
-	// prometheus.MustRegister(sendBlockSize)
 	prometheus.MustRegister(sendBlockCount)
-	// prometheus.MustRegister(sendTransactionSize)
 	prometheus.MustRegister(sendTransactionCount)
-	// prometheus.MustRegister(receivedBlockSize)
-	//prometheus.MustRegister(receivedBlockCount)
-	// prometheus.MustRegister(receivedBroadTransactionSize)
 	prometheus.MustRegister(receivedBroadTransactionCount)
 }
 

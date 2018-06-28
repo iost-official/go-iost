@@ -10,11 +10,12 @@ import (
 
 // Peer manages connections with other nodes.
 type Peer struct {
-	conn    net.Conn
-	local   string
-	remote  string
-	created mclock.AbsTime
-	closed  chan struct{}
+	conn      net.Conn
+	blockConn net.Conn
+	local     string
+	remote    string
+	created   mclock.AbsTime
+	closed    chan struct{}
 }
 
 // Disconnect disconnects a connection.
@@ -22,15 +23,19 @@ func (p *Peer) Disconnect() {
 	if p != nil && p.conn != nil {
 		p.conn.Close()
 	}
+	if p != nil && p.blockConn != nil {
+		p.blockConn.Close()
+	}
 }
 
-func newPeer(conn net.Conn, local, remote string) *Peer {
+func newPeer(conn net.Conn, blockConn net.Conn, local, remote string) *Peer {
 	return &Peer{
-		conn:    conn,
-		local:   local,
-		remote:  remote,
-		created: mclock.Now(),
-		closed:  make(chan struct{}),
+		conn:      conn,
+		blockConn: blockConn,
+		local:     local,
+		remote:    remote,
+		created:   mclock.Now(),
+		closed:    make(chan struct{}),
 	}
 }
 

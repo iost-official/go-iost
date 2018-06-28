@@ -55,9 +55,6 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 		return nil, nil, errors.New("input pool is nil")
 	}
 
-	//fmt.Print("1 ")
-	//fmt.Println(l.cachePool.GetHM("iost", "b"))
-
 	method0, err := l.contract.API(methodName)
 	if err != nil {
 		return nil, pool, err
@@ -103,9 +100,6 @@ func (l *VM) call(pool state.Pool, methodName string, args ...state.Value) ([]st
 		}()
 	}()
 
-	//fmt.Print("3 ")
-	//fmt.Println(l.cachePool.GetHM("iost", "b"))
-
 	if err != nil {
 		return nil, pool, err
 	}
@@ -138,17 +132,8 @@ func (l *VM) Call(ctx *vm.Context, pool state.Pool, methodName string, args ...s
 }
 func (l *VM) Prepare(monitor vm.Monitor) error {
 	l.ctx = vm.BaseContext()
-	//var ok bool
-	//l.contract, ok = contract.(*Contract)
-	//if !ok {
-	//	return fmt.Errorf("prepare contract %v : contract type error", contract.Info().Prefix)
-	//}
 
 	l.L = lua.NewState()
-	//if contract.Info().GasLimit < 3 {
-	//	return errors.New("gas limit less than 3")
-	//}
-	//l.L.PCLimit = uint64(contract.Info().GasLimit)
 	l.monitor = monitor
 
 	l.APIs = make([]api, 0)
@@ -192,9 +177,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				L.Push(lua.LNil)
 				return 1
 			}
-			//fmt.Println("get:", v)
 			v2, err := Core2Lua(v)
-			//fmt.Println(v2.(*lua.LTable).Len())
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -210,8 +193,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 	var Transfer = api{
 		name: "Transfer",
 		function: func(L *lua.LState) int {
-			src := L.ToString(1) // todo 验证输入
-			//fmt.Print("transfer call check")
+			src := L.ToString(1)
 			if vm.CheckPrivilege(l.ctx, l.contract.info, src) <= 0 {
 				L.Push(lua.LFalse)
 				return 1
@@ -228,7 +210,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 	var Deposit = api{
 		name: "Deposit",
 		function: func(L *lua.LState) int {
-			src := L.ToString(1) // todo 验证输入
+			src := L.ToString(1)
 			if vm.CheckPrivilege(l.ctx, l.contract.info, src) <= 0 {
 				L.Push(lua.LString("privilege error"))
 				return 1
@@ -370,9 +352,7 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				return 1
 			}
 
-			//fmt.Print("outer call check:")
 			p := vm.CheckPrivilege(l.ctx, *info, string(l.contract.Info().Publisher))
-			//fmt.Println("check result:", p)
 			pri := method.Privilege()
 			switch {
 			case pri == vm.Private && p > 1:
@@ -397,7 +377,6 @@ func (l *VM) Prepare(monitor vm.Monitor) error {
 				ctx.Signers = l.contract.Info().Signers
 
 				rtn, pool, gas, err := l.monitor.Call(ctx, l.cachePool, contractPrefix, methodName, args...)
-				//fmt.Println("caller gas is", gas)
 				l.callerPC += gas
 				if err != nil {
 					host.Log(err.Error(), contractPrefix)

@@ -4,20 +4,10 @@ import (
 	"sync"
 
 	"github.com/iost-official/prototype/account"
-	"github.com/iost-official/prototype/consensus/pob2"
+	"github.com/iost-official/prototype/consensus/pob"
 	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/blockcache"
-)
-
-type TxStatus int
-
-const (
-	ACCEPT TxStatus = iota
-	CACHED
-	POOL
-	REJECT
-	EXPIRED
+	"github.com/iost-official/prototype/core/state"
 )
 
 type Consensus interface {
@@ -51,7 +41,7 @@ func ConsensusFactory(consensusType string, acc account.Account, bc block.Chain,
 	case CONSENSUS_POB:
 		if Cons == nil {
 			once.Do(func() {
-				Cons, err = pob2.NewPoB(acc, bc, pool, witnessList)
+				Cons, err = pob.NewPoB(acc, bc, pool, witnessList)
 			})
 		}
 	}

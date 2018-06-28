@@ -27,7 +27,7 @@ type BInfo struct {
 type RpcServer struct {
 }
 
-// newRpcServer 初始 RPC结构体
+// newRpcServer
 func newRpcServer() *RpcServer {
 	s := &RpcServer{}
 	return s
@@ -66,7 +66,6 @@ func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRe
 
 	}
 
-	//consider to remove this
 	err = stx.VerifySelf() //verify Publisher and Signers
 	if err != nil {
 		return &ret, fmt.Errorf("VerifySelf:%v", err)
@@ -91,7 +90,6 @@ func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRe
 		panic(fmt.Errorf("Consensus is nil"))
 	}
 	txpool.TxPoolS.AddTransaction(&broadTx)
-	//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
 	ret.Code = 0
 	ret.Hash = stx.Hash()
 	return &ret, nil
@@ -107,7 +105,6 @@ func (s *RpcServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRe
 	if err != nil {
 		return &ret, err
 	}
-	//fmt.Println("PublishTx begin, tx.Nonce", tx1.Nonce)
 
 	err = tx1.VerifySelf() //verify Publisher and Signers
 	if err != nil {
@@ -132,7 +129,6 @@ func (s *RpcServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRe
 		panic(fmt.Errorf("Consensus is nil"))
 	}
 	txpool.TxPoolS.AddTransaction(&broadTx)
-	//fmt.Println("[rpc.PublishTx]:add tx to TxPool")
 	ret.Code = 0
 	ret.Hash = tx1.Hash()
 	return &ret, nil
@@ -141,14 +137,7 @@ func (s *RpcServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (
 	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	// bytes array do not need to encode or decode
-	/*PubKey := common.Base58Decode(string(txkey.Publisher))
-	//check length of Pubkey here
-	if len(PubKey) != 33 {
-		return nil, fmt.Errorf("PubKey invalid")
-	}*/
 	Nonce := txkey.Nonce
-	//check Nonce here
 
 	txDb := tx.TxDb
 	if txDb == nil {
@@ -162,14 +151,12 @@ func (s *RpcServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (
 	return &Transaction{Tx: tx.Encode()}, nil
 }
 
-//TODO:test this func
 func (s *RpcServer) GetTransactionByHash(ctx context.Context, txhash *TransactionHash) (*Transaction, error) {
 	fmt.Println("GetTransaction begin")
 	if txhash == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	txHash := txhash.Hash
-	//check txHash here
 
 	txDb := tx.TxDb
 	if txDb == nil {
@@ -227,11 +214,11 @@ func (s *RpcServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, err
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 
-	bc := block.BChain //we should get the instance of Chain,not to Create it again in the real version
+	bc := block.BChain
 	if bc == nil {
 		panic(fmt.Errorf("block.BChain cannot be nil"))
 	}
-	layer := bk.Layer //I think bk.Layer should be uint64,because bc.Length() is uint64
+	layer := bk.Layer
 	curLen := bc.Length()
 	if (layer < 0) || (uint64(layer) > curLen-1) {
 		return nil, fmt.Errorf("out of bound")
@@ -273,11 +260,11 @@ func (s *RpcServer) GetBlockByHeight(ctx context.Context, bk *BlockKey) (*BlockI
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 
-	bc := block.BChain //we should get the instance of Chain,not to Create it again in the real version
+	bc := block.BChain
 	if bc == nil {
 		panic(fmt.Errorf("block.BChain cannot be nil"))
 	}
-	height := bk.Layer //I think bk.Layer should be uint64,because bc.Length() is uint64
+	height := bk.Layer
 	curLen := bc.Length()
 	if (height < 0) || (uint64(height) > curLen-1) {
 		return nil, fmt.Errorf("out of bound")

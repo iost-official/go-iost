@@ -46,7 +46,6 @@ Playground runs lua script by turns.
 		ctx := vm.BaseContext()
 
 		vf, err := ReadFile(valuesFile)
-
 		if err != nil {
 			fmt.Println("no values specified, work as everything is nil")
 		} else {

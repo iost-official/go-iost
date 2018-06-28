@@ -13,7 +13,6 @@ import (
 
 //go:generate gencode go -schema=structs.schema -package=tx
 
-// Transaction 的实现
 type Tx struct {
 	Time      int64
 	Nonce     int64
@@ -23,7 +22,6 @@ type Tx struct {
 	Recorder  common.Signature
 }
 
-// 新建一个Tx，需要通过编译器得到一个contract
 func NewTx(nonce int64, contract vm.Contract) Tx {
 	return Tx{
 		Time:     time.Now().UnixNano(),
@@ -32,7 +30,6 @@ func NewTx(nonce int64, contract vm.Contract) Tx {
 	}
 }
 
-// 合约的参与者进行签名
 func SignContract(tx Tx, account account.Account) (common.Signature, error) {
 	sign, err := common.Sign(common.Secp256k1, tx.BaseHash(), account.Seckey)
 	if err != nil {
@@ -41,7 +38,6 @@ func SignContract(tx Tx, account account.Account) (common.Signature, error) {
 	return sign, nil
 }
 
-// 合约的发布者进行签名，此签名的用户用于支付gas
 func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
 	sign, err := common.Sign(common.Secp256k1, tx.publishHash(), account.Seckey)
@@ -71,7 +67,6 @@ func (t *Tx) String() string {
 	return str
 }
 
-// Time,Noce,Contract形成的基本哈希值
 func (t *Tx) BaseHash() []byte {
 	tbr := TxBaseRaw{t.Time, t.Nonce, t.Contract.Encode()}
 	b, err := tbr.Marshal(nil)
@@ -81,7 +76,6 @@ func (t *Tx) BaseHash() []byte {
 	return common.Sha256(b)
 }
 
-// 发布者使用的hash值，包含参与者的签名
 func (t *Tx) publishHash() []byte {
 	s := make([][]byte, 0)
 	for _, sign := range t.Signs {
@@ -95,7 +89,6 @@ func (t *Tx) publishHash() []byte {
 	return common.Sha256(b)
 }
 
-// 对Tx进行编码
 func (t *Tx) Encode() []byte {
 	s := make([][]byte, 0)
 	for _, sign := range t.Signs {
@@ -109,7 +102,6 @@ func (t *Tx) Encode() []byte {
 	return b
 }
 
-// 对Tx进行解码
 func (t *Tx) Decode(b []byte) (err error) {
 	var tr TxRaw
 	defer func() {
@@ -156,20 +148,17 @@ func (t *Tx) Decode(b []byte) (err error) {
 	return nil
 }
 
-// 计算Tx的哈希值
 func (t *Tx) Hash() []byte {
 	return common.Sha256(t.Encode())
 }
 
-// 公钥+nonoc 可用于交易判重
 func (t *Tx) TxID() string {
 	hash := string(t.Publisher.Pubkey) + strconv.FormatInt(t.Nonce, 10) + strconv.FormatInt(t.Time, 10)
 	return hash
 }
 
-// 验证签名的函数
 func (t *Tx) VerifySelf() error {
-	baseHash := t.BaseHash() // todo 在basehash内缓存，不需要在应用进行缓存
+	baseHash := t.BaseHash()
 	for _, sign := range t.Signs {
 		ok := common.VerifySignature(baseHash, sign)
 		if !ok {
@@ -197,7 +186,7 @@ func (s TransactionsList) Less(i, j int) bool {
 	}
 
 	if s[i].Contract.Info().Price == s[j].Contract.Info().Price {
-		if s[i].Time > s[j].Time { //时间小排到前面
+		if s[i].Time > s[j].Time {
 			return false
 		} else {
 			return true

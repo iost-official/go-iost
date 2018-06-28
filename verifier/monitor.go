@@ -20,8 +20,7 @@ var ErrForbiddenCall = errors.New("forbidden call")
 type vmHolder struct {
 	vm.VM
 	Lock      sync.Mutex
-	IsRunning bool // todo 为了修复hotvm变成nil的问题所做的暂时性修复，要在下一个版本中清理干净
-	//contract vm.contract
+	IsRunning bool
 }
 
 func NewHolder(vmm vm.VM) *vmHolder {
@@ -114,7 +113,6 @@ func (m *vmMonitor) Stop() {
 		}
 		m.hotVM.Stop()
 		m.needRestartHotVM = true
-		//m.hotVM = nil
 	}
 }
 

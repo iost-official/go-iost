@@ -15,17 +15,4 @@ func TestLogger(t *testing.T) {
 		//l.Crash("Test of Crash")
 		So(true, ShouldBeTrue)
 	})
-
-	//Convey("Test of log existence\n", t, func() {
-	//	l := Log
-	//	for i := 0; i < 10; i++ {
-	//		l.E("something wrong", i)
-	//		time.Sleep(3 * time.Second)
-	//	}
-	//	So(true, ShouldBeTrue)
-	//})
 }
-
-//func TestOfTime(t *testing.T) {
-//	ofTime()
-//}

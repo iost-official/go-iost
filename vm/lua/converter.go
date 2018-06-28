@@ -107,7 +107,6 @@ func Core2Lua(value state.Value) (lua.LValue, error) {
 			if err != nil {
 				return nil, err
 			}
-			//fmt.Println(k, lv.String())
 			i, err := strconv.Atoi(string(k))
 			if err != nil {
 				vt.RawSetString(string(k), lv)

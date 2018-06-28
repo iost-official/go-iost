@@ -42,7 +42,6 @@ func TestStdTxsVerifier(t *testing.T) {
 		}
 
 		So(len(txs), ShouldEqual, 100)
-		//fmt.Println(txs[0].contract)
 		p2, i, err := StdTxsVerifier(txs, pool)
 		fmt.Println(i)
 		fmt.Println("error", err.Error())
@@ -78,7 +77,7 @@ func TestStdCacheVerifier(t *testing.T) {
 		}
 		v, err := pool.GetHM("iost", "a")
 		So(err, ShouldBeNil)
-		So(v.EncodeString(), ShouldEqual, "f9.460000000000000e+03")
+		So(v.EncodeString(), ShouldEqual, "f9.459100000000139e+03")
 		p := pool.(*state.PoolImpl)
 		count := 0
 		for p != nil {
@@ -156,12 +155,9 @@ func BenchmarkStdTxsVerifier(b *testing.B) {
 		txs = append(txs, &txx)
 	}
 
-	//fmt.Println(txs[500].contract)
-	//var k int
 	for i := 0; i < b.N; i++ {
 		pool, _, _ = StdTxsVerifier(txs, pool)
 	}
-	//fmt.Println(pool.GetPatch())
 
 	fmt.Println(pool.GetHM("iost", "a"))
 
@@ -189,7 +185,6 @@ func BenchmarkStdCacheVerifier(b *testing.B) {
 		p2 = pool
 		b.StartTimer()
 		for j := 0; j < 10000; j++ {
-			//err := StdCacheVerifier(&txx, p2)
 			p2, _, err = StdTxsVerifier([]*tx.Tx{&txx}, p2)
 			if err != nil {
 				fmt.Println(err)
@@ -328,7 +323,7 @@ end--f
 -- @return_cnt 1
 function main()
 	print("hello")
-	Transfer("2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K", 10)
+	Transfer("iWgLQj3VTPN4dZnomuJMMCggv22LFw4nAkA6bmrVsmCo","mSS7EdV7WvBAiv7TChww7WE3fKDkEYRcVguznbQspj4K", 10)
 end--f
 `
 
@@ -337,9 +332,9 @@ end--f
 		So(err, ShouldBeNil)
 		sdb := state.NewDatabase(dbx)
 		pool := state.NewPool(sdb)
-		pool.PutHM("iost", "2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT", state.MakeVFloat(10000))
+		pool.PutHM("iost", "iWgLQj3VTPN4dZnomuJMMCggv22LFw4nAkA6bmrVsmCo", state.MakeVFloat(10000))
 
-		acc, err := account.NewAccount(common.Base58Decode("BRpwCKmVJiTTrPFi6igcSgvuzSiySd7Exxj7LGfqieW9"))
+		acc, err := account.NewAccount(common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4"))
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -352,20 +347,77 @@ end--f
 		var contract vm.Contract
 		parser, _ := lua.NewDocCommentParser(rawCode)
 		contract, err = parser.Parse()
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
+		So(err, ShouldBeNil)
 		mtx := tx.NewTx(1, contract)
 		stx, err := tx.SignTx(mtx, acc)
 		So(err, ShouldBeNil)
 		buf := stx.Encode()
 		var atx tx.Tx
 		err = atx.Decode(buf)
-		fmt.Println(atx.Contract)
 		So(err, ShouldBeNil)
 		err = StdCacheVerifier(&atx, pool, vm.BaseContext())
 		So(err, ShouldBeNil)
 	})
 
+}
+
+func TestStdCacheVerifierTimeout(t *testing.T) {
+	Convey("test of timeout", t, func() {
+		fib := `
+--- main 
+-- @gas_limit 10000000
+-- @gas_price 0.00001
+-- @param_cnt 0
+-- @return_cnt 1
+function main()
+  n = 100
+  local function inner(m)
+    if m < 2 then
+      return m
+    end
+    return inner(m-1) + inner(m-2)
+  end
+  print(inner(n))
+end--f
+`
+		workable := `
+--- main 合约主入口
+-- server1转账server2
+-- @gas_limit 10000
+-- @gas_price 0.001
+-- @param_cnt 0
+-- @return_cnt 1
+function main()
+	print("hello")
+end--f
+`
+
+		dbx, err := db.DatabaseFactory("redis")
+		So(err, ShouldBeNil)
+		sdb := state.NewDatabase(dbx)
+		pool := state.NewPool(sdb)
+		pool.PutHM("iost", "a", state.MakeVFloat(1000000000))
+
+		parser, err := lua.NewDocCommentParser(fib)
+		So(err, ShouldBeNil)
+		contract, err := parser.Parse()
+		So(err, ShouldBeNil)
+		contract.SetSender("a")
+		So(err, ShouldBeNil)
+		mtx := tx.NewTx(1, contract)
+		err = StdCacheVerifier(&mtx, pool, vm.BaseContext())
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, "time out")
+
+		parser, err = lua.NewDocCommentParser(workable)
+		So(err, ShouldBeNil)
+		contract, err = parser.Parse()
+		So(err, ShouldBeNil)
+		contract.SetSender("a")
+		So(err, ShouldBeNil)
+		mtx = tx.NewTx(1, contract)
+		err = StdCacheVerifier(&mtx, pool, vm.BaseContext())
+		So(err, ShouldBeNil)
+
+	})
 }

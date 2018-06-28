@@ -6,6 +6,9 @@ import (
 
 	"sync"
 
+	"time"
+
+	"github.com/flybikeGx/easy-timeout/timelimit"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
@@ -16,8 +19,6 @@ import (
 
 //go:generate gencode go -schema=structs.schema -package=block
 
-// VerifyBlockHead 验证块头正确性
-// blk 需要验证的块, parentBlk 父块
 func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 	bh := blk.Head
 	// parent hash
@@ -40,7 +41,6 @@ var verb *verifier.CacheVerifier
 
 var blockLock sync.Mutex
 
-// StdBlockVerifier 块内交易的验证函数
 func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 	blockLock.Lock()
 	defer blockLock.Unlock()
@@ -67,18 +67,6 @@ func StdTxsVerifier(txs []*tx.Tx, pool state.Pool) (state.Pool, int, error) {
 	for i, txx := range txs {
 		var err error
 		pool2, err = ver.VerifyContract(txx.Contract, pool2)
-		////////////probe//////////////////TODO 严重影响性能，不应该在这里测试
-		//var ret string = "pass"
-		//if err != nil {
-		//	ret = "fail"
-		//}
-		//log.Report(&log.MsgTx{
-		//	SubType:   "verify." + ret,
-		//	TxHash:    txx.Hash(),
-		//	Publisher: txx.Publisher.Pubkey,
-		//	Nonce:     txx.Nonce,
-		//})
-		///////////////////////////////////
 
 		if err != nil {
 			return pool2, i, err
@@ -101,13 +89,26 @@ func StdCacheVerifier(txx *tx.Tx, pool state.Pool, context *vm.Context) error {
 
 	verb.Context = context
 
-	p2, err := verb.VerifyContract(txx.Contract, pool.Copy())
-	if err != nil {
-		host.Log(err.Error(), txx.Contract.Info().Prefix)
-		return err
+	var p2 state.Pool = nil
+	var err error = nil
+
+	if timelimit.Run(200*time.Millisecond, func() {
+		defer func() {
+			if err0 := recover(); err0 != nil {
+				err = err0.(error)
+			}
+		}()
+		p2, err = verb.VerifyContract(txx.Contract, pool.Copy())
+	}) {
+		if err != nil {
+			host.Log(err.Error(), txx.Contract.Info().Prefix)
+			return err
+		}
+		p2.MergeParent()
+		return nil
+	} else {
+		return errors.New("time out")
 	}
-	p2.MergeParent()
-	return nil
 }
 
 type VerifyContext struct {
@@ -118,7 +119,6 @@ func (v VerifyContext) ParentHash() []byte {
 	return v.VParentHash
 }
 
-// VerifyTxSig 验证交易的签名
 func VerifyTxSig(tx tx.Tx) bool {
 	err := tx.VerifySelf()
 	return err == nil

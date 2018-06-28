@@ -15,15 +15,12 @@
 package cmd
 
 import (
-	"crypto/md5"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"runtime"
 	"runtime/pprof"
-	"strconv"
 
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
@@ -45,8 +42,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/iost-official/prototype/consensus/pob2"
+	"github.com/iost-official/prototype/consensus/pob"
 	"github.com/iost-official/prototype/core/txpool"
+	"github.com/iost-official/prototype/vm"
 )
 
 var cfgFile string
@@ -66,110 +64,6 @@ func goroutineHandler(w http.ResponseWriter, r *http.Request) {
 
 	p := pprof.Lookup("goroutine")
 	p.WriteTo(w, 1)
-}
-
-func chainServer(chain block.Chain) {
-	http.HandleFunc("/debug/goroutine", goroutineHandler)
-	http.HandleFunc("/blockchain/length", func(w http.ResponseWriter, r *http.Request) {
-		len := chain.Length()
-		resp := map[string]interface{}{
-			"len": len,
-		}
-		bytes, err := json.Marshal(resp)
-		if err != nil {
-			fmt.Println("json encode error. err=", err)
-		}
-		w.Write(bytes)
-	})
-	http.HandleFunc("/blockchain", func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-		num := r.Form["number"]
-		has := r.Form["hash"]
-		if len(num) == 0 && len(has) == 0 {
-			resp := map[string]interface{}{
-				"message": "wrong parameter. missing hash or number!",
-			}
-			bytes, err := json.Marshal(resp)
-			if err != nil {
-				fmt.Println("json encode error. err=", err)
-			}
-			w.Write(bytes)
-			return
-		}
-		if len(num) > 0 {
-			n, _ := strconv.ParseUint(num[0], 10, 64)
-			blk := chain.GetBlockByNumber(n)
-			blkStr := blk.String()
-			md5Ctx := md5.New()
-			md5Ctx.Write([]byte(blkStr))
-			cipherStr := md5Ctx.Sum(nil)
-			resp := map[string]interface{}{
-				"number": n,
-				"block":  blkStr,
-				"md5":    string(cipherStr),
-			}
-			bytes, err := json.Marshal(resp)
-			if err != nil {
-				fmt.Println("json encode error. err=", err)
-			}
-			w.Write(bytes)
-			return
-		}
-		if len(has) > 0 {
-			blk := chain.GetBlockByHash([]byte(has[0]))
-			blkStr := blk.String()
-			md5Ctx := md5.New()
-			md5Ctx.Write([]byte(blkStr))
-			cipherStr := md5Ctx.Sum(nil)
-			resp := map[string]interface{}{
-				"hash":  has[0],
-				"block": blkStr,
-				"md5":   string(cipherStr),
-			}
-			bytes, err := json.Marshal(resp)
-			if err != nil {
-				fmt.Println("json encode error. err=", err)
-			}
-			w.Write(bytes)
-			return
-		}
-	})
-	http.HandleFunc("/transaction", func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-		if len(r.Form["hash"]) == 0 {
-			resp := map[string]interface{}{
-				"message": "wrong parameter. missing hash!",
-			}
-			bytes, err := json.Marshal(resp)
-			if err != nil {
-				fmt.Println("get blockchain length failed. err=", err)
-			}
-			w.Write(bytes)
-			return
-		}
-		has := r.Form["hash"][0]
-		tx, err := chain.GetTx([]byte(has))
-		resp := map[string]interface{}{
-			"err": err,
-			"tx":  tx,
-		}
-		bytes, err := json.Marshal(resp)
-		if err != nil {
-			fmt.Println("json encode error. err=", err)
-		}
-		w.Write(bytes)
-	})
-	/*  http.HandleFunc("/blockchain/length", func(w http.ResponseWriter, r *http.Request) { */
-	// len := chain.Length()
-	// resp := map[string]interface{}{
-	// "len": len,
-	// }
-	// bytes, err := json.Marshal(resp)
-	// if err != nil {
-	// fmt.Println("get blockchain length failed. err=", err)
-	// }
-	// w.Write(bytes)
-	/* }) */
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -204,9 +98,8 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		//初始化数据库
 		ldbPath := viper.GetString("ldb.path")
-		redisAddr := viper.GetString("redis.addr") //optional
+		redisAddr := viper.GetString("redis.addr")
 		redisPort := viper.GetInt64("redis.port")
 
 		log.Log.I("ldb.path: %v", ldbPath)
@@ -240,9 +133,7 @@ var rootCmd = &cobra.Command{
 			log.Log.E("NewBlockChain failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-		//检查db和redis数据是否合法
 		var resBlockLength uint64
-		// 最少有个创世块
 		resBlockLength = 1
 		bn, err := state.StdPool.Get(state.Key("BlockNum"))
 		if err == nil {
@@ -262,7 +153,6 @@ var rootCmd = &cobra.Command{
 		log.Log.I("BlockNum on Redis: %v", resBlockLength-1)
 		log.Log.I("BCLen: %v", bcLen)
 		if bcLen < resBlockLength {
-			// 重算
 			resBlockLength = 0
 			state.StdPool.Delete(state.Key("iost"))
 			state.StdPool.Delete(state.Key("BlockNum"))
@@ -271,9 +161,13 @@ var rootCmd = &cobra.Command{
 
 		if bcLen > resBlockLength {
 			var blk *block.Block
-			for i := resBlockLength; i < bcLen; i++ {
+			var i uint64
+			for i = resBlockLength; i < bcLen; i++ {
 				log.Log.I("Update StatePool for number: %v", i)
 				blk = blockChain.GetBlockByNumber(i)
+				if blk == nil {
+					break
+				}
 				if i == 0 {
 					newPool, err := verifier.ParseGenesis(blk.Content[0].Contract, state.StdPool)
 					if err != nil {
@@ -290,13 +184,18 @@ var rootCmd = &cobra.Command{
 					newPool.Flush()
 				}
 			}
+
 			if bcLen > 0 {
-				state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(bcLen-1)))
-				state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(blk.HeadHash()))
-				state.StdPool.Flush()
+
+				blockChain.CheckLength()
+				b := blockChain.Top()
+				if b != nil {
+					state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(b.Head.Number)))
+					state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(b.HeadHash()))
+					state.StdPool.Flush()
+				}
 			}
 		}
-		//初始化网络
 		log.Log.I("1.Start the P2P networks")
 
 		logPath := viper.GetString("net.log-path")
@@ -325,10 +224,6 @@ var rootCmd = &cobra.Command{
 		}
 
 		log.Log.I("network instance")
-		/*      publicIP := common.GetPulicIP() */
-		// if publicIP != "" && common.IsPublicIP(net.ParseIP(publicIP)) && listenAddr != "127.0.0.1" {
-		// listenAddr = publicIP
-		/* } */
 		net, err := network.GetInstance(
 			&network.NetConfig{
 				LogPath:       logPath,
@@ -345,7 +240,6 @@ var rootCmd = &cobra.Command{
 		log.LocalID = net.(*network.RouterImpl).LocalID()
 		serverExit = append(serverExit, net)
 
-		//启动共识
 		accSecKey := viper.GetString("account.sec-key")
 		//fmt.Printf("account.sec-key:  %v\n", accSecKey)
 
@@ -357,14 +251,41 @@ var rootCmd = &cobra.Command{
 
 		account.MainAccount = acc
 
-		//fmt.Printf("account PubKey = %v\n", common.Base58Encode(acc.Pubkey))
-		//fmt.Printf("account SecKey = %v\n", common.Base58Encode(acc.Seckey))
 		log.Log.I("account ID = %v", acc.ID)
 
-		//HowHsu_Debug
-		log.Log.I("blockchain db length:%d\n", blockChain.Length())
+		// init servi
+		sp, err := tx.NewServiPool(len(account.GenesisAccount), 100)
+		if err != nil {
+			log.Log.E("NewServiPool failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+		tx.Data = tx.NewHolder(acc, state.StdPool, sp)
+		tx.Data.Spool.Restore()
+		bu, _ := tx.Data.Spool.BestUser()
 
-		witnessList := viper.GetStringSlice("consensus.witness-list")
+		if len(bu) != len(account.GenesisAccount) {
+			tx.Data.Spool.ClearBtu()
+			for k, v := range account.GenesisAccount {
+				ser, err := tx.Data.Spool.User(vm.IOSTAccount(k))
+				if err == nil {
+					ser.SetBalance(v)
+				}
+
+			}
+			tx.Data.Spool.Flush()
+		}
+		witnessList := make([]string, 0)
+
+		bu, err = tx.Data.Spool.BestUser()
+		if err != nil {
+			for k, _ := range account.GenesisAccount {
+				witnessList = append(witnessList, k)
+			}
+		} else {
+			for _, v := range bu {
+				witnessList = append(witnessList, string(v.Owner()))
+			}
+		}
 
 		for i, witness := range witnessList {
 			log.Log.I("witnessList[%v] = %v", i, witness)
@@ -390,17 +311,13 @@ var rootCmd = &cobra.Command{
 		txPool.Start()
 		serverExit = append(serverExit, txPool)
 
-		// init servi
-		tx.Data = tx.NewHolder(acc, state.StdPool, tx.StdServiPool)
-
-		//启动RPC
 		err = rpc.Server(rpcPort)
 		if err != nil {
 			log.Log.E("RPC initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
 
-		recorder := pob2.NewRecorder()
+		recorder := pob.NewRecorder()
 		recorder.Listen()
 
 		// Start Metrics Server
@@ -414,9 +331,6 @@ var rootCmd = &cobra.Command{
 		})
 		///////////////////////////////////
 
-		chainServer(blockChain)
-
-		//等待推出信号
 		exitLoop()
 
 	},
@@ -521,7 +435,6 @@ func initConfig() {
 
 	viper.AutomaticEnv() // read in environment variables that match
 
-	//fmt.Println(cfgFile)
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())

@@ -107,9 +107,6 @@ end`,
 			_, _, err = lvm.call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldNotBeNil)
-
-			//So(rtn[0].EncodeString(), ShouldEqual, "true")
-
 		})
 
 		Convey("Fatal with no bool assert", func() {
@@ -139,9 +136,6 @@ end`,
 			_, _, err = lvm.call(pool, "main")
 			lvm.Stop()
 			So(err, ShouldNotBeNil)
-
-			//So(rtn[0].EncodeString(), ShouldEqual, "true")
-
 		})
 
 		Convey("Out of gas", func() {
@@ -174,7 +168,7 @@ end`,
 	})
 
 	Convey("Test of Lua value converter", t, func() {
-		Convey("Lua to core", func() { // todo core2lua的测试平台
+		Convey("Lua to core", func() {
 			Convey("string", func() {
 				lstr := lua.LString("hello")
 				cstr, _ := Lua2Core(lstr)
@@ -218,8 +212,6 @@ end`,
 
 		lvm.Prepare(nil)
 		lvm.Start(&lc)
-		//fmt.Print("0 ")
-		//fmt.Println(pool.GetHM("iost", "b"))
 		_, pool, err = lvm.call(pool, "main")
 		lvm.Stop()
 
@@ -395,8 +387,6 @@ end--f
 		So(contract.info.Price, ShouldEqual, 0.0001)
 		fmt.Println(contract.code)
 		So(contract.main, ShouldResemble, Method{"main", 0, 1, vm.Private})
-		//So(contract.apis, ShouldResemble, map[string]Method{"foo": Method{"foo", 3, 2, vm.Public}})
-
 	})
 
 }
@@ -542,8 +532,6 @@ end--f
 		var sc2 Contract
 		sc2.Decode(buf)
 		fmt.Println()
-		//fmt.Println(sc.Encode())
-		//fmt.Println(sc2.Encode())
 		So(bytes.Equal(sc.Encode(), sc2.Encode()), ShouldBeTrue)
 	})
 
@@ -573,8 +561,6 @@ end`,
 
 		lvm.Prepare(nil)
 		lvm.Start(&lc)
-		//fmt.Print("0 ")
-		//fmt.Println(pool.GetHM("iost", "b"))
 
 		ctx := &vm.Context{
 			Publisher: vm.IOSTAccount("a"),
@@ -626,18 +612,13 @@ end`,
 
 		lvm.Prepare(nil)
 		lvm.Start(&lc)
-		//fmt.Println(*lvm.L)
 		So(lvm.PC(), ShouldEqual, 3)
 
 		lvm.Call(vm.BaseContext(), pool, "main")
-		//fmt.Println(pool.GetHM("iost", "b"))
 		So(lvm.PC(), ShouldEqual, 4)
 
-		//fmt.Println(*lvm.L)
 		So(lvm.L.PCLimit, ShouldEqual, 3)
 		lvm.Restart(&lc2)
-		//fmt.Println(lvm.Call(vm.BaseContext(), pool, "main"))
-		//fmt.Println(pool.GetHM("iost", "b"))
 
 		So(lvm.L.PCLimit, ShouldEqual, 10000)
 	})

@@ -1,15 +1,12 @@
 package network
 
 import (
-	"testing"
-	"time"
-
 	"fmt"
-
 	"os"
 	"strconv"
-
 	"sync"
+	"testing"
+	"time"
 
 	"github.com/iost-official/prototype/core/message"
 	. "github.com/smartystreets/goconvey/convey"
@@ -62,36 +59,6 @@ var m = message.Message{
 	Body:    []byte("&network.NetConfig{LogPath:       logPath, NodeTablePath: nodeTablePath, NodeID:        nodeID, RegisterAddr:  regAddr, ListenAddr:    listenAddr},&network.NetConfig{LogPath:       logPath, NodeTablePath: nodeTablePath, NodeID:        nodeID, RegisterAddr:  regAddr, ListenAddr:    listenAddr},"),
 }
 
-//3 ms
-/* func TestRouterImpl_Send(t *testing.T) { */
-// cleanLDB()
-// rs := newRouters(2)
-// net0 := rs[0].(*RouterImpl).base.(*BaseNetwork)
-// net1 := rs[1].(*RouterImpl).base.(*BaseNetwork)
-// m.To = net0.localNode.String()
-// net1.putNode(m.To)
-// begin := time.Now().UnixNano()
-// rs[1].Send(m)
-// ch, _ := rs[0].FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
-// wg := sync.WaitGroup{}
-// wg.Add(1)
-// for {
-// select {
-// case <-ch:
-// wg.Done()
-// goto Finish
-// }
-// }
-// Finish:
-// wg.Wait()
-// fmt.Println((time.Now().UnixNano()-begin)/int64(time.Millisecond), " ms/ per send")
-// for _, r := range rs {
-// r.Stop()
-// }
-// cleanLDB()
-/* } */
-
-//14ms
 func TestRouterImpl_Broadcast(t *testing.T) {
 	cleanLDB()
 	rs := newRouters(3)
@@ -103,7 +70,7 @@ func TestRouterImpl_Broadcast(t *testing.T) {
 		}
 	}
 	begin := time.Now().UnixNano()
-	rs[0].Broadcast(&m)
+	rs[0].Broadcast(m)
 	ch1, _ := rs[1].FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
 	ch2, _ := rs[2].FilteredChan(Filter{AcceptType: []ReqType{ReqBlockHeight}})
 
