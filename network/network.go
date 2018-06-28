@@ -128,6 +128,12 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	if err != nil {
 		return bn.RecvCh, errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
 	}
+	testListen, err := net.Dial("tcp4", bn.localNode.Addr())
+	if err != nil {
+		bn.log.E("test listen addr failed. err:%v", err)
+		os.Exit(1)
+	}
+	testListen.Close()
 	go func() {
 		for {
 			conn, err := bn.listener.Accept()
