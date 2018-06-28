@@ -130,7 +130,7 @@ func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	}
 	testListen, err := net.Dial("tcp4", bn.localNode.Addr())
 	if err != nil {
-		bn.log.E("test listen addr failed. err:%v", err)
+		bn.log.E("Net type error!")
 		os.Exit(1)
 	}
 	testListen.Close()
