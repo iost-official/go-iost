@@ -21,6 +21,12 @@ var (
 		"oh7VBi17aQvG647cTfhhoRGby3tH55o3Qv7YHWD5q8XU":  2800000000,
 		"28mKnLHaVvc1YRKc9CWpZxCpo2gLVCY3RL5nC9WbARRym": 2600000000,
 	}
+	// local net
+	//GenesisAccount = map[string]float64{
+	//	"iWgLQj3VTPN4dZnomuJMMCggv22LFw4nAkA6bmrVsmCo":  13400000000,
+	//	"281pWKbjMYGWKf2QHXUKDy4rVULbF61WGCZoi4PiKhbEk": 13200000000,
+	//	"bj38rN9xdqBa4eiMi1vPjcUwdMyZmQhvYbVA6cnHyQCH":  13100000000,
+	//}
 )
 
 type Account struct {
