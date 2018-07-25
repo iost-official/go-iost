@@ -712,6 +712,8 @@ func TestLog(t *testing.T) {
 		lc := Contract{
 			info: vm.ContractInfo{GasLimit: 1000, Price: 0.1},
 			code: `function main()
+	io.output([file])
+	io.write("abc")
 	Log("hello world")
 end`,
 			main: main,
