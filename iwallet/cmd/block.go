@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -28,13 +29,8 @@ import (
 var blockCmd = &cobra.Command{
 	Use:   "block",
 	Short: "print block info, default find by block number reversed",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Args: cobra.ExactArgs(1),
+	Long:  `"print block info, default find by block number reversed`,
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		switch {
 		case *byHash:
@@ -64,7 +60,12 @@ to quickly create a Cobra application.`,
 			fmt.Println(err.Error())
 			return
 		}
-		fmt.Println(blockInfo.Json)
+		blockInfoJson, err := json.Marshal(blockInfo)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		fmt.Println(string(blockInfoJson))
 	},
 }
 

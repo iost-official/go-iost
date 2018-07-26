@@ -1,20 +1,45 @@
 package block
 
 import (
+	"fmt"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/vm"
+	"strconv"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
 
-// Block 是一个区块的结构体定义
 type Block struct {
 	Head    BlockHead
-	Content []tx.Tx
+	Content []tx.Tx //TODO:make it general for other structs
 }
 
-// Encode 是区块的序列化方法
+func (d *Block) String() string {
+	str := "Block{\n"
+	str += "	BlockHead{\n"
+	str += "		Number: " + strconv.FormatInt(d.Head.Number, 10) + ",\n"
+	str += "		Time: " + strconv.FormatInt(d.Head.Time, 10) + ",\n"
+	str += "		Witness: " + d.Head.Witness + ",\n"
+	str += "	}\n"
+
+	str += "	Content{\n"
+	for _, tx := range d.Content {
+		str += tx.String()
+	}
+	str += "	}\n"
+	str += "}\n"
+	return str
+}
+
+func (d *Block) CalculateTreeHash() []byte {
+	treeHash := make([]byte, 0)
+	for _, tx := range d.Content {
+		treeHash = append(treeHash, tx.Publisher.Sig...)
+	}
+	return common.Sha256(treeHash)
+}
+
 func (d *Block) Encode() []byte {
 	c := make([][]byte, 0)
 	for _, t := range d.Content {
@@ -28,10 +53,15 @@ func (d *Block) Encode() []byte {
 	return b
 }
 
-// Decode 是区块的反序列方法
-func (d *Block) Decode(bin []byte) error {
+func (d *Block) Decode(bin []byte) (err error) {
 	var br BlockRaw
-	_, err := br.Unmarshal(bin)
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
+	_, err = br.Unmarshal(bin)
 	d.Head = br.Head
 	for _, t := range br.Content {
 		var tt tx.Tx
@@ -44,17 +74,23 @@ func (d *Block) Decode(bin []byte) error {
 	return nil
 }
 
-// Hash 返回区块的Hash值
 func (d *Block) Hash() []byte {
 	return common.Sha256(d.Encode())
 }
 
-// HeadHash 返回区块头部的Hash值
+//
+func (d *Block) HashID() string {
+	id := d.Head.Witness +
+		strconv.FormatInt(d.Head.Time, 10) +
+		strconv.FormatInt(d.Head.Number, 10) +
+		strconv.FormatInt(d.Head.Version, 10)
+	return id
+}
+
 func (d *Block) HeadHash() []byte {
 	return d.Head.Hash()
 }
 
-// GetTx 通过Content中交易索引，获取交易
 func (d *Block) GetTx(x int) tx.Tx {
 	if x < len(d.Content) {
 		return d.Content[x]
@@ -63,12 +99,10 @@ func (d *Block) GetTx(x int) tx.Tx {
 	}
 }
 
-// LenTx 获取一个block中交易的数量
 func (d *Block) LenTx() int {
 	return len(d.Content)
 }
 
-// GetAllContract 获取一个block中，所有Contract的集合
 func (d *Block) GetAllContract() []vm.Contract {
 
 	var allContract []vm.Contract
@@ -80,7 +114,6 @@ func (d *Block) GetAllContract() []vm.Contract {
 	return allContract
 }
 
-// Encode blockhead的序列化方法
 func (d *BlockHead) Encode() []byte {
 	bin, err := d.Marshal(nil)
 	if err != nil {
@@ -89,13 +122,11 @@ func (d *BlockHead) Encode() []byte {
 	return bin
 }
 
-// Decode blockhead反序列方法
 func (d *BlockHead) Decode(bin []byte) error {
 	_, err := d.Unmarshal(bin)
 	return err
 }
 
-// Hash 返回blockhead的Hash值
 func (d *BlockHead) Hash() []byte {
 	return common.Sha256(d.Encode())
 }

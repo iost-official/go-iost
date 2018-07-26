@@ -1,9 +1,5 @@
 package vm
 
-// ContractInfo 是智能合约的相关信息
-// 编译之后Language，version, gas limit， price有值，
-// 打包tx后signer，publisher有值
-// 被block chain收录之后prefix有值（=txhash的base58编码）
 type ContractInfo struct {
 	Prefix   string
 	Language string

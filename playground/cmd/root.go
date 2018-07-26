@@ -4,27 +4,34 @@ import (
 	"fmt"
 	"os"
 
+	"strings"
+
+	"strconv"
+
+	"sort"
+
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/verifier"
 	"github.com/iost-official/prototype/vm"
 	"github.com/iost-official/prototype/vm/lua"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 var cfgFile string
+var valuesFile string
 var language string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "playground",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Playground of IOST script",
+	Long: `Playground of IOST script, usage:
+	playground a.lua b.lua ... --values value.yml
+Playground runs lua script by turns.
+`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Args: cobra.MinimumNArgs(1),
@@ -33,46 +40,131 @@ to quickly create a Cobra application.`,
 		db := Database{make(map[string][]byte)}
 		mdb := state.NewDatabase(&db)
 		pool := state.NewPool(mdb)
-		for _, k := range viper.AllKeys() {
-			v := viper.GetString(k)
-			val, _ := state.ParseValue(v)
-			pool.Put(state.Key(k), val)
+
+		m := make(map[interface{}]interface{})
+
+		ctx := vm.BaseContext()
+
+		vf, err := ReadFile(valuesFile)
+		if err != nil {
+			fmt.Println("no values specified, work as everything is nil")
+		} else {
+			err = yaml.Unmarshal(vf, &m)
+			if err != nil {
+				panic(err)
+			}
+
+			for k, v := range m {
+				switch v.(type) {
+				case map[interface{}]interface{}:
+					for k2, v2 := range v.(map[interface{}]interface{}) {
+						vc, err := state.ParseValue(v2.(string))
+						if err != nil {
+							panic(err)
+						}
+						pool.PutHM(state.Key(k.(string)), state.Key(k2.(string)), vc)
+					}
+				case string:
+					vc, err := state.ParseValue(v.(string))
+					if err != nil {
+						panic(err)
+					}
+					pool.Put(state.Key(k.(string)), vc)
+				}
+			}
+
+			ctx = vm.BaseContext()
+			ph, err := pool.GetHM("context", "parent-hash")
+			if err != nil {
+				panic(err)
+			}
+			wit, err := pool.GetHM("context", "witness")
+			if err != nil {
+				panic(err)
+			}
+			height, err := pool.GetHM("context", "height")
+			if err != nil {
+				panic(err)
+			}
+			timestamp, err := pool.GetHM("context", "timestamp")
+			if err != nil {
+				panic(err)
+			}
+
+			ctx.ParentHash = common.Base58Decode(ph.(*state.VString).EncodeString()[1:])
+			ctx.Witness = vm.IOSTAccount(wit.EncodeString()[1:])
+			ctx.BlockHeight = int64(height.(*state.VFloat).ToFloat64())
+			ctx.Timestamp = int64(timestamp.(*state.VFloat).ToFloat64())
 		}
 
-		v := verifier.NewCacheVerifier(pool)
-		var sc0 vm.Contract
+		v := verifier.NewCacheVerifier()
+		v.Context = ctx
+
+		var (
+			pool2 state.Pool
+			gas   uint64
+		)
+
+		pool2 = pool.Copy()
 
 		switch language {
 		case "lua":
-			for i, file := range args {
+			for _, file := range args {
 				code := ReadSourceFile(file)
 				parser, err := lua.NewDocCommentParser(code)
 				if err != nil {
 					panic(err)
 				}
+				parser.Debug = true
 				sc, err := parser.Parse()
 				if err != nil {
 					panic(err)
 				}
-				if i == 0 {
-					sc0 = sc
-				}
+
+				sc.SetPrefix(file[strings.LastIndex(file, "/")+1 : strings.LastIndex(file, ".")])
 
 				v.StartVM(sc)
+
+				pool2, gas, err = v.Verify(sc, pool2)
+				if err != nil {
+					fmt.Println("error:", err.Error())
+				}
 			}
 		default:
 			fmt.Println(language, "not supported")
 		}
-		pool2, gas, err := v.Verify(sc0)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
+
 		pool2.Flush()
 		fmt.Println("======Report")
 		fmt.Println("gas spend:", gas)
 		fmt.Println("state trasition:")
+
+		var ss []string
 		for k, v := range db.Normal {
-			fmt.Printf("  %v: %v\n", k, string(v))
+			if strings.HasPrefix(k, "context.") {
+				continue
+			}
+			var vs string
+			val, _ := state.ParseValue(string(v))
+			switch val.(type) {
+			case *state.VBool:
+				vs = "(bool) "
+				vs += val.(*state.VBool).EncodeString()
+			case *state.VFloat:
+				vs = "(float) "
+				vs += strconv.FormatFloat(val.(*state.VFloat).ToFloat64(), 'f', 6, 64)
+			case *state.VMap:
+				vs = "(map) "
+				vs += val.EncodeString() + "}"
+			case *state.VString:
+				vs = "(string) "
+				vs += val.EncodeString()[1:]
+			}
+			ss = append(ss, fmt.Sprintf("  %v >  %v\n", k, vs))
+		}
+		sort.Strings(ss)
+		for _, v := range ss {
+			fmt.Print(v)
 		}
 
 	},
@@ -93,7 +185,8 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "values", "", "get values of test environment, default ./values.yaml")
+	rootCmd.PersistentFlags().StringVarP(&valuesFile, "values", "v", "values.yaml", "set init values, default ./values.yaml")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "set config default ./values.yaml")
 	rootCmd.PersistentFlags().StringVarP(&language, "lang", "l", "lua", "set language of contract, default lua")
 
 }
@@ -106,7 +199,6 @@ func initConfig() {
 	} else {
 		viper.SetConfigName("./values.yaml")
 	}
-
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.

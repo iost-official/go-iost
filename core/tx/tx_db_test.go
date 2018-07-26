@@ -1,113 +1,57 @@
 package tx
 
 import (
-
 	"testing"
 
+	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestTxPoolDb(t *testing.T) {
-	Convey("Test of TxPoolDb", t, func() {
-		/*
-			Convey("Test of Add", func() {
-				txpooldb, err := TxPoolFactory("db")
+func genTx() Tx {
+	main := lua.NewMethod(0, "main", 0, 1)
+	code := `function main()
+				Put("hello", "world")
+				return "success"
+			end`
+	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
 
-				main := lua.NewMethod("main", 0, 1)
-				code := `function main()
-							Put("hello", "world")
-							return "success"
-						end`
-				lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
+	return NewTx(int64(0), &lc)
+}
+func TestTxDb(t *testing.T) {
+	Convey("Test of TxDb", t, func() {
+		txdb := TxDbInstance()
+		Convey("Test of Add", func() {
+			_tx := genTx()
+			err := txdb.Add(&_tx)
+			So(err, ShouldBeNil)
+		})
 
-<<<<<<< HEAD
-				tx := NewTx(int64(0), &lc)
-				err = txpooldb.Add(&tx)
-				So(err, ShouldBeNil)
-			})
-=======
-			main := lua.NewMethod("main", 0, 1)
-			code := `function main()
-						Put("hello", "world")
-						return "success"
-					end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
->>>>>>> develop
+		Convey("Test of Has", func() {
+			_tx := genTx()
+			_, err := txdb.Has(&_tx)
+			So(err, ShouldBeNil)
+			txdb.Add(&_tx)
 
-			Convey("Test of Has", func() {
-				txpooldb, err := TxPoolFactory("db")
+			_, err = txdb.Has(&_tx)
+			So(err, ShouldBeNil)
+		})
 
-				main := lua.NewMethod("main", 0, 1)
-				code := `function main()
-							Put("hello", "world")
-							return "success"
-						end`
-				lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
-
-<<<<<<< HEAD
-				tx := NewTx(int64(0), &lc)
-				_, err = txpooldb.Has(&tx)
-				So(err, ShouldBeNil)
-				txpooldb.Add(&tx)
-=======
-			main := lua.NewMethod("main", 0, 1)
-			code := `function main()
-						Put("hello", "world")
-						return "success"
-					end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
->>>>>>> develop
-
-				_, err = txpooldb.Has(&tx)
-				So(err, ShouldBeNil)
-				//txpooldb.(*TxPoolDb).Close()
-			})
-
-			Convey("Test of Get", func() {
-				txpooldb, err := NewTxPoolDb()
-				main := lua.NewMethod("main", 0, 1)
-				code := `function main()
-								Put("hello", "world")
-								return "success"
-							end`
-				lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
-
-<<<<<<< HEAD
-				tx := NewTx(int64(0), &lc)
-				err = txpooldb.Add(&tx)
-				hash := tx.Hash()
-=======
 		Convey("Test of Get", func() {
-			txpooldb, err := NewTxPoolDb()
-			main := lua.NewMethod("main", 0, 1)
-			code := `function main()
-							Put("hello", "world")
-							return "success"
-						end`
-			lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
->>>>>>> develop
+			tx1 := genTx()
+			err := txdb.Add(&tx1)
+			hash := tx1.Hash()
+			tx2, err := txdb.Get(hash)
+			So(err, ShouldBeNil)
+			So(tx2.Time, ShouldEqual, tx1.Time)
+		})
 
-				tx1, err := txpooldb.Get(hash)
-				So(err, ShouldBeNil)
-				So(tx.Time, ShouldEqual, (*tx1).Time)
-				//txpooldb.(*TxPoolDb).Close()
-			})
-
-			Convey("Test of GetByPN", func() {
-				txpooldb, err := NewTxPoolDb()
-				main := lua.NewMethod("main", 0, 1)
-				code := `function main()
-								Put("hello", "world")
-								return "success"
-							end`
-				lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Sender: vm.IOSTAccount("ahaha")}, code, main)
-
-				tx := NewTx(int64(0), &lc)
-				err = txpooldb.Add(&tx)
-				tx1, err := txpooldb.(*TxPoolDb).GetByPN(tx.Nonce, tx.Publisher)
-				So(err, ShouldBeNil)
-				So(tx.Time, ShouldEqual, (*tx1).Time)
-			})
-		*/
+		Convey("Test of GetByPN", func() {
+			tx1 := genTx()
+			err := txdb.Add(&tx1)
+			tx2, err := txdb.(*TxPoolDb).GetByPN(tx1.Nonce, tx1.Publisher.Pubkey)
+			So(err, ShouldBeNil)
+			So(tx1.Time, ShouldEqual, (*tx2).Time)
+		})
 	})
 }

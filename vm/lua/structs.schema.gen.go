@@ -249,6 +249,7 @@ type methodRaw struct {
 	name string
 	ic   int32
 	oc   int32
+	priv int32
 }
 
 func (d *methodRaw) Size() (s uint64) {
@@ -268,7 +269,7 @@ func (d *methodRaw) Size() (s uint64) {
 		}
 		s += l
 	}
-	s += 8
+	s += 12
 	return
 }
 func (d *methodRaw) Marshal(buf []byte) ([]byte, error) {
@@ -323,7 +324,18 @@ func (d *methodRaw) Marshal(buf []byte) ([]byte, error) {
 		buf[i+3+4] = byte(d.oc >> 24)
 
 	}
-	return buf[:i+8], nil
+	{
+
+		buf[i+0+8] = byte(d.priv >> 0)
+
+		buf[i+1+8] = byte(d.priv >> 8)
+
+		buf[i+2+8] = byte(d.priv >> 16)
+
+		buf[i+3+8] = byte(d.priv >> 24)
+
+	}
+	return buf[:i+12], nil
 }
 
 func (d *methodRaw) Unmarshal(buf []byte) (uint64, error) {
@@ -359,5 +371,10 @@ func (d *methodRaw) Unmarshal(buf []byte) (uint64, error) {
 		d.oc = 0 | (int32(buf[i+0+4]) << 0) | (int32(buf[i+1+4]) << 8) | (int32(buf[i+2+4]) << 16) | (int32(buf[i+3+4]) << 24)
 
 	}
-	return i + 8, nil
+	{
+
+		d.priv = 0 | (int32(buf[i+0+8]) << 0) | (int32(buf[i+1+8]) << 8) | (int32(buf[i+2+8]) << 16) | (int32(buf[i+3+8]) << 24)
+
+	}
+	return i + 12, nil
 }

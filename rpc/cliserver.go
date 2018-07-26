@@ -2,51 +2,118 @@ package rpc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 
+	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/consensus"
-	"github.com/iost-official/prototype/consensus/dpos"
 	"github.com/iost-official/prototype/core/block"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/core/state"
 	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/prototype/core/txpool"
 	"github.com/iost-official/prototype/network"
 	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/prototype/vm/lua"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/prototype/rpc CliServer
 
 type BInfo struct {
 	Head  block.BlockHead
-	txCnt int
+	TxCnt int
 }
-type HttpServer struct {
+type RpcServer struct {
 }
 
-// newHttpServer 初始Http RPC结构体
-func newHttpServer() *HttpServer {
-	s := &HttpServer{}
+// newRpcServer
+func newRpcServer() *RpcServer {
+	s := &RpcServer{}
 	return s
 }
 
-func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response, error) {
-	fmt.Println("PublishTx begin")
+func (s *RpcServer) Transfer(ctx context.Context, txinfo *TransInfo) (*PublishRet, error) {
+	ret := PublishRet{Code: -1}
+	seckey := txinfo.Seckey
+	nonce := txinfo.Nonce
+	code := txinfo.Contract
+	acc, err := account.NewAccount(common.Base58Decode(seckey))
+	if err != nil {
+		return &ret, fmt.Errorf("NewAccount:%v", err)
+	}
+
+	var contract vm.Contract
+	parser, _ := lua.NewDocCommentParser(code)
+	contract, err = parser.Parse()
+	if err != nil {
+		return &ret, fmt.Errorf("Parse:%v", err)
+	}
+	mtx := tx.NewTx(nonce, contract)
+	sig, err := tx.SignContract(mtx, acc)
+	if !mtx.VerifySigner(sig) {
+		return &ret, fmt.Errorf("VerifySigner:%v", err)
+	}
+	mtx.Signs = append(mtx.Signs, sig)
+
+	if err != nil {
+		return &ret, fmt.Errorf("SignContract:%v", err)
+	}
+
+	stx, err := tx.SignTx(mtx, acc)
+	if err != nil {
+		return &ret, fmt.Errorf("SignTx:%v", err)
+
+	}
+
+	err = stx.VerifySelf() //verify Publisher and Signers
+	if err != nil {
+		return &ret, fmt.Errorf("VerifySelf:%v", err)
+
+	}
+
+	// add servi
+	tx.RecordTx(stx, tx.Data.Self())
+
+	//broadcast the tx
+	router := network.Route
+	if router == nil {
+		panic(fmt.Errorf("network.Router shouldn't be nil"))
+	}
+	broadTx := message.Message{
+		Body:    stx.Encode(),
+		ReqType: int32(network.ReqPublishTx),
+	}
+	router.Broadcast(broadTx)
+	Cons := consensus.Cons
+	if Cons == nil {
+		panic(fmt.Errorf("Consensus is nil"))
+	}
+	txpool.TxPoolS.AddTransaction(&broadTx)
+	ret.Code = 0
+	ret.Hash = stx.Hash()
+	return &ret, nil
+}
+func (s *RpcServer) PublishTx(ctx context.Context, _tx *Transaction) (*PublishRet, error) {
+	fmt.Println("publish")
+	ret := PublishRet{Code: -1}
 	var tx1 tx.Tx
 	if _tx == nil {
-		return &Response{Code: -1}, fmt.Errorf("argument cannot be nil pointer")
+		return &ret, fmt.Errorf("argument cannot be nil pointer")
 	}
 	err := tx1.Decode(_tx.Tx)
 	if err != nil {
-		return &Response{Code: -1}, err
+		return &ret, err
 	}
 
 	err = tx1.VerifySelf() //verify Publisher and Signers
 	if err != nil {
-		return &Response{Code: -1}, err
+		return &ret, err
 	}
+
+	// add servi
+	tx.RecordTx(tx1, tx.Data.Self())
+
 	//broadcast the tx
 	router := network.Route
 	if router == nil {
@@ -57,36 +124,26 @@ func (s *HttpServer) PublishTx(ctx context.Context, _tx *Transaction) (*Response
 		ReqType: int32(network.ReqPublishTx),
 	}
 	router.Broadcast(broadTx)
-
-	go func() {
-		Cons := consensus.Cons
-		if Cons == nil {
-			panic(fmt.Errorf("Consensus is nil"))
-		}
-		Cons.(*dpos.DPoS).ChTx <- broadTx
-		fmt.Println("[rpc.PublishTx]:add tx to TxPool")
-	}()
-	return &Response{Code: 0}, nil
+	Cons := consensus.Cons
+	if Cons == nil {
+		panic(fmt.Errorf("Consensus is nil"))
+	}
+	txpool.TxPoolS.AddTransaction(&broadTx)
+	ret.Code = 0
+	ret.Hash = tx1.Hash()
+	return &ret, nil
 }
-
-func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (*Transaction, error) {
-	fmt.Println("GetTransaction begin")
+func (s *RpcServer) GetTransaction(ctx context.Context, txkey *TransactionKey) (*Transaction, error) {
 	if txkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	PubKey := common.Base58Decode(txkey.Publisher)
-	//check length of Pubkey here
-	if len(PubKey) != 33 {
-		return nil, fmt.Errorf("PubKey invalid")
-	}
 	Nonce := txkey.Nonce
-	//check Nonce here
 
 	txDb := tx.TxDb
 	if txDb == nil {
 		panic(fmt.Errorf("TxDb should be nil"))
 	}
-	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, PubKey)
+	tx, err := txDb.(*tx.TxPoolDb).GetByPN(Nonce, txkey.Publisher)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +151,26 @@ func (s *HttpServer) GetTransaction(ctx context.Context, txkey *TransactionKey) 
 	return &Transaction{Tx: tx.Encode()}, nil
 }
 
-func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
+func (s *RpcServer) GetTransactionByHash(ctx context.Context, txhash *TransactionHash) (*Transaction, error) {
+	fmt.Println("GetTransaction begin")
+	if txhash == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	txHash := txhash.Hash
+
+	txDb := tx.TxDb
+	if txDb == nil {
+		panic(fmt.Errorf("TxDb should be nil"))
+	}
+	tx, err := txDb.(*tx.TxPoolDb).Get(txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Transaction{Tx: tx.Encode()}, nil
+}
+
+func (s *RpcServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
 	fmt.Println("GetBalance begin")
 	if iak == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
@@ -106,7 +182,7 @@ func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
 	}
 	val, ok := val0.(*state.VFloat)
 	if !ok {
-		return nil, fmt.Errorf("pool type error: should VFloat, acture %v; in iost.%v",
+		return nil, fmt.Errorf("RPC : pool type error: should VFloat, acture %v; in iost.%v",
 			reflect.TypeOf(val0).String(), vm.IOSTAccount(ia))
 	}
 	balance := val.EncodeString()
@@ -114,7 +190,7 @@ func (s *HttpServer) GetBalance(ctx context.Context, iak *Key) (*Value, error) {
 	return &Value{Sv: balance}, nil
 }
 
-func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
+func (s *RpcServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
 	fmt.Println("GetState begin")
 	if stkey == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
@@ -133,16 +209,16 @@ func (s *HttpServer) GetState(ctx context.Context, stkey *Key) (*Value, error) {
 	return &Value{Sv: stValue.EncodeString()}, nil
 }
 
-func (s *HttpServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, error) {
+func (s *RpcServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, error) {
 	if bk == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 
-	bc := block.BChain //we should get the instance of Chain,not to Create it again in the real version
+	bc := block.BChain
 	if bc == nil {
 		panic(fmt.Errorf("block.BChain cannot be nil"))
 	}
-	layer := bk.Layer //I think bk.Layer should be uint64,because bc.Length() is uint64
+	layer := bk.Layer
 	curLen := bc.Length()
 	if (layer < 0) || (uint64(layer) > curLen-1) {
 		return nil, fmt.Errorf("out of bound")
@@ -151,14 +227,76 @@ func (s *HttpServer) GetBlock(ctx context.Context, bk *BlockKey) (*BlockInfo, er
 	if block == nil {
 		return nil, fmt.Errorf("cannot get BlockInfo")
 	}
-	//better to Encode BlockHead first?
-	binfo := BInfo{
-		Head:  block.Head,
-		txCnt: block.LenTx(),
+
+	head := &Head{
+		Version:    block.Head.Version,
+		ParentHash: block.Head.ParentHash,
+		TreeHash:   block.Head.TreeHash,
+		BlockHash:  block.HeadHash(),
+		Info:       block.Head.Info,
+		Number:     block.Head.Number,
+		Witness:    block.Head.Witness,
+		Signature:  block.Head.Signature,
+		Time:       block.Head.Time,
 	}
-	b, err := json.Marshal(binfo)
-	if err != nil {
-		return nil, fmt.Errorf("json.Marshal failed: [%v]", err)
+
+	txList := make([]*TransactionKey, block.LenTx())
+	for k, v := range block.Content {
+		txList[k] = &TransactionKey{
+			Publisher: v.Publisher.Pubkey,
+			Nonce:     v.Nonce,
+		}
 	}
-	return &BlockInfo{Json: string(b)}, nil
+
+	return &BlockInfo{
+		Head:   head,
+		Txcnt:  int64(block.LenTx()),
+		TxList: txList,
+	}, nil
+}
+
+func (s *RpcServer) GetBlockByHeight(ctx context.Context, bk *BlockKey) (*BlockInfo, error) {
+	if bk == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+
+	bc := block.BChain
+	if bc == nil {
+		panic(fmt.Errorf("block.BChain cannot be nil"))
+	}
+	height := bk.Layer
+	curLen := bc.Length()
+	if (height < 0) || (uint64(height) > curLen-1) {
+		return nil, fmt.Errorf("out of bound")
+	}
+	block := bc.GetBlockByNumber(uint64(height))
+	if block == nil {
+		return nil, fmt.Errorf("cannot get BlockInfo")
+	}
+
+	head := &Head{
+		Version:    block.Head.Version,
+		ParentHash: block.Head.ParentHash,
+		TreeHash:   block.Head.TreeHash,
+		BlockHash:  block.HeadHash(),
+		Info:       block.Head.Info,
+		Number:     block.Head.Number,
+		Witness:    block.Head.Witness,
+		Signature:  block.Head.Signature,
+		Time:       block.Head.Time,
+	}
+
+	txList := make([]*TransactionKey, block.LenTx())
+	for k, v := range block.Content {
+		txList[k] = &TransactionKey{
+			Publisher: v.Publisher.Pubkey,
+			Nonce:     v.Nonce,
+		}
+	}
+
+	return &BlockInfo{
+		Head:   head,
+		Txcnt:  int64(block.LenTx()),
+		TxList: txList,
+	}, nil
 }

@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"errors"
-
 	"os"
+	//"encoding/hex"
 
 	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/prototype/common"
@@ -35,16 +35,12 @@ import (
 var publishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "sign to a .sc file with .sig files, and publish it",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Long:  `sign to a .sc file with .sig files, and publish it`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println(`invalid input, check
 	iwallet publish -h`)
+			return
 		}
 
 		sc, err := ReadFile(args[0])
@@ -57,6 +53,7 @@ to quickly create a Cobra application.`,
 		err = mtx.Decode(sc)
 		if err != nil {
 			fmt.Println(err.Error())
+			return
 		}
 
 		for i, v := range args {
@@ -102,14 +99,17 @@ to quickly create a Cobra application.`,
 
 		SaveTo(dest, stx.Encode())
 
+		var txHash []byte
 		if !isLocal {
-			err = sendTx(stx)
+			txHash, err = sendTx(stx)
 			if err != nil {
 				fmt.Println(err.Error())
+				return
 			}
 		}
-
 		fmt.Println("ok")
+		//fmt.Println(hex.EncodeToString(txHash))
+		fmt.Println(SaveBytes(txHash))
 	},
 }
 
@@ -138,23 +138,23 @@ func init() {
 	// publishCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func sendTx(stx tx.Tx) error {
+func sendTx(stx tx.Tx) ([]byte, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer conn.Close()
 	client := pb.NewCliClient(conn)
 	resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	switch resp.Code {
 	case 0:
-		return nil
+		return resp.Hash, nil
 	case -1:
-		return errors.New("tx rejected")
+		return nil, errors.New("tx rejected")
 	default:
-		return errors.New("unknown return")
+		return nil, errors.New("unknown return")
 	}
 }

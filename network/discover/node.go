@@ -2,20 +2,22 @@ package discover
 
 import (
 	"errors"
-	"fmt"
 	"net"
+	"sort"
+	//	"sort"
 	"strconv"
+	"strings"
 	"time"
 
-	"strings"
-
-	"sort"
-
 	"github.com/iost-official/prototype/common"
+	//	"github.com/iost-official/prototype/params"
+	//	"math/rand"
 )
 
+// NodeID is a node's identity.
 type NodeID string
 
+// Node represents a connected remote node.
 type Node struct {
 	IP       net.IP // len 4 for IPv4 or 16 for IPv6
 	UDP, TCP uint16 // port numbers
@@ -32,7 +34,7 @@ type Node struct {
 	addedAt time.Time
 }
 
-// NewNode creates a new node
+// NewNode returns a new Node instance.
 func NewNode(id NodeID, ip net.IP, udpPort, tcpPort uint16) *Node {
 	if ipv4 := ip.To4(); ipv4 != nil {
 		ip = ipv4
@@ -67,58 +69,73 @@ func (n *Node) validateComplete() error {
 	return nil
 }
 
+// String implements fmt.Stringer.
 func (n *Node) String() string {
 	return string(n.ID) + "@" + n.IP.String() + ":" + strconv.Itoa(int(n.TCP))
 }
 
+// Addr returns node's address.
 func (n *Node) Addr() string {
 	return n.IP.String() + ":" + strconv.Itoa(int(n.TCP))
 }
 
-// NodeID prints as a long hexadecimal number.
+// String returns a string format of NodeID.
 func (n NodeID) String() string {
-	return fmt.Sprintf("%s", string(n))
+	return string(n)
 }
 
-func GenNodeId() NodeID {
+// GenNodeID generates a NodeID.
+func GenNodeID() NodeID {
 	id := common.ToHex(common.Sha256(common.Int64ToBytes(time.Now().UnixNano())))
 	return NodeID(id)
 }
 
+// ParseNode parses a string to a Node instance.
 func ParseNode(nodeStr string) (node *Node, err error) {
 	node = &Node{}
-	nodeIdStrs := strings.Split(nodeStr, "@")
-	if len(nodeIdStrs) < 2 {
-		return node, fmt.Errorf("miss nodeId")
+	nodeIDStrs := strings.Split(nodeStr, "@")
+	if len(nodeIDStrs) == 2 {
+		node.ID = NodeID(nodeIDStrs[0])
+		tcpStr := strings.Split(nodeIDStrs[1], ":")
+		node.IP = net.ParseIP(tcpStr[0])
+		tcp, err := strconv.Atoi(tcpStr[1])
+		if err != nil {
+			return node, err
+		}
+		node.TCP = uint16(tcp)
 	}
-	node.ID = NodeID(nodeIdStrs[0])
-	tcpStr := strings.Split(nodeIdStrs[1], ":")
-	node.IP = net.ParseIP(tcpStr[0])
-	tcp, err := strconv.Atoi(tcpStr[1])
-	if err != nil {
-		return
+	if len(nodeIDStrs) == 1 {
+		tcpStr := strings.Split(nodeIDStrs[0], ":")
+		node.IP = net.ParseIP(tcpStr[0])
+		tcp, err := strconv.Atoi(tcpStr[1])
+		if err != nil {
+			return node, err
+		}
+		node.TCP = uint16(tcp)
 	}
-	node.TCP = uint16(tcp)
+
 	return node, nil
 
 }
 
+// MaxNeighbourNum is the max count of a node's neighbours.
 const MaxNeighbourNum = 8
 
+// FindNeighbours returns a node's neighbours
 func (n *Node) FindNeighbours(ns []*Node) []*Node {
+
 	if len(ns) < MaxNeighbourNum {
 		return ns
 	}
 	neighbours := make([]*Node, 0)
 	disArr := make([]int, len(ns))
 	for k, v := range ns {
-		disArr[k] = xorDistance(n.ID, v.ID)
+		disArr[k] = xorDistance(n.Addr(), v.Addr())
 	}
 	sortArr := make([]int, len(ns))
 	copy(sortArr, disArr)
 	sort.Ints(sortArr)
-
-	neighbourKeys := make(map[int]int, 0)
+	neighbourKeys := make(map[int]int)
 	for _, v := range sortArr {
 		for k, vd := range disArr {
 			if _, ok := neighbourKeys[k]; !ok && v == vd && len(neighbourKeys) < MaxNeighbourNum {
@@ -126,16 +143,16 @@ func (n *Node) FindNeighbours(ns []*Node) []*Node {
 			}
 		}
 	}
-	for k, _ := range neighbourKeys {
-		if len(neighbours) >= MaxNeighbourNum {
-			break
+	for k := range neighbourKeys {
+		if len(neighbours) >= MaxNeighbourNum || n.Addr() == ns[k].Addr() {
+			continue
 		}
 		neighbours = append(neighbours, ns[k])
 	}
 	return neighbours
 }
 
-func xorDistance(one, other NodeID) (ret int) {
+func xorDistance(one, other string) (ret int) {
 	oneBytes := []byte(one)
 	otherBytes := []byte(other)
 	for i := 0; i < len(oneBytes); i++ {

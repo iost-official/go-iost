@@ -1,59 +1,160 @@
 package network
 
 import (
+	"os"
 	"testing"
+	"time"
 
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/prototype/network/discover"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestNetwork(t *testing.T) {
-	Convey("", t, func() {
-		nn, err := NewNaiveNetwork(3)
-		if err != nil {
-			t.Errorf("NewNaiveNetwork encounter err %+v", err)
-			return
+func TestBaseNetwork_AllNodesExcludeAddr(t *testing.T) {
+	Convey("AllNodesExcludeAddr", t, func() {
+		baseNet, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		iter := baseNet.nodeTable.NewIterator()
+		for iter.Next() {
+			baseNet.nodeTable.Delete(iter.Key())
 		}
-		lis1, err := nn.Listen(11037)
+		iter.Release()
+		So(iter.Error(), ShouldBeNil)
+
+		baseNet.nodeTable.Put([]byte(registerAddr), common.IntToBytes(2))
+
+		arr, err := baseNet.AllNodesExcludeAddr("")
 		So(err, ShouldBeNil)
+		So(len(arr), ShouldEqual, 1)
+		So(arr[0], ShouldEqual, registerAddr)
 
-		lis2, err := nn.Listen(11038)
+		arr2, err := baseNet.AllNodesExcludeAddr(registerAddr)
 		So(err, ShouldBeNil)
-
-		req := message.Message{
-			Time:    1,
-			From:    "test1",
-			To:      "test2",
-			ReqType: 1,
-			Body:    []byte{1, 1, 2},
-		}
-		err = nn.Broadcast(req)
-		So(err, ShouldBeNil)
-
-		message := <-lis1
-		So(message.From, ShouldEqual, req.From)
-
-		message = <-lis2
-		So(message.ReqType, ShouldEqual, req.ReqType)
+		So(len(arr2), ShouldEqual, 0)
 	})
-	Convey("test rand pick node in all node which height greater than download height", t, func() {
-		m := map[string]uint64{
-			"node1": uint64(10),
-			"node2": uint64(8),
-			"node3": uint64(6),
-			"node4": uint64(4),
-			"node5": uint64(4),
-			"node6": uint64(5),
+}
+
+var registerAddr = "127.0.0.1:30304"
+
+func cleanLDB() {
+	os.RemoveAll("iost_db_")
+	os.RemoveAll("iost_db_1")
+	os.RemoveAll("iost_db_2")
+	os.RemoveAll("iost_db_2")
+	os.RemoveAll("iost_node_table_")
+}
+
+func TestBaseNetwork_recentSentLoop(t *testing.T) {
+	Convey("recentSentLoop", t, func() {
+		cleanLDB()
+		baseNet, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		baseNet.RecentSent.Store("test_expired", time.Now().Add(-(MsgLiveThresholdSeconds+1)*time.Second))
+		baseNet.RecentSent.Store("test_not_expired", time.Now())
+		go func() {
+			baseNet.recentSentLoop()
+		}()
+		time.Sleep(20 * time.Millisecond)
+		_, ok1 := baseNet.RecentSent.Load("test_expired")
+		_, ok2 := baseNet.RecentSent.Load("test_not_expired")
+		So(ok1, ShouldBeFalse)
+		So(ok2, ShouldBeTrue)
+		cleanLDB()
+	})
+}
+
+func TestBaseNetwork_isRecentSent(t *testing.T) {
+	Convey("isRecentSent", t, func() {
+		cleanLDB()
+		baseNet, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		msg := message.Message{From: "sender", Time: time.Now().UnixNano(), To: "192.168.1.34:20003", Body: []byte{22, 11, 125}, TTL: 2}
+		is := baseNet.isRecentSent(msg)
+		So(is, ShouldBeFalse)
+		is = baseNet.isRecentSent(msg)
+		So(is, ShouldBeTrue)
+		msg.TTL = msg.TTL - 1
+		is = baseNet.isRecentSent(msg)
+		So(is, ShouldBeTrue)
+		msg.To = msg.To + msg.To
+		is = baseNet.isRecentSent(msg)
+		So(is, ShouldBeFalse)
+		cleanLDB()
+	})
+}
+
+var addresses = []string{
+	"127.0.0.1:30301",
+	"127.0.0.1:30302",
+	"127.0.0.1:30303",
+	"127.0.0.1:30305",
+	"127.0.0.1:30306",
+	"127.0.0.1:30307",
+	"127.0.0.1:30308",
+	"127.0.0.1:30309",
+	"19.192.22.23:30310",
+	"18.192.22.23:30311",
+}
+
+func TestBaseNetwork_findNeighbours(t *testing.T) {
+	Convey("findNeighbours", t, func() {
+		cleanLDB()
+		bn, _ := NewBaseNetwork(&NetConfig{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		for _, addr := range addresses {
+			bn.putNode(addr)
 		}
-		randMap := make(map[string]int, 0)
-		for i := 0; i < 1000; i++ {
-			targetNode := randNodeMatchHeight(m, 2)
-			randMap[targetNode] = randMap[targetNode] + 1
-		}
-		for nodeStr, _ := range m {
-			times, ok := randMap[nodeStr]
-			So(ok, ShouldBeTrue)
-			So(times, ShouldBeGreaterThan, 100)
-		}
+		var neighbourLen int
+		bn.neighbours.Range(func(k, v interface{}) bool {
+			neighbourLen++
+			return true
+		})
+		So(neighbourLen, ShouldEqual, discover.MaxNeighbourNum)
+		_, ok1 := bn.neighbours.Load("@" + addresses[7])
+		So(ok1, ShouldBeFalse)
+		_, ok2 := bn.neighbours.Load("@" + addresses[6])
+		So(ok2, ShouldBeFalse)
+
+		bn.neighbours.Range(func(k, v interface{}) bool {
+			node := v.(*discover.Node)
+			bn.neighbours.Delete(node.String())
+			bn.nodeTable.Delete([]byte(node.Addr()))
+			return true
+		})
+
+		neighbourLen = 0
+		bn.neighbours.Range(func(k, v interface{}) bool {
+			neighbourLen++
+			return true
+		})
+		So(neighbourLen, ShouldEqual, 0)
+		cleanLDB()
+	})
+
+}
+
+func TestBaseNetwork_putNode(t *testing.T) {
+	Convey("putNode", t, func() {
+		cleanLDB()
+		bn, _ := NewBaseNetwork(&NetConfig{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+
+		bn.putNode(addresses[0])
+		b, err := bn.nodeTable.Get([]byte(addresses[0]))
+		So(err, ShouldBeNil)
+		So(common.BytesToInt(b), ShouldEqual, NodeLiveCycle)
+
+		bn.putNode(addresses[0])
+		b, err = bn.nodeTable.Get([]byte(addresses[0]))
+		So(err, ShouldBeNil)
+		So(common.BytesToInt(b), ShouldEqual, NodeLiveCycle)
+
+		b, err = bn.nodeTable.Get([]byte(addresses[1]))
+		So(err, ShouldNotBeNil)
+		So(common.BytesToInt(b), ShouldEqual, 0)
+		cleanLDB()
+	})
+}
+
+func TestBaseNetwork_registerLoop(t *testing.T) {
+	Convey("registerLoop", t, func() {
+		cleanLDB()
+		cleanLDB()
 	})
 }

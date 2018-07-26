@@ -5,47 +5,40 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"os"
 	"strconv"
-	"time"
-
-	"sync"
-
-	"bufio"
-
 	"strings"
-
-	"math/rand"
+	"sync"
+	"time"
 
 	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/message"
 	"github.com/iost-official/prototype/db"
 	"github.com/iost-official/prototype/log"
 	"github.com/iost-official/prototype/network/discover"
-	"github.com/iost-official/prototype/params"
 )
 
-type RequestHead struct {
-	Length uint32 // length of Request
-}
-
+// const
 const (
-	HEADLENGTH               = 4
-	CheckKnownNodeInterval   = 10
-	NodeLiveThresholdSeconds = 20
-	MaxDownloadRetry         = 2
+	HEADLENGTH              = 4
+	CheckKnownNodeInterval  = 10
+	NodeLiveCycle           = 2
+	MaxDownloadRetry        = 2
+	MsgLiveThresholdSeconds = 120
+	RegisterServerPort      = 30304
+	PublicMode              = "public"
+	CommitteeMode           = "committee"
+	RndBcastThreshold       = 0.5
 )
 
-type Response struct {
-	From        string
-	To          string
-	Code        int    // like http status code
-	Description string // code status description
-}
+// NetMode is the bootnode's mode.
+var NetMode string
 
-//Network api
+// Network defines network's API.
 type Network interface {
 	Broadcast(req message.Message)
 	Send(req message.Message)
@@ -53,218 +46,40 @@ type Network interface {
 	Close(port uint16) error
 	Download(start, end uint64) error
 	CancelDownload(start, end uint64) error
+	QueryBlockHash(start, end uint64) error
+	AskABlock(height uint64, to string) error
 }
 
-type NaiveNetwork struct {
-	db     *db.LDBDatabase //database of known nodes
-	listen net.Listener
-	conn   net.Conn
-	done   bool
-}
-
-//NewNaiveNetwork create n peers
-func NewNaiveNetwork(n int) (*NaiveNetwork, error) {
-	dirname, err := ioutil.TempDir(os.TempDir(), "p2p_test_")
-	if err != nil {
-		return nil, err
-	}
-	db, err := db.NewLDBDatabase(dirname, 0, 0)
-	if err != nil {
-		return nil, err
-	}
-	nn := &NaiveNetwork{
-		db:     db,
-		listen: nil,
-		done:   false,
-	}
-	for i := 1; i <= n; i++ {
-		nn.db.Put([]byte(string(i)), []byte("0.0.0.0:"+strconv.Itoa(11036+i)))
-	}
-	return nn, nil
-}
-
-func (nn *NaiveNetwork) Close(port uint16) error {
-	port = 3 // 避免出现unused variable
-	nn.done = true
-	return nn.listen.Close()
-}
-
-//
-func (nn *NaiveNetwork) Broadcast(req message.Message) error {
-	iter := nn.db.NewIterator()
-	for iter.Next() {
-		addr, _ := nn.db.Get([]byte(string(iter.Key())))
-		conn, err := net.Dial("tcp", string(addr))
-		if err != nil {
-			if dErr := nn.db.Delete([]byte(string(iter.Key()))); dErr != nil {
-				fmt.Errorf("failed to delete peer : k= %v, v = %v, err:%v\n", iter.Key(), addr, err.Error())
-			}
-			fmt.Errorf("dialing to %v encounter err : %v\n", addr, err.Error())
-			continue
-		}
-		nn.conn = conn
-		go nn.Send(req)
-	}
-	iter.Release()
-	return iter.Error()
-}
-
-func (nn *NaiveNetwork) Send(req message.Message) {
-	if nn.conn == nil {
-		fmt.Errorf("no connect in network")
-		return
-	}
-	defer nn.conn.Close()
-
-	reqHeadBytes, reqBodyBytes, err := reqToBytes(req)
-	if err != nil {
-		fmt.Errorf("reqToBytes encounter err : %v\n", err.Error())
-		return
-	}
-	if _, err = nn.conn.Write(reqHeadBytes); err != nil {
-		fmt.Errorf("sending request head encounter err :%v\n", err.Error())
-	}
-	if _, err = nn.conn.Write(reqBodyBytes[:]); err != nil {
-		fmt.Errorf("sending request body encounter err : %v\n", err.Error())
-	}
-	return
-}
-
-func (nn *NaiveNetwork) Listen(port uint16) (<-chan message.Message, error) {
-	var err error
-	nn.listen, err = net.Listen("tcp", ":"+strconv.Itoa(int(port)))
-	if err != nil {
-		return nil, fmt.Errorf("Error listening: %v", err.Error())
-	}
-	fmt.Println("Listening on " + ":" + strconv.Itoa(int(port)))
-	req := make(chan message.Message, 100)
-
-	conn := make(chan net.Conn, 10)
-
-	// For every listener spawn the following routine
-	go func(l net.Listener) {
-		for {
-			c, err := l.Accept()
-			if err != nil {
-				// handle error
-				conn <- nil
-				return
-			}
-			conn <- c
-		}
-	}(nn.listen)
-	go func() {
-		for {
-			select {
-			case c := <-conn:
-				if c == nil {
-					if nn.done {
-						return
-					}
-					fmt.Println("Error accepting: ")
-					break
-				}
-
-				go func(conn net.Conn) {
-					defer conn.Close()
-					// Make a buffer to hold incoming data.
-					buf := make([]byte, HEADLENGTH)
-					// Read the incoming connection into the buffer.
-					_, err := conn.Read(buf)
-					if err != nil {
-						fmt.Errorf("Error reading request head:%v", err.Error())
-					}
-					length := binary.BigEndian.Uint32(buf)
-					_buf := make([]byte, length)
-					_, err = conn.Read(_buf)
-
-					if err != nil {
-						fmt.Errorf("Error reading request body:%v", err.Error())
-					}
-					var received message.Message
-					received.Unmarshal(_buf)
-					req <- received
-					// Send a response back to person contacting us.
-					//conn.Write([]byte("Message received."))
-				}(c)
-			case <-time.After(1000.0 * time.Second):
-				fmt.Println("accepting time out..")
-			}
-		}
-	}()
-	return req, nil
-}
-
-func reqToBytes(req message.Message) ([]byte, []byte, error) {
-	reqBodyBytes, err := req.Marshal(nil)
-	if err != nil {
-		return nil, reqBodyBytes, err
-	}
-	reqHead := new(bytes.Buffer)
-	if err := binary.Write(reqHead, binary.BigEndian, int32(len(reqBodyBytes))); err != nil {
-		return nil, reqBodyBytes, err
-	}
-	return reqHead.Bytes(), reqBodyBytes, nil
-}
-
-//NetConfig p2p net config
-type NetConifg struct {
+// NetConfig defines p2p net config.
+type NetConfig struct {
 	LogPath       string
 	NodeTablePath string
 	NodeID        string
 	ListenAddr    string
+	RegisterAddr  string
 }
 
-func (conf *NetConifg) SetLogPath(path string) *NetConifg {
-	if path == "" {
-		fmt.Errorf("path of log should not be empty")
-	}
-	conf.LogPath = path
-	return conf
-}
-
-func (conf *NetConifg) SetNodeTablePath(path string) *NetConifg {
-	if path == "" {
-		fmt.Errorf("path of node table should not be empty")
-	}
-	conf.NodeTablePath = path
-	return conf
-}
-
-func (conf *NetConifg) SetNodeID(id string) *NetConifg {
-	if id == "" {
-		fmt.Errorf("node id should not be empty")
-	}
-	conf.NodeID = id
-	return conf
-}
-
-func (conf *NetConifg) SetListenAddr(addr string) *NetConifg {
-	if addr == "" {
-		fmt.Errorf("listen addr should not be empty")
-	}
-	conf.ListenAddr = addr
-	return conf
-}
-
-//BaseNetwork boot node maintain all node table, and distribute the node table to all node
+// BaseNetwork maintains all node table, and distributes the node table to all node.
 type BaseNetwork struct {
-	nodeTable  *db.LDBDatabase //all known node except remoteAddr
-	neighbours map[string]*discover.Node
-	lock       sync.RWMutex
-	peers      peerSet // manage all connection
-	RecvCh     chan message.Message
-	listener   net.Listener
-
+	nodeTable     *db.LDBDatabase //all known node except remoteAddr
+	neighbours    *sync.Map
+	lock          sync.Mutex
+	peers         peerSet // manage all connection
+	RecvCh        chan message.Message
+	listener      net.Listener
+	RecentSent    *sync.Map
 	NodeHeightMap map[string]uint64 //maintain all height of nodes higher than current height
 	localNode     *discover.Node
 
-	DownloadHeights map[uint64]uint8 //map[height]retry_times
+	DownloadHeights *sync.Map //map[height]retry_times
+	regAddr         string
 	log             *log.Logger
+
+	NodeAddedTime *sync.Map
 }
 
-// NewBaseNetwork ...
-func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
+// NewBaseNetwork returns a new BaseNetword instance.
+func NewBaseNetwork(conf *NetConfig) (*BaseNetwork, error) {
 	recv := make(chan message.Message, 100)
 	var err error
 	if conf.LogPath == "" {
@@ -280,133 +95,230 @@ func NewBaseNetwork(conf *NetConifg) (*BaseNetwork, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init log %v", err)
 	}
-
 	nodeTable, err := db.NewLDBDatabase(conf.NodeTablePath, 0, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init db %v", err)
 	}
-	neighbours := make(map[string]*discover.Node, 0)
 	NodeHeightMap := make(map[string]uint64, 0)
 	if conf.NodeID == "" {
-		conf.NodeID = string(discover.GenNodeId())
+		conf.NodeID = string(discover.GenNodeID())
 	}
 	localNode := &discover.Node{ID: discover.NodeID(conf.NodeID), IP: net.ParseIP(conf.ListenAddr)}
-	downloadHeights := make(map[uint64]uint8, 0)
 	s := &BaseNetwork{
 		nodeTable:       nodeTable,
 		RecvCh:          recv,
 		localNode:       localNode,
-		neighbours:      neighbours,
+		neighbours:      new(sync.Map),
 		log:             srvLog,
 		NodeHeightMap:   NodeHeightMap,
-		DownloadHeights: downloadHeights,
+		DownloadHeights: new(sync.Map),
+		regAddr:         conf.RegisterAddr,
+		RecentSent:      new(sync.Map),
+		NodeAddedTime:   new(sync.Map),
 	}
 	return s, nil
 }
 
-// Listen listen local port, find neighbours
+// Listen listens local port, find neighbours.
 func (bn *BaseNetwork) Listen(port uint16) (<-chan message.Message, error) {
 	bn.localNode.TCP = port
 	bn.log.D("[net] listening %v", bn.localNode)
 	var err error
-	bn.listener, err = net.Listen("tcp", bn.localNode.Addr())
+	bn.listener, err = net.Listen("tcp4", "0.0.0.0:"+strconv.Itoa(int(bn.localNode.TCP)))
 	if err != nil {
 		return bn.RecvCh, errors.New("failed to listen addr, err  = " + fmt.Sprintf("%v", err))
 	}
+	testListen, err := net.Dial("tcp4", bn.localNode.Addr())
+	if err != nil {
+		bn.log.E("Net type error!")
+		os.Exit(1)
+	}
+	testListen.Close()
 	go func() {
 		for {
 			conn, err := bn.listener.Accept()
 			if err != nil {
 				bn.log.E("[net] accept downStream node err:%v", err)
+				time.Sleep(2 * time.Second)
 				continue
 			}
 			go bn.receiveLoop(conn)
 		}
 	}()
 	//register
-	go bn.registerLoop()
-	go bn.nodeCheckLoop()
+	if bn.localNode.TCP == RegisterServerPort {
+		go bn.nodeCheckLoop()
+	} else {
+		go bn.registerLoop()
+		go bn.recentSentLoop()
+	}
 	return bn.RecvCh, nil
 }
 
-//Broadcast msg to all node in the node table
+// Broadcast broadcasts msg to all node in the node table.
 func (bn *BaseNetwork) Broadcast(msg message.Message) {
-	neighbours := bn.neighbours
-	bn.lock.Lock()
-	for _, node := range neighbours {
-		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.String())
-		msg.To = node.String()
-		go bn.broadcast(msg)
+	if msg.From == "" {
+		msg.From = bn.localNode.Addr()
 	}
-	bn.lock.Unlock()
+	from := msg.From
+
+	bn.neighbours.Range(func(k, v interface{}) bool {
+		node := v.(*discover.Node)
+		if node.Addr() == from {
+			return false
+		}
+		msg.To = node.Addr()
+		bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time, node.Addr())
+		if !bn.isRecentSent(msg) {
+			bn.broadcast(msg)
+			prometheusSendBlockTx(msg)
+		}
+		return true
+	})
 }
 
-//broadcast broadcast to all neighbours, stop broadcast when msg already broadcast
-func (bn *BaseNetwork) broadcast(msg message.Message) {
-	if msg.TTL == 0 {
-		return
-	} else {
-		msg.TTL = msg.TTL - 1
+func (bn *BaseNetwork) randomBroadcast(msg message.Message) {
+	if msg.From == "" {
+		msg.From = bn.localNode.Addr()
 	}
+	from := msg.From
+
+	targetAddrs := make([]string, 0)
+	bn.neighbours.Range(func(k, v interface{}) bool {
+		node := v.(*discover.Node)
+		if node.Addr() == from {
+			return false
+		}
+		targetAddrs = append(targetAddrs, node.Addr())
+		return true
+	})
+	if len(targetAddrs) == 0 {
+		return
+	}
+	rand.Seed(time.Now().UnixNano())
+	randomSlice := rand.Perm(len(targetAddrs))
+	for i := 0; i < len(randomSlice)/2; i++ {
+		msg.To = targetAddrs[randomSlice[i]]
+		if !bn.isRecentSent(msg) {
+			bn.log.D("[net] broad msg: type= %v, from=%v,to=%v,time=%v", msg.ReqType, msg.From, msg.To, msg.Time)
+			bn.broadcast(msg)
+			prometheusSendBlockTx(msg)
+		}
+	}
+}
+
+// broadcast broadcasts to all neighbours, stop broadcast when msg already broadcast
+func (bn *BaseNetwork) broadcast(msg message.Message) {
+	if msg.To == "" {
+		return
+	}
+	node, _ := discover.ParseNode(msg.To)
+	if msg.TTL == 0 || bn.localNode.Addr() == node.Addr() {
+		return
+	}
+	msg.TTL = msg.TTL - 1
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
-	req := newRequest(BroadcastMessage, bn.localNode.String(), data)
-	conn, err := bn.dial(msg.To)
+	req := newRequest(BroadcastMessage, bn.localNode.Addr(), data)
+	peer, err := bn.dial(msg.To)
 	if err != nil {
 		bn.log.E("[net] broadcast dial tcp got err:%v", err)
+		bn.nodeTable.Delete([]byte(msg.To))
+		bn.NodeAddedTime.Delete(msg.To)
 		return
 	}
-	if er := bn.send(conn, req); er != nil {
-		bn.peers.RemoveByNodeStr(msg.To)
+	if msg.ReqType == int32(ReqSyncBlock) || msg.ReqType == int32(ReqNewBlock) {
+		if er := bn.send(peer.blockConn, req); er != nil {
+			bn.log.E("[net] block conn sent error:%v", err)
+			bn.peers.RemoveByNodeStr(msg.To)
+		}
+	} else {
+		if er := bn.send(peer.conn, req); er != nil {
+			bn.log.E("[net] normal conn sent error:%v", err)
+			bn.peers.RemoveByNodeStr(msg.To)
+		}
 	}
 }
 
-func (bn *BaseNetwork) dial(nodeStr string) (net.Conn, error) {
+func (bn *BaseNetwork) dial(nodeStr string) (*Peer, error) {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
 	node, _ := discover.ParseNode(nodeStr)
+	if bn.localNode.Addr() == node.Addr() {
+		return nil, fmt.Errorf("dial local %v", node.Addr())
+	}
 	peer := bn.peers.Get(node)
 	if peer == nil {
 		bn.log.D("[net] dial to %v", node.Addr())
-		conn, err := net.Dial("tcp", node.Addr())
+		conn, blockConn, err := dial(node.Addr())
 		if err != nil {
-			bn.log.E("[net] dial tcp %v got err:%v", node.Addr(), err)
-			return conn, fmt.Errorf("dial tcp %v got err:%v", node.Addr(), err)
+			bn.log.E("failed to dial %v", err)
+			return nil, err
 		}
 		go bn.receiveLoop(conn)
-		peer := newPeer(conn, bn.localNode.String(), nodeStr)
+		go bn.receiveLoop(blockConn)
+		peer := newPeer(conn, blockConn, bn.localNode.Addr(), nodeStr)
 		bn.peers.Set(node, peer)
 	}
 
-	return bn.peers.Get(node).conn, nil
+	return bn.peers.Get(node), nil
 }
 
-//Send msg to msg.To
+func dial(nodeAddr string) (net.Conn, net.Conn, error) {
+	conn, err := net.Dial("tcp4", nodeAddr)
+	if err != nil {
+		if conn != nil {
+			conn.Close()
+		}
+		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: nodeAddr})
+		return nil, nil, fmt.Errorf("dial tcp %v got err:%v", nodeAddr, err)
+	}
+	blockConn, err := net.Dial("tcp4", nodeAddr)
+	if err != nil {
+		if blockConn != nil {
+			blockConn.Close()
+		}
+		log.Report(&log.MsgNode{SubType: log.Subtypes["MsgNode"][2], Log: nodeAddr})
+		return nil, nil, fmt.Errorf("dial tcp %v got err:%v", nodeAddr, err)
+	}
+	return conn, blockConn, nil
+}
+
+// Send sends msg to msg.To.
 func (bn *BaseNetwork) Send(msg message.Message) {
-	if msg.TTL == 0 {
+	if msg.To == bn.localNode.Addr() || msg.To == "" {
 		return
-	} else {
-		msg.TTL = msg.TTL - 1
 	}
 	data, err := msg.Marshal(nil)
 	if err != nil {
 		bn.log.E("[net] marshal request encountered err:%v", err)
 	}
-	bn.log.D("[net] send msg: type= %v, from=%v,to=%v,time=%v, to node: %v", msg.ReqType, msg.From, msg.To, msg.Time)
-	req := newRequest(Message, bn.localNode.String(), data)
-	conn, err := bn.dial(msg.To)
+	bn.log.D("[net] send msg: type= %v, from=%v,to=%v,time=%v", msg.ReqType, msg.From, msg.To, msg.Time)
+	req := newRequest(Message, bn.localNode.Addr(), data)
+	peer, err := bn.dial(msg.To)
 	if err != nil {
+		bn.nodeTable.Delete([]byte(msg.To))
+		bn.NodeAddedTime.Delete(msg.To)
 		bn.log.E("[net] Send, dial tcp got err:%v", err)
 		return
 	}
-	if er := bn.send(conn, req); er != nil {
-		bn.peers.RemoveByNodeStr(msg.To)
+
+	if msg.ReqType == int32(ReqSyncBlock) || msg.ReqType == int32(ReqNewBlock) {
+		if er := bn.send(peer.blockConn, req); er != nil {
+			bn.peers.RemoveByNodeStr(msg.To)
+		}
+	} else {
+		if er := bn.send(peer.conn, req); er != nil {
+			bn.peers.RemoveByNodeStr(msg.To)
+		}
 	}
+
+	prometheusSendBlockTx(msg)
 }
 
-// Close all connection
+// Close closes all connection.
 func (bn *BaseNetwork) Close(port uint16) error {
 	if bn.listener != nil {
 		bn.listener.Close()
@@ -416,7 +328,7 @@ func (bn *BaseNetwork) Close(port uint16) error {
 
 func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 	if conn == nil {
-		bn.log.E("[net] from %v,send data = %v, conn is nil", bn.localNode.String(), r)
+		bn.log.E("[net] from %v,send data = %v, conn is nil", bn.localNode.Addr(), r)
 		return nil
 	}
 	pack, err := r.Pack()
@@ -424,43 +336,94 @@ func (bn *BaseNetwork) send(conn net.Conn, r *Request) error {
 		bn.log.E("[net] pack data encountered err:%v", err)
 		return nil
 	}
+
+	conn.SetWriteDeadline(time.Now().Add(800 * time.Millisecond))
 	_, err = conn.Write(pack)
 	if err != nil {
 		bn.log.E("[net] conn write got err:%v", err)
+		conn.Close()
 	}
 	return err
 }
+func (bn *BaseNetwork) readMsg(conn net.Conn) ([]byte, error) {
 
-func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
-	defer conn.Close()
 	for {
-		scanner := bufio.NewScanner(conn)
-		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-			if !atEOF && isNetVersionMatch(data) {
-				if len(data) > 8 {
-					length := int32(0)
-					binary.Read(bytes.NewReader(data[4:8]), binary.BigEndian, &length)
-					if int(length)+8 <= len(data) {
-						return int(length) + 8, data[:int(length)+8], nil
-					}
-				}
+
+		length := int32(0)
+		revH := make([]byte, 4)
+		revL := make([]byte, 4)
+		if _, err := io.ReadFull(conn, revH); err != nil {
+			return nil, err
+		}
+
+		if !isNetVersionMatch(revH) {
+			return nil, errors.New("[net] Receive head error")
+		}
+
+		if _, err := io.ReadFull(conn, revL); err != nil {
+			return nil, err
+		}
+
+		if err := binary.Read(bytes.NewReader(revL), binary.BigEndian, &length); err != nil {
+			return nil, err
+		}
+
+		rbuf := make([]byte, length+8)
+		var n int
+		var err error
+		var rLen int
+
+		for {
+
+			if n, err = io.ReadFull(conn, rbuf[rLen+8:]); err != nil {
+				return nil, err
 			}
-			return
-		})
-		for scanner.Scan() {
-			req := new(Request)
-			req.Unpack(bytes.NewReader(scanner.Bytes()))
-			req.handle(bn, conn)
+
+			if n != len(rbuf)-8 {
+				rLen += n
+				continue
+			} else {
+				break
+			}
+
 		}
-		if err := scanner.Err(); err != nil {
-			bn.log.E("[net] invalid data packets: %v", err)
-			return
-		}
+
+		copy(rbuf[0:4], revH)
+		copy(rbuf[4:8], revL)
+
+		return rbuf, nil
 	}
-	bn.log.D("[net] recieve loop finish..")
+
+}
+func (bn *BaseNetwork) receiveLoop(conn net.Conn) {
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+	}()
+
+	for {
+
+		buf, err := bn.readMsg(conn)
+		if err != nil {
+			log.Log.E("[net] readMsg error:%v", err)
+			return
+		}
+
+		req := new(Request)
+		if err := req.Unpack(bytes.NewReader(buf)); err != nil {
+			log.Log.E("[net] req.Unpack error")
+			continue
+		}
+
+		req.handle(bn, conn)
+
+	}
+
 }
 
-//AllNodesExcludeAddr returns all the known node in the network
+// AllNodesExcludeAddr returns all the known node in the network.
 func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error) {
 	if bn.nodeTable == nil {
 		return nil, nil
@@ -481,152 +444,190 @@ func (bn *BaseNetwork) AllNodesExcludeAddr(excludeAddr string) ([]string, error)
 	return addrs, nil
 }
 
-//put node into node table of server
+// putnode puts node into node table of server.
 func (bn *BaseNetwork) putNode(addrs string) {
+	if addrs == "" {
+		return
+	}
 	addrArr := strings.Split(addrs, ",")
 	for _, addr := range addrArr {
-		if addr != "" && addr != bn.localNode.String() {
-			bn.nodeTable.Put([]byte(addr), common.Int64ToBytes(time.Now().Unix()))
+		node, err := discover.ParseNode(addr)
+		if err != nil {
+			bn.log.E("failed to ParseNode  %v,err: %v", addr, err)
+			continue
+		}
+		if addr != "" && addr != bn.localNode.Addr() {
+			_, err := bn.nodeTable.Has([]byte(addr))
+			if err != nil {
+				bn.log.E("failed to nodetable has %v, err: %v", addr, err)
+				continue
+			}
+			bn.nodeTable.Put([]byte(node.Addr()), common.IntToBytes(NodeLiveCycle))
+			if _, exist := bn.NodeAddedTime.Load(node.Addr()); !exist {
+				bn.NodeAddedTime.Store(node.Addr(), time.Now().Unix())
+			}
 		}
 	}
 	bn.findNeighbours()
 	return
 }
 
-//nodeCheckLoop inspection Last registration time of node
+// nodeCheckLoop inspections last registration time of node.
 func (bn *BaseNetwork) nodeCheckLoop() {
-	for {
-		now := time.Now().Unix()
-		iter := bn.nodeTable.NewIterator()
-		for iter.Next() {
-			if (now - common.BytesToInt64(iter.Value())) > NodeLiveThresholdSeconds {
-				bn.log.D("[net] delete node %v, cuz its last register time is %v", string(iter.Key()), common.BytesToInt64(iter.Value()))
-				bn.nodeTable.Delete(iter.Key())
-				bn.peers.RemoveByNodeStr(string(iter.Key()))
-				bn.delNeighbour(string(iter.Key()))
+	if bn.localNode.TCP == RegisterServerPort {
+		for {
+			iter := bn.nodeTable.NewIterator()
+			for iter.Next() {
+				k := iter.Key()
+				v := common.BytesToInt(iter.Value())
+				if v <= 0 {
+					bn.log.D("[net] delete node %v, cuz its last register time is %v", string(iter.Key()), common.BytesToInt64(iter.Value()))
+					bn.nodeTable.Delete(iter.Key())
+					bn.peers.RemoveByNodeStr(string(iter.Key()))
+					bn.neighbours.Delete(string(iter.Key()))
+					bn.NodeAddedTime.Delete(string(iter.Key()))
+				} else {
+					bn.nodeTable.Put(k, common.IntToBytes(v-1))
+				}
 			}
+			time.Sleep(CheckKnownNodeInterval * time.Second)
 		}
-		time.Sleep(CheckKnownNodeInterval * time.Second)
 	}
+
 }
 
-//registerLoop register local address to boot nodes
+// registerLoop registers local address to boot nodes.
 func (bn *BaseNetwork) registerLoop() {
 	for {
-		for _, encodeAddr := range params.TestnetBootnodes {
-			if bn.localNode.TCP != 30304 {
-				conn, err := bn.dial(encodeAddr)
-				if err != nil {
-					bn.log.E("[net] failed to connect boot node, err:%v", err)
-					continue
-				}
-				bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), encodeAddr)
-				req := newRequest(ReqNodeTable, bn.localNode.String(), nil)
-				if er := bn.send(conn, req); er != nil {
-					bn.peers.RemoveByNodeStr(encodeAddr)
-				}
+		if bn.localNode.TCP != RegisterServerPort && bn.regAddr != "" {
+			peer, err := bn.dial(bn.regAddr)
+			if err != nil {
+				bn.log.E("[net] failed to connect boot node, err:%v", err)
+				time.Sleep(CheckKnownNodeInterval * time.Second)
+				continue
+			}
+			bn.log.D("[net] %v request node table from %v", bn.localNode.Addr(), bn.regAddr)
+			req := newRequest(ReqNodeTable, bn.localNode.Addr(), nil)
+			if er := bn.send(peer.conn, req); er != nil {
+				bn.peers.RemoveByNodeStr(bn.regAddr)
 			}
 		}
 		time.Sleep(CheckKnownNodeInterval * time.Second)
 	}
 }
 
-//findNeighbours find neighbour nodes in the node table
+// findNeighbours finds neighbour nodes in the node table.
 func (bn *BaseNetwork) findNeighbours() {
-	nodesStr, _ := bn.AllNodesExcludeAddr(bn.localNode.String())
+	nodesStr, _ := bn.AllNodesExcludeAddr(bn.localNode.Addr())
 	nodes := make([]*discover.Node, 0)
 	for _, nodeStr := range nodesStr {
 		node, _ := discover.ParseNode(nodeStr)
 		nodes = append(nodes, node)
 	}
 	neighbours := bn.localNode.FindNeighbours(nodes)
+
+	bn.neighbours.Range(func(k, v interface{}) bool {
+		bn.neighbours.Delete(k)
+		return true
+	})
+
 	for _, n := range neighbours {
-		bn.setNeighbour(n)
+		bn.neighbours.Store(n.String(), n)
 	}
 }
 
-func (bn *BaseNetwork) setNeighbour(node *discover.Node) {
-	bn.lock.Lock()
-	defer bn.lock.Unlock()
-	bn.neighbours[node.String()] = node
+// AskABlock asks a node for a block.
+func (bn *BaseNetwork) AskABlock(height uint64, to string) error {
+	msg := message.Message{
+		Body:    common.Uint64ToBytes(height),
+		ReqType: int32(ReqDownloadBlock),
+		From:    bn.localNode.Addr(),
+		Time:    time.Now().UnixNano(),
+		To:      to,
+	}
+	bn.Send(msg)
+	return nil
 }
 
-func (bn *BaseNetwork) delNeighbour(nodeStr string) {
-	bn.lock.Lock()
-	defer bn.lock.Unlock()
-	delete(bn.neighbours, nodeStr)
+// QueryBlockHash queries blocks' hash by broadcast.
+func (bn *BaseNetwork) QueryBlockHash(start, end uint64) error {
+	hr := message.BlockHashQuery{Start: start, End: end}
+	bytes, err := hr.Marshal(nil)
+	if err != nil {
+		bn.log.D("marshal BlockHashQuery failed. err=%v", err)
+		return err
+	}
+	msg := message.Message{
+		Body:    bytes,
+		ReqType: int32(BlockHashQuery),
+		TTL:     1, //BlockHashQuery req just broadcast to its neibour
+		From:    bn.localNode.Addr(),
+		Time:    time.Now().UnixNano(),
+	}
+	bn.log.D("[net] query block hash. start=%v, end=%v, from=%v", start, end, bn.localNode.Addr())
+	bn.randomBroadcast(msg)
+	return nil
 }
 
-//Download block by height from which node in NodeHeightMap
+// Download downloads blocks by height.
 func (bn *BaseNetwork) Download(start, end uint64) error {
-	bn.lock.Lock()
 	for i := start; i <= end; i++ {
-		bn.DownloadHeights[i] = 0
+		bn.DownloadHeights.Store(uint64(i), 0)
 	}
-	bn.lock.Unlock()
 
 	for retry := 0; retry < MaxDownloadRetry; retry++ {
 		wg := sync.WaitGroup{}
 		time.Sleep(time.Duration(retry) * time.Second)
-		for downloadHeight, retryTimes := range bn.DownloadHeights {
+		bn.DownloadHeights.Range(func(k, v interface{}) bool {
+			downloadHeight, ok1 := k.(uint64)
+			retryTimes, ok2 := v.(int)
+			if !ok1 || !ok2 {
+				return true
+			}
 			if retryTimes > MaxDownloadRetry {
-				continue
+				return true
 			}
 			msg := message.Message{
 				Body:    common.Uint64ToBytes(downloadHeight),
 				ReqType: int32(ReqDownloadBlock),
 				TTL:     MsgMaxTTL,
-				From:    bn.localNode.String(),
+				From:    bn.localNode.Addr(),
 				Time:    time.Now().UnixNano(),
 			}
 			bn.log.D("[net] download height = %v  nodeMap = %v", downloadHeight, bn.NodeHeightMap)
-			bn.lock.Lock()
-			bn.DownloadHeights[downloadHeight] = retryTimes + 1
-			bn.lock.Unlock()
+			bn.DownloadHeights.Store(downloadHeight, retryTimes+1)
 			wg.Add(1)
 			go func() {
 				bn.Broadcast(msg)
 				wg.Done()
 			}()
-		}
+			return true
+		})
+
 		wg.Wait()
 	}
 	return nil
 }
 
-//CancelDownload cancel downloading block with height between start and end
+// CancelDownload cancels downloading block with height between start and end.
 func (bn *BaseNetwork) CancelDownload(start, end uint64) error {
-	bn.lock.Lock()
-	defer bn.lock.Unlock()
 	for ; start <= end; start++ {
-		delete(bn.DownloadHeights, start)
+		bn.DownloadHeights.Delete(start)
 	}
 	return nil
 }
 
-//sendTo send request to the address
-func (bn *BaseNetwork) sendTo(addr string, req *Request) {
-	conn, err := bn.dial(addr)
-	if err != nil {
-		bn.log.E("[net] dial tcp got err:%v", err)
-		return
-	}
-	if er := bn.send(conn, req); er != nil {
-		bn.peers.RemoveByNodeStr(addr)
-	}
-}
-
-//SetNodeHeightMap ...
+// SetNodeHeightMap sets a node's block height.
 func (bn *BaseNetwork) SetNodeHeightMap(nodeStr string, height uint64) {
 	bn.lock.Lock()
 	defer bn.lock.Unlock()
 	bn.NodeHeightMap[nodeStr] = height
 }
 
-//GetNodeHeightMap ...
+// GetNodeHeightMap gets a node's block height.
 func (bn *BaseNetwork) GetNodeHeightMap(nodeStr string) uint64 {
-	bn.lock.RLock()
-	defer bn.lock.RUnlock()
+	bn.lock.Lock()
+	defer bn.lock.Unlock()
 	return bn.NodeHeightMap[nodeStr]
 }
 
@@ -643,4 +644,65 @@ func randNodeMatchHeight(m map[string]uint64, downloadHeight uint64) (targetNode
 		}
 	}
 	return targetNode
+}
+
+// recentSentLoop cleans up recent sent time.
+func (bn *BaseNetwork) recentSentLoop() {
+	for {
+		bn.log.D("[net] clean up recent sent loop")
+		now := time.Now()
+		bn.RecentSent.Range(func(k, v interface{}) bool {
+			data, ok1 := k.(string)
+			t, ok2 := v.(time.Time)
+			if !ok1 || !ok2 {
+				return true
+			}
+			if t.Add(MsgLiveThresholdSeconds * time.Second).Before(now) {
+				bn.RecentSent.Delete(data)
+			}
+			return true
+		})
+
+		time.Sleep(MsgLiveThresholdSeconds * time.Second)
+	}
+}
+
+func (bn *BaseNetwork) isRecentSent(msg message.Message) bool {
+	msg.TTL = 0
+	data, err := msg.Marshal(nil)
+	if err != nil {
+		bn.log.E("[net] marshal request encountered err:%v", err)
+	}
+	h := string(common.Sha256(data))
+
+	if _, ok := bn.RecentSent.Load(h); !ok {
+		bn.RecentSent.Store(h, time.Now())
+		return false
+	}
+	return true
+}
+
+func (bn *BaseNetwork) sendNodeTable(from []byte, conn net.Conn) {
+	bn.log.D("[net] req node table from: %s", from)
+	addrs, err := bn.AllNodesExcludeAddr(string(from))
+	if err != nil {
+		bn.log.E("[net] failed to get node table, %v", err)
+	}
+	req := newRequest(NodeTable, bn.localNode.Addr(), []byte(strings.Join(addrs, ",")))
+	if er := bn.send(conn, req); er != nil {
+		bn.log.E("[net] failed to send node table,%v ", err)
+		conn.Close()
+	}
+	return
+}
+
+func prometheusSendBlockTx(req message.Message) {
+	if req.ReqType == int32(ReqPublishTx) {
+		// sendTransactionSize.Observe(float64(req.Size()))
+		sendTransactionCount.Inc()
+	}
+	if req.ReqType == int32(ReqNewBlock) {
+		// sendBlockSize.Observe(float64(req.Size()))
+		sendBlockCount.Inc()
+	}
 }

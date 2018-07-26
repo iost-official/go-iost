@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/iost-official/prototype/common"
 	"github.com/iost-official/prototype/core/tx"
 	"github.com/iost-official/prototype/rpc"
 	"github.com/spf13/cobra"
@@ -28,12 +29,7 @@ import (
 var transactionCmd = &cobra.Command{
 	Use:   "transaction",
 	Short: "find transactions",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Long:  `find transaction by publisher and nonce`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if publisher == nil || nonce == nil {
 			fmt.Println("input publisher and nonce")
@@ -47,7 +43,7 @@ to quickly create a Cobra application.`,
 		}
 		defer conn.Close()
 		client := rpc.NewCliClient(conn)
-		txRaw, err := client.GetTransaction(context.Background(), &rpc.TransactionKey{Publisher: *publisher, Nonce: int64(*nonce)})
+		txRaw, err := client.GetTransaction(context.Background(), &rpc.TransactionKey{Publisher: common.Base58Decode(*publisher), Nonce: int64(*nonce)})
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -79,5 +75,5 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// transactionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle") 
+	// transactionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

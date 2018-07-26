@@ -1,18 +1,20 @@
 package rpc
 
 import (
-	"net"
-	"google.golang.org/grpc"
 	"fmt"
+	"net"
+
+	"google.golang.org/grpc"
+	"strings"
 )
 
-const (
-	port = ":30303"
-)
+func Server(port string) error {
 
-func Server() error {
+	if !strings.HasPrefix(port, ":") {
+		port = ":" + port
+	}
 
-	lis, err := net.Listen("tcp", port)
+	lis, err := net.Listen("tcp4", port)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
@@ -22,7 +24,7 @@ func Server() error {
 		return fmt.Errorf("failed to rpc NewServer")
 	}
 
-	RegisterCliServer(s, newHttpServer())
+	RegisterCliServer(s, newRpcServer())
 
 	go s.Serve(lis)
 

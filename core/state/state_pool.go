@@ -17,7 +17,6 @@ type PoolImpl struct {
 	parent *PoolImpl
 }
 
-// 通过一个db生成新的pool
 func NewPool(db Database) Pool {
 	return &PoolImpl{
 		db:     db,
@@ -57,32 +56,32 @@ func (p *PoolImpl) Get(key Key) (Value, error) {
 		}
 	}
 	val2 := p.patch.Get(key)
-	if val2 == nil {
+	if val2 == VNil {
 		return val1, nil
 	}
-	return Merge(val1, val2)
+	return Merge(val1, val2), nil
 }
 func (p *PoolImpl) Has(key Key) bool {
 	ok := p.patch.Has(key)
-	if !ok {
-		if p.parent != nil {
-			return p.parent.Has(key)
-		} else {
-			ok, _ := p.db.Has(key)
-			return ok
-		}
-	} else {
+	if ok {
 		val := p.patch.Get(key)
-		if val == VNil {
+		if val == VDelete {
 			return false
-		} else {
+		} else if val != VNil {
 			return true
 		}
 	}
 
+	if p.parent != nil {
+		return p.parent.Has(key)
+	} else {
+		ok, _ := p.db.Has(key)
+		return ok
+	}
+
 }
 func (p *PoolImpl) Delete(key Key) {
-	p.patch.Put(key, VNil)
+	p.patch.Put(key, VDelete)
 }
 
 func (p *PoolImpl) Flush() error {
@@ -90,22 +89,36 @@ func (p *PoolImpl) Flush() error {
 		p.parent.Flush()
 	}
 	for k, v := range p.patch.m {
-		if v.Type() != Nil {
+		switch {
+		case v == VDelete:
+			p.db.Delete(k)
+		case v.Type() == Map:
+			vm := v.(*VMap)
+			for f, v := range vm.m {
+				v0, err := p.db.GetHM(k, f)
+				if err != nil {
+					return err
+				}
+				val := Merge(v0, v)
+				p.db.PutHM(k, f, val)
+			}
+		default:
 			val0, err := p.db.Get(k)
-			val, err := Merge(val0, v)
 			if err != nil {
 				return err
 			}
+			val := Merge(val0, v)
+
 			p.db.Put(k, val)
-		} else {
-			p.db.Delete(k)
 		}
 	}
+	p.patch = Patch{make(map[Key]Value)}
 	p.parent = nil
 	return nil
 }
 
 func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
+
 	var err error
 
 	var val1 Value
@@ -119,32 +132,27 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 		if err != nil {
 			val1 = VNil
 		}
+		//fmt.Println("in GetHM get parent: ", key, field, val1)
 	}
 
 	val2 := p.patch.Get(key)
-	if val2 == nil {
-		return val1, nil
-	}
 	if val2 == VNil {
 		return val1, nil
 	} else {
 		if val2.Type() != Map {
 			return nil, fmt.Errorf("type error : %v is not a hashmap", key)
 		}
-		val3, err := val2.(*VMap).Get(field)
-		if err != nil {
-			return nil, err
-		}
+		val3 := val2.(*VMap).Get(field)
 
-		return Merge(val1, val3)
+		return Merge(val1, val3), nil
 	}
 }
 func (p *PoolImpl) PutHM(key, field Key, value Value) error {
 	if ok := p.patch.Has(key); ok {
 		m := p.patch.Get(key)
-
 		if m.Type() == Map {
 			m.(*VMap).Set(field, value)
+			p.patch.Put(key, m)
 			return nil
 		}
 	}
@@ -154,14 +162,46 @@ func (p *PoolImpl) PutHM(key, field Key, value Value) error {
 	return nil
 }
 
+func (p *PoolImpl) MergeParent() (Pool, error) {
+	bak := *(p.parent)
+	for k, v := range p.patch.m {
+		switch {
+		case v == VDelete:
+			bak.Delete(k)
+		case v.Type() == Map:
+			vm := v.(*VMap)
+			for f, v := range vm.m {
+				v0, err := bak.GetHM(k, f)
+				if err != nil {
+					return nil, err
+				}
+				val := Merge(v0, v)
+				bak.PutHM(k, f, val)
+			}
+		default:
+			val0, err := bak.Get(k)
+			if err != nil {
+				return nil, err
+			}
+			val := Merge(val0, v)
+			bak.Put(k, val)
+		}
+	}
+	return &bak, nil
+}
+
+func (p *PoolImpl) Parent() *PoolImpl {
+	return p.parent
+}
+
 var StdPool Pool
 
 var once sync.Once
 
-func init() {
-	bdb, err := db.DatabaseFactor("redis")
+func PoolInstance() error {
+	bdb, err := db.DatabaseFactory("redis")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	mdb := NewDatabase(bdb)
 	if StdPool == nil {
@@ -169,4 +209,6 @@ func init() {
 			StdPool = NewPool(mdb)
 		})
 	}
+
+	return nil
 }
