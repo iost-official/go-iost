@@ -3,8 +3,8 @@ package tx
 import (
 	"testing"
 
-	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/vm/lua"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

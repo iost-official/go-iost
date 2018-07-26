@@ -5,10 +5,11 @@
 package protocol_mock
 
 import (
-	gomock "github.com/golang/mock/gomock"
-	message "github.com/iost-official/prototype/core/message"
-	network "github.com/iost-official/prototype/network"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+	message "github.com/iost-official/Go-IOS-Protocol/core/message"
+	network "github.com/iost-official/Go-IOS-Protocol/network"
 )
 
 // MockRouter is a mock of Router interface
