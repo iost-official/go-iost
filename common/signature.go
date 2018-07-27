@@ -3,7 +3,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/iost-official/prototype/log"
+	"github.com/iost-official/Go-IOS-Protocol/log"
 )
 
 //go:generate gencode go -schema=structs.schema -package=common

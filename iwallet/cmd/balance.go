@@ -19,9 +19,9 @@ import (
 
 	"context"
 
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/rpc"
-	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/rpc"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )

@@ -2,8 +2,8 @@ package pob
 
 import (
 	"errors"
-	"github.com/iost-official/prototype/core/blockcache"
-	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"sync"
 )
 

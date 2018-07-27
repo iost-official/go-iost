@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 var (

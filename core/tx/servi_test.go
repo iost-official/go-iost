@@ -2,8 +2,8 @@ package tx
 
 import (
 	"fmt"
-	"github.com/iost-official/prototype/account"
-	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 	. "github.com/smartystreets/goconvey/convey"
 	"os"
 	"testing"
@@ -13,7 +13,7 @@ func TestNewServi(t *testing.T) {
 	Convey("test servi", t, func() {
 		gopath := os.Getenv("GOPATH")
 		fmt.Println(gopath)
-		serviDb := gopath + "/src/github.com/iost-official/prototype/core/tx/serviDb"
+		serviDb := gopath + "/src/github.com/iost-official/Go-IOS-Protocol/core/tx/serviDb"
 		serviDb2 := gopath + "/src/github.com/iost-official/serviDb"
 
 		delDir := os.RemoveAll(serviDb)
@@ -59,7 +59,7 @@ func TestInitServi(t *testing.T) {
 	Convey("test servi", t, func() {
 		gopath := os.Getenv("GOPATH")
 		fmt.Println(gopath)
-		serviDb := gopath + "/src/github.com/iost-official/prototype/core/tx/serviDb"
+		serviDb := gopath + "/src/github.com/iost-official/Go-IOS-Protocol/core/tx/serviDb"
 		serviDb2 := gopath + "/src/github.com/iost-official/serviDb"
 
 		delDir := os.RemoveAll(serviDb)
@@ -120,7 +120,7 @@ func TestClearHm(t *testing.T) {
 	Convey("test clear hm", t, func() {
 		gopath := os.Getenv("GOPATH")
 		fmt.Println(gopath)
-		serviDb := gopath + "/src/github.com/iost-official/prototype/core/tx/serviDb"
+		serviDb := gopath + "/src/github.com/iost-official/Go-IOS-Protocol/core/tx/serviDb"
 		serviDb2 := gopath + "/src/github.com/iost-official/serviDb"
 
 		delDir := os.RemoveAll(serviDb)
@@ -178,7 +178,7 @@ func TestStoreServi(t *testing.T) {
 	Convey("test servi", t, func() {
 		gopath := os.Getenv("GOPATH")
 		fmt.Println(gopath)
-		serviDb := gopath + "/src/github.com/iost-official/prototype/core/tx/serviDb"
+		serviDb := gopath + "/src/github.com/iost-official/Go-IOS-Protocol/core/tx/serviDb"
 		serviDb2 := gopath + "/src/github.com/iost-official/serviDb"
 
 		delDir := os.RemoveAll(serviDb)

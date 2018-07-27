@@ -7,13 +7,13 @@ import (
 
 	"time"
 
-	"github.com/iost-official/prototype/account"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/db"
-	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/vm/lua"
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

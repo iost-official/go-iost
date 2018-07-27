@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/iost-official/prototype/rpc"
+	"github.com/iost-official/Go-IOS-Protocol/rpc"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )

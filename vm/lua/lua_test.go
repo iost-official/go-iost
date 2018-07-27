@@ -8,9 +8,9 @@ import (
 	"bytes"
 
 	"github.com/iost-official/gopher-lua"
-	"github.com/iost-official/prototype/core/state"
-	db2 "github.com/iost-official/prototype/db"
-	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	db2 "github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

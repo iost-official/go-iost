@@ -1,10 +1,10 @@
 package block
 
 import (
-	"github.com/iost-official/prototype/account"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

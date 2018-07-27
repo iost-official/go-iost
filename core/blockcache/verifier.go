@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/flybikeGx/easy-timeout/timelimit"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/verifier"
-	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/verifier"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
