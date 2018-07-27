@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sync"
 
-	common "github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core/tx"
+	common "github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 )
 
 var ErrIllegalTx = errors.New("illegal tx")

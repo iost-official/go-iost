@@ -5,8 +5,8 @@ import (
 
 	"fmt"
 
-	. "github.com/iost-official/prototype/network"
-	"github.com/iost-official/prototype/network/discover"
+	. "github.com/iost-official/Go-IOS-Protocol/network"
+	"github.com/iost-official/Go-IOS-Protocol/network/discover"
 )
 
 func main() {

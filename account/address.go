@@ -7,7 +7,7 @@ package account
 //	"github.com/LoCCS/bliss"
 //	"github.com/LoCCS/bliss/params"
 //	"github.com/LoCCS/bliss/sampler"
-//	"github.com/iost-official/prototype/common/hash"
+//	"github.com/iost-official/Go-IOS-Protocol/common/hash"
 //)
 //
 //const (

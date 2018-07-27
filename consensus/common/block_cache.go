@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"errors"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 )
 
 //const (

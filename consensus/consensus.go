@@ -3,10 +3,10 @@ package consensus
 import (
 	"sync"
 
-	"github.com/iost-official/prototype/account"
-	"github.com/iost-official/prototype/consensus/pob2"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/pob2"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
 )
 
 type TxStatus int

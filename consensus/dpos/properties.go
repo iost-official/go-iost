@@ -4,9 +4,9 @@ import (
 	"errors"
 	"sort"
 
-	. "github.com/iost-official/prototype/account"
-	. "github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core/block"
+	. "github.com/iost-official/Go-IOS-Protocol/account"
+	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 )
 
 type globalStaticProperty struct {

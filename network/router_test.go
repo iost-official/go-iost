@@ -11,7 +11,7 @@ import (
 
 	"sync"
 
-	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 var secureKeyPrefix = []byte("secure-key-")

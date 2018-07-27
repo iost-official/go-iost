@@ -6,18 +6,18 @@ import (
 	. "github.com/golang/mock/gomock"
 	"testing"
 
-	"github.com/iost-official/prototype/account"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/message"
-	"github.com/iost-official/prototype/core/mocks"
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/network"
-	"github.com/iost-official/prototype/network/mocks"
-	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/vm/lua"
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/network"
+	"github.com/iost-official/Go-IOS-Protocol/network/mocks"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
 	"os/exec"
 	"sync"
@@ -183,7 +183,7 @@ func TestRunGenerateBlock(t *testing.T) {
 //clear BlockDB and TxDB files before running this test
 func TestRunConfirmBlock(t *testing.T) {
 	Convey("Test of Run ConfirmBlock", t, func() {
-		cmd := exec.Command("/bin/bash", "-c", "cd $GOPATH/src/github.com/iost-official/prototype/consensus/pob2 && rm -rf blockDB txDB")
+		cmd := exec.Command("/bin/bash", "-c", "cd $GOPATH/src/github.com/iost-official/Go-IOS-Protocol/consensus/pob2 && rm -rf blockDB txDB")
 		cmd.Run()
 		p, accList, witnessList := envinit(t)
 		_tx := genTx(p, 998)

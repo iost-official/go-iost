@@ -3,11 +3,11 @@ package block
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"strconv"
 	"sync"
-	//"github.com/iost-official/prototype/log"
+	//"github.com/iost-official/Go-IOS-Protocol/log"
 )
 
 var (

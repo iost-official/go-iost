@@ -7,9 +7,9 @@ import (
 
 	"os"
 
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core/message"
-	"github.com/iost-official/prototype/network/discover"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/network/discover"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

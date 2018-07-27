@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

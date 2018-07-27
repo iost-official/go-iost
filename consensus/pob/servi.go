@@ -3,7 +3,7 @@ package pob
 import (
 	"math"
 
-	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
 const base float64 = 1.0

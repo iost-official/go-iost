@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

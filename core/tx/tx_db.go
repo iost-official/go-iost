@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 type TxPoolDb struct {

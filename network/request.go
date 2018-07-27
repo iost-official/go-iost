@@ -10,8 +10,8 @@ import (
 
 	"net"
 
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/message"
 )
 
 type NetReqType int16

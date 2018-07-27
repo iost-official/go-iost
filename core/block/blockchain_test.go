@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

@@ -9,8 +9,8 @@ import (
 
 	"time"
 
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/params"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/params"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

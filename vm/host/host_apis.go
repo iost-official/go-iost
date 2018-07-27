@@ -1,8 +1,8 @@
 package host
 
 import (
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/log"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/log"
 )
 
 var l log.Logger

@@ -17,8 +17,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/spf13/cobra"
 )
 

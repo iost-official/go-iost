@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 // Transaction Pool 实现内存Map存储

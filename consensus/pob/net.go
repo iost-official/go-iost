@@ -1,10 +1,10 @@
 package pob
 
 import (
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/message"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/network"
 )
 
 type Net struct {

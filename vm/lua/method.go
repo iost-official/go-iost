@@ -1,6 +1,6 @@
 package lua
 
-import "github.com/iost-official/prototype/vm"
+import "github.com/iost-official/Go-IOS-Protocol/vm"
 
 // Method lua方法接口的实现
 type Method struct {

@@ -7,8 +7,8 @@ import (
 
 	"regexp"
 
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
 const (

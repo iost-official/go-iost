@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/iost-official/prototype/consensus"
-	"github.com/iost-official/prototype/consensus/pob2"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/message"
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/core/tx"
-	"github.com/iost-official/prototype/network"
-	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/Go-IOS-Protocol/consensus"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/pob2"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/network"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
-//go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/prototype/rpc CliServer
+//go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/Go-IOS-Protocol/rpc CliServer
 
 type BInfo struct {
 	Head  block.BlockHead

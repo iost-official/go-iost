@@ -1,10 +1,10 @@
 package dpos
 
 import (
-	"github.com/iost-official/prototype/account"
-	. "github.com/iost-official/prototype/account"
-	. "github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	. "github.com/iost-official/Go-IOS-Protocol/account"
+	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

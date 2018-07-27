@@ -3,10 +3,10 @@ package trie
 import (
 	"errors"
 	"fmt"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/common/trie/prque"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/common/trie/prque"
 
-	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 var ErrNotRequested = errors.New("not requested")

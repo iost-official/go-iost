@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/InWeCrypto/sha3"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/common/rlp"
-	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/common/rlp"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 func Keccak256(data ...[]byte) []byte {

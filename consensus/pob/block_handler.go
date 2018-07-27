@@ -5,10 +5,10 @@ import (
 
 	"errors"
 
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 )
 
 const MaxTxInBlock = 1000
