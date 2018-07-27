@@ -2,16 +2,16 @@ FROM golang:1.10
 
 RUN go get github.com/kardianos/govendor
 # copy source code
-COPY . /go/src/github.com/iost-official/prototype/
+COPY . /go/src/github.com/iost-official/Go-IOS-Protocol/
 # install modules
-RUN cd /go/src/github.com/iost-official/prototype/ && govendor sync -v
+RUN cd /go/src/github.com/iost-official/Go-IOS-Protocol/ && govendor sync -v
 RUN go get github.com/golang/protobuf/proto github.com/iost-official/gopher-lua github.com/mitchellh/go-homedir
 RUN go get golang.org/x/net/context google.golang.org/grpc
 
 # build iwallet cmd
-RUN go build -o $GOPATH/bin/iwallet github.com/iost-official/prototype/iwallet
+RUN go build -o $GOPATH/bin/iwallet github.com/iost-official/Go-IOS-Protocol/iwallet
 # build iserver
-RUN go build  -o $GOPATH/bin/iserver github.com/iost-official/prototype/iserver
+RUN go build  -o $GOPATH/bin/iserver github.com/iost-official/Go-IOS-Protocol/iserver
 
 EXPOSE 30302
 EXPOSE 30303
