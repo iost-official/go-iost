@@ -1,7 +1,7 @@
 package consensus_common
 
 import (
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/Go-IOS-Protocol/core"
 )
 
 type CachedBlockChain struct {

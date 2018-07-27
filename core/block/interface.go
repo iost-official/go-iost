@@ -1,6 +1,6 @@
 package block
 
-//go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/prototype/core BlockChain
+//go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core BlockChain
 
 // Block chain
 type Chain interface {

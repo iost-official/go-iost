@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/iost-official/prototype/db"
-	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/network"
 )
 
 type Console struct {

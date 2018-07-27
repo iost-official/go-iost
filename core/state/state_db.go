@@ -1,6 +1,6 @@
 package state
 
-import "github.com/iost-official/prototype/db"
+import "github.com/iost-official/Go-IOS-Protocol/db"
 
 type Database struct {
 	db db.Database

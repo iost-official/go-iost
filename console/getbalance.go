@@ -2,7 +2,7 @@ package console
 
 import (
 	"fmt"
-	"github.com/iost-official/prototype/tx/tx"
+	"github.com/iost-official/Go-IOS-Protocol/tx/tx"
 )
 
 func Getbalance() Cmd {

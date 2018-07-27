@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/iost-official/prototype/core/message"
-	"github.com/iost-official/prototype/db"
+	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 type RequestHead struct {

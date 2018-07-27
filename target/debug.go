@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "github.com/iost-official/prototype/console"
+	. "github.com/iost-official/Go-IOS-Protocol/console"
 	"sync"
 )
 

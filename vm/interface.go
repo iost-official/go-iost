@@ -4,8 +4,8 @@ Vm package define vm of smart contract. Use verifier/ to verify txs and blocks
 package vm
 
 import (
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
 )
 
 type Privilege int
@@ -17,7 +17,7 @@ const (
 )
 
 //go:generate gencode go -schema=structs.schema -package=vm
-//go:generate mockgen -destination mocks/mock_contract.go -package vm_mock github.com/iost-official/prototype/vm Contract
+//go:generate mockgen -destination mocks/mock_contract.go -package vm_mock github.com/iost-official/Go-IOS-Protocol/vm Contract
 
 // code type, can be compile to contract
 // 代码类型的别名，可以编译为contract

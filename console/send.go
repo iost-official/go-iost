@@ -1,7 +1,7 @@
 package console
 
 import (
-	"github.com/iost-official/prototype/tx/tx"
+	"github.com/iost-official/Go-IOS-Protocol/tx/tx"
 	"strconv"
 )
 

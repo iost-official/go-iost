@@ -7,11 +7,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/db"
-	"github.com/iost-official/prototype/network"
-	"github.com/iost-official/prototype/tx/min_framework"
-	"github.com/iost-official/prototype/tx/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core"
+	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/network"
+	"github.com/iost-official/Go-IOS-Protocol/tx/min_framework"
+	"github.com/iost-official/Go-IOS-Protocol/tx/tx"
 )
 
 func Connect() Cmd {

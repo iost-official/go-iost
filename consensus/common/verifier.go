@@ -3,8 +3,8 @@ package consensus_common
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core"
 )
 
 // 验证块头正确性，调用此函数时块的父亲节点已经找到

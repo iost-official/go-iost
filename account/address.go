@@ -2,7 +2,7 @@ package account
 
 import (
   "fmt"
-  "github.com/iost-official/prototype/all_hash"
+  "github.com/iost-official/Go-IOS-Protocol/all_hash"
   "github.com/LoCCS/bliss"
   "github.com/LoCCS/bliss/sampler"
   "github.com/LoCCS/bliss/params"

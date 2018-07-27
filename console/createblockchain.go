@@ -1,6 +1,6 @@
 package console
 
-import "github.com/iost-official/prototype/tx/tx"
+import "github.com/iost-official/Go-IOS-Protocol/tx/tx"
 
 func Createblockchain() Cmd {
 	c := Cmd{

@@ -1,8 +1,8 @@
 package core
 
 import (
-	"github.com/iost-official/prototype/core/block"
-	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/network"
 )
 
 type TxStatus int

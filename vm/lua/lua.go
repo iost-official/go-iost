@@ -3,10 +3,10 @@ package lua
 import (
 	"fmt"
 	"github.com/iost-official/gopher-lua"
-	"github.com/iost-official/prototype/common"
-	"github.com/iost-official/prototype/core/state"
-	"github.com/iost-official/prototype/vm"
-	"github.com/iost-official/prototype/vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 //go:generate gencode go -schema=structs.schema -package=lua

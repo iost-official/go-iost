@@ -7,8 +7,8 @@ import (
 
 	"strconv"
 
-	"github.com/iost-official/prototype/core/message"
-	"github.com/iost-official/prototype/network"
+	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/network"
 )
 
 var listenPort = flag.String("p", "30302", "go run main.go or go run main.go -p 30305 -s 127.0.0.1:30302")

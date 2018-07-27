@@ -2,8 +2,8 @@ package consensus_common
 
 import (
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/core/mocks"
+	"github.com/iost-official/Go-IOS-Protocol/core"
+	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

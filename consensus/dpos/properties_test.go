@@ -1,8 +1,8 @@
 package dpos
 
 import (
-	. "github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core"
+	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/core"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

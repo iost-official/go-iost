@@ -3,7 +3,7 @@ package network
 import (
 	"fmt"
 
-	"github.com/iost-official/prototype/network/discover"
+	"github.com/iost-official/Go-IOS-Protocol/network/discover"
 )
 
 // Protocol represents a P2P subprotocol implementation.

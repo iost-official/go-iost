@@ -2,7 +2,7 @@ package lua
 
 import (
 	"github.com/iost-official/gopher-lua"
-	"github.com/iost-official/prototype/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/core/state"
 )
 
 func Lua2Core(value lua.LValue) state.Value {

@@ -3,7 +3,7 @@ package account
 import (
 	"testing"
 
-	. "github.com/iost-official/prototype/common"
+	. "github.com/iost-official/Go-IOS-Protocol/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

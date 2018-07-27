@@ -5,12 +5,12 @@ import (
 
 	. "github.com/bouk/monkey"
 	. "github.com/golang/mock/gomock"
-	"github.com/iost-official/prototype/common"
-	. "github.com/iost-official/prototype/consensus/common"
-	"github.com/iost-official/prototype/core"
-	"github.com/iost-official/prototype/network/mocks"
-	"github.com/iost-official/prototype/p2p"
-	"github.com/iost-official/prototype/vm"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/core"
+	"github.com/iost-official/Go-IOS-Protocol/network/mocks"
+	"github.com/iost-official/Go-IOS-Protocol/p2p"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 	. "github.com/smartystreets/goconvey/convey"
 	"time"
 )

@@ -3,7 +3,7 @@ package network
 import (
 	"fmt"
 
-	"github.com/iost-official/prototype/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/core/message"
 )
 
 //ReqType Marked request types using by protocol
