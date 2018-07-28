@@ -5,8 +5,6 @@ import (
 
 	"bytes"
 
-	"fmt"
-
 	. "github.com/iost-official/Go-IOS-Protocol/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -32,7 +30,7 @@ func TestMember(t *testing.T) {
 		Convey("sec to pub", func() {
 			m, err := NewAccount(Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4"))
 			So(err, ShouldBeNil)
-			fmt.Println(Base58Encode(m.Pubkey))
+			So(Base58Encode(m.Pubkey), ShouldEqual, "iWgLQj3VTPN4dZnomuJMMCggv22LFw4nAkA6bmrVsmCo")
 		})
 	})
 }

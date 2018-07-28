@@ -1,12 +1,8 @@
 package account
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
-	"math/rand"
-	"time"
-
+	"crypto/rand"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
@@ -55,14 +51,8 @@ func (member *Account) GetId() string {
 }
 
 func randomSeckey() []byte {
-	rand.Seed(time.Now().UnixNano())
-	bin := new(bytes.Buffer)
-	for i := 0; i < 4; i++ {
-		b := make([]byte, 8)
-		binary.BigEndian.PutUint64(b, rand.Uint64())
-		bin.Write(b)
-	}
-	seckey := bin.Bytes()
+	seckey := make([]byte, 32)
+	rand.Read(seckey)
 	return seckey
 }
 
