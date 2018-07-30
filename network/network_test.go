@@ -1,11 +1,9 @@
 package network
 
 import (
-	"testing"
-
-	"time"
-
 	"os"
+	"testing"
+	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
@@ -15,7 +13,7 @@ import (
 
 func TestBaseNetwork_AllNodesExcludeAddr(t *testing.T) {
 	Convey("AllNodesExcludeAddr", t, func() {
-		baseNet, _ := NewBaseNetwork(&NetConifg{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		baseNet, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
 		iter := baseNet.nodeTable.NewIterator()
 		for iter.Next() {
 			baseNet.nodeTable.Delete(iter.Key())
@@ -49,15 +47,15 @@ func cleanLDB() {
 func TestBaseNetwork_recentSentLoop(t *testing.T) {
 	Convey("recentSentLoop", t, func() {
 		cleanLDB()
-		baseNet, _ := NewBaseNetwork(&NetConifg{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
-		baseNet.RecentSent["test_expired"] = time.Now().Add(-(MsgLiveThresholdSeconds + 1) * time.Second)
-		baseNet.RecentSent["test_not_expired"] = time.Now()
+		baseNet, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		baseNet.RecentSent.Store("test_expired", time.Now().Add(-(MsgLiveThresholdSeconds+1)*time.Second))
+		baseNet.RecentSent.Store("test_not_expired", time.Now())
 		go func() {
 			baseNet.recentSentLoop()
 		}()
 		time.Sleep(20 * time.Millisecond)
-		_, ok1 := baseNet.RecentSent["test_expired"]
-		_, ok2 := baseNet.RecentSent["test_not_expired"]
+		_, ok1 := baseNet.RecentSent.Load("test_expired")
+		_, ok2 := baseNet.RecentSent.Load("test_not_expired")
 		So(ok1, ShouldBeFalse)
 		So(ok2, ShouldBeTrue)
 		cleanLDB()
@@ -67,7 +65,7 @@ func TestBaseNetwork_recentSentLoop(t *testing.T) {
 func TestBaseNetwork_isRecentSent(t *testing.T) {
 	Convey("isRecentSent", t, func() {
 		cleanLDB()
-		baseNet, _ := NewBaseNetwork(&NetConifg{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		baseNet, _ := NewBaseNetwork(&NetConfig{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
 		msg := message.Message{From: "sender", Time: time.Now().UnixNano(), To: "192.168.1.34:20003", Body: []byte{22, 11, 125}, TTL: 2}
 		is := baseNet.isRecentSent(msg)
 		So(is, ShouldBeFalse)
@@ -99,21 +97,34 @@ var addresses = []string{
 func TestBaseNetwork_findNeighbours(t *testing.T) {
 	Convey("findNeighbours", t, func() {
 		cleanLDB()
-		bn, _ := NewBaseNetwork(&NetConifg{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		bn, _ := NewBaseNetwork(&NetConfig{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
 		for _, addr := range addresses {
 			bn.putNode(addr)
 		}
-		So(len(bn.neighbours), ShouldEqual, discover.MaxNeighbourNum)
-		_, ok1 := bn.neighbours["@"+addresses[7]]
+		var neighbourLen int
+		bn.neighbours.Range(func(k, v interface{}) bool {
+			neighbourLen++
+			return true
+		})
+		So(neighbourLen, ShouldEqual, discover.MaxNeighbourNum)
+		_, ok1 := bn.neighbours.Load("@" + addresses[7])
 		So(ok1, ShouldBeFalse)
-		_, ok2 := bn.neighbours["@"+addresses[6]]
+		_, ok2 := bn.neighbours.Load("@" + addresses[6])
 		So(ok2, ShouldBeFalse)
 
-		for _, v := range bn.neighbours {
-			bn.delNeighbour(v.String())
-			bn.nodeTable.Delete([]byte(v.Addr()))
-		}
-		So(len(bn.neighbours), ShouldEqual, 0)
+		bn.neighbours.Range(func(k, v interface{}) bool {
+			node := v.(*discover.Node)
+			bn.neighbours.Delete(node.String())
+			bn.nodeTable.Delete([]byte(node.Addr()))
+			return true
+		})
+
+		neighbourLen = 0
+		bn.neighbours.Range(func(k, v interface{}) bool {
+			neighbourLen++
+			return true
+		})
+		So(neighbourLen, ShouldEqual, 0)
 		cleanLDB()
 	})
 
@@ -122,7 +133,7 @@ func TestBaseNetwork_findNeighbours(t *testing.T) {
 func TestBaseNetwork_putNode(t *testing.T) {
 	Convey("putNode", t, func() {
 		cleanLDB()
-		bn, _ := NewBaseNetwork(&NetConifg{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		bn, _ := NewBaseNetwork(&NetConfig{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
 
 		bn.putNode(addresses[0])
 		b, err := bn.nodeTable.Get([]byte(addresses[0]))
@@ -144,39 +155,6 @@ func TestBaseNetwork_putNode(t *testing.T) {
 func TestBaseNetwork_registerLoop(t *testing.T) {
 	Convey("registerLoop", t, func() {
 		cleanLDB()
-		//server, _ := NewBaseNetwork(&NetConifg{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
-		//server.Listen(RegisterServerPort)
-		//
-		//net1, _ := NewBaseNetwork(&NetConifg{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_1"})
-		//net1.Listen(30311)
-		//
-		//net2, _ := NewBaseNetwork(&NetConifg{RegisterAddr: registerAddr, ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_2"})
-		//net2.Listen(30312)
-		//
-		//time.Sleep(2000 * time.Millisecond)
-		//
-		//ok, _ := net2.nodeTable.Has([]byte("127.0.0.1:30311"))
-		//
-		//So(ok, ShouldBeTrue)
-		//ok, _ = net1.nodeTable.Has([]byte("127.0.0.1:30312"))
-		//So(ok, ShouldBeTrue)
-		//
-		//net1.nodeTable.Delete([]byte("127.0.0.1:30312"))
-		//net2.nodeTable.Delete([]byte("127.0.0.1:30311"))
-		//
-		//net1.peers.RemoveByNodeStr("127.0.0.1:30312")
-		//net1.peers.RemoveByNodeStr("127.0.0.1:30304")
-		//net2.peers.RemoveByNodeStr("127.0.0.1:30311")
-		//net2.peers.RemoveByNodeStr("127.0.0.1:30304")
-		//
-		//iter := server.nodeTable.NewIterator()
-		//for iter.Next() {
-		//	server.nodeTable.Delete(iter.Key())
-		//}
-		//iter.Release()
-		//server.listener.Close()
-		//net1.listener.Close()
-		//net2.listener.Close()
 		cleanLDB()
 	})
 }

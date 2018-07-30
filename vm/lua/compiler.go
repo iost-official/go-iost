@@ -1,9 +1,7 @@
 package lua
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,13 +10,16 @@ import (
 )
 
 var (
-	// ErrNoMain 代码中未包含main函数
-	ErrNoMain = errors.New("parse failed: no main function")
-	// ErrIllegalCode 代码中包含\\0字符
-	ErrIllegalCode = errors.New("parse failed: Text contains character \\0")
+	// compile errors
+	ErrNoMain      = errors.New("parse failed: no main function")
+	ErrIllegalCode = errors.New("parse failed: non function code included")
+	ErrNoGasPrice  = errors.New("parse failed: no gas price")
+	ErrNoGasLimit  = errors.New("parse failed: no gas limit")
+	ErrNoParamCnt  = errors.New("parse failed: param count not given")
+	ErrNoRtnCnt    = errors.New("parse failed: return count not given")
 )
 
-// DocCommentParser 装入text之后调用parse即可得到contract
+// DocCommentParser parser of codes
 type DocCommentParser struct {
 	Debug bool
 	text  string // always ends with \0, which doesn't appear elsewhere
@@ -28,92 +29,197 @@ type DocCommentParser struct {
 
 func NewDocCommentParser(text string) (*DocCommentParser, error) {
 	parser := new(DocCommentParser)
-	if strings.Contains(text, "\\0") {
-		return nil, ErrIllegalCode
-	}
-	parser.text = text + "\\0"
+	strings.Replace(text, "\\0", "", -1)
+	parser.text = text
 	parser.Debug = false
 	return parser, nil
 }
 
-func (p *DocCommentParser) Parse() (*Contract, error) {
-	//0. preprocess
-	//
-	//1. checking exsistence of main function
-	//2. detecting all functions and split them.
-	//3. Parse doccomment for each function.
-	//4. return contract
+func optionalMatchOne(re *regexp.Regexp, s string) (sub string, ok bool) {
+	ss := re.FindStringSubmatch(s)
+	if len(ss) < 1 {
+		return "", false
+	} else {
+		sub = ss[1]
+		ok = true
+		return
+	}
+}
 
-	// 没有doc comment的代码将被忽略
+func matchIntOne(code, re string) (int64, error) {
+	gasRe := regexp.MustCompile(re)
+	gas0, ok := optionalMatchOne(gasRe, code)
+	if !ok {
+		return 0, errors.New("no match")
+	}
+	return strconv.ParseInt(gas0, 10, 64)
+}
 
-	content := p.text
+func matchFloatOne(code, re string) (float64, error) {
+	priceRe := regexp.MustCompile(re)
+	price0, ok := optionalMatchOne(priceRe, code)
+	if !ok {
+		return 0, errors.New("no match")
+	}
+	return strconv.ParseFloat(price0, 64)
+}
 
-	re := regexp.MustCompile("--- .*\n(-- .*\n)*") //匹配全部注释代码
+func matchGasPrice(code string) (gasPrice float64, err error) {
+	return matchFloatOne(code, "@gas_price ([+]?([0-9]*[.])?[0-9]+)")
+}
 
-	hasMain := false
-	var contract Contract
+func matchGasLimit(code string) (gasLimit int64, err error) {
+	return matchIntOne(code, "@gas_limit (\\d+)")
+}
 
-	var buffer bytes.Buffer
+func matchPublisher(code string) (publisher string, err error) {
+	publisherRe := regexp.MustCompile("@publisher ([a-zA-Z1-9]+)")
+	match, ok := optionalMatchOne(publisherRe, code)
+	if !ok {
+		return "", errors.New("publisher undefined")
+	}
+	return match, nil
+}
 
-	for _, submatches := range re.FindAllStringSubmatchIndex(content, -1) {
-		/*
-			--- <functionName>  summary
-			-- some description
-			-- ...
-			-- ...
-			-- @gas_limit <gasLimit>
-			-- @gas_price <gasPrice>
-			-- @param_cnt <paramCnt>
-			-- @return_cnt <returnCnt>
-		*/
-		funcName := strings.Split(content[submatches[0]:submatches[1]], " ")[1]
-
-		inputCountRe := regexp.MustCompile("@param_cnt (\\d+)")
-		rtnCountRe := regexp.MustCompile("@return_cnt (\\d+)")
-
-		inputCount, _ := strconv.Atoi(inputCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1])
-		rtnCount, _ := strconv.Atoi(rtnCountRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1])
-		method := NewMethod(vm.Public, funcName, inputCount, rtnCount) // TODO 从代码中获取权限信息
-
-		//匹配代码部分
-
-		endRe := regexp.MustCompile("end")
-		endPos := endRe.FindStringIndex(content[submatches[1]:])
-
-		//code part: content[submatches[1]:][:endPos[1]
-		contract.apis = make(map[string]Method)
-		if funcName == "main" {
-			hasMain = true
-			// 匹配关键字
-			gasRe := regexp.MustCompile("@gas_limit (\\d+)")
-			priceRe := regexp.MustCompile("@gas_price ([+-]?([0-9]*[.])?[0-9]+)")
-			publisherRe := regexp.MustCompile("@publisher ([a-zA-Z1-9]+)")
-
-			gas, _ := strconv.ParseInt(gasRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 10, 64)
-			price, _ := strconv.ParseFloat(priceRe.FindStringSubmatch(content[submatches[0]:submatches[1]])[1], 64)
-			if p.Debug {
-				match := publisherRe.FindStringSubmatch(content[submatches[0]:submatches[1]])
-				fmt.Println("compile publisher:", match[1])
-				contract.info.Publisher = vm.IOSTAccount(match[1])
-			}
-			contract.info.Language = "lua"
-			contract.info.GasLimit = gas
-			contract.info.Price = price
-			contract.main = method
-			//contract.code = content[submatches[1]:][:endPos[1]]
-		} else {
-
-			contract.apis[funcName] = method
-		}
-		buffer.WriteString(content[submatches[1]:][:endPos[1]])
-		buffer.WriteString("\n")
-
+func matchPriv(code string) vm.Privilege {
+	privRe := regexp.MustCompile("@privilege ([a-z]+)")
+	var privS string
+	ps := privRe.FindStringSubmatch(code)
+	if len(ps) < 1 {
+		privS = ""
+	} else {
+		privS = ps[1]
 	}
 
+	var priv vm.Privilege
+	switch privS {
+	case "public":
+		priv = vm.Public
+	default:
+		priv = vm.Private
+
+	}
+	return priv
+}
+
+func parseAPI(code string) (method *Method, err error) {
+	funcNameRe := regexp.MustCompile("---[ \t\n]*([a-zA-Z0-9_]+)")
+	funcNameRe2 := regexp.MustCompile("function[ \t]+([a-zA-Z0-9_]+)")
+	funcName, ok := optionalMatchOne(funcNameRe, code)
+	if !ok {
+		return nil, errors.New("not an api")
+	}
+	funcName2, ok := optionalMatchOne(funcNameRe2, code)
+	if !ok {
+		return nil, errors.New("function implement not found")
+	}
+	if funcName != funcName2 {
+		return nil, errors.New("function name not match with comment")
+	}
+
+	pmc, err := matchIntOne(code, "@param_cnt (\\d+)")
+	if err != nil {
+		return nil, err
+	}
+	if pmc > 256 || pmc < 0 {
+		return nil, errors.New("illegal function input count")
+	}
+	rtnc, err := matchIntOne(code, "@return_cnt (\\d+)")
+	if err != nil {
+		return nil, err
+	}
+	if rtnc > 256 || rtnc < 0 {
+		return nil, errors.New("illegal function return count")
+	}
+	priv := matchPriv(code)
+
+	methodp := NewMethod(priv, funcName, int(pmc), int(rtnc))
+
+	return &methodp, nil
+
+}
+
+func checkNonFunctionCode(code string) error {
+	inFunc := false
+	li := 0
+	reComment := regexp.MustCompile("^[ \t]*--")
+	reEmpty := regexp.MustCompile("^[ \t]*$")
+	for _, line := range strings.Split(code, "\n") {
+		li++
+		if inFunc {
+			if strings.HasPrefix(line, "end--f") {
+				inFunc = false
+				continue
+			}
+		} else {
+			switch {
+			case strings.HasPrefix(line, "function"):
+				inFunc = true
+				continue
+			case reComment.MatchString(line):
+				continue
+			case reEmpty.MatchString(line):
+				continue
+			case line == "\\0":
+				continue
+			default:
+				return errors.New("parse failed: non function code included. line: " + strconv.Itoa(li))
+			}
+		}
+	}
+	return nil
+}
+
+func (p *DocCommentParser) Parse() (*Contract, error) {
+	content := p.text
+
+	err := checkNonFunctionCode(content)
+	if err != nil {
+		return nil, err
+	}
+
+	var contract Contract
+	contract.code = p.text
+
+	hasMain := false
+
+	gasPrice, err := matchGasPrice(content)
+	if err != nil {
+		return nil, err
+	}
+
+	gasLimit, err := matchGasLimit(content)
+	if err != nil {
+		return nil, err
+	}
+	var publisher string
+	if p.Debug {
+		publisher, err = matchPublisher(content)
+		if err != nil {
+			return nil, err
+		}
+		contract.info.Publisher = vm.IOSTAccount(publisher)
+	}
+	contract.info.Language = "lua"
+	contract.info.GasLimit = gasLimit
+	contract.info.Price = gasPrice
+	contract.apis = make(map[string]Method)
+
+	re := regexp.MustCompile("(--- .*\n)(-- .*\n)*function(.*\n)*?end--f")
+	for _, sub := range re.FindAllStringSubmatchIndex(content, -1) {
+		mtd, err := parseAPI(content[sub[0]:sub[1]])
+		if err != nil {
+			return nil, err
+		}
+		if mtd.name == "main" {
+			contract.main = *mtd
+			hasMain = true
+		} else {
+			contract.apis[mtd.name] = *mtd
+		}
+	}
 	if !hasMain {
 		return nil, ErrNoMain
 	}
-	contract.code = buffer.String()
 	return &contract, nil
-
 }

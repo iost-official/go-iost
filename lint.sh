@@ -1,1 +1,0 @@
-gometalinter --config gometalinter.json ./... |grep -v 'exported method\|function'

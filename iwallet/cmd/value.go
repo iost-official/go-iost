@@ -26,14 +26,9 @@ import (
 // valueCmd represents the value command
 var valueCmd = &cobra.Command{
 	Use:   "value",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Args: cobra.MinimumNArgs(1),
+	Short: "check value of a specified key",
+	Long:  `check value of a specified key, from a iserver node`,
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
 		conn, err := grpc.Dial(server, grpc.WithInsecure())

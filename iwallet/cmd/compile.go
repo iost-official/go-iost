@@ -27,10 +27,7 @@ import (
 var compileCmd = &cobra.Command{
 	Use:   "compile",
 	Short: "Compile contract files to smart contract",
-	Long: `Compile contract files to smart contract. 
-Useage : 
-
-iwallet compile -l lua SRC`,
+	Long:  `Compile contract files to smart contract. `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println(`Error: source file not given`)
@@ -54,18 +51,6 @@ iwallet compile -l lua SRC`,
 				return
 			}
 		}
-
-		//		fmt.Printf(`Transaction :
-		//Time: xx
-		//Nonce: xx
-		//Contract:
-		//    Price: %v
-		//    Gas limit: %v
-		//Code:
-		//----
-		//%v
-		//----
-		//`, contract.Info().Price, contract.Info().GasLimit, contract.Code())
 
 		mTx := tx.NewTx(int64(Nonce), contract)
 

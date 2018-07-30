@@ -1,7 +1,6 @@
 package host
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
@@ -11,15 +10,17 @@ import (
 
 func TestTransfer(t *testing.T) {
 	Convey("Test of transfer", t, func() {
-		db, _ := db.DatabaseFactor("redis")
+		db, _ := db.DatabaseFactory("redis")
 		mdb := state.NewDatabase(db)
 		pool := state.NewPool(mdb)
 		pool.PutHM("iost", "a", state.MakeVFloat(100))
 		pool.PutHM("iost", "b", state.MakeVFloat(100))
 
 		Transfer(pool, "a", "b", 20)
-		fmt.Println(pool.GetHM("iost", "a"))
-		fmt.Println(pool.GetHM("iost", "b"))
+		aa, _ := pool.GetHM("iost", "a")
+		So(aa.(*state.VFloat).ToFloat64(), ShouldEqual, 80)
+		bb, _ := pool.GetHM("iost", "b")
+		So(bb.(*state.VFloat).ToFloat64(), ShouldEqual, 120)
 
 	})
 }

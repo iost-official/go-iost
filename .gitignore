@@ -11,6 +11,74 @@ Icon
 # Thumbnails
 ._*
 
+### Emacs ###
+# -*- mode: gitignore; -*-
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Org-mode
+.org-id-locations
+*_archive
+
+# flymake-mode
+*_flymake.*
+
+# eshell files
+/eshell/history
+/eshell/lastdir
+
+# elpa packages
+/elpa/
+
+# reftex files
+*.rel
+
+# AUCTeX auto folder
+/auto/
+
+# cask packages
+.cask/
+dist/
+
+# Flycheck
+flycheck_*.el
+
+# server auth directory
+/server/
+
+# projectiles files
+.projectile
+projectile-bookmarks.eld
+
+# directory configuration
+.dir-locals.el
+
+# saveplace
+places
+
+# url cache
+url/cache/
+
+# cedet
+ede-projects.el
+
+# smex
+smex-items
+
+# company-statistics
+company-statistics-cache.el
+
+# anaconda-mode
+anaconda-mode/
+
+### Emacs End ###
+
 # Files that might appear in the root of a volume
 .DocumentRevisions-V100
 .fseventsd
@@ -85,9 +153,6 @@ fabric.properties
 
 prototype
 
-vendor/github.com/
-vendor/golang.org/
-vendor/gopkg.in/
 
 .vscode/
 
@@ -108,6 +173,9 @@ iwallet/test
 iwallet/iwallet
 
 # build and test
+/build
+/build.local
+imonitor/imonitor
 consensus/common/tx/
 /consensus/dpos/tx/
 /core/block/blockDB/
@@ -125,6 +193,8 @@ tx/
 playground/playground
 playground/test
 iserver/netpath/
+iserver/iserver
+iserver/iserver.yml
 rpc/js/node_modules/
 rpc/js/package-lock.json
 core/block/txDB/
@@ -141,6 +211,7 @@ iserver/txDB/
 
 iwallet/sc/
 iwallet/testTX.py
+imonitor/iserver.yml
 netpath/
 netpath3/
 rpc/txDB/
@@ -148,4 +219,13 @@ txDB/
 *.prof
 *.test
 *.svg
+*.sc
+*.tx
+servi_db.ldb
+*/test.log
+*/vm.log
+test/data
+/consensus/pob/serviDb/
+/core/block/serviDb/
+scripts/sendtx/iwallet
 

@@ -1,21 +1,22 @@
 package network
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
-	"time"
-
-	"bytes"
-
 	"net"
+	"strings"
+	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 )
 
+// NetReqType defines a request's type.
 type NetReqType int16
 
+// NetReqType types.
 const (
 	Message NetReqType = iota + 1
 	MessageReceived
@@ -27,7 +28,7 @@ const (
 	NodeTable
 )
 
-// Request data structure exchanged by nodes
+// Request is the data structure exchanged by nodes.
 type Request struct {
 	Version   [4]byte
 	Length    int32 // length of request
@@ -38,21 +39,22 @@ type Request struct {
 	Body      []byte
 }
 
-var NET_VERSION = [4]byte{'i', 'o', 's', 't'}
+// NetVersion is the network's version.
+var NetVersion = [4]byte{'i', 'o', 's', 't'}
 
 func isNetVersionMatch(buf []byte) bool {
-	if len(buf) >= len(NET_VERSION) {
-		return buf[0] == NET_VERSION[0] &&
-			buf[1] == NET_VERSION[1] &&
-			buf[2] == NET_VERSION[2] &&
-			buf[3] == NET_VERSION[3]
+	if len(buf) >= len(NetVersion) {
+		return buf[0] == NetVersion[0] &&
+			buf[1] == NetVersion[1] &&
+			buf[2] == NetVersion[2] &&
+			buf[3] == NetVersion[3]
 	}
 	return false
 }
 
 func newRequest(typ NetReqType, from string, data []byte) *Request {
 	r := &Request{
-		Version:   NET_VERSION,
+		Version:   NetVersion,
 		Timestamp: time.Now().UnixNano(),
 		Type:      typ,
 		FromLen:   int16(len(from)),
@@ -65,6 +67,7 @@ func newRequest(typ NetReqType, from string, data []byte) *Request {
 	return r
 }
 
+// Pack serializes a request to bytes.
 func (r *Request) Pack() ([]byte, error) {
 	var err error
 	buf := new(bytes.Buffer)
@@ -78,6 +81,7 @@ func (r *Request) Pack() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
+// Unpack unserializes bytes.
 func (r *Request) Unpack(reader io.Reader) error {
 	var err error
 	err = binary.Read(reader, binary.BigEndian, &r.Version)
@@ -92,6 +96,7 @@ func (r *Request) Unpack(reader io.Reader) error {
 	return err
 }
 
+// String implements fmt.Stringer.
 func (r *Request) String() string {
 	return fmt.Sprintf("version:%s length:%d type:%d timestamp:%s from:%s Body:%v",
 		r.Version,
@@ -103,6 +108,14 @@ func (r *Request) String() string {
 	)
 }
 
+func prometheusReceivedBlockTx(req *message.Message) {
+	if req.ReqType == int32(ReqPublishTx) {
+		receivedBroadTransactionCount.Inc()
+	}
+	if req.ReqType == int32(ReqNewBlock) {
+	}
+}
+
 func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 	switch r.Type {
 	case Message:
@@ -110,12 +123,11 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 		if _, err := appReq.Unmarshal(r.Body); err == nil {
 			base.log.D("[net] msg from =%v, to = %v, typ = %v,  ttl = %v", appReq.From, appReq.To, appReq.ReqType, appReq.TTL)
 			base.RecvCh <- *appReq
+			prometheusReceivedBlockTx(appReq)
+
 		} else {
 			base.log.E("[net] failed to unmarshal recv msg:%v, err:%v", r, err)
 		}
-		//if er := base.send(conn, newRequest(MessageReceived, base.localNode.Addr(), common.Int64ToBytes(r.Timestamp))); er != nil {
-		//	conn.Close()
-		//}
 		r.msgHandle(base)
 	case MessageReceived:
 		base.log.D("[net] MessageReceived: %v", string(r.From), common.BytesToInt64(r.Body))
@@ -126,6 +138,8 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 				appReq.From = string(r.From)
 			}
 			base.RecvCh <- *appReq
+
+			prometheusReceivedBlockTx(appReq)
 			if appReq.ReqType != int32(ReqDownloadBlock) {
 				base.Broadcast(*appReq)
 			}
@@ -137,7 +151,7 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 
 		if isValidNode(r, base) {
 			base.putNode(string(r.From))
-			base.peers.SetAddr(string(r.From), newPeer(conn,base.localNode.Addr(), conn.RemoteAddr().String()))
+			base.peers.SetAddr(string(r.From), newPeer(conn, nil, base.localNode.Addr(), conn.RemoteAddr().String()))
 			base.sendNodeTable(r.From, conn)
 		} else {
 			conn.Close()
@@ -152,18 +166,14 @@ func (r *Request) handle(base *BaseNetwork, conn net.Conn) {
 }
 
 func isValidNode(r *Request, base *BaseNetwork) bool {
-	if NetMode == PublicMode && !common.IsPublicIP(net.ParseIP(string(r.From))) {
-		base.log.D("[net] the node's ip is not public ip")
-		return false
-	}
-	if NetMode == CommitteeMode && !base.isInCommittee(r.From) {
-		base.log.D("[net] the node's ip is not in committee")
+	strs := strings.Split(string(r.From), ":")
+	if NetMode == PublicMode && !common.IsPublicIP(net.ParseIP(strs[0])) {
+		base.log.D("[net] the node's ip is not public ip: %v", strs[0])
 		return false
 	}
 	return true
 }
 
-//handle broadcast node's height
 func (r *Request) msgHandle(net *BaseNetwork) {
 	msg := &message.Message{}
 	if _, err := msg.Unmarshal(r.Body); err == nil {
