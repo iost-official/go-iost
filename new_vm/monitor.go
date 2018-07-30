@@ -1,13 +1,17 @@
 package new_vm
 
-import "context"
+import (
+	"context"
+
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+)
 
 type Monitor struct {
 	Pool
 	vms map[string]VM
 }
 
-func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...string) (rtn []string, receipt Receipt) {
+func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...string) (rtn []string, receipt tx.Receipt) {
 	contract, err := m.Contract(contractName)
 
 	if err != nil {
