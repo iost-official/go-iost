@@ -2,8 +2,8 @@ package account
 
 import (
 	"fmt"
-	"crypto/rand"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"crypto/rand"
 )
 
 var (
@@ -33,8 +33,12 @@ type Account struct {
 
 func NewAccount(seckey []byte) (Account, error) {
 	var m Account
+	var err error
 	if seckey == nil {
-		seckey = randomSeckey()
+		seckey, err = randomSeckey()
+		if err != nil {
+			return Account{}, err
+		}
 	}
 	if len(seckey) != 32 {
 		return Account{}, fmt.Errorf("seckey length error")
@@ -50,10 +54,13 @@ func (member *Account) GetId() string {
 	return member.ID
 }
 
-func randomSeckey() []byte {
+func randomSeckey() ([]byte, error) {
 	seckey := make([]byte, 32)
-	rand.Read(seckey)
-	return seckey
+	_, err := rand.Read(seckey)
+	if err != nil {
+		return nil, err
+	}
+	return seckey, nil
 }
 
 func makePubkey(seckey []byte) []byte {
