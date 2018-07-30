@@ -4,19 +4,10 @@ import (
 	"sync"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/pob2"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/pob"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
-)
-
-type TxStatus int
-
-const (
-	ACCEPT TxStatus = iota
-	CACHED
-	POOL
-	REJECT
-	EXPIRED
 )
 
 type Consensus interface {
@@ -25,6 +16,7 @@ type Consensus interface {
 
 	BlockChain() block.Chain
 	CachedBlockChain() block.Chain
+	BlockCache() blockcache.BlockCache
 	StatePool() state.Pool
 	CachedStatePool() state.Pool
 }
@@ -49,7 +41,7 @@ func ConsensusFactory(consensusType string, acc account.Account, bc block.Chain,
 	case CONSENSUS_POB:
 		if Cons == nil {
 			once.Do(func() {
-				Cons, err = pob2.NewPoB(acc, bc, pool, witnessList)
+				Cons, err = pob.NewPoB(acc, bc, pool, witnessList)
 			})
 		}
 	}

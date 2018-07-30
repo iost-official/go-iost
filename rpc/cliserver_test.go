@@ -19,8 +19,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestHttpServer(t *testing.T) {
-	Convey("Test of HttpServer", t, func() {
+func TestRpcServer(t *testing.T) {
+	Convey("Test of RpcServer", t, func() {
 		txDb := tx.TxDbInstance()
 		So(txDb, ShouldNotBeNil)
 		main := lua.NewMethod(vm.Public, "main", 0, 1)
@@ -35,22 +35,6 @@ func TestHttpServer(t *testing.T) {
 		a1, _ := account.NewAccount(nil)
 		sig1, _ := tx.SignContract(_tx, a1)
 		_tx, _ = tx.SignTx(_tx, acc, sig1)
-		/*
-			Convey("Test of PublishTx", func() {
-
-				ctl := gomock.NewController(t)
-				mockRouter := protocol_mock.NewMockRouter(ctl)
-				mockRouter.EXPECT().Broadcast(gomock.Any()).AnyTimes().Return()
-				network.Route = mockRouter
-
-				txpb := Transaction{Tx: _tx.Encode()}
-
-				hs := new(HttpServer)
-				res, err := hs.PublishTx(context.Background(), &txpb)
-				So(err, ShouldBeNil)
-				So(res.Code, ShouldEqual, 0)
-			})
-		*/
 		Convey("Test of GetTransaction", func() {
 			txdb := tx.TxDb
 			fmt.Println(txdb)
@@ -62,7 +46,7 @@ func TestHttpServer(t *testing.T) {
 				Nonce:     _tx.Nonce,
 			}
 			fmt.Println(txkey.Publisher)
-			hs := new(HttpServer)
+			hs := new(RpcServer)
 			_, err = hs.GetTransaction(context.Background(), &txkey)
 			So(err, ShouldBeNil)
 		})
@@ -73,7 +57,7 @@ func TestHttpServer(t *testing.T) {
 			mockPool.EXPECT().Get(gomock.Any()).AnyTimes().Return(state.MakeVString("hello"), nil)
 			state.StdPool = mockPool
 
-			hs := new(HttpServer)
+			hs := new(RpcServer)
 			_, err := hs.GetState(context.Background(), &Key{S: "HowHsu"})
 			So(err, ShouldBeNil)
 		})
@@ -86,7 +70,6 @@ func TestHttpServer(t *testing.T) {
 					Version:    2,
 					ParentHash: []byte("parent Hash"),
 					TreeHash:   []byte("tree hash"),
-					BlockHash:  []byte("block hash"),
 					Info:       []byte("info "),
 					Number:     int64(0),
 					Witness:    "id2,id3,id5,id6",
@@ -96,7 +79,7 @@ func TestHttpServer(t *testing.T) {
 			})
 			block.BChain = mockChain
 
-			hs := new(HttpServer)
+			hs := new(RpcServer)
 			_, err := hs.GetBlock(context.Background(), &BlockKey{Layer: 10})
 			So(err, ShouldBeNil)
 		})
@@ -107,7 +90,7 @@ func TestHttpServer(t *testing.T) {
 			mockPool.EXPECT().GetHM(gomock.Any(), gomock.Any()).AnyTimes().Return(state.MakeVFloat(18.0), nil)
 			state.StdPool = mockPool
 
-			hs := new(HttpServer)
+			hs := new(RpcServer)
 			balance, err := hs.GetBalance(context.Background(), &Key{S: "HowHsu"})
 			So(err, ShouldBeNil)
 

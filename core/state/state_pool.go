@@ -17,7 +17,6 @@ type PoolImpl struct {
 	parent *PoolImpl
 }
 
-// 通过一个db生成新的pool
 func NewPool(db Database) Pool {
 	return &PoolImpl{
 		db:     db,
@@ -113,6 +112,7 @@ func (p *PoolImpl) Flush() error {
 			p.db.Put(k, val)
 		}
 	}
+	p.patch = Patch{make(map[Key]Value)}
 	p.parent = nil
 	return nil
 }
@@ -125,13 +125,11 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 	if p.parent == nil {
 		val1, err = p.db.GetHM(key, field)
 		if err != nil {
-			fmt.Println(err) // TODO 消灭多余输出
 			val1 = VNil
 		}
 	} else {
 		val1, err = p.parent.GetHM(key, field)
 		if err != nil {
-			fmt.Println(err) // todo 消灭多余输出
 			val1 = VNil
 		}
 		//fmt.Println("in GetHM get parent: ", key, field, val1)
@@ -146,27 +144,18 @@ func (p *PoolImpl) GetHM(key, field Key) (Value, error) {
 		}
 		val3 := val2.(*VMap).Get(field)
 
-		//fmt.Println("in gethm :", val1, val3)
-		//fmt.Println(Merge(val1, val3))
-
 		return Merge(val1, val3), nil
 	}
 }
 func (p *PoolImpl) PutHM(key, field Key, value Value) error {
-	//fmt.Println("call put hm", key, field, value)
-	//fmt.Println("len:", p.patch.Length())
-	//fmt.Println("parent:", p.parent)
 	if ok := p.patch.Has(key); ok {
 		m := p.patch.Get(key)
-		//fmt.Println("1.8", m)
 		if m.Type() == Map {
 			m.(*VMap).Set(field, value)
-			//fmt.Println("1.9", m)
 			p.patch.Put(key, m)
 			return nil
 		}
 	}
-	//fmt.Println("new map")
 	m := MakeVMap(nil)
 	m.Set(field, value)
 	p.patch.Put(key, m)
@@ -210,7 +199,7 @@ var StdPool Pool
 var once sync.Once
 
 func PoolInstance() error {
-	bdb, err := db.DatabaseFactor("redis")
+	bdb, err := db.DatabaseFactory("redis")
 	if err != nil {
 		return err
 	}

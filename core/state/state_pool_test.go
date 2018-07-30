@@ -4,7 +4,10 @@ import (
 	"errors"
 	"testing"
 
+	"fmt"
+
 	"github.com/golang/mock/gomock"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -99,4 +102,28 @@ func TestPoolImpl(t *testing.T) {
 		})
 	})
 
+}
+
+func TestPoolHM(t *testing.T) {
+	Convey("test of hashmap", t, func() {
+		rdb, _ := db.DatabaseFactory("redis")
+		mdb := NewDatabase(rdb)
+		pool := NewPool(mdb)
+
+		pool.PutHM("iost", "a", MakeVFloat(1))
+		fmt.Println(pool.Get("iost"))
+		pool.Flush()
+		fmt.Println(pool.GetHM("iost", "a"))
+		vmap, _ := pool.Get("iost")
+		fmt.Println(vmap.(*VMap).Get("a"))
+
+		vmap2 := MakeVMap(nil)
+		vmap2.Set("hello", MakeVString("world"))
+		vmap2.Set("hi", MakeVFloat(123))
+
+		pool.Put("testvmap", vmap2)
+		pool.Flush()
+		fmt.Println(pool.GetHM("testvmap", "hello"))
+		fmt.Println(pool.GetHM("testvmap", "hi"))
+	})
 }

@@ -6,17 +6,15 @@ import (
 	"encoding/binary"
 	"log"
 	"testing"
-
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/params"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestRequest_isValidNode(t *testing.T) {
 	Convey("register", t, func() {
-		bn, _ := NewBaseNetwork(&NetConifg{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
+		bn, _ := NewBaseNetwork(&NetConfig{RegisterAddr: "127.0.0.1:30304", ListenAddr: "127.0.0.1", NodeTablePath: "iost_db_"})
 		isValid := isValidNode(&Request{From: []byte("127.0.0.1")}, bn)
 		So(isValid, ShouldBeTrue)
 		isValid = isValidNode(&Request{From: []byte("192.168.1.34")}, bn)
@@ -32,13 +30,6 @@ func TestRequest_isValidNode(t *testing.T) {
 		isValid = isValidNode(&Request{From: []byte("13.232.79.7")}, bn)
 		So(isValid, ShouldBeTrue)
 
-		NetMode = CommitteeMode
-		isValid = isValidNode(&Request{From: []byte(params.CommitteeNodes[0])}, bn)
-		So(isValid, ShouldBeTrue)
-		isValid = isValidNode(&Request{From: []byte("192.168.1.34")}, bn)
-		So(isValid, ShouldBeFalse)
-		isValid = isValidNode(&Request{From: []byte("13.232.79.7")}, bn)
-		So(isValid, ShouldBeFalse)
 	})
 }
 

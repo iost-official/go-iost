@@ -1,49 +1,52 @@
 package network
 
 import (
-	"log"
-	"os"
-	"sync"
-
 	"net"
+	"sync"
 
 	"github.com/iost-official/Go-IOS-Protocol/common/mclock"
 	"github.com/iost-official/Go-IOS-Protocol/network/discover"
 )
 
+// Peer manages connections with other nodes.
 type Peer struct {
-	conn    net.Conn
-	log     log.Logger
-	local   string
-	remote  string
-	created mclock.AbsTime
-	closed  chan struct{}
+	conn      net.Conn
+	blockConn net.Conn
+	local     string
+	remote    string
+	created   mclock.AbsTime
+	closed    chan struct{}
 }
 
+// Disconnect disconnects a connection.
 func (p *Peer) Disconnect() {
 	if p != nil && p.conn != nil {
 		p.conn.Close()
 	}
-}
-
-func newPeer(conn net.Conn, local, remote string) *Peer {
-	return &Peer{
-		conn:    conn,
-		local:   local,
-		remote:  remote,
-		log:     *log.New(os.Stderr, "", 0), //TODO: 写专门的logger
-		created: mclock.Now(),
-		closed:  make(chan struct{}),
+	if p != nil && p.blockConn != nil {
+		p.blockConn.Close()
 	}
 }
 
-// peerSet represents the collection of active peers
+func newPeer(conn net.Conn, blockConn net.Conn, local, remote string) *Peer {
+	return &Peer{
+		conn:      conn,
+		blockConn: blockConn,
+		local:     local,
+		remote:    remote,
+		created:   mclock.Now(),
+		closed:    make(chan struct{}),
+	}
+}
+
+// peerSet represents the collection of active peers.
 type peerSet struct {
 	peers  map[string]*Peer
 	lock   sync.Mutex
 	closed bool
 }
 
+// Get returns a connection with a node.
 func (ps *peerSet) Get(node *discover.Node) *Peer {
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
@@ -57,6 +60,7 @@ func (ps *peerSet) Get(node *discover.Node) *Peer {
 	return peer
 }
 
+// SetAddr stores a peer in peerSet.
 func (ps *peerSet) SetAddr(addr string, p *Peer) {
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
@@ -68,6 +72,7 @@ func (ps *peerSet) SetAddr(addr string, p *Peer) {
 	return
 }
 
+// Set stores a peer in peerSet.
 func (ps *peerSet) Set(node *discover.Node, p *Peer) {
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
@@ -79,11 +84,13 @@ func (ps *peerSet) Set(node *discover.Node, p *Peer) {
 	return
 }
 
+// RemoveByNodeStr removes a peer in peerSet by nodeStr.
 func (ps *peerSet) RemoveByNodeStr(nodeStr string) {
 	node, _ := discover.ParseNode(nodeStr)
 	ps.Remove(node)
 }
 
+// Remove removes a peer in peerSet.
 func (ps *peerSet) Remove(node *discover.Node) {
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
@@ -91,5 +98,3 @@ func (ps *peerSet) Remove(node *discover.Node) {
 	delete(ps.peers, node.String())
 	return
 }
-
-//todo ping - pong check is conn  alive, remove it when it's dead

@@ -14,7 +14,7 @@ func Server(port string) error {
 		port = ":" + port
 	}
 
-	lis, err := net.Listen("tcp", port)
+	lis, err := net.Listen("tcp4", port)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
@@ -24,7 +24,7 @@ func Server(port string) error {
 		return fmt.Errorf("failed to rpc NewServer")
 	}
 
-	RegisterCliServer(s, newHttpServer())
+	RegisterCliServer(s, newRpcServer())
 
 	go s.Serve(lis)
 

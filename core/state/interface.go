@@ -1,6 +1,9 @@
+/*
+Package state, implements of key-value using in vm
+*/
 package state
 
-// state pool存储对状态机进行修改的链，可以方便地记录所有的状态同时易于回退
+//Pool state pool of local state machine
 type Pool interface {
 	Copy() Pool
 	GetPatch() Patch

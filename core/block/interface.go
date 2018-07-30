@@ -5,13 +5,15 @@ import "github.com/iost-official/Go-IOS-Protocol/core/tx"
 
 //go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/block Chain
 
-// Chain 是区块链的接口定义
 type Chain interface {
 	Push(block *Block) error
 	Length() uint64
+	CheckLength() error
 	Top() *Block // 语法糖
+	GetHashByNumber(number uint64) []byte
 	GetBlockByNumber(number uint64) *Block
 	GetBlockByHash(blockHash []byte) *Block
+	GetBlockByteByHash(blockHash []byte) ([]byte, error)
 
 	HasTx(tx *tx.Tx) (bool, error)
 	GetTx(hash []byte) (*tx.Tx, error)
@@ -20,5 +22,5 @@ type Chain interface {
 }
 
 type ChainIterator interface {
-	Next() *Block // 返回下一个块
+	Next() *Block
 }

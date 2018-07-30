@@ -17,7 +17,7 @@ func main() {
 end`
 	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("a")}, code, main)
 
-	dbx, err := db.DatabaseFactor("redis")
+	dbx, err := db.DatabaseFactory("redis")
 	if err != nil {
 		panic(err.Error())
 	}

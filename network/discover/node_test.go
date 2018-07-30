@@ -11,7 +11,7 @@ import (
 
 func TestGenNodeId(t *testing.T) {
 	Convey("Test of discover node\n", t, func() {
-		So(len(GenNodeId()), ShouldEqual, 64)
+		So(len(GenNodeID()), ShouldEqual, 64)
 		node, err := ParseNode("84a8ecbeeb6d3f676da1b261c35c7cd15ae17f32b659a6f5ce7be2d60f6c16f9@18.219.254.124:30304")
 		So(err, ShouldBeNil)
 		So(node.TCP, ShouldEqual, uint16(30304))

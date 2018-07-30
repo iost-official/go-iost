@@ -1,0 +1,9 @@
+{
+    "Vendor": true,
+    "Exclude": ["should have comment"],
+    "Skip": [
+        "vendor",
+        "test"
+    ],
+    "Deadline": "120s"
+}
