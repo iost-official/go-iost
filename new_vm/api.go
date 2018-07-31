@@ -5,5 +5,5 @@ func Put(key, value string) {
 }
 
 func SetContract(contract *Contract) error {
-
+	return nil
 }
