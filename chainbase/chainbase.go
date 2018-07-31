@@ -39,6 +39,10 @@ func (m *Chainbase) Rollback() error {
 	return nil
 }
 
+func (m *Chainbase) Tag(tag string) error {
+	return nil
+}
+
 func (m *Chainbase) Checkout(commit string) (*Chainbase, error) {
 	return nil, nil
 }
