@@ -11,7 +11,7 @@ func (m *Chainbase) Get(table string, key string) (string, error) {
 	return "", nil
 }
 
-func (m *Chainbase) Put(table string, value string) error {
+func (m *Chainbase) Put(table, key, value string) error {
 	return nil
 }
 
