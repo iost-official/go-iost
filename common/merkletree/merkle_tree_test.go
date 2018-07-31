@@ -21,7 +21,7 @@ func TestBuild(t *testing.T) {
 		[]byte("node5"),
 	}
 	m := MerkleTree{}
-	m.Build2(data)
+	m.Build(data)
 	assert.Equal(
 		t,
 		"0f8a9f1e9450978a41ff06e77df3de64866b55261ed20651c90eb6cb462b1409",
@@ -51,7 +51,7 @@ func TestRootHash(t *testing.T) {
 		[]byte("node5"),
 	}
 	m := MerkleTree{}
-	m.Build2(data)
+	m.Build(data)
 	assert.Equal(
 		t,
 		"0f8a9f1e9450978a41ff06e77df3de64866b55261ed20651c90eb6cb462b1409",
@@ -69,7 +69,7 @@ func TestMerklePath(t *testing.T) {
 		[]byte("node5"),
 	}
 	m := MerkleTree{}
-	m.Build2(data)
+	m.Build(data)
 	mp := m.MerklePath([]byte("node5"))
 	assert.Equal(
 		t,
@@ -100,7 +100,7 @@ func TestMerkleProve(t *testing.T) {
 		[]byte("node5"),
 	}
 	m := MerkleTree{}
-	m.Build2(data)
+	m.Build(data)
 	mp := m.MerklePath([]byte("node5"))
 	assert.Equal(
 		t,
@@ -157,7 +157,7 @@ func RandStringRunes(n int) string {
 func BenchmarkBuild(b *testing.B) { // 646503ns = 0.6ms，vs 117729ns = 0.1ms
 	rand.Seed(time.Now().UnixNano())
 	var data [][]byte
-	for i := 0; i < 687; i++ {
+	for i := 0; i < 3000; i++ {
 		fmt.Println(i)
 		data = append(data, []byte(RandStringRunes(32)))
 	}
@@ -165,7 +165,7 @@ func BenchmarkBuild(b *testing.B) { // 646503ns = 0.6ms，vs 117729ns = 0.1ms
 	m.Build(data)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		m.Build2(data)
+		m.Build(data)
 	}
 	//for i := 0; i < b.N; i++ {
 	//	tmp := data[0]
@@ -183,7 +183,7 @@ func BenchmarkMerklePath(b *testing.B) { // 183ns
 		data = append(data, []byte(RandStringRunes(32)))
 	}
 	m := MerkleTree{}
-	m.Build2(data)
+	m.Build(data)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		datum := data[rand.Intn(1000)]

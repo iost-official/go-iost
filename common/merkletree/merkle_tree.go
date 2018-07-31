@@ -10,21 +10,6 @@ func (m *MerkleTree) Build(data [][]byte) {
 	n := int32(math.Exp2(math.Ceil(math.Log2(float64(len(data))))))
 	m.LeafNum = n
 	m.HashList = make([][]byte, 2*n-1)
-	m.Hash2Idx = make(map[string]int32)
-	copy(m.HashList[n-1:n+int32(len(data))-1], data)
-	for i := n + int32(len(data)) - 1; i < 2*n-1; i++ {
-		m.HashList[i] = data[len(data)-1]
-	}
-	m.ComputeHash(0)
-	for idx, datum := range data {
-		m.Hash2Idx[string(datum)] = int32(idx) + n - 1
-	}
-}
-
-func (m *MerkleTree) Build2(data [][]byte) {
-	n := int32(math.Exp2(math.Ceil(math.Log2(float64(len(data))))))
-	m.LeafNum = n
-	m.HashList = make([][]byte, 2*n-1)
 	copy(m.HashList[n-1:n+int32(len(data))-1], data)
 	start := n - 1
 	end := n + int32(len(data)) - 2
