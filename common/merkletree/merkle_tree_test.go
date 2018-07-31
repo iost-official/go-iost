@@ -1,14 +1,14 @@
 package merkletree
 
 import (
-	"testing"
 	"encoding/hex"
+	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"reflect"
-	"log"
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"log"
 	"math/rand"
+	"reflect"
 	"time"
 )
 
@@ -154,10 +154,10 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
-func BenchmarkBuild(b *testing.B) {	// 646503ns = 0.6ms，vs 117729ns = 0.1ms
+func BenchmarkBuild(b *testing.B) { // 646503ns = 0.6ms，vs 117729ns = 0.1ms
 	rand.Seed(time.Now().UnixNano())
 	var data [][]byte
-	for i := 0; i < 687 ; i++ {
+	for i := 0; i < 687; i++ {
 		fmt.Println(i)
 		data = append(data, []byte(RandStringRunes(32)))
 	}
@@ -176,10 +176,10 @@ func BenchmarkBuild(b *testing.B) {	// 646503ns = 0.6ms，vs 117729ns = 0.1ms
 	//}
 }
 
-func BenchmarkMerklePath(b *testing.B) {	// 183ns
+func BenchmarkMerklePath(b *testing.B) { // 183ns
 	rand.Seed(time.Now().UnixNano())
 	var data [][]byte
-	for i := 0; i < 1000 ; i++ {
+	for i := 0; i < 1000; i++ {
 		data = append(data, []byte(RandStringRunes(32)))
 	}
 	m := MerkleTree{}

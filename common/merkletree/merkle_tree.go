@@ -1,19 +1,19 @@
 package merkletree
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"math"
-	"bytes"
 )
 
 func (m *MerkleTree) Build(data [][]byte) {
 	n := int32(math.Exp2(math.Ceil(math.Log2(float64(len(data))))))
 	m.LeafNum = n
-	m.HashList = make([][]byte, 2 * n - 1)
+	m.HashList = make([][]byte, 2*n-1)
 	m.Hash2Idx = make(map[string]int32)
-	copy(m.HashList[n - 1: n + int32(len(data)) - 1], data)
-	for i := n + int32(len(data)) - 1; i < 2 * n - 1; i++ {
-		m.HashList[i] = data[len(data) - 1]
+	copy(m.HashList[n-1:n+int32(len(data))-1], data)
+	for i := n + int32(len(data)) - 1; i < 2*n-1; i++ {
+		m.HashList[i] = data[len(data)-1]
 	}
 	m.ComputeHash(0)
 	for idx, datum := range data {
@@ -24,14 +24,14 @@ func (m *MerkleTree) Build(data [][]byte) {
 func (m *MerkleTree) Build2(data [][]byte) {
 	n := int32(math.Exp2(math.Ceil(math.Log2(float64(len(data))))))
 	m.LeafNum = n
-	m.HashList = make([][]byte, 2 * n-1)
-	copy(m.HashList[n - 1:n + int32(len(data)) - 1], data)
+	m.HashList = make([][]byte, 2*n-1)
+	copy(m.HashList[n-1:n+int32(len(data))-1], data)
 	start := n - 1
 	end := n + int32(len(data)) - 2
 	for {
 		for i := start; i <= end; i = i + 2 {
 			var tmpHash [32]byte
-			if m.HashList[i+1] == nil{
+			if m.HashList[i+1] == nil {
 				tmpHash = sha256.Sum256(append(m.HashList[i], m.HashList[i]...))
 			} else {
 				if bytes.Compare(m.HashList[i], m.HashList[i+1]) < 0 {
@@ -57,8 +57,8 @@ func (m *MerkleTree) Build2(data [][]byte) {
 
 func (m *MerkleTree) ComputeHash(idx int32) []byte {
 	if m.HashList[idx] == nil {
-		LCHash := m.ComputeHash(2 * idx + 1)
-		RCHash := m.ComputeHash(2 * idx + 2)
+		LCHash := m.ComputeHash(2*idx + 1)
+		RCHash := m.ComputeHash(2*idx + 2)
 		var tmpHash [32]byte
 		if bytes.Compare(LCHash, RCHash) < 0 {
 			tmpHash = sha256.Sum256(append(LCHash, RCHash...))
@@ -81,10 +81,10 @@ func (m *MerkleTree) MerklePath(hash []byte) [][]byte {
 	mp := make([][]byte, int32(math.Log2(float64(m.LeafNum))))
 	for i := 0; idx != 0; i++ {
 		p := (idx - 1) / 2
-		if m.HashList[4 * p + 3 - idx] == nil {// p, 2p+1, 2p+2
+		if m.HashList[4*p+3-idx] == nil { // p, 2p+1, 2p+2
 			mp[i] = m.HashList[idx]
 		} else {
-			mp[i] = m.HashList[4 * p + 3 - idx]
+			mp[i] = m.HashList[4*p+3-idx]
 		}
 		idx = p
 	}
