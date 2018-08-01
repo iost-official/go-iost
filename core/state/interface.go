@@ -3,7 +3,7 @@ Package state, implements of key-value using in vm
 */
 package state
 
-//Pool state pool of local state machine
+//ContractDB state pool of local state machine
 type Pool interface {
 	Copy() Pool
 	GetPatch() Patch

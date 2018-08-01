@@ -1,5 +1,7 @@
 package tx
 
+import "github.com/golang/protobuf/proto"
+
 /**
  * Describtion: tx
  * User: wangyu
@@ -13,5 +15,35 @@ type Action struct {
 	Data        string  // json
 }
 
+func NewAction(contract string, name string, data string) Action {
+	return Action{
+		Contract:	contract,
+		ActionName:	name,
+		Data:		data,
+	}
+}
 
+func (a *Action) Encode() []byte {
+	ar := &ActionRaw{
+		Contract:a.Contract,
+		ActionName:a.ActionName,
+		Data:a.Data,
+	}
+	b, err := proto.Marshal(ar)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
 
+func (a *Action) Decode(b []byte) error {
+	var ar *ActionRaw
+	err := proto.Unmarshal(b, ar)
+	if err != nil {
+		return err
+	}
+	a.Contract = ar.Contract
+	a.ActionName = ar.ActionName
+	a.Data = ar.Data
+	return nil
+}

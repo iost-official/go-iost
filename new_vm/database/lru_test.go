@@ -1,7 +1,8 @@
-package new_vm
+package database
 
 import (
 	"testing"
+
 	"github.com/hashicorp/golang-lru"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -11,7 +12,7 @@ func TestLRU(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i := 0; i < 10; i ++ {
+	for i := 0; i < 10; i++ {
 		lru0.Add(i, i)
 		lru0.Get(3)
 	}
