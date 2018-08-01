@@ -6,6 +6,9 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 )
 
+var staticProp globalStaticProperty
+var dynamicProp globalDynamicProperty
+
 type globalStaticProperty struct {
 	Account
 	NumberOfWitnesses  int
@@ -80,43 +83,43 @@ func (prop *globalDynamicProperty) slotToTimestamp(slot int64) *Timestamp {
 	return &Timestamp{Slot: slot}
 }
 
-func witnessOfSec(sp *globalStaticProperty, dp *globalDynamicProperty, sec int64) string {
+func witnessOfSec(sec int64) string {
 	time := GetTimestamp(sec)
-	return witnessOfTime(sp, dp, time)
+	return witnessOfTime(time)
 }
 
-func witnessOfTime(sp *globalStaticProperty, dp *globalDynamicProperty, time Timestamp) string {
+func witnessOfTime(time Timestamp) string {
 
-	currentSlot := dp.timestampToSlot(time)
-	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
+	currentSlot := dynamicProp.timestampToSlot(time)
+	slotsEveryTurn := int64(staticProp.NumberOfWitnesses * slotPerWitness)
 	index := ((currentSlot % slotsEveryTurn) + slotsEveryTurn) % slotsEveryTurn
 	index /= slotPerWitness
-	witness := sp.WitnessList[index]
+	witness := staticProp.WitnessList[index]
 
 	return witness
 }
 
-func timeUntilNextSchedule(sp *globalStaticProperty, dp *globalDynamicProperty, timeSec int64) int64 {
+func timeUntilNextSchedule(timeSec int64) int64 {
 	var index int
-	if index = getIndex(sp.Account.GetId(), sp.WitnessList); index < 0 {
-		return dp.NextMaintenanceTime.ToUnixSec()
+	if index = getIndex(staticProp.Account.GetId(), staticProp.WitnessList); index < 0 {
+		return dynamicProp.NextMaintenanceTime.ToUnixSec()
 	}
 
 	time := GetTimestamp(timeSec)
-	currentSlot := dp.timestampToSlot(time)
-	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
+	currentSlot := dynamicProp.timestampToSlot(time)
+	slotsEveryTurn := int64(staticProp.NumberOfWitnesses * slotPerWitness)
 	k := currentSlot / slotsEveryTurn
 	startSlot := k*slotsEveryTurn + int64(index*slotPerWitness)
 	if startSlot > currentSlot {
-		return dp.slotToTimestamp(startSlot).ToUnixSec() - timeSec
+		return dynamicProp.slotToTimestamp(startSlot).ToUnixSec() - timeSec
 	}
 	if currentSlot-startSlot < slotPerWitness {
-		if time.Slot > dp.LastBlockTime.Slot {
+		if time.Slot > dynamicProp.LastBlockTime.Slot {
 			return 0
 		} else if currentSlot+1 < startSlot+slotPerWitness {
-			return dp.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
+			return dynamicProp.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
 		}
 	}
 	nextSlot := (k+1)*slotsEveryTurn + int64(index*slotPerWitness)
-	return dp.slotToTimestamp(nextSlot).ToUnixSec() - timeSec
+	return dynamicProp.slotToTimestamp(nextSlot).ToUnixSec() - timeSec
 }
