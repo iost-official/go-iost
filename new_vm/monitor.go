@@ -24,10 +24,15 @@ func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...st
 		rtn, err = vm.LoadAndCall(ctx, contract, api, args...)
 	}
 	if err != nil {
-		// todo make err receipt
+		receipt = tx.Receipt{
+			Type:    tx.SystemDefined,
+			Content: err.Error(),
+		}
 	}
-
-	// todo make success receipt
+	receipt = tx.Receipt{
+		Type:    tx.SystemDefined,
+		Content: "success",
+	}
 	return
 }
 
@@ -36,10 +41,8 @@ func (m *Monitor) Update(contractName string, newContract *Contract) error {
 	if err != nil {
 		return err
 	}
-
 	m.db.SetContract(newContract)
 	return nil
-
 }
 
 func (m *Monitor) Destory(contractName string) error {
