@@ -11,6 +11,9 @@ import (
 	"encoding/hex"
 	"reflect"
 	"github.com/stretchr/testify/assert"
+	"bytes"
+	"github.com/golang/protobuf/proto"
+
 )
 
 func TestSerializeAndDeserialize(t *testing.T) {
@@ -61,18 +64,6 @@ func TestMerkleTree(t *testing.T) {
 		if err != nil {
 			log.Panic(err)
 		}
-		var b []byte
-		b, err = m.XXX_Marshal(b, false)
-		if err != nil {
-			log.Panic(err)
-		}
-		m_read := MerkleTree{}
-		err = m_read.XXX_Unmarshal(b)
-		if err != nil {
-			log.Panic(err)
-		}
-		//fmt.Printf("\n------\n")
-		So(reflect.DeepEqual(m.HashList, m_read.HashList), ShouldEqual, true)
 		So(hex.EncodeToString(m.HashList[0]), ShouldEqual, "0f8a9f1e9450978a41ff06e77df3de64866b55261ed20651c90eb6cb462b1409")
 		So(hex.EncodeToString(m.HashList[1]), ShouldEqual, "e5e1a9ed8c02ed449057a4c17618127fa8e0a1e1c19fa15a371810371ac7530b")
 		So(hex.EncodeToString(m.HashList[2]), ShouldEqual, "de333248f6058db0367c9dc3e4731ea37324d4bfbbeee22ffd3d5a4e0c28330a")
@@ -86,25 +77,19 @@ func TestMerkleTree(t *testing.T) {
 		So(hex.EncodeToString(mp[1]), ShouldEqual, "946f804875563d1f73fb27b1fc8af795850e9128281954028e145108db4a0ab9")
 		So(hex.EncodeToString(mp[2]), ShouldEqual, "e5e1a9ed8c02ed449057a4c17618127fa8e0a1e1c19fa15a371810371ac7530b")
 		success, err := m.MerkleProve([]byte("node5"), rootHash, mp)
+		So(success, ShouldBeTrue)
+		b, err := proto.Marshal(&m)
 		if err != nil {
 			log.Panic(err)
 		}
-		So(success, ShouldEqual, true)
-		//var b []byte
-		//b, err = m.XXX_Marshal(b, false)
-		//if err != nil {
-		//	log.Panic(err)
-		//}
-		//m_read := MerkleTree{}
-		//err = m_read.XXX_Unmarshal(b)
-		//if err != nil {
-		//	log.Panic(err)
-		//}
-		////fmt.Printf("\n------\n")
-		//So(reflect.DeepEqual(m.HashList, m_read.HashList), ShouldEqual, true)
-		//for i := 0; i < 16; i++ {
-		//	fmt.Printf("%s %s %t\n", hex.EncodeToString(m.HashList[i]), hex.EncodeToString(m_read.HashList[i]), bytes.Equal(m.HashList[i], m_read.HashList[i]))
-		//}
+		var m_read MerkleTree
+		err = proto.Unmarshal(b, &m_read)
+		if err != nil {
+			log.Panic(err)
+		}
+		for i := 0; i < 16; i++ {
+			So(bytes.Equal(m.HashList[i], m_read.HashList[i]), ShouldBeTrue)
+		}
 	})
 }
 
