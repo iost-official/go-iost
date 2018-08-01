@@ -3,8 +3,8 @@ package merkletree
 import (
 	"bytes"
 	"crypto/sha256"
-	"math"
 	"errors"
+	"math"
 )
 
 func (m *MerkleTree) Build(data [][]byte) error {
