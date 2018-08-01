@@ -25,10 +25,9 @@ func NewMonitor(cb *db.MVCCDB, cacheLength int) *Monitor {
 	}
 }
 
-func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...string) (rtn []string, receipt tx.Receipt) {
+func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...string) (rtn []string, receipt tx.Receipt, err error) {
 	contract := m.db.GetContract(contractName)
 
-	var err error
 	if vm, ok := m.vms[contract.Lang]; ok {
 		rtn, err = vm.LoadAndCall(ctx, contract, api, args...)
 	} else {
