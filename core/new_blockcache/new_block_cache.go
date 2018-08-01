@@ -45,7 +45,7 @@ const (
 type BlockCacheNode struct {
 	Block                 *block.Block
 	commit                string
-	Parrent               *BlockCacheNode
+	Parent               *BlockCacheNode
 	Children              []*BlockCacheNode
 	Type                  BCNType
 	Number                uint64
@@ -56,7 +56,7 @@ type BlockCacheNode struct {
 	Extension             []byte
 }
 
-func NewBCN(parrent *BlockCacheNode, block *block.Block, nodeType BCNType) *BlockCacheNode {
+func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *BlockCacheNode {
 	return nil
 }
 
