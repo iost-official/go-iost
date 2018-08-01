@@ -8,46 +8,10 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"math/rand"
-	"reflect"
 	"time"
 )
-
-func TestSerializeAndDeserialize(t *testing.T) {
-	data := [][]byte{
-		[]byte("node1"),
-		[]byte("node2"),
-		[]byte("node3"),
-		[]byte("node4"),
-		[]byte("node5"),
-	}
-	m := MerkleTree{}
-	m.Build(data)
-	var b []byte
-	b, err := m.XXX_Marshal(b, false)
-	if err != nil {
-		log.Panic(err)
-	}
-	m_read := MerkleTree{}
-	err = m_read.XXX_Unmarshal(b)
-	if err != nil {
-		log.Panic(err)
-	}
-	assert.Equal(
-		t,
-		true,
-		reflect.DeepEqual(m.Hash2Idx, m_read.Hash2Idx),
-		"Hash2Idx is equal",
-	)
-	assert.Equal(
-		t,
-		true,
-		reflect.DeepEqual(m.HashList, m_read.HashList),
-		"HashList is equal",
-	)
-}
 
 func TestMerkleTree(t *testing.T) {
 	Convey("Test of Build", t, func() {
