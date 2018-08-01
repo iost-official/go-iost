@@ -13,7 +13,7 @@ func (m *MerkleTree) Build(data [][]byte) error {
 	}
 	n := int32(math.Exp2(math.Ceil(math.Log2(float64(len(data))))))
 	m.LeafNum = n
-	m.HashList = make([][]byte, 2*n-1)
+	m.HashList = make([][]byte, 2*n)
 	copy(m.HashList[n-1:n+int32(len(data))-1], data)
 	start := n - 1
 	end := n + int32(len(data)) - 2
