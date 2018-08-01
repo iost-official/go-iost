@@ -21,7 +21,10 @@ func TestBuild(t *testing.T) {
 		[]byte("node5"),
 	}
 	m := MerkleTree{}
-	m.Build(data)
+	err := m.Build(data)
+	if err != nil {
+		log.Panic(err)
+	}
 	assert.Equal(
 		t,
 		"0f8a9f1e9450978a41ff06e77df3de64866b55261ed20651c90eb6cb462b1409",
@@ -51,11 +54,15 @@ func TestRootHash(t *testing.T) {
 		[]byte("node5"),
 	}
 	m := MerkleTree{}
-	m.Build(data)
+	err := m.Build(data)
+	if err != nil {
+		log.Panic(err)
+	}
+	rootHash, err := m.RootHash()
 	assert.Equal(
 		t,
 		"0f8a9f1e9450978a41ff06e77df3de64866b55261ed20651c90eb6cb462b1409",
-		hex.EncodeToString(m.RootHash()),
+		hex.EncodeToString(rootHash),
 		"Root hash is correct",
 	)
 }
@@ -69,8 +76,14 @@ func TestMerklePath(t *testing.T) {
 		[]byte("node5"),
 	}
 	m := MerkleTree{}
-	m.Build(data)
-	mp := m.MerklePath([]byte("node5"))
+	err := m.Build(data)
+	if err != nil {
+		log.Panic(err)
+	}
+	mp, err := m.MerklePath([]byte("node5"))
+	if err != nil{
+		log.Panic(err)
+	}
 	assert.Equal(
 		t,
 		"6e6f646535",
@@ -100,12 +113,26 @@ func TestMerkleProve(t *testing.T) {
 		[]byte("node5"),
 	}
 	m := MerkleTree{}
-	m.Build(data)
-	mp := m.MerklePath([]byte("node5"))
+	err := m.Build(data)
+	if err != nil {
+		log.Panic(err)
+	}
+	mp, err := m.MerklePath([]byte("node5"))
+	if err != nil {
+		log.Panic(err)
+	}
+	rootHash, err := m.RootHash()
+	if err != nil {
+		log.Panic(err)
+	}
+	success, err := m.MerkleProve([]byte("node5"), rootHash, mp)
+	if err != nil {
+		log.Panic(err)
+	}
 	assert.Equal(
 		t,
 		true,
-		m.MerkleProve([]byte("node5"), m.RootHash(), mp),
+		success,
 		"merkle prove result is correct",
 	)
 }
@@ -119,9 +146,12 @@ func TestSerializeAndDeserialize(t *testing.T) {
 		[]byte("node5"),
 	}
 	m := MerkleTree{}
-	m.Build(data)
+	err := m.Build(data)
+	if err != nil {
+		log.Panic(err)
+	}
 	var b []byte
-	b, err := m.XXX_Marshal(b, false)
+	b, err = m.XXX_Marshal(b, false)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -157,15 +187,17 @@ func RandStringRunes(n int) string {
 func BenchmarkBuild(b *testing.B) { // 646503ns = 0.6ms，vs 117729ns = 0.1ms
 	rand.Seed(time.Now().UnixNano())
 	var data [][]byte
-	for i := 0; i < 3000; i++ {
+	for i := 0; i < 2; i++ {
 		fmt.Println(i)
 		data = append(data, []byte(RandStringRunes(32)))
 	}
 	m := MerkleTree{}
-	m.Build(data)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		m.Build(data)
+		err := m.Build(data)
+		if err != nil {
+			log.Panic(err)
+		}
 	}
 	//for i := 0; i < b.N; i++ {
 	//	tmp := data[0]
@@ -183,13 +215,16 @@ func BenchmarkMerklePath(b *testing.B) { // 183ns
 		data = append(data, []byte(RandStringRunes(32)))
 	}
 	m := MerkleTree{}
-	m.Build(data)
+	err := m.Build(data)
+	if err != nil {
+		log.Panic(err)
+	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		datum := data[rand.Intn(1000)]
-		mp := m.MerklePath(datum)
-		if m.MerkleProve(datum, m.RootHash(), mp) != true {
-			fmt.Printf("err")
+		_, err := m.MerklePath(datum)
+		if err != nil {
+			log.Panic(err)
 		}
 	}
 }

@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"math"
+	"errors"
 )
 
-func (m *MerkleTree) Build(data [][]byte) {
+func (m *MerkleTree) Build(data [][]byte) error {
+	if len(data) == 0 {
+		return errors.New("data length equals zero")
+	}
 	n := int32(math.Exp2(math.Ceil(math.Log2(float64(len(data))))))
 	m.LeafNum = n
 	m.HashList = make([][]byte, 2*n-1)
@@ -38,31 +42,24 @@ func (m *MerkleTree) Build(data [][]byte) {
 	for idx, datum := range data {
 		m.Hash2Idx[string(datum)] = int32(idx) + n - 1
 	}
+	return nil
 }
 
-func (m *MerkleTree) ComputeHash(idx int32) []byte {
-	if m.HashList[idx] == nil {
-		LCHash := m.ComputeHash(2*idx + 1)
-		RCHash := m.ComputeHash(2*idx + 2)
-		var tmpHash [32]byte
-		if bytes.Compare(LCHash, RCHash) < 0 {
-			tmpHash = sha256.Sum256(append(LCHash, RCHash...))
-		} else {
-			tmpHash = sha256.Sum256(append(RCHash, LCHash...))
-		}
-		m.HashList[idx] = tmpHash[:]
-		return m.HashList[idx]
-	} else {
-		return m.HashList[idx]
+func (m *MerkleTree) RootHash() ([]byte, error) {
+	if m.LeafNum == 0 {
+		return nil, errors.New("merkletree hasn't built")
 	}
+	return m.HashList[0], nil
 }
 
-func (m *MerkleTree) RootHash() []byte {
-	return m.HashList[0]
-}
-
-func (m *MerkleTree) MerklePath(hash []byte) [][]byte {
-	idx := m.Hash2Idx[string(hash)]
+func (m *MerkleTree) MerklePath(hash []byte) ([][]byte, error) {
+	if m.LeafNum == 0 {
+		return nil, errors.New("merkletree hasn't built")
+	}
+	idx, ok := m.Hash2Idx[string(hash)]
+	if !ok {
+		return nil, errors.New("hash isn't in the tree")
+	}
 	mp := make([][]byte, int32(math.Log2(float64(m.LeafNum))))
 	for i := 0; idx != 0; i++ {
 		p := (idx - 1) / 2
@@ -73,10 +70,16 @@ func (m *MerkleTree) MerklePath(hash []byte) [][]byte {
 		}
 		idx = p
 	}
-	return mp
+	return mp, nil
 }
 
-func (m *MerkleTree) MerkleProve(hash []byte, rootHash []byte, mp [][]byte) bool {
+func (m *MerkleTree) MerkleProve(hash []byte, rootHash []byte, mp [][]byte) (bool, error) {
+	if hash == nil {
+		return false, errors.New("hash input error")
+	}
+	if rootHash == nil {
+		return false, errors.New("rootHash input error")
+	}
 	for _, p := range mp {
 		var tmpHash [32]byte
 		if bytes.Compare(hash, p) < 0 {
@@ -86,5 +89,5 @@ func (m *MerkleTree) MerkleProve(hash []byte, rootHash []byte, mp [][]byte) bool
 		}
 		hash = tmpHash[:]
 	}
-	return bytes.Equal(hash, rootHash)
+	return bytes.Equal(hash, rootHash), nil
 }
