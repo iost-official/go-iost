@@ -86,6 +86,6 @@ func (bc *BlockCache) Flush(node *BlockCacheNode) {
 	return
 }
 
-func (bc *BlockCache) Find(blkHash *string) *BlockCacheNode {
+func (bc *BlockCache) Find(blkHash []byte) *BlockCacheNode {
 	return nil
 }
