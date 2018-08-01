@@ -11,6 +11,8 @@ import (
 	"unsafe"
 )
 
+const (aa = iota)
+
 // A Sandbox is an execution environment that allows separate, unrelated, JavaScript
 // code to run in a single instance of IVM.
 type Sandbox struct {
