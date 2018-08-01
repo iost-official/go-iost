@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 )
 
 type Host struct {
 	ctx context.Context
+	db  *database.Visitor
 }
 
 func (h *Host) LoadContext(ctx context.Context) *Host {
@@ -15,29 +17,29 @@ func (h *Host) LoadContext(ctx context.Context) *Host {
 		ctx: ctx,
 	}
 }
-func (h *Host) Put(key, value string) {
-
+func (h *Host) Put(key, value string) { // todo checkout version
+	h.db.Put(key, value)
 }
 func (h *Host) Get(key string) string {
-
+	return h.db.Get(key)
 }
 func (h *Host) Del(key string) {
-
+	h.db.Del(key)
 }
 func (h *Host) MapPut(key, field, value string) {
-
+	h.db.MPut(key, field, value)
 }
 func (h *Host) MapGet(key, field string) (value string) {
-
+	return h.db.MGet(key, field)
 }
 func (h *Host) MapKeys(key string) (fields []string) {
-
+	return h.db.MKeys(key)
 }
 func (h *Host) MapDel(key, field string) {
-
+	h.db.Del(key)
 }
 func (h *Host) MapLen(key string) int {
-
+	return len(h.db.MKeys(keys))
 }
 func (h *Host) Typeof(key string) string {
 
