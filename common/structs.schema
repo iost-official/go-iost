@@ -1,6 +1,0 @@
-struct SignatureRaw {
-	Algorithm int8
-
-	Sig    []byte
-	Pubkey []byte
-}
