@@ -1,6 +1,6 @@
 package database
 
-import "github.com/iost-official/Go-IOS-Protocol/chainbase"
+import "github.com/iost-official/Go-IOS-Protocol/db"
 
 type Database interface {
 	Get(key string) (value string)
@@ -15,8 +15,8 @@ const (
 )
 
 type chainbaseAdapter struct {
-	cb  *chainbase.Chainbase
-	err error
+	cb  *db.MVCCDB
+	err error // todo handle error
 }
 
 func (c *chainbaseAdapter) Get(key string) (value string) {
@@ -45,8 +45,9 @@ func (c *chainbaseAdapter) Keys(prefix string) []string {
 }
 
 func (c *chainbaseAdapter) Del(key string) {
+	c.err = c.cb.Del(StateTable, key)
 }
 
-func newChainbaseAdapter(cb *chainbase.Chainbase) *chainbaseAdapter {
+func newChainbaseAdapter(cb *db.MVCCDB) *chainbaseAdapter {
 	return &chainbaseAdapter{cb, nil}
 }

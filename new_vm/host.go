@@ -4,10 +4,13 @@ import (
 	"context"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 )
 
 type Host struct {
-	ctx context.Context
+	ctx     context.Context
+	db      *database.Visitor
+	monitor *Monitor
 }
 
 func (h *Host) LoadContext(ctx context.Context) *Host {
@@ -15,56 +18,69 @@ func (h *Host) LoadContext(ctx context.Context) *Host {
 		ctx: ctx,
 	}
 }
-func (h *Host) Put(key, value string) {
-
+func (h *Host) Put(key, value string) { // todo checkout version
+	contract := h.ctx.Value("contract_name").(string)
+	h.db.Put(contract+database.Separator+key, value)
 }
 func (h *Host) Get(key string) string {
-
+	contract := h.ctx.Value("contract_name").(string)
+	return h.db.Get(contract + database.Separator + key)
 }
 func (h *Host) Del(key string) {
-
+	contract := h.ctx.Value("contract_name").(string)
+	h.db.Del(contract + database.Separator + key)
 }
 func (h *Host) MapPut(key, field, value string) {
-
+	contract := h.ctx.Value("contract_name").(string)
+	h.db.MPut(contract+database.Separator+key, field, value)
 }
 func (h *Host) MapGet(key, field string) (value string) {
-
+	contract := h.ctx.Value("contract_name").(string)
+	return h.db.MGet(contract+database.Separator+key, field)
 }
 func (h *Host) MapKeys(key string) (fields []string) {
-
+	contract := h.ctx.Value("contract_name").(string)
+	return h.db.MKeys(contract + database.Separator + key)
 }
 func (h *Host) MapDel(key, field string) {
-
+	contract := h.ctx.Value("contract_name").(string)
+	h.db.Del(contract + database.Separator + key)
 }
 func (h *Host) MapLen(key string) int {
-
+	contract := h.ctx.Value("contract_name").(string)
+	return len(h.db.MKeys(contract + database.Separator + key))
 }
-func (h *Host) Typeof(key string) string {
-
-}
-func (h *Host) GlobalGet(contractName, key string) string {
-
+func (h *Host) GlobalGet(contract, key string) string {
+	return h.db.Get(contract + database.Separator + key)
 }
 func (h *Host) GlobalMapGet(contract, key, field string) (value string) {
-
+	return h.db.MGet(contract+database.Separator+key, field)
 }
-func (h *Host) GlobalMapDel(contract, key, field string) {
-
+func (h *Host) GlobalMapKeys(contract, key string) []string {
+	return h.db.MKeys(contract + database.Separator + key)
 }
 func (h *Host) GlobalMapLen(contract, key string) int {
-
+	return len(h.GlobalMapKeys(contract, key))
 }
-func (h *Host) RequireAuth(pubkey string) error {
-
+func (h *Host) RequireAuth(pubkey string) bool {
+	authList := h.ctx.Value("auth_list")
+	i, ok := authList.(map[string]int)[pubkey]
+	return ok && i > 0
 }
 func (h *Host) Receipt(s string) {
-
+	rec := tx.Receipt{
+		Type:    tx.UserDefined,
+		Content: s,
+	}
+	trec := h.ctx.Value("tx_receipt").(*tx.TxReceipt)
+	trec.Receipts = append(trec.Receipts, rec)
 }
 func (h *Host) Call(contract, api string, args ...string) ([]string, error) {
-
+	rtn, _, err := h.CallWithReceipt(contract, api, args...)
+	return rtn, err
 }
-func (h *Host) CallWithReceipt(contract, api string, args ...string) (tx.Receipt, []string, error) {
-
+func (h *Host) CallWithReceipt(contract, api string, args ...string) ([]string, tx.Receipt, error) {
+	return h.monitor.Call(h.ctx, contract, api, args...)
 }
 func (h *Host) Transfer(from, to string, amount int64) error {
 
