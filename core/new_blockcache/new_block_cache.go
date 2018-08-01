@@ -45,7 +45,7 @@ const (
 type BlockCacheNode struct {
 	Block                 *block.Block
 	commit                string
-	Parent               *BlockCacheNode
+	Parent                *BlockCacheNode
 	Children              []*BlockCacheNode
 	Type                  BCNType
 	Number                uint64
@@ -84,4 +84,8 @@ func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 
 func (bc *BlockCache) Flush(node *BlockCacheNode) {
 	return
+}
+
+func (bc *BlockCache) Find(blkHash *string) *BlockCacheNode {
+	return nil
 }
