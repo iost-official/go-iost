@@ -39,3 +39,6 @@ func (m *LRU) Del(key string) {
 	m.cache.Remove(key)
 	m.db.Del(key)
 }
+func (m *LRU) Purge() {
+	m.cache.Purge()
+}

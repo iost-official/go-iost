@@ -29,3 +29,7 @@ func (m *MapHandler) MKeys(key string) (fields []string) {
 	}
 	return
 }
+
+func (m *MapHandler) MDel(key, field string) {
+	m.db.Del(MapPrefix + key + Separator + field)
+}

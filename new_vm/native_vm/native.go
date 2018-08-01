@@ -1,4 +1,4 @@
-package native
+package native_vm
 
 import (
 	"context"
@@ -18,4 +18,8 @@ func (m *VM) LoadAndCall(ctx context.Context, contract *vm.Contract, api string,
 }
 func (m *VM) Release() {
 
+}
+
+func setContract(ctx context.Context, contract vm.Contract) error {
+	return nil
 }
