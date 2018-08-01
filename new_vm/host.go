@@ -15,51 +15,65 @@ type Host struct {
 
 func (h *Host) LoadContext(ctx context.Context) *Host {
 	return &Host{
-		ctx: ctx,
+		ctx:     ctx,
+		db:      h.db,
+		monitor: h.monitor,
 	}
 }
-func (h *Host) Put(key, value string) { // todo checkout version
+func (h *Host) Put(key, value string) {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	contract := h.ctx.Value("contract_name").(string)
 	h.db.Put(contract+database.Separator+key, value)
 }
 func (h *Host) Get(key string) string {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	contract := h.ctx.Value("contract_name").(string)
 	return h.db.Get(contract + database.Separator + key)
 }
 func (h *Host) Del(key string) {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	contract := h.ctx.Value("contract_name").(string)
 	h.db.Del(contract + database.Separator + key)
 }
 func (h *Host) MapPut(key, field, value string) {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	contract := h.ctx.Value("contract_name").(string)
 	h.db.MPut(contract+database.Separator+key, field, value)
 }
 func (h *Host) MapGet(key, field string) (value string) {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	contract := h.ctx.Value("contract_name").(string)
 	return h.db.MGet(contract+database.Separator+key, field)
 }
 func (h *Host) MapKeys(key string) (fields []string) {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	contract := h.ctx.Value("contract_name").(string)
 	return h.db.MKeys(contract + database.Separator + key)
 }
 func (h *Host) MapDel(key, field string) {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	contract := h.ctx.Value("contract_name").(string)
 	h.db.Del(contract + database.Separator + key)
 }
 func (h *Host) MapLen(key string) int {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	contract := h.ctx.Value("contract_name").(string)
 	return len(h.db.MKeys(contract + database.Separator + key))
 }
 func (h *Host) GlobalGet(contract, key string) string {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	return h.db.Get(contract + database.Separator + key)
 }
 func (h *Host) GlobalMapGet(contract, key, field string) (value string) {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	return h.db.MGet(contract+database.Separator+key, field)
 }
 func (h *Host) GlobalMapKeys(contract, key string) []string {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	return h.db.MKeys(contract + database.Separator + key)
 }
 func (h *Host) GlobalMapLen(contract, key string) int {
+	h.db.Checkout(h.ctx.Value("commit").(string))
 	return len(h.GlobalMapKeys(contract, key))
 }
 func (h *Host) RequireAuth(pubkey string) bool {
