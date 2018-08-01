@@ -9,7 +9,7 @@ message ActionRaw {
     string data = 3;
 }
 
-message TransactionRaw {
+message TxRaw {
     string id = 1;
     int64 time = 2;
     repeated ActionRaw actions = 3;
