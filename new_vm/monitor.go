@@ -4,28 +4,24 @@ import (
 	"context"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 )
 
 type Monitor struct {
-	Pool
+	db  database.Visitor
 	vms map[string]VM
 }
 
 func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...string) (rtn []string, receipt tx.Receipt) {
-	contract, err := m.Contract(contractName)
+	contract := m.db.GetContract(contractName)
 
-	if err != nil {
-		panic(err)
-	}
-
+	var err error
 	if vm, ok := m.vms[contract.Lang]; ok {
-		vm.Load(contract)
-		rtn, err = vm.Call(ctx, api, args...)
+		rtn, err = vm.LoadAndCall(ctx, contract, api, args...)
 	} else {
 		vm = VMFactory(contract.Lang)
 		m.vms[contract.Lang] = vm
-		vm.Load(contract)
-		rtn, err = vm.Call(ctx, api, args...)
+		rtn, err = vm.LoadAndCall(ctx, contract, api, args...)
 	}
 	if err != nil {
 		// todo make err receipt
@@ -41,13 +37,13 @@ func (m *Monitor) Update(contractName string, newContract *Contract) error {
 		return err
 	}
 
-	return SetContract(newContract)
+	m.db.SetContract(newContract)
+	return nil
 
 }
 
 func (m *Monitor) Destory(contractName string) error {
-	m.Pool.DeleteContract(contractName)
-	// TODO  从数据库中删除contract
+	m.db.DelContract(contractName)
 	return nil
 }
 
