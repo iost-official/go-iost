@@ -13,14 +13,14 @@ type Contract struct {
 	Code string
 }
 
-func (c *Contract) Encode() string {
+func (c *Contract) Encode() string { // todo
 	return ""
 }
 
-func (c *Contract) Decode(string) {
+func (c *Contract) Decode(string) { // todo
 
 }
 
-func DecodeContract(str string) *Contract {
+func DecodeContract(str string) *Contract { // todo
 	return nil
 }
