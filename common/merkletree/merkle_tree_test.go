@@ -3,17 +3,16 @@ package merkletree
 import (
 	"testing"
 
+	"bytes"
+	"encoding/hex"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 	"log"
 	"math/rand"
-	"time"
-	"encoding/hex"
 	"reflect"
-	"github.com/stretchr/testify/assert"
-	"bytes"
-	"github.com/golang/protobuf/proto"
-
+	"time"
 )
 
 func TestSerializeAndDeserialize(t *testing.T) {
