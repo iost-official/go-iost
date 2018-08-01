@@ -21,6 +21,7 @@ func (m *MVCCHandler) Checkout(tag string) {
 		return
 	} else {
 		m.cache.Purge()
-		//m.db.
+		//m.db.Fork(tag) // 注意这个
+		m.currentTag = tag
 	}
 }
