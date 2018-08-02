@@ -7,8 +7,9 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	//"github.com/golang/protobuf/proto"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-		"encoding/hex"
-	)
+	"encoding/hex"
+	"fmt"
+)
 
 func TestTXRMerkleTree(t *testing.T) {
 	Convey("Test of Build", t, func() {
@@ -25,11 +26,11 @@ func TestTXRMerkleTree(t *testing.T) {
 			log.Panic(err)
 		}
 		So(hex.EncodeToString(m.TX2TXR["node1"]), ShouldEqual, "0a056e6f6465311a00")
-		_, err = m.GetTXR([]byte("node1"))
+		txr, err := m.GetTXR([]byte("node1"))
 		if err != nil {
 			log.Panic(err)
 		}
-		//fmt.Printf("%s",hex.EncodeToString(txr.Encode()))
+		fmt.Printf("\n%s",hex.EncodeToString(txr.Encode()))
 
 
 		//So(hex.EncodeToString(m.HashList[1]), ShouldEqual, "e5e1a9ed8c02ed449057a4c17618127fa8e0a1e1c19fa15a371810371ac7530b")

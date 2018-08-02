@@ -21,10 +21,11 @@ func (m *TXRMerkleTree) Build(txrs []tx.TxReceipt) error {
 func (m *TXRMerkleTree) GetTXR(hash []byte) (tx.TxReceipt, error) {
 	txr := tx.TxReceipt{}
 	txr_hash := m.TX2TXR[string(hash)]
+	err := txr.Decode(txr_hash)
 	fmt.Printf("%s", hex.EncodeToString(txr_hash))
-	//if err != nil {
-	//	return txr, err
-	//}
+	if err != nil {
+		return txr, err
+	}
 	return txr, nil
 }
 func (m *TXRMerkleTree) RootHash() ([]byte, error) {
