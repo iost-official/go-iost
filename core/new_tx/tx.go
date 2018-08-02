@@ -1,7 +1,7 @@
 package tx
 
 import (
-	"github.com/iost-official/prototype/common"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 //go:generate gencode go -schema=structs.schema -package=tx

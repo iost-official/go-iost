@@ -9,8 +9,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
 	"log"
-	"math/rand"
 	"time"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"math/rand"
 )
 
 func TestMerkleTree(t *testing.T) {
@@ -56,22 +57,13 @@ func TestMerkleTree(t *testing.T) {
 	})
 }
 
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func RandStringRunes(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
-}
 
 func BenchmarkBuild(b *testing.B) { // 646503ns = 0.6ms，vs 117729ns = 0.1ms
 	rand.Seed(time.Now().UnixNano())
 	var data [][]byte
 	for i := 0; i < 2; i++ {
 		fmt.Println(i)
-		data = append(data, []byte(RandStringRunes(32)))
+		data = append(data, common.RandHash(32))
 	}
 	m := MerkleTree{}
 	b.ResetTimer()
@@ -87,7 +79,7 @@ func BenchmarkMerklePath(b *testing.B) { // 183ns
 	rand.Seed(time.Now().UnixNano())
 	var data [][]byte
 	for i := 0; i < 1000; i++ {
-		data = append(data, []byte(RandStringRunes(32)))
+		data = append(data, common.RandHash(32))
 	}
 	m := MerkleTree{}
 	err := m.Build(data)
