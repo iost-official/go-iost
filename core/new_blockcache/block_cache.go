@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -24,7 +23,7 @@ func init() {
 	prometheus.MustRegister(blockCachedLength)
 }
 
-func If(condition bool, trueRes, falseRes interface{}) interface{} {
+func IF(condition bool, trueRes, falseRes interface{}) interface{} {
 	if condition {
 		return trueRes
 	}
@@ -55,7 +54,6 @@ const (
 // BlockCacheTree 缓存链分叉的树结构
 type BlockCacheNode struct {
 	Block                 *block.Block
-	commit                string
 	Parent                *BlockCacheNode
 	Children              map[*BlockCacheNode]bool
 	Type                  BCNType
@@ -68,15 +66,15 @@ type BlockCacheNode struct {
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
-	if child==nil{
+	if child == nil {
 		return
 	}
-	_,ok:=bcn.Children[child]
-	if ok{
+	_, ok := bcn.Children[child]
+	if ok {
 		return
-	}	
+	}
 	child.Parent = bcn
-	bcn.Children[child]=true
+	bcn.Children[child] = true
 	return
 }
 
@@ -84,8 +82,8 @@ func (bcn *BlockCacheNode) delChild(child *BlockCacheNode) {
 	if child == nil {
 		return
 	}
-	delete(bcn.Children,child)
-	child.Parent=nil
+	delete(bcn.Children, child)
+	child.Parent = nil
 }
 
 func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *BlockCacheNode {
@@ -93,7 +91,7 @@ func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *Block
 		Block:    block,
 		Children: make(map[*BlockCacheNode]bool),
 		Parent:   parent,
-		Type:     If(parent != nil, parent.Type, nodeType).(BCNType),
+		Type:     IF(parent != nil, parent.Type, nodeType).(BCNType),
 		//initialize others
 	}
 	if parent != nil {
@@ -132,7 +130,6 @@ func (bc *BlockCache) hmdel(hash []byte) {
 	bc.hash2node.Delete(string(hash))
 }
 
-/*
 func NewBlockCache() *BlockCache {
 	bc := BlockCache{
 		linkedTree: NewBCN(nil, nil, Linked),
@@ -141,13 +138,12 @@ func NewBlockCache() *BlockCache {
 	}
 	blkchain := block.BChain
 	lib := blkchain.Top()
-	bc.linkedTree=lib
+	bc.linkedTree.Block = lib
 	if lib != nil {
-		bc.hmset(lib.HeadHash(), lib)
+		bc.hmset(lib.HeadHash(), bc.linkedTree)
 	}
 	return &bc
 }
-*/
 func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 	var code CacheStatus
 	var newNode *BlockCacheNode
@@ -158,7 +154,7 @@ func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 		parent, ok := bc.hmget(blk.Head.ParentHash)
 		if ok {
 			newNode = NewBCN(parent, blk, Linked)
-			code = If(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
+			code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
 		} else {
 			code, newNode = NotFound, nil
 		}
@@ -186,11 +182,21 @@ func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 	case ErrorBlock:
 		return newNode, ErrBlock
 	}
+	if newNode.Number > bc.Head.Number {
+		bc.Head = newNode
+	}
 	return newNode, nil
 }
 
-func (bc *BlockCache) Find(blkHash []byte) *BlockCacheNode {
-	return nil
+func (bc *BlockCache) delNode(bcn *BlockCacheNode) {
+	fa := bcn.Parent
+	bcn.Parent = nil
+	bc.hmdel(bcn.Block.HeadHash())
+	if fa == nil {
+		return
+	}
+	fa.delChild(bcn)
+	return
 }
 func (bc *BlockCache) Del(bcn *BlockCacheNode) {
 	if bcn == nil {
@@ -199,10 +205,9 @@ func (bc *BlockCache) Del(bcn *BlockCacheNode) {
 	for ch, _ := range bcn.Children {
 		bc.Del(ch)
 	}
-	fa := bcn.Parent
-	fa.delChild(bcn) //just do this once
-	bc.hmdel(bcn.Block.HeadHash())
+	bc.delNode(bcn)
 }
+
 func (bc *BlockCache) addSingle(newNode *BlockCacheNode) {
 	block := newNode.Block
 	var child *BlockCacheNode
@@ -213,6 +218,9 @@ func (bc *BlockCache) addSingle(newNode *BlockCacheNode) {
 		}
 	}
 
+	if child == nil {
+		return
+	}
 	child.Parent.delChild(child)
 	newNode.addChild(child)
 	//modify Type from child to end
@@ -232,27 +240,47 @@ func (bc *BlockCache) delSingle() {
 			bc.Del(bcn)
 		}
 	}
+	return
 }
+
 func (bc *BlockCache) flush(cur *BlockCacheNode, retain *BlockCacheNode) {
 	if cur != bc.linkedTree {
 		bc.flush(cur.Parent, cur)
 	}
-	for child,_ := range cur.Children {
+	for child, _ := range cur.Children {
 		if child == retain {
 			continue
 		}
 		bc.Del(child)
 	}
 	//confirm retain to db
+	blkchain := block.BChain
+	if retain.Block != nil {
+		err := blkchain.Push(retain.Block)
+		if err != nil {
+			log.Log.E("Database error, BlockChain Push err:%v", err)
+		}
+	}
+	/*
+		statedb:=db.MVCCDB
+		statedb.Flush(retain.commit)
+	*/
 	bc.hmdel(cur.Block.HeadHash())
 	retain.Parent = nil
 	bc.linkedTree = retain
 	return
 }
+
 func (bc *BlockCache) Flush(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
 	bc.flush(bcn.Parent, bcn)
+	bc.delSingle()
 	return
+}
+
+func (bc *BlockCache) FindBlock(hash []byte) (*block.Block, error) {
+	bcn, ok := bc.hmget(hash)
+	return bcn.Block, IF(ok, nil, errors.New("block not found")).(error)
 }
