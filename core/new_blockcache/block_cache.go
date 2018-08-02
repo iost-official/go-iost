@@ -8,7 +8,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
 	"github.com/iost-official/Go-IOS-Protocol/log"
-	//"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -58,22 +57,26 @@ type BlockCacheNode struct {
 	Block                 *block.Block
 	commit                string
 	Parent                *BlockCacheNode
-	Children              []*BlockCacheNode
+	Children              map[*BlockCacheNode]bool
 	Type                  BCNType
 	Number                uint64
 	Witness               string
 	ConfirmUntil          uint64
 	LastWitnessListNumber uint64
-	PendingWitnessList    []*string
+	PendingWitnessList    []string
 	Extension             []byte
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
-	if child == nil {
+	if child==nil{
 		return
 	}
-	bcn.Children = append(bcn.Children, child)
+	_,ok:=bcn.Children[child]
+	if ok{
+		return
+	}	
 	child.Parent = bcn
+	bcn.Children[child]=true
 	return
 }
 
@@ -81,21 +84,14 @@ func (bcn *BlockCacheNode) delChild(child *BlockCacheNode) {
 	if child == nil {
 		return
 	}
-	newChildren := make([]*BlockCacheNode, 0)
-	bcn.Children = append(bcn.Children, child)
-	for _, ch := range bcn.Children {
-		if ch == child {
-			continue
-		}
-		newChildren = append(newChildren, ch)
-	}
-	bcn.Children = newChildren
+	delete(bcn.Children,child)
+	child.Parent=nil
 }
 
 func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *BlockCacheNode {
 	bcn := BlockCacheNode{
 		Block:    block,
-		Children: make([]*BlockCacheNode, 0),
+		Children: make(map[*BlockCacheNode]bool),
 		Parent:   parent,
 		Type:     If(parent != nil, parent.Type, nodeType).(BCNType),
 		//initialize others
@@ -200,7 +196,7 @@ func (bc *BlockCache) Del(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
-	for _, ch := range bcn.Children {
+	for ch, _ := range bcn.Children {
 		bc.Del(ch)
 	}
 	fa := bcn.Parent
@@ -210,7 +206,7 @@ func (bc *BlockCache) Del(bcn *BlockCacheNode) {
 func (bc *BlockCache) addSingle(newNode *BlockCacheNode) {
 	block := newNode.Block
 	var child *BlockCacheNode
-	for _, bcn := range bc.singleTree.Children {
+	for bcn, _ := range bc.singleTree.Children {
 		if bytes.Equal(bcn.Block.Head.ParentHash, block.HeadHash()) {
 			child = bcn
 			break
@@ -231,7 +227,7 @@ func (bc *BlockCache) delSingle() {
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
-	for _, bcn := range bc.singleTree.Children {
+	for bcn, _ := range bc.singleTree.Children {
 		if bcn.Number <= height {
 			bc.Del(bcn)
 		}
@@ -241,7 +237,7 @@ func (bc *BlockCache) flush(cur *BlockCacheNode, retain *BlockCacheNode) {
 	if cur != bc.linkedTree {
 		bc.flush(cur.Parent, cur)
 	}
-	for _, child := range cur.Children {
+	for child,_ := range cur.Children {
 		if child == retain {
 			continue
 		}
