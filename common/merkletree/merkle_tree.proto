@@ -2,12 +2,12 @@ syntax = "proto3";
 package merkletree;
 
 message MerkleTree {
-  repeated bytes hash_list = 1;
-  map<string, int32> hash2_idx = 2;
-  int32  leaf_num = 3;
+    repeated bytes hash_list = 1;
+    map<string, int32> hash2_idx = 2;
+    int32  leaf_num = 3;
 }
 
 message TXRMerkleTree {
-  MerkleTree MT = 1;
-  map<string, bytes> TX2TXR = 2;
+    MerkleTree mt = 1;
+    map<string, bytes> tx2_txr = 2;
 }
