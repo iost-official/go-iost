@@ -1,4 +1,4 @@
-package new_vm
+package contract
 
 type VersionCode string
 

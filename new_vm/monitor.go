@@ -3,6 +3,7 @@ package new_vm
 import (
 	"context"
 
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
@@ -49,7 +50,7 @@ func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...st
 	return
 }
 
-func (m *Monitor) Update(contractName string, newContract *Contract) error {
+func (m *Monitor) Update(contractName string, newContract *contract.Contract) error {
 	err := m.Destory(contractName)
 	if err != nil {
 		return err

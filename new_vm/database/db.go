@@ -1,7 +1,5 @@
 package database
 
-import "github.com/iost-official/Go-IOS-Protocol/db"
-
 type Visitor struct {
 	BasicHandler
 	MapHandler
@@ -9,7 +7,7 @@ type Visitor struct {
 	MVCCHandler
 }
 
-func NewVisitor(cacheLength int, cb *db.MVCCDB) *Visitor {
+func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 	db := newChainbaseAdapter(cb)
 	cachedDB := NewLRU(cacheLength, db)
 	return &Visitor{
