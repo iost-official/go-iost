@@ -2,8 +2,7 @@ package merkletree
 
 import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"fmt"
-	"encoding/hex"
+	"github.com/golang/protobuf/proto"
 )
 
 func (m *TXRMerkleTree) Build(txrs []tx.TxReceipt) error {
@@ -12,7 +11,6 @@ func (m *TXRMerkleTree) Build(txrs []tx.TxReceipt) error {
 	m.TX2TXR = make(map[string][]byte)
 	for i, txr := range txrs {
 		m.TX2TXR[string(txr.TxHash)] = txr.Encode()
-		fmt.Printf("%s\n", hex.EncodeToString(txr.Encode()))
 		data[i] = m.TX2TXR[string(txr.TxHash)]
 	}
 	return m.MT.Build(data)
@@ -22,7 +20,6 @@ func (m *TXRMerkleTree) GetTXR(hash []byte) (tx.TxReceipt, error) {
 	txr := tx.TxReceipt{}
 	txr_hash := m.TX2TXR[string(hash)]
 	err := txr.Decode(txr_hash)
-	fmt.Printf("%s", hex.EncodeToString(txr_hash))
 	if err != nil {
 		return txr, err
 	}
@@ -38,6 +35,14 @@ func (m *TXRMerkleTree) MerklePath(hash []byte) ([][]byte, error) {
 
 func (m *TXRMerkleTree) MerkleProve(hash []byte, rootHash []byte, mp [][]byte) (bool, error) {
 	return m.MT.MerkleProve(hash, rootHash, mp)
+}
+
+func (m *TXRMerkleTree) Encode() ([]byte, error) {
+	return proto.Marshal(m)
+}
+
+func (m *TXRMerkleTree) Decode(b []byte) error {
+	return proto.Unmarshal(b, m)
 }
 
 

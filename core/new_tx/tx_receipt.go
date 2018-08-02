@@ -94,7 +94,7 @@ func (r *TxReceipt) Encode() []byte {
 }
 
 func (r *TxReceipt) Decode(b []byte) error {
-	var tr *TxReceiptRaw
+	tr := &TxReceiptRaw{}
 	err := proto.Unmarshal(b, tr)
 	if err != nil {
 		return err
