@@ -170,10 +170,6 @@ func (t *Tx) Decode(b []byte) error {
 	return nil
 }
 
-// 计算Tx的哈希值
-func (t *Tx) Hash() []byte {
-	return common.Sha256(t.Encode())
-}
 
 // 验证签名的函数
 func (t *Tx) VerifySelf() error {
