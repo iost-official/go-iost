@@ -37,7 +37,7 @@ func (a *Action) Encode() []byte {
 }
 
 func (a *Action) Decode(b []byte) error {
-	var ar *ActionRaw
+	ar := &ActionRaw{}
 	err := proto.Unmarshal(b, ar)
 	if err != nil {
 		return err
