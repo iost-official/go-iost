@@ -14,7 +14,7 @@ import (
 )
 
 func TestTXRMerkleTree(t *testing.T) {
-	Convey("Test of Build", t, func() {
+	Convey("Test of TXR", t, func() {
 		m := TXRMerkleTree{}
 		txrs := []tx.TxReceipt{
 			{TxHash:[]byte("node1")},

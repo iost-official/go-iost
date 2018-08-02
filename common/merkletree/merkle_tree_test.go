@@ -15,7 +15,7 @@ import (
 )
 
 func TestMerkleTree(t *testing.T) {
-	Convey("Test of Build", t, func() {
+	Convey("Test of MT", t, func() {
 		data := [][]byte{
 			[]byte("node1"),
 			[]byte("node2"),
