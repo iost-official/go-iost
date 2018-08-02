@@ -1,10 +1,13 @@
 package new_vm
 
-import "context"
+import (
+	"context"
+
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+)
 
 type VM interface {
-	Init() error
-	Load(contract *Contract) error
-	Call(ctx context.Context, contractName, api string, args ...string) (rtn []string, err error)
+	Init(api *Host) error
+	LoadAndCall(ctx context.Context, contract *contract.Contract, api string, args ...string) (rtn []string, err error)
 	Release()
 }

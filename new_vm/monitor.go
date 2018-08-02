@@ -3,51 +3,64 @@ package new_vm
 import (
 	"context"
 
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 )
 
 type Monitor struct {
-	Pool
-	vms map[string]VM
+	db   *database.Visitor
+	vms  map[string]VM
+	host *Host
 }
 
-func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...string) (rtn []string, receipt tx.Receipt) {
-	contract, err := m.Contract(contractName)
-
-	if err != nil {
-		panic(err)
+func NewMonitor(cb *db.MVCCDB, cacheLength int) *Monitor {
+	visitor := database.NewVisitor(cacheLength, cb)
+	return &Monitor{
+		db: visitor,
+		host: &Host{
+			ctx: nil,
+			db:  visitor,
+		},
 	}
+}
+
+func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...string) (rtn []string, receipt tx.Receipt, err error) {
+	contract := m.db.GetContract(contractName)
 
 	if vm, ok := m.vms[contract.Lang]; ok {
-		vm.Load(contract)
-		rtn, err = vm.Call(ctx, api, args...)
+		rtn, err = vm.LoadAndCall(ctx, contract, api, args...)
 	} else {
 		vm = VMFactory(contract.Lang)
 		m.vms[contract.Lang] = vm
-		vm.Load(contract)
-		rtn, err = vm.Call(ctx, api, args...)
+		m.vms[contract.Lang].Init(m.host)
+		rtn, err = vm.LoadAndCall(ctx, contract, api, args...)
 	}
 	if err != nil {
-		// todo make err receipt
+		receipt = tx.Receipt{
+			Type:    tx.SystemDefined,
+			Content: err.Error(),
+		}
 	}
-
-	// todo make success receipt
+	receipt = tx.Receipt{
+		Type:    tx.SystemDefined,
+		Content: "success",
+	}
 	return
 }
 
-func (m *Monitor) Update(contractName string, newContract *Contract) error {
+func (m *Monitor) Update(contractName string, newContract *contract.Contract) error {
 	err := m.Destory(contractName)
 	if err != nil {
 		return err
 	}
-
-	return SetContract(newContract)
-
+	m.db.SetContract(newContract)
+	return nil
 }
 
 func (m *Monitor) Destory(contractName string) error {
-	m.Pool.DeleteContract(contractName)
-	// TODO  从数据库中删除contract
+	m.db.DelContract(contractName)
 	return nil
 }
 
