@@ -16,7 +16,7 @@ func (m *ContractHandler) SetContract(contract *contract.Contract) {
 	}
 }
 
-func (m *ContractHandler) GetContract(key string) (contract *contract.Contract) {
+func (m *ContractHandler) Contract(key string) (contract *contract.Contract) {
 	str := m.db.Get(ContractPrefix + key)
 	contract.Decode(str)
 	return

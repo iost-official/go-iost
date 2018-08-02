@@ -26,13 +26,14 @@ func NewMonitor(cb database.IMultiValue, cacheLength int) *Monitor {
 }
 
 func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...string) (rtn []string, receipt *tx.Receipt, cost *contract.Cost, err error) {
-	c := m.db.GetContract(contractName)
+	c := m.db.Contract(contractName)
 
 	ctx2 := ctx
 
 	switch c.ContractInfo.Payment {
 	case contract.ContractPay:
 		ctx2 = context.WithValue(ctx, "cost_limit", c.ContractInfo.Limit)
+
 	}
 
 	if vm, ok := m.vms[c.Lang]; ok {
@@ -53,6 +54,12 @@ func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...st
 		Type:    tx.SystemDefined,
 		Content: "success",
 	}
+	switch c.ContractInfo.Payment { // todo move to higher layer
+	case contract.ContractPay:
+		m.host.LoadContext(ctx2).Transfer(contractName, ctx.Value("witness").(string), int64(c.ContractInfo.GasPrice*cost.ToGas()))
+		cost = &contract.Cost{}
+	}
+
 	return
 }
 

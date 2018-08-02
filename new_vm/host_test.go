@@ -22,6 +22,7 @@ func sliceEqual(a, b []string) bool {
 
 func myinit(t *testing.T, ctx context.Context) (*database.MockIMultiValue, Host) {
 	mockCtrl := NewController(t)
+	defer mockCtrl.Finish()
 	db := database.NewMockIMultiValue(mockCtrl)
 	bdb := database.NewVisitor(100, db)
 
