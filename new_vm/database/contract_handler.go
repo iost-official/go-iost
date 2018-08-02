@@ -1,6 +1,6 @@
 package database
 
-import vm "github.com/iost-official/Go-IOS-Protocol/new_vm"
+import "github.com/iost-official/Go-IOS-Protocol/core/contract"
 
 const ContractPrefix = "c-"
 
@@ -8,7 +8,7 @@ type ContractHandler struct {
 	db Database
 }
 
-func (m *ContractHandler) SetContract(contract *vm.Contract) {
+func (m *ContractHandler) SetContract(contract *contract.Contract) {
 	if contract != nil {
 		m.db.Put(ContractPrefix+contract.Name, contract.Encode())
 	} else {
@@ -16,9 +16,9 @@ func (m *ContractHandler) SetContract(contract *vm.Contract) {
 	}
 }
 
-func (m *ContractHandler) GetContract(key string) (contract *vm.Contract) {
+func (m *ContractHandler) GetContract(key string) (contract *contract.Contract) {
 	str := m.db.Get(ContractPrefix + key)
-	contract = vm.DecodeContract(str)
+	contract.Decode(str)
 	return
 }
 
