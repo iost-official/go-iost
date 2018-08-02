@@ -1,14 +1,12 @@
 package database
 
-import "github.com/iost-official/Go-IOS-Protocol/db"
-
 type MVCCHandler struct {
 	cache      *LRU
-	db         *db.MVCCDB
+	db         IMultiValue
 	currentTag string
 }
 
-func newMVCCHandler(cache *LRU, db *db.MVCCDB) MVCCHandler {
+func newMVCCHandler(cache *LRU, db IMultiValue) MVCCHandler {
 	return MVCCHandler{
 		cache:      cache,
 		db:         db,
@@ -21,7 +19,7 @@ func (m *MVCCHandler) Checkout(tag string) {
 		return
 	} else {
 		m.cache.Purge()
-		//m.db.Fork(tag) // 注意这个
+		m.db.Checkout(tag) // 注意这个
 		m.currentTag = tag
 	}
 }

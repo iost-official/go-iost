@@ -5,6 +5,7 @@ import (
 	"time"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/gogo/protobuf/proto"
+	"fmt"
 )
 
 //go:generate gencode go -schema=structs.schema -package=tx
@@ -136,7 +137,7 @@ func (t *Tx) Encode() []byte {
 
 // 对Tx进行解码
 func (t *Tx) Decode(b []byte) error {
-	var tr *TxRaw
+	tr := &TxRaw{}
 	err := proto.Unmarshal(b, tr)
 	if err != nil {
 		return err
@@ -169,19 +170,21 @@ func (t *Tx) Decode(b []byte) error {
 	return nil
 }
 
-// 计算Tx的哈希值
-func (t *Tx) Hash() []byte {
-	return common.Sha256(t.Encode())
-}
 
-/*
 // 验证签名的函数
 func (t *Tx) VerifySelf() error {
 	baseHash := t.baseHash() // todo 在basehash内缓存，不需要在应用进行缓存
+	signerSet := make(map[string]bool)
 	for _, sign := range t.Signs {
 		ok := common.VerifySignature(baseHash, sign)
 		if !ok {
 			return fmt.Errorf("signer error")
+		}
+		signerSet[common.Base58Encode(sign.Pubkey)] = true
+	}
+	for _, signer := range t.Signers {
+		if _, ok := signerSet[common.Base58Encode(signer)]; !ok {
+			return fmt.Errorf("signer not enough")
 		}
 	}
 
@@ -195,4 +198,3 @@ func (t *Tx) VerifySelf() error {
 func (t *Tx) VerifySigner(sig common.Signature) bool {
 	return common.VerifySignature(t.baseHash(), sig)
 }
-*/
