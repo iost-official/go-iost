@@ -10,12 +10,13 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
 	"encoding/binary"
+	"time"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 )
 
 func genGenesis(initTime int64) (*block.Block, error) {
@@ -47,7 +48,7 @@ func genGenesis(initTime int64) (*block.Block, error) {
 	return genesis, nil
 }
 
-func genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Block {
+func genBlock(acc Account, bc block.Chain, node *blockcache.BlockCacheNode) *block.Block {
 	lastBlk := bc.Top()
 	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
 		Version:    0,
@@ -57,19 +58,38 @@ func genBlock(acc Account, bc block.Chain, pool state.Pool) *block.Block {
 		Time:       GetCurrentTimestamp().Slot,
 	}}
 
-	vc := vm.NewContext(vm.BaseContext())
-	vc.Timestamp = blk.Head.Time
-	vc.ParentHash = blk.Head.ParentHash
-	vc.BlockHeight = blk.Head.Number
-	vc.Witness = vm.IOSTAccount(acc.ID)
+	txCnt := 1000
+	limitTime := time.NewTicker(((SlotLength/3 - 1) + 1) * time.Second)
+	if txpool.TxPoolS != nil {
+		tx, err := txpool.TxPoolS.PendingTransactions(txCnt)
+		if err == nil {
+			txPoolSize.Set(float64(txpool.TxPoolS.TransactionNum()))
 
-	// TODO
+			if len(tx) != 0 {
+			ForEnd:
+				for _, t := range tx {
+					select {
+					case <-limitTime.C:
+						break ForEnd
+					default:
+						if len(blk.Content) >= txCnt {
+							break ForEnd
+						}
+						commit := node.Commit
+						if newCommit, err := verifyTx(t, commit, blk.Head); err == nil {
+							blk.Content = append(blk.Content, *t)
+							commit = newCommit
+						}
+					}
+				}
+			}
+		}
+	}
+
 	blk.Head.TreeHash = blk.CalculateTreeHash()
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
-
-	blockcache.CleanStdVerifier()
 
 	generatedBlockCount.Inc()
 
@@ -94,9 +114,10 @@ func generateHeadInfo(head block.BlockHead) []byte {
 	return common.Sha256(info)
 }
 
-func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-	// verify block head
-	if err := blockcache.VerifyBlockHead(blk, parent); err != nil {
+func blockVerify(blk *block.Block, parent *block.Block, commit string) (string, error) {
+	// verify block head: how to verify?
+	// add time verify on block head.
+	if err := verifyBlockHead(blk, parent); err != nil {
 		return nil, err
 	}
 
@@ -117,9 +138,80 @@ func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool
 	if !common.VerifySignature(headInfo, signature) {
 		return nil, errors.New("wrong signature")
 	}
-	newPool, err := blockcache.StdBlockVerifier(blk, pool)
+
+	// verify slot map
+	if _, err := staticProp.SlotMap[blk.Head.Time][blk.Head.Witness]; !err {
+		return nil, errors.New("witness slot duplicate")
+	}
+
+	// verify exist txs
+	if err := txpool.TxPoolS.ExistTxs(blk.HeadHash(), blk); err {
+		return nil, errors.New("duplicate txs")
+	}
+
+	// verify txs
+	newCommit, err := verifyBlock(blk, commit)
 	if err != nil {
 		return nil, err
 	}
-	return newPool, nil
+	return newCommit, nil
+}
+
+func updateNodeInfo(node *blockcache.BlockCacheNode) {
+	// watermark
+	node.ConfirmUntil = staticProp.Watermark[node.Witness]
+	staticProp.Watermark[node.Witness] = node.Number + 1
+
+	// slot map
+	staticProp.SlotMap[node.Slot][node.Witness] = true
+
+	// pending witness
+	if newList := getWitnessFromCommit(node.Commit); newList != nil {
+		node.PendingWitnessList = newList
+		node.LastWitnessListNumber = node.Number
+	} else {
+		node.PendingWitnessList = node.Parent.PendingWitnessList
+		node.LastWitnessListNumber = node.Parent.LastWitnessListNumber
+	}
+
+}
+
+func calculateConfirm(node *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
+	// return the last number that confirmed
+	confirmNumber := staticProp.NumberOfWitnesses * 2 / 3 + 1
+	totLen := node.Number - block.Chain.Length()
+	confirmMap := make(map[string]int)
+	confirmUntil := make([][]string, totLen)
+	i := 0
+	for node != nil {
+		if node.ConfirmUntil < node.Number {
+			if num, err := confirmMap[node.Witness]; err != nil {
+				confirmMap[node.Witness] = 1
+			} else {
+				confirmMap[node.Witness] = num + 1
+			}
+		}
+		index := node.Number-node.ConfirmUntil
+		confirmUntil[index] = append(confirmUntil[index], node.Witness)
+		if len(confirmMap) >= confirmNumber {
+			staticProp.delSlotWitness(block.Chain.Length(), node.Number)
+			return node
+		}
+		if confirmUntil[i] != nil {
+			for j := range confirmUntil[i] {
+				confirmMap[confirmUntil[i][j]]--
+			}
+		}
+		node = node.Parent
+	}
+}
+
+func updateWitness(node *blockcache.BlockCacheNode, confirmed uint64) {
+	// update the last pending witness list that has been confirmed
+	for node != nil && node.LastWitnessListNumber > confirmed {
+		node = node.Parent
+	}
+	if node != nil {
+		staticProp.updateWitnessList(node.PendingWitnessList)
+	}
 }

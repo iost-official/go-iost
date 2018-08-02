@@ -13,8 +13,8 @@ type globalStaticProperty struct {
 	Account
 	NumberOfWitnesses  int
 	WitnessList        []string
-	Watermark		   map[string]int
-	SlotMap			   map[string]string
+	Watermark		   map[string]uint64
+	SlotMap			   map[uint64]map[string]bool
 	Producing		   bool
 }
 
@@ -27,8 +27,19 @@ func newGlobalStaticProperty(acc Account, witnessList []string) globalStaticProp
 	return prop
 }
 
-func (prop *globalStaticProperty) updateWitnessList(newList []string) {
-	prop.WitnessList = newList
+func (prop *globalStaticProperty) updateWitnessList(newList []*string) {
+	// consistency?
+	prop.WitnessList = make([]string, len(newList))
+	for i := range newList {
+		prop.WitnessList[i] = *newList[i]
+	}
+	prop.NumberOfWitnesses = len(newList)
+}
+
+func (prop *globalStaticProperty) delSlotWitness(slotStart uint64, slotEnd uint64) {
+	for slot := slotStart; slot != slotEnd; slot++ {
+		delete(prop.SlotMap, slot)
+	}
 }
 
 func getIndex(element string, list []string) int {
