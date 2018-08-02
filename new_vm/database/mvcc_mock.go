@@ -33,10 +33,8 @@ func (m *MockIMultiValue) EXPECT() *MockIMultiValueMockRecorder {
 }
 
 // Checkout mocks base method
-func (m *MockIMultiValue) Checkout(arg0 string) string {
-	ret := m.ctrl.Call(m, "Checkout", arg0)
-	ret0, _ := ret[0].(string)
-	return ret0
+func (m *MockIMultiValue) Checkout(arg0 string) {
+	m.ctrl.Call(m, "Checkout", arg0)
 }
 
 // Checkout indicates an expected call of Checkout
@@ -45,11 +43,10 @@ func (mr *MockIMultiValueMockRecorder) Checkout(arg0 interface{}) *gomock.Call {
 }
 
 // Commit mocks base method
-func (m *MockIMultiValue) Commit() (string, error) {
+func (m *MockIMultiValue) Commit() string {
 	ret := m.ctrl.Call(m, "Commit")
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // Commit indicates an expected call of Commit
