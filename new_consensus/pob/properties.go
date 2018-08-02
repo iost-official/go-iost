@@ -23,22 +23,37 @@ func newGlobalStaticProperty(acc Account, witnessList []string) globalStaticProp
 		Account:            acc,
 		NumberOfWitnesses:  len(witnessList),
 		WitnessList:        witnessList,
+		Watermark: 			make(map[string]uint64),
+		SlotMap: 			make(map[uint64]map[string]bool),
 	}
 	return prop
 }
 
-func (prop *globalStaticProperty) updateWitnessList(newList []*string) {
-	// consistency?
-	prop.WitnessList = make([]string, len(newList))
-	for i := range newList {
-		prop.WitnessList[i] = *newList[i]
-	}
+func (prop *globalStaticProperty) updateWitnessList(newList []string) {
+	prop.WitnessList = newList
 	prop.NumberOfWitnesses = len(newList)
 }
 
+func (prop *globalStaticProperty) hasSlotWitness(slot uint64, witness string) bool {
+	if prop.SlotMap[slot] == nil {
+		return false
+	} else {
+		return prop.SlotMap[slot][witness]
+	}
+}
+
+func (prop *globalStaticProperty) addSlotWitness(slot uint64, witness string) {
+	if prop.SlotMap[slot] == nil {
+		prop.SlotMap[slot] = make(map[string]bool)
+	}
+	prop.SlotMap[slot][witness] = true
+}
+
 func (prop *globalStaticProperty) delSlotWitness(slotStart uint64, slotEnd uint64) {
-	for slot := slotStart; slot != slotEnd; slot++ {
-		delete(prop.SlotMap, slot)
+	for slot := slotStart; slot <= slotEnd; slot++ {
+		if _, has := prop.SlotMap[slot]; has {
+			delete(prop.SlotMap, slot)
+		}
 	}
 }
 

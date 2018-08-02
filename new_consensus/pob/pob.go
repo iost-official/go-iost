@@ -81,7 +81,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 		if err != nil {
 			return nil, fmt.Errorf("failed to genesis is nil")
 		}
-		//TODO: add genesis to db
+		//TODO: add genesis to db, what about its state?
 
 	}
 

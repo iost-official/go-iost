@@ -185,7 +185,7 @@ func calculateConfirm(node *blockcache.BlockCacheNode) *blockcache.BlockCacheNod
 	i := 0
 	for node != nil {
 		if node.ConfirmUntil < node.Number {
-			if num, err := confirmMap[node.Witness]; err != nil {
+			if num, err := confirmMap[node.Witness]; err {
 				confirmMap[node.Witness] = 1
 			} else {
 				confirmMap[node.Witness] = num + 1
