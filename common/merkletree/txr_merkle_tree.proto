@@ -1,7 +1,0 @@
-syntax = "proto3";
-package merkletree;
-
-message TXRMerkleTree {
-  MerkleTree MT = 1;
-  map<tx, tx.TxReceipt> TX2TXR = 2;
-}

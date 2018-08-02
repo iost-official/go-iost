@@ -1,7 +1,5 @@
 package tx
 
-import "github.com/iost-official/Go-IOS-Protocol/common"
-
 /**
  * Describtion: tx
  * User: wangyu
@@ -49,8 +47,4 @@ type TxReceipt struct {
 	Status      Status
 	SuccActionNum	int		// 执行成功的 action 个数
 	Receipts    []Receipt
-}
-
-func (txr *TxReceipt) Hash() []byte{	//merge to change
-	return common.RandHash(32)
-}
+}s

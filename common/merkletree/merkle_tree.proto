@@ -6,3 +6,8 @@ message MerkleTree {
   map<string, int32> hash2_idx = 2;
   int32  leaf_num = 3;
 }
+
+message TXRMerkleTree {
+  MerkleTree MT = 1;
+  map<string, bytes> TX2TXR = 2;
+}
