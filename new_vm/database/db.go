@@ -4,6 +4,7 @@ type Visitor struct {
 	BasicHandler
 	MapHandler
 	ContractHandler
+	BalanceHandler
 	MVCCHandler
 }
 
@@ -15,5 +16,6 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 		MapHandler:      MapHandler{cachedDB},
 		ContractHandler: ContractHandler{cachedDB},
 		MVCCHandler:     newMVCCHandler(cachedDB, cb),
+		BalanceHandler:  BalanceHandler{cachedDB},
 	}
 }

@@ -3,8 +3,15 @@ package new_vm
 import (
 	"context"
 
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/pkg/errors"
+)
+
+var (
+	ErrBalanceNotEnough = errors.New("balance not enough")
+	ErrTransferNegValue = errors.New("trasfer amount less than zero")
 )
 
 type Host struct {
@@ -97,23 +104,45 @@ func (h *Host) CallWithReceipt(contract, api string, args ...string) ([]string, 
 	return h.monitor.Call(h.ctx, contract, api, args...)
 }
 func (h *Host) Transfer(from, to string, amount int64) error {
+	if amount <= 0 {
+		return ErrTransferNegValue
+	}
 
+	h.db.Checkout(h.ctx.Value("commit").(string))
+	bf := h.db.Balance(from)
+	if bf > amount {
+		h.db.SetBalance(from, -1*amount)
+		h.db.SetBalance(to, amount)
+	} else {
+		return ErrBalanceNotEnough
+	}
+	return nil
 }
 func (h *Host) Withdraw(to string, amount int64) error {
-
+	h.db.Checkout(h.ctx.Value("commit").(string))
+	contract := h.ctx.Value("contract_name").(string)
+	return h.Transfer(contract, to, amount)
 }
 func (h *Host) Deposit(from string, amount int64) error {
-
+	h.db.Checkout(h.ctx.Value("commit").(string))
+	contract := h.ctx.Value("contract_name").(string)
+	return h.Transfer(from, contract, amount)
 }
 func (h *Host) TopUp(contract, from string, amount int64) error {
-
+	h.db.Checkout(h.ctx.Value("commit").(string))
+	return h.Transfer(from, "g-"+contract, amount)
 }
 func (h *Host) Countermand(contract, to string, amount int64) error {
-
+	h.db.Checkout(h.ctx.Value("commit").(string))
+	return h.Transfer("g-"+contract, to, amount)
 }
-func (h *Host) BlockInfo() string {
-
+func (h *Host) SetCode(c *contract.Contract) {
+	h.db.Checkout(h.ctx.Value("commit").(string))
+	h.db.SetContract(c)
 }
-func (h *Host) TxInfo() string {
-
+func (h *Host) BlockInfo() database.SerializedJSON {
+	return h.ctx.Value("block_info").(database.SerializedJSON)
+}
+func (h *Host) TxInfo() database.SerializedJSON {
+	return h.ctx.Value("tx_info").(database.SerializedJSON)
 }
