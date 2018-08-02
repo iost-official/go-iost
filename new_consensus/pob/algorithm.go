@@ -3,7 +3,7 @@ package pob
 import (
 	. "github.com/iost-official/Go-IOS-Protocol/account"
 	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
-	. "github.com/iost-official/Go-IOS-Protocol/core/tx"
+	. "github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 
 	"errors"
 	"fmt"
@@ -17,7 +17,6 @@ import (
 	"encoding/binary"
 	"time"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"net"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
@@ -78,8 +77,9 @@ func genBlock(acc Account, bc block.Chain, node *blockcache.BlockCacheNode) *blo
 							break ForEnd
 						}
 						commit := node.Commit
-						if newCommit, err := VerifyTx(t, commit, blk.Head); err == nil {
+						if newCommit, receipt, err := VerifyTx(t, commit, blk.Head); err == nil {
 							blk.Content = append(blk.Content, *t)
+							blk.Receipts = append(blk.Receipts, receipt)
 							commit = newCommit
 						}
 					}
@@ -117,7 +117,7 @@ func generateHeadInfo(head block.BlockHead) []byte {
 }
 
 func verifyBasics(blk *block.Block, parent *block.Block) error {
-	// add time verify on block head.
+	// verify block head
 	if err := VerifyBlockHead(blk, parent); err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func verifyBasics(blk *block.Block, parent *block.Block) error {
 
 	// verify exist txs
 	if err := txpool.TxPoolS.ExistTxs(blk.HeadHash(), blk); err {
-		return "", errors.New("duplicate txs")
+		return errors.New("duplicate txs")
 	}
 
 	return nil
@@ -155,9 +155,14 @@ func verifyBasics(blk *block.Block, parent *block.Block) error {
 
 func blockTxVerify(blk *block.Block, commit string) (string, error) {
 	// verify txs
-	newCommit, err := VerifyBlock(blk, commit)
+	newCommit, receipts, err := VerifyBlock(blk, commit)
 	if err != nil {
 		return "", err
+	}
+	for i := range receipts {
+		if !blk.Receipts[i].equal(receipts[i]) {
+			return "", errors.New("wrong tx receipt")
+		}
 	}
 	return newCommit, nil
 }

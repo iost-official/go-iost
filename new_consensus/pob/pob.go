@@ -2,7 +2,6 @@ package pob
 
 import (
 	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	. "github.com/iost-official/Go-IOS-Protocol/network"
 
 	"fmt"
