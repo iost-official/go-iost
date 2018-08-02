@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 var (
@@ -59,6 +60,7 @@ type PoB struct {
 	blockCache   *blockcache.BlockCache
 	router       Router
 	synchronizer Synchronizer
+	stateDB 	 *db.MVCCDB
 
 	exitSignal chan struct{}
 	chBlock    chan message.Message
@@ -146,15 +148,18 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			parent := p.blockCache.Find(blk.HeadHash())
-			if parent != nil {
-				var node *blockcache.BlockCacheNode
-				err := p.addBlock(&blk, node, parent, true)
-				if err ==  {
-					// dishonest?
+			if err := verifyBasics(blk, parent); err == nil {
+				if parent.Type == blockcache.Linked {
+					var node *blockcache.BlockCacheNode
+					err := p.addBlock(&blk, node, parent, true)
+					if err ==  {
+						// dishonest?
+					}
+					p.addSingles(node)
+
 				}
-				p.addSingles(node)
 			} else {
-				// sync?
+				// dishonest?
 			}
 		case <-p.exitSignal:
 			return
@@ -163,8 +168,8 @@ func (p *PoB) blockLoop() {
 }
 
 func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) error{
-	// verify
-	newCommit, err := blockVerify(blk, parent.Block, parent.Commit)
+	// verify block txs
+	newCommit, err := blockTxVerify(blk, parent.Commit)
 	// add
 	if newBlock {
 		if err == nil {
@@ -178,7 +183,13 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 			return err
 		}
 	}
-	updateNodeInfo(node)
+	// tag in state
+	p.stateDB.Tag(blk.HeadHash())
+	// update node info without state
+	updateNodeInfo(node, newCommit)
+	// update node info with state, currently witness list
+	updateWitness(node, p.stateDB, newCommit)
+
 	// confirm
 	confirmNode := calculateConfirm(node)
 	if confirmNode != nil {
@@ -186,7 +197,7 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 	}
 
 	// witness list
-	updateWitness(node, confirmNode.Number)
+	promoteWitness(node, confirmNode.Number)
 
 	dynamicProp.update(&blk.Head)
 	// -> tx pool

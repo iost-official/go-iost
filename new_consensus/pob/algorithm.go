@@ -2,7 +2,7 @@ package pob
 
 import (
 	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	. "github.com/iost-official/Go-IOS-Protocol/core/tx"
 
 	"errors"
@@ -17,6 +17,8 @@ import (
 	"encoding/binary"
 	"time"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"net"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 func genGenesis(initTime int64) (*block.Block, error) {
@@ -76,7 +78,7 @@ func genBlock(acc Account, bc block.Chain, node *blockcache.BlockCacheNode) *blo
 							break ForEnd
 						}
 						commit := node.Commit
-						if newCommit, err := verifyTx(t, commit, blk.Head); err == nil {
+						if newCommit, err := VerifyTx(t, commit, blk.Head); err == nil {
 							blk.Content = append(blk.Content, *t)
 							commit = newCommit
 						}
@@ -114,16 +116,15 @@ func generateHeadInfo(head block.BlockHead) []byte {
 	return common.Sha256(info)
 }
 
-func blockVerify(blk *block.Block, parent *block.Block, commit string) (string, error) {
-	// verify block head: how to verify?
+func verifyBasics(blk *block.Block, parent *block.Block) error {
 	// add time verify on block head.
-	if err := verifyBlockHead(blk, parent); err != nil {
-		return nil, err
+	if err := VerifyBlockHead(blk, parent); err != nil {
+		return err
 	}
 
 	// verify block witness
 	if witnessOfTime(Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
-		return nil, errors.New("wrong witness")
+		return errors.New("wrong witness")
 	}
 
 	headInfo := generateHeadInfo(blk.Head)
@@ -131,49 +132,61 @@ func blockVerify(blk *block.Block, parent *block.Block, commit string) (string, 
 	signature.Decode(blk.Head.Signature)
 
 	if blk.Head.Witness != common.Base58Encode(signature.Pubkey) {
-		return nil, errors.New("wrong pubkey")
+		return errors.New("wrong pubkey")
 	}
 
 	// verify block witness signature
 	if !common.VerifySignature(headInfo, signature) {
-		return nil, errors.New("wrong signature")
+		return errors.New("wrong signature")
 	}
 
 	// verify slot map
-	if _, err := staticProp.SlotMap[blk.Head.Time][blk.Head.Witness]; !err {
-		return nil, errors.New("witness slot duplicate")
+	if staticProp.hasSlotWitness(uint64(blk.Head.Time), blk.Head.Witness); !err {
+		return errors.New("witness slot duplicate")
 	}
 
 	// verify exist txs
 	if err := txpool.TxPoolS.ExistTxs(blk.HeadHash(), blk); err {
-		return nil, errors.New("duplicate txs")
+		return "", errors.New("duplicate txs")
 	}
 
+	return nil
+}
+
+func blockTxVerify(blk *block.Block, commit string) (string, error) {
 	// verify txs
-	newCommit, err := verifyBlock(blk, commit)
+	newCommit, err := VerifyBlock(blk, commit)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	return newCommit, nil
 }
 
-func updateNodeInfo(node *blockcache.BlockCacheNode) {
+func updateNodeInfo(node *blockcache.BlockCacheNode, commit string) {
+	node.Commit = commit
+	node.Number = node.Block.Head.Number
+	node.Witness = node.Block.Head.Witness
+
 	// watermark
 	node.ConfirmUntil = staticProp.Watermark[node.Witness]
 	staticProp.Watermark[node.Witness] = node.Number + 1
 
 	// slot map
-	staticProp.SlotMap[node.Slot][node.Witness] = true
+	staticProp.addSlotWitness(uint64(node.Block.Head.Time), node.Witness)
+}
 
+func updateWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB, commit string) []string {
 	// pending witness
-	if newList := getWitnessFromCommit(node.Commit); newList != nil {
+	db.Checkout(commit)
+	newList := db.Get("witnessList")
+
+	if newList != nil {
 		node.PendingWitnessList = newList
 		node.LastWitnessListNumber = node.Number
 	} else {
 		node.PendingWitnessList = node.Parent.PendingWitnessList
 		node.LastWitnessListNumber = node.Parent.LastWitnessListNumber
 	}
-
 }
 
 func calculateConfirm(node *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
@@ -206,7 +219,7 @@ func calculateConfirm(node *blockcache.BlockCacheNode) *blockcache.BlockCacheNod
 	}
 }
 
-func updateWitness(node *blockcache.BlockCacheNode, confirmed uint64) {
+func promoteWitness(node *blockcache.BlockCacheNode, confirmed uint64) {
 	// update the last pending witness list that has been confirmed
 	for node != nil && node.LastWitnessListNumber > confirmed {
 		node = node.Parent
