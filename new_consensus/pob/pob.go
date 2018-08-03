@@ -83,7 +83,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 			return nil, fmt.Errorf("failed to genesis is nil")
 		}
 		//TODO: add genesis to db, what about its state?
-
+		bc.Push(genesis)
 	}
 
 	var err error
@@ -181,10 +181,9 @@ func (p *PoB) scheduleLoop() {
 			wid := witnessOfTime(currentTimestamp)
 			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
 			if wid == p.account.ID && staticProp.Producing {
-				// TODO
 				chainHead := p.blockCache.Head()
-				commit := p.stateDB.GetTag(chainHead.Block.HeadHash())
-				blk := genBlock(p.account, chainHead)
+				db := p.stateDB.Checkout(chainHead.Block.HeadHash())
+				blk := genBlock(p.account, chainHead, db)
 
 				dynamicProp.update(&blk.Head)
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
@@ -203,8 +202,9 @@ func (p *PoB) scheduleLoop() {
 
 func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) error {
 	// verify block txs
-	commit := p.stateDB.GetTag(parent.Block.HeadHash())
-	newCommit, err := blockTxVerify(blk, commit)
+	db := p.stateDB.Checkout(parent.Block.HeadHash())
+	// is fork needed here?
+	err := verifyBlockTxs(blk, db)
 	// add
 	if newBlock {
 		if err == nil {
@@ -219,11 +219,11 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 		}
 	}
 	// tag in state
-	p.stateDB.Tag(blk.HeadHash())
+	p.stateDB.Commit(blk.HeadHash())
 	// update node info without state
-	updateNodeInfo(node, newCommit)
+	updateNodeInfo(node)
 	// update node info with state, currently witness list
-	updateWitness(node, p.stateDB, newCommit)
+	updateWitness(node, p.stateDB)
 
 	// confirm
 	confirmNode := calculateConfirm(node)
@@ -231,7 +231,7 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 		p.blockCache.Flush(confirmNode)
 	}
 
-	// witness list
+	// promote witness list
 	promoteWitness(node, confirmNode.Number)
 
 	dynamicProp.update(&blk.Head)

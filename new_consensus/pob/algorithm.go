@@ -18,6 +18,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
 	"time"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 )
 
 func genGenesis(initTime int64) (*block.Block, error) {
@@ -50,7 +51,7 @@ func genGenesis(initTime int64) (*block.Block, error) {
 	return genesis, nil
 }
 
-func genBlock(acc Account, node *blockcache.BlockCacheNode) *block.Block {
+func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *block.Block {
 	lastBlk := node.Block
 	blk := block.Block{
 		Head: block.BlockHead{
@@ -72,6 +73,9 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode) *block.Block {
 			txPoolSize.Set(float64(txpool.TxPoolS.TransactionNum()))
 
 			if len(tx) != 0 {
+				//  is this necessary?
+				db.Fork()
+				VerifyTxBegin(lastBlk, db)
 			ForEnd:
 				for _, t := range tx {
 					select {
@@ -81,11 +85,13 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode) *block.Block {
 						if len(blk.Txs) >= txCnt {
 							break ForEnd
 						}
-						commit := node.Commit
-						if newCommit, receipt, err := VerifyTx(t, commit, blk.Head); err == nil {
+						if receipt, err := VerifyTx(t); err == nil {
+							// same question on commit
+							db.Commit()
 							blk.Txs = append(blk.Txs, *t)
 							blk.Receipts = append(blk.Receipts, receipt)
-							commit = newCommit
+						} else {
+							db.Rollback()
 						}
 					}
 				}
@@ -98,6 +104,8 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode) *block.Block {
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
+	// commit here?
+	db.Commit(blk.HeadHash())
 
 	generatedBlockCount.Inc()
 
@@ -158,17 +166,16 @@ func verifyBasics(blk *block.Block, parent *block.Block) error {
 	return nil
 }
 
-func blockTxVerify(blk *block.Block, commit string) (string, error) {
+func verifyBlockTxs(blk *block.Block, db *db.MVCCDB) error {
 	// verify txs
-	newCommit, err := VerifyBlock(blk, commit)
+	err := VerifyBlock(blk, db)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return newCommit, nil
+	return nil
 }
 
-func updateNodeInfo(node *blockcache.BlockCacheNode, commit string) {
-	node.Commit = commit
+func updateNodeInfo(node *blockcache.BlockCacheNode) {
 	node.Number = node.Block.Head.Number
 	node.Witness = node.Block.Head.Witness
 
@@ -180,9 +187,8 @@ func updateNodeInfo(node *blockcache.BlockCacheNode, commit string) {
 	staticProp.addSlotWitness(uint64(node.Block.Head.Time), node.Witness)
 }
 
-func updateWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB, commit string) []string {
+func updateWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) []string {
 	// pending witness
-	db.Checkout(commit)
 	newList := db.Get("witnessList")
 
 	if newList != nil {

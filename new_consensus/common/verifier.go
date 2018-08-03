@@ -6,6 +6,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
@@ -39,28 +40,41 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 	return nil
 }
 
-func VerifyBlock(blk *block.Block, commit string) (string, error) {
+func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
 	var receipts []tx.TxReceipt
+	engine := new_vm.NewEngine(blk.Head, db)
 	for i := range blk.Txs {
-		newCommit, receipt, err := VerifyTx(&blk.Txs[i], commit, &blk.Head)
+		receipt, err := verify(&blk.Txs[i], &engine)
 		if err == nil {
-			commit = newCommit
+			// commit on every tx? with what tag? what about the last?
+			db.Commit()
 			receipts = append(receipts, receipt)
 		} else {
-			return "", err
+			db.Rollback()
+			return err
 		}
 	}
 	for i := range receipts {
 		if !blk.Receipts[i].Equal(receipts[i]) {
-			return "", errors.New("wrong tx receipt")
+			// How to rollback all the txs?
+			db.Rollback()
+			return errors.New("wrong tx receipt")
 		}
 	}
-	return commit, nil
+	return nil
 }
 
-func VerifyTx(tx *tx.Tx, commit string, head *block.BlockHead) (string, tx.TxReceipt, error) {
-	engine := new_vm.Engine()
-	engine.SetEnv(head, commit)
-	receipt, newCommit, err := engine.Exec(*tx)
-	return newCommit, receipt, err
+var txEngine new_vm.Engine
+
+func VerifyTxBegin(blk *block.Block, db *db.MVCCDB) {
+	txEngine = new_vm.NewEngine(blk.Head, db)
+}
+
+func VerifyTx(tx *tx.Tx) (tx.TxReceipt, error) {
+	return verify(tx, &txEngine)
+}
+
+func verify(tx *tx.Tx, engine *new_vm.Engine) (tx.TxReceipt, error) {
+	receipt, err := engine.Exec(tx)
+	return receipt, err
 }
