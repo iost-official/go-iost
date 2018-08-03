@@ -3,6 +3,7 @@ package merkletree
 import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/golang/protobuf/proto"
+	"errors"
 )
 
 func (m *TXRMerkleTree) Build(txrs []tx.TxReceipt) error {
@@ -18,8 +19,11 @@ func (m *TXRMerkleTree) Build(txrs []tx.TxReceipt) error {
 
 func (m *TXRMerkleTree) GetTXR(hash []byte) (tx.TxReceipt, error) {
 	txr := tx.TxReceipt{}
-	txr_hash := m.TX2TXR[string(hash)]
-	err := txr.Decode(txr_hash)
+	txrHash, ok := m.TX2TXR[string(hash)]
+	if !ok {
+		return txr, errors.New("txHash isn't in the tree")
+	}
+	err := txr.Decode(txrHash)
 	if err != nil {
 		return txr, err
 	}

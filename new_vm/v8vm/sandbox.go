@@ -37,10 +37,12 @@ func (sbx *Sandbox) Release() {
 	sbx.context = nil
 }
 
-func (sbx *Sandbox) Prepare(code, function string, args []string) string {
-	return fmt.Sprintf(`var exports = {};
-var module = {};
+func (sbx *Sandbox) Init() {
 
+}
+
+func (sbx *Sandbox) Prepare(code, function string, args []string) string {
+	return fmt.Sprintf(`
 var wrapper = (function (exports, module) {
 %s
 });

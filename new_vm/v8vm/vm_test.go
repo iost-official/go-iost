@@ -3,15 +3,17 @@ package v8
 import (
 	"context"
 	"testing"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 )
 
 func TestEngine_LoadAndCall(t *testing.T) {
-	contract := &new_vm.Contract{
-		ContractInfo: new_vm.ContractInfo{
+	contract := &contract.Contract{
+		ContractInfo: contract.ContractInfo{
 			Name: "test.js",
 		},
-		Code: `var Contract = function() {
+		Code: `
+var Contract = function() {
 }
 
 	Contract.prototype = {
