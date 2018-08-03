@@ -10,11 +10,12 @@ const (
 )
 
 type ContractInfo struct {
-	Name    string
-	Lang    string
-	Version VersionCode
-	Payment PaymentCode
-	Limit   *Cost
+	Name     string
+	Lang     string
+	Version  VersionCode
+	Payment  PaymentCode
+	Limit    *Cost
+	GasPrice uint64
 }
 
 type Contract struct {
