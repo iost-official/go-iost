@@ -50,8 +50,8 @@ func genGenesis(initTime int64) (*block.Block, error) {
 	return genesis, nil
 }
 
-func genBlock(acc Account, bc block.Chain, node *blockcache.BlockCacheNode) *block.Block {
-	lastBlk := bc.Top()
+func genBlock(acc Account, node *blockcache.BlockCacheNode) *block.Block {
+	lastBlk := node.Block
 	blk := block.Block{
 		Head: block.BlockHead{
 			Version:    0,

@@ -180,8 +180,21 @@ func (p *PoB) scheduleLoop() {
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(currentTimestamp)
 			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
-			if wid == p.account.ID {
+			if wid == p.account.ID && staticProp.Producing {
 				// TODO
+				chainHead := p.blockCache.Head()
+				commit := p.stateDB.GetTag(chainHead.Block.HeadHash())
+				blk := genBlock(p.account, chainHead)
+
+				dynamicProp.update(&blk.Head)
+				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
+
+				bb := blk.Encode()
+				msg := message.Message{ReqType: int32(ReqNewBlock), Body: bb}
+				log.Log.I("Block size: %v, TrNum: %v", len(bb), len(blk.Txs))
+				go p.router.Broadcast(msg)
+				p.chBlock <- msg
+				p.log.I("Broadcasted block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().Unix())
 		}
