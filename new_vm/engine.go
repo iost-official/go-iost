@@ -5,6 +5,7 @@ import (
 
 	"sync"
 
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
@@ -52,7 +53,7 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 }
 func (e *EngineImpl) Exec(tx0 tx.Tx) (tx.TxReceipt, error) {
 
-	txr := tx.NewTxReceipt(tx0.Hash())
+	txr := tx.NewTxReceipt([]byte(tx0.Id))
 	totalCost := contract.Cost0()
 
 	for _, action := range tx0.Actions {
@@ -64,7 +65,7 @@ func (e *EngineImpl) Exec(tx0 tx.Tx) (tx.TxReceipt, error) {
 		totalCost.AddAssign(cost)
 	}
 
-	//e.host.PayCost(totalCost, tx0.Publisher.) todo pay cost
+	e.host.PayCost(totalCost, account.GetIdByPubkey(tx0.Publisher.Pubkey), tx0.GasPrice)
 
 	return txr, nil
 }

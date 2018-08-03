@@ -23,6 +23,7 @@ type Tx struct {
 	Signers   [][]byte
 	Signs     []common.Signature
 	Publisher common.Signature
+	GasPrice  int64
 }
 
 // 新建一个Tx，需要通过编译器得到一个contract
