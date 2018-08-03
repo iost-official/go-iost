@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 )
 
 type Monitor struct {
@@ -28,7 +27,8 @@ func NewMonitor( /*cb database.IMultiValue, cacheLength int*/ ) *Monitor {
 	return m
 }
 
-func (m *Monitor) Call(host *Host, contractName, api string, args ...string) (rtn []string, receipt *tx.Receipt, cost *contract.Cost, err error) {
+func (m *Monitor) Call(host *Host, contractName, api string, args ...string) (rtn []string, cost *contract.Cost, err error) {
+
 	c := host.db.Contract(contractName)
 	ctx := host.Context()
 
@@ -42,25 +42,18 @@ func (m *Monitor) Call(host *Host, contractName, api string, args ...string) (rt
 		m.vms[c.Lang].Init()
 		rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
 	}
-	if err != nil {
-		receipt = &tx.Receipt{
-			Type:    tx.SystemDefined,
-			Content: err.Error(),
-		}
-	}
-	receipt = &tx.Receipt{
-		Type:    tx.SystemDefined,
-		Content: "success",
-	}
-	payment := host.ctx.Value("abi_config").(map[string]*string)["payment"]
+
+	payment := host.ctx.Value("abi_config").(map[string]*string)["payment"] // TODO 预编译
 	gasPrice := host.ctx.Value("gas_price").(int64)
 	switch {
 	case payment == nil:
 		break
 	default:
-		host.PayCost(cost, *payment, gasPrice)
+		host.PayCost(cost, contractName, gasPrice)
 		cost = contract.Cost0()
 	}
+
+	host.ctx = ctx
 
 	return
 }
