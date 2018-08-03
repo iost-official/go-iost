@@ -96,7 +96,6 @@ func (d *Block) Hash() []byte {
 	return common.Sha256(d.Encode())
 }
 
-//
 func (d *Block) HashID() string {
 	id := d.Head.Witness +
 		strconv.FormatInt(d.Head.Time, 10) +
@@ -119,17 +118,6 @@ func (d *Block) GetTx(x int) tx.Tx {
 
 func (d *Block) LenTx() int {
 	return len(d.Txs)
-}
-
-func (d *Block) GetAllContract() []vm.Contract {
-
-	var allContract []vm.Contract
-
-	for _, tx := range d.Txs {
-		allContract = append(allContract, tx.Contract)
-	}
-
-	return allContract
 }
 
 func (d *BlockHead) Encode() []byte {
