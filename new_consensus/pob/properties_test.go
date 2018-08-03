@@ -43,7 +43,7 @@ func TestGlobalStaticProperty(t *testing.T) {
 		Convey("Slot map add and delete", func() {
 			prop.addSlotWitness(4, "id3")
 			So(prop.hasSlotWitness(4, "id3"), ShouldBeTrue)
-			prop.delSlotWitness(0,2)
+			prop.delSlotWitness(0, 2)
 			So(prop.hasSlotWitness(1, "id3"), ShouldBeFalse)
 			So(prop.hasSlotWitness(2, "id5"), ShouldBeFalse)
 			So(prop.hasSlotWitness(3, "id6"), ShouldBeTrue)

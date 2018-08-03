@@ -2,22 +2,22 @@ package pob
 
 import (
 	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	. "github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 
 	"errors"
 	"fmt"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
 	"encoding/binary"
-	"time"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"time"
 )
 
 func genGenesis(initTime int64) (*block.Block, error) {
@@ -43,21 +43,26 @@ func genGenesis(initTime int64) (*block.Block, error) {
 			Number:  0,
 			Time:    initTime,
 		},
-		Content: make([]Tx, 0),
+		Txs:      make([]Tx, 0),
+		Receipts: make([]TxReceipt, 0),
 	}
-	genesis.Content = append(genesis.Content, tx)
+	genesis.Txs = append(genesis.Txs, tx)
 	return genesis, nil
 }
 
 func genBlock(acc Account, bc block.Chain, node *blockcache.BlockCacheNode) *block.Block {
 	lastBlk := bc.Top()
-	blk := block.Block{Content: []Tx{}, Head: block.BlockHead{
-		Version:    0,
-		ParentHash: lastBlk.HeadHash(),
-		Number:     lastBlk.Head.Number + 1,
-		Witness:    acc.ID,
-		Time:       GetCurrentTimestamp().Slot,
-	}}
+	blk := block.Block{
+		Head: block.BlockHead{
+			Version:    0,
+			ParentHash: lastBlk.HeadHash(),
+			Number:     lastBlk.Head.Number + 1,
+			Witness:    acc.ID,
+			Time:       GetCurrentTimestamp().Slot,
+		},
+		Txs:      []Tx{},
+		Receipts: []TxReceipt{},
+	}
 
 	txCnt := 1000
 	limitTime := time.NewTicker(((SlotLength/3 - 1) + 1) * time.Second)
@@ -73,12 +78,12 @@ func genBlock(acc Account, bc block.Chain, node *blockcache.BlockCacheNode) *blo
 					case <-limitTime.C:
 						break ForEnd
 					default:
-						if len(blk.Content) >= txCnt {
+						if len(blk.Txs) >= txCnt {
 							break ForEnd
 						}
 						commit := node.Commit
 						if newCommit, receipt, err := VerifyTx(t, commit, blk.Head); err == nil {
-							blk.Content = append(blk.Content, *t)
+							blk.Txs = append(blk.Txs, *t)
 							blk.Receipts = append(blk.Receipts, receipt)
 							commit = newCommit
 						}
@@ -88,14 +93,13 @@ func genBlock(acc Account, bc block.Chain, node *blockcache.BlockCacheNode) *blo
 		}
 	}
 
-	blk.Head.TreeHash = blk.CalculateTreeHash()
+	blk.Head.TxsHash = blk.CalculateTxsHash()
+	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
 
 	generatedBlockCount.Inc()
-
-	Data.ClearServi(blk.Head.Witness)
 
 	return &blk
 }
@@ -111,7 +115,8 @@ func generateHeadInfo(head block.BlockHead) []byte {
 	info = append(info, versionInfo...)
 	info = append(info, numberInfo...)
 	info = append(info, head.ParentHash...)
-	info = append(info, head.TreeHash...)
+	info = append(info, head.TxsHash...)
+	info = append(info, head.MerkleHash...)
 	info = append(info, head.Info...)
 	return common.Sha256(info)
 }
@@ -141,7 +146,7 @@ func verifyBasics(blk *block.Block, parent *block.Block) error {
 	}
 
 	// verify slot map
-	if staticProp.hasSlotWitness(uint64(blk.Head.Time), blk.Head.Witness); !err {
+	if staticProp.hasSlotWitness(uint64(blk.Head.Time), blk.Head.Witness) {
 		return errors.New("witness slot duplicate")
 	}
 
@@ -155,14 +160,9 @@ func verifyBasics(blk *block.Block, parent *block.Block) error {
 
 func blockTxVerify(blk *block.Block, commit string) (string, error) {
 	// verify txs
-	newCommit, receipts, err := VerifyBlock(blk, commit)
+	newCommit, err := VerifyBlock(blk, commit)
 	if err != nil {
 		return "", err
-	}
-	for i := range receipts {
-		if !blk.Receipts[i].equal(receipts[i]) {
-			return "", errors.New("wrong tx receipt")
-		}
 	}
 	return newCommit, nil
 }
@@ -196,7 +196,7 @@ func updateWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB, commit string
 
 func calculateConfirm(node *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
 	// return the last number that confirmed
-	confirmNumber := staticProp.NumberOfWitnesses * 2 / 3 + 1
+	confirmNumber := staticProp.NumberOfWitnesses*2/3 + 1
 	totLen := node.Number - block.Chain.Length()
 	confirmMap := make(map[string]int)
 	confirmUntil := make([][]string, totLen)
@@ -209,7 +209,7 @@ func calculateConfirm(node *blockcache.BlockCacheNode) *blockcache.BlockCacheNod
 				confirmMap[node.Witness] = num + 1
 			}
 		}
-		index := node.Number-node.ConfirmUntil
+		index := node.Number - node.ConfirmUntil
 		confirmUntil[index] = append(confirmUntil[index], node.Witness)
 		if len(confirmMap) >= confirmNumber {
 			staticProp.delSlotWitness(block.Chain.Length(), node.Number)

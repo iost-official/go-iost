@@ -2,8 +2,8 @@ package pob
 
 import (
 	. "github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
 )
 
 var staticProp globalStaticProperty
@@ -11,20 +11,20 @@ var dynamicProp globalDynamicProperty
 
 type globalStaticProperty struct {
 	Account
-	NumberOfWitnesses  int
-	WitnessList        []string
-	Watermark		   map[string]uint64
-	SlotMap			   map[uint64]map[string]bool
-	Producing		   bool
+	NumberOfWitnesses int
+	WitnessList       []string
+	Watermark         map[string]uint64
+	SlotMap           map[uint64]map[string]bool
+	Producing         bool
 }
 
 func newGlobalStaticProperty(acc Account, witnessList []string) globalStaticProperty {
 	prop := globalStaticProperty{
-		Account:            acc,
-		NumberOfWitnesses:  len(witnessList),
-		WitnessList:        witnessList,
-		Watermark: 			make(map[string]uint64),
-		SlotMap: 			make(map[uint64]map[string]bool),
+		Account:           acc,
+		NumberOfWitnesses: len(witnessList),
+		WitnessList:       witnessList,
+		Watermark:         make(map[string]uint64),
+		SlotMap:           make(map[uint64]map[string]bool),
 	}
 	return prop
 }

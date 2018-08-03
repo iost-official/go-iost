@@ -3,19 +3,20 @@ package pob
 import (
 	. "github.com/iost-official/Go-IOS-Protocol/account"
 	. "github.com/iost-official/Go-IOS-Protocol/network"
+	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 
 	"fmt"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 
+	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
-	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 var (
@@ -52,14 +53,13 @@ func init() {
 	prometheus.MustRegister(txPoolSize)
 }
 
-
 type PoB struct {
 	account      Account
 	blockChain   block.Chain
 	blockCache   *blockcache.BlockCache
 	router       Router
 	synchronizer Synchronizer
-	stateDB 	 *db.MVCCDB
+	stateDB      *db.MVCCDB
 
 	exitSignal chan struct{}
 	chBlock    chan message.Message
@@ -148,14 +148,16 @@ func (p *PoB) blockLoop() {
 			}
 			parent := p.blockCache.Find(blk.HeadHash())
 			if err := verifyBasics(blk, parent); err == nil {
+				// tell synchronizer to cancel downloading
+
 				if parent.Type == blockcache.Linked {
 					var node *blockcache.BlockCacheNode
 					err := p.addBlock(&blk, node, parent, true)
-					if err ==  {
+					if err != nil {
 						// dishonest?
+						continue
 					}
 					p.addSingles(node)
-
 				}
 			} else {
 				// dishonest?
@@ -166,9 +168,30 @@ func (p *PoB) blockLoop() {
 	}
 }
 
-func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) error{
+func (p *PoB) scheduleLoop() {
+	var nextSchedule int64
+	nextSchedule = 0
+	p.log.I("Start to schedule")
+	for {
+		select {
+		case <-p.exitSignal:
+			return
+		case <-time.After(time.Second * time.Duration(nextSchedule)):
+			currentTimestamp := GetCurrentTimestamp()
+			wid := witnessOfTime(currentTimestamp)
+			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
+			if wid == p.account.ID {
+				// TODO
+			}
+			nextSchedule = timeUntilNextSchedule(time.Now().Unix())
+		}
+	}
+}
+
+func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) error {
 	// verify block txs
-	newCommit, err := blockTxVerify(blk, parent.Commit)
+	commit := p.stateDB.GetTag(parent.Block.HeadHash())
+	newCommit, err := blockTxVerify(blk, commit)
 	// add
 	if newBlock {
 		if err == nil {
@@ -209,26 +232,6 @@ func (p *PoB) addSingles(node *blockcache.BlockCacheNode) {
 		for i := range node.Children {
 			p.addBlock(nil, node.Children[i], node, false)
 			p.addSingles(node.Children[i])
-		}
-	}
-}
-
-func (p *PoB) scheduleLoop() {
-	var nextSchedule int64
-	nextSchedule = 0
-	p.log.I("Start to schedule")
-	for {
-		select {
-		case <-p.exitSignal:
-			return
-		case <-time.After(time.Second * time.Duration(nextSchedule)):
-			currentTimestamp := GetCurrentTimestamp()
-			wid := witnessOfTime(currentTimestamp)
-			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
-			if wid == p.account.ID {
-				// TODO
-			}
-			nextSchedule = timeUntilNextSchedule(time.Now().Unix())
 		}
 	}
 }

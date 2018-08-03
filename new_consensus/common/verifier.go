@@ -2,8 +2,8 @@ package consensus_common
 
 import (
 	"bytes"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"errors"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 )
@@ -12,7 +12,7 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 	bh := blk.Head
 	// time
 	cur := GetCurrentTimestamp().Slot
-	if bh.Time > cur + 1 {
+	if bh.Time > cur+1 {
 		return errors.New("block from future")
 	}
 	if bh.Time < block.Chain.Top().Head.Time {
@@ -27,25 +27,35 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 		return errors.New("wrong number")
 	}
 	// tx hash
-	treeHash := blk.CalculateTreeHash()
-	if !bytes.Equal(treeHash, bh.TreeHash) {
-		return errors.New("wrong tree hash")
+	txHash := blk.CalculateTxsHash()
+	if !bytes.Equal(txHash, bh.TxsHash) {
+		return errors.New("wrong txs hash")
+	}
+	// tx receipt merkle hash
+	merkleHash := blk.CalculateMerkleHash()
+	if !bytes.Equal(merkleHash, bh.MerkleHash) {
+		return errors.New("wrong tx receipt merkle hash")
 	}
 	return nil
 }
 
-func VerifyBlock(blk *block.Block, commit string) (string, []tx.TxReceipt, error) {
+func VerifyBlock(blk *block.Block, commit string) (string, error) {
 	var receipts []tx.TxReceipt
-	for i := range blk.Content {
-		newCommit, receipt, err := VerifyTx(&blk.Content[i], commit, &blk.Head)
+	for i := range blk.Txs {
+		newCommit, receipt, err := VerifyTx(&blk.Txs[i], commit, &blk.Head)
 		if err == nil {
 			commit = newCommit
 			receipts = append(receipts, receipt)
 		} else {
-			return "", nil, err
+			return "", err
 		}
 	}
-	return commit, receipts, nil
+	for i := range receipts {
+		if !blk.Receipts[i].Equal(receipts[i]) {
+			return "", errors.New("wrong tx receipt")
+		}
+	}
+	return commit, nil
 }
 
 func VerifyTx(tx *tx.Tx, commit string, head *block.BlockHead) (string, tx.TxReceipt, error) {
