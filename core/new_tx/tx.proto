@@ -12,10 +12,13 @@ message ActionRaw {
 message TxRaw {
     string id = 1;
     int64 time = 2;
-    repeated ActionRaw actions = 3;
-    repeated bytes signers = 4;
-    repeated common.SignatureRaw signs = 5;
-    common.SignatureRaw publisher = 6;
+    int64 expiration = 3;
+    int64 gasLimit = 4;
+    double gasPrice = 5;
+    repeated ActionRaw actions = 6;
+    repeated bytes signers = 7;
+    repeated common.SignatureRaw signs = 8;
+    common.SignatureRaw publisher = 9;
 }
 
 message ReceiptRaw {
