@@ -26,16 +26,17 @@ func myinit(t *testing.T, ctx context.Context) (*database.MockIMultiValue, Host)
 	db := database.NewMockIMultiValue(mockCtrl)
 	bdb := database.NewVisitor(100, db)
 
-	monitor := Monitor{}
-	return db, Host{ctx: ctx, db: bdb, monitor: &monitor}
+	//monitor := Monitor{}
+	return db, Host{ctx: ctx, db: bdb}
 }
 
 func TestHost_Put(t *testing.T) {
-	mock, host := myinit(t, nil)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "commit", "abc")
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
 
 	mock.EXPECT().Checkout(Any()).Do(func(commit string) {
 		if commit != "abc" {
@@ -48,15 +49,15 @@ func TestHost_Put(t *testing.T) {
 		}
 	})
 
-	host.LoadContext(ctx).Put("hello", "world")
+	host.Put("hello", "world")
 }
 
 func TestHost_Get(t *testing.T) {
-	mock, host := myinit(t, nil)
-
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "commit", "abc")
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
 
 	mock.EXPECT().Checkout(Any()).Do(func(commit string) {
 		if commit != "abc" {
@@ -70,18 +71,19 @@ func TestHost_Get(t *testing.T) {
 		return "world", nil
 	})
 
-	ans := host.LoadContext(ctx).Get("hello")
+	ans := host.Get("hello")
 	if ans != "world" {
 		t.Fatal(ans)
 	}
 }
 
 func TestHost_MapPut(t *testing.T) {
-	mock, host := myinit(t, nil)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "commit", "abc")
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
 
 	mock.EXPECT().Checkout(Any()).Do(func(commit string) {
 		if commit != "abc" {
@@ -94,15 +96,16 @@ func TestHost_MapPut(t *testing.T) {
 		}
 	})
 
-	host.LoadContext(ctx).MapPut("hello", "1", "world")
+	host.MapPut("hello", "1", "world")
 }
 
 func TestHost_MapGet(t *testing.T) {
-	mock, host := myinit(t, nil)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "commit", "abc")
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
 
 	mock.EXPECT().Checkout(Any()).Do(func(commit string) {
 		if commit != "abc" {
@@ -116,18 +119,19 @@ func TestHost_MapGet(t *testing.T) {
 		return "world", nil
 	})
 
-	ans := host.LoadContext(ctx).MapGet("hello", "1")
+	ans := host.MapGet("hello", "1")
 	if ans != "world" {
 		t.Fatal(ans)
 	}
 }
 
 func TestHost_MapKeys(t *testing.T) {
-	mock, host := myinit(t, nil)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "commit", "abc")
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
 
 	mock.EXPECT().Checkout(Any()).Do(func(commit string) {
 		if commit != "abc" {
@@ -141,29 +145,30 @@ func TestHost_MapKeys(t *testing.T) {
 		return []string{"m-contractName-hello-a", "m-contractName-hello-b", "m-contractName-hello-c"}, nil
 	})
 
-	ans := host.LoadContext(ctx).MapKeys("hello")
+	ans := host.MapKeys("hello")
 	if !sliceEqual(ans, []string{"a", "b", "c"}) {
 		t.Fatal(ans)
 	}
 }
 
 func TestHost_RequireAuth(t *testing.T) {
-	_, host := myinit(t, nil)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "commit", "abc")
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
 	ctx = context.WithValue(ctx, "auth_list", map[string]int{"a": 1, "b": 0})
 
-	ans := host.LoadContext(ctx).RequireAuth("a")
+	_, host := myinit(t, ctx)
+
+	ans := host.RequireAuth("a")
 	if !ans {
 		t.Fatal(ans)
 	}
-	ans = host.LoadContext(ctx).RequireAuth("b")
+	ans = host.RequireAuth("b")
 	if ans {
 		t.Fatal(ans)
 	}
-	ans = host.LoadContext(ctx).RequireAuth("c")
+	ans = host.RequireAuth("c")
 	if ans {
 		t.Fatal(ans)
 	}

@@ -5,11 +5,10 @@
 package new_vm
 
 import (
-	"context"
-	"reflect"
+	reflect "reflect"
 
-	"github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	gomock "github.com/golang/mock/gomock"
+	contract "github.com/iost-official/Go-IOS-Protocol/core/contract"
 )
 
 // MockVM is a mock of VM interface
@@ -36,19 +35,19 @@ func (m *MockVM) EXPECT() *MockVMMockRecorder {
 }
 
 // Init mocks base method
-func (m *MockVM) Init(arg0 *Host) error {
-	ret := m.ctrl.Call(m, "Init", arg0)
+func (m *MockVM) Init() error {
+	ret := m.ctrl.Call(m, "Init")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Init indicates an expected call of Init
-func (mr *MockVMMockRecorder) Init(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockVM)(nil).Init), arg0)
+func (mr *MockVMMockRecorder) Init() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockVM)(nil).Init))
 }
 
 // LoadAndCall mocks base method
-func (m *MockVM) LoadAndCall(arg0 context.Context, arg1 *contract.Contract, arg2 string, arg3 ...string) ([]string, *contract.Cost, error) {
+func (m *MockVM) LoadAndCall(arg0 *Host, arg1 *contract.Contract, arg2 string, arg3 ...string) ([]string, *contract.Cost, error) {
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)

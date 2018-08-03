@@ -15,3 +15,7 @@ func (c *Cost) AddAssign(a *Cost) {
 	c.Net += a.Net
 	c.CPU += a.CPU
 }
+
+func Cost0() *Cost {
+	return &Cost{}
+}
