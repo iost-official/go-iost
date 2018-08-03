@@ -1,19 +1,23 @@
 #include "vm.h"
 #include "v8.h"
-#include "snapshot_blob.bin.h"
-#include "natives_blob.bin.h"
+//#include "snapshot_blob.bin.h"
+//#include "natives_blob.bin.h"
 
 #include "libplatform/libplatform.h"
 
 #include <assert.h>
 #include <cstring>
 #include <string>
+#include <fstream>
 #include <sstream>
 #include <thread>
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream>
 
 using namespace v8;
+
+#define NATIVE_LIB_PATH "v8/libjs/"
 
 typedef struct {
   Persistent<Context> context;
@@ -26,13 +30,13 @@ void init() {
     Platform *platform = platform::CreateDefaultPlatform();
     V8::InitializePlatform(platform);
 
-    StartupData nativesData, snapshotData;
+    /*StartupData nativesData, snapshotData;
     nativesData.data = reinterpret_cast<char *>(natives_blob_bin);
     nativesData.raw_size = natives_blob_bin_len;
     snapshotData.data = reinterpret_cast<char *>(snapshot_blob_bin);
     snapshotData.raw_size = snapshot_blob_bin_len;
     V8::SetNativesDataBlob(&nativesData);
-    V8::SetSnapshotDataBlob(&snapshotData);
+    V8::SetSnapshotDataBlob(&snapshotData);*/
 
     V8::Initialize();
     return;
@@ -54,6 +58,62 @@ void releaseIsolate(IsolatePtr ptr) {
     return;
 }
 
+const char *copyString(const std::string &str) {
+    char *cstr = new char[str.length() + 1];
+    std::strcpy(cstr, str.c_str());
+    return cstr;
+}
+
+std::string v8ValueToStdString(Local<Value> val) {
+    String::Utf8Value str(val);
+    if (str.length() == 0) {
+        return "";
+    }
+    return *str;
+}
+
+void nativeRequire(const FunctionCallbackInfo<Value> &info) {
+    Isolate *isolate = info.GetIsolate();
+
+    Local<Value> path = info[0];
+    if (!path->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "_native_require empty path")
+        );
+        isolate->ThrowException(err);
+    }
+
+    String::Utf8Value pathStr(path);
+    std::string fullRelPath = std::string(NATIVE_LIB_PATH) + *pathStr;
+
+    std::ifstream f(fullRelPath);
+    std::stringstream buffer;
+    buffer << f.rdbuf();
+
+    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
+    Local<String> fileName = String::NewFromUtf8(isolate, *pathStr, NewStringType::kNormal).ToLocalChecked();
+    Local<Script> script = Script::Compile(source, fileName);
+
+    if (!script.IsEmpty()) {
+        Local<Value> result = script->Run();
+        if (!result.IsEmpty()) {
+            std::cout << "result: " << v8ValueToStdString(result) << std::endl;
+            info.GetReturnValue().Set(result);
+        }
+    }
+}
+
+Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
+    Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
+
+    global->Set(
+          String::NewFromUtf8(isolate, "_native_require", NewStringType::kNormal)
+              .ToLocalChecked(),
+          v8::FunctionTemplate::New(isolate, nativeRequire));
+
+    return global;
+}
+
 SandboxPtr newSandbox(IsolatePtr ptr) {
     Isolate *isolate = static_cast<Isolate*>(ptr);
     Locker locker(isolate);
@@ -61,7 +121,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     Isolate::Scope isolate_scope(isolate);
     HandleScope handle_scope(isolate);
 
-    Local<ObjectTemplate> globalTpl = ObjectTemplate::New(isolate);
+    Local<ObjectTemplate> globalTpl = createGlobalTpl(isolate);
 
     Sandbox *sbx = new Sandbox;
     sbx->context.Reset(isolate, Context::New(isolate, nullptr, globalTpl));
@@ -82,20 +142,6 @@ void releaseSandbox(SandboxPtr ptr) {
 
     sbx->context.Reset();
     return;
-}
-
-const char *copyString(const std::string &str) {
-    char *cstr = new char[str.length() + 1];
-    std::strcpy(cstr, str.c_str());
-    return cstr;
-}
-
-std::string v8ValueToStdString(Local<Value> val) {
-    String::Utf8Value str(val);
-    if (str.length() == 0) {
-        return "";
-    }
-    return *str;
 }
 
 std::string report_exception(Isolate *isolate, Local<Context> ctx, TryCatch& tryCatch) {
@@ -150,6 +196,24 @@ const char* ToCString(const v8::String::Utf8Value& value) {
   return *value ? *value : "<string conversion failed>";
 }
 
+void LoadVM(Isolate *isolate) {
+    std::string vmPath = NATIVE_LIB_PATH "vm.js";
+    std::ifstream f(vmPath);
+    std::stringstream buffer;
+    buffer << f.rdbuf();
+
+    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
+    Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
+    Local<Script> script = Script::Compile(source, fileName);
+
+    if (!script.IsEmpty()) {
+        Local<Value> result = script->Run();
+        if (!result.IsEmpty()) {
+            std::cout << "result vm: " << v8ValueToStdString(result) << std::endl;
+        }
+    }
+}
+
 ValueTuple Execute(SandboxPtr ptr, const char *code) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
@@ -159,6 +223,8 @@ ValueTuple Execute(SandboxPtr ptr, const char *code) {
 
     HandleScope handle_scope(isolate);
     Context::Scope context_scope(sbx->context.Get(isolate));
+
+    LoadVM(isolate);
 
     TryCatch tryCatch(isolate);
     tryCatch.SetVerbose(false);
