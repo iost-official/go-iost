@@ -1,51 +1,77 @@
 package global
 
 import (
-	"errors"
+	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/prototype/core/block"
-	"github.com/spf13/viper"
+	"github.com/pkg/errors"
+)
+
+type Mode uint
+
+const (
+	ModeNormal Mode = iota
+	ModeSync
 )
 
 type GlobalImpl struct {
-	txDB *tx.TxPoolDb
+	txDB tx.TxPool
 
-	stdPool    *state.Pool
-	blockChain *block.Chain
+	stdPool    state.Pool
+	blockChain block.Chain
 
 	config *common.Config
+
+	mode Mode
 }
 
-func New(viper *viper.Viper) (Global, error) {
+func New(conf *common.Config) (Global, error) {
 
-	conf, err := common.NewConfig()
+	txDb := tx.TxDbInstance()
+	if txDb == nil {
+		return nil, errors.New("TxDbInstance failed, stop the program!")
+	}
+
+	err := state.PoolInstance()
 	if err != nil {
-		return nil, errors.New("NewConfig error")
+		return nil, fmt.Errorf("PoolInstance failed, stop the program! err:%v", err)
 	}
 
-	if err := conf.LocalConfig(viper); err != nil {
-		return nil, errors.New("config LocalConfig error")
+	blockChain, err := block.Instance()
+	if err != nil {
+		return nil, fmt.Errorf("NewBlockChain failed, stop the program! err:%v", err)
 	}
 
-	g := &GlobalImpl{config: conf}
+	n := &GlobalImpl{txDB: txDb, config: conf, stdPool: state.StdPool, blockChain: blockChain, mode: ModeNormal}
 
-	return g, nil
+	return n, nil
 }
 
-func (g *GlobalImpl) TxDB() *tx.TxPoolDb {
+func (g *GlobalImpl) TxDB() tx.TxPool {
 	return g.txDB
 }
 
-func (g *GlobalImpl) StdPool() *state.Pool {
+func (g *GlobalImpl) StdPool() state.Pool {
 	return g.stdPool
 }
 
-func (g *GlobalImpl) BlockChain() *block.Chain {
+func (g *GlobalImpl) BlockChain() block.Chain {
 	return g.blockChain
 }
 
 func (g *GlobalImpl) Config() *common.Config {
 	return g.config
+}
+
+func (g *GlobalImpl) Mode() Mode {
+	return g.mode
+}
+
+func (g *GlobalImpl) SetMode(mode Mode) bool {
+
+	g.mode = mode
+
+	return true
 }

@@ -76,22 +76,32 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		g, err := global.New(viper.GetViper())
+
+		conf, err := common.NewConfig(viper.GetViper())
 		if err != nil {
 			os.Exit(1)
 		}
 
-		lp := viper.GetString("log.path")
-		if lp != "" {
-			log.Path = g.Config()
+		if err := conf.LocalConfig(); err != nil {
+			os.Exit(1)
 		}
+
+		if conf.LogPath != "" {
+			log.Path = conf.LogPath
+		}
+
+		gl, err := global.New(conf)
+		if err != nil {
+			os.Exit(1)
+		}
+
 		// Log Server Information
 		log.NewLogger("iost")
 		log.Log.I("Version:  %v", "1.0")
 
-		log.Log.I("cfgFile: %v", viper.GetString("config"))
-		log.Log.I("logFile: %v", viper.GetString("log"))
-		log.Log.I("dbFile: %v", viper.GetString("db"))
+		log.Log.I("cfgFile: %v", gl.Config().CfgFile)
+		log.Log.I("logFile: %v", gl.Config().LogFile)
+		log.Log.I("dbFile: %v", gl.Config().DbFile)
 
 		// Start CPU Profile
 		if cpuprofile != "" {
@@ -104,30 +114,14 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		ldbPath := viper.GetString("ldb.path")
-		redisAddr := viper.GetString("redis.addr")
-		redisPort := viper.GetInt64("redis.port")
+		log.Log.I("ldb.path: %v", gl.Config().LdbPath)
+		log.Log.I("redis.addr: %v", gl.Config().LdbPath)
+		log.Log.I("redis.port: %v", gl.Config().RedisPort)
 
-		log.Log.I("ldb.path: %v", ldbPath)
-		log.Log.I("redis.addr: %v", redisAddr)
-		log.Log.I("redis.port: %v", redisPort)
-
-		tx.LdbPath = ldbPath
-		block.LdbPath = ldbPath
-		db.DBAddr = redisAddr
-		db.DBPort = int16(redisPort)
-
-		txDb := tx.TxDbInstance()
-		if txDb == nil {
-			log.Log.E("TxDbInstance failed, stop the program!")
-			os.Exit(1)
-		}
-
-		err := state.PoolInstance()
-		if err != nil {
-			log.Log.E("PoolInstance failed, stop the program! err:%v", err)
-			os.Exit(1)
-		}
+		tx.LdbPath = gl.Config().LdbPath
+		block.LdbPath = gl.Config().LdbPath
+		db.DBAddr = gl.Config().RedisAddr
+		db.DBPort = int16(gl.Config().RedisPort)
 
 		if state.StdPool == nil {
 			log.Log.E("StdPool initialization failed, stop the program!")
