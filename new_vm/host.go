@@ -46,6 +46,10 @@ func (h *Host) Context() context.Context {
 	return h.ctx
 }
 
+func (h *Host) VerifyArgs(api string, args ...string) error {
+	return nil
+}
+
 func (h *Host) Put(key, value string) {
 	//h.db.Checkout(h.ctx.Value("commit").(string))
 	c := h.ctx.Value("contract_name").(string)
