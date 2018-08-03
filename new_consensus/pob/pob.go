@@ -60,6 +60,7 @@ type PoB struct {
 	router       Router
 	synchronizer Synchronizer
 	stateDB      *db.MVCCDB
+	forkDB		 *db.MVCCDB
 
 	exitSignal chan struct{}
 	chBlock    chan message.Message
@@ -75,6 +76,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 
 	p.blockCache = blockcache.NewBlockCache()
 	p.blockChain = bc
+	p.forkDB = p.stateDB.Fork()
 	if bc.GetBlockByNumber(0) == nil {
 
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -182,7 +184,7 @@ func (p *PoB) scheduleLoop() {
 			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
 			if wid == p.account.ID && staticProp.Producing {
 				chainHead := p.blockCache.Head()
-				db := p.stateDB.Checkout(chainHead.Block.HeadHash())
+				db := p.forkDB.Checkout(chainHead.Block.HeadHash())
 				blk := genBlock(p.account, chainHead, db)
 
 				dynamicProp.update(&blk.Head)
@@ -203,7 +205,6 @@ func (p *PoB) scheduleLoop() {
 func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) error {
 	// verify block txs
 	db := p.stateDB.Checkout(parent.Block.HeadHash())
-	// is fork needed here?
 	err := verifyBlockTxs(blk, db)
 	// add
 	if newBlock {
@@ -219,7 +220,7 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 		}
 	}
 	// tag in state
-	p.stateDB.Commit(blk.HeadHash())
+	p.stateDB.Tag(blk.HeadHash())
 	// update node info without state
 	updateNodeInfo(node)
 	// update node info with state, currently witness list

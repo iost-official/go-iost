@@ -46,7 +46,6 @@ func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
 	for i := range blk.Txs {
 		receipt, err := verify(&blk.Txs[i], &engine)
 		if err == nil {
-			// commit on every tx? with what tag? what about the last?
 			db.Commit()
 			receipts = append(receipts, receipt)
 		} else {
@@ -56,8 +55,6 @@ func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
 	}
 	for i := range receipts {
 		if !blk.Receipts[i].Equal(receipts[i]) {
-			// How to rollback all the txs?
-			db.Rollback()
 			return errors.New("wrong tx receipt")
 		}
 	}

@@ -73,8 +73,6 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *bloc
 			txPoolSize.Set(float64(txpool.TxPoolS.TransactionNum()))
 
 			if len(tx) != 0 {
-				//  is this necessary?
-				db.Fork()
 				VerifyTxBegin(lastBlk, db)
 			ForEnd:
 				for _, t := range tx {
@@ -104,8 +102,7 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *bloc
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
-	// commit here?
-	db.Commit(blk.HeadHash())
+	//db.Tag(blk.HeadHash())
 
 	generatedBlockCount.Inc()
 
