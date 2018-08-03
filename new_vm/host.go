@@ -170,6 +170,6 @@ func (h *Host) ABIConfig(key, value string) {
 	ps := h.ctx.Value("abi_config").(map[string]*string)[key]
 	*ps = value
 }
-func (h *Host) PayCost(c *contract.Cost, who string) {
+func (h *Host) PayCost(c *contract.Cost, who string, gasPrice int64) {
 
 }

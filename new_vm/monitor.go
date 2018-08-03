@@ -53,11 +53,12 @@ func (m *Monitor) Call(host *Host, contractName, api string, args ...string) (rt
 		Content: "success",
 	}
 	payment := host.ctx.Value("abi_config").(map[string]*string)["payment"]
+	gasPrice := host.ctx.Value("gas_price").(int64)
 	switch {
 	case payment == nil:
 		break
 	default:
-		host.PayCost(cost, *payment)
+		host.PayCost(cost, *payment, gasPrice)
 		cost = contract.Cost0()
 	}
 
