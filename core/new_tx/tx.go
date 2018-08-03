@@ -171,8 +171,9 @@ func (t *Tx) Decode(b []byte) error {
 	return nil
 }
 
+// hash
 func (t *Tx) Hash() []byte {
-	return nil
+	return common.Sha256(t.Encode())
 }
 
 // 验证签名的函数
