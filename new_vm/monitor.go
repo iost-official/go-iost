@@ -5,64 +5,78 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 )
 
 type Monitor struct {
-	db   *database.Visitor
-	vms  map[string]VM
-	host *Host
+	//db   *database.Visitor
+	vms map[string]VM
+	//host *Host
 }
 
-func NewMonitor(cb *db.MVCCDB, cacheLength int) *Monitor {
-	visitor := database.NewVisitor(cacheLength, cb)
-	return &Monitor{
-		db: visitor,
-		host: &Host{
-			ctx: nil,
-			db:  visitor,
-		},
+func NewMonitor( /*cb database.IMultiValue, cacheLength int*/ ) *Monitor {
+	//visitor := database.NewVisitor(cacheLength, cb)
+	m := &Monitor{
+		//db: visitor,
+		//host: &Host{
+		//	ctx:  context.Background(),
+		//	db:   visitor,
+		//	cost: &contract.Cost{},
+		//},
+		vms: make(map[string]VM),
 	}
+	//m.host.monitor = m
+	return m
 }
 
-func (m *Monitor) Call(ctx context.Context, contractName, api string, args ...string) (rtn []string, receipt tx.Receipt, err error) {
-	contract := m.db.GetContract(contractName)
+func (m *Monitor) Call(host *Host, contractName, api string, args ...string) (rtn []string, receipt *tx.Receipt, cost *contract.Cost, err error) {
+	c := host.db.Contract(contractName)
+	ctx := host.Context()
 
-	if vm, ok := m.vms[contract.Lang]; ok {
-		rtn, err = vm.LoadAndCall(ctx, contract, api, args...)
+	host.ctx = context.WithValue(ctx, "abi_config", make(map[string]*string))
+
+	if vm, ok := m.vms[c.Lang]; ok {
+		rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
 	} else {
-		vm = VMFactory(contract.Lang)
-		m.vms[contract.Lang] = vm
-		m.vms[contract.Lang].Init(m.host)
-		rtn, err = vm.LoadAndCall(ctx, contract, api, args...)
+		vm = VMFactory(c.Lang)
+		m.vms[c.Lang] = vm
+		m.vms[c.Lang].Init()
+		rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
 	}
 	if err != nil {
-		receipt = tx.Receipt{
+		receipt = &tx.Receipt{
 			Type:    tx.SystemDefined,
 			Content: err.Error(),
 		}
 	}
-	receipt = tx.Receipt{
+	receipt = &tx.Receipt{
 		Type:    tx.SystemDefined,
 		Content: "success",
 	}
+	payment := host.ctx.Value("abi_config").(map[string]*string)["payment"]
+	switch {
+	case payment == nil:
+		break
+	default:
+		host.PayCost(cost, *payment)
+		cost = contract.Cost0()
+	}
+
 	return
 }
 
-func (m *Monitor) Update(contractName string, newContract *contract.Contract) error {
-	err := m.Destory(contractName)
-	if err != nil {
-		return err
-	}
-	m.db.SetContract(newContract)
-	return nil
-}
-
-func (m *Monitor) Destory(contractName string) error {
-	m.db.DelContract(contractName)
-	return nil
-}
+//func (m *Monitor) Update(contractName string, newContract *contract.Contract) error {
+//	err := m.Destory(contractName)
+//	if err != nil {
+//		return err
+//	}
+//	m.host.db.SetContract(newContract)
+//	return nil
+//}
+//
+//func (m *Monitor) Destory(contractName string) error {
+//	m.host.db.DelContract(contractName)
+//	return nil
+//}
 
 func VMFactory(lang string) VM {
 	return nil

@@ -2,10 +2,20 @@ package contract
 
 type VersionCode string
 
+type PaymentCode int
+
+const (
+	SelfPay PaymentCode = iota
+	ContractPay
+)
+
 type ContractInfo struct {
-	Name    string
-	Lang    string
-	Version VersionCode
+	Name     string
+	Lang     string
+	Version  VersionCode
+	Payment  PaymentCode
+	Limit    *Cost
+	GasPrice uint64
 }
 
 type Contract struct {

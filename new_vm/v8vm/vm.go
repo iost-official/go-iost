@@ -3,14 +3,14 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
-//#cgo LDFLAGS: -lvm
-#cgo LDFLAGS: -L./v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath ./v8/libv8/_linux_amd64
+#cgo LDFLAGS: -lvm
+//#cgo LDFLAGS: -L./v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath ./v8/libv8/_linux_amd64
 */
 import "C"
 import (
 	"context"
 
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 )
 
 func init() {
@@ -39,7 +39,7 @@ func (e *VM) Init() error {
 }
 
 // LoadAndCall load contract code with provide contract, and call api with args
-func (e *VM) LoadAndCall(ctx context.Context, contract *new_vm.Contract, api string, args ...string) (rtn []string, err error) {
+func (e *VM) LoadAndCall(ctx context.Context, contract *contract.Contract, api string, args ...string) (rtn []string, err error) {
 	code := contract.Code
 
 	preparedCode := e.sandbox.Prepare(code, api, args)
