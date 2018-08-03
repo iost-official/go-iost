@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -130,7 +131,10 @@ func (bc *BlockCache) hmdel(hash []byte) {
 	bc.hash2node.Delete(string(hash))
 }
 
-func NewBlockCache() *BlockCache {
+var StateDB *db.MVCCDB
+
+func NewBlockCache(MVCCDB *db.MVCCDB) *BlockCache {
+	StateDB = MVCCDB
 	bc := BlockCache{
 		linkedTree: NewBCN(nil, nil, Linked),
 		singleTree: NewBCN(nil, nil, Single),
@@ -243,7 +247,7 @@ func (bc *BlockCache) delSingle() {
 	return
 }
 
-func (bc *BlockCache) flush(cur *BlockCacheNode, retain *BlockCacheNode) {
+func (bc *BlockCache) flush(cur *BlockCacheNode, retain *BlockCacheNode) error {
 	if cur != bc.linkedTree {
 		bc.flush(cur.Parent, cur)
 	}
@@ -259,16 +263,19 @@ func (bc *BlockCache) flush(cur *BlockCacheNode, retain *BlockCacheNode) {
 		err := blkchain.Push(retain.Block)
 		if err != nil {
 			log.Log.E("Database error, BlockChain Push err:%v", err)
+			return err
 		}
+		err = StateDB.Flush(string(retain.Block.HeadHash()))
+		if err != nil {
+			log.Log.E("MVCCDB error, State Flush err:%v", err)
+			return err
+		}
+
+		bc.hmdel(cur.Block.HeadHash())
+		retain.Parent = nil
+		bc.linkedTree = retain
 	}
-	/*
-		statedb:=db.MVCCDB
-		statedb.Flush(retain.commit)
-	*/
-	bc.hmdel(cur.Block.HeadHash())
-	retain.Parent = nil
-	bc.linkedTree = retain
-	return
+	return nil
 }
 
 func (bc *BlockCache) Flush(bcn *BlockCacheNode) {
