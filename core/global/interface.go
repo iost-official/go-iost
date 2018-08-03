@@ -14,4 +14,6 @@ type Global interface {
 
 	Config() *common.Config
 	BlockChain() block.Chain
+	Mode() Mode
+	SetMode(mode Mode) bool
 }
