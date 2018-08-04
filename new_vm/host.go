@@ -199,6 +199,9 @@ func (h *Host) SetCode(ct string) { // 不在这里做编译
 	c.Decode(ct)
 	h.db.SetContract(&c)
 }
+func (h *Host) DestroyCode(contractName string) {
+	h.db.DelContract(contractName)
+}
 func (h *Host) BlockInfo() string {
 	return h.ctx.Value("block_info").(string)
 }
