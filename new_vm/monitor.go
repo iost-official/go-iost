@@ -33,23 +33,23 @@ func (m *Monitor) Call(host *Host, contractName, api string, args ...string) (rt
 	ctx := host.Context()
 
 	host.ctx = context.WithValue(ctx, "abi_config", make(map[string]*string))
+	host.ctx = context.WithValue(ctx, "contract_name", contractName)
+	host.ctx = context.WithValue(ctx, "abi_name", contractName)
 
-	if vm, ok := m.vms[c.Lang]; ok {
-		rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
-	} else {
+	vm, ok := m.vms[c.Lang]
+	if !ok {
 		vm = VMFactory(c.Lang)
 		m.vms[c.Lang] = vm
 		m.vms[c.Lang].Init()
-		rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
 	}
+	rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
 
 	payment := host.ctx.Value("abi_config").(map[string]*string)["payment"] // TODO 预编译
-	gasPrice := host.ctx.Value("gas_price").(int64)
+	gasPrice := host.ctx.Value("gas_price").(uint64)
 	switch {
 	case *payment == "contract_pay":
 		host.PayCost(cost, contractName, gasPrice)
 		cost = contract.Cost0()
-
 	}
 
 	host.ctx = ctx

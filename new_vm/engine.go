@@ -57,6 +57,10 @@ func (e *EngineImpl) Exec(tx0 tx.Tx) (*tx.TxReceipt, error) {
 	totalCost := contract.Cost0()
 
 	for _, action := range tx0.Actions {
+
+		e.host.ctx = context.WithValue(e.host.ctx, "stack0", tx0.Id)
+		e.host.ctx = context.WithValue(e.host.ctx, "stack_height", 1) // record stack trace
+
 		_, cost, err := staticMonitor.Call(e.host, action.Contract, action.ActionName, action.Data)
 		if err != nil {
 			txr := e.host.ctx.Value("tx_receipt").(*tx.TxReceipt)

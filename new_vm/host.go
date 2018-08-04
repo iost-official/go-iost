@@ -3,6 +3,10 @@ package new_vm
 import (
 	"context"
 
+	"strings"
+
+	"strconv"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
@@ -12,6 +16,7 @@ import (
 var (
 	ErrBalanceNotEnough = errors.New("balance not enough")
 	ErrTransferNegValue = errors.New("trasfer amount less than zero")
+	ErrReenter          = errors.New("re-entering")
 )
 
 type Host struct {
@@ -116,11 +121,28 @@ func (h *Host) Receipt(s string) {
 	(*trec).Receipts = append(trec.Receipts, rec)
 }
 func (h *Host) Call(contract, api string, args ...string) ([]string, *contract.Cost, error) {
-	// todo 禁止循环调用
-	return staticMonitor.Call(h, contract, api, args...)
+	record := contract + "-" + api
+
+	height := h.ctx.Value("stack_height").(int)
+
+	for i := 0; i < height; i++ {
+		key := "stack" + strconv.Itoa(i)
+		if h.ctx.Value(key).(string) == record {
+			return nil, nil, ErrReenter
+		}
+	}
+
+	key := "stack" + strconv.Itoa(height)
+	ctx := h.ctx
+	h.ctx = context.WithValue(h.ctx, "stack_height", height+1)
+	h.ctx = context.WithValue(h.ctx, key, record)
+
+	rtn, cost, err := staticMonitor.Call(h, contract, api, args...)
+	h.ctx = ctx
+	return rtn, cost, err
 }
 func (h *Host) CallWithReceipt(contract, api string, args ...string) ([]string, *contract.Cost, error) {
-	rtn, cost, err := staticMonitor.Call(h, contract, api, args...)
+	rtn, cost, err := h.Call(contract, api, args...)
 
 	var receipt tx.Receipt
 	if err != nil {
@@ -168,9 +190,10 @@ func (h *Host) TopUp(contract, from string, amount int64) error {
 func (h *Host) Countermand(contract, to string, amount int64) error {
 	return h.Transfer("g-"+contract, to, amount)
 }
-func (h *Host) SetCode(ct string) {
-	// todo 实现
-	//h.db.SetContract()
+func (h *Host) SetCode(ct string) { // 不在这里做编译
+	c := contract.Contract{}
+	c.Decode(ct)
+	h.db.SetContract(&c)
 }
 func (h *Host) BlockInfo() string {
 	return h.ctx.Value("block_info").(string)
@@ -182,6 +205,12 @@ func (h *Host) ABIConfig(key, value string) {
 	ps := h.ctx.Value("abi_config").(map[string]*string)[key]
 	*ps = value
 }
-func (h *Host) PayCost(c *contract.Cost, who string, gasPrice int64) {
-	// TODO
+func (h *Host) PayCost(c *contract.Cost, who string, gasPrice uint64) {
+	witness := h.ctx.Value("witness").(string)
+	fee := gasPrice * c.ToGas()
+	if strings.HasPrefix(who, "IOST") {
+		h.Transfer(who, witness, int64(fee))
+	} else {
+		h.Transfer("g-"+who, witness, int64(fee))
+	}
 }

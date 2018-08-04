@@ -82,7 +82,7 @@ func TestMonitor_HostInUse(t *testing.T) {
 
 	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(host *Host, c *contract.Contract, api string, args ...string) (rtn []string, cost *contract.Cost, err error) {
 		outerFlag = true
-		monitor.Call(host, "contract", "inner", "hello")
+		host.Call("contract", "inner", "hello")
 
 		return []string{"world"}, cost, nil
 	})
