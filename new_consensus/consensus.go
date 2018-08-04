@@ -14,7 +14,6 @@ type Consensus interface {
 	Stop()
 }
 
-
 const (
 	CONSENSUS_POB = "pob"
 )

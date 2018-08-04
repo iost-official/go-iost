@@ -15,7 +15,6 @@ type globalStaticProperty struct {
 	WitnessList       []string
 	Watermark         map[string]uint64
 	SlotMap           map[uint64]map[string]bool
-	Producing         bool
 }
 
 func newGlobalStaticProperty(acc Account, witnessList []string) globalStaticProperty {

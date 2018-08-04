@@ -12,8 +12,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 
+	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/prometheus/client_golang/prometheus"
@@ -55,12 +55,14 @@ func init() {
 
 type PoB struct {
 	account      Account
+	global       global.Global
 	blockChain   block.Chain
 	blockCache   *blockcache.BlockCache
+	txPool       new_txpool.TxPool
 	router       Router
 	synchronizer Synchronizer
-	stateDB      *db.MVCCDB
-	forkDB		 *db.MVCCDB
+	verifyDB     *db.MVCCDB
+	produceDB    *db.MVCCDB
 
 	exitSignal chan struct{}
 	chBlock    chan message.Message
@@ -68,16 +70,19 @@ type PoB struct {
 	log *log.Logger
 }
 
-func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /*, network core.Network*/) (*PoB, error) {
+func NewPoB(acc Account, global global.Global, witnessList []string) (*PoB, error) {
 	//TODO: change initialization based on new interfaces
 	p := PoB{
-		account: acc,
+		account:    acc,
+		global:     global,
+		blockCache: blockcache.NewBlockCache(),
+		blockChain: global.BlockChain(),
+		verifyDB:   global.StdPool(),
+		txPool:     global.TxDB(),
 	}
 
-	p.blockCache = blockcache.NewBlockCache()
-	p.blockChain = bc
-	p.forkDB = p.stateDB.Fork()
-	if bc.GetBlockByNumber(0) == nil {
+	p.produceDB = p.verifyDB.Fork()
+	if p.blockChain.GetBlockByNumber(0) == nil {
 
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 		genesis, err := genGenesis(GetTimestamp(t.Unix()).Slot)
@@ -85,9 +90,10 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 			return nil, fmt.Errorf("failed to genesis is nil")
 		}
 		//TODO: add genesis to db, what about its state?
-		bc.Push(genesis)
+		p.blockChain.Push(genesis)
 	}
 
+	// TODO: how to initialize network?
 	var err error
 	p.router = Route
 	if p.router == nil {
@@ -115,7 +121,7 @@ func NewPoB(acc Account, bc block.Chain, pool state.Pool, witnessList []string /
 
 	p.initGlobalProperty(p.account, witnessList)
 
-	dynamicProp.update(&bc.Top().Head)
+	dynamicProp.update(&p.blockChain.Top().Head)
 	return &p, nil
 }
 
@@ -182,10 +188,10 @@ func (p *PoB) scheduleLoop() {
 			currentTimestamp := GetCurrentTimestamp()
 			wid := witnessOfTime(currentTimestamp)
 			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
-			if wid == p.account.ID && staticProp.Producing {
-				chainHead := p.blockCache.Head()
-				db := p.forkDB.Checkout(chainHead.Block.HeadHash())
-				blk := genBlock(p.account, chainHead, db)
+			if wid == p.account.ID && p.global.Mode() == global.ModeNormal {
+				chainHead := p.blockCache.Head
+				p.produceDB.Checkout(chainHead.Block.HeadHash())
+				blk := genBlock(p.account, chainHead, p.produceDB)
 
 				dynamicProp.update(&blk.Head)
 				p.log.I("Generating block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
@@ -204,41 +210,45 @@ func (p *PoB) scheduleLoop() {
 
 func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) error {
 	// verify block txs
-	db := p.stateDB.Checkout(parent.Block.HeadHash())
-	err := verifyBlockTxs(blk, db)
-	// add
-	if newBlock {
-		if err == nil {
-			node, err = p.blockCache.Add(blk)
+	if blk.Head.Witness != p.account.ID {
+		p.verifyDB.Checkout(parent.Block.HeadHash())
+		err := verifyBlockTxs(blk, p.verifyDB)
+		// add
+		if newBlock {
+			if err == nil {
+				node, err = p.blockCache.Add(blk)
+			} else {
+				return err
+			}
 		} else {
-			return err
+			if err != nil {
+				p.blockCache.Del(node)
+				return err
+			}
 		}
+		// tag in state
+		p.verifyDB.Tag(blk.HeadHash())
 	} else {
-		if err != nil {
-			p.blockCache.Del(node)
-			return err
-		}
+		p.verifyDB.Checkout(blk.HeadHash())
 	}
-	// tag in state
-	p.stateDB.Tag(blk.HeadHash())
 	// update node info without state
 	updateNodeInfo(node)
-	// update node info with state, currently witness list
-	updateWitness(node, p.stateDB)
+	// update node info with state, currently pending witness list
+	updatePendingWitness(node, p.verifyDB)
 
 	// confirm
-	confirmNode := calculateConfirm(node)
+	confirmNode := calculateConfirm(node, p.blockCache.Head)
 	if confirmNode != nil {
 		p.blockCache.Flush(confirmNode)
 	}
 
 	// promote witness list
-	promoteWitness(node, confirmNode.Number)
+	promoteWitness(node, confirmNode)
 
 	dynamicProp.update(&blk.Head)
 	// -> tx pool
-	isHead := (node == p.blockCache.Head())
-	txpool.TxPoolS.AddConfirmBlock(blk, isHead)
+	isHead := (node == p.blockCache.Head)
+	new_txpool.TxPoolS.AddConfirmBlock(blk, isHead)
 }
 
 func (p *PoB) addSingles(node *blockcache.BlockCacheNode) {
