@@ -18,7 +18,6 @@ type Tx struct {
 	Time      int64
 	Expiration	int64
 	GasLimit	int64
-	GasPrice	float64
 	Actions   []Action
 	Signers   [][]byte
 	Signs     []common.Signature
@@ -27,7 +26,7 @@ type Tx struct {
 }
 
 // 新建一个Tx，需要通过编译器得到一个contract
-func NewTx(nonce int64, actions []Action, signers [][]byte, gasLimit int64, gasPrice float64, expiration int64) Tx {
+func NewTx(nonce int64, actions []Action, signers [][]byte, gasLimit int64, gasPrice int64, expiration int64) Tx {
 	now := time.Now().UnixNano()
 	return Tx{
 		Time:    now,
