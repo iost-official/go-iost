@@ -1,35 +1,26 @@
 package pob
 
 import (
+	"fmt"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/db"
+	"time"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"encoding/binary"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	. "github.com/iost-official/Go-IOS-Protocol/account"
 	. "github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
-
-	"errors"
-	"fmt"
-
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
-
-	"encoding/binary"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
-	"time"
+	"errors"
 )
 
 func genGenesis(initTime int64) (*block.Block, error) {
-
-	main := lua.NewMethod(vm.Public, "", 0, 0)
 
 	var code string
 	for k, v := range GenesisAccount {
 		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
 	}
-
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
 
 	tx := Tx{
 		Time: 0,
@@ -64,6 +55,7 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *bloc
 	}
 
 	txCnt := 1000
+
 	limitTime := time.NewTicker(((SlotLength/3 - 1) + 1) * time.Second)
 	if new_txpool.TxPoolS != nil {
 		tx, err := new_txpool.TxPoolS.PendingTransactions(txCnt)
@@ -170,7 +162,7 @@ func verifyBlockTxs(blk *block.Block, db *db.MVCCDB) error {
 }
 
 func updateNodeInfo(node *blockcache.BlockCacheNode) {
-	node.Number = node.Block.Head.Number
+	node.Number = uint64(node.Block.Head.Number)
 	node.Witness = node.Block.Head.Witness
 
 	// watermark
@@ -192,17 +184,17 @@ func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) []stri
 		node.PendingWitnessList = node.Parent.PendingWitnessList
 		node.LastWitnessListNumber = node.Parent.LastWitnessListNumber
 	}
+	return nil
 }
 
-func calculateConfirm(node *blockcache.BlockCacheNode, head *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
+func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
 	// return the last node that confirmed
 	confirmNumber := staticProp.NumberOfWitnesses*2/3 + 1
 	startNumber := node.Number
-	topNumber := block.Chain.Length()
+	topNumber := root.Number
 	confirmMap := make(map[string]int)
-	confirmUntil := make([][]string, startNumber-topNumber)
-	i := 0
-	for node != head {
+	confirmUntil := make([][]string, startNumber-topNumber + 1)
+	for node != root {
 		if node.ConfirmUntil <= node.Number {
 			if num, err := confirmMap[node.Witness]; err {
 				confirmMap[node.Witness] = 1
@@ -210,17 +202,22 @@ func calculateConfirm(node *blockcache.BlockCacheNode, head *blockcache.BlockCac
 				confirmMap[node.Witness] = num + 1
 			}
 		}
-		index := node.ConfirmUntil - topNumber
+		index := int64(node.ConfirmUntil) - int64(topNumber)
 		if index > 0 {
 			confirmUntil[index] = append(confirmUntil[index], node.Witness)
 		}
 		if len(confirmMap) >= confirmNumber {
-			staticProp.delSlotWitness(block.Chain.Length(), node.Number)
+			staticProp.delSlotWitness(topNumber, node.Number)
 			return node
 		}
+		i := node.Number - topNumber
 		if confirmUntil[i] != nil {
 			for j := range confirmUntil[i] {
-				confirmMap[confirmUntil[i][j]]--
+				witness := confirmUntil[i][j]
+				confirmMap[witness]--
+				if confirmMap[confirmUntil[i][j]] == 0 {
+					delete(confirmMap, witness)
+				}
 			}
 		}
 		node = node.Parent

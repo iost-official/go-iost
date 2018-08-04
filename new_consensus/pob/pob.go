@@ -237,18 +237,16 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 	updatePendingWitness(node, p.verifyDB)
 
 	// confirm
-	confirmNode := calculateConfirm(node, p.blockCache.Head)
+	confirmNode := calculateConfirm(node, p.blockCache.LinkedTree)
 	if confirmNode != nil {
 		p.blockCache.Flush(confirmNode)
+		// promote witness list
+		promoteWitness(node, confirmNode)
 	}
-
-	// promote witness list
-	promoteWitness(node, confirmNode)
 
 	dynamicProp.update(&blk.Head)
 	// -> tx pool
-	isHead := (node == p.blockCache.Head)
-	new_txpool.TxPoolS.AddConfirmBlock(blk, isHead)
+	new_txpool.TxPoolS.AddConfirmBlock(blk,  node == p.blockCache.Head)
 }
 
 func (p *PoB) addSingles(node *blockcache.BlockCacheNode) {
