@@ -62,6 +62,14 @@ func Unmarshall(o string) interface{} {
 
 }
 
+func MustUnmarshall(o string) interface{} {
+	rtn := Unmarshall(o)
+	if err, ok := rtn.(error); ok {
+		panic(err)
+	}
+	return rtn
+}
+
 func int64ToRaw(i int64) string {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, uint64(i))

@@ -50,25 +50,31 @@ func (h *Host) VerifyArgs(api string, args ...string) error {
 	return nil
 }
 
-func (h *Host) Put(key, value string) {
+func (h *Host) Put(key string, value interface{}) {
 	c := h.ctx.Value("contract_name").(string)
-	h.db.Put(c+database.Separator+key, value)
+	v := database.MustMarshall(value)
+	h.db.Put(c+database.Separator+key, v)
 }
-func (h *Host) Get(key string) string {
+func (h *Host) Get(key string) interface{} {
 	c := h.ctx.Value("contract_name").(string)
-	return h.db.Get(c + database.Separator + key)
+	rtn := database.MustUnmarshall(h.db.Get(c + database.Separator + key))
+
+	return rtn
 }
 func (h *Host) Del(key string) {
 	c := h.ctx.Value("contract_name").(string)
 	h.db.Del(c + database.Separator + key)
 }
-func (h *Host) MapPut(key, field, value string) {
+func (h *Host) MapPut(key, field string, value interface{}) {
 	c := h.ctx.Value("contract_name").(string)
-	h.db.MPut(c+database.Separator+key, field, value)
+	v := database.MustMarshall(value)
+	h.db.MPut(c+database.Separator+key, field, v)
 }
-func (h *Host) MapGet(key, field string) (value string) {
+func (h *Host) MapGet(key, field string) (value interface{}) {
 	c := h.ctx.Value("contract_name").(string)
-	return h.db.MGet(c+database.Separator+key, field)
+	ans := h.db.MGet(c+database.Separator+key, field)
+	rtn := database.MustUnmarshall(ans)
+	return rtn
 }
 func (h *Host) MapKeys(key string) (fields []string) {
 	c := h.ctx.Value("contract_name").(string)
@@ -82,11 +88,13 @@ func (h *Host) MapLen(key string) int {
 	c := h.ctx.Value("contract_name").(string)
 	return len(h.db.MKeys(c + database.Separator + key))
 }
-func (h *Host) GlobalGet(contract, key string) string {
-	return h.db.Get(contract + database.Separator + key)
+func (h *Host) GlobalGet(contract, key string) interface{} {
+	o := h.db.Get(contract + database.Separator + key)
+	return database.MustUnmarshall(o)
 }
-func (h *Host) GlobalMapGet(contract, key, field string) (value string) {
-	return h.db.MGet(contract+database.Separator+key, field)
+func (h *Host) GlobalMapGet(contract, key, field string) (value interface{}) {
+	o := h.db.MGet(contract+database.Separator+key, field)
+	return database.MustUnmarshall(o)
 }
 func (h *Host) GlobalMapKeys(contract, key string) []string {
 	return h.db.MKeys(contract + database.Separator + key)
@@ -175,5 +183,5 @@ func (h *Host) ABIConfig(key, value string) {
 	*ps = value
 }
 func (h *Host) PayCost(c *contract.Cost, who string, gasPrice int64) {
-
+	// TODO
 }
