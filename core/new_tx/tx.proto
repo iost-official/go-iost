@@ -14,7 +14,7 @@ message TxRaw {
     int64 time = 2;
     int64 expiration = 3;
     int64 gasLimit = 4;
-    double gasPrice = 5;
+    int64 gasPrice = 5;
     repeated ActionRaw actions = 6;
     repeated bytes signers = 7;
     repeated common.SignatureRaw signs = 8;
