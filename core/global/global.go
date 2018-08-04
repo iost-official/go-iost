@@ -1,12 +1,12 @@
 package global
 
 import (
+	"errors"
 	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/pkg/errors"
 )
 
 type Mode uint

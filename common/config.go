@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 	"github.com/spf13/viper"
 )
 
