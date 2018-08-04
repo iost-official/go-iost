@@ -46,7 +46,7 @@ func MustMarshall(in interface{}) string {
 }
 
 func Unmarshall(o string) interface{} {
-	switch o[0:0] {
+	switch o[0:1] {
 	case IntPrefix:
 		return rawToInt64(o)
 	case StringPrefix:

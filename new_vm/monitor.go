@@ -27,14 +27,14 @@ func NewMonitor( /*cb database.IMultiValue, cacheLength int*/ ) *Monitor {
 	return m
 }
 
-func (m *Monitor) Call(host *Host, contractName, api string, args ...string) (rtn []string, cost *contract.Cost, err error) {
+func (m *Monitor) Call(host *Host, contractName, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
 
 	c := host.db.Contract(contractName)
 	ctx := host.Context()
 
-	host.ctx = context.WithValue(ctx, "abi_config", make(map[string]*string))
-	host.ctx = context.WithValue(ctx, "contract_name", contractName)
-	host.ctx = context.WithValue(ctx, "abi_name", contractName)
+	host.ctx = context.WithValue(host.ctx, "abi_config", make(map[string]*string))
+	host.ctx = context.WithValue(host.ctx, "contract_name", contractName)
+	host.ctx = context.WithValue(host.ctx, "abi_name", api)
 
 	vm, ok := m.vms[c.Lang]
 	if !ok {
@@ -47,7 +47,7 @@ func (m *Monitor) Call(host *Host, contractName, api string, args ...string) (rt
 	payment := host.ctx.Value("abi_config").(map[string]*string)["payment"] // TODO 预编译
 	gasPrice := host.ctx.Value("gas_price").(uint64)
 	switch {
-	case *payment == "contract_pay":
+	case payment != nil && *payment == "contract_pay":
 		host.PayCost(cost, contractName, gasPrice)
 		cost = contract.Cost0()
 	}
