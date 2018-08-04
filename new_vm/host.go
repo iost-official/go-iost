@@ -46,6 +46,10 @@ func (h *Host) Context() context.Context {
 	return h.ctx
 }
 
+func (h *Host) VerifyArgs(api string, args ...string) error {
+	return nil
+}
+
 func (h *Host) Put(key, value string) {
 	//h.db.Checkout(h.ctx.Value("commit").(string))
 	c := h.ctx.Value("contract_name").(string)
@@ -170,6 +174,6 @@ func (h *Host) ABIConfig(key, value string) {
 	ps := h.ctx.Value("abi_config").(map[string]*string)[key]
 	*ps = value
 }
-func (h *Host) PayCost(c *contract.Cost, who string) {
+func (h *Host) PayCost(c *contract.Cost, who string, gasPrice int64) {
 
 }

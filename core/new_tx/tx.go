@@ -9,25 +9,33 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
-//go:generate gencode go -schema=structs.schema -package=tx
+//go:generate protoc  --go_out=plugins=grpc:. ./core/new_tx/tx.proto
 
 // Tx Transaction 的实现
 type Tx struct {
 	// TODO calculate id
 	Id        string // encode tx hash
 	Time      int64
+	Expiration	int64
+	GasLimit	int64
+	GasPrice	float64
 	Actions   []Action
 	Signers   [][]byte
 	Signs     []common.Signature
 	Publisher common.Signature
+	GasPrice  int64
 }
 
 // 新建一个Tx，需要通过编译器得到一个contract
-func NewTx(nonce int64, actions []Action, signers [][]byte) Tx {
+func NewTx(nonce int64, actions []Action, signers [][]byte, gasLimit int64, gasPrice float64, expiration int64) Tx {
+	now := time.Now().UnixNano()
 	return Tx{
-		Time:    time.Now().UnixNano(),
+		Time:    now,
 		Actions: actions,
 		Signers: signers,
+		GasLimit: gasLimit,
+		GasPrice: gasPrice,
+		Expiration: expiration,
 	}
 }
 
@@ -45,6 +53,9 @@ func (t *Tx) baseHash() []byte {
 	tr := &TxRaw{
 		Id:   t.Id,
 		Time: t.Time,
+		Expiration:t.Expiration,
+		GasLimit:t.GasLimit,
+		GasPrice:t.GasPrice,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -78,6 +89,9 @@ func (t *Tx) publishHash() []byte {
 	tr := &TxRaw{
 		Id:   t.Id,
 		Time: t.Time,
+		Expiration:t.Expiration,
+		GasLimit:t.GasLimit,
+		GasPrice:t.GasPrice,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -107,6 +121,9 @@ func (t *Tx) Encode() []byte {
 	tr := &TxRaw{
 		Id:   t.Id,
 		Time: t.Time,
+		Expiration:t.Expiration,
+		GasLimit:t.GasLimit,
+		GasPrice:t.GasPrice,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -145,6 +162,9 @@ func (t *Tx) Decode(b []byte) error {
 	}
 	t.Id = tr.Id
 	t.Time = tr.Time
+	t.Expiration = tr.Expiration
+	t.GasLimit = tr.GasLimit
+	t.GasPrice = tr.GasPrice
 	t.Actions = []Action{}
 	for _, a := range tr.Actions {
 		t.Actions = append(t.Actions, Action{
@@ -171,8 +191,9 @@ func (t *Tx) Decode(b []byte) error {
 	return nil
 }
 
+// hash
 func (t *Tx) Hash() []byte {
-	return nil
+	return common.Sha256(t.Encode())
 }
 
 // 验证签名的函数
