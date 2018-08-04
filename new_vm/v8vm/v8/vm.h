@@ -9,7 +9,7 @@
 extern "C" {
 #endif // __cplusplus
 
-typedef void* IsolatePtr;
+    typedef void* IsolatePtr;
 typedef void* SandboxPtr;
 
 typedef struct {
@@ -81,4 +81,4 @@ extern ValueTuple Execute(SandboxPtr ptr, const char *code);
 }
 #endif // __cplusplus
 
-#endif //IOST_V8_ENGINE_H
+#endif // IOST_V8_ENGINE_H

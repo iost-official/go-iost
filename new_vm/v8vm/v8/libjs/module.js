@@ -41,7 +41,7 @@ NativeModule.prototype.require = function(id) {
 
 NativeModule._load = function(request, parent) {
     var nativeObj = _native_require(request);
-    return nativeObj;
+    // return nativeObj;
 }
 
 NativeModule.prototype._compile = function (content, filename) {

@@ -17,7 +17,7 @@
 
 using namespace v8;
 
-#define NATIVE_LIB_PATH "v8/libjs/"
+#define NATIVE_LIB_PATH "libjs/"
 
 typedef struct {
   Persistent<Context> context;
@@ -90,6 +90,21 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     std::stringstream buffer;
     buffer << f.rdbuf();
 
+//    std::cout << "fullpath: " << buffer.str() << std::endl;
+
+//    ScriptOrigin sourceSrcOrigin(path);
+//    Local<Context> context = isolate->GetCurrentContext();
+//    MaybeLocal<Script> script = Script::Compile(
+//          context, String::NewFromUtf8(isolate, buffer.str().c_str()), &sourceSrcOrigin);
+//    if (!script.IsEmpty()) {
+//        MaybeLocal<Value> ret = script.ToLocalChecked()->Run(context);
+//        if (!ret.IsEmpty()) {
+//            Local<Value> rr = ret.ToLocalChecked();
+//            std::cout << "result: " << v8ValueToStdString(rr) << std::endl;
+//            info.GetReturnValue().Set(rr);
+//        }
+//    }
+
     Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<String> fileName = String::NewFromUtf8(isolate, *pathStr, NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
@@ -97,7 +112,7 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     if (!script.IsEmpty()) {
         Local<Value> result = script->Run();
         if (!result.IsEmpty()) {
-            std::cout << "result: " << v8ValueToStdString(result) << std::endl;
+//            std::cout << "result: " << v8ValueToStdString(result) << std::endl;
             info.GetReturnValue().Set(result);
         }
     }
@@ -209,7 +224,7 @@ void LoadVM(Isolate *isolate) {
     if (!script.IsEmpty()) {
         Local<Value> result = script->Run();
         if (!result.IsEmpty()) {
-            std::cout << "result vm: " << v8ValueToStdString(result) << std::endl;
+//            std::cout << "result vm: " << v8ValueToStdString(result) << std::endl;
         }
     }
 }
