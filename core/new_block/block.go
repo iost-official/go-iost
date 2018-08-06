@@ -2,17 +2,17 @@ package block
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"strconv"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
 
 type Block struct {
 	Head     BlockHead
-	Txs 	 []tx.Tx
+	Txs      []tx.Tx
 	Receipts []tx.TxReceipt
 }
 
@@ -25,14 +25,14 @@ func (d *Block) String() string {
 	str += "	}\n"
 
 	str += "	Txs {\n"
-	for _, tx := range d.Txs {
-		str += tx.String()
-	}
+	//for _, tx := range d.Txs {
+	//	//str += tx.String()
+	//}
 	str += "	}\n"
 	str += "	Receipts {\n"
-	for _, receipt := range d.Receipts {
-		str += receipt.String()
-	}
+	//for _, receipt := range d.Receipts {
+	//	str += receipt.String()
+	//}
 	str += "	}\n"
 	str += "}\n"
 	return str
