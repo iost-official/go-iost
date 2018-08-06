@@ -57,12 +57,12 @@ func (h *Host) VerifyArgs(api string, args ...string) error {
 
 func (h *Host) Put(key string, value interface{}) {
 	c := h.ctx.Value("contract_name").(string)
-	v := database.MustMarshall(value)
+	v := database.MustMarshal(value)
 	h.db.Put(c+database.Separator+key, v)
 }
 func (h *Host) Get(key string) interface{} {
 	c := h.ctx.Value("contract_name").(string)
-	rtn := database.MustUnmarshall(h.db.Get(c + database.Separator + key))
+	rtn := database.MustUnmarshal(h.db.Get(c + database.Separator + key))
 
 	return rtn
 }
@@ -72,13 +72,13 @@ func (h *Host) Del(key string) {
 }
 func (h *Host) MapPut(key, field string, value interface{}) {
 	c := h.ctx.Value("contract_name").(string)
-	v := database.MustMarshall(value)
+	v := database.MustMarshal(value)
 	h.db.MPut(c+database.Separator+key, field, v)
 }
 func (h *Host) MapGet(key, field string) (value interface{}) {
 	c := h.ctx.Value("contract_name").(string)
 	ans := h.db.MGet(c+database.Separator+key, field)
-	rtn := database.MustUnmarshall(ans)
+	rtn := database.MustUnmarshal(ans)
 	return rtn
 }
 func (h *Host) MapKeys(key string) (fields []string) {
@@ -95,11 +95,11 @@ func (h *Host) MapLen(key string) int {
 }
 func (h *Host) GlobalGet(contract, key string) interface{} {
 	o := h.db.Get(contract + database.Separator + key)
-	return database.MustUnmarshall(o)
+	return database.MustUnmarshal(o)
 }
 func (h *Host) GlobalMapGet(contract, key, field string) (value interface{}) {
 	o := h.db.MGet(contract+database.Separator+key, field)
-	return database.MustUnmarshall(o)
+	return database.MustUnmarshal(o)
 }
 func (h *Host) GlobalMapKeys(contract, key string) []string {
 	return h.db.MKeys(contract + database.Separator + key)
@@ -120,7 +120,7 @@ func (h *Host) Receipt(s string) {
 	trec := h.ctx.Value("tx_receipt").(*tx.TxReceipt)
 	(*trec).Receipts = append(trec.Receipts, rec)
 }
-func (h *Host) Call(contract, api string, args ...interface{}) ([]string, *contract.Cost, error) {
+func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
 
 	// save stack
 	record := contract + "-" + api
@@ -145,7 +145,7 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]string, *contr
 	h.ctx = ctx
 	return rtn, cost, err
 }
-func (h *Host) CallWithReceipt(contract, api string, args ...interface{}) ([]string, *contract.Cost, error) {
+func (h *Host) CallWithReceipt(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
 	rtn, cost, err := h.Call(contract, api, args...)
 
 	var receipt tx.Receipt
@@ -200,13 +200,15 @@ func (h *Host) SetCode(ct string) { // 不在这里做编译
 	h.db.SetContract(&c)
 }
 func (h *Host) DestroyCode(contractName string) {
+	// todo 释放kv
+
 	h.db.DelContract(contractName)
 }
-func (h *Host) BlockInfo() string {
-	return h.ctx.Value("block_info").(string)
+func (h *Host) BlockInfo() database.SerializedJSON {
+	return h.ctx.Value("block_info").(database.SerializedJSON)
 }
-func (h *Host) TxInfo() string {
-	return h.ctx.Value("tx_info").(string)
+func (h *Host) TxInfo() database.SerializedJSON {
+	return h.ctx.Value("tx_info").(database.SerializedJSON)
 }
 func (h *Host) ABIConfig(key, value string) {
 	ps := h.ctx.Value("abi_config").(map[string]*string)[key]

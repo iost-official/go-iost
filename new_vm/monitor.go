@@ -27,7 +27,7 @@ func NewMonitor( /*cb database.IMultiValue, cacheLength int*/ ) *Monitor {
 	return m
 }
 
-func (m *Monitor) Call(host *Host, contractName, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
+func (m *Monitor) Call(host *Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
 	c := host.db.Contract(contractName)
 	ctx := host.Context()
