@@ -52,7 +52,6 @@ const (
 	Single
 )
 
-// BlockCacheTree 缓存链分叉的树结构
 type BlockCacheNode struct {
 	Block                 *block.Block
 	Parent                *BlockCacheNode
@@ -178,7 +177,6 @@ func (bc *BlockCache) updateLongest() {
 	cur := uint64(0)
 	newHead := bc.Head
 	for key, val := range bc.Leaf {
-		fmt.Printf("longest: %v\n", key.Number)
 		if val > cur {
 			cur = val
 			newHead = key
