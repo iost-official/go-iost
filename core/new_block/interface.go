@@ -7,10 +7,10 @@ type Chain interface {
 	Push(block *Block) error
 	Length() uint64
 	CheckLength() error
-	Top() *Block // 语法糖
-	GetHashByNumber(number uint64) []byte
-	GetBlockByNumber(number uint64) *Block
-	GetBlockByHash(blockHash []byte) *Block
+	Top() (*Block, error) // 语法糖
+	GetHashByNumber(number uint64) ([]byte, error)
+	GetBlockByNumber(number uint64) (*Block, error)
+	GetBlockByHash(blockHash []byte) (*Block, error)
 	GetBlockByteByHash(blockHash []byte) ([]byte, error)
 }
 

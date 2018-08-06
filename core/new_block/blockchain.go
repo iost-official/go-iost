@@ -95,8 +95,8 @@ func (b *ChainImpl) CheckLength() error {
 	dbLen := b.Length()
 	var i uint64
 	for i = dbLen; i > 0; i-- {
-		bb := b.GetBlockByNumber(i - 1)
-		if bb != nil {
+		_, err := b.GetBlockByNumber(i - 1)
+		if err == nil {
 			log.Log.I("[block] set block length %v", i)
 			b.setLength(i)
 			break
@@ -123,67 +123,72 @@ func (b *ChainImpl) getLengthBytes(length uint64) []byte {
 	return []byte(strconv.FormatUint(length, 10))
 }
 
-func (b *ChainImpl) Top() *Block {
+func (b *ChainImpl) Top() (*Block, error) {
 	var blk *Block
+	var err error
 	if b.length == 0 {
-		return b.GetBlockByNumber(b.length)
+		blk, err = b.GetBlockByNumber(b.length)
+		if err != nil {
+			return nil, err
+		}
+		return blk, nil
 	} else {
 		for i := b.length; i > 0; i-- {
-			blk = b.GetBlockByNumber(i - 1)
-			if blk != nil {
+			blk, err = b.GetBlockByNumber(i - 1)
+			if err == nil {
 				break
 			}
 		}
-		return blk
+		return blk, nil
 	}
 }
 
-func (b *ChainImpl) GetHashByNumber(number uint64) []byte {
+func (b *ChainImpl) GetHashByNumber(number uint64) ([]byte, error) {
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
 	if err != nil {
 		log.Log.E("Get block hash error: %v number: %v", err, number)
-		return nil
+		return nil, err
 	}
-	return hash
+	return hash, nil
 }
 
-func (b *ChainImpl) GetBlockByNumber(number uint64) *Block {
+func (b *ChainImpl) GetBlockByNumber(number uint64) (*Block, error) {
 	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
 	if err != nil {
 		log.Log.E("Get block hash error: %v number: %v", err, number)
-		return nil
+		return nil, err
 	}
 
 	block, err := b.db.Get(append(blockPrefix, hash...))
 	if err != nil {
 		log.Log.E("Get block error: %v number: %v", err, number)
-		return nil
+		return nil, err
 	}
 	if len(block) == 0 {
 		log.Log.E("GetBlockByNumber Block empty! number: %v", number)
-		return nil
+		return nil, fmt.Errorf("GetBlockByNumber Block empty! number: %v", number)
 	}
 	rBlock := new(Block)
 	if err := rBlock.Decode(block); err != nil {
 		log.Log.E("Failed to GetBlockByNumber Decode err: %v", err)
-		return nil
+		return nil, err
 	}
-	return rBlock
+	return rBlock, nil
 }
 
-func (b *ChainImpl) GetBlockByHash(blockHash []byte) *Block {
+func (b *ChainImpl) GetBlockByHash(blockHash []byte) (*Block, error) {
 	block, err := b.db.Get(append(blockPrefix, blockHash...))
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	if len(block) == 0 {
-		return nil
+		return nil, fmt.Errorf("GetBlockByHash Block empty! hash: %v", blockHash)
 	}
 	rBlock := new(Block)
 	if err := rBlock.Decode(block); err != nil {
-		return nil
+		return nil, err
 	}
-	return rBlock
+	return rBlock, nil
 }
 
 func (b *ChainImpl) GetBlockByteByHash(blockHash []byte) ([]byte, error) {
