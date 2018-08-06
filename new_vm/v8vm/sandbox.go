@@ -11,47 +11,61 @@ import (
 	"unsafe"
 )
 
-const (aa = iota)
-
 // A Sandbox is an execution environment that allows separate, unrelated, JavaScript
 // code to run in a single instance of IVM.
 type Sandbox struct {
 	id      int
 	isolate C.IsolatePtr
 	context C.SandboxPtr
+	modules Modules
+}
+
+var sbxMap = make(map[C.SandboxPtr]*Sandbox)
+
+func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
+	sbx, ok := sbxMap[cSbx]
+	return sbx, ok
 }
 
 func NewSandbox(e *VM) *Sandbox {
+	cSbx := C.newSandbox(e.isolate)
 	s := &Sandbox{
 		isolate: e.isolate,
-		context: C.newSandbox(e.isolate),
+		context: cSbx,
+		modules: NewModules(),
 	}
+	sbxMap[cSbx] = s
 
 	return s
 }
 
 func (sbx *Sandbox) Release() {
 	if sbx.context != nil {
+		delete(sbxMap, sbx.context)
 		C.releaseSandbox(sbx.context)
 	}
 	sbx.context = nil
 }
 
 func (sbx *Sandbox) Init() {
+	// init require
+}
 
+func (sbx *Sandbox) SetModule(name, code string) {
+	if name == "" || code == "" {
+		return
+	}
+	m := NewModule(name, code)
+	sbx.modules.Set(m)
 }
 
 func (sbx *Sandbox) Prepare(code, function string, args []string) string {
+	sbx.SetModule("_native_main", code)
 	return fmt.Sprintf(`
-var wrapper = (function (exports, module) {
-%s
-});
-
-wrapper.call(wrapper, exports, module)
-
-var obj = new module.exports();
-obj["%s"].apply(obj, %v);
-`, code, function, args)
+var _native_main = NativeModule.require('_native_main');
+var obj = new _native_main();
+obj['%s'].apply(obj, %v);
+`, function, args)
 }
 
 func (sbx *Sandbox) Execute(preparedCode string) (string, error) {

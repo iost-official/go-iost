@@ -1,58 +1,63 @@
 'use strict'
 
-function makeRequireFunction(mod) {
-    const NativeModule = mod.constructor;
-
-    function require(path) {
-        return mod.require(path);
-    }
-
-    require.cache = NativeModule._cache;
-
-    return require;
-}
-
-function NativeModule(id, parent) {
+function Module(id, parent) {
     this.id = id;
     this.exports = {};
     this.parent = parent;
+
+    this.filename = null;
+    this.loaded = false;
+    this.exited = false;
+    this.children = [];
 }
+module.exports = Module;
 
-NativeModule._cache = Object.create(null);
+Module._cache = {};
 
-NativeModule.wrap = function (script) {
-    return NativeModule.wrapper[0] + script + NativeModule.wrapper[1]
+Module.runMain = function() {
+    // Load the main module--the command line argument.
+    Module._load('_native_main', null, true);
 };
 
-NativeModule.wrapper = [
-    '(function (exports, require, module, __filename, __dirname) { ',
-    '\n});'
-];
+Module._load = function(request, parent, isMain) {
+    var filename = request;
 
-NativeModule.prototype.require = function(id) {
-    if (typeof id !== 'string') {
-        throw 'require id not string'
+    var module = new Module(filename, parent);
+
+    if (isMain) {
+        module.id = '.'
     }
-    if (id === '') {
-        throw 'require id is empty'
+    Module._cache[filename] = module;
+    try {
+        module.load(filename);
+    } catch(err) {
+        delete Module._cache[filename];
+        throw err;
     }
-    return NativeModule._load(id, this)
-}
+};
 
-NativeModule._load = function(request, parent) {
-    var nativeObj = _native_require(request);
-    // return nativeObj;
-}
+Module.prototype.load = function(filename) {
+    this.filename = filename;
 
-NativeModule.prototype._compile = function (content, filename) {
-    var wrapper = NativeModule.wrap(content);
+    var extension = '.js';
+    Module._extensions[extension](this, filename);
+    this.loaded = true;
+};
 
-    var require = function (path) {
+Module.prototype.require = function(path) {
+    return Module._load(path, this);
+};
 
+Module.prototype._compile = function(content, filename) {
+    var self = this;
+
+    function require(path) {
+        return self.require(path);
     }
-}
+    require.path = Module._cache;
+};
 
-// module.exports = {
-//     NativeModule,
-//     makeRequireFunction,
-// };
+Module._extensions['.js'] = function(module, filename) {
+    var content = _native_readFile(filename);
+    module._compile(content, filename);
+};

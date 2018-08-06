@@ -9,7 +9,7 @@
 extern "C" {
 #endif // __cplusplus
 
-    typedef void* IsolatePtr;
+typedef void* IsolatePtr;
 typedef void* SandboxPtr;
 
 typedef struct {
@@ -76,6 +76,8 @@ extern SandboxPtr newSandbox(IsolatePtr ptr);
 extern void releaseSandbox(SandboxPtr ptr);
 
 extern ValueTuple Execute(SandboxPtr ptr, const char *code);
+
+extern char *requireModule(SandboxPtr, const char *);
 
 #ifdef __cplusplus
 }
