@@ -115,12 +115,7 @@ func generateHeadInfo(head block.BlockHead) []byte {
 	return common.Sha256(info)
 }
 
-func verifyBasics(blk *block.Block, parent *block.Block) error {
-	// verify block head
-	if err := VerifyBlockHead(blk, parent); err != nil {
-		return err
-	}
-
+func verifyBasics(blk *block.Block) error {
 	// verify block witness
 	if witnessOfTime(Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
 		return errors.New("wrong witness")
@@ -149,12 +144,20 @@ func verifyBasics(blk *block.Block, parent *block.Block) error {
 		return errors.New("witness slot duplicate")
 	}
 
+	return nil
+}
+
+func verifyBlockHead(blk *block.Block, parent *block.Block) error {
+	return VerifyBlockHead(blk, parent)
+}
+
+func verifyBlockTxs(blk *block.Block, db *db.MVCCDB) error {
 	// verify exist txs
 	for _, tx := range blk.Txs {
 		if blk.Head.Time - tx.Time > 300 {
 			return errors.New("tx too old")
 		}
-		exist := new_txpool.TxPoolS.ExistTx(tx.Hash())
+		exist := new_txpool.TxPoolS.ExistTx(tx.Hash(), blk)
 		if exist == INBLOCK {
 			return errors.New("duplicate tx")
 		} else if exist != PENDING {
@@ -164,10 +167,6 @@ func verifyBasics(blk *block.Block, parent *block.Block) error {
 		}
 	}
 
-	return nil
-}
-
-func verifyBlockTxs(blk *block.Block, db *db.MVCCDB) error {
 	// verify txs
 	err := VerifyBlock(blk, db)
 	if err != nil {

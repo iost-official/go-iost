@@ -154,15 +154,17 @@ func (p *PoB) blockLoop() {
 			if err != nil {
 				continue
 			}
-			parent := p.blockCache.Find(blk.HeadHash())
-			if err := verifyBasics(blk, parent); err == nil {
-				// tell synchronizer to cancel downloading
+			if err := verifyBasics(blk); err == nil {
+				parent := p.blockCache.Find(blk.HeadHash())
+				if parent != nil && parent.Type == blockcache.Linked {
+					// tell synchronizer to cancel downloading
 
-				if parent.Type == blockcache.Linked {
 					var node *blockcache.BlockCacheNode
-					err := p.addBlock(&blk, node, parent, true)
+					var err error
+					node, err = p.addBlock(&blk, node, parent, true)
 					if err != nil {
 						// dishonest?
+						p.log.I("Add block error: %v", err)
 						continue
 					}
 					p.addSingles(node)
@@ -208,24 +210,38 @@ func (p *PoB) scheduleLoop() {
 	}
 }
 
-func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) error {
+func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) (*blockcache.BlockCacheNode, error) {
 	// verify block txs
 	if blk.Head.Witness != p.account.ID {
 		p.verifyDB.Checkout(parent.Block.HeadHash())
-		err := verifyBlockTxs(blk, p.verifyDB)
+		var headErr, txErr error
+		if headErr = verifyBlockHead(blk, parent.Block); headErr == nil {
+			txErr = verifyBlockTxs(blk, p.verifyDB)
+		}
+
 		// add
 		if newBlock {
-			if err == nil {
+			if headErr == nil && txErr == nil {
+				var err error
 				node, err = p.blockCache.Add(blk)
+				if err != nil {
+					return nil, err
+				}
+			} else if headErr != nil {
+				return nil, headErr
 			} else {
-				return err
+				return nil, txErr
 			}
 		} else {
-			if err != nil {
-				p.blockCache.Del(node)
-				return err
-			} else {
+			if headErr == nil && txErr == nil {
 				p.blockCache.Link(node)
+			} else {
+				p.blockCache.Del(node)
+				if headErr != nil {
+					return nil, headErr
+				} else {
+					return nil, txErr
+				}
 			}
 		}
 		// tag in state
@@ -233,6 +249,7 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 	} else {
 		p.verifyDB.Checkout(blk.HeadHash())
 	}
+
 	// update node info without state
 	updateNodeInfo(node)
 	// update node info with state, currently pending witness list
@@ -248,14 +265,17 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 
 	dynamicProp.update(&blk.Head)
 	// -> tx pool
-	new_txpool.TxPoolS.AddConfirmBlock(blk,  node == p.blockCache.Head)
+	new_txpool.TxPoolS.AddBlock(node)
+	return node, nil
 }
 
 func (p *PoB) addSingles(node *blockcache.BlockCacheNode) {
 	if node.Children != nil {
 		for _, child := range node.Children {
-			p.addBlock(nil, child, node, false)
-			p.addSingles(child)
+			_, err := p.addBlock(nil, child, node, false)
+			if err == nil {
+				p.addSingles(child)
+			}
 		}
 	}
 }
