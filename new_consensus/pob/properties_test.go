@@ -5,7 +5,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	. "github.com/smartystreets/goconvey/convey"
 )

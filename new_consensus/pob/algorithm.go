@@ -139,6 +139,11 @@ func verifyBasics(blk *block.Block, parent *block.Block) error {
 		return errors.New("wrong signature")
 	}
 
+	// block produced by itself: do not verify the rest parts
+	if blk.Head.Witness == staticProp.ID {
+		return nil
+	}
+
 	// verify slot map
 	if staticProp.hasSlotWitness(uint64(blk.Head.Time), blk.Head.Witness) {
 		return errors.New("witness slot duplicate")

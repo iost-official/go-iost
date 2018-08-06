@@ -224,6 +224,8 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 			if err != nil {
 				p.blockCache.Del(node)
 				return err
+			} else {
+				p.blockCache.Link(node)
 			}
 		}
 		// tag in state
