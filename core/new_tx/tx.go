@@ -14,15 +14,16 @@ import (
 // Tx Transaction 的实现
 type Tx struct {
 	// TODO calculate id
-	Id         string             `json:"id"`
-	Time       int64              `json:"time,string"`
-	Expiration int64              `json:"expiration,string"`
-	GasLimit   uint64             `json:"gas_limit,string"`
-	Actions    []Action           `json:"-"`
-	Signers    [][]byte           `json:"-"`
-	Signs      []common.Signature `json:"-"`
-	Publisher  common.Signature   `json:"-"`
-	GasPrice   uint64             `json:"gas_price,string"`
+	hash       []byte
+	Id         string // encode tx hash
+	Time       int64
+	Expiration int64
+	GasLimit   uint64
+	Actions    []Action
+	Signers    [][]byte
+	Signs      []common.Signature
+	Publisher  common.Signature
+	GasPrice   uint64
 }
 
 // 新建一个Tx，需要通过编译器得到一个contract
@@ -35,6 +36,7 @@ func NewTx(nonce int64, actions []Action, signers [][]byte, gasLimit uint64, gas
 		GasLimit:   gasLimit,
 		GasPrice:   gasPrice,
 		Expiration: expiration,
+		hash:       nil,
 	}
 }
 
@@ -186,13 +188,16 @@ func (t *Tx) Decode(b []byte) error {
 		Sig:       tr.Publisher.Sig,
 		Pubkey:    tr.Publisher.PubKey,
 	}
-
+	t.hash = nil
 	return nil
 }
 
 // hash
 func (t *Tx) Hash() []byte {
-	return common.Sha256(t.Encode())
+	if t.hash == nil {
+		t.hash = common.Sha256(t.Encode())
+	}
+	return t.hash
 }
 
 // 验证签名的函数

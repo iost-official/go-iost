@@ -1,19 +1,13 @@
 package block
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
-		txDb := tx.TxDbInstance()
-		So(txDb, ShouldNotBeNil)
-
 		bc, err := Instance()
 		Convey("New", func() {
 			So(err, ShouldBeNil)
@@ -22,22 +16,18 @@ func TestNewBlockChain(t *testing.T) {
 	})
 }
 
+/*
 func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
-		txDb := tx.TxDbInstance()
-		So(txDb, ShouldNotBeNil)
-
 		bc, err := Instance()
-
 		Convey("New", func() {
 			So(err, ShouldBeNil)
-
 		})
 
 		tBlock := Block{Head: BlockHead{
 			Version:    2,
 			ParentHash: []byte("parent Hash"),
-			TxsHash:     []byte("tree hash"),
+			TxsHash:    []byte("tree hash"),
 			Info:       []byte("info "),
 			Number:     int64(0),
 			Witness:    "id2,id3,id5,id6",
@@ -105,3 +95,4 @@ func TestChainImpl(t *testing.T) {
 		})
 	})
 }
+*/
