@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"sync"
-
+	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
@@ -92,8 +92,12 @@ func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *Block
 		Block:    block,
 		Children: make(map[*BlockCacheNode]bool),
 		Parent:   parent,
-		Type:     IF(parent != nil, parent.Type, nodeType).(BCNType),
 		//initialize others
+	}
+	if parent==nil{
+		bcn.Type=nodeType
+	}else{
+		bcn.Type=parent.Type
 	}
 	if parent != nil {
 		parent.addChild(&bcn)
@@ -102,10 +106,11 @@ func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *Block
 }
 
 type BlockCache struct {
-	linkedTree *BlockCacheNode
-	singleTree *BlockCacheNode
+	LinkedTree *BlockCacheNode
+	SingleTree *BlockCacheNode
 	Head       *BlockCacheNode
 	hash2node  *sync.Map
+	Leaf       map[*BlockCacheNode]uint64
 }
 
 var (
@@ -136,35 +141,61 @@ var StateDB *db.MVCCDB
 func NewBlockCache(MVCCDB *db.MVCCDB) *BlockCache {
 	StateDB = MVCCDB
 	bc := BlockCache{
-		linkedTree: NewBCN(nil, nil, Linked),
-		singleTree: NewBCN(nil, nil, Single),
+		LinkedTree: NewBCN(nil, nil, Linked),
+		SingleTree: NewBCN(nil, nil, Single),
 		hash2node:  new(sync.Map),
+		Leaf:	make(map[*BlockCacheNode]uint64),
 	}
+	bc.Head=bc.LinkedTree
 	blkchain := block.BChain
 	lib := blkchain.Top()
-	bc.linkedTree.Block = lib
+	bc.LinkedTree.Block = lib
 	if lib != nil {
-		bc.hmset(lib.HeadHash(), bc.linkedTree)
+		bc.hmset(lib.HeadHash(), bc.LinkedTree)
 	}
+	bc.Leaf[bc.LinkedTree]=bc.LinkedTree.Number
 	return &bc
+}
+
+//call this when you run the block verify after Add() to ensure add single bcn to linkedTree
+func (bc *BlockCache) Link(bcn *BlockCacheNode) {
+	if bcn == nil {
+		return
+	}
+	bcn.Type = Linked
+	delete(bc.Leaf, bcn.Parent)
+	bc.Leaf[bcn] = bcn.Number
+	bc.updateLongest()
+}
+
+func (bc *BlockCache) updateLongest() {
+	cur := bc.Head.Number
+	newHead := bc.Head
+	for key, val := range bc.Leaf {
+		if val > cur {
+			cur = val
+			newHead = key
+		}
+	}
+	bc.Head = newHead
 }
 func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 	var code CacheStatus
 	var newNode *BlockCacheNode
 	_, ok := bc.hmget(blk.HeadHash())
 	if ok {
-		code, newNode = Duplicate, nil
-	} else {
-		parent, ok := bc.hmget(blk.Head.ParentHash)
-		if ok {
-			newNode = NewBCN(parent, blk, Linked)
-			code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
-		} else {
-			code, newNode = NotFound, nil
-		}
-		bc.hmset(blk.HeadHash(), newNode)
+		return nil,ErrDup
 	}
-
+	parent, ok := bc.hmget(blk.Head.ParentHash)
+	bcnType:=IF(ok,Linked,Single).(BCNType)
+	fa:=IF(ok,parent,bc.SingleTree).(*BlockCacheNode)
+	newNode = NewBCN(fa, blk, bcnType)
+	if ok {
+		code=IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
+	}else{
+		code=NotFound
+	}
+	bc.hmset(blk.HeadHash(), newNode)
 	switch code {
 	case Extend:
 		fallthrough
@@ -172,22 +203,15 @@ func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 		// Added to cached tree or added to single tree
 		if newNode.Type == Linked {
 			bc.addSingle(newNode)
+			bc.Link(newNode)
 		} else {
 			bc.mergeSingle(newNode)
 			return newNode, ErrNotFound
 		}
 	case NotFound:
 		// Added as a child of single root
-		newNode = NewBCN(bc.singleTree, blk, Single)
 		bc.mergeSingle(newNode)
 		return newNode, ErrNotFound
-	case Duplicate:
-		return newNode, ErrDup
-	case ErrorBlock:
-		return newNode, ErrBlock
-	}
-	if newNode.Number > bc.Head.Number {
-		bc.Head = newNode
 	}
 	return newNode, nil
 }
@@ -196,9 +220,11 @@ func (bc *BlockCache) delNode(bcn *BlockCacheNode) {
 	fa := bcn.Parent
 	bcn.Parent = nil
 	bc.hmdel(bcn.Block.HeadHash())
+	delete(bc.Leaf, bcn)
 	if fa == nil {
 		return
 	}
+	bc.Leaf[fa] = fa.Number
 	fa.delChild(bcn)
 	return
 }
@@ -206,16 +232,25 @@ func (bc *BlockCache) Del(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
+	len := len(bcn.Children)
 	for ch, _ := range bcn.Children {
 		bc.Del(ch)
 	}
 	bc.delNode(bcn)
+	if len == 0 {
+		bc.updateLongest()
+	}
 }
 
 func (bc *BlockCache) addSingle(newNode *BlockCacheNode) {
+	bc.mergeSingle(newNode)
+	//modify Type from child to end
+}
+
+func (bc *BlockCache) mergeSingle(newNode *BlockCacheNode) {
 	block := newNode.Block
 	var child *BlockCacheNode
-	for bcn, _ := range bc.singleTree.Children {
+	for bcn, _ := range bc.SingleTree.Children {
 		if bytes.Equal(bcn.Block.Head.ParentHash, block.HeadHash()) {
 			child = bcn
 			break
@@ -227,19 +262,14 @@ func (bc *BlockCache) addSingle(newNode *BlockCacheNode) {
 	}
 	child.Parent.delChild(child)
 	newNode.addChild(child)
-	//modify Type from child to end
-}
-
-func (bc *BlockCache) mergeSingle(newNode *BlockCacheNode) {
-	bc.addSingle(newNode) //dont modify Type
 }
 
 func (bc *BlockCache) delSingle() {
-	height := bc.linkedTree.Number
+	height := bc.LinkedTree.Number
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
-	for bcn, _ := range bc.singleTree.Children {
+	for bcn, _ := range bc.SingleTree.Children {
 		if bcn.Number <= height {
 			bc.Del(bcn)
 		}
@@ -248,7 +278,7 @@ func (bc *BlockCache) delSingle() {
 }
 
 func (bc *BlockCache) flush(cur *BlockCacheNode, retain *BlockCacheNode) error {
-	if cur != bc.linkedTree {
+	if cur != bc.LinkedTree {
 		bc.flush(cur.Parent, cur)
 	}
 	for child, _ := range cur.Children {
@@ -270,10 +300,11 @@ func (bc *BlockCache) flush(cur *BlockCacheNode, retain *BlockCacheNode) error {
 			log.Log.E("MVCCDB error, State Flush err:%v", err)
 			return err
 		}
-
+		//AddConfirmBlock(retain.Block)
 		bc.hmdel(cur.Block.HeadHash())
 		retain.Parent = nil
-		bc.linkedTree = retain
+		bc.LinkedTree = retain
+
 	}
 	return nil
 }
