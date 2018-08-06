@@ -14,28 +14,30 @@ import (
 // Tx Transaction 的实现
 type Tx struct {
 	// TODO calculate id
-	Id        string // encode tx hash
-	Time      int64
-	Expiration	int64
-	GasLimit	int64
-	GasPrice	float64
-	Actions   []Action
-	Signers   [][]byte
-	Signs     []common.Signature
-	Publisher common.Signature
-	GasPrice  int64
+	Id         string // encode tx hash
+	Time       int64
+	Expiration int64
+	GasLimit   int64
+	GasPrice   float64
+	Actions    []Action
+	Signers    [][]byte
+	Signs      []common.Signature
+	Publisher  common.Signature
+	GasPrice   int64
+	hash       []byte
 }
 
 // 新建一个Tx，需要通过编译器得到一个contract
 func NewTx(nonce int64, actions []Action, signers [][]byte, gasLimit int64, gasPrice float64, expiration int64) Tx {
 	now := time.Now().UnixNano()
 	return Tx{
-		Time:    now,
-		Actions: actions,
-		Signers: signers,
-		GasLimit: gasLimit,
-		GasPrice: gasPrice,
+		Time:       now,
+		Actions:    actions,
+		Signers:    signers,
+		GasLimit:   gasLimit,
+		GasPrice:   gasPrice,
 		Expiration: expiration,
+		hash:       nil,
 	}
 }
 
@@ -51,11 +53,11 @@ func SignTxContent(tx Tx, account account.Account) (common.Signature, error) {
 // Time,Noce,Contract形成的基本哈希值
 func (t *Tx) baseHash() []byte {
 	tr := &TxRaw{
-		Id:   t.Id,
-		Time: t.Time,
-		Expiration:t.Expiration,
-		GasLimit:t.GasLimit,
-		GasPrice:t.GasPrice,
+		Id:         t.Id,
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasLimit:   t.GasLimit,
+		GasPrice:   t.GasPrice,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -87,11 +89,11 @@ func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, erro
 // publishHash 发布者使用的hash值，包含参与者的签名
 func (t *Tx) publishHash() []byte {
 	tr := &TxRaw{
-		Id:   t.Id,
-		Time: t.Time,
-		Expiration:t.Expiration,
-		GasLimit:t.GasLimit,
-		GasPrice:t.GasPrice,
+		Id:         t.Id,
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasLimit:   t.GasLimit,
+		GasPrice:   t.GasPrice,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -119,11 +121,11 @@ func (t *Tx) publishHash() []byte {
 // 对Tx进行编码
 func (t *Tx) Encode() []byte {
 	tr := &TxRaw{
-		Id:   t.Id,
-		Time: t.Time,
-		Expiration:t.Expiration,
-		GasLimit:t.GasLimit,
-		GasPrice:t.GasPrice,
+		Id:         t.Id,
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasLimit:   t.GasLimit,
+		GasPrice:   t.GasPrice,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -187,13 +189,16 @@ func (t *Tx) Decode(b []byte) error {
 		Sig:       tr.Publisher.Sig,
 		Pubkey:    tr.Publisher.PubKey,
 	}
-
+	t.hash = nil
 	return nil
 }
 
 // hash
 func (t *Tx) Hash() []byte {
-	return common.Sha256(t.Encode())
+	if t.hash == nil {
+		t.hash = common.Sha256(t.Encode())
+	}
+	return t.hash
 }
 
 // 验证签名的函数
