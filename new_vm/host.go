@@ -120,7 +120,7 @@ func (h *Host) Receipt(s string) {
 	trec := h.ctx.Value("tx_receipt").(*tx.TxReceipt)
 	(*trec).Receipts = append(trec.Receipts, rec)
 }
-func (h *Host) Call(contract, api string, args ...interface{}) ([]string, *contract.Cost, error) {
+func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
 
 	// save stack
 	record := contract + "-" + api
@@ -145,7 +145,7 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]string, *contr
 	h.ctx = ctx
 	return rtn, cost, err
 }
-func (h *Host) CallWithReceipt(contract, api string, args ...interface{}) ([]string, *contract.Cost, error) {
+func (h *Host) CallWithReceipt(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
 	rtn, cost, err := h.Call(contract, api, args...)
 
 	var receipt tx.Receipt
