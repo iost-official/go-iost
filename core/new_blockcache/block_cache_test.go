@@ -2,7 +2,7 @@ package blockcache
 
 import (
 	"testing"
-
+//	"fmt"
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
@@ -43,16 +43,22 @@ func TestBlockCache(t *testing.T) {
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
 			bc := NewBlockCache(nil)
+			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			b1node,_:=bc.Add(b1)
+			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			bc.Add(b2)
 			_,err := bc.Add(b2)
 			So(err, ShouldEqual, ErrDup)
 			_,err = bc.Add(b4)
+			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			So(err, ShouldEqual, ErrNotFound)
 			_,err = bc.Add(b4)
 			So(err, ShouldEqual, ErrDup)
 			bc.Del(b1node)
+			//fmt.Printf("after Del Leaf:%+v\n",bc.Leaf)
 			b1node,_=bc.Add(b1)
+			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
+			//bc.Draw()
 			So(bc.Head,ShouldEqual,b1node)
 			bc.Add(b3)
 			So(bc.Head,ShouldEqual,b1node)

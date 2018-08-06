@@ -3,12 +3,12 @@ package blockcache
 import (
 	"bytes"
 	"errors"
-	"sync"
 	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/prometheus/client_golang/prometheus"
+	"sync"
 )
 
 var (
@@ -94,10 +94,13 @@ func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *Block
 		Parent:   parent,
 		//initialize others
 	}
-	if parent==nil{
-		bcn.Type=nodeType
-	}else{
-		bcn.Type=parent.Type
+	if block != nil {
+		bcn.Number = uint64(block.Head.Number)
+	}
+	if parent == nil {
+		bcn.Type = nodeType
+	} else {
+		bcn.Type = parent.Type
 	}
 	if parent != nil {
 		parent.addChild(&bcn)
@@ -144,16 +147,16 @@ func NewBlockCache(MVCCDB *db.MVCCDB) *BlockCache {
 		LinkedTree: NewBCN(nil, nil, Linked),
 		SingleTree: NewBCN(nil, nil, Single),
 		hash2node:  new(sync.Map),
-		Leaf:	make(map[*BlockCacheNode]uint64),
+		Leaf:       make(map[*BlockCacheNode]uint64),
 	}
-	bc.Head=bc.LinkedTree
+	bc.Head = bc.LinkedTree
 	blkchain := block.BChain
 	lib := blkchain.Top()
 	bc.LinkedTree.Block = lib
 	if lib != nil {
 		bc.hmset(lib.HeadHash(), bc.LinkedTree)
 	}
-	bc.Leaf[bc.LinkedTree]=bc.LinkedTree.Number
+	bc.Leaf[bc.LinkedTree] = bc.LinkedTree.Number
 	return &bc
 }
 
@@ -169,9 +172,13 @@ func (bc *BlockCache) Link(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCache) updateLongest() {
-	cur := bc.Head.Number
+	if len(bc.Leaf) == 0 {
+		panic(fmt.Errorf("BlockCache shouldnt be empty"))
+	}
+	cur := uint64(0)
 	newHead := bc.Head
 	for key, val := range bc.Leaf {
+		fmt.Printf("longest: %v\n", key.Number)
 		if val > cur {
 			cur = val
 			newHead = key
@@ -184,16 +191,16 @@ func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 	var newNode *BlockCacheNode
 	_, ok := bc.hmget(blk.HeadHash())
 	if ok {
-		return nil,ErrDup
+		return nil, ErrDup
 	}
 	parent, ok := bc.hmget(blk.Head.ParentHash)
-	bcnType:=IF(ok,Linked,Single).(BCNType)
-	fa:=IF(ok,parent,bc.SingleTree).(*BlockCacheNode)
+	bcnType := IF(ok, Linked, Single).(BCNType)
+	fa := IF(ok, parent, bc.SingleTree).(*BlockCacheNode)
 	newNode = NewBCN(fa, blk, bcnType)
 	if ok {
-		code=IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
-	}else{
-		code=NotFound
+		code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
+	} else {
+		code = NotFound
 	}
 	bc.hmset(blk.HeadHash(), newNode)
 	switch code {
@@ -321,4 +328,66 @@ func (bc *BlockCache) Flush(bcn *BlockCacheNode) {
 func (bc *BlockCache) FindBlock(hash []byte) (*block.Block, error) {
 	bcn, ok := bc.hmget(hash)
 	return bcn.Block, IF(ok, nil, errors.New("block not found")).(error)
+}
+
+//for debug
+//draw the blockcache
+const PICSIZE int = 100
+
+var pic [PICSIZE][PICSIZE]byte
+var picX, picY int
+
+func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
+	if x > picX {
+		picX = x
+	}
+	if y > picY {
+		picY = y
+	}
+	if y != 0 {
+		pic[x][y-1] = '-'
+		for i := x; i >= 0; i-- {
+			if pic[i][y-2] != ' ' {
+				break
+			}
+			pic[i][y-2] = '|'
+		}
+	}
+	pic[x][y] = 'N'
+	var width int = 0
+	var f bool = false
+	i := 0
+	for k, _ := range root.Children {
+		i += 1
+		if i == len(root.Children)-1 {
+			f = true
+		}
+		width = calcTree(k, x+width, y+2, f)
+	}
+	if isLast {
+		return x + width
+	} else {
+		return x + width + 2
+	}
+}
+func (bcn *BlockCacheNode) DrawTree() {
+	for i := 0; i < PICSIZE; i++ {
+		for j := 0; j < PICSIZE; j++ {
+			pic[i][j] = ' '
+		}
+	}
+	calcTree(bcn, 0, 0, true)
+	for i := 0; i <= picX; i++ {
+		for j := 0; j <= picY; j++ {
+			fmt.Printf("%c", pic[i][j])
+		}
+		fmt.Printf("\n")
+	}
+}
+
+func (bc *BlockCache) Draw() {
+	fmt.Println("\nLinkedTree:")
+	bc.LinkedTree.DrawTree()
+	fmt.Println("SingleTree:")
+	bc.SingleTree.DrawTree()
 }
