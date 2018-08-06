@@ -46,7 +46,7 @@ func MustMarshall(in interface{}) string {
 }
 
 func Unmarshall(o string) interface{} {
-	switch o[0:0] {
+	switch o[0:1] {
 	case IntPrefix:
 		return rawToInt64(o)
 	case StringPrefix:
@@ -60,6 +60,14 @@ func Unmarshall(o string) interface{} {
 	}
 	return ErrInvalidData
 
+}
+
+func MustUnmarshall(o string) interface{} {
+	rtn := Unmarshall(o)
+	if err, ok := rtn.(error); ok {
+		panic(err)
+	}
+	return rtn
 }
 
 func int64ToRaw(i int64) string {

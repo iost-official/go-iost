@@ -19,7 +19,7 @@ func (m *MVCCHandler) Checkout(tag string) {
 		return
 	} else {
 		m.cache.Purge()
-		m.db.Checkout(tag) // 注意这个
+		//m.db.Checkout(tag) // 注意这个
 		m.currentTag = tag
 	}
 }

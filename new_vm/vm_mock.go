@@ -47,7 +47,7 @@ func (mr *MockVMMockRecorder) Init() *gomock.Call {
 }
 
 // LoadAndCall mocks base method
-func (m *MockVM) LoadAndCall(arg0 *Host, arg1 *contract.Contract, arg2 string, arg3 ...string) ([]string, *contract.Cost, error) {
+func (m *MockVM) LoadAndCall(arg0 *Host, arg1 *contract.Contract, arg2 string, arg3 ...interface{}) ([]string, *contract.Cost, error) {
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)

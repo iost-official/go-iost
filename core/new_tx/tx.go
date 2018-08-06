@@ -17,17 +17,16 @@ type Tx struct {
 	Id        string // encode tx hash
 	Time      int64
 	Expiration	int64
-	GasLimit	int64
-	GasPrice	float64
+	GasLimit	uint64
 	Actions   []Action
 	Signers   [][]byte
 	Signs     []common.Signature
 	Publisher common.Signature
-	GasPrice  int64
+	GasPrice  uint64
 }
 
 // 新建一个Tx，需要通过编译器得到一个contract
-func NewTx(nonce int64, actions []Action, signers [][]byte, gasLimit int64, gasPrice float64, expiration int64) Tx {
+func NewTx(nonce int64, actions []Action, signers [][]byte, gasLimit uint64, gasPrice uint64, expiration int64) Tx {
 	now := time.Now().UnixNano()
 	return Tx{
 		Time:    now,

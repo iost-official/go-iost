@@ -44,7 +44,7 @@ func TestHost_Put(t *testing.T) {
 		}
 	})
 	mock.EXPECT().Put(Any(), Any(), Any()).Do(func(a, b, c string) {
-		if a != "state" || b != "b-contractName-hello" || c != "world" {
+		if a != "state" || b != "b-contractName-hello" || c != "sworld" {
 			t.Fatal(a, b, c)
 		}
 	})
@@ -68,7 +68,7 @@ func TestHost_Get(t *testing.T) {
 		if a != "state" || b != "b-contractName-hello" {
 			t.Fatal(a, b)
 		}
-		return "world", nil
+		return "sworld", nil
 	})
 
 	ans := host.Get("hello")
@@ -91,7 +91,7 @@ func TestHost_MapPut(t *testing.T) {
 		}
 	})
 	mock.EXPECT().Put(Any(), Any(), Any()).Do(func(a, b, c string) {
-		if a != "state" || b != "m-contractName-hello-1" || c != "world" {
+		if a != "state" || b != "m-contractName-hello-1" || c != "sworld" {
 			t.Fatal(a, b, c)
 		}
 	})
@@ -116,7 +116,7 @@ func TestHost_MapGet(t *testing.T) {
 		if a != "state" || b != "m-contractName-hello-1" {
 			t.Fatal(a, b)
 		}
-		return "world", nil
+		return "sworld", nil
 	})
 
 	ans := host.MapGet("hello", "1")
