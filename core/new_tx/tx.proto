@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+import "common/common.proto";
+package tx;
+
+message ActionRaw {
+    string contract = 1;
+    string actionName = 2;
+    string data = 3;
+}
+
+message TxRaw {
+    string id = 1;
+    int64 time = 2;
+    int64 expiration = 3;
+    uint64 gasLimit = 4;
+    uint64 gasPrice = 5;
+    repeated ActionRaw actions = 6;
+    repeated bytes signers = 7;
+    repeated common.SignatureRaw signs = 8;
+    common.SignatureRaw publisher = 9;
+}
+
+message ReceiptRaw {
+    int32 type = 1;
+    string content = 2;
+}
+
+message StatusRaw {
+    int32 code = 1;
+    string message = 2;
+}
+
+message TxReceiptRaw {
+    bytes txHash = 1;
+    uint64 gasUsage = 2;
+    StatusRaw status = 3;
+    int32 succActionNum = 4;
+    repeated ReceiptRaw receipts = 5;
+}
