@@ -19,7 +19,7 @@ const (
 type Engine interface {
 	//Init()
 	//SetEnv(bh *block.BlockHead, cb database.IMultiValue) Engine
-	Exec(tx0 tx.Tx) (tx.TxReceipt, error)
+	Exec(tx0 tx.Tx) (*tx.TxReceipt, error)
 	GC()
 }
 
@@ -51,19 +51,26 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	host := NewHost(ctx, db)
 	return &EngineImpl{host: host}
 }
-func (e *EngineImpl) Exec(tx0 tx.Tx) (tx.TxReceipt, error) {
+func (e *EngineImpl) Exec(tx0 tx.Tx) (*tx.TxReceipt, error) {
 
-	txr := tx.NewTxReceipt([]byte(tx0.Id))
+	//txr := tx.NewTxReceipt([]byte(tx0.Id))
 	totalCost := contract.Cost0()
 
 	for _, action := range tx0.Actions {
-		_, receipt, cost, err := staticMonitor.Call(e.host, action.Contract, action.ActionName, action.Data)
+
+		e.host.ctx = context.WithValue(e.host.ctx, "stack0", tx0.Id)
+		e.host.ctx = context.WithValue(e.host.ctx, "stack_height", 1) // record stack trace
+
+		_, cost, err := staticMonitor.Call(e.host, action.Contract, action.ActionName, action.Data)
 		if err != nil {
+			txr := e.host.ctx.Value("tx_receipt").(*tx.TxReceipt)
 			return txr, err
 		}
-		txr.Receipts = append(txr.Receipts, *receipt)
+
 		totalCost.AddAssign(cost)
 	}
+
+	txr := e.host.ctx.Value("tx_receipt").(*tx.TxReceipt)
 
 	e.host.PayCost(totalCost, account.GetIdByPubkey(tx0.Publisher.Pubkey), tx0.GasPrice)
 

@@ -8,11 +8,11 @@ type IMultiValue interface {
 	Del(table string, key string) error
 	Has(table string, key string) (bool, error)
 	Keys(table string, prefix string) ([]string, error)
-	Tables(table string) ([]string, error)
-	Commit() string
-	Rollback() error
-	Tag(tag string) error
-	Fork(revision string) string
-	Checkout(revision string)
-	Flush(revision string) error
+	//Tables(table string) ([]string, error)
+	//Commit() string
+	//Rollback() error
+	//Tag(tag string) error
+	//Fork(revision string) string
+	//Checkout(revision string)
+	//Flush(revision string) error
 }

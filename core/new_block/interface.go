@@ -1,8 +1,6 @@
 // Package block 是区块和区块链的结构体定义和操作方法
 package block
 
-import "github.com/iost-official/Go-IOS-Protocol/core/tx"
-
 //go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/block Chain
 
 type Chain interface {
@@ -14,11 +12,6 @@ type Chain interface {
 	GetBlockByNumber(number uint64) *Block
 	GetBlockByHash(blockHash []byte) *Block
 	GetBlockByteByHash(blockHash []byte) ([]byte, error)
-
-	HasTx(tx *tx.Tx) (bool, error)
-	GetTx(hash []byte) (*tx.Tx, error)
-
-	Iterator() ChainIterator
 }
 
 type ChainIterator interface {

@@ -2,20 +2,22 @@ package block
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"strconv"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block
 
 type Block struct {
+	hash     []byte
 	Head     BlockHead
-	Txs 	 []tx.Tx
+	Txs      []tx.Tx
 	Receipts []tx.TxReceipt
 }
 
+/*
 func (d *Block) String() string {
 	str := "Block{\n"
 	str += "	BlockHead{\n"
@@ -37,6 +39,7 @@ func (d *Block) String() string {
 	str += "}\n"
 	return str
 }
+*/
 
 func (d *Block) CalculateTreeHash() []byte {
 	treeHash := make([]byte, 0)
@@ -60,6 +63,7 @@ func (d *Block) Encode() []byte {
 	if err != nil {
 		panic(err)
 	}
+	d.hash = nil
 	return b
 }
 
@@ -92,10 +96,6 @@ func (d *Block) Decode(bin []byte) (err error) {
 	return nil
 }
 
-func (d *Block) Hash() []byte {
-	return common.Sha256(d.Encode())
-}
-
 func (d *Block) HashID() string {
 	id := d.Head.Witness +
 		strconv.FormatInt(d.Head.Time, 10) +
@@ -105,7 +105,10 @@ func (d *Block) HashID() string {
 }
 
 func (d *Block) HeadHash() []byte {
-	return d.Head.Hash()
+	if d.hash == nil {
+		d.hash = d.Head.Hash()
+	}
+	return d.hash
 }
 
 func (d *Block) GetTx(x int) tx.Tx {
