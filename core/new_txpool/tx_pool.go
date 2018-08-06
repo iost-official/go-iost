@@ -33,6 +33,14 @@ func init() {
 	prometheus.MustRegister(receivedTransactionCount)
 }
 
+type FRet uint
+
+const (
+	NotFound FRet = iota
+	FoundPending
+	FoundChain
+)
+
 type TxPoolServer struct {
 	chTx           chan message.Message
 	chConfirmBlock chan *block.Block
