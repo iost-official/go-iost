@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package rpc;
+
+service Apis {
+	rpc GetHeight (VoidReq) returns (HeightRes) {}
+	rpc GetTxByHash (HashReq) returns (TxRes) {}
+	rpc GetBlockByHash (HashReq) returns (BlockRes) {}
+	rpc getBlockByNum (NumReq) returns (BlockRes) {}
+    rpc GetBalance (GetBalanceReq) returns (GetBalanceRes) {}
+    rpc GetState (GetStateReq) returns (GetStateRes) {}
+    rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {}
+    rpc EstimateGas (RawTxReq) returns (GasRes) {}
+}
+
+message VoidReq {
+
+}
+
+message HashReq {
+	string hash=1;
+}
+message NumReq {
+	uint64 num=1;	
+}
+message GetBalanceReq {
+	string pubkey=1;
+}
+
+message GetStateReq {
+	string key=1;
+}
+
+message RawTxReq {
+	bytes data=1;
+}
+message HeightRes {
+	uint64 height=1;
+}
+
+message TxRes {
+	//tx to be returned
+	string todo=1;		
+}
+
+message BlockRes {
+	//blk to be returned
+	string todo=1;
+}
+
+message GetBalanceRes {
+	string balance=1;
+}
+
+message GetStateRes {
+	string value=1;
+}
+
+message SendRawTxRes {
+	string hash=1;
+}
+
+message GasRes {
+	uint64 gas=1;
+}
+/*
+message Head {
+    int64 version = 1;
+    bytes parentHash = 2;
+    bytes treeHash = 3;
+    bytes blockHash = 4;
+    bytes info = 5;
+    int64 number = 6;
+    string witness = 7;
+    bytes signature = 8;
+    int64 time = 9;
+}
+
+message BlockInfo {
+    Head head = 1;
+    int64 Txcnt = 2;
+    repeated TransactionKey txList = 3;
+}
+*/
