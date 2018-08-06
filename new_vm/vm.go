@@ -1,9 +1,13 @@
 package new_vm
 
-import "context"
+import (
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+)
+
+//go:generate mockgen -destination vm_mock.go -package new_vm github.com/iost-official/Go-IOS-Protocol/new_vm VM
 
 type VM interface {
 	Init() error
-	LoadAndCall(ctx context.Context, contract *Contract, api string, args ...string) (rtn []string, err error)
+	LoadAndCall(host *Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
 	Release()
 }

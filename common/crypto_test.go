@@ -3,6 +3,8 @@ package common
 import (
 	"testing"
 
+	"crypto/rand"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -35,4 +37,19 @@ func TestSign(t *testing.T) {
 			So(VerifySignInSecp256k1(info, pubkey, []byte{5, 6, 7, 8}), ShouldBeFalse)
 		})
 	})
+}
+
+func TestBase58Encode(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		seckey := make([]byte, 32)
+		rand.Read(seckey)
+
+		pubkey := CalcPubkeyInSecp256k1(seckey)
+		spub := Base58Encode(append(pubkey, Parity(pubkey)...))
+
+		if len(spub) != 50 {
+			t.Failed()
+		}
+	}
+
 }

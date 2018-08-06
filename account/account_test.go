@@ -36,3 +36,16 @@ func TestMember(t *testing.T) {
 		})
 	})
 }
+
+func TestPubkeyAndID(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		pubkey := makePubkey(randomSeckey())
+		id := GetIdByPubkey(pubkey)
+		pub2 := GetPubkeyByID(id)
+		id2 := GetIdByPubkey(pub2)
+
+		if id != id2 {
+			t.Failed()
+		}
+	}
+}

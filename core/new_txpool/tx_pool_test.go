@@ -1,4 +1,4 @@
-package txpool
+package new_txpool
 
 import (
 	. "github.com/golang/mock/gomock"

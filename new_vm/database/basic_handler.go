@@ -19,5 +19,5 @@ func (m *BasicHandler) Has(key string) bool {
 }
 
 func (m *BasicHandler) Del(key string) {
-
+	m.db.Del(BasicPrefix + key)
 }

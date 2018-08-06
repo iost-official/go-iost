@@ -1,7 +1,5 @@
 package database
 
-import "github.com/iost-official/Go-IOS-Protocol/chainbase"
-
 type Database interface {
 	Get(key string) (value string)
 	Put(key, value string)
@@ -15,12 +13,13 @@ const (
 )
 
 type chainbaseAdapter struct {
-	cb  *chainbase.Chainbase
-	err error
+	cb  IMultiValue
+	err error // todo handle error
 }
 
 func (c *chainbaseAdapter) Get(key string) (value string) {
-	value, err := c.cb.Get(StateTable, key)
+	var err error
+	value, err = c.cb.Get(StateTable, key)
 	if err != nil {
 		c.err = err
 		return ""
@@ -45,8 +44,9 @@ func (c *chainbaseAdapter) Keys(prefix string) []string {
 }
 
 func (c *chainbaseAdapter) Del(key string) {
+	c.err = c.cb.Del(StateTable, key)
 }
 
-func newChainbaseAdapter(cb *chainbase.Chainbase) *chainbaseAdapter {
+func newChainbaseAdapter(cb IMultiValue) *chainbaseAdapter {
 	return &chainbaseAdapter{cb, nil}
 }
