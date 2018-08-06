@@ -23,11 +23,6 @@ func DatabaseFactory(target string) (Database, error) {
 	switch target {
 	case "redis":
 		return NewRedisDatabase()
-	case "ldb":
-		//dirname, _ := ioutil.TempDir(os.TempDir(), "test_")
-		dirname := "database"
-		Db, err := NewLDBDatabase(dirname, 0, 0)
-		return Db, err
 	case "mem":
 		db, err := NewMemDatabase()
 		return db, err
