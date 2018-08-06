@@ -150,8 +150,18 @@ func verifyBasics(blk *block.Block, parent *block.Block) error {
 	}
 
 	// verify exist txs
-	if err := new_txpool.TxPoolS.ExistTxs(blk.HeadHash(), blk); err {
-		return errors.New("duplicate txs")
+	for _, tx := range blk.Txs {
+		if blk.Head.Time - tx.Time > 300 {
+			return errors.New("tx too old")
+		}
+		exist := new_txpool.TxPoolS.ExistTx(tx.Hash())
+		if exist == INBLOCK {
+			return errors.New("duplicate tx")
+		} else if exist != PENDING {
+			if err := tx.VerifySelf(); err != nil {
+				return errors.New("tx wrong signature")
+			}
+		}
 	}
 
 	return nil
@@ -217,10 +227,9 @@ func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCac
 		}
 		i := node.Number - topNumber
 		if confirmUntil[i] != nil {
-			for j := range confirmUntil[i] {
-				witness := confirmUntil[i][j]
+			for _, witness := range confirmUntil[i] {
 				confirmMap[witness]--
-				if confirmMap[confirmUntil[i][j]] == 0 {
+				if confirmMap[witness] == 0 {
 					delete(confirmMap, witness)
 				}
 			}

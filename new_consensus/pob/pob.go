@@ -253,9 +253,9 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 
 func (p *PoB) addSingles(node *blockcache.BlockCacheNode) {
 	if node.Children != nil {
-		for i := range node.Children {
-			p.addBlock(nil, node.Children[i], node, false)
-			p.addSingles(node.Children[i])
+		for _, child := range node.Children {
+			p.addBlock(nil, child, node, false)
+			p.addSingles(child)
 		}
 	}
 }

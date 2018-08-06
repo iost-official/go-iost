@@ -43,8 +43,8 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
 func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
 	var receipts []tx.TxReceipt
 	engine := new_vm.NewEngine(blk.Head, db)
-	for i := range blk.Txs {
-		receipt, err := verify(&blk.Txs[i], &engine)
+	for _, tx := range blk.Txs {
+		receipt, err := verify(&tx, &engine)
 		if err == nil {
 			db.Commit()
 			receipts = append(receipts, receipt)
@@ -53,8 +53,8 @@ func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
 			return err
 		}
 	}
-	for i := range receipts {
-		if !blk.Receipts[i].Equal(receipts[i]) {
+	for i, r := range receipts {
+		if !blk.Receipts[i].Equal(r) {
 			return errors.New("wrong tx receipt")
 		}
 	}
