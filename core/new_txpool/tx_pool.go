@@ -9,7 +9,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
@@ -32,10 +31,6 @@ var (
 
 func init() {
 	prometheus.MustRegister(receivedTransactionCount)
-}
-func aaa(global global.Global) {
-
-	fmt.Println("")
 }
 
 type TxPoolServer struct {
