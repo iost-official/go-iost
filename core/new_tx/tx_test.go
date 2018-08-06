@@ -8,6 +8,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"bytes"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"fmt"
 )
 /*
 func gentx() Tx {
@@ -49,6 +50,11 @@ func TestTx(t *testing.T) {
 			Contract:"contract1",
 			ActionName:"actionname1",
 			Data:"{\"num\": 1, \"message\": \"contract1\"}",
+		})
+		actions = append(actions, Action{
+			Contract:"contract2",
+			ActionName:"actionname2",
+			Data:"1",
 		})
 		// seckey := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 		// acc, err := account.NewAccount(seckey)
@@ -160,6 +166,8 @@ func TestTx(t *testing.T) {
 			}
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "publisher error")
+
+			fmt.Println(tx.String())
 
 			tx.Signs[0] = common.Signature{
 				Algorithm: common.Secp256k1,

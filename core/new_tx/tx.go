@@ -7,6 +7,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"strconv"
 )
 
 //go:generate protoc  --go_out=plugins=grpc:. ./core/new_tx/tx.proto
@@ -190,6 +191,18 @@ func (t *Tx) Decode(b []byte) error {
 	}
 	t.hash = nil
 	return nil
+}
+
+func (t *Tx) String() string {
+	str := "Tx{\n"
+	str += "	Time: " + strconv.FormatInt(t.Time, 10) + ",\n"
+	str += "	Pubkey: " + string(t.Publisher.Pubkey) + ",\n"
+	str += "	Action:\n"
+	for _, a := range t.Actions {
+		str += "		" + a.String()
+	}
+	str += "}\n"
+	return str
 }
 
 // hash
