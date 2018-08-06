@@ -65,7 +65,7 @@ func getIndex(element string, list []string) int {
 	return -1
 }
 
-const (
+var (
 	slotPerWitness      = 1
 	maintenanceInterval = 24
 )
@@ -75,7 +75,6 @@ type globalDynamicProperty struct {
 	LastBlockTime            Timestamp
 	LastBLockHash            []byte
 	TotalSlots               int64
-	LastConfirmedBlockNumber int32
 	NextMaintenanceTime      Timestamp
 }
 
@@ -84,7 +83,6 @@ func newGlobalDynamicProperty() globalDynamicProperty {
 		LastBlockNumber:          0,
 		LastBlockTime:            Timestamp{Slot: 0},
 		TotalSlots:               0,
-		LastConfirmedBlockNumber: 0,
 	}
 	prop.NextMaintenanceTime.AddHour(maintenanceInterval)
 	return prop
@@ -117,8 +115,8 @@ func witnessOfTime(time Timestamp) string {
 
 	currentSlot := dynamicProp.timestampToSlot(time)
 	slotsEveryTurn := int64(staticProp.NumberOfWitnesses * slotPerWitness)
-	index := ((currentSlot % slotsEveryTurn) + slotsEveryTurn) % slotsEveryTurn
-	index /= slotPerWitness
+	index := currentSlot % slotsEveryTurn
+	index /= int64(slotPerWitness)
 	witness := staticProp.WitnessList[index]
 
 	return witness
@@ -138,10 +136,10 @@ func timeUntilNextSchedule(timeSec int64) int64 {
 	if startSlot > currentSlot {
 		return dynamicProp.slotToTimestamp(startSlot).ToUnixSec() - timeSec
 	}
-	if currentSlot-startSlot < slotPerWitness {
+	if currentSlot-startSlot < int64(slotPerWitness) {
 		if time.Slot > dynamicProp.LastBlockTime.Slot {
 			return 0
-		} else if currentSlot+1 < startSlot+slotPerWitness {
+		} else if currentSlot+1 < startSlot+int64(slotPerWitness) {
 			return dynamicProp.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
 		}
 	}

@@ -15,8 +15,7 @@ import (
 	"errors"
 )
 
-func genGenesis(initTime int64) (*block.Block, error) {
-
+func genGenesis(initTime int64) *block.Block {
 	var code string
 	for k, v := range GenesisAccount {
 		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
@@ -37,7 +36,7 @@ func genGenesis(initTime int64) (*block.Block, error) {
 		Receipts: make([]TxReceipt, 0),
 	}
 	genesis.Txs = append(genesis.Txs, tx)
-	return genesis, nil
+	return genesis
 }
 
 func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *block.Block {

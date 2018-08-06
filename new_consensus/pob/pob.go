@@ -85,10 +85,7 @@ func NewPoB(acc Account, global global.Global, witnessList []string) (*PoB, erro
 	if p.blockChain.GetBlockByNumber(0) == nil {
 
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-		genesis, err := genGenesis(GetTimestamp(t.Unix()).Slot)
-		if err != nil {
-			return nil, fmt.Errorf("failed to genesis is nil")
-		}
+		genesis := genGenesis(GetTimestamp(t.Unix()).Slot)
 		//TODO: add genesis to db, what about its state?
 		p.blockChain.Push(genesis)
 	}
@@ -171,6 +168,7 @@ func (p *PoB) blockLoop() {
 				}
 			} else {
 				// dishonest?
+				p.log.I("Add block error: %v", err)
 			}
 		case <-p.exitSignal:
 			return
