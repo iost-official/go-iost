@@ -6,27 +6,26 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
-type LDBDatabase struct {
-	fn string
-	db *leveldb.DB
-
+type LDB struct {
+	fn       string
+	db       *leveldb.DB
 	quitLock sync.Mutex
-	quitChan chan chan error
 }
 
-var ldbMap map[string]*LDBDatabase
-var mutex sync.Mutex
+var ldbMap map[string]*LDB
+var mutex sync.RWMutex
 
-func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
+func NewLDB(file string, cache int, handles int) (*LDB, error) {
 	if ldbMap == nil {
-		ldbMap = make(map[string]*LDBDatabase)
+		ldbMap = make(map[string]*LDB)
 	}
-	mutex.Lock()
-	if _, ok := ldbMap[file]; !ok {
+	mutex.RLock()
+	ldb, ok := ldbMap[file]
+	mutex.RUnlock()
+	if !ok {
 		if cache < 16 {
 			cache = 16
 		}
@@ -47,70 +46,69 @@ func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
 		if err != nil {
 			return nil, err
 		}
-		ldbMap[file] = &LDBDatabase{
+		ldb = &LDB{
 			fn: file,
 			db: db,
 		}
+		mutex.Lock()
+		ldbMap[file] = ldb
+		mutex.Unlock()
 	}
-	mutex.Unlock()
-	return ldbMap[file], nil
+	return ldb, nil
 }
 
-func (db *LDBDatabase) Path() string {
-	return db.fn
+func (ldb *LDB) Put(key []byte, value []byte) error {
+	return ldb.db.Put(key, value, nil)
 }
 
-func (db *LDBDatabase) Put(key []byte, value []byte) error {
-	return db.db.Put(key, value, nil)
-}
-
-func (db *LDBDatabase) PutHM(key []byte, args ...[]byte) error {
-	return errors.New("Unsupported")
-}
-
-func (db *LDBDatabase) Get(key []byte) ([]byte, error) {
-	value, err := db.db.Get(key, nil)
+func (ldb *LDB) Get(key []byte) ([]byte, error) {
+	value, err := ldb.db.Get(key, nil)
 	if err != nil {
 		return nil, err
 	}
 	return value, nil
 }
 
-func (db *LDBDatabase) GetHM(key []byte, args ...[]byte) ([][]byte, error) {
-	return nil, errors.New("Unsupported")
+func (ldb *LDB) Has(key []byte) (bool, error) {
+	return ldb.db.Has(key, nil)
 }
 
-func (db *LDBDatabase) Has(key []byte) (bool, error) {
-	return db.db.Has(key, nil)
+func (ldb *LDB) Delete(key []byte) error {
+	return ldb.db.Delete(key, nil)
 }
 
-func (db *LDBDatabase) Delete(key []byte) error {
-	return db.db.Delete(key, nil)
+func (ldb *LDB) Close() {
+	ldb.quitLock.Lock()
+	defer ldb.quitLock.Unlock()
+	ldb.db.Close()
 }
 
-func (db *LDBDatabase) NewIterator() iterator.Iterator {
-	return db.db.NewIterator(nil, nil)
+func (ldb *LDB) Path() string {
+	return ldb.fn
 }
 
-func (db *LDBDatabase) Close() {
-	db.quitLock.Lock()
-	defer db.quitLock.Unlock()
-	db.db.Close()
+func (ldb *LDB) DB() *leveldb.DB {
+	return ldb.db
 }
 
-func (db *LDBDatabase) DB() *leveldb.DB {
-	return db.db
+func (ldb *LDB) Batch() *LDBBatch {
+	return &LDBBatch{db: ldb.db, btch: new(leveldb.Batch)}
 }
 
-func (db *LDBDatabase) IsEmpty() (bool, error) {
-	isEmpty := true
-	iter := db.NewIterator()
-	for iter.Next() {
-		isEmpty = false
-		break
-	}
-	iter.Release()
-	err := iter.Error()
+type LDBBatch struct {
+	db   *leveldb.DB
+	btch *leveldb.Batch
+}
 
-	return isEmpty, err
+func (ldbBtch *LDBBatch) Reset() {
+	ldbBtch.btch.Reset()
+}
+
+func (ldbBtch *LDBBatch) Put(key []byte, value []byte) error {
+	ldbBtch.btch.Put(key, value)
+	return nil
+}
+
+func (ldbBtch *LDBBatch) Commit() error {
+	return ldbBtch.db.Write(ldbBtch.btch, nil)
 }
