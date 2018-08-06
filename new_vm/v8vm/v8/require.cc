@@ -31,21 +31,6 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     String::Utf8Value pathStr(path);
     char *code = requireModule(sbx, *pathStr);
 
-    std::cout << "code: " << code << std::endl;
-
-//    Local<String> source = String::NewFromUtf8(isolate, code, NewStringType::kNormal).ToLocalChecked();
-//    Local<String> fileName = String::NewFromUtf8(isolate, *pathStr, NewStringType::kNormal).ToLocalChecked();
-//    free(code);
-//
-//    Local<Script> script = Script::Compile(source, fileName);
-
-//    if (!script.IsEmpty()) {
-//        Local<Value> result = script->Run();
-//        if (!result.IsEmpty()) {
-//            info.GetReturnValue().Set(result);
-//        }
-//    }
-
     info.GetReturnValue().Set(String::NewFromUtf8(isolate, code));
     free(code);
 }
