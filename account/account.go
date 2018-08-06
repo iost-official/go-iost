@@ -66,10 +66,10 @@ func makePubkey(seckey []byte) []byte {
 }
 
 func GetIdByPubkey(pubkey []byte) string {
-	return common.Base58Encode(append(pubkey, common.Parity(pubkey)...))
+	return "IOST" + common.Base58Encode(append(pubkey, common.Parity(pubkey)...))
 }
 
 func GetPubkeyByID(ID string) []byte {
-	b := common.Base58Decode(ID)
+	b := common.Base58Decode(ID[4:])
 	return b[:len(b)-4]
 }
