@@ -16,7 +16,6 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
            std::cout << "nativeRequire val error" << std::endl;
         return;
     }
-
     SandboxPtr sbx = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
 
     Local<Value> path = info[0];

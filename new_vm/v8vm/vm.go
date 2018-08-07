@@ -8,9 +8,8 @@ package v8
 */
 import "C"
 import (
-	"context"
-
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 )
 
 func init() {
@@ -39,10 +38,9 @@ func (e *VM) Init() error {
 }
 
 // LoadAndCall load contract code with provide contract, and call api with args
-func (e *VM) LoadAndCall(ctx context.Context, contract *contract.Contract, api string, args ...string) (rtn []string, err error) {
-	code := contract.Code
-
-	preparedCode := e.sandbox.Prepare(code, api, args)
+func (e *VM) LoadAndCall(host *new_vm.Host, contract *contract.Contract, api string, args ...string) (rtn []string, err error) {
+	e.sandbox.SetHost(host)
+	preparedCode := e.sandbox.Prepare(contract, api, args)
 
 	rs, err := e.sandbox.Execute(preparedCode)
 

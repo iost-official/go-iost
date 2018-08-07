@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "v8.h"
 #include "require.h"
+#include "storage.h"
 #include "snapshot_blob.bin.h"
 #include "natives_blob.bin.h"
 
@@ -173,6 +174,7 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
     global->SetInternalFieldCount(1);
 
     InitRequire(isolate, global);
+    InitStorage(isolate, global);
 
     global->Set(
               String::NewFromUtf8(isolate, "_native_log", NewStringType::kNormal)
@@ -280,14 +282,30 @@ const char* ToCString(const v8::String::Utf8Value& value) {
 }
 
 void LoadVM(Isolate *isolate) {
-    std::string vmPath = NATIVE_LIB_PATH "nativeModule.js";
-    std::ifstream f(vmPath);
-    std::stringstream buffer;
-    buffer << f.rdbuf();
+    std::string nativeModulePath = NATIVE_LIB_PATH "nativeModule.js";
+    std::ifstream nf(nativeModulePath);
+    std::stringstream nbuffer;
+    nbuffer << nf.rdbuf();
 
-    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
-    Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
+    Local<String> source = String::NewFromUtf8(isolate, nbuffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
+    Local<String> fileName = String::NewFromUtf8(isolate, nativeModulePath.c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
+
+    if (!script.IsEmpty()) {
+        Local<Value> result = script->Run();
+        if (!result.IsEmpty()) {
+//            std::cout << "result vm: " << v8ValueToStdString(result) << std::endl;
+        }
+    }
+
+    std::string storagePath = NATIVE_LIB_PATH "storage.js";
+    std::ifstream sf(storagePath);
+    std::stringstream sbuffer;
+    sbuffer << sf.rdbuf();
+
+    source = String::NewFromUtf8(isolate, sbuffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
+    fileName = String::NewFromUtf8(isolate, storagePath.c_str(), NewStringType::kNormal).ToLocalChecked();
+    script = Script::Compile(source, fileName);
 
     if (!script.IsEmpty()) {
         Local<Value> result = script->Run();

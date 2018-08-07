@@ -10,7 +10,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var (

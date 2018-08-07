@@ -4,11 +4,28 @@ import (
 	"context"
 	"testing"
 
+	. "github.com/golang/mock/gomock"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 )
 
+func Init(t *testing.T) *database.Visitor {
+	mc := NewController(t)
+	defer mc.Finish()
+	db := database.NewMockIMultiValue(mc)
+	vi := database.NewVisitor(100, db)
+	return vi
+}
+
 func TestEngine_LoadAndCall(t *testing.T) {
-	contract := &contract.Contract{
+	vi := Init(t)
+	ctx := context.Background()
+	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
+	ctx = context.WithValue(ctx, "contract_name", "contractName")
+	host := new_vm.NewHost(ctx, vi)
+
+	code := &contract.Contract{
 		ContractInfo: contract.ContractInfo{
 			Name: "test.js",
 		},
@@ -32,7 +49,8 @@ var Contract = function() {
 	defer e.Release()
 	e.Init()
 
-	rs, err := e.LoadAndCall(context.Background(), contract, "fibonacci", "12")
+
+	rs, err := e.LoadAndCall(host, code, "fibonacci", "12")
 
 	if err != nil {
 		t.Fatalf("LoadAndCall run error: %v\n", err)
