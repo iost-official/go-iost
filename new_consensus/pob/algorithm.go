@@ -25,7 +25,6 @@ var (
 	ErrTxSignature = errors.New("tx wrong signature")
 )
 
-
 func genGenesis(initTime int64) *block.Block {
 	var code string
 	for k, v := range GenesisAccount {
@@ -101,7 +100,7 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *bloc
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
-	db.Tag(blk.HeadHash())
+	db.Tag(string(blk.HeadHash()))
 
 	generatedBlockCount.Inc()
 
@@ -192,8 +191,15 @@ func updateNodeInfo(node *blockcache.BlockCacheNode) {
 	node.Witness = node.Block.Head.Witness
 
 	// watermark
-	node.ConfirmUntil = staticProp.Watermark[node.Witness]
-	staticProp.Watermark[node.Witness] = node.Number + 1
+	if number, has := staticProp.Watermark[node.Witness]; has {
+		node.ConfirmUntil = number
+		if node.Number >= number {
+			staticProp.Watermark[node.Witness] = node.Number + 1
+		}
+	} else {
+		node.ConfirmUntil = 0
+		staticProp.Watermark[node.Witness] = node.Number + 1
+	}
 
 	// slot map
 	staticProp.addSlotWitness(uint64(node.Block.Head.Time), node.Witness)
@@ -222,15 +228,16 @@ func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCac
 	confirmUntil := make([][]string, startNumber-topNumber+1)
 	for node != root {
 		if node.ConfirmUntil <= node.Number {
+			// This node can confirm some nodes
 			if num, err := confirmMap[node.Witness]; err {
 				confirmMap[node.Witness] = 1
 			} else {
 				confirmMap[node.Witness] = num + 1
 			}
-		}
-		index := int64(node.ConfirmUntil) - int64(topNumber)
-		if index > 0 {
-			confirmUntil[index] = append(confirmUntil[index], node.Witness)
+			index := int64(node.ConfirmUntil) - int64(topNumber)
+			if index > 0 {
+				confirmUntil[index] = append(confirmUntil[index], node.Witness)
+			}
 		}
 		if len(confirmMap) >= confirmNumber {
 			staticProp.delSlotWitness(topNumber, node.Number)

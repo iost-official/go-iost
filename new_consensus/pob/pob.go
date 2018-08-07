@@ -151,13 +151,13 @@ func (p *PoB) blockLoop() {
 			if err != nil {
 				continue
 			}
-			if node := p.blockCache.Find(blk.HeadHash()); node != nil {
+			if _, err := p.blockCache.Find(blk.HeadHash()); err == nil {
 				p.log.I("Duplicate block: %v", blk.HeadHash())
 				continue
 			}
 			if err := verifyBasics(&blk); err == nil {
-				parent := p.blockCache.Find(blk.Head.ParentHash)
-				if parent != nil && parent.Type == blockcache.Linked {
+				parent, err := p.blockCache.Find(blk.Head.ParentHash)
+				if err == nil && parent.Type == blockcache.Linked {
 					// Can be linked
 					// tell synchronizer to cancel downloading
 
@@ -198,7 +198,7 @@ func (p *PoB) scheduleLoop() {
 			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
 			if wid == p.account.ID && p.global.Mode() == global.ModeNormal {
 				chainHead := p.blockCache.Head
-				p.produceDB.Checkout(chainHead.Block.HeadHash())
+				p.produceDB.Checkout(string(chainHead.Block.HeadHash()))
 				blk := genBlock(p.account, chainHead, p.produceDB)
 
 				dynamicProp.update(&blk.Head)
@@ -219,7 +219,7 @@ func (p *PoB) scheduleLoop() {
 func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) (*blockcache.BlockCacheNode, error) {
 	// verify block txs
 	if blk.Head.Witness != p.account.ID {
-		p.verifyDB.Checkout(parent.Block.HeadHash())
+		p.verifyDB.Checkout(string(parent.Block.HeadHash()))
 		var verifyErr error
 		if top, err := p.blockChain.Top(); err == nil {
 			verifyErr = verifyBlock(blk, parent.Block, top, p.verifyDB)
@@ -246,9 +246,9 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 			}
 		}
 		// tag in state
-		p.verifyDB.Tag(blk.HeadHash())
+		p.verifyDB.Tag(string(blk.HeadHash()))
 	} else {
-		p.verifyDB.Checkout(blk.HeadHash())
+		p.verifyDB.Checkout(string(blk.HeadHash()))
 	}
 
 	// update node info without state
