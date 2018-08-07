@@ -300,11 +300,13 @@ func (bc *BlockCache) flush(cur *BlockCacheNode, retain *BlockCacheNode) error {
 			log.Log.E("Database error, BlockChain Push err:%v", err)
 			return err
 		}
-		err = StateDB.Flush(string(retain.Block.HeadHash()))
-		if err != nil {
-			log.Log.E("MVCCDB error, State Flush err:%v", err)
-			return err
-		}
+		/*
+			err = StateDB.Flush(string(retain.Block.HeadHash()))
+			if err != nil {
+				log.Log.E("MVCCDB error, State Flush err:%v", err)
+				return err
+			}
+		*/
 		//AddConfirmBlock(retain.Block)
 		bc.hmdel(cur.Block.HeadHash())
 		retain.Parent = nil
@@ -356,11 +358,11 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 	var f bool = false
 	i := 0
 	for k, _ := range root.Children {
-		i += 1
 		if i == len(root.Children)-1 {
 			f = true
 		}
 		width = calcTree(k, x+width, y+2, f)
+		i += 1
 	}
 	if isLast {
 		return x + width
