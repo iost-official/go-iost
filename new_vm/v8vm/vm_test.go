@@ -50,12 +50,56 @@ var Contract = function() {
 	e.Init()
 
 
-	rs, err := e.LoadAndCall(host, code, "fibonacci", "12")
+	rs, _, err := e.LoadAndCall(host, code, "fibonacci", "12")
 
 	if err != nil {
 		t.Fatalf("LoadAndCall run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0] != "144" {
 		t.Errorf("LoadAndCall except 144, got %s\n", rs[0])
+	}
+}
+
+func TestEngine_Storage(t *testing.T) {
+	vi := Init(t)
+	ctx := context.Background()
+	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
+	ctx = context.WithValue(ctx, "contract_name", "contractName")
+	host := new_vm.NewHost(ctx, vi)
+
+	code := &contract.Contract{
+		ContractInfo: contract.ContractInfo{
+			Name: "test.js",
+		},
+		Code: `
+var Contract = function() {
+};
+
+	Contract.prototype = {
+	mySet: function(k, v) {
+			return IOSTContractStorage.put(k, v);
+		},
+	myGet: function(k) {
+			return IOSTContractStorage.get(k)
+		}
+	};
+
+	module.exports = Contract;
+`,
+	}
+
+	e := NewVM()
+	defer e.Release()
+	e.Init()
+
+
+	e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
+	rs, _,err := e.LoadAndCall(host, code, "myGet", "mySetKey")
+
+	if err != nil {
+		t.Fatalf("LoadAndCall run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0] != "mySetVal" {
+		t.Errorf("LoadAndCall except mySetVal, got %s\n", rs[0])
 	}
 }

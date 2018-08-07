@@ -38,13 +38,16 @@ func (e *VM) Init() error {
 }
 
 // LoadAndCall load contract code with provide contract, and call api with args
-func (e *VM) LoadAndCall(host *new_vm.Host, contract *contract.Contract, api string, args ...string) (rtn []string, err error) {
+func (e *VM) LoadAndCall(host *new_vm.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 	e.sandbox.SetHost(host)
-	preparedCode := e.sandbox.Prepare(contract, api, args)
+	preparedCode, err := e.sandbox.Prepare(contract, api, args)
+	if err != nil {
+
+	}
 
 	rs, err := e.sandbox.Execute(preparedCode)
 
-	return []string{rs}, err
+	return []interface{}{rs}, nil, err
 }
 
 // Release release all engine associate resource
