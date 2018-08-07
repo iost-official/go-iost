@@ -3,8 +3,8 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
-#cgo LDFLAGS: -lvm
-//#cgo LDFLAGS: -L./v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath ./v8/libv8/_linux_amd64
+//#cgo LDFLAGS: -lvm
+#cgo LDFLAGS: -L./v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath ./v8/libv8/_linux_amd64
 */
 import "C"
 import (

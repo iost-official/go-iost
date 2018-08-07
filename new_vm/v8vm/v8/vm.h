@@ -77,8 +77,10 @@ extern void releaseSandbox(SandboxPtr ptr);
 
 extern ValueTuple Execute(SandboxPtr ptr, const char *code);
 
+extern char *requireModule(SandboxPtr, const char *);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#endif //IOST_V8_ENGINE_H
+#endif // IOST_V8_ENGINE_H
