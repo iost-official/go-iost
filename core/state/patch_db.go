@@ -1,11 +1,10 @@
 package state
 
 import (
-	"sync"
-
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"sync"
 )
 
-var PatchDb *db.LDB
+var PatchDb *db.LDBDatabase
 
 var o sync.Once
