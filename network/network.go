@@ -61,7 +61,7 @@ type NetConfig struct {
 
 // BaseNetwork maintains all node table, and distributes the node table to all node.
 type BaseNetwork struct {
-	nodeTable     *db.LDBDatabase //all known node except remoteAddr
+	nodeTable     *db.LDB //all known node except remoteAddr
 	neighbours    *sync.Map
 	lock          sync.Mutex
 	peers         peerSet // manage all connection
@@ -95,7 +95,7 @@ func NewBaseNetwork(conf *NetConfig) (*BaseNetwork, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init log %v", err)
 	}
-	nodeTable, err := db.NewLDBDatabase(conf.NodeTablePath, 0, 0)
+	nodeTable, err := db.NewLDB(conf.NodeTablePath, 0, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init db %v", err)
 	}
