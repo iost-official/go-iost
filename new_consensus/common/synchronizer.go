@@ -457,7 +457,6 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash, peerID string
 				})
 			}
 		case <-dc.exitSignal:
-			//fmt.Println("Close DownloadLoop")
 			return
 		}
 	}
