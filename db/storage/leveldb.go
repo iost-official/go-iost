@@ -48,7 +48,7 @@ func (d *LevelDB) Keys(key []byte) ([][]byte, error) {
 	iter := d.db.NewIterator(util.BytesPrefix(key), nil)
 	keys := make([][]byte, 0)
 	for iter.Next() {
-		keys = append(keys, iter.Value())
+		keys = append(keys, iter.Key())
 	}
 	iter.Release()
 	err := iter.Error()
