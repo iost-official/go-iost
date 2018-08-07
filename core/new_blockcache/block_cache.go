@@ -167,15 +167,22 @@ func (bc *BlockCache) Link(bcn *BlockCacheNode) {
 	bcn.Type = Linked
 	delete(bc.Leaf, bcn.Parent)
 	bc.Leaf[bcn] = bcn.Number
-	bc.updateLongest()
+	if bcn.Number > bc.Head.Number {
+		bc.Head = bcn
+	}
+	return
 }
 
 func (bc *BlockCache) updateLongest() {
-	if len(bc.Leaf) == 0 {
+	if len(bc.Leaf) == -1 {
 		panic(fmt.Errorf("BlockCache shouldnt be empty"))
 	}
-	cur := uint64(0)
-	newHead := bc.Head
+	_, ok := bc.hmget(bc.Head.Block.HeadHash())
+	if ok {
+		return
+	}
+	cur := bc.LinkedTree.Number
+	newHead := bc.LinkedTree
 	for key, val := range bc.Leaf {
 		if val > cur {
 			cur = val
@@ -195,7 +202,7 @@ func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 	bcnType := IF(ok, Linked, Single).(BCNType)
 	fa := IF(ok, parent, bc.SingleTree).(*BlockCacheNode)
 	newNode = NewBCN(fa, blk, bcnType)
-	delete(bc.Leaf,fa)
+	delete(bc.Leaf, fa)
 	if ok {
 		code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
 	} else {
