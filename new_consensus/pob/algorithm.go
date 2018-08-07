@@ -1,19 +1,30 @@
 package pob
 
 import (
-	"fmt"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"time"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"encoding/binary"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	"errors"
+	"fmt"
+	. "github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	. "github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"github.com/iost-official/Go-IOS-Protocol/db"
+	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
+	"time"
 )
+
+var (
+	ErrWitness     = errors.New("wrong witness")
+	ErrPubkey      = errors.New("wrong pubkey")
+	ErrSignature   = errors.New("wrong signature")
+	ErrSlotWitness = errors.New("witness slot duplicate")
+	ErrTxTooOld    = errors.New("tx too old")
+	ErrTxDup       = errors.New("duplicate tx")
+	ErrTxSignature = errors.New("tx wrong signature")
+)
+
 
 func genGenesis(initTime int64) *block.Block {
 	var code string
@@ -117,7 +128,7 @@ func generateHeadInfo(head block.BlockHead) []byte {
 func verifyBasics(blk *block.Block) error {
 	// verify block witness
 	if witnessOfTime(Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
-		return errors.New("wrong witness")
+		return ErrWitness
 	}
 
 	headInfo := generateHeadInfo(blk.Head)
@@ -125,12 +136,12 @@ func verifyBasics(blk *block.Block) error {
 	signature.Decode(blk.Head.Signature)
 
 	if blk.Head.Witness != common.Base58Encode(signature.Pubkey) {
-		return errors.New("wrong pubkey")
+		return ErrPubkey
 	}
 
 	// verify block witness signature
 	if !common.VerifySignature(headInfo, signature) {
-		return errors.New("wrong signature")
+		return ErrSignature
 	}
 
 	// block produced by itself: do not verify the rest parts
@@ -140,7 +151,7 @@ func verifyBasics(blk *block.Block) error {
 
 	// verify slot map
 	if staticProp.hasSlotWitness(uint64(blk.Head.Time), blk.Head.Witness) {
-		return errors.New("witness slot duplicate")
+		return ErrSlotWitness
 	}
 
 	return nil
@@ -155,15 +166,15 @@ func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, db *db
 	// verify tx time/sig/exist
 	for _, tx := range blk.Txs {
 		// TODO how to calculate time of tx?
-		if blk.Head.Time - tx.Time > 300 {
-			return errors.New("tx too old")
+		if blk.Head.Time-tx.Time > 300 {
+			return ErrTxTooOld
 		}
 		exist := new_txpool.TxPoolS.ExistTx(tx.Hash(), blk)
 		if exist == INBLOCK {
-			return errors.New("duplicate tx")
+			return ErrTxDup
 		} else if exist != PENDING {
 			if err := tx.VerifySelf(); err != nil {
-				return errors.New("tx wrong signature")
+				return ErrTxSignature
 			}
 		}
 	}
@@ -208,7 +219,7 @@ func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCac
 	startNumber := node.Number
 	topNumber := root.Number
 	confirmMap := make(map[string]int)
-	confirmUntil := make([][]string, startNumber-topNumber + 1)
+	confirmUntil := make([][]string, startNumber-topNumber+1)
 	for node != root {
 		if node.ConfirmUntil <= node.Number {
 			if num, err := confirmMap[node.Witness]; err {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -186,8 +186,7 @@ func TestGlobalDynamicPropertyMultiSlot(t *testing.T) {
 			So(dynamicProp.LastBlockNumber, ShouldEqual, 2)
 		})
 
-
-		curSec += SlotLength*2
+		curSec += SlotLength * 2
 		Convey("in self's slot", func() {
 			wit := witnessOfSec(curSec)
 			So(wit, ShouldEqual, "id1")
@@ -217,7 +216,7 @@ func TestGlobalDynamicPropertyMultiSlot(t *testing.T) {
 		bh.Witness = "id1"
 		dynamicProp.update(&bh)
 
-		curSec += SlotLength*2-1
+		curSec += SlotLength*2 - 1
 		sec = timeUntilNextSchedule(curSec)
 		Convey("past self's last slot", func() {
 			wit := witnessOfSec(curSec)

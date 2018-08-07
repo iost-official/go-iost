@@ -151,7 +151,7 @@ func (p *PoB) blockLoop() {
 			if err != nil {
 				continue
 			}
-			if self:= p.blockCache.Find(blk.HeadHash()); self != nil {
+			if node := p.blockCache.Find(blk.HeadHash()); node != nil {
 				p.log.I("Duplicate block: %v", blk.HeadHash())
 				continue
 			}

@@ -71,18 +71,18 @@ var (
 )
 
 type globalDynamicProperty struct {
-	LastBlockNumber          int64
-	LastBlockTime            Timestamp
-	LastBLockHash            []byte
-	TotalSlots               int64
-	NextMaintenanceTime      Timestamp
+	LastBlockNumber     int64
+	LastBlockTime       Timestamp
+	LastBLockHash       []byte
+	TotalSlots          int64
+	NextMaintenanceTime Timestamp
 }
 
 func newGlobalDynamicProperty() globalDynamicProperty {
 	prop := globalDynamicProperty{
-		LastBlockNumber:          0,
-		LastBlockTime:            Timestamp{Slot: 0},
-		TotalSlots:               0,
+		LastBlockNumber: 0,
+		LastBlockTime:   Timestamp{Slot: 0},
+		TotalSlots:      0,
 	}
 	prop.NextMaintenanceTime.AddHour(maintenanceInterval)
 	return prop

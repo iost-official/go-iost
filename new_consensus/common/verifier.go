@@ -4,9 +4,19 @@ import (
 	"bytes"
 	"errors"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
-	"github.com/iost-official/Go-IOS-Protocol/db"
+)
+
+var (
+	ErrFutureBlk  = errors.New("block from future")
+	ErrOldBlk     = errors.New("block too old")
+	ErrParentHash = errors.New("wrong parent hash")
+	ErrNumber     = errors.New("wrong number")
+	ErrTxHash     = errors.New("wrong txs hash")
+	ErrMerkleHash = errors.New("wrong tx receipt merkle hash")
+	ErrTxReceipt  = errors.New("wrong tx receipt")
 )
 
 func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.Block) error {
@@ -14,28 +24,28 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.B
 	// time
 	cur := GetCurrentTimestamp().Slot
 	if bh.Time > cur+1 {
-		return errors.New("block from future")
+		return ErrFutureBlk
 	}
 	if bh.Time < chainTop.Head.Time {
-		return errors.New("block too old")
+		return ErrOldBlk
 	}
 	// parent hash
 	if !bytes.Equal(bh.ParentHash, parentBlk.HeadHash()) {
-		return errors.New("wrong parent hash")
+		return ErrParentHash
 	}
 	// block number
 	if bh.Number != parentBlk.Head.Number+1 {
-		return errors.New("wrong number")
+		return ErrNumber
 	}
 	// tx hash
 	txHash := blk.CalculateTxsHash()
 	if !bytes.Equal(txHash, bh.TxsHash) {
-		return errors.New("wrong txs hash")
+		return ErrTxHash
 	}
 	// tx receipt merkle hash
 	merkleHash := blk.CalculateMerkleHash()
 	if !bytes.Equal(merkleHash, bh.MerkleHash) {
-		return errors.New("wrong tx receipt merkle hash")
+		return ErrMerkleHash
 	}
 	return nil
 }
@@ -54,8 +64,8 @@ func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
 		}
 	}
 	for i, r := range receipts {
-		if !blk.Receipts[i].Equal(r) {
-			return errors.New("wrong tx receipt")
+		if !bytes.Equal(blk.Receipts[i].Encode(), r.Encode()) {
+			return ErrTxReceipt
 		}
 	}
 	return nil
@@ -64,7 +74,7 @@ func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
 var txEngine new_vm.Engine
 
 func VerifyTxBegin(blk *block.Block, db *db.MVCCDB) {
-	txEngine = new_vm.NewEngine(blk.Head, db)
+	txEngine = new_vm.NewEngine(&blk.Head, db)
 }
 
 func VerifyTx(tx *tx.Tx) (tx.TxReceipt, error) {
