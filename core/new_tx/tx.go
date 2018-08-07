@@ -8,15 +8,16 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"strconv"
+	"bytes"
+	"errors"
 )
 
 //go:generate protoc  --go_out=plugins=grpc:. ./core/new_tx/tx.proto
 
 // Tx Transaction 的实现
 type Tx struct {
-	// TODO calculate id
+	Id         string  // not used yet
 	hash       []byte
-	Id         string // encode tx hash
 	Time       int64
 	Expiration int64
 	GasLimit   uint64
@@ -28,7 +29,7 @@ type Tx struct {
 }
 
 // 新建一个Tx，需要通过编译器得到一个contract
-func NewTx(nonce int64, actions []Action, signers [][]byte, gasLimit uint64, gasPrice uint64, expiration int64) Tx {
+func NewTx(actions []Action, signers [][]byte, gasLimit uint64, gasPrice uint64, expiration int64) Tx {
 	now := time.Now().UnixNano()
 	return Tx{
 		Time:       now,
@@ -43,11 +44,25 @@ func NewTx(nonce int64, actions []Action, signers [][]byte, gasLimit uint64, gas
 
 // 合约的参与者进行签名
 func SignTxContent(tx Tx, account account.Account) (common.Signature, error) {
+	if !tx.containSigner(account.Pubkey){
+		return common.Signature{}, errors.New("account not included in signer list of this transaction")
+	}
+
 	sign, err := common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey)
 	if err != nil {
 		return sign, err
 	}
 	return sign, nil
+}
+
+func (t *Tx) containSigner(pubkey []byte) bool {
+	found := false
+	for _, signer := range t.Signers {
+		if bytes.Equal(signer, pubkey) {
+			found = true
+		}
+	}
+	return found
 }
 
 // Time,Noce,Contract形成的基本哈希值
@@ -215,7 +230,7 @@ func (t *Tx) Hash() []byte {
 
 // 验证签名的函数
 func (t *Tx) VerifySelf() error {
-	baseHash := t.baseHash() // todo 在basehash内缓存，不需要在应用进行缓存
+	baseHash := t.baseHash()
 	signerSet := make(map[string]bool)
 	for _, sign := range t.Signs {
 		ok := common.VerifySignature(baseHash, sign)
