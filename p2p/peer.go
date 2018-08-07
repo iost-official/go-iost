@@ -8,7 +8,6 @@ import (
 
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
-	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/willf/bloom"
 )
@@ -21,7 +20,6 @@ const (
 )
 
 type Peer struct {
-	peerInfo    *peerstore.PeerInfo
 	id          peer.ID
 	addr        multiaddr.Multiaddr
 	stream      libnet.Stream
@@ -42,6 +40,15 @@ func NewPeer(stream libnet.Stream) *Peer {
 		quitWriteCh: make(chan struct{}),
 	}
 	return peer
+}
+
+func (p *Peer) Start() {
+	p.writeLoop()
+	p.readLoop()
+}
+
+func (p *Peer) Stop() {
+	close(p.quitWriteCh)
 }
 
 func (p *Peer) write(m *p2pMessage) error {
