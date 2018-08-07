@@ -9,14 +9,14 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
-func VerifyBlockHead(blk *block.Block, parentBlk *block.Block) error {
+func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.Block) error {
 	bh := blk.Head
 	// time
 	cur := GetCurrentTimestamp().Slot
 	if bh.Time > cur+1 {
 		return errors.New("block from future")
 	}
-	if bh.Time < block.Chain.Top().Head.Time {
+	if bh.Time < chainTop.Head.Time {
 		return errors.New("block too old")
 	}
 	// parent hash

@@ -151,9 +151,14 @@ func (p *PoB) blockLoop() {
 			if err != nil {
 				continue
 			}
-			if err := verifyBasics(blk); err == nil {
-				parent := p.blockCache.Find(blk.HeadHash())
+			if self:= p.blockCache.Find(blk.HeadHash()); self != nil {
+				p.log.I("Duplicate block: %v", blk.HeadHash())
+				continue
+			}
+			if err := verifyBasics(&blk); err == nil {
+				parent := p.blockCache.Find(blk.Head.ParentHash)
 				if parent != nil && parent.Type == blockcache.Linked {
+					// Can be linked
 					// tell synchronizer to cancel downloading
 
 					var node *blockcache.BlockCacheNode
@@ -165,6 +170,9 @@ func (p *PoB) blockLoop() {
 						continue
 					}
 					p.addSingles(node)
+				} else {
+					// Single block
+					p.blockCache.Add(&blk)
 				}
 			} else {
 				// dishonest?
@@ -212,34 +220,29 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 	// verify block txs
 	if blk.Head.Witness != p.account.ID {
 		p.verifyDB.Checkout(parent.Block.HeadHash())
-		var headErr, txErr error
-		if headErr = verifyBlockHead(blk, parent.Block); headErr == nil {
-			txErr = verifyBlockTxs(blk, p.verifyDB)
+		var verifyErr error
+		if top, err := p.blockChain.Top(); err == nil {
+			verifyErr = verifyBlock(blk, parent.Block, top, p.verifyDB)
+		} else {
+			return nil, err
 		}
 
 		// add
 		if newBlock {
-			if headErr == nil && txErr == nil {
+			if verifyErr == nil {
 				var err error
-				node, err = p.blockCache.Add(blk)
-				if err != nil {
+				if node, err = p.blockCache.Add(blk); err != nil {
 					return nil, err
 				}
-			} else if headErr != nil {
-				return nil, headErr
 			} else {
-				return nil, txErr
+				return nil, verifyErr
 			}
 		} else {
-			if headErr == nil && txErr == nil {
+			if verifyErr == nil {
 				p.blockCache.Link(node)
 			} else {
 				p.blockCache.Del(node)
-				if headErr != nil {
-					return nil, headErr
-				} else {
-					return nil, txErr
-				}
+				return nil, verifyErr
 			}
 		}
 		// tag in state
@@ -270,8 +273,7 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 func (p *PoB) addSingles(node *blockcache.BlockCacheNode) {
 	if node.Children != nil {
 		for _, child := range node.Children {
-			_, err := p.addBlock(nil, child, node, false)
-			if err == nil {
+			if _, err := p.addBlock(nil, child, node, false); err == nil {
 				p.addSingles(child)
 			}
 		}

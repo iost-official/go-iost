@@ -146,13 +146,15 @@ func verifyBasics(blk *block.Block) error {
 	return nil
 }
 
-func verifyBlockHead(blk *block.Block, parent *block.Block) error {
-	return VerifyBlockHead(blk, parent)
-}
+func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, db *db.MVCCDB) error {
+	// verify block head
+	if err := VerifyBlockHead(blk, parent, top); err != nil {
+		return err
+	}
 
-func verifyBlockTxs(blk *block.Block, db *db.MVCCDB) error {
-	// verify exist txs
+	// verify tx time/sig/exist
 	for _, tx := range blk.Txs {
+		// TODO how to calculate time of tx?
 		if blk.Head.Time - tx.Time > 300 {
 			return errors.New("tx too old")
 		}
@@ -167,10 +169,10 @@ func verifyBlockTxs(blk *block.Block, db *db.MVCCDB) error {
 	}
 
 	// verify txs
-	err := VerifyBlock(blk, db)
-	if err != nil {
+	if err := VerifyBlock(blk, db); err != nil {
 		return err
 	}
+
 	return nil
 }
 
