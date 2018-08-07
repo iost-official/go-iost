@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	SeedNodes   []multiaddr.Multiaddr
-	Listen      string
+	ListenAddr  string
 	BucketSize  int
 	PeerTimeout time.Duration
 	PrivKeyPath string
