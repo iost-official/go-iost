@@ -325,9 +325,9 @@ func (bc *BlockCache) Flush(bcn *BlockCacheNode) {
 	return
 }
 
-func (bc *BlockCache) FindBlock(hash []byte) (*block.Block, error) {
+func (bc *BlockCache) Find(hash []byte) (*BlockCacheNode, error) {
 	bcn, ok := bc.hmget(hash)
-	return bcn.Block, IF(ok, nil, errors.New("block not found")).(error)
+	return bcn, IF(ok, nil, errors.New("block not found")).(error)
 }
 
 //for debug
