@@ -28,29 +28,31 @@ type Synchronizer interface {
 }
 
 type SyncImpl struct {
-	router        Router
+	router        network.Router
+	blockCache    blockcache.BlockCache
 	dc            DownloadController
 	confirmNumber int
 	messageChan   chan message.Message
 	exitSignal    chan struct{}
+	reqMap        *sync.Map
 
 	log *log.Logger
 }
 
-func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int) (*SyncImpl, error) {
-	sync := &SyncImpl{
+func NewSynchronizer(bc blockcache.BlockCache, router network.Router, confirmNumber int) (*SyncImpl, error) {
+	sy := &SyncImpl{
 		blockCache: bc,
 		router:     router,
-		requestMap: new(sy.Map),
+		reqMap:     new(sync.Map),
 	}
 	var err error
-	sync.dc, err = NewDownloadController()
+	sy.dc, err = NewDownloadController()
 	if err != nil {
 		return nil, err
 	}
 
-	sync.messageChan, err = sync.router.FilteredChan(Filter{
-		AcceptType: []ReqType{
+	sy.messageChan, err = sy.router.FilteredChan(network.Filter{
+		AcceptType: []network.ReqType{
 			network.ReqDownloadBlock,
 			network.BlockHashQuery,
 			network.BlockHashResponse,
@@ -59,29 +61,25 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int)
 		return nil, err
 	}
 
-	sync.log, err = log.NewLogger("synchronizer.log")
+	sy.log, err = log.NewLogger("synchronizer.log")
 	if err != nil {
 		return nil, err
 	}
 
-	sync.log.NeedPrint = false
-	sync.exitSignal = make(chan struct{})
+	sy.log.NeedPrint = false
+	sy.exitSignal = make(chan struct{})
 
-	return sync, nil
+	return sy, nil
 }
 
 func (sy *SyncImpl) reqDownloadBlock(hash, peerID string) {
 	blkReq := &message.RequestBlock{
-		BlockHash: blkHash.Hash,
-	}
-	if err != nil {
-		sy.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", blkReq, err)
-		break
+		BlockHash: []byte(hash),
 	}
 	reqMsg := message.Message{
 		Time:    time.Now().Unix(),
 		To:      peerID,
-		ReqType: int32(ReqDownloadBlock),
+		ReqType: int32(network.ReqDownloadBlock),
 		Body:    blkReq.Encode(),
 	}
 	sy.router.Send(reqMsg)
@@ -130,18 +128,17 @@ func (sy *SyncImpl) queryBlockHash(start, end uint64) error {
 	hr := message.BlockHashQuery{Start: start, End: end}
 	bytes, err := hr.Marshal(nil)
 	if err != nil {
-		bn.log.D("marshal BlockHashQuery failed. err=%v", err)
+		sy.log.D("marshal BlockHashQuery failed. err=%v", err)
 		return err
 	}
 	msg := message.Message{
 		Body:    bytes,
-		ReqType: int32(BlockHashQuery),
+		ReqType: int32(network.BlockHashQuery),
 		TTL:     1, //BlockHashQuery req just broadcast to its neibour
-		From:    bn.localNode.Addr(),
 		Time:    time.Now().UnixNano(),
 	}
-	bn.log.D("[net] query block hash. start=%v, end=%v, from=%v", start, end, bn.localNode.Addr())
-	sy.router.broadcast(msg)
+	sy.log.D("[net] query block hash. start=%v, end=%v", start, end)
+	sy.router.Broadcast(msg)
 	return nil
 }
 
@@ -150,7 +147,7 @@ func (sy *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
 		need := false
 		for i := startNumber; i < startNumber+uint64(MaxBlockHashQueryNumber); i++ {
-			_, ok := sy.requestMap.LoadOrStore(i, true)
+			_, ok := sy.reqMap.LoadOrStore(i, true)
 			if !ok {
 				need = true
 			}
@@ -167,7 +164,7 @@ func (sy *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	if startNumber <= endNumber {
 		need := false
 		for i := startNumber; i < endNumber; i++ {
-			_, ok := sy.requestMap.LoadOrStore(i, true)
+			_, ok := sy.reqMap.LoadOrStore(i, true)
 			if !ok {
 				need = true
 			}
@@ -183,47 +180,47 @@ func (sy *SyncImpl) OnBlockConfirmed(hash, peerID string) error {
 	return sy.dc.OnBlockConfirmed(hash, peerID)
 }
 
-func (sy *syncImpl) messageLoop() {
+func (sy *SyncImpl) messageLoop() {
 	for {
 		select {
 		case req, ok := <-sy.messageChan:
 			if !ok {
 				break
 			}
-			if req.ReqType == network.BlockHashQuery {
+			if req.ReqType == int32(network.BlockHashQuery) {
 				var rh message.BlockHashQuery
 				_, err := rh.Unmarshal(req.Body)
 				if err != nil {
 					sy.log.E("unmarshal BlockHashQuery failed:%v", err)
 					break
 				}
-				go sy.handleHashQuery(rh)
-			} else if req.ReqType == network.BlockHashResponse {
+				go sy.handleHashQuery(&rh, string(req.From))
+			} else if req.ReqType == int32(network.BlockHashResponse) {
 				var rh message.BlockHashResponse
 				_, err := rh.Unmarshal(req.Body)
 				if err != nil {
 					sy.log.E("unmarshal BlockHashResponse failed:%v", err)
 					break
 				}
-				go sy.handleHashResp(rh)
-			} else if req.ReqType == network.ReqDownloadBlock {
+				go sy.handleHashResp(&rh, string(req.From))
+			} else if req.ReqType == int32(network.ReqDownloadBlock) {
 				var rh message.RequestBlock
 				err := rh.Decode(req.Body)
 				if err != nil {
 					break
 				}
-				go sy.handleBlockQuery(rh)
+				go sy.handleBlockQuery(&rh, string(req.From))
 			}
-		case <-sync.exitSignal:
+		case <-sy.exitSignal:
 			return
 		}
 	}
 
 }
 
-func (sy *SyncImpl) handleHashQuery(rh message.BlockHashQuery) {
+func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID string) {
 	if rh.End < rh.Start {
-		break
+		return
 	}
 	chain := sy.blockCache.LongestChain()
 	resp := &message.BlockHashResponse{
@@ -241,29 +238,28 @@ func (sy *SyncImpl) handleHashQuery(rh message.BlockHashQuery) {
 		resp.BlockHashes = append(resp.BlockHashes, blkHash)
 	}
 	if len(resp.BlockHashes) == 0 {
-		break
+		return
 	}
 	bytes, err := resp.Marshal(nil)
 	if err != nil {
 		sy.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
-		break
+		return
 	}
 	resMsg := message.Message{
 		Time:    time.Now().Unix(),
-		From:    req.To,
-		To:      req.From,
-		ReqType: int32(BlockHashResponse),
+		To:      peerID,
+		ReqType: int32(network.BlockHashResponse),
 		Body:    bytes,
 	}
 	sy.router.Send(resMsg)
 }
 
-func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse) {
+func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID string) {
 	sy.log.I("receive block hashes: len=%v", len(rh.BlockHashes))
 	for _, blkHash := range rh.BlockHashes {
 		if !sy.blockCache.CheckBlock(blkHash.Hash) { // TODO: check hash @ BlockCache and BlockDB
-			sy.requestMap.Delete(blkHash.Height)
-			sy.dc.OnRecvHash(blkHash.Hash, req.From)
+			sy.reqMap.Delete(blkHash.Height)
+			sy.dc.OnRecvHash(string(blkHash.Hash), peerID)
 		}
 	}
 }
@@ -272,13 +268,13 @@ func (sy *SyncImpl) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(RetryTime):
-			sy.requestMap.Range(func(k, v interface{}) bool {
+			sy.reqMap.Range(func(k, v interface{}) bool {
 				num, ok := k.(uint64)
 				if !ok {
 					return false
 				}
 				if num < sy.blockCache.ConfirmedLength() { // TODO
-					sy.requestMap.Delete(num)
+					sy.reqMap.Delete(num)
 				} else {
 					sy.queryBlockHash(num, num)
 				}
@@ -290,37 +286,37 @@ func (sy *SyncImpl) retryDownloadLoop() {
 	}
 }
 
-func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock) {
+func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID string) {
 	chain := sy.blockCache.BlockChain()
 	var b []byte
+	var err error
 	if rh.BlockNumber < chain.Length() {
 		b, err = chain.GetBlockByteByHash(rh.BlockHash)
 		if err != nil {
 			log.Log.E("Database error: block empty %v", rh.BlockNumber)
-			break
+			return
 		}
 	} else {
 		block, err := sy.blockCache.FindBlockInCache(rh.BlockHash)
 		if err != nil {
 			log.Log.E("Block not in cache: %v", rh.BlockNumber)
-			break
+			return
 		}
 		b = block.Encode()
 	}
 
 	resMsg := message.Message{
 		Time:    time.Now().Unix(),
-		From:    req.To,
-		To:      req.From,
-		ReqType: int32(ReqSyncBlock),
+		To:      peerID,
+		ReqType: int32(network.ReqSyncBlock),
 		Body:    b,
 	}
 	sy.router.Send(resMsg)
 }
 
 type DownloadController interface {
-	OnRecvHash(hash, peerid string) error
-	OnTimeout() error
+	OnRecvHash(hash, peerID string) error
+	OnTimeout(hash string, peerID string) error
 	OnBlockConfirmed(hash string, peerID string) error
 	DownloadLoop(callback func(hash, peerID string))
 	Stop()
@@ -329,7 +325,7 @@ type DownloadController interface {
 type DownloadControllerImpl struct {
 	hashState  *sync.Map
 	peerState  *sync.Map
-	peerMap    map[string]*sy.Map
+	peerMap    map[string]*sync.Map
 	peerTimer  map[string]*time.Timer
 	chDownload chan bool
 	exitSignal chan struct{}
@@ -337,9 +333,9 @@ type DownloadControllerImpl struct {
 
 func NewDownloadController() (*DownloadControllerImpl, error) {
 	dc := &DownloadControllerImpl{
-		hashState:  new(sy.Map),
-		peerState:  new(sy.Map),
-		peerMap:    make(map[string]*sy.Map, 0),
+		hashState:  new(sync.Map),
+		peerState:  new(sync.Map),
+		peerMap:    make(map[string]*sync.Map, 0),
 		peerTimer:  make(map[string]*time.Timer, 0),
 		chDownload: make(chan bool, 100),
 		exitSignal: make(chan struct{}),
@@ -353,7 +349,7 @@ func (dc *DownloadControllerImpl) Stop() {
 
 func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID string) error {
 	if _, ok := dc.peerMap[peerID]; !ok {
-		hashMap := new(sy.Map)
+		hashMap := new(sync.Map)
 		dc.peerMap[peerID] = hashMap
 	}
 	dc.peerMap[peerID].Store(hash, true)
