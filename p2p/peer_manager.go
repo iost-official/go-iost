@@ -31,7 +31,13 @@ func (pm *PeerManager) AddPeer(s libnet.Stream) {
 		return
 	}
 	remotePID := s.Conn().RemotePeer()
-	if _, exist := pm.neighbors.Load(remotePID); exist {
+	if p, exist := pm.neighbors.Load(remotePID); exist {
+		old, ok := p.(*Peer)
+		if !ok || old.Inactive() {
+			pm.neighbors.Delete(remotePID)
+			pm.peerCount.Dec()
+			return
+		}
 		// log
 		s.Close()
 		return
@@ -44,10 +50,10 @@ func (pm *PeerManager) AddPeer(s libnet.Stream) {
 
 func (pm *PeerManager) RemovePeer(peerID peer.ID) {
 	if p, exist := pm.neighbors.Load(peerID); exist {
+		pm.neighbors.Delete(peerID)
+		pm.peerCount.Dec()
 		if peer, ok := p.(*Peer); ok {
 			peer.Stop()
-			pm.neighbors.Delete(peerID)
-			pm.peerCount.Dec()
 		}
 	}
 }
