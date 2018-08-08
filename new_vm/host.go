@@ -51,9 +51,10 @@ func (h *Host) Context() context.Context {
 	return h.ctx
 }
 
-func (h *Host) VerifyArgs(api string, args ...string) error {
-	return nil
-}
+//
+//func (h *Host) VerifyArgs(api string, args ...interface{}) error {
+//	return nil
+//}
 
 func (h *Host) Put(key string, value interface{}) {
 	c := h.ctx.Value("contract_name").(string)
@@ -211,15 +212,27 @@ func (h *Host) TxInfo() database.SerializedJSON {
 	return h.ctx.Value("tx_info").(database.SerializedJSON)
 }
 func (h *Host) ABIConfig(key, value string) {
-	ps := h.ctx.Value("abi_config").(map[string]*string)[key]
-	*ps = value
+	abi := h.ctx.Value("abi_config").(*contract.ABI)
+
+	switch key {
+	case "payment":
+		if value == "contract_pay" {
+			(*abi).Payment = 1
+		}
+	}
 }
-func (h *Host) PayCost(c *contract.Cost, who string, gasPrice uint64) {
+func (h *Host) PayCost(c *contract.Cost, who string, gasPrice int64) {
+	if gasPrice <= 0 {
+		panic("gas_price error")
+	}
 	witness := h.ctx.Value("witness").(string)
 	fee := gasPrice * c.ToGas()
 	if strings.HasPrefix(who, "IOST") {
 		h.Transfer(who, witness, int64(fee))
 	} else {
-		h.Transfer("g-"+who, witness, int64(fee))
+		err := h.Transfer("g-"+who, witness, int64(fee))
+		if err != nil {
+			panic(err)
+		}
 	}
 }

@@ -4,6 +4,12 @@ import (
 	"context"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/pkg/errors"
+)
+
+var (
+	ErrABINotFound    = errors.New("abi not found")
+	ErrGasPriceTooBig = errors.New("gas price too big")
 )
 
 type Monitor struct {
@@ -30,26 +36,35 @@ func NewMonitor( /*cb database.IMultiValue, cacheLength int*/ ) *Monitor {
 func (m *Monitor) Call(host *Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
 	c := host.db.Contract(contractName)
+	abi := c.ABI(api)
+	if abi == nil {
+		return nil, nil, ErrABINotFound
+	}
 	ctx := host.Context()
 
-	host.ctx = context.WithValue(host.ctx, "abi_config", make(map[string]*string))
+	host.ctx = context.WithValue(host.ctx, "abi_config", abi)
 	host.ctx = context.WithValue(host.ctx, "contract_name", contractName)
 	host.ctx = context.WithValue(host.ctx, "abi_name", api)
 
-	vm, ok := m.vms[c.Lang]
+	vm, ok := m.vms[c.Info.Lang]
 	if !ok {
-		vm = VMFactory(c.Lang)
-		m.vms[c.Lang] = vm
-		m.vms[c.Lang].Init()
+		vm = VMFactory(c.Info.Lang)
+		m.vms[c.Info.Lang] = vm
+		m.vms[c.Info.Lang].Init()
 	}
 	rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
 
-	payment := host.ctx.Value("abi_config").(map[string]*string)["payment"] // TODO 预编译
-	gasPrice := host.ctx.Value("gas_price").(uint64)
-	switch {
-	case payment != nil && *payment == "contract_pay":
+	payment := host.ctx.Value("abi_config").(*contract.ABI).Payment // TODO 预编译
+	switch payment {
+	case 1:
+		var gasPrice = host.ctx.Value("gas_price").(int64) // TODO 判断大于0
+		if abi.GasPrice < gasPrice {
+			return nil, nil, ErrGasPriceTooBig
+		}
 		host.PayCost(cost, contractName, gasPrice)
 		cost = contract.Cost0()
+	default:
+		//fmt.Println("user paid for", args[0])
 	}
 
 	host.ctx = ctx
