@@ -102,7 +102,7 @@ func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *Block
 }
 
 type BlockCache struct {
-	linkedTree *BlockCacheNode
+	LinkedTree *BlockCacheNode
 	singleTree *BlockCacheNode
 	Head       *BlockCacheNode
 	hash2node  *sync.Map

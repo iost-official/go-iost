@@ -8,9 +8,9 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/network"
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,7 +18,7 @@ import (
 
 var (
 	clearInterval = 11 * time.Second
-	filterTime    = 40
+	filterTime    = 60
 	//filterTime    = 60*60*24*7
 
 	receivedTransactionCount = prometheus.NewCounter(
@@ -41,40 +41,39 @@ const (
 	FoundChain
 )
 
-type TxPoolServer struct {
-	chTx           chan message.Message
-	chConfirmBlock chan *block.Block
+type RecNode struct {
+	LinkedNode *blockcache.BlockCacheNode
+	HeadNode   *blockcache.BlockCacheNode
+}
+
+type TxPoolImpl struct {
+	chTx         chan message.Message
+	chLinkedNode chan *RecNode
 
 	chain  blockcache.BlockCache
 	router network.Router
 
-	blockTx   blockTx
-	listTx    listTx
-	pendingTx listTx
+	head      *blockcache.BlockCacheNode
+	block     *sync.Map
+	pendingTx *sync.Map
 
-	checkIterateBlockHash blockHashList
+	longestChainHash *sync.Map
 
 	filterTime int64
 	mu         sync.RWMutex
 }
 
-var TxPoolS *TxPoolServer
+func NewTxPoolImpl(chain blockcache.BlockCache, router network.Router) (TxPool, error) {
 
-func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan *block.Block) (*TxPoolServer, error) {
-
-	p := &TxPoolServer{
-		chain:          chain,
-		chConfirmBlock: chConfirmBlock,
-		blockTx: blockTx{
-			blkTx:   make(map[string]*hashMap),
-			blkTime: make(map[string]int64),
-		},
-		listTx:                listTx{list: make(map[string]*tx.Tx)},
-		pendingTx:             listTx{list: make(map[string]*tx.Tx)},
-		checkIterateBlockHash: blockHashList{blockList: make(map[string]struct{}, 0)},
-		filterTime:            int64(filterTime),
+	p := &TxPoolImpl{
+		chain:            chain,
+		chLinkedNode:     make(chan *RecNode, 100),
+		block:            new(sync.Map),
+		pendingTx:        new(sync.Map),
+		longestChainHash: new(sync.Map),
+		filterTime:       int64(filterTime),
 	}
-	p.router = network.Route
+	p.router = router
 	if p.router == nil {
 		return nil, fmt.Errorf("failed to network.Route is nil")
 	}
@@ -88,22 +87,21 @@ func NewTxPoolServer(chain blockcache.BlockCache, chConfirmBlock chan *block.Blo
 		return nil, err
 	}
 
-	TxPoolS = p
 	return p, nil
 }
 
-func (pool *TxPoolServer) Start() {
-	log.Log.I("TxPoolServer Start")
+func (pool *TxPoolImpl) Start() {
+	log.Log.I("TxPoolImpl Start")
 	go pool.loop()
 }
 
-func (pool *TxPoolServer) Stop() {
-	log.Log.I("TxPoolServer Stop")
+func (pool *TxPoolImpl) Stop() {
+	log.Log.I("TxPoolImpl Stop")
 	close(pool.chTx)
-	close(pool.chConfirmBlock)
+	close(pool.chLinkedNode)
 }
 
-func (pool *TxPoolServer) loop() {
+func (pool *TxPoolImpl) loop() {
 
 	pool.initBlockTx()
 
@@ -146,11 +144,17 @@ func (pool *TxPoolServer) loop() {
 	}
 }
 
-func (pool *TxPoolServer) AddTransaction(tx *message.Message) {
-	pool.chTx <- *tx
+func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error {
+
+	return nil
 }
 
-func (pool *TxPoolServer) PendingTransactions(maxCnt int) tx.TransactionsList {
+func (pool *TxPoolImpl) AddTx(tx message.Message) error {
+	pool.chTx <- tx
+	return nil
+}
+
+func (pool *TxPoolImpl) PendingTxs(maxCnt int) (tx.TransactionsList, error) {
 
 	pool.updatePending(maxCnt)
 
@@ -165,45 +169,17 @@ func (pool *TxPoolServer) PendingTransactions(maxCnt int) tx.TransactionsList {
 	}
 	sort.Sort(pendingList)
 
-	return pendingList
+	return pendingList, nil
 }
 
-func (pool *TxPoolServer) Transaction(hash string) *tx.Tx {
+func (pool *TxPoolImpl) ExistTxs(hash string, chainNode *blockcache.BlockCacheNode) (FRet, error) {
 	pool.mu.RLock()
 	defer pool.mu.RUnlock()
 
-	return pool.listTx.Get(hash)
+	return pool.listTx.Exist(hash), nil
 }
 
-func (pool *TxPoolServer) ExistTransaction(hash string) bool {
-	pool.mu.RLock()
-	defer pool.mu.RUnlock()
-
-	return pool.listTx.Exist(hash)
-}
-
-func (pool *TxPoolServer) TransactionNum() int {
-	pool.mu.RLock()
-	defer pool.mu.RUnlock()
-
-	return pool.listTx.Len()
-}
-
-func (pool *TxPoolServer) PendingTransactionNum() int {
-	pool.mu.RLock()
-	defer pool.mu.RUnlock()
-
-	return pool.pendingTx.Len()
-}
-
-func (pool *TxPoolServer) BlockTxNum() int {
-	pool.mu.RLock()
-	defer pool.mu.RUnlock()
-
-	return pool.blockTx.Len()
-}
-
-func (pool *TxPoolServer) initBlockTx() {
+func (pool *TxPoolImpl) initBlockTx() {
 	chain := pool.chain.BlockChain()
 	timeNow := time.Now().Unix()
 
@@ -215,19 +191,72 @@ func (pool *TxPoolServer) initBlockTx() {
 
 		t := pool.slotToSec(blk.Head.Time)
 		if timeNow-t >= pool.filterTime {
-			pool.blockTx.Add(blk)
-			pool.checkIterateBlockHash.Add(blk.HashID())
+			pool.block.Add(blk)
+			pool.longestChainHash.Add(blk.HashID())
 		}
 	}
 
 }
 
-func (pool *TxPoolServer) slotToSec(t int64) int64 {
+func (pool *TxPoolImpl) slotToSec(t int64) int64 {
 	slot := consensus_common.Timestamp{Slot: t}
 	return slot.ToUnixSec()
 }
 
-func (pool *TxPoolServer) addListTx(tx *tx.Tx) {
+func (pool *TxPoolImpl) addBlock(linkedNode *blockcache.BlockCacheNode) error {
+
+	if _, ok := pool.block.Load(linkedNode.Block.HeadHash()); ok {
+		return nil
+	}
+
+	b := new(blockTx)
+
+	b.setTime(linkedNode.Block.Head.Time)
+	b.addBlock(linkedNode.Block)
+
+	pool.block.Store(linkedNode.Block.HeadHash(), b)
+
+	return nil
+}
+
+func (pool *TxPoolImpl) existTxInLongestChain(txHash []byte) bool {
+
+	h := pool.head.Block.Head.Hash()
+
+	ret := pool.existTxInBlock(txHash, h)
+	if ret {
+		return ret
+	}
+
+	h = h.ParentHash
+
+	return ret
+}
+
+func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
+
+	b, ok := pool.block.Load(blockHash)
+	if !ok {
+		return false
+	}
+
+	return b.(*blockTx).existTx(txHash)
+}
+
+func (pool *TxPoolImpl) clearBlock() {
+	ft := pool.chain.LinkedTree.Block.Head.Time - (pool.filterTime + pool.filterTime/2)
+
+	pool.block.Range(func(key, value interface{}) bool {
+		if value.(*blockTx).time() < ft {
+			pool.block.Delete(key)
+		}
+
+		return true
+	})
+
+}
+
+func (pool *TxPoolImpl) addListTx(tx *tx.Tx) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -237,7 +266,7 @@ func (pool *TxPoolServer) addListTx(tx *tx.Tx) {
 
 }
 
-func (pool *TxPoolServer) txTimeOut(tx *tx.Tx) bool {
+func (pool *TxPoolImpl) txTimeOut(tx *tx.Tx) bool {
 
 	nTime := time.Now().Unix()
 	txTime := tx.Time / 1e9
@@ -248,7 +277,7 @@ func (pool *TxPoolServer) txTimeOut(tx *tx.Tx) bool {
 	return false
 }
 
-func (pool *TxPoolServer) delTimeOutTx() {
+func (pool *TxPoolImpl) delTimeOutTx() {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -268,7 +297,7 @@ func (pool *TxPoolServer) delTimeOutTx() {
 
 }
 
-func (pool *TxPoolServer) delTimeOutBlockTx() {
+func (pool *TxPoolImpl) delTimeOutBlockTx() {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -281,7 +310,7 @@ func (pool *TxPoolServer) delTimeOutBlockTx() {
 		confirmTime = pool.slotToSec(blk.Head.Time)
 	}
 
-	list := pool.blockTx.GetListTime()
+	list := pool.block.GetListTime()
 
 	hashList := make([]string, 0)
 	for hash, t := range list {
@@ -292,12 +321,12 @@ func (pool *TxPoolServer) delTimeOutBlockTx() {
 	}
 	for _, hash := range hashList {
 
-		pool.blockTx.Del(hash)
-		pool.checkIterateBlockHash.Del(hash)
+		pool.block.Del(hash)
+		pool.longestChainHash.Del(hash)
 	}
 }
 
-func (pool *TxPoolServer) updatePending(maxCnt int) {
+func (pool *TxPoolImpl) updatePending(maxCnt int) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -314,9 +343,9 @@ func (pool *TxPoolServer) updatePending(maxCnt int) {
 	}
 }
 
-func (pool *TxPoolServer) txExistTxPool(hash string) bool {
-	for blockHash := range pool.checkIterateBlockHash.GetList() {
-		txList := pool.blockTx.TxList(string(blockHash))
+func (pool *TxPoolImpl) txExistTxPool(hash string) bool {
+	for blockHash := range pool.longestChainHash.GetList() {
+		txList := pool.block.TxList(string(blockHash))
 		if txList != nil {
 			if b := txList.Exist(hash); b {
 				return true
@@ -326,7 +355,7 @@ func (pool *TxPoolServer) txExistTxPool(hash string) bool {
 	return false
 }
 
-func (pool *TxPoolServer) blockHash(chain block.Chain) *blockHashList {
+func (pool *TxPoolImpl) blockHash(chain block.Chain) *blockHashList {
 	pool.mu.RLock()
 	defer pool.mu.RUnlock()
 
@@ -342,26 +371,18 @@ func (pool *TxPoolServer) blockHash(chain block.Chain) *blockHashList {
 	return bhl
 }
 
-func (pool *TxPoolServer) updateBlockHash(bhl *blockHashList) {
+func (pool *TxPoolImpl) updateBlockHash(bhl *blockHashList) {
 	pool.mu.RLock()
 	defer pool.mu.RUnlock()
 
 	for hash := range bhl.GetList() {
-		pool.checkIterateBlockHash.Add(hash)
-	}
-}
-
-func (pool *TxPoolServer) addBlockTx(bl *block.Block) {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
-
-	if !pool.blockTx.Exist(bl.HashID()) {
-		pool.blockTx.Add(bl)
+		pool.longestChainHash.Add(hash)
 	}
 }
 
 type hashMap struct {
 	hashList map[string]struct{}
+	time     int64
 }
 
 func (h *hashMap) Add(hash string) {
@@ -386,55 +407,31 @@ func (h *hashMap) Clear() {
 }
 
 type blockTx struct {
-	blkTx   map[string]*hashMap
-	blkTime map[string]int64
+	txMap sync.Map
+	cTime int64
 }
 
-func (b *blockTx) GetListTime() map[string]int64 {
-	return b.blkTime
+func (b *blockTx) time() int64 {
+	return b.cTime
 }
 
-func (b *blockTx) Add(bl *block.Block) {
-	blochHash := bl.HashID()
+func (b *blockTx) setTime(t int64) {
+	b.cTime = t
+}
 
-	if _, e := b.blkTx[blochHash]; !e {
-		b.blkTx[blochHash] = &hashMap{hashList: make(map[string]struct{})}
+func (b *blockTx) addBlock(ib *block.Block) {
+
+	for _, v := range ib.Content {
+
+		b.txMap.Store(v.Hash(), nil)
 	}
-
-	txList := b.blkTx[blochHash]
-	for _, tr := range bl.Content {
-		txList.Add(tr.TxID())
-	}
-
-	slot := consensus_common.Timestamp{Slot: bl.Head.Time}
-	b.blkTime[blochHash] = slot.ToUnixSec()
-
 }
 
-func (b *blockTx) Len() int {
-	return len(b.blkTx)
-}
+func (b *blockTx) existTx(hash []byte) bool {
 
-func (b *blockTx) Exist(hash string) bool {
-	if _, b := b.blkTx[hash]; b {
-		return true
-	}
-	return false
-}
+	_, r := b.txMap.Load(hash)
 
-func (b *blockTx) TxList(blockHash string) *hashMap {
-	return b.blkTx[blockHash]
-}
-
-func (b *blockTx) Time(hash string) int64 {
-	return b.blkTime[hash]
-}
-
-func (b blockTx) Del(hash string) {
-	blk := b.blkTx[hash]
-	blk.Clear()
-	delete(b.blkTime, hash)
-	delete(b.blkTx, hash)
+	return r
 }
 
 type listTx struct {

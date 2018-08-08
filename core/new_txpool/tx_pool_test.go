@@ -256,9 +256,9 @@ func BenchmarkUpdatePending(b *testing.B) {
 	}
 
 	txPool.addBlockTx(blockList[0])
-	txPool.checkIterateBlockHash.Add(blockList[0].HashID())
+	txPool.longestChainHash.Add(blockList[0].HashID())
 	txPool.addBlockTx(blockList[1])
-	txPool.checkIterateBlockHash.Add(blockList[1].HashID())
+	txPool.longestChainHash.Add(blockList[1].HashID())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -267,7 +267,7 @@ func BenchmarkUpdatePending(b *testing.B) {
 
 }
 
-func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolServer) {
+func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl) {
 	var accountList []account.Account
 	var witnessList []string
 
