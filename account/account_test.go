@@ -9,6 +9,7 @@ import (
 
 	. "github.com/iost-official/Go-IOS-Protocol/common"
 	. "github.com/smartystreets/goconvey/convey"
+	"strings"
 )
 
 func TestMember(t *testing.T) {
@@ -18,6 +19,7 @@ func TestMember(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(m.Pubkey), ShouldEqual, 33)
 			So(len(m.Seckey), ShouldEqual, 32)
+			So(len(m.GetId()), ShouldEqual, len(GetIdByPubkey(m.Pubkey)))
 		})
 
 		Convey("sign and verify: ", func() {
@@ -43,7 +45,9 @@ func TestPubkeyAndID(t *testing.T) {
 		id := GetIdByPubkey(pubkey)
 		pub2 := GetPubkeyByID(id)
 		id2 := GetIdByPubkey(pub2)
-
+		if !strings.HasPrefix(id, "IOST") {
+			t.Failed()
+		}
 		if id != id2 {
 			t.Failed()
 		}

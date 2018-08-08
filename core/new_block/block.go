@@ -41,12 +41,16 @@ func (d *Block) String() string {
 }
 */
 
-func (d *Block) CalculateTreeHash() []byte {
+func (d *Block) CalculateTxsHash() []byte {
 	treeHash := make([]byte, 0)
 	for _, tx := range d.Txs {
 		treeHash = append(treeHash, tx.Publisher.Sig...)
 	}
 	return common.Sha256(treeHash)
+}
+
+func (d *Block) CalculateMerkleHash() []byte {
+
 }
 
 func (d *Block) Encode() []byte {
