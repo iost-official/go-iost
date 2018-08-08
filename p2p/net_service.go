@@ -15,6 +15,8 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
+type PeerID = peer.ID
+
 const (
 	protocolID = "iostp2p/1.0"
 )
@@ -28,7 +30,7 @@ type Service interface {
 	Stop()
 
 	Broadcast([]byte, MessageType, MessagePriority)
-	SendToPeer(peer.ID, []byte, MessageType, MessagePriority)
+	SendToPeer(PeerID, []byte, MessageType, MessagePriority)
 	Register(string, ...MessageType) chan IncomingMessage
 	Deregister(string, ...MessageType)
 }
