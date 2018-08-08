@@ -2,26 +2,63 @@ package p2p
 
 import (
 	"sync"
+	"time"
 
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/uber-go/atomic"
 )
 
+var (
+	clearInactivePeerInterval = 5 * time.Second
+)
+
 const (
 	maxNeighborCount = 32 // TODO: configurable
+
+	incomingMsgChanSize = 1024
 )
 
 type PeerManager struct {
 	neighbors *sync.Map // map[peer.ID]*Peer
 	peerCount atomic.Uint64
 	subs      map[MessageType]map[string]chan IncomingMessage
+	quitCh    chan struct{}
 }
 
 func NewPeerManager() *PeerManager {
 	return &PeerManager{
 		neighbors: new(sync.Map),
 		subs:      make(map[MessageType]map[string]chan IncomingMessage),
+		quitCh:    make(chan struct{}),
+	}
+}
+
+func (pm *PeerManager) Start() {
+	go pm.clearInactivePeer()
+}
+
+func (pm *PeerManager) Stop() {
+	close(pm.quitCh)
+}
+
+func (pm *PeerManager) clearInactivePeer() {
+	ticker := time.NewTicker(clearInactivePeerInterval)
+	for {
+		select {
+		case <-pm.quitCh:
+			// log
+			return
+		case <-ticker.C:
+			pm.neighbors.Range(func(k, v interface{}) bool {
+				peer, ok := v.(*Peer)
+				if !ok || peer.Inactive() {
+					pm.neighbors.Delete(k)
+					pm.peerCount.Dec()
+				}
+				return true
+			})
+		}
 	}
 }
 
@@ -33,14 +70,12 @@ func (pm *PeerManager) AddPeer(s libnet.Stream) {
 	remotePID := s.Conn().RemotePeer()
 	if p, exist := pm.neighbors.Load(remotePID); exist {
 		old, ok := p.(*Peer)
-		if !ok || old.Inactive() {
-			pm.neighbors.Delete(remotePID)
-			pm.peerCount.Dec()
+		if ok && !old.Inactive() {
+			s.Close()
 			return
 		}
-		// log
-		s.Close()
-		return
+		pm.neighbors.Delete(remotePID)
+		pm.peerCount.Dec()
 	}
 	peer := NewPeer(s)
 	peer.Start()
@@ -52,7 +87,7 @@ func (pm *PeerManager) RemovePeer(peerID peer.ID) {
 	if p, exist := pm.neighbors.Load(peerID); exist {
 		pm.neighbors.Delete(peerID)
 		pm.peerCount.Dec()
-		if peer, ok := p.(*Peer); ok {
+		if peer, ok := p.(*Peer); ok && !peer.Inactive() {
 			peer.Stop()
 		}
 	}
@@ -86,7 +121,10 @@ func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, 
 }
 
 func (pm *PeerManager) Register(id string, mTyps ...MessageType) chan IncomingMessage {
-	c := make(chan IncomingMessage, 1024)
+	if len(mTyps) == 0 {
+		return nil
+	}
+	c := make(chan IncomingMessage, incomingMsgChanSize)
 	for _, typ := range mTyps {
 		pm.subs[typ][id] = c
 	}

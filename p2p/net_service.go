@@ -12,7 +12,6 @@ import (
 	kbucket "github.com/libp2p/go-libp2p-kbucket"
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
-	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
 type PeerID = peer.ID
@@ -89,15 +88,19 @@ func NewNetService(config *Config) (*NetService, error) {
 
 	ns.routeTable = kbucket.NewRoutingTable(config.BucketSize, kbucket.ConvertPeerID(ns.host.ID()), config.PeerTimeout, ns.host.Peerstore())
 
+	ns.peerManager = NewPeerManager()
+
 	return ns, nil
 }
 
 func (ns *NetService) Start() error {
+	ns.peerManager.Start()
 	return nil
 }
 
 func (ns *NetService) Stop() {
 	ns.host.Close()
+	ns.peerManager.Stop()
 	return
 }
 
@@ -115,12 +118,4 @@ func (ns *NetService) Register(id string, typs ...MessageType) chan IncomingMess
 
 func (ns *NetService) Deregister(id string, typs ...MessageType) {
 	ns.peerManager.Deregister(id, typs...)
-}
-
-func (ns *NetService) NeighborAddrs() map[peer.ID][]multiaddr.Multiaddr {
-	addrs := make(map[peer.ID][]multiaddr.Multiaddr)
-	for _, pid := range ns.host.Peerstore().Peers() {
-		addrs[pid] = ns.host.Peerstore().Addrs(pid)
-	}
-	return addrs
 }
