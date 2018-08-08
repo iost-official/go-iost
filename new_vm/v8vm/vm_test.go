@@ -60,7 +60,51 @@ var Contract = function() {
 	}
 }
 
-func TestEngine_Storage(t *testing.T) {
+//func TestEngine_Storage(t *testing.T) {
+//	vi := Init(t)
+//	ctx := context.Background()
+//	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
+//	ctx = context.WithValue(ctx, "contract_name", "contractName")
+//	host := new_vm.NewHost(ctx, vi)
+//
+//	code := &contract.Contract{
+//		ContractInfo: contract.ContractInfo{
+//			Name: "test.js",
+//		},
+//		Code: `
+//var Contract = function() {
+//};
+//
+//	Contract.prototype = {
+//	mySet: function(k, v) {
+//			return IOSTContractStorage.put(k, v);
+//		},
+//	myGet: function(k) {
+//			return IOSTContractStorage.get(k)
+//		}
+//	};
+//
+//	module.exports = Contract;
+//`,
+//	}
+//
+//	e := NewVM()
+//	defer e.Release()
+//	e.Init()
+//
+//
+//	e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
+//	rs, _,err := e.LoadAndCall(host, code, "myGet", "mySetKey")
+//
+//	if err != nil {
+//		t.Fatalf("LoadAndCall run error: %v\n", err)
+//	}
+//	if len(rs) != 1 || rs[0] != "mySetVal" {
+//		t.Errorf("LoadAndCall except mySetVal, got %s\n", rs[0])
+//	}
+//}
+
+func TestEngine_bigNumber(t *testing.T) {
 	vi := Init(t)
 	ctx := context.Background()
 	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
@@ -73,15 +117,14 @@ func TestEngine_Storage(t *testing.T) {
 		},
 		Code: `
 var Contract = function() {
+	this.val = new bigNumber(0.00000000008);
+	this.val = this.val.plus(0.0000000000000029);
 };
 
 	Contract.prototype = {
-	mySet: function(k, v) {
-			return IOSTContractStorage.put(k, v);
-		},
-	myGet: function(k) {
-			return IOSTContractStorage.get(k)
-		}
+	getVal: function() {
+		return this.val.toString(10);
+	}
 	};
 
 	module.exports = Contract;
@@ -93,13 +136,13 @@ var Contract = function() {
 	e.Init()
 
 
-	e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
-	rs, _,err := e.LoadAndCall(host, code, "myGet", "mySetKey")
+	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
+	rs, _,err := e.LoadAndCall(host, code, "getVal")
 
 	if err != nil {
 		t.Fatalf("LoadAndCall run error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0] != "mySetVal" {
+	if len(rs) != 1 || rs[0] != "0.0000000000800029" {
 		t.Errorf("LoadAndCall except mySetVal, got %s\n", rs[0])
 	}
 }

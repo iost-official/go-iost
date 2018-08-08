@@ -1,4 +1,4 @@
-var IOSTContractStorage = (function () {
+var BlockChainContractStorage = (function () {
     var storage = new IOSTStorage;
     return {
         put: function (key, val) {
@@ -16,5 +16,4 @@ var IOSTContractStorage = (function () {
     }
 })();
 
-module.exports = IOSTContractStorage
-
+module.exports = BlockChainContractStorage

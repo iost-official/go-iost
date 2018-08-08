@@ -10,6 +10,7 @@ import "C"
 import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"fmt"
 )
 
 func init() {
@@ -39,6 +40,12 @@ func (e *VM) Init() error {
 
 // LoadAndCall load contract code with provide contract, and call api with args
 func (e *VM) LoadAndCall(host *new_vm.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("LoadAndCall recover:", err)
+		}
+	}()
+
 	e.sandbox.SetHost(host)
 	preparedCode, err := e.sandbox.Prepare(contract, api, args)
 	if err != nil {

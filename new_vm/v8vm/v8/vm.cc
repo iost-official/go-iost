@@ -2,6 +2,7 @@
 #include "v8.h"
 #include "require.h"
 #include "storage.h"
+#include "blockchain.h"
 #include "snapshot_blob.bin.h"
 #include "natives_blob.bin.h"
 
@@ -74,36 +75,6 @@ std::string v8ValueToStdString(Local<Value> val) {
     return *str;
 }
 
-//void nativeRequire(const FunctionCallbackInfo<Value> &info) {
-//    Isolate *isolate = info.GetIsolate();
-//
-//    Local<Value> path = info[0];
-//    if (!path->IsString()) {
-//        Local<Value> err = Exception::Error(
-//            String::NewFromUtf8(isolate, "_native_require empty path")
-//        );
-//        isolate->ThrowException(err);
-//    }
-//
-//    String::Utf8Value pathStr(path);
-//    std::string fullRelPath = std::string(NATIVE_LIB_PATH) + *pathStr;
-//
-//    std::ifstream f(fullRelPath);
-//    std::stringstream buffer;
-//    buffer << f.rdbuf();
-//
-//    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
-//    Local<String> fileName = String::NewFromUtf8(isolate, *pathStr, NewStringType::kNormal).ToLocalChecked();
-//    Local<Script> script = Script::Compile(source, fileName);
-//
-//    if (!script.IsEmpty()) {
-//        Local<Value> result = script->Run();
-//        if (!result.IsEmpty()) {
-//            info.GetReturnValue().Set(result);
-//        }
-//    }
-//}
-
 void nativeLog(const FunctionCallbackInfo<Value> &info) {
     Isolate *isolate = info.GetIsolate();
 
@@ -117,29 +88,6 @@ void nativeLog(const FunctionCallbackInfo<Value> &info) {
 
     String::Utf8Value msgStr(msg);
     std::cout << "native_log: " << *msgStr << std::endl;
-    return;
-}
-
-void nativeReadFile(const FunctionCallbackInfo<Value> &info) {
-    Isolate *isolate = info.GetIsolate();
-
-    Local<Value> fileName = info[0];
-    if (!fileName->IsString()) {
-        Local<Value> err = Exception::Error(
-            String::NewFromUtf8(isolate, "_native_readFile empty file name.")
-        );
-        isolate->ThrowException(err);
-    }
-
-    String::Utf8Value fileNameStr(fileName);
-    std::string fullRelPath = std::string(NATIVE_LIB_PATH) + *fileNameStr + std::string(".js");
-
-    std::ifstream f(fullRelPath);
-    std::stringstream buffer;
-    buffer << f.rdbuf();
-
-    info.GetReturnValue().Set(String::NewFromUtf8(isolate, buffer.str().c_str()));
-
     return;
 }
 
@@ -180,11 +128,6 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
               String::NewFromUtf8(isolate, "_native_log", NewStringType::kNormal)
                   .ToLocalChecked(),
               v8::FunctionTemplate::New(isolate, nativeLog));
-
-    global->Set(
-                  String::NewFromUtf8(isolate, "_native_readFile", NewStringType::kNormal)
-                      .ToLocalChecked(),
-                  v8::FunctionTemplate::New(isolate, nativeReadFile));
 
     global->Set(
                       String::NewFromUtf8(isolate, "_native_run", NewStringType::kNormal)
@@ -282,30 +225,14 @@ const char* ToCString(const v8::String::Utf8Value& value) {
 }
 
 void LoadVM(Isolate *isolate) {
-    std::string nativeModulePath = NATIVE_LIB_PATH "nativeModule.js";
-    std::ifstream nf(nativeModulePath);
-    std::stringstream nbuffer;
-    nbuffer << nf.rdbuf();
+    std::string vmPath = NATIVE_LIB_PATH "vm.js";
+    std::ifstream f(vmPath);
+    std::stringstream buffer;
+    buffer << f.rdbuf();
 
-    Local<String> source = String::NewFromUtf8(isolate, nbuffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
-    Local<String> fileName = String::NewFromUtf8(isolate, nativeModulePath.c_str(), NewStringType::kNormal).ToLocalChecked();
+    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
+    Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
-
-    if (!script.IsEmpty()) {
-        Local<Value> result = script->Run();
-        if (!result.IsEmpty()) {
-//            std::cout << "result vm: " << v8ValueToStdString(result) << std::endl;
-        }
-    }
-
-    std::string storagePath = NATIVE_LIB_PATH "storage.js";
-    std::ifstream sf(storagePath);
-    std::stringstream sbuffer;
-    sbuffer << sf.rdbuf();
-
-    source = String::NewFromUtf8(isolate, sbuffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
-    fileName = String::NewFromUtf8(isolate, storagePath.c_str(), NewStringType::kNormal).ToLocalChecked();
-    script = Script::Compile(source, fileName);
 
     if (!script.IsEmpty()) {
         Local<Value> result = script->Run();
@@ -325,6 +252,9 @@ ValueTuple Execute(SandboxPtr ptr, const char *code) {
     HandleScope handle_scope(isolate);
     Context::Scope context_scope(sbx->context.Get(isolate));
 
+//    LoadModule(isolate);
+//    LoadStorage(isolate);
+//    LoadBigNumber(isolate);
     LoadVM(isolate);
 
     TryCatch tryCatch(isolate);

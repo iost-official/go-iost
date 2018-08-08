@@ -57,4 +57,8 @@ NativeModule.prototype.cache = function() {
     NativeModule._cache[this.id] = this;
 };
 
-// const require = NativeModule.require;
+var require = NativeModule.require;
+
+var IOSTContractStorage = require('storage');
+var BlockChainContractStorage = require('blockchain');
+var bigNumber = require('bignumber');

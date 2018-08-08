@@ -90,6 +90,15 @@ extern void goGlobalGet(SandboxPtr, const char *, const char *, size_t *);
 extern void goGlobalMapGet(SandboxPtr, const char *, const char *, const char *, size_t *);
 extern void goGlobalMapKeys(SandboxPtr, const char *, const char *, size_t *);
 extern void goGlobalMapLen(SandboxPtr, const char *, const char *, size_t *);
+// blockchain
+extern int goTransfer(SandboxPtr, char *, char *, char *, size_t *);
+extern int goWithdraw(SandboxPtr, char *, char *, size_t *);
+extern int goDeposit(SandboxPtr, char *, char *, size_t *);
+extern int goTopUp(SandboxPtr, char *, char *, char *, size_t *);
+extern int goCountermand(SandboxPtr, char *, char *, char *, size_t *);
+extern char *goBlockInfo(SandboxPtr, size_t *);
+extern char *goTxInfo(SandboxPtr, size_t *);
+extern char *goCall(SandboxPtr, char *, char *, char *, size_t *);
 
 #ifdef __cplusplus
 }
