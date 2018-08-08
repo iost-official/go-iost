@@ -75,7 +75,7 @@ func (b *ChainImpl) Push(block *Block) error {
 
 	log.Log.E("[block] lengthAdd length:%v block num:%v ", b.length, number)
 	l := number + 1
-	var tmpByte = make([]byte, 128)
+	var tmpByte = make([]byte, 8)
 	binary.BigEndian.PutUint64(tmpByte, l)
 	btch.Put(blockLength, tmpByte)
 
