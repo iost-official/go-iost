@@ -195,6 +195,7 @@ func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 	bcnType := IF(ok, Linked, Single).(BCNType)
 	fa := IF(ok, parent, bc.SingleTree).(*BlockCacheNode)
 	newNode = NewBCN(fa, blk, bcnType)
+	delete(bc.Leaf,fa)
 	if ok {
 		code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
 	} else {
@@ -207,7 +208,7 @@ func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 	case Fork:
 		// Added to cached tree or added to single tree
 		if newNode.Type == Linked {
-			bc.addSingle(newNode)
+			bc.mergeSingle(newNode)
 			bc.Link(newNode)
 		} else {
 			bc.mergeSingle(newNode)
@@ -223,13 +224,11 @@ func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 
 func (bc *BlockCache) delNode(bcn *BlockCacheNode) {
 	fa := bcn.Parent
-	bcn.Parent = nil
+	//bcn.Parent = nil
 	bc.hmdel(bcn.Block.HeadHash())
-	delete(bc.Leaf, bcn)
 	if fa == nil {
 		return
 	}
-	bc.Leaf[fa] = fa.Number
 	fa.delChild(bcn)
 	return
 }
@@ -237,36 +236,26 @@ func (bc *BlockCache) Del(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
-	len := len(bcn.Children)
+	length := len(bcn.Children)
 	for ch, _ := range bcn.Children {
 		bc.Del(ch)
 	}
 	bc.delNode(bcn)
-	if len == 0 {
-		bc.updateLongest()
+	if length == 0 {
+		delete(bc.Leaf, bcn)
 	}
-}
-
-func (bc *BlockCache) addSingle(newNode *BlockCacheNode) {
-	bc.mergeSingle(newNode)
-	//modify Type from child to end
 }
 
 func (bc *BlockCache) mergeSingle(newNode *BlockCacheNode) {
 	block := newNode.Block
-	var child *BlockCacheNode
 	for bcn, _ := range bc.SingleTree.Children {
 		if bytes.Equal(bcn.Block.Head.ParentHash, block.HeadHash()) {
-			child = bcn
-			break
+			bcn.Parent.delChild(bcn)
+			newNode.addChild(bcn)
+
 		}
 	}
-
-	if child == nil {
-		return
-	}
-	child.Parent.delChild(child)
-	newNode.addChild(child)
+	return
 }
 
 func (bc *BlockCache) delSingle() {
@@ -321,6 +310,7 @@ func (bc *BlockCache) Flush(bcn *BlockCacheNode) {
 		return
 	}
 	bc.flush(bcn.Parent, bcn)
+	bc.updateLongest()
 	bc.delSingle()
 	return
 }
