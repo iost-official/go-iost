@@ -27,8 +27,8 @@ func (c *Contract) Encode() string { // todo
 	return ""
 }
 
-func (c *Contract) Decode(string) { // todo
-
+func (c *Contract) Decode(string) error { // todo
+	return nil
 }
 
 func DecodeContract(str string) *Contract { // todo

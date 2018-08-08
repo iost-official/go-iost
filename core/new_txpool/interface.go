@@ -1,4 +1,4 @@
-package txpool
+package new_txpool
 
 import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
@@ -8,7 +8,7 @@ import (
 type TxPool interface {
 	Start()
 	Stop()
-	AddConfirmBlock(block *block.Block, isLongestChain bool) error
+	AddConfirmBlock(block *block.Block, isLongestChain bool, irreversibleNum uint64) error
 	AddTx(tx *tx.Tx) error
 	PendingTxs(maxCnt int) (tx.TransactionsList, error)
 	PendingTxsNum() (int, error)

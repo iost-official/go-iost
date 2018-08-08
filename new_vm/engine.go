@@ -5,6 +5,11 @@ import (
 
 	"sync"
 
+	"encoding/json"
+
+	"strconv"
+
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
@@ -18,7 +23,7 @@ const (
 type Engine interface {
 	//Init()
 	//SetEnv(bh *block.BlockHead, cb database.IMultiValue) Engine
-	Exec(tx0 tx.Tx) (tx.TxReceipt, error)
+	Exec(tx0 tx.Tx) (*tx.TxReceipt, error)
 	GC()
 }
 
@@ -30,14 +35,6 @@ type EngineImpl struct {
 	host *Host
 }
 
-//func (e *EngineImpl) Init() {
-//	if staticMonitor == nil {
-//		once.Do(func() {
-//			staticMonitor = NewMonitor()
-//		})
-//	}
-//}
-
 func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	if staticMonitor == nil {
 		once.Do(func() {
@@ -45,26 +42,61 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 		})
 	}
 
-	ctx := context.Background()
+	ctx := context.Background() // todo
+
+	blkInfo := make(map[string]string)
+
+	blkInfo["parent_hash"] = string(bh.ParentHash)
+	blkInfo["number"] = strconv.FormatInt(bh.Number, 10)
+	blkInfo["witness"] = string(bh.Witness)
+	blkInfo["time"] = strconv.FormatInt(bh.Time, 10)
+
+	bij, err := json.Marshal(blkInfo)
+	if err != nil {
+		panic(err)
+	}
+
+	ctx = context.WithValue(ctx, "block_info", database.SerializedJSON(bij))
 	db := database.NewVisitor(defaultCacheLength, cb)
 	host := NewHost(ctx, db)
 	return &EngineImpl{host: host}
 }
-func (e *EngineImpl) Exec(tx0 tx.Tx) (tx.TxReceipt, error) {
+func (e *EngineImpl) Exec(tx0 tx.Tx) (*tx.TxReceipt, error) {
 
-	txr := tx.NewTxReceipt(tx0.Hash())
+	//txr := tx.NewTxReceipt([]byte(tx0.Id))
 	totalCost := contract.Cost0()
 
+	txInfo, err := json.Marshal(tx0)
+	if err != nil {
+		panic(err)
+	}
+
+	authList := make(map[string]int)
+	for _, v := range tx0.Signers {
+		authList[string(v)] = 1
+	}
+
+	authList[account.GetIdByPubkey(tx0.Publisher.Pubkey)] = 2
+
+	e.host.ctx = context.WithValue(e.host.ctx, "tx_info", database.SerializedJSON(txInfo))
+
 	for _, action := range tx0.Actions {
-		_, receipt, cost, err := staticMonitor.Call(e.host, action.Contract, action.ActionName, action.Data)
+
+		e.host.ctx = context.WithValue(e.host.ctx, "stack0", tx0.Id)
+		e.host.ctx = context.WithValue(e.host.ctx, "stack_height", 1) // record stack trace
+
+		_, cost, err := staticMonitor.Call(e.host, action.Contract, action.ActionName, action.Data)
 		if err != nil {
+			txr := e.host.ctx.Value("tx_receipt").(*tx.TxReceipt)
 			return txr, err
 		}
-		txr.Receipts = append(txr.Receipts, *receipt)
+
 		totalCost.AddAssign(cost)
 	}
 
-	//e.host.PayCost(totalCost, tx0.Publisher.) todo pay cost
+	txr := e.host.ctx.Value("tx_receipt").(*tx.TxReceipt)
+
+	e.host.PayCost(totalCost, account.GetIdByPubkey(tx0.Publisher.Pubkey), tx0.GasPrice)
 
 	return txr, nil
 }

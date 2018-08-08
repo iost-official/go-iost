@@ -1,6 +1,8 @@
 package tx
 
-import "github.com/golang/protobuf/proto"
+import (
+	"github.com/golang/protobuf/proto"
+)
 
 /**
  * Describtion: tx
@@ -46,4 +48,13 @@ func (a *Action) Decode(b []byte) error {
 	a.ActionName = ar.ActionName
 	a.Data = ar.Data
 	return nil
+}
+
+func (a *Action) String() string {
+	str := "Action{"
+	str += "Contract: " + a.Contract + ", "
+	str += "ActionName: " + a.ActionName + ", "
+	str += "Data: " + a.Data
+	str += "}\n"
+	return str
 }

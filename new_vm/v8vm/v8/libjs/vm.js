@@ -18,6 +18,21 @@ function NativeModule(id, parent) {
     this.parent = parent;
 }
 
+NativeModule._load = function(request, parent) {
+    _native_require(request);
+    return module.exports
+}
+
+NativeModule.prototype.require = function (id) {
+    if (typeof id !== 'string') {
+        throw "id not string";
+    }
+    if (id === '') {
+        throw "id empty string";
+    }
+    return NativeModule._load(id, this);
+}
+
 const module = new NativeModule();
 const require = makeRequireFunction(module);
 const exports = {};

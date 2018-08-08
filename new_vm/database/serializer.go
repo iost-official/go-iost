@@ -21,7 +21,7 @@ var (
 
 type SerializedJSON []byte
 
-func Marshall(in interface{}) (string, error) {
+func Marshal(in interface{}) (string, error) {
 	switch in.(type) {
 	case int64:
 		return IntPrefix + int64ToRaw(in.(int64)), nil
@@ -37,16 +37,16 @@ func Marshall(in interface{}) (string, error) {
 	return "", ErrTypeNotSupport
 }
 
-func MustMarshall(in interface{}) string {
-	s, err := Marshall(in)
+func MustMarshal(in interface{}) string {
+	s, err := Marshal(in)
 	if err != nil {
 		panic(err)
 	}
 	return s
 }
 
-func Unmarshall(o string) interface{} {
-	switch o[0:0] {
+func Unmarshal(o string) interface{} {
+	switch o[0:1] {
 	case IntPrefix:
 		return rawToInt64(o)
 	case StringPrefix:
@@ -60,6 +60,14 @@ func Unmarshall(o string) interface{} {
 	}
 	return ErrInvalidData
 
+}
+
+func MustUnmarshal(o string) interface{} {
+	rtn := Unmarshal(o)
+	if err, ok := rtn.(error); ok {
+		panic(err)
+	}
+	return rtn
 }
 
 func int64ToRaw(i int64) string {
