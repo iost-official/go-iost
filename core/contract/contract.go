@@ -35,11 +35,12 @@ func (c *Contract) Encode() string {
 	return string(buf)
 }
 
-func (c *Contract) Decode(str string) {
+func (c *Contract) Decode(str string) error {
 	err := proto.Unmarshal([]byte(str), c)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 func DecodeContract(str string) *Contract {

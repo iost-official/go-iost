@@ -57,7 +57,7 @@ func (s *Signature) Encode() []byte {
 }
 
 func (s *Signature) Decode(b []byte) error {
-	var sr *SignatureRaw
+	sr := &SignatureRaw{}
 	err := proto.Unmarshal(b, sr)
 	if err != nil {
 		log.Log.E("Error in Decode of signature ", b, err.Error())
