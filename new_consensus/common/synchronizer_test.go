@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -12,8 +13,9 @@ func TestDownloadController(t *testing.T) {
 	Convey("Test DownloadController", t, func() {
 		dc, ok := NewDownloadController()
 		So(ok, ShouldBeNil)
-		var dHash, dPID string
-		go dc.DownloadLoop(func(hash, peerID string) {
+		var dHash string
+		var dPID p2p.PeerID
+		go dc.DownloadLoop(func(hash string, peerID p2p.PeerID) {
 			dHash = hash
 			dPID = peerID
 			fmt.Println("CallBack", hash, peerID)

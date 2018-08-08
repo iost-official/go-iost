@@ -50,7 +50,7 @@ func (d *Block) CalculateTxsHash() []byte {
 }
 
 func (d *Block) CalculateMerkleHash() []byte {
-
+	return nil
 }
 
 func (d *Block) Encode() []byte {
