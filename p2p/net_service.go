@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 
@@ -9,8 +10,19 @@ import (
 	crypto "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
 	kbucket "github.com/libp2p/go-libp2p-kbucket"
+	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
+)
+
+type PeerID = peer.ID
+
+const (
+	protocolID = "iostp2p/1.0"
+)
+
+var (
+	ErrPortUnavailable = errors.New("port is unavailable")
 )
 
 type Service interface {
@@ -18,29 +30,45 @@ type Service interface {
 	Stop()
 
 	Broadcast([]byte, MessageType, MessagePriority)
-	SendToPeer(peer.ID, []byte, MessageType, MessagePriority)
+	SendToPeer(PeerID, []byte, MessageType, MessagePriority)
 	Register(string, ...MessageType) chan IncomingMessage
 	Deregister(string, ...MessageType)
 }
 
 type NetService struct {
+	localID     peer.ID
 	routeTable  *kbucket.RoutingTable
 	host        host.Host
 	peerManager *PeerManager
 }
 
-func basicHost(pk crypto.PrivKey, listenAddr string) (host.Host, error) {
+func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", listenAddr)
 	if err != nil {
 		fmt.Println("failed to resolve tcp addr. err=", err)
 		return nil, err
 	}
+
+	if !isPortAvailable(tcpAddr.Port) {
+		return nil, ErrPortUnavailable
+	}
+
 	opts := []libp2p.Option{
 		libp2p.Identity(pk),
 		libp2p.NATPortMap(),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", tcpAddr.IP, tcpAddr.Port)),
 	}
-	return libp2p.New(context.Background(), opts...)
+	h, err := libp2p.New(context.Background(), opts...)
+	if err != nil {
+		fmt.Println("failed to start host. err=", err)
+		return nil, err
+	}
+	h.SetStreamHandler(protocolID, ns.streamHandler)
+	return h, nil
+}
+
+func (ns *NetService) streamHandler(s libnet.Stream) {
+	ns.peerManager.AddPeer(s)
 }
 
 func NewNetService(config *Config) (*NetService, error) {
@@ -52,7 +80,7 @@ func NewNetService(config *Config) (*NetService, error) {
 		return nil, err
 	}
 
-	host, err := basicHost(privKey, config.ListenAddr)
+	host, err := ns.startHost(privKey, config.ListenAddr)
 	if err != nil {
 		// node.log.E("failed to make a host. err=%v", err)
 		return nil, err
@@ -69,6 +97,7 @@ func (ns *NetService) Start() error {
 }
 
 func (ns *NetService) Stop() error {
+	ns.host.Close()
 	return nil
 }
 
