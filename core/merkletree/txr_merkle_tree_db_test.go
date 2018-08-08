@@ -2,19 +2,17 @@ package merkletree
 
 import (
 	"testing"
-	"log"
-	. "github.com/smartystreets/goconvey/convey"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"encoding/hex"
-	"reflect"
+	"log"
+		"reflect"
 	"bytes"
+	"github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"time"
-	"fmt"
-)
+	)
 
-func TestTXRMerkleTree(t *testing.T) {
-	Convey("Test of TXR", t, func() {
+func TestTXRMerkleTreeDB(t *testing.T) {
+	convey.Convey("Test of TXRMTDB", t, func() {
 		m := TXRMerkleTree{}
 		txrs := []tx.TxReceipt{
 			{TxHash:[]byte("node1")},
@@ -27,42 +25,38 @@ func TestTXRMerkleTree(t *testing.T) {
 		if err != nil {
 			log.Panic(err)
 		}
-		So(hex.EncodeToString(m.TX2TXR["node1"]), ShouldEqual, "0a056e6f6465311a00")
-		txr, err := m.GetTXR([]byte("node1"))
-		if err != nil {
-			log.Panic(err)
-		}
-		So(hex.EncodeToString(txr.Encode()), ShouldEqual, "0a056e6f6465311a00")
-
-		b, err := m.Encode()
+		Init("./")
+		err = TXRMTDB.Put(&m, 32342)
 		if err != nil {
 			log.Panic(err)
 		}
 		var m_read TXRMerkleTree
-		err = m_read.Decode(b)
+		m_read, err = TXRMTDB.Get(32342)
 		if err != nil {
 			log.Panic(err)
 		}
-		So(reflect.DeepEqual(m.TX2TXR,m_read.TX2TXR), ShouldBeTrue)
+		convey.So(reflect.DeepEqual(m.TX2TXR,m_read.TX2TXR), convey.ShouldBeTrue)
 		for i := 0; i < 16; i++ {
-			So(bytes.Equal(m.MT.HashList[i], m_read.MT.HashList[i]), ShouldBeTrue)
+			convey.So(bytes.Equal(m.MT.HashList[i], m_read.MT.HashList[i]), convey.ShouldBeTrue)
 		}
 	})
 }
 
-func BenchmarkTXRMerkleTree_Build(b *testing.B) { // 2439313ns = 2.4ms
+func BenchmarkTXRMerkleTreeDB(b *testing.B) { //Put: 1544788ns = 1.5ms, Get: 621922ns = 0.6ms
 	rand.Seed(time.Now().UnixNano())
+	Init("./")
 	var txrs []tx.TxReceipt
 	for i := 0; i < 3000; i++ {
-		fmt.Println(i)
 		txrs = append(txrs, tx.TxReceipt{TxHash:[]byte("node1")})
 	}
 	m := TXRMerkleTree{}
+	err := m.Build(txrs)
+	if err != nil {
+		log.Panic(err)
+	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := m.Build(txrs)
-		if err != nil {
-			log.Panic(err)
-		}
+		TXRMTDB.Put(&m, 33)
+		TXRMTDB.Get(33)
 	}
 }

@@ -163,21 +163,21 @@ func (m *MVCCDB) Has(table string, key string) (bool, error) {
 }
 
 func (m *MVCCDB) Keys(table string, prefix string) ([]string, error) {
-	if !m.isValidTable(table) {
-		return nil, ErrTableNotValid
-	}
-	p := []byte(table + string(SEPARATOR) + prefix)
-	m.stagerw.RLock()
-	vlist := m.stage.Keys(p)
-	m.stagerw.RUnlock()
-	keys, err := m.storage.Keys(p)
-	if err != nil {
-		return nil, err
-	}
-	// TODO use iterator instead of keys
-	for key := range keys {
-
-	}
+	//if !m.isValidTable(table) {
+	//	return nil, ErrTableNotValid
+	//}
+	//p := []byte(table + string(SEPARATOR) + prefix)
+	//m.stagerw.RLock()
+	//vlist := m.stage.Keys(p)
+	//m.stagerw.RUnlock()
+	//keys, err := m.storage.Keys(p)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//// TODO use iterator instead of keys
+	//for key := range keys {
+	//
+	//}
 	//	if !ok {
 	//		return nil, error.New("can't assert Item type")
 	//	}
