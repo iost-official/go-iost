@@ -133,8 +133,7 @@ func (t *Tx) publishHash() []byte {
 	return common.Sha256(b)
 }
 
-// 对Tx进行编码
-func (t *Tx) Encode() []byte {
+func (t *Tx) ToTxRaw() *TxRaw {
 	tr := &TxRaw{
 		Id:         t.Id,
 		Time:       t.Time,
@@ -162,7 +161,12 @@ func (t *Tx) Encode() []byte {
 		Sig:       t.Publisher.Sig,
 		PubKey:    t.Publisher.Pubkey,
 	}
+	return tr;
+}
 
+// 对Tx进行编码
+func (t *Tx) Encode() []byte {
+	tr := t.ToTxRaw()
 	b, err := proto.Marshal(tr)
 	if err != nil {
 		panic(err)
@@ -170,13 +174,7 @@ func (t *Tx) Encode() []byte {
 	return b
 }
 
-// 对Tx进行解码
-func (t *Tx) Decode(b []byte) error {
-	tr := &TxRaw{}
-	err := proto.Unmarshal(b, tr)
-	if err != nil {
-		return err
-	}
+func (t *Tx) FromTxRaw(tr *TxRaw) {
 	t.Id = tr.Id
 	t.Time = tr.Time
 	t.Expiration = tr.Expiration
@@ -205,6 +203,16 @@ func (t *Tx) Decode(b []byte) error {
 		Pubkey:    tr.Publisher.PubKey,
 	}
 	t.hash = nil
+}
+
+// 对Tx进行解码
+func (t *Tx) Decode(b []byte) error {
+	tr := &TxRaw{}
+	err := proto.Unmarshal(b, tr)
+	if err != nil {
+		return err
+	}
+	t.FromTxRaw(tr)
 	return nil
 }
 
