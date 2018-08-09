@@ -9,6 +9,10 @@ import (
 	"errors"
 	"fmt"
 	"unsafe"
+
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"encoding/json"
 )
 
 // A Sandbox is an execution environment that allows separate, unrelated, JavaScript
@@ -18,6 +22,7 @@ type Sandbox struct {
 	isolate C.IsolatePtr
 	context C.SandboxPtr
 	modules Modules
+	host    *new_vm.Host
 }
 
 var sbxMap = make(map[C.SandboxPtr]*Sandbox)
@@ -51,6 +56,10 @@ func (sbx *Sandbox) Init() {
 	// init require
 }
 
+func (sbx *Sandbox) SetHost(host *new_vm.Host) {
+	sbx.host = host
+}
+
 func (sbx *Sandbox) SetModule(name, code string) {
 	if name == "" || code == "" {
 		return
@@ -59,13 +68,22 @@ func (sbx *Sandbox) SetModule(name, code string) {
 	sbx.modules.Set(m)
 }
 
-func (sbx *Sandbox) Prepare(code, function string, args []string) string {
-	sbx.SetModule("_native_main", code)
+func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args []interface{}) (string, error) {
+	name := contract.Name
+	code := contract.Code
+
+	sbx.SetModule(name, code)
+
+	argStr, err := json.Marshal(args)
+	if err != nil {
+		return "", err
+	}
+
 	return fmt.Sprintf(`
-var _native_main = NativeModule.require('_native_main');
+var _native_main = NativeModule.require('%s');
 var obj = new _native_main();
 obj['%s'].apply(obj, %v);
-`, function, args)
+`, name, function, string(argStr)), nil
 }
 
 func (sbx *Sandbox) Execute(preparedCode string) (string, error) {

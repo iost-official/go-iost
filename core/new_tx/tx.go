@@ -16,16 +16,16 @@ import (
 
 // Tx Transaction 的实现
 type Tx struct {
-	Id         string  // not used yet
-	hash       []byte
-	Time       int64
-	Expiration int64
-	GasLimit   uint64
-	Actions    []Action
-	Signers    [][]byte
-	Signs      []common.Signature
-	Publisher  common.Signature
-	GasPrice   uint64
+	hash       []byte             `json:"-"`
+	Id         string             `json:"id"`
+	Time       int64              `json:"time,string"`
+	Expiration int64              `json:"expiration,string"`
+	GasLimit   uint64             `json:"gas_limit,string"`
+	Actions    []Action           `json:"-"`
+	Signers    [][]byte           `json:"-"`
+	Signs      []common.Signature `json:"-"`
+	Publisher  common.Signature   `json:"-"`
+	GasPrice   uint64             `json:"gas_price,string"`
 }
 
 // 新建一个Tx，需要通过编译器得到一个contract

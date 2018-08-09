@@ -96,9 +96,9 @@ func (ns *NetService) Start() error {
 	return nil
 }
 
-func (ns *NetService) Stop() error {
+func (ns *NetService) Stop() {
 	ns.host.Close()
-	return nil
+	return
 }
 
 func (ns *NetService) Broadcast(data []byte, typ MessageType, mp MessagePriority) {

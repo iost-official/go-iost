@@ -27,14 +27,14 @@ func (d *Block) String() string {
 	str += "	}\n"
 
 	str += "	Txs {\n"
-	for _, tx := range d.Txs {
-		str += tx.String()
-	}
+	//for _, tx := range d.Txs {
+	//	//str += tx.String()
+	//}
 	str += "	}\n"
 	str += "	Receipts {\n"
-	for _, receipt := range d.Receipts {
-		str += receipt.String()
-	}
+	//for _, receipt := range d.Receipts {
+	//	str += receipt.String()
+	//}
 	str += "	}\n"
 	str += "}\n"
 	return str
@@ -50,7 +50,7 @@ func (d *Block) CalculateTxsHash() []byte {
 }
 
 func (d *Block) CalculateMerkleHash() []byte {
-
+	return nil
 }
 
 func (d *Block) Encode() []byte {

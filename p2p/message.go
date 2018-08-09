@@ -38,6 +38,11 @@ type MessagePriority uint8
 
 const (
 	Ping MessageType = iota + 1
+	SyncBlockHashRequest
+	SyncBlockHashResponse
+	SyncBlockRequest
+	SyncBlockResponse
+	NewBlockResponse
 
 	UrgentMessage = 1
 	NormalMessage = 2
