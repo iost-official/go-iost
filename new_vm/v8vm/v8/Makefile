@@ -29,7 +29,7 @@ else
 	INSTALL_PATH=./libv8/_linux_amd64
 endif
 
-vm: vm.cc.o require.cc.o
+vm: vm.cc.o require.cc.o storage.cc.o blockchain.cc.o
 	$(LD) -g -shared $(LDFLAGS) $^ -o libvm$(LIB_SUFFIX) -L$(LIB_PATH) $(LIBS)
 
 %.cc.o: %.cc

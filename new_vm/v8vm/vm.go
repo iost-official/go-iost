@@ -8,9 +8,9 @@ package v8
 */
 import "C"
 import (
-	"context"
-
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"fmt"
 )
 
 func init() {
@@ -39,14 +39,22 @@ func (e *VM) Init() error {
 }
 
 // LoadAndCall load contract code with provide contract, and call api with args
-func (e *VM) LoadAndCall(ctx context.Context, contract *contract.Contract, api string, args ...string) (rtn []string, err error) {
-	code := contract.Code
+func (e *VM) LoadAndCall(host *new_vm.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("LoadAndCall recover:", err)
+		}
+	}()
 
-	preparedCode := e.sandbox.Prepare(code, api, args)
+	e.sandbox.SetHost(host)
+	preparedCode, err := e.sandbox.Prepare(contract, api, args)
+	if err != nil {
+
+	}
 
 	rs, err := e.sandbox.Execute(preparedCode)
 
-	return []string{rs}, err
+	return []interface{}{rs}, nil, err
 }
 
 // Release release all engine associate resource

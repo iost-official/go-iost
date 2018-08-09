@@ -1,7 +1,9 @@
 package message
 
+import "github.com/gogo/protobuf/proto"
+
 func (d *RequestHeight) Encode() []byte {
-	b, err := d.Marshal(nil)
+	b, err := proto.Marshal(d)
 	if err != nil {
 		panic(err)
 	}
@@ -10,7 +12,7 @@ func (d *RequestHeight) Encode() []byte {
 }
 
 func (d *RequestHeight) Decode(bin []byte) error {
-	_, err := d.Unmarshal(bin)
+	err := proto.Unmarshal(bin, d)
 	if err != nil {
 		return err
 	}
@@ -19,7 +21,7 @@ func (d *RequestHeight) Decode(bin []byte) error {
 }
 
 func (d *ResponseHeight) Encode() []byte {
-	b, err := d.Marshal(nil)
+	b, err := proto.Marshal(d)
 	if err != nil {
 		panic(err)
 	}
@@ -28,7 +30,7 @@ func (d *ResponseHeight) Encode() []byte {
 }
 
 func (d *ResponseHeight) Decode(bin []byte) error {
-	_, err := d.Unmarshal(bin)
+	err := proto.Unmarshal(bin, d)
 	if err != nil {
 		return err
 	}
@@ -37,7 +39,7 @@ func (d *ResponseHeight) Decode(bin []byte) error {
 }
 
 func (d *RequestBlock) Encode() []byte {
-	b, err := d.Marshal(nil)
+	b, err := proto.Marshal(d)
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +48,7 @@ func (d *RequestBlock) Encode() []byte {
 }
 
 func (d *RequestBlock) Decode(bin []byte) error {
-	_, err := d.Unmarshal(bin)
+	err := proto.Unmarshal(bin, d)
 	if err != nil {
 		return err
 	}

@@ -17,7 +17,6 @@ import (
 // Tx Transaction 的实现
 type Tx struct {
 	hash       []byte             `json:"-"`
-	Id         string             `json:"id"`
 	Time       int64              `json:"time,string"`
 	Expiration int64              `json:"expiration,string"`
 	GasLimit   uint64             `json:"gas_limit,string"`
@@ -68,7 +67,6 @@ func (t *Tx) containSigner(pubkey []byte) bool {
 // Time,Noce,Contract形成的基本哈希值
 func (t *Tx) baseHash() []byte {
 	tr := &TxRaw{
-		Id:         t.Id,
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
@@ -104,7 +102,6 @@ func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, erro
 // publishHash 发布者使用的hash值，包含参与者的签名
 func (t *Tx) publishHash() []byte {
 	tr := &TxRaw{
-		Id:         t.Id,
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
@@ -133,10 +130,8 @@ func (t *Tx) publishHash() []byte {
 	return common.Sha256(b)
 }
 
-// 对Tx进行编码
-func (t *Tx) Encode() []byte {
+func (t *Tx) ToTxRaw() *TxRaw {
 	tr := &TxRaw{
-		Id:         t.Id,
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
@@ -162,7 +157,12 @@ func (t *Tx) Encode() []byte {
 		Sig:       t.Publisher.Sig,
 		PubKey:    t.Publisher.Pubkey,
 	}
+	return tr;
+}
 
+// 对Tx进行编码
+func (t *Tx) Encode() []byte {
+	tr := t.ToTxRaw()
 	b, err := proto.Marshal(tr)
 	if err != nil {
 		panic(err)
@@ -170,14 +170,7 @@ func (t *Tx) Encode() []byte {
 	return b
 }
 
-// 对Tx进行解码
-func (t *Tx) Decode(b []byte) error {
-	tr := &TxRaw{}
-	err := proto.Unmarshal(b, tr)
-	if err != nil {
-		return err
-	}
-	t.Id = tr.Id
+func (t *Tx) FromTxRaw(tr *TxRaw) {
 	t.Time = tr.Time
 	t.Expiration = tr.Expiration
 	t.GasLimit = tr.GasLimit
@@ -205,6 +198,16 @@ func (t *Tx) Decode(b []byte) error {
 		Pubkey:    tr.Publisher.PubKey,
 	}
 	t.hash = nil
+}
+
+// 对Tx进行解码
+func (t *Tx) Decode(b []byte) error {
+	tr := &TxRaw{}
+	err := proto.Unmarshal(b, tr)
+	if err != nil {
+		return err
+	}
+	t.FromTxRaw(tr)
 	return nil
 }
 

@@ -3,7 +3,7 @@ package database
 import (
 	"encoding/binary"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 const (
