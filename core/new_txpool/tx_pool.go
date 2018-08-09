@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"bytes"
+	"errors"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
@@ -15,8 +16,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/network"
-	"github.com/jessevdk/go-flags"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"os"
 )
