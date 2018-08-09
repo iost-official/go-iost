@@ -164,16 +164,18 @@ func (pool *TxPoolImpl) loop() {
 			case ForkError:
 				log.Log.E("tx_pool - updateForkChain is error")
 				pool.clearTxPending()
+
 			case Fork:
 				if err := pool.doChainChange(); err != nil {
 					log.Log.E("tx_pool - doChainChange is error")
 					pool.clearTxPending()
 				}
+
 			case NotFork:
-				err := pool.delBlockTxInPending(bl.LinkedNode.Block.Hash())
-				if err != nil {
+				if err := pool.delBlockTxInPending(bl.LinkedNode.Block.Hash()); err != nil {
 					log.Log.E("tx_pool - delBlockTxInPending is error")
 				}
+
 			default:
 				log.Log.E("tx_pool - updateForkChain is error")
 			}
@@ -186,6 +188,17 @@ func (pool *TxPoolImpl) loop() {
 }
 
 func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error {
+
+	if linkedNode == nil || headNode == nil {
+		return errors.New("parameter is nil")
+	}
+
+	r := &RecNode{
+		LinkedNode: linkedNode,
+		HeadNode:   headNode,
+	}
+
+	pool.chLinkedNode <- r
 
 	return nil
 }
