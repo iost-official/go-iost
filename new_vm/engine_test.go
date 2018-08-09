@@ -204,7 +204,7 @@ func TestCost(t *testing.T) { // tests of context transport
 	e.Exec(&mtx)
 }
 
-func TestNative(t *testing.T) { // tests of native vm works
+func TestNative_Transfer(t *testing.T) { // tests of native vm works
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	blkInfo := string(e.(*EngineImpl).host.ctx.Value("block_info").(database.SerializedJSON))
@@ -272,6 +272,78 @@ func TestNative(t *testing.T) { // tests of native vm works
 		}
 		return nil
 	})
+	e.Exec(&mtx)
+
+}
+func TestNative_TopUp(t *testing.T) { // tests of native vm works
+	bh, db, _ := engineinit(t)
+	e := NewEngine(bh, db)
+	blkInfo := string(e.(*EngineImpl).host.ctx.Value("block_info").(database.SerializedJSON))
+	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
+		t.Fatal(blkInfo)
+	}
+
+	mtx := tx.Tx{
+		Id:         "txid",
+		Time:       time.Now().UnixNano(),
+		Expiration: 10000,
+		GasLimit:   100000,
+		GasPrice:   1,
+		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+	}
+
+	ac := tx.Action{
+		Contract:   "iost.system",
+		ActionName: "TopUp",
+		Data:       `["a","b",100]`,
+	}
+
+	mtx.Actions = append(mtx.Actions, ac)
+
+	c := contract.Contract{
+		ID:   "iost.system",
+		Code: "codes",
+		Info: &contract.Info{
+			Lang:        "native",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				&contract.ABI{
+					Name:     "TopUp",
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{"string", "string", "number"},
+				},
+			},
+		},
+	}
+
+	db.EXPECT().Get("state", "c-iost.system").DoAndReturn(func(table string, key string) (string, error) {
+		return c.Encode(), nil
+	})
+
+	db.EXPECT().Get("state", "i-g-a").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Get("state", "i-b").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Put("state", "i-g-a", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(1100) {
+			t.Fatal("g-a", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	db.EXPECT().Put("state", "i-b", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(900) {
+			t.Fatal("a", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
 	e.Exec(&mtx)
 
 }

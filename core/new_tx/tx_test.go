@@ -66,8 +66,7 @@ func TestTx(t *testing.T) {
 
 		Convey("proto marshal", func() {
 			tx := &TxRaw{
-				Id: "txproto",
-				Time: 1,
+				Time: 99,
 				Actions:[]*ActionRaw{&ActionRaw{
 					Contract:"contract1",
 					ActionName:"actionname1",
@@ -83,7 +82,7 @@ func TestTx(t *testing.T) {
 			err = proto.Unmarshal(b, tx1)
 			So(err, ShouldEqual, nil)
 
-			So("txproto", ShouldEqual, tx1.Id)
+			So(99, ShouldEqual, tx1.Time)
 		})
 
 		Convey("encode and decode", func() {
@@ -111,7 +110,6 @@ func TestTx(t *testing.T) {
 			hash1 = tx1.Hash()
 			So(bytes.Equal(hash, hash1), ShouldEqual, true)
 
-			So(tx.Id == tx1.Id, ShouldBeTrue)
 			So(tx.Time == tx1.Time, ShouldBeTrue)
 			So(tx.Expiration == tx1.Expiration, ShouldBeTrue)
 			So(tx.GasLimit == tx1.GasLimit, ShouldBeTrue)
