@@ -6,20 +6,26 @@ import (
 	"sync"
 	"time"
 
+	"bytes"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/network"
+	"github.com/jessevdk/go-flags"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"os"
 )
 
 var (
-	clearInterval = 11 * time.Second
-	filterTime    = 60
-	//filterTime    = 60*60*24*7
+	clearInterval       = 10 * time.Second
+	expiration    int64 = 60
+	filterTime          = expiration + expiration/2
+	//expiration    = 60*60*24*7
 
 	receivedTransactionCount = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -41,37 +47,50 @@ const (
 	FoundChain
 )
 
+type TFork uint
+
+const (
+	NotFork TFork = iota
+	Fork
+	ForkError
+)
+
 type RecNode struct {
 	LinkedNode *blockcache.BlockCacheNode
 	HeadNode   *blockcache.BlockCacheNode
+}
+
+type ForkChain struct {
+	NewHead       *blockcache.BlockCacheNode
+	OldHead       *blockcache.BlockCacheNode
+	ForkBlockHash []byte
 }
 
 type TxPoolImpl struct {
 	chTx         chan message.Message
 	chLinkedNode chan *RecNode
 
+	global global.Global
+
 	chain  blockcache.BlockCache
 	router network.Router
 
-	head      *blockcache.BlockCacheNode
-	block     *sync.Map
+	forkChain *ForkChain
+	blockList *sync.Map
 	pendingTx *sync.Map
 
-	longestChainHash *sync.Map
-
-	filterTime int64
-	mu         sync.RWMutex
+	mu sync.RWMutex
 }
 
-func NewTxPoolImpl(chain blockcache.BlockCache, router network.Router) (TxPool, error) {
+func NewTxPoolImpl(chain blockcache.BlockCache, router network.Router, global global.Global) (TxPool, error) {
 
 	p := &TxPoolImpl{
-		chain:            chain,
-		chLinkedNode:     make(chan *RecNode, 100),
-		block:            new(sync.Map),
-		pendingTx:        new(sync.Map),
-		longestChainHash: new(sync.Map),
-		filterTime:       int64(filterTime),
+		chain:        chain,
+		chLinkedNode: make(chan *RecNode, 100),
+		forkChain:    new(ForkChain),
+		blockList:    new(sync.Map),
+		pendingTx:    new(sync.Map),
+		global:       global,
 	}
 	p.router = router
 	if p.router == nil {
@@ -112,7 +131,8 @@ func (pool *TxPoolImpl) loop() {
 		select {
 		case tr, ok := <-pool.chTx:
 			if !ok {
-				return
+				log.Log.E("tx_pool - chTx is error")
+				os.Exit(1)
 			}
 
 			var tx tx.Tx
@@ -125,21 +145,43 @@ func (pool *TxPoolImpl) loop() {
 				continue
 			}
 
-			if blockcache.VerifyTxSig(tx) {
-				pool.addListTx(&tx)
+			if tx.VerifySelf() != nil {
+				pool.addTx(&tx)
 				receivedTransactionCount.Inc()
 			}
 
-		case bl, ok := <-pool.chConfirmBlock:
+		case bl, ok := <-pool.chLinkedNode:
 			if !ok {
-				return
+				log.Log.E("tx_pool - chLinkedNode is error")
+				os.Exit(1)
 			}
-			pool.addBlockTx(bl)
-			bhl := pool.blockHash(pool.chain.LongestChain())
-			pool.updateBlockHash(bhl)
+
+			if pool.addBlock(bl.LinkedNode.Block) != nil {
+				continue
+			}
+
+			tFort := pool.updateForkChain(bl.HeadNode)
+			switch tFort {
+			case ForkError:
+				log.Log.E("tx_pool - updateForkChain is error")
+				pool.clearTxPending()
+			case Fork:
+				if err := pool.doChainChange(); err != nil {
+					log.Log.E("tx_pool - doChainChange is error")
+					pool.clearTxPending()
+				}
+			case NotFork:
+				err := pool.delBlockTxInPending(bl.LinkedNode.Block.Hash())
+				if err != nil {
+					log.Log.E("tx_pool - delBlockTxInPending is error")
+				}
+			default:
+				log.Log.E("tx_pool - updateForkChain is error")
+			}
+
 		case <-clearTx.C:
-			pool.delTimeOutTx()
-			pool.delTimeOutBlockTx()
+			pool.clearBlock()
+			pool.clearTimeOutTx()
 		}
 	}
 }
@@ -180,7 +222,7 @@ func (pool *TxPoolImpl) ExistTxs(hash string, chainNode *blockcache.BlockCacheNo
 }
 
 func (pool *TxPoolImpl) initBlockTx() {
-	chain := pool.chain.BlockChain()
+	chain := pool.global.BlockChain()
 	timeNow := time.Now().Unix()
 
 	for i := chain.Length() - 1; i > 0; i-- {
@@ -190,9 +232,8 @@ func (pool *TxPoolImpl) initBlockTx() {
 		}
 
 		t := pool.slotToSec(blk.Head.Time)
-		if timeNow-t >= pool.filterTime {
-			pool.block.Add(blk)
-			pool.longestChainHash.Add(blk.HashID())
+		if timeNow-t <= filterTime {
+			pool.addBlock(blk)
 		}
 	}
 
@@ -203,39 +244,72 @@ func (pool *TxPoolImpl) slotToSec(t int64) int64 {
 	return slot.ToUnixSec()
 }
 
-func (pool *TxPoolImpl) addBlock(linkedNode *blockcache.BlockCacheNode) error {
+func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 
-	if _, ok := pool.block.Load(linkedNode.Block.HeadHash()); ok {
+	if _, ok := pool.blockList.Load(linkedBlock.Hash()); ok {
 		return nil
 	}
 
 	b := new(blockTx)
 
-	b.setTime(linkedNode.Block.Head.Time)
-	b.addBlock(linkedNode.Block)
+	b.setTime(pool.slotToSec(linkedBlock.Head.Time))
+	b.addBlock(linkedBlock)
 
-	pool.block.Store(linkedNode.Block.HeadHash(), b)
+	pool.blockList.Store(linkedBlock.Hash(), b)
 
 	return nil
 }
 
-func (pool *TxPoolImpl) existTxInLongestChain(txHash []byte) bool {
+func (pool *TxPoolImpl) parentHash(hash []byte) ([]byte, bool) {
 
-	h := pool.head.Block.Head.Hash()
-
-	ret := pool.existTxInBlock(txHash, h)
-	if ret {
-		return ret
+	v, ok := pool.block(hash)
+	if !ok {
+		return nil, false
 	}
 
-	h = h.ParentHash
+	return v.ParentHash, true
+}
 
-	return ret
+func (pool *TxPoolImpl) block(hash []byte) (*blockTx, bool) {
+
+	if v, ok := pool.blockList.Load(hash); ok {
+		return v.(*blockTx), true
+	}
+
+	return nil, false
+}
+
+func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
+
+	h := block.Head.Hash()
+	t := pool.slotToSec(block.Head.Time)
+	var ok bool
+
+	for {
+		ret := pool.existTxInBlock(txHash, h)
+		if ret {
+			return true
+		}
+
+		h, ok = pool.parentHash(h)
+		if !ok {
+			return false
+		}
+
+		if b, ok := pool.block(h); ok {
+			if (t - b.time()) > filterTime {
+				return false
+			}
+		}
+
+	}
+
+	return false
 }
 
 func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 
-	b, ok := pool.block.Load(blockHash)
+	b, ok := pool.blockList.Load(blockHash)
 	if !ok {
 		return false
 	}
@@ -244,11 +318,11 @@ func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 }
 
 func (pool *TxPoolImpl) clearBlock() {
-	ft := pool.chain.LinkedTree.Block.Head.Time - (pool.filterTime + pool.filterTime/2)
+	ft := pool.slotToSec(pool.chain.LinkedTree.Block.Head.Time) - filterTime
 
-	pool.block.Range(func(key, value interface{}) bool {
+	pool.blockList.Range(func(key, value interface{}) bool {
 		if value.(*blockTx).time() < ft {
-			pool.block.Delete(key)
+			pool.blockList.Delete(key)
 		}
 
 		return true
@@ -256,14 +330,21 @@ func (pool *TxPoolImpl) clearBlock() {
 
 }
 
-func (pool *TxPoolImpl) addListTx(tx *tx.Tx) {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+func (pool *TxPoolImpl) addTx(tx *tx.Tx) {
 
-	if !pool.listTx.Exist(tx.TxID()) {
-		pool.listTx.Add(tx)
+	h := tx.Hash()
+
+	if !pool.existTxInChain(h, pool.forkChain.NewHead.Block) && !pool.existTxInPending(h) {
+		pool.pendingTx.Store(h, tx)
 	}
 
+}
+
+func (pool *TxPoolImpl) existTxInPending(hash []byte) bool {
+
+	_, ok := pool.pendingTx.Load(hash)
+
+	return ok
 }
 
 func (pool *TxPoolImpl) txTimeOut(tx *tx.Tx) bool {
@@ -271,144 +352,212 @@ func (pool *TxPoolImpl) txTimeOut(tx *tx.Tx) bool {
 	nTime := time.Now().Unix()
 	txTime := tx.Time / 1e9
 
-	if nTime-txTime > pool.filterTime {
+	if nTime-txTime > expiration {
 		return true
 	}
 	return false
 }
 
-func (pool *TxPoolImpl) delTimeOutTx() {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+func (pool *TxPoolImpl) clearTimeOutTx() {
 
 	nTime := time.Now().Unix()
-	hashList := make([]string, 0)
 
-	list := pool.listTx.GetList()
-	for hash, tx := range list {
-		txTime := tx.Time / 1e9
-		if nTime-txTime > pool.filterTime {
-			hashList = append(hashList, hash)
+	pool.pendingTx.Range(func(key, value interface{}) bool {
+
+		txTime := value.(*tx.Tx).Time / 1e9
+		if nTime-txTime > expiration {
+			pool.delTxInPending(value.(*tx.Tx).Hash())
 		}
-	}
-	for _, hash := range hashList {
-		pool.listTx.Del(hash)
-	}
+
+		return true
+	})
 
 }
 
-func (pool *TxPoolImpl) delTimeOutBlockTx() {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
-
-	nTime := time.Now().Unix()
-	chain := pool.chain.BlockChain()
-	blk := chain.Top()
-
-	var confirmTime int64
-	if blk != nil {
-		confirmTime = pool.slotToSec(blk.Head.Time)
-	}
-
-	list := pool.block.GetListTime()
-
-	hashList := make([]string, 0)
-	for hash, t := range list {
-
-		if t < confirmTime && nTime-pool.filterTime > t {
-			hashList = append(hashList, hash)
-		}
-	}
-	for _, hash := range hashList {
-
-		pool.block.Del(hash)
-		pool.longestChainHash.Del(hash)
-	}
+func (pool *TxPoolImpl) delTxInPending(hash []byte) {
+	pool.pendingTx.Delete(hash)
 }
 
-func (pool *TxPoolImpl) updatePending(maxCnt int) {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
+func (pool *TxPoolImpl) delBlockTxInPending(hash []byte) error {
 
-	pool.pendingTx.list = make(map[string]*tx.Tx, 0)
-
-	list := pool.listTx.GetList()
-	for hash, tr := range list {
-		if !pool.txExistTxPool(hash) {
-			pool.pendingTx.Add(tr)
-			if pool.pendingTx.Len() >= maxCnt {
-				break
-			}
-		}
+	b, ok := pool.block(hash)
+	if !ok {
+		return nil
 	}
+
+	b.txMap.Range(func(key, value interface{}) bool {
+		pool.pendingTx.Delete(key)
+		return true
+	})
+
+	return nil
 }
 
-func (pool *TxPoolImpl) txExistTxPool(hash string) bool {
-	for blockHash := range pool.longestChainHash.GetList() {
-		txList := pool.block.TxList(string(blockHash))
-		if txList != nil {
-			if b := txList.Exist(hash); b {
-				return true
-			}
-		}
-	}
-	return false
+func (pool *TxPoolImpl) clearTxPending() {
+	pool.pendingTx = new(sync.Map)
 }
 
-func (pool *TxPoolImpl) blockHash(chain block.Chain) *blockHashList {
-	pool.mu.RLock()
-	defer pool.mu.RUnlock()
+func (pool *TxPoolImpl) updatePending(blockHash []byte) error {
 
-	bhl := &blockHashList{blockList: make(map[string]struct{}, 0)}
-	iter := chain.Iterator()
+	b, ok := pool.block(blockHash)
+	if !ok {
+		return errors.New("updatePending is error")
+	}
+
+	b.txMap.Range(func(key, value interface{}) bool {
+
+		pool.delTxInPending(key.([]byte))
+		return true
+	})
+
+	return nil
+}
+
+func (pool *TxPoolImpl) updateForkChain(headNode *blockcache.BlockCacheNode) TFork {
+
+	if pool.forkChain.NewHead == nil {
+		pool.forkChain.NewHead = headNode
+		return NotFork
+	}
+
+	if bytes.Equal(pool.forkChain.NewHead.Block.Hash(), headNode.Block.Head.ParentHash) {
+		pool.forkChain.NewHead = headNode
+		return NotFork
+	}
+
+	pool.forkChain.OldHead, pool.forkChain.NewHead = pool.forkChain.NewHead, headNode
+
+	hash, ok := pool.fundForkBlockHash(pool.forkChain.NewHead.Block.Hash(), pool.forkChain.OldHead.Block.Hash())
+	if !ok {
+		return ForkError
+	}
+
+	pool.forkChain.ForkBlockHash = hash
+
+	return Fork
+}
+
+func (pool *TxPoolImpl) fundForkBlockHash(newHash []byte, oldHash []byte) ([]byte, bool) {
+	n := newHash
+	o := oldHash
+
+	if bytes.Equal(n, o) {
+		return n, true
+	}
+
 	for {
-		blk := iter.Next()
-		if blk == nil {
+
+		forkHash, ok := pool.fundBlockInChain(n, o)
+		if ok {
+			return forkHash, true
+		}
+
+		b, ok := pool.block(n)
+		if !ok {
+			bb, err := pool.chain.FindBlock(n)
+			if err != nil {
+				log.Log.E("tx_pool - fundForkBlockHash FindBlock error")
+				return nil, false
+			}
+
+			if err = pool.addBlock(bb); err != nil {
+				log.Log.E("tx_pool - fundForkBlockHash addBlock error")
+				return nil, false
+			}
+
+			b, ok = pool.block(n)
+			if !ok {
+				log.Log.E("tx_pool - fundForkBlockHash block error")
+				return nil, false
+			}
+		}
+
+		n = b.ParentHash
+
+		if bytes.Equal(pool.chain.LinkedTree.Block.Head.ParentHash, b.ParentHash) {
+			return nil, false
+		}
+
+	}
+
+	return nil, false
+}
+
+func (pool *TxPoolImpl) fundBlockInChain(hash []byte, chainHead []byte) ([]byte, bool) {
+	h := hash
+	c := chainHead
+
+	if bytes.Equal(h, c) {
+		return h, true
+	}
+
+	for {
+		b, ok := pool.block(c)
+		if !ok {
+			return nil, false
+		}
+
+		if bytes.Equal(b.ParentHash, h) {
+			return h, true
+		}
+
+		c = b.ParentHash
+
+	}
+
+	return nil, false
+}
+
+func (pool *TxPoolImpl) doChainChange() error {
+
+	n := pool.forkChain.NewHead.Block.Hash()
+	o := pool.forkChain.OldHead.Block.Hash()
+	f := pool.forkChain.ForkBlockHash
+
+	//Reply to txs
+	for {
+		b, err := pool.chain.FindBlock(o)
+		if err != nil {
+			return err
+		}
+
+		for _, v := range b.Content {
+			pool.addTx(&v)
+		}
+
+		if bytes.Equal(b.Head.ParentHash, f) {
 			break
 		}
-		bhl.Add(blk.HashID())
-	}
-	return bhl
-}
 
-func (pool *TxPoolImpl) updateBlockHash(bhl *blockHashList) {
-	pool.mu.RLock()
-	defer pool.mu.RUnlock()
-
-	for hash := range bhl.GetList() {
-		pool.longestChainHash.Add(hash)
-	}
-}
-
-type hashMap struct {
-	hashList map[string]struct{}
-	time     int64
-}
-
-func (h *hashMap) Add(hash string) {
-	h.hashList[hash] = struct{}{}
-}
-
-func (h *hashMap) Exist(txHash string) bool {
-	if _, b := h.hashList[txHash]; b {
-		return true
+		o = b.Head.ParentHash
 	}
 
-	return false
-}
+	//Duplicate txs
+	for {
+		b, ok := pool.block(n)
+		if !ok {
+			return errors.New("doForkChain is error")
+		}
 
-func (h *hashMap) Del(hash string) {
-	delete(h.hashList, hash)
-}
+		b.txMap.Range(func(key, value interface{}) bool {
+			pool.delTxInPending(key.([]byte))
+			return true
+		})
 
-func (h *hashMap) Clear() {
-	h.hashList = nil
-	h.hashList = make(map[string]struct{})
+		if bytes.Equal(b.ParentHash, f) {
+			break
+		}
+
+		n = b.ParentHash
+	}
+
+	return nil
 }
 
 type blockTx struct {
-	txMap sync.Map
-	cTime int64
+	txMap      sync.Map
+	ParentHash []byte
+	cTime      int64
 }
 
 func (b *blockTx) time() int64 {
@@ -425,6 +574,8 @@ func (b *blockTx) addBlock(ib *block.Block) {
 
 		b.txMap.Store(v.Hash(), nil)
 	}
+
+	b.ParentHash = ib.Head.ParentHash
 }
 
 func (b *blockTx) existTx(hash []byte) bool {
@@ -432,78 +583,4 @@ func (b *blockTx) existTx(hash []byte) bool {
 	_, r := b.txMap.Load(hash)
 
 	return r
-}
-
-type listTx struct {
-	list map[string]*tx.Tx
-}
-
-func (l *listTx) GetList() map[string]*tx.Tx {
-	return l.list
-}
-
-func (l *listTx) Add(Tx *tx.Tx) {
-	if _, ok := l.list[Tx.TxID()]; ok {
-		return
-	}
-
-	l.list[Tx.TxID()] = &tx.Tx{
-		Time:      Tx.Time,
-		Nonce:     Tx.Nonce,
-		Contract:  Tx.Contract,
-		Signs:     Tx.Signs,
-		Publisher: Tx.Publisher,
-		Recorder:  Tx.Recorder,
-	}
-}
-
-func (l listTx) Len() int {
-	return len(l.list)
-}
-
-func (l listTx) Del(hash string) {
-	delete(l.list, hash)
-
-}
-
-func (l listTx) Exist(hash string) bool {
-	if _, b := l.list[hash]; b {
-		return true
-	}
-
-	return false
-}
-
-func (l listTx) Get(hash string) *tx.Tx {
-	return l.list[hash]
-}
-
-func (l listTx) Clear() {
-	l.list = make(map[string]*tx.Tx, 0)
-}
-
-type blockHashList struct {
-	blockList map[string]struct{}
-}
-
-func (b *blockHashList) Add(hash string) {
-	if _, ok := b.blockList[hash]; ok {
-		return
-	}
-	b.blockList[hash] = struct{}{}
-}
-
-func (b *blockHashList) Del(hash string) {
-	if _, ok := b.blockList[hash]; ok {
-		delete(b.blockList, hash)
-	}
-}
-
-func (b *blockHashList) Clear() {
-	b.blockList = nil
-	b.blockList = make(map[string]struct{})
-}
-
-func (b *blockHashList) GetList() map[string]struct{} {
-	return b.blockList
 }

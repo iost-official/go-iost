@@ -58,7 +58,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 		blockChain, err := block.Instance()
 		if err != nil {
-			panic("block.Instance error")
+			panic("blockList.Instance error")
 		}
 
 		err = state.PoolInstance()
@@ -89,7 +89,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 			tx := genTx(accountList[0], 1)
 
-			tx.Time -= int64(filterTime*1e9 + 1*1e9)
+			tx.Time -= int64(expiration*1e9 + 1*1e9)
 			b := txPool.txTimeOut(&tx)
 			So(b, ShouldBeTrue)
 
@@ -100,7 +100,7 @@ func TestNewTxPoolServer(t *testing.T) {
 			tx := genTx(accountList[0], 1)
 			So(txPool.TransactionNum(), ShouldEqual, 0)
 
-			tx.Time -= int64(filterTime*1e9 + 1*1e9)
+			tx.Time -= int64(expiration*1e9 + 1*1e9)
 			txPool.addListTx(&tx)
 			So(txPool.TransactionNum(), ShouldEqual, 1)
 
@@ -304,7 +304,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 
 	blockChain, err := block.Instance()
 	if err != nil {
-		panic("block.Instance error")
+		panic("blockList.Instance error")
 	}
 
 	err = state.PoolInstance()
