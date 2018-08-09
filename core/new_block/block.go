@@ -6,9 +6,8 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/gogo/protobuf/proto"
 )
-
-//go:generate gencode go -schema=structs.schema -package=block
 
 type Block struct {
 	hash     []byte
@@ -27,26 +26,30 @@ func (d *Block) String() string {
 	str += "	}\n"
 
 	str += "	Txs {\n"
-	for _, tx := range d.Txs {
-		str += tx.String()
-	}
+	//for _, tx := range d.Txs {
+	//	//str += tx.String()
+	//}
 	str += "	}\n"
 	str += "	Receipts {\n"
-	for _, receipt := range d.Receipts {
-		str += receipt.String()
-	}
+	//for _, receipt := range d.Receipts {
+	//	str += receipt.String()
+	//}
 	str += "	}\n"
 	str += "}\n"
 	return str
 }
 */
 
-func (d *Block) CalculateTreeHash() []byte {
+func (d *Block) CalculateTxsHash() []byte {
 	treeHash := make([]byte, 0)
 	for _, tx := range d.Txs {
 		treeHash = append(treeHash, tx.Publisher.Sig...)
 	}
 	return common.Sha256(treeHash)
+}
+
+func (d *Block) CalculateMerkleHash() []byte {
+	return nil
 }
 
 func (d *Block) Encode() []byte {
@@ -58,8 +61,13 @@ func (d *Block) Encode() []byte {
 	for _, r := range d.Receipts {
 		rpts = append(rpts, r.Encode())
 	}
-	br := BlockRaw{d.Head, txs, rpts}
-	b, err := br.Marshal(nil)
+	br := &BlockRaw{
+		Head: &d.Head,
+		Txs: txs,
+		Receipts: rpts,
+	}
+
+	b, err := proto.Marshal(br)
 	if err != nil {
 		panic(err)
 	}
@@ -68,15 +76,15 @@ func (d *Block) Encode() []byte {
 }
 
 func (d *Block) Decode(bin []byte) (err error) {
-	var br BlockRaw
+	br := &BlockRaw{}
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
 		}
 	}()
 
-	_, err = br.Unmarshal(bin)
-	d.Head = br.Head
+	err = proto.Unmarshal(bin, br)
+	d.Head = *br.Head
 	for _, t := range br.Txs {
 		var tt tx.Tx
 		err = tt.Decode(t)
@@ -124,7 +132,7 @@ func (d *Block) LenTx() int {
 }
 
 func (d *BlockHead) Encode() []byte {
-	bin, err := d.Marshal(nil)
+	bin, err := proto.Marshal(d)
 	if err != nil {
 		panic(err)
 	}
@@ -132,7 +140,7 @@ func (d *BlockHead) Encode() []byte {
 }
 
 func (d *BlockHead) Decode(bin []byte) error {
-	_, err := d.Unmarshal(bin)
+	err := proto.Unmarshal(bin, d)
 	return err
 }
 

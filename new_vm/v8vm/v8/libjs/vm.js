@@ -1,38 +1,64 @@
 'use strict'
 
-function makeRequireFunction(mod) {
-    const NativeModule = mod.constructor;
-
-    function require(path) {
-        return mod.require(path);
-    }
-
-    require.cache = NativeModule._cache;
-
-    return require;
-}
-
-function NativeModule(id, parent) {
+function NativeModule(id) {
+    this.filename = id + '.js';
     this.id = id;
     this.exports = {};
-    this.parent = parent;
+    this.loaded = false;
 }
 
-NativeModule._load = function(request, parent) {
-    _native_require(request);
-    return module.exports
-}
+NativeModule._cache = {};
 
-NativeModule.prototype.require = function (id) {
-    if (typeof id !== 'string') {
-        throw "id not string";
+NativeModule.require = function (id) {
+    if (id == '_native_module') {
+        return NativeModule;
     }
-    if (id === '') {
-        throw "id empty string";
-    }
-    return NativeModule._load(id, this);
-}
 
-const module = new NativeModule();
-const require = makeRequireFunction(module);
-const exports = {};
+    var cached = NativeModule.getCached(id);
+    if (cached) {
+        return cached.exports;
+    }
+
+    var nativeModule = new NativeModule(id);
+    nativeModule.compile();
+    nativeModule.cache();
+
+    return nativeModule.exports;
+};
+
+NativeModule.getCached = function(id) {
+    return NativeModule._cache[id];
+};
+
+NativeModule.getSource = function(id) {
+    return _native_require(id);
+};
+
+NativeModule.wrap = function(script) {
+    return NativeModule.wrapper[0] + script + NativeModule.wrapper[1];
+};
+
+NativeModule.wrapper = [
+    '(function (exports, require, module, __filename, __dirname) {\n',
+    '\n});'
+];
+
+NativeModule.prototype.compile = function () {
+    var source = NativeModule.getSource(this.id);
+    source = NativeModule.wrap(source);
+
+    var fn = _native_run(source, this.filename);
+    fn(this.exports, NativeModule.require, this, this.filename);
+
+    this.loaded = true;
+};
+
+NativeModule.prototype.cache = function() {
+    NativeModule._cache[this.id] = this;
+};
+
+var require = NativeModule.require;
+
+var IOSTContractStorage = require('storage');
+var BlockChainContractStorage = require('blockchain');
+var bigNumber = require('bignumber');

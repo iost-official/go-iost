@@ -45,5 +45,8 @@ func requireModule(cSbx C.SandboxPtr, moduleId *C.char) *C.char {
 	}
 
 	m := sbx.modules.Get(id)
+	if m == nil {
+		return nil
+	}
 	return C.CString(m.code)
 }

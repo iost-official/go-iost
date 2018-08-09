@@ -2,30 +2,58 @@ package pob
 
 import (
 	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 )
+
+var staticProp globalStaticProperty
+var dynamicProp globalDynamicProperty
 
 type globalStaticProperty struct {
 	Account
-	NumberOfWitnesses  int
-	WitnessList        []string
-	Watermark		   map[string]int
-	SlotMap			   map[string]string
-	Producing		   bool
+	NumberOfWitnesses int
+	WitnessList       []string
+	Watermark         map[string]uint64
+	SlotMap           map[uint64]map[string]bool
 }
 
 func newGlobalStaticProperty(acc Account, witnessList []string) globalStaticProperty {
 	prop := globalStaticProperty{
-		Account:            acc,
-		NumberOfWitnesses:  len(witnessList),
-		WitnessList:        witnessList,
+		Account:           acc,
+		NumberOfWitnesses: len(witnessList),
+		WitnessList:       witnessList,
+		Watermark:         make(map[string]uint64),
+		SlotMap:           make(map[uint64]map[string]bool),
 	}
 	return prop
 }
 
 func (prop *globalStaticProperty) updateWitnessList(newList []string) {
 	prop.WitnessList = newList
+	prop.NumberOfWitnesses = len(newList)
+}
+
+func (prop *globalStaticProperty) hasSlotWitness(slot uint64, witness string) bool {
+	if prop.SlotMap[slot] == nil {
+		return false
+	} else {
+		return prop.SlotMap[slot][witness]
+	}
+}
+
+func (prop *globalStaticProperty) addSlotWitness(slot uint64, witness string) {
+	if prop.SlotMap[slot] == nil {
+		prop.SlotMap[slot] = make(map[string]bool)
+	}
+	prop.SlotMap[slot][witness] = true
+}
+
+func (prop *globalStaticProperty) delSlotWitness(slotStart uint64, slotEnd uint64) {
+	for slot := slotStart; slot <= slotEnd; slot++ {
+		if _, has := prop.SlotMap[slot]; has {
+			delete(prop.SlotMap, slot)
+		}
+	}
 }
 
 func getIndex(element string, list []string) int {
@@ -37,26 +65,24 @@ func getIndex(element string, list []string) int {
 	return -1
 }
 
-const (
+var (
 	slotPerWitness      = 1
 	maintenanceInterval = 24
 )
 
 type globalDynamicProperty struct {
-	LastBlockNumber          int64
-	LastBlockTime            Timestamp
-	LastBLockHash            []byte
-	TotalSlots               int64
-	LastConfirmedBlockNumber int32
-	NextMaintenanceTime      Timestamp
+	LastBlockNumber     int64
+	LastBlockTime       Timestamp
+	LastBLockHash       []byte
+	TotalSlots          int64
+	NextMaintenanceTime Timestamp
 }
 
 func newGlobalDynamicProperty() globalDynamicProperty {
 	prop := globalDynamicProperty{
-		LastBlockNumber:          0,
-		LastBlockTime:            Timestamp{Slot: 0},
-		TotalSlots:               0,
-		LastConfirmedBlockNumber: 0,
+		LastBlockNumber: 0,
+		LastBlockTime:   Timestamp{Slot: 0},
+		TotalSlots:      0,
 	}
 	prop.NextMaintenanceTime.AddHour(maintenanceInterval)
 	return prop
@@ -80,43 +106,43 @@ func (prop *globalDynamicProperty) slotToTimestamp(slot int64) *Timestamp {
 	return &Timestamp{Slot: slot}
 }
 
-func witnessOfSec(sp *globalStaticProperty, dp *globalDynamicProperty, sec int64) string {
+func witnessOfSec(sec int64) string {
 	time := GetTimestamp(sec)
-	return witnessOfTime(sp, dp, time)
+	return witnessOfTime(time)
 }
 
-func witnessOfTime(sp *globalStaticProperty, dp *globalDynamicProperty, time Timestamp) string {
+func witnessOfTime(time Timestamp) string {
 
-	currentSlot := dp.timestampToSlot(time)
-	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
-	index := ((currentSlot % slotsEveryTurn) + slotsEveryTurn) % slotsEveryTurn
-	index /= slotPerWitness
-	witness := sp.WitnessList[index]
+	currentSlot := dynamicProp.timestampToSlot(time)
+	slotsEveryTurn := int64(staticProp.NumberOfWitnesses * slotPerWitness)
+	index := currentSlot % slotsEveryTurn
+	index /= int64(slotPerWitness)
+	witness := staticProp.WitnessList[index]
 
 	return witness
 }
 
-func timeUntilNextSchedule(sp *globalStaticProperty, dp *globalDynamicProperty, timeSec int64) int64 {
+func timeUntilNextSchedule(timeSec int64) int64 {
 	var index int
-	if index = getIndex(sp.Account.GetId(), sp.WitnessList); index < 0 {
-		return dp.NextMaintenanceTime.ToUnixSec()
+	if index = getIndex(staticProp.Account.GetId(), staticProp.WitnessList); index < 0 {
+		return dynamicProp.NextMaintenanceTime.ToUnixSec()
 	}
 
 	time := GetTimestamp(timeSec)
-	currentSlot := dp.timestampToSlot(time)
-	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
+	currentSlot := dynamicProp.timestampToSlot(time)
+	slotsEveryTurn := int64(staticProp.NumberOfWitnesses * slotPerWitness)
 	k := currentSlot / slotsEveryTurn
 	startSlot := k*slotsEveryTurn + int64(index*slotPerWitness)
 	if startSlot > currentSlot {
-		return dp.slotToTimestamp(startSlot).ToUnixSec() - timeSec
+		return dynamicProp.slotToTimestamp(startSlot).ToUnixSec() - timeSec
 	}
-	if currentSlot-startSlot < slotPerWitness {
-		if time.Slot > dp.LastBlockTime.Slot {
+	if currentSlot-startSlot < int64(slotPerWitness) {
+		if time.Slot > dynamicProp.LastBlockTime.Slot {
 			return 0
-		} else if currentSlot+1 < startSlot+slotPerWitness {
-			return dp.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
+		} else if currentSlot+1 < startSlot+int64(slotPerWitness) {
+			return dynamicProp.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
 		}
 	}
 	nextSlot := (k+1)*slotsEveryTurn + int64(index*slotPerWitness)
-	return dp.slotToTimestamp(nextSlot).ToUnixSec() - timeSec
+	return dynamicProp.slotToTimestamp(nextSlot).ToUnixSec() - timeSec
 }

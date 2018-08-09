@@ -1,16 +1,19 @@
 package contract
 
-type Cost struct {
-	Data uint64
-	Net  uint64
-	CPU  uint64
-}
+//type CostOld struct {
+//	Data int64
+//	Net  int64
+//	CPU  int64
+//}
 
-func (c Cost) ToGas() uint64 {
+func (c Cost) ToGas() int64 {
 	return c.Data + c.Net + c.CPU
 }
 
 func (c *Cost) AddAssign(a *Cost) {
+	if a == nil {
+		return
+	}
 	c.Data += a.Data
 	c.Net += a.Net
 	c.CPU += a.CPU
@@ -18,4 +21,8 @@ func (c *Cost) AddAssign(a *Cost) {
 
 func Cost0() *Cost {
 	return &Cost{}
+}
+
+func NewCost(data, net, cpu int64) *Cost {
+	return &Cost{data, net, cpu}
 }

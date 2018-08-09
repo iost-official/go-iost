@@ -28,9 +28,10 @@ type Storage interface {
 	Get(key []byte) ([]byte, error)
 	Put(key []byte, value []byte) error
 	Del(key []byte) error
-	Keys(key []byte) ([][]byte, error)
+	Keys(prefix []byte) ([][]byte, error)
 	BeginBatch() error
 	CommitBatch() error
+	Close() error
 }
 
 type MVCCDB struct {
@@ -44,14 +45,14 @@ type MVCCDB struct {
 	storage   Storage
 }
 
-func (m *MVCCDB) NewMVCCDB(path string) (*MVCCDB, error) {
+func NewMVCCDB(path string) (*MVCCDB, error) {
 	storage, err := storage.NewLevelDB(path)
 	if err != nil {
 		return nil, err
 	}
 	tag, err := storage.Get([]byte(string(SEPARATOR) + "tag"))
 	if err != nil {
-		return nil, err
+		tag = []byte("")
 	}
 	head := trie.New()
 	stage := head.Fork()
@@ -261,4 +262,8 @@ func (m *MVCCDB) Flush(t string) error {
 		}
 	}
 	return nil
+}
+
+func (m *MVCCDB) Close() error {
+	return m.storage.Close()
 }
