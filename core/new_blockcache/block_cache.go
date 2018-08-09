@@ -107,6 +107,15 @@ func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *Block
 	return &bcn
 }
 
+type BlockCacheInterface interface {
+	Add(blk *block.Block) (*BlockCacheNode, error)
+	Link(bcn *BlockCacheNode)
+	Del(bcn *BlockCacheNode)
+	Flush(bcn *BlockCacheNode)
+	Find(hash []byte) (*BlockCacheNode, error)
+	GetBlockByNumber(num uint64) (*block.Block, error)
+	Draw()
+}
 type BlockCache struct {
 	LinkedTree *BlockCacheNode
 	SingleTree *BlockCacheNode
@@ -325,6 +334,17 @@ func (bc *BlockCache) Flush(bcn *BlockCacheNode) {
 func (bc *BlockCache) Find(hash []byte) (*BlockCacheNode, error) {
 	bcn, ok := bc.hmget(hash)
 	return bcn, IF(ok, nil, errors.New("block not found")).(error)
+}
+
+func (bc *BlockCache) GetBlockByNumber(num uint64) (*block.Block, error) {
+	it := bc.Head
+	for it.Parent != nil {
+		if it.Number == num {
+			return it.Block, nil
+		}
+		it = it.Parent
+	}
+	return nil, fmt.Errorf("cant find the block")
 }
 
 //for debug

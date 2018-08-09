@@ -77,6 +77,7 @@ func TestBlockCache(t *testing.T) {
 			So(bc.Head, ShouldEqual, b1node)
 
 		})
+
 		Convey("Flush", func() {
 			bc := NewBlockCache(nil)
 			bc.Add(b1)
@@ -103,5 +104,39 @@ func TestBlockCache(t *testing.T) {
 			//bc.Draw()
 
 		})
+
+		Convey("GetBlockbyNumber", func() {
+			bc := NewBlockCache(nil)
+			b1node, _ := bc.Add(b1)
+			//bc.Draw()
+			b2node, _ := bc.Add(b2)
+			//bc.Draw()
+			bc.Add(b2a)
+			//bc.Draw()
+			bc.Add(b3)
+			//bc.Draw()
+			b4node, _ := bc.Add(b4)
+			//bc.Draw()
+			b3anode, _ := bc.Add(b3a)
+			//bc.Draw()
+			b5node, _ := bc.Add(b5)
+			//bc.Draw()
+			So(bc.Head, ShouldEqual, b5node)
+			blk, _ := bc.GetBlockByNumber(uint64(7))
+			So(blk, ShouldEqual, b5node.Block)
+			blk, _ = bc.GetBlockByNumber(uint64(6))
+			So(blk, ShouldEqual, b3anode.Block)
+			blk, _ = bc.GetBlockByNumber(uint64(2))
+			So(blk, ShouldEqual, b2node.Block)
+			blk, _ = bc.GetBlockByNumber(uint64(1))
+			So(blk, ShouldEqual, b1node.Block)
+			blk, _ = bc.GetBlockByNumber(uint64(4))
+			So(blk, ShouldEqual, nil)
+
+			bc.Flush(b4node)
+			//bc.Draw()
+
+		})
+
 	})
 }
