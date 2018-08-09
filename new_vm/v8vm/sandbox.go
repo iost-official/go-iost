@@ -69,7 +69,7 @@ func (sbx *Sandbox) SetModule(name, code string) {
 }
 
 func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args []interface{}) (string, error) {
-	name := contract.Name
+	name := contract.ID
 	code := contract.Code
 
 	sbx.SetModule(name, code)
@@ -99,8 +99,12 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
 		err = errors.New(C.GoString(rs.Err))
 	}
 
-	C.free(unsafe.Pointer(rs.Value))
-	C.free(unsafe.Pointer(rs.Err))
+	if rs.Value != nil {
+		C.free(unsafe.Pointer(rs.Value))
+	}
+	if rs.Err != nil {
+		C.free(unsafe.Pointer(rs.Err))
+	}
 
 	return result, err
 }

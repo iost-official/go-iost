@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var (
