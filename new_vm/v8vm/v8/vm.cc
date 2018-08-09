@@ -16,7 +16,10 @@
 #include <thread>
 #include <stdlib.h>
 #include <stdio.h>
+#include <thread>
 #include <iostream>
+#include <unistd.h>
+#include <chrono>
 
 using namespace v8;
 
@@ -242,7 +245,49 @@ void LoadVM(Isolate *isolate) {
     }
 }
 
-ValueTuple Execute(SandboxPtr ptr, const char *code) {
+//ValueTuple Execute(SandboxPtr ptr, const char *code) {
+//    Sandbox *sbx = static_cast<Sandbox*>(ptr);
+//    Isolate *isolate = sbx->isolate;
+//
+//    Locker locker(isolate);
+//    Isolate::Scope isolate_scope(isolate);
+//
+//    HandleScope handle_scope(isolate);
+//    Context::Scope context_scope(sbx->context.Get(isolate));
+
+//    LoadModule(isolate);
+//    LoadStorage(isolate);
+//    LoadBigNumber(isolate);
+//    LoadVM(isolate);
+//
+//    TryCatch tryCatch(isolate);
+//    tryCatch.SetVerbose(false);
+//
+//    Local<String> source = String::NewFromUtf8(isolate, code, NewStringType::kNormal).ToLocalChecked();
+//    Local<String> fileName = String::NewFromUtf8(isolate, "_default_name.js", NewStringType::kNormal).ToLocalChecked();
+//    Local<Script> script = Script::Compile(source, fileName);
+//
+//    ValueTuple res = { nullptr, nullptr };
+//    if (script.IsEmpty()) {
+//        std::string exception = report_exception(isolate, sbx->context.Get(isolate), tryCatch);
+//        res.Err = copyString(exception);
+//        return res;
+//    }
+//
+//    Local<Value> result = script->Run();
+//
+//    if (result.IsEmpty()) {
+//        std::string exception = report_exception(isolate, sbx->context.Get(isolate), tryCatch);
+//        res.Err = copyString(exception);
+//    } else {
+//        String::Utf8Value retV8Str(isolate, result);
+//        res.Value = strdup(ToCString(retV8Str));
+//    }
+//
+//    return res;
+//}
+
+void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -252,9 +297,6 @@ ValueTuple Execute(SandboxPtr ptr, const char *code) {
     HandleScope handle_scope(isolate);
     Context::Scope context_scope(sbx->context.Get(isolate));
 
-//    LoadModule(isolate);
-//    LoadStorage(isolate);
-//    LoadBigNumber(isolate);
     LoadVM(isolate);
 
     TryCatch tryCatch(isolate);
@@ -264,22 +306,52 @@ ValueTuple Execute(SandboxPtr ptr, const char *code) {
     Local<String> fileName = String::NewFromUtf8(isolate, "_default_name.js", NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
 
-    ValueTuple res = { nullptr, nullptr };
     if (script.IsEmpty()) {
         std::string exception = report_exception(isolate, sbx->context.Get(isolate), tryCatch);
-        res.Err = copyString(exception);
-        return res;
+        error = exception;
+        return;
     }
 
-    Local<Value> result = script->Run();
+    Local<Value> ret = script->Run();
 
-    if (result.IsEmpty()) {
+    if (ret.IsEmpty()) {
         std::string exception = report_exception(isolate, sbx->context.Get(isolate), tryCatch);
-        res.Err = copyString(exception);
-    } else {
-        String::Utf8Value retV8Str(isolate, result);
-        res.Value = strdup(ToCString(retV8Str));
+        error = exception;
+        return;
     }
 
+    String::Utf8Value retV8Str(isolate, ret);
+    result = *retV8Str;
+}
+
+ValueTuple Execute(SandboxPtr ptr, const char *code) {
+    Sandbox *sbx = static_cast<Sandbox*>(ptr);
+    Isolate *isolate = sbx->isolate;
+
+    std::string result;
+    std::string error;
+    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error));
+    exec.detach();
+
+    ValueTuple res = { nullptr, nullptr };
+    auto startTime = std::chrono::steady_clock::now();
+    while(true) {
+        if (error.length() > 0) {
+            res.Err = copyString(error);
+            break;
+        }
+        if (result.length() > 0) {
+            res.Value = copyString(result);
+            break;
+        }
+        auto now = std::chrono::steady_clock::now();
+        auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
+        if (execTime > 200) {
+            isolate->TerminateExecution();
+            res.Err = strdup("execution killed");
+            break;
+        }
+        usleep(10);
+    }
     return res;
 }

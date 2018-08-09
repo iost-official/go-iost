@@ -26,9 +26,7 @@ func TestEngine_LoadAndCall(t *testing.T) {
 	host := new_vm.NewHost(ctx, vi)
 
 	code := &contract.Contract{
-		ContractInfo: contract.ContractInfo{
-			Name: "test.js",
-		},
+		ID: "test.js",
 		Code: `
 var Contract = function() {
 }
@@ -68,9 +66,7 @@ var Contract = function() {
 //	host := new_vm.NewHost(ctx, vi)
 //
 //	code := &contract.Contract{
-//		ContractInfo: contract.ContractInfo{
-//			Name: "test.js",
-//		},
+//		ID: "test.js",
 //		Code: `
 //var Contract = function() {
 //};
@@ -112,9 +108,7 @@ func TestEngine_bigNumber(t *testing.T) {
 	host := new_vm.NewHost(ctx, vi)
 
 	code := &contract.Contract{
-		ContractInfo: contract.ContractInfo{
-			Name: "test.js",
-		},
+		ID: "test.js",
 		Code: `
 var Contract = function() {
 	this.val = new bigNumber(0.00000000008);
@@ -138,6 +132,45 @@ var Contract = function() {
 
 	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
 	rs, _,err := e.LoadAndCall(host, code, "getVal")
+
+	if err != nil {
+		t.Fatalf("LoadAndCall run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0] != "0.0000000000800029" {
+		t.Errorf("LoadAndCall except mySetVal, got %s\n", rs[0])
+	}
+}
+
+func TestEngine_infiniteLoop(t *testing.T) {
+	vi := Init(t)
+	ctx := context.Background()
+	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
+	ctx = context.WithValue(ctx, "contract_name", "contractName")
+	host := new_vm.NewHost(ctx, vi)
+
+	code := &contract.Contract{
+		ID: "test.js",
+		Code: `
+var Contract = function() {
+};
+
+	Contract.prototype = {
+	loop: function() {
+		while (true) {}
+	}
+	};
+
+	module.exports = Contract;
+`,
+	}
+
+	e := NewVM()
+	defer e.Release()
+	e.Init()
+
+
+	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
+	rs, _,err := e.LoadAndCall(host, code, "loop")
 
 	if err != nil {
 		t.Fatalf("LoadAndCall run error: %v\n", err)
