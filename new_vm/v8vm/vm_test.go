@@ -170,12 +170,9 @@ var Contract = function() {
 
 
 	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
-	rs, _,err := e.LoadAndCall(host, code, "loop")
+	_, _,err := e.LoadAndCall(host, code, "loop")
 
-	if err != nil {
-		t.Fatalf("LoadAndCall run error: %v\n", err)
-	}
-	if len(rs) != 1 || rs[0] != "0.0000000000800029" {
-		t.Errorf("LoadAndCall except mySetVal, got %s\n", rs[0])
+	if err != nil && err.Error() != "execution killed" {
+		t.Fatalf("infiniteLoop run error: %v\n", err)
 	}
 }

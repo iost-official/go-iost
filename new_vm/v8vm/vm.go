@@ -38,6 +38,21 @@ func (e *VM) Init() error {
 	return nil
 }
 
+func (e *VM) Run(code, api string, args ...interface{}) (string, error) {
+	contr := &contract.Contract{
+		ID: "run_id",
+		Code: code,
+	}
+
+	preparedCode, err := e.sandbox.Prepare(contr, api, args)
+	if err != nil {
+		return "", err
+	}
+
+	rs, err := e.sandbox.Execute(preparedCode)
+	return rs, err
+}
+
 // LoadAndCall load contract code with provide contract, and call api with args
 func (e *VM) LoadAndCall(host *new_vm.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 	defer func() {
