@@ -16,7 +16,6 @@ import (
 
 // Tx Transaction 的实现
 type Tx struct {
-	Id         string  // not used yet
 	hash       []byte
 	Time       int64
 	Expiration int64
@@ -68,7 +67,6 @@ func (t *Tx) containSigner(pubkey []byte) bool {
 // Time,Noce,Contract形成的基本哈希值
 func (t *Tx) baseHash() []byte {
 	tr := &TxRaw{
-		Id:         t.Id,
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
@@ -104,7 +102,6 @@ func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, erro
 // publishHash 发布者使用的hash值，包含参与者的签名
 func (t *Tx) publishHash() []byte {
 	tr := &TxRaw{
-		Id:         t.Id,
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
@@ -135,7 +132,6 @@ func (t *Tx) publishHash() []byte {
 
 func (t *Tx) ToTxRaw() *TxRaw {
 	tr := &TxRaw{
-		Id:         t.Id,
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
@@ -175,7 +171,6 @@ func (t *Tx) Encode() []byte {
 }
 
 func (t *Tx) FromTxRaw(tr *TxRaw) {
-	t.Id = tr.Id
 	t.Time = tr.Time
 	t.Expiration = tr.Expiration
 	t.GasLimit = tr.GasLimit
