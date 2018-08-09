@@ -1,8 +1,8 @@
-#include "v8.h"
+#include "sandbox.h"
 #include "require.h"
 #include "storage.h"
 #include "blockchain.h"
-#include "sandbox.h"
+#include "instruction.h"
 
 #include <assert.h>
 #include <cstring>
@@ -16,13 +16,6 @@
 #include <iostream>
 #include <unistd.h>
 #include <chrono>
-
-using namespace v8;
-
-typedef struct {
-  Persistent<Context> context;
-  Isolate *isolate;
-} Sandbox;
 
 #define NATIVE_LIB_PATH "v8/libjs/"
 
@@ -88,6 +81,7 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
 
     InitRequire(isolate, global);
     InitStorage(isolate, global);
+    InitInstruction(isolate, global);
 
     global->Set(
               String::NewFromUtf8(isolate, "_native_log", NewStringType::kNormal)
@@ -123,6 +117,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     //sbx->context.Reset(isolate, Context::New(isolate, nullptr, globalTpl));
     sbx->context.Reset(isolate, context);
     sbx->isolate = isolate;
+    sbx->gasCount = 0;
 
     return static_cast<SandboxPtr>(sbx);
 }
