@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 func TestConfirmNode(t *testing.T) {
@@ -202,6 +203,100 @@ func TestNodeInfoUpdate(t *testing.T) {
 			updateNodeInfo(node)
 			confirmNode = calculateConfirm(node, bc.LinkedTree)
 			So(confirmNode.Number, ShouldEqual, 4)
+		})
+	})
+}
+
+
+func TestVerifyBasics(t *testing.T) {
+	Convey("Test of verify basics", t, func() {
+		sec := common.Sha256([]byte("sec of id0"))
+		account0, _ := account.NewAccount(sec)
+		sec = common.Sha256([]byte("sec of id1"))
+		account1, _ := account.NewAccount(sec)
+		staticProp = newGlobalStaticProperty(account1, []string{account0.ID, account1.ID, "id2"})
+		Convey("Normal (self block)", func() {
+			blk := &block.Block{
+				Head: block.BlockHead{
+					Time: 1,
+					Witness: account1.ID,
+				},
+			}
+			info := generateHeadInfo(blk.Head)
+			sig, _ := common.Sign(common.Secp256k1, info, account1.Seckey)
+			blk.Head.Signature = sig.Encode()
+
+			err := verifyBasics(blk)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Normal (other's block)", func() {
+			blk := &block.Block{
+				Head: block.BlockHead{
+					Time: 0,
+					Witness: account0.ID,
+				},
+			}
+			info := generateHeadInfo(blk.Head)
+			sig, _ := common.Sign(common.Secp256k1, info, account0.Seckey)
+			blk.Head.Signature = sig.Encode()
+
+			err := verifyBasics(blk)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Wrong witness/pubkey/signature", func() {
+			blk := &block.Block{
+				Head: block.BlockHead{
+					Time: 1,
+					Witness: account0.ID,
+				},
+			}
+			err := verifyBasics(blk)
+			So(err, ShouldEqual, ErrWitness)
+
+			blk.Head.Witness = account1.ID
+			info := generateHeadInfo(blk.Head)
+			sig, _ := common.Sign(common.Secp256k1, info, account0.Seckey)
+			blk.Head.Signature = sig.Encode()
+			err = verifyBasics(blk)
+			So(err, ShouldEqual, ErrPubkey)
+
+			info = generateHeadInfo(blk.Head)
+			sig, _ = common.Sign(common.Secp256k1, info, account1.Seckey)
+			blk.Head.Signature = sig.Encode()
+			blk.Head.Info = []byte("fake info")
+			err = verifyBasics(blk)
+			So(err, ShouldEqual, ErrSignature)
+		})
+
+		Convey("Slot witness duplicate", func() {
+			blk := &block.Block{
+				Head: block.BlockHead{
+					Time: 0,
+					Witness: account0.ID,
+					Info: []byte("first one"),
+				},
+			}
+			info := generateHeadInfo(blk.Head)
+			sig, _ := common.Sign(common.Secp256k1, info, account0.Seckey)
+			blk.Head.Signature = sig.Encode()
+			err := verifyBasics(blk)
+			So(err, ShouldBeNil)
+
+			staticProp.addSlotWitness(0, account0.ID)
+			blk = &block.Block{
+				Head: block.BlockHead{
+					Time: 0,
+					Witness: account0.ID,
+					Info: []byte("second one"),
+				},
+			}
+			info = generateHeadInfo(blk.Head)
+			sig, _ = common.Sign(common.Secp256k1, info, account0.Seckey)
+			blk.Head.Signature = sig.Encode()
+			err = verifyBasics(blk)
+			So(err, ShouldEqual, ErrSlotWitness)
 		})
 	})
 }
