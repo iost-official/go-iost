@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/db"
+	"sync"
+
+	"github.com/iost-official/Go-IOS-Protocol/core/global"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/prometheus/client_golang/prometheus"
-	"sync"
 )
 
 var (
@@ -113,6 +114,7 @@ type BlockCache struct {
 	Head       *BlockCacheNode
 	hash2node  *sync.Map
 	Leaf       map[*BlockCacheNode]uint64
+	glb        global.Global
 }
 
 var (
@@ -138,25 +140,25 @@ func (bc *BlockCache) hmdel(hash []byte) {
 	bc.hash2node.Delete(string(hash))
 }
 
-var StateDB *db.MVCCDB
-
-func NewBlockCache(MVCCDB *db.MVCCDB) *BlockCache {
-	StateDB = MVCCDB
+func NewBlockCache(glb global.Global) (*BlockCache, error) {
 	bc := BlockCache{
 		LinkedTree: NewBCN(nil, nil, Linked),
 		SingleTree: NewBCN(nil, nil, Single),
 		hash2node:  new(sync.Map),
 		Leaf:       make(map[*BlockCacheNode]uint64),
+		glb:        glb,
 	}
 	bc.Head = bc.LinkedTree
-	blkchain := block.BChain
-	lib := blkchain.Top()
+
+	lib, err := glb.BlockChain().Top()
+	if err != nil {
+	}
 	bc.LinkedTree.Block = lib
 	if lib != nil {
 		bc.hmset(lib.HeadHash(), bc.LinkedTree)
 	}
 	bc.Leaf[bc.LinkedTree] = bc.LinkedTree.Number
-	return &bc
+	return &bc, nil
 }
 
 //call this when you run the block verify after Add() to ensure add single bcn to linkedTree
@@ -167,7 +169,9 @@ func (bc *BlockCache) Link(bcn *BlockCacheNode) {
 	bcn.Type = Linked
 	delete(bc.Leaf, bcn.Parent)
 	bc.Leaf[bcn] = bcn.Number
-	bc.updateLongest()
+	if bcn.Number > bc.Head.Number {
+		bc.updateLongest()
+	}
 }
 
 func (bc *BlockCache) updateLongest() {
@@ -195,7 +199,7 @@ func (bc *BlockCache) Add(blk *block.Block) (*BlockCacheNode, error) {
 	bcnType := IF(ok, Linked, Single).(BCNType)
 	fa := IF(ok, parent, bc.SingleTree).(*BlockCacheNode)
 	newNode = NewBCN(fa, blk, bcnType)
-	delete(bc.Leaf,fa)
+	delete(bc.Leaf, fa)
 	if ok {
 		code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
 	} else {
@@ -252,7 +256,6 @@ func (bc *BlockCache) mergeSingle(newNode *BlockCacheNode) {
 		if bytes.Equal(bcn.Block.Head.ParentHash, block.HeadHash()) {
 			bcn.Parent.delChild(bcn)
 			newNode.addChild(bcn)
-
 		}
 	}
 	return
@@ -282,22 +285,27 @@ func (bc *BlockCache) flush(cur *BlockCacheNode, retain *BlockCacheNode) error {
 		bc.Del(child)
 	}
 	//confirm retain to db
-	blkchain := block.BChain
 	if retain.Block != nil {
-		err := blkchain.Push(retain.Block)
+		err := bc.glb.BlockChain().Push(retain.Block)
 		if err != nil {
 			log.Log.E("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		/*
-			err = StateDB.Flush(string(retain.Block.HeadHash()))
+			err = bc.glb.StdPool().Flush(string(retain.Block.HeadHash()))
 			if err != nil {
 				log.Log.E("MVCCDB error, State Flush err:%v", err)
 				return err
 			}
 		*/
-		//AddConfirmBlock(retain.Block)
-		bc.hmdel(cur.Block.HeadHash())
+
+		err = bc.glb.TxDB().Push(retain.Block.Txs)
+		if err != nil {
+			log.Log.E("Database error, BlockChain Push err:%v", err)
+			return err
+		}
+		//bc.hmdel(cur.Block.HeadHash())
+		bc.delNode(cur)
 		retain.Parent = nil
 		bc.LinkedTree = retain
 
@@ -310,8 +318,8 @@ func (bc *BlockCache) Flush(bcn *BlockCacheNode) {
 		return
 	}
 	bc.flush(bcn.Parent, bcn)
-	bc.updateLongest()
 	bc.delSingle()
+	bc.updateLongest()
 	return
 }
 
