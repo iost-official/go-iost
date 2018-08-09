@@ -80,6 +80,28 @@ type TxPoolImpl struct {
 
 	mu sync.RWMutex
 }
+type TxsList []*tx.Tx
+
+func (s TxsList) Len() int { return len(s) }
+func (s TxsList) Less(i, j int) bool {
+	if s[i].GasPrice > s[j].GasPrice {
+		return true
+	}
+
+	if s[i].GasPrice == s[j].GasPrice {
+		if s[i].Time > s[j].Time {
+			return false
+		} else {
+			return true
+		}
+	}
+	return false
+}
+func (s TxsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
+func (s *TxsList) Push(x interface{}) {
+	*s = append(*s, x.(*tx.Tx))
+}
 
 func NewTxPoolImpl(chain blockcache.BlockCache, router network.Router, global global.Global) (TxPool, error) {
 
@@ -208,22 +230,24 @@ func (pool *TxPoolImpl) AddTx(tx message.Message) error {
 	return nil
 }
 
-func (pool *TxPoolImpl) PendingTxs(maxCnt int) (tx.TransactionsList, error) {
+func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 
-	pool.updatePending(maxCnt)
+	var pendingList TxsList
 
-	pool.mu.RLock()
-	defer pool.mu.RUnlock()
+	pool.pendingTx.Range(func(key, value interface{}) bool {
+		pendingList = append(pendingList, value.(*tx.Tx))
 
-	var pendingList tx.TransactionsList
-	list := pool.pendingTx.GetList()
+		return true
+	})
 
-	for _, tx := range list {
-		pendingList = append(pendingList, tx)
-	}
 	sort.Sort(pendingList)
 
-	return pendingList, nil
+	len := len(pendingList)
+	if len >= maxCnt {
+		len = maxCnt
+	}
+
+	return pendingList[:len], nil
 }
 
 func (pool *TxPoolImpl) ExistTxs(hash string, chainNode *blockcache.BlockCacheNode) (FRet, error) {
