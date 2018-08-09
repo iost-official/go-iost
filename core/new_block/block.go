@@ -13,8 +13,8 @@ import (
 type Block struct {
 	hash     []byte
 	Head     BlockHead
-	Txs      []tx.Tx
-	Receipts []tx.TxReceipt
+	Txs      []*tx.Tx
+	Receipts []*tx.TxReceipt
 }
 
 /*
@@ -87,7 +87,7 @@ func (d *Block) Decode(bin []byte) (err error) {
 		if err != nil {
 			return err
 		}
-		d.Txs = append(d.Txs, tt)
+		d.Txs = append(d.Txs, &tt)
 	}
 	for _, r := range br.Receipts {
 		var rcpt tx.TxReceipt
@@ -95,7 +95,7 @@ func (d *Block) Decode(bin []byte) (err error) {
 		if err != nil {
 			return err
 		}
-		d.Receipts = append(d.Receipts, rcpt)
+		d.Receipts = append(d.Receipts, &rcpt)
 	}
 	return nil
 }
@@ -115,11 +115,11 @@ func (d *Block) HeadHash() []byte {
 	return d.hash
 }
 
-func (d *Block) GetTx(x int) tx.Tx {
+func (d *Block) GetTx(x int) *tx.Tx {
 	if x < len(d.Txs) {
 		return d.Txs[x]
 	} else {
-		return tx.Tx{}
+		return &tx.Tx{}
 	}
 }
 
