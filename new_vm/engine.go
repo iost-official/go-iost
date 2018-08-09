@@ -100,7 +100,9 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		c := e.host.db.Contract(action.Contract)
 		abi := c.ABI(action.ActionName)
 
-		// todo verify args
+		if abi == nil {
+			return nil, ErrABINotFound
+		}
 
 		args, err := unmarshalArgs(abi, action.Data)
 		if err != nil {
