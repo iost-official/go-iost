@@ -43,6 +43,7 @@ func TestPubkeyAndID(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		pubkey := makePubkey(randomSeckey())
 		id := GetIdByPubkey(pubkey)
+		//fmt.Println(id)
 		pub2 := GetPubkeyByID(id)
 		id2 := GetIdByPubkey(pub2)
 		if !strings.HasPrefix(id, "IOST") {

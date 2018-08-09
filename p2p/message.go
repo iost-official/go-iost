@@ -38,6 +38,11 @@ type MessagePriority uint8
 
 const (
 	Ping MessageType = iota + 1
+	SyncBlockHashRequest
+	SyncBlockHashResponse
+	SyncBlockRequest
+	SyncBlockResponse
+	NewBlockResponse
 
 	UrgentMessage = 1
 	NormalMessage = 2
@@ -140,7 +145,7 @@ func parseP2PMessage(data []byte) (*p2pMessage, error) {
 }
 
 type IncomingMessage struct {
-	from peer.ID
+	from PeerID
 	data []byte
 	typ  MessageType
 }
@@ -153,7 +158,7 @@ func newIncomingMessage(peerID peer.ID, data []byte, messageType MessageType) *I
 	}
 }
 
-func (m *IncomingMessage) From() peer.ID {
+func (m *IncomingMessage) From() PeerID {
 	return m.from
 }
 

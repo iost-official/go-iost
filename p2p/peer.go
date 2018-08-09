@@ -2,15 +2,20 @@ package p2p
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"time"
 
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
-	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	multiaddr "github.com/multiformats/go-multiaddr"
+	"github.com/uber-go/atomic"
 	"github.com/willf/bloom"
+)
+
+var (
+	ErrInactivePeer = errors.New("inactive peer")
 )
 
 const (
@@ -21,7 +26,6 @@ const (
 )
 
 type Peer struct {
-	peerInfo    *peerstore.PeerInfo
 	id          peer.ID
 	addr        multiaddr.Multiaddr
 	stream      libnet.Stream
@@ -29,6 +33,8 @@ type Peer struct {
 	urgentMsgCh chan *p2pMessage
 	normalMsgCh chan *p2pMessage
 	quitWriteCh chan struct{}
+
+	inactive atomic.Bool
 }
 
 func NewPeer(stream libnet.Stream) *Peer {
@@ -44,6 +50,20 @@ func NewPeer(stream libnet.Stream) *Peer {
 	return peer
 }
 
+func (p *Peer) Start() {
+	p.writeLoop()
+	p.readLoop()
+}
+
+func (p *Peer) Stop() {
+	p.inactive.Store(true)
+	close(p.quitWriteCh)
+}
+
+func (p *Peer) Inactive() bool {
+	return p.inactive.Load()
+}
+
 func (p *Peer) write(m *p2pMessage) error {
 	deadline := time.Now().Add(time.Duration(len(m.content())/1024/10+1) * time.Second)
 	if err := p.stream.SetWriteDeadline(deadline); err != nil {
@@ -52,7 +72,8 @@ func (p *Peer) write(m *p2pMessage) error {
 	}
 	_, err := p.stream.Write([]byte(*m))
 	if err != nil {
-		// TODO: log, close
+		// TODO: log
+		p.Stop()
 		return err
 	}
 	// TODO: metrics
@@ -78,7 +99,8 @@ func (p *Peer) readLoop() {
 	for {
 		_, err := io.ReadFull(p.stream, header)
 		if err != nil {
-			// TODO: log, close
+			// TODO: log
+			p.Stop()
 			return
 		}
 		// TODO: check chainID
@@ -86,13 +108,15 @@ func (p *Peer) readLoop() {
 		data := make([]byte, dataBegin+length)
 		_, err = io.ReadFull(p.stream, data[dataBegin:])
 		if err != nil {
-			// TODO: log, close
+			// TODO: log
+			p.Stop()
 			return
 		}
 		copy(data[0:dataBegin], header)
 		msg, err := parseP2PMessage(data)
 		if err != nil {
-			// TODO: log, close
+			// TODO: log
+			p.Stop()
 			return
 		}
 		p.handleMessage(msg)
@@ -100,6 +124,9 @@ func (p *Peer) readLoop() {
 }
 
 func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority) error {
+	if p.Inactive() {
+		return ErrInactivePeer
+	}
 	switch mp {
 	case UrgentMessage:
 		p.urgentMsgCh <- msg

@@ -77,7 +77,28 @@ extern void releaseSandbox(SandboxPtr ptr);
 
 extern ValueTuple Execute(SandboxPtr ptr, const char *code);
 
-extern char *requireModule(SandboxPtr, const char *);
+extern char *requireModule(SandboxPtr, char *);
+extern int goPut(SandboxPtr, char *, char *, size_t *);
+extern char *goGet(SandboxPtr, char *, size_t *);
+extern int goDel(SandboxPtr, char *, size_t *);
+extern void goMapPut(SandboxPtr, const char *, const char *, const char *, size_t *);
+extern void goMapGet(SandboxPtr, const char *, const char *, size_t *);
+extern void goMapDel(SandboxPtr, const char *, const char *, size_t *);
+extern void goMapKeys(SandboxPtr, const char *, size_t *);
+extern void goMapLen(SandboxPtr, const char *, size_t *);
+extern void goGlobalGet(SandboxPtr, const char *, const char *, size_t *);
+extern void goGlobalMapGet(SandboxPtr, const char *, const char *, const char *, size_t *);
+extern void goGlobalMapKeys(SandboxPtr, const char *, const char *, size_t *);
+extern void goGlobalMapLen(SandboxPtr, const char *, const char *, size_t *);
+// blockchain
+extern int goTransfer(SandboxPtr, char *, char *, char *, size_t *);
+extern int goWithdraw(SandboxPtr, char *, char *, size_t *);
+extern int goDeposit(SandboxPtr, char *, char *, size_t *);
+extern int goTopUp(SandboxPtr, char *, char *, char *, size_t *);
+extern int goCountermand(SandboxPtr, char *, char *, char *, size_t *);
+extern char *goBlockInfo(SandboxPtr, size_t *);
+extern char *goTxInfo(SandboxPtr, size_t *);
+extern char *goCall(SandboxPtr, char *, char *, char *, size_t *);
 
 #ifdef __cplusplus
 }
