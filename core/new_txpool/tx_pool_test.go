@@ -5,11 +5,11 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/network"
 	"github.com/iost-official/Go-IOS-Protocol/network/mocks"
@@ -19,7 +19,7 @@ import (
 	"testing"
 )
 
-func TestNewTxPoolServer(t *testing.T) {
+func TestNewTxPoolImpl(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
 		var accountList []account.Account
 		var witnessList []string
@@ -71,7 +71,7 @@ func TestNewTxPoolServer(t *testing.T) {
 		BlockCache := blockcache.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
 
 		chConfirmBlock := make(chan *block.Block, 10000)
-		txPool, err := NewTxPoolServer(BlockCache, chConfirmBlock)
+		txPool, err := NewTxPoolImpl(BlockCache, chConfirmBlock)
 		So(err, ShouldBeNil)
 
 		txPool.Start()
