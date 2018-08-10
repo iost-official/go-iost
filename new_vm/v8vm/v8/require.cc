@@ -3,39 +3,17 @@
 #include <stdlib.h>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 using namespace v8;
 
 #define NATIVE_LIB_PATH "v8/libjs/"
 
-//static int readFile(const char *filename, char **code) {
-//    Isolate *isolate = info.GetIsolate();
-//
-//    Local<Value> fileName = info[0];
-//    if (!fileName->IsString()) {
-//        Local<Value> err = Exception::Error(
-//            String::NewFromUtf8(isolate, "readFile empty file name.")
-//        );
-//        isolate->ThrowException(err);
-//    }
-//
-//    String::Utf8Value fileNameStr(fileName);
-//    std::string fullRelPath = std::string(NATIVE_LIB_PATH) + *fileNameStr + std::string(".js");
-//
-//    std::ifstream f(fullRelPath);
-//
-//    if (f.good()) {
-        // file not found
-//        return 1;
-//    }
-//
-//    std::stringstream buffer;
-//    buffer << f.rdbuf();
-//
-//    info.GetReturnValue().Set(String::NewFromUtf8(isolate, buffer.str().c_str()));
-//
-//    return 0;
-//}
+static char injectGasFormat[] =
+    "(function(){\n"
+    "const source = \"%s\";\n"
+    "return injectGas(source);\n"
+    "})();";
 
 void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     Isolate *isolate = info.GetIsolate();
@@ -75,8 +53,22 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     SandboxPtr sbx = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
 
     char *code = requireModule(sbx, *pathStr);
-    info.GetReturnValue().Set(String::NewFromUtf8(isolate, code));
+    char *injectCode = nullptr;
+    asprintf(&injectCode, injectGasFormat, code);
     free(code);
+
+    Local<String> source = String::NewFromUtf8(isolate, injectCode, NewStringType::kNormal).ToLocalChecked();
+    free(injectCode);
+    Local<String> fileName = String::NewFromUtf8(isolate, *pathStr, NewStringType::kNormal).ToLocalChecked();
+    Local<Script> script = Script::Compile(source, fileName);
+
+    if (!script.IsEmpty()) {
+        Local<Value> result = script->Run();
+        if (!result.IsEmpty()) {
+            String::Utf8Value retStr(result);
+            info.GetReturnValue().Set(result);
+        }
+    }
 }
 
 void InitRequire(Isolate *isolate, Local<ObjectTemplate> globalTpl) {

@@ -157,7 +157,7 @@ void InitStorage(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     storageTpl->Set(
             String::NewFromUtf8(isolate, "del"),
             FunctionTemplate::New(isolate, IOSTContractStorage_Del)
-        );
+    );
 
 
     globalTpl->Set(storageClassName, storageClass);
