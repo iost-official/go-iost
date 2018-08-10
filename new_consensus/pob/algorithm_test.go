@@ -8,6 +8,11 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
+	"time"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 func TestConfirmNode(t *testing.T) {
@@ -299,8 +304,9 @@ func TestVerifyBasics(t *testing.T) {
 		})
 	})
 }
-/*
+
 func TestVerifyBlock(t *testing.T) {
+	// NOT tested, run after mock is ready
 	Convey("Test of verify block", t, func() {
 		sec := common.Sha256([]byte("sec of id0"))
 		account0, _ := account.NewAccount(sec)
@@ -316,6 +322,18 @@ func TestVerifyBlock(t *testing.T) {
 				Time: rootTime,
 				Witness: witnessOfTime(consensus_common.Timestamp{rootTime}),
 			},
+		}
+		tx0 := &tx.Tx{
+			Time: time.Now().UnixNano(),
+			Actions:[]tx.Action{{
+				Contract:"contract1",
+				ActionName:"actionname1",
+				Data:"{\"num\": 1, \"message\": \"contract1\"}",
+			}},
+			Signers:[][]byte{account1.Pubkey},
+		}
+		rcpt0 := &tx.TxReceipt{
+			TxHash: tx0.Hash(),
 		}
 		curTime := consensus_common.GetCurrentTimestamp()
 		witness := witnessOfTime(curTime)
@@ -342,13 +360,22 @@ func TestVerifyBlock(t *testing.T) {
 		}
 		blk.Head.Signature = sig.Encode()
 
-		Convey("Normal (No txs)", func() {
+		Convey("Normal (no txs)", func() {
 			err := verifyBlock(blk, rootBlk, rootBlk, nil, nil)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Normal (with txs)", func() {
+			blk.Txs = append(blk.Txs, tx0)
+			blk.Receipts = append(blk.Receipts, rcpt0)
+			// Use mock
+			txPool, _ := new_txpool.NewTxPoolImpl()
+			db, _ := db.NewMVCCDB()
+			err := verifyBlock(blk, rootBlk, rootBlk, txPool, db)
 			So(err, ShouldBeNil)
 		})
 	})
 }
-*/
 
 func addNode(parent *blockcache.BlockCacheNode, number uint64, confirm uint64, witness string) *blockcache.BlockCacheNode {
 	node := &blockcache.BlockCacheNode{
