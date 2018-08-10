@@ -159,7 +159,7 @@ prototype
 *.log
 /core/block/database/
 core/tx/database/
-db/database/
+database/database/
 
 
 /core/tx/database/

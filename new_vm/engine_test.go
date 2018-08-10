@@ -12,7 +12,6 @@ import (
 	blk "github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 )
 
 func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockVM) {
@@ -28,9 +27,9 @@ func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockV
 	pm := NewMonitor()
 	pm.vms["javascript"] = vm
 
-	nvm := native_vm.VM{}
-
-	pm.vms["native"] = &nvm
+	//nvm := native_vm.VM{}
+	//
+	//pm.vms["native"] = &nvm
 	staticMonitor = pm
 	return bh, db, vm
 }
