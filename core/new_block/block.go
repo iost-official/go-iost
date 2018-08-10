@@ -1,14 +1,12 @@
 package block
 
 import (
-	"fmt"
-	"strconv"
-
-	"github.com/iost-official/Go-IOS-Protocol/common"
+			"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/Go-IOS-Protocol/core/merkletree"
-)
+	"errors"
+	)
 
 type Block struct {
 	hash     []byte
@@ -17,12 +15,15 @@ type Block struct {
 	Receipts []tx.TxReceipt
 }
 
-func (b *Block) CalculateTxsHash() []byte {
+func (b *Block) CalculateTxsHash() ([]byte, error) {
+	if len(b.Txs) == 0{
+		return nil, errors.New("txs length equals 0")
+	}
 	treeHash := make([]byte, 0)
 	for _, tx := range b.Txs {
 		treeHash = append(treeHash, tx.Publisher.Sig...)
 	}
-	return common.Sha256(treeHash)
+	return common.Sha3(treeHash), nil
 }
 
 func (b *Block) CalculateMerkleHash() ([]byte, error) {
@@ -34,7 +35,7 @@ func (b *Block) CalculateMerkleHash() ([]byte, error) {
 	return m.RootHash()
 }
 
-func (b *Block) Encode() []byte {
+func (b *Block) Encode() ([]byte, error) {
 	txs := make([][]byte, 0)
 	for _, t := range b.Txs {
 		txs = append(txs, t.Encode())
@@ -48,30 +49,25 @@ func (b *Block) Encode() []byte {
 		Txs: txs,
 		Receipts: rpts,
 	}
-
 	brByte, err := proto.Marshal(br)
 	if err != nil {
-		panic(err)
+		return nil, errors.New("fail to encode blockraw")
 	}
-	b.hash = brByte
-	return brByte
+	return brByte, nil
 }
 
-func (b *Block) Decode(bin []byte) (err error) {
+func (b *Block) Decode(blockByte []byte) error {
 	br := &BlockRaw{}
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("%v", r)
-		}
-	}()
-
-	err = proto.Unmarshal(bin, br)
+	err := proto.Unmarshal(blockByte, br)
+	if err !=nil {
+		return errors.New("fail to decode blockraw")
+	}
 	b.Head = *br.Head
 	for _, t := range br.Txs {
 		var tt tx.Tx
 		err = tt.Decode(t)
 		if err != nil {
-			return err
+			return errors.New("fail to decode tx")
 		}
 		b.Txs = append(b.Txs, tt)
 	}
@@ -79,33 +75,29 @@ func (b *Block) Decode(bin []byte) (err error) {
 		var rcpt tx.TxReceipt
 		err = rcpt.Decode(r)
 		if err != nil {
-			return err
+			return errors.New("fail to decode txr")
 		}
 		b.Receipts = append(b.Receipts, rcpt)
 	}
 	return nil
 }
 
-func (b *Block) HashID() string {
-	id := b.Head.Witness +
-		strconv.FormatInt(b.Head.Time, 10) +
-		strconv.FormatInt(b.Head.Number, 10) +
-		strconv.FormatInt(b.Head.Version, 10)
-	return id
-}
-
-func (b *Block) HeadHash() []byte {
+func (b *Block) HeadHash() ([]byte, error) {
+	var err error
 	if b.hash == nil {
-		b.hash = b.Head.Hash()
+		b.hash, err = b.Head.Hash()
+		if err != nil {
+			return nil, err
+		}
 	}
-	return b.hash
+	return b.hash, nil
 }
 
-func (b *Block) GetTx(x int) tx.Tx {
+func (b *Block) GetTx(x int) (tx.Tx, error) {
 	if x < len(b.Txs) {
-		return b.Txs[x]
+		return b.Txs[x], nil
 	} else {
-		return tx.Tx{}
+		return tx.Tx{}, errors.New("query out of index in txs")
 	}
 }
 
@@ -113,19 +105,26 @@ func (b *Block) LenTx() int {
 	return len(b.Txs)
 }
 
-func (b *BlockHead) Encode() []byte {
-	bin, err := proto.Marshal(b)
+func (b *BlockHead) Encode() ([]byte, error) {
+	bhByte, err := proto.Marshal(b)
 	if err != nil {
-		panic(err)
+		return nil, errors.New("fail to encode blockhead")
 	}
-	return bin
+	return bhByte, nil
 }
 
-func (b *BlockHead) Decode(bin []byte) error {
-	err := proto.Unmarshal(bin, b)
-	return err
+func (b *BlockHead) Decode(bhByte []byte) error {
+	err := proto.Unmarshal(bhByte, b)
+	if err != nil {
+		return errors.New("fail to decode blockhead")
+	}
+	return nil
 }
 
-func (b *BlockHead) Hash() []byte {
-	return common.Sha256(b.Encode())
+func (b *BlockHead) Hash() ([]byte, error) {
+	bhByte, err := b.Encode()
+	if err != nil {
+		return nil, err
+	}
+	return common.Sha3(bhByte), nil
 }
