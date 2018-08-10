@@ -335,3 +335,5 @@ function injectGas(source) {
 	var newSource = genNewScript(source);
 	return newSource;
 }
+
+module.exports = injectGas;

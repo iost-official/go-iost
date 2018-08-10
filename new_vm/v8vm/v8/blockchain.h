@@ -16,46 +16,14 @@ private:
 public:
     IOSTBlockchain(SandboxPtr ptr): sbx(ptr) {}
 
-    int Transfer(char *from, char *to, char *amount) {
-        size_t gasCount = 0;
-        int ret = goTransfer(sbx, from, to, amount, &gasCount);
-        return ret;
-    }
-    int Withdraw(char *to, char *amount) {
-        size_t gasCount = 0;
-        int ret = goWithdraw(sbx, to, amount, &gasCount);
-        return ret;
-    }
-    int Deposit(char *from, char *amount) {
-        size_t gasCount = 0;
-        int ret = goDeposit(sbx, from, amount, &gasCount);
-        return ret;
-    }
-    int TopUp(char *contract, char *from, char *amount) {
-        size_t gasCount = 0;
-        int ret = goTopUp(sbx, contract, from, amount, &gasCount);
-        return ret;
-    }
-    int Countermand(char *contract, char *to, char *amount) {
-        size_t gasCount = 0;
-        int ret = goCountermand(sbx, contract, to, amount, &gasCount);
-        return ret;
-    }
-    char *BlockInfo() {
-        size_t gasCount = 0;
-        char *blkInfo = goBlockInfo(sbx, &gasCount);
-        return blkInfo;
-    }
-    char *TxInfo() {
-        size_t gasCount = 0;
-        char *txInfo = goTxInfo(sbx, &gasCount);
-        return txInfo;
-    }
-    char *Call(char *contract, char *api, char *args) {
-        size_t gasCount = 0;
-        char *result = goCall(sbx, contract, api, args, &gasCount);
-        return result;
-    }
+    int Transfer(char *from, char *to, char *amount);
+    int Withdraw(char *to, char *amount);
+    int Deposit(char *from, char *amount);
+    int TopUp(char *contract, char *from, char *amount);
+    int Countermand(char *contract, char *to, char *amount);
+    char *BlockInfo();
+    char *TxInfo();
+    char *Call(char *contract, char *api, char *args);
 };
 
 #endif // IOST_V8_BLOCKCHAIN_H
