@@ -57,10 +57,9 @@ func TestBlockSerialize(t *testing.T) {
 		}
 		blk.Receipts = append(blk.Receipts, &receipt)
 		blkByte, err := blk.Encode()
-		var blkRead Block
+		blkRead := Block{}
 		err = blkRead.Decode(blkByte)
 		convey.So(err, convey.ShouldBeNil)
-
 		convey.So(bytes.Equal(blkRead.Head.ParentHash, blk.Head.ParentHash), convey.ShouldBeTrue)
 		convey.So(len(blkRead.Txs) == len(blk.Txs), convey.ShouldBeTrue)
 		convey.So(len(blkRead.Receipts) == len(blk.Receipts), convey.ShouldBeTrue)

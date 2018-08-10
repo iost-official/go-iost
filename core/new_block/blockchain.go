@@ -18,7 +18,7 @@ var (
 	blockNumberPrefix = []byte("n")
 	blockPrefix = []byte("H")
 	once sync.Once
-	BC *Chain
+	BC Chain
 	LevelDBPath string
 )
 
@@ -32,7 +32,7 @@ func ByteToUint64(b []byte) uint64 {
 	return binary.LittleEndian.Uint64(b)
 }
 
-func Instance() (*BlockChain, error) {
+func Instance() (Chain, error) {
 	var err error
 	once.Do(func() {
 		levelDB, tempErr := db.NewLDB(LevelDBPath+"BlockChainDB", 0, 0)
@@ -63,8 +63,7 @@ func Instance() (*BlockChain, error) {
 	return BC, err
 }
 
-
-func (bc *BlockChain) Length(block *Block) uint64{
+func (bc *BlockChain) Length() uint64{
 	return bc.length
 }
 

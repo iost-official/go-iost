@@ -11,8 +11,8 @@ func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
 		bc, err := Instance()
 		So(err, ShouldBeNil)
-		So(bc.Length, ShouldEqual, bc.Length)
-		fmt.Println(bc.Length)
+		So(bc.Length(), ShouldEqual, bc.Length())
+		fmt.Println(bc.Length())
 	})
 }
 
