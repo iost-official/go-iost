@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
@@ -21,7 +22,9 @@ import (
 type MVCCDB interface {
 	Get(table string, key string) (string, error)
 }
+
 var mvccdb MVCCDB
+var bc blockcache.BlockCache
 type RpcServer struct {
 }
 
@@ -65,6 +68,12 @@ func GetBlockByHash(ctx context.Context,hash *HashReq) (*BlockRaw, error){
 		panic(fmt.Errorf("block.BChain cannot be nil"))
 	}
 	blk:=bchain.GetBlockByHash([]byte(hash.Hash))
+	if blk==nil{
+		blk:=bc.GetBlockByHash([]byte(hash.hash))
+	}
+	if blk==nil{
+		return nil,fmt.Errorf("cant find the block")
+	}
 	blkRaw:=blk.ToBlkRaw()
 	return blkRaw,nil
 }
@@ -80,7 +89,10 @@ func GetBlockByNum(ctx context.Context,num *NumReq) (*BlockRaw, error) {
 	}
 	blk:=bchain.GetBlockByNumber(num)
 	if blk==nil{
-		return nil,nil
+		blk:=bc.GetBlockByNumber(num)
+	}
+	if blk==nil{
+		return nil,fmt.Errorf("cant find the block")
 	}
 	blkRaw:=blk.ToBlkRaw()
 	return blkRaw,nil
@@ -93,29 +105,38 @@ func GetBalance(ctx context.Context,key *GetBalanceReq) (*GetBalanceRes, error) 
 	pub := key.pubkey
 	balance,err:=mvccdb.Get("","i-"+pub)
 	if err!=nil{
-		balance=err
+		return nil,err
 	}
 	return &GetBalanceRes{
 		balance:balance,
 	},nil
 }
 func GetState(ctx context.Context,key *GetStateReq) (*GetStateRes, error) {
-
+	if key == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	pub := key.pubkey
+	val,err:=mvccdb.Get("","i-"+pub)
+	if err!=nil{
+		return nil,err
+	}
+	return &GetStateRes{
+		value:val,
+	},nil
 }
 func SendRawTx(ctx context.Context,rawTx *RawTxReq) (*SendRawTxRes, error){
-	res := SendRawTxRes{}
 	if rawTx == nil {
-		return &ret, fmt.Errorf("argument cannot be nil pointer")
+		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	var trx tx.Tx
 	err := trx.Decode(rawTx.data)
 	if err != nil {
-		return &ret, err
+		return nil, err
 	}
 
 	err = trx.VerifySelf() //verify Publisher and Signers
 	if err != nil {
-		return &ret, err
+		return nil, err
 	}
 
 	// add servi
@@ -136,8 +157,9 @@ func SendRawTx(ctx context.Context,rawTx *RawTxReq) (*SendRawTxRes, error){
 		panic(fmt.Errorf("Consensus is nil"))
 	}
 	txpool.TxPoolS.AddTransaction(&broadTx)
-	ret.hash = trx.Hash()
-	return &ret, nil
+	res := SendRawTxRes{}
+	res.hash = trx.Hash()
+	return &res, nil
 
 }
 func EstimateGas(ctx context.Context,rawTx *RawTxReq) (*GasRes, error){
