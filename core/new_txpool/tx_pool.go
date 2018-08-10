@@ -40,7 +40,7 @@ type TxPoolImpl struct {
 	mu sync.RWMutex
 }
 
-func NewTxPoolImpl(chain blockcache.BlockCache, router network.Router, global global.Global) (TxPool, error) {
+func NewTxPoolImpl(chain blockcache.BlockCache, router network.Router, global global.Global) (*TxPoolImpl, error) {
 
 	p := &TxPoolImpl{
 		chain:        chain,
@@ -93,20 +93,20 @@ func (pool *TxPoolImpl) loop() {
 				os.Exit(1)
 			}
 
-			var tx tx.Tx
-			err := tx.Decode(tr.Body)
+			var t tx.Tx
+			err := t.Decode(tr.Body)
 			if err != nil {
 				continue
 			}
 
-			if pool.txTimeOut(&tx) {
+			if pool.txTimeOut(&t) {
 				continue
 			}
 
-			if tx.VerifySelf() != nil {
+			if t.VerifySelf() != nil {
 				pool.mu.Lock()
 
-				pool.addTx(&tx)
+				pool.addTx(&t)
 
 				pool.mu.Unlock()
 				receivedTransactionCount.Inc()
@@ -190,12 +190,12 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 
 	sort.Sort(pendingList)
 
-	len := len(pendingList)
-	if len >= maxCnt {
-		len = maxCnt
+	l := len(pendingList)
+	if l >= maxCnt {
+		l = maxCnt
 	}
 
-	return pendingList[:len], nil
+	return pendingList[:l], nil
 }
 
 func (pool *TxPoolImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error) {
@@ -548,4 +548,26 @@ func (pool *TxPoolImpl) doChainChange() error {
 	}
 
 	return nil
+}
+
+func (pool *TxPoolImpl) testPendingTxsNum() int64 {
+	var r int64 = 0
+
+	pool.pendingTx.Range(func(key, value interface{}) bool {
+		r++
+		return true
+	})
+
+	return r
+}
+
+func (pool *TxPoolImpl) testBlockListNum() int64 {
+	var r int64 = 0
+
+	pool.blockList.Range(func(key, value interface{}) bool {
+		r++
+		return true
+	})
+
+	return r
 }
