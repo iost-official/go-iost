@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/network"
 	"github.com/iost-official/Go-IOS-Protocol/network/mocks"
+	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
@@ -43,12 +44,11 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		tx.LdbPath = ""
 
-		mockCtr := NewController(t)
-		mockRouter := protocol_mock.NewMockRouter(mockCtr)
+		config := &p2p.Config{
+			ListenAddr: "0.0.0.0:8088",
+		}
 
-		network.Route = mockRouter
-		txChan := make(chan message.Message, 100000)
-		mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
+		node, err := p2p.NewNetService(config)
 
 		log.NewLogger("iost")
 
@@ -60,7 +60,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		BlockCache, err := blockcache.NewBlockCache(gl)
 		So(err, ShouldBeNil)
 
-		txPool, err := NewTxPoolImpl(BlockCache, network.Route, gl)
+		txPool, err := NewTxPoolImpl(gl, BlockCache, node)
 		So(err, ShouldBeNil)
 
 		txPool.Start()
@@ -332,12 +332,12 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 	return &tx
 }
 
-func genTxMsg(a account.Account, expirationIter int64) message.Message {
+func genTxMsg(a account.Account, expirationIter int64) p2p.IncomingMessage {
 	t := genTx(a, expirationIter)
 
-	broadTx := message.Message{
-		Body:    t.Encode(),
-		ReqType: int32(network.ReqPublishTx),
+	broadTx := p2p.IncomingMessage{
+		data: t.Encode(),
+		typ:  int32(p2p.ReqPublishTx),
 	}
 
 	return broadTx

@@ -38,7 +38,7 @@ type TxPoolImpl struct {
 	mu sync.RWMutex
 }
 
-func NewTxPoolImpl(global global.Global, blockCache blockcache.BlockCache, p2pserv p2p.Service) (*TxPoolImpl, error) {
+func NewTxPoolImpl(global global.Global, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
 	p := &TxPoolImpl{
 		blockCache:   blockCache,
 		chLinkedNode: make(chan *RecNode, 100),
@@ -47,7 +47,7 @@ func NewTxPoolImpl(global global.Global, blockCache blockcache.BlockCache, p2pse
 		pendingTx:    new(sync.Map),
 		global:       global,
 	}
-	p.p2pService = p2pserv
+	p.p2pService = p2ps
 	p.chTx = p.p2pService.Register("TxPool message", p2p.PublishTxRequest)
 
 	return p, nil
