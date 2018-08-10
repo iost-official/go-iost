@@ -137,7 +137,7 @@ func (pool *TxPoolImpl) loop() {
 				}
 
 			case NotFork:
-				if err := pool.delBlockTxInPending(bl.LinkedNode.Block.Hash()); err != nil {
+				if err := pool.delBlockTxInPending(bl.LinkedNode.Block.HeadHash()); err != nil {
 					log.Log.E("tx_pool - delBlockTxInPending is error")
 				}
 
@@ -220,8 +220,8 @@ func (pool *TxPoolImpl) initBlockTx() {
 	timeNow := time.Now().Unix()
 
 	for i := chain.Length() - 1; i > 0; i-- {
-		blk := chain.GetBlockByNumber(i)
-		if blk == nil {
+		blk, err := chain.GetBlockByNumber(i)
+		if err != nil {
 			return
 		}
 
@@ -240,7 +240,7 @@ func (pool *TxPoolImpl) slotToSec(t int64) int64 {
 
 func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 
-	if _, ok := pool.blockList.Load(linkedBlock.Hash()); ok {
+	if _, ok := pool.blockList.Load(linkedBlock.HeadHash()); ok {
 		return nil
 	}
 
@@ -249,7 +249,7 @@ func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 	b.setTime(pool.slotToSec(linkedBlock.Head.Time))
 	b.addBlock(linkedBlock)
 
-	pool.blockList.Store(linkedBlock.Hash(), b)
+	pool.blockList.Store(linkedBlock.HeadHash(), b)
 
 	return nil
 }
@@ -416,14 +416,14 @@ func (pool *TxPoolImpl) updateForkChain(headNode *blockcache.BlockCacheNode) TFo
 		return NotFork
 	}
 
-	if bytes.Equal(pool.forkChain.NewHead.Block.Hash(), headNode.Block.Head.ParentHash) {
+	if bytes.Equal(pool.forkChain.NewHead.Block.HeadHash(), headNode.Block.Head.ParentHash) {
 		pool.forkChain.NewHead = headNode
 		return NotFork
 	}
 
 	pool.forkChain.OldHead, pool.forkChain.NewHead = pool.forkChain.NewHead, headNode
 
-	hash, ok := pool.fundForkBlockHash(pool.forkChain.NewHead.Block.Hash(), pool.forkChain.OldHead.Block.Hash())
+	hash, ok := pool.fundForkBlockHash(pool.forkChain.NewHead.Block.HeadHash(), pool.forkChain.OldHead.Block.HeadHash())
 	if !ok {
 		return ForkError
 	}
@@ -450,13 +450,13 @@ func (pool *TxPoolImpl) fundForkBlockHash(newHash []byte, oldHash []byte) ([]byt
 
 		b, ok := pool.block(n)
 		if !ok {
-			bb, err := pool.chain.FindBlock(n)
+			bb, err := pool.chain.Find(n)
 			if err != nil {
 				log.Log.E("tx_pool - fundForkBlockHash FindBlock error")
 				return nil, false
 			}
 
-			if err = pool.addBlock(bb); err != nil {
+			if err = pool.addBlock(bb.Block); err != nil {
 				log.Log.E("tx_pool - fundForkBlockHash addBlock error")
 				return nil, false
 			}
@@ -506,26 +506,26 @@ func (pool *TxPoolImpl) fundBlockInChain(hash []byte, chainHead []byte) ([]byte,
 
 func (pool *TxPoolImpl) doChainChange() error {
 
-	n := pool.forkChain.NewHead.Block.Hash()
-	o := pool.forkChain.OldHead.Block.Hash()
+	n := pool.forkChain.NewHead.Block.HeadHash()
+	o := pool.forkChain.OldHead.Block.HeadHash()
 	f := pool.forkChain.ForkBlockHash
 
 	//Reply to txs
 	for {
-		b, err := pool.chain.FindBlock(o)
+		b, err := pool.chain.Find(o)
 		if err != nil {
 			return err
 		}
 
-		for _, v := range b.Txs {
-			pool.addTx(&v)
+		for _, v := range b.Block.Txs {
+			pool.addTx(v)
 		}
 
-		if bytes.Equal(b.Head.ParentHash, f) {
+		if bytes.Equal(b.Block.Head.ParentHash, f) {
 			break
 		}
 
-		o = b.Head.ParentHash
+		o = b.Block.Head.ParentHash
 	}
 
 	//Duplicate txs
