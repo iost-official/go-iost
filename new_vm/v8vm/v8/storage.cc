@@ -1,6 +1,34 @@
 #include "storage.h"
 #include <iostream>
 
+static putFunc CPut = nullptr;
+static getFunc CGet = nullptr;
+static delFunc CDel = nullptr;
+
+void InitGoStorage(putFunc put, getFunc get, delFunc del) {
+    CPut = put;
+    CGet = get;
+    CDel = del;
+}
+
+int IOSTContractStorage::Put(char *key, char *value) {
+    size_t gasCount = 0;
+    int ret = CPut(sbx, key, value, &gasCount);
+    return ret;
+}
+
+char *IOSTContractStorage::Get(char *key) {
+    size_t gasCount = 0;
+    char *ret = CGet(sbx, key, &gasCount);
+    return ret;
+}
+
+int IOSTContractStorage::Del(char *key) {
+    size_t gasCount = 0;
+    int ret = CDel(sbx, key, &gasCount);
+    return ret;
+}
+
 void NewIOSTContractStorage(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Context> context = isolate->GetCurrentContext();
