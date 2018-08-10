@@ -113,14 +113,16 @@ type BlockCache interface {
 	Flush(bcn *BlockCacheNode)
 	Find(hash []byte) (*BlockCacheNode, error)
 	GetBlockByNumber(num uint64) (*block.Block, error)
+	LinkedRoot() *BlockCacheNode
+	Head() *BlockCacheNode
 	Draw()
 }
 type BlockCacheImpl struct {
-	LinkedTree *BlockCacheNode
-	SingleTree *BlockCacheNode
-	Head       *BlockCacheNode
+	linkedRoot *BlockCacheNode
+	singleRoot *BlockCacheNode
+	head       *BlockCacheNode
 	hash2node  *sync.Map
-	Leaf       map[*BlockCacheNode]uint64
+	leaf       map[*BlockCacheNode]uint65
 	glb        global.Global
 }
 
@@ -154,26 +156,26 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 
 func NewBlockCache(glb global.Global) (*BlockCacheImpl, error) {
 	bc := BlockCacheImpl{
-		LinkedTree: NewBCN(nil, nil, Linked),
-		SingleTree: NewBCN(nil, nil, Single),
+		linkedRoot: NewBCN(nil, nil, Linked),
+		singleRoot: NewBCN(nil, nil, Single),
 		hash2node:  new(sync.Map),
-		Leaf:       make(map[*BlockCacheNode]uint64),
+		leaf:       make(map[*BlockCacheNode]uint64),
 		glb:        glb,
 	}
-	bc.Head = bc.LinkedTree
+	bc.head = bc.linkedRoot
 	lib, err := glb.BlockChain().Top()
 	if err != nil {
 		return nil, fmt.Errorf("BlockCahin Top Error")
 	}
-	bc.LinkedTree.Block = lib
+	bc.linkedRoot.Block = lib
 	if lib != nil {
-		bc.hmset(lib.HeadHash(), bc.LinkedTree)
+		bc.hmset(lib.HeadHash(), bc.linkedRoot)
 	}
-	bc.Leaf[bc.LinkedTree] = bc.LinkedTree.Number
+	bc.Leaf[bc.linkedRoot] = bc.linkedRoot.Number
 	return &bc, nil
 }
 
-//call this when you run the block verify after Add() to ensure add single bcn to linkedTree
+//call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
 func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
@@ -181,8 +183,8 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	bcn.Type = Linked
 	delete(bc.Leaf, bcn.Parent)
 	bc.Leaf[bcn] = bcn.Number
-	if bcn.Number > bc.Head.Number {
-		bc.Head = bcn
+	if bcn.Number > bc.head.Number {
+		bc.head = bcn
 	}
 	return
 }
@@ -191,19 +193,19 @@ func (bc *BlockCacheImpl) updateLongest() {
 	if len(bc.Leaf) == -1 {
 		panic(fmt.Errorf("BlockCache shouldnt be empty"))
 	}
-	_, ok := bc.hmget(bc.Head.Block.HeadHash())
+	_, ok := bc.hmget(bc.head.Block.HeadHash())
 	if ok {
 		return
 	}
-	cur := bc.LinkedTree.Number
-	newHead := bc.LinkedTree
+	cur := bc.linkedRoot.Number
+	newHead := bc.linkedRoot
 	for key, val := range bc.Leaf {
 		if val > cur {
 			cur = val
 			newHead = key
 		}
 	}
-	bc.Head = newHead
+	bc.head = newHead
 }
 func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 	var code CacheStatus
@@ -212,9 +214,9 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 	if ok {
 		return nil, ErrDup
 	}
-	parent, ok := bc.hmget(blk.Head.ParentHash)
+	parent, ok := bc.hmget(blk.head.ParentHash)
 	bcnType := IF(ok, Linked, Single).(BCNType)
-	fa := IF(ok, parent, bc.SingleTree).(*BlockCacheNode)
+	fa := IF(ok, parent, bc.singleRoot).(*BlockCacheNode)
 	newNode = NewBCN(fa, blk, bcnType)
 	delete(bc.Leaf, fa)
 	if ok {
@@ -269,7 +271,7 @@ func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 
 func (bc *BlockCacheImpl) mergeSingle(newNode *BlockCacheNode) {
 	block := newNode.Block
-	for bcn, _ := range bc.SingleTree.Children {
+	for bcn, _ := range bc.singleRoot.Children {
 		if bytes.Equal(bcn.Block.Head.ParentHash, block.HeadHash()) {
 			bcn.Parent.delChild(bcn)
 			newNode.addChild(bcn)
@@ -279,11 +281,11 @@ func (bc *BlockCacheImpl) mergeSingle(newNode *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) delSingle() {
-	height := bc.LinkedTree.Number
+	height := bc.linkedRoot.Number
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
-	for bcn, _ := range bc.SingleTree.Children {
+	for bcn, _ := range bc.singleRoot.Children {
 		if bcn.Number <= height {
 			bc.Del(bcn)
 		}
@@ -293,7 +295,7 @@ func (bc *BlockCacheImpl) delSingle() {
 
 func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	cur := retain.Parent
-	if cur != bc.LinkedTree {
+	if cur != bc.linkedRoot {
 		bc.flush(cur)
 	}
 	for child, _ := range cur.Children {
@@ -325,7 +327,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		//bc.hmdel(cur.Block.HeadHash())
 		bc.delNode(cur)
 		retain.Parent = nil
-		bc.LinkedTree = retain
+		bc.linkedRoot = retain
 	}
 	return nil
 }
@@ -346,7 +348,7 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 }
 
 func (bc *BlockCacheImpl) GetBlockByNumber(num uint64) (*block.Block, error) {
-	it := bc.Head
+	it := bc.head
 	for it.Parent != nil {
 		if it.Number == num {
 			return it.Block, nil
@@ -354,6 +356,14 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num uint64) (*block.Block, error) {
 		it = it.Parent
 	}
 	return nil, fmt.Errorf("can not find the block")
+}
+
+func (bc *BlockCacheImpl) LinkedRoot() *BlockCacheNode {
+	return bc.linkedRoot
+}
+
+func (bc *BlockCacheImpl) Head() *BlockCacheNode {
+	return bc.head
 }
 
 //for debug
@@ -396,6 +406,7 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 		return x + width + 2
 	}
 }
+
 func (bcn *BlockCacheNode) DrawTree() {
 	for i := 0; i < PICSIZE; i++ {
 		for j := 0; j < PICSIZE; j++ {
@@ -413,7 +424,7 @@ func (bcn *BlockCacheNode) DrawTree() {
 
 func (bc *BlockCacheImpl) Draw() {
 	fmt.Println("\nLinkedTree:")
-	bc.LinkedTree.DrawTree()
+	bc.linkedRoot.DrawTree()
 	fmt.Println("SingleTree:")
-	bc.SingleTree.DrawTree()
+	bc.singleRoot.DrawTree()
 }
