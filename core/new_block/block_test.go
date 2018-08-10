@@ -56,17 +56,15 @@ func TestBlockSerialize(t *testing.T) {
 			},
 		}
 		blk.Receipts = append(blk.Receipts, &receipt)
-		b := blk.Encode()
-		var blk1 Block
-		err := blk1.Decode(b)
-		convey.So(err, ShouldBeNil)
+		blkByte, err := blk.Encode()
+		var blkRead Block
+		err = blkRead.Decode(blkByte)
+		convey.So(err, convey.ShouldBeNil)
 
-		convey.So(bytes.Equal(blk1.Head.ParentHash, blk.Head.ParentHash), ShouldBeTrue)
-		convey.So(len(blk1.Txs) == len(blk.Txs), ShouldBeTrue)
-		convey.So(len(blk1.Receipts) == len(blk.Receipts), ShouldBeTrue)
-		convey.So(bytes.Equal(blk1.Receipts[0].TxHash, tx0.Hash()), ShouldBeTrue)
-		blk.Receipts = append(blk.Receipts, receipt)
-		blockByte, err := blk.Encode()
+		convey.So(bytes.Equal(blkRead.Head.ParentHash, blk.Head.ParentHash), convey.ShouldBeTrue)
+		convey.So(len(blkRead.Txs) == len(blk.Txs), convey.ShouldBeTrue)
+		convey.So(len(blkRead.Receipts) == len(blk.Receipts), convey.ShouldBeTrue)
+		convey.So(bytes.Equal(blkRead.Receipts[0].TxHash, tx0.Hash()), convey.ShouldBeTrue)
 		convey.So(err, convey.ShouldBeNil)
 
 	})

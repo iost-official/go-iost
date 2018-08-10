@@ -91,20 +91,20 @@ func (b *Block) Decode(blockByte []byte) error {
 	}
 	b.Head = *br.Head
 	for _, t := range br.Txs {
-		var tt tx.Tx
+		var tt *tx.Tx
 		err = tt.Decode(t)
 		if err != nil {
 			return errors.New("fail to decode tx")
 		}
-		d.Txs = append(d.Txs, &tt)
+		b.Txs = append(b.Txs, tt)
 	}
 	for _, r := range br.Receipts {
-		var rcpt tx.TxReceipt
+		var rcpt *tx.TxReceipt
 		err = rcpt.Decode(r)
 		if err != nil {
 			return errors.New("fail to decode txr")
 		}
-		d.Receipts = append(d.Receipts, &rcpt)
+		b.Receipts = append(b.Receipts, rcpt)
 	}
 	return nil
 }
