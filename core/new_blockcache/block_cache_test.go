@@ -7,7 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -55,7 +55,7 @@ func TestBlockCache(t *testing.T) {
 	block.BChain = base
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
-			bc := NewBlockCache(nil)
+			bc, _ := NewBlockCache(nil)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			b1node, _ := bc.Add(b1)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
@@ -79,7 +79,7 @@ func TestBlockCache(t *testing.T) {
 		})
 
 		Convey("Flush", func() {
-			bc := NewBlockCache(nil)
+			bc, _ := NewBlockCache(nil)
 			bc.Add(b1)
 			//bc.Draw()
 			bc.Add(b2)
