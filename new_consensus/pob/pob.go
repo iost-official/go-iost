@@ -55,7 +55,7 @@ type PoB struct {
 	account      Account
 	global       global.Global
 	blockChain   block.Chain
-	blockCache   *blockcache.BlockCache
+	blockCache   blockCache.BlockCache
 	txPool       new_txpool.TxPool
 	p2pService   p2p.Service
 	synchronizer *Synchronizer

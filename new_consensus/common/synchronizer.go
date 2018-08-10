@@ -7,7 +7,6 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
@@ -30,24 +29,24 @@ type Synchronizer interface {
 }
 
 type SyncImpl struct {
-	p2pService    p2p.Service
-	blockCache    *blockcache.BlockCache
-	chain         block.Chain
-	dc            DownloadController
-	confirmNumber int
-	messageChan   chan p2p.IncomingMessage
-	exitSignal    chan struct{}
-	reqMap        *sync.Map
+	p2pService p2p.Service
+	blockCache blockcache.BlockCache
+	glb        global.Global
+	dc         DownloadController
+	reqMap     *sync.Map
+
+	messageChan chan p2p.IncomingMessage
+	exitSignal  chan struct{}
 
 	log *log.Logger
 }
 
-func NewSynchronizer(glb global.Global, bc *blockcache.BlockCache, p2pserv p2p.Service, confirmNumber int) (*SyncImpl, error) {
+func NewSynchronizer(glb global.Global, blkcache blockcache.BlockCache, p2pserv p2p.Service) (*SyncImpl, error) {
 	sy := &SyncImpl{
-		blockCache: bc,
 		p2pService: p2pserv,
+		blockCache: blkcache,
+		glb:        glb,
 		reqMap:     new(sync.Map),
-		chain:      glb.BlockChain(),
 	}
 	var err error
 	sy.dc, err = NewDownloadController()
@@ -228,13 +227,13 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 	if rh.End < rh.Start {
 		return
 	}
-	/*
-		chain := sy.blockCache.()
-		resp := &message.BlockHashResponse{
-			BlockHashes: make([]message.BlockHash, 0, rh.End-rh.Start+1),
-		}
-		for i := rh.Start; i <= rh.End; i++ {
-			hash := chain.GetHashByNumber(i)
+	resp := &message.BlockHashResponse{
+		BlockHashes: make([]message.BlockHash, 0, rh.End-rh.Start+1),
+	}
+	node := sy.blockCache.Head()
+	for i := rh.End; i >= rh.Start; i-- {
+		if i < sy.blockCache.LinkedRoot().Number() {
+			hash := sy.glb.BlockChain().GetHashByNumber(i)
 			if hash == nil {
 				continue
 			}
@@ -242,18 +241,29 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 				Height: i,
 				Hash:   hash,
 			}
-			resp.BlockHashes = append(resp.BlockHashes, blkHash)
+		} else {
+			if i > node.Number {
+				continue
+			}
+			for node != nil && i < node.Number {
+				node = node.Parent
+			}
+			if node == nil || i != node.Number {
+				continue
+			}
+			has = node.Block.HeadHash()
 		}
-		if len(resp.BlockHashes) == 0 {
-			return
-		}
-		bytes, err := resp.Marshal(nil)
-		if err != nil {
-			sy.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
-			return
-		}
-		sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage)
-	*/
+		resp.BlockHashes = append(resp.BlockHashes, blkHash)
+	}
+	if len(resp.BlockHashes) == 0 {
+		return
+	}
+	bytes, err := resp.Marshal(nil)
+	if err != nil {
+		sy.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
+		return
+	}
+	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage)
 	/*
 		resMsg := message.Message{
 			Time:    time.Now().Unix(),
@@ -284,7 +294,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 				if !ok {
 					return false
 				}
-				if num <= sy.blockCache.LinkedTree.Number { // TODO
+				if num <= sy.blockCache.LinkedRoot().Number { // TODO
 					sy.reqMap.Delete(num)
 				} else {
 					sy.queryBlockHash(num, num)
@@ -300,8 +310,8 @@ func (sy *SyncImpl) retryDownloadLoop() {
 func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
 	var b []byte
 	var err error
-	if rh.BlockNumber < sy.chain.Length() {
-		b, err = sy.chain.GetBlockByteByHash(rh.BlockHash)
+	if rh.BlockNumber < sy.blockCache.LinkedRoot().Number() {
+		b, err = sy.glb.BlockChain().GetBlockByteByHash(rh.BlockHash)
 		if err != nil {
 			log.Log.E("Database error: block empty %v", rh.BlockNumber)
 			return
