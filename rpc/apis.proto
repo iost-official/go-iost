@@ -1,13 +1,14 @@
 syntax = "proto3";
 
-import "../core/new_tx/tx.proto"
+import "core/new_tx/tx.proto";
+import "core/new_block/block.proto";
 package rpc;
 
 service Apis {
 	rpc GetHeight (VoidReq) returns (HeightRes) {}
-	rpc GetTxByHash (HashReq) returns (TxRes) {}
-	rpc GetBlockByHash (HashReq) returns (BlockRes) {}
-	rpc getBlockByNum (NumReq) returns (BlockRes) {}
+	rpc GetTxByHash (HashReq) returns (tx.TxRaw) {}
+	rpc GetBlockByHash (BlockByHashReq) returns (BlockInfo) {}
+	rpc getBlockByNum (BlockByNumReq) returns (BlockInfo) {}
     rpc GetBalance (GetBalanceReq) returns (GetBalanceRes) {}
     rpc GetState (GetStateReq) returns (GetStateRes) {}
     rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {}
@@ -21,8 +22,13 @@ message VoidReq {
 message HashReq {
 	bytes hash=1;
 }
-message NumReq {
-	uint64 num=1;	
+message BlockByHashReq {
+	bytes hash=1;
+	bool complete=2;
+}
+message BlockByNumReq {
+	uint64 num=1;
+	bool complete=2;	
 }
 message GetBalanceReq {
 	string pubkey=1;
@@ -54,22 +60,9 @@ message SendRawTxRes {
 message GasRes {
 	uint64 gas=1;
 }
-/*
-message Head {
-    int64 version = 1;
-    bytes parentHash = 2;
-    bytes treeHash = 3;
-    bytes blockHash = 4;
-    bytes info = 5;
-    int64 number = 6;
-    string witness = 7;
-    bytes signature = 8;
-    int64 time = 9;
-}
 
 message BlockInfo {
-    Head head = 1;
-    int64 Txcnt = 2;
-    repeated TransactionKey txList = 3;
+    block.BlockHead head = 1;
+    repeated tx.TxRaw txs = 2;
+	repeated bytes txhash=3;  
 }
-*/

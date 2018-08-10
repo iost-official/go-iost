@@ -7,12 +7,11 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/network"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
@@ -58,31 +57,46 @@ func GetTxByHash(ctx context.Context,hash *HashReq) (*TxRaw, error) {
 	return txRaw,nil
 }
 
-func GetBlockByHash(ctx context.Context,hash *HashReq) (*BlockRaw, error){
-	if hash == nil {
+func GetBlockByHash(ctx context.Context,blkHashReq *BlockByHashReq) (*BlockInfo, error){
+	if blkHashReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 
+	hash:=blkHashReq.hash
+	complete:=blkHashReq.complete
 	bchain := block.BChain
 	if bchain == nil {
 		panic(fmt.Errorf("block.BChain cannot be nil"))
 	}
-	blk:=bchain.GetBlockByHash([]byte(hash.Hash))
+	blk:=bchain.GetBlockByHash(hash)
 	if blk==nil{
-		blk:=bc.GetBlockByHash([]byte(hash.hash))
+		blk:=bc.GetBlockByHash(hash)
 	}
 	if blk==nil{
 		return nil,fmt.Errorf("cant find the block")
 	}
-	blkRaw:=blk.ToBlkRaw()
-	return blkRaw,nil
+	blkInfo:=&{
+		Head:blk.Head,
+		Txs:make([]*new_tx.TxRaw),
+		Txhash:make([][]byte), 
+	}
+	for _,trx:=range blk.Txs {
+		if complete {
+			blkInfo.Txs=append(blkInfo.Txs,trx.ToTxRaw)
+		}else{
+			blkInfo.Txhash=append(blkInfo.Txhash,trx.Hash())
+		}
+	} 
+	return blkInfo,nil
 }
 
-func GetBlockByNum(ctx context.Context,num *NumReq) (*BlockRaw, error) {
-	if num == nil {
+func GetBlockByNum(ctx context.Context,blkNumReq *BlockByNumReq) (*BlockInfo, error) {
+	if blkNumReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	num:=num.num
+	
+	num:=blkNumReq.Num
+	complete:=blkNumReq.complete
 	bchain := block.BChain
 	if bchain == nil {
 		panic(fmt.Errorf("block.BChain cannot be nil"))
@@ -94,9 +108,19 @@ func GetBlockByNum(ctx context.Context,num *NumReq) (*BlockRaw, error) {
 	if blk==nil{
 		return nil,fmt.Errorf("cant find the block")
 	}
-	blkRaw:=blk.ToBlkRaw()
-	return blkRaw,nil
-
+	blkInfo:=&{
+		Head:blk.Head,
+		Txs:make([]*new_tx.TxRaw),
+		Txhash:make([][]byte), 
+	}
+	for _,trx:=range blk.Txs {
+		if complete {
+			blkInfo.Txs=append(blkInfo.Txs,trx.ToTxRaw)
+		}else{
+			blkInfo.Txhash=append(blkInfo.Txhash,trx.Hash())
+		}
+	} 
+	return blkInfo,nil
 }
 func GetBalance(ctx context.Context,key *GetBalanceReq) (*GetBalanceRes, error) {
 	if key == nil {
@@ -157,10 +181,15 @@ func SendRawTx(ctx context.Context,rawTx *RawTxReq) (*SendRawTxRes, error){
 		panic(fmt.Errorf("Consensus is nil"))
 	}
 	txpool.TxPoolS.AddTransaction(&broadTx)
+<<<<<<< Updated upstream
 	res := SendRawTxRes{}
 	res.hash = trx.Hash()
 	return &res, nil
 
+=======
+	ret.hash = trx.Hash()
+	return &ret, nil
+>>>>>>> Stashed changes
 }
 func EstimateGas(ctx context.Context,rawTx *RawTxReq) (*GasRes, error){
 
