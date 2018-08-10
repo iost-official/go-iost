@@ -43,6 +43,7 @@ const (
 	SyncBlockRequest
 	SyncBlockResponse
 	NewBlockResponse
+	PublishTxRequest
 
 	UrgentMessage = 1
 	NormalMessage = 2
