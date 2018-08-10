@@ -45,15 +45,15 @@ func (mdb *TXRMerkleTreeDB) Put(m *TXRMerkleTree, blockNum uint64) error {
 	return nil
 }
 
-func (mdb *TXRMerkleTreeDB) Get(blockNum uint64) (TXRMerkleTree, error) {
+func (mdb *TXRMerkleTreeDB) Get(blockNum uint64) (*TXRMerkleTree, error) {
 	mByte, err := mdb.txrMerkleTreeDB.Get(Uint64ToInt(blockNum))
 	m := TXRMerkleTree{}
 	if err != nil {
-		return m, errors.New("fail to get TXRMerkleTree")
+		return nil, errors.New("fail to get TXRMerkleTree")
 	}
 	err = m.Decode(mByte)
 	if err != nil {
-		return m, errors.New("fail to decode TXRMerkleTree")
+		return nil, errors.New("fail to decode TXRMerkleTree")
 	}
-	return m, nil
+	return &m, nil
 }

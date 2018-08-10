@@ -14,7 +14,7 @@ import (
 func TestTXRMerkleTreeDB(t *testing.T) {
 	convey.Convey("Test of TXRMTDB", t, func() {
 		m := TXRMerkleTree{}
-		txrs := []tx.TxReceipt{
+		txrs := []*tx.TxReceipt{
 			{TxHash:[]byte("node1")},
 			{TxHash:[]byte("node2")},
 			{TxHash:[]byte("node3")},
@@ -30,7 +30,7 @@ func TestTXRMerkleTreeDB(t *testing.T) {
 		if err != nil {
 			log.Panic(err)
 		}
-		var m_read TXRMerkleTree
+		var m_read *TXRMerkleTree
 		m_read, err = TXRMTDB.Get(32342)
 		if err != nil {
 			log.Panic(err)
@@ -45,9 +45,9 @@ func TestTXRMerkleTreeDB(t *testing.T) {
 func BenchmarkTXRMerkleTreeDB(b *testing.B) { //Put: 1544788ns = 1.5ms, Get: 621922ns = 0.6ms
 	rand.Seed(time.Now().UnixNano())
 	Init("./")
-	var txrs []tx.TxReceipt
+	var txrs []*tx.TxReceipt
 	for i := 0; i < 3000; i++ {
-		txrs = append(txrs, tx.TxReceipt{TxHash:[]byte("node1")})
+		txrs = append(txrs, &tx.TxReceipt{TxHash:[]byte("node1")})
 	}
 	m := TXRMerkleTree{}
 	err := m.Build(txrs)
