@@ -8,6 +8,8 @@ import (
 
 	"bytes"
 	"errors"
+	"os"
+
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
@@ -15,9 +17,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/network"
+	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
-	"os"
 )
 
 func init() {
@@ -29,9 +30,8 @@ type TxPoolImpl struct {
 	chLinkedNode chan *RecNode
 
 	global global.Global
-
 	chain  blockcache.BlockCache
-	router network.Router
+	p2pService p2p.Service
 
 	forkChain *ForkChain
 	blockList *sync.Map
@@ -40,8 +40,7 @@ type TxPoolImpl struct {
 	mu sync.RWMutex
 }
 
-func NewTxPoolImpl(chain blockcache.BlockCache, router network.Router, global global.Global) (TxPool, error) {
-
+func NewTxPoolImpl(global global.Global chain blockcache.BlockCache, p2pserv p2p.Service) (TxPool, error) {
 	p := &TxPoolImpl{
 		chain:        chain,
 		chLinkedNode: make(chan *RecNode, 100),
@@ -50,20 +49,8 @@ func NewTxPoolImpl(chain blockcache.BlockCache, router network.Router, global gl
 		pendingTx:    new(sync.Map),
 		global:       global,
 	}
-	p.router = router
-	if p.router == nil {
-		return nil, fmt.Errorf("failed to network.Route is nil")
-	}
-
-	var err error
-	p.chTx, err = p.router.FilteredChan(network.Filter{
-		AcceptType: []network.ReqType{
-			network.ReqPublishTx,
-		}})
-	if err != nil {
-		return nil, err
-	}
-
+	p.p2pService = p2pserv
+	p.chTx = p.p2pService.Register("TxPool message", p2p.PublishTxRequest)
 	return p, nil
 }
 

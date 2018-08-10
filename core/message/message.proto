@@ -11,15 +11,6 @@ message Message {
     bytes body = 6;
 }
 
-message RequestHeight {
-    uint64 localBlockHeight = 1;
-    uint64 needBlockHeight = 2;
-}
-
-message ResponseHeight {
-    uint64 blockHeight = 1;
-}
-
 message RequestBlock {
     uint64 blockNumber = 1;
     bytes blockHash = 2;
