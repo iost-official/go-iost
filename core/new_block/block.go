@@ -96,7 +96,7 @@ func (b *Block) Decode(blockByte []byte) error {
 		if err != nil {
 			return errors.New("fail to decode tx")
 		}
-		d.Txs = append(d.Txs, &tt)
+		b.Txs = append(b.Txs, &tt)
 	}
 	for _, r := range br.Receipts {
 		var rcpt tx.TxReceipt
@@ -104,7 +104,7 @@ func (b *Block) Decode(blockByte []byte) error {
 		if err != nil {
 			return errors.New("fail to decode txr")
 		}
-		d.Receipts = append(d.Receipts, &rcpt)
+		b.Receipts = append(b.Receipts, &rcpt)
 	}
 	return nil
 }

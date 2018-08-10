@@ -10,7 +10,7 @@ import (
 
 type BlockChain struct {
 	BlockChainDB     *db.LDB
-	Length uint64
+	length uint64
 }
 
 var (
@@ -18,7 +18,7 @@ var (
 	blockNumberPrefix = []byte("n")
 	blockPrefix = []byte("H")
 	once sync.Once
-	BC BlockChain
+	BC Chain
 	LevelDBPath string
 )
 
@@ -32,7 +32,7 @@ func ByteToUint64(b []byte) uint64 {
 	return binary.LittleEndian.Uint64(b)
 }
 
-func Instance() (BlockChain, error) {
+func Instance() (Chain, error) {
 	var err error
 	once.Do(func() {
 		levelDB, tempErr := db.NewLDB(LevelDBPath+"BlockChainDB", 0, 0)
@@ -57,10 +57,14 @@ func Instance() (BlockChain, error) {
 				err = errors.New("fail to put blockLength")
 			}
 		}
-		BC = BlockChain{levelDB, length}
+		BC = &BlockChain{levelDB, length}
 		BC.CheckLength()
 	})
 	return BC, err
+}
+
+func (bc *BlockChain) Length() uint64{
+	return bc.length
 }
 
 func (bc *BlockChain) Push(block *Block) error {
@@ -81,29 +85,29 @@ func (bc *BlockChain) Push(block *Block) error {
 	if err != nil {
 		return errors.New("fail to put block")
 	}
-	bc.Length = number + 1
+	bc.length = number + 1
 	return nil
 }
 
 func (bc *BlockChain) CheckLength() error {
 	var err error = nil
-	for i := bc.Length; i > 0; i-- {
+	for i := bc.length; i > 0; i-- {
 		_, err = bc.GetBlockByNumber(i - 1)
 		if err != nil {
 			err = errors.New("broken chain in BlockChainDB")
 		}
 		bc.BlockChainDB.Put(blockLength, Uint64ToByte(i))
-		bc.Length = i
+		bc.length = i
 		break
 	}
 	return err
 }
 
-func (bc *BlockChain) Top() (Block, error) {
-	if bc.Length == 0 {
-		return Block{}, errors.New("no block in blockChainDB")
+func (bc *BlockChain) Top() (*Block, error) {
+	if bc.length == 0 {
+		return nil, errors.New("no block in blockChainDB")
 	} else {
-		return bc.GetBlockByNumber(bc.Length - 1)
+		return bc.GetBlockByNumber(bc.length - 1)
 	}
 }
 
@@ -123,23 +127,23 @@ func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
 	return blockByte, nil
 }
 
-func (bc *BlockChain) GetBlockByHash(hash []byte) (Block, error) {
+func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
 	blockByte, err := bc.GetBlockByteByHash(hash)
 	if err != nil {
-		return Block{}, err
+		return nil, err
 	}
-	block := Block{}
+	var block *Block
 	err = block.Decode(blockByte)
 	if err != nil {
-		return Block{}, errors.New("fail to decode blockByte")
+		return nil, errors.New("fail to decode blockByte")
 	}
 	return block, nil
 }
 
-func (bc *BlockChain) GetBlockByNumber(number uint64) (Block, error) {
+func (bc *BlockChain) GetBlockByNumber(number uint64) (*Block, error) {
 	hash, err := bc.GetHashByNumber(number)
 	if err != nil {
-		return Block{}, err
+		return nil, err
 	}
 	return bc.GetBlockByHash(hash)
 }
