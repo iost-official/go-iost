@@ -20,49 +20,8 @@ import (
 	"os"
 )
 
-var (
-	clearInterval       = 10 * time.Second
-	expiration    int64 = 60
-	filterTime          = expiration + expiration/2
-	//expiration    = 60*60*24*7
-
-	receivedTransactionCount = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "received_transaction_count",
-			Help: "Count of received transaction by current node",
-		},
-	)
-)
-
 func init() {
 	prometheus.MustRegister(receivedTransactionCount)
-}
-
-type FRet uint
-
-const (
-	NotFound FRet = iota
-	FoundPending
-	FoundChain
-)
-
-type TFork uint
-
-const (
-	NotFork TFork = iota
-	Fork
-	ForkError
-)
-
-type RecNode struct {
-	LinkedNode *blockcache.BlockCacheNode
-	HeadNode   *blockcache.BlockCacheNode
-}
-
-type ForkChain struct {
-	NewHead       *blockcache.BlockCacheNode
-	OldHead       *blockcache.BlockCacheNode
-	ForkBlockHash []byte
 }
 
 type TxPoolImpl struct {
@@ -79,28 +38,6 @@ type TxPoolImpl struct {
 	pendingTx *sync.Map
 
 	mu sync.RWMutex
-}
-type TxsList []*tx.Tx
-
-func (s TxsList) Len() int { return len(s) }
-func (s TxsList) Less(i, j int) bool {
-	if s[i].GasPrice > s[j].GasPrice {
-		return true
-	}
-
-	if s[i].GasPrice == s[j].GasPrice {
-		if s[i].Time > s[j].Time {
-			return false
-		} else {
-			return true
-		}
-	}
-	return false
-}
-func (s TxsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-
-func (s *TxsList) Push(x interface{}) {
-	*s = append(*s, x.(*tx.Tx))
 }
 
 func NewTxPoolImpl(chain blockcache.BlockCache, router network.Router, global global.Global) (TxPool, error) {
@@ -167,7 +104,11 @@ func (pool *TxPoolImpl) loop() {
 			}
 
 			if tx.VerifySelf() != nil {
+				pool.mu.Lock()
+
 				pool.addTx(&tx)
+
+				pool.mu.Unlock()
 				receivedTransactionCount.Inc()
 			}
 
@@ -180,6 +121,8 @@ func (pool *TxPoolImpl) loop() {
 			if pool.addBlock(bl.LinkedNode.Block) != nil {
 				continue
 			}
+
+			pool.mu.Lock()
 
 			tFort := pool.updateForkChain(bl.HeadNode)
 			switch tFort {
@@ -201,10 +144,15 @@ func (pool *TxPoolImpl) loop() {
 			default:
 				log.Log.E("tx_pool - updateForkChain is error")
 			}
+			pool.mu.Unlock()
 
 		case <-clearTx.C:
+			pool.mu.Lock()
+
 			pool.clearBlock()
 			pool.clearTimeOutTx()
+
+			pool.mu.Unlock()
 		}
 	}
 }
@@ -600,35 +548,4 @@ func (pool *TxPoolImpl) doChainChange() error {
 	}
 
 	return nil
-}
-
-type blockTx struct {
-	txMap      sync.Map
-	ParentHash []byte
-	cTime      int64
-}
-
-func (b *blockTx) time() int64 {
-	return b.cTime
-}
-
-func (b *blockTx) setTime(t int64) {
-	b.cTime = t
-}
-
-func (b *blockTx) addBlock(ib *block.Block) {
-
-	for _, v := range ib.Txs {
-
-		b.txMap.Store(v.Hash(), nil)
-	}
-
-	b.ParentHash = ib.Head.ParentHash
-}
-
-func (b *blockTx) existTx(hash []byte) bool {
-
-	_, r := b.txMap.Load(hash)
-
-	return r
 }
