@@ -90,6 +90,7 @@ func (b *Block) Decode(blockByte []byte) error {
 		return errors.New("fail to decode blockraw")
 	}
 	b.Head = *br.Head
+
 	for _, t := range br.Txs {
 		var tt tx.Tx
 		err = tt.Decode(t)

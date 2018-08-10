@@ -5,7 +5,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"fmt"
-)
+				)
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
@@ -16,14 +16,11 @@ func TestNewBlockChain(t *testing.T) {
 	})
 }
 
-/*
+
 func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
 		bc, err := Instance()
-		Convey("New", func() {
-			So(err, ShouldBeNil)
-		})
-
+		So(err, ShouldBeNil)
 		tBlock := Block{Head: BlockHead{
 			Version:    2,
 			ParentHash: []byte("parent Hash"),
@@ -34,65 +31,52 @@ func TestChainImpl(t *testing.T) {
 			Signature:  []byte("Signatrue"),
 			Time:       201222,
 		}}
-
-		err = state.PoolInstance()
-		if err != nil {
-			panic("state.PoolInstance error")
-		}
-
-		sp, e := tx.NewServiPool(len(account.GenesisAccount), 1000)
-		So(e, ShouldBeNil)
-		acc, err := account.NewAccount(common.Base58Decode("4PpkMbuJauTeqX1VZw4qeYrc9jNbdAbBUi3q6dVR7sMC"))
+		//test Push
+		length := bc.Length()
+		fmt.Println("length:", length)
+		tBlock.Head.Number = int64(length)
+		err = bc.Push(&tBlock)
 		So(err, ShouldBeNil)
-		tx.Data = tx.NewHolder(acc, state.StdPool, sp)
+		So(bc.Length(), ShouldEqual, length+1)
 
-		Convey("Push", func() {
-			length := bc.Length()
+		//test GetBlockByNumber
 
-			tBlock.Head.Number = int64(length)
+		block, err := bc.GetBlockByNumber(bc.Length() - 1)
+		So(err, ShouldBeNil)
+		So(block, ShouldNotBeNil)
+		So(block.Head.Version, ShouldEqual, 2)
+		So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
+		So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
+		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
+		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
+		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
+		So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
+		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 
-			err = bc.Push(&tBlock)
-			So(err, ShouldBeNil)
-			So(bc.Length(), ShouldEqual, length+1)
-		})
+		block, err = bc.Top()
+		So(err, ShouldBeNil)
+		So(block, ShouldNotBeNil)
+		So(block.Head.Version, ShouldEqual, 2)
+		So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
+		So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
+		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
+		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
+		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
+		So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
+		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 
-		Convey("GetBlockByNumber", func() {
-			length := bc.Length()
-			tBlock.Head.Number = int64(length) - 1
-
-			block := bc.GetBlockByNumber(length - 1)
-			So(block, ShouldNotBeNil)
-			So(block.Head.Version, ShouldEqual, 2)
-			So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
-			So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
-			So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
-			So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
-			So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
-			So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
-			So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
-
-			block = bc.Top()
-			So(block, ShouldNotBeNil)
-			So(block.Head.Version, ShouldEqual, 2)
-			So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
-			So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
-			So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
-			So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
-			So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
-			So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
-			So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
-
-			block = bc.GetBlockByHash(tBlock.HeadHash())
-			So(block, ShouldNotBeNil)
-			So(block.Head.Version, ShouldEqual, 2)
-			So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
-			So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
-			So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
-			So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
-			So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
-			So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
-			So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
-		})
+		HeadHash, err := tBlock.HeadHash()
+		block, err = bc.GetBlockByHash(HeadHash)
+		So(err, ShouldBeNil)
+		So(block, ShouldNotBeNil)
+		So(block.Head.Version, ShouldEqual, 2)
+		So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
+		So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
+		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
+		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
+		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
+		So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
+		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 	})
 }
-*/
+
