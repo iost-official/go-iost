@@ -9,9 +9,9 @@ import (
 	"bytes"
 	"errors"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
@@ -250,14 +250,14 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 	return pendingList[:len], nil
 }
 
-func (pool *TxPoolImpl) ExistTxs(hash []byte, chainNode *blockcache.BlockCacheNode) (FRet, error) {
+func (pool *TxPoolImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error) {
 
 	var r FRet
 
 	switch {
 	case pool.existTxInPending(hash):
 		r = FoundPending
-	case pool.existTxInChain(hash, chainNode.Block):
+	case pool.existTxInChain(hash, chainBlock):
 		r = FoundChain
 	default:
 		r = NotFound
@@ -397,6 +397,11 @@ func (pool *TxPoolImpl) txTimeOut(tx *tx.Tx) bool {
 
 	nTime := time.Now().Unix()
 	txTime := tx.Time / 1e9
+	exTime := tx.Expiration / 1e9
+
+	if exTime <= nTime {
+		return true
+	}
 
 	if nTime-txTime > expiration {
 		return true
@@ -406,12 +411,9 @@ func (pool *TxPoolImpl) txTimeOut(tx *tx.Tx) bool {
 
 func (pool *TxPoolImpl) clearTimeOutTx() {
 
-	nTime := time.Now().Unix()
-
 	pool.pendingTx.Range(func(key, value interface{}) bool {
 
-		txTime := value.(*tx.Tx).Time / 1e9
-		if nTime-txTime > expiration {
+		if pool.txTimeOut(value.(*tx.Tx)) {
 			pool.delTxInPending(value.(*tx.Tx).Hash())
 		}
 
@@ -567,7 +569,7 @@ func (pool *TxPoolImpl) doChainChange() error {
 			return err
 		}
 
-		for _, v := range b.Content {
+		for _, v := range b.Txs {
 			pool.addTx(&v)
 		}
 
@@ -616,7 +618,7 @@ func (b *blockTx) setTime(t int64) {
 
 func (b *blockTx) addBlock(ib *block.Block) {
 
-	for _, v := range ib.Content {
+	for _, v := range ib.Txs {
 
 		b.txMap.Store(v.Hash(), nil)
 	}
