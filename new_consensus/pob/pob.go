@@ -137,8 +137,12 @@ func (p *PoB) Stop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block) bool {
-	if _, err := p.blockCache.Find(blk.HeadHash()); err == nil {
-		p.log.I("Duplicate block: %v", blk.HeadHash())
+	hash, err := blk.HeadHash()
+	if err != nil {
+		return false
+	}
+	if _, err := p.blockCache.Find(hash); err == nil {
+		p.log.I("Duplicate block: %v", hash)
 		return false
 	}
 	if err := verifyBasics(blk); err == nil {
@@ -209,7 +213,11 @@ func (p *PoB) scheduleLoop() {
 			p.log.I("currentTimestamp: %v, wid: %v, p.account.ID: %v", currentTimestamp, wid, p.account.ID)
 			if wid == p.account.ID && p.global.Mode() == global.ModeNormal {
 				chainHead := p.blockCache.Head()
-				p.produceDB.Checkout(string(chainHead.Block.HeadHash()))
+				hash, err := chainHead.Block.HeadHash()
+				if err != nil {
+					continue
+				}
+				p.produceDB.Checkout(string(hash))
 				blk := genBlock(p.account, chainHead, p.txPool, p.produceDB)
 
 				dynamicProp.update(&blk.Head)
@@ -233,9 +241,13 @@ func (p *PoB) scheduleLoop() {
 func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) (*blockcache.BlockCacheNode, error) {
 	// verify block txs
 	if blk.Head.Witness != p.account.ID {
-		p.verifyDB.Checkout(string(parent.Block.HeadHash()))
+		hash, err := parent.Block.HeadHash()
+		if err != nil {
+			return nil, err
+		}
+		p.verifyDB.Checkout(string(hash))
 		var verifyErr error
-		verifyErr = verifyBlock(blk, parent.Block, p.blockCache.LinkedTree().Block, p.txPool, p.verifyDB)
+		verifyErr = verifyBlock(blk, parent.Block, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 
 		// add
 		if newBlock {
@@ -256,9 +268,17 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 			}
 		}
 		// tag in state
-		p.verifyDB.Tag(string(blk.HeadHash()))
+		hash, err = blk.HeadHash()
+		if err != nil {
+			return nil, err
+		}
+		p.verifyDB.Tag(string(hash))
 	} else {
-		p.verifyDB.Checkout(string(blk.HeadHash()))
+		hash, err := blk.HeadHash()
+		if err != nil {
+			return nil, err
+		}
+		p.verifyDB.Checkout(string(hash))
 	}
 
 	// update node info without state
@@ -267,7 +287,7 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 	updatePendingWitness(node, p.verifyDB)
 
 	// confirm
-	confirmNode := calculateConfirm(node, p.blockCache.LinkedTree())
+	confirmNode := calculateConfirm(node, p.blockCache.LinkedRoot())
 	if confirmNode != nil {
 		p.blockCache.Flush(confirmNode)
 		// promote witness list

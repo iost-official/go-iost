@@ -29,10 +29,14 @@ var (
 
 func genBlock(acc Account, node *blockcache.BlockCacheNode, txPool new_txpool.TxPool, db *db.MVCCDB) *block.Block {
 	lastBlk := node.Block
+	parentHash, err := lastBlk.HeadHash()
+	if err != nil {
+		return nil
+	}
 	blk := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
-			ParentHash: lastBlk.HeadHash(),
+			ParentHash: parentHash,
 			Number:     lastBlk.Head.Number + 1,
 			Witness:    acc.ID,
 			Time:       GetCurrentTimestamp().Slot,
@@ -73,12 +77,13 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, txPool new_txpool.Tx
 		}
 	}
 
-	blk.Head.TxsHash = blk.CalculateTxsHash()
-	blk.Head.MerkleHash = blk.CalculateMerkleHash()
+	blk.Head.TxsHash, err = blk.CalculateTxsHash()
+	blk.Head.MerkleHash, err = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
-	db.Tag(string(blk.HeadHash()))
+	hash, err := blk.HeadHash()
+	db.Tag(string(hash))
 
 	generatedBlockCount.Inc()
 

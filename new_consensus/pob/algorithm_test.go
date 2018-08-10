@@ -337,18 +337,19 @@ func TestVerifyBlock(t *testing.T) {
 		}
 		curTime := consensus_common.GetCurrentTimestamp()
 		witness := witnessOfTime(curTime)
+		hash, _ := rootBlk.HeadHash()
 		blk := &block.Block{
 			Head: block.BlockHead{
 				Number: 2,
-				ParentHash: rootBlk.HeadHash(),
+				ParentHash: hash,
 				Time: curTime.Slot,
 				Witness: witness,
 			},
 			Txs: []*tx.Tx{},
 			Receipts: []*tx.TxReceipt{},
 		}
-		blk.Head.TxsHash = blk.CalculateTxsHash()
-		blk.Head.MerkleHash = blk.CalculateMerkleHash()
+		blk.Head.TxsHash, _ = blk.CalculateTxsHash()
+		blk.Head.MerkleHash, _ = blk.CalculateMerkleHash()
 		info := generateHeadInfo(blk.Head)
 		var sig common.Signature
 		if witness == account0.ID {

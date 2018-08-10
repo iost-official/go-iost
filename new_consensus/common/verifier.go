@@ -30,7 +30,8 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.B
 		return ErrOldBlk
 	}
 	// parent hash
-	if !bytes.Equal(bh.ParentHash, parentBlk.HeadHash()) {
+	hash, err := parentBlk.HeadHash()
+	if err != nil || !bytes.Equal(bh.ParentHash, hash) {
 		return ErrParentHash
 	}
 	// block number
@@ -38,13 +39,13 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.B
 		return ErrNumber
 	}
 	// tx hash
-	txHash := blk.CalculateTxsHash()
-	if !bytes.Equal(txHash, bh.TxsHash) {
+	txHash, err := blk.CalculateTxsHash()
+	if err != nil || !bytes.Equal(txHash, bh.TxsHash) {
 		return ErrTxHash
 	}
 	// tx receipt merkle hash
-	merkleHash := blk.CalculateMerkleHash()
-	if !bytes.Equal(merkleHash, bh.MerkleHash) {
+	merkleHash, err := blk.CalculateMerkleHash()
+	if err != nil || !bytes.Equal(merkleHash, bh.MerkleHash) {
 		return ErrMerkleHash
 	}
 	return nil
