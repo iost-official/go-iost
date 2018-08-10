@@ -6,7 +6,6 @@ import (
 
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -27,30 +26,6 @@ var (
 	ErrTxDup       = errors.New("duplicate tx")
 	ErrTxSignature = errors.New("tx wrong signature")
 )
-
-func genGenesis(initTime int64) *block.Block {
-	var code string
-	for k, v := range GenesisAccount {
-		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
-	}
-
-	tx := tx.Tx{
-		Time: 0,
-		// TODO what is the genesis tx?
-	}
-
-	genesis := &block.Block{
-		Head: block.BlockHead{
-			Version: 0,
-			Number:  0,
-			Time:    initTime,
-		},
-		Txs:      make([]tx.Tx, 0),
-		Receipts: make([]tx.TxReceipt, 0),
-	}
-	genesis.Txs = append(genesis.Txs, tx)
-	return genesis
-}
 
 func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *block.Block {
 	lastBlk := node.Block

@@ -4,16 +4,41 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/gogo/protobuf/proto"
 )
 
 type Block struct {
 	hash     []byte
 	Head     BlockHead
-	Txs      []tx.Tx
-	Receipts []tx.TxReceipt
+	Txs      []*tx.Tx
+	Receipts []*tx.TxReceipt
+}
+
+func GenGenesis(initTime int64) *Block {
+	var code string
+	for k, v := range account.GenesisAccount {
+		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
+	}
+
+	txn := tx.Tx{
+		Time: 0,
+		// TODO what is the genesis tx?
+	}
+
+	genesis := &Block{
+		Head: BlockHead{
+			Version: 0,
+			Number:  0,
+			Time:    initTime,
+		},
+		Txs:      make([]*tx.Tx, 0),
+		Receipts: make([]*tx.TxReceipt, 0),
+	}
+	genesis.Txs = append(genesis.Txs, &txn)
+	return genesis
 }
 
 /*
@@ -62,8 +87,8 @@ func (d *Block) Encode() []byte {
 		rpts = append(rpts, r.Encode())
 	}
 	br := &BlockRaw{
-		Head: &d.Head,
-		Txs: txs,
+		Head:     &d.Head,
+		Txs:      txs,
 		Receipts: rpts,
 	}
 
@@ -91,7 +116,7 @@ func (d *Block) Decode(bin []byte) (err error) {
 		if err != nil {
 			return err
 		}
-		d.Txs = append(d.Txs, tt)
+		d.Txs = append(d.Txs, &tt)
 	}
 	for _, r := range br.Receipts {
 		var rcpt tx.TxReceipt
@@ -99,7 +124,7 @@ func (d *Block) Decode(bin []byte) (err error) {
 		if err != nil {
 			return err
 		}
-		d.Receipts = append(d.Receipts, rcpt)
+		d.Receipts = append(d.Receipts, &rcpt)
 	}
 	return nil
 }
@@ -119,11 +144,11 @@ func (d *Block) HeadHash() []byte {
 	return d.hash
 }
 
-func (d *Block) GetTx(x int) tx.Tx {
+func (d *Block) GetTx(x int) *tx.Tx {
 	if x < len(d.Txs) {
 		return d.Txs[x]
 	} else {
-		return tx.Tx{}
+		return &tx.Tx{}
 	}
 }
 

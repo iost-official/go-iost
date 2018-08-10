@@ -69,12 +69,12 @@ type PoB struct {
 	log *log.Logger
 }
 
-func NewPoB(acc Account, global global.Global, p2pserv p2p.Service, sy *Synchronizer, witnessList []string) (*PoB, error) {
+func NewPoB(acc Account, global global.Global, blkcache blockCache.BlockCache, p2pserv p2p.Service, sy *Synchronizer, witnessList []string) (*PoB, error) {
 	//TODO: change initialization based on new interfaces
 	p := PoB{
 		account:      acc,
 		global:       global,
-		blockCache:   blockcache.NewBlockCache(),
+		blockCache:   blkcache,
 		blockChain:   global.BlockChain(),
 		verifyDB:     global.StdPool(),
 		txPool:       global.TxDB(),
@@ -84,13 +84,15 @@ func NewPoB(acc Account, global global.Global, p2pserv p2p.Service, sy *Synchron
 	}
 
 	p.produceDB = p.verifyDB.Fork()
-	if p.blockChain.GetBlockByNumber(0) == nil {
+	/*
+		if p.blockChain.GetBlockByNumber(0) == nil {
 
-		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-		genesis := genGenesis(GetTimestamp(t.Unix()).Slot)
-		//TODO: add genesis to db, what about its state?
-		p.blockChain.Push(genesis)
-	}
+			t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+			genesis := genGenesis(GetTimestamp(t.Unix()).Slot)
+			//TODO: add genesis to db, what about its state?
+			p.blockChain.Push(genesis)
+		}
+	*/
 
 	p.chRecvBlock, err = p.p2pService.Register("consensus chan", p2p.NewBlockResponse, p2p.SyncBlockResponse)
 	if err != nil {
