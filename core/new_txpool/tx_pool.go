@@ -250,11 +250,21 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 	return pendingList[:len], nil
 }
 
-func (pool *TxPoolImpl) ExistTxs(hash string, chainNode *blockcache.BlockCacheNode) (FRet, error) {
-	pool.mu.RLock()
-	defer pool.mu.RUnlock()
+func (pool *TxPoolImpl) ExistTxs(hash []byte, chainNode *blockcache.BlockCacheNode) (FRet, error) {
 
-	return pool.listTx.Exist(hash), nil
+	var r FRet
+
+	switch {
+	case pool.existTxInPending(hash):
+		r = FoundPending
+	case pool.existTxInChain(hash, chainNode.Block):
+		r = FoundChain
+	default:
+		r = NotFound
+
+	}
+
+	return r, nil
 }
 
 func (pool *TxPoolImpl) initBlockTx() {

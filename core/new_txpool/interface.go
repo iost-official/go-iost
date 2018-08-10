@@ -12,5 +12,5 @@ type TxPool interface {
 	AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error
 	AddTx(tx message.Message) error
 	PendingTxs(maxCnt int) (tx.TransactionsList, error)
-	ExistTxs(hash string, chainNode *blockcache.BlockCacheNode) (FRet, error)
+	ExistTxs(hash []byte, chainNode *blockcache.BlockCacheNode) (FRet, error)
 }
