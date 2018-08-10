@@ -104,9 +104,8 @@ func (ldbBtch *LDBBatch) Reset() {
 	ldbBtch.btch.Reset()
 }
 
-func (ldbBtch *LDBBatch) Put(key []byte, value []byte) error {
+func (ldbBtch *LDBBatch) Put(key []byte, value []byte) {
 	ldbBtch.btch.Put(key, value)
-	return nil
 }
 
 func (ldbBtch *LDBBatch) Commit() error {
