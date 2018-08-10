@@ -4,15 +4,15 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"fmt"
 )
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
 		bc, err := Instance()
-		Convey("New", func() {
-			So(err, ShouldBeNil)
-			So(bc.Length(), ShouldEqual, bc.Length())
-		})
+		So(err, ShouldBeNil)
+		So(bc.Length(), ShouldEqual, bc.Length())
+		fmt.Println(bc.Length())
 	})
 }
 
