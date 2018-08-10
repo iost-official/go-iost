@@ -14,6 +14,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 )
 
 var (
@@ -32,7 +34,7 @@ func genGenesis(initTime int64) *block.Block {
 		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
 	}
 
-	tx := Tx{
+	tx := tx.Tx{
 		Time: 0,
 		// TODO what is the genesis tx?
 	}
@@ -43,8 +45,8 @@ func genGenesis(initTime int64) *block.Block {
 			Number:  0,
 			Time:    initTime,
 		},
-		Txs:      make([]Tx, 0),
-		Receipts: make([]TxReceipt, 0),
+		Txs:      make([]tx.Tx, 0),
+		Receipts: make([]tx.TxReceipt, 0),
 	}
 	genesis.Txs = append(genesis.Txs, tx)
 	return genesis
@@ -60,8 +62,8 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *bloc
 			Witness:    acc.ID,
 			Time:       GetCurrentTimestamp().Slot,
 		},
-		Txs:      []Tx{},
-		Receipts: []TxReceipt{},
+		Txs:      []tx.Tx{},
+		Receipts: []tx.TxReceipt{},
 	}
 
 	txCnt := 1000
@@ -165,11 +167,10 @@ func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, db *db
 
 	// verify tx time/sig/exist
 	for _, tx := range blk.Txs {
-		// TODO how to calculate time of tx?
-		if blk.Head.Time-tx.Time > 300 {
+		if dynamicProp.slotToTimestamp(blk.Head.Time).ToUnixSec() - tx.Time/1e9 > 60 {
 			return ErrTxTooOld
 		}
-		exist := new_txpool.TxPoolS.ExistTx(tx.Hash(), blk)
+		exist := new_txpool.TxPoolS.ExistTxs(tx.Hash(), parent)
 		if exist == INBLOCK {
 			return ErrTxDup
 		} else if exist != PENDING {
@@ -207,7 +208,7 @@ func updateNodeInfo(node *blockcache.BlockCacheNode) {
 }
 
 func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) []string {
-	// pending witness
+	// TODO how to decode witness list from db?
 	newList, err := db.Get("state", "witnessList")
 
 	if err == nil {

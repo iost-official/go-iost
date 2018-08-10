@@ -107,7 +107,11 @@ func NewPoB(acc Account, global global.Global, p2pserv p2p.Service, sy *Synchron
 
 	p.initGlobalProperty(p.account, witnessList)
 
-	dynamicProp.update(&p.blockChain.Top().Head)
+	if blk, err := p.blockChain.Top(); err == nil {
+		dynamicProp.update(&blk.Head)
+	} else {
+		p.log.E("Unable to initialize block chain top")
+	}
 	return &p, nil
 }
 
@@ -151,7 +155,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) bool {
 			p.addSingles(node)
 		} else {
 			// Single block
-			p.blockCache.Add(&blk)
+			p.blockCache.Add(blk)
 		}
 	} else {
 		// dishonest?
