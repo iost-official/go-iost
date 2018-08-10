@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -16,7 +15,7 @@ func TestConfirmNode(t *testing.T) {
 
 		staticProp.WitnessList = []string{"id0", "id1", "id2", "id3", "id4"}
 		staticProp.NumberOfWitnesses = 5
-		bc := blockcache.NewBlockCache(&db.MVCCDB{})
+		bc, _ := blockcache.NewBlockCache(nil)
 		// Root of linked tree is confirmed
 		bc.LinkedTree = &blockcache.BlockCacheNode{
 			Number:       1,
@@ -69,7 +68,7 @@ func TestPromoteWitness(t *testing.T) {
 	Convey("Test of Promote Witness", t, func() {
 		staticProp.WitnessList = []string{"id0", "id1", "id2"}
 		staticProp.NumberOfWitnesses = 3
-		bc := blockcache.NewBlockCache(&db.MVCCDB{})
+		bc, _ := blockcache.NewBlockCache(nil)
 		bc.LinkedTree = &blockcache.BlockCacheNode{
 			Number:                1,
 			Witness:               "id0",
@@ -137,7 +136,7 @@ func TestNodeInfoUpdate(t *testing.T) {
 	Convey("Test of node info update", t, func() {
 
 		staticProp = newGlobalStaticProperty(account.Account{"id0",[]byte{}, []byte{}}, []string{"id0", "id1", "id2"})
-		bc := blockcache.NewBlockCache(&db.MVCCDB{})
+		bc, _ := blockcache.NewBlockCache(nil)
 		bc.LinkedTree = &blockcache.BlockCacheNode{
 			Number:  1,
 			Witness: "id0",
@@ -300,6 +299,56 @@ func TestVerifyBasics(t *testing.T) {
 		})
 	})
 }
+/*
+func TestVerifyBlock(t *testing.T) {
+	Convey("Test of verify block", t, func() {
+		sec := common.Sha256([]byte("sec of id0"))
+		account0, _ := account.NewAccount(sec)
+		sec = common.Sha256([]byte("sec of id1"))
+		account1, _ := account.NewAccount(sec)
+		sec = common.Sha256([]byte("sec of id2"))
+		account2, _ := account.NewAccount(sec)
+		staticProp = newGlobalStaticProperty(account0, []string{account0.ID, account1.ID, account2.ID})
+		rootTime := consensus_common.GetCurrentTimestamp().Slot - 1
+		rootBlk := &block.Block{
+			Head: block.BlockHead{
+				Number: 1,
+				Time: rootTime,
+				Witness: witnessOfTime(consensus_common.Timestamp{rootTime}),
+			},
+		}
+		curTime := consensus_common.GetCurrentTimestamp()
+		witness := witnessOfTime(curTime)
+		blk := &block.Block{
+			Head: block.BlockHead{
+				Number: 2,
+				ParentHash: rootBlk.HeadHash(),
+				Time: curTime.Slot,
+				Witness: witness,
+			},
+			Txs: []*tx.Tx{},
+			Receipts: []*tx.TxReceipt{},
+		}
+		blk.Head.TxsHash = blk.CalculateTxsHash()
+		blk.Head.MerkleHash = blk.CalculateMerkleHash()
+		info := generateHeadInfo(blk.Head)
+		var sig common.Signature
+		if witness == account0.ID {
+			sig, _ = common.Sign(common.Secp256k1, info, account0.Seckey)
+		} else if witness == account1.ID {
+			sig, _ = common.Sign(common.Secp256k1, info, account1.Seckey)
+		} else {
+			sig, _ = common.Sign(common.Secp256k1, info, account2.Seckey)
+		}
+		blk.Head.Signature = sig.Encode()
+
+		Convey("Normal (No txs)", func() {
+			err := verifyBlock(blk, rootBlk, rootBlk, nil, nil)
+			So(err, ShouldBeNil)
+		})
+	})
+}
+*/
 
 func addNode(parent *blockcache.BlockCacheNode, number uint64, confirm uint64, witness string) *blockcache.BlockCacheNode {
 	node := &blockcache.BlockCacheNode{

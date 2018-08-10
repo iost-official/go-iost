@@ -54,7 +54,7 @@ func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
 	var receipts []*tx.TxReceipt
 	engine := new_vm.NewEngine(&blk.Head, db)
 	for _, tx := range blk.Txs {
-		receipt, err := verify(tx, &engine)
+		receipt, err := verify(tx, engine)
 		if err == nil {
 			db.Commit()
 			receipts = append(receipts, receipt)

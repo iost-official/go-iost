@@ -59,7 +59,7 @@ func TestVerifyBlockHead(t *testing.T) {
 
 		Convey("Wrong tx hash", func() {
 			tx0 := tx.NewTx(nil, nil, 1000, 1, 300)
-			blk.Txs = append(blk.Txs, tx0)
+			blk.Txs = append(blk.Txs, &tx0)
 			blk.Head.TxsHash = blk.CalculateTxsHash()
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
 			So(err, ShouldBeNil)
