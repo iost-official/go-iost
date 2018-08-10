@@ -27,7 +27,7 @@ var (
 	ErrTxSignature = errors.New("tx wrong signature")
 )
 
-func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *block.Block {
+func genBlock(acc Account, node *blockcache.BlockCacheNode, txPool new_txpool.TxPool, db *db.MVCCDB) *block.Block {
 	lastBlk := node.Block
 	blk := block.Block{
 		Head: block.BlockHead{
@@ -37,17 +37,17 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *bloc
 			Witness:    acc.ID,
 			Time:       GetCurrentTimestamp().Slot,
 		},
-		Txs:      []tx.Tx{},
-		Receipts: []tx.TxReceipt{},
+		Txs:      []*tx.Tx{},
+		Receipts: []*tx.TxReceipt{},
 	}
 
 	txCnt := 1000
 
 	limitTime := time.NewTicker(((SlotLength/3 - 1) + 1) * time.Second)
-	if new_txpool.TxPoolS != nil {
-		tx, err := new_txpool.TxPoolS.PendingTransactions(txCnt)
+	if txPool != nil {
+		tx, err := txPool.PendingTxs(txCnt)
 		if err == nil {
-			txPoolSize.Set(float64(new_txpool.TxPoolS.TransactionNum()))
+			txPoolSize.Set(float64(len(tx)))
 
 			if len(tx) != 0 {
 				VerifyTxBegin(lastBlk, db)
@@ -62,7 +62,7 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *bloc
 						}
 						if receipt, err := VerifyTx(t); err == nil {
 							db.Commit()
-							blk.Txs = append(blk.Txs, *t)
+							blk.Txs = append(blk.Txs, t)
 							blk.Receipts = append(blk.Receipts, receipt)
 						} else {
 							db.Rollback()
@@ -134,7 +134,7 @@ func verifyBasics(blk *block.Block) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, db *db.MVCCDB) error {
+func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, txPool new_txpool.TxPool, db *db.MVCCDB) error {
 	// verify block head
 	if err := VerifyBlockHead(blk, parent, top); err != nil {
 		return err
@@ -145,10 +145,10 @@ func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, db *db
 		if dynamicProp.slotToTimestamp(blk.Head.Time).ToUnixSec() - tx.Time/1e9 > 60 {
 			return ErrTxTooOld
 		}
-		exist := new_txpool.TxPoolS.ExistTxs(tx.Hash(), parent)
-		if exist == INBLOCK {
+		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
+		if exist == new_txpool.FoundChain {
 			return ErrTxDup
-		} else if exist != PENDING {
+		} else if exist != new_txpool.FoundPending {
 			if err := tx.VerifySelf(); err != nil {
 				return ErrTxSignature
 			}

@@ -51,10 +51,10 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.B
 }
 
 func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
-	var receipts []tx.TxReceipt
-	engine := new_vm.NewEngine(blk.Head, db)
+	var receipts []*tx.TxReceipt
+	engine := new_vm.NewEngine(&blk.Head, db)
 	for _, tx := range blk.Txs {
-		receipt, err := verify(&tx, &engine)
+		receipt, err := verify(tx, &engine)
 		if err == nil {
 			db.Commit()
 			receipts = append(receipts, receipt)
@@ -77,11 +77,11 @@ func VerifyTxBegin(blk *block.Block, db *db.MVCCDB) {
 	txEngine = new_vm.NewEngine(&blk.Head, db)
 }
 
-func VerifyTx(tx *tx.Tx) (tx.TxReceipt, error) {
-	return verify(tx, &txEngine)
+func VerifyTx(tx *tx.Tx) (*tx.TxReceipt, error) {
+	return verify(tx, txEngine)
 }
 
-func verify(tx *tx.Tx, engine *new_vm.Engine) (tx.TxReceipt, error) {
+func verify(tx *tx.Tx, engine new_vm.Engine) (*tx.TxReceipt, error) {
 	receipt, err := engine.Exec(tx)
 	return receipt, err
 }
