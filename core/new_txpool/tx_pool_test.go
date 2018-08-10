@@ -5,11 +5,11 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/network"
 	"github.com/iost-official/Go-IOS-Protocol/network/mocks"
@@ -19,7 +19,7 @@ import (
 	"testing"
 )
 
-func TestNewTxPoolServer(t *testing.T) {
+func TestNewTxPoolImpl(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
 		var accountList []account.Account
 		var witnessList []string
@@ -58,7 +58,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 		blockChain, err := block.Instance()
 		if err != nil {
-			panic("block.Instance error")
+			panic("blockList.Instance error")
 		}
 
 		err = state.PoolInstance()
@@ -71,7 +71,7 @@ func TestNewTxPoolServer(t *testing.T) {
 		BlockCache := blockcache.NewBlockCache(blockChain, state.StdPool, len(witnessList)*2/3)
 
 		chConfirmBlock := make(chan *block.Block, 10000)
-		txPool, err := NewTxPoolServer(BlockCache, chConfirmBlock)
+		txPool, err := NewTxPoolImpl(BlockCache, chConfirmBlock)
 		So(err, ShouldBeNil)
 
 		txPool.Start()
@@ -89,7 +89,7 @@ func TestNewTxPoolServer(t *testing.T) {
 
 			tx := genTx(accountList[0], 1)
 
-			tx.Time -= int64(filterTime*1e9 + 1*1e9)
+			tx.Time -= int64(expiration*1e9 + 1*1e9)
 			b := txPool.txTimeOut(&tx)
 			So(b, ShouldBeTrue)
 
@@ -100,7 +100,7 @@ func TestNewTxPoolServer(t *testing.T) {
 			tx := genTx(accountList[0], 1)
 			So(txPool.TransactionNum(), ShouldEqual, 0)
 
-			tx.Time -= int64(filterTime*1e9 + 1*1e9)
+			tx.Time -= int64(expiration*1e9 + 1*1e9)
 			txPool.addListTx(&tx)
 			So(txPool.TransactionNum(), ShouldEqual, 1)
 
@@ -256,9 +256,9 @@ func BenchmarkUpdatePending(b *testing.B) {
 	}
 
 	txPool.addBlockTx(blockList[0])
-	txPool.checkIterateBlockHash.Add(blockList[0].HashID())
+	txPool.longestChainHash.Add(blockList[0].HashID())
 	txPool.addBlockTx(blockList[1])
-	txPool.checkIterateBlockHash.Add(blockList[1].HashID())
+	txPool.longestChainHash.Add(blockList[1].HashID())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -267,7 +267,7 @@ func BenchmarkUpdatePending(b *testing.B) {
 
 }
 
-func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolServer) {
+func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl) {
 	var accountList []account.Account
 	var witnessList []string
 
@@ -304,7 +304,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 
 	blockChain, err := block.Instance()
 	if err != nil {
-		panic("block.Instance error")
+		panic("blockList.Instance error")
 	}
 
 	err = state.PoolInstance()

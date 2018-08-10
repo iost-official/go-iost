@@ -7,7 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -21,7 +21,7 @@ func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 	if fa == nil {
 		ret.Head.ParentHash = []byte("Im a single block")
 	} else {
-		ret.Head.ParentHash = fa.HeadHash()
+		ret.Head.ParentHash, _ = fa.HeadHash()
 	}
 	return ret
 }
@@ -52,10 +52,10 @@ func TestBlockCache(t *testing.T) {
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(b0)
 	base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
-	block.BChain = base
+	block.BC = base
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
-			bc := NewBlockCache(nil)
+			bc, _ := NewBlockCache(nil)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			b1node, _ := bc.Add(b1)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
@@ -68,10 +68,10 @@ func TestBlockCache(t *testing.T) {
 			_, err = bc.Add(b4)
 			So(err, ShouldEqual, ErrDup)
 			bc.Del(b1node)
+			bc.updateLongest()
 			//fmt.Printf("after Del Leaf:%+v\n",bc.Leaf)
 			b1node, _ = bc.Add(b1)
-			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
-			//bc.Draw()
+			bc.Draw()
 			So(bc.Head, ShouldEqual, b1node)
 			bc.Add(b3)
 			So(bc.Head, ShouldEqual, b1node)
@@ -79,29 +79,62 @@ func TestBlockCache(t *testing.T) {
 		})
 
 		Convey("Flush", func() {
-			bc := NewBlockCache(nil)
+			bc, _ := NewBlockCache(nil)
 			bc.Add(b1)
-			bc.Draw()
+			//bc.Draw()
 			bc.Add(b2)
-			bc.Draw()
+			//bc.Draw()
 			bc.Add(b2a)
-			bc.Draw()
+			//bc.Draw()
 			bc.Add(b3)
-			bc.Draw()
+			//bc.Draw()
 			b4node, _ := bc.Add(b4)
-			bc.Draw()
+			//bc.Draw()
 			bc.Add(b3a)
-			bc.Draw()
+			//bc.Draw()
 			bc.Add(b5)
-			bc.Draw()
+			//bc.Draw()
 
 			bc.Add(s1)
 			bc.Add(s2)
 			bc.Add(s2a)
 			bc.Add(s3)
-			bc.Draw()
+			//bc.Draw()
 			bc.Flush(b4node)
-			bc.Draw()
+			//bc.Draw()
+
+		})
+
+		Convey("GetBlockbyNumber", func() {
+			bc, _ := NewBlockCache(nil)
+			b1node, _ := bc.Add(b1)
+			//bc.Draw()
+			b2node, _ := bc.Add(b2)
+			//bc.Draw()
+			bc.Add(b2a)
+			//bc.Draw()
+			bc.Add(b3)
+			//bc.Draw()
+			b4node, _ := bc.Add(b4)
+			//bc.Draw()
+			b3anode, _ := bc.Add(b3a)
+			//bc.Draw()
+			b5node, _ := bc.Add(b5)
+			//bc.Draw()
+			So(bc.Head, ShouldEqual, b5node)
+			blk, _ := bc.GetBlockByNumber(uint64(7))
+			So(blk, ShouldEqual, b5node.Block)
+			blk, _ = bc.GetBlockByNumber(uint64(6))
+			So(blk, ShouldEqual, b3anode.Block)
+			blk, _ = bc.GetBlockByNumber(uint64(2))
+			So(blk, ShouldEqual, b2node.Block)
+			blk, _ = bc.GetBlockByNumber(uint64(1))
+			So(blk, ShouldEqual, b1node.Block)
+			blk, _ = bc.GetBlockByNumber(uint64(4))
+			So(blk, ShouldEqual, nil)
+
+			bc.Flush(b4node)
+			//bc.Draw()
 
 		})
 

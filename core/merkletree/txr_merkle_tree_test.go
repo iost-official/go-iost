@@ -16,7 +16,7 @@ import (
 func TestTXRMerkleTree(t *testing.T) {
 	convey.Convey("Test of TXR", t, func() {
 		m := TXRMerkleTree{}
-		txrs := []tx.TxReceipt{
+		txrs := []*tx.TxReceipt{
 			{TxHash:[]byte("node1")},
 			{TxHash:[]byte("node2")},
 			{TxHash:[]byte("node3")},
@@ -52,10 +52,10 @@ func TestTXRMerkleTree(t *testing.T) {
 
 func BenchmarkTXRMerkleTree_Build(b *testing.B) { // 2439313ns = 2.4ms
 	rand.Seed(time.Now().UnixNano())
-	var txrs []tx.TxReceipt
+	var txrs []*tx.TxReceipt
 	for i := 0; i < 3000; i++ {
 		fmt.Println(i)
-		txrs = append(txrs, tx.TxReceipt{TxHash:[]byte("node1")})
+		txrs = append(txrs, &tx.TxReceipt{TxHash:[]byte("node1")})
 	}
 	m := TXRMerkleTree{}
 	b.ResetTimer()

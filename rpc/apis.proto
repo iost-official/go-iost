@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+import "../core/new_tx/tx.proto"
 package rpc;
 
 service Apis {
@@ -18,7 +19,7 @@ message VoidReq {
 }
 
 message HashReq {
-	string hash=1;
+	bytes hash=1;
 }
 message NumReq {
 	uint64 num=1;	
@@ -38,16 +39,6 @@ message HeightRes {
 	uint64 height=1;
 }
 
-message TxRes {
-	//tx to be returned
-	string todo=1;		
-}
-
-message BlockRes {
-	//blk to be returned
-	string todo=1;
-}
-
 message GetBalanceRes {
 	string balance=1;
 }
@@ -57,7 +48,7 @@ message GetStateRes {
 }
 
 message SendRawTxRes {
-	string hash=1;
+	bytes hash=1;
 }
 
 message GasRes {

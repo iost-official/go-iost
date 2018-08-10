@@ -5,7 +5,8 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
-	"github.com/pkg/errors"
+
+	"errors"
 )
 
 var (
