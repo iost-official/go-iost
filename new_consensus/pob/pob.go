@@ -187,7 +187,10 @@ func (p *PoB) blockLoop() {
 			}
 			if p.handleRecvBlock(&blk) {
 				if req.Type() == p2p.SyncBlockResponse {
-					go p.synchronizer.OnRecvBlock(blk.HeadHash(), req.From())
+					hash, err := blk.HeadHash()
+					if err == nil {
+						go p.synchronizer.OnRecvBlock(hash, req.From())
+					}
 				}
 			}
 		case blk, ok := <-p.chGenBlock:
