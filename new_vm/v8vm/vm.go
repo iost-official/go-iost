@@ -4,7 +4,7 @@ package v8
 #include <stdlib.h>
 #include "v8/vm.h"
 //#cgo LDFLAGS: -lvm
-#cgo LDFLAGS: -L./v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath ./v8/libv8/_linux_amd64
+#cgo LDFLAGS: -L${SRCDIR}/v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath ${SRCDIR}/v8/libv8/_linux_amd64
 */
 import "C"
 import (
@@ -36,6 +36,21 @@ func NewVM() *VM {
 
 func (e *VM) Init() error {
 	return nil
+}
+
+func (e *VM) Run(code, api string, args ...interface{}) (string, error) {
+	contr := &contract.Contract{
+		ID: "run_id",
+		Code: code,
+	}
+
+	preparedCode, err := e.sandbox.Prepare(contr, api, args)
+	if err != nil {
+		return "", err
+	}
+
+	rs, err := e.sandbox.Execute(preparedCode)
+	return rs, err
 }
 
 // LoadAndCall load contract code with provide contract, and call api with args
