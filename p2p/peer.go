@@ -5,17 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
-	"github.com/uber-go/atomic"
 	"github.com/willf/bloom"
 )
 
 var (
-	ErrInactivePeer = errors.New("inactive peer")
+	ErrStreamCountExceed = errors.New("stream count exceed")
 )
 
 const (
@@ -23,59 +23,111 @@ const (
 	bloomErrRate   = 0.001
 
 	msgChanSize = 1024
+
+	maxStreamCount = 4
 )
 
 type Peer struct {
 	id          peer.ID
 	addr        multiaddr.Multiaddr
-	stream      libnet.Stream
+	peerManager *PeerManager
+
+	streams     chan libnet.Stream
+	streamCount int
+	streamMutex sync.Mutex
+
+	conn        libnet.Conn
 	recentMsg   *bloom.BloomFilter
 	urgentMsgCh chan *p2pMessage
 	normalMsgCh chan *p2pMessage
 	quitWriteCh chan struct{}
-
-	inactive atomic.Bool
 }
 
-func NewPeer(stream libnet.Stream) *Peer {
+func NewPeer(stream libnet.Stream, pm *PeerManager) *Peer {
 	peer := &Peer{
 		id:          stream.Conn().RemotePeer(),
 		addr:        stream.Conn().RemoteMultiaddr(),
-		stream:      stream,
+		peerManager: pm,
+		conn:        stream.Conn(),
+		streams:     make(chan libnet.Stream, maxStreamCount),
 		recentMsg:   bloom.NewWithEstimates(bloomItemCount, bloomErrRate),
 		urgentMsgCh: make(chan *p2pMessage, msgChanSize),
 		normalMsgCh: make(chan *p2pMessage, msgChanSize),
 		quitWriteCh: make(chan struct{}),
 	}
+	peer.AddStream(stream)
 	return peer
 }
 
 func (p *Peer) Start() {
 	p.writeLoop()
-	p.readLoop()
 }
 
 func (p *Peer) Stop() {
-	p.inactive.Store(true)
 	close(p.quitWriteCh)
+	p.conn.Close()
 }
 
-func (p *Peer) Inactive() bool {
-	return p.inactive.Load()
+func (p *Peer) AddStream(stream libnet.Stream) error {
+	p.streamMutex.Lock()
+	defer p.streamMutex.Unlock()
+
+	if p.streamCount >= maxStreamCount {
+		return ErrStreamCountExceed
+	}
+	p.streams <- stream
+	p.streamCount++
+	go p.readLoop(stream)
+	return nil
+}
+
+func (p *Peer) newStream() (libnet.Stream, error) {
+	p.streamMutex.Lock()
+	defer p.streamMutex.Unlock()
+	if p.streamCount >= maxStreamCount {
+		return nil, ErrStreamCountExceed
+	}
+	stream, err := p.conn.NewStream()
+	if err != nil {
+		// log
+		return nil, err
+	}
+	p.streamCount++
+	return stream, nil
+}
+
+func (p *Peer) getStream() (libnet.Stream, error) {
+	select {
+	case stream := <-p.streams:
+		return stream, nil
+	default:
+		stream, err := p.newStream()
+		if err == ErrStreamCountExceed {
+			break
+		}
+		return stream, err
+	}
+	return <-p.streams, nil
 }
 
 func (p *Peer) write(m *p2pMessage) error {
+	stream, err := p.getStream()
+	if err != nil {
+		return err
+	}
+
 	deadline := time.Now().Add(time.Duration(len(m.content())/1024/10+1) * time.Second)
-	if err := p.stream.SetWriteDeadline(deadline); err != nil {
+	if err = stream.SetWriteDeadline(deadline); err != nil {
 		// log
 		return err
 	}
-	_, err := p.stream.Write([]byte(*m))
+	_, err = stream.Write(m.content())
 	if err != nil {
 		// TODO: log
-		p.Stop()
+		stream.Reset()
 		return err
 	}
+	p.streams <- stream
 	// TODO: metrics
 	return nil
 }
@@ -94,29 +146,29 @@ func (p *Peer) writeLoop() {
 	}
 }
 
-func (p *Peer) readLoop() {
+func (p *Peer) readLoop(stream libnet.Stream) {
 	header := make([]byte, dataBegin)
 	for {
-		_, err := io.ReadFull(p.stream, header)
+		_, err := io.ReadFull(stream, header)
 		if err != nil {
 			// TODO: log
-			p.Stop()
+			stream.Reset()
 			return
 		}
 		// TODO: check chainID
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
 		data := make([]byte, dataBegin+length)
-		_, err = io.ReadFull(p.stream, data[dataBegin:])
+		_, err = io.ReadFull(stream, data[dataBegin:])
 		if err != nil {
 			// TODO: log
-			p.Stop()
+			stream.Reset()
 			return
 		}
 		copy(data[0:dataBegin], header)
 		msg, err := parseP2PMessage(data)
 		if err != nil {
 			// TODO: log
-			p.Stop()
+			stream.Reset()
 			return
 		}
 		p.handleMessage(msg)
@@ -124,9 +176,7 @@ func (p *Peer) readLoop() {
 }
 
 func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority) error {
-	if p.Inactive() {
-		return ErrInactivePeer
-	}
+	// TODO: unblock
 	switch mp {
 	case UrgentMessage:
 		p.urgentMsgCh <- msg

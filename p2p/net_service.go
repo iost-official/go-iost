@@ -67,7 +67,7 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 }
 
 func (ns *NetService) streamHandler(s libnet.Stream) {
-	ns.peerManager.AddPeer(s)
+	ns.peerManager.HandlerStream(s)
 }
 
 func NewNetService(config *Config) (*NetService, error) {
