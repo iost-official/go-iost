@@ -2,20 +2,46 @@ package block
 
 import (
 	"fmt"
+	"strconv"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"strconv"
 )
 
-//go:generate gencode go -schema=structs.schema -package=block
-
 type Block struct {
+	hash     []byte
 	Head     BlockHead
-	Txs 	 []tx.Tx
-	Receipts []tx.TxReceipt
+	Txs      []*tx.Tx
+	Receipts []*tx.TxReceipt
 }
 
+func GenGenesis(initTime int64) *Block {
+	var code string
+	for k, v := range account.GenesisAccount {
+		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
+	}
+
+	txn := tx.Tx{
+		Time: 0,
+		// TODO what is the genesis tx?
+	}
+
+	genesis := &Block{
+		Head: BlockHead{
+			Version: 0,
+			Number:  0,
+			Time:    initTime,
+		},
+		Txs:      make([]*tx.Tx, 0),
+		Receipts: make([]*tx.TxReceipt, 0),
+	}
+	genesis.Txs = append(genesis.Txs, &txn)
+	return genesis
+}
+
+/*
 func (d *Block) String() string {
 	str := "Block{\n"
 	str += "	BlockHead{\n"
@@ -25,25 +51,30 @@ func (d *Block) String() string {
 	str += "	}\n"
 
 	str += "	Txs {\n"
-	for _, tx := range d.Txs {
-		str += tx.String()
-	}
+	//for _, tx := range d.Txs {
+	//	//str += tx.String()
+	//}
 	str += "	}\n"
 	str += "	Receipts {\n"
-	for _, receipt := range d.Receipts {
-		str += receipt.String()
-	}
+	//for _, receipt := range d.Receipts {
+	//	str += receipt.String()
+	//}
 	str += "	}\n"
 	str += "}\n"
 	return str
 }
+*/
 
-func (d *Block) CalculateTreeHash() []byte {
+func (d *Block) CalculateTxsHash() []byte {
 	treeHash := make([]byte, 0)
 	for _, tx := range d.Txs {
 		treeHash = append(treeHash, tx.Publisher.Sig...)
 	}
 	return common.Sha256(treeHash)
+}
+
+func (d *Block) CalculateMerkleHash() []byte {
+	return nil
 }
 
 func (d *Block) Encode() []byte {
@@ -55,31 +86,37 @@ func (d *Block) Encode() []byte {
 	for _, r := range d.Receipts {
 		rpts = append(rpts, r.Encode())
 	}
-	br := BlockRaw{d.Head, txs, rpts}
-	b, err := br.Marshal(nil)
+	br := &BlockRaw{
+		Head:     &d.Head,
+		Txs:      txs,
+		Receipts: rpts,
+	}
+
+	b, err := proto.Marshal(br)
 	if err != nil {
 		panic(err)
 	}
+	d.hash = nil
 	return b
 }
 
 func (d *Block) Decode(bin []byte) (err error) {
-	var br BlockRaw
+	br := &BlockRaw{}
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
 		}
 	}()
 
-	_, err = br.Unmarshal(bin)
-	d.Head = br.Head
+	err = proto.Unmarshal(bin, br)
+	d.Head = *br.Head
 	for _, t := range br.Txs {
 		var tt tx.Tx
 		err = tt.Decode(t)
 		if err != nil {
 			return err
 		}
-		d.Txs = append(d.Txs, tt)
+		d.Txs = append(d.Txs, &tt)
 	}
 	for _, r := range br.Receipts {
 		var rcpt tx.TxReceipt
@@ -87,13 +124,9 @@ func (d *Block) Decode(bin []byte) (err error) {
 		if err != nil {
 			return err
 		}
-		d.Receipts = append(d.Receipts, rcpt)
+		d.Receipts = append(d.Receipts, &rcpt)
 	}
 	return nil
-}
-
-func (d *Block) Hash() []byte {
-	return common.Sha256(d.Encode())
 }
 
 func (d *Block) HashID() string {
@@ -105,14 +138,17 @@ func (d *Block) HashID() string {
 }
 
 func (d *Block) HeadHash() []byte {
-	return d.Head.Hash()
+	if d.hash == nil {
+		d.hash = d.Head.Hash()
+	}
+	return d.hash
 }
 
-func (d *Block) GetTx(x int) tx.Tx {
+func (d *Block) GetTx(x int) *tx.Tx {
 	if x < len(d.Txs) {
 		return d.Txs[x]
 	} else {
-		return tx.Tx{}
+		return &tx.Tx{}
 	}
 }
 
@@ -121,7 +157,7 @@ func (d *Block) LenTx() int {
 }
 
 func (d *BlockHead) Encode() []byte {
-	bin, err := d.Marshal(nil)
+	bin, err := proto.Marshal(d)
 	if err != nil {
 		panic(err)
 	}
@@ -129,7 +165,7 @@ func (d *BlockHead) Encode() []byte {
 }
 
 func (d *BlockHead) Decode(bin []byte) error {
-	_, err := d.Unmarshal(bin)
+	err := proto.Unmarshal(bin, d)
 	return err
 }
 

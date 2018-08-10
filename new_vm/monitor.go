@@ -4,7 +4,12 @@ import (
 	"context"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"errors"
+)
+
+var (
+	ErrABINotFound    = errors.New("abi not found")
+	ErrGasPriceTooBig = errors.New("gas price too big")
 )
 
 type Monitor struct {
@@ -28,39 +33,41 @@ func NewMonitor( /*cb database.IMultiValue, cacheLength int*/ ) *Monitor {
 	return m
 }
 
-func (m *Monitor) Call(host *Host, contractName, api string, args ...string) (rtn []string, receipt *tx.Receipt, cost *contract.Cost, err error) {
+func (m *Monitor) Call(host *Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+
 	c := host.db.Contract(contractName)
+	abi := c.ABI(api)
+	if abi == nil {
+		return nil, nil, ErrABINotFound
+	}
 	ctx := host.Context()
 
-	host.ctx = context.WithValue(ctx, "abi_config", make(map[string]*string))
+	host.ctx = context.WithValue(host.ctx, "abi_config", abi)
+	host.ctx = context.WithValue(host.ctx, "contract_name", contractName)
+	host.ctx = context.WithValue(host.ctx, "abi_name", api)
 
-	if vm, ok := m.vms[c.Lang]; ok {
-		rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
-	} else {
-		vm = VMFactory(c.Lang)
-		m.vms[c.Lang] = vm
-		m.vms[c.Lang].Init()
-		rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
+	vm, ok := m.vms[c.Info.Lang]
+	if !ok {
+		vm = VMFactory(c.Info.Lang)
+		m.vms[c.Info.Lang] = vm
+		m.vms[c.Info.Lang].Init()
 	}
-	if err != nil {
-		receipt = &tx.Receipt{
-			Type:    tx.SystemDefined,
-			Content: err.Error(),
+	rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
+
+	payment := host.ctx.Value("abi_config").(*contract.ABI).Payment // TODO 预编译
+	switch payment {
+	case 1:
+		var gasPrice = host.ctx.Value("gas_price").(int64) // TODO 判断大于0
+		if abi.GasPrice < gasPrice {
+			return nil, nil, ErrGasPriceTooBig
 		}
-	}
-	receipt = &tx.Receipt{
-		Type:    tx.SystemDefined,
-		Content: "success",
-	}
-	payment := host.ctx.Value("abi_config").(map[string]*string)["payment"]
-	gasPrice := host.ctx.Value("gas_price").(int64)
-	switch {
-	case payment == nil:
-		break
-	default:
-		host.PayCost(cost, *payment, gasPrice)
+		host.PayCost(cost, contractName, gasPrice)
 		cost = contract.Cost0()
+	default:
+		//fmt.Println("user paid for", args[0])
 	}
+
+	host.ctx = ctx
 
 	return
 }

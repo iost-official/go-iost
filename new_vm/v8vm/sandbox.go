@@ -9,9 +9,11 @@ import (
 	"errors"
 	"fmt"
 	"unsafe"
-)
 
-const (aa = iota)
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"encoding/json"
+)
 
 // A Sandbox is an execution environment that allows separate, unrelated, JavaScript
 // code to run in a single instance of IVM.
@@ -19,39 +21,69 @@ type Sandbox struct {
 	id      int
 	isolate C.IsolatePtr
 	context C.SandboxPtr
+	modules Modules
+	host    *new_vm.Host
+}
+
+var sbxMap = make(map[C.SandboxPtr]*Sandbox)
+
+func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
+	sbx, ok := sbxMap[cSbx]
+	return sbx, ok
 }
 
 func NewSandbox(e *VM) *Sandbox {
+	cSbx := C.newSandbox(e.isolate)
 	s := &Sandbox{
 		isolate: e.isolate,
-		context: C.newSandbox(e.isolate),
+		context: cSbx,
+		modules: NewModules(),
 	}
+	sbxMap[cSbx] = s
 
 	return s
 }
 
 func (sbx *Sandbox) Release() {
 	if sbx.context != nil {
+		delete(sbxMap, sbx.context)
 		C.releaseSandbox(sbx.context)
 	}
 	sbx.context = nil
 }
 
 func (sbx *Sandbox) Init() {
-
+	// init require
 }
 
-func (sbx *Sandbox) Prepare(code, function string, args []string) string {
+func (sbx *Sandbox) SetHost(host *new_vm.Host) {
+	sbx.host = host
+}
+
+func (sbx *Sandbox) SetModule(name, code string) {
+	if name == "" || code == "" {
+		return
+	}
+	m := NewModule(name, code)
+	sbx.modules.Set(m)
+}
+
+func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args []interface{}) (string, error) {
+	name := contract.ID
+	code := contract.Code
+
+	sbx.SetModule(name, code)
+
+	argStr, err := json.Marshal(args)
+	if err != nil {
+		return "", err
+	}
+
 	return fmt.Sprintf(`
-var wrapper = (function (exports, module) {
-%s
-});
-
-wrapper.call(wrapper, exports, module)
-
-var obj = new module.exports();
-obj["%s"].apply(obj, %v);
-`, code, function, args)
+var _native_main = NativeModule.require('%s');
+var obj = new _native_main();
+obj['%s'].apply(obj, %v);
+`, name, function, string(argStr)), nil
 }
 
 func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
@@ -67,8 +99,12 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
 		err = errors.New(C.GoString(rs.Err))
 	}
 
-	C.free(unsafe.Pointer(rs.Value))
-	C.free(unsafe.Pointer(rs.Err))
+	if rs.Value != nil {
+		C.free(unsafe.Pointer(rs.Value))
+	}
+	if rs.Err != nil {
+		C.free(unsafe.Pointer(rs.Err))
+	}
 
 	return result, err
 }

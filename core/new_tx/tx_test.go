@@ -8,6 +8,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"bytes"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"fmt"
 )
 /*
 func gentx() Tx {
@@ -50,6 +51,11 @@ func TestTx(t *testing.T) {
 			ActionName:"actionname1",
 			Data:"{\"num\": 1, \"message\": \"contract1\"}",
 		})
+		actions = append(actions, Action{
+			Contract:"contract2",
+			ActionName:"actionname2",
+			Data:"1",
+		})
 		// seckey := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 		// acc, err := account.NewAccount(seckey)
 		// So(err, ShouldEqual, nil)
@@ -60,8 +66,7 @@ func TestTx(t *testing.T) {
 
 		Convey("proto marshal", func() {
 			tx := &TxRaw{
-				Id: "txproto",
-				Time: 1,
+				Time: 99,
 				Actions:[]*ActionRaw{&ActionRaw{
 					Contract:"contract1",
 					ActionName:"actionname1",
@@ -77,12 +82,12 @@ func TestTx(t *testing.T) {
 			err = proto.Unmarshal(b, tx1)
 			So(err, ShouldEqual, nil)
 
-			So("txproto", ShouldEqual, tx1.Id)
+			So(99, ShouldEqual, tx1.Time)
 		})
 
 		Convey("encode and decode", func() {
-			tx := NewTx(0, actions, [][]byte{a1.Pubkey}, 100000, 100, 11)
-			tx1 := NewTx(1, []Action{}, [][]byte{}, 0, 0, 0)
+			tx := NewTx(actions, [][]byte{a1.Pubkey}, 100000, 100, 11)
+			tx1 := NewTx([]Action{}, [][]byte{}, 0, 0, 0)
 			hash := tx.Hash()
 
 			encode := tx.Encode()
@@ -105,7 +110,6 @@ func TestTx(t *testing.T) {
 			hash1 = tx1.Hash()
 			So(bytes.Equal(hash, hash1), ShouldEqual, true)
 
-			So(tx.Id == tx1.Id, ShouldBeTrue)
 			So(tx.Time == tx1.Time, ShouldBeTrue)
 			So(tx.Expiration == tx1.Expiration, ShouldBeTrue)
 			So(tx.GasLimit == tx1.GasLimit, ShouldBeTrue)
@@ -133,7 +137,7 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("sign and verify", func() {
-			tx := NewTx(0, actions, [][]byte{a1.Pubkey, a2.Pubkey}, 9999, 1, 1)
+			tx := NewTx(actions, [][]byte{a1.Pubkey, a2.Pubkey}, 9999, 1, 1)
 			sig1, err := SignTxContent(tx, a1)
 			So(tx.VerifySigner(sig1), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig1)
@@ -160,6 +164,8 @@ func TestTx(t *testing.T) {
 			}
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "publisher error")
+
+			fmt.Println(tx.String())
 
 			tx.Signs[0] = common.Signature{
 				Algorithm: common.Secp256k1,

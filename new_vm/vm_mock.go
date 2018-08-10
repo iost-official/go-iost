@@ -5,10 +5,10 @@
 package new_vm
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	contract "github.com/iost-official/Go-IOS-Protocol/core/contract"
+	host "github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	reflect "reflect"
 )
 
 // MockVM is a mock of VM interface
@@ -47,13 +47,13 @@ func (mr *MockVMMockRecorder) Init() *gomock.Call {
 }
 
 // LoadAndCall mocks base method
-func (m *MockVM) LoadAndCall(arg0 *Host, arg1 *contract.Contract, arg2 string, arg3 ...string) ([]string, *contract.Cost, error) {
+func (m *MockVM) LoadAndCall(arg0 host.IHost, arg1 *contract.Contract, arg2 string, arg3 ...interface{}) ([]interface{}, *contract.Cost, error) {
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "LoadAndCall", varargs...)
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]interface{})
 	ret1, _ := ret[1].(*contract.Cost)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
