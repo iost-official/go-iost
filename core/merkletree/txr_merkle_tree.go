@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-func (m *TXRMerkleTree) Build(txrs []tx.TxReceipt) error {
+func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) error {
 	m.MT = &MerkleTree{}
 	data := make([][]byte, len(txrs))
 	m.TX2TXR = make(map[string][]byte)
