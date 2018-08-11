@@ -1,4 +1,4 @@
-package new_txpool
+package txpool
 
 import (
 	"sort"

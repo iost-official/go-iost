@@ -1,0 +1,14 @@
+{
+  "name": "contract",
+  "version": "1.0.0",
+  "description": "",
+  "main": "contract.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "esprima": "^4.0.1"
+  }
+}

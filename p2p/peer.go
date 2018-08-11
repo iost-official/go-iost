@@ -191,7 +191,7 @@ func (p *Peer) handleMessage(msg *p2pMessage) error {
 	case Ping:
 		fmt.Println("pong")
 	default:
-		p.peerManager.NotifyMessage(msg, p.id)
+		p.peerManager.HandleMessage(msg, p.id)
 	}
 	return nil
 }

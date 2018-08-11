@@ -5,12 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"time"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
-	kbucket "github.com/libp2p/go-libp2p-kbucket"
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
@@ -37,7 +35,6 @@ type Service interface {
 
 type NetService struct {
 	localID     peer.ID
-	routeTable  *kbucket.RoutingTable
 	host        host.Host
 	peerManager *PeerManager
 }
@@ -54,9 +51,7 @@ func NewDefault() (*NetService, error) {
 	}
 	ns.host = host
 
-	ns.routeTable = kbucket.NewRoutingTable(20, kbucket.ConvertPeerID(ns.host.ID()), time.Second, ns.host.Peerstore())
-
-	ns.peerManager = NewPeerManager()
+	ns.peerManager = NewPeerManager(host)
 
 	return ns, nil
 }
@@ -77,9 +72,7 @@ func NewNetService(config *Config) (*NetService, error) {
 	}
 	ns.host = host
 
-	ns.routeTable = kbucket.NewRoutingTable(config.BucketSize, kbucket.ConvertPeerID(ns.host.ID()), config.PeerTimeout, ns.host.Peerstore())
-
-	ns.peerManager = NewPeerManager()
+	ns.peerManager = NewPeerManager(host)
 
 	return ns, nil
 }
@@ -137,5 +130,5 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 }
 
 func (ns *NetService) streamHandler(s libnet.Stream) {
-	ns.peerManager.HandlerStream(s)
+	ns.peerManager.HandleStream(s)
 }
