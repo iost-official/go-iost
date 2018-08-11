@@ -48,6 +48,7 @@ func (m *Monitor) Call(host *host.Host, contractName, api string, args ...interf
 	}
 
 	err = checkArgs(abi, args)
+
 	if err != nil {
 		return nil, nil, err // todo check cost
 	}
