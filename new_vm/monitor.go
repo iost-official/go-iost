@@ -14,6 +14,8 @@ import (
 var (
 	ErrABINotFound    = errors.New("abi not found")
 	ErrGasPriceTooBig = errors.New("gas price too big")
+	ErrArgsNotEnough  = errors.New("args not enough")
+	ErrArgsType       = errors.New("args type not match")
 )
 
 type Monitor struct {
@@ -44,6 +46,13 @@ func (m *Monitor) Call(host *host.Host, contractName, api string, args ...interf
 	if abi == nil {
 		return nil, nil, ErrABINotFound
 	}
+
+	err = checkArgs(abi, args)
+
+	if err != nil {
+		return nil, nil, err // todo check cost
+	}
+
 	ctx := host.Context()
 
 	host.Ctx = context.WithValue(host.Ctx, "abi_config", abi)
@@ -89,6 +98,30 @@ func (m *Monitor) Call(host *host.Host, contractName, api string, args ...interf
 //	m.host.db.DelContract(contractName)
 //	return nil
 //}
+
+func checkArgs(abi *contract.ABI, args []interface{}) error {
+	if len(abi.Args) > len(args) {
+		return ErrArgsNotEnough
+	}
+
+	for i, t := range abi.Args {
+		var ok bool
+		switch t {
+		case "string":
+			_, ok = args[i].(string)
+		case "number":
+			_, ok = args[i].(uint64)
+		case "bool":
+			_, ok = args[i].(bool)
+		case "json":
+			_, ok = args[i].([]byte)
+		}
+		if !ok {
+			return ErrArgsType
+		}
+	}
+	return nil
+}
 
 func VMFactory(lang string) VM {
 	switch lang {

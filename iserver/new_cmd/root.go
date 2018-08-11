@@ -32,7 +32,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/metrics"
-	"github.com/iost-official/Go-IOS-Protocol/network"
+	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/rpc"
 	"github.com/iost-official/Go-IOS-Protocol/verifier"
 	"github.com/mitchellh/go-homedir"
@@ -198,47 +198,16 @@ var rootCmd = &cobra.Command{
 		}
 		log.Log.I("1.Start the P2P networks")
 
-		logPath := viper.GetString("net.log-path")
-		nodeTablePath := viper.GetString("net.node-table-path")
-		nodeID := viper.GetString("net.node-id") //optional
-		listenAddr := viper.GetString("net.listen-addr")
-		regAddr := viper.GetString("net.register-addr")
 		rpcPort := viper.GetString("net.rpc-port")
-		target := viper.GetString("net.target") //optional
-		port := viper.GetInt64("net.port")
 		metricsPort := viper.GetString("net.metrics-port")
 
-		log.Log.I("net.log-path:  %v", logPath)
-		log.Log.I("net.node-table-path:  %v", nodeTablePath)
-		log.Log.I("net.node-id:   %v", nodeID)
-		log.Log.I("net.listen-addr:  %v", listenAddr)
-		log.Log.I("net.register-addr:  %v", regAddr)
-		log.Log.I("net.target:  %v", target)
-		log.Log.I("net.port:  %v", port)
-		log.Log.I("net.rpcPort:  %v", rpcPort)
-		log.Log.I("net.metricsPort:  %v", metricsPort)
-
-		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 || rpcPort == "" {
-			log.Log.E("Network config initialization failed, stop the program!")
-			os.Exit(1)
-		}
-
 		log.Log.I("network instance")
-		net, err := network.GetInstance(
-			&network.NetConfig{
-				LogPath:       logPath,
-				NodeTablePath: nodeTablePath,
-				NodeID:        nodeID,
-				RegisterAddr:  regAddr,
-				ListenAddr:    listenAddr},
-			target,
-			uint16(port))
+		p2pService, err := p2p.NewDefault()
 		if err != nil {
 			log.Log.E("Network initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-		log.LocalID = net.(*network.RouterImpl).LocalID()
-		serverExit = append(serverExit, net)
+		serverExit = append(serverExit, p2pService)
 
 		accSecKey := viper.GetString("account.sec-key")
 		//fmt.Printf("account.sec-key:  %v\n", accSecKey)

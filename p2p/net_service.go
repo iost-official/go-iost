@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"time"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
@@ -12,7 +13,6 @@ import (
 	kbucket "github.com/libp2p/go-libp2p-kbucket"
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
-	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
 type PeerID = peer.ID
@@ -42,6 +42,75 @@ type NetService struct {
 	peerManager *PeerManager
 }
 
+func NewDefault() (*NetService, error) {
+	ns := &NetService{}
+	privKey, err := getOrCreateKey("priv.key")
+	if err != nil {
+		return nil, err
+	}
+	host, err := ns.startHost(privKey, "0.0.0.0:6666")
+	if err != nil {
+		return nil, err
+	}
+	ns.host = host
+
+	ns.routeTable = kbucket.NewRoutingTable(20, kbucket.ConvertPeerID(ns.host.ID()), time.Second, ns.host.Peerstore())
+
+	ns.peerManager = NewPeerManager()
+
+	return ns, nil
+}
+
+func NewNetService(config *Config) (*NetService, error) {
+	ns := &NetService{}
+
+	privKey, err := getOrCreateKey(config.PrivKeyPath)
+	if err != nil {
+		// node.log.E("failed to get private key. err=%v", err)
+		return nil, err
+	}
+
+	host, err := ns.startHost(privKey, config.ListenAddr)
+	if err != nil {
+		// node.log.E("failed to make a host. err=%v", err)
+		return nil, err
+	}
+	ns.host = host
+
+	ns.routeTable = kbucket.NewRoutingTable(config.BucketSize, kbucket.ConvertPeerID(ns.host.ID()), config.PeerTimeout, ns.host.Peerstore())
+
+	ns.peerManager = NewPeerManager()
+
+	return ns, nil
+}
+
+func (ns *NetService) Start() error {
+	ns.peerManager.Start()
+	return nil
+}
+
+func (ns *NetService) Stop() {
+	ns.host.Close()
+	ns.peerManager.Stop()
+	return
+}
+
+func (ns *NetService) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
+	ns.peerManager.Broadcast(data, typ, mp)
+}
+
+func (ns *NetService) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
+	ns.peerManager.SendToPeer(peerID, data, typ, mp)
+}
+
+func (ns *NetService) Register(id string, typs ...MessageType) chan IncomingMessage {
+	return ns.peerManager.Register(id, typs...)
+}
+
+func (ns *NetService) Deregister(id string, typs ...MessageType) {
+	ns.peerManager.Deregister(id, typs...)
+}
+
 func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", listenAddr)
 	if err != nil {
@@ -68,59 +137,5 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 }
 
 func (ns *NetService) streamHandler(s libnet.Stream) {
-	ns.peerManager.AddPeer(s)
-}
-
-func NewNetService(config *Config) (*NetService, error) {
-	ns := &NetService{}
-
-	privKey, err := getOrCreateKey(config.PrivKeyPath)
-	if err != nil {
-		// node.log.E("failed to get private key. err=%v", err)
-		return nil, err
-	}
-
-	host, err := ns.startHost(privKey, config.ListenAddr)
-	if err != nil {
-		// node.log.E("failed to make a host. err=%v", err)
-		return nil, err
-	}
-	ns.host = host
-
-	ns.routeTable = kbucket.NewRoutingTable(config.BucketSize, kbucket.ConvertPeerID(ns.host.ID()), config.PeerTimeout, ns.host.Peerstore())
-
-	return ns, nil
-}
-
-func (ns *NetService) Start() error {
-	return nil
-}
-
-func (ns *NetService) Stop() {
-	ns.host.Close()
-	return
-}
-
-func (ns *NetService) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-	ns.peerManager.Broadcast(data, typ, mp)
-}
-
-func (ns *NetService) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
-	ns.peerManager.SendToPeer(peerID, data, typ, mp)
-}
-
-func (ns *NetService) Register(id string, typs ...MessageType) chan IncomingMessage {
-	return ns.peerManager.Register(id, typs...)
-}
-
-func (ns *NetService) Deregister(id string, typs ...MessageType) {
-	ns.peerManager.Deregister(id, typs...)
-}
-
-func (ns *NetService) NeighborAddrs() map[peer.ID][]multiaddr.Multiaddr {
-	addrs := make(map[peer.ID][]multiaddr.Multiaddr)
-	for _, pid := range ns.host.Peerstore().Peers() {
-		addrs[pid] = ns.host.Peerstore().Addrs(pid)
-	}
-	return addrs
+	ns.peerManager.HandlerStream(s)
 }

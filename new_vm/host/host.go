@@ -242,3 +242,6 @@ func (h *Host) PayCost(c *contract.Cost, who string, gasPrice int64) {
 		}
 	}
 }
+func (h *Host) GasLimit() uint64 {
+	return h.Ctx.Value("gas_limit").(uint64)
+}
