@@ -32,7 +32,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/metrics"
-	"github.com/iost-official/Go-IOS-Protocol/network"
+	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/rpc"
 	"github.com/iost-official/Go-IOS-Protocol/verifier"
 	"github.com/mitchellh/go-homedir"
@@ -224,21 +224,12 @@ var rootCmd = &cobra.Command{
 		}
 
 		log.Log.I("network instance")
-		net, err := network.GetInstance(
-			&network.NetConfig{
-				LogPath:       logPath,
-				NodeTablePath: nodeTablePath,
-				NodeID:        nodeID,
-				RegisterAddr:  regAddr,
-				ListenAddr:    listenAddr},
-			target,
-			uint16(port))
+		p2pService, err := p2p.NewDefault()
 		if err != nil {
 			log.Log.E("Network initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-		log.LocalID = net.(*network.RouterImpl).LocalID()
-		serverExit = append(serverExit, net)
+		serverExit = append(serverExit, p2pService)
 
 		accSecKey := viper.GetString("account.sec-key")
 		//fmt.Printf("account.sec-key:  %v\n", accSecKey)

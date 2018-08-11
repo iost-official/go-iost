@@ -2,99 +2,151 @@ package p2p
 
 import (
 	"sync"
+	"time"
 
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
-	"github.com/uber-go/atomic"
+)
+
+var (
+	clearInactivePeerInterval = 5 * time.Second
 )
 
 const (
-	maxNeighborCount = 32 // TODO: configurable
+	maxPeerCount = 32 // TODO: configurable
+
+	incomingMsgChanSize = 1024
 )
 
 type PeerManager struct {
-	neighbors *sync.Map // map[peer.ID]*Peer
-	peerCount atomic.Uint64
-	subs      map[MessageType]map[string]chan IncomingMessage
+	peers     map[peer.ID]*Peer
+	peerCount int
+	peerMutex sync.RWMutex
+
+	// subs   map[MessageType]map[string]chan IncomingMessage
+	subs   *sync.Map //  map[MessageType]map[string]chan IncomingMessage
+	quitCh chan struct{}
 }
 
 func NewPeerManager() *PeerManager {
 	return &PeerManager{
-		neighbors: new(sync.Map),
-		subs:      make(map[MessageType]map[string]chan IncomingMessage),
+		peers:  make(map[peer.ID]*Peer),
+		subs:   new(sync.Map),
+		quitCh: make(chan struct{}),
 	}
 }
 
-func (pm *PeerManager) AddPeer(s libnet.Stream) {
-	if pm.peerCount.Load() >= maxNeighborCount {
-		s.Close()
-		return
-	}
+func (pm *PeerManager) Start() {
+}
+
+func (pm *PeerManager) Stop() {
+	close(pm.quitCh)
+}
+
+func (pm *PeerManager) HandlerStream(s libnet.Stream) {
 	remotePID := s.Conn().RemotePeer()
-	if p, exist := pm.neighbors.Load(remotePID); exist {
-		old, ok := p.(*Peer)
-		if !ok || old.Inactive() {
-			pm.neighbors.Delete(remotePID)
-			pm.peerCount.Dec()
+	peer := pm.GetPeer(remotePID)
+	if peer == nil {
+		if pm.PeerCount() >= maxPeerCount {
+			s.Reset()
 			return
 		}
-		// log
-		s.Close()
+		pm.AddPeer(NewPeer(s, pm))
 		return
 	}
-	peer := NewPeer(s)
-	peer.Start()
-	pm.neighbors.Store(remotePID, peer)
-	pm.peerCount.Inc()
+
+	err := peer.AddStream(s)
+	if err != nil {
+		s.Reset()
+		return
+	}
+}
+
+func (pm *PeerManager) AddPeer(p *Peer) {
+	pm.peerMutex.Lock()
+	defer pm.peerMutex.Unlock()
+
+	pm.peers[p.id] = p
+	p.Start()
 }
 
 func (pm *PeerManager) RemovePeer(peerID peer.ID) {
-	if p, exist := pm.neighbors.Load(peerID); exist {
-		pm.neighbors.Delete(peerID)
-		pm.peerCount.Dec()
-		if peer, ok := p.(*Peer); ok {
-			peer.Stop()
-		}
+	pm.peerMutex.Lock()
+	defer pm.peerMutex.Unlock()
+
+	if peer, exist := pm.peers[peerID]; exist {
+		peer.Stop()
+		delete(pm.peers, peerID)
 	}
+}
+
+func (pm *PeerManager) GetPeer(peerID peer.ID) *Peer {
+	pm.peerMutex.RLock()
+	defer pm.peerMutex.RUnlock()
+
+	return pm.peers[peerID]
+}
+
+func (pm *PeerManager) PeerCount() int {
+	pm.peerMutex.RLock()
+	defer pm.peerMutex.RUnlock()
+
+	return len(pm.peers)
 }
 
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
 	msg := newP2PMessage(100, typ, 1, 0, data)
-	pm.neighbors.Range(func(k, v interface{}) bool {
-		peer, ok := v.(*Peer)
-		if !ok {
-			return true
-		}
+
+	pm.peerMutex.RLock()
+	defer pm.peerMutex.RUnlock()
+
+	for _, peer := range pm.peers {
 		peer.SendMessage(msg, mp)
-		return true
-	})
+	}
 }
 
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
 	msg := newP2PMessage(100, typ, 1, 0, data)
-	v, ok := pm.neighbors.Load(peerID)
-	if !ok {
-		// log
-		return
+	peer := pm.GetPeer(peerID)
+	if peer != nil {
+		peer.SendMessage(msg, mp)
 	}
-	peer, ok := v.(*Peer)
-	if !ok {
-		// log
-		return
-	}
-	peer.SendMessage(msg, mp)
 }
 
 func (pm *PeerManager) Register(id string, mTyps ...MessageType) chan IncomingMessage {
-	c := make(chan IncomingMessage, 1024)
+	if len(mTyps) == 0 {
+		return nil
+	}
+	c := make(chan IncomingMessage, incomingMsgChanSize)
 	for _, typ := range mTyps {
-		pm.subs[typ][id] = c
+		m, _ := pm.subs.LoadOrStore(typ, new(sync.Map))
+		m.(*sync.Map).Store(id, c)
 	}
 	return c
 }
 
 func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 	for _, typ := range mTyps {
-		delete(pm.subs[typ], id)
+		if m, exist := pm.subs.Load(typ); exist {
+			m.(*sync.Map).Delete(id)
+		}
+	}
+}
+
+func (pm *PeerManager) NotifyMessage(msg *p2pMessage, peerID peer.ID) {
+	data, err := msg.data()
+	if err != nil {
+		return
+	}
+	inMsg := newIncomingMessage(peerID, data, msg.messageType())
+	if m, exist := pm.subs.Load(msg.messageType()); exist {
+		m.(*sync.Map).Range(func(k, v interface{}) bool {
+			select {
+			case v.(chan IncomingMessage) <- *inMsg:
+			default:
+				// log
+			}
+			return true
+		})
 	}
 }
