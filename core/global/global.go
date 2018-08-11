@@ -7,7 +7,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 type Mode struct {
@@ -34,7 +34,7 @@ const (
 type GlobalImpl struct {
 	txDB tx.TxDB
 
-	stdPool    state.Pool
+	statePool  *db.MVCCDB
 	blockChain block.Chain
 
 	config *common.Config
@@ -43,21 +43,23 @@ type GlobalImpl struct {
 }
 
 func New(conf *common.Config) (Global, error) {
-
-	txDb := tx.TxDbInstance()
-	if txDb == nil {
-		return nil, errors.New("TxDbInstance failed, stop the program!")
-	}
-
-	err := state.PoolInstance()
-	if err != nil {
-		return nil, fmt.Errorf("PoolInstance failed, stop the program! err:%v", err)
-	}
-
+	block.LevelDBPath = conf.LdbPath
 	blockChain, err := block.Instance()
 	if err != nil {
 		return nil, fmt.Errorf("NewBlockChain failed, stop the program! err:%v", err)
 	}
+	//TODO: INIT FROM A EXISTING MVCCDB
+	statePool, err := db.NewMVCCDB("StatePoolDB")
+	if err != nil {
+		return nil, fmt.Errorf("NewStatePool failed, stop the program! err:%v", err)
+	}
+
+	tx.LdbPath = conf.LdbPath
+	txDb := tx.TxDbInstance()
+	if txDb == nil {
+		return nil, errors.New("fail to txdbinstance")
+	}
+	//TODO: check DB, state, txDB
 
 	m := new(Mode)
 	m.SetMode(ModeNormal)
@@ -71,8 +73,8 @@ func (g *GlobalImpl) TxDB() tx.TxDB {
 	return g.txDB
 }
 
-func (g *GlobalImpl) StdPool() state.Pool {
-	return g.stdPool
+func (g *GlobalImpl) StatePool() *db.MVCCDB {
+	return g.statePool
 }
 
 func (g *GlobalImpl) BlockChain() block.Chain {
