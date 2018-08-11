@@ -6,8 +6,8 @@ import (
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 )
 
 func Init(t *testing.T) *database.Visitor {
@@ -23,7 +23,7 @@ func TestEngine_LoadAndCall(t *testing.T) {
 	ctx := context.Background()
 	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
-	host := new_vm.NewHost(ctx, vi)
+	tHost := &host.Host{Ctx: ctx, DB: vi}
 
 	code := &contract.Contract{
 		ID: "test.js",
@@ -47,7 +47,7 @@ var Contract = function() {
 	defer e.Release()
 	e.Init()
 
-	rs, _, err := e.LoadAndCall(host, code, "fibonacci", "12")
+	rs, _, err := e.LoadAndCall(tHost, code, "fibonacci", "12")
 
 	if err != nil {
 		t.Fatalf("LoadAndCall run error: %v\n", err)
@@ -104,7 +104,7 @@ func TestEngine_bigNumber(t *testing.T) {
 	ctx := context.Background()
 	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
-	host := new_vm.NewHost(ctx, vi)
+	tHost := &host.Host{Ctx: ctx, DB: vi}
 
 	code := &contract.Contract{
 		ID: "test.js",
@@ -129,7 +129,7 @@ var Contract = function() {
 	e.Init()
 
 	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
-	rs, _, err := e.LoadAndCall(host, code, "getVal")
+	rs, _, err := e.LoadAndCall(tHost, code, "getVal")
 
 	if err != nil {
 		t.Fatalf("LoadAndCall run error: %v\n", err)
@@ -144,7 +144,7 @@ func TestEngine_infiniteLoop(t *testing.T) {
 	ctx := context.Background()
 	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
-	host := new_vm.NewHost(ctx, vi)
+	tHost := &host.Host{Ctx: ctx, DB: vi}
 
 	code := &contract.Contract{
 		ID: "test.js",
@@ -167,7 +167,7 @@ var Contract = function() {
 	e.Init()
 
 	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
-	_, _, err := e.LoadAndCall(host, code, "loop")
+	_, _, err := e.LoadAndCall(tHost, code, "loop")
 
 	if err != nil && err.Error() != "execution killed" {
 		t.Fatalf("infiniteLoop run error: %v\n", err)
@@ -179,7 +179,7 @@ func TestEngine_injectCode(t *testing.T) {
 	ctx := context.Background()
 	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
-	host := new_vm.NewHost(ctx, vi)
+	tHost := &host.Host{Ctx: ctx, DB: vi}
 
 	code := &contract.Contract{
 		ID: "test.js",
@@ -208,7 +208,7 @@ var Contract = function() {
 	defer e.Release()
 	e.Init()
 
-	rs, _, err := e.LoadAndCall(host, code, "callFib", "12")
+	rs, _, err := e.LoadAndCall(tHost, code, "callFib", "12")
 
 	if err != nil {
 		t.Fatalf("LoadAndCall run error: %v\n", err)
