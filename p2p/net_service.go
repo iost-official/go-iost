@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"time"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
@@ -41,33 +42,23 @@ type NetService struct {
 	peerManager *PeerManager
 }
 
-func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host, error) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", listenAddr)
+func NewDefault() (*NetService, error) {
+	ns := &NetService{}
+	privKey, err := getOrCreateKey("priv.key")
 	if err != nil {
-		fmt.Println("failed to resolve tcp addr. err=", err)
 		return nil, err
 	}
-
-	if !isPortAvailable(tcpAddr.Port) {
-		return nil, ErrPortUnavailable
-	}
-
-	opts := []libp2p.Option{
-		libp2p.Identity(pk),
-		libp2p.NATPortMap(),
-		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", tcpAddr.IP, tcpAddr.Port)),
-	}
-	h, err := libp2p.New(context.Background(), opts...)
+	host, err := ns.startHost(privKey, "0.0.0.0:6666")
 	if err != nil {
-		fmt.Println("failed to start host. err=", err)
 		return nil, err
 	}
-	h.SetStreamHandler(protocolID, ns.streamHandler)
-	return h, nil
-}
+	ns.host = host
 
-func (ns *NetService) streamHandler(s libnet.Stream) {
-	ns.peerManager.HandlerStream(s)
+	ns.routeTable = kbucket.NewRoutingTable(20, kbucket.ConvertPeerID(ns.host.ID()), time.Second, ns.host.Peerstore())
+
+	ns.peerManager = NewPeerManager()
+
+	return ns, nil
 }
 
 func NewNetService(config *Config) (*NetService, error) {
@@ -118,4 +109,33 @@ func (ns *NetService) Register(id string, typs ...MessageType) chan IncomingMess
 
 func (ns *NetService) Deregister(id string, typs ...MessageType) {
 	ns.peerManager.Deregister(id, typs...)
+}
+
+func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host, error) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", listenAddr)
+	if err != nil {
+		fmt.Println("failed to resolve tcp addr. err=", err)
+		return nil, err
+	}
+
+	if !isPortAvailable(tcpAddr.Port) {
+		return nil, ErrPortUnavailable
+	}
+
+	opts := []libp2p.Option{
+		libp2p.Identity(pk),
+		libp2p.NATPortMap(),
+		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", tcpAddr.IP, tcpAddr.Port)),
+	}
+	h, err := libp2p.New(context.Background(), opts...)
+	if err != nil {
+		fmt.Println("failed to start host. err=", err)
+		return nil, err
+	}
+	h.SetStreamHandler(protocolID, ns.streamHandler)
+	return h, nil
+}
+
+func (ns *NetService) streamHandler(s libnet.Stream) {
+	ns.peerManager.HandlerStream(s)
 }

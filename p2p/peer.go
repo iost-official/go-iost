@@ -190,6 +190,8 @@ func (p *Peer) handleMessage(msg *p2pMessage) error {
 	switch msg.messageType() {
 	case Ping:
 		fmt.Println("pong")
+	default:
+		p.peerManager.NotifyMessage(msg, p.id)
 	}
 	return nil
 }

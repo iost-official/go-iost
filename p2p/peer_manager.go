@@ -23,14 +23,15 @@ type PeerManager struct {
 	peerCount int
 	peerMutex sync.RWMutex
 
-	subs   map[MessageType]map[string]chan IncomingMessage
+	// subs   map[MessageType]map[string]chan IncomingMessage
+	subs   *sync.Map //  map[MessageType]map[string]chan IncomingMessage
 	quitCh chan struct{}
 }
 
 func NewPeerManager() *PeerManager {
 	return &PeerManager{
 		peers:  make(map[peer.ID]*Peer),
-		subs:   make(map[MessageType]map[string]chan IncomingMessage),
+		subs:   new(sync.Map),
 		quitCh: make(chan struct{}),
 	}
 }
@@ -118,13 +119,34 @@ func (pm *PeerManager) Register(id string, mTyps ...MessageType) chan IncomingMe
 	}
 	c := make(chan IncomingMessage, incomingMsgChanSize)
 	for _, typ := range mTyps {
-		pm.subs[typ][id] = c
+		m, _ := pm.subs.LoadOrStore(typ, new(sync.Map))
+		m.(*sync.Map).Store(id, c)
 	}
 	return c
 }
 
 func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 	for _, typ := range mTyps {
-		delete(pm.subs[typ], id)
+		if m, exist := pm.subs.Load(typ); exist {
+			m.(*sync.Map).Delete(id)
+		}
+	}
+}
+
+func (pm *PeerManager) NotifyMessage(msg *p2pMessage, peerID peer.ID) {
+	data, err := msg.data()
+	if err != nil {
+		return
+	}
+	inMsg := newIncomingMessage(peerID, data, msg.messageType())
+	if m, exist := pm.subs.Load(msg.messageType()); exist {
+		m.(*sync.Map).Range(func(k, v interface{}) bool {
+			select {
+			case v.(chan IncomingMessage) <- *inMsg:
+			default:
+				// log
+			}
+			return true
+		})
 	}
 }
