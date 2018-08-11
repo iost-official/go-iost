@@ -1,18 +1,14 @@
 package new_txpool
 
 import (
-	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/network"
-	"github.com/iost-official/Go-IOS-Protocol/network/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -67,7 +63,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		Convey("AddTx", func() {
 
-			tx := genTxMsg(accountList[0], expiration)
+			tx := genTx(accountList[0], expiration)
 
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			txPool.AddTx(tx)
@@ -286,12 +282,11 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 
 	tx.LdbPath = ""
 
-	mockCtr := NewController(b)
-	mockRouter := protocol_mock.NewMockRouter(mockCtr)
+	config := &p2p.Config{
+		ListenAddr: "0.0.0.0:8088",
+	}
 
-	network.Route = mockRouter
-	txChan := make(chan message.Message, 100000)
-	mockRouter.EXPECT().FilteredChan(Any()).Return(txChan, nil)
+	node, err := p2p.NewNetService(config)
 
 	log.NewLogger("iost")
 
@@ -303,7 +298,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 	BlockCache, err := blockcache.NewBlockCache(gl)
 	So(err, ShouldBeNil)
 
-	txPool, err := NewTxPoolImpl(BlockCache, network.Route, gl)
+	txPool, err := NewTxPoolImpl(gl, BlockCache, node)
 	So(err, ShouldBeNil)
 
 	txPool.Start()
@@ -332,13 +327,10 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 	return &tx
 }
 
-func genTxMsg(a account.Account, expirationIter int64) p2p.IncomingMessage {
+func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
 	t := genTx(a, expirationIter)
 
-	broadTx := p2p.IncomingMessage{
-		data: t.Encode(),
-		typ:  int32(p2p.ReqPublishTx),
-	}
+	broadTx := &p2p.IncomingMessage{"test", t.Encode(), p2p.PublishTxRequest}
 
 	return broadTx
 }
