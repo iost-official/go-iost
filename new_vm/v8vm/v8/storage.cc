@@ -12,20 +12,20 @@ void InitGoStorage(putFunc put, getFunc get, delFunc del) {
 }
 
 int IOSTContractStorage::Put(char *key, char *value) {
-    size_t gasCount = 0;
-    int ret = CPut(sbx, key, value, &gasCount);
+    size_t gasUsed = 0;
+    int ret = CPut(sbx, key, value, &gasUsed);
     return ret;
 }
 
 char *IOSTContractStorage::Get(char *key) {
-    size_t gasCount = 0;
-    char *ret = CGet(sbx, key, &gasCount);
+    size_t gasUsed = 0;
+    char *ret = CGet(sbx, key, &gasUsed);
     return ret;
 }
 
 int IOSTContractStorage::Del(char *key) {
-    size_t gasCount = 0;
-    int ret = CDel(sbx, key, &gasCount);
+    size_t gasUsed = 0;
+    int ret = CDel(sbx, key, &gasUsed);
     return ret;
 }
 

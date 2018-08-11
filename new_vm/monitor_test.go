@@ -5,6 +5,8 @@ import (
 
 	"context"
 
+	"fmt"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
@@ -182,4 +184,39 @@ func TestMonitor_HostCall(t *testing.T) {
 	if !outerFlag || !innerFlag {
 		t.Fatal(outerFlag, innerFlag)
 	}
+}
+
+func TestJSM(t *testing.T) {
+	monitor, _, db, vi := Init(t)
+
+	ctx := context.WithValue(context.Background(), "gas_price", uint64(1))
+
+	h := host.NewHost(ctx, vi, monitor)
+
+	c := contract.Contract{
+		ID: "contract",
+		Code: `module.export = function hello() {
+	return world
+}`,
+		Info: &contract.Info{
+			Lang:        "javascript",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				&contract.ABI{
+					Name:     "hello",
+					Args:     []string{},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+			},
+		},
+	}
+
+	db.EXPECT().Get(Any(), Any()).DoAndReturn(func(table string, key string) (string, error) {
+		return c.Encode(), nil
+	})
+
+	fmt.Println(monitor.Call(h, "contract", "hello"))
+
 }

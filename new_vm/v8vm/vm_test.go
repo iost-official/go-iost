@@ -22,6 +22,7 @@ func TestEngine_LoadAndCall(t *testing.T) {
 	vi := Init(t)
 	ctx := context.Background()
 	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
+	ctx = context.WithValue(ctx, "gas_limit", uint64(1000000000))
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
 	tHost := &host.Host{Ctx: ctx, DB: vi}
 
@@ -46,6 +47,7 @@ var Contract = function() {
 	e := NewVM()
 	defer e.Release()
 	e.Init()
+	e.SetJSPath("/Users/lihaifeng/GoLang/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
 
 	rs, _, err := e.LoadAndCall(tHost, code, "fibonacci", "12")
 
@@ -103,6 +105,7 @@ func TestEngine_bigNumber(t *testing.T) {
 	vi := Init(t)
 	ctx := context.Background()
 	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
+	ctx = context.WithValue(ctx, "gas_limit", uint64(1000000000))
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
 	tHost := &host.Host{Ctx: ctx, DB: vi}
 
@@ -127,6 +130,7 @@ var Contract = function() {
 	e := NewVM()
 	defer e.Release()
 	e.Init()
+	e.SetJSPath("/Users/lihaifeng/GoLang/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
 
 	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
 	rs, _, err := e.LoadAndCall(tHost, code, "getVal")
@@ -143,6 +147,7 @@ func TestEngine_infiniteLoop(t *testing.T) {
 	vi := Init(t)
 	ctx := context.Background()
 	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
+	ctx = context.WithValue(ctx, "gas_limit", uint64(1000))
 	ctx = context.WithValue(ctx, "contract_name", "contractName")
 	tHost := &host.Host{Ctx: ctx, DB: vi}
 
@@ -165,55 +170,12 @@ var Contract = function() {
 	e := NewVM()
 	defer e.Release()
 	e.Init()
+	e.SetJSPath("/Users/lihaifeng/GoLang/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
 
 	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
 	_, _, err := e.LoadAndCall(tHost, code, "loop")
 
-	if err != nil && err.Error() != "execution killed" {
+	if err != nil && err.Error() != "out of gas" {
 		t.Fatalf("infiniteLoop run error: %v\n", err)
-	}
-}
-
-func TestEngine_injectCode(t *testing.T) {
-	vi := Init(t)
-	ctx := context.Background()
-	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
-	ctx = context.WithValue(ctx, "contract_name", "contractName")
-	tHost := &host.Host{Ctx: ctx, DB: vi}
-
-	code := &contract.Contract{
-		ID: "test.js",
-		Code: `
-var Contract = function() {
-}
-
-	Contract.prototype = {
-		fibonacci: function(cycles) {
-			if (cycles == 0) return 0;
-			if (cycles == 1) return 1;
-			return this.fibonacci(cycles - 1) + this.fibonacci(cycles - 2);
-		},
-		callFib: function(cycles) {
-			var result = this.fibonacci(cycles);
-			var gasCount = _IOSTInstruction_counter.count();
-			return gasCount;
-		}
-	}
-
-	module.exports = Contract
-`,
-	}
-
-	e := NewVM()
-	defer e.Release()
-	e.Init()
-
-	rs, _, err := e.LoadAndCall(tHost, code, "callFib", "12")
-
-	if err != nil {
-		t.Fatalf("LoadAndCall run error: %v\n", err)
-	}
-	if len(rs) != 1 || rs[0] != "10217" {
-		t.Errorf("LoadAndCall except 144, got %s\n", rs[0])
 	}
 }
