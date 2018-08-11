@@ -41,6 +41,8 @@ vm: vm.cc.o require.cc.o storage.cc.o blockchain.cc.o sandbox.cc.o instruction.c
 
 install:
 	-mv libvm$(LIB_SUFFIX) $(INSTALL_PATH)
+
+deploy:
 	$(INSTALL) $(INSTALL_PATH)/*$(LIB_SUFFIX) /usr/local/lib
 	$(LDCONFIG)
 

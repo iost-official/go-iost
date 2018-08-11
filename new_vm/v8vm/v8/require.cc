@@ -5,8 +5,6 @@
 #include <sstream>
 #include <iostream>
 
-#define NATIVE_LIB_PATH "v8/libjs/"
-
 static char injectGasFormat[] =
     "(function(){\n"
     "const source = \"%s\";\n"
@@ -20,6 +18,18 @@ void InitGoRequire(requireFunc require) {
 
 void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     Isolate *isolate = info.GetIsolate();
+    Local<Context> context = isolate->GetCurrentContext();
+    Local<Object> global = context->Global();
+    Local<Value> val = global->GetInternalField(0);
+    if (!val->IsExternal()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "nativeRequire val error")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+    SandboxPtr sbxPtr = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
 
     Local<Value> path = info[0];
     if (!path->IsString()) {
@@ -31,7 +41,7 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     }
 
     String::Utf8Value pathStr(path);
-    std::string fullRelPath = std::string(NATIVE_LIB_PATH) + *pathStr + std::string(".js");
+    std::string fullRelPath = std::string(sbx->jsPath) + *pathStr + ".js";
 
     std::ifstream f(fullRelPath);
     std::stringstream buffer;
@@ -43,19 +53,7 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     }
 
     // read go module again
-    Local<Context> context = isolate->GetCurrentContext();
-    Local<Object> global = context->Global();
-    Local<Value> val = global->GetInternalField(0);
-    if (!val->IsExternal()) {
-        Local<Value> err = Exception::Error(
-            String::NewFromUtf8(isolate, "nativeRequire val error")
-        );
-        isolate->ThrowException(err);
-        return;
-    }
-    SandboxPtr sbx = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
-
-    char *code = CRequire(sbx, *pathStr);
+    char *code = CRequire(sbxPtr, *pathStr);
     char *injectCode = nullptr;
     asprintf(&injectCode, injectGasFormat, code);
     free(code);

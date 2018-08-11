@@ -31,7 +31,7 @@ type Synchronizer interface {
 type SyncImpl struct {
 	p2pService p2p.Service
 	blockCache blockcache.BlockCache
-	glb        global.Global
+	glb        global.BaseVariable
 	dc         DownloadController
 	reqMap     *sync.Map
 
@@ -41,7 +41,7 @@ type SyncImpl struct {
 	log *log.Logger
 }
 
-func NewSynchronizer(glb global.Global, blkcache blockcache.BlockCache, p2pserv p2p.Service) (*SyncImpl, error) {
+func NewSynchronizer(glb global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service) (*SyncImpl, error) {
 	sy := &SyncImpl{
 		p2pService: p2pserv,
 		blockCache: blkcache,

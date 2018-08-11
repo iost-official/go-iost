@@ -7,7 +7,7 @@ import "C"
 import "encoding/json"
 
 //export goTransfer
-func goTransfer(cSbx C.SandboxPtr, from, to, amount *C.char, gasCount *C.size_t) C.int {
+func goTransfer(cSbx C.SandboxPtr, from, to, amount *C.char, gasUsed *C.size_t) C.int {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 
@@ -26,7 +26,7 @@ func goTransfer(cSbx C.SandboxPtr, from, to, amount *C.char, gasCount *C.size_t)
 }
 
 //export goWithdraw
-func goWithdraw(cSbx C.SandboxPtr, to, amount *C.char, gasCount *C.size_t) C.int {
+func goWithdraw(cSbx C.SandboxPtr, to, amount *C.char, gasUsed *C.size_t) C.int {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 
@@ -44,7 +44,7 @@ func goWithdraw(cSbx C.SandboxPtr, to, amount *C.char, gasCount *C.size_t) C.int
 }
 
 //export goDeposit
-func goDeposit(cSbx C.SandboxPtr, from, amount *C.char, gasCount *C.size_t) C.int {
+func goDeposit(cSbx C.SandboxPtr, from, amount *C.char, gasUsed *C.size_t) C.int {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 
@@ -62,7 +62,7 @@ func goDeposit(cSbx C.SandboxPtr, from, amount *C.char, gasCount *C.size_t) C.in
 }
 
 //export goTopUp
-func goTopUp(cSbx C.SandboxPtr, contract, from, amount *C.char, gasCount *C.size_t) C.int {
+func goTopUp(cSbx C.SandboxPtr, contract, from, amount *C.char, gasUsed *C.size_t) C.int {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 
@@ -81,7 +81,7 @@ func goTopUp(cSbx C.SandboxPtr, contract, from, amount *C.char, gasCount *C.size
 }
 
 //export goCountermand
-func goCountermand(cSbx C.SandboxPtr, contract, to, amount *C.char, gasCount *C.size_t) C.int {
+func goCountermand(cSbx C.SandboxPtr, contract, to, amount *C.char, gasUsed *C.size_t) C.int {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 
@@ -100,7 +100,7 @@ func goCountermand(cSbx C.SandboxPtr, contract, to, amount *C.char, gasCount *C.
 }
 
 //export goBlockInfo
-func goBlockInfo(cSbx C.SandboxPtr, gasCount *C.size_t) *C.char {
+func goBlockInfo(cSbx C.SandboxPtr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 
@@ -111,7 +111,7 @@ func goBlockInfo(cSbx C.SandboxPtr, gasCount *C.size_t) *C.char {
 }
 
 //export goTxInfo
-func goTxInfo(cSbx C.SandboxPtr, gasCount *C.size_t) *C.char {
+func goTxInfo(cSbx C.SandboxPtr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 
@@ -122,7 +122,7 @@ func goTxInfo(cSbx C.SandboxPtr, gasCount *C.size_t) *C.char {
 }
 
 //export goCall
-func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, gasCount *C.size_t) *C.char {
+func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 

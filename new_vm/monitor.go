@@ -9,6 +9,7 @@ import (
 	"errors"
 
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm"
 )
 
 var (
@@ -127,6 +128,8 @@ func VMFactory(lang string) VM {
 	switch lang {
 	case "native":
 		return &native_vm.VM{}
+	case "javascript":
+		return v8.NewVM()
 	}
 	return nil
 }

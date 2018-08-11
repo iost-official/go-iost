@@ -1,8 +1,7 @@
 #ifndef IOST_V8_REQUIRE_H
 #define IOST_V8_REQUIRE_H
 
-#include "v8.h"
-#include "vm.h"
+#include "sandbox.h"
 
 using namespace v8;
 
