@@ -26,7 +26,7 @@ func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockV
 	}
 	vm := NewMockVM(ctl)
 	pm := NewMonitor()
-	pm.vms["javascript"] = vm
+	pm.vms["mock"] = vm
 
 	//nvm := native_vm.VM{}
 	//
@@ -68,7 +68,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		ID:   "contract",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "javascript",
+			Lang:        "mock",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
 				&contract.ABI{
@@ -131,7 +131,7 @@ func TestCost(t *testing.T) { // tests of context transport
 		ID:   "contract",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "javascript",
+			Lang:        "mock",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
 				&contract.ABI{
@@ -344,4 +344,57 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 
 	e.Exec(&mtx)
 
+}
+
+func TestJS(t *testing.T) {
+	bh, db, _ := engineinit(t)
+	e := NewEngine(bh, db)
+	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
+	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
+		t.Fatal(blkInfo)
+	}
+
+	mtx := tx.Tx{
+		Time:       time.Now().UnixNano(),
+		Expiration: 10000,
+		GasLimit:   100000,
+		GasPrice:   1,
+		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+	}
+
+	ac := tx.Action{
+		Contract:   "testjs",
+		ActionName: "hello",
+		Data:       `[]`,
+	}
+
+	mtx.Actions = append(mtx.Actions, ac)
+
+	c := contract.Contract{
+		ID: "testjs",
+		Code: `
+module.export = function hello() {
+	return world
+}
+`,
+		Info: &contract.Info{
+			Lang:        "javascript",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				&contract.ABI{
+					Name:     "hello",
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				},
+			},
+		},
+	}
+
+	db.EXPECT().Get("state", "c-testjs").DoAndReturn(func(table string, key string) (string, error) {
+		return c.Encode(), nil
+	})
+
+	e.Exec(&mtx)
 }
