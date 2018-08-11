@@ -1,4 +1,4 @@
-package new_vm
+package host
 
 import (
 	"context"
@@ -27,7 +27,7 @@ func myinit(t *testing.T, ctx context.Context) (*database.MockIMultiValue, Host)
 	bdb := database.NewVisitor(100, db)
 
 	//monitor := Monitor{}
-	return db, Host{ctx: ctx, db: bdb}
+	return db, Host{Ctx: ctx, DB: bdb}
 }
 
 func TestHost_Put(t *testing.T) {
