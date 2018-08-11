@@ -330,7 +330,7 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
 	t := genTx(a, expirationIter)
 
-	broadTx := &p2p.IncomingMessage{"test", t.Encode(), p2p.PublishTxRequest}
+	broadTx := p2p.NewIncomingMessage("test", t.Encode(), p2p.PublishTxRequest)
 
 	return broadTx
 }
