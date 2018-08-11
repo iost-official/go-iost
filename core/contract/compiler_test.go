@@ -17,7 +17,7 @@ var raw = `{
 	"price_limit": 123
 	}, {
 		"name": "def",
-	"args": ["string", "string", "int"],
+	"args": ["string", "string", "number"],
 	"payment": 2,
 	"cost_limit": [1,2,3],
 	"price_limit": 123

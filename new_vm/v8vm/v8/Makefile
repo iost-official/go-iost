@@ -17,7 +17,9 @@ ifeq ($(LC_OS_NAME), darwin)
 	CXXFLAGS+=-I./include/_darwin_amd64
 	LIBS+=-lv8_base -lv8_init -lv8_initializers -lv8_libsampler -lv8_snapshot
 	LIB_PATH=./libv8/_darwin_amd64
-	INSTALL_PATH=/usr/local/lib
+	INSTALL=install
+	INSTALL_PATH=./libv8/_darwin_amd64
+	LDCONFIG=
 else
 	CC=gcc
 	CXX=g++
@@ -26,7 +28,9 @@ else
 	CXXFLAGS+=-I./include/_linux_amd64
 	LIBS+=-licui18n -licuuc
 	LIB_PATH=./libv8/_linux_amd64
+	INSTALL=sudo install
 	INSTALL_PATH=./libv8/_linux_amd64
+	LDCONFIG=sudo /sbin/ldconfig
 endif
 
 vm: vm.cc.o require.cc.o storage.cc.o blockchain.cc.o sandbox.cc.o instruction.cc.o
@@ -37,6 +41,8 @@ vm: vm.cc.o require.cc.o storage.cc.o blockchain.cc.o sandbox.cc.o instruction.c
 
 install:
 	-mv libvm$(LIB_SUFFIX) $(INSTALL_PATH)
+	$(INSTALL) $(INSTALL_PATH)/*$(LIB_SUFFIX) /usr/local/lib
+	$(LDCONFIG)
 
 clean:
 	-rm -rf *.o

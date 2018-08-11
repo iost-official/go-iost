@@ -3,6 +3,18 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
+char *requireModule(SandboxPtr, char *);
+int goTransfer(SandboxPtr, char *, char *, char *, size_t *);
+int goWithdraw(SandboxPtr, char *, char *, size_t *);
+int goDeposit(SandboxPtr, char *, char *, size_t *);
+int goTopUp(SandboxPtr, char *, char *, char *, size_t *);
+int goCountermand(SandboxPtr, char *, char *, char *, size_t *);
+char *goBlockInfo(SandboxPtr, size_t *);
+char *goTxInfo(SandboxPtr, size_t *);
+char *goCall(SandboxPtr, char *, char *, char *, size_t *);
+int goPut(SandboxPtr, char *, char *, size_t *);
+char *goGet(SandboxPtr, char *, size_t *);
+int goDel(SandboxPtr, char *, size_t *);
 */
 import "C"
 import (
@@ -39,6 +51,7 @@ func NewSandbox(e *VM) *Sandbox {
 		context: cSbx,
 		modules: NewModules(),
 	}
+	s.Init()
 	sbxMap[cSbx] = s
 
 	return s
@@ -54,6 +67,18 @@ func (sbx *Sandbox) Release() {
 
 func (sbx *Sandbox) Init() {
 	// init require
+	C.InitGoRequire((C.requireFunc)(unsafe.Pointer(C.requireModule)))
+	C.InitGoBlockchain((C.transferFunc)(unsafe.Pointer(C.goTransfer)),
+		(C.withdrawFunc)(unsafe.Pointer(C.goWithdraw)),
+		(C.depositFunc)(unsafe.Pointer(C.goDeposit)),
+		(C.topUpFunc)(unsafe.Pointer(C.goTopUp)),
+		(C.countermandFunc)(unsafe.Pointer(C.goCountermand)),
+		(C.blockInfoFunc)(unsafe.Pointer(C.goBlockInfo)),
+		(C.txInfoFunc)(unsafe.Pointer(C.goTxInfo)),
+		(C.callFunc)(unsafe.Pointer(C.goCall)))
+	C.InitGoStorage((C.putFunc)(unsafe.Pointer(C.goPut)),
+		(C.getFunc)(unsafe.Pointer(C.goGet)),
+		(C.delFunc)(unsafe.Pointer(C.goDel)))
 }
 
 func (sbx *Sandbox) SetHost(host *new_vm.Host) {

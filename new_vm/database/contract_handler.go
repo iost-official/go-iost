@@ -1,6 +1,8 @@
 package database
 
-import "github.com/iost-official/Go-IOS-Protocol/core/contract"
+import (
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+)
 
 const ContractPrefix = "c-"
 

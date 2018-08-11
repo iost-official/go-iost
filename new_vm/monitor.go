@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
+
 	"errors"
 )
 
@@ -87,5 +89,9 @@ func (m *Monitor) Call(host *Host, contractName, api string, args ...interface{}
 //}
 
 func VMFactory(lang string) VM {
+	switch lang {
+	case "native":
+		return &native_vm.VM{}
+	}
 	return nil
 }

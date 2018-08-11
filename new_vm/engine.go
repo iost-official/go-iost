@@ -15,10 +15,15 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/pkg/errors"
 )
 
 const (
 	defaultCacheLength = 1000
+)
+
+var (
+	ErrContractNotFound = errors.New("contract not found")
 )
 
 type Engine interface {
@@ -98,6 +103,11 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		e.host.ctx = context.WithValue(e.host.ctx, "stack_height", 1) // record stack trace
 
 		c := e.host.db.Contract(action.Contract)
+
+		if c.Info == nil {
+			return nil, ErrContractNotFound
+		}
+
 		abi := c.ABI(action.ActionName)
 
 		if abi == nil {
@@ -111,7 +121,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		if err = checkArgs(args); err != nil {
 			panic(err)
 		}
-
+		// todo host call check args
 		_, cost, err := staticMonitor.Call(e.host, action.Contract, action.ActionName, args...)
 		if err != nil {
 			txr := e.host.ctx.Value("tx_receipt").(*tx.TxReceipt)
