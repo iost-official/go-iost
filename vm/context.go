@@ -2,12 +2,12 @@ package vm
 
 type Context struct {
 	Base        *Context
-	Publisher   IOSTAccount
-	Signers     []IOSTAccount
+	Publisher   string
+	Signers     []string
 	ParentHash  []byte
 	Timestamp   int64
 	BlockHeight int64
-	Witness     IOSTAccount
+	Witness     string
 }
 
 func NewContext(ctx *Context) *Context {

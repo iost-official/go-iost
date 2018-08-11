@@ -104,24 +104,8 @@ var (
 	ErrDup      = errors.New("block duplicate")
 )
 
-type BlockCache interface {
-	AddGenesis(block *block.Block) error
-	Add(block *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error
 
-	FindBlockInCache(hash []byte) (*block.Block, error)
-	CheckBlock(hash []byte) bool
-	LongestChain() block.Chain
-	LongestPool() state.Pool
-	BlockChain() block.Chain
-	BasePool() state.Pool
-	SetBasePool(statePool state.Pool) error
-	ConfirmedLength() uint64
-	BlockConfirmChan() chan uint64
-	OnBlockChan() chan *block.Block
-	SendOnBlock(blk *block.Block)
-}
-
-type BlockCacheImpl struct {
+type BlockCache struct {
 	bc                 block.Chain
 	cachedRoot         *BlockCacheTree
 	singleBlockRoot    *BlockCacheTree
@@ -131,8 +115,8 @@ type BlockCacheImpl struct {
 	chConfirmBlockData chan *block.Block
 }
 
-func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCacheImpl {
-	h := BlockCacheImpl{
+func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) BlockCache {
+	h := BlockCache{
 		bc: chain,
 		cachedRoot: &BlockCacheTree{
 			bc:       NewCBC(chain),
@@ -155,18 +139,18 @@ func NewBlockCache(chain block.Chain, pool state.Pool, maxDepth int) *BlockCache
 	if h.cachedRoot.bc.Top() != nil {
 		h.hashMap.Store(string(h.cachedRoot.bc.Top().HeadHash()), h.cachedRoot)
 	}
-	return &h
+	return h
 }
 
-func (h *BlockCacheImpl) ConfirmedLength() uint64 {
+func (h *BlockCache) ConfirmedLength() uint64 {
 	return h.bc.Length()
 }
 
-func (h *BlockCacheImpl) BlockChain() block.Chain {
+func (h *BlockCache) BlockChain() block.Chain {
 	return h.bc
 }
 
-func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
+func (h *BlockCache) AddGenesis(block *block.Block) error {
 
 	err := h.bc.Push(block)
 	if err != nil {
@@ -181,7 +165,7 @@ func (h *BlockCacheImpl) AddGenesis(block *block.Block) error {
 	return nil
 }
 
-func (h *BlockCacheImpl) getHashMap(hash []byte) (*BlockCacheTree, bool) {
+func (h *BlockCache) getHashMap(hash []byte) (*BlockCacheTree, bool) {
 	rtnI, ok := h.hashMap.Load(string(hash))
 	if !ok {
 		return nil, false
@@ -190,11 +174,11 @@ func (h *BlockCacheImpl) getHashMap(hash []byte) (*BlockCacheTree, bool) {
 	return rtn, ok
 }
 
-func (h *BlockCacheImpl) setHashMap(hash []byte, bct *BlockCacheTree) {
+func (h *BlockCache) setHashMap(hash []byte, bct *BlockCacheTree) {
 	h.hashMap.Store(string(hash), bct)
 }
 
-func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error {
+func (h *BlockCache) Add(blk *block.Block, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) error {
 	var code CacheStatus
 	var newTree *BlockCacheTree
 	bct, ok := h.getHashMap(blk.HeadHash())
@@ -237,7 +221,7 @@ func (h *BlockCacheImpl) Add(blk *block.Block, verifier func(blk *block.Block, p
 	return nil
 }
 
-func (h *BlockCacheImpl) addSingles(newTree *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
+func (h *BlockCache) addSingles(newTree *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) {
 	block := newTree.bc.Top()
 	newChildren := make([]*BlockCacheTree, 0)
 	for _, bct := range h.singleBlockRoot.children {
@@ -251,7 +235,7 @@ func (h *BlockCacheImpl) addSingles(newTree *BlockCacheTree, verifier func(blk *
 	h.singleBlockRoot.children = newChildren
 }
 
-func (h *BlockCacheImpl) mergeSingles(newTree *BlockCacheTree) {
+func (h *BlockCache) mergeSingles(newTree *BlockCacheTree) {
 	block := newTree.bc.block
 	newChildren := make([]*BlockCacheTree, 0)
 	for _, bct := range h.singleBlockRoot.children {
@@ -265,7 +249,7 @@ func (h *BlockCacheImpl) mergeSingles(newTree *BlockCacheTree) {
 	h.singleBlockRoot.children = newChildren
 }
 
-func (h *BlockCacheImpl) delSingles() {
+func (h *BlockCache) delSingles() {
 	height := h.ConfirmedLength() - 1
 	if height%DelSingleBlockTime != 0 {
 		return
@@ -281,7 +265,7 @@ func (h *BlockCacheImpl) delSingles() {
 	h.singleBlockRoot.children = newChildren
 }
 
-func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
+func (h *BlockCache) addSubTree(root *BlockCacheTree, child *BlockCacheTree, verifier func(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error)) (CacheStatus, *BlockCacheTree) {
 	blk := child.bc.Top()
 	newTree := newBct(blk, root)
 	if root.bctType == OnCache {
@@ -306,14 +290,14 @@ func (h *BlockCacheImpl) addSubTree(root *BlockCacheTree, child *BlockCacheTree,
 	}
 }
 
-func (h *BlockCacheImpl) delSubTree(root *BlockCacheTree) {
+func (h *BlockCache) delSubTree(root *BlockCacheTree) {
 	h.hashMap.Delete(string(root.bc.Top().HeadHash()))
 	for _, bct := range root.children {
 		h.delSubTree(bct)
 	}
 }
 
-func (h *BlockCacheImpl) tryFlush(version int64) {
+func (h *BlockCache) tryFlush(version int64) {
 	for {
 		need, newRoot := h.needFlush(version)
 		if need {
@@ -338,7 +322,7 @@ func (h *BlockCacheImpl) tryFlush(version int64) {
 	}
 }
 
-func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
+func (h *BlockCache) needFlush(version int64) (bool, *BlockCacheTree) {
 	switch version {
 	case 0:
 		for _, bct := range h.cachedRoot.children {
@@ -356,7 +340,7 @@ func (h *BlockCacheImpl) needFlush(version int64) (bool, *BlockCacheTree) {
 	return false, nil
 }
 
-func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
+func (h *BlockCache) FindBlockInCache(hash []byte) (*block.Block, error) {
 	bct, ok := h.getHashMap(hash)
 	if ok {
 		return bct.bc.Top(), nil
@@ -364,7 +348,7 @@ func (h *BlockCacheImpl) FindBlockInCache(hash []byte) (*block.Block, error) {
 	return nil, errors.New("block not found")
 }
 
-func (h *BlockCacheImpl) CheckBlock(hash []byte) bool {
+func (h *BlockCache) CheckBlock(hash []byte) bool {
 	if _, err := h.FindBlockInCache(hash); err == nil {
 		return true
 	}
@@ -374,7 +358,7 @@ func (h *BlockCacheImpl) CheckBlock(hash []byte) bool {
 	return false
 }
 
-func (h *BlockCacheImpl) LongestChain() block.Chain {
+func (h *BlockCache) LongestChain() block.Chain {
 	bct := h.cachedRoot
 	for {
 		if len(bct.children) == 0 {
@@ -389,16 +373,16 @@ func (h *BlockCacheImpl) LongestChain() block.Chain {
 	}
 }
 
-func (h *BlockCacheImpl) BasePool() state.Pool {
+func (h *BlockCache) BasePool() state.Pool {
 	return h.cachedRoot.pool
 }
 
-func (h *BlockCacheImpl) SetBasePool(statePool state.Pool) error {
+func (h *BlockCache) SetBasePool(statePool state.Pool) error {
 	h.cachedRoot.pool = statePool
 	return nil
 }
 
-func (h *BlockCacheImpl) LongestPool() state.Pool {
+func (h *BlockCache) LongestPool() state.Pool {
 	bct := h.cachedRoot
 	for {
 		if len(bct.children) == 0 {
@@ -413,14 +397,14 @@ func (h *BlockCacheImpl) LongestPool() state.Pool {
 	}
 }
 
-func (h *BlockCacheImpl) BlockConfirmChan() chan uint64 {
+func (h *BlockCache) BlockConfirmChan() chan uint64 {
 	return h.blkConfirmChan
 }
 
-func (h *BlockCacheImpl) OnBlockChan() chan *block.Block {
+func (h *BlockCache) OnBlockChan() chan *block.Block {
 	return h.chConfirmBlockData
 }
 
-func (h *BlockCacheImpl) SendOnBlock(blk *block.Block) {
+func (h *BlockCache) SendOnBlock(blk *block.Block) {
 	h.chConfirmBlockData <- blk
 }
