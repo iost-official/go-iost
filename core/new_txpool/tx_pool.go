@@ -27,7 +27,7 @@ type TxPoolImpl struct {
 	chTx         chan p2p.IncomingMessage
 	chLinkedNode chan *RecNode
 
-	global     global.Global
+	global     global.BaseVariable
 	blockCache blockcache.BlockCache
 	p2pService p2p.Service
 
@@ -38,7 +38,7 @@ type TxPoolImpl struct {
 	mu sync.RWMutex
 }
 
-func NewTxPoolImpl(global global.Global, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
+func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
 	p := &TxPoolImpl{
 		blockCache:   blockCache,
 		chLinkedNode: make(chan *RecNode, 100),

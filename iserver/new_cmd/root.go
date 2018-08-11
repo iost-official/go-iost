@@ -25,16 +25,13 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/metrics"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/rpc"
-	"github.com/iost-official/Go-IOS-Protocol/verifier"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -44,7 +41,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/consensus/pob"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
@@ -90,7 +87,7 @@ var rootCmd = &cobra.Command{
 			log.Path = conf.LogPath
 		}
 
-		gl, err := global.New(conf)
+		glbl, err := global.New(conf)
 		if err != nil {
 			os.Exit(1)
 		}
@@ -99,9 +96,10 @@ var rootCmd = &cobra.Command{
 		log.NewLogger("iost")
 		log.Log.I("Version:  %v", "1.0")
 
-		log.Log.I("cfgFile: %v", gl.Config().CfgFile)
-		log.Log.I("logFile: %v", gl.Config().LogFile)
-		log.Log.I("dbFile: %v", gl.Config().DbFile)
+		log.Log.I("cfgFile: %v", glbl.Config().CfgFile)
+		log.Log.I("logFile: %v", glbl.Config().LogFile)
+		log.Log.I("ldb.path: %v", glbl.Config().LdbPath)
+		log.Log.I("dbFile: %v", glbl.Config().DbFile)
 
 		// Start CPU Profile
 		if cpuprofile != "" {
@@ -114,88 +112,6 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		log.Log.I("ldb.path: %v", gl.Config().LdbPath)
-		log.Log.I("redis.addr: %v", gl.Config().LdbPath)
-		log.Log.I("redis.port: %v", gl.Config().RedisPort)
-
-		tx.LdbPath = gl.Config().LdbPath
-		block.LdbPath = gl.Config().LdbPath
-		db.DBAddr = gl.Config().RedisAddr
-		db.DBPort = int16(gl.Config().RedisPort)
-
-		if state.StdPool == nil {
-			log.Log.E("StdPool initialization failed, stop the program!")
-			os.Exit(1)
-		}
-
-		blockChain, err := block.Instance()
-		if err != nil {
-			log.Log.E("NewBlockChain failed, stop the program! err:%v", err)
-			os.Exit(1)
-		}
-		var resBlockLength uint64
-		resBlockLength = 1
-		bn, err := state.StdPool.Get(state.Key("BlockNum"))
-		if err == nil {
-
-			val, ok := bn.(*state.VInt)
-			if !ok {
-				log.Log.E("Redis BlockNum empty")
-				state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(1))
-				state.StdPool.Flush()
-			} else {
-				resBlockLength = uint64(val.ToInt()) + 1
-			}
-
-		}
-
-		bcLen := blockChain.Length()
-		log.Log.I("BlockNum on Redis: %v", resBlockLength-1)
-		log.Log.I("BCLen: %v", bcLen)
-		if bcLen < resBlockLength {
-			resBlockLength = 0
-			state.StdPool.Delete(state.Key("iost"))
-			state.StdPool.Delete(state.Key("BlockNum"))
-			state.StdPool.Flush()
-		}
-
-		if bcLen > resBlockLength {
-			var blk *block.Block
-			var i uint64
-			for i = resBlockLength; i < bcLen; i++ {
-				log.Log.I("Update StatePool for number: %v", i)
-				blk = blockChain.GetBlockByNumber(i)
-				if blk == nil {
-					break
-				}
-				if i == 0 {
-					newPool, err := verifier.ParseGenesis(blk.Content[0].Contract, state.StdPool)
-					if err != nil {
-						log.Log.E("Update StatePool failed, stop the program! err:%v", err)
-						os.Exit(1)
-					}
-					newPool.Flush()
-				} else {
-					newPool, err := blockcache.StdBlockVerifier(blk, state.StdPool)
-					if err != nil {
-						log.Log.E("Update StatePool failed, stop the program! err:%v", err)
-						os.Exit(1)
-					}
-					newPool.Flush()
-				}
-			}
-
-			if bcLen > 0 {
-
-				blockChain.CheckLength()
-				b := blockChain.Top()
-				if b != nil {
-					state.StdPool.Put(state.Key("BlockNum"), state.MakeVInt(int(b.Head.Number)))
-					state.StdPool.Put(state.Key("BlockHash"), state.MakeVByte(b.HeadHash()))
-					state.StdPool.Flush()
-				}
-			}
-		}
 		log.Log.I("1.Start the P2P networks")
 
 		rpcPort := viper.GetString("net.rpc-port")
@@ -260,6 +176,29 @@ var rootCmd = &cobra.Command{
 			log.Log.I("witnessList[%v] = %v", i, witness)
 		}
 
+		var blkCache blockcache.BlockCache
+		blkCache, err = blockcache.NewBlockCache(glbl)
+		if err != nil {
+			log.Log.E("blockcache initialization failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+
+		sync, err = consensus_common.NewSynchronizer(glbl, blkCache, p2pService)
+		if err != nil {
+			log.Log.E("synchronizer initialization failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+		serverExit = append(serverExit, sync)
+
+		var txpool new_txpool.TxPool
+		txPool, err = new_txpool.NewTxPoolImpl(glbl, blkCache, p2pService)
+		if err != nil {
+			log.Log.E("NewTxPoolServer failed, stop the program! err:%v", err)
+			os.Exit(1)
+		}
+		txPool.Start()
+		serverExit = append(serverExit, txPool)
+
 		consensus, err := consensus.ConsensusFactory(
 			consensus.CONSENSUS_POB,
 			acc, blockChain, state.StdPool, witnessList)
@@ -267,18 +206,8 @@ var rootCmd = &cobra.Command{
 			log.Log.E("consensus initialization failed, stop the program! err:%v", err)
 			os.Exit(1)
 		}
-
 		consensus.Run()
 		serverExit = append(serverExit, consensus)
-		blockCache := consensus.BlockCache()
-		txPool, err := txpool.NewTxPoolServer(blockCache, blockCache.OnBlockChan())
-		if err != nil {
-			log.Log.E("NewTxPoolServer failed, stop the program! err:%v", err)
-			os.Exit(1)
-		}
-
-		txPool.Start()
-		serverExit = append(serverExit, txPool)
 
 		err = rpc.Server(rpcPort)
 		if err != nil {
