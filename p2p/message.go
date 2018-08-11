@@ -37,6 +37,8 @@ type MessagePriority uint8
 
 const (
 	Ping MessageType = iota + 1
+	RoutingTableQuery
+	RoutingTableResponse
 	SyncBlockHashRequest
 	SyncBlockHashResponse
 	SyncBlockRequest
