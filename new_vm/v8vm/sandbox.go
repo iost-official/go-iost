@@ -3,16 +3,28 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
+char *requireModule(SandboxPtr, char *);
+int goTransfer(SandboxPtr, char *, char *, char *, size_t *);
+int goWithdraw(SandboxPtr, char *, char *, size_t *);
+int goDeposit(SandboxPtr, char *, char *, size_t *);
+int goTopUp(SandboxPtr, char *, char *, char *, size_t *);
+int goCountermand(SandboxPtr, char *, char *, char *, size_t *);
+char *goBlockInfo(SandboxPtr, size_t *);
+char *goTxInfo(SandboxPtr, size_t *);
+char *goCall(SandboxPtr, char *, char *, char *, size_t *);
+int goPut(SandboxPtr, char *, char *, size_t *);
+char *goGet(SandboxPtr, char *, size_t *);
+int goDel(SandboxPtr, char *, size_t *);
 */
 import "C"
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"unsafe"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
-	"encoding/json"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 )
 
 // A Sandbox is an execution environment that allows separate, unrelated, JavaScript
@@ -22,7 +34,7 @@ type Sandbox struct {
 	isolate C.IsolatePtr
 	context C.SandboxPtr
 	modules Modules
-	host    *new_vm.Host
+	host    *host.Host
 }
 
 var sbxMap = make(map[C.SandboxPtr]*Sandbox)
@@ -39,6 +51,7 @@ func NewSandbox(e *VM) *Sandbox {
 		context: cSbx,
 		modules: NewModules(),
 	}
+	s.Init()
 	sbxMap[cSbx] = s
 
 	return s
@@ -54,9 +67,21 @@ func (sbx *Sandbox) Release() {
 
 func (sbx *Sandbox) Init() {
 	// init require
+	C.InitGoRequire((C.requireFunc)(unsafe.Pointer(C.requireModule)))
+	C.InitGoBlockchain((C.transferFunc)(unsafe.Pointer(C.goTransfer)),
+		(C.withdrawFunc)(unsafe.Pointer(C.goWithdraw)),
+		(C.depositFunc)(unsafe.Pointer(C.goDeposit)),
+		(C.topUpFunc)(unsafe.Pointer(C.goTopUp)),
+		(C.countermandFunc)(unsafe.Pointer(C.goCountermand)),
+		(C.blockInfoFunc)(unsafe.Pointer(C.goBlockInfo)),
+		(C.txInfoFunc)(unsafe.Pointer(C.goTxInfo)),
+		(C.callFunc)(unsafe.Pointer(C.goCall)))
+	C.InitGoStorage((C.putFunc)(unsafe.Pointer(C.goPut)),
+		(C.getFunc)(unsafe.Pointer(C.goGet)),
+		(C.delFunc)(unsafe.Pointer(C.goDel)))
 }
 
-func (sbx *Sandbox) SetHost(host *new_vm.Host) {
+func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
 }
 
@@ -69,7 +94,7 @@ func (sbx *Sandbox) SetModule(name, code string) {
 }
 
 func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args []interface{}) (string, error) {
-	name := contract.Name
+	name := contract.ID
 	code := contract.Code
 
 	sbx.SetModule(name, code)
@@ -99,8 +124,12 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
 		err = errors.New(C.GoString(rs.Err))
 	}
 
-	C.free(unsafe.Pointer(rs.Value))
-	C.free(unsafe.Pointer(rs.Err))
+	if rs.Value != nil {
+		C.free(unsafe.Pointer(rs.Value))
+	}
+	if rs.Err != nil {
+		C.free(unsafe.Pointer(rs.Err))
+	}
 
 	return result, err
 }

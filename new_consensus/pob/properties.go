@@ -95,7 +95,10 @@ func (prop *globalDynamicProperty) update(blockHead *block.BlockHead) {
 	}
 	prop.LastBlockNumber = blockHead.Number
 	prop.LastBlockTime = Timestamp{Slot: blockHead.Time}
-	copy(prop.LastBLockHash, blockHead.Hash())
+	hash, err := blockHead.Hash()
+	if err == nil {
+		copy(prop.LastBLockHash, hash)
+	}
 }
 
 func (prop *globalDynamicProperty) timestampToSlot(time Timestamp) int64 {

@@ -8,7 +8,7 @@ import (
 )
 
 type TxDB interface {
-	Add(txs []*Tx) error
+	Push(txs []*Tx) error
 	Get(hash []byte) (*Tx, error)
 	Has(tx *Tx) (bool, error)
 }
@@ -41,14 +41,11 @@ func TxDbInstance() *TxDBImpl {
 }
 
 //Add tx to db
-func (tdb *TxDBImpl) Add(txs []*Tx) error {
+func (tdb *TxDBImpl) Push(txs []*Tx) error {
 	btch := tdb.db.Batch()
 	for _, tx := range txs {
 		hash := tx.Hash()
-		err := btch.Put(append(txPrefix, hash...), tx.Encode())
-		if err != nil {
-			return fmt.Errorf("failed to Put hash->tx: %v", err)
-		}
+		btch.Put(append(txPrefix, hash...), tx.Encode())
 	}
 	btch.Commit()
 	return nil

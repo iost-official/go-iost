@@ -6,7 +6,6 @@ import (
 
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -14,6 +13,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/prototype/account"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 )
 
 var (
@@ -26,51 +27,31 @@ var (
 	ErrTxSignature = errors.New("tx wrong signature")
 )
 
-func genGenesis(initTime int64) *block.Block {
-	var code string
-	for k, v := range GenesisAccount {
-		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
-	}
-
-	tx := Tx{
-		Time: 0,
-		// TODO what is the genesis tx?
-	}
-
-	genesis := &block.Block{
-		Head: block.BlockHead{
-			Version: 0,
-			Number:  0,
-			Time:    initTime,
-		},
-		Txs:      make([]Tx, 0),
-		Receipts: make([]TxReceipt, 0),
-	}
-	genesis.Txs = append(genesis.Txs, tx)
-	return genesis
-}
-
-func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *block.Block {
+func genBlock(acc Account, node *blockcache.BlockCacheNode, txPool new_txpool.TxPool, db *db.MVCCDB) *block.Block {
 	lastBlk := node.Block
+	parentHash, err := lastBlk.HeadHash()
+	if err != nil {
+		return nil
+	}
 	blk := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
-			ParentHash: lastBlk.HeadHash(),
+			ParentHash: parentHash,
 			Number:     lastBlk.Head.Number + 1,
 			Witness:    acc.ID,
 			Time:       GetCurrentTimestamp().Slot,
 		},
-		Txs:      []Tx{},
-		Receipts: []TxReceipt{},
+		Txs:      []*tx.Tx{},
+		Receipts: []*tx.TxReceipt{},
 	}
 
 	txCnt := 1000
 
 	limitTime := time.NewTicker(((SlotLength/3 - 1) + 1) * time.Second)
-	if new_txpool.TxPoolS != nil {
-		tx, err := new_txpool.TxPoolS.PendingTransactions(txCnt)
+	if txPool != nil {
+		tx, err := txPool.PendingTxs(txCnt)
 		if err == nil {
-			txPoolSize.Set(float64(new_txpool.TxPoolS.TransactionNum()))
+			txPoolSize.Set(float64(len(tx)))
 
 			if len(tx) != 0 {
 				VerifyTxBegin(lastBlk, db)
@@ -85,7 +66,7 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *bloc
 						}
 						if receipt, err := VerifyTx(t); err == nil {
 							db.Commit()
-							blk.Txs = append(blk.Txs, *t)
+							blk.Txs = append(blk.Txs, t)
 							blk.Receipts = append(blk.Receipts, receipt)
 						} else {
 							db.Rollback()
@@ -96,12 +77,13 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, db *db.MVCCDB) *bloc
 		}
 	}
 
-	blk.Head.TxsHash = blk.CalculateTxsHash()
-	blk.Head.MerkleHash = blk.CalculateMerkleHash()
+	blk.Head.TxsHash, err = blk.CalculateTxsHash()
+	blk.Head.MerkleHash, err = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
-	db.Tag(string(blk.HeadHash()))
+	hash, err := blk.HeadHash()
+	db.Tag(string(hash))
 
 	generatedBlockCount.Inc()
 
@@ -157,7 +139,7 @@ func verifyBasics(blk *block.Block) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, db *db.MVCCDB) error {
+func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, txPool new_txpool.TxPool, db *db.MVCCDB) error {
 	// verify block head
 	if err := VerifyBlockHead(blk, parent, top); err != nil {
 		return err
@@ -165,14 +147,13 @@ func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, db *db
 
 	// verify tx time/sig/exist
 	for _, tx := range blk.Txs {
-		// TODO how to calculate time of tx?
-		if blk.Head.Time-tx.Time > 300 {
+		if dynamicProp.slotToTimestamp(blk.Head.Time).ToUnixSec() - tx.Time/1e9 > 60 {
 			return ErrTxTooOld
 		}
-		exist := new_txpool.TxPoolS.ExistTx(tx.Hash(), blk)
-		if exist == INBLOCK {
+		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
+		if exist == new_txpool.FoundChain {
 			return ErrTxDup
-		} else if exist != PENDING {
+		} else if exist != new_txpool.FoundPending {
 			if err := tx.VerifySelf(); err != nil {
 				return ErrTxSignature
 			}
@@ -207,7 +188,7 @@ func updateNodeInfo(node *blockcache.BlockCacheNode) {
 }
 
 func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) []string {
-	// pending witness
+	// TODO how to decode witness list from db?
 	newList, err := db.Get("state", "witnessList")
 
 	if err == nil {

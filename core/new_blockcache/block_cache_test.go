@@ -7,7 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -21,7 +21,7 @@ func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 	if fa == nil {
 		ret.Head.ParentHash = []byte("Im a single block")
 	} else {
-		ret.Head.ParentHash = fa.HeadHash()
+		ret.Head.ParentHash, _ = fa.HeadHash()
 	}
 	return ret
 }
@@ -52,10 +52,10 @@ func TestBlockCache(t *testing.T) {
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(b0)
 	base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
-	block.BChain = base
+	block.BC = base
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
-			bc := NewBlockCache(nil)
+			bc, _ := NewBlockCache(nil)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			b1node, _ := bc.Add(b1)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
@@ -79,7 +79,7 @@ func TestBlockCache(t *testing.T) {
 		})
 
 		Convey("Flush", func() {
-			bc := NewBlockCache(nil)
+			bc, _ := NewBlockCache(nil)
 			bc.Add(b1)
 			//bc.Draw()
 			bc.Add(b2)
@@ -106,7 +106,7 @@ func TestBlockCache(t *testing.T) {
 		})
 
 		Convey("GetBlockbyNumber", func() {
-			bc := NewBlockCache(nil)
+			bc, _ := NewBlockCache(nil)
 			b1node, _ := bc.Add(b1)
 			//bc.Draw()
 			b2node, _ := bc.Add(b2)

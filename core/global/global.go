@@ -15,6 +15,7 @@ type Mode uint
 const (
 	ModeNormal Mode = iota
 	ModeSync
+	ModeProduce
 )
 
 type GlobalImpl struct {

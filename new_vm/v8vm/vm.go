@@ -3,14 +3,14 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
-//#cgo LDFLAGS: -lvm
-#cgo LDFLAGS: -L./v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath ./v8/libv8/_linux_amd64
+#cgo LDFLAGS: -lvm
 */
 import "C"
 import (
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 	"fmt"
+
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 )
 
 func init() {
@@ -38,8 +38,23 @@ func (e *VM) Init() error {
 	return nil
 }
 
+func (e *VM) Run(code, api string, args ...interface{}) (string, error) {
+	contr := &contract.Contract{
+		ID:   "run_id",
+		Code: code,
+	}
+
+	preparedCode, err := e.sandbox.Prepare(contr, api, args)
+	if err != nil {
+		return "", err
+	}
+
+	rs, err := e.sandbox.Execute(preparedCode)
+	return rs, err
+}
+
 // LoadAndCall load contract code with provide contract, and call api with args
-func (e *VM) LoadAndCall(host *new_vm.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+func (e *VM) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println("LoadAndCall recover:", err)
