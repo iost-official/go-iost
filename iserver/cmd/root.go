@@ -163,7 +163,7 @@ var rootCmd = &cobra.Command{
 			var blk *block.Block
 			var i uint64
 			for i = resBlockLength; i < bcLen; i++ {
-				log.Log.I("Update StatePool for number: %v", i)
+				log.Log.I("Update StateDB for number: %v", i)
 				blk = blockChain.GetBlockByNumber(i)
 				if blk == nil {
 					break
@@ -171,14 +171,14 @@ var rootCmd = &cobra.Command{
 				if i == 0 {
 					newPool, err := verifier.ParseGenesis(blk.Content[0].Contract, state.StdPool)
 					if err != nil {
-						log.Log.E("Update StatePool failed, stop the program! err:%v", err)
+						log.Log.E("Update StateDB failed, stop the program! err:%v", err)
 						os.Exit(1)
 					}
 					newPool.Flush()
 				} else {
 					newPool, err := blockcache.StdBlockVerifier(blk, state.StdPool)
 					if err != nil {
-						log.Log.E("Update StatePool failed, stop the program! err:%v", err)
+						log.Log.E("Update StateDB failed, stop the program! err:%v", err)
 						os.Exit(1)
 					}
 					newPool.Flush()

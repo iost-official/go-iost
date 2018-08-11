@@ -9,7 +9,9 @@ using namespace v8;
 typedef struct {
   Persistent<Context> context;
   Isolate *isolate;
-  size_t gasCount;
+  const char *jsPath;
+  size_t gasUsed;
+  size_t gasLimit;
 } Sandbox;
 
 extern ValueTuple Execution(SandboxPtr ptr, const char *code);

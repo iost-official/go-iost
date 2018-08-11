@@ -24,50 +24,50 @@ void InitGoBlockchain(transferFunc transfer, withdrawFunc withdraw,
 }
 
 int IOSTBlockchain::Transfer(char *from, char *to, char *amount) {
-    size_t gasCount = 0;
-    int ret = CTransfer(sbx, from, to, amount, &gasCount);
+    size_t gasUsed = 0;
+    int ret = CTransfer(sbx, from, to, amount, &gasUsed);
     return ret;
 }
 
 int IOSTBlockchain::Withdraw(char *to, char *amount) {
-    size_t gasCount = 0;
-    int ret = CWithdraw(sbx, to, amount, &gasCount);
+    size_t gasUsed = 0;
+    int ret = CWithdraw(sbx, to, amount, &gasUsed);
     return ret;
 }
 
 int IOSTBlockchain::Deposit(char *from, char *amount) {
-    size_t gasCount = 0;
-    int ret = CDeposit(sbx, from, amount, &gasCount);
+    size_t gasUsed = 0;
+    int ret = CDeposit(sbx, from, amount, &gasUsed);
     return ret;
 }
 
 int IOSTBlockchain::TopUp(char *contract, char *from, char *amount) {
-    size_t gasCount = 0;
-    int ret = CTopUp(sbx, contract, from, amount, &gasCount);
+    size_t gasUsed = 0;
+    int ret = CTopUp(sbx, contract, from, amount, &gasUsed);
     return ret;
 }
 
 int IOSTBlockchain::Countermand(char *contract, char *to, char *amount) {
-    size_t gasCount = 0;
-    int ret = CCountermand(sbx, contract, to, amount, &gasCount);
+    size_t gasUsed = 0;
+    int ret = CCountermand(sbx, contract, to, amount, &gasUsed);
     return ret;
 }
 
 char *IOSTBlockchain::BlockInfo() {
-    size_t gasCount = 0;
-    char *blkInfo = CBlkInfo(sbx, &gasCount);
+    size_t gasUsed = 0;
+    char *blkInfo = CBlkInfo(sbx, &gasUsed);
     return blkInfo;
 }
 
 char *IOSTBlockchain::TxInfo() {
-    size_t gasCount = 0;
-    char *txInfo = CTxInfo(sbx, &gasCount);
+    size_t gasUsed = 0;
+    char *txInfo = CTxInfo(sbx, &gasUsed);
     return txInfo;
 }
 
 char *IOSTBlockchain::Call(char *contract, char *api, char *args) {
-    size_t gasCount = 0;
-    char *result = CCall(sbx, contract, api, args, &gasCount);
+    size_t gasUsed = 0;
+    char *result = CCall(sbx, contract, api, args, &gasUsed);
     return result;
 }
 

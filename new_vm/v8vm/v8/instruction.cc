@@ -59,6 +59,7 @@ void IOSTContractInstruction_Incr(const FunctionCallbackInfo<Value> &args) {
 
     IOSTContractInstruction *ici = static_cast<IOSTContractInstruction *>(extVal->Value());
     size_t ret = ici->Incr(valInt);
+
     args.GetReturnValue().Set(Number::New(isolate, (double)ret));
 }
 
