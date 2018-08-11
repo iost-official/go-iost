@@ -198,30 +198,8 @@ var rootCmd = &cobra.Command{
 		}
 		log.Log.I("1.Start the P2P networks")
 
-		logPath := viper.GetString("net.log-path")
-		nodeTablePath := viper.GetString("net.node-table-path")
-		nodeID := viper.GetString("net.node-id") //optional
-		listenAddr := viper.GetString("net.listen-addr")
-		regAddr := viper.GetString("net.register-addr")
 		rpcPort := viper.GetString("net.rpc-port")
-		target := viper.GetString("net.target") //optional
-		port := viper.GetInt64("net.port")
 		metricsPort := viper.GetString("net.metrics-port")
-
-		log.Log.I("net.log-path:  %v", logPath)
-		log.Log.I("net.node-table-path:  %v", nodeTablePath)
-		log.Log.I("net.node-id:   %v", nodeID)
-		log.Log.I("net.listen-addr:  %v", listenAddr)
-		log.Log.I("net.register-addr:  %v", regAddr)
-		log.Log.I("net.target:  %v", target)
-		log.Log.I("net.port:  %v", port)
-		log.Log.I("net.rpcPort:  %v", rpcPort)
-		log.Log.I("net.metricsPort:  %v", metricsPort)
-
-		if logPath == "" || nodeTablePath == "" || listenAddr == "" || regAddr == "" || port <= 0 || rpcPort == "" {
-			log.Log.E("Network config initialization failed, stop the program!")
-			os.Exit(1)
-		}
 
 		log.Log.I("network instance")
 		p2pService, err := p2p.NewDefault()
