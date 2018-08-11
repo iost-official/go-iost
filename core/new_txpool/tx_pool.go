@@ -85,16 +85,7 @@ func (pool *TxPoolImpl) loop() {
 				continue
 			}
 
-			if pool.txTimeOut(&t) {
-				continue
-			}
-
-			if t.VerifySelf() != nil {
-				pool.mu.Lock()
-
-				pool.addTx(&t)
-
-				pool.mu.Unlock()
+			if ret := pool.addTx(&t); ret == Success {
 				receivedTransactionCount.Inc()
 			}
 
@@ -165,9 +156,9 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 	return nil
 }
 
-func (pool *TxPoolImpl) AddTx(tx p2p.IncomingMessage) error {
-	pool.chTx <- tx
-	return nil
+func (pool *TxPoolImpl) AddTx(tx *tx.Tx) TAddTx {
+
+	return pool.addTx(tx)
 }
 
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
@@ -327,14 +318,28 @@ func (pool *TxPoolImpl) clearBlock() {
 
 }
 
-func (pool *TxPoolImpl) addTx(tx *tx.Tx) {
+func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
+
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	if pool.txTimeOut(tx) {
+		return TimeError
+	}
+
+	if err := tx.VerifySelf(); err != nil {
+		return VerifyError
+	}
 
 	h := tx.Hash()
 
-	if !pool.existTxInChain(h, pool.forkChain.NewHead.Block) && !pool.existTxInPending(h) {
+	if pool.existTxInChain(h, pool.forkChain.NewHead.Block) || pool.existTxInPending(h) {
+		return DupError
+	} else {
 		pool.pendingTx.Store(h, tx)
 	}
 
+	return Success
 }
 
 func (pool *TxPoolImpl) existTxInPending(hash []byte) bool {
