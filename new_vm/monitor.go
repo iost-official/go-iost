@@ -7,6 +7,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 
 	"errors"
+
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 )
 
 var (
@@ -35,18 +37,18 @@ func NewMonitor( /*cb database.IMultiValue, cacheLength int*/ ) *Monitor {
 	return m
 }
 
-func (m *Monitor) Call(host *Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+func (m *Monitor) Call(host *host.Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
-	c := host.db.Contract(contractName)
+	c := host.DB.Contract(contractName)
 	abi := c.ABI(api)
 	if abi == nil {
 		return nil, nil, ErrABINotFound
 	}
 	ctx := host.Context()
 
-	host.ctx = context.WithValue(host.ctx, "abi_config", abi)
-	host.ctx = context.WithValue(host.ctx, "contract_name", contractName)
-	host.ctx = context.WithValue(host.ctx, "abi_name", api)
+	host.Ctx = context.WithValue(host.Ctx, "abi_config", abi)
+	host.Ctx = context.WithValue(host.Ctx, "contract_name", contractName)
+	host.Ctx = context.WithValue(host.Ctx, "abi_name", api)
 
 	vm, ok := m.vms[c.Info.Lang]
 	if !ok {
@@ -56,10 +58,10 @@ func (m *Monitor) Call(host *Host, contractName, api string, args ...interface{}
 	}
 	rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
 
-	payment := host.ctx.Value("abi_config").(*contract.ABI).Payment // TODO 预编译
+	payment := host.Ctx.Value("abi_config").(*contract.ABI).Payment // TODO 预编译
 	switch payment {
 	case 1:
-		var gasPrice = host.ctx.Value("gas_price").(int64) // TODO 判断大于0
+		var gasPrice = host.Ctx.Value("gas_price").(int64) // TODO 判断大于0
 		if abi.GasPrice < gasPrice {
 			return nil, nil, ErrGasPriceTooBig
 		}
@@ -69,7 +71,7 @@ func (m *Monitor) Call(host *Host, contractName, api string, args ...interface{}
 		//fmt.Println("user paid for", args[0])
 	}
 
-	host.ctx = ctx
+	host.Ctx = ctx
 
 	return
 }

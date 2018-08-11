@@ -12,6 +12,7 @@ import (
 	blk "github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 )
 
 func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockVM) {
@@ -37,7 +38,7 @@ func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockV
 func TestNewEngine(t *testing.T) { // test of normal engine work
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
-	blkInfo := string(e.(*EngineImpl).host.ctx.Value("block_info").(database.SerializedJSON))
+	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
@@ -48,7 +49,6 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	}
 
 	mtx := tx.Tx{
-		Id:         "txid",
 		Time:       time.Now().UnixNano(),
 		Expiration: 10000,
 		GasLimit:   100000,
@@ -59,7 +59,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	act := tx.Action{
 		Contract:   "contract",
 		ActionName: "abi",
-		Data:       "datas",
+		Data:       `["datas"]`,
 	}
 
 	mtx.Actions = append(mtx.Actions, act)
@@ -73,6 +73,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 			Abis: []*contract.ABI{
 				&contract.ABI{
 					Name:     "abi",
+					Args:     []string{"string"},
 					Payment:  0,
 					GasPrice: int64(1000),
 					Limit:    contract.NewCost(100, 100, 100),
@@ -85,8 +86,8 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		return c.Encode(), nil
 	})
 
-	vm.EXPECT().LoadAndCall(gomock.Any(), gomock.Any(), "abi", "datas").DoAndReturn(
-		func(host *Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(gomock.Any(), gomock.Any(), "abi", `datas`).DoAndReturn(
+		func(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			return nil, nil, nil
 		},
 	)
@@ -98,13 +99,12 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 func TestCost(t *testing.T) { // tests of context transport
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
-	blkInfo := string(e.(*EngineImpl).host.ctx.Value("block_info").(database.SerializedJSON))
+	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
 
 	mtx := tx.Tx{
-		Id:         "txid",
 		Time:       time.Now().UnixNano(),
 		Expiration: 10000,
 		GasLimit:   100000,
@@ -115,7 +115,7 @@ func TestCost(t *testing.T) { // tests of context transport
 	ac := tx.Action{
 		Contract:   "contract",
 		ActionName: "abi",
-		Data:       "datas",
+		Data:       `["datas"]`,
 	}
 
 	mtx.Actions = append(mtx.Actions, ac)
@@ -123,7 +123,7 @@ func TestCost(t *testing.T) { // tests of context transport
 	ac2 := tx.Action{
 		Contract:   "contract",
 		ActionName: "abi",
-		Data:       "data2",
+		Data:       `["data2"]`,
 	}
 	mtx.Actions = append(mtx.Actions, ac2)
 
@@ -136,6 +136,7 @@ func TestCost(t *testing.T) { // tests of context transport
 			Abis: []*contract.ABI{
 				&contract.ABI{
 					Name:     "abi",
+					Args:     []string{"string"},
 					Payment:  0,
 					GasPrice: int64(1000),
 					Limit:    contract.NewCost(100, 100, 100),
@@ -184,7 +185,7 @@ func TestCost(t *testing.T) { // tests of context transport
 	})
 
 	vm.EXPECT().LoadAndCall(gomock.Any(), gomock.Any(), "abi", "datas").DoAndReturn(
-		func(host *Host, c *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		func(host *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			cost = contract.NewCost(0, 0, 100)
 			//fmt.Println("call datas")
 			return nil, cost, nil
@@ -192,7 +193,7 @@ func TestCost(t *testing.T) { // tests of context transport
 	)
 
 	vm.EXPECT().LoadAndCall(gomock.Any(), gomock.Any(), "abi", "data2").DoAndReturn(
-		func(host *Host, c *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		func(host *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			host.ABIConfig("payment", "contract_pay")
 			cost = contract.NewCost(0, 0, 100)
 			//fmt.Println("call data2")
@@ -206,13 +207,12 @@ func TestCost(t *testing.T) { // tests of context transport
 func TestNative_Transfer(t *testing.T) { // tests of native vm works
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
-	blkInfo := string(e.(*EngineImpl).host.ctx.Value("block_info").(database.SerializedJSON))
+	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
 
 	mtx := tx.Tx{
-		Id:         "txid",
 		Time:       time.Now().UnixNano(),
 		Expiration: 10000,
 		GasLimit:   100000,
@@ -277,13 +277,12 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 func TestNative_TopUp(t *testing.T) { // tests of native vm works
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
-	blkInfo := string(e.(*EngineImpl).host.ctx.Value("block_info").(database.SerializedJSON))
+	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
 
 	mtx := tx.Tx{
-		Id:         "txid",
 		Time:       time.Now().UnixNano(),
 		Expiration: 10000,
 		GasLimit:   100000,
