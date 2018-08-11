@@ -48,7 +48,7 @@ func StdBlockVerifier(block *block.Block, pool state.Pool) (state.Pool, error) {
 	ver.Context.ParentHash = block.Head.ParentHash
 	ver.Context.Timestamp = block.Head.Time
 	ver.Context.BlockHeight = block.Head.Number
-	ver.Context.Witness = vm.IOSTAccount(block.Head.Witness)
+	ver.Context.Witness = block.Head.Witness
 
 	txs := block.Content
 	ptxs := make([]*tx.Tx, 0)

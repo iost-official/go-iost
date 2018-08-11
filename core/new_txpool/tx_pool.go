@@ -9,12 +9,12 @@ import (
 	"errors"
 	"os"
 
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -86,6 +86,7 @@ func (pool *TxPoolImpl) loop() {
 			}
 
 			if ret := pool.addTx(&t); ret == Success {
+				pool.p2pService.Broadcast(tr.Data(), p2p.PublishTxRequest, p2p.UrgentMessage)
 				receivedTransactionCount.Inc()
 			}
 
@@ -158,7 +159,12 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 
 func (pool *TxPoolImpl) AddTx(tx *tx.Tx) TAddTx {
 
-	return pool.addTx(tx)
+	r := pool.addTx(tx)
+	if r == Success {
+		pool.p2pService.Broadcast(tx.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
+		receivedTransactionCount.Inc()
+	}
+	return r
 }
 
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
