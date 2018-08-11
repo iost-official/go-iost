@@ -1,4 +1,4 @@
-package new_txpool
+package txpool
 
 import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
