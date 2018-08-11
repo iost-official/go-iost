@@ -1,11 +1,9 @@
 package account
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
-	"math/rand"
-	"time"
+
+	"crypto/rand"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 )
@@ -55,14 +53,11 @@ func (member *Account) GetId() string {
 }
 
 func randomSeckey() []byte {
-	rand.Seed(time.Now().UnixNano())
-	bin := new(bytes.Buffer)
-	for i := 0; i < 4; i++ {
-		b := make([]byte, 8)
-		binary.BigEndian.PutUint64(b, rand.Uint64())
-		bin.Write(b)
+	seckey := make([]byte, 32)
+	_, err := rand.Read(seckey)
+	if err != nil {
+		return nil
 	}
-	seckey := bin.Bytes()
 	return seckey
 }
 
@@ -71,9 +66,13 @@ func makePubkey(seckey []byte) []byte {
 }
 
 func GetIdByPubkey(pubkey []byte) string {
-	return common.Base58Encode(pubkey)
+	if len(pubkey) != 33 {
+		panic("illegal pubkey")
+	}
+	return "IOST" + common.Base58Encode(append(pubkey, common.Parity(pubkey)...))
 }
 
 func GetPubkeyByID(ID string) []byte {
-	return common.Base58Decode(ID)
+	b := common.Base58Decode(ID[4:])
+	return b[:len(b)-4]
 }

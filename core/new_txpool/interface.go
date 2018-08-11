@@ -1,16 +1,16 @@
-package txpool
+package new_txpool
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 )
 
 type TxPool interface {
 	Start()
 	Stop()
-	AddConfirmBlock(block *block.Block, isLongestChain bool) error
-	AddTx(tx *tx.Tx) error
-	PendingTxs(maxCnt int) (tx.TransactionsList, error)
-	PendingTxsNum() (int, error)
-	ExistTxs(hash string, block *block.Block) (bool, error)
+	AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error
+	AddTx(tx *tx.Tx) TAddTx
+	PendingTxs(maxCnt int) (TxsList, error)
+	ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error)
 }
