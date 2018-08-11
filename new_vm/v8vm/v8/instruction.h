@@ -15,12 +15,12 @@ public:
 
     size_t Incr(size_t num) {
         Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
-        sbx->gasCount += num;
-        return sbx->gasCount;
+        sbx->gasUsed += num;
+        return sbx->gasUsed;
     }
     size_t Count() {
         Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
-        return sbx->gasCount;
+        return sbx->gasUsed;
     }
 };
 

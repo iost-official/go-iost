@@ -12,7 +12,7 @@ import (
 var ErrInvalidDbValType = errors.New("invalid db value type")
 
 //export goPut
-func goPut(cSbx C.SandboxPtr, key, val *C.char, gasCount *C.size_t) C.int {
+func goPut(cSbx C.SandboxPtr, key, val *C.char, gasUsed *C.size_t) C.int {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 
@@ -27,7 +27,7 @@ func goPut(cSbx C.SandboxPtr, key, val *C.char, gasCount *C.size_t) C.int {
 }
 
 //export goGet
-func goGet(cSbx C.SandboxPtr, key *C.char, gasCount *C.size_t) *C.char {
+func goGet(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 
@@ -41,7 +41,7 @@ func goGet(cSbx C.SandboxPtr, key *C.char, gasCount *C.size_t) *C.char {
 }
 
 //export goDel
-func goDel(cSbx C.SandboxPtr, key *C.char, gasCount *C.size_t) C.int {
+func goDel(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) C.int {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 

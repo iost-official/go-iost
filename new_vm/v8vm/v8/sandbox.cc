@@ -17,8 +17,6 @@
 #include <unistd.h>
 #include <chrono>
 
-#define NATIVE_LIB_PATH "v8/libjs/"
-
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
     std::strcpy(cstr, str.c_str());
@@ -117,7 +115,9 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     //sbx->context.Reset(isolate, Context::New(isolate, nullptr, globalTpl));
     sbx->context.Reset(isolate, context);
     sbx->isolate = isolate;
-    sbx->gasCount = 0;
+    sbx->jsPath = strdup("v8/libjs");
+    sbx->gasUsed = 0;
+    sbx->gasLimit = 0;
 
     return static_cast<SandboxPtr>(sbx);
 }
@@ -133,7 +133,20 @@ void releaseSandbox(SandboxPtr ptr) {
     Isolate::Scope isolate_scope(sbx->isolate);
 
     sbx->context.Reset();
+
+    free((char *)sbx->jsPath);
+    delete sbx;
     return;
+}
+
+void setJSPath(SandboxPtr ptr, const char *jsPath) {
+    Sandbox *sbx = static_cast<Sandbox*>(ptr);
+    sbx->jsPath = jsPath;
+}
+
+void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit) {
+    Sandbox *sbx = static_cast<Sandbox*>(ptr);
+    sbx->gasLimit = gasLimit;
 }
 
 std::string report_exception(Isolate *isolate, Local<Context> ctx, TryCatch& tryCatch) {
@@ -188,8 +201,10 @@ std::string report_exception(Isolate *isolate, Local<Context> ctx, TryCatch& try
     return ss.str();
 }
 
-void LoadVM(Isolate *isolate) {
-    std::string vmPath = NATIVE_LIB_PATH "vm.js";
+void LoadVM(Sandbox *sbx) {
+    Isolate *isolate = sbx->isolate;
+
+    std::string vmPath = std::string(sbx->jsPath) + "vm.js";
     std::ifstream f(vmPath);
     std::stringstream buffer;
     buffer << f.rdbuf();
@@ -216,7 +231,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     HandleScope handle_scope(isolate);
     Context::Scope context_scope(sbx->context.Get(isolate));
 
-    LoadVM(isolate);
+    LoadVM(sbx);
 
     TryCatch tryCatch(isolate);
     tryCatch.SetVerbose(false);
@@ -265,6 +280,11 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
         }
         if (result.length() > 0) {
             res.Value = copyString(result);
+            break;
+        }
+        if (sbx->gasUsed > sbx->gasLimit) {
+            isolate->TerminateExecution();
+            res.Err = strdup("out of gas");
             break;
         }
         auto now = std::chrono::steady_clock::now();

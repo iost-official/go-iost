@@ -76,6 +76,8 @@ extern SandboxPtr newSandbox(IsolatePtr ptr);
 extern void releaseSandbox(SandboxPtr ptr);
 
 extern ValueTuple Execute(SandboxPtr ptr, const char *code);
+extern void setJSPath(SandboxPtr ptr, const char *jsPath);
+extern void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit);
 
 // require
 typedef char *(*requireFunc)(SandboxPtr, char *);

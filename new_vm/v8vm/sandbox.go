@@ -35,6 +35,7 @@ type Sandbox struct {
 	context C.SandboxPtr
 	modules Modules
 	host    *host.Host
+	jsPath  string
 }
 
 var sbxMap = make(map[C.SandboxPtr]*Sandbox)
@@ -81,8 +82,13 @@ func (sbx *Sandbox) Init() {
 		(C.delFunc)(unsafe.Pointer(C.goDel)))
 }
 
+func (sbx *Sandbox) SetGasLimit(limit uint64) {
+	C.setSandboxGasLimit(sbx.context, C.size_t(limit))
+}
+
 func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
+	sbx.SetGasLimit(host.GasLimit())
 }
 
 func (sbx *Sandbox) SetModule(name, code string) {
@@ -91,6 +97,12 @@ func (sbx *Sandbox) SetModule(name, code string) {
 	}
 	m := NewModule(name, code)
 	sbx.modules.Set(m)
+}
+
+func (sbx *Sandbox) SetJSPath(path string) {
+	sbx.jsPath = path
+	cPath := C.CString(path)
+	C.setJSPath(sbx.context, cPath)
 }
 
 func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args []interface{}) (string, error) {
