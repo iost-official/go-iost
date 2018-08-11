@@ -4,12 +4,21 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/iost-official/Go-IOS-Protocol/core/global"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"google.golang.org/grpc"
 	"strings"
 )
 
-func Server(port string) error {
-
+var bc blockcache.BlockCache
+var txdb tx.TxDB
+var bchain block.Chain
+func Server(port string, bcache blockcache.BlockCache, _global global.Global) error {
+	txdb = _global.TxDB()
+	bchain = _global.BlockChain()
+	bc = bcache
 	if !strings.HasPrefix(port, ":") {
 		port = ":" + port
 	}
