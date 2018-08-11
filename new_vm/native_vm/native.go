@@ -13,7 +13,7 @@ type VM struct {
 func (m *VM) Init() error {
 	return nil
 }
-func (m *VM) LoadAndCall(host host.IHost, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 	//err = host.VerifyArgs(api, args...)
 	//if err != nil {
 	//	return nil, host.Cost(), err

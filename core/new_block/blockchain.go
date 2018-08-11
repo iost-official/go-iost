@@ -6,6 +6,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/db"
 		"errors"
+	"fmt"
 )
 
 type BlockChain struct {
@@ -92,8 +93,10 @@ func (bc *BlockChain) Push(block *Block) error {
 func (bc *BlockChain) CheckLength() error {
 	var err error = nil
 	for i := bc.length; i > 0; i-- {
+		fmt.Println(i)
 		_, err = bc.GetBlockByNumber(i - 1)
 		if err != nil {
+			fmt.Println("fail to get the block")
 			err = errors.New("broken chain in BlockChainDB")
 		}
 		bc.BlockChainDB.Put(blockLength, Uint64ToByte(i))
@@ -132,12 +135,12 @@ func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	var block *Block
+	var block Block
 	err = block.Decode(blockByte)
 	if err != nil {
 		return nil, errors.New("fail to decode blockByte")
 	}
-	return block, nil
+	return &block, nil
 }
 
 func (bc *BlockChain) GetBlockByNumber(number uint64) (*Block, error) {

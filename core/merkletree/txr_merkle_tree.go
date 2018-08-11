@@ -17,17 +17,17 @@ func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) error {
 	return m.MT.Build(data)
 }
 
-func (m *TXRMerkleTree) GetTXR(hash []byte) (tx.TxReceipt, error) {
+func (m *TXRMerkleTree) GetTXR(hash []byte) (*tx.TxReceipt, error) {
 	txr := tx.TxReceipt{}
 	txrHash, ok := m.TX2TXR[string(hash)]
 	if !ok {
-		return txr, errors.New("txHash isn't in the tree")
+		return nil, errors.New("txHash isn't in the tree")
 	}
 	err := txr.Decode(txrHash)
 	if err != nil {
-		return txr, err
+		return nil, err
 	}
-	return txr, nil
+	return &txr, nil
 }
 func (m *TXRMerkleTree) RootHash() ([]byte, error) {
 	return m.MT.RootHash()

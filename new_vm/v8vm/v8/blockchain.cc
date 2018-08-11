@@ -1,6 +1,76 @@
 #include "blockchain.h"
 #include <iostream>
 
+static transferFunc CTransfer = nullptr;
+static withdrawFunc CWithdraw = nullptr;
+static depositFunc CDeposit = nullptr;
+static topUpFunc CTopUp = nullptr;
+static countermandFunc CCountermand = nullptr;
+static blockInfoFunc CBlkInfo = nullptr;
+static txInfoFunc CTxInfo = nullptr;
+static callFunc CCall = nullptr;
+
+void InitGoBlockchain(transferFunc transfer, withdrawFunc withdraw,
+                        depositFunc deposit, topUpFunc topUp, countermandFunc countermand,
+                        blockInfoFunc blkInfo, txInfoFunc txInfo, callFunc call) {
+    CTransfer = transfer;
+    CWithdraw = withdraw;
+    CDeposit = deposit;
+    CTopUp = topUp;
+    CCountermand = countermand;
+    CBlkInfo = blkInfo;
+    CTxInfo = txInfo;
+    CCall = call;
+}
+
+int IOSTBlockchain::Transfer(char *from, char *to, char *amount) {
+    size_t gasCount = 0;
+    int ret = CTransfer(sbx, from, to, amount, &gasCount);
+    return ret;
+}
+
+int IOSTBlockchain::Withdraw(char *to, char *amount) {
+    size_t gasCount = 0;
+    int ret = CWithdraw(sbx, to, amount, &gasCount);
+    return ret;
+}
+
+int IOSTBlockchain::Deposit(char *from, char *amount) {
+    size_t gasCount = 0;
+    int ret = CDeposit(sbx, from, amount, &gasCount);
+    return ret;
+}
+
+int IOSTBlockchain::TopUp(char *contract, char *from, char *amount) {
+    size_t gasCount = 0;
+    int ret = CTopUp(sbx, contract, from, amount, &gasCount);
+    return ret;
+}
+
+int IOSTBlockchain::Countermand(char *contract, char *to, char *amount) {
+    size_t gasCount = 0;
+    int ret = CCountermand(sbx, contract, to, amount, &gasCount);
+    return ret;
+}
+
+char *IOSTBlockchain::BlockInfo() {
+    size_t gasCount = 0;
+    char *blkInfo = CBlkInfo(sbx, &gasCount);
+    return blkInfo;
+}
+
+char *IOSTBlockchain::TxInfo() {
+    size_t gasCount = 0;
+    char *txInfo = CTxInfo(sbx, &gasCount);
+    return txInfo;
+}
+
+char *IOSTBlockchain::Call(char *contract, char *api, char *args) {
+    size_t gasCount = 0;
+    char *result = CCall(sbx, contract, api, args, &gasCount);
+    return result;
+}
+
 void NewIOSTBlockchain(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Context> context = isolate->GetCurrentContext();

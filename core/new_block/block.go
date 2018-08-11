@@ -9,7 +9,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/merkletree"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-)
+	)
 
 type Block struct {
 	hash     []byte
@@ -46,11 +46,11 @@ func (b *Block) CalculateTxsHash() ([]byte, error) {
 	if len(b.Txs) == 0 {
 		return nil, errors.New("txs length equals 0")
 	}
-	treeHash := make([]byte, 0)
+	hash := make([]byte, 0)
 	for _, tx := range b.Txs {
-		treeHash = append(treeHash, tx.Publisher.Sig...)
+		hash = append(hash, tx.Publisher.Sig...)
 	}
-	return common.Sha3(treeHash), nil
+	return common.Sha3(hash), nil
 }
 
 func (b *Block) CalculateMerkleHash() ([]byte, error) {
@@ -90,6 +90,7 @@ func (b *Block) Decode(blockByte []byte) error {
 		return errors.New("fail to decode blockraw")
 	}
 	b.Head = *br.Head
+
 	for _, t := range br.Txs {
 		var tt tx.Tx
 		err = tt.Decode(t)

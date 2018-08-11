@@ -16,21 +16,9 @@ private:
 public:
     IOSTContractStorage(SandboxPtr ptr): sbx(ptr) {}
 
-    int Put(char *key, char *value) {
-        size_t gasCount = 0;
-        int ret = goPut(sbx, key, value, &gasCount);
-        return ret;
-    }
-    char *Get(char *key) {
-        size_t gasCount = 0;
-        char *ret = goGet(sbx, key, &gasCount);
-        return ret;
-    }
-    int Del(char *key) {
-        size_t gasCount = 0;
-        int ret = goDel(sbx, key, &gasCount);
-        return ret;
-    }
+    int Put(char *key, char *value);
+    char *Get(char *key);
+    int Del(char *key);
     void MapPut(const char *key, const char *field, const char *value) {
 //        size_t gasCount = 0;
 //        char *ret = goMapPut(sbx, key, field, value, &gasCount);
