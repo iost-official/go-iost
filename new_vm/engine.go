@@ -159,11 +159,15 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	}
 
 	rtn := make([]interface{}, 0)
+	arr, err := js.Array()
+	if err != nil {
+		return nil, err
+	}
 
-	//if len(arr) < len(abi.Args) {
-	//	panic("less args ")
-	//}
-	for i := range js.MustArray() {
+	if len(arr) < len(abi.Args) {
+		panic("less args ")
+	}
+	for i := range arr {
 		switch abi.Args[i] {
 		case "string":
 			s, err := js.GetIndex(i).String()
@@ -195,8 +199,4 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	return rtn, nil
 	//return nil, errors.New("unsupported yet")
 
-}
-
-func checkArgs(args []interface{}) error {
-	return nil
 }
