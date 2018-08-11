@@ -107,18 +107,17 @@ func (b *Block) Decode(blockByte []byte) error {
 		}
 		b.Receipts = append(b.Receipts, &rcpt)
 	}
-	return nil
+	return b.CalculateHeadHash()
 }
 
-func (b *Block) HeadHash() ([]byte, error) {
+func (b *Block) CalculateHeadHash() error {
 	var err error
-	if b.hash == nil {
-		b.hash, err = b.Head.Hash()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return b.hash, nil
+	b.hash, err = b.Head.Hash()
+	return err
+}
+
+func (b *Block) HeadHash() ([]byte) {
+	return b.hash
 }
 
 func (b *Block) LenTx() int {

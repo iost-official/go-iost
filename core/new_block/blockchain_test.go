@@ -35,6 +35,7 @@ func TestChainImpl(t *testing.T) {
 		length := bc.Length()
 		fmt.Println("length:", length)
 		tBlock.Head.Number = int64(length)
+		tBlock.CalculateHeadHash()
 		err = bc.Push(&tBlock)
 		So(err, ShouldBeNil)
 		So(bc.Length(), ShouldEqual, length+1)
@@ -65,7 +66,7 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 
-		HeadHash, err := tBlock.HeadHash()
+		HeadHash := tBlock.HeadHash()
 		block, err = bc.GetBlockByHash(HeadHash)
 		So(err, ShouldBeNil)
 		So(block, ShouldNotBeNil)
