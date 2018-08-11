@@ -5,8 +5,6 @@
 #include <sstream>
 #include <iostream>
 
-using namespace v8;
-
 #define NATIVE_LIB_PATH "v8/libjs/"
 
 static char injectGasFormat[] =
@@ -14,6 +12,11 @@ static char injectGasFormat[] =
     "const source = \"%s\";\n"
     "return injectGas(source);\n"
     "})();";
+static requireFunc CRequire = nullptr;
+
+void InitGoRequire(requireFunc require) {
+    CRequire = require;
+}
 
 void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     Isolate *isolate = info.GetIsolate();
@@ -52,7 +55,7 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     }
     SandboxPtr sbx = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
 
-    char *code = requireModule(sbx, *pathStr);
+    char *code = CRequire(sbx, *pathStr);
     char *injectCode = nullptr;
     asprintf(&injectCode, injectGasFormat, code);
     free(code);
