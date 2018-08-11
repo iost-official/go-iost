@@ -39,6 +39,15 @@ const (
 	ForkError
 )
 
+type TAddTx uint
+
+const (
+	Success TAddTx = iota
+	TimeError
+	VerifyError
+	DupError
+)
+
 type RecNode struct {
 	LinkedNode *blockcache.BlockCacheNode
 	HeadNode   *blockcache.BlockCacheNode

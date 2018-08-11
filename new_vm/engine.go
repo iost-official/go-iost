@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 	"github.com/pkg/errors"
 )
 
@@ -38,7 +39,7 @@ var staticMonitor *Monitor
 var once sync.Once
 
 type EngineImpl struct {
-	host *Host
+	host *host.Host
 }
 
 func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
@@ -66,7 +67,7 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	ctx = context.WithValue(ctx, "witness", blkInfo["witness"])
 
 	db := database.NewVisitor(defaultCacheLength, cb)
-	host := NewHost(ctx, db)
+	host := host.NewHost(ctx, db, staticMonitor)
 	return &EngineImpl{host: host}
 }
 func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
@@ -91,18 +92,19 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 	ptxr := tx.NewTxReceipt(tx0.Hash())
 
-	e.host.ctx = context.WithValue(e.host.ctx, "tx_info", database.SerializedJSON(txInfo))
-	e.host.ctx = context.WithValue(e.host.ctx, "auth_list", authList)
-	e.host.ctx = context.WithValue(e.host.ctx, "gas_limit", tx0.GasLimit)
-	e.host.ctx = context.WithValue(e.host.ctx, "gas_price", int64(tx0.GasPrice))
-	e.host.ctx = context.WithValue(e.host.ctx, "tx_receipt", &ptxr)
+	e.host.Ctx = context.WithValue(e.host.Ctx, "tx_info", database.SerializedJSON(txInfo))
+	e.host.Ctx = context.WithValue(e.host.Ctx, "auth_list", authList)
+	e.host.Ctx = context.WithValue(e.host.Ctx, "gas_price", int64(tx0.GasPrice))
+	e.host.Ctx = context.WithValue(e.host.Ctx, "tx_receipt", &ptxr)
 
 	for _, action := range tx0.Actions {
 
-		e.host.ctx = context.WithValue(e.host.ctx, "stack0", "direct_call")
-		e.host.ctx = context.WithValue(e.host.ctx, "stack_height", 1) // record stack trace
+		e.host.Ctx = context.WithValue(e.host.Ctx, "stack0", "direct_call")
+		e.host.Ctx = context.WithValue(e.host.Ctx, "stack_height", 1) // record stack trace
 
-		c := e.host.db.Contract(action.Contract)
+		e.host.Ctx = context.WithValue(e.host.Ctx, "gas_limit", tx0.GasLimit)
+
+		c := e.host.DB.Contract(action.Contract)
 
 		if c.Info == nil {
 			return nil, ErrContractNotFound
@@ -124,14 +126,16 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		// todo host call check args
 		_, cost, err := staticMonitor.Call(e.host, action.Contract, action.ActionName, args...)
 		if err != nil {
-			txr := e.host.ctx.Value("tx_receipt").(*tx.TxReceipt)
+			txr := e.host.Ctx.Value("tx_receipt").(*tx.TxReceipt)
 			return txr, err
 		}
+
+		e.host.Ctx = context.WithValue(e.host.Ctx, "gas_limit", tx0.GasLimit-uint64(cost.ToGas()))
 
 		totalCost.AddAssign(cost)
 	}
 
-	txr := e.host.ctx.Value("tx_receipt").(*tx.TxReceipt)
+	txr := e.host.Ctx.Value("tx_receipt").(*tx.TxReceipt)
 
 	e.host.PayCost(totalCost, account.GetIdByPubkey(tx0.Publisher.Pubkey), int64(tx0.GasPrice))
 
@@ -155,11 +159,15 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	}
 
 	rtn := make([]interface{}, 0)
+	arr, err := js.Array()
+	if err != nil {
+		return nil, err
+	}
 
-	//if len(arr) < len(abi.Args) {
-	//	panic("less args ")
-	//}
-	for i := range js.MustArray() {
+	if len(arr) < len(abi.Args) {
+		panic("less args ")
+	}
+	for i := range arr {
 		switch abi.Args[i] {
 		case "string":
 			s, err := js.GetIndex(i).String()
@@ -191,8 +199,4 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	return rtn, nil
 	//return nil, errors.New("unsupported yet")
 
-}
-
-func checkArgs(args []interface{}) error {
-	return nil
 }

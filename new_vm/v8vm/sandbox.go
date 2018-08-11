@@ -18,13 +18,13 @@ int goDel(SandboxPtr, char *, size_t *);
 */
 import "C"
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"unsafe"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
-	"encoding/json"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 )
 
 // A Sandbox is an execution environment that allows separate, unrelated, JavaScript
@@ -34,7 +34,7 @@ type Sandbox struct {
 	isolate C.IsolatePtr
 	context C.SandboxPtr
 	modules Modules
-	host    *new_vm.Host
+	host    *host.Host
 }
 
 var sbxMap = make(map[C.SandboxPtr]*Sandbox)
@@ -81,7 +81,7 @@ func (sbx *Sandbox) Init() {
 		(C.delFunc)(unsafe.Pointer(C.goDel)))
 }
 
-func (sbx *Sandbox) SetHost(host *new_vm.Host) {
+func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
 }
 

@@ -9,6 +9,6 @@ import (
 
 type VM interface {
 	Init() error
-	LoadAndCall(host host.IHost, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
+	LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
 	Release()
 }

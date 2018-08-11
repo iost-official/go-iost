@@ -6,7 +6,6 @@ import (
 	"hash/crc32"
 
 	"github.com/golang/snappy"
-	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 /*
@@ -151,7 +150,7 @@ type IncomingMessage struct {
 	typ  MessageType
 }
 
-func newIncomingMessage(peerID peer.ID, data []byte, messageType MessageType) *IncomingMessage {
+func NewIncomingMessage(peerID PeerID, data []byte, messageType MessageType) *IncomingMessage {
 	return &IncomingMessage{
 		from: peerID,
 		data: data,
