@@ -21,7 +21,7 @@ const (
 type GlobalImpl struct {
 	txDB tx.TxDB
 
-	statePool    *db.MVCCDB
+	statePool  *db.MVCCDB
 	blockChain block.Chain
 
 	config *common.Config
@@ -30,10 +30,10 @@ type GlobalImpl struct {
 }
 
 func New(conf *common.Config) (Global, error) {
-
-	txDb := tx.TxDbInstance()
-	if txDb == nil {
-		return nil, errors.New("fail to txdbinstance")
+	block.LevelDBPath = conf.LdbPath
+	blockChain, err := block.Instance()
+	if err != nil {
+		return nil, fmt.Errorf("NewBlockChain failed, stop the program! err:%v", err)
 	}
 	//TODO: INIT FROM A EXISTING MVCCDB
 	statePool, err := db.NewMVCCDB("StatePoolDB")
@@ -41,10 +41,12 @@ func New(conf *common.Config) (Global, error) {
 		return nil, fmt.Errorf("NewStatePool failed, stop the program! err:%v", err)
 	}
 
-	blockChain, err := block.Instance()
-	if err != nil {
-		return nil, fmt.Errorf("NewBlockChain failed, stop the program! err:%v", err)
+	tx.LdbPath = conf.LdbPath
+	txDb := tx.TxDbInstance()
+	if txDb == nil {
+		return nil, errors.New("fail to txdbinstance")
 	}
+	//TODO: check DB, state, txDB
 
 	n := &GlobalImpl{txDB: txDb, config: conf, statePool: statePool, blockChain: blockChain, mode: ModeNormal}
 
