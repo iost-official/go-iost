@@ -6,6 +6,9 @@ import (
 
 	"time"
 
+	"errors"
+	"fmt"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -15,8 +18,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
-	"fmt"
-	"errors"
 )
 
 var (
@@ -54,15 +55,15 @@ func init() {
 }
 
 type PoB struct {
-	account      account.Account
-	global       global.Global
-	blockChain   block.Chain
-	blockCache   blockcache.BlockCache
-	txPool       new_txpool.TxPool
-	p2pService   p2p.Service
-	synchronizer consensus_common.Synchronizer
-	addBlockPointer     *db.MVCCDB
-	genBlockPointer    *db.MVCCDB
+	account         account.Account
+	global          global.Global
+	blockChain      block.Chain
+	blockCache      blockcache.BlockCache
+	txPool          new_txpool.TxPool
+	p2pService      p2p.Service
+	synchronizer    consensus_common.Synchronizer
+	addBlockPointer *db.MVCCDB
+	genBlockPointer *db.MVCCDB
 
 	exitSignal  chan struct{}
 	chRecvBlock chan message.Message
@@ -72,15 +73,15 @@ type PoB struct {
 func NewPoB(account_ account.Account, blockchain_ block.BlockChain, blockcache_ blockcache.BlockCache, txPool_ new_txpool.TxPool, service_ p2p.Service, synchronizer_ consensus_common.Synchronizer, witnessList []string) (*PoB, error) {
 	//TODO: change initialization based on new interfaces
 	p := PoB{
-		account:      account_,
-		global:       global_,
-		blockCache:   blockcache_,
-		blockChain:   global_.BlockChain(),
-		addBlockPointer:     global_.StatePool(),
-		txPool:       txPool_,
-		p2pService:   service_,
-		synchronizer: synchronizer_,
-		chGenBlock:   make(chan *block.Block, 10),
+		account:         account_,
+		global:          global_,
+		blockCache:      blockcache_,
+		blockChain:      global_.BlockChain(),
+		addBlockPointer: global_.StatePool(),
+		txPool:          txPool_,
+		p2pService:      service_,
+		synchronizer:    synchronizer_,
+		chGenBlock:      make(chan *block.Block, 10),
 	}
 
 	p.genBlockPointer = p.addBlockPointer.Fork()
@@ -205,7 +206,7 @@ func (p *PoB) scheduleLoop() {
 				log.Log.I("Block size: %v, TrNum: %v", len(blkByte), len(blk.Txs))
 				go p.p2pService.Broadcast(blkByte, p2p.NewBlockResponse, p2p.UrgentMessage)
 
-				}
+			}
 			nextSchedule = timeUntilNextSchedule(time.Now().Unix())
 		case <-p.exitSignal:
 			return

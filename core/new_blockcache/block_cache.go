@@ -124,7 +124,7 @@ type BlockCacheImpl struct {
 	head       *BlockCacheNode
 	hash2node  *sync.Map
 	leaf       map[*BlockCacheNode]uint64
-	glb        global.Global
+	glbl       global.Global
 }
 
 var (
@@ -155,16 +155,16 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 	bc.hash2node.Delete(string(hash))
 }
 
-func NewBlockCache(glb global.Global) (*BlockCacheImpl, error) {
+func NewBlockCache(glbl global.Global) (*BlockCacheImpl, error) {
 	bc := BlockCacheImpl{
 		linkedRoot: NewBCN(nil, nil, Linked),
 		singleRoot: NewBCN(nil, nil, Single),
 		hash2node:  new(sync.Map),
 		leaf:       make(map[*BlockCacheNode]uint64),
-		glb:        glb,
+		glbl:       glbl,
 	}
 	bc.head = bc.linkedRoot
-	lib, err := glb.BlockChain().Top()
+	lib, err := glbl.BlockChain().Top()
 	if err != nil {
 		return nil, fmt.Errorf("BlockCahin Top Error")
 	}
@@ -326,7 +326,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	}
 	//confirm retain to db
 	if retain.Block != nil {
-		err := bc.glb.BlockChain().Push(retain.Block)
+		err := bc.glbl.BlockChain().Push(retain.Block)
 		if err != nil {
 			log.Log.E("Database error, BlockChain Push err:%v", err)
 			return err
@@ -339,7 +339,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			}
 		*/
 
-		err = bc.glb.TxDB().Push(retain.Block.Txs)
+		err = bc.glbl.TxDB().Push(retain.Block.Txs)
 		if err != nil {
 			log.Log.E("Database error, BlockChain Push err:%v", err)
 			return err
