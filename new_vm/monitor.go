@@ -129,7 +129,9 @@ func VMFactory(lang string) VM {
 	case "native":
 		return &native_vm.VM{}
 	case "javascript":
-		return v8.NewVM()
+		vm := v8.NewVM()
+		vm.SetJSPath("/Users/hepeijian/go/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
+		return vm
 	}
 	return nil
 }

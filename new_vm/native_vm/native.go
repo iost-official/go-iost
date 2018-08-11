@@ -93,3 +93,7 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 }
 func (m *VM) Release() {
 }
+
+func (m *VM) Compile(contract *contract.Contract) (string, error) {
+	return "", nil
+}
