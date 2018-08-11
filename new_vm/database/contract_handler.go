@@ -1,6 +1,8 @@
 package database
 
-import "github.com/iost-official/Go-IOS-Protocol/core/contract"
+import (
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+)
 
 const ContractPrefix = "c-"
 
@@ -10,7 +12,7 @@ type ContractHandler struct {
 
 func (m *ContractHandler) SetContract(contract *contract.Contract) {
 	if contract != nil {
-		m.db.Put(ContractPrefix+contract.Name, contract.Encode())
+		m.db.Put(ContractPrefix+contract.ID, contract.Encode())
 	} else {
 		panic("set a nil contract")
 	}

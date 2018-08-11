@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package message;
+
+message Message {
+    int64 time = 1;
+    string from = 2;
+    string to = 3;
+    int32 reqType = 4;
+    int32 tTL = 5;
+    bytes body = 6;
+}
+
+message RequestBlock {
+    uint64 blockNumber = 1;
+    bytes blockHash = 2;
+}
+
+message BlockHashQuery {
+    uint64 start = 1;
+    uint64 end = 2;
+}
+
+message BlockHash {
+    uint64 height = 1;
+    bytes hash = 2;
+}
+
+message BlockHashResponse {
+    repeated BlockHash blockHashes = 1;
+}

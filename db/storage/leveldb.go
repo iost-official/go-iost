@@ -44,11 +44,13 @@ func (d *LevelDB) Del(key []byte) error {
 	return nil
 }
 
-func (d *LevelDB) Keys(key []byte) ([][]byte, error) {
-	iter := d.db.NewIterator(util.BytesPrefix(key), nil)
+func (d *LevelDB) Keys(prefix []byte) ([][]byte, error) {
+	iter := d.db.NewIterator(util.BytesPrefix(prefix), nil)
 	keys := make([][]byte, 0)
 	for iter.Next() {
-		keys = append(keys, iter.Key())
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+		keys = append(keys, key)
 	}
 	iter.Release()
 	err := iter.Error()

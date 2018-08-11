@@ -2,204 +2,151 @@ package block
 
 import (
 	"encoding/binary"
-	"fmt"
-	"strconv"
-	"sync"
+			"sync"
 
 	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/log"
+		"errors"
+	"fmt"
 )
 
-var (
-	blockLength = []byte("BlockLength") //blockLength -> length of ChainImpl
-
-	blockNumberPrefix = []byte("n") //blockNumberPrefix + block number -> block hash
-	blockPrefix       = []byte("H") //blockHashPrefix + block hash -> block data
-)
-
-type ChainImpl struct {
-	db     *db.LDB
+type BlockChain struct {
+	BlockChainDB     *db.LDB
 	length uint64
 }
 
-var BChain Chain
-var once sync.Once
+var (
+	blockLength = []byte("BlockLength")
+	blockNumberPrefix = []byte("n")
+	blockPrefix = []byte("H")
+	once sync.Once
+	BC Chain
+	LevelDBPath string
+)
 
-var LdbPath string
+func Uint64ToByte(n uint64) []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, n)
+	return b
+}
+
+func ByteToUint64(b []byte) uint64 {
+	return binary.LittleEndian.Uint64(b)
+}
 
 func Instance() (Chain, error) {
 	var err error
-
 	once.Do(func() {
-
-		ldb, er := db.NewLDB(LdbPath+"blockDB", 0, 0)
-		if er != nil {
-			err = fmt.Errorf("failed to init db %v", err)
-			return
+		levelDB, tempErr := db.NewLDB(LevelDBPath+"BlockChainDB", 0, 0)
+		if tempErr != nil {
+			err = errors.New("fail to init BlockChainDB")
 		}
-		//defer ldb.Close()
-
-		var length uint64
-		var lenByte = make([]byte, 128)
-
-		if ok, _ := ldb.Has(blockLength); ok {
-			lenByte, er := ldb.Get(blockLength)
-			if er != nil {
-				err = fmt.Errorf("failed to Get blockLength")
-				return
+		var length uint64 = 0
+		ok, tempErr := levelDB.Has(blockLength)
+		if tempErr != nil {
+			err = errors.New("fail to check Has(blocklength)")
+		}
+		if ok {
+			lengthByte, tempErr := levelDB.Get(blockLength)
+			if tempErr != nil {
+				err = errors.New("fail to get blocklength")
 			}
-			length = binary.BigEndian.Uint64(lenByte)
+			length = ByteToUint64(lengthByte)
 		} else {
-			fmt.Printf("blockLength not exist")
-			length = 0
-			binary.BigEndian.PutUint64(lenByte, length)
-			er := ldb.Put(blockLength, lenByte)
-			if er != nil {
-				err = fmt.Errorf("failed to Put blockLength")
-				return
+			lengthByte := Uint64ToByte(0)
+			tempErr := levelDB.Put(blockLength, lengthByte)
+			if tempErr != nil {
+				err = errors.New("fail to put blockLength")
 			}
 		}
-		BChain = &ChainImpl{db: ldb, length: length}
-		BChain.CheckLength()
+		BC = &BlockChain{levelDB, length}
+		BC.CheckLength()
 	})
-
-	return BChain, err
+	return BC, err
 }
 
-func (b *ChainImpl) Push(block *Block) error {
-	btch := b.db.Batch()
-	hash := block.HeadHash()
+func (bc *BlockChain) Length() uint64{
+	return bc.length
+}
+
+func (bc *BlockChain) Push(block *Block) error {
+	batch := bc.BlockChainDB.Batch()
+	hash, err := block.HeadHash()
+	if err != nil {
+		return errors.New("fail to calculate HeadHash()")
+	}
 	number := uint64(block.Head.Number)
-	btch.Put(append(blockNumberPrefix, strconv.FormatUint(number, 10)...), hash)
-	btch.Put(append(blockPrefix, hash...), block.Encode())
-
-	log.Log.E("[block] lengthAdd length:%v block num:%v ", b.length, number)
-	l := number + 1
-	var tmpByte = make([]byte, 128)
-	binary.BigEndian.PutUint64(tmpByte, l)
-	btch.Put(blockLength, tmpByte)
-
-	err := btch.Commit()
+	batch.Put(append(blockNumberPrefix, Uint64ToByte(number)...), hash)
+	blockByte, err := block.Encode()
 	if err != nil {
-		return fmt.Errorf("failed to Put block data")
+		return errors.New("fail to encode block")
 	}
-	b.length = l
+	batch.Put(append(blockPrefix, hash...), blockByte)
+	batch.Put(blockLength, Uint64ToByte(number + 1))
+	err = batch.Commit()
+	if err != nil {
+		return errors.New("fail to put block")
+	}
+	bc.length = number + 1
 	return nil
 }
 
-func (b *ChainImpl) Length() uint64 {
-	return b.length
-}
-
-func (b *ChainImpl) CheckLength() error {
-	dbLen := b.Length()
-	var i uint64
-	for i = dbLen; i > 0; i-- {
-		_, err := b.GetBlockByNumber(i - 1)
-		if err == nil {
-			log.Log.I("[block] set block length %v", i)
-			b.setLength(i)
-			break
-		} else {
-			log.Log.E("[block] Length error %v", i)
-		}
-	}
-
-	return nil
-}
-
-func (b *ChainImpl) setLength(l uint64) error {
-	var lenB = make([]byte, 128)
-	binary.BigEndian.PutUint64(lenB, l)
-	er := b.db.Put(blockLength, lenB)
-	if er != nil {
-		return fmt.Errorf("failed to Put blockLength err:%v", er)
-	}
-	b.length = l
-	return nil
-}
-
-func (b *ChainImpl) getLengthBytes(length uint64) []byte {
-	return []byte(strconv.FormatUint(length, 10))
-}
-
-func (b *ChainImpl) Top() (*Block, error) {
-	var blk *Block
-	var err error
-	if b.length == 0 {
-		blk, err = b.GetBlockByNumber(b.length)
+func (bc *BlockChain) CheckLength() error {
+	var err error = nil
+	for i := bc.length; i > 0; i-- {
+		fmt.Println(i)
+		_, err = bc.GetBlockByNumber(i - 1)
 		if err != nil {
-			return nil, err
+			fmt.Println("fail to get the block")
+			err = errors.New("broken chain in BlockChainDB")
 		}
-		return blk, nil
+		bc.BlockChainDB.Put(blockLength, Uint64ToByte(i))
+		bc.length = i
+		break
+	}
+	return err
+}
+
+func (bc *BlockChain) Top() (*Block, error) {
+	if bc.length == 0 {
+		return nil, errors.New("no block in blockChainDB")
 	} else {
-		for i := b.length; i > 0; i-- {
-			blk, err = b.GetBlockByNumber(i - 1)
-			if err == nil {
-				break
-			}
-		}
-		return blk, nil
+		return bc.GetBlockByNumber(bc.length - 1)
 	}
 }
 
-func (b *ChainImpl) GetHashByNumber(number uint64) ([]byte, error) {
-	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
+func (bc *BlockChain) GetHashByNumber(number uint64) ([]byte, error) {
+	hash, err := bc.BlockChainDB.Get(append(blockNumberPrefix, Uint64ToByte(number)...))
 	if err != nil {
-		log.Log.E("Get block hash error: %v number: %v", err, number)
-		return nil, err
+		return nil, errors.New("fail to GetHashByNumber")
 	}
 	return hash, nil
 }
 
-func (b *ChainImpl) GetBlockByNumber(number uint64) (*Block, error) {
-	hash, err := b.db.Get(append(blockNumberPrefix, b.getLengthBytes(number)...))
+func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
+	blockByte, err := bc.BlockChainDB.Get(append(blockPrefix, hash...))
 	if err != nil {
-		log.Log.E("Get block hash error: %v number: %v", err, number)
-		return nil, err
+		return nil, errors.New("fail to GetBlockByteByHash")
 	}
-
-	block, err := b.db.Get(append(blockPrefix, hash...))
-	if err != nil {
-		log.Log.E("Get block error: %v number: %v", err, number)
-		return nil, err
-	}
-	if len(block) == 0 {
-		log.Log.E("GetBlockByNumber Block empty! number: %v", number)
-		return nil, fmt.Errorf("GetBlockByNumber Block empty! number: %v", number)
-	}
-	rBlock := new(Block)
-	if err := rBlock.Decode(block); err != nil {
-		log.Log.E("Failed to GetBlockByNumber Decode err: %v", err)
-		return nil, err
-	}
-	return rBlock, nil
+	return blockByte, nil
 }
 
-func (b *ChainImpl) GetBlockByHash(blockHash []byte) (*Block, error) {
-	block, err := b.db.Get(append(blockPrefix, blockHash...))
+func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
+	blockByte, err := bc.GetBlockByteByHash(hash)
 	if err != nil {
 		return nil, err
 	}
-	if len(block) == 0 {
-		return nil, fmt.Errorf("GetBlockByHash Block empty! hash: %v", blockHash)
+	var block Block
+	err = block.Decode(blockByte)
+	if err != nil {
+		return nil, errors.New("fail to decode blockByte")
 	}
-	rBlock := new(Block)
-	if err := rBlock.Decode(block); err != nil {
-		return nil, err
-	}
-	return rBlock, nil
+	return &block, nil
 }
 
-func (b *ChainImpl) GetBlockByteByHash(blockHash []byte) ([]byte, error) {
-	block, err := b.db.Get(append(blockPrefix, blockHash...))
+func (bc *BlockChain) GetBlockByNumber(number uint64) (*Block, error) {
+	hash, err := bc.GetHashByNumber(number)
 	if err != nil {
-		log.Log.E("Get block error: %v hash: %v", err, string(blockHash))
 		return nil, err
 	}
-	if len(block) == 0 {
-		log.Log.E("GetBlockByteByHash Block empty! : %v", string(blockHash))
-		return nil, fmt.Errorf("block empty")
-	}
-	return block, nil
+	return bc.GetBlockByHash(hash)
 }

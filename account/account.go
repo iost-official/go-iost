@@ -66,6 +66,9 @@ func makePubkey(seckey []byte) []byte {
 }
 
 func GetIdByPubkey(pubkey []byte) string {
+	if len(pubkey) != 33 {
+		panic("illegal pubkey")
+	}
 	return "IOST" + common.Base58Encode(append(pubkey, common.Parity(pubkey)...))
 }
 

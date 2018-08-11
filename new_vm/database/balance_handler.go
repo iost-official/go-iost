@@ -19,7 +19,7 @@ func (m *BalanceHandler) Balance(name string) int64 {
 	balance := Unmarshal(currentRaw)
 	ib, ok := balance.(int64)
 	if !ok {
-		panic(balance)
+		return 0
 	}
 	return ib
 }

@@ -4,11 +4,14 @@ package v8
 #include "v8/vm.h"
 */
 import "C"
+import "strings"
 
 type Module struct {
 	id   string
 	code string
 }
+
+var moduleReplacer = strings.NewReplacer("\\", "\\\\", "\n", "\\n", "\r", "\\r", "\"", "\\\"")
 
 func NewModule(id, code string) *Module {
 	return &Module{
@@ -45,5 +48,11 @@ func requireModule(cSbx C.SandboxPtr, moduleId *C.char) *C.char {
 	}
 
 	m := sbx.modules.Get(id)
+	if m == nil {
+		return nil
+	}
+
+	m.code = moduleReplacer.Replace(m.code)
+
 	return C.CString(m.code)
 }
