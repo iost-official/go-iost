@@ -10,10 +10,23 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/state"
 )
 
-type Mode uint
+type Mode struct {
+	mode TMode
+}
+
+func (m *Mode) Mode() TMode {
+	return m.mode
+}
+
+func (m *Mode) SetMode(i TMode) bool {
+	m.mode = i
+	return true
+}
+
+type TMode uint
 
 const (
-	ModeNormal Mode = iota
+	ModeNormal TMode = iota
 	ModeSync
 	ModeProduce
 )
@@ -26,7 +39,7 @@ type GlobalImpl struct {
 
 	config *common.Config
 
-	mode Mode
+	mode *Mode
 }
 
 func New(conf *common.Config) (Global, error) {
@@ -46,7 +59,10 @@ func New(conf *common.Config) (Global, error) {
 		return nil, fmt.Errorf("NewBlockChain failed, stop the program! err:%v", err)
 	}
 
-	n := &GlobalImpl{txDB: txDb, config: conf, stdPool: state.StdPool, blockChain: blockChain, mode: ModeNormal}
+	m := new(Mode)
+	m.SetMode(ModeNormal)
+
+	n := &GlobalImpl{txDB: txDb, config: conf, stdPool: state.StdPool, blockChain: blockChain, mode: m}
 
 	return n, nil
 }
