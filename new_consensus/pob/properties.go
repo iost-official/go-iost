@@ -6,8 +6,8 @@ import (
 	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 )
 
-var staticProp globalStaticProperty
-var dynamicProp globalDynamicProperty
+var staticProperty globalStaticProperty
+var dynamicProperty globalDynamicProperty
 
 type globalStaticProperty struct {
 	Account
@@ -116,36 +116,36 @@ func witnessOfSec(sec int64) string {
 
 func witnessOfTime(time Timestamp) string {
 
-	currentSlot := dynamicProp.timestampToSlot(time)
-	slotsEveryTurn := int64(staticProp.NumberOfWitnesses * slotPerWitness)
+	currentSlot := dynamicProperty.timestampToSlot(time)
+	slotsEveryTurn := int64(staticProperty.NumberOfWitnesses * slotPerWitness)
 	index := currentSlot % slotsEveryTurn
 	index /= int64(slotPerWitness)
-	witness := staticProp.WitnessList[index]
+	witness := staticProperty.WitnessList[index]
 
 	return witness
 }
 
 func timeUntilNextSchedule(timeSec int64) int64 {
 	var index int
-	if index = getIndex(staticProp.Account.GetId(), staticProp.WitnessList); index < 0 {
-		return dynamicProp.NextMaintenanceTime.ToUnixSec()
+	if index = getIndex(staticProperty.Account.GetId(), staticProperty.WitnessList); index < 0 {
+		return dynamicProperty.NextMaintenanceTime.ToUnixSec()
 	}
 
 	time := GetTimestamp(timeSec)
-	currentSlot := dynamicProp.timestampToSlot(time)
-	slotsEveryTurn := int64(staticProp.NumberOfWitnesses * slotPerWitness)
+	currentSlot := dynamicProperty.timestampToSlot(time)
+	slotsEveryTurn := int64(staticProperty.NumberOfWitnesses * slotPerWitness)
 	k := currentSlot / slotsEveryTurn
 	startSlot := k*slotsEveryTurn + int64(index*slotPerWitness)
 	if startSlot > currentSlot {
-		return dynamicProp.slotToTimestamp(startSlot).ToUnixSec() - timeSec
+		return dynamicProperty.slotToTimestamp(startSlot).ToUnixSec() - timeSec
 	}
 	if currentSlot-startSlot < int64(slotPerWitness) {
-		if time.Slot > dynamicProp.LastBlockTime.Slot {
+		if time.Slot > dynamicProperty.LastBlockTime.Slot {
 			return 0
 		} else if currentSlot+1 < startSlot+int64(slotPerWitness) {
-			return dynamicProp.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
+			return dynamicProperty.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
 		}
 	}
 	nextSlot := (k+1)*slotsEveryTurn + int64(index*slotPerWitness)
-	return dynamicProp.slotToTimestamp(nextSlot).ToUnixSec() - timeSec
+	return dynamicProperty.slotToTimestamp(nextSlot).ToUnixSec() - timeSec
 }

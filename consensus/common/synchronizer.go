@@ -19,15 +19,8 @@ var (
 	MaxAcceptableLength     int64 = 100
 )
 
-type Synchronizer interface {
-	StartListen() error
-	StopListen() error
-	NeedSync(maxHeight uint64) (bool, uint64, uint64)
-	SyncBlocks(startNumber uint64, endNumber uint64) error
-	BlockConfirmed(num int64)
-}
 
-type SyncImpl struct {
+type Synchronizer struct {
 	blockCache        blockcache.BlockCache
 	router            Router
 	confirmNumber     int
@@ -42,8 +35,8 @@ type SyncImpl struct {
 	log *log.Logger
 }
 
-func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int) *SyncImpl {
-	sync := &SyncImpl{
+func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int) (Synchronizer, error) {
+	sync := Synchronizer{
 		blockCache:        bc,
 		router:            router,
 		requestMap:        new(sy.Map),
@@ -56,7 +49,7 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int)
 			ReqBlockHeight,
 		}})
 	if err != nil {
-		return nil
+		return sync, nil
 	}
 
 	sync.blkSyncChan, err = sync.router.FilteredChan(Filter{
@@ -64,7 +57,7 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int)
 			ReqDownloadBlock,
 		}})
 	if err != nil {
-		return nil
+		return sync, nil
 	}
 
 	sync.blkHashQueryChan, err = sync.router.FilteredChan(Filter{
@@ -72,7 +65,7 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int)
 			BlockHashQuery,
 		}})
 	if err != nil {
-		return nil
+		return sync, nil
 	}
 
 	sync.blkHashRespChan, err = sync.router.FilteredChan(Filter{
@@ -80,20 +73,20 @@ func NewSynchronizer(bc blockcache.BlockCache, router Router, confirmNumber int)
 			BlockHashResponse,
 		}})
 	if err != nil {
-		return nil
+		return sync, nil
 	}
 
 	sync.log, err = log.NewLogger("synchronizer.log")
 	if err != nil {
-		return nil
+		return sync, nil
 	}
 
 	sync.log.NeedPrint = false
 
-	return sync
+	return sync, nil
 }
 
-func (sync *SyncImpl) StartListen() error {
+func (sync *Synchronizer) StartListen() error {
 	go sync.requestBlockLoop()
 	go sync.retryDownloadLoop()
 	go sync.handleHashQuery()
@@ -102,7 +95,7 @@ func (sync *SyncImpl) StartListen() error {
 	return nil
 }
 
-func (sync *SyncImpl) StopListen() error {
+func (sync *Synchronizer) StopListen() error {
 	close(sync.blkSyncChan)
 	close(sync.exitSignal)
 	close(sync.blkHashQueryChan)
@@ -110,18 +103,18 @@ func (sync *SyncImpl) StopListen() error {
 	return nil
 }
 
-func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
+func (sync *Synchronizer) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	height := sync.blockCache.ConfirmedLength() - 1
 	if netHeight > height+uint64(SyncNumber) {
 		return true, height + 1, netHeight
 	}
 
 	bc := sync.blockCache.LongestChain()
-	ter := bc.Iterator()
+	iter := bc.Iterator()
 	witness := bc.Top().Head.Witness
 	num := 0
 	for i := 0; i < sync.confirmNumber; i++ {
-		block := ter.Next()
+		block := iter.Next()
 		if block == nil {
 			break
 		}
@@ -136,7 +129,7 @@ func (sync *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	return false, 0, 0
 }
 
-func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
+func (sync *Synchronizer) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	var syncNum int
 	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
 		need := false
@@ -170,7 +163,7 @@ func (sync *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 	return nil
 }
 
-func (sync *SyncImpl) requestBlockLoop() {
+func (sync *Synchronizer) requestBlockLoop() {
 
 	for {
 		select {
@@ -218,11 +211,11 @@ func (sync *SyncImpl) requestBlockLoop() {
 	}
 }
 
-func (sync *SyncImpl) BlockConfirmed(num int64) {
+func (sync *Synchronizer) BlockConfirmed(num int64) {
 	sync.requestMap.Delete(uint64(num))
 }
 
-func (sync *SyncImpl) retryDownloadLoop() {
+func (sync *Synchronizer) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(time.Second * time.Duration(RetryTime)):
@@ -248,7 +241,7 @@ func (sync *SyncImpl) retryDownloadLoop() {
 	}
 }
 
-func (sync *SyncImpl) handleHashQuery() {
+func (sync *Synchronizer) handleHashQuery() {
 	for {
 		select {
 		case req, ok := <-sync.blkHashQueryChan:
@@ -305,7 +298,7 @@ func (sync *SyncImpl) handleHashQuery() {
 	}
 }
 
-func (sync *SyncImpl) handleHashResp() {
+func (sync *Synchronizer) handleHashResp() {
 
 	for {
 		select {
@@ -352,7 +345,7 @@ func (sync *SyncImpl) handleHashResp() {
 	}
 }
 
-func (sync *SyncImpl) recentAskedBlocksClean() {
+func (sync *Synchronizer) recentAskedBlocksClean() {
 	for {
 		select {
 		case <-time.After(cleanInterval):

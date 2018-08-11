@@ -138,7 +138,7 @@ func (pm *PeerManager) NotifyMessage(msg *p2pMessage, peerID peer.ID) {
 	if err != nil {
 		return
 	}
-	inMsg := newIncomingMessage(peerID, data, msg.messageType())
+	inMsg := NewIncomingMessage(peerID, data, msg.messageType())
 	if m, exist := pm.subs.Load(msg.messageType()); exist {
 		m.(*sync.Map).Range(func(k, v interface{}) bool {
 			select {

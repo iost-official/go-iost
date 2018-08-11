@@ -117,6 +117,7 @@ type BlockCache interface {
 	Head() *BlockCacheNode
 	Draw()
 }
+
 type BlockCacheImpl struct {
 	linkedRoot *BlockCacheNode
 	singleRoot *BlockCacheNode

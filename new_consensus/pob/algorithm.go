@@ -1,8 +1,8 @@
 package pob
 
 import (
-	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 
 	"encoding/binary"
 	"errors"
@@ -13,7 +13,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/prototype/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 )
 
@@ -27,7 +26,7 @@ var (
 	ErrTxSignature = errors.New("tx wrong signature")
 )
 
-func genBlock(acc Account, node *blockcache.BlockCacheNode, txPool new_txpool.TxPool, db *db.MVCCDB) *block.Block {
+func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool new_txpool.TxPool, db *db.MVCCDB) *block.Block {
 	lastBlk := node.Block
 	parentHash, err := lastBlk.HeadHash()
 	if err != nil {
@@ -39,7 +38,7 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, txPool new_txpool.Tx
 			ParentHash: parentHash,
 			Number:     lastBlk.Head.Number + 1,
 			Witness:    acc.ID,
-			Time:       GetCurrentTimestamp().Slot,
+			Time:       consensus_common.GetCurrentTimestamp().Slot,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -47,14 +46,14 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, txPool new_txpool.Tx
 
 	txCnt := 1000
 
-	limitTime := time.NewTicker(((SlotLength/3 - 1) + 1) * time.Second)
+	limitTime := time.NewTicker(((consensus_common.SlotLength/3 - 1) + 1) * time.Second)
 	if txPool != nil {
 		tx, err := txPool.PendingTxs(txCnt)
 		if err == nil {
 			txPoolSize.Set(float64(len(tx)))
 
 			if len(tx) != 0 {
-				VerifyTxBegin(lastBlk, db)
+				consensus_common.VerifyTxBegin(lastBlk, db)
 			ForEnd:
 				for _, t := range tx {
 					select {
@@ -64,7 +63,7 @@ func genBlock(acc Account, node *blockcache.BlockCacheNode, txPool new_txpool.Tx
 						if len(blk.Txs) >= txCnt {
 							break ForEnd
 						}
-						if receipt, err := VerifyTx(t); err == nil {
+						if receipt, err := consensus_common.VerifyTx(t); err == nil {
 							db.Commit()
 							blk.Txs = append(blk.Txs, t)
 							blk.Receipts = append(blk.Receipts, receipt)
@@ -109,7 +108,7 @@ func generateHeadInfo(head block.BlockHead) []byte {
 
 func verifyBasics(blk *block.Block) error {
 	// verify block witness
-	if witnessOfTime(Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
+	if witnessOfTime(consensus_common.Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
 		return ErrWitness
 	}
 
@@ -141,7 +140,7 @@ func verifyBasics(blk *block.Block) error {
 
 func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, txPool new_txpool.TxPool, db *db.MVCCDB) error {
 	// verify block head
-	if err := VerifyBlockHead(blk, parent, top); err != nil {
+	if err := consensus_common.VerifyBlockHead(blk, parent, top); err != nil {
 		return err
 	}
 
@@ -161,7 +160,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, txPool
 	}
 
 	// verify txs
-	if err := VerifyBlock(blk, db); err != nil {
+	if err := consensus_common.VerifyBlock(blk, db); err != nil {
 		return err
 	}
 
