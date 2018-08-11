@@ -34,7 +34,7 @@ const (
 type GlobalImpl struct {
 	txDB tx.TxDB
 
-	statePool  *db.MVCCDB
+	stateDB    *db.MVCCDB
 	blockChain block.Chain
 
 	config *common.Config
@@ -42,14 +42,14 @@ type GlobalImpl struct {
 	mode *Mode
 }
 
-func New(conf *common.Config) (Global, error) {
+func New(conf *common.Config) (BaseVariable, error) {
 	block.LevelDBPath = conf.LdbPath
 	blockChain, err := block.Instance()
 	if err != nil {
 		return nil, fmt.Errorf("NewBlockChain failed, stop the program! err:%v", err)
 	}
 	//TODO: INIT FROM A EXISTING MVCCDB
-	statePool, err := db.NewMVCCDB("StatePoolDB")
+	stateDB, err := db.NewMVCCDB("StatePoolDB")
 	if err != nil {
 		return nil, fmt.Errorf("NewStatePool failed, stop the program! err:%v", err)
 	}
@@ -64,7 +64,7 @@ func New(conf *common.Config) (Global, error) {
 	m := new(Mode)
 	m.SetMode(ModeNormal)
 
-	n := &GlobalImpl{txDB: txDb, config: conf, stdPool: state.StdPool, blockChain: blockChain, mode: m}
+	n := &GlobalImpl{txDB: txDb, config: conf, stateDB: stateDB, blockChain: blockChain, mode: m}
 
 	return n, nil
 }
@@ -73,8 +73,8 @@ func (g *GlobalImpl) TxDB() tx.TxDB {
 	return g.txDB
 }
 
-func (g *GlobalImpl) StatePool() *db.MVCCDB {
-	return g.statePool
+func (g *GlobalImpl) StateDB() *db.MVCCDB {
+	return g.stateDB
 }
 
 func (g *GlobalImpl) BlockChain() block.Chain {
@@ -85,13 +85,6 @@ func (g *GlobalImpl) Config() *common.Config {
 	return g.config
 }
 
-func (g *GlobalImpl) Mode() Mode {
+func (g *GlobalImpl) Mode() *Mode {
 	return g.mode
-}
-
-func (g *GlobalImpl) SetMode(mode Mode) bool {
-
-	g.mode = mode
-
-	return true
 }

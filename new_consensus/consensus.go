@@ -22,7 +22,7 @@ var Cons Consensus
 
 var once sync.Once
 
-func ConsensusFactory(consensusType string, acc Account, global global.Global, blkcache blockcache.BlockCache, p2pserv p2p.Service, sy *Synchronizer, witnessList []string) (Consensus, error) {
+func ConsensusFactory(consensusType string, acc Account, global global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service, sy *Synchronizer, witnessList []string) (Consensus, error) {
 
 	if consensusType == "" {
 		consensusType = CONSENSUS_POB

@@ -56,7 +56,7 @@ func init() {
 
 type PoB struct {
 	account         account.Account
-	global          global.Global
+	global          global.BaseVariable
 	blockChain      block.Chain
 	blockCache      blockcache.BlockCache
 	txPool          new_txpool.TxPool

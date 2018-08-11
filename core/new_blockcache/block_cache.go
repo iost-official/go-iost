@@ -124,7 +124,7 @@ type BlockCacheImpl struct {
 	head       *BlockCacheNode
 	hash2node  *sync.Map
 	leaf       map[*BlockCacheNode]uint64
-	glbl       global.Global
+	glbl       global.BaseVariable
 }
 
 var (
@@ -155,7 +155,7 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 	bc.hash2node.Delete(string(hash))
 }
 
-func NewBlockCache(glbl global.Global) (*BlockCacheImpl, error) {
+func NewBlockCache(glbl global.BaseVariable) (*BlockCacheImpl, error) {
 	bc := BlockCacheImpl{
 		linkedRoot: NewBCN(nil, nil, Linked),
 		singleRoot: NewBCN(nil, nil, Single),
