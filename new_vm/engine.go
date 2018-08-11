@@ -94,7 +94,6 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 	e.host.Ctx = context.WithValue(e.host.Ctx, "tx_info", database.SerializedJSON(txInfo))
 	e.host.Ctx = context.WithValue(e.host.Ctx, "auth_list", authList)
-	e.host.Ctx = context.WithValue(e.host.Ctx, "gas_limit", tx0.GasLimit)
 	e.host.Ctx = context.WithValue(e.host.Ctx, "gas_price", int64(tx0.GasPrice))
 	e.host.Ctx = context.WithValue(e.host.Ctx, "tx_receipt", &ptxr)
 
@@ -102,6 +101,8 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		e.host.Ctx = context.WithValue(e.host.Ctx, "stack0", "direct_call")
 		e.host.Ctx = context.WithValue(e.host.Ctx, "stack_height", 1) // record stack trace
+
+		e.host.Ctx = context.WithValue(e.host.Ctx, "gas_limit", tx0.GasLimit)
 
 		c := e.host.DB.Contract(action.Contract)
 
@@ -128,6 +129,8 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 			txr := e.host.Ctx.Value("tx_receipt").(*tx.TxReceipt)
 			return txr, err
 		}
+
+		e.host.Ctx = context.WithValue(e.host.Ctx, "gas_limit", tx0.GasLimit-uint64(cost.ToGas()))
 
 		totalCost.AddAssign(cost)
 	}
