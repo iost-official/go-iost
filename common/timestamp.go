@@ -1,5 +1,4 @@
-// Package consensus_common contains helper functions for consensus.
-package consensus_common
+package common
 
 import "time"
 
