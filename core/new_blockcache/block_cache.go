@@ -221,9 +221,8 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 		return nil, ErrDup
 	}
 	parent, ok := bc.hmget(blk.Head.ParentHash)
-	bcnType := IF(ok, Linked, Single).(BCNType)
 	fa := IF(ok, parent, bc.singleRoot).(*BlockCacheNode)
-	newNode = NewBCN(fa, blk, bcnType)
+	newNode = NewBCN(fa, blk, Single)
 	delete(bc.leaf, fa)
 	if ok {
 		code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
