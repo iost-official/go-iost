@@ -50,7 +50,6 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 
 		// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
 	case "SetCode":
-		// todo 预编译
 		con := &contract.Contract{}
 		err = con.Decode(args[0].(string))
 		if err != nil {
@@ -65,7 +64,9 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		if len(res) != 1 {
 			return nil, host.Cost(), errors.New("return of canUpdate should have 1 argument")
 		}
-		// todo check res[0]
+		if !(res[0].(bool)) {
+			return nil, host.Cost(), errors.New("canUpdate return false")
+		}
 		host.SetCode(args[0].(string))
 		return []interface{}{}, host.Cost(), nil
 
@@ -79,8 +80,9 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		if len(res) != 1 {
 			return nil, host.Cost(), errors.New("return of canDestroy should have 1 argument")
 		}
-
-		// todo check res[0]
+		if !(res[0].(bool)) {
+			return nil, host.Cost(), errors.New("canDestroy return false")
+		}
 		host.DestroyCode(args[0].(string))
 		return []interface{}{}, host.Cost(), nil
 
