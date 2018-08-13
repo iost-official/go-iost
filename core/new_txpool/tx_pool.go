@@ -75,7 +75,7 @@ func (pool *TxPoolImpl) loop() {
 		select {
 		case tr, ok := <-pool.chTx:
 			if !ok {
-				log.Log.E("txPool - chTx is error")
+				log.Log.E("failed to chTx")
 				os.Exit(1)
 			}
 
@@ -92,7 +92,7 @@ func (pool *TxPoolImpl) loop() {
 
 		case bl, ok := <-pool.chLinkedNode:
 			if !ok {
-				log.Log.E("txPool - chLinkedNode is error")
+				log.Log.E("failed to ch linked node")
 				os.Exit(1)
 			}
 
@@ -105,23 +105,23 @@ func (pool *TxPoolImpl) loop() {
 			tFort := pool.updateForkChain(bl.HeadNode)
 			switch tFort {
 			case ForkError:
-				log.Log.E("txPool - updateForkChain is error")
+				log.Log.E("failed to update fork chain")
 				pool.clearTxPending()
 
 			case Fork:
 				if err := pool.doChainChange(); err != nil {
-					log.Log.E("txPool - doChainChange is error")
+					log.Log.E("failed to chain change")
 					pool.clearTxPending()
 				}
 
 			case NotFork:
 
 				if err := pool.delBlockTxInPending(bl.LinkedNode.Block.HeadHash()); err != nil {
-					log.Log.E("txPool - delBlockTxInPending is error")
+					log.Log.E("failed to del block tx")
 				}
 
 			default:
-				log.Log.E("txPool - updateForkChain is error")
+				log.Log.E("failed to tFort")
 			}
 			pool.mu.Unlock()
 
@@ -458,18 +458,18 @@ func (pool *TxPoolImpl) fundForkBlockHash(newHash []byte, oldHash []byte) ([]byt
 		if !ok {
 			bb, err := pool.blockCache.Find(n)
 			if err != nil {
-				log.Log.E("txPool - fundForkBlockHash FindBlock error")
+				log.Log.E("failed to find block ,err = ", err)
 				return nil, false
 			}
 
 			if err = pool.addBlock(bb.Block); err != nil {
-				log.Log.E("txPool - fundForkBlockHash addBlock error")
+				log.Log.E("failed to add block, err = ", err)
 				return nil, false
 			}
 
 			b, ok = pool.block(n)
 			if !ok {
-				log.Log.E("txPool - fundForkBlockHash block error")
+				log.Log.E("failed to get block ,err = ", err)
 				return nil, false
 			}
 		}
