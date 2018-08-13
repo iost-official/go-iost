@@ -6,7 +6,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	//"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"google.golang.org/grpc"
@@ -15,11 +15,12 @@ import (
 
 var bc blockcache.BlockCache
 var txdb tx.TxDB
-var txpool txpool.TxPool
+//var txpool txpool.TxPool
 var bchain block.Chain
-func Server(port string, tp txpool.TxPool,bcache blockcache.BlockCache, _global global.Global) error {
+//func Server(port string, tp txpool.TxPool,bcache blockcache.BlockCache, _global global.Global) error {
+func Server(port string,bcache blockcache.BlockCache, _global global.BaseVariable) error {
 	txdb = _global.TxDB()
-	txpool=tp
+	//txpool=tp
 	bchain = _global.BlockChain()
 	bc = bcache
 	if !strings.HasPrefix(port, ":") {
@@ -36,7 +37,7 @@ func Server(port string, tp txpool.TxPool,bcache blockcache.BlockCache, _global 
 		return fmt.Errorf("failed to rpc NewServer")
 	}
 
-	RegisterCliServer(s, newRpcServer())
+	RegisterApisServer(s, newRpcServer())
 
 	go s.Serve(lis)
 

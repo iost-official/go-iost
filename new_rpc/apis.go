@@ -24,7 +24,7 @@ func (s *RpcServer) GetHeight(ctx context.Context, void *VoidReq) (*HeightRes, e
 	},nil
 }
 
-func GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, error) {
+func (s *RpcServer) GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, error) {
 	if hash == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -38,7 +38,7 @@ func GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, error) {
 	return txRaw, nil
 }
 
-func GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashReq) (*BlockInfo, error) {
+func (s *RpcServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashReq) (*BlockInfo, error) {
 	if blkHashReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -68,7 +68,7 @@ func GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashReq) (*BlockInfo
 	return blkInfo, nil
 }
 
-func GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
+func (s *RpcServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
 	if blkNumReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -96,6 +96,14 @@ func GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, e
 		}
 	}
 	return blkInfo, nil
+}
+
+func (s *RpcServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBalanceRes, error) {
+	return nil,nil
+}
+
+func (s *RpcServer) GetState(ctx context.Context,key *GetStateReq) (*GetStateRes, error) {
+	return nil,nil
 }
 /*
 func GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBalanceRes, error) {
@@ -127,7 +135,7 @@ func GetState(ctx context.Context,key *GetStateReq) (*GetStateRes, error) {
 	},nil
 }
 */
-func SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
+func (s *RpcServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
 	if rawTx == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -138,18 +146,18 @@ func SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
 	}
 	// add servi
 	//tx.RecordTx(trx, tx.Data.Self())
-
+/*
 	ret := txpool.TxPoolS.AddTx(trx)
 	if ret != txpool.Success {
 		return nil, fmt.Errorf("tx err:%v", ret)
 	}
+*/
 	res := SendRawTxRes{}
 	res.Hash = trx.Hash()
 	return &res, nil
 }
 
-/*
-func EstimateGas(ctx context.Context,rawTx *RawTxReq) (*GasRes, error){
-
+func (s *RpcServer) EstimateGas(ctx context.Context,rawTx *RawTxReq) (*GasRes, error){
+	return nil,nil
 }
-*/
+
