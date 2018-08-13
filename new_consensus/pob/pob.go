@@ -1,14 +1,12 @@
 package pob
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
-
-	"time"
-
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -16,9 +14,10 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
-			)
+)
 
 var (
 	generatedBlockCount = prometheus.NewCounter(
@@ -55,15 +54,15 @@ func init() {
 }
 
 type PoB struct {
-	account         account.Account
-	baseVariable    global.BaseVariable
-	blockChain      block.Chain
-	blockCache      blockcache.BlockCache
-	txPool          txpool.TxPool
-	p2pService      p2p.Service
-	synchronizer    consensus_common.Synchronizer
-	verifyDB *db.MVCCDB
-	produceDB *db.MVCCDB
+	account      account.Account
+	baseVariable global.BaseVariable
+	blockChain   block.Chain
+	blockCache   blockcache.BlockCache
+	txPool       txpool.TxPool
+	p2pService   p2p.Service
+	synchronizer consensus_common.Synchronizer
+	verifyDB     *db.MVCCDB
+	produceDB    *db.MVCCDB
 
 	exitSignal  chan struct{}
 	chRecvBlock chan message.Message
@@ -73,15 +72,15 @@ type PoB struct {
 func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer consensus_common.Synchronizer, witnessList []string) (*PoB, error) {
 	//TODO: change initialization based on new interfaces
 	p := PoB{
-		account:         account,
-		baseVariable:    baseVariable,
-		blockCache:      blockCache,
-		blockChain:      baseVariable.BlockChain(),
-		verifyDB: baseVariable.StateDB(),
-		txPool:          txPool,
-		p2pService:      p2pService,
-		synchronizer:    synchronizer,
-		chGenBlock:      make(chan *block.Block, 10),
+		account:      account,
+		baseVariable: baseVariable,
+		blockCache:   blockCache,
+		blockChain:   baseVariable.BlockChain(),
+		verifyDB:     baseVariable.StateDB(),
+		txPool:       txPool,
+		p2pService:   p2pService,
+		synchronizer: synchronizer,
+		chGenBlock:   make(chan *block.Block, 10),
 	}
 
 	p.produceDB = p.verifyDB.Fork()
@@ -184,7 +183,7 @@ func (p *PoB) scheduleLoop() {
 	for {
 		select {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
-			currentTimestamp := consensus_common.GetCurrentTimestamp()
+			currentTimestamp := common.GetCurrentTimestamp()
 			wid := witnessOfTime(currentTimestamp)
 			if wid == p.account.ID && p.baseVariable.Mode().Mode() == global.ModeNormal {
 				chainHead := p.blockCache.Head()
