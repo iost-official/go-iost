@@ -34,7 +34,7 @@ func New() *Logger {
 		callDepth:   1,
 		lowestLevel: LevelFatal,
 		wg:          new(sync.WaitGroup),
-		msg:         make(chan *message, 1024),
+		msg:         make(chan *message, 4096),
 		flush:       make(chan *sync.WaitGroup, 1),
 		bufPool:     NewBufPool(),
 		quitCh:      make(chan struct{}, 1),
