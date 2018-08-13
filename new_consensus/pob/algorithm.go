@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"fmt"
 )
 
 var (
@@ -28,10 +29,7 @@ var (
 
 func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool new_txpool.TxPool, db *db.MVCCDB) *block.Block {
 	lastBlk := node.Block
-	parentHash, err := lastBlk.HeadHash()
-	if err != nil {
-		return nil
-	}
+	parentHash := lastBlk.HeadHash()
 	blk := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
@@ -75,14 +73,17 @@ func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool new_t
 			}
 		}
 	}
-
+	var err error
 	blk.Head.TxsHash, err = blk.CalculateTxsHash()
 	blk.Head.MerkleHash, err = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
-	hash, err := blk.HeadHash()
-	db.Tag(string(hash))
+	err = blk.CalculateHeadHash()
+	if err != nil {
+		fmt.Println(err)
+	}
+	db.Tag(string(blk.HeadHash()))
 
 	generatedBlockCount.Inc()
 
@@ -126,12 +127,12 @@ func verifyBasics(blk *block.Block) error {
 	}
 
 	// block produced by itself: do not verify the rest parts
-	if blk.Head.Witness == staticProp.ID {
+	if blk.Head.Witness == staticProperty.ID {
 		return nil
 	}
 
 	// verify slot map
-	if staticProp.hasSlotWitness(uint64(blk.Head.Time), blk.Head.Witness) {
+	if staticProperty.hasSlotWitness(uint64(blk.Head.Time), blk.Head.Witness) {
 		return ErrSlotWitness
 	}
 
@@ -146,7 +147,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, txPool
 
 	// verify tx time/sig/exist
 	for _, tx := range blk.Txs {
-		if dynamicProp.slotToTimestamp(blk.Head.Time).ToUnixSec() - tx.Time/1e9 > 60 {
+		if dynamicProperty.slotToTimestamp(blk.Head.Time).ToUnixSec() - tx.Time/1e9 > 60 {
 			return ErrTxTooOld
 		}
 		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
@@ -172,18 +173,18 @@ func updateNodeInfo(node *blockcache.BlockCacheNode) {
 	node.Witness = node.Block.Head.Witness
 
 	// watermark
-	if number, has := staticProp.Watermark[node.Witness]; has {
+	if number, has := staticProperty.Watermark[node.Witness]; has {
 		node.ConfirmUntil = number
 		if node.Number >= number {
-			staticProp.Watermark[node.Witness] = node.Number + 1
+			staticProperty.Watermark[node.Witness] = node.Number + 1
 		}
 	} else {
 		node.ConfirmUntil = 0
-		staticProp.Watermark[node.Witness] = node.Number + 1
+		staticProperty.Watermark[node.Witness] = node.Number + 1
 	}
 
 	// slot map
-	staticProp.addSlotWitness(uint64(node.Block.Head.Time), node.Witness)
+	staticProperty.addSlotWitness(uint64(node.Block.Head.Time), node.Witness)
 }
 
 func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) []string {
@@ -202,7 +203,7 @@ func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) []stri
 
 func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
 	// return the last node that confirmed
-	confirmNumber := staticProp.NumberOfWitnesses*2/3 + 1
+	confirmNumber := staticProperty.NumberOfWitnesses*2/3 + 1
 	startNumber := node.Number
 	topNumber := root.Number
 	confirmMap := make(map[string]int)
@@ -221,7 +222,7 @@ func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCac
 			}
 		}
 		if len(confirmMap) >= confirmNumber {
-			staticProp.delSlotWitness(topNumber, node.Number)
+			staticProperty.delSlotWitness(topNumber, node.Number)
 			return node
 		}
 		i := node.Number - topNumber
@@ -244,6 +245,6 @@ func promoteWitness(node *blockcache.BlockCacheNode, confirmed *blockcache.Block
 		node = node.Parent
 	}
 	if node.PendingWitnessList != nil {
-		staticProp.updateWitnessList(node.PendingWitnessList)
+		staticProperty.updateWitnessList(node.PendingWitnessList)
 	}
 }

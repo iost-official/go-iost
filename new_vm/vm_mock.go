@@ -34,6 +34,19 @@ func (m *MockVM) EXPECT() *MockVMMockRecorder {
 	return m.recorder
 }
 
+// Compile mocks base method
+func (m *MockVM) Compile(arg0 *contract.Contract) (string, error) {
+	ret := m.ctrl.Call(m, "Compile", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Compile indicates an expected call of Compile
+func (mr *MockVMMockRecorder) Compile(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Compile", reflect.TypeOf((*MockVM)(nil).Compile), arg0)
+}
+
 // Init mocks base method
 func (m *MockVM) Init() error {
 	ret := m.ctrl.Call(m, "Init")

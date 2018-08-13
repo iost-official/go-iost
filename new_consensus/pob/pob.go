@@ -18,6 +18,9 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
+	"fmt"
+	"errors"
+	blockcache2 "github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 )
 
 var (
@@ -120,11 +123,8 @@ func (p *PoB) Stop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block) error {
-	hash, err := blk.HeadHash()
-	if err != nil {
-		return errors.New("fail to calculate HeadHash()")
-	}
-	_, err = p.blockCache.Find(hash)
+	hash := blk.HeadHash()
+	_, err := p.blockCache.Find(hash)
 	if err == nil {
 		return errors.New("duplicate block")
 	}
@@ -191,11 +191,7 @@ func (p *PoB) scheduleLoop() {
 			wid := witnessOfTime(currentTimestamp)
 			if wid == p.account.ID && p.global.Mode() == global.ModeNormal {
 				chainHead := p.blockCache.Head()
-				hash, err := chainHead.Block.HeadHash()
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
+				hash := chainHead.Block.HeadHash()
 				p.genBlockPointer.Checkout(string(hash))
 				blk := genBlock(p.account, chainHead, p.txPool, p.genBlockPointer)
 				dynamicProperty.update(&blk.Head)
@@ -205,7 +201,6 @@ func (p *PoB) scheduleLoop() {
 				p.chGenBlock <- blk
 				log.Log.I("Block size: %v, TrNum: %v", len(blkByte), len(blk.Txs))
 				go p.p2pService.Broadcast(blkByte, p2p.NewBlockResponse, p2p.UrgentMessage)
-
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().Unix())
 		case <-p.exitSignal:
@@ -217,10 +212,7 @@ func (p *PoB) scheduleLoop() {
 func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) (*blockcache.BlockCacheNode, error) {
 	// verify block txs
 	if blk.Head.Witness != p.account.ID {
-		hash, err := parent.Block.HeadHash()
-		if err != nil {
-			return nil, err
-		}
+		hash := parent.Block.HeadHash()
 		p.addBlockPointer.Checkout(string(hash))
 		var verifyErr error
 		verifyErr = verifyBlock(blk, parent.Block, p.blockCache.LinkedRoot().Block, p.txPool, p.addBlockPointer)
@@ -229,7 +221,8 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 		if newBlock {
 			if verifyErr == nil {
 				var err error
-				if node, err = p.blockCache.Add(blk); err != nil {
+				node, err = p.blockCache.Add(blk)
+				if err != nil {
 					return nil, err
 				}
 			} else {
@@ -244,16 +237,10 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 			}
 		}
 		// tag in state
-		hash, err = blk.HeadHash()
-		if err != nil {
-			return nil, err
-		}
+		hash = blk.HeadHash()
 		p.addBlockPointer.Tag(string(hash))
 	} else {
-		hash, err := blk.HeadHash()
-		if err != nil {
-			return nil, err
-		}
+		hash := blk.HeadHash()
 		p.addBlockPointer.Checkout(string(hash))
 	}
 
@@ -277,11 +264,12 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 }
 
 func (p *PoB) addSingles(node *blockcache.BlockCacheNode) {
-	if node.Children != nil {
-		for child := range node.Children {
-			if _, err := p.addBlock(nil, child, node, false); err == nil {
-				p.addSingles(child)
-			}
+	for child := range node.Children {
+		_, err := p.addBlock(child.Block, child, node, false)
+		if err != nil {
+			fmt.Println(err)
+			continue
 		}
+		p.addSingles(child)
 	}
 }

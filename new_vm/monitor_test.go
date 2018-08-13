@@ -190,19 +190,20 @@ func TestJSM(t *testing.T) {
 	monitor, _, db, vi := Init(t)
 
 	ctx := context.WithValue(context.Background(), "gas_price", uint64(1))
+	ctx = context.WithValue(ctx, "gas_limit", uint64(1000))
 
 	h := host.NewHost(ctx, vi, monitor)
 
 	c := contract.Contract{
 		ID: "contract",
-		Code: `module.export = function hello() {
-	return world
+		Code: `module.exports = function hello() {
+	return "world";
 }`,
 		Info: &contract.Info{
 			Lang:        "javascript",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "hello",
 					Args:     []string{},
 					Payment:  0,

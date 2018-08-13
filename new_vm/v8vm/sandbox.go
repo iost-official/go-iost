@@ -119,8 +119,12 @@ func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args [
 	return fmt.Sprintf(`
 var _native_main = NativeModule.require('%s');
 var obj = new _native_main();
-obj['%s'].apply(obj, %v);
-`, name, function, string(argStr)), nil
+if (obj.constructor.name == '%s') {
+	obj.constructor();
+} else {
+	obj['%s'].apply(obj, %v);
+}
+`, name, function, function, string(argStr)), nil
 }
 
 func (sbx *Sandbox) Execute(preparedCode string) (string, error) {

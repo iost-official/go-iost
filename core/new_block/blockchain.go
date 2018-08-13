@@ -70,10 +70,7 @@ func (bc *BlockChain) Length() uint64{
 
 func (bc *BlockChain) Push(block *Block) error {
 	batch := bc.BlockChainDB.Batch()
-	hash, err := block.HeadHash()
-	if err != nil {
-		return errors.New("fail to calculate HeadHash()")
-	}
+	hash := block.HeadHash()
 	number := uint64(block.Head.Number)
 	batch.Put(append(blockNumberPrefix, Uint64ToByte(number)...), hash)
 	blockByte, err := block.Encode()

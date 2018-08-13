@@ -120,9 +120,6 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		if err != nil {
 			panic(err)
 		}
-		if err = checkArgs(abi, args); err != nil {
-			panic(err)
-		}
 		// todo host call check args
 		_, cost, err := staticMonitor.Call(e.host, action.Contract, action.ActionName, args...)
 		if err != nil {
