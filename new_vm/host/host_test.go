@@ -38,11 +38,6 @@ func TestHost_Put(t *testing.T) {
 
 	mock, host := myinit(t, ctx)
 
-	mock.EXPECT().Checkout(Any()).Do(func(commit string) {
-		if commit != "abc" {
-			t.Fatal(commit)
-		}
-	})
 	mock.EXPECT().Put(Any(), Any(), Any()).Do(func(a, b, c string) {
 		if a != "state" || b != "b-contractName-hello" || c != "sworld" {
 			t.Fatal(a, b, c)
@@ -59,11 +54,6 @@ func TestHost_Get(t *testing.T) {
 
 	mock, host := myinit(t, ctx)
 
-	mock.EXPECT().Checkout(Any()).Do(func(commit string) {
-		if commit != "abc" {
-			t.Fatal(commit)
-		}
-	})
 	mock.EXPECT().Get(Any(), Any()).DoAndReturn(func(a, b string) (string, error) {
 		if a != "state" || b != "b-contractName-hello" {
 			t.Fatal(a, b)
@@ -71,7 +61,7 @@ func TestHost_Get(t *testing.T) {
 		return "sworld", nil
 	})
 
-	ans := host.Get("hello")
+	ans, _ := host.Get("hello")
 	if ans != "world" {
 		t.Fatal(ans)
 	}
@@ -85,11 +75,6 @@ func TestHost_MapPut(t *testing.T) {
 
 	mock, host := myinit(t, ctx)
 
-	mock.EXPECT().Checkout(Any()).Do(func(commit string) {
-		if commit != "abc" {
-			t.Fatal(commit)
-		}
-	})
 	mock.EXPECT().Put(Any(), Any(), Any()).Do(func(a, b, c string) {
 		if a != "state" || b != "m-contractName-hello-1" || c != "sworld" {
 			t.Fatal(a, b, c)
@@ -107,11 +92,6 @@ func TestHost_MapGet(t *testing.T) {
 
 	mock, host := myinit(t, ctx)
 
-	mock.EXPECT().Checkout(Any()).Do(func(commit string) {
-		if commit != "abc" {
-			t.Fatal(commit)
-		}
-	})
 	mock.EXPECT().Get(Any(), Any()).DoAndReturn(func(a, b string) (string, error) {
 		if a != "state" || b != "m-contractName-hello-1" {
 			t.Fatal(a, b)
@@ -119,7 +99,7 @@ func TestHost_MapGet(t *testing.T) {
 		return "sworld", nil
 	})
 
-	ans := host.MapGet("hello", "1")
+	ans, _ := host.MapGet("hello", "1")
 	if ans != "world" {
 		t.Fatal(ans)
 	}
@@ -133,11 +113,6 @@ func TestHost_MapKeys(t *testing.T) {
 
 	mock, host := myinit(t, ctx)
 
-	mock.EXPECT().Checkout(Any()).Do(func(commit string) {
-		if commit != "abc" {
-			t.Fatal(commit)
-		}
-	})
 	mock.EXPECT().Keys(Any(), Any()).DoAndReturn(func(a, b string) ([]string, error) {
 		if a != "state" || b != "m-contractName-hello-" {
 			t.Fatal(a, b)
@@ -145,7 +120,7 @@ func TestHost_MapKeys(t *testing.T) {
 		return []string{"m-contractName-hello-a", "m-contractName-hello-b", "m-contractName-hello-c"}, nil
 	})
 
-	ans := host.MapKeys("hello")
+	ans, _ := host.MapKeys("hello")
 	if !sliceEqual(ans, []string{"a", "b", "c"}) {
 		t.Fatal(ans)
 	}
@@ -160,15 +135,15 @@ func TestHost_RequireAuth(t *testing.T) {
 
 	_, host := myinit(t, ctx)
 
-	ans := host.RequireAuth("a")
+	ans, _ := host.RequireAuth("a")
 	if !ans {
 		t.Fatal(ans)
 	}
-	ans = host.RequireAuth("b")
+	ans, _ = host.RequireAuth("b")
 	if ans {
 		t.Fatal(ans)
 	}
-	ans = host.RequireAuth("c")
+	ans, _ = host.RequireAuth("c")
 	if ans {
 		t.Fatal(ans)
 	}

@@ -27,6 +27,14 @@ var (
 	ErrContractNotFound = errors.New("contract not found")
 )
 
+const (
+	GasCheckTxFailed = uint64(100)
+)
+
+type Rollbacker interface {
+	Rollback()
+}
+
 type Engine interface {
 	//Init()
 	//SetEnv(bh *block.BlockHead, cb database.IMultiValue) Engine
@@ -49,7 +57,7 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 		})
 	}
 
-	ctx := context.Background() // todo
+	ctx := context.Background()
 
 	blkInfo := make(map[string]string)
 
@@ -73,14 +81,14 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	err := checkTx(tx0)
 	if err != nil {
-		return nil, err // todo receipt
+		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), nil
 	}
 
-	totalCost := contract.Cost0()
+	// todo 检查发布者余额是否能支撑gaslimit
 
 	txInfo, err := json.Marshal(tx0)
 	if err != nil {
-		panic(err)
+		panic(err) // should not get error
 	}
 
 	authList := make(map[string]int)
@@ -107,34 +115,49 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		c := e.host.DB.Contract(action.Contract)
 
 		if c.Info == nil {
-			return nil, ErrContractNotFound
+
+			ptxr.GasUsage += GasCheckTxFailed
+			ptxr.Status = tx.Status{
+				Code:    tx.ErrorParamter,
+				Message: ErrContractNotFound.Error() + action.Contract,
+			}
+
+			return &ptxr, nil
 		}
 
 		abi := c.ABI(action.ActionName)
 
 		if abi == nil {
-			return nil, ErrABINotFound
+			ptxr.GasUsage += GasCheckTxFailed
+			ptxr.Status = tx.Status{
+				Code:    tx.ErrorParamter,
+				Message: ErrABINotFound.Error() + action.Contract,
+			}
+			return &ptxr, nil
 		}
 
 		args, err := unmarshalArgs(abi, action.Data)
 		if err != nil {
 			panic(err)
 		}
-		// todo host call check args
+
 		_, cost, err := staticMonitor.Call(e.host, action.Contract, action.ActionName, args...)
 		if err != nil {
-			txr := e.host.Ctx.Value("tx_receipt").(*tx.TxReceipt)
-			return txr, err
+			ptxr.Status = tx.Status{
+				Code:    tx.ErrorRuntime,
+				Message: err.Error(),
+			}
+			return &ptxr, nil
 		}
 
 		e.host.Ctx = context.WithValue(e.host.Ctx, "gas_limit", tx0.GasLimit-uint64(cost.ToGas()))
 
-		totalCost.AddAssign(cost)
+		e.host.PayCost(cost, account.GetIdByPubkey(tx0.Publisher.Pubkey))
 	}
 
 	txr := e.host.Ctx.Value("tx_receipt").(*tx.TxReceipt)
 
-	e.host.PayCost(totalCost, account.GetIdByPubkey(tx0.Publisher.Pubkey), int64(tx0.GasPrice))
+	e.host.DoPay(e.host.Ctx.Value("witness").(string), int64(tx0.GasPrice))
 
 	return txr, nil
 }
@@ -196,4 +219,17 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	return rtn, nil
 	//return nil, errors.New("unsupported yet")
 
+}
+
+func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
+	return &tx.TxReceipt{
+		TxHash:   hash,
+		GasUsage: GasCheckTxFailed,
+		Status: tx.Status{
+			Code:    code,
+			Message: message,
+		},
+		SuccActionNum: 0,
+		Receipts:      make([]tx.Receipt, 0),
+	}
 }
