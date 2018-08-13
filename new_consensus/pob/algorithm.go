@@ -8,13 +8,14 @@ import (
 	"errors"
 	"time"
 
+	"fmt"
+
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"fmt"
 )
 
 var (
@@ -27,7 +28,7 @@ var (
 	ErrTxSignature = errors.New("tx wrong signature")
 )
 
-func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool new_txpool.TxPool, db *db.MVCCDB) *block.Block {
+func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db *db.MVCCDB) *block.Block {
 	lastBlk := node.Block
 	parentHash := lastBlk.HeadHash()
 	blk := block.Block{
@@ -36,7 +37,7 @@ func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool new_t
 			ParentHash: parentHash,
 			Number:     lastBlk.Head.Number + 1,
 			Witness:    acc.ID,
-			Time:       consensus_common.GetCurrentTimestamp().Slot,
+			Time:       common.GetCurrentTimestamp().Slot,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -44,7 +45,7 @@ func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool new_t
 
 	txCnt := 1000
 
-	limitTime := time.NewTicker(((consensus_common.SlotLength/3 - 1) + 1) * time.Second)
+	limitTime := time.NewTicker(((common.SlotLength/3 - 1) + 1) * time.Second)
 	if txPool != nil {
 		tx, err := txPool.PendingTxs(txCnt)
 		if err == nil {
@@ -74,8 +75,8 @@ func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool new_t
 		}
 	}
 	var err error
-	blk.Head.TxsHash, err = blk.CalculateTxsHash()
-	blk.Head.MerkleHash, err = blk.CalculateMerkleHash()
+	blk.Head.TxsHash = blk.CalculateTxsHash()
+	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
@@ -109,7 +110,7 @@ func generateHeadInfo(head block.BlockHead) []byte {
 
 func verifyBasics(blk *block.Block) error {
 	// verify block witness
-	if witnessOfTime(consensus_common.Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
+	if witnessOfTime(common.Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
 		return ErrWitness
 	}
 
@@ -139,32 +140,28 @@ func verifyBasics(blk *block.Block) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, txPool new_txpool.TxPool, db *db.MVCCDB) error {
-	// verify block head
-	if err := consensus_common.VerifyBlockHead(blk, parent, top); err != nil {
+func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db *db.MVCCDB) error {
+	err := consensus_common.VerifyBlockHead(blk, parent, lib)
+	if err != nil {
 		return err
 	}
-
-	// verify tx time/sig/exist
 	for _, tx := range blk.Txs {
-		if dynamicProperty.slotToTimestamp(blk.Head.Time).ToUnixSec() - tx.Time/1e9 > 60 {
+		if dynamicProperty.slotToTimestamp(blk.Head.Time).ToUnixSec()-tx.Time/1e9 > 60 {
 			return ErrTxTooOld
 		}
 		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
-		if exist == new_txpool.FoundChain {
+		if exist == txpool.FoundChain {
 			return ErrTxDup
-		} else if exist != new_txpool.FoundPending {
+		} else if exist != txpool.FoundPending {
 			if err := tx.VerifySelf(); err != nil {
 				return ErrTxSignature
 			}
 		}
 	}
-
-	// verify txs
-	if err := consensus_common.VerifyBlock(blk, db); err != nil {
+	err = consensus_common.VerifyBlock(blk, db)
+	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -189,10 +186,10 @@ func updateNodeInfo(node *blockcache.BlockCacheNode) {
 
 func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) []string {
 	// TODO how to decode witness list from db?
-	newList, err := db.Get("state", "witnessList")
-
+	//newList, err := db.Get("state", "witnessList")
+	var err error
 	if err == nil {
-		node.PendingWitnessList = newList
+		//node.PendingWitnessList = newList
 		node.LastWitnessListNumber = node.Number
 	} else {
 		node.PendingWitnessList = node.Parent.PendingWitnessList

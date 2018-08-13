@@ -1,23 +1,23 @@
 package pob
 
 import (
-	. "github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 var staticProperty globalStaticProperty
 var dynamicProperty globalDynamicProperty
 
 type globalStaticProperty struct {
-	Account
+	account.Account
 	NumberOfWitnesses int
 	WitnessList       []string
 	Watermark         map[string]uint64
 	SlotMap           map[uint64]map[string]bool
 }
 
-func newGlobalStaticProperty(acc Account, witnessList []string) globalStaticProperty {
+func newGlobalStaticProperty(acc account.Account, witnessList []string) globalStaticProperty {
 	prop := globalStaticProperty{
 		Account:           acc,
 		NumberOfWitnesses: len(witnessList),
@@ -72,16 +72,16 @@ var (
 
 type globalDynamicProperty struct {
 	LastBlockNumber     int64
-	LastBlockTime       Timestamp
+	LastBlockTime       common.Timestamp
 	LastBLockHash       []byte
 	TotalSlots          int64
-	NextMaintenanceTime Timestamp
+	NextMaintenanceTime common.Timestamp
 }
 
 func newGlobalDynamicProperty() globalDynamicProperty {
 	prop := globalDynamicProperty{
 		LastBlockNumber: 0,
-		LastBlockTime:   Timestamp{Slot: 0},
+		LastBlockTime:   common.Timestamp{Slot: 0},
 		TotalSlots:      0,
 	}
 	prop.NextMaintenanceTime.AddHour(maintenanceInterval)
@@ -94,27 +94,27 @@ func (prop *globalDynamicProperty) update(blockHead *block.BlockHead) {
 		prop.NextMaintenanceTime.AddHour(maintenanceInterval)
 	}
 	prop.LastBlockNumber = blockHead.Number
-	prop.LastBlockTime = Timestamp{Slot: blockHead.Time}
+	prop.LastBlockTime = common.Timestamp{Slot: blockHead.Time}
 	hash, err := blockHead.Hash()
 	if err == nil {
 		copy(prop.LastBLockHash, hash)
 	}
 }
 
-func (prop *globalDynamicProperty) timestampToSlot(time Timestamp) int64 {
+func (prop *globalDynamicProperty) timestampToSlot(time common.Timestamp) int64 {
 	return time.Slot
 }
 
-func (prop *globalDynamicProperty) slotToTimestamp(slot int64) *Timestamp {
-	return &Timestamp{Slot: slot}
+func (prop *globalDynamicProperty) slotToTimestamp(slot int64) *common.Timestamp {
+	return &common.Timestamp{Slot: slot}
 }
 
 func witnessOfSec(sec int64) string {
-	time := GetTimestamp(sec)
+	time := common.GetTimestamp(sec)
 	return witnessOfTime(time)
 }
 
-func witnessOfTime(time Timestamp) string {
+func witnessOfTime(time common.Timestamp) string {
 
 	currentSlot := dynamicProperty.timestampToSlot(time)
 	slotsEveryTurn := int64(staticProperty.NumberOfWitnesses * slotPerWitness)
@@ -131,7 +131,7 @@ func timeUntilNextSchedule(timeSec int64) int64 {
 		return dynamicProperty.NextMaintenanceTime.ToUnixSec()
 	}
 
-	time := GetTimestamp(timeSec)
+	time := common.GetTimestamp(timeSec)
 	currentSlot := dynamicProperty.timestampToSlot(time)
 	slotsEveryTurn := int64(staticProperty.NumberOfWitnesses * slotPerWitness)
 	k := currentSlot / slotsEveryTurn

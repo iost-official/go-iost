@@ -68,15 +68,20 @@ func (m *Monitor) Call(host *host.Host, contractName, api string, args ...interf
 	}
 	rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
 
-	payment := host.Ctx.Value("abi_config").(*contract.ABI).Payment // TODO 预编译
+	payment := host.Ctx.Value("abi_config").(*contract.ABI).Payment
 	switch payment {
 	case 1:
 		var gasPrice = host.Ctx.Value("gas_price").(int64) // TODO 判断大于0
 		if abi.GasPrice < gasPrice {
 			return nil, nil, ErrGasPriceTooBig
 		}
-		host.PayCost(cost, contractName, gasPrice)
-		cost = contract.Cost0()
+
+		b := host.DB.Balance(contractName)
+		if b > gasPrice*cost.ToGas() {
+			host.PayCost(cost, contractName, gasPrice)
+			cost = contract.Cost0()
+		}
+
 	default:
 		//fmt.Println("user paid for", args[0])
 	}

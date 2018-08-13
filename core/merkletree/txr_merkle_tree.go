@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) error {
+func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) {
 	m.MT = &MerkleTree{}
 	data := make([][]byte, len(txrs))
 	m.TX2TXR = make(map[string][]byte)
@@ -14,7 +14,7 @@ func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) error {
 		m.TX2TXR[string(txr.TxHash)] = txr.Encode()
 		data[i] = m.TX2TXR[string(txr.TxHash)]
 	}
-	return m.MT.Build(data)
+	m.MT.Build(data)
 }
 
 func (m *TXRMerkleTree) GetTXR(hash []byte) (*tx.TxReceipt, error) {
@@ -29,7 +29,7 @@ func (m *TXRMerkleTree) GetTXR(hash []byte) (*tx.TxReceipt, error) {
 	}
 	return &txr, nil
 }
-func (m *TXRMerkleTree) RootHash() ([]byte, error) {
+func (m *TXRMerkleTree) RootHash() []byte {
 	return m.MT.RootHash()
 }
 
