@@ -75,8 +75,8 @@ func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool txpoo
 		}
 	}
 	var err error
-	blk.Head.TxsHash, err = blk.CalculateTxsHash()
-	blk.Head.MerkleHash, err = blk.CalculateMerkleHash()
+	blk.Head.TxsHash = blk.CalculateTxsHash()
+	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
 	blk.Head.Signature = sig.Encode()
@@ -186,10 +186,10 @@ func updateNodeInfo(node *blockcache.BlockCacheNode) {
 
 func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) []string {
 	// TODO how to decode witness list from db?
-	newList, err := db.Get("state", "witnessList")
-
+	//newList, err := db.Get("state", "witnessList")
+	var err error
 	if err == nil {
-		node.PendingWitnessList = newList
+		//node.PendingWitnessList = newList
 		node.LastWitnessListNumber = node.Number
 	} else {
 		node.PendingWitnessList = node.Parent.PendingWitnessList
