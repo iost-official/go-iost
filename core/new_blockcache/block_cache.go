@@ -38,8 +38,6 @@ const (
 	Extend CacheStatus = iota
 	Fork
 	NotFound
-	ErrorBlock
-	Duplicate
 )
 
 const (
