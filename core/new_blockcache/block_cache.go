@@ -170,10 +170,7 @@ func NewBlockCache(glbl global.BaseVariable) (*BlockCacheImpl, error) {
 	}
 	bc.linkedRoot.Block = lib
 	if lib != nil {
-		hash, err := lib.HeadHash()
-		if err != nil {
-			return nil, fmt.Errorf("BlockCahin Top Error")
-		}
+		hash := lib.HeadHash()
 		bc.hmset(hash, bc.linkedRoot)
 	}
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
@@ -198,12 +195,10 @@ func (bc *BlockCacheImpl) updateLongest() {
 	if len(bc.leaf) == -1 {
 		panic(fmt.Errorf("BlockCache shouldnt be empty"))
 	}
-	hash, err := bc.head.Block.HeadHash()
-	if err == nil {
-		_, ok := bc.hmget(hash)
-		if ok {
-			return
-		}
+	hash := bc.head.Block.HeadHash()
+	_, ok := bc.hmget(hash)
+	if ok {
+		return
 	}
 	cur := bc.linkedRoot.Number
 	newHead := bc.linkedRoot
@@ -219,10 +214,7 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 	var code CacheStatus
 	var newNode *BlockCacheNode
 
-	hash, herr := blk.HeadHash()
-	if herr != nil {
-		return nil, fmt.Errorf("fail to cale HeadHash, err:%v", herr)
-	}
+	hash := blk.HeadHash()
 	_, ok := bc.hmget(hash)
 	if ok {
 		return nil, ErrDup
@@ -260,10 +252,7 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	fa := bcn.Parent
 	bcn.Parent = nil
-	hash, herr := bcn.Block.HeadHash()
-	if herr != nil {
-		return
-	}
+	hash := bcn.Block.HeadHash()
 	bc.hmdel(hash)
 	if fa == nil {
 		return
@@ -287,10 +276,7 @@ func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 
 func (bc *BlockCacheImpl) mergeSingle(newNode *BlockCacheNode) {
 	block := newNode.Block
-	hash, herr := block.HeadHash()
-	if herr != nil {
-		return
-	}
+	hash := block.HeadHash()
 	for bcn, _ := range bc.singleRoot.Children {
 		if bytes.Equal(bcn.Block.Head.ParentHash, hash) {
 			bcn.Parent.delChild(bcn)
