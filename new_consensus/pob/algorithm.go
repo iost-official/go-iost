@@ -28,7 +28,7 @@ var (
 	ErrTxSignature = errors.New("tx wrong signature")
 )
 
-func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool new_txpool.TxPool, db *db.MVCCDB) *block.Block {
+func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db *db.MVCCDB) *block.Block {
 	lastBlk := node.Block
 	parentHash := lastBlk.HeadHash()
 	blk := block.Block{
@@ -140,32 +140,28 @@ func verifyBasics(blk *block.Block) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, top *block.Block, txPool new_txpool.TxPool, db *db.MVCCDB) error {
-	// verify block head
-	if err := consensus_common.VerifyBlockHead(blk, parent, top); err != nil {
+func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db *db.MVCCDB) error {
+	err := consensus_common.VerifyBlockHead(blk, parent, lib)
+	if err != nil {
 		return err
 	}
-
-	// verify tx time/sig/exist
 	for _, tx := range blk.Txs {
 		if dynamicProperty.slotToTimestamp(blk.Head.Time).ToUnixSec()-tx.Time/1e9 > 60 {
 			return ErrTxTooOld
 		}
 		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
-		if exist == new_txpool.FoundChain {
+		if exist == txpool.FoundChain {
 			return ErrTxDup
-		} else if exist != new_txpool.FoundPending {
+		} else if exist != txpool.FoundPending {
 			if err := tx.VerifySelf(); err != nil {
 				return ErrTxSignature
 			}
 		}
 	}
-
-	// verify txs
-	if err := consensus_common.VerifyBlock(blk, db); err != nil {
+	err = consensus_common.VerifyBlock(blk, db)
+	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
