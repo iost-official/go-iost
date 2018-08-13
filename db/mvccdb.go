@@ -6,6 +6,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/db/mvcc/trie"
 	"github.com/iost-official/Go-IOS-Protocol/db/storage"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -57,7 +58,7 @@ func NewMVCCDB(path string) (*MVCCDB, error) {
 	head := trie.New()
 	stage := head.Fork()
 	tags := make(map[string]*trie.Trie)
-	commits := make([]*trie.Trie, 1)
+	commits := make([]*trie.Trie, 0)
 
 	head.SetTag(string(tag))
 	tags[string(tag)] = head
@@ -93,19 +94,24 @@ func (m *MVCCDB) Get(table string, key string) (string, error) {
 	}
 	k := []byte(table + string(SEPARATOR) + key)
 	m.stagerw.RLock()
-	v, ok := m.stage.Get(k).(*Item)
+	v := m.stage.Get(k)
 	m.stagerw.RUnlock()
+	if v == nil {
+		v, err := m.storage.Get(k)
+		if err != nil {
+			log.Debugf("Failed to get from storage: %v", err)
+			return "", ErrKeyNotFound
+		}
+		return string(v[:]), nil
+	}
+	i, ok := v.(*Item)
 	if !ok {
 		return "", errors.New("can't assert Item type")
 	}
-	if v == nil {
-		v, err := m.storage.Get(k)
-		return string(v[:]), err
-	}
-	if v.deleted {
+	if i.deleted {
 		return "", ErrKeyNotFound
 	}
-	return v.value, nil
+	return i.value, nil
 }
 
 func (m *MVCCDB) Put(table string, key string, value string) error {
@@ -148,16 +154,21 @@ func (m *MVCCDB) Has(table string, key string) (bool, error) {
 	}
 	k := []byte(table + string(SEPARATOR) + key)
 	m.stagerw.RLock()
-	v, ok := m.stage.Get(k).(*Item)
+	v := m.stage.Get(k)
 	m.stagerw.RUnlock()
+	if v == nil {
+		v, err := m.storage.Get(k)
+		if err != nil {
+			log.Debugf("Failed to get from storage: %v", err)
+			return false, nil
+		}
+		return v != nil, nil
+	}
+	i, ok := v.(*Item)
 	if !ok {
 		return false, errors.New("can't assert Item type")
 	}
-	if v == nil {
-		v, err := m.storage.Get(k)
-		return v != nil, err
-	}
-	if v.deleted {
+	if i.deleted {
 		return false, nil
 	}
 	return true, nil
@@ -231,7 +242,7 @@ func (m *MVCCDB) Flush(t string) error {
 	if err := m.storage.BeginBatch(); err != nil {
 		return err
 	}
-	for _, v := range trie.Keys([]byte("")) {
+	for _, v := range trie.All([]byte("")) {
 		item, ok := v.(*Item)
 		if !ok {
 			return errors.New("can't assert Item type")
@@ -252,6 +263,7 @@ func (m *MVCCDB) Flush(t string) error {
 		return err
 	}
 
+	log.Debugf("Commits length: %v", len(m.commits))
 	for k, v := range m.commits {
 		if v == trie {
 			m.commits = m.commits[k:]
