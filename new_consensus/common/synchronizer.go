@@ -253,10 +253,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 			if node == nil || i != node.Number {
 				continue
 			}
-			hash, err = node.Block.HeadHash()
-			if err != nil {
-				continue
-			}
+			hash = node.Block.HeadHash()
 		}
 		blkHash := message.BlockHash{
 			Height: i,

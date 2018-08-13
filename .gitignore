@@ -229,3 +229,5 @@ test/data
 /core/block/serviDb/
 scripts/sendtx/iwallet
 
+/core/new_txpool/BlockChainDB/
+/core/new_txpool/StatePoolDB/

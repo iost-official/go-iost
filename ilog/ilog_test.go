@@ -2,14 +2,56 @@ package ilog
 
 import (
 	"testing"
-	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestConsoleLog(t *testing.T) {
+func TestDefaultLogger(t *testing.T) {
 	Debug("this is a debug log")
 	Info("this is a info log")
 	Warn("this is a waining log")
 	Error("this is a error log")
 	Fatal("this is a fatal log")
-	time.Sleep(time.Second)
+	Flush()
+}
+
+func TestFileLogger(t *testing.T) {
+	logger := New()
+	fw := NewFileWriter("test.log")
+	err := logger.AddWriter(fw)
+	assert.Nil(t, err)
+	InitLogger(logger)
+
+	Debug("this is a debug log")
+	Info("this is a info log")
+	Warn("this is a waining log")
+	Error("this is a error log")
+	Fatal("this is a fatal log")
+	Flush()
+}
+
+func TestAddWriter(t *testing.T) {
+	fw := NewFileWriter("test1.log")
+	err := AddWriter(fw)
+	assert.Nil(t, err)
+
+	Debug("this is a debug log")
+	Info("this is a info log")
+	Warn("this is a waining log")
+	Error("this is a error log")
+	Fatal("this is a fatal log")
+	Flush()
+}
+
+func BenchmarkFileLogger(b *testing.B) {
+	logger := New()
+	fw := NewFileWriter("testbench.log")
+	logger.AddWriter(fw)
+	InitLogger(logger)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		logger.Info("benchmark: %d", i)
+	}
+	logger.Flush()
 }

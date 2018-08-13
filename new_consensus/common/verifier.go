@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 )
 
@@ -30,8 +30,7 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.B
 		return ErrOldBlk
 	}
 	// parent hash
-	hash, err := parentBlk.HeadHash()
-	if err != nil || !bytes.Equal(bh.ParentHash, hash) {
+	if !bytes.Equal(bh.ParentHash, parentBlk.HeadHash()) {
 		return ErrParentHash
 	}
 	// block number
