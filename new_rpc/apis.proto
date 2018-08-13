@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-import "core/new_tx/tx.proto";
-import "core/new_block/block.proto";
+import "github.com/iost-official/Go-IOS-Protocol/new_rpc/core/new_tx/tx.proto";
+import "github.com/iost-official/Go-IOS-Protocol/new_rpc/core/new_block/block.proto";
 package rpc;
 
 service Apis {
@@ -47,10 +47,12 @@ message HeightRes {
 
 message GetBalanceRes {
 	string balance=1;
+	int64 code=2;
 }
 
 message GetStateRes {
 	string value=1;
+	int64 code=2;
 }
 
 message SendRawTxRes {
