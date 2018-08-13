@@ -1,14 +1,12 @@
 package pob
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
-
-	"time"
-
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -16,11 +14,9 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
-	"fmt"
-	"errors"
-	blockcache2 "github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 )
 
 var (
@@ -187,7 +183,7 @@ func (p *PoB) scheduleLoop() {
 	for {
 		select {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
-			currentTimestamp := consensus_common.GetCurrentTimestamp()
+			currentTimestamp := common.GetCurrentTimestamp()
 			wid := witnessOfTime(currentTimestamp)
 			if wid == p.account.ID && p.global.Mode() == global.ModeNormal {
 				chainHead := p.blockCache.Head()
