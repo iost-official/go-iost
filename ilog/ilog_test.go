@@ -17,7 +17,7 @@ func TestDefaultLogger(t *testing.T) {
 
 func TestFileLogger(t *testing.T) {
 	logger := New()
-	fw := NewFileWriter("test.log")
+	fw := NewFileWriter("logs1/")
 	err := logger.AddWriter(fw)
 	assert.Nil(t, err)
 	InitLogger(logger)
@@ -31,7 +31,7 @@ func TestFileLogger(t *testing.T) {
 }
 
 func TestAddWriter(t *testing.T) {
-	fw := NewFileWriter("test1.log")
+	fw := NewFileWriter("logs2/")
 	err := AddWriter(fw)
 	assert.Nil(t, err)
 
@@ -45,7 +45,7 @@ func TestAddWriter(t *testing.T) {
 
 func BenchmarkFileLogger(b *testing.B) {
 	logger := New()
-	fw := NewFileWriter("testbench.log")
+	fw := NewFileWriter("benchlogs/")
 	logger.AddWriter(fw)
 	InitLogger(logger)
 
