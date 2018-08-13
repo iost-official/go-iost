@@ -18,9 +18,11 @@ type Logger struct {
 	callDepth   int
 	lowestLevel Level
 	isRunning   int32
+	wg          *sync.WaitGroup
 
 	writers []LogWriter
 	msg     chan *message
+	flush   chan *sync.WaitGroup
 
 	bufPool *BufPool
 
@@ -29,11 +31,13 @@ type Logger struct {
 
 func New() *Logger {
 	return &Logger{
-		callDepth:   2,
+		callDepth:   1,
 		lowestLevel: LevelFatal,
-		msg:         make(chan *message, 1024),
+		wg:          new(sync.WaitGroup),
+		msg:         make(chan *message, 4096),
+		flush:       make(chan *sync.WaitGroup, 1),
 		bufPool:     NewBufPool(),
-		quitCh:      make(chan struct{}),
+		quitCh:      make(chan struct{}, 1),
 	}
 }
 
@@ -53,13 +57,28 @@ func (logger *Logger) Start() {
 		return
 	}
 
+	logger.wg.Add(1)
 	go func() {
+		defer func() {
+			atomic.StoreInt32(&logger.isRunning, 0)
+			logger.cleanMsg()
+			for _, writer := range logger.writers {
+				writer.Flush()
+				writer.Close()
+			}
+			logger.wg.Done()
+		}()
+
 		for {
 			select {
 			case <-logger.quitCh:
 				return
 			case msg := <-logger.msg:
-				logger.Write(msg)
+				logger.write(msg)
+			case wg := <-logger.flush:
+				logger.cleanMsg()
+				logger.flushWriters()
+				wg.Done()
 			}
 		}
 	}()
@@ -69,9 +88,8 @@ func (logger *Logger) Stop() {
 	if !atomic.CompareAndSwapInt32(&logger.isRunning, 1, 0) {
 		return
 	}
-	close(logger.quitCh)
-	logger.cleanMsg()
-	logger.Flush()
+	logger.quitCh <- struct{}{}
+	logger.wg.Wait()
 }
 
 func (logger *Logger) SetCallDepth(d int) {
@@ -89,7 +107,21 @@ func (logger *Logger) AddWriter(writer LogWriter) error {
 	return nil
 }
 
-func (logger *Logger) Write(msg *message) {
+func (logger *Logger) Flush() {
+	if atomic.LoadInt32(&logger.isRunning) == 0 {
+		return
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	select {
+	case logger.flush <- wg:
+		wg.Wait()
+	default:
+	}
+}
+
+func (logger *Logger) write(msg *message) {
 	wg := &sync.WaitGroup{}
 	for _, writer := range logger.writers {
 		if msg.level < writer.GetLevel() {
@@ -105,7 +137,7 @@ func (logger *Logger) Write(msg *message) {
 
 }
 
-func (logger *Logger) Flush() {
+func (logger *Logger) flushWriters() {
 	wg := &sync.WaitGroup{}
 	for _, writer := range logger.writers {
 		wg.Add(1)
@@ -170,7 +202,7 @@ func (logger *Logger) genMsg(level Level, log string) {
 
 	select {
 	case logger.msg <- &message{buf.String(), level}:
-	default:
+		// default:
 	}
 }
 
@@ -178,7 +210,7 @@ func (logger *Logger) cleanMsg() {
 	for {
 		select {
 		case msg := <-logger.msg:
-			logger.Write(msg)
+			logger.write(msg)
 		default:
 			return
 		}

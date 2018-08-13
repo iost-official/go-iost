@@ -16,12 +16,20 @@ func InitLogger(logger *Logger) {
 	defaultLogger.Start()
 }
 
+func DefaultLogger() *Logger {
+	return defaultLogger
+}
+
 func AddWriter(lw LogWriter) error {
 	return defaultLogger.AddWriter(lw)
 }
 
 func SetCallDepth(d int) {
 	defaultLogger.SetCallDepth(d)
+}
+
+func Start() {
+	defaultLogger.Start()
 }
 
 func Stop() {
