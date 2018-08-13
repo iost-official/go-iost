@@ -18,10 +18,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
-	"fmt"
-	"errors"
-	blockcache2 "github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-)
+			)
 
 var (
 	generatedBlockCount = prometheus.NewCounter(
@@ -59,38 +56,38 @@ func init() {
 
 type PoB struct {
 	account         account.Account
-	global          global.BaseVariable
+	baseVariable    global.BaseVariable
 	blockChain      block.Chain
 	blockCache      blockcache.BlockCache
-	txPool          new_txpool.TxPool
+	txPool          txpool.TxPool
 	p2pService      p2p.Service
 	synchronizer    consensus_common.Synchronizer
-	addBlockPointer *db.MVCCDB
-	genBlockPointer *db.MVCCDB
+	verifyDB *db.MVCCDB
+	produceDB *db.MVCCDB
 
 	exitSignal  chan struct{}
 	chRecvBlock chan message.Message
 	chGenBlock  chan *block.Block
 }
 
-func NewPoB(account_ account.Account, blockchain_ block.BlockChain, blockcache_ blockcache.BlockCache, txPool_ new_txpool.TxPool, service_ p2p.Service, synchronizer_ consensus_common.Synchronizer, witnessList []string) (*PoB, error) {
+func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer consensus_common.Synchronizer, witnessList []string) (*PoB, error) {
 	//TODO: change initialization based on new interfaces
 	p := PoB{
-		account:         account_,
-		global:          global_,
-		blockCache:      blockcache_,
-		blockChain:      global_.BlockChain(),
-		addBlockPointer: global_.StatePool(),
-		txPool:          txPool_,
-		p2pService:      service_,
-		synchronizer:    synchronizer_,
+		account:         account,
+		baseVariable:    baseVariable,
+		blockCache:      blockCache,
+		blockChain:      baseVariable.BlockChain(),
+		verifyDB: baseVariable.StateDB(),
+		txPool:          txPool,
+		p2pService:      p2pService,
+		synchronizer:    synchronizer,
 		chGenBlock:      make(chan *block.Block, 10),
 	}
 
-	p.genBlockPointer = p.addBlockPointer.Fork()
+	p.produceDB = p.verifyDB.Fork()
 
 	var err error
-	p.chRecvBlock, err = p.p2pService.Register("consensus chan", p2p.NewBlockResponse, p2p.SyncBlockResponse)
+	//p.chRecvBlock, err = p.p2pService.Register("consensus chan", p2p.NewBlockResponse, p2p.SyncBlockResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +164,7 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			if req.GetReqType() == int32(p2p.SyncBlockResponse) {
-				go p.synchronizer.OnRecvBlock(blk.HeadHash(), req.From())
+				//go p.synchronizer.OnRecvBlock(blk.HeadHash(), req.From())
 			}
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
@@ -189,13 +186,16 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
 			currentTimestamp := consensus_common.GetCurrentTimestamp()
 			wid := witnessOfTime(currentTimestamp)
-			if wid == p.account.ID && p.global.Mode() == global.ModeNormal {
+			if wid == p.account.ID && p.baseVariable.Mode().Mode() == global.ModeNormal {
 				chainHead := p.blockCache.Head()
 				hash := chainHead.Block.HeadHash()
-				p.genBlockPointer.Checkout(string(hash))
-				blk := genBlock(p.account, chainHead, p.txPool, p.genBlockPointer)
+				p.produceDB.Checkout(string(hash))
+				blk := genBlock(p.account, chainHead, p.txPool, p.produceDB)
 				dynamicProperty.update(&blk.Head)
 				blkByte, err := blk.Encode()
+				if err != nil {
+					fmt.Println(err)
+				}
 				//msg := message.Message{ReqType: int32(ReqNewBlock), Body: bb}
 				//go p.router.Broadcast(msg)
 				p.chGenBlock <- blk
@@ -210,14 +210,11 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) (*blockcache.BlockCacheNode, error) {
-	// verify block txs
 	if blk.Head.Witness != p.account.ID {
 		hash := parent.Block.HeadHash()
-		p.addBlockPointer.Checkout(string(hash))
+		p.verifyDB.Checkout(string(hash))
 		var verifyErr error
-		verifyErr = verifyBlock(blk, parent.Block, p.blockCache.LinkedRoot().Block, p.txPool, p.addBlockPointer)
-
-		// add
+		verifyErr = verifyBlock(blk, parent.Block, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if newBlock {
 			if verifyErr == nil {
 				var err error
@@ -238,16 +235,16 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 		}
 		// tag in state
 		hash = blk.HeadHash()
-		p.addBlockPointer.Tag(string(hash))
+		p.verifyDB.Tag(string(hash))
 	} else {
 		hash := blk.HeadHash()
-		p.addBlockPointer.Checkout(string(hash))
+		p.verifyDB.Checkout(string(hash))
 	}
 
 	// update node info without state
 	updateNodeInfo(node)
 	// update node info with state, currently pending witness list
-	updatePendingWitness(node, p.addBlockPointer)
+	updatePendingWitness(node, p.verifyDB)
 
 	// confirm
 	confirmNode := calculateConfirm(node, p.blockCache.LinkedRoot())

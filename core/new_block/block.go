@@ -42,23 +42,17 @@ func GenGenesis(initTime int64) *Block {
 	return genesis
 }
 
-func (b *Block) CalculateTxsHash() ([]byte, error) {
-	if len(b.Txs) == 0 {
-		return nil, errors.New("txs length equals 0")
-	}
+func (b *Block) CalculateTxsHash() []byte {
 	hash := make([]byte, 0)
 	for _, tx := range b.Txs {
 		hash = append(hash, tx.Publisher.Sig...)
 	}
-	return common.Sha3(hash), nil
+	return common.Sha3(hash)
 }
 
-func (b *Block) CalculateMerkleHash() ([]byte, error) {
+func (b *Block) CalculateMerkleHash() []byte {
 	m := merkletree.TXRMerkleTree{}
-	err := m.Build(b.Receipts)
-	if err != nil {
-		return nil, err
-	}
+	m.Build(b.Receipts)
 	return m.RootHash()
 }
 

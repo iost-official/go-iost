@@ -21,7 +21,6 @@ var (
 
 func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.Block) error {
 	bh := blk.Head
-	// time
 	cur := GetCurrentTimestamp().Slot
 	if bh.Time > cur+1 {
 		return ErrFutureBlk
@@ -29,23 +28,16 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.B
 	if bh.Time < chainTop.Head.Time {
 		return ErrOldBlk
 	}
-	// parent hash
-	hash, err := parentBlk.HeadHash()
-	if err != nil || !bytes.Equal(bh.ParentHash, hash) {
+	if !bytes.Equal(bh.ParentHash, parentBlk.HeadHash()) {
 		return ErrParentHash
 	}
-	// block number
 	if bh.Number != parentBlk.Head.Number+1 {
 		return ErrNumber
 	}
-	// tx hash
-	txHash, err := blk.CalculateTxsHash()
-	if err != nil || !bytes.Equal(txHash, bh.TxsHash) {
+	if !bytes.Equal(blk.CalculateTxsHash(), bh.TxsHash) {
 		return ErrTxHash
 	}
-	// tx receipt merkle hash
-	merkleHash, err := blk.CalculateMerkleHash()
-	if err != nil || !bytes.Equal(merkleHash, bh.MerkleHash) {
+	if !bytes.Equal(blk.CalculateMerkleHash(), bh.MerkleHash) {
 		return ErrMerkleHash
 	}
 	return nil
@@ -55,14 +47,11 @@ func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
 	var receipts []*tx.TxReceipt
 	engine := new_vm.NewEngine(&blk.Head, db)
 	for _, tx := range blk.Txs {
-		receipt, err := verify(tx, engine)
-		if err == nil {
-			db.Commit()
-			receipts = append(receipts, receipt)
-		} else {
-			db.Rollback()
+		receipt, err := engine.Exec(tx)
+		if err != nil {
 			return err
 		}
+		receipts = append(receipts, receipt)
 	}
 	for i, r := range receipts {
 		if !bytes.Equal(blk.Receipts[i].Encode(), r.Encode()) {
@@ -79,10 +68,5 @@ func VerifyTxBegin(blk *block.Block, db *db.MVCCDB) {
 }
 
 func VerifyTx(tx *tx.Tx) (*tx.TxReceipt, error) {
-	return verify(tx, txEngine)
-}
-
-func verify(tx *tx.Tx, engine new_vm.Engine) (*tx.TxReceipt, error) {
-	receipt, err := engine.Exec(tx)
-	return receipt, err
+	return txEngine.Exec(tx)
 }
