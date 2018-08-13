@@ -22,6 +22,7 @@ const (
 	ErrorParamter // paramter mismatch when calling function
 	ErrorRuntime  // runtime error
 	ErrorUnknown  // other errors
+	ErrorTxFormat // tx format errors
 )
 
 type Status struct {

@@ -31,7 +31,7 @@ const (
 	ModeProduce
 )
 
-type GlobalImpl struct {
+type BaseVariableImpl struct {
 	txDB tx.TxDB
 
 	stateDB    *db.MVCCDB
@@ -42,7 +42,7 @@ type GlobalImpl struct {
 	mode *Mode
 }
 
-func New(conf *common.Config) (BaseVariable, error) {
+func New(conf *common.Config) (*BaseVariableImpl, error) {
 	block.LevelDBPath = conf.LdbPath
 	blockChain, err := block.Instance()
 	if err != nil {
@@ -64,27 +64,27 @@ func New(conf *common.Config) (BaseVariable, error) {
 	m := new(Mode)
 	m.SetMode(ModeNormal)
 
-	n := &GlobalImpl{txDB: txDb, config: conf, stateDB: stateDB, blockChain: blockChain, mode: m}
+	n := &BaseVariableImpl{txDB: txDb, config: conf, stateDB: stateDB, blockChain: blockChain, mode: m}
 
 	return n, nil
 }
 
-func (g *GlobalImpl) TxDB() tx.TxDB {
+func (g *BaseVariableImpl) TxDB() tx.TxDB {
 	return g.txDB
 }
 
-func (g *GlobalImpl) StateDB() *db.MVCCDB {
+func (g *BaseVariableImpl) StateDB() *db.MVCCDB {
 	return g.stateDB
 }
 
-func (g *GlobalImpl) BlockChain() block.Chain {
+func (g *BaseVariableImpl) BlockChain() block.Chain {
 	return g.blockChain
 }
 
-func (g *GlobalImpl) Config() *common.Config {
+func (g *BaseVariableImpl) Config() *common.Config {
 	return g.config
 }
 
-func (g *GlobalImpl) Mode() *Mode {
+func (g *BaseVariableImpl) Mode() *Mode {
 	return g.mode
 }
