@@ -1,8 +1,8 @@
 package global
 
 import (
-	"errors"
 	"fmt"
+	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -31,7 +31,7 @@ const (
 	ModeProduce
 )
 
-type GlobalImpl struct {
+type BaseVariableImpl struct {
 	txDB tx.TxDB
 
 	stateDB    *db.MVCCDB
@@ -42,49 +42,55 @@ type GlobalImpl struct {
 	mode *Mode
 }
 
-func New(conf *common.Config) (BaseVariable, error) {
+func New(conf *common.Config) (*BaseVariableImpl, error) {
 	block.LevelDBPath = conf.LdbPath
 	blockChain, err := block.Instance()
 	if err != nil {
-		return nil, fmt.Errorf("NewBlockChain failed, stop the program! err:%v", err)
+		return nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)
 	}
+	blk, err := blockChain.Top()
+	if err != nil {
+		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+		blk = block.GenGenesis(t / 3)
+	}
+
 	//TODO: INIT FROM A EXISTING MVCCDB
 	stateDB, err := db.NewMVCCDB("StatePoolDB")
 	if err != nil {
-		return nil, fmt.Errorf("NewStatePool failed, stop the program! err:%v", err)
+		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
 
 	tx.LdbPath = conf.LdbPath
 	txDb := tx.TxDbInstance()
 	if txDb == nil {
-		return nil, errors.New("fail to txdbinstance")
+		return nil, fmt.Errorf("new txdb failed, stop the program.")
 	}
 	//TODO: check DB, state, txDB
 
 	m := new(Mode)
 	m.SetMode(ModeNormal)
 
-	n := &GlobalImpl{txDB: txDb, config: conf, stateDB: stateDB, blockChain: blockChain, mode: m}
+	n := &BaseVariableImpl{txDB: txDb, config: conf, stateDB: stateDB, blockChain: blockChain, mode: m}
 
 	return n, nil
 }
 
-func (g *GlobalImpl) TxDB() tx.TxDB {
+func (g *BaseVariableImpl) TxDB() tx.TxDB {
 	return g.txDB
 }
 
-func (g *GlobalImpl) StateDB() *db.MVCCDB {
+func (g *BaseVariableImpl) StateDB() *db.MVCCDB {
 	return g.stateDB
 }
 
-func (g *GlobalImpl) BlockChain() block.Chain {
+func (g *BaseVariableImpl) BlockChain() block.Chain {
 	return g.blockChain
 }
 
-func (g *GlobalImpl) Config() *common.Config {
+func (g *BaseVariableImpl) Config() *common.Config {
 	return g.config
 }
 
-func (g *GlobalImpl) Mode() *Mode {
+func (g *BaseVariableImpl) Mode() *Mode {
 	return g.mode
 }

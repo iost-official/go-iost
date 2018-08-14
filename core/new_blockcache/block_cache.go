@@ -38,8 +38,6 @@ const (
 	Extend CacheStatus = iota
 	Fork
 	NotFound
-	ErrorBlock
-	Duplicate
 )
 
 const (
@@ -70,24 +68,16 @@ func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
 	if child == nil {
 		return
 	}
-	_, ok := bcn.Children[child]
-	if ok {
-		return
-	}
 	bcn.Children[child] = true
 	child.Parent = bcn
 	return
 }
 
 func (bcn *BlockCacheNode) delChild(child *BlockCacheNode) {
-	if child == nil {
-		return
-	}
 	delete(bcn.Children, child)
-	//child.Parent = nil
 }
 
-func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *BlockCacheNode {
+func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	bcn := BlockCacheNode{
 		Block:    block,
 		Children: make(map[*BlockCacheNode]bool),
@@ -97,9 +87,7 @@ func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *Block
 	if block != nil {
 		bcn.Number = uint64(block.Head.Number)
 	}
-	if parent == nil {
-		bcn.Type = nodeType
-	} else {
+	if parent != nil {
 		bcn.Type = parent.Type
 		parent.addChild(&bcn)
 	}
@@ -107,12 +95,13 @@ func NewBCN(parent *BlockCacheNode, block *block.Block, nodeType BCNType) *Block
 }
 
 type BlockCache interface {
-	Add(blk *block.Block) (*BlockCacheNode, error)
-	Link(bcn *BlockCacheNode)
-	Del(bcn *BlockCacheNode)
-	Flush(bcn *BlockCacheNode)
-	Find(hash []byte) (*BlockCacheNode, error)
-	GetBlockByNumber(num uint64) (*block.Block, error)
+	Add(*block.Block) (*BlockCacheNode, error)
+	Link(*BlockCacheNode)
+	Del(*BlockCacheNode)
+	Flush(*BlockCacheNode)
+	Find([]byte) (*BlockCacheNode, error)
+	GetBlockByNumber(uint64) (*block.Block, error)
+	GetBlockByHash([]byte) (*block.Block, error)
 	LinkedRoot() *BlockCacheNode
 	Head() *BlockCacheNode
 	Draw()
@@ -129,8 +118,6 @@ type BlockCacheImpl struct {
 
 var (
 	ErrNotFound = errors.New("not found")
-	ErrBlock    = errors.New("error block")
-	ErrTooOld   = errors.New("block too old")
 	ErrDup      = errors.New("block duplicate")
 )
 
@@ -157,12 +144,14 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 
 func NewBlockCache(glbl global.BaseVariable) (*BlockCacheImpl, error) {
 	bc := BlockCacheImpl{
-		linkedRoot: NewBCN(nil, nil, Linked),
-		singleRoot: NewBCN(nil, nil, Single),
+		linkedRoot: NewBCN(nil, nil),
+		singleRoot: NewBCN(nil, nil),
 		hash2node:  new(sync.Map),
 		leaf:       make(map[*BlockCacheNode]uint64),
 		glbl:       glbl,
 	}
+	bc.linkedRoot.Type = Linked
+	bc.singleRoot.Type = Single
 	bc.head = bc.linkedRoot
 	lib, err := glbl.BlockChain().Top()
 	if err != nil {
@@ -170,8 +159,7 @@ func NewBlockCache(glbl global.BaseVariable) (*BlockCacheImpl, error) {
 	}
 	bc.linkedRoot.Block = lib
 	if lib != nil {
-		hash := lib.HeadHash()
-		bc.hmset(hash, bc.linkedRoot)
+		bc.hmset(lib.HeadHash(), bc.linkedRoot)
 	}
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
 	return &bc, nil
@@ -213,16 +201,14 @@ func (bc *BlockCacheImpl) updateLongest() {
 func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 	var code CacheStatus
 	var newNode *BlockCacheNode
-
 	hash := blk.HeadHash()
 	_, ok := bc.hmget(hash)
 	if ok {
 		return nil, ErrDup
 	}
 	parent, ok := bc.hmget(blk.Head.ParentHash)
-	bcnType := IF(ok, Linked, Single).(BCNType)
 	fa := IF(ok, parent, bc.singleRoot).(*BlockCacheNode)
-	newNode = NewBCN(fa, blk, bcnType)
+	newNode = NewBCN(fa, blk)
 	delete(bc.leaf, fa)
 	if ok {
 		code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
@@ -234,7 +220,6 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 	case Extend:
 		fallthrough
 	case Fork:
-		// Added to cached tree or added to single tree
 		bc.mergeSingle(newNode)
 		if newNode.Type == Linked {
 			bc.Link(newNode)
@@ -242,7 +227,6 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 			return newNode, ErrNotFound
 		}
 	case NotFound:
-		// Added as a child of single root
 		bc.mergeSingle(newNode)
 		return newNode, ErrNotFound
 	}
@@ -252,8 +236,7 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	fa := bcn.Parent
 	bcn.Parent = nil
-	hash := bcn.Block.HeadHash()
-	bc.hmdel(hash)
+	bc.hmdel(bcn.Block.HeadHash())
 	if fa == nil {
 		return
 	}
@@ -275,15 +258,12 @@ func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) mergeSingle(newNode *BlockCacheNode) {
-	block := newNode.Block
-	hash := block.HeadHash()
 	for bcn, _ := range bc.singleRoot.Children {
-		if bytes.Equal(bcn.Block.Head.ParentHash, hash) {
+		if bytes.Equal(bcn.Block.Head.ParentHash, newNode.Block.HeadHash()) {
 			bcn.Parent.delChild(bcn)
 			newNode.addChild(bcn)
 		}
 	}
-	return
 }
 
 func (bc *BlockCacheImpl) delSingle() {
@@ -362,6 +342,14 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num uint64) (*block.Block, error) {
 		it = it.Parent
 	}
 	return nil, fmt.Errorf("can not find the block")
+}
+
+func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
+	bcn, ok := bc.hmget(hash)
+	if !ok {
+		return nil, fmt.Errorf("cant find the block")
+	}
+	return bcn.Block, nil
 }
 
 func (bc *BlockCacheImpl) LinkedRoot() *BlockCacheNode {

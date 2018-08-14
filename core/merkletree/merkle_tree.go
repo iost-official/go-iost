@@ -8,9 +8,10 @@ import (
 	"math"
 )
 
-func (m *MerkleTree) Build(data [][]byte) error {
+func (m *MerkleTree) Build(data [][]byte) {
 	if len(data) == 0 {
-		return errors.New("data length equals zero")
+		m.HashList[0] = nil
+		return
 	}
 	n := int32(math.Exp2(math.Ceil(math.Log2(float64(len(data))))))
 	m.LeafNum = n
@@ -43,14 +44,10 @@ func (m *MerkleTree) Build(data [][]byte) error {
 	for idx, datum := range data {
 		m.Hash2Idx[string(datum)] = int32(idx) + n - 1
 	}
-	return nil
 }
 
-func (m *MerkleTree) RootHash() ([]byte, error) {
-	if m.LeafNum == 0 {
-		return nil, errors.New("merkletree hasn't built")
-	}
-	return m.HashList[0], nil
+func (m *MerkleTree) RootHash() []byte {
+	return m.HashList[0]
 }
 
 func (m *MerkleTree) MerklePath(hash []byte) ([][]byte, error) {
