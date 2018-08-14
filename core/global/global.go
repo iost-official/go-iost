@@ -32,14 +32,12 @@ const (
 )
 
 type BaseVariableImpl struct {
-	txDB tx.TxDB
-
-	stateDB    *db.MVCCDB
 	blockChain block.Chain
+	stateDB    *db.MVCCDB
+	txDB       tx.TxDB
 
+	mode   *Mode
 	config *common.Config
-
-	mode *Mode
 }
 
 func New(conf *common.Config) (*BaseVariableImpl, error) {
@@ -51,7 +49,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	blk, err := blockChain.Top()
 	if err != nil {
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-		blk = block.GenGenesis(t / 3)
+		blk = block.GenGenesis(common.GetTimestamp(t.Unix()).Slot)
 	}
 
 	//TODO: INIT FROM A EXISTING MVCCDB
