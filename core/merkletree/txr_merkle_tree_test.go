@@ -23,10 +23,7 @@ func TestTXRMerkleTree(t *testing.T) {
 			{TxHash:[]byte("node4")},
 			{TxHash:[]byte("node5")},
 		}
-		err := m.Build(txrs)
-		if err != nil {
-			log.Panic(err)
-		}
+		m.Build(txrs)
 		convey.So(hex.EncodeToString(m.TX2TXR["node1"]), convey.ShouldEqual, "0a056e6f6465311a00")
 		txr, err := m.GetTXR([]byte("node1"))
 		if err != nil {
@@ -60,9 +57,6 @@ func BenchmarkTXRMerkleTree_Build(b *testing.B) { // 2439313ns = 2.4ms
 	m := TXRMerkleTree{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := m.Build(txrs)
-		if err != nil {
-			log.Panic(err)
-		}
+		m.Build(txrs)
 	}
 }
