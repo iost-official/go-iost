@@ -47,8 +47,7 @@ func (tdb *TxDBImpl) Push(txs []*Tx) error {
 		hash := tx.Hash()
 		btch.Put(append(txPrefix, hash...), tx.Encode())
 	}
-	btch.Commit()
-	return nil
+	return btch.Commit()
 }
 
 //Get tx from db
