@@ -5,6 +5,8 @@
 
 # IOSBlockchain - A Secure & Scalable Blockchain for Smart Services
 
+[![Build Status](https://travis-ci.org/iost-official/Go-IOS-Protocol.svg?branch=develop)](https://travis-ci.org/iost-official/Go-IOS-Protocol)
+
 The Internet of Services (IOS) offers a secure & scalable infrastructure for online service providers. Its high TPS, scalable and secure blockchain, and privacy protection scales social and economic cooperation to a new level. For more information about IOS Blockchain, please refer to our [whitepaper](https://github.com/iost-official/Documents)
 
 The source codes released in this repo represent part of our early alpha-quality codes, with the purpose to demonstrate our development progress. Currently, there are still parts of our project have been intensively working on in private repos. We will gradually release our code.
