@@ -232,4 +232,65 @@ func TestEngine_Storage(t *testing.T) {
 }
 
 func TestEngine_DataType(t *testing.T) {
+	e, host, code := MyInit(t, "datatype")
+
+	rs, _,err := e.LoadAndCall(host, code, "number", 1)
+	if err != nil {
+		t.Fatalf("LoadAndCall number run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "0.5555555555" {
+		t.Errorf("LoadAndCall except 0.5555555555, got %s\n", rs[0])
+	}
+
+	rs, _,err = e.LoadAndCall(host, code, "number_big", 1)
+	if err != nil {
+		t.Fatalf("LoadAndCall number_big run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "0.5555555555" {
+		t.Errorf("LoadAndCall except 0.5555555555, got %s\n", rs[0])
+	}
+
+	rs, _,err = e.LoadAndCall(host, code, "number_op")
+	if err != nil {
+		t.Fatalf("LoadAndCall number_op run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "3" {
+		t.Errorf("LoadAndCall except 3, got %s\n", rs[0])
+	}
+
+	rs, _,err = e.LoadAndCall(host, code, "number_op2")
+	if err != nil {
+		t.Fatalf("LoadAndCall number_op2 run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "2" {
+		t.Errorf("LoadAndCall except 3, got %s\n", rs[0])
+	}
+
+	rs, _,err = e.LoadAndCall(host, code, "param", 2)
+	if err != nil {
+		t.Fatalf("LoadAndCall param run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "4" {
+		t.Errorf("LoadAndCall except 4, got %s %s\n", rs[0])
+	}
+
+	rs, _,err = e.LoadAndCall(host, code, "param2")
+	if err != nil {
+		t.Fatalf("LoadAndCall param run error: %v\n", err)
+	}
+	// todo get return string undefined
+	if len(rs) != 1 || rs[0].(string) != "undefined" {
+		t.Errorf("LoadAndCall except undefined, got %s\n", rs[0])
+	}
+
+	rs, _,err = e.LoadAndCall(host, code, "bool")
+	if err != nil {
+		t.Fatalf("LoadAndCall bool run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "true" {
+		t.Errorf("LoadAndCall except undefined, got %s\n", rs[0])
+	}
+}
+
+func TestEngine_Loop(t *testing.T) {
 }
