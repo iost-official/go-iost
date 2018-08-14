@@ -76,37 +76,38 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 			tx := genTx(accountList[0], expiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			txPool.AddTx(tx)
-			//r := txPool.AddTx(tx)
-			//So(r, ShouldEqual, Success)
-			//So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+			r := txPool.AddTx(tx)
+			So(r, ShouldEqual, Success)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+			r = txPool.AddTx(tx)
+			So(r, ShouldEqual, DupError)
+		})
+		Convey("txTimeOut", func() {
+
+			tx := genTx(accountList[0], expiration)
+			b := txPool.txTimeOut(tx)
+			So(b, ShouldBeFalse)
+
+			tx.Time -= int64(expiration*1e9 + 1*1e9)
+			b = txPool.txTimeOut(tx)
+			So(b, ShouldBeTrue)
+
+			tx = genTx(accountList[0], expiration)
+
+			tx.Expiration -= int64(expiration * 1e9 * 3)
+			b = txPool.txTimeOut(tx)
+			So(b, ShouldBeTrue)
+
 		})
 
-		//Convey("txTimeOut", func() {
-		//
-		//	tx := genTx(accountList[0], expiration)
-		//	b := txPool.txTimeOut(tx)
-		//	So(b, ShouldBeFalse)
-		//
-		//	tx.Time -= int64(expiration*1e9 + 1*1e9)
-		//	b = txPool.txTimeOut(tx)
-		//	So(b, ShouldBeTrue)
-		//
-		//	tx = genTx(accountList[0], expiration)
-		//
-		//	tx.Expiration -= int64(expiration * 1e9 * 3)
-		//	b = txPool.txTimeOut(tx)
-		//	So(b, ShouldBeTrue)
-		//
-		//})
-		//
 		//Convey("delTimeOutTx", func() {
 		//
 		//	tx := genTx(accountList[0], expiration)
 		//	So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 		//
-		//	tx.Time -= int64(expiration*1e9 + 1*1e9)
-		//	txPool.AddTx(tx)
+		//	tx.Time -= int64((expiration) * 1e9)
+		//	r := txPool.AddTx(tx)
+		//	So(r, ShouldEqual, Success)
 		//	So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 		//
 		//	txPool.clearTimeOutTx()
