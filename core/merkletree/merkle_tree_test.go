@@ -24,14 +24,11 @@ func TestMerkleTree(t *testing.T) {
 			[]byte("node5"),
 		}
 		m := MerkleTree{}
-		err := m.Build(data)
-		if err != nil {
-			log.Panic(err)
-		}
+		m.Build(data)
 		So(hex.EncodeToString(m.HashList[0]), ShouldEqual, "0f8a9f1e9450978a41ff06e77df3de64866b55261ed20651c90eb6cb462b1409")
 		So(hex.EncodeToString(m.HashList[1]), ShouldEqual, "e5e1a9ed8c02ed449057a4c17618127fa8e0a1e1c19fa15a371810371ac7530b")
 		So(hex.EncodeToString(m.HashList[2]), ShouldEqual, "de333248f6058db0367c9dc3e4731ea37324d4bfbbeee22ffd3d5a4e0c28330a")
-		rootHash, err := m.RootHash()
+		rootHash := m.RootHash()
 		So(hex.EncodeToString(rootHash), ShouldEqual, "0f8a9f1e9450978a41ff06e77df3de64866b55261ed20651c90eb6cb462b1409")
 		mp, err := m.MerklePath([]byte("node5"))
 		if err != nil {
@@ -68,10 +65,7 @@ func BenchmarkBuild(b *testing.B) { // 646503ns = 0.6ms，vs 117729ns = 0.1ms
 	m := MerkleTree{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := m.Build(data)
-		if err != nil {
-			log.Panic(err)
-		}
+		m.Build(data)
 	}
 }
 
@@ -82,10 +76,7 @@ func BenchmarkMerklePath(b *testing.B) { // 183ns
 		data = append(data, common.RandHash(32))
 	}
 	m := MerkleTree{}
-	err := m.Build(data)
-	if err != nil {
-		log.Panic(err)
-	}
+	m.Build(data)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		datum := data[rand.Intn(1000)]
