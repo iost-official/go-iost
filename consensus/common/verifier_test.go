@@ -13,21 +13,21 @@ func TestVerifyBlockHead(t *testing.T) {
 		parentBlk := &block.Block{
 			Head: block.BlockHead{
 				Number: 3,
-				Time:   GetCurrentTimestamp().Slot - 1,
+				Time:   common.GetCurrentTimestamp().Slot - 1,
 			},
 		}
 		chainTop := &block.Block{
 			Head: block.BlockHead{
 				Number: 1,
-				Time:   GetCurrentTimestamp().Slot - 4,
+				Time:   common.GetCurrentTimestamp().Slot - 4,
 			},
 		}
-		hash, _ := parentBlk.HeadHash()
+		hash := parentBlk.HeadHash()
 		blk := &block.Block{
 			Head: block.BlockHead{
 				ParentHash: hash,
 				Number:     4,
-				Time:       GetCurrentTimestamp().Slot,
+				Time:       common.GetCurrentTimestamp().Slot,
 				TxsHash:    common.Sha256([]byte{}),
 				MerkleHash: []byte{},
 			},
@@ -38,10 +38,10 @@ func TestVerifyBlockHead(t *testing.T) {
 		})
 
 		Convey("Wrong time", func() {
-			blk.Head.Time = GetCurrentTimestamp().Slot - 5
+			blk.Head.Time = common.GetCurrentTimestamp().Slot - 5
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
 			So(err, ShouldEqual, ErrOldBlk)
-			blk.Head.Time = GetCurrentTimestamp().Slot + 2
+			blk.Head.Time = common.GetCurrentTimestamp().Slot + 2
 			err = VerifyBlockHead(blk, parentBlk, chainTop)
 			So(err, ShouldEqual, ErrFutureBlk)
 		})
@@ -61,7 +61,7 @@ func TestVerifyBlockHead(t *testing.T) {
 		Convey("Wrong tx hash", func() {
 			tx0 := tx.NewTx(nil, nil, 1000, 1, 300)
 			blk.Txs = append(blk.Txs, &tx0)
-			blk.Head.TxsHash, _ = blk.CalculateTxsHash()
+			blk.Head.TxsHash = blk.CalculateTxsHash()
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
 			So(err, ShouldBeNil)
 			blk.Head.TxsHash = []byte("fake hash")
