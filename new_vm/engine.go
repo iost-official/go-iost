@@ -1,8 +1,6 @@
 package new_vm
 
 import (
-	"context"
-
 	"sync"
 
 	"encoding/json"
@@ -28,12 +26,8 @@ var (
 )
 
 const (
-	GasCheckTxFailed = uint64(100)
+	GasCheckTxFailed = int64(100)
 )
-
-type Rollbacker interface {
-	Rollback()
-}
 
 type Engine interface {
 	//Init()
@@ -57,7 +51,7 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 		})
 	}
 
-	ctx := context.Background()
+	ctx := host.NewContext(nil)
 
 	blkInfo := make(map[string]string)
 
@@ -71,12 +65,12 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 		panic(err)
 	}
 
-	ctx = context.WithValue(ctx, "block_info", database.SerializedJSON(bij))
-	ctx = context.WithValue(ctx, "witness", blkInfo["witness"])
+	ctx.Set("block_info", database.SerializedJSON(bij))
+	ctx.Set("witness", blkInfo["witness"])
 
 	db := database.NewVisitor(defaultCacheLength, cb)
-	host := host.NewHost(ctx, db, staticMonitor)
-	return &EngineImpl{host: host}
+	h := host.NewHost(ctx, db, staticMonitor)
+	return &EngineImpl{host: h}
 }
 func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	err := checkTx(tx0)
@@ -98,68 +92,52 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 	authList[account.GetIdByPubkey(tx0.Publisher.Pubkey)] = 2
 
-	ptxr := tx.NewTxReceipt(tx0.Hash())
+	e.host.Ctx = host.NewContext(e.host.Ctx)
+	defer func() {
+		e.host.Ctx = e.host.Ctx.Base()
+	}()
 
-	e.host.Ctx = context.WithValue(e.host.Ctx, "tx_info", database.SerializedJSON(txInfo))
-	e.host.Ctx = context.WithValue(e.host.Ctx, "auth_list", authList)
-	e.host.Ctx = context.WithValue(e.host.Ctx, "gas_price", int64(tx0.GasPrice))
-	e.host.Ctx = context.WithValue(e.host.Ctx, "tx_receipt", &ptxr)
+	e.host.Ctx.Set("tx_info", database.SerializedJSON(txInfo))
+	e.host.Ctx.Set("auth_list", authList)
+	e.host.Ctx.Set("gas_price", int64(tx0.GasPrice))
+
+	e.host.Ctx.GSet("gas_limit", tx0.GasLimit)
+	e.host.Ctx.GSet("receipts", make([]tx.Receipt, 0))
+
+	txr := tx.NewTxReceipt(tx0.Hash())
 
 	for _, action := range tx0.Actions {
 
-		e.host.Ctx = context.WithValue(e.host.Ctx, "stack0", "direct_call")
-		e.host.Ctx = context.WithValue(e.host.Ctx, "stack_height", 1) // record stack trace
-
-		e.host.Ctx = context.WithValue(e.host.Ctx, "gas_limit", tx0.GasLimit)
-
-		c := e.host.DB.Contract(action.Contract)
-
-		if c.Info == nil {
-
-			ptxr.GasUsage += GasCheckTxFailed
-			ptxr.Status = tx.Status{
-				Code:    tx.ErrorParamter,
-				Message: ErrContractNotFound.Error() + action.Contract,
-			}
-
-			return &ptxr, nil
-		}
-
-		abi := c.ABI(action.ActionName)
-
-		if abi == nil {
-			ptxr.GasUsage += GasCheckTxFailed
-			ptxr.Status = tx.Status{
-				Code:    tx.ErrorParamter,
-				Message: ErrABINotFound.Error() + action.Contract,
-			}
-			return &ptxr, nil
-		}
-
-		args, err := unmarshalArgs(abi, action.Data)
+		cost, status, receipts, err := e.runAction(action)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
-		_, cost, err := staticMonitor.Call(e.host, action.Contract, action.ActionName, args...)
-		if err != nil {
-			ptxr.Status = tx.Status{
-				Code:    tx.ErrorRuntime,
-				Message: err.Error(),
-			}
-			return &ptxr, nil
+		if cost == nil {
+			panic("cost is nil")
 		}
 
-		e.host.Ctx = context.WithValue(e.host.Ctx, "gas_limit", tx0.GasLimit-uint64(cost.ToGas()))
+		txr.Status = status
+		txr.GasUsage += uint64(cost.ToGas())
+
+		if status.Code != tx.Success {
+			txr.Receipts = nil
+			e.host.DB.Rollback()
+			break
+		}
+
+		txr.Receipts = append(txr.Receipts, receipts...)
+		txr.SuccActionNum++
+
+		e.host.Ctx.GSet("gas_limit", tx0.GasLimit-uint64(cost.ToGas()))
 
 		e.host.PayCost(cost, account.GetIdByPubkey(tx0.Publisher.Pubkey))
 	}
 
-	txr := e.host.Ctx.Value("tx_receipt").(*tx.TxReceipt)
-
 	e.host.DoPay(e.host.Ctx.Value("witness").(string), int64(tx0.GasPrice))
+	e.host.DB.Commit()
 
-	return txr, nil
+	return &txr, nil
 }
 func (e *EngineImpl) GC() {
 
@@ -224,7 +202,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,
-		GasUsage: GasCheckTxFailed,
+		GasUsage: uint64(GasCheckTxFailed),
 		Status: tx.Status{
 			Code:    code,
 			Message: message,
@@ -232,4 +210,71 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 		SuccActionNum: 0,
 		Receipts:      make([]tx.Receipt, 0),
 	}
+}
+
+func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
+	receipts = make([]tx.Receipt, 0)
+	cost = contract.Cost0()
+
+	e.host.Ctx = host.NewContext(e.host.Ctx)
+	defer func() {
+		e.host.Ctx = e.host.Ctx.Base()
+	}()
+
+	e.host.Ctx.Set("stack0", "direct_call")
+	e.host.Ctx.Set("stack_height", 1) // record stack trace
+
+	c := e.host.DB.Contract(action.Contract)
+
+	if c.Info == nil {
+		cost = contract.NewCost(0, 0, GasCheckTxFailed)
+		status = tx.Status{
+			Code:    tx.ErrorParamter,
+			Message: ErrContractNotFound.Error() + action.Contract,
+		}
+
+		return
+	}
+
+	abi := c.ABI(action.ActionName)
+
+	if abi == nil {
+		cost = contract.NewCost(0, 0, GasCheckTxFailed)
+		status = tx.Status{
+			Code:    tx.ErrorParamter,
+			Message: ErrABINotFound.Error() + action.Contract,
+		}
+		return
+	}
+
+	args, err := unmarshalArgs(abi, action.Data)
+	if err != nil {
+		panic(err)
+	}
+
+	_, cost, err = staticMonitor.Call(e.host, action.Contract, action.ActionName, args...)
+
+	if cost == nil {
+		panic("here")
+	}
+
+	if err != nil {
+		status = tx.Status{
+			Code:    tx.ErrorRuntime,
+			Message: err.Error(),
+		}
+		receipt := tx.Receipt{
+			Type:    tx.SystemDefined,
+			Content: err.Error(),
+		}
+		receipts = append(receipts, receipt)
+
+		err = nil
+
+		return
+	}
+
+	receipts = append(receipts, e.host.Ctx.GValue("receipts").([]tx.Receipt)...)
+
+	return
 }
