@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
@@ -8,7 +9,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -16,7 +16,10 @@ import (
 )
 
 func TestNewTxPoolImpl(t *testing.T) {
+	t.SkipNow()
 	Convey("test NewTxPoolServer", t, func() {
+		//ctl := gomock.NewController(t)
+
 		var accountList []account.Account
 		var witnessList []string
 
@@ -45,6 +48,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		}
 
 		node, err := p2p.NewNetService(config)
+		So(err, ShouldBeNil)
 
 		log.NewLogger("iost")
 
@@ -52,6 +56,13 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		gl, err := global.New(conf)
 		So(err, ShouldBeNil)
+
+		blockList := genBlocks(accountList, witnessList, 1, 1, true)
+
+		gl.BlockChain().Push(blockList[0])
+		//base := core_mock.NewMockChain(ctl)
+		//base.EXPECT().Top().AnyTimes().Return(blockList[0], nil)
+		//base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
 
 		BlockCache, err := blockcache.NewBlockCache(gl)
 		So(err, ShouldBeNil)
@@ -64,18 +75,21 @@ func TestNewTxPoolImpl(t *testing.T) {
 		Convey("AddTx", func() {
 
 			tx := genTx(accountList[0], expiration)
-
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			txPool.AddTx(tx)
+			r := txPool.AddTx(tx)
+			So(r, ShouldEqual, Success)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+			r = txPool.AddTx(tx)
+			So(r, ShouldEqual, DupError)
 		})
-
 		Convey("txTimeOut", func() {
 
-			tx := genTx(accountList[0], expiration*2)
+			tx := genTx(accountList[0], expiration)
+			b := txPool.txTimeOut(tx)
+			So(b, ShouldBeFalse)
 
 			tx.Time -= int64(expiration*1e9 + 1*1e9)
-			b := txPool.txTimeOut(tx)
+			b = txPool.txTimeOut(tx)
 			So(b, ShouldBeTrue)
 
 			tx = genTx(accountList[0], expiration)
@@ -85,20 +99,21 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(b, ShouldBeTrue)
 
 		})
-		//
-		//Convey("delTimeOutTx", func() {
-		//
-		//	tx := genTx(accountList[0], 1)
-		//	So(txPool.TransactionNum(), ShouldEqual, 0)
-		//
-		//	tx.Time -= int64(expiration*1e9 + 1*1e9)
-		//	txPool.addListTx(&tx)
-		//	So(txPool.TransactionNum(), ShouldEqual, 1)
-		//
-		//	txPool.delTimeOutTx()
-		//	So(txPool.TransactionNum(), ShouldEqual, 0)
-		//
-		//})
+
+		Convey("delTimeOutTx", func() {
+
+			tx := genTx(accountList[0], expiration)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+
+			tx.Time -= int64((expiration) * 1e9)
+			r := txPool.AddTx(tx)
+			So(r, ShouldEqual, Success)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+
+			txPool.clearTimeOutTx()
+			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+
+		})
 		//
 		//Convey("concurrent", func() {
 		//	txCnt := 100
@@ -322,9 +337,25 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 	ex := time.Now().UnixNano()
 	ex += expirationIter * 1e9
 
-	tx := tx.NewTx(actions, [][]byte{a.Pubkey}, 100000, 100, ex)
+	t := tx.NewTx(actions, [][]byte{a.Pubkey}, 100000, 100, ex)
 
-	return &tx
+	sig1, err := tx.SignTxContent(t, a)
+	if err != nil {
+		fmt.Println("failed to SignTxContent")
+	}
+
+	t.Signs = append(t.Signs, sig1)
+
+	t1, err := tx.SignTx(t, a)
+	if err != nil {
+		fmt.Println("failed to SignTx")
+	}
+
+	if err := t1.VerifySelf(); err != nil {
+		fmt.Println("failed to t.VerifySelf(), err", err)
+	}
+
+	return &t1
 }
 
 func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
@@ -335,9 +366,9 @@ func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
 	return broadTx
 }
 
-func genBlocks(p blockcache.BlockCache, accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
+func genBlocks(accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
-	slot := consensus_common.GetCurrentTimestamp().Slot
+	slot := common.GetCurrentTimestamp().Slot
 
 	for i := 0; i < blockCnt; i++ {
 		var hash []byte

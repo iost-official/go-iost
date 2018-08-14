@@ -14,9 +14,9 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 func init() {
@@ -218,15 +218,19 @@ func (pool *TxPoolImpl) initBlockTx() {
 }
 
 func (pool *TxPoolImpl) slotToSec(t int64) int64 {
-	slot := consensus_common.Timestamp{Slot: t}
+	slot := common.Timestamp{Slot: t}
 	return slot.ToUnixSec()
 }
 
 func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 
+	if linkedBlock == nil {
+		return errors.New("failed to linkedBlock")
+	}
+
 	h := linkedBlock.HeadHash()
 
-	if _, ok := pool.blockList.Load(h); ok {
+	if _, ok := pool.blockList.Load(string(h)); ok {
 		return nil
 	}
 
@@ -235,7 +239,7 @@ func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 	b.setTime(pool.slotToSec(linkedBlock.Head.Time))
 	b.addBlock(linkedBlock)
 
-	pool.blockList.Store(h, b)
+	pool.blockList.Store(string(h), b)
 
 	return nil
 }
@@ -252,7 +256,7 @@ func (pool *TxPoolImpl) parentHash(hash []byte) ([]byte, bool) {
 
 func (pool *TxPoolImpl) block(hash []byte) (*blockTx, bool) {
 
-	if v, ok := pool.blockList.Load(hash); ok {
+	if v, ok := pool.blockList.Load(string(hash)); ok {
 		return v.(*blockTx), true
 	}
 
@@ -260,6 +264,10 @@ func (pool *TxPoolImpl) block(hash []byte) (*blockTx, bool) {
 }
 
 func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
+
+	if block == nil {
+		return false
+	}
 
 	h := block.HeadHash()
 
@@ -290,7 +298,7 @@ func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 
 func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 
-	b, ok := pool.blockList.Load(blockHash)
+	b, ok := pool.blockList.Load(string(blockHash))
 	if !ok {
 		return false
 	}
@@ -326,10 +334,16 @@ func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
 
 	h := tx.Hash()
 
-	if pool.existTxInChain(h, pool.forkChain.NewHead.Block) || pool.existTxInPending(h) {
+	if pool.forkChain.NewHead != nil {
+		if pool.existTxInChain(h, pool.forkChain.NewHead.Block) {
+			return DupError
+		}
+	}
+
+	if pool.existTxInPending(h) {
 		return DupError
 	} else {
-		pool.pendingTx.Store(h, tx)
+		pool.pendingTx.Store(string(h), tx)
 	}
 
 	return Success
@@ -337,7 +351,7 @@ func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
 
 func (pool *TxPoolImpl) existTxInPending(hash []byte) bool {
 
-	_, ok := pool.pendingTx.Load(hash)
+	_, ok := pool.pendingTx.Load(string(hash))
 
 	return ok
 }

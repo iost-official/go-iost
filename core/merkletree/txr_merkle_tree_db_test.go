@@ -21,12 +21,9 @@ func TestTXRMerkleTreeDB(t *testing.T) {
 			{TxHash:[]byte("node4")},
 			{TxHash:[]byte("node5")},
 		}
-		err := m.Build(txrs)
-		if err != nil {
-			log.Panic(err)
-		}
+		m.Build(txrs)
 		Init("./")
-		err = TXRMTDB.Put(&m, 32342)
+		err := TXRMTDB.Put(&m, 32342)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -50,10 +47,8 @@ func BenchmarkTXRMerkleTreeDB(b *testing.B) { //Put: 1544788ns = 1.5ms, Get: 621
 		txrs = append(txrs, &tx.TxReceipt{TxHash:[]byte("node1")})
 	}
 	m := TXRMerkleTree{}
-	err := m.Build(txrs)
-	if err != nil {
-		log.Panic(err)
-	}
+	m.Build(txrs)
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		TXRMTDB.Put(&m, 33)

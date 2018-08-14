@@ -3,8 +3,8 @@ go:
   - "1.10"
 
 install:
-  - go get -t ./...
+  - echo "Skip install"
 
 script:
   - make
-
+  - go test $(go list ./... | grep -vE "/new_vm|/consensus/common|/core/new_blockcache")
