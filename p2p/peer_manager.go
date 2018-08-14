@@ -18,6 +18,8 @@ import (
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/uber-go/atomic"
+
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
 var (
@@ -27,11 +29,18 @@ var (
 
 const (
 	maxNeighborCount  = 32 // TODO: configurable
+	bucketSize        = 20
 	peerResponseCount = 20
 
 	incomingMsgChanSize = 1024
 )
 
+// PeerManager manages all peers we connect directily.
+//
+// PeerManager's jobs are:
+//   * holding a certain amount of peers.
+//   * handling messages according to its type.
+//   * discovering peers and maintaing routing table.
 type PeerManager struct {
 	neighbors     map[peer.ID]*Peer
 	neighborCount int
@@ -49,8 +58,9 @@ type PeerManager struct {
 	lastUpdateTime  atomic.Int64
 }
 
+// NewPeerManager returns a new instance of PeerManager struct.
 func NewPeerManager(host host.Host) *PeerManager {
-	routingTable := kbucket.NewRoutingTable(20, kbucket.ConvertPeerID(host.ID()), time.Second, host.Peerstore())
+	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), time.Second, host.Peerstore())
 	return &PeerManager{
 		neighbors:    make(map[peer.ID]*Peer),
 		subs:         new(sync.Map),
@@ -60,6 +70,7 @@ func NewPeerManager(host host.Host) *PeerManager {
 	}
 }
 
+// Start starts peer manager's job.
 func (pm *PeerManager) Start() {
 	pm.parseSeeds()
 	pm.LoadRoutingTable()
@@ -70,10 +81,17 @@ func (pm *PeerManager) Start() {
 
 }
 
+// Stop stops peer manager's loop.
 func (pm *PeerManager) Stop() {
 	close(pm.quitCh)
 }
 
+// HandleStream handles the incoming stream.
+//
+// It checks whether the remote peer already exists.
+// If the peer is new and the neighbor count doesn't reach the threshold, it adds the peer into the neighbor list.
+// If peer already exits, just add the stream to the peer.
+// In other cases, reset the stream.
 func (pm *PeerManager) HandleStream(s libnet.Stream) {
 	remotePID := s.Conn().RemotePeer()
 	peer := pm.GetNeighbor(remotePID)
@@ -104,8 +122,8 @@ func (pm *PeerManager) dumpRoutingTableLoop() {
 			if lastSaveTime < pm.lastUpdateTime.Load() {
 				pm.DumpRoutingTable()
 				lastSaveTime = time.Now().Unix()
-				dumpRoutingTableTicker.Reset(dumpRoutingTableInterval)
 			}
+			dumpRoutingTableTicker.Reset(dumpRoutingTableInterval)
 		}
 	}
 }
@@ -123,18 +141,23 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 	}
 }
 
+// storePeer stores peer information in peerStore and routingTable. It doesn't need lock since the
+// peerStore.SetAddr and routingTable.Update function are thread safe.
 func (pm *PeerManager) storePeer(peerID peer.ID, addr multiaddr.Multiaddr) {
 	pm.peerStore.SetAddr(peerID, addr, peerstore.PermanentAddrTTL)
 	pm.routingTable.Update(peerID)
 	pm.lastUpdateTime.Store(time.Now().Unix())
 }
 
+// deletePeer deletes peer information in peerStore and routingTable. It doesn't need lock since the
+// peerStore.SetAddr and routingTable.Update function are thread safe.
 func (pm *PeerManager) deletePeer(peerID peer.ID) {
 	pm.peerStore.ClearAddrs(peerID)
 	pm.routingTable.Remove(peerID)
 	pm.lastUpdateTime.Store(time.Now().Unix())
 }
 
+// AddNeighbor starts a peer and adds it to the neighbor list.
 func (pm *PeerManager) AddNeighbor(p *Peer) {
 	p.Start()
 	pm.storePeer(p.id, p.addr)
@@ -145,6 +168,7 @@ func (pm *PeerManager) AddNeighbor(p *Peer) {
 	pm.neighbors[p.id] = p
 }
 
+// RemoveNeighbor stops a peer and removes it from the neighbor list.
 func (pm *PeerManager) RemoveNeighbor(peerID peer.ID) {
 	pm.deletePeer(peerID)
 
@@ -157,6 +181,7 @@ func (pm *PeerManager) RemoveNeighbor(peerID peer.ID) {
 	}
 }
 
+// GetNeighbor returns the peer of the given peerID from the neighbor list.
 func (pm *PeerManager) GetNeighbor(peerID peer.ID) *Peer {
 	pm.neighborMutex.RLock()
 	defer pm.neighborMutex.RUnlock()
@@ -164,6 +189,7 @@ func (pm *PeerManager) GetNeighbor(peerID peer.ID) *Peer {
 	return pm.neighbors[peerID]
 }
 
+// NeighborCount returns the neighbor amount.
 func (pm *PeerManager) NeighborCount() int {
 	pm.neighborMutex.RLock()
 	defer pm.neighborMutex.RUnlock()
@@ -171,10 +197,11 @@ func (pm *PeerManager) NeighborCount() int {
 	return len(pm.neighbors)
 }
 
+// DumpRoutingTable saves routing table in file.
 func (pm *PeerManager) DumpRoutingTable() {
 	file, err := os.Create(pm.routingFilePath)
 	if err != nil {
-		// log
+		ilog.Error("create routing file failed. err=%v, path=%v", err, pm.routingFilePath)
 		return
 	}
 	defer file.Close()
@@ -187,10 +214,11 @@ func (pm *PeerManager) DumpRoutingTable() {
 	}
 }
 
+// LoadRoutingTable reads routing table file and parses it.
 func (pm *PeerManager) LoadRoutingTable() {
 	file, err := os.Open(pm.routingFilePath)
 	if err != nil {
-		// log
+		ilog.Error("open routing file failed. err=%v, path=%v", err, pm.routingFilePath)
 		return
 	}
 	defer file.Close()
@@ -205,12 +233,15 @@ func (pm *PeerManager) LoadRoutingTable() {
 		}
 		peerID, addr, err := parseMultiaddr(line)
 		if err != nil {
+			ilog.Warn("parse multi addr failed. err=%v, line=%v", err, line)
 			continue
 		}
 		pm.storePeer(peerID, addr)
 	}
 }
 
+// syncRoutingTable broadcasts a routing table message. If the neighbor count is less than the threshold,
+// it will pick the rest amount of peers from the routing table and sends query to them.
 func (pm *PeerManager) syncRoutingTable() {
 	pm.Broadcast(nil, RoutingTableQuery, UrgentMessage)
 	neighborCount := pm.NeighborCount()
@@ -316,9 +347,11 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 	}
 }
 
+// HandleMessage handles messages according to its type.
 func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 	data, err := msg.data()
 	if err != nil {
+		ilog.Error("get message data failed. err=%v", err)
 		return
 	}
 	switch msg.messageType() {
@@ -333,7 +366,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 				select {
 				case v.(chan IncomingMessage) <- *inMsg:
 				default:
-					// log
+					ilog.Error("send incoming message failed. message_type=%v", msg.messageType())
 				}
 				return true
 			})
