@@ -1,1 +1,0 @@
-webpack test.ts --output bundle.js

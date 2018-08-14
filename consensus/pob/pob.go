@@ -1,31 +1,23 @@
 package pob
 
 import (
-	"encoding/binary"
-
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/network"
-
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
-
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/verifier"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
-	"math/rand"
-	)
+)
 
 var (
 	generatedBlockCount = prometheus.NewCounter(
@@ -48,7 +40,7 @@ var (
 	)
 	txPoolSize = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "tx_pool_size",
+			Name: "tx_poo_size",
 			Help: "size of tx pool on current node",
 		},
 	)
@@ -61,276 +53,219 @@ func init() {
 	prometheus.MustRegister(txPoolSize)
 }
 
-var TxPerBlk int
-
 type PoB struct {
 	account      account.Account
+	baseVariable global.BaseVariable
+	blockChain   block.Chain
 	blockCache   blockcache.BlockCache
-	router       network.Router
+	txPool       txpool.TxPool
+	p2pService   p2p.Service
 	synchronizer consensus_common.Synchronizer
-	globalStaticProperty
-	globalDynamicProperty
+	verifyDB     *db.MVCCDB
+	produceDB    *db.MVCCDB
 
-	exitSignal chan struct{}
-	chBlock    chan message.Message
-
-	log *log.Logger
+	exitSignal  chan struct{}
+	chRecvBlock chan message.Message
+	chGenBlock  chan *block.Block
 }
 
-func NewPoB(acc account.Account, bc block.Chain, pool state.Pool, witnessList []string) (*PoB, error) {
-	TxPerBlk = 800
+func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer consensus_common.Synchronizer, witnessList []string) (*PoB, error) {
+	//TODO: change initialization based on new interfaces
 	p := PoB{
-		account: acc,
+		account:      account,
+		baseVariable: baseVariable,
+		blockCache:   blockCache,
+		blockChain:   baseVariable.BlockChain(),
+		verifyDB:     baseVariable.StateDB(),
+		txPool:       txPool,
+		p2pService:   p2pService,
+		synchronizer: synchronizer,
+		chGenBlock:   make(chan *block.Block, 10),
 	}
 
-	p.blockCache = blockcache.NewBlockCache(bc, pool, len(witnessList)*2/3)
-	if bc.GetBlockByNumber(0) == nil {
-		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-		err := p.genesis(consensus_common.GetTimestamp(t.Unix()).Slot)
-		if err != nil {
-			return nil, fmt.Errorf("failed to genesis is nil")
-		}
-	}
+	p.produceDB = p.verifyDB.Fork()
 
 	var err error
-	p.router = network.Route
-	if p.router == nil {
-		return nil, fmt.Errorf("failed to network.Route is nil")
-	}
-
-	p.synchronizer, err = consensus_common.NewSynchronizer(p.blockCache, p.router, len(witnessList)*2/3)
-
-	p.chBlock, err = p.router.FilteredChan(network.Filter{
-		AcceptType: []network.ReqType{network.ReqNewBlock, network.ReqSyncBlock}})
+	//p.chRecvBlock, err = p.p2pService.Register("consensus chan", p2p.NewBlockResponse, p2p.SyncBlockResponse)
 	if err != nil {
 		return nil, err
 	}
 	p.exitSignal = make(chan struct{})
-
-	p.log, err = log.NewLogger("consensus.log")
-	if err != nil {
-		return nil, err
-	}
-
-	p.log.NeedPrint = false
-
 	p.initGlobalProperty(p.account, witnessList)
-
-	p.update(&bc.Top().Head)
+	blk, err := p.blockChain.Top()
+	if err != nil {
+		fmt.Println("Unable to initialize block chain top")
+	}
+	dynamicProperty.update(&blk.Head)
 	return &p, nil
 }
 
 func (p *PoB) initGlobalProperty(acc account.Account, witnessList []string) {
-	p.globalStaticProperty = newGlobalStaticProperty(acc, witnessList)
-	p.globalDynamicProperty = newGlobalDynamicProperty()
+	staticProperty = newGlobalStaticProperty(acc, witnessList)
+	dynamicProperty = newGlobalDynamicProperty()
 }
 
 func (p *PoB) Run() {
-	p.synchronizer.StartListen()
+	p.synchronizer.Start()
 	go p.blockLoop()
 	go p.scheduleLoop()
 }
 
 func (p *PoB) Stop() {
-	close(p.chBlock)
+	p.synchronizer.Stop()
+	close(p.chRecvBlock)
+	close(p.chGenBlock)
 	close(p.exitSignal)
 }
 
-func (p *PoB) BlockCache() blockcache.BlockCache {
-	return p.blockCache
-}
-
-func (p *PoB) BlockChain() block.Chain {
-	return p.blockCache.BlockChain()
-}
-
-func (p *PoB) CachedBlockChain() block.Chain {
-	return p.blockCache.LongestChain()
-}
-
-func (p *PoB) StatePool() state.Pool {
-	return p.blockCache.BasePool()
-}
-
-func (p *PoB) CachedStatePool() state.Pool {
-	return p.blockCache.LongestPool()
-}
-
-func (p *PoB) genesis(initTime int64) error {
-
-	main := lua.NewMethod(vm.Public, "", 0, 0)
-
-	var code string
-	for k, v := range account.GenesisAccount {
-		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
+func (p *PoB) handleRecvBlock(blk *block.Block) error {
+	hash := blk.HeadHash()
+	_, err := p.blockCache.Find(hash)
+	if err == nil {
+		return errors.New("duplicate block")
 	}
-
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "", GasLimit: 0, Price: 0, Publisher: ""}, code, main)
-
-	tmp_tx := tx.Tx{
-		Time:     0,
-		Nonce:    0,
-		Contract: &lc,
+	err = verifyBasics(blk)
+	if err != nil {
+		return errors.New("fail to verifyBasics")
 	}
-
-	genesis := &block.Block{
-		Head: block.BlockHead{
-			Version: 0,
-			Number:  0,
-			Time:    initTime,
-		},
-		Content: make([]tx.Tx, 0),
+	parent, err := p.blockCache.Find(blk.Head.ParentHash)
+	if err == nil && parent.Type == blockcache.Linked {
+		var node *blockcache.BlockCacheNode
+		node, err = p.addBlock(blk, node, parent, true)
+		if err != nil {
+			// dishonest?
+			return errors.New("fail to addBlock")
+		}
+		p.addSingles(node)
+	} else {
+		p.blockCache.Add(blk)
 	}
-	genesis.Content = append(genesis.Content, tmp_tx)
-	stp, err := verifier.ParseGenesis(tmp_tx.Contract, p.StatePool())
-	err = p.blockCache.SetBasePool(stp)
-	err = p.blockCache.AddGenesis(genesis)
-	return err
+	return nil
 }
 
 func (p *PoB) blockLoop() {
 	for {
 		select {
-		case req, _ := <-p.chBlock:
+		case req, ok := <-p.chRecvBlock:
+			if !ok {
+				fmt.Println("chRecvBlock has closed")
+				return
+			}
 			var blk block.Block
-			blk.Decode(req.Body)
-			localLength := p.blockCache.ConfirmedLength()
-			if blk.Head.Number > int64(localLength)+consensus_common.MaxAcceptableLength {
-				if req.ReqType == int32(network.ReqNewBlock){
-					go p.synchronizer.SyncBlocks(localLength, localLength+uint64(consensus_common.MaxAcceptableLength))
-				}
+			err := blk.Decode(req.GetBody())
+			if err != nil {
+				fmt.Println(err)
 				continue
 			}
-			err := p.blockCache.Add(&blk, p.blockVerify)
-			if err == nil {
-				p.log.I("Link it onto cached chain")
-				p.blockCache.SendOnBlock(&blk)
-				receivedBlockCount.Inc()
-			} else {
-				p.log.I("Error: %v", err)
+			err = p.handleRecvBlock(&blk)
+			if err != nil {
+				fmt.Println(err)
+				continue
 			}
-			if err != blockcache.ErrBlock && err != blockcache.ErrTooOld {
-				go p.synchronizer.BlockConfirmed(blk.Head.Number)
-				if err == nil {
-					p.globalDynamicProperty.update(&blk.Head)
-				} else if err == blockcache.ErrNotFound && req.ReqType == int32(network.ReqNewBlock) {
-					// New block is a single block
-					need, start, end := p.synchronizer.NeedSync(uint64(blk.Head.Number))
-					if need {
-						go p.synchronizer.SyncBlocks(start, end)
-					}
-				}
+			if req.GetReqType() == int32(p2p.SyncBlockResponse) {
+				//go p.synchronizer.OnRecvBlock(blk.HeadHash(), req.From())
 			}
+		case blk, ok := <-p.chGenBlock:
+			if !ok {
+				fmt.Println("chGenBlock has closed")
+				return
+			}
+			p.handleRecvBlock(blk)
 		case <-p.exitSignal:
+			fmt.Println("exitSignal")
 			return
 		}
 	}
 }
 
 func (p *PoB) scheduleLoop() {
-	var nextSchedule int64
-	nextSchedule = 0
+	var nextSchedule int64 = 0
 	for {
 		select {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
-			currentTimestamp := consensus_common.GetCurrentTimestamp()
-			wid := witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, currentTimestamp)
-			if wid == p.account.ID {
-				bc := p.blockCache.LongestChain()
-				pool := p.blockCache.LongestPool()
-				blk := p.genBlock(p.account, bc, pool)
-				p.globalDynamicProperty.update(&blk.Head)
-				bb := blk.Encode()
-				msg := message.Message{ReqType: int32(network.ReqNewBlock), Body: bb}
-				go p.router.Broadcast(msg)
-				p.chBlock <- msg
-				p.log.I("Broadcasted block, current timestamp: %v number: %v", currentTimestamp, blk.Head.Number)
+			currentTimestamp := common.GetCurrentTimestamp()
+			wid := witnessOfTime(currentTimestamp)
+			if wid == p.account.ID && p.baseVariable.Mode().Mode() == global.ModeNormal {
+				chainHead := p.blockCache.Head()
+				hash := chainHead.Block.HeadHash()
+				p.produceDB.Checkout(string(hash))
+				blk := genBlock(p.account, chainHead, p.txPool, p.produceDB)
+				dynamicProperty.update(&blk.Head)
+				blkByte, err := blk.Encode()
+				if err != nil {
+					fmt.Println(err)
+				}
+				//msg := message.Message{ReqType: int32(ReqNewBlock), Body: bb}
+				//go p.router.Broadcast(msg)
+				p.chGenBlock <- blk
+				log.Log.I("Block size: %v, TrNum: %v", len(blkByte), len(blk.Txs))
+				go p.p2pService.Broadcast(blkByte, p2p.NewBlockResponse, p2p.UrgentMessage)
 			}
-			nextSchedule = timeUntilNextSchedule(&p.globalStaticProperty, &p.globalDynamicProperty, time.Now().Unix())//当前结束到下一次造块的时间
-			}
-	}
-}
-
-func (p *PoB) genBlock(acc account.Account, bc block.Chain, pool state.Pool) *block.Block {
-	lastBlk := bc.Top()
-	blk := block.Block{Content: []tx.Tx{}, Head: block.BlockHead{
-		Version:    0,
-		ParentHash: lastBlk.HeadHash(),
-		Number:     lastBlk.Head.Number + 1,
-		Witness:    acc.ID,
-		Time:       consensus_common.GetCurrentTimestamp().Slot,
-	}}
-	spool1 := pool.Copy()
-
-	vc := vm.NewContext(vm.BaseContext())
-	vc.Timestamp = blk.Head.Time
-	vc.ParentHash = blk.Head.ParentHash
-	vc.BlockHeight = blk.Head.Number
-	vc.Witness = acc.ID
-
-	txCnt := TxPerBlk + rand.Intn(500)
-	var txList []*tx.Tx
-	if txpool.TxPoolS != nil {
-		txList = txpool.TxPoolS.PendingTransactions(txCnt)
-		txPoolSize.Set(float64(txpool.TxPoolS.TransactionNum()))
-	}
-
-	if len(txList) != 0 {
-		for _, t := range txList {
-			blockcache.StdCacheVerifier(t, spool1, vc)
-			blk.Content = append(blk.Content, *t)
+			nextSchedule = timeUntilNextSchedule(time.Now().Unix())
+		case <-p.exitSignal:
+			return
 		}
 	}
-	blk.Head.TreeHash = blk.CalculateTreeHash()
-	headInfo := generateHeadInfo(blk.Head)
-	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
-	blk.Head.Signature = sig.Encode()
-
-	blockcache.CleanStdVerifier()
-
-	generatedBlockCount.Inc()
-
-	tx.Data.ClearServi(blk.Head.Witness)
-
-	return &blk
 }
 
-func generateHeadInfo(head block.BlockHead) []byte {
-	var info, numberInfo, versionInfo []byte
-	info = make([]byte, 8)
-	versionInfo = make([]byte, 4)
-	numberInfo = make([]byte, 4)
-	binary.BigEndian.PutUint64(info, uint64(head.Time))
-	binary.BigEndian.PutUint32(versionInfo, uint32(head.Version))
-	binary.BigEndian.PutUint32(numberInfo, uint32(head.Number))
-	info = append(info, versionInfo...)
-	info = append(info, numberInfo...)
-	info = append(info, head.ParentHash...)
-	info = append(info, head.TreeHash...)
-	info = append(info, head.Info...)
-	return common.Sha256(info)
+func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) (*blockcache.BlockCacheNode, error) {
+	if blk.Head.Witness != p.account.ID {
+		hash := parent.Block.HeadHash()
+		p.verifyDB.Checkout(string(hash))
+		var verifyErr error
+		verifyErr = verifyBlock(blk, parent.Block, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
+		if newBlock {
+			if verifyErr == nil {
+				var err error
+				node, err = p.blockCache.Add(blk)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, verifyErr
+			}
+		} else {
+			if verifyErr == nil {
+				p.blockCache.Link(node)
+			} else {
+				p.blockCache.Del(node)
+				return nil, verifyErr
+			}
+		}
+		// tag in state
+		hash = blk.HeadHash()
+		p.verifyDB.Tag(string(hash))
+	} else {
+		hash := blk.HeadHash()
+		p.verifyDB.Checkout(string(hash))
+	}
+
+	// update node info without state
+	updateNodeInfo(node)
+	// update node info with state, currently pending witness list
+	updatePendingWitness(node, p.verifyDB)
+
+	// confirm
+	confirmNode := calculateConfirm(node, p.blockCache.LinkedRoot())
+	if confirmNode != nil {
+		p.blockCache.Flush(confirmNode)
+		// promote witness list
+		promoteWitness(node, confirmNode)
+	}
+
+	dynamicProperty.update(&blk.Head)
+	// -> tx pool
+	p.txPool.AddLinkedNode(node, p.blockCache.Head())
+	return node, nil
 }
 
-func (p *PoB) blockVerify(blk *block.Block, parent *block.Block, pool state.Pool) (state.Pool, error) {
-	blockcache.VerifyBlockHead(blk, parent)
-	if witnessOfTime(&p.globalStaticProperty, &p.globalDynamicProperty, consensus_common.Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
-		return nil, errors.New("wrong witness")
+func (p *PoB) addSingles(node *blockcache.BlockCacheNode) {
+	for child := range node.Children {
+		_, err := p.addBlock(child.Block, child, node, false)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		p.addSingles(child)
 	}
-
-	headInfo := generateHeadInfo(blk.Head)
-	var signature common.Signature
-	signature.Decode(blk.Head.Signature)
-
-	if blk.Head.Witness != common.Base58Encode(signature.Pubkey) {
-		return nil, errors.New("wrong pubkey")
-	}
-
-	if !common.VerifySignature(headInfo, signature) {
-		return nil, errors.New("wrong signature")
-	}
-	newPool, err := blockcache.StdBlockVerifier(blk, pool)
-	if err != nil {
-		return nil, err
-	}
-	return newPool, nil
 }
