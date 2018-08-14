@@ -1,9 +1,0 @@
-struct ValueRaw {
-    t uint8
-    val []byte
-}
-
-struct PatchRaw {
-    keys []string
-    vals [][]byte
-}
