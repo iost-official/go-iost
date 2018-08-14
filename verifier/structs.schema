@@ -1,3 +1,0 @@
-struct VerifyLogRaw {
-    List  [][]int32
-}

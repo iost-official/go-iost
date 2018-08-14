@@ -7,10 +7,10 @@ package core_mock
 import (
 	gomock "github.com/golang/mock/gomock"
 	common "github.com/iost-official/Go-IOS-Protocol/common"
-	block "github.com/iost-official/Go-IOS-Protocol/core/block"
+	block "github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	global "github.com/iost-official/Go-IOS-Protocol/core/global"
 	state "github.com/iost-official/Go-IOS-Protocol/core/state"
-	tx "github.com/iost-official/Go-IOS-Protocol/core/tx"
+	tx "github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	reflect "reflect"
 )
 
