@@ -226,7 +226,7 @@ func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 
 	h := linkedBlock.HeadHash()
 
-	if _, ok := pool.blockList.Load(h); ok {
+	if _, ok := pool.blockList.Load(string(h)); ok {
 		return nil
 	}
 
@@ -235,7 +235,7 @@ func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 	b.setTime(pool.slotToSec(linkedBlock.Head.Time))
 	b.addBlock(linkedBlock)
 
-	pool.blockList.Store(h, b)
+	pool.blockList.Store(string(h), b)
 
 	return nil
 }
@@ -252,7 +252,7 @@ func (pool *TxPoolImpl) parentHash(hash []byte) ([]byte, bool) {
 
 func (pool *TxPoolImpl) block(hash []byte) (*blockTx, bool) {
 
-	if v, ok := pool.blockList.Load(hash); ok {
+	if v, ok := pool.blockList.Load(string(hash)); ok {
 		return v.(*blockTx), true
 	}
 
@@ -290,7 +290,7 @@ func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 
 func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 
-	b, ok := pool.blockList.Load(blockHash)
+	b, ok := pool.blockList.Load(string(blockHash))
 	if !ok {
 		return false
 	}
@@ -329,7 +329,7 @@ func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
 	if pool.existTxInChain(h, pool.forkChain.NewHead.Block) || pool.existTxInPending(h) {
 		return DupError
 	} else {
-		pool.pendingTx.Store(h, tx)
+		pool.pendingTx.Store(string(h), tx)
 	}
 
 	return Success
@@ -337,7 +337,7 @@ func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
 
 func (pool *TxPoolImpl) existTxInPending(hash []byte) bool {
 
-	_, ok := pool.pendingTx.Load(hash)
+	_, ok := pool.pendingTx.Load(string(hash))
 
 	return ok
 }
