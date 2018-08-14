@@ -95,12 +95,13 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 }
 
 type BlockCache interface {
-	Add(blk *block.Block) (*BlockCacheNode, error)
-	Link(bcn *BlockCacheNode)
-	Del(bcn *BlockCacheNode)
-	Flush(bcn *BlockCacheNode)
-	Find(hash []byte) (*BlockCacheNode, error)
-	GetBlockByNumber(num uint64) (*block.Block, error)
+	Add(*block.Block) (*BlockCacheNode, error)
+	Link(*BlockCacheNode)
+	Del(*BlockCacheNode)
+	Flush(*BlockCacheNode)
+	Find([]byte) (*BlockCacheNode, error)
+	GetBlockByNumber(uint64) (*block.Block, error)
+	GetBlockByHash([]byte) (*block.Block, error)
 	LinkedRoot() *BlockCacheNode
 	Head() *BlockCacheNode
 	Draw()
@@ -341,6 +342,14 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num uint64) (*block.Block, error) {
 		it = it.Parent
 	}
 	return nil, fmt.Errorf("can not find the block")
+}
+
+func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
+	bcn, ok := bc.hmget(hash)
+	if !ok {
+		return nil, fmt.Errorf("cant find the block")
+	}
+	return bcn.Block, nil
 }
 
 func (bc *BlockCacheImpl) LinkedRoot() *BlockCacheNode {
