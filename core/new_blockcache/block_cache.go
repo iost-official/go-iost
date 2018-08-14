@@ -182,9 +182,12 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) updateLongest() {
+/*
+	think about there are only one witness
 	if len(bc.leaf) == -1 {
 		panic(fmt.Errorf("BlockCache shouldnt be empty"))
 	}
+*/
 	_, ok := bc.hmget(bc.head.Block.HeadHash())
 	if ok {
 		return
