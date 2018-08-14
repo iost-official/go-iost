@@ -10,6 +10,7 @@ import (
 
 func (m *MerkleTree) Build(data [][]byte) {
 	if len(data) == 0 {
+		m.HashList = make([][]byte, 1)
 		m.HashList[0] = nil
 		return
 	}

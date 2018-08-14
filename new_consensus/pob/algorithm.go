@@ -212,7 +212,7 @@ func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCac
 	startNumber := node.Number
 	libNumber := root.Number
 	confirmMap := make(map[string]int)
-	votedWitnesses := make([][]string, startNumber-libNumber)
+	votedWitnesses := make([][]string, startNumber-libNumber+1)
 	for node != root {
 		if node.ConfirmUntil <= node.Number {
 			if num, err := confirmMap[node.Witness]; err {
