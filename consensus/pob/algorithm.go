@@ -44,28 +44,22 @@ func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool t
 	}
 	txCnt := 1000
 	limitTime := time.NewTicker((common.SlotLength/3 * time.Second))
-	txsList, err := txPool.PendingTxs(txCnt)
-	if err == nil {
-		txPoolSize.Set(float64(len(txsList)))
-
-		if len(txsList) != 0 {
-			consensus_common.VerifyTxBegin(lastBlock, db)
-		ForEnd:
-			for _, t := range txsList {
-				select {
-				case <-limitTime.C:
-					break ForEnd
-				default:
-					if len(blk.Txs) >= txCnt {
-						break ForEnd
-					}
-					if receipt, err := consensus_common.VerifyTx(t); err == nil {
-						db.Commit()
-						blk.Txs = append(blk.Txs, t)
-						blk.Receipts = append(blk.Receipts, receipt)
-					} else {
-						db.Rollback()
-					}
+	txsList, _ := txPool.PendingTxs(txCnt)
+	txPoolSize.Set(float64(len(txsList)))
+	if len(txsList) != 0 {
+		consensus_common.VerifyTxBegin(lastBlock, db)
+	ForEnd:
+		for _, t := range txsList {
+			select {
+			case <-limitTime.C:
+				break ForEnd
+			default:
+				if receipt, err := consensus_common.VerifyTx(t); err == nil {
+					db.Commit()
+					blk.Txs = append(blk.Txs, t)
+					blk.Receipts = append(blk.Receipts, receipt)
+				} else {
+					db.Rollback()
 				}
 			}
 		}
