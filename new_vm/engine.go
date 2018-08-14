@@ -7,6 +7,8 @@ import (
 
 	"strconv"
 
+	"errors"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
@@ -14,7 +16,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"errors"
 )
 
 const (
@@ -255,7 +256,7 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	_, cost, err = staticMonitor.Call(e.host, action.Contract, action.ActionName, args...)
 
 	if cost == nil {
-		panic("here")
+		cost = contract.Cost0()
 	}
 
 	if err != nil {
@@ -276,5 +277,9 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	receipts = append(receipts, e.host.Ctx.GValue("receipts").([]tx.Receipt)...)
 
+	status = tx.Status{
+		Code:    tx.Success,
+		Message: "",
+	}
 	return
 }
