@@ -224,6 +224,10 @@ func (pool *TxPoolImpl) slotToSec(t int64) int64 {
 
 func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 
+	if linkedBlock == nil {
+		return errors.New("failed to linkedBlock")
+	}
+
 	h := linkedBlock.HeadHash()
 
 	if _, ok := pool.blockList.Load(string(h)); ok {
@@ -260,6 +264,10 @@ func (pool *TxPoolImpl) block(hash []byte) (*blockTx, bool) {
 }
 
 func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
+
+	if block == nil {
+		return false
+	}
 
 	h := block.HeadHash()
 
@@ -326,7 +334,13 @@ func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
 
 	h := tx.Hash()
 
-	if pool.existTxInChain(h, pool.forkChain.NewHead.Block) || pool.existTxInPending(h) {
+	if pool.forkChain.NewHead != nil {
+		if pool.existTxInChain(h, pool.forkChain.NewHead.Block) {
+			return DupError
+		}
+	}
+
+	if pool.existTxInPending(h) {
 		return DupError
 	} else {
 		pool.pendingTx.Store(string(h), tx)
