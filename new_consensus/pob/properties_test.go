@@ -6,8 +6,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	. "github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	. "github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 func TestGlobalStaticProperty(t *testing.T) {
@@ -53,7 +53,7 @@ func TestGlobalStaticProperty(t *testing.T) {
 
 func TestGlobalDynamicPropertyOneSlot(t *testing.T) {
 	Convey("Test of global dynamic property (one slot per witness)", t, func() {
-		staticProp = newGlobalStaticProperty(
+		staticProperty = newGlobalStaticProperty(
 			account.Account{
 				ID:     "id1",
 				Pubkey: []byte{},
@@ -62,34 +62,34 @@ func TestGlobalDynamicPropertyOneSlot(t *testing.T) {
 			[]string{"id0", "id1", "id2"},
 		)
 
-		dynamicProp = newGlobalDynamicProperty()
-		dynamicProp.LastBlockNumber = 0
-		dynamicProp.TotalSlots = 0
-		dynamicProp.LastBlockTime = Timestamp{Slot: 0}
-		startTs := Timestamp{Slot: 70002}
+		dynamicProperty = newGlobalDynamicProperty()
+		dynamicProperty.LastBlockNumber = 0
+		dynamicProperty.TotalSlots = 0
+		dynamicProperty.LastBlockTime = common.Timestamp{Slot: 0}
+		startTs := common.Timestamp{Slot: 70002}
 		bh := block.BlockHead{
 			Number:  1,
 			Time:    startTs.Slot,
 			Witness: "id0",
 		}
-		dynamicProp.update(&bh)
+		dynamicProperty.update(&bh)
 
 		Convey("update first block", func() {
-			So(dynamicProp.LastBlockNumber, ShouldEqual, 1)
+			So(dynamicProperty.LastBlockNumber, ShouldEqual, 1)
 		})
 
 		curSec := startTs.ToUnixSec() + 1
 		sec := timeUntilNextSchedule(curSec)
 		Convey("in other's slot", func() {
-			curTs := GetTimestamp(curSec)
+			curTs := common.GetTimestamp(curSec)
 			wit := witnessOfTime(curTs)
 			So(wit, ShouldEqual, "id0")
-			So(sec, ShouldBeLessThanOrEqualTo, SlotLength)
+			So(sec, ShouldBeLessThanOrEqualTo, common.SlotLength)
 		})
 
-		curSec += SlotLength - 1
+		curSec += common.SlotLength - 1
 
-		timestamp := GetTimestamp(curSec)
+		timestamp := common.GetTimestamp(curSec)
 		Convey("in self's slot", func() {
 			wit := witnessOfTime(timestamp)
 			So(wit, ShouldEqual, "id1")
@@ -100,34 +100,34 @@ func TestGlobalDynamicPropertyOneSlot(t *testing.T) {
 		bh.Number = 2
 		bh.Time = timestamp.Slot
 		bh.Witness = "id1"
-		dynamicProp.update(&bh)
+		dynamicProperty.update(&bh)
 		Convey("update second block", func() {
-			So(dynamicProp.LastBlockNumber, ShouldEqual, 2)
+			So(dynamicProperty.LastBlockNumber, ShouldEqual, 2)
 		})
 
 		curSec += 1
 		sec = timeUntilNextSchedule(curSec)
 		Convey("in self's slot, but finished", func() {
-			So(sec, ShouldBeGreaterThanOrEqualTo, SlotLength*2)
-			So(sec, ShouldBeLessThanOrEqualTo, SlotLength*3)
+			So(sec, ShouldBeGreaterThanOrEqualTo, common.SlotLength*2)
+			So(sec, ShouldBeLessThanOrEqualTo, common.SlotLength*3)
 		})
 
-		curSec += SlotLength*3 - 1
+		curSec += common.SlotLength*3 - 1
 		Convey("in self's slot and lost two previous blocks", func() {
-			curTs := GetTimestamp(curSec)
+			curTs := common.GetTimestamp(curSec)
 			wit := witnessOfTime(curTs)
 			So(wit, ShouldEqual, "id1")
 			wit = witnessOfSec(curSec)
 			So(wit, ShouldEqual, "id1")
 		})
 
-		timestamp = GetTimestamp(curSec)
+		timestamp = common.GetTimestamp(curSec)
 		bh.Number = 3
 		bh.Time = timestamp.Slot
 		bh.Witness = "id1"
-		dynamicProp.update(&bh)
+		dynamicProperty.update(&bh)
 		Convey("update third block", func() {
-			So(dynamicProp.LastBlockNumber, ShouldEqual, 3)
+			So(dynamicProperty.LastBlockNumber, ShouldEqual, 3)
 		})
 	})
 }
@@ -135,7 +135,7 @@ func TestGlobalDynamicPropertyOneSlot(t *testing.T) {
 func TestGlobalDynamicPropertyMultiSlot(t *testing.T) {
 	Convey("Test of global dynamic property (multi slot per witness)", t, func() {
 		slotPerWitness = 3
-		staticProp = newGlobalStaticProperty(
+		staticProperty = newGlobalStaticProperty(
 			account.Account{
 				ID:     "id1",
 				Pubkey: []byte{},
@@ -144,67 +144,67 @@ func TestGlobalDynamicPropertyMultiSlot(t *testing.T) {
 			[]string{"id0", "id1", "id2"},
 		)
 
-		dynamicProp = newGlobalDynamicProperty()
-		dynamicProp.LastBlockNumber = 0
-		dynamicProp.TotalSlots = 0
-		dynamicProp.LastBlockTime = Timestamp{Slot: 0}
-		startTs := Timestamp{Slot: 70002}
+		dynamicProperty = newGlobalDynamicProperty()
+		dynamicProperty.LastBlockNumber = 0
+		dynamicProperty.TotalSlots = 0
+		dynamicProperty.LastBlockTime = common.Timestamp{Slot: 0}
+		startTs := common.Timestamp{Slot: 70002}
 		bh := block.BlockHead{
 			Number:  1,
 			Time:    startTs.Slot,
 			Witness: "id0",
 		}
-		dynamicProp.update(&bh)
+		dynamicProperty.update(&bh)
 
 		Convey("update first block", func() {
-			So(dynamicProp.LastBlockNumber, ShouldEqual, 1)
+			So(dynamicProperty.LastBlockNumber, ShouldEqual, 1)
 		})
 
 		curSec := startTs.ToUnixSec() + 1
 		sec := timeUntilNextSchedule(curSec)
 		Convey("in other's slot", func() {
-			curTs := GetTimestamp(curSec)
+			curTs := common.GetTimestamp(curSec)
 			wit := witnessOfTime(curTs)
 			So(wit, ShouldEqual, "id0")
-			So(sec, ShouldEqual, 3*SlotLength-1)
+			So(sec, ShouldEqual, 3*common.SlotLength-1)
 		})
 
-		curSec += SlotLength - 1
-		timestamp := GetTimestamp(curSec)
+		curSec += common.SlotLength - 1
+		timestamp := common.GetTimestamp(curSec)
 		sec = timeUntilNextSchedule(curSec)
 		Convey("in other's second slot", func() {
 			wit := witnessOfTime(timestamp)
 			So(wit, ShouldEqual, "id0")
-			So(sec, ShouldEqual, 2*SlotLength)
+			So(sec, ShouldEqual, 2*common.SlotLength)
 		})
 
 		bh.Number = 2
 		bh.Time = timestamp.Slot
 		bh.Witness = "id0"
-		dynamicProp.update(&bh)
+		dynamicProperty.update(&bh)
 		Convey("update second block", func() {
-			So(dynamicProp.LastBlockNumber, ShouldEqual, 2)
+			So(dynamicProperty.LastBlockNumber, ShouldEqual, 2)
 		})
 
-		curSec += SlotLength * 2
+		curSec += common.SlotLength * 2
 		Convey("in self's slot", func() {
 			wit := witnessOfSec(curSec)
 			So(wit, ShouldEqual, "id1")
 		})
 		bh.Number = 3
-		bh.Time = GetTimestamp(curSec).Slot
+		bh.Time = common.GetTimestamp(curSec).Slot
 		bh.Witness = "id1"
-		dynamicProp.update(&bh)
+		dynamicProperty.update(&bh)
 
 		curSec += 1
 		sec = timeUntilNextSchedule(curSec)
 		Convey("in self's first slot, but finished", func() {
 			wit := witnessOfSec(curSec)
 			So(wit, ShouldEqual, "id1")
-			So(sec, ShouldEqual, SlotLength-1)
+			So(sec, ShouldEqual, common.SlotLength-1)
 		})
 
-		curSec += SlotLength
+		curSec += common.SlotLength
 		sec = timeUntilNextSchedule(curSec)
 		Convey("in self's second slot, not on time", func() {
 			wit := witnessOfSec(curSec)
@@ -212,16 +212,16 @@ func TestGlobalDynamicPropertyMultiSlot(t *testing.T) {
 			So(sec, ShouldEqual, 0)
 		})
 		bh.Number = 4
-		bh.Time = GetTimestamp(curSec).Slot
+		bh.Time = common.GetTimestamp(curSec).Slot
 		bh.Witness = "id1"
-		dynamicProp.update(&bh)
+		dynamicProperty.update(&bh)
 
-		curSec += SlotLength*2 - 1
+		curSec += common.SlotLength*2 - 1
 		sec = timeUntilNextSchedule(curSec)
 		Convey("past self's last slot", func() {
 			wit := witnessOfSec(curSec)
 			So(wit, ShouldEqual, "id2")
-			So(sec, ShouldEqual, 6*SlotLength)
+			So(sec, ShouldEqual, 6*common.SlotLength)
 		})
 	})
 }

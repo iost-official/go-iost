@@ -11,31 +11,41 @@ var _ LogWriter = &FileWriter{}
 
 type FileWriter struct {
 	level    Level
-	filename string
+	filepath string
 	fd       *os.File
 
 	hourlyTicker *hourlyTicker
 }
 
-func NewFileWriter(filename string) *FileWriter {
+func NewFileWriter(filepath string) *FileWriter {
 	return &FileWriter{
-		filename:     filename,
+		filepath:     filepath,
 		hourlyTicker: NewHourlyTicker(),
 	}
 }
 
 func (fw *FileWriter) Init() error {
-	realFile := fmt.Sprintf("%s.%s", fw.filename, time.Now().Format("2006-01-02_15"))
+	if len(fw.filepath) == 0 {
+		fw.filepath = "./"
+	}
+	if !filepath.IsAbs(fw.filepath) {
+		fw.filepath, _ = filepath.Abs(fw.filepath)
+	}
+	if err := os.MkdirAll(fw.filepath, 0700); err != nil {
+		panic(err)
+	}
+	realFile := fmt.Sprintf("%s/iost_%s.log", fw.filepath, time.Now().Format("2006-01-02_15"))
+	linkFile := fmt.Sprintf("%s/iost.log", fw.filepath)
 	fd, err := os.OpenFile(realFile, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
 		return err
 	}
 	fw.fd = fd
-	_, err = os.Lstat(fw.filename)
+	_, err = os.Lstat(linkFile)
 	if err == nil || os.IsExist(err) {
-		os.Remove(fw.filename)
+		os.Remove(linkFile)
 	}
-	os.Symlink("./"+filepath.Base(realFile), fw.filename)
+	os.Symlink(realFile, linkFile)
 	return nil
 }
 

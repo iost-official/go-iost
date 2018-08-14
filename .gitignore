@@ -173,8 +173,7 @@ iwallet/test
 iwallet/iwallet
 
 # build and test
-/build
-/build.local
+/target
 imonitor/imonitor
 consensus/common/tx/
 /consensus/dpos/tx/
@@ -229,3 +228,5 @@ test/data
 /core/block/serviDb/
 scripts/sendtx/iwallet
 
+/core/new_txpool/BlockChainDB/
+/core/new_txpool/StatePoolDB/

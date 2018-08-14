@@ -9,8 +9,8 @@ type IMultiValue interface {
 	Has(table string, key string) (bool, error)
 	Keys(table string, prefix string) ([]string, error)
 	//Tables(table string) ([]string, error)
-	//Commit() string
-	//Rollback() error
+	Commit()
+	Rollback()
 	//Tag(tag string) error
 	//Fork(revision string) string
 	//Checkout(revision string)

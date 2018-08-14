@@ -32,21 +32,9 @@ func (m *MockIMultiValue) EXPECT() *MockIMultiValueMockRecorder {
 	return m.recorder
 }
 
-// Checkout mocks base method
-func (m *MockIMultiValue) Checkout(arg0 string) {
-	m.ctrl.Call(m, "Checkout", arg0)
-}
-
-// Checkout indicates an expected call of Checkout
-func (mr *MockIMultiValueMockRecorder) Checkout(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockIMultiValue)(nil).Checkout), arg0)
-}
-
 // Commit mocks base method
-func (m *MockIMultiValue) Commit() string {
-	ret := m.ctrl.Call(m, "Commit")
-	ret0, _ := ret[0].(string)
-	return ret0
+func (m *MockIMultiValue) Commit() {
+	m.ctrl.Call(m, "Commit")
 }
 
 // Commit indicates an expected call of Commit
@@ -64,30 +52,6 @@ func (m *MockIMultiValue) Del(arg0, arg1 string) error {
 // Del indicates an expected call of Del
 func (mr *MockIMultiValueMockRecorder) Del(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*MockIMultiValue)(nil).Del), arg0, arg1)
-}
-
-// Flush mocks base method
-func (m *MockIMultiValue) Flush(arg0 string) error {
-	ret := m.ctrl.Call(m, "Flush", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Flush indicates an expected call of Flush
-func (mr *MockIMultiValueMockRecorder) Flush(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Flush", reflect.TypeOf((*MockIMultiValue)(nil).Flush), arg0)
-}
-
-// Fork mocks base method
-func (m *MockIMultiValue) Fork(arg0 string) string {
-	ret := m.ctrl.Call(m, "Fork", arg0)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// Fork indicates an expected call of Fork
-func (mr *MockIMultiValueMockRecorder) Fork(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Fork", reflect.TypeOf((*MockIMultiValue)(nil).Fork), arg0)
 }
 
 // Get mocks base method
@@ -142,38 +106,11 @@ func (mr *MockIMultiValueMockRecorder) Put(arg0, arg1, arg2 interface{}) *gomock
 }
 
 // Rollback mocks base method
-func (m *MockIMultiValue) Rollback() error {
-	ret := m.ctrl.Call(m, "Rollback")
-	ret0, _ := ret[0].(error)
-	return ret0
+func (m *MockIMultiValue) Rollback() {
+	m.ctrl.Call(m, "Rollback")
 }
 
 // Rollback indicates an expected call of Rollback
 func (mr *MockIMultiValueMockRecorder) Rollback() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockIMultiValue)(nil).Rollback))
-}
-
-// Tables mocks base method
-func (m *MockIMultiValue) Tables(arg0 string) ([]string, error) {
-	ret := m.ctrl.Call(m, "Tables", arg0)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Tables indicates an expected call of Tables
-func (mr *MockIMultiValueMockRecorder) Tables(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tables", reflect.TypeOf((*MockIMultiValue)(nil).Tables), arg0)
-}
-
-// Tag mocks base method
-func (m *MockIMultiValue) Tag(arg0 string) error {
-	ret := m.ctrl.Call(m, "Tag", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Tag indicates an expected call of Tag
-func (mr *MockIMultiValueMockRecorder) Tag(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tag", reflect.TypeOf((*MockIMultiValue)(nil).Tag), arg0)
 }
