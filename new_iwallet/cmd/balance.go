@@ -39,7 +39,7 @@ var balanceCmd = &cobra.Command{
 		pubkey, err := ReadFile(filePath)
 		if err != nil {
 			fmt.Println(err.Error())
-			return
+	 		return
 		}
 
 		pk := LoadBytes(string(pubkey))
@@ -48,13 +48,13 @@ var balanceCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println(filePath, ">", b, "iost")
+	 	fmt.Println(filePath, ">", b, "iost")
 
-	},
+	}, 
 }
 
 func init() {
-	rootCmd.AddCommand(balanceCmd)
+	rootCmd.AddCommand(balanceCmd) 
 
 	// Here you will define your flags and configuration settings.
 
@@ -67,7 +67,7 @@ func init() {
 	// balanceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func CheckBalance(ia vm.IOSTAccount) (float64, error) {
+func CheckBalance(ia vm.IOSTAccount) (int64, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
 		return 0, err
