@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 var (
@@ -21,7 +22,7 @@ var (
 
 func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.Block) error {
 	bh := blk.Head
-	cur := GetCurrentTimestamp().Slot
+	cur := common.GetCurrentTimestamp().Slot
 	if bh.Time > cur+1 {
 		return ErrFutureBlk
 	}

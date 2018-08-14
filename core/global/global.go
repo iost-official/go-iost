@@ -2,9 +2,7 @@ package global
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/iost-official/Go-IOS-Protocol/common"
+		"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
@@ -48,11 +46,11 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)
 	}
-	blk, err := blockChain.Top()
-	if err != nil {
-		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-		blk = block.GenGenesis(t / 3)
-	}
+	//blk, err := blockChain.Top()
+	//if err != nil {
+	//	t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+	//	blk = block.GenGenesis(t / 3)
+	//}
 
 	//TODO: INIT FROM A EXISTING MVCCDB
 	stateDB, err := db.NewMVCCDB("StatePoolDB")
