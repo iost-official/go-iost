@@ -111,7 +111,20 @@ func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args [
 
 	sbx.SetModule(name, code)
 
-	argStr, err := json.Marshal(args)
+	if function == "constructor" {
+		return fmt.Sprintf(`
+var _native_main = NativeModule.require('%s');
+var obj = new _native_main();
+
+// store kv that was constructed by contract.
+Object.keys(obj).forEach((key) => {
+   let val = obj[key];
+   IOSTContractStorage.put(key, val);
+});
+`, name), nil
+	}
+
+	argStr, err := formatFucArgs(args)
 	if err != nil {
 		return "", err
 	}
@@ -119,12 +132,26 @@ func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args [
 	return fmt.Sprintf(`
 var _native_main = NativeModule.require('%s');
 var obj = new _native_main();
-if (obj.constructor.name == '%s') {
-	obj.constructor();
-} else {
-	obj['%s'].apply(obj, %v);
-}
-`, name, function, function, string(argStr)), nil
+
+Object.keys(obj).forEach((key) => {
+    let val = obj[key];
+
+    Object.defineProperty(obj, key, {
+        configurable: false,
+        enumerable: true,
+        get: function() {
+            return IOSTContractStorage.get(key, val);
+        },
+        set: function() {
+			val = setVal;
+			IOSTContractStorage.put(key, val);
+        }
+    })
+});
+
+// run contract with specified function and args.
+obj['%s'].apply(obj, %v);
+`, name, function, argStr), nil
 }
 
 func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
@@ -148,4 +175,14 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
 	}
 
 	return result, err
+}
+
+func formatFucArgs(args []interface{}) (string, error) {
+	argStr, err := json.Marshal(args)
+	if err != nil {
+		return "", err
+	}
+
+	return string(argStr), nil
+	//return strings.Trim(string(argStr), "[]"), nil
 }

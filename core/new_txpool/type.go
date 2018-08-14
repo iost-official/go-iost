@@ -100,7 +100,7 @@ func (b *blockTx) addBlock(ib *block.Block) {
 
 	for _, v := range ib.Txs {
 
-		b.txMap.Store(v.Hash(), nil)
+		b.txMap.Store(string(v.Hash()), nil)
 	}
 
 	b.ParentHash = ib.Head.ParentHash
@@ -108,7 +108,7 @@ func (b *blockTx) addBlock(ib *block.Block) {
 
 func (b *blockTx) existTx(hash []byte) bool {
 
-	_, r := b.txMap.Load(hash)
+	_, r := b.txMap.Load(string(hash))
 
 	return r
 }

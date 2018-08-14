@@ -61,7 +61,7 @@ var require = NativeModule.require;
 
 var IOSTContractStorage = require('storage');
 var BlockChainContractStorage = require('blockchain');
-var bigNumber = require('bignumber');
+var BigNumber = require('bignumber');
 var injectGas = require('inject_gas');
 
 var _IOSTInstruction_counter = new IOSTInstruction;

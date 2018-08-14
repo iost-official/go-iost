@@ -117,7 +117,7 @@ func TestEngine_bigNumber(t *testing.T) {
 		ID: "test.js",
 		Code: `
 var Contract = function() {
-	this.val = new bigNumber(0.00000000008);
+	this.val = new BigNumber(0.00000000008);
 	this.val = this.val.plus(0.0000000000000029);
 };
 
@@ -137,6 +137,7 @@ var Contract = function() {
 	e.SetJSPath("./v8/libjs/")
 
 	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
+	e.LoadAndCall(tHost, code, "constructor")
 	rs, _, err := e.LoadAndCall(tHost, code, "getVal")
 
 	if err != nil {
