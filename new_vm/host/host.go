@@ -1,8 +1,6 @@
 package host
 
 import (
-	"context"
-
 	"strings"
 
 	"strconv"
@@ -25,13 +23,13 @@ type Caller interface {
 }
 
 type Host struct {
-	Ctx     context.Context
+	Ctx     *Context
 	DB      *database.Visitor
 	monitor Caller
 	cost    map[string]*contract.Cost
 }
 
-func NewHost(ctx context.Context, db *database.Visitor, monitor Caller) *Host {
+func NewHost(ctx *Context, db *database.Visitor, monitor Caller) *Host {
 	return &Host{
 		Ctx:     ctx,
 		DB:      db,
@@ -53,7 +51,7 @@ func NewHost(ctx context.Context, db *database.Visitor, monitor Caller) *Host {
 //	h.cost = &contract.Cost{}
 //	return c
 //}
-func (h *Host) Context() context.Context {
+func (h *Host) Context() *Context {
 	return h.Ctx
 }
 
@@ -128,14 +126,17 @@ func (h *Host) RequireAuth(pubkey string) (ok bool, cost *contract.Cost) {
 	i, ok := authList.(map[string]int)[pubkey]
 	return ok && i > 0, contract.NewCost(1, 1, 1)
 }
-func (h *Host) Receipt(s string) *contract.Cost {
+func (h *Host) receipt(t tx.ReceiptType, s string) {
 	rec := tx.Receipt{
 		Type:    tx.UserDefined,
 		Content: s,
 	}
-	trec := h.Ctx.Value("tx_receipt").(*tx.TxReceipt)
-	(*trec).Receipts = append(trec.Receipts, rec)
 
+	rs := h.Ctx.GValue("receipts").([]tx.Receipt)
+	h.Ctx.GSet("receipts", append(rs, rec))
+}
+func (h *Host) Receipt(s string) *contract.Cost {
+	h.receipt(tx.UserDefined, s)
 	return contract.NewCost(1, 1, 1)
 }
 func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
@@ -153,33 +154,27 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *
 	}
 
 	key := "stack" + strconv.Itoa(height)
-	ctx := h.Ctx
-	h.Ctx = context.WithValue(h.Ctx, "stack_height", height+1)
-	h.Ctx = context.WithValue(h.Ctx, key, record)
 
-	// check args and
+	h.Ctx = NewContext(h.Ctx)
 
+	h.Ctx.Set("stack_height", height+1)
+	h.Ctx.Set(key, record)
 	rtn, cost, err := h.monitor.Call(h, contract, api, args...)
-	h.Ctx = ctx
+
+	h.Ctx = h.Ctx.Base()
+
 	return rtn, cost, err
 }
 func (h *Host) CallWithReceipt(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
 	rtn, cost, err := h.Call(contract, api, args...)
 
-	var receipt tx.Receipt
+	var s string
 	if err != nil {
-		receipt = tx.Receipt{
-			Type:    tx.SystemDefined,
-			Content: err.Error(),
-		}
+		s = err.Error()
+	} else {
+		s = "success"
 	}
-	receipt = tx.Receipt{
-		Type:    tx.SystemDefined,
-		Content: "success",
-	}
-
-	trec := h.Ctx.Value("tx_receipt").(*tx.TxReceipt)
-	(*trec).Receipts = append(trec.Receipts, receipt)
+	h.receipt(tx.SystemDefined, s)
 
 	return rtn, cost, err
 
@@ -230,12 +225,10 @@ func (h *Host) TxInfo() (info database.SerializedJSON, cost *contract.Cost) {
 	return h.Ctx.Value("tx_info").(database.SerializedJSON), contract.NewCost(1, 1, 1)
 }
 func (h *Host) ABIConfig(key, value string) {
-	abi := h.Ctx.Value("abi_config").(*contract.ABI)
-
 	switch key {
 	case "payment":
 		if value == "contract_pay" {
-			(*abi).Payment = 1
+			h.Ctx.GSet("abi_payment", 1)
 		}
 	}
 }

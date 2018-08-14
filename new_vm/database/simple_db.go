@@ -176,3 +176,11 @@ func (d *database) addSystem() {
 
 	d.json.Set("c-iost.system", c.Encode())
 }
+
+func (d *database) Commit() {
+
+}
+
+func (d *database) Rollback() {
+
+}

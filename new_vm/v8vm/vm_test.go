@@ -1,15 +1,15 @@
 package v8
 
 import (
-	"context"
 	"testing"
+
+	"io/ioutil"
+	"os"
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"os"
-	"io/ioutil"
 )
 
 var testDataPath = "./test_data/"
@@ -39,11 +39,11 @@ func MyInit(t *testing.T, conName string) (*VM, *host.Host, *contract.Contract) 
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
 	vi := database.NewVisitor(100, db)
 
-	ctx := context.Background()
-	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
-	ctx = context.WithValue(ctx, "gas_limit", uint64(1000))
-	ctx = context.WithValue(ctx, "contract_name", conName)
-	host := &host.Host{Ctx: ctx, DB: vi}
+	ctx := host.NewContext(nil)
+	ctx.Set("gas_price", uint64(1))
+	ctx.Set("gas_limit", uint64(1000))
+	ctx.Set("contract_name", conName)
+	h := &host.Host{Ctx: ctx, DB: vi}
 
 	fd, err := ReadFile(testDataPath + conName + ".js")
 	if err != nil {
@@ -53,7 +53,7 @@ func MyInit(t *testing.T, conName string) (*VM, *host.Host, *contract.Contract) 
 	rawCode := string(fd)
 
 	code := &contract.Contract{
-		ID: conName,
+		ID:   conName,
 		Code: rawCode,
 	}
 
@@ -61,15 +61,15 @@ func MyInit(t *testing.T, conName string) (*VM, *host.Host, *contract.Contract) 
 	e.Init()
 	e.SetJSPath("./v8/libjs/")
 
-	return e, host, code
+	return e, h, code
 }
 
 func TestEngine_LoadAndCall(t *testing.T) {
 	vi := Init(t)
-	ctx := context.Background()
-	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
-	ctx = context.WithValue(ctx, "gas_limit", uint64(1000000000))
-	ctx = context.WithValue(ctx, "contract_name", "contractName")
+	ctx := host.NewContext(nil)
+	ctx.Set("gas_price", uint64(1))
+	ctx.Set("gas_limit", uint64(1000000000))
+	ctx.Set("contract_name", "contractName")
 	tHost := &host.Host{Ctx: ctx, DB: vi}
 
 	code := &contract.Contract{
@@ -107,10 +107,10 @@ var Contract = function() {
 
 func TestEngine_bigNumber(t *testing.T) {
 	vi := Init(t)
-	ctx := context.Background()
-	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
-	ctx = context.WithValue(ctx, "gas_limit", uint64(1000000000))
-	ctx = context.WithValue(ctx, "contract_name", "contractName")
+	ctx := host.NewContext(nil)
+	ctx.Set("gas_price", uint64(1))
+	ctx.Set("gas_limit", uint64(1000000000))
+	ctx.Set("contract_name", "contractName")
 	tHost := &host.Host{Ctx: ctx, DB: vi}
 
 	code := &contract.Contract{
@@ -149,10 +149,11 @@ var Contract = function() {
 
 func TestEngine_infiniteLoop(t *testing.T) {
 	vi := Init(t)
-	ctx := context.Background()
-	ctx = context.WithValue(context.Background(), "gas_price", uint64(1))
-	ctx = context.WithValue(ctx, "gas_limit", uint64(1000))
-	ctx = context.WithValue(ctx, "contract_name", "contractName")
+
+	ctx := host.NewContext(nil)
+	ctx.Set("gas_price", uint64(1))
+	ctx.Set("gas_limit", uint64(1000))
+	ctx.Set("contract_name", "contractName")
 	tHost := &host.Host{Ctx: ctx, DB: vi}
 
 	code := &contract.Contract{
@@ -187,7 +188,7 @@ var Contract = function() {
 func TestEngine_Storage(t *testing.T) {
 	e, host, code := MyInit(t, "storage1")
 
-	rs, _,err := e.LoadAndCall(host, code, "get", "a")
+	rs, _, err := e.LoadAndCall(host, code, "get", "a")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
@@ -204,7 +205,7 @@ func TestEngine_Storage(t *testing.T) {
 	}
 	t.Log(cost)
 
-	rs, _,err = e.LoadAndCall(host, code, "get", "mySetKey")
+	rs, _, err = e.LoadAndCall(host, code, "get", "mySetKey")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
@@ -221,7 +222,7 @@ func TestEngine_Storage(t *testing.T) {
 	}
 	t.Log(cost)
 
-	rs, _,err = e.LoadAndCall(host, code, "get", "mySetKey")
+	rs, _, err = e.LoadAndCall(host, code, "get", "mySetKey")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
