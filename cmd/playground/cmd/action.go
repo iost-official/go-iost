@@ -19,6 +19,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/spf13/cobra"
 )
 
@@ -31,11 +32,11 @@ Usage:
 	playground action <contract> <action> '[arg1, arg2, ...]'
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		bh, err := LoadBlockhead("block_info.json")
+		bh, err := database.LoadBlockhead("block_info.json")
 		if err != nil {
 			panic(err)
 		}
-		db := NewDatabase()
+		db := database.NewDatabase()
 		err = db.Load("state.json")
 		if err != nil {
 			panic(err)
@@ -44,7 +45,7 @@ Usage:
 
 		action := tx.NewAction(args[0], args[1], args[2])
 
-		tx0, err := LoadTxInfo("tx_info.json")
+		tx0, err := database.LoadTxInfo("tx_info.json")
 		tx0.Actions = []tx.Action{action}
 
 		fmt.Println(eg.Exec(tx0))
