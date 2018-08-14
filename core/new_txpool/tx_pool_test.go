@@ -9,7 +9,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -368,7 +367,7 @@ func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
 
 func genBlocks(accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
-	slot := consensus_common.GetCurrentTimestamp().Slot
+	slot := common.GetCurrentTimestamp().Slot
 
 	for i := 0; i < blockCnt; i++ {
 		var hash []byte
