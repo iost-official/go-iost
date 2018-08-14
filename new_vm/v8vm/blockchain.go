@@ -18,7 +18,7 @@ func goTransfer(cSbx C.SandboxPtr, from, to, amount *C.char, gasUsed *C.size_t) 
 	//amountStr := C.GoString(amount)
 
 	ret := C.int(0)
-	err := sbx.host.Transfer(fromStr, toStr, 0)
+	_, err := sbx.host.Transfer(fromStr, toStr, 0)
 	if err != nil {
 		ret = C.int(1)
 	}
@@ -36,7 +36,7 @@ func goWithdraw(cSbx C.SandboxPtr, to, amount *C.char, gasUsed *C.size_t) C.int 
 	//amountStr := C.GoString(amount)
 
 	ret := C.int(0)
-	err := sbx.host.Withdraw(toStr, 0)
+	_, err := sbx.host.Withdraw(toStr, 0)
 	if err != nil {
 		ret = C.int(1)
 	}
@@ -54,7 +54,7 @@ func goDeposit(cSbx C.SandboxPtr, from, amount *C.char, gasUsed *C.size_t) C.int
 	//amountStr := C.GoString(amount)
 
 	ret := C.int(0)
-	err := sbx.host.Deposit(fromStr, 0)
+	_, err := sbx.host.Deposit(fromStr, 0)
 	if err != nil {
 		ret = C.int(1)
 	}
@@ -73,7 +73,7 @@ func goTopUp(cSbx C.SandboxPtr, contract, from, amount *C.char, gasUsed *C.size_
 	//amountStr := C.GoString(amount)
 
 	ret := C.int(0)
-	err := sbx.host.TopUp(contractStr, fromStr, 0)
+	_, err := sbx.host.TopUp(contractStr, fromStr, 0)
 	if err != nil {
 		ret = C.int(1)
 	}
@@ -92,7 +92,7 @@ func goCountermand(cSbx C.SandboxPtr, contract, to, amount *C.char, gasUsed *C.s
 	//amountStr := C.GoString(amount)
 
 	ret := C.int(0)
-	err := sbx.host.TopUp(contractStr, toStr, 0)
+	_, err := sbx.host.TopUp(contractStr, toStr, 0)
 	if err != nil {
 		ret = C.int(1)
 	}
@@ -106,7 +106,7 @@ func goBlockInfo(cSbx C.SandboxPtr, gasUsed *C.size_t) *C.char {
 
 	}
 
-	blkInfo := sbx.host.BlockInfo()
+	blkInfo, _ := sbx.host.BlockInfo()
 	return C.CString(string(blkInfo))
 }
 
@@ -117,7 +117,7 @@ func goTxInfo(cSbx C.SandboxPtr, gasUsed *C.size_t) *C.char {
 
 	}
 
-	txInfo := sbx.host.TxInfo()
+	txInfo, _ := sbx.host.TxInfo()
 	return C.CString(string(txInfo))
 }
 

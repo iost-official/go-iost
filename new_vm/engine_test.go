@@ -87,13 +87,22 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	})
 
 	vm.EXPECT().LoadAndCall(gomock.Any(), gomock.Any(), "abi", `datas`).DoAndReturn(
-		func(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
-			return nil, nil, nil
+		func(host *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			return nil, contract.Cost0(), nil
 		},
 	)
 
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
 	e.Exec(&mtx)
 
+	if !committed {
+		t.Fatal(committed)
+	}
 }
 
 func TestCost(t *testing.T) { // tests of context transport
@@ -201,7 +210,17 @@ func TestCost(t *testing.T) { // tests of context transport
 		},
 	)
 
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
 	e.Exec(&mtx)
+
+	if !committed {
+		t.Fatal(committed)
+	}
 }
 
 func TestNative_Transfer(t *testing.T) { // tests of native vm works
@@ -258,6 +277,14 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		return database.MustMarshal(int64(1000)), nil
 	})
 
+	db.EXPECT().Get("state", "i-witness").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
 	db.EXPECT().Put("state", "i-a", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
 		if database.MustUnmarshal(value).(int64) != int64(900) {
 			t.Fatal("a", database.MustUnmarshal(value).(int64))
@@ -267,11 +294,36 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 
 	db.EXPECT().Put("state", "i-b", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
 		if database.MustUnmarshal(value).(int64) != int64(1100) {
-			t.Fatal("a", database.MustUnmarshal(value).(int64))
+			t.Fatal("b", database.MustUnmarshal(value).(int64))
 		}
 		return nil
 	})
+
+	db.EXPECT().Put("state", "i-witness", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(1003) {
+			t.Fatal("witness", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(997) {
+			t.Fatal("publisher", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
 	e.Exec(&mtx)
+
+	if !committed {
+		t.Fatal(committed)
+	}
 
 }
 func TestNative_TopUp(t *testing.T) { // tests of native vm works
@@ -342,7 +394,39 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		return nil
 	})
 
+	db.EXPECT().Get("state", "i-witness").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Put("state", "i-witness", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(1003) {
+			t.Fatal("witness", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(997) {
+			t.Fatal("publisher", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
 	e.Exec(&mtx)
+
+	if !committed {
+		t.Fatal(committed)
+	}
 
 }
 

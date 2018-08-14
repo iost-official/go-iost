@@ -1,83 +1,59 @@
 package pob
 
 import (
-	"errors"
-	"sort"
-
-	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
+var staticProperty globalStaticProperty
+var dynamicProperty globalDynamicProperty
+
 type globalStaticProperty struct {
-	Account
-	NumberOfWitnesses  int
-	WitnessList        []string
-	PendingWitnessList []string
+	account.Account
+	NumberOfWitnesses int
+	WitnessList       []string
+	Watermark         map[string]uint64
+	SlotMap           map[uint64]map[string]bool
 }
 
-func newGlobalStaticProperty(acc Account, witnessList []string) globalStaticProperty {
+func newGlobalStaticProperty(acc account.Account, witnessList []string) globalStaticProperty {
 	prop := globalStaticProperty{
-		Account:            acc,
-		NumberOfWitnesses:  len(witnessList),
-		WitnessList:        witnessList,
-		PendingWitnessList: []string{},
+		Account:           acc,
+		NumberOfWitnesses: len(witnessList),
+		WitnessList:       witnessList,
+		Watermark:         make(map[string]uint64),
+		SlotMap:           make(map[uint64]map[string]bool),
 	}
 	return prop
 }
 
-func (prop *globalStaticProperty) addPendingWitness(id string) error {
-	for _, wit := range prop.WitnessList {
-		if id == wit {
-			return errors.New("already in witness list")
-		}
-	}
-	for _, wit := range prop.PendingWitnessList {
-		if id == wit {
-			return errors.New("already in pending list")
-		}
-	}
-	prop.PendingWitnessList = append(prop.PendingWitnessList, id)
-	return nil
-}
-
-func (prop *globalStaticProperty) deletePendingWitness(id string) error {
-	i := 0
-	for _, wit := range prop.PendingWitnessList {
-		if id == wit {
-			newList := append(prop.PendingWitnessList[:i], prop.PendingWitnessList[i+1:]...)
-			prop.PendingWitnessList = newList
-			return nil
-		}
-		i++
-	}
-	return errors.New("witness not in pending list")
-}
-
-func (prop *globalStaticProperty) updateWitnessLists(newList []string) {
-	var newPendingList []string
-	for _, wit := range prop.WitnessList {
-		if !inList(wit, newList) {
-			newPendingList = append(newPendingList, wit)
-		}
-	}
-	for _, wit := range prop.PendingWitnessList {
-		if !inList(wit, newList) {
-			newPendingList = append(newPendingList, wit)
-		}
-	}
-	sort.Strings(newList)
+func (prop *globalStaticProperty) updateWitnessList(newList []string) {
 	prop.WitnessList = newList
-	prop.PendingWitnessList = newPendingList
+	prop.NumberOfWitnesses = len(newList)
 }
 
-func inList(element string, list []string) bool {
-	for _, ele := range list {
-		if ele == element {
-			return true
+func (prop *globalStaticProperty) hasSlotWitness(slot uint64, witness string) bool {
+	if prop.SlotMap[slot] == nil {
+		return false
+	} else {
+		return prop.SlotMap[slot][witness]
+	}
+}
+
+func (prop *globalStaticProperty) addSlotWitness(slot uint64, witness string) {
+	if prop.SlotMap[slot] == nil {
+		prop.SlotMap[slot] = make(map[string]bool)
+	}
+	prop.SlotMap[slot][witness] = true
+}
+
+func (prop *globalStaticProperty) delSlotWitness(slotStart uint64, slotEnd uint64) {
+	for slot := slotStart; slot <= slotEnd; slot++ {
+		if _, has := prop.SlotMap[slot]; has {
+			delete(prop.SlotMap, slot)
 		}
 	}
-	return false
 }
 
 func getIndex(element string, list []string) int {
@@ -89,26 +65,24 @@ func getIndex(element string, list []string) int {
 	return -1
 }
 
-const (
+var (
 	slotPerWitness      = 1
 	maintenanceInterval = 24
 )
 
 type globalDynamicProperty struct {
-	LastBlockNumber          int64
-	LastBlockTime            Timestamp
-	LastBLockHash            []byte
-	TotalSlots               int64
-	LastConfirmedBlockNumber int32
-	NextMaintenanceTime      Timestamp
+	LastBlockNumber     int64
+	LastBlockTime       common.Timestamp
+	LastBLockHash       []byte
+	TotalSlots          int64
+	NextMaintenanceTime common.Timestamp
 }
 
 func newGlobalDynamicProperty() globalDynamicProperty {
 	prop := globalDynamicProperty{
-		LastBlockNumber:          0,
-		LastBlockTime:            Timestamp{Slot: 0},
-		TotalSlots:               0,
-		LastConfirmedBlockNumber: 0,
+		LastBlockNumber: 0,
+		LastBlockTime:   common.Timestamp{Slot: 0},
+		TotalSlots:      0,
 	}
 	prop.NextMaintenanceTime.AddHour(maintenanceInterval)
 	return prop
@@ -120,55 +94,58 @@ func (prop *globalDynamicProperty) update(blockHead *block.BlockHead) {
 		prop.NextMaintenanceTime.AddHour(maintenanceInterval)
 	}
 	prop.LastBlockNumber = blockHead.Number
-	prop.LastBlockTime = Timestamp{Slot: blockHead.Time}
-	copy(prop.LastBLockHash, blockHead.Hash())
+	prop.LastBlockTime = common.Timestamp{Slot: blockHead.Time}
+	hash, err := blockHead.Hash()
+	if err == nil {
+		copy(prop.LastBLockHash, hash)
+	}
 }
 
-func (prop *globalDynamicProperty) timestampToSlot(time Timestamp) int64 {
+func (prop *globalDynamicProperty) timestampToSlot(time common.Timestamp) int64 {
 	return time.Slot
 }
 
-func (prop *globalDynamicProperty) slotToTimestamp(slot int64) *Timestamp {
-	return &Timestamp{Slot: slot}
+func (prop *globalDynamicProperty) slotToTimestamp(slot int64) *common.Timestamp {
+	return &common.Timestamp{Slot: slot}
 }
 
-func witnessOfSec(sp *globalStaticProperty, dp *globalDynamicProperty, sec int64) string {
-	time := GetTimestamp(sec)
-	return witnessOfTime(sp, dp, time)
+func witnessOfSec(sec int64) string {
+	time := common.GetTimestamp(sec)
+	return witnessOfTime(time)
 }
 
-func witnessOfTime(sp *globalStaticProperty, dp *globalDynamicProperty, time Timestamp) string {
+func witnessOfTime(time common.Timestamp) string {
 
-	currentSlot := dp.timestampToSlot(time)
-	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
-	index := ((currentSlot % slotsEveryTurn) + slotsEveryTurn) % slotsEveryTurn
-	index /= slotPerWitness
-	witness := sp.WitnessList[index]
+	currentSlot := dynamicProperty.timestampToSlot(time)
+	slotsEveryTurn := int64(staticProperty.NumberOfWitnesses * slotPerWitness)
+	index := currentSlot % slotsEveryTurn
+	index /= int64(slotPerWitness)
+	witness := staticProperty.WitnessList[index]
 
 	return witness
 }
 
-func timeUntilNextSchedule(sp *globalStaticProperty, dp *globalDynamicProperty, timeSec int64) int64 {
+func timeUntilNextSchedule(timeSec int64) int64 {
 	var index int
-	if index = getIndex(sp.Account.GetId(), sp.WitnessList); index < 0 {
-		return dp.NextMaintenanceTime.ToUnixSec()
+	if index = getIndex(staticProperty.Account.GetId(), staticProperty.WitnessList); index < 0 {
+		return dynamicProperty.NextMaintenanceTime.ToUnixSec()
 	}
 
-	time := GetTimestamp(timeSec)
-	currentSlot := dp.timestampToSlot(time)
-	slotsEveryTurn := int64(sp.NumberOfWitnesses * slotPerWitness)
+	time := common.GetTimestamp(timeSec)
+	currentSlot := dynamicProperty.timestampToSlot(time)
+	slotsEveryTurn := int64(staticProperty.NumberOfWitnesses * slotPerWitness)
 	k := currentSlot / slotsEveryTurn
 	startSlot := k*slotsEveryTurn + int64(index*slotPerWitness)
 	if startSlot > currentSlot {
-		return dp.slotToTimestamp(startSlot).ToUnixSec() - timeSec
+		return dynamicProperty.slotToTimestamp(startSlot).ToUnixSec() - timeSec
 	}
-	if currentSlot-startSlot < slotPerWitness {
-		if time.Slot > dp.LastBlockTime.Slot {
+	if currentSlot-startSlot < int64(slotPerWitness) {
+		if time.Slot > dynamicProperty.LastBlockTime.Slot {
 			return 0
-		} else if currentSlot+1 < startSlot+slotPerWitness {
-			return dp.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
+		} else if currentSlot+1 < startSlot+int64(slotPerWitness) {
+			return dynamicProperty.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
 		}
 	}
 	nextSlot := (k+1)*slotsEveryTurn + int64(index*slotPerWitness)
-	return dp.slotToTimestamp(nextSlot).ToUnixSec() - timeSec
+	return dynamicProperty.slotToTimestamp(nextSlot).ToUnixSec() - timeSec
 }

@@ -14,9 +14,9 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/new_consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 func init() {
@@ -218,7 +218,7 @@ func (pool *TxPoolImpl) initBlockTx() {
 }
 
 func (pool *TxPoolImpl) slotToSec(t int64) int64 {
-	slot := consensus_common.Timestamp{Slot: t}
+	slot := common.Timestamp{Slot: t}
 	return slot.ToUnixSec()
 }
 
