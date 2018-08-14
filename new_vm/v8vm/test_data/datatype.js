@@ -15,7 +15,7 @@ class Datatype {
     }
 
     number_big(delta) {
-        var a = new bigNumber(0);
+        var a = new BigNumber(0);
         for (var i = 0; i < 10; i++) {
             a = a.plus(delta);
             delta /= 10;
@@ -27,7 +27,7 @@ class Datatype {
     }
 
     number_op() {
-        var a = new bigNumber(1);
+        var a = new BigNumber(1);
         a <<= 2;
         a >>= 1;
         a **= 3;
@@ -36,7 +36,7 @@ class Datatype {
     }
 
     number_op2() {
-        var a = new bigNumber(8);
+        var a = new BigNumber(8);
         a |= 1;
         a &= 7;
         a ^= 3;
@@ -44,7 +44,7 @@ class Datatype {
     }
 
     number_strange() {
-        var a = new bigNumber(8);
+        var a = new BigNumber(8);
         return a / -0.0;
     }
 

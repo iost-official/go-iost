@@ -106,10 +106,11 @@ var Contract = function() {
 		t.Fatalf("LoadAndCall run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0] != "144" {
-		t.Errorf("LoadAndCall except 144, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except 144, got %s\n", rs[0])
 	}
 }
 
+/*
 func TestEngine_bigNumber(t *testing.T) {
 	vi := Init(t)
 	ctx := host.NewContext(nil)
@@ -152,54 +153,18 @@ var Contract = function() {
 		t.Errorf("LoadAndCall except mySetVal, got %s\n", rs[0])
 	}
 }
-
-func TestEngine_infiniteLoop(t *testing.T) {
-	vi := Init(t)
-
-	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", uint64(1))
-	ctx.Set("gas_limit", uint64(1000))
-	ctx.Set("contract_name", "contractName")
-	tHost := &host.Host{Ctx: ctx, DB: vi}
-
-	code := &contract.Contract{
-		ID: "test.js",
-		Code: `
-var Contract = function() {
-};
-
-	Contract.prototype = {
-	loop: function() {
-		while (true) {}
-	}
-	};
-
-	module.exports = Contract;
-`,
-	}
-
-	e := NewVM()
-	defer e.Release()
-	e.Init()
-	e.SetJSPath("./v8/libjs/")
-
-	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
-	_, _, err := e.LoadAndCall(tHost, code, "loop")
-
-	if err != nil && err.Error() != "out of gas" {
-		t.Fatalf("infiniteLoop run error: %v\n", err)
-	}
-}
+*/
 
 func TestEngine_Storage(t *testing.T) {
 	e, host, code := MyInit(t, "storage1")
 
-	rs, _, err := e.LoadAndCall(host, code, "get", "a")
+	e.LoadAndCall(host, code, "constructor")
+	rs, _, err := e.LoadAndCall(host, code, "get", "a", "number")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "1000" {
-		t.Errorf("LoadAndCall except mySetVal, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except mySetVal, got %s\n", rs[0])
 	}
 
 	rtn, cost, err := e.LoadAndCall(host, code, "put", "mySetKey", "mySetVal")
@@ -211,12 +176,28 @@ func TestEngine_Storage(t *testing.T) {
 	}
 	t.Log(cost)
 
-	rs, _, err = e.LoadAndCall(host, code, "get", "mySetKey")
+	rs, _, err = e.LoadAndCall(host, code, "get", "mySetKey", "string")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "mySetVal" {
-		t.Errorf("LoadAndCall except mySetVal, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except mySetVal, got %s\n", rs[0])
+	}
+
+	rs, _, err = e.LoadAndCall(host, code,"getThisNum")
+	if err != nil {
+		t.Fatalf("LoadAndCall getThisNum run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "99" {
+		t.Fatalf("LoadAndCall except 99, got %s\n", rs[0])
+	}
+
+	rs, _, err = e.LoadAndCall(host, code,"getThisStr")
+	if err != nil {
+		t.Fatalf("LoadAndCall getThisStr run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "yeah" {
+		t.Fatalf("LoadAndCall except yeah, got %s\n", rs[0])
 	}
 
 	rtn, cost, err = e.LoadAndCall(host, code, "delete", "mySetKey")
@@ -234,7 +215,7 @@ func TestEngine_Storage(t *testing.T) {
 	}
 	// todo get return nil
 	if len(rs) != 1 || rs[0].(string) != "nil" {
-		t.Errorf("LoadAndCall except mySetVal, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except mySetVal, got %s\n", rs[0])
 	}
 }
 
@@ -246,7 +227,7 @@ func TestEngine_DataType(t *testing.T) {
 		t.Fatalf("LoadAndCall number run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "0.5555555555" {
-		t.Errorf("LoadAndCall except 0.5555555555, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except 0.5555555555, got %s\n", rs[0])
 	}
 
 	rs, _,err = e.LoadAndCall(host, code, "number_big", 1)
@@ -254,7 +235,7 @@ func TestEngine_DataType(t *testing.T) {
 		t.Fatalf("LoadAndCall number_big run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "0.5555555555" {
-		t.Errorf("LoadAndCall except 0.5555555555, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except 0.5555555555, got %s\n", rs[0])
 	}
 
 	rs, _,err = e.LoadAndCall(host, code, "number_op")
@@ -262,7 +243,7 @@ func TestEngine_DataType(t *testing.T) {
 		t.Fatalf("LoadAndCall number_op run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "3" {
-		t.Errorf("LoadAndCall except 3, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except 3, got %s\n", rs[0])
 	}
 
 	rs, _,err = e.LoadAndCall(host, code, "number_op2")
@@ -270,7 +251,7 @@ func TestEngine_DataType(t *testing.T) {
 		t.Fatalf("LoadAndCall number_op2 run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "2" {
-		t.Errorf("LoadAndCall except 3, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except 3, got %s\n", rs[0])
 	}
 
 	rs, _,err = e.LoadAndCall(host, code, "number_strange")
@@ -279,7 +260,7 @@ func TestEngine_DataType(t *testing.T) {
 	}
 	// todo get return string -infinity
 	if len(rs) != 1 || rs[0].(string) != "-Infinity" {
-		t.Errorf("LoadAndCall except Infinity, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except Infinity, got %s\n", rs[0])
 	}
 
 	rs, _,err = e.LoadAndCall(host, code, "param", 2)
@@ -287,7 +268,7 @@ func TestEngine_DataType(t *testing.T) {
 		t.Fatalf("LoadAndCall param run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "4" {
-		t.Errorf("LoadAndCall except 4, got %s %s\n", rs[0])
+		t.Fatalf("LoadAndCall except 4, got %s %s\n", rs[0])
 	}
 
 	rs, _,err = e.LoadAndCall(host, code, "param2")
@@ -296,7 +277,7 @@ func TestEngine_DataType(t *testing.T) {
 	}
 	// todo get return string undefined
 	if len(rs) != 1 || rs[0].(string) != "undefined" {
-		t.Errorf("LoadAndCall except undefined, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except undefined, got %s\n", rs[0])
 	}
 
 	rs, _,err = e.LoadAndCall(host, code, "bool")
@@ -305,7 +286,7 @@ func TestEngine_DataType(t *testing.T) {
 	}
 	// todo get return string false
 	if len(rs) != 1 || rs[0].(string) != "false" {
-		t.Errorf("LoadAndCall except undefined, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except undefined, got %s\n", rs[0])
 	}
 
 	rs, _,err = e.LoadAndCall(host, code, "string")
@@ -313,7 +294,7 @@ func TestEngine_DataType(t *testing.T) {
 		t.Fatalf("LoadAndCall string run error: %v\n", err)
 	}
 	if len(rs) != 1 || len(rs[0].(string)) != 4096 {
-		t.Errorf("LoadAndCall except len 4096, got %d\n", len(rs[0].(string)))
+		t.Fatalf("LoadAndCall except len 4096, got %d\n", len(rs[0].(string)))
 	}
 
 	rs, _,err = e.LoadAndCall(host, code, "array")
@@ -321,7 +302,7 @@ func TestEngine_DataType(t *testing.T) {
 		t.Fatalf("LoadAndCall array run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "0,1,2,3"{
-		t.Errorf("LoadAndCall except 0,1,2,3, got %s\n", rs[0].(string))
+		t.Fatalf("LoadAndCall except 0,1,2,3, got %s\n", rs[0].(string))
 	}
 
 	// todo get return string [object Object]
@@ -356,7 +337,7 @@ func TestEngine_Loop(t *testing.T) {
 		t.Fatalf("LoadAndCall for3 run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "10"{
-		t.Errorf("LoadAndCall except 10, got %s\n", rs[0].(string))
+		t.Fatalf("LoadAndCall except 10, got %s\n", rs[0].(string))
 	}
 
 	e, host, code = MyInit(t, "loop")
@@ -365,7 +346,7 @@ func TestEngine_Loop(t *testing.T) {
 		t.Fatalf("LoadAndCall forin run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "12"{
-		t.Errorf("LoadAndCall except 12, got %s\n", rs[0].(string))
+		t.Fatalf("LoadAndCall except 12, got %s\n", rs[0].(string))
 	}
 
 	e, host, code = MyInit(t, "loop")
@@ -374,7 +355,7 @@ func TestEngine_Loop(t *testing.T) {
 		t.Fatalf("LoadAndCall forof run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "6"{
-		t.Errorf("LoadAndCall except 6, got %s\n", rs[0].(string))
+		t.Fatalf("LoadAndCall except 6, got %s\n", rs[0].(string))
 	}
 
 	e, host, code = MyInit(t, "loop")
@@ -401,5 +382,43 @@ func TestEngine_Func(t *testing.T) {
 	_, _,err = e.LoadAndCall(host, code, "func1")
 	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Maximum call stack size exceeded") {
 		t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded, but got %v\n", err)
+	}
+
+	e, host, code = MyInit(t, "func")
+	rs, _,err := e.LoadAndCall(host, code, "func3", 4)
+	if err != nil {
+		t.Fatalf("LoadAndCall func3 run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "9"{
+		t.Fatalf("LoadAndCall except 9, got %s\n", rs[0].(string))
+	}
+
+	e, host, code = MyInit(t, "func")
+	rs, _,err = e.LoadAndCall(host, code, "func4")
+	if err != nil {
+		t.Fatalf("LoadAndCall func4 run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "2,5,5"{
+		t.Fatalf("LoadAndCall except 2,5,5, got %s\n", rs[0].(string))
+	}
+}
+
+func TestEngine_Danger(t *testing.T) {
+	e, host, code := MyInit(t, "danger")
+	_, _,err := e.LoadAndCall(host, code, "bigArray")
+	if err == nil || err.Error() != "execution killed"{
+		t.Fatalf("LoadAndCall for should return error: execution killed, but got %v\n", err)
+	}
+
+	e, host, code = MyInit(t, "danger")
+	_, _,err = e.LoadAndCall(host, code, "visitUndefined")
+	if err == nil || !strings.Contains(err.Error(),"Uncaught exception: TypeError: Cannot set property 'c' of undefined") {
+		t.Fatalf("LoadAndCall for should return error: Uncaught exception: TypeError: Cannot set property 'c' of undefined, but got %v\n", err)
+	}
+
+	e, host, code = MyInit(t, "danger")
+	_, _,err = e.LoadAndCall(host, code, "throw")
+	if err == nil || !strings.Contains(err.Error(),"Uncaught exception: test throw") {
+		t.Fatalf("LoadAndCall for should return error: Uncaught exception: test throw, but got %v\n", err)
 	}
 }
