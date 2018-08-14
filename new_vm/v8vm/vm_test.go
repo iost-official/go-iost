@@ -47,7 +47,7 @@ var Contract = function() {
 	e := NewVM()
 	defer e.Release()
 	e.Init()
-	e.SetJSPath("/Users/lihaifeng/GoLang/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
+	e.SetJSPath("./v8/libjs/")
 
 	rs, _, err := e.LoadAndCall(tHost, code, "fibonacci", "12")
 
@@ -113,7 +113,7 @@ func TestEngine_bigNumber(t *testing.T) {
 		ID: "test.js",
 		Code: `
 var Contract = function() {
-	this.val = new bigNumber(0.00000000008);
+	this.val = new BigNumber(0.00000000008);
 	this.val = this.val.plus(0.0000000000000029);
 };
 
@@ -130,9 +130,10 @@ var Contract = function() {
 	e := NewVM()
 	defer e.Release()
 	e.Init()
-	e.SetJSPath("/Users/lihaifeng/GoLang/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
+	e.SetJSPath("./v8/libjs/")
 
 	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
+	e.LoadAndCall(tHost, code, "constructor")
 	rs, _, err := e.LoadAndCall(tHost, code, "getVal")
 
 	if err != nil {
@@ -170,7 +171,7 @@ var Contract = function() {
 	e := NewVM()
 	defer e.Release()
 	e.Init()
-	e.SetJSPath("/Users/lihaifeng/GoLang/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
+	e.SetJSPath("./v8/libjs/")
 
 	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
 	_, _, err := e.LoadAndCall(tHost, code, "loop")
