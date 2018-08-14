@@ -1,4 +1,4 @@
-package cmd
+package database
 
 import (
 	"os"
@@ -16,7 +16,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	vmdb "github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 )
 
 type database struct {
@@ -27,6 +26,17 @@ func NewDatabase() *database {
 	var data database
 	data.json = simplejson.New()
 	data.addSystem()
+	return &data
+}
+
+func NewDatabaseFromPath(path string) *database {
+	var data database
+	json, err := readJson(path)
+	if err != nil {
+		return nil
+	}
+	data.json = json
+	fmt.Println(data.json)
 	return &data
 }
 
@@ -55,10 +65,10 @@ func (d *database) Get(table string, key string) (string, error) {
 		return out.(string), nil
 	}
 
-	return vmdb.Marshal(out)
+	return Marshal(out)
 }
 func (d *database) Put(table string, key string, value string) error {
-	d.json.Set(key, vmdb.MustUnmarshal(value))
+	d.json.Set(key, MustUnmarshal(value))
 	return nil
 }
 func (d *database) Del(table string, key string) error {
