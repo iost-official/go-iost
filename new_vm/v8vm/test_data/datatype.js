@@ -1,32 +1,88 @@
-class Storage1 {
+class Datatype {
     constructor() {
     }
 
-    put(k, v) {
-        return IOSTContractStorage.put(k, v);
+    number(delta) {
+        var a = 0;
+        for (var i = 0; i < 10; i++) {
+            a += delta;
+            delta /= 10;
+        }
+        a -= a / 2;
+        a /= 2;
+        a *= 2;
+        return a;
     }
 
-    get(k) {
-        return IOSTContractStorage.get(k)
+    number_big(delta) {
+        var a = new bigNumber(0);
+        for (var i = 0; i < 10; i++) {
+            a = a.plus(delta);
+            delta /= 10;
+        }
+        a -= a / 2;
+        a /= 2;
+        a *= 2;
+        return a;
     }
 
-    delete(k) {
-        return IOSTContractStorage.del(k);
+    number_op() {
+        var a = new bigNumber(1);
+        a <<= 2;
+        a >>= 1;
+        a **= 3;
+        a %= 5;
+        return a;
     }
 
-    /*
-    mset(k, f, v) {
-        return IOSTContract
+    number_op2() {
+        var a = new bigNumber(8);
+        a |= 1;
+        a &= 7;
+        a ^= 3;
+        return a == 2 ? 2 : 22;
     }
 
-    mget(k) {
-        return IOSTContractStorage.get(k)
+    number_strange() {
+        var a = new bigNumber(8);
+        return a / -0.0;
     }
 
-    mdelete(k) {
-        return IOSTContractStorage.del(k);
+    param() {
+        return 3, 4;
     }
-    */
+
+    param2(a) {
+        return a;
+    }
+
+    bool() {
+        var a = true;
+        var b = true;
+        return !a || !b && a;
+    }
+
+    string() {
+        var a = "test";
+        for (var i = 0; i < 10; i += 1) {
+            a = a + a;
+        }
+        return a;
+    }
+
+    array() {
+        var a = [0, 1, 2];
+        a.push(3);
+        return a;
+    }
+
+    object() {
+        var a = {
+            pos: 0,
+            str: "test object"
+        }
+        return a;
+    }
 };
 
-module.exports = Storage1;
+module.exports = Datatype;
