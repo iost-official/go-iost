@@ -34,7 +34,7 @@ func goGet(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) *C.char {
 	}
 
 	k := C.GoString(key)
-	val := sbx.host.Get(k)
+	val, _ := sbx.host.Get(k)
 	valStr, _ := dbValToString(val)
 
 	return C.CString(valStr)

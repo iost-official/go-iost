@@ -51,6 +51,12 @@
 			"revisionTime": "2018-03-21T16:47:47Z"
 		},
 		{
+			"checksumSHA1": "0EhLvZ6Og9HYqJtCc2Dzs1EgM30=",
+			"path": "github.com/bitly/go-simplejson",
+			"revision": "0c965951289cce37dec52ad1f34200fefc816777",
+			"revisionTime": "2017-10-23T17:51:54Z"
+		},
+		{
 			"checksumSHA1": "tmTwnJZMpwYat5xtkhAJCGxEf3w=",
 			"path": "github.com/btcsuite/btcd/btcec",
 			"revision": "bc0944904505aab55e089371a892be2f87883161",

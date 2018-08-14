@@ -9,7 +9,7 @@ var IOSTContractStorage = (function () {
             var val = storage.get(key);
             return val;
         },
-        del: function () {
+        del: function (key) {
             var ret = storage.del(key);
             return ret;
         },

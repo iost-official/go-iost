@@ -1,15 +1,12 @@
 package new_vm
 
 import (
-	"context"
-
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 
 	"errors"
 
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm"
 )
 
 var (
@@ -40,25 +37,24 @@ func NewMonitor( /*cb database.IMultiValue, cacheLength int*/ ) *Monitor {
 	return m
 }
 
-func (m *Monitor) Call(host *host.Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
-	c := host.DB.Contract(contractName)
+	c := h.DB.Contract(contractName)
 	abi := c.ABI(api)
 	if abi == nil {
-		return nil, nil, ErrABINotFound
+		panic("should not reach here")
 	}
 
 	err = checkArgs(abi, args)
 
 	if err != nil {
-		return nil, nil, err // todo check cost
+		return nil, contract.NewCost(0, 0, GasCheckTxFailed), err // todo check cost
 	}
 
-	ctx := host.Context()
+	h.Ctx = host.NewContext(h.Ctx)
 
-	host.Ctx = context.WithValue(host.Ctx, "abi_config", abi)
-	host.Ctx = context.WithValue(host.Ctx, "contract_name", contractName)
-	host.Ctx = context.WithValue(host.Ctx, "abi_name", api)
+	h.Ctx.Set("contract_name", contractName)
+	h.Ctx.Set("abi_name", api)
 
 	vm, ok := m.vms[c.Info.Lang]
 	if !ok {
@@ -66,19 +62,22 @@ func (m *Monitor) Call(host *host.Host, contractName, api string, args ...interf
 		m.vms[c.Info.Lang] = vm
 		m.vms[c.Info.Lang].Init()
 	}
-	rtn, cost, err = vm.LoadAndCall(host, c, api, args...)
+	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
 
-	payment := host.Ctx.Value("abi_config").(*contract.ABI).Payment
+	payment, ok := h.Ctx.GValue("abi_payment").(int)
+	if !ok {
+		payment = 0
+	}
 	switch payment {
 	case 1:
-		var gasPrice = host.Ctx.Value("gas_price").(int64) // TODO 判断大于0
+		var gasPrice = h.Ctx.Value("gas_price").(int64) // TODO 判断大于0
 		if abi.GasPrice < gasPrice {
 			return nil, nil, ErrGasPriceTooBig
 		}
 
-		b := host.DB.Balance(contractName)
+		b := h.DB.Balance("g-" + contractName)
 		if b > gasPrice*cost.ToGas() {
-			host.PayCost(cost, contractName, gasPrice)
+			h.PayCost(cost, "g-"+contractName)
 			cost = contract.Cost0()
 		}
 
@@ -86,7 +85,7 @@ func (m *Monitor) Call(host *host.Host, contractName, api string, args ...interf
 		//fmt.Println("user paid for", args[0])
 	}
 
-	host.Ctx = ctx
+	h.Ctx = h.Ctx.Base()
 
 	return
 }
@@ -116,7 +115,7 @@ func checkArgs(abi *contract.ABI, args []interface{}) error {
 		case "string":
 			_, ok = args[i].(string)
 		case "number":
-			_, ok = args[i].(uint64)
+			_, ok = args[i].(int64)
 		case "bool":
 			_, ok = args[i].(bool)
 		case "json":
@@ -134,9 +133,9 @@ func VMFactory(lang string) VM {
 	case "native":
 		return &native_vm.VM{}
 	case "javascript":
-		vm := v8.NewVM()
-		vm.SetJSPath("/Users/hepeijian/go/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
-		return vm
+		//vm := v8.NewVM()
+		//vm.SetJSPath("/Users/hepeijian/go/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
+		//return vm
 	}
 	return nil
 }
