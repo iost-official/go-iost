@@ -7,4 +7,4 @@ install:
 
 script:
   - make
-  - go test ./...
+  - go test $(go list ./... | grep -vE "/new_vm|/consensus/common|/core/new_blockcache")
