@@ -3,8 +3,8 @@ go:
   - "1.10"
 
 install:
-  - go get -t ./...
+  - echo "Skip install"
 
 script:
   - make
-
+  - go test ./...
