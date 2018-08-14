@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -15,54 +15,31 @@ var (
 )
 
 func TestGetKeyFromFile(t *testing.T) {
-	Convey("valid key in file", t, func() {
-		err := ioutil.WriteFile(testCacheFile, []byte(testPrivKey), 0666)
-		Convey("create a file", func() {
-			So(err, ShouldBeNil)
-		})
+	// valid key in file
+	err := ioutil.WriteFile(testCacheFile, []byte(testPrivKey), 0666)
+	assert.Nil(t, err)
+	pk, err := getKeyFromFile(testCacheFile)
+	assert.Nil(t, err)
+	assert.NotNil(t, pk)
+	assert.Nil(t, os.Remove(testCacheFile))
 
-		Convey("check private key", func() {
-			pk, err := getKeyFromFile(testCacheFile)
-			So(err, ShouldBeNil)
-			So(pk, ShouldNotBeNil)
-		})
+	// invalid key in file
+	err = ioutil.WriteFile(testCacheFile, []byte(testInvalidKey), 0666)
+	assert.Nil(t, err)
+	pk, err = getKeyFromFile(testCacheFile)
+	assert.NotNil(t, err)
+	assert.Nil(t, pk)
+	assert.Nil(t, os.Remove(testCacheFile))
 
-		err = os.Remove(testCacheFile)
-		Convey("delete the file", func() {
-			So(err, ShouldBeNil)
-		})
-	})
+	// nonexistent file
+	pk, err = getKeyFromFile("")
+	assert.NotNil(t, err)
+	assert.Nil(t, pk)
 
-	Convey("invalid key in file", t, func() {
-		err := ioutil.WriteFile(testCacheFile, []byte(testInvalidKey), 0666)
-		Convey("create a file", func() {
-			So(err, ShouldBeNil)
-		})
-
-		Convey("check private key", func() {
-			pk, err := getKeyFromFile(testCacheFile)
-			So(err, ShouldNotBeNil)
-			So(pk, ShouldBeNil)
-		})
-
-		err = os.Remove(testCacheFile)
-		Convey("delete the file", func() {
-			So(err, ShouldBeNil)
-		})
-	})
-
-	Convey("nonexistent file", t, func() {
-		Convey("empty file name", func() {
-			pk, err := getKeyFromFile("")
-			So(err, ShouldNotBeNil)
-			So(pk, ShouldBeNil)
-		})
-		Convey("nonexistent file name", func() {
-			pk, err := getKeyFromFile(testCacheFile)
-			So(err, ShouldNotBeNil)
-			So(pk, ShouldBeNil)
-		})
-	})
+	// nonexistent file name
+	pk, err = getKeyFromFile(testCacheFile)
+	assert.NotNil(t, err)
+	assert.Nil(t, pk)
 }
 
 func fileExists(path string) (bool, error) {
@@ -77,25 +54,20 @@ func fileExists(path string) (bool, error) {
 }
 
 func TestGetOrCreateKey(t *testing.T) {
-	Convey("file should be nonexistent", t, func() {
-		isExist, err := fileExists(testCacheFile)
-		So(err, ShouldBeNil)
-		So(isExist, ShouldBeFalse)
-	})
-	Convey("create key and save", t, func() {
-		privKey, err := getOrCreateKey(testCacheFile)
-		So(err, ShouldBeNil)
-		So(privKey, ShouldNotBeNil)
-	})
+	// file should be nonexistent
+	isExist, err := fileExists(testCacheFile)
+	assert.Nil(t, err)
+	assert.False(t, isExist)
 
-	Convey("file should be existent", t, func() {
-		isExist, err := fileExists(testCacheFile)
-		So(err, ShouldBeNil)
-		So(isExist, ShouldBeTrue)
-	})
+	// create key and save
+	privKey, err := getOrCreateKey(testCacheFile)
+	assert.Nil(t, err)
+	assert.NotNil(t, privKey)
 
-	Convey("delete the file", t, func() {
-		err := os.Remove(testCacheFile)
-		So(err, ShouldBeNil)
-	})
+	// file should be existent
+	isExist, err = fileExists(testCacheFile)
+	assert.Nil(t, err)
+	assert.True(t, isExist)
+
+	assert.Nil(t, os.Remove(testCacheFile))
 }

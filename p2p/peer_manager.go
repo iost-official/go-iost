@@ -52,6 +52,7 @@ type PeerManager struct {
 	seeds []string
 
 	host            host.Host
+	config          *Config
 	routingTable    *kbucket.RoutingTable
 	peerStore       peerstore.Peerstore
 	routingFilePath string
@@ -59,13 +60,15 @@ type PeerManager struct {
 }
 
 // NewPeerManager returns a new instance of PeerManager struct.
-func NewPeerManager(host host.Host) *PeerManager {
+func NewPeerManager(host host.Host, config *Config) *PeerManager {
 	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), time.Second, host.Peerstore())
 	return &PeerManager{
 		neighbors:    make(map[peer.ID]*Peer),
 		subs:         new(sync.Map),
 		quitCh:       make(chan struct{}),
 		routingTable: routingTable,
+		host:         host,
+		config:       config,
 		peerStore:    host.Peerstore(),
 	}
 }
@@ -275,8 +278,9 @@ func (pm *PeerManager) parseSeeds() {
 	}
 }
 
+// Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-	msg := newP2PMessage(100, typ, 1, 0, data)
+	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	pm.neighborMutex.RLock()
 	defer pm.neighborMutex.RUnlock()
@@ -286,14 +290,17 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 	}
 }
 
+// SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
-	msg := newP2PMessage(100, typ, 1, 0, data)
+	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
+
 	peer := pm.GetNeighbor(peerID)
 	if peer != nil {
 		peer.SendMessage(msg, mp)
 	}
 }
 
+// Register registers a message channel of the given types.
 func (pm *PeerManager) Register(id string, mTyps ...MessageType) chan IncomingMessage {
 	if len(mTyps) == 0 {
 		return nil
@@ -306,6 +313,7 @@ func (pm *PeerManager) Register(id string, mTyps ...MessageType) chan IncomingMe
 	return c
 }
 
+// Deregister deregisters a message channel of the given types.
 func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 	for _, typ := range mTyps {
 		if m, exist := pm.subs.Load(typ); exist {
@@ -314,6 +322,7 @@ func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 	}
 }
 
+// handleRoutingTableQuery picks the nearest peers of the given peerID and sends the result to it.
 func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
 	peerIDs := pm.routingTable.NearestPeers(kbucket.ConvertPeerID(peerID), peerResponseCount)
 	peerInfo := make([]peerstore.PeerInfo, 0, len(peerIDs))
@@ -325,19 +334,23 @@ func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
 	}
 	bytes, err := json.Marshal(peerInfo)
 	if err != nil {
+		ilog.Error("json encode failed. err=%v, obj=%+v", err, peerInfo)
 		return
 	}
 	pm.SendToPeer(peerID, bytes, RoutingTableResponse, UrgentMessage)
 }
 
+// handleRoutingTableResponse stores the peer information received.
 func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 	data, err := msg.data()
 	if err != nil {
+		ilog.Error("get message data failed. err=%v", err)
 		return
 	}
 	peerInfos := make([]peerstore.PeerInfo, 0)
 	err = json.Unmarshal(data, &peerInfos)
 	if err != nil {
+		ilog.Error("json decode failed. err=%v, str=%s", err, data)
 		return
 	}
 	for _, peerInfo := range peerInfos {

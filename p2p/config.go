@@ -1,15 +1,20 @@
 package p2p
 
-import (
-	"time"
-
-	multiaddr "github.com/multiformats/go-multiaddr"
-)
-
+// Config defines configuration the p2p needs.
 type Config struct {
-	SeedNodes   []multiaddr.Multiaddr
+	SeedNodes   []string
 	ListenAddr  string
-	BucketSize  int
-	PeerTimeout time.Duration
 	PrivKeyPath string
+	ChainID     uint32
+	Version     uint16
+}
+
+// DefaultConfig returns a default configuration.
+func DefaultConfig() *Config {
+	return &Config{
+		ListenAddr:  "0.0.0.0:6666",
+		PrivKeyPath: "priv.key",
+		ChainID:     404,
+		Version:     1.0,
+	}
 }
