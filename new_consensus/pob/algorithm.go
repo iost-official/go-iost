@@ -28,57 +28,52 @@ var (
 	ErrTxSignature = errors.New("tx wrong signature")
 )
 
-func genBlock(acc account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db *db.MVCCDB) *block.Block {
-	lastBlk := node.Block
-	parentHash := lastBlk.HeadHash()
+func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db *db.MVCCDB) *block.Block {
+	lastBlock := node.Block
+	parentHash := lastBlock.HeadHash()
 	blk := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
 			ParentHash: parentHash,
-			Number:     lastBlk.Head.Number + 1,
-			Witness:    acc.ID,
+			Number:     lastBlock.Head.Number + 1,
+			Witness:    account.ID,
 			Time:       common.GetCurrentTimestamp().Slot,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-
 	txCnt := 1000
+	limitTime := time.NewTicker((common.SlotLength/3 * time.Second))
+	txsList, err := txPool.PendingTxs(txCnt)
+	if err == nil {
+		txPoolSize.Set(float64(len(txsList)))
 
-	limitTime := time.NewTicker(((common.SlotLength/3 - 1) + 1) * time.Second)
-	if txPool != nil {
-		tx, err := txPool.PendingTxs(txCnt)
-		if err == nil {
-			txPoolSize.Set(float64(len(tx)))
-
-			if len(tx) != 0 {
-				consensus_common.VerifyTxBegin(lastBlk, db)
-			ForEnd:
-				for _, t := range tx {
-					select {
-					case <-limitTime.C:
+		if len(txsList) != 0 {
+			consensus_common.VerifyTxBegin(lastBlock, db)
+		ForEnd:
+			for _, t := range txsList {
+				select {
+				case <-limitTime.C:
+					break ForEnd
+				default:
+					if len(blk.Txs) >= txCnt {
 						break ForEnd
-					default:
-						if len(blk.Txs) >= txCnt {
-							break ForEnd
-						}
-						if receipt, err := consensus_common.VerifyTx(t); err == nil {
-							db.Commit()
-							blk.Txs = append(blk.Txs, t)
-							blk.Receipts = append(blk.Receipts, receipt)
-						} else {
-							db.Rollback()
-						}
+					}
+					if receipt, err := consensus_common.VerifyTx(t); err == nil {
+						db.Commit()
+						blk.Txs = append(blk.Txs, t)
+						blk.Receipts = append(blk.Receipts, receipt)
+					} else {
+						db.Rollback()
 					}
 				}
 			}
 		}
 	}
-	var err error
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
-	sig, _ := common.Sign(common.Secp256k1, headInfo, acc.Seckey)
+	sig, _ := common.Sign(common.Secp256k1, headInfo, account.Seckey)
 	blk.Head.Signature = sig.Encode()
 	err = blk.CalculateHeadHash()
 	if err != nil {
@@ -158,7 +153,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 			}
 		}
 	}
-	err = consensus_common.VerifyBlock(blk, db)
+	err = consensus_common.VerifyBlockWithVM(blk, db)
 	if err != nil {
 		return err
 	}
@@ -168,8 +163,6 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 func updateNodeInfo(node *blockcache.BlockCacheNode) {
 	node.Number = uint64(node.Block.Head.Number)
 	node.Witness = node.Block.Head.Witness
-
-	// watermark
 	if number, has := staticProperty.Watermark[node.Witness]; has {
 		node.ConfirmUntil = number
 		if node.Number >= number {
@@ -179,8 +172,6 @@ func updateNodeInfo(node *blockcache.BlockCacheNode) {
 		node.ConfirmUntil = 0
 		staticProperty.Watermark[node.Witness] = node.Number + 1
 	}
-
-	// slot map
 	staticProperty.addSlotWitness(uint64(node.Block.Head.Time), node.Witness)
 }
 
@@ -198,33 +189,49 @@ func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) []stri
 	return nil
 }
 
-func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
-	// return the last node that confirmed
+func calculateConfirm2(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
 	confirmNumber := staticProperty.NumberOfWitnesses*2/3 + 1
 	startNumber := node.Number
-	topNumber := root.Number
+	libNumber := root.Number
+	votedWitnesses := make([][]string, startNumber-libNumber)
+	var j uint64 = 0
+	for node != root {
+		for i := 0; uint64(i) < startNumber-node.ConfirmUntil+1; i++ {
+			votedWitnesses[i] = append(votedWitnesses[0], node.Witness)
+		}
+		if len(votedWitnesses[j]) == confirmNumber {
+			return node
+		}
+		j++
+		node = node.Parent
+	}
+	return nil
+}
+func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
+	confirmNumber := staticProperty.NumberOfWitnesses*2/3 + 1
+	startNumber := node.Number
+	libNumber := root.Number
 	confirmMap := make(map[string]int)
-	confirmUntil := make([][]string, startNumber-topNumber+1)
+	votedWitnesses := make([][]string, startNumber-libNumber)
 	for node != root {
 		if node.ConfirmUntil <= node.Number {
-			// This node can confirm some nodes
 			if num, err := confirmMap[node.Witness]; err {
 				confirmMap[node.Witness] = 1
 			} else {
 				confirmMap[node.Witness] = num + 1
 			}
-			index := int64(node.ConfirmUntil) - int64(topNumber)
+			index := int64(node.ConfirmUntil) - int64(libNumber)
 			if index > 0 {
-				confirmUntil[index] = append(confirmUntil[index], node.Witness)
+				votedWitnesses[index] = append(votedWitnesses[index], node.Witness)
 			}
 		}
 		if len(confirmMap) >= confirmNumber {
-			staticProperty.delSlotWitness(topNumber, node.Number)
+			staticProperty.delSlotWitness(libNumber, node.Number)
 			return node
 		}
-		i := node.Number - topNumber
-		if confirmUntil[i] != nil {
-			for _, witness := range confirmUntil[i] {
+		i := node.Number - libNumber
+		if votedWitnesses[i] != nil {
+			for _, witness := range votedWitnesses[i] {
 				confirmMap[witness]--
 				if confirmMap[witness] == 0 {
 					delete(confirmMap, witness)

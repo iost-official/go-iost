@@ -96,7 +96,7 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 	if err != nil {
 		fmt.Println("Unable to initialize block chain top")
 	}
-	dynamicProperty.update(&blk.Head)
+	dynamicProperty.update(blk)
 	return &p, nil
 }
 
@@ -190,7 +190,7 @@ func (p *PoB) scheduleLoop() {
 				hash := chainHead.Block.HeadHash()
 				p.produceDB.Checkout(string(hash))
 				blk := genBlock(p.account, chainHead, p.txPool, p.produceDB)
-				dynamicProperty.update(&blk.Head)
+				dynamicProperty.update(blk)
 				blkByte, err := blk.Encode()
 				if err != nil {
 					fmt.Println(err)
@@ -232,28 +232,16 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 				return nil, verifyErr
 			}
 		}
-		// tag in state
-		hash = blk.HeadHash()
-		p.verifyDB.Tag(string(hash))
+		p.verifyDB.Tag(string(blk.HeadHash()))
 	} else {
-		hash := blk.HeadHash()
-		p.verifyDB.Checkout(string(hash))
+		p.verifyDB.Checkout(string(blk.HeadHash()))
 	}
-
-	// update node info without state
 	updateNodeInfo(node)
-	// update node info with state, currently pending witness list
-	updatePendingWitness(node, p.verifyDB)
-
-	// confirm
+	updatePendingWitness(node, p.verifyDB) //?
 	confirmNode := calculateConfirm(node, p.blockCache.LinkedRoot())
-	if confirmNode != nil {
-		p.blockCache.Flush(confirmNode)
-		// promote witness list
-		promoteWitness(node, confirmNode)
-	}
-
-	dynamicProperty.update(&blk.Head)
+	p.blockCache.Flush(confirmNode)
+	promoteWitness(node, confirmNode)	//更新witnesslist?
+	dynamicProperty.update(blk)
 	// -> tx pool
 	p.txPool.AddLinkedNode(node, p.blockCache.Head())
 	return node, nil

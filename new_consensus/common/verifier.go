@@ -44,7 +44,7 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.B
 	return nil
 }
 
-func VerifyBlock(blk *block.Block, db *db.MVCCDB) error {
+func VerifyBlockWithVM(blk *block.Block, db *db.MVCCDB) error {
 	var receipts []*tx.TxReceipt
 	engine := new_vm.NewEngine(&blk.Head, db)
 	for _, tx := range blk.Txs {

@@ -73,7 +73,7 @@ var (
 type globalDynamicProperty struct {
 	LastBlockNumber     int64
 	LastBlockTime       common.Timestamp
-	LastBLockHash       []byte
+	LastBlockHash       []byte
 	TotalSlots          int64
 	NextMaintenanceTime common.Timestamp
 }
@@ -88,17 +88,14 @@ func newGlobalDynamicProperty() globalDynamicProperty {
 	return prop
 }
 
-func (prop *globalDynamicProperty) update(blockHead *block.BlockHead) {
+func (prop *globalDynamicProperty) update(blk *block.Block) {
 	if prop.LastBlockNumber == 0 {
 		prop.TotalSlots = 1
 		prop.NextMaintenanceTime.AddHour(maintenanceInterval)
 	}
-	prop.LastBlockNumber = blockHead.Number
-	prop.LastBlockTime = common.Timestamp{Slot: blockHead.Time}
-	hash, err := blockHead.Hash()
-	if err == nil {
-		copy(prop.LastBLockHash, hash)
-	}
+	prop.LastBlockNumber = blk.Head.Number
+	prop.LastBlockTime = common.Timestamp{Slot: blk.Head.Time}
+	copy(prop.LastBlockHash, blk.HeadHash())
 }
 
 func (prop *globalDynamicProperty) timestampToSlot(time common.Timestamp) int64 {

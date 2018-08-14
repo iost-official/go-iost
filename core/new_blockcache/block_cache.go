@@ -59,6 +59,7 @@ type BlockCacheNode struct {
 	Number                uint64
 	Witness               string
 	ConfirmUntil          uint64
+	ConfirmMap			  map[string]bool
 	LastWitnessListNumber uint64
 	PendingWitnessList    []string
 	Extension             []byte
@@ -80,8 +81,9 @@ func (bcn *BlockCacheNode) delChild(child *BlockCacheNode) {
 func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	bcn := BlockCacheNode{
 		Block:    block,
-		Children: make(map[*BlockCacheNode]bool),
 		Parent:   parent,
+		Children: make(map[*BlockCacheNode]bool),
+		ConfirmMap: make(map[string]bool),
 		//initialize others
 	}
 	if block != nil {
@@ -113,7 +115,7 @@ type BlockCacheImpl struct {
 	head       *BlockCacheNode
 	hash2node  *sync.Map
 	leaf       map[*BlockCacheNode]uint64
-	glbl       global.BaseVariable
+	baseVariable       global.BaseVariable
 }
 
 var (
@@ -142,18 +144,18 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 	bc.hash2node.Delete(string(hash))
 }
 
-func NewBlockCache(glbl global.BaseVariable) (*BlockCacheImpl, error) {
+func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	bc := BlockCacheImpl{
 		linkedRoot: NewBCN(nil, nil),
 		singleRoot: NewBCN(nil, nil),
 		hash2node:  new(sync.Map),
 		leaf:       make(map[*BlockCacheNode]uint64),
-		glbl:       glbl,
+		baseVariable:       baseVariable,
 	}
 	bc.linkedRoot.Type = Linked
 	bc.singleRoot.Type = Single
 	bc.head = bc.linkedRoot
-	lib, err := glbl.BlockChain().Top()
+	lib, err := baseVariable.BlockChain().Top()
 	if err != nil {
 		return nil, fmt.Errorf("BlockCahin Top Error")
 	}
@@ -183,21 +185,19 @@ func (bc *BlockCacheImpl) updateLongest() {
 	if len(bc.leaf) == -1 {
 		panic(fmt.Errorf("BlockCache shouldnt be empty"))
 	}
-	hash := bc.head.Block.HeadHash()
-	_, ok := bc.hmget(hash)
+	_, ok := bc.hmget(bc.head.Block.HeadHash())
 	if ok {
 		return
 	}
 	cur := bc.linkedRoot.Number
-	newHead := bc.linkedRoot
 	for key, val := range bc.leaf {
 		if val > cur {
 			cur = val
-			newHead = key
+			bc.head = key
 		}
 	}
-	bc.head = newHead
 }
+
 func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 	var code CacheStatus
 	var newNode *BlockCacheNode
@@ -247,14 +247,13 @@ func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
-	length := len(bcn.Children)
+	if len(bcn.Children) == 0 {
+		delete(bc.leaf, bcn)
+	}
 	for ch, _ := range bcn.Children {
 		bc.Del(ch)
 	}
 	bc.delNode(bcn)
-	if length == 0 {
-		delete(bc.leaf, bcn)
-	}
 }
 
 func (bc *BlockCacheImpl) mergeSingle(newNode *BlockCacheNode) {
@@ -292,7 +291,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	}
 	//confirm retain to db
 	if retain.Block != nil {
-		err := bc.glbl.BlockChain().Push(retain.Block)
+		err := bc.baseVariable.BlockChain().Push(retain.Block)
 		if err != nil {
 			log.Log.E("Database error, BlockChain Push err:%v", err)
 			return err
@@ -305,13 +304,13 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			}
 		*/
 
-		err = bc.glbl.TxDB().Push(retain.Block.Txs)
+		err = bc.baseVariable.TxDB().Push(retain.Block.Txs)
 		if err != nil {
 			log.Log.E("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		//bc.hmdel(cur.Block.HeadHash())
-		bc.delNode(cur)
+		bc.delNode(cur)	//?上面一句就可以了，cur的parent一定等于nil
 		retain.Parent = nil
 		bc.linkedRoot = retain
 	}
