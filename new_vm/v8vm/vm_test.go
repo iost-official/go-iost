@@ -110,50 +110,18 @@ var Contract = function() {
 	}
 }
 
-/*
 func TestEngine_bigNumber(t *testing.T) {
-	vi := Init(t)
-	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", uint64(1))
-	ctx.Set("gas_limit", uint64(1000000000))
-	ctx.Set("contract_name", "contractName")
-	tHost := &host.Host{Ctx: ctx, DB: vi}
-
-	code := &contract.Contract{
-		ID: "test.js",
-		Code: `
-var Contract = function() {
-	this.val = new BigNumber(0.00000000008);
-	this.val = this.val.plus(0.0000000000000029);
-};
-
-	Contract.prototype = {
-	getVal: function() {
-		return this.val.toString(10);
-	}
-	};
-
-	module.exports = Contract;
-`,
-	}
-
-	e := NewVM()
-	defer e.Release()
-	e.Init()
-	e.SetJSPath("./v8/libjs/")
-
-	//e.LoadAndCall(host, code, "mySet", "mySetKey", "mySetVal")
-	e.LoadAndCall(tHost, code, "constructor")
-	rs, _, err := e.LoadAndCall(tHost, code, "getVal")
+	e, host, code := MyInit(t, "bignumber1")
+	e.LoadAndCall(host, code, "constructor")
+	rs, _, err := e.LoadAndCall(host, code, "getVal")
 
 	if err != nil {
-		t.Fatalf("LoadAndCall run error: %v\n", err)
+		t.Fatalf("LoadAndCall getVal error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0] != "0.0000000000800029" {
-		t.Errorf("LoadAndCall except mySetVal, got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != "0.0000000000800029" {
+		t.Errorf("LoadAndCall except 0.0000000000800029, got %s\n", rs[0])
 	}
 }
-*/
 
 func TestEngine_Storage(t *testing.T) {
 	e, host, code := MyInit(t, "storage1")
