@@ -46,9 +46,9 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*VM, *host.H
 	if len(optional) > 0 {
 		gasLimit = optional[0].(uint64)
 	}
-	ctx.Set("gas_limit", gasLimit)
+	ctx.GSet("gas_limit", gasLimit)
 	ctx.Set("contract_name", conName)
-	h := &host.Host{Ctx: ctx, DB: vi}
+	h := host.NewHost(ctx, vi, nil)
 
 	fd, err := ReadFile(testDataPath + conName + ".js")
 	if err != nil {
@@ -73,9 +73,9 @@ func TestEngine_LoadAndCall(t *testing.T) {
 	vi := Init(t)
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", uint64(1))
-	ctx.Set("gas_limit", uint64(1000000000))
+	ctx.GSet("gas_limit", uint64(1000000000))
 	ctx.Set("contract_name", "contractName")
-	tHost := &host.Host{Ctx: ctx, DB: vi}
+	tHost := host.NewHost(ctx, vi, nil)
 
 	code := &contract.Contract{
 		ID: "test.js",
