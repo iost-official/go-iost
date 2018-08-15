@@ -59,7 +59,6 @@ type BlockCacheNode struct {
 	Number                uint64
 	Witness               string
 	ConfirmUntil          uint64
-	ConfirmMap			  map[string]bool
 	LastWitnessListNumber uint64
 	PendingWitnessList    []string
 	Extension             []byte
@@ -83,7 +82,6 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 		Block:    block,
 		Parent:   parent,
 		Children: make(map[*BlockCacheNode]bool),
-		ConfirmMap: make(map[string]bool),
 		//initialize others
 	}
 	if block != nil {
