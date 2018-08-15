@@ -28,7 +28,7 @@ var (
 	ErrTxSignature = errors.New("tx wrong signature")
 )
 
-func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db *db.MVCCDB) *block.Block {
+func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db db.MVCCDB) *block.Block {
 	lastBlock := node.Block
 	parentHash := lastBlock.HeadHash()
 	blk := block.Block{
@@ -43,7 +43,7 @@ func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool t
 		Receipts: []*tx.TxReceipt{},
 	}
 	txCnt := 1000
-	limitTime := time.NewTicker((common.SlotLength/3 * time.Second))
+	limitTime := time.NewTicker((common.SlotLength / 3 * time.Second))
 	txsList, _ := txPool.PendingTxs(txCnt)
 	txPoolSize.Set(float64(len(txsList)))
 	if len(txsList) != 0 {
@@ -129,7 +129,7 @@ func verifyBasics(blk *block.Block) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db *db.MVCCDB) error {
+func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB) error {
 	err := consensus_common.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func updateNodeInfo(node *blockcache.BlockCacheNode) {
 	staticProperty.addSlotWitness(uint64(node.Block.Head.Time), node.Witness)
 }
 
-func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) []string {
+func updatePendingWitness(node *blockcache.BlockCacheNode, db db.MVCCDB) []string {
 	// TODO how to decode witness list from db?
 	//newList, err := db.Get("state", "witnessList")
 	var err error

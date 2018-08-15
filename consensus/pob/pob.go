@@ -7,6 +7,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -14,7 +15,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -61,8 +61,8 @@ type PoB struct {
 	txPool       txpool.TxPool
 	p2pService   p2p.Service
 	synchronizer consensus_common.Synchronizer
-	verifyDB     *db.MVCCDB
-	produceDB    *db.MVCCDB
+	verifyDB     db.MVCCDB
+	produceDB    db.MVCCDB
 
 	exitSignal  chan struct{}
 	chRecvBlock chan message.Message
