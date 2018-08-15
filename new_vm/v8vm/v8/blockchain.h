@@ -16,14 +16,14 @@ private:
 public:
     IOSTBlockchain(SandboxPtr ptr): sbx(ptr) {}
 
-    int Transfer(char *from, char *to, char *amount);
-    int Withdraw(char *to, char *amount);
-    int Deposit(char *from, char *amount);
-    int TopUp(char *contract, char *from, char *amount);
-    int Countermand(char *contract, char *to, char *amount);
+    int Transfer(const char *, const char *, const char *);
+    int Withdraw(const char *, const char *);
+    int Deposit(const char *, const char *);
+    int TopUp(const char *, const char *, const char *);
+    int Countermand(const char *, const char *, const char *);
     char *BlockInfo();
     char *TxInfo();
-    char *Call(char *contract, char *api, char *args);
+    char *Call(const char *, const char *, const char *);
 };
 
 #endif // IOST_V8_BLOCKCHAIN_H
