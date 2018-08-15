@@ -6,6 +6,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/db/mvcc/trie"
 	"github.com/iost-official/Go-IOS-Protocol/db/storage"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -17,13 +18,6 @@ var (
 	ErrTableNotValid = errors.New("table name is not valid")
 )
 
-type Item struct {
-	table   string
-	key     string
-	value   string
-	deleted bool
-}
-
 type Storage interface {
 	Get(key []byte) ([]byte, error)
 	Put(key []byte, value []byte) error
@@ -34,7 +28,33 @@ type Storage interface {
 	Close() error
 }
 
-type MVCCDB struct {
+type MVCCDB interface {
+	Get(table string, key string) (string, error)
+	Put(table string, key string, value string) error
+	Del(table string, key string) error
+	Has(table string, key string) (bool, error)
+	Keys(table string, prefix string) ([]string, error)
+	Commit()
+	Rollback()
+	Checkout(t string)
+	Tag(t string)
+	Fork() MVCCDB
+	Flush(t string) error
+	Close() error
+}
+
+func NewMVCCDB(path string) (MVCCDB, error) {
+	return NewTrieMVCCDB(path)
+}
+
+type Item struct {
+	table   string
+	key     string
+	value   string
+	deleted bool
+}
+
+type TrieMVCCDB struct {
 	head      *trie.Trie
 	stage     *trie.Trie
 	tags      map[string]*trie.Trie
@@ -45,7 +65,7 @@ type MVCCDB struct {
 	storage   Storage
 }
 
-func NewMVCCDB(path string) (*MVCCDB, error) {
+func NewTrieMVCCDB(path string) (*TrieMVCCDB, error) {
 	storage, err := storage.NewLevelDB(path)
 	if err != nil {
 		return nil, err
@@ -57,12 +77,12 @@ func NewMVCCDB(path string) (*MVCCDB, error) {
 	head := trie.New()
 	stage := head.Fork()
 	tags := make(map[string]*trie.Trie)
-	commits := make([]*trie.Trie, 1)
+	commits := make([]*trie.Trie, 0)
 
 	head.SetTag(string(tag))
 	tags[string(tag)] = head
 	commits = append(commits, head)
-	mvccdb := &MVCCDB{
+	mvccdb := &TrieMVCCDB{
 		head:      head,
 		stage:     stage,
 		tags:      tags,
@@ -75,7 +95,7 @@ func NewMVCCDB(path string) (*MVCCDB, error) {
 	return mvccdb, nil
 }
 
-func (m *MVCCDB) isValidTable(table string) bool {
+func (m *TrieMVCCDB) isValidTable(table string) bool {
 	if table == "" {
 		return false
 	}
@@ -87,28 +107,33 @@ func (m *MVCCDB) isValidTable(table string) bool {
 	return true
 }
 
-func (m *MVCCDB) Get(table string, key string) (string, error) {
+func (m *TrieMVCCDB) Get(table string, key string) (string, error) {
 	if !m.isValidTable(table) {
 		return "", ErrTableNotValid
 	}
 	k := []byte(table + string(SEPARATOR) + key)
 	m.stagerw.RLock()
-	v, ok := m.stage.Get(k).(*Item)
+	v := m.stage.Get(k)
 	m.stagerw.RUnlock()
+	if v == nil {
+		v, err := m.storage.Get(k)
+		if err != nil {
+			log.Debugf("Failed to get from storage: %v", err)
+			return "", ErrKeyNotFound
+		}
+		return string(v[:]), nil
+	}
+	i, ok := v.(*Item)
 	if !ok {
 		return "", errors.New("can't assert Item type")
 	}
-	if v == nil {
-		v, err := m.storage.Get(k)
-		return string(v[:]), err
-	}
-	if v.deleted {
+	if i.deleted {
 		return "", ErrKeyNotFound
 	}
-	return v.value, nil
+	return i.value, nil
 }
 
-func (m *MVCCDB) Put(table string, key string, value string) error {
+func (m *TrieMVCCDB) Put(table string, key string, value string) error {
 	if !m.isValidTable(table) {
 		return ErrTableNotValid
 	}
@@ -125,7 +150,7 @@ func (m *MVCCDB) Put(table string, key string, value string) error {
 	return nil
 }
 
-func (m *MVCCDB) Del(table string, key string) error {
+func (m *TrieMVCCDB) Del(table string, key string) error {
 	if !m.isValidTable(table) {
 		return ErrTableNotValid
 	}
@@ -142,28 +167,33 @@ func (m *MVCCDB) Del(table string, key string) error {
 	return nil
 }
 
-func (m *MVCCDB) Has(table string, key string) (bool, error) {
+func (m *TrieMVCCDB) Has(table string, key string) (bool, error) {
 	if !m.isValidTable(table) {
 		return false, ErrTableNotValid
 	}
 	k := []byte(table + string(SEPARATOR) + key)
 	m.stagerw.RLock()
-	v, ok := m.stage.Get(k).(*Item)
+	v := m.stage.Get(k)
 	m.stagerw.RUnlock()
+	if v == nil {
+		v, err := m.storage.Get(k)
+		if err != nil {
+			log.Debugf("Failed to get from storage: %v", err)
+			return false, nil
+		}
+		return v != nil, nil
+	}
+	i, ok := v.(*Item)
 	if !ok {
 		return false, errors.New("can't assert Item type")
 	}
-	if v == nil {
-		v, err := m.storage.Get(k)
-		return v != nil, err
-	}
-	if v.deleted {
+	if i.deleted {
 		return false, nil
 	}
 	return true, nil
 }
 
-func (m *MVCCDB) Keys(table string, prefix string) ([]string, error) {
+func (m *TrieMVCCDB) Keys(table string, prefix string) ([]string, error) {
 	//if !m.isValidTable(table) {
 	//	return nil, ErrTableNotValid
 	//}
@@ -185,7 +215,7 @@ func (m *MVCCDB) Keys(table string, prefix string) ([]string, error) {
 	return nil, nil
 }
 
-func (m *MVCCDB) Commit() {
+func (m *TrieMVCCDB) Commit() {
 	m.commitsrw.Lock()
 	m.commits = append(m.commits, m.stage)
 	m.commitsrw.Unlock()
@@ -193,26 +223,26 @@ func (m *MVCCDB) Commit() {
 	m.stage = m.head.Fork()
 }
 
-func (m *MVCCDB) Rollback() {
+func (m *TrieMVCCDB) Rollback() {
 	m.stage = m.head.Fork()
 }
 
-func (m *MVCCDB) Checkout(t string) {
+func (m *TrieMVCCDB) Checkout(t string) {
 	m.tagsrw.RLock()
 	m.head = m.tags[t]
 	m.tagsrw.RUnlock()
 	m.stage = m.head.Fork()
 }
 
-func (m *MVCCDB) Tag(t string) {
+func (m *TrieMVCCDB) Tag(t string) {
 	m.tagsrw.Lock()
 	m.tags[t] = m.head
 	m.tagsrw.Unlock()
 	m.head.SetTag(t)
 }
 
-func (m *MVCCDB) Fork() *MVCCDB {
-	mvccdb := &MVCCDB{
+func (m *TrieMVCCDB) Fork() MVCCDB {
+	mvccdb := &TrieMVCCDB{
 		head:      m.head,
 		stage:     m.head.Fork(),
 		tags:      m.tags,
@@ -225,13 +255,13 @@ func (m *MVCCDB) Fork() *MVCCDB {
 	return mvccdb
 }
 
-func (m *MVCCDB) Flush(t string) error {
+func (m *TrieMVCCDB) Flush(t string) error {
 	trie := m.tags[t]
 
 	if err := m.storage.BeginBatch(); err != nil {
 		return err
 	}
-	for _, v := range trie.Keys([]byte("")) {
+	for _, v := range trie.All([]byte("")) {
 		item, ok := v.(*Item)
 		if !ok {
 			return errors.New("can't assert Item type")
@@ -252,6 +282,7 @@ func (m *MVCCDB) Flush(t string) error {
 		return err
 	}
 
+	log.Debugf("Commits length: %v", len(m.commits))
 	for k, v := range m.commits {
 		if v == trie {
 			m.commits = m.commits[k:]
@@ -264,6 +295,6 @@ func (m *MVCCDB) Flush(t string) error {
 	return nil
 }
 
-func (m *MVCCDB) Close() error {
+func (m *TrieMVCCDB) Close() error {
 	return m.storage.Close()
 }

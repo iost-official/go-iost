@@ -168,16 +168,8 @@ func TestEngine_Storage(t *testing.T) {
 		t.Fatalf("LoadAndCall except yeah, got %s\n", rs[0])
 	}
 
-	rtn, cost, err = e.LoadAndCall(host, code, "delete", "mySetKey")
-	if err != nil {
-		t.Fatalf("LoadAndCall delete run error: %v\n", err)
-	}
-	if len(rtn) != 1 || rtn[0].(string) != "0" {
-		t.Fatalf("return of put should be ['0']")
-	}
-	t.Log(cost)
 
-	rs, _, err = e.LoadAndCall(host, code, "get", "mySetKey")
+	rs, _, err = e.LoadAndCall(host, code, "get", "mySetKeynotfound", "string")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
