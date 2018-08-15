@@ -372,7 +372,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		return c.Encode(), nil
 	})
 
-	db.EXPECT().Get("state", "i-g-a").DoAndReturn(func(table string, key string) (string, error) {
+	db.EXPECT().Get("state", "i-CGa").DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(int64(1000)), nil
 	})
 
@@ -380,7 +380,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		return database.MustMarshal(int64(1000)), nil
 	})
 
-	db.EXPECT().Put("state", "i-g-a", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+	db.EXPECT().Put("state", "i-CGa", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
 		if database.MustUnmarshal(value).(int64) != int64(1100) {
 			t.Fatal("g-a", database.MustUnmarshal(value).(int64))
 		}
@@ -457,18 +457,18 @@ func TestJS(t *testing.T) {
 	c := contract.Contract{
 		ID: "testjs",
 		Code: `
-module.export = function hello() {
-	return world
+module.exports = function hello() {
+	return "world"
 }
 `,
 		Info: &contract.Info{
 			Lang:        "javascript",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "hello",
 					Payment:  0,
-					GasPrice: int64(1000),
+					GasPrice: int64(1),
 					Limit:    contract.NewCost(100, 100, 100),
 					Args:     []string{},
 				},
@@ -480,5 +480,19 @@ module.export = function hello() {
 		return c.Encode(), nil
 	})
 
-	e.Exec(&mtx)
+	db.EXPECT().Rollback().Do(func() {
+		t.Log("exec tx failed, and success rollback")
+	})
+
+	db.EXPECT().Commit().Do(func() {
+		t.Log("committed")
+	})
+
+	txr, err := e.Exec(&mtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txr.Status.Code != tx.Success {
+		t.Fatal(txr.Status.Message)
+	}
 }
