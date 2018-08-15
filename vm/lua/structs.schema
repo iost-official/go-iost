@@ -1,4 +1,0 @@
-struct contractRaw {
-    info []byte
-    code []byte
-}

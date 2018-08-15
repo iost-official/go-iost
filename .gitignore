@@ -2,6 +2,7 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+*/.DS_Store
 
 # Icon must end with two \r
 Icon
@@ -9,6 +10,74 @@ Icon
 
 # Thumbnails
 ._*
+
+### Emacs ###
+# -*- mode: gitignore; -*-
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Org-mode
+.org-id-locations
+*_archive
+
+# flymake-mode
+*_flymake.*
+
+# eshell files
+/eshell/history
+/eshell/lastdir
+
+# elpa packages
+/elpa/
+
+# reftex files
+*.rel
+
+# AUCTeX auto folder
+/auto/
+
+# cask packages
+.cask/
+dist/
+
+# Flycheck
+flycheck_*.el
+
+# server auth directory
+/server/
+
+# projectiles files
+.projectile
+projectile-bookmarks.eld
+
+# directory configuration
+.dir-locals.el
+
+# saveplace
+places
+
+# url cache
+url/cache/
+
+# cedet
+ede-projects.el
+
+# smex
+smex-items
+
+# company-statistics
+company-statistics-cache.el
+
+# anaconda-mode
+anaconda-mode/
+
+### Emacs End ###
 
 # Files that might appear in the root of a volume
 .DocumentRevisions-V100
@@ -84,10 +153,80 @@ fabric.properties
 
 prototype
 
-vendor/github.com/
-vendor/golang.org/
-vendor/gopkg.in/
 
 .vscode/
 
 *.log
+/core/block/database/
+core/tx/database/
+database/database/
+
+
+/core/tx/database/
+# ctags
+tags
+
+# .swap file
+*.swp
+
+iwallet/test
+iwallet/iwallet
+
+# build and test
+/target
+imonitor/imonitor
+consensus/common/tx/
+/consensus/dpos/tx/
+/core/block/blockDB/
+/core/block/tx/
+/core/tx/tx/
+/rpc/tx/
+/verifier/tx/
+/network/tale_test/
+/network/iost_db_0/
+/network/iost_db_1/
+/network/iost_db_2/
+/network/iost_node_table_/
+network/iost_db_*
+tx/
+playground/playground
+playground/test
+iserver/netpath/
+iserver/iserver
+iserver/iserver.yml
+rpc/js/node_modules/
+rpc/js/package-lock.json
+core/block/txDB/
+
+bak/
+blockDB/
+
+dump.rdb
+iserver/iserver
+iserver/blockDB/
+iserver/netpath2/
+iserver/netpath3/
+iserver/txDB/
+
+iwallet/sc/
+iwallet/testTX.py
+imonitor/iserver.yml
+netpath/
+netpath3/
+rpc/txDB/
+txDB/
+*.prof
+*.test
+*.svg
+*.sc
+*.tx
+servi_db.ldb
+*/test.log
+*/vm.log
+test/data
+/consensus/pob/serviDb/
+/core/block/serviDb/
+scripts/sendtx/iwallet
+
+/core/new_txpool/BlockChainDB/
+/core/new_txpool/StatePoolDB/

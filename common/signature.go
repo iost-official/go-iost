@@ -1,6 +1,11 @@
 package common
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/golang/protobuf/proto"
+)
 
 //go:generate gencode go -schema=structs.schema -package=common
 
@@ -38,18 +43,29 @@ func VerifySignature(info []byte, s Signature) bool {
 }
 
 func (s *Signature) Encode() []byte {
-	sr := SignatureRaw{int8(s.Algorithm), s.Sig, s.Pubkey}
-	b, err := sr.Marshal(nil)
+	sr := &SignatureRaw{
+		Algorithm:int32(s.Algorithm),
+		Sig:s.Sig,
+		PubKey:s.Pubkey,
+	}
+	b, err := proto.Marshal(sr)
 	if err != nil {
-		panic(err)
+		log.Log.E("Error in Encode of signature ", s.Pubkey, err.Error())
 		return nil
 	}
 	return b
 }
 
 func (s *Signature) Decode(b []byte) error {
-	var sr SignatureRaw
-	_, err := sr.Unmarshal(b)
+	sr := &SignatureRaw{}
+	err := proto.Unmarshal(b, sr)
+	if err != nil {
+		log.Log.E("Error in Decode of signature ", b, err.Error())
+		return err
+	}
+	s.Algorithm = SignAlgorithm(sr.Algorithm)
+	s.Sig = sr.Sig
+	s.Pubkey = sr.PubKey
 	return err
 }
 

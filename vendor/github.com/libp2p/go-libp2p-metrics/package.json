@@ -1,0 +1,48 @@
+{
+  "author": "whyrusleeping",
+  "bugs": {
+    "url": "https://github.com/libp2p/go-libp2p-metrics"
+  },
+  "gx": {
+    "dvcsimport": "github.com/libp2p/go-libp2p-metrics"
+  },
+  "gxDependencies": [
+    {
+      "author": "whyrusleeping",
+      "hash": "QmcJukH2sAFjY3HdBKq35WDzWoL3UUu2gt9wdfqZTUyM74",
+      "name": "go-libp2p-peer",
+      "version": "2.3.2"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN",
+      "name": "go-libp2p-protocol",
+      "version": "1.0.0"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmPUHzTLPZFYqv8WqcBTuMFYTgeom4uHHEaxzk7bd5GYZB",
+      "name": "go-libp2p-transport",
+      "version": "2.2.14"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmXoz9o2PT3tEzf7hicegwex5UgVP54n3k82K7jrWFyN86",
+      "name": "go-libp2p-net",
+      "version": "2.0.7"
+    },
+    {
+      "author": "Stebalien",
+      "hash": "QmQFXpvKpF34dK9HcE7k8Ksk8V4BwWYZtdEcjzu5aUgRVr",
+      "name": "go-flow-metrics",
+      "version": "0.2.0"
+    }
+  ],
+  "gxVersion": "0.9.1",
+  "language": "go",
+  "license": "",
+  "name": "go-libp2p-metrics",
+  "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
+  "version": "2.0.6"
+}
+

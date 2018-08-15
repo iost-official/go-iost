@@ -1,27 +1,42 @@
 package db
 
 import (
+	"strconv"
+	"time"
+
 	"errors"
 
 	"github.com/gomodule/redigo/redis"
 )
 
 const (
-	Conn   = "tcp"
-	DBAddr = "localhost:6379"
+	Conn = "tcp"
 )
 
+var DBAddr string = "127.0.0.1"
+var DBPort int16 = 6379
+
 type RedisDatabase struct {
-	cli redis.Conn
+	connPool *redis.Pool
 }
 
 func NewRedisDatabase() (*RedisDatabase, error) {
-	dial, _ := redis.Dial(Conn, DBAddr)
-	return &RedisDatabase{cli: dial}, nil
+
+	pool := &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial(Conn, DBAddr+":"+strconv.FormatUint(uint64(DBPort), 10))
+		},
+	}
+
+	return &RedisDatabase{connPool: pool}, nil
 }
 
 func (rdb *RedisDatabase) Put(key []byte, value []byte) error {
-	_, err := rdb.cli.Do("SET", interface{}(key), interface{}(value))
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	_, err := conn.Do("SET", interface{}(key), interface{}(value))
 	return err
 }
 
@@ -31,12 +46,23 @@ func (rdb *RedisDatabase) PutHM(key []byte, args ...[]byte) error {
 	for i, v := range args {
 		newArgs[i+1] = v
 	}
-	_, err := rdb.cli.Do("HMSET", newArgs...)
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	_, err := conn.Do("HMSET", newArgs...)
 	return err
 }
 
 func (rdb *RedisDatabase) Get(key []byte) ([]byte, error) {
-	rtn, err := rdb.cli.Do("GET", interface{}(key))
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	rtn, err := conn.Do("GET", interface{}(key))
+	if err != nil {
+
+		return nil, err
+	}
+	if rtn == nil {
+		return nil, nil
+	}
 	return rtn.([]byte), err
 }
 
@@ -46,7 +72,9 @@ func (rdb *RedisDatabase) GetHM(key []byte, args ...[]byte) ([][]byte, error) {
 	for i, v := range args {
 		newArgs[i+1] = v
 	}
-	value, ok := redis.Values(rdb.cli.Do("HMGET", newArgs...))
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	value, ok := redis.Values(conn.Do("HMGET", newArgs...))
 	if ok == nil {
 		params := make([][]byte, 0)
 		for _, v := range value {
@@ -58,66 +86,43 @@ func (rdb *RedisDatabase) GetHM(key []byte, args ...[]byte) ([][]byte, error) {
 		}
 		return params, nil
 	}
-	return nil, errors.New("Not found")
+	return nil, nil
 }
 
 func (rdb *RedisDatabase) Has(key []byte) (bool, error) {
-	_, ok := rdb.cli.Do("EXISTS", key)
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	_, ok := conn.Do("EXISTS", key)
 	return ok == nil, nil
 }
 
 func (rdb *RedisDatabase) Delete(key []byte) error {
-	_, err := rdb.cli.Do("DEL", key)
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	_, err := conn.Do("DEL", key)
 	return err
 }
 
 func (rdb *RedisDatabase) Close() {
-	rdb.cli = nil
+	rdb.connPool.Close()
 }
 
-/*
-type UTXORedis struct {
-	db      *RedisDatabase
-	subKeys []interface{}
+func (rdb *RedisDatabase) Type(key string) (string, error) {
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	rtn, err := conn.Do("TYPE", key)
+	if err != nil {
+		return "", err
+	}
+	s, ok := rtn.(string)
+	if !ok {
+		return "", errors.New("return no string")
+	}
+	return s, nil
 }
 
-func NewUTXORedis(keys ...interface{}) (*UTXORedis, error) {
-	rdb, _ := NewRedisDatabase()
-	return &UTXORedis{db: rdb, subKeys: keys}, nil
+func (rdb *RedisDatabase) GetAll(key string) (map[string]string, error) {
+	conn := rdb.connPool.Get()
+	defer conn.Close()
+	return redis.StringMap(conn.Do("HGETALL", key))
 }
-
-func (ur *UTXORedis) Put(args ...interface{}) error {
-	params := make([]interface{}, 0)
-	for k, v := range args {
-		if k != 0 {
-			params = append(params, ur.subKeys[k-1])
-		}
-		params = append(params, v)
-	}
-	ur.db.Put(params...)
-	return nil
-}
-
-func (ur *UTXORedis) Get(args ...interface{}) (interface{}, error) {
-	params := make([]interface{}, 0)
-	for _, v := range args {
-		params = append(params, v)
-	}
-	for _, v := range ur.subKeys {
-		params = append(params, v)
-	}
-	rtn, err := ur.db.Get(params...)
-	return rtn, err
-
-}
-
-func (ur *UTXORedis) Has(args ...interface{}) (bool, error) {
-	params := make([]interface{}, 0)
-	for _, v := range args {
-		params = append(params, v)
-	}
-	for _, v := range ur.subKeys {
-		params = append(params, v)
-	}
-	return ur.db.Has(params...)
-}*/

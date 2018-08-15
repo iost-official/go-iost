@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/syndtr/goleveldb/leveldb"
@@ -19,25 +18,41 @@ type LDBDatabase struct {
 	quitChan chan chan error
 }
 
-func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
-	db, err := leveldb.OpenFile(file, &opt.Options{
-		OpenFilesCacheCapacity: handles,
-		BlockCacheCapacity:     cache / 2 * opt.MiB,
-		WriteBuffer:            cache / 4 * opt.MiB,
-		Filter:                 filter.NewBloomFilter(10),
-	})
+var ldbmap map[string]*LDBDatabase
 
-	fmt.Println(file, err)
-	if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
-		db, err = leveldb.RecoverFile(file, nil)
+func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
+	if ldbmap == nil {
+		ldbmap = make(map[string]*LDBDatabase)
 	}
-	if err != nil {
-		return nil, err
+	mutex.Lock()
+	if _, ok := ldbMap[file]; !ok {
+		if cache < 16 {
+			cache = 16
+		}
+		if handles < 16 {
+			handles = 16
+		}
+		db, err := leveldb.OpenFile(file, &opt.Options{
+			OpenFilesCacheCapacity: handles,
+			BlockCacheCapacity:     cache / 2 * opt.MiB,
+			WriteBuffer:            cache / 4 * opt.MiB,
+			Filter:                 filter.NewBloomFilter(10),
+		})
+
+		//fmt.Println(file, err)
+		if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
+			db, err = leveldb.RecoverFile(file, nil)
+		}
+		if err != nil {
+			return nil, err
+		}
+		ldbmap[file] = &LDBDatabase{
+			fn: file,
+			db: db,
+		}
 	}
-	return &LDBDatabase{
-		fn: file,
-		db: db,
-	}, nil
+	mutex.Unlock()
+	return ldbmap[file], nil
 }
 
 func (db *LDBDatabase) Path() string {
