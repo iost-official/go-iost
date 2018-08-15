@@ -76,9 +76,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 			return nil, nil, ErrGasPriceTooBig
 		}
 
-		b := h.DB.Balance("g-" + contractName)
+		b := h.DB.Balance(host.ContractGasPrefix + contractName)
 		if b > gasPrice*cost.ToGas() {
-			h.PayCost(cost, "g-"+contractName)
+			h.PayCost(cost, host.ContractGasPrefix+contractName)
 			cost = contract.Cost0()
 		}
 
@@ -135,7 +135,7 @@ func VMFactory(lang string) VM {
 		return &native_vm.VM{}
 	case "javascript":
 		vm := v8.NewVM()
-		vm.SetJSPath("/Users/hepeijian/go/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
+		vm.SetJSPath("./v8vm/v8/libjs/")
 		return vm
 	}
 	return nil
