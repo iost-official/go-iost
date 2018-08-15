@@ -102,6 +102,11 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		panic(err) // should not get error
 	}
 
+	j2, _ := simplejson.NewJson(txInfo)
+	j2.Set("hash", tx0.Hash())
+
+	j2e, _ := j2.Encode()
+
 	authList := make(map[string]int)
 	for _, v := range tx0.Signers {
 		authList[string(v)] = 1
@@ -114,7 +119,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		e.host.Ctx = e.host.Ctx.Base()
 	}()
 
-	e.host.Ctx.Set("tx_info", database.SerializedJSON(txInfo))
+	e.host.Ctx.Set("tx_info", database.SerializedJSON(j2e))
 	e.host.Ctx.Set("auth_list", authList)
 	e.host.Ctx.Set("gas_price", int64(tx0.GasPrice))
 
