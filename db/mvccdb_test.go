@@ -16,7 +16,7 @@ const (
 
 type MVCCDBTestSuite struct {
 	suite.Suite
-	mvccdb *MVCCDB
+	mvccdb MVCCDB
 }
 
 func (suite *MVCCDBTestSuite) SetupTest() {
