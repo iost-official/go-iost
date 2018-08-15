@@ -55,7 +55,7 @@ var publishCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-
+		signs:=make([]common.Signature)
 		for i, v := range args {
 			if i == 0 {
 				continue
@@ -75,7 +75,7 @@ var publishCmd = &cobra.Command{
 				fmt.Printf("Error: Sign %v wrong\n", v)
 				return
 			}
-			mtx.Signs = append(mtx.Signs, sign)
+			signs = append(signs, sign)
 		}
 		fsk, err := ReadFile(kpPath)
 		if err != nil {
@@ -89,7 +89,7 @@ var publishCmd = &cobra.Command{
 			return
 		}
 
-		stx, err := tx.SignTx(mtx, acc)
+		stx, err := tx.SignTx(mtx, acc,signs...)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -145,10 +145,12 @@ func sendTx(stx tx.Tx) ([]byte, error) {
 	}
 	defer conn.Close()
 	client := pb.NewCliClient(conn)
-	resp, err := client.PublishTx(context.Background(), &pb.Transaction{Tx: stx.Encode()})
+	resp, err := client.SendRawTx(context.Background(), &pb.RawTxReq{Tx: stx.Encode()})
 	if err != nil {
 		return nil, err
 	}
+	return resp.Hash,nil 
+	/*
 	switch resp.Code {
 	case 0:
 		return resp.Hash, nil
@@ -157,4 +159,5 @@ func sendTx(stx tx.Tx) ([]byte, error) {
 	default:
 		return nil, errors.New("unknown return")
 	}
+	*/
 }

@@ -83,8 +83,7 @@ func init() {
 	rootCmd.AddCommand(blockCmd)
 
 	blockCmd.Flags().StringVarP(&method,"method","m" ,"num", "find by block num or hash")
-	blockCmd.Flags().BoolVar(&complete,"complete" ,"c",false, "indicate whether to fetch all the trxs in the block or not")
-
+	blockCmd.Flags().BoolVarP(&complete,"complete" ,"c",false, "indicate whether to fetch all the trxs in the block or not")
 
 	// Here you will define your flags and configuration settings.
 

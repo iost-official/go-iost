@@ -75,10 +75,10 @@ var signCmd = &cobra.Command{
 			return
 		}
 
-		sig, err := tx.SignContract(mtx, acc)
+		sig, err := tx.SignTxContent(mtx, acc)
 		if err != nil {
 			fmt.Println(err.Error())
-			return
+			return 
 		}
 
 		if len(args) < 2 {

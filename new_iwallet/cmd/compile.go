@@ -17,44 +17,57 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/spf13/cobra"
 )
 
 // compileCmd represents the compile command
 var compileCmd = &cobra.Command{
-	Use:   "compile",
+	Use:    "compile",
 	Short: "Compile contract files to smart contract",
 	Long:  `Compile contract files to smart contract. `,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println(`Error: source file not given`)
+		if len(args) < 2 {
+			fmt.Println(`Error: source code file or abi file not given`)
 			return
 		}
-		path := args[0]
-		fd, err := ReadFile(path)
+		codePath := args[0]
+		fd, err := ReadFile(codePath)
 		if err != nil {
-			fmt.Println("Read file failed: ", err.Error())
+			fmt.Println("Read source code file failed: ", err.Error())
 			return
 		}
-		rawCode := string(fd)
-
-		var contract vm.Contract
-		switch Language {
-		case "lua":
-			parser, _ := lua.NewDocCommentParser(rawCode)
-			contract, err = parser.Parse()
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
+		code := string(fd)
+		abiPath := args[1]
+		fd, err = ReadFile(abiPath)
+		if err != nil {
+			fmt.Println("Read abi file failed: ", err.Error())
+			return
 		}
+		abi := string(fd)
 
-		mTx := tx.NewTx(int64(Nonce), contract)
+		compiler:=new(contract.Compiler)
+		if compiler==nil{
+			fmt.Println("gen compiler instance failed")
+			return
+		}
+		contract,err:=compiler.Parse("",code,abi)
+		if err!=nil{
+			fmt.Printf("gen contract error:%v\n",err)
+			return
+		}
+		action:=tx.NewAction("iost.system","setcode",`["`+contract.Encode()+`",]`)
+		pubkeys:=make([][]byte,len(signers))
+		for i,pubkey:=range signers{
+			pubkeys[i]=LoadBytes(string(pubkey))
+		}
+		trx:=tx.NewTx([]Action{action,}, pubkeys, gasLimit, gasPrice, expiration)
 
-		bytes := mTx.Encode()
+
+
+
+		bytes := trx.Encode()
 
 		if dest == "default" {
 			dest = ChangeSuffix(args[0], ".sc")
@@ -67,15 +80,18 @@ var compileCmd = &cobra.Command{
 	},
 }
 
-var Language string
 var dest string
-var Nonce int
-
+var gasLimit uint64
+var gasPrice uint64
+var expiration int64
+var signers []string
 func init() {
 	rootCmd.AddCommand(compileCmd)
-
-	compileCmd.Flags().StringVarP(&Language, "language", "l", "lua", "Set language of contract, Support lua")
-	compileCmd.Flags().IntVarP(&Nonce, "nonce", "n", 1, "Set Nonce of this Transaction")
+	
+	compileCmd.Flags().UintVarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
+	compileCmd.Flags().UintVarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
+	compileCmd.Flags().IntVarP(&expiration, "expiration", "e", 0, "expiration timestamp for a transaction")
+	compileCmd.Flags().StringSliceVarP(&signers, "signers", "s",[]string{} , "signers who should sign this transaction")
 
 	// Here you will define your flags and configuration settings.
 
@@ -85,5 +101,5 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// compileCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// compi leCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
