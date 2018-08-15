@@ -97,20 +97,60 @@ func (h *Host) CallWithReceipt(contract, api string, args ...interface{}) ([]int
 
 }
 
-func (h *Host) SetCode(ct string) (*contract.Cost, error) {
-	c := contract.Contract{}
-	c.Decode(ct)
-	code, err := h.monitor.Compile(&c)
+func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
+	code, err := h.monitor.Compile(c)
 	if err != nil {
 		return contract.NewCost(0, 0, 100), err
 	}
 	c.Code = code
-	h.DB.SetContract(&c)
-	return contract.NewCost(0, 0, 100), nil // todo check set cost
+
+	l := int64(len(c.Encode()) / 100)
+
+	h.DB.SetContract(c)
+
+	_, cost, err := h.monitor.Call(h, c.ID, "constructor")
+
+	cost.AddAssign(contract.NewCost(0, l, 100))
+
+	return cost, err // todo check set cost
 }
-func (h *Host) DestroyCode(contractName string) *contract.Cost {
+
+func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*contract.Cost, error) {
+
+	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update")
+
+	if err != nil {
+		return contract.NewCost(0, 0, 100), err
+	}
+
+	if t, ok := rtn[0].(bool); !ok || !t {
+		return cost, errors.New("update refused")
+	}
+
+	c2, err := h.SetCode(c)
+
+	if err != nil {
+		cost.AddAssign(contract.NewCost(0, 0, 100))
+		return cost, err
+	}
+
+	c2.AddAssign(cost)
+	return c2, err
+}
+
+func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 	// todo 释放kv
 
+	rtn, cost, err := h.monitor.Call(h, contractName, "can_destroy")
+
+	if err != nil {
+		return contract.NewCost(0, 0, 100), err
+	}
+
+	if t, ok := rtn[0].(bool); !ok || !t {
+		return cost, errors.New("destroy refused")
+	}
+
 	h.DB.DelContract(contractName)
-	return contract.NewCost(1, 2, 3)
+	return contract.NewCost(1, 2, 3), nil
 }

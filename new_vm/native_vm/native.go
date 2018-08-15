@@ -68,7 +68,7 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		if !(res[0].(bool)) {
 			return nil, cost, errors.New("canUpdate return false")
 		}
-		cost, err := host.SetCode(args[0].(string))
+		cost, err := host.SetCode(con)
 		return []interface{}{}, cost, err
 
 		// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
@@ -84,8 +84,8 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		if !(res[0].(bool)) {
 			return nil, cost, errors.New("canDestroy return false")
 		}
-		host.DestroyCode(args[0].(string))
-		return []interface{}{}, cost, nil
+		cost, err = host.DestroyCode(args[0].(string))
+		return []interface{}{}, cost, err
 
 	default:
 		return nil, cost, errors.New("unknown api name")
