@@ -143,6 +143,9 @@ func New() *Trie {
 
 func (t *Trie) Get(key []byte) Value {
 	node := t.root.get(key, 0)
+	if node == nil {
+		return nil
+	}
 	return node.value
 }
 
@@ -154,7 +157,7 @@ func (t *Trie) Put(key []byte, value Value) {
 	t.root.put(key, value, 0)
 }
 
-func (t *Trie) Keys(prefix []byte) []Value {
+func (t *Trie) All(prefix []byte) []Value {
 	node := t.root.get(prefix, 0)
 	valuelist := []Value{}
 	for _, n := range node.all() {
