@@ -69,7 +69,7 @@ func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool t
 	headInfo := generateHeadInfo(blk.Head)
 	sig, _ := common.Sign(common.Secp256k1, headInfo, account.Seckey)
 	blk.Head.Signature = sig.Encode()
-	err = blk.CalculateHeadHash()
+	err := blk.CalculateHeadHash()
 	if err != nil {
 		fmt.Println(err)
 	}

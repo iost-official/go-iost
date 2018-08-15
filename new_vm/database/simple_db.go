@@ -36,7 +36,6 @@ func NewDatabaseFromPath(path string) *database {
 		return nil
 	}
 	data.json = json
-	fmt.Println(data.json)
 	return &data
 }
 

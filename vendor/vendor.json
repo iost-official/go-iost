@@ -189,6 +189,18 @@
 			"revisionTime": "2018-04-20T17:16:12Z"
 		},
 		{
+			"checksumSHA1": "YtLKaK8Ht8bGfqs0JIbBKcTRkpg=",
+			"path": "github.com/gxed/GoEndian",
+			"revision": "0f5c6873267e5abf306ffcdfcfa4bf77517ef4a7",
+			"revisionTime": "2016-09-16T11:27:11Z"
+		},
+		{
+			"checksumSHA1": "cBFbr8wzdtrp4Ke6P36B3L7grdc=",
+			"path": "github.com/gxed/eventfd",
+			"revision": "80a92cca79a8041496ccc9dd773fcb52a57ec6f9",
+			"revisionTime": "2016-09-16T11:34:12Z"
+		},
+		{
 			"checksumSHA1": "DeCJipQ5LSYKWSQBMkvnM2FtDSU=",
 			"path": "github.com/gxed/hashland/keccakpg",
 			"revision": "d9f6b97f8db22dd1e090fd0bbbe98f09cc7dd0a8",
