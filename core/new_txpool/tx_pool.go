@@ -586,6 +586,7 @@ func (pool *TxPoolImpl) testBlockListNum() int64 {
 
 	pool.blockList.Range(func(key, value interface{}) bool {
 		r++
+		//fmt.Println("blockList hash:", []byte(key.(string)))
 		return true
 	})
 

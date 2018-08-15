@@ -64,7 +64,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		blockList := genBlocks(accountList, witnessList, 1, 1, true)
-		fmt.Println("init ", blockList[0].HeadHash())
 
 		gl.BlockChain().Push(blockList[0])
 		//base := core_mock.NewMockChain(ctl)
@@ -133,13 +132,21 @@ func TestNewTxPoolImpl(t *testing.T) {
 		Convey("ExistTxs FoundChain", func() {
 
 			b := genBlocks(accountList, witnessList, 1, 10, true)
-			fmt.Println("FoundChain", b[0].HeadHash())
+			//fmt.Println("FoundChain", b[0].HeadHash())
 
 			bcn := blockcache.NewBCN(nil, b[0])
 			So(txPool.testBlockListNum(), ShouldEqual, 1)
 
 			err := txPool.AddLinkedNode(bcn, bcn)
 			So(err, ShouldBeNil)
+
+			// need delay
+			for i := 0; i < 10; i++ {
+				time.Sleep(100 * time.Millisecond)
+				if txPool.testBlockListNum() == 2 {
+					break
+				}
+			}
 
 			So(txPool.testBlockListNum(), ShouldEqual, 2)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
