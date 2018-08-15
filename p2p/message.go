@@ -31,10 +31,13 @@ P2PMessage protocol:
 
 */
 
+// MessageType represents the message type.
 type MessageType uint16
 
+// MessagePriority represents the message priority.
 type MessagePriority uint8
 
+// consts.
 const (
 	Ping MessageType = iota + 1
 	RoutingTableQuery
@@ -61,6 +64,7 @@ const (
 	reservedBegin, reservedEnd         = 16, 20
 	dataBegin                          = 20
 
+	defaultReservedFlag     = 0
 	reservedCompressionFlag = 1
 )
 
@@ -146,12 +150,14 @@ func parseP2PMessage(data []byte) (*p2pMessage, error) {
 	return &m, nil
 }
 
+// IncomingMessage is the struct which would be sent to the upstream.
 type IncomingMessage struct {
 	from PeerID
 	data []byte
 	typ  MessageType
 }
 
+// NewIncomingMessage returns a IncomingMessage instance.
 func NewIncomingMessage(peerID PeerID, data []byte, messageType MessageType) *IncomingMessage {
 	return &IncomingMessage{
 		from: peerID,
@@ -160,14 +166,17 @@ func NewIncomingMessage(peerID PeerID, data []byte, messageType MessageType) *In
 	}
 }
 
+// From returns the peerID who sends the message.
 func (m *IncomingMessage) From() PeerID {
 	return m.from
 }
 
+// Data returns the bytes.
 func (m *IncomingMessage) Data() []byte {
 	return m.data
 }
 
+// Type returns the message type.
 func (m *IncomingMessage) Type() MessageType {
 	return m.typ
 }

@@ -59,7 +59,6 @@ type BlockCacheNode struct {
 	Number                uint64
 	Witness               string
 	ConfirmUntil          uint64
-	ConfirmMap			  map[string]bool
 	LastWitnessListNumber uint64
 	PendingWitnessList    []string
 	Extension             []byte
@@ -83,7 +82,6 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 		Block:    block,
 		Parent:   parent,
 		Children: make(map[*BlockCacheNode]bool),
-		ConfirmMap: make(map[string]bool),
 		//initialize others
 	}
 	if block != nil {
@@ -182,9 +180,12 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) updateLongest() {
+/*
+	think about there are only one witness
 	if len(bc.leaf) == -1 {
 		panic(fmt.Errorf("BlockCache shouldnt be empty"))
 	}
+*/
 	_, ok := bc.hmget(bc.head.Block.HeadHash())
 	if ok {
 		return
