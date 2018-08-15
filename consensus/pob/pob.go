@@ -92,17 +92,11 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 	}
 	p.exitSignal = make(chan struct{})
 	p.initGlobalProperty(p.account, witnessList)
-	blk, err := p.blockChain.Top()
-	if err != nil {
-		fmt.Println("Unable to initialize block chain top")
-	}
-	dynamicProperty.update(&blk.Head)
 	return &p, nil
 }
 
 func (p *PoB) initGlobalProperty(acc account.Account, witnessList []string) {
-	staticProperty = newGlobalStaticProperty(acc, witnessList)
-	dynamicProperty = newGlobalDynamicProperty()
+	staticProperty = newStaticProperty(acc, witnessList)
 }
 
 func (p *PoB) Run() {
@@ -184,13 +178,12 @@ func (p *PoB) scheduleLoop() {
 		select {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
 			currentTimestamp := common.GetCurrentTimestamp()
-			wid := witnessOfTime(currentTimestamp)
+			wid := witnessOfSlot(currentTimestamp.Slot)
 			if wid == p.account.ID && p.baseVariable.Mode().Mode() == global.ModeNormal {
 				chainHead := p.blockCache.Head()
 				hash := chainHead.Block.HeadHash()
 				p.produceDB.Checkout(string(hash))
 				blk := genBlock(p.account, chainHead, p.txPool, p.produceDB)
-				dynamicProperty.update(&blk.Head)
 				blkByte, err := blk.Encode()
 				if err != nil {
 					fmt.Println(err)
@@ -249,11 +242,9 @@ func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent
 	confirmNode := calculateConfirm(node, p.blockCache.LinkedRoot())
 	if confirmNode != nil {
 		p.blockCache.Flush(confirmNode)
-		// promote witness list
-		promoteWitness(node, confirmNode)
+		staticProperty.updateWitnessList(confirmNode.PendingWitnessList)
 	}
 
-	dynamicProperty.update(&blk.Head)
 	// -> tx pool
 	p.txPool.AddLinkedNode(node, p.blockCache.Head())
 	return node, nil

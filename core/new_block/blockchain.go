@@ -12,7 +12,7 @@ import (
 
 type BlockChain struct {
 	BlockChainDB *db.LDB
-	length       uint64
+	length       int64
 }
 
 var (
@@ -24,14 +24,14 @@ var (
 	LevelDBPath       string
 )
 
-func Uint64ToByte(n uint64) []byte {
+func Int64ToByte(n int64) []byte {
 	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, n)
+	binary.LittleEndian.PutUint64(b, uint64(n))
 	return b
 }
 
-func ByteToUint64(b []byte) uint64 {
-	return binary.LittleEndian.Uint64(b)
+func ByteToInt64(b []byte) int64 {
+	return int64(binary.LittleEndian.Uint64(b))
 }
 
 func Instance() (Chain, error) {
@@ -41,7 +41,7 @@ func Instance() (Chain, error) {
 		if tempErr != nil {
 			err = errors.New("fail to init blockchaindb")
 		}
-		var length uint64 = 0
+		var length int64 = 0
 		ok, tempErr := levelDB.Has(blockLength)
 		if tempErr != nil {
 			err = errors.New("fail to check has(blocklength)")
@@ -51,9 +51,9 @@ func Instance() (Chain, error) {
 			if tempErr != nil {
 				err = errors.New("fail to get blocklength")
 			}
-			length = ByteToUint64(lengthByte)
+			length = int64(ByteToInt64(lengthByte))
 		} else {
-			lengthByte := Uint64ToByte(0)
+			lengthByte := Int64ToByte(0)
 			tempErr := levelDB.Put(blockLength, lengthByte)
 			if tempErr != nil {
 				err = errors.New("fail to put blocklength")
@@ -65,21 +65,21 @@ func Instance() (Chain, error) {
 	return BC, err
 }
 
-func (bc *BlockChain) Length() uint64 {
+func (bc *BlockChain) Length() int64 {
 	return bc.length
 }
 
 func (bc *BlockChain) Push(block *Block) error {
 	batch := bc.BlockChainDB.Batch()
 	hash := block.HeadHash()
-	number := uint64(block.Head.Number)
-	batch.Put(append(blockNumberPrefix, Uint64ToByte(number)...), hash)
+	number := block.Head.Number
+	batch.Put(append(blockNumberPrefix, Int64ToByte(number)...), hash)
 	blockByte, err := block.Encode()
 	if err != nil {
 		return errors.New("fail to encode block")
 	}
 	batch.Put(append(blockPrefix, hash...), blockByte)
-	batch.Put(blockLength, Uint64ToByte(number+1))
+	batch.Put(blockLength, Int64ToByte(number+1))
 	err = batch.Commit()
 	if err != nil {
 		return errors.New("fail to put block")
@@ -97,7 +97,7 @@ func (bc *BlockChain) CheckLength() error {
 			fmt.Println("fail to get the block")
 			err = errors.New("broken chain in blockChaindb")
 		}
-		bc.BlockChainDB.Put(blockLength, Uint64ToByte(i))
+		bc.BlockChainDB.Put(blockLength, Int64ToByte(i))
 		bc.length = i
 		break
 	}
@@ -112,8 +112,8 @@ func (bc *BlockChain) Top() (*Block, error) {
 	}
 }
 
-func (bc *BlockChain) GetHashByNumber(number uint64) ([]byte, error) {
-	hash, err := bc.BlockChainDB.Get(append(blockNumberPrefix, Uint64ToByte(number)...))
+func (bc *BlockChain) GetHashByNumber(number int64) ([]byte, error) {
+	hash, err := bc.BlockChainDB.Get(append(blockNumberPrefix, Int64ToByte(number)...))
 	if err != nil {
 		return nil, errors.New("fail to get hash by number")
 	}
@@ -141,7 +141,7 @@ func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
 	return &block, nil
 }
 
-func (bc *BlockChain) GetBlockByNumber(number uint64) (*Block, error) {
+func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 	hash, err := bc.GetHashByNumber(number)
 	if err != nil {
 		return nil, err

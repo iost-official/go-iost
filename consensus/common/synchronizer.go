@@ -14,7 +14,7 @@ import (
 
 var (
 	SyncNumber                    = 2
-	MaxBlockHashQueryNumber       = 10
+	MaxBlockHashQueryNumber int64 = 10
 	RetryTime                     = 5 * time.Second
 	blockDownloadTimeout    int64 = 10
 	MaxAcceptableLength     int64 = 100
@@ -130,8 +130,8 @@ func (sy *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
 	return false, 0, 0
 }
 
-func (sy *SyncImpl) queryBlockHash(start, end uint64) error {
-	hr := message.BlockHashQuery{Start: start, End: end}
+func (sy *SyncImpl) queryBlockHash(start, end int64) error {
+	hr := message.BlockHashQuery{Start: uint64(start), End: uint64(end)}
 	bytes, err := hr.Encode()
 	if err != nil {
 		sy.log.D("marshal BlockHashQuery failed. err=%v", err)
@@ -151,11 +151,11 @@ func (sy *SyncImpl) queryBlockHash(start, end uint64) error {
 	return nil
 }
 
-func (sy *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
+func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 	var syncNum int
-	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
+	for endNumber > startNumber+MaxBlockHashQueryNumber-1 {
 		need := false
-		for i := startNumber; i < startNumber+uint64(MaxBlockHashQueryNumber); i++ {
+		for i := startNumber; i < startNumber+MaxBlockHashQueryNumber; i++ {
 			_, ok := sy.reqMap.LoadOrStore(i, true)
 			if !ok {
 				need = true
@@ -163,9 +163,9 @@ func (sy *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 		}
 		if need {
 			syncNum++
-			sy.queryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
+			sy.queryBlockHash(startNumber, startNumber+MaxBlockHashQueryNumber-1)
 		}
-		startNumber += uint64(MaxBlockHashQueryNumber)
+		startNumber += MaxBlockHashQueryNumber
 		if syncNum%10 == 0 {
 			time.Sleep(time.Second)
 		}
@@ -235,7 +235,8 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 		BlockHashes: make([]*message.BlockHash, 0, rh.End-rh.Start+1),
 	}
 	node := sy.blockCache.Head()
-	for i := rh.End; i >= rh.Start; i-- {
+	var i int64
+	for i = int64(rh.End); i >= int64(rh.Start); i-- {
 		var hash []byte
 		var err error
 		if i < sy.blockCache.LinkedRoot().Number {
@@ -256,7 +257,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 			hash = node.Block.HeadHash()
 		}
 		blkHash := message.BlockHash{
-			Height: i,
+			Height: uint64(i),
 			Hash:   hash,
 		}
 		resp.BlockHashes = append(resp.BlockHashes, &blkHash)
@@ -296,7 +297,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 		select {
 		case <-time.After(RetryTime):
 			sy.reqMap.Range(func(k, v interface{}) bool {
-				num, ok := k.(uint64)
+				num, ok := k.(int64)
 				if !ok {
 					return false
 				}
@@ -316,7 +317,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
 	var b []byte
 	var err error
-	if rh.BlockNumber < sy.blockCache.LinkedRoot().Number {
+	if int64(rh.BlockNumber) < sy.blockCache.LinkedRoot().Number {
 		b, err = sy.glb.BlockChain().GetBlockByteByHash(rh.BlockHash)
 		if err != nil {
 			log.Log.E("Database error: block empty %v", rh.BlockNumber)

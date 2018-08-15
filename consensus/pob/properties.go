@@ -2,150 +2,87 @@ package pob
 
 import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"fmt"
 )
 
-var staticProperty globalStaticProperty
-var dynamicProperty globalDynamicProperty
+var staticProperty StaticProperty
 
-type globalStaticProperty struct {
-	account.Account
-	NumberOfWitnesses int
-	WitnessList       []string
-	Watermark         map[string]uint64
-	SlotMap           map[uint64]map[string]bool
+type StaticProperty struct {
+	account           account.Account
+	NumberOfWitnesses int64
+	WitnessList		  []string
+	WitnessMap        map[string]int64
+	Watermark         map[string]int64
+	SlotMap           map[int64]bool
 }
 
-func newGlobalStaticProperty(acc account.Account, witnessList []string) globalStaticProperty {
-	prop := globalStaticProperty{
-		Account:           acc,
-		NumberOfWitnesses: len(witnessList),
-		WitnessList:       witnessList,
-		Watermark:         make(map[string]uint64),
-		SlotMap:           make(map[uint64]map[string]bool),
+func newStaticProperty(account account.Account, witnessList []string) StaticProperty {
+	property := StaticProperty{
+		account:           account,
+		NumberOfWitnesses: int64(len(witnessList)),
+		WitnessList:	   witnessList,
+		WitnessMap:        make(map[string]int64),
+		Watermark:         make(map[string]int64),
+		SlotMap:           make(map[int64]bool),
 	}
-	return prop
-}
-
-func (prop *globalStaticProperty) updateWitnessList(newList []string) {
-	prop.WitnessList = newList
-	prop.NumberOfWitnesses = len(newList)
-}
-
-func (prop *globalStaticProperty) hasSlotWitness(slot uint64, witness string) bool {
-	if prop.SlotMap[slot] == nil {
-		return false
-	} else {
-		return prop.SlotMap[slot][witness]
+	for i, w := range witnessList{
+		property.WitnessMap[w] = int64(i)
 	}
+	return property
 }
 
-func (prop *globalStaticProperty) addSlotWitness(slot uint64, witness string) {
-	if prop.SlotMap[slot] == nil {
-		prop.SlotMap[slot] = make(map[string]bool)
+func (property *StaticProperty) updateWitnessList(witnessList []string) {
+	property.WitnessList = witnessList
+	for i, w := range witnessList{
+		property.WitnessMap[w] = int64(i)
 	}
-	prop.SlotMap[slot][witness] = true
+	property.NumberOfWitnesses = int64(len(witnessList))
 }
 
-func (prop *globalStaticProperty) delSlotWitness(slotStart uint64, slotEnd uint64) {
+func (property *StaticProperty) hasSlotWitness(slot int64) bool {
+	return property.SlotMap[slot]
+}
+
+func (property *StaticProperty) addSlotWitness(slot int64) {
+	property.SlotMap[slot] = true
+}
+
+func (property *StaticProperty) delSlotWitness(slotStart int64, slotEnd int64) {
 	for slot := slotStart; slot <= slotEnd; slot++ {
-		if _, has := prop.SlotMap[slot]; has {
-			delete(prop.SlotMap, slot)
-		}
+		property.SlotMap[slot] = false
 	}
-}
-
-func getIndex(element string, list []string) int {
-	for index, ele := range list {
-		if ele == element {
-			return index
-		}
-	}
-	return -1
 }
 
 var (
-	slotPerWitness      = 1
-	maintenanceInterval = 24
+	maintenanceInterval int64 = 24
 )
 
-type globalDynamicProperty struct {
-	LastBlockNumber     int64
-	LastBlockTime       common.Timestamp
-	LastBLockHash       []byte
-	TotalSlots          int64
-	NextMaintenanceTime common.Timestamp
-}
-
-func newGlobalDynamicProperty() globalDynamicProperty {
-	prop := globalDynamicProperty{
-		LastBlockNumber: 0,
-		LastBlockTime:   common.Timestamp{Slot: 0},
-		TotalSlots:      0,
-	}
-	prop.NextMaintenanceTime.AddHour(maintenanceInterval)
-	return prop
-}
-
-func (prop *globalDynamicProperty) update(blockHead *block.BlockHead) {
-	if prop.LastBlockNumber == 0 {
-		prop.TotalSlots = 1
-		prop.NextMaintenanceTime.AddHour(maintenanceInterval)
-	}
-	prop.LastBlockNumber = blockHead.Number
-	prop.LastBlockTime = common.Timestamp{Slot: blockHead.Time}
-	hash, err := blockHead.Hash()
-	if err == nil {
-		copy(prop.LastBLockHash, hash)
-	}
-}
-
-func (prop *globalDynamicProperty) timestampToSlot(time common.Timestamp) int64 {
-	return time.Slot
-}
-
-func (prop *globalDynamicProperty) slotToTimestamp(slot int64) *common.Timestamp {
-	return &common.Timestamp{Slot: slot}
-}
-
 func witnessOfSec(sec int64) string {
-	time := common.GetTimestamp(sec)
-	return witnessOfTime(time)
+	return witnessOfSlot(sec/common.SlotLength)
 }
 
-func witnessOfTime(time common.Timestamp) string {
-
-	currentSlot := dynamicProperty.timestampToSlot(time)
-	slotsEveryTurn := int64(staticProperty.NumberOfWitnesses * slotPerWitness)
-	index := currentSlot % slotsEveryTurn
-	index /= int64(slotPerWitness)
+func witnessOfSlot(slot int64) string {
+	index := slot%staticProperty.NumberOfWitnesses
+	fmt.Println(index)
 	witness := staticProperty.WitnessList[index]
-
 	return witness
 }
 
 func timeUntilNextSchedule(timeSec int64) int64 {
-	var index int
-	if index = getIndex(staticProperty.Account.GetId(), staticProperty.WitnessList); index < 0 {
-		return dynamicProperty.NextMaintenanceTime.ToUnixSec()
+	index, ok := staticProperty.WitnessMap[staticProperty.account.ID]
+	if !ok {
+		return maintenanceInterval*common.SlotLength
 	}
-
-	time := common.GetTimestamp(timeSec)
-	currentSlot := dynamicProperty.timestampToSlot(time)
-	slotsEveryTurn := int64(staticProperty.NumberOfWitnesses * slotPerWitness)
-	k := currentSlot / slotsEveryTurn
-	startSlot := k*slotsEveryTurn + int64(index*slotPerWitness)
-	if startSlot > currentSlot {
-		return dynamicProperty.slotToTimestamp(startSlot).ToUnixSec() - timeSec
+	currentSlot := timeSec/common.SlotLength
+	round := currentSlot/staticProperty.NumberOfWitnesses
+	startSlot := round*staticProperty.NumberOfWitnesses+index
+	if currentSlot > startSlot {
+		nextSlot := (round+1)*staticProperty.NumberOfWitnesses+index
+		return nextSlot*common.SlotLength-timeSec
+	} else if currentSlot < startSlot {
+		return startSlot*common.SlotLength-timeSec
+	} else {
+		return 0
 	}
-	if currentSlot-startSlot < int64(slotPerWitness) {
-		if time.Slot > dynamicProperty.LastBlockTime.Slot {
-			return 0
-		} else if currentSlot+1 < startSlot+int64(slotPerWitness) {
-			return dynamicProperty.slotToTimestamp(currentSlot+1).ToUnixSec() - timeSec
-		}
-	}
-	nextSlot := (k+1)*slotsEveryTurn + int64(index*slotPerWitness)
-	return dynamicProperty.slotToTimestamp(nextSlot).ToUnixSec() - timeSec
 }
