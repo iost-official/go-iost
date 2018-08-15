@@ -1,7 +1,6 @@
 package host
 
 import (
-	"context"
 	"testing"
 
 	. "github.com/golang/mock/gomock"
@@ -20,21 +19,23 @@ func sliceEqual(a, b []string) bool {
 	return false
 }
 
-func myinit(t *testing.T, ctx context.Context) (*database.MockIMultiValue, Host) {
+func myinit(t *testing.T, ctx *Context) (*database.MockIMultiValue, Host) {
 	mockCtrl := NewController(t)
 	defer mockCtrl.Finish()
 	db := database.NewMockIMultiValue(mockCtrl)
 	bdb := database.NewVisitor(100, db)
 
 	//monitor := Monitor{}
-	return db, Host{Ctx: ctx, DB: bdb}
+
+	host := NewHost(ctx, bdb, nil)
+	return db, *host
 }
 
 func TestHost_Put(t *testing.T) {
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "commit", "abc")
-	ctx = context.WithValue(ctx, "contract_name", "contractName")
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
 
 	mock, host := myinit(t, ctx)
 
@@ -48,9 +49,9 @@ func TestHost_Put(t *testing.T) {
 }
 
 func TestHost_Get(t *testing.T) {
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "commit", "abc")
-	ctx = context.WithValue(ctx, "contract_name", "contractName")
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
 
 	mock, host := myinit(t, ctx)
 
@@ -69,9 +70,9 @@ func TestHost_Get(t *testing.T) {
 
 func TestHost_MapPut(t *testing.T) {
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "commit", "abc")
-	ctx = context.WithValue(ctx, "contract_name", "contractName")
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
 
 	mock, host := myinit(t, ctx)
 
@@ -86,9 +87,9 @@ func TestHost_MapPut(t *testing.T) {
 
 func TestHost_MapGet(t *testing.T) {
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "commit", "abc")
-	ctx = context.WithValue(ctx, "contract_name", "contractName")
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
 
 	mock, host := myinit(t, ctx)
 
@@ -107,9 +108,9 @@ func TestHost_MapGet(t *testing.T) {
 
 func TestHost_MapKeys(t *testing.T) {
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "commit", "abc")
-	ctx = context.WithValue(ctx, "contract_name", "contractName")
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
 
 	mock, host := myinit(t, ctx)
 
@@ -128,10 +129,10 @@ func TestHost_MapKeys(t *testing.T) {
 
 func TestHost_RequireAuth(t *testing.T) {
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "commit", "abc")
-	ctx = context.WithValue(ctx, "contract_name", "contractName")
-	ctx = context.WithValue(ctx, "auth_list", map[string]int{"a": 1, "b": 0})
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
+	ctx.Set("auth_list", map[string]int{"a": 1, "b": 0})
 
 	_, host := myinit(t, ctx)
 

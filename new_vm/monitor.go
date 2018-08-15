@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm"
 )
 
 var (
@@ -133,9 +134,9 @@ func VMFactory(lang string) VM {
 	case "native":
 		return &native_vm.VM{}
 	case "javascript":
-		//vm := v8.NewVM()
-		//vm.SetJSPath("/Users/hepeijian/go/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
-		//return vm
+		vm := v8.NewVM()
+		vm.SetJSPath("/Users/hepeijian/go/src/github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm/v8/libjs/")
+		return vm
 	}
 	return nil
 }
