@@ -153,16 +153,8 @@ func (logger *Logger) Debug(format string, v ...interface{}) {
 	logger.genMsg(LevelDebug, fmt.Sprintf(format, v...))
 }
 
-func (logger *Logger) D(format string, v ...interface{}) {
-	logger.Debug(format, v...)
-}
-
 func (logger *Logger) Info(format string, v ...interface{}) {
 	logger.genMsg(LevelInfo, fmt.Sprintf(format, v...))
-}
-
-func (logger *Logger) I(format string, v ...interface{}) {
-	logger.Info(format, v...)
 }
 
 func (logger *Logger) Warn(format string, v ...interface{}) {
@@ -171,10 +163,6 @@ func (logger *Logger) Warn(format string, v ...interface{}) {
 
 func (logger *Logger) Error(format string, v ...interface{}) {
 	logger.genMsg(LevelError, fmt.Sprintf(format, v...))
-}
-
-func (logger *Logger) E(format string, v ...interface{}) {
-	logger.Error(format, v...)
 }
 
 func (logger *Logger) Fatal(format string, v ...interface{}) {
