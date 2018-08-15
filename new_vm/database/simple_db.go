@@ -138,8 +138,8 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 	t.Signers = s
 	p, err := json.Get("publisher").String()
 	t.Publisher.Pubkey = account.GetPubkeyByID(p)
-	t.GasLimit, err = json.Get("gas_limit").Uint64()
-	t.GasPrice, err = json.Get("gas_price").Uint64()
+	t.GasLimit, err = json.Get("gas_limit").Int64()
+	t.GasPrice, err = json.Get("gas_price").Int64()
 	return t, err
 }
 
