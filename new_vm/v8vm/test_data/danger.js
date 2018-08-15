@@ -1,4 +1,4 @@
-class Datatype {
+class Danger {
     constructor() {
     }
 
@@ -16,4 +16,7 @@ class Datatype {
     }
 };
 
-module.exports = Datatype;
+module.exports = function () {
+    return undefined;
+};
+module.exports = Danger;

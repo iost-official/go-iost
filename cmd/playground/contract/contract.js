@@ -5,46 +5,68 @@ var esprima = require('esprima/dist/esprima.js');
 var lang = "js";
 var version = "1.0.0";
 
-function isFunctionDecl(stat) {
+function isClassDecl(stat) {
 	if (!stat || stat === null) {
 		return false;
 	}
-	if (stat.type === "FunctionDeclaration") {
+	if (stat.type === "ClassDeclaration") {
 		return true;
 	}
 	return false;
 }
 
-function isValid(stat) {
-	console.log("is valid stat = " + stat);
-	if (isFunctionDecl(stat)) {
-		return true;
+function isExport(stat) {
+	if (!stat || stat === null) {
+		return false;
 	}
-	if (stat.type === "ExpressionStatement" && stat.expression.type === "CallExpression" &&
-			stat.expression.callee.type === "Identifier" && stat.expression.callee.name === "require") {
+	if (stat.type === "AssignmentExpression" && stat.left.type === "MemberExpression" &&
+			stat.left.object.type === "Identifier" && stat.left.object.name === "module" &&
+			stat.left.property.type === "Identifier" && stat.left.property.name === "exports") {
 		return true;
 	}
 	return false;
 }
 
-function genAbi(stat) {
-	if (!isFunctionDecl(stat)) {
+function getExportName(stat) {
+	if (stat.right.type != "Identifier") {
+		throw "module.exports should be assigned to an identifier";
+	}
+	return stat.right.name;
+}
+
+function isPublicMethod(def) {
+	return def.key.type === "Identifier" && def.value.type === "FunctionExpression" && def.key.name !== "constructor" && !def.key.name.startsWith("_");
+}
+
+function genAbi(def) {
+	var abi = {
+		"name": def.key.name,
+		"args": new Array(def.value.params.length).fill("string"),
+		"payment": 0,
+		"cost_limit": new Array(def.value.params.length).fill(1),
+		"price_limit": 1
+	};
+	return abi;
+}
+
+function genAbiArr(stat) {
+	var abiArr = [];
+	if (!isClassDecl(stat) || stat.body.type !== "ClassBody") {
 		console.error("invalid statment for generate abi. stat = " + stat);
 		return null;
 	}
-	var abi = {
-		"name": stat.id.name,
-		"args": new Array(stat.params.length).fill("string"),
-		"payment": 0,
-		"cost_limit": new Array(stat.params.length).fill(1),
-		"price_limit": 1
+	for (var i in stat.body.body) {
+		var def = stat.body.body[i];
+		if (def.type === "MethodDefinition" && isPublicMethod(def)) {
+			abiArr.push(genAbi(def));
+		}
 	}
-	return abi;
+	return abiArr;
 }
 
 function processContract(source) {
 	var newSource, abi;
-    var ast = esprima.parseScript(source, {
+    var ast = esprima.parseModule(source, {
 		range: true,
 		loc: true,
 		tokens: true
@@ -56,13 +78,24 @@ function processContract(source) {
 		console.error("invalid source! ast = " + ast);
 	}
 	var validRange = [];
+	var className;
 	for (var i in ast.body) {
 		var stat = ast.body[i];
-		if (isValid(stat)) {
+
+		if (isClassDecl(stat)) {
 			validRange.push(stat.range);
-			if (isFunctionDecl(stat)) {
-				abiArr.push(genAbi(stat));
-			}
+		}
+		else if (stat.type === "ExpressionStatement" && isExport(stat.expression)) {
+			validRange.push(stat.range);
+			className = getExportName(stat.expression);
+		}
+	}
+
+	for (var i in ast.body) {
+		var stat = ast.body[i];
+
+		if (isClassDecl(stat) && stat.id.type == "Identifier" && stat.id.name == className) {
+			abiArr = genAbiArr(stat);
 		}
 	}
 
