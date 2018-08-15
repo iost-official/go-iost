@@ -93,7 +93,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	}
 
 	bl := e.host.DB.Balance(account.GetIdByPubkey(tx0.Publisher.Pubkey))
-	if bl <= 0 || uint64(bl) < tx0.GasPrice*tx0.GasLimit {
+	if bl <= 0 || bl < tx0.GasPrice*tx0.GasLimit {
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), nil
 	}
 
@@ -146,7 +146,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		txr.Receipts = append(txr.Receipts, receipts...)
 		txr.SuccActionNum++
 
-		e.host.Ctx.GSet("gas_limit", tx0.GasLimit-uint64(cost.ToGas()))
+		e.host.Ctx.GSet("gas_limit", tx0.GasLimit-cost.ToGas())
 
 		e.host.PayCost(cost, account.GetIdByPubkey(tx0.Publisher.Pubkey))
 	}

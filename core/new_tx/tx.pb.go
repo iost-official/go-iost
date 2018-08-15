@@ -76,8 +76,8 @@ func (m *ActionRaw) GetData() string {
 type TxRaw struct {
 	Time                 int64                  `protobuf:"varint,1,opt,name=time,proto3" json:"time,omitempty"`
 	Expiration           int64                  `protobuf:"varint,2,opt,name=expiration,proto3" json:"expiration,omitempty"`
-	GasLimit             uint64                 `protobuf:"varint,3,opt,name=gasLimit,proto3" json:"gasLimit,omitempty"`
-	GasPrice             uint64                 `protobuf:"varint,4,opt,name=gasPrice,proto3" json:"gasPrice,omitempty"`
+	GasLimit             int64                  `protobuf:"varint,3,opt,name=gasLimit,proto3" json:"gasLimit,omitempty"`
+	GasPrice             int64                  `protobuf:"varint,4,opt,name=gasPrice,proto3" json:"gasPrice,omitempty"`
 	Actions              []*ActionRaw           `protobuf:"bytes,5,rep,name=actions,proto3" json:"actions,omitempty"`
 	Signers              [][]byte               `protobuf:"bytes,6,rep,name=signers,proto3" json:"signers,omitempty"`
 	Signs                []*common.SignatureRaw `protobuf:"bytes,7,rep,name=signs,proto3" json:"signs,omitempty"`

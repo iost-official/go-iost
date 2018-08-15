@@ -28,6 +28,6 @@ func (h *Info) ABIConfig(key, value string) {
 	}
 }
 
-func (h *Info) GasLimit() uint64 {
-	return h.ctx.GValue("gas_limit").(uint64)
+func (h *Info) GasLimit() int64 {
+	return h.ctx.GValue("gas_limit").(int64)
 }
