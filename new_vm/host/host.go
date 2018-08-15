@@ -16,8 +16,9 @@ var (
 	ErrReenter          = errors.New("re-entering")
 )
 
-type Caller interface {
+type Monitor interface {
 	Call(host *Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
+	Compile(con *contract.Contract) (string, error)
 }
 
 type Host struct {
@@ -28,10 +29,10 @@ type Host struct {
 
 	Ctx     *Context
 	DB      *database.Visitor
-	monitor Caller
+	monitor Monitor
 }
 
-func NewHost(ctx *Context, db *database.Visitor, monitor Caller) *Host {
+func NewHost(ctx *Context, db *database.Visitor, monitor Monitor) *Host {
 	return &Host{
 		Ctx:     ctx,
 		DB:      db,
@@ -96,10 +97,16 @@ func (h *Host) CallWithReceipt(contract, api string, args ...interface{}) ([]int
 
 }
 
-func (h *Host) SetCode(ct string) { // 不在这里做编译
+func (h *Host) SetCode(ct string) (*contract.Cost, error) {
 	c := contract.Contract{}
 	c.Decode(ct)
+	code, err := h.monitor.Compile(&c)
+	if err != nil {
+		return contract.NewCost(0, 0, 100), err
+	}
+	c.Code = code
 	h.DB.SetContract(&c)
+	return contract.NewCost(0, 0, 100), nil // todo check set cost
 }
 func (h *Host) DestroyCode(contractName string) *contract.Cost {
 	// todo 释放kv

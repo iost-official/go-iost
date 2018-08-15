@@ -105,6 +105,17 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 //	return nil
 //}
 
+func (m *Monitor) Compile(con *contract.Contract) (string, error) {
+	switch con.Info.Lang {
+	case "native":
+		return "", nil
+	case "javascript":
+		jsvm := m.vms["javascript"]
+		return jsvm.Compile(con)
+	}
+	return "", errors.New("vm unsupported")
+}
+
 func checkArgs(abi *contract.ABI, args []interface{}) error {
 	if len(abi.Args) > len(args) {
 		return ErrArgsNotEnough
