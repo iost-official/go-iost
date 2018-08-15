@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
@@ -16,7 +17,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 func init() {
@@ -311,7 +311,7 @@ func (pool *TxPoolImpl) clearBlock() {
 
 	pool.blockList.Range(func(key, value interface{}) bool {
 		if value.(*blockTx).time() < ft {
-			pool.blockList.Delete(key)
+			pool.blockList.Delete(key.(string))
 		}
 
 		return true
@@ -386,7 +386,7 @@ func (pool *TxPoolImpl) clearTimeOutTx() {
 }
 
 func (pool *TxPoolImpl) delTxInPending(hash []byte) {
-	pool.pendingTx.Delete(hash)
+	pool.pendingTx.Delete(string(hash))
 }
 
 func (pool *TxPoolImpl) delBlockTxInPending(hash []byte) error {
@@ -397,7 +397,7 @@ func (pool *TxPoolImpl) delBlockTxInPending(hash []byte) error {
 	}
 
 	b.txMap.Range(func(key, value interface{}) bool {
-		pool.pendingTx.Delete(key)
+		pool.pendingTx.Delete(key.(string))
 		return true
 	})
 
