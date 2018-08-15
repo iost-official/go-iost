@@ -79,7 +79,10 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), nil
 	}
 
-	// todo 检查发布者余额是否能支撑gaslimit
+	bl := e.host.DB.Balance(account.GetIdByPubkey(tx0.Publisher.Pubkey))
+	if bl <= 0 || uint64(bl) < tx0.GasPrice*tx0.GasLimit {
+		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, ""), nil
+	}
 
 	txInfo, err := json.Marshal(tx0)
 	if err != nil {
