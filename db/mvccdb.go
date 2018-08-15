@@ -38,6 +38,7 @@ type MVCCDB interface {
 	Rollback()
 	Checkout(t string)
 	Tag(t string)
+	CurrentTag() string
 	Fork() MVCCDB
 	Flush(t string) error
 	Close() error
@@ -239,6 +240,10 @@ func (m *TrieMVCCDB) Tag(t string) {
 	m.tags[t] = m.head
 	m.tagsrw.Unlock()
 	m.head.SetTag(t)
+}
+
+func (m *TrieMVCCDB) CurrentTag() string {
+	return m.head.Tag()
 }
 
 func (m *TrieMVCCDB) Fork() MVCCDB {

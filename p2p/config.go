@@ -15,6 +15,6 @@ func DefaultConfig() *Config {
 		ListenAddr:  "0.0.0.0:6666",
 		PrivKeyPath: "priv.key",
 		ChainID:     404,
-		Version:     1.0,
+		Version:     1,
 	}
 }
