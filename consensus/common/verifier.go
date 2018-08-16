@@ -2,24 +2,26 @@ package consensus_common
 
 import (
 	"bytes"
-	"time"
 	"errors"
+	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 )
+
 var (
-	ErrFutureBlk   = errors.New("block from future")
-	ErrOldBlk      = errors.New("block too old")
-	ErrParentHash  = errors.New("wrong parent hash")
-	ErrNumber      = errors.New("wrong number")
-	ErrTxHash      = errors.New("wrong txs hash")
-	ErrMerkleHash  = errors.New("wrong tx receipt merkle hash")
-	ErrTxReceipt   = errors.New("wrong tx receipt")
+	ErrFutureBlk  = errors.New("block from future")
+	ErrOldBlk     = errors.New("block too old")
+	ErrParentHash = errors.New("wrong parent hash")
+	ErrNumber     = errors.New("wrong number")
+	ErrTxHash     = errors.New("wrong txs hash")
+	ErrMerkleHash = errors.New("wrong tx receipt merkle hash")
+	ErrTxReceipt  = errors.New("wrong tx receipt")
 )
+
 func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Block) error {
 	bh := blk.Head
 	if bh.Time > time.Now().Unix()/common.SlotLength+1 {
@@ -43,7 +45,7 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 	return nil
 }
 
-func VerifyBlockWithVM(blk *block.Block, db *db.MVCCDB) error {
+func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 	var receipts []*tx.TxReceipt
 	engine := new_vm.NewEngine(&blk.Head, db)
 	for _, tx := range blk.Txs {
