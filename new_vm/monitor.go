@@ -99,7 +99,12 @@ func (m *Monitor) Compile(con *contract.Contract) (string, error) {
 	case "native":
 		return "", nil
 	case "javascript":
-		jsvm := m.vms["javascript"]
+		jsvm, ok := m.vms["javascript"]
+		if !ok {
+			jsvm = VMFactory(con.Info.Lang)
+			m.vms[con.Info.Lang] = jsvm
+			m.vms[con.Info.Lang].Init()
+		}
 		return jsvm.Compile(con)
 	}
 	return "", errors.New("vm unsupported")

@@ -67,7 +67,11 @@ func (d *database) Get(table string, key string) (string, error) {
 	return Marshal(out)
 }
 func (d *database) Put(table string, key string, value string) error {
-	d.json.Set(key, MustUnmarshal(value))
+	if strings.HasPrefix(key, "c-") {
+		d.json.Set(key, value)
+	} else {
+		d.json.Set(key, MustUnmarshal(value))
+	}
 	return nil
 }
 func (d *database) Del(table string, key string) error {
