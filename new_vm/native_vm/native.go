@@ -60,15 +60,17 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		if err != nil {
 			return nil, cost, err
 		}
+		println(json.Get("hash"))
 		id, err := json.Get("hash").Bytes()
 		if err != nil {
 			return nil, cost, err
 		}
-		con.ID = "Contract" + common.Base58Encode(id)
+		actId := "Contract" + common.Base58Encode(id)
+		con.ID = actId
 
 		cost1, err := host.SetCode(con)
 		cost.AddAssign(cost1)
-		return []interface{}{}, cost, err
+		return []interface{}{actId}, cost, err
 
 		// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
 	case "UpdateCode":

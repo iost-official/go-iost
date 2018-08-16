@@ -43,7 +43,7 @@ function genAbi(def) {
 		"name": def.key.name,
 		"args": new Array(def.value.params.length).fill("string"),
 		"payment": 0,
-		"cost_limit": new Array(def.value.params.length).fill(1),
+		"cost_limit": new Array(3).fill(1),
 		"price_limit": 1
 	};
 	return abi;
