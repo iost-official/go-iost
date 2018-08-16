@@ -9,6 +9,7 @@ import (
 
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
@@ -347,7 +348,7 @@ func (e *EngineImpl) setLogger(level, path string, start bool) {
 
 func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
 	c := host.NewContext(ctx)
-	c.Set("parent_hash", bh.ParentHash)
+	c.Set("parent_hash", common.Base58Encode(bh.ParentHash))
 	c.Set("number", bh.Number)
 	c.Set("witness", bh.Witness)
 	c.Set("time", bh.Time)
@@ -359,7 +360,7 @@ func loadTxInfo(ctx *host.Context, t *tx.Tx) *host.Context {
 	c.Set("time", t.Time)
 	c.Set("expiration", t.Expiration)
 	c.Set("gas_price", t.GasPrice)
-	c.Set("tx_hash", t.Hash())
+	c.Set("tx_hash", common.Base58Encode(t.Hash()))
 
 	authList := make(map[string]int)
 	for _, v := range t.Signers {
