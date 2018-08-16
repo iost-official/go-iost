@@ -234,7 +234,7 @@ func TestCost(t *testing.T) { // tests of context transport
 			Lang:        "mock",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "abi",
 					Args:     []string{"string"},
 					Payment:  0,
