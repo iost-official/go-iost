@@ -4,7 +4,7 @@ class Test {
     }
 
     number() {
-        return _num(this.num);
+        return this._num(this.num);
     }
 
     _num(d) {

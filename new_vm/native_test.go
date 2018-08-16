@@ -1,4 +1,4 @@
-package native_vm
+package new_vm
 
 import (
 	"testing"
@@ -7,32 +7,33 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 	"os"
 	"io/ioutil"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 )
 
 var testDataPath = "./test_data/"
 
-func MyInit(t *testing.T, conName string, optional ...interface{}) (*VM, *host.Host, *contract.Contract) {
+func MyInit(t *testing.T, conName string, optional ...interface{}) (*native_vm.VM, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
 	vi := database.NewVisitor(100, db)
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", uint64(1))
-	var gasLimit = uint64(10000);
+	ctx.Set("gas_price", int64(1))
+	var gasLimit = int64(10000);
 	if len(optional) > 0 {
-		gasLimit = optional[0].(uint64)
+		gasLimit = optional[0].(int64)
 	}
 	ctx.GSet("gas_limit", gasLimit)
 	ctx.Set("contract_name", conName)
+	ctx.Set("tx_hash", []byte("iamhash"))
 
-	pm := new_vm.NewMonitor()
+	pm := NewMonitor()
 	h := host.NewHost(ctx, vi, pm, nil)
 
 	code := &contract.Contract{
 		ID:   conName,
 	}
 
-	e := &VM{}
+	e := &native_vm.VM{}
 	e.Init()
 
 	return e, h, code
@@ -75,7 +76,7 @@ func TestEngine_SetCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall setcode error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "0.0000000000800029" {
-		t.Errorf("LoadAndCall except 0.0000000000800029, got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != "Contract2qYMbQdP6sJc3PXL8" {
+		t.Errorf("LoadAndCall except Contract2qYMbQdP6sJc3PXL8, got %s\n", rs[0])
 	}
 }

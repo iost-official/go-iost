@@ -2,7 +2,7 @@
 
 var esprima = require('esprima/dist/esprima.js');
 
-var lang = "js";
+var lang = "javascript";
 var version = "1.0.0";
 
 function isClassDecl(stat) {
@@ -35,7 +35,7 @@ function getExportName(stat) {
 }
 
 function isPublicMethod(def) {
-	return def.key.type === "Identifier" && def.value.type === "FunctionExpression" && def.key.name !== "constructor" && !def.key.name.startsWith("_");
+	return def.key.type === "Identifier" && def.value.type === "FunctionExpression" && !def.key.name.startsWith("_");
 }
 
 function genAbi(def) {
