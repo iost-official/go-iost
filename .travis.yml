@@ -16,13 +16,16 @@ matrix:
           packages:
             - g++-5
       env:
-         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+         - CC=gcc-5
+         - CXX=g++-5
     - os: osx
       go: 1.10
-         - MATRIX_EVAL="CC=clang && CXX=clang++"
+      env:
+         - CC=clang
+         - CXX=clang++
 
 before_install:
-  - eval "${MATRIX_EVAL}"
+  - ${CC} --version
   - ${CXX} --version
 
 install: true
