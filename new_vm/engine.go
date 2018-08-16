@@ -132,9 +132,11 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		txr.Status = status
 		txr.GasUsage += cost.ToGas()
+		ilog.Debug("action status: %v", status)
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
+			ilog.Debug("rollback")
 			e.ho.DB.Rollback()
 			break
 		}

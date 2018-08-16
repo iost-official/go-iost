@@ -8,6 +8,13 @@ type LRU struct {
 }
 
 func NewLRU(length int, db Database) *LRU {
+	if length <= 0 {
+		return &LRU{
+			cache: nil,
+			db:    db,
+		}
+	}
+
 	c, err := lru.New(length)
 	if err != nil {
 		panic(err)
@@ -19,6 +26,9 @@ func NewLRU(length int, db Database) *LRU {
 }
 
 func (m *LRU) Get(key string) (value string) {
+	if m.cache == nil {
+		return m.db.Get(key)
+	}
 	v, ok := m.cache.Get(key)
 	if !ok {
 		v = m.db.Get(key)
@@ -30,15 +40,22 @@ func (m *LRU) Put(key, value string) {
 	m.db.Put(key, value)
 }
 func (m *LRU) Has(key string) bool {
+	if m.cache == nil {
+		return m.db.Has(key)
+	}
 	return m.cache.Contains(key)
 }
 func (m *LRU) Keys(prefix string) []string {
 	return m.db.Keys(prefix)
 }
 func (m *LRU) Del(key string) {
-	m.cache.Remove(key)
+	if m.cache != nil {
+		m.cache.Remove(key)
+	}
 	m.db.Del(key)
 }
 func (m *LRU) Purge() {
-	m.cache.Purge()
+	if m.cache != nil {
+		m.cache.Purge()
+	}
 }

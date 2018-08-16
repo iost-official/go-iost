@@ -7,9 +7,13 @@ import (
 
 	"os"
 
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 )
 
 var testID = []string{
@@ -25,12 +29,40 @@ var testID = []string{
 	"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4", "7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
 }
 
+var systemContract = &contract.Contract{
+	ID:   "iost.system",
+	Code: "codes",
+	Info: &contract.Info{
+		Lang:        "native",
+		VersionCode: "1.0.0",
+		Abis: []*contract.ABI{
+			{
+				Name:     "Transfer",
+				Payment:  0,
+				GasPrice: int64(1000),
+				Limit:    contract.NewCost(100, 100, 100),
+				Args:     []string{"string", "string", "number"},
+			},
+		},
+	},
+}
+
 func TestIntergration_Transfer(t *testing.T) {
 
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	//mvccdb := database.NewDatabase()
+
+	defer os.RemoveAll("mvcc")
+
+	vi := database.NewVisitor(0, mvccdb)
+
+	vi.SetBalance(testID[0], 1000000)
+
+	vi.SetContract(systemContract)
 
 	bh := &block.BlockHead{
 		ParentHash: []byte("abc"),
@@ -42,13 +74,62 @@ func TestIntergration_Transfer(t *testing.T) {
 	e := NewEngine(bh, mvccdb)
 
 	e.SetUp("js_path", jsPath)
+	e.SetUp("log_level", "debug")
+	e.SetUp("log_enable", "")
 
-	ac := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 
-	trx := tx.NewTx([]tx.Action{ac}, nil, int64(10000), int64(1), int64(10000000))
+	trx := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
 
-	t.Log(trx)
+	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	trx, err = tx.SignTx(trx, ac)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//
+	//	cpl := contract.Compiler{}
+	//
+	//	code := `
+	//class Contract {
+	// constructor() {
+	//
+	// }
+	// hello(someone) {
+	//  return "hello "+ someone + "!";
+	// }
+	//}
+	//
+	//module.exports = Contract;
+	//`
+	//
+	//	abi := `
+	//{
+	//  "lang": "javascript",
+	//  "version": "1.0.0",
+	//  "abi": [{
+	//    "name": "hello",
+	//    "args": ["string"],
+	//    "payment": 0,
+	//    "cost_limit": [1,1,1],
+	//    "price_limit": 1
+	//  }
+	//  ]
+	//}
+	//`
+	//
+	//	c, err := cpl.Parse("contract", code, abi)
+	//	if err != nil {
+	//		t.Fatal(err)
+	//	}
 
-	os.RemoveAll("mvcc")
+	//acSet := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+	//
+	//trxSet := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
 
+	t.Log(e.Exec(&trx))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+	t.Log("balance of receiver :", vi.Balance(testID[2]))
 }
