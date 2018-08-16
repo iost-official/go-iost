@@ -46,6 +46,9 @@ func MustMarshal(in interface{}) string {
 }
 
 func Unmarshal(o string) interface{} {
+	if len(o) < 1 {
+		return ErrInvalidData
+	}
 	switch o[0:1] {
 	case IntPrefix:
 		return rawToInt64(o)
