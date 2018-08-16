@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
@@ -16,7 +17,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 func init() {
@@ -234,7 +234,7 @@ func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 		return nil
 	}
 
-	b := new(blockTx)
+	b := newBlockTx()
 
 	b.setTime(pool.slotToSec(linkedBlock.Head.Time))
 	b.addBlock(linkedBlock)
@@ -311,7 +311,7 @@ func (pool *TxPoolImpl) clearBlock() {
 
 	pool.blockList.Range(func(key, value interface{}) bool {
 		if value.(*blockTx).time() < ft {
-			pool.blockList.Delete(key)
+			pool.blockList.Delete(key.(string))
 		}
 
 		return true
@@ -386,7 +386,7 @@ func (pool *TxPoolImpl) clearTimeOutTx() {
 }
 
 func (pool *TxPoolImpl) delTxInPending(hash []byte) {
-	pool.pendingTx.Delete(hash)
+	pool.pendingTx.Delete(string(hash))
 }
 
 func (pool *TxPoolImpl) delBlockTxInPending(hash []byte) error {
@@ -397,7 +397,7 @@ func (pool *TxPoolImpl) delBlockTxInPending(hash []byte) error {
 	}
 
 	b.txMap.Range(func(key, value interface{}) bool {
-		pool.pendingTx.Delete(key)
+		pool.pendingTx.Delete(key.(string))
 		return true
 	})
 
@@ -532,13 +532,16 @@ func (pool *TxPoolImpl) doChainChange() error {
 
 	//Reply to txs
 	for {
+		//fmt.Println("blockCache.Find:", o)
 		b, err := pool.blockCache.Find(o)
 		if err != nil {
 			return err
 		}
 
 		for _, v := range b.Block.Txs {
-			pool.addTx(v)
+			if b := pool.existTxInPending(v.Hash()); !b {
+				pool.pendingTx.Store(string(v.Hash()), v)
+			}
 		}
 
 		if bytes.Equal(b.Block.Head.ParentHash, f) {
@@ -548,7 +551,7 @@ func (pool *TxPoolImpl) doChainChange() error {
 		o = b.Block.Head.ParentHash
 	}
 
-	//Duplicate txs
+	//Check duplicate txs
 	for {
 		b, ok := pool.block(n)
 		if !ok {
@@ -556,7 +559,7 @@ func (pool *TxPoolImpl) doChainChange() error {
 		}
 
 		b.txMap.Range(func(key, value interface{}) bool {
-			pool.delTxInPending(key.([]byte))
+			pool.delTxInPending([]byte(key.(string)))
 			return true
 		})
 
@@ -586,6 +589,7 @@ func (pool *TxPoolImpl) testBlockListNum() int64 {
 
 	pool.blockList.Range(func(key, value interface{}) bool {
 		r++
+		//fmt.Println("blockList hash:", []byte(key.(string)))
 		return true
 	})
 
