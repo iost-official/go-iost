@@ -86,13 +86,13 @@ func (sbx *Sandbox) Init() {
 		(C.globalGetFunc)(unsafe.Pointer(C.goGlobalGet)))
 }
 
-func (sbx *Sandbox) SetGasLimit(limit uint64) {
+func (sbx *Sandbox) SetGasLimit(limit int64) {
 	C.setSandboxGasLimit(sbx.context, C.size_t(limit))
 }
 
 func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
-	sbx.SetGasLimit(uint64(host.GasLimit()))
+	sbx.SetGasLimit(host.GasLimit())
 }
 
 func (sbx *Sandbox) SetModule(name, code string) {
