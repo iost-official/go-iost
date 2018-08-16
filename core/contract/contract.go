@@ -2,7 +2,7 @@ package contract
 
 import "github.com/gogo/protobuf/proto"
 
-//go:generate protoc --gofast_out=. *.proto
+//go:generate protoc --gofast_out=. contract.proto
 
 type VersionCode string
 

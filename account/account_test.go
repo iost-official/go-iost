@@ -42,9 +42,10 @@ func TestMember(t *testing.T) {
 
 func TestPubkeyAndID(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		pubkey := makePubkey(randomSeckey())
+		seckey := randomSeckey()
+		pubkey := makePubkey(seckey)
 		id := GetIdByPubkey(pubkey)
-		fmt.Println(id)
+		fmt.Println(`"`, id, `", "`, Base58Encode(seckey), `"`)
 		pub2 := GetPubkeyByID(id)
 		id2 := GetIdByPubkey(pub2)
 		if !strings.HasPrefix(id, "IOST") {
