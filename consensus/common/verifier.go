@@ -3,11 +3,12 @@ package consensus_common
 import (
 	"bytes"
 	"errors"
+
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 var (
@@ -44,7 +45,7 @@ func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.B
 	return nil
 }
 
-func VerifyBlockWithVM(blk *block.Block, db *db.MVCCDB) error {
+func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 	var receipts []*tx.TxReceipt
 	engine := new_vm.NewEngine(&blk.Head, db)
 	for _, tx := range blk.Txs {
@@ -64,7 +65,7 @@ func VerifyBlockWithVM(blk *block.Block, db *db.MVCCDB) error {
 
 var txEngine new_vm.Engine
 
-func VerifyTxBegin(blk *block.Block, db *db.MVCCDB) {
+func VerifyTxBegin(blk *block.Block, db db.MVCCDB) {
 	txEngine = new_vm.NewEngine(&blk.Head, db)
 }
 

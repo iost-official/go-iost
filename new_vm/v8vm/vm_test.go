@@ -228,7 +228,7 @@ func TestVM_DataType(t *testing.T) {
 		t.Fatalf("LoadAndCall param run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "4" {
-		t.Fatalf("LoadAndCall except 4, got %s %s\n", rs[0])
+		t.Fatalf("LoadAndCall except 4, got %s\n", rs[0])
 	}
 
 	rs, _,err = e.LoadAndCall(host, code, "param2")

@@ -4,28 +4,36 @@
 static putFunc CPut = nullptr;
 static getFunc CGet = nullptr;
 static delFunc CDel = nullptr;
+static globalGetFunc CGGet = nullptr;
 
-void InitGoStorage(putFunc put, getFunc get, delFunc del) {
+void InitGoStorage(putFunc put, getFunc get, delFunc del, globalGetFunc gGet) {
     CPut = put;
     CGet = get;
     CDel = del;
+    CGGet = gGet;
 }
 
-int IOSTContractStorage::Put(char *key, char *value) {
+int IOSTContractStorage::Put(const char *key, const char *value) {
     size_t gasUsed = 0;
     int ret = CPut(sbx, key, value, &gasUsed);
     return ret;
 }
 
-char *IOSTContractStorage::Get(char *key) {
+char *IOSTContractStorage::Get(const char *key) {
     size_t gasUsed = 0;
     char *ret = CGet(sbx, key, &gasUsed);
     return ret;
 }
 
-int IOSTContractStorage::Del(char *key) {
+int IOSTContractStorage::Del(const char *key) {
     size_t gasUsed = 0;
     int ret = CDel(sbx, key, &gasUsed);
+    return ret;
+}
+
+char *IOSTContractStorage::GlobalGet(const char *contract, const char *key) {
+    size_t gasUsed = 0;
+    char *ret = CGGet(sbx, contract, key, &gasUsed);
     return ret;
 }
 
@@ -99,7 +107,7 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
 
     if (args.Length() != 1) {
         Local<Value> err = Exception::Error(
-            String::NewFromUtf8(isolate, "IOSTContractStorage_Get invalid argument length.")
+            String::NewFromUtf8(isolate, "IOSTContractStorage_Get invalid argument length")
         );
         isolate->ThrowException(err);
         return;
@@ -108,7 +116,7 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
     Local<Value> key = args[0];
     if (!key->IsString()) {
         Local<Value> err = Exception::Error(
-            String::NewFromUtf8(isolate, "IOSTContractStorage_Get key must be string.")
+            String::NewFromUtf8(isolate, "IOSTContractStorage_Get key must be string")
         );
         isolate->ThrowException(err);
         return;
@@ -166,6 +174,55 @@ void IOSTContractStorage_Del(const FunctionCallbackInfo<Value> &args) {
     args.GetReturnValue().Set(ret);
 }
 
+void IOSTContractStorage_GGet(const FunctionCallbackInfo<Value> &args) {
+    Isolate *isolate = args.GetIsolate();
+    Local<Object> self = args.Holder();
+
+    if (args.Length() != 2) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTContractStorage_GGet invalid argument length")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
+    Local<Value> contract = args[0];
+    if (!contract->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTContractStorage_GGet contract must be string")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
+    Local<Value> key = args[1];
+    if (!key->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTContractStorage_GGet key must be string")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
+    String::Utf8Value contractStr(contract);
+    String::Utf8Value keyStr(key);
+
+    Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
+    if (!extVal->IsExternal()) {
+        std::cout << "IOSTContractStorage_Get val error" << std::endl;
+        return;
+    }
+
+    IOSTContractStorage *ics = static_cast<IOSTContractStorage *>(extVal->Value());
+    char *val = ics->Get(*keyStr);
+    if (val == nullptr) {
+        args.GetReturnValue().SetNull();
+    } else {
+        args.GetReturnValue().Set(String::NewFromUtf8(isolate, val));
+        free(val);
+    }
+}
+
 void InitStorage(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     Local<FunctionTemplate> storageClass =
         FunctionTemplate::New(isolate, NewIOSTContractStorage);
@@ -185,6 +242,10 @@ void InitStorage(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     storageTpl->Set(
             String::NewFromUtf8(isolate, "del"),
             FunctionTemplate::New(isolate, IOSTContractStorage_Del)
+    );
+    storageTpl->Set(
+        String::NewFromUtf8(isolate, "globalGet"),
+        FunctionTemplate::New(isolate, IOSTContractStorage_GGet)
     );
 
 

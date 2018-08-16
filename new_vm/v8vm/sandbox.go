@@ -3,18 +3,19 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
-char *requireModule(SandboxPtr, char *);
-int goTransfer(SandboxPtr, char *, char *, char *, size_t *);
-int goWithdraw(SandboxPtr, char *, char *, size_t *);
-int goDeposit(SandboxPtr, char *, char *, size_t *);
-int goTopUp(SandboxPtr, char *, char *, char *, size_t *);
-int goCountermand(SandboxPtr, char *, char *, char *, size_t *);
+char *requireModule(SandboxPtr, const char *);
+int goTransfer(SandboxPtr, const char *, const char *, const char *, size_t *);
+int goWithdraw(SandboxPtr, const char *, const char *, size_t *);
+int goDeposit(SandboxPtr, const char *, const char *, size_t *);
+int goTopUp(SandboxPtr, const char *, const char *, const char *, size_t *);
+int goCountermand(SandboxPtr, const char *, const char *, const char *, size_t *);
 char *goBlockInfo(SandboxPtr, size_t *);
 char *goTxInfo(SandboxPtr, size_t *);
-char *goCall(SandboxPtr, char *, char *, char *, size_t *);
-int goPut(SandboxPtr, char *, char *, size_t *);
-char *goGet(SandboxPtr, char *, size_t *);
-int goDel(SandboxPtr, char *, size_t *);
+char *goCall(SandboxPtr, const char *, const char *, const char *, size_t *);
+int goPut(SandboxPtr, const char *, const char *, size_t *);
+char *goGet(SandboxPtr, const char *, size_t *);
+int goDel(SandboxPtr, const char *, size_t *);
+char *goGlobalGet(SandboxPtr, const char *, const char *, size_t *);
 */
 import "C"
 import (
@@ -25,6 +26,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"strings"
 )
 
 // A Sandbox is an execution environment that allows separate, unrelated, JavaScript
@@ -79,7 +81,8 @@ func (sbx *Sandbox) Init() {
 		(C.callFunc)(unsafe.Pointer(C.goCall)))
 	C.InitGoStorage((C.putFunc)(unsafe.Pointer(C.goPut)),
 		(C.getFunc)(unsafe.Pointer(C.goGet)),
-		(C.delFunc)(unsafe.Pointer(C.goDel)))
+		(C.delFunc)(unsafe.Pointer(C.goDel)),
+		(C.globalGetFunc)(unsafe.Pointer(C.goGlobalGet)))
 }
 
 func (sbx *Sandbox) SetGasLimit(limit uint64) {
@@ -113,7 +116,7 @@ func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args [
 
 	if function == "constructor" {
 		return fmt.Sprintf(`
-var _native_main = NativeModule.require('%s');
+var _native_main = require('%s');
 var obj = new _native_main();
 
 // store kv that was constructed by contract.
@@ -124,34 +127,37 @@ Object.keys(obj).forEach((key) => {
 `, name), nil
 	}
 
-	argStr, err := formatFucArgs(args)
+	argStr, err := formatFuncArgs(args)
 	if err != nil {
 		return "", err
 	}
 
 	return fmt.Sprintf(`
-var _native_main = NativeModule.require('%s');
+var _native_main = require('%s');
 var obj = new _native_main();
 
-Object.keys(obj).forEach((key) => {
-    let val = obj[key];
+var objObserver = observer.create(obj)
 
-    Object.defineProperty(obj, key, {
-        configurable: false,
-        enumerable: true,
-        get: function() {
-            return IOSTContractStorage.get(key, val);
-        },
-        set: function() {
-			val = setVal;
-			IOSTContractStorage.put(key, val);
-        }
-    })
-});
+// Object.keys(obj).forEach((key) => {
+//     let val = obj[key];
+//
+//     Object.defineProperty(obj, key, {
+//         configurable: false,
+//         enumerable: true,
+//         get: function() {
+//             return IOSTContractStorage.get(key, val);
+//         },
+//         set: function() {
+// 			val = setVal;
+// 			IOSTContractStorage.put(key, val);
+//         }
+//     })
+// });
 
 // run contract with specified function and args.
-obj['%s'].apply(obj, %v);
-`, name, function, argStr), nil
+objObserver.%s(%s)
+// objObserver['%s'].apply(obj, %v);
+`, name, function, strings.Trim(argStr, "[]")), nil
 }
 
 func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
@@ -177,12 +183,11 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
 	return result, err
 }
 
-func formatFucArgs(args []interface{}) (string, error) {
+func formatFuncArgs(args []interface{}) (string, error) {
 	argStr, err := json.Marshal(args)
 	if err != nil {
 		return "", err
 	}
 
 	return string(argStr), nil
-	//return strings.Trim(string(argStr), "[]"), nil
 }

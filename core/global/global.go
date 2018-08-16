@@ -2,7 +2,8 @@ package global
 
 import (
 	"fmt"
-		"github.com/iost-official/Go-IOS-Protocol/common"
+
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
@@ -32,7 +33,7 @@ const (
 type BaseVariableImpl struct {
 	txDB tx.TxDB
 
-	stateDB    *db.MVCCDB
+	stateDB    db.MVCCDB
 	blockChain block.Chain
 
 	config *common.Config
@@ -77,7 +78,7 @@ func (g *BaseVariableImpl) TxDB() tx.TxDB {
 	return g.txDB
 }
 
-func (g *BaseVariableImpl) StateDB() *db.MVCCDB {
+func (g *BaseVariableImpl) StateDB() db.MVCCDB {
 	return g.stateDB
 }
 
