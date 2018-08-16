@@ -131,7 +131,8 @@ func TestNewTxPoolImpl(t *testing.T) {
 		})
 		Convey("ExistTxs FoundChain", func() {
 
-			b := genBlocks(accountList, witnessList, 1, 10, true)
+			txCnt := 10
+			b := genBlocks(accountList, witnessList, 1, txCnt, true)
 			//fmt.Println("FoundChain", b[0].HeadHash())
 
 			bcn := blockcache.NewBCN(nil, b[0])
@@ -150,8 +151,98 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 			So(txPool.testBlockListNum(), ShouldEqual, 2)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			r1, _ := txPool.ExistTxs(b[0].Txs[0].Hash(), bcn.Block)
-			So(r1, ShouldEqual, FoundChain)
+			for i := 0; i < txCnt; i++ {
+				r1, _ := txPool.ExistTxs(b[0].Txs[i].Hash(), bcn.Block)
+				So(r1, ShouldEqual, FoundChain)
+			}
+
+			tx := genTx(accountList[0], expiration)
+			r1, _ := txPool.ExistTxs(tx.Hash(), bcn.Block)
+			So(r1, ShouldEqual, NotFound)
+
+		})
+		Convey("Pending", func() {
+
+			tx := genTx(accountList[0], expiration)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+			r := txPool.AddTx(tx)
+			So(r, ShouldEqual, Success)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+
+			l, err := txPool.PendingTxs(100)
+			So(err, ShouldBeNil)
+			So(len(l), ShouldEqual, 1)
+			So(string(l[0].Hash()), ShouldEqual, string(tx.Hash()))
+
+			txCnt := 10
+			b := genBlocks(accountList, witnessList, 1, txCnt, true)
+
+			for i := 0; i < txCnt; i++ {
+				r := txPool.AddTx(b[0].Txs[i])
+				So(r, ShouldEqual, Success)
+			}
+			So(txPool.testPendingTxsNum(), ShouldEqual, 11)
+
+			l, err = txPool.PendingTxs(100)
+			So(err, ShouldBeNil)
+			So(len(l), ShouldEqual, 11)
+
+			bcn := blockcache.NewBCN(nil, b[0])
+			So(bcn, ShouldNotBeNil)
+			err = txPool.AddLinkedNode(bcn, bcn)
+			So(err, ShouldBeNil)
+
+			// need delay
+			for i := 0; i < 10; i++ {
+				time.Sleep(100 * time.Millisecond)
+				if txPool.testBlockListNum() == 1 {
+					break
+				}
+			}
+
+			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+
+		})
+		Convey("doChainChange", func() {
+
+			txCnt := 10
+			blockCnt := 3
+			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
+
+			for i := 0; i < blockCnt; i++ {
+				//fmt.Println("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
+				bcn, err := BlockCache.Add(blockList[i])
+				So(bcn, ShouldNotBeNil)
+
+				err = txPool.AddLinkedNode(bcn, bcn)
+				So(err, ShouldBeNil)
+			}
+
+			forkBlockTxCnt := 6
+			forkBlock := genSingleBlock(accountList, witnessList, blockList[1].HeadHash(), forkBlockTxCnt)
+			//fmt.Println("Sing hash:", forkBlock.HeadHash(), " Sing parentHash:", forkBlock.Head.ParentHash)
+			bcn, err := BlockCache.Add(forkBlock)
+			So(bcn, ShouldNotBeNil)
+
+			for i := 0; i < forkBlockTxCnt-3; i++ {
+				r := txPool.AddTx(forkBlock.Txs[i])
+				So(r, ShouldEqual, Success)
+			}
+
+			So(txPool.testPendingTxsNum(), ShouldEqual, 3)
+
+			// fork chain
+			err = txPool.AddLinkedNode(bcn, bcn)
+			So(err, ShouldBeNil)
+			// need delay
+			for i := 0; i < 10; i++ {
+				time.Sleep(100 * time.Millisecond)
+				if txPool.testBlockListNum() == 10 {
+					break
+				}
+			}
+
+			So(txPool.testPendingTxsNum(), ShouldEqual, 10)
 		})
 		//
 		//Convey("concurrent", func() {
@@ -423,9 +514,9 @@ func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
 func genBlocks(accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
 	slot := common.GetCurrentTimestamp().Slot
+	var hash []byte
 
 	for i := 0; i < blockCnt; i++ {
-		var hash []byte
 
 		if continuity == false {
 			hash[i%len(hash)] = byte(i % 256)
@@ -441,13 +532,39 @@ func genBlocks(accountList []account.Account, witnessList []string, blockCnt int
 		}}
 
 		for i := 0; i < txCnt; i++ {
-			blk.Txs = append(blk.Txs, genTx(accountList[0], int64(i)))
+			blk.Txs = append(blk.Txs, genTx(accountList[0], expiration))
 		}
 
 		blk.Head.TxsHash = blk.CalculateTxsHash()
 		blk.CalculateHeadHash()
+
+		hash = blk.HeadHash()
 		blockPool = append(blockPool, &blk)
 	}
 
 	return
+}
+
+func genSingleBlock(accountList []account.Account, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
+
+	slot := common.GetCurrentTimestamp().Slot
+
+	blk := block.Block{Txs: []*tx.Tx{}, Head: block.BlockHead{
+		Version:    0,
+		ParentHash: ParentHash,
+		MerkleHash: make([]byte, 0),
+		Info:       []byte(""),
+		Number:     int64(1),
+		Witness:    witnessList[0],
+		Time:       slot,
+	}}
+
+	for i := 0; i < txCnt; i++ {
+		blk.Txs = append(blk.Txs, genTx(accountList[0], expiration))
+	}
+
+	blk.Head.TxsHash = blk.CalculateTxsHash()
+	blk.CalculateHeadHash()
+
+	return &blk
 }

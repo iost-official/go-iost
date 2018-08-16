@@ -234,7 +234,7 @@ func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 		return nil
 	}
 
-	b := new(blockTx)
+	b := newBlockTx()
 
 	b.setTime(pool.slotToSec(linkedBlock.Head.Time))
 	b.addBlock(linkedBlock)
@@ -532,13 +532,16 @@ func (pool *TxPoolImpl) doChainChange() error {
 
 	//Reply to txs
 	for {
+		//fmt.Println("blockCache.Find:", o)
 		b, err := pool.blockCache.Find(o)
 		if err != nil {
 			return err
 		}
 
 		for _, v := range b.Block.Txs {
-			pool.addTx(v)
+			if b := pool.existTxInPending(v.Hash()); !b {
+				pool.pendingTx.Store(string(v.Hash()), v)
+			}
 		}
 
 		if bytes.Equal(b.Block.Head.ParentHash, f) {
@@ -548,7 +551,7 @@ func (pool *TxPoolImpl) doChainChange() error {
 		o = b.Block.Head.ParentHash
 	}
 
-	//Duplicate txs
+	//Check duplicate txs
 	for {
 		b, ok := pool.block(n)
 		if !ok {
@@ -556,7 +559,7 @@ func (pool *TxPoolImpl) doChainChange() error {
 		}
 
 		b.txMap.Range(func(key, value interface{}) bool {
-			pool.delTxInPending(key.([]byte))
+			pool.delTxInPending([]byte(key.(string)))
 			return true
 		})
 
