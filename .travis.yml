@@ -5,21 +5,27 @@ branches:
     - master
     - develop
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-5
+matrix:
+  include:
+    - os: linux
+      go: 1.10
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env:
+         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+    - os: osx
+      go: 1.10
+         - MATRIX_EVAL="CC=clang && CXX=clang++"
 
-go:
-  - "1.10"
-os:
-  - linux
-  - osx
+before_install:
+  - eval "${MATRIX_EVAL}"
+  - ${CXX} --version
 
-install:
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 90
+install: true
 
 script:
   - make build
