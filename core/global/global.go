@@ -61,7 +61,18 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	}
 
 	hash := stateDB.CurrentTag()
-	if hash != nil {
+	if hash == "" {
+		blk, err = blockChain.GetBlockByNumber(0)
+		if err != nil {
+			return nil, fmt.Errorf("new statedb failed, stop the pogram. err: %v", err)
+		}
+		stateDB
+	} else {
+		blk, err = blockChain.GetBlockByHash([]byte(hash))
+		if err != nil {
+			return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
+		}
+
 	}
 
 	tx.LdbPath = conf.LdbPath
@@ -81,7 +92,7 @@ func (g *BaseVariableImpl) TxDB() tx.TxDB {
 	return g.txDB
 }
 
-func (g *BaseVariableImpl) StateDB() *db.MVCCDB {
+func (g *BaseVariableImpl) StateDB() db.MVCCDB {
 	return g.stateDB
 }
 

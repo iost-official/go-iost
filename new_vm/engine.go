@@ -22,17 +22,18 @@ const (
 	defaultCacheLength = 1000
 )
 
-var (
-	ErrContractNotFound = errors.New("contract not found")
-)
-
 const (
 	GasCheckTxFailed = int64(100)
 )
 
+var (
+	ErrContractNotFound = errors.New("contract not found")
+
+	ErrSetUpArgs = errors.New("key does not exist")
+)
+
 type Engine interface {
-	//Init()
-	//SetEnv(bh *block.BlockHead, cb database.IMultiValue) Engine
+	SetUp(k, v string) error
 	Exec(tx0 *tx.Tx) (*tx.TxReceipt, error)
 	GC()
 }
@@ -43,6 +44,8 @@ var once sync.Once
 
 type EngineImpl struct {
 	host *host.Host
+
+	jsPath string
 }
 
 func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
@@ -73,6 +76,16 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	h := host.NewHost(ctx, db, staticMonitor)
 	return &EngineImpl{host: h}
 }
+
+func (e *EngineImpl) SetUp(k, v string) error {
+	switch k {
+	case "js_path":
+		e.jsPath = v
+	default:
+		return ErrSetUpArgs
+	}
+	return nil
+}
 func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	err := checkTx(tx0)
 	if err != nil {
@@ -81,7 +94,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 	bl := e.host.DB.Balance(account.GetIdByPubkey(tx0.Publisher.Pubkey))
 	if bl <= 0 || uint64(bl) < tx0.GasPrice*tx0.GasLimit {
-		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, ""), nil
+		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), nil
 	}
 
 	txInfo, err := json.Marshal(tx0)
@@ -153,7 +166,6 @@ func checkTx(tx0 *tx.Tx) error {
 	}
 	return nil
 }
-
 func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
@@ -202,7 +214,6 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	//return nil, errors.New("unsupported yet")
 
 }
-
 func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,
@@ -215,7 +226,6 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 		Receipts:      make([]tx.Receipt, 0),
 	}
 }
-
 func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
 	receipts = make([]tx.Receipt, 0)
 	cost = contract.Cost0()
