@@ -36,7 +36,7 @@ func (e *VM) init() error {
 	return nil
 }
 
-func (e *VM) Run(code, api string, args ...interface{}) (string, error) {
+func (e *VM) Run(code, api string, args ...interface{}) (interface{}, error) {
 	contr := &contract.Contract{
 		ID:   "run_id",
 		Code: code,
@@ -67,8 +67,6 @@ func (e *VM) execute(code string) (rtn []interface{}, cost *contract.Cost, err e
 	rs, err := e.sandbox.Execute(code)
 	return []interface{}{rs}, nil, err
 }
-
-
 
 func (e *VM) setJSPath(path string) {
 	e.sandbox.SetJSPath(path)
