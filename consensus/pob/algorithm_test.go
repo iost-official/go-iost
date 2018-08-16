@@ -64,8 +64,7 @@ func TestConfirmNode(t *testing.T) {
 
 func TestPromoteWitness(t *testing.T) {
 	convey.Convey("Test of Promote Witness", t, func() {
-		staticProperty.WitnessList = []string{"id0", "id1", "id2"}
-		staticProperty.NumberOfWitnesses = 3
+		staticProperty = newStaticProperty(account.Account{}, []string{"id0", "id1", "id2"})
 		rootNode := &blockcache.BlockCacheNode{
 			Number:                1,
 			Witness:               "id0",
@@ -82,9 +81,9 @@ func TestPromoteWitness(t *testing.T) {
 		node = addNode(node, 4, 2, "id0")
 		node.PendingWitnessList = lastNode.PendingWitnessList
 
-
 		confirmNode := calculateConfirm(node, rootNode)
 		convey.So(confirmNode.Number, convey.ShouldEqual, 2)
+		staticProperty.updateWitnessList(confirmNode.PendingWitnessList)
 		convey.So(staticProperty.WitnessList[0], convey.ShouldEqual, "id3")
 
 		node = addNode(rootNode, 2, 0, "id1")

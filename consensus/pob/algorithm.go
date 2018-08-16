@@ -9,6 +9,7 @@ import (
 
 	"fmt"
 
+	"bytes"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
@@ -16,7 +17,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
-	"bytes"
 )
 
 var (
@@ -36,7 +36,6 @@ var (
 	ErrTxReceipt   = errors.New("wrong tx receipt")
 )
 
-
 func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db *db.MVCCDB) *block.Block {
 	lastBlock := node.Block
 	parentHash := lastBlock.HeadHash()
@@ -52,7 +51,7 @@ func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool t
 		Receipts: []*tx.TxReceipt{},
 	}
 	txCnt := 1000
-	limitTime := time.NewTicker(common.SlotLength*time.Second/3)
+	limitTime := time.NewTicker(common.SlotLength * time.Second / 3)
 	txsList, _ := txPool.PendingTxs(txCnt)
 	txPoolSize.Set(float64(len(txsList)))
 	engine := new_vm.NewEngine(&lastBlock.Head, db)
@@ -80,7 +79,6 @@ func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool t
 	generatedBlockCount.Inc()
 	return &blk
 }
-
 
 func verifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Block) error {
 	bh := blk.Head
@@ -181,8 +179,6 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 }
 
 func updateNodeInfo(node *blockcache.BlockCacheNode) {
-	node.Number = node.Block.Head.Number
-	node.Witness = node.Block.Head.Witness
 	staticProperty.addSlotWitness(node.Block.Head.Time)
 	if number, has := staticProperty.Watermark[node.Witness]; has {
 		node.ConfirmUntil = number
@@ -207,22 +203,20 @@ func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) {
 }
 
 func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
-	confirmNumber := staticProperty.NumberOfWitnesses*2/3+1
+	confirmLimit := staticProperty.NumberOfWitnesses*2/3 + 1
 	startNumber := node.Number
-	confirmMap := make(map[string]bool)
-	confirmUntilMap := make(map[int64][]string, startNumber-root.Number+1)
+	var confirmNum int64 = 0
+	confirmUntilMap := make(map[int64]int64, startNumber-root.Number+1)
 	var index int64 = 0
 	for node != root {
 		if node.ConfirmUntil <= node.Number {
-			confirmMap[node.Witness] = true
-			confirmUntilMap[startNumber-node.ConfirmUntil] = append(confirmUntilMap[startNumber-node.ConfirmUntil], node.Witness)
+			confirmNum++
+			confirmUntilMap[startNumber-node.ConfirmUntil]++
 		}
-		if int64(len(confirmMap)) >= confirmNumber {
+		if confirmNum >= confirmLimit {
 			return node
 		}
-		for _, w  := range confirmUntilMap[index] {
-			confirmMap[w] = false
-		}
+		confirmNum -= confirmUntilMap[index]
 		node = node.Parent
 		index++
 	}
