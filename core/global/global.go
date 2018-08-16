@@ -33,7 +33,7 @@ const (
 
 type BaseVariableImpl struct {
 	blockChain block.Chain
-	stateDB    *db.MVCCDB
+	stateDB    db.MVCCDB
 	txDB       tx.TxDB
 
 	mode   *Mode
@@ -51,11 +51,17 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 		blk = block.GenGenesis(common.GetTimestamp(t.Unix()).Slot)
 	}
+	if blk == nil {
+		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
+	}
 
-	//TODO: INIT FROM A EXISTING MVCCDB
 	stateDB, err := db.NewMVCCDB("StatePoolDB")
 	if err != nil {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
+	}
+
+	hash := stateDB.CurrentTag()
+	if hash != nil {
 	}
 
 	tx.LdbPath = conf.LdbPath
@@ -64,12 +70,10 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		return nil, fmt.Errorf("new txdb failed, stop the program.")
 	}
 	//TODO: check DB, state, txDB
-
 	m := new(Mode)
 	m.SetMode(ModeNormal)
 
 	n := &BaseVariableImpl{txDB: txDb, config: conf, stateDB: stateDB, blockChain: blockChain, mode: m}
-
 	return n, nil
 }
 
