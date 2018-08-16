@@ -18,23 +18,13 @@ var (
 )
 
 type Monitor struct {
-	//db   *database.Visitor
 	vms map[string]VM
-	//host *Host
 }
 
-func NewMonitor( /*cb database.IMultiValue, cacheLength int*/ ) *Monitor {
-	//visitor := database.NewVisitor(cacheLength, cb)
+func NewMonitor() *Monitor {
 	m := &Monitor{
-		//db: visitor,
-		//host: &Host{
-		//	ctx:  context.Background(),
-		//	db:   visitor,
-		//	cost: &contract.Cost{},
-		//},
 		vms: make(map[string]VM),
 	}
-	//m.host.monitor = m
 	return m
 }
 
@@ -83,7 +73,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		}
 
 	default:
-		//fmt.Println("user paid for", args[0])
 	}
 
 	h.Ctx = h.Ctx.Base()
@@ -96,12 +85,12 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 //	if err != nil {
 //		return err
 //	}
-//	m.host.db.SetContract(newContract)
+//	m.ho.db.SetContract(newContract)
 //	return nil
 //}
 //
 //func (m *Monitor) Destory(contractName string) error {
-//	m.host.db.DelContract(contractName)
+//	m.ho.db.DelContract(contractName)
 //	return nil
 //}
 

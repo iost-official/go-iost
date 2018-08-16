@@ -3,17 +3,16 @@ package new_vm
 import (
 	"sync"
 
-	"encoding/json"
-
-	"strconv"
-
 	"errors"
+
+	"runtime"
 
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 )
@@ -43,9 +42,13 @@ var staticMonitor *Monitor
 var once sync.Once
 
 type EngineImpl struct {
-	host *host.Host
+	ho *host.Host
 
 	jsPath string
+
+	logger        *ilog.Logger
+	consoleWriter *ilog.ConsoleWriter
+	fileWriter    *ilog.FileWriter
 }
 
 func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
@@ -57,30 +60,39 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 
 	ctx := host.NewContext(nil)
 
-	blkInfo := make(map[string]string)
-
-	blkInfo["parent_hash"] = string(bh.ParentHash)
-	blkInfo["number"] = strconv.FormatInt(bh.Number, 10)
-	blkInfo["witness"] = string(bh.Witness)
-	blkInfo["time"] = strconv.FormatInt(bh.Time, 10)
-
-	bij, err := json.Marshal(blkInfo)
-	if err != nil {
-		panic(err)
-	}
-
-	ctx.Set("block_info", database.SerializedJSON(bij))
-	ctx.Set("witness", blkInfo["witness"])
+	ctx = loadBlkInfo(ctx, bh)
 
 	db := database.NewVisitor(defaultCacheLength, cb)
-	h := host.NewHost(ctx, db, staticMonitor)
-	return &EngineImpl{host: h}
+
+	logger := ilog.New()
+	logger.Stop()
+	h := host.NewHost(ctx, db, staticMonitor, logger)
+
+	e := &EngineImpl{ho: h, logger: logger}
+	runtime.SetFinalizer(e, func(e *EngineImpl) {
+		e.GC()
+	})
+
+	return e
 }
 
+/*
+SetUp keys:
+	js_path   	path to libjs/
+	log_level 	log level of this engine(debug, info, warning, error, fatal), unset to silent log
+	log_path	path to log file, unset to disable saving logs
+	log_enable	enable log, log_level should set
+*/
 func (e *EngineImpl) SetUp(k, v string) error {
 	switch k {
 	case "js_path":
 		e.jsPath = v
+	case "log_level":
+		e.setLogger(v, "", false)
+	case "log_path":
+		e.setLogger("", v, false)
+	case "log_enable":
+		e.setLogger("", "", true)
 	default:
 		return ErrSetUpArgs
 	}
@@ -92,39 +104,15 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), nil
 	}
 
-	bl := e.host.DB.Balance(account.GetIdByPubkey(tx0.Publisher.Pubkey))
+	bl := e.ho.DB.Balance(account.GetIdByPubkey(tx0.Publisher.Pubkey))
 	if bl <= 0 || bl < tx0.GasPrice*tx0.GasLimit {
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), nil
 	}
 
-	txInfo, err := json.Marshal(tx0)
-	if err != nil {
-		panic(err) // should not get error
-	}
+	e.ho.Ctx = loadTxInfo(e.ho.Ctx, tx0)
 
-	j2, _ := simplejson.NewJson(txInfo)
-	j2.Set("hash", tx0.Hash())
-
-	j2e, _ := j2.Encode()
-
-	authList := make(map[string]int)
-	for _, v := range tx0.Signers {
-		authList[string(v)] = 1
-	}
-
-	authList[account.GetIdByPubkey(tx0.Publisher.Pubkey)] = 2
-
-	e.host.Ctx = host.NewContext(e.host.Ctx)
-	defer func() {
-		e.host.Ctx = e.host.Ctx.Base()
-	}()
-
-	e.host.Ctx.Set("tx_info", database.SerializedJSON(j2e))
-	e.host.Ctx.Set("auth_list", authList)
-	e.host.Ctx.Set("gas_price", int64(tx0.GasPrice))
-
-	e.host.Ctx.GSet("gas_limit", tx0.GasLimit)
-	e.host.Ctx.GSet("receipts", make([]tx.Receipt, 0))
+	e.ho.Ctx.GSet("gas_limit", tx0.GasLimit)
+	e.ho.Ctx.GSet("receipts", make([]tx.Receipt, 0))
 
 	txr := tx.NewTxReceipt(tx0.Hash())
 
@@ -140,29 +128,30 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		}
 
 		txr.Status = status
-		txr.GasUsage += uint64(cost.ToGas())
+		txr.GasUsage += cost.ToGas()
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
-			e.host.DB.Rollback()
+			e.ho.DB.Rollback()
 			break
 		}
 
 		txr.Receipts = append(txr.Receipts, receipts...)
 		txr.SuccActionNum++
 
-		e.host.Ctx.GSet("gas_limit", tx0.GasLimit-cost.ToGas())
+		gasLimit := e.ho.Ctx.GValue("gas_limit").(int64)
+		e.ho.Ctx.GSet("gas_limit", gasLimit-cost.ToGas())
 
-		e.host.PayCost(cost, account.GetIdByPubkey(tx0.Publisher.Pubkey))
+		e.ho.PayCost(cost, account.GetIdByPubkey(tx0.Publisher.Pubkey))
 	}
 
-	e.host.DoPay(e.host.Ctx.Value("witness").(string), int64(tx0.GasPrice))
-	e.host.DB.Commit()
+	e.ho.DoPay(e.ho.Ctx.Value("witness").(string), int64(tx0.GasPrice))
+	e.ho.DB.Commit()
 
 	return &txr, nil
 }
 func (e *EngineImpl) GC() {
-
+	e.logger.Stop()
 }
 
 func checkTx(tx0 *tx.Tx) error {
@@ -222,7 +211,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,
-		GasUsage: uint64(GasCheckTxFailed),
+		GasUsage: GasCheckTxFailed,
 		Status: tx.Status{
 			Code:    code,
 			Message: message,
@@ -235,28 +224,25 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	receipts = make([]tx.Receipt, 0)
 	cost = contract.Cost0()
 
-	e.host.Ctx = host.NewContext(e.host.Ctx)
+	e.ho.Ctx = host.NewContext(e.ho.Ctx)
 	defer func() {
-		e.host.Ctx = e.host.Ctx.Base()
+		e.ho.Ctx = e.ho.Ctx.Base()
 	}()
 
-	e.host.Ctx.Set("stack0", "direct_call")
-	e.host.Ctx.Set("stack_height", 1) // record stack trace
+	e.ho.Ctx.Set("stack0", "direct_call")
+	e.ho.Ctx.Set("stack_height", 1) // record stack trace
 
-	c := e.host.DB.Contract(action.Contract)
-
+	c := e.ho.DB.Contract(action.Contract)
 	if c.Info == nil {
 		cost = contract.NewCost(0, 0, GasCheckTxFailed)
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
 			Message: ErrContractNotFound.Error() + action.Contract,
 		}
-
 		return
 	}
 
 	abi := c.ABI(action.ActionName)
-
 	if abi == nil {
 		cost = contract.NewCost(0, 0, GasCheckTxFailed)
 		status = tx.Status{
@@ -268,10 +254,15 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	args, err := unmarshalArgs(abi, action.Data)
 	if err != nil {
-		panic(err)
+		cost = contract.NewCost(0, 0, GasCheckTxFailed)
+		status = tx.Status{
+			Code:    tx.ErrorParamter,
+			Message: err.Error(),
+		}
+		return
 	}
 
-	_, cost, err = staticMonitor.Call(e.host, action.Contract, action.ActionName, args...)
+	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
 
 	if cost == nil {
 		cost = contract.Cost0()
@@ -293,11 +284,83 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		return
 	}
 
-	receipts = append(receipts, e.host.Ctx.GValue("receipts").([]tx.Receipt)...)
+	receipts = append(receipts, e.ho.Ctx.GValue("receipts").([]tx.Receipt)...)
 
 	status = tx.Status{
 		Code:    tx.Success,
 		Message: "",
 	}
 	return
+}
+
+func (e *EngineImpl) setLogger(level, path string, start bool) {
+
+	if path == "" {
+
+		if e.consoleWriter == nil {
+			e.consoleWriter = ilog.NewConsoleWriter()
+		}
+
+		switch level {
+		case "debug":
+			e.consoleWriter.SetLevel(ilog.LevelDebug)
+		case "info":
+			e.consoleWriter.SetLevel(ilog.LevelInfo)
+		case "warning":
+			e.consoleWriter.SetLevel(ilog.LevelWarn)
+		case "error":
+			e.consoleWriter.SetLevel(ilog.LevelError)
+		case "fatal":
+			e.consoleWriter.SetLevel(ilog.LevelFatal)
+		}
+
+		return
+	}
+
+	if level == "" {
+		e.fileWriter = ilog.NewFileWriter(path)
+	}
+
+	if start {
+		var ok bool
+		if e.consoleWriter != nil {
+			e.logger.AddWriter(e.consoleWriter)
+			ok = true
+		}
+		if e.fileWriter != nil {
+			e.logger.AddWriter(e.fileWriter)
+			ok = true
+		}
+
+		if ok {
+			e.logger.Start()
+		}
+	}
+}
+
+func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
+	c := host.NewContext(ctx)
+	c.Set("parent_hash", bh.ParentHash)
+	c.Set("number", bh.Number)
+	c.Set("witness", bh.Witness)
+	c.Set("time", bh.Time)
+	return c
+}
+
+func loadTxInfo(ctx *host.Context, t *tx.Tx) *host.Context {
+	c := host.NewContext(ctx)
+	c.Set("time", t.Time)
+	c.Set("expiration", t.Expiration)
+	c.Set("gas_price", t.GasPrice)
+
+	authList := make(map[string]int)
+	for _, v := range t.Signers {
+		authList[string(v)] = 1
+	}
+
+	authList[account.GetIdByPubkey(t.Publisher.Pubkey)] = 2
+
+	c.Set("auth_list", authList)
+
+	return c
 }

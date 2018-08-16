@@ -7,6 +7,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 )
 
@@ -27,16 +28,18 @@ type Host struct {
 	Teller
 	APIDelegate
 
+	logger  *ilog.Logger
 	Ctx     *Context
 	DB      *database.Visitor
 	monitor Monitor
 }
 
-func NewHost(ctx *Context, db *database.Visitor, monitor Monitor) *Host {
+func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.Logger) *Host {
 	return &Host{
 		Ctx:     ctx,
 		DB:      db,
 		monitor: monitor,
+		logger:  logger,
 
 		DBHandler:   NewDBHandler(db, ctx),
 		Info:        NewInfo(ctx),
@@ -153,4 +156,8 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 
 	h.DB.DelContract(contractName)
 	return contract.NewCost(1, 2, 3), nil
+}
+
+func (h *Host) Logger() *ilog.Logger {
+	return h.logger
 }

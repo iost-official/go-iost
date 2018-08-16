@@ -41,7 +41,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
+	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
@@ -118,12 +118,99 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	}
 }
 
+func TestLogger(t *testing.T) { // test of normal engine work
+	bh, db, vm := engineinit(t)
+	e := NewEngine(bh, db)
+	e.SetUp("js_path", jsPath)
+	e.SetUp("log_level", "debug")
+	e.SetUp("log_enable", "")
+	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
+	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
+		t.Fatal(blkInfo)
+	}
+
+	//ac, err := account.NewAccount(nil)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+
+	mtx := tx.Tx{
+		Time:       time.Now().UnixNano(),
+		Expiration: 10000,
+		GasLimit:   100000,
+		GasPrice:   1,
+		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+	}
+
+	act := tx.Action{
+		Contract:   "contract",
+		ActionName: "abi",
+		Data:       `["datas"]`,
+	}
+
+	mtx.Actions = append(mtx.Actions, act)
+
+	c := contract.Contract{
+		ID:   "contract",
+		Code: "codes",
+		Info: &contract.Info{
+			Lang:        "mock",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				&contract.ABI{
+					Name:     "abi",
+					Args:     []string{"string"},
+					Payment:  0,
+					GasPrice: int64(10),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+			},
+		},
+	}
+
+	db.EXPECT().Get("state", "c-contract").DoAndReturn(func(table string, key string) (string, error) {
+		return c.Encode(), nil
+	})
+
+	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000000)), nil
+	})
+
+	vm.EXPECT().LoadAndCall(gomock.Any(), gomock.Any(), "abi", `datas`).DoAndReturn(
+		func(host *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			l := host.Logger()
+			l.E("test of error")
+			l.D("test of debug")
+			l.I("test of info")
+			return nil, contract.Cost0(), nil
+		},
+	)
+
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
+	txr, err := e.Exec(&mtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txr.Status.Code != tx.Success {
+		t.Fatal(txr.Status)
+	}
+
+	if !committed {
+		t.Fatal(committed)
+	}
+}
+
 func TestCost(t *testing.T) { // tests of context transport
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
 
-	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
+	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
@@ -249,7 +336,7 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
 
-	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
+	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
@@ -360,7 +447,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
 
-	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
+	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
@@ -472,7 +559,7 @@ func TestJS(t *testing.T) {
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
 
-	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
+	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}

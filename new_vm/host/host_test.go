@@ -27,7 +27,7 @@ func myinit(t *testing.T, ctx *Context) (*database.MockIMultiValue, Host) {
 
 	//monitor := Monitor{}
 
-	host := NewHost(ctx, bdb, nil)
+	host := NewHost(ctx, bdb, nil, nil)
 	return db, *host
 }
 
