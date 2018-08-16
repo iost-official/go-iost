@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/account"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/Go-IOS-Protocol/new_rpc ApisServer
@@ -112,7 +113,7 @@ func (s *RpcServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	return &GetBalanceRes{
-		Balance: visitor.BalanceHandler.Balance(key.Pubkey),
+		Balance: visitor.BalanceHandler.Balance(account.GetIdByPubkey(key.Pubkey)),
 	}, nil 
 }
 
