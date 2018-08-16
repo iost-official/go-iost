@@ -41,7 +41,7 @@ var transactionCmd = &cobra.Command{
 		}
 		defer conn.Close()
 		client := rpc.NewApisClient(conn)
-		txRaw, err := client.GetTxByHash(context.Background(), &rpc.HashReq{Hash: LoadBytes(args[0]),})
+		txRaw, err := client.GetTxByHash(context.Background(), &rpc.HashReq{Hash: LoadBytes(args[0])})
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -53,7 +53,6 @@ var transactionCmd = &cobra.Command{
 		fmt.Println(txRaw)
 	},
 }
-
 
 func init() {
 	rootCmd.AddCommand(transactionCmd)

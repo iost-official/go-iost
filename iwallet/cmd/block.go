@@ -32,42 +32,42 @@ var blockCmd = &cobra.Command{
 	Long:  `print block info, default find by block number`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-	var i int
-	var err error
-	if len(args) < 1 {
-		fmt.Println(`Error: block num or hash not given`)
-		return
-	}
+		var i int
+		var err error
+		if len(args) < 1 {
+			fmt.Println(`Error: block num or hash not given`)
+			return
+		}
 
-	switch method {
+		switch method {
 		case "num":
 			i, err = strconv.Atoi(args[0])
 			if err != nil {
 				fmt.Println(err.Error())
-				 return
+				return
 			}
 		case "hash":
 		default:
-			fmt .Println("please enter correct method arg")
+			fmt.Println("please enter correct method arg")
 			return
 		}
 
 		conn, err := grpc.Dial(server, grpc.WithInsecure())
 		if err != nil {
- 			fmt.Println(err.Error())
+			fmt.Println(err.Error())
 			return
 		}
 		defer conn.Close()
 		client := rpc.NewApisClient(conn)
 		var blockInfo *rpc.BlockInfo
-		if method=="num" {
-			blockInfo, err = client.GetBlockByNum(context.Background(), &rpc.BlockByNumReq{Num: uint64(i),Complete:complete,})
+		if method == "num" {
+			blockInfo, err = client.GetBlockByNum(context.Background(), &rpc.BlockByNumReq{Num: uint64(i), Complete: complete})
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
-		}else{
-			blockInfo, err = client.GetBlockByHash(context.Background(), &rpc.BlockByHashReq{Hash: LoadBytes(args[0]),Complete:complete,})
+		} else {
+			blockInfo, err = client.GetBlockByHash(context.Background(), &rpc.BlockByHashReq{Hash: LoadBytes(args[0]), Complete: complete})
 			if err != nil {
 				fmt.Println(err.Error())
 				return
@@ -80,11 +80,12 @@ var blockCmd = &cobra.Command{
 
 var method string
 var complete bool
+
 func init() {
 	rootCmd.AddCommand(blockCmd)
 
-	blockCmd.Flags().StringVarP(&method,"method","m" ,"num", "find by block num or hash")
-	blockCmd.Flags().BoolVarP(&complete,"complete" ,"c",false, "indicate whether to fetch all the trxs in the block or not")
+	blockCmd.Flags().StringVarP(&method, "method", "m", "num", "find by block num or hash")
+	blockCmd.Flags().BoolVarP(&complete, "complete", "c", false, "indicate whether to fetch all the trxs in the block or not")
 
 	// Here you will define your flags and configuration settings.
 

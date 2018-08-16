@@ -54,9 +54,9 @@ var publishCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		signs:=make([]common.Signature,0)
+		signs := make([]common.Signature, 0)
 		for i, v := range args {
-			if i == 0 { 
+			if i == 0 {
 				continue
 			}
 			sig, err := ReadFile(v)
@@ -88,7 +88,7 @@ var publishCmd = &cobra.Command{
 			return
 		}
 
-		stx, err := tx.SignTx(mtx, acc,signs...)
+		stx, err := tx.SignTx(mtx, acc, signs...)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -148,15 +148,15 @@ func sendTx(stx tx.Tx) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return resp.Hash,nil 
+	return resp.Hash, nil
 	/*
-	switch resp.Code {
-	case 0:
-		return resp.Hash, nil
-	case -1:
-		return nil, errors.New("tx rejected")
-	default:
-		return nil, errors.New("unknown return")
-	}
+		switch resp.Code {
+		case 0:
+			return resp.Hash, nil
+		case -1:
+			return nil, errors.New("tx rejected")
+		default:
+			return nil, errors.New("unknown return")
+		}
 	*/
 }
