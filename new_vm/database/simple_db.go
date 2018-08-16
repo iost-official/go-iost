@@ -36,7 +36,6 @@ func NewDatabaseFromPath(path string) *database {
 		return nil
 	}
 	data.json = json
-	fmt.Println(data.json)
 	return &data
 }
 
@@ -175,4 +174,12 @@ func (d *database) addSystem() {
 	fmt.Println(c)
 
 	d.json.Set("c-iost.system", c.Encode())
+}
+
+func (d *database) Commit() {
+
+}
+
+func (d *database) Rollback() {
+
 }

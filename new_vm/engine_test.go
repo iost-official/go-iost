@@ -15,6 +15,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 )
 
+var jsPath = "./v8vm/v8/libjs/"
+
 func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockVM) {
 	ctl := gomock.NewController(t)
 	db := database.NewMockIMultiValue(ctl)
@@ -38,22 +40,23 @@ func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockV
 func TestNewEngine(t *testing.T) { // test of normal engine work
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
+	e.SetUp("js_path", jsPath)
 	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
 
-	ac, err := account.NewAccount(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	//ac, err := account.NewAccount(nil)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
 
 	mtx := tx.Tx{
 		Time:       time.Now().UnixNano(),
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: ac.Pubkey},
+		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	act := tx.Action{
@@ -75,7 +78,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 					Name:     "abi",
 					Args:     []string{"string"},
 					Payment:  0,
-					GasPrice: int64(1000),
+					GasPrice: int64(10),
 					Limit:    contract.NewCost(100, 100, 100),
 				},
 			},
@@ -86,19 +89,40 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		return c.Encode(), nil
 	})
 
+	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000000)), nil
+	})
+
 	vm.EXPECT().LoadAndCall(gomock.Any(), gomock.Any(), "abi", `datas`).DoAndReturn(
-		func(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
-			return nil, nil, nil
+		func(host *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			return nil, contract.Cost0(), nil
 		},
 	)
 
-	e.Exec(&mtx)
+	committed := false
 
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
+	txr, err := e.Exec(&mtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txr.Status.Code != tx.Success {
+		t.Fatal(txr.Status)
+	}
+
+	if !committed {
+		t.Fatal(committed)
+	}
 }
 
 func TestCost(t *testing.T) { // tests of context transport
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
+	e.SetUp("js_path", jsPath)
+
 	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
@@ -150,10 +174,10 @@ func TestCost(t *testing.T) { // tests of context transport
 	})
 
 	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
-		return database.MustMarshal(int64(1000)), nil
+		return database.MustMarshal(int64(1000000)), nil
 	})
 
-	db.EXPECT().Get("state", "i-g-contract").DoAndReturn(func(table string, key string) (string, error) {
+	db.EXPECT().Get("state", "i-CGcontract").DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(int64(1000)), nil
 	})
 
@@ -177,7 +201,7 @@ func TestCost(t *testing.T) { // tests of context transport
 		return nil
 	})
 
-	db.EXPECT().Put("state", "i-g-contract", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+	db.EXPECT().Put("state", "i-CGcontract", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
 		if database.MustUnmarshal(value) != int64(900) {
 			t.Fatal(database.MustUnmarshal(value))
 		}
@@ -201,12 +225,30 @@ func TestCost(t *testing.T) { // tests of context transport
 		},
 	)
 
-	e.Exec(&mtx)
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
+	txr, err := e.Exec(&mtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txr.Status.Code != tx.Success {
+		t.Fatal(txr.Status)
+	}
+
+	if !committed {
+		t.Fatal(committed)
+	}
 }
 
 func TestNative_Transfer(t *testing.T) { // tests of native vm works
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
+	e.SetUp("js_path", jsPath)
+
 	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
@@ -258,6 +300,14 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		return database.MustMarshal(int64(1000)), nil
 	})
 
+	db.EXPECT().Get("state", "i-witness").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(10000000)), nil
+	})
+
 	db.EXPECT().Put("state", "i-a", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
 		if database.MustUnmarshal(value).(int64) != int64(900) {
 			t.Fatal("a", database.MustUnmarshal(value).(int64))
@@ -267,16 +317,49 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 
 	db.EXPECT().Put("state", "i-b", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
 		if database.MustUnmarshal(value).(int64) != int64(1100) {
-			t.Fatal("a", database.MustUnmarshal(value).(int64))
+			t.Fatal("b", database.MustUnmarshal(value).(int64))
 		}
 		return nil
 	})
-	e.Exec(&mtx)
+
+	db.EXPECT().Put("state", "i-witness", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(1003) {
+			t.Fatal("witness", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(9999997) {
+			t.Fatal("publisher", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
+	txr, err := e.Exec(&mtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txr.Status.Code != tx.Success {
+		t.Fatal(txr.Status)
+	}
+
+	if !committed {
+		t.Fatal(committed)
+	}
 
 }
 func TestNative_TopUp(t *testing.T) { // tests of native vm works
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
+	e.SetUp("js_path", jsPath)
+
 	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
@@ -320,7 +403,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		return c.Encode(), nil
 	})
 
-	db.EXPECT().Get("state", "i-g-a").DoAndReturn(func(table string, key string) (string, error) {
+	db.EXPECT().Get("state", "i-CGa").DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(int64(1000)), nil
 	})
 
@@ -328,9 +411,9 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		return database.MustMarshal(int64(1000)), nil
 	})
 
-	db.EXPECT().Put("state", "i-g-a", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+	db.EXPECT().Put("state", "i-CGa", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
 		if database.MustUnmarshal(value).(int64) != int64(1100) {
-			t.Fatal("g-a", database.MustUnmarshal(value).(int64))
+			t.Fatal("CGa", database.MustUnmarshal(value).(int64))
 		}
 		return nil
 	})
@@ -342,13 +425,53 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		return nil
 	})
 
-	e.Exec(&mtx)
+	db.EXPECT().Get("state", "i-witness").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000000)), nil
+	})
+
+	db.EXPECT().Put("state", "i-witness", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(1003) {
+			t.Fatal("witness", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(999997) {
+			t.Fatal("publisher", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
+	txr, err := e.Exec(&mtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txr.Status.Code != tx.Success {
+		t.Fatal(txr.Status)
+	}
+
+	if !committed {
+		t.Fatal(committed)
+	}
 
 }
 
 func TestJS(t *testing.T) {
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
+	e.SetUp("js_path", jsPath)
+
 	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
 	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
 		t.Fatal(blkInfo)
@@ -373,18 +496,25 @@ func TestJS(t *testing.T) {
 	c := contract.Contract{
 		ID: "testjs",
 		Code: `
-module.export = function hello() {
-	return world
+class Contract {
+ constructor() {
+  
+ }
+ hello() {
+  return "show";
+ }
 }
+
+module.exports = Contract;
 `,
 		Info: &contract.Info{
 			Lang:        "javascript",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "hello",
 					Payment:  0,
-					GasPrice: int64(1000),
+					GasPrice: int64(1),
 					Limit:    contract.NewCost(100, 100, 100),
 					Args:     []string{},
 				},
@@ -396,5 +526,23 @@ module.export = function hello() {
 		return c.Encode(), nil
 	})
 
-	e.Exec(&mtx)
+	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000000)), nil
+	})
+
+	db.EXPECT().Rollback().Do(func() {
+		t.Log("exec tx failed, and success rollback")
+	})
+
+	db.EXPECT().Commit().Do(func() {
+		t.Log("committed")
+	})
+
+	txr, err := e.Exec(&mtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txr.Status.Code != tx.Success {
+		t.Fatal(txr.Status)
+	}
 }

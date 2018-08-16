@@ -2,7 +2,6 @@ package global
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -34,7 +33,7 @@ const (
 type BaseVariableImpl struct {
 	txDB tx.TxDB
 
-	stateDB    *db.MVCCDB
+	stateDB    db.MVCCDB
 	blockChain block.Chain
 
 	config *common.Config
@@ -48,11 +47,11 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)
 	}
-	blk, err := blockChain.Top()
-	if err != nil {
-		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-		blk = block.GenGenesis(t / 3)
-	}
+	//blk, err := blockChain.Top()
+	//if err != nil {
+	//	t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+	//	blk = block.GenGenesis(t / 3)
+	//}
 
 	//TODO: INIT FROM A EXISTING MVCCDB
 	stateDB, err := db.NewMVCCDB("StatePoolDB")
@@ -79,7 +78,7 @@ func (g *BaseVariableImpl) TxDB() tx.TxDB {
 	return g.txDB
 }
 
-func (g *BaseVariableImpl) StateDB() *db.MVCCDB {
+func (g *BaseVariableImpl) StateDB() db.MVCCDB {
 	return g.stateDB
 }
 

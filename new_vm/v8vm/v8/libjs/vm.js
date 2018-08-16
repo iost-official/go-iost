@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 function NativeModule(id) {
     this.filename = id + '.js';
@@ -59,9 +59,16 @@ NativeModule.prototype.cache = function() {
 
 var require = NativeModule.require;
 
+// storage
 var IOSTContractStorage = require('storage');
+var GlobalStorage = IOSTContractStorage.GlobalStorage;
+
+// blockchain
 var BlockChainContractStorage = require('blockchain');
-var bigNumber = require('bignumber');
+
+// other helper funcitons
+var BigNumber = require('bignumber');
 var injectGas = require('inject_gas');
+var observer = require('observer');
 
 var _IOSTInstruction_counter = new IOSTInstruction;

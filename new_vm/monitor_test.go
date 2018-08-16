@@ -3,8 +3,6 @@ package new_vm
 import (
 	"testing"
 
-	"context"
-
 	"fmt"
 
 	. "github.com/golang/mock/gomock"
@@ -27,7 +25,8 @@ func Init(t *testing.T) (*Monitor, *MockVM, *database.MockIMultiValue, *database
 func TestMonitor_Call(t *testing.T) {
 	monitor, vm, db, vi := Init(t)
 
-	ctx := context.WithValue(context.Background(), "gas_price", uint64(1))
+	ctx := host.NewContext(nil)
+	ctx.Set("gas_price", uint64(1))
 
 	h := host.NewHost(ctx, vi, monitor)
 
@@ -69,7 +68,8 @@ func TestMonitor_Call(t *testing.T) {
 
 func TestMonitor_Context(t *testing.T) {
 	monitor, vm, db, vi := Init(t)
-	ctx := context.WithValue(context.Background(), "gas_price", uint64(1))
+	ctx := host.NewContext(nil)
+	ctx.Set("gas_price", uint64(1))
 
 	h := host.NewHost(ctx, vi, monitor)
 
@@ -127,9 +127,11 @@ func TestMonitor_HostCall(t *testing.T) {
 	monitor, vm, db, vi := Init(t)
 	staticMonitor = monitor
 
-	ctx := context.WithValue(context.Background(), "gas_price", uint64(1))
-	ctx = context.WithValue(ctx, "stack_height", 1)
-	ctx = context.WithValue(ctx, "stack0", "test")
+	ctx := host.NewContext(nil)
+
+	ctx.Set("gas_price", uint64(1))
+	ctx.Set("stack_height", 1)
+	ctx.Set("stack0", "test")
 
 	h := host.NewHost(ctx, vi, monitor)
 	outerFlag := false
@@ -189,16 +191,26 @@ func TestMonitor_HostCall(t *testing.T) {
 func TestJSM(t *testing.T) {
 	monitor, _, db, vi := Init(t)
 
-	ctx := context.WithValue(context.Background(), "gas_price", uint64(1))
-	ctx = context.WithValue(ctx, "gas_limit", uint64(1000))
+	ctx := host.NewContext(nil)
+	ctx.Set("gas_price", uint64(1))
+	ctx.GSet("gas_limit", uint64(1000))
 
 	h := host.NewHost(ctx, vi, monitor)
 
 	c := contract.Contract{
 		ID: "contract",
-		Code: `module.exports = function hello() {
-	return "world";
-}`,
+		Code: `
+class Contract {
+ constructor() {
+  
+ }
+ show() {
+  return "show";
+ }
+}
+
+module.exports = Contract;
+`,
 		Info: &contract.Info{
 			Lang:        "javascript",
 			VersionCode: "1.0.0",
@@ -218,6 +230,9 @@ func TestJSM(t *testing.T) {
 		return c.Encode(), nil
 	})
 
-	fmt.Println(monitor.Call(h, "contract", "hello"))
+	rs, co, e := monitor.Call(h, "contract", "hello")
+	if rs[0] != "world" {
+		fmt.Println(rs, co, e)
+	}
 
 }

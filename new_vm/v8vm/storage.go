@@ -54,6 +54,24 @@ func goDel(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) C.int {
 	return 0
 }
 
+//export goGlobalGet
+func goGlobalGet(cSbx C.SandboxPtr, contractName, key *C.char, gasUsed *C.size_t) *C.char {
+	sbx, ok := GetSandbox(cSbx)
+	if !ok {
+
+	}
+
+	c := C.GoString(contractName)
+	k := C.GoString(key)
+
+	val, cost := sbx.host.GlobalGet(c, k)
+	valStr, _ := dbValToString(val)
+
+	*gasUsed = C.size_t(cost.Data)
+
+	return C.CString(valStr)
+}
+
 func dbValToString(val interface{}) (string, error) {
 	switch v := val.(type) {
 	case int64:

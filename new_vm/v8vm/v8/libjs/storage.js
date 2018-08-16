@@ -1,20 +1,63 @@
 var IOSTContractStorage = (function () {
+
     var storage = new IOSTStorage;
+
+    var normalValTypeList = ['number', 'string', 'boolean'];
+
+    var MapStorage = function (key) {
+        this.mapKey = key;
+        this.put = function (field, value) {
+            return storage.mapPut(this.mapKey, value);
+        };
+        this.get = function (field) {
+            return storage.mapGet(this.mapKey, field);
+        };
+        this.del = function (field) {
+            return storage.mapDel(this.mapKey, field);
+        };
+        this.keys = function () {
+            return storage.mapKeys(this.mapKey);
+        };
+        this.length = function () {
+            return storage.mapLen(this.mapKey);
+        }
+    };
+
+    var GlobalStorage = function (contract) {
+        this.contract = contract;
+        this.get = function (key) {
+            return storage.globalGet(contract, key);
+        }
+    };
+
     return {
         put: function (key, val) {
-            var ret = storage.put(key, val);
-            return ret;
+            let valType = typeof val;
+            if (valType === 'string') {
+                return storage.put(key, val);
+            }
+            return storage.put(key, JSON.stringify(val))
         },
-        get: function (key) {
-            var val = storage.get(key);
-            return val;
+        get: function (key, val) {
+            let valType = typeof val;
+            if (valType === 'string') {
+                return storage.get(key);
+            }
+            if (normalValTypeList.indexOf(valType) !== -1) {
+                let valInStorage = storage.get(key);
+                return JSON.parse(valInStorage);
+            }
+
+            if (val instanceof BigNumber) {
+                let valInStorage = storage.get(key);
+                return new BigNumber(JSON.parse(valInStorage));
+            }
+
+            return new MapStorage(key);
         },
-        del: function (key) {
-            var ret = storage.del(key);
-            return ret;
-        },
+        GlobalStorage: GlobalStorage
     }
 })();
 
-module.exports = IOSTContractStorage
+module.exports = IOSTContractStorage;
 
