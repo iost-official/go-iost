@@ -120,11 +120,13 @@ func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args [
 var _native_main = require('%s');
 var obj = new _native_main();
 
+var ret = 0;
 // store kv that was constructed by contract.
 Object.keys(obj).forEach((key) => {
    let val = obj[key];
-   IOSTContractStorage.put(key, val);
+   ret = IOSTContractStorage.put(key, val);
 });
+ret;
 `, name), nil
 	}
 
