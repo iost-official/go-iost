@@ -108,12 +108,12 @@ type BlockCache interface {
 }
 
 type BlockCacheImpl struct {
-	linkedRoot *BlockCacheNode
-	singleRoot *BlockCacheNode
-	head       *BlockCacheNode
-	hash2node  *sync.Map
-	leaf       map[*BlockCacheNode]uint64
-	baseVariable       global.BaseVariable
+	linkedRoot   *BlockCacheNode
+	singleRoot   *BlockCacheNode
+	head         *BlockCacheNode
+	hash2node    *sync.Map
+	leaf         map[*BlockCacheNode]uint64
+	baseVariable global.BaseVariable
 }
 
 var (
@@ -144,11 +144,11 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	bc := BlockCacheImpl{
-		linkedRoot: NewBCN(nil, nil),
-		singleRoot: NewBCN(nil, nil),
-		hash2node:  new(sync.Map),
-		leaf:       make(map[*BlockCacheNode]uint64),
-		baseVariable:       baseVariable,
+		linkedRoot:   NewBCN(nil, nil),
+		singleRoot:   NewBCN(nil, nil),
+		hash2node:    new(sync.Map),
+		leaf:         make(map[*BlockCacheNode]uint64),
+		baseVariable: baseVariable,
 	}
 	bc.linkedRoot.Type = Linked
 	bc.singleRoot.Type = Single
@@ -180,12 +180,12 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) updateLongest() {
-/*
-	think about there are only one witness
-	if len(bc.leaf) == -1 {
-		panic(fmt.Errorf("BlockCache shouldnt be empty"))
-	}
-*/
+	/*
+		think about there are only one witness
+		if len(bc.leaf) == -1 {
+			panic(fmt.Errorf("BlockCache shouldnt be empty"))
+		}
+	*/
 	_, ok := bc.hmget(bc.head.Block.HeadHash())
 	if ok {
 		return
@@ -311,7 +311,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			return err
 		}
 		//bc.hmdel(cur.Block.HeadHash())
-		bc.delNode(cur)	//?上面一句就可以了，cur的parent一定等于nil
+		bc.delNode(cur) //?上面一句就可以了，cur的parent一定等于nil
 		retain.Parent = nil
 		bc.linkedRoot = retain
 	}
@@ -330,7 +330,11 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 
 func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 	bcn, ok := bc.hmget(hash)
-	return bcn, IF(ok, nil, errors.New("block not found")).(error)
+	if ok {
+		return bcn, nil
+	} else {
+		return nil, errors.New("block not found")
+	}
 }
 
 func (bc *BlockCacheImpl) GetBlockByNumber(num uint64) (*block.Block, error) {

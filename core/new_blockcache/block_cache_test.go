@@ -2,7 +2,7 @@ package blockcache
 
 import (
 	"testing"
-//	"fmt"
+	//	"fmt"
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
@@ -51,9 +51,9 @@ func TestBlockCache(t *testing.T) {
 	s3 := genBlock(s2, "w4", 4)
 
 	base := core_mock.NewMockChain(ctl)
-	base.EXPECT().Top().AnyTimes().Return(b0,nil)
+	base.EXPECT().Top().AnyTimes().Return(b0, nil)
 	base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
-	global:=core_mock.NewMockBaseVariable(ctl)
+	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
@@ -61,7 +61,7 @@ func TestBlockCache(t *testing.T) {
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			_, err := bc.Add(b1)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
-			So(err, ShouldEqual,nil)
+			So(err, ShouldEqual, nil)
 			bc.Draw()
 			bc.Add(b2)
 			_, err = bc.Add(b2)
@@ -132,7 +132,7 @@ func TestBlockCache(t *testing.T) {
 			So(blk, ShouldEqual, nil)
 
 			bc.Flush(b4node)
-			//bc.Draw() 
+			//bc.Draw()
 
 		})
 
