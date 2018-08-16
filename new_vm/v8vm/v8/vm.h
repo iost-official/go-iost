@@ -15,6 +15,7 @@ typedef void* SandboxPtr;
 typedef struct {
     const char *Value;
     const char *Err;
+    bool isJson;
 } ValueTuple;
 
 typedef enum {

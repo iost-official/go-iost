@@ -157,7 +157,6 @@ var objObserver = observer.create(obj)
 
 // run contract with specified function and args.
 objObserver.%s(%s)
-// objObserver['%s'].apply(obj, %v);
 `, name, function, strings.Trim(argStr, "[]")), nil
 }
 
@@ -168,17 +167,12 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
 	rs := C.Execute(sbx.context, cCode)
 
 	result := C.GoString(rs.Value)
+	defer C.free(unsafe.Pointer(rs.Value))
+	defer C.free(unsafe.Pointer(rs.Err))
 
 	var err error
 	if rs.Err != nil {
 		err = errors.New(C.GoString(rs.Err))
-	}
-
-	if rs.Value != nil {
-		C.free(unsafe.Pointer(rs.Value))
-	}
-	if rs.Err != nil {
-		C.free(unsafe.Pointer(rs.Err))
 	}
 
 	return result, err
