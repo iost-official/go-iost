@@ -69,7 +69,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*VM, *host.H
 	return e, h, code
 }
 
-func TestEngine_LoadAndCall(t *testing.T) {
+func TestVM_LoadAndCall(t *testing.T) {
 	vi := Init(t)
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", uint64(1))
@@ -110,7 +110,7 @@ var Contract = function() {
 	}
 }
 
-func TestEngine_bigNumber(t *testing.T) {
+func TestVM_bigNumber(t *testing.T) {
 	e, host, code := MyInit(t, "bignumber1")
 	e.LoadAndCall(host, code, "constructor")
 	rs, _, err := e.LoadAndCall(host, code, "getVal")
@@ -123,7 +123,7 @@ func TestEngine_bigNumber(t *testing.T) {
 	}
 }
 
-func TestEngine_Storage(t *testing.T) {
+func TestVM_Storage(t *testing.T) {
 	e, host, code := MyInit(t, "storage1")
 
 	e.LoadAndCall(host, code, "constructor")
@@ -179,7 +179,7 @@ func TestEngine_Storage(t *testing.T) {
 	}
 }
 
-func TestEngine_DataType(t *testing.T) {
+func TestVM_DataType(t *testing.T) {
 	e, host, code := MyInit(t, "datatype")
 
 	rs, _,err := e.LoadAndCall(host, code, "number", 1)
@@ -277,7 +277,7 @@ func TestEngine_DataType(t *testing.T) {
 	*/
 }
 
-func TestEngine_Loop(t *testing.T) {
+func TestVM_Loop(t *testing.T) {
 	e, host, code := MyInit(t, "loop")
 
 	_, _,err := e.LoadAndCall(host, code, "for")
@@ -331,7 +331,7 @@ func TestEngine_Loop(t *testing.T) {
 	}
 }
 
-func TestEngine_Func(t *testing.T) {
+func TestVM_Func(t *testing.T) {
 	e, host, code := MyInit(t, "func")
 	_, _,err := e.LoadAndCall(host, code, "func1")
 	if err == nil || err.Error() != "out of gas"{
@@ -363,7 +363,7 @@ func TestEngine_Func(t *testing.T) {
 	}
 }
 
-func TestEngine_Danger(t *testing.T) {
+func TestVM_Danger(t *testing.T) {
 	e, host, code := MyInit(t, "danger")
 	_, _,err := e.LoadAndCall(host, code, "bigArray")
 	if err == nil || err.Error() != "execution killed"{
@@ -381,4 +381,8 @@ func TestEngine_Danger(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(),"Uncaught exception: test throw") {
 		t.Fatalf("LoadAndCall for should return error: Uncaught exception: test throw, but got %v\n", err)
 	}
+}
+
+func TestVM_Cost(t *testing.T) {
+
 }

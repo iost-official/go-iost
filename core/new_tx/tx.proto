@@ -32,7 +32,7 @@ message StatusRaw {
 
 message TxReceiptRaw {
     bytes txHash = 1;
-    uint64 gasUsage = 2;
+    int64 gasUsage = 2;
     StatusRaw status = 3;
     int32 succActionNum = 4;
     repeated ReceiptRaw receipts = 5;
