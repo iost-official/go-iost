@@ -41,7 +41,7 @@ const (
 )
 
 const (
-	DelSingleBlockTime uint64 = 10
+	DelSingleBlockTime int64 = 10
 )
 
 type BCNType int
@@ -56,10 +56,9 @@ type BlockCacheNode struct {
 	Parent                *BlockCacheNode
 	Children              map[*BlockCacheNode]bool
 	Type                  BCNType
-	Number                uint64
+	Number                int64
 	Witness               string
-	ConfirmUntil          uint64
-	LastWitnessListNumber uint64
+	ConfirmUntil          int64
 	PendingWitnessList    []string
 	Extension             []byte
 }
@@ -82,10 +81,10 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 		Block:    block,
 		Parent:   parent,
 		Children: make(map[*BlockCacheNode]bool),
-		//initialize others
 	}
 	if block != nil {
-		bcn.Number = uint64(block.Head.Number)
+		bcn.Number = block.Head.Number
+		bcn.Witness = block.Head.Witness
 	}
 	if parent != nil {
 		bcn.Type = parent.Type
@@ -100,7 +99,7 @@ type BlockCache interface {
 	Del(*BlockCacheNode)
 	Flush(*BlockCacheNode)
 	Find([]byte) (*BlockCacheNode, error)
-	GetBlockByNumber(uint64) (*block.Block, error)
+	GetBlockByNumber(int64) (*block.Block, error)
 	GetBlockByHash([]byte) (*block.Block, error)
 	LinkedRoot() *BlockCacheNode
 	Head() *BlockCacheNode
@@ -112,7 +111,7 @@ type BlockCacheImpl struct {
 	singleRoot   *BlockCacheNode
 	head         *BlockCacheNode
 	hash2node    *sync.Map
-	leaf         map[*BlockCacheNode]uint64
+	leaf         map[*BlockCacheNode]int64
 	baseVariable global.BaseVariable
 }
 
@@ -147,7 +146,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		linkedRoot:   NewBCN(nil, nil),
 		singleRoot:   NewBCN(nil, nil),
 		hash2node:    new(sync.Map),
-		leaf:         make(map[*BlockCacheNode]uint64),
+		leaf:         make(map[*BlockCacheNode]int64),
 		baseVariable: baseVariable,
 	}
 	bc.linkedRoot.Type = Linked
@@ -260,7 +259,7 @@ func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 func (bc *BlockCacheImpl) mergeSingle(newNode *BlockCacheNode) {
 	for bcn, _ := range bc.singleRoot.Children {
 		if bytes.Equal(bcn.Block.Head.ParentHash, newNode.Block.HeadHash()) {
-			bcn.Parent.delChild(bcn)
+			bc.singleRoot.delChild(bcn)
 			newNode.addChild(bcn)
 		}
 	}
@@ -337,7 +336,7 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 	}
 }
 
-func (bc *BlockCacheImpl) GetBlockByNumber(num uint64) (*block.Block, error) {
+func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 	it := bc.head
 	for it.Parent != nil {
 		if it.Number == num {

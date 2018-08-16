@@ -25,8 +25,7 @@ var Cons Consensus
 
 var once sync.Once
 
-func ConsensusFactory(consensusType string, acc account.Account, txPool txpool.TxPool, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service, sy consensus_common.Synchronizer, witnessList []string) (Consensus, error) {
-
+func ConsensusFactory(consensusType string, account account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service, synchronizer consensus_common.Synchronizer, witnessList []string) (Consensus, error) {
 	if consensusType == "" {
 		consensusType = CONSENSUS_POB
 	}
@@ -37,7 +36,7 @@ func ConsensusFactory(consensusType string, acc account.Account, txPool txpool.T
 	case CONSENSUS_POB:
 		if Cons == nil {
 			once.Do(func() {
-				Cons, err = pob.NewPoB(acc, baseVariable, blkcache, txPool, p2pserv, sy, witnessList)
+				Cons, err = pob.NewPoB(account, baseVariable, blkcache, txPool, service, synchronizer, witnessList)
 			})
 		}
 	}

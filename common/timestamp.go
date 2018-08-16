@@ -14,32 +14,31 @@ type Timestamp struct {
 }
 
 func GetCurrentTimestamp() Timestamp {
-	t := time.Now()
-	return GetTimestamp(t.Unix())
+	return GetTimestamp(time.Now().Unix())
 }
 
 func GetTimestamp(timeSec int64) Timestamp {
-	return Timestamp{(timeSec - Epoch) / SlotLength}
+	return Timestamp{timeSec / SlotLength}
 }
 
-func (t *Timestamp) AddDay(intervalDay int) {
-	t.Slot = t.Slot + int64(intervalDay)*SecondsInDay/SlotLength
+func (t *Timestamp) AddDay(intervalDay int64) {
+	t.Slot = t.Slot + intervalDay*SecondsInDay/SlotLength
 }
 
-func (t *Timestamp) AddHour(intervalHour int) {
-	t.Slot = t.Slot + int64(intervalHour)*SecondsInHour/SlotLength
+func (t *Timestamp) AddHour(intervalHour int64) {
+	t.Slot = t.Slot + intervalHour*SecondsInHour/SlotLength
 }
 
-func (t *Timestamp) AddSecond(interval int) {
-	t.Slot = t.Slot + int64(interval)/SlotLength
+func (t *Timestamp) AddSecond(interval int64) {
+	t.Slot = t.Slot + interval/SlotLength
 }
 
-func (t *Timestamp) Add(intervalSlot int) {
-	t.Slot = t.Slot + int64(intervalSlot)
+func (t *Timestamp) Add(intervalSlot int64) {
+	t.Slot = t.Slot + intervalSlot
 }
 
 func (t *Timestamp) ToUnixSec() int64 {
-	return t.Slot*SlotLength + Epoch
+	return t.Slot*SlotLength
 }
 
 func IntervalSecond(t1 Timestamp, t2 Timestamp) int64 {

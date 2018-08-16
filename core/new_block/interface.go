@@ -7,7 +7,7 @@ type Chain interface {
 	Push(block *Block) error
 	Length() int64
 	CheckLength() error
-	Top() (*Block, error) // 语法糖
+	Top() (*Block, error)
 	GetHashByNumber(number int64) ([]byte, error)
 	GetBlockByNumber(number int64) (*Block, error)
 	GetBlockByHash(blockHash []byte) (*Block, error)
