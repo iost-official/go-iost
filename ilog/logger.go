@@ -20,9 +20,10 @@ type Logger struct {
 	isRunning   int32
 	wg          *sync.WaitGroup
 
-	writers []LogWriter
-	msg     chan *message
-	flush   chan *sync.WaitGroup
+	writers   []LogWriter
+	msg       chan *message
+	flush     chan *sync.WaitGroup
+	syncWrite bool
 
 	bufPool *BufPool
 
@@ -38,6 +39,7 @@ func New() *Logger {
 		flush:       make(chan *sync.WaitGroup, 1),
 		bufPool:     NewBufPool(),
 		quitCh:      make(chan struct{}, 1),
+		syncWrite:   true,
 	}
 }
 
@@ -121,6 +123,10 @@ func (logger *Logger) Flush() {
 	}
 }
 
+func (logger *Logger) AsyncWrite() {
+	logger.syncWrite = false
+}
+
 func (logger *Logger) write(msg *message) {
 	wg := &sync.WaitGroup{}
 	for _, writer := range logger.writers {
@@ -191,6 +197,10 @@ func (logger *Logger) genMsg(level Level, log string) {
 	select {
 	case logger.msg <- &message{buf.String(), level}:
 		// default:
+	}
+
+	if logger.syncWrite {
+		logger.Flush()
 	}
 }
 
