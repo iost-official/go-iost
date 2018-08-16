@@ -3,12 +3,13 @@ package consensus_common
 import (
 	"bytes"
 	"time"
+	"errors"
+
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"errors"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 var (
 	ErrFutureBlk   = errors.New("block from future")

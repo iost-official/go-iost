@@ -26,7 +26,6 @@ var Cons Consensus
 var once sync.Once
 
 func ConsensusFactory(consensusType string, account account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service, synchronizer consensus_common.Synchronizer, witnessList []string) (Consensus, error) {
-
 	if consensusType == "" {
 		consensusType = CONSENSUS_POB
 	}

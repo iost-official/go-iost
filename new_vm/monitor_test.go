@@ -193,15 +193,24 @@ func TestJSM(t *testing.T) {
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", uint64(1))
-	ctx.Set("gas_limit", uint64(1000))
+	ctx.GSet("gas_limit", uint64(1000))
 
 	h := host.NewHost(ctx, vi, monitor)
 
 	c := contract.Contract{
 		ID: "contract",
-		Code: `module.exports = function hello() {
-	return "world";
-}`,
+		Code: `
+class Contract {
+ constructor() {
+  
+ }
+ show() {
+  return "show";
+ }
+}
+
+module.exports = Contract;
+`,
 		Info: &contract.Info{
 			Lang:        "javascript",
 			VersionCode: "1.0.0",
@@ -221,6 +230,9 @@ func TestJSM(t *testing.T) {
 		return c.Encode(), nil
 	})
 
-	fmt.Println(monitor.Call(h, "contract", "hello"))
+	rs, co, e := monitor.Call(h, "contract", "hello")
+	if rs[0] != "world" {
+		fmt.Println(rs, co, e)
+	}
 
 }

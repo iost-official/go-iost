@@ -3,13 +3,15 @@ package consensus_common
 import (
 	"github.com/smartystreets/goconvey/convey"
 	"testing"
+
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestVerifyBlockHead(t *testing.T) {
-	convey.Convey("Test of verify block head", t, func() {
+	Convey("Test of verify block head", t, func() {
 		parentBlk := &block.Block{
 			Head: block.BlockHead{
 				Number: 3,

@@ -6,8 +6,7 @@ package core_mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	block "github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	tx "github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	new_block "github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	reflect "reflect"
 )
 

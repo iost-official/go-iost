@@ -1,8 +1,10 @@
 package storage
 
 import (
+	"math/rand"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -211,4 +213,44 @@ func (suite *LevelDBTestSuite) TearDownTest() {
 
 func TestLevelDBTestSuite(t *testing.T) {
 	suite.Run(t, new(LevelDBTestSuite))
+}
+
+func BenchmarkLevelDB(b *testing.B) {
+	rand.Seed(time.Now().UnixNano())
+
+	ldb, err := NewLevelDB(DBPATH)
+	if err != nil {
+		b.Fatalf("Failed to new leveldb: %v", err)
+	}
+
+	keys := make([][]byte, b.N)
+	values := make([][]byte, b.N)
+	for i := 0; i < 1000000; i++ {
+		key := make([]byte, 32)
+		value := make([]byte, 32)
+		rand.Read(key)
+		rand.Read(value)
+		keys = append(keys, key)
+		values = append(values, value)
+	}
+
+	b.Run("Put", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			ldb.Put(keys[i], values[i])
+		}
+	})
+	b.Run("Get", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			ldb.Get(keys[i])
+		}
+	})
+	b.Run("Del", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			ldb.Del(keys[i])
+		}
+	})
+
+	ldb.Close()
+	cmd := exec.Command("rm", "-r", DBPATH)
+	cmd.Run()
 }

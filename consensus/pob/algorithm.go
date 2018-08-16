@@ -29,7 +29,7 @@ var (
 	ErrTxSignature = errors.New("tx wrong signature")
 )
 
-func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db *db.MVCCDB) *block.Block {
+func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db db.MVCCDB) *block.Block {
 	lastBlock := node.Block
 	parentHash := lastBlock.HeadHash()
 	blk := block.Block{
@@ -44,7 +44,7 @@ func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool t
 		Receipts: []*tx.TxReceipt{},
 	}
 	txCnt := 1000
-	limitTime := time.NewTicker(common.SlotLength * time.Second / 3)
+	limitTime := time.NewTicker((common.SlotLength / 3 * time.Second))
 	txsList, _ := txPool.PendingTxs(txCnt)
 	txPoolSize.Set(float64(len(txsList)))
 	engine := new_vm.NewEngine(&lastBlock.Head, db)
@@ -109,7 +109,7 @@ func verifyBasics(blk *block.Block) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db *db.MVCCDB) error {
+func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB) error {
 	err := consensus_common.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err

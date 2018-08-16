@@ -7,6 +7,8 @@ import (
 
 	"strconv"
 
+	"errors"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
@@ -14,24 +16,24 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"errors"
 )
 
 const (
 	defaultCacheLength = 1000
 )
 
-var (
-	ErrContractNotFound = errors.New("contract not found")
-)
-
 const (
 	GasCheckTxFailed = int64(100)
 )
 
+var (
+	ErrContractNotFound = errors.New("contract not found")
+
+	ErrSetUpArgs = errors.New("key does not exist")
+)
+
 type Engine interface {
-	//Init()
-	//SetEnv(bh *block.BlockHead, cb database.IMultiValue) Engine
+	SetUp(k, v string) error
 	Exec(tx0 *tx.Tx) (*tx.TxReceipt, error)
 	GC()
 }
@@ -42,6 +44,8 @@ var once sync.Once
 
 type EngineImpl struct {
 	host *host.Host
+
+	jsPath string
 }
 
 func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
@@ -72,13 +76,26 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	h := host.NewHost(ctx, db, staticMonitor)
 	return &EngineImpl{host: h}
 }
+
+func (e *EngineImpl) SetUp(k, v string) error {
+	switch k {
+	case "js_path":
+		e.jsPath = v
+	default:
+		return ErrSetUpArgs
+	}
+	return nil
+}
 func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	err := checkTx(tx0)
 	if err != nil {
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), nil
 	}
 
-	// todo 检查发布者余额是否能支撑gaslimit
+	bl := e.host.DB.Balance(account.GetIdByPubkey(tx0.Publisher.Pubkey))
+	if bl <= 0 || uint64(bl) < tx0.GasPrice*tx0.GasLimit {
+		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), nil
+	}
 
 	txInfo, err := json.Marshal(tx0)
 	if err != nil {
@@ -149,7 +166,6 @@ func checkTx(tx0 *tx.Tx) error {
 	}
 	return nil
 }
-
 func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
@@ -198,7 +214,6 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	//return nil, errors.New("unsupported yet")
 
 }
-
 func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,
@@ -211,7 +226,6 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 		Receipts:      make([]tx.Receipt, 0),
 	}
 }
-
 func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
 	receipts = make([]tx.Receipt, 0)
 	cost = contract.Cost0()
@@ -255,7 +269,7 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	_, cost, err = staticMonitor.Call(e.host, action.Contract, action.ActionName, args...)
 
 	if cost == nil {
-		panic("here")
+		cost = contract.Cost0()
 	}
 
 	if err != nil {
@@ -276,5 +290,9 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	receipts = append(receipts, e.host.Ctx.GValue("receipts").([]tx.Receipt)...)
 
+	status = tx.Status{
+		Code:    tx.Success,
+		Message: "",
+	}
 	return
 }

@@ -2,14 +2,13 @@ package pob
 
 import (
 	"testing"
-
-	"github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"time"
+	"github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 )
 
 func TestConfirmNode(t *testing.T) {
@@ -116,6 +115,7 @@ func TestUpdateWitness(t *testing.T) {
 }
 
 func TestNodeInfoUpdate(t *testing.T) {
+
 	convey.Convey("Test of node info update", t, func() {
 		staticProperty = newStaticProperty(account.Account{ID:"id0"}, []string{"id0", "id1", "id2"})
 		rootNode := &blockcache.BlockCacheNode{
@@ -197,7 +197,7 @@ func TestVerifyBasics(t *testing.T) {
 		convey.Convey("Normal (self block)", func() {
 			blk := &block.Block{
 				Head: block.BlockHead{
-					Time: 1,
+					Time:    1,
 					Witness: account1.ID,
 				},
 			}
@@ -211,7 +211,7 @@ func TestVerifyBasics(t *testing.T) {
 		convey.Convey("Normal (other's block)", func() {
 			blk := &block.Block{
 				Head: block.BlockHead{
-					Time: 0,
+					Time:    0,
 					Witness: account0.ID,
 				},
 			}
@@ -226,7 +226,7 @@ func TestVerifyBasics(t *testing.T) {
 		convey.Convey("Wrong witness/pubkey/signature", func() {
 			blk := &block.Block{
 				Head: block.BlockHead{
-					Time: 1,
+					Time:    1,
 					Witness: account0.ID,
 				},
 			}
@@ -251,9 +251,9 @@ func TestVerifyBasics(t *testing.T) {
 		convey.Convey("Slot witness duplicate", func() {
 			blk := &block.Block{
 				Head: block.BlockHead{
-					Time: 0,
+					Time:    0,
 					Witness: account0.ID,
-					Info: []byte("first one"),
+					Info:    []byte("first one"),
 				},
 			}
 			info := generateHeadInfo(blk.Head)
@@ -265,9 +265,9 @@ func TestVerifyBasics(t *testing.T) {
 			staticProperty.addSlot(0)
 			blk = &block.Block{
 				Head: block.BlockHead{
-					Time: 0,
+					Time:    0,
 					Witness: account0.ID,
-					Info: []byte("second one"),
+					Info:    []byte("second one"),
 				},
 			}
 			info = generateHeadInfo(blk.Head)
@@ -313,12 +313,12 @@ func TestVerifyBlock(t *testing.T) {
 		witness := witnessOfSlot(curTime)
 		blk := &block.Block{
 			Head: block.BlockHead{
-				Number: 2,
+				Number:     2,
 				ParentHash: hash,
 				Time:curTime,
 				Witness: witnessOfSlot(curTime),
 			},
-			Txs: []*tx.Tx{},
+			Txs:      []*tx.Tx{},
 			Receipts: []*tx.TxReceipt{},
 		}
 		blk.Head.TxsHash = blk.CalculateTxsHash()

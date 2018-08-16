@@ -23,6 +23,7 @@ func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 	} else {
 		ret.Head.ParentHash = fa.HeadHash()
 	}
+	ret.CalculateHeadHash()
 	return ret
 }
 func TestBlockCache(t *testing.T) {
@@ -50,36 +51,33 @@ func TestBlockCache(t *testing.T) {
 	s3 := genBlock(s2, "w4", 4)
 
 	base := core_mock.NewMockChain(ctl)
-	base.EXPECT().Top().AnyTimes().Return(b0)
+	base.EXPECT().Top().AnyTimes().Return(b0, nil)
 	base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
-	//block.BC = base
+	global := core_mock.NewMockBaseVariable(ctl)
+	global.EXPECT().BlockChain().AnyTimes().Return(base)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
-			bc, _ := NewBlockCache(nil)
+			bc, _ := NewBlockCache(global)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
-			b1node, _ := bc.Add(b1)
+			_, err := bc.Add(b1)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
+			So(err, ShouldEqual, nil)
+			bc.Draw()
 			bc.Add(b2)
-			_, err := bc.Add(b2)
+			_, err = bc.Add(b2)
+
 			So(err, ShouldEqual, ErrDup)
 			_, err = bc.Add(b4)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
+
+			bc.Draw()
 			So(err, ShouldEqual, ErrNotFound)
 			_, err = bc.Add(b4)
 			So(err, ShouldEqual, ErrDup)
-			bc.Del(b1node)
-			bc.updateLongest()
-			//fmt.Printf("after Del Leaf:%+v\n",bc.Leaf)
-			b1node, _ = bc.Add(b1)
-			bc.Draw()
-			So(bc.Head, ShouldEqual, b1node)
-			bc.Add(b3)
-			So(bc.Head, ShouldEqual, b1node)
-
 		})
 
 		Convey("Flush", func() {
-			bc, _ := NewBlockCache(nil)
+			bc, _ := NewBlockCache(global)
 			bc.Add(b1)
 			//bc.Draw()
 			bc.Add(b2)
@@ -106,7 +104,7 @@ func TestBlockCache(t *testing.T) {
 		})
 
 		Convey("GetBlockbyNumber", func() {
-			bc, _ := NewBlockCache(nil)
+			bc, _ := NewBlockCache(global)
 			b1node, _ := bc.Add(b1)
 			//bc.Draw()
 			b2node, _ := bc.Add(b2)
@@ -121,7 +119,7 @@ func TestBlockCache(t *testing.T) {
 			//bc.Draw()
 			b5node, _ := bc.Add(b5)
 			//bc.Draw()
-			So(bc.Head, ShouldEqual, b5node)
+			So(bc.head, ShouldEqual, b5node)
 			blk, _ := bc.GetBlockByNumber(uint64(7))
 			So(blk, ShouldEqual, b5node.Block)
 			blk, _ = bc.GetBlockByNumber(uint64(6))

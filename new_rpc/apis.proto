@@ -31,7 +31,7 @@ message BlockByNumReq {
 	bool complete=2;	
 }
 message GetBalanceReq {
-	string pubkey=1;
+	bytes pubkey=1;
 }
 
 message GetStateReq {
