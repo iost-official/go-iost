@@ -3,7 +3,7 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
-#cgo LDFLAGS: -lvm
+#cgo LDFLAGS: -lvm -lv8
 */
 import "C"
 import (
