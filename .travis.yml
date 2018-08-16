@@ -1,9 +1,17 @@
 language: go
+
+branches:
+  only:
+    - master
+    - develop
+
 go:
   - "1.10"
+os:
+  - linux
+  - osx
 
-install:
-  - echo "Skip install"
+install: true
 
 script:
   - make build
