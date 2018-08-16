@@ -23,7 +23,7 @@ var (
 	ErrWitness     = errors.New("wrong witness")
 	ErrPubkey      = errors.New("wrong pubkey")
 	ErrSignature   = errors.New("wrong signature")
-	ErrSlotWitness = errors.New("witness slot duplicate")
+	ErrSlot		   = errors.New("witness slot duplicate")
 	ErrTxTooOld    = errors.New("tx too old")
 	ErrTxDup       = errors.New("duplicate tx")
 	ErrTxSignature = errors.New("tx wrong signature")
@@ -80,6 +80,42 @@ func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool t
 	return &blk
 }
 
+func generateHeadInfo(head block.BlockHead) []byte {
+	var info, numberInfo, versionInfo []byte
+	info = make([]byte, 8)
+	versionInfo = make([]byte, 4)
+	numberInfo = make([]byte, 4)
+	binary.BigEndian.PutUint64(info, uint64(head.Time))
+	binary.BigEndian.PutUint32(versionInfo, uint32(head.Version))
+	binary.BigEndian.PutUint32(numberInfo, uint32(head.Number))
+	info = append(info, versionInfo...)
+	info = append(info, numberInfo...)
+	info = append(info, head.ParentHash...)
+	info = append(info, head.TxsHash...)
+	info = append(info, head.MerkleHash...)
+	info = append(info, head.Info...)
+	return common.Sha256(info)
+}
+
+func verifyBasics(blk *block.Block) error {
+	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+		return ErrWitness
+	}
+	var signature common.Signature
+	signature.Decode(blk.Head.Signature)
+	if blk.Head.Witness != account.GetIdByPubkey(signature.Pubkey) {
+		return ErrPubkey
+	}
+	headInfo := generateHeadInfo(blk.Head)
+	if !common.VerifySignature(headInfo, signature) {
+		return ErrSignature
+	}
+	if staticProperty.hasSlot(blk.Head.Time) {
+		return ErrSlot
+	}
+	return nil
+}
+
 func verifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Block) error {
 	bh := blk.Head
 	if bh.Time > time.Now().Unix()/common.SlotLength+1 {
@@ -121,42 +157,6 @@ func verifyBlockWithVM(blk *block.Block, db *db.MVCCDB) error {
 	return nil
 }
 
-func generateHeadInfo(head block.BlockHead) []byte {
-	var info, numberInfo, versionInfo []byte
-	info = make([]byte, 8)
-	versionInfo = make([]byte, 4)
-	numberInfo = make([]byte, 4)
-	binary.BigEndian.PutUint64(info, uint64(head.Time))
-	binary.BigEndian.PutUint32(versionInfo, uint32(head.Version))
-	binary.BigEndian.PutUint32(numberInfo, uint32(head.Number))
-	info = append(info, versionInfo...)
-	info = append(info, numberInfo...)
-	info = append(info, head.ParentHash...)
-	info = append(info, head.TxsHash...)
-	info = append(info, head.MerkleHash...)
-	info = append(info, head.Info...)
-	return common.Sha256(info)
-}
-
-func verifyBasics(blk *block.Block) error {
-	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
-		return ErrWitness
-	}
-	var signature common.Signature
-	signature.Decode(blk.Head.Signature)
-	if blk.Head.Witness != account.GetIdByPubkey(signature.Pubkey) {
-		return ErrPubkey
-	}
-	headInfo := generateHeadInfo(blk.Head)
-	if !common.VerifySignature(headInfo, signature) {
-		return ErrSignature
-	}
-	if staticProperty.hasSlotWitness(blk.Head.Time) {
-		return ErrSlotWitness
-	}
-	return nil
-}
-
 func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db *db.MVCCDB) error {
 	err := verifyBlockHead(blk, parent, lib)
 	if err != nil {
@@ -179,21 +179,17 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 }
 
 func updateNodeInfo(node *blockcache.BlockCacheNode) {
-	staticProperty.addSlotWitness(node.Block.Head.Time)
-	if number, has := staticProperty.Watermark[node.Witness]; has {
-		node.ConfirmUntil = number
-		if node.Number >= number {
-			staticProperty.Watermark[node.Witness] = node.Number + 1
-		}
-	} else {
-		node.ConfirmUntil = 0
-		staticProperty.Watermark[node.Witness] = int64(node.Number) + 1
+	staticProperty.addSlot(node.Block.Head.Time)
+	node.ConfirmUntil = staticProperty.Watermark[node.Witness]
+	if node.Number >= staticProperty.Watermark[node.Witness] {
+		staticProperty.Watermark[node.Witness] = node.Number + 1
+
 	}
 }
 
 func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) {
 	// TODO how to decode witness list from db?
-	//newList, err := db.Get("state", "witnessList")
+	//newList, err := db.Get("state", "witnessList"), "id1"
 	var err error
 	if err == nil {
 		//node.PendingWitnessList = newList
@@ -206,7 +202,7 @@ func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCac
 	confirmLimit := staticProperty.NumberOfWitnesses*2/3 + 1
 	startNumber := node.Number
 	var confirmNum int64 = 0
-	confirmUntilMap := make(map[int64]int64, startNumber-root.Number+1)
+	confirmUntilMap := make(map[int64]int64, startNumber-root.Number)
 	var index int64 = 0
 	for node != root {
 		if node.ConfirmUntil <= node.Number {

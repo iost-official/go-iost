@@ -40,18 +40,12 @@ func (property *StaticProperty) updateWitnessList(witnessList []string) {
 	property.NumberOfWitnesses = int64(len(witnessList))
 }
 
-func (property *StaticProperty) hasSlotWitness(slot int64) bool {
+func (property *StaticProperty) hasSlot(slot int64) bool {
 	return property.SlotMap[slot]
 }
 
-func (property *StaticProperty) addSlotWitness(slot int64) {
+func (property *StaticProperty) addSlot(slot int64) {
 	property.SlotMap[slot] = true
-}
-
-func (property *StaticProperty) delSlotWitness(slotStart int64, slotEnd int64) {
-	for slot := slotStart; slot <= slotEnd; slot++ {
-		property.SlotMap[slot] = false
-	}
 }
 
 var (

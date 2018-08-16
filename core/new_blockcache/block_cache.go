@@ -81,7 +81,6 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 		Block:    block,
 		Parent:   parent,
 		Children: make(map[*BlockCacheNode]bool),
-		//initialize others
 	}
 	if block != nil {
 		bcn.Number = block.Head.Number
