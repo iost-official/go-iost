@@ -15,13 +15,13 @@ module.exports = (function () {
 
         var handler = {
             get: function(target, property, receiver) {
-                var aa = {
-                    target: target,
-                    prop: property,
-                    path: getPath(path, property),
-                    type: typeof target[property]
-                }
-                _native_log('get: ' + JSON.stringify(aa));
+                // var aa = {
+                //     target: target,
+                //     prop: property,
+                //     path: getPath(path, property),
+                //     type: typeof target[property]
+                // }
+                // _native_log('get: ' + JSON.stringify(aa));
 
                 var value = Reflect.get(target, property, receiver);
                 if (typeof target[property] === 'object' && target[property] !== null) {
@@ -45,14 +45,14 @@ module.exports = (function () {
                 return value;
             },
             set: function(target, prop, value, receiver) {
-                var aa = {
-                    target: target,
-                    prop: prop,
-                    path: getPath(path, prop),
-                    value: value,
-                    type: typeof target[prop]
-                }
-                _native_log('set: ' + JSON.stringify(aa));
+                // var aa = {
+                //     target: target,
+                //     prop: prop,
+                //     path: getPath(path, prop),
+                //     value: value,
+                //     type: typeof target[prop]
+                // }
+                // _native_log('set: ' + JSON.stringify(aa));
                 target[prop] = value;
                 return true;
             }

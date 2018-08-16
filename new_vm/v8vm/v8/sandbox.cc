@@ -221,7 +221,7 @@ void LoadVM(Sandbox *sbx) {
     }
 }
 
-void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error) {
+void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -234,7 +234,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     LoadVM(sbx);
 
     TryCatch tryCatch(isolate);
-    tryCatch.SetVerbose(false);
+    tryCatch.SetVerbose(true);
 
     Local<String> source = String::NewFromUtf8(isolate, code, NewStringType::kNormal).ToLocalChecked();
     Local<String> fileName = String::NewFromUtf8(isolate, "_default_name.js", NewStringType::kNormal).ToLocalChecked();
@@ -258,8 +258,21 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         return;
     }
 
-    String::Utf8Value retV8Str(isolate, ret);
-    result = *retV8Str;
+    if (ret->IsString() || ret->IsNumber() || ret->IsBoolean()) {
+        String::Utf8Value retV8Str(isolate, ret);
+        result = *retV8Str;
+        return;
+    }
+
+    Local<Object> obj = ret.As<Object>();
+    if (!obj->IsUndefined()) {
+        MaybeLocal<String> jsonRet = JSON::Stringify(sbx->context.Get(isolate), obj);
+        if (!jsonRet.IsEmpty()) {
+            isJson = true;
+            String::Utf8Value jsonRetStr(jsonRet.ToLocalChecked());
+            result = *jsonRetStr;
+        }
+    }
 }
 
 ValueTuple Execution(SandboxPtr ptr, const char *code) {
@@ -268,10 +281,11 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
 
     std::string result;
     std::string error;
-    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error));
+    bool isJson = false;
+    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson));
     exec.detach();
 
-    ValueTuple res = { nullptr, nullptr };
+    ValueTuple res = { nullptr, nullptr, isJson };
     auto startTime = std::chrono::steady_clock::now();
     while(true) {
         if (error.length() > 0) {
@@ -280,6 +294,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
         }
         if (result.length() > 0) {
             res.Value = copyString(result);
+            res.isJson = isJson;
             break;
         }
         if (sbx->gasUsed > sbx->gasLimit) {

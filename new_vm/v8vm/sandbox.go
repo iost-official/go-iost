@@ -86,13 +86,13 @@ func (sbx *Sandbox) Init() {
 		(C.globalGetFunc)(unsafe.Pointer(C.goGlobalGet)))
 }
 
-func (sbx *Sandbox) SetGasLimit(limit uint64) {
+func (sbx *Sandbox) SetGasLimit(limit int64) {
 	C.setSandboxGasLimit(sbx.context, C.size_t(limit))
 }
 
 func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
-	sbx.SetGasLimit(uint64(host.GasLimit()))
+	sbx.SetGasLimit(host.GasLimit())
 }
 
 func (sbx *Sandbox) SetModule(name, code string) {
@@ -157,7 +157,6 @@ var objObserver = observer.create(obj)
 
 // run contract with specified function and args.
 objObserver.%s(%s)
-// objObserver['%s'].apply(obj, %v);
 `, name, function, strings.Trim(argStr, "[]")), nil
 }
 
@@ -168,17 +167,12 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
 	rs := C.Execute(sbx.context, cCode)
 
 	result := C.GoString(rs.Value)
+	defer C.free(unsafe.Pointer(rs.Value))
+	defer C.free(unsafe.Pointer(rs.Err))
 
 	var err error
 	if rs.Err != nil {
 		err = errors.New(C.GoString(rs.Err))
-	}
-
-	if rs.Value != nil {
-		C.free(unsafe.Pointer(rs.Value))
-	}
-	if rs.Err != nil {
-		C.free(unsafe.Pointer(rs.Err))
 	}
 
 	return result, err

@@ -39,7 +39,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 	err = checkArgs(abi, args)
 
 	if err != nil {
-		return nil, contract.NewCost(0, 0, GasCheckTxFailed), err // todo check cost
+		return nil, contract.NewCost(0, 0, GasCheckTxFailed), err
 	}
 
 	h.Ctx = host.NewContext(h.Ctx)
@@ -57,11 +57,11 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 
 	payment, ok := h.Ctx.GValue("abi_payment").(int)
 	if !ok {
-		payment = 0
+		payment = int(abi.Payment)
 	}
 	switch payment {
 	case 1:
-		var gasPrice = h.Ctx.Value("gas_price").(int64) // TODO 判断大于0
+		var gasPrice = h.Ctx.Value("gas_price").(int64)
 		if abi.GasPrice < gasPrice {
 			return nil, nil, ErrGasPriceTooBig
 		}
