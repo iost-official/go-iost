@@ -43,8 +43,7 @@ var balanceCmd = &cobra.Command{
 		}
 
 		pk := LoadBytes(string(pubkey))
-		ia := vm.PubkeyToIOSTAccount(pk)
-		b, err := CheckBalance(ia)
+		b, err := CheckBalance(pk)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -67,14 +66,14 @@ func init() {
 	// balanceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func CheckBalance(ia vm.IOSTAccount) (int64, error) {
+func CheckBalance(ia []byte) (int64, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
 		return 0, err
 	}
 	defer conn.Close()
-	client := rpc.NewCliClient(conn)
-	value, err := client.GetBalance(context.Background(), &rpc.GetBalanceReq{Pubkey: string(ia)})
+	client := rpc.NewApisClient(conn)
+	value, err := client.GetBalance(context.Background(), &rpc.GetBalanceReq{Pubkey: ia})
 	if err != nil {
 		return 0, err
 	}

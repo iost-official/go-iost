@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"errors"
 	"os"
 	//"encoding/hex"
 
@@ -55,9 +54,9 @@ var publishCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		signs:=make([]common.Signature)
+		signs:=make([]common.Signature,0)
 		for i, v := range args {
-			if i == 0 {
+			if i == 0 { 
 				continue
 			}
 			sig, err := ReadFile(v)
@@ -144,8 +143,8 @@ func sendTx(stx tx.Tx) ([]byte, error) {
 		return nil, err
 	}
 	defer conn.Close()
-	client := pb.NewCliClient(conn)
-	resp, err := client.SendRawTx(context.Background(), &pb.RawTxReq{Tx: stx.Encode()})
+	client := pb.NewApisClient(conn)
+	resp, err := client.SendRawTx(context.Background(), &pb.RawTxReq{Data: stx.Encode()})
 	if err != nil {
 		return nil, err
 	}

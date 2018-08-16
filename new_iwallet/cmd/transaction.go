@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/new_rpc"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -41,19 +40,17 @@ var transactionCmd = &cobra.Command{
 			return
 		}
 		defer conn.Close()
-		client := rpc.NewCliClient(conn)
-		txRaw, err := client.GetTxByHash(context.Background(), &rpc.HashReq{Hash: args[0],})
+		client := rpc.NewApisClient(conn)
+		txRaw, err := client.GetTxByHash(context.Background(), &rpc.HashReq{Hash: LoadBytes(args[0]),})
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
 		//fmt.Println("tx raw:", txRaw.TxRaw)
-		var trx tx.Tx
-		err = trx.Decode(txRaw.TxRaw)
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		PrintTx(trx)
+		fmt.Println(txRaw)
 	},
 }
 

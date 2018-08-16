@@ -33,6 +33,7 @@ var blockCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 	var i int
+	var err error
 	if len(args) < 1 {
 		fmt.Println(`Error: block num or hash not given`)
 		return
@@ -40,7 +41,7 @@ var blockCmd = &cobra.Command{
 
 	switch method {
 		case "num":
-			i, err := strconv.Atoi(args[0])
+			i, err = strconv.Atoi(args[0])
 			if err != nil {
 				fmt.Println(err.Error())
 				 return
@@ -57,16 +58,16 @@ var blockCmd = &cobra.Command{
 			return
 		}
 		defer conn.Close()
-		client := rpc.NewCliClient(conn)
+		client := rpc.NewApisClient(conn)
 		var blockInfo *rpc.BlockInfo
 		if method=="num" {
-			blockInfo, err = client.GetBlockByNum(context.Background(), &rpc.BlockByNumReq{Num: int64(i),Complete:complete,})
+			blockInfo, err = client.GetBlockByNum(context.Background(), &rpc.BlockByNumReq{Num: uint64(i),Complete:complete,})
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
 		}else{
-			blockInfo, err = client.GetBlockByHash(context.Background(), &rpc.BlockByHashReq{Hash: args[0],Complete:complete,})
+			blockInfo, err = client.GetBlockByHash(context.Background(), &rpc.BlockByHashReq{Hash: LoadBytes(args[0]),Complete:complete,})
 			if err != nil {
 				fmt.Println(err.Error())
 				return
