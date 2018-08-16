@@ -153,3 +153,41 @@ func TestHost_RequireAuth(t *testing.T) {
 func TestHost_BlockInfo(t *testing.T) {
 
 }
+
+func TestTeller_Transfer(t *testing.T) {
+	ctx := NewContext(nil)
+	ctx.Set("contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
+
+	var (
+		ihello = int64(1000)
+		iworld = int64(0)
+	)
+
+	mock.EXPECT().Get(Any(), Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		switch key {
+		case "i-hello":
+			return database.MustMarshal(ihello), nil
+		case "i-world":
+			return database.MustMarshal(iworld), nil
+		}
+		return database.MustMarshal(nil), nil
+	})
+
+	mock.EXPECT().Put(Any(), Any(), Any()).AnyTimes().DoAndReturn(func(a, b, c string) error {
+		t.Log("put:", a, b, database.MustUnmarshal(c))
+		switch b {
+		case "i-hello":
+			ihello = database.MustUnmarshal(c).(int64)
+		case "i-world":
+			iworld = database.MustUnmarshal(c).(int64)
+		}
+
+		return nil
+	})
+
+	host.Transfer("hello", "world", 3)
+	host.Transfer("hello", "world", 3)
+
+}

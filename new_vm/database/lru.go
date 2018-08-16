@@ -37,6 +37,9 @@ func (m *LRU) Get(key string) (value string) {
 	return v.(string)
 }
 func (m *LRU) Put(key, value string) {
+	if m.cache != nil && m.cache.Contains(key) {
+		m.cache.Add(key, value)
+	}
 	m.db.Put(key, value)
 }
 func (m *LRU) Has(key string) bool {

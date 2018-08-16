@@ -7,6 +7,7 @@ import (
 
 	"os"
 
+	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
@@ -47,6 +48,64 @@ var systemContract = &contract.Contract{
 	},
 }
 
+func replaceDB(t *testing.T) database.IMultiValue {
+	ctl := gomock.NewController(t)
+	mvccdb := database.NewMockIMultiValue(ctl)
+
+	var senderbalance int64
+	var receiverbalance int64
+
+	mvccdb.EXPECT().Get("state", "i-"+testID[0]).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(senderbalance), nil
+	})
+	mvccdb.EXPECT().Get("state", "i-"+testID[2]).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(receiverbalance), nil
+	})
+
+	mvccdb.EXPECT().Get("state", "c-iost.system").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return systemContract.Encode(), nil
+	})
+
+	mvccdb.EXPECT().Get("state", "i-witness").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	mvccdb.EXPECT().Put("state", "c-iost.system", gomock.Any()).AnyTimes().DoAndReturn(func(table string, key string, value string) error {
+		return nil
+	})
+
+	mvccdb.EXPECT().Put("state", "i-"+testID[0], gomock.Any()).AnyTimes().DoAndReturn(func(table string, key string, value string) error {
+		t.Log("sender balance:", database.Unmarshal(value))
+		senderbalance = database.Unmarshal(value).(int64)
+		return nil
+	})
+
+	mvccdb.EXPECT().Put("state", "i-"+testID[2], gomock.Any()).AnyTimes().DoAndReturn(func(table string, key string, value string) error {
+		t.Log("receiver balance:", database.Unmarshal(value))
+		receiverbalance = database.Unmarshal(value).(int64)
+		return nil
+	})
+
+	mvccdb.EXPECT().Put("state", "i-witness", gomock.Any()).AnyTimes().DoAndReturn(func(table string, key string, value string) error {
+
+		//fmt.Println("witness received money", database.MustUnmarshal(value))
+		//if database.MustUnmarshal(value) != int64(1100) {
+		//	t.Fatal(database.MustUnmarshal(value))
+		//}
+		return nil
+	})
+
+	mvccdb.EXPECT().Rollback().Do(func() {
+		t.Log("exec tx failed, and success rollback")
+	})
+
+	mvccdb.EXPECT().Commit().Do(func() {
+		t.Log("committed")
+	})
+
+	return mvccdb
+}
+
 func TestIntergration_Transfer(t *testing.T) {
 
 	mvccdb, err := db.NewMVCCDB("mvcc")
@@ -54,14 +113,12 @@ func TestIntergration_Transfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	//mvccdb := database.NewDatabase()
+	//mvccdb := replaceDB(t)
 
 	defer os.RemoveAll("mvcc")
 
 	vi := database.NewVisitor(0, mvccdb)
-
 	vi.SetBalance(testID[0], 1000000)
-
 	vi.SetContract(systemContract)
 
 	bh := &block.BlockHead{

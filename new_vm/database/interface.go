@@ -15,4 +15,5 @@ type IMultiValue interface {
 	//Fork(revision string) string
 	//Checkout(revision string)
 	//Flush(revision string) error
+
 }
