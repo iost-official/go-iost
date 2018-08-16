@@ -222,7 +222,7 @@ void LoadVM(Sandbox *sbx) {
     }
 }
 
-void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson) {
+void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -270,6 +270,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         MaybeLocal<String> jsonRet = JSON::Stringify(sbx->context.Get(isolate), obj);
         if (!jsonRet.IsEmpty()) {
             isJson = true;
+            isDone = true;
             String::Utf8Value jsonRetStr(jsonRet.ToLocalChecked());
             result = *jsonRetStr;
         }
@@ -283,7 +284,8 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     std::string result;
     std::string error;
     bool isJson = false;
-    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson));
+    bool isDone = false;
+    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
     exec.detach();
 
     ValueTuple res = { nullptr, nullptr, isJson };

@@ -52,7 +52,7 @@ func (e *VM) Run(code, api string, args ...interface{}) (interface{}, error) {
 }
 
 func (e *VM) compile(contract *contract.Contract) (string, error) {
-	return "", nil
+	return contract.Code, nil
 }
 
 func (e *VM) setHost(host *host.Host) {
