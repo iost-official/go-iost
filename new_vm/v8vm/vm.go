@@ -19,8 +19,8 @@ func init() {
 type VM struct {
 	isolate              C.IsolatePtr
 	sandbox              *Sandbox
-	limitsOfInstructions uint64
-	limitsOfMemorySize   uint64
+	limitsOfInstructions int64
+	limitsOfMemorySize   int64
 }
 
 func NewVM() *VM {
