@@ -5,13 +5,21 @@ branches:
     - master
     - develop
 
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-5
+
 go:
   - "1.10"
 os:
   - linux
   - osx
 
-install: true
+install:
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 90
 
 script:
   - make build
