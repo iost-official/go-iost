@@ -64,7 +64,7 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		if err != nil {
 			return nil, cost, err
 		}
-		con.ID = common.Base58Encode(id)
+		con.ID = "Contract" + common.Base58Encode(id)
 
 		cost1, err := host.SetCode(con)
 		cost.AddAssign(cost1)
