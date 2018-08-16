@@ -44,6 +44,13 @@ var systemContract = &contract.Contract{
 				Limit:    contract.NewCost(100, 100, 100),
 				Args:     []string{"string", "string", "number"},
 			},
+			{
+				Name:     "SetCode",
+				Payment:  0,
+				GasPrice: int64(1000),
+				Limit:    contract.NewCost(100, 100, 100),
+				Args:     []string{"string"},
+			},
 		},
 	},
 }
@@ -106,8 +113,7 @@ func replaceDB(t *testing.T) database.IMultiValue {
 	return mvccdb
 }
 
-func TestIntergration_Transfer(t *testing.T) {
-
+func ininit(t *testing.T) (Engine, *database.Visitor) {
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
 		t.Fatal(err)
@@ -133,6 +139,26 @@ func TestIntergration_Transfer(t *testing.T) {
 	e.SetUp("js_path", jsPath)
 	e.SetUp("log_level", "debug")
 	e.SetUp("log_enable", "")
+	return e, vi
+}
+
+func makeTx(act tx.Action) (*tx.Tx, error) {
+	trx := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
+
+	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
+	if err != nil {
+		return nil, err
+	}
+	trx, err = tx.SignTx(trx, ac)
+	if err != nil {
+		return nil, err
+	}
+	return &trx, nil
+}
+
+func TestIntergration_Transfer(t *testing.T) {
+
+	e, vi := ininit(t)
 
 	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 
@@ -189,4 +215,48 @@ func TestIntergration_Transfer(t *testing.T) {
 	t.Log(e.Exec(&trx))
 	t.Log("balance of sender :", vi.Balance(testID[0]))
 	t.Log("balance of receiver :", vi.Balance(testID[2]))
+}
+
+func TestIntergration_SetCode(t *testing.T) {
+	e, vi := ininit(t)
+
+	jshw := contract.Contract{
+		ID: "testjs",
+		Code: `
+class Contract {
+ constructor() {
+  
+ }
+ hello() {
+  return "show";
+ }
+}
+
+module.exports = Contract;
+`,
+		Info: &contract.Info{
+			Lang:        "javascript",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				{
+					Name:     "hello",
+					Payment:  0,
+					GasPrice: int64(1),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				},
+			},
+		},
+	}
+
+	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, jshw.Encode()))
+
+	trx, err := makeTx(act)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(e.Exec(trx))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+
 }
