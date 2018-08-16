@@ -15,7 +15,6 @@ endif
 ifeq ($(shell uname),Linux)
 	export CGO_LDFLAGS=-L$(shell pwd)/new_vm/v8vm/v8/libv8/_linux_amd64
 	export CGO_CFLAGS=-I$(shell pwd)/new_vm/v8vm/v8/include/_linux_amd64
-	export LIBRARY_PATH=$(shell pwd)/new_vm/v8vm/v8/libv8/_linux_amd64
 	export LD_LIBRARY_PATH=$(shell pwd)/new_vm/v8vm/v8/libv8/_linux_amd64
 endif
 

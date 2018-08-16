@@ -5,11 +5,25 @@ branches:
     - master
     - develop
 
-go:
-  - "1.10"
-os:
-  - linux
-  - osx
+matrix:
+  include:
+    - os: linux
+      go: 1.10
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env:
+         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+    - os: osx
+      go: 1.10
+         - MATRIX_EVAL="CC=clang && CXX=clang++"
+
+before_install:
+  - eval "${MATRIX_EVAL}"
+  - ${CXX} --version
 
 install: true
 
