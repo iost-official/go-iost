@@ -7,7 +7,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 	"os"
 	"io/ioutil"
-	"github.com/bitly/go-simplejson"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 )
 
 var testDataPath = "./test_data/"
@@ -24,7 +24,9 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*VM, *host.H
 	}
 	ctx.GSet("gas_limit", gasLimit)
 	ctx.Set("contract_name", conName)
-	h := host.NewHost(ctx, vi, nil, nil)
+
+	pm := new_vm.NewMonitor()
+	h := host.NewHost(ctx, vi, pm, nil)
 
 	code := &contract.Contract{
 		ID:   conName,
@@ -51,13 +53,7 @@ func ReadFile(src string) ([]byte, error) {
 
 func TestEngine_SetCode(t *testing.T) {
 	e, host, code := MyInit(t, "setcode")
-	txInfo := simplejson.New()
-	txInfo.Set("hash", []byte("iamhash"))
-	b, err := txInfo.Encode()
-	if err != nil {
-		t.Fatalf("tx info encode error: %v\n", err)
-	}
-	host.Ctx.Set("tx_info", b)
+	host.Ctx.Set("tx_hash", []byte("iamhash"))
 
 	rawCode, err := ReadFile(testDataPath + "test.js")
 	if err != nil {
