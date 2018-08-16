@@ -110,6 +110,9 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	}
 
 	e.ho.Ctx = loadTxInfo(e.ho.Ctx, tx0)
+	defer func() {
+		e.ho.Ctx = e.ho.Ctx.Base()
+	}()
 
 	e.ho.Ctx.GSet("gas_limit", tx0.GasLimit)
 	e.ho.Ctx.GSet("receipts", make([]tx.Receipt, 0))
@@ -354,6 +357,7 @@ func loadTxInfo(ctx *host.Context, t *tx.Tx) *host.Context {
 	c.Set("time", t.Time)
 	c.Set("expiration", t.Expiration)
 	c.Set("gas_price", t.GasPrice)
+	c.Set("tx_hash", t.Hash())
 
 	authList := make(map[string]int)
 	for _, v := range t.Signers {

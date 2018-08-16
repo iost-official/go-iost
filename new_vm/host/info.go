@@ -35,6 +35,7 @@ func (h *Info) TxInfo() (info database.SerializedJSON, cost *contract.Cost) {
 
 	txInfo := make(map[string]interface{})
 	txInfo["time"] = h.ctx.Value("time")
+	txInfo["hash"] = h.ctx.Value("tx_hash")
 	txInfo["expiration"] = h.ctx.Value("expiration")
 	txInfo["gas_limit"] = h.ctx.GValue("gas_limit")
 	txInfo["gas_price"] = h.ctx.Value("gas_price")
