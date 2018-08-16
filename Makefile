@@ -6,7 +6,19 @@ PROJECT = github.com/iost-official/Go-IOS-Protocol
 DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
 TARGET_DIR = target
 
-.PHONY: all build iserver iwallet lint image devimage install clean
+ifeq ($(shell uname),Darwin)
+	export CGO_LDFLAGS=-L$(shell pwd)/new_vm/v8vm/v8/libv8/_darwin_amd64
+	export CGO_CFLAGS=-I$(shell pwd)/new_vm/v8vm/v8/include/_darwin_amd64
+	export DYLD_LIBRARY_PATH=$(shell pwd)/new_vm/v8vm/v8/libv8/_darwin_amd64
+endif
+
+ifeq ($(shell uname),Linux)
+	export CGO_LDFLAGS=-L$(shell pwd)/new_vm/v8vm/v8/libv8/_linux_amd64
+	export CGO_CFLAGS=-I$(shell pwd)/new_vm/v8vm/v8/include/_linux_amd64
+	export LD_LIBRARY_PATH=$(shell pwd)/new_vm/v8vm/v8/libv8/_linux_amd64
+endif
+
+.PHONY: all build iserver iwallet lint test image devimage install clean
 
 all: build
 
@@ -20,6 +32,9 @@ iwallet:
 
 lint:
 	@gometalinter --config=.gometalinter.json ./...
+
+test:
+	@go test $(shell go list ./... | grep -vE "/new_vm/v8vm|/core/new_blockcache")
 
 image: devimage
 	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iost-dev make

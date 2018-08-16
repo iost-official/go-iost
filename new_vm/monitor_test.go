@@ -199,9 +199,18 @@ func TestJSM(t *testing.T) {
 
 	c := contract.Contract{
 		ID: "contract",
-		Code: `module.exports = function hello() {
-	return "world";
-}`,
+		Code: `
+class Contract {
+ constructor() {
+  
+ }
+ show() {
+  return "show";
+ }
+}
+
+module.exports = Contract;
+`,
 		Info: &contract.Info{
 			Lang:        "javascript",
 			VersionCode: "1.0.0",

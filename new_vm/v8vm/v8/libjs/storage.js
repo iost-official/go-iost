@@ -23,6 +23,13 @@ var IOSTContractStorage = (function () {
         }
     };
 
+    var GlobalStorage = function (contract) {
+        this.contract = contract;
+        this.get = function (key) {
+            return storage.globalGet(contract, key);
+        }
+    };
+
     return {
         put: function (key, val) {
             let valType = typeof val;
@@ -47,7 +54,8 @@ var IOSTContractStorage = (function () {
             }
 
             return new MapStorage(key);
-        }
+        },
+        GlobalStorage: GlobalStorage
     }
 })();
 
