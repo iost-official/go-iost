@@ -244,168 +244,111 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 			So(txPool.testPendingTxsNum(), ShouldEqual, 10)
 		})
-		//
-		//Convey("concurrent", func() {
-		//	txCnt := 100
-		//	blockCnt := 1000
-		//	bl := genBlocks(BlockCache, accountList, witnessList, blockCnt, txCnt, true)
-		//	ch := make(chan int, 11)
-		//
-		//	go func() {
-		//		for _, blk := range bl {
-		//			txPool.addBlockTx(blk)
-		//		}
-		//		ch <- 1
-		//	}()
-		//
-		//	txx := genTx(accountList[0], 10000)
-		//	go func() {
-		//		for i := 0; i < 10000; i++ {
-		//			tx := genTx(accountList[0], 100000+i)
-		//			txPool.addListTx(&tx)
-		//		}
-		//		ch <- 2
-		//	}()
-		//
-		//	go func() {
-		//		for i := 0; i < 10000; i++ {
-		//			tx := genTx(accountList[0], 1000000+i)
-		//			broadTx := message.Message{
-		//				Body:    tx.Encode(),
-		//				ReqType: int32(network.ReqPublishTx),
-		//			}
-		//			txPool.AddTransaction(&broadTx)
-		//		}
-		//		ch <- 3
-		//	}()
-		//	////time.Sleep(5*time.Second)
-		//	runCnt := 100
-		//	go func() {
-		//		for i := 0; i < runCnt; i++ {
-		//			//time.Sleep(1*time.Millisecond)
-		//			txPool.BlockTxNum()
-		//		}
-		//		ch <- 4
-		//	}()
-		//	go func() {
-		//		for i := 0; i < runCnt; i++ {
-		//			//time.Sleep(1*time.Millisecond)
-		//			txPool.PendingTransactions(100000)
-		//		}
-		//		ch <- 5
-		//	}()
-		//	go func() {
-		//		for i := 0; i < runCnt; i++ {
-		//			//time.Sleep(1*time.Millisecond)
-		//			txPool.TransactionNum()
-		//		}
-		//		ch <- 6
-		//	}()
-		//	go func() {
-		//		for i := 0; i < runCnt; i++ {
-		//			//time.Sleep(1*time.Millisecond)
-		//			txPool.PendingTransactionNum()
-		//		}
-		//		ch <- 7
-		//	}()
-		//	go func() {
-		//		for i := 0; i < runCnt; i++ {
-		//			//time.Sleep(1*time.Millisecond)
-		//			txPool.Transaction(txx.TxID())
-		//
-		//		}
-		//		ch <- 8
-		//	}()
-		//	go func() {
-		//		for i := 0; i < runCnt; i++ {
-		//			//time.Sleep(1*time.Millisecond)
-		//			txPool.ExistTransaction(txx.TxID())
-		//		}
-		//		ch <- 9
-		//	}()
-		//	go func() {
-		//		for i := 0; i < runCnt; i++ {
-		//			//time.Sleep(1*time.Millisecond)
-		//			txPool.delTimeOutTx()
-		//		}
-		//		ch <- 10
-		//	}()
-		//	go func() {
-		//		for i := 0; i < runCnt; i++ {
-		//			//time.Sleep(1*time.Millisecond)
-		//			txPool.delTimeOutBlockTx()
-		//		}
-		//		ch <- 11
-		//	}()
-		//
-		//	for i := 0; i < 11; i++ {
-		//		<-ch
-		//	}
-		//
-		//})
-		//
-		//Convey("addBlockTx", func() {
-		//	txCnt := 20
-		//	bl := genBlocks(BlockCache, accountList, witnessList, 2, txCnt, true)
-		//	So(txPool.BlockTxNum(), ShouldEqual, 0)
-		//	txPool.addBlockTx(bl[0])
-		//	txPool.addBlockTx(bl[1])
-		//	txPool.addBlockTx(bl[0])
-		//	txPool.addBlockTx(bl[1])
-		//	So(txPool.BlockTxNum(), ShouldEqual, 2)
-		//	So(len(txPool.blockTx.blkTx[bl[0].HashID()].hashList), ShouldEqual, txCnt)
-		//	So(len(txPool.blockTx.blkTx[bl[1].HashID()].hashList), ShouldEqual, txCnt)
-		//
-		//	listTxCnt := 2
-		//	for i := 0; i < listTxCnt; i++ {
-		//		tx := genTx(accountList[0], 30+i)
-		//		txPool.addListTx(&tx)
-		//	}
-		//
-		//	txPool.updatePending(txCnt)
-		//
-		//	So(txPool.PendingTransactionNum(), ShouldEqual, listTxCnt)
-		//	for _, tx := range bl[0].Content {
-		//		//fmt.Println("add List tr hash:",tx.TxID(), " tr nonce:", tx.Nonce)
-		//		txPool.addListTx(&tx)
-		//	}
-		//
-		//	So(txPool.TransactionNum(), ShouldEqual, len(bl[0].Content)+listTxCnt)
-		//	txPool.checkIterateBlockHash.Add(bl[0].HashID())
-		//	txPool.updatePending(500)
-		//
-		//	So(txPool.PendingTransactionNum(), ShouldEqual, listTxCnt)
-		//
-		//})
+
+		Convey("concurrent", func() {
+			txCnt := 10
+			blockCnt := 100
+			bl := genNodes(accountList, witnessList, blockCnt, txCnt, true)
+			ch := make(chan int, 4)
+			//fmt.Println("genNodes impl")
+			go func() {
+				for _, bcn := range bl {
+					txPool.AddLinkedNode(bcn, bcn)
+				}
+				ch <- 1
+			}()
+
+			go func() {
+				for i := 0; i < 100; i++ {
+					tx := genTx(accountList[0], expiration)
+					txPool.AddTx(tx)
+				}
+				ch <- 2
+			}()
+
+			go func() {
+				for i := 0; i < 10000; i++ {
+					txPool.PendingTxs(10000000)
+				}
+				ch <- 3
+			}()
+			////time.Sleep(5*time.Second)
+
+			tx := genTx(accountList[0], expiration)
+			txPool.AddTx(tx)
+			go func() {
+				for i := 0; i < 10000; i++ {
+					txPool.ExistTxs(tx.Hash(), bl[blockCnt-10].Block)
+				}
+				ch <- 4
+			}()
+
+			for i := 0; i < 4; i++ {
+				<-ch
+				//fmt.Println("ch :", a)
+			}
+
+		})
 
 		stopTest()
 	})
 }
 
-//func BenchmarkUpdatePending(b *testing.B) {
-//	BlockCache, accountList, witnessList, txPool := envInit(b)
-//
-//	blockList := genBlocks(BlockCache, accountList, witnessList, 2, 500, true)
-//
-//	listTxCnt := 500
-//	for i := 0; i < listTxCnt; i++ {
-//		tx := genTx(accountList[0], 30+i)
-//		txPool.addListTx(&tx)
-//	}
-//
-//	txPool.addBlockTx(blockList[0])
-//	txPool.longestChainHash.Add(blockList[0].HashID())
-//	txPool.addBlockTx(blockList[1])
-//	txPool.longestChainHash.Add(blockList[1].HashID())
-//
-//	b.ResetTimer()
-//	for i := 0; i < b.N; i++ {
-//		txPool.updatePending(500)
-//	}
-//
-//}
+//result 55.3 ns/op
+func BenchmarkAddBlock(b *testing.B) {
+	_, accountList, witnessList, txPool := envInit(b)
+	listTxCnt := 500
+	blockList := genBlocks(accountList, witnessList, 1, listTxCnt, true)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		txPool.addBlock(blockList[0])
+	}
+
+}
+
+//result 472185 ns/op  tps:2147
+// no verify 17730 ns/op tps:58823
+func BenchmarkAddTx(b *testing.B) {
+	_, accountList, witnessList, txPool := envInit(b)
+	listTxCnt := 10
+	blockCnt := 100
+	blockList := genNodes(accountList, witnessList, blockCnt, listTxCnt, true)
+
+	for i := 0; i < blockCnt; i++ {
+		txPool.AddLinkedNode(blockList[i], blockList[i])
+	}
+	time.Sleep(200 * time.Millisecond)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		tx := genTx(accountList[0], expiration)
+		b.StartTimer()
+
+		txPool.addTx(tx)
+	}
+}
+
+//result 2444189 ns/op
+func BenchmarkPendingTxs(b *testing.B) {
+	_, accountList, _, txPool := envInit(b)
+
+	for i := 0; i < 10000; i++ {
+		tx := genTx(accountList[0], expiration)
+		txPool.addTx(tx)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+
+		txPool.PendingTxs(10000000)
+	}
+}
 
 func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl) {
+	//ctl := gomock.NewController(t)
+
 	var accountList []account.Account
 	var witnessList []string
 
@@ -440,13 +383,17 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 	conf := &common.Config{}
 
 	gl, err := global.New(conf)
-	So(err, ShouldBeNil)
+
+	blockList := genBlocks(accountList, witnessList, 1, 1, true)
+
+	gl.BlockChain().Push(blockList[0])
+	//base := core_mock.NewMockChain(ctl)
+	//base.EXPECT().Top().AnyTimes().Return(blockList[0], nil)
+	//base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
 
 	BlockCache, err := blockcache.NewBlockCache(gl)
-	So(err, ShouldBeNil)
 
 	txPool, err := NewTxPoolImpl(gl, BlockCache, node)
-	So(err, ShouldBeNil)
 
 	txPool.Start()
 
@@ -543,6 +490,21 @@ func genBlocks(accountList []account.Account, witnessList []string, blockCnt int
 	}
 
 	return
+}
+
+func genNodes(accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) []*blockcache.BlockCacheNode {
+
+	var bcnList []*blockcache.BlockCacheNode
+
+	blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, continuity)
+
+	for i := 0; i < blockCnt; i++ {
+		bcn := blockcache.NewBCN(nil, blockList[i])
+
+		bcnList = append(bcnList, bcn)
+	}
+
+	return bcnList
 }
 
 func genSingleBlock(accountList []account.Account, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
