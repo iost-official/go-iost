@@ -24,9 +24,10 @@ import (
 	"fmt"
 	"unsafe"
 
+	"strings"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"strings"
 )
 
 // A Sandbox is an execution environment that allows separate, unrelated, JavaScript
@@ -91,7 +92,7 @@ func (sbx *Sandbox) SetGasLimit(limit uint64) {
 
 func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
-	sbx.SetGasLimit(host.GasLimit())
+	sbx.SetGasLimit(uint64(host.GasLimit()))
 }
 
 func (sbx *Sandbox) SetModule(name, code string) {

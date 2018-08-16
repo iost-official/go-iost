@@ -41,8 +41,11 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
+
+	bi, _ := e.(*EngineImpl).ho.BlockInfo()
+
+	blkInfo := string(bi)
+	if blkInfo != `{"number":10,"parent_hash":"YWJj","time":123456,"witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
 
@@ -124,15 +127,6 @@ func TestLogger(t *testing.T) { // test of normal engine work
 	e.SetUp("js_path", jsPath)
 	e.SetUp("log_level", "debug")
 	e.SetUp("log_enable", "")
-	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
-		t.Fatal(blkInfo)
-	}
-
-	//ac, err := account.NewAccount(nil)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
 
 	mtx := tx.Tx{
 		Time:       time.Now().UnixNano(),
@@ -179,9 +173,9 @@ func TestLogger(t *testing.T) { // test of normal engine work
 	vm.EXPECT().LoadAndCall(gomock.Any(), gomock.Any(), "abi", `datas`).DoAndReturn(
 		func(host *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			l := host.Logger()
-			l.E("test of error")
-			l.D("test of debug")
-			l.I("test of info")
+			l.Error("test of error")
+			l.Debug("test of debug")
+			l.Info("test of info")
 			return nil, contract.Cost0(), nil
 		},
 	)
@@ -209,11 +203,6 @@ func TestCost(t *testing.T) { // tests of context transport
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-
-	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
-		t.Fatal(blkInfo)
-	}
 
 	mtx := tx.Tx{
 		Time:       time.Now().UnixNano(),
@@ -335,12 +324,6 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-
-	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
-		t.Fatal(blkInfo)
-	}
-
 	mtx := tx.Tx{
 		Time:       time.Now().UnixNano(),
 		Expiration: 10000,
@@ -442,15 +425,11 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 	}
 
 }
+
 func TestNative_TopUp(t *testing.T) { // tests of native vm works
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-
-	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
-		t.Fatal(blkInfo)
-	}
 
 	mtx := tx.Tx{
 		Time:       time.Now().UnixNano(),
@@ -558,11 +537,6 @@ func TestJS(t *testing.T) {
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-
-	blkInfo := string(e.(*EngineImpl).ho.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
-		t.Fatal(blkInfo)
-	}
 
 	mtx := tx.Tx{
 		Time:       time.Now().UnixNano(),

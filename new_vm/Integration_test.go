@@ -5,6 +5,8 @@ import (
 
 	"fmt"
 
+	"os"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
@@ -46,5 +48,7 @@ func TestIntergration_Transfer(t *testing.T) {
 	trx := tx.NewTx([]tx.Action{ac}, nil, int64(10000), int64(1), int64(10000000))
 
 	t.Log(trx)
+
+	os.RemoveAll("mvcc")
 
 }

@@ -3,8 +3,6 @@ package new_vm
 import (
 	"testing"
 
-	"fmt"
-
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
@@ -28,7 +26,7 @@ func TestMonitor_Call(t *testing.T) {
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", uint64(1))
 
-	h := host.NewHost(ctx, vi, monitor)
+	h := host.NewHost(ctx, vi, monitor, nil)
 
 	flag := false
 
@@ -71,7 +69,7 @@ func TestMonitor_Context(t *testing.T) {
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", uint64(1))
 
-	h := host.NewHost(ctx, vi, monitor)
+	h := host.NewHost(ctx, vi, monitor, nil)
 
 	outerFlag := false
 	innerFlag := false
@@ -133,7 +131,7 @@ func TestMonitor_HostCall(t *testing.T) {
 	ctx.Set("stack_height", 1)
 	ctx.Set("stack0", "test")
 
-	h := host.NewHost(ctx, vi, monitor)
+	h := host.NewHost(ctx, vi, monitor, nil)
 	outerFlag := false
 	innerFlag := false
 
@@ -192,10 +190,10 @@ func TestJSM(t *testing.T) {
 	monitor, _, db, vi := Init(t)
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", uint64(1))
-	ctx.GSet("gas_limit", uint64(1000))
+	ctx.Set("gas_price", int64(1))
+	ctx.GSet("gas_limit", int64(1000))
 
-	h := host.NewHost(ctx, vi, monitor)
+	h := host.NewHost(ctx, vi, monitor, nil)
 
 	c := contract.Contract{
 		ID: "contract",
@@ -204,8 +202,8 @@ class Contract {
  constructor() {
   
  }
- show() {
-  return "show";
+ hello() {
+  return "world";
  }
 }
 
@@ -232,7 +230,7 @@ module.exports = Contract;
 
 	rs, co, e := monitor.Call(h, "contract", "hello")
 	if rs[0] != "world" {
-		fmt.Println(rs, co, e)
+		t.Fatal(rs, co, e)
 	}
 
 }

@@ -295,8 +295,8 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 func (e *EngineImpl) setLogger(level, path string, start bool) {
 
-	if path == "" {
-
+	if path == "" && !start {
+		ilog.Debug("console log accepted")
 		if e.consoleWriter == nil {
 			e.consoleWriter = ilog.NewConsoleWriter()
 		}
@@ -317,7 +317,7 @@ func (e *EngineImpl) setLogger(level, path string, start bool) {
 		return
 	}
 
-	if level == "" {
+	if level == "" && !start {
 		e.fileWriter = ilog.NewFileWriter(path)
 	}
 
@@ -333,6 +333,8 @@ func (e *EngineImpl) setLogger(level, path string, start bool) {
 		}
 
 		if ok {
+
+			e.logger.SetCallDepth(0)
 			e.logger.Start()
 		}
 	}
