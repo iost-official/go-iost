@@ -5,11 +5,11 @@ package block
 
 type Chain interface {
 	Push(block *Block) error
-	Length() uint64
+	Length() int64
 	CheckLength() error
 	Top() (*Block, error) // 语法糖
-	GetHashByNumber(number uint64) ([]byte, error)
-	GetBlockByNumber(number uint64) (*Block, error)
+	GetHashByNumber(number int64) ([]byte, error)
+	GetBlockByNumber(number int64) (*Block, error)
 	GetBlockByHash(blockHash []byte) (*Block, error)
 	GetBlockByteByHash(blockHash []byte) ([]byte, error)
 }

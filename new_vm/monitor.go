@@ -145,7 +145,7 @@ func VMFactory(lang string) VM {
 	case "native":
 		return &native_vm.VM{}
 	case "javascript":
-		vm := v8.NewVM()
+		vm := v8.NewVMPool(12312)
 		vm.SetJSPath("./v8vm/v8/libjs/")
 		return vm
 	}
