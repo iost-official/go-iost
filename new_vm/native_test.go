@@ -8,6 +8,7 @@ import (
 	"os"
 	"io/ioutil"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 var testDataPath = "./test_data/"
@@ -76,7 +77,7 @@ func TestEngine_SetCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall setcode error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "Contract2qYMbQdP6sJc3PXL8" {
-		t.Errorf("LoadAndCall except Contract2qYMbQdP6sJc3PXL8, got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != "Contract" + common.Base58Encode([]byte("iamhash")) {
+		t.Errorf("LoadAndCall except Contract" + common.Base58Encode([]byte("iamhash")) + ", got %s\n", rs[0])
 	}
 }

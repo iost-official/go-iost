@@ -5,7 +5,6 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/bitly/go-simplejson"
 )
 
@@ -56,21 +55,17 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		}
 
 		info, cost1 := host.TxInfo()
-		println(string(info))
 		cost.AddAssign(cost1)
 		json, err := simplejson.NewJson(info)
 		if err != nil {
 			return nil, cost, err
 		}
 
-		id, err := json.Get("hash").Bytes()
+		id, err := json.Get("hash").String()
 		if err != nil {
 			return nil, cost, err
 		}
-		println(string(id))
-
-		actId := "Contract" + common.Base58Encode(id)
-		println(actId)
+		actId := "Contract" + id
 		con.ID = actId
 
 		cost2, err := host.SetCode(con)
