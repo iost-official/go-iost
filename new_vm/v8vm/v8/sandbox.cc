@@ -79,6 +79,7 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
 
     InitRequire(isolate, global);
     InitStorage(isolate, global);
+    InitBlockchain(isolate, global);
     InitInstruction(isolate, global);
 
     global->Set(
