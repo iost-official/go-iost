@@ -22,10 +22,10 @@ var (
 
 type Synchronizer interface {
 	Start() error
-	Stop() error
-	NeedSync(maxHeight uint64) (bool, uint64, uint64)
-	SyncBlocks(startNumber uint64, endNumber uint64) error
-	OnBlockConfirmed(hash, peerID p2p.PeerID) error
+	Stop()
+	NeedSync(maxHeight int64) (bool, int64, int64)
+	SyncBlocks(startNumber int64, endNumber int64) error
+	OnBlockConfirmed(hash string, peerID p2p.PeerID) error
 }
 
 type SyncImpl struct {
@@ -98,13 +98,12 @@ func (sy *SyncImpl) Start() error {
 	return nil
 }
 
-func (sy *SyncImpl) Stop() error {
+func (sy *SyncImpl) Stop() {
 	sy.dc.Stop()
 	close(sy.exitSignal)
-	return nil
 }
 
-func (sy *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
+func (sy *SyncImpl) NeedSync(netHeight int64) (bool, int64, int64) {
 	//TODO：height，block confirmed Length
 	/*
 		if netHeight > height+uint64(SyncNumber) {

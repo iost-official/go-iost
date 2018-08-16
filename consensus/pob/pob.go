@@ -7,7 +7,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -60,7 +60,7 @@ type PoB struct {
 	blockCache   blockcache.BlockCache
 	txPool       txpool.TxPool
 	p2pService   p2p.Service
-	synchronizer consensus_common.Synchronizer
+	synchronizer synchronizer.Synchronizer
 	verifyDB     db.MVCCDB
 	produceDB    db.MVCCDB
 
@@ -69,7 +69,7 @@ type PoB struct {
 	chGenBlock  chan *block.Block
 }
 
-func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer consensus_common.Synchronizer, witnessList []string) (*PoB, error) {
+func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) (*PoB, error) {
 	//TODO: change initialization based on new interfaces
 	p := PoB{
 		account:      account,

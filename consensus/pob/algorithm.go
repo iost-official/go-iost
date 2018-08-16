@@ -10,20 +10,20 @@ import (
 	"fmt"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 )
 
 var (
 	ErrWitness     = errors.New("wrong witness")
 	ErrPubkey      = errors.New("wrong pubkey")
 	ErrSignature   = errors.New("wrong signature")
-	ErrSlot		   = errors.New("witness slot duplicate")
+	ErrSlot        = errors.New("witness slot duplicate")
 	ErrTxTooOld    = errors.New("tx too old")
 	ErrTxDup       = errors.New("duplicate tx")
 	ErrTxSignature = errors.New("tx wrong signature")
@@ -138,7 +138,7 @@ func updateNodeInfo(node *blockcache.BlockCacheNode) {
 	}
 }
 
-func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) {
+func updatePendingWitness(node *blockcache.BlockCacheNode, db db.MVCCDB) {
 	// TODO how to decode witness list from db?
 	//newList, err := db.Get("state", "witnessList"), "id1"
 	var err error
