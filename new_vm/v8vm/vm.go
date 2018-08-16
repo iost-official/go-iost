@@ -32,7 +32,7 @@ func NewVM() *VM {
 	return e
 }
 
-func (e *VM) Init() error {
+func (e *VM) init() error {
 	return nil
 }
 
@@ -51,35 +51,31 @@ func (e *VM) Run(code, api string, args ...interface{}) (string, error) {
 	return rs, err
 }
 
-func (e *VM) Compile(contract *contract.Contract) (string, error) {
+func (e *VM) compile(contract *contract.Contract) (string, error) {
 	return "", nil
 }
 
-// LoadAndCall load contract code with provide contract, and call api with args
-func (e *VM) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
-	//defer func() {
-	//	if err := recover(); err != nil {
-	//		fmt.Println("LoadAndCall recover:", err)
-	//	}
-	//}()
-
+func (e *VM) setHost(host *host.Host) {
 	e.sandbox.SetHost(host)
-	preparedCode, err := e.sandbox.Prepare(contract, api, args)
-	if err != nil {
+}
 
-	}
+func (e *VM) setContract(contract *contract.Contract, api string, args ...interface{}) (string, error) {
+	return e.sandbox.Prepare(contract, api, args)
+}
 
-	rs, err := e.sandbox.Execute(preparedCode)
-
+func (e *VM) execute(code string) (rtn []interface{}, cost *contract.Cost, err error) {
+	rs, err := e.sandbox.Execute(code)
 	return []interface{}{rs}, nil, err
 }
 
-func (e *VM) SetJSPath(path string) {
+
+
+func (e *VM) setJSPath(path string) {
 	e.sandbox.SetJSPath(path)
 }
 
 // Release release all engine associate resource
-func (e *VM) Release() {
+func (e *VM) release() {
 	// first release sandbox
 	if e.sandbox != nil {
 		e.sandbox.Release()

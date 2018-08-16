@@ -16,6 +16,7 @@ func (m *VM) Init() error {
 	return nil
 }
 func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+	// todo cost add base cost
 	switch api {
 	case "RequireAuth":
 		b, cost := host.RequireAuth(args[0].(string))

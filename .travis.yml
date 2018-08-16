@@ -6,5 +6,5 @@ install:
   - echo "Skip install"
 
 script:
-  - make
-  - go test $(go list ./... | grep -vE "/new_vm|/consensus/common|/core/new_blockcache")
+  - make build
+  - make test

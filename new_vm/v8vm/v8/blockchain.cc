@@ -23,31 +23,31 @@ void InitGoBlockchain(transferFunc transfer, withdrawFunc withdraw,
     CCall = call;
 }
 
-int IOSTBlockchain::Transfer(char *from, char *to, char *amount) {
+int IOSTBlockchain::Transfer(const char *from, const char *to, const char *amount) {
     size_t gasUsed = 0;
     int ret = CTransfer(sbx, from, to, amount, &gasUsed);
     return ret;
 }
 
-int IOSTBlockchain::Withdraw(char *to, char *amount) {
+int IOSTBlockchain::Withdraw(const char *to, const char *amount) {
     size_t gasUsed = 0;
     int ret = CWithdraw(sbx, to, amount, &gasUsed);
     return ret;
 }
 
-int IOSTBlockchain::Deposit(char *from, char *amount) {
+int IOSTBlockchain::Deposit(const char *from, const char *amount) {
     size_t gasUsed = 0;
     int ret = CDeposit(sbx, from, amount, &gasUsed);
     return ret;
 }
 
-int IOSTBlockchain::TopUp(char *contract, char *from, char *amount) {
+int IOSTBlockchain::TopUp(const char *contract, const char *from, const char *amount) {
     size_t gasUsed = 0;
     int ret = CTopUp(sbx, contract, from, amount, &gasUsed);
     return ret;
 }
 
-int IOSTBlockchain::Countermand(char *contract, char *to, char *amount) {
+int IOSTBlockchain::Countermand(const char *contract, const char *to, const char *amount) {
     size_t gasUsed = 0;
     int ret = CCountermand(sbx, contract, to, amount, &gasUsed);
     return ret;
@@ -65,7 +65,7 @@ char *IOSTBlockchain::TxInfo() {
     return txInfo;
 }
 
-char *IOSTBlockchain::Call(char *contract, char *api, char *args) {
+char *IOSTBlockchain::Call(const char *contract, const char *api, const char *args) {
     size_t gasUsed = 0;
     char *result = CCall(sbx, contract, api, args, &gasUsed);
     return result;
