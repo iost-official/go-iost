@@ -16,17 +16,13 @@ matrix:
           packages:
             - g++-5
       env:
-         - CC=gcc-5
-         - CXX=g++-5
+         - CC=gcc
+         - CXX=g++
     - os: osx
       go: 1.10
       env:
          - CC=clang
          - CXX=clang++
-
-before_install:
-  - ${CC} --version
-  - ${CXX} --version
 
 install: true
 
