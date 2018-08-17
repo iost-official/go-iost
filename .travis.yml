@@ -8,7 +8,7 @@ branches:
 matrix:
   include:
     - os: linux
-      go: 1.10
+      go: "1.10"
       addons:
         apt:
           sources:
@@ -16,10 +16,10 @@ matrix:
           packages:
             - g++-5
       env:
-         - CC=gcc
-         - CXX=g++
+         - CC=gcc-5
+         - CXX=g++-5
     - os: osx
-      go: 1.10
+      go: "1.10"
       env:
          - CC=clang
          - CXX=clang++
