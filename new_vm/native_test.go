@@ -8,7 +8,6 @@ import (
 	"os"
 	"io/ioutil"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 var testDataPath = "./test_data/"
@@ -55,7 +54,7 @@ func ReadFile(src string) ([]byte, error) {
 
 func TestEngine_SetCode(t *testing.T) {
 	e, host, code := MyInit(t, "setcode")
-	host.Ctx.Set("tx_hash", []byte("iamhash"))
+	host.Ctx.Set("tx_hash", "iamhash")
 
 	rawCode, err := ReadFile(testDataPath + "test.js")
 	if err != nil {
@@ -77,7 +76,7 @@ func TestEngine_SetCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall setcode error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "Contract" + common.Base58Encode([]byte("iamhash")) {
-		t.Errorf("LoadAndCall except Contract" + common.Base58Encode([]byte("iamhash")) + ", got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != "Contractiamhash" {
+		t.Errorf("LoadAndCall except Contract" + "iamhash" + ", got %s\n", rs[0])
 	}
 }

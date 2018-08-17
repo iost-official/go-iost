@@ -29,7 +29,7 @@ func (vmp *VMPool) SetJSPath(path string) {
 }
 
 func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
-	return "", nil
+	return contract.Code, nil
 }
 
 func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
