@@ -119,14 +119,23 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 }
 
 func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*contract.Cost, error) {
+	oc := h.DB.Contract(c.ID)
+	if oc == nil {
+		return contract.NewCost(0, 0, 100), errors.New("contract not exists")
+	}
+	abi := oc.ABI("can_update")
+	if abi == nil {
+		return contract.NewCost(0, 0, 100), errors.New("update refused")
+	}
 
-	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update")
+	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update", []byte(id))
 
 	if err != nil {
 		return contract.NewCost(0, 0, 100), err
 	}
 
-	if t, ok := rtn[0].(bool); !ok || !t {
+	// todo return 返回类型应该是 bool
+	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, errors.New("update refused")
 	}
 
@@ -144,13 +153,23 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 	// todo 释放kv
 
+	oc := h.DB.Contract(contractName)
+	if oc == nil {
+		return contract.NewCost(0, 0, 100), errors.New("contract not exists")
+	}
+	abi := oc.ABI("can_destroy")
+	if abi == nil {
+		return contract.NewCost(0, 0, 100), errors.New("destroy refused")
+	}
+
 	rtn, cost, err := h.monitor.Call(h, contractName, "can_destroy")
 
 	if err != nil {
 		return contract.NewCost(0, 0, 100), err
 	}
 
-	if t, ok := rtn[0].(bool); !ok || !t {
+	// todo return 返回类型应该是 bool
+	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, errors.New("destroy refused")
 	}
 

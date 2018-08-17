@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"errors"
 )
 
 type database struct {
@@ -61,6 +62,9 @@ func (d *database) Get(table string, key string) (string, error) {
 	}
 
 	if strings.HasPrefix(key, "c-") {
+		if out == nil {
+			return "", errors.New("key not exists")
+		}
 		return out.(string), nil
 	}
 

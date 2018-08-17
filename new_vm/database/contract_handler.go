@@ -21,7 +21,10 @@ func (m *ContractHandler) SetContract(contract *contract.Contract) {
 func (m *ContractHandler) Contract(key string) (c *contract.Contract) {
 	str := m.db.Get(ContractPrefix + key)
 	c = &contract.Contract{}
-	c.Decode(str)
+	err := c.Decode(str)
+	if err != nil {
+		return nil
+	}
 	return
 }
 

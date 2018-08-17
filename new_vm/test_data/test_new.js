@@ -14,5 +14,9 @@ class Test {
     can_update(d) {
         return true
     }
+
+    can_destroy() {
+        return true
+    }
 };
 module.exports = Test;
