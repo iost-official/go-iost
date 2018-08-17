@@ -2,7 +2,7 @@ package blockcache
 
 import (
 	"testing"
-//	"fmt"
+	//	"fmt"
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
@@ -50,19 +50,22 @@ func TestBlockCache(t *testing.T) {
 	s2a := genBlock(s1, "w3", 3)
 	s3 := genBlock(s2, "w4", 4)
 
+	txdb:= core_mock.NewMockTxDB(ctl)
+	txdb.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
 	base := core_mock.NewMockChain(ctl)
-	base.EXPECT().Top().AnyTimes().Return(b0,nil)
+	base.EXPECT().Top().AnyTimes().Return(b0, nil)
 	base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
-	global:=core_mock.NewMockBaseVariable(ctl)
+	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
+	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
 			bc, _ := NewBlockCache(global)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			_, err := bc.Add(b1)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
-			So(err, ShouldEqual,nil)
-			bc.Draw()
+			So(err, ShouldEqual, nil)
+			//bc.Draw()
 			bc.Add(b2)
 			_, err = bc.Add(b2)
 
@@ -70,7 +73,7 @@ func TestBlockCache(t *testing.T) {
 			_, err = bc.Add(b4)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 
-			bc.Draw()
+			//bc.Draw()
 			So(err, ShouldEqual, ErrNotFound)
 			_, err = bc.Add(b4)
 			So(err, ShouldEqual, ErrDup)
@@ -86,7 +89,7 @@ func TestBlockCache(t *testing.T) {
 			//bc.Draw()
 			bc.Add(b3)
 			//bc.Draw()
-			b4node, _ := bc.Add(b4)
+			//b4node, _ := bc.Add(b4)
 			//bc.Draw()
 			bc.Add(b3a)
 			//bc.Draw()
@@ -98,7 +101,7 @@ func TestBlockCache(t *testing.T) {
 			bc.Add(s2a)
 			bc.Add(s3)
 			//bc.Draw()
-			bc.Flush(b4node)
+			//bc.Flush(b4node)
 			//bc.Draw()
 
 		})
@@ -112,7 +115,7 @@ func TestBlockCache(t *testing.T) {
 			bc.Add(b2a)
 			//bc.Draw()
 			bc.Add(b3)
-			//bc.Draw()
+			 //bc.Draw()
 			b4node, _ := bc.Add(b4)
 			//bc.Draw()
 			b3anode, _ := bc.Add(b3a)
@@ -120,19 +123,19 @@ func TestBlockCache(t *testing.T) {
 			b5node, _ := bc.Add(b5)
 			//bc.Draw()
 			So(bc.head, ShouldEqual, b5node)
-			blk, _ := bc.GetBlockByNumber(uint64(7))
+			blk, _ := bc.GetBlockByNumber(7)
 			So(blk, ShouldEqual, b5node.Block)
-			blk, _ = bc.GetBlockByNumber(uint64(6))
+			blk, _ = bc.GetBlockByNumber(6)
 			So(blk, ShouldEqual, b3anode.Block)
-			blk, _ = bc.GetBlockByNumber(uint64(2))
+			blk, _ = bc.GetBlockByNumber(2)
 			So(blk, ShouldEqual, b2node.Block)
-			blk, _ = bc.GetBlockByNumber(uint64(1))
+			blk, _ = bc.GetBlockByNumber(1)
 			So(blk, ShouldEqual, b1node.Block)
-			blk, _ = bc.GetBlockByNumber(uint64(4))
+			blk, _ = bc.GetBlockByNumber(4)
 			So(blk, ShouldEqual, nil)
 
 			bc.Flush(b4node)
-			//bc.Draw() 
+			//bc.Draw()
 
 		})
 

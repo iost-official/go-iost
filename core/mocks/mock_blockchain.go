@@ -59,7 +59,7 @@ func (mr *MockChainMockRecorder) GetBlockByHash(arg0 interface{}) *gomock.Call {
 }
 
 // GetBlockByNumber mocks base method
-func (m *MockChain) GetBlockByNumber(arg0 uint64) (*new_block.Block, error) {
+func (m *MockChain) GetBlockByNumber(arg0 int64) (*new_block.Block, error) {
 	ret := m.ctrl.Call(m, "GetBlockByNumber", arg0)
 	ret0, _ := ret[0].(*new_block.Block)
 	ret1, _ := ret[1].(error)
@@ -85,7 +85,7 @@ func (mr *MockChainMockRecorder) GetBlockByteByHash(arg0 interface{}) *gomock.Ca
 }
 
 // GetHashByNumber mocks base method
-func (m *MockChain) GetHashByNumber(arg0 uint64) ([]byte, error) {
+func (m *MockChain) GetHashByNumber(arg0 int64) ([]byte, error) {
 	ret := m.ctrl.Call(m, "GetHashByNumber", arg0)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
@@ -98,9 +98,9 @@ func (mr *MockChainMockRecorder) GetHashByNumber(arg0 interface{}) *gomock.Call 
 }
 
 // Length mocks base method
-func (m *MockChain) Length() uint64 {
+func (m *MockChain) Length() int64 {
 	ret := m.ctrl.Call(m, "Length")
-	ret0, _ := ret[0].(uint64)
+	ret0, _ := ret[0].(int64)
 	return ret0
 }
 

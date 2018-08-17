@@ -5,11 +5,24 @@ branches:
     - master
     - develop
 
-go:
-  - "1.10"
-os:
-  - linux
-  - osx
+matrix:
+  include:
+    - os: linux
+      go: "1.10"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env:
+         - CC=gcc-5
+         - CXX=g++-5
+    - os: osx
+      go: "1.10"
+      env:
+         - CC=clang
+         - CXX=clang++
 
 install: true
 

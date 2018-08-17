@@ -1,6 +1,7 @@
 package consensus_common
 
 import (
+	"github.com/smartystreets/goconvey/convey"
 	"testing"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -10,7 +11,6 @@ import (
 )
 
 func TestVerifyBlockHead(t *testing.T) {
-	t.SkipNow()
 	Convey("Test of verify block head", t, func() {
 		parentBlk := &block.Block{
 			Head: block.BlockHead{
@@ -30,45 +30,45 @@ func TestVerifyBlockHead(t *testing.T) {
 				ParentHash: hash,
 				Number:     4,
 				Time:       common.GetCurrentTimestamp().Slot,
-				TxsHash:    common.Sha256([]byte{}),
+				TxsHash:    common.Sha3([]byte{}),
 				MerkleHash: []byte{},
 			},
 		}
-		Convey("Pass", func() {
+		convey.Convey("Pass", func() {
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
-			So(err, ShouldBeNil)
+			convey.So(err, convey.ShouldBeNil)
 		})
 
-		Convey("Wrong time", func() {
+		convey.Convey("Wrong time", func() {
 			blk.Head.Time = common.GetCurrentTimestamp().Slot - 5
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
-			So(err, ShouldEqual, ErrOldBlk)
+			convey.So(err, convey.ShouldEqual, ErrOldBlk)
 			blk.Head.Time = common.GetCurrentTimestamp().Slot + 2
 			err = VerifyBlockHead(blk, parentBlk, chainTop)
-			So(err, ShouldEqual, ErrFutureBlk)
+			convey.So(err, convey.ShouldEqual, ErrFutureBlk)
 		})
 
-		Convey("Wrong parent", func() {
+		convey.Convey("Wrong parent", func() {
 			blk.Head.ParentHash = []byte("fake hash")
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
-			So(err, ShouldEqual, ErrParentHash)
+			convey.So(err, convey.ShouldEqual, ErrParentHash)
 		})
 
-		Convey("Wrong number", func() {
+		convey.Convey("Wrong number", func() {
 			blk.Head.Number = 5
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
-			So(err, ShouldEqual, ErrNumber)
+			convey.So(err, convey.ShouldEqual, ErrNumber)
 		})
 
-		Convey("Wrong tx hash", func() {
+		convey.Convey("Wrong tx hash", func() {
 			tx0 := tx.NewTx(nil, nil, 1000, 1, 300)
 			blk.Txs = append(blk.Txs, &tx0)
 			blk.Head.TxsHash = blk.CalculateTxsHash()
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
-			So(err, ShouldBeNil)
+			convey.So(err, convey.ShouldBeNil)
 			blk.Head.TxsHash = []byte("fake hash")
 			err = VerifyBlockHead(blk, parentBlk, chainTop)
-			So(err, ShouldEqual, ErrTxHash)
+			convey.So(err, convey.ShouldEqual, ErrTxHash)
 		})
 	})
 }
