@@ -6,14 +6,12 @@ import (
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -68,30 +66,23 @@ type PoB struct {
 	chGenBlock  chan *block.Block
 }
 
-func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) (*PoB, error) {
-	//TODO: change initialization based on new interfaces
+func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) *PoB {
 	p := PoB{
 		account:      account,
 		baseVariable: baseVariable,
-		blockCache:   blockCache,
 		blockChain:   baseVariable.BlockChain(),
-		verifyDB:     baseVariable.StateDB(),
+		blockCache:   blockCache,
 		txPool:       txPool,
 		p2pService:   p2pService,
 		synchronizer: synchronizer,
+		verifyDB:     baseVariable.StateDB(),
+		produceDB:    baseVariable.StateDB().Fork(),
+		exitSignal:   make(chan struct{}),
+		chRecvBlock:  p2pService.Register("consensus channel", p2p.NewBlockResponse, p2p.SyncBlockResponse),
 		chGenBlock:   make(chan *block.Block, 10),
 	}
-
-	p.produceDB = p.verifyDB.Fork()
-
-	p.chRecvBlock = p.p2pService.Register("consensus chan", p2p.NewBlockResponse, p2p.SyncBlockResponse)
-	p.exitSignal = make(chan struct{})
-	p.initGlobalProperty(p.account, witnessList)
-	return &p, nil
-}
-
-func (p *PoB) initGlobalProperty(acc account.Account, witnessList []string) {
-	staticProperty = newStaticProperty(acc, witnessList)
+	staticProperty = newStaticProperty(p.account, witnessList)
+	return &p
 }
 
 func (p *PoB) Run() {
@@ -102,46 +93,21 @@ func (p *PoB) Run() {
 
 func (p *PoB) Stop() {
 	p.synchronizer.Stop()
+	close(p.exitSignal)
 	close(p.chRecvBlock)
 	close(p.chGenBlock)
-	close(p.exitSignal)
-}
-
-func (p *PoB) handleRecvBlock(blk *block.Block) error {
-	hash := blk.HeadHash()
-	_, err := p.blockCache.Find(hash)
-	if err == nil {
-		return errors.New("duplicate block")
-	}
-	err = verifyBasics(blk)
-	if err != nil {
-		return errors.New("fail to verifyBasics")
-	}
-	parent, err := p.blockCache.Find(blk.Head.ParentHash)
-	if err == nil && parent.Type == blockcache.Linked {
-		var node *blockcache.BlockCacheNode
-		node, err = p.addBlock(blk, node, parent, true)
-		if err != nil {
-			// dishonest?
-			return errors.New("fail to addBlock")
-		}
-		p.addSingles(node)
-	} else {
-		p.blockCache.Add(blk)
-	}
-	return nil
 }
 
 func (p *PoB) blockLoop() {
 	for {
 		select {
-		case req, ok := <-p.chRecvBlock:
+		case incomingMessage, ok := <-p.chRecvBlock:
 			if !ok {
 				fmt.Println("chRecvBlock has closed")
 				return
 			}
 			var blk block.Block
-			err := blk.Decode(req.Data())
+			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -152,7 +118,7 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			go p.p2pService.Broadcast(req.Data(), req.Type(), p2p.UrgentMessage)
-			if req.Type() == p2p.SyncBlockResponse {
+			if incomingMessage.Type() == p2p.SyncBlockResponse {
 				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), req.From())
 			}
 		case blk, ok := <-p.chGenBlock:
@@ -173,20 +139,19 @@ func (p *PoB) scheduleLoop() {
 	for {
 		select {
 		case <-time.After(time.Second * time.Duration(nextSchedule)):
-			currentTimestamp := common.GetCurrentTimestamp()
-			wid := witnessOfSlot(currentTimestamp.Slot)
-			if wid == p.account.ID && p.baseVariable.Mode().Mode() == global.ModeNormal {
-				chainHead := p.blockCache.Head()
-				hash := chainHead.Block.HeadHash()
-				p.produceDB.Checkout(string(hash))
-				blk := genBlock(p.account, chainHead, p.txPool, p.produceDB)
+			if witnessOfSec(time.Now().Unix()) == p.account.ID && p.baseVariable.Mode().Mode() == global.ModeNormal {
+				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
+				if err != nil {
+					fmt.Println(err)
+					fmt.Println("fail to generateBlock")
+					continue
+				}
 				blkByte, err := blk.Encode()
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
 				p.chGenBlock <- blk
-				log.Log.I("Block size: %v, TrNum: %v", len(blkByte), len(blk.Txs))
 				go p.p2pService.Broadcast(blkByte, p2p.NewBlockResponse, p2p.UrgentMessage)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().Unix())
@@ -196,62 +161,68 @@ func (p *PoB) scheduleLoop() {
 	}
 }
 
-func (p *PoB) addBlock(blk *block.Block, node *blockcache.BlockCacheNode, parent *blockcache.BlockCacheNode, newBlock bool) (*blockcache.BlockCacheNode, error) {
-	if blk.Head.Witness != p.account.ID {
-		hash := parent.Block.HeadHash()
-		p.verifyDB.Checkout(string(hash))
-		var verifyErr error
-		verifyErr = verifyBlock(blk, parent.Block, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
-		if newBlock {
-			if verifyErr == nil {
-				var err error
-				node, err = p.blockCache.Add(blk)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				return nil, verifyErr
-			}
-		} else {
-			if verifyErr == nil {
-				p.blockCache.Link(node)
-			} else {
-				p.blockCache.Del(node)
-				return nil, verifyErr
-			}
-		}
-		// tag in state
-		hash = blk.HeadHash()
-		p.verifyDB.Tag(string(hash))
+func (p *PoB) handleRecvBlock(blk *block.Block) error {
+	_, err := p.blockCache.Find(blk.HeadHash())
+	if err == nil {
+		return errors.New("duplicate block")
+	}
+	err = verifyBasics(blk)
+	if err != nil {
+		return errors.New("fail to verifyBasics")
+	}
+	parent, err := p.blockCache.Find(blk.Head.ParentHash)
+	if err == nil && parent.Type == blockcache.Linked {
+		return p.addNewBlock(blk, parent.Block) // only need to consider error from addNewBlock, not from addExistingblock
 	} else {
-		hash := blk.HeadHash()
-		p.verifyDB.Checkout(string(hash))
+		p.blockCache.Add(blk)
 	}
-
-	// update node info without state
-	updateNodeInfo(node)
-	// update node info with state, currently pending witness list
-	updatePendingWitness(node, p.verifyDB)
-
-	// confirm
-	confirmNode := calculateConfirm(node, p.blockCache.LinkedRoot())
-	if confirmNode != nil {
-		p.blockCache.Flush(confirmNode)
-		staticProperty.updateWitnessList(confirmNode.PendingWitnessList)
-	}
-
-	// -> tx pool
-	p.txPool.AddLinkedNode(node, p.blockCache.Head())
-	return node, nil
+	return nil
 }
 
-func (p *PoB) addSingles(node *blockcache.BlockCacheNode) {
-	for child := range node.Children {
-		_, err := p.addBlock(child.Block, child, node, false)
+func (p *PoB) addNewBlock(blk *block.Block, parentBlock *block.Block) error {
+	if blk.Head.Witness != p.account.ID {
+		p.verifyDB.Checkout(string(blk.Head.ParentHash))
+		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
-			fmt.Println(err)
-			continue
+			return err
 		}
-		p.addSingles(child)
+		p.verifyDB.Tag(string(blk.HeadHash()))
+	} else {
+		p.verifyDB.Checkout(string(blk.HeadHash()))
 	}
+	node := p.blockCache.Add(blk)
+	p.updateInfo(node)
+	p.addChildren(node)
+	return nil
+}
+
+func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) {
+	node, _ := p.blockCache.Find(blk.HeadHash())
+	if blk.Head.Witness != p.account.ID {
+		p.verifyDB.Checkout(string(blk.Head.ParentHash))
+		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
+		if err != nil {
+			p.blockCache.Del(node)
+			fmt.Println(err)
+		}
+		p.verifyDB.Tag(string(blk.HeadHash()))
+	} else {
+		p.verifyDB.Checkout(string(blk.HeadHash()))
+	}
+	p.blockCache.Link(node)
+	p.updateInfo(node)
+	p.addChildren(node)
+}
+
+func (p *PoB) addChildren(node *blockcache.BlockCacheNode) {
+	for child := range node.Children {
+		p.addExistingBlock(child.Block, node.Block)
+	}
+}
+
+func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
+	updateStaticProperty(node)
+	updatePendingWitness(node, p.verifyDB)
+	updateLib(node, p.blockCache)
+	p.txPool.AddLinkedNode(node, p.blockCache.Head())
 }

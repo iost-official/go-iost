@@ -128,14 +128,12 @@ type Trie struct {
 	context *Context
 	root    *Node
 	size    uint64
-	tag     string
 }
 
 func New() *Trie {
 	t := &Trie{
 		context: NewContext(),
 		size:    0,
-		tag:     "",
 	}
 	t.root = t.context.newNode()
 	return t
@@ -173,7 +171,6 @@ func (t *Trie) Fork() *Trie {
 		context: t.context.fork(),
 		root:    t.root,
 		size:    t.size,
-		tag:     "",
 	}
 	return trie
 }
@@ -182,13 +179,4 @@ func (t *Trie) Free() {
 	t.root.free()
 	t.context = nil
 	t.size = 0
-	t.tag = ""
-}
-
-func (t *Trie) Tag() string {
-	return t.tag
-}
-
-func (t *Trie) SetTag(tag string) {
-	t.tag = tag
 }

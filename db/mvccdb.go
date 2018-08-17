@@ -55,11 +55,30 @@ type Item struct {
 	deleted bool
 }
 
+type Commit struct {
+	trie.Trie
+	Tag string
+}
+
+func NewCommit() *Commit {
+	return &Commit{
+		Trie: *trie.New(),
+		Tag:  "",
+	}
+}
+
+func (c *Commit) Fork() *Commit {
+	return &Commit{
+		Trie: *c.Trie.Fork(),
+		Tag:  "",
+	}
+}
+
 type TrieMVCCDB struct {
-	head      *trie.Trie
-	stage     *trie.Trie
-	tags      map[string]*trie.Trie
-	commits   []*trie.Trie
+	head      *Commit
+	stage     *Commit
+	tags      map[string]*Commit
+	commits   []*Commit
 	stagerw   *sync.RWMutex
 	tagsrw    *sync.RWMutex
 	commitsrw *sync.RWMutex
@@ -75,13 +94,13 @@ func NewTrieMVCCDB(path string) (*TrieMVCCDB, error) {
 	if err != nil {
 		tag = []byte("")
 	}
-	head := trie.New()
+	head := NewCommit()
 	stage := head.Fork()
-	tags := make(map[string]*trie.Trie)
-	commits := make([]*trie.Trie, 0)
+	tags := make(map[string]*Commit)
+	commits := make([]*Commit, 0)
 
-	head.SetTag(string(tag))
-	tags[string(tag)] = head
+	head.Tag = string(tag)
+	tags[head.Tag] = head
 	commits = append(commits, head)
 	mvccdb := &TrieMVCCDB{
 		head:      head,
@@ -239,11 +258,11 @@ func (m *TrieMVCCDB) Tag(t string) {
 	m.tagsrw.Lock()
 	m.tags[t] = m.head
 	m.tagsrw.Unlock()
-	m.head.SetTag(t)
+	m.head.Tag = t
 }
 
 func (m *TrieMVCCDB) CurrentTag() string {
-	return m.head.Tag()
+	return m.head.Tag
 }
 
 func (m *TrieMVCCDB) Fork() MVCCDB {
@@ -293,7 +312,7 @@ func (m *TrieMVCCDB) Flush(t string) error {
 			m.commits = m.commits[k:]
 			break
 		} else {
-			delete(m.tags, v.Tag())
+			delete(m.tags, v.Tag)
 			v.Free()
 		}
 	}

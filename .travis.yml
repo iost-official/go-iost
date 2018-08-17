@@ -5,28 +5,20 @@ branches:
     - master
     - develop
 
-matrix:
-  include:
-    - os: linux
-      go: 1.10
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-5
-      env:
-         - CC=gcc-5
-         - CXX=g++-5
-    - os: osx
-      go: 1.10
-      env:
-         - CC=clang
-         - CXX=clang++
+go: "1.10"
+os:
+  - linux
+  - osx
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-5
 
 before_install:
-  - ${CC} --version
-  - ${CXX} --version
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 20; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 20; fi
 
 install: true
 
