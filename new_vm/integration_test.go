@@ -288,6 +288,6 @@ module.exports = Contract;
 	}
 }
 
-func TestIntergration_Payment(t *tesing.T) {
+func TestIntergration_Payment(t *testing.T) {
 
 }
