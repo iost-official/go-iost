@@ -5,10 +5,9 @@
 package core_mock
 
 import (
-	gomock "github.com/golang/mock/gomock"
-	block "github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	tx "github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	reflect "reflect"
+	"github.com/golang/mock/gomock"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"reflect"
 )
 
 // MockChain is a mock of Chain interface
@@ -47,9 +46,9 @@ func (mr *MockChainMockRecorder) CheckLength() *gomock.Call {
 }
 
 // GetBlockByHash mocks base method
-func (m *MockChain) GetBlockByHash(arg0 []byte) (*new_block.Block, error) {
+func (m *MockChain) GetBlockByHash(arg0 []byte) (*block.Block, error) {
 	ret := m.ctrl.Call(m, "GetBlockByHash", arg0)
-	ret0, _ := ret[0].(*new_block.Block)
+	ret0, _ := ret[0].(*block.Block)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -60,9 +59,9 @@ func (mr *MockChainMockRecorder) GetBlockByHash(arg0 interface{}) *gomock.Call {
 }
 
 // GetBlockByNumber mocks base method
-func (m *MockChain) GetBlockByNumber(arg0 uint64) (*new_block.Block, error) {
+func (m *MockChain) GetBlockByNumber(arg0 uint64) (*block.Block, error) {
 	ret := m.ctrl.Call(m, "GetBlockByNumber", arg0)
-	ret0, _ := ret[0].(*new_block.Block)
+	ret0, _ := ret[0].(*block.Block)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -111,7 +110,7 @@ func (mr *MockChainMockRecorder) Length() *gomock.Call {
 }
 
 // Push mocks base method
-func (m *MockChain) Push(arg0 *new_block.Block) error {
+func (m *MockChain) Push(arg0 *block.Block) error {
 	ret := m.ctrl.Call(m, "Push", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -123,9 +122,9 @@ func (mr *MockChainMockRecorder) Push(arg0 interface{}) *gomock.Call {
 }
 
 // Top mocks base method
-func (m *MockChain) Top() (*new_block.Block, error) {
+func (m *MockChain) Top() (*block.Block, error) {
 	ret := m.ctrl.Call(m, "Top")
-	ret0, _ := ret[0].(*new_block.Block)
+	ret0, _ := ret[0].(*block.Block)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

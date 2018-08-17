@@ -23,7 +23,7 @@ var (
 	ErrWitness     = errors.New("wrong witness")
 	ErrPubkey      = errors.New("wrong pubkey")
 	ErrSignature   = errors.New("wrong signature")
-	ErrSlot		   = errors.New("witness slot duplicate")
+	ErrSlot        = errors.New("witness slot duplicate")
 	ErrTxTooOld    = errors.New("tx too old")
 	ErrTxDup       = errors.New("duplicate tx")
 	ErrTxSignature = errors.New("tx wrong signature")
@@ -36,25 +36,25 @@ var (
 	ErrTxReceipt   = errors.New("wrong tx receipt")
 )
 
-func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db *db.MVCCDB) *block.Block {
-	lastBlock := node.Block
-	parentHash := lastBlock.HeadHash()
+func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db *db.MVCCDB) (*block.Block, error) {
+	var err error
 	blk := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
-			ParentHash: parentHash,
-			Number:     lastBlock.Head.Number + 1,
+			ParentHash: topBlock.HeadHash(),
+			Number:     topBlock.Head.Number + 1,
 			Witness:    account.ID,
-			Time:       common.GetCurrentTimestamp().Slot,
+			Time:       time.Now().Unix() / common.SlotLength,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
+
 	txCnt := 1000
 	limitTime := time.NewTicker(common.SlotLength * time.Second / 3)
 	txsList, _ := txPool.PendingTxs(txCnt)
-	txPoolSize.Set(float64(len(txsList)))
-	engine := new_vm.NewEngine(&lastBlock.Head, db)
+	db.Checkout(string(topBlock.HeadHash()))
+	engine := new_vm.NewEngine(&topBlock.Head, db)
 	for _, t := range txsList {
 		select {
 		case <-limitTime.C:
@@ -66,18 +66,24 @@ func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool t
 			}
 		}
 	}
+	db.Tag(string(blk.HeadHash()))
+
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
-	sig, _ := common.Sign(common.Secp256k1, headInfo, account.Seckey)
-	blk.Head.Signature = sig.Encode()
-	err := blk.CalculateHeadHash()
+	sig := common.Sign(common.Secp256k1, headInfo, account.Seckey)
+	blk.Head.Signature, err = sig.Encode()
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
-	db.Tag(string(blk.HeadHash()))
+	err = blk.CalculateHeadHash()
+	if err != nil {
+		return nil, err
+	}
+
 	generatedBlockCount.Inc()
-	return &blk
+	txPoolSize.Set(float64(len(blk.Txs)))
+	return &blk, nil
 }
 
 func generateHeadInfo(head block.BlockHead) []byte {
@@ -130,6 +136,7 @@ func verifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 	if bh.Number != parentBlock.Head.Number+1 {
 		return ErrNumber
 	}
+	fmt.Println(blk.CalculateTxsHash(), bh.TxsHash)
 	if !bytes.Equal(blk.CalculateTxsHash(), bh.TxsHash) {
 		return ErrTxHash
 	}
@@ -178,12 +185,10 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	return verifyBlockWithVM(blk, db)
 }
 
-func updateNodeInfo(node *blockcache.BlockCacheNode) {
-	staticProperty.addSlot(node.Block.Head.Time)
+func updateWaterMark(node *blockcache.BlockCacheNode) {
 	node.ConfirmUntil = staticProperty.Watermark[node.Witness]
 	if node.Number >= staticProperty.Watermark[node.Witness] {
 		staticProperty.Watermark[node.Witness] = node.Number + 1
-
 	}
 }
 
@@ -195,6 +200,14 @@ func updatePendingWitness(node *blockcache.BlockCacheNode, db *db.MVCCDB) {
 		//node.PendingWitnessList = newList
 	} else {
 		node.PendingWitnessList = node.Parent.PendingWitnessList
+	}
+}
+
+func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
+	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
+	if confirmedNode != nil {
+		bc.Flush(confirmedNode)
+		staticProperty.updateWitnessList(confirmedNode.PendingWitnessList)
 	}
 }
 

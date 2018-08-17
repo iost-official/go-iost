@@ -37,7 +37,7 @@ type CacheStatus int
 const (
 	Extend CacheStatus = iota
 	Fork
-	NotFound
+	ParentNotFound
 )
 
 const (
@@ -52,15 +52,15 @@ const (
 )
 
 type BlockCacheNode struct {
-	Block                 *block.Block
-	Parent                *BlockCacheNode
-	Children              map[*BlockCacheNode]bool
-	Type                  BCNType
-	Number                int64
-	Witness               string
-	ConfirmUntil          int64
-	PendingWitnessList    []string
-	Extension             []byte
+	Block              *block.Block
+	Parent             *BlockCacheNode
+	Children           map[*BlockCacheNode]bool
+	Type               BCNType
+	Number             int64
+	Witness            string
+	ConfirmUntil       int64
+	PendingWitnessList []string
+	Extension          []byte
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
@@ -107,12 +107,12 @@ type BlockCache interface {
 }
 
 type BlockCacheImpl struct {
-	linkedRoot *BlockCacheNode
-	singleRoot *BlockCacheNode
-	head       *BlockCacheNode
-	hash2node  *sync.Map
-	leaf       map[*BlockCacheNode]int64
-	baseVariable       global.BaseVariable
+	linkedRoot   *BlockCacheNode
+	singleRoot   *BlockCacheNode
+	head         *BlockCacheNode
+	hash2node    *sync.Map
+	leaf         map[*BlockCacheNode]int64
+	baseVariable global.BaseVariable
 }
 
 var (
@@ -143,11 +143,11 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	bc := BlockCacheImpl{
-		linkedRoot: NewBCN(nil, nil),
-		singleRoot: NewBCN(nil, nil),
-		hash2node:  new(sync.Map),
-		leaf:       make(map[*BlockCacheNode]int64),
-		baseVariable:       baseVariable,
+		linkedRoot:   NewBCN(nil, nil),
+		singleRoot:   NewBCN(nil, nil),
+		hash2node:    new(sync.Map),
+		leaf:         make(map[*BlockCacheNode]int64),
+		baseVariable: baseVariable,
 	}
 	bc.linkedRoot.Type = Linked
 	bc.singleRoot.Type = Single
@@ -196,10 +196,9 @@ func (bc *BlockCacheImpl) updateLongest() {
 }
 
 func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
-	var code CacheStatus
+	//var code CacheStatus
 	var newNode *BlockCacheNode
-	hash := blk.HeadHash()
-	_, ok := bc.hmget(hash)
+	_, ok := bc.hmget(blk.HeadHash())
 	if ok {
 		return nil, ErrDup
 	}
@@ -207,25 +206,36 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 	fa := IF(ok, parent, bc.singleRoot).(*BlockCacheNode)
 	newNode = NewBCN(fa, blk)
 	delete(bc.leaf, fa)
-	if ok {
-		code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
-	} else {
-		code = NotFound
-	}
-	bc.hmset(hash, newNode)
-	switch code {
-	case Extend:
-		fallthrough
-	case Fork:
-		bc.mergeSingle(newNode)
-		if newNode.Type == Linked {
-			bc.Link(newNode)
-		} else {
-			return newNode, ErrNotFound
+	bc.hmset(blk.HeadHash(), newNode)
+	//
+	//if ok {
+	//	code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
+	//} else {
+	//	code = ParentNotFound
+	//}
+	//switch code {
+	//case Extend:
+	//	fallthrough
+	//case Fork:
+	//	bc.mergeSingle(newNode)
+	//	if newNode.Type == Linked {
+	//		bc.Link(newNode)
+	//	} else {
+	//		return newNode, ErrNotFound
+	//	}
+	//case ParentNotFound:
+	//	bc.mergeSingle(newNode)
+	//	return newNode, ErrNotFound
+	//}
+	//return newNode, nil
+	//
+
+	bc.mergeSingle(newNode)
+	if newNode.Type == Linked {
+		bc.leaf[newNode] = newNode.Number
+		if newNode.Number > bc.head.Number {
+			bc.head = newNode
 		}
-	case NotFound:
-		bc.mergeSingle(newNode)
-		return newNode, ErrNotFound
 	}
 	return newNode, nil
 }
@@ -307,7 +317,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			return err
 		}
 		//bc.hmdel(cur.Block.HeadHash())
-		bc.delNode(cur)	//?上面一句就可以了，cur的parent一定等于nil
+		bc.delNode(cur) //?上面一句就可以了，cur的parent一定等于nil
 		retain.Parent = nil
 		bc.linkedRoot = retain
 	}
@@ -315,9 +325,6 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 }
 
 func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
-	if bcn == nil {
-		return
-	}
 	bc.flush(bcn)
 	bc.delSingle()
 	bc.updateLongest()
