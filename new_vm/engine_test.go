@@ -533,6 +533,100 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 
 }
 
+func TestNative_Receipt(t *testing.T) { // tests of native vm works
+	bh, db, _ := engineinit(t)
+	e := NewEngine(bh, db)
+	e.SetUp("js_path", jsPath)
+	mtx := tx.Tx{
+		Time:       time.Now().UnixNano(),
+		Expiration: 10000,
+		GasLimit:   100000,
+		GasPrice:   1,
+		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+	}
+
+	ac := tx.Action{
+		Contract:   "iost.system",
+		ActionName: "CallWithReceipt",
+		Data:       `["iost.system", "Receipt", ["iamreceipt"]]`,
+	}
+
+	mtx.Actions = append(mtx.Actions, ac)
+
+	c := contract.Contract{
+		ID:   "iost.system",
+		Code: "codes",
+		Info: &contract.Info{
+			Lang:        "native",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				&contract.ABI{
+					Name:     "Receipt",
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{"string"},
+				},
+				&contract.ABI{
+					Name:     "CallWithReceipt",
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{"string", "string", "json"},
+				},
+			},
+		},
+	}
+
+	db.EXPECT().Get("state", "c-iost.system").DoAndReturn(func(table string, key string) (string, error) {
+		return c.Encode(), nil
+	})
+
+	db.EXPECT().Get("state", "i-witness").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(10000000)), nil
+	})
+
+	db.EXPECT().Put("state", "i-witness", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(1103) {
+			t.Fatal("witness", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(9999897) {
+			t.Fatal("publisher", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
+	txr, err := e.Exec(&mtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txr.Status.Code != tx.Success {
+		t.Fatal(txr.Status)
+	}
+	if len(txr.Receipts) != 2 || txr.Receipts[0].Type != tx.UserDefined || txr.Receipts[0].Content != "iamreceipt" ||
+		txr.Receipts[1].Type != tx.SystemDefined || txr.Receipts[1].Content != `["Receipt",["iamreceipt"],"success"]` {
+		t.Fatal(txr.Receipts)
+	}
+
+	if !committed {
+		t.Fatal(committed)
+	}
+}
+
 func TestJS(t *testing.T) {
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)

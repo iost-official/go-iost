@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"encoding/json"
 )
 
 var (
@@ -85,16 +86,25 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *
 	return rtn, cost, err
 }
 
-func (h *Host) CallWithReceipt(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
-	rtn, cost, err := h.Call(contract, api, args...)
+func (h *Host) CallWithReceipt(contractName, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
+	rtn, cost, err := h.Call(contractName, api, args...)
 
-	var s string
+	cost.AddAssign(contract.NewCost(0, 0, 100))
+
+	var sarr []interface{}
+	sarr = append(sarr, api)
+	sarr = append(sarr, args)
+
 	if err != nil {
-		s = err.Error()
+		sarr = append(sarr, err.Error())
 	} else {
-		s = "success"
+		sarr = append(sarr, "success")
 	}
-	h.receipt(tx.SystemDefined, s)
+	s, err := json.Marshal(sarr)
+	if err != nil {
+		return rtn, cost, err
+	}
+	h.receipt(tx.SystemDefined, string(s))
 
 	return rtn, cost, err
 

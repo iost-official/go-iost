@@ -28,7 +28,12 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		return []interface{}{}, cost, nil
 
 	case "CallWithReceipt":
-		rtn, cost, err = host.CallWithReceipt(args[0].(string), args[1].(string), args[2:])
+		json, err := simplejson.NewJson(args[2].([]byte))
+		arr, err := json.Array()
+		if err != nil {
+			return nil, cost, err
+		}
+		rtn, cost, err = host.CallWithReceipt(args[0].(string), args[1].(string), arr...)
 		return rtn, cost, err
 
 	case "Transfer":

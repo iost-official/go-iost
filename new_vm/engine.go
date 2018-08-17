@@ -206,7 +206,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-			rtn = append(rtn, database.SerializedJSON(s))
+			rtn = append(rtn, s)
 		}
 	}
 
