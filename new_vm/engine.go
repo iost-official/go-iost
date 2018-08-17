@@ -239,7 +239,7 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	e.ho.Ctx.Set("stack_height", 1) // record stack trace
 
 	c := e.ho.DB.Contract(action.Contract)
-	if c.Info == nil {
+	if c == nil || c.Info == nil {
 		cost = contract.NewCost(0, 0, GasCheckTxFailed)
 		status = tx.Status{
 			Code:    tx.ErrorParamter,

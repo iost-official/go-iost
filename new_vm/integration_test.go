@@ -215,7 +215,7 @@ func TestIntergration_SetCode(t *testing.T) {
 
 	jshw := jsHelloWorld()
 
-	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, jshw.Encode()))
+	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, jshw.B64Encode()))
 
 	trx, err := makeTx(act)
 	if err != nil {
@@ -223,8 +223,18 @@ func TestIntergration_SetCode(t *testing.T) {
 	}
 
 	t.Log(e.Exec(trx))
+
 	t.Log("balance of sender :", vi.Balance(testID[0]))
 
+	act2 := tx.NewAction("jsHelloWorld", "hello", `[]`)
+
+	trx2, err := makeTx(act2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(e.Exec(trx2))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
 }
 
 func TestIntergration_CallJSCode(t *testing.T) {
@@ -256,7 +266,7 @@ class Contract {
   
  }
  call_hello() {
-  return BlockChain.call("jsHelloWorld", "hello")
+  return BlockChain.call("jsHelloWorld", "hello", "[]")
  }
 }
 
@@ -276,4 +286,8 @@ module.exports = Contract;
 			},
 		},
 	}
+}
+
+func TestIntergration_Payment(t *tesing.T) {
+
 }

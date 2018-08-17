@@ -73,13 +73,13 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Fatalf("compiler parse error: %v\n", err)
 	}
 
-	rs, _, err := e.LoadAndCall(host, code, "SetCode", con.Encode())
+	rs, _, err := e.LoadAndCall(host, code, "SetCode", con.B64Encode())
 
 	if err != nil {
 		t.Fatalf("LoadAndCall setcode error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != hash {
-		t.Errorf("LoadAndCall except Contract" + "iamhash" + ", got %s\n", rs[0])
+		t.Errorf("LoadAndCall except Contract"+"iamhash"+", got %s\n", rs[0])
 	}
 
 	con.ID = "Contractiamhash"
@@ -105,7 +105,7 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Fatalf("LoadAndCall update error: %v\n", err)
 	}
 	if len(rs) != 0 {
-		t.Errorf("LoadAndCall except 0 rtn" + ", got %d\n", len(rs))
+		t.Errorf("LoadAndCall except 0 rtn"+", got %d\n", len(rs))
 	}
 
 	rs, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)

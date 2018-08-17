@@ -3,9 +3,9 @@ package native_vm
 import (
 	"errors"
 
+	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"github.com/bitly/go-simplejson"
 )
 
 type VM struct {
@@ -54,7 +54,7 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 	case "SetCode":
 		cost := contract.NewCost(1, 1, 1)
 		con := &contract.Contract{}
-		err = con.Decode(args[0].(string))
+		err = con.B64Decode(args[0].(string))
 		if err != nil {
 			return nil, cost, err
 		}
@@ -96,7 +96,7 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		return []interface{}{}, cost, err
 
 	default:
-		return nil, contract.NewCost(1,1, 1), errors.New("unknown api name")
+		return nil, contract.NewCost(1, 1, 1), errors.New("unknown api name")
 
 	}
 
