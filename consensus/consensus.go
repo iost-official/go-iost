@@ -1,13 +1,15 @@
-package new_consensus
+package consensus
 
 import (
 	"sync"
 
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/pob"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
-	"github.com/iost-official/Go-IOS-Protocol/account"
 )
 
 type Consensus interface {
@@ -23,8 +25,7 @@ var Cons Consensus
 
 var once sync.Once
 
-func ConsensusFactory(consensusType string, acc account.Account, global global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service, sy *Synchronizer, witnessList []string) (Consensus, error) {
-
+func ConsensusFactory(consensusType string, account account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) (Consensus, error) {
 	if consensusType == "" {
 		consensusType = CONSENSUS_POB
 	}
@@ -35,7 +36,7 @@ func ConsensusFactory(consensusType string, acc account.Account, global global.B
 	case CONSENSUS_POB:
 		if Cons == nil {
 			once.Do(func() {
-				Cons, err = pob.NewPoB(acc, global, blkcache, p2pserv)
+				Cons = pob.NewPoB(account, baseVariable, blkcache, txPool, service, synchronizer, witnessList)
 			})
 		}
 	}

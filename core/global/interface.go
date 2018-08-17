@@ -11,7 +11,7 @@ import (
 
 type BaseVariable interface {
 	TxDB() tx.TxDB
-	StateDB() *db.MVCCDB
+	StateDB() db.MVCCDB
 	Config() *common.Config
 	BlockChain() block.Chain
 	Mode() *Mode

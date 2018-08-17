@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
@@ -57,15 +57,15 @@ type PoB struct {
 	blockCache   blockcache.BlockCache
 	txPool       txpool.TxPool
 	p2pService   p2p.Service
-	synchronizer consensus_common.Synchronizer
-	verifyDB     *db.MVCCDB
-	produceDB    *db.MVCCDB
+	synchronizer synchronizer.Synchronizer
+	verifyDB     db.MVCCDB
+	produceDB    db.MVCCDB
 	exitSignal   chan struct{}
 	chRecvBlock  chan p2p.IncomingMessage
 	chGenBlock   chan *block.Block
 }
 
-func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer consensus_common.Synchronizer, witnessList []string) *PoB {
+func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) *PoB {
 	p := PoB{
 		account:      account,
 		baseVariable: baseVariable,
@@ -117,7 +117,7 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			if incomingMessage.Type() == p2p.MessageType(p2p.SyncBlockResponse) {
-				go p.synchronizer.OnRecvBlock(blk.HeadHash(), incomingMessage.From())
+				//go p.synchronizer.OnRecvBlock(blk.HeadHash(), incomingMessage.From())
 			}
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
@@ -190,7 +190,7 @@ func (p *PoB) addNewBlock(blk *block.Block, parentBlock *block.Block) error {
 	} else {
 		p.verifyDB.Checkout(string(blk.HeadHash()))
 	}
-	node, _ := p.blockCache.Add(blk)
+	node := p.blockCache.Add(blk)
 	p.updateInfo(node)
 	p.addChildren(node)
 	return nil
@@ -221,8 +221,7 @@ func (p *PoB) addChildren(node *blockcache.BlockCacheNode) {
 }
 
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
-	staticProperty.addSlot(node.Block.Head.Time)
-	updateWaterMark(node)
+	updateStaticProperty(node)
 	updatePendingWitness(node, p.verifyDB)
 	updateLib(node, p.blockCache)
 	p.txPool.AddLinkedNode(node, p.blockCache.Head())

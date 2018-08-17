@@ -51,7 +51,7 @@ func Instance() (Chain, error) {
 			if tempErr != nil {
 				err = errors.New("fail to get blocklength")
 			}
-			length = int64(ByteToInt64(lengthByte))
+			length = ByteToInt64(lengthByte)
 		} else {
 			lengthByte := Int64ToByte(0)
 			tempErr := levelDB.Put(blockLength, lengthByte)

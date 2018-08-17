@@ -1,10 +1,27 @@
 language: go
-go:
-  - "1.10"
 
-install:
-  - go get -t ./...
+branches:
+  only:
+    - master
+    - develop
+
+go: "1.10"
+os:
+  - linux
+  - osx
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-5
+
+before_install:
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 20; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 20; fi
+
+install: true
 
 script:
-  - make
-
+  - make build
+  - make test

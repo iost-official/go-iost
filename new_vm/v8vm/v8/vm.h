@@ -15,6 +15,7 @@ typedef void* SandboxPtr;
 typedef struct {
     const char *Value;
     const char *Err;
+    bool isJson;
 } ValueTuple;
 
 typedef enum {
@@ -80,27 +81,29 @@ extern void setJSPath(SandboxPtr ptr, const char *jsPath);
 extern void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit);
 
 // require
-typedef char *(*requireFunc)(SandboxPtr, char *);
+typedef char *(*requireFunc)(SandboxPtr, const char *);
 void InitGoRequire(requireFunc);
 
 // blockchain
-typedef int (*transferFunc)(SandboxPtr, char *, char *, char *, size_t *);
-typedef int (*withdrawFunc)(SandboxPtr, char *, char *, size_t *);
-typedef int (*depositFunc)(SandboxPtr, char *, char *, size_t *);
-typedef int (*topUpFunc)(SandboxPtr, char *, char *, char *, size_t *);
-typedef int (*countermandFunc)(SandboxPtr, char *, char *, char *, size_t *);
+typedef int (*transferFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
+typedef int (*withdrawFunc)(SandboxPtr, const char *, const char *, size_t *);
+typedef int (*depositFunc)(SandboxPtr, const char *, const char *, size_t *);
+typedef int (*topUpFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
+typedef int (*countermandFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
 typedef char *(*blockInfoFunc)(SandboxPtr, size_t *);
 typedef char *(*txInfoFunc)(SandboxPtr, size_t *);
-typedef char *(*callFunc)(SandboxPtr, char *, char *, char *, size_t *);
+typedef char *(*callFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
 void InitGoBlockchain(transferFunc, withdrawFunc,
                         depositFunc, topUpFunc, countermandFunc,
                         blockInfoFunc, txInfoFunc, callFunc);
 
 // storage
-typedef int (*putFunc)(SandboxPtr, char *, char *, size_t *);
-typedef char *(*getFunc)(SandboxPtr, char *, size_t *);
-typedef int (*delFunc)(SandboxPtr, char *, size_t *);
-void InitGoStorage(putFunc, getFunc, delFunc);
+typedef int (*putFunc)(SandboxPtr, const char *, const char *, size_t *);
+typedef char *(*getFunc)(SandboxPtr, const char *, size_t *);
+typedef int (*delFunc)(SandboxPtr, const char *, size_t *);
+typedef char *(*globalGetFunc)(SandboxPtr, const char *, const char *, size_t *);
+void InitGoStorage(putFunc, getFunc, delFunc,
+    globalGetFunc);
 
 //extern int goPut(SandboxPtr, char *, char *, size_t *);
 //extern char *goGet(SandboxPtr, char *, size_t *);
@@ -111,7 +114,6 @@ extern void goMapGet(SandboxPtr, const char *, const char *, size_t *);
 extern void goMapDel(SandboxPtr, const char *, const char *, size_t *);
 extern void goMapKeys(SandboxPtr, const char *, size_t *);
 extern void goMapLen(SandboxPtr, const char *, size_t *);
-extern void goGlobalGet(SandboxPtr, const char *, const char *, size_t *);
 extern void goGlobalMapGet(SandboxPtr, const char *, const char *, const char *, size_t *);
 extern void goGlobalMapKeys(SandboxPtr, const char *, const char *, size_t *);
 extern void goGlobalMapLen(SandboxPtr, const char *, const char *, size_t *);

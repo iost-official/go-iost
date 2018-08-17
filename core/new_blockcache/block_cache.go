@@ -94,7 +94,7 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 }
 
 type BlockCache interface {
-	Add(*block.Block) (*BlockCacheNode, error)
+	Add(*block.Block) *BlockCacheNode
 	Link(*BlockCacheNode)
 	Del(*BlockCacheNode)
 	Flush(*BlockCacheNode)
@@ -179,9 +179,12 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) updateLongest() {
-	if len(bc.leaf) == -1 {
-		panic(fmt.Errorf("BlockCache shouldnt be empty"))
-	}
+	/*
+		think about there are only one witness
+		if len(bc.leaf) == -1 {
+			panic(fmt.Errorf("BlockCache shouldnt be empty"))
+		}
+	*/
 	_, ok := bc.hmget(bc.head.Block.HeadHash())
 	if ok {
 		return
@@ -195,41 +198,12 @@ func (bc *BlockCacheImpl) updateLongest() {
 	}
 }
 
-func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
-	//var code CacheStatus
-	var newNode *BlockCacheNode
-	_, ok := bc.hmget(blk.HeadHash())
-	if ok {
-		return nil, ErrDup
-	}
+func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	parent, ok := bc.hmget(blk.Head.ParentHash)
 	fa := IF(ok, parent, bc.singleRoot).(*BlockCacheNode)
-	newNode = NewBCN(fa, blk)
+	newNode := NewBCN(fa, blk)
 	delete(bc.leaf, fa)
 	bc.hmset(blk.HeadHash(), newNode)
-	//
-	//if ok {
-	//	code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
-	//} else {
-	//	code = ParentNotFound
-	//}
-	//switch code {
-	//case Extend:
-	//	fallthrough
-	//case Fork:
-	//	bc.mergeSingle(newNode)
-	//	if newNode.Type == Linked {
-	//		bc.Link(newNode)
-	//	} else {
-	//		return newNode, ErrNotFound
-	//	}
-	//case ParentNotFound:
-	//	bc.mergeSingle(newNode)
-	//	return newNode, ErrNotFound
-	//}
-	//return newNode, nil
-	//
-
 	bc.mergeSingle(newNode)
 	if newNode.Type == Linked {
 		bc.leaf[newNode] = newNode.Number
@@ -237,7 +211,7 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
 			bc.head = newNode
 		}
 	}
-	return newNode, nil
+	return newNode
 }
 
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
@@ -333,7 +307,11 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 
 func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 	bcn, ok := bc.hmget(hash)
-	return bcn, IF(ok, nil, errors.New("block not found")).(error)
+	if ok {
+		return bcn, nil
+	} else {
+		return nil, errors.New("block not found")
+	}
 }
 
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {

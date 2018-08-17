@@ -44,16 +44,8 @@ func Debug(format string, v ...interface{}) {
 	defaultLogger.Debug(format, v...)
 }
 
-func D(format string, v ...interface{}) {
-	defaultLogger.D(format, v...)
-}
-
 func Info(format string, v ...interface{}) {
 	defaultLogger.Info(format, v...)
-}
-
-func I(format string, v ...interface{}) {
-	defaultLogger.I(format, v...)
 }
 
 func Warn(format string, v ...interface{}) {
@@ -62,10 +54,6 @@ func Warn(format string, v ...interface{}) {
 
 func Error(format string, v ...interface{}) {
 	defaultLogger.Error(format, v...)
-}
-
-func E(format string, v ...interface{}) {
-	defaultLogger.E(format, v...)
 }
 
 func Fatal(format string, v ...interface{}) {

@@ -74,9 +74,9 @@ func (mr *MockBaseVariableMockRecorder) Mode() *gomock.Call {
 }
 
 // StateDB mocks base method
-func (m *MockBaseVariable) StateDB() *db.MVCCDB {
+func (m *MockBaseVariable) StateDB() db.MVCCDB {
 	ret := m.ctrl.Call(m, "StateDB")
-	ret0, _ := ret[0].(*db.MVCCDB)
+	ret0, _ := ret[0].(db.MVCCDB)
 	return ret0
 }
 
