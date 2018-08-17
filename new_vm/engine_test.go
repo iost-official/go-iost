@@ -692,13 +692,13 @@ module.exports = Contract;
 	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
 
 		db.EXPECT().Put("state", "i-witness", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
-			if database.MustUnmarshal(value).(int64) != int64(1300) {
+			if database.MustUnmarshal(value).(int64) != int64(1003) {
 				t.Fatal("witness", database.MustUnmarshal(value).(int64))
 			}
 			return nil
 		})
 
-		if database.MustUnmarshal(value).(int64) != 999700 {
+		if database.MustUnmarshal(value).(int64) != 999997 {
 			t.Fatal(database.MustUnmarshal(value).(int64))
 		}
 
