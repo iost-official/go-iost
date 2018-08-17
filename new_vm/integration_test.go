@@ -289,5 +289,23 @@ module.exports = Contract;
 }
 
 func TestIntergration_Payment(t *testing.T) {
+	jshw := jsHelloWorld()
+	jshw.Info.Abis[0].Payment = 1
+	jshw.Info.Abis[0].GasPrice = int64(10)
 
+	e, vi := ininit(t)
+	vi.SetContract(jshw)
+
+	vi.SetBalance("CGjsHelloWorld", 1000000)
+
+	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
+
+	trx, err := makeTx(act)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(e.Exec(trx))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+	t.Log("balance of contract :", vi.Balance("CGjsHelloWorld"))
 }
