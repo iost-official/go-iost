@@ -246,5 +246,19 @@ func TestIntergration_CallJSCode(t *testing.T) {
 }
 
 func jsCallHelloWorld() *contract.Contract {
-	return &contract.Contract{}
+	return &contract.Contract{
+		ID:"call_hello_world",
+		Code: `
+class Contract {
+ constructor() {
+  
+ }
+ call_hello() {
+  return BlockChain.call("")
+ }
+}
+
+module.exports = Contract;
+`,
+	}
 }
