@@ -346,6 +346,92 @@ func BenchmarkPendingTxs(b *testing.B) {
 	}
 }
 
+//result 4445 ns/op
+func BenchmarkDecodeTx(b *testing.B) {
+	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
+	newAccount, err := account.NewAccount(acc)
+	if err != nil {
+		panic("account.NewAccount error")
+	}
+
+	tm := genTxMsg(newAccount, expiration)
+	var t tx.Tx
+	err = t.Decode(tm.Data())
+	if err != nil {
+		panic("Decode error")
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+
+		var t tx.Tx
+		t.Decode(tm.Data())
+	}
+}
+
+//result 3.8S ~ 4.2S  10000 tx verify
+func BenchmarkTxVerify(b *testing.B) {
+	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
+	newAccount, err := account.NewAccount(acc)
+	if err != nil {
+		panic("account.NewAccount error")
+	}
+
+	t := genTx(newAccount, expiration)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < 10000; j++ {
+			t.VerifySelf()
+		}
+	}
+}
+
+//result 1 goroutine 3.8S ~ 4.2S  10000 tx verify
+//result 2 goroutine 2.0S ~ 2.1S  10000 tx verify
+//result 3 goroutine 1.3S ~ 1.7S  10000 tx verify
+//result 5 goroutine 1.0S ~ 1.2S  10000 tx verify
+//result 8 goroutine 1.0S ~ 1.3S  10000 tx verify
+func BenchmarkConcurrentTxVerify(b *testing.B) {
+	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
+	newAccount, err := account.NewAccount(acc)
+	if err != nil {
+		panic("account.NewAccount error")
+	}
+
+	txCnt := 10000
+	goCnt := 4
+
+	t := genTx(newAccount, expiration)
+
+	tc := make(chan *tx.Tx, txCnt)
+	rc := make(chan int, txCnt)
+	for j := 0; j < txCnt; j++ {
+		tc <- t
+	}
+
+	conVerifyTx := func() {
+		for v := range tc {
+			v.VerifySelf()
+			rc <- 1
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for z := 0; z < goCnt; z++ {
+			b.StopTimer()
+			go conVerifyTx()
+			b.StartTimer()
+		}
+
+		for j := 0; j < txCnt; j++ {
+			<-rc
+		}
+
+	}
+}
+
 func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl) {
 	//ctl := gomock.NewController(t)
 
@@ -451,13 +537,13 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 	return &t1
 }
 
-//func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
-//	t := genTx(a, expirationIter)
-//
-//	broadTx := p2p.NewIncomingMessage("test", t.Encode(), p2p.PublishTxRequest)
-//
-//	return broadTx
-//}
+func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
+	t := genTx(a, expirationIter)
+
+	broadTx := p2p.NewIncomingMessage("test", t.Encode(), p2p.PublishTxRequest)
+
+	return broadTx
+}
 
 func genBlocks(accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
