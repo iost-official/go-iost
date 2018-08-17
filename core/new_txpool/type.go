@@ -83,9 +83,18 @@ func (s *TxsList) Push(x interface{}) {
 }
 
 type blockTx struct {
-	txMap      sync.Map
+	txMap      *sync.Map
 	ParentHash []byte
 	cTime      int64
+}
+
+func newBlockTx() *blockTx {
+	b := &blockTx{
+		txMap:      new(sync.Map),
+		ParentHash: make([]byte, 32),
+	}
+
+	return b
 }
 
 func (b *blockTx) time() int64 {
@@ -99,9 +108,13 @@ func (b *blockTx) setTime(t int64) {
 func (b *blockTx) addBlock(ib *block.Block) {
 
 	for _, v := range ib.Txs {
-
 		b.txMap.Store(string(v.Hash()), nil)
 	}
+
+	//b.txMap.Range(func(key, value interface{}) bool {
+	//	fmt.Println("range:", key.(string))
+	//	return true
+	//})
 
 	b.ParentHash = ib.Head.ParentHash
 }

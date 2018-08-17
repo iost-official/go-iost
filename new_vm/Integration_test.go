@@ -172,56 +172,15 @@ func TestIntergration_Transfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//
-	//	cpl := contract.Compiler{}
-	//
-	//	code := `
-	//class Contract {
-	// constructor() {
-	//
-	// }
-	// hello(someone) {
-	//  return "hello "+ someone + "!";
-	// }
-	//}
-	//
-	//module.exports = Contract;
-	//`
-	//
-	//	abi := `
-	//{
-	//  "lang": "javascript",
-	//  "version": "1.0.0",
-	//  "abi": [{
-	//    "name": "hello",
-	//    "args": ["string"],
-	//    "payment": 0,
-	//    "cost_limit": [1,1,1],
-	//    "price_limit": 1
-	//  }
-	//  ]
-	//}
-	//`
-	//
-	//	c, err := cpl.Parse("contract", code, abi)
-	//	if err != nil {
-	//		t.Fatal(err)
-	//	}
-
-	//acSet := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
-	//
-	//trxSet := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
 
 	t.Log(e.Exec(&trx))
 	t.Log("balance of sender :", vi.Balance(testID[0]))
 	t.Log("balance of receiver :", vi.Balance(testID[2]))
 }
 
-func TestIntergration_SetCode(t *testing.T) {
-	e, vi := ininit(t)
-
+func jsHelloWorld() *contract.Contract {
 	jshw := contract.Contract{
-		ID: "testjs",
+		ID: "jsHelloWorld",
 		Code: `
 class Contract {
  constructor() {
@@ -248,6 +207,13 @@ module.exports = Contract;
 			},
 		},
 	}
+	return &jshw
+}
+
+func TestIntergration_SetCode(t *testing.T) {
+	e, vi := ininit(t)
+
+	jshw := jsHelloWorld()
 
 	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, jshw.Encode()))
 
@@ -259,4 +225,26 @@ module.exports = Contract;
 	t.Log(e.Exec(trx))
 	t.Log("balance of sender :", vi.Balance(testID[0]))
 
+}
+
+func TestIntergration_CallJSCode(t *testing.T) {
+	e, vi := ininit(t)
+
+	jshw := jsHelloWorld()
+
+	vi.SetContract(jshw)
+
+	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
+
+	trx, err := makeTx(act)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(e.Exec(trx))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+}
+
+func jsCallHelloWorld() *contract.Contract {
+	return &contract.Contract{}
 }

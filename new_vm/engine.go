@@ -267,8 +267,9 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		}
 		return
 	}
-
-	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
+	var rtn []interface{}
+	rtn, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
+	ilog.Debug("action %v > %v", action.Contract+action.ActionName, rtn)
 
 	if cost == nil {
 		cost = contract.Cost0()
