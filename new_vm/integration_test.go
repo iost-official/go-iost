@@ -187,7 +187,7 @@ class Contract {
   
  }
  hello() {
-  return "show";
+  return "world";
  }
 }
 
@@ -256,7 +256,7 @@ class Contract {
   
  }
  call_hello() {
-  return BlockChain.call("")
+  return BlockChain.call("jsHelloWorld", "hello")
  }
 }
 
