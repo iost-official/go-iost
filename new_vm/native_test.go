@@ -1,12 +1,14 @@
 package new_vm
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
+
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"os"
-	"io/ioutil"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 )
 
@@ -18,7 +20,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*native_vm.V
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
-	var gasLimit = int64(10000);
+	var gasLimit = int64(10000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
 	}
@@ -30,7 +32,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*native_vm.V
 	h := host.NewHost(ctx, vi, pm, nil)
 
 	code := &contract.Contract{
-		ID:   conName,
+		ID: conName,
 	}
 
 	e := &native_vm.VM{}

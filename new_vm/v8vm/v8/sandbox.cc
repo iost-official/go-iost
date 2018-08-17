@@ -270,7 +270,6 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         MaybeLocal<String> jsonRet = JSON::Stringify(sbx->context.Get(isolate), obj);
         if (!jsonRet.IsEmpty()) {
             isJson = true;
-            isDone = true;
             String::Utf8Value jsonRetStr(jsonRet.ToLocalChecked());
             result = *jsonRetStr;
         }
