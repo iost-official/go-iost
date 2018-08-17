@@ -231,10 +231,12 @@ func TestIntergration_CallJSCode(t *testing.T) {
 	e, vi := ininit(t)
 
 	jshw := jsHelloWorld()
+	jsc := jsCallHelloWorld()
 
 	vi.SetContract(jshw)
+	vi.SetContract(jsc)
 
-	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
+	act := tx.NewAction("call_hello_world", "call_hello", fmt.Sprintf(`[]`))
 
 	trx, err := makeTx(act)
 	if err != nil {
@@ -247,7 +249,7 @@ func TestIntergration_CallJSCode(t *testing.T) {
 
 func jsCallHelloWorld() *contract.Contract {
 	return &contract.Contract{
-		ID:"call_hello_world",
+		ID: "call_hello_world",
 		Code: `
 class Contract {
  constructor() {
@@ -260,5 +262,18 @@ class Contract {
 
 module.exports = Contract;
 `,
+		Info: &contract.Info{
+			Lang:        "javascript",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				{
+					Name:     "call_hello",
+					Payment:  0,
+					GasPrice: int64(1),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				},
+			},
+		},
 	}
 }
