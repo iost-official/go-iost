@@ -117,7 +117,7 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			if incomingMessage.Type() == p2p.MessageType(p2p.SyncBlockResponse) {
-				//go p.synchronizer.OnRecvBlock(blk.HeadHash(), incomingMessage.From())
+				go p.synchronizer.OnRecvBlock(blk.HeadHash(), incomingMessage.From())
 			}
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
