@@ -78,7 +78,7 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 		verifyDB:     baseVariable.StateDB(),
 		produceDB:    baseVariable.StateDB().Fork(),
 		exitSignal:   make(chan struct{}),
-		chRecvBlock:  p2pService.Register("consensus channel", p2p.NewBlockResponse, p2p.SyncBlockResponse),
+		chRecvBlock:  p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
 		chGenBlock:   make(chan *block.Block, 10),
 	}
 	staticProperty = newStaticProperty(p.account, witnessList)
@@ -117,9 +117,13 @@ func (p *PoB) blockLoop() {
 				fmt.Println(err)
 				continue
 			}
-			go p.p2pService.Broadcast(req.Data(), req.Type(), p2p.UrgentMessage)
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
-				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), req.From())
+				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
+			} else {
+				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
+				if ok, start, end := p.synchronizer.NeedSync(blk.Head.Number); ok {
+					go p.synchronizer.SyncBlocks(start, end)
+				}
 			}
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
@@ -152,7 +156,7 @@ func (p *PoB) scheduleLoop() {
 					continue
 				}
 				p.chGenBlock <- blk
-				go p.p2pService.Broadcast(blkByte, p2p.NewBlockResponse, p2p.UrgentMessage)
+				go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().Unix())
 		case <-p.exitSignal:

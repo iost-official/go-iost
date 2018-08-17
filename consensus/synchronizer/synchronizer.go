@@ -169,7 +169,7 @@ func (sy *SyncImpl) messageLoop() {
 		select {
 		case req, ok := <-sy.messageChan:
 			if !ok {
-				break
+				return
 			}
 			if req.Type() == p2p.SyncBlockHashRequest {
 				var rh message.BlockHashQuery
