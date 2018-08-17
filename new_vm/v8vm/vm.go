@@ -65,7 +65,7 @@ func (e *VM) setContract(contract *contract.Contract, api string, args ...interf
 
 func (e *VM) execute(code string) (rtn []interface{}, cost *contract.Cost, err error) {
 	rs, err := e.sandbox.Execute(code)
-	return []interface{}{rs}, nil, err
+	return []interface{}{rs}, contract.NewCost(1, 1, 1), err
 }
 
 func (e *VM) setJSPath(path string) {
