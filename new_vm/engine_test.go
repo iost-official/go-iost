@@ -45,7 +45,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	bi, _ := e.(*EngineImpl).ho.BlockInfo()
 
 	blkInfo := string(bi)
-	if blkInfo != `{"number":10,"parent_hash":"YWJj","time":123456,"witness":"witness"}` {
+	if blkInfo != `{"number":10,"parent_hash":"ZiCa","time":123456,"witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
 
@@ -683,6 +683,26 @@ module.exports = Contract;
 
 	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(int64(1000000)), nil
+	})
+
+	db.EXPECT().Get("state", "i-witness").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+
+		db.EXPECT().Put("state", "i-witness", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+			if database.MustUnmarshal(value).(int64) != int64(1300) {
+				t.Fatal("witness", database.MustUnmarshal(value).(int64))
+			}
+			return nil
+		})
+
+		if database.MustUnmarshal(value).(int64) != 999700 {
+			t.Fatal(database.MustUnmarshal(value).(int64))
+		}
+
+		return nil
 	})
 
 	db.EXPECT().Rollback().Do(func() {
