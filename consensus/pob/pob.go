@@ -9,7 +9,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
@@ -65,7 +64,7 @@ type PoB struct {
 	produceDB    db.MVCCDB
 
 	exitSignal  chan struct{}
-	chRecvBlock chan message.Message
+	chRecvBlock chan p2p.IncomingMessage
 	chGenBlock  chan *block.Block
 }
 
@@ -85,11 +84,7 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 
 	p.produceDB = p.verifyDB.Fork()
 
-	var err error
-	//p.chRecvBlock, err = p.p2pService.Register("consensus chan", p2p.NewBlockResponse, p2p.SyncBlockResponse)
-	if err != nil {
-		return nil, err
-	}
+	p.chRecvBlock = p.p2pService.Register("consensus chan", p2p.NewBlockResponse, p2p.SyncBlockResponse)
 	p.exitSignal = make(chan struct{})
 	p.initGlobalProperty(p.account, witnessList)
 	return &p, nil
@@ -146,7 +141,7 @@ func (p *PoB) blockLoop() {
 				return
 			}
 			var blk block.Block
-			err := blk.Decode(req.GetBody())
+			err := blk.Decode(req.Data())
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -156,8 +151,9 @@ func (p *PoB) blockLoop() {
 				fmt.Println(err)
 				continue
 			}
-			if req.GetReqType() == int32(p2p.SyncBlockResponse) {
-				//go p.synchronizer.OnRecvBlock(blk.HeadHash(), req.From())
+			go p.p2pService.Broadcast(req.Data(), req.Type(), p2p.UrgentMessage)
+			if req.Type() == p2p.SyncBlockResponse {
+				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), req.From())
 			}
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
@@ -187,9 +183,8 @@ func (p *PoB) scheduleLoop() {
 				blkByte, err := blk.Encode()
 				if err != nil {
 					fmt.Println(err)
+					continue
 				}
-				//msg := message.Message{ReqType: int32(ReqNewBlock), Body: bb}
-				//go p.router.Broadcast(msg)
 				p.chGenBlock <- blk
 				log.Log.I("Block size: %v, TrNum: %v", len(blkByte), len(blk.Txs))
 				go p.p2pService.Broadcast(blkByte, p2p.NewBlockResponse, p2p.UrgentMessage)
