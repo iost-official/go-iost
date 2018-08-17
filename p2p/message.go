@@ -119,6 +119,10 @@ func (m *p2pMessage) data() ([]byte, error) {
 	return data, err
 }
 
+func (m *p2pMessage) needDedup() bool {
+	return m.messageType() != RoutingTableQuery && m.messageType() != RoutingTableResponse
+}
+
 func newP2PMessage(chainID uint32, messageType MessageType, version uint16, reserved uint32, data []byte) *p2pMessage {
 	if reserved&reservedCompressionFlag > 0 {
 		data = snappy.Encode(nil, data)
