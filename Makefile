@@ -41,7 +41,7 @@ image: devimage
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 devimage:
-	docker build -f Dockerfile.dev -t iost-dev .
+	docker build -f Dockerfile.dev -t iostio/iost-dev .
 
 install:
 	go install ./cmd/iwallet/
