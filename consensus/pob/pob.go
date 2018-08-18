@@ -119,7 +119,8 @@ func (p *PoB) blockLoop() {
 			}
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
 				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
-			} else {
+			}
+			if incomingMessage.Type() == p2p.NewBlock {
 				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
 				if ok, start, end := p.synchronizer.NeedSync(blk.Head.Number); ok {
 					go p.synchronizer.SyncBlocks(start, end)

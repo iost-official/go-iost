@@ -18,13 +18,13 @@ func TestSignature(t *testing.T) {
 			info := Sha256([]byte("hello"))
 			seckey := Sha256([]byte("seckey"))
 			pubkey := CalcPubkeyInSecp256k1(seckey)
-			sig, _ := Sign(Secp256k1, info, seckey)
+			sig := Sign(Secp256k1, info, seckey)
 			So(bytes.Equal(sig.Pubkey, pubkey), ShouldBeTrue)
 
 			ans := VerifySignature(info, sig)
 			So(ans, ShouldBeTrue)
 
-			bsig := sig.Encode()
+			bsig, _ := sig.Encode()
 			var sig2 Signature
 			sig2.Decode(bsig)
 			So(Base58Encode(sig2.Pubkey), ShouldEqual, Base58Encode(sig.Pubkey))
