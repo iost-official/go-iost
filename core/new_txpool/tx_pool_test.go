@@ -2,6 +2,7 @@ package txpool
 
 import (
 	"fmt"
+	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
@@ -10,6 +11,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
+	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 	"os/exec"
 	"testing"
@@ -27,7 +29,12 @@ var (
 func TestNewTxPoolImpl(t *testing.T) {
 	//t.SkipNow()
 	Convey("test NewTxPoolServer", t, func() {
-		//ctl := gomock.NewController(t)
+		ctl := NewController(t)
+		p2pMock := p2p_mock.NewMockService(ctl)
+
+		p2pCh := make(chan p2p.IncomingMessage, 100)
+		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
+		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
 		var accountList []account.Account
 		var witnessList []string
@@ -52,31 +59,17 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		tx.LdbPath = ""
 
-		config := &p2p.Config{
-			ListenAddr: "0.0.0.0:8088",
-		}
-
-		node, err := p2p.NewNetService(config)
-		So(err, ShouldBeNil)
-
 		log.NewLogger("iost")
-		//blockList := genBlocks(accountList, witnessList, 1, 1, true)
-		//
-		//gl.BlockChain().Push(blockList[0])
 
 		conf := &common.Config{}
 
 		gl, err := global.New(conf)
 		So(err, ShouldBeNil)
 
-		//base := core_mock.NewMockChain(ctl)
-		//base.EXPECT().Top().AnyTimes().Return(blockList[0], nil)
-		//base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
-
 		BlockCache, err := blockcache.NewBlockCache(gl)
 		So(err, ShouldBeNil)
 
-		txPool, err := NewTxPoolImpl(gl, BlockCache, node)
+		txPool, err := NewTxPoolImpl(gl, BlockCache, p2pMock)
 		So(err, ShouldBeNil)
 
 		txPool.Start()
