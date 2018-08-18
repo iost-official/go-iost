@@ -3,6 +3,7 @@ package consensus_common
 import (
 	"bytes"
 	"errors"
+	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -21,19 +22,18 @@ var (
 	ErrTxReceipt  = errors.New("wrong tx receipt")
 )
 
-func VerifyBlockHead(blk *block.Block, parentBlk *block.Block, chainTop *block.Block) error {
+func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Block) error {
 	bh := blk.Head
-	cur := common.GetCurrentTimestamp().Slot
-	if bh.Time > cur+1 {
+	if bh.Time > time.Now().Unix()/common.SlotLength+1 {
 		return ErrFutureBlk
 	}
-	if bh.Time < chainTop.Head.Time {
+	if bh.Time <= lib.Head.Time {
 		return ErrOldBlk
 	}
-	if !bytes.Equal(bh.ParentHash, parentBlk.HeadHash()) {
+	if !bytes.Equal(bh.ParentHash, parentBlock.HeadHash()) {
 		return ErrParentHash
 	}
-	if bh.Number != parentBlk.Head.Number+1 {
+	if bh.Number != parentBlock.Head.Number+1 {
 		return ErrNumber
 	}
 	if !bytes.Equal(blk.CalculateTxsHash(), bh.TxsHash) {
@@ -61,14 +61,4 @@ func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 		}
 	}
 	return nil
-}
-
-var txEngine new_vm.Engine
-
-func VerifyTxBegin(blk *block.Block, db db.MVCCDB) {
-	txEngine = new_vm.NewEngine(&blk.Head, db)
-}
-
-func VerifyTx(tx *tx.Tx) (*tx.TxReceipt, error) {
-	return txEngine.Exec(tx)
 }

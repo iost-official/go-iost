@@ -42,11 +42,11 @@ const (
 	Ping MessageType = iota + 1
 	RoutingTableQuery
 	RoutingTableResponse
+	NewBlock
 	SyncBlockHashRequest
 	SyncBlockHashResponse
 	SyncBlockRequest
 	SyncBlockResponse
-	NewBlockResponse
 	PublishTxRequest
 
 	UrgentMessage = 1
@@ -117,6 +117,10 @@ func (m *p2pMessage) data() ([]byte, error) {
 		data, err = snappy.Decode(nil, data)
 	}
 	return data, err
+}
+
+func (m *p2pMessage) needDedup() bool {
+	return m.messageType() != RoutingTableQuery && m.messageType() != RoutingTableResponse
 }
 
 func newP2PMessage(chainID uint32, messageType MessageType, version uint16, reserved uint32, data []byte) *p2pMessage {

@@ -2,42 +2,39 @@ package pob
 
 import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 
 	"encoding/binary"
 	"errors"
-	"time"
-
-	"fmt"
-
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"time"
 )
 
 var (
 	ErrWitness     = errors.New("wrong witness")
 	ErrPubkey      = errors.New("wrong pubkey")
 	ErrSignature   = errors.New("wrong signature")
-	ErrSlotWitness = errors.New("witness slot duplicate")
+	ErrSlot        = errors.New("witness slot duplicate")
 	ErrTxTooOld    = errors.New("tx too old")
 	ErrTxDup       = errors.New("duplicate tx")
 	ErrTxSignature = errors.New("tx wrong signature")
 )
 
-func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool txpool.TxPool, db db.MVCCDB) *block.Block {
-	lastBlock := node.Block
-	parentHash := lastBlock.HeadHash()
+func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+	var err error
 	blk := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
-			ParentHash: parentHash,
-			Number:     lastBlock.Head.Number + 1,
+			ParentHash: topBlock.HeadHash(),
+			Number:     topBlock.Head.Number + 1,
 			Witness:    account.ID,
-			Time:       common.GetCurrentTimestamp().Slot,
+			Time:       time.Now().Unix() / common.SlotLength,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -45,39 +42,37 @@ func genBlock(account account.Account, node *blockcache.BlockCacheNode, txPool t
 	txCnt := 1000
 	limitTime := time.NewTicker((common.SlotLength / 3 * time.Second))
 	txsList, _ := txPool.PendingTxs(txCnt)
-	txPoolSize.Set(float64(len(txsList)))
-	if len(txsList) != 0 {
-		consensus_common.VerifyTxBegin(lastBlock, db)
-	ForEnd:
-		for _, t := range txsList {
-			select {
-			case <-limitTime.C:
-				break ForEnd
-			default:
-				if receipt, err := consensus_common.VerifyTx(t); err == nil {
-					db.Commit()
-					blk.Txs = append(blk.Txs, t)
-					blk.Receipts = append(blk.Receipts, receipt)
-				} else {
-					db.Rollback()
-				}
+	db.Checkout(string(topBlock.HeadHash()))
+	engine := new_vm.NewEngine(&topBlock.Head, db)
+	for _, t := range txsList {
+		select {
+		case <-limitTime.C:
+			break
+		default:
+			if receipt, err := engine.Exec(t); err == nil {
+				blk.Txs = append(blk.Txs, t)
+				blk.Receipts = append(blk.Receipts, receipt)
 			}
 		}
 	}
+	db.Tag(string(blk.HeadHash()))
+
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
-	sig, _ := common.Sign(common.Secp256k1, headInfo, account.Seckey)
-	blk.Head.Signature = sig.Encode()
-	err := blk.CalculateHeadHash()
+	sig := common.Sign(common.Secp256k1, headInfo, account.Seckey)
+	blk.Head.Signature, err = sig.Encode()
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
-	db.Tag(string(blk.HeadHash()))
+	err = blk.CalculateHeadHash()
+	if err != nil {
+		return nil, err
+	}
 
 	generatedBlockCount.Inc()
-
-	return &blk
+	txPoolSize.Set(float64(len(blk.Txs)))
+	return &blk, nil
 }
 
 func generateHeadInfo(head block.BlockHead) []byte {
@@ -98,34 +93,21 @@ func generateHeadInfo(head block.BlockHead) []byte {
 }
 
 func verifyBasics(blk *block.Block) error {
-	// verify block witness
-	if witnessOfTime(common.Timestamp{Slot: blk.Head.Time}) != blk.Head.Witness {
+	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
 		return ErrWitness
 	}
-
-	headInfo := generateHeadInfo(blk.Head)
 	var signature common.Signature
 	signature.Decode(blk.Head.Signature)
-
 	if blk.Head.Witness != account.GetIdByPubkey(signature.Pubkey) {
 		return ErrPubkey
 	}
-
-	// verify block witness signature
+	headInfo := generateHeadInfo(blk.Head)
 	if !common.VerifySignature(headInfo, signature) {
 		return ErrSignature
 	}
-
-	// block produced by itself: do not verify the rest parts
-	if blk.Head.Witness == staticProperty.ID {
-		return nil
+	if staticProperty.hasSlot(blk.Head.Time) {
+		return ErrSlot
 	}
-
-	// verify slot map
-	if staticProperty.hasSlotWitness(uint64(blk.Head.Time), blk.Head.Witness) {
-		return ErrSlotWitness
-	}
-
 	return nil
 }
 
@@ -135,9 +117,6 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return err
 	}
 	for _, tx := range blk.Txs {
-		if dynamicProperty.slotToTimestamp(blk.Head.Time).ToUnixSec()-tx.Time/1e9 > 60 {
-			return ErrTxTooOld
-		}
 		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
 		if exist == txpool.FoundChain {
 			return ErrTxDup
@@ -146,103 +125,57 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 				return ErrTxSignature
 			}
 		}
+		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > 60 {
+			return ErrTxTooOld
+		}
 	}
-	err = consensus_common.VerifyBlockWithVM(blk, db)
-	if err != nil {
-		return err
-	}
-	return nil
+	return consensus_common.VerifyBlockWithVM(blk, db)
 }
 
-func updateNodeInfo(node *blockcache.BlockCacheNode) {
-	node.Number = uint64(node.Block.Head.Number)
-	node.Witness = node.Block.Head.Witness
-	if number, has := staticProperty.Watermark[node.Witness]; has {
-		node.ConfirmUntil = number
-		if node.Number >= number {
-			staticProperty.Watermark[node.Witness] = node.Number + 1
-		}
-	} else {
-		node.ConfirmUntil = 0
+func updateStaticProperty(node *blockcache.BlockCacheNode) {
+	staticProperty.addSlot(node.Block.Head.Time)
+	node.ConfirmUntil = staticProperty.Watermark[node.Witness]
+	if node.Number >= staticProperty.Watermark[node.Witness] {
 		staticProperty.Watermark[node.Witness] = node.Number + 1
 	}
-	staticProperty.addSlotWitness(uint64(node.Block.Head.Time), node.Witness)
 }
 
-func updatePendingWitness(node *blockcache.BlockCacheNode, db db.MVCCDB) []string {
+func updatePendingWitness(node *blockcache.BlockCacheNode, db db.MVCCDB) {
 	// TODO how to decode witness list from db?
-	//newList, err := db.Get("state", "witnessList")
+	//newList, err := db.Get("state", "witnessList"), "id1"
 	var err error
 	if err == nil {
 		//node.PendingWitnessList = newList
-		node.LastWitnessListNumber = node.Number
 	} else {
 		node.PendingWitnessList = node.Parent.PendingWitnessList
-		node.LastWitnessListNumber = node.Parent.LastWitnessListNumber
 	}
-	return nil
 }
 
-func calculateConfirm2(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
-	confirmNumber := staticProperty.NumberOfWitnesses*2/3 + 1
-	startNumber := node.Number
-	libNumber := root.Number
-	votedWitnesses := make([][]string, startNumber-libNumber)
-	var j uint64 = 0
-	for node != root {
-		for i := 0; uint64(i) < startNumber-node.ConfirmUntil+1; i++ {
-			votedWitnesses[i] = append(votedWitnesses[0], node.Witness)
-		}
-		if len(votedWitnesses[j]) == confirmNumber {
-			return node
-		}
-		j++
-		node = node.Parent
+func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
+	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
+	if confirmedNode != nil {
+		bc.Flush(confirmedNode)
+		staticProperty.updateWitnessList(confirmedNode.PendingWitnessList)
 	}
-	return nil
 }
+
 func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
-	confirmNumber := staticProperty.NumberOfWitnesses*2/3 + 1
+	confirmLimit := staticProperty.NumberOfWitnesses*2/3 + 1
 	startNumber := node.Number
-	libNumber := root.Number
-	confirmMap := make(map[string]int)
-	votedWitnesses := make([][]string, startNumber-libNumber+1)
+	var confirmNum int64 = 0
+	confirmUntilMap := make(map[int64]int64, startNumber-root.Number)
+	var index int64 = 0
 	for node != root {
 		if node.ConfirmUntil <= node.Number {
-			if num, err := confirmMap[node.Witness]; err {
-				confirmMap[node.Witness] = 1
-			} else {
-				confirmMap[node.Witness] = num + 1
-			}
-			index := int64(node.ConfirmUntil) - int64(libNumber)
-			if index > 0 {
-				votedWitnesses[index] = append(votedWitnesses[index], node.Witness)
-			}
+			confirmNum++
+			confirmUntilMap[startNumber-node.ConfirmUntil]++
 		}
-		if len(confirmMap) >= confirmNumber {
-			staticProperty.delSlotWitness(libNumber, node.Number)
+		if confirmNum >= confirmLimit {
 			return node
 		}
-		i := node.Number - libNumber
-		if votedWitnesses[i] != nil {
-			for _, witness := range votedWitnesses[i] {
-				confirmMap[witness]--
-				if confirmMap[witness] == 0 {
-					delete(confirmMap, witness)
-				}
-			}
-		}
+		confirmNum -= confirmUntilMap[index]
 		node = node.Parent
+		index++
 	}
 	return nil
-}
-
-func promoteWitness(node *blockcache.BlockCacheNode, confirmed *blockcache.BlockCacheNode) {
-	// update the last pending witness list that has been confirmed
-	for node != confirmed && node.LastWitnessListNumber > confirmed.Number {
-		node = node.Parent
-	}
-	if node.PendingWitnessList != nil {
-		staticProperty.updateWitnessList(node.PendingWitnessList)
-	}
 }

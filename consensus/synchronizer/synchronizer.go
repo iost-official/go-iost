@@ -1,4 +1,4 @@
-package consensus_common
+package synchronizer
 
 import (
 	"fmt"
@@ -7,25 +7,26 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	block "github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 )
 
 var (
-	SyncNumber                    = 2
-	MaxBlockHashQueryNumber       = 10
+	SyncNumber              int64 = 2
+	MaxBlockHashQueryNumber int64 = 10
 	RetryTime                     = 5 * time.Second
-	blockDownloadTimeout    int64 = 10
 	MaxAcceptableLength     int64 = 100
+	ConfirmNumber           int   = 7
 )
 
 type Synchronizer interface {
 	Start() error
-	Stop() error
-	NeedSync(maxHeight uint64) (bool, uint64, uint64)
-	SyncBlocks(startNumber uint64, endNumber uint64) error
-	OnBlockConfirmed(hash, peerID p2p.PeerID) error
+	Stop()
+	NeedSync(maxHeight int64) (bool, int64, int64)
+	SyncBlocks(startNumber int64, endNumber int64) error
+	OnBlockConfirmed(hash string, peerID p2p.PeerID) error
 }
 
 type SyncImpl struct {
@@ -60,12 +61,7 @@ func NewSynchronizer(glb global.BaseVariable, blkcache blockcache.BlockCache, p2
 		p2p.SyncBlockHashResponse,
 	)
 
-	sy.log, err = log.NewLogger("synchronizer.log")
-	if err != nil {
-		return nil, err
-	}
-
-	sy.log.NeedPrint = false
+	//sy.log.NeedPrint = false
 	sy.exitSignal = make(chan struct{})
 
 	return sy, nil
@@ -80,15 +76,6 @@ func (sy *SyncImpl) reqDownloadBlock(hash string, peerID p2p.PeerID) {
 		return
 	}
 	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
-	/*
-		reqMsg := message.Message{
-			Time:    time.Now().Unix(),
-			To:      peerID,
-			ReqType: int32(p2p.ReqDownloadBlock),
-			Body:    blkReq.Encode(),
-		}
-		sy.router.Send(reqMsg)
-	*/
 }
 
 func (sy *SyncImpl) Start() error {
@@ -98,64 +85,52 @@ func (sy *SyncImpl) Start() error {
 	return nil
 }
 
-func (sy *SyncImpl) Stop() error {
+func (sy *SyncImpl) Stop() {
 	sy.dc.Stop()
 	close(sy.exitSignal)
-	return nil
 }
 
-func (sy *SyncImpl) NeedSync(netHeight uint64) (bool, uint64, uint64) {
+func (sy *SyncImpl) NeedSync(netHeight int64) (bool, int64, int64) {
 	//TODO：height，block confirmed Length
-	/*
-		if netHeight > height+uint64(SyncNumber) {
-			return true, height + 1, netHeight
+	height := sy.glb.BlockChain().Length() - 1
+	if netHeight > height+SyncNumber {
+		return true, height + 1, netHeight
+	}
+	bcn := sy.blockCache.Head()
+	witness := bcn.Block.Head.Witness
+	num := 0
+	for i := 0; i < ConfirmNumber; i++ {
+		bcn = bcn.Parent
+		if bcn == nil {
+			break
 		}
-			bc := sy.blockCache.LongestChain()
-			ter := bc.Iterator()
-			witness := bc.Top().Head.Witness
-			num := 0
-			for i := 0; i < sy.confirmNumber; i++ {
-				block := ter.Next()
-				if block == nil {
-					break
-				}
-				if witness == block.Head.Witness {
-					num++
-				}
-			}
-			if num > 0 {
-				return true, height + 1, netHeight
-			}
-	*/
+		if witness == bcn.Block.Head.Witness {
+			num++
+		}
+	}
+	if num > 0 {
+		return true, height + 1, netHeight
+	}
 	return false, 0, 0
 }
 
-func (sy *SyncImpl) queryBlockHash(start, end uint64) error {
-	hr := message.BlockHashQuery{Start: start, End: end}
+func (sy *SyncImpl) queryBlockHash(start, end int64) error {
+	hr := message.BlockHashQuery{ReqType: 0, Start: start, End: end}
 	bytes, err := hr.Encode()
 	if err != nil {
-		sy.log.D("marshal BlockHashQuery failed. err=%v", err)
+		//sy.log.D("marshal BlockHashQuery failed. err=%v", err)
 		return err
 	}
-	sy.log.D("[net] query block hash. start=%v, end=%v", start, end)
+	//sy.log.D("[net] query block hash. start=%v, end=%v", start, end)
 	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
-	/*
-		msg := message.Message{
-			Body:    bytes,
-			ReqType: int32(p2p.BlockHashQuery),
-			TTL:     1, //BlockHashQuery req just broadcast to its neibour
-			Time:    time.Now().UnixNano(),
-		}
-		sy.router.Broadcast(msg)
-	*/
 	return nil
 }
 
-func (sy *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
+func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 	var syncNum int
-	for endNumber > startNumber+uint64(MaxBlockHashQueryNumber)-1 {
+	for endNumber > startNumber+MaxBlockHashQueryNumber-1 {
 		need := false
-		for i := startNumber; i < startNumber+uint64(MaxBlockHashQueryNumber); i++ {
+		for i := startNumber; i < startNumber+MaxBlockHashQueryNumber; i++ {
 			_, ok := sy.reqMap.LoadOrStore(i, true)
 			if !ok {
 				need = true
@@ -163,9 +138,9 @@ func (sy *SyncImpl) SyncBlocks(startNumber uint64, endNumber uint64) error {
 		}
 		if need {
 			syncNum++
-			sy.queryBlockHash(startNumber, startNumber+uint64(MaxBlockHashQueryNumber)-1)
+			sy.queryBlockHash(startNumber, startNumber+MaxBlockHashQueryNumber-1)
 		}
-		startNumber += uint64(MaxBlockHashQueryNumber)
+		startNumber += MaxBlockHashQueryNumber
 		if syncNum%10 == 0 {
 			time.Sleep(time.Second)
 		}
@@ -194,13 +169,13 @@ func (sy *SyncImpl) messageLoop() {
 		select {
 		case req, ok := <-sy.messageChan:
 			if !ok {
-				break
+				return
 			}
 			if req.Type() == p2p.SyncBlockHashRequest {
 				var rh message.BlockHashQuery
 				err := rh.Decode(req.Data())
 				if err != nil {
-					sy.log.E("unmarshal BlockHashQuery failed:%v", err)
+					//sy.log.E("unmarshal BlockHashQuery failed:%v", err)
 					break
 				}
 				go sy.handleHashQuery(&rh, req.From())
@@ -208,7 +183,7 @@ func (sy *SyncImpl) messageLoop() {
 				var rh message.BlockHashResponse
 				err := rh.Decode(req.Data())
 				if err != nil {
-					sy.log.E("unmarshal BlockHashResponse failed:%v", err)
+					//sy.log.E("unmarshal BlockHashResponse failed:%v", err)
 					break
 				}
 				go sy.handleHashResp(&rh, req.From())
@@ -234,55 +209,69 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 	resp := &message.BlockHashResponse{
 		BlockHashes: make([]*message.BlockHash, 0, rh.End-rh.Start+1),
 	}
-	node := sy.blockCache.Head()
-	for i := rh.End; i >= rh.Start; i-- {
-		var hash []byte
+	if rh.ReqType == 0 {
+		node := sy.blockCache.Head()
+		var i int64
+		for i = rh.End; i >= rh.Start; i-- {
+			var hash []byte
+			var err error
+			if i < sy.blockCache.LinkedRoot().Number {
+				hash, err = sy.glb.BlockChain().GetHashByNumber(i)
+				if err != nil {
+					continue
+				}
+			} else {
+				if i > node.Number {
+					continue
+				}
+				for node != nil && i < node.Number {
+					node = node.Parent
+				}
+				if node == nil || i != node.Number {
+					continue
+				}
+				hash = node.Block.HeadHash()
+			}
+			blkHash := message.BlockHash{
+				Height: i,
+				Hash:   hash,
+			}
+			resp.BlockHashes = append(resp.BlockHashes, &blkHash)
+		}
+	} else {
+		var blk *block.Block
 		var err error
-		if i < sy.blockCache.LinkedRoot().Number {
-			hash, err = sy.glb.BlockChain().GetHashByNumber(i)
-			if err != nil {
-				continue
+		for _, num := range rh.Nums {
+			var hash []byte
+			blk, err = sy.blockCache.GetBlockByNumber(num)
+			if err == nil {
+				hash = blk.HeadHash()
+			} else {
+				hash, err = sy.glb.BlockChain().GetHashByNumber(num)
+				if err != nil {
+					continue
+				}
 			}
-		} else {
-			if i > node.Number {
-				continue
+			blkHash := message.BlockHash{
+				Height: num,
+				Hash:   hash,
 			}
-			for node != nil && i < node.Number {
-				node = node.Parent
-			}
-			if node == nil || i != node.Number {
-				continue
-			}
-			hash = node.Block.HeadHash()
+			resp.BlockHashes = append(resp.BlockHashes, &blkHash)
 		}
-		blkHash := message.BlockHash{
-			Height: i,
-			Hash:   hash,
-		}
-		resp.BlockHashes = append(resp.BlockHashes, &blkHash)
 	}
 	if len(resp.BlockHashes) == 0 {
 		return
 	}
 	bytes, err := resp.Encode()
 	if err != nil {
-		sy.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
+		//sy.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
 		return
 	}
 	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage)
-	/*
-		resMsg := message.Message{
-			Time:    time.Now().Unix(),
-			To:      peerID,
-			ReqType: int32(p2p.BlockHashResponse),
-			Body:    bytes,
-		}
-		sy.router.Send(resMsg)
-	*/
 }
 
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
-	sy.log.I("receive block hashes: len=%v", len(rh.BlockHashes))
+	//sy.log.I("receive block hashes: len=%v", len(rh.BlockHashes))
 	for _, blkHash := range rh.BlockHashes {
 		if _, err := sy.blockCache.Find(blkHash.Hash); err == nil { // TODO: check hash @ BlockCache and BlockDB
 			sy.reqMap.Delete(blkHash.Height)
@@ -296,7 +285,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 		select {
 		case <-time.After(RetryTime):
 			sy.reqMap.Range(func(k, v interface{}) bool {
-				num, ok := k.(uint64)
+				num, ok := k.(int64)
 				if !ok {
 					return false
 				}
@@ -316,34 +305,25 @@ func (sy *SyncImpl) retryDownloadLoop() {
 func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
 	var b []byte
 	var err error
-	if rh.BlockNumber < sy.blockCache.LinkedRoot().Number {
+	if int64(rh.BlockNumber) < sy.blockCache.LinkedRoot().Number {
 		b, err = sy.glb.BlockChain().GetBlockByteByHash(rh.BlockHash)
 		if err != nil {
-			log.Log.E("Database error: block empty %v", rh.BlockNumber)
+			//log.Log.E("Database error: block empty %v", rh.BlockNumber)
 			return
 		}
 	} else {
 		node, err := sy.blockCache.Find(rh.BlockHash)
 		if err != nil {
-			log.Log.E("Block not in cache: %v", rh.BlockNumber)
+			//log.Log.E("Block not in cache: %v", rh.BlockNumber)
 			return
 		}
 		b, err = node.Block.Encode()
 		if err != nil {
-			log.Log.E("Fail to encode block: %v", rh.BlockNumber)
+			//log.Log.E("Fail to encode block: %v", rh.BlockNumber)
 			return
 		}
 	}
 	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
-	/*
-		resMsg := message.Message{
-			Time:    time.Now().Unix(),
-			To:      peerID,
-			ReqType: int32(p2p.ReqSyncBlock),
-			Body:    b,
-		}
-		sy.router.Send(resMsg)
-	*/
 }
 
 type DownloadController interface {

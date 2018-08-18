@@ -49,14 +49,11 @@ type PeerManager struct {
 	subs   *sync.Map //  map[MessageType]map[string]chan IncomingMessage
 	quitCh chan struct{}
 
-	seeds []string
-
-	host            host.Host
-	config          *Config
-	routingTable    *kbucket.RoutingTable
-	peerStore       peerstore.Peerstore
-	routingFilePath string
-	lastUpdateTime  atomic.Int64
+	host           host.Host
+	config         *Config
+	routingTable   *kbucket.RoutingTable
+	peerStore      peerstore.Peerstore
+	lastUpdateTime atomic.Int64
 }
 
 // NewPeerManager returns a new instance of PeerManager struct.
@@ -97,6 +94,8 @@ func (pm *PeerManager) Stop() {
 // In other cases, reset the stream.
 func (pm *PeerManager) HandleStream(s libnet.Stream) {
 	remotePID := s.Conn().RemotePeer()
+	ilog.Info("new stream is coming. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+
 	peer := pm.GetNeighbor(remotePID)
 	if peer == nil {
 		if pm.NeighborCount() >= maxNeighborCount {
@@ -109,6 +108,7 @@ func (pm *PeerManager) HandleStream(s libnet.Stream) {
 
 	err := peer.AddStream(s)
 	if err != nil {
+		ilog.Info("add stream failed. err=%v, pid=%s", err, remotePID.Pretty())
 		s.Reset()
 		return
 	}
@@ -138,6 +138,7 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 		case <-pm.quitCh:
 			return
 		case <-syncRoutingTableTicker.C:
+			ilog.Info("start sync routing table.")
 			pm.syncRoutingTable()
 			syncRoutingTableTicker.Reset(syncRoutingTableInterval)
 		}
@@ -202,9 +203,9 @@ func (pm *PeerManager) NeighborCount() int {
 
 // DumpRoutingTable saves routing table in file.
 func (pm *PeerManager) DumpRoutingTable() {
-	file, err := os.Create(pm.routingFilePath)
+	file, err := os.Create(pm.config.RoutingFile)
 	if err != nil {
-		ilog.Error("create routing file failed. err=%v, path=%v", err, pm.routingFilePath)
+		ilog.Error("create routing file failed. err=%v, path=%v", err, pm.config.RoutingFile)
 		return
 	}
 	defer file.Close()
@@ -219,9 +220,16 @@ func (pm *PeerManager) DumpRoutingTable() {
 
 // LoadRoutingTable reads routing table file and parses it.
 func (pm *PeerManager) LoadRoutingTable() {
-	file, err := os.Open(pm.routingFilePath)
+	if _, err := os.Stat(pm.config.RoutingFile); err != nil {
+		if os.IsNotExist(err) {
+			ilog.Info("no routing file. path=%v", pm.config.RoutingFile)
+			return
+		}
+	}
+
+	file, err := os.Open(pm.config.RoutingFile)
 	if err != nil {
-		ilog.Error("open routing file failed. err=%v, path=%v", err, pm.routingFilePath)
+		ilog.Error("open routing file failed. err=%v, path=%v", err, pm.config.RoutingFile)
 		return
 	}
 	defer file.Close()
@@ -254,24 +262,32 @@ func (pm *PeerManager) syncRoutingTable() {
 	allPeerIDs := pm.routingTable.ListPeers()
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	perm := r.Perm(len(allPeerIDs))
-	for i := 0; i < len(perm) && i < maxNeighborCount-neighborCount; i++ {
+
+	for i, t := 0, 0; i < len(perm) && t < maxNeighborCount-neighborCount; i++ {
 		peerID := allPeerIDs[perm[i]]
+		if peerID == pm.host.ID() {
+			continue
+		}
 		if pm.GetNeighbor(peerID) != nil {
 			continue
 		}
 		stream, err := pm.host.NewStream(context.Background(), peerID, protocolID)
 		if err != nil {
+			ilog.Error("create stream failed. err=%v", err)
+			pm.deletePeer(peerID)
 			continue
 		}
 		pm.HandleStream(stream)
 		pm.SendToPeer(peerID, nil, RoutingTableQuery, UrgentMessage)
+		t++
 	}
 }
 
 func (pm *PeerManager) parseSeeds() {
-	for _, seed := range pm.seeds {
+	for _, seed := range pm.config.SeedNodes {
 		peerID, addr, err := parseMultiaddr(seed)
 		if err != nil {
+			ilog.Error("parse seed nodes error. seed=%s, err=%v", seed, err)
 			continue
 		}
 		pm.storePeer(peerID, addr)
@@ -280,23 +296,25 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
+	ilog.Info("broadcast message. type=%d", typ)
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	pm.neighborMutex.RLock()
 	defer pm.neighborMutex.RUnlock()
 
 	for _, peer := range pm.neighbors {
-		peer.SendMessage(msg, mp)
+		peer.SendMessage(msg, mp, true)
 	}
 }
 
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
+	ilog.Info("send message to peer. type=%d, peerID=%s", typ, peerID.Pretty())
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	peer := pm.GetNeighbor(peerID)
 	if peer != nil {
-		peer.SendMessage(msg, mp)
+		peer.SendMessage(msg, mp, false)
 	}
 }
 
@@ -324,6 +342,8 @@ func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 
 // handleRoutingTableQuery picks the nearest peers of the given peerID and sends the result to it.
 func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
+	ilog.Info("handling routing table query. peerID=%s", peerID.Pretty())
+
 	peerIDs := pm.routingTable.NearestPeers(kbucket.ConvertPeerID(peerID), peerResponseCount)
 	peerInfo := make([]peerstore.PeerInfo, 0, len(peerIDs))
 	for _, id := range peerIDs {
@@ -342,6 +362,8 @@ func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
 
 // handleRoutingTableResponse stores the peer information received.
 func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
+	ilog.Info("handling routing table response.")
+
 	data, err := msg.data()
 	if err != nil {
 		ilog.Error("get message data failed. err=%v", err)
@@ -353,6 +375,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 		ilog.Error("json decode failed. err=%v, str=%s", err, data)
 		return
 	}
+	ilog.Info("receiving peer infos: %v", peerInfos)
 	for _, peerInfo := range peerInfos {
 		if len(peerInfo.Addrs) > 0 {
 			pm.storePeer(peerInfo.ID, peerInfo.Addrs[0])
@@ -379,7 +402,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 				select {
 				case v.(chan IncomingMessage) <- *inMsg:
 				default:
-					ilog.Error("send incoming message failed. message_type=%v", msg.messageType())
+					ilog.Error("sending incoming message failed. type=%d", msg.messageType())
 				}
 				return true
 			})
