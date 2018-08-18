@@ -144,8 +144,8 @@ func TestMonitor_HostCall(t *testing.T) {
 
 	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...string) (rtn []string, cost *contract.Cost, err error) {
 		innerFlag = true
-		if h.Ctx.Value("abi_name") != "inner" {
-			t.Fatal(h.Ctx)
+		if h.Context().Value("abi_name") != "inner" {
+			t.Fatal(h.Context())
 		}
 
 		return []string{"world"}, cost, nil

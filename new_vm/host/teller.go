@@ -71,6 +71,9 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 
 	for k, c := range h.cost {
 		fee := gasPrice * c.ToGas()
+		if fee == 0 {
+			continue
+		}
 		if strings.HasPrefix(k, "IOST") {
 			_, err := h.Transfer(k, witness, int64(fee))
 			if err != nil {

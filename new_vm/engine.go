@@ -105,18 +105,18 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), nil
 	}
 
-	bl := e.ho.DB.Balance(account.GetIdByPubkey(tx0.Publisher.Pubkey))
+	bl := e.ho.DB().Balance(account.GetIdByPubkey(tx0.Publisher.Pubkey))
 	if bl <= 0 || bl < tx0.GasPrice*tx0.GasLimit {
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), nil
 	}
 
-	e.ho.Ctx = loadTxInfo(e.ho.Ctx, tx0)
+	loadTxInfo(e.ho, tx0)
 	defer func() {
-		e.ho.Ctx = e.ho.Ctx.Base()
+		e.ho.PopCtx()
 	}()
 
-	e.ho.Ctx.GSet("gas_limit", tx0.GasLimit)
-	e.ho.Ctx.GSet("receipts", make([]tx.Receipt, 0))
+	e.ho.Context().GSet("gas_limit", tx0.GasLimit)
+	e.ho.Context().GSet("receipts", make([]tx.Receipt, 0))
 
 	txr := tx.NewTxReceipt(tx0.Hash())
 
@@ -138,28 +138,28 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		if status.Code != tx.Success {
 			txr.Receipts = nil
 			ilog.Debug("rollback")
-			e.ho.DB.Rollback()
+			e.ho.DB().Rollback()
 			break
 		}
 
 		txr.Receipts = append(txr.Receipts, receipts...)
 		txr.SuccActionNum++
 
-		gasLimit := e.ho.Ctx.GValue("gas_limit").(int64)
-		e.ho.Ctx.GSet("gas_limit", gasLimit-cost.ToGas())
+		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
+		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
 		e.ho.PayCost(cost, account.GetIdByPubkey(tx0.Publisher.Pubkey))
 	}
 
-	err = e.ho.DoPay(e.ho.Ctx.Value("witness").(string), int64(tx0.GasPrice))
+	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), int64(tx0.GasPrice))
 	if err != nil {
-		e.ho.DB.Rollback()
-		err = e.ho.DoPay(e.ho.Ctx.Value("witness").(string), int64(tx0.GasPrice))
+		e.ho.DB().Rollback()
+		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), int64(tx0.GasPrice))
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		e.ho.DB.Commit()
+		e.ho.DB().Commit()
 	}
 
 	return &txr, nil
@@ -238,15 +238,15 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	receipts = make([]tx.Receipt, 0)
 	cost = contract.Cost0()
 
-	e.ho.Ctx = host.NewContext(e.ho.Ctx)
+	e.ho.PushCtx()
 	defer func() {
-		e.ho.Ctx = e.ho.Ctx.Base()
+		e.ho.PopCtx()
 	}()
 
-	e.ho.Ctx.Set("stack0", "direct_call")
-	e.ho.Ctx.Set("stack_height", 1) // record stack trace
+	e.ho.Context().Set("stack0", "direct_call")
+	e.ho.Context().Set("stack_height", 1) // record stack trace
 
-	c := e.ho.DB.Contract(action.Contract)
+	c := e.ho.DB().Contract(action.Contract)
 	if c == nil || c.Info == nil {
 		cost = contract.NewCost(0, 0, GasCheckTxFailed)
 		status = tx.Status{
@@ -299,7 +299,7 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		return
 	}
 
-	receipts = append(receipts, e.ho.Ctx.GValue("receipts").([]tx.Receipt)...)
+	receipts = append(receipts, e.ho.Context().GValue("receipts").([]tx.Receipt)...)
 
 	status = tx.Status{
 		Code:    tx.Success,
@@ -364,12 +364,12 @@ func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
 	return c
 }
 
-func loadTxInfo(ctx *host.Context, t *tx.Tx) *host.Context {
-	c := host.NewContext(ctx)
-	c.Set("time", t.Time)
-	c.Set("expiration", t.Expiration)
-	c.Set("gas_price", t.GasPrice)
-	c.Set("tx_hash", common.Base58Encode(t.Hash()))
+func loadTxInfo(h *host.Host, t *tx.Tx) {
+	h.PushCtx()
+	h.Context().Set("time", t.Time)
+	h.Context().Set("expiration", t.Expiration)
+	h.Context().Set("gas_price", t.GasPrice)
+	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))
 
 	authList := make(map[string]int)
 	for _, v := range t.Signers {
@@ -378,7 +378,6 @@ func loadTxInfo(ctx *host.Context, t *tx.Tx) *host.Context {
 
 	authList[account.GetIdByPubkey(t.Publisher.Pubkey)] = 2
 
-	c.Set("auth_list", authList)
+	h.Context().Set("auth_list", authList)
 
-	return c
 }

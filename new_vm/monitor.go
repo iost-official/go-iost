@@ -31,7 +31,7 @@ func NewMonitor() *Monitor {
 
 func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
-	c := h.DB.Contract(contractName)
+	c := h.DB().Contract(contractName)
 	abi := c.ABI(api)
 	if abi == nil {
 		panic("should not reach here")
@@ -43,10 +43,10 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		return nil, contract.NewCost(0, 0, GasCheckTxFailed), err
 	}
 
-	h.Ctx = host.NewContext(h.Ctx)
+	h.PushCtx()
 
-	h.Ctx.Set("contract_name", contractName)
-	h.Ctx.Set("abi_name", api)
+	h.Context().Set("contract_name", contractName)
+	h.Context().Set("abi_name", api)
 
 	vm, ok := m.vms[c.Info.Lang]
 	if !ok {
@@ -60,18 +60,18 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		cost = contract.NewCost(100, 100, 100)
 	}
 
-	payment, ok := h.Ctx.GValue("abi_payment").(int)
+	payment, ok := h.Context().GValue("abi_payment").(int)
 	if !ok {
 		payment = int(abi.Payment)
 	}
 	switch payment {
 	case 1:
-		var gasPrice = h.Ctx.Value("gas_price").(int64)
+		var gasPrice = h.Context().Value("gas_price").(int64)
 		if abi.GasPrice < gasPrice {
 			return nil, nil, ErrGasPriceTooBig
 		}
 
-		b := h.DB.Balance(host.ContractGasPrefix + contractName)
+		b := h.DB().Balance(host.ContractGasPrefix + contractName)
 		if b > gasPrice*cost.ToGas() {
 			h.PayCost(cost, host.ContractGasPrefix+contractName)
 			cost = contract.Cost0()
@@ -80,7 +80,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 	default:
 	}
 
-	h.Ctx = h.Ctx.Base()
+	h.PopCtx()
 
 	return
 }
