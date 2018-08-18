@@ -60,15 +60,15 @@ func TestNewTxPoolImpl(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		log.NewLogger("iost")
+		//blockList := genBlocks(accountList, witnessList, 1, 1, true)
+		//
+		//gl.BlockChain().Push(blockList[0])
 
 		conf := &common.Config{}
 
 		gl, err := global.New(conf)
 		So(err, ShouldBeNil)
 
-		blockList := genBlocks(accountList, witnessList, 1, 1, true)
-
-		gl.BlockChain().Push(blockList[0])
 		//base := core_mock.NewMockChain(ctl)
 		//base.EXPECT().Top().AnyTimes().Return(blockList[0], nil)
 		//base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
@@ -139,7 +139,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 			//fmt.Println("FoundChain", b[0].HeadHash())
 
 			bcn := blockcache.NewBCN(nil, b[0])
-			So(txPool.testBlockListNum(), ShouldEqual, 1)
+			So(txPool.testBlockListNum(), ShouldEqual, 0)
 
 			err := txPool.AddLinkedNode(bcn, bcn)
 			So(err, ShouldBeNil)
@@ -147,12 +147,12 @@ func TestNewTxPoolImpl(t *testing.T) {
 			// need delay
 			for i := 0; i < 10; i++ {
 				time.Sleep(100 * time.Millisecond)
-				if txPool.testBlockListNum() == 2 {
+				if txPool.testBlockListNum() == 1 {
 					break
 				}
 			}
 
-			So(txPool.testBlockListNum(), ShouldEqual, 2)
+			So(txPool.testBlockListNum(), ShouldEqual, 1)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			for i := 0; i < txCnt; i++ {
 				r1, _ := txPool.ExistTxs(b[0].Txs[i].Hash(), bcn.Block)
@@ -214,7 +214,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 			for i := 0; i < blockCnt; i++ {
 				//fmt.Println("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
-				bcn, err := BlockCache.Add(blockList[i])
+				bcn := BlockCache.Add(blockList[i])
 				So(bcn, ShouldNotBeNil)
 
 				err = txPool.AddLinkedNode(bcn, bcn)
@@ -224,7 +224,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 			forkBlockTxCnt := 6
 			forkBlock := genSingleBlock(accountList, witnessList, blockList[1].HeadHash(), forkBlockTxCnt)
 			//fmt.Println("Sing hash:", forkBlock.HeadHash(), " Sing parentHash:", forkBlock.Head.ParentHash)
-			bcn, err := BlockCache.Add(forkBlock)
+			bcn := BlockCache.Add(forkBlock)
 			So(bcn, ShouldNotBeNil)
 
 			for i := 0; i < forkBlockTxCnt-3; i++ {
