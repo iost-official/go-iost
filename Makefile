@@ -34,7 +34,7 @@ lint:
 	@gometalinter --config=.gometalinter.json ./...
 
 test:
-	@go test $(shell go list ./... | grep -vE "/new_vm/v8vm|/core/new_blockcache")
+	@go test ./...
 
 image: devimage
 	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iost-dev make
