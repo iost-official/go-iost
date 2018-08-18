@@ -61,6 +61,16 @@ function genAbiArr(stat) {
 			abiArr.push(genAbi(def));
 		}
 	}
+	var constructorFound = false;
+	for (var i in abiArr) {
+		if (abiArr[i].name == "constructor") {
+			constructorFound = true;
+		}
+	}
+	if (!constructorFound) {
+		console.error("constructor not found!");
+		return null;
+	}
 	return abiArr;
 }
 
@@ -71,11 +81,11 @@ function processContract(source) {
 		loc: true,
 		tokens: true
 	});
-	console.log(ast);
 
 	var abiArr = [];
 	if (!ast || ast === null || !ast.body || ast.body === null || ast.body.length === 0) {
 		console.error("invalid source! ast = " + ast);
+		return ["", ""]
 	}
 	var validRange = [];
 	var className;
