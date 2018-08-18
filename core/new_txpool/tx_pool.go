@@ -152,13 +152,19 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 	return nil
 }
 
-func (pool *TxPoolImpl) AddTx(tx *tx.Tx) TAddTx {
+func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 
-	r := pool.addTx(tx)
-	if r == Success {
-		pool.p2pService.Broadcast(tx.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
+	var r TAddTx
+
+	if r = pool.txVerify(t); r != Success {
+		return r
+	}
+
+	if r = pool.addTx(t); r == Success {
+		pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
 		receivedTransactionCount.Inc()
 	}
+
 	return r
 }
 
@@ -215,6 +221,19 @@ func (pool *TxPoolImpl) initBlockTx() {
 		}
 	}
 
+}
+
+func (pool *TxPoolImpl) txVerify(t *tx.Tx) TAddTx {
+
+	if pool.txTimeOut(t) {
+		return TimeError
+	}
+
+	if err := t.VerifySelf(); err != nil {
+		return VerifyError
+	}
+
+	return Success
 }
 
 func (pool *TxPoolImpl) slotToSec(t int64) int64 {
@@ -323,14 +342,6 @@ func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
 
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
-
-	if pool.txTimeOut(tx) {
-		return TimeError
-	}
-
-	if err := tx.VerifySelf(); err != nil {
-		return VerifyError
-	}
 
 	h := tx.Hash()
 

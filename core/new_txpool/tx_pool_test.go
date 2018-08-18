@@ -16,10 +16,13 @@ import (
 	"time"
 )
 
-var dbPath1 = "txDB"
-var dbPath2 = "StatePoolDB"
-var dbPath3 = "BlockChainDB"
-var logPath = "logs"
+var (
+	dbPath1   = "txDB"
+	dbPath2   = "StatePoolDB"
+	dbPath3   = "BlockChainDB"
+	logPath   = "logs"
+	vmLogPath = "vm.log"
+)
 
 func TestNewTxPoolImpl(t *testing.T) {
 	//t.SkipNow()
@@ -369,6 +372,22 @@ func BenchmarkDecodeTx(b *testing.B) {
 	}
 }
 
+//result 3416 ns/op
+func BenchmarkEncodeTx(b *testing.B) {
+	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
+	newAccount, err := account.NewAccount(acc)
+	if err != nil {
+		panic("account.NewAccount error")
+	}
+
+	tm := genTx(newAccount, expiration)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tm.Encode()
+	}
+}
+
 //result 3.8S ~ 4.2S  10000 tx verify
 func BenchmarkTxVerify(b *testing.B) {
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
@@ -496,6 +515,8 @@ func stopTest() {
 	cmd = exec.Command("rm", "-r", dbPath3)
 	cmd.Run()
 	cmd = exec.Command("rm", "-r", logPath)
+	cmd.Run()
+	cmd = exec.Command("rm", "", vmLogPath)
 	cmd.Run()
 
 }
