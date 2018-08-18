@@ -173,7 +173,17 @@ func TestIntergration_Transfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Log("trasfer succes case:")
 	t.Log(e.Exec(&trx))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+	t.Log("balance of receiver :", vi.Balance(testID[2]))
+
+	act2 := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
+	trx2 := tx.NewTx([]tx.Action{act2}, nil, int64(10000), int64(1), int64(10000000))
+	trx2, err = tx.SignTx(trx2, ac)
+
+	t.Log("trasfer not enough balance case:")
+	t.Log(e.Exec(&trx2))
 	t.Log("balance of sender :", vi.Balance(testID[0]))
 	t.Log("balance of receiver :", vi.Balance(testID[2]))
 }
@@ -226,7 +236,7 @@ func TestIntergration_SetCode(t *testing.T) {
 
 	t.Log("balance of sender :", vi.Balance(testID[0]))
 
-	act2 := tx.NewAction("jsHelloWorld", "hello", `[]`)
+	act2 := tx.NewAction("Contract"+common.Base58Encode(trx.Hash()), "hello", `[]`)
 
 	trx2, err := makeTx(act2)
 	if err != nil {

@@ -151,8 +151,16 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		e.ho.PayCost(cost, account.GetIdByPubkey(tx0.Publisher.Pubkey))
 	}
 
-	e.ho.DoPay(e.ho.Ctx.Value("witness").(string), int64(tx0.GasPrice))
-	e.ho.DB.Commit()
+	err = e.ho.DoPay(e.ho.Ctx.Value("witness").(string), int64(tx0.GasPrice))
+	if err != nil {
+		e.ho.DB.Rollback()
+		err = e.ho.DoPay(e.ho.Ctx.Value("witness").(string), int64(tx0.GasPrice))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		e.ho.DB.Commit()
+	}
 
 	return &txr, nil
 }
