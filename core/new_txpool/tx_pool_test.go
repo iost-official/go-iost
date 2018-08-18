@@ -308,6 +308,9 @@ func BenchmarkAddBlock(b *testing.B) {
 		txPool.addBlock(blockList[0])
 	}
 
+	b.StopTimer()
+	stopTest()
+
 }
 
 //result 472185 ns/op  tps:2147
@@ -331,6 +334,9 @@ func BenchmarkAddTx(b *testing.B) {
 
 		txPool.addTx(t)
 	}
+
+	b.StopTimer()
+	stopTest()
 }
 
 //result 2444189 ns/op
@@ -347,6 +353,9 @@ func BenchmarkPendingTxs(b *testing.B) {
 
 		txPool.PendingTxs(10000000)
 	}
+
+	b.StopTimer()
+	stopTest()
 }
 
 //result 4445 ns/op
@@ -370,6 +379,9 @@ func BenchmarkDecodeTx(b *testing.B) {
 		var t tx.Tx
 		t.Decode(tm.Data())
 	}
+
+	b.StopTimer()
+	stopTest()
 }
 
 //result 3416 ns/op
@@ -386,24 +398,27 @@ func BenchmarkEncodeTx(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		tm.Encode()
 	}
+
+	b.StopTimer()
+	stopTest()
 }
 
 //result 3.8S ~ 4.2S  10000 tx verify
-func BenchmarkTxVerify(b *testing.B) {
-	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc)
-	if err != nil {
-		panic("account.NewAccount error")
-	}
+func BenchmarkVerifyTx(b *testing.B) {
 
-	t := genTx(newAccount, expiration)
+	_, accountList, _, txPool := envInit(b)
+
+	t := genTx(accountList[0], expiration)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 10000; j++ {
-			t.VerifySelf()
+			txPool.verifyTx(t)
 		}
 	}
+
+	b.StopTimer()
+	stopTest()
 }
 
 //result 1 goroutine 3.8S ~ 4.2S  10000 tx verify
@@ -411,36 +426,26 @@ func BenchmarkTxVerify(b *testing.B) {
 //result 3 goroutine 1.3S ~ 1.7S  10000 tx verify
 //result 5 goroutine 1.0S ~ 1.2S  10000 tx verify
 //result 8 goroutine 1.0S ~ 1.3S  10000 tx verify
-func BenchmarkConcurrentTxVerify(b *testing.B) {
-	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc)
-	if err != nil {
-		panic("account.NewAccount error")
-	}
+func BenchmarkConcurrentVerifyTx(b *testing.B) {
+	_, accountList, _, txPool := envInit(b)
 
 	txCnt := 10000
 	goCnt := 4
 
-	t := genTx(newAccount, expiration)
+	t := genTxMsg(accountList[0], expiration)
 
-	tc := make(chan *tx.Tx, txCnt)
-	rc := make(chan int, txCnt)
+	tc := make(chan p2p.IncomingMessage, txCnt)
+	rc := make(chan *tx.Tx, txCnt)
+
 	for j := 0; j < txCnt; j++ {
-		tc <- t
-	}
-
-	conVerifyTx := func() {
-		for v := range tc {
-			v.VerifySelf()
-			rc <- 1
-		}
+		tc <- *t
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for z := 0; z < goCnt; z++ {
 			b.StopTimer()
-			go conVerifyTx()
+			go txPool.verifyWorkers(tc, rc)
 			b.StartTimer()
 		}
 
@@ -449,6 +454,9 @@ func BenchmarkConcurrentTxVerify(b *testing.B) {
 		}
 
 	}
+
+	b.StopTimer()
+	stopTest()
 }
 
 func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl) {
