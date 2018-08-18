@@ -119,12 +119,15 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	c.Code = code
 
 	l := int64(len(c.Encode()) / 100)
+	ilog.Debug("length is : %v", l)
 
 	h.db.SetContract(c)
 
 	_, cost, err := h.monitor.Call(h, c.ID, "constructor")
 
 	cost.AddAssign(contract.NewCost(0, l, 100))
+
+	ilog.Debug("set gas is : %v", cost.ToGas())
 
 	return cost, err // todo check set cost
 }

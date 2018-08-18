@@ -1,6 +1,8 @@
 package new_vm
 
 import (
+	"strings"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 
@@ -34,7 +36,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 	c := h.DB().Contract(contractName)
 	abi := c.ABI(api)
 	if abi == nil {
-		panic("should not reach here")
+		return nil, contract.NewCost(0, 0, GasCheckTxFailed), ErrABINotFound
 	}
 
 	err = checkArgs(abi, args)
@@ -56,7 +58,11 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 	}
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
 	if cost == nil {
-		ilog.Fatal("will return nil cost")
+		if strings.HasPrefix(contractName, "Contract") {
+			ilog.Fatal("will return nil cost : %v.%v", contractName, api)
+		} else {
+			ilog.Debug("will return nil cost : %v.%v", contractName, api)
+		}
 		cost = contract.NewCost(100, 100, 100)
 	}
 

@@ -156,6 +156,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		e.ho.DB().Rollback()
 		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), int64(tx0.GasPrice))
 		if err != nil {
+			ilog.Debug(err.Error())
 			return nil, err
 		}
 	} else {
@@ -277,7 +278,7 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	}
 	var rtn []interface{}
 	rtn, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	ilog.Debug("action %v > %v", action.Contract+action.ActionName, rtn)
+	ilog.Debug("action %v > %v", action.Contract+"."+action.ActionName, rtn)
 
 	if cost == nil {
 		cost = contract.Cost0()
