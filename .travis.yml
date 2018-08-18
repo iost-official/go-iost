@@ -10,6 +10,9 @@ os:
   - linux
   - osx
 
+sudo: required
+dist: trusty
+
 addons:
   apt:
     sources:
