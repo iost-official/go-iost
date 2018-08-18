@@ -16,6 +16,7 @@ typedef struct {
     const char *Value;
     const char *Err;
     bool isJson;
+    size_t gasUsed;
 } ValueTuple;
 
 typedef enum {
