@@ -24,4 +24,5 @@ matrix:
       script:
         - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make build
         - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make test
-
+  allow_failures:
+    - os: osx
