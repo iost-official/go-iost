@@ -162,7 +162,7 @@ objObserver.%s(%s)
 `, name, function, strings.Trim(argStr, "[]")), nil
 }
 
-func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
+func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	cCode := C.CString(preparedCode)
 	defer C.free(unsafe.Pointer(cCode))
 
@@ -177,7 +177,9 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
 		err = errors.New(C.GoString(rs.Err))
 	}
 
-	return result, err
+	gasUsed := rs.gasUsed
+
+	return result, int64(gasUsed) , err
 }
 
 func formatFuncArgs(args []interface{}) (string, error) {
