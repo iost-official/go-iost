@@ -12,6 +12,7 @@ import (
 	host "github.com/libp2p/go-libp2p-host"
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
+	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
 // PeerID is the alias of peer.ID
@@ -43,6 +44,8 @@ type NetService struct {
 	peerManager *PeerManager
 	config      *Config
 }
+
+var _ Service = &NetService{}
 
 // NewDefault returns a default NetService instance.
 func NewDefault() (*NetService, error) {
@@ -88,9 +91,19 @@ func NewNetService(config *Config) (*NetService, error) {
 	return ns, nil
 }
 
+// ID returns the host's ID.
+func (ns *NetService) ID() string {
+	return ns.host.ID().Pretty()
+}
+
+// LocalAddrs returns the local's multiaddrs.
+func (ns *NetService) LocalAddrs() []multiaddr.Multiaddr {
+	return ns.host.Addrs()
+}
+
 // Start starts the jobs.
 func (ns *NetService) Start() error {
-	ns.peerManager.Start()
+	go ns.peerManager.Start()
 	return nil
 }
 
@@ -125,7 +138,6 @@ func (ns *NetService) Deregister(id string, typs ...MessageType) {
 func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", listenAddr)
 	if err != nil {
-		fmt.Println("failed to resolve tcp addr. err=", err)
 		return nil, err
 	}
 
@@ -140,7 +152,6 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 	}
 	h, err := libp2p.New(context.Background(), opts...)
 	if err != nil {
-		ilog.Error("failed to start host. err=%v", err)
 		return nil, err
 	}
 	h.SetStreamHandler(protocolID, ns.streamHandler)

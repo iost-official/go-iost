@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"encoding/json"
 )
 
 var (
@@ -85,16 +86,25 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *
 	return rtn, cost, err
 }
 
-func (h *Host) CallWithReceipt(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
-	rtn, cost, err := h.Call(contract, api, args...)
+func (h *Host) CallWithReceipt(contractName, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
+	rtn, cost, err := h.Call(contractName, api, args...)
 
-	var s string
+	cost.AddAssign(contract.NewCost(0, 0, 100))
+
+	var sarr []interface{}
+	sarr = append(sarr, api)
+	sarr = append(sarr, args)
+
 	if err != nil {
-		s = err.Error()
+		sarr = append(sarr, err.Error())
 	} else {
-		s = "success"
+		sarr = append(sarr, "success")
 	}
-	h.receipt(tx.SystemDefined, s)
+	s, err := json.Marshal(sarr)
+	if err != nil {
+		return rtn, cost, err
+	}
+	h.receipt(tx.SystemDefined, string(s))
 
 	return rtn, cost, err
 
@@ -119,14 +129,23 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 }
 
 func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*contract.Cost, error) {
+	oc := h.DB.Contract(c.ID)
+	if oc == nil {
+		return contract.NewCost(0, 0, 100), errors.New("contract not exists")
+	}
+	abi := oc.ABI("can_update")
+	if abi == nil {
+		return contract.NewCost(0, 0, 100), errors.New("update refused")
+	}
 
-	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update")
+	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update", []byte(id))
 
 	if err != nil {
 		return contract.NewCost(0, 0, 100), err
 	}
 
-	if t, ok := rtn[0].(bool); !ok || !t {
+	// todo return 返回类型应该是 bool
+	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, errors.New("update refused")
 	}
 
@@ -144,13 +163,23 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 	// todo 释放kv
 
+	oc := h.DB.Contract(contractName)
+	if oc == nil {
+		return contract.NewCost(0, 0, 100), errors.New("contract not exists")
+	}
+	abi := oc.ABI("can_destroy")
+	if abi == nil {
+		return contract.NewCost(0, 0, 100), errors.New("destroy refused")
+	}
+
 	rtn, cost, err := h.monitor.Call(h, contractName, "can_destroy")
 
 	if err != nil {
 		return contract.NewCost(0, 0, 100), err
 	}
 
-	if t, ok := rtn[0].(bool); !ok || !t {
+	// todo return 返回类型应该是 bool
+	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, errors.New("destroy refused")
 	}
 

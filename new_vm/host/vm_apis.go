@@ -15,7 +15,7 @@ func NewAPI(ctx *Context) APIDelegate {
 
 func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
 	rec := tx.Receipt{
-		Type:    tx.UserDefined,
+		Type:    t,
 		Content: s,
 	}
 

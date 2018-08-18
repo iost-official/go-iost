@@ -172,63 +172,32 @@ func TestIntergration_Transfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//
-	//	cpl := contract.Compiler{}
-	//
-	//	code := `
-	//class Contract {
-	// constructor() {
-	//
-	// }
-	// hello(someone) {
-	//  return "hello "+ someone + "!";
-	// }
-	//}
-	//
-	//module.exports = Contract;
-	//`
-	//
-	//	abi := `
-	//{
-	//  "lang": "javascript",
-	//  "version": "1.0.0",
-	//  "abi": [{
-	//    "name": "hello",
-	//    "args": ["string"],
-	//    "payment": 0,
-	//    "cost_limit": [1,1,1],
-	//    "price_limit": 1
-	//  }
-	//  ]
-	//}
-	//`
-	//
-	//	c, err := cpl.Parse("contract", code, abi)
-	//	if err != nil {
-	//		t.Fatal(err)
-	//	}
 
-	//acSet := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
-	//
-	//trxSet := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
-
+	t.Log("trasfer succes case:")
 	t.Log(e.Exec(&trx))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+	t.Log("balance of receiver :", vi.Balance(testID[2]))
+
+	act2 := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
+	trx2 := tx.NewTx([]tx.Action{act2}, nil, int64(10000), int64(1), int64(10000000))
+	trx2, err = tx.SignTx(trx2, ac)
+
+	t.Log("trasfer not enough balance case:")
+	t.Log(e.Exec(&trx2))
 	t.Log("balance of sender :", vi.Balance(testID[0]))
 	t.Log("balance of receiver :", vi.Balance(testID[2]))
 }
 
-func TestIntergration_SetCode(t *testing.T) {
-	e, vi := ininit(t)
-
+func jsHelloWorld() *contract.Contract {
 	jshw := contract.Contract{
-		ID: "testjs",
+		ID: "jsHelloWorld",
 		Code: `
 class Contract {
  constructor() {
   
  }
  hello() {
-  return "show";
+  return "world";
  }
 }
 
@@ -248,8 +217,46 @@ module.exports = Contract;
 			},
 		},
 	}
+	return &jshw
+}
 
-	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, jshw.Encode()))
+func TestIntergration_SetCode(t *testing.T) {
+	e, vi := ininit(t)
+
+	jshw := jsHelloWorld()
+
+	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, jshw.B64Encode()))
+
+	trx, err := makeTx(act)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(e.Exec(trx))
+
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+
+	act2 := tx.NewAction("Contract"+common.Base58Encode(trx.Hash()), "hello", `[]`)
+
+	trx2, err := makeTx(act2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(e.Exec(trx2))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+}
+
+func TestIntergration_CallJSCode(t *testing.T) {
+	e, vi := ininit(t)
+
+	jshw := jsHelloWorld()
+	jsc := jsCallHelloWorld()
+
+	vi.SetContract(jshw)
+	vi.SetContract(jsc)
+
+	act := tx.NewAction("call_hello_world", "call_hello", fmt.Sprintf(`[]`))
 
 	trx, err := makeTx(act)
 	if err != nil {
@@ -258,5 +265,57 @@ module.exports = Contract;
 
 	t.Log(e.Exec(trx))
 	t.Log("balance of sender :", vi.Balance(testID[0]))
+}
 
+func jsCallHelloWorld() *contract.Contract {
+	return &contract.Contract{
+		ID: "call_hello_world",
+		Code: `
+class Contract {
+ constructor() {
+  
+ }
+ call_hello() {
+  return BlockChain.call("jsHelloWorld", "hello", "[]")
+ }
+}
+
+module.exports = Contract;
+`,
+		Info: &contract.Info{
+			Lang:        "javascript",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				{
+					Name:     "call_hello",
+					Payment:  0,
+					GasPrice: int64(1),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				},
+			},
+		},
+	}
+}
+
+func TestIntergration_Payment(t *testing.T) {
+	jshw := jsHelloWorld()
+	jshw.Info.Abis[0].Payment = 1
+	jshw.Info.Abis[0].GasPrice = int64(10)
+
+	e, vi := ininit(t)
+	vi.SetContract(jshw)
+
+	vi.SetBalance("CGjsHelloWorld", 1000000)
+
+	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
+
+	trx, err := makeTx(act)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(e.Exec(trx))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+	t.Log("balance of contract :", vi.Balance("CGjsHelloWorld"))
 }

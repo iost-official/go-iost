@@ -20,11 +20,12 @@ import (
 var (
 	ErrStreamCountExceed  = errors.New("stream count exceed")
 	ErrMessageChannelFull = errors.New("message channel is full")
+	ErrDuplicateMessage   = errors.New("reduplicate message")
 )
 
 const (
-	bloomItemCount = 100000
-	bloomErrRate   = 0.001
+	bloomMaxItemCount = 100000
+	bloomErrRate      = 0.001
 
 	msgChanSize = 1024
 
@@ -48,7 +49,9 @@ type Peer struct {
 	streamCount int
 	streamMutex sync.Mutex
 
-	recentMsg *bloom.BloomFilter
+	recentMsg      *bloom.BloomFilter
+	bloomMutex     sync.Mutex
+	bloomItemCount int
 
 	urgentMsgCh chan *p2pMessage
 	normalMsgCh chan *p2pMessage
@@ -64,7 +67,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager) *Peer {
 		peerManager: pm,
 		conn:        stream.Conn(),
 		streams:     make(chan libnet.Stream, maxStreamCount),
-		recentMsg:   bloom.NewWithEstimates(bloomItemCount, bloomErrRate),
+		recentMsg:   bloom.NewWithEstimates(bloomMaxItemCount, bloomErrRate),
 		urgentMsgCh: make(chan *p2pMessage, msgChanSize),
 		normalMsgCh: make(chan *p2pMessage, msgChanSize),
 		quitWriteCh: make(chan struct{}),
@@ -75,11 +78,15 @@ func NewPeer(stream libnet.Stream, pm *PeerManager) *Peer {
 
 // Start starts peer's loop.
 func (p *Peer) Start() {
-	p.writeLoop()
+	ilog.Info("peer is started. id=%s", p.id.Pretty())
+
+	go p.writeLoop()
 }
 
 // Stop stops peer's loop and cuts off the TCP connection.
 func (p *Peer) Stop() {
+	ilog.Info("peer is stopped. id=%s", p.id.Pretty())
+
 	close(p.quitWriteCh)
 	p.conn.Close()
 }
@@ -176,22 +183,22 @@ func (p *Peer) writeLoop() {
 	for {
 		select {
 		case <-p.quitWriteCh:
-			ilog.Info("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 			return
-		case m := <-p.urgentMsgCh:
-			p.write(m)
-			continue
-		default:
-		}
-
-		select {
-		case <-p.quitWriteCh:
-			ilog.Info("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
-			return
-		case m := <-p.urgentMsgCh:
-			p.write(m)
-		case m := <-p.normalMsgCh:
-			p.write(m)
+		case um := <-p.urgentMsgCh:
+			p.write(um)
+		case nm := <-p.normalMsgCh:
+			for done := false; !done; {
+				select {
+				case <-p.quitWriteCh:
+					ilog.Info("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
+					return
+				case um := <-p.urgentMsgCh:
+					p.write(um)
+				default:
+					done = true
+				}
+			}
+			p.write(nm)
 		}
 	}
 }
@@ -204,7 +211,11 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 			ilog.Warn("read header failed. err=%v", err)
 			return
 		}
-		// TODO: check chainID
+		chainID := binary.BigEndian.Uint32(header[chainIDBegin:chainIDEnd])
+		if chainID != p.peerManager.config.ChainID {
+			ilog.Warn("mismatched chainID. chainID=%d", chainID)
+			return
+		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
 		data := make([]byte, dataBegin+length)
 		_, err = io.ReadFull(stream, data[dataBegin:])
@@ -223,20 +234,32 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 }
 
 // SendMessage puts message into the corresponding channel.
-func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority) error {
+func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool) error {
+	if deduplicate && msg.needDedup() {
+		if p.hasMessage(msg) {
+			ilog.Info("ignore reduplicate message")
+			return ErrDuplicateMessage
+		}
+	}
 	switch mp {
 	case UrgentMessage:
 		p.urgentMsgCh <- msg
 	case NormalMessage:
 		p.normalMsgCh <- msg
 	default:
-		ilog.Error("send message failed. channel is full. messagePriority=%v", mp)
+		ilog.Error("sending message failed. channel is full. messagePriority=%d", mp)
 		return ErrMessageChannelFull
+	}
+	if msg.needDedup() {
+		p.recordMessage(msg)
 	}
 	return nil
 }
 
 func (p *Peer) handleMessage(msg *p2pMessage) error {
+	if msg.needDedup() {
+		p.recordMessage(msg)
+	}
 	switch msg.messageType() {
 	case Ping:
 		fmt.Println("pong")
@@ -244,4 +267,24 @@ func (p *Peer) handleMessage(msg *p2pMessage) error {
 		p.peerManager.HandleMessage(msg, p.id)
 	}
 	return nil
+}
+
+func (p *Peer) recordMessage(msg *p2pMessage) {
+	p.bloomMutex.Lock()
+	defer p.bloomMutex.Unlock()
+
+	if p.bloomItemCount >= bloomMaxItemCount {
+		p.recentMsg = bloom.NewWithEstimates(bloomMaxItemCount, bloomErrRate)
+		p.bloomItemCount = 0
+	}
+
+	p.recentMsg.Add(msg.content())
+	p.bloomItemCount++
+}
+
+func (p *Peer) hasMessage(msg *p2pMessage) bool {
+	p.bloomMutex.Lock()
+	defer p.bloomMutex.Unlock()
+
+	return p.recentMsg.Test(msg.content())
 }

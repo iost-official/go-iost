@@ -3,9 +3,9 @@ package native_vm
 import (
 	"errors"
 
+	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"github.com/bitly/go-simplejson"
 )
 
 type VM struct {
@@ -28,7 +28,12 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		return []interface{}{}, cost, nil
 
 	case "CallWithReceipt":
-		rtn, cost, err = host.CallWithReceipt(args[0].(string), args[1].(string), args[2:])
+		json, err := simplejson.NewJson(args[2].([]byte))
+		arr, err := json.Array()
+		if err != nil {
+			return nil, cost, err
+		}
+		rtn, cost, err = host.CallWithReceipt(args[0].(string), args[1].(string), arr...)
 		return rtn, cost, err
 
 	case "Transfer":
@@ -49,7 +54,7 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 	case "SetCode":
 		cost := contract.NewCost(1, 1, 1)
 		con := &contract.Contract{}
-		err = con.Decode(args[0].(string))
+		err = con.B64Decode(args[0].(string))
 		if err != nil {
 			return nil, cost, err
 		}
@@ -91,7 +96,7 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		return []interface{}{}, cost, err
 
 	default:
-		return nil, contract.NewCost(1,1, 1), errors.New("unknown api name")
+		return nil, contract.NewCost(1, 1, 1), errors.New("unknown api name")
 
 	}
 

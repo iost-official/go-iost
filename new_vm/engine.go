@@ -151,8 +151,16 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		e.ho.PayCost(cost, account.GetIdByPubkey(tx0.Publisher.Pubkey))
 	}
 
-	e.ho.DoPay(e.ho.Ctx.Value("witness").(string), int64(tx0.GasPrice))
-	e.ho.DB.Commit()
+	err = e.ho.DoPay(e.ho.Ctx.Value("witness").(string), int64(tx0.GasPrice))
+	if err != nil {
+		e.ho.DB.Rollback()
+		err = e.ho.DoPay(e.ho.Ctx.Value("witness").(string), int64(tx0.GasPrice))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		e.ho.DB.Commit()
+	}
 
 	return &txr, nil
 }
@@ -206,7 +214,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-			rtn = append(rtn, database.SerializedJSON(s))
+			rtn = append(rtn, s)
 		}
 	}
 
@@ -239,7 +247,7 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	e.ho.Ctx.Set("stack_height", 1) // record stack trace
 
 	c := e.ho.DB.Contract(action.Contract)
-	if c.Info == nil {
+	if c == nil || c.Info == nil {
 		cost = contract.NewCost(0, 0, GasCheckTxFailed)
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
@@ -267,8 +275,9 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		}
 		return
 	}
-
-	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
+	var rtn []interface{}
+	rtn, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
+	ilog.Debug("action %v > %v", action.Contract+action.ActionName, rtn)
 
 	if cost == nil {
 		cost = contract.Cost0()

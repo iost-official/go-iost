@@ -6,6 +6,7 @@ import (
 
 	"errors"
 
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm"
 )
@@ -54,6 +55,10 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		m.vms[c.Info.Lang].Init()
 	}
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
+	if cost == nil {
+		ilog.Fatal("will return nil cost")
+		cost = contract.NewCost(100, 100, 100)
+	}
 
 	payment, ok := h.Ctx.GValue("abi_payment").(int)
 	if !ok {

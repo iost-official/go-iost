@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
@@ -56,7 +55,8 @@ func ReadFile(src string) ([]byte, error) {
 
 func TestEngine_SetCode(t *testing.T) {
 	e, host, code := MyInit(t, "setcode")
-	host.Ctx.Set("tx_hash", []byte("iamhash"))
+	host.Ctx.Set("tx_hash", "iamhash")
+	hash := "Contractiamhash"
 
 	rawCode, err := ReadFile(testDataPath + "test.js")
 	if err != nil {
@@ -73,12 +73,48 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Fatalf("compiler parse error: %v\n", err)
 	}
 
-	rs, _, err := e.LoadAndCall(host, code, "SetCode", con.Encode())
+	rs, _, err := e.LoadAndCall(host, code, "SetCode", con.B64Encode())
 
 	if err != nil {
 		t.Fatalf("LoadAndCall setcode error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "Contract"+common.Base58Encode([]byte("iamhash")) {
-		t.Errorf("LoadAndCall except Contract"+common.Base58Encode([]byte("iamhash"))+", got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != hash {
+		t.Errorf("LoadAndCall except Contract"+"iamhash"+", got %s\n", rs[0])
+	}
+
+	con.ID = "Contractiamhash"
+	rs, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
+	if err == nil || err.Error() != "destroy refused" {
+		t.Fatalf("LoadAndCall for should return destroy refused, but got %v\n", err)
+	}
+
+	rawCode, err = ReadFile(testDataPath + "test_new.js")
+	if err != nil {
+		t.Fatalf("read file error: %v\n", err)
+	}
+	rawAbi, err = ReadFile(testDataPath + "test_new.js.abi")
+	if err != nil {
+		t.Fatalf("read file error: %v\n", err)
+	}
+	con, err = compiler.Parse(con.ID, string(rawCode), string(rawAbi))
+	if err != nil {
+		t.Fatalf("compiler parse error: %v\n", err)
+	}
+	rs, _, err = e.LoadAndCall(host, code, "UpdateCode", con.Encode(), "")
+	if err != nil {
+		t.Fatalf("LoadAndCall update error: %v\n", err)
+	}
+	if len(rs) != 0 {
+		t.Errorf("LoadAndCall except 0 rtn"+", got %d\n", len(rs))
+	}
+
+	rs, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
+	if err != nil {
+		t.Fatalf("LoadAndCall destroy error: %v\n", err)
+	}
+
+	rs, _, err = e.LoadAndCall(host, code, "UpdateCode", con.Encode(), "")
+	if err == nil || err.Error() != "contract not exists" {
+		t.Fatalf("LoadAndCall for should return contract not exists, but got %v\n", err)
 	}
 }

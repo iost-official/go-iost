@@ -17,14 +17,14 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/spf13/cobra"
 )
 
 // compileCmd represents the compile command
 var compileCmd = &cobra.Command{
-	Use:    "compile",
+	Use:   "compile",
 	Short: "Compile contract files to smart contract",
 	Long:  `Compile contract files to smart contract. `,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -47,25 +47,22 @@ var compileCmd = &cobra.Command{
 		}
 		abi := string(fd)
 
-		compiler:=new(contract.Compiler)
-		if compiler==nil{
+		compiler := new(contract.Compiler)
+		if compiler == nil {
 			fmt.Println("gen compiler instance failed")
 			return
 		}
-		contract,err:=compiler.Parse("",code,abi)
-		if err!=nil{
-			fmt.Printf("gen contract error:%v\n",err)
+		contract, err := compiler.Parse("", code, abi)
+		if err != nil {
+			fmt.Printf("gen contract error:%v\n", err)
 			return
 		}
-		action:=tx.NewAction("iost.system","setcode",`["`+contract.Encode()+`",]`)
-		pubkeys:=make([][]byte,len(signers))
-		for i,pubkey:=range signers{
-			pubkeys[i]=LoadBytes(string(pubkey))
+		action := tx.NewAction("iost.system", "setcode", `["`+contract.Encode()+`",]`)
+		pubkeys := make([][]byte, len(signers))
+		for i, pubkey := range signers {
+			pubkeys[i] = LoadBytes(string(pubkey))
 		}
-		trx:=tx.NewTx([]tx.Action{action,}, pubkeys, gasLimit, gasPrice, expiration)
-
-
-
+		trx := tx.NewTx([]tx.Action{action}, pubkeys, gasLimit, gasPrice, expiration)
 
 		bytes := trx.Encode()
 
@@ -85,13 +82,14 @@ var gasLimit uint64
 var gasPrice uint64
 var expiration int64
 var signers []string
+
 func init() {
 	rootCmd.AddCommand(compileCmd)
-	
+
 	compileCmd.Flags().Uint64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
 	compileCmd.Flags().Uint64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
 	compileCmd.Flags().Int64VarP(&expiration, "expiration", "e", 0, "expiration timestamp for a transaction")
-	compileCmd.Flags().StringSliceVarP(&signers, "signers", "s",[]string{} , "signers who should sign this transaction")
+	compileCmd.Flags().StringSliceVarP(&signers, "signers", "s", []string{}, "signers who should sign this transaction")
 
 	// Here you will define your flags and configuration settings.
 
