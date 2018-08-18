@@ -60,9 +60,10 @@ type PoB struct {
 	synchronizer synchronizer.Synchronizer
 	verifyDB     db.MVCCDB
 	produceDB    db.MVCCDB
-	exitSignal   chan struct{}
-	chRecvBlock  chan p2p.IncomingMessage
-	chGenBlock   chan *block.Block
+
+	exitSignal  chan struct{}
+	chRecvBlock chan p2p.IncomingMessage
+	chGenBlock  chan *block.Block
 }
 
 func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) *PoB {
@@ -77,7 +78,7 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 		verifyDB:     baseVariable.StateDB(),
 		produceDB:    baseVariable.StateDB().Fork(),
 		exitSignal:   make(chan struct{}),
-		chRecvBlock:  p2pService.Register("consensus channel", p2p.NewBlockResponse, p2p.SyncBlockResponse),
+		chRecvBlock:  p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
 		chGenBlock:   make(chan *block.Block, 10),
 	}
 	staticProperty = newStaticProperty(p.account, witnessList)
@@ -116,8 +117,14 @@ func (p *PoB) blockLoop() {
 				fmt.Println(err)
 				continue
 			}
-			if incomingMessage.Type() == p2p.MessageType(p2p.SyncBlockResponse) {
-				go p.synchronizer.OnRecvBlock(blk.HeadHash(), incomingMessage.From())
+			if incomingMessage.Type() == p2p.SyncBlockResponse {
+				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
+			}
+			if incomingMessage.Type() == p2p.NewBlock {
+				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
+				if ok, start, end := p.synchronizer.NeedSync(blk.Head.Number); ok {
+					go p.synchronizer.SyncBlocks(start, end)
+				}
 			}
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
@@ -149,10 +156,8 @@ func (p *PoB) scheduleLoop() {
 					fmt.Println(err)
 					continue
 				}
-				//msg := message.Message{ReqType: int32(ReqNewBlock), Body: bb}
-				//go p.router.Broadcast(msg)
 				p.chGenBlock <- blk
-				go p.p2pService.Broadcast(blkByte, p2p.NewBlockResponse, p2p.UrgentMessage)
+				go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().Unix())
 		case <-p.exitSignal:
