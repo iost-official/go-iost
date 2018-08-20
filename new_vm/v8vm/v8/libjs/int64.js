@@ -10,6 +10,7 @@ class Int64 {
     }
 
     _validate() {
+        _native_log("val: " + this.number)
         if (!this.number.isInteger()) {
             throw new Error('Int64: ' + this.number + ' is not an integer');
         }
@@ -24,54 +25,58 @@ class Int64 {
     }
 
     _checkArgument(arg) {
-        if (!arg instanceof Int64 || arg.constructor !== arg.constructor) {
-            throw new Error('Int64 argument: ' + arg + ' is not Int64 type');
-        }
         if (typeof arg === 'undefined' || arg == null) {
             throw new Error('Int64 argument: ' + arg + ' is empty');
         }
+
+        if (!(arg instanceof Int64) || arg.constructor !== arg.constructor) {
+            arg = new this.constructor(arg);
+        }
+
         arg._validate();
+
+        return arg
     }
 
     plus(n) {
-        this._checkArgument(n);
-        let rs = this.number.plus(n.number);
-        return new this(rs);
+        let arg = this._checkArgument(n);
+        let rs = this.number.plus(arg.number);
+        return new this.constructor(rs);
     }
 
     minus(n) {
-        this._checkArgument(n);
-        let rs = this.number.minus(n.number);
-        return new this(rs);
+        let arg = this._checkArgument(n);
+        let rs = this.number.minus(arg.number);
+        return new this.constructor(rs);
     }
 
     multi(n) {
-        this._checkArgument(n);
-        let rs = this.number.times(n.number);
-        return new this(rs);
+        let arg = this._checkArgument(n);
+        let rs = this.number.times(arg.number);
+        return new this.constructor(rs);
     }
 
     div(n) {
-        this._checkArgument(n);
-        let rs = this.number.idiv(n.number);
-        return new this(rs);
+        let arg = this._checkArgument(n);
+        let rs = this.number.idiv(arg.number);
+        return new this.constructor(rs);
     }
 
     mod(n) {
-        this._checkArgument(n);
-        let rs = this.number.mod(n);
-        return new this(rs);
+        let arg = this._checkArgument(n);
+        let rs = this.number.mod(arg.number);
+        return new this.constructor(rs);
     }
 
     pow(n) {
-        this._checkArgument(n);
-        let rs = this.number.pow(n.number);
-        return new this(rs);
+        let arg = this._checkArgument(n);
+        let rs = this.number.pow(arg.number);
+        return new this.constructor(rs);
     }
 
     sqrt() {
         let rs = this.number.sqrt();
-        return new this(rs);
+        return new this.constructor(rs);
     }
 
     eq(n) {
