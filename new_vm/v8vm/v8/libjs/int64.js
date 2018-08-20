@@ -10,7 +10,6 @@ class Int64 {
     }
 
     _validate() {
-        _native_log("val: " + this.number)
         if (!this.number.isInteger()) {
             throw new Error('Int64: ' + this.number + ' is not an integer');
         }
