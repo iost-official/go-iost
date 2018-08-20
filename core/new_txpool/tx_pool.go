@@ -9,15 +9,16 @@ import (
 	"errors"
 	"os"
 
+	"runtime"
+
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
-	"runtime"
 )
 
 func init() {
@@ -58,12 +59,12 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 }
 
 func (pool *TxPoolImpl) Start() {
-	log.Log.I("TxPoolImpl Start")
+	ilog.Info("TxPoolImpl Start")
 	go pool.loop()
 }
 
 func (pool *TxPoolImpl) Stop() {
-	log.Log.I("TxPoolImpl Stop")
+	ilog.Info("TxPoolImpl Stop")
 	close(pool.chP2PTx)
 	close(pool.chLinkedNode)
 }
@@ -88,7 +89,7 @@ func (pool *TxPoolImpl) loop() {
 		select {
 		case tr, ok := <-pool.chTx:
 			if !ok {
-				log.Log.E("failed to chTx")
+				ilog.Error("failed to chTx")
 				os.Exit(1)
 			}
 
@@ -99,7 +100,7 @@ func (pool *TxPoolImpl) loop() {
 
 		case bl, ok := <-pool.chLinkedNode:
 			if !ok {
-				log.Log.E("failed to ch linked node")
+				ilog.Error("failed to ch linked node")
 				os.Exit(1)
 			}
 
@@ -112,23 +113,23 @@ func (pool *TxPoolImpl) loop() {
 			tFort := pool.updateForkChain(bl.HeadNode)
 			switch tFort {
 			case ForkError:
-				log.Log.E("failed to update fork chain")
+				ilog.Error("failed to update fork chain")
 				pool.clearTxPending()
 
 			case Fork:
 				if err := pool.doChainChange(); err != nil {
-					log.Log.E("failed to chain change")
+					ilog.Error("failed to chain change")
 					pool.clearTxPending()
 				}
 
 			case NotFork:
 
 				if err := pool.delBlockTxInPending(bl.LinkedNode.Block.HeadHash()); err != nil {
-					log.Log.E("failed to del block tx")
+					ilog.Error("failed to del block tx")
 				}
 
 			default:
-				log.Log.E("failed to tFort")
+				ilog.Error("failed to tFort")
 			}
 			pool.mu.Unlock()
 
@@ -506,18 +507,18 @@ func (pool *TxPoolImpl) fundForkBlockHash(newHash []byte, oldHash []byte) ([]byt
 		if !ok {
 			bb, err := pool.blockCache.Find(n)
 			if err != nil {
-				log.Log.E("failed to find block ,err = ", err)
+				ilog.Error("failed to find block ,err = ", err)
 				return nil, false
 			}
 
 			if err = pool.addBlock(bb.Block); err != nil {
-				log.Log.E("failed to add block, err = ", err)
+				ilog.Error("failed to add block, err = ", err)
 				return nil, false
 			}
 
 			b, ok = pool.block(n)
 			if !ok {
-				log.Log.E("failed to get block ,err = ", err)
+				ilog.Error("failed to get block ,err = ", err)
 				return nil, false
 			}
 		}
