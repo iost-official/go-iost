@@ -47,12 +47,7 @@ func SignTxContent(tx Tx, account account.Account) (common.Signature, error) {
 	if !tx.containSigner(account.Pubkey) {
 		return common.Signature{}, errors.New("account not included in signer list of this transaction")
 	}
-
-	sign, err := common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey)
-	if err != nil {
-		return sign, err
-	}
-	return sign, nil
+	return common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey), nil
 }
 
 func (t *Tx) containSigner(pubkey []byte) bool {
@@ -92,11 +87,7 @@ func (t *Tx) baseHash() []byte {
 // 合约的发布者进行签名，此签名的用户用于支付gas
 func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
-	sign, err := common.Sign(common.Secp256k1, tx.publishHash(), account.Seckey)
-	if err != nil {
-		return tx, err
-	}
-	tx.Publisher = sign
+	tx.Publisher = common.Sign(common.Secp256k1, tx.publishHash(), account.Seckey)
 	return tx, nil
 }
 

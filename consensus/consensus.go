@@ -36,7 +36,7 @@ func ConsensusFactory(consensusType string, account account.Account, baseVariabl
 	case CONSENSUS_POB:
 		if Cons == nil {
 			once.Do(func() {
-				Cons, err = pob.NewPoB(account, baseVariable, blkcache, txPool, service, synchronizer, witnessList)
+				Cons = pob.NewPoB(account, baseVariable, blkcache, txPool, service, synchronizer, witnessList)
 			})
 		}
 	}

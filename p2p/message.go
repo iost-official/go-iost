@@ -42,11 +42,11 @@ const (
 	Ping MessageType = iota + 1
 	RoutingTableQuery
 	RoutingTableResponse
+	NewBlock
 	SyncBlockHashRequest
 	SyncBlockHashResponse
 	SyncBlockRequest
 	SyncBlockResponse
-	NewBlockResponse
 	PublishTxRequest
 
 	UrgentMessage = 1

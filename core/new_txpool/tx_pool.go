@@ -17,6 +17,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
+	"runtime"
 )
 
 func init() {
@@ -24,7 +25,9 @@ func init() {
 }
 
 type TxPoolImpl struct {
-	chTx         chan p2p.IncomingMessage
+	chP2PTx chan p2p.IncomingMessage
+	chTx    chan *tx.Tx
+
 	chLinkedNode chan *RecNode
 
 	global     global.BaseVariable
@@ -42,13 +45,14 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 	p := &TxPoolImpl{
 		blockCache:   blockCache,
 		chLinkedNode: make(chan *RecNode, 100),
+		chTx:         make(chan *tx.Tx, 10000),
 		forkChain:    new(ForkChain),
 		blockList:    new(sync.Map),
 		pendingTx:    new(sync.Map),
 		global:       global,
 	}
 	p.p2pService = p2ps
-	p.chTx = p.p2pService.Register("TxPool message", p2p.PublishTxRequest)
+	p.chP2PTx = p.p2pService.Register("TxPool message", p2p.PublishTxRequest)
 
 	return p, nil
 }
@@ -60,13 +64,22 @@ func (pool *TxPoolImpl) Start() {
 
 func (pool *TxPoolImpl) Stop() {
 	log.Log.I("TxPoolImpl Stop")
-	close(pool.chTx)
+	close(pool.chP2PTx)
 	close(pool.chLinkedNode)
 }
 
 func (pool *TxPoolImpl) loop() {
 
 	pool.initBlockTx()
+
+	workerCnt := (runtime.NumCPU() + 1) / 2
+	if workerCnt == 0 {
+		workerCnt = 1
+	}
+
+	for i := 0; i < workerCnt; i++ {
+		go pool.verifyWorkers(pool.chP2PTx, pool.chTx)
+	}
 
 	clearTx := time.NewTicker(clearInterval)
 	defer clearTx.Stop()
@@ -79,14 +92,8 @@ func (pool *TxPoolImpl) loop() {
 				os.Exit(1)
 			}
 
-			var t tx.Tx
-			err := t.Decode(tr.Data())
-			if err != nil {
-				continue
-			}
-
-			if ret := pool.addTx(&t); ret == Success {
-				pool.p2pService.Broadcast(tr.Data(), p2p.PublishTxRequest, p2p.UrgentMessage)
+			if ret := pool.addTx(tr); ret == Success {
+				pool.p2pService.Broadcast(tr.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
 				receivedTransactionCount.Inc()
 			}
 
@@ -136,6 +143,22 @@ func (pool *TxPoolImpl) loop() {
 	}
 }
 
+func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *tx.Tx) {
+
+	for v := range p2pCh {
+
+		var t tx.Tx
+		err := t.Decode(v.Data())
+		if err != nil {
+			continue
+		}
+
+		if r := pool.verifyTx(&t); r == Success {
+			tCn <- &t
+		}
+	}
+}
+
 func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error {
 
 	if linkedNode == nil || headNode == nil {
@@ -152,13 +175,19 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 	return nil
 }
 
-func (pool *TxPoolImpl) AddTx(tx *tx.Tx) TAddTx {
+func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 
-	r := pool.addTx(tx)
-	if r == Success {
-		pool.p2pService.Broadcast(tx.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
+	var r TAddTx
+
+	if r = pool.verifyTx(t); r != Success {
+		return r
+	}
+
+	if r = pool.addTx(t); r == Success {
+		pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
 		receivedTransactionCount.Inc()
 	}
+
 	return r
 }
 
@@ -215,6 +244,19 @@ func (pool *TxPoolImpl) initBlockTx() {
 		}
 	}
 
+}
+
+func (pool *TxPoolImpl) verifyTx(t *tx.Tx) TAddTx {
+
+	if pool.txTimeOut(t) {
+		return TimeError
+	}
+
+	if err := t.VerifySelf(); err != nil {
+		return VerifyError
+	}
+
+	return Success
 }
 
 func (pool *TxPoolImpl) slotToSec(t int64) int64 {
@@ -323,14 +365,6 @@ func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
 
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
-
-	if pool.txTimeOut(tx) {
-		return TimeError
-	}
-
-	if err := tx.VerifySelf(); err != nil {
-		return VerifyError
-	}
 
 	h := tx.Hash()
 

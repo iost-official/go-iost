@@ -28,7 +28,7 @@ func TestMember(t *testing.T) {
 			sig := SignInSecp256k1(Sha256(info), m.Seckey)
 			So(VerifySignInSecp256k1(Sha256(info), m.Pubkey, sig), ShouldBeTrue)
 
-			sig2, _ := Sign(Secp256k1, Sha256(info), m.Seckey)
+			sig2 := Sign(Secp256k1, Sha256(info), m.Seckey)
 			So(bytes.Equal(sig2.Pubkey, m.Pubkey), ShouldBeTrue)
 
 		})

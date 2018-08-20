@@ -32,7 +32,7 @@ var blockCmd = &cobra.Command{
 	Long:  `print block info, default find by block number`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var i int
+		var i int64
 		var err error
 		if len(args) < 1 {
 			fmt.Println(`Error: block num or hash not given`)
@@ -41,7 +41,7 @@ var blockCmd = &cobra.Command{
 
 		switch method {
 		case "num":
-			i, err = strconv.Atoi(args[0])
+			i, err = strconv.ParseInt(args[0], 10, 64)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
@@ -61,7 +61,7 @@ var blockCmd = &cobra.Command{
 		client := rpc.NewApisClient(conn)
 		var blockInfo *rpc.BlockInfo
 		if method == "num" {
-			blockInfo, err = client.GetBlockByNum(context.Background(), &rpc.BlockByNumReq{Num: uint64(i), Complete: complete})
+			blockInfo, err = client.GetBlockByNum(context.Background(), &rpc.BlockByNumReq{Num: i, Complete: complete})
 			if err != nil {
 				fmt.Println(err.Error())
 				return

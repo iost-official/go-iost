@@ -9,7 +9,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/merkletree"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	)
+)
 
 type Block struct {
 	hash     []byte
@@ -18,7 +18,7 @@ type Block struct {
 	Receipts []*tx.TxReceipt
 }
 
-func GenGenesis(initTime int64) *Block {
+func GenGenesis(initTime int64) (*Block, error) {
 	var code string
 	for k, v := range account.GenesisAccount {
 		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
@@ -39,7 +39,7 @@ func GenGenesis(initTime int64) *Block {
 		Receipts: make([]*tx.TxReceipt, 0),
 	}
 	genesis.Txs = append(genesis.Txs, &txn)
-	return genesis
+	return genesis, nil
 }
 
 func (b *Block) CalculateTxsHash() []byte {
@@ -110,7 +110,7 @@ func (b *Block) CalculateHeadHash() error {
 	return err
 }
 
-func (b *Block) HeadHash() ([]byte) {
+func (b *Block) HeadHash() []byte {
 	return b.hash
 }
 
