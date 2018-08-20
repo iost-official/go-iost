@@ -7,25 +7,22 @@ branches:
 
 matrix:
   include:
-    - os: linux
-      go: "1.10"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-5
-      env:
-         - CC=gcc-5
-         - CXX=g++-5
     - os: osx
-      go: "1.10"
-      env:
-         - CC=clang
-         - CXX=clang++
+      osx_image: xcode10
+      go: 1.10.x
+      script:
+        - make build
+        - make test
 
-install: true
-
-script:
-  - make build
-  - make test
+    - os: linux
+      dist: trusty
+      go: 1.10.x
+      services:
+        - docker
+      before_install:
+        - make devimage
+      script:
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make build
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make test
+  allow_failures:
+    - os: osx

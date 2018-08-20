@@ -1,9 +1,8 @@
 package common
 
 import (
-	"fmt"
+	"errors"
 
-	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -22,16 +21,16 @@ type Signature struct {
 	Pubkey []byte
 }
 
-func Sign(algo SignAlgorithm, info, privkey []byte) (Signature, error) {
+func Sign(algo SignAlgorithm, info, privkey []byte) Signature {
 	s := Signature{}
 	s.Algorithm = algo
 	switch algo {
 	case Secp256k1:
 		s.Pubkey = CalcPubkeyInSecp256k1(privkey)
 		s.Sig = SignInSecp256k1(info, privkey)
-		return s, nil
+		return s
 	}
-	return s, fmt.Errorf("algorithm not exist")
+	return s
 }
 
 func VerifySignature(info []byte, s Signature) bool {
@@ -42,25 +41,23 @@ func VerifySignature(info []byte, s Signature) bool {
 	return false
 }
 
-func (s *Signature) Encode() []byte {
+func (s *Signature) Encode() ([]byte, error) {
 	sr := &SignatureRaw{
-		Algorithm:int32(s.Algorithm),
-		Sig:s.Sig,
-		PubKey:s.Pubkey,
+		Algorithm: int32(s.Algorithm),
+		Sig:       s.Sig,
+		PubKey:    s.Pubkey,
 	}
 	b, err := proto.Marshal(sr)
 	if err != nil {
-		log.Log.E("Error in Encode of signature ", s.Pubkey, err.Error())
-		return nil
+		return nil, errors.New("fail to encode signature")
 	}
-	return b
+	return b, nil
 }
 
 func (s *Signature) Decode(b []byte) error {
 	sr := &SignatureRaw{}
 	err := proto.Unmarshal(b, sr)
 	if err != nil {
-		log.Log.E("Error in Decode of signature ", b, err.Error())
 		return err
 	}
 	s.Algorithm = SignAlgorithm(sr.Algorithm)
@@ -70,5 +67,6 @@ func (s *Signature) Decode(b []byte) error {
 }
 
 func (s *Signature) Hash() []byte {
-	return Sha256(s.Encode())
+	b, _ := s.Encode()
+	return Sha3(b)
 }

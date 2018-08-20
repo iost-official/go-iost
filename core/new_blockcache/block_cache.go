@@ -8,7 +8,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -37,7 +37,7 @@ type CacheStatus int
 const (
 	Extend CacheStatus = iota
 	Fork
-	NotFound
+	ParentNotFound
 )
 
 const (
@@ -52,15 +52,15 @@ const (
 )
 
 type BlockCacheNode struct {
-	Block                 *block.Block
-	Parent                *BlockCacheNode
-	Children              map[*BlockCacheNode]bool
-	Type                  BCNType
-	Number                int64
-	Witness               string
-	ConfirmUntil          int64
-	PendingWitnessList    []string
-	Extension             []byte
+	Block              *block.Block
+	Parent             *BlockCacheNode
+	Children           map[*BlockCacheNode]bool
+	Type               BCNType
+	Number             int64
+	Witness            string
+	ConfirmUntil       int64
+	PendingWitnessList []string
+	Extension          []byte
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
@@ -94,7 +94,7 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 }
 
 type BlockCache interface {
-	Add(*block.Block) (*BlockCacheNode, error)
+	Add(*block.Block) *BlockCacheNode
 	Link(*BlockCacheNode)
 	Del(*BlockCacheNode)
 	Flush(*BlockCacheNode)
@@ -198,39 +198,20 @@ func (bc *BlockCacheImpl) updateLongest() {
 	}
 }
 
-func (bc *BlockCacheImpl) Add(blk *block.Block) (*BlockCacheNode, error) {
-	var code CacheStatus
-	var newNode *BlockCacheNode
-	hash := blk.HeadHash()
-	_, ok := bc.hmget(hash)
-	if ok {
-		return nil, ErrDup
-	}
+func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	parent, ok := bc.hmget(blk.Head.ParentHash)
 	fa := IF(ok, parent, bc.singleRoot).(*BlockCacheNode)
-	newNode = NewBCN(fa, blk)
+	newNode := NewBCN(fa, blk)
 	delete(bc.leaf, fa)
-	if ok {
-		code = IF(len(parent.Children) > 1, Fork, Extend).(CacheStatus)
-	} else {
-		code = NotFound
-	}
-	bc.hmset(hash, newNode)
-	switch code {
-	case Extend:
-		fallthrough
-	case Fork:
-		bc.mergeSingle(newNode)
-		if newNode.Type == Linked {
-			bc.Link(newNode)
-		} else {
-			return newNode, ErrNotFound
+	bc.hmset(blk.HeadHash(), newNode)
+	bc.mergeSingle(newNode)
+	if newNode.Type == Linked {
+		bc.leaf[newNode] = newNode.Number
+		if newNode.Number > bc.head.Number {
+			bc.head = newNode
 		}
-	case NotFound:
-		bc.mergeSingle(newNode)
-		return newNode, ErrNotFound
 	}
-	return newNode, nil
+	return newNode
 }
 
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
@@ -293,7 +274,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	if retain.Block != nil {
 		err := bc.baseVariable.BlockChain().Push(retain.Block)
 		if err != nil {
-			log.Log.E("Database error, BlockChain Push err:%v", err)
+			ilog.Debug("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		/*
@@ -306,7 +287,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs)
 		if err != nil {
-			log.Log.E("Database error, BlockChain Push err:%v", err)
+			ilog.Debug("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		//bc.hmdel(cur.Block.HeadHash())
@@ -318,9 +299,6 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 }
 
 func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
-	if bcn == nil {
-		return
-	}
 	bc.flush(bcn)
 	bc.delSingle()
 	bc.updateLongest()

@@ -7,13 +7,13 @@ DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
 TARGET_DIR = target
 
 ifeq ($(shell uname),Darwin)
-	export CGO_LDFLAGS=-L$(shell pwd)/new_vm/v8vm/v8/libv8/_darwin_amd64
+	export CGO_LDFLAGS=-L$(shell pwd)/new_vm/v8vm/v8/libv8/_darwin_amd64 -lvm
 	export CGO_CFLAGS=-I$(shell pwd)/new_vm/v8vm/v8/include/_darwin_amd64
 	export DYLD_LIBRARY_PATH=$(shell pwd)/new_vm/v8vm/v8/libv8/_darwin_amd64
 endif
 
 ifeq ($(shell uname),Linux)
-	export CGO_LDFLAGS=-L$(shell pwd)/new_vm/v8vm/v8/libv8/_linux_amd64
+	export CGO_LDFLAGS=-L$(shell pwd)/new_vm/v8vm/v8/libv8/_linux_amd64 -lvm -lv8
 	export CGO_CFLAGS=-I$(shell pwd)/new_vm/v8vm/v8/include/_linux_amd64
 	export LD_LIBRARY_PATH=$(shell pwd)/new_vm/v8vm/v8/libv8/_linux_amd64
 endif
@@ -34,14 +34,14 @@ lint:
 	@gometalinter --config=.gometalinter.json ./...
 
 test:
-	@go test $(shell go list ./... | grep -vE "/new_vm/v8vm|/core/new_blockcache")
+	@go test ./...
 
 image: devimage
 	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iost-dev make
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 devimage:
-	docker build -f Dockerfile.dev -t iost-dev .
+	docker build -f Dockerfile.dev -t iostio/iost-dev .
 
 install:
 	go install ./cmd/iwallet/

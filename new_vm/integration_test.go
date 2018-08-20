@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 )
 
 var testID = []string{
@@ -31,30 +32,7 @@ var testID = []string{
 	"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4", "7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
 }
 
-var systemContract = &contract.Contract{
-	ID:   "iost.system",
-	Code: "codes",
-	Info: &contract.Info{
-		Lang:        "native",
-		VersionCode: "1.0.0",
-		Abis: []*contract.ABI{
-			{
-				Name:     "Transfer",
-				Payment:  0,
-				GasPrice: int64(1000),
-				Limit:    contract.NewCost(100, 100, 100),
-				Args:     []string{"string", "string", "number"},
-			},
-			{
-				Name:     "SetCode",
-				Payment:  0,
-				GasPrice: int64(1000),
-				Limit:    contract.NewCost(100, 100, 100),
-				Args:     []string{"string"},
-			},
-		},
-	},
-}
+var systemContract = native_vm.NativeABI()
 
 func replaceDB(t *testing.T) database.IMultiValue {
 	ctl := gomock.NewController(t)

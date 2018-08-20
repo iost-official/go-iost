@@ -88,7 +88,12 @@ var signCmd = &cobra.Command{
 			dest = args[1]
 		}
 
-		err = SaveTo(dest, sig.Encode())
+		sigRaw, err := sig.Encode()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		err = SaveTo(dest, sigRaw)
 		if err != nil {
 			fmt.Println(err.Error())
 			return

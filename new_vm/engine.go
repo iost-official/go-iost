@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 )
 
 const (
@@ -53,6 +54,12 @@ type EngineImpl struct {
 }
 
 func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
+	db := database.NewVisitor(defaultCacheLength, cb)
+
+	return newEngine(bh, db)
+}
+
+func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 	if staticMonitor == nil {
 		once.Do(func() {
 			staticMonitor = NewMonitor()
@@ -63,7 +70,9 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 
 	ctx = loadBlkInfo(ctx, bh)
 
-	db := database.NewVisitor(defaultCacheLength, cb)
+	if bh.Number == 0 && db.Contract("iost.system") == nil {
+		db.SetContract(native_vm.NativeABI())
+	}
 
 	logger := ilog.New()
 	logger.Stop()
@@ -133,7 +142,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		txr.Status = status
 		txr.GasUsage += cost.ToGas()
-		ilog.Debug("action status: %v", status)
+		//ilog.Debug("action status: %v", status)
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
@@ -170,8 +179,8 @@ func (e *EngineImpl) GC() {
 }
 
 func checkTx(tx0 *tx.Tx) error {
-	if tx0.GasPrice <= 0 || tx0.GasPrice > 10000 {
-		return ErrGasPriceTooBig
+	if tx0.GasPrice < 0 || tx0.GasPrice > 10000 {
+		return ErrGasPriceIllegal
 	}
 	return nil
 }
@@ -276,9 +285,11 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		}
 		return
 	}
-	var rtn []interface{}
-	rtn, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	ilog.Debug("action %v > %v", action.Contract+"."+action.ActionName, rtn)
+	//var rtn []interface{}
+	//rtn, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
+	//ilog.Debug("action %v > %v", action.Contract+"."+action.ActionName, rtn)
+
+	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
 
 	if cost == nil {
 		cost = contract.Cost0()
@@ -312,7 +323,7 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 func (e *EngineImpl) setLogger(level, path string, start bool) {
 
 	if path == "" && !start {
-		ilog.Debug("console log accepted")
+		//ilog.Debug("console log accepted")
 		if e.consoleWriter == nil {
 			e.consoleWriter = ilog.NewConsoleWriter()
 		}

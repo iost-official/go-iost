@@ -27,7 +27,7 @@ message BlockByHashReq {
 	bool complete=2;
 }
 message BlockByNumReq {
-	uint64 num=1;
+	int64 num=1;
 	bool complete=2;	
 }
 message GetBalanceReq {
@@ -42,7 +42,7 @@ message RawTxReq {
 	bytes data=1;
 }
 message HeightRes {
-	uint64 height=1;
+	int64 height=1;
 }
 
 message GetBalanceRes {

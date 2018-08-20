@@ -362,8 +362,8 @@ func TestEngine_Func(t *testing.T) {
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger")
 	_, _, err := vmPool.LoadAndCall(host, code, "bigArray")
-	if err == nil || err.Error() != "execution killed" {
-		t.Fatalf("LoadAndCall for should return error: execution killed, but got %v\n", err)
+	if err != nil {
+		t.Fatal("LoadAndCall for should return no error")
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "visitUndefined")
@@ -375,5 +375,16 @@ func TestEngine_Danger(t *testing.T) {
 	_, _, err = vmPool.LoadAndCall(host, code, "throw")
 	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: test throw") {
 		t.Fatalf("LoadAndCall for should return error: Uncaught exception: test throw, but got %v\n", err)
+	}
+}
+
+func TestEngine_Int64(t *testing.T)  {
+	host, code := MyInit(t, "int64Test")
+	rs, _, err := vmPool.LoadAndCall(host, code, "getPlus")
+	if err != nil {
+		t.Fatalf("LoadAndCall getPlus error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "1234501234" {
+		t.Fatalf("LoadAndCall getPlus except: , got: %v", rs[0])
 	}
 }
