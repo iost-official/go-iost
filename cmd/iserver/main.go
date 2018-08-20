@@ -26,7 +26,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
-	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/spf13/viper"
 )
@@ -185,9 +184,6 @@ func main() {
 			}
 	*/
 
-	log.Report(&log.MsgNode{
-		SubType: "online",
-	})
 	exitLoop()
 
 }
