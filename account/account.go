@@ -10,7 +10,7 @@ import (
 
 var (
 	MainAccount    Account
-	GenesisAccount = map[string]float64{
+	GenesisAccount = map[string]int64{
 		"2BibFrAhc57FAd3sDJFbPqjwskBJb5zPDtecPWVRJ1jxT": 3400000000,
 		"tUFikMypfNGxuJcNbfreh8LM893kAQVNTktVQRsFYuEU":  3200000000,
 		"s1oUQNTcRKL7uqJ1aRqUMzkAkgqJdsBB7uW9xrTd85qB":  3100000000,

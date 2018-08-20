@@ -14,11 +14,11 @@ import (
 )
 
 var (
-	ErrABINotFound    = errors.New("abi not found")
-	ErrGasPriceTooBig = errors.New("gas price too big")
-	ErrArgsNotEnough  = errors.New("args not enough")
-	ErrArgsType       = errors.New("args type not match")
-	ErrGasOverflow = errors.New("contract pay gas overflow")
+	ErrABINotFound     = errors.New("abi not found")
+	ErrGasPriceIllegal = errors.New("gas price too big")
+	ErrArgsNotEnough   = errors.New("args not enough")
+	ErrArgsType        = errors.New("args type not match")
+	ErrGasOverflow     = errors.New("contract pay gas overflow")
 )
 
 type Monitor struct {

@@ -171,7 +171,7 @@ Supported features list below:
 2. IOST transfer
 3. Deposit to or Withdraw from contract account
 3. Inter-contract API calls
-4. Multi signature
+4. Multiple signature
 
 Some of Lua's feature such as require are not supported yet, and will be supported during next updates.
 

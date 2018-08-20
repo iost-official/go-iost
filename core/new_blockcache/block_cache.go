@@ -8,6 +8,10 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+<<<<<<< HEAD
+=======
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
+>>>>>>> develop
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -273,6 +277,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	if retain.Block != nil {
 		err := bc.baseVariable.BlockChain().Push(retain.Block)
 		if err != nil {
+			ilog.Debug("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
@@ -282,6 +287,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs)
 		if err != nil {
+			ilog.Debug("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		//bc.hmdel(cur.Block.HeadHash())
