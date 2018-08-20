@@ -90,9 +90,8 @@ func (suite *MVCCDBTestSuite) TestHas() {
 
 func (suite *MVCCDBTestSuite) TestCommit() {
 	var value string
-	var err error
 
-	err = suite.mvccdb.Put("table01", "key06", "value06")
+	err := suite.mvccdb.Put("table01", "key06", "value06")
 	suite.Nil(err)
 	err = suite.mvccdb.Del("table01", "key04")
 	suite.Nil(err)
@@ -108,9 +107,8 @@ func (suite *MVCCDBTestSuite) TestCommit() {
 
 func (suite *MVCCDBTestSuite) TestRollback() {
 	var value string
-	var err error
 
-	err = suite.mvccdb.Put("table01", "key06", "value06")
+	err := suite.mvccdb.Put("table01", "key06", "value06")
 	suite.Nil(err)
 	err = suite.mvccdb.Del("table01", "key04")
 	suite.Nil(err)
@@ -126,9 +124,8 @@ func (suite *MVCCDBTestSuite) TestRollback() {
 
 func (suite *MVCCDBTestSuite) TestCheckout() {
 	var value string
-	var err error
 
-	err = suite.mvccdb.Put("table01", "key06", "value06")
+	err := suite.mvccdb.Put("table01", "key06", "value06")
 	suite.Nil(err)
 	err = suite.mvccdb.Del("table01", "key04")
 	suite.Nil(err)
@@ -161,11 +158,10 @@ func (suite *MVCCDBTestSuite) TestCheckout() {
 
 func (suite *MVCCDBTestSuite) TestFork() {
 	var value string
-	var err error
 
 	mvccdb2 := suite.mvccdb.Fork()
 
-	err = mvccdb2.Put("table01", "key06", "value06")
+	err := mvccdb2.Put("table01", "key06", "value06")
 	suite.Nil(err)
 	err = mvccdb2.Del("table01", "key04")
 	suite.Nil(err)
@@ -188,9 +184,8 @@ func (suite *MVCCDBTestSuite) TestFork() {
 
 func (suite *MVCCDBTestSuite) TestFlush() {
 	var value string
-	var err error
 
-	err = suite.mvccdb.Put("table01", "key06", "value06")
+	err := suite.mvccdb.Put("table01", "key06", "value06")
 	suite.Nil(err)
 	err = suite.mvccdb.Del("table01", "key04")
 	suite.Nil(err)

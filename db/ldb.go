@@ -3,6 +3,7 @@ package db
 import (
 	"sync"
 
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
@@ -80,7 +81,10 @@ func (ldb *LDB) Delete(key []byte) error {
 func (ldb *LDB) Close() {
 	ldb.quitLock.Lock()
 	defer ldb.quitLock.Unlock()
-	ldb.db.Close()
+	err := ldb.db.Close()
+	if err != nil {
+		ilog.Error("Close LDB failed: %v", err)
+	}
 }
 
 func (ldb *LDB) Path() string {
