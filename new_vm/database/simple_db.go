@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"errors"
 )
 
 type database struct {
@@ -61,13 +62,20 @@ func (d *database) Get(table string, key string) (string, error) {
 	}
 
 	if strings.HasPrefix(key, "c-") {
+		if out == nil {
+			return "", errors.New("key not exists")
+		}
 		return out.(string), nil
 	}
 
 	return Marshal(out)
 }
 func (d *database) Put(table string, key string, value string) error {
-	d.json.Set(key, MustUnmarshal(value))
+	if strings.HasPrefix(key, "c-") {
+		d.json.Set(key, value)
+	} else {
+		d.json.Set(key, MustUnmarshal(value))
+	}
 	return nil
 }
 func (d *database) Del(table string, key string) error {
@@ -138,8 +146,8 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 	t.Signers = s
 	p, err := json.Get("publisher").String()
 	t.Publisher.Pubkey = account.GetPubkeyByID(p)
-	t.GasLimit, err = json.Get("gas_limit").Uint64()
-	t.GasPrice, err = json.Get("gas_price").Uint64()
+	t.GasLimit, err = json.Get("gas_limit").Int64()
+	t.GasPrice, err = json.Get("gas_price").Int64()
 	return t, err
 }
 

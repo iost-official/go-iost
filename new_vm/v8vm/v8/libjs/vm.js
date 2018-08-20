@@ -64,7 +64,7 @@ var IOSTContractStorage = require('storage');
 var GlobalStorage = IOSTContractStorage.GlobalStorage;
 
 // blockchain
-var BlockChainContractStorage = require('blockchain');
+var BlockChain = require('blockchain');
 
 // other helper funcitons
 var BigNumber = require('bignumber');

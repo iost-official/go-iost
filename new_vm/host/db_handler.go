@@ -18,62 +18,50 @@ func NewDBHandler(db *database.Visitor, ctx *Context) DBHandler {
 }
 
 func (h *DBHandler) Put(key string, value interface{}) *contract.Cost {
-	cn := h.ctx.Value("contract_name").(string)
-
-	v := database.MustMarshal(value)
-	h.db.Put(cn+database.Separator+key, v)
+	h.db.Put(
+		h.modifyKey(key),
+		database.MustMarshal(value),
+	)
 	return contract.NewCost(1, 1, 1)
 }
 
 func (h *DBHandler) Get(key string) (value interface{}, cost *contract.Cost) {
-	cn := h.ctx.Value("contract_name").(string)
 
-	rtn := database.MustUnmarshal(h.db.Get(cn + database.Separator + key))
+	rtn := database.MustUnmarshal(h.db.Get(h.modifyKey(key)))
+
 	return rtn, contract.NewCost(1, 1, 1)
 }
 
 func (h *DBHandler) Del(key string) *contract.Cost {
-	cn := h.ctx.Value("contract_name").(string)
 
-	h.db.Del(cn + database.Separator + key)
+	h.db.Del(h.modifyKey(key))
 
 	return contract.NewCost(1, 1, 1)
 }
 
 func (h *DBHandler) MapPut(key, field string, value interface{}) *contract.Cost {
-	cn := h.ctx.Value("contract_name").(string)
-
 	v := database.MustMarshal(value)
-	h.db.MPut(cn+database.Separator+key, field, v)
-
+	h.db.MPut(h.modifyKey(key), field, v)
 	return contract.NewCost(1, 1, 1)
 }
 
 func (h *DBHandler) MapGet(key, field string) (value interface{}, cost *contract.Cost) {
-	cn := h.ctx.Value("contract_name").(string)
-
-	ans := h.db.MGet(cn+database.Separator+key, field)
-	rtn := database.MustUnmarshal(ans)
+	rtn := database.MustUnmarshal(h.db.MGet(h.modifyKey(key), field))
 	return rtn, contract.NewCost(1, 1, 1)
 }
 
 func (h *DBHandler) MapKeys(key string) (fields []string, cost *contract.Cost) {
-	cn := h.ctx.Value("contract_name").(string)
 
-	return h.db.MKeys(cn + database.Separator + key), contract.NewCost(1, 1, 1)
+	return h.db.MKeys(h.modifyKey(key)), contract.NewCost(1, 1, 1)
 }
 
 func (h *DBHandler) MapDel(key, field string) *contract.Cost {
-	cn := h.ctx.Value("contract_name").(string)
-
-	h.db.Del(cn + database.Separator + key)
+	h.db.MDel(h.modifyKey(key), field)
 	return contract.NewCost(1, 1, 1)
 }
 
 func (h *DBHandler) MapLen(key string) (int, *contract.Cost) {
-	cn := h.ctx.Value("contract_name").(string)
-
-	return len(h.db.MKeys(cn + database.Separator + key)), contract.NewCost(1, 1, 1)
+	return len(h.db.MKeys(h.modifyKey(key))), contract.NewCost(1, 1, 1)
 }
 
 func (h *DBHandler) GlobalGet(con, key string) (value interface{}, cost *contract.Cost) {
@@ -93,4 +81,8 @@ func (h *DBHandler) GlobalMapKeys(con, key string) (keys []string, cost *contrac
 func (h *DBHandler) GlobalMapLen(con, key string) (length int, cost *contract.Cost) {
 	k, cost := h.GlobalMapKeys(con, key)
 	return len(k), contract.NewCost(1, 1, 1)
+}
+
+func (h *DBHandler) modifyKey(key string) string {
+	return h.ctx.Value("contract_name").(string) + database.Separator + key
 }

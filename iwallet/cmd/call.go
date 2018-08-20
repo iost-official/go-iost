@@ -61,8 +61,8 @@ var callCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(callCmd)
 
-	callCmd.Flags().Uint64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
-	callCmd.Flags().Uint64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
+	callCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
+	callCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
 	callCmd.Flags().Int64VarP(&expiration, "expiration", "e", 0, "expiration timestamp for a transaction")
 	callCmd.Flags().StringSliceVarP(&signers, "signers", "s", []string{}, "signers who should sign this transaction")
 

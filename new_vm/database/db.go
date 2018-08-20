@@ -11,11 +11,12 @@ type Visitor struct {
 func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 	db := newChainbaseAdapter(cb)
 	cachedDB := NewLRU(cacheLength, db)
-	return &Visitor{
+	v := &Visitor{
 		BasicHandler:    BasicHandler{cachedDB},
 		MapHandler:      MapHandler{cachedDB},
 		ContractHandler: ContractHandler{cachedDB},
-		RollbackHandler: newRollbackHandler(cb),
 		BalanceHandler:  BalanceHandler{cachedDB},
 	}
+	v.RollbackHandler = newRollbackHandler(cb, cachedDB)
+	return v
 }

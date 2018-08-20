@@ -6,12 +6,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	. "github.com/smartystreets/goconvey/convey"
 	"log"
-	"time"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	"math/rand"
+	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestMerkleTree(t *testing.T) {
@@ -53,7 +54,6 @@ func TestMerkleTree(t *testing.T) {
 		}
 	})
 }
-
 
 func BenchmarkBuild(b *testing.B) { // 646503ns = 0.6ms，vs 117729ns = 0.1ms
 	rand.Seed(time.Now().UnixNano())
