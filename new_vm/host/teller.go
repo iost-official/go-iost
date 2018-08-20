@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 )
 
@@ -87,7 +87,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 				return err
 			}
 		} else {
-			log.Log.E("key is:", k)
+			ilog.Error("key is:", k)
 			panic("prefix error")
 		}
 	}
