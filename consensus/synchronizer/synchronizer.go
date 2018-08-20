@@ -100,7 +100,7 @@ func (sy *SyncImpl) NeedSync(netHeight int64) (bool, int64, int64) {
 	bcn := sy.blockCache.Head()
 	num := 0
 	if bcn != sy.lastHead {
-		sy.lastHead = sy.blockCache.Head
+		sy.lastHead = sy.blockCache.Head()
 		witness := bcn.Block.Head.Witness
 		for i := 0; i < ConfirmNumber; i++ {
 			bcn = bcn.Parent
