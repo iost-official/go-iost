@@ -2,8 +2,8 @@ package common
 
 import (
 	"errors"
+
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/Go-IOS-Protocol/log"
 )
 
 //go:generate gencode go -schema=structs.schema -package=common
@@ -58,7 +58,6 @@ func (s *Signature) Decode(b []byte) error {
 	sr := &SignatureRaw{}
 	err := proto.Unmarshal(b, sr)
 	if err != nil {
-		log.Log.E("Error in Decode of signature ", b, err.Error())
 		return err
 	}
 	s.Algorithm = SignAlgorithm(sr.Algorithm)
