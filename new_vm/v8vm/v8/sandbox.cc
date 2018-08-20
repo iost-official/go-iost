@@ -274,6 +274,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
             result = *jsonRetStr;
         }
     }
+    isDone = true;
 }
 
 ValueTuple Execution(SandboxPtr ptr, const char *code) {
@@ -299,6 +300,9 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
             res.Value = copyString(result);
             res.isJson = isJson;
             res.gasUsed = sbx->gasUsed;
+            break;
+        }
+        if (isDone) {
             break;
         }
         if (sbx->gasUsed > sbx->gasLimit) {
