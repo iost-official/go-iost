@@ -20,6 +20,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus"
@@ -29,12 +30,19 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
 
 type ServerExit interface {
 	Stop()
 }
+
+var cfgFile string
+var logFile string
+var dbFile string
+var cpuprofile string
+var memprofile string
 
 var serverExit []ServerExit
 
@@ -80,7 +88,7 @@ func main() {
 
 	serverExit = append(serverExit, p2pService)
 
-	accSecKey := viper.GetString("account.sec-key")
+	accSecKey := glb.Config().AccSecKey
 	//fmt.Printf("account.sec-key:  %v\n", accSecKey)
 	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
 	if err != nil {
@@ -220,4 +228,33 @@ func exitLoop() {
 	signal.Stop(c)
 	close(exit)
 	os.Exit(0)
+}
+
+func initConfig() {
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Find home directory.
+		home, err := homedir.Dir()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		// Search config in home directory with name ".iserver" (without extension).
+		viper.AddConfigPath(home)
+		viper.SetConfigName(".iserver")
+	}
+
+	viper.AutomaticEnv() // read in environment variables that match
+
+	//fmt.Println(cfgFile)
+	// If a config file is found, read it in.
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	} else {
+		panic(err)
+	}
+
 }
