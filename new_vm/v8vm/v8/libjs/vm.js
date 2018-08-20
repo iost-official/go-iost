@@ -68,7 +68,7 @@ var BlockChain = require('blockchain');
 
 // other helper funcitons
 var BigNumber = require('bignumber');
-var Ing64 = require('int64');
+var Int64 = require('int64');
 
 var injectGas = require('inject_gas');
 var observer = require('observer');
