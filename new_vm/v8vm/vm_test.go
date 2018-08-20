@@ -362,8 +362,8 @@ func TestEngine_Func(t *testing.T) {
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger")
 	_, _, err := vmPool.LoadAndCall(host, code, "bigArray")
-	if err == nil || err.Error() != "execution killed" {
-		t.Fatalf("LoadAndCall for should return error: execution killed, but got %v\n", err)
+	if err != nil {
+		t.Fatal("LoadAndCall for should return no error")
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "visitUndefined")
