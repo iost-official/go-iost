@@ -249,6 +249,10 @@ func (pool *TxPoolImpl) initBlockTx() {
 
 func (pool *TxPoolImpl) verifyTx(t *tx.Tx) TAddTx {
 
+	if t.GasPrice <= pool.global.Config().GasPrice {
+		return GasPriceError
+	}
+
 	if pool.txTimeOut(t) {
 		return TimeError
 	}
