@@ -1,25 +1,26 @@
 package merkletree
 
 import (
-	"testing"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"log"
-		"reflect"
 	"bytes"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/smartystreets/goconvey/convey"
+	"log"
 	"math/rand"
+	"os/exec"
+	"reflect"
+	"testing"
 	"time"
-	)
+)
 
 func TestTXRMerkleTreeDB(t *testing.T) {
 	convey.Convey("Test of TXRMTDB", t, func() {
 		m := TXRMerkleTree{}
 		txrs := []*tx.TxReceipt{
-			{TxHash:[]byte("node1")},
-			{TxHash:[]byte("node2")},
-			{TxHash:[]byte("node3")},
-			{TxHash:[]byte("node4")},
-			{TxHash:[]byte("node5")},
+			{TxHash: []byte("node1")},
+			{TxHash: []byte("node2")},
+			{TxHash: []byte("node3")},
+			{TxHash: []byte("node4")},
+			{TxHash: []byte("node5")},
 		}
 		m.Build(txrs)
 		Init("./")
@@ -32,10 +33,12 @@ func TestTXRMerkleTreeDB(t *testing.T) {
 		if err != nil {
 			log.Panic(err)
 		}
-		convey.So(reflect.DeepEqual(m.TX2TXR,m_read.TX2TXR), convey.ShouldBeTrue)
+		convey.So(reflect.DeepEqual(m.TX2TXR, m_read.TX2TXR), convey.ShouldBeTrue)
 		for i := 0; i < 16; i++ {
 			convey.So(bytes.Equal(m.MT.HashList[i], m_read.MT.HashList[i]), convey.ShouldBeTrue)
 		}
+		cmd := exec.Command("rm", "-r", "./TXRMerkleTreeDB")
+		cmd.Run()
 	})
 }
 
@@ -44,7 +47,7 @@ func BenchmarkTXRMerkleTreeDB(b *testing.B) { //Put: 1544788ns = 1.5ms, Get: 621
 	Init("./")
 	var txrs []*tx.TxReceipt
 	for i := 0; i < 3000; i++ {
-		txrs = append(txrs, &tx.TxReceipt{TxHash:[]byte("node1")})
+		txrs = append(txrs, &tx.TxReceipt{TxHash: []byte("node1")})
 	}
 	m := TXRMerkleTree{}
 	m.Build(txrs)
