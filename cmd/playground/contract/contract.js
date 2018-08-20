@@ -2,7 +2,7 @@
 
 var esprima = require('esprima/dist/esprima.js');
 
-var lang = "js";
+var lang = "javascript";
 var version = "1.0.0";
 
 function isClassDecl(stat) {
@@ -35,7 +35,7 @@ function getExportName(stat) {
 }
 
 function isPublicMethod(def) {
-	return def.key.type === "Identifier" && def.value.type === "FunctionExpression" && def.key.name !== "constructor" && !def.key.name.startsWith("_");
+	return def.key.type === "Identifier" && def.value.type === "FunctionExpression" && !def.key.name.startsWith("_");
 }
 
 function genAbi(def) {
@@ -43,7 +43,7 @@ function genAbi(def) {
 		"name": def.key.name,
 		"args": new Array(def.value.params.length).fill("string"),
 		"payment": 0,
-		"cost_limit": new Array(def.value.params.length).fill(1),
+		"cost_limit": new Array(3).fill(1),
 		"price_limit": 1
 	};
 	return abi;
@@ -61,6 +61,16 @@ function genAbiArr(stat) {
 			abiArr.push(genAbi(def));
 		}
 	}
+	var constructorFound = false;
+	for (var i in abiArr) {
+		if (abiArr[i].name == "constructor") {
+			constructorFound = true;
+		}
+	}
+	if (!constructorFound) {
+		console.error("constructor not found!");
+		return null;
+	}
 	return abiArr;
 }
 
@@ -71,11 +81,11 @@ function processContract(source) {
 		loc: true,
 		tokens: true
 	});
-	console.log(ast);
 
 	var abiArr = [];
 	if (!ast || ast === null || !ast.body || ast.body === null || ast.body.length === 0) {
 		console.error("invalid source! ast = " + ast);
+		return ["", ""]
 	}
 	var validRange = [];
 	var className;

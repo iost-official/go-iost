@@ -9,9 +9,9 @@ int goWithdraw(SandboxPtr, const char *, const char *, size_t *);
 int goDeposit(SandboxPtr, const char *, const char *, size_t *);
 int goTopUp(SandboxPtr, const char *, const char *, const char *, size_t *);
 int goCountermand(SandboxPtr, const char *, const char *, const char *, size_t *);
-char *goBlockInfo(SandboxPtr, size_t *);
-char *goTxInfo(SandboxPtr, size_t *);
-char *goCall(SandboxPtr, const char *, const char *, const char *, size_t *);
+int goBlockInfo(SandboxPtr, char **, size_t *);
+int goTxInfo(SandboxPtr, char **, size_t *);
+int goCall(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 int goPut(SandboxPtr, const char *, const char *, size_t *);
 char *goGet(SandboxPtr, const char *, size_t *);
 int goDel(SandboxPtr, const char *, size_t *);
@@ -24,9 +24,10 @@ import (
 	"fmt"
 	"unsafe"
 
+	"strings"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"strings"
 )
 
 // A Sandbox is an execution environment that allows separate, unrelated, JavaScript
@@ -85,7 +86,7 @@ func (sbx *Sandbox) Init() {
 		(C.globalGetFunc)(unsafe.Pointer(C.goGlobalGet)))
 }
 
-func (sbx *Sandbox) SetGasLimit(limit uint64) {
+func (sbx *Sandbox) SetGasLimit(limit int64) {
 	C.setSandboxGasLimit(sbx.context, C.size_t(limit))
 }
 
@@ -119,11 +120,13 @@ func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args [
 var _native_main = require('%s');
 var obj = new _native_main();
 
+var ret = 0;
 // store kv that was constructed by contract.
 Object.keys(obj).forEach((key) => {
    let val = obj[key];
-   IOSTContractStorage.put(key, val);
+   ret = IOSTContractStorage.put(key, val);
 });
+ret;
 `, name), nil
 	}
 
@@ -159,7 +162,7 @@ objObserver.%s(%s)
 `, name, function, strings.Trim(argStr, "[]")), nil
 }
 
-func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
+func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	cCode := C.CString(preparedCode)
 	defer C.free(unsafe.Pointer(cCode))
 
@@ -174,7 +177,9 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, error) {
 		err = errors.New(C.GoString(rs.Err))
 	}
 
-	return result, err
+	gasUsed := rs.gasUsed
+
+	return result, int64(gasUsed) , err
 }
 
 func formatFuncArgs(args []interface{}) (string, error) {

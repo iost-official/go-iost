@@ -2,13 +2,14 @@ package merkletree
 
 import (
 	"encoding/binary"
-	"github.com/iost-official/Go-IOS-Protocol/db"
 	"errors"
-		"sync"
+	"sync"
+
+	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
 type TXRMerkleTreeDB struct {
-	txrMerkleTreeDB     *db.LDB
+	txrMerkleTreeDB *db.LDB
 }
 
 var TXRMTDB TXRMerkleTreeDB

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"strconv"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -19,23 +21,22 @@ type Block struct {
 }
 
 func GenGenesis(initTime int64) (*Block, error) {
-	var code string
+	//var code string
+	var acts []tx.Action
 	for k, v := range account.GenesisAccount {
-		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
+		//code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, k, strconv.FormatInt(v, 10)))
+		acts = append(acts, act)
 	}
 
-	txn := tx.Tx{
-		Time: 0,
-		// TODO what is the genesis tx?
-	}
-
+	txn := tx.NewTx(acts, nil, 0, 0, 0)
 	genesis := &Block{
 		Head: BlockHead{
 			Version: 0,
 			Number:  0,
 			Time:    initTime,
 		},
-		Txs:      make([]*tx.Tx, 0),
+		Txs:      []*tx.Tx{&txn},
 		Receipts: make([]*tx.TxReceipt, 0),
 	}
 	genesis.Txs = append(genesis.Txs, &txn)

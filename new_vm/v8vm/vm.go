@@ -19,8 +19,8 @@ func init() {
 type VM struct {
 	isolate              C.IsolatePtr
 	sandbox              *Sandbox
-	limitsOfInstructions uint64
-	limitsOfMemorySize   uint64
+	limitsOfInstructions int64
+	limitsOfMemorySize   int64
 }
 
 func NewVM() *VM {
@@ -47,12 +47,12 @@ func (e *VM) Run(code, api string, args ...interface{}) (interface{}, error) {
 		return "", err
 	}
 
-	rs, err := e.sandbox.Execute(preparedCode)
+	rs, _, err := e.sandbox.Execute(preparedCode)
 	return rs, err
 }
 
 func (e *VM) compile(contract *contract.Contract) (string, error) {
-	return "", nil
+	return contract.Code, nil
 }
 
 func (e *VM) setHost(host *host.Host) {
@@ -64,8 +64,9 @@ func (e *VM) setContract(contract *contract.Contract, api string, args ...interf
 }
 
 func (e *VM) execute(code string) (rtn []interface{}, cost *contract.Cost, err error) {
-	rs, err := e.sandbox.Execute(code)
-	return []interface{}{rs}, nil, err
+	rs, gasUsed, err := e.sandbox.Execute(code)
+	gasCost := contract.NewCost(gasUsed, 0, 0)
+	return []interface{}{rs}, gasCost, err
 }
 
 func (e *VM) setJSPath(path string) {
