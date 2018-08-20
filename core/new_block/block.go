@@ -2,10 +2,7 @@ package block
 
 import (
 	"errors"
-	"fmt"
-
 	"github.com/gogo/protobuf/proto"
-	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/merkletree"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
@@ -19,15 +16,15 @@ type Block struct {
 }
 
 func GenGenesis(initTime int64) (*Block, error) {
-	var code string
-	for k, v := range account.GenesisAccount {
-		code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
-	}
+	//var code string
+	//for k, v := range account.GenesisAccount {
+	//	code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
+	//}
 
-	txn := tx.Tx{
-		Time: 0,
-		// TODO what is the genesis tx?
-	}
+	//txn := tx.Tx{
+	//	Time: 0,
+	//	// TODO what is the genesis tx?
+	//}
 
 	genesis := &Block{
 		Head: BlockHead{
@@ -38,7 +35,7 @@ func GenGenesis(initTime int64) (*Block, error) {
 		Txs:      make([]*tx.Tx, 0),
 		Receipts: make([]*tx.TxReceipt, 0),
 	}
-	genesis.Txs = append(genesis.Txs, &txn)
+	//genesis.Txs = append(genesis.Txs, &txn)
 	return genesis, nil
 }
 

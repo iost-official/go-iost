@@ -99,9 +99,11 @@ func (p *PoB) Stop() {
 }
 
 func (p *PoB) blockLoop() {
+	fmt.Println("here")
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
+			fmt.Println("new block come")
 			if !ok {
 				fmt.Println("chRecvBlock has closed")
 				return
@@ -167,13 +169,14 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block) error {
+	fmt.Println("handleRecvBlock")
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errors.New("duplicate block")
 	}
 	err = verifyBasics(blk)
 	if err != nil {
-		return errors.New("fail to verifyBasics")
+		return fmt.Errorf("fail to verify blocks, %v", err)
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	if err == nil && parent.Type == blockcache.Linked {

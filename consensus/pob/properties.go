@@ -3,7 +3,6 @@ package pob
 import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"fmt"
 )
 
 var staticProperty StaticProperty
@@ -58,7 +57,6 @@ func witnessOfSec(sec int64) string {
 
 func witnessOfSlot(slot int64) string {
 	index := slot%staticProperty.NumberOfWitnesses
-	fmt.Println(index)
 	witness := staticProperty.WitnessList[index]
 	return witness
 }

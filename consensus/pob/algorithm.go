@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 	"time"
+	"fmt"
 )
 
 var (
@@ -93,6 +94,8 @@ func generateHeadInfo(head block.BlockHead) []byte {
 }
 
 func verifyBasics(blk *block.Block) error {
+	fmt.Println(witnessOfSlot(blk.Head.Time))
+	fmt.Println(blk.Head.Witness)
 	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
 		return ErrWitness
 	}
