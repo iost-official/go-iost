@@ -177,8 +177,8 @@ func (e *EngineImpl) GC() {
 }
 
 func checkTx(tx0 *tx.Tx) error {
-	if tx0.GasPrice <= 0 || tx0.GasPrice > 10000 {
-		return ErrGasPriceTooBig
+	if tx0.GasPrice < 0 || tx0.GasPrice > 10000 {
+		return ErrGasPriceIllegal
 	}
 	return nil
 }
