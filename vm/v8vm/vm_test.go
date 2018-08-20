@@ -387,7 +387,6 @@ func TestEngine_Int64(t *testing.T) {
 	if len(rs) > 0 && rs[0] != "1234501234" {
 		t.Fatalf("LoadAndCall getPlus except: , got: %v", rs[0])
 	}
-
 	rs, _, err = vmPool.LoadAndCall(host, code, "getMinus")
 	if err != nil {
 		t.Fatalf("LoadAndCall getMinus error: %v", err)
