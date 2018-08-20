@@ -16,6 +16,7 @@ typedef struct {
     const char *Value;
     const char *Err;
     bool isJson;
+    size_t gasUsed;
 } ValueTuple;
 
 typedef enum {
@@ -90,9 +91,9 @@ typedef int (*withdrawFunc)(SandboxPtr, const char *, const char *, size_t *);
 typedef int (*depositFunc)(SandboxPtr, const char *, const char *, size_t *);
 typedef int (*topUpFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
 typedef int (*countermandFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
-typedef char *(*blockInfoFunc)(SandboxPtr, size_t *);
-typedef char *(*txInfoFunc)(SandboxPtr, size_t *);
-typedef char *(*callFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
+typedef int (*blockInfoFunc)(SandboxPtr, char **, size_t *);
+typedef int (*txInfoFunc)(SandboxPtr, char **, size_t *);
+typedef int (*callFunc)(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 void InitGoBlockchain(transferFunc, withdrawFunc,
                         depositFunc, topUpFunc, countermandFunc,
                         blockInfoFunc, txInfoFunc, callFunc);

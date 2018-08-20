@@ -41,8 +41,11 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
+
+	bi, _ := e.(*EngineImpl).ho.BlockInfo()
+
+	blkInfo := string(bi)
+	if blkInfo != `{"number":10,"parent_hash":"ZiCa","time":123456,"witness":"witness"}` {
 		t.Fatal(blkInfo)
 	}
 
@@ -118,15 +121,88 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	}
 }
 
+func TestLogger(t *testing.T) { // test of normal engine work
+	bh, db, vm := engineinit(t)
+	e := NewEngine(bh, db)
+	e.SetUp("js_path", jsPath)
+	e.SetUp("log_level", "debug")
+	e.SetUp("log_enable", "")
+
+	mtx := tx.Tx{
+		Time:       time.Now().UnixNano(),
+		Expiration: 10000,
+		GasLimit:   100000,
+		GasPrice:   1,
+		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+	}
+
+	act := tx.Action{
+		Contract:   "contract",
+		ActionName: "abi",
+		Data:       `["datas"]`,
+	}
+
+	mtx.Actions = append(mtx.Actions, act)
+
+	c := contract.Contract{
+		ID:   "contract",
+		Code: "codes",
+		Info: &contract.Info{
+			Lang:        "mock",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				&contract.ABI{
+					Name:     "abi",
+					Args:     []string{"string"},
+					Payment:  0,
+					GasPrice: int64(10),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+			},
+		},
+	}
+
+	db.EXPECT().Get("state", "c-contract").DoAndReturn(func(table string, key string) (string, error) {
+		return c.Encode(), nil
+	})
+
+	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000000)), nil
+	})
+
+	vm.EXPECT().LoadAndCall(gomock.Any(), gomock.Any(), "abi", `datas`).DoAndReturn(
+		func(host *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			l := host.Logger()
+			l.Error("test of error")
+			l.Debug("test of debug")
+			l.Info("test of info")
+			return nil, contract.Cost0(), nil
+		},
+	)
+
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
+	txr, err := e.Exec(&mtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txr.Status.Code != tx.Success {
+		t.Fatal(txr.Status)
+	}
+
+	if !committed {
+		t.Fatal(committed)
+	}
+}
+
 func TestCost(t *testing.T) { // tests of context transport
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-
-	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
-		t.Fatal(blkInfo)
-	}
 
 	mtx := tx.Tx{
 		Time:       time.Now().UnixNano(),
@@ -158,7 +234,7 @@ func TestCost(t *testing.T) { // tests of context transport
 			Lang:        "mock",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "abi",
 					Args:     []string{"string"},
 					Payment:  0,
@@ -186,7 +262,7 @@ func TestCost(t *testing.T) { // tests of context transport
 	})
 
 	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
-		if database.MustUnmarshal(value) != int64(900) {
+		if database.MustUnmarshal(value) != int64(999900) {
 			t.Fatal(database.MustUnmarshal(value))
 		}
 		return nil
@@ -248,12 +324,6 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-
-	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
-		t.Fatal(blkInfo)
-	}
-
 	mtx := tx.Tx{
 		Time:       time.Now().UnixNano(),
 		Expiration: 10000,
@@ -355,15 +425,11 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 	}
 
 }
+
 func TestNative_TopUp(t *testing.T) { // tests of native vm works
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-
-	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
-		t.Fatal(blkInfo)
-	}
 
 	mtx := tx.Tx{
 		Time:       time.Now().UnixNano(),
@@ -467,15 +533,104 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 
 }
 
+func TestNative_Receipt(t *testing.T) { // tests of native vm works
+	bh, db, _ := engineinit(t)
+	e := NewEngine(bh, db)
+	e.SetUp("js_path", jsPath)
+	mtx := tx.Tx{
+		Time:       time.Now().UnixNano(),
+		Expiration: 10000,
+		GasLimit:   100000,
+		GasPrice:   1,
+		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+	}
+
+	ac := tx.Action{
+		Contract:   "iost.system",
+		ActionName: "CallWithReceipt",
+		Data:       `["iost.system", "Receipt", ["iamreceipt"]]`,
+	}
+
+	mtx.Actions = append(mtx.Actions, ac)
+
+	c := contract.Contract{
+		ID:   "iost.system",
+		Code: "codes",
+		Info: &contract.Info{
+			Lang:        "native",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				&contract.ABI{
+					Name:     "Receipt",
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{"string"},
+				},
+				&contract.ABI{
+					Name:     "CallWithReceipt",
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{"string", "string", "json"},
+				},
+			},
+		},
+	}
+
+	db.EXPECT().Get("state", "c-iost.system").DoAndReturn(func(table string, key string) (string, error) {
+		return c.Encode(), nil
+	})
+
+	db.EXPECT().Get("state", "i-witness").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Get("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(10000000)), nil
+	})
+
+	db.EXPECT().Put("state", "i-witness", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(1103) {
+			t.Fatal("witness", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(9999897) {
+			t.Fatal("publisher", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
+
+	committed := false
+
+	db.EXPECT().Commit().Do(func() {
+		committed = true
+	})
+
+	txr, err := e.Exec(&mtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if txr.Status.Code != tx.Success {
+		t.Fatal(txr.Status)
+	}
+	if len(txr.Receipts) != 2 || txr.Receipts[0].Type != tx.UserDefined || txr.Receipts[0].Content != "iamreceipt" ||
+		txr.Receipts[1].Type != tx.SystemDefined || txr.Receipts[1].Content != `["Receipt",["iamreceipt"],"success"]` {
+		t.Fatal(txr.Receipts)
+	}
+
+	if !committed {
+		t.Fatal(committed)
+	}
+}
+
 func TestJS(t *testing.T) {
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
-
-	blkInfo := string(e.(*EngineImpl).host.Ctx.Value("block_info").(database.SerializedJSON))
-	if blkInfo != `{"number":"10","parent_hash":"abc","time":"123456","witness":"witness"}` {
-		t.Fatal(blkInfo)
-	}
 
 	mtx := tx.Tx{
 		Time:       time.Now().UnixNano(),
@@ -530,6 +685,25 @@ module.exports = Contract;
 		return database.MustMarshal(int64(1000000)), nil
 	})
 
+	db.EXPECT().Get("state", "i-witness").DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(int64(1000)), nil
+	})
+
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+
+		if database.MustUnmarshal(value).(int64) != 999993 {
+			t.Fatal(database.MustUnmarshal(value).(int64))
+		}
+
+		return nil
+	})
+
+	db.EXPECT().Put("state", "i-witness", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(1007) {
+			t.Fatal("witness", database.MustUnmarshal(value).(int64))
+		}
+		return nil
+	})
 	db.EXPECT().Rollback().Do(func() {
 		t.Log("exec tx failed, and success rollback")
 	})

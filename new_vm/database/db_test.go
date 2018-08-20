@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	. "github.com/golang/mock/gomock"
+	"github.com/iost-official/Go-IOS-Protocol/db"
+	"os"
 )
 
 func sliceEqual(a, b []string) bool {
@@ -87,4 +89,58 @@ func TestHandler_Get(t *testing.T) {
 	if !sliceEqual(strs, []string{"a", "b", "c"}) {
 		t.Fatal(strs)
 	}
+}
+
+func TestMultiWork(t *testing.T) {
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer os.RemoveAll("mvcc")
+
+	length := 100
+
+
+	v := NewVisitor(length, mvccdb)
+
+	v.Put("hello", "world")
+
+
+	vv := v.Get("hello")
+	if !(vv == "world") {
+		t.Fatal(vv)
+	}
+
+	v.Put("hello", "world2")
+
+	vv = v.Get("hello")
+	if !(vv == "world2") {
+		t.Fatal(vv)
+	}
+}
+
+func TestMultiVisitor(t *testing.T) {
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer os.RemoveAll("mvcc")
+	length := 100
+	v1 := NewVisitor(length, mvccdb)
+	v2 := NewVisitor(length, mvccdb)
+
+	v1.Put("hello", "world")
+	vv := v2.Get("hello")
+	if vv != "world" {
+		t.Fatal(vv)
+	}
+
+	v2.Put("hello", "world2")
+	vv = v1.Get("hello")
+	if vv != "world2" {
+		t.Fatal(vv)
+	}
+
 }

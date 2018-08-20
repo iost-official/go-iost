@@ -1,19 +1,46 @@
-var BlockChainContractStorage = (function () {
-    var storage = new IOSTStorage;
+var BlockChain = (function () {
+    var bc = new IOSTBlockchain;
     return {
-        put: function (key, val) {
-            var ret = storage.put(key, val);
-            return ret;
+        transfer: function (from, to, amount) {
+            if (!amount instanceof BigNumber) {
+                amount = new BigNumber(amount);
+            }
+            return bc.transfer(from, to, amount);
         },
-        get: function (key) {
-            var val = storage.get(key);
-            return val;
+        withdraw: function (to, amount) {
+            if (!amount instanceof BigNumber) {
+                amount = new BigNumber(amount);
+            }
+            return bc.withdraw(to, amount);
         },
-        del: function () {
-            var ret = storage.del(key);
-            return ret;
+        deposit: function (from, amount) {
+            if (!amount instanceof BigNumber) {
+                amount = new BigNumber(amount);
+            }
+            return bc.deposit(from, amount);
         },
+        topUp: function (contract, from, amount) {
+            if (!amount instanceof BigNumber) {
+                amount = new BigNumber(amount);
+            }
+            return bc.topUp(contract, from, amount);
+        },
+        countermand: function (contract, to, amount) {
+            if (!amount instanceof BigNumber) {
+                amount = new BigNumber(amount);
+            }
+            return bc.countermand(contract, to, amount);
+        },
+        blockInfo: function () {
+            return bc.blockInfo();
+        },
+        txInfo: function () {
+            return bc.txInfo();
+        },
+        call: function (contract, api, args) {
+            return bc.call(contract, api, args);
+        }
     }
 })();
 
-module.exports = BlockChainContractStorage
+module.exports = BlockChain;

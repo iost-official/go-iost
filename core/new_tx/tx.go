@@ -6,10 +6,11 @@ import (
 
 	"bytes"
 	"errors"
+	"strconv"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"strconv"
 )
 
 //go:generate protoc  --go_out=plugins=grpc:. ./core/new_tx/tx.proto
@@ -19,16 +20,16 @@ type Tx struct {
 	hash       []byte             `json:"-"`
 	Time       int64              `json:"time,string"`
 	Expiration int64              `json:"expiration,string"`
-	GasLimit   uint64             `json:"gas_limit,string"`
+	GasLimit   int64              `json:"gas_limit,string"`
 	Actions    []Action           `json:"-"`
 	Signers    [][]byte           `json:"-"`
 	Signs      []common.Signature `json:"-"`
 	Publisher  common.Signature   `json:"-"`
-	GasPrice   uint64             `json:"gas_price,string"`
+	GasPrice   int64              `json:"gas_price,string"`
 }
 
 // 新建一个Tx，需要通过编译器得到一个contract
-func NewTx(actions []Action, signers [][]byte, gasLimit uint64, gasPrice uint64, expiration int64) Tx {
+func NewTx(actions []Action, signers [][]byte, gasLimit int64, gasPrice int64, expiration int64) Tx {
 	now := time.Now().UnixNano()
 	return Tx{
 		Time:       now,

@@ -1,20 +1,19 @@
 #ifndef IOST_V8_BLOCKCHAIN_H
 #define IOST_V8_BLOCKCHAIN_H
 
-#include "v8.h"
-#include "vm.h"
+#include "sandbox.h"
 #include "stddef.h"
 
 using namespace v8;
 
-void InitBlockChain(Isolate *isolate, Local<ObjectTemplate> globalTpl);
+void InitBlockchain(Isolate *isolate, Local<ObjectTemplate> globalTpl);
 void NewIOSTBlockchain(const FunctionCallbackInfo<Value> &args);
 
 class IOSTBlockchain {
 private:
-    SandboxPtr sbx;
+    SandboxPtr sbxPtr;
 public:
-    IOSTBlockchain(SandboxPtr ptr): sbx(ptr) {}
+    IOSTBlockchain(SandboxPtr ptr): sbxPtr(ptr) {}
 
     int Transfer(const char *, const char *, const char *);
     int Withdraw(const char *, const char *);
