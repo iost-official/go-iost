@@ -5,23 +5,24 @@ branches:
     - master
     - develop
 
-go: "1.10"
-os:
-  - linux
-  - osx
+matrix:
+  include:
+    - os: osx
+      osx_image: xcode10
+      go: 1.10.x
+      script:
+        - make build
+        - make test
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-5
-
-before_install:
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 20; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 20; fi
-
-install: true
-
-script:
-  - make build
-  - make test
+    - os: linux
+      dist: trusty
+      go: 1.10.x
+      services:
+        - docker
+      before_install:
+        - make devimage
+      script:
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make build
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make test
+  allow_failures:
+    - os: osx
