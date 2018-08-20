@@ -178,6 +178,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	if err != nil {
 		return fmt.Errorf("fail to verify blocks, %v", err)
 	}
+	fmt.Println(blk.Head.ParentHash)
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addNewBlock(blk, parent.Block) // only need to consider error from addNewBlock, not from addExistingblock

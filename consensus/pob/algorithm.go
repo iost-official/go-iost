@@ -5,6 +5,9 @@ import (
 
 	"encoding/binary"
 	"errors"
+	"fmt"
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -13,8 +16,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
-	"time"
-	"fmt"
 )
 
 var (
