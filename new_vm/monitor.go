@@ -1,11 +1,14 @@
 package new_vm
 
 import (
+	"strings"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 
 	"errors"
 
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm"
 )
@@ -15,47 +18,38 @@ var (
 	ErrGasPriceTooBig = errors.New("gas price too big")
 	ErrArgsNotEnough  = errors.New("args not enough")
 	ErrArgsType       = errors.New("args type not match")
+	ErrGasOverflow = errors.New("contract pay gas overflow")
 )
 
 type Monitor struct {
-	//db   *database.Visitor
 	vms map[string]VM
-	//host *Host
 }
 
-func NewMonitor( /*cb database.IMultiValue, cacheLength int*/ ) *Monitor {
-	//visitor := database.NewVisitor(cacheLength, cb)
+func NewMonitor() *Monitor {
 	m := &Monitor{
-		//db: visitor,
-		//host: &Host{
-		//	ctx:  context.Background(),
-		//	db:   visitor,
-		//	cost: &contract.Cost{},
-		//},
 		vms: make(map[string]VM),
 	}
-	//m.host.monitor = m
 	return m
 }
 
 func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
-	c := h.DB.Contract(contractName)
+	c := h.DB().Contract(contractName)
 	abi := c.ABI(api)
 	if abi == nil {
-		panic("should not reach here")
+		return nil, contract.NewCost(0, 0, GasCheckTxFailed), ErrABINotFound
 	}
 
 	err = checkArgs(abi, args)
 
 	if err != nil {
-		return nil, contract.NewCost(0, 0, GasCheckTxFailed), err // todo check cost
+		return nil, contract.NewCost(0, 0, GasCheckTxFailed), err
 	}
 
-	h.Ctx = host.NewContext(h.Ctx)
+	h.PushCtx()
 
-	h.Ctx.Set("contract_name", contractName)
-	h.Ctx.Set("abi_name", api)
+	h.Context().Set("contract_name", contractName)
+	h.Context().Set("abi_name", api)
 
 	vm, ok := m.vms[c.Info.Lang]
 	if !ok {
@@ -64,29 +58,32 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		m.vms[c.Info.Lang].Init()
 	}
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
-
-	payment, ok := h.Ctx.GValue("abi_payment").(int)
-	if !ok {
-		payment = 0
-	}
-	switch payment {
-	case 1:
-		var gasPrice = h.Ctx.Value("gas_price").(int64) // TODO 判断大于0
-		if abi.GasPrice < gasPrice {
-			return nil, nil, ErrGasPriceTooBig
+	if cost == nil {
+		if strings.HasPrefix(contractName, "Contract") {
+			ilog.Fatal("will return nil cost : %v.%v", contractName, api)
+		} else {
+			ilog.Debug("will return nil cost : %v.%v", contractName, api)
 		}
+		cost = contract.NewCost(100, 100, 100)
+	}
 
-		b := h.DB.Balance(host.ContractGasPrefix + contractName)
+	payment, ok := h.Context().GValue("abi_payment").(int)
+	if !ok {
+		payment = int(abi.Payment)
+	}
+	var gasPrice = h.Context().Value("gas_price").(int64)
+
+	if  payment == 1 &&
+		abi.GasPrice > gasPrice &&
+		! cost.IsOverflow(abi.Limit) {
+		b := h.DB().Balance(host.ContractGasPrefix + contractName)
 		if b > gasPrice*cost.ToGas() {
 			h.PayCost(cost, host.ContractGasPrefix+contractName)
 			cost = contract.Cost0()
 		}
-
-	default:
-		//fmt.Println("user paid for", args[0])
 	}
 
-	h.Ctx = h.Ctx.Base()
+	h.PopCtx()
 
 	return
 }
@@ -96,12 +93,12 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 //	if err != nil {
 //		return err
 //	}
-//	m.host.db.SetContract(newContract)
+//	m.ho.db.SetContract(newContract)
 //	return nil
 //}
 //
 //func (m *Monitor) Destory(contractName string) error {
-//	m.host.db.DelContract(contractName)
+//	m.ho.db.DelContract(contractName)
 //	return nil
 //}
 
@@ -110,7 +107,12 @@ func (m *Monitor) Compile(con *contract.Contract) (string, error) {
 	case "native":
 		return "", nil
 	case "javascript":
-		jsvm := m.vms["javascript"]
+		jsvm, ok := m.vms["javascript"]
+		if !ok {
+			jsvm = VMFactory(con.Info.Lang)
+			m.vms[con.Info.Lang] = jsvm
+			m.vms[con.Info.Lang].Init()
+		}
 		return jsvm.Compile(con)
 	}
 	return "", errors.New("vm unsupported")
@@ -145,7 +147,7 @@ func VMFactory(lang string) VM {
 	case "native":
 		return &native_vm.VM{}
 	case "javascript":
-		vm := v8.NewVMPool(12312)
+		vm := v8.NewVMPool(10)
 		vm.SetJSPath("./v8vm/v8/libjs/")
 		return vm
 	}

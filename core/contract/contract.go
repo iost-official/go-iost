@@ -1,8 +1,12 @@
 package contract
 
-import "github.com/gogo/protobuf/proto"
+import (
+	"encoding/base64"
 
-//go:generate protoc --gofast_out=. *.proto
+	"github.com/gogo/protobuf/proto"
+)
+
+//go:generate protoc --gofast_out=. contract.proto
 
 type VersionCode string
 
@@ -41,6 +45,22 @@ func (c *Contract) Decode(str string) error {
 		return err
 	}
 	return nil
+}
+
+func (c *Contract) B64Encode() string {
+	buf, err := c.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString(buf)
+}
+
+func (c *Contract) B64Decode(str string) error {
+	buf, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		return err
+	}
+	return proto.Unmarshal(buf, c)
 }
 
 func DecodeContract(str string) *Contract {

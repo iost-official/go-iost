@@ -22,7 +22,7 @@ func (c *chainbaseAdapter) Get(key string) (value string) {
 	value, err = c.cb.Get(StateTable, key)
 	if err != nil {
 		c.err = err
-		return ""
+		return "n"
 	}
 	return
 }

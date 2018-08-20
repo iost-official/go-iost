@@ -25,49 +25,78 @@ void InitGoBlockchain(transferFunc transfer, withdrawFunc withdraw,
 
 int IOSTBlockchain::Transfer(const char *from, const char *to, const char *amount) {
     size_t gasUsed = 0;
-    int ret = CTransfer(sbx, from, to, amount, &gasUsed);
+    int ret = CTransfer(sbxPtr, from, to, amount, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
     return ret;
 }
 
 int IOSTBlockchain::Withdraw(const char *to, const char *amount) {
     size_t gasUsed = 0;
-    int ret = CWithdraw(sbx, to, amount, &gasUsed);
+    int ret = CWithdraw(sbxPtr, to, amount, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
     return ret;
 }
 
 int IOSTBlockchain::Deposit(const char *from, const char *amount) {
     size_t gasUsed = 0;
-    int ret = CDeposit(sbx, from, amount, &gasUsed);
+    int ret = CDeposit(sbxPtr, from, amount, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
     return ret;
 }
 
 int IOSTBlockchain::TopUp(const char *contract, const char *from, const char *amount) {
     size_t gasUsed = 0;
-    int ret = CTopUp(sbx, contract, from, amount, &gasUsed);
+    int ret = CTopUp(sbxPtr, contract, from, amount, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
     return ret;
 }
 
 int IOSTBlockchain::Countermand(const char *contract, const char *to, const char *amount) {
     size_t gasUsed = 0;
-    int ret = CCountermand(sbx, contract, to, amount, &gasUsed);
+    int ret = CCountermand(sbxPtr, contract, to, amount, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
     return ret;
 }
 
 char *IOSTBlockchain::BlockInfo() {
     size_t gasUsed = 0;
-    char *blkInfo = CBlkInfo(sbx, &gasUsed);
-    return blkInfo;
+    char *info = nullptr;
+
+    int ret = CBlkInfo(sbxPtr, &info, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
+    return info;
 }
 
 char *IOSTBlockchain::TxInfo() {
     size_t gasUsed = 0;
-    char *txInfo = CTxInfo(sbx, &gasUsed);
-    return txInfo;
+    char *info = nullptr;
+    int ret =
+    CTxInfo(sbxPtr, &info, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
+    return info;
 }
 
 char *IOSTBlockchain::Call(const char *contract, const char *api, const char *args) {
     size_t gasUsed = 0;
-    char *result = CCall(sbx, contract, api, args, &gasUsed);
+    char *result = nullptr;
+    int ret = CCall(sbxPtr, contract, api, args, &result, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
     return result;
 }
 

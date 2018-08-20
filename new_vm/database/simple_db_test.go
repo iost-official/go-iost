@@ -6,6 +6,8 @@ import (
 
 	"reflect"
 
+	"os"
+
 	"github.com/bitly/go-simplejson"
 )
 
@@ -25,6 +27,7 @@ func TestDB(t *testing.T) {
 	if v != "sabc" {
 		t.Fatal(v)
 	}
+	os.Remove("state.json")
 }
 
 func TestSjson(t *testing.T) {

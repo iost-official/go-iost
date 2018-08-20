@@ -79,6 +79,7 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
 
     InitRequire(isolate, global);
     InitStorage(isolate, global);
+    InitBlockchain(isolate, global);
     InitInstruction(isolate, global);
 
     global->Set(
@@ -221,7 +222,7 @@ void LoadVM(Sandbox *sbx) {
     }
 }
 
-void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson) {
+void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -282,24 +283,28 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     std::string result;
     std::string error;
     bool isJson = false;
-    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson));
+    bool isDone = false;
+    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
     exec.detach();
 
-    ValueTuple res = { nullptr, nullptr, isJson };
+    ValueTuple res = { nullptr, nullptr, isJson, 0 };
     auto startTime = std::chrono::steady_clock::now();
     while(true) {
         if (error.length() > 0) {
             res.Err = copyString(error);
+            res.gasUsed = sbx->gasUsed;
             break;
         }
         if (result.length() > 0) {
             res.Value = copyString(result);
             res.isJson = isJson;
+            res.gasUsed = sbx->gasUsed;
             break;
         }
         if (sbx->gasUsed > sbx->gasLimit) {
             isolate->TerminateExecution();
             res.Err = strdup("out of gas");
+            res.gasUsed = sbx->gasUsed;
             break;
         }
         auto now = std::chrono::steady_clock::now();
@@ -307,6 +312,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
         if (execTime > 200) {
             isolate->TerminateExecution();
             res.Err = strdup("execution killed");
+            res.gasUsed = sbx->gasUsed;
             break;
         }
         usleep(10);

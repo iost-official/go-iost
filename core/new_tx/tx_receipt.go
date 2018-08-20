@@ -46,7 +46,7 @@ type Receipt struct {
 // TxReceipt Transaction Receipt 实现
 type TxReceipt struct {
 	TxHash   []byte
-	GasUsage uint64
+	GasUsage int64
 	// 目前只收gas，这些可以先没有
 	/*
 		CpuTimeUsage    uint64
