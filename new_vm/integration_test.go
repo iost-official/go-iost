@@ -305,7 +305,7 @@ module.exports = Contract;
 	}
 }
 
-func TestIntergration_Payment(t *testing.T) {
+func TestIntergration_Payment_Success(t *testing.T) {
 	jshw := jsHelloWorld()
 	jshw.Info.Abis[0].Payment = 1
 	jshw.Info.Abis[0].GasPrice = int64(10)
@@ -329,20 +329,35 @@ func TestIntergration_Payment(t *testing.T) {
 	ilog.Debug("balance of sender : %v", vi.Balance(testID[0]))
 	ilog.Debug("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
 
+}
+
+func TestIntergration_Payment_Failed(t *testing.T) {
+	jshw := jsHelloWorld()
+	jshw.Info.Abis[0].Payment = 1
+	jshw.Info.Abis[0].GasPrice = int64(10)
+
 	jshw.Info.Abis[0].Limit.Data = -1
 	jshw.Info.Abis[0].Limit.CPU = -1
 	jshw.Info.Abis[0].Limit.Net = -1
 
+	ilog.Debug("init %v", jshw.Info.Abis[0].GetLimit())
+
+	e, vi := ininit(t)
 	vi.SetContract(jshw)
+
+	vi.SetBalance("CGjsHelloWorld", 1000000)
 	vi.Commit()
 
-	fmt.Print("abi in vi: ")
-	fmt.Println(vi.Contract("jsHelloWorld").ABI("hello").GetLimit())
+	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
 
+	trx, err := makeTx(act)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	r, err = e.Exec(trx)
-
-	ilog.Debug("failed: %v, %v", r, err)
+	r, err := e.Exec(trx)
+	ilog.Debug("success: %v, %v", r, err)
 	ilog.Debug("balance of sender : %v", vi.Balance(testID[0]))
 	ilog.Debug("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
+
 }

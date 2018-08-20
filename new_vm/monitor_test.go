@@ -24,7 +24,7 @@ func TestMonitor_Call(t *testing.T) {
 	monitor, vm, db, vi := Init(t)
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", uint64(1))
+	ctx.Set("gas_price", int64(1))
 
 	h := host.NewHost(ctx, vi, monitor, nil)
 
@@ -67,7 +67,7 @@ func TestMonitor_Call(t *testing.T) {
 func TestMonitor_Context(t *testing.T) {
 	monitor, vm, db, vi := Init(t)
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", uint64(1))
+	ctx.Set("gas_price", int64(1))
 
 	h := host.NewHost(ctx, vi, monitor, nil)
 
@@ -127,7 +127,7 @@ func TestMonitor_HostCall(t *testing.T) {
 
 	ctx := host.NewContext(nil)
 
-	ctx.Set("gas_price", uint64(1))
+	ctx.Set("gas_price", int64(1))
 	ctx.Set("stack_height", 1)
 	ctx.Set("stack0", "test")
 

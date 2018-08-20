@@ -11,7 +11,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm"
-	"fmt"
 )
 
 var (
@@ -35,11 +34,8 @@ func NewMonitor() *Monitor {
 
 func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
-	fmt.Println("cn is : ", contractName + "." + api)
 	c := h.DB().Contract(contractName)
 	abi := c.ABI(api)
-	fmt.Print("abi in monitor.call : ")
-	fmt.Println(abi.GetLimit())
 	if abi == nil {
 		return nil, contract.NewCost(0, 0, GasCheckTxFailed), ErrABINotFound
 	}
@@ -71,21 +67,15 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		cost = contract.NewCost(100, 100, 100)
 	}
 
-	//payment, ok := h.Context().GValue("abi_payment").(int)
-	//if !ok {
-	//	payment = int(abi.Payment)
-	//}
-	if abi.Payment == 1 {
-		ilog.Debug("check contract pay")
-		var gasPrice = h.Context().Value("gas_price").(int64)
-		if abi.GasPrice < gasPrice {
-			return nil, contract.NewCost(1,1,1), ErrGasPriceTooBig
-		}
+	payment, ok := h.Context().GValue("abi_payment").(int)
+	if !ok {
+		payment = int(abi.Payment)
+	}
+	var gasPrice = h.Context().Value("gas_price").(int64)
 
-		if cost.IsOverflow(abi.Limit) {
-			return nil, contract.NewCost(1,1,1), ErrGasOverflow
-		}
-
+	if  payment == 1 &&
+		abi.GasPrice > gasPrice &&
+		! cost.IsOverflow(abi.Limit) {
 		b := h.DB().Balance(host.ContractGasPrefix + contractName)
 		if b > gasPrice*cost.ToGas() {
 			h.PayCost(cost, host.ContractGasPrefix+contractName)

@@ -262,7 +262,7 @@ func TestCost(t *testing.T) { // tests of context transport
 	})
 
 	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
-		if database.MustUnmarshal(value) != int64(900) {
+		if database.MustUnmarshal(value) != int64(999900) {
 			t.Fatal(database.MustUnmarshal(value))
 		}
 		return nil
