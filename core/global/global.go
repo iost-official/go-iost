@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
@@ -65,35 +66,35 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
-	//
-	//hash := stateDB.CurrentTag()
-	//if hash == "" {
-	//	blk, err = blockChain.GetBlockByNumber(0)
-	//	if err != nil {
-	//		return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
-	//	}
-	//	consensus_common.VerifyBlockWithVM(blk, stateDB)
-	//	stateDB.Tag(string(blk.HeadHash()))
-	//} else {
-	//	blk, err = blockChain.GetBlockByHash([]byte(hash))
-	//	if err != nil {
-	//		return nil, fmt.Errorf("get block by hash failed, stop the program. err: %v", err)
-	//	}
-	//}
-	//for blk.Head.Number < blockChain.Length()-1 {
-	//	blk, err = blockChain.GetBlockByNumber(blk.Head.Number + 1)
-	//	if err != nil {
-	//		return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
-	//	}
-	//	consensus_common.VerifyBlockWithVM(blk, stateDB)
-	//	stateDB.Tag(string(blk.HeadHash()))
-	//	if blk.Head.Number%1000 == 0 {
-	//		err = stateDB.Flush(string(blk.HeadHash()))
-	//		if err != nil {
-	//			return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
-	//		}
-	//	}
-	//}
+
+	hash := stateDB.CurrentTag()
+	if hash == "" {
+		blk, err = blockChain.GetBlockByNumber(0)
+		if err != nil {
+			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
+		}
+		consensus_common.VerifyBlockWithVM(blk, stateDB)
+		stateDB.Tag(string(blk.HeadHash()))
+	} else {
+		blk, err = blockChain.GetBlockByHash([]byte(hash))
+		if err != nil {
+			return nil, fmt.Errorf("get block by hash failed, stop the program. err: %v", err)
+		}
+	}
+	for blk.Head.Number < blockChain.Length()-1 {
+		blk, err = blockChain.GetBlockByNumber(blk.Head.Number + 1)
+		if err != nil {
+			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
+		}
+		consensus_common.VerifyBlockWithVM(blk, stateDB)
+		stateDB.Tag(string(blk.HeadHash()))
+		if blk.Head.Number%1000 == 0 {
+			err = stateDB.Flush(string(blk.HeadHash()))
+			if err != nil {
+				return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
+			}
+		}
+	}
 
 	tx.LdbPath = conf.LdbPath
 	txDb := tx.TxDbInstance()
