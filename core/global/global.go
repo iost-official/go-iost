@@ -51,9 +51,10 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if err != nil {
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 		blk = block.GenGenesis(common.GetTimestamp(t.Unix()).Slot)
-	}
-	if blk == nil {
-		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
+		err = blockChain.Push(blk)
+		if err != nil {
+			return nil, fmt.Errorf("gen genesis failed, stop the program. err: %v", err)
+		}
 	}
 
 	stateDB, err := db.NewMVCCDB("StatePoolDB")
