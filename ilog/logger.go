@@ -2,6 +2,7 @@ package ilog
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -173,6 +174,8 @@ func (logger *Logger) Error(format string, v ...interface{}) {
 
 func (logger *Logger) Fatal(format string, v ...interface{}) {
 	logger.genMsg(LevelFatal, fmt.Sprintf(format, v...))
+	logger.Stop()
+	os.Exit(1)
 }
 
 func (logger *Logger) genMsg(level Level, log string) {

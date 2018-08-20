@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 )
 
 const (
@@ -64,6 +65,10 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	ctx = loadBlkInfo(ctx, bh)
 
 	db := database.NewVisitor(defaultCacheLength, cb)
+
+	if bh.Number == 0 && db.Contract("iost.system") == nil {
+		db.SetContract(native_vm.NativeABI())
+	}
 
 	logger := ilog.New()
 	logger.Stop()
@@ -170,8 +175,8 @@ func (e *EngineImpl) GC() {
 }
 
 func checkTx(tx0 *tx.Tx) error {
-	if tx0.GasPrice <= 0 || tx0.GasPrice > 10000 {
-		return ErrGasPriceTooBig
+	if tx0.GasPrice < 0 || tx0.GasPrice > 10000 {
+		return ErrGasPriceIllegal
 	}
 	return nil
 }
