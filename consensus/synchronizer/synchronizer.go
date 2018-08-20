@@ -9,7 +9,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	block "github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 )
 
@@ -39,8 +39,6 @@ type SyncImpl struct {
 
 	messageChan chan p2p.IncomingMessage
 	exitSignal  chan struct{}
-
-	log *log.Logger
 }
 
 func NewSynchronizer(glb global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service) (*SyncImpl, error) {
@@ -63,7 +61,6 @@ func NewSynchronizer(glb global.BaseVariable, blkcache blockcache.BlockCache, p2
 		p2p.SyncBlockHashResponse,
 	)
 
-	//sy.log.NeedPrint = false
 	sy.exitSignal = make(chan struct{})
 
 	return sy, nil
@@ -122,10 +119,10 @@ func (sy *SyncImpl) queryBlockHash(start, end int64) error {
 	hr := message.BlockHashQuery{ReqType: 0, Start: start, End: end}
 	bytes, err := hr.Encode()
 	if err != nil {
-		//sy.log.D("marshal BlockHashQuery failed. err=%v", err)
+		ilog.Debug("marshal BlockHashQuery failed. err=%v", err)
 		return err
 	}
-	//sy.log.D("[net] query block hash. start=%v, end=%v", start, end)
+	ilog.Debug("[net] query block hash. start=%v, end=%v", start, end)
 	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
 	return nil
 }
@@ -179,7 +176,7 @@ func (sy *SyncImpl) messageLoop() {
 				var rh message.BlockHashQuery
 				err := rh.Decode(req.Data())
 				if err != nil {
-					//sy.log.E("unmarshal BlockHashQuery failed:%v", err)
+					ilog.Debug("unmarshal BlockHashQuery failed:%v", err)
 					break
 				}
 				go sy.handleHashQuery(&rh, req.From())
@@ -187,7 +184,7 @@ func (sy *SyncImpl) messageLoop() {
 				var rh message.BlockHashResponse
 				err := rh.Decode(req.Data())
 				if err != nil {
-					//sy.log.E("unmarshal BlockHashResponse failed:%v", err)
+					ilog.Debug("unmarshal BlockHashResponse failed:%v", err)
 					break
 				}
 				go sy.handleHashResp(&rh, req.From())
@@ -268,14 +265,14 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 	}
 	bytes, err := resp.Encode()
 	if err != nil {
-		//sy.log.E("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
+		ilog.Error("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
 		return
 	}
 	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage)
 }
 
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
-	//sy.log.I("receive block hashes: len=%v", len(rh.BlockHashes))
+	ilog.Info("receive block hashes: len=%v", len(rh.BlockHashes))
 	for _, blkHash := range rh.BlockHashes {
 		if _, err := sy.blockCache.Find(blkHash.Hash); err == nil { // TODO: check hash @ BlockCache and BlockDB
 			sy.reqMap.Delete(blkHash.Height)
@@ -312,18 +309,18 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID
 	if int64(rh.BlockNumber) < sy.blockCache.LinkedRoot().Number {
 		b, err = sy.glb.BlockChain().GetBlockByteByHash(rh.BlockHash)
 		if err != nil {
-			//log.Log.E("Database error: block empty %v", rh.BlockNumber)
+			ilog.Error("Database error: block empty %v", rh.BlockNumber)
 			return
 		}
 	} else {
 		node, err := sy.blockCache.Find(rh.BlockHash)
 		if err != nil {
-			//log.Log.E("Block not in cache: %v", rh.BlockNumber)
+			ilog.Error("Block not in cache: %v", rh.BlockNumber)
 			return
 		}
 		b, err = node.Block.Encode()
 		if err != nil {
-			//log.Log.E("Fail to encode block: %v", rh.BlockNumber)
+			ilog.Error("Fail to encode block: %v", rh.BlockNumber)
 			return
 		}
 	}
