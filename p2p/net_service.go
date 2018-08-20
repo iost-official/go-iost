@@ -15,6 +15,8 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
+//go:generate mockgen -destination mocks/mock_service.go -package p2p_mock github.com/iost-official/Go-IOS-Protocol/p2p Service
+
 // PeerID is the alias of peer.ID
 type PeerID = peer.ID
 

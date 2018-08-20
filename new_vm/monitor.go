@@ -1,6 +1,8 @@
 package new_vm
 
 import (
+	"strings"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 
@@ -12,10 +14,11 @@ import (
 )
 
 var (
-	ErrABINotFound    = errors.New("abi not found")
-	ErrGasPriceTooBig = errors.New("gas price too big")
-	ErrArgsNotEnough  = errors.New("args not enough")
-	ErrArgsType       = errors.New("args type not match")
+	ErrABINotFound     = errors.New("abi not found")
+	ErrGasPriceIllegal = errors.New("gas price too big")
+	ErrArgsNotEnough   = errors.New("args not enough")
+	ErrArgsType        = errors.New("args type not match")
+	ErrGasOverflow     = errors.New("contract pay gas overflow")
 )
 
 type Monitor struct {
@@ -31,10 +34,10 @@ func NewMonitor() *Monitor {
 
 func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
-	c := h.DB.Contract(contractName)
+	c := h.DB().Contract(contractName)
 	abi := c.ABI(api)
 	if abi == nil {
-		panic("should not reach here")
+		return nil, contract.NewCost(0, 0, GasCheckTxFailed), ErrABINotFound
 	}
 
 	err = checkArgs(abi, args)
@@ -43,10 +46,10 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		return nil, contract.NewCost(0, 0, GasCheckTxFailed), err
 	}
 
-	h.Ctx = host.NewContext(h.Ctx)
+	h.PushCtx()
 
-	h.Ctx.Set("contract_name", contractName)
-	h.Ctx.Set("abi_name", api)
+	h.Context().Set("contract_name", contractName)
+	h.Context().Set("abi_name", api)
 
 	vm, ok := m.vms[c.Info.Lang]
 	if !ok {
@@ -56,31 +59,31 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 	}
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
 	if cost == nil {
-		ilog.Fatal("will return nil cost")
+		if strings.HasPrefix(contractName, "Contract") {
+			ilog.Fatal("will return nil cost : %v.%v", contractName, api)
+		} else {
+			ilog.Debug("will return nil cost : %v.%v", contractName, api)
+		}
 		cost = contract.NewCost(100, 100, 100)
 	}
 
-	payment, ok := h.Ctx.GValue("abi_payment").(int)
+	payment, ok := h.Context().GValue("abi_payment").(int)
 	if !ok {
 		payment = int(abi.Payment)
 	}
-	switch payment {
-	case 1:
-		var gasPrice = h.Ctx.Value("gas_price").(int64)
-		if abi.GasPrice < gasPrice {
-			return nil, nil, ErrGasPriceTooBig
-		}
+	var gasPrice = h.Context().Value("gas_price").(int64)
 
-		b := h.DB.Balance(host.ContractGasPrefix + contractName)
+	if  payment == 1 &&
+		abi.GasPrice > gasPrice &&
+		! cost.IsOverflow(abi.Limit) {
+		b := h.DB().Balance(host.ContractGasPrefix + contractName)
 		if b > gasPrice*cost.ToGas() {
 			h.PayCost(cost, host.ContractGasPrefix+contractName)
 			cost = contract.Cost0()
 		}
-
-	default:
 	}
 
-	h.Ctx = h.Ctx.Base()
+	h.PopCtx()
 
 	return
 }

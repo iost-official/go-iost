@@ -2,13 +2,14 @@ package pob
 
 import (
 	"testing"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"time"
-	"github.com/smartystreets/goconvey/convey"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/smartystreets/goconvey/convey"
 )
 
 func TestConfirmNode(t *testing.T) {
@@ -65,9 +66,9 @@ func TestUpdateWitness(t *testing.T) {
 	convey.Convey("Test of Promote Witness", t, func() {
 		staticProperty = newStaticProperty(account.Account{}, []string{"id0", "id1", "id2"})
 		rootNode := &blockcache.BlockCacheNode{
-			Number:                1,
-			Witness:               "id0",
-			PendingWitnessList:    []string{"id0", "id1", "id2"},
+			Number:             1,
+			Witness:            "id0",
+			PendingWitnessList: []string{"id0", "id1", "id2"},
 		}
 		node := addNode(rootNode, 2, 0, "id1")
 		node.PendingWitnessList = []string{"id3", "id2", "id1"}
@@ -117,29 +118,26 @@ func TestUpdateWitness(t *testing.T) {
 func TestNodeInfoUpdate(t *testing.T) {
 
 	convey.Convey("Test of node info update", t, func() {
-		staticProperty = newStaticProperty(account.Account{ID:"id0"}, []string{"id0", "id1", "id2"})
+		staticProperty = newStaticProperty(account.Account{ID: "id0"}, []string{"id0", "id1", "id2"})
 		rootNode := &blockcache.BlockCacheNode{
-			Number:  1,
-			Witness: "id0",
+			Number:   1,
+			Witness:  "id0",
 			Children: make(map[*blockcache.BlockCacheNode]bool),
 		}
 		staticProperty.addSlot(1)
 		staticProperty.Watermark["id0"] = 2
 		convey.Convey("Normal", func() {
 			node := addBlock(rootNode, 2, "id1", 2)
-			updateNodeInfo(node)
+			updateStaticProperty(node)
 			convey.So(staticProperty.Watermark["id1"], convey.ShouldEqual, 3)
-			convey.So(staticProperty.hasSlot(2), convey.ShouldBeTrue)
 
 			node = addBlock(node, 3, "id2", 3)
-			updateNodeInfo(node)
+			updateStaticProperty(node)
 			convey.So(staticProperty.Watermark["id2"], convey.ShouldEqual, 4)
-			convey.So(staticProperty.hasSlot(3), convey.ShouldBeTrue)
 
 			node = addBlock(node, 4, "id0", 4)
-			updateNodeInfo(node)
+			updateStaticProperty(node)
 			convey.So(staticProperty.Watermark["id0"], convey.ShouldEqual, 5)
-			convey.So(staticProperty.hasSlot(4),convey.ShouldBeTrue)
 
 			node = calculateConfirm(node, rootNode)
 			convey.So(node.Number, convey.ShouldEqual, 2)
@@ -147,40 +145,40 @@ func TestNodeInfoUpdate(t *testing.T) {
 
 		convey.Convey("Slot witness error", func() {
 			node := addBlock(rootNode, 2, "id1", 2)
-			updateNodeInfo(node)
+			updateStaticProperty(node)
 
 			node = addBlock(node, 3, "id1", 2)
-			updateNodeInfo(node)
+			updateStaticProperty(node)
 			convey.So(staticProperty.hasSlot(2), convey.ShouldBeTrue)
 		})
 
 		convey.Convey("Watermark test", func() {
 			node := addBlock(rootNode, 2, "id1", 2)
-			updateNodeInfo(node)
+			updateStaticProperty(node)
 			convey.So(node.ConfirmUntil, convey.ShouldEqual, 0)
 			branchNode := node
 
 			node = addBlock(node, 3, "id2", 3)
-			updateNodeInfo(node)
+			updateStaticProperty(node)
 
 			newNode := addBlock(branchNode, 3, "id0", 4)
-			updateNodeInfo(newNode)
+			updateStaticProperty(newNode)
 			convey.So(newNode.ConfirmUntil, convey.ShouldEqual, 2)
 			confirmNode := calculateConfirm(newNode, rootNode)
 			convey.So(confirmNode, convey.ShouldBeNil)
 			convey.So(staticProperty.Watermark["id0"], convey.ShouldEqual, 4)
 			node = addBlock(node, 4, "id1", 5)
-			updateNodeInfo(node)
+			updateStaticProperty(node)
 			convey.So(node.ConfirmUntil, convey.ShouldEqual, 3)
 
 			node = addBlock(node, 5, "id0", 7)
-			updateNodeInfo(node)
+			updateStaticProperty(node)
 			convey.So(node.ConfirmUntil, convey.ShouldEqual, 4)
 			confirmNode = calculateConfirm(node, rootNode)
 			convey.So(confirmNode, convey.ShouldBeNil)
 
 			node = addBlock(node, 6, "id2", 9)
-			updateNodeInfo(node)
+			updateStaticProperty(node)
 			confirmNode = calculateConfirm(node, rootNode)
 			convey.So(confirmNode.Number, convey.ShouldEqual, 4)
 		})
@@ -202,8 +200,8 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig, _ := common.Sign(common.Secp256k1, info, account1.Seckey)
-			blk.Head.Signature = sig.Encode()
+			sig := common.Sign(common.Secp256k1, info, account1.Seckey)
+			blk.Head.Signature, _ = sig.Encode()
 			err := verifyBasics(blk)
 			convey.So(err, convey.ShouldBeNil)
 		})
@@ -216,8 +214,8 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig, _ := common.Sign(common.Secp256k1, info, account0.Seckey)
-			blk.Head.Signature = sig.Encode()
+			sig := common.Sign(common.Secp256k1, info, account0.Seckey)
+			blk.Head.Signature, _ = sig.Encode()
 
 			err := verifyBasics(blk)
 			convey.So(err, convey.ShouldBeNil)
@@ -235,14 +233,14 @@ func TestVerifyBasics(t *testing.T) {
 
 			blk.Head.Witness = account1.ID
 			info := generateHeadInfo(blk.Head)
-			sig, _ := common.Sign(common.Secp256k1, info, account0.Seckey)
-			blk.Head.Signature = sig.Encode()
+			sig := common.Sign(common.Secp256k1, info, account0.Seckey)
+			blk.Head.Signature, _ = sig.Encode()
 			err = verifyBasics(blk)
 			convey.So(err, convey.ShouldEqual, ErrPubkey)
 
 			info = generateHeadInfo(blk.Head)
-			sig, _ = common.Sign(common.Secp256k1, info, account1.Seckey)
-			blk.Head.Signature = sig.Encode()
+			sig = common.Sign(common.Secp256k1, info, account1.Seckey)
+			blk.Head.Signature, _ = sig.Encode()
 			blk.Head.Info = []byte("fake info")
 			err = verifyBasics(blk)
 			convey.So(err, convey.ShouldEqual, ErrSignature)
@@ -257,8 +255,8 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig, _ := common.Sign(common.Secp256k1, info, account0.Seckey)
-			blk.Head.Signature = sig.Encode()
+			sig := common.Sign(common.Secp256k1, info, account0.Seckey)
+			blk.Head.Signature, _ = sig.Encode()
 			err := verifyBasics(blk)
 			convey.So(err, convey.ShouldBeNil)
 
@@ -271,8 +269,8 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info = generateHeadInfo(blk.Head)
-			sig, _ = common.Sign(common.Secp256k1, info, account0.Seckey)
-			blk.Head.Signature = sig.Encode()
+			sig = common.Sign(common.Secp256k1, info, account0.Seckey)
+			blk.Head.Signature, _ = sig.Encode()
 			err = verifyBasics(blk)
 			convey.So(err, convey.ShouldEqual, ErrSlot)
 		})
@@ -291,19 +289,19 @@ func TestVerifyBlock(t *testing.T) {
 		rootTime := common.GetCurrentTimestamp().Slot - 1
 		rootBlk := &block.Block{
 			Head: block.BlockHead{
-				Number: 1,
-				Time: rootTime,
+				Number:  1,
+				Time:    rootTime,
 				Witness: witnessOfSlot(rootTime),
 			},
 		}
 		tx0 := &tx.Tx{
 			Time: time.Now().UnixNano(),
-			Actions:[]tx.Action{{
-				Contract:"contract1",
-				ActionName:"actionname1",
-				Data:"{\"num\": 1, \"message\": \"contract1\"}",
+			Actions: []tx.Action{{
+				Contract:   "contract1",
+				ActionName: "actionname1",
+				Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 			}},
-			Signers:[][]byte{account1.Pubkey},
+			Signers: [][]byte{account1.Pubkey},
 		}
 		rcpt0 := &tx.TxReceipt{
 			TxHash: tx0.Hash(),
@@ -315,8 +313,8 @@ func TestVerifyBlock(t *testing.T) {
 			Head: block.BlockHead{
 				Number:     2,
 				ParentHash: hash,
-				Time:curTime,
-				Witness: witnessOfSlot(curTime),
+				Time:       curTime,
+				Witness:    witnessOfSlot(curTime),
 			},
 			Txs:      []*tx.Tx{},
 			Receipts: []*tx.TxReceipt{},
@@ -326,17 +324,17 @@ func TestVerifyBlock(t *testing.T) {
 		info := generateHeadInfo(blk.Head)
 		var sig common.Signature
 		if witness == account0.ID {
-			sig, _ = common.Sign(common.Secp256k1, info, account0.Seckey)
+			sig = common.Sign(common.Secp256k1, info, account0.Seckey)
 		} else if witness == account1.ID {
-			sig, _ = common.Sign(common.Secp256k1, info, account1.Seckey)
+			sig = common.Sign(common.Secp256k1, info, account1.Seckey)
 		} else {
-			sig, _ = common.Sign(common.Secp256k1, info, account2.Seckey)
+			sig = common.Sign(common.Secp256k1, info, account2.Seckey)
 		}
-		blk.Head.Signature = sig.Encode()
-		convey.Convey("Normal (no txs)", func() {
-			err := verifyBlock(blk, rootBlk, rootBlk, nil, nil)
-			convey.So(err, convey.ShouldBeNil)
-		})
+		blk.Head.Signature, _ = sig.Encode()
+		//convey.Convey("Normal (no txs)", func() {
+		//	err := verifyBlock(blk, rootBlk, rootBlk, nil, nil)
+		//	convey.So(err, convey.ShouldBeNil)
+		//})
 
 		convey.Convey("Normal (with txs)", func() {
 			blk.Txs = append(blk.Txs, tx0)

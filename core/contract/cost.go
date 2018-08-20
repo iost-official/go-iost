@@ -19,6 +19,16 @@ func (c *Cost) AddAssign(a *Cost) {
 	c.CPU += a.CPU
 }
 
+func (c *Cost) IsOverflow(limit *Cost) bool {
+	if c.Data > limit.Data ||
+		c.Net > limit.Net ||
+		c.CPU > limit.CPU {
+		return true
+	}
+
+	return false
+}
+
 func Cost0() *Cost {
 	return &Cost{}
 }
@@ -26,3 +36,4 @@ func Cost0() *Cost {
 func NewCost(data, net, cpu int64) *Cost {
 	return &Cost{data, net, cpu}
 }
+

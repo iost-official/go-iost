@@ -5,11 +5,12 @@ import (
 
 	"strconv"
 
+	"encoding/json"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
-	"encoding/json"
 )
 
 var (
@@ -30,15 +31,15 @@ type Host struct {
 	APIDelegate
 
 	logger  *ilog.Logger
-	Ctx     *Context
-	DB      *database.Visitor
+	ctx     *Context
+	db      *database.Visitor
 	monitor Monitor
 }
 
 func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.Logger) *Host {
 	return &Host{
-		Ctx:     ctx,
-		DB:      db,
+		ctx:     ctx,
+		db:      db,
 		monitor: monitor,
 		logger:  logger,
 
@@ -51,11 +52,11 @@ func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.L
 }
 
 func (h *Host) Context() *Context {
-	return h.Ctx
+	return h.ctx
 }
 
 func (h *Host) SetContext(ctx *Context) {
-	h.Ctx = ctx
+	h.ctx = ctx
 
 }
 
@@ -64,24 +65,24 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *
 	// save stack
 	record := contract + "-" + api
 
-	height := h.Ctx.Value("stack_height").(int)
+	height := h.ctx.Value("stack_height").(int)
 
 	for i := 0; i < height; i++ {
 		key := "stack" + strconv.Itoa(i)
-		if h.Ctx.Value(key).(string) == record {
+		if h.ctx.Value(key).(string) == record {
 			return nil, nil, ErrReenter
 		}
 	}
 
 	key := "stack" + strconv.Itoa(height)
 
-	h.Ctx = NewContext(h.Ctx)
+	h.ctx = NewContext(h.ctx)
 
-	h.Ctx.Set("stack_height", height+1)
-	h.Ctx.Set(key, record)
+	h.ctx.Set("stack_height", height+1)
+	h.ctx.Set(key, record)
 	rtn, cost, err := h.monitor.Call(h, contract, api, args...)
 
-	h.Ctx = h.Ctx.Base()
+	h.ctx = h.ctx.Base()
 
 	return rtn, cost, err
 }
@@ -118,18 +119,21 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	c.Code = code
 
 	l := int64(len(c.Encode()) / 100)
+	ilog.Debug("length is : %v", l)
 
-	h.DB.SetContract(c)
+	h.db.SetContract(c)
 
 	_, cost, err := h.monitor.Call(h, c.ID, "constructor")
 
 	cost.AddAssign(contract.NewCost(0, l, 100))
 
+	ilog.Debug("set gas is : %v", cost.ToGas())
+
 	return cost, err // todo check set cost
 }
 
 func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*contract.Cost, error) {
-	oc := h.DB.Contract(c.ID)
+	oc := h.db.Contract(c.ID)
 	if oc == nil {
 		return contract.NewCost(0, 0, 100), errors.New("contract not exists")
 	}
@@ -163,7 +167,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 	// todo 释放kv
 
-	oc := h.DB.Contract(contractName)
+	oc := h.db.Contract(contractName)
 	if oc == nil {
 		return contract.NewCost(0, 0, 100), errors.New("contract not exists")
 	}
@@ -183,10 +187,34 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 		return cost, errors.New("destroy refused")
 	}
 
-	h.DB.DelContract(contractName)
+	h.db.DelContract(contractName)
 	return contract.NewCost(1, 2, 3), nil
 }
 
 func (h *Host) Logger() *ilog.Logger {
 	return h.logger
+}
+
+func (h *Host) DB() *database.Visitor {
+	return h.db
+}
+
+func (h *Host) PushCtx() {
+
+	ctx := NewContext(h.ctx)
+	h.ctx = ctx
+
+	h.DBHandler.ctx = ctx
+	h.Info.ctx = ctx
+	h.Teller.ctx = ctx
+	h.APIDelegate.ctx = ctx
+}
+
+func (h *Host) PopCtx() {
+	ctx := h.ctx.Base()
+	h.ctx = ctx
+	h.DBHandler.ctx = ctx
+	h.Info.ctx = ctx
+	h.Teller.ctx = ctx
+	h.APIDelegate.ctx = ctx
 }

@@ -1,9 +1,10 @@
 package merkletree
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/golang/protobuf/proto"
 	"errors"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 )
 
 func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) {
@@ -48,5 +49,3 @@ func (m *TXRMerkleTree) Encode() ([]byte, error) {
 func (m *TXRMerkleTree) Decode(b []byte) error {
 	return proto.Unmarshal(b, m)
 }
-
-

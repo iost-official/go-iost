@@ -1,12 +1,14 @@
 package database
 
 type RollbackHandler struct {
-	db IMultiValue
+	db  IMultiValue
+	lru *LRU
 }
 
-func newRollbackHandler(db IMultiValue) RollbackHandler {
+func newRollbackHandler(db IMultiValue, lru *LRU) RollbackHandler {
 	return RollbackHandler{
-		db: db,
+		db:  db,
+		lru: lru,
 	}
 }
 
@@ -15,5 +17,6 @@ func (m *RollbackHandler) Commit() {
 }
 
 func (m *RollbackHandler) Rollback() {
+	m.lru.Purge()
 	m.db.Rollback()
 }

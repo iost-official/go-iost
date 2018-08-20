@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 )
 
@@ -28,11 +28,13 @@ func NewTeller(db *database.Visitor, ctx *Context) Teller {
 }
 
 func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error) {
+	ilog.Debug("amount : %v", amount)
 	if amount <= 0 {
 		return contract.NewCost(1, 1, 1), ErrTransferNegValue
 	}
 
 	bf := h.db.Balance(from)
+	ilog.Debug("%v's balance : %v", from, bf)
 	if bf > amount {
 		h.db.SetBalance(from, -1*amount)
 		h.db.SetBalance(to, amount)
@@ -71,6 +73,9 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 
 	for k, c := range h.cost {
 		fee := gasPrice * c.ToGas()
+		if fee == 0 {
+			continue
+		}
 		if strings.HasPrefix(k, "IOST") {
 			_, err := h.Transfer(k, witness, int64(fee))
 			if err != nil {
@@ -82,7 +87,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 				return err
 			}
 		} else {
-			log.Log.E("key is:", k)
+			ilog.Error("key is:", k)
 			panic("prefix error")
 		}
 	}

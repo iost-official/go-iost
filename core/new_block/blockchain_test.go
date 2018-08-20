@@ -3,9 +3,10 @@ package block
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
 	"fmt"
-				)
+	. "github.com/smartystreets/goconvey/convey"
+	"os/exec"
+)
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
@@ -15,7 +16,6 @@ func TestNewBlockChain(t *testing.T) {
 		fmt.Println(bc.Length())
 	})
 }
-
 
 func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
@@ -78,6 +78,8 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
 		So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
+
+		cmd := exec.Command("rm", "-r", "./BlockChainDB/")
+		cmd.Run()
 	})
 }
-

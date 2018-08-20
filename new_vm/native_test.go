@@ -55,7 +55,7 @@ func ReadFile(src string) ([]byte, error) {
 
 func TestEngine_SetCode(t *testing.T) {
 	e, host, code := MyInit(t, "setcode")
-	host.Ctx.Set("tx_hash", "iamhash")
+	host.Context().Set("tx_hash", "iamhash")
 	hash := "Contractiamhash"
 
 	rawCode, err := ReadFile(testDataPath + "test.js")

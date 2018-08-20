@@ -11,7 +11,6 @@ func TestDefaultLogger(t *testing.T) {
 	Info("this is a info log")
 	Warn("this is a waining log")
 	Error("this is a error log")
-	Fatal("this is a fatal log")
 	Flush()
 }
 
@@ -26,7 +25,6 @@ func TestFileLogger(t *testing.T) {
 	Info("this is a info log")
 	Warn("this is a waining log")
 	Error("this is a error log")
-	Fatal("this is a fatal log")
 	Flush()
 }
 
@@ -39,7 +37,6 @@ func TestAddWriter(t *testing.T) {
 	Info("this is a info log")
 	Warn("this is a waining log")
 	Error("this is a error log")
-	Fatal("this is a fatal log")
 	Flush()
 }
 

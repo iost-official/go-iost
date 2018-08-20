@@ -8,6 +8,10 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
 )
 
+var (
+	ErrIssueInNormalBlock = errors.New("issueIOST should never used outsides of genesis")
+)
+
 type VM struct {
 }
 
@@ -95,6 +99,12 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		cost, err = host.DestroyCode(args[0].(string))
 		return []interface{}{}, cost, err
 
+	case "IssueIOST":
+		if host.Context().Value("number").(int64) != 0 {
+			return []interface{}{}, contract.Cost0(), ErrIssueInNormalBlock
+		}
+		host.DB().SetBalance(args[0].(string), args[1].(int64))
+		return []interface{}{}, contract.Cost0(), nil
 	default:
 		return nil, contract.NewCost(1, 1, 1), errors.New("unknown api name")
 
@@ -107,4 +117,87 @@ func (m *VM) Release() {
 
 func (m *VM) Compile(contract *contract.Contract) (string, error) {
 	return "", nil
+}
+
+func NativeABI() *contract.Contract {
+	return &contract.Contract{
+		ID:   "iost.system",
+		Code: "codes",
+		Info: &contract.Info{
+			Lang:        "native",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				{
+					Name:     "RequireAuth",
+					Args:     []string{"string"},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+				{
+					Name:     "Receipt",
+					Args:     []string{"string"},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+				{
+					Name:     "CallWithReceipt",
+					Args:     []string{"string", "string", "json"},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+				{
+					Name:     "Transfer",
+					Args:     []string{"string", "string", "number"},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+				{
+					Name:     "TopUp",
+					Args:     []string{"string", "string", "number"},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+				{
+					Name:     "Countermand",
+					Args:     []string{"string", "string", "number"},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+				{
+					Name:     "SetCode",
+					Args:     []string{"string"},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+				{
+					Name:     "UpdateCode",
+					Args:     []string{"string"},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+				{
+					Name:     "DestroyCode",
+					Args:     []string{"string"},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+				{
+					Name:     "IssueIOST",
+					Args:     []string{"string", "number"},
+					Payment:  0,
+					GasPrice: int64(1000),
+					Limit:    contract.NewCost(100, 100, 100),
+				},
+			},
+		},
+	}
 }
