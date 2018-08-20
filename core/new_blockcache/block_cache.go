@@ -8,10 +8,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-<<<<<<< HEAD
-=======
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
->>>>>>> develop
 	"github.com/prometheus/client_golang/prometheus"
 )
 
