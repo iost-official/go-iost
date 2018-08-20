@@ -32,6 +32,7 @@ type Synchronizer interface {
 type SyncImpl struct {
 	p2pService p2p.Service
 	blockCache blockcache.BlockCache
+	lastHead   *blockcache.BlockCacheNode
 	glb        global.BaseVariable
 	dc         DownloadController
 	reqMap     *sync.Map
@@ -48,6 +49,7 @@ func NewSynchronizer(glb global.BaseVariable, blkcache blockcache.BlockCache, p2
 		blockCache: blkcache,
 		glb:        glb,
 		reqMap:     new(sync.Map),
+		lastHead:   nil,
 	}
 	var err error
 	sy.dc, err = NewDownloadController()
@@ -91,21 +93,23 @@ func (sy *SyncImpl) Stop() {
 }
 
 func (sy *SyncImpl) NeedSync(netHeight int64) (bool, int64, int64) {
-	//TODO：height，block confirmed Length
 	height := sy.glb.BlockChain().Length() - 1
 	if netHeight > height+SyncNumber {
 		return true, height + 1, netHeight
 	}
 	bcn := sy.blockCache.Head()
-	witness := bcn.Block.Head.Witness
 	num := 0
-	for i := 0; i < ConfirmNumber; i++ {
-		bcn = bcn.Parent
-		if bcn == nil {
-			break
-		}
-		if witness == bcn.Block.Head.Witness {
-			num++
+	if bcn != sy.lastHead {
+		sy.lastHead = sy.blockCache.Head
+		witness := bcn.Block.Head.Witness
+		for i := 0; i < ConfirmNumber; i++ {
+			bcn = bcn.Parent
+			if bcn == nil {
+				break
+			}
+			if witness == bcn.Block.Head.Witness {
+				num++
+			}
 		}
 	}
 	if num > 0 {
