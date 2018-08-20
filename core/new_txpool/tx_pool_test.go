@@ -2,6 +2,10 @@ package txpool
 
 import (
 	"fmt"
+	"os/exec"
+	"testing"
+	"time"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -9,21 +13,15 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/log"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
-	"os/exec"
-	"testing"
-	"time"
 )
 
 var (
-	dbPath1   = "txDB"
-	dbPath2   = "StatePoolDB"
-	dbPath3   = "BlockChainDB"
-	logPath   = "logs"
-	vmLogPath = "vm.log"
+	dbPath1 = "txDB"
+	dbPath2 = "StatePoolDB"
+	dbPath3 = "BlockChainDB"
 )
 
 func TestNewTxPoolImpl(t *testing.T) {
@@ -58,8 +56,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 		}
 
 		tx.LdbPath = ""
-
-		log.NewLogger("iost")
 
 		conf := &common.Config{}
 
@@ -484,8 +480,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 
 	node, err := p2p.NewNetService(config)
 
-	log.NewLogger("iost")
-
 	conf := &common.Config{}
 
 	gl, err := global.New(conf)
@@ -515,11 +509,6 @@ func stopTest() {
 	cmd.Run()
 	cmd = exec.Command("rm", "-r", dbPath3)
 	cmd.Run()
-	cmd = exec.Command("rm", "-r", logPath)
-	cmd.Run()
-	cmd = exec.Command("rm", "", vmLogPath)
-	cmd.Run()
-
 }
 
 func genTx(a account.Account, expirationIter int64) *tx.Tx {
