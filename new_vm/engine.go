@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
 )
 
 const (
@@ -64,6 +65,12 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	ctx = loadBlkInfo(ctx, bh)
 
 	db := database.NewVisitor(defaultCacheLength, cb)
+
+	if db.Contract("iost.system") == nil {
+		db.SetContract(native_vm.NativeABI())
+
+	}
+
 
 	logger := ilog.New()
 	logger.Stop()
@@ -382,3 +389,4 @@ func loadTxInfo(h *host.Host, t *tx.Tx) {
 	h.Context().Set("auth_list", authList)
 
 }
+
