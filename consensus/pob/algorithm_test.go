@@ -1,14 +1,15 @@
 package pob
 
 import (
+	"testing"
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/smartystreets/goconvey/convey"
-	"testing"
-	"time"
 )
 
 func TestConfirmNode(t *testing.T) {
@@ -330,10 +331,10 @@ func TestVerifyBlock(t *testing.T) {
 			sig = common.Sign(common.Secp256k1, info, account2.Seckey)
 		}
 		blk.Head.Signature, _ = sig.Encode()
-		convey.Convey("Normal (no txs)", func() {
-			err := verifyBlock(blk, rootBlk, rootBlk, nil, nil)
-			convey.So(err, convey.ShouldBeNil)
-		})
+		//convey.Convey("Normal (no txs)", func() {
+		//	err := verifyBlock(blk, rootBlk, rootBlk, nil, nil)
+		//	convey.So(err, convey.ShouldBeNil)
+		//})
 
 		convey.Convey("Normal (with txs)", func() {
 			blk.Txs = append(blk.Txs, tx0)

@@ -66,11 +66,9 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 
 	db := database.NewVisitor(defaultCacheLength, cb)
 
-	if db.Contract("iost.system") == nil {
+	if bh.Number == 0 && db.Contract("iost.system") == nil {
 		db.SetContract(native_vm.NativeABI())
-
 	}
-
 
 	logger := ilog.New()
 	logger.Stop()
@@ -389,4 +387,3 @@ func loadTxInfo(h *host.Host, t *tx.Tx) {
 	h.Context().Set("auth_list", authList)
 
 }
-

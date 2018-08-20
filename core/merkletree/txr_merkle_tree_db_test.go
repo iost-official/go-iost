@@ -2,14 +2,15 @@ package merkletree
 
 import (
 	"bytes"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/smartystreets/goconvey/convey"
 	"log"
 	"math/rand"
 	"os/exec"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/smartystreets/goconvey/convey"
 )
 
 func TestTXRMerkleTreeDB(t *testing.T) {
