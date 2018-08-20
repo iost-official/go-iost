@@ -60,9 +60,6 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		}
 
 	}
-	if blk == nil {
-		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
-	}
 
 	stateDB, err := db.NewMVCCDB("StatePoolDB")
 	if err != nil {
