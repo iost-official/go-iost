@@ -105,7 +105,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 func FakeNew() BaseVariable {
 	block.LevelDBPath = "./"
 	blockChain, _ := block.Instance()
-	stateDB, _ := db.NewMVCCDB("StatePoolDB")
+	stateDB, _ := db.NewMVCCDB("StateDB")
 	tx.LdbPath = "./"
 	txDBfdafad := tx.TxDBInstance()
 	mode := Mode{}
