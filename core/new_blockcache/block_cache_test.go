@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
+	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	. "github.com/smartystreets/goconvey/convey"
@@ -52,12 +53,15 @@ func TestBlockCache(t *testing.T) {
 
 	txdb := core_mock.NewMockTxDB(ctl)
 	txdb.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
+	statedb := db_mock.NewMockMVCCDB(ctl)
+	statedb.EXPECT().Flush(gomock.Any()).AnyTimes().Return(nil)
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(b0, nil)
 	base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
 	global.EXPECT().TxDB().AnyTimes().Return(txdb)
+	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
 			bc, _ := NewBlockCache(global)
