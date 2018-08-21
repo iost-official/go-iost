@@ -36,6 +36,12 @@ var IOSTContractStorage = (function () {
             if (valType === 'string') {
                 return storage.put(key, val);
             }
+            if (val instanceof Int64) {
+                return storage.put(key, val.toString())
+            }
+            if (val instanceof BigNumber) {
+                return storage.put(key, val.toString(10))
+            }
             return storage.put(key, JSON.stringify(val))
         },
         get: function (key, val) {
@@ -48,9 +54,14 @@ var IOSTContractStorage = (function () {
                 return JSON.parse(valInStorage);
             }
 
+            if (val instanceof Int64) {
+                let valInStorage = storage.get(key);
+                return new Int64(valInStorage);
+            }
+
             if (val instanceof BigNumber) {
                 let valInStorage = storage.get(key);
-                return new BigNumber(JSON.parse(valInStorage));
+                return new BigNumber(valInStorage);
             }
 
             let valInStorage = storage.get(key);
