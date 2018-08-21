@@ -44,12 +44,8 @@ func NewAccount(seckey []byte) (Account, error) {
 
 	m.Seckey = seckey
 	m.Pubkey = makePubkey(seckey)
-	m.ID = GetIdByPubkey(m.Pubkey)
+	m.ID = GetIDByPubkey(m.Pubkey)
 	return m, nil
-}
-
-func (member *Account) GetId() string {
-	return member.ID
 }
 
 func randomSeckey() []byte {
@@ -65,7 +61,7 @@ func makePubkey(seckey []byte) []byte {
 	return common.CalcPubkeyInSecp256k1(seckey)
 }
 
-func GetIdByPubkey(pubkey []byte) string {
+func GetIDByPubkey(pubkey []byte) string {
 	if len(pubkey) != 33 {
 		panic("illegal pubkey")
 	}
