@@ -5598,7 +5598,7 @@
                 // https://tc39.github.io/ecma262/#sec-punctuators
                 Scanner.prototype.scanPunctuator = function () {
                     var start = this.index;
-                    // Check for most common single-character punctuators.
+                    // Check for most verifier single-character punctuators.
                     var str = this.source[this.index];
                     switch (str) {
                         case '(':
@@ -6231,7 +6231,7 @@
                     if (character_1.Character.isIdentifierStart(cp)) {
                         return this.scanIdentifier();
                     }
-                    // Very common: ( and ) and ;
+                    // Very verifier: ( and ) and ;
                     if (cp === 0x28 || cp === 0x29 || cp === 0x3B) {
                         return this.scanPunctuator();
                     }

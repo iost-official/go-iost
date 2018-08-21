@@ -7,6 +7,7 @@ import (
 
 var staticProperty StaticProperty
 
+// StaticProperty handles the the static property of pob.
 type StaticProperty struct {
 	account           account.Account
 	NumberOfWitnesses int64
