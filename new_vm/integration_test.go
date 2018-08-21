@@ -357,7 +357,7 @@ func NewJSTester(t *testing.T) *JSTester {
 	}
 }
 
-func (j *JSTester) testJS(code, main, args string) {
+func (j *JSTester) testJS(code, main, args string) *tx.TxReceipt {
 
 	c := &contract.Contract{
 		ID:   "jsContract",
@@ -392,12 +392,16 @@ func (j *JSTester) testJS(code, main, args string) {
 		j.t.Fatal(err)
 	}
 
-	j.t.Log(j.e.Exec(trx))
+	r, err := j.e.Exec(trx)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+	return r
 }
 
 func TestJSAPI_Database(t *testing.T) {
 	js := NewJSTester(t)
-	js.testJS(`
+	r := js.testJS(`
 class Contract {
  constructor() {
     this.aa = new Int64(123);
@@ -413,7 +417,8 @@ class Contract {
 
 module.exports = Contract;
 `, "main", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
 	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
-	t.Log(js.e.(*EngineImpl).ho.Get("aa"))
+	//t.Log(js.e.(*EngineImpl).ho.Get("aa"))
 }
