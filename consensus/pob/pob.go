@@ -209,14 +209,10 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 	}
 	p.blockCache.Link(node)
 	p.updateInfo(node)
-	p.addChildren(node)
-	return nil
-}
-
-func (p *PoB) addChildren(node *blockcache.BlockCacheNode) {
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block)
 	}
+	return nil
 }
 
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
