@@ -344,6 +344,8 @@ type JSTester struct {
 	t  *testing.T
 	e  Engine
 	vi *database.Visitor
+
+	cn string
 }
 
 func NewJSTester(t *testing.T) *JSTester {
@@ -357,8 +359,11 @@ func NewJSTester(t *testing.T) *JSTester {
 	}
 }
 
-func (j *JSTester) testJS(code, main, args string) *tx.TxReceipt {
+func (j *JSTester) readDB(key string) (value interface{}) {
+	return database.MustUnmarshal(j.vi.Get(j.cn + "-" + key))
+}
 
+func (j *JSTester) setJS(code, main string) *tx.TxReceipt {
 	c := &contract.Contract{
 		ID:   "jsContract",
 		Code: code,
@@ -389,9 +394,20 @@ func (j *JSTester) testJS(code, main, args string) *tx.TxReceipt {
 	if err != nil {
 		j.t.Fatal(err)
 	}
-	j.e.Exec(trx)
+	r, err := j.e.Exec(trx)
+	if err != nil {
+		j.t.Fatal(err)
+	}
 
-	act2 := tx.NewAction("Contract"+common.Base58Encode(trx.Hash()), main, fmt.Sprintf(`[]`))
+	j.cn = "Contract" + common.Base58Encode(trx.Hash())
+
+	return r
+
+}
+
+func (j *JSTester) testJS(main, args string) *tx.TxReceipt {
+
+	act2 := tx.NewAction(j.cn, main, fmt.Sprintf(`[]`))
 
 	trx2, err := makeTx(act2)
 	if err != nil {
@@ -407,21 +423,44 @@ func (j *JSTester) testJS(code, main, args string) *tx.TxReceipt {
 
 func TestJSAPI_Database(t *testing.T) {
 	js := NewJSTester(t)
-	r := js.testJS(`
-class Contract {
- constructor() {
-    this.aa = new Int64(123);
- }
- main() {
-	this.aa = new Int64(456);
 
- }
+	js.setJS(`
+class Contract {
+	constructor() {
+	this.aa = new Int64(300);
+	}
+	main() {
+		this.aa = new Int64(45);
+	}
 }
 
 module.exports = Contract;
-`, "main", fmt.Sprintf(`[]`))
+`, "main")
+
+	r := js.testJS("main", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+	t.Log("balance of publisher :", js.vi.Balance(testID[0]))
+	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
+	t.Log("value of this.aa :", js.readDB("aa"))
+}
+
+func TestJSAPI_Transfer(t *testing.T) {
+
+	js := NewJSTester(t)
+	js.setJS(`
+class Contract {
+	constructor() {
+	}
+	main() {
+		BlockChain.transfer("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
+	}
+}
+
+module.exports = Contract;
+`, "main")
+
+	r := js.testJS("main", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
 	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
-	//t.Log(js.e.(*EngineImpl).ho.Get("aa"))
 }
