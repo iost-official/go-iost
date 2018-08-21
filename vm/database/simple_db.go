@@ -12,6 +12,7 @@ import (
 	"fmt"
 
 	"errors"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"

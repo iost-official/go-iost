@@ -131,14 +131,14 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 	for _, action := range tx0.Actions {
 
-		cost, status, receipts, err := e.runAction(action)
+		cost, status, receipts, err2 := e.runAction(action)
 		e.logger.Info("run action : %v, result is %v", action, status.Code)
 		e.logger.Debug("used cost > %v", cost)
 		e.logger.Debug("status > \n%v\n", status)
 		e.logger.Debug("receipts > \n%v\n", receipts)
 
-		if err != nil {
-			return nil, err
+		if err2 != nil {
+			return nil, err2
 		}
 
 		if cost == nil {
