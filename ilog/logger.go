@@ -32,7 +32,7 @@ type Logger struct {
 	quitCh chan struct{}
 }
 
-// New returns a default Logger instace.
+// New returns a default Logger instance.
 func New() *Logger {
 	return &Logger{
 		callDepth:   1,
