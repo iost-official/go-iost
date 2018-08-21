@@ -383,16 +383,22 @@ func (j *JSTester) testJS(code, main, args string) *tx.TxReceipt {
 		},
 	}
 
-	j.vi.SetContract(c)
-
-	act := tx.NewAction("jsContract", main, fmt.Sprintf(`[]`))
+	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, c.B64Encode()))
 
 	trx, err := makeTx(act)
 	if err != nil {
 		j.t.Fatal(err)
 	}
+	j.e.Exec(trx)
 
-	r, err := j.e.Exec(trx)
+	act2 := tx.NewAction("Contract"+common.Base58Encode(trx.Hash()), main, fmt.Sprintf(`[]`))
+
+	trx2, err := makeTx(act2)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+
+	r, err := j.e.Exec(trx2)
 	if err != nil {
 		j.t.Fatal(err)
 	}
@@ -407,11 +413,8 @@ class Contract {
     this.aa = new Int64(123);
  }
  main() {
-  let bc = new BlockChain;
 	this.aa = new Int64(456);
-  bc.transfer("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",
-  	"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY",
-  	100)
+
  }
 }
 
