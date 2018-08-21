@@ -38,11 +38,13 @@ type ServerExit interface {
 	Stop()
 }
 
-var cfgFile string
-var logFile string
-var dbFile string
-var cpuprofile string
-var memprofile string
+var (
+	cfgFile    = "iserver.yml"
+	logFile    string
+	dbFile     string
+	cpuprofile string
+	memprofile string
+)
 
 var serverExit []ServerExit
 
