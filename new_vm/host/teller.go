@@ -33,8 +33,14 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 		return contract.NewCost(1, 1, 1), ErrTransferNegValue
 	}
 
-	if h.Privilege(from) < 1 {
-		return contract.NewCost(1, 1, 1), ErrPermissionLost
+	if strings.HasPrefix(from, ContractAccountPrefix) {
+		if from != ContractAccountPrefix+h.ctx.Value("contract_name").(string) {
+			return contract.NewCost(1, 1, 1), ErrPermissionLost
+		}
+	} else {
+		if h.Privilege(from) < 1 {
+			return contract.NewCost(1, 1, 1), ErrPermissionLost
+		}
 	}
 
 	bf := h.db.Balance(from)
@@ -49,13 +55,13 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 }
 
 func (h *Teller) Withdraw(to string, amount int64) (*contract.Cost, error) {
-	c := h.ctx.Value(ContractAccountPrefix + "contract_name").(string)
-	return h.Transfer(c, to, amount)
+	c := h.ctx.Value("contract_name").(string)
+	return h.Transfer(ContractAccountPrefix+c, to, amount)
 }
 
 func (h *Teller) Deposit(from string, amount int64) (*contract.Cost, error) {
-	c := h.ctx.Value(ContractAccountPrefix + "contract_name").(string)
-	return h.Transfer(from, c, amount)
+	c := h.ctx.Value("contract_name").(string)
+	return h.Transfer(from, ContractAccountPrefix+c, amount)
 }
 
 func (h *Teller) TopUp(contract, from string, amount int64) (*contract.Cost, error) {
