@@ -101,11 +101,9 @@ func TestMultiWork(t *testing.T) {
 
 	length := 100
 
-
 	v := NewVisitor(length, mvccdb)
 
 	v.Put("hello", "world")
-
 
 	vv := v.Get("hello")
 	if !(vv == "world") {

@@ -3,13 +3,14 @@ package tx
 import (
 	"testing"
 	//	"fmt"
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/smartystreets/goconvey/convey"
-	"github.com/gogo/protobuf/proto"
 	"bytes"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	. "github.com/smartystreets/goconvey/convey"
 )
+
 /*
 func gentx() Tx {
 	main := lua.NewMethod(0, "main", 0, 1)
@@ -47,14 +48,14 @@ func TestTx(t *testing.T) {
 	Convey("Test of Tx Data Structure", t, func() {
 		actions := []Action{}
 		actions = append(actions, Action{
-			Contract:"contract1",
-			ActionName:"actionname1",
-			Data:"{\"num\": 1, \"message\": \"contract1\"}",
+			Contract:   "contract1",
+			ActionName: "actionname1",
+			Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 		})
 		actions = append(actions, Action{
-			Contract:"contract2",
-			ActionName:"actionname2",
-			Data:"1",
+			Contract:   "contract2",
+			ActionName: "actionname2",
+			Data:       "1",
 		})
 		// seckey := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 		// acc, err := account.NewAccount(seckey)
@@ -67,12 +68,12 @@ func TestTx(t *testing.T) {
 		Convey("proto marshal", func() {
 			tx := &TxRaw{
 				Time: 99,
-				Actions:[]*ActionRaw{&ActionRaw{
-					Contract:"contract1",
-					ActionName:"actionname1",
-					Data:"{\"num\": 1, \"message\": \"contract1\"}",
+				Actions: []*ActionRaw{&ActionRaw{
+					Contract:   "contract1",
+					ActionName: "actionname1",
+					Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 				}},
-				Signers:[][]byte{a1.Pubkey},
+				Signers: [][]byte{a1.Pubkey},
 			}
 			b, err := proto.Marshal(tx)
 			So(err, ShouldEqual, nil)
@@ -178,4 +179,3 @@ func TestTx(t *testing.T) {
 
 	})
 }
-

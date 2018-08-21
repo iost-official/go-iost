@@ -378,7 +378,7 @@ func TestEngine_Danger(t *testing.T) {
 	}
 }
 
-func TestEngine_Int64(t *testing.T)  {
+func TestEngine_Int64(t *testing.T) {
 	host, code := MyInit(t, "int64Test")
 	rs, _, err := vmPool.LoadAndCall(host, code, "getPlus")
 	if err != nil {
