@@ -294,8 +294,10 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	//ilog.Debug("action %v > %v", action.Contract+"."+action.ActionName, rtn)
 
 	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
+	e.logger.Debug("cost is %v", cost)
 
 	if cost == nil {
+		panic("cost is nil")
 		cost = contract.Cost0()
 	}
 
