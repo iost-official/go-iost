@@ -1,9 +1,9 @@
 {
     "Vendor": true,
-    "Exclude": ["should have comment"],
-    "Skip": [
-        "vendor",
-        "test"
+    "Enable": ["vet", "gocyclo", "golint", "ineffassign", "misspell", "deadcode", "unconvert", "gofmt"],
+    "Exclude": [
+        ".+.pb.go",
+        "vendor"
     ],
     "Deadline": "120s"
 }
