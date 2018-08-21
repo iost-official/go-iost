@@ -58,6 +58,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		m.vms[c.Info.Lang].Init()
 	}
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
+	ilog.Debug("cost in monitor is %v", cost)
 	if cost == nil {
 		if strings.HasPrefix(contractName, "Contract") {
 			ilog.Fatal("will return nil cost : %v.%v", contractName, api)
@@ -73,9 +74,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 	}
 	var gasPrice = h.Context().Value("gas_price").(int64)
 
-	if  payment == 1 &&
+	if payment == 1 &&
 		abi.GasPrice > gasPrice &&
-		! cost.IsOverflow(abi.Limit) {
+		!cost.IsOverflow(abi.Limit) {
 		b := h.DB().Balance(host.ContractGasPrefix + contractName)
 		if b > gasPrice*cost.ToGas() {
 			h.PayCost(cost, host.ContractGasPrefix+contractName)

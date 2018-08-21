@@ -75,6 +75,7 @@ class Int64 {
 
     sqrt() {
         let rs = this.number.sqrt();
+        rs = rs.integerValue();
         return new this.constructor(rs);
     }
 

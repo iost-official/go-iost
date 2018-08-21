@@ -114,7 +114,7 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 		Time:       123456,
 	}
 
-	e := NewEngine(bh, mvccdb)
+	e := newEngine(bh, vi)
 
 	e.SetUp("js_path", jsPath)
 	e.SetUp("log_level", "debug")
@@ -338,4 +338,129 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 	ilog.Debug("balance of sender : %v", vi.Balance(testID[0]))
 	ilog.Debug("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
 
+}
+
+type JSTester struct {
+	t  *testing.T
+	e  Engine
+	vi *database.Visitor
+
+	cn string
+}
+
+func NewJSTester(t *testing.T) *JSTester {
+
+	e, vi := ininit(t)
+
+	return &JSTester{
+		t:  t,
+		vi: vi,
+		e:  e,
+	}
+}
+
+func (j *JSTester) readDB(key string) (value interface{}) {
+	return database.MustUnmarshal(j.vi.Get(j.cn + "-" + key))
+}
+
+func (j *JSTester) setJS(code, main string) *tx.TxReceipt {
+	c := &contract.Contract{
+		ID:   "jsContract",
+		Code: code,
+		Info: &contract.Info{
+			Lang:        "javascript",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				{
+					Name:     main,
+					Payment:  0,
+					GasPrice: int64(1),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				}, {
+					Name:     "constructor",
+					Payment:  0,
+					GasPrice: int64(1),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				},
+			},
+		},
+	}
+
+	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, c.B64Encode()))
+
+	trx, err := makeTx(act)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+	r, err := j.e.Exec(trx)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+
+	j.cn = "Contract" + common.Base58Encode(trx.Hash())
+
+	return r
+
+}
+
+func (j *JSTester) testJS(main, args string) *tx.TxReceipt {
+
+	act2 := tx.NewAction(j.cn, main, fmt.Sprintf(`[]`))
+
+	trx2, err := makeTx(act2)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+
+	r, err := j.e.Exec(trx2)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+	return r
+}
+
+func TestJSAPI_Database(t *testing.T) {
+	js := NewJSTester(t)
+
+	js.setJS(`
+class Contract {
+	constructor() {
+	this.aa = new Int64(300);
+	}
+	main() {
+		this.aa = new Int64(45);
+	}
+}
+
+module.exports = Contract;
+`, "main")
+
+	r := js.testJS("main", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+	t.Log("balance of publisher :", js.vi.Balance(testID[0]))
+	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
+	t.Log("value of this.aa :", js.readDB("aa"))
+}
+
+func TestJSAPI_Transfer(t *testing.T) {
+
+	js := NewJSTester(t)
+	js.setJS(`
+class Contract {
+	constructor() {
+	}
+	main() {
+		BlockChain.transfer("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
+	}
+}
+
+module.exports = Contract;
+`, "main")
+
+	r := js.testJS("main", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+	t.Log("balance of sender :", js.vi.Balance(testID[0]))
+	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
 }

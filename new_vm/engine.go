@@ -115,7 +115,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	}
 
 	bl := e.ho.DB().Balance(account.GetIdByPubkey(tx0.Publisher.Pubkey))
-	if bl <= 0 || bl < tx0.GasPrice*tx0.GasLimit {
+	if bl < tx0.GasPrice*tx0.GasLimit {
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), nil
 	}
 
@@ -132,6 +132,11 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	for _, action := range tx0.Actions {
 
 		cost, status, receipts, err := e.runAction(action)
+		e.logger.Info("run action : %v, result is %v", action, status.Code)
+		e.logger.Debug("used cost > %v", cost)
+		e.logger.Debug("status > \n%v\n", status)
+		e.logger.Debug("receipts > \n%v\n", receipts)
+
 		if err != nil {
 			return nil, err
 		}
@@ -146,13 +151,12 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
-			ilog.Debug("rollback")
+			e.logger.Debug("rollback")
 			e.ho.DB().Rollback()
-			break
+		} else {
+			txr.Receipts = append(txr.Receipts, receipts...)
+			txr.SuccActionNum++
 		}
-
-		txr.Receipts = append(txr.Receipts, receipts...)
-		txr.SuccActionNum++
 
 		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
@@ -290,8 +294,10 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	//ilog.Debug("action %v > %v", action.Contract+"."+action.ActionName, rtn)
 
 	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
+	e.logger.Debug("cost is %v", cost)
 
 	if cost == nil {
+		panic("cost is nil")
 		cost = contract.Cost0()
 	}
 
