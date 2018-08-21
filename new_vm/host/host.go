@@ -17,6 +17,7 @@ var (
 	ErrBalanceNotEnough = errors.New("balance not enough")
 	ErrTransferNegValue = errors.New("trasfer amount less than zero")
 	ErrReenter          = errors.New("re-entering")
+	ErrPermissionLost   = errors.New("transaction has no permission")
 )
 
 type Monitor interface {
