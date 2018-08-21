@@ -185,33 +185,15 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 		return fmt.Errorf("fail to verify blocks, %v", err)
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
+	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addNewBlock(blk, parent.Block) // only need to consider error from addNewBlock, not from addExistingblock
-	} else {
-		p.blockCache.Add(blk)
+		return p.addExistingBlock(blk, parent.Block)
 	}
 	staticProperty.addSlot(blk.Head.Time)
 	return nil
 }
 
-func (p *PoB) addNewBlock(blk *block.Block, parentBlock *block.Block) error {
-	if blk.Head.Witness != p.account.ID {
-		p.verifyDB.Checkout(string(blk.Head.ParentHash))
-		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
-		if err != nil {
-			return err
-		}
-		p.verifyDB.Tag(string(blk.HeadHash()))
-	} else {
-		p.verifyDB.Checkout(string(blk.HeadHash()))
-	}
-	node := p.blockCache.Add(blk)
-	p.updateInfo(node)
-	p.addChildren(node)
-	return nil
-}
-
-func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) {
+func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	if blk.Head.Witness != p.account.ID {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
@@ -219,6 +201,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) {
 		if err != nil {
 			p.blockCache.Del(node)
 			ilog.Debug(err.Error())
+			return err
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	} else {
@@ -227,6 +210,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) {
 	p.blockCache.Link(node)
 	p.updateInfo(node)
 	p.addChildren(node)
+	return nil
 }
 
 func (p *PoB) addChildren(node *blockcache.BlockCacheNode) {
