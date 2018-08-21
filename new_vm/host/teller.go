@@ -33,6 +33,10 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 		return contract.NewCost(1, 1, 1), ErrTransferNegValue
 	}
 
+	if h.Privilege(from) < 1 {
+		return contract.NewCost(1, 1, 1), ErrPermissionLost
+	}
+
 	bf := h.db.Balance(from)
 	//ilog.Debug("%v's balance : %v", from, bf)
 	if bf > amount {
@@ -93,4 +97,13 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 	}
 
 	return nil
+}
+
+func (h *Teller) Privilege(id string) int {
+	am := h.ctx.Value("auth_list").(map[string]int)
+	i, ok := am[id]
+	if !ok {
+		i = 0
+	}
+	return i
 }
