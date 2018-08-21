@@ -20,7 +20,7 @@ func TestMember(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(m.Pubkey), ShouldEqual, 33)
 			So(len(m.Seckey), ShouldEqual, 32)
-			So(len(m.GetId()), ShouldEqual, len(GetIdByPubkey(m.Pubkey)))
+			So(len(m.ID), ShouldEqual, len(GetIDByPubkey(m.Pubkey)))
 		})
 
 		Convey("sign and verify: ", func() {
@@ -44,10 +44,10 @@ func TestPubkeyAndID(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		seckey := randomSeckey()
 		pubkey := makePubkey(seckey)
-		id := GetIdByPubkey(pubkey)
+		id := GetIDByPubkey(pubkey)
 		fmt.Println(`"`, id, `", "`, Base58Encode(seckey), `"`)
 		pub2 := GetPubkeyByID(id)
-		id2 := GetIdByPubkey(pub2)
+		id2 := GetIDByPubkey(pub2)
 		if !strings.HasPrefix(id, "IOST") {
 			t.Failed()
 		}

@@ -1,6 +1,7 @@
 package global
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -116,7 +117,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	tx.LdbPath = conf.LdbPath
 	txDb := tx.TxDBInstance()
 	if txDb == nil {
-		return nil, fmt.Errorf("new txdb failed, stop the program.")
+		return nil, errors.New("new txdb failed, stop the program.")
 	}
 	//TODO: check DB, state, txDB
 	m := new(Mode)
