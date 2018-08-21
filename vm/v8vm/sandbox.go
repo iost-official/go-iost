@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 // A Sandbox is an execution environment that allows separate, unrelated, JavaScript
@@ -179,7 +179,7 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 
 	gasUsed := rs.gasUsed
 
-	return result, int64(gasUsed) , err
+	return result, int64(gasUsed), err
 }
 
 func formatFuncArgs(args []interface{}) (string, error) {

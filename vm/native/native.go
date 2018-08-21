@@ -1,11 +1,11 @@
-package native_vm
+package native
 
 import (
 	"errors"
 
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 var (
@@ -21,7 +21,8 @@ func (m *VM) Init() error {
 func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 	switch api {
 	case "RequireAuth":
-		b, cost := host.RequireAuth(args[0].(string))
+		var b bool
+		b, cost = host.RequireAuth(args[0].(string))
 		rtn = []interface{}{
 			b,
 		}

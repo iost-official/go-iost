@@ -1,4 +1,4 @@
-package new_vm
+package vm
 
 import (
 	"sync"
@@ -14,9 +14,9 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 )
 
 const (
@@ -71,7 +71,7 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 	ctx = loadBlkInfo(ctx, bh)
 
 	if bh.Number == 0 && db.Contract("iost.system") == nil {
-		db.SetContract(native_vm.NativeABI())
+		db.SetContract(native.NativeABI())
 	}
 
 	logger := ilog.New()
@@ -250,7 +250,7 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 }
 func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
 	receipts = make([]tx.Receipt, 0)
-	cost = contract.Cost0()
+	//cost = contract.Cost0()
 
 	e.ho.PushCtx()
 	defer func() {

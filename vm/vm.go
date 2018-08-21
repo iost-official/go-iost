@@ -1,8 +1,8 @@
-package new_vm
+package vm
 
 import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 //go:generate mockgen -destination vm_mock.go -package new_vm github.com/iost-official/Go-IOS-Protocol/new_vm VM
