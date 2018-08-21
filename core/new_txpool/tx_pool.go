@@ -344,7 +344,6 @@ func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 
 	}
 
-	return false
 }
 
 func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
@@ -539,7 +538,6 @@ func (pool *TxPoolImpl) fundForkBlockHash(newHash []byte, oldHash []byte) ([]byt
 
 	}
 
-	return nil, false
 }
 
 func (pool *TxPoolImpl) fundBlockInChain(hash []byte, chainHead []byte) ([]byte, bool) {
@@ -564,7 +562,6 @@ func (pool *TxPoolImpl) fundBlockInChain(hash []byte, chainHead []byte) ([]byte,
 
 	}
 
-	return nil, false
 }
 
 func (pool *TxPoolImpl) doChainChange() error {
