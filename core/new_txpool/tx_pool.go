@@ -25,6 +25,7 @@ func init() {
 	prometheus.MustRegister(receivedTransactionCount)
 }
 
+// TxPoolImpl defines all the API of txpool package.
 type TxPoolImpl struct {
 	chP2PTx chan p2p.IncomingMessage
 	chTx    chan *tx.Tx
@@ -42,6 +43,7 @@ type TxPoolImpl struct {
 	mu sync.RWMutex
 }
 
+// NewTxPoolImpl returns a default TxPoolImpl instance.
 func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
 	p := &TxPoolImpl{
 		blockCache:   blockCache,
@@ -58,11 +60,13 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 	return p, nil
 }
 
+// Start starts the jobs.
 func (pool *TxPoolImpl) Start() {
 	ilog.Info("TxPoolImpl Start")
 	go pool.loop()
 }
 
+// Stop stops all the jobs.
 func (pool *TxPoolImpl) Stop() {
 	ilog.Info("TxPoolImpl Stop")
 	close(pool.chP2PTx)
@@ -160,6 +164,7 @@ func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *
 	}
 }
 
+// AddLinkedNode add the block
 func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error {
 
 	if linkedNode == nil || headNode == nil {
@@ -176,6 +181,7 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 	return nil
 }
 
+// AddTx add the transaction
 func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 
 	var r TAddTx
@@ -192,6 +198,7 @@ func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 	return r
 }
 
+// PendingTxs get the pending transactions
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 
 	var pendingList TxsList
@@ -212,6 +219,7 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 	return pendingList[:l], nil
 }
 
+// ExistTxs determine if the transaction exists
 func (pool *TxPoolImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error) {
 
 	var r FRet
