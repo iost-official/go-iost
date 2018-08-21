@@ -1,3 +1,8 @@
+# local net
+#account:
+#  id: IOST5FhLBhVXMnwWRwhvz5j9NyWpBSchAMzpSMZT21xZqT8w7icwJ5
+#  pub-key: 5FhLBhVXMnwWRwhvz5j9NyWpBSchAMzpSMZT21xZqT8w7i
+#  sec-key: BCV7fV37aSWNx1N1Yjk3TdQXeHMmLhyqsqGms1PkqwPT
 account:
   id: IOST7j5ynm6UXmJqY3GJp4RchiEWxjoPvifqgQVVAUaKV9sPLpx719
   pub-key: 7j5ynm6UXmJqY3GJp4RchiEWxjoPvifqgQVVAUaKV9sPLp
