@@ -89,7 +89,7 @@ func init() {
 	compileCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
 	compileCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
 	compileCmd.Flags().Int64VarP(&expiration, "expiration", "e", 0, "expiration timestamp for a transaction")
-	compileCmd.Flags().StringSliceVarP(&signers, "signers", "s", []string{}, "signers who should sign this transaction")
+	compileCmd.Flags().StringSliceVarP(&signers, "signers", "", []string{}, "signers who should sign this transaction")
 
 	// Here you will define your flags and configuration settings.
 

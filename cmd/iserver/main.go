@@ -15,6 +15,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"os/signal"
 	"syscall"
@@ -31,23 +32,20 @@ import (
 	"github.com/spf13/viper"
 )
 
-//	"github.com/iost-official/Go-IOS-Protocol/iserver/cmd"
 type ServerExit interface {
 	Stop()
 }
 
 var serverExit []ServerExit
 
+var (
+	configfile = flag.String("f", "", "configuration `file`")
+)
+
 func main() {
 	//	cmd.Execute()
-	conf, err := common.NewConfig(viper.GetViper())
-	if err != nil {
-		os.Exit(1)
-	}
-
-	if err := conf.LocalConfig(); err != nil {
-		os.Exit(1)
-	}
+	flag.Parse()
+	conf := common.NewConfig(*configfile)
 
 	glb, err := global.New(conf)
 	if err != nil {
@@ -56,10 +54,7 @@ func main() {
 
 	// Log Server Information
 	ilog.Info("Version:  %v", "1.0")
-	ilog.Info("cfgFile: %v", glb.Config().CfgFile)
-	ilog.Info("logFile: %v", glb.Config().LogFile)
-	ilog.Info("ldb.path: %v", glb.Config().LdbPath)
-	ilog.Info("dbFile: %v", glb.Config().DbFile)
+	ilog.Info("Config Information:\n%v", glb.Config().YamlString())
 	// Start CPU Profile
 	/*
 		if cpuprofile != "" {

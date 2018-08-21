@@ -1,6 +1,7 @@
 package global
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -41,7 +42,7 @@ type BaseVariableImpl struct {
 }
 
 func New(conf *common.Config) (*BaseVariableImpl, error) {
-	block.LevelDBPath = conf.LdbPath
+	block.LevelDBPath = conf.DB.LdbPath
 	blockChain, err := block.Instance()
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)
@@ -95,10 +96,10 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	//	}
 	//}
 
-	tx.LdbPath = conf.LdbPath
+	tx.LdbPath = conf.DB.LdbPath
 	txDb := tx.TxDbInstance()
 	if txDb == nil {
-		return nil, fmt.Errorf("new txdb failed, stop the program.")
+		return nil, errors.New("new txdb failed, stop the program.")
 	}
 	//TODO: check DB, state, txDB
 	m := new(Mode)

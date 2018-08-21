@@ -99,7 +99,7 @@ func verifyBasics(blk *block.Block) error {
 	}
 	var signature common.Signature
 	signature.Decode(blk.Head.Signature)
-	if blk.Head.Witness != account.GetIdByPubkey(signature.Pubkey) {
+	if blk.Head.Witness != account.GetIDByPubkey(signature.Pubkey) {
 		return ErrPubkey
 	}
 	headInfo := generateHeadInfo(blk.Head)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
@@ -16,6 +17,7 @@ const (
 
 	opening = `
 	Welcome! Your ID is %s.
+	You can serve as a seed node by running "./example --seed %s/ipfs/%s" on another console. You can replace 127.0.0.1 with public IP as well.
 	`
 )
 
@@ -32,13 +34,16 @@ func newMessage(content string) *message {
 	}
 }
 
+// Chatter is the core struct of the chatting demo.
 type Chatter struct {
 	p2pService *p2p.NetService
 
-	msg    chan p2p.IncomingMessage
-	quitCh chan struct{}
+	msg        chan p2p.IncomingMessage
+	quitCh     chan struct{}
+	screenLock sync.Mutex
 }
 
+// NewChatter returns a new instance of Chatter.
 func NewChatter(p2pService *p2p.NetService) *Chatter {
 	c := &Chatter{
 		p2pService: p2pService,
@@ -48,12 +53,14 @@ func NewChatter(p2pService *p2p.NetService) *Chatter {
 	return c
 }
 
+// Start starts chatter's job.
 func (ct *Chatter) Start() {
 	ct.printOpening()
 	go ct.handleMsgLoop()
 	go ct.readLoop()
 }
 
+// Stop stops chatter's job.
 func (ct *Chatter) Stop() {
 	ilog.Info("chatter is stopped")
 	close(ct.quitCh)
@@ -72,9 +79,10 @@ func (ct *Chatter) handleMsgLoop() {
 				ilog.Error("json decode failed. err=%v, bytes=%v", err, msg.Data())
 				continue
 			}
-			author := "\n" + shortID(msg.From().Pretty()) + ":"
-			fmt.Println(color(author, green), color(string(m.Content), blue))
+			author := "\n" + shortID(msg.From().Pretty()) + ": "
+			fmt.Println(color(author, green), color(m.Content, blue))
 			// fmt.Print("\033[05;0m> \033[0m")
+			ct.p2pService.Broadcast(msg.Data(), chatData, p2p.UrgentMessage)
 		}
 	}
 }
@@ -82,7 +90,7 @@ func (ct *Chatter) handleMsgLoop() {
 func (ct *Chatter) readLoop() {
 	stdReader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print("\033[05;0m> \033[0m")
+		ct.printPrompt()
 		sendData, err := stdReader.ReadString('\n')
 		if err != nil {
 			ilog.Error("std read error. err=%v", err)
@@ -98,10 +106,21 @@ func (ct *Chatter) readLoop() {
 			continue
 		}
 		ct.p2pService.Broadcast(bytes, chatData, p2p.UrgentMessage)
+		author := shortID(ct.p2pService.ID()) + ": "
+		fmt.Print(color(author, green), color(sendData, blue))
 	}
 }
 
+func (ct *Chatter) clearLastLine() {
+	fmt.Print("\033[1A")
+	fmt.Print("\033[2K")
+}
+
+func (ct *Chatter) printPrompt() {
+	fmt.Print("\033[05;0m> \033[0m")
+}
+
 func (ct *Chatter) printOpening() {
-	text := fmt.Sprintf(opening, shortID(ct.p2pService.ID()))
+	text := fmt.Sprintf(opening, shortID(ct.p2pService.ID()), ct.p2pService.LocalAddrs()[0], ct.p2pService.ID())
 	fmt.Println(color(text, grey))
 }

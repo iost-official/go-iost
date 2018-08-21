@@ -1,8 +1,8 @@
 package pob
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"

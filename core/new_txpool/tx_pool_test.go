@@ -57,7 +57,9 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		tx.LdbPath = ""
 
-		conf := &common.Config{}
+		conf := &common.Config{
+			DB: &common.DBConfig{},
+		}
 
 		gl, err := global.New(conf)
 		So(err, ShouldBeNil)
