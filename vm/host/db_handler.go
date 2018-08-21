@@ -80,7 +80,7 @@ func (h *DBHandler) GlobalMapKeys(con, key string) (keys []string, cost *contrac
 
 func (h *DBHandler) GlobalMapLen(con, key string) (length int, cost *contract.Cost) {
 	k, cost := h.GlobalMapKeys(con, key)
-	return len(k), contract.NewCost(1, 1, 1)
+	return len(k), cost
 }
 
 func (h *DBHandler) modifyKey(key string) string {

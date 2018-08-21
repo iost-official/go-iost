@@ -71,7 +71,7 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 	ctx = loadBlkInfo(ctx, bh)
 
 	if bh.Number == 0 && db.Contract("iost.system") == nil {
-		db.SetContract(native.NativeABI())
+		db.SetContract(native.ABI())
 	}
 
 	logger := ilog.New()
@@ -131,14 +131,14 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 	for _, action := range tx0.Actions {
 
-		cost, status, receipts, err := e.runAction(action)
+		cost, status, receipts, err2 := e.runAction(action)
 		e.logger.Info("run action : %v, result is %v", action, status.Code)
 		e.logger.Debug("used cost > %v", cost)
 		e.logger.Debug("status > \n%v\n", status)
 		e.logger.Debug("receipts > \n%v\n", receipts)
 
-		if err != nil {
-			return nil, err
+		if err2 != nil {
+			return nil, err2
 		}
 
 		if cost == nil {
@@ -164,10 +164,10 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		e.ho.PayCost(cost, account.GetIDByPubkey(tx0.Publisher.Pubkey))
 	}
 
-	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), int64(tx0.GasPrice))
+	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
 	if err != nil {
 		e.ho.DB().Rollback()
-		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), int64(tx0.GasPrice))
+		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
 		if err != nil {
 			ilog.Debug(err.Error())
 			return nil, err
@@ -250,7 +250,6 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 }
 func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
 	receipts = make([]tx.Receipt, 0)
-	//cost = contract.Cost0()
 
 	e.ho.PushCtx()
 	defer func() {
@@ -298,7 +297,6 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	if cost == nil {
 		panic("cost is nil")
-		cost = contract.Cost0()
 	}
 
 	if err != nil {
@@ -327,7 +325,6 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 }
 
 func (e *EngineImpl) setLogger(level, path string, start bool) {
-
 	if path == "" && !start {
 		//ilog.Debug("console log accepted")
 		if e.consoleWriter == nil {
@@ -357,16 +354,21 @@ func (e *EngineImpl) setLogger(level, path string, start bool) {
 	if start {
 		var ok bool
 		if e.consoleWriter != nil {
-			e.logger.AddWriter(e.consoleWriter)
+			err := e.logger.AddWriter(e.consoleWriter)
+			if err != nil {
+				panic(err)
+			}
 			ok = true
 		}
 		if e.fileWriter != nil {
-			e.logger.AddWriter(e.fileWriter)
+			err := e.logger.AddWriter(e.fileWriter)
+			if err != nil {
+				panic(err)
+			}
 			ok = true
 		}
 
 		if ok {
-
 			e.logger.SetCallDepth(0)
 			e.logger.Start()
 		}

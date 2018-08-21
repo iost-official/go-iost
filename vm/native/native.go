@@ -29,14 +29,18 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		return rtn, cost, nil
 
 	case "Receipt":
-		cost := host.Receipt(args[0].(string))
+		cost = host.Receipt(args[0].(string))
 		return []interface{}{}, cost, nil
 
 	case "CallWithReceipt":
-		json, err := simplejson.NewJson(args[2].([]byte))
+		var json *simplejson.Json
+		json, err = simplejson.NewJson(args[2].([]byte))
+		if err != nil {
+			return nil, contract.NewCost(1, 1, 1), err
+		}
 		arr, err := json.Array()
 		if err != nil {
-			return nil, cost, err
+			return nil, contract.NewCost(1, 1, 1), err
 		}
 		rtn, cost, err = host.CallWithReceipt(args[0].(string), args[1].(string), arr...)
 		return rtn, cost, err
@@ -57,7 +61,7 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 
 		// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
 	case "SetCode":
-		cost := contract.NewCost(1, 1, 1)
+		cost = contract.NewCost(1, 1, 1)
 		con := &contract.Contract{}
 		err = con.B64Decode(args[0].(string))
 		if err != nil {
@@ -66,21 +70,24 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 
 		info, cost1 := host.TxInfo()
 		cost.AddAssign(cost1)
-		json, err := simplejson.NewJson(info)
+		var json *simplejson.Json
+		json, err = simplejson.NewJson(info)
 		if err != nil {
 			return nil, cost, err
 		}
 
-		id, err := json.Get("hash").String()
+		var id string
+		id, err = json.Get("hash").String()
 		if err != nil {
 			return nil, cost, err
 		}
-		actId := "Contract" + id
-		con.ID = actId
+		actID := "Contract" + id
+		con.ID = actID
 
-		cost2, err := host.SetCode(con)
+		var cost2 *contract.Cost
+		cost2, err = host.SetCode(con)
 		cost.AddAssign(cost2)
-		return []interface{}{actId}, cost, err
+		return []interface{}{actID}, cost, err
 
 		// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
 	case "UpdateCode":
@@ -110,8 +117,6 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		return nil, contract.NewCost(1, 1, 1), errors.New("unknown api name")
 
 	}
-
-	return nil, contract.NewCost(1, 1, 1), errors.New("unexpected error")
 }
 func (m *VM) Release() {
 }
@@ -120,7 +125,7 @@ func (m *VM) Compile(contract *contract.Contract) (string, error) {
 	return "", nil
 }
 
-func NativeABI() *contract.Contract {
+func ABI() *contract.Contract {
 	return &contract.Contract{
 		ID:   "iost.system",
 		Code: "codes",

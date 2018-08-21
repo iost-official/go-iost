@@ -53,9 +53,12 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 
 	vm, ok := m.vms[c.Info.Lang]
 	if !ok {
-		vm = VMFactory(c.Info.Lang)
+		vm = Factory(c.Info.Lang)
 		m.vms[c.Info.Lang] = vm
-		m.vms[c.Info.Lang].Init()
+		err := m.vms[c.Info.Lang].Init()
+		if err != nil {
+			panic(err)
+		}
 	}
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
 	ilog.Debug("cost in monitor is %v", cost)
@@ -110,9 +113,12 @@ func (m *Monitor) Compile(con *contract.Contract) (string, error) {
 	case "javascript":
 		jsvm, ok := m.vms["javascript"]
 		if !ok {
-			jsvm = VMFactory(con.Info.Lang)
+			jsvm = Factory(con.Info.Lang)
 			m.vms[con.Info.Lang] = jsvm
-			m.vms[con.Info.Lang].Init()
+			err := m.vms[con.Info.Lang].Init()
+			if err != nil {
+				panic(err)
+			}
 		}
 		return jsvm.Compile(con)
 	}
@@ -143,7 +149,7 @@ func checkArgs(abi *contract.ABI, args []interface{}) error {
 	return nil
 }
 
-func VMFactory(lang string) VM {
+func Factory(lang string) VM {
 	switch lang {
 	case "native":
 		return &native.VM{}
