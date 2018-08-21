@@ -1,9 +1,9 @@
 {
     "Vendor": true,
     "Enable": ["vet", "gocyclo", "golint", "ineffassign", "misspell", "deadcode", "unconvert", "gofmt"],
-    "Skip": [
-        "vendor",
-        "test"
+    "Exclude": [
+        ".+.pb.go",
+        "vendor"
     ],
     "Deadline": "120s"
 }
