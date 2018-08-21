@@ -362,8 +362,8 @@ func TestEngine_Func(t *testing.T) {
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger")
 	_, _, err := vmPool.LoadAndCall(host, code, "bigArray")
-	if err == nil || err.Error() != "execution killed" {
-		t.Fatalf("LoadAndCall for should return error: execution killed, but got %v\n", err)
+	if err != nil {
+		t.Fatal("LoadAndCall for should return no error")
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "visitUndefined")
@@ -375,5 +375,64 @@ func TestEngine_Danger(t *testing.T) {
 	_, _, err = vmPool.LoadAndCall(host, code, "throw")
 	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: test throw") {
 		t.Fatalf("LoadAndCall for should return error: Uncaught exception: test throw, but got %v\n", err)
+	}
+}
+
+func TestEngine_Int64(t *testing.T) {
+	host, code := MyInit(t, "int64Test")
+	rs, _, err := vmPool.LoadAndCall(host, code, "getPlus")
+	if err != nil {
+		t.Fatalf("LoadAndCall getPlus error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "1234501234" {
+		t.Fatalf("LoadAndCall getPlus except: , got: %v", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "getMinus")
+	if err != nil {
+		t.Fatalf("LoadAndCall getMinus error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "123400109" {
+		t.Fatalf("LoadAndCall getMinus except: , got: %v", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "getMulti")
+	if err != nil {
+		t.Fatalf("LoadAndCall getMulti error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "148148004" {
+		t.Fatalf("LoadAndCall getMulti except: , got: %v", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "getDiv")
+	if err != nil {
+		t.Fatalf("LoadAndCall getDiv error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "1028805" {
+		t.Fatalf("LoadAndCall getDiv except: , got: %v", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "getMod")
+	if err != nil {
+		t.Fatalf("LoadAndCall getMod error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "7" {
+		t.Fatalf("LoadAndCall getMod except: , got: %v", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "getPow", 3)
+	if err != nil {
+		t.Fatalf("LoadAndCall getPow error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "1879080904" {
+		t.Fatalf("LoadAndCall getPow except: 1879080904, got: %v", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "getSqrt")
+	if err != nil {
+		t.Fatalf("LoadAndCall getSqrt error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "1111" {
+		t.Fatalf("LoadAndCall getSqrt except: 1111, got: %v", rs[0])
 	}
 }
