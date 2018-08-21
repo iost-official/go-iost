@@ -1,9 +1,9 @@
 package event
 
 import (
+	"fmt"
 	"testing"
 	"time"
-	"fmt"
 )
 
 /**
@@ -38,14 +38,14 @@ func TestEventCollector_Post(t *testing.T) {
 				if e.Data != "test1" {
 					t.Fatalf("sub1 expect event data test1, got %s", e.Data)
 				}
-				count1 ++
+				count1++
 			}
 		}
 	}(sub1.ReadChan())
 
 	go func(ch <-chan *Event) {
 		t.Log("run sub2")
-		for  {
+		for {
 			select {
 			case e := <-ch:
 				if e.Topic != Event_ContractEvent {
@@ -54,20 +54,20 @@ func TestEventCollector_Post(t *testing.T) {
 				if e.Data != "test2" {
 					t.Fatalf("sub2 expect event data test2, got %s", e.Data)
 				}
-				count2 ++
+				count2++
 			}
 		}
 	}(sub2.ReadChan())
 
 	go func(ch <-chan *Event) {
 		t.Log("run sub3")
-		for  {
+		for {
 			select {
 			case e := <-ch:
 				if e.Topic != Event_TransactionResult && e.Topic != Event_ContractEvent {
 					t.Fatalf("sub3 expect event topic Event_TransactionResult or Event_ContractEvent, got %s", e.Topic.String())
 				}
-				count3 ++
+				count3++
 			}
 		}
 	}(sub3.ReadChan())
@@ -122,33 +122,33 @@ func TestEventCollector_Full(t *testing.T) {
 				if e.Topic != Event_TransactionResult {
 					t.Fatalf("sub1 expect event topic Event_TransactionResult, got %s", e.Topic.String())
 				}
-				count1 ++
+				count1++
 			}
 		}
 	}(sub1.ReadChan())
 
 	go func(ch <-chan *Event) {
 		t.Log("run sub2")
-		for  {
+		for {
 			select {
 			case e := <-ch:
 				if e.Topic != Event_ContractEvent {
 					t.Fatalf("sub2 expect event topic Event_ContractEvent, got %s", e.Topic.String())
 				}
-				count2 ++
+				count2++
 			}
 		}
 	}(sub2.ReadChan())
 
 	go func(ch <-chan *Event) {
 		t.Log("run sub3")
-		for  {
+		for {
 			select {
 			case e := <-ch:
 				if e.Topic != Event_TransactionResult && e.Topic != Event_ContractEvent {
 					t.Fatalf("sub3 expect event topic Event_TransactionResult or Event_ContractEvent, got %s", e.Topic.String())
 				}
-				count3 ++
+				count3++
 			}
 		}
 	}(sub3.ReadChan())
@@ -170,6 +170,7 @@ func TestEventCollector_Full(t *testing.T) {
 	}
 
 	t0 := time.Now().Nanosecond()
+	// almost 6ms for 10000 post
 	for i := 0; i < 10000; i++ {
 		ec.Post(NewEvent(Event_TransactionResult, data))
 		time.Sleep(time.Microsecond * 50)

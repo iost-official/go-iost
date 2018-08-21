@@ -3,9 +3,10 @@ package tx
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
 	"bytes"
+	. "github.com/smartystreets/goconvey/convey"
 )
+
 /*
 func gentx() Tx {
 	main := lua.NewMethod(0, "main", 0, 1)
@@ -22,16 +23,16 @@ func TestTxReceipt(t *testing.T) {
 	Convey("Test of Tx Receipt", t, func() {
 
 		Convey("encode and decode", func() {
-			tx := NewTxReceipt([]byte{0,1,2})
+			tx := NewTxReceipt([]byte{0, 1, 2})
 			tx.SuccActionNum = 99
 			tx.GasUsage = 88
 			tx.Status = Status{
-				Code:ErrorGasRunOut,
-				Message:"error gas run out",
+				Code:    ErrorGasRunOut,
+				Message: "error gas run out",
 			}
 			tx.Receipts = append(tx.Receipts, Receipt{
-				Type:SystemDefined,
-				Content:"{\"num\": 1, \"message\": \"contract1\"}",
+				Type:    SystemDefined,
+				Content: "{\"num\": 1, \"message\": \"contract1\"}",
 			})
 			tx1 := NewTxReceipt([]byte{})
 
@@ -58,4 +59,3 @@ func TestTxReceipt(t *testing.T) {
 
 	})
 }
-

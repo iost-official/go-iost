@@ -1,24 +1,24 @@
 package event
 
 import (
+	log "github.com/iost-official/Go-IOS-Protocol/ilog"
 	"sync"
 	"time"
-	log "github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
-const EVENT_CONTROLLER_SIZE = 1024;
+const EventCollectorSize = 1024
 
 func NewEvent(topic Event_Topic, data string) *Event {
 	now := time.Now().UnixNano()
 	return &Event{
-		Topic:	topic,
-		Data:	data,
-		Time:	now,
+		Topic: topic,
+		Data:  data,
+		Time:  now,
 	}
 }
 
 type Subscription struct {
-	topics  []Event_Topic
+	topics []Event_Topic
 	postCh chan<- *Event
 	readCh <-chan *Event
 }
@@ -26,7 +26,7 @@ type Subscription struct {
 func NewSubscription(chSize int, topics []Event_Topic) *Subscription {
 	postCh := make(chan *Event, chSize)
 	subscribe := &Subscription{
-		topics:  topics,
+		topics: topics,
 		postCh: postCh,
 		readCh: postCh,
 	}
@@ -38,9 +38,9 @@ func (s *Subscription) ReadChan() <-chan *Event {
 }
 
 type EventCollector struct {
-	subMap	*sync.Map
-	postCh  chan *Event
-	quitCh  chan int
+	subMap *sync.Map
+	postCh chan *Event
+	quitCh chan int
 }
 
 var ec *EventCollector
@@ -48,9 +48,9 @@ var ec *EventCollector
 func GetEventCollectorInstance() *EventCollector {
 	if ec == nil {
 		ec = &EventCollector{
-			subMap:	new(sync.Map),
-			postCh:	make(chan *Event, EVENT_CONTROLLER_SIZE),
-			quitCh:	make(chan int, 1),
+			subMap: new(sync.Map),
+			postCh: make(chan *Event, EventCollectorSize),
+			quitCh: make(chan int, 1),
 		}
 	}
 	return ec
