@@ -410,7 +410,6 @@ func (j *JSTester) setJS(code string, main ...string) *tx.TxReceipt {
 	return r
 
 }
-
 func (j *JSTester) testJS(main, args string) *tx.TxReceipt {
 
 	act2 := tx.NewAction(j.cn, main, fmt.Sprintf(`[]`))
@@ -433,7 +432,7 @@ func TestJSAPI_Database(t *testing.T) {
 	js.setJS(`
 class Contract {
 	constructor() {
-	this.aa = new Int64(100);
+		this.aa = new Int64(100);
 	}
 	main() {
 		this.aa = new Int64(45);
