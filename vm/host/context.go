@@ -13,12 +13,12 @@ func NewContext(base *Context) *Context {
 			base:  base,
 			value: make(map[string]interface{}),
 		}
-	} else {
-		return &Context{
-			base:   nil,
-			value:  make(map[string]interface{}),
-			gValue: make(map[string]interface{}),
-		}
+	}
+
+	return &Context{
+		base:   nil,
+		value:  make(map[string]interface{}),
+		gValue: make(map[string]interface{}),
 	}
 
 }
@@ -30,12 +30,12 @@ func (c *Context) Value(key string) (value interface{}) {
 		value, ok = cc.value[key]
 		if ok {
 			return
-		} else {
-			cc = cc.base
-			if cc == nil {
-				return nil
-			}
 		}
+		cc = cc.base
+		if cc == nil {
+			return nil
+		}
+
 	}
 }
 
