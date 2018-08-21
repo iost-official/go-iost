@@ -113,7 +113,7 @@ func (s *RpcServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	return &GetBalanceRes{
-		Balance: visitor.BalanceHandler.Balance(account.GetIdByPubkey(key.Pubkey)),
+		Balance: visitor.BalanceHandler.Balance(account.GetIDByPubkey(key.Pubkey)),
 	}, nil
 }
 
