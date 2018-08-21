@@ -1,12 +1,7 @@
 package vm
 
 import (
-	"testing"
-
 	"fmt"
-
-	"os"
-
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -18,6 +13,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"os"
+	"testing"
 )
 
 var testID = []string{
