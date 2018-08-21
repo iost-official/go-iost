@@ -52,11 +52,12 @@ func GetEventCollectorInstance() *EventCollector {
 			postCh: make(chan *Event, EventCollectorSize),
 			quitCh: make(chan int, 1),
 		}
+		ec.start()
 	}
 	return ec
 }
 
-func (ec *EventCollector) Start() {
+func (ec *EventCollector) start() {
 	go ec.deliverLoop()
 }
 
