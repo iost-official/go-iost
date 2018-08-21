@@ -5,7 +5,10 @@ import (
 	"fmt"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/core/event"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"time"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/Go-IOS-Protocol/new_rpc ApisServer
@@ -141,4 +144,28 @@ func (s *RpcServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 
 func (s *RpcServer) EstimateGas(ctx context.Context, rawTx *RawTxReq) (*GasRes, error) {
 	return nil, nil
+}
+
+func (s *RpcServer) Subscribe(req *SubscribeReq, res Apis_SubscribeServer) error {
+	ec := event.GetEventCollectorInstance()
+	sub := event.NewSubscription(100, req.Topics)
+	ec.Subscribe(sub)
+	defer ec.Unsubscribe(sub)
+
+	timerChan := time.NewTicker(time.Minute).C
+forloop:
+	for {
+		select {
+		case <-timerChan:
+			ilog.Debug("timeup in subscribe send")
+			break forloop
+		case ev := <-sub.ReadChan():
+			err := res.Send(&SubscribeRes{Ev: ev})
+			if err != nil {
+				return err
+			}
+		default:
+		}
+	}
+	return nil
 }
