@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 )
 
@@ -322,7 +323,6 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 	jshw.Info.Abis[0].Limit.Net = -1
 
 	ilog.Debug("init %v", jshw.Info.Abis[0].GetLimit())
-
 	e, vi := ininit(t)
 	vi.SetContract(jshw)
 
@@ -347,7 +347,6 @@ type JSTester struct {
 	t  *testing.T
 	e  Engine
 	vi *database.Visitor
-
 	cn string
 }
 
