@@ -106,18 +106,18 @@ func (p *PoB) blockLoop() {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
 			if !ok {
-				fmt.Println("chRecvBlock has closed")
+				ilog.Info("chRecvBlock has closed")
 				return
 			}
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
-				fmt.Println(err)
+				ilog.Debug(err.Error())
 				continue
 			}
 			err = p.handleRecvBlock(&blk)
 			if err != nil {
-				fmt.Println(err)
+				ilog.Debug(err.Error())
 				continue
 			}
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
@@ -131,15 +131,14 @@ func (p *PoB) blockLoop() {
 			}
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
-				fmt.Println("chGenBlock has closed")
+				ilog.Info("chGenBlock has closed")
 				return
 			}
 			err := p.handleRecvBlock(blk)
 			if err != nil {
-				fmt.Println(err)
+				ilog.Debug(err.Error())
 			}
 		case <-p.exitSignal:
-			fmt.Println("exitSignal")
 			return
 		}
 	}
@@ -155,12 +154,12 @@ func (p *PoB) scheduleLoop() {
 				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
 				ilog.Info("gen block:%v", blk.Head.Number)
 				if err != nil {
-					fmt.Println(err)
+					ilog.Debug(err.Error())
 					continue
 				}
 				blkByte, err := blk.Encode()
 				if err != nil {
-					fmt.Println(err)
+					ilog.Debug(err.Error())
 					continue
 				}
 				p.chGenBlock <- blk
@@ -219,7 +218,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) {
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
 			p.blockCache.Del(node)
-			fmt.Println(err)
+			ilog.Debug(err.Error())
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	} else {
