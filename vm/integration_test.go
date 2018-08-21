@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 )
 
@@ -488,6 +489,39 @@ module.exports = Contract;
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
 	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
+}
+
+func TestJSAPI_Deposit(t *testing.T) {
+
+	js := NewJSTester(t)
+	js.setJS(`
+class Contract {
+	constructor() {
+	}
+	deposit() {
+		return BlockChain.deposit("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "100")
+	}
+	withdraw() {
+		return BlockChain.withdraw("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "99")
+	}
+}
+
+module.exports = Contract;
+`, "deposit", "withdraw")
+
+	r := js.testJS("deposit", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+	t.Log("balance of sender :", js.vi.Balance(testID[0]))
+	if 100 != js.vi.Balance(host.ContractAccountPrefix+js.cn) {
+		t.Fatalf("balance of contract " + js.cn + "should be 100.")
+	}
+
+	r = js.testJS("withdraw", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+	t.Log("balance of sender :", js.vi.Balance(testID[0]))
+	if 1 != js.vi.Balance(host.ContractAccountPrefix+js.cn) {
+		t.Fatalf("balance of contract " + js.cn + "should be 1.")
+	}
 }
 
 func TestJS_LuckyBet(t *testing.T) {

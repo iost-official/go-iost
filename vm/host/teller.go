@@ -45,8 +45,14 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 		return contract.NewCost(1, 1, 1), ErrTransferNegValue
 	}
 
-	if h.Privilege(from) < 1 {
-		return contract.NewCost(1, 1, 1), ErrPermissionLost
+	if strings.HasPrefix(from, ContractAccountPrefix) {
+		if from != ContractAccountPrefix+h.ctx.Value("contract_name").(string) {
+			return contract.NewCost(1, 1, 1), ErrPermissionLost
+		}
+	} else {
+		if h.Privilege(from) < 1 {
+			return contract.NewCost(1, 1, 1), ErrPermissionLost
+		}
 	}
 
 	err := h.transfer(from, to, amount)
