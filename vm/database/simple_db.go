@@ -19,20 +19,20 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 )
 
-type database struct {
+type SimpleDB struct {
 	json *simplejson.Json
 }
 
-func NewDatabase() *database {
-	var data database
+func NewDatabase() *SimpleDB {
+	var data SimpleDB
 	data.json = simplejson.New()
 	data.addSystem()
 	return &data
 }
 
-func NewDatabaseFromPath(path string) *database {
-	var data database
-	json, err := readJson(path)
+func NewDatabaseFromPath(path string) *SimpleDB {
+	var data SimpleDB
+	json, err := readJSON(path)
 	if err != nil {
 		return nil
 	}
@@ -40,7 +40,7 @@ func NewDatabaseFromPath(path string) *database {
 	return &data
 }
 
-func (d *database) Get(table string, key string) (string, error) {
+func (d *SimpleDB) Get(table string, key string) (string, error) {
 	jso := d.json.Get(key)
 	var out interface{}
 	var err error
@@ -70,7 +70,7 @@ func (d *database) Get(table string, key string) (string, error) {
 
 	return Marshal(out)
 }
-func (d *database) Put(table string, key string, value string) error {
+func (d *SimpleDB) Put(table string, key string, value string) error {
 	if strings.HasPrefix(key, "c-") {
 		d.json.Set(key, value)
 	} else {
@@ -78,22 +78,22 @@ func (d *database) Put(table string, key string, value string) error {
 	}
 	return nil
 }
-func (d *database) Del(table string, key string) error {
+func (d *SimpleDB) Del(table string, key string) error {
 	d.json.Del(key)
 	return nil
 }
-func (d *database) Has(table string, key string) (bool, error) {
+func (d *SimpleDB) Has(table string, key string) (bool, error) {
 	_, ok := d.json.CheckGet(key)
 	return ok, nil
 }
-func (d *database) Keys(table string, prefix string) ([]string, error) {
+func (d *SimpleDB) Keys(table string, prefix string) ([]string, error) {
 	return nil, nil
 }
-func (d *database) Save(path string) error {
+func (d *SimpleDB) Save(path string) error {
 
 	d.json.Del("c-iost.system")
 
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
+	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
@@ -101,13 +101,16 @@ func (d *database) Save(path string) error {
 	if err != nil {
 		return err
 	}
-	f.Write(buf)
-	f.Close()
-	return nil
+	_, err = f.Write(buf)
+	if err != nil {
+		return err
+	}
+	err = f.Close()
+	return err
 }
-func (d *database) Load(path string) error {
+func (d *SimpleDB) Load(path string) error {
 	var err error
-	d.json, err = readJson(path)
+	d.json, err = readJSON(path)
 	if err != nil {
 		return err
 	}
@@ -117,22 +120,34 @@ func (d *database) Load(path string) error {
 
 func LoadBlockhead(path string) (*block.BlockHead, error) {
 
-	json, err := readJson(path)
+	json, err := readJSON(path)
 	if err != nil {
 		return nil, err
 	}
 	bh := &block.BlockHead{}
 	bh.Time, err = json.Get("time").Int64()
+	if err != nil {
+		return nil, err
+	}
 	bh.ParentHash, err = json.Get("parent_hash").Bytes()
+	if err != nil {
+		return nil, err
+	}
 	bh.Number, err = json.Get("number").Int64()
+	if err != nil {
+		return nil, err
+	}
 	bh.Witness, err = json.Get("witness").String()
-	return bh, err
+	if err != nil {
+		return nil, err
+	}
+	return bh, nil
 
 }
 
 func LoadTxInfo(path string) (*tx.Tx, error) {
 
-	json, err := readJson(path)
+	json, err := readJSON(path)
 	if err != nil {
 		return nil, err
 	}
@@ -145,13 +160,22 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 
 	t.Signers = s
 	p, err := json.Get("publisher").String()
+	if err != nil {
+		return nil, err
+	}
 	t.Publisher.Pubkey = account.GetPubkeyByID(p)
 	t.GasLimit, err = json.Get("gas_limit").Int64()
+	if err != nil {
+		return nil, err
+	}
 	t.GasPrice, err = json.Get("gas_price").Int64()
-	return t, err
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
 }
 
-func readJson(path string) (*simplejson.Json, error) {
+func readJSON(path string) (*simplejson.Json, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -163,7 +187,7 @@ func readJson(path string) (*simplejson.Json, error) {
 	return simplejson.NewJson(fd)
 }
 
-func (d *database) addSystem() {
+func (d *SimpleDB) addSystem() {
 	cp := contract.Compiler{}
 
 	f, err := os.Open("system.json")
@@ -184,10 +208,10 @@ func (d *database) addSystem() {
 	d.json.Set("c-iost.system", c.Encode())
 }
 
-func (d *database) Commit() {
+func (d *SimpleDB) Commit() {
 
 }
 
-func (d *database) Rollback() {
+func (d *SimpleDB) Rollback() {
 
 }
