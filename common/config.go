@@ -19,6 +19,7 @@ type Config struct {
 	RpcPort       string
 	Target        string
 	Port          int64
+	GasPrice      int64
 	MetricsPort   string
 	AccSecKey     string
 	LogPath       string
@@ -54,6 +55,7 @@ func (c *Config) LocalConfig() error {
 	c.RpcPort = c.vip.GetString("net.rpc-port")
 	c.Target = c.vip.GetString("net.target") //optional
 	c.Port = c.vip.GetInt64("net.port")
+	c.GasPrice = c.vip.GetInt64("vm.gas-price")
 	c.MetricsPort = c.vip.GetString("net.metrics-port")
 	c.AccSecKey = c.vip.GetString("account.sec-key")
 
