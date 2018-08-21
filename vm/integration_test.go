@@ -383,7 +383,6 @@ func (j *JSTester) setJS(code string, main ...string) *tx.TxReceipt {
 			},
 		},
 	}
-
 	for _, m := range main {
 		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
 			Name:     m,
@@ -523,7 +522,6 @@ module.exports = Contract;
 		t.Fatalf("balance of contract " + js.cn + "should be 1.")
 	}
 }
-
 func TestJS_LuckyBet(t *testing.T) {
 	js := NewJSTester(t)
 	lc, err := ReadFile("test_data/lucky_bet.js")
