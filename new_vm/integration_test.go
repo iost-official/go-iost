@@ -427,7 +427,7 @@ func TestJSAPI_Database(t *testing.T) {
 	js.setJS(`
 class Contract {
 	constructor() {
-	this.aa = new Int64(300);
+	this.aa = new Int64(100);
 	}
 	main() {
 		this.aa = new Int64(45);
@@ -453,6 +453,27 @@ class Contract {
 	}
 	main() {
 		BlockChain.transfer("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
+	}
+}
+
+module.exports = Contract;
+`, "main")
+
+	r := js.testJS("main", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+	t.Log("balance of sender :", js.vi.Balance(testID[0]))
+	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
+}
+
+func TestJSAPI_Transfer_Failed(t *testing.T) {
+
+	js := NewJSTester(t)
+	js.setJS(`
+class Contract {
+	constructor() {
+	}
+	main() {
+		BlockChain.transfer("IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
 	}
 }
 
