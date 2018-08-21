@@ -132,10 +132,10 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	for _, action := range tx0.Actions {
 
 		cost, status, receipts, err := e.runAction(action)
-		e.logger.Debug("run action : %v", action)
-		e.logger.Debug("\tused cost > %v", cost)
-		e.logger.Debug("\tstatus > \n%v\n", status)
-		e.logger.Debug("\treceipts > \n%v\n", receipts)
+		e.logger.Info("run action : %v, result is %v", action, status.Code)
+		e.logger.Debug("used cost > %v", cost)
+		e.logger.Debug("status > \n%v\n", status)
+		e.logger.Debug("receipts > \n%v\n", receipts)
 
 		if err != nil {
 			return nil, err
@@ -151,7 +151,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
-			ilog.Debug("rollback")
+			e.logger.Debug("rollback")
 			e.ho.DB().Rollback()
 		} else {
 			txr.Receipts = append(txr.Receipts, receipts...)
