@@ -363,7 +363,7 @@ func (j *JSTester) readDB(key string) (value interface{}) {
 	return database.MustUnmarshal(j.vi.Get(j.cn + "-" + key))
 }
 
-func (j *JSTester) setJS(code, main string) *tx.TxReceipt {
+func (j *JSTester) setJS(code string, main ...string) *tx.TxReceipt {
 	c := &contract.Contract{
 		ID:   "jsContract",
 		Code: code,
@@ -372,12 +372,6 @@ func (j *JSTester) setJS(code, main string) *tx.TxReceipt {
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
 				{
-					Name:     main,
-					Payment:  0,
-					GasPrice: int64(1),
-					Limit:    contract.NewCost(100, 100, 100),
-					Args:     []string{},
-				}, {
 					Name:     "constructor",
 					Payment:  0,
 					GasPrice: int64(1),
@@ -386,6 +380,16 @@ func (j *JSTester) setJS(code, main string) *tx.TxReceipt {
 				},
 			},
 		},
+	}
+
+	for _, m := range main {
+		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
+			Name:     m,
+			Payment:  0,
+			GasPrice: int64(1),
+			Limit:    contract.NewCost(100, 100, 100),
+			Args:     []string{},
+		})
 	}
 
 	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, c.B64Encode()))
