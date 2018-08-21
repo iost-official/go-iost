@@ -1,7 +1,9 @@
 package ilog
 
+// Level is the log level.
 type Level int
 
+// log level enum.
 const (
 	LevelDebug Level = iota
 	LevelInfo
@@ -28,6 +30,7 @@ var (
 	}
 )
 
+// LogWriter defines writer's API.
 type LogWriter interface {
 	Init() error
 	SetLevel(Level)

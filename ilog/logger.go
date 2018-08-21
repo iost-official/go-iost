@@ -15,6 +15,7 @@ type message struct {
 	level   Level
 }
 
+// Logger is the core struct of ilog package. It packs message and sends it to the writer.
 type Logger struct {
 	callDepth   int
 	lowestLevel Level
@@ -31,6 +32,7 @@ type Logger struct {
 	quitCh chan struct{}
 }
 
+// New returns a default Logger instace.
 func New() *Logger {
 	return &Logger{
 		callDepth:   1,
@@ -44,6 +46,7 @@ func New() *Logger {
 	}
 }
 
+// NewConsoleLogger returns a Logger instance with a console writer.
 func NewConsoleLogger() *Logger {
 	logger := New()
 	consoleWriter := NewConsoleWriter()
@@ -51,6 +54,7 @@ func NewConsoleLogger() *Logger {
 	return logger
 }
 
+// Start starts the logger.
 func (logger *Logger) Start() {
 	if !atomic.CompareAndSwapInt32(&logger.isRunning, 0, 1) {
 		return
@@ -87,6 +91,7 @@ func (logger *Logger) Start() {
 	}()
 }
 
+// Stop stops the logger.
 func (logger *Logger) Stop() {
 	if !atomic.CompareAndSwapInt32(&logger.isRunning, 1, 0) {
 		return
@@ -95,10 +100,12 @@ func (logger *Logger) Stop() {
 	logger.wg.Wait()
 }
 
+// SetCallDepth sets the logger's call depth.
 func (logger *Logger) SetCallDepth(d int) {
 	logger.callDepth = d
 }
 
+// AddWriter adds a writer to logger.
 func (logger *Logger) AddWriter(writer LogWriter) error {
 	if err := writer.Init(); err != nil {
 		return err
@@ -110,6 +117,7 @@ func (logger *Logger) AddWriter(writer LogWriter) error {
 	return nil
 }
 
+// Flush flushes the logger.
 func (logger *Logger) Flush() {
 	if atomic.LoadInt32(&logger.isRunning) == 0 {
 		return
@@ -124,6 +132,7 @@ func (logger *Logger) Flush() {
 	}
 }
 
+// AsyncWrite sets logger's syncWrite to false.
 func (logger *Logger) AsyncWrite() {
 	logger.syncWrite = false
 }
@@ -156,22 +165,27 @@ func (logger *Logger) flushWriters() {
 	wg.Wait()
 }
 
+// Debug generates a debug-level log.
 func (logger *Logger) Debug(format string, v ...interface{}) {
 	logger.genMsg(LevelDebug, fmt.Sprintf(format, v...))
 }
 
+// Info generates a info-level log.
 func (logger *Logger) Info(format string, v ...interface{}) {
 	logger.genMsg(LevelInfo, fmt.Sprintf(format, v...))
 }
 
+// Warn generates a warn-level log.
 func (logger *Logger) Warn(format string, v ...interface{}) {
 	logger.genMsg(LevelWarn, fmt.Sprintf(format, v...))
 }
 
+// Error generates a error-level log.
 func (logger *Logger) Error(format string, v ...interface{}) {
 	logger.genMsg(LevelError, fmt.Sprintf(format, v...))
 }
 
+// Fatal generates a fatal-level log and exits the program.
 func (logger *Logger) Fatal(format string, v ...interface{}) {
 	logger.genMsg(LevelFatal, fmt.Sprintf(format, v...))
 	logger.Stop()
