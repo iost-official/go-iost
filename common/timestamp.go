@@ -6,7 +6,6 @@ const (
 	SlotLength    = 3
 	SecondsInHour = 3600
 	SecondsInDay  = 24 * 3600
-	Epoch         = 0 //1970-01-01 00:00:00
 )
 
 type Timestamp struct {
@@ -38,7 +37,7 @@ func (t *Timestamp) Add(intervalSlot int64) {
 }
 
 func (t *Timestamp) ToUnixSec() int64 {
-	return t.Slot*SlotLength
+	return t.Slot * SlotLength
 }
 
 func IntervalSecond(t1 Timestamp, t2 Timestamp) int64 {

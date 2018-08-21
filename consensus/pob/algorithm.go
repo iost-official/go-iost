@@ -5,7 +5,6 @@ import (
 
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -57,8 +56,6 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 			}
 		}
 	}
-	db.Tag(string(blk.HeadHash()))
-
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
@@ -71,6 +68,7 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	if err != nil {
 		return nil, err
 	}
+	db.Tag(string(blk.HeadHash()))
 
 	generatedBlockCount.Inc()
 	txPoolSize.Set(float64(len(blk.Txs)))
@@ -95,8 +93,6 @@ func generateHeadInfo(head block.BlockHead) []byte {
 }
 
 func verifyBasics(blk *block.Block) error {
-	fmt.Println(witnessOfSlot(blk.Head.Time))
-	fmt.Println(blk.Head.Witness)
 	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
 		return ErrWitness
 	}
@@ -136,22 +132,10 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	return consensus_common.VerifyBlockWithVM(blk, db)
 }
 
-func updateStaticProperty(node *blockcache.BlockCacheNode) {
-	staticProperty.addSlot(node.Block.Head.Time)
+func updateWaterMark(node *blockcache.BlockCacheNode) {
 	node.ConfirmUntil = staticProperty.Watermark[node.Witness]
 	if node.Number >= staticProperty.Watermark[node.Witness] {
 		staticProperty.Watermark[node.Witness] = node.Number + 1
-	}
-}
-
-func updatePendingWitness(node *blockcache.BlockCacheNode, db db.MVCCDB) {
-	// TODO how to decode witness list from db?
-	//newList, err := db.Get("state", "witnessList"), "id1"
-	var err error
-	if err == nil {
-		//node.PendingWitnessList = newList
-	} else {
-		node.PendingWitnessList = node.Parent.PendingWitnessList
 	}
 }
 
@@ -159,7 +143,6 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
-		staticProperty.updateWitnessList(confirmedNode.PendingWitnessList)
 	}
 }
 
