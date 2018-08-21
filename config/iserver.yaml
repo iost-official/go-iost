@@ -1,0 +1,9 @@
+
+vm:
+
+db:
+  ldbpath: "leveldb"
+
+p2p:
+  address: "127.0.0.1"
+  port: 8080

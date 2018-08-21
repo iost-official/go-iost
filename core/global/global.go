@@ -43,7 +43,7 @@ type BaseVariableImpl struct {
 }
 
 func New(conf *common.Config) (*BaseVariableImpl, error) {
-	block.LevelDBPath = conf.LdbPath
+	block.LevelDBPath = conf.DB.LdbPath
 	blockChain, err := block.Instance()
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)
@@ -114,8 +114,13 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		}
 	}
 
+<<<<<<< HEAD
 	tx.LdbPath = conf.LdbPath
 	txDb := tx.TxDBInstance()
+=======
+	tx.LdbPath = conf.DB.LdbPath
+	txDb := tx.TxDbInstance()
+>>>>>>> develop
 	if txDb == nil {
 		return nil, errors.New("new txdb failed, stop the program.")
 	}
