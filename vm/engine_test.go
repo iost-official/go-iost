@@ -330,7 +330,9 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		GasLimit:   100000,
 		GasPrice:   1,
 		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Signers:    make([][]byte, 0),
 	}
+	mtx.Signers = append(mtx.Signers, []byte("a"))
 
 	ac := tx.Action{
 		Contract:   "iost.system",

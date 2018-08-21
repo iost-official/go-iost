@@ -250,7 +250,7 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 }
 func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
 	receipts = make([]tx.Receipt, 0)
-	cost = contract.Cost0()
+	//cost = contract.Cost0()
 
 	e.ho.PushCtx()
 	defer func() {
