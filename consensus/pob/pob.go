@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"math"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
@@ -132,7 +134,10 @@ func (p *PoB) blockLoop() {
 				fmt.Println("chGenBlock has closed")
 				return
 			}
-			p.handleRecvBlock(blk)
+			err := p.handleRecvBlock(blk)
+			if err != nil {
+				fmt.Println(err)
+			}
 		case <-p.exitSignal:
 			fmt.Println("exitSignal")
 			return
@@ -142,25 +147,28 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
-	ilog.Info("next schedule:%v", nextSchedule)
+	ilog.Info("next schedule:%v", math.Round(float64(nextSchedule)/float64(second2nanosecond)))
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
-			blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
-			if err != nil {
-				fmt.Println(err)
-				continue
+			if witnessOfSec(time.Now().Unix()) == p.account.ID {
+				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
+				ilog.Info("gen block:%v", blk.Head.Number)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				blkByte, err := blk.Encode()
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				p.chGenBlock <- blk
+				go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
+				time.Sleep(common.SlotLength * time.Second)
 			}
-			blkByte, err := blk.Encode()
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			p.chGenBlock <- blk
-			go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
-			time.Sleep(common.SlotLength * time.Second)
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
-			ilog.Info("next schedule:%v", nextSchedule)
+			ilog.Info("next schedule:%v", math.Round(float64(nextSchedule)/float64(second2nanosecond)))
 		case <-p.exitSignal:
 			return
 		}

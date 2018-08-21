@@ -20,6 +20,7 @@ import (
 	"syscall"
 
 	"fmt"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus"
@@ -49,20 +50,15 @@ var (
 var serverExit []ServerExit
 
 func main() {
-	//	cmd.Execute()
-
 	initConfig()
-
 	conf, err := common.NewConfig(viper.GetViper())
 	if err != nil {
 		os.Exit(1)
 	}
-
 	glb, err := global.New(conf)
 	if err != nil {
 		os.Exit(1)
 	}
-
 	// Log Server Information
 	ilog.Info("Version:  %v", "1.0")
 	ilog.Info("cfgFile: %v", glb.Config().CfgFile)
@@ -252,14 +248,11 @@ func initConfig() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-
 		// Search config in home directory with name ".iserver" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".iserver")
 	}
-
 	viper.AutomaticEnv() // read in environment variables that match
-
 	//fmt.Println(cfgFile)
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
@@ -267,5 +260,4 @@ func initConfig() {
 	} else {
 		panic(err)
 	}
-
 }
