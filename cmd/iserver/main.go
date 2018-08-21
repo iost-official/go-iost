@@ -58,10 +58,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := conf.LocalConfig(); err != nil {
-		os.Exit(1)
-	}
-
 	glb, err := global.New(conf)
 	if err != nil {
 		os.Exit(1)

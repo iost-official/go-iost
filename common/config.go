@@ -33,10 +33,7 @@ func NewConfig(vip *viper.Viper) (*Config, error) {
 		return nil, errors.New("NewConfig vip error")
 	}
 
-	return &Config{vip: vip}, nil
-}
-
-func (c *Config) LocalConfig() error {
+	c := &Config{vip: vip}
 
 	c.CfgFile = c.vip.GetString("config")
 	c.LogFile = c.vip.GetString("log")
@@ -57,5 +54,5 @@ func (c *Config) LocalConfig() error {
 	c.MetricsPort = c.vip.GetString("net.metrics-port")
 	c.AccSecKey = c.vip.GetString("account.sec-key")
 
-	return nil
+	return c, nil
 }
