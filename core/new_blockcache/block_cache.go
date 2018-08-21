@@ -8,7 +8,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -274,24 +274,21 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	if retain.Block != nil {
 		err := bc.baseVariable.BlockChain().Push(retain.Block)
 		if err != nil {
-			log.Log.E("Database error, BlockChain Push err:%v", err)
+			ilog.Debug("Database error, BlockChain Push err:%v", err)
 			return err
 		}
-		/*
-			err = bc.glb.StdPool().Flush(string(retain.Block.HeadHash()))
-			if err != nil {
-				log.Log.E("MVCCDB error, State Flush err:%v", err)
-				return err
-			}
-		*/
+		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
+		if err != nil {
+			return err
+		}
 
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs)
 		if err != nil {
-			log.Log.E("Database error, BlockChain Push err:%v", err)
+			ilog.Debug("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		//bc.hmdel(cur.Block.HeadHash())
-		bc.delNode(cur) //?上面一句就可以了，cur的parent一定等于nil
+		bc.delNode(cur)
 		retain.Parent = nil
 		bc.linkedRoot = retain
 	}
