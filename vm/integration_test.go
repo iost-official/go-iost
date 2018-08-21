@@ -393,6 +393,16 @@ func (j *JSTester) setJS(code string, main ...string) *tx.TxReceipt {
 		})
 	}
 
+	for _, m := range main {
+		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
+			Name:     m,
+			Payment:  0,
+			GasPrice: int64(1),
+			Limit:    contract.NewCost(100, 100, 100),
+			Args:     []string{},
+		})
+	}
+
 	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, c.B64Encode()))
 
 	trx, err := makeTx(act)
