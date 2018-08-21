@@ -38,11 +38,13 @@ type ServerExit interface {
 	Stop()
 }
 
-var cfgFile string
-var logFile string
-var dbFile string
-var cpuprofile string
-var memprofile string
+var (
+	cfgFile    = "iserver.yml"
+	logFile    string
+	dbFile     string
+	cpuprofile string
+	memprofile string
+)
 
 var serverExit []ServerExit
 
@@ -165,9 +167,14 @@ func main() {
 	txp.Start()
 	serverExit = append(serverExit, txp)
 
+	var witnessList []string
+	for k := range account.GenesisAccount {
+		witnessList = append(witnessList, k)
+	}
+
 	consensus, err := consensus.ConsensusFactory(
 		consensus.CONSENSUS_POB,
-		acc, glb, blkCache, txp, p2pService, sync, nil) //witnessList)
+		acc, glb, blkCache, txp, p2pService, sync, witnessList) //witnessList)
 	if err != nil {
 		ilog.Fatal("consensus initialization failed, stop the program! err:%v", err)
 	}
