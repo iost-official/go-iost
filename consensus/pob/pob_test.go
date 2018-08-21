@@ -20,7 +20,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 )
 
-func testRun(t *testing.T) {
+func TestRun(t *testing.T) {
 	exec.Command("rm", "-r", "./BlockChainDB").Run()
 	exec.Command("rm", "-r", "./StateDB").Run()
 	exec.Command("rm", "-r", "./txDB").Run()
