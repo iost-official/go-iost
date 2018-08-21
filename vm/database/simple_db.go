@@ -12,6 +12,7 @@ import (
 	"fmt"
 
 	"errors"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
@@ -117,16 +118,28 @@ func (d *database) Load(path string) error {
 
 func LoadBlockhead(path string) (*block.BlockHead, error) {
 
-	json, err := readJson(path)
+	jSON, err := readJson(path)
 	if err != nil {
 		return nil, err
 	}
 	bh := &block.BlockHead{}
-	bh.Time, err = json.Get("time").Int64()
-	bh.ParentHash, err = json.Get("parent_hash").Bytes()
-	bh.Number, err = json.Get("number").Int64()
-	bh.Witness, err = json.Get("witness").String()
-	return bh, err
+	bh.Time, err = jSON.Get("time").Int64()
+	if err != nil {
+		return nil, err
+	}
+	bh.ParentHash, err = jSON.Get("parent_hash").Bytes()
+	if err != nil {
+		return nil, err
+	}
+	bh.Number, err = jSON.Get("number").Int64()
+	if err != nil {
+		return nil, err
+	}
+	bh.Witness, err = jSON.Get("witness").String()
+	if err != nil {
+		return nil, err
+	}
+	return bh, nil
 
 }
 
