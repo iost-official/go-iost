@@ -22,9 +22,9 @@ type P2PConfig struct {
 
 // Config provide all configuration for the application
 type Config struct {
-	VM  VMConfig
-	DB  DBConfig
-	P2P P2PConfig
+	VM  *VMConfig
+	DB  *DBConfig
+	P2P *P2PConfig
 }
 
 // NewConfig returns a new instance of Config
