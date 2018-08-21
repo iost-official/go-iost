@@ -12,24 +12,24 @@ import (
 
 // Action 的实现
 type Action struct {
-	Contract    string  // 合约地址，为空则视为调用系统合约
-	ActionName  string	// 方法名称
-	Data        string  // json
+	Contract   string // 合约地址，为空则视为调用系统合约
+	ActionName string // 方法名称
+	Data       string // json
 }
 
 func NewAction(contract string, name string, data string) Action {
 	return Action{
-		Contract:	contract,
-		ActionName:	name,
-		Data:		data,
+		Contract:   contract,
+		ActionName: name,
+		Data:       data,
 	}
 }
 
 func (a *Action) Encode() []byte {
 	ar := &ActionRaw{
-		Contract:a.Contract,
-		ActionName:a.ActionName,
-		Data:a.Data,
+		Contract:   a.Contract,
+		ActionName: a.ActionName,
+		Data:       a.Data,
 	}
 	b, err := proto.Marshal(ar)
 	if err != nil {

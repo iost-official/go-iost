@@ -7,7 +7,6 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 )
@@ -46,17 +45,13 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 }
 
 func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
-	var receipts []*tx.TxReceipt
 	engine := new_vm.NewEngine(&blk.Head, db)
-	for _, tx := range blk.Txs {
+	for k, tx := range blk.Txs {
 		receipt, err := engine.Exec(tx)
 		if err != nil {
 			return err
 		}
-		receipts = append(receipts, receipt)
-	}
-	for i, r := range receipts {
-		if !bytes.Equal(blk.Receipts[i].Encode(), r.Encode()) {
+		if !bytes.Equal(blk.Receipts[k].Encode(), receipt.Encode()) {
 			return ErrTxReceipt
 		}
 	}
