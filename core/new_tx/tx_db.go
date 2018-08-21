@@ -6,6 +6,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/db"
 )
+
 //go:generate mockgen -destination ../mocks/mock_txdb.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/new_tx TxDB
 
 type TxDB interface {
@@ -25,7 +26,7 @@ var once sync.Once
 var TxDBInst *TxDBImpl
 var LdbPath string
 
-func TxDbInstance() *TxDBImpl {
+func TxDBInstance() TxDB {
 	if TxDBInst != nil {
 		return TxDBInst
 	}

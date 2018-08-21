@@ -37,9 +37,8 @@ type BaseVariableImpl struct {
 	blockChain block.Chain
 	stateDB    db.MVCCDB
 	txDB       tx.TxDB
-
-	mode   *Mode
-	config *common.Config
+	mode       *Mode
+	config     *common.Config
 }
 
 func New(conf *common.Config) (*BaseVariableImpl, error) {
@@ -115,7 +114,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	}
 
 	tx.LdbPath = conf.LdbPath
-	txDb := tx.TxDbInstance()
+	txDb := tx.TxDBInstance()
 	if txDb == nil {
 		return nil, fmt.Errorf("new txdb failed, stop the program.")
 	}
@@ -125,6 +124,18 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 
 	n := &BaseVariableImpl{txDB: txDb, config: conf, stateDB: stateDB, blockChain: blockChain, mode: m}
 	return n, nil
+}
+
+func FakeNew() BaseVariable {
+	block.LevelDBPath = "./"
+	blockChain, _ := block.Instance()
+	stateDB, _ := db.NewMVCCDB("StateDB")
+	tx.LdbPath = "./"
+	txDBfdafad := tx.TxDBInstance()
+	mode := Mode{}
+	mode.SetMode(ModeNormal)
+	config := common.Config{}
+	return &BaseVariableImpl{blockChain, stateDB, txDBfdafad, &mode, &config}
 }
 
 func (g *BaseVariableImpl) TxDB() tx.TxDB {

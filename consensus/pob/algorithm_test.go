@@ -62,59 +62,6 @@ func TestConfirmNode(t *testing.T) {
 	})
 }
 
-func TestUpdateWitness(t *testing.T) {
-	convey.Convey("Test of Promote Witness", t, func() {
-		staticProperty = newStaticProperty(account.Account{}, []string{"id0", "id1", "id2"})
-		rootNode := &blockcache.BlockCacheNode{
-			Number:             1,
-			Witness:            "id0",
-			PendingWitnessList: []string{"id0", "id1", "id2"},
-		}
-		node := addNode(rootNode, 2, 0, "id1")
-		node.PendingWitnessList = []string{"id3", "id2", "id1"}
-
-		lastNode := node
-		node = addNode(node, 3, 0, "id2")
-		node.PendingWitnessList = lastNode.PendingWitnessList
-
-		lastNode = node
-		node = addNode(node, 4, 2, "id0")
-		node.PendingWitnessList = lastNode.PendingWitnessList
-
-		confirmNode := calculateConfirm(node, rootNode)
-		convey.So(confirmNode.Number, convey.ShouldEqual, 2)
-		staticProperty.updateWitnessList(confirmNode.PendingWitnessList)
-		convey.So(staticProperty.WitnessList[0], convey.ShouldEqual, "id3")
-
-		node = addNode(rootNode, 2, 0, "id1")
-		node.PendingWitnessList = []string{"id3", "id2", "id1"}
-
-		lastNode = node
-		node = addNode(node, 3, 0, "id2")
-		node.PendingWitnessList = lastNode.PendingWitnessList
-
-		lastNode = node
-		node = addNode(node, 4, 3, "id1")
-		node.PendingWitnessList = []string{"id2", "id3", "id4"}
-
-		lastNode = node
-		node = addNode(node, 5, 4, "id2")
-		node.PendingWitnessList = lastNode.PendingWitnessList
-
-		confirmNode = calculateConfirm(node, rootNode)
-		convey.So(confirmNode, convey.ShouldBeNil)
-
-		lastNode = node
-		node = addNode(node, 6, 2, "id0")
-		node.PendingWitnessList = []string{"id5", "id2", "id3"}
-
-		confirmNode = calculateConfirm(node, rootNode)
-		convey.So(confirmNode.Number, convey.ShouldEqual, 4)
-		staticProperty.updateWitnessList(confirmNode.PendingWitnessList)
-		convey.So(staticProperty.WitnessList[0], convey.ShouldEqual, "id2")
-	})
-}
-
 func TestNodeInfoUpdate(t *testing.T) {
 
 	convey.Convey("Test of node info update", t, func() {
@@ -128,15 +75,15 @@ func TestNodeInfoUpdate(t *testing.T) {
 		staticProperty.Watermark["id0"] = 2
 		convey.Convey("Normal", func() {
 			node := addBlock(rootNode, 2, "id1", 2)
-			updateStaticProperty(node)
+			updateWaterMark(node)
 			convey.So(staticProperty.Watermark["id1"], convey.ShouldEqual, 3)
 
 			node = addBlock(node, 3, "id2", 3)
-			updateStaticProperty(node)
+			updateWaterMark(node)
 			convey.So(staticProperty.Watermark["id2"], convey.ShouldEqual, 4)
 
 			node = addBlock(node, 4, "id0", 4)
-			updateStaticProperty(node)
+			updateWaterMark(node)
 			convey.So(staticProperty.Watermark["id0"], convey.ShouldEqual, 5)
 
 			node = calculateConfirm(node, rootNode)
@@ -145,40 +92,39 @@ func TestNodeInfoUpdate(t *testing.T) {
 
 		convey.Convey("Slot witness error", func() {
 			node := addBlock(rootNode, 2, "id1", 2)
-			updateStaticProperty(node)
+			updateWaterMark(node)
 
 			node = addBlock(node, 3, "id1", 2)
-			updateStaticProperty(node)
-			convey.So(staticProperty.hasSlot(2), convey.ShouldBeTrue)
+			updateWaterMark(node)
 		})
 
 		convey.Convey("Watermark test", func() {
 			node := addBlock(rootNode, 2, "id1", 2)
-			updateStaticProperty(node)
+			updateWaterMark(node)
 			convey.So(node.ConfirmUntil, convey.ShouldEqual, 0)
 			branchNode := node
 
 			node = addBlock(node, 3, "id2", 3)
-			updateStaticProperty(node)
+			updateWaterMark(node)
 
 			newNode := addBlock(branchNode, 3, "id0", 4)
-			updateStaticProperty(newNode)
+			updateWaterMark(newNode)
 			convey.So(newNode.ConfirmUntil, convey.ShouldEqual, 2)
 			confirmNode := calculateConfirm(newNode, rootNode)
 			convey.So(confirmNode, convey.ShouldBeNil)
 			convey.So(staticProperty.Watermark["id0"], convey.ShouldEqual, 4)
 			node = addBlock(node, 4, "id1", 5)
-			updateStaticProperty(node)
+			updateWaterMark(node)
 			convey.So(node.ConfirmUntil, convey.ShouldEqual, 3)
 
 			node = addBlock(node, 5, "id0", 7)
-			updateStaticProperty(node)
+			updateWaterMark(node)
 			convey.So(node.ConfirmUntil, convey.ShouldEqual, 4)
 			confirmNode = calculateConfirm(node, rootNode)
 			convey.So(confirmNode, convey.ShouldBeNil)
 
 			node = addBlock(node, 6, "id2", 9)
-			updateStaticProperty(node)
+			updateWaterMark(node)
 			confirmNode = calculateConfirm(node, rootNode)
 			convey.So(confirmNode.Number, convey.ShouldEqual, 4)
 		})

@@ -6,12 +6,14 @@ import (
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -60,10 +62,9 @@ type PoB struct {
 	synchronizer synchronizer.Synchronizer
 	verifyDB     db.MVCCDB
 	produceDB    db.MVCCDB
-
-	exitSignal  chan struct{}
-	chRecvBlock chan p2p.IncomingMessage
-	chGenBlock  chan *block.Block
+	exitSignal   chan struct{}
+	chRecvBlock  chan p2p.IncomingMessage
+	chGenBlock   chan *block.Block
 }
 
 func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) *PoB {
@@ -98,6 +99,7 @@ func (p *PoB) Stop() {
 }
 
 func (p *PoB) blockLoop() {
+	ilog.Info("start block")
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
@@ -139,26 +141,26 @@ func (p *PoB) blockLoop() {
 }
 
 func (p *PoB) scheduleLoop() {
-	var nextSchedule int64 = 0
+	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
+	ilog.Info("next schedule:%v", nextSchedule)
 	for {
 		select {
-		case <-time.After(time.Second * time.Duration(nextSchedule)):
-			if witnessOfSec(time.Now().Unix()) == p.account.ID && p.baseVariable.Mode().Mode() == global.ModeNormal {
-				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
-				if err != nil {
-					fmt.Println(err)
-					fmt.Println("fail to generateBlock")
-					continue
-				}
-				blkByte, err := blk.Encode()
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
-				p.chGenBlock <- blk
-				go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
+		case <-time.After(time.Duration(nextSchedule)):
+			blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
+			if err != nil {
+				fmt.Println(err)
+				continue
 			}
-			nextSchedule = timeUntilNextSchedule(time.Now().Unix())
+			blkByte, err := blk.Encode()
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			p.chGenBlock <- blk
+			go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
+			time.Sleep(common.SlotLength * time.Second)
+			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
+			ilog.Info("next schedule:%v", nextSchedule)
 		case <-p.exitSignal:
 			return
 		}
@@ -166,13 +168,14 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block) error {
+	ilog.Info("block number:%v", blk.Head.Number)
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errors.New("duplicate block")
 	}
 	err = verifyBasics(blk)
 	if err != nil {
-		return errors.New("fail to verifyBasics")
+		return fmt.Errorf("fail to verify blocks, %v", err)
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	if err == nil && parent.Type == blockcache.Linked {
@@ -180,6 +183,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	} else {
 		p.blockCache.Add(blk)
 	}
+	staticProperty.addSlot(blk.Head.Time)
 	return nil
 }
 
@@ -225,8 +229,7 @@ func (p *PoB) addChildren(node *blockcache.BlockCacheNode) {
 }
 
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
-	updateStaticProperty(node)
-	updatePendingWitness(node, p.verifyDB)
+	updateWaterMark(node)
 	updateLib(node, p.blockCache)
 	p.txPool.AddLinkedNode(node, p.blockCache.Head())
 }
