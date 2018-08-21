@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	. "github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
 func sliceEqual(a, b []string) bool {

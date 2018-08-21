@@ -7,7 +7,8 @@ import "C"
 import (
 	"encoding/json"
 	"strconv"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 // transfer err list

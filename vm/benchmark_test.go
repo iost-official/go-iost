@@ -1,4 +1,4 @@
-package new_vm
+package vm
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
 func benchInit() (Engine, *database.Visitor) {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
 const (
