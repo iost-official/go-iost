@@ -6,12 +6,6 @@ import (
 	"time"
 )
 
-/**
- * Describtion: event
- * User: wangyu
- * Date: 18-8-20
- */
-
 func TestEventCollector_Post(t *testing.T) {
 	sub1 := NewSubscription(100, []Event_Topic{Event_TransactionResult})
 	sub2 := NewSubscription(100, []Event_Topic{Event_ContractEvent})
@@ -24,8 +18,6 @@ func TestEventCollector_Post(t *testing.T) {
 	count1 := 0
 	count2 := 0
 	count3 := 0
-
-	ec.Start()
 
 	go func(ch <-chan *Event) {
 		t.Log("run sub1")
@@ -107,7 +99,6 @@ func TestEventCollector_Full(t *testing.T) {
 	count2 := 0
 	count3 := 0
 
-	ec.Start()
 	ec.Post(NewEvent(Event_TransactionResult, "test1"))
 	ec.Post(NewEvent(Event_TransactionResult, "test1"))
 	ec.Post(NewEvent(Event_ContractEvent, "test2"))
