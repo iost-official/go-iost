@@ -364,7 +364,7 @@ func (j *JSTester) readDB(key string) (value interface{}) {
 	return database.MustUnmarshal(j.vi.Get(j.cn + "-" + key))
 }
 
-func (j *JSTester) setJS(code string, methods ...string) *tx.TxReceipt {
+func (j *JSTester) setJS(code string, main ...string) *tx.TxReceipt {
 	c := &contract.Contract{
 		ID:   "jsContract",
 		Code: code,
@@ -382,7 +382,8 @@ func (j *JSTester) setJS(code string, methods ...string) *tx.TxReceipt {
 			},
 		},
 	}
-	for _, m := range methods {
+
+	for _, m := range main {
 		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
 			Name:     m,
 			Payment:  0,
