@@ -114,7 +114,7 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 		Time:       123456,
 	}
 
-	e := NewEngine(bh, mvccdb)
+	e := newEngine(bh, vi)
 
 	e.SetUp("js_path", jsPath)
 	e.SetUp("log_level", "debug")
@@ -338,4 +338,82 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 	ilog.Debug("balance of sender : %v", vi.Balance(testID[0]))
 	ilog.Debug("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
 
+}
+
+type JSTester struct {
+	t  *testing.T
+	e  Engine
+	vi *database.Visitor
+}
+
+func NewJSTester(t *testing.T) *JSTester {
+
+	e, vi := ininit(t)
+
+	return &JSTester{
+		t:  t,
+		vi: vi,
+		e:  e,
+	}
+}
+
+func (j *JSTester) testJS(code, main, args string) {
+
+	c := &contract.Contract{
+		ID:   "jsContract",
+		Code: code,
+		Info: &contract.Info{
+			Lang:        "javascript",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				{
+					Name:     main,
+					Payment:  0,
+					GasPrice: int64(1),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				}, {
+					Name:     "constructor",
+					Payment:  0,
+					GasPrice: int64(1),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				},
+			},
+		},
+	}
+
+	j.vi.SetContract(c)
+
+	act := tx.NewAction("jsContract", main, fmt.Sprintf(`[]`))
+
+	trx, err := makeTx(act)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+
+	j.t.Log(j.e.Exec(trx))
+}
+
+func TestJSAPI_Database(t *testing.T) {
+	js := NewJSTester(t)
+	js.testJS(`
+class Contract {
+ constructor() {
+    this.aa = new Int64(123);
+ }
+ main() {
+  let bc = new BlockChain;
+	this.aa = new Int64(456);
+  bc.transfer("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",
+  	"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY",
+  	100)
+ }
+}
+
+module.exports = Contract;
+`, "main", fmt.Sprintf(`[]`))
+	t.Log("balance of sender :", js.vi.Balance(testID[0]))
+	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
+	t.Log(js.e.(*EngineImpl).ho.Get("aa"))
 }
