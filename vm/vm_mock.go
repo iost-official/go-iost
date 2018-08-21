@@ -2,13 +2,14 @@
 // Source: github.com/iost-official/Go-IOS-Protocol/new_vm (interfaces: VM)
 
 // Package new_vm is a generated GoMock package.
-package new_vm
+package vm
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	contract "github.com/iost-official/Go-IOS-Protocol/core/contract"
-	host "github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	reflect "reflect"
+	host "github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 // MockVM is a mock of VM interface

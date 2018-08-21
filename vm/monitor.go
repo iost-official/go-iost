@@ -1,16 +1,16 @@
-package new_vm
+package vm
 
 import (
 	"strings"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 
 	"errors"
 
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/v8vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/vm/v8vm"
 )
 
 var (
@@ -146,7 +146,7 @@ func checkArgs(abi *contract.ABI, args []interface{}) error {
 func VMFactory(lang string) VM {
 	switch lang {
 	case "native":
-		return &native_vm.VM{}
+		return &native.VM{}
 	case "javascript":
 		vm := v8.NewVMPool(10)
 		vm.SetJSPath("./v8vm/v8/libjs/")

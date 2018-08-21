@@ -1,4 +1,4 @@
-package new_vm
+package vm
 
 import (
 	"testing"
@@ -15,8 +15,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 )
 
 var testID = []string{
@@ -32,7 +32,7 @@ var testID = []string{
 	"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4", "7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
 }
 
-var systemContract = native_vm.NativeABI()
+var systemContract = native.NativeABI()
 
 func replaceDB(t *testing.T) database.IMultiValue {
 	ctl := gomock.NewController(t)
@@ -488,4 +488,16 @@ module.exports = Contract;
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
 	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
+}
+
+func TestJS_LuckyBet(t *testing.T) {
+	js := NewJSTester(t)
+	lc, err := ReadFile("test_data/lucky_bet.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.setJS(string(lc), "clearUserValue", "bet", "getReward")
+	r := js.testJS("bet", fmt.Sprintf(`["%v",5, 2]`, testID[0]))
+	t.Log("receipt is ", r)
+	t.Log("max user number ", js.readDB("maxUserNumber"))
 }

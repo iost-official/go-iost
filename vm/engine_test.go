@@ -1,4 +1,4 @@
-package new_vm
+package vm
 
 import (
 	"testing"
@@ -11,8 +11,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	blk "github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 var jsPath = "./v8vm/v8/libjs/"
@@ -30,7 +30,7 @@ func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockV
 	pm := NewMonitor()
 	pm.vms["mock"] = vm
 
-	//nvm := native_vm.VM{}
+	//nvm := native.VM{}
 	//
 	//pm.vms["native"] = &nvm
 	staticMonitor = pm

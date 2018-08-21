@@ -2,7 +2,7 @@ package v8
 
 import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 type VMPool struct {
