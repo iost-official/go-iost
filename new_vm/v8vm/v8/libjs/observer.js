@@ -15,17 +15,19 @@ module.exports = (function () {
 
         var handler = {
             get: function(target, property, receiver) {
-                // var aa = {
-                //     target: target,
-                //     prop: property,
-                //     path: getPath(path, property),
-                //     type: typeof target[property]
-                // }
-                // _native_log('get: ' + JSON.stringify(aa));
+                var aa = {
+                    target: target,
+                    prop: property,
+                    path: getPath(path, property),
+                    type: typeof target[property]
+                }
+                _native_log('get: ' + JSON.stringify(aa));
 
                 var value = Reflect.get(target, property, receiver);
                 if (typeof target[property] === 'object' && target[property] !== null) {
-                    var proxy = _create(value, getPath(path, property));
+                    var objectStorage = IOSTContractStorage.get(property);
+                    _native_log("obb: " + JSON.stringify(objectStorage))
+                    var proxy = _create(objectStorage, getPath(path, property));
                     proxies[property] = proxy;
                     return proxy;
                 }
@@ -54,8 +56,11 @@ module.exports = (function () {
                 // }
                 // _native_log('set: ' + JSON.stringify(aa));
                 target[prop] = value;
+
+                var totalPath = getPath(path, prop)
+                IOSTContractStorage.put(totalPath.substr(0, totalPath.indexOf('.')), target);
                 return true;
-            }
+            },
         }
 
         return new Proxy(target, handler);

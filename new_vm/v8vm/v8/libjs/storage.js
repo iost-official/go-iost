@@ -53,7 +53,9 @@ var IOSTContractStorage = (function () {
                 return new BigNumber(JSON.parse(valInStorage));
             }
 
-            return new MapStorage(key);
+            let valInStorage = storage.get(key);
+            return JSON.parse(valInStorage);
+            // return new MapStorage(key);
         },
         GlobalStorage: GlobalStorage
     }

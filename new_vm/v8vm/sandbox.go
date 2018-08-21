@@ -141,23 +141,7 @@ var obj = new _native_main();
 
 var objObserver = observer.create(obj)
 
-// Object.keys(obj).forEach((key) => {
-//     let val = obj[key];
-//
-//     Object.defineProperty(obj, key, {
-//         configurable: false,
-//         enumerable: true,
-//         get: function() {
-//             return IOSTContractStorage.get(key, val);
-//         },
-//         set: function() {
-// 			val = setVal;
-// 			IOSTContractStorage.put(key, val);
-//         }
-//     })
-// });
-
-// run contract with specified function and args.
+// run contract with specified function and args
 objObserver.%s(%s)
 `, name, function, strings.Trim(argStr, "[]")), nil
 }
