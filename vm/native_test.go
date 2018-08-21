@@ -1,4 +1,4 @@
-package new_vm
+package vm
 
 import (
 	"io/ioutil"
@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/host"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/native_vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 )
 
 var testDataPath = "./test_data/"
 
-func MyInit(t *testing.T, conName string, optional ...interface{}) (*native_vm.VM, *host.Host, *contract.Contract) {
+func MyInit(t *testing.T, conName string, optional ...interface{}) (*native.VM, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
 	vi := database.NewVisitor(100, db)
 
@@ -34,7 +34,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*native_vm.V
 		ID: conName,
 	}
 
-	e := &native_vm.VM{}
+	e := &native.VM{}
 	e.Init()
 
 	return e, h, code

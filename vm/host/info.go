@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
 type Info struct {
