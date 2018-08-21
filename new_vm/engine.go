@@ -114,7 +114,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), nil
 	}
 
-	bl := e.ho.DB().Balance(account.GetIdByPubkey(tx0.Publisher.Pubkey))
+	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
 	if bl <= 0 || bl < tx0.GasPrice*tx0.GasLimit {
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), nil
 	}
@@ -157,7 +157,7 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
-		e.ho.PayCost(cost, account.GetIdByPubkey(tx0.Publisher.Pubkey))
+		e.ho.PayCost(cost, account.GetIDByPubkey(tx0.Publisher.Pubkey))
 	}
 
 	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), int64(tx0.GasPrice))
@@ -388,7 +388,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx) {
 		authList[string(v)] = 1
 	}
 
-	authList[account.GetIdByPubkey(t.Publisher.Pubkey)] = 2
+	authList[account.GetIDByPubkey(t.Publisher.Pubkey)] = 2
 
 	h.Context().Set("auth_list", authList)
 

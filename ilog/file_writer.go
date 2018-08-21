@@ -9,6 +9,7 @@ import (
 
 var _ LogWriter = &FileWriter{}
 
+// FileWriter is responsible for writing log to file.
 type FileWriter struct {
 	level    Level
 	filepath string
@@ -17,13 +18,15 @@ type FileWriter struct {
 	hourlyTicker *hourlyTicker
 }
 
+// NewFileWriter returns a new instance of NewFileWriter.
 func NewFileWriter(filepath string) *FileWriter {
 	return &FileWriter{
 		filepath:     filepath,
-		hourlyTicker: NewHourlyTicker(),
+		hourlyTicker: newHourlyTicker(),
 	}
 }
 
+// Init inits NewFileWriter.
 func (fw *FileWriter) Init() error {
 	if len(fw.filepath) == 0 {
 		fw.filepath = "./"
@@ -49,24 +52,29 @@ func (fw *FileWriter) Init() error {
 	return nil
 }
 
+// SetLevel sets the log level.
 func (fw *FileWriter) SetLevel(l Level) {
 	fw.level = l
 }
 
+// GetLevel returns the log level.
 func (fw *FileWriter) GetLevel() Level {
 	return fw.level
 }
 
+// Write writes message to the console.
 func (fw *FileWriter) Write(msg string, level Level) error {
 	fw.checkFile()
 	_, err := fmt.Fprint(fw.fd, msg)
 	return err
 }
 
+// Flush flushes.
 func (fw *FileWriter) Flush() error {
 	return fw.fd.Sync()
 }
 
+// Close closes the writer.
 func (fw *FileWriter) Close() error {
 	return fw.fd.Close()
 }
@@ -86,7 +94,7 @@ type hourlyTicker struct {
 	quitCh chan struct{}
 }
 
-func NewHourlyTicker() *hourlyTicker {
+func newHourlyTicker() *hourlyTicker {
 	ht := &hourlyTicker{
 		C:      make(chan time.Time),
 		quitCh: make(chan struct{}),
@@ -114,6 +122,6 @@ func (ht *hourlyTicker) startTimer() {
 	}()
 }
 
-func (ht *hourlyTicker) Stop() {
+func (ht *hourlyTicker) stop() {
 	close(ht.quitCh)
 }

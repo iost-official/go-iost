@@ -101,7 +101,7 @@ func verifyBasics(blk *block.Block) error {
 	}
 	var signature common.Signature
 	signature.Decode(blk.Head.Signature)
-	if blk.Head.Witness != account.GetIdByPubkey(signature.Pubkey) {
+	if blk.Head.Witness != account.GetIDByPubkey(signature.Pubkey) {
 		return ErrPubkey
 	}
 	headInfo := generateHeadInfo(blk.Head)
@@ -152,9 +152,9 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
 	confirmLimit := staticProperty.NumberOfWitnesses*2/3 + 1
 	startNumber := node.Number
-	var confirmNum int64 = 0
+	var confirmNum int64
 	confirmUntilMap := make(map[int64]int64, startNumber-root.Number)
-	var index int64 = 0
+	var index int64
 	for node != root {
 		if node.ConfirmUntil <= node.Number {
 			confirmNum++
