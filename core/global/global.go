@@ -114,13 +114,9 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		}
 	}
 
-<<<<<<< HEAD
-	tx.LdbPath = conf.LdbPath
-	txDb := tx.TxDBInstance()
-=======
 	tx.LdbPath = conf.DB.LdbPath
-	txDb := tx.TxDbInstance()
->>>>>>> develop
+	txDb := tx.TxDBInstance()
+
 	if txDb == nil {
 		return nil, errors.New("new txdb failed, stop the program.")
 	}
