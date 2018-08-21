@@ -87,7 +87,7 @@ func rawToInt64(s string) int64 {
 func boolToString(i bool) string {
 	if i {
 		return "t"
-	} else {
-		return "f"
 	}
+	return "f"
+
 }

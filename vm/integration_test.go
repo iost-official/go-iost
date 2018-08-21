@@ -33,7 +33,7 @@ var testID = []string{
 	"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4", "7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
 }
 
-var systemContract = native.NativeABI()
+var systemContract = native.ABI()
 
 func replaceDB(t *testing.T) database.IMultiValue {
 	ctl := gomock.NewController(t)
@@ -162,6 +162,9 @@ func TestIntergration_Transfer(t *testing.T) {
 	act2 := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
 	trx2 := tx.NewTx([]tx.Action{act2}, nil, int64(10000), int64(1), int64(10000000))
 	trx2, err = tx.SignTx(trx2, ac)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Log("trasfer not enough balance case:")
 	t.Log(e.Exec(&trx2))
