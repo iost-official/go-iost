@@ -5,8 +5,8 @@ package v8
 */
 import "C"
 import (
-	"strconv"
 	"errors"
+	"strconv"
 )
 
 var ErrInvalidDbValType = errors.New("invalid db value type")
