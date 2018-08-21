@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 )
 
 type Mode struct {
@@ -73,7 +74,13 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
 		}
-		consensus_common.VerifyBlockWithVM(blk, stateDB)
+		engine := new_vm.NewEngine(&blk.Head, stateDB)
+		for _, tx := range blk.Txs {
+			_, err = engine.Exec(tx)
+			if err != nil {
+				return nil, fmt.Errorf("statedb push genesis failed, stop the pogram. err: %v", err)
+			}
+		}
 		stateDB.Tag(string(blk.HeadHash()))
 	} else {
 		blk, err = blockChain.GetBlockByHash([]byte(hash))
@@ -93,6 +100,17 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			if err != nil {
 				return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
 			}
+		}
+	}
+	hash = stateDB.CurrentTag()
+	blk, err = blockChain.Top()
+	if err != nil {
+		return nil, fmt.Errorf("blockchain top failed, stop the pogram. err: %v", err)
+	}
+	if string(blk.HeadHash()) != hash {
+		err = stateDB.Flush(string(blk.HeadHash()))
+		if err != nil {
+			return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
 		}
 	}
 
