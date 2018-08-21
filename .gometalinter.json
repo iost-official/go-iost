@@ -1,6 +1,6 @@
 {
     "Vendor": true,
-    "Exclude": ["should have comment"],
+    "Enable": ["vet", "gocyclo", "golint", "ineffassign", "misspell", "deadcode", "unconvert", "gofmt"],
     "Skip": [
         "vendor",
         "test"
