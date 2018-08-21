@@ -54,6 +54,7 @@ func init() {
 	prometheus.MustRegister(txPoolSize)
 }
 
+//PoB is a struct that handles the consensus logic.
 type PoB struct {
 	account      account.Account
 	baseVariable global.BaseVariable
@@ -69,6 +70,7 @@ type PoB struct {
 	chGenBlock   chan *block.Block
 }
 
+// NewPoB init a new PoB.
 func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) *PoB {
 	p := PoB{
 		account:      account,
@@ -88,12 +90,14 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 	return &p
 }
 
+//Run make the PoB run.
 func (p *PoB) Run() {
 	p.synchronizer.Start()
 	go p.blockLoop()
 	go p.scheduleLoop()
 }
 
+//Stop make the PoB stop.
 func (p *PoB) Stop() {
 	close(p.exitSignal)
 	close(p.chRecvBlock)

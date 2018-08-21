@@ -175,21 +175,14 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			err := verifyBasics(blk)
-			convey.So(err, convey.ShouldEqual, ErrWitness)
+			convey.So(err, convey.ShouldEqual, errWitness)
 
 			blk.Head.Witness = account1.ID
 			info := generateHeadInfo(blk.Head)
 			sig := common.Sign(common.Secp256k1, info, account0.Seckey)
 			blk.Head.Signature, _ = sig.Encode()
 			err = verifyBasics(blk)
-			convey.So(err, convey.ShouldEqual, ErrPubkey)
-
-			info = generateHeadInfo(blk.Head)
-			sig = common.Sign(common.Secp256k1, info, account1.Seckey)
-			blk.Head.Signature, _ = sig.Encode()
-			blk.Head.Info = []byte("fake info")
-			err = verifyBasics(blk)
-			convey.So(err, convey.ShouldEqual, ErrSignature)
+			convey.So(err, convey.ShouldEqual, errPubkey)
 		})
 
 		convey.Convey("Slot witness duplicate", func() {
@@ -197,7 +190,6 @@ func TestVerifyBasics(t *testing.T) {
 				Head: block.BlockHead{
 					Time:    0,
 					Witness: account0.ID,
-					Info:    []byte("first one"),
 				},
 			}
 			info := generateHeadInfo(blk.Head)
@@ -211,14 +203,13 @@ func TestVerifyBasics(t *testing.T) {
 				Head: block.BlockHead{
 					Time:    0,
 					Witness: account0.ID,
-					Info:    []byte("second one"),
 				},
 			}
 			info = generateHeadInfo(blk.Head)
 			sig = common.Sign(common.Secp256k1, info, account0.Seckey)
 			blk.Head.Signature, _ = sig.Encode()
 			err = verifyBasics(blk)
-			convey.So(err, convey.ShouldEqual, ErrSlot)
+			convey.So(err, convey.ShouldEqual, errSlot)
 		})
 	})
 }

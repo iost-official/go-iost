@@ -6,7 +6,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-//go:generate gencode go -schema=structs.schema -package=common
+//go:generate gencode go -schema=structs.schema -package=verifier
 
 type SignAlgorithm uint8
 

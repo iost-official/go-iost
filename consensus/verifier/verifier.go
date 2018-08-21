@@ -1,4 +1,4 @@
-package consensus_common
+package verifier
 
 import (
 	"bytes"
@@ -12,38 +12,40 @@ import (
 )
 
 var (
-	ErrFutureBlk  = errors.New("block from future")
-	ErrOldBlk     = errors.New("block too old")
-	ErrParentHash = errors.New("wrong parent hash")
-	ErrNumber     = errors.New("wrong number")
-	ErrTxHash     = errors.New("wrong txs hash")
-	ErrMerkleHash = errors.New("wrong tx receipt merkle hash")
-	ErrTxReceipt  = errors.New("wrong tx receipt")
+	errFutureBlk  = errors.New("block from future")
+	errOldBlk     = errors.New("block too old")
+	errParentHash = errors.New("wrong parent hash")
+	errNumber     = errors.New("wrong number")
+	errTxHash     = errors.New("wrong txs hash")
+	errMerkleHash = errors.New("wrong tx receipt merkle hash")
+	errTxReceipt  = errors.New("wrong tx receipt")
 )
 
+// VerifyBlockHead verifies the block head.
 func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Block) error {
 	bh := blk.Head
 	if bh.Time > time.Now().Unix()/common.SlotLength+1 {
-		return ErrFutureBlk
+		return errFutureBlk
 	}
 	if bh.Time <= lib.Head.Time {
-		return ErrOldBlk
+		return errOldBlk
 	}
 	if !bytes.Equal(bh.ParentHash, parentBlock.HeadHash()) {
-		return ErrParentHash
+		return errParentHash
 	}
 	if bh.Number != parentBlock.Head.Number+1 {
-		return ErrNumber
+		return errNumber
 	}
 	if !bytes.Equal(blk.CalculateTxsHash(), bh.TxsHash) {
-		return ErrTxHash
+		return errTxHash
 	}
 	if !bytes.Equal(blk.CalculateMerkleHash(), bh.MerkleHash) {
-		return ErrMerkleHash
+		return errMerkleHash
 	}
 	return nil
 }
 
+//VerifyBlockWithVM verifies the block with VM.
 func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 	engine := new_vm.NewEngine(&blk.Head, db)
 	for k, tx := range blk.Txs {
@@ -52,7 +54,7 @@ func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 			return err
 		}
 		if !bytes.Equal(blk.Receipts[k].Encode(), receipt.Encode()) {
-			return ErrTxReceipt
+			return errTxReceipt
 		}
 	}
 	return nil

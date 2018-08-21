@@ -5,6 +5,7 @@ import (
 	//	"fmt"
 	"bytes"
 	"fmt"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -57,7 +58,7 @@ func TestTx(t *testing.T) {
 			ActionName: "actionname2",
 			Data:       "1",
 		})
-		// seckey := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
+		// seckey := verifier.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 		// acc, err := account.NewAccount(seckey)
 		// So(err, ShouldEqual, nil)
 

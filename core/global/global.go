@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
@@ -93,7 +93,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
 		}
-		consensus_common.VerifyBlockWithVM(blk, stateDB)
+		verifier.VerifyBlockWithVM(blk, stateDB)
 		stateDB.Tag(string(blk.HeadHash()))
 		if blk.Head.Number%1000 == 0 {
 			err = stateDB.Flush(string(blk.HeadHash()))

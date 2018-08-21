@@ -164,8 +164,8 @@ func main() {
 		witnessList = append(witnessList, k)
 	}
 
-	consensus, err := consensus.ConsensusFactory(
-		consensus.CONSENSUS_POB,
+	consensus, err := consensus.Factory(
+		"pob",
 		acc, glb, blkCache, txp, p2pService, sync, witnessList) //witnessList)
 	if err != nil {
 		ilog.Fatal("consensus initialization failed, stop the program! err:%v", err)
