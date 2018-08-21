@@ -83,7 +83,7 @@ func TestEngine_SetCode(t *testing.T) {
 	}
 
 	con.ID = "Contractiamhash"
-	rs, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
+	_, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
 	if err == nil || err.Error() != "destroy refused" {
 		t.Fatalf("LoadAndCall for should return destroy refused, but got %v\n", err)
 	}
@@ -108,12 +108,12 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Errorf("LoadAndCall except 0 rtn"+", got %d\n", len(rs))
 	}
 
-	rs, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
+	_, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
 	if err != nil {
 		t.Fatalf("LoadAndCall destroy error: %v\n", err)
 	}
 
-	rs, _, err = e.LoadAndCall(host, code, "UpdateCode", con.Encode(), "")
+	_, _, err = e.LoadAndCall(host, code, "UpdateCode", con.Encode(), "")
 	if err == nil || err.Error() != "contract not exists" {
 		t.Fatalf("LoadAndCall for should return contract not exists, but got %v\n", err)
 	}
