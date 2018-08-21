@@ -27,6 +27,18 @@ func NewTeller(db *database.Visitor, ctx *Context) Teller {
 	}
 }
 
+func (h *Teller) transfer(from, to string, amount int64) error {
+	bf := h.db.Balance(from)
+	//ilog.Debug("%v's balance : %v", from, bf)
+	if bf > amount {
+		h.db.SetBalance(from, -1*amount)
+		h.db.SetBalance(to, amount)
+		return nil
+	} else {
+		return ErrBalanceNotEnough
+	}
+}
+
 func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error) {
 	//ilog.Debug("amount : %v", amount)
 	if amount <= 0 {
@@ -37,33 +49,28 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 		return contract.NewCost(1, 1, 1), ErrPermissionLost
 	}
 
-	bf := h.db.Balance(from)
-	//ilog.Debug("%v's balance : %v", from, bf)
-	if bf > amount {
-		h.db.SetBalance(from, -1*amount)
-		h.db.SetBalance(to, amount)
-	} else {
-		return contract.NewCost(1, 1, 1), ErrBalanceNotEnough
-	}
-	return contract.NewCost(1, 1, 1), nil
+	err := h.transfer(from, to, amount)
+	return contract.NewCost(1, 1, 1), err
 }
 
 func (h *Teller) Withdraw(to string, amount int64) (*contract.Cost, error) {
 	c := h.ctx.Value("contract_name").(string)
-	return h.Transfer(ContractAccountPrefix+c, to, amount)
+	return contract.NewCost(1, 1, 1), h.transfer(ContractAccountPrefix+c, to, amount)
 }
 
 func (h *Teller) Deposit(from string, amount int64) (*contract.Cost, error) {
 	c := h.ctx.Value("contract_name").(string)
-	return h.Transfer(from, ContractAccountPrefix+c, amount)
+	return contract.NewCost(1, 1, 1), h.transfer(from, ContractAccountPrefix+c, amount)
+
 }
 
-func (h *Teller) TopUp(contract, from string, amount int64) (*contract.Cost, error) {
-	return h.Transfer(from, ContractGasPrefix+contract, amount)
+func (h *Teller) TopUp(c, from string, amount int64) (*contract.Cost, error) {
+	return contract.NewCost(1, 1, 1), h.transfer(from, ContractGasPrefix+c, amount)
+
 }
 
-func (h *Teller) Countermand(contract, to string, amount int64) (*contract.Cost, error) {
-	return h.Transfer(ContractGasPrefix+contract, to, amount)
+func (h *Teller) Countermand(c, to string, amount int64) (*contract.Cost, error) {
+	return contract.NewCost(1, 1, 1), h.transfer(ContractGasPrefix+c, to, amount)
 }
 
 func (h *Teller) PayCost(c *contract.Cost, who string) {
@@ -81,12 +88,12 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 			continue
 		}
 		if strings.HasPrefix(k, "IOST") {
-			_, err := h.Transfer(k, witness, int64(fee))
+			err := h.transfer(k, witness, int64(fee))
 			if err != nil {
 				return err
 			}
 		} else if strings.HasPrefix(k, ContractGasPrefix) {
-			_, err := h.Transfer(k, witness, int64(fee))
+			err := h.transfer(k, witness, int64(fee))
 			if err != nil {
 				return err
 			}
