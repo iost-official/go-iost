@@ -24,15 +24,15 @@ const (
 )
 
 const (
-	GasCheckTxFailed = int64(100)
+	gasCheckTxFailed = int64(100)
 )
 
 var (
-	ErrContractNotFound = errors.New("contract not found")
-
-	ErrSetUpArgs = errors.New("key does not exist")
+	errContractNotFound = errors.New("contract not found")
+	errSetUpArgs        = errors.New("key does not exist")
 )
 
+// Engine the smart contract engine
 type Engine interface {
 	SetUp(k, v string) error
 	Exec(tx0 *tx.Tx) (*tx.TxReceipt, error)
@@ -43,7 +43,7 @@ var staticMonitor *Monitor
 
 var once sync.Once
 
-type EngineImpl struct {
+type engineImpl struct {
 	ho *host.Host
 
 	jsPath string
@@ -53,6 +53,7 @@ type EngineImpl struct {
 	fileWriter    *ilog.FileWriter
 }
 
+// NewEngine ...
 func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	db := database.NewVisitor(defaultCacheLength, cb)
 
@@ -78,8 +79,8 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 	logger.Stop()
 	h := host.NewHost(ctx, db, staticMonitor, logger)
 
-	e := &EngineImpl{ho: h, logger: logger}
-	runtime.SetFinalizer(e, func(e *EngineImpl) {
+	e := &engineImpl{ho: h, logger: logger}
+	runtime.SetFinalizer(e, func(e *engineImpl) {
 		e.GC()
 	})
 
@@ -93,7 +94,7 @@ SetUp keys:
 	log_path	path to log file, unset to disable saving logs
 	log_enable	enable log, log_level should set
 */
-func (e *EngineImpl) SetUp(k, v string) error {
+func (e *engineImpl) SetUp(k, v string) error {
 	switch k {
 	case "js_path":
 		e.jsPath = v
@@ -104,11 +105,11 @@ func (e *EngineImpl) SetUp(k, v string) error {
 	case "log_enable":
 		e.setLogger("", "", true)
 	default:
-		return ErrSetUpArgs
+		return errSetUpArgs
 	}
 	return nil
 }
-func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
+func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	err := checkTx(tx0)
 	if err != nil {
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), nil
@@ -178,13 +179,13 @@ func (e *EngineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 	return &txr, nil
 }
-func (e *EngineImpl) GC() {
+func (e *engineImpl) GC() {
 	e.logger.Stop()
 }
 
 func checkTx(tx0 *tx.Tx) error {
 	if tx0.GasPrice < 0 || tx0.GasPrice > 10000 {
-		return ErrGasPriceIllegal
+		return errGasPriceIllegal
 	}
 	return nil
 }
@@ -200,8 +201,8 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 		return nil, err
 	}
 
-	if len(arr) < len(abi.Args) {
-		panic("less args ")
+	if len(arr) != len(abi.Args) {
+		return nil, errors.New("args unmatched to abi")
 	}
 	for i := range arr {
 		switch abi.Args[i] {
@@ -239,7 +240,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,
-		GasUsage: GasCheckTxFailed,
+		GasUsage: gasCheckTxFailed,
 		Status: tx.Status{
 			Code:    code,
 			Message: message,
@@ -248,7 +249,7 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 		Receipts:      make([]tx.Receipt, 0),
 	}
 }
-func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
+func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
 	receipts = make([]tx.Receipt, 0)
 
 	e.ho.PushCtx()
@@ -261,27 +262,27 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	c := e.ho.DB().Contract(action.Contract)
 	if c == nil || c.Info == nil {
-		cost = contract.NewCost(0, 0, GasCheckTxFailed)
+		cost = contract.NewCost(0, 0, gasCheckTxFailed)
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
-			Message: ErrContractNotFound.Error() + action.Contract,
+			Message: errContractNotFound.Error() + action.Contract,
 		}
 		return
 	}
 
 	abi := c.ABI(action.ActionName)
 	if abi == nil {
-		cost = contract.NewCost(0, 0, GasCheckTxFailed)
+		cost = contract.NewCost(0, 0, gasCheckTxFailed)
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
-			Message: ErrABINotFound.Error() + action.Contract,
+			Message: errABINotFound.Error() + action.Contract,
 		}
 		return
 	}
 
 	args, err := unmarshalArgs(abi, action.Data)
 	if err != nil {
-		cost = contract.NewCost(0, 0, GasCheckTxFailed)
+		cost = contract.NewCost(0, 0, gasCheckTxFailed)
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
 			Message: err.Error(),
@@ -324,7 +325,7 @@ func (e *EngineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	return
 }
 
-func (e *EngineImpl) setLogger(level, path string, start bool) {
+func (e *engineImpl) setLogger(level, path string, start bool) {
 	if path == "" && !start {
 		//ilog.Debug("console log accepted")
 		if e.consoleWriter == nil {

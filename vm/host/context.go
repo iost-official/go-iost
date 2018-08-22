@@ -1,11 +1,13 @@
 package host
 
+// Context thread unsafe context with global fields
 type Context struct { // thread unsafe
 	base   *Context
 	value  map[string]interface{}
 	gValue map[string]interface{}
 }
 
+// NewContext ...
 func NewContext(base *Context) *Context {
 
 	if base != nil {
@@ -23,6 +25,7 @@ func NewContext(base *Context) *Context {
 
 }
 
+// Value ...
 func (c *Context) Value(key string) (value interface{}) {
 	cc := c
 	for {
@@ -39,10 +42,12 @@ func (c *Context) Value(key string) (value interface{}) {
 	}
 }
 
+// Set  ...
 func (c *Context) Set(key string, value interface{}) {
 	c.value[key] = value
 }
 
+// GValue ...
 func (c *Context) GValue(key string) (value interface{}) {
 	cc := c
 	for cc.base != nil {
@@ -51,6 +56,7 @@ func (c *Context) GValue(key string) (value interface{}) {
 	return cc.gValue[key]
 }
 
+// GSet ...
 func (c *Context) GSet(key string, value interface{}) {
 	cc := c
 	for cc.base != nil {
@@ -59,6 +65,7 @@ func (c *Context) GSet(key string, value interface{}) {
 	cc.gValue[key] = value
 }
 
+// Base ...
 func (c *Context) Base() *Context {
 	return c.base
 }

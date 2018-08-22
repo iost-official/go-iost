@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
+// var ...
 var (
 	ErrBalanceNotEnough = errors.New("balance not enough")
 	ErrTransferNegValue = errors.New("trasfer amount less than zero")
@@ -20,11 +21,13 @@ var (
 	ErrPermissionLost   = errors.New("transaction has no permission")
 )
 
+// Monitor ...
 type Monitor interface {
 	Call(host *Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
 	Compile(con *contract.Contract) (string, error)
 }
 
+// Host ...
 type Host struct {
 	DBHandler
 	Info
@@ -37,6 +40,7 @@ type Host struct {
 	monitor Monitor
 }
 
+// NewHost ...
 func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.Logger) *Host {
 	return &Host{
 		ctx:     ctx,
@@ -52,15 +56,18 @@ func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.L
 
 }
 
+// Context ...
 func (h *Host) Context() *Context {
 	return h.ctx
 }
 
+// SetContext ...
 func (h *Host) SetContext(ctx *Context) {
 	h.ctx = ctx
 
 }
 
+// Call  ...
 func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
 
 	// save stack
@@ -88,6 +95,7 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *
 	return rtn, cost, err
 }
 
+// CallWithReceipt ...
 func (h *Host) CallWithReceipt(contractName, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
 	rtn, cost, err := h.Call(contractName, api, args...)
 
@@ -112,6 +120,7 @@ func (h *Host) CallWithReceipt(contractName, api string, args ...interface{}) ([
 
 }
 
+// SetCode ...
 func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	code, err := h.monitor.Compile(c)
 	if err != nil {
@@ -133,6 +142,7 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	return cost, err // todo check set cost
 }
 
+// UpdateCode ...
 func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*contract.Cost, error) {
 	oc := h.db.Contract(c.ID)
 	if oc == nil {
@@ -165,6 +175,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 	return c2, err
 }
 
+// DestroyCode ...
 func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 	// todo 释放kv
 
@@ -192,14 +203,17 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 	return contract.NewCost(1, 2, 3), nil
 }
 
+// Logger ...
 func (h *Host) Logger() *ilog.Logger {
 	return h.logger
 }
 
+// DB ...
 func (h *Host) DB() *database.Visitor {
 	return h.db
 }
 
+// PushCtx ...
 func (h *Host) PushCtx() {
 
 	ctx := NewContext(h.ctx)
@@ -211,6 +225,7 @@ func (h *Host) PushCtx() {
 	h.APIDelegate.ctx = ctx
 }
 
+// PopCtx ...
 func (h *Host) PopCtx() {
 	ctx := h.ctx.Base()
 	h.ctx = ctx
