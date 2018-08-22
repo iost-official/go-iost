@@ -18,8 +18,8 @@ import (
 	"fmt"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/spf13/cobra"
 )
 
@@ -38,10 +38,11 @@ Usage:
 		}
 		db := database.NewDatabase()
 		err = db.Load("state.json")
+		db.AddSystem("system.json")
 		if err != nil {
 			panic(err)
 		}
-		eg := new_vm.NewEngine(bh, db)
+		eg := vm.NewEngine(bh, db)
 
 		action := tx.NewAction(args[0], args[1], args[2])
 

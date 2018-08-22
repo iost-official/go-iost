@@ -92,7 +92,6 @@ func (p *PoB) Run() {
 }
 
 func (p *PoB) Stop() {
-	p.synchronizer.Stop()
 	close(p.exitSignal)
 	close(p.chRecvBlock)
 	close(p.chGenBlock)
