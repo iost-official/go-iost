@@ -28,13 +28,13 @@ func NewTeller(db *database.Visitor, ctx *Context) Teller {
 }
 
 func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error) {
-	ilog.Debug("amount : %v", amount)
+	//ilog.Debug("amount : %v", amount)
 	if amount <= 0 {
 		return contract.NewCost(1, 1, 1), ErrTransferNegValue
 	}
 
 	bf := h.db.Balance(from)
-	ilog.Debug("%v's balance : %v", from, bf)
+	//ilog.Debug("%v's balance : %v", from, bf)
 	if bf > amount {
 		h.db.SetBalance(from, -1*amount)
 		h.db.SetBalance(to, amount)
