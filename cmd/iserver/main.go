@@ -19,7 +19,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus"
@@ -29,140 +28,116 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
-	"github.com/mitchellh/go-homedir"
-	"github.com/spf13/viper"
+	flag "github.com/spf13/pflag"
 )
 
-//	"github.com/iost-official/Go-IOS-Protocol/iserver/cmd"
 type ServerExit interface {
 	Stop()
 }
 
-var (
-	cfgFile    = "iserver.yml"
-	logFile    string
-	dbFile     string
-	cpuprofile string
-	memprofile string
-)
-
 var serverExit []ServerExit
 
+var (
+	configfile = flag.StringP("config", "f", "", "Configuration `file`")
+	help       = flag.BoolP("help", "h", false, "Display available options")
+)
+
+func getLogLevel(l string) ilog.Level {
+	switch l {
+	case "debug":
+		return ilog.LevelDebug
+	case "info":
+		return ilog.LevelInfo
+	case "warn":
+		return ilog.LevelWarn
+	case "error":
+		return ilog.LevelError
+	case "fatal":
+		return ilog.LevelFatal
+	default:
+		return ilog.LevelDebug
+	}
+}
+
+func initLogger(logConfig *common.LogConfig) {
+	if logConfig == nil {
+		return
+	}
+	logger := ilog.New()
+	if logConfig.AsyncWrite {
+		logger.AsyncWrite()
+	}
+	if logConfig.ConsoleLog != nil && logConfig.ConsoleLog.Enable {
+		consoleWriter := ilog.NewConsoleWriter()
+		consoleWriter.SetLevel(getLogLevel(logConfig.ConsoleLog.Level))
+		logger.AddWriter(consoleWriter)
+	}
+	if logConfig.FileLog != nil && logConfig.FileLog.Enable {
+		fileWriter := ilog.NewFileWriter(logConfig.FileLog.Path)
+		fileWriter.SetLevel(getLogLevel(logConfig.FileLog.Level))
+		logger.AddWriter(fileWriter)
+	}
+	ilog.InitLogger(logger)
+}
+
 func main() {
-	//	cmd.Execute()
-
-	initConfig()
-
-	conf, err := common.NewConfig(viper.GetViper())
-	if err != nil {
-		os.Exit(1)
+	flag.Parse()
+	if *help {
+		flag.Usage()
 	}
 
-	if err := conf.LocalConfig(); err != nil {
-		os.Exit(1)
+	if *configfile == "" {
+		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/iserver.yaml"
 	}
+
+	conf := common.NewConfig(*configfile)
+
+	initLogger(conf.Log)
+
+	ilog.Infof("Config Information:\n%v", conf.YamlString())
 
 	glb, err := global.New(conf)
 	if err != nil {
-		os.Exit(1)
+		ilog.Fatalf("create global failed. err=%v", err)
 	}
 
-	// Log Server Information
-	ilog.Info("Version:  %v", "1.0")
-	ilog.Info("cfgFile: %v", glb.Config().CfgFile)
-	ilog.Info("logFile: %v", glb.Config().LogFile)
-	ilog.Info("ldb.path: %v", glb.Config().LdbPath)
-	ilog.Info("dbFile: %v", glb.Config().DbFile)
-	// Start CPU Profile
-	/*
-		if cpuprofile != "" {
-			f, err := os.Create(cpuprofile)
-			if err != nil {
-				//ilog.E("could not create CPU profile: ", err)
-			}
-			if err := pprof.StartCPUProfile(f); err != nil {
-				//ilog.E("could not start CPU profile: ", err)
-			}
-		}*/
-
-	// ilog.I("1.Start the P2P networks")
-
-	// rpcPort := viper.GetString("net.rpc-port")
-	// metricsPort := viper.GetString("net.metrics-port")
-
-	//ilog.I("network instance")
-	p2pService, err := p2p.NewDefault()
+	p2pService, err := p2p.NewNetService(conf.P2P)
 	if err != nil {
-		ilog.Fatal("Network initialization failed, stop the program! err:%v", err)
+		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
+	}
+	err = p2pService.Start()
+	if err != nil {
+		ilog.Fatalf("start p2pservice failed. err=%v", err)
 	}
 
 	serverExit = append(serverExit, p2pService)
 
-	accSecKey := glb.Config().AccSecKey
-	//fmt.Printf("account.sec-key:  %v\n", accSecKey)
+	accSecKey := glb.Config().ACC.SecKey
 	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
 	if err != nil {
-		ilog.Fatal("NewAccount failed, stop the program! err:%v", err)
+		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
 	}
 	account.MainAccount = acc
-	//ilog.I("account ID = %v", acc.ID)
-	/*
-			// init servi
-			sp, err := tx.NewServiPool(len(account.GenesisAccount), 100)
-			if err != nil {
-				ilog.E("NewServiPool failed, stop the program! err:%v", err)
-				os.Exit(1)
-			}
-			tx.Data = tx.NewHolder(acc, state.StdPool, sp)
-			tx.Data.Spool.Restore()
-			bu, _ := tx.Data.Spool.BestUser()
 
-			if len(bu) != len(account.GenesisAccount) {
-				tx.Data.Spool.ClearBtu()
-				for k, v := range account.GenesisAccount {
-					ser, err := tx.Data.Spool.User(vm.IOSTAccount(k))
-					if err == nil {
-						ser.SetBalance(v)
-					}
-
-				}
-				tx.Data.Spool.Flush()
-			}
-			witnessList := make([]string, 0)
-
-		bu, err = tx.Data.Spool.BestUser()
-		if err != nil {
-			for k, _ := range account.GenesisAccount {
-				witnessList = append(witnessList, k)
-			}
-		} else {
-			for _, v := range bu {
-				witnessList = append(witnessList, string(v.Owner()))
-			}
-		}
-
-		for i, witness := range witnessList {
-			ilog.I("witnessList[%v] = %v", i, witness)
-		}
-	*/
-
-	var blkCache blockcache.BlockCache
-	blkCache, err = blockcache.NewBlockCache(glb)
+	blkCache, err := blockcache.NewBlockCache(glb)
 	if err != nil {
-		ilog.Fatal("blockcache initialization failed, stop the program! err:%v", err)
+		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
 	}
 
-	var sync synchronizer.Synchronizer
-	sync, err = synchronizer.NewSynchronizer(glb, blkCache, p2pService)
+	sync, err := synchronizer.NewSynchronizer(glb, blkCache, p2pService)
 	if err != nil {
-		ilog.Fatal("synchronizer initialization failed, stop the program! err:%v", err)
+		ilog.Fatalf("synchronizer initialization failed, stop the program! err:%v", err)
+	}
+	err = sync.Start()
+	if err != nil {
+		ilog.Fatalf("start synchronizer failed. err=%v", err)
 	}
 	serverExit = append(serverExit, sync)
 
 	var txp txpool.TxPool
 	txp, err = txpool.NewTxPoolImpl(glb, blkCache, p2pService)
 	if err != nil {
-		ilog.Fatal("txpool initialization failed, stop the program! err:%v", err)
+		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 	txp.Start()
 	serverExit = append(serverExit, txp)
@@ -172,104 +147,26 @@ func main() {
 		witnessList = append(witnessList, k)
 	}
 
-	consensus, err := consensus.ConsensusFactory(
-		consensus.CONSENSUS_POB,
+	consensus, err := consensus.Factory(
+		"pob",
 		acc, glb, blkCache, txp, p2pService, sync, witnessList) //witnessList)
 	if err != nil {
-		ilog.Fatal("consensus initialization failed, stop the program! err:%v", err)
+		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}
 	consensus.Run()
 	serverExit = append(serverExit, consensus)
-
-	/*
-		err = rpc.Server(rpcPort)
-		if err != nil {
-			//ilog.E("RPC initialization failed, stop the program! err:%v", err)
-			os.Exit(1)
-		}
-			recorder := pob.NewRecorder()
-			recorder.Listen()
-
-			if metricsPort != "" {
-				metrics.NewServer(metricsPort)
-			}
-	*/
 
 	exitLoop()
 
 }
 
 func exitLoop() {
-	exit := make(chan bool)
 	c := make(chan os.Signal, 1)
-
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-	go func() {
-		i := <-c
-		ilog.Info("IOST server received interrupt[%v], shutting down...", i)
-
-		for _, s := range serverExit {
-			if s != nil {
-				s.Stop()
-			}
-		}
-		exit <- true
-		// os.Exit(0)
-	}()
-
-	<-exit
-	// Stop Cpu Profile
-	/*
-		if cpuprofile != "" {
-			pprof.StopCPUProfile()
-		}
-	*/
-	// Start Memory Profile
-	/*
-		if memprofile != "" {
-			f, err := os.Create(memprofile)
-			if err != nil {
-				//ilog.E("could not create memory profile: ", err)
-			}
-			runtime.GC() // get up-to-date statistics
-			if err := pprof.WriteHeapProfile(f); err != nil {
-				//ilog.E("could not write memory profile: ", err)
-			}
-			f.Close()
-		}
-
-	*/
-	signal.Stop(c)
-	close(exit)
-	os.Exit(0)
-}
-
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".iserver" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".iserver")
+	i := <-c
+	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
+	for _, s := range serverExit {
+		s.Stop()
 	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	//fmt.Println(cfgFile)
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	} else {
-		panic(err)
-	}
-
+	ilog.Stop()
 }

@@ -16,7 +16,7 @@ func init() {
 	C.init()
 }
 
-// Engine contains isolate instance, which is a v8 VM with its own heap.
+// VM contains isolate instance, which is a v8 VM with its own heap.
 type VM struct {
 	isolate              C.IsolatePtr
 	sandbox              *Sandbox
@@ -24,6 +24,7 @@ type VM struct {
 	limitsOfMemorySize   int64
 }
 
+// NewVM return new vm with isolate and sandbox
 func NewVM() *VM {
 	isolate := C.newIsolate()
 	e := &VM{
@@ -37,6 +38,7 @@ func (e *VM) init() error {
 	return nil
 }
 
+// Run load contract from code and invoke api function
 func (e *VM) Run(code, api string, args ...interface{}) (interface{}, error) {
 	contr := &contract.Contract{
 		ID:   "run_id",

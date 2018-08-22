@@ -12,7 +12,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
@@ -117,7 +117,7 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 
 	e := newEngine(bh, vi)
 
-	e.SetUp("js_path", jsPath)
+	//e.SetUp("js_path", jsPath)
 	e.SetUp("log_level", "debug")
 	e.SetUp("log_enable", "")
 	return e, vi
@@ -222,8 +222,8 @@ func TestIntergration_SetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ilog.Debug(fmt.Sprintln(e.Exec(trx)))
-	ilog.Debug(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
+	ilog.Debugf(fmt.Sprintln(e.Exec(trx)))
+	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
 
 	act2 := tx.NewAction("Contract"+common.Base58Encode(trx.Hash()), "hello", `[]`)
 
@@ -232,8 +232,8 @@ func TestIntergration_SetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ilog.Debug(fmt.Sprintln(e.Exec(trx2)))
-	ilog.Debug(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
+	ilog.Debugf(fmt.Sprintln(e.Exec(trx2)))
+	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
 }
 
 func TestIntergration_CallJSCode(t *testing.T) {
@@ -292,7 +292,7 @@ func TestIntergration_Payment_Success(t *testing.T) {
 	jshw.Info.Abis[0].Payment = 1
 	jshw.Info.Abis[0].GasPrice = int64(10)
 
-	ilog.Debug("init %v", jshw.Info.Abis[0].GetLimit())
+	ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
 
 	e, vi := ininit(t)
 	vi.SetContract(jshw)
@@ -307,9 +307,9 @@ func TestIntergration_Payment_Success(t *testing.T) {
 	}
 
 	r, err := e.Exec(trx)
-	ilog.Debug("success: %v, %v", r, err)
-	ilog.Debug("balance of sender : %v", vi.Balance(testID[0]))
-	ilog.Debug("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
+	ilog.Debugf("success: %v, %v", r, err)
+	ilog.Debugf("balance of sender : %v", vi.Balance(testID[0]))
+	ilog.Debugf("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
 
 }
 
@@ -322,7 +322,7 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 	jshw.Info.Abis[0].Limit.CPU = -1
 	jshw.Info.Abis[0].Limit.Net = -1
 
-	ilog.Debug("init %v", jshw.Info.Abis[0].GetLimit())
+	ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
 
 	e, vi := ininit(t)
 	vi.SetContract(jshw)
@@ -338,9 +338,9 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 	}
 
 	r, err := e.Exec(trx)
-	ilog.Debug("success: %v, %v", r, err)
-	ilog.Debug("balance of sender : %v", vi.Balance(testID[0]))
-	ilog.Debug("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
+	ilog.Debugf("success: %v, %v", r, err)
+	ilog.Debugf("balance of sender : %v", vi.Balance(testID[0]))
+	ilog.Debugf("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
 
 }
 

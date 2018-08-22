@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
@@ -33,6 +33,7 @@ type Host struct {
 	Info
 	Teller
 	APIDelegate
+	EventPoster
 
 	logger  *ilog.Logger
 	ctx     *Context
@@ -129,7 +130,7 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	c.Code = code
 
 	l := int64(len(c.Encode()) / 100)
-	//ilog.Debug("length is : %v", l)
+	//ilog.Debugf("length is : %v", l)
 
 	h.db.SetContract(c)
 
@@ -137,7 +138,7 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 
 	cost.AddAssign(contract.NewCost(0, l, 100))
 
-	//ilog.Debug("set gas is : %v", cost.ToGas())
+	//ilog.Debugf("set gas is : %v", cost.ToGas())
 
 	return cost, err // todo check set cost
 }

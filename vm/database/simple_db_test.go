@@ -13,12 +13,14 @@ import (
 
 func TestDB(t *testing.T) {
 	db := NewDatabase()
+	db.AddSystem("system.json")
 	db.Put("state", "i-1", "sabc")
 	err := db.Save("state.json")
 	if err != nil {
 		t.Fatal(err)
 	}
 	db2 := NewDatabase()
+	db2.AddSystem("system.json")
 	db2.Load("state.json")
 	v, err := db2.Get("state", "i-1")
 	if err != nil {

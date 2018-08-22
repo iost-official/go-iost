@@ -27,7 +27,7 @@ func (vmp *VMPool) Init() error {
 	return nil
 }
 
-// SetJsPath set standard Javascript library path.
+// SetJSPath set standard Javascript library path.
 func (vmp *VMPool) SetJSPath(path string) {
 	vmp.jsPath = path
 }

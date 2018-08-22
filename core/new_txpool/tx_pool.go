@@ -15,7 +15,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/prometheus/client_golang/prometheus"
@@ -25,6 +25,7 @@ func init() {
 	prometheus.MustRegister(receivedTransactionCount)
 }
 
+// TxPoolImpl defines all the API of txpool package.
 type TxPoolImpl struct {
 	chP2PTx chan p2p.IncomingMessage
 	chTx    chan *tx.Tx
@@ -42,6 +43,7 @@ type TxPoolImpl struct {
 	mu sync.RWMutex
 }
 
+// NewTxPoolImpl returns a default TxPoolImpl instance.
 func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
 	p := &TxPoolImpl{
 		blockCache:   blockCache,
@@ -58,13 +60,15 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 	return p, nil
 }
 
+// Start starts the jobs.
 func (pool *TxPoolImpl) Start() {
-	ilog.Info("TxPoolImpl Start")
+	ilog.Infof("TxPoolImpl Start")
 	go pool.loop()
 }
 
+// Stop stops all the jobs.
 func (pool *TxPoolImpl) Stop() {
-	ilog.Info("TxPoolImpl Stop")
+	ilog.Infof("TxPoolImpl Stop")
 	close(pool.chP2PTx)
 	close(pool.chLinkedNode)
 }
@@ -89,7 +93,7 @@ func (pool *TxPoolImpl) loop() {
 		select {
 		case tr, ok := <-pool.chTx:
 			if !ok {
-				ilog.Error("failed to chTx")
+				ilog.Errorf("failed to chTx")
 				os.Exit(1)
 			}
 
@@ -100,7 +104,7 @@ func (pool *TxPoolImpl) loop() {
 
 		case bl, ok := <-pool.chLinkedNode:
 			if !ok {
-				ilog.Error("failed to ch linked node")
+				ilog.Errorf("failed to ch linked node")
 				os.Exit(1)
 			}
 
@@ -113,23 +117,23 @@ func (pool *TxPoolImpl) loop() {
 			tFort := pool.updateForkChain(bl.HeadNode)
 			switch tFort {
 			case ForkError:
-				ilog.Error("failed to update fork chain")
+				ilog.Errorf("failed to update fork chain")
 				pool.clearTxPending()
 
 			case Fork:
 				if err := pool.doChainChange(); err != nil {
-					ilog.Error("failed to chain change")
+					ilog.Errorf("failed to chain change")
 					pool.clearTxPending()
 				}
 
 			case NotFork:
 
 				if err := pool.delBlockTxInPending(bl.LinkedNode.Block.HeadHash()); err != nil {
-					ilog.Error("failed to del block tx")
+					ilog.Errorf("failed to del block tx")
 				}
 
 			default:
-				ilog.Error("failed to tFort")
+				ilog.Errorf("failed to tFort")
 			}
 			pool.mu.Unlock()
 
@@ -160,6 +164,7 @@ func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *
 	}
 }
 
+// AddLinkedNode add the block
 func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error {
 
 	if linkedNode == nil || headNode == nil {
@@ -176,6 +181,7 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 	return nil
 }
 
+// AddTx add the transaction
 func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 
 	var r TAddTx
@@ -192,6 +198,7 @@ func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 	return r
 }
 
+// PendingTxs get the pending transactions
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 
 	var pendingList TxsList
@@ -212,6 +219,7 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 	return pendingList[:l], nil
 }
 
+// ExistTxs determine if the transaction exists
 func (pool *TxPoolImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error) {
 
 	var r FRet
@@ -248,6 +256,10 @@ func (pool *TxPoolImpl) initBlockTx() {
 }
 
 func (pool *TxPoolImpl) verifyTx(t *tx.Tx) TAddTx {
+
+	if t.GasPrice <= 0 {
+		return GasPriceError
+	}
 
 	if pool.txTimeOut(t) {
 		return TimeError
@@ -336,7 +348,6 @@ func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 
 	}
 
-	return false
 }
 
 func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
@@ -507,18 +518,18 @@ func (pool *TxPoolImpl) fundForkBlockHash(newHash []byte, oldHash []byte) ([]byt
 		if !ok {
 			bb, err := pool.blockCache.Find(n)
 			if err != nil {
-				ilog.Error("failed to find block ,err = ", err)
+				ilog.Errorf("failed to find block ,err = ", err)
 				return nil, false
 			}
 
 			if err = pool.addBlock(bb.Block); err != nil {
-				ilog.Error("failed to add block, err = ", err)
+				ilog.Errorf("failed to add block, err = ", err)
 				return nil, false
 			}
 
 			b, ok = pool.block(n)
 			if !ok {
-				ilog.Error("failed to get block ,err = ", err)
+				ilog.Errorf("failed to get block ,err = ", err)
 				return nil, false
 			}
 		}
@@ -531,7 +542,6 @@ func (pool *TxPoolImpl) fundForkBlockHash(newHash []byte, oldHash []byte) ([]byt
 
 	}
 
-	return nil, false
 }
 
 func (pool *TxPoolImpl) fundBlockInChain(hash []byte, chainHead []byte) ([]byte, bool) {
@@ -556,7 +566,6 @@ func (pool *TxPoolImpl) fundBlockInChain(hash []byte, chainHead []byte) ([]byte,
 
 	}
 
-	return nil, false
 }
 
 func (pool *TxPoolImpl) doChainChange() error {

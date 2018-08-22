@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/spf13/cobra"
 )
 
@@ -33,14 +33,14 @@ var compileCmd = &cobra.Command{
 			return
 		}
 		codePath := args[0]
-		fd, err := ReadFile(codePath)
+		fd, err := readFile(codePath)
 		if err != nil {
 			fmt.Println("Read source code file failed: ", err.Error())
 			return
 		}
 		code := string(fd)
 		abiPath := args[1]
-		fd, err = ReadFile(abiPath)
+		fd, err = readFile(abiPath)
 		if err != nil {
 			fmt.Println("Read abi file failed: ", err.Error())
 			return
@@ -60,17 +60,17 @@ var compileCmd = &cobra.Command{
 		action := tx.NewAction("iost.system", "setcode", `["`+contract.Encode()+`",]`)
 		pubkeys := make([][]byte, len(signers))
 		for i, pubkey := range signers {
-			pubkeys[i] = LoadBytes(string(pubkey))
+			pubkeys[i] = loadBytes(pubkey)
 		}
 		trx := tx.NewTx([]tx.Action{action}, pubkeys, gasLimit, gasPrice, expiration)
 
 		bytes := trx.Encode()
 
 		if dest == "default" {
-			dest = ChangeSuffix(args[0], ".sc")
+			dest = changeSuffix(args[0], ".sc")
 		}
 
-		err = SaveTo(dest, bytes)
+		err = saveTo(dest, bytes)
 		if err != nil {
 			fmt.Println(err.Error())
 		}

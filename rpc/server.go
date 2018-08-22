@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"google.golang.org/grpc"
 )
 
@@ -23,6 +23,8 @@ var bchain block.Chain
 var visitor *database.Visitor
 
 //func Server(port string, tp txpool.TxPool,bcache blockcache.BlockCache, _global global.Global) error {
+
+// Server gRPC entry
 func Server(port string, bcache blockcache.BlockCache, _global global.BaseVariable) error {
 	txdb = _global.TxDB()
 	//txpool=tp
@@ -43,7 +45,7 @@ func Server(port string, bcache blockcache.BlockCache, _global global.BaseVariab
 		return fmt.Errorf("failed to rpc NewServer")
 	}
 
-	RegisterApisServer(s, newRpcServer())
+	RegisterApisServer(s, newRPCServer())
 
 	go s.Serve(lis)
 

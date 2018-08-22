@@ -3,9 +3,10 @@ package txpool
 import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 )
 
+// TxPool defines all the API of txpool package.
 type TxPool interface {
 	Start()
 	Stop()

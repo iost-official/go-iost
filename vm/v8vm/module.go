@@ -47,8 +47,8 @@ func (ms Modules) Del(id string) {
 
 // requireModule get module from modules and return to c function.
 //export requireModule
-func requireModule(cSbx C.SandboxPtr, moduleId *C.char) *C.char {
-	id := C.GoString(moduleId)
+func requireModule(cSbx C.SandboxPtr, moduleID *C.char) *C.char {
+	id := C.GoString(moduleID)
 
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {

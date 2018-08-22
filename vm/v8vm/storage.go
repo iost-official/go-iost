@@ -9,6 +9,7 @@ import (
 	"strconv"
 )
 
+// ErrInvalidDbValType error
 var ErrInvalidDbValType = errors.New("invalid db value type")
 
 //export goPut

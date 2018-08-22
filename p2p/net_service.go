@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	libp2p "github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
@@ -21,7 +22,8 @@ import (
 type PeerID = peer.ID
 
 const (
-	protocolID = "iostp2p/1.0"
+	protocolID  = "iostp2p/1.0"
+	privKeyPath = "priv.key"
 )
 
 // errors
@@ -44,46 +46,26 @@ type Service interface {
 type NetService struct {
 	host        host.Host
 	peerManager *PeerManager
-	config      *Config
+	config      *common.P2PConfig
 }
 
 var _ Service = &NetService{}
 
-// NewDefault returns a default NetService instance.
-func NewDefault() (*NetService, error) {
-	ns := &NetService{}
-	privKey, err := getOrCreateKey("priv.key")
-	if err != nil {
-		ilog.Error("failed to get private key. err=%v", err)
-		return nil, err
-	}
-	host, err := ns.startHost(privKey, "0.0.0.0:6666")
-	if err != nil {
-		ilog.Error("failed to start a host. err=%v", err)
-		return nil, err
-	}
-	ns.host = host
-
-	ns.peerManager = NewPeerManager(host, DefaultConfig())
-
-	return ns, nil
-}
-
 // NewNetService returns a NetService instance with the config argument.
-func NewNetService(config *Config) (*NetService, error) {
+func NewNetService(config *common.P2PConfig) (*NetService, error) {
 	ns := &NetService{
 		config: config,
 	}
 
-	privKey, err := getOrCreateKey(config.PrivKeyPath)
+	privKey, err := getOrCreateKey(privKeyPath)
 	if err != nil {
-		ilog.Error("failed to get private key. err=%v, path=%v", err, config.PrivKeyPath)
+		ilog.Errorf("failed to get private key. err=%v, path=%v", err, privKeyPath)
 		return nil, err
 	}
 
 	host, err := ns.startHost(privKey, config.ListenAddr)
 	if err != nil {
-		ilog.Error("failed to start a host. err=%v, listenAddr=%v", err, config.ListenAddr)
+		ilog.Errorf("failed to start a host. err=%v, listenAddr=%v", err, config.ListenAddr)
 		return nil, err
 	}
 	ns.host = host
@@ -106,6 +88,9 @@ func (ns *NetService) LocalAddrs() []multiaddr.Multiaddr {
 // Start starts the jobs.
 func (ns *NetService) Start() error {
 	go ns.peerManager.Start()
+	for _, addr := range ns.host.Addrs() {
+		ilog.Infof("multiaddr: %s/ipfs/%s", addr, ns.ID())
+	}
 	return nil
 }
 

@@ -22,7 +22,7 @@ func genTx() Tx {
 
 func TestTxDb(t *testing.T) {
 	Convey("Test of TxDb", t, func() {
-		txdb := TxDbInstance()
+		txdb := TxDBInstance()
 		Convey("Test of Add", func() {
 			a1, _ := account.NewAccount(nil)
 			_tx := NewTx([]Action{}, [][]byte{a1.Pubkey}, 100000, 100, 11)

@@ -23,7 +23,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	pb "github.com/iost-official/Go-IOS-Protocol/new_rpc"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -42,7 +42,7 @@ var publishCmd = &cobra.Command{
 			return
 		}
 
-		sc, err := ReadFile(args[0])
+		sc, err := readFile(args[0])
 		if err != nil {
 			fmt.Println("Read file failed: ", err.Error())
 			return
@@ -59,7 +59,7 @@ var publishCmd = &cobra.Command{
 			if i == 0 {
 				continue
 			}
-			sig, err := ReadFile(v)
+			sig, err := readFile(v)
 			if err != nil {
 				fmt.Println("Read file failed: ", err.Error())
 				return
@@ -76,13 +76,13 @@ var publishCmd = &cobra.Command{
 			}
 			signs = append(signs, sign)
 		}
-		fsk, err := ReadFile(kpPath)
+		fsk, err := readFile(kpPath)
 		if err != nil {
 			fmt.Println("Read file failed: ", err.Error())
 			return
 		}
 
-		acc, err := account.NewAccount(LoadBytes(string(fsk)))
+		acc, err := account.NewAccount(loadBytes(string(fsk)))
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -94,9 +94,9 @@ var publishCmd = &cobra.Command{
 			return
 		}
 
-		dest = ChangeSuffix(args[0], ".tx")
+		dest = changeSuffix(args[0], ".tx")
 
-		SaveTo(dest, stx.Encode())
+		saveTo(dest, stx.Encode())
 
 		var txHash []byte
 		if !isLocal {
@@ -108,7 +108,7 @@ var publishCmd = &cobra.Command{
 		}
 		fmt.Println("ok")
 		//fmt.Println(hex.EncodeToString(txHash))
-		fmt.Println(SaveBytes(txHash))
+		fmt.Println(saveBytes(txHash))
 	},
 }
 
@@ -134,7 +134,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// publishCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// publishCmd.Fla gs().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func sendTx(stx tx.Tx) ([]byte, error) {

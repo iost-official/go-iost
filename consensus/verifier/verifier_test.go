@@ -1,12 +1,13 @@
-package consensus_common
+package verifier
 
 import (
-	"github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	"github.com/smartystreets/goconvey/convey"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -42,22 +43,22 @@ func TestVerifyBlockHead(t *testing.T) {
 		convey.Convey("Wrong time", func() {
 			blk.Head.Time = common.GetCurrentTimestamp().Slot - 5
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
-			convey.So(err, convey.ShouldEqual, ErrOldBlk)
+			convey.So(err, convey.ShouldEqual, errOldBlk)
 			blk.Head.Time = common.GetCurrentTimestamp().Slot + 2
 			err = VerifyBlockHead(blk, parentBlk, chainTop)
-			convey.So(err, convey.ShouldEqual, ErrFutureBlk)
+			convey.So(err, convey.ShouldEqual, errFutureBlk)
 		})
 
 		convey.Convey("Wrong parent", func() {
 			blk.Head.ParentHash = []byte("fake hash")
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
-			convey.So(err, convey.ShouldEqual, ErrParentHash)
+			convey.So(err, convey.ShouldEqual, errParentHash)
 		})
 
 		convey.Convey("Wrong number", func() {
 			blk.Head.Number = 5
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
-			convey.So(err, convey.ShouldEqual, ErrNumber)
+			convey.So(err, convey.ShouldEqual, errNumber)
 		})
 
 		convey.Convey("Wrong tx hash", func() {
@@ -68,7 +69,7 @@ func TestVerifyBlockHead(t *testing.T) {
 			convey.So(err, convey.ShouldBeNil)
 			blk.Head.TxsHash = []byte("fake hash")
 			err = VerifyBlockHead(blk, parentBlk, chainTop)
-			convey.So(err, convey.ShouldEqual, ErrTxHash)
+			convey.So(err, convey.ShouldEqual, errTxHash)
 		})
 	})
 }

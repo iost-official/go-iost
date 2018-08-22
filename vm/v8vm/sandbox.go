@@ -30,7 +30,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
-// A Sandbox is an execution environment that allows separate, unrelated, JavaScript
+// Sandbox is an execution environment that allows separate, unrelated, JavaScript
 // code to run in a single instance of IVM.
 type Sandbox struct {
 	id      int
@@ -43,11 +43,13 @@ type Sandbox struct {
 
 var sbxMap = make(map[C.SandboxPtr]*Sandbox)
 
+// GetSandbox from sandbox map by sandbox ptr
 func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
 	sbx, ok := sbxMap[cSbx]
 	return sbx, ok
 }
 
+// NewSandbox generate new sandbox for VM and insert into sandbox map
 func NewSandbox(e *VM) *Sandbox {
 	cSbx := C.newSandbox(e.isolate)
 	s := &Sandbox{
@@ -61,6 +63,7 @@ func NewSandbox(e *VM) *Sandbox {
 	return s
 }
 
+// Release release sandbox and delete from map
 func (sbx *Sandbox) Release() {
 	if sbx.context != nil {
 		delete(sbxMap, sbx.context)
@@ -69,6 +72,8 @@ func (sbx *Sandbox) Release() {
 	sbx.context = nil
 }
 
+// nolint
+// Init add system functions
 func (sbx *Sandbox) Init() {
 	// init require
 	C.InitGoRequire((C.requireFunc)(C.requireModule))
@@ -86,15 +91,18 @@ func (sbx *Sandbox) Init() {
 		(C.globalGetFunc)(C.goGlobalGet))
 }
 
+// SetGasLimit set gas limit in context
 func (sbx *Sandbox) SetGasLimit(limit int64) {
 	C.setSandboxGasLimit(sbx.context, C.size_t(limit))
 }
 
+// SetHost set host in sandbox and set gas limit
 func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
 	sbx.SetGasLimit(host.GasLimit())
 }
 
+// SetModule generate new module and set module in sandbox
 func (sbx *Sandbox) SetModule(name, code string) {
 	if name == "" || code == "" {
 		return
@@ -103,12 +111,14 @@ func (sbx *Sandbox) SetModule(name, code string) {
 	sbx.modules.Set(m)
 }
 
+// SetJSPath set js path
 func (sbx *Sandbox) SetJSPath(path string) {
 	sbx.jsPath = path
 	cPath := C.CString(path)
 	C.setJSPath(sbx.context, cPath)
 }
 
+// Prepare for contract, inject code
 func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args []interface{}) (string, error) {
 	name := contract.ID
 	code := contract.Code
@@ -146,6 +156,7 @@ objObserver.%s(%s)
 `, name, function, strings.Trim(argStr, "[]")), nil
 }
 
+// Execute prepared code, return results, gasUsed
 func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	cCode := C.CString(preparedCode)
 	defer C.free(unsafe.Pointer(cCode))

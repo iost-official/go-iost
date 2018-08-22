@@ -12,7 +12,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
@@ -40,6 +40,18 @@ type Engine interface {
 }
 
 var staticMonitor *Monitor
+var jsPath = "./v8vm/v8/libjs/"
+
+// SetUp setup global engine settings
+func SetUp(k, v string) error {
+	switch k {
+	case "js_path":
+		jsPath = v
+	default:
+		return errSetUpArgs
+	}
+	return nil
+}
 
 var once sync.Once
 
@@ -97,13 +109,13 @@ SetUp keys:
 func (e *engineImpl) SetUp(k, v string) error {
 	switch k {
 	case "js_path":
-		e.jsPath = v
+		jsPath = v
 	case "log_level":
-		e.setLogger(v, "", false)
+		e.setLogLevel(v)
 	case "log_path":
-		e.setLogger("", v, false)
+		e.setLogPath(v)
 	case "log_enable":
-		e.setLogger("", "", true)
+		e.startLog()
 	default:
 		return errSetUpArgs
 	}
@@ -133,10 +145,10 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	for _, action := range tx0.Actions {
 
 		cost, status, receipts, err2 := e.runAction(action)
-		e.logger.Info("run action : %v, result is %v", action, status.Code)
-		e.logger.Debug("used cost > %v", cost)
-		e.logger.Debug("status > \n%v\n", status)
-		e.logger.Debug("receipts > \n%v\n", receipts)
+		e.logger.Infof("run action : %v, result is %v", action, status.Code)
+		e.logger.Debugf("used cost > %v", cost)
+		e.logger.Debugf("status > \n%v\n", status)
+		e.logger.Debugf("receipts > \n%v\n", receipts)
 
 		if err2 != nil {
 			return nil, err2
@@ -148,11 +160,11 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		txr.Status = status
 		txr.GasUsage += cost.ToGas()
-		//ilog.Debug("action status: %v", status)
+		//ilog.Debugf("action status: %v", status)
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
-			e.logger.Debug("rollback")
+			e.logger.Debugf("rollback")
 			e.ho.DB().Rollback()
 		} else {
 			txr.Receipts = append(txr.Receipts, receipts...)
@@ -170,7 +182,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		e.ho.DB().Rollback()
 		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
 		if err != nil {
-			ilog.Debug(err.Error())
+			ilog.Debugf(err.Error())
 			return nil, err
 		}
 	} else {
@@ -189,6 +201,8 @@ func checkTx(tx0 *tx.Tx) error {
 	}
 	return nil
 }
+
+// nolint
 func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
@@ -234,8 +248,6 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	}
 
 	return rtn, nil
-	//return nil, errors.New("unsupported yet")
-
 }
 func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
@@ -291,10 +303,10 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	}
 	//var rtn []interface{}
 	//rtn, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	//ilog.Debug("action %v > %v", action.Contract+"."+action.ActionName, rtn)
+	//ilog.Debugf("action %v > %v", action.Contract+"."+action.ActionName, rtn)
 
 	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	e.logger.Debug("cost is %v", cost)
+	e.logger.Debugf("cost is %v", cost)
 
 	if cost == nil {
 		panic("cost is nil")
@@ -325,54 +337,45 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	return
 }
 
-func (e *engineImpl) setLogger(level, path string, start bool) {
-	if path == "" && !start {
-		//ilog.Debug("console log accepted")
-		if e.consoleWriter == nil {
-			e.consoleWriter = ilog.NewConsoleWriter()
-		}
-
-		switch level {
-		case "debug":
-			e.consoleWriter.SetLevel(ilog.LevelDebug)
-		case "info":
-			e.consoleWriter.SetLevel(ilog.LevelInfo)
-		case "warning":
-			e.consoleWriter.SetLevel(ilog.LevelWarn)
-		case "error":
-			e.consoleWriter.SetLevel(ilog.LevelError)
-		case "fatal":
-			e.consoleWriter.SetLevel(ilog.LevelFatal)
-		}
-
-		return
+func (e *engineImpl) setLogLevel(level string) {
+	if e.consoleWriter == nil {
+		e.consoleWriter = ilog.NewConsoleWriter()
 	}
-
-	if level == "" && !start {
-		e.fileWriter = ilog.NewFileWriter(path)
+	switch level {
+	case "debug":
+		e.consoleWriter.SetLevel(ilog.LevelDebug)
+	case "info":
+		e.consoleWriter.SetLevel(ilog.LevelInfo)
+	case "warning":
+		e.consoleWriter.SetLevel(ilog.LevelWarn)
+	case "error":
+		e.consoleWriter.SetLevel(ilog.LevelError)
+	case "fatal":
+		e.consoleWriter.SetLevel(ilog.LevelFatal)
 	}
-
-	if start {
-		var ok bool
-		if e.consoleWriter != nil {
-			err := e.logger.AddWriter(e.consoleWriter)
-			if err != nil {
-				panic(err)
-			}
-			ok = true
+}
+func (e *engineImpl) setLogPath(path string) {
+	e.fileWriter = ilog.NewFileWriter(path)
+}
+func (e *engineImpl) startLog() {
+	var ok bool
+	if e.consoleWriter != nil {
+		err := e.logger.AddWriter(e.consoleWriter)
+		if err != nil {
+			panic(err)
 		}
-		if e.fileWriter != nil {
-			err := e.logger.AddWriter(e.fileWriter)
-			if err != nil {
-				panic(err)
-			}
-			ok = true
+		ok = true
+	}
+	if e.fileWriter != nil {
+		err := e.logger.AddWriter(e.fileWriter)
+		if err != nil {
+			panic(err)
 		}
-
-		if ok {
-			e.logger.SetCallDepth(0)
-			e.logger.Start()
-		}
+		ok = true
+	}
+	if ok {
+		e.logger.SetCallDepth(0)
+		e.logger.Start()
 	}
 }
 

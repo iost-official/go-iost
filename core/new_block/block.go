@@ -10,7 +10,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/merkletree"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 )
 
 type Block struct {
@@ -49,7 +49,6 @@ func GenGenesis(initTime int64) (*Block, error) {
 		Txs:      []*tx.Tx{&txn},
 		Receipts: make([]*tx.TxReceipt, 0),
 	}
-	genesis.Txs = append(genesis.Txs, &txn)
 	return genesis, nil
 }
 

@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
@@ -69,7 +69,7 @@ var signCmd = &cobra.Command{
 			return
 		}
 
-		acc, err := account.NewAccount(LoadBytes(string(seckey)))
+		acc, err := account.NewAccount(loadBytes(string(seckey)))
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -93,7 +93,7 @@ var signCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		err = SaveTo(dest, sigRaw)
+		err = saveTo(dest, sigRaw)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
