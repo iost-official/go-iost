@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 )
@@ -25,10 +26,8 @@ func main() {
 
 	flag.Parse()
 
-	config := &p2p.Config{
-		ChainID:     111,
-		PrivKeyPath: "priv.key",
-		RoutingFile: "routing.table",
+	config := &common.P2PConfig{
+		ChainID: 111,
 	}
 	if *seed != "" {
 		config.SeedNodes = []string{*seed}
@@ -37,24 +36,24 @@ func main() {
 		*port = randomPort()
 	}
 	if *port <= 0 {
-		ilog.Fatal("invalid tcp port")
+		ilog.Fatalf("invalid tcp port")
 	}
 	config.ListenAddr = "0.0.0.0:" + strconv.Itoa(*port)
 
 	ns, err := p2p.NewNetService(config)
 	if err != nil {
-		ilog.Fatal("create p2pservice failed. err=%v", err)
+		ilog.Fatalf("create p2pservice failed. err=%v", err)
 	}
 	ns.Start()
 	ct := NewChatter(ns)
 	ct.Start()
 
-	ilog.Info("start. id=%s, addrs=%s", ns.ID(), ns.LocalAddrs())
+	ilog.Infof("start. id=%s, addrs=%s", ns.ID(), ns.LocalAddrs())
 
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT)
 	s := <-c
-	ilog.Info("received quit signal: %s", s)
+	ilog.Infof("received quit signal: %s", s)
 	ct.Stop()
 	ns.Stop()
 }

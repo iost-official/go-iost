@@ -47,7 +47,7 @@ func SignTxContent(tx Tx, account account.Account) (common.Signature, error) {
 	if !tx.containSigner(account.Pubkey) {
 		return common.Signature{}, errors.New("account not included in signer list of this transaction")
 	}
-	return common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey), nil
+	return common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey, common.SavePubkey), nil
 }
 
 func (t *Tx) containSigner(pubkey []byte) bool {
@@ -86,7 +86,7 @@ func (t *Tx) baseHash() []byte {
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
 func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
-	tx.Publisher = common.Sign(common.Secp256k1, tx.publishHash(), account.Seckey)
+	tx.Publisher = common.Sign(common.Secp256k1, tx.publishHash(), account.Seckey, common.SavePubkey)
 	return tx, nil
 }
 

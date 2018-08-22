@@ -49,7 +49,6 @@ func GenGenesis(initTime int64) (*Block, error) {
 		Txs:      []*tx.Tx{&txn},
 		Receipts: make([]*tx.TxReceipt, 0),
 	}
-	genesis.Txs = append(genesis.Txs, &txn)
 	return genesis, nil
 }
 

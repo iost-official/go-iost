@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
+	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
@@ -38,9 +38,8 @@ type BaseVariableImpl struct {
 	blockChain block.Chain
 	stateDB    db.MVCCDB
 	txDB       tx.TxDB
-
-	mode   *Mode
-	config *common.Config
+	mode       *Mode
+	config     *common.Config
 }
 
 func New(conf *common.Config) (*BaseVariableImpl, error) {
@@ -94,7 +93,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
 		}
-		consensus_common.VerifyBlockWithVM(blk, stateDB)
+		verifier.VerifyBlockWithVM(blk, stateDB)
 		stateDB.Tag(string(blk.HeadHash()))
 		if blk.Head.Number%1000 == 0 {
 			err = stateDB.Flush(string(blk.HeadHash()))
@@ -116,7 +115,8 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	}
 
 	tx.LdbPath = conf.DB.LdbPath
-	txDb := tx.TxDbInstance()
+	txDb := tx.TxDBInstance()
+
 	if txDb == nil {
 		return nil, errors.New("new txdb failed, stop the program.")
 	}
@@ -126,6 +126,18 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 
 	n := &BaseVariableImpl{txDB: txDb, config: conf, stateDB: stateDB, blockChain: blockChain, mode: m}
 	return n, nil
+}
+
+func FakeNew() BaseVariable {
+	block.LevelDBPath = "./"
+	blockChain, _ := block.Instance()
+	stateDB, _ := db.NewMVCCDB("StateDB")
+	tx.LdbPath = "./"
+	txDBfdafad := tx.TxDBInstance()
+	mode := Mode{}
+	mode.SetMode(ModeNormal)
+	config := common.Config{}
+	return &BaseVariableImpl{blockChain, stateDB, txDBfdafad, &mode, &config}
 }
 
 func (g *BaseVariableImpl) TxDB() tx.TxDB {

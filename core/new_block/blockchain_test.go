@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"fmt"
-	. "github.com/smartystreets/goconvey/convey"
 	"os/exec"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewBlockChain(t *testing.T) {

@@ -160,7 +160,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		txr.Status = status
 		txr.GasUsage += cost.ToGas()
-		//ilog.Debug("action status: %v", status)
+		//ilog.Debugf("action status: %v", status)
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
@@ -182,7 +182,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		e.ho.DB().Rollback()
 		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
 		if err != nil {
-			ilog.Debug(err.Error())
+			ilog.Debugf(err.Error())
 			return nil, err
 		}
 	} else {
@@ -303,7 +303,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	}
 	//var rtn []interface{}
 	//rtn, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	//ilog.Debug("action %v > %v", action.Contract+"."+action.ActionName, rtn)
+	//ilog.Debugf("action %v > %v", action.Contract+"."+action.ActionName, rtn)
 
 	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
 	e.logger.Debug("cost is %v", cost)

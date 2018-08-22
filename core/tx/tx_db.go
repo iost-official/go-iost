@@ -26,7 +26,7 @@ var once sync.Once
 var TxDBInst *TxDBImpl
 var LdbPath string
 
-func TxDbInstance() *TxDBImpl {
+func TxDBInstance() TxDB {
 	if TxDBInst != nil {
 		return TxDBInst
 	}
