@@ -40,11 +40,11 @@ func TestGenerateBlock(t *testing.T) {
 		GasPrice:   1,
 		Publisher:  common.Signature{Pubkey: account.Pubkey},
 	}
-	acticon := tx.Action{
-		Contract:   "iost.system",
-		ActionName: "Transfer",
-		Data:       `["a","b", 100]`,
-	}
+	//acticon := tx.Action{
+	//	Contract:   "iost.system",
+	//	ActionName: "Transfer",
+	//	Data:       `["a","b", 100]`,
+	//}
 	txsList = append(txsList, &tx1)
 	mockTxPool.EXPECT().PendingTxs(gomock.Any()).Return(txsList, nil)
 	generateBlock(account, topBlock, mockTxPool, stateDB)
