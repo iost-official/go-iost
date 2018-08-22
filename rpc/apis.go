@@ -10,22 +10,25 @@ import (
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/Go-IOS-Protocol/new_rpc ApisServer
 
-type RpcServer struct {
+// RPCServer is the class of RPC server
+type RPCServer struct {
 }
 
-// newRpcServer
-func newRpcServer() *RpcServer {
-	s := &RpcServer{}
+// newRPCServer
+func newRPCServer() *RPCServer {
+	s := &RPCServer{}
 	return s
 }
 
-func (s *RpcServer) GetHeight(ctx context.Context, void *VoidReq) (*HeightRes, error) {
+// GetHeight ...
+func (s *RPCServer) GetHeight(ctx context.Context, void *VoidReq) (*HeightRes, error) {
 	return &HeightRes{
 		Height: bchain.Length(),
 	}, nil
 }
 
-func (s *RpcServer) GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, error) {
+// GetTxByHash ...
+func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, error) {
 	if hash == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -39,7 +42,8 @@ func (s *RpcServer) GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, 
 	return txRaw, nil
 }
 
-func (s *RpcServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashReq) (*BlockInfo, error) {
+// GetBlockByHash ...
+func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashReq) (*BlockInfo, error) {
 	if blkHashReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -69,7 +73,8 @@ func (s *RpcServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 	return blkInfo, nil
 }
 
-func (s *RpcServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
+// GetBlockByNum ...
+func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
 	if blkNumReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -99,7 +104,8 @@ func (s *RpcServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq)
 	return blkInfo, nil
 }
 
-func (s *RpcServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRes, error) {
+// GetState ...
+func (s *RPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRes, error) {
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -108,7 +114,8 @@ func (s *RpcServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRe
 	}, nil
 }
 
-func (s *RpcServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBalanceRes, error) {
+// GetBalance ...
+func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBalanceRes, error) {
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -117,7 +124,8 @@ func (s *RpcServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 	}, nil
 }
 
-func (s *RpcServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
+// SendRawTx ...
+func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
 	if rawTx == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -139,6 +147,7 @@ func (s *RpcServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	return &res, nil
 }
 
-func (s *RpcServer) EstimateGas(ctx context.Context, rawTx *RawTxReq) (*GasRes, error) {
+// EstimateGas ...
+func (s *RPCServer) EstimateGas(ctx context.Context, rawTx *RawTxReq) (*GasRes, error) {
 	return nil, nil
 }
