@@ -58,16 +58,16 @@ func NewConfig(configfile string) *Config {
 
 	f, err := os.Open(configfile)
 	if err != nil {
-		ilog.Fatal("Failed to open config file '%v', %v", configfile, err)
+		ilog.Fatalf("Failed to open config file '%v', %v", configfile, err)
 	}
 
 	if err := v.ReadConfig(f); err != nil {
-		ilog.Fatal("Failed to read config file: %v", err)
+		ilog.Fatalf("Failed to read config file: %v", err)
 	}
 
 	c := &Config{}
 	if err := v.Unmarshal(c); err != nil {
-		ilog.Fatal("Unable to decode into struct, %v", err)
+		ilog.Fatalf("Unable to decode into struct, %v", err)
 	}
 
 	return c
@@ -76,7 +76,7 @@ func NewConfig(configfile string) *Config {
 func (c *Config) YamlString() string {
 	bs, err := yaml.Marshal(c)
 	if err != nil {
-		ilog.Fatal("Unable to marshal config to YAML: %v", err)
+		ilog.Fatalf("Unable to marshal config to YAML: %v", err)
 	}
 	return string(bs)
 }

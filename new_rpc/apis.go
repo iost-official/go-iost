@@ -157,7 +157,7 @@ forloop:
 	for {
 		select {
 		case <-timerChan:
-			ilog.Debug("timeup in subscribe send")
+			ilog.Debugf("timeup in subscribe send")
 			break forloop
 		case ev := <-sub.ReadChan():
 			err := res.Send(&SubscribeRes{Ev: ev})

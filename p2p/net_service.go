@@ -59,13 +59,13 @@ func NewNetService(config *common.P2PConfig) (*NetService, error) {
 
 	privKey, err := getOrCreateKey(privKeyPath)
 	if err != nil {
-		ilog.Error("failed to get private key. err=%v, path=%v", err, privKeyPath)
+		ilog.Errorf("failed to get private key. err=%v, path=%v", err, privKeyPath)
 		return nil, err
 	}
 
 	host, err := ns.startHost(privKey, config.ListenAddr)
 	if err != nil {
-		ilog.Error("failed to start a host. err=%v, listenAddr=%v", err, config.ListenAddr)
+		ilog.Errorf("failed to start a host. err=%v, listenAddr=%v", err, config.ListenAddr)
 		return nil, err
 	}
 	ns.host = host
@@ -89,7 +89,7 @@ func (ns *NetService) LocalAddrs() []multiaddr.Multiaddr {
 func (ns *NetService) Start() error {
 	go ns.peerManager.Start()
 	for _, addr := range ns.host.Addrs() {
-		ilog.Info("multiaddr: %s/ipfs/%s", addr, ns.ID())
+		ilog.Infof("multiaddr: %s/ipfs/%s", addr, ns.ID())
 	}
 	return nil
 }

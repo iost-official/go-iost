@@ -59,12 +59,12 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 }
 
 func (pool *TxPoolImpl) Start() {
-	ilog.Info("TxPoolImpl Start")
+	ilog.Infof("TxPoolImpl Start")
 	go pool.loop()
 }
 
 func (pool *TxPoolImpl) Stop() {
-	ilog.Info("TxPoolImpl Stop")
+	ilog.Infof("TxPoolImpl Stop")
 	close(pool.chP2PTx)
 	close(pool.chLinkedNode)
 }
@@ -89,7 +89,7 @@ func (pool *TxPoolImpl) loop() {
 		select {
 		case tr, ok := <-pool.chTx:
 			if !ok {
-				ilog.Error("failed to chTx")
+				ilog.Errorf("failed to chTx")
 				os.Exit(1)
 			}
 
@@ -100,7 +100,7 @@ func (pool *TxPoolImpl) loop() {
 
 		case bl, ok := <-pool.chLinkedNode:
 			if !ok {
-				ilog.Error("failed to ch linked node")
+				ilog.Errorf("failed to ch linked node")
 				os.Exit(1)
 			}
 
@@ -113,23 +113,23 @@ func (pool *TxPoolImpl) loop() {
 			tFort := pool.updateForkChain(bl.HeadNode)
 			switch tFort {
 			case ForkError:
-				ilog.Error("failed to update fork chain")
+				ilog.Errorf("failed to update fork chain")
 				pool.clearTxPending()
 
 			case Fork:
 				if err := pool.doChainChange(); err != nil {
-					ilog.Error("failed to chain change")
+					ilog.Errorf("failed to chain change")
 					pool.clearTxPending()
 				}
 
 			case NotFork:
 
 				if err := pool.delBlockTxInPending(bl.LinkedNode.Block.HeadHash()); err != nil {
-					ilog.Error("failed to del block tx")
+					ilog.Errorf("failed to del block tx")
 				}
 
 			default:
-				ilog.Error("failed to tFort")
+				ilog.Errorf("failed to tFort")
 			}
 			pool.mu.Unlock()
 
@@ -507,18 +507,18 @@ func (pool *TxPoolImpl) fundForkBlockHash(newHash []byte, oldHash []byte) ([]byt
 		if !ok {
 			bb, err := pool.blockCache.Find(n)
 			if err != nil {
-				ilog.Error("failed to find block ,err = ", err)
+				ilog.Errorf("failed to find block ,err = ", err)
 				return nil, false
 			}
 
 			if err = pool.addBlock(bb.Block); err != nil {
-				ilog.Error("failed to add block, err = ", err)
+				ilog.Errorf("failed to add block, err = ", err)
 				return nil, false
 			}
 
 			b, ok = pool.block(n)
 			if !ok {
-				ilog.Error("failed to get block ,err = ", err)
+				ilog.Errorf("failed to get block ,err = ", err)
 				return nil, false
 			}
 		}
