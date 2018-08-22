@@ -6,16 +6,13 @@ import (
 
 	"fmt"
 
-	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 	"github.com/smartystreets/goconvey/convey"
 )
 
@@ -38,33 +35,44 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	return &trx, nil
 }
 
-func GenerateBlock(t *testing.T) {
-	account, _ := account.NewAccount(nil)
-	topBlock := &block.Block{
-		Head: block.BlockHead{
-			ParentHash: []byte("abc"),
-			Number:     10,
-			Witness:    "witness",
-			Time:       123456,
-		},
-	}
-	topBlock.CalculateHeadHash()
-	mockController := gomock.NewController(t)
+func BenchmarkGenerateBlock(b *testing.B) {
+
+}
+
+func BenchmarkTXRMerkleTree_Build(b *testing.B) { // 2439313ns = 2.4ms
+	//account, _ := account.NewAccount(nil)
+	//topBlock := &block.Block{
+	//	Head: block.BlockHead{
+	//		ParentHash: []byte("abc"),
+	//		Number:     10,
+	//		Witness:    "witness",
+	//		Time:       123456,
+	//	},
+	//}
+	//topBlock.CalculateHeadHash()
+	//mockController := gomock.NewController(nil)
 	stateDB, _ := db.NewMVCCDB("./StateDB")
 	vi := database.NewVisitor(0, stateDB)
-	vi.SetBalance(testID[0], 1000000)
-	vi.SetContract(native.ABI())
-	vi.Commit()
-	stateDB.Tag(string(topBlock.HeadHash()))
-	mockTxPool := core_mock.NewMockTxPool(mockController)
-	txsList := make([]*tx.Tx, 0)
-	for i := 0; i < 3000; i++ {
-		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
-		trx, _ := MakeTx(act)
-		txsList = append(txsList, trx)
-	}
-	mockTxPool.EXPECT().PendingTxs(gomock.Any()).Return(txsList, nil)
-	generateBlock(account, topBlock, mockTxPool, stateDB)
+	vi.SetBalance(testID[0], 100000000)
+	//vi.SetContract(native.ABI())
+	//vi.Commit()
+	//stateDB.Tag(string(topBlock.HeadHash()))
+	//mockTxPool := core_mock.NewMockTxPool(mockController)
+	//txsList := make([]*tx.Tx, 0)
+	//for i := 0; i < 3000; i++ {
+	//	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+	//	trx, _ := MakeTx(act)
+	//	txsList = append(txsList, trx)
+	//}
+	//mockTxPool.EXPECT().PendingTxs(gomock.Any()).Return(txsList, nil).AnyTimes()
+	//
+	//generateBlock(account, topBlock, mockTxPool, stateDB)
+	fmt.Println("fafeawfwa")
+	b.ResetTimer()
+	//for j := 0; j < b.N; j++ {
+	//	fmt.Println("start")
+	//	fmt.Println("end")
+	//}
 }
 
 func TestConfirmNode(t *testing.T) {

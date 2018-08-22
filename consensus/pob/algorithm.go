@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	"fmt"
+
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -41,14 +43,17 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	}
 	txCnt := 1000
 	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
-	txsList, _ := txPool.PendingTxs(txCnt)//signers是不需要的吗？
+	txsList, _ := txPool.PendingTxs(txCnt)
+	fmt.Println("here")
 	db.Checkout(string(topBlock.HeadHash()))
+	fmt.Println("here")
 	engine := vm.NewEngine(&topBlock.Head, db)
-	S:
+	fmt.Println("here")
+L:
 	for _, t := range txsList {
 		select {
 		case <-limitTime.C:
-			break S
+			break L
 		default:
 			if receipt, err := engine.Exec(t); err == nil {
 				blk.Txs = append(blk.Txs, t)
@@ -56,6 +61,7 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 			}
 		}
 	}
+	fmt.Println("here")
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
@@ -72,6 +78,7 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 
 	generatedBlockCount.Inc()
 	txPoolSize.Set(float64(len(blk.Txs)))
+	fmt.Println("here")
 	return &blk, nil
 }
 
