@@ -13,9 +13,8 @@ type BalanceHandler struct {
 // SetBalance ...
 func (m *BalanceHandler) SetBalance(to string, delta int64) {
 	ib := m.Balance(to)
-	//nb := ib + delta
-	println("nb:", ib, to)
-	//m.db.Put(IOSTPrefix+to, MustMarshal(nb))
+	nb := ib + delta
+	m.db.Put(IOSTPrefix+to, MustMarshal(nb))
 }
 
 // Balance ...
