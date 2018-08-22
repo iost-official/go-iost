@@ -1,6 +1,6 @@
 GO = go
 
-VERSION = 1.0.3
+VERSION = 2.0.0
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/Go-IOS-Protocol
 DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
@@ -36,8 +36,8 @@ lint:
 test:
 	@go test ./...
 
-image: devimage
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iost-dev make
+image:
+	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 devimage:
