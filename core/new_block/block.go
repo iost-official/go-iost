@@ -30,6 +30,16 @@ func GenGenesis(initTime int64) (*Block, error) {
 	}
 
 	txn := tx.NewTx(acts, nil, 0, 0, 0)
+
+	act, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
+	if err != nil {
+		panic(err)
+	}
+
+	txn, err = tx.SignTx(txn, act)
+	if err != nil {
+		panic(err)
+	}
 	genesis := &Block{
 		Head: BlockHead{
 			Version: 0,
