@@ -341,10 +341,11 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 }
 
 type JSTester struct {
-	t  *testing.T
-	e  Engine
-	vi *database.Visitor
-	cn string
+	t     *testing.T
+	e     Engine
+	vi    *database.Visitor
+	cname string
+	c     *contract.Contract
 }
 
 func NewJSTester(t *testing.T) *JSTester {
@@ -359,11 +360,11 @@ func NewJSTester(t *testing.T) *JSTester {
 }
 
 func (j *JSTester) readDB(key string) (value interface{}) {
-	return database.MustUnmarshal(j.vi.Get(j.cn + "-" + key))
+	return database.MustUnmarshal(j.vi.Get(j.cname + "-" + key))
 }
 
-func (j *JSTester) setJS(code string, main ...string) *tx.TxReceipt {
-	c := &contract.Contract{
+func (j *JSTester) setJS(code string) {
+	j.c = &contract.Contract{
 		ID:   "jsContract",
 		Code: code,
 		Info: &contract.Info{
@@ -372,35 +373,18 @@ func (j *JSTester) setJS(code string, main ...string) *tx.TxReceipt {
 			Abis: []*contract.ABI{
 				{
 					Name:     "constructor",
+					Args:     []string{},
 					Payment:  0,
 					GasPrice: int64(1),
 					Limit:    contract.NewCost(100, 100, 100),
-					Args:     []string{},
 				},
 			},
 		},
 	}
-	for _, m := range main {
-		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
-			Name:     m,
-			Payment:  0,
-			GasPrice: int64(1),
-			Limit:    contract.NewCost(100, 100, 100),
-			Args:     []string{},
-		})
-	}
+}
 
-	for _, m := range main {
-		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
-			Name:     m,
-			Payment:  0,
-			GasPrice: int64(1),
-			Limit:    contract.NewCost(100, 100, 100),
-			Args:     []string{},
-		})
-	}
-
-	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, c.B64Encode()))
+func (j *JSTester) doSet() *tx.TxReceipt {
+	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, j.c.B64Encode()))
 
 	trx, err := makeTx(act)
 	if err != nil {
@@ -411,14 +395,25 @@ func (j *JSTester) setJS(code string, main ...string) *tx.TxReceipt {
 		j.t.Fatal(err)
 	}
 
-	j.cn = "Contract" + common.Base58Encode(trx.Hash())
+	j.cname = "Contract" + common.Base58Encode(trx.Hash())
 
 	return r
+}
+
+func (j *JSTester) setAPI(name string, argType ...string) {
+
+	j.c.Info.Abis = append(j.c.Info.Abis, &contract.ABI{
+		Name:     name,
+		Payment:  0,
+		GasPrice: int64(1),
+		Limit:    contract.NewCost(100, 100, 100),
+		Args:     argType,
+	})
 
 }
 func (j *JSTester) testJS(main, args string) *tx.TxReceipt {
 
-	act2 := tx.NewAction(j.cn, main, args)
+	act2 := tx.NewAction(j.cname, main, args)
 
 	trx2, err := makeTx(act2)
 	if err != nil {
@@ -446,7 +441,9 @@ class Contract {
 }
 
 module.exports = Contract;
-`, "main")
+`)
+	js.setAPI("main")
+	js.doSet()
 
 	r := js.testJS("main", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
@@ -468,7 +465,9 @@ class Contract {
 }
 
 module.exports = Contract;
-`, "main")
+`)
+	js.setAPI("main")
+	js.doSet()
 
 	r := js.testJS("main", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
@@ -489,7 +488,9 @@ class Contract {
 }
 
 module.exports = Contract;
-`, "main")
+`)
+	js.setAPI("main")
+	js.doSet()
 
 	r := js.testJS("main", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
@@ -513,20 +514,22 @@ class Contract {
 }
 
 module.exports = Contract;
-`, "deposit", "withdraw")
+`)
+	js.setAPI("deposit", "withdraw")
+	js.doSet()
 
 	r := js.testJS("deposit", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
-	if 100 != js.vi.Balance(host.ContractAccountPrefix+js.cn) {
-		t.Fatalf("balance of contract " + js.cn + "should be 100.")
+	if 100 != js.vi.Balance(host.ContractAccountPrefix+js.cname) {
+		t.Fatalf("balance of contract " + js.cname + "should be 100.")
 	}
 
 	r = js.testJS("withdraw", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
-	if 1 != js.vi.Balance(host.ContractAccountPrefix+js.cn) {
-		t.Fatalf("balance of contract " + js.cn + "should be 1.")
+	if 1 != js.vi.Balance(host.ContractAccountPrefix+js.cname) {
+		t.Fatalf("balance of contract " + js.cname + "should be 1.")
 	}
 }
 func TestJS_LuckyBet(t *testing.T) {
@@ -535,9 +538,13 @@ func TestJS_LuckyBet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	js.setJS(string(lc), "clearUserValue", "bet", "getReward")
+	js.setJS(string(lc))
+	js.setAPI("clearUserValue")
+	js.setAPI("bet", "string", "number", "number")
+	js.setAPI("getReward")
+	js.doSet()
 	r := js.testJS("bet", fmt.Sprintf(`["%v",5, 2]`, testID[0]))
 	t.Log("receipt is ", r)
 	t.Log("max user number ", js.readDB("maxUserNumber"))
-	t.Log()
+	t.Log("user count ", js.readDB("userNumber"))
 }
