@@ -8,6 +8,11 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+type ACCConfig struct {
+	ID     string
+	SecKey string
+}
+
 type DBConfig struct {
 	LdbPath string
 }
@@ -45,6 +50,7 @@ type LogConfig struct {
 
 // Config provide all configuration for the application
 type Config struct {
+	ACC *ACCConfig
 	VM  *VMConfig
 	DB  *DBConfig
 	P2P *P2PConfig

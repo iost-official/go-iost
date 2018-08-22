@@ -29,7 +29,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	flag "github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 type ServerExit interface {
@@ -86,9 +85,11 @@ func main() {
 	if *help {
 		flag.Usage()
 	}
+
 	if *configfile == "" {
 		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/iserver.yaml"
 	}
+
 	conf := common.NewConfig(*configfile)
 
 	initLogger(conf.Log)
@@ -111,13 +112,13 @@ func main() {
 
 	serverExit = append(serverExit, p2pService)
 
-	accSecKey := viper.GetString("account.sec-key")
+	accSecKey := glb.Config().ACC.SecKey
 	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
 	if err != nil {
 		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
 	}
-
 	account.MainAccount = acc
+
 	blkCache, err := blockcache.NewBlockCache(glb)
 	if err != nil {
 		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
@@ -141,9 +142,14 @@ func main() {
 	txp.Start()
 	serverExit = append(serverExit, txp)
 
-	consensus, err := consensus.ConsensusFactory(
-		consensus.CONSENSUS_POB,
-		acc, glb, blkCache, txp, p2pService, sync, nil) //witnessList)
+	var witnessList []string
+	for k := range account.GenesisAccount {
+		witnessList = append(witnessList, k)
+	}
+
+	consensus, err := consensus.Factory(
+		"pob",
+		acc, glb, blkCache, txp, p2pService, sync, witnessList) //witnessList)
 	if err != nil {
 		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}
@@ -156,9 +162,7 @@ func main() {
 
 func exitLoop() {
 	c := make(chan os.Signal, 1)
-
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
 	i := <-c
 	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
 	for _, s := range serverExit {
