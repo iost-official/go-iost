@@ -23,9 +23,15 @@ module.exports = (function () {
                 // }
                 // _native_log('get: ' + JSON.stringify(aa));
 
+                if (target[property] instanceof BigNumber || target[property] instanceof Int64 || typeof target[property] === 'string') {
+                    var objectStorage = IOSTContractStorage.get(property, target[property]);
+                    return objectStorage;
+                }
+
                 var value = Reflect.get(target, property, receiver);
                 if (typeof target[property] === 'object' && target[property] !== null) {
-                    var proxy = _create(value, getPath(path, property));
+                    var objectStorage = IOSTContractStorage.get(property);
+                    var proxy = _create(objectStorage, getPath(path, property));
                     proxies[property] = proxy;
                     return proxy;
                 }
@@ -54,12 +60,21 @@ module.exports = (function () {
                 // }
                 // _native_log('set: ' + JSON.stringify(aa));
                 target[prop] = value;
+
+                var totalPath = getPath(path, prop);
+                var dotIndex = totalPath.indexOf('.');
+
+                if (dotIndex !== -1) {
+                    IOSTContractStorage.put(totalPath.substr(0, totalPath.indexOf('.')), target);
+                } else {
+                    IOSTContractStorage.put(prop, value);
+                }
                 return true;
-            }
-        }
+            },
+        };
 
         return new Proxy(target, handler);
-    }
+    };
 
     return {
         create: function(target) {
