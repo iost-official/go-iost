@@ -85,12 +85,11 @@ func main() {
 	if *help {
 		flag.Usage()
 	}
+
 	if *configfile == "" {
 		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/iserver.yaml"
 	}
-	if *configfile == "" {
-		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/iserver.yaml"
-	}
+
 	conf := common.NewConfig(*configfile)
 
 	initLogger(conf.Log)
