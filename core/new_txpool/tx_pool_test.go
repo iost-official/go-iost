@@ -476,7 +476,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 
 	tx.LdbPath = ""
 
-	config := &p2p.Config{
+	config := &common.P2PConfig{
 		ListenAddr: "0.0.0.0:8088",
 	}
 
