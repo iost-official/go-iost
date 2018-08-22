@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -12,40 +14,63 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 	"github.com/smartystreets/goconvey/convey"
 )
+
+var testID = []string{
+	"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE",
+	"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "8dJ9YKovJ5E7hkebAQaScaG1BA8snRUHPUbVcArcTVq6",
+	"IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs", "7CnwT7BXkEFAVx6QZqC7gkDhQwbvC3d2CkMZvXHZdDMN",
+	"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd", "Htarc5Sp4trjqY4WrTLtZ85CF6qx87v7CRwtV4RRGnbF",
+	"IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh", "Bk8bAyG4VLBcrsoRErPuQGhwCy4C1VxfKE4jjX9oLhv",
+	"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN", "546aCDG9igGgZqVZeybajaorP5ZeF9ghLu2oLncXk3d6",
+	"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9", "DXNYRwG7dRFkbWzMNEbKfBhuS8Yn51x9J6XuTdNwB11M",
+	"IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB", "AG8uECmAwFis8uxTdWqcgGD9tGDwoP6CxqhkhpuCdSeC",
+	"IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9", "GJt5WSSv5WZi1axd3qkb1vLEfxCEgKGupcXf45b5tERU",
+	"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4", "7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
+}
+
+func MakeTx(act tx.Action) (*tx.Tx, error) {
+	trx := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
+
+	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
+	if err != nil {
+		return nil, err
+	}
+	trx, err = tx.SignTx(trx, ac)
+	if err != nil {
+		return nil, err
+	}
+	return &trx, nil
+}
 
 func TestGenerateBlock(t *testing.T) {
 	account, _ := account.NewAccount(nil)
 	topBlock := &block.Block{
 		Head: block.BlockHead{
-			Version: 0,
-			Number:  21,
-			Time:    0,
+			ParentHash: []byte("abc"),
+			Number:     10,
+			Witness:    "witness",
+			Time:       123456,
 		},
-		Txs:      make([]*tx.Tx, 0),
-		Receipts: make([]*tx.TxReceipt, 0),
 	}
-
 	topBlock.CalculateHeadHash()
 	mockController := gomock.NewController(t)
 	stateDB, _ := db.NewMVCCDB("./StateDB")
+	vi := database.NewVisitor(0, stateDB)
+	vi.SetBalance(testID[0], 1000000)
+	vi.SetContract(native.ABI())
+	vi.Commit()
 	stateDB.Tag(string(topBlock.HeadHash()))
 	mockTxPool := core_mock.NewMockTxPool(mockController)
 	txsList := make([]*tx.Tx, 0)
-	tx1 := tx.Tx{
-		Time:       time.Now().UnixNano(),
-		Expiration: 10000,
-		GasLimit:   100000,
-		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.Pubkey},
+	for i := 0; i < 3000; i++ {
+		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+		trx, _ := MakeTx(act)
+		txsList = append(txsList, trx)
 	}
-	//acticon := tx.Action{
-	//	Contract:   "iost.system",
-	//	ActionName: "Transfer",
-	//	Data:       `["a","b", 100]`,
-	//}
-	txsList = append(txsList, &tx1)
 	mockTxPool.EXPECT().PendingTxs(gomock.Any()).Return(txsList, nil)
 	generateBlock(account, topBlock, mockTxPool, stateDB)
 }
