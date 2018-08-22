@@ -8,7 +8,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
 var (
@@ -47,7 +47,7 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 
 //VerifyBlockWithVM verifies the block with VM.
 func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
-	engine := new_vm.NewEngine(&blk.Head, db)
+	engine := vm.NewEngine(&blk.Head, db)
 	for k, tx := range blk.Txs {
 		receipt, err := engine.Exec(tx)
 		if err != nil {

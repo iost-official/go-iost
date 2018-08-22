@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 )
@@ -25,10 +26,8 @@ func main() {
 
 	flag.Parse()
 
-	config := &p2p.Config{
-		ChainID:     111,
-		PrivKeyPath: "priv.key",
-		RoutingFile: "routing.table",
+	config := &common.P2PConfig{
+		ChainID: 111,
 	}
 	if *seed != "" {
 		config.SeedNodes = []string{*seed}

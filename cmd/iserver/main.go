@@ -35,14 +35,6 @@ type ServerExit interface {
 	Stop()
 }
 
-var (
-	cfgFile    = "iserver.yml"
-	logFile    string
-	dbFile     string
-	cpuprofile string
-	memprofile string
-)
-
 var serverExit []ServerExit
 
 var (
@@ -92,7 +84,9 @@ func main() {
 	flag.Parse()
 	if *help {
 		flag.Usage()
-		os.Exit(0)
+	}
+	if *configfile == "" {
+		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/iserver.yaml"
 	}
 	if *configfile == "" {
 		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/iserver.yaml"

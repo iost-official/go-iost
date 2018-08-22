@@ -476,7 +476,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 
 	tx.LdbPath = ""
 
-	config := &p2p.Config{
+	config := &common.P2PConfig{
 		ListenAddr: "0.0.0.0:8088",
 	}
 
@@ -485,6 +485,8 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 	conf := &common.Config{}
 
 	gl, err := global.New(conf)
+
+	node, err := p2p.NewNetService(gl.Config().P2P)
 
 	blockList := genBlocks(accountList, witnessList, 1, 1, true)
 
