@@ -109,6 +109,7 @@ func (p *PoB) blockLoop() {
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
+			ilog.Info("block from others")
 			if !ok {
 				ilog.Info("chRecvBlock has closed")
 				return
@@ -116,12 +117,14 @@ func (p *PoB) blockLoop() {
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
-				ilog.Debug(err.Error())
+				ilog.Error(err.Error())
 				continue
 			}
+			ilog.Info("witnessOfSlot%s", witnessOfSlot(blk.Head.Time))
+			ilog.Info("blk.Head.Witness%s", blk.Head.Witness)
 			err = p.handleRecvBlock(&blk)
 			if err != nil {
-				ilog.Debug(err.Error())
+				ilog.Error(err.Error())
 				continue
 			}
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
@@ -138,9 +141,12 @@ func (p *PoB) blockLoop() {
 				ilog.Info("chGenBlock has closed")
 				return
 			}
+			ilog.Info("block from myself")
+			ilog.Info("witnessOfSlot%s", witnessOfSlot(blk.Head.Time))
+			ilog.Info("blk.Head.Witness%s", blk.Head.Witness)
 			err := p.handleRecvBlock(blk)
 			if err != nil {
-				ilog.Debug(err.Error())
+				ilog.Error(err.Error())
 			}
 		case <-p.exitSignal:
 			return
@@ -158,12 +164,12 @@ func (p *PoB) scheduleLoop() {
 				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
 				ilog.Info("gen block:%v", blk.Head.Number)
 				if err != nil {
-					ilog.Debug(err.Error())
+					ilog.Error(err.Error())
 					continue
 				}
 				blkByte, err := blk.Encode()
 				if err != nil {
-					ilog.Debug(err.Error())
+					ilog.Error(err.Error())
 					continue
 				}
 				p.chGenBlock <- blk
@@ -204,7 +210,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
 			p.blockCache.Del(node)
-			ilog.Debug(err.Error())
+			ilog.Error(err.Error())
 			return err
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))

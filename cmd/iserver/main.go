@@ -143,14 +143,9 @@ func main() {
 	txp.Start()
 	serverExit = append(serverExit, txp)
 
-	var witnessList []string
-	for k := range account.GenesisAccount {
-		witnessList = append(witnessList, k)
-	}
-
 	consensus, err := consensus.Factory(
 		"pob",
-		acc, glb, blkCache, txp, p2pService, sync, witnessList) //witnessList)
+		acc, glb, blkCache, txp, p2pService, sync, account.WitnessList) //witnessList)
 	if err != nil {
 		ilog.Fatal("consensus initialization failed, stop the program! err:%v", err)
 	}
