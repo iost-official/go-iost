@@ -91,7 +91,7 @@ func main() {
 
 	serverExit = append(serverExit, p2pService)
 
-	accSecKey := glb.Config().AccSecKey
+	accSecKey := glb.Config().ACC.SecKey
 	//fmt.Printf("account.sec-key:  %v\n", accSecKey)
 	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
 	if err != nil {
