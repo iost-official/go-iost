@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "core/new_tx/tx.proto";
 import "core/new_block/block.proto";
+import "core/event/event.proto";
 package rpc;
 
 service Apis {
@@ -13,6 +14,7 @@ service Apis {
     rpc GetState (GetStateReq) returns (GetStateRes) {}
     rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {}
     rpc EstimateGas (RawTxReq) returns (GasRes) {}
+    rpc Subscribe (SubscribeReq) returns (stream SubscribeRes) {}
 }
 
 message VoidReq {
@@ -41,6 +43,11 @@ message GetStateReq {
 message RawTxReq {
 	bytes data=1;
 }
+
+message SubscribeReq {
+    repeated event.Event.Topic topics=1;
+}
+
 message HeightRes {
 	int64 height=1;
 }
@@ -65,4 +72,8 @@ message BlockInfo {
     block.BlockHead head = 1;
     repeated tx.TxRaw txs = 2;
 	repeated bytes txhash=3;  
+}
+
+message SubscribeRes {
+    event.Event ev=1;
 }

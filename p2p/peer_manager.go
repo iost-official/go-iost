@@ -40,7 +40,7 @@ const (
 // PeerManager's jobs are:
 //   * holding a certain amount of peers.
 //   * handling messages according to its type.
-//   * discovering peers and maintaing routing table.
+//   * discovering peers and maintaining routing table.
 type PeerManager struct {
 	neighbors     map[peer.ID]*Peer
 	neighborCount int

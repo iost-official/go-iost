@@ -38,7 +38,7 @@ func (t *Timestamp) Add(intervalSlot int64) {
 }
 
 func (t *Timestamp) ToUnixSec() int64 {
-	return t.Slot*SlotLength
+	return t.Slot * SlotLength
 }
 
 func IntervalSecond(t1 Timestamp, t2 Timestamp) int64 {

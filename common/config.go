@@ -1,61 +1,58 @@
 package common
 
 import (
-	"errors"
+	"os"
+
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/spf13/viper"
+	yaml "gopkg.in/yaml.v2"
 )
 
-type Config struct {
-	vip *viper.Viper
-
-	LdbPath       string
-	RedisAddr     string
-	RedisPort     int64
-	NetLogPath    string
-	NodeTablePath string
-	NodeID        string
-	ListenAddr    string
-	RegAddr       string
-	RpcPort       string
-	Target        string
-	Port          int64
-	MetricsPort   string
-	AccSecKey     string
-	LogPath       string
-	CfgFile       string
-	LogFile       string
-	DbFile        string
+type DBConfig struct {
+	LdbPath string
 }
 
-func NewConfig(vip *viper.Viper) (*Config, error) {
+type VMConfig struct {
+}
 
-	if vip == nil {
-		return nil, errors.New("NewConfig vip error")
+type P2PConfig struct {
+	Address string
+	Port    int64
+}
+
+// Config provide all configuration for the application
+type Config struct {
+	VM  *VMConfig
+	DB  *DBConfig
+	P2P *P2PConfig
+}
+
+// NewConfig returns a new instance of Config
+func NewConfig(configfile string) *Config {
+	v := viper.GetViper()
+	v.SetConfigType("yaml")
+
+	f, err := os.Open(configfile)
+	if err != nil {
+		ilog.Fatal("Failed to open config file '%v', %v", configfile, err)
 	}
 
-	return &Config{vip: vip}, nil
+	if err := v.ReadConfig(f); err != nil {
+		ilog.Fatal("Failed to read config file: %v", err)
+	}
+
+	c := &Config{}
+	if err := v.Unmarshal(c); err != nil {
+		ilog.Fatal("Unable to decode into struct, %v", err)
+	}
+
+	return c
 }
 
-func (c *Config) LocalConfig() error {
-
-	c.CfgFile = c.vip.GetString("config")
-	c.LogFile = c.vip.GetString("log")
-	c.DbFile = c.vip.GetString("db")
-
-	c.LogPath = c.vip.GetString("log.path")
-	c.LdbPath = c.vip.GetString("ldb.path")
-	c.RedisAddr = c.vip.GetString("redis.addr")
-	c.RedisPort = c.vip.GetInt64("redis.port")
-	c.NetLogPath = c.vip.GetString("net.log-path")
-	c.NodeTablePath = c.vip.GetString("net.node-table-path")
-	c.NodeID = c.vip.GetString("net.node-id") //optional
-	c.ListenAddr = c.vip.GetString("net.listen-addr")
-	c.RegAddr = c.vip.GetString("net.register-addr")
-	c.RpcPort = c.vip.GetString("net.rpc-port")
-	c.Target = c.vip.GetString("net.target") //optional
-	c.Port = c.vip.GetInt64("net.port")
-	c.MetricsPort = c.vip.GetString("net.metrics-port")
-	c.AccSecKey = c.vip.GetString("account.sec-key")
-
-	return nil
+func (c *Config) YamlString() string {
+	bs, err := yaml.Marshal(c)
+	if err != nil {
+		ilog.Fatal("Unable to marshal config to YAML: %v", err)
+	}
+	return string(bs)
 }

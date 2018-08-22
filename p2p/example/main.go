@@ -37,13 +37,13 @@ func main() {
 		*port = randomPort()
 	}
 	if *port <= 0 {
-		panic("invalid tcp port")
+		ilog.Fatal("invalid tcp port")
 	}
 	config.ListenAddr = "0.0.0.0:" + strconv.Itoa(*port)
 
 	ns, err := p2p.NewNetService(config)
 	if err != nil {
-		panic(err)
+		ilog.Fatal("create p2pservice failed. err=%v", err)
 	}
 	ns.Start()
 	ct := NewChatter(ns)

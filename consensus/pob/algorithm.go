@@ -5,6 +5,8 @@ import (
 
 	"encoding/binary"
 	"errors"
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
@@ -12,8 +14,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm"
-	"time"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
 var (
@@ -43,7 +44,7 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	limitTime := time.NewTicker((common.SlotLength / 3 * time.Second))
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
-	engine := new_vm.NewEngine(&topBlock.Head, db)
+	engine := vm.NewEngine(&topBlock.Head, db)
 	for _, t := range txsList {
 		select {
 		case <-limitTime.C:
@@ -98,7 +99,7 @@ func verifyBasics(blk *block.Block) error {
 	}
 	var signature common.Signature
 	signature.Decode(blk.Head.Signature)
-	if blk.Head.Witness != account.GetIdByPubkey(signature.Pubkey) {
+	if blk.Head.Witness != account.GetIDByPubkey(signature.Pubkey) {
 		return ErrPubkey
 	}
 	headInfo := generateHeadInfo(blk.Head)
