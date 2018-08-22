@@ -1,0 +1,26 @@
+acc:
+  id: "IOST7j5ynm6UXmJqY3GJp4RchiEWxjoPvifqgQVVAUaKV9sPLpx719"
+  seckey: "2hMWMbULjDVzbS9fFdxrGRiDQmMUXUN7U7kW68aQDSdN"
+
+vm:
+
+db:
+  ldbpath: "leveldb/"
+
+
+p2p:
+  listenAddr: "0.0.0.0:30303"
+  chainID: 1024
+  version: 1
+  seedNodes:
+    - "/ip4/127.0.0.1/tcp/30303/ipfs/12D3KooWBBhYDkCUjgtPRsTirrcbRtKtL4n2Q4RqX1PM43jmrC1r"
+
+log:
+  asyncWrite: true
+  fileLog:
+    path: "logs/"
+    level: "info"
+    enable: true
+  consoleLog:
+    level: "debug"
+    enable: true
