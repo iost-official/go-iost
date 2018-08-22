@@ -103,6 +103,17 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			}
 		}
 	}
+	hash = stateDB.CurrentTag()
+	blk, err = blockChain.Top()
+	if err != nil {
+		return nil, fmt.Errorf("blockchain top failed, stop the pogram. err: %v", err)
+	}
+	if string(blk.HeadHash()) != hash {
+		err = stateDB.Flush(string(blk.HeadHash()))
+		if err != nil {
+			return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
+		}
+	}
 
 	tx.LdbPath = conf.DB.LdbPath
 	txDb := tx.TxDbInstance()

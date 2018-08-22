@@ -1,7 +1,12 @@
 package vm
 
 import (
+	"testing"
+
 	"fmt"
+
+	"os"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -13,8 +18,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
-	"os"
-	"testing"
 )
 
 var testID = []string{
@@ -114,7 +117,7 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 
 	e := newEngine(bh, vi)
 
-	e.SetUp("js_path", jsPath)
+	//e.SetUp("js_path", jsPath)
 	e.SetUp("log_level", "debug")
 	e.SetUp("log_enable", "")
 	return e, vi
@@ -320,6 +323,7 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 	jshw.Info.Abis[0].Limit.Net = -1
 
 	ilog.Debug("init %v", jshw.Info.Abis[0].GetLimit())
+
 	e, vi := ininit(t)
 	vi.SetContract(jshw)
 
@@ -341,9 +345,10 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 }
 
 type JSTester struct {
-	t     *testing.T
-	e     Engine
-	vi    *database.Visitor
+	t  *testing.T
+	e  Engine
+	vi *database.Visitor
+
 	cname string
 	c     *contract.Contract
 }
@@ -409,6 +414,7 @@ func (j *JSTester) SetAPI(name string, argType ...string) {
 	})
 
 }
+
 func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
 
 	act2 := tx.NewAction(j.cname, main, args)
@@ -431,7 +437,7 @@ func TestJSAPI_Database(t *testing.T) {
 	js.SetJS(`
 class Contract {
 	constructor() {
-		this.aa = new Int64(100);
+	this.aa = new Int64(100);
 	}
 	main() {
 		this.aa = new Int64(45);
@@ -531,6 +537,7 @@ module.exports = Contract;
 		t.Fatalf("balance of contract " + js.cname + "should be 1.")
 	}
 }
+
 func TestJS_LuckyBet(t *testing.T) {
 	js := NewJSTester(t)
 	lc, err := ReadFile("test_data/lucky_bet.js")

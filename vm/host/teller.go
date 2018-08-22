@@ -72,6 +72,7 @@ func (h *Teller) Withdraw(to string, amount int64) (*contract.Cost, error) {
 func (h *Teller) Deposit(from string, amount int64) (*contract.Cost, error) {
 	c := h.ctx.Value("contract_name").(string)
 	return contract.NewCost(1, 1, 1), h.transfer(from, ContractAccountPrefix+c, amount)
+
 }
 
 // TopUp ...
