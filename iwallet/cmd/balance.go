@@ -19,7 +19,7 @@ import (
 
 	"context"
 
-	"github.com/iost-official/Go-IOS-Protocol/new_rpc"
+	"github.com/iost-official/Go-IOS-Protocol/rpc"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -36,14 +36,14 @@ var balanceCmd = &cobra.Command{
 		} else {
 			filePath = args[0]
 		}
-		pubkey, err := ReadFile(filePath)
+		pubkey, err := readFile(filePath)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
 
-		pk := LoadBytes(string(pubkey))
-		b, err := CheckBalance(pk)
+		pk := loadBytes(string(pubkey))
+		b, err := checkBalance(pk)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -66,7 +66,7 @@ func init() {
 	// balanceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func CheckBalance(ia []byte) (int64, error) {
+func checkBalance(ia []byte) (int64, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
 		return 0, err
