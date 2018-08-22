@@ -157,6 +157,7 @@ func TestHost_BlockInfo(t *testing.T) {
 func TestTeller_Transfer(t *testing.T) {
 	ctx := NewContext(nil)
 	ctx.Set("contract_name", "contractName")
+	ctx.Set("auth_list", map[string]int{"hello": 1, "b": 0})
 
 	mock, host := myinit(t, ctx)
 
