@@ -5,7 +5,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
-//go:generate mockgen -destination vm_mock.go -package new_vm github.com/iost-official/Go-IOS-Protocol/new_vm VM
+//go:generate mockgen -destination vm_mock.go -package vm github.com/iost-official/Go-IOS-Protocol/vm VM
 
 // VM ...
 type VM interface {
