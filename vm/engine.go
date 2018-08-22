@@ -338,6 +338,9 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 }
 
 func (e *engineImpl) setLogLevel(level string) {
+	if e.consoleWriter == nil {
+		e.consoleWriter = ilog.NewConsoleWriter()
+	}
 	switch level {
 	case "debug":
 		e.consoleWriter.SetLevel(ilog.LevelDebug)
