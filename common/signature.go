@@ -18,7 +18,7 @@ type SignMode bool
 
 const (
 	SavePubkey SignMode = true
-	NotPubkey  SignMode = false
+	NilPubkey  SignMode = false
 )
 
 type Signature struct {

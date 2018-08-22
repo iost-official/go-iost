@@ -61,7 +61,7 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
-	sig := common.Sign(common.Secp256k1, headInfo, account.Seckey, common.NotPubkey)
+	sig := common.Sign(common.Secp256k1, headInfo, account.Seckey, common.NilPubkey)
 	blk.Head.Signature, err = sig.Encode()
 	if err != nil {
 		return nil, err
