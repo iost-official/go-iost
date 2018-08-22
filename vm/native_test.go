@@ -53,6 +53,7 @@ func ReadFile(src string) ([]byte, error) {
 	return fd, nil
 }
 
+// nolint
 func TestEngine_SetCode(t *testing.T) {
 	e, host, code := MyInit(t, "setcode")
 	host.Context().Set("tx_hash", "iamhash")
