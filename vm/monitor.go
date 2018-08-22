@@ -14,17 +14,19 @@ import (
 )
 
 var (
-	ErrABINotFound     = errors.New("abi not found")
-	ErrGasPriceIllegal = errors.New("gas price too big")
-	ErrArgsNotEnough   = errors.New("args not enough")
-	ErrArgsType        = errors.New("args type not match")
-	ErrGasOverflow     = errors.New("contract pay gas overflow")
+	errABINotFound     = errors.New("abi not found")
+	errGasPriceIllegal = errors.New("gas price too big")
+	errArgsNotEnough   = errors.New("args not enough")
+	errArgsType        = errors.New("args type not match")
+	errGasOverflow     = errors.New("contract pay gas overflow")
 )
 
+// Monitor ...
 type Monitor struct {
 	vms map[string]VM
 }
 
+// NewMonitor ...
 func NewMonitor() *Monitor {
 	m := &Monitor{
 		vms: make(map[string]VM),
@@ -32,18 +34,19 @@ func NewMonitor() *Monitor {
 	return m
 }
 
+// Call ...
 func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
 	c := h.DB().Contract(contractName)
 	abi := c.ABI(api)
 	if abi == nil {
-		return nil, contract.NewCost(0, 0, GasCheckTxFailed), ErrABINotFound
+		return nil, contract.NewCost(0, 0, gasCheckTxFailed), errABINotFound
 	}
 
 	err = checkArgs(abi, args)
 
 	if err != nil {
-		return nil, contract.NewCost(0, 0, GasCheckTxFailed), err
+		return nil, contract.NewCost(0, 0, gasCheckTxFailed), err
 	}
 
 	h.PushCtx()
@@ -101,11 +104,12 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 //	return nil
 //}
 //
-//func (m *Monitor) Destory(contractName string) error {
+//func (m *Monitor) Destroy(contractName string) error {
 //	m.ho.db.DelContract(contractName)
 //	return nil
 //}
 
+// Compile ...
 func (m *Monitor) Compile(con *contract.Contract) (string, error) {
 	switch con.Info.Lang {
 	case "native":
@@ -127,7 +131,7 @@ func (m *Monitor) Compile(con *contract.Contract) (string, error) {
 
 func checkArgs(abi *contract.ABI, args []interface{}) error {
 	if len(abi.Args) > len(args) {
-		return ErrArgsNotEnough
+		return errArgsNotEnough
 	}
 
 	for i, t := range abi.Args {
@@ -143,12 +147,13 @@ func checkArgs(abi *contract.ABI, args []interface{}) error {
 			_, ok = args[i].([]byte)
 		}
 		if !ok {
-			return ErrArgsType
+			return errArgsType
 		}
 	}
 	return nil
 }
 
+// Factory ...
 func Factory(lang string) VM {
 	switch lang {
 	case "native":

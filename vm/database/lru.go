@@ -2,12 +2,14 @@ package database
 
 import "github.com/hashicorp/golang-lru"
 
+// LRU ...
 type LRU struct {
 	cache *lru.Cache
-	db    Database
+	db    database
 }
 
-func NewLRU(length int, db Database) *LRU {
+// NewLRU ...
+func NewLRU(length int, db database) *LRU {
 	if length <= 0 {
 		return &LRU{
 			cache: nil,
@@ -25,6 +27,7 @@ func NewLRU(length int, db Database) *LRU {
 	}
 }
 
+// Get ...
 func (m *LRU) Get(key string) (value string) {
 	if m.cache == nil {
 		return m.db.Get(key)
@@ -36,27 +39,37 @@ func (m *LRU) Get(key string) (value string) {
 	}
 	return v.(string)
 }
+
+// Put ...
 func (m *LRU) Put(key, value string) {
 	if m.cache != nil && m.cache.Contains(key) {
 		m.cache.Add(key, value)
 	}
 	m.db.Put(key, value)
 }
+
+// Has ...
 func (m *LRU) Has(key string) bool {
 	if m.cache == nil {
 		return m.db.Has(key)
 	}
 	return m.cache.Contains(key)
 }
+
+// Keys ...
 func (m *LRU) Keys(prefix string) []string {
 	return m.db.Keys(prefix)
 }
+
+// Del ...
 func (m *LRU) Del(key string) {
 	if m.cache != nil {
 		m.cache.Remove(key)
 	}
 	m.db.Del(key)
 }
+
+// Purge ...
 func (m *LRU) Purge() {
 	if m.cache != nil {
 		m.cache.Purge()

@@ -76,19 +76,19 @@ func (sbx *Sandbox) Release() {
 // Init add system functions
 func (sbx *Sandbox) Init() {
 	// init require
-	C.InitGoRequire((C.requireFunc)(unsafe.Pointer(C.requireModule)))
-	C.InitGoBlockchain((C.transferFunc)(unsafe.Pointer(C.goTransfer)),
-		(C.withdrawFunc)(unsafe.Pointer(C.goWithdraw)),
-		(C.depositFunc)(unsafe.Pointer(C.goDeposit)),
-		(C.topUpFunc)(unsafe.Pointer(C.goTopUp)),
-		(C.countermandFunc)(unsafe.Pointer(C.goCountermand)),
-		(C.blockInfoFunc)(unsafe.Pointer(C.goBlockInfo)),
-		(C.txInfoFunc)(unsafe.Pointer(C.goTxInfo)),
-		(C.callFunc)(unsafe.Pointer(C.goCall)))
-	C.InitGoStorage((C.putFunc)(unsafe.Pointer(C.goPut)),
-		(C.getFunc)(unsafe.Pointer(C.goGet)),
-		(C.delFunc)(unsafe.Pointer(C.goDel)),
-		(C.globalGetFunc)(unsafe.Pointer(C.goGlobalGet)))
+	C.InitGoRequire((C.requireFunc)(C.requireModule))
+	C.InitGoBlockchain((C.transferFunc)(C.goTransfer),
+		(C.withdrawFunc)(C.goWithdraw),
+		(C.depositFunc)(C.goDeposit),
+		(C.topUpFunc)(C.goTopUp),
+		(C.countermandFunc)(C.goCountermand),
+		(C.blockInfoFunc)(C.goBlockInfo),
+		(C.txInfoFunc)(C.goTxInfo),
+		(C.callFunc)(C.goCall))
+	C.InitGoStorage((C.putFunc)(C.goPut),
+		(C.getFunc)(C.goGet),
+		(C.delFunc)(C.goDel),
+		(C.globalGetFunc)(C.goGlobalGet))
 }
 
 // SetGasLimit set gas limit in context
@@ -151,23 +151,7 @@ var obj = new _native_main();
 
 var objObserver = observer.create(obj)
 
-// Object.keys(obj).forEach((key) => {
-//     let val = obj[key];
-//
-//     Object.defineProperty(obj, key, {
-//         configurable: false,
-//         enumerable: true,
-//         get: function() {
-//             return IOSTContractStorage.get(key, val);
-//         },
-//         set: function() {
-// 			val = setVal;
-// 			IOSTContractStorage.put(key, val);
-//         }
-//     })
-// });
-
-// run contract with specified function and args.
+// run contract with specified function and args
 objObserver.%s(%s)
 `, name, function, strings.Trim(argStr, "[]")), nil
 }

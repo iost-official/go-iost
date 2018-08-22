@@ -8,16 +8,21 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
+// var ...
 var (
 	ErrIssueInNormalBlock = errors.New("issueIOST should never used outsides of genesis")
 )
 
+// VM ...
 type VM struct {
 }
 
+// Init ...
 func (m *VM) Init() error {
 	return nil
 }
+
+// LoadAndCall ...
 func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 	switch api {
 	case "RequireAuth":
@@ -118,13 +123,17 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 
 	}
 }
+
+// Release ...
 func (m *VM) Release() {
 }
 
+// Compile ...
 func (m *VM) Compile(contract *contract.Contract) (string, error) {
 	return "", nil
 }
 
+// ABI ...
 func ABI() *contract.Contract {
 	return &contract.Contract{
 		ID:   "iost.system",

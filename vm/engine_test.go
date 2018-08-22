@@ -42,7 +42,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
 
-	bi, _ := e.(*EngineImpl).ho.BlockInfo()
+	bi, _ := e.(*engineImpl).ho.BlockInfo()
 
 	blkInfo := string(bi)
 	if blkInfo != `{"number":10,"parent_hash":"ZiCa","time":123456,"witness":"witness"}` {
@@ -77,7 +77,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 			Lang:        "mock",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "abi",
 					Args:     []string{"string"},
 					Payment:  0,
@@ -151,7 +151,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 			Lang:        "mock",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "abi",
 					Args:     []string{"string"},
 					Payment:  0,
@@ -349,7 +349,7 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 			Lang:        "native",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "Transfer",
 					Payment:  0,
 					GasPrice: int64(1000),
@@ -456,7 +456,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 			Lang:        "native",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "TopUp",
 					Payment:  0,
 					GasPrice: int64(1000),
@@ -562,14 +562,14 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 			Lang:        "native",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "Receipt",
 					Payment:  0,
 					GasPrice: int64(1000),
 					Limit:    contract.NewCost(100, 100, 100),
 					Args:     []string{"string"},
 				},
-				&contract.ABI{
+				{
 					Name:     "CallWithReceipt",
 					Payment:  0,
 					GasPrice: int64(1000),

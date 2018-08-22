@@ -1,13 +1,12 @@
 package synchronizer
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/message"
-	block "github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
@@ -18,7 +17,7 @@ var (
 	MaxBlockHashQueryNumber int64 = 10
 	RetryTime                     = 5 * time.Second
 	MaxAcceptableLength     int64 = 100
-	ConfirmNumber           int   = 7
+	ConfirmNumber                 = 7
 )
 
 type Synchronizer interface {
@@ -26,7 +25,7 @@ type Synchronizer interface {
 	Stop()
 	NeedSync(maxHeight int64) (bool, int64, int64)
 	SyncBlocks(startNumber int64, endNumber int64) error
-	OnBlockConfirmed(hash string, peerID p2p.PeerID) error
+	OnBlockConfirmed(hash string, peerID p2p.PeerID)
 }
 
 type SyncImpl struct {
@@ -115,16 +114,14 @@ func (sy *SyncImpl) NeedSync(netHeight int64) (bool, int64, int64) {
 	return false, 0, 0
 }
 
-func (sy *SyncImpl) queryBlockHash(start, end int64) error {
-	hr := message.BlockHashQuery{ReqType: 0, Start: start, End: end}
+func (sy *SyncImpl) queryBlockHash(hr message.BlockHashQuery) {
 	bytes, err := hr.Encode()
 	if err != nil {
 		ilog.Debug("marshal BlockHashQuery failed. err=%v", err)
-		return err
+		return
 	}
-	ilog.Debug("[net] query block hash. start=%v, end=%v", start, end)
+	ilog.Debug("[net] query block hash. start=%v, end=%v", hr.Start, hr.End)
 	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
-	return nil
 }
 
 func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
@@ -139,7 +136,7 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 		}
 		if need {
 			syncNum++
-			sy.queryBlockHash(startNumber, startNumber+MaxBlockHashQueryNumber-1)
+			sy.queryBlockHash(message.BlockHashQuery{ReqType: 0, Start: startNumber, End: startNumber + MaxBlockHashQueryNumber - 1, Nums: nil})
 		}
 		startNumber += MaxBlockHashQueryNumber
 		if syncNum%10 == 0 {
@@ -155,14 +152,14 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 			}
 		}
 		if need {
-			sy.queryBlockHash(startNumber, endNumber)
+			sy.queryBlockHash(message.BlockHashQuery{ReqType: 0, Start: startNumber, End: endNumber, Nums: nil})
 		}
 	}
 	return nil
 }
 
-func (sy *SyncImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) error {
-	return sy.dc.OnBlockConfirmed(hash, peerID)
+func (sy *SyncImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) {
+	sy.dc.OnBlockConfirmed(hash, peerID)
 }
 
 func (sy *SyncImpl) messageLoop() {
@@ -285,18 +282,23 @@ func (sy *SyncImpl) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(RetryTime):
+			hr := message.BlockHashQuery{ReqType: 0, Start: 0, End: 0, Nums: make([]int64, 0)}
 			sy.reqMap.Range(func(k, v interface{}) bool {
 				num, ok := k.(int64)
 				if !ok {
-					return false
+					sy.reqMap.Delete(k)
+					return true
 				}
 				if num <= sy.blockCache.LinkedRoot().Number { // TODO
 					sy.reqMap.Delete(num)
 				} else {
-					sy.queryBlockHash(num, num)
+					hr.Nums = append(hr.Nums, num)
 				}
 				return true
 			})
+			if len(hr.Nums) > 0 {
+				sy.queryBlockHash(hr)
+			}
 		case <-sy.exitSignal:
 			return
 		}
@@ -306,7 +308,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
 	var b []byte
 	var err error
-	if int64(rh.BlockNumber) < sy.blockCache.LinkedRoot().Number {
+	if rh.BlockNumber < sy.blockCache.LinkedRoot().Number {
 		b, err = sy.glb.BlockChain().GetBlockByteByHash(rh.BlockHash)
 		if err != nil {
 			ilog.Error("Database error: block empty %v", rh.BlockNumber)
@@ -328,9 +330,9 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID
 }
 
 type DownloadController interface {
-	OnRecvHash(hash string, peerID p2p.PeerID) error
-	OnTimeout(hash string, peerID p2p.PeerID) error
-	OnBlockConfirmed(hash string, peerID p2p.PeerID) error
+	OnRecvHash(hash string, peerID p2p.PeerID)
+	OnTimeout(hash string, peerID p2p.PeerID)
+	OnBlockConfirmed(hash string, peerID p2p.PeerID)
 	DownloadLoop(callback func(hash string, peerID p2p.PeerID))
 	Stop()
 }
@@ -348,8 +350,8 @@ func NewDownloadController() (*DownloadControllerImpl, error) {
 	dc := &DownloadControllerImpl{
 		hashState:  new(sync.Map),
 		peerState:  new(sync.Map),
-		peerMap:    make(map[p2p.PeerID]*sync.Map, 0),
-		peerTimer:  make(map[p2p.PeerID]*time.Timer, 0),
+		peerMap:    make(map[p2p.PeerID]*sync.Map),
+		peerTimer:  make(map[p2p.PeerID]*time.Timer),
 		chDownload: make(chan bool, 100),
 		exitSignal: make(chan struct{}),
 	}
@@ -360,7 +362,7 @@ func (dc *DownloadControllerImpl) Stop() {
 	close(dc.exitSignal)
 }
 
-func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) error {
+func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 	if _, ok := dc.peerMap[peerID]; !ok {
 		hashMap := new(sync.Map)
 		dc.peerMap[peerID] = hashMap
@@ -371,11 +373,9 @@ func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) err
 	if hState.(string) == "Wait" && pState.(string) == "Free" {
 		dc.chDownload <- true
 	}
-	return nil
 }
 
-func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) error {
-	fmt.Println("OnTimeout", hash, peerID)
+func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) {
 	if hState, hok := dc.hashState.Load(hash); hok {
 		hs, ok := hState.(string)
 		if !ok {
@@ -393,11 +393,9 @@ func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) erro
 			dc.chDownload <- true
 		}
 	}
-	return nil
 }
 
-func (dc *DownloadControllerImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) error {
-	fmt.Println("OnRecvBlock", hash, peerID)
+func (dc *DownloadControllerImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) {
 	dc.hashState.Store(hash, "Done")
 	if pState, pok := dc.peerState.Load(peerID); pok {
 		ps, ok := pState.(string)
@@ -411,7 +409,6 @@ func (dc *DownloadControllerImpl) OnBlockConfirmed(hash string, peerID p2p.PeerI
 			dc.chDownload <- true
 		}
 	}
-	return nil
 }
 
 func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID p2p.PeerID)) {

@@ -47,7 +47,7 @@ func BenchmarkNative_Transfer(b *testing.B) {
 	e, _ := benchInit()
 
 	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
-	trx, err := makeTx(act)
+	trx, err := MakeTx(act)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func BenchmarkNative_Transfer_LRU(b *testing.B) {
 	e.SetUp("log_enable", "")
 
 	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
-	trx, err := makeTx(act)
+	trx, err := MakeTx(act)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func BenchmarkNative_Receipt(b *testing.B) {
 	e, _ := benchInit()
 
 	act := tx.NewAction("iost.system", "Receipt", `["my receipt"]`)
-	trx, err := makeTx(act)
+	trx, err := MakeTx(act)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func BenchmarkNative_SetCode(b *testing.B) {
 	hw := jsHelloWorld()
 
 	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, hw.B64Encode()))
-	trx, err := makeTx(act)
+	trx, err := MakeTx(act)
 	if err != nil {
 		b.Fatal(err)
 	}

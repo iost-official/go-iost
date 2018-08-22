@@ -15,11 +15,11 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus"
@@ -29,23 +29,38 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
 
+//	"github.com/iost-official/Go-IOS-Protocol/iserver/cmd"
 type ServerExit interface {
 	Stop()
 }
 
-var serverExit []ServerExit
-
 var (
-	configfile = flag.String("f", "", "configuration `file`")
+	cfgFile    = "iserver.yml"
+	logFile    string
+	dbFile     string
+	cpuprofile string
+	memprofile string
 )
+
+var serverExit []ServerExit
 
 func main() {
 	//	cmd.Execute()
-	flag.Parse()
-	conf := common.NewConfig(*configfile)
+
+	initConfig()
+
+	conf, err := common.NewConfig(viper.GetViper())
+	if err != nil {
+		os.Exit(1)
+	}
+
+	if err := conf.LocalConfig(); err != nil {
+		os.Exit(1)
+	}
 
 	glb, err := global.New(conf)
 	if err != nil {
@@ -54,7 +69,10 @@ func main() {
 
 	// Log Server Information
 	ilog.Info("Version:  %v", "1.0")
-	ilog.Info("Config Information:\n%v", glb.Config().YamlString())
+	ilog.Info("cfgFile: %v", glb.Config().CfgFile)
+	ilog.Info("logFile: %v", glb.Config().LogFile)
+	ilog.Info("ldb.path: %v", glb.Config().LdbPath)
+	ilog.Info("dbFile: %v", glb.Config().DbFile)
 	// Start CPU Profile
 	/*
 		if cpuprofile != "" {
@@ -80,7 +98,7 @@ func main() {
 
 	serverExit = append(serverExit, p2pService)
 
-	accSecKey := viper.GetString("account.sec-key")
+	accSecKey := glb.Config().AccSecKey
 	//fmt.Printf("account.sec-key:  %v\n", accSecKey)
 	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
 	if err != nil {
@@ -149,9 +167,14 @@ func main() {
 	txp.Start()
 	serverExit = append(serverExit, txp)
 
+	var witnessList []string
+	for k := range account.GenesisAccount {
+		witnessList = append(witnessList, k)
+	}
+
 	consensus, err := consensus.ConsensusFactory(
 		consensus.CONSENSUS_POB,
-		acc, glb, blkCache, txp, p2pService, sync, nil) //witnessList)
+		acc, glb, blkCache, txp, p2pService, sync, witnessList) //witnessList)
 	if err != nil {
 		ilog.Fatal("consensus initialization failed, stop the program! err:%v", err)
 	}
@@ -220,4 +243,33 @@ func exitLoop() {
 	signal.Stop(c)
 	close(exit)
 	os.Exit(0)
+}
+
+func initConfig() {
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Find home directory.
+		home, err := homedir.Dir()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		// Search config in home directory with name ".iserver" (without extension).
+		viper.AddConfigPath(home)
+		viper.SetConfigName(".iserver")
+	}
+
+	viper.AutomaticEnv() // read in environment variables that match
+
+	//fmt.Println(cfgFile)
+	// If a config file is found, read it in.
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	} else {
+		panic(err)
+	}
+
 }
