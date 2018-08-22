@@ -18,7 +18,7 @@ func TestSignature(t *testing.T) {
 			info := Sha256([]byte("hello"))
 			seckey := Sha256([]byte("seckey"))
 			pubkey := CalcPubkeyInSecp256k1(seckey)
-			sig := Sign(Secp256k1, info, seckey)
+			sig := Sign(Secp256k1, info, seckey, true)
 			So(bytes.Equal(sig.Pubkey, pubkey), ShouldBeTrue)
 
 			ans := VerifySignature(info, sig)

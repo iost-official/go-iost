@@ -299,7 +299,6 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-	ilog.Info("broadcast message. type=%d", typ)
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	pm.neighborMutex.RLock()

@@ -12,33 +12,31 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 )
 
+// Consensus handles the different consensus strategy.
 type Consensus interface {
 	Run()
 	Stop()
 }
 
-const (
-	CONSENSUS_POB = "pob"
-)
-
-var Cons Consensus
+var cons Consensus
 
 var once sync.Once
 
-func ConsensusFactory(consensusType string, account account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) (Consensus, error) {
+// Factory handles the different consensus strategy.
+func Factory(consensusType string, account account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) (Consensus, error) {
 	if consensusType == "" {
-		consensusType = CONSENSUS_POB
+		consensusType = "pob"
 	}
 
 	var err error
 
 	switch consensusType {
-	case CONSENSUS_POB:
-		if Cons == nil {
+	case "pob":
+		if cons == nil {
 			once.Do(func() {
-				Cons = pob.NewPoB(account, baseVariable, blkcache, txPool, service, synchronizer, witnessList)
+				cons = pob.NewPoB(account, baseVariable, blkcache, txPool, service, synchronizer, witnessList)
 			})
 		}
 	}
-	return Cons, err
+	return cons, err
 }
