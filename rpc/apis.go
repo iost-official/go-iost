@@ -155,7 +155,8 @@ func (s *RPCServer) EstimateGas(ctx context.Context, rawTx *RawTxReq) (*GasRes, 
 	return nil, nil
 }
 
-func (s *RpcServer) Subscribe(req *SubscribeReq, res Apis_SubscribeServer) error {
+// Subscribe ...
+func (s *RPCServer) Subscribe(req *SubscribeReq, res Apis_SubscribeServer) error {
 	ec := event.GetEventCollectorInstance()
 	sub := event.NewSubscription(100, req.Topics)
 	ec.Subscribe(sub)
