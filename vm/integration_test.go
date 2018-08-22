@@ -123,7 +123,7 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 	return e, vi
 }
 
-func makeTx(act tx.Action) (*tx.Tx, error) {
+func MakeTx(act tx.Action) (*tx.Tx, error) {
 	trx := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
 
 	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
@@ -217,7 +217,7 @@ func TestIntergration_SetCode(t *testing.T) {
 
 	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, jshw.B64Encode()))
 
-	trx, err := makeTx(act)
+	trx, err := MakeTx(act)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,7 +227,7 @@ func TestIntergration_SetCode(t *testing.T) {
 
 	act2 := tx.NewAction("Contract"+common.Base58Encode(trx.Hash()), "hello", `[]`)
 
-	trx2, err := makeTx(act2)
+	trx2, err := MakeTx(act2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +247,7 @@ func TestIntergration_CallJSCode(t *testing.T) {
 
 	act := tx.NewAction("call_hello_world", "call_hello", fmt.Sprintf(`[]`))
 
-	trx, err := makeTx(act)
+	trx, err := MakeTx(act)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +301,7 @@ func TestIntergration_Payment_Success(t *testing.T) {
 
 	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
 
-	trx, err := makeTx(act)
+	trx, err := MakeTx(act)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -332,7 +332,7 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 
 	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
 
-	trx, err := makeTx(act)
+	trx, err := MakeTx(act)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -354,9 +354,7 @@ type JSTester struct {
 }
 
 func NewJSTester(t *testing.T) *JSTester {
-
 	e, vi := ininit(t)
-
 	return &JSTester{
 		t:  t,
 		vi: vi,
@@ -364,11 +362,11 @@ func NewJSTester(t *testing.T) *JSTester {
 	}
 }
 
-func (j *JSTester) readDB(key string) (value interface{}) {
+func (j *JSTester) ReadDB(key string) (value interface{}) {
 	return database.MustUnmarshal(j.vi.Get(j.cname + "-" + key))
 }
 
-func (j *JSTester) setJS(code string) {
+func (j *JSTester) SetJS(code string) {
 	j.c = &contract.Contract{
 		ID:   "jsContract",
 		Code: code,
@@ -388,10 +386,10 @@ func (j *JSTester) setJS(code string) {
 	}
 }
 
-func (j *JSTester) doSet() *tx.TxReceipt {
+func (j *JSTester) DoSet() *tx.TxReceipt {
 	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, j.c.B64Encode()))
 
-	trx, err := makeTx(act)
+	trx, err := MakeTx(act)
 	if err != nil {
 		j.t.Fatal(err)
 	}
@@ -405,7 +403,7 @@ func (j *JSTester) doSet() *tx.TxReceipt {
 	return r
 }
 
-func (j *JSTester) setAPI(name string, argType ...string) {
+func (j *JSTester) SetAPI(name string, argType ...string) {
 
 	j.c.Info.Abis = append(j.c.Info.Abis, &contract.ABI{
 		Name:     name,
@@ -417,11 +415,11 @@ func (j *JSTester) setAPI(name string, argType ...string) {
 
 }
 
-func (j *JSTester) testJS(main, args string) *tx.TxReceipt {
+func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
 
 	act2 := tx.NewAction(j.cname, main, args)
 
-	trx2, err := makeTx(act2)
+	trx2, err := MakeTx(act2)
 	if err != nil {
 		j.t.Fatal(err)
 	}
@@ -436,7 +434,7 @@ func (j *JSTester) testJS(main, args string) *tx.TxReceipt {
 func TestJSAPI_Database(t *testing.T) {
 	js := NewJSTester(t)
 
-	js.setJS(`
+	js.SetJS(`
 class Contract {
 	constructor() {
 	this.aa = new Int64(100);
@@ -448,20 +446,20 @@ class Contract {
 
 module.exports = Contract;
 `)
-	js.setAPI("main")
-	js.doSet()
+	js.SetAPI("main")
+	js.DoSet()
 
-	r := js.testJS("main", fmt.Sprintf(`[]`))
+	r := js.TestJS("main", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of publisher :", js.vi.Balance(testID[0]))
 	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
-	t.Log("value of this.aa :", js.readDB("aa"))
+	t.Log("value of this.aa :", js.ReadDB("aa"))
 }
 
 func TestJSAPI_Transfer(t *testing.T) {
 
 	js := NewJSTester(t)
-	js.setJS(`
+	js.SetJS(`
 class Contract {
 	constructor() {
 	}
@@ -472,10 +470,10 @@ class Contract {
 
 module.exports = Contract;
 `)
-	js.setAPI("main")
-	js.doSet()
+	js.SetAPI("main")
+	js.DoSet()
 
-	r := js.testJS("main", fmt.Sprintf(`[]`))
+	r := js.TestJS("main", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
 	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
@@ -484,7 +482,7 @@ module.exports = Contract;
 func TestJSAPI_Transfer_Failed(t *testing.T) {
 
 	js := NewJSTester(t)
-	js.setJS(`
+	js.SetJS(`
 class Contract {
 	constructor() {
 	}
@@ -495,10 +493,10 @@ class Contract {
 
 module.exports = Contract;
 `)
-	js.setAPI("main")
-	js.doSet()
+	js.SetAPI("main")
+	js.DoSet()
 
-	r := js.testJS("main", fmt.Sprintf(`[]`))
+	r := js.TestJS("main", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
 	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
@@ -507,7 +505,7 @@ module.exports = Contract;
 func TestJSAPI_Deposit(t *testing.T) {
 
 	js := NewJSTester(t)
-	js.setJS(`
+	js.SetJS(`
 class Contract {
 	constructor() {
 	}
@@ -521,17 +519,18 @@ class Contract {
 
 module.exports = Contract;
 `)
-	js.setAPI("deposit", "withdraw")
-	js.doSet()
+	js.SetAPI("deposit")
+	js.SetAPI("withdraw")
+	js.DoSet()
 
-	r := js.testJS("deposit", fmt.Sprintf(`[]`))
+	r := js.TestJS("deposit", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
 	if 100 != js.vi.Balance(host.ContractAccountPrefix+js.cname) {
 		t.Fatalf("balance of contract " + js.cname + "should be 100.")
 	}
 
-	r = js.testJS("withdraw", fmt.Sprintf(`[]`))
+	r = js.TestJS("withdraw", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
 	if 1 != js.vi.Balance(host.ContractAccountPrefix+js.cname) {
@@ -545,13 +544,13 @@ func TestJS_LuckyBet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	js.setJS(string(lc))
-	js.setAPI("clearUserValue")
-	js.setAPI("bet", "string", "number", "number")
-	js.setAPI("getReward")
-	js.doSet()
-	r := js.testJS("bet", fmt.Sprintf(`["%v",5, 2]`, testID[0]))
+	js.SetJS(string(lc))
+	js.SetAPI("clearUserValue")
+	js.SetAPI("bet", "string", "number", "number")
+	js.SetAPI("getReward")
+	js.DoSet()
+	r := js.TestJS("bet", fmt.Sprintf(`["%v",5, 2]`, testID[0]))
 	t.Log("receipt is ", r)
-	t.Log("max user number ", js.readDB("maxUserNumber"))
-	t.Log("user count ", js.readDB("userNumber"))
+	t.Log("max user number ", js.ReadDB("maxUserNumber"))
+	t.Log("user count ", js.ReadDB("userNumber"))
 }
