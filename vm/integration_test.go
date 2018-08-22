@@ -117,7 +117,7 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 
 	e := newEngine(bh, vi)
 
-	e.SetUp("js_path", jsPath)
+	//e.SetUp("js_path", jsPath)
 	e.SetUp("log_level", "debug")
 	e.SetUp("log_enable", "")
 	return e, vi

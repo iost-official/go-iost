@@ -40,13 +40,22 @@ type Engine interface {
 }
 
 var staticMonitor *Monitor
+var jsPath string = "./v8vm/v8/libjs/"
+
+func SetUp(k, v string) error {
+	switch k {
+	case "js_path":
+		jsPath = v
+	default:
+		return errSetUpArgs
+	}
+	return nil
+}
 
 var once sync.Once
 
 type engineImpl struct {
 	ho *host.Host
-
-	jsPath string
 
 	logger        *ilog.Logger
 	consoleWriter *ilog.ConsoleWriter
@@ -97,7 +106,7 @@ SetUp keys:
 func (e *engineImpl) SetUp(k, v string) error {
 	switch k {
 	case "js_path":
-		e.jsPath = v
+		jsPath = v
 	case "log_level":
 		e.setLogger(v, "", false)
 	case "log_path":

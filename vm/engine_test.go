@@ -15,8 +15,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
-var jsPath = "./v8vm/v8/libjs/"
-
 func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockVM) {
 	ctl := gomock.NewController(t)
 	db := database.NewMockIMultiValue(ctl)
