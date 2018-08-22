@@ -45,7 +45,7 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 }
 
 func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
-	engine := new_vm.NewEngine(&blk.Head, db)
+	engine := vm.NewEngine(&blk.Head, db)
 	for k, tx := range blk.Txs {
 		receipt, err := engine.Exec(tx)
 		if err != nil {
