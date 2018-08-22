@@ -6,12 +6,13 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/new_vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	//"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"strings"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"google.golang.org/grpc"
-	"strings"
 )
 
 var bc blockcache.BlockCache

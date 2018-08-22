@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package event;
+
+message Event {
+    enum Topic {
+        TransactionResult = 0;
+        ContractEvent = 1;
+    }
+    Topic topic = 1;
+    string data = 2;
+    int64 time = 3;
+}
