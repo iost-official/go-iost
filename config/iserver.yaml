@@ -5,7 +5,7 @@ acc:
 vm:
 
 db:
-  ldbpath: "leveldb"
+  ldbpath: "leveldb/"
 
 p2p:
   address: "127.0.0.1"

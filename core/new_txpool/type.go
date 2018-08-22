@@ -46,6 +46,7 @@ const (
 	TimeError
 	VerifyError
 	DupError
+	GasPriceError
 )
 
 type RecNode struct {

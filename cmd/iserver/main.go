@@ -15,7 +15,6 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,6 +31,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/mitchellh/go-homedir"
+	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -50,12 +50,16 @@ var (
 var serverExit []ServerExit
 
 var (
-	configfile = flag.String("f", "", "configuration `file`")
+	configfile = flag.StringP("config", "f", "", "Configuration `file`")
+	help       = flag.BoolP("help", "h", false, "Display available options")
 )
 
 func main() {
-	//	cmd.Execute()
 	flag.Parse()
+	if *help || *configfile == "" {
+		flag.Usage()
+		os.Exit(0)
+	}
 	conf := common.NewConfig(*configfile)
 
 	glb, err := global.New(conf)
@@ -65,17 +69,6 @@ func main() {
 	// Log Server Information
 	ilog.Info("Version:  %v", "1.0")
 	ilog.Info("Config Information:\n%v", glb.Config().YamlString())
-	// Start CPU Profile
-	/*
-		if cpuprofile != "" {
-			f, err := os.Create(cpuprofile)
-			if err != nil {
-				//ilog.E("could not create CPU profile: ", err)
-			}
-			if err := pprof.StartCPUProfile(f); err != nil {
-				//ilog.E("could not start CPU profile: ", err)
-			}
-		}*/
 
 	// ilog.I("1.Start the P2P networks")
 
