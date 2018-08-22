@@ -1,7 +1,6 @@
 package pob
 
 import (
-	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 )
@@ -33,17 +32,6 @@ func newStaticProperty(account account.Account, witnessList []string) StaticProp
 	return property
 }
 
-<<<<<<< HEAD
-=======
-func (property *StaticProperty) updateWitnessList(witnessList []string) {
-	property.WitnessList = witnessList
-	for i, w := range witnessList {
-		property.WitnessMap[w] = int64(i)
-	}
-	property.NumberOfWitnesses = int64(len(witnessList))
-}
-
->>>>>>> vm_dev
 func (property *StaticProperty) hasSlot(slot int64) bool {
 	return property.SlotMap[slot]
 }

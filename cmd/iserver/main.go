@@ -15,12 +15,13 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"fmt"
+
+	"flag"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -35,6 +36,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+//	"github.com/iost-official/Go-IOS-Protocol/iserver/cmd"
 type ServerExit interface {
 	Stop()
 }
@@ -49,10 +51,6 @@ var (
 
 var serverExit []ServerExit
 
-var (
-	configfile = flag.String("f", "", "configuration `file`")
-)
-
 func main() {
 	//	cmd.Execute()
 	flag.Parse()
@@ -64,7 +62,10 @@ func main() {
 	}
 	// Log Server Information
 	ilog.Info("Version:  %v", "1.0")
-	ilog.Info("Config Information:\n%v", glb.Config().YamlString())
+	ilog.Info("cfgFile: %v", glb.Config().CfgFile)
+	ilog.Info("logFile: %v", glb.Config().LogFile)
+	ilog.Info("ldb.path: %v", glb.Config().LdbPath)
+	ilog.Info("dbFile: %v", glb.Config().DbFile)
 	// Start CPU Profile
 	/*
 		if cpuprofile != "" {
