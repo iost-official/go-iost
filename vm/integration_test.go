@@ -418,7 +418,7 @@ func (j *JSTester) setJS(code string, main ...string) *tx.TxReceipt {
 }
 func (j *JSTester) testJS(main, args string) *tx.TxReceipt {
 
-	act2 := tx.NewAction(j.cn, main, fmt.Sprintf(`[]`))
+	act2 := tx.NewAction(j.cn, main, args)
 
 	trx2, err := makeTx(act2)
 	if err != nil {
@@ -539,4 +539,5 @@ func TestJS_LuckyBet(t *testing.T) {
 	r := js.testJS("bet", fmt.Sprintf(`["%v",5, 2]`, testID[0]))
 	t.Log("receipt is ", r)
 	t.Log("max user number ", js.readDB("maxUserNumber"))
+	t.Log()
 }

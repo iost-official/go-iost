@@ -7,6 +7,7 @@ import (
 
 //go:generate mockgen -destination vm_mock.go -package new_vm github.com/iost-official/Go-IOS-Protocol/new_vm VM
 
+// VM ...
 type VM interface {
 	Init() error
 	Compile(contract *contract.Contract) (string, error)

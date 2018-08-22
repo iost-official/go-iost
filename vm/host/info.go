@@ -7,14 +7,17 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
+// Info ...
 type Info struct {
 	ctx *Context
 }
 
+// NewInfo ...
 func NewInfo(ctx *Context) Info {
 	return Info{ctx: ctx}
 }
 
+// BlockInfo ...
 func (h *Info) BlockInfo() (info database.SerializedJSON, cost *contract.Cost) { // todo 清理并且保证正确
 
 	blkInfo := make(map[string]interface{})
@@ -31,6 +34,8 @@ func (h *Info) BlockInfo() (info database.SerializedJSON, cost *contract.Cost) {
 
 	return database.SerializedJSON(bij), contract.NewCost(1, 1, 1)
 }
+
+// TxInfo ...
 func (h *Info) TxInfo() (info database.SerializedJSON, cost *contract.Cost) {
 
 	txInfo := make(map[string]interface{})
@@ -48,6 +53,8 @@ func (h *Info) TxInfo() (info database.SerializedJSON, cost *contract.Cost) {
 
 	return database.SerializedJSON(tij), contract.NewCost(1, 1, 1)
 }
+
+// ABIConfig ...
 func (h *Info) ABIConfig(key, value string) {
 	switch key {
 	case "payment":
@@ -57,6 +64,7 @@ func (h *Info) ABIConfig(key, value string) {
 	}
 }
 
+// GasLimit ...
 func (h *Info) GasLimit() int64 {
 	return h.ctx.GValue("gas_limit").(int64)
 }
