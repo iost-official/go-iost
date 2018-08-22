@@ -18,7 +18,6 @@ var (
 	errGasPriceIllegal = errors.New("gas price too big")
 	errArgsNotEnough   = errors.New("args not enough")
 	errArgsType        = errors.New("args type not match")
-	errGasOverflow     = errors.New("contract pay gas overflow")
 )
 
 // Monitor ...
@@ -35,6 +34,7 @@ func NewMonitor() *Monitor {
 }
 
 // Call ...
+// nolint
 func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
 	c := h.DB().Contract(contractName)

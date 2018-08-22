@@ -533,6 +533,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 
 }
 
+// nolint
 func TestNative_Receipt(t *testing.T) { // tests of native vm works
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
