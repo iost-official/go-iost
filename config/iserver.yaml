@@ -4,6 +4,20 @@ vm:
 db:
   ldbpath: "leveldb"
 
+
 p2p:
-  address: "127.0.0.1"
-  port: 8080
+  listenAddr: "0.0.0.0:30303"
+  chainID: 1024
+  version: 1
+  seedNodes:
+    - "/ip4/127.0.0.1/tcp/30303/ipfs/12D3KooWBBhYDkCUjgtPRsTirrcbRtKtL4n2Q4RqX1PM43jmrC1r"
+
+log:
+  asyncWrite: true
+  fileLog:
+    path: "logs/"
+    level: "info"
+    enable: true
+  consoleLog:
+    level: "debug"
+    enable: true
