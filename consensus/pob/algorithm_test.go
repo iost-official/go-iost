@@ -4,13 +4,51 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/smartystreets/goconvey/convey"
 )
+
+func TestGenerateBlock(t *testing.T) {
+	account, _ := account.NewAccount(nil)
+	topBlock := &block.Block{
+		Head: block.BlockHead{
+			Version: 0,
+			Number:  21,
+			Time:    0,
+		},
+		Txs:      make([]*tx.Tx, 0),
+		Receipts: make([]*tx.TxReceipt, 0),
+	}
+
+	topBlock.CalculateHeadHash()
+	mockController := gomock.NewController(t)
+	stateDB, _ := db.NewMVCCDB("./StateDB")
+	stateDB.Tag(string(topBlock.HeadHash()))
+	mockTxPool := core_mock.NewMockTxPool(mockController)
+	txsList := make([]*tx.Tx, 0)
+	tx1 := tx.Tx{
+		Time:       time.Now().UnixNano(),
+		Expiration: 10000,
+		GasLimit:   100000,
+		GasPrice:   1,
+		Publisher:  common.Signature{Pubkey: account.Pubkey},
+	}
+	acticon := tx.Action{
+		Contract:   "iost.system",
+		ActionName: "Transfer",
+		Data:       `["a","b", 100]`,
+	}
+	txsList = append(txsList, &tx1)
+	mockTxPool.EXPECT().PendingTxs(gomock.Any()).Return(txsList, nil)
+	generateBlock(account, topBlock, mockTxPool, stateDB)
+}
 
 func TestConfirmNode(t *testing.T) {
 	convey.Convey("Test of Confirm node", t, func() {
@@ -63,7 +101,6 @@ func TestConfirmNode(t *testing.T) {
 }
 
 func TestNodeInfoUpdate(t *testing.T) {
-
 	convey.Convey("Test of node info update", t, func() {
 		staticProperty = newStaticProperty(account.Account{ID: "id0"}, []string{"id0", "id1", "id2"})
 		rootNode := &blockcache.BlockCacheNode{

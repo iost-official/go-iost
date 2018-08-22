@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
 var (
@@ -63,7 +64,8 @@ func makePubkey(seckey []byte) []byte {
 
 func GetIDByPubkey(pubkey []byte) string {
 	if len(pubkey) != 33 {
-		panic("illegal pubkey")
+		ilog.Error("illegal pubkey")
+		return ""
 	}
 	return "IOST" + common.Base58Encode(append(pubkey, common.Parity(pubkey)...))
 }

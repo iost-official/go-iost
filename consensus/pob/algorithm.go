@@ -13,7 +13,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/new_vm"
 )
 
@@ -29,8 +28,6 @@ var (
 
 func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	var err error
-	ilog.Info(account.ID)
-	ilog.Info(witnessOfSec(time.Now().Unix()))
 	blk := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
@@ -43,7 +40,7 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 		Receipts: []*tx.TxReceipt{},
 	}
 	txCnt := 1000
-	limitTime := time.NewTicker((common.SlotLength / 3 * time.Second))
+	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := new_vm.NewEngine(&topBlock.Head, db)
