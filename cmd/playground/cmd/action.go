@@ -38,6 +38,7 @@ Usage:
 		}
 		db := database.NewDatabase()
 		err = db.Load("state.json")
+		db.AddSystem("system.json")
 		if err != nil {
 			panic(err)
 		}

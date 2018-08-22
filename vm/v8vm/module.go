@@ -6,6 +6,7 @@ package v8
 import "C"
 import "strings"
 
+// Module module struct
 type Module struct {
 	id   string
 	code string
@@ -13,6 +14,7 @@ type Module struct {
 
 var moduleReplacer = strings.NewReplacer("\\", "\\\\", "\n", "\\n", "\r", "\\r", "\"", "\\\"")
 
+// NewModule return module with id and code
 func NewModule(id, code string) *Module {
 	return &Module{
 		id:   id,
@@ -20,27 +22,32 @@ func NewModule(id, code string) *Module {
 	}
 }
 
+// Modules module map
 type Modules map[string]*Module
 
+// NewModules return module map
 func NewModules() Modules {
 	return make(Modules)
 }
 
+// Set set module by id
 func (ms Modules) Set(m *Module) {
 	ms[m.id] = m
 }
 
+// Get get module by id
 func (ms Modules) Get(id string) *Module {
 	return ms[id]
 }
 
+// Del delete module by id
 func (ms Modules) Del(id string) {
 	delete(ms, id)
 }
 
 //export requireModule
-func requireModule(cSbx C.SandboxPtr, moduleId *C.char) *C.char {
-	id := C.GoString(moduleId)
+func requireModule(cSbx C.SandboxPtr, moduleID *C.char) *C.char {
+	id := C.GoString(moduleID)
 
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
