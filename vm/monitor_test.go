@@ -42,7 +42,7 @@ func TestMonitor_Call(t *testing.T) {
 			Lang:        "",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "abi",
 					Args:     []string{"string"},
 					Payment:  0,
@@ -92,14 +92,14 @@ func TestMonitor_Context(t *testing.T) {
 			Lang:        "",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "outer",
 					Args:     []string{"string"},
 					Payment:  0,
 					GasPrice: int64(1000),
 					Limit:    contract.NewCost(100, 100, 100),
 				},
-				&contract.ABI{
+				{
 					Name:     "inner",
 					Args:     []string{"string"},
 					Payment:  0,
@@ -157,14 +157,14 @@ func TestMonitor_HostCall(t *testing.T) {
 			Lang:        "",
 			VersionCode: "1.0.0",
 			Abis: []*contract.ABI{
-				&contract.ABI{
+				{
 					Name:     "outer",
 					Args:     []string{"string"},
 					Payment:  0,
 					GasPrice: int64(1000),
 					Limit:    contract.NewCost(100, 100, 100),
 				},
-				&contract.ABI{
+				{
 					Name:     "inner",
 					Args:     []string{"string"},
 					Payment:  0,

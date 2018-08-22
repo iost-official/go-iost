@@ -1,6 +1,6 @@
 package database
 
-type Database interface {
+type database interface {
 	Get(key string) (value string)
 	Put(key, value string)
 	Has(key string) bool
@@ -9,6 +9,7 @@ type Database interface {
 }
 
 const (
+	// StateTable name
 	StateTable = "state"
 )
 
