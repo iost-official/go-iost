@@ -6,7 +6,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 )
 
-//go:generate mockgen -destination ../mocks/mock_txpool.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/new_txpool TxPool
+//go:generate mockgen -destination mock/mock_txpool.go -package txpool_mock github.com/iost-official/Go-IOS-Protocol/core/new_txpool TxPool
 
 // TxPool defines all the API of txpool package.
 type TxPool interface {
