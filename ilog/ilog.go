@@ -48,26 +48,51 @@ func Flush() {
 }
 
 // Debug generates a debug-level log.
-func Debug(format string, v ...interface{}) {
-	defaultLogger.Debug(format, v...)
+func Debug(v ...interface{}) {
+	defaultLogger.Debug(v...)
 }
 
 // Info generates a info-level log.
-func Info(format string, v ...interface{}) {
-	defaultLogger.Info(format, v...)
+func Info(v ...interface{}) {
+	defaultLogger.Info(v...)
 }
 
 // Warn generates a warn-level log.
-func Warn(format string, v ...interface{}) {
-	defaultLogger.Warn(format, v...)
+func Warn(v ...interface{}) {
+	defaultLogger.Warn(v...)
 }
 
 // Error generates a error-level log.
-func Error(format string, v ...interface{}) {
-	defaultLogger.Error(format, v...)
+func Error(v ...interface{}) {
+	defaultLogger.Error(v...)
 }
 
 // Fatal generates a fatal-level log and exits the program.
-func Fatal(format string, v ...interface{}) {
-	defaultLogger.Fatal(format, v...)
+func Fatal(v ...interface{}) {
+	defaultLogger.Fatal(v...)
+}
+
+// Debugf generates a debug-level log.
+func Debugf(format string, v ...interface{}) {
+	defaultLogger.Debugf(format, v...)
+}
+
+// Infof generates a info-level log.
+func Infof(format string, v ...interface{}) {
+	defaultLogger.Infof(format, v...)
+}
+
+// Warnf generates a warn-level log.
+func Warnf(format string, v ...interface{}) {
+	defaultLogger.Warnf(format, v...)
+}
+
+// Errorf generates a error-level log.
+func Errorf(format string, v ...interface{}) {
+	defaultLogger.Errorf(format, v...)
+}
+
+// Fatalf generates a fatal-level log and exits the program.
+func Fatalf(format string, v ...interface{}) {
+	defaultLogger.Fatalf(format, v...)
 }

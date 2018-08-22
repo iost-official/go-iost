@@ -97,7 +97,7 @@ func (pm *PeerManager) Stop() {
 // In other cases, reset the stream.
 func (pm *PeerManager) HandleStream(s libnet.Stream) {
 	remotePID := s.Conn().RemotePeer()
-	ilog.Info("new stream is coming. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+	ilog.Infof("new stream is coming. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
 
 	peer := pm.GetNeighbor(remotePID)
 	if peer == nil {
@@ -111,7 +111,7 @@ func (pm *PeerManager) HandleStream(s libnet.Stream) {
 
 	err := peer.AddStream(s)
 	if err != nil {
-		ilog.Info("add stream failed. err=%v, pid=%s", err, remotePID.Pretty())
+		ilog.Infof("add stream failed. err=%v, pid=%s", err, remotePID.Pretty())
 		s.Reset()
 		return
 	}
@@ -141,7 +141,7 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 		case <-pm.quitCh:
 			return
 		case <-syncRoutingTableTicker.C:
-			ilog.Info("start sync routing table.")
+			ilog.Infof("start sync routing table.")
 			pm.syncRoutingTable()
 			syncRoutingTableTicker.Reset(syncRoutingTableInterval)
 		}
@@ -208,7 +208,7 @@ func (pm *PeerManager) NeighborCount() int {
 func (pm *PeerManager) DumpRoutingTable() {
 	file, err := os.Create(routingTablePath)
 	if err != nil {
-		ilog.Error("create routing file failed. err=%v, path=%v", err, routingTablePath)
+		ilog.Errorf("create routing file failed. err=%v, path=%v", err, routingTablePath)
 		return
 	}
 	defer file.Close()
@@ -225,14 +225,14 @@ func (pm *PeerManager) DumpRoutingTable() {
 func (pm *PeerManager) LoadRoutingTable() {
 	if _, err := os.Stat(routingTablePath); err != nil {
 		if os.IsNotExist(err) {
-			ilog.Info("no routing file. path=%v", routingTablePath)
+			ilog.Infof("no routing file. path=%v", routingTablePath)
 			return
 		}
 	}
 
 	file, err := os.Open(routingTablePath)
 	if err != nil {
-		ilog.Error("open routing file failed. err=%v, path=%v", err, routingTablePath)
+		ilog.Errorf("open routing file failed. err=%v, path=%v", err, routingTablePath)
 		return
 	}
 	defer file.Close()
@@ -247,7 +247,7 @@ func (pm *PeerManager) LoadRoutingTable() {
 		}
 		peerID, addr, err := parseMultiaddr(line)
 		if err != nil {
-			ilog.Warn("parse multi addr failed. err=%v, line=%v", err, line)
+			ilog.Warnf("parse multi addr failed. err=%v, line=%v", err, line)
 			continue
 		}
 		pm.storePeer(peerID, addr)
@@ -276,7 +276,7 @@ func (pm *PeerManager) syncRoutingTable() {
 		}
 		stream, err := pm.host.NewStream(context.Background(), peerID, protocolID)
 		if err != nil {
-			ilog.Error("create stream failed. err=%v", err)
+			ilog.Errorf("create stream failed. err=%v", err)
 			pm.deletePeer(peerID)
 			continue
 		}
@@ -290,7 +290,7 @@ func (pm *PeerManager) parseSeeds() {
 	for _, seed := range pm.config.SeedNodes {
 		peerID, addr, err := parseMultiaddr(seed)
 		if err != nil {
-			ilog.Error("parse seed nodes error. seed=%s, err=%v", seed, err)
+			ilog.Errorf("parse seed nodes error. seed=%s, err=%v", seed, err)
 			continue
 		}
 		pm.storePeer(peerID, addr)
@@ -299,6 +299,7 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
+	ilog.Infof("broadcast message. type=%d", typ)
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	pm.neighborMutex.RLock()
@@ -311,7 +312,7 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
-	ilog.Info("send message to peer. type=%d, peerID=%s", typ, peerID.Pretty())
+	ilog.Infof("send message to peer. type=%d, peerID=%s", typ, peerID.Pretty())
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	peer := pm.GetNeighbor(peerID)
@@ -344,7 +345,7 @@ func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 
 // handleRoutingTableQuery picks the nearest peers of the given peerID and sends the result to it.
 func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
-	ilog.Info("handling routing table query. peerID=%s", peerID.Pretty())
+	ilog.Infof("handling routing table query. peerID=%s", peerID.Pretty())
 
 	peerIDs := pm.routingTable.NearestPeers(kbucket.ConvertPeerID(peerID), peerResponseCount)
 	peerInfo := make([]peerstore.PeerInfo, 0, len(peerIDs))
@@ -356,7 +357,7 @@ func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
 	}
 	bytes, err := json.Marshal(peerInfo)
 	if err != nil {
-		ilog.Error("json encode failed. err=%v, obj=%+v", err, peerInfo)
+		ilog.Errorf("json encode failed. err=%v, obj=%+v", err, peerInfo)
 		return
 	}
 	pm.SendToPeer(peerID, bytes, RoutingTableResponse, UrgentMessage)
@@ -364,20 +365,20 @@ func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
 
 // handleRoutingTableResponse stores the peer information received.
 func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
-	ilog.Info("handling routing table response.")
+	ilog.Infof("handling routing table response.")
 
 	data, err := msg.data()
 	if err != nil {
-		ilog.Error("get message data failed. err=%v", err)
+		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
 	peerInfos := make([]peerstore.PeerInfo, 0)
 	err = json.Unmarshal(data, &peerInfos)
 	if err != nil {
-		ilog.Error("json decode failed. err=%v, str=%s", err, data)
+		ilog.Errorf("json decode failed. err=%v, str=%s", err, data)
 		return
 	}
-	ilog.Info("receiving peer infos: %v", peerInfos)
+	ilog.Infof("receiving peer infos: %v", peerInfos)
 	for _, peerInfo := range peerInfos {
 		if len(peerInfo.Addrs) > 0 {
 			pm.storePeer(peerInfo.ID, peerInfo.Addrs[0])
@@ -389,7 +390,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 	data, err := msg.data()
 	if err != nil {
-		ilog.Error("get message data failed. err=%v", err)
+		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
 	switch msg.messageType() {
@@ -404,7 +405,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 				select {
 				case v.(chan IncomingMessage) <- *inMsg:
 				default:
-					ilog.Error("sending incoming message failed. type=%d", msg.messageType())
+					ilog.Errorf("sending incoming message failed. type=%d", msg.messageType())
 				}
 				return true
 			})

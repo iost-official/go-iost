@@ -105,23 +105,23 @@ func (p *PoB) Stop() {
 }
 
 func (p *PoB) blockLoop() {
-	ilog.Info("start block")
+	ilog.Infof("start block")
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
 			if !ok {
-				ilog.Info("chRecvBlock has closed")
+				ilog.Infof("chRecvBlock has closed")
 				return
 			}
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
-				ilog.Debug(err.Error())
+				ilog.Debugf(err.Error())
 				continue
 			}
 			err = p.handleRecvBlock(&blk)
 			if err != nil {
-				ilog.Debug(err.Error())
+				ilog.Debugf(err.Error())
 				continue
 			}
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
@@ -135,12 +135,12 @@ func (p *PoB) blockLoop() {
 			}
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
-				ilog.Info("chGenBlock has closed")
+				ilog.Infof("chGenBlock has closed")
 				return
 			}
 			err := p.handleRecvBlock(blk)
 			if err != nil {
-				ilog.Debug(err.Error())
+				ilog.Debugf(err.Error())
 			}
 		case <-p.exitSignal:
 			return
@@ -150,20 +150,20 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
-	ilog.Info("next schedule:%v", math.Round(float64(nextSchedule)/float64(second2nanosecond)))
+	ilog.Infof("next schedule:%v", math.Round(float64(nextSchedule)/float64(second2nanosecond)))
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
-				ilog.Info("gen block:%v", blk.Head.Number)
+				ilog.Infof("gen block:%v", blk.Head.Number)
 				if err != nil {
-					ilog.Debug(err.Error())
+					ilog.Debugf(err.Error())
 					continue
 				}
 				blkByte, err := blk.Encode()
 				if err != nil {
-					ilog.Debug(err.Error())
+					ilog.Debugf(err.Error())
 					continue
 				}
 				p.chGenBlock <- blk
@@ -171,7 +171,7 @@ func (p *PoB) scheduleLoop() {
 				time.Sleep(common.SlotLength * time.Second)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
-			ilog.Info("next schedule:%v", math.Round(float64(nextSchedule)/float64(second2nanosecond)))
+			ilog.Infof("next schedule:%v", math.Round(float64(nextSchedule)/float64(second2nanosecond)))
 		case <-p.exitSignal:
 			return
 		}
@@ -179,7 +179,7 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block) error {
-	ilog.Info("block number:%v", blk.Head.Number)
+	ilog.Infof("block number:%v", blk.Head.Number)
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errors.New("duplicate block")
@@ -204,7 +204,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
 			p.blockCache.Del(node)
-			ilog.Debug(err.Error())
+			ilog.Debugf(err.Error())
 			return err
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))

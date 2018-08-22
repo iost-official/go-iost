@@ -29,8 +29,8 @@ var (
 
 func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	var err error
-	ilog.Info(account.ID)
-	ilog.Info(witnessOfSec(time.Now().Unix()))
+	ilog.Infof(account.ID)
+	ilog.Infof(witnessOfSec(time.Now().Unix()))
 	blk := block.Block{
 		Head: block.BlockHead{
 			Version:    0,
