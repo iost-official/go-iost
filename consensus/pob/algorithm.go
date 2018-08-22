@@ -61,7 +61,7 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
-	sig := common.Sign(common.Secp256k1, headInfo, account.Seckey)
+	sig := common.Sign(common.Secp256k1, headInfo, account.Seckey, common.NotPubkey)
 	blk.Head.Signature, err = sig.Encode()
 	if err != nil {
 		return nil, err
@@ -93,9 +93,7 @@ func verifyBasics(blk *block.Block) error {
 	}
 	var signature common.Signature
 	signature.Decode(blk.Head.Signature)
-	if blk.Head.Witness != account.GetIDByPubkey(signature.Pubkey) {
-		return errPubkey
-	}
+	signature.SetPubkey(account.GetPubkeyByID(blk.Head.Witness))
 	headInfo := generateHeadInfo(blk.Head)
 	if !common.VerifySignature(headInfo, signature) {
 		return errSignature

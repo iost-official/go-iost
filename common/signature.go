@@ -14,6 +14,13 @@ const (
 	Secp256k1 SignAlgorithm = iota
 )
 
+type SignMode bool
+
+const (
+	SavePubkey SignMode = true
+	NotPubkey  SignMode = false
+)
+
 type Signature struct {
 	Algorithm SignAlgorithm
 
@@ -21,12 +28,14 @@ type Signature struct {
 	Pubkey []byte
 }
 
-func Sign(algo SignAlgorithm, info, privkey []byte) Signature {
-	s := Signature{}
+func Sign(algo SignAlgorithm, info, privkey []byte, smode SignMode) Signature {
+	s := Signature{Pubkey: nil}
 	s.Algorithm = algo
 	switch algo {
 	case Secp256k1:
-		s.Pubkey = CalcPubkeyInSecp256k1(privkey)
+		if smode {
+			s.Pubkey = CalcPubkeyInSecp256k1(privkey)
+		}
 		s.Sig = SignInSecp256k1(info, privkey)
 		return s
 	}
@@ -39,6 +48,10 @@ func VerifySignature(info []byte, s Signature) bool {
 		return VerifySignInSecp256k1(info, s.Pubkey, s.Sig)
 	}
 	return false
+}
+
+func (s *Signature) SetPubkey(pubkey []byte) {
+	s.Pubkey = pubkey
 }
 
 func (s *Signature) Encode() ([]byte, error) {
