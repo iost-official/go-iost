@@ -6,7 +6,6 @@ const (
 	SlotLength    = 3
 	SecondsInHour = 3600
 	SecondsInDay  = 24 * 3600
-	Epoch         = 0 //1970-01-01 00:00:00
 )
 
 type Timestamp struct {
