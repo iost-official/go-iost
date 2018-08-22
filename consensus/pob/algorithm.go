@@ -92,9 +92,6 @@ func generateHeadInfo(head block.BlockHead) []byte {
 }
 
 func verifyBasics(blk *block.Block) error {
-	ilog.Info("verifyBlocks")
-	ilog.Info("witnessOfSlot%s", witnessOfSlot(blk.Head.Time))
-	ilog.Info("blk.Head.Witness%s", blk.Head.Witness)
 	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
 		return errWitness
 	}

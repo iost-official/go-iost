@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"math"
-
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
@@ -109,7 +107,6 @@ func (p *PoB) blockLoop() {
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
-			ilog.Info("block from others")
 			if !ok {
 				ilog.Info("chRecvBlock has closed")
 				return
@@ -120,8 +117,6 @@ func (p *PoB) blockLoop() {
 				ilog.Error(err.Error())
 				continue
 			}
-			ilog.Info("witnessOfSlot%s", witnessOfSlot(blk.Head.Time))
-			ilog.Info("blk.Head.Witness%s", blk.Head.Witness)
 			err = p.handleRecvBlock(&blk)
 			if err != nil {
 				ilog.Error(err.Error())
@@ -141,9 +136,6 @@ func (p *PoB) blockLoop() {
 				ilog.Info("chGenBlock has closed")
 				return
 			}
-			ilog.Info("block from myself")
-			ilog.Info("witnessOfSlot%s", witnessOfSlot(blk.Head.Time))
-			ilog.Info("blk.Head.Witness%s", blk.Head.Witness)
 			err := p.handleRecvBlock(blk)
 			if err != nil {
 				ilog.Error(err.Error())
@@ -156,7 +148,6 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
-	ilog.Info("next schedule:%v", math.Round(float64(nextSchedule)/float64(second2nanosecond)))
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
@@ -177,7 +168,6 @@ func (p *PoB) scheduleLoop() {
 				time.Sleep(common.SlotLength * time.Second)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
-			ilog.Info("next schedule:%v", math.Round(float64(nextSchedule)/float64(second2nanosecond)))
 		case <-p.exitSignal:
 			return
 		}
