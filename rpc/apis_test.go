@@ -20,8 +20,8 @@ func (s *Mock_Apis_SubscribeServer) Send(req *SubscribeRes) error {
 	return nil
 }
 
-func TestRpcServer_Subscribe(t *testing.T) {
-	s := newRpcServer()
+func TestRPCServer_Subscribe(t *testing.T) {
+	s := newRPCServer()
 	ec := event.GetEventCollectorInstance()
 	req := &SubscribeReq{Topics: []event.Event_Topic{event.Event_TransactionResult}}
 	res := Mock_Apis_SubscribeServer{

@@ -32,7 +32,7 @@ func NewTeller(db *database.Visitor, ctx *Context) Teller {
 
 func (h *Teller) transfer(from, to string, amount int64) error {
 	bf := h.db.Balance(from)
-	//ilog.Debug("%v's balance : %v", from, bf)
+	//ilog.Debugf("%v's balance : %v", from, bf)
 	if bf > amount {
 		h.db.SetBalance(from, -1*amount)
 		h.db.SetBalance(to, amount)
@@ -43,7 +43,7 @@ func (h *Teller) transfer(from, to string, amount int64) error {
 
 // Transfer ...
 func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error) {
-	//ilog.Debug("amount : %v", amount)
+	//ilog.Debugf("amount : %v", amount)
 	if amount <= 0 {
 		return contract.NewCost(1, 1, 1), ErrTransferNegValue
 	}
@@ -113,7 +113,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 				return err
 			}
 		} else {
-			ilog.Error("key is:", k)
+			ilog.Errorf("key is:", k)
 			panic("prefix error")
 		}
 	}

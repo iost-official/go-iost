@@ -91,7 +91,6 @@ func (bc *BlockChain) Push(block *Block) error {
 func (bc *BlockChain) CheckLength() error {
 	var err error = nil
 	for i := bc.length; i > 0; i-- {
-		fmt.Println(i)
 		_, err = bc.GetBlockByNumber(i - 1)
 		if err != nil {
 			fmt.Println("fail to get the block")
