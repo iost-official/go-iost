@@ -41,13 +41,14 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	}
 	txCnt := 1000
 	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
-	txsList, _ := txPool.PendingTxs(txCnt)
+	txsList, _ := txPool.PendingTxs(txCnt)//signers是不需要的吗？
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(&topBlock.Head, db)
+	S:
 	for _, t := range txsList {
 		select {
 		case <-limitTime.C:
-			break
+			break S
 		default:
 			if receipt, err := engine.Exec(t); err == nil {
 				blk.Txs = append(blk.Txs, t)
