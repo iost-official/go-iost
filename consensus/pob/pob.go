@@ -103,12 +103,12 @@ func (p *PoB) Stop() {
 }
 
 func (p *PoB) blockLoop() {
-	ilog.Info("start block")
+	ilog.Infof("start block")
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
 			if !ok {
-				ilog.Info("chRecvBlock has closed")
+				ilog.Infof("chRecvBlock has closed")
 				return
 			}
 			var blk block.Block
@@ -133,7 +133,7 @@ func (p *PoB) blockLoop() {
 			}
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
-				ilog.Info("chGenBlock has closed")
+				ilog.Infof("chGenBlock has closed")
 				return
 			}
 			err := p.handleRecvBlock(blk)
@@ -148,12 +148,14 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
+	time.Duration(nextSchedule).Seconds()
+	ilog.Infof("next schedule:%v", time.Duration(nextSchedule).Seconds())
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
-				ilog.Info("gen block:%v", blk.Head.Number)
+				ilog.Infof("gen block:%v", blk.Head.Number)
 				if err != nil {
 					ilog.Error(err.Error())
 					continue
@@ -168,6 +170,7 @@ func (p *PoB) scheduleLoop() {
 				time.Sleep(common.SlotLength * time.Second)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
+			ilog.Infof("next schedule:%v", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
 			return
 		}
@@ -175,7 +178,7 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block) error {
-	ilog.Info("block number:%v", blk.Head.Number)
+	ilog.Infof("block number:%v", blk.Head.Number)
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errors.New("duplicate block")

@@ -83,7 +83,7 @@ func (ldb *LDB) Close() {
 	defer ldb.quitLock.Unlock()
 	err := ldb.db.Close()
 	if err != nil {
-		ilog.Error("Close LDB failed: %v", err)
+		ilog.Errorf("Close LDB failed: %v", err)
 	}
 }
 
