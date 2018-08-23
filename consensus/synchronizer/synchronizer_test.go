@@ -45,7 +45,7 @@ func TestSynchronizer(t *testing.T) {
 	Convey("Test Synchronizer", t, func() {
 		baseVariable := global.FakeNew()
 		genesisBlock := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				Version: 0,
 				Number:  0,
 				Time:    0,
