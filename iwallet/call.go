@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package iwallet
 
 import (
 	"fmt"
@@ -42,7 +42,7 @@ var callCmd = &cobra.Command{
 		}
 		pubkeys := make([][]byte, len(signers))
 		for i, pubkey := range signers {
-			pubkeys[i] = loadBytes(pubkey)
+			pubkeys[i] = loadBytes(string(pubkey))
 		}
 		trx := tx.NewTx(actions, pubkeys, gasLimit, gasPrice, expiration)
 
