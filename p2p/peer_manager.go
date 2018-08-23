@@ -19,6 +19,7 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/uber-go/atomic"
 
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
@@ -28,11 +29,13 @@ var (
 )
 
 const (
-	maxNeighborCount  = 32 // TODO: configurable
+	maxNeighborCount  = 32
 	bucketSize        = 20
 	peerResponseCount = 20
 
 	incomingMsgChanSize = 1024
+
+	routingTablePath = "routing.table"
 )
 
 // PeerManager manages all peers we connect directily.
@@ -50,14 +53,14 @@ type PeerManager struct {
 	quitCh chan struct{}
 
 	host           host.Host
-	config         *Config
+	config         *common.P2PConfig
 	routingTable   *kbucket.RoutingTable
 	peerStore      peerstore.Peerstore
 	lastUpdateTime atomic.Int64
 }
 
 // NewPeerManager returns a new instance of PeerManager struct.
-func NewPeerManager(host host.Host, config *Config) *PeerManager {
+func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), time.Second, host.Peerstore())
 	return &PeerManager{
 		neighbors:    make(map[peer.ID]*Peer),
@@ -203,9 +206,9 @@ func (pm *PeerManager) NeighborCount() int {
 
 // DumpRoutingTable saves routing table in file.
 func (pm *PeerManager) DumpRoutingTable() {
-	file, err := os.Create(pm.config.RoutingFile)
+	file, err := os.Create(routingTablePath)
 	if err != nil {
-		ilog.Error("create routing file failed. err=%v, path=%v", err, pm.config.RoutingFile)
+		ilog.Error("create routing file failed. err=%v, path=%v", err, routingTablePath)
 		return
 	}
 	defer file.Close()
@@ -220,16 +223,16 @@ func (pm *PeerManager) DumpRoutingTable() {
 
 // LoadRoutingTable reads routing table file and parses it.
 func (pm *PeerManager) LoadRoutingTable() {
-	if _, err := os.Stat(pm.config.RoutingFile); err != nil {
+	if _, err := os.Stat(routingTablePath); err != nil {
 		if os.IsNotExist(err) {
-			ilog.Info("no routing file. path=%v", pm.config.RoutingFile)
+			ilog.Info("no routing file. path=%v", routingTablePath)
 			return
 		}
 	}
 
-	file, err := os.Open(pm.config.RoutingFile)
+	file, err := os.Open(routingTablePath)
 	if err != nil {
-		ilog.Error("open routing file failed. err=%v, path=%v", err, pm.config.RoutingFile)
+		ilog.Error("open routing file failed. err=%v, path=%v", err, routingTablePath)
 		return
 	}
 	defer file.Close()

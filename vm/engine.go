@@ -40,6 +40,18 @@ type Engine interface {
 }
 
 var staticMonitor *Monitor
+var jsPath = "./v8vm/v8/libjs/"
+
+// SetUp setup global engine settings
+func SetUp(k, v string) error {
+	switch k {
+	case "js_path":
+		jsPath = v
+	default:
+		return errSetUpArgs
+	}
+	return nil
+}
 
 var once sync.Once
 
@@ -97,13 +109,13 @@ SetUp keys:
 func (e *engineImpl) SetUp(k, v string) error {
 	switch k {
 	case "js_path":
-		e.jsPath = v
+		jsPath = v
 	case "log_level":
-		e.setLogger(v, "", false)
+		e.setLogLevel(v)
 	case "log_path":
-		e.setLogger("", v, false)
+		e.setLogPath(v)
 	case "log_enable":
-		e.setLogger("", "", true)
+		e.startLog()
 	default:
 		return errSetUpArgs
 	}
@@ -189,6 +201,8 @@ func checkTx(tx0 *tx.Tx) error {
 	}
 	return nil
 }
+
+// nolint
 func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
@@ -234,8 +248,6 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	}
 
 	return rtn, nil
-	//return nil, errors.New("unsupported yet")
-
 }
 func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
@@ -325,54 +337,45 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	return
 }
 
-func (e *engineImpl) setLogger(level, path string, start bool) {
-	if path == "" && !start {
-		//ilog.Debug("console log accepted")
-		if e.consoleWriter == nil {
-			e.consoleWriter = ilog.NewConsoleWriter()
-		}
-
-		switch level {
-		case "debug":
-			e.consoleWriter.SetLevel(ilog.LevelDebug)
-		case "info":
-			e.consoleWriter.SetLevel(ilog.LevelInfo)
-		case "warning":
-			e.consoleWriter.SetLevel(ilog.LevelWarn)
-		case "error":
-			e.consoleWriter.SetLevel(ilog.LevelError)
-		case "fatal":
-			e.consoleWriter.SetLevel(ilog.LevelFatal)
-		}
-
-		return
+func (e *engineImpl) setLogLevel(level string) {
+	if e.consoleWriter == nil {
+		e.consoleWriter = ilog.NewConsoleWriter()
 	}
-
-	if level == "" && !start {
-		e.fileWriter = ilog.NewFileWriter(path)
+	switch level {
+	case "debug":
+		e.consoleWriter.SetLevel(ilog.LevelDebug)
+	case "info":
+		e.consoleWriter.SetLevel(ilog.LevelInfo)
+	case "warning":
+		e.consoleWriter.SetLevel(ilog.LevelWarn)
+	case "error":
+		e.consoleWriter.SetLevel(ilog.LevelError)
+	case "fatal":
+		e.consoleWriter.SetLevel(ilog.LevelFatal)
 	}
-
-	if start {
-		var ok bool
-		if e.consoleWriter != nil {
-			err := e.logger.AddWriter(e.consoleWriter)
-			if err != nil {
-				panic(err)
-			}
-			ok = true
+}
+func (e *engineImpl) setLogPath(path string) {
+	e.fileWriter = ilog.NewFileWriter(path)
+}
+func (e *engineImpl) startLog() {
+	var ok bool
+	if e.consoleWriter != nil {
+		err := e.logger.AddWriter(e.consoleWriter)
+		if err != nil {
+			panic(err)
 		}
-		if e.fileWriter != nil {
-			err := e.logger.AddWriter(e.fileWriter)
-			if err != nil {
-				panic(err)
-			}
-			ok = true
+		ok = true
+	}
+	if e.fileWriter != nil {
+		err := e.logger.AddWriter(e.fileWriter)
+		if err != nil {
+			panic(err)
 		}
-
-		if ok {
-			e.logger.SetCallDepth(0)
-			e.logger.Start()
-		}
+		ok = true
+	}
+	if ok {
+		e.logger.SetCallDepth(0)
+		e.logger.Start()
 	}
 }
 

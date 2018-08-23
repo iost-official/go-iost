@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
@@ -27,6 +28,9 @@ var (
 )
 
 func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+	ilog.Info("generateBlockstart")
+	ilog.Info("account.ID:%s", account.ID)
+	ilog.Info("witnessOfSec:%s", witnessOfSec(time.Now().Unix()))
 	var err error
 	blk := block.Block{
 		Head: block.BlockHead{
@@ -39,6 +43,9 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
+	ilog.Info("generateBlockEnd")
+	ilog.Info("witnessOfSlot%s", witnessOfSlot(blk.Head.Time))
+	ilog.Info("blk.Head.Witness%s", blk.Head.Witness)
 	txCnt := 1000
 	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
 	txsList, _ := txPool.PendingTxs(txCnt)
@@ -59,7 +66,7 @@ L:
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
-	sig := common.Sign(common.Secp256k1, headInfo, account.Seckey)
+	sig := common.Sign(common.Secp256k1, headInfo, account.Seckey, common.NilPubkey)
 	blk.Head.Signature, err = sig.Encode()
 	if err != nil {
 		return nil, err
@@ -91,9 +98,7 @@ func verifyBasics(blk *block.Block) error {
 	}
 	var signature common.Signature
 	signature.Decode(blk.Head.Signature)
-	if blk.Head.Witness != account.GetIDByPubkey(signature.Pubkey) {
-		return errPubkey
-	}
+	signature.SetPubkey(account.GetPubkeyByID(blk.Head.Witness))
 	headInfo := generateHeadInfo(blk.Head)
 	if !common.VerifySignature(headInfo, signature) {
 		return errSignature

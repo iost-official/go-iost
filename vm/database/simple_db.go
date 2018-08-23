@@ -20,17 +20,19 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 )
 
+// SimpleDB implements simple database interface
 type SimpleDB struct {
 	json *simplejson.Json
 }
 
+// NewDatabase returns a SimpleDB with empty data and system contract
 func NewDatabase() *SimpleDB {
 	var data SimpleDB
 	data.json = simplejson.New()
-	data.addSystem()
 	return &data
 }
 
+// NewDatabaseFromPath returns a SimpleDB with data loaded from json file
 func NewDatabaseFromPath(path string) *SimpleDB {
 	var data SimpleDB
 	json, err := readJSON(path)
@@ -41,6 +43,7 @@ func NewDatabaseFromPath(path string) *SimpleDB {
 	return &data
 }
 
+// Get key-value from db with marshal
 func (d *SimpleDB) Get(table string, key string) (string, error) {
 	jso := d.json.Get(key)
 	var out interface{}
@@ -71,6 +74,8 @@ func (d *SimpleDB) Get(table string, key string) (string, error) {
 
 	return Marshal(out)
 }
+
+// Put key-value into db with unmarshal
 func (d *SimpleDB) Put(table string, key string, value string) error {
 	if strings.HasPrefix(key, "c-") {
 		d.json.Set(key, value)
@@ -79,17 +84,25 @@ func (d *SimpleDB) Put(table string, key string, value string) error {
 	}
 	return nil
 }
+
+// Del delete key from db
 func (d *SimpleDB) Del(table string, key string) error {
 	d.json.Del(key)
 	return nil
 }
+
+// Has return if key exists in db
 func (d *SimpleDB) Has(table string, key string) (bool, error) {
 	_, ok := d.json.CheckGet(key)
 	return ok, nil
 }
+
+// Keys do nothing
 func (d *SimpleDB) Keys(table string, prefix string) ([]string, error) {
 	return nil, nil
 }
+
+// Save save db data to json file
 func (d *SimpleDB) Save(path string) error {
 
 	d.json.Del("c-iost.system")
@@ -109,16 +122,18 @@ func (d *SimpleDB) Save(path string) error {
 	err = f.Close()
 	return err
 }
+
+// Load load db data from json file
 func (d *SimpleDB) Load(path string) error {
 	var err error
 	d.json, err = readJSON(path)
 	if err != nil {
 		return err
 	}
-	d.addSystem()
 	return nil
 }
 
+// LoadBlockhead load block info as block.BlockHead from json file
 func LoadBlockhead(path string) (*block.BlockHead, error) {
 
 	json, err := readJSON(path)
@@ -146,6 +161,7 @@ func LoadBlockhead(path string) (*block.BlockHead, error) {
 
 }
 
+// LoadTxInfo load tx info as tx.Tx from json file
 func LoadTxInfo(path string) (*tx.Tx, error) {
 
 	json, err := readJSON(path)
@@ -188,10 +204,11 @@ func readJSON(path string) (*simplejson.Json, error) {
 	return simplejson.NewJson(fd)
 }
 
-func (d *SimpleDB) addSystem() {
+// AddSystem load system contract and data from json file
+func (d *SimpleDB) AddSystem(path string) {
 	cp := contract.Compiler{}
 
-	f, err := os.Open("system.json")
+	f, err := os.Open(path)
 	if err != nil {
 		panic(err)
 	}
@@ -209,10 +226,12 @@ func (d *SimpleDB) addSystem() {
 	d.json.Set("c-iost.system", c.Encode())
 }
 
+// Commit do nothing
 func (d *SimpleDB) Commit() {
 
 }
 
+// Rollback do nothing
 func (d *SimpleDB) Rollback() {
 
 }

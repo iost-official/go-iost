@@ -6,8 +6,10 @@ import (
 	"time"
 )
 
+// EventCollectorSize size of post channel in event collector
 const EventCollectorSize = 1024
 
+// NewEvent generate new event with topic and data
 func NewEvent(topic Event_Topic, data string) *Event {
 	now := time.Now().UnixNano()
 	return &Event{
@@ -17,12 +19,14 @@ func NewEvent(topic Event_Topic, data string) *Event {
 	}
 }
 
+// Subscription is a struct used for listening specific topics
 type Subscription struct {
 	topics []Event_Topic
 	postCh chan<- *Event
 	readCh <-chan *Event
 }
 
+// NewSubscription new subscription with specific topics and size for post channel
 func NewSubscription(chSize int, topics []Event_Topic) *Subscription {
 	postCh := make(chan *Event, chSize)
 	subscribe := &Subscription{
@@ -33,10 +37,13 @@ func NewSubscription(chSize int, topics []Event_Topic) *Subscription {
 	return subscribe
 }
 
+// ReadChan get channel for reading event
 func (s *Subscription) ReadChan() <-chan *Event {
 	return s.readCh
 }
 
+// nolint
+// EventCollector struct for posting event
 type EventCollector struct {
 	subMap *sync.Map
 	postCh chan *Event
@@ -45,6 +52,7 @@ type EventCollector struct {
 
 var ec *EventCollector
 
+// GetEventCollectorInstance return single-instance event collector
 func GetEventCollectorInstance() *EventCollector {
 	if ec == nil {
 		ec = &EventCollector{
@@ -61,10 +69,12 @@ func (ec *EventCollector) start() {
 	go ec.deliverLoop()
 }
 
+// Stop event collector if no longer in use
 func (ec *EventCollector) Stop() {
 	ec.quitCh <- 1
 }
 
+// Post a event
 func (ec *EventCollector) Post(e *Event) {
 	select {
 	case ec.postCh <- e:
@@ -74,6 +84,7 @@ func (ec *EventCollector) Post(e *Event) {
 
 }
 
+// Subscribe a subscription to event collector
 func (ec *EventCollector) Subscribe(sub *Subscription) {
 	for _, topic := range sub.topics {
 		m, _ := ec.subMap.LoadOrStore(topic, new(sync.Map))
@@ -82,6 +93,7 @@ func (ec *EventCollector) Subscribe(sub *Subscription) {
 	}
 }
 
+// Unsubscribe a subscription from event collector, won't receive new event, but can still read from this subscription
 func (ec *EventCollector) Unsubscribe(sub *Subscription) {
 	for _, topic := range sub.topics {
 		m, ok := ec.subMap.Load(topic)

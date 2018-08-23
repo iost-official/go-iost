@@ -20,6 +20,15 @@ var (
 		"IOST5XxHPKQ5gdvEocak4rjeDKgLh3uYumrT1iUFoR82vrHkMWNz4p": 2800000000,
 		"IOST8SJYAr9ig81JPvjnyeDsPX9fbDuNGB4ECWKTedvMBN4fzZiG7F": 2600000000,
 	}
+	WitnessList = []string{
+		"IOST7j5ynm6UXmJqY3GJp4RchiEWxjoPvifqgQVVAUaKV9sPLpx719",
+		"IOST5QWmFgVpXwz7vgQmPd4qUHDbexKeK523PtcMDh8geyM131niP2",
+		"IOST7koa9yKFh4j45t97xwMBzVKrJw1q8mnixRmsdJx4JftnLo52tH",
+		"IOST5dFQcKgmU3ZaKDgfVuX2vVCgm3W9W1GyJWyhEtgfibK6nM6Hsn",
+		"IOST7mo771oBeAuYNp7b8VLhkP7FHxcub4HeWx3VzqsLvmNKxatQ8c",
+		"IOST5XxHPKQ5gdvEocak4rjeDKgLh3uYumrT1iUFoR82vrHkMWNz4p",
+		"IOST8SJYAr9ig81JPvjnyeDsPX9fbDuNGB4ECWKTedvMBN4fzZiG7F",
+	}
 	// local net
 	//GenesisAccount = map[string]float64{
 	//	"IOST5FhLBhVXMnwWRwhvz5j9NyWpBSchAMzpSMZT21xZqT8w7icwJ5": 13400000000, // seckey:BCV7fV37aSWNx1N1Yjk3TdQXeHMmLhyqsqGms1PkqwPT

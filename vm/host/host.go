@@ -33,6 +33,7 @@ type Host struct {
 	Info
 	Teller
 	APIDelegate
+	EventPoster
 
 	logger  *ilog.Logger
 	ctx     *Context

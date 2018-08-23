@@ -23,6 +23,7 @@ func (m *VM) Init() error {
 }
 
 // LoadAndCall ...
+// nolint
 func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 	switch api {
 	case "RequireAuth":

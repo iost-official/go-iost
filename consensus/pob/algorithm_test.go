@@ -9,10 +9,10 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool/mock"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
@@ -38,7 +38,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	return &trx, nil
 }
 
-func BenchmarkTXRMerkleTree_Build(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
+func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
 	account, _ := account.NewAccount(nil)
 	topBlock := &block.Block{
 		Head: block.BlockHead{
@@ -60,7 +60,7 @@ func BenchmarkTXRMerkleTree_Build(b *testing.B) { // 296275 = 0.3ms(0tx), 466353
 	vi.SetContract(native.ABI())
 	vi.Commit()
 	stateDB.Tag(string(topBlock.HeadHash()))
-	mockTxPool := core_mock.NewMockTxPool(mockController)
+	mockTxPool := txpool_mock.NewMockTxPool(mockController)
 	txsList := make([]*tx.Tx, 0)
 	for i := 0; i < 8000; i++ {
 		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
@@ -207,7 +207,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account1.Seckey)
+			sig := common.Sign(common.Secp256k1, info, account1.Seckey, common.NilPubkey)
 			blk.Head.Signature, _ = sig.Encode()
 			err := verifyBasics(blk)
 			convey.So(err, convey.ShouldBeNil)
@@ -221,7 +221,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account0.Seckey)
+			sig := common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
 			blk.Head.Signature, _ = sig.Encode()
 
 			err := verifyBasics(blk)
@@ -240,10 +240,10 @@ func TestVerifyBasics(t *testing.T) {
 
 			blk.Head.Witness = account1.ID
 			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account0.Seckey)
+			sig := common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
 			blk.Head.Signature, _ = sig.Encode()
 			err = verifyBasics(blk)
-			convey.So(err, convey.ShouldEqual, errPubkey)
+			convey.So(err, convey.ShouldEqual, errSignature)
 		})
 
 		convey.Convey("Slot witness duplicate", func() {
@@ -254,7 +254,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account0.Seckey)
+			sig := common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
 			blk.Head.Signature, _ = sig.Encode()
 			err := verifyBasics(blk)
 			convey.So(err, convey.ShouldBeNil)
@@ -267,7 +267,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info = generateHeadInfo(blk.Head)
-			sig = common.Sign(common.Secp256k1, info, account0.Seckey)
+			sig = common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
 			blk.Head.Signature, _ = sig.Encode()
 			err = verifyBasics(blk)
 			convey.So(err, convey.ShouldEqual, errSlot)
@@ -322,11 +322,11 @@ func TestVerifyBlock(t *testing.T) {
 		info := generateHeadInfo(blk.Head)
 		var sig common.Signature
 		if witness == account0.ID {
-			sig = common.Sign(common.Secp256k1, info, account0.Seckey)
+			sig = common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
 		} else if witness == account1.ID {
-			sig = common.Sign(common.Secp256k1, info, account1.Seckey)
+			sig = common.Sign(common.Secp256k1, info, account1.Seckey, common.NilPubkey)
 		} else {
-			sig = common.Sign(common.Secp256k1, info, account2.Seckey)
+			sig = common.Sign(common.Secp256k1, info, account2.Seckey, common.NilPubkey)
 		}
 		blk.Head.Signature, _ = sig.Encode()
 		//convey.Convey("Normal (no txs)", func() {
