@@ -2,7 +2,6 @@ package txpool
 
 import (
 	"fmt"
-	"os/exec"
 	"testing"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
+	"os"
 )
 
 var (
@@ -505,12 +505,9 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 
 func stopTest() {
 
-	cmd := exec.Command("rm", "-r", dbPath1)
-	cmd.Run()
-	cmd = exec.Command("rm", "-r", dbPath2)
-	cmd.Run()
-	cmd = exec.Command("rm", "-r", dbPath3)
-	cmd.Run()
+	os.RemoveAll(dbPath1)
+	os.RemoveAll(dbPath2)
+	os.RemoveAll(dbPath3)
 }
 
 func genTx(a account.Account, expirationIter int64) *tx.Tx {
