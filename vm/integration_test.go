@@ -101,6 +101,7 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 		t.Fatal(err)
 	}
 
+	os.RemoveAll("mvcc")
 	//mvccdb := replaceDB(t)
 
 	vi := database.NewVisitor(0, mvccdb)
@@ -344,8 +345,12 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 
 }
 
+type fataler interface {
+	Fatal(args ...interface{})
+}
+
 type JSTester struct {
-	t      *testing.T
+	t      fataler
 	e      Engine
 	vi     *database.Visitor
 	mvccdb db.MVCCDB
@@ -354,11 +359,13 @@ type JSTester struct {
 	c     *contract.Contract
 }
 
-func NewJSTester(t *testing.T) *JSTester {
+func NewJSTester(t fataler) *JSTester {
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
+
+	os.RemoveAll("mvcc")
 
 	//mvccdb := replaceDB(t)
 
@@ -376,11 +383,10 @@ func NewJSTester(t *testing.T) *JSTester {
 
 	e := newEngine(bh, vi)
 
-	//e.SetUp("js_path", jsPath)
+	e.SetUp("js_path", jsPath)
 	e.SetUp("log_level", "debug")
 	e.SetUp("log_enable", "")
 	return &JSTester{
-		t:      t,
 		vi:     vi,
 		e:      e,
 		mvccdb: mvccdb,
