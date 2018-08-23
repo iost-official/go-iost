@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"hash/crc32"
+	"strconv"
 
 	"github.com/golang/snappy"
 )
@@ -52,6 +53,29 @@ const (
 	UrgentMessage = 1
 	NormalMessage = 2
 )
+
+func (m MessageType) String() string {
+	switch m {
+	case RoutingTableQuery:
+		return "RoutingTableQuery"
+	case RoutingTableResponse:
+		return "RoutingTableResponse"
+	case NewBlock:
+		return "NewBlock"
+	case SyncBlockHashRequest:
+		return "SyncBlockHashRequest"
+	case SyncBlockHashResponse:
+		return "SyncBlockHashResponse"
+	case SyncBlockRequest:
+		return "SyncBlockRequest"
+	case SyncBlockResponse:
+		return "SyncBlockResponse"
+	case PublishTxRequest:
+		return "PublishTxRequest"
+	default:
+		return "unknown_type:" + strconv.Itoa(int(m))
+	}
+}
 
 type p2pMessage []byte
 
