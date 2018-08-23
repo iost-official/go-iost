@@ -5,6 +5,8 @@ import (
 
 	"fmt"
 
+	"strconv"
+
 	"os"
 
 	"github.com/golang/mock/gomock"
@@ -100,8 +102,6 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 	}
 
 	//mvccdb := replaceDB(t)
-
-	defer os.RemoveAll("mvcc")
 
 	vi := database.NewVisitor(0, mvccdb)
 	vi.SetBalance(testID[0], 1000000)
@@ -345,20 +345,45 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 }
 
 type JSTester struct {
-	t  *testing.T
-	e  Engine
-	vi *database.Visitor
+	t      *testing.T
+	e      Engine
+	vi     *database.Visitor
+	mvccdb db.MVCCDB
 
 	cname string
 	c     *contract.Contract
 }
 
 func NewJSTester(t *testing.T) *JSTester {
-	e, vi := ininit(t)
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//mvccdb := replaceDB(t)
+
+	vi := database.NewVisitor(0, mvccdb)
+	vi.SetBalance(testID[0], 1000000)
+	vi.SetContract(systemContract)
+	vi.Commit()
+
+	bh := &block.BlockHead{
+		ParentHash: []byte("abc"),
+		Number:     10,
+		Witness:    "witness",
+		Time:       123456,
+	}
+
+	e := newEngine(bh, vi)
+
+	//e.SetUp("js_path", jsPath)
+	e.SetUp("log_level", "debug")
+	e.SetUp("log_enable", "")
 	return &JSTester{
-		t:  t,
-		vi: vi,
-		e:  e,
+		t:      t,
+		vi:     vi,
+		e:      e,
+		mvccdb: mvccdb,
 	}
 }
 
@@ -429,6 +454,11 @@ func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
 		j.t.Fatal(err)
 	}
 	return r
+}
+
+func (j *JSTester) Clear() {
+	j.mvccdb.Close()
+	os.RemoveAll("mvcc")
 }
 
 func TestJSAPI_Database(t *testing.T) {
@@ -540,6 +570,7 @@ module.exports = Contract;
 
 func TestJS_Database(t *testing.T) {
 	js := NewJSTester(t)
+	defer js.Clear()
 	lc, err := ReadFile("test_data/database.js")
 	if err != nil {
 		t.Fatal(err)
@@ -578,6 +609,7 @@ func TestJS_Database(t *testing.T) {
 
 func TestJS_LuckyBet(t *testing.T) {
 	js := NewJSTester(t)
+	defer js.Clear()
 	lc, err := ReadFile("test_data/lucky_bet.js")
 	if err != nil {
 		t.Fatal(err)
@@ -593,16 +625,15 @@ func TestJS_LuckyBet(t *testing.T) {
 	t.Log("user count ", js.ReadDB("userNumber"))
 	t.Log("total coins ", js.ReadDB("totalCoins"))
 	t.Log("table should be saved ", js.ReadDB("table0"))
-	js.TestJS("bet", fmt.Sprintf(`["%v",1, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",2, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",3, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",4, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",5, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",6, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",7, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",8, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",9, 2]`, testID[0]))
-	t.Log("user count ", js.ReadDB("userNumber"))
 
+	for i := 1; i < 10; i++ {
+		js.TestJS("bet", fmt.Sprintf(`["%v",%v, 2]`, testID[0], i))
+	}
+
+	t.Log("user count ", js.ReadDB("userNumber"))
+	t.Log("total coins ", js.ReadDB("totalCoins"))
+	for i := 0; i < 10; i++ {
+		t.Log("table"+strconv.Itoa(i), js.ReadDB("table"+strconv.Itoa(i)))
+	}
 	t.Log("result is ", js.ReadDB("results"))
 }
