@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool/mock"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
@@ -207,7 +208,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account1.Seckey, common.NilPubkey)
+			sig := common.Sign(crypto.Secp256k1, info, account1.Seckey, common.NilPubkey)
 			blk.Head.Signature, _ = sig.Encode()
 			err := verifyBasics(blk)
 			convey.So(err, convey.ShouldBeNil)
@@ -221,7 +222,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
+			sig := common.Sign(crypto.Secp256k1, info, account0.Seckey, common.NilPubkey)
 			blk.Head.Signature, _ = sig.Encode()
 
 			err := verifyBasics(blk)
@@ -240,7 +241,7 @@ func TestVerifyBasics(t *testing.T) {
 
 			blk.Head.Witness = account1.ID
 			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
+			sig := common.Sign(crypto.Secp256k1, info, account0.Seckey, common.NilPubkey)
 			blk.Head.Signature, _ = sig.Encode()
 			err = verifyBasics(blk)
 			convey.So(err, convey.ShouldEqual, errSignature)
@@ -254,7 +255,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
+			sig := common.Sign(crypto.Secp256k1, info, account0.Seckey, common.NilPubkey)
 			blk.Head.Signature, _ = sig.Encode()
 			err := verifyBasics(blk)
 			convey.So(err, convey.ShouldBeNil)
@@ -267,7 +268,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info = generateHeadInfo(blk.Head)
-			sig = common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
+			sig = common.Sign(crypto.Secp256k1, info, account0.Seckey, common.NilPubkey)
 			blk.Head.Signature, _ = sig.Encode()
 			err = verifyBasics(blk)
 			convey.So(err, convey.ShouldEqual, errSlot)
@@ -322,11 +323,11 @@ func TestVerifyBlock(t *testing.T) {
 		info := generateHeadInfo(blk.Head)
 		var sig common.Signature
 		if witness == account0.ID {
-			sig = common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
+			sig = common.Sign(crypto.Secp256k1, info, account0.Seckey, common.NilPubkey)
 		} else if witness == account1.ID {
-			sig = common.Sign(common.Secp256k1, info, account1.Seckey, common.NilPubkey)
+			sig = common.Sign(crypto.Secp256k1, info, account1.Seckey, common.NilPubkey)
 		} else {
-			sig = common.Sign(common.Secp256k1, info, account2.Seckey, common.NilPubkey)
+			sig = common.Sign(crypto.Secp256k1, info, account2.Seckey, common.NilPubkey)
 		}
 		blk.Head.Signature, _ = sig.Encode()
 		//convey.Convey("Normal (no txs)", func() {
