@@ -59,6 +59,7 @@ type Config struct {
 	VM  *VMConfig
 	DB  *DBConfig
 	P2P *P2PConfig
+	RPC *RPCConfig
 	Log *LogConfig
 }
 
