@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 )
 
 func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) {

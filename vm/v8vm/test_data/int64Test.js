@@ -38,12 +38,6 @@ class Int64Test {
         this.number = this.number.pow(times);
         return this.number.toString();
     }
-
-    getSqrt() {
-        this.number = new Int64("1234789");
-        this.number = this.number.sqrt();
-        return this.number.toString();
-    }
 }
 
 module.exports = Int64Test;

@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
@@ -132,4 +132,34 @@ func BenchmarkNative_SetCode(b *testing.B) {
 	}
 	b.StopTimer()
 	cleanUp()
+}
+
+func BenchmarkJS_Gas(b *testing.B) {
+	js := NewJSTester(b)
+	f, err := ReadFile("test_data/gas.js")
+	if err != nil {
+		b.Fatal(err)
+	}
+	js.SetJS(string(f))
+	js.SetAPI("single")
+	js.SetAPI("ten")
+	js.DoSet()
+
+	act2 := tx.NewAction(js.cname, "ten", `[]`)
+
+	trx2, err := MakeTx(act2)
+	if err != nil {
+		js.t.Fatal(err)
+	}
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		// r := js.TestJS("single", `[]`)
+		//if i == 0 {
+		//	b.Log("gas is : ", r.GasUsage)
+		//}
+		js.e.Exec(trx2)
+	}
+	b.StopTimer()
+
 }

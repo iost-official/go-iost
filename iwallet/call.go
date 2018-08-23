@@ -17,7 +17,7 @@ package iwallet
 import (
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/spf13/cobra"
 )
 
