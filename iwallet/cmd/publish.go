@@ -24,7 +24,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	pb "github.com/iost-official/Go-IOS-Protocol/new_rpc"
+	pb "github.com/iost-official/Go-IOS-Protocol/rpc"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
