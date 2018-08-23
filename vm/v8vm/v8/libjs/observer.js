@@ -15,22 +15,30 @@ module.exports = (function () {
 
         var handler = {
             get: function(target, property, receiver) {
-                // var aa = {
-                //     target: target,
-                //     prop: property,
-                //     path: getPath(path, property),
-                //     type: typeof target[property]
-                // }
-                // _native_log('get: ' + JSON.stringify(aa));
+                var aa = {
+                    target: target,
+                    prop: property,
+                    path: getPath(path, property),
+                    type: typeof target[property]
+                };
+                // _native_log('observer get: ' + JSON.stringify(aa));
+
+                var totalPath = getPath(path, property);
+                var dotIndex = totalPath.indexOf('.');
 
                 if (target[property] instanceof BigNumber || target[property] instanceof Int64 || typeof target[property] === 'string' || typeof target[property] === 'number') {
-                    var objectStorage = IOSTContractStorage.get(property, target[property]);
-                    return objectStorage;
+                    if (dotIndex === -1) {
+                        var objectStorage = IOSTContractStorage.get(property, target[property]);
+                        return objectStorage;
+                    } else {
+                        return target[property];
+                    }
                 }
 
                 var value = Reflect.get(target, property, receiver);
                 if (typeof target[property] === 'object' && target[property] !== null) {
                     var objectStorage = IOSTContractStorage.get(property);
+                    // _native_log("observer get return: " + JSON.stringify(objectStorage));
                     var proxy = _create(objectStorage, getPath(path, property));
                     proxies[property] = proxy;
                     return proxy;
@@ -51,14 +59,14 @@ module.exports = (function () {
                 return value;
             },
             set: function(target, prop, value, receiver) {
-                // var aa = {
-                //     target: target,
-                //     prop: prop,
-                //     path: getPath(path, prop),
-                //     value: value,
-                //     type: typeof target[prop]
-                // }
-                // _native_log('set: ' + JSON.stringify(aa));
+                var aa = {
+                    target: target,
+                    prop: prop,
+                    path: getPath(path, prop),
+                    value: value,
+                    type: typeof target[prop]
+                };
+                // _native_log('observer set: ' + JSON.stringify(aa));
                 target[prop] = value;
 
                 var totalPath = getPath(path, prop);

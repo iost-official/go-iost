@@ -42,6 +42,7 @@ var IOSTContractStorage = (function () {
             if (val instanceof BigNumber) {
                 return storage.put(key, val.toString(10))
             }
+            // _native_log("storage put: " + key + " : " + JSON.stringify(val))
             return storage.put(key, JSON.stringify(val))
         },
         get: function (key, val) {
