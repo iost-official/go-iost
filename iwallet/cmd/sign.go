@@ -69,7 +69,7 @@ var signCmd = &cobra.Command{
 			return
 		}
 
-		acc, err := account.NewAccount(LoadBytes(string(seckey)))
+		acc, err := account.NewAccount(loadBytes(string(seckey)))
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -93,7 +93,7 @@ var signCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		err = SaveTo(dest, sigRaw)
+		err = saveTo(dest, sigRaw)
 		if err != nil {
 			fmt.Println(err.Error())
 			return

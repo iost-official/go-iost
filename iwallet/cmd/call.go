@@ -42,16 +42,16 @@ var callCmd = &cobra.Command{
 		}
 		pubkeys := make([][]byte, len(signers))
 		for i, pubkey := range signers {
-			pubkeys[i] = LoadBytes(string(pubkey))
+			pubkeys[i] = loadBytes(pubkey)
 		}
 		trx := tx.NewTx(actions, pubkeys, gasLimit, gasPrice, expiration)
 
 		bytes := trx.Encode()
 		if dest == "default" {
-			dest = ChangeSuffix(args[0], ".sc")
+			dest = changeSuffix(args[0], ".sc")
 		}
 
-		err := SaveTo(dest, bytes)
+		err := saveTo(dest, bytes)
 		if err != nil {
 			fmt.Println(err.Error())
 		}

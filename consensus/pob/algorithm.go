@@ -51,10 +51,11 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(&topBlock.Head, db)
+L:
 	for _, t := range txsList {
 		select {
 		case <-limitTime.C:
-			break
+			break L
 		default:
 			if receipt, err := engine.Exec(t); err == nil {
 				blk.Txs = append(blk.Txs, t)

@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -12,43 +14,64 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool/mock"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 	"github.com/smartystreets/goconvey/convey"
 )
 
-func TestGenerateBlock(t *testing.T) {
-	t.SkipNow()
+var testID = []string{
+	"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE",
+	"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "8dJ9YKovJ5E7hkebAQaScaG1BA8snRUHPUbVcArcTVq6",
+}
+
+func MakeTx(act tx.Action) (*tx.Tx, error) {
+	trx := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
+
+	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
+	if err != nil {
+		return nil, err
+	}
+	trx, err = tx.SignTx(trx, ac)
+	if err != nil {
+		return nil, err
+	}
+	return &trx, nil
+}
+
+func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
 	account, _ := account.NewAccount(nil)
 	topBlock := &block.Block{
 		Head: block.BlockHead{
-			Version: 0,
-			Number:  21,
-			Time:    0,
+			ParentHash: []byte("abc"),
+			Number:     10,
+			Witness:    "witness",
+			Time:       123456,
 		},
-		Txs:      make([]*tx.Tx, 0),
-		Receipts: make([]*tx.TxReceipt, 0),
 	}
-
 	topBlock.CalculateHeadHash()
-	mockController := gomock.NewController(t)
-	stateDB, _ := db.NewMVCCDB("./StateDB")
+	mockController := gomock.NewController(nil)
+	stateDB, err := db.NewMVCCDB("./StateDB")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer stateDB.Close()
+	vi := database.NewVisitor(0, stateDB)
+	vi.SetBalance(testID[0], 100000000)
+	vi.SetContract(native.ABI())
+	vi.Commit()
 	stateDB.Tag(string(topBlock.HeadHash()))
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
 	txsList := make([]*tx.Tx, 0)
-	tx1 := tx.Tx{
-		Time:       time.Now().UnixNano(),
-		Expiration: 10000,
-		GasLimit:   100000,
-		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.Pubkey},
+	for i := 0; i < 8000; i++ {
+		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+		trx, _ := MakeTx(act)
+		txsList = append(txsList, trx)
 	}
-	//acticon := tx.Action{
-	//	Contract:   "iost.system",
-	//	ActionName: "Transfer",
-	//	Data:       `["a","b", 100]`,
-	//}
-	txsList = append(txsList, &tx1)
-	mockTxPool.EXPECT().PendingTxs(gomock.Any()).Return(txsList, nil)
-	generateBlock(account, topBlock, mockTxPool, stateDB)
+	mockTxPool.EXPECT().PendingTxs(gomock.Any()).Return(txsList, nil).AnyTimes()
+	b.ResetTimer()
+	for j := 0; j < b.N; j++ {
+		generateBlock(account, topBlock, mockTxPool, stateDB)
+	}
 }
 
 func TestConfirmNode(t *testing.T) {
