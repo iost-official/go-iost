@@ -118,7 +118,7 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			err = p.handleRecvBlock(&blk)
-			if err != nil && err.Error() == "duplicate block" {
+			if err != nil {
 				ilog.Error(err.Error())
 				continue
 			}

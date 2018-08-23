@@ -150,7 +150,6 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 }
 
 func (sy *SyncImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) {
-	ilog.Debugf("[sync] block confirmed. hash=%s", hash)
 	sy.dc.OnBlockConfirmed(hash, peerID)
 	if sy.syncEnd <= sy.blockCache.Head().Number {
 		sy.basevariable.Mode().SetMode(global.ModeNormal)
@@ -265,10 +264,10 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 }
 
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
-	ilog.Infof("receive block hashes: len=%v, hashes=%+v", len(rh.BlockHashes), rh.BlockHashes)
+	ilog.Infof("receive block hashes: len=%v", len(rh.BlockHashes))
 	for _, blkHash := range rh.BlockHashes {
-		if _, err := sy.blockCache.Find(blkHash.Hash); err == nil { // TODO: check hash @ BlockCache and BlockDB
-			sy.reqMap.Delete(blkHash.Height)
+		sy.reqMap.Delete(blkHash.Height)
+		if _, err := sy.blockCache.Find(blkHash.Hash); err != nil {
 			sy.dc.OnRecvHash(string(blkHash.Hash), peerID)
 		}
 	}
