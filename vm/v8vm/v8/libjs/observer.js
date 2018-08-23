@@ -20,7 +20,8 @@ module.exports = (function () {
                 // var aa = {
                 //     target: target,
                 //     prop: property,
-                //     path: getPath(path, property),
+                //     path: path,
+                //     // path: getPath(path, property),
                 //     type: typeof target[property]
                 // };
                 // _native_log('observer get: ' + JSON.stringify(aa));
@@ -52,7 +53,8 @@ module.exports = (function () {
                 var value = Reflect.get(target, property, receiver);
                 if (typeof target[property] === 'object' && target[property] !== null) {
                     if (dotIndex === -1) {
-                        let objectStorage = IOSTContractStorage.get(property);
+                        let objectStorage = IOSTContractStorage.get(property, target[property]);
+
                         // _native_log("observer get return: " + JSON.stringify(objectStorage));
                         let proxy = _create(objectStorage, getPath(path, property));
                         proxies[property] = proxy;
