@@ -73,8 +73,8 @@ var blockCmd = &cobra.Command{
 				return
 			}
 		}
-		blockInfoJson, err := json.Marshal(blockInfo)
-		fmt.Println(string(blockInfoJson))
+		blockInfoJSON, err := json.Marshal(blockInfo)
+		fmt.Println(string(blockInfoJSON))
 	},
 }
 
