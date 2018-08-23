@@ -54,7 +54,7 @@ func testRun(t *testing.T) {
 	synchronizer, _ := synchronizer.NewSynchronizer(baseVariable, blockCache, mockP2PService) //mock
 	witnessList := []string{account1.ID, account2.ID, account3.ID}
 	pob := NewPoB(account1, baseVariable, blockCache, txPool, mockP2PService, synchronizer, witnessList)
-	pob.Run()
+	pob.Start()
 	fmt.Println(time.Now().Second())
 	fmt.Println(time.Now().Nanosecond())
 	fw := ilog.NewFileWriter("pob/")
