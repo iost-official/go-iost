@@ -37,8 +37,7 @@ class Contract {
             this["table"+luckyNumber][account] += coins
         }
 
-        let un = this.userNumber;
-        _native_log(this.userNumber+"")
+        this.userNumber ++;
         this.totalCoins += coins;
 
         if (this.userNumber >= this.maxUserNumber) {

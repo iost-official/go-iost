@@ -7,6 +7,8 @@ import (
 
 	"os"
 
+	"strconv"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -593,16 +595,15 @@ func TestJS_LuckyBet(t *testing.T) {
 	t.Log("user count ", js.ReadDB("userNumber"))
 	t.Log("total coins ", js.ReadDB("totalCoins"))
 	t.Log("table should be saved ", js.ReadDB("table0"))
-	js.TestJS("bet", fmt.Sprintf(`["%v",1, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",2, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",3, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",4, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",5, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",6, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",7, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",8, 2]`, testID[0]))
-	js.TestJS("bet", fmt.Sprintf(`["%v",9, 2]`, testID[0]))
-	t.Log("user count ", js.ReadDB("userNumber"))
 
+	for i := 1; i < 10; i++ {
+		js.TestJS("bet", fmt.Sprintf(`["%v",%v, 2]`, testID[0], i))
+	}
+
+	t.Log("user count ", js.ReadDB("userNumber"))
+	t.Log("total coins ", js.ReadDB("totalCoins"))
+	for i := 0; i < 10; i++ {
+		t.Log("table"+strconv.Itoa(i), js.ReadDB("table"+strconv.Itoa(i)))
+	}
 	t.Log("result is ", js.ReadDB("results"))
 }

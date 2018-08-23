@@ -7,7 +7,7 @@ class Test {
         this.array = [1, 2, 3];
         this.object = {"foo": "bar"};
         this.arrayobj = [{"foo": "bar"}, {"foo": "bar"}, {"foo": "bar"}];
-        this.objobj = {"you": {"killed": "my father"}}
+        this.objobj = {"you": {"killed": "my father"}};
         this["key"] = {"foo": "bar"}
     }
 
