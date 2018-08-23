@@ -23,7 +23,7 @@ module.exports = (function () {
                 // }
                 // _native_log('get: ' + JSON.stringify(aa));
 
-                if (target[property] instanceof BigNumber || target[property] instanceof Int64 || typeof target[property] === 'string') {
+                if (target[property] instanceof BigNumber || target[property] instanceof Int64 || typeof target[property] === 'string' || typeof target[property] === 'number') {
                     var objectStorage = IOSTContractStorage.get(property, target[property]);
                     return objectStorage;
                 }
