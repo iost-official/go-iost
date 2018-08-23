@@ -7,14 +7,18 @@ import (
 )
 
 func TestDefaultLogger(t *testing.T) {
-	Debug("this", "is a", "debug log")
-	Info("this", "is a", "info log")
-	Warn("this", "is a", "waining log")
-	Error("this", "is a", "error log")
-	Debugf("this is a %s log", "debug")
-	Infof("this is a %s log", "info")
-	Warnf("this is a %s log", "warning")
-	Errorf("this is a %s log", "error")
+	Debug("this ", "is a ", "debug log")
+	Info("this ", "is a ", "info log")
+	Warn("this ", "is a ", "waining log")
+	Error("this ", "is a ", "error log")
+	Debugln("this", "is a", "debugln log")
+	Infoln("this", "is a", "infoln log")
+	Warnln("this", "is a", "wainln log")
+	Errorln("this", "is a", "errorln log")
+	Debugf("this is a %s log", "debugf")
+	Infof("this is a %s log", "infof")
+	Warnf("this is a %s log", "warnf")
+	Errorf("this is a %s log", "errorf")
 	Flush()
 }
 
