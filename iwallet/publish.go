@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package iwallet
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	pb "github.com/iost-official/Go-IOS-Protocol/new_rpc"
+	pb "github.com/iost-official/Go-IOS-Protocol/rpc"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -134,7 +134,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// publishCmd.Fla gs().BoolP("toggle", "t", false, "Help message for toggle")
+	// publishCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func sendTx(stx tx.Tx) ([]byte, error) {

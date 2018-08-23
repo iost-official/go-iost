@@ -13,8 +13,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
@@ -54,7 +54,7 @@ func testRun(t *testing.T) {
 	synchronizer, _ := synchronizer.NewSynchronizer(baseVariable, blockCache, mockP2PService) //mock
 	witnessList := []string{account1.ID, account2.ID, account3.ID}
 	pob := NewPoB(account1, baseVariable, blockCache, txPool, mockP2PService, synchronizer, witnessList)
-	pob.Run()
+	pob.Start()
 	fmt.Println(time.Now().Second())
 	fmt.Println(time.Now().Nanosecond())
 	fw := ilog.NewFileWriter("pob/")

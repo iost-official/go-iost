@@ -3,6 +3,7 @@ package rpc
 import (
 	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
@@ -22,15 +23,14 @@ var txdb tx.TxDB
 var bchain block.Chain
 var visitor *database.Visitor
 
-//func Server(port string, tp txpool.TxPool,bcache blockcache.BlockCache, _global global.Global) error {
-
 // Server gRPC entry
-func Server(port string, bcache blockcache.BlockCache, _global global.BaseVariable) error {
+func Server(bcache blockcache.BlockCache, _global global.BaseVariable) error {
 	txdb = _global.TxDB()
 	//txpool=tp
 	bchain = _global.BlockChain()
 	bc = bcache
 	visitor = database.NewVisitor(0, _global.StateDB())
+	port := strconv.Itoa(_global.Config().RPC.Port)
 	if !strings.HasPrefix(port, ":") {
 		port = ":" + port
 	}

@@ -64,7 +64,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		}
 	}
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
-	//ilog.Debugf("cost in monitor is %v", cost)
 	if cost == nil {
 		if strings.HasPrefix(contractName, "Contract") {
 			ilog.Fatalf("will return nil cost : %v.%v", contractName, api)

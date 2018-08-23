@@ -192,6 +192,38 @@ func (logger *Logger) Fatalf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
+// Debugln generates a debug-level log.
+func (logger *Logger) Debugln(v ...interface{}) {
+	msg := fmt.Sprintln(v...)
+	logger.genMsg(LevelDebug, msg[:len(msg)-1])
+}
+
+// Infoln generates a info-level log.
+func (logger *Logger) Infoln(v ...interface{}) {
+	msg := fmt.Sprintln(v...)
+	logger.genMsg(LevelInfo, msg[:len(msg)-1])
+}
+
+// Warnln generates a warn-level log.
+func (logger *Logger) Warnln(v ...interface{}) {
+	msg := fmt.Sprintln(v...)
+	logger.genMsg(LevelWarn, msg[:len(msg)-1])
+}
+
+// Errorln generates a error-level log.
+func (logger *Logger) Errorln(v ...interface{}) {
+	msg := fmt.Sprintln(v...)
+	logger.genMsg(LevelError, msg[:len(msg)-1])
+}
+
+// Fatalln generates a fatal-level log and exits the program.
+func (logger *Logger) Fatalln(v ...interface{}) {
+	msg := fmt.Sprintln(v...)
+	logger.genMsg(LevelFatal, msg[:len(msg)-1])
+	logger.Stop()
+	os.Exit(1)
+}
+
 // Debug generates a debug-level log.
 func (logger *Logger) Debug(v ...interface{}) {
 	logger.genMsg(LevelDebug, fmt.Sprint(v...))

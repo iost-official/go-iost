@@ -121,6 +121,7 @@ cmake-build-debug/
 cmake-build-release/
 
 # Mongo Explorer plugin:
+
 .idea/**/mongoSettings.xml
 
 ## File-based project format:
@@ -232,3 +233,11 @@ scripts/sendtx/iwallet
 /consensus/pob/BlockChainDB/
 /consensus/pob/StateDB/
 /consensus/pob/txDB/
+
+/node1/
+/node2/
+
+/config/StatePoolDB/
+/config/levelDB/
+/config/logs/
+/config/priv.key

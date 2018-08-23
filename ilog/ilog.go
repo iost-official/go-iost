@@ -72,6 +72,31 @@ func Fatal(v ...interface{}) {
 	defaultLogger.Fatal(v...)
 }
 
+// Debugln generates a debug-level log.
+func Debugln(v ...interface{}) {
+	defaultLogger.Debugln(v...)
+}
+
+// Infoln generates a info-level log.
+func Infoln(v ...interface{}) {
+	defaultLogger.Infoln(v...)
+}
+
+// Warnln generates a warn-level log.
+func Warnln(v ...interface{}) {
+	defaultLogger.Warnln(v...)
+}
+
+// Errorln generates a error-level log.
+func Errorln(v ...interface{}) {
+	defaultLogger.Errorln(v...)
+}
+
+// Fatalln generates a fatal-level log and exits the program.
+func Fatalln(v ...interface{}) {
+	defaultLogger.Fatalln(v...)
+}
+
 // Debugf generates a debug-level log.
 func Debugf(format string, v ...interface{}) {
 	defaultLogger.Debugf(format, v...)
