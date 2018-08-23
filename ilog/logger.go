@@ -192,34 +192,61 @@ func (logger *Logger) Fatalf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-// Debug generates a debug-level log.
-func (logger *Logger) Debug(v ...interface{}) {
+// Debugln generates a debug-level log.
+func (logger *Logger) Debugln(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelDebug, msg[:len(msg)-1])
 }
 
-// Info generates a info-level log.
-func (logger *Logger) Info(v ...interface{}) {
+// Infoln generates a info-level log.
+func (logger *Logger) Infoln(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelInfo, msg[:len(msg)-1])
 }
 
-// Warn generates a warn-level log.
-func (logger *Logger) Warn(v ...interface{}) {
+// Warnln generates a warn-level log.
+func (logger *Logger) Warnln(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelWarn, msg[:len(msg)-1])
 }
 
-// Error generates a error-level log.
-func (logger *Logger) Error(v ...interface{}) {
+// Errorln generates a error-level log.
+func (logger *Logger) Errorln(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelError, msg[:len(msg)-1])
 }
 
-// Fatal generates a fatal-level log and exits the program.
-func (logger *Logger) Fatal(v ...interface{}) {
+// Fatalln generates a fatal-level log and exits the program.
+func (logger *Logger) Fatalln(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelFatal, msg[:len(msg)-1])
+	logger.Stop()
+	os.Exit(1)
+}
+
+// Debug generates a debug-level log.
+func (logger *Logger) Debug(v ...interface{}) {
+	logger.genMsg(LevelDebug, fmt.Sprint(v...))
+}
+
+// Info generates a info-level log.
+func (logger *Logger) Info(v ...interface{}) {
+	logger.genMsg(LevelInfo, fmt.Sprint(v...))
+}
+
+// Warn generates a warn-level log.
+func (logger *Logger) Warn(v ...interface{}) {
+	logger.genMsg(LevelWarn, fmt.Sprint(v...))
+}
+
+// Error generates a error-level log.
+func (logger *Logger) Error(v ...interface{}) {
+	logger.genMsg(LevelError, fmt.Sprint(v...))
+}
+
+// Fatal generates a fatal-level log and exits the program.
+func (logger *Logger) Fatal(v ...interface{}) {
+	logger.genMsg(LevelFatal, fmt.Sprint(v...))
 	logger.Stop()
 	os.Exit(1)
 }
