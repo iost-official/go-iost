@@ -1,4 +1,4 @@
-package cmd
+package iwallet
 
 import (
 	"io/ioutil"
