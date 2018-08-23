@@ -3,6 +3,7 @@ package rpc
 import (
 	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
@@ -29,8 +30,7 @@ func Server(bcache blockcache.BlockCache, _global global.BaseVariable) error {
 	bchain = _global.BlockChain()
 	bc = bcache
 	visitor = database.NewVisitor(0, _global.StateDB())
-
-	port := string(_global.Config().RPC.Port)
+	port := strconv.Itoa(_global.Config().RPC.Port)
 	if !strings.HasPrefix(port, ":") {
 		port = ":" + port
 	}
