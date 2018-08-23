@@ -49,6 +49,7 @@ type BCNType int
 const (
 	Linked BCNType = iota
 	Single
+	Virtual
 )
 
 type BlockCacheNode struct {
