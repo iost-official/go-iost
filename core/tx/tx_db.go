@@ -7,7 +7,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
-//go:generate mockgen -destination ../mocks/mock_txdb.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/new_tx TxDB
+//go:generate mockgen -destination ../mocks/mock_txdb.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/tx TxDB
 
 type TxDB interface {
 	Push(txs []*Tx) error

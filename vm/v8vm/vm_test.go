@@ -432,12 +432,4 @@ func TestEngine_Int64(t *testing.T) {
 	if len(rs) > 0 && rs[0] != "1879080904" {
 		t.Fatalf("LoadAndCall getPow except: 1879080904, got: %v", rs[0])
 	}
-
-	rs, _, err = vmPool.LoadAndCall(host, code, "getSqrt")
-	if err != nil {
-		t.Fatalf("LoadAndCall getSqrt error: %v", err)
-	}
-	if len(rs) > 0 && rs[0] != "1111" {
-		t.Fatalf("LoadAndCall getSqrt except: 1111, got: %v", rs[0])
-	}
 }

@@ -73,12 +73,6 @@ class Int64 {
         return new this.constructor(rs);
     }
 
-    sqrt() {
-        let rs = this.number.sqrt();
-        rs = rs.integerValue();
-        return new this.constructor(rs);
-    }
-
     eq(n) {
         this._checkArgument(n);
         return this.number.eq(n.number);
