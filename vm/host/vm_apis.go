@@ -29,11 +29,11 @@ func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
 func (h *APIDelegate) RequireAuth(pubkey string) (ok bool, cost *contract.Cost) {
 	authList := h.ctx.Value("auth_list")
 	i, ok := authList.(map[string]int)[pubkey]
-	return ok && i > 0, contract.NewCost(1, 1, 1)
+	return ok && i > 0, RequireAuthCost
 }
 
 // Receipt ...
 func (h *APIDelegate) Receipt(s string) *contract.Cost {
 	h.receipt(tx.UserDefined, s)
-	return contract.NewCost(1, 1, 1)
+	return ReceiptCost(len(s))
 }

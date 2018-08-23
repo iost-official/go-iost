@@ -24,57 +24,57 @@ func (m *VM) Init() error {
 
 // LoadAndCall ...
 // nolint
-func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+func (m *VM) LoadAndCall(h *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 	switch api {
 	case "RequireAuth":
 		var b bool
-		b, cost = host.RequireAuth(args[0].(string))
+		b, cost = h.RequireAuth(args[0].(string))
 		rtn = []interface{}{
 			b,
 		}
 		return rtn, cost, nil
 
 	case "Receipt":
-		cost = host.Receipt(args[0].(string))
+		cost = h.Receipt(args[0].(string))
 		return []interface{}{}, cost, nil
 
 	case "CallWithReceipt":
 		var json *simplejson.Json
 		json, err = simplejson.NewJson(args[2].([]byte))
 		if err != nil {
-			return nil, contract.NewCost(1, 1, 1), err
+			return nil, host.CommonErrorCost(1), err
 		}
 		arr, err := json.Array()
 		if err != nil {
-			return nil, contract.NewCost(1, 1, 1), err
+			return nil, host.CommonErrorCost(2), err
 		}
-		rtn, cost, err = host.CallWithReceipt(args[0].(string), args[1].(string), arr...)
+		rtn, cost, err = h.CallWithReceipt(args[0].(string), args[1].(string), arr...)
 		return rtn, cost, err
 
 	case "Transfer":
 		arg2 := args[2].(int64)
-		cost, err = host.Transfer(args[0].(string), args[1].(string), arg2)
+		cost, err = h.Transfer(args[0].(string), args[1].(string), arg2)
 		return []interface{}{}, cost, err
 
 	case "TopUp":
-		cost, err = host.TopUp(args[0].(string), args[1].(string), args[2].(int64))
+		cost, err = h.TopUp(args[0].(string), args[1].(string), args[2].(int64))
 		return []interface{}{}, cost, err
 
 	case "Countermand":
 		arg2 := args[2].(int64)
-		cost, err = host.Countermand(args[0].(string), args[1].(string), arg2)
+		cost, err = h.Countermand(args[0].(string), args[1].(string), arg2)
 		return []interface{}{}, cost, err
 
 		// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
 	case "SetCode":
-		cost = contract.NewCost(1, 1, 1)
+		cost = contract.Cost0()
 		con := &contract.Contract{}
 		err = con.B64Decode(args[0].(string))
 		if err != nil {
-			return nil, cost, err
+			return nil, host.CommonErrorCost(1), err
 		}
 
-		info, cost1 := host.TxInfo()
+		info, cost1 := h.TxInfo()
 		cost.AddAssign(cost1)
 		var json *simplejson.Json
 		json, err = simplejson.NewJson(info)
@@ -91,36 +91,36 @@ func (m *VM) LoadAndCall(host *host.Host, con *contract.Contract, api string, ar
 		con.ID = actID
 
 		var cost2 *contract.Cost
-		cost2, err = host.SetCode(con)
+		cost2, err = h.SetCode(con)
 		cost.AddAssign(cost2)
 		return []interface{}{actID}, cost, err
 
 		// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
 	case "UpdateCode":
-		cost := contract.NewCost(1, 1, 1)
+		cost := contract.Cost0()
 		con := &contract.Contract{}
 		err = con.Decode(args[0].(string))
 		if err != nil {
-			return nil, cost, err
+			return nil, host.CommonErrorCost(1), err
 		}
 
-		cost1, err := host.UpdateCode(con, []byte(args[1].(string)))
+		cost1, err := h.UpdateCode(con, []byte(args[1].(string)))
 		cost.AddAssign(cost1)
 		return []interface{}{}, cost, err
 
 		// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
 	case "DestroyCode":
-		cost, err = host.DestroyCode(args[0].(string))
+		cost, err = h.DestroyCode(args[0].(string))
 		return []interface{}{}, cost, err
 
 	case "IssueIOST":
-		if host.Context().Value("number").(int64) != 0 {
+		if h.Context().Value("number").(int64) != 0 {
 			return []interface{}{}, contract.Cost0(), ErrIssueInNormalBlock
 		}
-		host.DB().SetBalance(args[0].(string), args[1].(int64))
+		h.DB().SetBalance(args[0].(string), args[1].(int64))
 		return []interface{}{}, contract.Cost0(), nil
 	default:
-		return nil, contract.NewCost(1, 1, 1), errors.New("unknown api name")
+		return nil, host.CommonErrorCost(1), errors.New("unknown api name")
 
 	}
 }

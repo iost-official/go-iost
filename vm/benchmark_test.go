@@ -133,3 +133,24 @@ func BenchmarkNative_SetCode(b *testing.B) {
 	b.StopTimer()
 	cleanUp()
 }
+
+func BenchmarkJS_Gas(b *testing.B) {
+	js := NewJSTester(b)
+	f, err := ReadFile("test_data/gas.js")
+	if err != nil {
+		b.Fatal(err)
+	}
+	js.SetJS(string(f))
+	js.SetAPI("single")
+	js.SetAPI("ten")
+	js.DoSet()
+
+	for i := 0; i < b.N; i++ {
+		r := js.TestJS("single", `[]`)
+		b.StopTimer()
+		if i == 0 {
+			b.Log("gas is : ", r.GasUsage)
+		}
+		b.StartTimer()
+	}
+}

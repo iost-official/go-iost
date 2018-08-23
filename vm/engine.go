@@ -23,10 +23,6 @@ const (
 	defaultCacheLength = 1000
 )
 
-const (
-	gasCheckTxFailed = int64(100)
-)
-
 var (
 	errContractNotFound = errors.New("contract not found")
 	errSetUpArgs        = errors.New("key does not exist")
@@ -124,7 +120,7 @@ func (e *engineImpl) SetUp(k, v string) error {
 func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	err := checkTx(tx0)
 	if err != nil {
-		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), nil
+		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
 	}
 
 	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
@@ -146,7 +142,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		cost, status, receipts, err2 := e.runAction(action)
 		e.logger.Infof("run action : %v, result is %v", action, status.Code)
-		e.logger.Debugf("used cost > %v", cost)
+		e.logger.Debug("used cost > ", cost)
 		e.logger.Debugf("status > \n%v\n", status)
 		//e.logger.Debugf("receipts > \n%v\n", receipts)
 
@@ -252,7 +248,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,
-		GasUsage: gasCheckTxFailed,
+		GasUsage: 0,
 		Status: tx.Status{
 			Code:    code,
 			Message: message,
@@ -274,7 +270,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	c := e.ho.DB().Contract(action.Contract)
 	if c == nil || c.Info == nil {
-		cost = contract.NewCost(0, 0, gasCheckTxFailed)
+		cost = host.ContractNotFoundCost
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
 			Message: errContractNotFound.Error() + action.Contract,
@@ -284,7 +280,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	abi := c.ABI(action.ActionName)
 	if abi == nil {
-		cost = contract.NewCost(0, 0, gasCheckTxFailed)
+		cost = host.ABINotFoundCost
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
 			Message: errABINotFound.Error() + action.Contract,
@@ -294,7 +290,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	args, err := unmarshalArgs(abi, action.Data)
 	if err != nil {
-		cost = contract.NewCost(0, 0, gasCheckTxFailed)
+		cost = host.CommonErrorCost(2)
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
 			Message: err.Error(),
