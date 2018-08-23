@@ -87,8 +87,10 @@ func (mr *MockTxPoolMockRecorder) PendingTxs(arg0 interface{}) *gomock.Call {
 }
 
 // Start mocks base method
-func (m *MockTxPool) Start() {
-	m.ctrl.Call(m, "Start")
+func (m *MockTxPool) Start() error {
+	ret := m.ctrl.Call(m, "Start")
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Start indicates an expected call of Start
