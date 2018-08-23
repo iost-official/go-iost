@@ -45,6 +45,8 @@ var (
 	)
 )
 
+var errSingle = errors.New("single blcok")
+
 func init() {
 	prometheus.MustRegister(generatedBlockCount)
 	prometheus.MustRegister(receivedBlockCount)
@@ -119,19 +121,22 @@ func (p *PoB) blockLoop() {
 			}
 			ilog.Info("new block come, block number: ", blk.Head.Number)
 			err = p.handleRecvBlock(&blk)
-			if err != nil {
+			if err != nil && err != errSingle {
 				ilog.Error(err.Error())
 				continue
 			}
+			p.synchronizer.CheckSyncProcess()
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
 				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
 			}
 			if incomingMessage.Type() == p2p.NewBlock {
 				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
-				if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need {
+				ilog.Info("err type ", err)
+				if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need && (err == errSingle) {
 					go p.synchronizer.SyncBlocks(start, end)
 				}
 			}
+			p.blockCache.Draw()
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
 				ilog.Infof("chGenBlock has closed")
@@ -155,7 +160,9 @@ func (p *PoB) scheduleLoop() {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
+			ilog.Info(p.baseVariable.Mode().Mode())
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
+				ilog.Info(p.baseVariable.Mode().Mode())
 				if p.baseVariable.Mode().Mode() == global.ModeNormal {
 					blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
 					ilog.Infof("gen block:%v", blk.Head.Number)
@@ -195,8 +202,9 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	staticProperty.addSlot(blk.Head.Time)
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent.Block)
+	} else {
+		return errSingle
 	}
-	return nil
 }
 
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
