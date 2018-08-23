@@ -5,9 +5,9 @@ import (
 
 	"fmt"
 
-	"os"
-
 	"strconv"
+
+	"os"
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
@@ -102,8 +102,6 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 	}
 
 	//mvccdb := replaceDB(t)
-
-	defer os.RemoveAll("mvcc")
 
 	vi := database.NewVisitor(0, mvccdb)
 	vi.SetBalance(testID[0], 1000000)
@@ -347,20 +345,45 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 }
 
 type JSTester struct {
-	t  *testing.T
-	e  Engine
-	vi *database.Visitor
+	t      *testing.T
+	e      Engine
+	vi     *database.Visitor
+	mvccdb db.MVCCDB
 
 	cname string
 	c     *contract.Contract
 }
 
 func NewJSTester(t *testing.T) *JSTester {
-	e, vi := ininit(t)
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//mvccdb := replaceDB(t)
+
+	vi := database.NewVisitor(0, mvccdb)
+	vi.SetBalance(testID[0], 1000000)
+	vi.SetContract(systemContract)
+	vi.Commit()
+
+	bh := &block.BlockHead{
+		ParentHash: []byte("abc"),
+		Number:     10,
+		Witness:    "witness",
+		Time:       123456,
+	}
+
+	e := newEngine(bh, vi)
+
+	//e.SetUp("js_path", jsPath)
+	e.SetUp("log_level", "debug")
+	e.SetUp("log_enable", "")
 	return &JSTester{
-		t:  t,
-		vi: vi,
-		e:  e,
+		t:      t,
+		vi:     vi,
+		e:      e,
+		mvccdb: mvccdb,
 	}
 }
 
@@ -431,6 +454,11 @@ func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
 		j.t.Fatal(err)
 	}
 	return r
+}
+
+func (j *JSTester) Clear() {
+	j.mvccdb.Close()
+	os.RemoveAll("mvcc")
 }
 
 func TestJSAPI_Database(t *testing.T) {
@@ -542,6 +570,7 @@ module.exports = Contract;
 
 func TestJS_Database(t *testing.T) {
 	js := NewJSTester(t)
+	defer js.Clear()
 	lc, err := ReadFile("test_data/database.js")
 	if err != nil {
 		t.Fatal(err)
@@ -580,6 +609,7 @@ func TestJS_Database(t *testing.T) {
 
 func TestJS_LuckyBet(t *testing.T) {
 	js := NewJSTester(t)
+	defer js.Clear()
 	lc, err := ReadFile("test_data/lucky_bet.js")
 	if err != nil {
 		t.Fatal(err)

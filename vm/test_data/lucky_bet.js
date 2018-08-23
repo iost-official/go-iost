@@ -5,7 +5,7 @@ class Contract {
         this.totalCoins = 0;
         this.lastLuckyBlock = -1;
         this.round = 0;
-        this.results = [];
+        this["results"]= [];
         this.clearUserValue()
     }
     clearUserValue() {
@@ -46,6 +46,7 @@ class Contract {
             let ph = bi.parent_hash;
             if ( true /*this.lastLuckyBlock < 0 || bn - this.lastLuckyBlock >= 16 || bn > this.lastLuckyBlock && ph[ph.length-1] % 16 === 0*/) {
                 this.lastLuckyBlock = bn;
+
                 this.getReward(bn);
                 this.userNumber = 0;
                 this.totalCoins = 0
@@ -61,8 +62,10 @@ class Contract {
         let totalVal = 0;
         let kNum = 0;
 
+        _native_log("lucky number is "+ln);
+
         let winTable = this["table"+ln];
-        _native_log("winTab is" + JSON.stringify(winTable));
+        _native_log("winTab is" + (winTable));
 
         for (let [key, value] of winTable) {
             totalVal += value;
@@ -84,7 +87,9 @@ class Contract {
                 result.rewards.push({"key":key, "value": value * unit})
             }
         }
-        this.results.push(result)
+        let results =  this["results"];
+        results.push(result);
+        this["results"] = results
     }
 }
 

@@ -15,9 +15,9 @@ class Test {
         _native_log("num > "+this.num );//  9;
         _native_log("str > "+this.string );//  "hello";
         _native_log("boo > "+this.bool );//  true;
-        _native_log("arr > "+this.array );//  [1, 2, 3]
-        _native_log("obj > "+this.object );//  {"foo": "bar"};
-        _native_log("key > "+this["key"])
+        _native_log("arr > "+JSON.stringify(this.array));//  [1, 2, 3]
+        _native_log("obj > "+JSON.stringify(this.object));//  {"foo": "bar"};
+        _native_log("key > "+JSON.stringify(this["key"]))
         // _native_log("aio > "+this.arrayobj );//  [{"foo": "bar"}, {"abc": 123}, {"ok": true}];
         // _native_log("oio > "+this.objobj )//  {"i am": {"your": "father"}}
     }
