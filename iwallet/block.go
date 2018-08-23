@@ -67,7 +67,7 @@ var blockCmd = &cobra.Command{
 				return
 			}
 		} else {
-			blockInfo, err = client.GetBlockByHash(context.Background(), &rpc.BlockByHashReq{Hash: LoadBytes(args[0]), Complete: complete})
+			blockInfo, err = client.GetBlockByHash(context.Background(), &rpc.BlockByHashReq{Hash: loadBytes(args[0]), Complete: complete})
 			if err != nil {
 				fmt.Println(err.Error())
 				return

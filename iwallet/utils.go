@@ -8,22 +8,22 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
-func SaveBytes(buf []byte) string {
+func saveBytes(buf []byte) string {
 	return common.Base58Encode(buf)
 }
 
-func LoadBytes(s string) []byte {
+func loadBytes(s string) []byte {
 	buf := common.Base58Decode(s)
 	return buf
 }
 
-func ChangeSuffix(filename, suffix string) string {
+func changeSuffix(filename, suffix string) string {
 	dist := filename[:strings.LastIndex(filename, ".")]
 	dist = dist + suffix
 	return dist
 }
 
-func SaveTo(Dist string, file []byte) error {
+func saveTo(Dist string, file []byte) error {
 	f, err := os.Create(Dist)
 	if err != nil {
 		return err
@@ -33,7 +33,7 @@ func SaveTo(Dist string, file []byte) error {
 	return err
 }
 
-func ReadFile(src string) ([]byte, error) {
+func readFile(src string) ([]byte, error) {
 	fi, err := os.Open(src)
 	if err != nil {
 		return nil, err

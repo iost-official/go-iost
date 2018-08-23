@@ -36,13 +36,13 @@ var balanceCmd = &cobra.Command{
 		} else {
 			filePath = args[0]
 		}
-		pubkey, err := ReadFile(filePath)
+		pubkey, err := readFile(filePath)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
 
-		pk := LoadBytes(string(pubkey))
+		pk := loadBytes(string(pubkey))
 		b, err := CheckBalance(pk)
 		if err != nil {
 			fmt.Println(err)
