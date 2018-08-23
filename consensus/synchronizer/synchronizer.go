@@ -197,7 +197,6 @@ func (sy *SyncImpl) messageLoop() {
 			return
 		}
 	}
-
 }
 
 func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerID) {
@@ -340,18 +339,18 @@ type DownloadController interface {
 type DownloadControllerImpl struct {
 	hashState  *sync.Map
 	peerState  *sync.Map
-	peerMap    map[p2p.PeerID]*sync.Map
-	peerTimer  map[p2p.PeerID]*time.Timer
+	peerMap    *sync.Map
+	peerTimer  *sync.Map
 	chDownload chan bool
 	exitSignal chan struct{}
 }
 
 func NewDownloadController() (*DownloadControllerImpl, error) {
 	dc := &DownloadControllerImpl{
-		hashState:  new(sync.Map),
-		peerState:  new(sync.Map),
-		peerMap:    make(map[p2p.PeerID]*sync.Map),
-		peerTimer:  make(map[p2p.PeerID]*time.Timer),
+		hashState:  new(sync.Map), // map[string]string
+		peerState:  new(sync.Map), // map[PeerID]string
+		peerMap:    new(sync.Map), // map[PeerID](map[string]bool)
+		peerTimer:  new(sync.Map), // map[PeerID]*time.Timer
 		chDownload: make(chan bool, 100),
 		exitSignal: make(chan struct{}),
 	}
@@ -363,11 +362,8 @@ func (dc *DownloadControllerImpl) Stop() {
 }
 
 func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
-	if _, ok := dc.peerMap[peerID]; !ok {
-		hashMap := new(sync.Map)
-		dc.peerMap[peerID] = hashMap
-	}
-	dc.peerMap[peerID].Store(hash, true)
+	hm, _ := dc.peerMap.LoadOrStore(peerID, new(sync.Map))
+	hm.(*sync.Map).Store(hash, true)
 	hState, _ := dc.hashState.LoadOrStore(hash, "Wait")
 	pState, _ := dc.peerState.LoadOrStore(peerID, "Free")
 	if hState.(string) == "Wait" && pState.(string) == "Free" {
@@ -403,8 +399,9 @@ func (dc *DownloadControllerImpl) OnBlockConfirmed(hash string, peerID p2p.PeerI
 			dc.peerState.Delete(peerID)
 		} else if ps == hash {
 			dc.peerState.Store(peerID, "Free")
-			if pTimer, ook := dc.peerTimer[peerID]; ook {
-				pTimer.Stop()
+			if pTimer, ook := dc.peerTimer.Load(peerID); ook {
+				pTimer.(*time.Timer).Stop()
+				dc.peerTimer.Delete(peerID)
 			}
 			dc.chDownload <- true
 		}
@@ -418,16 +415,18 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 			if !ok {
 				break
 			}
-			for peerID, hashMap := range dc.peerMap {
+			dc.peerMap.Range(func(k, v interface{}) bool {
+				peerID := k.(p2p.PeerID)
+				hashMap := v.(*sync.Map)
 				pState, pok := dc.peerState.Load(peerID)
 				if !pok {
-					continue
+					return true
 				} else {
 					ps, ok := pState.(string)
 					if !ok {
 						dc.peerState.Delete(peerID)
 					} else if ps != "Free" {
-						continue
+						return true
 					}
 				}
 				hashMap.Range(func(k, v interface{}) bool {
@@ -452,16 +451,17 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 					}
 					if hste == "Wait" {
 						dc.peerState.Store(peerID, hash)
-						dc.hashState.Store(hash, peerID)
+						dc.hashState.Store(hash, peerID.Pretty())
 						callback(hash, peerID)
-						dc.peerTimer[peerID] = time.AfterFunc(5*time.Second, func() {
+						dc.peerTimer.Store(peerID, time.AfterFunc(5*time.Second, func() {
 							dc.OnTimeout(hash, peerID)
-						})
+						}))
 						return false
 					}
 					return true
 				})
-			}
+				return true
+			})
 		case <-dc.exitSignal:
 			return
 		}
