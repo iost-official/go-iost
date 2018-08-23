@@ -28,6 +28,7 @@ var (
 )
 
 func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+	ilog.Info("generateBlockstart")
 	var err error
 	blk := block.Block{
 		Head: block.BlockHead{

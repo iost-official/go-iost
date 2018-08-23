@@ -44,7 +44,7 @@ var accountCmd = &cobra.Command{
 			}
 			defer pubfile.Close()
 
-			_, err = pubfile.WriteString(SaveBytes(ac.Pubkey))
+			_, err = pubfile.WriteString(saveBytes(ac.Pubkey))
 			if err != nil {
 				fmt.Println(err.Error())
 				return
@@ -57,7 +57,7 @@ var accountCmd = &cobra.Command{
 			}
 			defer secFile.Close()
 
-			_, err = secFile.WriteString(SaveBytes(ac.Seckey))
+			_, err = secFile.WriteString(saveBytes(ac.Seckey))
 			if err != nil {
 				fmt.Println(err.Error())
 				return

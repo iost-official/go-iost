@@ -14,7 +14,7 @@ import (
 
 // Consensus handles the different consensus strategy.
 type Consensus interface {
-	Run()
+	Start() error
 	Stop()
 }
 

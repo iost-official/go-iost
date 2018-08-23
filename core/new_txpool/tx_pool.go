@@ -61,8 +61,9 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 }
 
 // Start starts the jobs.
-func (pool *TxPoolImpl) Start() {
+func (pool *TxPoolImpl) Start() error {
 	go pool.loop()
+	return nil
 }
 
 // Stop stops all the jobs.
@@ -165,7 +166,8 @@ func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *
 
 // AddLinkedNode add the block
 func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error {
-
+	//ilog.Infof("block: %+v", linkedNode.Block)
+	//ilog.Infof("headNode block:%+v", headNode.Block)
 	if linkedNode == nil || headNode == nil {
 		return errors.New("parameter is nil")
 	}
@@ -477,6 +479,10 @@ func (pool *TxPoolImpl) updateForkChain(headNode *blockcache.BlockCacheNode) TFo
 	}
 
 	nh := pool.forkChain.NewHead.Block.HeadHash()
+
+	if bytes.Equal(nh, headNode.Block.HeadHash()) {
+		return NotFork
+	}
 
 	if bytes.Equal(nh, headNode.Block.Head.ParentHash) {
 		pool.forkChain.NewHead = headNode

@@ -88,10 +88,11 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 	return &p
 }
 
-//Run make the PoB run.
-func (p *PoB) Run() {
+//Start make the PoB run.
+func (p *PoB) Start() error {
 	go p.blockLoop()
 	go p.scheduleLoop()
+	return nil
 }
 
 //Stop make the PoB stop.
@@ -127,7 +128,7 @@ func (p *PoB) blockLoop() {
 			}
 			if incomingMessage.Type() == p2p.NewBlock {
 				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
-				if ok, start, end := p.synchronizer.NeedSync(blk.Head.Number); ok {
+				if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need {
 					go p.synchronizer.SyncBlocks(start, end)
 				}
 			}
@@ -155,19 +156,21 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Duration(nextSchedule)):
 			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
-				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
-				ilog.Infof("gen block:%v", blk.Head.Number)
-				if err != nil {
-					ilog.Error(err.Error())
-					continue
+				if p.baseVariable.Mode().Mode() == global.ModeNormal {
+					blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
+					ilog.Infof("gen block:%v", blk.Head.Number)
+					if err != nil {
+						ilog.Error(err.Error())
+						continue
+					}
+					blkByte, err := blk.Encode()
+					if err != nil {
+						ilog.Error(err.Error())
+						continue
+					}
+					p.chGenBlock <- blk
+					go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 				}
-				blkByte, err := blk.Encode()
-				if err != nil {
-					ilog.Error(err.Error())
-					continue
-				}
-				p.chGenBlock <- blk
-				go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 				time.Sleep(common.SlotLength * time.Second)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
