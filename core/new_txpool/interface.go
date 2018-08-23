@@ -10,7 +10,7 @@ import (
 
 // TxPool defines all the API of txpool package.
 type TxPool interface {
-	Start()
+	Start() error
 	Stop()
 	AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error
 	AddTx(tx *tx.Tx) TAddTx

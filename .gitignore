@@ -237,3 +237,8 @@ scripts/sendtx/iwallet
 
 /node1/
 /node2/
+
+/config/StatePoolDB/
+/config/levelDB/
+/config/logs/
+/config/priv.key

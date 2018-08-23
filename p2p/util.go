@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	peer "github.com/libp2p/go-libp2p-peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
@@ -16,12 +17,12 @@ var (
 
 // isPortAvailable returns a flag indicating whether or not a TCP port is available.
 func isPortAvailable(port int) bool {
-	conn, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), time.Second)
 	if err != nil {
-		return false
+		return true
 	}
 	conn.Close()
-	return true
+	return false
 }
 
 func parseMultiaddr(s string) (peer.ID, multiaddr.Multiaddr, error) {

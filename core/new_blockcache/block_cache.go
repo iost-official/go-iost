@@ -275,7 +275,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	if retain.Block != nil {
 		err := bc.baseVariable.BlockChain().Push(retain.Block)
 		if err != nil {
-			ilog.Debug("Database error, BlockChain Push err:%v", err)
+			ilog.Debugf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
@@ -285,7 +285,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs)
 		if err != nil {
-			ilog.Debug("Database error, BlockChain Push err:%v", err)
+			ilog.Debugf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		//bc.hmdel(cur.Block.HeadHash())
