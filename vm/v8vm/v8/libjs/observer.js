@@ -102,7 +102,9 @@ module.exports = (function () {
 
                 _native_log("setttt: " + JSON.stringify(target) + ' : ' + pathList.length + " : " + path + " : " + prop);
 
-                if (pathList.length <= 2) {
+                if (pathList.length === 1) {
+                    IOSTContractStorage.put(prop, value)
+                } else if (pathList.length === 2) {
                     IOSTContractStorage.put(path, target);
                 } else {
                     if (pathList.length === 3) {
