@@ -29,24 +29,26 @@ type Synchronizer interface {
 }
 
 type SyncImpl struct {
-	p2pService p2p.Service
-	blockCache blockcache.BlockCache
-	lastHead   *blockcache.BlockCacheNode
-	glb        global.BaseVariable
-	dc         DownloadController
-	reqMap     *sync.Map
+	p2pService   p2p.Service
+	blockCache   blockcache.BlockCache
+	lastHead     *blockcache.BlockCacheNode
+	basevariable global.BaseVariable
+	dc           DownloadController
+	reqMap       *sync.Map
+	syncEnd      int64
 
 	messageChan chan p2p.IncomingMessage
 	exitSignal  chan struct{}
 }
 
-func NewSynchronizer(glb global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service) (*SyncImpl, error) {
+func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service) (*SyncImpl, error) {
 	sy := &SyncImpl{
-		p2pService: p2pserv,
-		blockCache: blkcache,
-		glb:        glb,
-		reqMap:     new(sync.Map),
-		lastHead:   nil,
+		p2pService:   p2pserv,
+		blockCache:   blkcache,
+		basevariable: basevariable,
+		reqMap:       new(sync.Map),
+		lastHead:     nil,
+		syncEnd:      0,
 	}
 	var err error
 	sy.dc, err = NewDownloadController()
@@ -89,7 +91,10 @@ func (sy *SyncImpl) Stop() {
 }
 
 func (sy *SyncImpl) NeedSync(netHeight int64) (bool, int64, int64) {
-	height := sy.glb.BlockChain().Length() - 1
+	if sy.basevariable.Mode().Mode() == global.ModeSync {
+		return false, 0, 0
+	}
+	height := sy.basevariable.BlockChain().Length() - 1
 	if netHeight > height+SyncNumber {
 		return true, height + 1, netHeight
 	}
@@ -120,46 +125,36 @@ func (sy *SyncImpl) queryBlockHash(hr message.BlockHashQuery) {
 		ilog.Debugf("marshal BlockHashQuery failed. err=%v", err)
 		return
 	}
-	ilog.Debugf("[net] query block hash. start=%v, end=%v", hr.Start, hr.End)
+	ilog.Debugf("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
 	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
 }
 
 func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
-	var syncNum int
+	sy.basevariable.Mode().SetMode(global.ModeSync)
+	sy.syncEnd = endNumber
 	for endNumber > startNumber+MaxBlockHashQueryNumber-1 {
-		need := false
 		for i := startNumber; i < startNumber+MaxBlockHashQueryNumber; i++ {
-			_, ok := sy.reqMap.LoadOrStore(i, true)
-			if !ok {
-				need = true
-			}
+			sy.reqMap.Store(i, true)
 		}
-		if need {
-			syncNum++
-			sy.queryBlockHash(message.BlockHashQuery{ReqType: 0, Start: startNumber, End: startNumber + MaxBlockHashQueryNumber - 1, Nums: nil})
-		}
+		sy.queryBlockHash(message.BlockHashQuery{ReqType: 0, Start: startNumber, End: startNumber + MaxBlockHashQueryNumber - 1, Nums: nil})
 		startNumber += MaxBlockHashQueryNumber
-		if syncNum%10 == 0 {
-			time.Sleep(time.Second)
-		}
+		time.Sleep(time.Second)
 	}
 	if startNumber <= endNumber {
-		need := false
 		for i := startNumber; i < endNumber; i++ {
-			_, ok := sy.reqMap.LoadOrStore(i, true)
-			if !ok {
-				need = true
-			}
+			sy.reqMap.Store(i, true)
 		}
-		if need {
-			sy.queryBlockHash(message.BlockHashQuery{ReqType: 0, Start: startNumber, End: endNumber, Nums: nil})
-		}
+		sy.queryBlockHash(message.BlockHashQuery{ReqType: 0, Start: startNumber, End: endNumber, Nums: nil})
 	}
 	return nil
 }
 
 func (sy *SyncImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) {
 	sy.dc.OnBlockConfirmed(hash, peerID)
+	if sy.syncEnd <= sy.blockCache.Head().Number {
+		sy.basevariable.Mode().SetMode(global.ModeNormal)
+		sy.dc.Reset()
+	}
 }
 
 func (sy *SyncImpl) messageLoop() {
@@ -213,7 +208,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 			var hash []byte
 			var err error
 			if i < sy.blockCache.LinkedRoot().Number {
-				hash, err = sy.glb.BlockChain().GetHashByNumber(i)
+				hash, err = sy.basevariable.BlockChain().GetHashByNumber(i)
 				if err != nil {
 					continue
 				}
@@ -235,7 +230,8 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 			}
 			resp.BlockHashes = append(resp.BlockHashes, &blkHash)
 		}
-	} else {
+	}
+	if rh.ReqType == 1 {
 		var blk *block.Block
 		var err error
 		for _, num := range rh.Nums {
@@ -244,7 +240,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 			if err == nil {
 				hash = blk.HeadHash()
 			} else {
-				hash, err = sy.glb.BlockChain().GetHashByNumber(num)
+				hash, err = sy.basevariable.BlockChain().GetHashByNumber(num)
 				if err != nil {
 					continue
 				}
@@ -270,8 +266,8 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
 	ilog.Infof("receive block hashes: len=%v", len(rh.BlockHashes))
 	for _, blkHash := range rh.BlockHashes {
-		if _, err := sy.blockCache.Find(blkHash.Hash); err == nil { // TODO: check hash @ BlockCache and BlockDB
-			sy.reqMap.Delete(blkHash.Height)
+		sy.reqMap.Delete(blkHash.Height)
+		if _, err := sy.blockCache.Find(blkHash.Hash); err != nil {
 			sy.dc.OnRecvHash(string(blkHash.Hash), peerID)
 		}
 	}
@@ -281,18 +277,14 @@ func (sy *SyncImpl) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(RetryTime):
-			hr := message.BlockHashQuery{ReqType: 0, Start: 0, End: 0, Nums: make([]int64, 0)}
+			hr := message.BlockHashQuery{ReqType: 1, Start: 0, End: 0, Nums: make([]int64, 0)}
 			sy.reqMap.Range(func(k, v interface{}) bool {
 				num, ok := k.(int64)
 				if !ok {
 					sy.reqMap.Delete(k)
 					return true
 				}
-				if num <= sy.blockCache.LinkedRoot().Number { // TODO
-					sy.reqMap.Delete(num)
-				} else {
-					hr.Nums = append(hr.Nums, num)
-				}
+				hr.Nums = append(hr.Nums, num)
 				return true
 			})
 			if len(hr.Nums) > 0 {
@@ -308,7 +300,7 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID
 	var b []byte
 	var err error
 	if rh.BlockNumber < sy.blockCache.LinkedRoot().Number {
-		b, err = sy.glb.BlockChain().GetBlockByteByHash(rh.BlockHash)
+		b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.BlockHash)
 		if err != nil {
 			ilog.Errorf("Database error: block empty %v", rh.BlockNumber)
 			return
@@ -333,6 +325,7 @@ type DownloadController interface {
 	OnTimeout(hash string, peerID p2p.PeerID)
 	OnBlockConfirmed(hash string, peerID p2p.PeerID)
 	DownloadLoop(callback func(hash string, peerID p2p.PeerID))
+	Reset()
 	Stop()
 }
 
@@ -355,6 +348,13 @@ func NewDownloadController() (*DownloadControllerImpl, error) {
 		exitSignal: make(chan struct{}),
 	}
 	return dc, nil
+}
+
+func (dc *DownloadControllerImpl) Reset() {
+	dc.hashState = new(sync.Map)
+	dc.peerState = new(sync.Map)
+	dc.peerMap = new(sync.Map)
+	dc.peerTimer = new(sync.Map)
 }
 
 func (dc *DownloadControllerImpl) Stop() {

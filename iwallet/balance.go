@@ -43,7 +43,7 @@ var balanceCmd = &cobra.Command{
 		}
 
 		pk := loadBytes(string(pubkey))
-		b, err := checkBalance(pk)
+		b, err := CheckBalance(pk)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -66,7 +66,7 @@ func init() {
 	// balanceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func checkBalance(ia []byte) (int64, error) {
+func CheckBalance(ia []byte) (int64, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
 		return 0, err
