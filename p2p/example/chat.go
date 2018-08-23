@@ -62,7 +62,7 @@ func (ct *Chatter) Start() {
 
 // Stop stops chatter's job.
 func (ct *Chatter) Stop() {
-	ilog.Info("chatter is stopped")
+	ilog.Infof("chatter is stopped")
 	close(ct.quitCh)
 }
 
@@ -70,13 +70,13 @@ func (ct *Chatter) handleMsgLoop() {
 	for {
 		select {
 		case <-ct.quitCh:
-			ilog.Info("chatter quits loop")
+			ilog.Infof("chatter quits loop")
 			return
 		case msg := <-ct.msg:
 			var m message
 			err := json.Unmarshal(msg.Data(), &m)
 			if err != nil {
-				ilog.Error("json decode failed. err=%v, bytes=%v", err, msg.Data())
+				ilog.Errorf("json decode failed. err=%v, bytes=%v", err, msg.Data())
 				continue
 			}
 			author := "\n" + shortID(msg.From().Pretty()) + ": "
@@ -93,7 +93,7 @@ func (ct *Chatter) readLoop() {
 		ct.printPrompt()
 		sendData, err := stdReader.ReadString('\n')
 		if err != nil {
-			ilog.Error("std read error. err=%v", err)
+			ilog.Errorf("std read error. err=%v", err)
 			panic(err)
 		}
 		if sendData[len(sendData)-1] == '\n' {
@@ -102,7 +102,7 @@ func (ct *Chatter) readLoop() {
 		msg := newMessage(sendData)
 		bytes, err := json.Marshal(msg)
 		if err != nil {
-			ilog.Error("json encode failed. err=%v, obj=%+v", err, msg)
+			ilog.Errorf("json encode failed. err=%v, obj=%+v", err, msg)
 			continue
 		}
 		ct.p2pService.Broadcast(bytes, chatData, p2p.UrgentMessage)
