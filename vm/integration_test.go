@@ -538,6 +538,42 @@ module.exports = Contract;
 	}
 }
 
+func TestJS_Database(t *testing.T) {
+	js := NewJSTester(t)
+	lc, err := ReadFile("test_data/database.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("main")
+	js.SetAPI("change")
+	js.DoSet()
+	t.Log("========= constructor")
+	t.Log("num is ", js.ReadDB("num"))
+	t.Log("string is ", js.ReadDB("string"))
+	t.Log("bool is ", js.ReadDB("bool"))
+	t.Log("nil is ", js.ReadDB("nil"))
+	t.Log("array is ", js.ReadDB("array"))
+	t.Log("object is ", js.ReadDB("object"))
+	t.Log("arrayobj is ", js.ReadDB("arrayobj"))
+	t.Log("objobj is ", js.ReadDB("objobj"))
+	js.TestJS("main", `[]`)
+	t.Log("========= main")
+	t.Log("num is ", js.ReadDB("num"))
+	t.Log("string is ", js.ReadDB("string"))
+	t.Log("bool is ", js.ReadDB("bool"))
+	t.Log("array is ", js.ReadDB("array"))
+	t.Log("object is ", js.ReadDB("object"))
+	t.Log("arrayobj is ", js.ReadDB("arrayobj"))
+	t.Log("objobj is ", js.ReadDB("objobj"))
+	js.TestJS("change", `[]`)
+	t.Log("========= change")
+	t.Log("array is ", js.ReadDB("array"))
+	t.Log("object is ", js.ReadDB("object"))
+	t.Log("arrayobj is ", js.ReadDB("arrayobj"))
+	t.Log("objobj is ", js.ReadDB("objobj"))
+}
+
 func TestJS_LuckyBet(t *testing.T) {
 	js := NewJSTester(t)
 	lc, err := ReadFile("test_data/lucky_bet.js")

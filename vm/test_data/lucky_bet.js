@@ -10,8 +10,17 @@ class Contract {
         this.clearUserValue()
     }
     clearUserValue() {
-        for (let i = 0; i <= 9; i ++) {
-            this.tables[i] = {}
+        this.tables = {
+            "0":{},
+            "1":{},
+            "2":{},
+            "3":{},
+            "4":{},
+            "5":{},
+            "6":{},
+            "7":{},
+            "8":{},
+            "9":{}
         }
     }
     bet(account, luckyNumber, coins) {
@@ -24,11 +33,18 @@ class Contract {
 
         BlockChain.deposit(account, coins);
 
-        if (this.tables[luckyNumber][account] === undefined) {
-            this.tables[luckyNumber][account] = coins
+        let betTables = this.tables;
+        _native_log("here"+betTables);
+        let betTable = betTables[luckyNumber+""];
+
+
+        if (betTable[account] === undefined) {
+            betTable[account] = coins
         } else {
-            this.tables[luckyNumber][account] += coins
+            betTable[account] += coins
         }
+
+        this.tables = betTables;
 
         this.userNumber ++;
         this.totalCoins += coins;
@@ -54,7 +70,8 @@ class Contract {
         let totalVal = 0;
         let kNum = 0;
 
-        for (let [key, value] of this.tables[ln]) {
+        let winTable = this.tables[ln];
+        for (let [key, value] of winTable) {
             totalVal ++;
             kNum ++
         }
@@ -69,7 +86,7 @@ class Contract {
 
         if (kNum >0) {
             let unit = tc / totalVal;
-            for (let [key, value] of this.tables[ln]) {
+            for (let [key, value] of winTable) {
                 BlockChain.withdraw(key, value * unit);
                 result.rewards.push({"key":key, "value": value * unit})
             }
