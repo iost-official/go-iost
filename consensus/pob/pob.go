@@ -125,15 +125,17 @@ func (p *PoB) blockLoop() {
 				ilog.Error(err.Error())
 				continue
 			}
-			p.synchronizer.CheckSyncProcess()
+			go p.synchronizer.CheckSyncProcess()
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
 				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
 			}
 			if incomingMessage.Type() == p2p.NewBlock {
 				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
 				ilog.Info("err type ", err)
-				if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need && (err == errSingle) {
-					go p.synchronizer.SyncBlocks(start, end)
+				if err == errSingle {
+					if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need {
+						go p.synchronizer.SyncBlocks(start, end)
+					}
 				}
 			}
 			p.blockCache.Draw()
@@ -205,6 +207,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	} else {
 		return errSingle
 	}
+	return nil
 }
 
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
