@@ -12,70 +12,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package iwallet
 
 import (
-	"fmt"
-
 	"context"
+	"fmt"
 
 	"github.com/iost-official/Go-IOS-Protocol/rpc"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
 
-// balanceCmd represents the balance command
-var balanceCmd = &cobra.Command{
-	Use:   "balance",
-	Short: "check balance of specified account",
-	Long:  `check balance of specified account`,
+// transactionCmd represents the transaction command
+var transactionCmd = &cobra.Command{
+	Use:   "transaction",
+	Short: "find transactions",
+	Long:  `find transaction by transaction hash`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var filePath string
 		if len(args) < 1 {
-			filePath = "~/.ssh/id_secp.pub"
-		} else {
-			filePath = args[0]
+			fmt.Println(`Error: transaction hash not given`)
+			return
 		}
-		pubkey, err := readFile(filePath)
+
+		conn, err := grpc.Dial(server, grpc.WithInsecure())
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
-
-		pk := loadBytes(string(pubkey))
-		b, err := checkBalance(pk)
+		defer conn.Close()
+		client := rpc.NewApisClient(conn)
+		txRaw, err := client.GetTxByHash(context.Background(), &rpc.HashReq{Hash: loadBytes(args[0])})
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(err.Error())
+			return
 		}
-		fmt.Println(filePath, ">", b, "iost")
-
+		//fmt.Println("tx raw:", txRaw.TxRaw)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		fmt.Println(txRaw)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(balanceCmd)
+	rootCmd.AddCommand(transactionCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// balanceCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// transactionCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// balanceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-func checkBalance(ia []byte) (int64, error) {
-	conn, err := grpc.Dial(server, grpc.WithInsecure())
-	if err != nil {
-		return 0, err
-	}
-	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	value, err := client.GetBalance(context.Background(), &rpc.GetBalanceReq{Pubkey: ia})
-	if err != nil {
-		return 0, err
-	}
-	return value.Balance, nil
+	// transactionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
