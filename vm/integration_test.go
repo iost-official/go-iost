@@ -5,8 +5,6 @@ import (
 
 	"fmt"
 
-	"strconv"
-
 	"os"
 
 	"github.com/golang/mock/gomock"
@@ -638,8 +636,6 @@ func TestJS_LuckyBet(t *testing.T) {
 
 	t.Log("user count ", js.ReadDB("userNumber"))
 	t.Log("total coins ", js.ReadDB("totalCoins"))
-	for i := 0; i < 10; i++ {
-		t.Log("table"+strconv.Itoa(i), js.ReadDB("table"+strconv.Itoa(i)))
-	}
+	t.Log("tables", js.ReadDB("tables"))
 	t.Log("result is ", js.ReadDB("results"))
 }

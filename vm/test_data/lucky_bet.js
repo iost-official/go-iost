@@ -5,20 +5,12 @@ class Contract {
         this.totalCoins = 0;
         this.lastLuckyBlock = -1;
         this.round = 0;
-        this["results"]= [];
+        this.results = [];
+        this.tables = [];
         this.clearUserValue()
     }
     clearUserValue() {
-        this["table0"] = {};
-        this["table1"] = {};
-        this["table2"] = {};
-        this["table3"] = {};
-        this["table4"] = {};
-        this["table5"] = {};
-        this["table6"] = {};
-        this["table7"] = {};
-        this["table8"] = {};
-        this["table9"] = {}
+        this.tables = [];
     }
     bet(account, luckyNumber, coins) {
         if (coins < 1 || coins > 5) {
@@ -30,11 +22,13 @@ class Contract {
 
         BlockChain.deposit(account, coins);
 
-
-        if (this["table"+luckyNumber][account] === undefined) {
-            this["table"+luckyNumber][account] = coins
+        if (this.tables[luckyNumber] === undefined) {
+            this.tables[luckyNumber] = {}
+        }
+        if (this.tables[luckyNumber][account] === undefined) {
+            this.tables[luckyNumber][account] = coins
         } else {
-            this["table"+luckyNumber][account] += coins
+            this.tables[luckyNumber][account] += coins
         }
 
         this.userNumber ++;
@@ -64,8 +58,8 @@ class Contract {
 
         _native_log("lucky number is "+ln);
 
-        let winTable = this["table"+ln];
-        _native_log("winTab is" + (winTable));
+        let winTable = this.tables[ln];
+        _native_log("winTab is" + JSON.stringify(winTable));
 
         for (let [key, value] of winTable) {
             totalVal += value;
@@ -87,9 +81,9 @@ class Contract {
                 result.rewards.push({"key":key, "value": value * unit})
             }
         }
-        let results =  this["results"];
+        let results =  this.results;
         results.push(result);
-        this["results"] = results
+        this.results = results
     }
 }
 
