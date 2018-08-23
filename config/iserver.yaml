@@ -23,4 +23,4 @@ log:
     enable: true
   consoleLog:
     level: "debug"
-  enable: true
+    enable: true

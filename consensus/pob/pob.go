@@ -150,7 +150,6 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
-	time.Duration(nextSchedule).Seconds()
 	ilog.Infof("next schedule:%v", time.Duration(nextSchedule).Seconds())
 	for {
 		select {
