@@ -148,7 +148,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		e.logger.Infof("run action : %v, result is %v", action, status.Code)
 		e.logger.Debugf("used cost > %v", cost)
 		e.logger.Debugf("status > \n%v\n", status)
-		e.logger.Debugf("receipts > \n%v\n", receipts)
+		//e.logger.Debugf("receipts > \n%v\n", receipts)
 
 		if err2 != nil {
 			return nil, err2
@@ -306,7 +306,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	//ilog.Debugf("action %v > %v", action.Contract+"."+action.ActionName, rtn)
 
 	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	e.logger.Debugf("cost is %v", cost)
+	//e.logger.Debugf("cost is %v", cost)
 
 	if cost == nil {
 		panic("cost is nil")

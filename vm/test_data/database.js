@@ -8,21 +8,24 @@ class Test {
         this.object = {"foo": "bar"};
         this.arrayobj = [{"foo": "bar"}, {"foo": "bar"}, {"foo": "bar"}];
         this.objobj = {"you": {"killed": "my father"}}
+        this["key"] = {"foo": "bar"}
     }
 
-    main() {
-        this.num = 10;
-        this.string = "hello world";
-        this.bool = false;
-        this.array = [1, 2, 3, 4, 5, 6];
-        this.object = {"foo": "bar", "abc": 123};
-        this.arrayobj = [{"foo": "bar"}, {"abc": 123}, {"ok": true}];
-        this.objobj = {"i am": {"your": "father"}}
+    read() {
+        _native_log("num > "+this.num );//  9;
+        _native_log("str > "+this.string );//  "hello";
+        _native_log("boo > "+this.bool );//  true;
+        _native_log("arr > "+this.array );//  [1, 2, 3]
+        _native_log("obj > "+this.object );//  {"foo": "bar"};
+        _native_log("key > "+this["key"])
+        // _native_log("aio > "+this.arrayobj );//  [{"foo": "bar"}, {"abc": 123}, {"ok": true}];
+        // _native_log("oio > "+this.objobj )//  {"i am": {"your": "father"}}
     }
 
     change() {
         this.array.push(7);
-        this.object["foo"] = "hahaha"
+        this.object["foo"] = "hahaha";
+        this["key"]["foo"] = "baz"
         // this.arrayobj[0]["foo"] = "oh bad" // error
         // this.objobj["i am"]["your"] = "grandpa"  // error
 
