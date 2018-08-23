@@ -14,7 +14,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-/*
 func TestDownloadController(t *testing.T) {
 	Convey("Test DownloadController", t, func() {
 		dc, err := NewDownloadController()
@@ -36,12 +35,11 @@ func TestDownloadController(t *testing.T) {
 			So(dHash, ShouldEqual, "222")
 			So(dPID, ShouldEqual, "bbb")
 		})
-			Convey("Stop DownloadLoop", func() {
-				dc.Stop()
-			})
+		Convey("Stop DownloadLoop", func() {
+			dc.Stop()
+		})
 	})
 }
-*/
 
 func TestSynchronizer(t *testing.T) {
 	Convey("Test Synchronizer", t, func() {

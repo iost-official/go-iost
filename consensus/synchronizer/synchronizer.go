@@ -125,7 +125,7 @@ func (sy *SyncImpl) queryBlockHash(hr message.BlockHashQuery) {
 		ilog.Debugf("marshal BlockHashQuery failed. err=%v", err)
 		return
 	}
-	ilog.Debugf("[net] request block hash. start=%v, end=%v", hr.Start, hr.End)
+	ilog.Debugf("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
 	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
 }
 
@@ -150,9 +150,11 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 }
 
 func (sy *SyncImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) {
+	ilog.Debugf("[sync] block confirmed. hash=%s", hash)
 	sy.dc.OnBlockConfirmed(hash, peerID)
 	if sy.syncEnd <= sy.blockCache.Head().Number {
 		sy.basevariable.Mode().SetMode(global.ModeNormal)
+		sy.dc.Reset()
 	}
 }
 
@@ -256,14 +258,14 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 	}
 	bytes, err := resp.Encode()
 	if err != nil {
-		ilog.Error("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
+		ilog.Errorf("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
 		return
 	}
 	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage)
 }
 
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
-	ilog.Info("receive block hashes: len=%v", len(rh.BlockHashes))
+	ilog.Infof("receive block hashes: len=%v, hashes=%+v", len(rh.BlockHashes), rh.BlockHashes)
 	for _, blkHash := range rh.BlockHashes {
 		if _, err := sy.blockCache.Find(blkHash.Hash); err == nil { // TODO: check hash @ BlockCache and BlockDB
 			sy.reqMap.Delete(blkHash.Height)
@@ -283,11 +285,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 					sy.reqMap.Delete(k)
 					return true
 				}
-				if num <= sy.blockCache.LinkedRoot().Number { // TODO
-					sy.reqMap.Delete(num)
-				} else {
-					hr.Nums = append(hr.Nums, num)
-				}
+				hr.Nums = append(hr.Nums, num)
 				return true
 			})
 			if len(hr.Nums) > 0 {
@@ -305,18 +303,18 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID
 	if rh.BlockNumber < sy.blockCache.LinkedRoot().Number {
 		b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.BlockHash)
 		if err != nil {
-			ilog.Error("Database error: block empty %v", rh.BlockNumber)
+			ilog.Errorf("Database error: block empty %v", rh.BlockNumber)
 			return
 		}
 	} else {
 		node, err := sy.blockCache.Find(rh.BlockHash)
 		if err != nil {
-			ilog.Error("Block not in cache: %v", rh.BlockNumber)
+			ilog.Errorf("Block not in cache: %v", rh.BlockNumber)
 			return
 		}
 		b, err = node.Block.Encode()
 		if err != nil {
-			ilog.Error("Fail to encode block: %v", rh.BlockNumber)
+			ilog.Errorf("Fail to encode block: %v", rh.BlockNumber)
 			return
 		}
 	}
@@ -328,6 +326,7 @@ type DownloadController interface {
 	OnTimeout(hash string, peerID p2p.PeerID)
 	OnBlockConfirmed(hash string, peerID p2p.PeerID)
 	DownloadLoop(callback func(hash string, peerID p2p.PeerID))
+	Reset()
 	Stop()
 }
 
@@ -350,6 +349,13 @@ func NewDownloadController() (*DownloadControllerImpl, error) {
 		exitSignal: make(chan struct{}),
 	}
 	return dc, nil
+}
+
+func (dc *DownloadControllerImpl) Reset() {
+	dc.hashState = new(sync.Map)
+	dc.peerState = new(sync.Map)
+	dc.peerMap = new(sync.Map)
+	dc.peerTimer = new(sync.Map)
 }
 
 func (dc *DownloadControllerImpl) Stop() {

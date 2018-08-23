@@ -90,10 +90,8 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 
 //Start make the PoB run.
 func (p *PoB) Start() error {
-	p.synchronizer.Start()
 	go p.blockLoop()
 	go p.scheduleLoop()
-
 	return nil
 }
 
@@ -120,7 +118,7 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			err = p.handleRecvBlock(&blk)
-			if err != nil {
+			if err != nil && err.Error() == "duplicate block" {
 				ilog.Error(err.Error())
 				continue
 			}
