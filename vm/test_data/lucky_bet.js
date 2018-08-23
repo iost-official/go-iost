@@ -23,13 +23,25 @@ class Contract {
         BlockChain.deposit(account, coins);
 
         if (this.tables[luckyNumber] === undefined) {
-            this.tables[luckyNumber] = {}
+            this.tables[luckyNumber] = []
         }
-        if (this.tables[luckyNumber][account] === undefined) {
-            this.tables[luckyNumber][account] = coins
-        } else {
-            this.tables[luckyNumber][account] += coins
+
+        let isExist = false;
+        for (let i = 0; i < this.tables[luckyNumber].length; i ++) {
+            if (this.tables[luckyNumber][i].account === account){
+                this.tables[luckyNumber][i].coins += coins;
+                isExist = true;
+            }
         }
+        if (!isExist) {
+            this.tables[luckyNumber].push({ account:account, coins : coins})
+        }
+
+        // if (this.tables[luckyNumber][account] === undefined) {
+        //     this.tables[luckyNumber][account] = coins
+        // } else {
+        //     this.tables[luckyNumber][account] += coins
+        // }
 
         this.userNumber ++;
         this.totalCoins += coins;
@@ -61,8 +73,13 @@ class Contract {
         let winTable = this.tables[ln];
         _native_log("winTab is" + JSON.stringify(winTable));
 
-        for (let [key, value] of winTable) {
-            totalVal += value;
+        // for (let [key, value] of winTable) {
+        //     totalVal += value
+        //     kNum ++
+        // }
+
+        for (let i = 0; i < winTable.length; i ++) {
+            totalVal += winTable[i].coins;
             kNum ++
         }
 
@@ -76,9 +93,14 @@ class Contract {
 
         if (kNum > 0) {
             let unit = tc / totalVal;
-            for (let [key, value] of winTable) {
-                BlockChain.withdraw(key, value * unit);
-                result.rewards.push({"key":key, "value": value * unit})
+            // for (let [key, value] of winTable) {
+            //     BlockChain.withdraw(key, value * unit);
+            //     result.rewards.push({"key":key, "value": value * unit})
+            // }
+            for (let i = 0; i < winTable.length; i ++) {
+                let reward = winTable[i].coins * unit;
+                BlockChain.withdraw(winTable[i].account, reward);
+                result.rewards.push({"account":winTable[i].account, "reward": reward})
             }
         }
         let results =  this.results;
