@@ -382,8 +382,8 @@ func NewJSTester(t fataler) *JSTester {
 	e := newEngine(bh, vi)
 
 	e.SetUp("js_path", jsPath)
-	e.SetUp("log_level", "debug")
-	e.SetUp("log_enable", "")
+	//e.SetUp("log_level", "debug")
+	//e.SetUp("log_enable", "")
 	return &JSTester{
 		vi:     vi,
 		e:      e,
