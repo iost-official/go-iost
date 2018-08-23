@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"math"
-
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
@@ -90,11 +88,13 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 	return &p
 }
 
-//Run make the PoB run.
-func (p *PoB) Run() {
+//Start make the PoB run.
+func (p *PoB) Start() error {
 	p.synchronizer.Start()
 	go p.blockLoop()
 	go p.scheduleLoop()
+
+	return nil
 }
 
 //Stop make the PoB stop.
@@ -116,12 +116,12 @@ func (p *PoB) blockLoop() {
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
-				ilog.Debugf(err.Error())
+				ilog.Error(err.Error())
 				continue
 			}
 			err = p.handleRecvBlock(&blk)
 			if err != nil {
-				ilog.Debugf(err.Error())
+				ilog.Error(err.Error())
 				continue
 			}
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
@@ -140,7 +140,7 @@ func (p *PoB) blockLoop() {
 			}
 			err := p.handleRecvBlock(blk)
 			if err != nil {
-				ilog.Debugf(err.Error())
+				ilog.Error(err.Error())
 			}
 		case <-p.exitSignal:
 			return
@@ -150,7 +150,7 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
-	ilog.Infof("next schedule:%v", math.Round(float64(nextSchedule)/float64(second2nanosecond)))
+	ilog.Infof("next schedule:%v", time.Duration(nextSchedule).Seconds())
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
@@ -158,12 +158,12 @@ func (p *PoB) scheduleLoop() {
 				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
 				ilog.Infof("gen block:%v", blk.Head.Number)
 				if err != nil {
-					ilog.Debugf(err.Error())
+					ilog.Error(err.Error())
 					continue
 				}
 				blkByte, err := blk.Encode()
 				if err != nil {
-					ilog.Debugf(err.Error())
+					ilog.Error(err.Error())
 					continue
 				}
 				p.chGenBlock <- blk
@@ -171,7 +171,7 @@ func (p *PoB) scheduleLoop() {
 				time.Sleep(common.SlotLength * time.Second)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
-			ilog.Infof("next schedule:%v", math.Round(float64(nextSchedule)/float64(second2nanosecond)))
+			ilog.Infof("next schedule:%v", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
 			return
 		}
@@ -204,7 +204,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
 			p.blockCache.Del(node)
-			ilog.Debugf(err.Error())
+			ilog.Error(err.Error())
 			return err
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
