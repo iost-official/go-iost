@@ -23,13 +23,32 @@ class Contract {
         BlockChain.deposit(account, coins);
 
         if (this.tables[luckyNumber] === undefined) {
-            this.tables[luckyNumber] = {}
+            this.tables[luckyNumber] = [];
         }
-        if (this.tables[luckyNumber][account] === undefined) {
-            this.tables[luckyNumber][account] = coins
-        } else {
-            this.tables[luckyNumber][account] += coins
+        
+        let isExist = false;
+        
+        this.tables[luckyNumber].forEach(function (record) {
+            if (record.account === account) {
+                record.coins += coins;
+                isExist = true;
+            }
+        });
+
+        if (!isExist) {
+            this.tables[luckyNumber].push({ account:account, coins : coins})
         }
+
+        // if (this.tables[luckyNumber] === undefined) {
+        //     this.tables[luckyNumber] = {};
+        // }
+        //
+        // if (this.tables[luckyNumber].get(account) === undefined) {
+        //     this.tables[luckyNumber].set(account, coins);
+        // } else {
+        //     let c = this.tables[luckyNumber].get(account);
+        //     this.tables[luckyNumber].set(account, c + coins);
+        // }
 
         this.userNumber ++;
         this.totalCoins += coins;
@@ -38,7 +57,7 @@ class Contract {
             let bi = JSON.parse(BlockChain.blockInfo());
             let bn = bi.number;
             let ph = bi.parent_hash;
-            if ( true /*this.lastLuckyBlock < 0 || bn - this.lastLuckyBlock >= 16 || bn > this.lastLuckyBlock && ph[ph.length-1] % 16 === 0*/) {
+            if ( this.lastLuckyBlock < 0 || bn - this.lastLuckyBlock >= 16 || bn > this.lastLuckyBlock && ph[ph.length-1] % 16 === 0) {
                 this.lastLuckyBlock = bn;
 
                 this.getReward(bn);
@@ -58,13 +77,16 @@ class Contract {
 
         _native_log("lucky number is "+ln);
 
-        let winTable = this.tables[ln];
-        _native_log("winTab is" + JSON.stringify(winTable));
 
-        for (let [key, value] of winTable) {
-            totalVal += value;
-            kNum ++
-        }
+        // for (let [key, value] of this.tables[ln]) {
+        //     totalVal += value;
+        //     kNum ++
+        // }
+
+        this.tables[ln].forEach(function (record) {
+            totalVal += record.coins;
+            kNum ++;
+        });
 
         let result = {
             number: this.lastLuckyBlock,
@@ -76,10 +98,15 @@ class Contract {
 
         if (kNum > 0) {
             let unit = tc / totalVal;
-            for (let [key, value] of winTable) {
-                BlockChain.withdraw(key, value * unit);
-                result.rewards.push({"key":key, "value": value * unit})
-            }
+            // for (let [key, value] of winTable) {
+            //     BlockChain.withdraw(key, value * unit);
+            //     result.rewards.push({"account":key, "reward": value * unit})
+            // }
+            this.tables[ln].forEach(function (record) {
+                let reward = record.coins * unit;
+                BlockChain.withdraw(record.account, reward);
+                result.rewards.push({"account":record.account, "reward": reward})
+            });
         }
         let results =  this.results;
         results.push(result);
