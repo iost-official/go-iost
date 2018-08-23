@@ -572,6 +572,40 @@ module.exports = Contract;
 	}
 }
 
+func TestJSAPI_Info(t *testing.T) {
+
+	js := NewJSTester(t)
+	js.SetJS(`
+class Contract {
+	constructor() {
+	}
+	blockInfo() {
+		var info = BlockChain.blockInfo()
+		var obj = JSON.parse(info)	
+		_native_log(obj["parent_hash"])
+		return obj["parent_hash"]
+	}
+	txInfo() {
+		var info = BlockChain.txInfo()
+		var obj = JSON.parse(info)	
+		_native_log(obj["hash"])
+		return obj["hash"]
+	}
+}
+
+module.exports = Contract;
+`)
+	js.SetAPI("blockInfo")
+	js.SetAPI("txInfo")
+	js.DoSet()
+
+	r := js.TestJS("blockInfo", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+
+	r = js.TestJS("txInfo", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+}
+
 func TestJS_Database(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
