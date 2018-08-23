@@ -29,7 +29,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	flag "github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 type ServerExit interface {
@@ -86,66 +85,73 @@ func main() {
 	if *help {
 		flag.Usage()
 	}
+
 	if *configfile == "" {
 		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/iserver.yaml"
 	}
+
 	conf := common.NewConfig(*configfile)
 
 	initLogger(conf.Log)
 
-	ilog.Info("Config Information:\n%v", conf.YamlString())
+	ilog.Infof("Config Information:\n%v", conf.YamlString())
 
 	glb, err := global.New(conf)
 	if err != nil {
-		ilog.Fatal("create global failed. err=%v", err)
+		ilog.Fatalf("create global failed. err=%v", err)
 	}
 
 	p2pService, err := p2p.NewNetService(conf.P2P)
 	if err != nil {
-		ilog.Fatal("network initialization failed, stop the program! err:%v", err)
+		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
 	}
 	err = p2pService.Start()
 	if err != nil {
-		ilog.Fatal("start p2pservice failed. err=%v", err)
+		ilog.Fatalf("start p2pservice failed. err=%v", err)
 	}
 
 	serverExit = append(serverExit, p2pService)
 
-	accSecKey := viper.GetString("account.sec-key")
+	accSecKey := glb.Config().ACC.SecKey
 	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
 	if err != nil {
-		ilog.Fatal("NewAccount failed, stop the program! err:%v", err)
+		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
 	}
-
 	account.MainAccount = acc
+
 	blkCache, err := blockcache.NewBlockCache(glb)
 	if err != nil {
-		ilog.Fatal("blockcache initialization failed, stop the program! err:%v", err)
+		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
 	}
 
 	sync, err := synchronizer.NewSynchronizer(glb, blkCache, p2pService)
 	if err != nil {
-		ilog.Fatal("synchronizer initialization failed, stop the program! err:%v", err)
+		ilog.Fatalf("synchronizer initialization failed, stop the program! err:%v", err)
 	}
 	err = sync.Start()
 	if err != nil {
-		ilog.Fatal("start synchronizer failed. err=%v", err)
+		ilog.Fatalf("start synchronizer failed. err=%v", err)
 	}
 	serverExit = append(serverExit, sync)
 
 	var txp txpool.TxPool
 	txp, err = txpool.NewTxPoolImpl(glb, blkCache, p2pService)
 	if err != nil {
-		ilog.Fatal("txpool initialization failed, stop the program! err:%v", err)
+		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 	txp.Start()
 	serverExit = append(serverExit, txp)
 
-	consensus, err := consensus.ConsensusFactory(
-		consensus.CONSENSUS_POB,
-		acc, glb, blkCache, txp, p2pService, sync, nil) //witnessList)
+	var witnessList []string
+	for k := range account.GenesisAccount {
+		witnessList = append(witnessList, k)
+	}
+
+	consensus, err := consensus.Factory(
+		"pob",
+		acc, glb, blkCache, txp, p2pService, sync, witnessList) //witnessList)
 	if err != nil {
-		ilog.Fatal("consensus initialization failed, stop the program! err:%v", err)
+		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}
 	consensus.Run()
 	serverExit = append(serverExit, consensus)
@@ -156,11 +162,9 @@ func main() {
 
 func exitLoop() {
 	c := make(chan os.Signal, 1)
-
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
 	i := <-c
-	ilog.Info("IOST server received interrupt[%v], shutting down...", i)
+	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
 	for _, s := range serverExit {
 		s.Stop()
 	}
