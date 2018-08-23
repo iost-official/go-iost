@@ -88,11 +88,13 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 	return &p
 }
 
-//Run make the PoB run.
-func (p *PoB) Run() {
+//Start make the PoB run.
+func (p *PoB) Start() error {
 	p.synchronizer.Start()
 	go p.blockLoop()
 	go p.scheduleLoop()
+
+	return nil
 }
 
 //Stop make the PoB stop.

@@ -148,7 +148,7 @@ func main() {
 	if err != nil {
 		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}
-	consensus.Run()
+	consensus.Start()
 	serverExit = append(serverExit, consensus)
 
 	exitLoop()
