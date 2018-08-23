@@ -145,12 +145,21 @@ func BenchmarkJS_Gas(b *testing.B) {
 	js.SetAPI("ten")
 	js.DoSet()
 
-	for i := 0; i < b.N; i++ {
-		r := js.TestJS("single", `[]`)
-		b.StopTimer()
-		if i == 0 {
-			b.Log("gas is : ", r.GasUsage)
-		}
-		b.StartTimer()
+	act2 := tx.NewAction(js.cname, "ten", `[]`)
+
+	trx2, err := MakeTx(act2)
+	if err != nil {
+		js.t.Fatal(err)
 	}
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		// r := js.TestJS("single", `[]`)
+		//if i == 0 {
+		//	b.Log("gas is : ", r.GasUsage)
+		//}
+		js.e.Exec(trx2)
+	}
+	b.StopTimer()
+
 }
