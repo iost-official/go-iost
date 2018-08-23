@@ -28,6 +28,11 @@ type P2PConfig struct {
 	Version    uint16
 }
 
+//RPCConfig is the config for RPC Server.
+type RPCConfig struct {
+	Port int
+}
+
 // FileLogConfig is the config for filewriter of ilog.
 type FileLogConfig struct {
 	Path   string
@@ -54,6 +59,7 @@ type Config struct {
 	VM  *VMConfig
 	DB  *DBConfig
 	P2P *P2PConfig
+	RPC *RPCConfig
 	Log *LogConfig
 }
 

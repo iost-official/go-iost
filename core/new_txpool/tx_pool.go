@@ -61,9 +61,11 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 }
 
 // Start starts the jobs.
-func (pool *TxPoolImpl) Start() {
-	ilog.Infof("TxPoolImpl Start")
+func (pool *TxPoolImpl) Start() error {
+	ilog.Info("TxPoolImpl Start")
 	go pool.loop()
+
+	return nil
 }
 
 // Stop stops all the jobs.

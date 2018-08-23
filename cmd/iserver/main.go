@@ -31,12 +31,6 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-type ServerExit interface {
-	Stop()
-}
-
-var serverExit []ServerExit
-
 var (
 	configfile = flag.StringP("config", "f", "", "Configuration `file`")
 	help       = flag.BoolP("help", "h", false, "Display available options")
@@ -101,16 +95,13 @@ func main() {
 		ilog.Fatalf("create global failed. err=%v", err)
 	}
 
+	var app common.App
+
 	p2pService, err := p2p.NewNetService(conf.P2P)
 	if err != nil {
 		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
 	}
-	err = p2pService.Start()
-	if err != nil {
-		ilog.Fatalf("start p2pservice failed. err=%v", err)
-	}
-
-	serverExit = append(serverExit, p2pService)
+	app = append(app, p2pService)
 
 	accSecKey := glb.Config().ACC.SecKey
 	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
@@ -128,45 +119,37 @@ func main() {
 	if err != nil {
 		ilog.Fatalf("synchronizer initialization failed, stop the program! err:%v", err)
 	}
-	err = sync.Start()
-	if err != nil {
-		ilog.Fatalf("start synchronizer failed. err=%v", err)
-	}
-	serverExit = append(serverExit, sync)
+	app = append(app, sync)
 
 	var txp txpool.TxPool
 	txp, err = txpool.NewTxPoolImpl(glb, blkCache, p2pService)
 	if err != nil {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
-	txp.Start()
-	serverExit = append(serverExit, txp)
-
-	var witnessList []string
-	for k := range account.GenesisAccount {
-		witnessList = append(witnessList, k)
-	}
+	app = append(app, txp)
 
 	consensus, err := consensus.Factory(
 		"pob",
-		acc, glb, blkCache, txp, p2pService, sync, witnessList) //witnessList)
+		acc, glb, blkCache, txp, p2pService, sync, account.WitnessList) //witnessList)
 	if err != nil {
 		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}
-	consensus.Run()
-	serverExit = append(serverExit, consensus)
+	app = append(app, consensus)
 
-	exitLoop()
+	err = app.Start()
+	if err != nil {
+		ilog.Fatal("start iserver failed. err=%v", err)
+	}
 
+	waitExit()
+
+	app.Stop()
+	ilog.Stop()
 }
 
-func exitLoop() {
+func waitExit() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	i := <-c
 	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
-	for _, s := range serverExit {
-		s.Stop()
-	}
-	ilog.Stop()
 }

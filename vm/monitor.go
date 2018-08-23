@@ -40,13 +40,13 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 	c := h.DB().Contract(contractName)
 	abi := c.ABI(api)
 	if abi == nil {
-		return nil, host.ContractNotFoundCost, errABINotFound
+		return nil, contract.NewCost(0, 0, gasCheckTxFailed), errABINotFound
 	}
 
 	err = checkArgs(abi, args)
 
 	if err != nil {
-		return nil, host.ABINotFoundCost, err
+		return nil, contract.NewCost(0, 0, gasCheckTxFailed), err
 	}
 
 	h.PushCtx()
@@ -64,7 +64,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		}
 	}
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
-	//ilog.Debugf("cost in monitor is %v", cost)
 	if cost == nil {
 		if strings.HasPrefix(contractName, "Contract") {
 			ilog.Fatalf("will return nil cost : %v.%v", contractName, api)
