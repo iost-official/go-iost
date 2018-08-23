@@ -62,7 +62,6 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 
 // Start starts the jobs.
 func (pool *TxPoolImpl) Start() {
-	ilog.Infof("TxPoolImpl Start")
 	go pool.loop()
 }
 

@@ -78,7 +78,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager) *Peer {
 
 // Start starts peer's loop.
 func (p *Peer) Start() {
-	ilog.Infof("peer is started. id=%s", p.id.Pretty())
+	//ilog.Infof("peer is started. id=%s", p.id.Pretty())
 
 	go p.writeLoop()
 }
@@ -237,7 +237,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool) error {
 	if deduplicate && msg.needDedup() {
 		if p.hasMessage(msg) {
-			ilog.Infof("ignore reduplicate message")
+			//ilog.Infof("ignore reduplicate message")
 			return ErrDuplicateMessage
 		}
 	}

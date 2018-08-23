@@ -94,8 +94,6 @@ func main() {
 
 	initLogger(conf.Log)
 
-	ilog.Infof("Config Information:\n%v", conf.YamlString())
-
 	glb, err := global.New(conf)
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)

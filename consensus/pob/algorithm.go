@@ -28,9 +28,6 @@ var (
 )
 
 func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
-	ilog.Info("generateBlockstart")
-	ilog.Info("account.ID:%s", account.ID)
-	ilog.Info("witnessOfSec:%s", witnessOfSec(time.Now().Unix()))
 	var err error
 	blk := block.Block{
 		Head: block.BlockHead{
@@ -43,9 +40,6 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	ilog.Info("generateBlockEnd")
-	ilog.Info("witnessOfSlot%s", witnessOfSlot(blk.Head.Time))
-	ilog.Info("blk.Head.Witness%s", blk.Head.Witness)
 	txCnt := 1000
 	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
 	txsList, _ := txPool.PendingTxs(txCnt)
@@ -103,6 +97,7 @@ func verifyBasics(blk *block.Block) error {
 	if !common.VerifySignature(headInfo, signature) {
 		return errSignature
 	}
+	ilog.Infof("block number: %d, slotMap: %v", blk.Head.Number, staticProperty.SlotMap)
 	if staticProperty.hasSlot(blk.Head.Time) {
 		return errSlot
 	}

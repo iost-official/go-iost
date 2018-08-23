@@ -90,7 +90,6 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 
 //Run make the PoB run.
 func (p *PoB) Run() {
-	p.synchronizer.Start()
 	go p.blockLoop()
 	go p.scheduleLoop()
 }
@@ -117,6 +116,7 @@ func (p *PoB) blockLoop() {
 				ilog.Error(err.Error())
 				continue
 			}
+			ilog.Info("new block come, block number: ", blk.Head.Number)
 			err = p.handleRecvBlock(&blk)
 			if err != nil {
 				ilog.Error(err.Error())
@@ -136,6 +136,7 @@ func (p *PoB) blockLoop() {
 				ilog.Infof("chGenBlock has closed")
 				return
 			}
+			ilog.Info("block from myself, block number: ", blk.Head.Number)
 			err := p.handleRecvBlock(blk)
 			if err != nil {
 				ilog.Error(err.Error())
@@ -148,10 +149,11 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
+	ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
-			ilog.Info("nextSchedule", time.Duration(nextSchedule).Seconds())
+			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
 				ilog.Infof("gen block:%v", blk.Head.Number)
@@ -169,7 +171,7 @@ func (p *PoB) scheduleLoop() {
 				time.Sleep(common.SlotLength * time.Second)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
-			ilog.Info("nextSchedule", time.Duration(nextSchedule).Seconds())
+			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
 			return
 		}
@@ -177,7 +179,6 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block) error {
-	ilog.Infof("block number:%v", blk.Head.Number)
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errors.New("duplicate block")
@@ -188,10 +189,10 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
+	staticProperty.addSlot(blk.Head.Time)
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent.Block)
 	}
-	staticProperty.addSlot(blk.Head.Time)
 	return nil
 }
 

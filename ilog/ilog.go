@@ -1,10 +1,14 @@
 package ilog
 
+import "os/exec"
+
 var (
 	defaultLogger *Logger
 )
 
 func init() {
+	cmd := exec.Command("rm", "-r", "./logs")
+	cmd.Run()
 	defaultLogger = NewConsoleLogger()
 	defaultLogger.SetCallDepth(1)
 	defaultLogger.Start()
