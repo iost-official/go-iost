@@ -1,7 +1,6 @@
 package blockcache
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"sync"
@@ -25,12 +24,14 @@ func init() {
 	prometheus.MustRegister(blockCachedLength)
 }
 
+/*
 func IF(condition bool, trueRes, falseRes interface{}) interface{} {
 	if condition {
 		return trueRes
 	}
 	return falseRes
 }
+*/
 
 type CacheStatus int
 
@@ -65,32 +66,60 @@ type BlockCacheNode struct {
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
-	if child == nil {
-		return
+	if child != nil {
+		bcn.Children[child] = true
 	}
-	bcn.Children[child] = true
-	child.Parent = bcn
-	return
 }
 
 func (bcn *BlockCacheNode) delChild(child *BlockCacheNode) {
 	delete(bcn.Children, child)
 }
 
+func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
+	if parent != nil {
+		bcn.Parent = parent
+		bcn.Type = parent.Type
+		if bcn.Type == Virtual {
+			bcn.Type = Single
+		}
+		parent.addChild(bcn)
+	}
+}
+
+func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block.Block) {
+	if bcn.Type == Virtual && parent != nil && block != nil {
+		bcn.Block = block
+		bcn.Number = block.Head.Number
+		bcn.Witness = block.Head.Witness
+		bcn.setParent(parent)
+	}
+}
+
 func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	bcn := BlockCacheNode{
 		Block:    block,
-		Parent:   parent,
+		Parent:   nil,
 		Children: make(map[*BlockCacheNode]bool),
 	}
 	if block != nil {
 		bcn.Number = block.Head.Number
 		bcn.Witness = block.Head.Witness
 	}
-	if parent != nil {
-		bcn.Type = parent.Type
-		parent.addChild(&bcn)
+	bcn.setParent(parent)
+	return &bcn
+}
+
+func NewVirtualBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
+	bcn := BlockCacheNode{
+		Block:    nil,
+		Parent:   nil,
+		Children: make(map[*BlockCacheNode]bool),
 	}
+	if block != nil {
+		bcn.Number = block.Head.Number - 1
+	}
+	bcn.setParent(parent)
+	bcn.Type = Virtual
 	return &bcn
 }
 
@@ -115,11 +144,6 @@ type BlockCacheImpl struct {
 	leaf         map[*BlockCacheNode]int64
 	baseVariable global.BaseVariable
 }
-
-var (
-	ErrNotFound = errors.New("not found")
-	ErrDup      = errors.New("block duplicate")
-)
 
 func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
 	rtnI, ok := bc.hash2node.Load(string(hash))
@@ -151,7 +175,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		baseVariable: baseVariable,
 	}
 	bc.linkedRoot.Type = Linked
-	bc.singleRoot.Type = Single
+	bc.singleRoot.Type = Virtual
 	bc.head = bc.linkedRoot
 	lib, err := baseVariable.BlockChain().Top()
 	if err != nil {
@@ -176,16 +200,9 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn.Number > bc.head.Number {
 		bc.head = bcn
 	}
-	return
 }
 
 func (bc *BlockCacheImpl) updateLongest() {
-	/*
-		think about there are only one witness
-		if len(bc.leaf) == -1 {
-			panic(fmt.Errorf("BlockCache shouldnt be empty"))
-		}
-	*/
 	_, ok := bc.hmget(bc.head.Block.HeadHash())
 	if ok {
 		return
@@ -200,13 +217,25 @@ func (bc *BlockCacheImpl) updateLongest() {
 }
 
 func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
-	parent, ok := bc.hmget(blk.Head.ParentHash)
-	fa := IF(ok, parent, bc.singleRoot).(*BlockCacheNode)
-	newNode := NewBCN(fa, blk)
-	delete(bc.leaf, fa)
-	bc.hmset(blk.HeadHash(), newNode)
-	bc.mergeSingle(newNode)
+	newNode, nok := bc.hmget(blk.HeadHash())
+	if nok && newNode.Type != Virtual {
+		return newNode
+	}
+	fa, ok := bc.hmget(blk.Head.ParentHash)
+	if !ok {
+		fa = NewVirtualBCN(bc.singleRoot, blk)
+		bc.hmset(blk.Head.ParentHash, fa)
+	}
+	//fa := IF(ok, parent, bc.singleRoot).(*BlockCacheNode)
+	if nok && newNode.Type == Virtual {
+		bc.singleRoot.delChild(newNode)
+		newNode.updateVirtualBCN(fa, blk)
+	} else {
+		newNode = NewBCN(fa, blk)
+		bc.hmset(blk.HeadHash(), newNode)
+	}
 	if newNode.Type == Linked {
+		delete(bc.leaf, fa)
 		bc.leaf[newNode] = newNode.Number
 		if newNode.Number > bc.head.Number {
 			bc.head = newNode
@@ -219,10 +248,9 @@ func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	fa := bcn.Parent
 	bcn.Parent = nil
 	bc.hmdel(bcn.Block.HeadHash())
-	if fa == nil {
-		return
+	if fa != nil {
+		fa.delChild(bcn)
 	}
-	fa.delChild(bcn)
 }
 
 func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
@@ -238,15 +266,6 @@ func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 	bc.delNode(bcn)
 }
 
-func (bc *BlockCacheImpl) mergeSingle(newNode *BlockCacheNode) {
-	for bcn, _ := range bc.singleRoot.Children {
-		if bytes.Equal(bcn.Block.Head.ParentHash, newNode.Block.HeadHash()) {
-			bc.singleRoot.delChild(bcn)
-			newNode.addChild(bcn)
-		}
-	}
-}
-
 func (bc *BlockCacheImpl) delSingle() {
 	height := bc.linkedRoot.Number
 	if height%DelSingleBlockTime != 0 {
@@ -257,7 +276,6 @@ func (bc *BlockCacheImpl) delSingle() {
 			bc.Del(bcn)
 		}
 	}
-	return
 }
 
 func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
@@ -288,7 +306,6 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			ilog.Debugf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
-		//bc.hmdel(cur.Block.HeadHash())
 		bc.delNode(cur)
 		retain.Parent = nil
 		bc.linkedRoot = retain
@@ -300,7 +317,6 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	bc.flush(bcn)
 	bc.delSingle()
 	bc.updateLongest()
-	return
 }
 
 func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
