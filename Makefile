@@ -18,7 +18,7 @@ ifeq ($(shell uname),Linux)
 	export LD_LIBRARY_PATH=$(shell pwd)/vm/v8vm/v8/libv8/_linux_amd64
 endif
 
-.PHONY: all build iserver iwallet lint test image devimage install clean
+.PHONY: all build iserver iwallet lint test image devimage swagger install clean
 
 all: build
 
@@ -42,6 +42,9 @@ image:
 
 devimage:
 	docker build -f Dockerfile.dev -t iostio/iost-dev .
+
+swagger:
+	./script/gen_swagger.sh
 
 install:
 	go install ./cmd/iwallet/
