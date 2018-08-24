@@ -48,12 +48,14 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	fmt.Println("init")
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
 		// Find home directory.
 		home, err := homedir.Dir()
+		fmt.Println(home)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
