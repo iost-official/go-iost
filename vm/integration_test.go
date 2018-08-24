@@ -173,7 +173,7 @@ func TestIntergration_Transfer(t *testing.T) {
 
 func jsHelloWorld() *contract.Contract {
 	jshw := contract.Contract{
-		ID: "jsHelloWorld",
+		ID: "ContractjsHelloWorld",
 		Code: `
 class Contract {
  constructor() {
@@ -244,7 +244,7 @@ func TestIntergration_CallJSCode(t *testing.T) {
 	vi.SetContract(jshw)
 	vi.SetContract(jsc)
 
-	act := tx.NewAction("call_hello_world", "call_hello", fmt.Sprintf(`[]`))
+	act := tx.NewAction("Contractcall_hello_world", "call_hello", fmt.Sprintf(`[]`))
 
 	trx, err := MakeTx(act)
 	if err != nil {
@@ -257,14 +257,14 @@ func TestIntergration_CallJSCode(t *testing.T) {
 
 func jsCallHelloWorld() *contract.Contract {
 	return &contract.Contract{
-		ID: "call_hello_world",
+		ID: "Contractcall_hello_world",
 		Code: `
 class Contract {
  constructor() {
   
  }
  call_hello() {
-  return BlockChain.call("jsHelloWorld", "hello", "[]")
+  return BlockChain.call("ContractjsHelloWorld", "hello", "[]")
  }
 }
 
@@ -298,7 +298,7 @@ func TestIntergration_Payment_Success(t *testing.T) {
 
 	vi.SetBalance("CGjsHelloWorld", 1000000)
 
-	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
+	act := tx.NewAction("ContractjsHelloWorld", "hello", fmt.Sprintf(`[]`))
 
 	trx, err := MakeTx(act)
 	if err != nil {
@@ -329,7 +329,7 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 	vi.SetBalance("CGjsHelloWorld", 1000000)
 	vi.Commit()
 
-	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
+	act := tx.NewAction("ContractjsHelloWorld", "hello", fmt.Sprintf(`[]`))
 
 	trx, err := MakeTx(act)
 	if err != nil {

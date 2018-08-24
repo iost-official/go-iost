@@ -13,7 +13,7 @@ import (
 
 var testDataPath = "./test_data/"
 
-func MyInit(t *testing.T, conName string, optional ...interface{}) (*native.VM, *host.Host, *contract.Contract) {
+func MyInit(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
 	vi := database.NewVisitor(100, db)
 
@@ -34,7 +34,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*native.VM, 
 		ID: conName,
 	}
 
-	e := &native.VM{}
+	e := &native.Impl{}
 	e.Init()
 
 	return e, h, code

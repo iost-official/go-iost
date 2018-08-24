@@ -268,7 +268,15 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	e.ho.Context().Set("stack0", "direct_call")
 	e.ho.Context().Set("stack_height", 1) // record stack trace
 
-	c := e.ho.DB().Contract(action.Contract)
+	var cid string
+	dhcp := NewDHCP(e.ho)
+	if dhcp.IsDomain(action.Contract) {
+		cid = dhcp.URL(action.Contract)
+	} else {
+		cid = action.Contract
+	}
+
+	c := e.ho.DB().Contract(cid)
 	if c == nil || c.Info == nil {
 		cost = host.ContractNotFoundCost
 		status = tx.Status{
