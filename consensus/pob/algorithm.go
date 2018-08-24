@@ -137,6 +137,7 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
+		go staticProperty.delSlot(confirmedNode.Block.Head.Time)
 	}
 }
 

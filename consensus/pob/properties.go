@@ -40,6 +40,14 @@ func (property *StaticProperty) addSlot(slot int64) {
 	property.SlotMap[slot] = true
 }
 
+func (property *StaticProperty) delSlot(slot int64) {
+	for k := range property.SlotMap {
+		if k <= slot {
+			delete(property.SlotMap, k)
+		}
+	}
+}
+
 var (
 	second2nanosecond   int64 = 1000000000
 	maintenanceInterval       = 24 * second2nanosecond
