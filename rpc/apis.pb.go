@@ -7,7 +7,7 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import event "github.com/iost-official/Go-IOS-Protocol/core/event"
-import new_block "github.com/iost-official/Go-IOS-Protocol/core/new_block"
+import new_block "github.com/iost-official/Go-IOS-Protocol/core/block"
 import new_tx "github.com/iost-official/Go-IOS-Protocol/core/tx"
 
 import (
