@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "core/new_tx/tx.proto";
+import "core/tx/tx.proto";
 import "core/new_block/block.proto";
 import "core/event/event.proto";
 package rpc;
@@ -33,7 +33,7 @@ message BlockByNumReq {
 	bool complete=2;	
 }
 message GetBalanceReq {
-	bytes pubkey=1;
+	string ID=1;
 }
 
 message GetStateReq {
