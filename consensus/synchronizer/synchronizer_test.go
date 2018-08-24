@@ -1,6 +1,7 @@
 package synchronizer
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -26,14 +27,14 @@ func TestDownloadController(t *testing.T) {
 		})
 		Convey("Check OnRecvHash", func() {
 			dc.OnRecvHash("111", "aaa")
-			time.Sleep(time.Second)
+			time.Sleep(100 * time.Millisecond)
 			dc.OnRecvHash("222", "bbb")
-			time.Sleep(time.Second)
+			time.Sleep(100 * time.Millisecond)
 			dc.OnRecvHash("222", "ccc")
 			//dc.OnRecvBlock("123", "abc")
-			time.Sleep(7 * time.Second)
+			time.Sleep(300 * time.Millisecond)
 			So(dHash, ShouldEqual, "222")
-			So(dPID, ShouldEqual, "bbb")
+			So(dPID, ShouldEqual, p2p.PeerID("bbb"))
 		})
 		Convey("Stop DownloadLoop", func() {
 			dc.Stop()
@@ -44,8 +45,13 @@ func TestDownloadController(t *testing.T) {
 func TestSynchronizer(t *testing.T) {
 	Convey("Test Synchronizer", t, func() {
 		baseVariable := global.FakeNew()
+		defer func() {
+			os.RemoveAll("BlockChainDB")
+			os.RemoveAll("StateDB")
+			os.RemoveAll("txDB")
+		}()
 		genesisBlock := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				Version: 0,
 				Number:  0,
 				Time:    0,
@@ -69,6 +75,6 @@ func TestSynchronizer(t *testing.T) {
 		So(err, ShouldBeNil)
 		err = sy.SyncBlocks(1, 15)
 		So(err, ShouldBeNil)
-		time.Sleep(2 * time.Second)
+		time.Sleep(200 * time.Millisecond)
 	})
 }
