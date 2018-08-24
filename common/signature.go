@@ -23,17 +23,18 @@ type Signature struct {
 	Pubkey []byte
 }
 
-func Sign(algo crypto.Algorithm, info, privkey []byte, smode SignMode) Signature {
-	s := Signature{Pubkey: nil}
-	s.Algorithm = algo
+func NewSignature(algo crypto.Algorithm, info, privkey []byte, smode SignMode) *Signature {
+	s := &Signature{
+		Algorithm: algo,
+		Sig:       algo.Sign(info, privkey),
+	}
 	if smode {
 		s.Pubkey = s.Algorithm.GetPubkey(privkey)
 	}
-	s.Sig = s.Algorithm.Sign(info, privkey)
 	return s
 }
 
-func VerifySignature(info []byte, s Signature) bool {
+func (s *Signature) Verify(info []byte) bool {
 	return s.Algorithm.Verify(info, s.Pubkey, s.Sig)
 }
 

@@ -29,7 +29,7 @@ func TestMember(t *testing.T) {
 			sig := crypto.Secp256k1.Sign(Sha256(info), m.Seckey)
 			So(crypto.Secp256k1.Verify(Sha256(info), m.Pubkey, sig), ShouldBeTrue)
 
-			sig2 := Sign(crypto.Secp256k1, Sha256(info), m.Seckey, SavePubkey)
+			sig2 := m.Sign(crypto.Secp256k1, Sha256(info), SavePubkey)
 			So(bytes.Equal(sig2.Pubkey, m.Pubkey), ShouldBeTrue)
 
 		})

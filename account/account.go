@@ -66,6 +66,10 @@ func NewAccount(seckey []byte) (Account, error) {
 	return m, nil
 }
 
+func (a *Account) Sign(algo crypto.Algorithm, info []byte, smode common.SignMode) common.Signature {
+	return *common.NewSignature(algo, info, a.Seckey, smode)
+}
+
 func randomSeckey() []byte {
 	seckey := make([]byte, 32)
 	_, err := rand.Read(seckey)
