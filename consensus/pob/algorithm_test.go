@@ -9,10 +9,10 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool/mock"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/txpool/mock"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
@@ -77,8 +77,10 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 
 func TestConfirmNode(t *testing.T) {
 	convey.Convey("Test of Confirm node", t, func() {
-		staticProperty.WitnessList = []string{"id0", "id1", "id2", "id3", "id4"}
-		staticProperty.NumberOfWitnesses = 5
+
+		acc, _ := account.NewAccount(nil)
+		staticProperty = newStaticProperty(acc, []string{"id0", "id1", "id2", "id3", "id4"})
+
 		rootNode := &blockcache.BlockCacheNode{
 			Number:       1,
 			Witness:      "id0",

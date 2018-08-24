@@ -1,20 +1,66 @@
 syntax = "proto3";
-
-import "core/new_tx/tx.proto";
-import "core/new_block/block.proto";
-import "core/event/event.proto";
 package rpc;
 
+import "core/tx/tx.proto";
+import "core/block/block.proto";
+import "core/event/event.proto";
+import "google/api/annotations.proto";
+
 service Apis {
-	rpc GetHeight (VoidReq) returns (HeightRes) {}
-	rpc GetTxByHash (HashReq) returns (tx.TxRaw) {}
-	rpc GetBlockByHash (BlockByHashReq) returns (BlockInfo) {}
-	rpc getBlockByNum (BlockByNumReq) returns (BlockInfo) {}
-    rpc GetBalance (GetBalanceReq) returns (GetBalanceRes) {}
-    rpc GetState (GetStateReq) returns (GetStateRes) {}
-    rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {}
-    rpc EstimateGas (RawTxReq) returns (GasRes) {}
-    rpc Subscribe (SubscribeReq) returns (stream SubscribeRes) {}
+	rpc GetHeight (VoidReq) returns (HeightRes) {
+    option (google.api.http) = {
+      post: "/v1/getheight"
+      body: "*"
+    };
+  }
+	rpc GetTxByHash (HashReq) returns (tx.TxRaw) {
+    option (google.api.http) = {
+      post: "/v1/gettxbyhash"
+      body: "*"
+    };
+  }
+	rpc GetBlockByHash (BlockByHashReq) returns (BlockInfo) {
+    option (google.api.http) = {
+      post: "/v1/getblockbyhash"
+      body: "*"
+    };
+  }
+	rpc getBlockByNum (BlockByNumReq) returns (BlockInfo) {
+    option (google.api.http) = {
+      post: "/v1/getblockbynum"
+      body: "*"
+    };
+  }
+  rpc GetBalance (GetBalanceReq) returns (GetBalanceRes) {
+    option (google.api.http) = {
+      post: "/v1/getbalance"
+      body: "*"
+    };
+  }
+  rpc GetState (GetStateReq) returns (GetStateRes) {
+    option (google.api.http) = {
+      post: "/v1/getstate"
+      body: "*"
+    };
+  }
+  rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {
+    option (google.api.http) = {
+      post: "/v1/sendrawtx"
+      body: "*"
+    };
+  }
+  rpc EstimateGas (RawTxReq) returns (GasRes) {
+    option (google.api.http) = {
+      post: "/v1/estimategas"
+      body: "*"
+    };
+  }
+  rpc Subscribe (SubscribeReq) returns (stream SubscribeRes) {
+    option (google.api.http) = {
+      post: "/v1/subscribe"
+      body: "*"
+    };
+  }
 }
 
 message VoidReq {
