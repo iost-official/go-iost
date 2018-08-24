@@ -28,6 +28,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
+	"github.com/iost-official/Go-IOS-Protocol/rpc"
 	flag "github.com/spf13/pflag"
 )
 
@@ -125,6 +126,9 @@ func main() {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 	app = append(app, txp)
+
+	rpcServer := rpc.NewRPCServer(blkCache, glb)
+	app = append(app, rpcServer)
 
 	consensus, err := consensus.Factory(
 		"pob",
