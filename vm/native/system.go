@@ -1,10 +1,10 @@
 package native
 
 import (
+	"errors"
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
-	"github.com/pkg/errors"
 )
 
 var systemABIs map[string]*abi

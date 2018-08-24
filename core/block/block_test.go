@@ -30,7 +30,7 @@ func TestBlockHeadSerialize(t *testing.T) {
 func TestBlockSerialize(t *testing.T) {
 	convey.Convey("Test of block encode and decode", t, func() {
 		blk := Block{
-			Head: BlockHead{
+			Head: &BlockHead{
 				Number:     1,
 				Witness:    "id1",
 				ParentHash: []byte("parent"),

@@ -5,6 +5,8 @@ import (
 
 	"crypto/rand"
 
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -21,20 +23,20 @@ func TestSign(t *testing.T) {
 
 		Convey("Calculate public key", func() {
 			pub := "0314bf901a6640033ea07b39c6b3acb675fc0af6a6ab526f378216085a93e5c7a2"
-			pubkey = CalcPubkeyInSecp256k1(privkey)
+			pubkey = crypto.Secp256k1.GetPubkey(privkey)
 			So(ToHex(pubkey), ShouldEqual, pub)
 		})
 
 		Convey("Hash-160", func() {
 			hash := "9c1185a5c5e9fc54612808977ee8f548b2258d31"
-			So(ToHex(Hash160(CalcPubkeyInSecp256k1(privkey))), ShouldEqual, hash)
+			So(ToHex(Hash160(crypto.Secp256k1.GetPubkey(privkey))), ShouldEqual, hash)
 		})
 
 		Convey("SignInSecp256k1 and verify", func() {
 			info := Sha256([]byte{1, 2, 3, 4})
-			sig := SignInSecp256k1(info, privkey)
-			So(VerifySignInSecp256k1(info, pubkey, sig), ShouldBeTrue)
-			So(VerifySignInSecp256k1(info, pubkey, []byte{5, 6, 7, 8}), ShouldBeFalse)
+			sig := crypto.Secp256k1.Sign(info, privkey)
+			So(crypto.Secp256k1.Verify(info, pubkey, sig), ShouldBeTrue)
+			So(crypto.Secp256k1.Verify(info, pubkey, []byte{5, 6, 7, 8}), ShouldBeFalse)
 		})
 	})
 }
@@ -44,7 +46,7 @@ func TestBase58Encode(t *testing.T) {
 		seckey := make([]byte, 32)
 		rand.Read(seckey)
 
-		pubkey := CalcPubkeyInSecp256k1(seckey)
+		pubkey := crypto.Secp256k1.GetPubkey(seckey)
 		spub := Base58Encode(append(pubkey, Parity(pubkey)...))
 
 		if len(spub) != 50 {

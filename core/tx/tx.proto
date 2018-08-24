@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "verifier/verifier.proto";
+import "common/common.proto";
 package tx;
 
 message ActionRaw {
