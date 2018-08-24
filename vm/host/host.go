@@ -24,6 +24,7 @@ type Host struct {
 	Teller
 	APIDelegate
 	EventPoster
+	DHCP
 
 	logger  *ilog.Logger
 	ctx     *Context
@@ -33,17 +34,20 @@ type Host struct {
 
 // NewHost ...
 func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.Logger) *Host {
-	return &Host{
+	h := &Host{
 		ctx:     ctx,
 		db:      db,
 		monitor: monitor,
 		logger:  logger,
-
-		DBHandler:   NewDBHandler(db, ctx),
-		Info:        NewInfo(ctx),
-		Teller:      NewTeller(db, ctx),
-		APIDelegate: NewAPI(ctx),
 	}
+	h.DBHandler = NewDBHandler(h)
+	h.Info = NewInfo(h)
+	h.Teller = NewTeller(h)
+	h.APIDelegate = NewAPI(h)
+	h.EventPoster = EventPoster{}
+	h.DHCP = NewDHCP(h)
+
+	return h
 
 }
 
@@ -199,22 +203,12 @@ func (h *Host) DB() *database.Visitor {
 
 // PushCtx ...
 func (h *Host) PushCtx() {
-
 	ctx := NewContext(h.ctx)
 	h.ctx = ctx
-
-	h.DBHandler.ctx = ctx
-	h.Info.ctx = ctx
-	h.Teller.ctx = ctx
-	h.APIDelegate.ctx = ctx
 }
 
 // PopCtx ...
 func (h *Host) PopCtx() {
 	ctx := h.ctx.Base()
 	h.ctx = ctx
-	h.DBHandler.ctx = ctx
-	h.Info.ctx = ctx
-	h.Teller.ctx = ctx
-	h.APIDelegate.ctx = ctx
 }
