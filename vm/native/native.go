@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
@@ -13,14 +14,12 @@ type abi struct {
 	do   func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
 }
 
-var abis map[string]*abi
-
 // Impl .
 type Impl struct {
 }
 
-func register(a *abi) {
-	abis[a.name] = a
+func register(m *map[string]*abi, a *abi) {
+	(*m)[a.name] = a
 }
 
 // Init .
@@ -39,23 +38,21 @@ func (i *Impl) Compile(contract *contract.Contract) (string, error) {
 }
 
 func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
-	abi, ok := abis[api]
+	var (
+		a  *abi
+		ok bool
+	)
+
+	switch con.ID {
+	case "iost.system":
+		a, ok = systemABIs[api]
+	case "iost.domain":
+
+	}
 	if !ok {
+		ilog.Fatal("error", con.ID, api, systemABIs)
 		return nil, host.CommonErrorCost(1), errors.New("unknown api name")
 	}
-	return abi.do(h, args...)
-}
 
-func init() {
-	abis = make(map[string]*abi)
-	register(requireAuth)
-	register(receipt)
-	register(callWithReceipt)
-	register(transfer)
-	register(topUp)
-	register(countermand)
-	register(setCode)
-	register(updateCode)
-	register(destroyCode)
-	register(issueIOST)
+	return a.do(h, args...)
 }

@@ -18,7 +18,7 @@ func ABI() *contract.Contract {
 		},
 	}
 
-	for _, v := range abis {
+	for _, v := range systemABIs {
 		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
 			Name:     v.name,
 			Args:     v.args,

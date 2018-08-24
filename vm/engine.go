@@ -269,9 +269,8 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	e.ho.Context().Set("stack_height", 1) // record stack trace
 
 	var cid string
-	dhcp := NewDHCP(e.ho)
-	if dhcp.IsDomain(action.Contract) {
-		cid = dhcp.URL(action.Contract)
+	if e.ho.IsDomain(action.Contract) {
+		cid = e.ho.URL(action.Contract)
 	} else {
 		cid = action.Contract
 	}

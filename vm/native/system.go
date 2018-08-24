@@ -7,6 +7,22 @@ import (
 	"github.com/pkg/errors"
 )
 
+var systemABIs map[string]*abi
+
+func init() {
+	systemABIs = make(map[string]*abi)
+	register(&systemABIs, requireAuth)
+	register(&systemABIs, receipt)
+	register(&systemABIs, callWithReceipt)
+	register(&systemABIs, transfer)
+	register(&systemABIs, topUp)
+	register(&systemABIs, countermand)
+	register(&systemABIs, setCode)
+	register(&systemABIs, updateCode)
+	register(&systemABIs, destroyCode)
+	register(&systemABIs, issueIOST)
+}
+
 // var .
 var (
 	requireAuth = &abi{
@@ -66,7 +82,7 @@ var (
 		},
 	}
 	countermand = &abi{
-		name: "",
+		name: "Contermand",
 		args: []string{"string", "string", "number"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 

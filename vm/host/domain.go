@@ -1,25 +1,24 @@
-package vm
+package host
 
 import (
 	"strings"
-
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 // const ...
 const (
-	DHCPTable  = "dhcp_table"
-	DHCPRTable = "dhcp_revert_table"
+	DHCPTable      = "dhcp_table"
+	DHCPRTable     = "dhcp_revert_table"
+	DHCPOwnerTable = "dhcp_owner_table"
 )
 
 // DHCP ...
 type DHCP struct {
-	h *host.Host
+	h *Host
 }
 
 // NewDHCP ...
-func NewDHCP(h *host.Host) *DHCP {
-	return &DHCP{
+func NewDHCP(h *Host) DHCP {
+	return DHCP{
 		h: h,
 	}
 }
@@ -31,6 +30,20 @@ func (d *DHCP) ContractID(url string) string {
 		return s
 	}
 	return ""
+}
+
+// URLOwner .
+func (d *DHCP) URLOwner(url string) string {
+	owner, _ := d.h.MapGet(DHCPOwnerTable, url)
+	if s, ok := owner.(string); ok {
+		return s
+	}
+	return ""
+}
+
+// URLTransfer .
+func (d *DHCP) URLTransfer(url, to string) {
+	d.h.MapPut(DHCPOwnerTable, url, to)
 }
 
 // URL .
@@ -50,12 +63,14 @@ func (d *DHCP) IsDomain(s string) bool {
 	return true
 }
 
-func (d *DHCP) Write(url, cid string) {
+func (d *DHCP) WriteLink(url, cid, owner string) {
 	d.h.MapPut(DHCPTable, url, cid)
 	d.h.MapPut(DHCPRTable, cid, url)
+	d.h.MapPut(DHCPOwnerTable, url, owner)
 }
 
-func (d *DHCP) Remove(url, cid string) {
+func (d *DHCP) RemoveLink(url, cid string) {
 	d.h.MapDel(DHCPRTable, cid)
 	d.h.MapDel(DHCPTable, url)
+	d.h.MapDel(DHCPOwnerTable, url)
 }
