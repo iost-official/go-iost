@@ -13,6 +13,17 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
+func (m TMode) String() string {
+	switch m {
+	case ModeNormal:
+		return "ModeNormal"
+	case ModeSync:
+		return "ModeSync"
+	default:
+		return ""
+	}
+}
+
 type Mode struct {
 	mode TMode
 }
