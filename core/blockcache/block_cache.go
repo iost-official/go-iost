@@ -321,10 +321,10 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 
 func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 	bcn, ok := bc.hmget(hash)
-	if ok {
-		return bcn, nil
-	} else {
+	if !ok || bcn.Type == Virtual {
 		return nil, errors.New("block not found")
+	} else {
+		return bcn, nil
 	}
 }
 
@@ -341,8 +341,8 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 
 func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
 	bcn, ok := bc.hmget(hash)
-	if !ok {
-		return nil, fmt.Errorf("cant find the block")
+	if !ok || bcn.Type == Virtual {
+		return nil, fmt.Errorf("block not found")
 	}
 	return bcn.Block, nil
 }
