@@ -26,6 +26,7 @@ type Synchronizer interface {
 	NeedSync(maxHeight int64) (bool, int64, int64)
 	SyncBlocks(startNumber int64, endNumber int64) error
 	OnBlockConfirmed(hash string, peerID p2p.PeerID)
+	CheckSyncProcess()
 }
 
 type SyncImpl struct {
@@ -149,12 +150,15 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 	return nil
 }
 
-func (sy *SyncImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) {
-	sy.dc.OnBlockConfirmed(hash, peerID)
+func (sy *SyncImpl) CheckSyncProcess() {
 	if sy.syncEnd <= sy.blockCache.Head().Number {
 		sy.basevariable.Mode().SetMode(global.ModeNormal)
 		sy.dc.Reset()
 	}
+}
+
+func (sy *SyncImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) {
+	sy.dc.OnBlockConfirmed(hash, peerID)
 }
 
 func (sy *SyncImpl) messageLoop() {
