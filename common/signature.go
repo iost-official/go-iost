@@ -7,8 +7,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 )
 
-//go:generate gencode go -schema=structs.schema -package=common
-
 type SignMode bool
 
 const (

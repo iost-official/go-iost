@@ -3,8 +3,6 @@ package account
 import (
 	"fmt"
 
-	"crypto/rand"
-
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
@@ -46,41 +44,34 @@ var (
 )
 
 type Account struct {
-	ID     string
-	Pubkey []byte
-	Seckey []byte
+	ID        string
+	Algorithm crypto.Algorithm
+	Pubkey    []byte
+	Seckey    []byte
 }
 
 func NewAccount(seckey []byte) (Account, error) {
-	var m Account
+	algo := crypto.Secp256k1
 	if seckey == nil {
-		seckey = randomSeckey()
+		seckey = algo.GenSeckey()
 	}
 	if len(seckey) != 32 {
 		return Account{}, fmt.Errorf("seckey length error")
 	}
+	pubkey := algo.GetPubkey(seckey)
+	id := GetIDByPubkey(pubkey)
 
-	m.Seckey = seckey
-	m.Pubkey = makePubkey(seckey)
-	m.ID = GetIDByPubkey(m.Pubkey)
-	return m, nil
+	account := Account{
+		ID:        id,
+		Algorithm: algo,
+		Pubkey:    pubkey,
+		Seckey:    seckey,
+	}
+	return account, nil
 }
 
 func (a *Account) Sign(algo crypto.Algorithm, info []byte, smode common.SignMode) common.Signature {
 	return *common.NewSignature(algo, info, a.Seckey, smode)
-}
-
-func randomSeckey() []byte {
-	seckey := make([]byte, 32)
-	_, err := rand.Read(seckey)
-	if err != nil {
-		return nil
-	}
-	return seckey
-}
-
-func makePubkey(seckey []byte) []byte {
-	return crypto.Secp256k1.GetPubkey(seckey)
 }
 
 func GetIDByPubkey(pubkey []byte) string {

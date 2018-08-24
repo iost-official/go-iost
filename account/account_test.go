@@ -43,8 +43,8 @@ func TestMember(t *testing.T) {
 
 func TestPubkeyAndID(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		seckey := randomSeckey()
-		pubkey := makePubkey(seckey)
+		seckey := crypto.Secp256k1.GenSeckey()
+		pubkey := crypto.Secp256k1.GetPubkey(seckey)
 		id := GetIDByPubkey(pubkey)
 		fmt.Println(`"`, id, `", "`, Base58Encode(seckey), `"`)
 		pub2 := GetPubkeyByID(id)
