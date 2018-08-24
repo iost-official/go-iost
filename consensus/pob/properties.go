@@ -5,7 +5,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
-var staticProperty StaticProperty
+var staticProperty *StaticProperty
 
 // StaticProperty handles the the static property of pob.
 type StaticProperty struct {
@@ -17,8 +17,8 @@ type StaticProperty struct {
 	SlotMap           map[int64]bool
 }
 
-func newStaticProperty(account account.Account, witnessList []string) StaticProperty {
-	property := StaticProperty{
+func newStaticProperty(account account.Account, witnessList []string) *StaticProperty {
+	property := &StaticProperty{
 		account:           account,
 		NumberOfWitnesses: int64(len(witnessList)),
 		WitnessList:       witnessList,
@@ -38,6 +38,14 @@ func (property *StaticProperty) hasSlot(slot int64) bool {
 
 func (property *StaticProperty) addSlot(slot int64) {
 	property.SlotMap[slot] = true
+}
+
+func (property *StaticProperty) delSlot(slot int64) {
+	for k := range property.SlotMap {
+		if k <= slot {
+			delete(property.SlotMap, k)
+		}
+	}
 }
 
 var (

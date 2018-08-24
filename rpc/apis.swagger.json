@@ -1,0 +1,540 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "rpc/apis.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/estimategas": {
+      "post": {
+        "operationId": "EstimateGas",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpcGasRes"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcRawTxReq"
+            }
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/v1/getbalance": {
+      "post": {
+        "operationId": "GetBalance",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpcGetBalanceRes"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcGetBalanceReq"
+            }
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/v1/getblockbyhash": {
+      "post": {
+        "operationId": "GetBlockByHash",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpcBlockInfo"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcBlockByHashReq"
+            }
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/v1/getblockbynum": {
+      "post": {
+        "operationId": "getBlockByNum",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpcBlockInfo"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcBlockByNumReq"
+            }
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/v1/getheight": {
+      "post": {
+        "operationId": "GetHeight",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpcHeightRes"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcVoidReq"
+            }
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/v1/getstate": {
+      "post": {
+        "operationId": "GetState",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpcGetStateRes"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcGetStateReq"
+            }
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/v1/gettxbyhash": {
+      "post": {
+        "operationId": "GetTxByHash",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/txTxRaw"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcHashReq"
+            }
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/v1/sendrawtx": {
+      "post": {
+        "operationId": "SendRawTx",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpcSendRawTxRes"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcRawTxReq"
+            }
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/v1/subscribe": {
+      "post": {
+        "operationId": "Subscribe",
+        "responses": {
+          "200": {
+            "description": "(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/rpcSubscribeRes"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcSubscribeReq"
+            }
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "EventTopic": {
+      "type": "string",
+      "enum": [
+        "TransactionResult",
+        "ContractEvent"
+      ],
+      "default": "TransactionResult"
+    },
+    "blockBlockHead": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "format": "int64"
+        },
+        "parentHash": {
+          "type": "string",
+          "format": "byte"
+        },
+        "txsHash": {
+          "type": "string",
+          "format": "byte"
+        },
+        "merkleHash": {
+          "type": "string",
+          "format": "byte"
+        },
+        "info": {
+          "type": "string",
+          "format": "byte"
+        },
+        "number": {
+          "type": "string",
+          "format": "int64"
+        },
+        "witness": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string",
+          "format": "byte"
+        },
+        "time": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "commonSignatureRaw": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sig": {
+          "type": "string",
+          "format": "byte"
+        },
+        "pubKey": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "eventEvent": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "$ref": "#/definitions/EventTopic"
+        },
+        "data": {
+          "type": "string"
+        },
+        "time": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "rpcBlockByHashReq": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "format": "byte"
+        },
+        "complete": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
+    "rpcBlockByNumReq": {
+      "type": "object",
+      "properties": {
+        "num": {
+          "type": "string",
+          "format": "int64"
+        },
+        "complete": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
+    "rpcBlockInfo": {
+      "type": "object",
+      "properties": {
+        "head": {
+          "$ref": "#/definitions/blockBlockHead"
+        },
+        "txs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/txTxRaw"
+          }
+        },
+        "txhash": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      }
+    },
+    "rpcGasRes": {
+      "type": "object",
+      "properties": {
+        "gas": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "rpcGetBalanceReq": {
+      "type": "object",
+      "properties": {
+        "pubkey": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "rpcGetBalanceRes": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "rpcGetStateReq": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        }
+      }
+    },
+    "rpcGetStateRes": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "rpcHashReq": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "rpcHeightRes": {
+      "type": "object",
+      "properties": {
+        "height": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "rpcRawTxReq": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "rpcSendRawTxRes": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "rpcSubscribeReq": {
+      "type": "object",
+      "properties": {
+        "topics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EventTopic"
+          }
+        }
+      }
+    },
+    "rpcSubscribeRes": {
+      "type": "object",
+      "properties": {
+        "ev": {
+          "$ref": "#/definitions/eventEvent"
+        }
+      }
+    },
+    "rpcVoidReq": {
+      "type": "object"
+    },
+    "txActionRaw": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "type": "string"
+        },
+        "actionName": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        }
+      }
+    },
+    "txTxRaw": {
+      "type": "object",
+      "properties": {
+        "time": {
+          "type": "string",
+          "format": "int64"
+        },
+        "expiration": {
+          "type": "string",
+          "format": "int64"
+        },
+        "gasLimit": {
+          "type": "string",
+          "format": "int64"
+        },
+        "gasPrice": {
+          "type": "string",
+          "format": "int64"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/txActionRaw"
+          }
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        },
+        "signs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/commonSignatureRaw"
+          }
+        },
+        "publisher": {
+          "$ref": "#/definitions/commonSignatureRaw"
+        }
+      }
+    }
+  }
+}
