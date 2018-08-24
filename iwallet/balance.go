@@ -30,24 +30,17 @@ var balanceCmd = &cobra.Command{
 	Short: "check balance of specified account",
 	Long:  `check balance of specified account`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var filePath string
 		if len(args) < 1 {
-			filePath = "~/.ssh/id_secp.pub"
-		} else {
-			filePath = args[0]
-		}
-		pubkey, err := readFile(filePath)
-		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println("please enter the account ID")
 			return
 		}
-
-		pk := loadBytes(string(pubkey))
-		b, err := CheckBalance(pk)
+		//do some check for arg[0] here
+		id := args[0]
+		b, err := CheckBalance(id)
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println(filePath, ">", b, "iost")
+		fmt.Println(b, "iost")
 
 	},
 }
@@ -66,14 +59,14 @@ func init() {
 	// balanceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func CheckBalance(ia []byte) (int64, error) {
+func CheckBalance(id string) (int64, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
 		return 0, err
 	}
 	defer conn.Close()
 	client := rpc.NewApisClient(conn)
-	value, err := client.GetBalance(context.Background(), &rpc.GetBalanceReq{Pubkey: ia})
+	value, err := client.GetBalance(context.Background(), &rpc.GetBalanceReq{ID: id})
 	if err != nil {
 		return 0, err
 	}
