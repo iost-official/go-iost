@@ -6,7 +6,7 @@ import (
 	"github.com/smartystreets/goconvey/convey"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
 )
