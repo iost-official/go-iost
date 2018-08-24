@@ -9,31 +9,22 @@ import (
 
 type abi struct {
 	name string
+	args []string
 	do   func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
 }
 
+var abis map[string]*abi
+
 // Impl .
 type Impl struct {
-	abis map[string]func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
 }
 
-func (i *Impl) register(a *abi) {
-	i.abis[a.name] = a.do
+func register(a *abi) {
+	abis[a.name] = a
 }
 
 // Init .
 func (i *Impl) Init() error {
-	i.abis = make(map[string]func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error))
-	i.register(requireAuth)
-	i.register(receipt)
-	i.register(callWithReceipt)
-	i.register(transfer)
-	i.register(topUp)
-	i.register(countermand)
-	i.register(setCode)
-	i.register(updateCode)
-	i.register(destroyCode)
-	i.register(issueIOST)
 	return nil
 }
 
@@ -48,9 +39,23 @@ func (i *Impl) Compile(contract *contract.Contract) (string, error) {
 }
 
 func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
-	doer, ok := i.abis[api]
+	abi, ok := abis[api]
 	if !ok {
 		return nil, host.CommonErrorCost(1), errors.New("unknown api name")
 	}
-	return doer(h, args...)
+	return abi.do(h, args...)
+}
+
+func init() {
+	abis = make(map[string]*abi)
+	register(requireAuth)
+	register(receipt)
+	register(callWithReceipt)
+	register(transfer)
+	register(topUp)
+	register(countermand)
+	register(setCode)
+	register(updateCode)
+	register(destroyCode)
+	register(issueIOST)
 }

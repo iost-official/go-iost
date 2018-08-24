@@ -11,6 +11,7 @@ import (
 var (
 	requireAuth = &abi{
 		name: "RequireAuth",
+		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			var b bool
 			b, cost = h.RequireAuth(args[0].(string))
@@ -22,6 +23,7 @@ var (
 	}
 	receipt = &abi{
 		name: "Receipt",
+		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			cost = h.Receipt(args[0].(string))
 			return []interface{}{}, cost, nil
@@ -29,6 +31,7 @@ var (
 	}
 	callWithReceipt = &abi{
 		name: "CallWithReceipt",
+		args: []string{"string", "string", "json"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			var json *simplejson.Json
 			json, err = simplejson.NewJson(args[2].([]byte))
@@ -45,6 +48,7 @@ var (
 	}
 	transfer = &abi{
 		name: "Transfer",
+		args: []string{"string", "string", "number"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
 			arg2 := args[2].(int64)
@@ -54,6 +58,7 @@ var (
 	}
 	topUp = &abi{
 		name: "TopUp",
+		args: []string{"string", "string", "number"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
 			cost, err = h.TopUp(args[0].(string), args[1].(string), args[2].(int64))
@@ -62,6 +67,7 @@ var (
 	}
 	countermand = &abi{
 		name: "",
+		args: []string{"string", "string", "number"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
 			arg2 := args[2].(int64)
@@ -72,6 +78,7 @@ var (
 	// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
 	setCode = &abi{
 		name: "SetCode",
+		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
 			cost = contract.Cost0()
@@ -106,6 +113,7 @@ var (
 	// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
 	updateCode = &abi{
 		name: "UpdateCode",
+		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			cost = contract.Cost0()
 			con := &contract.Contract{}
@@ -123,6 +131,7 @@ var (
 	// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
 	destroyCode = &abi{
 		name: "DestroyCode",
+		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
 			cost, err = h.DestroyCode(args[0].(string))
@@ -131,6 +140,7 @@ var (
 	}
 	issueIOST = &abi{
 		name: "IssueIOST",
+		args: []string{"string", "number"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
 			if h.Context().Value("number").(int64) != 0 {

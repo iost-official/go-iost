@@ -1,87 +1,46 @@
 package native
 
-import "github.com/iost-official/Go-IOS-Protocol/core/contract"
+import (
+	"sort"
+
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+)
 
 // ABI ...
 func ABI() *contract.Contract {
-	return &contract.Contract{
+	c := &contract.Contract{
 		ID:   "iost.system",
 		Code: "codes",
 		Info: &contract.Info{
 			Lang:        "native",
 			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
-				{
-					Name:     "RequireAuth",
-					Args:     []string{"string"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-				{
-					Name:     "Receipt",
-					Args:     []string{"string"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-				{
-					Name:     "CallWithReceipt",
-					Args:     []string{"string", "string", "json"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-				{
-					Name:     "Transfer",
-					Args:     []string{"string", "string", "number"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-				{
-					Name:     "TopUp",
-					Args:     []string{"string", "string", "number"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-				{
-					Name:     "Countermand",
-					Args:     []string{"string", "string", "number"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-				{
-					Name:     "SetCode",
-					Args:     []string{"string"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-				{
-					Name:     "UpdateCode",
-					Args:     []string{"string"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-				{
-					Name:     "DestroyCode",
-					Args:     []string{"string"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-				{
-					Name:     "IssueIOST",
-					Args:     []string{"string", "number"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-			},
+			Abis:        make([]*contract.ABI, 0),
 		},
 	}
+
+	for _, v := range abis {
+		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
+			Name:     v.name,
+			Args:     v.args,
+			Payment:  0,
+			GasPrice: int64(1000),
+			Limit:    contract.NewCost(100, 100, 100),
+		})
+	}
+
+	sort.Sort(abiSlice(c.Info.Abis))
+
+	return c
+}
+
+type abiSlice []*contract.ABI
+
+func (s abiSlice) Len() int {
+	return len(s)
+}
+func (s abiSlice) Less(i, j int) bool {
+	return s[i].Name < s[j].Name
+}
+func (s abiSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
