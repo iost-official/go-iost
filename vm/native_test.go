@@ -31,7 +31,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	h := host.NewHost(ctx, vi, pm, nil)
 
 	code := &contract.Contract{
-		ID: conName,
+		ID: "iost.system",
 	}
 
 	e := &native.Impl{}
