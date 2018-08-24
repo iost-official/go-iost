@@ -9,6 +9,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -160,7 +161,7 @@ func TestTx(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			tx.Publisher = common.Signature{
-				Algorithm: common.Secp256k1,
+				Algorithm: crypto.Secp256k1,
 				Sig:       []byte("hello"),
 				Pubkey:    []byte("world"),
 			}
@@ -170,7 +171,7 @@ func TestTx(t *testing.T) {
 			fmt.Println(tx.String())
 
 			tx.Signs[0] = common.Signature{
-				Algorithm: common.Secp256k1,
+				Algorithm: crypto.Secp256k1,
 				Sig:       []byte("hello"),
 				Pubkey:    []byte("world"),
 			}

@@ -11,6 +11,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 )
 
 //go:generate protoc  --go_out=plugins=grpc:. ./core/tx/tx.proto
@@ -47,7 +48,7 @@ func SignTxContent(tx Tx, account account.Account) (common.Signature, error) {
 	if !tx.containSigner(account.Pubkey) {
 		return common.Signature{}, errors.New("account not included in signer list of this transaction")
 	}
-	return common.Sign(common.Secp256k1, tx.baseHash(), account.Seckey, common.SavePubkey), nil
+	return common.Sign(crypto.Secp256k1, tx.baseHash(), account.Seckey, common.SavePubkey), nil
 }
 
 func (t *Tx) containSigner(pubkey []byte) bool {
@@ -86,7 +87,7 @@ func (t *Tx) baseHash() []byte {
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
 func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
-	tx.Publisher = common.Sign(common.Secp256k1, tx.publishHash(), account.Seckey, common.SavePubkey)
+	tx.Publisher = common.Sign(crypto.Secp256k1, tx.publishHash(), account.Seckey, common.SavePubkey)
 	return tx, nil
 }
 
@@ -180,13 +181,13 @@ func (t *Tx) FromTxRaw(tr *TxRaw) {
 	t.Signs = []common.Signature{}
 	for _, sr := range tr.Signs {
 		t.Signs = append(t.Signs, common.Signature{
-			Algorithm: common.SignAlgorithm(sr.Algorithm),
+			Algorithm: crypto.Algorithm(sr.Algorithm),
 			Sig:       sr.Sig,
 			Pubkey:    sr.PubKey,
 		})
 	}
 	t.Publisher = common.Signature{
-		Algorithm: common.SignAlgorithm(tr.Publisher.Algorithm),
+		Algorithm: crypto.Algorithm(tr.Publisher.Algorithm),
 		Sig:       tr.Publisher.Sig,
 		Pubkey:    tr.Publisher.PubKey,
 	}

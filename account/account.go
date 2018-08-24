@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
@@ -75,7 +76,7 @@ func randomSeckey() []byte {
 }
 
 func makePubkey(seckey []byte) []byte {
-	return common.CalcPubkeyInSecp256k1(seckey)
+	return crypto.Secp256k1.GetPubkey(seckey)
 }
 
 func GetIDByPubkey(pubkey []byte) string {
