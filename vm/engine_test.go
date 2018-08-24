@@ -61,7 +61,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	}
 
 	act := tx.Action{
-		Contract:   "contract",
+		Contract:   "Contract0",
 		ActionName: "abi",
 		Data:       `["datas"]`,
 	}
@@ -69,7 +69,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 	mtx.Actions = append(mtx.Actions, act)
 
 	c := contract.Contract{
-		ID:   "contract",
+		ID:   "Contract0",
 		Code: "codes",
 		Info: &contract.Info{
 			Lang:        "mock",
@@ -86,7 +86,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		},
 	}
 
-	db.EXPECT().Get("state", "c-contract").DoAndReturn(func(table string, key string) (string, error) {
+	db.EXPECT().Get("state", "c-Contract0").DoAndReturn(func(table string, key string) (string, error) {
 		return c.Encode(), nil
 	})
 
@@ -135,7 +135,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 	}
 
 	act := tx.Action{
-		Contract:   "contract",
+		Contract:   "Contract0",
 		ActionName: "abi",
 		Data:       `["datas"]`,
 	}
@@ -143,7 +143,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 	mtx.Actions = append(mtx.Actions, act)
 
 	c := contract.Contract{
-		ID:   "contract",
+		ID:   "Contract0",
 		Code: "codes",
 		Info: &contract.Info{
 			Lang:        "mock",
@@ -160,7 +160,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 		},
 	}
 
-	db.EXPECT().Get("state", "c-contract").DoAndReturn(func(table string, key string) (string, error) {
+	db.EXPECT().Get("state", "c-Contract0").DoAndReturn(func(table string, key string) (string, error) {
 		return c.Encode(), nil
 	})
 
@@ -211,7 +211,7 @@ func TestCost(t *testing.T) { // tests of context transport
 	}
 
 	ac := tx.Action{
-		Contract:   "contract",
+		Contract:   "Contract0",
 		ActionName: "abi",
 		Data:       `["datas"]`,
 	}
@@ -219,14 +219,14 @@ func TestCost(t *testing.T) { // tests of context transport
 	mtx.Actions = append(mtx.Actions, ac)
 
 	ac2 := tx.Action{
-		Contract:   "contract",
+		Contract:   "Contract0",
 		ActionName: "abi",
 		Data:       `["data2"]`,
 	}
 	mtx.Actions = append(mtx.Actions, ac2)
 
 	c := contract.Contract{
-		ID:   "contract",
+		ID:   "Contract0",
 		Code: "codes",
 		Info: &contract.Info{
 			Lang:        "mock",
@@ -243,7 +243,7 @@ func TestCost(t *testing.T) { // tests of context transport
 		},
 	}
 
-	db.EXPECT().Get("state", "c-contract").DoAndReturn(func(table string, key string) (string, error) {
+	db.EXPECT().Get("state", "c-Contract0").DoAndReturn(func(table string, key string) (string, error) {
 		return c.Encode(), nil
 	})
 
@@ -251,7 +251,7 @@ func TestCost(t *testing.T) { // tests of context transport
 		return database.MustMarshal(int64(1000000)), nil
 	})
 
-	db.EXPECT().Get("state", "i-CGcontract").DoAndReturn(func(table string, key string) (string, error) {
+	db.EXPECT().Get("state", "i-CGContract0").DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(int64(1000)), nil
 	})
 
@@ -275,7 +275,7 @@ func TestCost(t *testing.T) { // tests of context transport
 		return nil
 	})
 
-	db.EXPECT().Put("state", "i-CGcontract", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+	db.EXPECT().Put("state", "i-CGContract0", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
 		if database.MustUnmarshal(value) != int64(900) {
 			t.Fatal(database.MustUnmarshal(value))
 		}
@@ -642,7 +642,7 @@ func TestJS(t *testing.T) {
 	}
 
 	ac := tx.Action{
-		Contract:   "testjs",
+		Contract:   "Contracttestjs",
 		ActionName: "hello",
 		Data:       `[]`,
 	}
@@ -650,7 +650,7 @@ func TestJS(t *testing.T) {
 	mtx.Actions = append(mtx.Actions, ac)
 
 	c := contract.Contract{
-		ID: "testjs",
+		ID: "Contracttestjs",
 		Code: `
 class Contract {
  constructor() {
@@ -678,7 +678,7 @@ module.exports = Contract;
 		},
 	}
 
-	db.EXPECT().Get("state", "c-testjs").DoAndReturn(func(table string, key string) (string, error) {
+	db.EXPECT().Get("state", "c-Contracttestjs").DoAndReturn(func(table string, key string) (string, error) {
 		return c.Encode(), nil
 	})
 
