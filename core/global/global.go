@@ -13,6 +13,17 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
+func (m TMode) String() string {
+	switch m {
+	case ModeNormal:
+		return "ModeNormal"
+	case ModeSync:
+		return "ModeSync"
+	default:
+		return ""
+	}
+}
+
 type Mode struct {
 	mode TMode
 }
@@ -74,7 +85,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
 		}
-		engine := vm.NewEngine(&blk.Head, stateDB)
+		engine := vm.NewEngine(blk.Head, stateDB)
 		for _, tx := range blk.Txs {
 			_, err = engine.Exec(tx)
 			if err != nil {
