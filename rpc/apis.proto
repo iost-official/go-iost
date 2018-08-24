@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 import "core/tx/tx.proto";
-import "core/new_block/block.proto";
+import "core/block/block.proto";
 import "core/event/event.proto";
 package rpc;
 

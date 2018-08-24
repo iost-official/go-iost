@@ -63,7 +63,7 @@ var accountCmd = &cobra.Command{
 				return
 			}
 			fmt.Println("the iost account ID is:")
-			fmt.Println(ac.GetIDByPubkey(ac.Pubkey))
+			fmt.Println(account.GetIDByPubkey(ac.Pubkey))
 		default:
 			fmt.Println("invalid input")
 		}

@@ -10,12 +10,12 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	//"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/event"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
@@ -63,6 +63,7 @@ func (s *RPCServer) Start() error {
 
 	RegisterApisServer(server, s)
 	go server.Serve(lis)
+	ilog.Info("RPCServer Start")
 	return nil
 }
 
@@ -126,6 +127,7 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 
 // GetBlockByNum ...
 func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
+	fmt.Println("enter GetBlockByNum")
 	if blkNumReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -170,8 +172,9 @@ func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
+	fmt.Println("key.ID:", key.ID)
 	return &GetBalanceRes{
-		Balance: s.visitor.BalanceHandler.Balance(key.Pubkey),
+		Balance: s.visitor.Balance(key.ID),
 	}, nil
 }
 
