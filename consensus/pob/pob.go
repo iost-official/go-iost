@@ -45,7 +45,7 @@ var (
 	)
 )
 
-var errSingle = errors.New("single blcok")
+var errSingle = errors.New("single block")
 
 func init() {
 	prometheus.MustRegister(generatedBlockCount)
