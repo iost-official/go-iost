@@ -14,7 +14,7 @@ import (
 
 func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 	ret := &block.Block{
-		Head: block.BlockHead{
+		Head: &block.BlockHead{
 			Witness: wit,
 			Number:  int64(num),
 		},
@@ -30,7 +30,7 @@ func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 func TestBlockCache(t *testing.T) {
 	ctl := gomock.NewController(t)
 	b0 := &block.Block{
-		Head: block.BlockHead{
+		Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: []byte("nothing"),
 			Witness:    "w0",

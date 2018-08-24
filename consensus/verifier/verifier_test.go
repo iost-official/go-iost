@@ -14,20 +14,20 @@ import (
 func TestVerifyBlockHead(t *testing.T) {
 	Convey("Test of verify block head", t, func() {
 		parentBlk := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				Number: 3,
 				Time:   common.GetCurrentTimestamp().Slot - 1,
 			},
 		}
 		chainTop := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				Number: 1,
 				Time:   common.GetCurrentTimestamp().Slot - 4,
 			},
 		}
 		hash := parentBlk.HeadHash()
 		blk := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				ParentHash: hash,
 				Number:     4,
 				Time:       common.GetCurrentTimestamp().Slot,
