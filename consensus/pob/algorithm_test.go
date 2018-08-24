@@ -77,8 +77,10 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 
 func TestConfirmNode(t *testing.T) {
 	convey.Convey("Test of Confirm node", t, func() {
-		staticProperty.WitnessList = []string{"id0", "id1", "id2", "id3", "id4"}
-		staticProperty.NumberOfWitnesses = 5
+
+		acc, _ := account.NewAccount(nil)
+		staticProperty = newStaticProperty(acc, []string{"id0", "id1", "id2", "id3", "id4"})
+
 		rootNode := &blockcache.BlockCacheNode{
 			Number:       1,
 			Witness:      "id0",
