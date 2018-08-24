@@ -210,7 +210,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig := account1.Sign(crypto.Secp256k1, info, common.NilPubkey)
+			sig := account1.Sign(crypto.Secp256k1, info)
 			blk.Head.Signature, _ = sig.Encode()
 			err := verifyBasics(blk)
 			convey.So(err, convey.ShouldBeNil)
@@ -224,7 +224,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig := account0.Sign(crypto.Secp256k1, info, common.NilPubkey)
+			sig := account0.Sign(crypto.Secp256k1, info)
 			blk.Head.Signature, _ = sig.Encode()
 
 			err := verifyBasics(blk)
@@ -243,7 +243,7 @@ func TestVerifyBasics(t *testing.T) {
 
 			blk.Head.Witness = account1.ID
 			info := generateHeadInfo(blk.Head)
-			sig := account0.Sign(crypto.Secp256k1, info, common.NilPubkey)
+			sig := account0.Sign(crypto.Secp256k1, info)
 			blk.Head.Signature, _ = sig.Encode()
 			err = verifyBasics(blk)
 			convey.So(err, convey.ShouldEqual, errSignature)
@@ -257,7 +257,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info := generateHeadInfo(blk.Head)
-			sig := account0.Sign(crypto.Secp256k1, info, common.NilPubkey)
+			sig := account0.Sign(crypto.Secp256k1, info)
 			blk.Head.Signature, _ = sig.Encode()
 			err := verifyBasics(blk)
 			convey.So(err, convey.ShouldBeNil)
@@ -270,7 +270,7 @@ func TestVerifyBasics(t *testing.T) {
 				},
 			}
 			info = generateHeadInfo(blk.Head)
-			sig = account0.Sign(crypto.Secp256k1, info, common.NilPubkey)
+			sig = account0.Sign(crypto.Secp256k1, info)
 			blk.Head.Signature, _ = sig.Encode()
 			err = verifyBasics(blk)
 			convey.So(err, convey.ShouldEqual, errSlot)
@@ -325,11 +325,11 @@ func TestVerifyBlock(t *testing.T) {
 		info := generateHeadInfo(blk.Head)
 		var sig common.Signature
 		if witness == account0.ID {
-			sig = account0.Sign(crypto.Secp256k1, info, common.NilPubkey)
+			sig = account0.Sign(crypto.Secp256k1, info)
 		} else if witness == account1.ID {
-			sig = account1.Sign(crypto.Secp256k1, info, common.NilPubkey)
+			sig = account1.Sign(crypto.Secp256k1, info)
 		} else {
-			sig = account2.Sign(crypto.Secp256k1, info, common.NilPubkey)
+			sig = account2.Sign(crypto.Secp256k1, info)
 		}
 		blk.Head.Signature, _ = sig.Encode()
 		//convey.Convey("Normal (no txs)", func() {

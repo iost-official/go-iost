@@ -7,13 +7,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 )
 
-type SignMode bool
-
-const (
-	SavePubkey SignMode = true
-	NilPubkey  SignMode = false
-)
-
 type Signature struct {
 	Algorithm crypto.Algorithm
 
@@ -21,13 +14,11 @@ type Signature struct {
 	Pubkey []byte
 }
 
-func NewSignature(algo crypto.Algorithm, info, privkey []byte, smode SignMode) *Signature {
+func NewSignature(algo crypto.Algorithm, info []byte, privkey []byte) *Signature {
 	s := &Signature{
 		Algorithm: algo,
 		Sig:       algo.Sign(info, privkey),
-	}
-	if smode {
-		s.Pubkey = s.Algorithm.GetPubkey(privkey)
+		Pubkey:    algo.GetPubkey(privkey),
 	}
 	return s
 }

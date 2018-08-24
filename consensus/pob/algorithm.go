@@ -62,7 +62,7 @@ L:
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
-	sig := account.Sign(crypto.Secp256k1, headInfo, common.NilPubkey)
+	sig := account.Sign(crypto.Secp256k1, headInfo)
 	blk.Head.Signature, err = sig.Encode()
 	if err != nil {
 		return nil, err
