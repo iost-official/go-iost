@@ -200,6 +200,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
+	staticProperty.addSlot(blk.Head.Time)
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent.Block)
 	} else {
@@ -217,7 +218,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 			ilog.Error(err.Error())
 			return err
 		}
-		staticProperty.addSlot(blk.Head.Time)
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	} else {
 		p.verifyDB.Checkout(string(blk.HeadHash()))
