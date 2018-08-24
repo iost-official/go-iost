@@ -8,7 +8,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
