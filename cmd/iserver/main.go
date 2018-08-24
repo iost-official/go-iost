@@ -25,7 +25,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	flag "github.com/spf13/pflag"
