@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
@@ -61,7 +62,7 @@ L:
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
-	sig := common.Sign(common.Secp256k1, headInfo, account.Seckey, common.NilPubkey)
+	sig := common.Sign(crypto.Secp256k1, headInfo, account.Seckey, common.NilPubkey)
 	blk.Head.Signature, err = sig.Encode()
 	if err != nil {
 		return nil, err
