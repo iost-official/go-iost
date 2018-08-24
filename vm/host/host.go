@@ -1,24 +1,14 @@
 package host
 
 import (
-	"errors"
-
 	"strconv"
 
 	"encoding/json"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-)
-
-// var ...
-var (
-	ErrBalanceNotEnough = errors.New("balance not enough")
-	ErrTransferNegValue = errors.New("trasfer amount less than zero")
-	ErrReenter          = errors.New("re-entering")
-	ErrPermissionLost   = errors.New("transaction has no permission")
 )
 
 // Monitor ...
@@ -100,8 +90,6 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *
 func (h *Host) CallWithReceipt(contractName, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
 	rtn, cost, err := h.Call(contractName, api, args...)
 
-	cost.AddAssign(contract.NewCost(0, 0, 100))
-
 	var sarr []interface{}
 	sarr = append(sarr, api)
 	sarr = append(sarr, args)
@@ -116,7 +104,7 @@ func (h *Host) CallWithReceipt(contractName, api string, args ...interface{}) ([
 		return rtn, cost, err
 	}
 	h.receipt(tx.SystemDefined, string(s))
-
+	cost.AddAssign(ReceiptCost(len(s)))
 	return rtn, cost, err
 
 }
@@ -125,18 +113,18 @@ func (h *Host) CallWithReceipt(contractName, api string, args ...interface{}) ([
 func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	code, err := h.monitor.Compile(c)
 	if err != nil {
-		return contract.NewCost(0, 0, 100), err
+		return CompileErrCost, err
 	}
 	c.Code = code
 
-	l := int64(len(c.Encode()) / 100)
+	l := len(c.Encode()) // todo multi Encode call
 	//ilog.Debugf("length is : %v", l)
 
 	h.db.SetContract(c)
 
 	_, cost, err := h.monitor.Call(h, c.ID, "constructor")
 
-	cost.AddAssign(contract.NewCost(0, l, 100))
+	cost.AddAssign(CodeSavageCost(l))
 
 	//ilog.Debugf("set gas is : %v", cost.ToGas())
 
@@ -147,30 +135,25 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*contract.Cost, error) {
 	oc := h.db.Contract(c.ID)
 	if oc == nil {
-		return contract.NewCost(0, 0, 100), errors.New("contract not exists")
+		return ContractNotFoundCost, ErrContractNotFound
 	}
 	abi := oc.ABI("can_update")
 	if abi == nil {
-		return contract.NewCost(0, 0, 100), errors.New("update refused")
+		return ABINotFoundCost, ErrUpdateRefused
 	}
 
 	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update", []byte(id))
 
 	if err != nil {
-		return contract.NewCost(0, 0, 100), err
+		return cost, err
 	}
 
 	// todo return 返回类型应该是 bool
 	if t, ok := rtn[0].(string); !ok || t != "true" {
-		return cost, errors.New("update refused")
+		return cost, ErrUpdateRefused
 	}
 
 	c2, err := h.SetCode(c)
-
-	if err != nil {
-		cost.AddAssign(contract.NewCost(0, 0, 100))
-		return cost, err
-	}
 
 	c2.AddAssign(cost)
 	return c2, err
@@ -182,26 +165,26 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 
 	oc := h.db.Contract(contractName)
 	if oc == nil {
-		return contract.NewCost(0, 0, 100), errors.New("contract not exists")
+		return ContractNotFoundCost, ErrContractNotFound
 	}
 	abi := oc.ABI("can_destroy")
 	if abi == nil {
-		return contract.NewCost(0, 0, 100), errors.New("destroy refused")
+		return ABINotFoundCost, ErrDestroyRefused
 	}
 
 	rtn, cost, err := h.monitor.Call(h, contractName, "can_destroy")
 
 	if err != nil {
-		return contract.NewCost(0, 0, 100), err
+		return cost, err
 	}
 
 	// todo return 返回类型应该是 bool
 	if t, ok := rtn[0].(string); !ok || t != "true" {
-		return cost, errors.New("destroy refused")
+		return cost, ErrDestroyRefused
 	}
 
 	h.db.DelContract(contractName)
-	return contract.NewCost(1, 2, 3), nil
+	return DelContractCost, nil
 }
 
 // Logger ...

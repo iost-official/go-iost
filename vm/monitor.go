@@ -40,13 +40,13 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 	c := h.DB().Contract(contractName)
 	abi := c.ABI(api)
 	if abi == nil {
-		return nil, contract.NewCost(0, 0, gasCheckTxFailed), errABINotFound
+		return nil, host.ContractNotFoundCost, errABINotFound
 	}
 
 	err = checkArgs(abi, args)
 
 	if err != nil {
-		return nil, contract.NewCost(0, 0, gasCheckTxFailed), err
+		return nil, host.ABINotFoundCost, err
 	}
 
 	h.PushCtx()
