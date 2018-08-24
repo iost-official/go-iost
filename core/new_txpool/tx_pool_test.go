@@ -568,7 +568,7 @@ func genBlocks(accountList []account.Account, witnessList []string, blockCnt int
 		if continuity == false {
 			hash[i%len(hash)] = byte(i % 256)
 		}
-		blk := block.Block{Txs: []*tx.Tx{}, Head: block.BlockHead{
+		blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: hash,
 			MerkleHash: make([]byte, 0),
@@ -611,7 +611,7 @@ func genSingleBlock(accountList []account.Account, witnessList []string, ParentH
 
 	slot := common.GetCurrentTimestamp().Slot
 
-	blk := block.Block{Txs: []*tx.Tx{}, Head: block.BlockHead{
+	blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
 		Version:    0,
 		ParentHash: ParentHash,
 		MerkleHash: make([]byte, 0),

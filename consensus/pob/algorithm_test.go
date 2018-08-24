@@ -42,7 +42,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
 	account, _ := account.NewAccount(nil)
 	topBlock := &block.Block{
-		Head: block.BlockHead{
+		Head: &block.BlockHead{
 			ParentHash: []byte("abc"),
 			Number:     10,
 			Witness:    "witness",
@@ -202,7 +202,7 @@ func TestVerifyBasics(t *testing.T) {
 		staticProperty = newStaticProperty(account1, []string{account0.ID, account1.ID, "id2"})
 		convey.Convey("Normal (self block)", func() {
 			blk := &block.Block{
-				Head: block.BlockHead{
+				Head: &block.BlockHead{
 					Time:    1,
 					Witness: account1.ID,
 				},
@@ -216,7 +216,7 @@ func TestVerifyBasics(t *testing.T) {
 
 		convey.Convey("Normal (other's block)", func() {
 			blk := &block.Block{
-				Head: block.BlockHead{
+				Head: &block.BlockHead{
 					Time:    0,
 					Witness: account0.ID,
 				},
@@ -231,7 +231,7 @@ func TestVerifyBasics(t *testing.T) {
 
 		convey.Convey("Wrong witness/pubkey/signature", func() {
 			blk := &block.Block{
-				Head: block.BlockHead{
+				Head: &block.BlockHead{
 					Time:    1,
 					Witness: account0.ID,
 				},
@@ -249,7 +249,7 @@ func TestVerifyBasics(t *testing.T) {
 
 		convey.Convey("Slot witness duplicate", func() {
 			blk := &block.Block{
-				Head: block.BlockHead{
+				Head: &block.BlockHead{
 					Time:    0,
 					Witness: account0.ID,
 				},
@@ -262,7 +262,7 @@ func TestVerifyBasics(t *testing.T) {
 
 			staticProperty.addSlot(0)
 			blk = &block.Block{
-				Head: block.BlockHead{
+				Head: &block.BlockHead{
 					Time:    0,
 					Witness: account0.ID,
 				},
@@ -287,7 +287,7 @@ func TestVerifyBlock(t *testing.T) {
 		staticProperty = newStaticProperty(account0, []string{account0.ID, account1.ID, account2.ID})
 		rootTime := common.GetCurrentTimestamp().Slot - 1
 		rootBlk := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				Number:  1,
 				Time:    rootTime,
 				Witness: witnessOfSlot(rootTime),
@@ -309,7 +309,7 @@ func TestVerifyBlock(t *testing.T) {
 		hash := rootBlk.HeadHash()
 		witness := witnessOfSlot(curTime)
 		blk := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				Number:     2,
 				ParentHash: hash,
 				Time:       curTime,
@@ -359,7 +359,7 @@ func addNode(parent *blockcache.BlockCacheNode, number int64, confirm int64, wit
 
 func addBlock(parent *blockcache.BlockCacheNode, number int64, witness string, ts int64) *blockcache.BlockCacheNode {
 	blk := &block.Block{
-		Head: block.BlockHead{
+		Head: &block.BlockHead{
 			Number:  number,
 			Witness: witness,
 			Time:    ts,

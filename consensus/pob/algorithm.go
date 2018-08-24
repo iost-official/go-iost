@@ -32,7 +32,7 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	ilog.Info("generateBlockstart")
 	var err error
 	blk := block.Block{
-		Head: block.BlockHead{
+		Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: topBlock.HeadHash(),
 			Number:     topBlock.Head.Number + 1,
@@ -46,7 +46,7 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
-	engine := vm.NewEngine(&topBlock.Head, db)
+	engine := vm.NewEngine(topBlock.Head, db)
 L:
 	for _, t := range txsList {
 		select {
@@ -78,7 +78,7 @@ L:
 	return &blk, nil
 }
 
-func generateHeadInfo(head block.BlockHead) []byte {
+func generateHeadInfo(head *block.BlockHead) []byte {
 	info := block.Int64ToByte(head.Version)
 	info = append(info, head.ParentHash...)
 	info = append(info, head.TxsHash...)
