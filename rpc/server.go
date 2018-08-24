@@ -8,7 +8,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	//"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	//"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"strings"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
