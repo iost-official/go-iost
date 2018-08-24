@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/event"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"time"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/Go-IOS-Protocol/new_rpc ApisServer
@@ -62,7 +63,7 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 		return nil, fmt.Errorf("cant find the block")
 	}
 	blkInfo := &BlockInfo{
-		Head:   &blk.Head,
+		Head:   blk.Head,
 		Txs:    make([]*tx.TxRaw, 0),
 		Txhash: make([][]byte, 0),
 	}
@@ -93,7 +94,7 @@ func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq)
 		return nil, fmt.Errorf("cant find the block")
 	}
 	blkInfo := &BlockInfo{
-		Head:   &blk.Head,
+		Head:   blk.Head,
 		Txs:    make([]*tx.TxRaw, 0),
 		Txhash: make([][]byte, 0),
 	}

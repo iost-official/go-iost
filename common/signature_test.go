@@ -5,6 +5,7 @@ import (
 
 	"bytes"
 
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -17,8 +18,8 @@ func TestSignature(t *testing.T) {
 			//So(bytes.Equal(sig.Pubkey, ac.Pubkey), ShouldBeTrue)
 			info := Sha256([]byte("hello"))
 			seckey := Sha256([]byte("seckey"))
-			pubkey := CalcPubkeyInSecp256k1(seckey)
-			sig := Sign(Secp256k1, info, seckey, true)
+			pubkey := crypto.Secp256k1.GetPubkey(seckey)
+			sig := Sign(crypto.Secp256k1, info, seckey, true)
 			So(bytes.Equal(sig.Pubkey, pubkey), ShouldBeTrue)
 
 			ans := VerifySignature(info, sig)

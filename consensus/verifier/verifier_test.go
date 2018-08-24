@@ -7,27 +7,27 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestVerifyBlockHead(t *testing.T) {
 	Convey("Test of verify block head", t, func() {
 		parentBlk := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				Number: 3,
 				Time:   common.GetCurrentTimestamp().Slot - 1,
 			},
 		}
 		chainTop := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				Number: 1,
 				Time:   common.GetCurrentTimestamp().Slot - 4,
 			},
 		}
 		hash := parentBlk.HeadHash()
 		blk := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				ParentHash: hash,
 				Number:     4,
 				Time:       common.GetCurrentTimestamp().Slot,

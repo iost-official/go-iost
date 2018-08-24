@@ -10,12 +10,12 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/merkletree"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 )
 
 type Block struct {
 	hash     []byte
-	Head     BlockHead
+	Head     *BlockHead
 	Txs      []*tx.Tx
 	Receipts []*tx.TxReceipt
 }
@@ -41,7 +41,7 @@ func GenGenesis(initTime int64) (*Block, error) {
 		panic(err)
 	}
 	genesis := &Block{
-		Head: BlockHead{
+		Head: &BlockHead{
 			Version: 0,
 			Number:  0,
 			Time:    initTime,
@@ -76,7 +76,7 @@ func (b *Block) Encode() ([]byte, error) {
 		rpts = append(rpts, r.Encode())
 	}
 	br := &BlockRaw{
-		Head:     &b.Head,
+		Head:     b.Head,
 		Txs:      txs,
 		Receipts: rpts,
 	}
@@ -93,7 +93,7 @@ func (b *Block) Decode(blockByte []byte) error {
 	if err != nil {
 		return errors.New("fail to decode blockraw")
 	}
-	b.Head = *br.Head
+	b.Head = br.Head
 
 	for _, t := range br.Txs {
 		var tt tx.Tx

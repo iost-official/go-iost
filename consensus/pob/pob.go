@@ -45,7 +45,7 @@ var (
 	)
 )
 
-var errSingle = errors.New("single blcok")
+var errSingle = errors.New("single block")
 
 func init() {
 	prometheus.MustRegister(generatedBlockCount)
@@ -119,24 +119,26 @@ func (p *PoB) blockLoop() {
 				ilog.Error(err.Error())
 				continue
 			}
-			ilog.Info("new block come, block number: ", blk.Head.Number)
+			ilog.Info("received new block, block number: ", blk.Head.Number)
 			err = p.handleRecvBlock(&blk)
 			if err != nil && err != errSingle {
 				ilog.Error(err.Error())
 				continue
 			}
 			p.synchronizer.CheckSyncProcess()
+			go p.synchronizer.CheckSyncProcess()
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
 				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
 			}
 			if incomingMessage.Type() == p2p.NewBlock {
 				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
-				ilog.Info("err type ", err)
-				if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need && (err == errSingle) {
-					go p.synchronizer.SyncBlocks(start, end)
+				if err == errSingle {
+					if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need {
+						go p.synchronizer.SyncBlocks(start, end)
+					}
 				}
 			}
-			p.blockCache.Draw()
+			// p.blockCache.Draw()
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
 				ilog.Infof("chGenBlock has closed")

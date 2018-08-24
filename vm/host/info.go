@@ -32,7 +32,7 @@ func (h *Info) BlockInfo() (info database.SerializedJSON, cost *contract.Cost) {
 		panic(err)
 	}
 
-	return database.SerializedJSON(bij), contract.NewCost(1, 1, 1)
+	return database.SerializedJSON(bij), BlockInfoCost
 }
 
 // TxInfo ...
@@ -51,7 +51,7 @@ func (h *Info) TxInfo() (info database.SerializedJSON, cost *contract.Cost) {
 		panic(err)
 	}
 
-	return database.SerializedJSON(tij), contract.NewCost(1, 1, 1)
+	return database.SerializedJSON(tij), TxInfoCost
 }
 
 // ABIConfig ...

@@ -13,8 +13,8 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
@@ -34,7 +34,7 @@ func testRun(t *testing.T) {
 	id2Seckey[account3.ID] = account3.Seckey
 	baseVariable := global.FakeNew()
 	genesisBlock := &block.Block{
-		Head: block.BlockHead{
+		Head: &block.BlockHead{
 			Version: 0,
 			Number:  0,
 			Time:    0,

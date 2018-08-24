@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/smartystreets/goconvey/convey"
 )
 
@@ -30,7 +30,7 @@ func TestBlockHeadSerialize(t *testing.T) {
 func TestBlockSerialize(t *testing.T) {
 	convey.Convey("Test of block encode and decode", t, func() {
 		blk := Block{
-			Head: BlockHead{
+			Head: &BlockHead{
 				Number:     1,
 				Witness:    "id1",
 				ParentHash: []byte("parent"),

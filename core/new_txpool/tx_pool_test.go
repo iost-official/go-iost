@@ -12,7 +12,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
@@ -568,7 +568,7 @@ func genBlocks(accountList []account.Account, witnessList []string, blockCnt int
 		if continuity == false {
 			hash[i%len(hash)] = byte(i % 256)
 		}
-		blk := block.Block{Txs: []*tx.Tx{}, Head: block.BlockHead{
+		blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: hash,
 			MerkleHash: make([]byte, 0),
@@ -611,7 +611,7 @@ func genSingleBlock(accountList []account.Account, witnessList []string, ParentH
 
 	slot := common.GetCurrentTimestamp().Slot
 
-	blk := block.Block{Txs: []*tx.Tx{}, Head: block.BlockHead{
+	blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
 		Version:    0,
 		ParentHash: ParentHash,
 		MerkleHash: make([]byte, 0),

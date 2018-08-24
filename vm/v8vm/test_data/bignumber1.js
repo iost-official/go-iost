@@ -6,6 +6,6 @@ class BigNumber1{
     getVal() {
         return this.val.toString(10);
     }
-};
+}
 
 module.exports = BigNumber1;

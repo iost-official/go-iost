@@ -45,45 +45,45 @@ func (h *Teller) transfer(from, to string, amount int64) error {
 func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error) {
 	//ilog.Debugf("amount : %v", amount)
 	if amount <= 0 {
-		return contract.NewCost(1, 1, 1), ErrTransferNegValue
+		return CommonErrorCost(1), ErrTransferNegValue
 	}
 
 	if strings.HasPrefix(from, ContractAccountPrefix) {
 		if from != ContractAccountPrefix+h.ctx.Value("contract_name").(string) {
-			return contract.NewCost(1, 1, 1), ErrPermissionLost
+			return CommonErrorCost(2), ErrPermissionLost
 		}
 	} else {
 		if h.Privilege(from) < 1 {
-			return contract.NewCost(1, 1, 1), ErrPermissionLost
+			return CommonErrorCost(2), ErrPermissionLost
 		}
 	}
 
 	err := h.transfer(from, to, amount)
-	return contract.NewCost(1, 1, 1), err
+	return TransferCost, err
 }
 
 // Withdraw ...
 func (h *Teller) Withdraw(to string, amount int64) (*contract.Cost, error) {
 	c := h.ctx.Value("contract_name").(string)
-	return contract.NewCost(1, 1, 1), h.transfer(ContractAccountPrefix+c, to, amount)
+	return TransferCost, h.transfer(ContractAccountPrefix+c, to, amount)
 }
 
 // Deposit ...
 func (h *Teller) Deposit(from string, amount int64) (*contract.Cost, error) {
 	c := h.ctx.Value("contract_name").(string)
-	return contract.NewCost(1, 1, 1), h.transfer(from, ContractAccountPrefix+c, amount)
+	return TransferCost, h.transfer(from, ContractAccountPrefix+c, amount)
 
 }
 
 // TopUp ...
 func (h *Teller) TopUp(c, from string, amount int64) (*contract.Cost, error) {
-	return contract.NewCost(1, 1, 1), h.transfer(from, ContractGasPrefix+c, amount)
+	return TransferCost, h.transfer(from, ContractGasPrefix+c, amount)
 
 }
 
 // Countermand ...
 func (h *Teller) Countermand(c, to string, amount int64) (*contract.Cost, error) {
-	return contract.NewCost(1, 1, 1), h.transfer(ContractGasPrefix+c, to, amount)
+	return TransferCost, h.transfer(ContractGasPrefix+c, to, amount)
 }
 
 // PayCost ...
