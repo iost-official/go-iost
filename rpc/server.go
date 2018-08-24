@@ -5,8 +5,8 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	//"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"strings"

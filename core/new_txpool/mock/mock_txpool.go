@@ -9,7 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	new_block "github.com/iost-official/Go-IOS-Protocol/core/block"
-	new_blockcache "github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
+	new_blockcache "github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	new_txpool "github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	new_tx "github.com/iost-official/Go-IOS-Protocol/core/tx"
 )
