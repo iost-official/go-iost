@@ -2,13 +2,15 @@ package rpc
 
 import (
 	"errors"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/event"
+
+	"testing"
+	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
-	"testing"
-	"time"
 
 	"github.com/bouk/monkey"
 )

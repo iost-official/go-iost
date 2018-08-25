@@ -191,7 +191,7 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	}
 	// add servi
 	//tx.RecordTx(trx, tx.Data.Self())
-	fmt.Printf("the Tx is:\n%+v\n", trx)
+	ilog.Info("the Tx is:\n%+v\n", trx)
 	ret := s.txpool.AddTx(&trx)
 	if ret != txpool.Success {
 		return nil, fmt.Errorf("tx err:%v", ret)
