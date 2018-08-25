@@ -7,15 +7,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 )
 
-//go:generate gencode go -schema=structs.schema -package=common
-
-type SignMode bool
-
-const (
-	SavePubkey SignMode = true
-	NilPubkey  SignMode = false
-)
-
 type Signature struct {
 	Algorithm crypto.Algorithm
 
@@ -23,17 +14,16 @@ type Signature struct {
 	Pubkey []byte
 }
 
-func Sign(algo crypto.Algorithm, info, privkey []byte, smode SignMode) Signature {
-	s := Signature{Pubkey: nil}
-	s.Algorithm = algo
-	if smode {
-		s.Pubkey = s.Algorithm.GetPubkey(privkey)
+func NewSignature(algo crypto.Algorithm, info []byte, privkey []byte) *Signature {
+	s := &Signature{
+		Algorithm: algo,
+		Sig:       algo.Sign(info, privkey),
+		Pubkey:    algo.GetPubkey(privkey),
 	}
-	s.Sig = s.Algorithm.Sign(info, privkey)
 	return s
 }
 
-func VerifySignature(info []byte, s Signature) bool {
+func (s *Signature) Verify(info []byte) bool {
 	return s.Algorithm.Verify(info, s.Pubkey, s.Sig)
 }
 

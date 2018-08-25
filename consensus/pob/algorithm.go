@@ -89,10 +89,17 @@ func verifyBasics(head *block.BlockHead) error {
 		return errWitness
 	}
 	var signature common.Signature
+<<<<<<< HEAD
 	signature.Decode(head.Signature)
 	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
 	headInfo := generateHeadInfo(head)
 	if !common.VerifySignature(headInfo, signature) {
+=======
+	signature.Decode(blk.Head.Signature)
+	signature.SetPubkey(account.GetPubkeyByID(blk.Head.Witness))
+	headInfo := generateHeadInfo(blk.Head)
+	if !signature.Verify(headInfo) {
+>>>>>>> 728f64400d4429f23589a231ef2d78d23373a2f3
 		return errSignature
 	}
 	if staticProperty.hasSlot(blk.Head.Time) {
