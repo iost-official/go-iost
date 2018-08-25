@@ -22,8 +22,8 @@ import (
 	//"encoding/hex"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	pb "github.com/iost-official/Go-IOS-Protocol/rpc"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -54,7 +54,7 @@ var publishCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		signs := make([]common.Signature, 0)
+		signs := make([]crypto.Signature, 0)
 		for i, v := range args {
 			if i == 0 {
 				continue
@@ -64,7 +64,7 @@ var publishCmd = &cobra.Command{
 				fmt.Println("Read file failed: ", err.Error())
 				return
 			}
-			var sign common.Signature
+			var sign crypto.Signature
 			err = sign.Decode(sig)
 			if err != nil {
 				fmt.Println("Error: Illegal sig file", err)
