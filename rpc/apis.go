@@ -127,7 +127,6 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 
 // GetBlockByNum ...
 func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
-	fmt.Println("enter GetBlockByNum")
 	if blkNumReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -172,7 +171,6 @@ func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	fmt.Println("key.ID:", key.ID)
 	return &GetBalanceRes{
 		Balance: s.visitor.Balance(key.ID),
 	}, nil
