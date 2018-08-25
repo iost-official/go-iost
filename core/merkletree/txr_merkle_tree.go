@@ -8,19 +8,19 @@ import (
 )
 
 func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) {
-	m.MT = &MerkleTree{}
+	m.Mt = &MerkleTree{}
 	data := make([][]byte, len(txrs))
-	m.TX2TXR = make(map[string][]byte)
+	m.Tx2Txr = make(map[string][]byte)
 	for i, txr := range txrs {
-		m.TX2TXR[string(txr.TxHash)] = txr.Encode()
-		data[i] = m.TX2TXR[string(txr.TxHash)]
+		m.Tx2Txr[string(txr.TxHash)] = txr.Encode()
+		data[i] = m.Tx2Txr[string(txr.TxHash)]
 	}
-	m.MT.Build(data)
+	m.Mt.Build(data)
 }
 
 func (m *TXRMerkleTree) GetTXR(hash []byte) (*tx.TxReceipt, error) {
 	txr := tx.TxReceipt{}
-	txrHash, ok := m.TX2TXR[string(hash)]
+	txrHash, ok := m.Tx2Txr[string(hash)]
 	if !ok {
 		return nil, errors.New("txHash isn't in the tree")
 	}
@@ -31,15 +31,15 @@ func (m *TXRMerkleTree) GetTXR(hash []byte) (*tx.TxReceipt, error) {
 	return &txr, nil
 }
 func (m *TXRMerkleTree) RootHash() []byte {
-	return m.MT.RootHash()
+	return m.Mt.RootHash()
 }
 
 func (m *TXRMerkleTree) MerklePath(hash []byte) ([][]byte, error) {
-	return m.MT.MerklePath(hash)
+	return m.Mt.MerklePath(hash)
 }
 
 func (m *TXRMerkleTree) MerkleProve(hash []byte, rootHash []byte, mp [][]byte) (bool, error) {
-	return m.MT.MerkleProve(hash, rootHash, mp)
+	return m.Mt.MerkleProve(hash, rootHash, mp)
 }
 
 func (m *TXRMerkleTree) Encode() ([]byte, error) {
