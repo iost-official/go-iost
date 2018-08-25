@@ -64,6 +64,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 		blk, err = block.GenGenesis(common.GetTimestamp(t.Unix()).Slot)
 		if err == nil {
+
 			err = blockChain.Push(blk)
 			if err != nil {
 				return nil, fmt.Errorf("gen genesis push failed, stop the program. err: %v", err)
@@ -71,10 +72,8 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		} else {
 			return nil, fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
 		}
-
 	}
-
-	stateDB, err := db.NewMVCCDB("StatePoolDB")
+	stateDB, err := db.NewMVCCDB("StateDB")
 	if err != nil {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
