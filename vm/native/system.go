@@ -92,7 +92,7 @@ var (
 			return []interface{}{}, cost, err
 		},
 	}
-	// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
+	// setcode can only be invoked in native vm, avoid updating contract during running
 	setCode = &abi{
 		name: "SetCode",
 		args: []string{"string"},
@@ -127,7 +127,7 @@ var (
 			return []interface{}{actID}, cost, err
 		},
 	}
-	// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
+	// updateCode can only be invoked in native vm, avoid updating contract during running
 	updateCode = &abi{
 		name: "UpdateCode",
 		args: []string{"string"},
@@ -145,7 +145,7 @@ var (
 			return []interface{}{}, cost, err
 		},
 	}
-	// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
+	// destroyCode can only be invoked in native vm, avoid updating contract during running
 	destroyCode = &abi{
 		name: "DestroyCode",
 		args: []string{"string"},
