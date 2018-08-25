@@ -5,7 +5,6 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
 // const ...
@@ -16,26 +15,24 @@ const (
 
 // Teller ...
 type Teller struct {
-	db   *database.Visitor
-	ctx  *Context
+	h    *Host
 	cost map[string]*contract.Cost
 }
 
 // NewTeller ...
-func NewTeller(db *database.Visitor, ctx *Context) Teller {
+func NewTeller(h *Host) Teller {
 	return Teller{
-		db:   db,
-		ctx:  ctx,
+		h:    h,
 		cost: make(map[string]*contract.Cost),
 	}
 }
 
 func (h *Teller) transfer(from, to string, amount int64) error {
-	bf := h.db.Balance(from)
+	bf := h.h.db.Balance(from)
 	//ilog.Debugf("%v's balance : %v", from, bf)
 	if bf > amount {
-		h.db.SetBalance(from, -1*amount)
-		h.db.SetBalance(to, amount)
+		h.h.db.SetBalance(from, -1*amount)
+		h.h.db.SetBalance(to, amount)
 		return nil
 	}
 	return ErrBalanceNotEnough
@@ -49,7 +46,7 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 	}
 
 	if strings.HasPrefix(from, ContractAccountPrefix) {
-		if from != ContractAccountPrefix+h.ctx.Value("contract_name").(string) {
+		if from != ContractAccountPrefix+h.h.ctx.Value("contract_name").(string) {
 			return CommonErrorCost(2), ErrPermissionLost
 		}
 	} else {
@@ -64,13 +61,13 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 
 // Withdraw ...
 func (h *Teller) Withdraw(to string, amount int64) (*contract.Cost, error) {
-	c := h.ctx.Value("contract_name").(string)
+	c := h.h.ctx.Value("contract_name").(string)
 	return TransferCost, h.transfer(ContractAccountPrefix+c, to, amount)
 }
 
 // Deposit ...
 func (h *Teller) Deposit(from string, amount int64) (*contract.Cost, error) {
-	c := h.ctx.Value("contract_name").(string)
+	c := h.h.ctx.Value("contract_name").(string)
 	return TransferCost, h.transfer(from, ContractAccountPrefix+c, amount)
 
 }
@@ -93,7 +90,7 @@ func (h *Teller) PayCost(c *contract.Cost, who string) {
 
 // DoPay ...
 func (h *Teller) DoPay(witness string, gasPrice int64) error {
-	if gasPrice <= 0 {
+	if gasPrice < 0 {
 		panic("gas_price error")
 	}
 
@@ -123,7 +120,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 
 // Privilege ...
 func (h *Teller) Privilege(id string) int {
-	am := h.ctx.Value("auth_list").(map[string]int)
+	am := h.h.ctx.Value("auth_list").(map[string]int)
 	i, ok := am[id]
 	if !ok {
 		i = 0

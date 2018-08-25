@@ -62,7 +62,7 @@ L:
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	headInfo := generateHeadInfo(blk.Head)
-	sig := common.Sign(crypto.Secp256k1, headInfo, account.Seckey, common.NilPubkey)
+	sig := account.Sign(crypto.Secp256k1, headInfo)
 	blk.Head.Signature, err = sig.Encode()
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func verifyBasics(blk *block.Block) error {
 	signature.Decode(blk.Head.Signature)
 	signature.SetPubkey(account.GetPubkeyByID(blk.Head.Witness))
 	headInfo := generateHeadInfo(blk.Head)
-	if !common.VerifySignature(headInfo, signature) {
+	if !signature.Verify(headInfo) {
 		return errSignature
 	}
 	ilog.Infof("block number: %d, slotMap: %v", blk.Head.Number, staticProperty.SlotMap)
