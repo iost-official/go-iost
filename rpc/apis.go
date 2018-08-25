@@ -193,8 +193,16 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	//tx.RecordTx(trx, tx.Data.Self())
 	ilog.Info("the Tx is:\n%+v\n", trx)
 	ret := s.txpool.AddTx(&trx)
-	if ret != txpool.Success {
-		return nil, fmt.Errorf("tx err:%v", ret)
+	switch ret {
+	case txpool.TimeError:
+		return nil, fmt.Errorf("tx err:%v", "TimeError")
+	case txpool.VerifyError:
+		return nil, fmt.Errorf("tx err:%v", "VerifyError")
+	case txpool.DupError:
+		return nil, fmt.Errorf("tx err:%v", "DupError")
+	case txpool.GasPriceError:
+		return nil, fmt.Errorf("tx err:%v", "GasPriceError")
+	default:
 	}
 	res := SendRawTxRes{}
 	res.Hash = trx.Hash()
