@@ -3,7 +3,7 @@ acc:
   seckey: "BCV7fV37aSWNx1N1Yjk3TdQXeHMmLhyqsqGms1PkqwPT"
 
 vm:
-
+  logLevel: "debug"
 db:
   ldbpath: "leveldb/"
 

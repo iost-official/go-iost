@@ -37,10 +37,12 @@ type Engine interface {
 
 var staticMonitor *Monitor
 var jsPath = "./v8vm/v8/libjs/"
+var logLevel = ""
 
 // SetUp setup global engine settings
-func SetUp(config common.VMConfig) error {
+func SetUp(config *common.VMConfig) error {
 	jsPath = config.JsPath
+	logLevel = config.LogLevel
 	return nil
 }
 
@@ -60,7 +62,9 @@ type engineImpl struct {
 func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	db := database.NewVisitor(defaultCacheLength, cb)
 
-	return newEngine(bh, db)
+	e := newEngine(bh, db)
+
+	return e
 }
 
 func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
@@ -89,6 +93,11 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 		e.GC()
 	})
 
+	if logLevel != "" {
+		e.setLogLevel(logLevel)
+		e.startLog()
+	}
+
 	return e
 }
 
@@ -115,7 +124,7 @@ func (e *engineImpl) SetUp(k, v string) error {
 	return nil
 }
 func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
-	ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
+	e.ho.Logger().Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
 	err := checkTx(tx0)
 	if err != nil {
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
