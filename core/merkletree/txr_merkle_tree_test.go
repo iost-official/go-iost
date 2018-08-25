@@ -25,7 +25,7 @@ func TestTXRMerkleTree(t *testing.T) {
 			{TxHash: []byte("node5")},
 		}
 		m.Build(txrs)
-		convey.So(hex.EncodeToString(m.TX2TXR["node1"]), convey.ShouldEqual, "0a056e6f6465311a00")
+		convey.So(hex.EncodeToString(m.Tx2Txr["node1"]), convey.ShouldEqual, "0a056e6f6465311a00")
 		txr, err := m.GetTXR([]byte("node1"))
 		if err != nil {
 			log.Panic(err)
@@ -41,9 +41,9 @@ func TestTXRMerkleTree(t *testing.T) {
 		if err != nil {
 			log.Panic(err)
 		}
-		convey.So(reflect.DeepEqual(m.TX2TXR, m_read.TX2TXR), convey.ShouldBeTrue)
+		convey.So(reflect.DeepEqual(m.Tx2Txr, m_read.Tx2Txr), convey.ShouldBeTrue)
 		for i := 0; i < 16; i++ {
-			convey.So(bytes.Equal(m.MT.HashList[i], m_read.MT.HashList[i]), convey.ShouldBeTrue)
+			convey.So(bytes.Equal(m.Mt.HashList[i], m_read.Mt.HashList[i]), convey.ShouldBeTrue)
 		}
 	})
 }
