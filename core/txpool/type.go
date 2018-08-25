@@ -11,7 +11,7 @@ import (
 
 var (
 	clearInterval       = 10 * time.Second
-	expiration    int64 = 60
+	expiration    int64 = 60 * 1e9
 	filterTime          = expiration + expiration/2
 	//expiration    = 60*60*24*7
 

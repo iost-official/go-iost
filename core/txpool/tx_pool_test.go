@@ -88,13 +88,13 @@ func TestNewTxPoolImpl(t *testing.T) {
 			b := txPool.txTimeOut(t)
 			So(b, ShouldBeFalse)
 
-			t.Time -= int64(expiration*1e9 + 1*1e9)
+			t.Time -= int64(expiration + 1*1e9)
 			b = txPool.txTimeOut(t)
 			So(b, ShouldBeTrue)
 
 			t = genTx(accountList[0], expiration)
 
-			t.Expiration -= int64(expiration * 1e9 * 3)
+			t.Expiration -= int64(expiration * 3)
 			b = txPool.txTimeOut(t)
 			So(b, ShouldBeTrue)
 
@@ -102,7 +102,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		Convey("delTimeOutTx", func() {
 
-			t := genTx(accountList[0], 1)
+			t := genTx(accountList[0], 1*1e9)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 
 			r := txPool.AddTx(t)
@@ -524,7 +524,7 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 	})
 
 	ex := time.Now().UnixNano()
-	ex += expirationIter * 1e9
+	ex += expirationIter
 
 	t := tx.NewTx(actions, [][]byte{a.Pubkey}, 100000, 100, ex)
 

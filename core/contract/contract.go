@@ -32,7 +32,7 @@ const (
 //}
 
 func (c *Contract) Encode() string {
-	buf, err := c.Marshal()
+	buf, err := proto.Marshal(c)
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +48,7 @@ func (c *Contract) Decode(str string) error {
 }
 
 func (c *Contract) B64Encode() string {
-	buf, err := c.Marshal()
+	buf, err := proto.Marshal(c)
 	if err != nil {
 		panic(err)
 	}
