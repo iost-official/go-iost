@@ -34,5 +34,9 @@ func Cost0() *Cost {
 }
 
 func NewCost(data, net, cpu int64) *Cost {
-	return &Cost{data, net, cpu}
+	return &Cost{
+		Data: data,
+		Net:  net,
+		CPU:  cpu,
+	}
 }
