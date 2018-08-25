@@ -385,6 +385,7 @@ func NewJSTester(t fataler) *JSTester {
 	//e.SetUp("log_level", "debug")
 	//e.SetUp("log_enable", "")
 	return &JSTester{
+		t:      t,
 		vi:     vi,
 		e:      e,
 		mvccdb: mvccdb,

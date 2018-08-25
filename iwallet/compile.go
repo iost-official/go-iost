@@ -17,6 +17,8 @@ package iwallet
 import (
 	"fmt"
 
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/spf13/cobra"
@@ -62,7 +64,7 @@ var compileCmd = &cobra.Command{
 		for i, pubkey := range signers {
 			pubkeys[i] = loadBytes(string(pubkey))
 		}
-		trx := tx.NewTx([]tx.Action{action}, pubkeys, gasLimit, gasPrice, expiration)
+		trx := tx.NewTx([]tx.Action{action}, pubkeys, gasLimit, gasPrice, time.Now().UnixNano()+int64(time.Second)*expiration)
 
 		bytes := trx.Encode()
 
