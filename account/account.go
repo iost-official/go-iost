@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	MainAccount Account
 	//GenesisAccount = map[string]int64{
 	//	"IOST7j5ynm6UXmJqY3GJp4RchiEWxjoPvifqgQVVAUaKV9sPLpx719": 3400000000,
 	//	"IOST5QWmFgVpXwz7vgQmPd4qUHDbexKeK523PtcMDh8geyM131niP2": 3200000000,

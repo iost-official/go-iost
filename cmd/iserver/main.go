@@ -29,6 +29,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/rpc"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 	flag "github.com/spf13/pflag"
 )
 
@@ -89,6 +90,8 @@ func main() {
 
 	initLogger(conf.Log)
 
+	vm.SetUp(conf.VM)
+
 	glb, err := global.New(conf)
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)
@@ -102,12 +105,11 @@ func main() {
 	}
 	app = append(app, p2pService)
 
-	accSecKey := glb.Config().ACC.SecKey
+	accSecKey := conf.ACC.SecKey
 	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
 	if err != nil {
 		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
 	}
-	account.MainAccount = acc
 
 	blkCache, err := blockcache.NewBlockCache(glb)
 	if err != nil {

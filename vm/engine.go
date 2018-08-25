@@ -39,7 +39,7 @@ var staticMonitor *Monitor
 var jsPath = "./v8vm/v8/libjs/"
 
 // SetUp setup global engine settings
-func SetUp(config common.VMConfig) error {
+func SetUp(config *common.VMConfig) error {
 	jsPath = config.JsPath
 	return nil
 }

@@ -1,10 +1,12 @@
 package global
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
+	"strconv"
+
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
@@ -53,58 +55,89 @@ type BaseVariableImpl struct {
 	config     *common.Config
 }
 
+func GenGenesis(initTime int64, db db.MVCCDB) (*block.Block, error) {
+	var acts []tx.Action
+	for k, v := range account.GenesisAccount {
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, k, strconv.FormatInt(v, 10)))
+		acts = append(acts, act)
+	}
+	trx := tx.NewTx(acts, nil, 0, 0, 0)
+	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
+	if err != nil {
+		return nil, err
+	}
+	trx, err = tx.SignTx(trx, acc)
+	if err != nil {
+		return nil, err
+	}
+	blockHead := block.BlockHead{
+		Version:    0,
+		ParentHash: nil,
+		Number:     0,
+		Witness:    acc.ID,
+		Time:       initTime,
+	}
+	engine := vm.NewEngine(&blockHead, db)
+	txr, err := engine.Exec(&trx)
+	if err != nil {
+		return nil, fmt.Errorf("statedb push genesis failed, stop the pogram. err: %v", err)
+	}
+	blk := block.Block{
+		Head:     &blockHead,
+		Txs:      []*tx.Tx{&trx},
+		Receipts: []*tx.TxReceipt{txr},
+	}
+	blk.Head.TxsHash = blk.CalculateTxsHash()
+	blk.Head.MerkleHash = blk.CalculateMerkleHash()
+	err = blk.CalculateHeadHash()
+	if err != nil {
+		return nil, err
+	}
+	db.Tag(string(blk.HeadHash()))
+	return &blk, nil
+}
+
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 	block.LevelDBPath = conf.DB.LdbPath
 	blockChain, err := block.Instance()
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)
 	}
-	blk, err := blockChain.Top()
-	if err != nil {
-		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-		blk, err = block.GenGenesis(common.GetTimestamp(t.Unix()).Slot)
-		if err == nil {
-
-			err = blockChain.Push(blk)
-			if err != nil {
-				return nil, fmt.Errorf("gen genesis push failed, stop the program. err: %v", err)
-			}
-		} else {
-			return nil, fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
-		}
-	}
 	stateDB, err := db.NewMVCCDB("StateDB")
 	if err != nil {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
+	blk, err := blockChain.Top()
+	if err != nil {
+		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+		blk, err = GenGenesis(common.GetTimestamp(t.Unix()).Slot, stateDB)
+		if err != nil {
+			return nil, fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
+		}
+		err = blockChain.Push(blk)
+		if err != nil {
+			return nil, fmt.Errorf("push block in blockChain failed, stop the program. err: %v", err)
+		}
+		err = stateDB.Flush(string(blk.HeadHash()))
+		if err != nil {
+			return nil, fmt.Errorf("push block in statedb failed, stop the program. err: %v", err)
+		}
+	}
 
 	hash := stateDB.CurrentTag()
-	if hash == "" {
-		blk, err = blockChain.GetBlockByNumber(0)
-		if err != nil {
-			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
-		}
-		engine := vm.NewEngine(blk.Head, stateDB)
-		for _, tx := range blk.Txs {
-			_, err = engine.Exec(tx)
-			if err != nil {
-				return nil, fmt.Errorf("statedb push genesis failed, stop the pogram. err: %v", err)
-			}
-		}
-		stateDB.Tag(string(blk.HeadHash()))
-	} else {
-		blk, err = blockChain.GetBlockByHash([]byte(hash))
-		if err != nil {
-			return nil, fmt.Errorf("get block by hash failed, stop the program. err: %v", err)
-		}
+	blk, err = blockChain.GetBlockByHash([]byte(hash))
+	if err != nil {
+		return nil, fmt.Errorf("get block by hash failed, stop the program. err: %v", err)
 	}
 	for blk.Head.Number < blockChain.Length()-1 {
 		blk, err = blockChain.GetBlockByNumber(blk.Head.Number + 1)
 		if err != nil {
 			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
 		}
-		verifier.VerifyBlockWithVM(blk, stateDB)
-		stateDB.Tag(string(blk.HeadHash()))
+		err = verifier.VerifyBlockWithVM(blk, stateDB)
+		if err != nil {
+			return nil, fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
+		}
 		if blk.Head.Number%1000 == 0 {
 			err = stateDB.Flush(string(blk.HeadHash()))
 			if err != nil {
@@ -112,29 +145,24 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			}
 		}
 	}
-	hash = stateDB.CurrentTag()
 	blk, err = blockChain.Top()
 	if err != nil {
 		return nil, fmt.Errorf("blockchain top failed, stop the pogram. err: %v", err)
 	}
-	if string(blk.HeadHash()) != hash {
-		err = stateDB.Flush(string(blk.HeadHash()))
-		if err != nil {
-			return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
-		}
+	err = stateDB.Flush(string(blk.HeadHash()))
+	if err != nil {
+		return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
 	}
-
 	tx.LdbPath = conf.DB.LdbPath
-	txDb := tx.TxDBInstance()
-
-	if txDb == nil {
-		return nil, errors.New("new txdb failed, stop the program.")
+	txDB := tx.TxDBInstance()
+	if txDB == nil {
+		return nil, fmt.Errorf("new txdb failed, stop the program")
 	}
-	//TODO: check DB, state, txDB
+	stateDB.Tag(string(blk.HeadHash()))
 	m := new(Mode)
 	m.SetMode(ModeNormal)
 
-	n := &BaseVariableImpl{txDB: txDb, config: conf, stateDB: stateDB, blockChain: blockChain, mode: m}
+	n := &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: m, config: conf}
 	return n, nil
 }
 
@@ -143,11 +171,11 @@ func FakeNew() BaseVariable {
 	blockChain, _ := block.Instance()
 	stateDB, _ := db.NewMVCCDB("StateDB")
 	tx.LdbPath = "./"
-	txDBfdafad := tx.TxDBInstance()
+	txDB := tx.TxDBInstance()
 	mode := Mode{}
 	mode.SetMode(ModeNormal)
 	config := common.Config{}
-	return &BaseVariableImpl{blockChain, stateDB, txDBfdafad, &mode, &config}
+	return &BaseVariableImpl{blockChain, stateDB, txDB, &mode, &config}
 }
 
 func (g *BaseVariableImpl) TxDB() tx.TxDB {
