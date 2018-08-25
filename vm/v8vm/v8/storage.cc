@@ -15,25 +15,33 @@ void InitGoStorage(putFunc put, getFunc get, delFunc del, globalGetFunc gGet) {
 
 int IOSTContractStorage::Put(const char *key, const char *value) {
     size_t gasUsed = 0;
-    int ret = CPut(sbx, key, value, &gasUsed);
+    int ret = CPut(sbxPtr, key, value, &gasUsed);
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
     return ret;
 }
 
 char *IOSTContractStorage::Get(const char *key) {
     size_t gasUsed = 0;
-    char *ret = CGet(sbx, key, &gasUsed);
+    char *ret = CGet(sbxPtr, key, &gasUsed);
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
     return ret;
 }
 
 int IOSTContractStorage::Del(const char *key) {
     size_t gasUsed = 0;
-    int ret = CDel(sbx, key, &gasUsed);
+    int ret = CDel(sbxPtr, key, &gasUsed);
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
     return ret;
 }
 
 char *IOSTContractStorage::GlobalGet(const char *contract, const char *key) {
     size_t gasUsed = 0;
-    char *ret = CGGet(sbx, contract, key, &gasUsed);
+    char *ret = CGGet(sbxPtr, contract, key, &gasUsed);
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
     return ret;
 }
 
