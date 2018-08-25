@@ -66,9 +66,10 @@ var (
 				return nil, cost, host.ErrCoinIssueRefused
 			}
 
-			// todo add coin to account
+			cost0, err = h.GrantCoin(coinName, account, amount)
+			cost.AddAssign(cost0)
 
-			return []interface{}{}, cost, nil
+			return []interface{}{}, cost, err
 		},
 	}
 

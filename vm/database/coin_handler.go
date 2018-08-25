@@ -13,7 +13,7 @@ type CoinHandler struct {
 }
 
 func (m *CoinHandler) getKey(coinName, name string) string {
-	return CoinPrefix + coinName + "-" + name
+	return CoinPrefix + coinName + Separator + name
 }
 
 // SetCoin ...
