@@ -10,33 +10,33 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	//"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/event"
+	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/Go-IOS-Protocol/new_rpc ApisServer
 
 // RPCServer is the class of RPC server
 type RPCServer struct {
-	bc   blockcache.BlockCache
-	txdb tx.TxDB
-	//	txpool txpool.TxPool
+	bc      blockcache.BlockCache
+	txdb    tx.TxDB
+	txpool  txpool.TxPool
 	bchain  block.Chain
 	visitor *database.Visitor
 	port    int
 }
 
 // newRPCServer
-func NewRPCServer(bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
+func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
 	return &RPCServer{
-		txdb: _global.TxDB(),
-		//txpool:,
+		txdb:    _global.TxDB(),
+		txpool:  tp,
 		bchain:  _global.BlockChain(),
 		bc:      bcache,
 		visitor: database.NewVisitor(0, _global.StateDB()),
@@ -180,6 +180,7 @@ func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 
 // SendRawTx ...
 func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
+	ilog.Info("RPC received rawTx")
 	if rawTx == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -190,12 +191,11 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	}
 	// add servi
 	//tx.RecordTx(trx, tx.Data.Self())
-	/*
-		ret := txpool.TxPoolS.AddTx(trx)
-		if ret != txpool.Success {
-			return nil, fmt.Errorf("tx err:%v", ret)
-		}
-	*/
+	fmt.Printf("the Tx is:\n%+v\n", trx)
+	ret := s.txpool.AddTx(&trx)
+	if ret != txpool.Success {
+		return nil, fmt.Errorf("tx err:%v", ret)
+	}
 	res := SendRawTxRes{}
 	res.Hash = trx.Hash()
 	return &res, nil
