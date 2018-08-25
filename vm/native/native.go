@@ -48,6 +48,8 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 		a, ok = systemABIs[api]
 	case "iost.domain":
 		a, ok = domainABIs[api]
+	case "iost.token":
+		a, ok = tokenABIs[api]
 	}
 	if !ok {
 		ilog.Fatal("error", con.ID, api, systemABIs)
