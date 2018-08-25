@@ -92,7 +92,7 @@ func verifyBasics(blk *block.Block) error {
 	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
 		return errWitness
 	}
-	var signature common.Signature
+	var signature crypto.Signature
 	signature.Decode(blk.Head.Signature)
 	signature.SetPubkey(account.GetPubkeyByID(blk.Head.Witness))
 	headInfo := generateHeadInfo(blk.Head)
