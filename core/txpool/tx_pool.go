@@ -407,9 +407,13 @@ func (pool *TxPoolImpl) existTxInPending(hash []byte) bool {
 
 func (pool *TxPoolImpl) txTimeOut(tx *tx.Tx) bool {
 
-	nTime := time.Now().Unix()
-	txTime := tx.Time / 1e9
-	exTime := tx.Expiration / 1e9
+	nTime := time.Now().UnixNano()
+	txTime := tx.Time
+	exTime := tx.Expiration
+
+	if txTime > nTime {
+		return true
+	}
 
 	if exTime <= nTime {
 		return true
