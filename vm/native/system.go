@@ -2,6 +2,7 @@ package native
 
 import (
 	"errors"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
@@ -158,7 +159,6 @@ var (
 		name: "IssueIOST",
 		args: []string{"string", "number"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
-
 			if h.Context().Value("number").(int64) != 0 {
 				return []interface{}{}, contract.Cost0(), errors.New("issue IOST in normal block")
 			}
