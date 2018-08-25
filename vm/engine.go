@@ -10,8 +10,8 @@ import (
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
@@ -268,7 +268,14 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	e.ho.Context().Set("stack0", "direct_call")
 	e.ho.Context().Set("stack_height", 1) // record stack trace
 
-	c := e.ho.DB().Contract(action.Contract)
+	var cid string
+	if e.ho.IsDomain(action.Contract) {
+		cid = e.ho.URL(action.Contract)
+	} else {
+		cid = action.Contract
+	}
+
+	c := e.ho.DB().Contract(cid)
 	if c == nil || c.Info == nil {
 		cost = host.ContractNotFoundCost
 		status = tx.Status{

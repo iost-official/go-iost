@@ -22,7 +22,7 @@ func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
 		bc, err := Instance()
 		So(err, ShouldBeNil)
-		tBlock := Block{Head: BlockHead{
+		tBlock := Block{Head: &BlockHead{
 			Version:    2,
 			ParentHash: []byte("parent Hash"),
 			TxsHash:    []byte("tree hash"),

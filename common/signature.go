@@ -4,15 +4,10 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 )
 
-//go:generate gencode go -schema=structs.schema -package=verifier
-
-type SignAlgorithm uint8
-
-const (
-	Secp256k1 SignAlgorithm = iota
-)
+//go:generate gencode go -schema=structs.schema -package=common
 
 type SignMode bool
 
@@ -22,32 +17,24 @@ const (
 )
 
 type Signature struct {
-	Algorithm SignAlgorithm
+	Algorithm crypto.Algorithm
 
 	Sig    []byte
 	Pubkey []byte
 }
 
-func Sign(algo SignAlgorithm, info, privkey []byte, smode SignMode) Signature {
+func Sign(algo crypto.Algorithm, info, privkey []byte, smode SignMode) Signature {
 	s := Signature{Pubkey: nil}
 	s.Algorithm = algo
-	switch algo {
-	case Secp256k1:
-		if smode {
-			s.Pubkey = CalcPubkeyInSecp256k1(privkey)
-		}
-		s.Sig = SignInSecp256k1(info, privkey)
-		return s
+	if smode {
+		s.Pubkey = s.Algorithm.GetPubkey(privkey)
 	}
+	s.Sig = s.Algorithm.Sign(info, privkey)
 	return s
 }
 
 func VerifySignature(info []byte, s Signature) bool {
-	switch s.Algorithm {
-	case Secp256k1:
-		return VerifySignInSecp256k1(info, s.Pubkey, s.Sig)
-	}
-	return false
+	return s.Algorithm.Verify(info, s.Pubkey, s.Sig)
 }
 
 func (s *Signature) SetPubkey(pubkey []byte) {
@@ -73,7 +60,7 @@ func (s *Signature) Decode(b []byte) error {
 	if err != nil {
 		return err
 	}
-	s.Algorithm = SignAlgorithm(sr.Algorithm)
+	s.Algorithm = crypto.Algorithm(sr.Algorithm)
 	s.Sig = sr.Sig
 	s.Pubkey = sr.PubKey
 	return err

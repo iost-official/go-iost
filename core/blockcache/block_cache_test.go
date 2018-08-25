@@ -8,13 +8,13 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 	ret := &block.Block{
-		Head: block.BlockHead{
+		Head: &block.BlockHead{
 			Witness: wit,
 			Number:  int64(num),
 		},
@@ -30,7 +30,7 @@ func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 func TestBlockCache(t *testing.T) {
 	ctl := gomock.NewController(t)
 	b0 := &block.Block{
-		Head: block.BlockHead{
+		Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: []byte("nothing"),
 			Witness:    "w0",

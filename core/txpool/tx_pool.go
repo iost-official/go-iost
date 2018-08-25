@@ -12,9 +12,9 @@ import (
 	"runtime"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
@@ -168,7 +168,8 @@ func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *
 
 // AddLinkedNode add the block
 func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error {
-
+	//ilog.Infof("block: %+v", linkedNode.Block)
+	//ilog.Infof("headNode block:%+v", headNode.Block)
 	if linkedNode == nil || headNode == nil {
 		return errors.New("parameter is nil")
 	}
@@ -480,6 +481,10 @@ func (pool *TxPoolImpl) updateForkChain(headNode *blockcache.BlockCacheNode) TFo
 	}
 
 	nh := pool.forkChain.NewHead.Block.HeadHash()
+
+	if bytes.Equal(nh, headNode.Block.HeadHash()) {
+		return NotFork
+	}
 
 	if bytes.Equal(nh, headNode.Block.Head.ParentHash) {
 		pool.forkChain.NewHead = headNode

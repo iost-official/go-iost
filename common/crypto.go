@@ -8,7 +8,6 @@ import (
 	"hash/crc32"
 
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/iost-official/Go-IOS-Protocol/common/hash"
 	"golang.org/x/crypto/ripemd160"
 )
@@ -55,23 +54,4 @@ func ParseHex(s string) []byte {
 		return nil
 	}
 	return d
-}
-
-func SignInSecp256k1(info, privkey []byte) []byte {
-	sig, err := secp256k1.Sign(info, privkey)
-	if err != nil {
-		println(err)
-		return nil
-	}
-	return sig[:64]
-}
-
-func VerifySignInSecp256k1(info, pubkey, sig []byte) bool {
-	return secp256k1.VerifySignature(pubkey, info, sig)
-}
-
-func CalcPubkeyInSecp256k1(privkey []byte) []byte {
-	myCurve := secp256k1.S256()
-	x, y := myCurve.ScalarBaseMult(privkey)
-	return secp256k1.CompressPubkey(x, y)
 }
