@@ -79,7 +79,7 @@ message BlockByNumReq {
 	bool complete=2;	
 }
 message GetBalanceReq {
-	bytes pubkey=1;
+	string ID=1;
 }
 
 message GetStateReq {

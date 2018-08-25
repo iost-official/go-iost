@@ -48,7 +48,7 @@ func SignTxContent(tx Tx, account account.Account) (common.Signature, error) {
 	if !tx.containSigner(account.Pubkey) {
 		return common.Signature{}, errors.New("account not included in signer list of this transaction")
 	}
-	return common.Sign(crypto.Secp256k1, tx.baseHash(), account.Seckey, common.SavePubkey), nil
+	return account.Sign(crypto.Secp256k1, tx.baseHash()), nil
 }
 
 func (t *Tx) containSigner(pubkey []byte) bool {
@@ -87,7 +87,7 @@ func (t *Tx) baseHash() []byte {
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
 func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
-	tx.Publisher = common.Sign(crypto.Secp256k1, tx.publishHash(), account.Seckey, common.SavePubkey)
+	tx.Publisher = account.Sign(crypto.Secp256k1, tx.publishHash())
 	return tx, nil
 }
 
@@ -231,7 +231,7 @@ func (t *Tx) VerifySelf() error {
 	baseHash := t.baseHash()
 	signerSet := make(map[string]bool)
 	for _, sign := range t.Signs {
-		ok := common.VerifySignature(baseHash, sign)
+		ok := sign.Verify(baseHash)
 		if !ok {
 			return fmt.Errorf("signer error")
 		}
@@ -243,7 +243,7 @@ func (t *Tx) VerifySelf() error {
 		}
 	}
 
-	ok := common.VerifySignature(t.publishHash(), t.Publisher)
+	ok := t.Publisher.Verify(t.publishHash())
 	if !ok {
 		return fmt.Errorf("publisher error")
 	}
@@ -252,5 +252,5 @@ func (t *Tx) VerifySelf() error {
 
 // VerifySelf verify signer's signature
 func (t *Tx) VerifySigner(sig common.Signature) bool {
-	return common.VerifySignature(t.baseHash(), sig)
+	return sig.Verify(t.baseHash())
 }
