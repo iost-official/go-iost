@@ -4,6 +4,7 @@ acc:
 
 vm:
   logLevel: "debug"
+  jsPath: "vm/v8vm/v8/libjs/"
 db:
   ldbpath: "leveldb/"
 

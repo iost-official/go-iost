@@ -7,6 +7,10 @@ import (
 
 	"runtime"
 
+	"fmt"
+
+	"strings"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -207,9 +211,12 @@ func checkTx(tx0 *tx.Tx) error {
 
 // nolint
 func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
+	if strings.HasSuffix(data, ",]") {
+		data = data[:len(data)-2] + "]"
+	}
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error in abi file: %v", err)
 	}
 
 	rtn := make([]interface{}, 0)
@@ -307,7 +314,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		cost = host.CommonErrorCost(2)
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
-			Message: err.Error(),
+			Message: "unmarshal args error: " + err.Error(),
 		}
 		return
 	}

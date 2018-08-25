@@ -59,7 +59,7 @@ var compileCmd = &cobra.Command{
 			fmt.Printf("gen contract error:%v\n", err)
 			return
 		}
-		action := tx.NewAction("iost.system", "setcode", `["`+contract.Encode()+`",]`)
+		action := tx.NewAction("iost.system", "SetCode", `["`+contract.B64Encode()+`",]`)
 		pubkeys := make([][]byte, len(signers))
 		for i, pubkey := range signers {
 			pubkeys[i] = loadBytes(string(pubkey))

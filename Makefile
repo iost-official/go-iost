@@ -18,7 +18,7 @@ ifeq ($(shell uname),Linux)
 	export LD_LIBRARY_PATH=$(shell pwd)/vm/v8vm/v8/libv8/_linux_amd64
 endif
 
-.PHONY: all build iserver iwallet lint test image devimage swagger install clean debug clear_debug_file
+.PHONY: all build iserver iwallet lint test image devimage swagger install clean debug
 
 all: build
 
