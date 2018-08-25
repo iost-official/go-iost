@@ -24,15 +24,6 @@ func init() {
 	prometheus.MustRegister(blockCachedLength)
 }
 
-/*
-func IF(condition bool, trueRes, falseRes interface{}) interface{} {
-	if condition {
-		return trueRes
-	}
-	return falseRes
-}
-*/
-
 type CacheStatus int
 
 const (
@@ -336,13 +327,13 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 		}
 		it = it.Parent
 	}
-	return nil, fmt.Errorf("can not find the block")
+	return nil, fmt.Errorf("block not found")
 }
 
 func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
-	bcn, ok := bc.hmget(hash)
-	if !ok || bcn.Type == Virtual {
-		return nil, fmt.Errorf("block not found")
+	bcn, err := bc.Find(hash)
+	if err != nil {
+		return nil, err
 	}
 	return bcn.Block, nil
 }
@@ -382,7 +373,7 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 	var width int = 0
 	var f bool = false
 	i := 0
-	for k, _ := range root.Children {
+	for k := range root.Children {
 		if i == len(root.Children)-1 {
 			f = true
 		}
