@@ -127,7 +127,6 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 
 // GetBlockByNum ...
 func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
-	fmt.Println("enter GetBlockByNum")
 	if blkNumReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -172,7 +171,6 @@ func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	fmt.Println("key.ID:", key.ID)
 	return &GetBalanceRes{
 		Balance: s.visitor.Balance(key.ID),
 	}, nil
@@ -193,8 +191,16 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	//tx.RecordTx(trx, tx.Data.Self())
 	ilog.Info("the Tx is:\n%+v\n", trx)
 	ret := s.txpool.AddTx(&trx)
-	if ret != txpool.Success {
-		return nil, fmt.Errorf("tx err:%v", ret)
+	switch ret {
+	case txpool.TimeError:
+		return nil, fmt.Errorf("tx err:%v", "TimeError")
+	case txpool.VerifyError:
+		return nil, fmt.Errorf("tx err:%v", "VerifyError")
+	case txpool.DupError:
+		return nil, fmt.Errorf("tx err:%v", "DupError")
+	case txpool.GasPriceError:
+		return nil, fmt.Errorf("tx err:%v", "GasPriceError")
+	default:
 	}
 	res := SendRawTxRes{}
 	res.Hash = trx.Hash()
