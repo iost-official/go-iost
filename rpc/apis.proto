@@ -1,9 +1,9 @@
 syntax = "proto3";
 package rpc;
 
-import "core/tx/tx.proto";
-import "core/block/block.proto";
-import "core/event/event.proto";
+import "github.com/iost-official/Go-IOS-Protocol/core/tx/tx.proto";
+import "github.com/iost-official/Go-IOS-Protocol/core/block/block.proto";
+import "github.com/iost-official/Go-IOS-Protocol/core/event/event.proto";
 import "google/api/annotations.proto";
 
 service Apis {
