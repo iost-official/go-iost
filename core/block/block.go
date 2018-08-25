@@ -16,6 +16,7 @@ import (
 type Block struct {
 	hash     []byte
 	Head     *BlockHead
+	Sign     *common.Signature
 	Txs      []*tx.Tx
 	Receipts []*tx.TxReceipt
 }
@@ -75,8 +76,10 @@ func (b *Block) Encode() ([]byte, error) {
 	for _, r := range b.Receipts {
 		rpts = append(rpts, r.Encode())
 	}
+	signByte, err := b.Sign.Encode()
 	br := &BlockRaw{
 		Head:     b.Head,
+		Sign:     signByte,
 		Txs:      txs,
 		Receipts: rpts,
 	}
@@ -94,7 +97,11 @@ func (b *Block) Decode(blockByte []byte) error {
 		return errors.New("fail to decode blockraw")
 	}
 	b.Head = br.Head
-
+	b.Sign = &common.Signature{}
+	err = b.Sign.Decode(br.Sign)
+	if err != nil {
+		return errors.New("fail to decode signature")
+	}
 	for _, t := range br.Txs {
 		var tt tx.Tx
 		err = tt.Decode(t)

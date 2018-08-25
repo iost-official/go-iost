@@ -9,13 +9,13 @@ message BlockHead {
     bytes merkleHash = 4;
     bytes info = 5;
     int64 number = 6;
-    string witness = 7;
-    bytes signature = 8;
-    int64 time = 9;
+    bytes witness = 7;
+    int64 time = 8;
 }
 
 message BlockRaw {
     BlockHead head = 1;
-    repeated bytes txs = 2;
-    repeated bytes receipts = 3;
+    bytes sign = 2;
+    repeated bytes txs = 3;
+    repeated bytes receipts = 4;
 }

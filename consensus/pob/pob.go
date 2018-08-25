@@ -104,6 +104,16 @@ func (p *PoB) Stop() {
 	close(p.chGenBlock)
 }
 
+func (p *PoB) HashLoop() {
+    for {
+        select{
+            case <-p.exitSignal {
+                return
+            }
+        }
+    }
+}
+
 func (p *PoB) blockLoop() {
 	ilog.Infof("start block")
 	for {

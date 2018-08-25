@@ -61,13 +61,7 @@ L:
 	}
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
-	headInfo := generateHeadInfo(blk.Head)
-	sig := common.Sign(crypto.Secp256k1, headInfo, account.Seckey, common.NilPubkey)
-	blk.Head.Signature, err = sig.Encode()
-	if err != nil {
-		return nil, err
-	}
-	err = blk.CalculateHeadHash()
+	sig := common.Sign(crypto.Secp256k1, blk.HeadHash(), account.Seckey, common.NilPubkey)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +72,7 @@ L:
 	return &blk, nil
 }
 
+/*
 func generateHeadInfo(head *block.BlockHead) []byte {
 	info := block.Int64ToByte(head.Version)
 	info = append(info, head.ParentHash...)
@@ -87,15 +82,16 @@ func generateHeadInfo(head *block.BlockHead) []byte {
 	info = append(info, block.Int64ToByte(head.Time)...)
 	return common.Sha3(info)
 }
+*/
 
-func verifyBasics(blk *block.Block) error {
-	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+func verifyBasics(head *block.BlockHead) error {
+	if witnessOfSlot(head.Time) != head.Witness {
 		return errWitness
 	}
 	var signature common.Signature
-	signature.Decode(blk.Head.Signature)
-	signature.SetPubkey(account.GetPubkeyByID(blk.Head.Witness))
-	headInfo := generateHeadInfo(blk.Head)
+	signature.Decode(head.Signature)
+	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
+	headInfo := generateHeadInfo(head)
 	if !common.VerifySignature(headInfo, signature) {
 		return errSignature
 	}
