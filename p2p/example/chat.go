@@ -79,7 +79,7 @@ func (ct *Chatter) handleMsgLoop() {
 				ilog.Errorf("json decode failed. err=%v, bytes=%v", err, msg.Data())
 				continue
 			}
-			author := "\n" + shortID(msg.From().Pretty()) + ": "
+			author := shortID(msg.From().Pretty()) + ":"
 			fmt.Println(color(author, green), color(m.Content, blue))
 			// fmt.Print("\033[05;0m> \033[0m")
 			ct.p2pService.Broadcast(msg.Data(), chatData, p2p.UrgentMessage)
@@ -106,8 +106,8 @@ func (ct *Chatter) readLoop() {
 			continue
 		}
 		ct.p2pService.Broadcast(bytes, chatData, p2p.UrgentMessage)
-		author := shortID(ct.p2pService.ID()) + ": "
-		fmt.Print(color(author, green), color(sendData, blue))
+		author := shortID(ct.p2pService.ID()) + ":"
+		fmt.Println(color(author, yellow), color(sendData, blue))
 	}
 }
 
