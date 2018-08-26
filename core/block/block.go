@@ -11,12 +11,13 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/merkletree"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 )
 
 type Block struct {
 	hash     []byte
 	Head     *BlockHead
-	Sign     *common.Signature
+	Sign     *crypto.Signature
 	Txs      []*tx.Tx
 	Receipts []*tx.TxReceipt
 }
@@ -47,6 +48,7 @@ func GenGenesis(initTime int64) (*Block, error) {
 			Number:  0,
 			Time:    initTime,
 		},
+		Sign:     &crypto.Signature{},
 		Txs:      []*tx.Tx{&txn},
 		Receipts: make([]*tx.TxReceipt, 0),
 	}
@@ -97,7 +99,7 @@ func (b *Block) Decode(blockByte []byte) error {
 		return errors.New("fail to decode blockraw")
 	}
 	b.Head = br.Head
-	b.Sign = &common.Signature{}
+	b.Sign = &crypto.Signature{}
 	err = b.Sign.Decode(br.Sign)
 	if err != nil {
 		return errors.New("fail to decode signature")

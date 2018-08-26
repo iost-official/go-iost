@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/smartystreets/goconvey/convey"
 )
 
@@ -33,7 +33,7 @@ func TestBlockSerialize(t *testing.T) {
 				Number:     1,
 				ParentHash: []byte("parent"),
 			},
-			Sign: &common.Signature{},
+			Sign: &crypto.Signature{},
 		}
 		a1, _ := account.NewAccount(nil)
 		tx0 := tx.Tx{

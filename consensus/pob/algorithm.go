@@ -89,8 +89,10 @@ func verifyBasics(head *block.BlockHead) error {
 		return errWitness
 	}
 	var signature crypto.Signature
-	headInfo := generateHeadInfo(head)
-	if !signature.Verify(headInfo) {
+	if head.Witness != account.GetIdByPubkey(signature.Pubkey) {
+		return ErrPubkey
+	}
+	if !signature.Verify(head.Hash()) {
 		return errSignature
 	}
 	if staticProperty.hasSlot(blk.Head.Time) {

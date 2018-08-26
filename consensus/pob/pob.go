@@ -105,13 +105,12 @@ func (p *PoB) Stop() {
 }
 
 func (p *PoB) HashLoop() {
-    for {
-        select{
-            case <-p.exitSignal {
-                return
-            }
-        }
-    }
+	for {
+		select {
+		case <-p.exitSignal:
+			return
+		}
+	}
 }
 
 func (p *PoB) blockLoop() {

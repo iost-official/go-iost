@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -32,7 +32,7 @@ func TestChainImpl(t *testing.T) {
 				Number:     int64(0),
 				Time:       201222,
 			},
-			Sign: &common.Signature{},
+			Sign: &crypto.Signature{},
 		}
 		//test Push
 		length := bc.Length()
