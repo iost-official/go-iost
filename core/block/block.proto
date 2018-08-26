@@ -9,7 +9,7 @@ message BlockHead {
     bytes merkleHash = 4;
     bytes info = 5;
     int64 number = 6;
-    bytes witness = 7;
+    string witness = 7;
     int64 time = 8;
 }
 

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package common;
+package crypto;
 
 message SignatureRaw {
     int32 algorithm = 1;

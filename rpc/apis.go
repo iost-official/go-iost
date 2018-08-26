@@ -10,33 +10,33 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	//"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/event"
+	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/Go-IOS-Protocol/new_rpc ApisServer
 
 // RPCServer is the class of RPC server
 type RPCServer struct {
-	bc   blockcache.BlockCache
-	txdb tx.TxDB
-	//	txpool txpool.TxPool
+	bc      blockcache.BlockCache
+	txdb    tx.TxDB
+	txpool  txpool.TxPool
 	bchain  block.Chain
 	visitor *database.Visitor
 	port    int
 }
 
 // newRPCServer
-func NewRPCServer(bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
+func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
 	return &RPCServer{
-		txdb: _global.TxDB(),
-		//txpool:,
+		txdb:    _global.TxDB(),
+		txpool:  tp,
 		bchain:  _global.BlockChain(),
 		bc:      bcache,
 		visitor: database.NewVisitor(0, _global.StateDB()),
@@ -127,7 +127,6 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 
 // GetBlockByNum ...
 func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
-	fmt.Println("enter GetBlockByNum")
 	if blkNumReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -172,7 +171,6 @@ func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	fmt.Println("key.ID:", key.ID)
 	return &GetBalanceRes{
 		Balance: s.visitor.Balance(key.ID),
 	}, nil
@@ -180,6 +178,7 @@ func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 
 // SendRawTx ...
 func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
+	ilog.Info("RPC received rawTx")
 	if rawTx == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -190,12 +189,19 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	}
 	// add servi
 	//tx.RecordTx(trx, tx.Data.Self())
-	/*
-		ret := txpool.TxPoolS.AddTx(trx)
-		if ret != txpool.Success {
-			return nil, fmt.Errorf("tx err:%v", ret)
-		}
-	*/
+	ilog.Info("the Tx is:\n%+v\n", trx)
+	ret := s.txpool.AddTx(&trx)
+	switch ret {
+	case txpool.TimeError:
+		return nil, fmt.Errorf("tx err:%v", "TimeError")
+	case txpool.VerifyError:
+		return nil, fmt.Errorf("tx err:%v", "VerifyError")
+	case txpool.DupError:
+		return nil, fmt.Errorf("tx err:%v", "DupError")
+	case txpool.GasPriceError:
+		return nil, fmt.Errorf("tx err:%v", "GasPriceError")
+	default:
+	}
 	res := SendRawTxRes{}
 	res.Hash = trx.Hash()
 	return &res, nil

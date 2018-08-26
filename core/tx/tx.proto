@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "common/common.proto";
+import "github.com/iost-official/Go-IOS-Protocol/crypto/signature.proto";
 package tx;
 
 message ActionRaw {
@@ -16,8 +16,8 @@ message TxRaw {
     int64 gasPrice = 4;
     repeated ActionRaw actions = 5;
     repeated bytes signers = 6;
-    repeated common.SignatureRaw signs = 7;
-    common.SignatureRaw publisher = 8;
+    repeated crypto.SignatureRaw signs = 7;
+    crypto.SignatureRaw publisher = 8;
 }
 
 message ReceiptRaw {
