@@ -21,11 +21,13 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/Go-IOS-Protocol/metrics"
 )
 
 var (
 	dumpRoutingTableInterval = 5 * time.Minute
 	syncRoutingTableInterval = 30 * time.Second
+	metricsStatInterval      = 3 * time.Second
 )
 
 const (
@@ -57,6 +59,8 @@ type PeerManager struct {
 	routingTable   *kbucket.RoutingTable
 	peerStore      peerstore.Peerstore
 	lastUpdateTime atomic.Int64
+
+	wg *sync.WaitGroup
 }
 
 // NewPeerManager returns a new instance of PeerManager struct.
@@ -70,6 +74,7 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 		host:         host,
 		config:       config,
 		peerStore:    host.Peerstore(),
+		wg:           new(sync.WaitGroup),
 	}
 }
 
@@ -81,12 +86,14 @@ func (pm *PeerManager) Start() {
 
 	go pm.dumpRoutingTableLoop()
 	go pm.syncRoutingTableLoop()
+	go pm.metricsStatLoop()
 
 }
 
 // Stop stops peer manager's loop.
 func (pm *PeerManager) Stop() {
 	close(pm.quitCh)
+	pm.wg.Wait()
 }
 
 // HandleStream handles the incoming stream.
@@ -118,11 +125,13 @@ func (pm *PeerManager) HandleStream(s libnet.Stream) {
 }
 
 func (pm *PeerManager) dumpRoutingTableLoop() {
+	pm.wg.Add(1)
 	var lastSaveTime int64
 	dumpRoutingTableTicker := time.NewTimer(dumpRoutingTableInterval)
 	for {
 		select {
 		case <-pm.quitCh:
+			pm.wg.Done()
 			return
 		case <-dumpRoutingTableTicker.C:
 			if lastSaveTime < pm.lastUpdateTime.Load() {
@@ -135,10 +144,12 @@ func (pm *PeerManager) dumpRoutingTableLoop() {
 }
 
 func (pm *PeerManager) syncRoutingTableLoop() {
+	pm.wg.Add(1)
 	syncRoutingTableTicker := time.NewTimer(syncRoutingTableInterval)
 	for {
 		select {
 		case <-pm.quitCh:
+			pm.wg.Done()
 			return
 		case <-syncRoutingTableTicker.C:
 			ilog.Infof("start sync routing table.")
@@ -146,6 +157,24 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 			syncRoutingTableTicker.Reset(syncRoutingTableInterval)
 		}
 	}
+}
+
+func (pm *PeerManager) metricsStatLoop() {
+	pm.wg.Add(1)
+	metricsStatTicker := time.NewTimer(metricsStatInterval)
+	for {
+		select {
+		case <-pm.quitCh:
+			pm.wg.Done()
+			return
+		case <-metricsStatTicker.C:
+			metrics.Gauge("iost_p2p_neighbor_count", float64(pm.NeighborCount()), nil)
+			metrics.Gauge("iost_p2p_routing_count", float64(pm.routingTable.Size()), nil)
+
+			metricsStatTicker.Reset(metricsStatInterval)
+		}
+	}
+
 }
 
 // storePeer stores peer information in peerStore and routingTable. It doesn't need lock since the
