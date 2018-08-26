@@ -53,6 +53,7 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
+		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 
 		block, err = bc.Top()
@@ -63,6 +64,7 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
+		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 
 		HeadHash := tBlock.HeadHash()
@@ -74,6 +76,7 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
+		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 
 		cmd := exec.Command("rm", "-r", "./BlockChainDB/")
