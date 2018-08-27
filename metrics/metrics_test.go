@@ -9,13 +9,18 @@ import (
 func TestMetrics(t *testing.T) {
 	assert.Nil(t, SetPusher("47.75.42.25:9091"))
 	assert.Nil(t, Start())
-	Counter("test_counter", 1, nil)
-	Counter("test_counter", 1, nil)
-	Counter("test_counter", 1, nil)
-	Gauge("test_gauge", 100, map[string]string{"tag": "aaa"})
-	Gauge("test_gauge", 100, map[string]string{"tag": "bbb"})
-	Timer("test_timer", 100, nil)
-	Timer("test_timer", 200, nil)
-	Timer("test_timer", 300, nil)
+	counter := NewCounter("test_counter", nil)
+	counter.Add(1, nil)
+	counter.Add(1, nil)
+	counter.Add(1, nil)
+
+	gauge := NewGauge("test_gauge", []string{"tag"})
+	gauge.Set(100, map[string]string{"tag": "aaa"})
+
+	sum := NewSummary("test_summary", nil)
+	sum.Observe(100, nil)
+	sum.Observe(200, nil)
+	sum.Observe(300, nil)
+
 	Stop()
 }
