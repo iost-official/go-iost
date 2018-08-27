@@ -27,17 +27,17 @@ func Stop() {
 	defaultClient.Stop()
 }
 
-// Counter sends a counter type metrics.
-func Counter(name string, value float64, tagkv map[string]string) error {
-	return defaultClient.Counter(name, value, tagkv)
+// NewCounter returns a counter-type metrics.
+func NewCounter(name string, labels []string) Counter {
+	return defaultClient.NewCounter(name, labels)
 }
 
-// Gauge sends a gauge type metrics.
-func Gauge(name string, value float64, tagkv map[string]string) error {
-	return defaultClient.Gauge(name, value, tagkv)
+// NewGauge returns a gauge-type metrics.
+func NewGauge(name string, labels []string) Gauge {
+	return defaultClient.NewGauge(name, labels)
 }
 
-// Timer sends a summary type metrics.
-func Timer(name string, value float64, tagkv map[string]string) error {
-	return defaultClient.Timer(name, value, tagkv)
+// NewSummary returns a summary-type metrics.
+func NewSummary(name string, labels []string) Summary {
+	return defaultClient.NewSummary(name, labels)
 }
