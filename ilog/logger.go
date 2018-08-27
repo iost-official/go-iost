@@ -132,6 +132,13 @@ func (logger *Logger) Flush() {
 	}
 }
 
+// SetLevel sets all the writers' level to l.
+func (logger *Logger) SetLevel(l Level) {
+	for _, writer := range logger.writers {
+		writer.SetLevel(l)
+	}
+}
+
 // AsyncWrite sets logger's syncWrite to false.
 func (logger *Logger) AsyncWrite() {
 	logger.syncWrite = false
