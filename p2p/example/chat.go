@@ -7,6 +7,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/go-vgo/robotgo"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	uuid "github.com/satori/go.uuid"
@@ -80,7 +81,9 @@ func (ct *Chatter) handleMsgLoop() {
 				continue
 			}
 			author := shortID(msg.From().Pretty()) + ":"
+			ct.clearLastLine(0)
 			fmt.Println(color(author, green), color(m.Content, blue))
+			ct.reprint()
 			// fmt.Print("\033[05;0m> \033[0m")
 			ct.p2pService.Broadcast(msg.Data(), chatData, p2p.UrgentMessage)
 		}
@@ -107,13 +110,21 @@ func (ct *Chatter) readLoop() {
 		}
 		ct.p2pService.Broadcast(bytes, chatData, p2p.UrgentMessage)
 		author := shortID(ct.p2pService.ID()) + ":"
+		ct.clearLastLine(1)
 		fmt.Println(color(author, yellow), color(sendData, blue))
 	}
 }
 
-func (ct *Chatter) clearLastLine() {
-	fmt.Print("\033[1A")
+func (ct *Chatter) reprint() {
+	robotgo.KeyTap("r", "control")
+}
+
+func (ct *Chatter) clearLastLine(n int) {
+	if n > 0 {
+		fmt.Printf("\033[%dA", n)
+	}
 	fmt.Print("\033[2K")
+	fmt.Print("\033[1G")
 }
 
 func (ct *Chatter) printPrompt() {
