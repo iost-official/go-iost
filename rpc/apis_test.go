@@ -2,12 +2,15 @@ package rpc
 
 import (
 	"errors"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/event"
+
+	"testing"
+	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"testing"
-	"time"
+	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 
 	"github.com/bouk/monkey"
 )
@@ -26,11 +29,11 @@ func (s *Mock_Apis_SubscribeServer) Send(req *SubscribeRes) error {
 }
 
 func TestRpcServer_Subscribe(t *testing.T) {
-	monkey.Patch(NewRPCServer, func(bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
+	monkey.Patch(NewRPCServer, func(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
 		return &RPCServer{}
 	})
 
-	s := NewRPCServer(nil, nil)
+	s := NewRPCServer(nil, nil, nil)
 	ec := event.GetEventCollectorInstance()
 	req := &SubscribeReq{Topics: []event.Event_Topic{event.Event_TransactionResult}}
 	res := Mock_Apis_SubscribeServer{
