@@ -1,11 +1,10 @@
 package db
 
 import (
-	"os"
 	"os/exec"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -211,6 +210,35 @@ func (suite *MVCCDBTestSuite) TestFlush() {
 	suite.Equal("", value)
 }
 
+func (suite *MVCCDBTestSuite) TestRecovery() {
+	var value string
+	var err error
+
+	value, err = suite.mvccdb.Get("table01", "key05")
+	suite.Nil(err)
+	suite.Equal("value05", value)
+
+	suite.mvccdb.Commit()
+	suite.mvccdb.Tag("qwertyuiopasdfghjkl;zxcvbnm,.afd")
+
+	err = suite.mvccdb.Flush("qwertyuiopasdfghjkl;zxcvbnm,.afd")
+	suite.Nil(err)
+
+	ilog.Info("Close mvccdb")
+	err = suite.mvccdb.Close()
+	suite.Nil(err, "Close MVCCDB should not fail")
+
+	mvccdb, err := NewMVCCDB(DBPATH)
+	require.Nil(suite.T(), err, "Create MVCCDB should not fail")
+	suite.mvccdb = mvccdb
+
+	value, err = suite.mvccdb.Get("table01", "key05")
+	suite.Nil(err)
+	suite.Equal("value05", value)
+
+	suite.Equal("qwertyuiopasdfghjkl;zxcvbnm,.afd", suite.mvccdb.CurrentTag())
+}
+
 func (suite *MVCCDBTestSuite) TearDownTest() {
 	err := suite.mvccdb.Close()
 	suite.Nil(err, "Close MVCCDB should not fail")
@@ -221,8 +249,5 @@ func (suite *MVCCDBTestSuite) TearDownTest() {
 }
 
 func TestMVCCDBTestSuite(t *testing.T) {
-	if (len(os.Args) > 1) && (os.Args[1] == "debug") {
-		log.SetLevel(log.DebugLevel)
-	}
 	suite.Run(t, new(MVCCDBTestSuite))
 }
