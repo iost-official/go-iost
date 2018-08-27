@@ -20,6 +20,7 @@ func init() {
 type VM struct {
 	isolate              C.IsolatePtr
 	sandbox              *Sandbox
+	releaseChannel       chan *VM
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
 }
@@ -31,6 +32,16 @@ func NewVM() *VM {
 		isolate: isolate,
 	}
 	e.sandbox = NewSandbox(e)
+	return e
+}
+
+func NewVMWithChannel(releaseChannel chan *VM) *VM {
+	isolate := C.newIsolate()
+	e := &VM{
+		isolate: isolate,
+	}
+	e.sandbox = NewSandbox(e)
+	e.releaseChannel = releaseChannel
 	return e
 }
 
@@ -74,6 +85,19 @@ func (e *VM) execute(code string) (rtn []interface{}, cost *contract.Cost, err e
 
 func (e *VM) setJSPath(path string) {
 	e.sandbox.SetJSPath(path)
+}
+
+func (e *VM) setReleaseChannel(releaseChannel chan *VM) {
+	e.releaseChannel = releaseChannel
+}
+
+func (e *VM) recycle() {
+	var newE = NewVM()
+	if e.releaseChannel != nil {
+		newE.setReleaseChannel(e.releaseChannel)
+		newE.releaseChannel <- newE
+	}
+	e.release()
 }
 
 // Release release all engine associate resource

@@ -15,8 +15,9 @@ import (
 var vmPool *VMPool
 
 func init() {
-	vmPool = NewVMPool(10)
+	vmPool = NewVMPool(3)
 	vmPool.SetJSPath("./v8/libjs/")
+	//vmPool.Init()
 }
 
 var testDataPath = "./test_data/"
@@ -72,6 +73,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 }
 
 func TestEngine_LoadAndCall(t *testing.T) {
+	vmPool.Init()
 	vi := Init(t)
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
@@ -108,6 +110,7 @@ var Contract = function() {
 }
 
 func TestEngine_bigNumber(t *testing.T) {
+	vmPool.Init()
 	host, code := MyInit(t, "bignumber1")
 	vmPool.LoadAndCall(host, code, "constructor")
 	rs, _, err := vmPool.LoadAndCall(host, code, "getVal")
@@ -122,6 +125,7 @@ func TestEngine_bigNumber(t *testing.T) {
 
 // nolint
 func TestEngine_Storage(t *testing.T) {
+	vmPool.Init()
 	host, code := MyInit(t, "storage1")
 
 	vmPool.LoadAndCall(host, code, "constructor")
@@ -178,6 +182,7 @@ func TestEngine_Storage(t *testing.T) {
 
 // nolint
 func TestEngine_DataType(t *testing.T) {
+	vmPool.Init()
 	host, code := MyInit(t, "datatype")
 
 	rs, _, err := vmPool.LoadAndCall(host, code, "number", 1)
@@ -277,6 +282,7 @@ func TestEngine_DataType(t *testing.T) {
 
 // nolint
 func TestEngine_Loop(t *testing.T) {
+	vmPool.Init()
 	host, code := MyInit(t, "loop")
 
 	_, _, err := vmPool.LoadAndCall(host, code, "for")
@@ -331,6 +337,7 @@ func TestEngine_Loop(t *testing.T) {
 }
 
 func TestEngine_Func(t *testing.T) {
+	vmPool.Init()
 	host, code := MyInit(t, "func")
 	_, _, err := vmPool.LoadAndCall(host, code, "func1")
 	if err == nil || err.Error() != "out of gas" {
@@ -363,6 +370,7 @@ func TestEngine_Func(t *testing.T) {
 }
 
 func TestEngine_Danger(t *testing.T) {
+	vmPool.Init()
 	host, code := MyInit(t, "danger")
 	/*
 		_, _, err := vmPool.LoadAndCall(host, code, "bigArray")
@@ -385,6 +393,7 @@ func TestEngine_Danger(t *testing.T) {
 
 // nolint
 func TestEngine_Int64(t *testing.T) {
+	vmPool.Init()
 	host, code := MyInit(t, "int64Test")
 	rs, _, err := vmPool.LoadAndCall(host, code, "getPlus")
 	if err != nil {
