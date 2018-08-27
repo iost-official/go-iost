@@ -25,14 +25,16 @@ type Client struct {
 
 	pusher *push.Pusher
 	exitCh chan struct{}
+
+	collectorCache []prometheus.Collector
 }
 
 // NewClient returns a new Client.
 func NewClient() *Client {
 	return &Client{
-		exitCh: make(chan struct{}),
+		exitCh:         make(chan struct{}),
+		collectorCache: make([]prometheus.Collector, 0),
 	}
-
 }
 
 // SetPusher sets the pusher with the given addr.
@@ -41,6 +43,9 @@ func (c *Client) SetPusher(addr string) error {
 		return ErrPusherUnavailable
 	}
 	c.pusher = push.New(addr, "iost")
+	for _, colloctor := range c.collectorCache {
+		c.pusher.Collector(colloctor)
+	}
 	return nil
 }
 
@@ -77,6 +82,8 @@ func (c *Client) NewCounter(name string, labels []string) Counter {
 	}, labels)
 	if c.pusher != nil {
 		c.pusher.Collector(counterVec)
+	} else {
+		c.collectorCache = append(c.collectorCache, counterVec)
 	}
 	return NewPromCounter(counterVec)
 }
@@ -89,6 +96,8 @@ func (c *Client) NewGauge(name string, labels []string) Gauge {
 	}, labels)
 	if c.pusher != nil {
 		c.pusher.Collector(gaugeVec)
+	} else {
+		c.collectorCache = append(c.collectorCache, gaugeVec)
 	}
 	return NewPromGauge(gaugeVec)
 }
@@ -101,6 +110,8 @@ func (c *Client) NewSummary(name string, labels []string) Summary {
 	}, labels)
 	if c.pusher != nil {
 		c.pusher.Collector(summaryVec)
+	} else {
+		c.collectorCache = append(c.collectorCache, summaryVec)
 	}
 	return NewPromSummary(summaryVec)
 }
