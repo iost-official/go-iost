@@ -2,17 +2,19 @@ package host
 
 import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/core/event"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 )
 
 // APIDelegate ...
 type APIDelegate struct {
-	h *Host
+	h  *Host
+	ec *event.EventCollector
 }
 
 // NewAPI ...
 func NewAPI(h *Host) APIDelegate {
-	return APIDelegate{h: h}
+	return APIDelegate{h: h, ec: event.GetEventCollectorInstance()}
 }
 
 func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
@@ -23,6 +25,7 @@ func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
 
 	rs := h.h.ctx.GValue("receipts").([]tx.Receipt)
 	h.h.ctx.GSet("receipts", append(rs, rec))
+
 }
 
 // RequireAuth ...
