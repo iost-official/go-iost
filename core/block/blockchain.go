@@ -147,3 +147,7 @@ func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 	}
 	return bc.GetBlockByHash(hash)
 }
+
+func (bc *BlockChain) Close() {
+	bc.BlockChainDB.Close()
+}

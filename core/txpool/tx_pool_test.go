@@ -1,9 +1,10 @@
 package txpool
 
 import (
-	"fmt"
 	"testing"
 	"time"
+
+	"os"
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
@@ -12,15 +13,15 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
-	"os"
 )
 
 var (
 	dbPath1 = "txDB"
-	dbPath2 = "StatePoolDB"
+	dbPath2 = "StateDB"
 	dbPath3 = "BlockChainDB"
 )
 
@@ -60,10 +61,12 @@ func TestNewTxPoolImpl(t *testing.T) {
 		conf := &common.Config{
 			DB: &common.DBConfig{},
 		}
-
+		ilog.Debug("Here")
 		gl, err := global.New(conf)
-		So(err, ShouldBeNil)
 
+		ilog.Debug("here")
+		So(err, ShouldBeNil)
+		ilog.Debug("here")
 		BlockCache, err := blockcache.NewBlockCache(gl)
 		So(err, ShouldBeNil)
 
@@ -81,210 +84,210 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			r = txPool.AddTx(t)
 			So(r, ShouldEqual, DupError)
+			ilog.Error("here")
 		})
-		Convey("txTimeOut", func() {
+		time.Sleep(time.Second)
+		//Convey("txTimeOut", func() {
+		//	ilog.Debug("feawfeawfea")
+		//
+		//	t := genTx(accountList[0], expiration)
+		//	ilog.Debug("feawfeawfea")
+		//
+		//	b := txPool.txTimeOut(t)
+		//	So(b, ShouldBeFalse)
+		//
+		//	t.Time -= int64(expiration + 1*1e9)
+		//	b = txPool.txTimeOut(t)
+		//	So(b, ShouldBeTrue)
+		//
+		//	t = genTx(accountList[0], expiration)
+		//
+		//	t.Expiration -= int64(expiration * 3)
+		//	b = txPool.txTimeOut(t)
+		//	So(b, ShouldBeTrue)
+		//})
+		//Convey("delTimeOutTx", func() {
+		//
+		//	t := genTx(accountList[0], 1*1e9)
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+		//
+		//	r := txPool.AddTx(t)
+		//	So(r, ShouldEqual, Success)
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+		//	time.Sleep(2 * time.Second)
+		//	txPool.clearTimeOutTx()
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+		//})
+		//Convey("ExistTxs FoundPending", func() {
+		//
+		//	t := genTx(accountList[0], expiration)
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+		//	r := txPool.AddTx(t)
+		//	So(r, ShouldEqual, Success)
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+		//	r1, _ := txPool.ExistTxs(t.Hash(), nil)
+		//	So(r1, ShouldEqual, FoundPending)
+		//})
+		//Convey("ExistTxs FoundChain", func() {
+		//
+		//	txCnt := 10
+		//	b := genBlocks(accountList, witnessList, 1, txCnt, true)
+		//	//ilog.Debug(("FoundChain", b[0].HeadHash())
+		//
+		//	bcn := blockcache.NewBCN(nil, b[0])
+		//	So(txPool.testBlockListNum(), ShouldEqual, 0)
+		//
+		//	err := txPool.AddLinkedNode(bcn, bcn)
+		//	So(err, ShouldBeNil)
+		//
+		//	// need delay
+		//	for i := 0; i < 10; i++ {
+		//		time.Sleep(100 * time.Millisecond)
+		//		if txPool.testBlockListNum() == 1 {
+		//			break
+		//		}
+		//	}
+		//
+		//	So(txPool.testBlockListNum(), ShouldEqual, 1)
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+		//	for i := 0; i < txCnt; i++ {
+		//		r1, _ := txPool.ExistTxs(b[0].Txs[i].Hash(), bcn.Block)
+		//		So(r1, ShouldEqual, FoundChain)
+		//	}
+		//
+		//	t := genTx(accountList[0], expiration)
+		//	r1, _ := txPool.ExistTxs(t.Hash(), bcn.Block)
+		//	So(r1, ShouldEqual, NotFound)
+		//})
+		//Convey("Pending", func() {
+		//
+		//	t := genTx(accountList[0], expiration)
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+		//	r := txPool.AddTx(t)
+		//	So(r, ShouldEqual, Success)
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+		//
+		//	l, err := txPool.PendingTxs(100)
+		//	So(err, ShouldBeNil)
+		//	So(len(l), ShouldEqual, 1)
+		//	So(string(l[0].Hash()), ShouldEqual, string(t.Hash()))
+		//
+		//	txCnt := 10
+		//	b := genBlocks(accountList, witnessList, 1, txCnt, true)
+		//
+		//	for i := 0; i < txCnt; i++ {
+		//		r := txPool.AddTx(b[0].Txs[i])
+		//		So(r, ShouldEqual, Success)
+		//	}
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 11)
+		//
+		//	l, err = txPool.PendingTxs(100)
+		//	So(err, ShouldBeNil)
+		//	So(len(l), ShouldEqual, 11)
+		//
+		//	bcn := blockcache.NewBCN(nil, b[0])
+		//	So(bcn, ShouldNotBeNil)
+		//	err = txPool.AddLinkedNode(bcn, bcn)
+		//	So(err, ShouldBeNil)
+		//
+		//	// need delay
+		//	for i := 0; i < 10; i++ {
+		//		time.Sleep(100 * time.Millisecond)
+		//		if txPool.testBlockListNum() == 1 {
+		//			break
+		//		}
+		//	}
+		//
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+		//})
+		//Convey("doChainChange", func() {
+		//
+		//	txCnt := 10
+		//	blockCnt := 3
+		//	blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
+		//
+		//	for i := 0; i < blockCnt; i++ {
+		//		//ilog.Debug(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
+		//		bcn := BlockCache.Add(blockList[i])
+		//		So(bcn, ShouldNotBeNil)
+		//
+		//		err = txPool.AddLinkedNode(bcn, bcn)
+		//		So(err, ShouldBeNil)
+		//	}
+		//
+		//	forkBlockTxCnt := 6
+		//	forkBlock := genSingleBlock(accountList, witnessList, blockList[1].HeadHash(), forkBlockTxCnt)
+		//	//ilog.Debug(("Sing hash:", forkBlock.HeadHash(), " Sing parentHash:", forkBlock.Head.ParentHash)
+		//	bcn := BlockCache.Add(forkBlock)
+		//	So(bcn, ShouldNotBeNil)
+		//
+		//	for i := 0; i < forkBlockTxCnt-3; i++ {
+		//		r := txPool.AddTx(forkBlock.Txs[i])
+		//		So(r, ShouldEqual, Success)
+		//	}
+		//
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 3)
+		//
+		//	// fork chain
+		//	err = txPool.AddLinkedNode(bcn, bcn)
+		//	So(err, ShouldBeNil)
+		//	// need delay
+		//	for i := 0; i < 10; i++ {
+		//		time.Sleep(100 * time.Millisecond)
+		//		if txPool.testBlockListNum() == 10 {
+		//			break
+		//		}
+		//	}
+		//
+		//	So(txPool.testPendingTxsNum(), ShouldEqual, 10)
+		//})
+		//
+		//Convey("concurrent", func() {
+		//	txCnt := 10
+		//	blockCnt := 100
+		//	bl := genNodes(accountList, witnessList, blockCnt, txCnt, true)
+		//	ch := make(chan int, 4)
+		//	//ilog.Debug(("genNodes impl")
+		//	go func() {
+		//		for _, bcn := range bl {
+		//			txPool.AddLinkedNode(bcn, bcn)
+		//		}
+		//		ch <- 1
+		//	}()
+		//
+		//	go func() {
+		//		for i := 0; i < 100; i++ {
+		//			t := genTx(accountList[0], expiration)
+		//			txPool.AddTx(t)
+		//		}
+		//		ch <- 2
+		//	}()
+		//
+		//	go func() {
+		//		for i := 0; i < 10000; i++ {
+		//			txPool.PendingTxs(10000000)
+		//		}
+		//		ch <- 3
+		//	}()
+		//	////time.Sleep(5*time.Second)
+		//
+		//	t := genTx(accountList[0], expiration)
+		//	txPool.AddTx(t)
+		//	go func() {
+		//		for i := 0; i < 10000; i++ {
+		//			txPool.ExistTxs(t.Hash(), bl[blockCnt-10].Block)
+		//		}
+		//		ch <- 4
+		//	}()
+		//
+		//	for i := 0; i < 4; i++ {
+		//		<-ch
+		//		//ilog.Debug(("ch :", a)
+		//	}
+		//})
 
-			t := genTx(accountList[0], expiration)
-			b := txPool.txTimeOut(t)
-			So(b, ShouldBeFalse)
-
-			t.Time -= int64(expiration + 1*1e9)
-			b = txPool.txTimeOut(t)
-			So(b, ShouldBeTrue)
-
-			t = genTx(accountList[0], expiration)
-
-			t.Expiration -= int64(expiration * 3)
-			b = txPool.txTimeOut(t)
-			So(b, ShouldBeTrue)
-
-		})
-
-		Convey("delTimeOutTx", func() {
-
-			t := genTx(accountList[0], 1*1e9)
-			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
-			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-			time.Sleep(2 * time.Second)
-			txPool.clearTimeOutTx()
-			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-
-		})
-		Convey("ExistTxs FoundPending", func() {
-
-			t := genTx(accountList[0], expiration)
-			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
-			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-			r1, _ := txPool.ExistTxs(t.Hash(), nil)
-			So(r1, ShouldEqual, FoundPending)
-		})
-		Convey("ExistTxs FoundChain", func() {
-
-			txCnt := 10
-			b := genBlocks(accountList, witnessList, 1, txCnt, true)
-			//fmt.Println("FoundChain", b[0].HeadHash())
-
-			bcn := blockcache.NewBCN(nil, b[0])
-			So(txPool.testBlockListNum(), ShouldEqual, 0)
-
-			err := txPool.AddLinkedNode(bcn, bcn)
-			So(err, ShouldBeNil)
-
-			// need delay
-			for i := 0; i < 10; i++ {
-				time.Sleep(100 * time.Millisecond)
-				if txPool.testBlockListNum() == 1 {
-					break
-				}
-			}
-
-			So(txPool.testBlockListNum(), ShouldEqual, 1)
-			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			for i := 0; i < txCnt; i++ {
-				r1, _ := txPool.ExistTxs(b[0].Txs[i].Hash(), bcn.Block)
-				So(r1, ShouldEqual, FoundChain)
-			}
-
-			t := genTx(accountList[0], expiration)
-			r1, _ := txPool.ExistTxs(t.Hash(), bcn.Block)
-			So(r1, ShouldEqual, NotFound)
-
-		})
-		Convey("Pending", func() {
-
-			t := genTx(accountList[0], expiration)
-			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
-			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-
-			l, err := txPool.PendingTxs(100)
-			So(err, ShouldBeNil)
-			So(len(l), ShouldEqual, 1)
-			So(string(l[0].Hash()), ShouldEqual, string(t.Hash()))
-
-			txCnt := 10
-			b := genBlocks(accountList, witnessList, 1, txCnt, true)
-
-			for i := 0; i < txCnt; i++ {
-				r := txPool.AddTx(b[0].Txs[i])
-				So(r, ShouldEqual, Success)
-			}
-			So(txPool.testPendingTxsNum(), ShouldEqual, 11)
-
-			l, err = txPool.PendingTxs(100)
-			So(err, ShouldBeNil)
-			So(len(l), ShouldEqual, 11)
-
-			bcn := blockcache.NewBCN(nil, b[0])
-			So(bcn, ShouldNotBeNil)
-			err = txPool.AddLinkedNode(bcn, bcn)
-			So(err, ShouldBeNil)
-
-			// need delay
-			for i := 0; i < 10; i++ {
-				time.Sleep(100 * time.Millisecond)
-				if txPool.testBlockListNum() == 1 {
-					break
-				}
-			}
-
-			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-
-		})
-		Convey("doChainChange", func() {
-
-			txCnt := 10
-			blockCnt := 3
-			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
-
-			for i := 0; i < blockCnt; i++ {
-				//fmt.Println("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
-				bcn := BlockCache.Add(blockList[i])
-				So(bcn, ShouldNotBeNil)
-
-				err = txPool.AddLinkedNode(bcn, bcn)
-				So(err, ShouldBeNil)
-			}
-
-			forkBlockTxCnt := 6
-			forkBlock := genSingleBlock(accountList, witnessList, blockList[1].HeadHash(), forkBlockTxCnt)
-			//fmt.Println("Sing hash:", forkBlock.HeadHash(), " Sing parentHash:", forkBlock.Head.ParentHash)
-			bcn := BlockCache.Add(forkBlock)
-			So(bcn, ShouldNotBeNil)
-
-			for i := 0; i < forkBlockTxCnt-3; i++ {
-				r := txPool.AddTx(forkBlock.Txs[i])
-				So(r, ShouldEqual, Success)
-			}
-
-			So(txPool.testPendingTxsNum(), ShouldEqual, 3)
-
-			// fork chain
-			err = txPool.AddLinkedNode(bcn, bcn)
-			So(err, ShouldBeNil)
-			// need delay
-			for i := 0; i < 10; i++ {
-				time.Sleep(100 * time.Millisecond)
-				if txPool.testBlockListNum() == 10 {
-					break
-				}
-			}
-
-			So(txPool.testPendingTxsNum(), ShouldEqual, 10)
-		})
-
-		Convey("concurrent", func() {
-			txCnt := 10
-			blockCnt := 100
-			bl := genNodes(accountList, witnessList, blockCnt, txCnt, true)
-			ch := make(chan int, 4)
-			//fmt.Println("genNodes impl")
-			go func() {
-				for _, bcn := range bl {
-					txPool.AddLinkedNode(bcn, bcn)
-				}
-				ch <- 1
-			}()
-
-			go func() {
-				for i := 0; i < 100; i++ {
-					t := genTx(accountList[0], expiration)
-					txPool.AddTx(t)
-				}
-				ch <- 2
-			}()
-
-			go func() {
-				for i := 0; i < 10000; i++ {
-					txPool.PendingTxs(10000000)
-				}
-				ch <- 3
-			}()
-			////time.Sleep(5*time.Second)
-
-			t := genTx(accountList[0], expiration)
-			txPool.AddTx(t)
-			go func() {
-				for i := 0; i < 10000; i++ {
-					txPool.ExistTxs(t.Hash(), bl[blockCnt-10].Block)
-				}
-				ch <- 4
-			}()
-
-			for i := 0; i < 4; i++ {
-				<-ch
-				//fmt.Println("ch :", a)
-			}
-
-		})
-
-		stopTest()
+		//stopTest()
+		//gl.StateDB().Close()
 	})
 }
 
@@ -530,18 +533,18 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 
 	sig1, err := tx.SignTxContent(t, a)
 	if err != nil {
-		fmt.Println("failed to SignTxContent")
+		ilog.Debug("failed to SignTxContent")
 	}
 
 	t.Signs = append(t.Signs, sig1)
 
 	t1, err := tx.SignTx(t, a)
 	if err != nil {
-		fmt.Println("failed to SignTx")
+		ilog.Debug("failed to SignTx")
 	}
 
 	if err := t1.VerifySelf(); err != nil {
-		fmt.Println("failed to t.VerifySelf(), err", err)
+		ilog.Debug("failed to t.VerifySelf(), err", err)
 	}
 
 	return &t1
