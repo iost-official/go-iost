@@ -1,20 +1,20 @@
-package common
+package crypto
 
 import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
 type Signature struct {
-	Algorithm crypto.Algorithm
+	Algorithm Algorithm
 
 	Sig    []byte
 	Pubkey []byte
 }
 
-func NewSignature(algo crypto.Algorithm, info []byte, privkey []byte) *Signature {
+func NewSignature(algo Algorithm, info []byte, privkey []byte) *Signature {
 	s := &Signature{
 		Algorithm: algo,
 		Sig:       algo.Sign(info, privkey),
@@ -50,7 +50,7 @@ func (s *Signature) Decode(b []byte) error {
 	if err != nil {
 		return err
 	}
-	s.Algorithm = crypto.Algorithm(sr.Algorithm)
+	s.Algorithm = Algorithm(sr.Algorithm)
 	s.Sig = sr.Sig
 	s.Pubkey = sr.PubKey
 	return err
@@ -58,5 +58,5 @@ func (s *Signature) Decode(b []byte) error {
 
 func (s *Signature) Hash() []byte {
 	b, _ := s.Encode()
-	return Sha3(b)
+	return common.Sha3(b)
 }

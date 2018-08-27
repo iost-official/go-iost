@@ -7,10 +7,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	blk "github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
@@ -57,7 +57,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	act := tx.Action{
@@ -131,7 +131,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	act := tx.Action{
@@ -207,7 +207,7 @@ func TestCost(t *testing.T) { // tests of context transport
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -327,7 +327,7 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 		Signers:    make([][]byte, 0),
 	}
 	mtx.Signers = append(mtx.Signers, []byte("a"))
@@ -436,7 +436,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -543,7 +543,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -638,7 +638,7 @@ func TestJS(t *testing.T) {
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
