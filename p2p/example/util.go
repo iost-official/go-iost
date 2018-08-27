@@ -10,9 +10,10 @@ import (
 type colorNum int
 
 const (
-	grey  colorNum = 30
-	green colorNum = 32
-	blue  colorNum = 34
+	grey   colorNum = 30
+	green  colorNum = 32
+	yellow colorNum = 33
+	blue   colorNum = 34
 )
 
 func isPortAvailable(port int) bool {

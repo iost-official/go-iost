@@ -22,15 +22,17 @@ const (
 )
 
 type message struct {
+	From    string
 	ID      string
 	Content string
 }
 
-func newMessage(content string) *message {
+func newMessage(content string, from string) *message {
 	id, _ := uuid.NewV4()
 	return &message{
 		ID:      string(id.Bytes()),
 		Content: content,
+		From:    from,
 	}
 }
 
@@ -38,9 +40,11 @@ func newMessage(content string) *message {
 type Chatter struct {
 	p2pService *p2p.NetService
 
-	msg        chan p2p.IncomingMessage
-	quitCh     chan struct{}
-	screenLock sync.Mutex
+	msg    chan p2p.IncomingMessage
+	quitCh chan struct{}
+
+	mu       sync.RWMutex
+	received map[string]struct{}
 }
 
 // NewChatter returns a new instance of Chatter.
@@ -48,6 +52,7 @@ func NewChatter(p2pService *p2p.NetService) *Chatter {
 	c := &Chatter{
 		p2pService: p2pService,
 		quitCh:     make(chan struct{}),
+		received:   make(map[string]struct{}),
 	}
 	c.msg = p2pService.Register("example_chat", chatData)
 	return c
@@ -79,9 +84,15 @@ func (ct *Chatter) handleMsgLoop() {
 				ilog.Errorf("json decode failed. err=%v, bytes=%v", err, msg.Data())
 				continue
 			}
-			author := "\n" + shortID(msg.From().Pretty()) + ": "
+			if ct.hasID(m.ID) {
+				continue
+			}
+			author := shortID(m.From) + ":"
+			ct.clearLastLine(0)
 			fmt.Println(color(author, green), color(m.Content, blue))
-			// fmt.Print("\033[05;0m> \033[0m")
+			// ct.reprint()
+			ct.printPrompt()
+			ct.record(m.ID)
 			ct.p2pService.Broadcast(msg.Data(), chatData, p2p.UrgentMessage)
 		}
 	}
@@ -99,21 +110,30 @@ func (ct *Chatter) readLoop() {
 		if sendData[len(sendData)-1] == '\n' {
 			sendData = sendData[0 : len(sendData)-1]
 		}
-		msg := newMessage(sendData)
+		msg := newMessage(sendData, ct.p2pService.ID())
 		bytes, err := json.Marshal(msg)
 		if err != nil {
 			ilog.Errorf("json encode failed. err=%v, obj=%+v", err, msg)
 			continue
 		}
+		ct.record(msg.ID)
 		ct.p2pService.Broadcast(bytes, chatData, p2p.UrgentMessage)
-		author := shortID(ct.p2pService.ID()) + ": "
-		fmt.Print(color(author, green), color(sendData, blue))
+		author := shortID(ct.p2pService.ID()) + ":"
+		ct.clearLastLine(1)
+		fmt.Println(color(author, yellow), color(sendData, blue))
 	}
 }
 
-func (ct *Chatter) clearLastLine() {
-	fmt.Print("\033[1A")
+func (ct *Chatter) reprint() {
+	// robotgo.KeyTap("r", "control")
+}
+
+func (ct *Chatter) clearLastLine(n int) {
+	if n > 0 {
+		fmt.Printf("\033[%dA", n)
+	}
 	fmt.Print("\033[2K")
+	fmt.Print("\033[1G")
 }
 
 func (ct *Chatter) printPrompt() {
@@ -123,4 +143,20 @@ func (ct *Chatter) printPrompt() {
 func (ct *Chatter) printOpening() {
 	text := fmt.Sprintf(opening, shortID(ct.p2pService.ID()), ct.p2pService.LocalAddrs()[0], ct.p2pService.ID())
 	fmt.Println(color(text, grey))
+}
+
+func (ct *Chatter) record(id string) {
+	ct.mu.Lock()
+	ct.received[id] = struct{}{}
+	if len(ct.received) > 100000 {
+		ct.received = make(map[string]struct{})
+	}
+	ct.mu.Unlock()
+}
+
+func (ct *Chatter) hasID(id string) bool {
+	ct.mu.RLock()
+	_, exist := ct.received[id]
+	ct.mu.RUnlock()
+	return exist
 }
