@@ -12,7 +12,7 @@ import (
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
-		bc, err := Instance()
+		bc, err := Instance("./")
 		So(err, ShouldBeNil)
 		So(bc.Length(), ShouldEqual, bc.Length())
 		fmt.Println(bc.Length())
@@ -21,7 +21,7 @@ func TestNewBlockChain(t *testing.T) {
 
 func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
-		bc, err := Instance()
+		bc, err := Instance("./")
 		So(err, ShouldBeNil)
 		tBlock := Block{
 			Head: &BlockHead{
