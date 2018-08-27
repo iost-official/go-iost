@@ -284,13 +284,13 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		})
 
-		stopTest()
+		stopTest(gl)
 	})
 }
 
 //result 55.3 ns/op
 func BenchmarkAddBlock(b *testing.B) {
-	_, accountList, witnessList, txPool := envInit(b)
+	_, accountList, witnessList, txPool, gl := envInit(b)
 	listTxCnt := 500
 	blockList := genBlocks(accountList, witnessList, 1, listTxCnt, true)
 
@@ -300,14 +300,14 @@ func BenchmarkAddBlock(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 
 }
 
 //result 472185 ns/op  tps:2147
 // no verify 17730 ns/op tps:58823
 func BenchmarkAddTx(b *testing.B) {
-	_, accountList, witnessList, txPool := envInit(b)
+	_, accountList, witnessList, txPool, gl := envInit(b)
 	listTxCnt := 10
 	blockCnt := 100
 	blockList := genNodes(accountList, witnessList, blockCnt, listTxCnt, true)
@@ -327,12 +327,12 @@ func BenchmarkAddTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
 //result 2444189 ns/op
 func BenchmarkPendingTxs(b *testing.B) {
-	_, accountList, _, txPool := envInit(b)
+	_, accountList, _, txPool, gl := envInit(b)
 
 	for i := 0; i < 10000; i++ {
 		t := genTx(accountList[0], expiration)
@@ -346,7 +346,7 @@ func BenchmarkPendingTxs(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
 //result 4445 ns/op
@@ -372,7 +372,6 @@ func BenchmarkDecodeTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
 }
 
 //result 3416 ns/op
@@ -391,13 +390,12 @@ func BenchmarkEncodeTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
 }
 
 //result 3.8S ~ 4.2S  10000 tx verify
 func BenchmarkVerifyTx(b *testing.B) {
 
-	_, accountList, _, txPool := envInit(b)
+	_, accountList, _, txPool, gl := envInit(b)
 
 	t := genTx(accountList[0], expiration)
 
@@ -409,7 +407,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
 //result 1 goroutine 3.8S ~ 4.2S  10000 tx verify
@@ -418,7 +416,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 //result 5 goroutine 1.0S ~ 1.2S  10000 tx verify
 //result 8 goroutine 1.0S ~ 1.3S  10000 tx verify
 func BenchmarkConcurrentVerifyTx(b *testing.B) {
-	_, accountList, _, txPool := envInit(b)
+	_, accountList, _, txPool, gl := envInit(b)
 
 	txCnt := 10000
 	goCnt := 4
@@ -447,10 +445,10 @@ func BenchmarkConcurrentVerifyTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
-func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl) {
+func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl, global.BaseVariable) {
 	//ctl := gomock.NewController(t)
 
 	var accountList []account.Account
@@ -500,10 +498,12 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 	txPool.Start()
 	b.ResetTimer()
 
-	return BlockCache, accountList, witnessList, txPool
+	return BlockCache, accountList, witnessList, txPool, gl
 }
 
-func stopTest() {
+func stopTest(gl global.BaseVariable) {
+
+	gl.StateDB().Close()
 
 	os.RemoveAll(dbPath1)
 	os.RemoveAll(dbPath2)
