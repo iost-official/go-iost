@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	blk "github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/core/event"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
@@ -616,6 +617,27 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		committed = true
 	})
 
+	sub := event.NewSubscription(100, []event.Event_Topic{event.Event_ContractUserEvent, event.Event_ContractSystemEvent})
+	ec := event.GetEventCollectorInstance()
+	ec.Subscribe(sub)
+	defer ec.Unsubscribe(sub)
+
+	count0 := 0
+	count1 := 0
+	go func() {
+		for {
+			select {
+			case e := <-sub.ReadChan():
+				t.Log(e.String())
+				if e.Topic == event.Event_ContractUserEvent {
+					count0++
+				} else if e.Topic == event.Event_ContractSystemEvent {
+					count1++
+				}
+			}
+		}
+	}()
+
 	txr, err := e.Exec(&mtx)
 	if err != nil {
 		t.Fatal(err)
@@ -626,6 +648,11 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 	if len(txr.Receipts) != 2 || txr.Receipts[0].Type != tx.UserDefined || txr.Receipts[0].Content != "iamreceipt" ||
 		txr.Receipts[1].Type != tx.SystemDefined || txr.Receipts[1].Content != `["Receipt",["iamreceipt"],"success"]` {
 		t.Fatal(txr.Receipts)
+	}
+	time.Sleep(10 * time.Millisecond)
+
+	if count0 != 1 || count1 != 1 {
+		t.Fatalf("expect count0 = 1, count1 = 1, got %d, %d", count0, count1)
 	}
 
 	if !committed {
