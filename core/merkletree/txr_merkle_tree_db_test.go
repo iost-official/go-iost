@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/smartystreets/goconvey/convey"
 )
 
@@ -34,9 +34,9 @@ func TestTXRMerkleTreeDB(t *testing.T) {
 		if err != nil {
 			log.Panic(err)
 		}
-		convey.So(reflect.DeepEqual(m.TX2TXR, m_read.TX2TXR), convey.ShouldBeTrue)
+		convey.So(reflect.DeepEqual(m.Tx2Txr, m_read.Tx2Txr), convey.ShouldBeTrue)
 		for i := 0; i < 16; i++ {
-			convey.So(bytes.Equal(m.MT.HashList[i], m_read.MT.HashList[i]), convey.ShouldBeTrue)
+			convey.So(bytes.Equal(m.Mt.HashList[i], m_read.Mt.HashList[i]), convey.ShouldBeTrue)
 		}
 		cmd := exec.Command("rm", "-r", "./TXRMerkleTreeDB")
 		cmd.Run()

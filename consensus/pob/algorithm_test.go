@@ -9,10 +9,11 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool/mock"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/txpool/mock"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
@@ -41,7 +42,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
 	account, _ := account.NewAccount(nil)
 	topBlock := &block.Block{
-		Head: block.BlockHead{
+		Head: &block.BlockHead{
 			ParentHash: []byte("abc"),
 			Number:     10,
 			Witness:    "witness",
@@ -76,8 +77,10 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 
 func TestConfirmNode(t *testing.T) {
 	convey.Convey("Test of Confirm node", t, func() {
-		staticProperty.WitnessList = []string{"id0", "id1", "id2", "id3", "id4"}
-		staticProperty.NumberOfWitnesses = 5
+
+		acc, _ := account.NewAccount(nil)
+		staticProperty = newStaticProperty(acc, []string{"id0", "id1", "id2", "id3", "id4"})
+
 		rootNode := &blockcache.BlockCacheNode{
 			Number:       1,
 			Witness:      "id0",
@@ -201,75 +204,70 @@ func TestVerifyBasics(t *testing.T) {
 		staticProperty = newStaticProperty(account1, []string{account0.ID, account1.ID, "id2"})
 		convey.Convey("Normal (self block)", func() {
 			blk := &block.Block{
-				Head: block.BlockHead{
+				Head: &block.BlockHead{
 					Time:    1,
 					Witness: account1.ID,
 				},
 			}
-			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account1.Seckey, common.NilPubkey)
-			blk.Head.Signature, _ = sig.Encode()
-			err := verifyBasics(blk)
+			//info := generateHeadInfo(blk.Head)
+			hash, _ := blk.Head.Hash()
+			blk.Sign = account1.Sign(crypto.Secp256k1, hash)
+			err := verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldBeNil)
 		})
 
 		convey.Convey("Normal (other's block)", func() {
 			blk := &block.Block{
-				Head: block.BlockHead{
+				Head: &block.BlockHead{
 					Time:    0,
 					Witness: account0.ID,
 				},
 			}
-			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
-			blk.Head.Signature, _ = sig.Encode()
-
-			err := verifyBasics(blk)
+			hash, _ := blk.Head.Hash()
+			blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+			err := verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldBeNil)
 		})
 
 		convey.Convey("Wrong witness/pubkey/signature", func() {
 			blk := &block.Block{
-				Head: block.BlockHead{
+				Head: &block.BlockHead{
 					Time:    1,
 					Witness: account0.ID,
 				},
 			}
-			err := verifyBasics(blk)
+			err := verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldEqual, errWitness)
 
 			blk.Head.Witness = account1.ID
-			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
-			blk.Head.Signature, _ = sig.Encode()
-			err = verifyBasics(blk)
+			hash, _ := blk.Head.Hash()
+			blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+			err = verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldEqual, errSignature)
 		})
 
 		convey.Convey("Slot witness duplicate", func() {
 			blk := &block.Block{
-				Head: block.BlockHead{
+				Head: &block.BlockHead{
 					Time:    0,
 					Witness: account0.ID,
 				},
 			}
-			info := generateHeadInfo(blk.Head)
-			sig := common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
-			blk.Head.Signature, _ = sig.Encode()
-			err := verifyBasics(blk)
+			hash, _ := blk.Head.Hash()
+			blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+			err := verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldBeNil)
 
 			staticProperty.addSlot(0)
 			blk = &block.Block{
-				Head: block.BlockHead{
+				Head: &block.BlockHead{
 					Time:    0,
 					Witness: account0.ID,
 				},
 			}
-			info = generateHeadInfo(blk.Head)
-			sig = common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
-			blk.Head.Signature, _ = sig.Encode()
-			err = verifyBasics(blk)
+			hash, _ = blk.Head.Hash()
+			blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+			err = verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldEqual, errSlot)
 		})
 	})
@@ -286,7 +284,7 @@ func TestVerifyBlock(t *testing.T) {
 		staticProperty = newStaticProperty(account0, []string{account0.ID, account1.ID, account2.ID})
 		rootTime := common.GetCurrentTimestamp().Slot - 1
 		rootBlk := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				Number:  1,
 				Time:    rootTime,
 				Witness: witnessOfSlot(rootTime),
@@ -305,10 +303,10 @@ func TestVerifyBlock(t *testing.T) {
 			TxHash: tx0.Hash(),
 		}
 		curTime := common.GetCurrentTimestamp().Slot
-		hash := rootBlk.HeadHash()
+		hash, _ := rootBlk.Head.Hash()
 		witness := witnessOfSlot(curTime)
 		blk := &block.Block{
-			Head: block.BlockHead{
+			Head: &block.BlockHead{
 				Number:     2,
 				ParentHash: hash,
 				Time:       curTime,
@@ -319,16 +317,16 @@ func TestVerifyBlock(t *testing.T) {
 		}
 		blk.Head.TxsHash = blk.CalculateTxsHash()
 		blk.Head.MerkleHash = blk.CalculateMerkleHash()
-		info := generateHeadInfo(blk.Head)
-		var sig common.Signature
+		info, _ := blk.Head.Hash()
+		var sig *crypto.Signature
 		if witness == account0.ID {
-			sig = common.Sign(common.Secp256k1, info, account0.Seckey, common.NilPubkey)
+			sig = account0.Sign(crypto.Secp256k1, info)
 		} else if witness == account1.ID {
-			sig = common.Sign(common.Secp256k1, info, account1.Seckey, common.NilPubkey)
+			sig = account1.Sign(crypto.Secp256k1, info)
 		} else {
-			sig = common.Sign(common.Secp256k1, info, account2.Seckey, common.NilPubkey)
+			sig = account2.Sign(crypto.Secp256k1, info)
 		}
-		blk.Head.Signature, _ = sig.Encode()
+		blk.Sign = sig
 		//convey.Convey("Normal (no txs)", func() {
 		//	err := verifyBlock(blk, rootBlk, rootBlk, nil, nil)
 		//	convey.So(err, convey.ShouldBeNil)
@@ -358,7 +356,7 @@ func addNode(parent *blockcache.BlockCacheNode, number int64, confirm int64, wit
 
 func addBlock(parent *blockcache.BlockCacheNode, number int64, witness string, ts int64) *blockcache.BlockCacheNode {
 	blk := &block.Block{
-		Head: block.BlockHead{
+		Head: &block.BlockHead{
 			Number:  number,
 			Witness: witness,
 			Time:    ts,

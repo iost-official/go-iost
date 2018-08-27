@@ -10,9 +10,9 @@ import (
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
@@ -21,10 +21,6 @@ import (
 
 const (
 	defaultCacheLength = 1000
-)
-
-const (
-	gasCheckTxFailed = int64(100)
 )
 
 var (
@@ -124,7 +120,7 @@ func (e *engineImpl) SetUp(k, v string) error {
 func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	err := checkTx(tx0)
 	if err != nil {
-		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), nil
+		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
 	}
 
 	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
@@ -145,10 +141,10 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	for _, action := range tx0.Actions {
 
 		cost, status, receipts, err2 := e.runAction(action)
-		e.logger.Info("run action : %v, result is %v", action, status.Code)
-		e.logger.Debug("used cost > %v", cost)
-		e.logger.Debug("status > \n%v\n", status)
-		e.logger.Debug("receipts > \n%v\n", receipts)
+		e.logger.Infof("run action : %v, result is %v", action, status.Code)
+		e.logger.Debug("used cost > ", cost)
+		e.logger.Debugf("status > \n%v\n", status)
+		//e.logger.Debugf("receipts > \n%v\n", receipts)
 
 		if err2 != nil {
 			return nil, err2
@@ -164,7 +160,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
-			e.logger.Debug("rollback")
+			e.logger.Debugf("rollback")
 			e.ho.DB().Rollback()
 		} else {
 			txr.Receipts = append(txr.Receipts, receipts...)
@@ -252,7 +248,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,
-		GasUsage: gasCheckTxFailed,
+		GasUsage: 0,
 		Status: tx.Status{
 			Code:    code,
 			Message: message,
@@ -272,9 +268,16 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	e.ho.Context().Set("stack0", "direct_call")
 	e.ho.Context().Set("stack_height", 1) // record stack trace
 
-	c := e.ho.DB().Contract(action.Contract)
+	var cid string
+	if e.ho.IsDomain(action.Contract) {
+		cid = e.ho.URL(action.Contract)
+	} else {
+		cid = action.Contract
+	}
+
+	c := e.ho.DB().Contract(cid)
 	if c == nil || c.Info == nil {
-		cost = contract.NewCost(0, 0, gasCheckTxFailed)
+		cost = host.ContractNotFoundCost
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
 			Message: errContractNotFound.Error() + action.Contract,
@@ -284,7 +287,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	abi := c.ABI(action.ActionName)
 	if abi == nil {
-		cost = contract.NewCost(0, 0, gasCheckTxFailed)
+		cost = host.ABINotFoundCost
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
 			Message: errABINotFound.Error() + action.Contract,
@@ -294,7 +297,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	args, err := unmarshalArgs(abi, action.Data)
 	if err != nil {
-		cost = contract.NewCost(0, 0, gasCheckTxFailed)
+		cost = host.CommonErrorCost(2)
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
 			Message: err.Error(),
@@ -306,7 +309,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	//ilog.Debugf("action %v > %v", action.Contract+"."+action.ActionName, rtn)
 
 	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	e.logger.Debug("cost is %v", cost)
+	//e.logger.Debugf("cost is %v", cost)
 
 	if cost == nil {
 		panic("cost is nil")

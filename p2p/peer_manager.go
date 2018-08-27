@@ -97,7 +97,7 @@ func (pm *PeerManager) Stop() {
 // In other cases, reset the stream.
 func (pm *PeerManager) HandleStream(s libnet.Stream) {
 	remotePID := s.Conn().RemotePeer()
-	ilog.Infof("new stream is coming. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+	ilog.Infof("handle new stream. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
 
 	peer := pm.GetNeighbor(remotePID)
 	if peer == nil {
@@ -245,7 +245,7 @@ func (pm *PeerManager) LoadRoutingTable() {
 		if strings.HasPrefix(line, "#") {
 			continue
 		}
-		peerID, addr, err := parseMultiaddr(line)
+		peerID, addr, err := parseMultiaddr(line[:len(line)-1])
 		if err != nil {
 			ilog.Warnf("parse multi addr failed. err=%v, line=%v", err, line)
 			continue
@@ -299,7 +299,7 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-	ilog.Infof("broadcast message. type=%d", typ)
+	ilog.Infof("broadcast message. type=%s", typ)
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	pm.neighborMutex.RLock()
@@ -312,7 +312,7 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
-	ilog.Infof("send message to peer. type=%d, peerID=%s", typ, peerID.Pretty())
+	ilog.Infof("send message to peer. type=%s, peerID=%s", typ, peerID.Pretty())
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	peer := pm.GetNeighbor(peerID)
@@ -393,6 +393,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
+	ilog.Infof("receiving message. type=%s", msg.messageType())
 	switch msg.messageType() {
 	case RoutingTableQuery:
 		pm.handleRoutingTableQuery(peerID)
@@ -405,7 +406,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 				select {
 				case v.(chan IncomingMessage) <- *inMsg:
 				default:
-					ilog.Errorf("sending incoming message failed. type=%d", msg.messageType())
+					ilog.Errorf("sending incoming message failed. type=%s", msg.messageType())
 				}
 				return true
 			})

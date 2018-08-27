@@ -8,10 +8,10 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_txpool"
+	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
@@ -44,6 +44,8 @@ var (
 		},
 	)
 )
+
+var errSingle = errors.New("single block")
 
 func init() {
 	prometheus.MustRegister(generatedBlockCount)
@@ -90,10 +92,8 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 
 //Start make the PoB run.
 func (p *PoB) Start() error {
-	p.synchronizer.Start()
 	go p.blockLoop()
 	go p.scheduleLoop()
-
 	return nil
 }
 
@@ -119,25 +119,31 @@ func (p *PoB) blockLoop() {
 				ilog.Error(err.Error())
 				continue
 			}
+			ilog.Info("received new block, block number: ", blk.Head.Number)
 			err = p.handleRecvBlock(&blk)
-			if err != nil {
+			if err != nil && err != errSingle {
 				ilog.Error(err.Error())
 				continue
 			}
+			go p.synchronizer.CheckSyncProcess()
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
 				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
 			}
 			if incomingMessage.Type() == p2p.NewBlock {
 				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
-				if ok, start, end := p.synchronizer.NeedSync(blk.Head.Number); ok {
-					go p.synchronizer.SyncBlocks(start, end)
+				if err == errSingle {
+					if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need {
+						go p.synchronizer.SyncBlocks(start, end)
+					}
 				}
 			}
+			// p.blockCache.Draw()
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
 				ilog.Infof("chGenBlock has closed")
 				return
 			}
+			ilog.Info("block from myself, block number: ", blk.Head.Number)
 			err := p.handleRecvBlock(blk)
 			if err != nil {
 				ilog.Error(err.Error())
@@ -150,28 +156,33 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
-	ilog.Infof("next schedule:%v", time.Duration(nextSchedule).Seconds())
+	ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
+			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
+			ilog.Info(p.baseVariable.Mode().Mode())
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
-				blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
-				ilog.Infof("gen block:%v", blk.Head.Number)
-				if err != nil {
-					ilog.Error(err.Error())
-					continue
+				ilog.Info(p.baseVariable.Mode().Mode())
+				if p.baseVariable.Mode().Mode() == global.ModeNormal {
+					blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
+					ilog.Infof("gen block:%v", blk.Head.Number)
+					if err != nil {
+						ilog.Error(err.Error())
+						continue
+					}
+					blkByte, err := blk.Encode()
+					if err != nil {
+						ilog.Error(err.Error())
+						continue
+					}
+					p.chGenBlock <- blk
+					go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 				}
-				blkByte, err := blk.Encode()
-				if err != nil {
-					ilog.Error(err.Error())
-					continue
-				}
-				p.chGenBlock <- blk
-				go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 				time.Sleep(common.SlotLength * time.Second)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
-			ilog.Infof("next schedule:%v", time.Duration(nextSchedule).Seconds())
+			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
 			return
 		}
@@ -179,22 +190,21 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block) error {
-	ilog.Infof("block number:%v", blk.Head.Number)
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errors.New("duplicate block")
 	}
-	err = verifyBasics(blk)
+	err = verifyBasics(blk.Head, blk.Sign)
 	if err != nil {
 		return fmt.Errorf("fail to verify blocks, %v", err)
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
+	staticProperty.addSlot(blk.Head.Time)
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent.Block)
 	}
-	staticProperty.addSlot(blk.Head.Time)
-	return nil
+	return errSingle
 }
 
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {

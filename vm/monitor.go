@@ -3,13 +3,13 @@ package vm
 import (
 	"strings"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/vm/native"
-
 	"errors"
+
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 	"github.com/iost-official/Go-IOS-Protocol/vm/v8vm"
 )
 
@@ -40,13 +40,13 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 	c := h.DB().Contract(contractName)
 	abi := c.ABI(api)
 	if abi == nil {
-		return nil, contract.NewCost(0, 0, gasCheckTxFailed), errABINotFound
+		return nil, host.ContractNotFoundCost, errABINotFound
 	}
 
 	err = checkArgs(abi, args)
 
 	if err != nil {
-		return nil, contract.NewCost(0, 0, gasCheckTxFailed), err
+		return nil, host.ABINotFoundCost, err
 	}
 
 	h.PushCtx()
@@ -156,7 +156,9 @@ func checkArgs(abi *contract.ABI, args []interface{}) error {
 func Factory(lang string) VM {
 	switch lang {
 	case "native":
-		return &native.VM{}
+		vm := native.Impl{}
+		vm.Init()
+		return &vm
 	case "javascript":
 		vm := v8.NewVMPool(10)
 		vm.SetJSPath(jsPath)

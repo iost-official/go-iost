@@ -10,9 +10,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_block"
-	"github.com/iost-official/Go-IOS-Protocol/core/new_tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
@@ -99,9 +99,8 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 		t.Fatal(err)
 	}
 
+	os.RemoveAll("mvcc")
 	//mvccdb := replaceDB(t)
-
-	defer os.RemoveAll("mvcc")
 
 	vi := database.NewVisitor(0, mvccdb)
 	vi.SetBalance(testID[0], 1000000)
@@ -174,7 +173,7 @@ func TestIntergration_Transfer(t *testing.T) {
 
 func jsHelloWorld() *contract.Contract {
 	jshw := contract.Contract{
-		ID: "jsHelloWorld",
+		ID: "ContractjsHelloWorld",
 		Code: `
 class Contract {
  constructor() {
@@ -245,7 +244,7 @@ func TestIntergration_CallJSCode(t *testing.T) {
 	vi.SetContract(jshw)
 	vi.SetContract(jsc)
 
-	act := tx.NewAction("call_hello_world", "call_hello", fmt.Sprintf(`[]`))
+	act := tx.NewAction("Contractcall_hello_world", "call_hello", fmt.Sprintf(`[]`))
 
 	trx, err := MakeTx(act)
 	if err != nil {
@@ -258,14 +257,14 @@ func TestIntergration_CallJSCode(t *testing.T) {
 
 func jsCallHelloWorld() *contract.Contract {
 	return &contract.Contract{
-		ID: "call_hello_world",
+		ID: "Contractcall_hello_world",
 		Code: `
 class Contract {
  constructor() {
   
  }
  call_hello() {
-  return BlockChain.call("jsHelloWorld", "hello", "[]")
+  return BlockChain.call("ContractjsHelloWorld", "hello", "[]")
  }
 }
 
@@ -299,7 +298,7 @@ func TestIntergration_Payment_Success(t *testing.T) {
 
 	vi.SetBalance("CGjsHelloWorld", 1000000)
 
-	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
+	act := tx.NewAction("ContractjsHelloWorld", "hello", fmt.Sprintf(`[]`))
 
 	trx, err := MakeTx(act)
 	if err != nil {
@@ -330,7 +329,7 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 	vi.SetBalance("CGjsHelloWorld", 1000000)
 	vi.Commit()
 
-	act := tx.NewAction("jsHelloWorld", "hello", fmt.Sprintf(`[]`))
+	act := tx.NewAction("ContractjsHelloWorld", "hello", fmt.Sprintf(`[]`))
 
 	trx, err := MakeTx(act)
 	if err != nil {
@@ -344,21 +343,51 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 
 }
 
+type fataler interface {
+	Fatal(args ...interface{})
+}
+
 type JSTester struct {
-	t  *testing.T
-	e  Engine
-	vi *database.Visitor
+	t      fataler
+	e      Engine
+	vi     *database.Visitor
+	mvccdb db.MVCCDB
 
 	cname string
 	c     *contract.Contract
 }
 
-func NewJSTester(t *testing.T) *JSTester {
-	e, vi := ininit(t)
+func NewJSTester(t fataler) *JSTester {
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	if err != nil {
+		panic(err)
+	}
+
+	os.RemoveAll("mvcc")
+
+	//mvccdb := replaceDB(t)
+
+	vi := database.NewVisitor(0, mvccdb)
+	vi.SetBalance(testID[0], 1000000)
+	vi.SetContract(systemContract)
+	vi.Commit()
+
+	bh := &block.BlockHead{
+		ParentHash: []byte("abc"),
+		Number:     10,
+		Witness:    "witness",
+		Time:       123456,
+	}
+
+	e := newEngine(bh, vi)
+
+	e.SetUp("js_path", jsPath)
+	//e.SetUp("log_level", "debug")
+	//e.SetUp("log_enable", "")
 	return &JSTester{
-		t:  t,
-		vi: vi,
-		e:  e,
+		vi:     vi,
+		e:      e,
+		mvccdb: mvccdb,
 	}
 }
 
@@ -429,6 +458,11 @@ func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
 		j.t.Fatal(err)
 	}
 	return r
+}
+
+func (j *JSTester) Clear() {
+	j.mvccdb.Close()
+	os.RemoveAll("mvcc")
 }
 
 func TestJSAPI_Database(t *testing.T) {
@@ -538,8 +572,82 @@ module.exports = Contract;
 	}
 }
 
+func TestJSAPI_Info(t *testing.T) {
+
+	js := NewJSTester(t)
+	js.SetJS(`
+class Contract {
+	constructor() {
+	}
+	blockInfo() {
+		var info = BlockChain.blockInfo()
+		var obj = JSON.parse(info)	
+		_native_log(obj["parent_hash"])
+		return obj["parent_hash"]
+	}
+	txInfo() {
+		var info = BlockChain.txInfo()
+		var obj = JSON.parse(info)	
+		_native_log(obj["hash"])
+		return obj["hash"]
+	}
+}
+
+module.exports = Contract;
+`)
+	js.SetAPI("blockInfo")
+	js.SetAPI("txInfo")
+	js.DoSet()
+
+	r := js.TestJS("blockInfo", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+
+	r = js.TestJS("txInfo", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+}
+
+func TestJS_Database(t *testing.T) {
+	js := NewJSTester(t)
+	defer js.Clear()
+	lc, err := ReadFile("test_data/database.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("read")
+	js.SetAPI("change")
+	js.DoSet()
+	t.Log("========= constructor")
+	t.Log("num is ", js.ReadDB("num"))
+	t.Log("string is ", js.ReadDB("string"))
+	t.Log("bool is ", js.ReadDB("bool"))
+	t.Log("nil is ", js.ReadDB("nil"))
+	t.Log("array is ", js.ReadDB("array"))
+	t.Log("object is ", js.ReadDB("object"))
+	t.Log("arrayobj is ", js.ReadDB("arrayobj"))
+	t.Log("objobj is ", js.ReadDB("objobj"))
+	t.Log("========= read")
+
+	js.TestJS("read", `[]`)
+	//t.Log("num is ", js.ReadDB("num"))
+	//t.Log("string is ", js.ReadDB("string"))
+	//t.Log("bool is ", js.ReadDB("bool"))
+	//t.Log("array is ", js.ReadDB("array"))
+	//t.Log("object is ", js.ReadDB("object"))
+	//t.Log("arrayobj is ", js.ReadDB("arrayobj"))
+	//t.Log("objobj is ", js.ReadDB("objobj"))
+	js.TestJS("change", `[]`)
+	t.Log("========= change")
+	t.Log("array is ", js.ReadDB("array"))
+	t.Log("object is ", js.ReadDB("object"))
+	t.Log("arrayobj is ", js.ReadDB("arrayobj"))
+	t.Log("objobj is ", js.ReadDB("objobj"))
+	t.Log("keyobj is", js.ReadDB("key"))
+}
+
 func TestJS_LuckyBet(t *testing.T) {
 	js := NewJSTester(t)
+	defer js.Clear()
 	lc, err := ReadFile("test_data/lucky_bet.js")
 	if err != nil {
 		t.Fatal(err)
@@ -549,8 +657,19 @@ func TestJS_LuckyBet(t *testing.T) {
 	js.SetAPI("bet", "string", "number", "number")
 	js.SetAPI("getReward")
 	js.DoSet()
-	r := js.TestJS("bet", fmt.Sprintf(`["%v",5, 2]`, testID[0]))
+	r := js.TestJS("bet", fmt.Sprintf(`["%v",0, 2]`, testID[0]))
 	t.Log("receipt is ", r)
 	t.Log("max user number ", js.ReadDB("maxUserNumber"))
 	t.Log("user count ", js.ReadDB("userNumber"))
+	t.Log("total coins ", js.ReadDB("totalCoins"))
+	t.Log("table should be saved ", js.ReadDB("table0"))
+
+	for i := 1; i < 10; i++ {
+		js.TestJS("bet", fmt.Sprintf(`["%v",%v, 2]`, testID[0], i))
+	}
+
+	t.Log("user count ", js.ReadDB("userNumber"))
+	t.Log("total coins ", js.ReadDB("totalCoins"))
+	t.Log("tables", js.ReadDB("tables"))
+	t.Log("result is ", js.ReadDB("results"))
 }
