@@ -29,9 +29,10 @@ func main() {
 	config := &common.P2PConfig{
 		ChainID: 111,
 	}
-	if *seed != "" {
-		config.SeedNodes = []string{*seed}
+	if *seed == "" {
+		*seed = "/ip4/47.75.42.25/tcp/3389/ipfs/12D3KooWE9Y2AJvjY7NN2htfTtjVtjRCikaU9CYV9gQ8zAAAwvs4"
 	}
+	config.SeedNodes = []string{*seed}
 	if *port <= 0 {
 		*port = randomPort()
 	}
