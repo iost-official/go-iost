@@ -209,10 +209,10 @@ func TestVerifyBasics(t *testing.T) {
 					Witness: account1.ID,
 				},
 			}
-			info := generateHeadInfo(blk.Head)
-			sig := account1.Sign(crypto.Secp256k1, info)
-			blk.Head.Signature, _ = sig.Encode()
-			err := verifyBasics(blk)
+			//info := generateHeadInfo(blk.Head)
+			hash, _ := blk.Head.Hash()
+			blk.Sign = account1.Sign(crypto.Secp256k1, hash)
+			err := verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldBeNil)
 		})
 
@@ -223,11 +223,9 @@ func TestVerifyBasics(t *testing.T) {
 					Witness: account0.ID,
 				},
 			}
-			info := generateHeadInfo(blk.Head)
-			sig := account0.Sign(crypto.Secp256k1, info)
-			blk.Head.Signature, _ = sig.Encode()
-
-			err := verifyBasics(blk)
+			hash, _ := blk.Head.Hash()
+			blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+			err := verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldBeNil)
 		})
 
@@ -238,14 +236,13 @@ func TestVerifyBasics(t *testing.T) {
 					Witness: account0.ID,
 				},
 			}
-			err := verifyBasics(blk)
+			err := verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldEqual, errWitness)
 
 			blk.Head.Witness = account1.ID
-			info := generateHeadInfo(blk.Head)
-			sig := account0.Sign(crypto.Secp256k1, info)
-			blk.Head.Signature, _ = sig.Encode()
-			err = verifyBasics(blk)
+			hash, _ := blk.Head.Hash()
+			blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+			err = verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldEqual, errSignature)
 		})
 
@@ -256,10 +253,9 @@ func TestVerifyBasics(t *testing.T) {
 					Witness: account0.ID,
 				},
 			}
-			info := generateHeadInfo(blk.Head)
-			sig := account0.Sign(crypto.Secp256k1, info)
-			blk.Head.Signature, _ = sig.Encode()
-			err := verifyBasics(blk)
+			hash, _ := blk.Head.Hash()
+			blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+			err := verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldBeNil)
 
 			staticProperty.addSlot(0)
@@ -269,10 +265,9 @@ func TestVerifyBasics(t *testing.T) {
 					Witness: account0.ID,
 				},
 			}
-			info = generateHeadInfo(blk.Head)
-			sig = account0.Sign(crypto.Secp256k1, info)
-			blk.Head.Signature, _ = sig.Encode()
-			err = verifyBasics(blk)
+			hash, _ = blk.Head.Hash()
+			blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+			err = verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldEqual, errSlot)
 		})
 	})
@@ -308,7 +303,7 @@ func TestVerifyBlock(t *testing.T) {
 			TxHash: tx0.Hash(),
 		}
 		curTime := common.GetCurrentTimestamp().Slot
-		hash := rootBlk.HeadHash()
+		hash, _ := rootBlk.Head.Hash()
 		witness := witnessOfSlot(curTime)
 		blk := &block.Block{
 			Head: &block.BlockHead{
@@ -322,8 +317,8 @@ func TestVerifyBlock(t *testing.T) {
 		}
 		blk.Head.TxsHash = blk.CalculateTxsHash()
 		blk.Head.MerkleHash = blk.CalculateMerkleHash()
-		info := generateHeadInfo(blk.Head)
-		var sig crypto.Signature
+		info, _ := blk.Head.Hash()
+		var sig *crypto.Signature
 		if witness == account0.ID {
 			sig = account0.Sign(crypto.Secp256k1, info)
 		} else if witness == account1.ID {
@@ -331,7 +326,7 @@ func TestVerifyBlock(t *testing.T) {
 		} else {
 			sig = account2.Sign(crypto.Secp256k1, info)
 		}
-		blk.Head.Signature, _ = sig.Encode()
+		blk.Sign = sig
 		//convey.Convey("Normal (no txs)", func() {
 		//	err := verifyBlock(blk, rootBlk, rootBlk, nil, nil)
 		//	convey.So(err, convey.ShouldBeNil)

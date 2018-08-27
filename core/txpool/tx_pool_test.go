@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"os"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -12,10 +14,10 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
-	"os"
 )
 
 var (
@@ -565,15 +567,19 @@ func genBlocks(accountList []account.Account, witnessList []string, blockCnt int
 		if continuity == false {
 			hash[i%len(hash)] = byte(i % 256)
 		}
-		blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
-			Version:    0,
-			ParentHash: hash,
-			MerkleHash: make([]byte, 0),
-			Info:       []byte(""),
-			Number:     int64(i + 1),
-			Witness:    witnessList[0],
-			Time:       slot + int64(i),
-		}}
+		blk := block.Block{
+			Txs: []*tx.Tx{},
+			Head: &block.BlockHead{
+				Version:    0,
+				ParentHash: hash,
+				MerkleHash: make([]byte, 0),
+				Info:       []byte(""),
+				Number:     int64(i + 1),
+				Witness:    witnessList[0],
+				Time:       slot + int64(i),
+			},
+			Sign: &crypto.Signature{},
+		}
 
 		for i := 0; i < txCnt; i++ {
 			blk.Txs = append(blk.Txs, genTx(accountList[0], expiration))
