@@ -22,6 +22,7 @@ func init() {
 	register(&systemABIs, updateCode)
 	register(&systemABIs, destroyCode)
 	register(&systemABIs, issueIOST)
+	register(&systemABIs, initSetCode)
 }
 
 // var .
@@ -121,8 +122,7 @@ var (
 			actID := "Contract" + id
 			con.ID = actID
 
-			var cost2 *contract.Cost
-			cost2, err = h.SetCode(con)
+			cost2, err := h.SetCode(con)
 			cost.AddAssign(cost2)
 			return []interface{}{actID}, cost, err
 		},
@@ -164,6 +164,32 @@ var (
 			}
 			h.DB().SetBalance(args[0].(string), args[1].(int64))
 			return []interface{}{}, contract.Cost0(), nil
+		},
+	}
+
+	// initSetCode can only be invoked in genesis block, use specific id for deploying contract
+	initSetCode = &abi{
+		name: "InitSetCode",
+		args: []string{"string", "string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			cost = contract.Cost0()
+
+			if h.Context().Value("number").(int64) != 0 {
+				return []interface{}{}, cost, errors.New("InitSetCode in normal block")
+			}
+
+			con := &contract.Contract{}
+			err = con.B64Decode(args[1].(string))
+			if err != nil {
+				return nil, host.CommonErrorCost(1), err
+			}
+
+			actID := args[0].(string)
+			con.ID = actID
+
+			cost2, err := h.SetCode(con)
+			cost.AddAssign(cost2)
+			return []interface{}{actID}, cost, err
 		},
 	}
 )

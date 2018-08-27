@@ -235,6 +235,55 @@ func TestIntergration_SetCode(t *testing.T) {
 	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
 }
 
+func TestEngine_InitSetCode(t *testing.T) {
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	os.RemoveAll("mvcc")
+
+	vi := database.NewVisitor(0, mvccdb)
+	vi.SetBalance(testID[0], 1000000)
+	vi.SetContract(systemContract)
+	vi.Commit()
+
+	bh := &block.BlockHead{
+		ParentHash: []byte("abc"),
+		Number:     0,
+		Witness:    "witness",
+		Time:       123456,
+	}
+
+	e := newEngine(bh, vi)
+
+	//e.SetUp("js_path", jsPath)
+	e.SetUp("log_level", "debug")
+	e.SetUp("log_enable", "")
+
+	jshw := jsHelloWorld()
+
+	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["iost.test", "%v"]`, jshw.B64Encode()))
+
+	trx, err := MakeTx(act)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ilog.Debugf(fmt.Sprintln(e.Exec(trx)))
+	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
+
+	act2 := tx.NewAction("iost.test", "hello", `[]`)
+
+	trx2, err := MakeTx(act2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ilog.Debugf(fmt.Sprintln(e.Exec(trx2)))
+	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
+}
+
 func TestIntergration_CallJSCode(t *testing.T) {
 	e, vi := ininit(t)
 
