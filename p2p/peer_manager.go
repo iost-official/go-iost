@@ -21,7 +21,6 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/metrics"
 )
 
 var (
@@ -168,8 +167,8 @@ func (pm *PeerManager) metricsStatLoop() {
 			pm.wg.Done()
 			return
 		case <-metricsStatTicker.C:
-			metrics.Gauge("iost_p2p_neighbor_count", float64(pm.NeighborCount()), nil)
-			metrics.Gauge("iost_p2p_routing_count", float64(pm.routingTable.Size()), nil)
+			neighborCountGauge.Set(float64(pm.NeighborCount()), nil)
+			routingCountGauge.Set(float64(pm.routingTable.Size()), nil)
 
 			metricsStatTicker.Reset(metricsStatInterval)
 		}

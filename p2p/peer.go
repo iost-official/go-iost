@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/metrics"
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
 
@@ -175,8 +174,8 @@ func (p *Peer) write(m *p2pMessage) error {
 		return err
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
-	metrics.Timer("iost_p2p_byte_out", float64(len(m.content())), tagkv)
-	metrics.Counter("iost_p2p_packet_out", 1, tagkv)
+	byteOutSummary.Observe(float64(len(m.content())), tagkv)
+	packetOutCounter.Add(1, tagkv)
 
 	p.streams <- stream
 	return nil
@@ -233,8 +232,8 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 			return
 		}
 		tagkv := map[string]string{"mtype": msg.messageType().String()}
-		metrics.Timer("iost_p2p_byte_in", float64(len(msg.content())), tagkv)
-		metrics.Counter("iost_p2p_packet_in", 1, tagkv)
+		byteInSummary.Observe(float64(len(msg.content())), tagkv)
+		packetInCounter.Add(1, tagkv)
 
 		p.handleMessage(msg)
 	}
