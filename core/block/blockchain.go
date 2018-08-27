@@ -21,7 +21,6 @@ var (
 	blockPrefix       = []byte("H")
 	once              sync.Once
 	BC                Chain
-	LevelDBPath       string
 )
 
 func Int64ToByte(n int64) []byte {
@@ -34,10 +33,10 @@ func ByteToInt64(b []byte) int64 {
 	return int64(binary.LittleEndian.Uint64(b))
 }
 
-func Instance() (Chain, error) {
+func Instance(path string) (Chain, error) {
 	var err error
 	once.Do(func() {
-		levelDB, tempErr := db.NewLDB(LevelDBPath+"BlockChainDB", 0, 0)
+		levelDB, tempErr := db.NewLDB(path+"BlockChainDB", 0, 0)
 		if tempErr != nil {
 			err = errors.New("fail to init blockchaindb")
 		}
@@ -146,4 +145,8 @@ func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 		return nil, err
 	}
 	return bc.GetBlockByHash(hash)
+}
+
+func (bc *BlockChain) Close() {
+	bc.BlockChainDB.Close()
 }
