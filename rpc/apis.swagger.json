@@ -299,7 +299,7 @@
         }
       }
     },
-    "commonSignatureRaw": {
+    "cryptoSignatureRaw": {
       "type": "object",
       "properties": {
         "algorithm": {
@@ -390,9 +390,8 @@
     "rpcGetBalanceReq": {
       "type": "object",
       "properties": {
-        "pubkey": {
-          "type": "string",
-          "format": "byte"
+        "ID": {
+          "type": "string"
         }
       }
     },
@@ -528,11 +527,11 @@
         "signs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/commonSignatureRaw"
+            "$ref": "#/definitions/cryptoSignatureRaw"
           }
         },
         "publisher": {
-          "$ref": "#/definitions/commonSignatureRaw"
+          "$ref": "#/definitions/cryptoSignatureRaw"
         }
       }
     }
