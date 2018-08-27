@@ -32,6 +32,12 @@ func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockV
 	//
 	//pm.vms["native"] = &nvm
 	staticMonitor = pm
+	db.EXPECT().Get("state", "c-iost.system").DoAndReturn(func(table string, key string) (string, error) {
+		return "-", nil
+	})
+	db.EXPECT().Put("state", "c-iost.system", gomock.Any()).DoAndReturn(func(table string, key string, content string) error {
+		return nil
+	})
 	return bh, db, vm
 }
 
@@ -564,21 +570,20 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 				{
 					Name:     "Receipt",
 					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
+					GasPrice: int64(100),
+					Limit:    contract.NewCost(1000, 1000, 1000),
 					Args:     []string{"string"},
 				},
 				{
 					Name:     "CallWithReceipt",
 					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
+					GasPrice: int64(100),
+					Limit:    contract.NewCost(1000, 1000, 1000),
 					Args:     []string{"string", "string", "json"},
 				},
 			},
 		},
 	}
-
 	db.EXPECT().Get("state", "c-iost.system").DoAndReturn(func(table string, key string) (string, error) {
 		return c.Encode(), nil
 	})
