@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	clearInterval       = 10 * time.Second
-	expiration    int64 = 60
-	filterTime          = expiration + expiration/2
+	clearInterval = 10 * time.Second
+	expiration    = int64(60 * time.Second)
+	filterTime    = int64(expiration + expiration/2)
 	//expiration    = 60*60*24*7
 
 	receivedTransactionCount = prometheus.NewCounter(

@@ -26,11 +26,11 @@ var (
 	errTxTooOld    = errors.New("tx too old")
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
+	errHeadHash    = errors.New("wrong head hash")
 )
 
 func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	ilog.Info("generateBlockstart")
-	var err error
 	blk := block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
@@ -61,23 +61,19 @@ L:
 	}
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
-	headInfo := generateHeadInfo(blk.Head)
-	sig := account.Sign(crypto.Secp256k1, headInfo)
-	blk.Head.Signature, err = sig.Encode()
+	//headInfo := generateHeadInfo(blk.Head)
+	err := blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err
 	}
-	err = blk.CalculateHeadHash()
-	if err != nil {
-		return nil, err
-	}
+	blk.Sign = account.Sign(crypto.Secp256k1, blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
-
 	generatedBlockCount.Inc()
 	txPoolSize.Set(float64(len(blk.Txs)))
 	return &blk, nil
 }
 
+/*
 func generateHeadInfo(head *block.BlockHead) []byte {
 	info := block.Int64ToByte(head.Version)
 	info = append(info, head.ParentHash...)
@@ -87,19 +83,23 @@ func generateHeadInfo(head *block.BlockHead) []byte {
 	info = append(info, block.Int64ToByte(head.Time)...)
 	return common.Sha3(info)
 }
+*/
 
-func verifyBasics(blk *block.Block) error {
-	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
+	if witnessOfSlot(head.Time) != head.Witness {
 		return errWitness
 	}
-	var signature common.Signature
-	signature.Decode(blk.Head.Signature)
-	signature.SetPubkey(account.GetPubkeyByID(blk.Head.Witness))
-	headInfo := generateHeadInfo(blk.Head)
-	if !signature.Verify(headInfo) {
+	//signature.Decode(Head.Signature)
+	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
+	//headInfo := generateHeadInfo(blk.Head)
+	hash, err := head.Hash()
+	if err != nil {
+		return errHeadHash
+	}
+	if !signature.Verify(hash) {
 		return errSignature
 	}
-	if staticProperty.hasSlot(blk.Head.Time) {
+	if staticProperty.hasSlot(head.Time) {
 		return errSlot
 	}
 	return nil

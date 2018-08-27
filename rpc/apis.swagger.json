@@ -17,6 +17,7 @@
   "paths": {
     "/v1/estimategas": {
       "post": {
+        "summary": "not supported yet",
         "operationId": "EstimateGas",
         "responses": {
           "200": {
@@ -43,6 +44,7 @@
     },
     "/v1/getbalance": {
       "post": {
+        "summary": "get the balance of some account by account ID",
         "operationId": "GetBalance",
         "responses": {
           "200": {
@@ -69,6 +71,7 @@
     },
     "/v1/getblockbyhash": {
       "post": {
+        "summary": "get the block by hash",
         "operationId": "GetBlockByHash",
         "responses": {
           "200": {
@@ -95,6 +98,7 @@
     },
     "/v1/getblockbynum": {
       "post": {
+        "summary": "get the block by number",
         "operationId": "getBlockByNum",
         "responses": {
           "200": {
@@ -121,6 +125,7 @@
     },
     "/v1/getheight": {
       "post": {
+        "summary": "get the current height of the blockchain",
         "operationId": "GetHeight",
         "responses": {
           "200": {
@@ -147,6 +152,7 @@
     },
     "/v1/getstate": {
       "post": {
+        "summary": "get the value of the corresponding key in stateDB",
         "operationId": "GetState",
         "responses": {
           "200": {
@@ -173,6 +179,7 @@
     },
     "/v1/gettxbyhash": {
       "post": {
+        "summary": "get the tx by hash",
         "operationId": "GetTxByHash",
         "responses": {
           "200": {
@@ -199,6 +206,7 @@
     },
     "/v1/sendrawtx": {
       "post": {
+        "summary": "receive encoded tx",
         "operationId": "SendRawTx",
         "responses": {
           "200": {
@@ -225,6 +233,7 @@
     },
     "/v1/subscribe": {
       "post": {
+        "summary": "subscribe an event",
         "operationId": "Subscribe",
         "responses": {
           "200": {
@@ -299,7 +308,7 @@
         }
       }
     },
-    "commonSignatureRaw": {
+    "cryptoSignatureRaw": {
       "type": "object",
       "properties": {
         "algorithm": {
@@ -342,7 +351,8 @@
           "type": "boolean",
           "format": "boolean"
         }
-      }
+      },
+      "title": "complete means return the whole block or just blockhead+txhash_list"
     },
     "rpcBlockByNumReq": {
       "type": "object",
@@ -390,9 +400,8 @@
     "rpcGetBalanceReq": {
       "type": "object",
       "properties": {
-        "pubkey": {
-          "type": "string",
-          "format": "byte"
+        "ID": {
+          "type": "string"
         }
       }
     },
@@ -446,7 +455,8 @@
           "type": "string",
           "format": "byte"
         }
-      }
+      },
+      "title": "the rawdata of a tx"
     },
     "rpcSendRawTxRes": {
       "type": "object",
@@ -528,11 +538,11 @@
         "signs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/commonSignatureRaw"
+            "$ref": "#/definitions/cryptoSignatureRaw"
           }
         },
         "publisher": {
-          "$ref": "#/definitions/commonSignatureRaw"
+          "$ref": "#/definitions/cryptoSignatureRaw"
         }
       }
     }

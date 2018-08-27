@@ -12,6 +12,7 @@ type Chain interface {
 	GetBlockByNumber(number int64) (*Block, error)
 	GetBlockByHash(blockHash []byte) (*Block, error)
 	GetBlockByteByHash(blockHash []byte) ([]byte, error)
+	Close()
 }
 
 type ChainIterator interface {

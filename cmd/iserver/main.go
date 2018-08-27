@@ -146,7 +146,7 @@ func main() {
 	}
 	app = append(app, txp)
 
-	rpcServer := rpc.NewRPCServer(blkCache, glb)
+	rpcServer := rpc.NewRPCServer(txp, blkCache, glb)
 	app = append(app, rpcServer)
 
 	consensus, err := consensus.Factory(
