@@ -11,18 +11,8 @@ import (
 
 // errors
 var (
-	ErrDuplMetricsType   = errors.New("duplicated metrics name")
 	ErrNilPusher         = errors.New("pusher is nil")
 	ErrPusherUnavailable = errors.New("pusher addr unavailable")
-	ErrMetricsStopped    = errors.New("metrics has been stopped")
-)
-
-type metricsType int
-
-const (
-	metricsTypeCounter metricsType = iota
-	metricsTypeGauge
-	metricsTypeTimer
 )
 
 var (
