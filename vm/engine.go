@@ -153,7 +153,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 	for _, action := range tx0.Actions {
 
-		cost, status, receipts, err2 := e.runAction(action)
+		cost, status, receipts, err2 := e.runAction(*action)
 		e.logger.Infof("run action : %v, result is %v", action, status.Code)
 		e.logger.Debug("used cost > ", cost)
 		e.logger.Debugf("status > \n%v\n", status)

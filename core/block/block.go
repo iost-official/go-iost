@@ -24,11 +24,11 @@ type Block struct {
 
 func GenGenesis(initTime int64) (*Block, error) {
 	//var code string
-	var acts []tx.Action
+	var acts []*tx.Action
 	for k, v := range account.GenesisAccount {
 		//code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
 		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, k, strconv.FormatInt(v, 10)))
-		acts = append(acts, act)
+		acts = append(acts, &act)
 	}
 
 	txn := tx.NewTx(acts, nil, 0, 0, 0)
