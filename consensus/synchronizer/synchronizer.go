@@ -16,6 +16,7 @@ var (
 	SyncNumber              int64 = 2
 	MaxBlockHashQueryNumber int64 = 10
 	RetryTime                     = 5 * time.Second
+	syncBlockTimeout              = 3 * time.Second
 	MaxAcceptableLength     int64 = 100
 	ConfirmNumber                 = 7
 )
@@ -457,7 +458,7 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 						dc.peerState.Store(peerID, hash)
 						dc.hashState.Store(hash, peerID.Pretty())
 						callback(hash, peerID)
-						dc.peerTimer.Store(peerID, time.AfterFunc(5*time.Second, func() {
+						dc.peerTimer.Store(peerID, time.AfterFunc(syncBlockTimeout, func() {
 							dc.OnTimeout(hash, peerID)
 						}))
 						return false

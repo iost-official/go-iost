@@ -44,6 +44,8 @@ const (
 	RoutingTableQuery
 	RoutingTableResponse
 	NewBlock
+	NewBlockHead
+	NewBlockRequest
 	SyncBlockHashRequest
 	SyncBlockHashResponse
 	SyncBlockRequest
