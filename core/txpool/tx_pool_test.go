@@ -23,7 +23,7 @@ import (
 var (
 	dbPath1 = "txDB"
 	dbPath2 = "StatePoolDB"
-	dbPath3 = "BlockChainDB"
+	dbPath3 = "blockChainDB"
 )
 
 func TestNewTxPoolImpl(t *testing.T) {
