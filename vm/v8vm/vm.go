@@ -38,14 +38,7 @@ func NewVM() *VM {
 }
 
 func NewVMWithChannel(releaseChannel chan *VM) *VM {
-	CVMInitOnce.Do(func() {
-		C.init()
-	})
-	isolate := C.newIsolate()
-	e := &VM{
-		isolate: isolate,
-	}
-	e.sandbox = NewSandbox(e)
+	e := NewVM()
 	e.releaseChannel = releaseChannel
 	return e
 }
