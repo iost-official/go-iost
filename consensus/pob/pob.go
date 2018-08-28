@@ -166,26 +166,32 @@ func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
 	blkReq := &message.RequestBlock{
 		BlockHash: []byte(blk.HeadHash()),
 	}
-
 	bytes, err := blkReq.Encode()
 	if err != nil {
+		ilog.Debug(fmt.Errorf("fail to encode requestblock, %v", err))
 		return
 	}
 	p.blockReqMap.Store(string(blk.HeadHash()), time.AfterFunc(blockReqTimeout, func() {
 		p.blockReqMap.Delete(string(blk.HeadHash()))
 	}))
 	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage)
+	blkByte, err := blk.EncodeHead()
+	if err != nil {
+		ilog.Error(err.Error())
+		return
+	}
+	p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
 }
 
 func (p *PoB) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
 	node, err := p.blockCache.Find(rh.BlockHash)
 	if err != nil {
-		ilog.Errorf("Block not in cache: %v", rh.BlockNumber)
+		ilog.Errorf("block not in cache: %v", rh.BlockNumber)
 		return
 	}
 	b, err := node.Block.Encode()
 	if err != nil {
-		ilog.Errorf("Fail to encode block: %v", rh.BlockNumber)
+		ilog.Errorf("fail to encode block: %v", rh.BlockNumber)
 		return
 	}
 	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
@@ -253,7 +259,6 @@ func (p *PoB) blockLoop() {
 				ilog.Error(err.Error())
 				continue
 			}
-			blk.DecodeHead(blkByte)
 			go p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
 		case <-p.exitSignal:
 			return

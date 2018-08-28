@@ -124,7 +124,7 @@ func (sy *SyncImpl) NeedSync(netHeight int64) (bool, int64, int64) {
 func (sy *SyncImpl) queryBlockHash(hr message.BlockHashQuery) {
 	bytes, err := hr.Encode()
 	if err != nil {
-		ilog.Debugf("marshal BlockHashQuery failed. err=%v", err)
+		ilog.Errorf("marshal blockhashquery failed. err=%v", err)
 		return
 	}
 	ilog.Debugf("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
