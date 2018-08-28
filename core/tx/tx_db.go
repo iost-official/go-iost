@@ -26,11 +26,11 @@ var once sync.Once
 var TxDBInst *TxDBImpl
 var LdbPath string
 
-func TxDBInstance() TxDB {
+func TxDBInstance(path string) TxDB {
 	if TxDBInst != nil {
 		return TxDBInst
 	}
-	ldb, err := db.NewLDB(LdbPath+"txDB", 0, 0)
+	ldb, err := db.NewLDB(path+"txDB", 0, 0)
 	if err != nil {
 		panic(err)
 	}

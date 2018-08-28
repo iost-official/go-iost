@@ -125,8 +125,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		}
 	}
 
-	tx.LdbPath = conf.DB.LdbPath
-	txDb := tx.TxDBInstance()
+	txDb := tx.TxDBInstance(conf.DB.LdbPath)
 
 	if txDb == nil {
 		return nil, errors.New("new txdb failed, stop the program.")
@@ -142,8 +141,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 func FakeNew() BaseVariable {
 	blockChain, _ := block.NewBlockChainDB("./")
 	stateDB, _ := db.NewMVCCDB("StateDB")
-	tx.LdbPath = "./"
-	txDBfdafad := tx.TxDBInstance()
+	txDBfdafad := tx.TxDBInstance("./")
 	mode := Mode{}
 	mode.SetMode(ModeNormal)
 	config := common.Config{}
