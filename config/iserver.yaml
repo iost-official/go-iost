@@ -10,14 +10,14 @@ db:
 
 
 p2p:
-  listenAddr: "0.0.0.0:30303"
+  listenAddr: "0.0.0.0:30308"
   chainID: 1024
   version: 1
   seedNodes:
-  - "/ip4/127.0.0.1/tcp/30303/ipfs/12D3KooWBBhYDkCUjgtPRsTirrcbRtKtL4n2Q4RqX1PM43jmrC1r"
+  - "/ip4/127.0.0.1/tcp/30308/ipfs/12D3KooWMH9UtmksK7dUXoHFUPuHSKAB4LwStPuzdijahDiPLdSR"
 
 rpc:
-  port: 30302
+  port: 30312
 
 log:
   asyncWrite: true

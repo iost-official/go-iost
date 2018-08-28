@@ -227,7 +227,6 @@ func (p *PoB) blockLoop() {
 					ilog.Error(err.Error())
 					continue
 				}
-				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
 				if err == errSingle {
 					if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need {
 						go p.synchronizer.SyncBlocks(start, end)

@@ -10,6 +10,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
@@ -73,6 +74,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		}
 
 	}
+	ilog.Errorln("block hash", blk.HeadHash())
 
 	stateDB, err := db.NewMVCCDB(conf.DB.LdbPath + "StatePoolDB")
 	if err != nil {
@@ -80,6 +82,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	}
 
 	hash := stateDB.CurrentTag()
+	ilog.Errorln("state hash", []byte(hash))
 	if hash == "" {
 		blk, err = blockChain.GetBlockByNumber(0)
 		if err != nil {
