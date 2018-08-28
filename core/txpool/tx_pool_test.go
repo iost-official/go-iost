@@ -155,6 +155,18 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(r1, ShouldEqual, NotFound)
 
 		})
+		Convey("delPending", func() {
+
+			t := genTx(accountList[0], expiration)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+			r := txPool.AddTx(t)
+			So(r, ShouldEqual, Success)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+			e := txPool.DelTx(t.Hash())
+			So(e, ShouldBeNil)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+
+		})
 		Convey("Pending", func() {
 
 			t := genTx(accountList[0], expiration)
