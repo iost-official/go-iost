@@ -323,7 +323,7 @@ func TestVerifyBlock(t *testing.T) {
 		blk.Head.TxsHash = blk.CalculateTxsHash()
 		blk.Head.MerkleHash = blk.CalculateMerkleHash()
 		info := generateHeadInfo(blk.Head)
-		var sig common.Signature
+		var sig crypto.Signature
 		if witness == account0.ID {
 			sig = account0.Sign(crypto.Secp256k1, info)
 		} else if witness == account1.ID {
