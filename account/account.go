@@ -70,8 +70,8 @@ func NewAccount(seckey []byte) (Account, error) {
 	return account, nil
 }
 
-func (a *Account) Sign(algo crypto.Algorithm, info []byte) crypto.Signature {
-	return *crypto.NewSignature(algo, info, a.Seckey)
+func (a *Account) Sign(algo crypto.Algorithm, info []byte) *crypto.Signature {
+	return crypto.NewSignature(algo, info, a.Seckey)
 }
 
 func GetIDByPubkey(pubkey []byte) string {

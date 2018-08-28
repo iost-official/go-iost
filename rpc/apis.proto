@@ -6,55 +6,65 @@ import "github.com/iost-official/Go-IOS-Protocol/core/block/block.proto";
 import "github.com/iost-official/Go-IOS-Protocol/core/event/event.proto";
 import "google/api/annotations.proto";
 
+// rpc apis
 service Apis {
+	// get the current height of the blockchain
 	rpc GetHeight (VoidReq) returns (HeightRes) {
     option (google.api.http) = {
       post: "/v1/getheight"
       body: "*"
     };
   }
+  // get the tx by hash
 	rpc GetTxByHash (HashReq) returns (tx.TxRaw) {
     option (google.api.http) = {
       post: "/v1/gettxbyhash"
       body: "*"
-    };
+    }; 
   }
+  // get the block by hash
 	rpc GetBlockByHash (BlockByHashReq) returns (BlockInfo) {
     option (google.api.http) = {
       post: "/v1/getblockbyhash"
       body: "*"
     };
   }
+  // get the block by number
 	rpc getBlockByNum (BlockByNumReq) returns (BlockInfo) {
     option (google.api.http) = {
       post: "/v1/getblockbynum"
       body: "*"
     };
   }
+  // get the balance of some account by account ID
   rpc GetBalance (GetBalanceReq) returns (GetBalanceRes) {
-    option (google.api.http) = {
+    option (google.api.http) = { 
       post: "/v1/getbalance"
       body: "*"
     };
   }
+  // get the value of the corresponding key in stateDB
   rpc GetState (GetStateReq) returns (GetStateRes) {
     option (google.api.http) = {
       post: "/v1/getstate"
       body: "*"
     };
   }
+  // receive encoded tx
   rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {
     option (google.api.http) = {
       post: "/v1/sendrawtx"
       body: "*"
     };
   }
+  // not supported yet
   rpc EstimateGas (RawTxReq) returns (GasRes) {
     option (google.api.http) = {
       post: "/v1/estimategas"
       body: "*"
     };
   }
+  //subscribe an event
   rpc Subscribe (SubscribeReq) returns (stream SubscribeRes) {
     option (google.api.http) = {
       post: "/v1/subscribe"
@@ -70,6 +80,8 @@ message VoidReq {
 message HashReq {
 	bytes hash=1;
 }
+
+// complete means return the whole block or just blockhead+txhash_list
 message BlockByHashReq {
 	bytes hash=1;
 	bool complete=2;
@@ -86,6 +98,7 @@ message GetStateReq {
 	string key=1;
 }
 
+//the rawdata of a tx
 message RawTxReq {
 	bytes data=1;
 }
