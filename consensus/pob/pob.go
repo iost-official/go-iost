@@ -151,6 +151,7 @@ func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
 	_, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 	if ok {
 		ilog.Info("block in block request map, block hash: ", blk.HeadHash())
+		return
 	}
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
