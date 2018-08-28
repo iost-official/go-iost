@@ -808,6 +808,12 @@
 			"revisionTime": "2018-06-07T12:36:07Z"
 		},
 		{
+			"checksumSHA1": "1Yskj6jmB018jKE/I1EhEzr7xzI=",
+			"path": "github.com/prometheus/client_golang/prometheus/push",
+			"revision": "4eb539fa85a2688054063c3b01d9e86eb01bf999",
+			"revisionTime": "2018-08-24T10:10:16Z"
+		},
+		{
 			"checksumSHA1": "DvwvOlPNAgRntBzt3b3OSRMS2N4=",
 			"path": "github.com/prometheus/client_model/go",
 			"revision": "99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c",
