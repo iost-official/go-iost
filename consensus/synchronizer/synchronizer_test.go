@@ -10,6 +10,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
@@ -46,7 +47,7 @@ func TestSynchronizer(t *testing.T) {
 	Convey("Test Synchronizer", t, func() {
 		baseVariable := global.FakeNew()
 		defer func() {
-			os.RemoveAll("BlockChainDB")
+			os.RemoveAll("blockChainDB")
 			os.RemoveAll("StateDB")
 			os.RemoveAll("txDB")
 		}()
@@ -56,6 +57,7 @@ func TestSynchronizer(t *testing.T) {
 				Number:  0,
 				Time:    0,
 			},
+			Sign:     &crypto.Signature{},
 			Txs:      make([]*tx.Tx, 0),
 			Receipts: make([]*tx.TxReceipt, 0),
 		}

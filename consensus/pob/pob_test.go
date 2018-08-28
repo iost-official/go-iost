@@ -21,7 +21,7 @@ import (
 )
 
 func testRun(t *testing.T) {
-	exec.Command("rm", "-r", "./BlockChainDB").Run()
+	exec.Command("rm", "-r", "./blockChainDB").Run()
 	exec.Command("rm", "-r", "./StateDB").Run()
 	exec.Command("rm", "-r", "./txDB").Run()
 	exec.Command("rm", "", "priv.key").Run()

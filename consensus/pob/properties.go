@@ -41,6 +41,11 @@ func (property *StaticProperty) addSlot(slot int64) {
 }
 
 func (property *StaticProperty) delSlot(slot int64) {
+
+	if slot%10 != 0 {
+		return
+	}
+
 	for k := range property.SlotMap {
 		if k <= slot {
 			delete(property.SlotMap, k)
