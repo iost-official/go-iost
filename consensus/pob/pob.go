@@ -148,7 +148,7 @@ func (p *PoB) messageLoop() {
 }
 
 func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
-	_, ok := p.blockReqMap.Load(blk.HeadHash())
+	_, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 	if ok {
 		ilog.Info("block in block request map, block hash: ", blk.HeadHash())
 	}
@@ -171,8 +171,8 @@ func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
 	if err != nil {
 		return
 	}
-	p.blockReqMap.Store(blk.HeadHash(), time.AfterFunc(blockReqTimeout, func() {
-		p.blockReqMap.Delete(blk.HeadHash())
+	p.blockReqMap.Store(string(blk.HeadHash()), time.AfterFunc(blockReqTimeout, func() {
+		p.blockReqMap.Delete(string(blk.HeadHash()))
 	}))
 	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage)
 }
@@ -207,14 +207,14 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			ilog.Info("received new block, block number: ", blk.Head.Number)
-			timer, ok := p.blockReqMap.Load(blk.HeadHash())
+			timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 			if !ok {
 				ilog.Info("block not in block request map, block number: ", blk.Head.Number)
 				continue
 			}
 			timer.(*time.Timer).Stop()
 			err = p.handleRecvBlock(&blk)
-			p.blockReqMap.Delete(blk.HeadHash())
+			p.blockReqMap.Delete(string(blk.HeadHash()))
 			if err != nil && err != errSingle {
 				ilog.Error(err.Error())
 				continue
@@ -262,7 +262,6 @@ func (p *PoB) scheduleLoop() {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
-			ilog.Info(p.baseVariable.Mode().Mode())
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				ilog.Info(p.baseVariable.Mode().Mode())
 				if p.baseVariable.Mode().Mode() == global.ModeNormal {
