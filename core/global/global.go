@@ -93,6 +93,10 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			}
 		}
 		stateDB.Tag(string(blk.HeadHash()))
+		err = stateDB.Flush(string(blk.HeadHash()))
+		if err != nil {
+			return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
+		}
 	} else {
 		blk, err = blockChain.GetBlockByHash([]byte(hash))
 		if err != nil {
@@ -106,24 +110,26 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		}
 		verifier.VerifyBlockWithVM(blk, stateDB)
 		stateDB.Tag(string(blk.HeadHash()))
-		if blk.Head.Number%1000 == 0 {
+		//if blk.Head.Number%1000 == 0 {
+		err = stateDB.Flush(string(blk.HeadHash()))
+		if err != nil {
+			return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
+		}
+		//}
+	}
+	/*
+		hash = stateDB.CurrentTag()
+		blk, err = blockChain.Top()
+		if err != nil {
+			return nil, fmt.Errorf("blockchain top failed, stop the pogram. err: %v", err)
+		}
+		if string(blk.HeadHash()) != hash {
 			err = stateDB.Flush(string(blk.HeadHash()))
 			if err != nil {
 				return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
 			}
 		}
-	}
-	hash = stateDB.CurrentTag()
-	blk, err = blockChain.Top()
-	if err != nil {
-		return nil, fmt.Errorf("blockchain top failed, stop the pogram. err: %v", err)
-	}
-	if string(blk.HeadHash()) != hash {
-		err = stateDB.Flush(string(blk.HeadHash()))
-		if err != nil {
-			return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
-		}
-	}
+	*/
 
 	txDb := tx.NewTxDB(conf.DB.LdbPath)
 
