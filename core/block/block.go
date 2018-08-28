@@ -71,15 +71,13 @@ func (b *Block) CalculateMerkleHash() []byte {
 
 func (b *Block) EncodeHead() ([]byte, error) {
 	signByte, err := b.Sign.Encode()
-	br := &BlockRaw{
-		Head:     b.Head,
-		Sign:     signByte,
-		Txs:      nil,
-		Receipts: nil,
+	br := &BlockHeadAndSign{
+		Head: b.Head,
+		Sign: signByte,
 	}
 	brByte, err := proto.Marshal(br)
 	if err != nil {
-		return nil, errors.New("fail to encode blockraw")
+		return nil, errors.New("fail to encode blockheadandsign")
 	}
 	return brByte, nil
 }
@@ -88,7 +86,7 @@ func (b *Block) DecodeHead(blockByte []byte) error {
 	br := &BlockHeadAndSign{}
 	err := proto.Unmarshal(blockByte, br)
 	if err != nil {
-		return errors.New("fail to decode blockraw")
+		return errors.New("fail to decode blockheadandsign")
 	}
 	b.Head = br.Head
 	b.Sign = &crypto.Signature{}

@@ -102,6 +102,7 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 
 //Start make the PoB run.
 func (p *PoB) Start() error {
+	go p.messageLoop()
 	go p.blockLoop()
 	go p.scheduleLoop()
 	return nil
@@ -122,24 +123,24 @@ func (p *PoB) messageLoop() {
 				ilog.Infof("chRecvBlockHead has closed")
 				return
 			}
-			var blk *block.Block
+			var blk block.Block
 			err := blk.DecodeHead(incomingMessage.Data())
 			if err != nil {
 				continue
 			}
-			go p.handleRecvBlockHead(blk, incomingMessage.From())
+			go p.handleRecvBlockHead(&blk, incomingMessage.From())
 		case incomingMessage, ok := <-p.chQueryBlock:
 			if !ok {
 				ilog.Infof("chRecvBlockHead has closed")
 				return
 			}
 
-			var rh *message.RequestBlock
+			var rh message.RequestBlock
 			err := rh.Decode(incomingMessage.Data())
 			if err != nil {
 				continue
 			}
-			go p.handleBlockQuery(rh, incomingMessage.From())
+			go p.handleBlockQuery(&rh, incomingMessage.From())
 		case <-p.exitSignal:
 			return
 		}
@@ -246,6 +247,7 @@ func (p *PoB) blockLoop() {
 				ilog.Error(err.Error())
 				continue
 			}
+			blk.DecodeHead(blkByte)
 			go p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
 		case <-p.exitSignal:
 			return
