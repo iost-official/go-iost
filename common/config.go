@@ -18,6 +18,8 @@ type DBConfig struct {
 }
 
 type VMConfig struct {
+	JsPath   string
+	LogLevel string
 }
 
 // P2PConfig is the config for p2p network.

@@ -38,6 +38,28 @@ func (h *Teller) transfer(from, to string, amount int64) error {
 	return ErrBalanceNotEnough
 }
 
+// GrantCoin ...
+func (h *Teller) GrantCoin(coinName, to string, amount int64) (*contract.Cost, error) {
+	if amount <= 0 {
+		return CommonErrorCost(1), ErrTransferNegValue
+	}
+	h.h.db.SetCoin(coinName, to, amount)
+	return TransferCost, nil
+}
+
+// ConsumeCoin ...
+func (h *Teller) ConsumeCoin(coinName, from string, amount int64) (cost *contract.Cost, err error) {
+	if amount <= 0 {
+		return CommonErrorCost(1), ErrTransferNegValue
+	}
+	bl := h.h.db.Coin(coinName, from)
+	if bl < amount {
+		return CommonErrorCost(1), ErrBalanceNotEnough
+	}
+	h.h.db.SetCoin(coinName, from, -1*amount)
+	return TransferCost, nil
+}
+
 // Transfer ...
 func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error) {
 	//ilog.Debugf("amount : %v", amount)
@@ -90,7 +112,7 @@ func (h *Teller) PayCost(c *contract.Cost, who string) {
 
 // DoPay ...
 func (h *Teller) DoPay(witness string, gasPrice int64) error {
-	if gasPrice <= 0 {
+	if gasPrice < 0 {
 		panic("gas_price error")
 	}
 

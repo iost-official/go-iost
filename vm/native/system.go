@@ -2,6 +2,7 @@ package native
 
 import (
 	"errors"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
@@ -21,6 +22,7 @@ func init() {
 	register(&systemABIs, updateCode)
 	register(&systemABIs, destroyCode)
 	register(&systemABIs, issueIOST)
+	register(&systemABIs, initSetCode)
 }
 
 // var .
@@ -91,7 +93,7 @@ var (
 			return []interface{}{}, cost, err
 		},
 	}
-	// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
+	// setcode can only be invoked in native vm, avoid updating contract during running
 	setCode = &abi{
 		name: "SetCode",
 		args: []string{"string"},
@@ -120,13 +122,12 @@ var (
 			actID := "Contract" + id
 			con.ID = actID
 
-			var cost2 *contract.Cost
-			cost2, err = h.SetCode(con)
+			cost2, err := h.SetCode(con)
 			cost.AddAssign(cost2)
 			return []interface{}{actID}, cost, err
 		},
 	}
-	// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
+	// updateCode can only be invoked in native vm, avoid updating contract during running
 	updateCode = &abi{
 		name: "UpdateCode",
 		args: []string{"string"},
@@ -144,7 +145,7 @@ var (
 			return []interface{}{}, cost, err
 		},
 	}
-	// 不支持在智能合约中调用, 只能放在 action 中执行, 否则会有把正在执行的智能合约更新的风险
+	// destroyCode can only be invoked in native vm, avoid updating contract during running
 	destroyCode = &abi{
 		name: "DestroyCode",
 		args: []string{"string"},
@@ -158,12 +159,37 @@ var (
 		name: "IssueIOST",
 		args: []string{"string", "number"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
-
 			if h.Context().Value("number").(int64) != 0 {
 				return []interface{}{}, contract.Cost0(), errors.New("issue IOST in normal block")
 			}
 			h.DB().SetBalance(args[0].(string), args[1].(int64))
 			return []interface{}{}, contract.Cost0(), nil
+		},
+	}
+
+	// initSetCode can only be invoked in genesis block, use specific id for deploying contract
+	initSetCode = &abi{
+		name: "InitSetCode",
+		args: []string{"string", "string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			cost = contract.Cost0()
+
+			if h.Context().Value("number").(int64) != 0 {
+				return []interface{}{}, cost, errors.New("InitSetCode in normal block")
+			}
+
+			con := &contract.Contract{}
+			err = con.B64Decode(args[1].(string))
+			if err != nil {
+				return nil, host.CommonErrorCost(1), err
+			}
+
+			actID := args[0].(string)
+			con.ID = actID
+
+			cost2, err := h.SetCode(con)
+			cost.AddAssign(cost2)
+			return []interface{}{actID}, cost, err
 		},
 	}
 )

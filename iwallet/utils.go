@@ -13,6 +13,9 @@ func saveBytes(buf []byte) string {
 }
 
 func loadBytes(s string) []byte {
+	if s[len(s)-1] == 10 {
+		s = s[:len(s)-1]
+	}
 	buf := common.Base58Decode(s)
 	return buf
 }

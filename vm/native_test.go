@@ -80,7 +80,7 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Fatalf("LoadAndCall setcode error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != hash {
-		t.Errorf("LoadAndCall except Contract"+"iamhash"+", got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except Contract"+"iamhash"+", got %s\n", rs[0])
 	}
 
 	con.ID = "Contractiamhash"
@@ -106,7 +106,7 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Fatalf("LoadAndCall update error: %v\n", err)
 	}
 	if len(rs) != 0 {
-		t.Errorf("LoadAndCall except 0 rtn"+", got %d\n", len(rs))
+		t.Fatalf("LoadAndCall except 0 rtn"+", got %d\n", len(rs))
 	}
 
 	_, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)

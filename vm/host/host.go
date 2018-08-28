@@ -152,7 +152,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 		return cost, err
 	}
 
-	// todo return 返回类型应该是 bool
+	// todo rtn[0] should be bool type
 	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, ErrUpdateRefused
 	}
@@ -165,7 +165,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 
 // DestroyCode ...
 func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
-	// todo 释放kv
+	// todo free kv
 
 	oc := h.db.Contract(contractName)
 	if oc == nil {
@@ -182,7 +182,7 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 		return cost, err
 	}
 
-	// todo return 返回类型应该是 bool
+	// todo rtn[0] should be bool type
 	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, ErrDestroyRefused
 	}
