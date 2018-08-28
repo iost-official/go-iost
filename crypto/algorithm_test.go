@@ -59,13 +59,10 @@ func BenchmarkVerify(b *testing.B) {
 func BenchmarkGetPubkey(b *testing.B) {
 	for _, algo := range algos {
 		b.Run(algo.name, func(b *testing.B) {
-			seckeys := make([][]byte, 0)
-			for i := 0; i < b.N; i++ {
-				seckeys = append(seckeys, algo.data.GenSeckey())
-			}
+			seckey := algo.data.GenSeckey()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				algo.data.GetPubkey(seckeys[i])
+				algo.data.GetPubkey(seckey)
 			}
 		})
 	}
