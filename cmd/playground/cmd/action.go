@@ -47,7 +47,7 @@ Usage:
 		action := tx.NewAction(args[0], args[1], args[2])
 
 		tx0, err := database.LoadTxInfo("tx_info.json")
-		tx0.Actions = []tx.Action{action}
+		tx0.Actions = []*tx.Action{&action}
 
 		fmt.Println(eg.Exec(tx0))
 

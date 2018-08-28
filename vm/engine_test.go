@@ -64,7 +64,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	act := tx.Action{
@@ -73,7 +73,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		Data:       `["datas"]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, act)
+	mtx.Actions = append(mtx.Actions, &act)
 
 	c := contract.Contract{
 		ID:   "Contract0",
@@ -138,7 +138,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	act := tx.Action{
@@ -147,7 +147,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 		Data:       `["datas"]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, act)
+	mtx.Actions = append(mtx.Actions, &act)
 
 	c := contract.Contract{
 		ID:   "Contract0",
@@ -214,7 +214,7 @@ func TestCost(t *testing.T) { // tests of context transport
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -223,14 +223,14 @@ func TestCost(t *testing.T) { // tests of context transport
 		Data:       `["datas"]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, ac)
+	mtx.Actions = append(mtx.Actions, &ac)
 
 	ac2 := tx.Action{
 		Contract:   "Contract0",
 		ActionName: "abi",
 		Data:       `["data2"]`,
 	}
-	mtx.Actions = append(mtx.Actions, ac2)
+	mtx.Actions = append(mtx.Actions, &ac2)
 
 	c := contract.Contract{
 		ID:   "Contract0",
@@ -334,7 +334,7 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 		Signers:    make([][]byte, 0),
 	}
 	mtx.Signers = append(mtx.Signers, []byte("a"))
@@ -345,7 +345,7 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		Data:       `["a","b", 100]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, ac)
+	mtx.Actions = append(mtx.Actions, &ac)
 
 	c := contract.Contract{
 		ID:   "iost.system",
@@ -443,7 +443,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -452,7 +452,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		Data:       `["a","b",100]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, ac)
+	mtx.Actions = append(mtx.Actions, &ac)
 
 	c := contract.Contract{
 		ID:   "iost.system",
@@ -550,7 +550,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -559,7 +559,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		Data:       `["iost.system", "Receipt", ["iamreceipt"]]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, ac)
+	mtx.Actions = append(mtx.Actions, &ac)
 
 	c := contract.Contract{
 		ID:   "iost.system",
@@ -670,7 +670,7 @@ func TestJS(t *testing.T) {
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -679,7 +679,7 @@ func TestJS(t *testing.T) {
 		Data:       `[]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, ac)
+	mtx.Actions = append(mtx.Actions, &ac)
 
 	c := contract.Contract{
 		ID: "Contracttestjs",

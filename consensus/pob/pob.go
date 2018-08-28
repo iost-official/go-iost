@@ -194,7 +194,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	if err == nil {
 		return errors.New("duplicate block")
 	}
-	err = verifyBasics(blk)
+	err = verifyBasics(blk.Head, blk.Sign)
 	if err != nil {
 		return fmt.Errorf("fail to verify blocks, %v", err)
 	}
@@ -203,9 +203,8 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	staticProperty.addSlot(blk.Head.Time)
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent.Block)
-	} else {
-		return errSingle
 	}
+	return errSingle
 }
 
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {

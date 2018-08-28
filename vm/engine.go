@@ -30,6 +30,7 @@ const (
 var (
 	errContractNotFound = errors.New("contract not found")
 	errSetUpArgs        = errors.New("key does not exist")
+	errCannotPay        = errors.New("publisher's balance less than price * limit")
 )
 
 // Engine the smart contract engine
@@ -135,8 +136,9 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	}
 
 	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
+	ilog.Error(bl, tx0.GasPrice*tx0.GasLimit)
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
-		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), nil
+		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
 	}
 
 	loadTxInfo(e.ho, tx0)
@@ -151,7 +153,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 	for _, action := range tx0.Actions {
 
-		cost, status, receipts, err2 := e.runAction(action)
+		cost, status, receipts, err2 := e.runAction(*action)
 		e.logger.Infof("run action : %v, result is %v", action, status.Code)
 		e.logger.Debug("used cost > ", cost)
 		e.logger.Debugf("status > \n%v\n", status)

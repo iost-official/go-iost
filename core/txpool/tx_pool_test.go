@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"os"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -12,16 +14,16 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
-	"os"
 )
 
 var (
 	dbPath1 = "txDB"
 	dbPath2 = "StatePoolDB"
-	dbPath3 = "BlockChainDB"
+	dbPath3 = "blockChainDB"
 )
 
 func TestNewTxPoolImpl(t *testing.T) {
@@ -55,8 +57,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 			witnessList = append(witnessList, newAccount.ID)
 		}
 
-		tx.LdbPath = ""
-
 		conf := &common.Config{
 			DB: &common.DBConfig{},
 		}
@@ -88,13 +88,13 @@ func TestNewTxPoolImpl(t *testing.T) {
 			b := txPool.txTimeOut(t)
 			So(b, ShouldBeFalse)
 
-			t.Time -= int64(expiration*1e9 + 1*1e9)
+			t.Time -= int64(expiration + int64(1*time.Second))
 			b = txPool.txTimeOut(t)
 			So(b, ShouldBeTrue)
 
 			t = genTx(accountList[0], expiration)
 
-			t.Expiration -= int64(expiration * 1e9 * 3)
+			t.Expiration -= int64(expiration * 3)
 			b = txPool.txTimeOut(t)
 			So(b, ShouldBeTrue)
 
@@ -102,7 +102,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		Convey("delTimeOutTx", func() {
 
-			t := genTx(accountList[0], 1)
+			t := genTx(accountList[0], int64(1*time.Second))
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 
 			r := txPool.AddTx(t)
@@ -284,13 +284,13 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		})
 
-		stopTest()
+		stopTest(gl)
 	})
 }
 
 //result 55.3 ns/op
 func BenchmarkAddBlock(b *testing.B) {
-	_, accountList, witnessList, txPool := envInit(b)
+	_, accountList, witnessList, txPool, gl := envInit(b)
 	listTxCnt := 500
 	blockList := genBlocks(accountList, witnessList, 1, listTxCnt, true)
 
@@ -300,14 +300,14 @@ func BenchmarkAddBlock(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 
 }
 
 //result 472185 ns/op  tps:2147
 // no verify 17730 ns/op tps:58823
 func BenchmarkAddTx(b *testing.B) {
-	_, accountList, witnessList, txPool := envInit(b)
+	_, accountList, witnessList, txPool, gl := envInit(b)
 	listTxCnt := 10
 	blockCnt := 100
 	blockList := genNodes(accountList, witnessList, blockCnt, listTxCnt, true)
@@ -327,12 +327,12 @@ func BenchmarkAddTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
 //result 2444189 ns/op
 func BenchmarkPendingTxs(b *testing.B) {
-	_, accountList, _, txPool := envInit(b)
+	_, accountList, _, txPool, gl := envInit(b)
 
 	for i := 0; i < 10000; i++ {
 		t := genTx(accountList[0], expiration)
@@ -346,7 +346,7 @@ func BenchmarkPendingTxs(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
 //result 4445 ns/op
@@ -372,7 +372,6 @@ func BenchmarkDecodeTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
 }
 
 //result 3416 ns/op
@@ -391,13 +390,12 @@ func BenchmarkEncodeTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
 }
 
 //result 3.8S ~ 4.2S  10000 tx verify
 func BenchmarkVerifyTx(b *testing.B) {
 
-	_, accountList, _, txPool := envInit(b)
+	_, accountList, _, txPool, gl := envInit(b)
 
 	t := genTx(accountList[0], expiration)
 
@@ -409,7 +407,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
 //result 1 goroutine 3.8S ~ 4.2S  10000 tx verify
@@ -418,7 +416,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 //result 5 goroutine 1.0S ~ 1.2S  10000 tx verify
 //result 8 goroutine 1.0S ~ 1.3S  10000 tx verify
 func BenchmarkConcurrentVerifyTx(b *testing.B) {
-	_, accountList, _, txPool := envInit(b)
+	_, accountList, _, txPool, gl := envInit(b)
 
 	txCnt := 10000
 	goCnt := 4
@@ -447,10 +445,10 @@ func BenchmarkConcurrentVerifyTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
-func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl) {
+func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl, global.BaseVariable) {
 	//ctl := gomock.NewController(t)
 
 	var accountList []account.Account
@@ -473,8 +471,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 		accountList = append(accountList, newAccount)
 		witnessList = append(witnessList, newAccount.ID)
 	}
-
-	tx.LdbPath = ""
 
 	config := &common.P2PConfig{
 		ListenAddr: "0.0.0.0:8088",
@@ -500,10 +496,12 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 	txPool.Start()
 	b.ResetTimer()
 
-	return BlockCache, accountList, witnessList, txPool
+	return BlockCache, accountList, witnessList, txPool, gl
 }
 
-func stopTest() {
+func stopTest(gl global.BaseVariable) {
+
+	gl.StateDB().Close()
 
 	os.RemoveAll(dbPath1)
 	os.RemoveAll(dbPath2)
@@ -511,20 +509,20 @@ func stopTest() {
 }
 
 func genTx(a account.Account, expirationIter int64) *tx.Tx {
-	actions := make([]tx.Action, 10)
-	actions = append(actions, tx.Action{
+	actions := make([]*tx.Action, 0)
+	actions = append(actions, &tx.Action{
 		Contract:   "contract1",
 		ActionName: "actionname1",
 		Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 	})
-	actions = append(actions, tx.Action{
+	actions = append(actions, &tx.Action{
 		Contract:   "contract2",
 		ActionName: "actionname2",
 		Data:       "1",
 	})
 
 	ex := time.Now().UnixNano()
-	ex += expirationIter * 1e9
+	ex += expirationIter
 
 	t := tx.NewTx(actions, [][]byte{a.Pubkey}, 100000, 100, ex)
 
@@ -533,7 +531,7 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 		fmt.Println("failed to SignTxContent")
 	}
 
-	t.Signs = append(t.Signs, sig1)
+	t.Signs = append(t.Signs, &sig1)
 
 	t1, err := tx.SignTx(t, a)
 	if err != nil {
@@ -565,15 +563,19 @@ func genBlocks(accountList []account.Account, witnessList []string, blockCnt int
 		if continuity == false {
 			hash[i%len(hash)] = byte(i % 256)
 		}
-		blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
-			Version:    0,
-			ParentHash: hash,
-			MerkleHash: make([]byte, 0),
-			Info:       []byte(""),
-			Number:     int64(i + 1),
-			Witness:    witnessList[0],
-			Time:       slot + int64(i),
-		}}
+		blk := block.Block{
+			Txs: []*tx.Tx{},
+			Head: &block.BlockHead{
+				Version:    0,
+				ParentHash: hash,
+				MerkleHash: make([]byte, 0),
+				Info:       []byte(""),
+				Number:     int64(i + 1),
+				Witness:    witnessList[0],
+				Time:       slot + int64(i),
+			},
+			Sign: &crypto.Signature{},
+		}
 
 		for i := 0; i < txCnt; i++ {
 			blk.Txs = append(blk.Txs, genTx(accountList[0], expiration))

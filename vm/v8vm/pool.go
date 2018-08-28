@@ -62,12 +62,8 @@ func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api
 
 // Release release all V8VM instance in VMPool
 func (vmp *VMPool) Release() {
-	for {
-		select {
-		case e := <-vmp.poolBuff:
-			e.release()
-		default:
-			break
-		}
+	close(vmp.poolBuff)
+	for e := range vmp.poolBuff {
+		e.release()
 	}
 }
