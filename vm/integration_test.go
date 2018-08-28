@@ -123,7 +123,7 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 }
 
 func MakeTx(act tx.Action) (*tx.Tx, error) {
-	trx := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
+	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(10000), int64(1), int64(10000000))
 
 	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
 	if err != nil {
@@ -142,7 +142,7 @@ func TestIntergration_Transfer(t *testing.T) {
 
 	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 
-	trx := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
+	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(10000), int64(1), int64(10000000))
 
 	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
 	if err != nil {
@@ -159,7 +159,7 @@ func TestIntergration_Transfer(t *testing.T) {
 	t.Log("balance of receiver :", vi.Balance(testID[2]))
 
 	act2 := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
-	trx2 := tx.NewTx([]tx.Action{act2}, nil, int64(10000), int64(1), int64(10000000))
+	trx2 := tx.NewTx([]*tx.Action{&act2}, nil, int64(10000), int64(1), int64(10000000))
 	trx2, err = tx.SignTx(trx2, ac)
 	if err != nil {
 		t.Fatal(err)
@@ -270,7 +270,13 @@ func TestEngine_InitSetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ilog.Debugf(fmt.Sprintln(e.Exec(trx)))
+	r, err := e.Exec(trx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status.Code != tx.Success {
+		t.Fatal(r)
+	}
 	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
 
 	act2 := tx.NewAction("iost.test", "hello", `[]`)
@@ -280,7 +286,13 @@ func TestEngine_InitSetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ilog.Debugf(fmt.Sprintln(e.Exec(trx2)))
+	r, err = e.Exec(trx2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status.Code != tx.Success {
+		t.Fatal(r)
+	}
 	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
 }
 
@@ -572,6 +584,29 @@ class Contract {
 	}
 	main() {
 		BlockChain.transfer("IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
+	}
+}
+
+module.exports = Contract;
+`)
+	js.SetAPI("main")
+	js.DoSet()
+
+	r := js.TestJS("main", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+	t.Log("balance of sender :", js.vi.Balance(testID[0]))
+	t.Log("balance of receiver :", js.vi.Balance(testID[2]))
+}
+
+func TestJSAPI_Transfer_WrongFormat1(t *testing.T) {
+
+	js := NewJSTester(t)
+	js.SetJS(`
+class Contract {
+	constructor() {
+	}
+	main() {
+		BlockChain.transfer("a", "b", 1)
 	}
 }
 

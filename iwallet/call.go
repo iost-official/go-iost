@@ -39,9 +39,10 @@ var callCmd = &cobra.Command{
 			fmt.Println(`Error: number of args should be a multiplier of 3`)
 			return
 		}
-		var actions []tx.Action = make([]tx.Action, argc/3)
+		var actions []*tx.Action = make([]*tx.Action, argc/3)
 		for i := 0; i < len(args); i += 3 {
-			actions[i] = tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
+			act := tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
+			actions[i] = &act
 		}
 		pubkeys := make([][]byte, len(signers))
 		for i, pubkey := range signers {

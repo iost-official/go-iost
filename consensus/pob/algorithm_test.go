@@ -26,7 +26,7 @@ var testID = []string{
 }
 
 func MakeTx(act tx.Action) (*tx.Tx, error) {
-	trx := tx.NewTx([]tx.Action{act}, nil, int64(10000), int64(1), int64(10000000))
+	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(10000), int64(1), int64(10000000))
 
 	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
 	if err != nil {
@@ -297,7 +297,7 @@ func TestVerifyBlock(t *testing.T) {
 		}
 		tx0 := &tx.Tx{
 			Time: time.Now().UnixNano(),
-			Actions: []tx.Action{{
+			Actions: []*tx.Action{{
 				Contract:   "contract1",
 				ActionName: "actionname1",
 				Data:       "{\"num\": 1, \"message\": \"contract1\"}",

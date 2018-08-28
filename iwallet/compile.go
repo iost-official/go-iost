@@ -67,7 +67,7 @@ var compileCmd = &cobra.Command{
 		for i, pubkey := range signers {
 			pubkeys[i] = loadBytes(string(pubkey))
 		}
-		trx := tx.NewTx([]tx.Action{action}, pubkeys, gasLimit, gasPrice, time.Now().UnixNano()+int64(time.Second)*expiration)
+		trx := tx.NewTx([]*tx.Action{&action}, pubkeys, gasLimit, gasPrice, time.Now().UnixNano()+int64(time.Second)*expiration)
 
 		if len(signers) == 0 {
 			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
