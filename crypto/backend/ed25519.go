@@ -18,9 +18,9 @@ func (b *Ed25519) Verify(message []byte, pubkey []byte, sig []byte) bool {
 }
 
 func (b *Ed25519) GetPubkey(seckey []byte) []byte {
-	pubkey, ok := (ed25519.PrivateKey(seckey).Public()).([]byte)
+	pubkey, ok := ed25519.PrivateKey(seckey).Public().(ed25519.PublicKey)
 	if !ok {
-		ilog.Errorf("Failed to assert ed25519.PublicKey to []byte")
+		ilog.Errorf("Failed to assert ed25519.PublicKey")
 		return nil
 	}
 	return pubkey
