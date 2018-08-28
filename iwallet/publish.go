@@ -54,7 +54,7 @@ var publishCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		signs := make([]crypto.Signature, 0)
+		signs := make([]*crypto.Signature, 0)
 		for i, v := range args {
 			if i == 0 {
 				continue
@@ -74,7 +74,7 @@ var publishCmd = &cobra.Command{
 				fmt.Printf("Error: Sign %v wrong\n", v)
 				return
 			}
-			signs = append(signs, sign)
+			signs = append(signs, &sign)
 		}
 		fsk, err := readFile(kpPath)
 		if err != nil {

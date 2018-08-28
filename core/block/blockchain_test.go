@@ -12,7 +12,7 @@ import (
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
-		bc, err := Instance("./")
+		bc, err := NewBlockChainDB("./")
 		So(err, ShouldBeNil)
 		So(bc.Length(), ShouldEqual, bc.Length())
 		fmt.Println(bc.Length())
@@ -21,7 +21,7 @@ func TestNewBlockChain(t *testing.T) {
 
 func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
-		bc, err := Instance("./")
+		bc, err := NewBlockChainDB("./")
 		So(err, ShouldBeNil)
 		tBlock := Block{
 			Head: &BlockHead{
@@ -79,7 +79,7 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 
-		cmd := exec.Command("rm", "-r", "./BlockChainDB/")
+		cmd := exec.Command("rm", "-r", "./blockChainDB/")
 		cmd.Run()
 	})
 }

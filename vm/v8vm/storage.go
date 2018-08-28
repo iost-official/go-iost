@@ -22,7 +22,8 @@ func goPut(cSbx C.SandboxPtr, key, val *C.char, gasUsed *C.size_t) C.int {
 	k := C.GoString(key)
 	v := C.GoString(val)
 
-	sbx.host.Put(k, v)
+	cost := sbx.host.Put(k, v)
+	*gasUsed = C.size_t(cost.Data)
 
 	return 0
 }
@@ -35,7 +36,9 @@ func goGet(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) *C.char {
 	}
 
 	k := C.GoString(key)
-	val, _ := sbx.host.Get(k)
+	val, cost := sbx.host.Get(k)
+
+	*gasUsed = C.size_t(cost.Data)
 	valStr, _ := dbValToString(val)
 
 	return C.CString(valStr)
@@ -50,7 +53,8 @@ func goDel(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) C.int {
 
 	k := C.GoString(key)
 
-	sbx.host.Del(k)
+	cost := sbx.host.Del(k)
+	*gasUsed = C.size_t(cost.Data)
 
 	return 0
 }

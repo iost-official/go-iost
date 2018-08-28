@@ -2,8 +2,6 @@ package tx
 
 import (
 	"fmt"
-	"sync"
-
 	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
@@ -21,24 +19,17 @@ type TxDBImpl struct {
 var txPrefix = []byte("t") //txPrefix+tx hash -> tx data
 var PNPrefix = []byte("p")
 
-var once sync.Once
+func NewTxDB(path string) TxDB {
 
-var TxDBInst *TxDBImpl
-var LdbPath string
-
-func TxDBInstance() TxDB {
-	if TxDBInst != nil {
-		return TxDBInst
-	}
-	ldb, err := db.NewLDB(LdbPath+"txDB", 0, 0)
+	ldb, err := db.NewLDB(path+"txDB", 0, 0)
 	if err != nil {
 		panic(err)
 	}
-	once.Do(func() {
-		TxDBInst = &TxDBImpl{
-			db: ldb,
-		}
-	})
+
+	TxDBInst := &TxDBImpl{
+		db: ldb,
+	}
+
 	return TxDBInst
 }
 

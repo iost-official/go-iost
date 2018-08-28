@@ -14,6 +14,7 @@ type TxPool interface {
 	Stop()
 	AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error
 	AddTx(tx *tx.Tx) TAddTx
+	DelTx(hash []byte) error
 	PendingTxs(maxCnt int) (TxsList, error)
 	ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error)
 }

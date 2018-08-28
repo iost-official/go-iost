@@ -1,8 +1,7 @@
 #ifndef IOST_V8_STORAGE_H
 #define IOST_V8_STORAGE_H
 
-#include "v8.h"
-#include "vm.h"
+#include "sandbox.h"
 #include "stddef.h"
 
 using namespace v8;
@@ -12,9 +11,9 @@ void NewIOSTContractStorage(const FunctionCallbackInfo<Value> &info);
 
 class IOSTContractStorage {
 private:
-    SandboxPtr sbx;
+    SandboxPtr sbxPtr;
 public:
-    IOSTContractStorage(SandboxPtr ptr): sbx(ptr) {}
+    IOSTContractStorage(SandboxPtr ptr): sbxPtr(ptr) {}
 
     int Put(const char *key, const char *value);
     char *Get(const char *key);

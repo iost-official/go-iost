@@ -237,6 +237,11 @@ scripts/sendtx/iwallet
 /node1/
 /node2/
 
+
+cmd/playground/contract/node_modules/
+cmd/playground/contract/package-lock.json
+vm/test_data/lucky_bet.js.after
+
 /config/StatePoolDB/
 /config/levelDB/
 /config/logs/

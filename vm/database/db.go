@@ -6,6 +6,7 @@ type Visitor struct {
 	MapHandler
 	ContractHandler
 	BalanceHandler
+	CoinHandler
 	RollbackHandler
 }
 
@@ -17,6 +18,7 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 		BasicHandler:    BasicHandler{cachedDB},
 		MapHandler:      MapHandler{cachedDB},
 		ContractHandler: ContractHandler{cachedDB},
+		CoinHandler:     CoinHandler{cachedDB},
 		BalanceHandler:  BalanceHandler{cachedDB},
 	}
 	v.RollbackHandler = newRollbackHandler(cb, cachedDB)
