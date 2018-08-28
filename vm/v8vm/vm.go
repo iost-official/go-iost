@@ -10,11 +10,10 @@ import "C"
 import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"sync"
 )
 
-func init() {
-	C.init()
-}
+var CVMInitOnce = sync.Once{}
 
 // VM contains isolate instance, which is a v8 VM with its own heap.
 type VM struct {
@@ -27,6 +26,9 @@ type VM struct {
 
 // NewVM return new vm with isolate and sandbox
 func NewVM() *VM {
+	CVMInitOnce.Do(func() {
+		C.init()
+	})
 	isolate := C.newIsolate()
 	e := &VM{
 		isolate: isolate,
@@ -36,6 +38,9 @@ func NewVM() *VM {
 }
 
 func NewVMWithChannel(releaseChannel chan *VM) *VM {
+	CVMInitOnce.Do(func() {
+		C.init()
+	})
 	isolate := C.newIsolate()
 	e := &VM{
 		isolate: isolate,
