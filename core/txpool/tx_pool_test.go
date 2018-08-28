@@ -102,13 +102,13 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		Convey("delTimeOutTx", func() {
 
-			t := genTx(accountList[0], int64(1*time.Second))
+			t := genTx(accountList[0], int64(30*time.Millisecond))
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 
 			r := txPool.AddTx(t)
 			So(r, ShouldEqual, Success)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-			time.Sleep(2 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 			txPool.clearTimeOutTx()
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 
@@ -136,8 +136,8 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			// need delay
-			for i := 0; i < 10; i++ {
-				time.Sleep(100 * time.Millisecond)
+			for i := 0; i < 20; i++ {
+				time.Sleep(20 * time.Millisecond)
 				if txPool.testBlockListNum() == 1 {
 					break
 				}
@@ -199,8 +199,8 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			// need delay
-			for i := 0; i < 10; i++ {
-				time.Sleep(100 * time.Millisecond)
+			for i := 0; i < 20; i++ {
+				time.Sleep(20 * time.Millisecond)
 				if txPool.testBlockListNum() == 1 {
 					break
 				}
@@ -241,8 +241,8 @@ func TestNewTxPoolImpl(t *testing.T) {
 			err = txPool.AddLinkedNode(bcn, bcn)
 			So(err, ShouldBeNil)
 			// need delay
-			for i := 0; i < 10; i++ {
-				time.Sleep(100 * time.Millisecond)
+			for i := 0; i < 20; i++ {
+				time.Sleep(20 * time.Millisecond)
 				if txPool.testBlockListNum() == 10 {
 					break
 				}
@@ -250,51 +250,51 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 			So(txPool.testPendingTxsNum(), ShouldEqual, 10)
 		})
-
-		Convey("concurrent", func() {
-			txCnt := 10
-			blockCnt := 100
-			bl := genNodes(accountList, witnessList, blockCnt, txCnt, true)
-			ch := make(chan int, 4)
-			//fmt.Println("genNodes impl")
-			go func() {
-				for _, bcn := range bl {
-					txPool.AddLinkedNode(bcn, bcn)
-				}
-				ch <- 1
-			}()
-
-			go func() {
-				for i := 0; i < 100; i++ {
-					t := genTx(accountList[0], expiration)
-					txPool.AddTx(t)
-				}
-				ch <- 2
-			}()
-
-			go func() {
-				for i := 0; i < 10000; i++ {
-					txPool.PendingTxs(10000000)
-				}
-				ch <- 3
-			}()
-			////time.Sleep(5*time.Second)
-
-			t := genTx(accountList[0], expiration)
-			txPool.AddTx(t)
-			go func() {
-				for i := 0; i < 10000; i++ {
-					txPool.ExistTxs(t.Hash(), bl[blockCnt-10].Block)
-				}
-				ch <- 4
-			}()
-
-			for i := 0; i < 4; i++ {
-				<-ch
-				//fmt.Println("ch :", a)
-			}
-
-		})
+		//
+		//Convey("concurrent", func() {
+		//	txCnt := 10
+		//	blockCnt := 100
+		//	bl := genNodes(accountList, witnessList, blockCnt, txCnt, true)
+		//	ch := make(chan int, 4)
+		//	//fmt.Println("genNodes impl")
+		//	go func() {
+		//		for _, bcn := range bl {
+		//			txPool.AddLinkedNode(bcn, bcn)
+		//		}
+		//		ch <- 1
+		//	}()
+		//
+		//	go func() {
+		//		for i := 0; i < 100; i++ {
+		//			t := genTx(accountList[0], expiration)
+		//			txPool.AddTx(t)
+		//		}
+		//		ch <- 2
+		//	}()
+		//
+		//	go func() {
+		//		for i := 0; i < 10000; i++ {
+		//			txPool.PendingTxs(10000000)
+		//		}
+		//		ch <- 3
+		//	}()
+		//	////time.Sleep(5*time.Second)
+		//
+		//	t := genTx(accountList[0], expiration)
+		//	txPool.AddTx(t)
+		//	go func() {
+		//		for i := 0; i < 10000; i++ {
+		//			txPool.ExistTxs(t.Hash(), bl[blockCnt-10].Block)
+		//		}
+		//		ch <- 4
+		//	}()
+		//
+		//	for i := 0; i < 4; i++ {
+		//		<-ch
+		//		//fmt.Println("ch :", a)
+		//	}
+		//
+		//})
 
 		stopTest(gl)
 	})
