@@ -6,7 +6,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/db/mvcc/trie"
 	"github.com/iost-official/Go-IOS-Protocol/db/storage"
-	log "github.com/sirupsen/logrus"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
 //go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/Go-IOS-Protocol/db MVCCDB
@@ -140,7 +140,7 @@ func (m *TrieMVCCDB) Get(table string, key string) (string, error) {
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
-			log.Debugf("Failed to get from storage: %v", err)
+			ilog.Debugf("Failed to get from storage: %v", err)
 			return "", ErrKeyNotFound
 		}
 		return string(v[:]), nil
@@ -200,7 +200,7 @@ func (m *TrieMVCCDB) Has(table string, key string) (bool, error) {
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
-			log.Debugf("Failed to get from storage: %v", err)
+			ilog.Debugf("Failed to get from storage: %v", err)
 			return false, nil
 		}
 		return v != nil, nil
@@ -287,18 +287,22 @@ func (m *TrieMVCCDB) Flush(t string) error {
 	if err := m.storage.BeginBatch(); err != nil {
 		return err
 	}
+	err := m.storage.Put([]byte(string(SEPARATOR)+"tag"), []byte(trie.Tag))
+	if err != nil {
+		return err
+	}
 	for _, v := range trie.All([]byte("")) {
 		item, ok := v.(*Item)
 		if !ok {
 			return errors.New("can't assert Item type")
 		}
 		if item.deleted {
-			err := m.storage.Del([]byte(item.key))
+			err := m.storage.Del([]byte(item.table + string(SEPARATOR) + item.key))
 			if err != nil {
 				return err
 			}
 		} else {
-			err := m.storage.Put([]byte(item.key), []byte(item.value))
+			err := m.storage.Put([]byte(item.table+string(SEPARATOR)+item.key), []byte(item.value))
 			if err != nil {
 				return err
 			}
@@ -308,7 +312,7 @@ func (m *TrieMVCCDB) Flush(t string) error {
 		return err
 	}
 
-	log.Debugf("Commits length: %v", len(m.commits))
+	ilog.Debugf("Commits length: %v", len(m.commits))
 	for k, v := range m.commits {
 		if v == trie {
 			m.commits = m.commits[k:]
