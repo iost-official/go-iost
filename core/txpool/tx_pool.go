@@ -201,6 +201,14 @@ func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 	return r
 }
 
+// AddTx del the transaction
+func (pool *TxPoolImpl) DelTx(hash []byte) error {
+
+	pool.pendingTx.Delete(string(hash))
+
+	return nil
+}
+
 // PendingTxs get the pending transactions
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 
