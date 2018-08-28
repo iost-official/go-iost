@@ -18,7 +18,7 @@ ifeq ($(shell uname),Linux)
 	export LD_LIBRARY_PATH=$(shell pwd)/vm/v8vm/v8/libv8/_linux_amd64
 endif
 
-.PHONY: all build iserver iwallet lint test image devimage swagger protobuf install clean
+.PHONY: all build iserver iwallet lint test image devimage swagger protobuf install clean debug
 
 all: build
 
@@ -55,3 +55,12 @@ install:
 
 clean:
 	rm -f ${TARGET_DIR}
+
+debug: build
+	target/iserver -f config/iserver.yaml
+
+clear_debug_file:
+	rm -rf StatePoolDB/
+	rm -rf leveldb/
+	rm priv.key
+	rm routing.table

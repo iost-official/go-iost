@@ -509,13 +509,13 @@ func stopTest(gl global.BaseVariable) {
 }
 
 func genTx(a account.Account, expirationIter int64) *tx.Tx {
-	actions := make([]tx.Action, 10)
-	actions = append(actions, tx.Action{
+	actions := make([]*tx.Action, 0)
+	actions = append(actions, &tx.Action{
 		Contract:   "contract1",
 		ActionName: "actionname1",
 		Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 	})
-	actions = append(actions, tx.Action{
+	actions = append(actions, &tx.Action{
 		Contract:   "contract2",
 		ActionName: "actionname2",
 		Data:       "1",
@@ -531,7 +531,7 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 		fmt.Println("failed to SignTxContent")
 	}
 
-	t.Signs = append(t.Signs, sig1)
+	t.Signs = append(t.Signs, &sig1)
 
 	t1, err := tx.SignTx(t, a)
 	if err != nil {
