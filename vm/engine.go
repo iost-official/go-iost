@@ -7,6 +7,10 @@ import (
 
 	"runtime"
 
+	"fmt"
+
+	"strings"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -26,6 +30,7 @@ const (
 var (
 	errContractNotFound = errors.New("contract not found")
 	errSetUpArgs        = errors.New("key does not exist")
+	errCannotPay        = errors.New("publisher's balance less than price * limit")
 )
 
 // Engine the smart contract engine
@@ -37,15 +42,12 @@ type Engine interface {
 
 var staticMonitor *Monitor
 var jsPath = "./v8vm/v8/libjs/"
+var logLevel = ""
 
 // SetUp setup global engine settings
-func SetUp(k, v string) error {
-	switch k {
-	case "js_path":
-		jsPath = v
-	default:
-		return errSetUpArgs
-	}
+func SetUp(config *common.VMConfig) error {
+	jsPath = config.JsPath
+	logLevel = config.LogLevel
 	return nil
 }
 
@@ -65,7 +67,9 @@ type engineImpl struct {
 func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	db := database.NewVisitor(defaultCacheLength, cb)
 
-	return newEngine(bh, db)
+	e := newEngine(bh, db)
+
+	return e
 }
 
 func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
@@ -79,7 +83,9 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 
 	ctx = loadBlkInfo(ctx, bh)
 
-	if bh.Number == 0 && db.Contract("iost.system") == nil {
+	//ilog.Error("iost.system is ", db.Contract("iost.system"))
+
+	if db.Contract("iost.system") == nil {
 		db.SetContract(native.ABI())
 	}
 
@@ -91,6 +97,11 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 	runtime.SetFinalizer(e, func(e *engineImpl) {
 		e.GC()
 	})
+
+	if logLevel != "" {
+		e.setLogLevel(logLevel)
+		e.startLog()
+	}
 
 	return e
 }
@@ -118,14 +129,16 @@ func (e *engineImpl) SetUp(k, v string) error {
 	return nil
 }
 func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
+	e.ho.Logger().Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
 	err := checkTx(tx0)
 	if err != nil {
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
 	}
 
 	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
-	if bl <= 0 || bl < tx0.GasPrice*tx0.GasLimit {
-		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), nil
+	ilog.Error(bl, tx0.GasPrice*tx0.GasLimit)
+	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
+		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
 	}
 
 	loadTxInfo(e.ho, tx0)
@@ -140,7 +153,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 	for _, action := range tx0.Actions {
 
-		cost, status, receipts, err2 := e.runAction(action)
+		cost, status, receipts, err2 := e.runAction(*action)
 		e.logger.Infof("run action : %v, result is %v", action, status.Code)
 		e.logger.Debug("used cost > ", cost)
 		e.logger.Debugf("status > \n%v\n", status)
@@ -178,7 +191,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		e.ho.DB().Rollback()
 		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
 		if err != nil {
-			ilog.Debugf(err.Error())
+			ilog.Error(err.Error())
 			return nil, err
 		}
 	} else {
@@ -200,9 +213,12 @@ func checkTx(tx0 *tx.Tx) error {
 
 // nolint
 func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
+	if strings.HasSuffix(data, ",]") {
+		data = data[:len(data)-2] + "]"
+	}
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error in abi file: %v", err)
 	}
 
 	rtn := make([]interface{}, 0)
@@ -300,7 +316,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		cost = host.CommonErrorCost(2)
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
-			Message: err.Error(),
+			Message: "unmarshal args error: " + err.Error(),
 		}
 		return
 	}

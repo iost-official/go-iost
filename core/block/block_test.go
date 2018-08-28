@@ -38,7 +38,7 @@ func TestBlockSerialize(t *testing.T) {
 		a1, _ := account.NewAccount(nil)
 		tx0 := tx.Tx{
 			Time: 1,
-			Actions: []tx.Action{{
+			Actions: []*tx.Action{{
 				Contract:   "contract1",
 				ActionName: "actionname1",
 				Data:       "{\"num\": 1, \"message\": \"contract1\"}",

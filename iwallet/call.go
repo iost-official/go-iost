@@ -17,6 +17,7 @@ package iwallet
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
@@ -39,15 +40,16 @@ var callCmd = &cobra.Command{
 			fmt.Println(`Error: number of args should be a multiplier of 3`)
 			return
 		}
-		var actions []tx.Action = make([]tx.Action, argc/3)
+		var actions []*tx.Action = make([]*tx.Action, argc/3)
 		for i := 0; i < len(args); i += 3 {
-			actions[i] = tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
+			act := tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
+			actions[i] = &act
 		}
 		pubkeys := make([][]byte, len(signers))
 		for i, pubkey := range signers {
 			pubkeys[i] = loadBytes(string(pubkey))
 		}
-		trx := tx.NewTx(actions, pubkeys, gasLimit, gasPrice, expiration)
+		trx := tx.NewTx(actions, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
 		if len(signers) == 0 {
 			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
 			fsk, err := readFile(kpPath)

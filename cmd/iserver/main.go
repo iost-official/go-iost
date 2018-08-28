@@ -30,6 +30,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/metrics"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/rpc"
+	"github.com/iost-official/Go-IOS-Protocol/vm"
 	flag "github.com/spf13/pflag"
 )
 
@@ -102,6 +103,8 @@ func main() {
 	initLogger(conf.Log)
 
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
+
+	vm.SetUp(conf.VM)
 
 	err := initMetrics(conf.Metrics)
 	if err != nil {

@@ -56,6 +56,8 @@ L:
 			if receipt, err := engine.Exec(t); err == nil {
 				blk.Txs = append(blk.Txs, t)
 				blk.Receipts = append(blk.Receipts, receipt)
+			} else {
+				txPool.DelTx(t.Hash())
 			}
 		}
 	}
