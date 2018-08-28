@@ -606,7 +606,10 @@ class Contract {
 	constructor() {
 	}
 	main() {
-		BlockChain.transfer("a", "b", 1)
+		var ret = BlockChain.transfer("a", "b", 1);
+		if (ret !== 0) {
+			throw new Error("ret = ", ret);
+		}
 	}
 }
 
@@ -616,6 +619,7 @@ module.exports = Contract;
 	js.DoSet()
 
 	r := js.TestJS("main", fmt.Sprintf(`[]`))
+	//todo wrong receipt
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
 	t.Log("balance of receiver :", js.vi.Balance(testID[2]))

@@ -17,7 +17,6 @@ package iwallet
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"time"
 
@@ -69,7 +68,7 @@ var compileCmd = &cobra.Command{
 			pubkeys[i] = loadBytes(string(pubkey))
 		}
 
-		trx := tx.NewTx([]tx.Action{action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
+		trx := tx.NewTx([]*tx.Action{&action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
 
 		if len(signers) == 0 {
 			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
