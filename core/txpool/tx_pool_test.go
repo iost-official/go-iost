@@ -57,8 +57,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 			witnessList = append(witnessList, newAccount.ID)
 		}
 
-		tx.LdbPath = ""
-
 		conf := &common.Config{
 			DB: &common.DBConfig{},
 		}
@@ -473,8 +471,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 		accountList = append(accountList, newAccount)
 		witnessList = append(witnessList, newAccount.ID)
 	}
-
-	tx.LdbPath = ""
 
 	config := &common.P2PConfig{
 		ListenAddr: "0.0.0.0:8088",
