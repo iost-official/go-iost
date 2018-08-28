@@ -55,7 +55,7 @@ type BaseVariableImpl struct {
 
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 
-	blockChain, err := block.Instance(conf.DB.LdbPath)
+	blockChain, err := block.NewBlockChainDB(conf.DB.LdbPath)
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)
 	}
@@ -125,8 +125,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		}
 	}
 
-	tx.LdbPath = conf.DB.LdbPath
-	txDb := tx.TxDBInstance()
+	txDb := tx.NewTxDB(conf.DB.LdbPath)
 
 	if txDb == nil {
 		return nil, errors.New("new txdb failed, stop the program.")
@@ -140,10 +139,9 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 }
 
 func FakeNew() BaseVariable {
-	blockChain, _ := block.Instance("./")
+	blockChain, _ := block.NewBlockChainDB("./")
 	stateDB, _ := db.NewMVCCDB("StateDB")
-	tx.LdbPath = "./"
-	txDBfdafad := tx.TxDBInstance()
+	txDBfdafad := tx.NewTxDB("./")
 	mode := Mode{}
 	mode.SetMode(ModeNormal)
 	config := common.Config{}
