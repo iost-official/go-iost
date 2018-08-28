@@ -75,6 +75,7 @@ extern IsolatePtr newIsolate();
 extern void releaseIsolate(IsolatePtr ptr);
 
 extern SandboxPtr newSandbox(IsolatePtr ptr);
+extern void LoadVM(SandboxPtr ptr);
 extern void releaseSandbox(SandboxPtr ptr);
 
 extern ValueTuple Execute(SandboxPtr ptr, const char *code);

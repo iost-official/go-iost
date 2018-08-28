@@ -202,7 +202,12 @@ std::string report_exception(Isolate *isolate, Local<Context> ctx, TryCatch& try
     return ss.str();
 }
 
-void LoadVM(Sandbox *sbx) {
+void LoadVM(SandboxPtr ptr) {
+    if (ptr == nullptr) {
+        return;
+    }
+
+    Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
     std::string vmPath = std::string(sbx->jsPath) + "vm.js";
@@ -232,7 +237,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     HandleScope handle_scope(isolate);
     Context::Scope context_scope(sbx->context.Get(isolate));
 
-    LoadVM(sbx);
+    //LoadVM(sbx);
 
     TryCatch tryCatch(isolate);
     tryCatch.SetVerbose(true);

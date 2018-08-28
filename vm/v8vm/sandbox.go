@@ -89,6 +89,8 @@ func (sbx *Sandbox) Init() {
 		(C.getFunc)(C.goGet),
 		(C.delFunc)(C.goDel),
 		(C.globalGetFunc)(C.goGlobalGet))
+	//LoadVM
+	C.LoadVM(sbx.context)
 }
 
 // SetGasLimit set gas limit in context
