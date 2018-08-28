@@ -52,6 +52,10 @@ func GenGenesis(initTime int64) (*Block, error) {
 		Txs:      []*tx.Tx{&txn},
 		Receipts: make([]*tx.TxReceipt, 0),
 	}
+	err = genesis.CalculateHeadHash()
+	if err != nil {
+		panic(err)
+	}
 	return genesis, nil
 }
 
