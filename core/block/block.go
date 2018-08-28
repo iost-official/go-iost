@@ -75,6 +75,9 @@ func (b *Block) CalculateMerkleHash() []byte {
 
 func (b *Block) EncodeHead() ([]byte, error) {
 	signByte, err := b.Sign.Encode()
+	if err != nil {
+		return nil, errors.New("fail to encode sign")
+	}
 	br := &BlockHeadAndSign{
 		Head: b.Head,
 		Sign: signByte,
@@ -111,6 +114,9 @@ func (b *Block) Encode() ([]byte, error) {
 		rpts = append(rpts, r.Encode())
 	}
 	signByte, err := b.Sign.Encode()
+	if err != nil {
+		return nil, errors.New("fail to encode sign")
+	}
 	br := &BlockRaw{
 		Head:     b.Head,
 		Sign:     signByte,

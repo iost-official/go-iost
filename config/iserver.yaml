@@ -1,23 +1,22 @@
 acc:
-  id: "IOST5FhLBhVXMnwWRwhvz5j9NyWpBSchAMzpSMZT21xZqT8w7icwJ5"
-  seckey: "BCV7fV37aSWNx1N1Yjk3TdQXeHMmLhyqsqGms1PkqwPT"
+  id: "IOST7j5ynm6UXmJqY3GJp4RchiEWxjoPvifqgQVVAUaKV9sPLpx719"
+  seckey: "2hMWMbULjDVzbS9fFdxrGRiDQmMUXUN7U7kW68aQDSdN"
 
 vm:
-  logLevel: "debug"
-  jsPath: "vm/v8vm/v8/libjs/"
+
 db:
   ldbpath: "leveldb/"
 
 
 p2p:
-  listenAddr: "0.0.0.0:30308"
+  listenAddr: "0.0.0.0:30303"
   chainID: 1024
   version: 1
   seedNodes:
-  - "/ip4/127.0.0.1/tcp/30308/ipfs/12D3KooWMH9UtmksK7dUXoHFUPuHSKAB4LwStPuzdijahDiPLdSR"
+  - "/ip4/127.0.0.1/tcp/30303/ipfs/12D3KooWBBhYDkCUjgtPRsTirrcbRtKtL4n2Q4RqX1PM43jmrC1r"
 
 rpc:
-  port: 30312
+  port: 30302
 
 log:
   asyncWrite: true
