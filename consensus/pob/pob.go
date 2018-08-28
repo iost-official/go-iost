@@ -206,24 +206,20 @@ func (p *PoB) blockLoop() {
 				ilog.Error(err.Error())
 				continue
 			}
-			ilog.Info("received new block, block number: ", blk.Head.Number)
-			timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
-			if !ok {
-				ilog.Info("block not in block request map, block number: ", blk.Head.Number)
-				continue
-			}
-			timer.(*time.Timer).Stop()
-			err = p.handleRecvBlock(&blk)
-			p.blockReqMap.Delete(string(blk.HeadHash()))
-			if err != nil && err != errSingle {
-				ilog.Error(err.Error())
-				continue
-			}
-			go p.synchronizer.CheckSyncProcess()
-			if incomingMessage.Type() == p2p.SyncBlockResponse {
-				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
-			}
 			if incomingMessage.Type() == p2p.NewBlock {
+				ilog.Info("received new block, block number: ", blk.Head.Number)
+				timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
+				if !ok {
+					ilog.Info("block not in block request map, block number: ", blk.Head.Number)
+					continue
+				}
+				timer.(*time.Timer).Stop()
+				err = p.handleRecvBlock(&blk)
+				p.blockReqMap.Delete(string(blk.HeadHash()))
+				if err != nil && err != errSingle {
+					ilog.Error(err.Error())
+					continue
+				}
 				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
 				if err == errSingle {
 					if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need {
@@ -231,6 +227,16 @@ func (p *PoB) blockLoop() {
 					}
 				}
 			}
+			if incomingMessage.Type() == p2p.SyncBlockResponse {
+				ilog.Info("received sync block, block number: ", blk.Head.Number)
+				err = p.handleRecvBlock(&blk)
+				if err != nil && err != errSingle {
+					ilog.Error(err.Error())
+					continue
+				}
+				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
+			}
+			go p.synchronizer.CheckSyncProcess()
 			// p.blockCache.Draw()
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
