@@ -40,7 +40,7 @@ func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global
 		bchain:  _global.BlockChain(),
 		bc:      bcache,
 		visitor: database.NewVisitor(0, _global.StateDB()),
-		port:    _global.Config().RPC.Port,
+		port:    _global.Config().RPC.GRPCPort,
 	}
 }
 
