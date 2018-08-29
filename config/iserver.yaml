@@ -1,6 +1,6 @@
 acc:
-  id: "IOST7j5ynm6UXmJqY3GJp4RchiEWxjoPvifqgQVVAUaKV9sPLpx719"
-  seckey: "2hMWMbULjDVzbS9fFdxrGRiDQmMUXUN7U7kW68aQDSdN"
+  id: "IOST5FhLBhVXMnwWRwhvz5j9NyWpBSchAMzpSMZT21xZqT8w7icwJ5"
+  seckey: "BCV7fV37aSWNx1N1Yjk3TdQXeHMmLhyqsqGms1PkqwPT"
 
 vm:
 
@@ -16,7 +16,8 @@ p2p:
   - "/ip4/127.0.0.1/tcp/30303/ipfs/12D3KooWBBhYDkCUjgtPRsTirrcbRtKtL4n2Q4RqX1PM43jmrC1r"
 
 rpc:
-  port: 30302
+  JSONPort: 30301
+  GRPCPort: 30302
 
 log:
   asyncWrite: true

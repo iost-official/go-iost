@@ -135,6 +135,12 @@
 			"revisionTime": "2018-05-03T01:48:54Z"
 		},
 		{
+			"checksumSHA1": "BP2buXHHOKxI5eYS2xELVng2kf4=",
+			"path": "github.com/golang/protobuf/jsonpb",
+			"revision": "b27b920f9e71b439b873b17bf99f56467623814a",
+			"revisionTime": "2018-08-21T05:17:52Z"
+		},
+		{
 			"checksumSHA1": "8e94vVGc8ssfxcpgDSGLmp1hRJM=",
 			"path": "github.com/golang/protobuf/proto",
 			"revision": "3a3da3a4e26776cc22a79ef46d5d58477532dede",
@@ -165,6 +171,12 @@
 			"revisionTime": "2018-05-22T22:42:51Z"
 		},
 		{
+			"checksumSHA1": "VCwyXqpYo81QNvC7z6nsp+yczc4=",
+			"path": "github.com/golang/protobuf/ptypes/struct",
+			"revision": "b27b920f9e71b439b873b17bf99f56467623814a",
+			"revisionTime": "2018-08-21T05:17:52Z"
+		},
+		{
 			"checksumSHA1": "1FJvuT0UllZaaS43kmPlx8oNiCs=",
 			"path": "github.com/golang/protobuf/ptypes/timestamp",
 			"revision": "3a3da3a4e26776cc22a79ef46d5d58477532dede",
@@ -193,6 +205,24 @@
 			"path": "github.com/gorilla/websocket",
 			"revision": "21ab95fa12b9bdd8fecf5fa3586aad941cc98785",
 			"revisionTime": "2018-04-20T17:16:12Z"
+		},
+		{
+			"checksumSHA1": "Bl8KNHyqjFad7TFPOUDmZp/zeyE=",
+			"path": "github.com/grpc-ecosystem/grpc-gateway/runtime",
+			"revision": "e679739db1dec33f243ca6cd7a4f05909a801fe1",
+			"revisionTime": "2018-07-27T12:08:50Z"
+		},
+		{
+			"checksumSHA1": "0nkLVed+YhQE6+7fFbir+gCrcSs=",
+			"path": "github.com/grpc-ecosystem/grpc-gateway/runtime/internal",
+			"revision": "e679739db1dec33f243ca6cd7a4f05909a801fe1",
+			"revisionTime": "2018-07-27T12:08:50Z"
+		},
+		{
+			"checksumSHA1": "QuHQq2+nPPMMJ3qoJxlQ8ZCVEfk=",
+			"path": "github.com/grpc-ecosystem/grpc-gateway/utilities",
+			"revision": "e679739db1dec33f243ca6cd7a4f05909a801fe1",
+			"revisionTime": "2018-07-27T12:08:50Z"
 		},
 		{
 			"checksumSHA1": "YtLKaK8Ht8bGfqs0JIbBKcTRkpg=",
