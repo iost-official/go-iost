@@ -158,8 +158,12 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 }
 
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
+	lib, err := baseVariable.BlockChain().Top()
+	if err != nil {
+		return nil, fmt.Errorf("BlockCahin Top Error")
+	}
 	bc := BlockCacheImpl{
-		linkedRoot:   NewBCN(nil, nil),
+		linkedRoot:   NewBCN(nil, lib),
 		singleRoot:   NewBCN(nil, nil),
 		hash2node:    new(sync.Map),
 		leaf:         make(map[*BlockCacheNode]int64),
@@ -168,14 +172,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	bc.linkedRoot.Type = Linked
 	bc.singleRoot.Type = Virtual
 	bc.head = bc.linkedRoot
-	lib, err := baseVariable.BlockChain().Top()
-	if err != nil {
-		return nil, fmt.Errorf("BlockCahin Top Error")
-	}
-	bc.linkedRoot.Block = lib
-	if lib != nil {
-		bc.hmset(lib.HeadHash(), bc.linkedRoot)
-	}
+	bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
 	return &bc, nil
 }
