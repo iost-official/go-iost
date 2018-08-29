@@ -11,63 +11,57 @@ service Apis {
 	// get the current height of the blockchain
 	rpc GetHeight (VoidReq) returns (HeightRes) {
     option (google.api.http) = {
-      post: "/v1/getheight"
-      body: "*"
+      get: "/getHeight"
     };
   }
   // get the tx by hash
 	rpc GetTxByHash (HashReq) returns (tx.TxRaw) {
     option (google.api.http) = {
-      post: "/v1/gettxbyhash"
-      body: "*"
+      get: "/getTxByHash/{hash}"
     }; 
   }
   // get the block by hash
 	rpc GetBlockByHash (BlockByHashReq) returns (BlockInfo) {
     option (google.api.http) = {
-      post: "/v1/getblockbyhash"
-      body: "*"
+      get: "/getBlockByHash/{hash}/{complete}"
     };
   }
   // get the block by number
 	rpc getBlockByNum (BlockByNumReq) returns (BlockInfo) {
     option (google.api.http) = {
-      post: "/v1/getblockbynum"
-      body: "*"
+      get: "/getBlockByNum/{num}/{complete}"
     };
   }
   // get the balance of some account by account ID
   rpc GetBalance (GetBalanceReq) returns (GetBalanceRes) {
     option (google.api.http) = { 
-      post: "/v1/getbalance"
-      body: "*"
+      get: "/getBalance/{ID}/{useLongestChain}"
     };
   }
   // get the value of the corresponding key in stateDB
   rpc GetState (GetStateReq) returns (GetStateRes) {
     option (google.api.http) = {
-      post: "/v1/getstate"
-      body: "*"
+      get: "/getState/{key}"
     };
   }
   // receive encoded tx
   rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {
     option (google.api.http) = {
-      post: "/v1/sendrawtx"
+      post: "/sendRawTx"
       body: "*"
     };
   }
   // not supported yet
   rpc EstimateGas (RawTxReq) returns (GasRes) {
     option (google.api.http) = {
-      post: "/v1/estimategas"
+      post: "/estimateGas"
       body: "*"
     };
   }
-  //subscribe an event
+  // subscribe an event
   rpc Subscribe (SubscribeReq) returns (stream SubscribeRes) {
     option (google.api.http) = {
-      post: "/v1/subscribe"
+      post: "/subscribe"
       body: "*"
     };
   }
@@ -92,6 +86,7 @@ message BlockByNumReq {
 }
 message GetBalanceReq {
 	string ID=1;
+    bool useLongestChain = 2;
 }
 
 message GetStateReq {
