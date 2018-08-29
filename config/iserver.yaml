@@ -17,7 +17,8 @@ p2p:
   - "/ip4/127.0.0.1/tcp/30303/ipfs/12D3KooWBBhYDkCUjgtPRsTirrcbRtKtL4n2Q4RqX1PM43jmrC1r"
 
 rpc:
-  port: 30302
+  JSONPort: 30301
+  GRPCPort: 30302
 
 log:
   asyncWrite: true

@@ -27,7 +27,7 @@ func TestBlockHeadSerialize(t *testing.T) {
 }
 
 func TestBlockSerialize(t *testing.T) {
-	convey.Convey("Test of block encode and decode", t, func() {
+	convey.Convey("test Push", t, func() {
 		blk := Block{
 			Head: &BlockHead{
 				Number:     1,
@@ -55,15 +55,24 @@ func TestBlockSerialize(t *testing.T) {
 			},
 		}
 		blk.Receipts = append(blk.Receipts, &receipt)
-		blkByte, err := blk.Encode()
-		blkRead := Block{}
-		err = blkRead.Decode(blkByte)
-		convey.So(err, convey.ShouldBeNil)
-		convey.So(bytes.Equal(blkRead.Head.ParentHash, blk.Head.ParentHash), convey.ShouldBeTrue)
-		convey.So(len(blkRead.Txs) == len(blk.Txs), convey.ShouldBeTrue)
-		convey.So(len(blkRead.Receipts) == len(blk.Receipts), convey.ShouldBeTrue)
-		convey.So(bytes.Equal(blkRead.Receipts[0].TxHash, tx0.Hash()), convey.ShouldBeTrue)
-		convey.So(err, convey.ShouldBeNil)
-
+		convey.Convey("Test of block encode and decode", func() {
+			blkByte, err := blk.Encode()
+			blkRead := Block{}
+			err = blkRead.Decode(blkByte)
+			convey.So(err, convey.ShouldBeNil)
+			convey.So(bytes.Equal(blkRead.Head.ParentHash, blk.Head.ParentHash), convey.ShouldBeTrue)
+			convey.So(len(blkRead.Txs) == len(blk.Txs), convey.ShouldBeTrue)
+			convey.So(len(blkRead.Receipts) == len(blk.Receipts), convey.ShouldBeTrue)
+			convey.So(bytes.Equal(blkRead.Receipts[0].TxHash, tx0.Hash()), convey.ShouldBeTrue)
+			convey.So(err, convey.ShouldBeNil)
+		})
+		convey.Convey("Test of block encodehead and decodehead", func() {
+			blkByte, err := blk.EncodeHead()
+			blkRead := Block{}
+			err = blkRead.DecodeHead(blkByte)
+			convey.So(err, convey.ShouldBeNil)
+			convey.So(bytes.Equal(blkRead.Head.ParentHash, blk.Head.ParentHash), convey.ShouldBeTrue)
+			convey.So(err, convey.ShouldBeNil)
+		})
 	})
 }
