@@ -152,6 +152,9 @@ func main() {
 	rpcServer := rpc.NewRPCServer(txp, blkCache, glb)
 	app = append(app, rpcServer)
 
+	jsonRPCServer := rpc.NewJSONServer(glb)
+	app = append(app, jsonRPCServer)
+
 	consensus, err := consensus.Factory(
 		"pob",
 		acc, glb, blkCache, txp, p2pService, sync, account.WitnessList) //witnessList)
