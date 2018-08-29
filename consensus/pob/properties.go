@@ -1,6 +1,8 @@
 package pob
 
 import (
+	"sync"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 )
@@ -14,7 +16,7 @@ type StaticProperty struct {
 	WitnessList       []string
 	WitnessMap        map[string]int64
 	Watermark         map[string]int64
-	SlotMap           map[int64]bool
+	SlotMap           *sync.Map
 }
 
 func newStaticProperty(account account.Account, witnessList []string) *StaticProperty {
@@ -24,7 +26,7 @@ func newStaticProperty(account account.Account, witnessList []string) *StaticPro
 		WitnessList:       witnessList,
 		WitnessMap:        make(map[string]int64),
 		Watermark:         make(map[string]int64),
-		SlotMap:           make(map[int64]bool),
+		SlotMap:           new(sync.Map),
 	}
 	for i, w := range witnessList {
 		property.WitnessMap[w] = int64(i)
@@ -33,24 +35,25 @@ func newStaticProperty(account account.Account, witnessList []string) *StaticPro
 }
 
 func (property *StaticProperty) hasSlot(slot int64) bool {
-	return property.SlotMap[slot]
+	_, ok := property.SlotMap.Load(slot)
+	return ok
 }
 
 func (property *StaticProperty) addSlot(slot int64) {
-	property.SlotMap[slot] = true
+	property.SlotMap.LoadOrStore(slot, true)
 }
 
 func (property *StaticProperty) delSlot(slot int64) {
-
 	if slot%10 != 0 {
 		return
 	}
-
-	for k := range property.SlotMap {
-		if k <= slot {
-			delete(property.SlotMap, k)
+	property.SlotMap.Range(func(k, v interface{}) bool {
+		s, sok := k.(int64)
+		if !sok || s <= slot {
+			property.SlotMap.Delete(s)
 		}
-	}
+		return true
+	})
 }
 
 var (
