@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
@@ -28,18 +29,21 @@ type RPCServer struct {
 	txdb    tx.TxDB
 	txpool  txpool.TxPool
 	bchain  block.Chain
+	forkDB  db.MVCCDB
 	visitor *database.Visitor
 	port    int
 }
 
 // newRPCServer
 func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
+	forkDb := _global.StateDB().Fork()
 	return &RPCServer{
 		txdb:    _global.TxDB(),
 		txpool:  tp,
 		bchain:  _global.BlockChain(),
 		bc:      bcache,
-		visitor: database.NewVisitor(0, _global.StateDB()),
+		forkDB:  forkDb,
+		visitor: database.NewVisitor(0, forkDb),
 		port:    _global.Config().RPC.GRPCPort,
 	}
 }
@@ -75,7 +79,7 @@ func (s *RPCServer) Stop() {
 // GetHeight ...
 func (s *RPCServer) GetHeight(ctx context.Context, void *VoidReq) (*HeightRes, error) {
 	return &HeightRes{
-		Height: s.bchain.Length(),
+		Height: s.bchain.Length() - 1,
 	}, nil
 }
 
@@ -170,6 +174,11 @@ func (s *RPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRe
 func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBalanceRes, error) {
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	if key.UseLongestChain {
+		s.forkDB.Checkout(string(s.bc.Head().Block.HeadHash())) // long
+	} else {
+		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
 	return &GetBalanceRes{
 		Balance: s.visitor.Balance(key.ID),
