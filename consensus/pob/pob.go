@@ -306,7 +306,8 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
-	if blk.Head.Witness != p.account.ID {
+	err := p.verifyDB.Checkout(string(blk.HeadHash()))
+	if err != nil {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
@@ -314,9 +315,8 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 			ilog.Error(err.Error())
 			return err
 		}
+		p.verifyDB.Commit()
 		p.verifyDB.Tag(string(blk.HeadHash()))
-	} else {
-		p.verifyDB.Checkout(string(blk.HeadHash()))
 	}
 	p.blockCache.Link(node)
 	p.updateInfo(node)

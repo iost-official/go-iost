@@ -235,7 +235,9 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	fa := bcn.Parent
 	bcn.Parent = nil
-	bc.hmdel(bcn.Block.HeadHash())
+	if bcn.Block != nil {
+		bc.hmdel(bcn.Block.HeadHash())
+	}
 	if fa != nil {
 		fa.delChild(bcn)
 	}
@@ -286,12 +288,13 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		}
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
 		if err != nil {
+			ilog.Errorf("flush mvcc error: %v", err)
 			return err
 		}
 
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs)
 		if err != nil {
-			ilog.Debugf("Database error, BlockChain Push err:%v", err)
+			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		bc.delNode(cur)
