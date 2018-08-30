@@ -72,12 +72,12 @@ message VoidReq {
 }
 
 message HashReq {
-	bytes hash=1;
+	string hash=1;
 }
 
 // complete means return the whole block or just blockhead+txhash_list
 message BlockByHashReq {
-	bytes hash=1;
+	string hash=1;
 	bool complete=2;
 }
 message BlockByNumReq {
@@ -115,7 +115,7 @@ message GetStateRes {
 }
 
 message SendRawTxRes {
-	bytes hash=1;
+	string hash=1;
 }
 
 message GasRes {
@@ -125,7 +125,7 @@ message GasRes {
 message BlockInfo {
     block.BlockHead head = 1;
     repeated tx.TxRaw txs = 2;
-	repeated bytes txhash=3;  
+	repeated string txhash=3;
 }
 
 message SubscribeRes {
