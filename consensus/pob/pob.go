@@ -169,7 +169,7 @@ func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
 	}
 	bytes, err := blkReq.Encode()
 	if err != nil {
-		ilog.Debug(fmt.Errorf("fail to encode requestblock, %v", err))
+		ilog.Debugf("fail to verify blocks, %v", err)
 		return
 	}
 	p.blockReqMap.Store(string(blk.HeadHash()), time.AfterFunc(blockReqTimeout, func() {
@@ -216,11 +216,27 @@ func (p *PoB) blockLoop() {
 			if incomingMessage.Type() == p2p.NewBlock {
 				ilog.Info("received new block, block number: ", blk.Head.Number)
 				timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
-				if !ok {
+				if ok {
+					timer.(*time.Timer).Stop()
+				} else {
 					ilog.Info("block not in block request map, block number: ", blk.Head.Number)
-					continue
+					_, err := p.blockCache.Find(blk.HeadHash())
+					if err == nil {
+						ilog.Debug(errors.New("duplicate block"))
+						continue
+					}
+					err = verifyBasics(blk.Head, blk.Sign)
+					if err != nil {
+						ilog.Debugf("fail to verify blocks, %v", err)
+						continue
+					}
+					blkByte, err := blk.EncodeHead()
+					if err != nil {
+						ilog.Error(err.Error())
+						return
+					}
+					p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
 				}
-				timer.(*time.Timer).Stop()
 				err = p.handleRecvBlock(&blk)
 				p.blockReqMap.Delete(string(blk.HeadHash()))
 				if err != nil && err != errSingle {
@@ -254,12 +270,12 @@ func (p *PoB) blockLoop() {
 			if err != nil {
 				ilog.Error(err.Error())
 			}
-			blkByte, err := blk.EncodeHead()
+			blkByte, err := blk.Encode()
 			if err != nil {
 				ilog.Error(err.Error())
 				continue
 			}
-			go p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
+			go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 		case <-p.exitSignal:
 			return
 		}
@@ -306,7 +322,8 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
-	if blk.Head.Witness != p.account.ID {
+	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
+	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
@@ -315,8 +332,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 			return err
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
-	} else {
-		p.verifyDB.Checkout(string(blk.HeadHash()))
 	}
 	p.blockCache.Link(node)
 	p.updateInfo(node)
