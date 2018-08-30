@@ -33,12 +33,12 @@ func ByteToInt64(b []byte) int64 {
 func NewBlockChain(path string) (Chain, error) {
 	levelDB, err := db.NewLDB(path, 0, 0)
 	if err != nil {
-		return nil, errors.New("fail to init blockchaindb")
+		return nil, fmt.Errorf("fail to init blockchaindb, %v", err)
 	}
 	var length int64 = 0
 	ok, err := levelDB.Has(blockLength)
 	if err != nil {
-		return nil, errors.New("fail to check has(blocklength)")
+		return nil, fmt.Errorf("fail to check has(blocklength), %v", err)errors.New()
 	}
 	if ok {
 		lengthByte, err := levelDB.Get(blockLength)

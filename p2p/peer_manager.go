@@ -328,9 +328,6 @@ func (pm *PeerManager) parseSeeds() {
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
 	ilog.Infof("broadcast message. type=%s", typ)
-	//if typ != 2 {
-	//	ilog.Infof("broadcast %s", typ)
-	//}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	pm.neighborMutex.RLock()
@@ -344,10 +341,6 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
 	ilog.Infof("send message to peer. type=%s, peerID=%s", typ, peerID.Pretty())
-
-	//if typ != 2 && typ != 3 {
-	//	ilog.Infof("send message to peer. type=%s", typ)
-	//}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	peer := pm.GetNeighbor(peerID)
@@ -428,9 +421,6 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
-	//if msg.messageType() != 2 && msg.messageType() != 3 {
-	//	ilog.Infof("receiving message. type=%s", msg.messageType())
-	//}
 	ilog.Infof("receiving message. type=%s", msg.messageType())
 	switch msg.messageType() {
 	case RoutingTableQuery:
