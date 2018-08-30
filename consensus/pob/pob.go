@@ -15,47 +15,20 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/Go-IOS-Protocol/metrics"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
-	generatedBlockCount = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "generated_block_count",
-			Help: "Count of generated block by current node",
-		},
-	)
-	receivedBlockCount = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "received_block_count",
-			Help: "Count of received block by current node",
-		},
-	)
-	confirmedBlockchainLength = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "confirmed_blockchain_length",
-			Help: "Length of confirmed blockchain on current node",
-		},
-	)
-	txPoolSize = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "tx_poo_size",
-			Help: "size of tx pool on current node",
-		},
-	)
+	metricsGeneratedBlockCount = metrics.NewCounter("iost_pob_generated_block", nil)
+	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
+	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
+	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
 )
 
 var errSingle = errors.New("single block")
 
 var blockReqTimeout = 3 * time.Second
-
-func init() {
-	prometheus.MustRegister(generatedBlockCount)
-	prometheus.MustRegister(receivedBlockCount)
-	prometheus.MustRegister(confirmedBlockchainLength)
-	prometheus.MustRegister(txPoolSize)
-}
 
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
@@ -298,6 +271,7 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Duration(nextSchedule)):
 			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 			ilog.Info(p.baseVariable.Mode())
+			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
 					blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
