@@ -287,9 +287,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		})
 
 		gl.StateDB().Close()
-		//gl.BlockChain().Close()
 		stopTest()
-		//time.Sleep(2 * time.Second)
 	})
 }
 
