@@ -189,7 +189,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/txTxRaw"
+              "$ref": "#/definitions/rpctxRes"
             }
           }
         },
@@ -346,6 +346,10 @@
         "head": {
           "$ref": "#/definitions/blockBlockHead"
         },
+        "hash": {
+          "type": "string",
+          "format": "byte"
+        },
         "txs": {
           "type": "array",
           "items": {
@@ -355,7 +359,8 @@
         "txhash": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         }
       }
@@ -429,6 +434,18 @@
       "properties": {
         "ev": {
           "$ref": "#/definitions/eventEvent"
+        }
+      }
+    },
+    "rpctxRes": {
+      "type": "object",
+      "properties": {
+        "txRaw": {
+          "$ref": "#/definitions/txTxRaw"
+        },
+        "hash": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
