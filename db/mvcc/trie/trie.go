@@ -6,12 +6,9 @@ const (
 	FreeListSize = uint64(65536)
 )
 
-type Value interface {
-}
-
 type Node struct {
 	context  *Context
-	value    Value
+	value    interface{}
 	children map[byte]*Node
 	edge     byte
 	refs     []*Node
@@ -36,7 +33,7 @@ func (n *Node) all() []*Node {
 	return nodelist
 }
 
-func (n *Node) put(key []byte, value Value, i int) *Node {
+func (n *Node) put(key []byte, value interface{}, i int) *Node {
 	if i >= len(key) {
 		n.value = value
 		return n
@@ -139,7 +136,7 @@ func New() *Trie {
 	return t
 }
 
-func (t *Trie) Get(key []byte) Value {
+func (t *Trie) Get(key []byte) interface{} {
 	node := t.root.get(key, 0)
 	if node == nil {
 		return nil
@@ -147,7 +144,7 @@ func (t *Trie) Get(key []byte) Value {
 	return node.value
 }
 
-func (t *Trie) Put(key []byte, value Value) {
+func (t *Trie) Put(key []byte, value interface{}) {
 	if t.root.context != t.context {
 		root := t.root.forkWithContext(t.context)
 		t.root = root
@@ -155,9 +152,9 @@ func (t *Trie) Put(key []byte, value Value) {
 	t.root.put(key, value, 0)
 }
 
-func (t *Trie) All(prefix []byte) []Value {
+func (t *Trie) All(prefix []byte) []interface{} {
 	node := t.root.get(prefix, 0)
-	valuelist := []Value{}
+	valuelist := []interface{}{}
 	for _, n := range node.all() {
 		if n.value != nil {
 			valuelist = append(valuelist, n.value)
@@ -166,7 +163,7 @@ func (t *Trie) All(prefix []byte) []Value {
 	return valuelist
 }
 
-func (t *Trie) Fork() *Trie {
+func (t *Trie) Fork() interface{} {
 	trie := &Trie{
 		context: t.context.fork(),
 		root:    t.root,

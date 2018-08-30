@@ -2,24 +2,21 @@ package mvccmap
 
 import "strings"
 
-type Value interface {
-}
-
 type MVCCMap struct {
-	data   map[string]Value
+	data   map[string]interface{}
 	parent *MVCCMap
 	refs   []*MVCCMap
 }
 
 func New() *MVCCMap {
 	return &MVCCMap{
-		data:   make(map[string]Value),
+		data:   make(map[string]interface{}),
 		parent: nil,
 		refs:   make([]*MVCCMap, 0),
 	}
 }
 
-func (m *MVCCMap) Get(key []byte) Value {
+func (m *MVCCMap) Get(key []byte) interface{} {
 	v, ok := m.data[string(key)]
 	if !ok {
 		if m.parent == nil {
@@ -30,12 +27,12 @@ func (m *MVCCMap) Get(key []byte) Value {
 	return v
 }
 
-func (m *MVCCMap) Put(key []byte, value Value) {
+func (m *MVCCMap) Put(key []byte, value interface{}) {
 	m.data[string(key)] = value
 }
 
-func (m *MVCCMap) All(prefix []byte) []Value {
-	values := make([]Value, 0)
+func (m *MVCCMap) All(prefix []byte) []interface{} {
+	values := make([]interface{}, 0)
 	for k, v := range m.data {
 		if strings.HasPrefix(string(k), string(prefix)) {
 			values = append(values, v)
@@ -47,9 +44,9 @@ func (m *MVCCMap) All(prefix []byte) []Value {
 	return append(m.parent.All(prefix), values...)
 }
 
-func (m *MVCCMap) Fork() *MVCCMap {
+func (m *MVCCMap) Fork() interface{} {
 	mvccmap := &MVCCMap{
-		data:   make(map[string]Value),
+		data:   make(map[string]interface{}),
 		parent: m,
 		refs:   make([]*MVCCMap, 0),
 	}
