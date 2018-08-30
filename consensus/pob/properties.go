@@ -50,7 +50,7 @@ func (property *StaticProperty) delSlot(slot int64) {
 	property.SlotMap.Range(func(k, v interface{}) bool {
 		s, sok := k.(int64)
 		if !sok || s <= slot {
-			property.SlotMap.Delete(s)
+			property.SlotMap.Delete(k)
 		}
 		return true
 	})
