@@ -31,7 +31,7 @@ func NexTxDB(path string) (TxDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &TxDBImpl{db: ldb}, nil
+	return &TxDBImpl{txDB: ldb}, nil
 }
 
 func (tdb *TxDBImpl) Push(txs []*Tx, receipts []*TxReceipt) error {
