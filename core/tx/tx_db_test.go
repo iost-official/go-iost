@@ -3,9 +3,10 @@ package tx
 import (
 	"testing"
 
+	"os"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	. "github.com/smartystreets/goconvey/convey"
-	"os"
 )
 
 /*
@@ -23,7 +24,7 @@ func genTx() Tx {
 
 func TestTxDb(t *testing.T) {
 	Convey("Test of TxDb", t, func() {
-		txdb, _ := NexTxDB("./txDB/")
+		txDb, _ := NexTxDB("./txDB/")
 		a1, _ := account.NewAccount(nil)
 		tx1 := NewTx([]*Action{}, [][]byte{a1.Pubkey}, 100000, 100, 11)
 		tx2 := NewTx([]*Action{}, [][]byte{a1.Pubkey}, 88888, 22, 11)
