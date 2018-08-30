@@ -40,7 +40,7 @@ func (property *StaticProperty) hasSlot(slot int64) bool {
 }
 
 func (property *StaticProperty) addSlot(slot int64) {
-	property.SlotMap.LoadOrStore(slot, true)
+	property.SlotMap.Store(slot, true)
 }
 
 func (property *StaticProperty) delSlot(slot int64) {

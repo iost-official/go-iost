@@ -38,7 +38,7 @@ type MVCCDB interface {
 	Keys(table string, prefix string) ([]string, error)
 	Commit()
 	Rollback()
-	Checkout(t string)
+	Checkout(t string) bool
 	Tag(t string)
 	CurrentTag() string
 	Fork() MVCCDB
@@ -59,20 +59,20 @@ type Item struct {
 
 type Commit struct {
 	trie.Trie
-	Tag string
+	Tags []string
 }
 
 func NewCommit() *Commit {
 	return &Commit{
 		Trie: *trie.New(),
-		Tag:  "",
+		Tags: make([]string, 0),
 	}
 }
 
 func (c *Commit) Fork() *Commit {
 	return &Commit{
 		Trie: *c.Trie.Fork(),
-		Tag:  "",
+		Tags: make([]string, 0),
 	}
 }
 
@@ -101,8 +101,8 @@ func NewTrieMVCCDB(path string) (*TrieMVCCDB, error) {
 	tags := make(map[string]*Commit)
 	commits := make([]*Commit, 0)
 
-	head.Tag = string(tag)
-	tags[head.Tag] = head
+	head.Tags = []string{string(tag)}
+	tags[head.Tags[0]] = head
 	commits = append(commits, head)
 	mvccdb := &TrieMVCCDB{
 		head:      head,
@@ -249,22 +249,27 @@ func (m *TrieMVCCDB) Rollback() {
 	m.stage = m.head.Fork()
 }
 
-func (m *TrieMVCCDB) Checkout(t string) {
+func (m *TrieMVCCDB) Checkout(t string) bool {
 	m.tagsrw.RLock()
-	m.head = m.tags[t]
+	head, ok := m.tags[t]
 	m.tagsrw.RUnlock()
+	if !ok {
+		return false
+	}
+	m.head = head
 	m.stage = m.head.Fork()
+	return true
 }
 
 func (m *TrieMVCCDB) Tag(t string) {
 	m.tagsrw.Lock()
 	m.tags[t] = m.head
 	m.tagsrw.Unlock()
-	m.head.Tag = t
+	m.head.Tags = append(m.head.Tags, t)
 }
 
 func (m *TrieMVCCDB) CurrentTag() string {
-	return m.head.Tag
+	return m.head.Tags[0]
 }
 
 func (m *TrieMVCCDB) Fork() MVCCDB {
@@ -287,7 +292,7 @@ func (m *TrieMVCCDB) Flush(t string) error {
 	if err := m.storage.BeginBatch(); err != nil {
 		return err
 	}
-	err := m.storage.Put([]byte(string(SEPARATOR)+"tag"), []byte(trie.Tag))
+	err := m.storage.Put([]byte(string(SEPARATOR)+"tag"), []byte(t))
 	if err != nil {
 		return err
 	}
@@ -317,7 +322,9 @@ func (m *TrieMVCCDB) Flush(t string) error {
 			m.commits = m.commits[k:]
 			break
 		} else {
-			delete(m.tags, v.Tag)
+			for _, t := range v.Tags {
+				delete(m.tags, t)
+			}
 			v.Free()
 		}
 	}

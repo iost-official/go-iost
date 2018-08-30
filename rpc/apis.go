@@ -92,7 +92,8 @@ func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, 
 	txHash := hash.Hash
 	txHashBytes := common.Base58Decode(txHash)
 
-	trx, err := s.txdb.Get(txHashBytes)
+	trx, err := s.txdb.GetTx(txHashBytes)
+
 	if err != nil {
 		return nil, err
 	}

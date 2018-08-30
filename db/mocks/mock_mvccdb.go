@@ -34,8 +34,10 @@ func (m *MockMVCCDB) EXPECT() *MockMVCCDBMockRecorder {
 }
 
 // Checkout mocks base method
-func (m *MockMVCCDB) Checkout(arg0 string) {
-	m.ctrl.Call(m, "Checkout", arg0)
+func (m *MockMVCCDB) Checkout(arg0 string) bool {
+	ret := m.ctrl.Call(m, "Checkout", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
 }
 
 // Checkout indicates an expected call of Checkout

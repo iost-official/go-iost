@@ -16,6 +16,10 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
+var (
+	StateDBFlushTime int64 = 10000
+)
+
 func (m TMode) String() string {
 	switch m {
 	case ModeNormal:
@@ -113,7 +117,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get block by hash failed, stop the program. err: %v", err)
 	}
-	for blk.Head.Number < blockChain.Length()-1 {
+	for blk.Head.Number+1 < blockChain.Length() {
 		blk, err = blockChain.GetBlockByNumber(blk.Head.Number + 1)
 		if err != nil {
 			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
