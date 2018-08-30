@@ -2,7 +2,6 @@ package pob
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -133,7 +132,7 @@ func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
 	}
 	err = verifyBasics(blk.Head, blk.Sign)
 	if err != nil {
-		ilog.Debug(fmt.Errorf("fail to verify blocks, %v", err))
+		ilog.Debugf("fail to verify blocks, err:%v", err)
 		return
 	}
 
@@ -151,7 +150,7 @@ func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
 	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage)
 	blkByte, err := blk.EncodeHead()
 	if err != nil {
-		ilog.Error(err.Error())
+		ilog.Error("fail to encode block head")
 		return
 	}
 	p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
@@ -183,7 +182,7 @@ func (p *PoB) blockLoop() {
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
-				ilog.Error(err.Error())
+				ilog.Error("fail to decode block")
 				continue
 			}
 			if incomingMessage.Type() == p2p.NewBlock {
@@ -195,25 +194,25 @@ func (p *PoB) blockLoop() {
 					ilog.Info("block not in block request map, block number: ", blk.Head.Number)
 					_, err := p.blockCache.Find(blk.HeadHash())
 					if err == nil {
-						ilog.Debug(errors.New("duplicate block"))
+						ilog.Debug("duplicate block")
 						continue
 					}
 					err = verifyBasics(blk.Head, blk.Sign)
 					if err != nil {
-						ilog.Debugf("fail to verify blocks, %v", err)
+						ilog.Debugf("fail to verify blocks, err:%v", err)
 						continue
 					}
 					blkByte, err := blk.EncodeHead()
 					if err != nil {
-						ilog.Error(err.Error())
-						return
+						ilog.Error("fail to encode block head")
+						continue
 					}
 					p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
 				}
 				err = p.handleRecvBlock(&blk)
 				p.blockReqMap.Delete(string(blk.HeadHash()))
 				if err != nil && err != errSingle {
-					ilog.Error(err.Error())
+					ilog.Debugf("received new block error, err:%v", err)
 					continue
 				}
 				if err == errSingle {
@@ -224,9 +223,19 @@ func (p *PoB) blockLoop() {
 			}
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
 				ilog.Info("received sync block, block number: ", blk.Head.Number)
+				_, err := p.blockCache.Find(blk.HeadHash())
+				if err == nil {
+					ilog.Debug(errors.New("duplicate block"))
+					continue
+				}
+				err = verifyBasics(blk.Head, blk.Sign)
+				if err != nil {
+					ilog.Debugf("fail to verify blocks, err:%v", err)
+					continue
+				}
 				err = p.handleRecvBlock(&blk)
 				if err != nil && err != errSingle {
-					ilog.Error(err.Error())
+					ilog.Debugf("received sync block error, err:%v", err)
 					continue
 				}
 				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
@@ -240,11 +249,12 @@ func (p *PoB) blockLoop() {
 			ilog.Info("block from myself, block number: ", blk.Head.Number)
 			err := p.handleRecvBlock(blk)
 			if err != nil {
-				ilog.Error(err.Error())
+				ilog.Debugf("received new block error, err:%v", err)
+				continue
 			}
 			blkByte, err := blk.Encode()
 			if err != nil {
-				ilog.Error(err.Error())
+				ilog.Errorf("fail to encode block: %v", blk.Head.Number)
 				continue
 			}
 			go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
