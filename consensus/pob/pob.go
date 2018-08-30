@@ -162,10 +162,10 @@ func (p *PoB) scheduleLoop() {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
-			ilog.Info(p.baseVariable.Mode().Mode())
+			ilog.Info(p.baseVariable.Mode())
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
-				ilog.Info(p.baseVariable.Mode().Mode())
-				if p.baseVariable.Mode().Mode() == global.ModeNormal {
+				ilog.Info(p.baseVariable.Mode())
+				if p.baseVariable.Mode() == global.ModeNormal {
 					blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
 					ilog.Infof("gen block:%v", blk.Head.Number)
 					if err != nil {

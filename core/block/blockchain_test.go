@@ -4,23 +4,24 @@ import (
 	"testing"
 
 	"fmt"
-	"os/exec"
+	"os"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
-		bc, err := Instance()
+		bc, err := NewBlockChain("./BlockChainDB/")
 		So(err, ShouldBeNil)
 		So(bc.Length(), ShouldEqual, bc.Length())
 		fmt.Println(bc.Length())
+		os.RemoveAll("./BlockChainDB/")
 	})
 }
 
 func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
-		bc, err := Instance()
+		bc, err := NewBlockChain("./BlockChainDB/")
 		So(err, ShouldBeNil)
 		tBlock := Block{Head: &BlockHead{
 			Version:    2,
@@ -79,8 +80,6 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
 		So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
-
-		cmd := exec.Command("rm", "-r", "./BlockChainDB/")
-		cmd.Run()
+		os.RemoveAll("./BlockChainDB/")
 	})
 }

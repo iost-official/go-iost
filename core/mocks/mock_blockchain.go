@@ -34,10 +34,8 @@ func (m *MockChain) EXPECT() *MockChainMockRecorder {
 }
 
 // CheckLength mocks base method
-func (m *MockChain) CheckLength() error {
-	ret := m.ctrl.Call(m, "CheckLength")
-	ret0, _ := ret[0].(error)
-	return ret0
+func (m *MockChain) CheckLength() {
+	m.ctrl.Call(m, "CheckLength")
 }
 
 // CheckLength indicates an expected call of CheckLength

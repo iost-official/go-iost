@@ -26,7 +26,7 @@ var (
 )
 
 func TestNewTxPoolImpl(t *testing.T) {
-	//t.SkipNow()
+	t.SkipNow()
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
 		p2pMock := p2p_mock.NewMockService(ctl)
@@ -45,7 +45,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 		}
 		accountList = append(accountList, newAccount)
 		witnessList = append(witnessList, newAccount.ID)
-		//_accId := newAccount.ID
 
 		for i := 1; i < 3; i++ {
 			newAccount, err := account.NewAccount(nil)
@@ -55,9 +54,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 			accountList = append(accountList, newAccount)
 			witnessList = append(witnessList, newAccount.ID)
 		}
-
-		tx.LdbPath = ""
-
 		conf := &common.Config{
 			DB: &common.DBConfig{},
 		}
@@ -287,6 +283,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		})
 
 		gl.StateDB().Close()
+		gl.BlockChain().Close()
 		stopTest()
 	})
 }
@@ -477,8 +474,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 		witnessList = append(witnessList, newAccount.ID)
 	}
 
-	tx.LdbPath = ""
-
 	config := &common.P2PConfig{
 		ListenAddr: "0.0.0.0:8088",
 	}
@@ -507,7 +502,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 }
 
 func stopTest() {
-
 	os.RemoveAll(dbPath1)
 	os.RemoveAll(dbPath2)
 	os.RemoveAll(dbPath3)

@@ -27,32 +27,18 @@ func (m TMode) String() string {
 	}
 }
 
-type Mode struct {
-	mode TMode
-}
-
-func (m *Mode) Mode() TMode {
-	return m.mode
-}
-
-func (m *Mode) SetMode(i TMode) bool {
-	m.mode = i
-	return true
-}
-
 type TMode uint
 
 const (
 	ModeNormal TMode = iota
 	ModeSync
-	ModeProduce
 )
 
 type BaseVariableImpl struct {
 	blockChain block.Chain
 	stateDB    db.MVCCDB
 	txDB       tx.TxDB
-	mode       *Mode
+	mode       TMode
 	config     *common.Config
 }
 
@@ -99,18 +85,15 @@ func GenGenesis(initTime int64, db db.MVCCDB) (*block.Block, error) {
 }
 
 func New(conf *common.Config) (*BaseVariableImpl, error) {
-	block.LevelDBPath = conf.DB.LdbPath
-	blockChain, err := block.Instance()
+	blockChain, err := block.NewBlockChain(conf.DB.LdbPath + "BlockChainDB")
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)
 	}
 	stateDB, err := db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
 	if err != nil {
-		ilog.Error(err)
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
 	blk, err := blockChain.Top()
-	ilog.Error(blk)
 	ilog.Error(err)
 	if err != nil {
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -124,15 +107,13 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		}
 		err = stateDB.Flush(string(blk.HeadHash()))
 		if err != nil {
-			return nil, fmt.Errorf("push block in statedb failed, stop the program. err: %v", err)
+			return nil, fmt.Errorf("flush stateDB failed, stop the program. err: %v", err)
 		}
 	}
-
 	hash := stateDB.CurrentTag()
 	if hash == "" {
 		ilog.Error("why currentTag equals \"\"")
 	}
-
 	ilog.Error("currentTag", hash)
 	blk, err = blockChain.GetBlockByHash([]byte(hash))
 	if err != nil {
@@ -147,44 +128,26 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if err != nil {
 			return nil, fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
 		}
-		if blk.Head.Number%1000 == 0 {
-			err = stateDB.Flush(string(blk.HeadHash()))
-			if err != nil {
-				return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
-			}
+		stateDB.Tag(string(blk.HeadHash()))
+		err = stateDB.Flush(string(blk.HeadHash()))
+		if err != nil {
+			return nil, fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
 		}
 	}
-	blk, err = blockChain.Top()
+	txDB, err := tx.NexTxDB(conf.DB.LdbPath + "txDB")
 	if err != nil {
-		return nil, fmt.Errorf("blockchain top failed, stop the pogram. err: %v", err)
+		return nil, fmt.Errorf("new txDB failed, stop the program")
 	}
-	err = stateDB.Flush(string(blk.HeadHash()))
-	if err != nil {
-		return nil, fmt.Errorf("flush state db failed, stop the pogram. err: %v", err)
-	}
-	tx.LdbPath = conf.DB.LdbPath
-	txDB := tx.TxDBInstance()
-	if txDB == nil {
-		return nil, fmt.Errorf("new txdb failed, stop the program")
-	}
-	stateDB.Tag(string(blk.HeadHash()))
-	m := new(Mode)
-	m.SetMode(ModeNormal)
-
-	n := &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: m, config: conf}
+	n := &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeNormal, config: conf}
 	return n, nil
 }
 
 func FakeNew() BaseVariable {
-	block.LevelDBPath = "./"
-	blockChain, _ := block.Instance()
-	stateDB, _ := db.NewMVCCDB("StateDB")
-	tx.LdbPath = "./"
-	txDB := tx.TxDBInstance()
-	mode := Mode{}
-	mode.SetMode(ModeNormal)
+	blockChain, _ := block.NewBlockChain("./db/")
+	stateDB, _ := db.NewMVCCDB("./db/StateDB")
+	txDB, _ := tx.NexTxDB("./db/")
 	config := common.Config{}
-	return &BaseVariableImpl{blockChain, stateDB, txDB, &mode, &config}
+	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, &config}
 }
 
 func (g *BaseVariableImpl) TxDB() tx.TxDB {
@@ -203,6 +166,10 @@ func (g *BaseVariableImpl) Config() *common.Config {
 	return g.config
 }
 
-func (g *BaseVariableImpl) Mode() *Mode {
+func (g *BaseVariableImpl) Mode() TMode {
 	return g.mode
+}
+
+func (g *BaseVariableImpl) SetMode(m TMode) {
+	g.mode = m
 }
