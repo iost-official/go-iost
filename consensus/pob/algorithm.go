@@ -1,11 +1,10 @@
 package pob
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/account"
-
 	"errors"
 	"time"
 
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"

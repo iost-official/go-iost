@@ -48,11 +48,12 @@ type BaseVariableImpl struct {
 
 func GenGenesis(initTime int64, db db.MVCCDB) (*block.Block, error) {
 	var acts []*tx.Action
-	for k, v := range account.GenesisAccount {
-		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, k, strconv.FormatInt(v, 10)))
+	for _, k := range account.WitnessList {
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, k, strconv.FormatInt(account.GenesisAccount[k], 10)))
 		acts = append(acts, &act)
 	}
 	trx := tx.NewTx(acts, nil, 0, 0, 0)
+	trx.Time = 0
 	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
 
 	if err != nil {

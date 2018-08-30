@@ -2,7 +2,6 @@ package pob
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -160,7 +159,7 @@ func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
 	}
 	err = verifyBasics(blk.Head, blk.Sign)
 	if err != nil {
-		ilog.Debug(fmt.Errorf("fail to verify blocks, %v", err))
+		ilog.Debugf("fail to verify blocks, err:%v", err)
 		return
 	}
 
@@ -227,13 +226,13 @@ func (p *PoB) blockLoop() {
 					}
 					err = verifyBasics(blk.Head, blk.Sign)
 					if err != nil {
-						ilog.Debugf("fail to verify blocks, %v", err)
+						ilog.Debugf("fail to verify blocks, err:%v", err)
 						continue
 					}
 					blkByte, err := blk.EncodeHead()
 					if err != nil {
 						ilog.Error(err.Error())
-						return
+						continue
 					}
 					p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
 				}
@@ -251,7 +250,19 @@ func (p *PoB) blockLoop() {
 			}
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
 				ilog.Info("received sync block, block number: ", blk.Head.Number)
+				_, err := p.blockCache.Find(blk.HeadHash())
+				if err == nil {
+					ilog.Debug(errors.New("duplicate block"))
+					continue
+				}
+				err = verifyBasics(blk.Head, blk.Sign)
+				if err != nil {
+					ilog.Debugf("fail to verify blocks, err:%v", err)
+					continue
+				}
 				err = p.handleRecvBlock(&blk)
+				node, _ := p.blockCache.Find(blk.HeadHash())
+				ilog.Debug("Type:", node.Type)
 				if err != nil && err != errSingle {
 					ilog.Error(err.Error())
 					continue
@@ -290,7 +301,6 @@ func (p *PoB) scheduleLoop() {
 			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 			ilog.Info(p.baseVariable.Mode())
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
-				ilog.Info(p.baseVariable.Mode())
 				if p.baseVariable.Mode() == global.ModeNormal {
 					blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
 					ilog.Infof("gen block:%v", blk.Head.Number)
@@ -323,6 +333,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
+	ilog.Debug("ok:", ok)
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
