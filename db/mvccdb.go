@@ -252,10 +252,10 @@ func (m *TrieMVCCDB) Rollback() {
 func (m *TrieMVCCDB) Checkout(t string) bool {
 	m.tagsrw.RLock()
 	head, ok := m.tags[t]
+	m.tagsrw.RUnlock()
 	if !ok {
 		return false
 	}
-	m.tagsrw.RUnlock()
 	m.head = head
 	m.stage = m.head.Fork()
 	return true

@@ -30,7 +30,7 @@ var (
 )
 
 func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
-	ilog.Info("generateBlockstart")
+	ilog.Info("generate Block start")
 	blk := block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
@@ -63,7 +63,6 @@ L:
 	}
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
-	//headInfo := generateHeadInfo(blk.Head)
 	err := blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err
