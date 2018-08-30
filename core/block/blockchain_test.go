@@ -13,7 +13,6 @@ import (
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
 		bc, err := NewBlockChain("./BlockChainDB/")
-		bc, err := NewBlockChainDB("./")
 		So(err, ShouldBeNil)
 		So(bc.Length(), ShouldEqual, bc.Length())
 		fmt.Println(bc.Length())

@@ -101,8 +101,7 @@ func main() {
 	conf := common.NewConfig(*configfile)
 
 	initLogger(conf.Log)
-
-	vm.SetUp(conf.VM)
+	ilog.Infof("Config Information:\n%v", conf.YamlString())
 
 	vm.SetUp(conf.VM)
 
