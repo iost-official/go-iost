@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/iost-official/Go-IOS-Protocol/db/mvcc/trie"
+	// "github.com/iost-official/Go-IOS-Protocol/db/mvcc/map"
 	"github.com/iost-official/Go-IOS-Protocol/db/storage"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
@@ -58,20 +59,23 @@ type Item struct {
 }
 
 type Commit struct {
-	trie.Trie
+	// *mvccmap.MVCCMap
+	*trie.Trie
 	Tags []string
 }
 
 func NewCommit() *Commit {
 	return &Commit{
-		Trie: *trie.New(),
+		// MVCCMap: mvccmap.New(),
+		Trie: trie.New(),
 		Tags: make([]string, 0),
 	}
 }
 
 func (c *Commit) Fork() *Commit {
 	return &Commit{
-		Trie: *c.Trie.Fork(),
+		// MVCCMap: c.MVCCMap.Fork(),
+		Trie: c.Trie.Fork(),
 		Tags: make([]string, 0),
 	}
 }

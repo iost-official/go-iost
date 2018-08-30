@@ -1,5 +1,7 @@
 package mvccmap
 
+import "strings"
+
 type Value interface {
 }
 
@@ -30,6 +32,19 @@ func (m *MVCCMap) Get(key []byte) Value {
 
 func (m *MVCCMap) Put(key []byte, value Value) {
 	m.data[string(key)] = value
+}
+
+func (m *MVCCMap) All(prefix []byte) []Value {
+	values := make([]Value, 0)
+	for k, v := range m.data {
+		if strings.HasPrefix(string(k), string(prefix)) {
+			values = append(values, v)
+		}
+	}
+	if m.parent == nil {
+		return values
+	}
+	return append(m.parent.All(prefix), values...)
 }
 
 func (m *MVCCMap) Fork() *MVCCMap {
