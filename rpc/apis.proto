@@ -15,7 +15,7 @@ service Apis {
     };
   }
   // get the tx by hash
-	rpc GetTxByHash (HashReq) returns (tx.TxRaw) {
+	rpc GetTxByHash (HashReq) returns (txRes) {
     option (google.api.http) = {
       get: "/getTxByHash/{hash}"
     }; 
@@ -122,10 +122,16 @@ message GasRes {
 	uint64 gas=1;
 }
 
+message txRes {
+    tx.TxRaw txRaw = 1;
+    bytes hash = 2;
+}
+
 message BlockInfo {
     block.BlockHead head = 1;
-    repeated tx.TxRaw txs = 2;
-	repeated bytes txhash=3;
+    bytes hash = 2;
+    repeated tx.TxRaw txs = 3;
+	repeated bytes txhash=4;
 }
 
 message SubscribeRes {
