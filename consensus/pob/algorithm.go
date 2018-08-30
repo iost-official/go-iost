@@ -75,25 +75,11 @@ L:
 	return &blk, nil
 }
 
-/*
-func generateHeadInfo(head *block.BlockHead) []byte {
-	info := block.Int64ToByte(head.Version)
-	info = append(info, head.ParentHash...)
-	info = append(info, head.TxsHash...)
-	info = append(info, head.MerkleHash...)
-	info = append(info, block.Int64ToByte(head.Number)...)
-	info = append(info, block.Int64ToByte(head.Time)...)
-	return common.Sha3(info)
-}
-*/
-
 func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	if witnessOfSlot(head.Time) != head.Witness {
 		return errWitness
 	}
-	//signature.Decode(Head.Signature)
 	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
-	//headInfo := generateHeadInfo(blk.Head)
 	hash, err := head.Hash()
 	if err != nil {
 		return errHeadHash

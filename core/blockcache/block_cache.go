@@ -314,9 +314,8 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 	bcn, ok := bc.hmget(hash)
 	if !ok || bcn.Type == Virtual {
 		return nil, errors.New("block not found")
-	} else {
-		return bcn, nil
 	}
+	return bcn, nil
 }
 
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {

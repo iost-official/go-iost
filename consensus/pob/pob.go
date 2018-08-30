@@ -218,7 +218,16 @@ func (p *PoB) blockLoop() {
 				timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 				if !ok {
 					ilog.Info("block not in block request map, block number: ", blk.Head.Number)
-					continue
+					_, err := p.blockCache.Find(blk.HeadHash())
+					if err == nil {
+						ilog.Debug(errors.New("duplicate block"))
+						continue
+					}
+					err = verifyBasics(blk.Head, blk.Sign)
+					if err != nil {
+						ilog.Debug(fmt.Errorf("fail to verify blocks, %v", err))
+						continue
+					}
 				}
 				timer.(*time.Timer).Stop()
 				err = p.handleRecvBlock(&blk)
@@ -254,12 +263,12 @@ func (p *PoB) blockLoop() {
 			if err != nil {
 				ilog.Error(err.Error())
 			}
-			blkByte, err := blk.EncodeHead()
+			blkByte, err := blk.Encode()
 			if err != nil {
 				ilog.Error(err.Error())
 				continue
 			}
-			go p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
+			go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 		case <-p.exitSignal:
 			return
 		}
@@ -306,8 +315,8 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
-	err := p.verifyDB.Checkout(string(blk.HeadHash()))
-	if err != nil {
+	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
+	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
