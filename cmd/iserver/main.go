@@ -47,6 +47,7 @@ func initMetrics(metricsConfig *common.MetricsConfig) error {
 	if err != nil {
 		return err
 	}
+	metrics.SetID(metricsConfig.ID)
 	return metrics.Start()
 }
 
@@ -101,7 +102,6 @@ func main() {
 	conf := common.NewConfig(*configfile)
 
 	initLogger(conf.Log)
-
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
 
 	vm.SetUp(conf.VM)
@@ -124,12 +124,11 @@ func main() {
 	}
 	app = append(app, p2pService)
 
-	accSecKey := glb.Config().ACC.SecKey
+	accSecKey := conf.ACC.SecKey
 	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
 	if err != nil {
 		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
 	}
-	account.MainAccount = acc
 
 	blkCache, err := blockcache.NewBlockCache(glb)
 	if err != nil {

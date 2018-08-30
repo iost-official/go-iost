@@ -93,7 +93,7 @@ func (sy *SyncImpl) Stop() {
 }
 
 func (sy *SyncImpl) NeedSync(netHeight int64) (bool, int64, int64) {
-	if sy.basevariable.Mode().Mode() == global.ModeSync {
+	if sy.basevariable.Mode() == global.ModeSync {
 		return false, 0, 0
 	}
 	height := sy.basevariable.BlockChain().Length() - 1
@@ -132,7 +132,7 @@ func (sy *SyncImpl) queryBlockHash(hr message.BlockHashQuery) {
 }
 
 func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
-	sy.basevariable.Mode().SetMode(global.ModeSync)
+	sy.basevariable.SetMode(global.ModeSync)
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+MaxBlockHashQueryNumber-1 {
 		for i := startNumber; i < startNumber+MaxBlockHashQueryNumber; i++ {
@@ -153,7 +153,7 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 
 func (sy *SyncImpl) CheckSyncProcess() {
 	if sy.syncEnd <= sy.blockCache.Head().Number {
-		sy.basevariable.Mode().SetMode(global.ModeNormal)
+		sy.basevariable.SetMode(global.ModeNormal)
 		sy.dc.Reset()
 	}
 }
@@ -304,23 +304,23 @@ func (sy *SyncImpl) retryDownloadLoop() {
 func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
 	var b []byte
 	var err error
-	if rh.BlockNumber < sy.blockCache.LinkedRoot().Number {
-		b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.BlockHash)
-		if err != nil {
-			ilog.Errorf("Database error: block empty %v", rh.BlockNumber)
-			return
-		}
-	} else {
-		node, err := sy.blockCache.Find(rh.BlockHash)
-		if err != nil {
-			ilog.Errorf("Block not in cache: %v", rh.BlockNumber)
-			return
-		}
+	node, err := sy.blockCache.Find(rh.BlockHash)
+	if err == nil {
 		b, err = node.Block.Encode()
 		if err != nil {
-			ilog.Errorf("Fail to encode block: %v", rh.BlockNumber)
+			ilog.Errorf("Fail to encode block: %v, err=%v", rh.BlockNumber, err)
 			return
 		}
+		sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
+		return
+	}
+
+	ilog.Infof("failed to get block from blockcache. err=%v", err)
+
+	b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.BlockHash)
+	if err != nil {
+		ilog.Warnf("failed to get block from blockchain. err=%v", err)
+		return
 	}
 	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
 }

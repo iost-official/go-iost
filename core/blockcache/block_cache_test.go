@@ -52,7 +52,7 @@ func TestBlockCache(t *testing.T) {
 	s3 := genBlock(s2, "w4", 4)
 
 	txdb := core_mock.NewMockTxDB(ctl)
-	txdb.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
+	txdb.EXPECT().Push(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(gomock.Any()).AnyTimes().Return(nil)
 	base := core_mock.NewMockChain(ctl)

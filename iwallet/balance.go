@@ -41,7 +41,6 @@ var balanceCmd = &cobra.Command{
 			fmt.Println(err)
 		}
 		fmt.Println(b, "iost")
-
 	},
 }
 

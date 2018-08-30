@@ -20,7 +20,6 @@ import (
 
 var (
 	errWitness     = errors.New("wrong witness")
-	errPubkey      = errors.New("wrong pubkey")
 	errSignature   = errors.New("wrong signature")
 	errSlot        = errors.New("witness slot duplicate")
 	errTxTooOld    = errors.New("tx too old")
@@ -30,7 +29,7 @@ var (
 )
 
 func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
-	ilog.Info("generateBlockstart")
+	ilog.Info("generate Block start")
 	blk := block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
@@ -63,7 +62,6 @@ L:
 	}
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
-	//headInfo := generateHeadInfo(blk.Head)
 	err := blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err
@@ -75,25 +73,11 @@ L:
 	return &blk, nil
 }
 
-/*
-func generateHeadInfo(head *block.BlockHead) []byte {
-	info := block.Int64ToByte(head.Version)
-	info = append(info, head.ParentHash...)
-	info = append(info, head.TxsHash...)
-	info = append(info, head.MerkleHash...)
-	info = append(info, block.Int64ToByte(head.Number)...)
-	info = append(info, block.Int64ToByte(head.Time)...)
-	return common.Sha3(info)
-}
-*/
-
 func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	if witnessOfSlot(head.Time) != head.Witness {
 		return errWitness
 	}
-	//signature.Decode(Head.Signature)
 	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
-	//headInfo := generateHeadInfo(blk.Head)
 	hash, err := head.Hash()
 	if err != nil {
 		return errHeadHash
