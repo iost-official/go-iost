@@ -148,7 +148,7 @@ func sendTx(stx tx.Tx) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return resp.Hash, nil
+	return []byte(resp.Hash), nil
 	/*
 		switch resp.Code {
 		case 0:
