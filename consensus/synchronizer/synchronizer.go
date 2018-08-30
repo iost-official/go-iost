@@ -93,7 +93,7 @@ func (sy *SyncImpl) Stop() {
 }
 
 func (sy *SyncImpl) NeedSync(netHeight int64) (bool, int64, int64) {
-	if sy.basevariable.Mode().Mode() == global.ModeSync {
+	if sy.basevariable.Mode() == global.ModeSync {
 		return false, 0, 0
 	}
 	height := sy.basevariable.BlockChain().Length() - 1
@@ -132,7 +132,7 @@ func (sy *SyncImpl) queryBlockHash(hr message.BlockHashQuery) {
 }
 
 func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
-	sy.basevariable.Mode().SetMode(global.ModeSync)
+	sy.basevariable.SetMode(global.ModeSync)
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+MaxBlockHashQueryNumber-1 {
 		for i := startNumber; i < startNumber+MaxBlockHashQueryNumber; i++ {
@@ -153,7 +153,7 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 
 func (sy *SyncImpl) CheckSyncProcess() {
 	if sy.syncEnd <= sy.blockCache.Head().Number {
-		sy.basevariable.Mode().SetMode(global.ModeNormal)
+		sy.basevariable.SetMode(global.ModeNormal)
 		sy.dc.Reset()
 	}
 }

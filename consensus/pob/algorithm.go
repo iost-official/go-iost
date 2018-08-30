@@ -20,7 +20,6 @@ import (
 
 var (
 	errWitness     = errors.New("wrong witness")
-	errPubkey      = errors.New("wrong pubkey")
 	errSignature   = errors.New("wrong signature")
 	errSlot        = errors.New("witness slot duplicate")
 	errTxTooOld    = errors.New("tx too old")
