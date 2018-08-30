@@ -38,7 +38,6 @@ type Sandbox struct {
 	context C.SandboxPtr
 	modules Modules
 	host    *host.Host
-	jsPath  string
 }
 
 var sbxMap = make(map[C.SandboxPtr]*Sandbox)
@@ -51,7 +50,11 @@ func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
 
 // NewSandbox generate new sandbox for VM and insert into sandbox map
 func NewSandbox(e *VM) *Sandbox {
+	cPath := C.CString(e.jsPath)
+	defer C.free(unsafe.Pointer(cPath))
 	cSbx := C.newSandbox(e.isolate)
+	C.setJSPath(cSbx, cPath)
+
 	s := &Sandbox{
 		isolate: e.isolate,
 		context: cSbx,
@@ -89,8 +92,7 @@ func (sbx *Sandbox) Init() {
 		(C.getFunc)(C.goGet),
 		(C.delFunc)(C.goDel),
 		(C.globalGetFunc)(C.goGlobalGet))
-	//LoadVM
-	C.LoadVM(sbx.context)
+	C.loadVM(sbx.context)
 }
 
 // SetGasLimit set gas limit in context
@@ -113,11 +115,12 @@ func (sbx *Sandbox) SetModule(name, code string) {
 	sbx.modules.Set(m)
 }
 
-// SetJSPath set js path
+// SetJSPath set js path and ReloadVM
 func (sbx *Sandbox) SetJSPath(path string) {
-	sbx.jsPath = path
 	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
 	C.setJSPath(sbx.context, cPath)
+	C.loadVM(sbx.context)
 }
 
 // Prepare for contract, inject code

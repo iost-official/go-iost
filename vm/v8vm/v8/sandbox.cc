@@ -108,12 +108,12 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
 
     Local<ObjectTemplate> globalTpl = createGlobalTpl(isolate);
     Local<Context> context = Context::New(isolate, NULL, globalTpl);
-    Local<Object> global = context->Global();
+    Context::Scope context_scope(context);
 
-    Sandbox *sbx = new Sandbox;
+    Sandbox *sbx = new Sandbox();
+    Local<Object> global = context->Global();
     global->SetInternalField(0, External::New(isolate, sbx));
 
-    //sbx->context.Reset(isolate, Context::New(isolate, nullptr, globalTpl));
     sbx->context.Reset(isolate, context);
     sbx->isolate = isolate;
     sbx->jsPath = strdup("v8/libjs");
@@ -132,6 +132,7 @@ void releaseSandbox(SandboxPtr ptr) {
 
     Locker locker(sbx->isolate);
     Isolate::Scope isolate_scope(sbx->isolate);
+    HandleScope handle_scope(sbx->isolate);
 
     sbx->context.Reset();
 
@@ -142,7 +143,8 @@ void releaseSandbox(SandboxPtr ptr) {
 
 void setJSPath(SandboxPtr ptr, const char *jsPath) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
-    sbx->jsPath = jsPath;
+    free((char *)sbx->jsPath);
+    sbx->jsPath = strdup(jsPath);
 }
 
 void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit) {
@@ -150,7 +152,7 @@ void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit) {
     sbx->gasLimit = gasLimit;
 }
 
-std::string report_exception(Isolate *isolate, Local<Context> ctx, TryCatch& tryCatch) {
+std::string reportException(Isolate *isolate, Local<Context> ctx, TryCatch& tryCatch) {
     std::stringstream ss;
     ss << "Uncaught exception: ";
 
@@ -202,13 +204,19 @@ std::string report_exception(Isolate *isolate, Local<Context> ctx, TryCatch& try
     return ss.str();
 }
 
-void LoadVM(SandboxPtr ptr) {
+void loadVM(SandboxPtr ptr) {
     if (ptr == nullptr) {
         return;
     }
 
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
+    Locker locker(isolate);
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope handle_scope(isolate);
+
+    Local<Context> context = sbx->context.Get(isolate);
+    Context::Scope context_scope(context);
 
     std::string vmPath = std::string(sbx->jsPath) + "vm.js";
     std::ifstream f(vmPath);
@@ -232,12 +240,12 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     Isolate *isolate = sbx->isolate;
 
     Locker locker(isolate);
+
     Isolate::Scope isolate_scope(isolate);
-
     HandleScope handle_scope(isolate);
-    Context::Scope context_scope(sbx->context.Get(isolate));
-
-    //LoadVM(sbx);
+    //Context::Scope context_scope(sbx->context.Get(isolate));
+    Local<Context> context = sbx->context.Get(isolate);
+    Context::Scope context_scope(context);
 
     TryCatch tryCatch(isolate);
     tryCatch.SetVerbose(true);
@@ -247,7 +255,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     Local<Script> script = Script::Compile(source, fileName);
 
     if (script.IsEmpty()) {
-        std::string exception = report_exception(isolate, sbx->context.Get(isolate), tryCatch);
+        std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
         return;
     }
@@ -259,7 +267,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     }
 
     if (ret.IsEmpty()) {
-        std::string exception = report_exception(isolate, sbx->context.Get(isolate), tryCatch);
+        std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
         return;
     }
@@ -272,7 +280,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
 
     Local<Object> obj = ret.As<Object>();
     if (!obj->IsUndefined()) {
-        MaybeLocal<String> jsonRet = JSON::Stringify(sbx->context.Get(isolate), obj);
+        MaybeLocal<String> jsonRet = JSON::Stringify(context, obj);
         if (!jsonRet.IsEmpty()) {
             isJson = true;
             String::Utf8Value jsonRetStr(jsonRet.ToLocalChecked());

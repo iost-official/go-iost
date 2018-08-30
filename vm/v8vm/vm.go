@@ -20,25 +20,27 @@ type VM struct {
 	isolate              C.IsolatePtr
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
+	jsPath               string
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
 }
 
 // NewVM return new vm with isolate and sandbox
-func NewVM() *VM {
+func NewVM(jsPath string) *VM {
 	CVMInitOnce.Do(func() {
 		C.init()
 	})
 	isolate := C.newIsolate()
 	e := &VM{
 		isolate: isolate,
+		jsPath:  jsPath,
 	}
 	e.sandbox = NewSandbox(e)
 	return e
 }
 
-func NewVMWithChannel(releaseChannel chan *VM) *VM {
-	e := NewVM()
+func NewVMWithChannel(jsPath string, releaseChannel chan *VM) *VM {
+	e := NewVM(jsPath)
 	e.releaseChannel = releaseChannel
 	return e
 }

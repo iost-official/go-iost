@@ -17,7 +17,7 @@ void init() {
 
     Platform *platform = platform::CreateDefaultPlatform();
     V8::InitializePlatform(platform);
-/*
+#ifdef __linux__
     StartupData nativesData, snapshotData;
     nativesData.data = reinterpret_cast<char *>(natives_blob_bin);
     nativesData.raw_size = natives_blob_bin_len;
@@ -25,7 +25,7 @@ void init() {
     snapshotData.raw_size = snapshot_blob_bin_len;
     V8::SetNativesDataBlob(&nativesData);
     V8::SetSnapshotDataBlob(&snapshotData);
-*/
+#endif
     V8::Initialize();
     return;
 }
