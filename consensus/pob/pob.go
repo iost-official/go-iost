@@ -261,8 +261,6 @@ func (p *PoB) blockLoop() {
 					continue
 				}
 				err = p.handleRecvBlock(&blk)
-				node, _ := p.blockCache.Find(blk.HeadHash())
-				ilog.Debug("Type:", node.Type)
 				if err != nil && err != errSingle {
 					ilog.Error(err.Error())
 					continue
@@ -333,7 +331,6 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
-	ilog.Debug("ok:", ok)
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
