@@ -5,6 +5,7 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	. "github.com/smartystreets/goconvey/convey"
+	"os"
 )
 
 /*
@@ -22,43 +23,75 @@ func genTx() Tx {
 
 func TestTxDb(t *testing.T) {
 	Convey("Test of TxDb", t, func() {
-		txdb := NewTxDB("./")
-		Convey("Test of Add", func() {
-			a1, _ := account.NewAccount(nil)
-			_tx := NewTx([]*Action{}, [][]byte{a1.Pubkey}, 100000, 100, 11)
-			var txs []*Tx
-			txs = make([]*Tx, 0)
-			txs = append(txs, &_tx)
-			err := txdb.Push(txs)
+		txDb := NewTxDB("./")
+
+		a1, _ := account.NewAccount(nil)
+		tx1 := NewTx([]*Action{}, [][]byte{a1.Pubkey}, 100000, 100, 11)
+		tx2 := NewTx([]*Action{}, [][]byte{a1.Pubkey}, 88888, 22, 11)
+		var txs []*Tx
+		txs = make([]*Tx, 0)
+		txs = append(txs, &tx1)
+
+		re1 := NewTxReceipt(tx1.Hash())
+		re2 := NewTxReceipt(tx2.Hash())
+
+		var res []*TxReceipt
+		res = make([]*TxReceipt, 0)
+		res = append(res, &re1)
+
+		err := txDb.Push(txs, res)
+		So(err, ShouldBeNil)
+
+		Convey("Test of HasTx", func() {
+			b, err := txDb.HasTx(tx1.Hash())
+			So(b, ShouldBeTrue)
 			So(err, ShouldBeNil)
+
+			b, err = txDb.HasTx(tx2.Hash())
+			So(b, ShouldBeFalse)
+			So(err, ShouldBeNil)
+
 		})
-		/*
-			Convey("Test of Has", func() {
-				_tx := genTx()
-				_, err := txdb.Has(&_tx)
-				So(err, ShouldBeNil)
-				txdb.Add(&_tx)
 
-				_, err = txdb.Has(&_tx)
-				So(err, ShouldBeNil)
-			})
+		Convey("Test of GetTx", func() {
+			tx, err := txDb.GetTx(tx1.Hash())
+			So(err, ShouldBeNil)
+			So(string(tx.Hash()), ShouldEqual, string(tx1.Hash()))
 
-			Convey("Test of Get", func() {
-				tx1 := genTx()
-				err := txdb.Add(&tx1)
-				hash := tx1.Hash()
-				tx2, err := txdb.Get(hash)
-				So(err, ShouldBeNil)
-				So(tx2.Time, ShouldEqual, tx1.Time)
-			})
+			_, err = txDb.GetTx(tx2.Hash())
+			So(err, ShouldNotBeNil)
 
-			Convey("Test of GetByPN", func() {
-				tx1 := genTx()
-				err := txdb.Add(&tx1)
-				tx2, err := txdb.(*TxPoolDb).GetByPN(tx1.Nonce, tx1.Publisher.Pubkey)
-				So(err, ShouldBeNil)
-				So(tx1.Time, ShouldEqual, (*tx2).Time)
-			})
-		*/
+		})
+
+		Convey("Test of GetReceipt", func() {
+			re, err := txDb.GetReceipt(re1.Hash())
+			So(err, ShouldBeNil)
+			So(string(re.Hash()), ShouldEqual, string(re1.Hash()))
+
+			_, err = txDb.GetTx(re2.Hash())
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Test of GetReceiptByTxHash", func() {
+			re, err := txDb.GetReceiptByTxHash(tx1.Hash())
+			So(err, ShouldBeNil)
+			So(string(re.Hash()), ShouldEqual, string(re1.Hash()))
+
+			_, err = txDb.GetReceiptByTxHash(tx2.Hash())
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Test of HasReceipt", func() {
+			b, err := txDb.HasReceipt(re1.Hash())
+			So(err, ShouldBeNil)
+			So(b, ShouldBeTrue)
+
+			b, err = txDb.HasReceipt(re2.Hash())
+			So(err, ShouldBeNil)
+			So(b, ShouldBeFalse)
+		})
+
 	})
+
+	os.RemoveAll("txDB")
 }
