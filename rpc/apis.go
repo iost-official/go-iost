@@ -90,7 +90,7 @@ func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, 
 	}
 	txHash := hash.Hash
 
-	trx, err := s.txdb.Get(txHash)
+	trx, err := s.txdb.GetTx(txHash)
 	if err != nil {
 		return nil, err
 	}

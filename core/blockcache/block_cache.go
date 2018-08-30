@@ -289,7 +289,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			return err
 		}
 
-		err = bc.baseVariable.TxDB().Push(retain.Block.Txs)
+		err = bc.baseVariable.TxDB().Push(retain.Block.Txs, retain.Block.Receipts)
 		if err != nil {
 			ilog.Debugf("Database error, BlockChain Push err:%v", err)
 			return err
