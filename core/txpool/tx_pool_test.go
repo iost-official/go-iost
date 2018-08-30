@@ -26,7 +26,6 @@ var (
 )
 
 func TestNewTxPoolImpl(t *testing.T) {
-	t.SkipNow()
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
 		p2pMock := p2p_mock.NewMockService(ctl)
