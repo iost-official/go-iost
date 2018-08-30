@@ -56,12 +56,9 @@ func TestNewTxPoolImpl(t *testing.T) {
 		conf := &common.Config{
 			DB: &common.DBConfig{},
 		}
-		ilog.Debug("Here")
 		gl, err := global.New(conf)
 
-		ilog.Debug("here")
 		So(err, ShouldBeNil)
-		ilog.Debug("here")
 		BlockCache, err := blockcache.NewBlockCache(gl)
 		So(err, ShouldBeNil)
 
@@ -79,14 +76,11 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			r = txPool.AddTx(t)
 			So(r, ShouldEqual, DupError)
-			ilog.Error("here")
 		})
 		time.Sleep(time.Second)
 		Convey("txTimeOut", func() {
-			ilog.Debug("feawfeawfea")
 
 			t := genTx(accountList[0], expiration)
-			ilog.Debug("feawfeawfea")
 
 			b := txPool.txTimeOut(t)
 			So(b, ShouldBeFalse)

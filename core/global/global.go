@@ -12,7 +12,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
@@ -94,7 +93,6 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
 	blk, err := blockChain.Top()
-	ilog.Error(err)
 	if err != nil {
 		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 		blk, err = GenGenesis(common.GetTimestamp(t.Unix()).Slot, stateDB)
@@ -111,10 +109,6 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		}
 	}
 	hash := stateDB.CurrentTag()
-	if hash == "" {
-		ilog.Error("why currentTag equals \"\"")
-	}
-	ilog.Error("currentTag", hash)
 	blk, err = blockChain.GetBlockByHash([]byte(hash))
 	if err != nil {
 		return nil, fmt.Errorf("get block by hash failed, stop the program. err: %v", err)
