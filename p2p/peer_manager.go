@@ -275,6 +275,7 @@ func (pm *PeerManager) LoadRoutingTable() {
 		}
 		peerID, addr, err := parseMultiaddr(line[:len(line)-1])
 		if err != nil {
+			ilog.Warnf("parse multi addr failed. err=%v, line=%v", err, line)
 			continue
 		}
 		pm.storePeer(peerID, addr)
@@ -326,6 +327,7 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
+	ilog.Infof("broadcast message. type=%s", typ)
 	//if typ != 2 {
 	//	ilog.Infof("broadcast %s", typ)
 	//}
