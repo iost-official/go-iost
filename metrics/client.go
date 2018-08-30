@@ -49,6 +49,14 @@ func (c *Client) SetPusher(addr string) error {
 	return nil
 }
 
+// SetID sets the ID of metrics client.
+func (c *Client) SetID(id string) {
+	if c.pusher == nil || id == "" {
+		return
+	}
+	c.pusher.Grouping("_id", id)
+}
+
 // Start starts the pusher loop.
 func (c *Client) Start() error {
 	if c.pusher == nil {
