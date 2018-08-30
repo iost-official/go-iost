@@ -38,7 +38,7 @@ func NewBlockChain(path string) (Chain, error) {
 	var length int64 = 0
 	ok, err := levelDB.Has(blockLength)
 	if err != nil {
-		return nil, fmt.Errorf("fail to check has(blocklength), %v", err)errors.New()
+		return nil, fmt.Errorf("fail to check has(blocklength), %v", err)
 	}
 	if ok {
 		lengthByte, err := levelDB.Get(blockLength)
