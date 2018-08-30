@@ -324,7 +324,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 			ilog.Error(err.Error())
 			return err
 		}
-		p.verifyDB.Commit()
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
 	p.blockCache.Link(node)
