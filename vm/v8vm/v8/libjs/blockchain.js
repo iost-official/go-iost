@@ -40,6 +40,9 @@ var BlockChain = (function () {
         call: function (contract, api, args) {
             return bc.call(contract, api, args);
         },
+        callWithReceipt: function (contract, api, args) {
+            return bc.callWithReceipt(contract, api, args);
+        },
         requireAuth: function (account) {
             return 0;
         }

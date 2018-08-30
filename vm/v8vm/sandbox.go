@@ -12,6 +12,7 @@ int goCountermand(SandboxPtr, const char *, const char *, const char *, size_t *
 int goBlockInfo(SandboxPtr, char **, size_t *);
 int goTxInfo(SandboxPtr, char **, size_t *);
 int goCall(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
+int goCallWithReceipt(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 int goPut(SandboxPtr, const char *, const char *, size_t *);
 char *goGet(SandboxPtr, const char *, size_t *);
 int goDel(SandboxPtr, const char *, size_t *);
@@ -87,7 +88,8 @@ func (sbx *Sandbox) Init() {
 		(C.countermandFunc)(C.goCountermand),
 		(C.blockInfoFunc)(C.goBlockInfo),
 		(C.txInfoFunc)(C.goTxInfo),
-		(C.callFunc)(C.goCall))
+		(C.callFunc)(C.goCall),
+		(C.callFunc)(C.goCallWithReceipt))
 	C.InitGoStorage((C.putFunc)(C.goPut),
 		(C.getFunc)(C.goGet),
 		(C.delFunc)(C.goDel),

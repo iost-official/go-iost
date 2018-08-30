@@ -9,10 +9,11 @@ static countermandFunc CCountermand = nullptr;
 static blockInfoFunc CBlkInfo = nullptr;
 static txInfoFunc CTxInfo = nullptr;
 static callFunc CCall = nullptr;
+static callFunc CCallWR = nullptr;
 
 void InitGoBlockchain(transferFunc transfer, withdrawFunc withdraw,
                         depositFunc deposit, topUpFunc topUp, countermandFunc countermand,
-                        blockInfoFunc blkInfo, txInfoFunc txInfo, callFunc call) {
+                        blockInfoFunc blkInfo, txInfoFunc txInfo, callFunc call, callFunc callWR) {
     CTransfer = transfer;
     CWithdraw = withdraw;
     CDeposit = deposit;
@@ -21,6 +22,7 @@ void InitGoBlockchain(transferFunc transfer, withdrawFunc withdraw,
     CBlkInfo = blkInfo;
     CTxInfo = txInfo;
     CCall = call;
+    CCallWR = callWR;
 }
 
 int IOSTBlockchain::Transfer(const char *from, const char *to, const char *amount) {
@@ -94,6 +96,16 @@ char *IOSTBlockchain::Call(const char *contract, const char *api, const char *ar
     size_t gasUsed = 0;
     char *result = nullptr;
     int ret = CCall(sbxPtr, contract, api, args, &result, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
+    return result;
+}
+
+char *IOSTBlockchain::CallWithReceipt(const char *contract, const char *api, const char *args) {
+    size_t gasUsed = 0;
+    char *result = nullptr;
+    int ret = CCallWR(sbxPtr, contract, api, args, &result, &gasUsed);
 
     Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
     sbx->gasUsed += gasUsed;
