@@ -16,9 +16,14 @@ package iwallet
 
 import (
 	"fmt"
+	"os"
 
+	"time"
+
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
 
@@ -57,12 +62,38 @@ var compileCmd = &cobra.Command{
 			fmt.Printf("gen contract error:%v\n", err)
 			return
 		}
-		action := tx.NewAction("iost.system", "setcode", `["`+contract.Encode()+`",]`)
+		action := tx.NewAction("iost.system", "SetCode", `["`+contract.B64Encode()+`",]`)
 		pubkeys := make([][]byte, len(signers))
 		for i, pubkey := range signers {
 			pubkeys[i] = loadBytes(string(pubkey))
 		}
-		trx := tx.NewTx([]tx.Action{action}, pubkeys, gasLimit, gasPrice, expiration)
+
+		trx := tx.NewTx([]*tx.Action{&action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
+
+		if len(signers) == 0 {
+			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
+			fsk, err := readFile(kpPath)
+			if err != nil {
+				fmt.Println("Read file failed: ", err.Error())
+				return
+			}
+
+			acc, err := account.NewAccount(loadBytes(string(fsk)))
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			stx, err := tx.SignTx(trx, acc)
+			var txHash []byte
+			txHash, err = sendTx(stx)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			fmt.Println("ok")
+			fmt.Println(saveBytes(txHash))
+			return
+		}
 
 		bytes := trx.Encode()
 
@@ -85,11 +116,17 @@ var signers []string
 
 func init() {
 	rootCmd.AddCommand(compileCmd)
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	compileCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
 	compileCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
 	compileCmd.Flags().Int64VarP(&expiration, "expiration", "e", 0, "expiration timestamp for a transaction")
 	compileCmd.Flags().StringSliceVarP(&signers, "signers", "", []string{}, "signers who should sign this transaction")
+	compileCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.ssh/id_secp", "Set path of sec-key")
 
 	// Here you will define your flags and configuration settings.
 

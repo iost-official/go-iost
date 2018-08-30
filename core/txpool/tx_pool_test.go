@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
@@ -85,7 +86,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 			b := txPool.txTimeOut(t)
 			So(b, ShouldBeFalse)
 
-			t.Time -= int64(expiration + 1*1e9)
+			t.Time -= int64(expiration + int64(1*time.Second))
 			b = txPool.txTimeOut(t)
 			So(b, ShouldBeTrue)
 
@@ -97,13 +98,13 @@ func TestNewTxPoolImpl(t *testing.T) {
 		})
 		Convey("delTimeOutTx", func() {
 
-			t := genTx(accountList[0], 1*1e9)
+			t := genTx(accountList[0], int64(30*time.Millisecond))
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 
 			r := txPool.AddTx(t)
 			So(r, ShouldEqual, Success)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-			time.Sleep(2 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 			txPool.clearTimeOutTx()
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 		})
@@ -130,8 +131,8 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			// need delay
-			for i := 0; i < 10; i++ {
-				time.Sleep(100 * time.Millisecond)
+			for i := 0; i < 20; i++ {
+				time.Sleep(20 * time.Millisecond)
 				if txPool.testBlockListNum() == 1 {
 					break
 				}
@@ -147,6 +148,18 @@ func TestNewTxPoolImpl(t *testing.T) {
 			t := genTx(accountList[0], expiration)
 			r1, _ := txPool.ExistTxs(t.Hash(), bcn.Block)
 			So(r1, ShouldEqual, NotFound)
+		})
+		Convey("delPending", func() {
+
+			t := genTx(accountList[0], expiration)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+			r := txPool.AddTx(t)
+			So(r, ShouldEqual, Success)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
+			e := txPool.DelTx(t.Hash())
+			So(e, ShouldBeNil)
+			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
+
 		})
 		Convey("Pending", func() {
 
@@ -180,8 +193,8 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			// need delay
-			for i := 0; i < 10; i++ {
-				time.Sleep(100 * time.Millisecond)
+			for i := 0; i < 20; i++ {
+				time.Sleep(20 * time.Millisecond)
 				if txPool.testBlockListNum() == 1 {
 					break
 				}
@@ -221,8 +234,8 @@ func TestNewTxPoolImpl(t *testing.T) {
 			err = txPool.AddLinkedNode(bcn, bcn)
 			So(err, ShouldBeNil)
 			// need delay
-			for i := 0; i < 10; i++ {
-				time.Sleep(100 * time.Millisecond)
+			for i := 0; i < 20; i++ {
+				time.Sleep(20 * time.Millisecond)
 				if txPool.testBlockListNum() == 10 {
 					break
 				}
@@ -230,60 +243,59 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 			So(txPool.testPendingTxsNum(), ShouldEqual, 10)
 		})
+		//
+		//Convey("concurrent", func() {
+		//	txCnt := 10
+		//	blockCnt := 100
+		//	bl := genNodes(accountList, witnessList, blockCnt, txCnt, true)
+		//	ch := make(chan int, 4)
+		//	//fmt.Println("genNodes impl")
+		//	go func() {
+		//		for _, bcn := range bl {
+		//			txPool.AddLinkedNode(bcn, bcn)
+		//		}
+		//		ch <- 1
+		//	}()
+		//
+		//	go func() {
+		//		for i := 0; i < 100; i++ {
+		//			t := genTx(accountList[0], expiration)
+		//			txPool.AddTx(t)
+		//		}
+		//		ch <- 2
+		//	}()
+		//
+		//	go func() {
+		//		for i := 0; i < 10000; i++ {
+		//			txPool.PendingTxs(10000000)
+		//		}
+		//		ch <- 3
+		//	}()
+		//	////time.Sleep(5*time.Second)
+		//
+		//	t := genTx(accountList[0], expiration)
+		//	txPool.AddTx(t)
+		//	go func() {
+		//		for i := 0; i < 10000; i++ {
+		//			txPool.ExistTxs(t.Hash(), bl[blockCnt-10].Block)
+		//		}
+		//		ch <- 4
+		//	}()
+		//
+		//	for i := 0; i < 4; i++ {
+		//		<-ch
+		//		//fmt.Println("ch :", a)
+		//	}
+		//
+		//})
 
-		Convey("concurrent", func() {
-			txCnt := 10
-			blockCnt := 100
-			bl := genNodes(accountList, witnessList, blockCnt, txCnt, true)
-			ch := make(chan int, 4)
-			//ilog.Debug(("genNodes impl")
-			go func() {
-				for _, bcn := range bl {
-					txPool.AddLinkedNode(bcn, bcn)
-				}
-				ch <- 1
-			}()
-
-			go func() {
-				for i := 0; i < 100; i++ {
-					t := genTx(accountList[0], expiration)
-					txPool.AddTx(t)
-				}
-				ch <- 2
-			}()
-
-			go func() {
-				for i := 0; i < 10000; i++ {
-					txPool.PendingTxs(10000000)
-				}
-				ch <- 3
-			}()
-			////time.Sleep(5*time.Second)
-
-			t := genTx(accountList[0], expiration)
-			txPool.AddTx(t)
-			go func() {
-				for i := 0; i < 10000; i++ {
-					txPool.ExistTxs(t.Hash(), bl[blockCnt-10].Block)
-				}
-				ch <- 4
-			}()
-
-			for i := 0; i < 4; i++ {
-				<-ch
-				//ilog.Debug(("ch :", a)
-			}
-		})
-
-		gl.StateDB().Close()
-		gl.BlockChain().Close()
-		stopTest()
+		stopTest(gl)
 	})
 }
 
 //result 55.3 ns/op
 func BenchmarkAddBlock(b *testing.B) {
-	_, accountList, witnessList, txPool := envInit(b)
+	_, accountList, witnessList, txPool, gl := envInit(b)
 	listTxCnt := 500
 	blockList := genBlocks(accountList, witnessList, 1, listTxCnt, true)
 
@@ -293,14 +305,14 @@ func BenchmarkAddBlock(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 
 }
 
 //result 472185 ns/op  tps:2147
 // no verify 17730 ns/op tps:58823
 func BenchmarkAddTx(b *testing.B) {
-	_, accountList, witnessList, txPool := envInit(b)
+	_, accountList, witnessList, txPool, gl := envInit(b)
 	listTxCnt := 10
 	blockCnt := 100
 	blockList := genNodes(accountList, witnessList, blockCnt, listTxCnt, true)
@@ -320,12 +332,12 @@ func BenchmarkAddTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
 //result 2444189 ns/op
 func BenchmarkPendingTxs(b *testing.B) {
-	_, accountList, _, txPool := envInit(b)
+	_, accountList, _, txPool, gl := envInit(b)
 
 	for i := 0; i < 10000; i++ {
 		t := genTx(accountList[0], expiration)
@@ -339,7 +351,7 @@ func BenchmarkPendingTxs(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
 //result 4445 ns/op
@@ -365,7 +377,6 @@ func BenchmarkDecodeTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
 }
 
 //result 3416 ns/op
@@ -384,13 +395,12 @@ func BenchmarkEncodeTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
 }
 
 //result 3.8S ~ 4.2S  10000 tx verify
 func BenchmarkVerifyTx(b *testing.B) {
 
-	_, accountList, _, txPool := envInit(b)
+	_, accountList, _, txPool, gl := envInit(b)
 
 	t := genTx(accountList[0], expiration)
 
@@ -402,7 +412,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
 //result 1 goroutine 3.8S ~ 4.2S  10000 tx verify
@@ -411,7 +421,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 //result 5 goroutine 1.0S ~ 1.2S  10000 tx verify
 //result 8 goroutine 1.0S ~ 1.3S  10000 tx verify
 func BenchmarkConcurrentVerifyTx(b *testing.B) {
-	_, accountList, _, txPool := envInit(b)
+	_, accountList, _, txPool, gl := envInit(b)
 
 	txCnt := 10000
 	goCnt := 4
@@ -440,10 +450,10 @@ func BenchmarkConcurrentVerifyTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest()
+	stopTest(gl)
 }
 
-func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl) {
+func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl, global.BaseVariable) {
 	//ctl := gomock.NewController(t)
 
 	var accountList []account.Account
@@ -491,23 +501,26 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 	txPool.Start()
 	b.ResetTimer()
 
-	return BlockCache, accountList, witnessList, txPool
+	return BlockCache, accountList, witnessList, txPool, gl
 }
 
-func stopTest() {
+func stopTest(gl global.BaseVariable) {
+
+	gl.StateDB().Close()
+	gl.BlockChain().Close()
 	os.RemoveAll(dbPath1)
 	os.RemoveAll(dbPath2)
 	os.RemoveAll(dbPath3)
 }
 
 func genTx(a account.Account, expirationIter int64) *tx.Tx {
-	actions := make([]tx.Action, 10)
-	actions = append(actions, tx.Action{
+	actions := make([]*tx.Action, 0)
+	actions = append(actions, &tx.Action{
 		Contract:   "contract1",
 		ActionName: "actionname1",
 		Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 	})
-	actions = append(actions, tx.Action{
+	actions = append(actions, &tx.Action{
 		Contract:   "contract2",
 		ActionName: "actionname2",
 		Data:       "1",
@@ -523,7 +536,7 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 		ilog.Debug("failed to SignTxContent")
 	}
 
-	t.Signs = append(t.Signs, sig1)
+	t.Signs = append(t.Signs, &sig1)
 
 	t1, err := tx.SignTx(t, a)
 	if err != nil {
@@ -555,15 +568,19 @@ func genBlocks(accountList []account.Account, witnessList []string, blockCnt int
 		if continuity == false {
 			hash[i%len(hash)] = byte(i % 256)
 		}
-		blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
-			Version:    0,
-			ParentHash: hash,
-			MerkleHash: make([]byte, 0),
-			Info:       []byte(""),
-			Number:     int64(i + 1),
-			Witness:    witnessList[0],
-			Time:       slot + int64(i),
-		}}
+		blk := block.Block{
+			Txs: []*tx.Tx{},
+			Head: &block.BlockHead{
+				Version:    0,
+				ParentHash: hash,
+				MerkleHash: make([]byte, 0),
+				Info:       []byte(""),
+				Number:     int64(i + 1),
+				Witness:    witnessList[0],
+				Time:       slot + int64(i),
+			},
+			Sign: &crypto.Signature{},
+		}
 
 		for i := 0; i < txCnt; i++ {
 			blk.Txs = append(blk.Txs, genTx(accountList[0], expiration))

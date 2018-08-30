@@ -32,7 +32,8 @@ type P2PConfig struct {
 
 //RPCConfig is the config for RPC Server.
 type RPCConfig struct {
-	Port int
+	JSONPort int
+	GRPCPort int
 }
 
 // FileLogConfig is the config for filewriter of ilog.
@@ -55,14 +56,21 @@ type LogConfig struct {
 	AsyncWrite bool
 }
 
+// MetricsConfig is the config of metrics.
+type MetricsConfig struct {
+	PushAddr string
+	Enable   bool
+}
+
 // Config provide all configuration for the application
 type Config struct {
-	ACC *ACCConfig
-	VM  *VMConfig
-	DB  *DBConfig
-	P2P *P2PConfig
-	RPC *RPCConfig
-	Log *LogConfig
+	ACC     *ACCConfig
+	VM      *VMConfig
+	DB      *DBConfig
+	P2P     *P2PConfig
+	RPC     *RPCConfig
+	Log     *LogConfig
+	Metrics *MetricsConfig
 }
 
 // NewConfig returns a new instance of Config

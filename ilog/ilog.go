@@ -31,6 +31,11 @@ func AddWriter(lw LogWriter) error {
 	return defaultLogger.AddWriter(lw)
 }
 
+// SetLevel sets the defaultLogger's level.
+func SetLevel(l Level) {
+	defaultLogger.SetLevel(l)
+}
+
 // SetCallDepth sets the global defaultLogger's call depth.
 func SetCallDepth(d int) {
 	defaultLogger.SetCallDepth(d)

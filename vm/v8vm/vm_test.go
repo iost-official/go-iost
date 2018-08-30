@@ -15,8 +15,9 @@ import (
 var vmPool *VMPool
 
 func init() {
-	vmPool = NewVMPool(10)
+	vmPool = NewVMPool(3)
 	vmPool.SetJSPath("./v8/libjs/")
+	vmPool.Init()
 }
 
 var testDataPath = "./test_data/"

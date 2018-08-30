@@ -199,6 +199,14 @@ func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 	return r
 }
 
+// AddTx del the transaction
+func (pool *TxPoolImpl) DelTx(hash []byte) error {
+
+	pool.pendingTx.Delete(string(hash))
+
+	return nil
+}
+
 // PendingTxs get the pending transactions
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 
@@ -240,7 +248,7 @@ func (pool *TxPoolImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, er
 
 func (pool *TxPoolImpl) initBlockTx() {
 	chain := pool.global.BlockChain()
-	timeNow := time.Now().Unix()
+	timeNow := time.Now().UnixNano()
 
 	for i := chain.Length() - 1; i > 0; i-- {
 		blk, err := chain.GetBlockByNumber(i)
@@ -248,7 +256,7 @@ func (pool *TxPoolImpl) initBlockTx() {
 			return
 		}
 
-		t := pool.slotToSec(blk.Head.Time)
+		t := pool.slotToNSec(blk.Head.Time)
 		if timeNow-t <= filterTime {
 			pool.addBlock(blk)
 		}
@@ -273,9 +281,9 @@ func (pool *TxPoolImpl) verifyTx(t *tx.Tx) TAddTx {
 	return Success
 }
 
-func (pool *TxPoolImpl) slotToSec(t int64) int64 {
+func (pool *TxPoolImpl) slotToNSec(t int64) int64 {
 	slot := common.Timestamp{Slot: t}
-	return slot.ToUnixSec()
+	return slot.ToUnixSec() * int64(time.Second)
 }
 
 func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
@@ -292,7 +300,7 @@ func (pool *TxPoolImpl) addBlock(linkedBlock *block.Block) error {
 
 	b := newBlockTx()
 
-	b.setTime(pool.slotToSec(linkedBlock.Head.Time))
+	b.setTime(pool.slotToNSec(linkedBlock.Head.Time))
 	b.addBlock(linkedBlock)
 
 	pool.blockList.Store(string(h), b)
@@ -327,7 +335,7 @@ func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 
 	h := block.HeadHash()
 
-	t := pool.slotToSec(block.Head.Time)
+	t := pool.slotToNSec(block.Head.Time)
 	var ok bool
 
 	for {
@@ -362,7 +370,7 @@ func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 }
 
 func (pool *TxPoolImpl) clearBlock() {
-	ft := pool.slotToSec(pool.blockCache.LinkedRoot().Block.Head.Time) - filterTime
+	ft := pool.slotToNSec(pool.blockCache.LinkedRoot().Block.Head.Time) - filterTime
 
 	pool.blockList.Range(func(key, value interface{}) bool {
 		if value.(*blockTx).time() < ft {

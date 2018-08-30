@@ -8,7 +8,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -48,13 +47,13 @@ func TestAction(t *testing.T) {
 
 func TestTx(t *testing.T) {
 	Convey("Test of Tx Data Structure", t, func() {
-		actions := []Action{}
-		actions = append(actions, Action{
+		actions := []*Action{}
+		actions = append(actions, &Action{
 			Contract:   "contract1",
 			ActionName: "actionname1",
 			Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 		})
-		actions = append(actions, Action{
+		actions = append(actions, &Action{
 			Contract:   "contract2",
 			ActionName: "actionname2",
 			Data:       "1",
@@ -90,7 +89,7 @@ func TestTx(t *testing.T) {
 
 		Convey("encode and decode", func() {
 			tx := NewTx(actions, [][]byte{a1.Pubkey}, 100000, 100, 11)
-			tx1 := NewTx([]Action{}, [][]byte{}, 0, 0, 0)
+			tx1 := NewTx([]*Action{}, [][]byte{}, 0, 0, 0)
 			hash := tx.Hash()
 
 			encode := tx.Encode()
@@ -103,7 +102,7 @@ func TestTx(t *testing.T) {
 			sig, err := SignTxContent(tx, a1)
 			So(err, ShouldEqual, nil)
 
-			_, err = SignTx(tx, a1, sig)
+			_, err = SignTx(tx, a1, &sig)
 			So(err, ShouldEqual, nil)
 
 			hash = tx.Hash()
@@ -133,9 +132,9 @@ func TestTx(t *testing.T) {
 				So(bytes.Equal(tx.Signs[i].Pubkey, tx1.Signs[i].Pubkey), ShouldBeTrue)
 				So(bytes.Equal(tx.Signs[i].Sig, tx1.Signs[i].Sig), ShouldBeTrue)
 			}
-			So(tx.Publisher.Algorithm == tx1.Publisher.Algorithm, ShouldBeTrue)
-			So(bytes.Equal(tx.Publisher.Pubkey, tx1.Publisher.Pubkey), ShouldBeTrue)
-			So(bytes.Equal(tx.Publisher.Sig, tx1.Publisher.Sig), ShouldBeTrue)
+			So(tx.Publisher == nil && tx1.Publisher == nil || tx.Publisher.Algorithm == tx1.Publisher.Algorithm, ShouldBeTrue)
+			So(tx.Publisher == nil && tx1.Publisher == nil || bytes.Equal(tx.Publisher.Pubkey, tx1.Publisher.Pubkey), ShouldBeTrue)
+			So(tx.Publisher == nil && tx1.Publisher == nil || bytes.Equal(tx.Publisher.Sig, tx1.Publisher.Sig), ShouldBeTrue)
 
 		})
 
@@ -143,14 +142,14 @@ func TestTx(t *testing.T) {
 			tx := NewTx(actions, [][]byte{a1.Pubkey, a2.Pubkey}, 9999, 1, 1)
 			sig1, err := SignTxContent(tx, a1)
 			So(tx.VerifySigner(sig1), ShouldBeTrue)
-			tx.Signs = append(tx.Signs, sig1)
+			tx.Signs = append(tx.Signs, &sig1)
 
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "signer not enough")
 
 			sig2, err := SignTxContent(tx, a2)
 			So(tx.VerifySigner(sig2), ShouldBeTrue)
-			tx.Signs = append(tx.Signs, sig2)
+			tx.Signs = append(tx.Signs, &sig2)
 
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "publisher error")
@@ -160,7 +159,7 @@ func TestTx(t *testing.T) {
 			err = tx3.VerifySelf()
 			So(err, ShouldBeNil)
 
-			tx.Publisher = common.Signature{
+			tx.Publisher = &crypto.Signature{
 				Algorithm: crypto.Secp256k1,
 				Sig:       []byte("hello"),
 				Pubkey:    []byte("world"),
@@ -170,7 +169,7 @@ func TestTx(t *testing.T) {
 
 			fmt.Println(tx.String())
 
-			tx.Signs[0] = common.Signature{
+			tx.Signs[0] = &crypto.Signature{
 				Algorithm: crypto.Secp256k1,
 				Sig:       []byte("hello"),
 				Pubkey:    []byte("world"),

@@ -18,7 +18,6 @@ type TxDBImpl struct {
 }
 
 var txPrefix = []byte("t") //txPrefix+tx hash -> tx data
-var PNPrefix = []byte("p")
 
 func NexTxDB(path string) (TxDB, error) {
 	ldb, err := db.NewLDB(path, 0, 0)

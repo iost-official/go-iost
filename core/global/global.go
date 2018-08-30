@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
@@ -42,13 +43,14 @@ type BaseVariableImpl struct {
 }
 
 func GenGenesis(initTime int64, db db.MVCCDB) (*block.Block, error) {
-	var acts []tx.Action
+	var acts []*tx.Action
 	for k, v := range account.GenesisAccount {
 		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, k, strconv.FormatInt(v, 10)))
-		acts = append(acts, act)
+		acts = append(acts, &act)
 	}
 	trx := tx.NewTx(acts, nil, 0, 0, 0)
 	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
+
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +72,7 @@ func GenGenesis(initTime int64, db db.MVCCDB) (*block.Block, error) {
 	}
 	blk := block.Block{
 		Head:     &blockHead,
+		Sign:     &crypto.Signature{},
 		Txs:      []*tx.Tx{&trx},
 		Receipts: []*tx.TxReceipt{txr},
 	}
@@ -104,9 +107,6 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			return nil, fmt.Errorf("push block in blockChain failed, stop the program. err: %v", err)
 		}
 		err = stateDB.Flush(string(blk.HeadHash()))
-		if err != nil {
-			return nil, fmt.Errorf("flush stateDB failed, stop the program. err: %v", err)
-		}
 	}
 	hash := stateDB.CurrentTag()
 	blk, err = blockChain.GetBlockByHash([]byte(hash))
@@ -128,7 +128,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			return nil, fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
 		}
 	}
-	txDB, err := tx.NexTxDB(conf.DB.LdbPath + "txDB")
+	txDB, err := tx.NexTxDB(conf.DB.LdbPath + "TXDB")
 	if err != nil {
 		return nil, fmt.Errorf("new txDB failed, stop the program")
 	}
@@ -137,9 +137,9 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 }
 
 func FakeNew() BaseVariable {
-	blockChain, _ := block.NewBlockChain("./db/")
+	blockChain, _ := block.NewBlockChain("./db/BlockChainDB")
 	stateDB, _ := db.NewMVCCDB("./db/StateDB")
-	txDB, _ := tx.NexTxDB("./db/")
+	txDB, _ := tx.NexTxDB("./db/TXDB")
 	config := common.Config{}
 	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, &config}
 }

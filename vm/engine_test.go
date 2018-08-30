@@ -7,10 +7,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
 	blk "github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/core/event"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
@@ -32,6 +33,12 @@ func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockV
 	//
 	//pm.vms["native"] = &nvm
 	staticMonitor = pm
+	db.EXPECT().Get("state", "c-iost.system").DoAndReturn(func(table string, key string) (string, error) {
+		return "-", nil
+	})
+	db.EXPECT().Put("state", "c-iost.system", gomock.Any()).DoAndReturn(func(table string, key string, content string) error {
+		return nil
+	})
 	return bh, db, vm
 }
 
@@ -57,7 +64,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	act := tx.Action{
@@ -66,7 +73,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		Data:       `["datas"]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, act)
+	mtx.Actions = append(mtx.Actions, &act)
 
 	c := contract.Contract{
 		ID:   "Contract0",
@@ -131,7 +138,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	act := tx.Action{
@@ -140,7 +147,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 		Data:       `["datas"]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, act)
+	mtx.Actions = append(mtx.Actions, &act)
 
 	c := contract.Contract{
 		ID:   "Contract0",
@@ -207,7 +214,7 @@ func TestCost(t *testing.T) { // tests of context transport
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -216,14 +223,14 @@ func TestCost(t *testing.T) { // tests of context transport
 		Data:       `["datas"]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, ac)
+	mtx.Actions = append(mtx.Actions, &ac)
 
 	ac2 := tx.Action{
 		Contract:   "Contract0",
 		ActionName: "abi",
 		Data:       `["data2"]`,
 	}
-	mtx.Actions = append(mtx.Actions, ac2)
+	mtx.Actions = append(mtx.Actions, &ac2)
 
 	c := contract.Contract{
 		ID:   "Contract0",
@@ -327,7 +334,7 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 		Signers:    make([][]byte, 0),
 	}
 	mtx.Signers = append(mtx.Signers, []byte("a"))
@@ -338,7 +345,7 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		Data:       `["a","b", 100]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, ac)
+	mtx.Actions = append(mtx.Actions, &ac)
 
 	c := contract.Contract{
 		ID:   "iost.system",
@@ -436,7 +443,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -445,7 +452,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		Data:       `["a","b",100]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, ac)
+	mtx.Actions = append(mtx.Actions, &ac)
 
 	c := contract.Contract{
 		ID:   "iost.system",
@@ -543,7 +550,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -552,7 +559,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		Data:       `["iost.system", "Receipt", ["iamreceipt"]]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, ac)
+	mtx.Actions = append(mtx.Actions, &ac)
 
 	c := contract.Contract{
 		ID:   "iost.system",
@@ -564,21 +571,20 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 				{
 					Name:     "Receipt",
 					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
+					GasPrice: int64(100),
+					Limit:    contract.NewCost(1000, 1000, 1000),
 					Args:     []string{"string"},
 				},
 				{
 					Name:     "CallWithReceipt",
 					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
+					GasPrice: int64(100),
+					Limit:    contract.NewCost(1000, 1000, 1000),
 					Args:     []string{"string", "string", "json"},
 				},
 			},
 		},
 	}
-
 	db.EXPECT().Get("state", "c-iost.system").DoAndReturn(func(table string, key string) (string, error) {
 		return c.Encode(), nil
 	})
@@ -611,6 +617,27 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		committed = true
 	})
 
+	sub := event.NewSubscription(100, []event.Event_Topic{event.Event_ContractUserEvent, event.Event_ContractSystemEvent})
+	ec := event.GetEventCollectorInstance()
+	ec.Subscribe(sub)
+	defer ec.Unsubscribe(sub)
+
+	count0 := 0
+	count1 := 0
+	go func() {
+		for {
+			select {
+			case e := <-sub.ReadChan():
+				t.Log(e.String())
+				if e.Topic == event.Event_ContractUserEvent {
+					count0++
+				} else if e.Topic == event.Event_ContractSystemEvent {
+					count1++
+				}
+			}
+		}
+	}()
+
 	txr, err := e.Exec(&mtx)
 	if err != nil {
 		t.Fatal(err)
@@ -621,6 +648,11 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 	if len(txr.Receipts) != 2 || txr.Receipts[0].Type != tx.UserDefined || txr.Receipts[0].Content != "iamreceipt" ||
 		txr.Receipts[1].Type != tx.SystemDefined || txr.Receipts[1].Content != `["Receipt",["iamreceipt"],"success"]` {
 		t.Fatal(txr.Receipts)
+	}
+	time.Sleep(10 * time.Millisecond)
+
+	if count0 != 1 || count1 != 1 {
+		t.Fatalf("expect count0 = 1, count1 = 1, got %d, %d", count0, count1)
 	}
 
 	if !committed {
@@ -638,7 +670,7 @@ func TestJS(t *testing.T) {
 		Expiration: 10000,
 		GasLimit:   100000,
 		GasPrice:   1,
-		Publisher:  common.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
 	}
 
 	ac := tx.Action{
@@ -647,7 +679,7 @@ func TestJS(t *testing.T) {
 		Data:       `[]`,
 	}
 
-	mtx.Actions = append(mtx.Actions, ac)
+	mtx.Actions = append(mtx.Actions, &ac)
 
 	c := contract.Contract{
 		ID: "Contracttestjs",

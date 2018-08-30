@@ -10,7 +10,7 @@ import (
 )
 
 type BlockChain struct {
-	BlockChainDB *db.LDB
+	blockChainDB *db.LDB
 	length       int64
 }
 
@@ -48,9 +48,9 @@ func NewBlockChain(path string) (Chain, error) {
 		length = ByteToInt64(lengthByte)
 	} else {
 		lengthByte := Int64ToByte(0)
-		err = levelDB.Put(blockLength, lengthByte)
-		if err != nil {
-			return nil, errors.New("fail to put blocklength")
+		tempErr := levelDB.Put(blockLength, lengthByte)
+		if tempErr != nil {
+			err = errors.New("fail to put blocklength")
 		}
 	}
 	BC := &BlockChain{levelDB, length}
@@ -63,7 +63,7 @@ func (bc *BlockChain) Length() int64 {
 }
 
 func (bc *BlockChain) Push(block *Block) error {
-	batch := bc.BlockChainDB.Batch()
+	batch := bc.blockChainDB.Batch()
 	hash := block.HeadHash()
 	number := block.Head.Number
 	batch.Put(append(blockNumberPrefix, Int64ToByte(number)...), hash)
@@ -87,7 +87,7 @@ func (bc *BlockChain) CheckLength() {
 		if err != nil {
 			fmt.Println("fail to get the block")
 		}
-		bc.BlockChainDB.Put(blockLength, Int64ToByte(i))
+		bc.blockChainDB.Put(blockLength, Int64ToByte(i))
 		bc.length = i
 		break
 	}
@@ -102,7 +102,7 @@ func (bc *BlockChain) Top() (*Block, error) {
 }
 
 func (bc *BlockChain) GetHashByNumber(number int64) ([]byte, error) {
-	hash, err := bc.BlockChainDB.Get(append(blockNumberPrefix, Int64ToByte(number)...))
+	hash, err := bc.blockChainDB.Get(append(blockNumberPrefix, Int64ToByte(number)...))
 	if err != nil {
 		return nil, errors.New("fail to get hash by number")
 	}
@@ -110,7 +110,7 @@ func (bc *BlockChain) GetHashByNumber(number int64) ([]byte, error) {
 }
 
 func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
-	blockByte, err := bc.BlockChainDB.Get(append(blockPrefix, hash...))
+	blockByte, err := bc.blockChainDB.Get(append(blockPrefix, hash...))
 	if err != nil {
 		return nil, errors.New("fail to get block byte by hash")
 	}
@@ -139,5 +139,5 @@ func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 }
 
 func (bc *BlockChain) Close() {
-	bc.BlockChainDB.Close()
+	bc.blockChainDB.Close()
 }

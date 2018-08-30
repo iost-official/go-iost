@@ -16,6 +16,7 @@ var (
 	SyncNumber              int64 = 2
 	MaxBlockHashQueryNumber int64 = 10
 	RetryTime                     = 5 * time.Second
+	syncBlockTimeout              = 3 * time.Second
 	MaxAcceptableLength     int64 = 100
 	ConfirmNumber                 = 7
 )
@@ -123,7 +124,7 @@ func (sy *SyncImpl) NeedSync(netHeight int64) (bool, int64, int64) {
 func (sy *SyncImpl) queryBlockHash(hr message.BlockHashQuery) {
 	bytes, err := hr.Encode()
 	if err != nil {
-		ilog.Debugf("marshal BlockHashQuery failed. err=%v", err)
+		ilog.Errorf("marshal blockhashquery failed. err=%v", err)
 		return
 	}
 	ilog.Debugf("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
@@ -457,7 +458,7 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 						dc.peerState.Store(peerID, hash)
 						dc.hashState.Store(hash, peerID.Pretty())
 						callback(hash, peerID)
-						dc.peerTimer.Store(peerID, time.AfterFunc(5*time.Second, func() {
+						dc.peerTimer.Store(peerID, time.AfterFunc(syncBlockTimeout, func() {
 							dc.OnTimeout(hash, peerID)
 						}))
 						return false

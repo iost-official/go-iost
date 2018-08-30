@@ -10,27 +10,43 @@ import "C"
 import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"sync"
 )
 
-func init() {
-	C.init()
-}
+var CVMInitOnce = sync.Once{}
 
 // VM contains isolate instance, which is a v8 VM with its own heap.
 type VM struct {
 	isolate              C.IsolatePtr
 	sandbox              *Sandbox
+	releaseChannel       chan *VM
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
 }
 
 // NewVM return new vm with isolate and sandbox
 func NewVM() *VM {
+	CVMInitOnce.Do(func() {
+		C.init()
+	})
 	isolate := C.newIsolate()
 	e := &VM{
 		isolate: isolate,
 	}
 	e.sandbox = NewSandbox(e)
+	return e
+}
+
+func NewVMWithChannel(releaseChannel chan *VM) *VM {
+	CVMInitOnce.Do(func() {
+		C.init()
+	})
+	isolate := C.newIsolate()
+	e := &VM{
+		isolate: isolate,
+	}
+	e.sandbox = NewSandbox(e)
+	e.releaseChannel = releaseChannel
 	return e
 }
 
@@ -74,6 +90,19 @@ func (e *VM) execute(code string) (rtn []interface{}, cost *contract.Cost, err e
 
 func (e *VM) setJSPath(path string) {
 	e.sandbox.SetJSPath(path)
+}
+
+func (e *VM) setReleaseChannel(releaseChannel chan *VM) {
+	e.releaseChannel = releaseChannel
+}
+
+func (e *VM) recycle() {
+	var newE = NewVM()
+	if e.releaseChannel != nil {
+		newE.setReleaseChannel(e.releaseChannel)
+		newE.releaseChannel <- newE
+	}
+	e.release()
 }
 
 // Release release all engine associate resource

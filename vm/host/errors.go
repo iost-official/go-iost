@@ -12,4 +12,9 @@ var (
 	ErrContractNotFound = errors.New("contract not exists")
 	ErrUpdateRefused    = errors.New("update refused")
 	ErrDestroyRefused   = errors.New("destroy refused")
+
+	ErrCoinExists         = errors.New("coin exists")
+	ErrCoinNotExists      = errors.New("coin not exists")
+	ErrCoinIssueRefused   = errors.New("coin issue refused")
+	ErrCoinSetRateRefused = errors.New("coin set rate refused")
 )

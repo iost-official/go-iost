@@ -18,19 +18,19 @@ import (
 
 // Tx Transaction structure
 type Tx struct {
-	hash       []byte             `json:"-"`
-	Time       int64              `json:"time,string"`
-	Expiration int64              `json:"expiration,string"`
-	GasLimit   int64              `json:"gas_limit,string"`
-	Actions    []Action           `json:"-"`
-	Signers    [][]byte           `json:"-"`
-	Signs      []common.Signature `json:"-"`
-	Publisher  common.Signature   `json:"-"`
-	GasPrice   int64              `json:"gas_price,string"`
+	hash       []byte              `json:"-"`
+	Time       int64               `json:"time,string"`
+	Expiration int64               `json:"expiration,string"`
+	GasLimit   int64               `json:"gas_limit,string"`
+	Actions    []*Action           `json:"-"`
+	Signers    [][]byte            `json:"-"`
+	Signs      []*crypto.Signature `json:"-"`
+	Publisher  *crypto.Signature   `json:"-"`
+	GasPrice   int64               `json:"gas_price,string"`
 }
 
 // NewTx return a new Tx
-func NewTx(actions []Action, signers [][]byte, gasLimit int64, gasPrice int64, expiration int64) Tx {
+func NewTx(actions []*Action, signers [][]byte, gasLimit int64, gasPrice int64, expiration int64) Tx {
 	now := time.Now().UnixNano()
 	return Tx{
 		Time:       now,
@@ -40,15 +40,16 @@ func NewTx(actions []Action, signers [][]byte, gasLimit int64, gasPrice int64, e
 		GasPrice:   gasPrice,
 		Expiration: expiration,
 		hash:       nil,
+		Publisher:  &crypto.Signature{},
 	}
 }
 
 // SignTxContent sign tx content, only signers should do this
-func SignTxContent(tx Tx, account account.Account) (common.Signature, error) {
+func SignTxContent(tx Tx, account account.Account) (crypto.Signature, error) {
 	if !tx.containSigner(account.Pubkey) {
-		return common.Signature{}, errors.New("account not included in signer list of this transaction")
+		return crypto.Signature{}, errors.New("account not included in signer list of this transaction")
 	}
-	return account.Sign(crypto.Secp256k1, tx.baseHash()), nil
+	return *account.Sign(crypto.Secp256k1, tx.baseHash()), nil
 }
 
 func (t *Tx) containSigner(pubkey []byte) bool {
@@ -85,9 +86,11 @@ func (t *Tx) baseHash() []byte {
 }
 
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
-func SignTx(tx Tx, account account.Account, signs ...common.Signature) (Tx, error) {
+func SignTx(tx Tx, account account.Account, signs ...*crypto.Signature) (Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
-	tx.Publisher = account.Sign(crypto.Secp256k1, tx.publishHash())
+
+	sig := account.Sign(crypto.Secp256k1, tx.publishHash())
+	tx.Publisher = sig
 	return tx, nil
 }
 
@@ -108,7 +111,7 @@ func (t *Tx) publishHash() []byte {
 	}
 	tr.Signers = t.Signers
 	for _, s := range t.Signs {
-		tr.Signs = append(tr.Signs, &common.SignatureRaw{
+		tr.Signs = append(tr.Signs, &crypto.SignatureRaw{
 			Algorithm: int32(s.Algorithm),
 			Sig:       s.Sig,
 			PubKey:    s.Pubkey,
@@ -139,16 +142,19 @@ func (t *Tx) ToTxRaw() *TxRaw {
 	}
 	tr.Signers = t.Signers
 	for _, s := range t.Signs {
-		tr.Signs = append(tr.Signs, &common.SignatureRaw{
+		tr.Signs = append(tr.Signs, &crypto.SignatureRaw{
 			Algorithm: int32(s.Algorithm),
 			Sig:       s.Sig,
 			PubKey:    s.Pubkey,
 		})
 	}
-	tr.Publisher = &common.SignatureRaw{
-		Algorithm: int32(t.Publisher.Algorithm),
-		Sig:       t.Publisher.Sig,
-		PubKey:    t.Publisher.Pubkey,
+	tr.Publisher = nil
+	if t.Publisher != nil {
+		tr.Publisher = &crypto.SignatureRaw{
+			Algorithm: int32(t.Publisher.Algorithm),
+			Sig:       t.Publisher.Sig,
+			PubKey:    t.Publisher.Pubkey,
+		}
 	}
 	return tr
 }
@@ -169,27 +175,30 @@ func (t *Tx) FromTxRaw(tr *TxRaw) {
 	t.Expiration = tr.Expiration
 	t.GasLimit = tr.GasLimit
 	t.GasPrice = tr.GasPrice
-	t.Actions = []Action{}
+	t.Actions = []*Action{}
 	for _, a := range tr.Actions {
-		t.Actions = append(t.Actions, Action{
+		t.Actions = append(t.Actions, &Action{
 			Contract:   a.Contract,
 			ActionName: a.ActionName,
 			Data:       a.Data,
 		})
 	}
 	t.Signers = tr.Signers
-	t.Signs = []common.Signature{}
+	t.Signs = []*crypto.Signature{}
 	for _, sr := range tr.Signs {
-		t.Signs = append(t.Signs, common.Signature{
+		t.Signs = append(t.Signs, &crypto.Signature{
 			Algorithm: crypto.Algorithm(sr.Algorithm),
 			Sig:       sr.Sig,
 			Pubkey:    sr.PubKey,
 		})
 	}
-	t.Publisher = common.Signature{
-		Algorithm: crypto.Algorithm(tr.Publisher.Algorithm),
-		Sig:       tr.Publisher.Sig,
-		Pubkey:    tr.Publisher.PubKey,
+	t.Publisher = nil
+	if tr.Publisher != nil {
+		t.Publisher = &crypto.Signature{
+			Algorithm: crypto.Algorithm(tr.Publisher.Algorithm),
+			Sig:       tr.Publisher.Sig,
+			Pubkey:    tr.Publisher.PubKey,
+		}
 	}
 	t.hash = nil
 }
@@ -242,8 +251,7 @@ func (t *Tx) VerifySelf() error {
 			return fmt.Errorf("signer not enough")
 		}
 	}
-
-	ok := t.Publisher.Verify(t.publishHash())
+	ok := t.Publisher != nil && t.Publisher.Verify(t.publishHash())
 	if !ok {
 		return fmt.Errorf("publisher error")
 	}
@@ -251,6 +259,6 @@ func (t *Tx) VerifySelf() error {
 }
 
 // VerifySelf verify signer's signature
-func (t *Tx) VerifySigner(sig common.Signature) bool {
+func (t *Tx) VerifySigner(sig crypto.Signature) bool {
 	return sig.Verify(t.baseHash())
 }

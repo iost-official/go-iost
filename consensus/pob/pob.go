@@ -3,6 +3,7 @@ package pob
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
@@ -11,6 +12,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
+	"github.com/iost-official/Go-IOS-Protocol/core/message"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
@@ -47,6 +49,8 @@ var (
 
 var errSingle = errors.New("single block")
 
+var blockReqTimeout = 3 * time.Second
+
 func init() {
 	prometheus.MustRegister(generatedBlockCount)
 	prometheus.MustRegister(receivedBlockCount)
@@ -56,35 +60,41 @@ func init() {
 
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
-	account      account.Account
-	baseVariable global.BaseVariable
-	blockChain   block.Chain
-	blockCache   blockcache.BlockCache
-	txPool       txpool.TxPool
-	p2pService   p2p.Service
-	synchronizer synchronizer.Synchronizer
-	verifyDB     db.MVCCDB
-	produceDB    db.MVCCDB
-	exitSignal   chan struct{}
-	chRecvBlock  chan p2p.IncomingMessage
-	chGenBlock   chan *block.Block
+	account         account.Account
+	baseVariable    global.BaseVariable
+	blockChain      block.Chain
+	blockCache      blockcache.BlockCache
+	txPool          txpool.TxPool
+	p2pService      p2p.Service
+	synchronizer    synchronizer.Synchronizer
+	verifyDB        db.MVCCDB
+	produceDB       db.MVCCDB
+	blockReqMap     *sync.Map
+	exitSignal      chan struct{}
+	chRecvBlock     chan p2p.IncomingMessage
+	chRecvBlockHead chan p2p.IncomingMessage
+	chQueryBlock    chan p2p.IncomingMessage
+	chGenBlock      chan *block.Block
 }
 
 // NewPoB init a new PoB.
 func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) *PoB {
 	p := PoB{
-		account:      account,
-		baseVariable: baseVariable,
-		blockChain:   baseVariable.BlockChain(),
-		blockCache:   blockCache,
-		txPool:       txPool,
-		p2pService:   p2pService,
-		synchronizer: synchronizer,
-		verifyDB:     baseVariable.StateDB(),
-		produceDB:    baseVariable.StateDB().Fork(),
-		exitSignal:   make(chan struct{}),
-		chRecvBlock:  p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
-		chGenBlock:   make(chan *block.Block, 10),
+		account:         account,
+		baseVariable:    baseVariable,
+		blockChain:      baseVariable.BlockChain(),
+		blockCache:      blockCache,
+		txPool:          txPool,
+		p2pService:      p2pService,
+		synchronizer:    synchronizer,
+		verifyDB:        baseVariable.StateDB(),
+		produceDB:       baseVariable.StateDB().Fork(),
+		blockReqMap:     new(sync.Map),
+		exitSignal:      make(chan struct{}),
+		chRecvBlock:     p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
+		chRecvBlockHead: p2pService.Register("consensus block head", p2p.NewBlockHead),
+		chQueryBlock:    p2pService.Register("consensus query block", p2p.NewBlockRequest),
+		chGenBlock:      make(chan *block.Block, 10),
 	}
 	staticProperty = newStaticProperty(p.account, witnessList)
 	return &p
@@ -92,6 +102,7 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 
 //Start make the PoB run.
 func (p *PoB) Start() error {
+	go p.messageLoop()
 	go p.blockLoop()
 	go p.scheduleLoop()
 	return nil
@@ -102,6 +113,89 @@ func (p *PoB) Stop() {
 	close(p.exitSignal)
 	close(p.chRecvBlock)
 	close(p.chGenBlock)
+}
+
+func (p *PoB) messageLoop() {
+	for {
+		select {
+		case incomingMessage, ok := <-p.chRecvBlockHead:
+			if !ok {
+				ilog.Infof("chRecvBlockHead has closed")
+				return
+			}
+			var blk block.Block
+			err := blk.DecodeHead(incomingMessage.Data())
+			if err != nil {
+				continue
+			}
+			go p.handleRecvBlockHead(&blk, incomingMessage.From())
+		case incomingMessage, ok := <-p.chQueryBlock:
+			if !ok {
+				ilog.Infof("chRecvBlockHead has closed")
+				return
+			}
+
+			var rh message.RequestBlock
+			err := rh.Decode(incomingMessage.Data())
+			if err != nil {
+				continue
+			}
+			go p.handleBlockQuery(&rh, incomingMessage.From())
+		case <-p.exitSignal:
+			return
+		}
+	}
+}
+
+func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
+	_, ok := p.blockReqMap.Load(string(blk.HeadHash()))
+	if ok {
+		ilog.Info("block in block request map, block hash: ", blk.HeadHash())
+		return
+	}
+	_, err := p.blockCache.Find(blk.HeadHash())
+	if err == nil {
+		ilog.Debug(errors.New("duplicate block"))
+		return
+	}
+	err = verifyBasics(blk.Head, blk.Sign)
+	if err != nil {
+		ilog.Debug(fmt.Errorf("fail to verify blocks, %v", err))
+		return
+	}
+
+	blkReq := &message.RequestBlock{
+		BlockHash: []byte(blk.HeadHash()),
+	}
+	bytes, err := blkReq.Encode()
+	if err != nil {
+		ilog.Debug(fmt.Errorf("fail to encode requestblock, %v", err))
+		return
+	}
+	p.blockReqMap.Store(string(blk.HeadHash()), time.AfterFunc(blockReqTimeout, func() {
+		p.blockReqMap.Delete(string(blk.HeadHash()))
+	}))
+	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage)
+	blkByte, err := blk.EncodeHead()
+	if err != nil {
+		ilog.Error(err.Error())
+		return
+	}
+	p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
+}
+
+func (p *PoB) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
+	node, err := p.blockCache.Find(rh.BlockHash)
+	if err != nil {
+		ilog.Errorf("block not in cache: %v", rh.BlockNumber)
+		return
+	}
+	b, err := node.Block.Encode()
+	if err != nil {
+		ilog.Errorf("fail to encode block: %v", rh.BlockNumber)
+		return
+	}
+	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 }
 
 func (p *PoB) blockLoop() {
@@ -119,26 +213,36 @@ func (p *PoB) blockLoop() {
 				ilog.Error(err.Error())
 				continue
 			}
-			ilog.Info("received new block, block number: ", blk.Head.Number)
-			err = p.handleRecvBlock(&blk)
-			if err != nil && err != errSingle {
-				ilog.Error(err.Error())
-				continue
-			}
-			p.synchronizer.CheckSyncProcess()
-			go p.synchronizer.CheckSyncProcess()
-			if incomingMessage.Type() == p2p.SyncBlockResponse {
-				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
-			}
 			if incomingMessage.Type() == p2p.NewBlock {
-				go p.p2pService.Broadcast(incomingMessage.Data(), incomingMessage.Type(), p2p.UrgentMessage)
+				ilog.Info("received new block, block number: ", blk.Head.Number)
+				timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
+				if !ok {
+					ilog.Info("block not in block request map, block number: ", blk.Head.Number)
+					continue
+				}
+				timer.(*time.Timer).Stop()
+				err = p.handleRecvBlock(&blk)
+				p.blockReqMap.Delete(string(blk.HeadHash()))
+				if err != nil && err != errSingle {
+					ilog.Error(err.Error())
+					continue
+				}
 				if err == errSingle {
 					if need, start, end := p.synchronizer.NeedSync(blk.Head.Number); need {
 						go p.synchronizer.SyncBlocks(start, end)
 					}
 				}
 			}
-			// p.blockCache.Draw()
+			if incomingMessage.Type() == p2p.SyncBlockResponse {
+				ilog.Info("received sync block, block number: ", blk.Head.Number)
+				err = p.handleRecvBlock(&blk)
+				if err != nil && err != errSingle {
+					ilog.Error(err.Error())
+					continue
+				}
+				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
+			}
+			go p.synchronizer.CheckSyncProcess()
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
 				ilog.Infof("chGenBlock has closed")
@@ -149,6 +253,12 @@ func (p *PoB) blockLoop() {
 			if err != nil {
 				ilog.Error(err.Error())
 			}
+			blkByte, err := blk.EncodeHead()
+			if err != nil {
+				ilog.Error(err.Error())
+				continue
+			}
+			go p.p2pService.Broadcast(blkByte, p2p.NewBlockHead, p2p.UrgentMessage)
 		case <-p.exitSignal:
 			return
 		}
@@ -172,13 +282,7 @@ func (p *PoB) scheduleLoop() {
 						ilog.Error(err.Error())
 						continue
 					}
-					blkByte, err := blk.Encode()
-					if err != nil {
-						ilog.Error(err.Error())
-						continue
-					}
 					p.chGenBlock <- blk
-					go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 				}
 				time.Sleep(common.SlotLength * time.Second)
 			}
@@ -191,22 +295,13 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block) error {
-	_, err := p.blockCache.Find(blk.HeadHash())
-	if err == nil {
-		return errors.New("duplicate block")
-	}
-	err = verifyBasics(blk)
-	if err != nil {
-		return fmt.Errorf("fail to verify blocks, %v", err)
-	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
 	staticProperty.addSlot(blk.Head.Time)
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent.Block)
-	} else {
-		return errSingle
 	}
+	return errSingle
 }
 
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {

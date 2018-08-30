@@ -173,9 +173,11 @@ func (p *Peer) write(m *p2pMessage) error {
 		p.CloseStream(stream)
 		return err
 	}
+	tagkv := map[string]string{"mtype": m.messageType().String()}
+	byteOutSummary.Observe(float64(len(m.content())), tagkv)
+	packetOutCounter.Add(1, tagkv)
 
 	p.streams <- stream
-	// TODO: metrics
 	return nil
 }
 
@@ -229,6 +231,10 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 			ilog.Errorf("parse p2pmessage failed. err=%v", err)
 			return
 		}
+		tagkv := map[string]string{"mtype": msg.messageType().String()}
+		byteInSummary.Observe(float64(len(msg.content())), tagkv)
+		packetInCounter.Add(1, tagkv)
+
 		p.handleMessage(msg)
 	}
 }

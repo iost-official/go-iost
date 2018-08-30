@@ -27,6 +27,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/Go-IOS-Protocol/metrics"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/rpc"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
@@ -37,6 +38,17 @@ var (
 	configfile = flag.StringP("config", "f", "", "Configuration `file`")
 	help       = flag.BoolP("help", "h", false, "Display available options")
 )
+
+func initMetrics(metricsConfig *common.MetricsConfig) error {
+	if metricsConfig == nil || !metricsConfig.Enable {
+		return nil
+	}
+	err := metrics.SetPusher(metricsConfig.PushAddr)
+	if err != nil {
+		return err
+	}
+	return metrics.Start()
+}
 
 func getLogLevel(l string) ilog.Level {
 	switch l {
@@ -92,6 +104,13 @@ func main() {
 
 	vm.SetUp(conf.VM)
 
+	vm.SetUp(conf.VM)
+
+	err := initMetrics(conf.Metrics)
+	if err != nil {
+		ilog.Errorf("init metrics failed. err=%v", err)
+	}
+
 	glb, err := global.New(conf)
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)
@@ -131,6 +150,9 @@ func main() {
 
 	rpcServer := rpc.NewRPCServer(txp, blkCache, glb)
 	app = append(app, rpcServer)
+
+	jsonRPCServer := rpc.NewJSONServer(glb)
+	app = append(app, jsonRPCServer)
 
 	consensus, err := consensus.Factory(
 		"pob",

@@ -303,6 +303,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
             break;
         }
         if (isDone) {
+            res.gasUsed = sbx->gasUsed;
             break;
         }
         if (sbx->gasUsed > sbx->gasLimit) {

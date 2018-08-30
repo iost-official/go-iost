@@ -15,8 +15,9 @@
     "application/json"
   ],
   "paths": {
-    "/v1/estimategas": {
+    "/estimateGas": {
       "post": {
+        "summary": "not supported yet",
         "operationId": "EstimateGas",
         "responses": {
           "200": {
@@ -41,8 +42,9 @@
         ]
       }
     },
-    "/v1/getbalance": {
-      "post": {
+    "/getBalance/{ID}/{useLongestChain}": {
+      "get": {
+        "summary": "get the balance of some account by account ID",
         "operationId": "GetBalance",
         "responses": {
           "200": {
@@ -54,12 +56,17 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "ID",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/rpcGetBalanceReq"
-            }
+            "type": "string"
+          },
+          {
+            "name": "useLongestChain",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
           }
         ],
         "tags": [
@@ -67,8 +74,9 @@
         ]
       }
     },
-    "/v1/getblockbyhash": {
-      "post": {
+    "/getBlockByHash/{hash}/{complete}": {
+      "get": {
+        "summary": "get the block by hash",
         "operationId": "GetBlockByHash",
         "responses": {
           "200": {
@@ -80,12 +88,17 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "hash",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/rpcBlockByHashReq"
-            }
+            "type": "string"
+          },
+          {
+            "name": "complete",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
           }
         ],
         "tags": [
@@ -93,8 +106,9 @@
         ]
       }
     },
-    "/v1/getblockbynum": {
-      "post": {
+    "/getBlockByNum/{num}/{complete}": {
+      "get": {
+        "summary": "get the block by number",
         "operationId": "getBlockByNum",
         "responses": {
           "200": {
@@ -106,12 +120,18 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "num",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/rpcBlockByNumReq"
-            }
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "complete",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
           }
         ],
         "tags": [
@@ -119,8 +139,9 @@
         ]
       }
     },
-    "/v1/getheight": {
-      "post": {
+    "/getHeight": {
+      "get": {
+        "summary": "get the current height of the blockchain",
         "operationId": "GetHeight",
         "responses": {
           "200": {
@@ -130,23 +151,14 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/rpcVoidReq"
-            }
-          }
-        ],
         "tags": [
           "Apis"
         ]
       }
     },
-    "/v1/getstate": {
-      "post": {
+    "/getState/{key}": {
+      "get": {
+        "summary": "get the value of the corresponding key in stateDB",
         "operationId": "GetState",
         "responses": {
           "200": {
@@ -158,12 +170,10 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "key",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/rpcGetStateReq"
-            }
+            "type": "string"
           }
         ],
         "tags": [
@@ -171,8 +181,9 @@
         ]
       }
     },
-    "/v1/gettxbyhash": {
-      "post": {
+    "/getTxByHash/{hash}": {
+      "get": {
+        "summary": "get the tx by hash",
         "operationId": "GetTxByHash",
         "responses": {
           "200": {
@@ -184,12 +195,10 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "hash",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/rpcHashReq"
-            }
+            "type": "string"
           }
         ],
         "tags": [
@@ -197,8 +206,9 @@
         ]
       }
     },
-    "/v1/sendrawtx": {
+    "/sendRawTx": {
       "post": {
+        "summary": "receive encoded tx",
         "operationId": "SendRawTx",
         "responses": {
           "200": {
@@ -223,8 +233,9 @@
         ]
       }
     },
-    "/v1/subscribe": {
+    "/subscribe": {
       "post": {
+        "summary": "subscribe an event",
         "operationId": "Subscribe",
         "responses": {
           "200": {
@@ -255,7 +266,9 @@
       "type": "string",
       "enum": [
         "TransactionResult",
-        "ContractEvent"
+        "ContractEvent",
+        "ContractUserEvent",
+        "ContractSystemEvent"
       ],
       "default": "TransactionResult"
     },
@@ -289,17 +302,13 @@
         "witness": {
           "type": "string"
         },
-        "signature": {
-          "type": "string",
-          "format": "byte"
-        },
         "time": {
           "type": "string",
           "format": "int64"
         }
       }
     },
-    "commonSignatureRaw": {
+    "cryptoSignatureRaw": {
       "type": "object",
       "properties": {
         "algorithm": {
@@ -331,32 +340,6 @@
         }
       }
     },
-    "rpcBlockByHashReq": {
-      "type": "object",
-      "properties": {
-        "hash": {
-          "type": "string",
-          "format": "byte"
-        },
-        "complete": {
-          "type": "boolean",
-          "format": "boolean"
-        }
-      }
-    },
-    "rpcBlockByNumReq": {
-      "type": "object",
-      "properties": {
-        "num": {
-          "type": "string",
-          "format": "int64"
-        },
-        "complete": {
-          "type": "boolean",
-          "format": "boolean"
-        }
-      }
-    },
     "rpcBlockInfo": {
       "type": "object",
       "properties": {
@@ -372,8 +355,7 @@
         "txhash": {
           "type": "array",
           "items": {
-            "type": "string",
-            "format": "byte"
+            "type": "string"
           }
         }
       }
@@ -387,15 +369,6 @@
         }
       }
     },
-    "rpcGetBalanceReq": {
-      "type": "object",
-      "properties": {
-        "pubkey": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
-    },
     "rpcGetBalanceRes": {
       "type": "object",
       "properties": {
@@ -405,28 +378,11 @@
         }
       }
     },
-    "rpcGetStateReq": {
-      "type": "object",
-      "properties": {
-        "key": {
-          "type": "string"
-        }
-      }
-    },
     "rpcGetStateRes": {
       "type": "object",
       "properties": {
         "value": {
           "type": "string"
-        }
-      }
-    },
-    "rpcHashReq": {
-      "type": "object",
-      "properties": {
-        "hash": {
-          "type": "string",
-          "format": "byte"
         }
       }
     },
@@ -446,14 +402,14 @@
           "type": "string",
           "format": "byte"
         }
-      }
+      },
+      "title": "the rawdata of a tx"
     },
     "rpcSendRawTxRes": {
       "type": "object",
       "properties": {
         "hash": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         }
       }
     },
@@ -475,9 +431,6 @@
           "$ref": "#/definitions/eventEvent"
         }
       }
-    },
-    "rpcVoidReq": {
-      "type": "object"
     },
     "txActionRaw": {
       "type": "object",
@@ -528,11 +481,11 @@
         "signs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/commonSignatureRaw"
+            "$ref": "#/definitions/cryptoSignatureRaw"
           }
         },
         "publisher": {
-          "$ref": "#/definitions/commonSignatureRaw"
+          "$ref": "#/definitions/cryptoSignatureRaw"
         }
       }
     }

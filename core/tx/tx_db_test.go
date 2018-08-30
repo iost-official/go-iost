@@ -25,7 +25,7 @@ func TestTxDb(t *testing.T) {
 		txdb, _ := NexTxDB("./txDB/")
 		Convey("Test of Add", func() {
 			a1, _ := account.NewAccount(nil)
-			_tx := NewTx([]Action{}, [][]byte{a1.Pubkey}, 100000, 100, 11)
+			_tx := NewTx([]*Action{}, [][]byte{a1.Pubkey}, 100000, 100, 11)
 			var txs []*Tx
 			txs = make([]*Tx, 0)
 			txs = append(txs, &_tx)

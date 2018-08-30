@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
 		bc, err := NewBlockChain("./BlockChainDB/")
+		bc, err := NewBlockChainDB("./")
 		So(err, ShouldBeNil)
 		So(bc.Length(), ShouldEqual, bc.Length())
 		fmt.Println(bc.Length())
@@ -23,16 +25,17 @@ func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
 		bc, err := NewBlockChain("./BlockChainDB/")
 		So(err, ShouldBeNil)
-		tBlock := Block{Head: &BlockHead{
-			Version:    2,
-			ParentHash: []byte("parent Hash"),
-			TxsHash:    []byte("tree hash"),
-			Info:       []byte("info "),
-			Number:     int64(0),
-			Witness:    "id2,id3,id5,id6",
-			Signature:  []byte("Signatrue"),
-			Time:       201222,
-		}}
+		tBlock := Block{
+			Head: &BlockHead{
+				Version:    2,
+				ParentHash: []byte("parent Hash"),
+				TxsHash:    []byte("tree hash"),
+				Info:       []byte("info "),
+				Number:     int64(0),
+				Time:       201222,
+			},
+			Sign: &crypto.Signature{},
+		}
 		//test Push
 		length := bc.Length()
 		fmt.Println("length:", length)
@@ -53,7 +56,6 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
 		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
-		So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 
 		block, err = bc.Top()
@@ -65,7 +67,6 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
 		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
-		So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 
 		HeadHash := tBlock.HeadHash()
@@ -78,7 +79,6 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
 		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
-		So(string(block.Head.Signature), ShouldEqual, string(tBlock.Head.Signature))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
 		os.RemoveAll("./BlockChainDB/")
 	})

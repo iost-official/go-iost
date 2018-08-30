@@ -10,12 +10,14 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/event"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
@@ -28,19 +30,22 @@ type RPCServer struct {
 	txdb    tx.TxDB
 	txpool  txpool.TxPool
 	bchain  block.Chain
+	forkDB  db.MVCCDB
 	visitor *database.Visitor
 	port    int
 }
 
 // newRPCServer
 func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
+	forkDb := _global.StateDB().Fork()
 	return &RPCServer{
 		txdb:    _global.TxDB(),
 		txpool:  tp,
 		bchain:  _global.BlockChain(),
 		bc:      bcache,
-		visitor: database.NewVisitor(0, _global.StateDB()),
-		port:    _global.Config().RPC.Port,
+		forkDB:  forkDb,
+		visitor: database.NewVisitor(0, forkDb),
+		port:    _global.Config().RPC.GRPCPort,
 	}
 }
 
@@ -75,7 +80,7 @@ func (s *RPCServer) Stop() {
 // GetHeight ...
 func (s *RPCServer) GetHeight(ctx context.Context, void *VoidReq) (*HeightRes, error) {
 	return &HeightRes{
-		Height: s.bchain.Length(),
+		Height: s.bchain.Length() - 1,
 	}, nil
 }
 
@@ -85,8 +90,9 @@ func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, 
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	txHash := hash.Hash
+	txHashBytes := common.Base58Decode(txHash)
 
-	trx, err := s.txdb.Get(txHash)
+	trx, err := s.txdb.Get(txHashBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -101,11 +107,12 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 	}
 
 	hash := blkHashReq.Hash
+	hashBytes := common.Base58Decode(hash)
 	complete := blkHashReq.Complete
 
-	blk, _ := s.bchain.GetBlockByHash(hash)
+	blk, _ := s.bchain.GetBlockByHash(hashBytes)
 	if blk == nil {
-		blk, _ = s.bc.GetBlockByHash(hash)
+		blk, _ = s.bc.GetBlockByHash(hashBytes)
 	}
 	if blk == nil {
 		return nil, fmt.Errorf("cant find the block")
@@ -113,13 +120,13 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 	blkInfo := &BlockInfo{
 		Head:   blk.Head,
 		Txs:    make([]*tx.TxRaw, 0),
-		Txhash: make([][]byte, 0),
+		Txhash: make([]string, 0),
 	}
 	for _, trx := range blk.Txs {
 		if complete {
 			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
 		} else {
-			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
+			blkInfo.Txhash = append(blkInfo.Txhash, string(trx.Hash()))
 		}
 	}
 	return blkInfo, nil
@@ -127,7 +134,6 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 
 // GetBlockByNum ...
 func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
-	fmt.Println("enter GetBlockByNum")
 	if blkNumReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -145,13 +151,13 @@ func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq)
 	blkInfo := &BlockInfo{
 		Head:   blk.Head,
 		Txs:    make([]*tx.TxRaw, 0),
-		Txhash: make([][]byte, 0),
+		Txhash: make([]string, 0),
 	}
 	for _, trx := range blk.Txs {
 		if complete {
 			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
 		} else {
-			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
+			blkInfo.Txhash = append(blkInfo.Txhash, string(trx.Hash()))
 		}
 	}
 	return blkInfo, nil
@@ -172,6 +178,11 @@ func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
+	if key.UseLongestChain {
+		s.forkDB.Checkout(string(s.bc.Head().Block.HeadHash())) // long
+	} else {
+		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
+	}
 	return &GetBalanceRes{
 		Balance: s.visitor.Balance(key.ID),
 	}, nil
@@ -190,13 +201,21 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	}
 	// add servi
 	//tx.RecordTx(trx, tx.Data.Self())
-	ilog.Info("the Tx is:\n%+v\n", trx)
+	ilog.Infof("the Tx is:\n%+v\n", trx)
 	ret := s.txpool.AddTx(&trx)
-	if ret != txpool.Success {
-		return nil, fmt.Errorf("tx err:%v", ret)
+	switch ret {
+	case txpool.TimeError:
+		return nil, fmt.Errorf("tx err:%v", "TimeError")
+	case txpool.VerifyError:
+		return nil, fmt.Errorf("tx err:%v", "VerifyError")
+	case txpool.DupError:
+		return nil, fmt.Errorf("tx err:%v", "DupError")
+	case txpool.GasPriceError:
+		return nil, fmt.Errorf("tx err:%v", "GasPriceError")
+	default:
 	}
 	res := SendRawTxRes{}
-	res.Hash = trx.Hash()
+	res.Hash = string(trx.Hash())
 	return &res, nil
 }
 
