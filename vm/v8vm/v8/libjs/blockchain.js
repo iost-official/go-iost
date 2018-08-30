@@ -39,6 +39,9 @@ var BlockChain = (function () {
         },
         call: function (contract, api, args) {
             return bc.call(contract, api, args);
+        },
+        requireAuth: function (account) {
+            return 0;
         }
     }
 })();
