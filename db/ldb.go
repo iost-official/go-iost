@@ -85,6 +85,9 @@ func (ldb *LDB) Close() {
 	if err != nil {
 		ilog.Errorf("Close LDB failed: %v", err)
 	}
+	mutex.Lock()
+	delete(ldbMap, ldb.fn)
+	mutex.Unlock()
 }
 
 func (ldb *LDB) Path() string {

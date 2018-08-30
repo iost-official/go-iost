@@ -316,7 +316,6 @@ func (m *TrieMVCCDB) Flush(t string) error {
 	if err := m.storage.CommitBatch(); err != nil {
 		return err
 	}
-
 	ilog.Debugf("Commits length: %v", len(m.commits))
 	for k, v := range m.commits {
 		if v == trie {

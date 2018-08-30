@@ -5,9 +5,8 @@
 package database
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // MockIMultiValue is a mock of IMultiValue interface

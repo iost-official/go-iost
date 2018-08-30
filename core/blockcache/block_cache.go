@@ -291,7 +291,6 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			ilog.Errorf("flush mvcc error: %v", err)
 			return err
 		}
-
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs, retain.Block.Receipts)
 		if err != nil {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)
