@@ -60,6 +60,7 @@ type LogConfig struct {
 type MetricsConfig struct {
 	PushAddr string
 	Enable   bool
+	ID       string
 }
 
 // Config provide all configuration for the application

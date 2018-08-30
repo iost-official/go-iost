@@ -47,6 +47,7 @@ func initMetrics(metricsConfig *common.MetricsConfig) error {
 	if err != nil {
 		return err
 	}
+	metrics.SetID(metricsConfig.ID)
 	return metrics.Start()
 }
 
