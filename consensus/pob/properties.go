@@ -40,7 +40,7 @@ func (property *StaticProperty) hasSlot(slot int64) bool {
 }
 
 func (property *StaticProperty) addSlot(slot int64) {
-	property.SlotMap.LoadOrStore(slot, true)
+	property.SlotMap.Store(slot, true)
 }
 
 func (property *StaticProperty) delSlot(slot int64) {
@@ -50,7 +50,7 @@ func (property *StaticProperty) delSlot(slot int64) {
 	property.SlotMap.Range(func(k, v interface{}) bool {
 		s, sok := k.(int64)
 		if !sok || s <= slot {
-			property.SlotMap.Delete(s)
+			property.SlotMap.Delete(k)
 		}
 		return true
 	})

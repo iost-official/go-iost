@@ -304,23 +304,23 @@ func (sy *SyncImpl) retryDownloadLoop() {
 func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
 	var b []byte
 	var err error
-	if rh.BlockNumber < sy.blockCache.LinkedRoot().Number {
-		b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.BlockHash)
-		if err != nil {
-			ilog.Errorf("Database error: block empty %v", rh.BlockNumber)
-			return
-		}
-	} else {
-		node, err := sy.blockCache.Find(rh.BlockHash)
-		if err != nil {
-			ilog.Errorf("Block not in cache: %v", rh.BlockNumber)
-			return
-		}
+	node, err := sy.blockCache.Find(rh.BlockHash)
+	if err == nil {
 		b, err = node.Block.Encode()
 		if err != nil {
-			ilog.Errorf("Fail to encode block: %v", rh.BlockNumber)
+			ilog.Errorf("Fail to encode block: %v, err=%v", rh.BlockNumber, err)
 			return
 		}
+		sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
+		return
+	}
+
+	ilog.Infof("failed to get block from blockcache. err=%v", err)
+
+	b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.BlockHash)
+	if err != nil {
+		ilog.Warnf("failed to get block from blockchain. err=%v", err)
+		return
 	}
 	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
 }
