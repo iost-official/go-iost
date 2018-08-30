@@ -121,13 +121,13 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 	blkInfo := &BlockInfo{
 		Head:   blk.Head,
 		Txs:    make([]*tx.TxRaw, 0),
-		Txhash: make([]string, 0),
+		Txhash: make([][]byte, 0),
 	}
 	for _, trx := range blk.Txs {
 		if complete {
 			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
 		} else {
-			blkInfo.Txhash = append(blkInfo.Txhash, string(trx.Hash()))
+			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
 		}
 	}
 	return blkInfo, nil
@@ -152,13 +152,13 @@ func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq)
 	blkInfo := &BlockInfo{
 		Head:   blk.Head,
 		Txs:    make([]*tx.TxRaw, 0),
-		Txhash: make([]string, 0),
+		Txhash: make([][]byte, 0),
 	}
 	for _, trx := range blk.Txs {
 		if complete {
 			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
 		} else {
-			blkInfo.Txhash = append(blkInfo.Txhash, string(trx.Hash()))
+			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
 		}
 	}
 	return blkInfo, nil

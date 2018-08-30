@@ -125,7 +125,7 @@ message GasRes {
 message BlockInfo {
     block.BlockHead head = 1;
     repeated tx.TxRaw txs = 2;
-	repeated string txhash=3;
+	repeated bytes txhash=3;
 }
 
 message SubscribeRes {
