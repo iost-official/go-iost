@@ -788,7 +788,14 @@ func TestJS_Vote1(t *testing.T) {
 	js.SetAPI("Vote", "string", "string", "number")
 	js.SetAPI("Unvote", "string", "string", "number")
 	js.SetAPI("Stat")
+	for i := 0; i <= 18; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	js.vi.Commit()
 	t.Log(js.DoSet())
+	for i := 6; i <= 18; i += 2 {
+		t.Log(js.vi.Balance(testID[i]))
+	}
 
 	keys := []string{
 		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
@@ -798,10 +805,7 @@ func TestJS_Vote1(t *testing.T) {
 	}
 	js.FlushDB(t, keys)
 
-	js.vi.SetBalance(testID[0], 5e+7)
-	js.vi.SetBalance(testID[2], 5e+7)
-	js.vi.Commit()
-
+	// todo require auth
 	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
 	js.FlushDB(t, keys)
 

@@ -7,17 +7,24 @@ class VoteContract {
 		this.voteLockTime = 200;
 
 		this.currentProducerList = [];
-		this.pendingProducerList = ["a", "b", "c", "d", "e", "f", "g"];
+		this.pendingProducerList = [
+			"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4",
+			"IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9",
+			"IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB",
+			"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9",
+			"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN",
+			"IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",
+			"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd"
+		];
 		this.pendingBlockNumber = 0;
 		this.producerTable = {}
 		this.voteTable = {}
 
 		for (var i = 0; i < this.producerNumber; i++) {
-			// todo init producer list pledge token
-			// var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
-			// if (ret != 0) {
-			// 	throw new Error("deposit failed. ret = " + ret);
-			// }
+			var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
+			if (ret != 0) {
+				throw new Error("deposit failed. ret = " + ret);
+			}
 			this.producerTable[this.pendingProducerList[i]] = {
 				"loc": "",
 				"url": "",
@@ -30,10 +37,10 @@ class VoteContract {
     }
 
 	_requireAuth(account) {
-		// var ret = BlockChain.requireAuth(account);
-		// if (ret !== 0) {
-		// 	throw new Error("require auth failed. ret = " + ret);
-		// }
+		var ret = BlockChain.requireAuth(account);
+		if (ret !== 0) {
+			throw new Error("require auth failed. ret = " + ret);
+		}
 	}
 
 	_getBlockNumber() {
