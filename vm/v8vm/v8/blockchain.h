@@ -24,6 +24,7 @@ public:
     char *TxInfo();
     char *Call(const char *, const char *, const char *);
     char *CallWithReceipt(const char *, const char *, const char *);
+    bool RequireAuth(const char *pubKey);
 };
 
 #endif // IOST_V8_BLOCKCHAIN_H

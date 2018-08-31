@@ -43,8 +43,8 @@ var BlockChain = (function () {
         callWithReceipt: function (contract, api, args) {
             return bc.callWithReceipt(contract, api, args);
         },
-        requireAuth: function (account) {
-            return 0;
+        requireAuth: function (pubKey) {
+            return bc.requireAuth(pubKey);
         }
     }
 })();

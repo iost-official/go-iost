@@ -10,10 +10,11 @@ static blockInfoFunc CBlkInfo = nullptr;
 static txInfoFunc CTxInfo = nullptr;
 static callFunc CCall = nullptr;
 static callFunc CCallWR = nullptr;
+static requireAuthFunc CRequireAuth = nullptr;
 
 void InitGoBlockchain(transferFunc transfer, withdrawFunc withdraw,
                         depositFunc deposit, topUpFunc topUp, countermandFunc countermand,
-                        blockInfoFunc blkInfo, txInfoFunc txInfo, callFunc call, callFunc callWR) {
+                        blockInfoFunc blkInfo, txInfoFunc txInfo, callFunc call, callFunc callWR, requireAuthFunc requireAuth) {
     CTransfer = transfer;
     CWithdraw = withdraw;
     CDeposit = deposit;
@@ -23,6 +24,7 @@ void InitGoBlockchain(transferFunc transfer, withdrawFunc withdraw,
     CTxInfo = txInfo;
     CCall = call;
     CCallWR = callWR;
+    CRequireAuth = requireAuth;
 }
 
 int IOSTBlockchain::Transfer(const char *from, const char *to, const char *amount) {
@@ -110,6 +112,16 @@ char *IOSTBlockchain::CallWithReceipt(const char *contract, const char *api, con
     Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
     sbx->gasUsed += gasUsed;
     return result;
+}
+
+bool IOSTBlockchain::RequireAuth(const char *pubKey) {
+    size_t gasUsed = 0;
+    bool ok = false;
+    int ret = CRequireAuth(sbxPtr, pubKey, &ok, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
+    return ok;
 }
 
 void NewIOSTBlockchain(const FunctionCallbackInfo<Value> &args) {

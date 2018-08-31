@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
+// todo replace this error code with c++ error code
 // transfer err list
 const (
 	TransferSuccess = iota
@@ -35,6 +36,12 @@ const (
 const (
 	ContractCallSuccess = iota
 	ContractCallUnexpectedError
+)
+
+// ApiCall err list
+const (
+	ApiCallSuccess = iota
+	ApiCallUnexpectedError
 )
 
 //export goTransfer
@@ -240,4 +247,25 @@ func goCallWithReceipt(cSbx C.SandboxPtr, contract, api, args *C.char, result **
 	*result = C.CString(string(rsStr))
 
 	return ContractCallSuccess
+}
+
+//export goRequireAuth
+func goRequireAuth(cSbx C.SandboxPtr, pubkey *C.char, ok *C.bool, gasUsed *C.size_t) int {
+	sbx, sbOk := GetSandbox(cSbx)
+	if !sbOk {
+		return ApiCallUnexpectedError
+	}
+
+	pubkeyStr := C.GoString(pubkey)
+
+	callOk, RequireAuthCost := sbx.host.APIDelegate.RequireAuth(pubkeyStr)
+
+	*ok = C.bool(callOk)
+	if callOk != true {
+		return ApiCallUnexpectedError
+	}
+
+	*gasUsed = C.size_t(RequireAuthCost.Data)
+
+	return ApiCallSuccess
 }
