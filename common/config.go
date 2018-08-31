@@ -69,6 +69,11 @@ type MetricsConfig struct {
 	ID       string
 }
 
+// DebugConfig is the config of debug.
+type DebugConfig struct {
+	ListenAddr string
+}
+
 // Config provide all configuration for the application
 type Config struct {
 	ACC     *ACCConfig
@@ -79,6 +84,7 @@ type Config struct {
 	RPC     *RPCConfig
 	Log     *LogConfig
 	Metrics *MetricsConfig
+	Debug   *DebugConfig
 }
 
 // NewConfig returns a new instance of Config

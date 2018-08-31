@@ -1,11 +1,10 @@
 package pob
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/account"
-
 	"errors"
 	"time"
 
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
@@ -68,8 +67,10 @@ L:
 	}
 	blk.Sign = account.Sign(crypto.Secp256k1, blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
-	generatedBlockCount.Inc()
-	txPoolSize.Set(float64(len(blk.Txs)))
+
+	metricsGeneratedBlockCount.Add(1, nil)
+	metricsTxSize.Set(float64(len(blk.Txs)), nil)
+
 	return &blk, nil
 }
 
@@ -124,6 +125,8 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
 		go staticProperty.delSlot(confirmedNode.Block.Head.Time)
+
+		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
 	}
 }
 

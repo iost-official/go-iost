@@ -15,6 +15,8 @@
 package main
 
 import (
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -167,6 +169,10 @@ func main() {
 		ilog.Fatal("start iserver failed. err=%v", err)
 	}
 
+	if conf.Debug != nil {
+		startDebugServer(conf.Debug.ListenAddr)
+	}
+
 	waitExit()
 
 	app.Stop()
@@ -178,4 +184,13 @@ func waitExit() {
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	i := <-c
 	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
+}
+
+func startDebugServer(addr string) {
+	go func() {
+		err := http.ListenAndServe(addr, nil)
+		if err != nil {
+			ilog.Errorf("start debug server failed. err=%v", err)
+		}
+	}()
 }

@@ -53,6 +53,7 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		acts = append(acts, &act)
 	}
 	trx := tx.NewTx(acts, nil, 0, 0, 0)
+	trx.Time = 0
 	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
 	if err != nil {
 		return nil, err

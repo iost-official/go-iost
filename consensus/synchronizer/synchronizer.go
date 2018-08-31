@@ -143,7 +143,7 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 		time.Sleep(time.Second)
 	}
 	if startNumber <= endNumber {
-		for i := startNumber; i < endNumber; i++ {
+		for i := startNumber; i <= endNumber; i++ {
 			sy.reqMap.Store(i, true)
 		}
 		sy.queryBlockHash(message.BlockHashQuery{ReqType: 0, Start: startNumber, End: endNumber, Nums: nil})
@@ -152,6 +152,7 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 }
 
 func (sy *SyncImpl) CheckSyncProcess() {
+	ilog.Infof("check sync process: end %v, num %v", sy.syncEnd, sy.blockCache.Head().Number)
 	if sy.syncEnd <= sy.blockCache.Head().Number {
 		sy.basevariable.SetMode(global.ModeNormal)
 		sy.dc.Reset()

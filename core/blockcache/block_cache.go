@@ -8,21 +8,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/prometheus/client_golang/prometheus"
 )
-
-var (
-	blockCachedLength = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "block_cached_length",
-			Help: "Length of cached block chain",
-		},
-	)
-)
-
-func init() {
-	prometheus.MustRegister(blockCachedLength)
-}
 
 type CacheStatus int
 

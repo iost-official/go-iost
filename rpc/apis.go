@@ -84,7 +84,7 @@ func (s *RPCServer) GetHeight(ctx context.Context, void *VoidReq) (*HeightRes, e
 }
 
 // GetTxByHash ...
-func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, error) {
+func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, error) {
 	if hash == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -96,8 +96,11 @@ func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, 
 	if err != nil {
 		return nil, err
 	}
-	txRaw := trx.ToTxRaw()
-	return txRaw, nil
+
+	return &TxRes{
+		TxRaw: trx.ToTxRaw(),
+		Hash:  trx.Hash(),
+	}, nil
 }
 
 // GetBlockByHash ...
@@ -119,14 +122,15 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 	}
 	blkInfo := &BlockInfo{
 		Head:   blk.Head,
+		Hash:   blk.HeadHash(),
 		Txs:    make([]*tx.TxRaw, 0),
-		Txhash: make([]string, 0),
+		Txhash: make([][]byte, 0),
 	}
 	for _, trx := range blk.Txs {
 		if complete {
 			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
 		} else {
-			blkInfo.Txhash = append(blkInfo.Txhash, string(trx.Hash()))
+			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
 		}
 	}
 	return blkInfo, nil
@@ -150,14 +154,15 @@ func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq)
 	}
 	blkInfo := &BlockInfo{
 		Head:   blk.Head,
+		Hash:   blk.HeadHash(),
 		Txs:    make([]*tx.TxRaw, 0),
-		Txhash: make([]string, 0),
+		Txhash: make([][]byte, 0),
 	}
 	for _, trx := range blk.Txs {
 		if complete {
 			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
 		} else {
-			blkInfo.Txhash = append(blkInfo.Txhash, string(trx.Hash()))
+			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
 		}
 	}
 	return blkInfo, nil

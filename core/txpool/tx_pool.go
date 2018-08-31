@@ -7,7 +7,6 @@ import (
 
 	"bytes"
 	"errors"
-	"os"
 
 	"runtime"
 
@@ -18,12 +17,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
-	"github.com/prometheus/client_golang/prometheus"
 )
-
-func init() {
-	prometheus.MustRegister(receivedTransactionCount)
-}
 
 // TxPoolImpl defines all the API of txpool package.
 type TxPoolImpl struct {
@@ -41,6 +35,8 @@ type TxPoolImpl struct {
 	pendingTx *sync.Map
 
 	mu sync.RWMutex
+
+	quitCh chan struct{}
 }
 
 // NewTxPoolImpl returns a default TxPoolImpl instance.
@@ -53,9 +49,10 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		blockList:    new(sync.Map),
 		pendingTx:    new(sync.Map),
 		global:       global,
+		p2pService:   p2ps,
+		chP2PTx:      p2ps.Register("TxPool message", p2p.PublishTxRequest),
+		quitCh:       make(chan struct{}),
 	}
-	p.p2pService = p2ps
-	p.chP2PTx = p.p2pService.Register("TxPool message", p2p.PublishTxRequest)
 
 	return p, nil
 }
@@ -69,8 +66,7 @@ func (pool *TxPoolImpl) Start() error {
 // Stop stops all the jobs.
 func (pool *TxPoolImpl) Stop() {
 	ilog.Infof("TxPoolImpl Stop")
-	close(pool.chP2PTx)
-	close(pool.chLinkedNode)
+	close(pool.quitCh)
 }
 
 func (pool *TxPoolImpl) loop() {
@@ -91,23 +87,14 @@ func (pool *TxPoolImpl) loop() {
 
 	for {
 		select {
-		case tr, ok := <-pool.chTx:
-			if !ok {
-				ilog.Errorf("failed to chTx")
-				os.Exit(1)
-			}
+		case tr := <-pool.chTx:
+			metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
 
 			if ret := pool.addTx(tr); ret == Success {
 				pool.p2pService.Broadcast(tr.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
-				receivedTransactionCount.Inc()
 			}
 
-		case bl, ok := <-pool.chLinkedNode:
-			if !ok {
-				ilog.Errorf("failed to ch linked node")
-				os.Exit(1)
-			}
-
+		case bl := <-pool.chLinkedNode:
 			if pool.addBlock(bl.LinkedNode.Block) != nil {
 				continue
 			}
@@ -144,6 +131,9 @@ func (pool *TxPoolImpl) loop() {
 			pool.clearTimeOutTx()
 
 			pool.mu.Unlock()
+
+		case <-pool.quitCh:
+			return
 		}
 	}
 }
@@ -193,7 +183,7 @@ func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 
 	if r = pool.addTx(t); r == Success {
 		pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
-		receivedTransactionCount.Inc()
+		metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	}
 
 	return r
