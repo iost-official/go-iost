@@ -57,6 +57,7 @@ func TestBlockCache(t *testing.T) {
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(gomock.Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
+	statedb.EXPECT().Checkout(gomock.Any()).AnyTimes().Return(true)
 
 	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("1"), nil

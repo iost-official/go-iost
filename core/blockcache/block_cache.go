@@ -261,7 +261,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 
 	bc.linkedRoot.Type = Linked
 	bc.singleRoot.Type = Virtual
-	bc.head = bc.linkedRoot
+	bc.initHead(bc.linkedRoot)
 	bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
 	return &bc, nil
@@ -276,24 +276,47 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	delete(bc.leaf, bcn.Parent)
 	bc.leaf[bcn] = bcn.Number
 	if bcn.Number > bc.head.Number {
-		bc.head = bcn
+		bc.setHead(bcn)
 	}
 }
 
-func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) {
+func (bc *BlockCacheImpl) initHead(h *BlockCacheNode) error {
+
+	bc.head = h
+
+	if err := bc.updatePending(bc.head); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
 
 	bc.head = h
 
 	if h.Number%common.VoteInterval != 0 {
-		return
+		return nil
 	}
+
+	if err := bc.updatePending(bc.head); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 
 	ok := bc.stateDB.Checkout(string(h.Block.HeadHash()))
 	if ok {
 		if err := bc.head.UpdatePending(bc.stateDB); err != nil {
 			ilog.Error("failed to update pending, err:", err)
+			return err
 		}
 	}
+
+	return nil
 }
 
 func (bc *BlockCacheImpl) updateLongest() {
@@ -305,7 +328,7 @@ func (bc *BlockCacheImpl) updateLongest() {
 	for key, val := range bc.leaf {
 		if val > cur {
 			cur = val
-			bc.head = key
+			bc.setHead(key)
 		}
 	}
 }
@@ -332,7 +355,7 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 		delete(bc.leaf, fa)
 		bc.leaf[newNode] = newNode.Number
 		if newNode.Number > bc.head.Number {
-			bc.head = newNode
+			bc.setHead(newNode)
 		}
 	}
 	return newNode
