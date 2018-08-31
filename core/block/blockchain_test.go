@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"fmt"
-	"os/exec"
+	"os"
 
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	. "github.com/smartystreets/goconvey/convey"
@@ -12,16 +12,17 @@ import (
 
 func TestNewBlockChain(t *testing.T) {
 	Convey("test TestNewBlockChain", t, func() {
-		bc, err := NewBlockChainDB("./")
+		bc, err := NewBlockChain("./BlockChainDB/")
 		So(err, ShouldBeNil)
 		So(bc.Length(), ShouldEqual, bc.Length())
 		fmt.Println(bc.Length())
+		os.RemoveAll("./BlockChainDB/")
 	})
 }
 
 func TestChainImpl(t *testing.T) {
 	Convey("test Push", t, func() {
-		bc, err := NewBlockChainDB("./")
+		bc, err := NewBlockChain("./BlockChainDB/")
 		So(err, ShouldBeNil)
 		tBlock := Block{
 			Head: &BlockHead{
@@ -78,8 +79,6 @@ func TestChainImpl(t *testing.T) {
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
 		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
 		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
-
-		cmd := exec.Command("rm", "-r", "./blockChainDB/")
-		cmd.Run()
+		os.RemoveAll("./BlockChainDB/")
 	})
 }

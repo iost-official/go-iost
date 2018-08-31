@@ -760,13 +760,16 @@ func TestJS_LuckyBet(t *testing.T) {
 	t.Log("table should be saved ", js.ReadDB("table0"))
 
 	for i := 1; i < 10; i++ {
-		js.TestJS("bet", fmt.Sprintf(`["%v",%v, 2]`, testID[0], i))
+		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v, %v]`, testID[0], i, i%4+1))
+		if r.Status.Code != 0 {
+			t.Fatal(r)
+		}
 	}
 
 	t.Log("user count ", js.ReadDB("userNumber"))
 	t.Log("total coins ", js.ReadDB("totalCoins"))
 	t.Log("tables", js.ReadDB("tables"))
-	t.Log("result is ", js.ReadDB("results"))
+	t.Log("result is ", js.ReadDB("result1"))
 }
 
 func TestJS_Vote1(t *testing.T) {

@@ -239,6 +239,42 @@ func (suite *MVCCDBTestSuite) TestRecovery() {
 	suite.Equal("qwertyuiopasdfghjkl;zxcvbnm,.afd", suite.mvccdb.CurrentTag())
 }
 
+func (suite *MVCCDBTestSuite) TestFlushAndCheckout() {
+	var value string
+
+	err := suite.mvccdb.Put("table01", "key06", "value06")
+	suite.Nil(err)
+	err = suite.mvccdb.Del("table01", "key04")
+	suite.Nil(err)
+	suite.mvccdb.Commit()
+	suite.mvccdb.Tag("tag1")
+
+	err = suite.mvccdb.Put("table01", "key06", "value066")
+	suite.Nil(err)
+	err = suite.mvccdb.Put("table01", "key04", "value044")
+	suite.Nil(err)
+	suite.mvccdb.Commit()
+	suite.mvccdb.Tag("tag2")
+
+	value, err = suite.mvccdb.Get("table01", "key06")
+	suite.Nil(err)
+	suite.Equal("value066", value)
+	value, err = suite.mvccdb.Get("table01", "key04")
+	suite.Nil(err)
+	suite.Equal("value044", value)
+
+	err = suite.mvccdb.Flush("tag1")
+	suite.Nil(err)
+	suite.mvccdb.Checkout("tag1")
+
+	value, err = suite.mvccdb.Get("table01", "key06")
+	suite.Nil(err)
+	suite.Equal("value06", value)
+	value, err = suite.mvccdb.Get("table01", "key04")
+	suite.Equal(ErrKeyNotFound, err)
+	suite.Equal("", value)
+}
+
 func (suite *MVCCDBTestSuite) TearDownTest() {
 	err := suite.mvccdb.Close()
 	suite.Nil(err, "Close MVCCDB should not fail")

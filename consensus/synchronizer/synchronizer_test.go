@@ -47,9 +47,7 @@ func TestSynchronizer(t *testing.T) {
 	Convey("Test Synchronizer", t, func() {
 		baseVariable := global.FakeNew()
 		defer func() {
-			os.RemoveAll("blockChainDB")
-			os.RemoveAll("StateDB")
-			os.RemoveAll("txDB")
+			os.RemoveAll("db")
 		}()
 		genesisBlock := &block.Block{
 			Head: &block.BlockHead{

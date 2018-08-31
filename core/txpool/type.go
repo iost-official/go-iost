@@ -1,12 +1,13 @@
 package txpool
 
 import (
+	"sync"
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/prometheus/client_golang/prometheus"
-	"sync"
-	"time"
+	"github.com/iost-official/Go-IOS-Protocol/metrics"
 )
 
 var (
@@ -15,12 +16,7 @@ var (
 	filterTime    = int64(expiration + expiration/2)
 	//expiration    = 60*60*24*7
 
-	receivedTransactionCount = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "received_transaction_count",
-			Help: "Count of received transaction by current node",
-		},
-	)
+	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
 )
 
 type FRet uint
