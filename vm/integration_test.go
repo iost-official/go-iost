@@ -18,6 +18,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"reflect"
 )
 
 var testID = []string{
@@ -768,6 +769,50 @@ func TestJS_LuckyBet(t *testing.T) {
 	t.Log("result is ", js.ReadDB("results"))
 }
 
+func TestJS_Vote1(t *testing.T) {
+	js := NewJSTester(t)
+	defer js.Clear()
+	lc, err := ReadFile("test_data/vote.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
+	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
+	js.SetAPI("LogInProducer", "string")
+	js.SetAPI("LogOutProducer", "string")
+	js.SetAPI("UnregisterProducer", "string")
+	js.SetAPI("Vote", "string", "string", "number")
+	js.SetAPI("Unvote", "string", "string", "number")
+	js.SetAPI("Stat")
+	t.Log(js.DoSet())
+
+	keys := []string{
+		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
+		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
+		"producerTable",
+		"voteTable",
+	}
+	js.FlushDB(t, keys)
+
+	js.vi.SetBalance(testID[0], 5e+7)
+	js.vi.SetBalance(testID[2], 5e+7)
+	js.vi.Commit()
+
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+
+	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber")))
+	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber"))))
+	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList")))
+	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList"))))
+}
+
 func TestJS_Vote(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
@@ -788,7 +833,7 @@ func TestJS_Vote(t *testing.T) {
 
 	keys := []string{
 		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
-		"voteLockTime", "currentProducerList", "pendingProducerList",
+		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
 		"producerTable",
 		"voteTable",
 	}
