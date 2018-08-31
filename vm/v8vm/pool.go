@@ -28,7 +28,7 @@ func (vmp *VMPool) getVM() *VM {
 func (vmp *VMPool) Init() error {
 	// Fill vmPoolBuffer
 	for i := 0; i < vmp.size; i++ {
-		var e = NewVMWithChannel(vmp.poolBuff)
+		var e = NewVMWithChannel(vmp.jsPath, vmp.poolBuff)
 		vmp.poolBuff <- e
 	}
 	return nil
@@ -51,8 +51,6 @@ func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 	vm := vmp.getVM()
 	defer vm.recycle()
-
-	vm.setJSPath(vmp.jsPath)
 
 	vm.setHost(host)
 	preparedCode, _ := vm.setContract(contract, api, args)
