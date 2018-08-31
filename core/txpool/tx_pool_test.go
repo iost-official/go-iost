@@ -37,15 +37,16 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		var accountList []account.Account
 		var witnessList []string
-
+		var witnessInfo []string
 		acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 		newAccount, err := account.NewAccount(acc)
 		if err != nil {
 			panic("account.NewAccount error")
 		}
 		accountList = append(accountList, newAccount)
+		witnessInfo = append(witnessInfo, newAccount.ID)
+		witnessInfo = append(witnessInfo, "100000")
 		witnessList = append(witnessList, newAccount.ID)
-
 		for i := 1; i < 3; i++ {
 			newAccount, err := account.NewAccount(nil)
 			if err != nil {
@@ -53,9 +54,12 @@ func TestNewTxPoolImpl(t *testing.T) {
 			}
 			accountList = append(accountList, newAccount)
 			witnessList = append(witnessList, newAccount.ID)
+			witnessInfo = append(witnessInfo, newAccount.ID)
+			witnessInfo = append(witnessInfo, "100000")
 		}
 		conf := &common.Config{
-			DB: &common.DBConfig{},
+			DB:      &common.DBConfig{},
+			Genesis: &common.GenesisConfig{CreateGenesis: true, WitnessInfo: witnessInfo},
 		}
 		gl, err := global.New(conf)
 
