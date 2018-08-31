@@ -26,7 +26,7 @@ var (
 	receiptPrefix     = []byte("r") // receiptPrefix + receipt hash -> receipt data
 )
 
-func NexTxDB(path string) (TxDB, error) {
+func NewTxDB(path string) (TxDB, error) {
 	ldb, err := db.NewLDB(path, 0, 0)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,6 @@ func NexTxDB(path string) (TxDB, error) {
 }
 
 func (tdb *TxDBImpl) Push(txs []*Tx, receipts []*TxReceipt) error {
-
 	txBth := tdb.txDB.Batch()
 
 	for i, tx := range txs {
@@ -98,4 +97,8 @@ func (tdb *TxDBImpl) GetReceiptByTxHash(Hash []byte) (*TxReceipt, error) {
 func (tdb *TxDBImpl) HasReceipt(hash []byte) (bool, error) {
 
 	return tdb.txDB.Has(append(receiptPrefix, hash...))
+}
+
+func (tdb *TxDBImpl) Close() {
+	tdb.txDB.Close()
 }
