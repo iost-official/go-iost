@@ -5,10 +5,15 @@ import (
 	"fmt"
 	"sync"
 
+	"encoding/json"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/prometheus/client_golang/prometheus"
+	"strconv"
 )
 
 var (
@@ -44,16 +49,87 @@ const (
 	Virtual
 )
 
+type WitnessList struct {
+	activeWitnessList    []string
+	pendingWitnessList   []string
+	pendingWitnessNumber int64
+}
+
+//func NewWL() *WitnessList {
+//
+//	w := &WitnessList{
+//		activeWitnessList:  make([]string, 0),
+//		pendingWitnessList: make([]string, 0),
+//	}
+//
+//	return w
+//}
+
+func (wl *WitnessList) SetPending(pl []string) {
+	wl.pendingWitnessList = pl
+}
+
+func (wl *WitnessList) SetPendingNum(n int64) {
+	wl.pendingWitnessNumber = n
+}
+
+func (wl *WitnessList) SetActive(al []string) {
+	wl.activeWitnessList = al
+}
+
+func (wl *WitnessList) Pending() []string {
+	return wl.pendingWitnessList
+}
+
+func (wl *WitnessList) Active() []string {
+	return wl.activeWitnessList
+}
+
+func (wl *WitnessList) PendingNum() int64 {
+	return wl.pendingWitnessNumber
+}
+
+func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
+
+	vi := database.NewVisitor(0, mv)
+
+	spn := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingBlockNumber"))
+	// todo delay
+	if spn == nil {
+		return nil
+	}
+	pn, err := strconv.ParseInt(spn.(string), 10, 64)
+	if err != nil {
+		return err
+	}
+	wl.SetPendingNum(pn)
+
+	jwl := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingProducerList"))
+	// todo delay
+	if jwl == nil {
+		return nil
+	}
+
+	str := make([]string, 0)
+	err = json.Unmarshal([]byte(jwl.(string)), &str)
+	if err != nil {
+		return err
+	}
+	wl.SetPending(str)
+
+	return nil
+}
+
 type BlockCacheNode struct {
-	Block              *block.Block
-	Parent             *BlockCacheNode
-	Children           map[*BlockCacheNode]bool
-	Type               BCNType
-	Number             int64
-	Witness            string
-	ConfirmUntil       int64
-	PendingWitnessList []string
-	Extension          []byte
+	Block        *block.Block
+	Parent       *BlockCacheNode
+	Children     map[*BlockCacheNode]bool
+	Type         BCNType
+	Number       int64
+	Witness      string
+	ConfirmUntil int64
+	WitnessList
+	Extension []byte
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
@@ -70,6 +146,12 @@ func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
 	if parent != nil {
 		bcn.Parent = parent
 		bcn.Type = parent.Type
+
+		// copy parent
+		bcn.SetActive(parent.Active())
+		bcn.SetPending(parent.Pending())
+		bcn.SetPendingNum(parent.PendingNum())
+
 		if bcn.Type == Virtual {
 			bcn.Type = Single
 		}
@@ -134,6 +216,7 @@ type BlockCacheImpl struct {
 	hash2node    *sync.Map
 	leaf         map[*BlockCacheNode]int64
 	baseVariable global.BaseVariable
+	stateDB      db.MVCCDB
 }
 
 func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
@@ -162,13 +245,20 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	if err != nil {
 		return nil, fmt.Errorf("BlockCahin Top Error")
 	}
+
 	bc := BlockCacheImpl{
 		linkedRoot:   NewBCN(nil, lib),
 		singleRoot:   NewBCN(nil, nil),
 		hash2node:    new(sync.Map),
 		leaf:         make(map[*BlockCacheNode]int64),
 		baseVariable: baseVariable,
+		stateDB:      baseVariable.StateDB().Fork(),
 	}
+
+	if err := bc.linkedRoot.UpdatePending(bc.stateDB); err != nil {
+		return nil, err
+	}
+
 	bc.linkedRoot.Type = Linked
 	bc.singleRoot.Type = Virtual
 	bc.head = bc.linkedRoot
@@ -187,6 +277,22 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	bc.leaf[bcn] = bcn.Number
 	if bcn.Number > bc.head.Number {
 		bc.head = bcn
+	}
+}
+
+func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) {
+
+	bc.head = h
+
+	if h.Number%common.VoteInterval != 0 {
+		return
+	}
+
+	ok := bc.stateDB.Checkout(string(h.Block.HeadHash()))
+	if ok {
+		if err := bc.head.UpdatePending(bc.stateDB); err != nil {
+			ilog.Error("failed to update pending, err:", err)
+		}
 	}
 }
 
