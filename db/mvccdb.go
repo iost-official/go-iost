@@ -140,7 +140,6 @@ func (m *TrieMVCCDB) Get(table string, key string) (string, error) {
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
-			ilog.Debugf("Failed to get from storage: %v", err)
 			return "", ErrKeyNotFound
 		}
 		return string(v[:]), nil
@@ -316,7 +315,6 @@ func (m *TrieMVCCDB) Flush(t string) error {
 	if err := m.storage.CommitBatch(); err != nil {
 		return err
 	}
-	ilog.Debugf("Commits length: %v", len(m.commits))
 	for k, v := range m.commits {
 		if v == trie {
 			m.commits = m.commits[k:]

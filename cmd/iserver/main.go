@@ -100,9 +100,9 @@ func main() {
 	}
 
 	conf := common.NewConfig(*configfile)
+	ilog.Infof("Config Information:\n%v", conf.YamlString())
 
 	initLogger(conf.Log)
-	ilog.Infof("Config Information:\n%v", conf.YamlString())
 
 	vm.SetUp(conf.VM)
 
@@ -115,7 +115,10 @@ func main() {
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)
 	}
-
+	if conf.Genesis.CreateGenesis {
+		genesisBlock, _ := glb.BlockChain().GetBlockByNumber(0)
+		ilog.Errorf("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
+	}
 	var app common.App
 
 	p2pService, err := p2p.NewNetService(conf.P2P)
@@ -153,10 +156,7 @@ func main() {
 
 	jsonRPCServer := rpc.NewJSONServer(glb)
 	app = append(app, jsonRPCServer)
-
-	consensus, err := consensus.Factory(
-		"pob",
-		acc, glb, blkCache, txp, p2pService, sync, account.WitnessList) //witnessList)
+	consensus, err := consensus.Factory("pob", acc, glb, blkCache, txp, p2pService, sync, glb.WitnessList())
 	if err != nil {
 		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}
