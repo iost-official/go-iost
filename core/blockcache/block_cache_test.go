@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -55,6 +56,15 @@ func TestBlockCache(t *testing.T) {
 	txdb.EXPECT().Push(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(gomock.Any()).AnyTimes().Return(nil)
+	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
+
+	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal("1"), nil
+	})
+	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal("[\"aaaa\",\"bbbbb\"]"), nil
+	})
+
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(b0, nil)
 	base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
