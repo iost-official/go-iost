@@ -1,5 +1,5 @@
-var BlockChain = (function () {
-    var bc = new IOSTBlockchain;
+let BlockChain = (function () {
+    let bc = new IOSTBlockchain;
     return {
         transfer: function (from, to, amount) {
             if (!(amount instanceof Int64)) {

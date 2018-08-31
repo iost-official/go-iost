@@ -33,7 +33,7 @@ else
 	LDCONFIG=sudo /sbin/ldconfig
 endif
 
-vm: vm.cc.o require.cc.o storage.cc.o blockchain.cc.o sandbox.cc.o instruction.cc.o
+vm: vm.cc.o console.cc.o require.cc.o storage.cc.o blockchain.cc.o sandbox.cc.o instruction.cc.o
 	$(LD) -g -shared $(LDFLAGS) $^ -o libvm$(LIB_SUFFIX) -L$(LIB_PATH) $(LIBS)
 
 %.cc.o: %.cc

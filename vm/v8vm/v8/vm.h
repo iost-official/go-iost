@@ -82,6 +82,10 @@ extern ValueTuple Execute(SandboxPtr ptr, const char *code);
 extern void setJSPath(SandboxPtr ptr, const char *jsPath);
 extern void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit);
 
+// log
+typedef int (*consoleFunc)(SandboxPtr, const char *, const char *);
+void InitGoConsole(consoleFunc);
+
 // require
 typedef char *(*requireFunc)(SandboxPtr, const char *);
 void InitGoRequire(requireFunc);

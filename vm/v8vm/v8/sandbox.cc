@@ -1,4 +1,5 @@
 #include "sandbox.h"
+#include "console.h"
 #include "require.h"
 #include "storage.h"
 #include "blockchain.h"
@@ -77,6 +78,7 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
     Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
     global->SetInternalFieldCount(1);
 
+    InitConsole(isolate, global);
     InitRequire(isolate, global);
     InitStorage(isolate, global);
     InitBlockchain(isolate, global);
