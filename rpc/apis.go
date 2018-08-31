@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/event"
@@ -84,18 +85,23 @@ func (s *RPCServer) GetHeight(ctx context.Context, void *VoidReq) (*HeightRes, e
 }
 
 // GetTxByHash ...
-func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*tx.TxRaw, error) {
+func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, error) {
 	if hash == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	txHash := hash.Hash
+	txHashBytes := common.Base58Decode(txHash)
 
-	trx, err := s.txdb.Get(txHash)
+	trx, err := s.txdb.GetTx(txHashBytes)
+
 	if err != nil {
 		return nil, err
 	}
-	txRaw := trx.ToTxRaw()
-	return txRaw, nil
+
+	return &TxRes{
+		TxRaw: trx.ToTxRaw(),
+		Hash:  trx.Hash(),
+	}, nil
 }
 
 // GetBlockByHash ...
@@ -105,17 +111,19 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 	}
 
 	hash := blkHashReq.Hash
+	hashBytes := common.Base58Decode(hash)
 	complete := blkHashReq.Complete
 
-	blk, _ := s.bchain.GetBlockByHash(hash)
+	blk, _ := s.bchain.GetBlockByHash(hashBytes)
 	if blk == nil {
-		blk, _ = s.bc.GetBlockByHash(hash)
+		blk, _ = s.bc.GetBlockByHash(hashBytes)
 	}
 	if blk == nil {
 		return nil, fmt.Errorf("cant find the block")
 	}
 	blkInfo := &BlockInfo{
 		Head:   blk.Head,
+		Hash:   blk.HeadHash(),
 		Txs:    make([]*tx.TxRaw, 0),
 		Txhash: make([][]byte, 0),
 	}
@@ -147,6 +155,7 @@ func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq)
 	}
 	blkInfo := &BlockInfo{
 		Head:   blk.Head,
+		Hash:   blk.HeadHash(),
 		Txs:    make([]*tx.TxRaw, 0),
 		Txhash: make([][]byte, 0),
 	}
@@ -198,7 +207,7 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	}
 	// add servi
 	//tx.RecordTx(trx, tx.Data.Self())
-	ilog.Info("the Tx is:\n%+v\n", trx)
+	ilog.Infof("the Tx is:\n%+v\n", trx)
 	ret := s.txpool.AddTx(&trx)
 	switch ret {
 	case txpool.TimeError:
@@ -212,7 +221,7 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	default:
 	}
 	res := SendRawTxRes{}
-	res.Hash = trx.Hash()
+	res.Hash = string(trx.Hash())
 	return &res, nil
 }
 

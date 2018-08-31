@@ -15,6 +15,8 @@
 package main
 
 import (
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -47,6 +49,7 @@ func initMetrics(metricsConfig *common.MetricsConfig) error {
 	if err != nil {
 		return err
 	}
+	metrics.SetID(metricsConfig.ID)
 	return metrics.Start()
 }
 
@@ -101,7 +104,6 @@ func main() {
 	conf := common.NewConfig(*configfile)
 
 	initLogger(conf.Log)
-
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
 
 	vm.SetUp(conf.VM)
@@ -124,12 +126,11 @@ func main() {
 	}
 	app = append(app, p2pService)
 
-	accSecKey := glb.Config().ACC.SecKey
+	accSecKey := conf.ACC.SecKey
 	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
 	if err != nil {
 		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
 	}
-	account.MainAccount = acc
 
 	blkCache, err := blockcache.NewBlockCache(glb)
 	if err != nil {
@@ -168,6 +169,10 @@ func main() {
 		ilog.Fatal("start iserver failed. err=%v", err)
 	}
 
+	if conf.Debug != nil {
+		startDebugServer(conf.Debug.ListenAddr)
+	}
+
 	waitExit()
 
 	app.Stop()
@@ -179,4 +184,13 @@ func waitExit() {
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	i := <-c
 	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
+}
+
+func startDebugServer(addr string) {
+	go func() {
+		err := http.ListenAndServe(addr, nil)
+		if err != nil {
+			ilog.Errorf("start debug server failed. err=%v", err)
+		}
+	}()
 }

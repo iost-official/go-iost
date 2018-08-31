@@ -1,11 +1,10 @@
 package pob
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/account"
-
 	"errors"
 	"time"
 
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
@@ -20,7 +19,6 @@ import (
 
 var (
 	errWitness     = errors.New("wrong witness")
-	errPubkey      = errors.New("wrong pubkey")
 	errSignature   = errors.New("wrong signature")
 	errSlot        = errors.New("witness slot duplicate")
 	errTxTooOld    = errors.New("tx too old")
@@ -30,7 +28,7 @@ var (
 )
 
 func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
-	ilog.Info("generateBlockstart")
+	ilog.Info("generate Block start")
 	blk := block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
@@ -63,37 +61,24 @@ L:
 	}
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
-	//headInfo := generateHeadInfo(blk.Head)
 	err := blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err
 	}
 	blk.Sign = account.Sign(crypto.Secp256k1, blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
-	generatedBlockCount.Inc()
-	txPoolSize.Set(float64(len(blk.Txs)))
+
+	metricsGeneratedBlockCount.Add(1, nil)
+	metricsTxSize.Set(float64(len(blk.Txs)), nil)
+
 	return &blk, nil
 }
-
-/*
-func generateHeadInfo(head *block.BlockHead) []byte {
-	info := block.Int64ToByte(head.Version)
-	info = append(info, head.ParentHash...)
-	info = append(info, head.TxsHash...)
-	info = append(info, head.MerkleHash...)
-	info = append(info, block.Int64ToByte(head.Number)...)
-	info = append(info, block.Int64ToByte(head.Time)...)
-	return common.Sha3(info)
-}
-*/
 
 func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	if witnessOfSlot(head.Time) != head.Witness {
 		return errWitness
 	}
-	//signature.Decode(Head.Signature)
 	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
-	//headInfo := generateHeadInfo(blk.Head)
 	hash, err := head.Hash()
 	if err != nil {
 		return errHeadHash
@@ -140,6 +125,8 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
 		go staticProperty.delSlot(confirmedNode.Block.Head.Time)
+
+		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
 	}
 }
 

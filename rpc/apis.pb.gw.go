@@ -53,7 +53,7 @@ func request_Apis_GetTxByHash_0(ctx context.Context, marshaler runtime.Marshaler
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "hash")
 	}
 
-	protoReq.Hash, err = runtime.Bytes(val)
+	protoReq.Hash, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "hash", err)
@@ -80,7 +80,7 @@ func request_Apis_GetBlockByHash_0(ctx context.Context, marshaler runtime.Marsha
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "hash")
 	}
 
-	protoReq.Hash, err = runtime.Bytes(val)
+	protoReq.Hash, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "hash", err)

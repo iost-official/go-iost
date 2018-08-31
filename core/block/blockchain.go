@@ -2,7 +2,6 @@ package block
 
 import (
 	"encoding/binary"
-	"sync"
 
 	"errors"
 	"fmt"
@@ -19,8 +18,6 @@ var (
 	blockLength       = []byte("BlockLength")
 	blockNumberPrefix = []byte("n")
 	blockPrefix       = []byte("H")
-	once              sync.Once
-	BC                Chain
 )
 
 func Int64ToByte(n int64) []byte {
@@ -33,22 +30,20 @@ func ByteToInt64(b []byte) int64 {
 	return int64(binary.LittleEndian.Uint64(b))
 }
 
-func NewBlockChainDB(path string) (Chain, error) {
-	var err error
-
-	levelDB, tempErr := db.NewLDB(path+"blockChainDB", 0, 0)
-	if tempErr != nil {
-		err = errors.New("fail to init blockchaindb")
+func NewBlockChain(path string) (Chain, error) {
+	levelDB, err := db.NewLDB(path, 0, 0)
+	if err != nil {
+		return nil, fmt.Errorf("fail to init blockchaindb, %v", err)
 	}
 	var length int64 = 0
-	ok, tempErr := levelDB.Has(blockLength)
-	if tempErr != nil {
-		err = errors.New("fail to check has(blocklength)")
+	ok, err := levelDB.Has(blockLength)
+	if err != nil {
+		return nil, fmt.Errorf("fail to check has(blocklength), %v", err)
 	}
 	if ok {
-		lengthByte, tempErr := levelDB.Get(blockLength)
-		if tempErr != nil {
-			err = errors.New("fail to get blocklength")
+		lengthByte, err := levelDB.Get(blockLength)
+		if err != nil {
+			return nil, errors.New("fail to get blocklength")
 		}
 		length = ByteToInt64(lengthByte)
 	} else {
@@ -58,9 +53,8 @@ func NewBlockChainDB(path string) (Chain, error) {
 			err = errors.New("fail to put blocklength")
 		}
 	}
-	BC = &BlockChain{levelDB, length}
+	BC := &BlockChain{levelDB, length}
 	BC.CheckLength()
-
 	return BC, err
 }
 
@@ -87,19 +81,16 @@ func (bc *BlockChain) Push(block *Block) error {
 	return nil
 }
 
-func (bc *BlockChain) CheckLength() error {
-	var err error = nil
+func (bc *BlockChain) CheckLength() {
 	for i := bc.length; i > 0; i-- {
-		_, err = bc.GetBlockByNumber(i - 1)
+		_, err := bc.GetBlockByNumber(i - 1)
 		if err != nil {
 			fmt.Println("fail to get the block")
-			err = errors.New("broken chain in blockChaindb")
 		}
 		bc.blockChainDB.Put(blockLength, Int64ToByte(i))
 		bc.length = i
 		break
 	}
-	return err
 }
 
 func (bc *BlockChain) Top() (*Block, error) {
