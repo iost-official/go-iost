@@ -762,6 +762,8 @@ class Contract {
 	requireAuth() {
 		var ok = BlockChain.requireAuth("haha")
 		_native_log(JSON.stringify(ok))
+		ok = BlockChain.requireAuth("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn")
+		_native_log(JSON.stringify(ok))
 		return ok
 	}
 }
@@ -879,19 +881,22 @@ func TestJS_Vote1(t *testing.T) {
 	}
 	js.FlushDB(t, keys)
 
-	// todo require auth
+	t.Log(js.vi.Balance(testID[18]))
 	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
 	js.FlushDB(t, keys)
 
-	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+	t.Log(js.vi.Balance(testID[18]))
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[2])))
 	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Stat", `[]`))
 
 	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber")))
 	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber"))))
 	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList")))
 	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList"))))
+
+	t.Log(js.vi.Balance(testID[18]))
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+	js.FlushDB(t, keys)
 }
 
 func TestJS_Vote(t *testing.T) {
@@ -910,6 +915,10 @@ func TestJS_Vote(t *testing.T) {
 	js.SetAPI("Vote", "string", "string", "number")
 	js.SetAPI("Unvote", "string", "string", "number")
 	js.SetAPI("Stat")
+	for i := 0; i <= 18; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	js.vi.Commit()
 	t.Log(js.DoSet())
 
 	keys := []string{
@@ -919,10 +928,6 @@ func TestJS_Vote(t *testing.T) {
 		"voteTable",
 	}
 	js.FlushDB(t, keys)
-
-	js.vi.SetBalance(testID[0], 5e+7)
-	js.vi.SetBalance(testID[2], 5e+7)
-	js.vi.Commit()
 
 	// test register, login, logout
 	t.Log(js.TestJS("LogOutProducer", `["a"]`))

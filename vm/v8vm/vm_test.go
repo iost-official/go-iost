@@ -121,6 +121,25 @@ func TestEngine_bigNumber(t *testing.T) {
 	}
 }
 
+func TestEngine_this(t *testing.T) {
+	host, code := MyInit(t, "this1")
+	vmPool.LoadAndCall(host, code, "constructor")
+	rs, _, err := vmPool.LoadAndCall(host, code, "setNum")
+
+	if err != nil {
+		t.Fatalf("LoadAndCall getVal error: %v\n", err)
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "getNum")
+	if err != nil {
+		t.Fatalf("LoadAndCall getVal error: %v\n", err)
+	}
+	t.Log(rs)
+	if len(rs) != 1 || rs[0].(string) != "99" {
+		t.Errorf("LoadAndCall except 99, got %s\n", rs[0])
+	}
+}
+
 // nolint
 func TestEngine_Storage(t *testing.T) {
 	host, code := MyInit(t, "storage1")

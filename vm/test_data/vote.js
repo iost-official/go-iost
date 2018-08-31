@@ -23,7 +23,7 @@ class VoteContract {
 		for (var i = 0; i < this.producerNumber; i++) {
 			var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
 			if (ret != 0) {
-				throw new Error("deposit failed. ret = " + ret);
+				throw new Error("constructor deposit failed. ret = " + ret);
 			}
 			this.producerTable[this.pendingProducerList[i]] = {
 				"loc": "",
@@ -38,7 +38,7 @@ class VoteContract {
 
 	_requireAuth(account) {
 		var ret = BlockChain.requireAuth(account);
-		if (ret !== 0) {
+		if (ret !== true) {
 			throw new Error("require auth failed. ret = " + ret);
 		}
 	}
@@ -54,13 +54,13 @@ class VoteContract {
 	// register account as a producer, need to pledge token
     RegisterProducer(account, loc, url, netId) {
 		this._requireAuth(account);
-		if (this.producerTable.hasOwnProperty(account)) {
+		if (this.producerTable.hasOwnProperty(account) !== false) {
 			throw new Error("producer exists");
 		}
-		var ret = BlockChain.deposit(account, this.producerRegisterFee);
-		if (ret != 0) {
-			throw new Error("deposit failed. ret = " + ret);
-		}
+		//var ret = BlockChain.deposit(account, this.producerRegisterFee);
+		//if (ret != 0) {
+		//	throw new Error("register deposit failed. ret = " + ret);
+		//}
 		this.producerTable[account] = {
 			"loc": loc,
 			"url": url,
@@ -74,7 +74,7 @@ class VoteContract {
 	// update the information of a producer
     UpdateProducer(account, loc, url, netId) {
 		this._requireAuth(account);
-		if (!this.producerTable.hasOwnProperty(account)) {
+		if (this.producerTable.hasOwnProperty(account) === false) {
 			throw new Error("producer not exists");
 		}
 		var pro = this.producerTable[account];
@@ -138,7 +138,7 @@ class VoteContract {
 
 		var ret = BlockChain.deposit(voter, amount);
 		if (ret != 0) {
-			throw new Error("deposit failed. ret = " + ret);
+			throw new Error("vote deposit failed. ret = " + ret);
 		}
 
 		if (!this.voteTable.hasOwnProperty(voter)) {
@@ -182,7 +182,6 @@ class VoteContract {
 			// if producer's votes < preProducerThreshold, then delete from preProducer map
 			if (ori >= this.preProducerThreshold && 
 					this.producerTable[producer].votes < this.preProducerThreshold) {
-				// todo cut down score?
 				this.preProducerMap[producer] = undefined;
 			}
 		}
@@ -201,28 +200,24 @@ class VoteContract {
 
 		// add scores for preProducerMap
 		var preList = [];	// list of producers whose vote > threshold
-		var that = this;
-		Object.keys(this.preProducerMap).forEach(function(key){
-			var pro = that.producerTable[key]
-			if (!that.pendingProducerList.includes(key) && pro.votes >= that.preProducerThreshold && pro.online === true) {
-				preList.push({
-					"key": key,
-					"votes": pro.votes,
-					"score": pro.score
-				});
-			}
-		});
+		for (var key in this.preProducerMap) {
+		    var pro = this.producerTable[key];
+            // don't get score if in pending producer list or offline
+		    if (!this.pendingProducerList.includes(key) && pro.votes >= this.preProducerThreshold && pro.online === true) {
+                preList.push({
+                    "key": key,
+                    "votes": pro.votes,
+                    "score": pro.score
+                });
+            }
+
+        }
 		for (var i = 0; i < preList.length; i++) {
 			var key = preList[i].key
-			// don't get score if in pending producer list
-			if (this.pendingProducerList.includes(key)) {
-				continue;
-			}
 			var delta = preList[i].votes - this.preProducerThreshold;
 			this.producerTable[key].score += delta;
 			preList[i].score += delta;
 		}
-		_native_log("pre list len = " + preList.length)
 
 		// sort according to score in reversed order
 		var scoreCmp = function(a, b) {
@@ -232,12 +227,14 @@ class VoteContract {
 
 		// update pending list
 		var replaceNum = Math.min(preList.length, Math.floor(this.producerNumber / 6));
-		var oldPreList = this.pendingProducerList.map(function(x){
+		var oldPreList = [];
+        for (let key in this.pendingProducerList) {
+		    var x = this.pendingProducerList[key];
 			return {
 				"key": x,
-				"score": that.producerTable[x].score
+				"score": this.producerTable[x].score
 			};
-		});
+		};
 		oldPreList.sort(scoreCmp);
 
 		// replace at most replaceNum producers
