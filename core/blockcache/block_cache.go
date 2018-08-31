@@ -8,21 +8,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/prometheus/client_golang/prometheus"
 )
-
-var (
-	blockCachedLength = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "block_cached_length",
-			Help: "Length of cached block chain",
-		},
-	)
-)
-
-func init() {
-	prometheus.MustRegister(blockCachedLength)
-}
 
 type CacheStatus int
 
@@ -158,8 +144,12 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 }
 
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
+	lib, err := baseVariable.BlockChain().Top()
+	if err != nil {
+		return nil, fmt.Errorf("BlockCahin Top Error")
+	}
 	bc := BlockCacheImpl{
-		linkedRoot:   NewBCN(nil, nil),
+		linkedRoot:   NewBCN(nil, lib),
 		singleRoot:   NewBCN(nil, nil),
 		hash2node:    new(sync.Map),
 		leaf:         make(map[*BlockCacheNode]int64),
@@ -168,14 +158,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	bc.linkedRoot.Type = Linked
 	bc.singleRoot.Type = Virtual
 	bc.head = bc.linkedRoot
-	lib, err := baseVariable.BlockChain().Top()
-	if err != nil {
-		return nil, fmt.Errorf("BlockCahin Top Error")
-	}
-	bc.linkedRoot.Block = lib
-	if lib != nil {
-		bc.hmset(lib.HeadHash(), bc.linkedRoot)
-	}
+	bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
 	return &bc, nil
 }
@@ -238,7 +221,9 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	fa := bcn.Parent
 	bcn.Parent = nil
-	bc.hmdel(bcn.Block.HeadHash())
+	if bcn.Block != nil {
+		bc.hmdel(bcn.Block.HeadHash())
+	}
 	if fa != nil {
 		fa.delChild(bcn)
 	}
@@ -289,12 +274,12 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		}
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
 		if err != nil {
+			ilog.Errorf("flush mvcc error: %v", err)
 			return err
 		}
-
-		err = bc.baseVariable.TxDB().Push(retain.Block.Txs)
+		err = bc.baseVariable.TxDB().Push(retain.Block.Txs, retain.Block.Receipts)
 		if err != nil {
-			ilog.Debugf("Database error, BlockChain Push err:%v", err)
+			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		bc.delNode(cur)
@@ -314,9 +299,8 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 	bcn, ok := bc.hmget(hash)
 	if !ok || bcn.Type == Virtual {
 		return nil, errors.New("block not found")
-	} else {
-		return bcn, nil
 	}
+	return bcn, nil
 }
 
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {

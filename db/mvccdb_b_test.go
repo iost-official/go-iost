@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+const (
+	MaxLen = 64
+)
+
 func BenchmarkMVCCDBPut(b *testing.B) {
 	rand.Seed(time.Now().UnixNano())
 
@@ -18,8 +22,8 @@ func BenchmarkMVCCDBPut(b *testing.B) {
 	keys := make([]string, b.N)
 	values := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
-		key := make([]byte, 32)
-		value := make([]byte, 32)
+		key := make([]byte, MaxLen)
+		value := make([]byte, MaxLen)
 		rand.Read(key)
 		rand.Read(value)
 		keys = append(keys, string(key))
@@ -48,8 +52,8 @@ func BenchmarkMVCCDBPutAndCommit(b *testing.B) {
 	keys := make([]string, b.N)
 	values := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
-		key := make([]byte, 32)
-		value := make([]byte, 32)
+		key := make([]byte, MaxLen)
+		value := make([]byte, MaxLen)
 		rand.Read(key)
 		rand.Read(value)
 		keys = append(keys, string(key))
@@ -81,8 +85,8 @@ func BenchmarkMVCCDBPutAndCommitAndFlush(b *testing.B) {
 	keys := make([]string, b.N)
 	values := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
-		key := make([]byte, 32)
-		value := make([]byte, 32)
+		key := make([]byte, MaxLen)
+		value := make([]byte, MaxLen)
 		rand.Read(key)
 		rand.Read(value)
 		keys = append(keys, string(key))
@@ -116,8 +120,8 @@ func BenchmarkMVCCDBGet(b *testing.B) {
 	keys := make([]string, b.N)
 	values := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
-		key := make([]byte, 32)
-		value := make([]byte, 32)
+		key := make([]byte, MaxLen)
+		value := make([]byte, MaxLen)
 		rand.Read(key)
 		rand.Read(value)
 		keys = append(keys, string(key))
@@ -126,6 +130,9 @@ func BenchmarkMVCCDBGet(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		mvccdb.Put("table01", keys[i], values[i])
+		if i%100 == 99 {
+			mvccdb.Commit()
+		}
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -149,8 +156,8 @@ func BenchmarkMVCCDBDel(b *testing.B) {
 	keys := make([]string, b.N)
 	values := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
-		key := make([]byte, 32)
-		value := make([]byte, 32)
+		key := make([]byte, MaxLen)
+		value := make([]byte, MaxLen)
 		rand.Read(key)
 		rand.Read(value)
 		keys = append(keys, string(key))

@@ -17,6 +17,11 @@ func SetPusher(addr string) error {
 	return defaultClient.SetPusher(addr)
 }
 
+// SetID sets the ID of metrics client.
+func SetID(id string) {
+	defaultClient.SetID(id)
+}
+
 // Start starts the pusher loop.
 func Start() error {
 	return defaultClient.Start()

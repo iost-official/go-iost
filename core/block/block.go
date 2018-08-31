@@ -2,12 +2,8 @@ package block
 
 import (
 	"errors"
-	"fmt"
-
-	"strconv"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/merkletree"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
@@ -20,39 +16,6 @@ type Block struct {
 	Sign     *crypto.Signature
 	Txs      []*tx.Tx
 	Receipts []*tx.TxReceipt
-}
-
-func GenGenesis(initTime int64) (*Block, error) {
-	//var code string
-	var acts []*tx.Action
-	for k, v := range account.GenesisAccount {
-		//code += fmt.Sprintf("@PutHM iost %v f%v\n", k, v)
-		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, k, strconv.FormatInt(v, 10)))
-		acts = append(acts, &act)
-	}
-
-	txn := tx.NewTx(acts, nil, 0, 0, 0)
-
-	act, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
-	if err != nil {
-		panic(err)
-	}
-
-	txn, err = tx.SignTx(txn, act)
-	if err != nil {
-		panic(err)
-	}
-	genesis := &Block{
-		Head: &BlockHead{
-			Version: 0,
-			Number:  0,
-			Time:    initTime,
-		},
-		Sign:     &crypto.Signature{},
-		Txs:      []*tx.Tx{&txn},
-		Receipts: make([]*tx.TxReceipt, 0),
-	}
-	return genesis, nil
 }
 
 func (b *Block) CalculateTxsHash() []byte {
@@ -69,6 +32,37 @@ func (b *Block) CalculateMerkleHash() []byte {
 	return m.RootHash()
 }
 
+func (b *Block) EncodeHead() ([]byte, error) {
+	signByte, err := b.Sign.Encode()
+	if err != nil {
+		return nil, errors.New("fail to encode sign")
+	}
+	br := &BlockHeadAndSign{
+		Head: b.Head,
+		Sign: signByte,
+	}
+	brByte, err := proto.Marshal(br)
+	if err != nil {
+		return nil, errors.New("fail to encode blockheadandsign")
+	}
+	return brByte, nil
+}
+
+func (b *Block) DecodeHead(blockByte []byte) error {
+	br := &BlockHeadAndSign{}
+	err := proto.Unmarshal(blockByte, br)
+	if err != nil {
+		return errors.New("fail to decode blockheadandsign")
+	}
+	b.Head = br.Head
+	b.Sign = &crypto.Signature{}
+	err = b.Sign.Decode(br.Sign)
+	if err != nil {
+		return errors.New("fail to decode signature")
+	}
+	return b.CalculateHeadHash()
+}
+
 func (b *Block) Encode() ([]byte, error) {
 	txs := make([][]byte, 0)
 	for _, t := range b.Txs {
@@ -79,6 +73,9 @@ func (b *Block) Encode() ([]byte, error) {
 		rpts = append(rpts, r.Encode())
 	}
 	signByte, err := b.Sign.Encode()
+	if err != nil {
+		return nil, errors.New("fail to encode sign")
+	}
 	br := &BlockRaw{
 		Head:     b.Head,
 		Sign:     signByte,
