@@ -348,6 +348,57 @@ module.exports = Contract;
 	}
 }
 
+func TestIntergration_CallJSCodeWithReceipt(t *testing.T) {
+	e, vi := ininit(t)
+
+	jshw := jsHelloWorld()
+	jsc := jsCallHelloWorldWithReceipt()
+
+	vi.SetContract(jshw)
+	vi.SetContract(jsc)
+
+	act := tx.NewAction("Contractcall_hello_world", "call_hello", fmt.Sprintf(`[]`))
+
+	trx, err := MakeTx(act)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(e.Exec(trx))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+}
+
+func jsCallHelloWorldWithReceipt() *contract.Contract {
+	return &contract.Contract{
+		ID: "Contractcall_hello_world",
+		Code: `
+class Contract {
+ constructor() {
+  
+ }
+ call_hello() {
+  return BlockChain.callWithReceipt("ContractjsHelloWorld", "hello", "[]")
+ }
+}
+
+module.exports = Contract;
+`,
+		Info: &contract.Info{
+			Lang:        "javascript",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				{
+					Name:     "call_hello",
+					Payment:  0,
+					GasPrice: int64(1),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				},
+			},
+		},
+	}
+}
+
 func TestIntergration_Payment_Success(t *testing.T) {
 	jshw := jsHelloWorld()
 	jshw.Info.Abis[0].Payment = 1
@@ -698,6 +749,29 @@ module.exports = Contract;
 	t.Log("receipt is ", r)
 
 	r = js.TestJS("txInfo", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+}
+
+func TestJSRequireAuth(t *testing.T) {
+
+	js := NewJSTester(t)
+	js.SetJS(`
+class Contract {
+	constructor() {
+	}
+	requireAuth() {
+		var ok = BlockChain.requireAuth("haha")
+		_native_log(JSON.stringify(ok))
+		return ok
+	}
+}
+
+module.exports = Contract;
+`)
+	js.SetAPI("requireAuth")
+	js.DoSet()
+
+	r := js.TestJS("requireAuth", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 }
 
