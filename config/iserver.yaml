@@ -37,5 +37,13 @@ log:
     level: "info"
     enable: true
   consoleLog:
-    level: "debug"
+    level: "info"
     enable: true
+
+metrics:
+  pushAddr: "47.75.42.25:9091"
+  enable: true
+  id: "10"
+
+debug:
+  listenAddr: "0.0.0.0:40303"

@@ -68,6 +68,7 @@ func (s *RPCServer) Start() error {
 
 	RegisterApisServer(server, s)
 	go server.Serve(lis)
+	ilog.Info("RPCServer Start")
 	return nil
 }
 
