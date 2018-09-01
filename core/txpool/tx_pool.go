@@ -360,6 +360,9 @@ func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 }
 
 func (pool *TxPoolImpl) clearBlock() {
+	if pool.global.Mode() == global.ModeFetchGenesis {
+		return
+	}
 	ft := pool.slotToNSec(pool.blockCache.LinkedRoot().Block.Head.Time) - filterTime
 
 	pool.blockList.Range(func(key, value interface{}) bool {
