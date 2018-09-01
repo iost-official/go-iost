@@ -2,6 +2,7 @@ package tx
 
 import (
 	"fmt"
+
 	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
@@ -25,22 +26,15 @@ var (
 	receiptPrefix     = []byte("r") // receiptPrefix + receipt hash -> receipt data
 )
 
-func NewTxDB(path string) TxDB {
-
-	txDb, err := db.NewLDB(path+"txDB", 0, 0)
+func NewTxDB(path string) (TxDB, error) {
+	ldb, err := db.NewLDB(path, 0, 0)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-
-	TxDBInst := &TxDBImpl{
-		txDB: txDb,
-	}
-
-	return TxDBInst
+	return &TxDBImpl{txDB: ldb}, nil
 }
 
 func (tdb *TxDBImpl) Push(txs []*Tx, receipts []*TxReceipt) error {
-
 	txBth := tdb.txDB.Batch()
 
 	for i, tx := range txs {
@@ -103,4 +97,8 @@ func (tdb *TxDBImpl) GetReceiptByTxHash(Hash []byte) (*TxReceipt, error) {
 func (tdb *TxDBImpl) HasReceipt(hash []byte) (bool, error) {
 
 	return tdb.txDB.Has(append(receiptPrefix, hash...))
+}
+
+func (tdb *TxDBImpl) Close() {
+	tdb.txDB.Close()
 }

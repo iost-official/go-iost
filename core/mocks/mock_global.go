@@ -7,9 +7,9 @@ package core_mock
 import (
 	gomock "github.com/golang/mock/gomock"
 	common "github.com/iost-official/Go-IOS-Protocol/common"
-	new_block "github.com/iost-official/Go-IOS-Protocol/core/block"
+	block "github.com/iost-official/Go-IOS-Protocol/core/block"
 	global "github.com/iost-official/Go-IOS-Protocol/core/global"
-	new_tx "github.com/iost-official/Go-IOS-Protocol/core/tx"
+	tx "github.com/iost-official/Go-IOS-Protocol/core/tx"
 	db "github.com/iost-official/Go-IOS-Protocol/db"
 	reflect "reflect"
 )
@@ -38,9 +38,9 @@ func (m *MockBaseVariable) EXPECT() *MockBaseVariableMockRecorder {
 }
 
 // BlockChain mocks base method
-func (m *MockBaseVariable) BlockChain() new_block.Chain {
+func (m *MockBaseVariable) BlockChain() block.Chain {
 	ret := m.ctrl.Call(m, "BlockChain")
-	ret0, _ := ret[0].(new_block.Chain)
+	ret0, _ := ret[0].(block.Chain)
 	return ret0
 }
 
@@ -62,15 +62,25 @@ func (mr *MockBaseVariableMockRecorder) Config() *gomock.Call {
 }
 
 // Mode mocks base method
-func (m *MockBaseVariable) Mode() *global.Mode {
+func (m *MockBaseVariable) Mode() global.TMode {
 	ret := m.ctrl.Call(m, "Mode")
-	ret0, _ := ret[0].(*global.Mode)
+	ret0, _ := ret[0].(global.TMode)
 	return ret0
 }
 
 // Mode indicates an expected call of Mode
 func (mr *MockBaseVariableMockRecorder) Mode() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Mode", reflect.TypeOf((*MockBaseVariable)(nil).Mode))
+}
+
+// SetMode mocks base method
+func (m *MockBaseVariable) SetMode(arg0 global.TMode) {
+	m.ctrl.Call(m, "SetMode", arg0)
+}
+
+// SetMode indicates an expected call of SetMode
+func (mr *MockBaseVariableMockRecorder) SetMode(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMode", reflect.TypeOf((*MockBaseVariable)(nil).SetMode), arg0)
 }
 
 // StateDB mocks base method
@@ -86,13 +96,25 @@ func (mr *MockBaseVariableMockRecorder) StateDB() *gomock.Call {
 }
 
 // TxDB mocks base method
-func (m *MockBaseVariable) TxDB() new_tx.TxDB {
+func (m *MockBaseVariable) TxDB() tx.TxDB {
 	ret := m.ctrl.Call(m, "TxDB")
-	ret0, _ := ret[0].(new_tx.TxDB)
+	ret0, _ := ret[0].(tx.TxDB)
 	return ret0
 }
 
 // TxDB indicates an expected call of TxDB
 func (mr *MockBaseVariableMockRecorder) TxDB() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxDB", reflect.TypeOf((*MockBaseVariable)(nil).TxDB))
+}
+
+// WitnessList mocks base method
+func (m *MockBaseVariable) WitnessList() []string {
+	ret := m.ctrl.Call(m, "WitnessList")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// WitnessList indicates an expected call of WitnessList
+func (mr *MockBaseVariableMockRecorder) WitnessList() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WitnessList", reflect.TypeOf((*MockBaseVariable)(nil).WitnessList))
 }

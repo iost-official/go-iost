@@ -16,19 +16,6 @@ import (
 	"strconv"
 )
 
-var (
-	blockCachedLength = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "block_cached_length",
-			Help: "Length of cached block chain",
-		},
-	)
-)
-
-func init() {
-	prometheus.MustRegister(blockCachedLength)
-}
-
 type CacheStatus int
 
 const (
@@ -198,6 +185,7 @@ func NewVirtualBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 
 type BlockCache interface {
 	Add(*block.Block) *BlockCacheNode
+	AddGenesis(*block.Block)
 	Link(*BlockCacheNode)
 	Del(*BlockCacheNode)
 	Flush(*BlockCacheNode)
@@ -243,7 +231,15 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	lib, err := baseVariable.BlockChain().Top()
 	if err != nil {
-		return nil, fmt.Errorf("BlockCahin Top Error")
+		bc := BlockCacheImpl{
+			singleRoot:   NewBCN(nil, nil),
+			hash2node:    new(sync.Map),
+			leaf:         make(map[*BlockCacheNode]int64),
+			baseVariable: baseVariable,
+		}
+		bc.singleRoot.Type = Virtual
+		//ilog.Errorf("get info from remote")
+		return &bc, nil
 	}
 
 	bc := BlockCacheImpl{
@@ -343,7 +339,6 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 		fa = NewVirtualBCN(bc.singleRoot, blk)
 		bc.hmset(blk.Head.ParentHash, fa)
 	}
-	//fa := IF(ok, parent, bc.singleRoot).(*BlockCacheNode)
 	if nok && newNode.Type == Virtual {
 		bc.singleRoot.delChild(newNode)
 		newNode.updateVirtualBCN(fa, blk)
@@ -359,6 +354,14 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 		}
 	}
 	return newNode
+}
+
+func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
+	bc.linkedRoot = NewBCN(nil, blk)
+	bc.linkedRoot.Type = Linked
+	bc.head = bc.linkedRoot
+	bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
+	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
 }
 
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
@@ -420,7 +423,6 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			ilog.Errorf("flush mvcc error: %v", err)
 			return err
 		}
-
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs, retain.Block.Receipts)
 		if err != nil {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)

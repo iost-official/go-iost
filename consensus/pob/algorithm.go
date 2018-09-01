@@ -1,11 +1,10 @@
 package pob
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/account"
-
 	"errors"
 	"time"
 
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
@@ -20,7 +19,6 @@ import (
 
 var (
 	errWitness     = errors.New("wrong witness")
-	errPubkey      = errors.New("wrong pubkey")
 	errSignature   = errors.New("wrong signature")
 	errSlot        = errors.New("witness slot duplicate")
 	errTxTooOld    = errors.New("tx too old")
@@ -29,7 +27,7 @@ var (
 	errHeadHash    = errors.New("wrong head hash")
 )
 
-func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+func generateBlock(account *account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	ilog.Info("generate Block start")
 	blk := block.Block{
 		Head: &block.BlockHead{
@@ -47,10 +45,12 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
+	ilog.Info(len(txsList))
 L:
 	for _, t := range txsList {
 		select {
 		case <-limitTime.C:
+			ilog.Info("time up")
 			break L
 		default:
 			if receipt, err := engine.Exec(t); err == nil {
@@ -69,8 +69,10 @@ L:
 	}
 	blk.Sign = account.Sign(crypto.Secp256k1, blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
-	generatedBlockCount.Inc()
-	txPoolSize.Set(float64(len(blk.Txs)))
+
+	metricsGeneratedBlockCount.Add(1, nil)
+	metricsTxSize.Set(float64(len(blk.Txs)), nil)
+
 	return &blk, nil
 }
 
@@ -122,9 +124,12 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
+	//bc.Flush(node) // in debug
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
 		go staticProperty.delSlot(confirmedNode.Block.Head.Time)
+
+		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
 	}
 }
 

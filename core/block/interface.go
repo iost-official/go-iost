@@ -6,7 +6,7 @@ package block
 type Chain interface {
 	Push(block *Block) error
 	Length() int64
-	CheckLength() error
+	CheckLength()
 	Top() (*Block, error)
 	GetHashByNumber(number int64) ([]byte, error)
 	GetBlockByNumber(number int64) (*Block, error)

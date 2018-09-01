@@ -1,5 +1,7 @@
 package v8
 
+import "C"
+
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
@@ -12,10 +14,13 @@ int goCountermand(SandboxPtr, const char *, const char *, const char *, size_t *
 int goBlockInfo(SandboxPtr, char **, size_t *);
 int goTxInfo(SandboxPtr, char **, size_t *);
 int goCall(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
+int goCallWithReceipt(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
+int goRequireAuth(SandboxPtr, const char *, bool *, size_t *);
 int goPut(SandboxPtr, const char *, const char *, size_t *);
 char *goGet(SandboxPtr, const char *, size_t *);
 int goDel(SandboxPtr, const char *, size_t *);
 char *goGlobalGet(SandboxPtr, const char *, const char *, size_t *);
+int goConsoleLog(SandboxPtr, const char *, const char *);
 */
 import "C"
 import (
@@ -38,7 +43,6 @@ type Sandbox struct {
 	context C.SandboxPtr
 	modules Modules
 	host    *host.Host
-	jsPath  string
 }
 
 var sbxMap = make(map[C.SandboxPtr]*Sandbox)
@@ -51,7 +55,11 @@ func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
 
 // NewSandbox generate new sandbox for VM and insert into sandbox map
 func NewSandbox(e *VM) *Sandbox {
+	cPath := C.CString(e.jsPath)
+	defer C.free(unsafe.Pointer(cPath))
 	cSbx := C.newSandbox(e.isolate)
+	C.setJSPath(cSbx, cPath)
+
 	s := &Sandbox{
 		isolate: e.isolate,
 		context: cSbx,
@@ -76,6 +84,7 @@ func (sbx *Sandbox) Release() {
 // Init add system functions
 func (sbx *Sandbox) Init() {
 	// init require
+	C.InitGoConsole((C.consoleFunc)(C.goConsoleLog))
 	C.InitGoRequire((C.requireFunc)(C.requireModule))
 	C.InitGoBlockchain((C.transferFunc)(C.goTransfer),
 		(C.withdrawFunc)(C.goWithdraw),
@@ -84,11 +93,14 @@ func (sbx *Sandbox) Init() {
 		(C.countermandFunc)(C.goCountermand),
 		(C.blockInfoFunc)(C.goBlockInfo),
 		(C.txInfoFunc)(C.goTxInfo),
-		(C.callFunc)(C.goCall))
+		(C.callFunc)(C.goCall),
+		(C.callFunc)(C.goCallWithReceipt),
+		(C.requireAuthFunc)(C.goRequireAuth))
 	C.InitGoStorage((C.putFunc)(C.goPut),
 		(C.getFunc)(C.goGet),
 		(C.delFunc)(C.goDel),
 		(C.globalGetFunc)(C.goGlobalGet))
+	C.loadVM(sbx.context)
 }
 
 // SetGasLimit set gas limit in context
@@ -111,11 +123,12 @@ func (sbx *Sandbox) SetModule(name, code string) {
 	sbx.modules.Set(m)
 }
 
-// SetJSPath set js path
+// SetJSPath set js path and ReloadVM
 func (sbx *Sandbox) SetJSPath(path string) {
-	sbx.jsPath = path
 	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
 	C.setJSPath(sbx.context, cPath)
+	C.loadVM(sbx.context)
 }
 
 // Prepare for contract, inject code

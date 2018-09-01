@@ -1,7 +1,6 @@
 package txpool
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
@@ -22,12 +22,11 @@ import (
 
 var (
 	dbPath1 = "txDB"
-	dbPath2 = "StatePoolDB"
-	dbPath3 = "blockChainDB"
+	dbPath2 = "StateDB"
+	dbPath3 = "BlockChainDB"
 )
 
 func TestNewTxPoolImpl(t *testing.T) {
-	//t.SkipNow()
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
 		p2pMock := p2p_mock.NewMockService(ctl)
@@ -36,18 +35,18 @@ func TestNewTxPoolImpl(t *testing.T) {
 		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
 		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
-		var accountList []account.Account
+		var accountList []*account.Account
 		var witnessList []string
-
+		var witnessInfo []string
 		acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 		newAccount, err := account.NewAccount(acc)
 		if err != nil {
 			panic("account.NewAccount error")
 		}
 		accountList = append(accountList, newAccount)
+		witnessInfo = append(witnessInfo, newAccount.ID)
+		witnessInfo = append(witnessInfo, "100000")
 		witnessList = append(witnessList, newAccount.ID)
-		//_accId := newAccount.ID
-
 		for i := 1; i < 3; i++ {
 			newAccount, err := account.NewAccount(nil)
 			if err != nil {
@@ -55,15 +54,16 @@ func TestNewTxPoolImpl(t *testing.T) {
 			}
 			accountList = append(accountList, newAccount)
 			witnessList = append(witnessList, newAccount.ID)
+			witnessInfo = append(witnessInfo, newAccount.ID)
+			witnessInfo = append(witnessInfo, "100000")
 		}
-
 		conf := &common.Config{
-			DB: &common.DBConfig{},
+			DB:      &common.DBConfig{},
+			Genesis: &common.GenesisConfig{CreateGenesis: true, WitnessInfo: witnessInfo},
 		}
-
 		gl, err := global.New(conf)
-		So(err, ShouldBeNil)
 
+		So(err, ShouldBeNil)
 		BlockCache, err := blockcache.NewBlockCache(gl)
 		So(err, ShouldBeNil)
 
@@ -82,9 +82,11 @@ func TestNewTxPoolImpl(t *testing.T) {
 			r = txPool.AddTx(t)
 			So(r, ShouldEqual, DupError)
 		})
+		time.Sleep(time.Second)
 		Convey("txTimeOut", func() {
 
 			t := genTx(accountList[0], expiration)
+
 			b := txPool.txTimeOut(t)
 			So(b, ShouldBeFalse)
 
@@ -97,9 +99,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 			t.Expiration -= int64(expiration * 3)
 			b = txPool.txTimeOut(t)
 			So(b, ShouldBeTrue)
-
 		})
-
 		Convey("delTimeOutTx", func() {
 
 			t := genTx(accountList[0], int64(30*time.Millisecond))
@@ -111,7 +111,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			txPool.clearTimeOutTx()
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-
 		})
 		Convey("ExistTxs FoundPending", func() {
 
@@ -127,7 +126,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 			txCnt := 10
 			b := genBlocks(accountList, witnessList, 1, txCnt, true)
-			//fmt.Println("FoundChain", b[0].HeadHash())
+			//ilog.Debug(("FoundChain", b[0].HeadHash())
 
 			bcn := blockcache.NewBCN(nil, b[0])
 			So(txPool.testBlockListNum(), ShouldEqual, 0)
@@ -153,7 +152,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 			t := genTx(accountList[0], expiration)
 			r1, _ := txPool.ExistTxs(t.Hash(), bcn.Block)
 			So(r1, ShouldEqual, NotFound)
-
 		})
 		Convey("delPending", func() {
 
@@ -207,7 +205,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 			}
 
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-
 		})
 		Convey("doChainChange", func() {
 
@@ -216,7 +213,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
 
 			for i := 0; i < blockCnt; i++ {
-				//fmt.Println("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
+				//ilog.Debug(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
 				bcn := BlockCache.Add(blockList[i])
 				So(bcn, ShouldNotBeNil)
 
@@ -226,7 +223,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 			forkBlockTxCnt := 6
 			forkBlock := genSingleBlock(accountList, witnessList, blockList[1].HeadHash(), forkBlockTxCnt)
-			//fmt.Println("Sing hash:", forkBlock.HeadHash(), " Sing parentHash:", forkBlock.Head.ParentHash)
+			//ilog.Debug(("Sing hash:", forkBlock.HeadHash(), " Sing parentHash:", forkBlock.Head.ParentHash)
 			bcn := BlockCache.Add(forkBlock)
 			So(bcn, ShouldNotBeNil)
 
@@ -460,10 +457,10 @@ func BenchmarkConcurrentVerifyTx(b *testing.B) {
 	stopTest(gl)
 }
 
-func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl, global.BaseVariable) {
+func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string, *TxPoolImpl, global.BaseVariable) {
 	//ctl := gomock.NewController(t)
 
-	var accountList []account.Account
+	var accountList []*account.Account
 	var witnessList []string
 
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
@@ -514,13 +511,13 @@ func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, 
 func stopTest(gl global.BaseVariable) {
 
 	gl.StateDB().Close()
-
+	gl.BlockChain().Close()
 	os.RemoveAll(dbPath1)
 	os.RemoveAll(dbPath2)
 	os.RemoveAll(dbPath3)
 }
 
-func genTx(a account.Account, expirationIter int64) *tx.Tx {
+func genTx(a *account.Account, expirationIter int64) *tx.Tx {
 	actions := make([]*tx.Action, 0)
 	actions = append(actions, &tx.Action{
 		Contract:   "contract1",
@@ -540,24 +537,24 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 
 	sig1, err := tx.SignTxContent(t, a)
 	if err != nil {
-		fmt.Println("failed to SignTxContent")
+		ilog.Debug("failed to SignTxContent")
 	}
 
-	t.Signs = append(t.Signs, &sig1)
+	t.Signs = append(t.Signs, sig1)
 
 	t1, err := tx.SignTx(t, a)
 	if err != nil {
-		fmt.Println("failed to SignTx")
+		ilog.Debug("failed to SignTx")
 	}
 
 	if err := t1.VerifySelf(); err != nil {
-		fmt.Println("failed to t.VerifySelf(), err", err)
+		ilog.Debug("failed to t.VerifySelf(), err", err)
 	}
 
-	return &t1
+	return t1
 }
 
-func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
+func genTxMsg(a *account.Account, expirationIter int64) *p2p.IncomingMessage {
 	t := genTx(a, expirationIter)
 
 	broadTx := p2p.NewIncomingMessage("test", t.Encode(), p2p.PublishTxRequest)
@@ -565,7 +562,7 @@ func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
 	return broadTx
 }
 
-func genBlocks(accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
+func genBlocks(accountList []*account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
 	slot := common.GetCurrentTimestamp().Slot
 	var hash []byte
@@ -603,7 +600,7 @@ func genBlocks(accountList []account.Account, witnessList []string, blockCnt int
 	return
 }
 
-func genNodes(accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) []*blockcache.BlockCacheNode {
+func genNodes(accountList []*account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) []*blockcache.BlockCacheNode {
 
 	var bcnList []*blockcache.BlockCacheNode
 
@@ -618,7 +615,7 @@ func genNodes(accountList []account.Account, witnessList []string, blockCnt int,
 	return bcnList
 }
 
-func genSingleBlock(accountList []account.Account, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
+func genSingleBlock(accountList []*account.Account, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
 
 	slot := common.GetCurrentTimestamp().Slot
 

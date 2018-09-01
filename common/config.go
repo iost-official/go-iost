@@ -13,6 +13,12 @@ type ACCConfig struct {
 	SecKey string
 }
 
+type GenesisConfig struct {
+	CreateGenesis bool
+	GenesisHash   string
+	WitnessInfo	  []string
+}
+
 type DBConfig struct {
 	LdbPath string
 }
@@ -60,17 +66,25 @@ type LogConfig struct {
 type MetricsConfig struct {
 	PushAddr string
 	Enable   bool
+	ID       string
+}
+
+// DebugConfig is the config of debug.
+type DebugConfig struct {
+	ListenAddr string
 }
 
 // Config provide all configuration for the application
 type Config struct {
 	ACC     *ACCConfig
+	Genesis *GenesisConfig
 	VM      *VMConfig
 	DB      *DBConfig
 	P2P     *P2PConfig
 	RPC     *RPCConfig
 	Log     *LogConfig
 	Metrics *MetricsConfig
+	Debug   *DebugConfig
 }
 
 // NewConfig returns a new instance of Config
