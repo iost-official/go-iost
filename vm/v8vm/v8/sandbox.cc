@@ -145,7 +145,8 @@ void releaseSandbox(SandboxPtr ptr) {
 
 void setJSPath(SandboxPtr ptr, const char *jsPath) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
-    free((char *)sbx->jsPath);
+    if ((sbx->jsPath != nullptr)
+        free((char *)sbx->jsPath);
     sbx->jsPath = strdup(jsPath);
 }
 

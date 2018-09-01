@@ -250,15 +250,15 @@ func goCallWithReceipt(cSbx C.SandboxPtr, contract, api, args *C.char, result **
 }
 
 //export goRequireAuth
-func goRequireAuth(cSbx C.SandboxPtr, pubkey *C.char, ok *C.bool, gasUsed *C.size_t) int {
+func goRequireAuth(cSbx C.SandboxPtr, pubKey *C.char, ok *C.bool, gasUsed *C.size_t) int {
 	sbx, sbOk := GetSandbox(cSbx)
 	if !sbOk {
 		return ApiCallUnexpectedError
 	}
 
-	pubkeyStr := C.GoString(pubkey)
+	pubKeyStr := C.GoString(pubKey)
 
-	callOk, RequireAuthCost := sbx.host.APIDelegate.RequireAuth(pubkeyStr)
+	callOk, RequireAuthCost := sbx.host.APIDelegate.RequireAuth(pubKeyStr)
 
 	*ok = C.bool(callOk)
 	if callOk != true {

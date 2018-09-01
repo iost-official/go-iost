@@ -4,7 +4,7 @@ let utils = require('utils');
 
 class Console {
     _format(...args) {
-        let formatStr = utils(...args);
+        let formatStr = utils.format(...args);
         return formatStr;
     }
 

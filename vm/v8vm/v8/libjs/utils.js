@@ -7,17 +7,13 @@ function format(...args) {
 
 function formatWithOptions(inspectOptions, f) {
     let i, tempStr;
-    _native_log(JSON.stringify(f))
     if (typeof f !== 'string') {
-        if (arguments.length === 1) return '';
-        let res = '';
-        for (i = 1; i < arguments.length - 1; i++) {
-            _native_log(JSON.stringify(arguments[i]))
-            res += inspect(arguments[i], inspectOptions);
-            res += ' ';
+        let args = Array.from(arguments);
+        args.shift();
+        if (args.length === 1) {
+            return JSON.stringify(args[0])
         }
-        res += inspect(arguments[i], inspectOptions);
-        return res;
+        return JSON.stringify(args);
     }
 
     if (arguments.length === 2) return f;
@@ -33,25 +29,17 @@ function formatWithOptions(inspectOptions, f) {
                     case 115: // 's'
                         tempStr = String(arguments[a++]);
                         break;
-                    case 106: // 'j'
-                        tempStr = tryStringify(arguments[a++]);
-                        break;
                     case 100: // 'd'
-                        tempStr = `${Number(arguments[a++])}`;
+                        let curr = arguments[a++];
+                        if (curr instanceof Int64 || curr instanceof BigNumber) {
+                            tempStr = `${curr.toString()}`
+                        } else {
+                            tempStr = `${Number(arguments[a++])}`;
+                        }
                         break;
-                    case 79: // 'O'
-                        tempStr = inspect(arguments[a++], inspectOptions);
+                    case 118: // 'v'
+                        tempStr = JSON.stringify(arguments[a++]);
                         break;
-                    case 111: // 'o'
-                    {
-                        const opts = Object.assign({}, inspectOptions, {
-                            showHidden: true,
-                            showProxy: true,
-                            depth: 4
-                        });
-                        tempStr = inspect(arguments[a++], opts);
-                        break;
-                    }
                     case 105: // 'i'
                         tempStr = `${parseInt(arguments[a++])}`;
                         break;
@@ -84,58 +72,12 @@ function formatWithOptions(inspectOptions, f) {
         if ((typeof x !== 'object' && typeof x !== 'symbol') || x === null) {
             str += ` ${x}`;
         } else {
-            str += ` ${inspect(x, inspectOptions)}`;
+            str += ` ${JSON.stringify(x)}`;
         }
     }
     return str;
 }
 
-/**
- * Echos the value of any input. Tries to print the value out
- * in the best way possible given the different types.
- *
- * @param {any} value The value to print out.
- * @param {Object} opts Optional options object that alters the output.
- */
-/* Legacy: value, showHidden, depth, colors */
-function inspect(value, opts) {
-    // Default options
-    const ctx = {
-        seen: [],
-        stylize: stylizeNoColor,
-        showHidden: inspectDefaultOptions.showHidden,
-        depth: inspectDefaultOptions.depth,
-        colors: inspectDefaultOptions.colors,
-        customInspect: inspectDefaultOptions.customInspect,
-        showProxy: inspectDefaultOptions.showProxy,
-        // TODO(BridgeAR): Deprecate `maxArrayLength` and replace it with
-        // `maxEntries`.
-        maxArrayLength: inspectDefaultOptions.maxArrayLength,
-        breakLength: inspectDefaultOptions.breakLength,
-        indentationLvl: 0,
-        compact: inspectDefaultOptions.compact
-    };
-    // Legacy...
-    if (arguments.length > 2) {
-        if (arguments[2] !== undefined) {
-            ctx.depth = arguments[2];
-        }
-        if (arguments.length > 3 && arguments[3] !== undefined) {
-            ctx.colors = arguments[3];
-        }
-    }
-    // Set user-specified options
-    if (typeof opts === 'boolean') {
-        ctx.showHidden = opts;
-    } else if (opts) {
-        const optKeys = Object.keys(opts);
-        for (var i = 0; i < optKeys.length; i++) {
-            ctx[optKeys[i]] = opts[optKeys[i]];
-        }
-    }
-    if (ctx.colors) ctx.stylize = stylizeWithColor;
-    if (ctx.maxArrayLength === null) ctx.maxArrayLength = Infinity;
-    return formatValue(ctx, value, ctx.depth);
-}
-
-module.exports = format;
+module.exports = {
+    format: format
+};

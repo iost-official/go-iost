@@ -4,7 +4,8 @@ class console1 {
     }
 
     log() {
-        console.log("%s: %d", 'hello', 123);
+        let a = new Int64("12345567");
+        console.log("%s: %d", 'hello', a);
     }
 }
 

@@ -7,6 +7,8 @@ import (
 
 	"os"
 
+	"reflect"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -326,6 +328,57 @@ class Contract {
  }
  call_hello() {
   return BlockChain.call("ContractjsHelloWorld", "hello", "[]")
+ }
+}
+
+module.exports = Contract;
+`,
+		Info: &contract.Info{
+			Lang:        "javascript",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				{
+					Name:     "call_hello",
+					Payment:  0,
+					GasPrice: int64(1),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				},
+			},
+		},
+	}
+}
+
+func TestIntergration_CallJSCodeWithReceipt(t *testing.T) {
+	e, vi := ininit(t)
+
+	jshw := jsHelloWorld()
+	jsc := jsCallHelloWorldWithReceipt()
+
+	vi.SetContract(jshw)
+	vi.SetContract(jsc)
+
+	act := tx.NewAction("Contractcall_hello_world", "call_hello", fmt.Sprintf(`[]`))
+
+	trx, err := MakeTx(act)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(e.Exec(trx))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+}
+
+func jsCallHelloWorldWithReceipt() *contract.Contract {
+	return &contract.Contract{
+		ID: "Contractcall_hello_world",
+		Code: `
+class Contract {
+ constructor() {
+  
+ }
+ call_hello() {
+  return BlockChain.callWithReceipt("ContractjsHelloWorld", "hello", "[]")
  }
 }
 
@@ -700,6 +753,31 @@ module.exports = Contract;
 	t.Log("receipt is ", r)
 }
 
+func TestJSRequireAuth(t *testing.T) {
+
+	js := NewJSTester(t)
+	js.SetJS(`
+class Contract {
+	constructor() {
+	}
+	requireAuth() {
+		var ok = BlockChain.requireAuth("haha")
+		_native_log(JSON.stringify(ok))
+		ok = BlockChain.requireAuth("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn")
+		_native_log(JSON.stringify(ok))
+		return ok
+	}
+}
+
+module.exports = Contract;
+`)
+	js.SetAPI("requireAuth")
+	js.DoSet()
+
+	r := js.TestJS("requireAuth", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+}
+
 func TestJS_Database(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
@@ -751,6 +829,8 @@ func TestJS_LuckyBet(t *testing.T) {
 	js.SetAPI("bet", "string", "number", "number")
 	js.SetAPI("getReward")
 	js.DoSet()
+
+	// here put the first bet
 	r := js.TestJS("bet", fmt.Sprintf(`["%v",0, 2]`, testID[0]))
 	t.Log("receipt is ", r)
 	t.Log("max user number ", js.ReadDB("maxUserNumber"))
@@ -758,7 +838,7 @@ func TestJS_LuckyBet(t *testing.T) {
 	t.Log("total coins ", js.ReadDB("totalCoins"))
 	t.Log("table should be saved ", js.ReadDB("table0"))
 
-	for i := 1; i < 10; i++ {
+	for i := 1; i < 3; i++ { // at i = 2, should get reward
 		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v, %v]`, testID[0], i, i%4+1))
 		if r.Status.Code != 0 {
 			t.Fatal(r)
@@ -768,7 +848,67 @@ func TestJS_LuckyBet(t *testing.T) {
 	t.Log("user count ", js.ReadDB("userNumber"))
 	t.Log("total coins ", js.ReadDB("totalCoins"))
 	t.Log("tables", js.ReadDB("tables"))
-	t.Log("result is ", js.ReadDB("result1"))
+	t.Log("result 0 is ", js.ReadDB("result0"))
+	t.Log("round is ", js.ReadDB("round"))
+	for i := 3; i < 6; i++ { // at i = 6, should get reward 2nd times
+		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v, %v]`, testID[0], i, i%4+1))
+		if r.Status.Code != 0 {
+			t.Fatal(r)
+		}
+	}
+	t.Log("round is ", js.ReadDB("round"))
+
+}
+
+func TestJS_Vote1(t *testing.T) {
+	js := NewJSTester(t)
+	defer js.Clear()
+	lc, err := ReadFile("test_data/vote.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
+	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
+	js.SetAPI("LogInProducer", "string")
+	js.SetAPI("LogOutProducer", "string")
+	js.SetAPI("UnregisterProducer", "string")
+	js.SetAPI("Vote", "string", "string", "number")
+	js.SetAPI("Unvote", "string", "string", "number")
+	js.SetAPI("Stat")
+	for i := 0; i <= 18; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	js.vi.Commit()
+	t.Log(js.DoSet())
+	for i := 6; i <= 18; i += 2 {
+		t.Log(js.vi.Balance(testID[i]))
+	}
+
+	keys := []string{
+		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
+		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
+		"producerTable",
+		"voteTable",
+	}
+	js.FlushDB(t, keys)
+
+	t.Log(js.vi.Balance(testID[18]))
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+	js.FlushDB(t, keys)
+
+	t.Log(js.vi.Balance(testID[18]))
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[2])))
+	js.FlushDB(t, keys)
+
+	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber")))
+	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber"))))
+	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList")))
+	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList"))))
+
+	t.Log(js.vi.Balance(testID[18]))
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+	js.FlushDB(t, keys)
 }
 
 func TestJS_Vote(t *testing.T) {
@@ -787,19 +927,19 @@ func TestJS_Vote(t *testing.T) {
 	js.SetAPI("Vote", "string", "string", "number")
 	js.SetAPI("Unvote", "string", "string", "number")
 	js.SetAPI("Stat")
+	for i := 0; i <= 18; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	js.vi.Commit()
 	t.Log(js.DoSet())
 
 	keys := []string{
 		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
-		"voteLockTime", "currentProducerList", "pendingProducerList",
+		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
 		"producerTable",
 		"voteTable",
 	}
 	js.FlushDB(t, keys)
-
-	js.vi.SetBalance(testID[0], 5e+7)
-	js.vi.SetBalance(testID[2], 5e+7)
-	js.vi.Commit()
 
 	// test register, login, logout
 	t.Log(js.TestJS("LogOutProducer", `["a"]`))
