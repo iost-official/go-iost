@@ -7,6 +7,8 @@ import (
 
 	"os"
 
+	"reflect"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -18,7 +20,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
-	"reflect"
 )
 
 var testID = []string{
@@ -828,6 +829,8 @@ func TestJS_LuckyBet(t *testing.T) {
 	js.SetAPI("bet", "string", "number", "number")
 	js.SetAPI("getReward")
 	js.DoSet()
+
+	// here put the first bet
 	r := js.TestJS("bet", fmt.Sprintf(`["%v",0, 2]`, testID[0]))
 	t.Log("receipt is ", r)
 	t.Log("max user number ", js.ReadDB("maxUserNumber"))
@@ -835,7 +838,7 @@ func TestJS_LuckyBet(t *testing.T) {
 	t.Log("total coins ", js.ReadDB("totalCoins"))
 	t.Log("table should be saved ", js.ReadDB("table0"))
 
-	for i := 1; i < 10; i++ {
+	for i := 1; i < 3; i++ { // at i = 2, should get reward
 		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v, %v]`, testID[0], i, i%4+1))
 		if r.Status.Code != 0 {
 			t.Fatal(r)
@@ -845,7 +848,16 @@ func TestJS_LuckyBet(t *testing.T) {
 	t.Log("user count ", js.ReadDB("userNumber"))
 	t.Log("total coins ", js.ReadDB("totalCoins"))
 	t.Log("tables", js.ReadDB("tables"))
-	t.Log("result is ", js.ReadDB("result1"))
+	t.Log("result 0 is ", js.ReadDB("result0"))
+	t.Log("round is ", js.ReadDB("round"))
+	for i := 3; i < 6; i++ { // at i = 6, should get reward 2nd times
+		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v, %v]`, testID[0], i, i%4+1))
+		if r.Status.Code != 0 {
+			t.Fatal(r)
+		}
+	}
+	t.Log("round is ", js.ReadDB("round"))
+
 }
 
 func TestJS_Vote1(t *testing.T) {
