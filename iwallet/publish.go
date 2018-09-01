@@ -88,7 +88,7 @@ var publishCmd = &cobra.Command{
 			return
 		}
 
-		stx, err := tx.SignTx(mtx, acc, signs...)
+		stx, err := tx.SignTx(&mtx, acc, signs...)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -137,7 +137,7 @@ func init() {
 	// publishCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func sendTx(stx tx.Tx) ([]byte, error) {
+func sendTx(stx *tx.Tx) ([]byte, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err

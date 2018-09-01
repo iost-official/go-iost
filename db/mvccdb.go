@@ -288,6 +288,9 @@ func (m *CacheMVCCDB) Fork() MVCCDB {
 
 func (m *CacheMVCCDB) Flush(t string) error {
 	trie := m.tags[t]
+	if trie == nil {
+		return nil
+	}
 
 	if err := m.storage.BeginBatch(); err != nil {
 		return err

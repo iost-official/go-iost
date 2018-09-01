@@ -32,7 +32,7 @@ var blockReqTimeout = 3 * time.Second
 
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
-	account         account.Account
+	account         *account.Account
 	baseVariable    global.BaseVariable
 	blockChain      block.Chain
 	blockCache      blockcache.BlockCache
@@ -50,7 +50,7 @@ type PoB struct {
 }
 
 // NewPoB init a new PoB.
-func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) *PoB {
+func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) *PoB {
 	p := PoB{
 		account:         account,
 		baseVariable:    baseVariable,
