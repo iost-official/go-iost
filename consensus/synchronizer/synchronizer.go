@@ -211,7 +211,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 		node := sy.blockCache.Head()
 
 		var end = rh.End
-		if end > node.Number {
+		if node != nil && end > node.Number {
 			end = node.Number
 		}
 
