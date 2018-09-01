@@ -36,7 +36,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &trx, nil
+	return trx, nil
 }
 
 func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
@@ -129,7 +129,7 @@ func TestConfirmNode(t *testing.T) {
 
 func TestNodeInfoUpdate(t *testing.T) {
 	convey.Convey("Test of node info update", t, func() {
-		staticProperty = newStaticProperty(account.Account{ID: "id0"}, []string{"id0", "id1", "id2"})
+		staticProperty = newStaticProperty(&account.Account{ID: "id0"}, []string{"id0", "id1", "id2"})
 		rootNode := &blockcache.BlockCacheNode{
 			Number:   1,
 			Witness:  "id0",

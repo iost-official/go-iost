@@ -70,7 +70,7 @@ var publishCmd = &cobra.Command{
 				fmt.Println("Error: Illegal sig file", err)
 				return
 			}
-			if !mtx.VerifySigner(sign) {
+			if !mtx.VerifySigner(&sign) {
 				fmt.Printf("Error: Sign %v wrong\n", v)
 				return
 			}

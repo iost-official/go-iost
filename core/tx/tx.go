@@ -18,7 +18,7 @@ import (
 
 // Tx Transaction structure
 type Tx struct {
-	hash       []byte              `json:"-"`
+	hash       []byte
 	Time       int64               `json:"time,string"`
 	Expiration int64               `json:"expiration,string"`
 	GasLimit   int64               `json:"gas_limit,string"`
@@ -45,7 +45,7 @@ func NewTx(actions []*Action, signers [][]byte, gasLimit int64, gasPrice int64, 
 }
 
 // SignTxContent sign tx content, only signers should do this
-func SignTxContent(tx Tx, account *account.Account) (*crypto.Signature, error) {
+func SignTxContent(tx *Tx, account *account.Account) (*crypto.Signature, error) {
 	if !tx.containSigner(account.Pubkey) {
 		return nil, errors.New("account not included in signer list of this transaction")
 	}
@@ -91,6 +91,7 @@ func SignTx(tx *Tx, account *account.Account, signs ...*crypto.Signature) (*Tx, 
 
 	sig := account.Sign(crypto.Secp256k1, tx.publishHash())
 	tx.Publisher = sig
+	tx.hash = nil
 	return tx, nil
 }
 
@@ -259,6 +260,6 @@ func (t *Tx) VerifySelf() error {
 }
 
 // VerifySigner verify signer's signature
-func (t *Tx) VerifySigner(sig crypto.Signature) bool {
+func (t *Tx) VerifySigner(sig *crypto.Signature) bool {
 	return sig.Verify(t.baseHash())
 }

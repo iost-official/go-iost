@@ -30,7 +30,7 @@ func TestTxDb(t *testing.T) {
 		tx2 := NewTx([]*Action{}, [][]byte{a1.Pubkey}, 88888, 22, 11)
 		var txs []*Tx
 		txs = make([]*Tx, 0)
-		txs = append(txs, &tx1)
+		txs = append(txs, tx1)
 
 		re1 := NewTxReceipt(tx1.Hash())
 		re2 := NewTxReceipt(tx2.Hash())
