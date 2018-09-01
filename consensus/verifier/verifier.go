@@ -27,7 +27,7 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 	if bh.Time > time.Now().Unix()/common.SlotLength+1 {
 		return errFutureBlk
 	}
-	if bh.Time <= lib.Head.Time {
+	if bh.Time < lib.Head.Time {
 		return errOldBlk
 	}
 	if !bytes.Equal(bh.ParentHash, parentBlock.HeadHash()) {
