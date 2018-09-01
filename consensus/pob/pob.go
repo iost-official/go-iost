@@ -78,7 +78,7 @@ type PoB struct {
 }
 
 // NewPoB init a new PoB.
-func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) *PoB {
+func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer) *PoB {
 	p := PoB{
 		account:         account,
 		baseVariable:    baseVariable,
@@ -96,7 +96,8 @@ func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCach
 		chQueryBlock:    p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		chGenBlock:      make(chan *block.Block, 10),
 	}
-	staticProperty = newStaticProperty(p.account, witnessList)
+
+	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
 	return &p
 }
 
@@ -344,5 +345,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
 	updateLib(node, p.blockCache)
+	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	p.txPool.AddLinkedNode(node, p.blockCache.Head())
 }

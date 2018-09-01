@@ -157,7 +157,7 @@ func main() {
 
 	consensus, err := consensus.Factory(
 		"pob",
-		acc, glb, blkCache, txp, p2pService, sync, account.WitnessList) //witnessList)
+		acc, glb, blkCache, txp, p2pService, sync) //witnessList)
 	if err != nil {
 		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}

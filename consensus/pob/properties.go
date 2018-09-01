@@ -21,16 +21,15 @@ type StaticProperty struct {
 
 func newStaticProperty(account account.Account, witnessList []string) *StaticProperty {
 	property := &StaticProperty{
-		account:           account,
-		NumberOfWitnesses: int64(len(witnessList)),
-		WitnessList:       witnessList,
-		WitnessMap:        make(map[string]int64),
-		Watermark:         make(map[string]int64),
-		SlotMap:           new(sync.Map),
+		account:     account,
+		WitnessList: make([]string, 0),
+		WitnessMap:  make(map[string]int64),
+		Watermark:   make(map[string]int64),
+		SlotMap:     new(sync.Map),
 	}
-	for i, w := range witnessList {
-		property.WitnessMap[w] = int64(i)
-	}
+
+	property.updateWitness(witnessList)
+
 	return property
 }
 
@@ -54,6 +53,21 @@ func (property *StaticProperty) delSlot(slot int64) {
 		}
 		return true
 	})
+}
+
+func (property *StaticProperty) updateWitness(witnessList []string) {
+
+	property.NumberOfWitnesses = int64(len(witnessList))
+	property.WitnessList = witnessList
+
+	for k := range property.WitnessMap {
+		delete(property.WitnessMap, k)
+	}
+
+	for i, w := range witnessList {
+		property.WitnessMap[w] = int64(i)
+	}
+
 }
 
 var (
