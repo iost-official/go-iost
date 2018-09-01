@@ -11,7 +11,7 @@ var staticProperty *StaticProperty
 
 // StaticProperty handles the the static property of pob.
 type StaticProperty struct {
-	account           account.Account
+	account           *account.Account
 	NumberOfWitnesses int64
 	WitnessList       []string
 	WitnessMap        map[string]int64
@@ -19,7 +19,7 @@ type StaticProperty struct {
 	SlotMap           *sync.Map
 }
 
-func newStaticProperty(account account.Account, witnessList []string) *StaticProperty {
+func newStaticProperty(account *account.Account, witnessList []string) *StaticProperty {
 	property := &StaticProperty{
 		account:           account,
 		NumberOfWitnesses: int64(len(witnessList)),

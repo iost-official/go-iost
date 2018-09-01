@@ -135,7 +135,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &trx, nil
+	return trx, nil
 }
 
 func TestIntergration_Transfer(t *testing.T) {
@@ -156,7 +156,7 @@ func TestIntergration_Transfer(t *testing.T) {
 	}
 
 	t.Log("trasfer succes case:")
-	t.Log(e.Exec(&trx))
+	t.Log(e.Exec(trx))
 	t.Log("balance of sender :", vi.Balance(testID[0]))
 	t.Log("balance of receiver :", vi.Balance(testID[2]))
 
@@ -168,7 +168,7 @@ func TestIntergration_Transfer(t *testing.T) {
 	}
 
 	t.Log("trasfer not enough balance case:")
-	t.Log(e.Exec(&trx2))
+	t.Log(e.Exec(trx2))
 	t.Log("balance of sender :", vi.Balance(testID[0]))
 	t.Log("balance of receiver :", vi.Balance(testID[2]))
 }
@@ -179,7 +179,7 @@ func jsHelloWorld() *contract.Contract {
 		Code: `
 class Contract {
  constructor() {
-  
+
  }
  hello() {
   return "world";
@@ -324,7 +324,7 @@ func jsCallHelloWorld() *contract.Contract {
 		Code: `
 class Contract {
  constructor() {
-  
+
  }
  call_hello() {
   return BlockChain.call("ContractjsHelloWorld", "hello", "[]")
@@ -728,13 +728,13 @@ class Contract {
 	}
 	blockInfo() {
 		var info = BlockChain.blockInfo()
-		var obj = JSON.parse(info)	
+		var obj = JSON.parse(info)
 		_native_log(obj["parent_hash"])
 		return obj["parent_hash"]
 	}
 	txInfo() {
 		var info = BlockChain.txInfo()
-		var obj = JSON.parse(info)	
+		var obj = JSON.parse(info)
 		_native_log(obj["hash"])
 		return obj["hash"]
 	}

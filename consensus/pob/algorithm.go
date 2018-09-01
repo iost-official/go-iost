@@ -27,7 +27,7 @@ var (
 	errHeadHash    = errors.New("wrong head hash")
 )
 
-func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+func generateBlock(account *account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	ilog.Info("generate Block start")
 	blk := block.Block{
 		Head: &block.BlockHead{
@@ -45,10 +45,12 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
+	ilog.Info(len(txsList))
 L:
 	for _, t := range txsList {
 		select {
 		case <-limitTime.C:
+			ilog.Info("time up")
 			break L
 		default:
 			if receipt, err := engine.Exec(t); err == nil {
@@ -122,9 +124,9 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
-	bc.Flush(node) // in debug
+	//bc.Flush(node) // in debug
 	if confirmedNode != nil {
-		//bc.Flush(confirmedNode)
+		bc.Flush(confirmedNode)
 		go staticProperty.delSlot(confirmedNode.Block.Head.Time)
 
 		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)

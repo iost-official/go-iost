@@ -18,7 +18,7 @@ import (
 
 // Tx Transaction structure
 type Tx struct {
-	hash       []byte              `json:"-"`
+	hash       []byte
 	Time       int64               `json:"time,string"`
 	Expiration int64               `json:"expiration,string"`
 	GasLimit   int64               `json:"gas_limit,string"`
@@ -30,9 +30,9 @@ type Tx struct {
 }
 
 // NewTx return a new Tx
-func NewTx(actions []*Action, signers [][]byte, gasLimit int64, gasPrice int64, expiration int64) Tx {
+func NewTx(actions []*Action, signers [][]byte, gasLimit int64, gasPrice int64, expiration int64) *Tx {
 	now := time.Now().UnixNano()
-	return Tx{
+	return &Tx{
 		Time:       now,
 		Actions:    actions,
 		Signers:    signers,
@@ -45,11 +45,11 @@ func NewTx(actions []*Action, signers [][]byte, gasLimit int64, gasPrice int64, 
 }
 
 // SignTxContent sign tx content, only signers should do this
-func SignTxContent(tx Tx, account account.Account) (crypto.Signature, error) {
+func SignTxContent(tx *Tx, account *account.Account) (*crypto.Signature, error) {
 	if !tx.containSigner(account.Pubkey) {
-		return crypto.Signature{}, errors.New("account not included in signer list of this transaction")
+		return nil, errors.New("account not included in signer list of this transaction")
 	}
-	return *account.Sign(crypto.Secp256k1, tx.baseHash()), nil
+	return account.Sign(crypto.Secp256k1, tx.baseHash()), nil
 }
 
 func (t *Tx) containSigner(pubkey []byte) bool {
@@ -86,11 +86,12 @@ func (t *Tx) baseHash() []byte {
 }
 
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
-func SignTx(tx Tx, account account.Account, signs ...*crypto.Signature) (Tx, error) {
+func SignTx(tx *Tx, account *account.Account, signs ...*crypto.Signature) (*Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
 
 	sig := account.Sign(crypto.Secp256k1, tx.publishHash())
 	tx.Publisher = sig
+	tx.hash = nil
 	return tx, nil
 }
 
@@ -258,7 +259,7 @@ func (t *Tx) VerifySelf() error {
 	return nil
 }
 
-// VerifySelf verify signer's signature
-func (t *Tx) VerifySigner(sig crypto.Signature) bool {
+// VerifySigner verify signer's signature
+func (t *Tx) VerifySigner(sig *crypto.Signature) bool {
 	return sig.Verify(t.baseHash())
 }

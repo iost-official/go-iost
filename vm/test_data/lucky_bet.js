@@ -4,14 +4,14 @@ class Contract {
         this.userNumber = 0;
         this.totalCoins = 0;
         this.lastLuckyBlock = -1;
-        this.round = 0;
+        this.round = 1;
         this.tables = [];
         this.clearUserValue()
     }
     clearUserValue() {
         this.tables = [];
     }
-    bet(account, luckyNumber, coins) {
+    bet(account, luckyNumber, coins, nonce) {
         if (coins < 1 || coins > 5) {
             return "bet coins should be >=1 and <= 5"
         }
@@ -25,7 +25,7 @@ class Contract {
             this.tables[luckyNumber] = [];
         }
 
-        this.tables[luckyNumber].push({ account:account, coins : coins});
+        this.tables[luckyNumber].push({ account:account, coins : coins, nonce : nonce});
         this.userNumber ++;
         this.totalCoins += coins;
 
@@ -56,8 +56,8 @@ class Contract {
         let totalVal = 0;
         let kNum = 0;
 
-        _native_log("lucky number is "+ln);
-        _native_log("tables is " + JSON.stringify(this.tables));
+        // _native_log("lucky number is "+ln);
+        // _native_log("tables is " + JSON.stringify(this.tables));
         if (this.tables[ln] !== undefined && this.tables[ln] !== null) {
             this.tables[ln].forEach(function (record) {
                 totalVal += record.coins;
@@ -70,38 +70,47 @@ class Contract {
             user_number: this.userNumber,
             k_number: kNum,
             total_coins : tc,
-            records : [],
-            rewards : []
+            records : []
         };
 
-        if (kNum > 0) {
-            let unit = tc / totalVal;
-            let cache = {};
+        // if (kNum > 0) {
+        //     let unit = tc / totalVal;
+        //     let cache = {};
+        //
+        //     this.tables[ln].forEach(function (record) {
+        //         if (cache[record.account] === undefined) {
+        //             cache[record.account] = [record.coins, 1];
+        //         } else {
+        //             let c = cache[record.account][0];
+        //             let t = cache[record.account][1];
+        //             cache[record.account] = [c + record.coins, t+1];
+        //         }
+        //     });
+        //
+        //     for (let account in cache) {
+        //         if (cache.hasOwnProperty(account)) {
+        //             let reward = cache[account][0] * unit;
+        //             BlockChain.withdraw(account, reward);
+        //             result.rewards.push({"account":account, "reward": reward, "times": cache[account][1]})
+        //         }
+        //     }
+        // }
+        let unit = tc / totalVal;
 
-            this.tables[ln].forEach(function (record) {
-                if (cache[record.account] === undefined) {
-                    cache[record.account] = [record.coins, 1];
-                } else {
-                    let c = cache[record.account][0];
-                    let t = cache[record.account][1];
-                    cache[record.account] = [c + record.coins, t+1];
-                }
-            });
-
-            for (let account in cache) {
-                if (cache.hasOwnProperty(account)) {
-                    let reward = cache[account][0] * unit;
-                    BlockChain.withdraw(account, reward);
-                    result.rewards.push({"account":account, "reward": reward, "times": cache[account][1]})
-                }
-            }
-        }
-
-        this.tables.forEach(function (table) {
+        this.tables.forEach(function (table, n) {
             if (table !== undefined && table !== null) {
-                table.forEach(function (record) {
-                    result.records.push(record)
-                })
+                if (n !== ln) {
+                    table.forEach(function (record) {
+                        result.records.push(record)
+                    })
+                } else {
+                    table.forEach(function (record) {
+                        record.reward = record.coins * unit;
+                        BlockChain.withdraw(record.account, record.reward);
+                        result.records.push(record)
+                    })
+                }
+
             }
         });
 
