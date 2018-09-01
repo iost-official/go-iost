@@ -43,6 +43,10 @@ func (h *Teller) GrantCoin(coinName, to string, amount int64) (*contract.Cost, e
 	if amount <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
+	cn := h.h.ctx.Value("contract_name").(string)
+	if !strings.HasPrefix(cn, "iost.") {
+		return CommonErrorCost(2), ErrPermissionLost
+	}
 	h.h.db.SetCoin(coinName, to, amount)
 	return TransferCost, nil
 }
@@ -52,11 +56,43 @@ func (h *Teller) ConsumeCoin(coinName, from string, amount int64) (cost *contrac
 	if amount <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
+	if h.Privilege(from) < 1 {
+		return CommonErrorCost(1), ErrPermissionLost
+	}
 	bl := h.h.db.Coin(coinName, from)
 	if bl < amount {
-		return CommonErrorCost(1), ErrBalanceNotEnough
+		return CommonErrorCost(2), ErrBalanceNotEnough
 	}
 	h.h.db.SetCoin(coinName, from, -1*amount)
+	return TransferCost, nil
+}
+
+// GrantServi ...
+func (h *Teller) GrantServi(to string, amount int64) (*contract.Cost, error) {
+	if amount <= 0 {
+		return CommonErrorCost(1), ErrTransferNegValue
+	}
+	cn := h.h.ctx.Value("contract_name").(string)
+	if !strings.HasPrefix(cn, "iost.") {
+		return CommonErrorCost(2), ErrPermissionLost
+	}
+	h.h.db.SetServi(to, amount)
+	return TransferCost, nil
+}
+
+// ConsumeServi ...
+func (h *Teller) ConsumeServi(from string, amount int64) (cost *contract.Cost, err error) {
+	if amount <= 0 {
+		return CommonErrorCost(1), ErrTransferNegValue
+	}
+	if h.Privilege(from) < 1 {
+		return CommonErrorCost(1), ErrPermissionLost
+	}
+	bl := h.h.db.Servi(from)
+	if bl < amount {
+		return CommonErrorCost(2), ErrBalanceNotEnough
+	}
+	h.h.db.SetServi(from, -1*amount)
 	return TransferCost, nil
 }
 
@@ -84,13 +120,13 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 // Withdraw ...
 func (h *Teller) Withdraw(to string, amount int64) (*contract.Cost, error) {
 	c := h.h.ctx.Value("contract_name").(string)
-	return TransferCost, h.transfer(ContractAccountPrefix+c, to, amount)
+	return h.Transfer(ContractAccountPrefix+c, to, amount)
 }
 
 // Deposit ...
 func (h *Teller) Deposit(from string, amount int64) (*contract.Cost, error) {
 	c := h.h.ctx.Value("contract_name").(string)
-	return TransferCost, h.transfer(from, ContractAccountPrefix+c, amount)
+	return h.Transfer(from, ContractAccountPrefix+c, amount)
 
 }
 

@@ -74,3 +74,6 @@ var injectGas = require('inject_gas');
 var observer = require('observer');
 
 var _IOSTInstruction_counter = new IOSTInstruction;
+
+var Console = require('console');
+var console = new Console;

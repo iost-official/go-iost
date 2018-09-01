@@ -20,6 +20,7 @@ int goPut(SandboxPtr, const char *, const char *, size_t *);
 char *goGet(SandboxPtr, const char *, size_t *);
 int goDel(SandboxPtr, const char *, size_t *);
 char *goGlobalGet(SandboxPtr, const char *, const char *, size_t *);
+int goConsoleLog(SandboxPtr, const char *, const char *);
 */
 import "C"
 import (
@@ -83,6 +84,7 @@ func (sbx *Sandbox) Release() {
 // Init add system functions
 func (sbx *Sandbox) Init() {
 	// init require
+	C.InitGoConsole((C.consoleFunc)(C.goConsoleLog))
 	C.InitGoRequire((C.requireFunc)(C.requireModule))
 	C.InitGoBlockchain((C.transferFunc)(C.goTransfer),
 		(C.withdrawFunc)(C.goWithdraw),

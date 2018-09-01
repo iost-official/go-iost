@@ -876,11 +876,13 @@ func TestJS_Vote1(t *testing.T) {
 	js.SetAPI("Vote", "string", "string", "number")
 	js.SetAPI("Unvote", "string", "string", "number")
 	js.SetAPI("Stat")
+	js.SetAPI("Init")
 	for i := 0; i <= 18; i += 2 {
 		js.vi.SetBalance(testID[i], 5e+7)
 	}
 	js.vi.Commit()
 	t.Log(js.DoSet())
+	t.Log(js.TestJS("Init", `[]`))
 	for i := 6; i <= 18; i += 2 {
 		t.Log(js.vi.Balance(testID[i]))
 	}
@@ -927,11 +929,13 @@ func TestJS_Vote(t *testing.T) {
 	js.SetAPI("Vote", "string", "string", "number")
 	js.SetAPI("Unvote", "string", "string", "number")
 	js.SetAPI("Stat")
+	js.SetAPI("Init")
 	for i := 0; i <= 18; i += 2 {
 		js.vi.SetBalance(testID[i], 5e+7)
 	}
 	js.vi.Commit()
 	t.Log(js.DoSet())
+	t.Log(js.TestJS("Init", `[]`))
 
 	keys := []string{
 		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",

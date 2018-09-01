@@ -47,6 +47,7 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     std::stringstream buffer;
     buffer << f.rdbuf();
 
+    // if it's jsFile under jsPath
     if (buffer.str().length() > 0) {
         info.GetReturnValue().Set(String::NewFromUtf8(isolate, buffer.str().c_str()));
         return;

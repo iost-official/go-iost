@@ -8,6 +8,7 @@ import (
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
@@ -55,7 +56,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 	}
 	ctx.GSet("gas_limit", gasLimit)
 	ctx.Set("contract_name", conName)
-	h := host.NewHost(ctx, vi, nil, nil)
+	h := host.NewHost(ctx, vi, nil, ilog.DefaultLogger())
 
 	fd, err := ReadFile(testDataPath + conName + ".js")
 	if err != nil {
@@ -118,25 +119,6 @@ func TestEngine_bigNumber(t *testing.T) {
 	}
 	if len(rs) != 1 || rs[0].(string) != "0.0000000000800029" {
 		t.Errorf("LoadAndCall except 0.0000000000800029, got %s\n", rs[0])
-	}
-}
-
-func TestEngine_this(t *testing.T) {
-	host, code := MyInit(t, "this1")
-	vmPool.LoadAndCall(host, code, "constructor")
-	rs, _, err := vmPool.LoadAndCall(host, code, "setNum")
-
-	if err != nil {
-		t.Fatalf("LoadAndCall getVal error: %v\n", err)
-	}
-
-	rs, _, err = vmPool.LoadAndCall(host, code, "getNum")
-	if err != nil {
-		t.Fatalf("LoadAndCall getVal error: %v\n", err)
-	}
-	t.Log(rs)
-	if len(rs) != 1 || rs[0].(string) != "99" {
-		t.Errorf("LoadAndCall except 99, got %s\n", rs[0])
 	}
 }
 
@@ -451,5 +433,13 @@ func TestEngine_Int64(t *testing.T) {
 	}
 	if len(rs) > 0 && rs[0] != "1879080904" {
 		t.Fatalf("LoadAndCall getPow except: 1879080904, got: %v", rs[0])
+	}
+}
+
+func TestEngine_Console(t *testing.T) {
+	host, code := MyInit(t, "console1")
+	_, _, err := vmPool.LoadAndCall(host, code, "log")
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
 	}
 }
