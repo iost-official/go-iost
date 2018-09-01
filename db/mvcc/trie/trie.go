@@ -150,7 +150,7 @@ func New() *Trie {
 
 func (t *Trie) Get(key []byte) interface{} {
 	t.rwmu.RLock()
-	defer t.rwmu.RLock()
+	defer t.rwmu.RUnLock()
 
 	node := t.root.get(key, 0)
 	if node == nil {
@@ -161,7 +161,7 @@ func (t *Trie) Get(key []byte) interface{} {
 
 func (t *Trie) Put(key []byte, value interface{}) {
 	t.rwmu.RLock()
-	defer t.rwmu.RLock()
+	defer t.rwmu.RUnLock()
 
 	if t.root.context != t.context {
 		root := t.root.forkWithContext(t.context)
@@ -172,7 +172,7 @@ func (t *Trie) Put(key []byte, value interface{}) {
 
 func (t *Trie) All(prefix []byte) []interface{} {
 	t.rwmu.RLock()
-	defer t.rwmu.RLock()
+	defer t.rwmu.RUnLock()
 
 	node := t.root.get(prefix, 0)
 	valuelist := []interface{}{}
@@ -186,7 +186,7 @@ func (t *Trie) All(prefix []byte) []interface{} {
 
 func (t *Trie) Fork() interface{} {
 	t.rwmu.RLock()
-	defer t.rwmu.RLock()
+	defer t.rwmu.RUnLock()
 
 	trie := &Trie{
 		context: t.context.fork(),
@@ -198,7 +198,7 @@ func (t *Trie) Fork() interface{} {
 
 func (t *Trie) Free() {
 	t.rwmu.Lock()
-	defer t.rwmu.Lock()
+	defer t.rwmu.Unlock()
 
 	t.root.free()
 	t.context.timestamp = math.MaxInt64
