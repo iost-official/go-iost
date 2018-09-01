@@ -13,6 +13,12 @@ type ACCConfig struct {
 	SecKey string
 }
 
+type GenesisConfig struct {
+	CreateGenesis bool
+	GenesisHash   string
+	WitnessInfo	  []string
+}
+
 type DBConfig struct {
 	LdbPath string
 }
@@ -71,6 +77,7 @@ type DebugConfig struct {
 // Config provide all configuration for the application
 type Config struct {
 	ACC     *ACCConfig
+	Genesis *GenesisConfig
 	VM      *VMConfig
 	DB      *DBConfig
 	P2P     *P2PConfig

@@ -7,10 +7,11 @@ import (
 
 	"google.golang.org/grpc"
 
+	"net/http"
+
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"net/http"
 )
 
 type JSONServer struct {

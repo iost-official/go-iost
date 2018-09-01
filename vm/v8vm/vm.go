@@ -4,13 +4,14 @@ package v8
 #include <stdlib.h>
 #include "v8/vm.h"
 #cgo darwin LDFLAGS: -lvm
-#cgo linux LDFLAGS: -L${SRCDIR}/v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath ${SRCDIR}/v8/libv8/_linux_amd64
+#cgo linux LDFLAGS: -L${SRCDIR}/v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath,${SRCDIR}/v8/libv8/_linux_amd64
 */
 import "C"
 import (
+	"sync"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
-	"sync"
 )
 
 var CVMInitOnce = sync.Once{}

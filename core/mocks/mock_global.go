@@ -106,3 +106,15 @@ func (m *MockBaseVariable) TxDB() tx.TxDB {
 func (mr *MockBaseVariableMockRecorder) TxDB() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxDB", reflect.TypeOf((*MockBaseVariable)(nil).TxDB))
 }
+
+// WitnessList mocks base method
+func (m *MockBaseVariable) WitnessList() []string {
+	ret := m.ctrl.Call(m, "WitnessList")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// WitnessList indicates an expected call of WitnessList
+func (mr *MockBaseVariableMockRecorder) WitnessList() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WitnessList", reflect.TypeOf((*MockBaseVariable)(nil).WitnessList))
+}
