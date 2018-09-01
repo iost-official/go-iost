@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
+// todo replace this error code with c++ error code
 // transfer err list
 const (
 	TransferSuccess = iota
@@ -35,6 +36,12 @@ const (
 const (
 	ContractCallSuccess = iota
 	ContractCallUnexpectedError
+)
+
+// ApiCall err list
+const (
+	ApiCallSuccess = iota
+	ApiCallUnexpectedError
 )
 
 //export goTransfer
@@ -213,4 +220,52 @@ func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gas
 	*result = C.CString(string(rsStr))
 
 	return ContractCallSuccess
+}
+
+//export goCallWithReceipt
+func goCallWithReceipt(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gasUsed *C.size_t) int {
+	sbx, ok := GetSandbox(cSbx)
+	if !ok {
+		return ContractCallUnexpectedError
+	}
+
+	contractStr := C.GoString(contract)
+	apiStr := C.GoString(api)
+	argsStr := C.GoString(args)
+
+	callRs, cost, err := sbx.host.CallWithReceipt(contractStr, apiStr, argsStr)
+	*gasUsed = C.size_t(cost.Data)
+	if err != nil {
+		return ContractCallUnexpectedError
+	}
+
+	rsStr, err := json.Marshal(callRs)
+	if err != nil {
+		return ContractCallUnexpectedError
+	}
+
+	*result = C.CString(string(rsStr))
+
+	return ContractCallSuccess
+}
+
+//export goRequireAuth
+func goRequireAuth(cSbx C.SandboxPtr, pubKey *C.char, ok *C.bool, gasUsed *C.size_t) int {
+	sbx, sbOk := GetSandbox(cSbx)
+	if !sbOk {
+		return ApiCallUnexpectedError
+	}
+
+	pubKeyStr := C.GoString(pubKey)
+
+	callOk, RequireAuthCost := sbx.host.APIDelegate.RequireAuth(pubKeyStr)
+
+	*ok = C.bool(callOk)
+	if callOk != true {
+		return ApiCallUnexpectedError
+	}
+
+	*gasUsed = C.size_t(RequireAuthCost.Data)
+
+	return ApiCallSuccess
 }

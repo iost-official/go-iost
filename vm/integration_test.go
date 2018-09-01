@@ -7,6 +7,8 @@ import (
 
 	"os"
 
+	"reflect"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -123,7 +125,7 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 }
 
 func MakeTx(act tx.Action) (*tx.Tx, error) {
-	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(10000), int64(1), int64(10000000))
+	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
 
 	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
 	if err != nil {
@@ -347,6 +349,57 @@ module.exports = Contract;
 	}
 }
 
+func TestIntergration_CallJSCodeWithReceipt(t *testing.T) {
+	e, vi := ininit(t)
+
+	jshw := jsHelloWorld()
+	jsc := jsCallHelloWorldWithReceipt()
+
+	vi.SetContract(jshw)
+	vi.SetContract(jsc)
+
+	act := tx.NewAction("Contractcall_hello_world", "call_hello", fmt.Sprintf(`[]`))
+
+	trx, err := MakeTx(act)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(e.Exec(trx))
+	t.Log("balance of sender :", vi.Balance(testID[0]))
+}
+
+func jsCallHelloWorldWithReceipt() *contract.Contract {
+	return &contract.Contract{
+		ID: "Contractcall_hello_world",
+		Code: `
+class Contract {
+ constructor() {
+  
+ }
+ call_hello() {
+  return BlockChain.callWithReceipt("ContractjsHelloWorld", "hello", "[]")
+ }
+}
+
+module.exports = Contract;
+`,
+		Info: &contract.Info{
+			Lang:        "javascript",
+			VersionCode: "1.0.0",
+			Abis: []*contract.ABI{
+				{
+					Name:     "call_hello",
+					Payment:  0,
+					GasPrice: int64(1),
+					Limit:    contract.NewCost(100, 100, 100),
+					Args:     []string{},
+				},
+			},
+		},
+	}
+}
+
 func TestIntergration_Payment_Success(t *testing.T) {
 	jshw := jsHelloWorld()
 	jshw.Info.Abis[0].Payment = 1
@@ -457,6 +510,12 @@ func (j *JSTester) ReadDB(key string) (value interface{}) {
 	return database.MustUnmarshal(j.vi.Get(j.cname + "-" + key))
 }
 
+func (j *JSTester) FlushDB(t *testing.T, keys []string) {
+	for _, k := range keys {
+		t.Logf("%s: %v", k, j.ReadDB(k))
+	}
+}
+
 func (j *JSTester) SetJS(code string) {
 	j.c = &contract.Contract{
 		ID:   "jsContract",
@@ -488,7 +547,6 @@ func (j *JSTester) DoSet() *tx.TxReceipt {
 	if err != nil {
 		j.t.Fatal(err)
 	}
-
 	j.cname = "Contract" + common.Base58Encode(trx.Hash())
 
 	return r
@@ -695,6 +753,31 @@ module.exports = Contract;
 	t.Log("receipt is ", r)
 }
 
+func TestJSRequireAuth(t *testing.T) {
+
+	js := NewJSTester(t)
+	js.SetJS(`
+class Contract {
+	constructor() {
+	}
+	requireAuth() {
+		var ok = BlockChain.requireAuth("haha")
+		_native_log(JSON.stringify(ok))
+		ok = BlockChain.requireAuth("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn")
+		_native_log(JSON.stringify(ok))
+		return ok
+	}
+}
+
+module.exports = Contract;
+`)
+	js.SetAPI("requireAuth")
+	js.DoSet()
+
+	r := js.TestJS("requireAuth", fmt.Sprintf(`[]`))
+	t.Log("receipt is ", r)
+}
+
 func TestJS_Database(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
@@ -746,6 +829,8 @@ func TestJS_LuckyBet(t *testing.T) {
 	js.SetAPI("bet", "string", "number", "number")
 	js.SetAPI("getReward")
 	js.DoSet()
+
+	// here put the first bet
 	r := js.TestJS("bet", fmt.Sprintf(`["%v",0, 2]`, testID[0]))
 	t.Log("receipt is ", r)
 	t.Log("max user number ", js.ReadDB("maxUserNumber"))
@@ -753,12 +838,244 @@ func TestJS_LuckyBet(t *testing.T) {
 	t.Log("total coins ", js.ReadDB("totalCoins"))
 	t.Log("table should be saved ", js.ReadDB("table0"))
 
-	for i := 1; i < 10; i++ {
-		js.TestJS("bet", fmt.Sprintf(`["%v",%v, 2]`, testID[0], i))
+	for i := 1; i < 3; i++ { // at i = 2, should get reward
+		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v, %v]`, testID[0], i, i%4+1))
+		if r.Status.Code != 0 {
+			t.Fatal(r)
+		}
 	}
 
 	t.Log("user count ", js.ReadDB("userNumber"))
 	t.Log("total coins ", js.ReadDB("totalCoins"))
 	t.Log("tables", js.ReadDB("tables"))
-	t.Log("result is ", js.ReadDB("results"))
+	t.Log("result 0 is ", js.ReadDB("result0"))
+	t.Log("round is ", js.ReadDB("round"))
+	for i := 3; i < 6; i++ { // at i = 6, should get reward 2nd times
+		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v, %v]`, testID[0], i, i%4+1))
+		if r.Status.Code != 0 {
+			t.Fatal(r)
+		}
+	}
+	t.Log("round is ", js.ReadDB("round"))
+
+}
+
+func TestJS_Vote1(t *testing.T) {
+	js := NewJSTester(t)
+	defer js.Clear()
+	lc, err := ReadFile("test_data/vote.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
+	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
+	js.SetAPI("LogInProducer", "string")
+	js.SetAPI("LogOutProducer", "string")
+	js.SetAPI("UnregisterProducer", "string")
+	js.SetAPI("Vote", "string", "string", "number")
+	js.SetAPI("Unvote", "string", "string", "number")
+	js.SetAPI("Stat")
+	js.SetAPI("Init")
+	for i := 0; i <= 18; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	js.vi.Commit()
+	t.Log(js.DoSet())
+	t.Log(js.TestJS("Init", `[]`))
+	for i := 6; i <= 18; i += 2 {
+		t.Log(js.vi.Balance(testID[i]))
+	}
+
+	keys := []string{
+		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
+		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
+		"producerTable",
+		"voteTable",
+	}
+	js.FlushDB(t, keys)
+
+	t.Log(js.vi.Balance(testID[18]))
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+	js.FlushDB(t, keys)
+
+	t.Log(js.vi.Balance(testID[18]))
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[2])))
+	js.FlushDB(t, keys)
+
+	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber")))
+	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber"))))
+	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList")))
+	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList"))))
+
+	t.Log(js.vi.Balance(testID[18]))
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+	js.FlushDB(t, keys)
+}
+
+func TestJS_Vote(t *testing.T) {
+	js := NewJSTester(t)
+	defer js.Clear()
+	lc, err := ReadFile("test_data/vote.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
+	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
+	js.SetAPI("LogInProducer", "string")
+	js.SetAPI("LogOutProducer", "string")
+	js.SetAPI("UnregisterProducer", "string")
+	js.SetAPI("Vote", "string", "string", "number")
+	js.SetAPI("Unvote", "string", "string", "number")
+	js.SetAPI("Stat")
+	js.SetAPI("Init")
+	for i := 0; i <= 18; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	js.vi.Commit()
+	t.Log(js.DoSet())
+	t.Log(js.TestJS("Init", `[]`))
+
+	keys := []string{
+		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
+		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
+		"producerTable",
+		"voteTable",
+	}
+	js.FlushDB(t, keys)
+
+	// test register, login, logout
+	t.Log(js.TestJS("LogOutProducer", `["a"]`))
+	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("UpdateProducer", fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, testID[0], "nloc", "nurl", "nnetid")))
+	js.FlushDB(t, keys)
+
+	// stat, no changes
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	// vote and unvote
+	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 10000000)))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[2], testID[0], 1)))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
+	js.FlushDB(t, keys)
+
+	// stat testID[0] become pending producer
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	bh := &block.BlockHead{
+		ParentHash: []byte("abc"),
+		Number:     211,
+		Witness:    "witness",
+		Time:       123456,
+	}
+	e := newEngine(bh, js.vi)
+	e.SetUp("js_path", jsPath)
+	js.e = e
+
+	// test unvote
+	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 20000001)))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 1000000)))
+	js.FlushDB(t, keys)
+
+	// stat pending producers don't get score
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	// seven
+	for i := 2; i <= 14; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	for i := 2; i <= 14; i += 2 {
+		t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[i])))
+		t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[i], testID[i], 30000000+i)))
+	}
+	js.FlushDB(t, keys)
+
+	// stat, offline producers don't get score
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	for i := 2; i <= 14; i += 2 {
+		t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[i])))
+	}
+	js.FlushDB(t, keys)
+
+	// stat, 1 producer become pending
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("LogOutProducer", fmt.Sprintf(`["%v"]`, testID[12])))
+
+	// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[12])))
+
+	// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	// testID[0] become pre producer from pending producer, score = 0
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
+	js.FlushDB(t, keys)
+
+	// unregister
+	t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+	js.FlushDB(t, keys)
+
+	// unvote after unregister
+	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 9000000)))
+	js.FlushDB(t, keys)
+
+	// re register, score = 0, vote = 0
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 21000001)))
+	js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+	js.FlushDB(t, keys)
+
+	// unregister pre producer
+	t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+	js.FlushDB(t, keys)
 }

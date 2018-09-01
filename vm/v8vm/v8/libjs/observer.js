@@ -75,8 +75,6 @@ module.exports = (function () {
                         args[_i] = arguments[_i];
                     }
                     value = function(...args) {
-                        console.log(...args);
-
                         return origSet.apply(target, arguments);
                     };
                 }

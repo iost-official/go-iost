@@ -1,5 +1,5 @@
-var BlockChain = (function () {
-    var bc = new IOSTBlockchain;
+let BlockChain = (function () {
+    let bc = new IOSTBlockchain;
     return {
         transfer: function (from, to, amount) {
             if (!(amount instanceof Int64)) {
@@ -39,6 +39,12 @@ var BlockChain = (function () {
         },
         call: function (contract, api, args) {
             return bc.call(contract, api, args);
+        },
+        callWithReceipt: function (contract, api, args) {
+            return bc.callWithReceipt(contract, api, args);
+        },
+        requireAuth: function (pubKey) {
+            return bc.requireAuth(pubKey);
         }
     }
 })();
