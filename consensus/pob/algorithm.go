@@ -122,9 +122,9 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
-	bc.Flush(node) // in debug
+	//bc.Flush(node) // in debug
 	if confirmedNode != nil {
-		//bc.Flush(confirmedNode)
+		bc.Flush(confirmedNode)
 		go staticProperty.delSlot(confirmedNode.Block.Head.Time)
 
 		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
