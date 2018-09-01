@@ -29,7 +29,7 @@ const (
 
 	msgChanSize = 1024
 
-	maxStreamCount = 4
+	maxStreamCount = 8
 )
 
 // Peer represents a neighbor which we connect directily.

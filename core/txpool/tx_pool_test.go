@@ -35,7 +35,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
 		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
-		var accountList []account.Account
+		var accountList []*account.Account
 		var witnessList []string
 		var witnessInfo []string
 		acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
@@ -457,10 +457,10 @@ func BenchmarkConcurrentVerifyTx(b *testing.B) {
 	stopTest(gl)
 }
 
-func envInit(b *testing.B) (blockcache.BlockCache, []account.Account, []string, *TxPoolImpl, global.BaseVariable) {
+func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string, *TxPoolImpl, global.BaseVariable) {
 	//ctl := gomock.NewController(t)
 
-	var accountList []account.Account
+	var accountList []*account.Account
 	var witnessList []string
 
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
@@ -517,7 +517,7 @@ func stopTest(gl global.BaseVariable) {
 	os.RemoveAll(dbPath3)
 }
 
-func genTx(a account.Account, expirationIter int64) *tx.Tx {
+func genTx(a *account.Account, expirationIter int64) *tx.Tx {
 	actions := make([]*tx.Action, 0)
 	actions = append(actions, &tx.Action{
 		Contract:   "contract1",
@@ -540,7 +540,7 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 		ilog.Debug("failed to SignTxContent")
 	}
 
-	t.Signs = append(t.Signs, &sig1)
+	t.Signs = append(t.Signs, sig1)
 
 	t1, err := tx.SignTx(t, a)
 	if err != nil {
@@ -551,10 +551,10 @@ func genTx(a account.Account, expirationIter int64) *tx.Tx {
 		ilog.Debug("failed to t.VerifySelf(), err", err)
 	}
 
-	return &t1
+	return t1
 }
 
-func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
+func genTxMsg(a *account.Account, expirationIter int64) *p2p.IncomingMessage {
 	t := genTx(a, expirationIter)
 
 	broadTx := p2p.NewIncomingMessage("test", t.Encode(), p2p.PublishTxRequest)
@@ -562,7 +562,7 @@ func genTxMsg(a account.Account, expirationIter int64) *p2p.IncomingMessage {
 	return broadTx
 }
 
-func genBlocks(accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
+func genBlocks(accountList []*account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
 	slot := common.GetCurrentTimestamp().Slot
 	var hash []byte
@@ -600,7 +600,7 @@ func genBlocks(accountList []account.Account, witnessList []string, blockCnt int
 	return
 }
 
-func genNodes(accountList []account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) []*blockcache.BlockCacheNode {
+func genNodes(accountList []*account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) []*blockcache.BlockCacheNode {
 
 	var bcnList []*blockcache.BlockCacheNode
 
@@ -615,7 +615,7 @@ func genNodes(accountList []account.Account, witnessList []string, blockCnt int,
 	return bcnList
 }
 
-func genSingleBlock(accountList []account.Account, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
+func genSingleBlock(accountList []*account.Account, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
 
 	slot := common.GetCurrentTimestamp().Slot
 

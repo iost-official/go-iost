@@ -108,6 +108,7 @@ func (pm *PeerManager) HandleStream(s libnet.Stream) {
 	peer := pm.GetNeighbor(remotePID)
 	if peer == nil {
 		if pm.NeighborCount() >= maxNeighborCount {
+			ilog.Debugf("reset stream. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
 			s.Reset()
 			return
 		}

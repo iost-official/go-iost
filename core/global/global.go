@@ -71,14 +71,14 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		Time:       time.Now().Unix() / common.SlotLength,
 	}
 	engine := vm.NewEngine(&blockHead, db)
-	txr, err := engine.Exec(&trx)
+	txr, err := engine.Exec(trx)
 	if err != nil {
 		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v", err)
 	}
 	blk := block.Block{
 		Head:     &blockHead,
 		Sign:     &crypto.Signature{},
-		Txs:      []*tx.Tx{&trx},
+		Txs:      []*tx.Tx{trx},
 		Receipts: []*tx.TxReceipt{txr},
 	}
 	blk.Head.TxsHash = blk.CalculateTxsHash()
