@@ -20,27 +20,30 @@ class VoteContract {
 		this.producerTable = {}
 		this.voteTable = {}
 
-		for (var i = 0; i < this.producerNumber; i++) {
-			var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
-			if (ret != 0) {
-				throw new Error("constructor deposit failed. ret = " + ret);
-			}
-			this.producerTable[this.pendingProducerList[i]] = {
-				"loc": "",
-				"url": "",
-				"netId": "",
-				"online": true,
-				"score": 0,
-				"votes": 0
-			}
-		}
+    }
+
+    Init() {
+        for (var i = 0; i < this.producerNumber; i++) {
+            var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
+            if (ret != 0) {
+                throw new Error("constructor deposit failed. ret = " + ret);
+            }
+            this.producerTable[this.pendingProducerList[i]] = {
+                "loc": "",
+                "url": "",
+                "netId": "",
+                "online": true,
+                "score": 0,
+                "votes": 0
+            }
+        }
     }
 
 	_requireAuth(account) {
 		var ret = BlockChain.requireAuth(account);
-		if (ret !== true) {
-			throw new Error("require auth failed. ret = " + ret);
-		}
+		//if (ret !== true) {
+		//	throw new Error("require auth failed. ret = " + ret);
+		//}
 	}
 
 	_getBlockNumber() {
@@ -57,10 +60,10 @@ class VoteContract {
 		if (this.producerTable.hasOwnProperty(account) !== false) {
 			throw new Error("producer exists");
 		}
-		//var ret = BlockChain.deposit(account, this.producerRegisterFee);
-		//if (ret != 0) {
-		//	throw new Error("register deposit failed. ret = " + ret);
-		//}
+		var ret = BlockChain.deposit(account, this.producerRegisterFee);
+		if (ret != 0) {
+			throw new Error("register deposit failed. ret = " + ret);
+		}
 		this.producerTable[account] = {
 			"loc": loc,
 			"url": url,
@@ -192,6 +195,7 @@ class VoteContract {
 		}
 
 		// todo calc servi
+        var servi = amount * Math.floor(this._getBlockNumber() / this.voteLockTime);
 	}
 
 	// calculate the vote result, modify pendingProducerList
@@ -210,7 +214,6 @@ class VoteContract {
                     "score": pro.score
                 });
             }
-
         }
 		for (var i = 0; i < preList.length; i++) {
 			var key = preList[i].key
@@ -230,12 +233,11 @@ class VoteContract {
 		var oldPreList = [];
         for (let key in this.pendingProducerList) {
 		    var x = this.pendingProducerList[key];
-			return {
+			oldPreList.push({
 				"key": x,
 				"score": this.producerTable[x].score
-			};
+			});
 		};
-		oldPreList.sort(scoreCmp);
 
 		// replace at most replaceNum producers
 		for (var i = 0; i < replaceNum; i++) {
