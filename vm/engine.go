@@ -306,7 +306,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		cost = host.ABINotFoundCost
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
-			Message: errABINotFound.Error() + action.Contract,
+			Message: errABINotFound.Error() + action.Contract + "." + action.ActionName,
 		}
 		return
 	}
