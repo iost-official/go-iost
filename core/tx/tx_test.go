@@ -102,7 +102,7 @@ func TestTx(t *testing.T) {
 			sig, err := SignTxContent(tx, a1)
 			So(err, ShouldEqual, nil)
 
-			_, err = SignTx(tx, a1, &sig)
+			_, err = SignTx(tx, a1, sig)
 			So(err, ShouldEqual, nil)
 
 			hash = tx.Hash()
@@ -110,6 +110,7 @@ func TestTx(t *testing.T) {
 			err = tx1.Decode(encode)
 			So(err, ShouldEqual, nil)
 			hash1 = tx1.Hash()
+
 			So(bytes.Equal(hash, hash1), ShouldEqual, true)
 
 			So(tx.Time == tx1.Time, ShouldBeTrue)
@@ -142,14 +143,14 @@ func TestTx(t *testing.T) {
 			tx := NewTx(actions, [][]byte{a1.Pubkey, a2.Pubkey}, 9999, 1, 1)
 			sig1, err := SignTxContent(tx, a1)
 			So(tx.VerifySigner(sig1), ShouldBeTrue)
-			tx.Signs = append(tx.Signs, &sig1)
+			tx.Signs = append(tx.Signs, sig1)
 
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "signer not enough")
 
 			sig2, err := SignTxContent(tx, a2)
 			So(tx.VerifySigner(sig2), ShouldBeTrue)
-			tx.Signs = append(tx.Signs, &sig2)
+			tx.Signs = append(tx.Signs, sig2)
 
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "publisher error")

@@ -150,7 +150,8 @@ func (m *p2pMessage) data() ([]byte, error) {
 }
 
 func (m *p2pMessage) needDedup() bool {
-	return m.messageType() != RoutingTableQuery && m.messageType() != RoutingTableResponse
+	return m.messageType() == NewBlock ||
+		m.messageType() == PublishTxRequest || m.messageType() == NewBlockHead
 }
 
 func newP2PMessage(chainID uint32, messageType MessageType, version uint16, reserved uint32, data []byte) *p2pMessage {

@@ -49,18 +49,18 @@ type Account struct {
 	Seckey    []byte
 }
 
-func NewAccount(seckey []byte) (Account, error) {
+func NewAccount(seckey []byte) (*Account, error) {
 	algo := crypto.Secp256k1
 	if seckey == nil {
 		seckey = algo.GenSeckey()
 	}
 	if len(seckey) != 32 {
-		return Account{}, fmt.Errorf("seckey length error")
+		return nil, fmt.Errorf("seckey length error")
 	}
 	pubkey := algo.GetPubkey(seckey)
 	id := GetIDByPubkey(pubkey)
 
-	account := Account{
+	account := &Account{
 		ID:        id,
 		Algorithm: algo,
 		Pubkey:    pubkey,

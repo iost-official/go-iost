@@ -13,12 +13,14 @@ import (
 )
 
 var (
-	SyncNumber              int64 = 2
+	// TODO: configurable
+	ConfirmNumber       = 3
+	SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
+
 	MaxBlockHashQueryNumber int64 = 10
 	RetryTime                     = 5 * time.Second
 	syncBlockTimeout              = 3 * time.Second
 	MaxAcceptableLength     int64 = 100
-	ConfirmNumber                 = 7
 )
 
 type Synchronizer interface {
@@ -166,15 +168,12 @@ func (sy *SyncImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) {
 func (sy *SyncImpl) messageLoop() {
 	for {
 		select {
-		case req, ok := <-sy.messageChan:
-			if !ok {
-				return
-			}
+		case req := <-sy.messageChan:
 			if req.Type() == p2p.SyncBlockHashRequest {
 				var rh message.BlockHashQuery
 				err := rh.Decode(req.Data())
 				if err != nil {
-					ilog.Debugf("unmarshal BlockHashQuery failed:%v", err)
+					ilog.Warnf("unmarshal BlockHashQuery failed:%v", err)
 					break
 				}
 				go sy.handleHashQuery(&rh, req.From())
@@ -201,7 +200,8 @@ func (sy *SyncImpl) messageLoop() {
 }
 
 func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerID) {
-	if rh.End < rh.Start {
+	ilog.Debug("handleHashQuery: ", rh)
+	if rh.End < rh.Start || rh.Start < 0 {
 		return
 	}
 	resp := &message.BlockHashResponse{
@@ -209,27 +209,30 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 	}
 	if rh.ReqType == 0 {
 		node := sy.blockCache.Head()
-		var i int64
-		for i = rh.End; i >= rh.Start; i-- {
+
+		var end = rh.End
+		if end > node.Number {
+			end = node.Number
+		}
+
+		for i := end; i >= rh.Start; i-- {
 			var hash []byte
 			var err error
-			if i < sy.blockCache.LinkedRoot().Number {
+
+			for node != nil && i < node.Number {
+				node = node.Parent
+			}
+
+			if node != nil {
+				hash = node.Block.HeadHash()
+			} else {
 				hash, err = sy.basevariable.BlockChain().GetHashByNumber(i)
 				if err != nil {
+					ilog.Warnf("get hash by number from db failed. err=%v, number=%v", err, i)
 					continue
 				}
-			} else {
-				if i > node.Number {
-					continue
-				}
-				for node != nil && i < node.Number {
-					node = node.Parent
-				}
-				if node == nil || i != node.Number {
-					continue
-				}
-				hash = node.Block.HeadHash()
 			}
+
 			blkHash := message.BlockHash{
 				Height: i,
 				Hash:   hash,
@@ -294,6 +297,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 				return true
 			})
 			if len(hr.Nums) > 0 {
+				ilog.Debug("retry download ", hr.Nums)
 				sy.queryBlockHash(hr)
 			}
 		case <-sy.exitSignal:
@@ -340,7 +344,7 @@ type DownloadControllerImpl struct {
 	peerState  *sync.Map
 	peerMap    *sync.Map
 	peerTimer  *sync.Map
-	chDownload chan bool
+	chDownload chan struct{}
 	exitSignal chan struct{}
 }
 
@@ -350,7 +354,7 @@ func NewDownloadController() (*DownloadControllerImpl, error) {
 		peerState:  new(sync.Map), // map[PeerID]string
 		peerMap:    new(sync.Map), // map[PeerID](map[string]bool)
 		peerTimer:  new(sync.Map), // map[PeerID]*time.Timer
-		chDownload: make(chan bool, 100),
+		chDownload: make(chan struct{}, 100),
 		exitSignal: make(chan struct{}),
 	}
 	return dc, nil
@@ -373,11 +377,12 @@ func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 	hState, _ := dc.hashState.LoadOrStore(hash, "Wait")
 	pState, _ := dc.peerState.LoadOrStore(peerID, "Free")
 	if hState.(string) == "Wait" && pState.(string) == "Free" {
-		dc.chDownload <- true
+		dc.chDownload <- struct{}{}
 	}
 }
 
 func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) {
+	ilog.Debugf("sync timout, hash=%v, peerID=%v", []byte(hash), peerID.Pretty())
 	if hState, hok := dc.hashState.Load(hash); hok {
 		hs, ok := hState.(string)
 		if !ok {
@@ -392,7 +397,7 @@ func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) {
 			dc.peerState.Delete(peerID)
 		} else if ps == hash {
 			dc.peerState.Store(peerID, "Free")
-			dc.chDownload <- true
+			dc.chDownload <- struct{}{}
 		}
 	}
 }
@@ -409,7 +414,7 @@ func (dc *DownloadControllerImpl) OnBlockConfirmed(hash string, peerID p2p.PeerI
 				pTimer.(*time.Timer).Stop()
 				dc.peerTimer.Delete(peerID)
 			}
-			dc.chDownload <- true
+			dc.chDownload <- struct{}{}
 		}
 	}
 }
@@ -417,10 +422,7 @@ func (dc *DownloadControllerImpl) OnBlockConfirmed(hash string, peerID p2p.PeerI
 func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID p2p.PeerID)) {
 	for {
 		select {
-		case _, ok := <-dc.chDownload:
-			if !ok {
-				break
-			}
+		case <-dc.chDownload:
 			dc.peerMap.Range(func(k, v interface{}) bool {
 				peerID := k.(p2p.PeerID)
 				hashMap := v.(*sync.Map)
