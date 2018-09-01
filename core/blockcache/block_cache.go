@@ -12,7 +12,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	"github.com/prometheus/client_golang/prometheus"
 	"strconv"
 )
 

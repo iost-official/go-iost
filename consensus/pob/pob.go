@@ -54,7 +54,7 @@ type PoB struct {
 }
 
 // NewPoB init a new PoB.
-func NewPoB(account account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer) *PoB {
+func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer) *PoB {
 	p := PoB{
 		account:         account,
 		baseVariable:    baseVariable,
