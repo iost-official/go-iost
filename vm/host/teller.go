@@ -38,6 +38,16 @@ func (h *Teller) transfer(from, to string, amount int64) error {
 	return ErrBalanceNotEnough
 }
 
+func (h *Teller) GetBalance(from string) (int64, *contract.Cost, error) {
+	bl := int64(0)
+	if strings.HasPrefix(from, "IOST") {
+		bl = h.h.db.Balance(from)
+	} else {
+		bl = h.h.db.Balance(ContractAccountPrefix + from)
+	}
+	return bl, GetCost, nil
+}
+
 // GrantCoin ...
 func (h *Teller) GrantCoin(coinName, to string, amount int64) (*contract.Cost, error) {
 	if amount <= 0 {
@@ -94,6 +104,13 @@ func (h *Teller) ConsumeServi(from string, amount int64) (cost *contract.Cost, e
 	}
 	h.h.db.SetServi(from, -1*amount)
 	return TransferCost, nil
+}
+
+// TotalServi ...
+func (h *Teller) TotalServi() (ts int64, cost *contract.Cost) {
+	ts = h.h.db.TotalServi()
+	cost = GetCost
+	return
 }
 
 // Transfer ...

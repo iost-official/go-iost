@@ -100,9 +100,10 @@ typedef int (*blockInfoFunc)(SandboxPtr, char **, size_t *);
 typedef int (*txInfoFunc)(SandboxPtr, char **, size_t *);
 typedef int (*callFunc)(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 typedef int (*requireAuthFunc)(SandboxPtr, const char *, const bool *, size_t *);
+typedef int (*grantServiFunc)(SandboxPtr, const char *, const char *, size_t *);
 void InitGoBlockchain(transferFunc, withdrawFunc,
                         depositFunc, topUpFunc, countermandFunc,
-                        blockInfoFunc, txInfoFunc, callFunc, callFunc, requireAuthFunc);
+                        blockInfoFunc, txInfoFunc, callFunc, callFunc, requireAuthFunc, grantServiFunc);
 
 // storage
 typedef int (*putFunc)(SandboxPtr, const char *, const char *, size_t *);
