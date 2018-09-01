@@ -160,14 +160,22 @@ func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
 }
 
 func (p *PoB) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
+	var b []byte
+	var err error
 	node, err := p.blockCache.Find(rh.BlockHash)
-	if err != nil {
-		ilog.Errorf("block not in cache: %v", rh.BlockNumber)
+	if err == nil {
+		b, err = node.Block.Encode()
+		if err != nil {
+			ilog.Errorf("Fail to encode block: %v, err=%v", rh.BlockNumber, err)
+			return
+		}
+		p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 		return
 	}
-	b, err := node.Block.Encode()
+	ilog.Infof("failed to get block from blockcache. err=%v", err)
+	b, err = p.blockChain.GetBlockByteByHash(rh.BlockHash)
 	if err != nil {
-		ilog.Errorf("fail to encode block: %v", rh.BlockNumber)
+		ilog.Warnf("failed to get block from blockchain. err=%v", err)
 		return
 	}
 	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
@@ -237,7 +245,6 @@ func (p *PoB) blockLoop() {
 			if incomingMessage.Type() == p2p.NewBlock {
 				ilog.Info("received new block, block number: ", blk.Head.Number)
 				timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
-
 				if ok {
 					timer.(*time.Timer).Stop()
 				} else {
@@ -276,6 +283,7 @@ func (p *PoB) blockLoop() {
 				_, err := p.blockCache.Find(blk.HeadHash())
 				if err == nil {
 					ilog.Debug(errors.New("duplicate block"))
+					go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
 					continue
 				}
 				err = verifyBasics(blk.Head, blk.Sign)
