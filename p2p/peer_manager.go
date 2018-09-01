@@ -103,7 +103,7 @@ func (pm *PeerManager) Stop() {
 // In other cases, reset the stream.
 func (pm *PeerManager) HandleStream(s libnet.Stream) {
 	remotePID := s.Conn().RemotePeer()
-	ilog.Infof("handle new stream. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+	//ilog.Infof("handle new stream. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
 
 	peer := pm.GetNeighbor(remotePID)
 	if peer == nil {
@@ -117,7 +117,7 @@ func (pm *PeerManager) HandleStream(s libnet.Stream) {
 
 	err := peer.AddStream(s)
 	if err != nil {
-		ilog.Infof("add stream failed. err=%v, pid=%s", err, remotePID.Pretty())
+		//ilog.Infof("add stream failed. err=%v, pid=%s", err, remotePID.Pretty())
 		s.Reset()
 		return
 	}
@@ -151,7 +151,7 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 			pm.wg.Done()
 			return
 		case <-syncRoutingTableTicker.C:
-			ilog.Infof("start sync routing table.")
+			//ilog.Infof("start sync routing table.")
 			pm.syncRoutingTable()
 			syncRoutingTableTicker.Reset(syncRoutingTableInterval)
 		}
@@ -304,7 +304,7 @@ func (pm *PeerManager) syncRoutingTable() {
 		}
 		stream, err := pm.host.NewStream(context.Background(), peerID, protocolID)
 		if err != nil {
-			ilog.Errorf("create stream failed. err=%v", err)
+			//ilog.Errorf("create stream failed. err=%v", err)
 			pm.deletePeer(peerID)
 			continue
 		}
@@ -327,7 +327,9 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-	ilog.Infof("broadcast message. type=%s", typ)
+	if typ != 2 && typ != 3 && typ != 7 && typ != 8 && typ != 9 && typ != 10 {
+		ilog.Infof("broadcast %s", typ)
+	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	pm.neighborMutex.RLock()
@@ -340,7 +342,9 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
-	ilog.Infof("send message to peer. type=%s, peerID=%s", typ, peerID.Pretty())
+	if typ != 2 && typ != 3 && typ != 7 && typ != 8 && typ != 9 && typ != 10 {
+		ilog.Infof("send type=%s", typ)
+	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	peer := pm.GetNeighbor(peerID)
@@ -373,7 +377,6 @@ func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 
 // handleRoutingTableQuery picks the nearest peers of the given peerID and sends the result to it.
 func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
-	ilog.Infof("handling routing table query. peerID=%s", peerID.Pretty())
 
 	peerIDs := pm.routingTable.NearestPeers(kbucket.ConvertPeerID(peerID), peerResponseCount)
 	peerInfo := make([]peerstore.PeerInfo, 0, len(peerIDs))
@@ -393,7 +396,6 @@ func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
 
 // handleRoutingTableResponse stores the peer information received.
 func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
-	ilog.Infof("handling routing table response.")
 
 	data, err := msg.data()
 	if err != nil {
@@ -406,7 +408,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 		ilog.Errorf("json decode failed. err=%v, str=%s", err, data)
 		return
 	}
-	ilog.Infof("receiving peer infos: %v", peerInfos)
+	//ilog.Infof("receiving peer infos: %v", peerInfos)
 	for _, peerInfo := range peerInfos {
 		if len(peerInfo.Addrs) > 0 {
 			pm.storePeer(peerInfo.ID, peerInfo.Addrs[0])
@@ -421,7 +423,9 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
-	ilog.Infof("receiving message. type=%s", msg.messageType())
+	if msg.messageType() != 2 && msg.messageType() != 3 && msg.messageType() != 7 && msg.messageType() != 8 && msg.messageType() != 9 && msg.messageType() != 10 {
+		ilog.Infof("recv %s", msg.messageType())
+	}
 	switch msg.messageType() {
 	case RoutingTableQuery:
 		pm.handleRoutingTableQuery(peerID)

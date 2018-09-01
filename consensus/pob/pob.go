@@ -160,15 +160,21 @@ func (p *PoB) handleRecvBlockHead(blk *block.Block, peerID p2p.PeerID) {
 }
 
 func (p *PoB) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
+	var b []byte
 	node, err := p.blockCache.Find(rh.BlockHash)
 	if err != nil {
-		ilog.Errorf("block not in cache: %v", rh.BlockNumber)
-		return
-	}
-	b, err := node.Block.Encode()
-	if err != nil {
-		ilog.Errorf("fail to encode block: %v", rh.BlockNumber)
-		return
+		ilog.Infof("block not in cache: %v", rh.BlockNumber)
+		b, err = p.blockChain.GetBlockByteByHash(rh.BlockHash)
+		if err != nil {
+			ilog.Infof("block not in blockchaindb: %v", rh.BlockNumber)
+			return
+		}
+	} else {
+		b, err = node.Block.Encode()
+		if err != nil {
+			ilog.Errorf("fail to encode block: %v", rh.BlockNumber)
+			return
+		}
 	}
 	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 }
@@ -202,7 +208,7 @@ func (p *PoB) handleGenesisBlock(blk *block.Block) error {
 	return fmt.Errorf("not genesis block")
 }
 func (p *PoB) blockLoop() {
-	ilog.Infof("start blockloop")
+	//ilog.Infof("start blockloop")
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
@@ -216,6 +222,8 @@ func (p *PoB) blockLoop() {
 				ilog.Error("fail to decode block")
 				continue
 			}
+			ilog.Infof("blockCache Head hash: %v", common.Base58Encode(p.blockCache.Head().Block.HeadHash()))
+			ilog.Info("block parent hash: ", common.Base58Encode(blk.Head.ParentHash))
 			ilog.Info(p.baseVariable.Mode())
 			if p.baseVariable.Mode() == global.ModeFetchGenesis {
 				err = p.handleGenesisBlock(&blk)
@@ -235,13 +243,13 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			if incomingMessage.Type() == p2p.NewBlock {
-				ilog.Info("received new block, block number: ", blk.Head.Number)
+				//ilog.Info("received new block, block number: ", blk.Head.Number)
 				timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 
 				if ok {
 					timer.(*time.Timer).Stop()
 				} else {
-					ilog.Info("block not in block request map, block number: ", blk.Head.Number)
+					//ilog.Info("block not in block request map, block number: ", blk.Head.Number)
 					_, err := p.blockCache.Find(blk.HeadHash())
 					if err == nil {
 						ilog.Debug("duplicate block")
@@ -290,13 +298,14 @@ func (p *PoB) blockLoop() {
 				}
 				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
 			}
+			//p.blockCache.Draw()
 			go p.synchronizer.CheckSyncProcess()
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
 				ilog.Infof("chGenBlock has closed")
 				return
 			}
-			ilog.Info("block from myself, block number: ", blk.Head.Number)
+			//ilog.Info("block from myself, block number: ", blk.Head.Number)
 			err := p.handleRecvBlock(blk)
 			if err != nil {
 				ilog.Debugf("received new block error, err:%v", err)
@@ -314,8 +323,6 @@ func (p *PoB) scheduleLoop() {
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
-			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
-			ilog.Info(p.baseVariable.Mode())
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {

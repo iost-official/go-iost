@@ -34,7 +34,7 @@ var GenesisAccount = map[string]int64{
 }
 
 func sendTx(stx tx.Tx) ([]byte, error) {
-	allServers := []string{"127.0.0.1:30302", "0.0.0.0:30312", "0.0.0.0:30314"}
+	allServers := []string{"127.0.0.1:30302", "0.0.0.0:30305", "0.0.0.0:30308"}
 	rand.Seed(time.Now().UnixNano())
 	_ = rand.Intn(3)
 	conn, err := grpc.Dial(allServers[0], grpc.WithInsecure())
@@ -76,25 +76,22 @@ func transfer() {
 	stx, err := tx.SignTx(trx, acc)
 	//fmt.Println("verify", stx.VerifySelf())
 	if err != nil {
-		fmt.Println("signtx", stx, err)
 		return
 	}
-	var txHash []byte
-	txHash, err = sendTx(stx)
+	_, err = sendTx(stx)
 	if err != nil {
-		fmt.Println("sendtx", txHash, err)
 		return
 	}
 }
 
 func main() {
-	var num = 5000
+	var num = 500
 
 	start := time.Now()
 
 	for i := 0; i < num; i++ {
 		fmt.Println(i)
-		transParallel(100)
+		transParallel(10)
 	}
 	fmt.Println("done. timecost=", time.Since(start))
 }

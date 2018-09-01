@@ -132,6 +132,7 @@ func (sy *SyncImpl) queryBlockHash(hr message.BlockHashQuery) {
 }
 
 func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
+	ilog.Infof("startNumber: %v, endNumber: %v", startNumber, endNumber)
 	sy.basevariable.SetMode(global.ModeSync)
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+MaxBlockHashQueryNumber-1 {
@@ -270,7 +271,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 }
 
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
-	ilog.Infof("receive block hashes: len=%v", len(rh.BlockHashes))
+	//ilog.Infof("receive block hashes: len=%v", len(rh.BlockHashes))
 	for _, blkHash := range rh.BlockHashes {
 		sy.reqMap.Delete(blkHash.Height)
 		if _, err := sy.blockCache.Find(blkHash.Hash); err != nil {

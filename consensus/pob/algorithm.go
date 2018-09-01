@@ -28,7 +28,7 @@ var (
 )
 
 func generateBlock(account account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
-	ilog.Info("generate Block start")
+	//ilog.Info("generate Block start")
 	blk := block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
@@ -40,15 +40,17 @@ func generateBlock(account account.Account, topBlock *block.Block, txPool txpool
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	txCnt := 1000
-	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
+	txCnt := 20000
+	limitTime := time.NewTicker(2 * time.Second)
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
+	ilog.Error(len(txsList))
 L:
 	for _, t := range txsList {
 		select {
 		case <-limitTime.C:
+			ilog.Error("time up")
 			break L
 		default:
 			if receipt, err := engine.Exec(t); err == nil {
