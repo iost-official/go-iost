@@ -45,10 +45,12 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
+	ilog.Info(len(txsList))
 L:
 	for _, t := range txsList {
 		select {
 		case <-limitTime.C:
+			ilog.Info("time up")
 			break L
 		default:
 			if receipt, err := engine.Exec(t); err == nil {

@@ -224,6 +224,10 @@ func (p *PoB) blockLoop() {
 				ilog.Error("fail to decode block")
 				continue
 			}
+			if p.blockCache.Head() != nil {
+				ilog.Infof("blockCache Head hash: %v", common.Base58Encode(p.blockCache.Head().Block.HeadHash()))
+			}
+			ilog.Info("block parent hash: ", common.Base58Encode(blk.Head.ParentHash))
 			ilog.Info(p.baseVariable.Mode())
 			if p.baseVariable.Mode() == global.ModeFetchGenesis {
 				err = p.handleGenesisBlock(&blk)
