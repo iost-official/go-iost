@@ -228,6 +228,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 			} else {
 				hash, err = sy.basevariable.BlockChain().GetHashByNumber(i)
 				if err != nil {
+					ilog.Warnf("get hash by number from db failed. err=%v, number=%v", err, i)
 					continue
 				}
 			}
