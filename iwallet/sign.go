@@ -75,7 +75,7 @@ var signCmd = &cobra.Command{
 			return
 		}
 
-		sig, err := tx.SignTxContent(mtx, acc)
+		sig, err := tx.SignTxContent(&mtx, acc)
 		if err != nil {
 			fmt.Println(err.Error())
 			return

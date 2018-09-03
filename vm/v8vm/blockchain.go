@@ -269,3 +269,27 @@ func goRequireAuth(cSbx C.SandboxPtr, pubKey *C.char, ok *C.bool, gasUsed *C.siz
 
 	return ApiCallSuccess
 }
+
+//export goGrantServi
+func goGrantServi(cSbx C.SandboxPtr, pubKey *C.char, amount *C.char, gasUsed *C.size_t) int {
+	sbx, sbOk := GetSandbox(cSbx)
+	if !sbOk {
+		return ApiCallUnexpectedError
+	}
+
+	pubKeyStr := C.GoString(pubKey)
+	amountStr := C.GoString(amount)
+	amountInt64, err := strconv.ParseInt(amountStr, 10, 64)
+	if err != nil || amountInt64 <= 0 {
+		return ApiCallUnexpectedError
+	}
+
+	cost, err := sbx.host.GrantServi(pubKeyStr, amountInt64)
+	*gasUsed = C.size_t(cost.Data)
+
+	if err != nil {
+		return ApiCallUnexpectedError
+	}
+
+	return ApiCallSuccess
+}

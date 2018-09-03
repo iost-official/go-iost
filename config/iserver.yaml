@@ -1,9 +1,19 @@
 acc:
   id: "IOST5FhLBhVXMnwWRwhvz5j9NyWpBSchAMzpSMZT21xZqT8w7icwJ5"
   seckey: "BCV7fV37aSWNx1N1Yjk3TdQXeHMmLhyqsqGms1PkqwPT"
+genesis:
+  createGenesis: true
+  genesisHash: ""
+  witnessInfo:
+    - "IOST5FhLBhVXMnwWRwhvz5j9NyWpBSchAMzpSMZT21xZqT8w7icwJ5"
+    - "13400000000"
+    - "IOST6Jymdka3EFLAv8954MJ1nBHytNMwBkZfcXevE2PixZHsSrRkbR"
+    - "13200000000"
+    - "IOST7gKuvHVXtRYupUixCcuhW95izkHymaSsgKTXGDjsyy5oTMvAAm"
+    - "13100000000"
 
 vm:
-  logLevel: "debug"
+  logLevel: ""
   jsPath: "vm/v8vm/v8/libjs/"
 db:
   ldbpath: "leveldb/"
@@ -14,7 +24,7 @@ p2p:
   chainID: 1024
   version: 1
   seedNodes:
-  - "/ip4/127.0.0.1/tcp/30303/ipfs/12D3KooWBBhYDkCUjgtPRsTirrcbRtKtL4n2Q4RqX1PM43jmrC1r"
+    - "/ip4/127.0.0.1/tcp/30303/ipfs/12D3KooWBBhYDkCUjgtPRsTirrcbRtKtL4n2Q4RqX1PM43jmrC1r"
 
 rpc:
   JSONPort: 30301
@@ -27,5 +37,13 @@ log:
     level: "info"
     enable: true
   consoleLog:
-    level: "debug"
+    level: "info"
     enable: true
+
+metrics:
+  pushAddr: "47.75.42.25:9091"
+  enable: true
+  id: "10"
+
+debug:
+  listenAddr: "0.0.0.0:40303"

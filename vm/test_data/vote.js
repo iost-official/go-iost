@@ -3,37 +3,45 @@ class VoteContract {
 		this.producerRegisterFee = 1000 * 10000;
 		this.producerNumber = 7;
 		this.preProducerThreshold = 2100 * 10000;
-		this.preProducerMap = {};
 		this.voteLockTime = 200;
+        this.preProducerMap = {};
+        this.currentProducerList = [];
+        this.pendingProducerList = [];
+        this.pendingBlockNumber = 0;
+        this.producerTable = {}
+        this.voteTable = {}
+    }
 
-		this.currentProducerList = [];
-		this.pendingProducerList = [
-			"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4",
-			"IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9",
-			"IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB",
-			"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9",
-			"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN",
-			"IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",
-			"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd"
-		];
-		this.pendingBlockNumber = 0;
-		this.producerTable = {}
-		this.voteTable = {}
+    Init() {
+        this.preProducerMap = {};
+        this.currentProducerList = [];
+        this.pendingProducerList = [
+            "IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4",
+            "IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9",
+            "IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB",
+            "IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9",
+            "IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN",
+            "IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",
+            "IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd"
+        ];
+        this.pendingBlockNumber = 0;
+        this.producerTable = {}
+        this.voteTable = {}
 
-		for (var i = 0; i < this.producerNumber; i++) {
-			var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
-			if (ret != 0) {
-				throw new Error("constructor deposit failed. ret = " + ret);
-			}
-			this.producerTable[this.pendingProducerList[i]] = {
-				"loc": "",
-				"url": "",
-				"netId": "",
-				"online": true,
-				"score": 0,
-				"votes": 0
-			}
-		}
+        for (var i = 0; i < this.producerNumber; i++) {
+            var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
+            if (ret != 0) {
+                throw new Error("constructor deposit failed. ret = " + ret);
+            }
+            this.producerTable[this.pendingProducerList[i]] = {
+                "loc": "",
+                "url": "",
+                "netId": "",
+                "online": true,
+                "score": 0,
+                "votes": 0
+            }
+        }
     }
 
 	_requireAuth(account) {
@@ -57,10 +65,10 @@ class VoteContract {
 		if (this.producerTable.hasOwnProperty(account) !== false) {
 			throw new Error("producer exists");
 		}
-		//var ret = BlockChain.deposit(account, this.producerRegisterFee);
-		//if (ret != 0) {
-		//	throw new Error("register deposit failed. ret = " + ret);
-		//}
+		var ret = BlockChain.deposit(account, this.producerRegisterFee);
+		if (ret != 0) {
+			throw new Error("register deposit failed. ret = " + ret);
+		}
 		this.producerTable[account] = {
 			"loc": loc,
 			"url": url,
@@ -191,7 +199,11 @@ class VoteContract {
 			throw new Error("withdraw failed. ret = " + ret);
 		}
 
-		// todo calc servi
+        var servi = Math.floor(amount * this._getBlockNumber() / this.voteLockTime);
+		ret = BlockChain.grantServi(voter, servi);
+		if (ret != 0) {
+		    throw new Error("grant servi failed. ret = " + ret);
+        }
 	}
 
 	// calculate the vote result, modify pendingProducerList
@@ -210,7 +222,6 @@ class VoteContract {
                     "score": pro.score
                 });
             }
-
         }
 		for (var i = 0; i < preList.length; i++) {
 			var key = preList[i].key
@@ -230,12 +241,11 @@ class VoteContract {
 		var oldPreList = [];
         for (let key in this.pendingProducerList) {
 		    var x = this.pendingProducerList[key];
-			return {
+			oldPreList.push({
 				"key": x,
 				"score": this.producerTable[x].score
-			};
+			});
 		};
-		oldPreList.sort(scoreCmp);
 
 		// replace at most replaceNum producers
 		for (var i = 0; i < replaceNum; i++) {
