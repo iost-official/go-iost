@@ -15,11 +15,13 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"time"
 )
 
 var testID = []string{
@@ -1156,4 +1158,82 @@ func TestJS_Vote(t *testing.T) {
 	t.Log(js.vi.Servi(testID[0]))
 	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
 	t.Log(js.vi.Balance(testID[0]))
+}
+
+func TestJS_Genesis(t *testing.T) {
+	witnessInfo := testID
+	var acts []*tx.Action
+	for i := 0; i < len(witnessInfo)/2; i++ {
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], 50000000))
+		acts = append(acts, &act)
+	}
+	// deploy iost.vote
+	voteFilePath := "/home/wangyu/gocode/src/github.com/iost-official/Go-IOS-Protocol/vm/test_data/vote.js"
+	voteAbiPath := "/home/wangyu/gocode/src/github.com/iost-official/Go-IOS-Protocol/vm/test_data/vote.js.abi"
+	fd, err := common.ReadFile(voteFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawCode := string(fd)
+	fd, err = common.ReadFile(voteAbiPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawAbi := string(fd)
+	c := contract.Compiler{}
+	code, err := c.Parse("iost.vote", rawCode, rawAbi)
+	if err != nil {
+		t.Fatal(err)
+	}
+	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
+	acts = append(acts, &act)
+	// deploy iost.bonus
+	act = tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
+	acts = append(acts, &act)
+
+	trx := tx.NewTx(acts, nil, 10000000, 0, 0)
+	trx.Time = 0
+	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	trx, err = tx.SignTx(trx, acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	blockHead := block.BlockHead{
+		Version:    0,
+		ParentHash: nil,
+		Number:     0,
+		Witness:    acc.ID,
+		Time:       time.Now().Unix() / common.SlotLength,
+	}
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	engine := NewEngine(&blockHead, mvccdb)
+	txr, err := engine.Exec(trx)
+	if err != nil {
+		t.Fatal(fmt.Errorf("exec tx failed, stop the pogram. err: %v", err))
+	}
+	t.Log(txr)
+	if txr.Status.Code != tx.Success {
+		t.Fatal("exec trx failed.")
+	}
+	blk := block.Block{
+		Head:     &blockHead,
+		Sign:     &crypto.Signature{},
+		Txs:      []*tx.Tx{trx},
+		Receipts: []*tx.TxReceipt{txr},
+	}
+	blk.Head.TxsHash = blk.CalculateTxsHash()
+	blk.Head.MerkleHash = blk.CalculateMerkleHash()
+	err = blk.CalculateHeadHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 }
