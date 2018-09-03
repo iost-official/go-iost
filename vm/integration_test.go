@@ -899,17 +899,52 @@ func TestJS_Vote1(t *testing.T) {
 	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
 	js.FlushDB(t, keys)
 
+	// test require auth
 	t.Log(js.vi.Balance(testID[18]))
 	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[2])))
 	js.FlushDB(t, keys)
 
+	// get pending producer info
 	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber")))
 	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber"))))
 	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList")))
 	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList"))))
 
+	// test re register
 	t.Log(js.vi.Balance(testID[18]))
 	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+	js.FlushDB(t, keys)
+}
+
+func TestJS_VoteServi(t *testing.T) {
+	js := NewJSTester(t)
+	defer js.Clear()
+	lc, err := ReadFile("test_data/vote.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
+	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
+	js.SetAPI("LogInProducer", "string")
+	js.SetAPI("LogOutProducer", "string")
+	js.SetAPI("UnregisterProducer", "string")
+	js.SetAPI("Vote", "string", "string", "number")
+	js.SetAPI("Unvote", "string", "string", "number")
+	js.SetAPI("Stat")
+	js.SetAPI("Init")
+	for i := 0; i <= 18; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	js.vi.Commit()
+	t.Log(js.DoSet())
+	t.Log(js.TestJS("Init", `[]`))
+	keys := []string{
+		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
+		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
+		"producerTable",
+		"voteTable",
+	}
 	js.FlushDB(t, keys)
 }
 
@@ -995,9 +1030,12 @@ func TestJS_Vote(t *testing.T) {
 	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 20000001)))
 	js.FlushDB(t, keys)
 
+	t.Log(database.MustUnmarshal(js.vi.Get("i-" + testID[0] + "-s")))
 	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 1000000)))
 	js.FlushDB(t, keys)
 
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.TotalServi())
 	// stat pending producers don't get score
 	t.Log(js.TestJS("Stat", `[]`))
 	js.FlushDB(t, keys)
@@ -1055,6 +1093,8 @@ func TestJS_Vote(t *testing.T) {
 
 	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
 	js.FlushDB(t, keys)
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.TotalServi())
 
 	// unregister
 	t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
@@ -1063,6 +1103,8 @@ func TestJS_Vote(t *testing.T) {
 	// unvote after unregister
 	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 9000000)))
 	js.FlushDB(t, keys)
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.TotalServi())
 
 	// re register, score = 0, vote = 0
 	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
@@ -1078,4 +1120,40 @@ func TestJS_Vote(t *testing.T) {
 	// unregister pre producer
 	t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
 	js.FlushDB(t, keys)
+
+	// test bonus
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
+	act2 := tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
+
+	trx2, err := MakeTx(act2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := js.e.Exec(trx2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(r)
+
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
+	t.Log(js.vi.Balance(testID[0]))
+	act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 21099999))
+
+	trx2, err = MakeTx(act2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, err = js.e.Exec(trx2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(r)
+
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
+	t.Log(js.vi.Balance(testID[0]))
 }

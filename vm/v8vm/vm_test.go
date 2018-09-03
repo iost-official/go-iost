@@ -443,3 +443,12 @@ func TestEngine_Console(t *testing.T) {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
 }
+
+func TestEngine_Blockchain(t *testing.T) {
+	host, code := MyInit(t, "blockchain1")
+	rs, _, err := vmPool.LoadAndCall(host, code, "gs")
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+	t.Log(rs)
+}
