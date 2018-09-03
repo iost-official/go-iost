@@ -23,7 +23,7 @@ var cons Consensus
 var once sync.Once
 
 // Factory handles the different consensus strategy.
-func Factory(consensusType string, account account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) (Consensus, error) {
+func Factory(consensusType string, account *account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) (Consensus, error) {
 	if consensusType == "" {
 		consensusType = "pob"
 	}

@@ -9,10 +9,12 @@ static countermandFunc CCountermand = nullptr;
 static blockInfoFunc CBlkInfo = nullptr;
 static txInfoFunc CTxInfo = nullptr;
 static callFunc CCall = nullptr;
+static callFunc CCallWR = nullptr;
+static requireAuthFunc CRequireAuth = nullptr;
 
 void InitGoBlockchain(transferFunc transfer, withdrawFunc withdraw,
                         depositFunc deposit, topUpFunc topUp, countermandFunc countermand,
-                        blockInfoFunc blkInfo, txInfoFunc txInfo, callFunc call) {
+                        blockInfoFunc blkInfo, txInfoFunc txInfo, callFunc call, callFunc callWR, requireAuthFunc requireAuth) {
     CTransfer = transfer;
     CWithdraw = withdraw;
     CDeposit = deposit;
@@ -21,6 +23,8 @@ void InitGoBlockchain(transferFunc transfer, withdrawFunc withdraw,
     CBlkInfo = blkInfo;
     CTxInfo = txInfo;
     CCall = call;
+    CCallWR = callWR;
+    CRequireAuth = requireAuth;
 }
 
 int IOSTBlockchain::Transfer(const char *from, const char *to, const char *amount) {
@@ -98,6 +102,26 @@ char *IOSTBlockchain::Call(const char *contract, const char *api, const char *ar
     Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
     sbx->gasUsed += gasUsed;
     return result;
+}
+
+char *IOSTBlockchain::CallWithReceipt(const char *contract, const char *api, const char *args) {
+    size_t gasUsed = 0;
+    char *result = nullptr;
+    int ret = CCallWR(sbxPtr, contract, api, args, &result, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
+    return result;
+}
+
+bool IOSTBlockchain::RequireAuth(const char *pubKey) {
+    size_t gasUsed = 0;
+    bool ok = false;
+    int ret = CRequireAuth(sbxPtr, pubKey, &ok, &gasUsed);
+
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
+    return ok;
 }
 
 void NewIOSTBlockchain(const FunctionCallbackInfo<Value> &args) {
@@ -417,7 +441,7 @@ void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
     Local<Value> contract = args[0];
     if (!contract->IsString()) {
         Local<Value> err = Exception::Error(
-            String::NewFromUtf8(isolate, "IOSTBlockchain_call from must be string")
+            String::NewFromUtf8(isolate, "IOSTBlockchain_call contract must be string")
         );
         isolate->ThrowException(err);
         return;
@@ -425,7 +449,7 @@ void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
     Local<Value> api = args[1];
     if (!api->IsString()) {
         Local<Value> err = Exception::Error(
-            String::NewFromUtf8(isolate, "IOSTBlockchain_call to must be string")
+            String::NewFromUtf8(isolate, "IOSTBlockchain_call api must be string")
         );
         isolate->ThrowException(err);
         return;
@@ -433,7 +457,7 @@ void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
     Local<Value> arg = args[2];
     if (!arg->IsString()) {
         Local<Value> err = Exception::Error(
-            String::NewFromUtf8(isolate, "IOSTBlockchain_call amount must be string")
+            String::NewFromUtf8(isolate, "IOSTBlockchain_call arg must be string")
         );
         isolate->ThrowException(err);
         return;
@@ -457,6 +481,99 @@ void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
         args.GetReturnValue().Set(String::NewFromUtf8(isolate, ret));
         free(ret);
     }
+}
+
+//todo refine this code
+void IOSTBlockchain_callWithReceipt(const FunctionCallbackInfo<Value> &args) {
+    Isolate *isolate = args.GetIsolate();
+    Local<Object> self = args.Holder();
+
+    if (args.Length() != 3) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTBlockchain_callWithReceipt invalid argument length")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
+    Local<Value> contract = args[0];
+    if (!contract->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTBlockchain_callWithReceipt contract must be string")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+    Local<Value> api = args[1];
+    if (!api->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTBlockchain_callWithReceipt api must be string")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+    Local<Value> arg = args[2];
+    if (!arg->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTBlockchain_callWithReceipt arg must be string")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
+    String::Utf8Value contractStr(contract);
+    String::Utf8Value apiStr(api);
+    String::Utf8Value argStr(arg);
+
+    Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
+    if (!extVal->IsExternal()) {
+        std::cout << "IOSTBlockchain_callWithReceipt val error" << std::endl;
+        return;
+    }
+
+    IOSTBlockchain *bc = static_cast<IOSTBlockchain *>(extVal->Value());
+    char *ret = bc->CallWithReceipt(*contractStr, *apiStr, *argStr);
+    if (ret == nullptr) {
+        args.GetReturnValue().SetNull();
+    } else {
+        args.GetReturnValue().Set(String::NewFromUtf8(isolate, ret));
+        free(ret);
+    }
+}
+
+void IOSTBlockchain_requireAuth(const FunctionCallbackInfo<Value> &args) {
+    Isolate *isolate = args.GetIsolate();
+    Local<Object> self = args.Holder();
+
+    if (args.Length() != 1) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTBlockchain_requireAuth invalid argument length")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
+    Local<Value> pubKey = args[0];
+    if (!pubKey->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTBlockchain_requireAuth pubKey must be string")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
+    String::Utf8Value pubKeyStr(pubKey);
+
+    Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
+    if (!extVal->IsExternal()) {
+        std::cout << "IOSTBlockchain_requireAuth val error" << std::endl;
+        return;
+    }
+
+    IOSTBlockchain *bc = static_cast<IOSTBlockchain *>(extVal->Value());
+    bool ret = bc->RequireAuth(*pubKeyStr);
+
+    args.GetReturnValue().Set(ret);
 }
 
 void InitBlockchain(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
@@ -499,6 +616,15 @@ void InitBlockchain(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
         String::NewFromUtf8(isolate, "call"),
         FunctionTemplate::New(isolate, IOSTBlockchain_call)
     );
+    blockchainTpl->Set(
+        String::NewFromUtf8(isolate, "callWithReceipt"),
+        FunctionTemplate::New(isolate, IOSTBlockchain_callWithReceipt)
+    );
+    blockchainTpl->Set(
+        String::NewFromUtf8(isolate, "requireAuth"),
+        FunctionTemplate::New(isolate, IOSTBlockchain_requireAuth)
+    );
+
 
     globalTpl->Set(blockchainClassName, blockchainClass);
 }

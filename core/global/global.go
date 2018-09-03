@@ -71,14 +71,14 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		Time:       time.Now().Unix() / common.SlotLength,
 	}
 	engine := vm.NewEngine(&blockHead, db)
-	txr, err := engine.Exec(&trx)
+	txr, err := engine.Exec(trx)
 	if err != nil {
 		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v", err)
 	}
 	blk := block.Block{
 		Head:     &blockHead,
 		Sign:     &crypto.Signature{},
-		Txs:      []*tx.Tx{&trx},
+		Txs:      []*tx.Tx{trx},
 		Receipts: []*tx.TxReceipt{txr},
 	}
 	blk.Head.TxsHash = blk.CalculateTxsHash()
@@ -156,6 +156,10 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeFetchGenesis, witnessList: witnessList, config: conf}, nil
 	}
 	stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
+	if err != nil {
+		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
+	}
+	blk, err = blockChain.Top()
 	if err != nil {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}

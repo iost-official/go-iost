@@ -4,13 +4,14 @@ package v8
 #include <stdlib.h>
 #include "v8/vm.h"
 #cgo darwin LDFLAGS: -lvm
-#cgo linux LDFLAGS: -L${SRCDIR}/v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath ${SRCDIR}/v8/libv8/_linux_amd64
+#cgo linux LDFLAGS: -L${SRCDIR}/v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath,${SRCDIR}/v8/libv8/_linux_amd64
 */
 import "C"
 import (
+	"sync"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
-	"sync"
 )
 
 var CVMInitOnce = sync.Once{}
@@ -20,32 +21,27 @@ type VM struct {
 	isolate              C.IsolatePtr
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
+	jsPath               string
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
 }
 
 // NewVM return new vm with isolate and sandbox
-func NewVM() *VM {
+func NewVM(jsPath string) *VM {
 	CVMInitOnce.Do(func() {
 		C.init()
 	})
 	isolate := C.newIsolate()
 	e := &VM{
 		isolate: isolate,
+		jsPath:  jsPath,
 	}
 	e.sandbox = NewSandbox(e)
 	return e
 }
 
-func NewVMWithChannel(releaseChannel chan *VM) *VM {
-	CVMInitOnce.Do(func() {
-		C.init()
-	})
-	isolate := C.newIsolate()
-	e := &VM{
-		isolate: isolate,
-	}
-	e.sandbox = NewSandbox(e)
+func NewVMWithChannel(jsPath string, releaseChannel chan *VM) *VM {
+	e := NewVM(jsPath)
 	e.releaseChannel = releaseChannel
 	return e
 }
@@ -97,12 +93,15 @@ func (e *VM) setReleaseChannel(releaseChannel chan *VM) {
 }
 
 func (e *VM) recycle() {
-	var newE = NewVM()
-	if e.releaseChannel != nil {
-		newE.setReleaseChannel(e.releaseChannel)
-		newE.releaseChannel <- newE
+	// first release sandbox
+	if e.sandbox != nil {
+		e.sandbox.Release()
 	}
-	e.release()
+	// then gen new sandbox
+	e.sandbox = NewSandbox(e)
+	if e.releaseChannel != nil {
+		e.releaseChannel <- e
+	}
 }
 
 // Release release all engine associate resource

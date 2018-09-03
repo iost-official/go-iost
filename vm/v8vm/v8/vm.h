@@ -75,11 +75,16 @@ extern IsolatePtr newIsolate();
 extern void releaseIsolate(IsolatePtr ptr);
 
 extern SandboxPtr newSandbox(IsolatePtr ptr);
+extern void loadVM(SandboxPtr ptr);
 extern void releaseSandbox(SandboxPtr ptr);
 
 extern ValueTuple Execute(SandboxPtr ptr, const char *code);
 extern void setJSPath(SandboxPtr ptr, const char *jsPath);
 extern void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit);
+
+// log
+typedef int (*consoleFunc)(SandboxPtr, const char *, const char *);
+void InitGoConsole(consoleFunc);
 
 // require
 typedef char *(*requireFunc)(SandboxPtr, const char *);
@@ -94,9 +99,10 @@ typedef int (*countermandFunc)(SandboxPtr, const char *, const char *, const cha
 typedef int (*blockInfoFunc)(SandboxPtr, char **, size_t *);
 typedef int (*txInfoFunc)(SandboxPtr, char **, size_t *);
 typedef int (*callFunc)(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
+typedef int (*requireAuthFunc)(SandboxPtr, const char *, const bool *, size_t *);
 void InitGoBlockchain(transferFunc, withdrawFunc,
                         depositFunc, topUpFunc, countermandFunc,
-                        blockInfoFunc, txInfoFunc, callFunc);
+                        blockInfoFunc, txInfoFunc, callFunc, callFunc, requireAuthFunc);
 
 // storage
 typedef int (*putFunc)(SandboxPtr, const char *, const char *, size_t *);

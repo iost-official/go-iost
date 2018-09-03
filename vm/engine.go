@@ -136,7 +136,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	}
 
 	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
-	ilog.Debug(bl, tx0.GasPrice*tx0.GasLimit)
+
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
 	}
@@ -306,7 +306,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		cost = host.ABINotFoundCost
 		status = tx.Status{
 			Code:    tx.ErrorParamter,
-			Message: errABINotFound.Error() + action.Contract,
+			Message: errABINotFound.Error() + action.Contract + "." + action.ActionName,
 		}
 		return
 	}
