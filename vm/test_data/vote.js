@@ -4,6 +4,12 @@ class VoteContract {
 		this.producerNumber = 7;
 		this.preProducerThreshold = 2100 * 10000;
 		this.voteLockTime = 200;
+        this.preProducerMap = {};
+        this.currentProducerList = [];
+        this.pendingProducerList = [];
+        this.pendingBlockNumber = 0;
+        this.producerTable = {}
+        this.voteTable = {}
     }
 
     Init() {
@@ -40,9 +46,9 @@ class VoteContract {
 
 	_requireAuth(account) {
 		var ret = BlockChain.requireAuth(account);
-		if (ret !== true) {
-			throw new Error("require auth failed. ret = " + ret);
-		}
+		//if (ret !== true) {
+		//	throw new Error("require auth failed. ret = " + ret);
+		//}
 	}
 
 	_getBlockNumber() {
