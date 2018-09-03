@@ -30,7 +30,7 @@ func NewTeller(h *Host) Teller {
 func (h *Teller) transfer(from, to string, amount int64) error {
 	bf := h.h.db.Balance(from)
 	//ilog.Debugf("%v's balance : %v", from, bf)
-	if bf > amount {
+	if strings.HasPrefix(from, ContractAccountPrefix) && bf >= amount || bf > amount {
 		h.h.db.SetBalance(from, -1*amount)
 		h.h.db.SetBalance(to, amount)
 		return nil
@@ -174,13 +174,24 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 		if fee == 0 {
 			continue
 		}
+		bfee := fee / 10
 		if strings.HasPrefix(k, "IOST") {
-			err := h.transfer(k, witness, fee)
+			err := h.transfer(k, witness, fee-bfee)
+			if err != nil {
+				return err
+			}
+			// 10% of gas transfered to iost.bonus
+			err = h.transfer(k, ContractAccountPrefix+"iost.bonus", bfee)
 			if err != nil {
 				return err
 			}
 		} else if strings.HasPrefix(k, ContractGasPrefix) {
-			err := h.transfer(k, witness, fee)
+			err := h.transfer(k, witness, fee-bfee)
+			if err != nil {
+				return err
+			}
+			// 10% of gas transfered to iost.bonus
+			err = h.transfer(k, ContractAccountPrefix+"iost.bonus", bfee)
 			if err != nil {
 				return err
 			}

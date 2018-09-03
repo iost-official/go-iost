@@ -45,6 +45,9 @@ var (
 			if token > bl {
 				token = bl
 			}
+			if token <= 0 {
+				return []interface{}{}, cost, nil
+			}
 
 			cost0, err = h.Withdraw(acc, token)
 			cost.AddAssign(cost0)

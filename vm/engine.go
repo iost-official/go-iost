@@ -88,6 +88,9 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 	if db.Contract("iost.system") == nil {
 		db.SetContract(native.ABI())
 	}
+	if db.Contract("iost.bonus") == nil {
+		db.SetContract(native.BonusABI())
+	}
 
 	logger := ilog.New()
 	logger.Stop()

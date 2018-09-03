@@ -38,7 +38,6 @@ func (m *BalanceHandler) serviKey(to string) string {
 
 // SetServi add delta to servi of to
 func (m *BalanceHandler) SetServi(to string, delta int64) {
-	println("set servi ", to, m.serviKey(to))
 	ib := m.Servi(to)
 	nb := ib + delta
 	m.db.Put(m.serviKey(to), MustMarshal(nb))

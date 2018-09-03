@@ -46,9 +46,9 @@ class VoteContract {
 
 	_requireAuth(account) {
 		var ret = BlockChain.requireAuth(account);
-		//if (ret !== true) {
-		//	throw new Error("require auth failed. ret = " + ret);
-		//}
+		if (ret !== true) {
+			throw new Error("require auth failed. ret = " + ret);
+		}
 	}
 
 	_getBlockNumber() {
