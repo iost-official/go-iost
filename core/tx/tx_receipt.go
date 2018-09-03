@@ -72,7 +72,7 @@ func NewTxReceipt(txHash []byte) TxReceipt {
 	}
 }
 
-func (r *TxReceipt) Encode() []byte {
+func (r *TxReceipt) ToTxReceiptRaw() *TxReceiptRaw {
 	tr := &TxReceiptRaw{
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
@@ -88,19 +88,18 @@ func (r *TxReceipt) Encode() []byte {
 			Content: re.Content,
 		})
 	}
-	b, err := proto.Marshal(tr)
+	return tr
+}
+
+func (r *TxReceipt) Encode() []byte {
+	b, err := proto.Marshal(r.ToTxReceiptRaw())
 	if err != nil {
 		panic(err)
 	}
 	return b
 }
 
-func (r *TxReceipt) Decode(b []byte) error {
-	tr := &TxReceiptRaw{}
-	err := proto.Unmarshal(b, tr)
-	if err != nil {
-		return err
-	}
+func (r *TxReceipt) FromTxReceiptRaw(tr *TxReceiptRaw) {
 	r.TxHash = tr.TxHash
 	r.GasUsage = tr.GasUsage
 	r.Status = Status{
@@ -115,6 +114,15 @@ func (r *TxReceipt) Decode(b []byte) error {
 			Content: re.Content,
 		})
 	}
+}
+
+func (r *TxReceipt) Decode(b []byte) error {
+	tr := &TxReceiptRaw{}
+	err := proto.Unmarshal(b, tr)
+	if err != nil {
+		return err
+	}
+	r.FromTxReceiptRaw(tr)
 	return nil
 }
 
