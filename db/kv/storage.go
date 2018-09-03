@@ -13,8 +13,9 @@ type StorageBackend interface {
 	Has(key []byte) (bool, error)
 	Delete(key []byte) error
 	Keys(prefix []byte) ([][]byte, error)
+	BeginBatch() error
+	CommitBatch() error
 	Close() error
-	Write(batch interface{}) error
 }
 
 type Storage struct {
@@ -37,31 +38,22 @@ func (s *Storage) Has(key []byte) (bool, error) {
 	return false, nil
 }
 
+func (s *Storage) Delete(key []byte) error {
+	return nil
+}
+
 func (s *Storage) Keys(prefix []byte) ([][]byte, error) {
 	return nil, nil
 }
 
+func (s *Storage) BeginBatch() error {
+	return nil
+}
+
+func (s *Storage) CommitBatch() error {
+	return nil
+}
+
 func (s *Storage) Close() error {
-	return nil
-}
-
-func (s *Storage) Write(batch Batch) error {
-	return nil
-}
-
-func (s *Storage) NewBatch() *Batch {
-	return nil
-}
-
-type BatchBackend interface {
-	Put(key []byte, value []byte) error
-	Delete(key []byte) error
-}
-
-type Batch struct {
-	BatchBackend
-}
-
-func newBatch(t StorageType) *Batch {
 	return nil
 }

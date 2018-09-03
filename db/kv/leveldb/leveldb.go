@@ -1,7 +1,7 @@
 package leveldb
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -62,7 +62,7 @@ func (d *DB) Keys(prefix []byte) ([][]byte, error) {
 
 func (d *DB) BeginBatch() error {
 	if d.batch != nil {
-		return errors.New("not support nested batch write")
+		return fmt.Errorf("not support nested batch write")
 	}
 	d.batch = new(leveldb.Batch)
 	return nil
@@ -70,7 +70,7 @@ func (d *DB) BeginBatch() error {
 
 func (d *DB) CommitBatch() error {
 	if d.batch == nil {
-		return errors.New("no batch write to commit")
+		return fmt.Errorf("no batch write to commit")
 	}
 	err := d.db.Write(d.batch, nil)
 	if err != nil {
