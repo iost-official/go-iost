@@ -88,9 +88,11 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	if !signature.Verify(hash) {
 		return errSignature
 	}
-	if staticProperty.hasSlot(head.Time) {
-		return errSlot
-	}
+	/*
+		if staticProperty.hasSlot(head.Time) {
+			return errSlot
+		}
+	*/
 	return nil
 }
 
