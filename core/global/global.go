@@ -10,10 +10,12 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 )
 
 func (m TMode) String() string {
@@ -52,6 +54,23 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], witnessInfo[2*i+1]))
 		acts = append(acts, &act)
 	}
+	// deploy iost.vote
+	voteFilePath := "/home/wangyu/gocode/src/github.com/iost-official/Go-IOS-Protocol/vm/test_data/vote.js"
+	fd, err := common.ReadFile(voteFilePath)
+	if err != nil {
+		return nil, err
+	}
+	rawCode := string(fd)
+	code := &contract.Contract{
+		ID:   "iost.vote",
+		Code: rawCode,
+	}
+	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
+	acts = append(acts, &act)
+	// deploy iost.bonus
+	act = tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
+	acts = append(acts, &act)
+
 	trx := tx.NewTx(acts, nil, 0, 0, 0)
 	trx.Time = 0
 	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
