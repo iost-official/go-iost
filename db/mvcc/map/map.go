@@ -21,18 +21,22 @@ func New() *MVCCMap {
 	}
 }
 
-func (m *MVCCMap) Get(key []byte) interface{} {
-	m.rwmu.RLock()
-	defer m.rwmu.RUnlock()
-
+func (m *MVCCMap) getFromLink(key []byte) interface{} {
 	v, ok := m.data[string(key)]
 	if !ok {
 		if m.parent == nil {
 			return nil
 		}
-		return m.parent.Get(key)
+		return m.parent.getFromLink(key)
 	}
 	return v
+}
+
+func (m *MVCCMap) Get(key []byte) interface{} {
+	m.rwmu.RLock()
+	defer m.rwmu.RUnlock()
+
+	return m.getFromLink(key)
 }
 
 func (m *MVCCMap) Put(key []byte, value interface{}) {
@@ -42,10 +46,7 @@ func (m *MVCCMap) Put(key []byte, value interface{}) {
 	m.data[string(key)] = value
 }
 
-func (m *MVCCMap) All(prefix []byte) []interface{} {
-	m.rwmu.RLock()
-	defer m.rwmu.RUnlock()
-
+func (m *MVCCMap) allFromLink(prefix []byte) []interface{} {
 	values := make([]interface{}, 0)
 	for k, v := range m.data {
 		if strings.HasPrefix(string(k), string(prefix)) {
@@ -55,7 +56,14 @@ func (m *MVCCMap) All(prefix []byte) []interface{} {
 	if m.parent == nil {
 		return values
 	}
-	return append(m.parent.All(prefix), values...)
+	return append(m.parent.allFromLink(prefix), values...)
+}
+
+func (m *MVCCMap) All(prefix []byte) []interface{} {
+	m.rwmu.RLock()
+	defer m.rwmu.RUnlock()
+
+	return m.allFromLink(prefix)
 }
 
 func (m *MVCCMap) Fork() interface{} {
@@ -72,12 +80,9 @@ func (m *MVCCMap) Fork() interface{} {
 	return mvccmap
 }
 
-func (m *MVCCMap) Free() {
-	m.rwmu.Lock()
-	defer m.rwmu.Unlock()
-
+func (m *MVCCMap) freeFromLink() {
 	if m.parent != nil {
-		m.parent.Free()
+		m.parent.freeFromLink()
 	}
 	for _, ref := range m.refs {
 		ref.parent = nil
@@ -85,4 +90,11 @@ func (m *MVCCMap) Free() {
 	m.parent = nil
 	m.refs = nil
 	m.data = nil
+}
+
+func (m *MVCCMap) Free() {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
+	m.freeFromLink()
 }
