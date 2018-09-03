@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
@@ -78,7 +79,7 @@ func (s *RPCServer) Stop() {
 }
 
 // GetHeight ...
-func (s *RPCServer) GetHeight(ctx context.Context, void *VoidReq) (*HeightRes, error) {
+func (s *RPCServer) GetHeight(ctx context.Context, empty *empty.Empty) (*HeightRes, error) {
 	return &HeightRes{
 		Height: s.bchain.Length() - 1,
 	}, nil
@@ -101,6 +102,44 @@ func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, err
 	return &TxRes{
 		TxRaw: trx.ToTxRaw(),
 		Hash:  trx.Hash(),
+	}, nil
+}
+
+// GetTxReceiptByHash ...
+func (s *RPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*TxReceiptRes, error) {
+	if hash == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	receiptHash := hash.Hash
+	receiptHashBytes := common.Base58Decode(receiptHash)
+
+	receipt, err := s.txdb.GetReceipt(receiptHashBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TxReceiptRes{
+		TxReceiptRaw: receipt.ToTxReceiptRaw(),
+		Hash:         receiptHashBytes,
+	}, nil
+}
+
+//
+func (s *RPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*TxReceiptRes, error) {
+	if hash == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	txHash := hash.Hash
+	txHashBytes := common.Base58Decode(txHash)
+
+	receipt, err := s.txdb.GetReceiptByTxHash(txHashBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TxReceiptRes{
+		TxReceiptRaw: receipt.ToTxReceiptRaw(),
+		Hash:         receipt.Hash(),
 	}, nil
 }
 
@@ -132,6 +171,13 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
 		} else {
 			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
+		}
+	}
+	for _, receipt := range blk.Receipts {
+		if complete {
+			blkInfo.Receipts = append(blkInfo.Receipts, receipt.ToTxReceiptRaw())
+		} else {
+			blkInfo.ReceiptHash = append(blkInfo.ReceiptHash, receipt.Hash())
 		}
 	}
 	return blkInfo, nil

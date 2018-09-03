@@ -206,6 +206,56 @@
         ]
       }
     },
+    "/getTxReceiptByHash/{hash}": {
+      "get": {
+        "summary": "get receipt by hash",
+        "operationId": "GetTxReceiptByHash",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpctxReceiptRes"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/getTxReceiptByTxHash/{hash}": {
+      "get": {
+        "summary": "get receipt by txhash",
+        "operationId": "GetTxReceiptByTxHash",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpctxReceiptRes"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
     "/sendRawTx": {
       "post": {
         "summary": "receive encoded tx",
@@ -362,6 +412,19 @@
             "type": "string",
             "format": "byte"
           }
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/txTxReceiptRaw"
+          }
+        },
+        "receiptHash": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
         }
       }
     },
@@ -437,6 +500,18 @@
         }
       }
     },
+    "rpctxReceiptRes": {
+      "type": "object",
+      "properties": {
+        "txReceiptRaw": {
+          "$ref": "#/definitions/txTxReceiptRaw"
+        },
+        "hash": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
     "rpctxRes": {
       "type": "object",
       "properties": {
@@ -459,6 +534,30 @@
           "type": "string"
         },
         "data": {
+          "type": "string"
+        }
+      }
+    },
+    "txReceiptRaw": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "content": {
+          "type": "string"
+        }
+      }
+    },
+    "txStatusRaw": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
           "type": "string"
         }
       }
@@ -503,6 +602,32 @@
         },
         "publisher": {
           "$ref": "#/definitions/cryptoSignatureRaw"
+        }
+      }
+    },
+    "txTxReceiptRaw": {
+      "type": "object",
+      "properties": {
+        "txHash": {
+          "type": "string",
+          "format": "byte"
+        },
+        "gasUsage": {
+          "type": "string",
+          "format": "int64"
+        },
+        "status": {
+          "$ref": "#/definitions/txStatusRaw"
+        },
+        "succActionNum": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/txReceiptRaw"
+          }
         }
       }
     }
