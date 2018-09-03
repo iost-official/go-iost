@@ -36,7 +36,13 @@ func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockV
 	db.EXPECT().Get("state", "c-iost.system").DoAndReturn(func(table string, key string) (string, error) {
 		return "-", nil
 	})
+	db.EXPECT().Get("state", "i-CAiost.bonus-b").DoAndReturn(func(table string, key string) (string, error) {
+		return "-", nil
+	})
 	db.EXPECT().Put("state", "c-iost.system", gomock.Any()).DoAndReturn(func(table string, key string, content string) error {
+		return nil
+	})
+	db.EXPECT().Put("state", "i-CAiost.bonus-b", gomock.Any()).DoAndReturn(func(table string, key string, content string) error {
 		return nil
 	})
 	return bh, db, vm
@@ -276,14 +282,14 @@ func TestCost(t *testing.T) { // tests of context transport
 	db.EXPECT().Put("state", "i-witness-b", gomock.Any()).Times(2).DoAndReturn(func(table string, key string, value string) error {
 
 		//fmt.Println("witness received money", database.MustUnmarshal(value))
-		if database.MustUnmarshal(value) != int64(1100) {
+		if database.MustUnmarshal(value) != int64(1090) {
 			t.Fatal(database.MustUnmarshal(value))
 		}
 		return nil
 	})
 
-	db.EXPECT().Put("state", "i-CGContract0-b", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
-		if database.MustUnmarshal(value) != int64(900) {
+	db.EXPECT().Put("state", "i-CGContract0-b", gomock.Any()).Times(2).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value) != int64(910) && database.MustUnmarshal(value) != int64(900) {
 			t.Fatal(database.MustUnmarshal(value))
 		}
 		return nil
@@ -400,14 +406,14 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 	})
 
 	db.EXPECT().Put("state", "i-witness-b", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
-		if database.MustUnmarshal(value).(int64) != int64(1303) {
+		if database.MustUnmarshal(value).(int64) != int64(1273) {
 			t.Fatal("witness", database.MustUnmarshal(value).(int64))
 		}
 		return nil
 	})
 
-	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ-b", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
-		if database.MustUnmarshal(value).(int64) != int64(9999697) {
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ-b", gomock.Any()).Times(2).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(9999727) && database.MustUnmarshal(value).(int64) != int64(9999697) {
 			t.Fatal("publisher", database.MustUnmarshal(value).(int64))
 		}
 		return nil
@@ -507,14 +513,14 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 	})
 
 	db.EXPECT().Put("state", "i-witness-b", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
-		if database.MustUnmarshal(value).(int64) != int64(1303) {
+		if database.MustUnmarshal(value).(int64) != int64(1273) {
 			t.Fatal("witness", database.MustUnmarshal(value).(int64))
 		}
 		return nil
 	})
 
-	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ-b", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
-		if database.MustUnmarshal(value).(int64) != int64(999697) {
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ-b", gomock.Any()).Times(2).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(999727) && database.MustUnmarshal(value).(int64) != int64(999697) {
 			t.Fatal("publisher", database.MustUnmarshal(value).(int64))
 		}
 		return nil
@@ -604,7 +610,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		return nil
 	})
 
-	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ-b", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ-b", gomock.Any()).Times(2).DoAndReturn(func(table string, key string, value string) error {
 		if database.MustUnmarshal(value).(int64) != int64(9999996) {
 			t.Fatal("publisher", database.MustUnmarshal(value).(int64))
 		}
@@ -722,7 +728,7 @@ module.exports = Contract;
 		return database.MustMarshal(int64(1000)), nil
 	})
 
-	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ-b", gomock.Any()).DoAndReturn(func(table string, key string, value string) error {
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ-b", gomock.Any()).Times(2).DoAndReturn(func(table string, key string, value string) error {
 
 		if database.MustUnmarshal(value).(int64) != 999993 {
 			t.Fatal(database.MustUnmarshal(value).(int64))
