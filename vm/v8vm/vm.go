@@ -8,9 +8,10 @@ package v8
 */
 import "C"
 import (
+	"sync"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
-	"sync"
 )
 
 var CVMInitOnce = sync.Once{}
