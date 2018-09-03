@@ -20,7 +20,3 @@ message BlockRaw {
     repeated bytes receipts = 4;
 }
 
-message BlockHeadAndSign {
-    BlockHead head = 1;
-    bytes sign = 2;
-}
