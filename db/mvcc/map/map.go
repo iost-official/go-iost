@@ -67,8 +67,8 @@ func (m *MVCCMap) All(prefix []byte) []interface{} {
 }
 
 func (m *MVCCMap) Fork() interface{} {
-	m.rwmu.RLock()
-	defer m.rwmu.RUnlock()
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
 
 	mvccmap := &MVCCMap{
 		data:   make(map[string]interface{}),
