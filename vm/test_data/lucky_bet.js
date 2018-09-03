@@ -1,6 +1,6 @@
 class Contract {
     constructor() {
-        this.maxUserNumber = 1;
+        this.maxUserNumber = 10;
         this.userNumber = 0;
         this.totalCoins = 0;
         this.lastLuckyBlock = -1;
@@ -33,7 +33,7 @@ class Contract {
             let bi = JSON.parse(BlockChain.blockInfo());
             let bn = bi.number;
             let ph = bi.parent_hash;
-            if (true  /*this.lastLuckyBlock < 0 || bn - this.lastLuckyBlock >= 16 || bn > this.lastLuckyBlock && ph[ph.length-1] % 16 === 0*/) {
+            if ( this.lastLuckyBlock < 0 || bn - this.lastLuckyBlock >= 16 || bn > this.lastLuckyBlock && ph[ph.length-1] % 16 === 0) {
                 this.lastLuckyBlock = bn;
 
                 this.getReward(bn);
