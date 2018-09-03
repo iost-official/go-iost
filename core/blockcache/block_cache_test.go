@@ -4,10 +4,11 @@ import (
 	"testing"
 	//	"fmt"
 
-	"github.com/golang/mock/gomock"
+	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
 
+	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
@@ -29,7 +30,7 @@ func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 	return ret
 }
 func TestBlockCache(t *testing.T) {
-	ctl := gomock.NewController(t)
+	ctl := NewController(t)
 	b0 := &block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
@@ -53,11 +54,11 @@ func TestBlockCache(t *testing.T) {
 	s3 := genBlock(s2, "w4", 4)
 
 	txdb := core_mock.NewMockTxDB(ctl)
-	txdb.EXPECT().Push(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
-	statedb.EXPECT().Flush(gomock.Any()).AnyTimes().Return(nil)
+	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
-	statedb.EXPECT().Checkout(gomock.Any()).AnyTimes().Return(true)
+	statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 
 	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("1"), nil
@@ -68,7 +69,7 @@ func TestBlockCache(t *testing.T) {
 
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(b0, nil)
-	base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
+	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
 	global.EXPECT().TxDB().AnyTimes().Return(txdb)
@@ -144,4 +145,80 @@ func TestBlockCache(t *testing.T) {
 		})
 
 	})
+}
+
+func TestVote(t *testing.T) {
+	ctl := NewController(t)
+	b0 := &block.Block{
+		Head: &block.BlockHead{
+			Version:    0,
+			ParentHash: []byte("nothing"),
+			Witness:    "w0",
+			Number:     0,
+		},
+	}
+
+	b1 := genBlock(b0, "w1", 1)
+	b2 := genBlock(b1, "w2", 2)
+	b3 := genBlock(b2, "w3", 3)
+	b4 := genBlock(b3, "w4", 4)
+	b5 := genBlock(b4, "w5", 5)
+
+	// todo
+	fmt.Println(b5)
+
+	txdb := core_mock.NewMockTxDB(ctl)
+	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
+	statedb := db_mock.NewMockMVCCDB(ctl)
+	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
+	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
+	statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
+
+	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal("4"), nil
+	})
+	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
+	})
+
+	base := core_mock.NewMockChain(ctl)
+	base.EXPECT().Top().AnyTimes().Return(b0, nil)
+	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
+	global := core_mock.NewMockBaseVariable(ctl)
+	global.EXPECT().BlockChain().AnyTimes().Return(base)
+	global.EXPECT().TxDB().AnyTimes().Return(txdb)
+	global.EXPECT().StateDB().AnyTimes().Return(statedb)
+
+	Convey("test api", t, func() {
+		var wl WitnessList
+		pl := []string{"p1", "p2", "p3"}
+		var pn int64 = 1
+		al := []string{"a1", "a2", "a3"}
+
+		wl.SetPending(pl)
+		So(StringSliceEqual(pl, wl.Pending()), ShouldBeTrue)
+
+		wl.SetPendingNum(pn)
+		So(wl.PendingNum(), ShouldEqual, pn)
+
+		wl.SetActive(al)
+		So(StringSliceEqual(al, wl.Active()), ShouldBeTrue)
+
+	})
+	Convey("test update", t, func() {
+
+	})
+}
+
+func StringSliceEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }
