@@ -124,7 +124,7 @@ func (s *RPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*TxR
 	}, nil
 }
 
-//
+// GetTxReceiptByTxHash...
 func (s *RPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*TxReceiptRes, error) {
 	if hash == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
