@@ -77,14 +77,12 @@ func (c *Commit) Fork() *Commit {
 }
 
 type CacheMVCCDB struct {
-	head      *Commit
-	stage     *Commit
-	tags      map[string]*Commit
-	commits   []*Commit
-	stagerw   *sync.RWMutex
-	tagsrw    *sync.RWMutex
-	commitsrw *sync.RWMutex
-	storage   Storage
+	head    *Commit
+	stage   *Commit
+	storage Storage
+	tags    map[string]*Commit
+	commits []*Commit
+	rwmu    *sync.RWMutex
 }
 
 func NewCacheMVCCDB(path string, cacheType mvcc.CacheType) (*CacheMVCCDB, error) {
@@ -105,14 +103,12 @@ func NewCacheMVCCDB(path string, cacheType mvcc.CacheType) (*CacheMVCCDB, error)
 	tags[head.Tags[0]] = head
 	commits = append(commits, head)
 	mvccdb := &CacheMVCCDB{
-		head:      head,
-		stage:     stage,
-		tags:      tags,
-		commits:   commits,
-		stagerw:   new(sync.RWMutex),
-		tagsrw:    new(sync.RWMutex),
-		commitsrw: new(sync.RWMutex),
-		storage:   storage,
+		head:    head,
+		stage:   stage,
+		tags:    tags,
+		commits: commits,
+		rwmu:    new(sync.RWMutex),
+		storage: storage,
 	}
 	return mvccdb, nil
 }
@@ -134,9 +130,7 @@ func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 		return "", ErrTableNotValid
 	}
 	k := []byte(table + string(SEPARATOR) + key)
-	m.stagerw.RLock()
 	v := m.stage.Get(k)
-	m.stagerw.RUnlock()
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
@@ -166,9 +160,7 @@ func (m *CacheMVCCDB) Put(table string, key string, value string) error {
 		value:   value,
 		deleted: false,
 	}
-	m.stagerw.RLock()
 	m.stage.Put(k, v)
-	m.stagerw.RUnlock()
 	return nil
 }
 
@@ -183,9 +175,7 @@ func (m *CacheMVCCDB) Del(table string, key string) error {
 		value:   "",
 		deleted: true,
 	}
-	m.stagerw.RLock()
 	m.stage.Put(k, v)
-	m.stagerw.RUnlock()
 	return nil
 }
 
@@ -194,9 +184,7 @@ func (m *CacheMVCCDB) Has(table string, key string) (bool, error) {
 		return false, ErrTableNotValid
 	}
 	k := []byte(table + string(SEPARATOR) + key)
-	m.stagerw.RLock()
 	v := m.stage.Get(k)
-	m.stagerw.RUnlock()
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
@@ -238,21 +226,26 @@ func (m *CacheMVCCDB) Keys(table string, prefix string) ([]string, error) {
 }
 
 func (m *CacheMVCCDB) Commit() {
-	m.commitsrw.Lock()
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
 	m.commits = append(m.commits, m.stage)
-	m.commitsrw.Unlock()
 	m.head = m.stage
 	m.stage = m.head.Fork()
 }
 
 func (m *CacheMVCCDB) Rollback() {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
 	m.stage = m.head.Fork()
 }
 
 func (m *CacheMVCCDB) Checkout(t string) bool {
-	m.tagsrw.RLock()
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
 	head, ok := m.tags[t]
-	m.tagsrw.RUnlock()
 	if !ok {
 		return false
 	}
@@ -262,31 +255,39 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 }
 
 func (m *CacheMVCCDB) Tag(t string) {
-	m.tagsrw.Lock()
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
 	m.tags[t] = m.head
-	m.tagsrw.Unlock()
 	m.head.Tags = append(m.head.Tags, t)
 }
 
 func (m *CacheMVCCDB) CurrentTag() string {
+	m.rwmu.RLock()
+	defer m.rwmu.RUnlock()
+
 	return m.head.Tags[0]
 }
 
 func (m *CacheMVCCDB) Fork() MVCCDB {
+	m.rwmu.RLock()
+	defer m.rwmu.RUnlock()
+
 	mvccdb := &CacheMVCCDB{
-		head:      m.head,
-		stage:     m.head.Fork(),
-		tags:      m.tags,
-		commits:   m.commits,
-		stagerw:   m.stagerw,
-		tagsrw:    m.tagsrw,
-		commitsrw: m.commitsrw,
-		storage:   m.storage,
+		head:    m.head,
+		stage:   m.head.Fork(),
+		tags:    m.tags,
+		commits: m.commits,
+		rwmu:    m.rwmu,
+		storage: m.storage,
 	}
 	return mvccdb
 }
 
 func (m *CacheMVCCDB) Flush(t string) error {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
 	trie := m.tags[t]
 
 	if err := m.storage.BeginBatch(); err != nil {
@@ -332,5 +333,8 @@ func (m *CacheMVCCDB) Flush(t string) error {
 }
 
 func (m *CacheMVCCDB) Close() error {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
 	return m.storage.Close()
 }
