@@ -1,5 +1,10 @@
 package kv
 
+import (
+	"github.com/iost-official/Go-IOS-Protocol/db/kv/leveldb"
+	"github.com/iost-official/Go-IOS-Protocol/db/kv/rocksdb"
+)
+
 type StorageType string
 
 const (
@@ -22,38 +27,25 @@ type Storage struct {
 	StorageBackend
 }
 
-func NewStorage(t StorageType) *Storage {
-	return nil
-}
-
-func (s *Storage) Get(key []byte) ([]byte, error) {
-	return nil, nil
-}
-
-func (s *Storage) Put(key []byte, value []byte) error {
-	return nil
-}
-
-func (s *Storage) Has(key []byte) (bool, error) {
-	return false, nil
-}
-
-func (s *Storage) Delete(key []byte) error {
-	return nil
-}
-
-func (s *Storage) Keys(prefix []byte) ([][]byte, error) {
-	return nil, nil
-}
-
-func (s *Storage) BeginBatch() error {
-	return nil
-}
-
-func (s *Storage) CommitBatch() error {
-	return nil
-}
-
-func (s *Storage) Close() error {
-	return nil
+func NewStorage(path string, t StorageType) (*Storage, error) {
+	switch t {
+	case LevelDBStorage:
+		sb, err := leveldb.NewDB(path)
+		if err != nil {
+			return nil, err
+		}
+		return &Storage{StorageBackend: sb}, nil
+	case RocksDBStorage:
+		sb, err := rocksdb.NewDB(path)
+		if err != nil {
+			return nil, err
+		}
+		return &Storage{StorageBackend: sb}, nil
+	default:
+		sb, err := leveldb.NewDB(path)
+		if err != nil {
+			return nil, err
+		}
+		return &Storage{StorageBackend: sb}, nil
+	}
 }

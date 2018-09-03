@@ -28,6 +28,10 @@ func (d *DB) Get(key []byte) ([]byte, error) {
 	return d.db.Get(key, nil)
 }
 
+func (d *DB) Has(key []byte) (bool, error) {
+	return d.db.Has(key, nil)
+}
+
 func (d *DB) Put(key []byte, value []byte) error {
 	if d.batch == nil {
 		return d.db.Put(key, value, nil)
@@ -36,7 +40,7 @@ func (d *DB) Put(key []byte, value []byte) error {
 	return nil
 }
 
-func (d *DB) Del(key []byte) error {
+func (d *DB) Delete(key []byte) error {
 	if d.batch == nil {
 		return d.db.Delete(key, nil)
 	}
