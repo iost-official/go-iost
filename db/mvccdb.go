@@ -79,9 +79,9 @@ func (c *Commit) Fork() *Commit {
 type CacheMVCCDB struct {
 	head    *Commit
 	stage   *Commit
+	storage Storage
 	tags    map[string]*Commit
 	commits []*Commit
-	storage Storage
 	rwmu    *sync.RWMutex
 }
 
@@ -126,9 +126,6 @@ func (m *CacheMVCCDB) isValidTable(table string) bool {
 }
 
 func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
-	m.rwmu.RLock()
-	defer m.rwmu.RUnlock()
-
 	if !m.isValidTable(table) {
 		return "", ErrTableNotValid
 	}
@@ -153,9 +150,6 @@ func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 }
 
 func (m *CacheMVCCDB) Put(table string, key string, value string) error {
-	m.rwmu.RLock()
-	defer m.rwmu.RUnlock()
-
 	if !m.isValidTable(table) {
 		return ErrTableNotValid
 	}
@@ -171,9 +165,6 @@ func (m *CacheMVCCDB) Put(table string, key string, value string) error {
 }
 
 func (m *CacheMVCCDB) Del(table string, key string) error {
-	m.rwmu.RLock()
-	defer m.rwmu.RUnlock()
-
 	if !m.isValidTable(table) {
 		return ErrTableNotValid
 	}
@@ -189,9 +180,6 @@ func (m *CacheMVCCDB) Del(table string, key string) error {
 }
 
 func (m *CacheMVCCDB) Has(table string, key string) (bool, error) {
-	m.rwmu.RLock()
-	defer m.rwmu.RUnlock()
-
 	if !m.isValidTable(table) {
 		return false, ErrTableNotValid
 	}
