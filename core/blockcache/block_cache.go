@@ -41,40 +41,37 @@ type WitnessList struct {
 	pendingWitnessNumber int64
 }
 
-//func NewWL() *WitnessList {
-//
-//	w := &WitnessList{
-//		activeWitnessList:  make([]string, 0),
-//		pendingWitnessList: make([]string, 0),
-//	}
-//
-//	return w
-//}
-
+// SetPending set pending witness list
 func (wl *WitnessList) SetPending(pl []string) {
 	wl.pendingWitnessList = pl
 }
 
+// SetPendingNum set block number of pending witness
 func (wl *WitnessList) SetPendingNum(n int64) {
 	wl.pendingWitnessNumber = n
 }
 
+// SetActive set active witness list
 func (wl *WitnessList) SetActive(al []string) {
 	wl.activeWitnessList = al
 }
 
+// Pending get pending witness list
 func (wl *WitnessList) Pending() []string {
 	return wl.pendingWitnessList
 }
 
+// Active get active witness list
 func (wl *WitnessList) Active() []string {
 	return wl.activeWitnessList
 }
 
+// SetPendingNum get block number of pending witness
 func (wl *WitnessList) PendingNum() int64 {
 	return wl.pendingWitnessNumber
 }
 
+// UpdatePending update pending witness list
 func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
 
 	vi := database.NewVisitor(0, mv)
