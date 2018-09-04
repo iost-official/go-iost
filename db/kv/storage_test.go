@@ -1,10 +1,10 @@
 package kv
 
 import (
-	"math/rand"
+	"crypto/rand"
 	"os/exec"
+	"reflect"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -217,41 +217,41 @@ func TestStorageTestSuite(t *testing.T) {
 }
 
 func BenchmarkStorage(b *testing.B) {
-	rand.Seed(time.Now().UnixNano())
+	for _, t := range []StorageType{LevelDBStorage, RocksDBStorage} {
+		storage, err := NewStorage(DBPATH, t)
+		if err != nil {
+			b.Fatalf("Failed to new storage: %v", err)
+		}
 
-	storage, err := NewStorage(DBPATH, LevelDBStorage)
-	if err != nil {
-		b.Fatalf("Failed to new storage: %v", err)
+		keys := make([][]byte, b.N)
+		values := make([][]byte, b.N)
+		for i := 0; i < 1000000; i++ {
+			key := make([]byte, 32)
+			value := make([]byte, 32)
+			rand.Read(key)
+			rand.Read(value)
+			keys = append(keys, key)
+			values = append(values, value)
+		}
+
+		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Put", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				storage.Put(keys[i], values[i])
+			}
+		})
+		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Get", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				storage.Get(keys[i])
+			}
+		})
+		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Delete", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				storage.Delete(keys[i])
+			}
+		})
+
+		storage.Close()
+		cmd := exec.Command("rm", "-r", DBPATH)
+		cmd.Run()
 	}
-
-	keys := make([][]byte, b.N)
-	values := make([][]byte, b.N)
-	for i := 0; i < 1000000; i++ {
-		key := make([]byte, 32)
-		value := make([]byte, 32)
-		rand.Read(key)
-		rand.Read(value)
-		keys = append(keys, key)
-		values = append(values, value)
-	}
-
-	b.Run("Put", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			storage.Put(keys[i], values[i])
-		}
-	})
-	b.Run("Get", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			storage.Get(keys[i])
-		}
-	})
-	b.Run("Delete", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			storage.Delete(keys[i])
-		}
-	})
-
-	storage.Close()
-	cmd := exec.Command("rm", "-r", DBPATH)
-	cmd.Run()
 }
