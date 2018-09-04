@@ -159,10 +159,9 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
-	//update stateDB with blockChainDB
 	blk, err = blockChain.Top()
 	if err != nil {
-		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
+		return nil, fmt.Errorf("get blockChain Top failed, stop the program. err: %v", err)
 	}
 	hash := stateDB.CurrentTag()
 	if hash != string(blk.HeadHash()) {

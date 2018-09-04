@@ -4,15 +4,14 @@ class Contract {
         this.userNumber = 0;
         this.totalCoins = 0;
         this.lastLuckyBlock = -1;
-        this.round = 0;
-        this.results = [];
+        this.round = 1;
         this.tables = [];
         this.clearUserValue()
     }
     clearUserValue() {
         this.tables = [];
     }
-    bet(account, luckyNumber, coins) {
+    bet(account, luckyNumber, coins, nonce) {
         if (coins < 1 || coins > 5) {
             return "bet coins should be >=1 and <= 5"
         }
@@ -22,34 +21,11 @@ class Contract {
 
         BlockChain.deposit(account, coins);
 
-        if (this.tables[luckyNumber] === undefined) {
+        if (this.tables[luckyNumber] === undefined || this.tables[luckyNumber] === null) {
             this.tables[luckyNumber] = [];
         }
-        
-        let isExist = false;
-        
-        this.tables[luckyNumber].forEach(function (record) {
-            if (record.account === account) {
-                record.coins += coins;
-                isExist = true;
-            }
-        });
 
-        if (!isExist) {
-            this.tables[luckyNumber].push({ account:account, coins : coins})
-        }
-
-        // if (this.tables[luckyNumber] === undefined) {
-        //     this.tables[luckyNumber] = {};
-        // }
-        //
-        // if (this.tables[luckyNumber].get(account) === undefined) {
-        //     this.tables[luckyNumber].set(account, coins);
-        // } else {
-        //     let c = this.tables[luckyNumber].get(account);
-        //     this.tables[luckyNumber].set(account, c + coins);
-        // }
-
+        this.tables[luckyNumber].push({ account:account, coins : coins, nonce : nonce});
         this.userNumber ++;
         this.totalCoins += coins;
 
@@ -62,55 +38,86 @@ class Contract {
 
                 this.getReward(bn);
                 this.userNumber = 0;
-                this.totalCoins = 0
+                this.totalCoins = 0;
+                this.tables = [];
+                this.round ++
             }
         }
     }
 
     getReward() {
         let ln = this.lastLuckyBlock % 10;
-        this.round ++;
 
-        let tc = this.totalCoins * 0.95;
+        let y = new Int64(100);
+        let x = new Int64(95);
+        let _tc = new Int64(this.totalCoins);
+
+        let tc = _tc.multi(x).div(y);
         let totalVal = 0;
         let kNum = 0;
 
-        _native_log("lucky number is "+ln);
-
-
-        // for (let [key, value] of this.tables[ln]) {
-        //     totalVal += value;
-        //     kNum ++
-        // }
-
-        this.tables[ln].forEach(function (record) {
-            totalVal += record.coins;
-            kNum ++;
-        });
+        // _native_log("lucky number is "+ln);
+        // _native_log("tables is " + JSON.stringify(this.tables));
+        if (this.tables[ln] !== undefined && this.tables[ln] !== null) {
+            this.tables[ln].forEach(function (record) {
+                totalVal += record.coins;
+                kNum++;
+            });
+        }
 
         let result = {
             number: this.lastLuckyBlock,
             user_number: this.userNumber,
             k_number: kNum,
             total_coins : tc,
-            rewards : []
+            records : []
         };
 
-        if (kNum > 0) {
-            let unit = tc / totalVal;
-            // for (let [key, value] of winTable) {
-            //     BlockChain.withdraw(key, value * unit);
-            //     result.rewards.push({"account":key, "reward": value * unit})
-            // }
-            this.tables[ln].forEach(function (record) {
-                let reward = record.coins * unit;
-                BlockChain.withdraw(record.account, reward);
-                result.rewards.push({"account":record.account, "reward": reward})
-            });
-        }
-        let results =  this.results;
-        results.push(result);
-        this.results = results
+        // if (kNum > 0) {
+        //     let unit = tc / totalVal;
+        //     let cache = {};
+        //
+        //     this.tables[ln].forEach(function (record) {
+        //         if (cache[record.account] === undefined) {
+        //             cache[record.account] = [record.coins, 1];
+        //         } else {
+        //             let c = cache[record.account][0];
+        //             let t = cache[record.account][1];
+        //             cache[record.account] = [c + record.coins, t+1];
+        //         }
+        //     });
+        //
+        //     for (let account in cache) {
+        //         if (cache.hasOwnProperty(account)) {
+        //             let reward = cache[account][0] * unit;
+        //             BlockChain.withdraw(account, reward);
+        //             result.rewards.push({"account":account, "reward": reward, "times": cache[account][1]})
+        //         }
+        //     }
+        // }
+        // let unit = tc.div(totalVal);
+
+        this.tables.forEach(function (table, n) {
+            if (table !== undefined && table !== null) {
+                if (n !== ln) {
+                    table.forEach(function (record) {
+                        result.records.push(record)
+                    })
+                } else {
+                    table.forEach(function (record) {
+
+                        const reward = (tc.multi(record.coins).div(totalVal));
+
+                        BlockChain.withdraw(record.account, reward);
+                        record.reward = reward.toString();
+                        result.records.push(record)
+                    })
+                }
+
+            }
+        });
+
+        this["result"+this.round] = JSON.stringify(result);
     }
 }
 

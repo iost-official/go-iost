@@ -45,12 +45,12 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
-	ilog.Error(len(txsList))
+	ilog.Info(len(txsList))
 L:
 	for _, t := range txsList {
 		select {
 		case <-limitTime.C:
-			ilog.Error("time up")
+			ilog.Info("time up")
 			break L
 		default:
 			if receipt, err := engine.Exec(t); err == nil {
@@ -88,11 +88,6 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	if !signature.Verify(hash) {
 		return errSignature
 	}
-	if staticProperty.hasSlot(head.Time) {
-		ilog.Error(head.Witness)
-		ilog.Error(witnessOfSlot(head.Time))
-		return errSlot
-	}
 	return nil
 }
 
@@ -110,9 +105,9 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 				return errTxSignature
 			}
 		}
-		//if blk.Head.Time*common.SlotLength-tx.Time/1e9 > 60 {
-		//	return errTxTooOld
-		//}
+		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > 60 {
+			return errTxTooOld
+		}
 	}
 	return verifier.VerifyBlockWithVM(blk, db)
 }

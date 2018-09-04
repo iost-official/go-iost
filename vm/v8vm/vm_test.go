@@ -8,6 +8,7 @@ import (
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
@@ -55,7 +56,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 	}
 	ctx.GSet("gas_limit", gasLimit)
 	ctx.Set("contract_name", conName)
-	h := host.NewHost(ctx, vi, nil, nil)
+	h := host.NewHost(ctx, vi, nil, ilog.DefaultLogger())
 
 	fd, err := ReadFile(testDataPath + conName + ".js")
 	if err != nil {
@@ -433,4 +434,21 @@ func TestEngine_Int64(t *testing.T) {
 	if len(rs) > 0 && rs[0] != "1879080904" {
 		t.Fatalf("LoadAndCall getPow except: 1879080904, got: %v", rs[0])
 	}
+}
+
+func TestEngine_Console(t *testing.T) {
+	host, code := MyInit(t, "console1")
+	_, _, err := vmPool.LoadAndCall(host, code, "log")
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+}
+
+func TestEngine_Blockchain(t *testing.T) {
+	host, code := MyInit(t, "blockchain1")
+	rs, _, err := vmPool.LoadAndCall(host, code, "gs")
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+	t.Log(rs)
 }

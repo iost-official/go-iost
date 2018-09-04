@@ -173,7 +173,7 @@ func main() {
 	}
 
 	if conf.Debug != nil {
-		startDebugServer(conf.Debug.ListenAddr)
+		startDebugServer(conf.Debug.ListenAddr, blkCache)
 	}
 
 	waitExit()
@@ -189,7 +189,10 @@ func waitExit() {
 	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
 }
 
-func startDebugServer(addr string) {
+func startDebugServer(addr string, blkCache blockcache.BlockCache) {
+	http.HandleFunc("/debug/blockcache/", func(rw http.ResponseWriter, r *http.Request) {
+		rw.Write([]byte(blkCache.Draw()))
+	})
 	go func() {
 		err := http.ListenAndServe(addr, nil)
 		if err != nil {

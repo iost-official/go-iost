@@ -15,12 +15,6 @@ import (
 type CacheStatus int
 
 const (
-	Extend CacheStatus = iota
-	Fork
-	ParentNotFound
-)
-
-const (
 	DelSingleBlockTime int64 = 10
 )
 
@@ -113,14 +107,14 @@ type BlockCache interface {
 	GetBlockByHash([]byte) (*block.Block, error)
 	LinkedRoot() *BlockCacheNode
 	Head() *BlockCacheNode
-	Draw()
+	Draw() string
 }
 
 type BlockCacheImpl struct {
 	linkedRoot   *BlockCacheNode
 	singleRoot   *BlockCacheNode
 	head         *BlockCacheNode
-	hash2node    *sync.Map
+	hash2node    *sync.Map // map[string]*BlockCacheNode
 	leaf         map[*BlockCacheNode]int64
 	baseVariable global.BaseVariable
 }
@@ -156,7 +150,6 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 			baseVariable: baseVariable,
 		}
 		bc.singleRoot.Type = Virtual
-		//ilog.Errorf("get info from remote")
 		return &bc, nil
 	}
 	bc := BlockCacheImpl{
@@ -241,14 +234,22 @@ func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
+	bc.del(bcn)
+	bc.updateLongest()
+}
+
+func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
 	if len(bcn.Children) == 0 {
 		delete(bc.leaf, bcn)
 	}
+	if bcn.Parent != nil && len(bcn.Parent.Children) == 1 && bcn.Parent.Type == Linked {
+		bc.leaf[bcn.Parent] = bcn.Parent.Number
+	}
 	for ch, _ := range bcn.Children {
-		bc.Del(ch)
+		bc.del(ch)
 	}
 	bc.delNode(bcn)
 }
@@ -260,7 +261,7 @@ func (bc *BlockCacheImpl) delSingle() {
 	}
 	for bcn, _ := range bc.singleRoot.Children {
 		if bcn.Number <= height {
-			bc.Del(bcn)
+			bc.del(bcn)
 		}
 	}
 }
@@ -274,7 +275,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		if child == retain {
 			continue
 		}
-		bc.Del(child)
+		bc.del(child)
 	}
 	//confirm retain to db
 	if retain.Block != nil {
@@ -295,7 +296,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		//}
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs, retain.Block.Receipts)
 		if err != nil {
-			ilog.Errorf("Database error, BlockChain Push err:%v", err)
+			ilog.Errorf("Database error, Transaction Push err:%v", err)
 			return err
 		}
 		bc.delNode(cur)
@@ -321,7 +322,7 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 	it := bc.head
-	for it.Parent != nil {
+	for it != nil {
 		if it.Number == num {
 			return it.Block, nil
 		}
@@ -387,7 +388,8 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 	}
 }
 
-func (bcn *BlockCacheNode) DrawTree() {
+func (bcn *BlockCacheNode) DrawTree() string {
+	var ret string
 	for i := 0; i < PICSIZE; i++ {
 		for j := 0; j < PICSIZE; j++ {
 			pic[i][j] = " "
@@ -401,6 +403,7 @@ func (bcn *BlockCacheNode) DrawTree() {
 		}
 		ilog.Info(l)
 	}
+	return ret
 }
 
 func (bc *BlockCacheImpl) Draw() {
@@ -408,4 +411,5 @@ func (bc *BlockCacheImpl) Draw() {
 	bc.linkedRoot.DrawTree()
 	ilog.Info("SingleTree:")
 	bc.singleRoot.DrawTree()
+	return nil
 }
