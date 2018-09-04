@@ -95,11 +95,11 @@ func (pool *TxPoolImpl) loop() {
 			}
 
 		case bl := <-pool.chLinkedNode:
+			pool.mu.Lock()
+
 			if pool.addBlock(bl.LinkedNode.Block) != nil {
 				continue
 			}
-
-			pool.mu.Lock()
 
 			tFort := pool.updateForkChain(bl.HeadNode)
 			switch tFort {
@@ -199,11 +199,15 @@ func (pool *TxPoolImpl) DelTx(hash []byte) error {
 
 // PendingTxs get the pending transactions
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
 
 	var pendingList TxsList
 
 	pool.pendingTx.Range(func(key, value interface{}) bool {
-		pendingList = append(pendingList, value.(*tx.Tx))
+		if !pool.txTimeOut(value.(*tx.Tx)) {
+			pendingList = append(pendingList, value.(*tx.Tx))
+		}
 
 		return true
 	})
