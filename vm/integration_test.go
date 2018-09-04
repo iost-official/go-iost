@@ -1187,9 +1187,13 @@ func TestJS_Genesis(t *testing.T) {
 	}
 	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
 	acts = append(acts, &act)
+	act1 := tx.NewAction("iost.vote", "Init", fmt.Sprintf(`[]`))
+	acts = append(acts, &act1)
 	// deploy iost.bonus
-	act = tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
-	acts = append(acts, &act)
+	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
+	acts = append(acts, &act2)
+	act3 := tx.NewAction("iost.bonus", "Init", fmt.Sprintf(`[]`))
+	acts = append(acts, &act3)
 
 	trx := tx.NewTx(acts, nil, 10000000, 0, 0)
 	trx.Time = 0
