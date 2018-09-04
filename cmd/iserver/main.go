@@ -117,8 +117,6 @@ func main() {
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)
 	}
-	//top, err := glb.BlockChain().Top()
-	//ilog.Info("blockchain top hash: %v", common.Base58Encode(top.HeadHash()))
 
 	if conf.Genesis.CreateGenesis {
 		genesisBlock, _ := glb.BlockChain().GetBlockByNumber(0)

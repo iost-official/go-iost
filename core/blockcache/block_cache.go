@@ -51,10 +51,7 @@ func (bcn *BlockCacheNode) delChild(child *BlockCacheNode) {
 func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
 	if parent != nil {
 		bcn.Parent = parent
-		bcn.Type = parent.Type
-		if bcn.Type == Virtual {
-			bcn.Type = Single
-		}
+		bcn.Type = Single
 		parent.addChild(bcn)
 	}
 }
@@ -77,6 +74,8 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	if block != nil {
 		bcn.Number = block.Head.Number
 		bcn.Witness = block.Head.Witness
+	} else {
+		bcn.Number = -1
 	}
 	bcn.setParent(parent)
 	return &bcn
@@ -141,35 +140,33 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 }
 
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
-	lib, err := baseVariable.BlockChain().Top()
-	if err != nil {
-		bc := BlockCacheImpl{
-			singleRoot:   NewBCN(nil, nil),
-			hash2node:    new(sync.Map),
-			leaf:         make(map[*BlockCacheNode]int64),
-			baseVariable: baseVariable,
-		}
-		bc.singleRoot.Type = Virtual
-		return &bc, nil
-	}
 	bc := BlockCacheImpl{
-		linkedRoot:   NewBCN(nil, lib),
+		linkedRoot:   NewBCN(nil, nil),
 		singleRoot:   NewBCN(nil, nil),
 		hash2node:    new(sync.Map),
 		leaf:         make(map[*BlockCacheNode]int64),
 		baseVariable: baseVariable,
 	}
-	bc.linkedRoot.Type = Linked
-	bc.singleRoot.Type = Virtual
+	bc.linkedRoot.Number = -1
+	lib, err := baseVariable.BlockChain().Top()
+	if err == nil {
+		bc.linkedRoot = NewBCN(nil, lib)
+		bc.linkedRoot.Type = Linked
+		bc.singleRoot.Type = Virtual
+		bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
+		bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
+	}
 	bc.head = bc.linkedRoot
-	bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
-	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
 	return &bc, nil
 }
 
 //call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
 func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn == nil {
+		return
+	}
+	fa, ok := bc.hmget(bcn.Block.Head.ParentHash)
+	if !ok || fa.Type != Linked {
 		return
 	}
 	bcn.Type = Linked

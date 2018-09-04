@@ -70,6 +70,12 @@ func (pool *TxPoolImpl) Stop() {
 }
 
 func (pool *TxPoolImpl) loop() {
+	for {
+		if pool.global.Mode() != global.ModeInit {
+			break
+		}
+		time.Sleep(time.Second)
+	}
 
 	pool.initBlockTx()
 
