@@ -45,6 +45,9 @@ let BlockChain = (function () {
         },
         requireAuth: function (pubKey) {
             return bc.requireAuth(pubKey);
+        },
+        grantServi: function (pubKey, amount) {
+            return bc.grantServi(pubKey, amount.toString());
         }
     }
 })();

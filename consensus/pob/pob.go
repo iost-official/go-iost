@@ -178,7 +178,8 @@ func (p *PoB) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID) {
 }
 
 func (p *PoB) handleGenesisBlock(blk *block.Block) error {
-	if blk.Head.Number == 0 && common.Base58Encode(blk.HeadHash()) == p.baseVariable.Config().Genesis.GenesisHash {
+	if common.Base58Encode(blk.HeadHash()) == p.baseVariable.Config().Genesis.GenesisHash {
+		// TODO verify merklehash
 		p.blockCache.AddGenesis(blk)
 		err := p.blockChain.Push(blk)
 		if err != nil {
@@ -201,7 +202,6 @@ func (p *PoB) handleGenesisBlock(blk *block.Block) error {
 		if err != nil {
 			return fmt.Errorf("push tx and txr into TxDB failed, err:%v", err)
 		}
-		p.baseVariable.SetMode(global.ModeNormal)
 		return nil
 	}
 	return fmt.Errorf("not genesis block")
@@ -220,28 +220,6 @@ func (p *PoB) blockLoop() {
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
 				ilog.Error("fail to decode block")
-				continue
-			}
-			if p.blockCache.Head() != nil {
-				ilog.Infof("blockCache Head hash: %v", common.Base58Encode(p.blockCache.Head().Block.HeadHash()))
-			}
-			// ilog.Info("block parent hash: ", common.Base58Encode(blk.Head.ParentHash))
-			// ilog.Info(p.baseVariable.Mode())
-			if p.baseVariable.Mode() == global.ModeFetchGenesis {
-				err = p.handleGenesisBlock(&blk)
-				if err != nil {
-					ilog.Error(err)
-					blkReq := &message.RequestBlock{
-						BlockNumber: 0,
-						BlockHash:   common.Base58Decode(p.baseVariable.Config().Genesis.GenesisHash),
-					}
-					bytes, err := blkReq.Encode()
-					if err != nil {
-						ilog.Errorf("fail to encode blkReq, %v", err)
-						continue
-					}
-					p.p2pService.Broadcast(bytes, p2p.NewBlockRequest, p2p.UrgentMessage)
-				}
 				continue
 			}
 			if incomingMessage.Type() == p2p.NewBlock {
@@ -273,12 +251,17 @@ func (p *PoB) blockLoop() {
 			}
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
 				ilog.Info("received sync block, block number: ", blk.Head.Number)
-				err = p.handleRecvBlock(&blk)
-				if err != nil && err != errSingle && err != errDuplicate {
-					ilog.Debugf("received sync block error, err:%v", err)
+				if blk.Head.Number == 0 {
+					err = p.handleGenesisBlock(&blk)
 					continue
+				} else {
+					err = p.handleRecvBlock(&blk)
+					if err != nil && err != errSingle && err != errDuplicate {
+						ilog.Debugf("received sync block error, err:%v", err)
+						continue
+					}
+					go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
 				}
-				go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()), incomingMessage.From())
 			}
 			go p.synchronizer.CheckSyncProcess()
 		case blk, ok := <-p.chGenBlock:

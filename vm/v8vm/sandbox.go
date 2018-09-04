@@ -16,6 +16,7 @@ int goTxInfo(SandboxPtr, char **, size_t *);
 int goCall(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 int goCallWithReceipt(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 int goRequireAuth(SandboxPtr, const char *, bool *, size_t *);
+int goGrantServi(SandboxPtr, const char *, const char *, size_t *);
 int goPut(SandboxPtr, const char *, const char *, size_t *);
 char *goGet(SandboxPtr, const char *, size_t *);
 int goDel(SandboxPtr, const char *, size_t *);
@@ -95,7 +96,8 @@ func (sbx *Sandbox) Init() {
 		(C.txInfoFunc)(C.goTxInfo),
 		(C.callFunc)(C.goCall),
 		(C.callFunc)(C.goCallWithReceipt),
-		(C.requireAuthFunc)(C.goRequireAuth))
+		(C.requireAuthFunc)(C.goRequireAuth),
+		(C.grantServiFunc)(C.goGrantServi))
 	C.InitGoStorage((C.putFunc)(C.goPut),
 		(C.getFunc)(C.goGet),
 		(C.delFunc)(C.goDel),

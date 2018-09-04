@@ -1,6 +1,6 @@
 class Contract {
     constructor() {
-        this.maxUserNumber = 3;
+        this.maxUserNumber = 10;
         this.userNumber = 0;
         this.totalCoins = 0;
         this.lastLuckyBlock = -1;
@@ -21,7 +21,7 @@ class Contract {
 
         BlockChain.deposit(account, coins);
 
-        if (this.tables[luckyNumber] === undefined) {
+        if (this.tables[luckyNumber] === undefined || this.tables[luckyNumber] === null) {
             this.tables[luckyNumber] = [];
         }
 
@@ -33,7 +33,7 @@ class Contract {
             let bi = JSON.parse(BlockChain.blockInfo());
             let bn = bi.number;
             let ph = bi.parent_hash;
-            if (true  /*this.lastLuckyBlock < 0 || bn - this.lastLuckyBlock >= 16 || bn > this.lastLuckyBlock && ph[ph.length-1] % 16 === 0*/) {
+            if ( this.lastLuckyBlock < 0 || bn - this.lastLuckyBlock >= 16 || bn > this.lastLuckyBlock && ph[ph.length-1] % 16 === 0) {
                 this.lastLuckyBlock = bn;
 
                 this.getReward(bn);
@@ -95,7 +95,7 @@ class Contract {
         //         }
         //     }
         // }
-        let unit = tc / totalVal;
+        // let unit = tc.div(totalVal);
 
         this.tables.forEach(function (table, n) {
             if (table !== undefined && table !== null) {
@@ -105,8 +105,11 @@ class Contract {
                     })
                 } else {
                     table.forEach(function (record) {
-                        record.reward = record.coins * unit;
-                        BlockChain.withdraw(record.account, record.reward);
+
+                        const reward = (tc.multi(record.coins).div(totalVal));
+
+                        BlockChain.withdraw(record.account, reward);
+                        record.reward = reward.toString();
                         result.records.push(record)
                     })
                 }
