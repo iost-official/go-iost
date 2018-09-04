@@ -32,37 +32,6 @@ func (b *Block) CalculateMerkleHash() []byte {
 	return m.RootHash()
 }
 
-func (b *Block) EncodeHead() ([]byte, error) {
-	signByte, err := b.Sign.Encode()
-	if err != nil {
-		return nil, errors.New("fail to encode sign")
-	}
-	br := &BlockHeadAndSign{
-		Head: b.Head,
-		Sign: signByte,
-	}
-	brByte, err := proto.Marshal(br)
-	if err != nil {
-		return nil, errors.New("fail to encode blockheadandsign")
-	}
-	return brByte, nil
-}
-
-func (b *Block) DecodeHead(blockByte []byte) error {
-	br := &BlockHeadAndSign{}
-	err := proto.Unmarshal(blockByte, br)
-	if err != nil {
-		return errors.New("fail to decode blockheadandsign")
-	}
-	b.Head = br.Head
-	b.Sign = &crypto.Signature{}
-	err = b.Sign.Decode(br.Sign)
-	if err != nil {
-		return errors.New("fail to decode signature")
-	}
-	return b.CalculateHeadHash()
-}
-
 func (b *Block) Encode() ([]byte, error) {
 	txs := make([][]byte, 0)
 	for _, t := range b.Txs {
