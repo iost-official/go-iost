@@ -5,8 +5,7 @@ package rocksdb
 #include <stdlib.h>
 #include <unistd.h>
 #cgo CFLAGS: -I${SRCDIR}/include
-#cgo darwin LDFLAGS: -L${SRCDIR}/lib -lrocksdb -lstdc++ -lz -lbz2 -Wl,-rpath,${SRCDIR}/lib
-#cgo linux LDFLAGS: -L${SRCDIR}/lib -lrocksdb -lstdc++ -lz -lbz2 -Wl,-rpath=${SRCDIR}/lib
+#cgo LDFLAGS: -lrocksdb -lstdc++ -lz -lbz2 -lsnappy
 */
 import "C"
 import (
@@ -81,15 +80,18 @@ func (d *DB) Put(key []byte, value []byte) error {
 	defer C.free(unsafe.Pointer(cvalue))
 	var cvaluelen C.size_t = C.size_t(len(value))
 
-	var cerr *C.char
-	defer C.free(unsafe.Pointer(cerr))
+	if d.cbatch == nil {
+		var cerr *C.char
+		defer C.free(unsafe.Pointer(cerr))
 
-	C.rocksdb_put(d.cdb, d.cwoptions, ckey, ckeylen, cvalue, cvaluelen+1, &cerr)
+		C.rocksdb_put(d.cdb, d.cwoptions, ckey, ckeylen, cvalue, cvaluelen, &cerr)
+		err := C.GoString(cerr)
 
-	err := C.GoString(cerr)
-
-	if err != "" {
-		return fmt.Errorf("failed to put by rocksdb: %v", err)
+		if err != "" {
+			return fmt.Errorf("failed to put by rocksdb: %v", err)
+		}
+	} else {
+		C.rocksdb_writebatch_put(d.cbatch, ckey, ckeylen, cvalue, cvaluelen)
 	}
 	return nil
 }
@@ -120,29 +122,55 @@ func (d *DB) Delete(key []byte) error {
 	defer C.free(unsafe.Pointer(ckey))
 	var ckeylen C.size_t = C.size_t(len(key))
 
-	var cerr *C.char
-	defer C.free(unsafe.Pointer(cerr))
+	if d.cbatch == nil {
+		var cerr *C.char
+		defer C.free(unsafe.Pointer(cerr))
 
-	C.rocksdb_delete(d.cdb, d.cwoptions, ckey, ckeylen, &cerr)
+		C.rocksdb_delete(d.cdb, d.cwoptions, ckey, ckeylen, &cerr)
 
-	err := C.GoString(cerr)
+		err := C.GoString(cerr)
 
-	if err != "" {
-		return fmt.Errorf("failed to delete by rocksdb: %v", err)
+		if err != "" {
+			return fmt.Errorf("failed to delete by rocksdb: %v", err)
+		}
+	} else {
+		C.rocksdb_writebatch_delete(d.cbatch, ckey, ckeylen)
 	}
 	return nil
+}
+
+func bytesPrefix(prefix []byte) (lower, upper []byte) {
+	lower = prefix
+	upper = []byte{}
+	for i := len(prefix) - 1; i >= 0; i-- {
+		c := prefix[i]
+		if c < 0xff {
+			upper = make([]byte, i+1)
+			copy(upper, prefix)
+			upper[i] = c + 1
+			break
+		}
+	}
+	return
 }
 
 func (d *DB) Keys(prefix []byte) ([][]byte, error) {
 	var croptions *C.rocksdb_readoptions_t = C.rocksdb_readoptions_create()
 	defer C.rocksdb_readoptions_destroy(croptions)
 
-	var ckey *C.char = C.CString(string(prefix))
-	defer C.free(unsafe.Pointer(ckey))
-	var ckeylen C.size_t = C.size_t(len(prefix))
-
-	C.rocksdb_readoptions_set_iterate_upper_bound(croptions, ckey, ckeylen)
-	C.rocksdb_readoptions_set_iterate_lower_bound(croptions, ckey, ckeylen)
+	lower, upper := bytesPrefix(prefix)
+	if len(lower) != 0 {
+		var clower *C.char = C.CString(string(lower))
+		defer C.free(unsafe.Pointer(clower))
+		var clowerlen C.size_t = C.size_t(len(lower))
+		C.rocksdb_readoptions_set_iterate_lower_bound(croptions, clower, clowerlen)
+	}
+	if len(upper) != 0 {
+		var cupper *C.char = C.CString(string(upper))
+		defer C.free(unsafe.Pointer(cupper))
+		var cupperlen C.size_t = C.size_t(len(upper))
+		C.rocksdb_readoptions_set_iterate_upper_bound(croptions, cupper, cupperlen)
+	}
 
 	var iter *C.rocksdb_iterator_t = C.rocksdb_create_iterator(d.cdb, croptions)
 	defer C.rocksdb_iter_destroy(iter)
@@ -150,8 +178,8 @@ func (d *DB) Keys(prefix []byte) ([][]byte, error) {
 	keys := make([][]byte, 0)
 	for C.rocksdb_iter_seek_to_first(iter); C.rocksdb_iter_valid(iter) != 0; C.rocksdb_iter_next(iter) {
 		var ckeylen C.size_t
+		// rocksdb_iter_key return a const char*, so free it in C/C++ code
 		var ckey *C.char = C.rocksdb_iter_key(iter, &ckeylen)
-		defer C.free(unsafe.Pointer(ckey))
 
 		key := C.GoString(ckey)
 
