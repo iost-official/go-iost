@@ -328,7 +328,7 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-	if typ != 2 && typ != 3 && typ != 7 && typ != 8 && typ != 9 && typ != 10 {
+	if typ != 2 && typ != 3 && typ != 7 && typ != 11 && typ != 8 && typ != 9 && typ != 10 {
 		ilog.Infof("broadcast %s", typ)
 	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
@@ -343,7 +343,7 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
-	if typ != 2 && typ != 3 && typ != 7 && typ != 8 && typ != 9 && typ != 10 {
+	if typ != 2 && typ != 3 && typ != 7 && typ != 11 && typ != 8 && typ != 9 && typ != 10 {
 		ilog.Infof("send type=%s", typ)
 	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
@@ -424,7 +424,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
-	if msg.messageType() != 2 && msg.messageType() != 3 && msg.messageType() != 7 && msg.messageType() != 8 && msg.messageType() != 9 && msg.messageType() != 10 {
+	if msg.messageType() != 2 && msg.messageType() != 3 && msg.messageType() != 5 && msg.messageType() != 11 && msg.messageType() != 7 && msg.messageType() != 8 && msg.messageType() != 9 && msg.messageType() != 10 {
 		ilog.Infof("recv %s", msg.messageType())
 	}
 	switch msg.messageType() {

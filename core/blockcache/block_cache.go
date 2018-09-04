@@ -216,13 +216,6 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 		newNode = NewBCN(fa, blk)
 		bc.hmset(blk.HeadHash(), newNode)
 	}
-	if newNode.Type == Linked {
-		delete(bc.leaf, fa)
-		bc.leaf[newNode] = newNode.Number
-		if newNode.Number > bc.head.Number {
-			bc.head = newNode
-		}
-	}
 	return newNode
 }
 
@@ -285,14 +278,19 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	if retain.Block != nil {
 		err := bc.baseVariable.BlockChain().Push(retain.Block)
 		if err != nil {
-			ilog.Debugf("Database error, BlockChain Push err:%v", err)
+			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
-		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
-		if err != nil {
-			ilog.Errorf("flush mvcc error: %v", err)
-			return err
+		if retain.Block.HeadHash() == nil {
+			ilog.Info("retain.Block.HeadHash = nil, %v.", retain.Block.Head.Number)
 		}
+		//ilog.Info(bc.baseVariable.StateDB())
+		ilog.Error("confirm ", retain.Number)
+		//err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
+		//if err != nil {
+		//	ilog.Errorf("flush mvcc error: %v", err)
+		//	return err
+		//}
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs, retain.Block.Receipts)
 		if err != nil {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)

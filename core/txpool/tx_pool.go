@@ -222,7 +222,7 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 func (pool *TxPoolImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error) {
 
 	var r FRet
-
+	//ilog.Error("verify existTxs")
 	switch {
 	case pool.existTxInPending(hash):
 		r = FoundPending
@@ -331,6 +331,7 @@ func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 	for {
 		ret := pool.existTxInBlock(txHash, h)
 		if ret {
+			ilog.Error("existTxInBlock")
 			return true
 		}
 
@@ -350,12 +351,20 @@ func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 }
 
 func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
-
 	b, ok := pool.blockList.Load(string(blockHash))
 	if !ok {
 		return false
 	}
-
+	exist := b.(*blockTx).existTx(txHash)
+	if exist {
+		bcn, err := pool.blockCache.Find(blockHash)
+		if err != nil {
+			ilog.Error("blockHash not found in blockcache")
+			return true
+		}
+		ilog.Error("the block containing duplicate tx:", bcn.Number)
+		ilog.Error("the block containing the duplicate tx: ", common.Base58Encode(blockHash))
+	}
 	return b.(*blockTx).existTx(txHash)
 }
 

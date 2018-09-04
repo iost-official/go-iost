@@ -1,10 +1,13 @@
 package ilog
 
+import "os"
+
 var (
 	defaultLogger *Logger
 )
 
 func init() {
+	os.RemoveAll("logs")
 	defaultLogger = NewConsoleLogger()
 	defaultLogger.SetCallDepth(1)
 	defaultLogger.Start()

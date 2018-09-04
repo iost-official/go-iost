@@ -125,7 +125,7 @@ func (p *Peer) newStream() (libnet.Stream, error) {
 	}
 	stream, err := p.conn.NewStream()
 	if err != nil {
-		//ilog.Errorf("creating stream failed. pid=%v, addr=%v, err=%v", p.id.Pretty(), p.addr, err)
+		ilog.Errorf("creating stream failed. pid=%v, addr=%v, err=%v", p.id.Pretty(), p.addr, err)
 		return nil, err
 	}
 	p.streamCount++

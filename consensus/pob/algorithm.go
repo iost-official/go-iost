@@ -41,7 +41,7 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 		Receipts: []*tx.TxReceipt{},
 	}
 	txCnt := 20000
-	limitTime := time.NewTicker(2 * time.Second)
+	limitTime := time.NewTicker(time.Second)
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
@@ -89,6 +89,8 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 		return errSignature
 	}
 	if staticProperty.hasSlot(head.Time) {
+		ilog.Error(head.Witness)
+		ilog.Error(witnessOfSlot(head.Time))
 		return errSlot
 	}
 	return nil

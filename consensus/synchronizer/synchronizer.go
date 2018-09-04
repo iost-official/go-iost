@@ -298,7 +298,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 				return true
 			})
 			if len(hr.Nums) > 0 {
-				ilog.Debug("retry download ", hr.Nums)
+				ilog.Error("retry download ", hr.Nums)
 				sy.queryBlockHash(hr)
 			}
 		case <-sy.exitSignal:
