@@ -116,9 +116,8 @@ func (sy *SyncImpl) Initializer() {
 				sy.SyncBlocks(0, 0)
 				continue
 			} else {
-				if !sy.CheckSync() {
-					sy.basevariable.SetMode(global.ModeNormal)
-				}
+				sy.basevariable.SetMode(global.ModeNormal)
+				sy.CheckSync()
 				return
 			}
 		case <-sy.exitSignal:
@@ -158,7 +157,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 }
 
 func (sy *SyncImpl) CheckSync() bool {
-	if sy.basevariable.Mode() == global.ModeSync {
+	if sy.basevariable.Mode() != global.ModeNormal {
 		return false
 	}
 	height := sy.basevariable.BlockChain().Length() - 1
@@ -192,7 +191,7 @@ func (sy *SyncImpl) CheckSync() bool {
 }
 
 func (sy *SyncImpl) CheckGenBlock(hash []byte) bool {
-	if sy.basevariable.Mode() == global.ModeSync {
+	if sy.basevariable.Mode() != global.ModeNormal {
 		return false
 	}
 	bcn, err := sy.blockCache.Find(hash)
