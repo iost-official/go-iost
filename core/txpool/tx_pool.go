@@ -199,6 +199,8 @@ func (pool *TxPoolImpl) DelTx(hash []byte) error {
 
 // PendingTxs get the pending transactions
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
 
 	var pendingList TxsList
 
