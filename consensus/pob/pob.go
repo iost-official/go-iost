@@ -208,11 +208,32 @@ func (p *PoB) handleGenesisBlock(blk *block.Block) error {
 	return fmt.Errorf("not genesis block")
 }
 
+func (p *PoB) calculateTPS() {
+	cnt := 0
+	n := 0
+	if p.blockCache.Head() == nil {
+		return
+	}
+	l := p.blockChain.Length()
+	for i := int64(0); i < 10; i++ {
+		blk, err := p.blockChain.GetBlockByNumber(l - i - 1)
+		if err != nil {
+			ilog.Error("get block by Number failed, ", i)
+			break
+		}
+		cnt += len(blk.Txs)
+		n++
+	}
+	ilog.Info("Tx per block:", cnt/n)
+	ilog.Info("TPS:", cnt/(n*3))
+}
+
 func (p *PoB) blockLoop() {
 	//ilog.Infof("start blockloop")
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
+			p.calculateTPS()
 			if !ok {
 				ilog.Infof("chRecvBlock has closed")
 				return
@@ -288,6 +309,7 @@ func (p *PoB) blockLoop() {
 			go p.synchronizer.CheckSyncProcess()
 			p.blockCache.Draw()
 		case blk, ok := <-p.chGenBlock:
+			p.calculateTPS()
 			if !ok {
 				ilog.Infof("chGenBlock has closed")
 				return
@@ -379,6 +401,11 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
+	tempHead := p.blockCache.Head()
+	if node.Number > p.blockCache.Head().Number {
+		tempHead = node
+	}
+	p.txPool.AddLinkedNode(node, tempHead)
 	p.blockCache.Link(node)
 	p.updateInfo(node)
 	for child := range node.Children {
@@ -390,5 +417,4 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
 	updateLib(node, p.blockCache)
-	p.txPool.AddLinkedNode(node, p.blockCache.Head())
 }

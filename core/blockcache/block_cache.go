@@ -406,10 +406,10 @@ func (bcn *BlockCacheNode) DrawTree() string {
 	return ret
 }
 
-func (bc *BlockCacheImpl) Draw() {
+func (bc *BlockCacheImpl) Draw() string {
 	ilog.Info("LinkedTree:")
 	bc.linkedRoot.DrawTree()
 	ilog.Info("SingleTree:")
 	bc.singleRoot.DrawTree()
-	return nil
+	return ""
 }

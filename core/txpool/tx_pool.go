@@ -161,14 +161,33 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 	if linkedNode == nil || headNode == nil {
 		return errors.New("parameter is nil")
 	}
-
-	r := &RecNode{
+	bl := &RecNode{
 		LinkedNode: linkedNode,
 		HeadNode:   headNode,
 	}
-
-	pool.chLinkedNode <- r
-
+	err := pool.addBlock(bl.LinkedNode.Block)
+	if err != nil {
+		return err
+	}
+	pool.mu.Lock()
+	tFort := pool.updateForkChain(bl.HeadNode)
+	switch tFort {
+	case ForkError:
+		ilog.Errorf("failed to update fork chain")
+		pool.clearTxPending()
+	case Fork:
+		if err := pool.doChainChange(); err != nil {
+			ilog.Errorf("failed to chain change")
+			pool.clearTxPending()
+		}
+	case NotFork:
+		if err := pool.delBlockTxInPending(bl.LinkedNode.Block.HeadHash()); err != nil {
+			ilog.Errorf("failed to del block tx")
+		}
+	default:
+		ilog.Errorf("failed to tFort")
+	}
+	pool.mu.Unlock()
 	return nil
 }
 

@@ -86,9 +86,8 @@ func transfer() {
 
 func main() {
 	for {
-		var num = 40
+		var num = 80
 		start := time.Now()
-
 		for i := 0; i < num; i++ {
 			transParallel(10)
 		}

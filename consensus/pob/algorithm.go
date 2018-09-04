@@ -45,7 +45,7 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
-	ilog.Info(len(txsList))
+	ilog.Info("txsList", len(txsList))
 L:
 	for _, t := range txsList {
 		select {
