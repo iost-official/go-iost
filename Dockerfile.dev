@@ -17,6 +17,9 @@ ENV GOPATH /gopath
 ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 
+# Install Rocksdb
+RUN apt install -y librocksdb4.1
+
 WORKDIR $GOPATH/src/github.com/iost-official/Go-IOS-Protocol
 
 CMD ["make"]
