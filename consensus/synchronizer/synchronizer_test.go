@@ -67,6 +67,7 @@ func TestSynchronizer(t *testing.T) {
 		mockP2PService := p2p_mock.NewMockService(mockController)
 		channel := make(chan p2p.IncomingMessage, 1024)
 		mockP2PService.EXPECT().Register(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(channel).AnyTimes()
+		mockP2PService.EXPECT().Register(gomock.Any(), gomock.Any()).Return(channel)
 		mockP2PService.EXPECT().Broadcast(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(a interface{}, b interface{}, c interface{}) {
 			channel <- *p2p.NewIncomingMessage("abc", a.([]byte), b.(p2p.MessageType))
 		}).AnyTimes()

@@ -1,12 +1,11 @@
 package pob
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"sync"
 	"time"
-
-	"bytes"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -207,6 +206,7 @@ func (p *PoB) handleGenesisBlock(blk *block.Block) error {
 	}
 	return fmt.Errorf("not genesis block")
 }
+
 func (p *PoB) blockLoop() {
 	ilog.Infof("start blockloop")
 	for {
@@ -268,7 +268,7 @@ func (p *PoB) blockLoop() {
 					continue
 				}
 				if err == errSingle {
-					go p.synchronizer.CheckSingleBlock(blk.Head.Number)
+					go p.synchronizer.CheckSync()
 				}
 			}
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
@@ -292,7 +292,7 @@ func (p *PoB) blockLoop() {
 				ilog.Debugf("received new block error, err:%v", err)
 				continue
 			}
-			go p.synchronizer.CheckGenBlock()
+			go p.synchronizer.CheckGenBlock(blk.HeadHash())
 		case <-p.exitSignal:
 			return
 		}
