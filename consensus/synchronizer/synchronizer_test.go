@@ -59,6 +59,7 @@ func TestSynchronizer(t *testing.T) {
 			Txs:      make([]*tx.Tx, 0),
 			Receipts: make([]*tx.TxReceipt, 0),
 		}
+
 		genesisBlock.CalculateHeadHash()
 		baseVariable.BlockChain().Push(genesisBlock)
 		blockCache, _ := blockcache.NewBlockCache(baseVariable)

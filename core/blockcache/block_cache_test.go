@@ -8,7 +8,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
 
-	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
@@ -161,11 +160,10 @@ func TestVote(t *testing.T) {
 	b1 := genBlock(b0, "w1", 1)
 	b2 := genBlock(b1, "w2", 2)
 	b3 := genBlock(b2, "w3", 3)
-	b4 := genBlock(b3, "w4", 4)
-	b5 := genBlock(b4, "w5", 5)
-
-	// todo
-	fmt.Println(b5)
+	//b4 := genBlock(b3, "w4", 4)
+	//b5 := genBlock(b4, "w5", 5)
+	//
+	//fmt.Println(b5)
 
 	txdb := core_mock.NewMockTxDB(ctl)
 	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
@@ -174,11 +172,13 @@ func TestVote(t *testing.T) {
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
 	statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 
+	tpl := "[\"a1\",\"a2\",\"a3\",\"a4\",\"a5\"]"
+	//tpl1 := "[\"b1\",\"b2\",\"b3\",\"b4\",\"b5\"]"
 	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
-		return database.MustMarshal("4"), nil
+		return database.MustMarshal("5"), nil
 	})
 	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
-		return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
+		return database.MustMarshal(tpl), nil
 	})
 
 	base := core_mock.NewMockChain(ctl)
@@ -206,6 +206,16 @@ func TestVote(t *testing.T) {
 
 	})
 	Convey("test update", t, func() {
+		bc, _ := NewBlockCache(global)
+		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
+		n1 := bc.Add(b1)
+
+		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, n1.Pending()), ShouldBeTrue)
+		n2 := bc.Add(b2)
+		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, n2.Pending()), ShouldBeTrue)
+
+		n3 := bc.Add(b3)
+		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, n3.Pending()), ShouldBeTrue)
 
 	})
 }

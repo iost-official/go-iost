@@ -79,7 +79,8 @@ func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
 	spn := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingBlockNumber"))
 	// todo delay
 	if spn == nil {
-		return errors.New("failed to get pending number")
+		//return errors.New("failed to get pending number")
+		return nil
 	}
 	pn, err := strconv.ParseInt(spn.(string), 10, 64)
 	if err != nil {
@@ -90,7 +91,8 @@ func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
 	jwl := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingProducerList"))
 	// todo delay
 	if jwl == nil {
-		return errors.New("failed to get pending list")
+		//return errors.New("failed to get pending list")
+		return nil
 	}
 
 	str := make([]string, 0)
