@@ -1,12 +1,11 @@
 package pob
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"sync"
 	"time"
-
-	"bytes"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -294,7 +293,7 @@ func (p *PoB) blockLoop() {
 					continue
 				}
 				if err == errSingle {
-					go p.synchronizer.CheckSingleBlock(blk.Head.Number)
+					go p.synchronizer.CheckSync()
 				}
 			}
 			if incomingMessage.Type() == p2p.SyncBlockResponse {
@@ -326,8 +325,8 @@ func (p *PoB) blockLoop() {
 				ilog.Errorf("received new block error, err:%v", err)
 				continue
 			}
+			go p.synchronizer.CheckGenBlock(blk.HeadHash())
 			p.blockCache.Draw()
-			go p.synchronizer.CheckGenBlock()
 		case <-p.exitSignal:
 			return
 		}
