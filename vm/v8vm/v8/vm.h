@@ -75,7 +75,7 @@ extern IsolatePtr newIsolate();
 extern void releaseIsolate(IsolatePtr ptr);
 
 extern SandboxPtr newSandbox(IsolatePtr ptr);
-extern void loadVM(SandboxPtr ptr);
+extern void loadVM(SandboxPtr ptr, int vmType);
 extern void releaseSandbox(SandboxPtr ptr);
 
 extern ValueTuple Execute(SandboxPtr ptr, const char *code);
@@ -125,6 +125,8 @@ extern void goMapLen(SandboxPtr, const char *, size_t *);
 extern void goGlobalMapGet(SandboxPtr, const char *, const char *, const char *, size_t *);
 extern void goGlobalMapKeys(SandboxPtr, const char *, const char *, size_t *);
 extern void goGlobalMapLen(SandboxPtr, const char *, const char *, size_t *);
+
+extern int compile(SandboxPtr, const char *code, const char **compiledCode);
 
 #ifdef __cplusplus
 }
