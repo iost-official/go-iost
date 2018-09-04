@@ -310,6 +310,7 @@ func (p *PoB) blockLoop() {
 			}
 			//p.blockCache.Draw()
 			go p.synchronizer.CheckSyncProcess()
+			p.blockCache.Draw()
 		case blk, ok := <-p.chGenBlock:
 			if !ok {
 				ilog.Infof("chGenBlock has closed")
@@ -327,6 +328,7 @@ func (p *PoB) blockLoop() {
 				ilog.Errorf("received new block error, err:%v", err)
 				continue
 			}
+			p.blockCache.Draw()
 		case <-p.exitSignal:
 			return
 		}

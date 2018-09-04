@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"strconv"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
@@ -348,7 +350,7 @@ func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 //draw the blockcache
 const PICSIZE int = 100
 
-var pic [PICSIZE][PICSIZE]byte
+var pic [PICSIZE][PICSIZE]string
 var picX, picY int
 
 func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
@@ -359,15 +361,15 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 		picY = y
 	}
 	if y != 0 {
-		pic[x][y-1] = '-'
+		pic[x][y-1] = "-"
 		for i := x; i >= 0; i-- {
-			if pic[i][y-2] != ' ' {
+			if pic[i][y-2] != " " {
 				break
 			}
-			pic[i][y-2] = '|'
+			pic[i][y-2] = "|"
 		}
 	}
-	pic[x][y] = 'N'
+	pic[x][y] = strconv.FormatInt(root.Number, 10)
 	var width int = 0
 	var f bool = false
 	i := 0
@@ -388,21 +390,22 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 func (bcn *BlockCacheNode) DrawTree() {
 	for i := 0; i < PICSIZE; i++ {
 		for j := 0; j < PICSIZE; j++ {
-			pic[i][j] = ' '
+			pic[i][j] = " "
 		}
 	}
 	calcTree(bcn, 0, 0, true)
 	for i := 0; i <= picX; i++ {
+		l := ""
 		for j := 0; j <= picY; j++ {
-			fmt.Printf("%c", pic[i][j])
+			l = l + pic[i][j]
 		}
-		fmt.Printf("\n")
+		ilog.Info(l)
 	}
 }
 
 func (bc *BlockCacheImpl) Draw() {
-	fmt.Println("\nLinkedTree:")
+	ilog.Info("LinkedTree:")
 	bc.linkedRoot.DrawTree()
-	fmt.Println("SingleTree:")
+	ilog.Info("SingleTree:")
 	bc.singleRoot.DrawTree()
 }
