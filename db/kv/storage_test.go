@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 const (
@@ -40,7 +39,7 @@ func (suite *StorageTestSuite) TestGet() {
 	var value []byte
 	var err error
 	value, err = suite.storage.Get([]byte("key00"))
-	suite.Equal(leveldb.ErrNotFound, err)
+	suite.NotNil(err)
 	suite.Nil(value)
 	value, err = suite.storage.Get([]byte("key01"))
 	suite.Nil(err)
@@ -54,17 +53,17 @@ func (suite *StorageTestSuite) TestPut() {
 	var value []byte
 	var err error
 	value, err = suite.storage.Get([]byte("key06"))
-	suite.Equal(leveldb.ErrNotFound, err)
+	suite.NotNil(err)
 	suite.Nil(value)
 	value, err = suite.storage.Get([]byte("key07"))
-	suite.Equal(leveldb.ErrNotFound, err)
+	suite.NotNil(err)
 	suite.Nil(value)
 
 	err = suite.storage.Put([]byte("key07"), []byte("value07"))
 	suite.Nil(err)
 
 	value, err = suite.storage.Get([]byte("key06"))
-	suite.Equal(leveldb.ErrNotFound, err)
+	suite.NotNil(err)
 	suite.Nil(value)
 	value, err = suite.storage.Get([]byte("key07"))
 	suite.Nil(err)
@@ -85,7 +84,7 @@ func (suite *StorageTestSuite) TestDelete() {
 	suite.Nil(err)
 
 	value, err = suite.storage.Get([]byte("key04"))
-	suite.Equal(leveldb.ErrNotFound, err)
+	suite.NotNil(err)
 	suite.Equal([]byte{}, value)
 	value, err = suite.storage.Get([]byte("key05"))
 	suite.Nil(err)
@@ -133,7 +132,7 @@ func (suite *StorageTestSuite) TestBatch() {
 	suite.Nil(err)
 	suite.Equal([]byte("value05"), value)
 	value, err = suite.storage.Get([]byte("key06"))
-	suite.Equal(leveldb.ErrNotFound, err)
+	suite.NotNil(err)
 	suite.Nil(value)
 
 	err = suite.storage.BeginBatch()
@@ -152,7 +151,7 @@ func (suite *StorageTestSuite) TestBatch() {
 	suite.NotNil(err)
 
 	value, err = suite.storage.Get([]byte("key04"))
-	suite.Equal(leveldb.ErrNotFound, err)
+	suite.NotNil(err)
 	suite.Equal([]byte{}, value)
 	value, err = suite.storage.Get([]byte("key05"))
 	suite.Nil(err)
@@ -173,7 +172,7 @@ func (suite *StorageTestSuite) TestRecover() {
 	suite.Nil(err)
 	suite.Equal([]byte("value05"), value)
 	value, err = suite.storage.Get([]byte("key06"))
-	suite.Equal(leveldb.ErrNotFound, err)
+	suite.NotNil(err)
 	suite.Nil(value)
 
 	err = suite.storage.BeginBatch()
@@ -200,7 +199,7 @@ func (suite *StorageTestSuite) TestRecover() {
 	suite.Nil(err)
 	suite.Equal([]byte("value05"), value)
 	value, err = suite.storage.Get([]byte("key06"))
-	suite.Equal(leveldb.ErrNotFound, err)
+	suite.NotNil(err)
 	suite.Nil(value)
 }
 
