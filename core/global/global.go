@@ -235,7 +235,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeNormal, witnessList: witnessList, config: conf}, nil
 }
 
-func FakeNew() BaseVariable {
+func FakeNew() *BaseVariableImpl {
 	blockChain, _ := block.NewBlockChain("./db/BlockChainDB")
 	stateDB, _ := db.NewMVCCDB("./db/StateDB")
 	txDB, _ := tx.NewTxDB("./db/TXDB")
