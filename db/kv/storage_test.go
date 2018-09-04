@@ -39,8 +39,8 @@ func (suite *StorageTestSuite) TestGet() {
 	var value []byte
 	var err error
 	value, err = suite.storage.Get([]byte("key00"))
-	suite.NotNil(err)
-	suite.Nil(value)
+	suite.Nil(err)
+	suite.Equal([]byte{}, value)
 	value, err = suite.storage.Get([]byte("key01"))
 	suite.Nil(err)
 	suite.Equal([]byte("value01"), value)
@@ -53,18 +53,18 @@ func (suite *StorageTestSuite) TestPut() {
 	var value []byte
 	var err error
 	value, err = suite.storage.Get([]byte("key06"))
-	suite.NotNil(err)
-	suite.Nil(value)
+	suite.Nil(err)
+	suite.Equal([]byte{}, value)
 	value, err = suite.storage.Get([]byte("key07"))
-	suite.NotNil(err)
-	suite.Nil(value)
+	suite.Nil(err)
+	suite.Equal([]byte{}, value)
 
 	err = suite.storage.Put([]byte("key07"), []byte("value07"))
 	suite.Nil(err)
 
 	value, err = suite.storage.Get([]byte("key06"))
-	suite.NotNil(err)
-	suite.Nil(value)
+	suite.Nil(err)
+	suite.Equal([]byte{}, value)
 	value, err = suite.storage.Get([]byte("key07"))
 	suite.Nil(err)
 	suite.Equal([]byte("value07"), value)
@@ -84,7 +84,7 @@ func (suite *StorageTestSuite) TestDelete() {
 	suite.Nil(err)
 
 	value, err = suite.storage.Get([]byte("key04"))
-	suite.NotNil(err)
+	suite.Nil(err)
 	suite.Equal([]byte{}, value)
 	value, err = suite.storage.Get([]byte("key05"))
 	suite.Nil(err)
@@ -132,8 +132,8 @@ func (suite *StorageTestSuite) TestBatch() {
 	suite.Nil(err)
 	suite.Equal([]byte("value05"), value)
 	value, err = suite.storage.Get([]byte("key06"))
-	suite.NotNil(err)
-	suite.Nil(value)
+	suite.Nil(err)
+	suite.Equal([]byte{}, value)
 
 	err = suite.storage.BeginBatch()
 	suite.Nil(err)
@@ -151,7 +151,7 @@ func (suite *StorageTestSuite) TestBatch() {
 	suite.NotNil(err)
 
 	value, err = suite.storage.Get([]byte("key04"))
-	suite.NotNil(err)
+	suite.Nil(err)
 	suite.Equal([]byte{}, value)
 	value, err = suite.storage.Get([]byte("key05"))
 	suite.Nil(err)
@@ -172,8 +172,8 @@ func (suite *StorageTestSuite) TestRecover() {
 	suite.Nil(err)
 	suite.Equal([]byte("value05"), value)
 	value, err = suite.storage.Get([]byte("key06"))
-	suite.NotNil(err)
-	suite.Nil(value)
+	suite.Nil(err)
+	suite.Equal([]byte{}, value)
 
 	err = suite.storage.BeginBatch()
 	suite.Nil(err)
@@ -199,8 +199,8 @@ func (suite *StorageTestSuite) TestRecover() {
 	suite.Nil(err)
 	suite.Equal([]byte("value05"), value)
 	value, err = suite.storage.Get([]byte("key06"))
-	suite.NotNil(err)
-	suite.Nil(value)
+	suite.Nil(err)
+	suite.Equal([]byte{}, value)
 }
 
 func (suite *StorageTestSuite) TearDownTest() {

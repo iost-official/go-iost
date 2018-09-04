@@ -17,15 +17,19 @@ func NewDB(path string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	ldb := &DB{
+	return &DB{
 		db:    db,
 		batch: nil,
-	}
-	return ldb, nil
+	}, nil
 }
 
 func (d *DB) Get(key []byte) ([]byte, error) {
-	return d.db.Get(key, nil)
+	value, err := d.db.Get(key, nil)
+	if err == leveldb.ErrNotFound {
+		return []byte{}, nil
+	} else {
+		return value, err
+	}
 }
 
 func (d *DB) Has(key []byte) (bool, error) {
