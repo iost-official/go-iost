@@ -369,6 +369,14 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
+
+	h := p.blockCache.Head()
+	if node.Number > h.Number {
+		p.txPool.AddLinkedNode(node, node)
+	} else {
+		p.txPool.AddLinkedNode(node, h)
+	}
+
 	p.blockCache.Link(node)
 	p.updateInfo(node)
 	for child := range node.Children {
@@ -380,5 +388,4 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
 	updateLib(node, p.blockCache)
-	p.txPool.AddLinkedNode(node, p.blockCache.Head())
 }

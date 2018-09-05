@@ -45,11 +45,6 @@ const (
 	GasPriceError
 )
 
-type RecNode struct {
-	LinkedNode *blockcache.BlockCacheNode
-	HeadNode   *blockcache.BlockCacheNode
-}
-
 type ForkChain struct {
 	NewHead       *blockcache.BlockCacheNode
 	OldHead       *blockcache.BlockCacheNode
