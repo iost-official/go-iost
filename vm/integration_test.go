@@ -865,7 +865,7 @@ func TestJS_LuckyBet(t *testing.T) {
 func TestJS_Vote1(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
-	lc, err := ReadFile("test_data/vote.js")
+	lc, err := ReadFile("../config/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -921,7 +921,7 @@ func TestJS_Vote1(t *testing.T) {
 func TestJS_VoteServi(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
-	lc, err := ReadFile("test_data/vote.js")
+	lc, err := ReadFile("../config/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -953,7 +953,7 @@ func TestJS_VoteServi(t *testing.T) {
 func TestJS_Vote(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
-	lc, err := ReadFile("test_data/vote.js")
+	lc, err := ReadFile("../config/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}
