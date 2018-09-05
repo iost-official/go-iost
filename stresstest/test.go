@@ -80,10 +80,12 @@ func transfer() {
 	}
 	_, err = sendTx(*stx)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 }
 
+//http://47.75.42.25:9090/graph?g0.range_input=10m&g0.expr=rate(iost_pob_generated_block%7B_id%3D~%221.%2B%22%7D%5B1m%5D)&g0.tab=0&g1.range_input=10m&g1.expr=rate(iost_tx_received_count%7B_id%3D~%221.%2B%22%7D%5B1m%5D)&g1.tab=0&g2.range_input=10m&g2.expr=iost_tx_received_count%7B_id%3D~%221.%2B%22%7D&g2.tab=0&g3.range_input=1m&g3.expr=iost_node_mode%7B_id%3D~%221.%2B%22%7D&g3.tab=0&g4.range_input=10s&g4.expr=iost_pob_confirmed_length%7B_id%3D~%221.%2B%22%7D&g4.tab=0&g5.range_input=1m&g5.expr=iost_block_tx_size%7B_id%3D~%221.%2B%22%7D&g5.tab=0&g6.range_input=1h&g6.expr=&g6.tab=1
 func main() {
 	for {
 		var num = 500
