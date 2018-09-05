@@ -46,7 +46,7 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
-	engine := vm.NewEngine(topBlock.Head, db)
+	engine := vm.NewEngine(blk.Head, db)
 	ilog.Info(len(txsList))
 
 	// call vote
@@ -59,7 +59,10 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 			if receipt, err := engine.Exec(trx); err == nil {
 				blk.Txs = append(blk.Txs, trx)
 				blk.Receipts = append(blk.Receipts, receipt)
+				ilog.Debug(receipt)
 			}
+		} else {
+			ilog.Debug(err)
 		}
 
 	}
@@ -74,7 +77,9 @@ L:
 			if receipt, err := engine.Exec(t); err == nil {
 				blk.Txs = append(blk.Txs, t)
 				blk.Receipts = append(blk.Receipts, receipt)
+				ilog.Debug(err, receipt)
 			} else {
+				ilog.Debug(err, receipt)
 				txPool.DelTx(t.Hash())
 			}
 		}
