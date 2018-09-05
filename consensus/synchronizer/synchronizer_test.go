@@ -46,6 +46,7 @@ func TestDownloadController(t *testing.T) {
 func TestSynchronizer(t *testing.T) {
 	Convey("Test Synchronizer", t, func() {
 		baseVariable := global.FakeNew()
+		So(baseVariable, ShouldNotBeNil)
 		defer func() {
 			os.RemoveAll("db")
 		}()
@@ -62,7 +63,8 @@ func TestSynchronizer(t *testing.T) {
 
 		genesisBlock.CalculateHeadHash()
 		baseVariable.BlockChain().Push(genesisBlock)
-		blockCache, _ := blockcache.NewBlockCache(baseVariable)
+		blockCache, err := blockcache.NewBlockCache(baseVariable)
+		So(err, ShouldBeNil)
 		baseVariable.StateDB().Tag(string(genesisBlock.HeadHash()))
 		mockController := gomock.NewController(t)
 		mockP2PService := p2p_mock.NewMockService(mockController)
