@@ -3,8 +3,8 @@ acc:
   seckey: "5ifJUpGWJ69S2eKsKYLDcajVxrc5yZk2CD7tJ29yK6FyjAtmeboK3G4Ag5p22uZTijBP3ftEDV4ymXZF1jGqu9j4"
   algorithm: "ed25519"
 genesis:
-  createGenesis: false
-  genesisHash: "BSUxNfQcHmTviuNEiN18GW4fhXXYbV9sRCFzJFJLYNhb"
+  createGenesis: true
+  genesisHash: ""
   witnessInfo:
     - "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP"
     - "13400000000"
@@ -14,7 +14,7 @@ genesis:
     - "13100000000"
 
 vm:
-  logLevel: "debug"
+  logLevel: ""
   jsPath: "vm/v8vm/v8/libjs/"
 
 db:
@@ -44,7 +44,7 @@ log:
 metrics:
   pushAddr: "47.75.42.25:9091"
   enable: true
-  id: "1"
+  id: "10"
 
 debug:
   listenAddr: "0.0.0.0:40303"
