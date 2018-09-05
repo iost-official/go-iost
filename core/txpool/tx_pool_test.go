@@ -64,7 +64,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		//	DB:      &common.DBConfig{},
 		//	Genesis: &common.GenesisConfig{CreateGenesis: true, WitnessInfo: witnessInfo},
 		//}
-		//gl, err := global.New(conf)
+		//gl, err := gbl.New(conf)
 
 		statedb := db_mock.NewMockMVCCDB(ctl)
 		statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
@@ -86,15 +86,16 @@ func TestNewTxPoolImpl(t *testing.T) {
 		base.EXPECT().Length().AnyTimes().Return(int64(1))
 		base.EXPECT().Close().AnyTimes()
 
-		global := core_mock.NewMockBaseVariable(ctl)
-		global.EXPECT().StateDB().AnyTimes().Return(statedb)
-		global.EXPECT().BlockChain().AnyTimes().Return(base)
+		gbl := core_mock.NewMockBaseVariable(ctl)
+		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
+		gbl.EXPECT().BlockChain().AnyTimes().Return(base)
+		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 
 		So(err, ShouldBeNil)
-		BlockCache, err := blockcache.NewBlockCache(global)
+		BlockCache, err := blockcache.NewBlockCache(gbl)
 		So(err, ShouldBeNil)
 
-		txPool, err := NewTxPoolImpl(global, BlockCache, p2pMock)
+		txPool, err := NewTxPoolImpl(gbl, BlockCache, p2pMock)
 		So(err, ShouldBeNil)
 
 		txPool.Start()
@@ -318,7 +319,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		//
 		//})
 
-		stopTest(global)
+		stopTest(gbl)
 	})
 }
 
