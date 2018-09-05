@@ -60,8 +60,8 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		acts = append(acts, &act)
 	}
 	// deploy iost.vote
-	voteFilePath := VoteContractPath + "/vote.js"
-	voteAbiPath := VoteContractPath + "/vote.js.abi"
+	voteFilePath := VoteContractPath + "vote.js"
+	voteAbiPath := VoteContractPath + "vote.js.abi"
 	fd, err := common.ReadFile(voteFilePath)
 	if err != nil {
 		return nil, err

@@ -249,6 +249,8 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		if err := bc.linkedRoot.UpdatePending(bc.stateDB); err != nil {
 			return nil, err
 		}
+
+		bc.linkedRoot.SetActive(bc.linkedRoot.Pending())
 	}
 	bc.head = bc.linkedRoot
 	return &bc, nil
