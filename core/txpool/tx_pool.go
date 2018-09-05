@@ -94,7 +94,7 @@ func (pool *TxPoolImpl) loop() {
 			metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
 
 			if ret := pool.addTx(tr); ret == Success {
-				pool.p2pService.Broadcast(tr.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
+				pool.p2pService.Broadcast(tr.Encode(), p2p.PublishTxRequest, p2p.NormalMessage)
 			}
 
 		case <-clearTx.C:
@@ -177,7 +177,7 @@ func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 	}
 
 	if r = pool.addTx(t); r == Success {
-		pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
+		pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.NormalMessage)
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	}
 

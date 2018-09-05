@@ -62,9 +62,9 @@ func TestTx(t *testing.T) {
 		// acc, err := account.NewAccount(seckey)
 		// So(err, ShouldEqual, nil)
 
-		a1, _ := account.NewAccount(nil)
-		a2, _ := account.NewAccount(nil)
-		a3, _ := account.NewAccount(nil)
+		a1, _ := account.NewAccount(nil, crypto.Secp256k1)
+		a2, _ := account.NewAccount(nil, crypto.Secp256k1)
+		a3, _ := account.NewAccount(nil, crypto.Secp256k1)
 
 		Convey("proto marshal", func() {
 			tx := &TxRaw{
