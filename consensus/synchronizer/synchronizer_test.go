@@ -6,11 +6,8 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
@@ -48,24 +45,11 @@ func TestSynchronizer(t *testing.T) {
 		baseVariable := global.FakeNew()
 		So(baseVariable, ShouldNotBeNil)
 		defer func() {
-			os.RemoveAll("db")
+			os.RemoveAll("Fakedb")
 		}()
-		genesisBlock := &block.Block{
-			Head: &block.BlockHead{
-				Version: 0,
-				Number:  0,
-				Time:    0,
-			},
-			Sign:     &crypto.Signature{},
-			Txs:      make([]*tx.Tx, 0),
-			Receipts: make([]*tx.TxReceipt, 0),
-		}
 
-		genesisBlock.CalculateHeadHash()
-		baseVariable.BlockChain().Push(genesisBlock)
 		blockCache, err := blockcache.NewBlockCache(baseVariable)
 		So(err, ShouldBeNil)
-		baseVariable.StateDB().Tag(string(genesisBlock.HeadHash()))
 		mockController := gomock.NewController(t)
 		mockP2PService := p2p_mock.NewMockService(mockController)
 		channel := make(chan p2p.IncomingMessage, 1024)

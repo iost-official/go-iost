@@ -265,6 +265,9 @@ func FakeNew() *BaseVariableImpl {
 	if err != nil {
 		return nil
 	}
+	blk.CalculateHeadHash()
+	blk.CalculateTxsHash()
+	blk.CalculateMerkleHash()
 	err = blockChain.Push(blk)
 	if err != nil {
 		return nil
