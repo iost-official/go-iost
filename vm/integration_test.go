@@ -1168,8 +1168,8 @@ func TestJS_Genesis(t *testing.T) {
 		acts = append(acts, &act)
 	}
 	// deploy iost.vote
-	voteFilePath := "/home/wangyu/gocode/src/github.com/iost-official/Go-IOS-Protocol/vm/test_data/vote.js"
-	voteAbiPath := "/home/wangyu/gocode/src/github.com/iost-official/Go-IOS-Protocol/vm/test_data/vote.js.abi"
+	voteFilePath := "../config/vote.js"
+	voteAbiPath := "../config/vote.js.abi"
 	fd, err := common.ReadFile(voteFilePath)
 	if err != nil {
 		t.Fatal(err)
