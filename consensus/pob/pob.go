@@ -411,11 +411,11 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
-	tempHead := p.blockCache.Head()
 	if node.Number > p.blockCache.Head().Number {
-		tempHead = node
+		p.txPool.AddLinkedNode(node, node)
+	} else {
+		p.txPool.AddLinkedNode(node, p.blockCache.Head())
 	}
-	p.txPool.AddLinkedNode(node, tempHead)
 	p.blockCache.Link(node)
 	p.updateInfo(node)
 	for child := range node.Children {

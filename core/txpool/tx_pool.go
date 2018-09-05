@@ -24,8 +24,6 @@ type TxPoolImpl struct {
 	chP2PTx chan p2p.IncomingMessage
 	chTx    chan *tx.Tx
 
-	chLinkedNode chan *RecNode
-
 	global     global.BaseVariable
 	blockCache blockcache.BlockCache
 	p2pService p2p.Service
@@ -42,16 +40,15 @@ type TxPoolImpl struct {
 // NewTxPoolImpl returns a default TxPoolImpl instance.
 func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
 	p := &TxPoolImpl{
-		blockCache:   blockCache,
-		chLinkedNode: make(chan *RecNode, 100),
-		chTx:         make(chan *tx.Tx, 10000),
-		forkChain:    new(ForkChain),
-		blockList:    new(sync.Map),
-		pendingTx:    new(sync.Map),
-		global:       global,
-		p2pService:   p2ps,
-		chP2PTx:      p2ps.Register("TxPool message", p2p.PublishTxRequest),
-		quitCh:       make(chan struct{}),
+		blockCache: blockCache,
+		chTx:       make(chan *tx.Tx, 10000),
+		forkChain:  new(ForkChain),
+		blockList:  new(sync.Map),
+		pendingTx:  new(sync.Map),
+		global:     global,
+		p2pService: p2ps,
+		chP2PTx:    p2ps.Register("TxPool message", p2p.PublishTxRequest),
+		quitCh:     make(chan struct{}),
 	}
 
 	return p, nil
@@ -100,36 +97,6 @@ func (pool *TxPoolImpl) loop() {
 				pool.p2pService.Broadcast(tr.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
 			}
 
-		case bl := <-pool.chLinkedNode:
-			pool.mu.Lock()
-
-			if pool.addBlock(bl.LinkedNode.Block) != nil {
-				continue
-			}
-
-			tFort := pool.updateForkChain(bl.HeadNode)
-			switch tFort {
-			case ForkError:
-				ilog.Errorf("failed to update fork chain")
-				pool.clearTxPending()
-
-			case Fork:
-				if err := pool.doChainChange(); err != nil {
-					ilog.Errorf("failed to chain change")
-					pool.clearTxPending()
-				}
-
-			case NotFork:
-
-				if err := pool.delBlockTxInPending(bl.LinkedNode.Block.HeadHash()); err != nil {
-					ilog.Errorf("failed to del block tx")
-				}
-
-			default:
-				ilog.Errorf("failed to tFort")
-			}
-			pool.mu.Unlock()
-
 		case <-clearTx.C:
 			pool.mu.Lock()
 
@@ -167,33 +134,36 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 	if linkedNode == nil || headNode == nil {
 		return errors.New("parameter is nil")
 	}
-	bl := &RecNode{
-		LinkedNode: linkedNode,
-		HeadNode:   headNode,
-	}
-	err := pool.addBlock(bl.LinkedNode.Block)
-	if err != nil {
-		return err
-	}
+
 	pool.mu.Lock()
-	tFort := pool.updateForkChain(bl.HeadNode)
+	defer pool.mu.Unlock()
+
+	if pool.addBlock(linkedNode.Block) != nil {
+		return errors.New("failed to add block")
+	}
+
+	tFort := pool.updateForkChain(headNode)
 	switch tFort {
 	case ForkError:
 		ilog.Errorf("failed to update fork chain")
 		pool.clearTxPending()
+
 	case Fork:
 		if err := pool.doChainChange(); err != nil {
 			ilog.Errorf("failed to chain change")
 			pool.clearTxPending()
 		}
+
 	case NotFork:
-		if err := pool.delBlockTxInPending(bl.LinkedNode.Block.HeadHash()); err != nil {
+
+		if err := pool.delBlockTxInPending(linkedNode.Block.HeadHash()); err != nil {
 			ilog.Errorf("failed to del block tx")
 		}
+
 	default:
-		ilog.Errorf("failed to tFort")
+		return errors.New("failed to tFort")
 	}
-	pool.mu.Unlock()
+
 	return nil
 }
 
@@ -251,7 +221,7 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 func (pool *TxPoolImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error) {
 
 	var r FRet
-	//ilog.Error("verify existTxs")
+
 	switch {
 	case pool.existTxInPending(hash):
 		r = FoundPending
@@ -360,7 +330,6 @@ func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 	for {
 		ret := pool.existTxInBlock(txHash, h)
 		if ret {
-			ilog.Error("existTxInBlock")
 			return true
 		}
 
@@ -380,20 +349,12 @@ func (pool *TxPoolImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 }
 
 func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
+
 	b, ok := pool.blockList.Load(string(blockHash))
 	if !ok {
 		return false
 	}
-	exist := b.(*blockTx).existTx(txHash)
-	if exist {
-		bcn, err := pool.blockCache.Find(blockHash)
-		if err != nil {
-			ilog.Error("blockHash not found in blockcache")
-			return true
-		}
-		ilog.Error("the block containing duplicate tx:", bcn.Number)
-		ilog.Error("the block containing the duplicate tx: ", common.Base58Encode(blockHash))
-	}
+
 	return b.(*blockTx).existTx(txHash)
 }
 
