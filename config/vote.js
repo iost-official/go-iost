@@ -4,6 +4,7 @@ class VoteContract {
 		this.producerNumber = 7;
 		this.preProducerThreshold = 2100 * 10000;
 		this.voteLockTime = 200;
+		this.voteStatInterval = 200;
         this.preProducerMap = {};
         this.currentProducerList = [];
         this.pendingProducerList = [];
@@ -13,8 +14,6 @@ class VoteContract {
     }
 
     Init() {
-        this.preProducerMap = {};
-        this.currentProducerList = [];
         this.pendingProducerList = [
             "IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4",
             "IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9",
@@ -24,9 +23,6 @@ class VoteContract {
             "IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",
             "IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd"
         ];
-        this.pendingBlockNumber = 0;
-        this.producerTable = {}
-        this.voteTable = {}
 
         for (var i = 0; i < this.producerNumber; i++) {
             var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
@@ -208,7 +204,11 @@ class VoteContract {
 
 	// calculate the vote result, modify pendingProducerList
 	Stat() {
-		//todo require auth
+		// controll auth
+		var bn = this._getBlockNumber();
+		if (bn % this.voteStatInterval != 0 || bn <= this.pendingBlockNumber) {
+			throw new Error("stat failed. block number mismatch. pending bn = " + this.pendingBlockNumber);
+		}
 
 		// add scores for preProducerMap
 		var preList = [];	// list of producers whose vote > threshold
