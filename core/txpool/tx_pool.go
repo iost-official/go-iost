@@ -24,8 +24,6 @@ type TxPoolImpl struct {
 	chP2PTx chan p2p.IncomingMessage
 	chTx    chan *tx.Tx
 
-	chLinkedNode chan *RecNode
-
 	global     global.BaseVariable
 	blockCache blockcache.BlockCache
 	p2pService p2p.Service
@@ -42,16 +40,15 @@ type TxPoolImpl struct {
 // NewTxPoolImpl returns a default TxPoolImpl instance.
 func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
 	p := &TxPoolImpl{
-		blockCache:   blockCache,
-		chLinkedNode: make(chan *RecNode, 100),
-		chTx:         make(chan *tx.Tx, 10000),
-		forkChain:    new(ForkChain),
-		blockList:    new(sync.Map),
-		pendingTx:    new(sync.Map),
-		global:       global,
-		p2pService:   p2ps,
-		chP2PTx:      p2ps.Register("TxPool message", p2p.PublishTxRequest),
-		quitCh:       make(chan struct{}),
+		blockCache: blockCache,
+		chTx:       make(chan *tx.Tx, 10000),
+		forkChain:  new(ForkChain),
+		blockList:  new(sync.Map),
+		pendingTx:  new(sync.Map),
+		global:     global,
+		p2pService: p2ps,
+		chP2PTx:    p2ps.Register("TxPool message", p2p.PublishTxRequest),
+		quitCh:     make(chan struct{}),
 	}
 
 	return p, nil
@@ -70,6 +67,12 @@ func (pool *TxPoolImpl) Stop() {
 }
 
 func (pool *TxPoolImpl) loop() {
+	for {
+		if pool.global.Mode() != global.ModeInit {
+			break
+		}
+		time.Sleep(time.Second)
+	}
 
 	pool.initBlockTx()
 
@@ -93,36 +96,6 @@ func (pool *TxPoolImpl) loop() {
 			if ret := pool.addTx(tr); ret == Success {
 				pool.p2pService.Broadcast(tr.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
 			}
-
-		case bl := <-pool.chLinkedNode:
-			if pool.addBlock(bl.LinkedNode.Block) != nil {
-				continue
-			}
-
-			pool.mu.Lock()
-
-			tFort := pool.updateForkChain(bl.HeadNode)
-			switch tFort {
-			case ForkError:
-				ilog.Errorf("failed to update fork chain")
-				pool.clearTxPending()
-
-			case Fork:
-				if err := pool.doChainChange(); err != nil {
-					ilog.Errorf("failed to chain change")
-					pool.clearTxPending()
-				}
-
-			case NotFork:
-
-				if err := pool.delBlockTxInPending(bl.LinkedNode.Block.HeadHash()); err != nil {
-					ilog.Errorf("failed to del block tx")
-				}
-
-			default:
-				ilog.Errorf("failed to tFort")
-			}
-			pool.mu.Unlock()
 
 		case <-clearTx.C:
 			pool.mu.Lock()
@@ -162,12 +135,34 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 		return errors.New("parameter is nil")
 	}
 
-	r := &RecNode{
-		LinkedNode: linkedNode,
-		HeadNode:   headNode,
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	if pool.addBlock(linkedNode.Block) != nil {
+		return errors.New("failed to add block")
 	}
 
-	pool.chLinkedNode <- r
+	tFort := pool.updateForkChain(headNode)
+	switch tFort {
+	case ForkError:
+		ilog.Errorf("failed to update fork chain")
+		pool.clearTxPending()
+
+	case Fork:
+		if err := pool.doChainChange(); err != nil {
+			ilog.Errorf("failed to chain change")
+			pool.clearTxPending()
+		}
+
+	case NotFork:
+
+		if err := pool.delBlockTxInPending(linkedNode.Block.HeadHash()); err != nil {
+			ilog.Errorf("failed to del block tx")
+		}
+
+	default:
+		return errors.New("failed to tFort")
+	}
 
 	return nil
 }
@@ -199,11 +194,15 @@ func (pool *TxPoolImpl) DelTx(hash []byte) error {
 
 // PendingTxs get the pending transactions
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
 
 	var pendingList TxsList
 
 	pool.pendingTx.Range(func(key, value interface{}) bool {
-		pendingList = append(pendingList, value.(*tx.Tx))
+		if !pool.txTimeOut(value.(*tx.Tx)) {
+			pendingList = append(pendingList, value.(*tx.Tx))
+		}
 
 		return true
 	})

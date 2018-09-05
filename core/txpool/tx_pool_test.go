@@ -12,11 +12,14 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
+	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
+	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -57,21 +60,44 @@ func TestNewTxPoolImpl(t *testing.T) {
 			witnessInfo = append(witnessInfo, newAccount.ID)
 			witnessInfo = append(witnessInfo, "100000")
 		}
-		conf := &common.Config{
-			DB:      &common.DBConfig{},
-			Genesis: &common.GenesisConfig{CreateGenesis: true, WitnessInfo: witnessInfo},
-		}
-		gl, err := global.New(conf)
+		//conf := &common.Config{
+		//	DB:      &common.DBConfig{},
+		//	Genesis: &common.GenesisConfig{CreateGenesis: true, WitnessInfo: witnessInfo},
+		//}
+		//gl, err := global.New(conf)
+
+		statedb := db_mock.NewMockMVCCDB(ctl)
+		statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
+		statedb.EXPECT().Fork().AnyTimes().Return(statedb)
+		statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
+		statedb.EXPECT().Close().AnyTimes()
+
+		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			return database.MustMarshal("4"), nil
+		})
+		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
+		})
+
+		b := genBlocks(accountList, witnessList, 1, 11, true)
+		base := core_mock.NewMockChain(ctl)
+		base.EXPECT().Top().AnyTimes().Return(b[0], nil)
+		base.EXPECT().Push(Any()).AnyTimes().Return(nil)
+		base.EXPECT().Length().AnyTimes().Return(int64(1))
+		base.EXPECT().Close().AnyTimes()
+
+		global := core_mock.NewMockBaseVariable(ctl)
+		global.EXPECT().StateDB().AnyTimes().Return(statedb)
+		global.EXPECT().BlockChain().AnyTimes().Return(base)
 
 		So(err, ShouldBeNil)
-		BlockCache, err := blockcache.NewBlockCache(gl)
+		BlockCache, err := blockcache.NewBlockCache(global)
 		So(err, ShouldBeNil)
 
-		txPool, err := NewTxPoolImpl(gl, BlockCache, p2pMock)
+		txPool, err := NewTxPoolImpl(global, BlockCache, p2pMock)
 		So(err, ShouldBeNil)
 
 		txPool.Start()
-
 		Convey("AddTx", func() {
 
 			t := genTx(accountList[0], expiration)
@@ -82,7 +108,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 			r = txPool.AddTx(t)
 			So(r, ShouldEqual, DupError)
 		})
-		time.Sleep(time.Second)
 		Convey("txTimeOut", func() {
 
 			t := genTx(accountList[0], expiration)
@@ -293,7 +318,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		//
 		//})
 
-		stopTest(gl)
+		stopTest(global)
 	})
 }
 

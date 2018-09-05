@@ -50,6 +50,7 @@ const (
 	SyncBlockHashResponse
 	SyncBlockRequest
 	SyncBlockResponse
+	SyncHeight
 	PublishTxRequest
 
 	UrgentMessage = 1
@@ -72,6 +73,8 @@ func (m MessageType) String() string {
 		return "SyncBlockRequest"
 	case SyncBlockResponse:
 		return "SyncBlockResponse"
+	case SyncHeight:
+		return "SyncHeight"
 	case PublishTxRequest:
 		return "PublishTxRequest"
 	case NewBlockHash:

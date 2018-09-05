@@ -5,9 +5,14 @@ import (
 	"fmt"
 	"sync"
 
+	"encoding/json"
+	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
+	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"strconv"
 )
 
 type CacheStatus int
@@ -30,16 +35,86 @@ const (
 	Virtual
 )
 
+type WitnessList struct {
+	activeWitnessList    []string
+	pendingWitnessList   []string
+	pendingWitnessNumber int64
+}
+
+// SetPending set pending witness list
+func (wl *WitnessList) SetPending(pl []string) {
+	wl.pendingWitnessList = pl
+}
+
+// SetPendingNum set block number of pending witness
+func (wl *WitnessList) SetPendingNum(n int64) {
+	wl.pendingWitnessNumber = n
+}
+
+// SetActive set active witness list
+func (wl *WitnessList) SetActive(al []string) {
+	wl.activeWitnessList = al
+}
+
+// Pending get pending witness list
+func (wl *WitnessList) Pending() []string {
+	return wl.pendingWitnessList
+}
+
+// Active get active witness list
+func (wl *WitnessList) Active() []string {
+	return wl.activeWitnessList
+}
+
+// SetPendingNum get block number of pending witness
+func (wl *WitnessList) PendingNum() int64 {
+	return wl.pendingWitnessNumber
+}
+
+// UpdatePending update pending witness list
+func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
+
+	vi := database.NewVisitor(0, mv)
+
+	spn := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingBlockNumber"))
+	// todo delay
+	if spn == nil {
+		//return errors.New("failed to get pending number")
+		return nil
+	}
+	pn, err := strconv.ParseInt(spn.(string), 10, 64)
+	if err != nil {
+		return err
+	}
+	wl.SetPendingNum(pn)
+
+	jwl := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingProducerList"))
+	// todo delay
+	if jwl == nil {
+		//return errors.New("failed to get pending list")
+		return nil
+	}
+
+	str := make([]string, 0)
+	err = json.Unmarshal([]byte(jwl.(string)), &str)
+	if err != nil {
+		return err
+	}
+	wl.SetPending(str)
+
+	return nil
+}
+
 type BlockCacheNode struct {
-	Block              *block.Block
-	Parent             *BlockCacheNode
-	Children           map[*BlockCacheNode]bool
-	Type               BCNType
-	Number             int64
-	Witness            string
-	ConfirmUntil       int64
-	PendingWitnessList []string
-	Extension          []byte
+	Block        *block.Block
+	Parent       *BlockCacheNode
+	Children     map[*BlockCacheNode]bool
+	Type         BCNType
+	Number       int64
+	Witness      string
+	ConfirmUntil int64
+	WitnessList
+	Extension []byte
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
@@ -55,10 +130,13 @@ func (bcn *BlockCacheNode) delChild(child *BlockCacheNode) {
 func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
 	if parent != nil {
 		bcn.Parent = parent
-		bcn.Type = parent.Type
-		if bcn.Type == Virtual {
-			bcn.Type = Single
-		}
+		bcn.Type = Single
+
+		// copy parent
+		bcn.SetActive(parent.Active())
+		bcn.SetPending(parent.Pending())
+		bcn.SetPendingNum(parent.PendingNum())
+
 		parent.addChild(bcn)
 	}
 }
@@ -81,6 +159,8 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	if block != nil {
 		bcn.Number = block.Head.Number
 		bcn.Witness = block.Head.Witness
+	} else {
+		bcn.Number = -1
 	}
 	bcn.setParent(parent)
 	return &bcn
@@ -111,16 +191,17 @@ type BlockCache interface {
 	GetBlockByHash([]byte) (*block.Block, error)
 	LinkedRoot() *BlockCacheNode
 	Head() *BlockCacheNode
-	Draw()
+	Draw() string
 }
 
 type BlockCacheImpl struct {
 	linkedRoot   *BlockCacheNode
 	singleRoot   *BlockCacheNode
 	head         *BlockCacheNode
-	hash2node    *sync.Map
+	hash2node    *sync.Map // map[string]*BlockCacheNode
 	leaf         map[*BlockCacheNode]int64
 	baseVariable global.BaseVariable
+	stateDB      db.MVCCDB
 }
 
 func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
@@ -145,30 +226,31 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 }
 
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
-	lib, err := baseVariable.BlockChain().Top()
-	if err != nil {
-		bc := BlockCacheImpl{
-			singleRoot:   NewBCN(nil, nil),
-			hash2node:    new(sync.Map),
-			leaf:         make(map[*BlockCacheNode]int64),
-			baseVariable: baseVariable,
-		}
-		bc.singleRoot.Type = Virtual
-		//ilog.Errorf("get info from remote")
-		return &bc, nil
-	}
 	bc := BlockCacheImpl{
-		linkedRoot:   NewBCN(nil, lib),
+		linkedRoot:   NewBCN(nil, nil),
 		singleRoot:   NewBCN(nil, nil),
 		hash2node:    new(sync.Map),
 		leaf:         make(map[*BlockCacheNode]int64),
 		baseVariable: baseVariable,
+		stateDB:      baseVariable.StateDB().Fork(),
 	}
-	bc.linkedRoot.Type = Linked
-	bc.singleRoot.Type = Virtual
+	bc.linkedRoot.Number = -1
+	lib, err := baseVariable.BlockChain().Top()
+	if err == nil {
+		bc.linkedRoot = NewBCN(nil, lib)
+		bc.linkedRoot.Type = Linked
+		bc.singleRoot.Type = Virtual
+		bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
+		bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
+
+		if !bc.stateDB.Checkout(string(lib.HeadHash())) {
+			return nil, errors.New("failed to state db")
+		}
+		if err := bc.linkedRoot.UpdatePending(bc.stateDB); err != nil {
+			return nil, err
+		}
+	}
 	bc.head = bc.linkedRoot
-	bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
-	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
 	return &bc, nil
 }
 
@@ -177,12 +259,55 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
+	fa, ok := bc.hmget(bcn.Block.Head.ParentHash)
+	if !ok || fa.Type != Linked {
+		return
+	}
 	bcn.Type = Linked
 	delete(bc.leaf, bcn.Parent)
 	bc.leaf[bcn] = bcn.Number
 	if bcn.Number > bc.head.Number {
-		bc.head = bcn
+		bc.setHead(bcn)
 	}
+}
+
+func (bc *BlockCacheImpl) initHead(h *BlockCacheNode) error {
+
+	bc.head = h
+
+	if err := bc.updatePending(bc.head); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
+
+	bc.head = h
+
+	if h.Number%common.VoteInterval != 0 {
+		return nil
+	}
+
+	if err := bc.updatePending(bc.head); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
+
+	ok := bc.stateDB.Checkout(string(h.Block.HeadHash()))
+	if ok {
+		if err := bc.head.UpdatePending(bc.stateDB); err != nil {
+			ilog.Error("failed to update pending, err:", err)
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (bc *BlockCacheImpl) updateLongest() {
@@ -194,7 +319,7 @@ func (bc *BlockCacheImpl) updateLongest() {
 	for key, val := range bc.leaf {
 		if val > cur {
 			cur = val
-			bc.head = key
+			bc.setHead(key)
 		}
 	}
 }
@@ -215,13 +340,6 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	} else {
 		newNode = NewBCN(fa, blk)
 		bc.hmset(blk.HeadHash(), newNode)
-	}
-	if newNode.Type == Linked {
-		delete(bc.leaf, fa)
-		bc.leaf[newNode] = newNode.Number
-		if newNode.Number > bc.head.Number {
-			bc.head = newNode
-		}
 	}
 	return newNode
 }
@@ -246,14 +364,22 @@ func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
+	bc.del(bcn)
+	bc.updateLongest()
+}
+
+func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
 	if len(bcn.Children) == 0 {
 		delete(bc.leaf, bcn)
 	}
+	if bcn.Parent != nil && len(bcn.Parent.Children) == 1 && bcn.Parent.Type == Linked {
+		bc.leaf[bcn.Parent] = bcn.Parent.Number
+	}
 	for ch, _ := range bcn.Children {
-		bc.Del(ch)
+		bc.del(ch)
 	}
 	bc.delNode(bcn)
 }
@@ -265,7 +391,7 @@ func (bc *BlockCacheImpl) delSingle() {
 	}
 	for bcn, _ := range bc.singleRoot.Children {
 		if bcn.Number <= height {
-			bc.Del(bcn)
+			bc.del(bcn)
 		}
 	}
 }
@@ -279,13 +405,13 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		if child == retain {
 			continue
 		}
-		bc.Del(child)
+		bc.del(child)
 	}
 	//confirm retain to db
 	if retain.Block != nil {
 		err := bc.baseVariable.BlockChain().Push(retain.Block)
 		if err != nil {
-			ilog.Debugf("Database error, BlockChain Push err:%v", err)
+			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
@@ -295,7 +421,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		}
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs, retain.Block.Receipts)
 		if err != nil {
-			ilog.Errorf("Database error, BlockChain Push err:%v", err)
+			ilog.Errorf("Database error, Transaction Push err:%v", err)
 			return err
 		}
 		bc.delNode(cur)
@@ -321,7 +447,7 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 	it := bc.head
-	for it.Parent != nil {
+	for it != nil {
 		if it.Number == num {
 			return it.Block, nil
 		}
@@ -387,7 +513,8 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 	}
 }
 
-func (bcn *BlockCacheNode) DrawTree() {
+func (bcn *BlockCacheNode) DrawTree() string {
+	var ret string
 	for i := 0; i < PICSIZE; i++ {
 		for j := 0; j < PICSIZE; j++ {
 			pic[i][j] = ' '
@@ -396,15 +523,17 @@ func (bcn *BlockCacheNode) DrawTree() {
 	calcTree(bcn, 0, 0, true)
 	for i := 0; i <= picX; i++ {
 		for j := 0; j <= picY; j++ {
-			fmt.Printf("%c", pic[i][j])
+			ret += fmt.Sprintf("%c", pic[i][j])
 		}
-		fmt.Printf("\n")
+		ret += fmt.Sprintf("\n")
 	}
+	return ret
 }
 
-func (bc *BlockCacheImpl) Draw() {
-	fmt.Println("\nLinkedTree:")
-	bc.linkedRoot.DrawTree()
-	fmt.Println("SingleTree:")
-	bc.singleRoot.DrawTree()
+func (bc *BlockCacheImpl) Draw() string {
+	return bc.linkedRoot.DrawTree() + "\n\n" + bc.singleRoot.DrawTree()
+	/*  fmt.Println("\nLinkedTree:") */
+	// bc.linkedRoot.DrawTree()
+	// fmt.Println("SingleTree:")
+	/* bc.singleRoot.DrawTree() */
 }
