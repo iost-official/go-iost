@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"strings"
 )
 
 var (
@@ -60,7 +61,9 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 				blk.Receipts = append(blk.Receipts, receipt)
 			}
 		}
+
 	}
+
 L:
 	for _, t := range txsList {
 		select {
@@ -116,6 +119,21 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	if err != nil {
 		return err
 	}
+
+	// check vote
+	if blk.Head.Number%common.VoteInterval == 0 {
+		if strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
+			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
+			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
+
+			return errors.New("blk did not vote")
+		}
+
+		if blk.Receipts[0].Status.Code != tx.Success {
+			return errors.New("vote was incorrect")
+		}
+	}
+
 	for _, tx := range blk.Txs {
 		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
 		if exist == txpool.FoundChain {
