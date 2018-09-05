@@ -136,7 +136,7 @@ func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
 		bcn.SetActive(parent.Active())
 		bcn.SetPending(parent.Pending())
 		bcn.SetPendingNum(parent.PendingNum())
-		
+
 		parent.addChild(bcn)
 	}
 }
@@ -242,6 +242,13 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		bc.singleRoot.Type = Virtual
 		bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
 		bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
+
+		if !bc.stateDB.Checkout(string(lib.HeadHash())) {
+			return nil, errors.New("failed to state db")
+		}
+		if err := bc.linkedRoot.UpdatePending(bc.stateDB); err != nil {
+			return nil, err
+		}
 	}
 	bc.head = bc.linkedRoot
 	return &bc, nil
