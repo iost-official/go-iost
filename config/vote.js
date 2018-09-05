@@ -23,6 +23,7 @@ class VoteContract {
             "IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",
             "IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd"
         ];
+        this.producerNumber = this.pendingProducerList.length;
 
         for (var i = 0; i < this.producerNumber; i++) {
             var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
