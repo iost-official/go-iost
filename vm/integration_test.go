@@ -1197,7 +1197,7 @@ func TestJS_Genesis(t *testing.T) {
 
 	trx := tx.NewTx(acts, nil, 10000000, 0, 0)
 	trx.Time = 0
-	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
+	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"), crypto.Secp256k1)
 	if err != nil {
 		t.Fatal(err)
 	}

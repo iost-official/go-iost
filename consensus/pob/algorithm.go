@@ -100,9 +100,7 @@ L:
 }
 
 func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
-	if witnessOfSlot(head.Time) != head.Witness {
-		return errWitness
-	}
+
 	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
 	hash, err := head.Hash()
 	if err != nil {
@@ -123,6 +121,10 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	err := verifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
+	}
+
+	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+		return errWitness
 	}
 
 	// check vote
