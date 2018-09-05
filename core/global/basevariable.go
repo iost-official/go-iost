@@ -18,6 +18,15 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 )
 
+type TMode uint
+
+const (
+	ModeNormal TMode = iota
+	ModeSync
+	ModeFetchGenesis
+	ModeInit
+)
+
 func (m TMode) String() string {
 	switch m {
 	case ModeNormal:
@@ -26,18 +35,12 @@ func (m TMode) String() string {
 		return "ModeSync"
 	case ModeFetchGenesis:
 		return "ModeFetchGenesis"
+	case ModeInit:
+		return "ModeInit"
 	default:
 		return ""
 	}
 }
-
-type TMode uint
-
-const (
-	ModeNormal TMode = iota
-	ModeSync
-	ModeFetchGenesis
-)
 
 type BaseVariableImpl struct {
 	blockChain  block.Chain
@@ -168,7 +171,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if err != nil {
 			return nil, fmt.Errorf("push txDB failed, stop the pogram. err: %v", err)
 		}
-		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeNormal, witnessList: witnessList, config: conf}, nil
+		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 	}
 	// connect to existing chain
 	blockChain, err = block.NewBlockChain(conf.DB.LdbPath + "BlockChainDB")
@@ -183,7 +186,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeFetchGenesis, witnessList: witnessList, config: conf}, nil
+		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 	}
 	stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
 	if err != nil {
@@ -226,13 +229,13 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 				return nil, fmt.Errorf("push txDB failed, stop the pogram. err: %v", err)
 			}
 		}
-		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeNormal, witnessList: witnessList, config: conf}, nil
+		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 	}
 	txDB, err = tx.NewTxDB(conf.DB.LdbPath + "TXDB")
 	if err != nil {
 		return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
 	}
-	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeNormal, witnessList: witnessList, config: conf}, nil
+	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 }
 
 func FakeNew() *BaseVariableImpl {
