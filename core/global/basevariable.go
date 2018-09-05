@@ -2,9 +2,6 @@ package global
 
 import (
 	"fmt"
-	"os"
-
-	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -57,7 +54,7 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	}
 	trx := tx.NewTx(acts, nil, 0, 0, 0)
 	trx.Time = 0
-	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
+	acc, err := account.NewAccount(common.Base58Decode("2vj2Ab8Taz1TT2MSQHxmSffGnvsc9EVrmjx1W7SBQthCpuykhbRn2it8DgNkcm4T9tdBgsue3uBiAzxLpLJoDUbc"), crypto.Ed25519)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +68,7 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		ParentHash: nil,
 		Number:     0,
 		Witness:    acc.ID,
-		Time:       time.Now().Unix() / common.SlotLength,
+		Time:       0,
 	}
 	engine := vm.NewEngine(&blockHead, db)
 	txr, err := engine.Exec(trx)
@@ -94,22 +91,6 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	return &blk, nil
 }
 
-func initDB(path string) (block.Chain, db.MVCCDB, tx.TxDB, error) {
-	blockChain, err := block.NewBlockChain(path + "BlockChainDB")
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)
-	}
-	stateDB, err := db.NewMVCCDB(path + "StateDB")
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
-	}
-	txDB, err := tx.NewTxDB(path + "TXDB")
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
-	}
-	return blockChain, stateDB, txDB, nil
-}
-
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 	var blockChain block.Chain
 	var stateDB db.MVCCDB
@@ -119,80 +100,36 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	for i := 0; i < len(conf.Genesis.WitnessInfo)/2; i++ {
 		witnessList = append(witnessList, conf.Genesis.WitnessInfo[2*i])
 	}
-	if conf.Genesis.CreateGenesis { //create a new chain
-		os.RemoveAll(conf.DB.LdbPath)
-		blockChain, stateDB, txDB, err = initDB(conf.DB.LdbPath)
-		if err != nil {
-			return nil, err
-		}
-		blk, err := GenGenesis(stateDB, conf.Genesis.WitnessInfo)
-		if err != nil {
-			return nil, fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
-		}
-		err = blockChain.Push(blk)
-		if err != nil {
-			return nil, fmt.Errorf("push block in blockChain failed, stop the program. err: %v", err)
-		}
-		err = stateDB.Flush(string(blk.HeadHash()))
-		if err != nil {
-			return nil, fmt.Errorf("flush block into stateDB failed, stop the program. err: %v", err)
-		}
-		err = txDB.Push(blk.Txs, blk.Receipts)
-		if err != nil {
-			return nil, fmt.Errorf("push txDB failed, stop the pogram. err: %v", err)
-		}
-		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
-	}
-	// connect to existing chain
 	blockChain, err = block.NewBlockChain(conf.DB.LdbPath + "BlockChainDB")
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)
 	}
 	blk, err := blockChain.GetBlockByNumber(0)
-	if err != nil || common.Base58Encode(blk.HeadHash()) != conf.Genesis.GenesisHash { //get data from seedNode
-		blockChain.Close()
-		os.RemoveAll(conf.DB.LdbPath)
-		blockChain, stateDB, txDB, err = initDB(conf.DB.LdbPath)
-		if err != nil {
-			return nil, err
-		}
-		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
-	}
-	stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
-	if err != nil {
-		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
-	}
-	blk, err = blockChain.Top()
-	if err != nil {
-		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
-	}
-	//update stateDB with blockChainDB
-	hash := stateDB.CurrentTag()
-	if hash != string(blk.HeadHash()) {
-		stateDB.Close()
-		os.RemoveAll(conf.DB.LdbPath + "StateDB")
-		os.RemoveAll(conf.DB.LdbPath + "TXDB")
+	if err != nil { //blockchaindb is empty
 		stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
 		if err != nil {
 			return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
+		}
+		hash := stateDB.CurrentTag()
+		if hash != "" {
+			return nil, fmt.Errorf("blockchaindb is empty, but statedb is not")
 		}
 		txDB, err = tx.NewTxDB(conf.DB.LdbPath + "TXDB")
 		if err != nil {
 			return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
 		}
-		for i := int64(0); i < blockChain.Length(); i++ {
-			blk, err = blockChain.GetBlockByNumber(i)
+		if conf.Genesis.CreateGenesis {
+			blk, err = GenGenesis(stateDB, conf.Genesis.WitnessInfo)
 			if err != nil {
-				return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
+				return nil, fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
 			}
-			err = verifier.VerifyBlockWithVM(blk, stateDB)
+			err = blockChain.Push(blk)
 			if err != nil {
-				return nil, fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
+				return nil, fmt.Errorf("push block in blockChain failed, stop the program. err: %v", err)
 			}
-			stateDB.Tag(string(blk.HeadHash()))
 			err = stateDB.Flush(string(blk.HeadHash()))
 			if err != nil {
-				return nil, fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
+				return nil, fmt.Errorf("flush block into stateDB failed, stop the program. err: %v", err)
 			}
 			err = txDB.Push(blk.Txs, blk.Receipts)
 			if err != nil {
@@ -200,6 +137,33 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			}
 		}
 		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
+	}
+	if common.Base58Encode(blk.HeadHash()) != conf.Genesis.GenesisHash { //get data from seedNode
+		return nil, fmt.Errorf("the hash of genesis block in db doesn't match that in config")
+	}
+	stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
+	if err != nil {
+		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
+	}
+	hash := stateDB.CurrentTag()
+	blk, err = blockChain.GetBlockByHash([]byte(hash))
+	if err != nil {
+		return nil, fmt.Errorf("statedb doesn't coincides with blockchaindb. err: %v", err)
+	}
+	for i := blk.Head.Number + 1; i < blockChain.Length(); i++ {
+		blk, err = blockChain.GetBlockByNumber(i)
+		if err != nil {
+			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
+		}
+		err = verifier.VerifyBlockWithVM(blk, stateDB)
+		if err != nil {
+			return nil, fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
+		}
+		stateDB.Tag(string(blk.HeadHash()))
+		err = stateDB.Flush(string(blk.HeadHash()))
+		if err != nil {
+			return nil, fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
+		}
 	}
 	txDB, err = tx.NewTxDB(conf.DB.LdbPath + "TXDB")
 	if err != nil {

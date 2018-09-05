@@ -3,15 +3,14 @@ package p2p
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"sync"
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
-
 	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/willf/bloom"
 )
@@ -155,12 +154,13 @@ func (p *Peer) write(m *p2pMessage) error {
 	// if getStream fails, the TCP connection may be broken and we should stop the peer.
 	if err != nil {
 		ilog.Errorf("get stream fails. err=%v", err)
-		p.peerManager.RemoveNeighbor(p.id)
+		// p.peerManager.RemoveNeighbor(p.id)
+		p.peerManager.RestartNeighbor(p.id)
 		return err
 	}
 
-	// 10 kB/s
-	deadline := time.Now().Add(time.Duration(len(m.content())/1024/10+1) * time.Second)
+	// 5 kB/s
+	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+1) * time.Second)
 	if err = stream.SetWriteDeadline(deadline); err != nil {
 		ilog.Warnf("set write deadline failed. err=%v", err)
 		p.CloseStream(stream)
@@ -170,11 +170,12 @@ func (p *Peer) write(m *p2pMessage) error {
 	_, err = stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
-		p.CloseStream(stream)
+		p.peerManager.RestartNeighbor(p.id)
+		// p.CloseStream(stream)
 		return err
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
-	byteOutSummary.Observe(float64(len(m.content())), tagkv)
+	byteOutSummary.Add(float64(len(m.content())), tagkv)
 	packetOutCounter.Add(1, tagkv)
 
 	p.streams <- stream
@@ -232,7 +233,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 			return
 		}
 		tagkv := map[string]string{"mtype": msg.messageType().String()}
-		byteInSummary.Observe(float64(len(msg.content())), tagkv)
+		byteInSummary.Add(float64(len(msg.content())), tagkv)
 		packetInCounter.Add(1, tagkv)
 
 		p.handleMessage(msg)
@@ -243,7 +244,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool) error {
 	if deduplicate && msg.needDedup() {
 		if p.hasMessage(msg) {
-			ilog.Infof("ignore reduplicate message")
+			// ilog.Debug("ignore reduplicate message")
 			return ErrDuplicateMessage
 		}
 	}
@@ -266,12 +267,7 @@ func (p *Peer) handleMessage(msg *p2pMessage) error {
 	if msg.needDedup() {
 		p.recordMessage(msg)
 	}
-	switch msg.messageType() {
-	case Ping:
-		fmt.Println("pong")
-	default:
-		p.peerManager.HandleMessage(msg, p.id)
-	}
+	p.peerManager.HandleMessage(msg, p.id)
 	return nil
 }
 

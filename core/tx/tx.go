@@ -49,7 +49,7 @@ func SignTxContent(tx *Tx, account *account.Account) (*crypto.Signature, error) 
 	if !tx.containSigner(account.Pubkey) {
 		return nil, errors.New("account not included in signer list of this transaction")
 	}
-	return account.Sign(crypto.Secp256k1, tx.baseHash()), nil
+	return account.Sign(tx.baseHash()), nil
 }
 
 func (t *Tx) containSigner(pubkey []byte) bool {
@@ -89,7 +89,7 @@ func (t *Tx) baseHash() []byte {
 func SignTx(tx *Tx, account *account.Account, signs ...*crypto.Signature) (*Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
 
-	sig := account.Sign(crypto.Secp256k1, tx.publishHash())
+	sig := account.Sign(tx.publishHash())
 	tx.Publisher = sig
 	tx.hash = nil
 	return tx, nil
@@ -245,10 +245,10 @@ func (t *Tx) VerifySelf() error {
 		if !ok {
 			return fmt.Errorf("signer error")
 		}
-		signerSet[common.Base58Encode(sign.Pubkey)] = true
+		signerSet[string(sign.Pubkey)] = true
 	}
 	for _, signer := range t.Signers {
-		if _, ok := signerSet[common.Base58Encode(signer)]; !ok {
+		if _, ok := signerSet[string(signer)]; !ok {
 			return fmt.Errorf("signer not enough")
 		}
 	}

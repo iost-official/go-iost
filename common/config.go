@@ -9,14 +9,15 @@ import (
 )
 
 type ACCConfig struct {
-	ID     string
-	SecKey string
+	ID        string
+	SecKey    string
+	Algorithm string
 }
 
 type GenesisConfig struct {
 	CreateGenesis bool
 	GenesisHash   string
-	WitnessInfo	  []string
+	WitnessInfo   []string
 }
 
 type DBConfig struct {
