@@ -28,6 +28,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/metrics"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
@@ -130,7 +131,7 @@ func main() {
 	app = append(app, p2pService)
 
 	accSecKey := conf.ACC.SecKey
-	acc, err := account.NewAccount(common.Base58Decode(accSecKey))
+	acc, err := account.NewAccount(common.Base58Decode(accSecKey), getSignAlgo(conf.ACC.Algorithm))
 	if err != nil {
 		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
 	}
@@ -196,4 +197,15 @@ func startDebugServer(addr string, blkCache blockcache.BlockCache) {
 			ilog.Errorf("start debug server failed. err=%v", err)
 		}
 	}()
+}
+
+func getSignAlgo(algo string) crypto.Algorithm {
+	switch algo {
+	case "secp256k1":
+		return crypto.Secp256k1
+	case "ed25519":
+		return crypto.Ed25519
+	default:
+		return crypto.Ed25519
+	}
 }

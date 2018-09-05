@@ -40,7 +40,7 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	txCnt := 1000
+	txCnt := 10000
 	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
 	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
@@ -67,7 +67,7 @@ L:
 	if err != nil {
 		return nil, err
 	}
-	blk.Sign = account.Sign(crypto.Secp256k1, blk.HeadHash())
+	blk.Sign = account.Sign(blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
 
 	metricsGeneratedBlockCount.Add(1, nil)
