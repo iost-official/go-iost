@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
@@ -46,6 +47,20 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
 	ilog.Info(len(txsList))
+
+	// call vote
+	if blk.Head.Number%common.VoteInterval == 0 {
+		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
+		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
+
+		trx, err := tx.SignTx(trx, staticProperty.account)
+		if err == nil {
+			if receipt, err := engine.Exec(trx); err == nil {
+				blk.Txs = append(blk.Txs, trx)
+				blk.Receipts = append(blk.Receipts, receipt)
+			}
+		}
+	}
 L:
 	for _, t := range txsList {
 		select {
