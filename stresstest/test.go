@@ -86,10 +86,10 @@ func transfer() {
 
 func main() {
 	for {
-		var num = 80
+		var num = 500
 		start := time.Now()
 		for i := 0; i < num; i++ {
-			transParallel(10)
+			transParallel(21)
 		}
 		fmt.Println("done. timecost=", time.Since(start))
 	}

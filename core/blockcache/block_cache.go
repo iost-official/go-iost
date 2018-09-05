@@ -284,13 +284,12 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		if retain.Block.HeadHash() == nil {
 			ilog.Info("retain.Block.HeadHash = nil, %v.", retain.Block.Head.Number)
 		}
-		//ilog.Info(bc.baseVariable.StateDB())
 		ilog.Error("confirm ", retain.Number)
-		//err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
-		//if err != nil {
-		//	ilog.Errorf("flush mvcc error: %v", err)
-		//	return err
-		//}
+		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
+		if err != nil {
+			ilog.Errorf("flush mvcc error: %v", err)
+			return err
+		}
 		err = bc.baseVariable.TxDB().Push(retain.Block.Txs, retain.Block.Receipts)
 		if err != nil {
 			ilog.Errorf("Database error, Transaction Push err:%v", err)

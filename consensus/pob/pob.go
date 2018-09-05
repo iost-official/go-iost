@@ -238,6 +238,9 @@ func (p *PoB) calculateTPS() {
 		cnt += len(blk.Txs)
 		n++
 	}
+	if n == 0 {
+		return
+	}
 	ilog.Info("Tx per block:", cnt/n)
 	ilog.Info("TPS:", cnt/(n*3))
 }
@@ -261,7 +264,7 @@ func (p *PoB) blockLoop() {
 			ilog.Info("\n")
 			ilog.Info("block number: ", blk.Head.Number)
 			ilog.Info("block hash: ", common.Base58Encode(blk.HeadHash()))
-			if p.blockCache.Head() != nil {
+			if p.blockCache.Head().Block != nil {
 				ilog.Infof("blockCache Head hash: %v", common.Base58Encode(p.blockCache.Head().Block.HeadHash()))
 			}
 			ilog.Info("block parent hash: ", common.Base58Encode(blk.Head.ParentHash))
