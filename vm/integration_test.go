@@ -129,7 +129,7 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 func MakeTx(act tx.Action) (*tx.Tx, error) {
 	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
 
-	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
+	ac, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func TestIntergration_Transfer(t *testing.T) {
 
 	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(10000), int64(1), int64(10000000))
 
-	ac, err := account.NewAccount(common.Base58Decode(testID[1]))
+	ac, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +377,7 @@ func jsCallHelloWorldWithReceipt() *contract.Contract {
 		Code: `
 class Contract {
  constructor() {
-  
+
  }
  call_hello() {
   return BlockChain.callWithReceipt("ContractjsHelloWorld", "hello", "[]")

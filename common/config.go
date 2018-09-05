@@ -9,8 +9,9 @@ import (
 )
 
 type ACCConfig struct {
-	ID     string
-	SecKey string
+	ID        string
+	SecKey    string
+	Algorithm string
 }
 
 type GenesisConfig struct {

@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
@@ -25,9 +26,9 @@ func testRun(t *testing.T) {
 	exec.Command("rm", "-r", "./StateDB").Run()
 	exec.Command("rm", "-r", "./TXDB").Run()
 	exec.Command("rm", "", "priv.key").Run()
-	account1, _ := account.NewAccount(nil)
-	account2, _ := account.NewAccount(nil)
-	account3, _ := account.NewAccount(nil)
+	account1, _ := account.NewAccount(nil, crypto.Secp256k1)
+	account2, _ := account.NewAccount(nil, crypto.Secp256k1)
+	account3, _ := account.NewAccount(nil, crypto.Secp256k1)
 	id2Seckey := make(map[string][]byte)
 	id2Seckey[account1.ID] = account1.Seckey
 	id2Seckey[account2.ID] = account2.Seckey

@@ -42,7 +42,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		var witnessList []string
 		var witnessInfo []string
 		acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-		newAccount, err := account.NewAccount(acc)
+		newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
 		if err != nil {
 			panic("account.NewAccount error")
 		}
@@ -51,7 +51,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		witnessInfo = append(witnessInfo, "100000")
 		witnessList = append(witnessList, newAccount.ID)
 		for i := 1; i < 3; i++ {
-			newAccount, err := account.NewAccount(nil)
+			newAccount, err := account.NewAccount(nil, crypto.Secp256k1)
 			if err != nil {
 				panic("account.NewAccount error")
 			}
@@ -387,7 +387,7 @@ func BenchmarkPendingTxs(b *testing.B) {
 //result 4445 ns/op
 func BenchmarkDecodeTx(b *testing.B) {
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc)
+	newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
 	if err != nil {
 		panic("account.NewAccount error")
 	}
@@ -412,7 +412,7 @@ func BenchmarkDecodeTx(b *testing.B) {
 //result 3416 ns/op
 func BenchmarkEncodeTx(b *testing.B) {
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc)
+	newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
 	if err != nil {
 		panic("account.NewAccount error")
 	}
@@ -490,7 +490,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string,
 	var witnessList []string
 
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc)
+	newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
 	if err != nil {
 		panic("account.NewAccount error")
 	}
@@ -499,7 +499,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string,
 	//_accId := newAccount.ID
 
 	for i := 1; i < 3; i++ {
-		newAccount, err := account.NewAccount(nil)
+		newAccount, err := account.NewAccount(nil, crypto.Secp256k1)
 		if err != nil {
 			panic("account.NewAccount error")
 		}

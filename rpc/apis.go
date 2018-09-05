@@ -220,6 +220,7 @@ func (s *RPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRe
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
+	s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash()))
 	return &GetStateRes{
 		Value: s.visitor.BasicHandler.Get(key.Key),
 	}, nil
