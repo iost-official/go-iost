@@ -243,15 +243,15 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 }
 
 func FakeNew() *BaseVariableImpl {
-	blockChain, err := block.NewBlockChain("./db/BlockChainDB")
+	blockChain, err := block.NewBlockChain("./Fakedb/BlockChainDB")
 	if err != nil {
 		return nil
 	}
-	stateDB, err := db.NewMVCCDB("./db/StateDB")
+	stateDB, err := db.NewMVCCDB("./Fakedb/StateDB")
 	if err != nil {
 		return nil
 	}
-	txDB, err := tx.NewTxDB("./db/TXDB")
+	txDB, err := tx.NewTxDB("./Fakedb/TXDB")
 	if err != nil {
 		return nil
 	}
@@ -261,7 +261,7 @@ func FakeNew() *BaseVariableImpl {
 
 	vm.SetUp(config.VM)
 	VoteContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
-	blk, err := GenGenesis(stateDB, []string{"a1", "1111", "a2", "2222", "a3", "333"})
+	blk, err := GenGenesis(stateDB, []string{"a1", "11111111111", "a2", "2222", "a3", "333"})
 	if err != nil {
 		return nil
 	}
