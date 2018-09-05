@@ -21,18 +21,21 @@ type DB struct {
 }
 
 func NewDB(path string) (*DB, error) {
-	var options *C.rocksdb_options_t = C.rocksdb_options_create()
-	defer C.rocksdb_options_destroy(options)
+	var cpath *C.char = C.CString(path)
+	defer C.free(unsafe.Pointer(cpath))
+
+	var coptions *C.rocksdb_options_t = C.rocksdb_options_create()
+	defer C.rocksdb_options_destroy(coptions)
 
 	var cpus C.long = C.sysconf(C._SC_NPROCESSORS_ONLN)
-	C.rocksdb_options_increase_parallelism(options, C.int(cpus))
-	C.rocksdb_options_optimize_level_style_compaction(options, 0)
-	C.rocksdb_options_set_create_if_missing(options, 1)
+	C.rocksdb_options_increase_parallelism(coptions, C.int(cpus))
+	C.rocksdb_options_optimize_level_style_compaction(coptions, 0)
+	C.rocksdb_options_set_create_if_missing(coptions, 1)
 
 	var cerr *C.char
 	defer C.free(unsafe.Pointer(cerr))
 
-	var db *C.rocksdb_t = C.rocksdb_open(options, C.CString(path), &cerr)
+	var db *C.rocksdb_t = C.rocksdb_open(coptions, cpath, &cerr)
 	var croptions *C.rocksdb_readoptions_t = C.rocksdb_readoptions_create()
 	var cwoptions *C.rocksdb_writeoptions_t = C.rocksdb_writeoptions_create()
 
