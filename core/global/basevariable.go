@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"os"
 )
 
 type TMode uint

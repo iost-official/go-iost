@@ -251,6 +251,13 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		}
 
 		bc.linkedRoot.SetActive(bc.linkedRoot.Pending())
+
+		for _, v := range bc.linkedRoot.Active() {
+			ilog.Info("ActiveWitness:", v)
+		}
+		for _, v := range bc.linkedRoot.Pending() {
+			ilog.Info("PendingWitness:", v)
+		}
 	}
 	bc.head = bc.linkedRoot
 	return &bc, nil
