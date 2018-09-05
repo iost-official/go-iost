@@ -27,6 +27,8 @@ const (
 	ModeInit
 )
 
+var VoteContractPath string
+
 func (m TMode) String() string {
 	switch m {
 	case ModeNormal:
@@ -58,8 +60,8 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		acts = append(acts, &act)
 	}
 	// deploy iost.vote
-	voteFilePath := "/home/wangyu/gocode/src/github.com/iost-official/Go-IOS-Protocol/vm/test_data/vote.js"
-	voteAbiPath := "/home/wangyu/gocode/src/github.com/iost-official/Go-IOS-Protocol/vm/test_data/vote.js.abi"
+	voteFilePath := VoteContractPath + "/vote.js"
+	voteAbiPath := VoteContractPath + "/vote.js.abi"
 	fd, err := common.ReadFile(voteFilePath)
 	if err != nil {
 		return nil, err
@@ -146,6 +148,8 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	var txDB tx.TxDB
 	var err error
 	var witnessList []string
+	VoteContractPath = conf.Genesis.VoteContractPath
+
 	for i := 0; i < len(conf.Genesis.WitnessInfo)/2; i++ {
 		witnessList = append(witnessList, conf.Genesis.WitnessInfo[2*i])
 	}

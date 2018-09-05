@@ -11,6 +11,7 @@ genesis:
     - "13200000000"
     - "IOST7gKuvHVXtRYupUixCcuhW95izkHymaSsgKTXGDjsyy5oTMvAAm"
     - "13100000000"
+  voteContractPath: "./"
 
 vm:
   logLevel: ""
