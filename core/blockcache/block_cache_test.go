@@ -215,14 +215,16 @@ func TestVote(t *testing.T) {
 	Convey("test update", t, func() {
 		bc, _ := NewBlockCache(global)
 		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
-		n1 := bc.Add(b1)
+		bc.Link(&BlockCacheNode{Block: b1})
+		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
 
-		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, n1.Pending()), ShouldBeTrue)
-		n2 := bc.Add(b2)
-		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, n2.Pending()), ShouldBeTrue)
+		bc.Link(&BlockCacheNode{Block: b2})
 
-		n3 := bc.Add(b3)
-		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, n3.Pending()), ShouldBeTrue)
+		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
+
+		bc.Link(&BlockCacheNode{Block: b3})
+
+		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
 
 	})
 }
