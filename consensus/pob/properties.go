@@ -72,19 +72,6 @@ func witnessOfSlot(slot int64) string {
 }
 
 func timeUntilNextSchedule(timeSec int64) int64 {
-	index, ok := staticProperty.WitnessMap[staticProperty.account.ID]
-	if !ok {
-		return maintenanceInterval * common.SlotLength
-	}
 	currentSlot := timeSec / (second2nanosecond * common.SlotLength)
-	round := currentSlot / staticProperty.NumberOfWitnesses
-	startSlot := round*staticProperty.NumberOfWitnesses + index
-	nextSlot := (round+1)*staticProperty.NumberOfWitnesses + index
-	if currentSlot > startSlot {
-		return nextSlot*common.SlotLength*second2nanosecond - timeSec
-	} else if currentSlot < startSlot {
-		return startSlot*common.SlotLength*second2nanosecond - timeSec
-	} else {
-		return 0
-	}
+	return (currentSlot+1)*common.SlotLength - timeSec
 }
