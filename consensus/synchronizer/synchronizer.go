@@ -20,7 +20,7 @@ var (
 	// SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
 	syncNumber int64 = 11
 
-	maxBlockHashQueryNumber int64 = 30
+	maxBlockHashQueryNumber int64 = 50
 	retryTime                     = 5 * time.Second
 	syncBlockTimeout              = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
@@ -227,19 +227,21 @@ func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
 		ilog.Errorf("marshal blockhashquery failed. err=%v", err)
 		return
 	}
-	// ilog.Debugf("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
+	ilog.Debugf("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
 	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
 }
 
 func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
+		for sy.blockCache.Head().Number+3 < startNumber {
+			time.Sleep(100 * time.Millisecond)
+		}
 		for i := startNumber; i < startNumber+maxBlockHashQueryNumber; i++ {
 			sy.reqMap.Store(i, true)
 		}
 		sy.queryBlockHash(&message.BlockHashQuery{ReqType: 0, Start: startNumber, End: startNumber + maxBlockHashQueryNumber - 1, Nums: nil})
 		startNumber += maxBlockHashQueryNumber
-		time.Sleep(time.Second)
 	}
 	if startNumber <= endNumber {
 		for i := startNumber; i <= endNumber; i++ {
@@ -480,7 +482,7 @@ func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 }
 
 func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) {
-	// ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.Pretty())
+	ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.Pretty())
 	if hState, hok := dc.hashState.Load(hash); hok {
 		hs, ok := hState.(string)
 		if !ok {
