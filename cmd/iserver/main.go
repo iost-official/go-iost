@@ -114,12 +114,12 @@ func main() {
 		ilog.Errorf("init metrics failed. err=%v", err)
 	}
 
-	glb, err := global.New(conf)
+	bv, err := global.New(conf)
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)
 	}
 	if conf.Genesis.CreateGenesis {
-		genesisBlock, _ := glb.BlockChain().GetBlockByNumber(0)
+		genesisBlock, _ := bv.BlockChain().GetBlockByNumber(0)
 		ilog.Errorf("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
 	}
 	var app common.App
@@ -136,30 +136,30 @@ func main() {
 		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
 	}
 
-	blkCache, err := blockcache.NewBlockCache(glb)
+	blkCache, err := blockcache.NewBlockCache(bv)
 	if err != nil {
 		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
 	}
 
-	sync, err := synchronizer.NewSynchronizer(glb, blkCache, p2pService)
+	sync, err := synchronizer.NewSynchronizer(bv, blkCache, p2pService)
 	if err != nil {
 		ilog.Fatalf("synchronizer initialization failed, stop the program! err:%v", err)
 	}
 	app = append(app, sync)
 
 	var txp txpool.TxPool
-	txp, err = txpool.NewTxPoolImpl(glb, blkCache, p2pService)
+	txp, err = txpool.NewTxPoolImpl(bv, blkCache, p2pService)
 	if err != nil {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 	app = append(app, txp)
 
-	rpcServer := rpc.NewRPCServer(txp, blkCache, glb)
+	rpcServer := rpc.NewRPCServer(txp, blkCache, bv)
 	app = append(app, rpcServer)
 
-	jsonRPCServer := rpc.NewJSONServer(glb)
+	jsonRPCServer := rpc.NewJSONServer(bv)
 	app = append(app, jsonRPCServer)
-	consensus, err := consensus.Factory("pob", acc, glb, blkCache, txp, p2pService, sync, glb.WitnessList())
+	consensus, err := consensus.Factory("pob", acc, bv, blkCache, txp, p2pService, sync, bv.WitnessList())
 	if err != nil {
 		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}
@@ -178,6 +178,9 @@ func main() {
 
 	app.Stop()
 	ilog.Stop()
+	bv.BlockChain().Close()
+	bv.StateDB().Close()
+	bv.TxDB().Close()
 }
 
 func waitExit() {

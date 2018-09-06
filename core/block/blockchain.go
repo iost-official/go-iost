@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/db/kv"
 )
 
 type BlockChain struct {
-	blockChainDB *db.LDB
+	blockChainDB *kv.Storage
 	length       int64
 }
 
@@ -31,7 +31,7 @@ func ByteToInt64(b []byte) int64 {
 }
 
 func NewBlockChain(path string) (Chain, error) {
-	levelDB, err := db.NewLDB(path, 0, 0)
+	levelDB, err := kv.NewStorage(path, kv.LevelDBStorage)
 	if err != nil {
 		return nil, fmt.Errorf("fail to init blockchaindb, %v", err)
 	}
@@ -63,7 +63,10 @@ func (bc *BlockChain) Length() int64 {
 }
 
 func (bc *BlockChain) Push(block *Block) error {
-	batch := bc.blockChainDB.Batch()
+	err := bc.blockChainDB.BeginBatch()
+	if err != nil {
+		return errors.New("fail to begin batch")
+	}
 	hash := block.HeadHash()
 	number := block.Head.Number
 	batch.Put(append(blockNumberPrefix, Int64ToByte(number)...), hash)
@@ -73,24 +76,25 @@ func (bc *BlockChain) Push(block *Block) error {
 	}
 	batch.Put(append(blockPrefix, hash...), blockByte)
 	batch.Put(blockLength, Int64ToByte(number+1))
-	err = batch.Commit()
+	err = bc.blockChainDB.CommitBatch()
 	if err != nil {
-		return errors.New("fail to put block")
+		return fmt.Errorf("fail to put block, err:%s", err)
 	}
 	bc.length = number + 1
 	return nil
 }
 
 func (bc *BlockChain) CheckLength() {
-	for i := bc.length; i > 0; i-- {
+	var i int64
+	for i = bc.length; i > 0; i-- {
 		_, err := bc.GetBlockByNumber(i - 1)
 		if err != nil {
 			fmt.Println("fail to get the block")
 		}
-		bc.blockChainDB.Put(blockLength, Int64ToByte(i))
-		bc.length = i
 		break
 	}
+	bc.blockChainDB.Put(blockLength, Int64ToByte(i))
+	bc.length = i
 }
 
 func (bc *BlockChain) Top() (*Block, error) {

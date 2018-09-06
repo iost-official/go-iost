@@ -1,9 +1,10 @@
 package tx
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/db/kv"
 )
 
 //go:generate mockgen -destination ../mocks/mock_txdb.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/tx TxDB
@@ -15,9 +16,11 @@ type TxDB interface {
 	GetReceipt(Hash []byte) (*TxReceipt, error)
 	GetReceiptByTxHash(Hash []byte) (*TxReceipt, error)
 	HasReceipt(hash []byte) (bool, error)
+	Close()
 }
+
 type TxDBImpl struct {
-	txDB *db.LDB
+	txDB *kv.Storage
 }
 
 var (
@@ -27,7 +30,7 @@ var (
 )
 
 func NewTxDB(path string) (TxDB, error) {
-	ldb, err := db.NewLDB(path, 0, 0)
+	ldb, err := kv.NewStorage(path, kv.LevelDBStorage)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +38,10 @@ func NewTxDB(path string) (TxDB, error) {
 }
 
 func (tdb *TxDBImpl) Push(txs []*Tx, receipts []*TxReceipt) error {
-	txBth := tdb.txDB.Batch()
+	err := tdb.txDB.BeginBatch()
+	if err != nil {
+		return errors.New("fail to begin batch")
+	}
 
 	for i, tx := range txs {
 		tHash := tx.Hash()
@@ -48,7 +54,11 @@ func (tdb *TxDBImpl) Push(txs []*Tx, receipts []*TxReceipt) error {
 		txBth.Put(append(receiptPrefix, rHash...), receipts[i].Encode())
 	}
 
-	return txBth.Commit()
+	err = txdb.txDB.CommitBatch()
+	if err != nil {
+		return fmt.Errorf("fail to put block, err:%s", err)
+	}
+	return nil
 }
 
 func (tdb *TxDBImpl) GetTx(hash []byte) (*Tx, error) {
