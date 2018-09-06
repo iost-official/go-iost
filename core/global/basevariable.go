@@ -147,10 +147,14 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	}
 	hash := stateDB.CurrentTag()
 	blk, err = blockChain.GetBlockByHash([]byte(hash))
-	if err != nil {
+	if err != nil && hash != "" {
 		return nil, fmt.Errorf("statedb doesn't coincides with blockchaindb. err: %v", err)
 	}
-	for i := blk.Head.Number + 1; i < blockChain.Length(); i++ {
+	var startNumebr int64
+	if err == nil {
+		startNumebr = blk.Head.Number + 1
+	}
+	for i := startNumebr; i < blockChain.Length(); i++ {
 		blk, err = blockChain.GetBlockByNumber(i)
 		if err != nil {
 			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
