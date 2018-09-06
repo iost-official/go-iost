@@ -234,12 +234,14 @@ func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
 func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
+		for sy.blockCache.Head().Number+3 < startNumber {
+			time.Sleep(100 * time.Millisecond)
+		}
 		for i := startNumber; i < startNumber+maxBlockHashQueryNumber; i++ {
 			sy.reqMap.Store(i, true)
 		}
 		sy.queryBlockHash(&message.BlockHashQuery{ReqType: 0, Start: startNumber, End: startNumber + maxBlockHashQueryNumber - 1, Nums: nil})
 		startNumber += maxBlockHashQueryNumber
-		time.Sleep(time.Second)
 	}
 	if startNumber <= endNumber {
 		for i := startNumber; i <= endNumber; i++ {
