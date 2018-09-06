@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -56,6 +57,11 @@ var _ Service = &NetService{}
 func NewNetService(config *common.P2PConfig) (*NetService, error) {
 	ns := &NetService{
 		config: config,
+	}
+
+	if err := os.MkdirAll(config.DataPath, 0766); err != nil {
+		ilog.Errorf("failed to create p2p datapath, err=%v, path=%v", err, config.DataPath)
+		return nil, err
 	}
 
 	privKey, err := getOrCreateKey(filepath.Join(config.DataPath, privKeyFile))
