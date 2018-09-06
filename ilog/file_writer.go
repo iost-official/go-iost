@@ -39,18 +39,20 @@ func (fw *FileWriter) Init() error {
 	if err := os.MkdirAll(fw.filepath, 0766); err != nil {
 		panic(err)
 	}
-	realFile := fmt.Sprintf("%s/iost_%s.log", fw.filepath, time.Now().In(cstZone).Format("2006-01-02_15"))
-	linkFile := fmt.Sprintf("%s/iost.log", fw.filepath)
-	fd, err := os.OpenFile(realFile, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	logFile := fmt.Sprintf("iost_%s.log", time.Now().In(cstZone).Format("2006-01-02_15"))
+	linkFile := filepath.Join(fw.filepath, "iost.log")
+
+	_, err := os.Lstat(linkFile)
+	if err == nil || os.IsExist(err) {
+		os.Remove(linkFile)
+	}
+	os.Symlink(logFile, linkFile)
+
+	fd, err := os.OpenFile(filepath.Join(fw.filepath, logFile), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
 		return err
 	}
 	fw.fd = fd
-	_, err = os.Lstat(linkFile)
-	if err == nil || os.IsExist(err) {
-		os.Remove(linkFile)
-	}
-	os.Symlink(realFile, linkFile)
 	return nil
 }
 
