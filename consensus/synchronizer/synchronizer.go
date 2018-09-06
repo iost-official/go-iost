@@ -20,7 +20,7 @@ var (
 	// SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
 	syncNumber int64 = 11
 
-	maxBlockHashQueryNumber int64 = 30
+	maxBlockHashQueryNumber int64 = 100
 	retryTime                     = 5 * time.Second
 	syncBlockTimeout              = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
