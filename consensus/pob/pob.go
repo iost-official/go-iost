@@ -354,7 +354,9 @@ func (p *PoB) scheduleLoop() {
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
 					ilog.Error("the number of blockcache head: ", p.blockCache.Head().Number)
+					p.txPool.Lock()
 					blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
+					p.txPool.Lease()
 					ilog.Infof("gen block:%v", blk.Head.Number)
 					if err != nil {
 						ilog.Error(err.Error())

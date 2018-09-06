@@ -32,9 +32,9 @@ type TxPoolImpl struct {
 	blockList *sync.Map
 	pendingTx *sync.Map
 
-	mu sync.RWMutex
-
-	quitCh chan struct{}
+	mu               sync.RWMutex
+	quitGenerateMode chan struct{}
+	quitCh           chan struct{}
 }
 
 // NewTxPoolImpl returns a default TxPoolImpl instance.
@@ -56,6 +56,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 
 // Start starts the jobs.
 func (pool *TxPoolImpl) Start() error {
+	pool.Lease()
 	go pool.loop()
 	return nil
 }
@@ -111,10 +112,20 @@ func (pool *TxPoolImpl) loop() {
 	}
 }
 
+func (pool *TxPoolImpl) Lock() {
+	pool.quitGenerateMode = make(chan struct{})
+}
+
+func (pool *TxPoolImpl) Lease() {
+	close(pool.quitGenerateMode)
+}
+
 func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *tx.Tx) {
 
 	for v := range p2pCh {
-
+		select {
+		case <-pool.quitGenerateMode:
+		}
 		var t tx.Tx
 		err := t.Decode(v.Data())
 		if err != nil {
@@ -359,7 +370,7 @@ func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 }
 
 func (pool *TxPoolImpl) clearBlock() {
-	if pool.global.Mode() == global.ModeFetchGenesis {
+	if pool.global.Mode() == global.ModeInit {
 		return
 	}
 	ft := pool.slotToNSec(pool.blockCache.LinkedRoot().Block.Head.Time) - filterTime
