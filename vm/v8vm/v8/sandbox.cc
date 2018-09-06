@@ -17,6 +17,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <chrono>
+#include <memory>
 
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
@@ -121,6 +122,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     sbx->jsPath = strdup("v8/libjs");
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
+    sbx->threadPool = make_unique<ThreadPool>(2);
 
     return static_cast<SandboxPtr>(sbx);
 }
@@ -306,8 +308,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     std::string error;
     bool isJson = false;
     bool isDone = false;
-    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
-    exec.detach();
+    sbx->threadPool->enqueue(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
 
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
     auto startTime = std::chrono::steady_clock::now();

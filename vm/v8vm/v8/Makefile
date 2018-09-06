@@ -1,6 +1,6 @@
-CFLAGS=-g -fPIC -m64 -Wall -Wextra -Wno-unused-parameter -Wno-unused-result -O2
+ CFLAGS=-g -fPIC -m64 -Wall -Wextra -Wno-unused-parameter -Wno-unused-result -O2
 
-CXXFLAGS=-g -std=c++11 -fno-rtti -fPIC -m64 -Wall -Wextra -Wno-unused-parameter -Wno-unused-result -O2
+CXXFLAGS=-g -std=c++11 -fno-rtti -fPIC -m64 -Wall -Wextra -Wno-unused-parameter -Wno-unused-result -O2 -I./include/common
 
 LDFLAGS=-fvisibility=hidden
 

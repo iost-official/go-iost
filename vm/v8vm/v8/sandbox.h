@@ -3,6 +3,7 @@
 
 #include "v8.h"
 #include "vm.h"
+#include "ThreadPool.h"
 
 using namespace v8;
 
@@ -12,6 +13,7 @@ typedef struct {
   const char *jsPath;
   size_t gasUsed;
   size_t gasLimit;
+  std::unique_ptr<ThreadPool> threadPool;
 } Sandbox;
 
 extern ValueTuple Execution(SandboxPtr ptr, const char *code);
