@@ -328,7 +328,6 @@ func (p *PoB) scheduleLoop() {
 					}
 					go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 				}
-				time.Sleep(common.SlotLength * time.Second)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
 			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
@@ -349,7 +348,6 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
-	// staticProperty.addSlot(blk.Head.Time)
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent.Block)
 	}
