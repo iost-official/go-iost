@@ -36,6 +36,7 @@ type P2PConfig struct {
 	SeedNodes  []string
 	ChainID    uint32
 	Version    uint16
+	DataPath   string
 }
 
 //RPCConfig is the config for RPC Server.

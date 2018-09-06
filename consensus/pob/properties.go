@@ -1,8 +1,6 @@
 package pob
 
 import (
-	"sync"
-
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 )
@@ -16,7 +14,6 @@ type StaticProperty struct {
 	WitnessList       []string
 	WitnessMap        map[string]int64
 	Watermark         map[string]int64
-	SlotMap           *sync.Map
 }
 
 func newStaticProperty(account *account.Account, witnessList []string) *StaticProperty {
@@ -67,12 +64,10 @@ func (property *StaticProperty) updateWitness(witnessList []string) {
 	for i, w := range witnessList {
 		property.WitnessMap[w] = int64(i)
 	}
-
 }
 
 var (
-	second2nanosecond   int64 = 1000000000
-	maintenanceInterval       = 24 * second2nanosecond
+	second2nanosecond int64 = 1000000000
 )
 
 func witnessOfSec(sec int64) string {
@@ -86,19 +81,6 @@ func witnessOfSlot(slot int64) string {
 }
 
 func timeUntilNextSchedule(timeSec int64) int64 {
-	index, ok := staticProperty.WitnessMap[staticProperty.account.ID]
-	if !ok {
-		return maintenanceInterval * common.SlotLength
-	}
 	currentSlot := timeSec / (second2nanosecond * common.SlotLength)
-	round := currentSlot / staticProperty.NumberOfWitnesses
-	startSlot := round*staticProperty.NumberOfWitnesses + index
-	nextSlot := (round+1)*staticProperty.NumberOfWitnesses + index
-	if currentSlot > startSlot {
-		return nextSlot*common.SlotLength*second2nanosecond - timeSec
-	} else if currentSlot < startSlot {
-		return startSlot*common.SlotLength*second2nanosecond - timeSec
-	} else {
-		return 0
-	}
+	return (currentSlot+1)*second2nanosecond*common.SlotLength - timeSec
 }

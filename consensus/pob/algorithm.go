@@ -169,7 +169,6 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	//bc.Flush(node) // in debug
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
-		go staticProperty.delSlot(confirmedNode.Block.Head.Time)
 
 		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
 	}

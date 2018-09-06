@@ -135,7 +135,6 @@ func TestNodeInfoUpdate(t *testing.T) {
 			Witness:  "id0",
 			Children: make(map[*blockcache.BlockCacheNode]bool),
 		}
-		staticProperty.addSlot(1)
 		staticProperty.Watermark["id0"] = 2
 		convey.Convey("Normal", func() {
 			node := addBlock(rootNode, 2, "id1", 2)

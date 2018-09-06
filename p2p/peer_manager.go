@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -36,7 +37,7 @@ const (
 
 	incomingMsgChanSize = 1024
 
-	routingTablePath = "routing.table"
+	routingTableFile = "routing.table"
 )
 
 // PeerManager manages all peers we connect directily.
@@ -249,9 +250,9 @@ func (pm *PeerManager) NeighborCount() int {
 
 // DumpRoutingTable saves routing table in file.
 func (pm *PeerManager) DumpRoutingTable() {
-	file, err := os.Create(routingTablePath)
+	file, err := os.Create(filepath.Join(pm.config.DataPath, routingTableFile))
 	if err != nil {
-		ilog.Errorf("create routing file failed. err=%v, path=%v", err, routingTablePath)
+		ilog.Errorf("create routing file failed. err=%v, path=%v", err, pm.config.DataPath)
 		return
 	}
 	defer file.Close()
@@ -266,16 +267,17 @@ func (pm *PeerManager) DumpRoutingTable() {
 
 // LoadRoutingTable reads routing table file and parses it.
 func (pm *PeerManager) LoadRoutingTable() {
-	if _, err := os.Stat(routingTablePath); err != nil {
+	routingFile := filepath.Join(pm.config.DataPath + routingTableFile)
+	if _, err := os.Stat(routingFile); err != nil {
 		if os.IsNotExist(err) {
-			ilog.Infof("no routing file. path=%v", routingTablePath)
+			ilog.Infof("no routing file. file=%v", routingFile)
 			return
 		}
 	}
 
-	file, err := os.Open(routingTablePath)
+	file, err := os.Open(routingFile)
 	if err != nil {
-		ilog.Errorf("open routing file failed. err=%v, path=%v", err, routingTablePath)
+		ilog.Errorf("open routing file failed. err=%v, file=%v", err, routingFile)
 		return
 	}
 	defer file.Close()
