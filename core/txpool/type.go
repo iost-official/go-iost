@@ -45,11 +45,6 @@ const (
 	GasPriceError
 )
 
-type RecNode struct {
-	LinkedNode *blockcache.BlockCacheNode
-	HeadNode   *blockcache.BlockCacheNode
-}
-
 type ForkChain struct {
 	NewHead       *blockcache.BlockCacheNode
 	OldHead       *blockcache.BlockCacheNode
@@ -75,8 +70,8 @@ func (s TxsList) Less(i, j int) bool {
 }
 func (s TxsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
-func (s *TxsList) Push(x interface{}) {
-	*s = append(*s, x.(*tx.Tx))
+func (s *TxsList) Push(x *tx.Tx) {
+	*s = append(*s, x)
 }
 
 type blockTx struct {

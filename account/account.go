@@ -5,7 +5,6 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
 var (
@@ -49,12 +48,12 @@ type Account struct {
 	Seckey    []byte
 }
 
-func NewAccount(seckey []byte) (*Account, error) {
-	algo := crypto.Secp256k1
+func NewAccount(seckey []byte, algo crypto.Algorithm) (*Account, error) {
 	if seckey == nil {
 		seckey = algo.GenSeckey()
 	}
-	if len(seckey) != 32 {
+	if (len(seckey) != 32 && algo == crypto.Secp256k1) ||
+		(len(seckey) != 64 && algo == crypto.Ed25519) {
 		return nil, fmt.Errorf("seckey length error")
 	}
 	pubkey := algo.GetPubkey(seckey)
@@ -69,15 +68,11 @@ func NewAccount(seckey []byte) (*Account, error) {
 	return account, nil
 }
 
-func (a *Account) Sign(algo crypto.Algorithm, info []byte) *crypto.Signature {
-	return crypto.NewSignature(algo, info, a.Seckey)
+func (a *Account) Sign(info []byte) *crypto.Signature {
+	return crypto.NewSignature(a.Algorithm, info, a.Seckey)
 }
 
 func GetIDByPubkey(pubkey []byte) string {
-	if len(pubkey) != 33 {
-		ilog.Error("illegal pubkey")
-		return ""
-	}
 	return "IOST" + common.Base58Encode(append(pubkey, common.Parity(pubkey)...))
 }
 

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
@@ -23,7 +25,7 @@ type PeerID = peer.ID
 
 const (
 	protocolID  = "iostp2p/1.0"
-	privKeyPath = "priv.key"
+	privKeyFile = "priv.key"
 )
 
 // errors
@@ -57,9 +59,14 @@ func NewNetService(config *common.P2PConfig) (*NetService, error) {
 		config: config,
 	}
 
-	privKey, err := getOrCreateKey(privKeyPath)
+	if err := os.MkdirAll(config.DataPath, 0766); err != nil {
+		ilog.Errorf("failed to create p2p datapath, err=%v, path=%v", err, config.DataPath)
+		return nil, err
+	}
+
+	privKey, err := getOrCreateKey(filepath.Join(config.DataPath, privKeyFile))
 	if err != nil {
-		ilog.Errorf("failed to get private key. err=%v, path=%v", err, privKeyPath)
+		ilog.Errorf("failed to get private key. err=%v, path=%v", err, config.DataPath)
 		return nil, err
 	}
 
