@@ -3,6 +3,7 @@ package pob
 import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"sync"
 )
 
 var staticProperty *StaticProperty
@@ -14,6 +15,7 @@ type StaticProperty struct {
 	WitnessList       []string
 	WitnessMap        map[string]int64
 	Watermark         map[string]int64
+	SlotMap           *sync.Map
 }
 
 func newStaticProperty(account *account.Account, witnessList []string) *StaticProperty {
