@@ -403,9 +403,9 @@ func (bcn *BlockCacheNode) DrawTree() string {
 }
 
 func (bc *BlockCacheImpl) Draw() string {
-	//ilog.Info("LinkedTree:")
-	//bc.linkedRoot.DrawTree()
-	//ilog.Info("SingleTree:")
-	//bc.singleRoot.DrawTree()
+	ilog.Info("LinkedTree:")
+	bc.linkedRoot.DrawTree()
+	ilog.Info("SingleTree:")
+	bc.singleRoot.DrawTree()
 	return ""
 }

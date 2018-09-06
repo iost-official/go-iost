@@ -368,7 +368,6 @@ func (p *PoB) scheduleLoop() {
 					}
 					go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 				}
-				time.Sleep(common.SlotLength * time.Second)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
 			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
