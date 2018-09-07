@@ -344,16 +344,8 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-<<<<<<< HEAD
 	if typ == NewBlock {
 		ilog.Infof("broadcast %s", typ)
-=======
-	/* if typ == PublishTxRequest { */
-	// return
-	/* } */
-	if typ == NewBlock || typ == NewBlockHash || typ == SyncBlockHashRequest {
-		ilog.Infof("broadcast message. type=%s", typ)
->>>>>>> develop
 	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
@@ -367,16 +359,6 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
-<<<<<<< HEAD
-	//if typ != RoutingTableQuery && typ != RoutingTableResponse && typ != NewBlockHash && typ != NewBlockRequest && typ != 8 && typ != 9 && typ != 10 {
-	//	ilog.Infof("send type=%s", typ)
-	//}
-=======
-	if typ == NewBlock || typ == NewBlockRequest || typ == SyncBlockHashResponse ||
-		typ == SyncBlockRequest || typ == SyncBlockResponse {
-		ilog.Infof("send message to peer. type=%s, peerID=%s", typ, peerID.Pretty())
-	}
->>>>>>> develop
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	peer := pm.GetNeighbor(peerID)
@@ -455,13 +437,8 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
-<<<<<<< HEAD
 	if msg.messageType() == NewBlock {
 		ilog.Infof("recv %s", msg.messageType())
-=======
-	if msg.messageType() != PublishTxRequest && msg.messageType() != SyncHeight {
-		ilog.Infof("receiving message. type=%s", msg.messageType())
->>>>>>> develop
 	}
 	switch msg.messageType() {
 	case RoutingTableQuery:
@@ -475,7 +452,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 				select {
 				case v.(chan IncomingMessage) <- *inMsg:
 				default:
-					ilog.Errorf("sending incoming message failed. type=%s", msg.messageType())
+					//ilog.Errorf("sending incoming message failed. type=%s", msg.messageType())
 				}
 				return true
 			})

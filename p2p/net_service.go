@@ -95,9 +95,9 @@ func (ns *NetService) LocalAddrs() []multiaddr.Multiaddr {
 // Start starts the jobs.
 func (ns *NetService) Start() error {
 	go ns.peerManager.Start()
-	//for _, addr := range ns.host.Addrs() {
-	//	ilog.Infof("multiaddr: %s/ipfs/%s", addr, ns.ID())
-	//}
+	for _, addr := range ns.host.Addrs() {
+		ilog.Infof("multiaddr: %s/ipfs/%s", addr, ns.ID())
+	}
 	return nil
 }
 

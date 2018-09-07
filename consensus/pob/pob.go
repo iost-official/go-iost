@@ -29,6 +29,7 @@ var (
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
+	metricsTPS                 = metrics.NewGauge("iost_tps", nil)
 )
 
 var (
@@ -222,11 +223,11 @@ func (p *PoB) handleGenesisBlock(blk *block.Block) error {
 	return fmt.Errorf("not genesis block")
 }
 
-func (p *PoB) calculateTPS() {
+func (p *PoB) calculateTPS() float64 {
 	cnt := 0
 	n := 0
 	if p.blockCache.Head() == nil {
-		return
+		return 0
 	}
 	l := p.blockChain.Length()
 	for i := int64(0); i < 10; i++ {
@@ -239,10 +240,9 @@ func (p *PoB) calculateTPS() {
 		n++
 	}
 	if n == 0 {
-		return
+		return 0
 	}
-	ilog.Info("Tx per block:", cnt/n)
-	ilog.Info("TPS:", cnt/(n*3))
+	return float64(cnt / (n * 3))
 }
 
 func (p *PoB) blockLoop() {
@@ -250,7 +250,7 @@ func (p *PoB) blockLoop() {
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
-			p.calculateTPS()
+			metricsTPS.Set(float64(p.calculateTPS()), nil)
 			if !ok {
 				ilog.Infof("chRecvBlock has closed")
 				return
@@ -261,14 +261,6 @@ func (p *PoB) blockLoop() {
 				ilog.Error("fail to decode block")
 				continue
 			}
-			ilog.Info("\n")
-			ilog.Info("block number: ", blk.Head.Number)
-			ilog.Info("block hash: ", common.Base58Encode(blk.HeadHash()))
-			if p.blockCache.Head().Block != nil {
-				ilog.Infof("blockCache Head hash: %v", common.Base58Encode(p.blockCache.Head().Block.HeadHash()))
-			}
-			ilog.Info("block parent hash: ", common.Base58Encode(blk.Head.ParentHash))
-			ilog.Info(p.baseVariable.Mode())
 			if incomingMessage.Type() == p2p.NewBlock {
 				if p.baseVariable.Mode() == global.ModeInit {
 					continue
@@ -325,18 +317,11 @@ func (p *PoB) blockLoop() {
 			go p.synchronizer.CheckSyncProcess()
 			p.blockCache.Draw()
 		case blk, ok := <-p.chGenBlock:
-			p.calculateTPS()
+			metricsTPS.Set(float64(p.calculateTPS()), nil)
 			if !ok {
 				ilog.Infof("chGenBlock has closed")
 				return
 			}
-			ilog.Info("block number: ", blk.Head.Number)
-			ilog.Info("block hash: ", common.Base58Encode(blk.HeadHash()))
-			if p.blockCache.Head() != nil {
-				ilog.Infof("blockCache Head hash: %v", common.Base58Encode(p.blockCache.Head().Block.HeadHash()))
-			}
-			ilog.Info("block parent hash: ", common.Base58Encode(blk.Head.ParentHash))
-			//ilog.Info("block from myself, block number: ", blk.Head.Number)
 			err := p.handleRecvBlock(blk)
 			if err != nil {
 				ilog.Errorf("received new block error, err:%v", err)
@@ -359,11 +344,11 @@ func (p *PoB) scheduleLoop() {
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
-					ilog.Error("the number of blockcache head: ", p.blockCache.Head().Number)
+					ilog.Debug("the number of blockcache head: ", p.blockCache.Head().Number)
 					p.txPool.Lock()
 					blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
 					p.txPool.Lease()
-					ilog.Infof("gen block:%v", blk.Head.Number)
+					ilog.Debug("gen block:%v", blk.Head.Number)
 					if err != nil {
 						ilog.Error(err.Error())
 						continue

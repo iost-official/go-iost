@@ -40,12 +40,12 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	txCnt := 20000
+	txCnt := 30000
 	limitTime := time.NewTicker(time.Second)
 	txsList, _ := txPool.PendingTxs(txCnt)
+	ilog.Error("txs in txpool", len(txsList))
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
-	ilog.Info("txsList", len(txsList))
 L:
 	for _, t := range txsList {
 		select {
@@ -61,6 +61,7 @@ L:
 			}
 		}
 	}
+	ilog.Error("txs in blk", len(blk.Txs))
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	err := blk.CalculateHeadHash()
@@ -123,10 +124,6 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
-<<<<<<< HEAD
-=======
-
->>>>>>> develop
 		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
 	}
 }

@@ -244,11 +244,6 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool) error {
 	if deduplicate && msg.needDedup() {
 		if p.hasMessage(msg) {
-<<<<<<< HEAD
-			//ilog.Infof("ignore reduplicate message")
-=======
-			// ilog.Debug("ignore reduplicate message")
->>>>>>> develop
 			return ErrDuplicateMessage
 		}
 	}

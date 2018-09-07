@@ -40,23 +40,23 @@ type TxPoolImpl struct {
 // NewTxPoolImpl returns a default TxPoolImpl instance.
 func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
 	p := &TxPoolImpl{
-		blockCache: blockCache,
-		chTx:       make(chan *tx.Tx, 10000),
-		forkChain:  new(ForkChain),
-		blockList:  new(sync.Map),
-		pendingTx:  new(sync.Map),
-		global:     global,
-		p2pService: p2ps,
-		chP2PTx:    p2ps.Register("TxPool message", p2p.PublishTxRequest),
-		quitCh:     make(chan struct{}),
+		blockCache:       blockCache,
+		chTx:             make(chan *tx.Tx, 10000),
+		forkChain:        new(ForkChain),
+		blockList:        new(sync.Map),
+		pendingTx:        new(sync.Map),
+		global:           global,
+		p2pService:       p2ps,
+		chP2PTx:          p2ps.Register("TxPool message", p2p.PublishTxRequest),
+		quitGenerateMode: make(chan struct{}),
+		quitCh:           make(chan struct{}),
 	}
-
+	p.Lease()
 	return p, nil
 }
 
 // Start starts the jobs.
 func (pool *TxPoolImpl) Start() error {
-	pool.Lease()
 	go pool.loop()
 	return nil
 }
@@ -114,14 +114,15 @@ func (pool *TxPoolImpl) loop() {
 
 func (pool *TxPoolImpl) Lock() {
 	pool.quitGenerateMode = make(chan struct{})
+	ilog.Error("lock here")
 }
 
 func (pool *TxPoolImpl) Lease() {
 	close(pool.quitGenerateMode)
+	ilog.Error("close the lock")
 }
 
 func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *tx.Tx) {
-
 	for v := range p2pCh {
 		select {
 		case <-pool.quitGenerateMode:
@@ -132,9 +133,9 @@ func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *
 			continue
 		}
 
-		if r := pool.verifyTx(&t); r == Success {
-			tCn <- &t
-		}
+		//if r := pool.verifyTx(&t); r == Success {
+		tCn <- &t
+		//}
 	}
 }
 
