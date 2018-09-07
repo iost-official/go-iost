@@ -27,6 +27,7 @@ p2p:
   chainID: 1024
   version: 1
   seedNodes:
+  datapath: "./"
 
 rpc:
   JSONPort: 30301
