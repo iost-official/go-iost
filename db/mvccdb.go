@@ -326,7 +326,6 @@ func (m *CacheMVCCDB) Flush(t string) error {
 	if commit == nil {
 		return fmt.Errorf("not found tag: %v", t)
 	}
-
 	if err := m.storage.BeginBatch(); err != nil {
 		return err
 	}
