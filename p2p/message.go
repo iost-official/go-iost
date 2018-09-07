@@ -44,12 +44,13 @@ const (
 	RoutingTableQuery
 	RoutingTableResponse
 	NewBlock
-	NewBlockHead
+	NewBlockHash
 	NewBlockRequest
 	SyncBlockHashRequest
 	SyncBlockHashResponse
 	SyncBlockRequest
 	SyncBlockResponse
+	SyncHeight
 	PublishTxRequest
 
 	UrgentMessage = 1
@@ -72,10 +73,12 @@ func (m MessageType) String() string {
 		return "SyncBlockRequest"
 	case SyncBlockResponse:
 		return "SyncBlockResponse"
+	case SyncHeight:
+		return "SyncHeight"
 	case PublishTxRequest:
 		return "PublishTxRequest"
-	case NewBlockHead:
-		return "NewBlockHead"
+	case NewBlockHash:
+		return "NewBlockHash"
 	case NewBlockRequest:
 		return "NewBlockRequest"
 	default:
@@ -151,7 +154,7 @@ func (m *p2pMessage) data() ([]byte, error) {
 
 func (m *p2pMessage) needDedup() bool {
 	return m.messageType() == NewBlock ||
-		m.messageType() == PublishTxRequest || m.messageType() == NewBlockHead
+		m.messageType() == PublishTxRequest || m.messageType() == NewBlockHash
 }
 
 func newP2PMessage(chainID uint32, messageType MessageType, version uint16, reserved uint32, data []byte) *p2pMessage {

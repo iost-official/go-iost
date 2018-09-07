@@ -62,6 +62,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 			Genesis: &common.GenesisConfig{CreateGenesis: true, WitnessInfo: witnessInfo},
 		}
 		gl, err := global.New(conf)
+		gl.SetMode(global.ModeNormal)
 
 		So(err, ShouldBeNil)
 		BlockCache, err := blockcache.NewBlockCache(gl)

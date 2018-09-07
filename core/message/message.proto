@@ -22,3 +22,8 @@ message BlockHash {
 message BlockHashResponse {
     repeated BlockHash blockHashes = 1;
 }
+
+message SyncHeight {
+    int64 height = 1;
+    int64 time = 2;
+}

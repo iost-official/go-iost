@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/iost-official/Go-IOS-Protocol/db/mvcc"
@@ -10,7 +11,6 @@ import (
 )
 
 //go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/Go-IOS-Protocol/db MVCCDB
-
 const (
 	SEPARATOR = '/'
 )
@@ -76,15 +76,74 @@ func (c *Commit) Fork() *Commit {
 	}
 }
 
+type CommitManager struct {
+	tags    map[string]*Commit
+	commits []*Commit
+	rwmu    *sync.RWMutex
+}
+
+func NewCommitManager() *CommitManager {
+	tags := make(map[string]*Commit)
+	commits := make([]*Commit, 0)
+	rwmu := new(sync.RWMutex)
+	return &CommitManager{
+		tags:    tags,
+		commits: commits,
+		rwmu:    rwmu,
+	}
+}
+
+func (m *CommitManager) Add(c *Commit) {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
+	m.commits = append(m.commits, c)
+}
+
+func (m *CommitManager) Get(t string) *Commit {
+	m.rwmu.RLock()
+	defer m.rwmu.RUnlock()
+
+	return m.tags[t]
+}
+
+func (m *CommitManager) AddTag(c *Commit, t string) {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
+	c.Tags = append(c.Tags, t)
+	m.tags[t] = c
+}
+
+func (m *CommitManager) GetTags(c *Commit) []string {
+	m.rwmu.RLock()
+	defer m.rwmu.RUnlock()
+
+	return c.Tags
+}
+
+func (m *CommitManager) FreeBefore(c *Commit) {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
+	for k, v := range m.commits {
+		if v == c {
+			m.commits = m.commits[k:]
+			break
+		} else {
+			for _, t := range v.Tags {
+				delete(m.tags, t)
+			}
+			v.Free()
+		}
+	}
+}
+
 type CacheMVCCDB struct {
-	head      *Commit
-	stage     *Commit
-	tags      map[string]*Commit
-	commits   []*Commit
-	stagerw   *sync.RWMutex
-	tagsrw    *sync.RWMutex
-	commitsrw *sync.RWMutex
-	storage   Storage
+	head    *Commit
+	stage   *Commit
+	storage Storage
+	cm      *CommitManager
 }
 
 func NewCacheMVCCDB(path string, cacheType mvcc.CacheType) (*CacheMVCCDB, error) {
@@ -98,21 +157,15 @@ func NewCacheMVCCDB(path string, cacheType mvcc.CacheType) (*CacheMVCCDB, error)
 	}
 	head := NewCommit(cacheType)
 	stage := head.Fork()
-	tags := make(map[string]*Commit)
-	commits := make([]*Commit, 0)
+	cm := NewCommitManager()
 
-	head.Tags = []string{string(tag)}
-	tags[head.Tags[0]] = head
-	commits = append(commits, head)
+	cm.AddTag(head, string(tag))
+	cm.Add(head)
 	mvccdb := &CacheMVCCDB{
-		head:      head,
-		stage:     stage,
-		tags:      tags,
-		commits:   commits,
-		stagerw:   new(sync.RWMutex),
-		tagsrw:    new(sync.RWMutex),
-		commitsrw: new(sync.RWMutex),
-		storage:   storage,
+		head:    head,
+		stage:   stage,
+		storage: storage,
+		cm:      cm,
 	}
 	return mvccdb, nil
 }
@@ -134,9 +187,7 @@ func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 		return "", ErrTableNotValid
 	}
 	k := []byte(table + string(SEPARATOR) + key)
-	m.stagerw.RLock()
 	v := m.stage.Get(k)
-	m.stagerw.RUnlock()
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
@@ -166,9 +217,7 @@ func (m *CacheMVCCDB) Put(table string, key string, value string) error {
 		value:   value,
 		deleted: false,
 	}
-	m.stagerw.RLock()
 	m.stage.Put(k, v)
-	m.stagerw.RUnlock()
 	return nil
 }
 
@@ -183,9 +232,7 @@ func (m *CacheMVCCDB) Del(table string, key string) error {
 		value:   "",
 		deleted: true,
 	}
-	m.stagerw.RLock()
 	m.stage.Put(k, v)
-	m.stagerw.RUnlock()
 	return nil
 }
 
@@ -194,9 +241,7 @@ func (m *CacheMVCCDB) Has(table string, key string) (bool, error) {
 		return false, ErrTableNotValid
 	}
 	k := []byte(table + string(SEPARATOR) + key)
-	m.stagerw.RLock()
 	v := m.stage.Get(k)
-	m.stagerw.RUnlock()
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
@@ -238,9 +283,7 @@ func (m *CacheMVCCDB) Keys(table string, prefix string) ([]string, error) {
 }
 
 func (m *CacheMVCCDB) Commit() {
-	m.commitsrw.Lock()
-	m.commits = append(m.commits, m.stage)
-	m.commitsrw.Unlock()
+	m.cm.Add(m.stage)
 	m.head = m.stage
 	m.stage = m.head.Fork()
 }
@@ -250,10 +293,8 @@ func (m *CacheMVCCDB) Rollback() {
 }
 
 func (m *CacheMVCCDB) Checkout(t string) bool {
-	m.tagsrw.RLock()
-	head, ok := m.tags[t]
-	m.tagsrw.RUnlock()
-	if !ok {
+	head := m.cm.Get(t)
+	if head == nil {
 		return false
 	}
 	m.head = head
@@ -262,32 +303,29 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 }
 
 func (m *CacheMVCCDB) Tag(t string) {
-	m.tagsrw.Lock()
-	m.tags[t] = m.head
-	m.tagsrw.Unlock()
-	m.head.Tags = append(m.head.Tags, t)
+	m.cm.AddTag(m.head, t)
 }
 
 func (m *CacheMVCCDB) CurrentTag() string {
-	return m.head.Tags[0]
+	tags := m.cm.GetTags(m.head)
+	return tags[len(tags)-1]
 }
 
 func (m *CacheMVCCDB) Fork() MVCCDB {
 	mvccdb := &CacheMVCCDB{
-		head:      m.head,
-		stage:     m.head.Fork(),
-		tags:      m.tags,
-		commits:   m.commits,
-		stagerw:   m.stagerw,
-		tagsrw:    m.tagsrw,
-		commitsrw: m.commitsrw,
-		storage:   m.storage,
+		head:    m.head,
+		stage:   m.head.Fork(),
+		storage: m.storage,
+		cm:      m.cm,
 	}
 	return mvccdb
 }
 
 func (m *CacheMVCCDB) Flush(t string) error {
-	trie := m.tags[t]
+	commit := m.cm.Get(t)
+	if commit == nil {
+		return fmt.Errorf("not found tag: %v", t)
+	}
 
 	if err := m.storage.BeginBatch(); err != nil {
 		return err
@@ -296,7 +334,7 @@ func (m *CacheMVCCDB) Flush(t string) error {
 	if err != nil {
 		return err
 	}
-	for _, v := range trie.All([]byte("")) {
+	for _, v := range commit.All([]byte("")) {
 		item, ok := v.(*Item)
 		if !ok {
 			return errors.New("can't assert Item type")
@@ -316,18 +354,7 @@ func (m *CacheMVCCDB) Flush(t string) error {
 	if err := m.storage.CommitBatch(); err != nil {
 		return err
 	}
-	ilog.Debugf("Commits length: %v", len(m.commits))
-	for k, v := range m.commits {
-		if v == trie {
-			m.commits = m.commits[k:]
-			break
-		} else {
-			for _, t := range v.Tags {
-				delete(m.tags, t)
-			}
-			v.Free()
-		}
-	}
+	m.cm.FreeBefore(commit)
 	return nil
 }
 

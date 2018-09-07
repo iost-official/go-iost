@@ -245,31 +245,32 @@ func TestVerifyBasics(t *testing.T) {
 			err = verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldEqual, errSignature)
 		})
+		/*
+			convey.Convey("Slot witness duplicate", func() {
+				blk := &block.Block{
+					Head: &block.BlockHead{
+						Time:    0,
+						Witness: account0.ID,
+					},
+				}
+				hash, _ := blk.Head.Hash()
+				blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+				err := verifyBasics(blk.Head, blk.Sign)
+				convey.So(err, convey.ShouldBeNil)
 
-		convey.Convey("Slot witness duplicate", func() {
-			blk := &block.Block{
-				Head: &block.BlockHead{
-					Time:    0,
-					Witness: account0.ID,
-				},
-			}
-			hash, _ := blk.Head.Hash()
-			blk.Sign = account0.Sign(crypto.Secp256k1, hash)
-			err := verifyBasics(blk.Head, blk.Sign)
-			convey.So(err, convey.ShouldBeNil)
-
-			staticProperty.addSlot(0)
-			blk = &block.Block{
-				Head: &block.BlockHead{
-					Time:    0,
-					Witness: account0.ID,
-				},
-			}
-			hash, _ = blk.Head.Hash()
-			blk.Sign = account0.Sign(crypto.Secp256k1, hash)
-			err = verifyBasics(blk.Head, blk.Sign)
-			convey.So(err, convey.ShouldEqual, errSlot)
-		})
+				staticProperty.addSlot(0)
+				blk = &block.Block{
+					Head: &block.BlockHead{
+						Time:    0,
+						Witness: account0.ID,
+					},
+				}
+				hash, _ = blk.Head.Hash()
+				blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+				err = verifyBasics(blk.Head, blk.Sign)
+				convey.So(err, convey.ShouldEqual, errSlot)
+			})
+		*/
 	})
 }
 
