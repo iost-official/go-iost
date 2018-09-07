@@ -20,9 +20,9 @@ var (
 	// SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
 	syncNumber int64 = 11
 
-	maxBlockHashQueryNumber int64 = 50
+	maxBlockHashQueryNumber int64 = 1000
 	retryTime                     = 5 * time.Second
-	syncBlockTimeout              = 3 * time.Second
+	syncBlockTimeout              = time.Second
 	syncHeightTime                = 3 * time.Second
 	heightTimeout           int64 = 5 * 3
 )
@@ -236,7 +236,7 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
 		for sy.blockCache.Head().Number+3 < startNumber {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 		}
 		for i := startNumber; i < startNumber+maxBlockHashQueryNumber; i++ {
 			sy.reqMap.Store(i, true)

@@ -84,7 +84,7 @@ func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCac
 		chRecvBlock:     p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
 		chRecvBlockHash: p2pService.Register("consensus block head", p2p.NewBlockHash),
 		chQueryBlock:    p2pService.Register("consensus query block", p2p.NewBlockRequest),
-		chVerifyBlock:   make(chan *verifyBlockMessage, 10),
+		chVerifyBlock:   make(chan *verifyBlockMessage, 1024),
 		//chGenBlock:      make(chan *block.Block, 10),
 	}
 	staticProperty = newStaticProperty(p.account, witnessList)
@@ -417,12 +417,10 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
 			p.blockCache.Del(node)
-			ilog.Error(err.Error())
 			return err
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
-
 	h := p.blockCache.Head()
 	if node.Number > h.Number {
 		p.txPool.AddLinkedNode(node, node)
