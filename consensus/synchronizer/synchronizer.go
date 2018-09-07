@@ -33,7 +33,8 @@ type Synchronizer interface {
 	CheckSync() bool
 	CheckGenBlock(hash []byte) bool
 	SyncBlocks(startNumber int64, endNumber int64) error
-	OnBlockConfirmed(hash string, peerID p2p.PeerID)
+	OnBlockConfirmed(hash string)
+	OnRecvBlock(hash string, peerID p2p.PeerID)
 	CheckSyncProcess()
 }
 
@@ -44,7 +45,7 @@ type SyncImpl struct {
 	basevariable global.BaseVariable
 	dc           DownloadController
 	reqMap       *sync.Map
-	HeightMap    *sync.Map
+	heightMap    *sync.Map
 	syncEnd      int64
 
 	messageChan    chan p2p.IncomingMessage
@@ -58,7 +59,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 		blockCache:   blkcache,
 		basevariable: basevariable,
 		reqMap:       new(sync.Map),
-		HeightMap:    new(sync.Map),
+		heightMap:    new(sync.Map),
 		lastHead:     nil,
 		syncEnd:      0,
 	}
@@ -148,7 +149,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 				continue
 			}
 			// ilog.Debugf("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
-			sy.HeightMap.Store(req.From(), sh)
+			sy.heightMap.Store(req.From(), sh)
 		case <-sy.exitSignal:
 			return
 		}
@@ -164,10 +165,10 @@ func (sy *SyncImpl) CheckSync() bool {
 	heights := make([]int64, 0, 0)
 	heights = append(heights, sy.blockCache.Head().Number)
 	now := time.Now().Unix()
-	sy.HeightMap.Range(func(k, v interface{}) bool {
+	sy.heightMap.Range(func(k, v interface{}) bool {
 		sh, ok := v.(message.SyncHeight)
 		if !ok || sh.Time+heightTimeout < now {
-			sy.HeightMap.Delete(k)
+			sy.heightMap.Delete(k)
 			return true
 		}
 		heights = append(heights, 0)
@@ -261,8 +262,12 @@ func (sy *SyncImpl) CheckSyncProcess() {
 	}
 }
 
-func (sy *SyncImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) {
-	sy.dc.OnBlockConfirmed(hash, peerID)
+func (sy *SyncImpl) OnBlockConfirmed(hash string) {
+	sy.dc.MissionComplete(hash)
+}
+
+func (sy *SyncImpl) OnRecvBlock(hash string, peerID p2p.PeerID) {
+	sy.dc.FreePeer(hash, peerID)
 }
 
 func (sy *SyncImpl) messageLoop() {
@@ -432,7 +437,8 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID
 type DownloadController interface {
 	OnRecvHash(hash string, peerID p2p.PeerID)
 	OnTimeout(hash string, peerID p2p.PeerID)
-	OnBlockConfirmed(hash string, peerID p2p.PeerID)
+	MissionComplete(hash string)
+	FreePeer(hash string, peerID p2p.PeerID)
 	DownloadLoop(callback func(hash string, peerID p2p.PeerID))
 	Reset()
 	Stop()
@@ -502,21 +508,30 @@ func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) {
 	}
 }
 
-func (dc *DownloadControllerImpl) OnBlockConfirmed(hash string, peerID p2p.PeerID) {
+func (dc *DownloadControllerImpl) MissionComplete(hash string) {
 	dc.hashState.Store(hash, "Done")
+}
+
+func (dc *DownloadControllerImpl) FreePeer(hash string, peerID p2p.PeerID) {
 	if pState, pok := dc.peerState.Load(peerID); pok {
 		ps, ok := pState.(string)
 		if !ok {
 			dc.peerState.Delete(peerID)
-		} else if ps == hash {
+			return
+		}
+		if ps == hash {
 			dc.peerState.Store(peerID, "Free")
 			if pTimer, ook := dc.peerTimer.Load(peerID); ook {
-				pTimer.(*time.Timer).Stop()
+				timer, tok := pTimer.(*time.Timer)
+				if tok {
+					timer.Stop()
+				}
 				dc.peerTimer.Delete(peerID)
 			}
 			dc.chDownload <- struct{}{}
 		}
 	}
+
 }
 
 func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID p2p.PeerID)) {

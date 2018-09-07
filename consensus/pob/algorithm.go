@@ -42,9 +42,10 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	txCnt := 10000
-	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
+	txCnt := 30000
+	limitTime := time.NewTicker(time.Second)
 	txsList, _ := txPool.PendingTxs(txCnt)
+	ilog.Info("txs in txpool", len(txsList))
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(blk.Head, db)
 	ilog.Info(len(txsList))
@@ -84,6 +85,7 @@ L:
 			}
 		}
 	}
+	ilog.Info("txs in blk", len(blk.Txs))
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	err := blk.CalculateHeadHash()
@@ -109,11 +111,6 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	if !signature.Verify(hash) {
 		return errSignature
 	}
-	/*
-		if staticProperty.hasSlot(head.Time) {
-			return errSlot
-		}
-	*/
 	return nil
 }
 
@@ -166,10 +163,8 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
-	//bc.Flush(node) // in debug
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
-
 		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
 	}
 }

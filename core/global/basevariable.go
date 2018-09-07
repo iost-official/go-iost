@@ -21,7 +21,6 @@ type TMode uint
 const (
 	ModeNormal TMode = iota
 	ModeSync
-	ModeFetchGenesis
 	ModeInit
 )
 
@@ -33,8 +32,6 @@ func (m TMode) String() string {
 		return "ModeNormal"
 	case ModeSync:
 		return "ModeSync"
-	case ModeFetchGenesis:
-		return "ModeFetchGenesis"
 	case ModeInit:
 		return "ModeInit"
 	default:
@@ -104,7 +101,6 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	blockHead := block.BlockHead{
 		Version:    0,
 		ParentHash: nil,

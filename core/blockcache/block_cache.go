@@ -7,6 +7,7 @@ import (
 
 	"encoding/json"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"strconv"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/db"
@@ -16,12 +17,6 @@ import (
 )
 
 type CacheStatus int
-
-const (
-	Extend CacheStatus = iota
-	Fork
-	ParentNotFound
-)
 
 const (
 	DelSingleBlockTime int64 = 10
@@ -434,6 +429,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
+		ilog.Info("confirm ", retain.Number)
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
 		if err != nil {
 			ilog.Errorf("flush mvcc error: %v", err)
@@ -497,7 +493,7 @@ func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 //draw the blockcache
 const PICSIZE int = 100
 
-var pic [PICSIZE][PICSIZE]byte
+var pic [PICSIZE][PICSIZE]string
 var picX, picY int
 
 func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
@@ -508,15 +504,15 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 		picY = y
 	}
 	if y != 0 {
-		pic[x][y-1] = '-'
+		pic[x][y-1] = "-"
 		for i := x; i >= 0; i-- {
-			if pic[i][y-2] != ' ' {
+			if pic[i][y-2] != " " {
 				break
 			}
-			pic[i][y-2] = '|'
+			pic[i][y-2] = "|"
 		}
 	}
-	pic[x][y] = 'N'
+	pic[x][y] = strconv.FormatInt(root.Number, 10)
 	var width int = 0
 	var f bool = false
 	i := 0
@@ -538,23 +534,20 @@ func (bcn *BlockCacheNode) DrawTree() string {
 	var ret string
 	for i := 0; i < PICSIZE; i++ {
 		for j := 0; j < PICSIZE; j++ {
-			pic[i][j] = ' '
+			pic[i][j] = " "
 		}
 	}
 	calcTree(bcn, 0, 0, true)
 	for i := 0; i <= picX; i++ {
+		l := ""
 		for j := 0; j <= picY; j++ {
-			ret += fmt.Sprintf("%c", pic[i][j])
+			l = l + pic[i][j]
 		}
-		ret += fmt.Sprintf("\n")
+		ilog.Info(l)
 	}
 	return ret
 }
 
 func (bc *BlockCacheImpl) Draw() string {
 	return bc.linkedRoot.DrawTree() + "\n\n" + bc.singleRoot.DrawTree()
-	/*  fmt.Println("\nLinkedTree:") */
-	// bc.linkedRoot.DrawTree()
-	// fmt.Println("SingleTree:")
-	/* bc.singleRoot.DrawTree() */
 }

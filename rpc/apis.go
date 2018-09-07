@@ -243,7 +243,6 @@ func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 
 // SendRawTx ...
 func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
-	ilog.Info("RPC received rawTx")
 	if rawTx == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -254,7 +253,6 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	}
 	// add servi
 	//tx.RecordTx(trx, tx.Data.Self())
-	ilog.Infof("the Tx is:\n%+v\n", trx)
 	ret := s.txpool.AddTx(&trx)
 	switch ret {
 	case txpool.TimeError:
