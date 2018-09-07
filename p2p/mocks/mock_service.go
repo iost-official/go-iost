@@ -44,6 +44,16 @@ func (mr *MockServiceMockRecorder) Broadcast(arg0, arg1, arg2 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Broadcast", reflect.TypeOf((*MockService)(nil).Broadcast), arg0, arg1, arg2)
 }
 
+// ConnectBPs mocks base method
+func (m *MockService) ConnectBPs(arg0 []string) {
+	m.ctrl.Call(m, "ConnectBPs", arg0)
+}
+
+// ConnectBPs indicates an expected call of ConnectBPs
+func (mr *MockServiceMockRecorder) ConnectBPs(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConnectBPs", reflect.TypeOf((*MockService)(nil).ConnectBPs), arg0)
+}
+
 // Deregister mocks base method
 func (m *MockService) Deregister(arg0 string, arg1 ...p2p.MessageType) {
 	varargs := []interface{}{arg0}
@@ -57,6 +67,18 @@ func (m *MockService) Deregister(arg0 string, arg1 ...p2p.MessageType) {
 func (mr *MockServiceMockRecorder) Deregister(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deregister", reflect.TypeOf((*MockService)(nil).Deregister), varargs...)
+}
+
+// ID mocks base method
+func (m *MockService) ID() string {
+	ret := m.ctrl.Call(m, "ID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ID indicates an expected call of ID
+func (mr *MockServiceMockRecorder) ID() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ID", reflect.TypeOf((*MockService)(nil).ID))
 }
 
 // Register mocks base method
