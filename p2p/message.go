@@ -40,7 +40,7 @@ type MessagePriority uint8
 
 // consts.
 const (
-	Ping MessageType = iota + 1
+	_ MessageType = iota
 	RoutingTableQuery
 	RoutingTableResponse
 	NewBlock

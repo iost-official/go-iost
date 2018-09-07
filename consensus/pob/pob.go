@@ -280,6 +280,9 @@ func (p *PoB) blockLoop() {
 					timer.(*time.Timer).Stop()
 					p.blockReqMap.Delete(string(blk.HeadHash()))
 				} else {
+					p.blockReqMap.Store(string(blk.HeadHash()), time.AfterFunc(blockReqTimeout, func() {
+						p.blockReqMap.Delete(string(blk.HeadHash()))
+					}))
 					blkHash := &message.BlockHash{
 						Height: blk.Head.Number,
 						Hash:   blk.HeadHash(),
@@ -308,6 +311,9 @@ func (p *PoB) blockLoop() {
 					}
 					continue
 				} else {
+					if p.baseVariable.Mode() == global.ModeInit {
+						continue
+					}
 					err = p.handleRecvBlock(&blk)
 					if err != nil && err != errSingle && err != errDuplicate {
 						ilog.Debugf("received sync block error, err:%v", err)
@@ -362,6 +368,7 @@ func (p *PoB) scheduleLoop() {
 						ilog.Error(err.Error())
 						continue
 					}
+					ilog.Debugf("block tx num: %v", len(blk.Txs))
 					p.chGenBlock <- blk
 					blkByte, err := blk.Encode()
 					if err != nil {

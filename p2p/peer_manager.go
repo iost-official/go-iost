@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -36,7 +37,7 @@ const (
 
 	incomingMsgChanSize = 1024
 
-	routingTablePath = "routing.table"
+	routingTableFile = "routing.table"
 )
 
 // PeerManager manages all peers we connect directily.
@@ -109,7 +110,7 @@ func (pm *PeerManager) HandleStream(s libnet.Stream) {
 	if peer == nil {
 		if pm.NeighborCount() >= maxNeighborCount {
 			ilog.Debugf("reset stream. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
-			s.Reset()
+			s.Conn().Close()
 			return
 		}
 		pm.AddNeighbor(NewPeer(s, pm))
@@ -217,6 +218,20 @@ func (pm *PeerManager) RemoveNeighbor(peerID peer.ID) {
 	}
 }
 
+// RestartNeighbor cuts off a neighbor's connection and reconnects it.
+func (pm *PeerManager) RestartNeighbor(peerID peer.ID) {
+	ilog.Debugf("restart neighbor, peerID=%s", peerID.Pretty())
+	pm.RemoveNeighbor(peerID)
+
+	stream, err := pm.host.NewStream(context.Background(), peerID, protocolID)
+	if err != nil {
+		ilog.Errorf("create stream failed. err=%v", err)
+		return
+	}
+	pm.HandleStream(stream)
+
+}
+
 // GetNeighbor returns the peer of the given peerID from the neighbor list.
 func (pm *PeerManager) GetNeighbor(peerID peer.ID) *Peer {
 	pm.neighborMutex.RLock()
@@ -235,9 +250,9 @@ func (pm *PeerManager) NeighborCount() int {
 
 // DumpRoutingTable saves routing table in file.
 func (pm *PeerManager) DumpRoutingTable() {
-	file, err := os.Create(routingTablePath)
+	file, err := os.Create(filepath.Join(pm.config.DataPath, routingTableFile))
 	if err != nil {
-		ilog.Errorf("create routing file failed. err=%v, path=%v", err, routingTablePath)
+		ilog.Errorf("create routing file failed. err=%v, path=%v", err, pm.config.DataPath)
 		return
 	}
 	defer file.Close()
@@ -252,16 +267,17 @@ func (pm *PeerManager) DumpRoutingTable() {
 
 // LoadRoutingTable reads routing table file and parses it.
 func (pm *PeerManager) LoadRoutingTable() {
-	if _, err := os.Stat(routingTablePath); err != nil {
+	routingFile := filepath.Join(pm.config.DataPath + routingTableFile)
+	if _, err := os.Stat(routingFile); err != nil {
 		if os.IsNotExist(err) {
-			ilog.Infof("no routing file. path=%v", routingTablePath)
+			ilog.Infof("no routing file. file=%v", routingFile)
 			return
 		}
 	}
 
-	file, err := os.Open(routingTablePath)
+	file, err := os.Open(routingFile)
 	if err != nil {
-		ilog.Errorf("open routing file failed. err=%v, path=%v", err, routingTablePath)
+		ilog.Errorf("open routing file failed. err=%v, file=%v", err, routingFile)
 		return
 	}
 	defer file.Close()
@@ -328,8 +344,16 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
+<<<<<<< HEAD
 	if typ == NewBlock {
 		ilog.Infof("broadcast %s", typ)
+=======
+	/* if typ == PublishTxRequest { */
+	// return
+	/* } */
+	if typ == NewBlock || typ == NewBlockHash || typ == SyncBlockHashRequest {
+		ilog.Infof("broadcast message. type=%s", typ)
+>>>>>>> develop
 	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
@@ -343,9 +367,16 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
+<<<<<<< HEAD
 	//if typ != RoutingTableQuery && typ != RoutingTableResponse && typ != NewBlockHash && typ != NewBlockRequest && typ != 8 && typ != 9 && typ != 10 {
 	//	ilog.Infof("send type=%s", typ)
 	//}
+=======
+	if typ == NewBlock || typ == NewBlockRequest || typ == SyncBlockHashResponse ||
+		typ == SyncBlockRequest || typ == SyncBlockResponse {
+		ilog.Infof("send message to peer. type=%s, peerID=%s", typ, peerID.Pretty())
+	}
+>>>>>>> develop
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	peer := pm.GetNeighbor(peerID)
@@ -424,8 +455,13 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
+<<<<<<< HEAD
 	if msg.messageType() == NewBlock {
 		ilog.Infof("recv %s", msg.messageType())
+=======
+	if msg.messageType() != PublishTxRequest && msg.messageType() != SyncHeight {
+		ilog.Infof("receiving message. type=%s", msg.messageType())
+>>>>>>> develop
 	}
 	switch msg.messageType() {
 	case RoutingTableQuery:

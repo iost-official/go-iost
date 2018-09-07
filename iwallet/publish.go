@@ -82,7 +82,7 @@ var publishCmd = &cobra.Command{
 			return
 		}
 
-		acc, err := account.NewAccount(loadBytes(string(fsk)))
+		acc, err := account.NewAccount(loadBytes(string(fsk)), getSignAlgo(signAlgo))
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -124,8 +124,9 @@ func init() {
 		os.Exit(1)
 	}
 
-	publishCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.ssh/id_secp", "Set path of sec-key")
+	publishCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
 	publishCmd.Flags().BoolVar(&isLocal, "local", false, "Set to not send tx to server")
+	publishCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command

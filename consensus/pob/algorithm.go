@@ -67,7 +67,7 @@ L:
 	if err != nil {
 		return nil, err
 	}
-	blk.Sign = account.Sign(crypto.Secp256k1, blk.HeadHash())
+	blk.Sign = account.Sign(blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
 
 	metricsGeneratedBlockCount.Add(1, nil)
@@ -123,6 +123,10 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
+<<<<<<< HEAD
+=======
+
+>>>>>>> develop
 		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
 	}
 }
