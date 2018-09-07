@@ -268,8 +268,9 @@ func (logger *Logger) genMsg(level Level, log string) {
 	buf := logger.bufPool.Get()
 	defer logger.bufPool.Release(buf)
 	buf.Write(levelBytes[level])
+
 	buf.WriteString(" ")
-	buf.WriteString(time.Now().Format("2006-01-02 15:04:05.000"))
+	buf.WriteString(time.Now().In(cstZone).Format("2006-01-02 15:04:05.000"))
 	buf.WriteString(" ")
 	buf.WriteString(location(logger.callDepth + 3))
 	buf.WriteString(" ")
