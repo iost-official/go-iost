@@ -235,6 +235,8 @@ func FakeNew() (*BaseVariableImpl, error) {
 
 	vm.SetUp(config.VM)
 	VoteContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
+	fmt.Println(VoteContractPath)
+	fmt.Println(config.VM.JsPath)
 	blk, err := GenGenesis(stateDB, []string{"a1", "11111111111", "a2", "2222", "a3", "333"})
 	if err != nil {
 		return nil, err
