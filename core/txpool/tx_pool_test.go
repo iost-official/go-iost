@@ -18,6 +18,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
+	"sync"
 )
 
 var (
@@ -83,7 +84,6 @@ func TestNewTxPoolImpl(t *testing.T) {
 			r = txPool.AddTx(t)
 			So(r, ShouldEqual, DupError)
 		})
-		time.Sleep(time.Second)
 		Convey("txTimeOut", func() {
 
 			t := genTx(accountList[0], expiration)
@@ -247,6 +247,41 @@ func TestNewTxPoolImpl(t *testing.T) {
 			}
 
 			So(txPool.testPendingTxsNum(), ShouldEqual, 10)
+		})
+		Convey("CheckTx", func() {
+			txCnt := 10
+			blockCnt := 3
+			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
+
+			for i := 0; i < blockCnt; i++ {
+				//ilog.Debug(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
+				bcn := BlockCache.Add(blockList[i])
+				So(bcn, ShouldNotBeNil)
+
+				err = txPool.AddLinkedNode(bcn, bcn)
+				So(err, ShouldBeNil)
+			}
+
+			rm := new(sync.Map)
+			b := txPool.createTxMapToBlock(rm, blockList[blockCnt-1].HeadHash())
+			So(b, ShouldBeTrue)
+
+			var i int
+			rm.Range(func(key, value interface{}) bool {
+				i++
+				return true
+			})
+			So(i, ShouldEqual, txCnt)
+
+			rm1, err := txPool.createTxMapToChain(blockList[blockCnt-1])
+			So(err, ShouldBeNil)
+			i = 0
+			rm1.Range(func(key, value interface{}) bool {
+				i++
+				return true
+			})
+			So(i, ShouldEqual, txCnt*blockCnt)
+
 		})
 		//
 		//Convey("concurrent", func() {

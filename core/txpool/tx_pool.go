@@ -235,6 +235,85 @@ func (pool *TxPoolImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, er
 	return r, nil
 }
 
+// ExistTxs check txs
+func (pool *TxPoolImpl) CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, error) {
+
+	rm, err := pool.createTxMapToChain(chainBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	dtm := new(sync.Map)
+	for _, v := range txs {
+		trh := string(v.Hash())
+		if _, ok := rm.Load(trh); ok {
+			return v, errors.New("duplicate tx in chain")
+		}
+
+		if _, ok := dtm.Load(trh); ok {
+			return v, errors.New("duplicate tx in txs")
+		} else {
+			dtm.Store(trh, nil)
+		}
+
+		if ok := pool.existTxInPending([]byte(trh)); !ok {
+			if pool.verifyTx(v) != Success {
+				return v, errors.New("failed to verify")
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+func (pool *TxPoolImpl) createTxMapToChain(chainBlock *block.Block) (*sync.Map, error) {
+
+	if chainBlock == nil {
+		return nil, errors.New("chainBlock is nil")
+	}
+
+	rm := new(sync.Map)
+	h := chainBlock.HeadHash()
+
+	t := pool.slotToNSec(chainBlock.Head.Time)
+	var ok bool
+
+	for {
+		ret := pool.createTxMapToBlock(rm, h)
+		if !ret {
+			return nil, errors.New("failed to create tx map")
+		}
+
+		h, ok = pool.parentHash(h)
+		if !ok {
+			return nil, errors.New("failed to get parent chainBlock")
+		}
+
+		if b, ok := pool.block(h); ok {
+			if (t - b.time()) > filterTime {
+				return rm, nil
+			}
+		}
+
+	}
+
+}
+
+func (pool *TxPoolImpl) createTxMapToBlock(tm *sync.Map, blockHash []byte) bool {
+
+	b, ok := pool.blockList.Load(string(blockHash))
+	if !ok {
+		return false
+	}
+
+	b.(*blockTx).txMap.Range(func(key, value interface{}) bool {
+		tm.Store(key.(string), nil)
+		return true
+	})
+
+	return true
+}
+
 func (pool *TxPoolImpl) initBlockTx() {
 	chain := pool.global.BlockChain()
 	timeNow := time.Now().UnixNano()
