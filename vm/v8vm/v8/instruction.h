@@ -16,6 +16,13 @@ public:
     size_t Incr(size_t num) {
         Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
         sbx->gasUsed += num;
+        if (sbx->gasUsed > sbx->gasLimit)
+        {
+            Local<Value> err = Exception::Error(
+                String::NewFromUtf8(sbx->isolate, "IOSTContractInstruction GasUsed exceed GasLimit!")
+            );
+            sbx->isolate->ThrowException(err);
+        }
         return sbx->gasUsed;
     }
     size_t Count() {
