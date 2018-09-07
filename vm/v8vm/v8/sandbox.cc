@@ -322,7 +322,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     std::unique_lock<std::mutex> lck(mtx);
 
     auto startTime = std::chrono::steady_clock::now();
-    if (executionFinished.wait_for(lck, std::chrono::milliseconds(1000)) == std::cv_status::timeout)
+    if (executionFinished.wait_for(lck, std::chrono::milliseconds(10000)) == std::cv_status::timeout)
     {
         auto now = std::chrono::steady_clock::now();
         auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
