@@ -111,7 +111,7 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	engine := vm.NewEngine(&blockHead, db)
 	txr, err := engine.Exec(trx)
 	if err != nil || txr.Status.Code != tx.Success {
-		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: ", err, txr)
+		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: %v", err, txr)
 	}
 	blk := block.Block{
 		Head:     &blockHead,
