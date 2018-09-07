@@ -101,7 +101,6 @@ func (p *PoB) Start() error {
 //Stop make the PoB stop.
 func (p *PoB) Stop() {
 	close(p.exitSignal)
-	close(p.chRecvBlock)
 }
 
 func (p *PoB) messageLoop() {
@@ -246,6 +245,7 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
+			ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
 			blk := vbm.blk
 			if vbm.gen {
 				ilog.Info("block from myself, block number: ", blk.Head.Number)
@@ -314,6 +314,7 @@ func (p *PoB) blockLoop() {
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
+			ilog.Debugf("recv block chan size:%v", len(p.chRecvBlock))
 			if !ok {
 				ilog.Infof("chRecvBlock has closed")
 				return
