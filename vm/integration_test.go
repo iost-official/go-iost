@@ -1167,7 +1167,7 @@ func TestJS_Genesis(t *testing.T) {
 		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], 50000000))
 		acts = append(acts, &act)
 	}
-	VoteContractPath := "../config/"
+	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
 	// deploy iost.vote
 	voteFilePath := VoteContractPath + "vote.js"
 	voteAbiPath := VoteContractPath + "vote.js.abi"
@@ -1230,6 +1230,7 @@ func TestJS_Genesis(t *testing.T) {
 	}
 
 	engine := NewEngine(&blockHead, mvccdb)
+	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
 	txr, err := engine.Exec(trx)
 	if err != nil {
 		t.Fatal(fmt.Errorf("exec tx failed, stop the pogram. err: %v", err))
@@ -1237,7 +1238,7 @@ func TestJS_Genesis(t *testing.T) {
 	t.Log(txr)
 	t.Log(database.MustUnmarshal(database.NewVisitor(0, mvccdb).Get("iost.vote" + "-" + "pendingProducerList")))
 	if txr.Status.Code != tx.Success {
-		t.Fatal("exec trx failed.")
+		t.Error("exec trx failed.")
 	}
 	blk := block.Block{
 		Head:     &blockHead,

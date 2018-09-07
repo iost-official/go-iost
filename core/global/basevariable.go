@@ -216,18 +216,18 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 }
 
-func FakeNew() *BaseVariableImpl {
+func FakeNew() (*BaseVariableImpl, error) {
 	blockChain, err := block.NewBlockChain("./Fakedb/BlockChainDB")
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	stateDB, err := db.NewMVCCDB("./Fakedb/StateDB")
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	txDB, err := tx.NewTxDB("./Fakedb/TXDB")
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	config := common.Config{}
 	config.VM = &common.VMConfig{}
@@ -237,25 +237,25 @@ func FakeNew() *BaseVariableImpl {
 	VoteContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
 	blk, err := GenGenesis(stateDB, []string{"a1", "11111111111", "a2", "2222", "a3", "333"})
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	blk.CalculateHeadHash()
 	blk.CalculateTxsHash()
 	blk.CalculateMerkleHash()
 	err = blockChain.Push(blk)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	err = stateDB.Flush(string(blk.HeadHash()))
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	err = txDB.Push(blk.Txs, blk.Receipts)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config}
+	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config}, nil
 }
 
 func (g *BaseVariableImpl) TxDB() tx.TxDB {

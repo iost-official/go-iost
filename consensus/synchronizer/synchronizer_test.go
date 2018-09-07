@@ -42,7 +42,8 @@ func TestDownloadController(t *testing.T) {
 
 func TestSynchronizer(t *testing.T) {
 	Convey("Test Synchronizer", t, func() {
-		baseVariable := global.FakeNew()
+		baseVariable, err := global.FakeNew()
+		So(err, ShouldBeNil)
 		So(baseVariable, ShouldNotBeNil)
 		defer func() {
 			os.RemoveAll("Fakedb")

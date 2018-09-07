@@ -33,7 +33,10 @@ func testRun(t *testing.T) {
 	id2Seckey[account1.ID] = account1.Seckey
 	id2Seckey[account2.ID] = account2.Seckey
 	id2Seckey[account3.ID] = account3.Seckey
-	baseVariable := global.FakeNew()
+	baseVariable, err := global.FakeNew()
+	if err != nil {
+		t.Fatal(err)
+	}
 	genesisBlock := &block.Block{
 		Head: &block.BlockHead{
 			Version: 0,
