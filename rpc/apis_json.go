@@ -59,7 +59,7 @@ func (j *JSONServer) Start() error {
 
 		j.srv.ListenAndServe()
 	}()
-	//ilog.Info("JSON RPC server start")
+	ilog.Info("JSON RPC server start")
 	return nil
 }
 

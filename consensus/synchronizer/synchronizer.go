@@ -377,7 +377,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 }
 
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
-	//ilog.Infof("receive block hashes: len=%v", len(rh.BlockHashes))
+	ilog.Infof("receive block hashes: len=%v", len(rh.BlockHashes))
 	for _, blkHash := range rh.BlockHashes {
 		sy.reqMap.Delete(blkHash.Height)
 		if blkHash.Height < sy.basevariable.BlockChain().Length() {

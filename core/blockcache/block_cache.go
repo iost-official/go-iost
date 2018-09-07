@@ -281,10 +281,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
-		if retain.Block.HeadHash() == nil {
-			ilog.Info("retain.Block.HeadHash = nil, %v.", retain.Block.Head.Number)
-		}
-		ilog.Error("confirm ", retain.Number)
+		ilog.Info("confirm ", retain.Number)
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
 		if err != nil {
 			ilog.Errorf("flush mvcc error: %v", err)
@@ -403,9 +400,5 @@ func (bcn *BlockCacheNode) DrawTree() string {
 }
 
 func (bc *BlockCacheImpl) Draw() string {
-	//ilog.Info("LinkedTree:")
-	//bc.linkedRoot.DrawTree()
-	//ilog.Info("SingleTree:")
-	//bc.singleRoot.DrawTree()
-	return ""
+	return bc.linkedRoot.DrawTree() + "\n\n" + bc.singleRoot.DrawTree()
 }

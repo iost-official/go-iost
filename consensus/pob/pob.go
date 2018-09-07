@@ -99,6 +99,11 @@ func (p *PoB) Start() error {
 	go p.scheduleLoop()
 	return nil
 }
+
+func (p *PoB) Stop() {
+	close(p.exitSignal)
+}
+
 func (p *PoB) messageLoop() {
 	for {
 		if p.baseVariable.Mode() != global.ModeInit {
