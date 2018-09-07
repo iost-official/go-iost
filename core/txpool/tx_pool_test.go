@@ -257,7 +257,9 @@ func TestNewTxPoolImpl(t *testing.T) {
 				//ilog.Debug(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
 				bcn := BlockCache.Add(blockList[i])
 				So(bcn, ShouldNotBeNil)
-
+				if i == 0 {
+					blockList[0].Head.Time -= int64(21 * time.Second)
+				}
 				err = txPool.AddLinkedNode(bcn, bcn)
 				So(err, ShouldBeNil)
 			}
@@ -280,7 +282,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 				i++
 				return true
 			})
-			So(i, ShouldEqual, txCnt*blockCnt)
+			So(i, ShouldEqual, txCnt*2)
 
 		})
 		//

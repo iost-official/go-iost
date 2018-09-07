@@ -17,4 +17,5 @@ type TxPool interface {
 	DelTx(hash []byte) error
 	PendingTxs(maxCnt int) (TxsList, error)
 	ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error)
+	CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, error)
 }
