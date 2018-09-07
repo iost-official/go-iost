@@ -105,7 +105,7 @@ func main() {
 	conf := common.NewConfig(*configfile)
 
 	initLogger(conf.Log)
-	ilog.Infof("Config Information:\n%v", conf.YamlString())
+	//ilog.Infof("Config Information:\n%v", conf.YamlString())
 
 	vm.SetUp(conf.VM)
 
@@ -118,6 +118,7 @@ func main() {
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)
 	}
+
 	if conf.Genesis.CreateGenesis {
 		genesisBlock, _ := glb.BlockChain().GetBlockByNumber(0)
 		ilog.Errorf("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))

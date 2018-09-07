@@ -45,7 +45,7 @@ type SyncImpl struct {
 	basevariable global.BaseVariable
 	dc           DownloadController
 	reqMap       *sync.Map
-	HeightMap    *sync.Map
+	heightMap    *sync.Map
 	syncEnd      int64
 
 	messageChan    chan p2p.IncomingMessage
@@ -59,7 +59,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 		blockCache:   blkcache,
 		basevariable: basevariable,
 		reqMap:       new(sync.Map),
-		HeightMap:    new(sync.Map),
+		heightMap:    new(sync.Map),
 		lastHead:     nil,
 		syncEnd:      0,
 	}
@@ -149,7 +149,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 				continue
 			}
 			// ilog.Debugf("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
-			sy.HeightMap.Store(req.From(), sh)
+			sy.heightMap.Store(req.From(), sh)
 		case <-sy.exitSignal:
 			return
 		}
@@ -165,10 +165,10 @@ func (sy *SyncImpl) CheckSync() bool {
 	heights := make([]int64, 0, 0)
 	heights = append(heights, sy.blockCache.Head().Number)
 	now := time.Now().Unix()
-	sy.HeightMap.Range(func(k, v interface{}) bool {
+	sy.heightMap.Range(func(k, v interface{}) bool {
 		sh, ok := v.(message.SyncHeight)
 		if !ok || sh.Time+heightTimeout < now {
-			sy.HeightMap.Delete(k)
+			sy.heightMap.Delete(k)
 			return true
 		}
 		heights = append(heights, 0)
@@ -377,7 +377,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 }
 
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
-	ilog.Infof("receive block hashes: len=%v", len(rh.BlockHashes))
+	//ilog.Infof("receive block hashes: len=%v", len(rh.BlockHashes))
 	for _, blkHash := range rh.BlockHashes {
 		sy.reqMap.Delete(blkHash.Height)
 		if blkHash.Height < sy.basevariable.BlockChain().Length() {

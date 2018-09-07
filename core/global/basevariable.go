@@ -10,6 +10,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
@@ -18,7 +19,6 @@ type TMode uint
 const (
 	ModeNormal TMode = iota
 	ModeSync
-	ModeFetchGenesis
 	ModeInit
 )
 
@@ -28,8 +28,6 @@ func (m TMode) String() string {
 		return "ModeNormal"
 	case ModeSync:
 		return "ModeSync"
-	case ModeFetchGenesis:
-		return "ModeFetchGenesis"
 	case ModeInit:
 		return "ModeInit"
 	default:
@@ -62,7 +60,6 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	blockHead := block.BlockHead{
 		Version:    0,
 		ParentHash: nil,
@@ -87,6 +84,7 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	if err != nil {
 		return nil, err
 	}
+	ilog.Error(blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
 	return &blk, nil
 }
@@ -135,6 +133,11 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			if err != nil {
 				return nil, fmt.Errorf("push txDB failed, stop the pogram. err: %v", err)
 			}
+			genesisBlock, err := blockChain.GetBlockByNumber(0)
+			if err != nil {
+				ilog.Error("read genesis failed")
+			}
+			ilog.Errorf("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
 		}
 		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 	}
