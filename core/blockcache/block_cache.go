@@ -105,6 +105,16 @@ func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
 	return nil
 }
 
+func (wl *WitnessList) LibWitnessHandle() {
+	wl.SetActive(wl.Pending())
+}
+
+func (wl *WitnessList) CopyWitness(n *BlockCacheNode) {
+	wl.SetActive(n.Active())
+	wl.SetPending(n.Pending())
+	wl.SetPendingNum(n.PendingNum())
+}
+
 type BlockCacheNode struct {
 	Block        *block.Block
 	Parent       *BlockCacheNode
@@ -131,11 +141,6 @@ func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
 	if parent != nil {
 		bcn.Parent = parent
 		bcn.Type = Single
-
-		// copy parent
-		bcn.SetActive(parent.Active())
-		bcn.SetPending(parent.Pending())
-		bcn.SetPendingNum(parent.PendingNum())
 
 		parent.addChild(bcn)
 	}
@@ -250,7 +255,15 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 			return nil, err
 		}
 
-		bc.linkedRoot.SetActive(bc.linkedRoot.Pending())
+		bc.linkedRoot.LibWitnessHandle()
+
+		ilog.Info("Witness Block Num:", bc.LinkedRoot().Number)
+		for _, v := range bc.linkedRoot.Active() {
+			ilog.Info("ActiveWitness:", v)
+		}
+		for _, v := range bc.linkedRoot.Pending() {
+			ilog.Info("PendingWitness:", v)
+		}
 	}
 	bc.head = bc.linkedRoot
 	return &bc, nil
@@ -286,14 +299,13 @@ func (bc *BlockCacheImpl) initHead(h *BlockCacheNode) error {
 
 func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
 
+	h.CopyWitness(bc.head)
 	bc.head = h
 
-	if h.Number%common.VoteInterval != 0 {
-		return nil
-	}
-
-	if err := bc.updatePending(bc.head); err != nil {
-		return err
+	if bc.head.Number%common.VoteInterval == 0 {
+		if err := bc.updatePending(bc.head); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -349,6 +361,12 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 	bc.linkedRoot = NewBCN(nil, blk)
 	bc.linkedRoot.Type = Linked
+
+	if bc.stateDB.Checkout(string(blk.HeadHash())) {
+		bc.linkedRoot.UpdatePending(bc.stateDB)
+		bc.linkedRoot.LibWitnessHandle()
+	}
+
 	bc.head = bc.linkedRoot
 	bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
@@ -428,6 +446,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		}
 		bc.delNode(cur)
 		retain.Parent = nil
+		retain.LibWitnessHandle()
 		bc.linkedRoot = retain
 	}
 	return nil

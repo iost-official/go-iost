@@ -51,6 +51,7 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 
 	// call vote
 	if blk.Head.Number%common.VoteInterval == 0 {
+		ilog.Info("vote start")
 		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
 		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
 
@@ -59,10 +60,9 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 			if receipt, err := engine.Exec(trx); err == nil {
 				blk.Txs = append(blk.Txs, trx)
 				blk.Receipts = append(blk.Receipts, receipt)
-				ilog.Debug(receipt)
 			}
 		} else {
-			ilog.Debug(err)
+			ilog.Error("failed to vote, err:", err)
 		}
 
 	}
@@ -100,9 +100,7 @@ L:
 }
 
 func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
-	if witnessOfSlot(head.Time) != head.Witness {
-		return errWitness
-	}
+
 	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
 	hash, err := head.Hash()
 	if err != nil {
@@ -125,9 +123,13 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return err
 	}
 
+	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+		return errWitness
+	}
+
 	// check vote
 	if blk.Head.Number%common.VoteInterval == 0 {
-		if strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
+		if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
 			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
 			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
 
@@ -167,7 +169,6 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	//bc.Flush(node) // in debug
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
-		go staticProperty.delSlot(confirmedNode.Block.Head.Time)
 
 		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
 	}
