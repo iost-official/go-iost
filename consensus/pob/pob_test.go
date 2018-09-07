@@ -62,3 +62,9 @@ func testRun(t *testing.T) {
 	ilog.AddWriter(fw)
 	select {}
 }
+
+func TestNilChannel(t *testing.T) {
+	quitGenerateMode := make(chan struct{})
+	close(quitGenerateMode)
+	ilog.Error("equals nil?", quitGenerateMode == nil)
+}
