@@ -1229,6 +1229,7 @@ func TestJS_Genesis(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	os.RemoveAll("mvcc")
 
 	engine := NewEngine(&blockHead, mvccdb)
 	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
