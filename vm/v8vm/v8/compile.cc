@@ -1,4 +1,5 @@
 #include "compile.h"
+#include <cstring>
 
 static char injectGasFormat[] =
     "(function(){\n"
