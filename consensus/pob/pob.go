@@ -94,6 +94,7 @@ func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCac
 func (p *PoB) Start() error {
 	go p.messageLoop()
 	go p.blockLoop()
+	go p.verifyLoop()
 	go p.scheduleLoop()
 	return nil
 }
@@ -314,17 +315,18 @@ func (p *PoB) blockLoop() {
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
-			ilog.Debugf("recv block chan size:%v", len(p.chRecvBlock))
 			if !ok {
 				ilog.Infof("chRecvBlock has closed")
 				return
 			}
+			ilog.Debugf("recv block chan size:%v", len(p.chRecvBlock))
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
 				ilog.Error("fail to decode block")
 				continue
 			}
+			ilog.Info("received block, block number: ", blk.Head.Number)
 			go p.synchronizer.OnRecvBlock(string(blk.HeadHash()), incomingMessage.From())
 			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, gen: false, p2pType: incomingMessage.Type()}
 			/*
@@ -353,7 +355,6 @@ func (p *PoB) scheduleLoop() {
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
-			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 			ilog.Info(p.baseVariable.Mode())
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
