@@ -1167,9 +1167,10 @@ func TestJS_Genesis(t *testing.T) {
 		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], 50000000))
 		acts = append(acts, &act)
 	}
+	VoteContractPath := "../config/"
 	// deploy iost.vote
-	voteFilePath := "../config/vote.js"
-	voteAbiPath := "../config/vote.js.abi"
+	voteFilePath := VoteContractPath + "vote.js"
+	voteAbiPath := VoteContractPath + "vote.js.abi"
 	fd, err := common.ReadFile(voteFilePath)
 	if err != nil {
 		t.Fatal(err)
@@ -1185,10 +1186,20 @@ func TestJS_Genesis(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	num := len(witnessInfo) / 2
+	proStr := "["
+	for i := 0; i < num; i++ {
+		proStr += fmt.Sprintf(`\"%v\"`, witnessInfo[2*i])
+		if i != num-1 {
+			proStr += ","
+		}
+	}
+	proStr += "]"
 	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
 	acts = append(acts, &act)
-	act1 := tx.NewAction("iost.vote", "Init", fmt.Sprintf(`[]`))
+	act1 := tx.NewAction("iost.vote", "Init", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
 	acts = append(acts, &act1)
+
 	// deploy iost.bonus
 	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
 	acts = append(acts, &act2)
@@ -1197,7 +1208,7 @@ func TestJS_Genesis(t *testing.T) {
 
 	trx := tx.NewTx(acts, nil, 10000000, 0, 0)
 	trx.Time = 0
-	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"))
+	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"), crypto.Secp256k1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1224,6 +1235,7 @@ func TestJS_Genesis(t *testing.T) {
 		t.Fatal(fmt.Errorf("exec tx failed, stop the pogram. err: %v", err))
 	}
 	t.Log(txr)
+	t.Log(database.MustUnmarshal(database.NewVisitor(0, mvccdb).Get("iost.vote" + "-" + "pendingProducerList")))
 	if txr.Status.Code != tx.Success {
 		t.Fatal("exec trx failed.")
 	}

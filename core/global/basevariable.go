@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"os"
 )
 
 type TMode uint
@@ -74,9 +75,18 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	if err != nil {
 		return nil, err
 	}
+	num := len(witnessInfo) / 2
+	proStr := "["
+	for i := 0; i < num; i++ {
+		proStr += fmt.Sprintf(`\"%v\"`, witnessInfo[2*i])
+		if i != num-1 {
+			proStr += ","
+		}
+	}
+	proStr += "]"
 	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
 	acts = append(acts, &act)
-	act1 := tx.NewAction("iost.vote", "Init", fmt.Sprintf(`[]`))
+	act1 := tx.NewAction("iost.vote", "Init", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
 	acts = append(acts, &act1)
 	// deploy iost.bonus
 	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))

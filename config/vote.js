@@ -13,21 +13,17 @@ class VoteContract {
         this.voteTable = {}
     }
 
-    Init() {
-        // this.pendingProducerList = [
-        //     "IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4",
-        //     "IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9",
-        //     "IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB",
-        //     "IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9",
-        //     "IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN",
-        //     "IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",
-        //     "IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd"
-        // ];
-        this.pendingProducerList = [
-            "IOST5FhLBhVXMnwWRwhvz5j9NyWpBSchAMzpSMZT21xZqT8w7icwJ5",
-            "IOST6Jymdka3EFLAv8954MJ1nBHytNMwBkZfcXevE2PixZHsSrRkbR",
-            "IOST7gKuvHVXtRYupUixCcuhW95izkHymaSsgKTXGDjsyy5oTMvAAm",
-        ];
+    Init(num, proStr) {
+        if (num === 0) {
+            throw new Error("producer list number empty.");
+        }
+        this.pendingProducerList = JSON.parse(proStr);
+        if (typeof this.pendingProducerList !== "object") {
+            throw new Error("producer str invalid format. got ", this.pendingProducerList, ", type = ", typeof this.pendingProducerList);
+        }
+        if (this.pendingProducerList.length !== num) {
+            throw new Error("producer list length mismatch with number.");
+        }
         this.producerNumber = this.pendingProducerList.length;
 
         for (var i = 0; i < this.producerNumber; i++) {

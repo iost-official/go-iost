@@ -15,7 +15,10 @@
         },
         {
             "name": "Init",
-            "args": [],
+            "args": [
+                "number",
+                "string"
+            ],
             "payment": 0,
             "cost_limit": [
                 1,
