@@ -38,6 +38,9 @@ type Service interface {
 	Start() error
 	Stop()
 
+	ID() string
+	ConnectBPs(ids []string)
+
 	Broadcast([]byte, MessageType, MessagePriority)
 	SendToPeer(PeerID, []byte, MessageType, MessagePriority)
 	Register(string, ...MessageType) chan IncomingMessage
@@ -59,7 +62,7 @@ func NewNetService(config *common.P2PConfig) (*NetService, error) {
 		config: config,
 	}
 
-	if err := os.MkdirAll(config.DataPath, 0766); err != nil {
+	if err := os.MkdirAll(config.DataPath, 0766); config.DataPath != "" && err != nil {
 		ilog.Errorf("failed to create p2p datapath, err=%v, path=%v", err, config.DataPath)
 		return nil, err
 	}
@@ -95,8 +98,8 @@ func (ns *NetService) LocalAddrs() []multiaddr.Multiaddr {
 // Start starts the jobs.
 func (ns *NetService) Start() error {
 	go ns.peerManager.Start()
-	for _, addr := range ns.host.Addrs() {
-		ilog.Infof("multiaddr: %s/ipfs/%s", addr, ns.ID())
+	for _, addr := range ns.LocalAddrs() {
+		ilog.Infof("local multiaddr: %s/ipfs/%s", addr, ns.ID())
 	}
 	return nil
 }
@@ -106,6 +109,11 @@ func (ns *NetService) Stop() {
 	ns.host.Close()
 	ns.peerManager.Stop()
 	return
+}
+
+// ConnectBPs makes the local host connected to the block producers directly.
+func (ns *NetService) ConnectBPs(ids []string) {
+	ns.peerManager.ConnectBPs(ids)
 }
 
 // Broadcast broadcasts the data.
