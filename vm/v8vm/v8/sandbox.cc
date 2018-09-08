@@ -330,7 +330,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
         }
         auto now = std::chrono::steady_clock::now();
         auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
-        if (execTime > 200) {
+        if (execTime > 1000) {
             isolate->TerminateExecution();
             res.Err = strdup("execution killed");
             res.gasUsed = sbx->gasUsed;
