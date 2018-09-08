@@ -8,6 +8,7 @@ import (
 const (
 	HashLength    = 32
 	AddressLength = 20
+	VoteInterval  = 200
 )
 
 type Hash [HashLength]byte

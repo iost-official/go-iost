@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package p2pb;
+
+message RoutingQuery {
+    repeated string ids = 1;
+}
+
+message PeerInfo {
+    string id = 1;
+    repeated string addrs = 2;
+}
+
+message RoutingResponse {
+    repeated PeerInfo peers = 1;
+}

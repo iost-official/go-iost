@@ -4,6 +4,7 @@ class VoteContract {
 		this.producerNumber = 7;
 		this.preProducerThreshold = 2100 * 10000;
 		this.voteLockTime = 200;
+		this.voteStatInterval = 200;
         this.preProducerMap = {};
         this.currentProducerList = [];
         this.pendingProducerList = [];
@@ -12,21 +13,18 @@ class VoteContract {
         this.voteTable = {}
     }
 
-    Init() {
-        this.preProducerMap = {};
-        this.currentProducerList = [];
-        this.pendingProducerList = [
-            "IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4",
-            "IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9",
-            "IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB",
-            "IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9",
-            "IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN",
-            "IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",
-            "IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd"
-        ];
-        this.pendingBlockNumber = 0;
-        this.producerTable = {}
-        this.voteTable = {}
+    Init(num, proStr) {
+        if (num === 0) {
+            throw new Error("producer list number empty.");
+        }
+        this.pendingProducerList = JSON.parse(proStr);
+        if (typeof this.pendingProducerList !== "object") {
+            throw new Error("producer str invalid format. got ", this.pendingProducerList, ", type = ", typeof this.pendingProducerList);
+        }
+        if (this.pendingProducerList.length !== num) {
+            throw new Error("producer list length mismatch with number.");
+        }
+        this.producerNumber = this.pendingProducerList.length;
 
         for (var i = 0; i < this.producerNumber; i++) {
             var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
@@ -208,7 +206,11 @@ class VoteContract {
 
 	// calculate the vote result, modify pendingProducerList
 	Stat() {
-		//todo require auth
+		// controll auth
+		var bn = this._getBlockNumber();
+		if (bn % this.voteStatInterval != 0 || bn <= this.pendingBlockNumber) {
+			throw new Error("stat failed. block number mismatch. pending bn = " + this.pendingBlockNumber);
+		}
 
 		// add scores for preProducerMap
 		var preList = [];	// list of producers whose vote > threshold

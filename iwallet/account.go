@@ -16,11 +16,13 @@ package iwallet
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"os"
 	"strings"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
@@ -36,8 +38,22 @@ var accountCmd = &cobra.Command{
 			if strings.ContainsAny(nickName, `?*:|/\"`) || len(nickName) > 16 {
 				fmt.Println("invalid nick name")
 			}
-			ac, _ := account.NewAccount(nil)
-			pubfile, err := os.Create(kvPath + "/" + nickName + "_secp.pub")
+			algo := getSignAlgo(signAlgo)
+			ac, _ := account.NewAccount(nil, algo)
+			if !filepath.IsAbs(kvPath) {
+				kvPath, _ = filepath.Abs(kvPath)
+			}
+			if err := os.MkdirAll(kvPath, 0700); err != nil {
+				panic(err)
+			}
+			fileName := kvPath + "/" + nickName
+			if algo == crypto.Ed25519 {
+				fileName += "_ed25519"
+			}
+			if algo == crypto.Secp256k1 {
+				fileName += "_secp256k1"
+			}
+			pubfile, err := os.Create(fileName + ".pub")
 			if err != nil {
 				fmt.Println(err.Error())
 				return
@@ -50,7 +66,7 @@ var accountCmd = &cobra.Command{
 				return
 			}
 
-			secFile, err := os.Create(kvPath + "/" + nickName + "_secp")
+			secFile, err := os.Create(fileName)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
@@ -82,8 +98,9 @@ func init() {
 		os.Exit(1)
 	}
 
-	accountCmd.Flags().StringVarP(&nickName, "create", "c", "id", "Create new account, using input as nickname")
-	accountCmd.Flags().StringVarP(&kvPath, "path", "p", home+"/.ssh", "Set path of key pair file")
+	accountCmd.Flags().StringVarP(&nickName, "name", "n", "id", "Create new account, using input as nickname")
+	accountCmd.Flags().StringVarP(&kvPath, "path", "p", home+"/.iwallet", "Set path of key pair file")
+	accountCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
 
 	// Here you will define your flags and configuration settings.
 

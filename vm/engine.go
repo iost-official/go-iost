@@ -171,19 +171,20 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		txr.GasUsage += cost.ToGas()
 		//ilog.Debugf("action status: %v", status)
 
-		if status.Code != tx.Success {
-			txr.Receipts = nil
-			e.logger.Debugf("rollback")
-			e.ho.DB().Rollback()
-		} else {
-			txr.Receipts = append(txr.Receipts, receipts...)
-			txr.SuccActionNum++
-		}
-
 		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
 		e.ho.PayCost(cost, account.GetIDByPubkey(tx0.Publisher.Pubkey))
+
+		if status.Code != tx.Success {
+			txr.Receipts = nil
+			e.logger.Debugf("rollback")
+			e.ho.DB().Rollback()
+			break
+		} else {
+			txr.Receipts = append(txr.Receipts, receipts...)
+			txr.SuccActionNum++
+		}
 	}
 
 	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)

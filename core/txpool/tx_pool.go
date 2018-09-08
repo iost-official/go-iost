@@ -24,8 +24,6 @@ type TxPoolImpl struct {
 	chP2PTx chan p2p.IncomingMessage
 	chTx    chan *tx.Tx
 
-	chLinkedNode chan *RecNode
-
 	global     global.BaseVariable
 	blockCache blockcache.BlockCache
 	p2pService p2p.Service
@@ -34,26 +32,26 @@ type TxPoolImpl struct {
 	blockList *sync.Map
 	pendingTx *sync.Map
 
-	mu sync.RWMutex
-
-	quitCh chan struct{}
+	mu               sync.RWMutex
+	quitGenerateMode chan struct{}
+	quitCh           chan struct{}
 }
 
 // NewTxPoolImpl returns a default TxPoolImpl instance.
 func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
 	p := &TxPoolImpl{
-		blockCache:   blockCache,
-		chLinkedNode: make(chan *RecNode, 100),
-		chTx:         make(chan *tx.Tx, 10000),
-		forkChain:    new(ForkChain),
-		blockList:    new(sync.Map),
-		pendingTx:    new(sync.Map),
-		global:       global,
-		p2pService:   p2ps,
-		chP2PTx:      p2ps.Register("TxPool message", p2p.PublishTxRequest),
-		quitCh:       make(chan struct{}),
+		blockCache:       blockCache,
+		chTx:             make(chan *tx.Tx, 10000),
+		forkChain:        new(ForkChain),
+		blockList:        new(sync.Map),
+		pendingTx:        new(sync.Map),
+		global:           global,
+		p2pService:       p2ps,
+		chP2PTx:          p2ps.Register("TxPool message", p2p.PublishTxRequest),
+		quitGenerateMode: make(chan struct{}),
+		quitCh:           make(chan struct{}),
 	}
-
+	p.Lease()
 	return p, nil
 }
 
@@ -97,38 +95,8 @@ func (pool *TxPoolImpl) loop() {
 			metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
 
 			if ret := pool.addTx(tr); ret == Success {
-				pool.p2pService.Broadcast(tr.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
+				pool.p2pService.Broadcast(tr.Encode(), p2p.PublishTxRequest, p2p.NormalMessage)
 			}
-
-		case bl := <-pool.chLinkedNode:
-			pool.mu.Lock()
-
-			if pool.addBlock(bl.LinkedNode.Block) != nil {
-				continue
-			}
-
-			tFort := pool.updateForkChain(bl.HeadNode)
-			switch tFort {
-			case ForkError:
-				ilog.Errorf("failed to update fork chain")
-				pool.clearTxPending()
-
-			case Fork:
-				if err := pool.doChainChange(); err != nil {
-					ilog.Errorf("failed to chain change")
-					pool.clearTxPending()
-				}
-
-			case NotFork:
-
-				if err := pool.delBlockTxInPending(bl.LinkedNode.Block.HeadHash()); err != nil {
-					ilog.Errorf("failed to del block tx")
-				}
-
-			default:
-				ilog.Errorf("failed to tFort")
-			}
-			pool.mu.Unlock()
 
 		case <-clearTx.C:
 			pool.mu.Lock()
@@ -144,10 +112,21 @@ func (pool *TxPoolImpl) loop() {
 	}
 }
 
+func (pool *TxPoolImpl) Lock() {
+	pool.quitGenerateMode = make(chan struct{})
+	ilog.Error("lock here")
+}
+
+func (pool *TxPoolImpl) Lease() {
+	close(pool.quitGenerateMode)
+	ilog.Error("close the lock")
+}
+
 func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *tx.Tx) {
-
 	for v := range p2pCh {
-
+		select {
+		case <-pool.quitGenerateMode:
+		}
 		var t tx.Tx
 		err := t.Decode(v.Data())
 		if err != nil {
@@ -168,12 +147,34 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 		return errors.New("parameter is nil")
 	}
 
-	r := &RecNode{
-		LinkedNode: linkedNode,
-		HeadNode:   headNode,
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	if pool.addBlock(linkedNode.Block) != nil {
+		return errors.New("failed to add block")
 	}
 
-	pool.chLinkedNode <- r
+	tFort := pool.updateForkChain(headNode)
+	switch tFort {
+	case ForkError:
+		ilog.Errorf("failed to update fork chain")
+		pool.clearTxPending()
+
+	case Fork:
+		if err := pool.doChainChange(); err != nil {
+			ilog.Errorf("failed to chain change")
+			pool.clearTxPending()
+		}
+
+	case NotFork:
+
+		if err := pool.delBlockTxInPending(linkedNode.Block.HeadHash()); err != nil {
+			ilog.Errorf("failed to del block tx")
+		}
+
+	default:
+		return errors.New("failed to tFort")
+	}
 
 	return nil
 }
@@ -188,7 +189,7 @@ func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 	}
 
 	if r = pool.addTx(t); r == Success {
-		pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.UrgentMessage)
+		pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.NormalMessage)
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	}
 
@@ -370,7 +371,7 @@ func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 }
 
 func (pool *TxPoolImpl) clearBlock() {
-	if pool.global.Mode() == global.ModeFetchGenesis {
+	if pool.global.Mode() == global.ModeInit {
 		return
 	}
 	ft := pool.slotToNSec(pool.blockCache.LinkedRoot().Block.Head.Time) - filterTime
