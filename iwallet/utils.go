@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
 )
 
 func saveBytes(buf []byte) string {
@@ -47,4 +48,15 @@ func readFile(src string) ([]byte, error) {
 		return nil, err
 	}
 	return fd, nil
+}
+
+func getSignAlgo(algo string) crypto.Algorithm {
+	switch algo {
+	case "secp256k1":
+		return crypto.Secp256k1
+	case "ed25519":
+		return crypto.Ed25519
+	default:
+		return crypto.Ed25519
+	}
 }

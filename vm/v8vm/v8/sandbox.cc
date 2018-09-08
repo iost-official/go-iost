@@ -17,9 +17,6 @@
 #include <iostream>
 #include <unistd.h>
 #include <chrono>
-#include <memory>
-#include <condition_variable>
-#include <mutex>
 
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
@@ -124,7 +121,6 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     sbx->jsPath = strdup("v8/libjs");
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
-    sbx->threadPool = make_unique<ThreadPool>(2);
 
     return static_cast<SandboxPtr>(sbx);
 }
@@ -211,7 +207,7 @@ std::string reportException(Isolate *isolate, Local<Context> ctx, TryCatch& tryC
     return ss.str();
 }
 
-void loadVM(SandboxPtr ptr, int vmType) {
+void loadVM(SandboxPtr ptr) {
     if (ptr == nullptr) {
         return;
     }
@@ -225,12 +221,7 @@ void loadVM(SandboxPtr ptr, int vmType) {
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 
-    std::string vmPath = std::string(sbx->jsPath);
-    if (vmType == 0) {
-        vmPath += "compile_vm.js";
-    } else {
-        vmPath += "vm.js";
-    }
+    std::string vmPath = std::string(sbx->jsPath) + "vm.js";
     std::ifstream f(vmPath);
     std::stringstream buffer;
     buffer << f.rdbuf();
@@ -247,7 +238,7 @@ void loadVM(SandboxPtr ptr, int vmType) {
     }
 }
 
-void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, std::condition_variable &executionFinished) {
+void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -269,28 +260,24 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     if (script.IsEmpty()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
-        executionFinished.notify_one();
         return;
     }
 
     Local<Value> ret = script->Run();
 
     if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
-        executionFinished.notify_one();
         return;
     }
 
     if (ret.IsEmpty()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
-        executionFinished.notify_one();
         return;
     }
 
     if (ret->IsString() || ret->IsNumber() || ret->IsBoolean()) {
         String::Utf8Value retV8Str(isolate, ret);
         result = *retV8Str;
-        executionFinished.notify_one();
         return;
     }
 
@@ -303,8 +290,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
             result = *jsonRetStr;
         }
     }
-    executionFinished.notify_one();
-    return ;
+    isDone = true;
 }
 
 ValueTuple Execution(SandboxPtr ptr, const char *code) {
@@ -314,33 +300,43 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     std::string result;
     std::string error;
     bool isJson = false;
+    bool isDone = false;
+    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
+    exec.detach();
+
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
-    std::condition_variable executionFinished;
-    sbx->threadPool->enqueue(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(executionFinished));
-
-    std::mutex mtx;
-    std::unique_lock<std::mutex> lck(mtx);
-
     auto startTime = std::chrono::steady_clock::now();
-    if (executionFinished.wait_for(lck, std::chrono::milliseconds(10000)) == std::cv_status::timeout)
-    {
-        auto now = std::chrono::steady_clock::now();
-        auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
-        std::cout << "Exe Killed! "  << execTime << std::endl;
-        isolate->TerminateExecution();
-        res.Err = strdup("execution killed");
-    }
-    else
-    {
+    while(true) {
         if (error.length() > 0) {
             res.Err = copyString(error);
+            res.gasUsed = sbx->gasUsed;
+            break;
         }
         if (result.length() > 0) {
             res.Value = copyString(result);
             res.isJson = isJson;
+            res.gasUsed = sbx->gasUsed;
+            break;
         }
+        if (isDone) {
+            res.gasUsed = sbx->gasUsed;
+            break;
+        }
+        if (sbx->gasUsed > sbx->gasLimit) {
+            isolate->TerminateExecution();
+            res.Err = strdup("out of gas");
+            res.gasUsed = sbx->gasUsed;
+            break;
+        }
+        auto now = std::chrono::steady_clock::now();
+        auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
+        if (execTime > 1000) {
+            isolate->TerminateExecution();
+            res.Err = strdup("execution killed");
+            res.gasUsed = sbx->gasUsed;
+            break;
+        }
+        usleep(10);
     }
-
-    res.gasUsed = sbx->gasUsed;
     return res;
 }

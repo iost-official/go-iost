@@ -3,10 +3,10 @@ package p2p
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -21,22 +21,25 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	p2pb "github.com/iost-official/Go-IOS-Protocol/p2p/pb"
 )
 
 var (
 	dumpRoutingTableInterval = 5 * time.Minute
 	syncRoutingTableInterval = 30 * time.Second
 	metricsStatInterval      = 3 * time.Second
+	findBPInterval           = 2 * time.Second
 )
 
 const (
 	maxNeighborCount  = 32
 	bucketSize        = 20
 	peerResponseCount = 20
+	maxPeerQuery      = 30
 
 	incomingMsgChanSize = 1024
 
-	routingTablePath = "routing.table"
+	routingTableFile = "routing.table"
 )
 
 // PeerManager manages all peers we connect directily.
@@ -60,6 +63,9 @@ type PeerManager struct {
 	lastUpdateTime atomic.Int64
 
 	wg *sync.WaitGroup
+
+	bpIDs   []peer.ID
+	bpMutex sync.RWMutex
 }
 
 // NewPeerManager returns a new instance of PeerManager struct.
@@ -81,11 +87,12 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 func (pm *PeerManager) Start() {
 	pm.parseSeeds()
 	pm.LoadRoutingTable()
-	pm.syncRoutingTable()
+	pm.routingQuery([]string{pm.host.ID().Pretty()})
 
 	go pm.dumpRoutingTableLoop()
 	go pm.syncRoutingTableLoop()
 	go pm.metricsStatLoop()
+	go pm.findBPLoop()
 
 }
 
@@ -93,6 +100,78 @@ func (pm *PeerManager) Start() {
 func (pm *PeerManager) Stop() {
 	close(pm.quitCh)
 	pm.wg.Wait()
+}
+
+func (pm *PeerManager) isBP(id peer.ID) bool {
+	for _, bp := range pm.getBPs() {
+		if bp == id {
+			return true
+		}
+	}
+	return false
+}
+
+func (pm *PeerManager) setBPs(ids []string) {
+	peerIDs := make([]peer.ID, 0, len(ids))
+	for _, id := range ids {
+		peerID, err := peer.IDB58Decode(id)
+		if err != nil {
+			ilog.Warnf("decode peerID failed. err=%v, id=%v", err, id)
+			continue
+		}
+		peerIDs = append(peerIDs, peerID)
+	}
+	pm.bpMutex.Lock()
+	pm.bpIDs = peerIDs
+	pm.bpMutex.Unlock()
+}
+
+func (pm *PeerManager) getBPs() []peer.ID {
+	pm.bpMutex.RLock()
+	defer pm.bpMutex.RUnlock()
+
+	return pm.bpIDs
+}
+
+func (pm *PeerManager) findBPLoop() {
+	pm.wg.Add(1)
+	for {
+		select {
+		case <-pm.quitCh:
+			pm.wg.Done()
+			return
+		case <-time.After(findBPInterval):
+			unknownBPs := make([]string, 0)
+			for _, id := range pm.getBPs() {
+				if len(pm.peerStore.Addrs(id)) == 0 {
+					unknownBPs = append(unknownBPs, id.Pretty())
+				}
+			}
+			pm.routingQuery(unknownBPs)
+			pm.connectBPs()
+		}
+	}
+}
+
+func (pm *PeerManager) connectBPs() {
+	for _, bpID := range pm.getBPs() {
+		if pm.GetNeighbor(bpID) == nil && bpID != pm.host.ID() && len(pm.peerStore.Addrs(bpID)) > 0 {
+			stream, err := pm.host.NewStream(context.Background(), bpID, protocolID)
+			if err != nil {
+				ilog.Errorf("create stream failed. pid=%s, err=%v", bpID.Pretty(), err)
+				continue
+			}
+			pm.HandleStream(stream)
+		}
+	}
+}
+
+// ConnectBPs makes the local host connected to the block producers directly.
+func (pm *PeerManager) ConnectBPs(ids []string) {
+	if len(ids) == 0 {
+		return
+	}
+	pm.setBPs(ids)
 }
 
 // HandleStream handles the incoming stream.
@@ -108,9 +187,12 @@ func (pm *PeerManager) HandleStream(s libnet.Stream) {
 	peer := pm.GetNeighbor(remotePID)
 	if peer == nil {
 		if pm.NeighborCount() >= maxNeighborCount {
-			ilog.Debugf("reset stream. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
-			s.Reset()
-			return
+			if !pm.isBP(remotePID) {
+				ilog.Debugf("neighbor count exceeds, close stream. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+				s.Conn().Close()
+				return
+			}
+			pm.kickNormalNeighbors()
 		}
 		pm.AddNeighbor(NewPeer(s, pm))
 		return
@@ -127,51 +209,44 @@ func (pm *PeerManager) HandleStream(s libnet.Stream) {
 func (pm *PeerManager) dumpRoutingTableLoop() {
 	pm.wg.Add(1)
 	var lastSaveTime int64
-	dumpRoutingTableTicker := time.NewTimer(dumpRoutingTableInterval)
 	for {
 		select {
 		case <-pm.quitCh:
 			pm.wg.Done()
 			return
-		case <-dumpRoutingTableTicker.C:
+		case <-time.After(dumpRoutingTableInterval):
 			if lastSaveTime < pm.lastUpdateTime.Load() {
 				pm.DumpRoutingTable()
 				lastSaveTime = time.Now().Unix()
 			}
-			dumpRoutingTableTicker.Reset(dumpRoutingTableInterval)
 		}
 	}
 }
 
 func (pm *PeerManager) syncRoutingTableLoop() {
 	pm.wg.Add(1)
-	syncRoutingTableTicker := time.NewTimer(syncRoutingTableInterval)
 	for {
 		select {
 		case <-pm.quitCh:
 			pm.wg.Done()
 			return
-		case <-syncRoutingTableTicker.C:
+		case <-time.After(syncRoutingTableInterval):
 			ilog.Infof("start sync routing table.")
-			pm.syncRoutingTable()
-			syncRoutingTableTicker.Reset(syncRoutingTableInterval)
+			pm.routingQuery([]string{pm.host.ID().Pretty()})
 		}
 	}
 }
 
 func (pm *PeerManager) metricsStatLoop() {
 	pm.wg.Add(1)
-	metricsStatTicker := time.NewTimer(metricsStatInterval)
 	for {
 		select {
 		case <-pm.quitCh:
 			pm.wg.Done()
 			return
-		case <-metricsStatTicker.C:
+		case <-time.After(metricsStatInterval):
 			neighborCountGauge.Set(float64(pm.NeighborCount()), nil)
 			routingCountGauge.Set(float64(pm.routingTable.Size()), nil)
-
-			metricsStatTicker.Reset(metricsStatInterval)
 		}
 	}
 
@@ -179,8 +254,8 @@ func (pm *PeerManager) metricsStatLoop() {
 
 // storePeer stores peer information in peerStore and routingTable. It doesn't need lock since the
 // peerStore.SetAddr and routingTable.Update function are thread safe.
-func (pm *PeerManager) storePeer(peerID peer.ID, addr multiaddr.Multiaddr) {
-	pm.peerStore.SetAddr(peerID, addr, peerstore.PermanentAddrTTL)
+func (pm *PeerManager) storePeer(peerID peer.ID, addrs []multiaddr.Multiaddr) {
+	pm.peerStore.AddAddrs(peerID, addrs, peerstore.PermanentAddrTTL)
 	pm.routingTable.Update(peerID)
 	pm.lastUpdateTime.Store(time.Now().Unix())
 }
@@ -196,7 +271,7 @@ func (pm *PeerManager) deletePeer(peerID peer.ID) {
 // AddNeighbor starts a peer and adds it to the neighbor list.
 func (pm *PeerManager) AddNeighbor(p *Peer) {
 	p.Start()
-	pm.storePeer(p.id, p.addr)
+	pm.storePeer(p.id, []multiaddr.Multiaddr{p.addr})
 
 	pm.neighborMutex.Lock()
 	defer pm.neighborMutex.Unlock()
@@ -206,7 +281,7 @@ func (pm *PeerManager) AddNeighbor(p *Peer) {
 
 // RemoveNeighbor stops a peer and removes it from the neighbor list.
 func (pm *PeerManager) RemoveNeighbor(peerID peer.ID) {
-	pm.deletePeer(peerID)
+	// pm.deletePeer(peerID)
 
 	pm.neighborMutex.Lock()
 	defer pm.neighborMutex.Unlock()
@@ -233,11 +308,28 @@ func (pm *PeerManager) NeighborCount() int {
 	return len(pm.neighbors)
 }
 
+// kickNormalNeighbors removes neighbors that are not block producers.
+func (pm *PeerManager) kickNormalNeighbors() {
+
+	pm.neighborMutex.Lock()
+	defer pm.neighborMutex.Unlock()
+
+	for pid, peer := range pm.neighbors {
+		if len(pm.neighbors) < maxNeighborCount {
+			break
+		}
+		if !pm.isBP(pid) {
+			peer.Stop()
+			delete(pm.neighbors, pid)
+		}
+	}
+}
+
 // DumpRoutingTable saves routing table in file.
 func (pm *PeerManager) DumpRoutingTable() {
-	file, err := os.Create(routingTablePath)
+	file, err := os.Create(filepath.Join(pm.config.DataPath, routingTableFile))
 	if err != nil {
-		ilog.Errorf("create routing file failed. err=%v, path=%v", err, routingTablePath)
+		ilog.Errorf("create routing file failed. err=%v, path=%v", err, pm.config.DataPath)
 		return
 	}
 	defer file.Close()
@@ -252,16 +344,17 @@ func (pm *PeerManager) DumpRoutingTable() {
 
 // LoadRoutingTable reads routing table file and parses it.
 func (pm *PeerManager) LoadRoutingTable() {
-	if _, err := os.Stat(routingTablePath); err != nil {
+	routingFile := filepath.Join(pm.config.DataPath + routingTableFile)
+	if _, err := os.Stat(routingFile); err != nil {
 		if os.IsNotExist(err) {
-			ilog.Infof("no routing file. path=%v", routingTablePath)
+			ilog.Infof("no routing file. file=%v", routingFile)
 			return
 		}
 	}
 
-	file, err := os.Open(routingTablePath)
+	file, err := os.Open(routingFile)
 	if err != nil {
-		ilog.Errorf("open routing file failed. err=%v, path=%v", err, routingTablePath)
+		ilog.Errorf("open routing file failed. err=%v, file=%v", err, routingFile)
 		return
 	}
 	defer file.Close()
@@ -279,14 +372,26 @@ func (pm *PeerManager) LoadRoutingTable() {
 			ilog.Warnf("parse multi addr failed. err=%v, line=%v", err, line)
 			continue
 		}
-		pm.storePeer(peerID, addr)
+		pm.storePeer(peerID, []multiaddr.Multiaddr{addr})
 	}
 }
 
-// syncRoutingTable broadcasts a routing table message. If the neighbor count is less than the threshold,
+// routingQuery broadcasts a routing query message. If the neighbor count is less than the threshold,
 // it will pick the rest amount of peers from the routing table and sends query to them.
-func (pm *PeerManager) syncRoutingTable() {
-	pm.Broadcast(nil, RoutingTableQuery, UrgentMessage)
+func (pm *PeerManager) routingQuery(ids []string) {
+	if len(ids) == 0 {
+		return
+	}
+	query := p2pb.RoutingQuery{
+		Ids: ids,
+	}
+	bytes, err := query.Marshal()
+	if err != nil {
+		ilog.Errorf("pb encode failed. err=%v, obj=%+v", err, query)
+		return
+	}
+
+	pm.Broadcast(bytes, RoutingTableQuery, UrgentMessage)
 	neighborCount := pm.NeighborCount()
 	if neighborCount >= maxNeighborCount {
 		return
@@ -305,12 +410,12 @@ func (pm *PeerManager) syncRoutingTable() {
 		}
 		stream, err := pm.host.NewStream(context.Background(), peerID, protocolID)
 		if err != nil {
-			ilog.Errorf("create stream failed. err=%v", err)
+			ilog.Errorf("create stream failed. pid=%s, err=%v", peerID.Pretty(), err)
 			pm.deletePeer(peerID)
 			continue
 		}
 		pm.HandleStream(stream)
-		pm.SendToPeer(peerID, nil, RoutingTableQuery, UrgentMessage)
+		pm.SendToPeer(peerID, bytes, RoutingTableQuery, UrgentMessage)
 		t++
 	}
 }
@@ -322,13 +427,18 @@ func (pm *PeerManager) parseSeeds() {
 			ilog.Errorf("parse seed nodes error. seed=%s, err=%v", seed, err)
 			continue
 		}
-		pm.storePeer(peerID, addr)
+		pm.storePeer(peerID, []multiaddr.Multiaddr{addr})
 	}
 }
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-	ilog.Infof("broadcast message. type=%s", typ)
+	/* if typ == PublishTxRequest { */
+	// return
+	/* } */
+	if typ == NewBlock || typ == NewBlockHash || typ == SyncBlockHashRequest {
+		ilog.Infof("broadcast message. type=%s", typ)
+	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	pm.neighborMutex.RLock()
@@ -341,7 +451,10 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
-	ilog.Infof("send message to peer. type=%s, peerID=%s", typ, peerID.Pretty())
+	if typ == NewBlock || typ == NewBlockRequest || typ == SyncBlockHashResponse ||
+		typ == SyncBlockRequest || typ == SyncBlockResponse {
+		ilog.Infof("send message to peer. type=%s, peerID=%s", typ, peerID.Pretty())
+	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	peer := pm.GetNeighbor(peerID)
@@ -372,21 +485,55 @@ func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 	}
 }
 
-// handleRoutingTableQuery picks the nearest peers of the given peerID and sends the result to it.
-func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
-	ilog.Infof("handling routing table query. peerID=%s", peerID.Pretty())
+// handleRoutingTableQuery picks the nearest peers of the given peerIDs and sends the result to it.
+func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, peerID peer.ID) {
+	ilog.Infof("handling routing table query.")
+	data, _ := msg.data()
 
-	peerIDs := pm.routingTable.NearestPeers(kbucket.ConvertPeerID(peerID), peerResponseCount)
-	peerInfo := make([]peerstore.PeerInfo, 0, len(peerIDs))
-	for _, id := range peerIDs {
-		info := pm.peerStore.PeerInfo(id)
-		if len(info.Addrs) > 0 {
-			peerInfo = append(peerInfo, info)
+	query := &p2pb.RoutingQuery{}
+	err := query.Unmarshal(data)
+	if err != nil {
+		ilog.Errorf("pb decode failed. err=%v, str=%s", err, data)
+		return
+	}
+
+	queryIDs := query.GetIds()
+	if len(queryIDs) > maxPeerQuery {
+		queryIDs = queryIDs[:maxPeerQuery]
+	}
+
+	pidSet := make(map[peer.ID]struct{})
+	for _, queryID := range queryIDs {
+		pid, err := peer.IDB58Decode(queryID)
+		if err != nil {
+			ilog.Warnf("decode peerID failed. err=%v, id=%v", err, queryID)
+			continue
+		}
+		peerIDs := pm.routingTable.NearestPeers(kbucket.ConvertPeerID(pid), peerResponseCount)
+		for _, id := range peerIDs {
+			pidSet[id] = struct{}{}
 		}
 	}
-	bytes, err := json.Marshal(peerInfo)
+
+	resp := p2pb.RoutingResponse{}
+	for pid := range pidSet {
+		info := pm.peerStore.PeerInfo(pid)
+		if len(info.Addrs) > 0 {
+			peerInfo := &p2pb.PeerInfo{
+				Id: info.ID.Pretty(),
+			}
+			for _, addr := range info.Addrs {
+				peerInfo.Addrs = append(peerInfo.Addrs, addr.String())
+			}
+			resp.Peers = append(resp.Peers, peerInfo)
+		}
+	}
+	if len(resp.Peers) == 0 {
+		return
+	}
+	bytes, err := resp.Marshal()
 	if err != nil {
-		ilog.Errorf("json encode failed. err=%v, obj=%+v", err, peerInfo)
+		ilog.Errorf("pb encode failed. err=%v, obj=%+v", err, resp)
 		return
 	}
 	pm.SendToPeer(peerID, bytes, RoutingTableResponse, UrgentMessage)
@@ -396,21 +543,34 @@ func (pm *PeerManager) handleRoutingTableQuery(peerID peer.ID) {
 func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 	ilog.Infof("handling routing table response.")
 
-	data, err := msg.data()
+	data, _ := msg.data()
+
+	resp := &p2pb.RoutingResponse{}
+	err := resp.Unmarshal(data)
 	if err != nil {
-		ilog.Errorf("get message data failed. err=%v", err)
+		ilog.Errorf("pb decode failed. err=%v, str=%s", err, data)
 		return
 	}
-	peerInfos := make([]peerstore.PeerInfo, 0)
-	err = json.Unmarshal(data, &peerInfos)
-	if err != nil {
-		ilog.Errorf("json decode failed. err=%v, str=%s", err, data)
-		return
-	}
-	ilog.Infof("receiving peer infos: %v", peerInfos)
-	for _, peerInfo := range peerInfos {
+	ilog.Infof("receiving peer infos: %v", resp)
+	for _, peerInfo := range resp.Peers {
 		if len(peerInfo.Addrs) > 0 {
-			pm.storePeer(peerInfo.ID, peerInfo.Addrs[0])
+			pid, err := peer.IDB58Decode(peerInfo.Id)
+			if err != nil {
+				ilog.Warnf("decode peerID failed. err=%v, id=%v", err, peerInfo.Id)
+				continue
+			}
+			maddrs := make([]multiaddr.Multiaddr, 0, len(peerInfo.Addrs))
+			for _, addr := range peerInfo.Addrs {
+				a, err := multiaddr.NewMultiaddr(addr)
+				if err != nil {
+					ilog.Warnf("parse multiaddr failed. err=%v, addr=%v", err, addr)
+					continue
+				}
+				maddrs = append(maddrs, a)
+			}
+			if len(maddrs) > 0 {
+				pm.storePeer(pid, maddrs)
+			}
 		}
 	}
 }
@@ -422,12 +582,14 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
-	ilog.Infof("receiving message. type=%s", msg.messageType())
+	if msg.messageType() != PublishTxRequest && msg.messageType() != SyncHeight {
+		ilog.Infof("receiving message. type=%s", msg.messageType())
+	}
 	switch msg.messageType() {
 	case RoutingTableQuery:
-		pm.handleRoutingTableQuery(peerID)
+		go pm.handleRoutingTableQuery(msg, peerID)
 	case RoutingTableResponse:
-		pm.handleRoutingTableResponse(msg)
+		go pm.handleRoutingTableResponse(msg)
 	default:
 		inMsg := NewIncomingMessage(peerID, data, msg.messageType())
 		if m, exist := pm.subs.Load(msg.messageType()); exist {

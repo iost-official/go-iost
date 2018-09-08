@@ -16,7 +16,15 @@ var (
 	filterTime    = int64(expiration + expiration/2)
 	//expiration    = 60*60*24*7
 
-	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
+	metricsReceivedTxCount  = metrics.NewCounter("iost_tx_received_count", []string{"from"})
+	metricsGetPendingTxTime = metrics.NewGauge("iost_get_pending_tx_time", nil)
+	metricsExistTxTime      = metrics.NewSummary("iost_exist_tx_time", nil)
+	metricsExistTxCount     = metrics.NewCounter("iost_exist_tx_count", nil)
+	metricsVerifyTxTime     = metrics.NewSummary("iost_verify_tx_time", nil)
+	metricsVerifyTxCount    = metrics.NewCounter("iost_verify_tx_count", nil)
+	metricsAddTxTime        = metrics.NewSummary("iost_add_tx_time", nil)
+	metricsAddTxCount       = metrics.NewCounter("iost_add_tx_count", nil)
+	metricsTxPoolSize       = metrics.NewGauge("iost_txpool_size", nil)
 )
 
 type FRet uint
@@ -45,11 +53,6 @@ const (
 	GasPriceError
 )
 
-type RecNode struct {
-	LinkedNode *blockcache.BlockCacheNode
-	HeadNode   *blockcache.BlockCacheNode
-}
-
 type ForkChain struct {
 	NewHead       *blockcache.BlockCacheNode
 	OldHead       *blockcache.BlockCacheNode
@@ -75,8 +78,8 @@ func (s TxsList) Less(i, j int) bool {
 }
 func (s TxsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
-func (s *TxsList) Push(x interface{}) {
-	*s = append(*s, x.(*tx.Tx))
+func (s *TxsList) Push(x *tx.Tx) {
+	*s = append(*s, x)
 }
 
 type blockTx struct {

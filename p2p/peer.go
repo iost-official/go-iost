@@ -1,18 +1,18 @@
 package p2p
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"sync"
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	multiaddr "github.com/multiformats/go-multiaddr"
+
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
-
-	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/willf/bloom"
 )
 
@@ -41,8 +41,8 @@ const (
 type Peer struct {
 	id          peer.ID
 	addr        multiaddr.Multiaddr
+	conn        libnet.Conn
 	peerManager *PeerManager
-	conn        libnet.Conn // the basic TCP connection which could create Stream
 
 	// streams is a chan type from which we get a stream to send data and put it back after finishing.
 	streams     chan libnet.Stream
@@ -64,8 +64,8 @@ func NewPeer(stream libnet.Stream, pm *PeerManager) *Peer {
 	peer := &Peer{
 		id:          stream.Conn().RemotePeer(),
 		addr:        stream.Conn().RemoteMultiaddr(),
-		peerManager: pm,
 		conn:        stream.Conn(),
+		peerManager: pm,
 		streams:     make(chan libnet.Stream, maxStreamCount),
 		recentMsg:   bloom.NewWithEstimates(bloomMaxItemCount, bloomErrRate),
 		urgentMsgCh: make(chan *p2pMessage, msgChanSize),
@@ -123,9 +123,9 @@ func (p *Peer) newStream() (libnet.Stream, error) {
 	if p.streamCount >= maxStreamCount {
 		return nil, ErrStreamCountExceed
 	}
-	stream, err := p.conn.NewStream()
+	stream, err := p.peerManager.host.NewStream(context.Background(), p.id, protocolID)
 	if err != nil {
-		ilog.Errorf("creating stream failed. pid=%v, addr=%v, err=%v", p.id.Pretty(), p.addr, err)
+		ilog.Errorf("creating stream failed. pid=%v, err=%v", p.id.Pretty(), err)
 		return nil, err
 	}
 	p.streamCount++
@@ -159,8 +159,8 @@ func (p *Peer) write(m *p2pMessage) error {
 		return err
 	}
 
-	// 10 kB/s
-	deadline := time.Now().Add(time.Duration(len(m.content())/1024/10+1) * time.Second)
+	// 5 kB/s
+	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+1) * time.Second)
 	if err = stream.SetWriteDeadline(deadline); err != nil {
 		ilog.Warnf("set write deadline failed. err=%v", err)
 		p.CloseStream(stream)
@@ -174,7 +174,7 @@ func (p *Peer) write(m *p2pMessage) error {
 		return err
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
-	byteOutSummary.Observe(float64(len(m.content())), tagkv)
+	byteOutSummary.Add(float64(len(m.content())), tagkv)
 	packetOutCounter.Add(1, tagkv)
 
 	p.streams <- stream
@@ -232,7 +232,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 			return
 		}
 		tagkv := map[string]string{"mtype": msg.messageType().String()}
-		byteInSummary.Observe(float64(len(msg.content())), tagkv)
+		byteInSummary.Add(float64(len(msg.content())), tagkv)
 		packetInCounter.Add(1, tagkv)
 
 		p.handleMessage(msg)
@@ -243,7 +243,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool) error {
 	if deduplicate && msg.needDedup() {
 		if p.hasMessage(msg) {
-			ilog.Infof("ignore reduplicate message")
+			// ilog.Debug("ignore reduplicate message")
 			return ErrDuplicateMessage
 		}
 	}
@@ -266,12 +266,7 @@ func (p *Peer) handleMessage(msg *p2pMessage) error {
 	if msg.needDedup() {
 		p.recordMessage(msg)
 	}
-	switch msg.messageType() {
-	case Ping:
-		fmt.Println("pong")
-	default:
-		p.peerManager.HandleMessage(msg, p.id)
-	}
+	p.peerManager.HandleMessage(msg, p.id)
 	return nil
 }
 

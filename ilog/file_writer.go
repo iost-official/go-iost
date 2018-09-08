@@ -9,6 +9,8 @@ import (
 
 var _ LogWriter = &FileWriter{}
 
+var cstZone = time.FixedZone("CST", 8*3600)
+
 // FileWriter is responsible for writing log to file.
 type FileWriter struct {
 	level    Level
@@ -34,21 +36,23 @@ func (fw *FileWriter) Init() error {
 	if !filepath.IsAbs(fw.filepath) {
 		fw.filepath, _ = filepath.Abs(fw.filepath)
 	}
-	if err := os.MkdirAll(fw.filepath, 0700); err != nil {
+	if err := os.MkdirAll(fw.filepath, 0766); err != nil {
 		panic(err)
 	}
-	realFile := fmt.Sprintf("%s/iost_%s.log", fw.filepath, time.Now().Format("2006-01-02_15"))
-	linkFile := fmt.Sprintf("%s/iost.log", fw.filepath)
-	fd, err := os.OpenFile(realFile, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	logFile := fmt.Sprintf("iost_%s.log", time.Now().In(cstZone).Format("2006-01-02_15"))
+	linkFile := filepath.Join(fw.filepath, "iost.log")
+
+	_, err := os.Lstat(linkFile)
+	if err == nil || os.IsExist(err) {
+		os.Remove(linkFile)
+	}
+	os.Symlink(logFile, linkFile)
+
+	fd, err := os.OpenFile(filepath.Join(fw.filepath, logFile), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
 		return err
 	}
 	fw.fd = fd
-	_, err = os.Lstat(linkFile)
-	if err == nil || os.IsExist(err) {
-		os.Remove(linkFile)
-	}
-	os.Symlink(realFile, linkFile)
 	return nil
 }
 
