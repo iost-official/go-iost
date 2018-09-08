@@ -13,6 +13,7 @@ const (
 	NilPrefix    = "n"
 	BoolPrefix   = "b"
 	JSONPrefix   = "j"
+	MapHolder    = "map"
 )
 
 var (

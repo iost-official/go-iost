@@ -121,12 +121,20 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	}
 	c.Code = code
 
+	initABI := contract.ABI{
+		Name:    "init",
+		Payment: 0,
+		Args:    []string{},
+	}
+
+	c.Info.Abis = append(c.Info.Abis, &initABI)
+
 	l := len(c.Encode()) // todo multi Encode call
 	//ilog.Debugf("length is : %v", l)
 
 	h.db.SetContract(c)
 
-	_, cost, err := h.monitor.Call(h, c.ID, "constructor")
+	_, cost, err := h.monitor.Call(h, c.ID, "init")
 
 	cost.AddAssign(CodeSavageCost(l))
 

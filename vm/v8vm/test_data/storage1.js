@@ -1,27 +1,28 @@
+'use strict';
 class Storage1 {
     constructor() {
-        this.num = "99"
-        this.str = "yeah"
+        storage.put("num", "99");
+        storage.put("str", "year");
     }
 
     put(k, v) {
-        return IOSTContractStorage.put(k, v);
+        return storage.put(k, v);
     }
 
     get(k, v) {
-        return IOSTContractStorage.get(k, v)
+        return storage.get(k, v)
     }
 
     delete(k) {
-        return IOSTContractStorage.del(k);
+        return storage.del(k);
     }
 
     getThisNum() {
-        return this.num
+        return storage.get("num")
     }
 
     getThisStr() {
-        return this.str
+        return storage.get("str")
     }
 
     /*
@@ -37,6 +38,6 @@ class Storage1 {
         return IOSTContractStorage.del(k);
     }
     */
-};
+}
 
 module.exports = Storage1;

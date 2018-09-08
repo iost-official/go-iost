@@ -8,7 +8,7 @@ class VoteContract {
         this.currentProducerList = [];
         this.pendingProducerList = [];
         this.pendingBlockNumber = 0;
-        this.producerTable = {}
+        this.producerTable = {};
         this.voteTable = {}
     }
 
@@ -25,8 +25,8 @@ class VoteContract {
             "IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd"
         ];
         this.pendingBlockNumber = 0;
-        this.producerTable = {}
-        this.voteTable = {}
+        this.producerTable = {};
+        this.voteTable = {};
 
         for (var i = 0; i < this.producerNumber; i++) {
             var ret = BlockChain.deposit(this.pendingProducerList[i], this.producerRegisterFee);
