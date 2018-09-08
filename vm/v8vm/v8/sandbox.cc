@@ -124,7 +124,6 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     sbx->jsPath = strdup("v8/libjs");
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
-    sbx->threadPool = make_unique<ThreadPool>(2);
 
     return static_cast<SandboxPtr>(sbx);
 }
@@ -316,13 +315,14 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     bool isJson = false;
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
     std::condition_variable executionFinished;
-    sbx->threadPool->enqueue(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(executionFinished));
+    //sbx->threadPool->enqueue(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(executionFinished));
+    std::future<void> f =std::async(std::launch::async, RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(executionFinished));
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lck(mtx);
 
     auto startTime = std::chrono::steady_clock::now();
-    if (executionFinished.wait_for(lck, std::chrono::milliseconds(10000)) == std::cv_status::timeout)
+    if (executionFinished.wait_for(lck, std::chrono::milliseconds(1000)) == std::cv_status::timeout)
     {
         auto now = std::chrono::steady_clock::now();
         auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
