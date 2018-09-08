@@ -128,8 +128,8 @@ func TestEngine_bigNumber(t *testing.T) {
 func TestEngine_Storage(t *testing.T) {
 	host, code := MyInit(t, "storage1")
 
-	vmPool.LoadAndCall(host, code, "constructor")
-	rs, _, err := vmPool.LoadAndCall(host, code, "get", "a", "number")
+	// vmPool.LoadAndCall(host, code, "constructor")
+	rs, _, err := vmPool.LoadAndCall(host, code, "get", "a")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}

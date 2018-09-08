@@ -1,27 +1,27 @@
 class Storage1 {
     constructor() {
-        this.num = "99"
-        this.str = "yeah"
+        storage.put("num", JSON.stringify(99));
+        storage.put("str", JSON.stringify("yeah"));
     }
 
     put(k, v) {
-        return IOSTContractStorage.put(k, v);
+        return storage.put(k, v);
     }
 
-    get(k, v) {
-        return IOSTContractStorage.get(k, v)
+    get(k) {
+        return storage.get(k);
     }
 
     delete(k) {
-        return IOSTContractStorage.del(k);
+        return storage.del(k);
     }
 
     getThisNum() {
-        return this.num
+        return JSON.parse(storage.get("num"));
     }
 
     getThisStr() {
-        return this.str
+        return JSON.parse(storage.get("str"));
     }
 
     /*
@@ -30,11 +30,11 @@ class Storage1 {
     }
 
     mget(k) {
-        return IOSTContractStorage.get(k)
+        return storage.get(k)
     }
 
     mdelete(k) {
-        return IOSTContractStorage.del(k);
+        return storage.del(k);
     }
     */
 };

@@ -20,7 +20,13 @@ let IOSTContractStorage = (function () {
 
     let mapStorage = function () {
         this.mapPut = function (k, f, v) {
+            if (typeof v !== 'string') {
+                throw new Error("storage mapPut must be string");
+            }
             return storage.mapPut(k, f, v);
+        };
+        this.mapHas = function (k, f) {
+            return storage.mapHas(k, f);
         };
         this.mapGet = function (k, f) {
             return storage.mapGet(k, f);
@@ -43,6 +49,7 @@ let IOSTContractStorage = (function () {
         get: simpleStorageObj.get,
         del: simpleStorageObj.del,
         mapPut: mapStorageObj.mapPut,
+        mapHas: mapStorageObj.mapHas,
         mapGet: mapStorageObj.mapGet,
         mapDel: mapStorageObj.mapDel,
         globalGet: globalStorageObj.get,
