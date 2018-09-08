@@ -1,7 +1,6 @@
 package txpool
 
 import (
-	"sort"
 	"sync"
 	"time"
 
@@ -51,7 +50,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitGenerateMode: make(chan struct{}),
 		quitCh:           make(chan struct{}),
 	}
-	p.Lease()
+	p.Release()
 	return p, nil
 }
 
@@ -117,7 +116,7 @@ func (pool *TxPoolImpl) Lock() {
 	ilog.Error("lock here")
 }
 
-func (pool *TxPoolImpl) Lease() {
+func (pool *TxPoolImpl) Release() {
 	close(pool.quitGenerateMode)
 	ilog.Error("close the lock")
 }
@@ -208,18 +207,19 @@ func (pool *TxPoolImpl) DelTx(hash []byte) error {
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
-
+	//t1 := time.Now()
+	var i = 0
 	var pendingList TxsList
-
 	pool.pendingTx.Range(func(key, value interface{}) bool {
-		if !pool.txTimeOut(value.(*tx.Tx)) {
-			pendingList = append(pendingList, value.(*tx.Tx))
+		pendingList = append(pendingList, value.(*tx.Tx))
+		i++
+		if i > maxCnt {
+			return false
 		}
-
 		return true
 	})
-
-	sort.Sort(pendingList)
+	//t2 := time.Now()
+	//ilog.Error("in txpool", t2.Sub(t1))
 
 	l := len(pendingList)
 	if l >= maxCnt {
