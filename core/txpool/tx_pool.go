@@ -114,12 +114,10 @@ func (pool *TxPoolImpl) loop() {
 
 func (pool *TxPoolImpl) Lock() {
 	pool.quitGenerateMode = make(chan struct{})
-	ilog.Error("lock here")
 }
 
 func (pool *TxPoolImpl) Lease() {
 	close(pool.quitGenerateMode)
-	ilog.Error("close the lock")
 }
 
 func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *tx.Tx) {
