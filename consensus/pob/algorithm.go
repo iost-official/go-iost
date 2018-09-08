@@ -40,12 +40,17 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	txCnt := 30000
+	txCnt := 10000
 	limitTime := time.NewTicker(time.Second)
+	//t1 := time.Now()
 	txsList, _ := txPool.PendingTxs(txCnt)
+	//t2 := time.Now()
+	//ilog.Error("load tx from txpool: ", t2.Sub(t1))
 	ilog.Error("txs in txpool", len(txsList))
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
+	//t3 := time.Now()
+	//ilog.Error("init new engine: ", t3.Sub(t2))
 L:
 	for _, t := range txsList {
 		select {
@@ -53,10 +58,18 @@ L:
 			ilog.Info("time up")
 			break L
 		default:
-			if receipt, err := engine.Exec(t); err == nil {
+			//ilog.Error("start loop")
+			//t4 := time.Now()
+			receipt, err := engine.Exec(t)
+			//t5 := time.Now()
+			//ilog.Error("exex time cost: ", t5.Sub(t4))
+			if err == nil {
 				blk.Txs = append(blk.Txs, t)
 				blk.Receipts = append(blk.Receipts, receipt)
+				//t6 := time.Now()
+				//ilog.Error("append time cost: ", t6.Sub(t5))
 			} else {
+				ilog.Error("ju ran error")
 				txPool.DelTx(t.Hash())
 			}
 		}
@@ -106,9 +119,9 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 				return errTxSignature
 			}
 		}
-		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > 60 {
-			return errTxTooOld
-		}
+		//if blk.Head.Time*common.SlotLength-tx.Time/1e9 > 60 {
+		//	return errTxTooOld
+		//}
 	}
 	return verifier.VerifyBlockWithVM(blk, db)
 }

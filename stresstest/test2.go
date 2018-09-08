@@ -19,11 +19,10 @@ var conns []*grpc.ClientConn
 
 func initConn(num int) {
 	conns = make([]*grpc.ClientConn, num)
-	allServers := []string{"127.0.0.1:30002", "35.177.202.166:30002", "18.136.110.166:30002",
-		"13.232.76.188:30002", "52.59.86.255:30002", "54.180.13.100:30002", "35.183.163.183:30002"}
+	allServers := []string{"127.0.0.1:30002"} //, "35.177.202.166:30002", "18.136.110.166:30002", "13.232.76.188:30002", "52.59.86.255:30002", "54.180.13.100:30002", "35.183.163.183:30002"}
 	// allServers := []string{"192.168.1.13:30302", "192.168.1.13:30305", "192.168.1.13:30308"}
 	for i := 0; i < num; i++ {
-		conn, err := grpc.Dial(allServers[i%7], grpc.WithInsecure())
+		conn, err := grpc.Dial(allServers[i%1], grpc.WithInsecure())
 		if err != nil {
 			continue
 		}

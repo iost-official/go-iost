@@ -99,6 +99,11 @@ func (p *PoB) Start() error {
 	go p.scheduleLoop()
 	return nil
 }
+
+func (p *PoB) Stop() {
+	return
+}
+
 func (p *PoB) messageLoop() {
 	for {
 		if p.baseVariable.Mode() != global.ModeInit {
@@ -225,7 +230,7 @@ func (p *PoB) handleGenesisBlock(blk *block.Block) error {
 func (p *PoB) calculateTPS() float64 {
 	cnt := 0
 	n := 0
-	if p.blockCache.Head() == nil {
+	if p.blockCache.Head().Block == nil {
 		return 0
 	}
 	l := p.blockChain.Length()
@@ -363,13 +368,14 @@ func (p *PoB) scheduleLoop() {
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
+					p.txPool.Lock()
 					blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
+					p.txPool.Release()
 					ilog.Infof("gen block:%v", blk.Head.Number)
 					if err != nil {
 						ilog.Error(err.Error())
 						continue
 					}
-					ilog.Debugf("block tx num: %v", len(blk.Txs))
 					p.chVerifyBlock <- &verifyBlockMessage{blk: blk, gen: true}
 					blkByte, err := blk.Encode()
 					if err != nil {

@@ -18,5 +18,5 @@ type TxPool interface {
 	PendingTxs(maxCnt int) (TxsList, error)
 	ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error)
 	Lock()
-	Lease()
+	Release()
 }
