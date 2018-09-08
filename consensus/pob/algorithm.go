@@ -46,7 +46,7 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 	txsList, _ := txPool.PendingTxs(txCnt)
 	//t2 := time.Now()
 	//ilog.Error("load tx from txpool: ", t2.Sub(t1))
-	ilog.Error("txs in txpool", len(txsList))
+	ilog.Info("txs in txpool", len(txsList))
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(topBlock.Head, db)
 	//t3 := time.Now()
@@ -74,7 +74,7 @@ L:
 			}
 		}
 	}
-	ilog.Error("txs in blk", len(blk.Txs))
+	ilog.Info("txs in blk", len(blk.Txs))
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	err := blk.CalculateHeadHash()

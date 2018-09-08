@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -8,10 +9,10 @@ import (
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	multiaddr "github.com/multiformats/go-multiaddr"
 
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
-	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/willf/bloom"
 )
 
@@ -40,8 +41,8 @@ const (
 type Peer struct {
 	id          peer.ID
 	addr        multiaddr.Multiaddr
+	conn        libnet.Conn
 	peerManager *PeerManager
-	conn        libnet.Conn // the basic TCP connection which could create Stream
 
 	// streams is a chan type from which we get a stream to send data and put it back after finishing.
 	streams     chan libnet.Stream
@@ -63,8 +64,8 @@ func NewPeer(stream libnet.Stream, pm *PeerManager) *Peer {
 	peer := &Peer{
 		id:          stream.Conn().RemotePeer(),
 		addr:        stream.Conn().RemoteMultiaddr(),
-		peerManager: pm,
 		conn:        stream.Conn(),
+		peerManager: pm,
 		streams:     make(chan libnet.Stream, maxStreamCount),
 		recentMsg:   bloom.NewWithEstimates(bloomMaxItemCount, bloomErrRate),
 		urgentMsgCh: make(chan *p2pMessage, msgChanSize),
@@ -77,7 +78,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager) *Peer {
 
 // Start starts peer's loop.
 func (p *Peer) Start() {
-	//ilog.Infof("peer is started. id=%s", p.id.Pretty())
+	ilog.Infof("peer is started. id=%s", p.id.Pretty())
 
 	go p.writeLoop()
 }
@@ -122,9 +123,9 @@ func (p *Peer) newStream() (libnet.Stream, error) {
 	if p.streamCount >= maxStreamCount {
 		return nil, ErrStreamCountExceed
 	}
-	stream, err := p.conn.NewStream()
+	stream, err := p.peerManager.host.NewStream(context.Background(), p.id, protocolID)
 	if err != nil {
-		ilog.Errorf("creating stream failed. pid=%v, addr=%v, err=%v", p.id.Pretty(), p.addr, err)
+		ilog.Errorf("creating stream failed. pid=%v, err=%v", p.id.Pretty(), err)
 		return nil, err
 	}
 	p.streamCount++
@@ -154,8 +155,7 @@ func (p *Peer) write(m *p2pMessage) error {
 	// if getStream fails, the TCP connection may be broken and we should stop the peer.
 	if err != nil {
 		ilog.Errorf("get stream fails. err=%v", err)
-		// p.peerManager.RemoveNeighbor(p.id)
-		p.peerManager.RestartNeighbor(p.id)
+		p.peerManager.RemoveNeighbor(p.id)
 		return err
 	}
 
@@ -170,8 +170,7 @@ func (p *Peer) write(m *p2pMessage) error {
 	_, err = stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
-		p.peerManager.RestartNeighbor(p.id)
-		// p.CloseStream(stream)
+		p.CloseStream(stream)
 		return err
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
@@ -244,6 +243,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool) error {
 	if deduplicate && msg.needDedup() {
 		if p.hasMessage(msg) {
+			// ilog.Debug("ignore reduplicate message")
 			return ErrDuplicateMessage
 		}
 	}
