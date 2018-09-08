@@ -132,9 +132,9 @@ func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *
 			continue
 		}
 
-		//if r := pool.verifyTx(&t); r == Success {
-		tCn <- &t
-		//}
+		if r := pool.verifyTx(&t); r == Success {
+			tCn <- &t
+		}
 	}
 }
 
