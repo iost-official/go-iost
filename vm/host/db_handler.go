@@ -42,6 +42,11 @@ func (h *DBHandler) Del(key string) *contract.Cost {
 	return DelCost
 }
 
+// Has ...
+func (h *DBHandler) Has(key string) bool {
+	return h.h.db.Has(h.modifyKey(key))
+}
+
 // MapPut ...
 func (h *DBHandler) MapPut(key, field string, value interface{}) *contract.Cost {
 	v := database.MustMarshal(value)
@@ -65,6 +70,11 @@ func (h *DBHandler) MapKeys(key string) (fields []string, cost *contract.Cost) {
 func (h *DBHandler) MapDel(key, field string) *contract.Cost {
 	h.h.db.MDel(h.modifyKey(key), field)
 	return DelCost
+}
+
+// MapHas ...
+func (h *DBHandler) MapHas(key, field string) bool {
+	return h.h.db.MHas(h.modifyKey(key), field)
 }
 
 // MapLen ...
