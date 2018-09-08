@@ -114,12 +114,10 @@ func (pool *TxPoolImpl) loop() {
 
 func (pool *TxPoolImpl) Lock() {
 	pool.quitGenerateMode = make(chan struct{})
-	ilog.Error("lock here")
 }
 
 func (pool *TxPoolImpl) Lease() {
 	close(pool.quitGenerateMode)
-	ilog.Error("close the lock")
 }
 
 func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *tx.Tx) {
@@ -196,7 +194,7 @@ func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 	return r
 }
 
-// AddTx del the transaction
+// DelTx del the transaction
 func (pool *TxPoolImpl) DelTx(hash []byte) error {
 
 	pool.pendingTx.Delete(string(hash))
@@ -206,6 +204,12 @@ func (pool *TxPoolImpl) DelTx(hash []byte) error {
 
 // PendingTxs get the pending transactions
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
+	start := time.Now()
+	defer func(t time.Time) {
+		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
+		metricsGetPendingTxTime.Set(float64(cost), nil)
+	}(start)
+
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -219,6 +223,8 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 		return true
 	})
 
+	metricsTxPoolSize.Set(float64(len(pendingList)), nil)
+
 	sort.Sort(pendingList)
 
 	l := len(pendingList)
@@ -231,6 +237,12 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 
 // ExistTxs determine if the transaction exists
 func (pool *TxPoolImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error) {
+	start := time.Now()
+	defer func(t time.Time) {
+		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
+		metricsExistTxTime.Observe(float64(cost), nil)
+		metricsExistTxCount.Add(1, nil)
+	}(start)
 
 	var r FRet
 
@@ -266,6 +278,13 @@ func (pool *TxPoolImpl) initBlockTx() {
 }
 
 func (pool *TxPoolImpl) verifyTx(t *tx.Tx) TAddTx {
+
+	start := time.Now()
+	defer func(t time.Time) {
+		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
+		metricsVerifyTxTime.Observe(float64(cost), nil)
+		metricsVerifyTxCount.Add(1, nil)
+	}(start)
 
 	if t.GasPrice <= 0 {
 		return GasPriceError
@@ -387,6 +406,12 @@ func (pool *TxPoolImpl) clearBlock() {
 }
 
 func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
+	start := time.Now()
+	defer func(t time.Time) {
+		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
+		metricsAddTxTime.Observe(float64(cost), nil)
+		metricsAddTxCount.Add(1, nil)
+	}(start)
 
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
