@@ -57,7 +57,7 @@ clean:
 	rm -f ${TARGET_DIR}
 
 debug: build
-	target/iserver -f config/iserver.yaml
+	target/iserver -f config/iserver.yml
 
 clear_debug_file:
 	rm -rf StatePoolDB/

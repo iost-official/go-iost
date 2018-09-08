@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"fmt"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
@@ -15,6 +16,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"strings"
 )
 
 var (
@@ -45,7 +47,27 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 	txsList, _ := txPool.PendingTxs(txCnt)
 	ilog.Info("txs in txpool", len(txsList))
 	db.Checkout(string(topBlock.HeadHash()))
-	engine := vm.NewEngine(topBlock.Head, db)
+	engine := vm.NewEngine(blk.Head, db)
+	ilog.Info(len(txsList))
+
+	// call vote
+	if blk.Head.Number%common.VoteInterval == 0 {
+		ilog.Info("vote start")
+		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
+		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
+
+		trx, err := tx.SignTx(trx, staticProperty.account)
+		if err == nil {
+			if receipt, err := engine.Exec(trx); err == nil {
+				blk.Txs = append(blk.Txs, trx)
+				blk.Receipts = append(blk.Receipts, receipt)
+			}
+		} else {
+			ilog.Error("failed to vote, err:", err)
+		}
+
+	}
+
 L:
 	for _, t := range txsList {
 		select {
@@ -56,7 +78,9 @@ L:
 			if receipt, err := engine.Exec(t); err == nil {
 				blk.Txs = append(blk.Txs, t)
 				blk.Receipts = append(blk.Receipts, receipt)
+				ilog.Debug(err, receipt)
 			} else {
+				ilog.Debug(err, receipt)
 				txPool.DelTx(t.Hash())
 			}
 		}
@@ -78,9 +102,7 @@ L:
 }
 
 func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
-	if witnessOfSlot(head.Time) != head.Witness {
-		return errWitness
-	}
+
 	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
 	hash, err := head.Hash()
 	if err != nil {
@@ -97,6 +119,25 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	if err != nil {
 		return err
 	}
+
+	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+		return errWitness
+	}
+
+	// check vote
+	if blk.Head.Number%common.VoteInterval == 0 {
+		if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
+			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
+			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
+
+			return errors.New("blk did not vote")
+		}
+
+		if blk.Receipts[0].Status.Code != tx.Success {
+			return errors.New("vote was incorrect")
+		}
+	}
+
 	for _, tx := range blk.Txs {
 		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
 		if exist == txpool.FoundChain {

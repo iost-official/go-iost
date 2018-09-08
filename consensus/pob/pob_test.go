@@ -33,7 +33,10 @@ func testRun(t *testing.T) {
 	id2Seckey[account1.ID] = account1.Seckey
 	id2Seckey[account2.ID] = account2.Seckey
 	id2Seckey[account3.ID] = account3.Seckey
-	baseVariable := global.FakeNew()
+	baseVariable, err := global.FakeNew()
+	if err != nil {
+		t.Fatal(err)
+	}
 	genesisBlock := &block.Block{
 		Head: &block.BlockHead{
 			Version: 0,
@@ -53,8 +56,7 @@ func testRun(t *testing.T) {
 	mockP2PService.EXPECT().Register(gomock.Any(), gomock.Any()).Return(channel).AnyTimes()
 	txPool, _ := txpool.NewTxPoolImpl(baseVariable, blockCache, mockP2PService)               //mock
 	synchronizer, _ := synchronizer.NewSynchronizer(baseVariable, blockCache, mockP2PService) //mock
-	witnessList := []string{account1.ID, account2.ID, account3.ID}
-	pob := NewPoB(account1, baseVariable, blockCache, txPool, mockP2PService, synchronizer, witnessList)
+	pob := NewPoB(account1, baseVariable, blockCache, txPool, mockP2PService, synchronizer)
 	pob.Start()
 	fmt.Println(time.Now().Second())
 	fmt.Println(time.Now().Nanosecond())

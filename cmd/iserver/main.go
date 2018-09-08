@@ -159,7 +159,7 @@ func main() {
 
 	jsonRPCServer := rpc.NewJSONServer(glb)
 	app = append(app, jsonRPCServer)
-	consensus, err := consensus.Factory("pob", acc, glb, blkCache, txp, p2pService, sync, glb.WitnessList())
+	consensus, err := consensus.Factory("pob", acc, glb, blkCache, txp, p2pService, sync)
 	if err != nil {
 		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}

@@ -15,9 +15,10 @@ type ACCConfig struct {
 }
 
 type GenesisConfig struct {
-	CreateGenesis bool
-	GenesisHash   string
-	WitnessInfo   []string
+	CreateGenesis    bool
+	GenesisHash      string
+	WitnessInfo      []string
+	VoteContractPath string
 }
 
 type DBConfig struct {
