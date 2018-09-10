@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"fmt"
+	"strings"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
@@ -16,7 +18,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"strings"
 )
 
 var (
@@ -48,7 +49,7 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 	ilog.Info("txs in txpool", len(txsList))
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(blk.Head, db)
-	ilog.Info(len(txsList))
+	ilog.Info("txlen ", len(txsList))
 
 	// call vote
 	if blk.Head.Number%common.VoteInterval == 0 {
