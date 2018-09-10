@@ -1,16 +1,16 @@
 'use strict';
 class Storage1 {
     constructor() {
-        storage.put("num", "99");
-        storage.put("str", "year");
+        storage.put("num", JSON.stringify(99));
+        storage.put("str", JSON.stringify("yeah"));
     }
 
     put(k, v) {
         return storage.put(k, v);
     }
 
-    get(k, v) {
-        return storage.get(k, v)
+    get(k) {
+        return storage.get(k);
     }
 
     delete(k) {
@@ -18,26 +18,28 @@ class Storage1 {
     }
 
     getThisNum() {
-        return storage.get("num")
+        return JSON.parse(storage.get("num"));
     }
 
     getThisStr() {
-        return storage.get("str")
+        return JSON.parse(storage.get("str"));
     }
 
-    /*
     mset(k, f, v) {
-        return IOSTContract
+        return storage.mapPut(k, f, JSON.stringify(v));
     }
 
-    mget(k) {
-        return IOSTContractStorage.get(k)
+    mget(k, f) {
+        return JSON.parse(storage.mapGet(k, f));
     }
 
-    mdelete(k) {
-        return IOSTContractStorage.del(k);
+    mhas(k, f) {
+        return storage.mapHas(k, f);
     }
-    */
+
+    mdelete(k, f) {
+        return storage.mapDel(k, f);
+    }
 }
 
 module.exports = Storage1;

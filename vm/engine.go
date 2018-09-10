@@ -150,8 +150,20 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	e.ho.Context().GSet("receipts", make([]tx.Receipt, 0))
 
 	txr := tx.NewTxReceipt(tx0.Hash())
+	hasSetCode := false
 
 	for _, action := range tx0.Actions {
+		if hasSetCode && action.Contract == "iost.system" && action.ActionName == "SetCode" {
+			txr.Receipts = nil
+			txr.Status.Code = tx.ErrorDuplicateSetCode
+			txr.Status.Message = "error duplicate set code in a tx"
+			e.logger.Debugf("rollback")
+			e.ho.DB().Rollback()
+			break
+		}
+		if action.Contract == "iost.system" && action.ActionName == "SetCode" {
+			hasSetCode = true
+		}
 
 		cost, status, receipts, err2 := e.runAction(*action)
 		e.logger.Infof("run action : %v, result is %v", action, status.Code)

@@ -53,7 +53,15 @@ func (m *LRU) Has(key string) bool {
 	if m.cache == nil {
 		return m.db.Has(key)
 	}
-	return m.cache.Contains(key)
+	ok := m.cache.Contains(key)
+	if !ok {
+		ok = m.db.Has(key)
+		if ok {
+			v := m.db.Get(key)
+			m.cache.Add(key, v)
+		}
+	}
+	return ok
 }
 
 // Keys ...

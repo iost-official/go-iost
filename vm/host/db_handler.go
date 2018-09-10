@@ -43,8 +43,8 @@ func (h *DBHandler) Del(key string) *contract.Cost {
 }
 
 // Has ...
-func (h *DBHandler) Has(key string) bool {
-	return h.h.db.Has(h.modifyKey(key))
+func (h *DBHandler) Has(key string) (bool, *contract.Cost) {
+	return h.h.db.Has(h.modifyKey(key)), GetCost
 }
 
 // MapPut ...
@@ -73,8 +73,8 @@ func (h *DBHandler) MapDel(key, field string) *contract.Cost {
 }
 
 // MapHas ...
-func (h *DBHandler) MapHas(key, field string) bool {
-	return h.h.db.MHas(h.modifyKey(key), field)
+func (h *DBHandler) MapHas(key, field string) (bool, *contract.Cost) {
+	return h.h.db.MHas(h.modifyKey(key), field), GetCost
 }
 
 // MapLen ...
