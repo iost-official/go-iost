@@ -1,5 +1,5 @@
 class Test {
-    constructor() {
+    init() {
         this.num = 9;
         this.string = "hello";
         this.bool = true;

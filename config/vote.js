@@ -9,11 +9,11 @@ class VoteContract {
         this.currentProducerList = [];
         this.pendingProducerList = [];
         this.pendingBlockNumber = 0;
-        this.producerTable = {}
+        this.producerTable = {};
         this.voteTable = {}
     }
 
-    Init(num, proStr) {
+    init(num, proStr) {
         if (num === 0) {
             throw new Error("producer list number empty.");
         }

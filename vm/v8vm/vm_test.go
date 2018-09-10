@@ -119,8 +119,8 @@ func TestEngine_bigNumber(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall getVal error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "0.0000000000800029" {
-		t.Errorf("LoadAndCall except 0.0000000000800029, got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != "\"8.00029e-11\"" {
+		t.Errorf("LoadAndCall except 8.00029e-11, got %s\n", rs[0])
 	}
 }
 

@@ -1,7 +1,7 @@
 const maxUserNumber = 10;
 
 class Contract {
-    constructor() {
+    init() {
         storage.put("user_number", JSON.stringify(0));
         storage.put("total_coins", JSON.stringify(0));
         storage.put("last_lucky_block", JSON.stringify(-1));

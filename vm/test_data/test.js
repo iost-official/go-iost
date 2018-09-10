@@ -1,5 +1,5 @@
 class Test {
-    constructor() {
+    init() {
         storage.put("num", JSON.stringify(9))
     }
 

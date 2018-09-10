@@ -5,7 +5,7 @@ class BigNumber1{
         storage.put("val", JSON.stringify(val.plus(0.0000000000000029)));
     }
     getVal() {
-        let val = storage.get("val");
+        let val = JSON.parse(storage.get("val"));
         return new BigNumber(val);
     }
 }

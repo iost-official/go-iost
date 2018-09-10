@@ -1,5 +1,5 @@
 class Test {
-    constructor() {
+    init() {
     }
     run (time) {
         let c = 0;

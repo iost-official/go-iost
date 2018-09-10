@@ -9,6 +9,8 @@ import (
 
 	"reflect"
 
+	"time"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -21,7 +23,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
-	"time"
 )
 
 var testID = []string{
@@ -180,7 +181,7 @@ func jsHelloWorld() *contract.Contract {
 		ID: "ContractjsHelloWorld",
 		Code: `
 class Contract {
- constructor() {
+ init() {
 
  }
  hello() {
@@ -325,7 +326,7 @@ func jsCallHelloWorld() *contract.Contract {
 		ID: "Contractcall_hello_world",
 		Code: `
 class Contract {
- constructor() {
+ init() {
 
  }
  call_hello() {
@@ -376,7 +377,7 @@ func jsCallHelloWorldWithReceipt() *contract.Contract {
 		ID: "Contractcall_hello_world",
 		Code: `
 class Contract {
- constructor() {
+ init() {
 
  }
  call_hello() {
@@ -592,7 +593,7 @@ func TestJSAPI_Database(t *testing.T) {
 
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	this.aa = new Int64(100);
 	}
 	main() {
@@ -617,7 +618,7 @@ func TestJSAPI_Transfer(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	main() {
 		BlockChain.transfer("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
@@ -640,7 +641,7 @@ func TestJSAPI_Transfer_Failed(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	main() {
 		BlockChain.transfer("IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
@@ -663,7 +664,7 @@ func TestJSAPI_Transfer_WrongFormat1(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	main() {
 		var ret = BlockChain.transfer("a", "b", 1);
@@ -690,7 +691,7 @@ func TestJSAPI_Deposit(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	deposit() {
 		return BlockChain.deposit("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "100")
@@ -726,7 +727,7 @@ func TestJSAPI_Info(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	blockInfo() {
 		var info = BlockChain.blockInfo()
@@ -760,7 +761,7 @@ func TestJSRequireAuth(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	requireAuth() {
 		var ok = BlockChain.requireAuth("haha")
