@@ -39,7 +39,7 @@ func (h *Teller) transfer(from, to string, amount int64) error {
 }
 
 func (h *Teller) GetBalance(from string) (int64, *contract.Cost, error) {
-	bl := int64(0)
+	var bl int64
 	if strings.HasPrefix(from, "IOST") {
 		bl = h.h.db.Balance(from)
 	} else {
@@ -180,7 +180,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 			if err != nil {
 				return err
 			}
-			// 10% of gas transfered to iost.bonus
+			// 10% of gas transferred to iost.bonus
 			err = h.transfer(k, ContractAccountPrefix+"iost.bonus", bfee)
 			if err != nil {
 				return err
@@ -190,7 +190,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 			if err != nil {
 				return err
 			}
-			// 10% of gas transfered to iost.bonus
+			// 10% of gas transferred to iost.bonus
 			err = h.transfer(k, ContractAccountPrefix+"iost.bonus", bfee)
 			if err != nil {
 				return err

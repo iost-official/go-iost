@@ -63,12 +63,14 @@ func (d *DHCP) IsDomain(s string) bool {
 	return true
 }
 
+// WriteLink add url and url owner to contract
 func (d *DHCP) WriteLink(url, cid, owner string) {
 	d.h.MapPut(DHCPTable, url, cid)
 	d.h.MapPut(DHCPRTable, cid, url)
 	d.h.MapPut(DHCPOwnerTable, url, owner)
 }
 
+// RemoveLink remove a url
 func (d *DHCP) RemoveLink(url, cid string) {
 	d.h.MapDel(DHCPRTable, cid)
 	d.h.MapDel(DHCPTable, url)
