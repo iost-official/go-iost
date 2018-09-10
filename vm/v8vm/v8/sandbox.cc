@@ -336,10 +336,10 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     std::mutex mtx;
     std::unique_lock<std::mutex> lck(mtx);
 
-    auto startTime = std::chrono::steady_clock::now();
+    auto startTime = std::chrono::system_clock::now();
     if (executionFinished.wait_until(lck, startTime + std::chrono::milliseconds(1300)) == std::cv_status::timeout)
     {
-        auto now = std::chrono::steady_clock::now();
+        auto now = std::chrono::system_clock::now();
         auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
         std::cout << "Exe Killed! "  << execTime << std::endl;
         isolate->TerminateExecution();
