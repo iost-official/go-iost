@@ -32,6 +32,8 @@ import (
 
 	"strings"
 
+	"sync"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
@@ -46,11 +48,16 @@ type Sandbox struct {
 	host    *host.Host
 }
 
-var sbxMap = make(map[C.SandboxPtr]*Sandbox)
+//var sbxMap = make(map[C.SandboxPtr]*Sandbox)
+var sbxMap sync.Map
 
 // GetSandbox from sandbox map by sandbox ptr
 func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
-	sbx, ok := sbxMap[cSbx]
+	valInterface, ok := sbxMap.Load(cSbx)
+	if !ok {
+		return nil, ok
+	}
+	sbx, ok := valInterface.(*Sandbox)
 	return sbx, ok
 }
 
@@ -67,7 +74,7 @@ func NewSandbox(e *VM) *Sandbox {
 		modules: NewModules(),
 	}
 	s.Init(e.vmType)
-	sbxMap[cSbx] = s
+	sbxMap.Store(cSbx, s)
 
 	return s
 }
@@ -75,7 +82,7 @@ func NewSandbox(e *VM) *Sandbox {
 // Release release sandbox and delete from map
 func (sbx *Sandbox) Release() {
 	if sbx.context != nil {
-		delete(sbxMap, sbx.context)
+		sbxMap.Delete(sbx.context)
 		C.releaseSandbox(sbx.context)
 	}
 	sbx.context = nil
