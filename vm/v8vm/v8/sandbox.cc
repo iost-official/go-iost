@@ -316,7 +316,9 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
     std::condition_variable executionFinished;
     //sbx->threadPool->enqueue(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(executionFinished));
-    std::future<void> f =std::async(std::launch::async, RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(executionFinished));
+    //std::future<void> f =std::async(std::launch::async, RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(executionFinished));
+    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(executionFinished));
+    exec.detach();
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lck(mtx);
