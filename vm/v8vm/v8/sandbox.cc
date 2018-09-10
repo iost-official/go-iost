@@ -207,7 +207,7 @@ std::string reportException(Isolate *isolate, Local<Context> ctx, TryCatch& tryC
     return ss.str();
 }
 
-void loadVM(SandboxPtr ptr) {
+void loadVM(SandboxPtr ptr, int vmType) {
     if (ptr == nullptr) {
         return;
     }
@@ -221,7 +221,12 @@ void loadVM(SandboxPtr ptr) {
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 
-    std::string vmPath = std::string(sbx->jsPath) + "vm.js";
+    std::string vmPath = std::string(sbx->jsPath);
+    if (vmType == 0) {
+        vmPath += "compile_vm.js";
+    } else {
+        vmPath += "vm.js";
+    }
     std::ifstream f(vmPath);
     std::stringstream buffer;
     buffer << f.rdbuf();
@@ -330,7 +335,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
         }
         auto now = std::chrono::steady_clock::now();
         auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
-        if (execTime > 1000) {
+        if (execTime > 200) {
             isolate->TerminateExecution();
             res.Err = strdup("execution killed");
             res.gasUsed = sbx->gasUsed;

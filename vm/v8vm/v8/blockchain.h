@@ -9,6 +9,7 @@ using namespace v8;
 void InitBlockchain(Isolate *isolate, Local<ObjectTemplate> globalTpl);
 void NewIOSTBlockchain(const FunctionCallbackInfo<Value> &args);
 
+// This Class wraps Go BlockChain function so JS contract can call them.
 class IOSTBlockchain {
 private:
     SandboxPtr sbxPtr;

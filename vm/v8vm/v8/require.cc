@@ -53,7 +53,7 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
         return;
     }
 
-    // read go module again
+    // read go standard module again
     char *code = CRequire(sbxPtr, *pathStr);
     char *injectCode = nullptr;
     asprintf(&injectCode, injectGasFormat, code);

@@ -21,27 +21,29 @@ type VM struct {
 	isolate              C.IsolatePtr
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
+	vmType               vmPoolType
 	jsPath               string
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
 }
 
 // NewVM return new vm with isolate and sandbox
-func NewVM(jsPath string) *VM {
+func NewVM(vmType vmPoolType, jsPath string) *VM {
 	CVMInitOnce.Do(func() {
 		C.init()
 	})
 	isolate := C.newIsolate()
 	e := &VM{
 		isolate: isolate,
+		vmType:  vmType,
 		jsPath:  jsPath,
 	}
 	e.sandbox = NewSandbox(e)
 	return e
 }
 
-func NewVMWithChannel(jsPath string, releaseChannel chan *VM) *VM {
-	e := NewVM(jsPath)
+func NewVMWithChannel(vmType vmPoolType, jsPath string, releaseChannel chan *VM) *VM {
+	e := NewVM(vmType, jsPath)
 	e.releaseChannel = releaseChannel
 	return e
 }
@@ -67,7 +69,7 @@ func (e *VM) Run(code, api string, args ...interface{}) (interface{}, error) {
 }
 
 func (e *VM) compile(contract *contract.Contract) (string, error) {
-	return contract.Code, nil
+	return e.sandbox.Compile(contract)
 }
 
 func (e *VM) setHost(host *host.Host) {
@@ -85,7 +87,7 @@ func (e *VM) execute(code string) (rtn []interface{}, cost *contract.Cost, err e
 }
 
 func (e *VM) setJSPath(path string) {
-	e.sandbox.SetJSPath(path)
+	e.sandbox.SetJSPath(path, e.vmType)
 }
 
 func (e *VM) setReleaseChannel(releaseChannel chan *VM) {
