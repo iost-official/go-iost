@@ -281,28 +281,28 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     if (script.IsEmpty()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
-        executionFinished.notify_one();
+        //executionFinished.notify_one();
         return;
     }
 
     Local<Value> ret = script->Run();
 
     if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
-        executionFinished.notify_one();
+        //executionFinished.notify_one();
         return;
     }
 
     if (ret.IsEmpty()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
-        executionFinished.notify_one();
+        //executionFinished.notify_one();
         return;
     }
 
     if (ret->IsString() || ret->IsNumber() || ret->IsBoolean()) {
         String::Utf8Value retV8Str(isolate, ret);
         result = *retV8Str;
-        executionFinished.notify_one();
+        //executionFinished.notify_one();
         return;
     }
 
@@ -315,7 +315,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
             result = *jsonRetStr;
         }
     }
-    executionFinished.notify_one();
+    //executionFinished.notify_one();
     return ;
 }
 
@@ -337,7 +337,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     std::unique_lock<std::mutex> lck(mtx);
 
     auto startTime = std::chrono::steady_clock::now();
-    if (executionFinished.wait_for(lck, std::chrono::milliseconds(1300)) == std::cv_status::timeout)
+    if (executionFinished.wait_until(lck, startTime + std::chrono::milliseconds(1300)) == std::cv_status::timeout)
     {
         auto now = std::chrono::steady_clock::now();
         auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
