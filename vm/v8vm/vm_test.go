@@ -16,7 +16,7 @@ import (
 var vmPool *VMPool
 
 func init() {
-	vmPool = NewVMPool(3)
+	vmPool = NewVMPool(3, 3)
 	vmPool.SetJSPath("./v8/libjs/")
 	vmPool.Init()
 }
@@ -69,6 +69,8 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 		ID:   conName,
 		Code: rawCode,
 	}
+
+	code.Code, _ = vmPool.Compile(code)
 
 	return h, code
 }

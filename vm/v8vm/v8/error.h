@@ -1,7 +1,8 @@
 #ifndef IOST_V8_ERROR_H
 #define IOST_V8_ERROR_H
 
-enum ivmErrno {
+// Hope to format the error into this file.
+enum ivmError {
   SUCCESS = 0,
   Failed = 1,
 };

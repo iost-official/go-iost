@@ -5,31 +5,50 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
+type vmPoolType int
+
+const (
+	CompileVMPool vmPoolType = iota
+	RunVMPool
+)
+
 // VMPool manage all V8VM instance.
 type VMPool struct {
-	size     int
-	poolBuff chan *VM
-	jsPath   string
+	compilePoolSize int
+	runPoolSize     int
+	compilePoolBuff chan *VM
+	runPoolBuff     chan *VM
+	jsPath          string
 }
 
 // NewVMPool create new VMPool instance.
-func NewVMPool(size int) *VMPool {
+func NewVMPool(compilePoolSize, runPoolSize int) *VMPool {
 	return &VMPool{
-		size:     size,
-		poolBuff: make(chan *VM, size),
+		compilePoolSize: compilePoolSize,
+		runPoolSize:     runPoolSize,
+		compilePoolBuff: make(chan *VM, compilePoolSize),
+		runPoolBuff:     make(chan *VM, runPoolSize),
 	}
 }
 
-func (vmp *VMPool) getVM() *VM {
-	return <-vmp.poolBuff
+func (vmp *VMPool) getCompileVM() *VM {
+	return <-vmp.compilePoolBuff
+}
+
+func (vmp *VMPool) getRunVM() *VM {
+	return <-vmp.runPoolBuff
 }
 
 // Init init VMPool.
 func (vmp *VMPool) Init() error {
 	// Fill vmPoolBuffer
-	for i := 0; i < vmp.size; i++ {
-		var e = NewVMWithChannel(vmp.jsPath, vmp.poolBuff)
-		vmp.poolBuff <- e
+	for i := 0; i < vmp.compilePoolSize; i++ {
+		var e = NewVMWithChannel(CompileVMPool, vmp.jsPath, vmp.compilePoolBuff)
+		vmp.compilePoolBuff <- e
+	}
+	for i := 0; i < vmp.runPoolSize; i++ {
+		var e = NewVMWithChannel(RunVMPool, vmp.jsPath, vmp.runPoolBuff)
+		vmp.runPoolBuff <- e
 	}
 	return nil
 }
@@ -41,7 +60,7 @@ func (vmp *VMPool) SetJSPath(path string) {
 
 // Compile compile js code to binary.
 func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
-	vm := vmp.getVM()
+	vm := vmp.getCompileVM()
 	defer vm.recycle()
 
 	return vm.compile(contract)
@@ -49,7 +68,7 @@ func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 
 // LoadAndCall load compiled Javascript code and run code with specified api and args
 func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
-	vm := vmp.getVM()
+	vm := vmp.getRunVM()
 	defer vm.recycle()
 
 	vm.setHost(host)
@@ -60,8 +79,13 @@ func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api
 
 // Release release all V8VM instance in VMPool
 func (vmp *VMPool) Release() {
-	close(vmp.poolBuff)
-	for e := range vmp.poolBuff {
+	close(vmp.compilePoolBuff)
+	for e := range vmp.compilePoolBuff {
+		e.release()
+	}
+
+	close(vmp.runPoolBuff)
+	for e := range vmp.runPoolBuff {
 		e.release()
 	}
 }

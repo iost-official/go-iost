@@ -695,7 +695,7 @@ class Contract {
   
  }
  hello() {
-  return "show";
+	console.log("hello");
  }
 }
 

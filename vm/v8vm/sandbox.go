@@ -32,6 +32,8 @@ import (
 
 	"strings"
 
+	"sync"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
@@ -46,11 +48,16 @@ type Sandbox struct {
 	host    *host.Host
 }
 
-var sbxMap = make(map[C.SandboxPtr]*Sandbox)
+//var sbxMap = make(map[C.SandboxPtr]*Sandbox)
+var sbxMap sync.Map
 
 // GetSandbox from sandbox map by sandbox ptr
 func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
-	sbx, ok := sbxMap[cSbx]
+	valInterface, ok := sbxMap.Load(cSbx)
+	if !ok {
+		return nil, ok
+	}
+	sbx, ok := valInterface.(*Sandbox)
 	return sbx, ok
 }
 
@@ -66,8 +73,8 @@ func NewSandbox(e *VM) *Sandbox {
 		context: cSbx,
 		modules: NewModules(),
 	}
-	s.Init()
-	sbxMap[cSbx] = s
+	s.Init(e.vmType)
+	sbxMap.Store(cSbx, s)
 
 	return s
 }
@@ -75,7 +82,7 @@ func NewSandbox(e *VM) *Sandbox {
 // Release release sandbox and delete from map
 func (sbx *Sandbox) Release() {
 	if sbx.context != nil {
-		delete(sbxMap, sbx.context)
+		sbxMap.Delete(sbx.context)
 		C.releaseSandbox(sbx.context)
 	}
 	sbx.context = nil
@@ -83,7 +90,7 @@ func (sbx *Sandbox) Release() {
 
 // nolint
 // Init add system functions
-func (sbx *Sandbox) Init() {
+func (sbx *Sandbox) Init(vmType vmPoolType) {
 	// init require
 	C.InitGoConsole((C.consoleFunc)(C.goConsoleLog))
 	C.InitGoRequire((C.requireFunc)(C.requireModule))
@@ -102,7 +109,7 @@ func (sbx *Sandbox) Init() {
 		(C.getFunc)(C.goGet),
 		(C.delFunc)(C.goDel),
 		(C.globalGetFunc)(C.goGlobalGet))
-	C.loadVM(sbx.context)
+	C.loadVM(sbx.context, C.int(vmType))
 }
 
 // SetGasLimit set gas limit in context
@@ -126,11 +133,25 @@ func (sbx *Sandbox) SetModule(name, code string) {
 }
 
 // SetJSPath set js path and ReloadVM
-func (sbx *Sandbox) SetJSPath(path string) {
+func (sbx *Sandbox) SetJSPath(path string, vmType vmPoolType) {
 	cPath := C.CString(path)
 	defer C.free(unsafe.Pointer(cPath))
 	C.setJSPath(sbx.context, cPath)
-	C.loadVM(sbx.context)
+	C.loadVM(sbx.context, C.int(vmType))
+}
+
+func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
+	code := moduleReplacer.Replace(contract.Code)
+	cCode := C.CString(code)
+	defer C.free(unsafe.Pointer(cCode))
+
+	var cCompiledCode *C.char
+	C.compile(sbx.context, cCode, &cCompiledCode)
+
+	compiledCode := C.GoString(cCompiledCode)
+	C.free(unsafe.Pointer(cCompiledCode))
+
+	return compiledCode, nil
 }
 
 // Prepare for contract, inject code
@@ -142,8 +163,8 @@ func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args [
 
 	if function == "constructor" {
 		return fmt.Sprintf(`
-var _native_main = require('%s');
-var obj = new _native_main();
+%s
+var obj = new module.exports;
 
 var ret = 0;
 // store kv that was constructed by contract.
@@ -152,7 +173,7 @@ Object.keys(obj).forEach((key) => {
    ret = IOSTContractStorage.put(key, val);
 });
 ret;
-`, name), nil
+`, code), nil
 	}
 
 	argStr, err := formatFuncArgs(args)
@@ -161,14 +182,14 @@ ret;
 	}
 
 	return fmt.Sprintf(`
-var _native_main = require('%s');
-var obj = new _native_main();
+%s;
+var obj = new module.exports;
 
 var objObserver = observer.create(obj)
 
 // run contract with specified function and args
 objObserver.%s(%s)
-`, name, function, strings.Trim(argStr, "[]")), nil
+`, code, function, strings.Trim(argStr, "[]")), nil
 }
 
 // Execute prepared code, return results, gasUsed

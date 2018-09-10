@@ -32,25 +32,26 @@ type TxPoolImpl struct {
 	blockList *sync.Map
 	pendingTx *sync.Map
 
-	mu sync.RWMutex
-
-	quitCh chan struct{}
+	mu               sync.RWMutex
+	quitGenerateMode chan struct{}
+	quitCh           chan struct{}
 }
 
 // NewTxPoolImpl returns a default TxPoolImpl instance.
 func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
 	p := &TxPoolImpl{
-		blockCache: blockCache,
-		chTx:       make(chan *tx.Tx, 10000),
-		forkChain:  new(ForkChain),
-		blockList:  new(sync.Map),
-		pendingTx:  new(sync.Map),
-		global:     global,
-		p2pService: p2ps,
-		chP2PTx:    p2ps.Register("TxPool message", p2p.PublishTxRequest),
-		quitCh:     make(chan struct{}),
+		blockCache:       blockCache,
+		chTx:             make(chan *tx.Tx, 102400),
+		forkChain:        new(ForkChain),
+		blockList:        new(sync.Map),
+		pendingTx:        new(sync.Map),
+		global:           global,
+		p2pService:       p2ps,
+		chP2PTx:          p2ps.Register("TxPool message", p2p.PublishTxRequest),
+		quitGenerateMode: make(chan struct{}),
+		quitCh:           make(chan struct{}),
 	}
-
+	p.Lease()
 	return p, nil
 }
 
@@ -111,10 +112,19 @@ func (pool *TxPoolImpl) loop() {
 	}
 }
 
+func (pool *TxPoolImpl) Lock() {
+	pool.quitGenerateMode = make(chan struct{})
+}
+
+func (pool *TxPoolImpl) Lease() {
+	close(pool.quitGenerateMode)
+}
+
 func (pool *TxPoolImpl) verifyWorkers(p2pCh chan p2p.IncomingMessage, tCn chan *tx.Tx) {
-
 	for v := range p2pCh {
-
+		select {
+		case <-pool.quitGenerateMode:
+		}
 		var t tx.Tx
 		err := t.Decode(v.Data())
 		if err != nil {
@@ -184,7 +194,7 @@ func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 	return r
 }
 
-// AddTx del the transaction
+// DelTx del the transaction
 func (pool *TxPoolImpl) DelTx(hash []byte) error {
 
 	pool.pendingTx.Delete(string(hash))
@@ -194,6 +204,12 @@ func (pool *TxPoolImpl) DelTx(hash []byte) error {
 
 // PendingTxs get the pending transactions
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
+	start := time.Now()
+	defer func(t time.Time) {
+		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
+		metricsGetPendingTxTime.Set(float64(cost), nil)
+	}(start)
+
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
@@ -207,6 +223,8 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 		return true
 	})
 
+	metricsTxPoolSize.Set(float64(len(pendingList)), nil)
+
 	sort.Sort(pendingList)
 
 	l := len(pendingList)
@@ -219,6 +237,12 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 
 // ExistTxs determine if the transaction exists
 func (pool *TxPoolImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error) {
+	start := time.Now()
+	defer func(t time.Time) {
+		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
+		metricsExistTxTime.Observe(float64(cost), nil)
+		metricsExistTxCount.Add(1, nil)
+	}(start)
 
 	var r FRet
 
@@ -254,6 +278,13 @@ func (pool *TxPoolImpl) initBlockTx() {
 }
 
 func (pool *TxPoolImpl) verifyTx(t *tx.Tx) TAddTx {
+
+	start := time.Now()
+	defer func(t time.Time) {
+		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
+		metricsVerifyTxTime.Observe(float64(cost), nil)
+		metricsVerifyTxCount.Add(1, nil)
+	}(start)
 
 	if t.GasPrice <= 0 {
 		return GasPriceError
@@ -359,7 +390,7 @@ func (pool *TxPoolImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 }
 
 func (pool *TxPoolImpl) clearBlock() {
-	if pool.global.Mode() == global.ModeFetchGenesis {
+	if pool.global.Mode() == global.ModeInit {
 		return
 	}
 	ft := pool.slotToNSec(pool.blockCache.LinkedRoot().Block.Head.Time) - filterTime
@@ -375,6 +406,12 @@ func (pool *TxPoolImpl) clearBlock() {
 }
 
 func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
+	start := time.Now()
+	defer func(t time.Time) {
+		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
+		metricsAddTxTime.Observe(float64(cost), nil)
+		metricsAddTxCount.Add(1, nil)
+	}(start)
 
 	pool.mu.Lock()
 	defer pool.mu.Unlock()

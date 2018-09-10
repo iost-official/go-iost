@@ -21,6 +21,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"time"
 )
 
 var testID = []string{
@@ -864,7 +865,7 @@ func TestJS_LuckyBet(t *testing.T) {
 func TestJS_Vote1(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
-	lc, err := ReadFile("test_data/vote.js")
+	lc, err := ReadFile("../config/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -920,7 +921,7 @@ func TestJS_Vote1(t *testing.T) {
 func TestJS_VoteServi(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
-	lc, err := ReadFile("test_data/vote.js")
+	lc, err := ReadFile("../config/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -952,7 +953,7 @@ func TestJS_VoteServi(t *testing.T) {
 func TestJS_Vote(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
-	lc, err := ReadFile("test_data/vote.js")
+	lc, err := ReadFile("../config/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1157,4 +1158,102 @@ func TestJS_Vote(t *testing.T) {
 	t.Log(js.vi.Servi(testID[0]))
 	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
 	t.Log(js.vi.Balance(testID[0]))
+}
+
+func TestJS_Genesis(t *testing.T) {
+	witnessInfo := testID
+	var acts []*tx.Action
+	for i := 0; i < len(witnessInfo)/2; i++ {
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], 50000000))
+		acts = append(acts, &act)
+	}
+	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
+	t.Log("vote contract path: ", VoteContractPath)
+	// deploy iost.vote
+	voteFilePath := VoteContractPath + "vote.js"
+	voteAbiPath := VoteContractPath + "vote.js.abi"
+	fd, err := common.ReadFile(voteFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawCode := string(fd)
+	fd, err = common.ReadFile(voteAbiPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawAbi := string(fd)
+	c := contract.Compiler{}
+	code, err := c.Parse("iost.vote", rawCode, rawAbi)
+	if err != nil {
+		t.Fatal(err)
+	}
+	num := len(witnessInfo) / 2
+	proStr := "["
+	for i := 0; i < num; i++ {
+		proStr += fmt.Sprintf(`\"%v\"`, witnessInfo[2*i])
+		if i != num-1 {
+			proStr += ","
+		}
+	}
+	proStr += "]"
+	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
+	acts = append(acts, &act)
+	act1 := tx.NewAction("iost.vote", "Init", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
+	acts = append(acts, &act1)
+
+	// deploy iost.bonus
+	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
+	acts = append(acts, &act2)
+	act3 := tx.NewAction("iost.bonus", "Init", fmt.Sprintf(`[]`))
+	acts = append(acts, &act3)
+
+	trx := tx.NewTx(acts, nil, 10000000, 0, 0)
+	trx.Time = 0
+	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"), crypto.Secp256k1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trx, err = tx.SignTx(trx, acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	blockHead := block.BlockHead{
+		Version:    0,
+		ParentHash: nil,
+		Number:     0,
+		Witness:    acc.ID,
+		Time:       time.Now().Unix() / common.SlotLength,
+	}
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.RemoveAll("mvcc")
+
+	engine := NewEngine(&blockHead, mvccdb)
+	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
+	t.Log("js path: ", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
+	txr, err := engine.Exec(trx)
+	if err != nil {
+		t.Fatal(fmt.Errorf("exec tx failed, stop the pogram. err: %v", err))
+	}
+	t.Log(txr)
+	t.Log(database.MustUnmarshal(database.NewVisitor(0, mvccdb).Get("iost.vote" + "-" + "pendingProducerList")))
+	if txr.Status.Code != tx.Success {
+		t.Fatal("exec trx failed.")
+	}
+	blk := block.Block{
+		Head:     &blockHead,
+		Sign:     &crypto.Signature{},
+		Txs:      []*tx.Tx{trx},
+		Receipts: []*tx.TxReceipt{txr},
+	}
+	blk.Head.TxsHash = blk.CalculateTxsHash()
+	blk.Head.MerkleHash = blk.CalculateMerkleHash()
+	err = blk.CalculateHeadHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 }

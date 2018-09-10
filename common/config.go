@@ -15,9 +15,10 @@ type ACCConfig struct {
 }
 
 type GenesisConfig struct {
-	CreateGenesis bool
-	GenesisHash   string
-	WitnessInfo   []string
+	CreateGenesis    bool
+	GenesisHash      string
+	WitnessInfo      []string
+	VoteContractPath string
 }
 
 type DBConfig struct {
@@ -35,6 +36,7 @@ type P2PConfig struct {
 	SeedNodes  []string
 	ChainID    uint32
 	Version    uint16
+	DataPath   string
 }
 
 //RPCConfig is the config for RPC Server.
