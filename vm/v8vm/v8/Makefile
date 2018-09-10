@@ -53,4 +53,4 @@ clean:
 	-rm -rf *$(LIB_SUFFIX)
 
 js_bin:
-	@$(foreach file, $(JSFILES), xxd -i ./libjs/$(file) ./libjs/include/$(file).h;)
+	@$(foreach file, $(JSFILES), xxd -i ./libjs/$(file) | sed 's/\([0-9a-f]\)$$/\0, 0x00/' > ./libjs/include/$(file).h;)

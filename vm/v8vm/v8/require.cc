@@ -40,18 +40,6 @@ void InitGoRequire(requireFunc require) {
 
 void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     Isolate *isolate = info.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
-    Local<Object> global = context->Global();
-    Local<Value> val = global->GetInternalField(0);
-    if (!val->IsExternal()) {
-        Local<Value> err = Exception::Error(
-            String::NewFromUtf8(isolate, "nativeRequire val error")
-        );
-        isolate->ThrowException(err);
-        return;
-    }
-    SandboxPtr sbxPtr = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
-    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
 
     Local<Value> path = info[0];
     if (!path->IsString()) {
@@ -63,14 +51,13 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     }
 
     String::Utf8Value pathStr(path);
-    std::string fullRelPath = std::string("__libjs_") + *pathStr + "_js";
 
-    if (jsLib.find(fullRelPath) == jsLib.end()) {
+    if (jsLib.find(pathStr) == jsLib.end()) {
         return;
     }
 
-    std::cout << jsLib[fullRelPath] << std::endl;
-    Local<String> jsLibStr = String::NewFromUtf8(isolate, jsLib[fullRelPath], NewStringType::kNormal).ToLocalChecked();
+    std::cout << jsLib[pathStr] << std::endl;
+    Local<String> jsLibStr = String::NewFromUtf8(isolate, jsLib[pathStr], NewStringType::kNormal).ToLocalChecked();
     info.GetReturnValue().Set(jsLibStr);
     return;
 }
