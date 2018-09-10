@@ -26,6 +26,7 @@ func (m *MapHandler) addField(key, field string) {
 	s := m.db.Get(MapPrefix + key)
 	if s == "n" {
 		m.db.Put(MapPrefix+key, "@"+field)
+		return
 	}
 	s = s + "@" + field
 	m.db.Put(MapPrefix+key, s)
