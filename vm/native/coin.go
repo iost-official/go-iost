@@ -7,6 +7,7 @@ import (
 
 var coinABIs map[string]*abi
 
+// const prifix
 const (
 	CoinContractPrefix = "OC"
 	CoinRatePrefix     = "OR"

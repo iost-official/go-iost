@@ -38,10 +38,10 @@ const (
 	ContractCallUnexpectedError
 )
 
-// ApiCall err list
+// APICall err list
 const (
-	ApiCallSuccess = iota
-	ApiCallUnexpectedError
+	APICallSuccess = iota
+	APICallUnexpectedError
 )
 
 //export goTransfer
@@ -253,7 +253,7 @@ func goCallWithReceipt(cSbx C.SandboxPtr, contract, api, args *C.char, result **
 func goRequireAuth(cSbx C.SandboxPtr, pubKey *C.char, ok *C.bool, gasUsed *C.size_t) int {
 	sbx, sbOk := GetSandbox(cSbx)
 	if !sbOk {
-		return ApiCallUnexpectedError
+		return APICallUnexpectedError
 	}
 
 	pubKeyStr := C.GoString(pubKey)
@@ -262,34 +262,34 @@ func goRequireAuth(cSbx C.SandboxPtr, pubKey *C.char, ok *C.bool, gasUsed *C.siz
 
 	*ok = C.bool(callOk)
 	if callOk != true {
-		return ApiCallUnexpectedError
+		return APICallUnexpectedError
 	}
 
 	*gasUsed = C.size_t(RequireAuthCost.Data)
 
-	return ApiCallSuccess
+	return APICallSuccess
 }
 
 //export goGrantServi
 func goGrantServi(cSbx C.SandboxPtr, pubKey *C.char, amount *C.char, gasUsed *C.size_t) int {
 	sbx, sbOk := GetSandbox(cSbx)
 	if !sbOk {
-		return ApiCallUnexpectedError
+		return APICallUnexpectedError
 	}
 
 	pubKeyStr := C.GoString(pubKey)
 	amountStr := C.GoString(amount)
 	amountInt64, err := strconv.ParseInt(amountStr, 10, 64)
 	if err != nil || amountInt64 <= 0 {
-		return ApiCallUnexpectedError
+		return APICallUnexpectedError
 	}
 
 	cost, err := sbx.host.GrantServi(pubKeyStr, amountInt64)
 	*gasUsed = C.size_t(cost.Data)
 
 	if err != nil {
-		return ApiCallUnexpectedError
+		return APICallUnexpectedError
 	}
 
-	return ApiCallSuccess
+	return APICallSuccess
 }

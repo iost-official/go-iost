@@ -2,6 +2,7 @@ package native
 
 import (
 	"errors"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
@@ -12,7 +13,7 @@ var domainABIs map[string]*abi
 func init() {
 	domainABIs = make(map[string]*abi)
 	register(&domainABIs, link)
-	register(&domainABIs, transferUrl)
+	register(&domainABIs, transferURL)
 
 }
 
@@ -56,7 +57,7 @@ var (
 			return nil, cost, nil
 		},
 	}
-	transferUrl = &abi{
+	transferURL = &abi{
 		name: "Transfer",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {

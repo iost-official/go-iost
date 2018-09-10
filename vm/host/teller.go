@@ -38,6 +38,7 @@ func (h *Teller) transfer(from, to string, amount int64) error {
 	return ErrBalanceNotEnough
 }
 
+// GetBalance return balance of an id
 func (h *Teller) GetBalance(from string) (int64, *contract.Cost, error) {
 	var bl int64
 	if strings.HasPrefix(from, "IOST") {
