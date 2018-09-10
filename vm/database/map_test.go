@@ -5,7 +5,7 @@ import (
 
 	"strings"
 
-	"github.com/gin-gonic/gin/json"
+	"encoding/json"
 )
 
 func TestJson(t *testing.T) {
