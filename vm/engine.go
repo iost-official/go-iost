@@ -128,19 +128,8 @@ func (e *engineImpl) SetUp(k, v string) error {
 	}
 	return nil
 }
-func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
-	e.ho.Logger().Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
-	err := checkTx(tx0)
-	if err != nil {
-		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
-	}
 
-	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
-
-	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
-		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
-	}
-
+func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	loadTxInfo(e.ho, tx0)
 	defer func() {
 		e.ho.PopCtx()
@@ -161,22 +150,16 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 			e.ho.DB().Rollback()
 			break
 		}
-		if action.Contract == "iost.system" && action.ActionName == "SetCode" {
-			hasSetCode = true
-		}
+		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
 
-		cost, status, receipts, err2 := e.runAction(*action)
+		cost, status, receipts, err := e.runAction(*action)
 		e.logger.Infof("run action : %v, result is %v", action, status.Code)
 		e.logger.Debug("used cost > ", cost)
 		e.logger.Debugf("status > \n%v\n", status)
 		//e.logger.Debugf("receipts > \n%v\n", receipts)
 
-		if err2 != nil {
-			return nil, err2
-		}
-
-		if cost == nil {
-			panic("cost is nil")
+		if err != nil {
+			return nil, err
 		}
 
 		txr.Status = status
@@ -199,7 +182,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		}
 	}
 
-	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+	err := e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
 	if err != nil {
 		e.ho.DB().Rollback()
 		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
@@ -212,6 +195,22 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	}
 
 	return &txr, nil
+}
+
+func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
+	e.ho.Logger().Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
+	err := checkTx(tx0)
+	if err != nil {
+		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
+	}
+
+	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
+
+	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
+		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
+	}
+
+	return e.exec(tx0)
 }
 func (e *engineImpl) GC() {
 	e.logger.Stop()

@@ -6,36 +6,19 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 )
 
-// ABI ...
+// ABI generate iost.system abi and contract
 func ABI() *contract.Contract {
-	c := &contract.Contract{
-		ID:   "iost.system",
-		Code: "codes",
-		Info: &contract.Info{
-			Lang:        "native",
-			VersionCode: "1.0.0",
-			Abis:        make([]*contract.ABI, 0),
-		},
-	}
-
-	for _, v := range systemABIs {
-		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
-			Name:     v.name,
-			Args:     v.args,
-			Payment:  0,
-			GasPrice: int64(1000),
-			Limit:    contract.NewCost(100, 100, 100),
-		})
-	}
-
-	sort.Sort(abiSlice(c.Info.Abis))
-
-	return c
+	return genNativeAbi("iost.system", systemABIs)
 }
 
+// BonusABI generate iost.bonus abi and contract
 func BonusABI() *contract.Contract {
+	return genNativeAbi("iost.bonus", bonusABIs)
+}
+
+func genNativeAbi(id string, abi map[string]*abi) *contract.Contract {
 	c := &contract.Contract{
-		ID:   "iost.bonus",
+		ID:   id,
 		Code: "codes",
 		Info: &contract.Info{
 			Lang:        "native",
@@ -44,7 +27,7 @@ func BonusABI() *contract.Contract {
 		},
 	}
 
-	for _, v := range bonusABIs {
+	for _, v := range abi {
 		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
 			Name:     v.name,
 			Args:     v.args,

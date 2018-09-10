@@ -57,7 +57,7 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
-			token := int64(amount * 1.0 / totalServi * bl)
+			token := amount * 1.0 / totalServi * bl
 			if token > bl {
 				token = bl
 			}

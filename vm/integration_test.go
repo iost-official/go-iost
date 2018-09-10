@@ -1171,6 +1171,7 @@ func TestJS_Vote(t *testing.T) {
 	t.Log(js.vi.Balance(testID[0]))
 }
 
+//nolint
 func TestJS_Genesis(t *testing.T) {
 	witnessInfo := testID
 	var acts []*tx.Action
