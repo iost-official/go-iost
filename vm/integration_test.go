@@ -967,13 +967,23 @@ func TestJS_Vote(t *testing.T) {
 	js.SetAPI("Vote", "string", "string", "number")
 	js.SetAPI("Unvote", "string", "string", "number")
 	js.SetAPI("Stat")
-	js.SetAPI("Init")
+	js.SetAPI("init")
+	js.SetAPI("InitProducer", "number", "string")
 	for i := 0; i <= 18; i += 2 {
 		js.vi.SetBalance(testID[i], 5e+7)
 	}
 	js.vi.Commit()
 	t.Log(js.DoSet())
-	t.Log(js.TestJS("Init", `[]`))
+	num := 7
+	proStr := "["
+	for i := 0; i < num; i++ {
+		proStr += fmt.Sprintf(`\"%v\"`, testID[2*i])
+		if i != num-1 {
+			proStr += ","
+		}
+	}
+	proStr += "]"
+	t.Log(js.TestJS("InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr)))
 
 	keys := []string{
 		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
@@ -1185,6 +1195,7 @@ func TestJS_Genesis(t *testing.T) {
 	rawAbi := string(fd)
 	c := contract.Compiler{}
 	code, err := c.Parse("iost.vote", rawCode, rawAbi)
+	t.Log(code)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1199,14 +1210,12 @@ func TestJS_Genesis(t *testing.T) {
 	proStr += "]"
 	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
 	acts = append(acts, &act)
-	act1 := tx.NewAction("iost.vote", "Init", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
+	act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
 	acts = append(acts, &act1)
 
 	// deploy iost.bonus
 	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
 	acts = append(acts, &act2)
-	act3 := tx.NewAction("iost.bonus", "Init", fmt.Sprintf(`[]`))
-	acts = append(acts, &act3)
 
 	trx := tx.NewTx(acts, nil, 10000000, 0, 0)
 	trx.Time = 0

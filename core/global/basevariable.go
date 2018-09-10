@@ -83,13 +83,11 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	proStr += "]"
 	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
 	acts = append(acts, &act)
-	act1 := tx.NewAction("iost.vote", "Init", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
+	act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
 	acts = append(acts, &act1)
 	// deploy iost.bonus
 	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
 	acts = append(acts, &act2)
-	act3 := tx.NewAction("iost.bonus", "Init", fmt.Sprintf(`[]`))
-	acts = append(acts, &act3)
 
 	trx := tx.NewTx(acts, nil, 100000000, 0, 0)
 	trx.Time = 0

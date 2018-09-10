@@ -23,7 +23,7 @@ var (
 		},
 	}
 	initFunc = &abi{
-		name: "Init",
+		name: "init",
 		args: []string{},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			return []interface{}{}, host.CommonErrorCost(1), nil

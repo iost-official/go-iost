@@ -31,6 +31,9 @@ let IOSTContractStorage = (function () {
         this.mapGet = function (k, f) {
             return storage.mapGet(k, f);
         };
+        this.mapKeys = function (k) {
+            return [];
+        };
         this.mapDel = function (k, f) {
             return storage.mapDel(k, f);
         }
@@ -51,6 +54,7 @@ let IOSTContractStorage = (function () {
         mapPut: mapStorageObj.mapPut,
         mapHas: mapStorageObj.mapHas,
         mapGet: mapStorageObj.mapGet,
+        mapKeys: mapStorageObj.mapKeys,
         mapDel: mapStorageObj.mapDel,
         globalGet: globalStorageObj.get,
     }

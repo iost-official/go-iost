@@ -14,7 +14,18 @@
             "price_limit": 1
         },
         {
-            "name": "Init",
+            "name": "init",
+            "args": [],
+            "payment": 0,
+            "cost_limit": [
+                1,
+                1,
+                1
+            ],
+            "price_limit": 1
+        },
+        {
+            "name": "InitProducer",
             "args": [
                 "number",
                 "string"
