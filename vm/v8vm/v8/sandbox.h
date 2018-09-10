@@ -3,7 +3,6 @@
 
 #include "v8.h"
 #include "vm.h"
-#include "ThreadPool.h"
 
 using namespace v8;
 

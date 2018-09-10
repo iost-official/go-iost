@@ -41,7 +41,7 @@ type TxPoolImpl struct {
 func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
 	p := &TxPoolImpl{
 		blockCache:       blockCache,
-		chTx:             make(chan *tx.Tx, 10000),
+		chTx:             make(chan *tx.Tx, 102400),
 		forkChain:        new(ForkChain),
 		blockList:        new(sync.Map),
 		pendingTx:        new(sync.Map),

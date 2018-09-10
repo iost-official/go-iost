@@ -332,14 +332,14 @@ func TestEngine_Loop(t *testing.T) {
 	host, code := MyInit(t, "loop")
 
 	_, _, err := vmPool.LoadAndCall(host, code, "for")
-	if err == nil || !strings.HasPrefix(err.Error(), "Uncaught exception: Error: IOSTContractInstruction GasUsed exceed GasLimit!") {
-		t.Fatalf("LoadAndCall for should return error: Uncaught exception: Error: IOSTContractInstruction GasUsed exceed GasLimit!, but got %v\n", err.Error())
+	if err == nil || err.Error() != "out of gas" {
+		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
 	}
 
 	host, code = MyInit(t, "loop")
 	_, _, err = vmPool.LoadAndCall(host, code, "for2")
-	if err == nil || !strings.HasPrefix(err.Error(), "Uncaught exception: Error: IOSTContractInstruction GasUsed exceed GasLimit!") {
-		t.Fatalf("LoadAndCall for should return error: Uncaught exception: Error: IOSTContractInstruction GasUsed exceed GasLimit!, but got %v\n", err)
+	if err == nil || err.Error() != "out of gas" {
+		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
 	}
 
 	host, code = MyInit(t, "loop")
@@ -371,22 +371,22 @@ func TestEngine_Loop(t *testing.T) {
 
 	host, code = MyInit(t, "loop")
 	_, _, err = vmPool.LoadAndCall(host, code, "while")
-	if err == nil || !strings.HasPrefix(err.Error(), "Uncaught exception: Error: IOSTContractInstruction GasUsed exceed GasLimit!") {
-		t.Fatalf("LoadAndCall for should return error: Uncaught exception: Error: IOSTContractInstruction GasUsed exceed GasLimit!, but got %v\n", err)
+	if err == nil || err.Error() != "out of gas" {
+		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
 	}
 
 	host, code = MyInit(t, "loop")
 	_, _, err = vmPool.LoadAndCall(host, code, "dowhile")
-	if err == nil || !strings.HasPrefix(err.Error(), "Uncaught exception: Error: IOSTContractInstruction GasUsed exceed GasLimit!") {
-		t.Fatalf("LoadAndCall for should return error: Uncaught exception: Error: IOSTContractInstruction GasUsed exceed GasLimit!, but got %v\n", err)
+	if err == nil || err.Error() != "out of gas" {
+		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
 	}
 }
 
 func TestEngine_Func(t *testing.T) {
 	host, code := MyInit(t, "func")
 	_, _, err := vmPool.LoadAndCall(host, code, "func1")
-	if err == nil || !strings.HasPrefix(err.Error(), "Uncaught exception: Error: IOSTContractInstruction GasUsed exceed GasLimit!") {
-		t.Fatalf("LoadAndCall for should return error: Uncaught exception: Error: IOSTContractInstruction GasUsed exceed GasLimit!, but got %v\n", err)
+	if err == nil || err.Error() != "out of gas" {
+		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
 	}
 
 	//host, code = MyInit(t, "func", int64(100000000000))

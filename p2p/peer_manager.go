@@ -37,7 +37,7 @@ const (
 	peerResponseCount = 20
 	maxPeerQuery      = 30
 
-	incomingMsgChanSize = 1024
+	incomingMsgChanSize = 102400
 
 	routingTableFile = "routing.table"
 )

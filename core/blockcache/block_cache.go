@@ -6,13 +6,14 @@ import (
 	"sync"
 
 	"encoding/json"
+	"strconv"
+
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	"strconv"
 )
 
 type CacheStatus int
@@ -542,8 +543,9 @@ func (bcn *BlockCacheNode) DrawTree() string {
 		for j := 0; j <= picY; j++ {
 			l = l + pic[i][j]
 		}
-		ilog.Info(l)
+		ret += l
 	}
+	ilog.Info(ret)
 	return ret
 }
 
