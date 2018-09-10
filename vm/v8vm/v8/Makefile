@@ -1,10 +1,12 @@
  CFLAGS=-g -fPIC -m64 -Wall -Wextra -Wno-unused-parameter -Wno-unused-result -O3
 
-CXXFLAGS=-g -std=c++11 -fno-rtti -fPIC -m64 -Wall -Wextra -Wno-unused-parameter -Wno-unused-result -O3 -I./include/common
+CXXFLAGS=-g -std=c++11 -fno-rtti -fPIC -m64 -Wall -Wextra -Wno-unused-parameter -Wno-unused-result -O3 -I./include/common -I./libjs/include
 
 LDFLAGS=-fvisibility=hidden
 
 LIBS=-lv8_libbase -lv8_libplatform
+
+JSFILES = $(shell ls ./libjs | grep -v include)
 
 OS_NAME = $(shell uname -s)
 LC_OS_NAME = $(shell echo $(OS_NAME) | tr '[A-Z]' '[a-z]')
@@ -49,3 +51,6 @@ deploy:
 clean:
 	-rm -rf *.o
 	-rm -rf *$(LIB_SUFFIX)
+
+js_bin:
+	@$(foreach file, $(JSFILES), xxd -i ./libjs/$(file) ./libjs/include/$(file).h;)
