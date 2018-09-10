@@ -24,19 +24,21 @@ class Storage1 {
         return JSON.parse(storage.get("str"));
     }
 
-    /*
     mset(k, f, v) {
-        return IOSTContract
+        return storage.mapPut(k, f, JSON.stringify(v));
     }
 
-    mget(k) {
-        return storage.get(k)
+    mget(k, f) {
+        return JSON.parse(storage.mapGet(k, f));
     }
 
-    mdelete(k) {
-        return storage.del(k);
+    mhas(k, f) {
+        return storage.mapHas(k, f);
     }
-    */
+
+    mdelete(k, f) {
+        return storage.mapDel(k, f);
+    }
 };
 
 module.exports = Storage1;
