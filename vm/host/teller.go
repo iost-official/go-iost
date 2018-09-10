@@ -7,19 +7,19 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
-// const ...
+// const prefixs
 const (
 	ContractAccountPrefix = "CA"
 	ContractGasPrefix     = "CG"
 )
 
-// Teller ...
+// Teller handler of iost
 type Teller struct {
 	h    *Host
 	cost map[string]*contract.Cost
 }
 
-// NewTeller ...
+// NewTeller new teller
 func NewTeller(h *Host) Teller {
 	return Teller{
 		h:    h,
@@ -49,7 +49,7 @@ func (h *Teller) GetBalance(from string) (int64, *contract.Cost, error) {
 	return bl, GetCost, nil
 }
 
-// GrantCoin ...
+// GrantCoin issue coin
 func (h *Teller) GrantCoin(coinName, to string, amount int64) (*contract.Cost, error) {
 	if amount <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
@@ -62,7 +62,7 @@ func (h *Teller) GrantCoin(coinName, to string, amount int64) (*contract.Cost, e
 	return TransferCost, nil
 }
 
-// ConsumeCoin ...
+// ConsumeCoin consume coin from
 func (h *Teller) ConsumeCoin(coinName, from string, amount int64) (cost *contract.Cost, err error) {
 	if amount <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue

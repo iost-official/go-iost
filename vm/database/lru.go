@@ -2,13 +2,13 @@ package database
 
 import "github.com/hashicorp/golang-lru"
 
-// LRU ...
+// LRU lru cache
 type LRU struct {
 	cache *lru.Cache
 	db    database
 }
 
-// NewLRU ...
+// NewLRU make a new lru
 func NewLRU(length int, db database) *LRU {
 	if length <= 0 {
 		return &LRU{
@@ -27,7 +27,7 @@ func NewLRU(length int, db database) *LRU {
 	}
 }
 
-// Get ...
+// Get get from cache
 func (m *LRU) Get(key string) (value string) {
 	if m.cache == nil {
 		return m.db.Get(key)
@@ -40,7 +40,7 @@ func (m *LRU) Get(key string) (value string) {
 	return v.(string)
 }
 
-// Put ...
+// Put put kv to cache
 func (m *LRU) Put(key, value string) {
 	if m.cache != nil && m.cache.Contains(key) {
 		m.cache.Add(key, value)
@@ -48,7 +48,7 @@ func (m *LRU) Put(key, value string) {
 	m.db.Put(key, value)
 }
 
-// Has ...
+// Has if key exist
 func (m *LRU) Has(key string) bool {
 	if m.cache == nil {
 		return m.db.Has(key)
@@ -64,12 +64,12 @@ func (m *LRU) Has(key string) bool {
 	return ok
 }
 
-// Keys ...
+// Keys list keys under prefix, do nothing
 func (m *LRU) Keys(prefix string) []string {
 	return m.db.Keys(prefix)
 }
 
-// Del ...
+// Del delete key from cache
 func (m *LRU) Del(key string) {
 	if m.cache != nil {
 		m.cache.Remove(key)
@@ -77,7 +77,7 @@ func (m *LRU) Del(key string) {
 	m.db.Del(key)
 }
 
-// Purge ...
+// Purge delete all keys
 func (m *LRU) Purge() {
 	if m.cache != nil {
 		m.cache.Purge()

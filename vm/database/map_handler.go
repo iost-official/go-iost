@@ -2,18 +2,18 @@ package database
 
 import "strings"
 
-// MapHandler ...
+// MapHandler handler of map
 type MapHandler struct {
 	db database
 }
 
-// MapPrefix ...
+// MapPrefix prefix of map key
 const MapPrefix = "m-"
 
-// Separator ...
+// Separator separator of map key
 const Separator = "-"
 
-// MPut ...
+// MPut put value in kfv storage o(1)
 func (m *MapHandler) MPut(key, field, value string) {
 	m.db.Put(MapPrefix+key+Separator+field, value)
 	m.addField(key, field)
@@ -37,23 +37,23 @@ func (m *MapHandler) delField(key, field string) {
 	m.db.Put(MapPrefix+key, s2)
 }
 
-// MGet ...
+// MGet get value from storage o(1)
 func (m *MapHandler) MGet(key, field string) (value string) {
 	return m.db.Get(MapPrefix + key + Separator + field)
 }
 
-// MHas ...
+// MHas if has map and field
 func (m *MapHandler) MHas(key, field string) bool {
 	return m.db.Has(MapPrefix + key + Separator + field)
 }
 
-// MKeys ...
+// MKeys list fields of map o(1)
 func (m *MapHandler) MKeys(key string) (fields []string) {
 	s := m.db.Get(MapPrefix + key)
 	return strings.Split(s, "@")[1:]
 }
 
-// MDel ...
+// MDel delete field of map o(1)
 func (m *MapHandler) MDel(key, field string) {
 	if !m.MHas(key, field) {
 		return
