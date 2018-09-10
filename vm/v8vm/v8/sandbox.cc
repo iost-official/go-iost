@@ -246,7 +246,20 @@ void loadVM(SandboxPtr ptr, int vmType) {
     }
 }
 
+class cv_defer
+{
+public:
+    cv_defer(std::condition_variable& cv): mCV(cv) {}
+    ~cv_defer()
+    {
+        mCV.notify_one();
+    }
+private:
+    std::condition_variable& mCV;
+};
+
 void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, std::condition_variable &executionFinished) {
+    cv_defer cvDefer(executionFinished);
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
