@@ -1,15 +1,29 @@
 #include "require.h"
 
+#include "bignumber.js.h"
+#include "blockchain.js.h"
+#include "console.js.h"
+#include "esprima.js.h"
+#include "inject_gas.js.h"
+#include "int64.js.h"
+#include "storage.js.h"
+#include "utils.js.h"
+
 #include <stdlib.h>
 #include <fstream>
-#include <sstream>
-#include <iostream>
+#include <unordered_map>
 
-static char injectGasFormat[] =
-    "(function(){\n"
-    "const source = \"%s\";\n"
-    "return injectGas(source);\n"
-    "})();";
+std::unordered_map<std::string, const char *> jsLib = {
+    {"bignumber", reinterpret_cast<char *>(__libjs_bignumber_js)},
+    {"blockchain", reinterpret_cast<char *>(__libjs_blockchain_js)},
+    {"console", reinterpret_cast<char *>(__libjs_console_js)},
+    {"esprima", reinterpret_cast<char *>(__libjs_esprima_js)},
+    {"inject_gas", reinterpret_cast<char *>(__libjs_inject_gas_js)},
+    {"int64", reinterpret_cast<char *>(__libjs_int64_js)},
+    {"storage", reinterpret_cast<char *>(__libjs_storage_js)},
+    {"utils", reinterpret_cast<char *>(__libjs_utils_js)},
+};
+
 static requireFunc CRequire = nullptr;
 
 void InitGoRequire(requireFunc require) {
@@ -18,18 +32,6 @@ void InitGoRequire(requireFunc require) {
 
 void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     Isolate *isolate = info.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
-    Local<Object> global = context->Global();
-    Local<Value> val = global->GetInternalField(0);
-    if (!val->IsExternal()) {
-        Local<Value> err = Exception::Error(
-            String::NewFromUtf8(isolate, "nativeRequire val error")
-        );
-        isolate->ThrowException(err);
-        return;
-    }
-    SandboxPtr sbxPtr = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
-    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
 
     Local<Value> path = info[0];
     if (!path->IsString()) {
@@ -41,36 +43,14 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
     }
 
     String::Utf8Value pathStr(path);
-    std::string fullRelPath = std::string(sbx->jsPath) + *pathStr + ".js";
 
-    std::ifstream f(fullRelPath);
-    std::stringstream buffer;
-    buffer << f.rdbuf();
-
-    // if it's jsFile under jsPath
-    if (buffer.str().length() > 0) {
-        info.GetReturnValue().Set(String::NewFromUtf8(isolate, buffer.str().c_str()));
+    if (jsLib.find(*pathStr) == jsLib.end()) {
         return;
     }
 
-    // read go standard module again
-    char *code = CRequire(sbxPtr, *pathStr);
-    char *injectCode = nullptr;
-    asprintf(&injectCode, injectGasFormat, code);
-    free(code);
-
-    Local<String> source = String::NewFromUtf8(isolate, injectCode, NewStringType::kNormal).ToLocalChecked();
-    free(injectCode);
-    Local<String> fileName = String::NewFromUtf8(isolate, *pathStr, NewStringType::kNormal).ToLocalChecked();
-    Local<Script> script = Script::Compile(source, fileName);
-
-    if (!script.IsEmpty()) {
-        Local<Value> result = script->Run();
-        if (!result.IsEmpty()) {
-            String::Utf8Value retStr(result);
-            info.GetReturnValue().Set(result);
-        }
-    }
+    Local<String> jsLibStr = String::NewFromUtf8(isolate, jsLib[*pathStr], NewStringType::kNormal).ToLocalChecked();
+    info.GetReturnValue().Set(jsLibStr);
+    return;
 }
 
 void InitRequire(Isolate *isolate, Local<ObjectTemplate> globalTpl) {

@@ -5,6 +5,9 @@
 #include "blockchain.h"
 #include "instruction.h"
 
+#include "vm.js.h"
+#include "compile_vm.js.h"
+
 #include <assert.h>
 #include <cstring>
 #include <string>
@@ -17,6 +20,9 @@
 #include <iostream>
 #include <unistd.h>
 #include <chrono>
+
+char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
+char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
 
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
@@ -221,17 +227,27 @@ void loadVM(SandboxPtr ptr, int vmType) {
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 
-    std::string vmPath = std::string(sbx->jsPath);
-    if (vmType == 0) {
-        vmPath += "compile_vm.js";
-    } else {
-        vmPath += "vm.js";
-    }
-    std::ifstream f(vmPath);
-    std::stringstream buffer;
-    buffer << f.rdbuf();
+//    std::string vmPath = std::string(sbx->jsPath);
+//    if (vmType == 0) {
+//        vmPath += "compile_vm.js";
+//    } else {
+//        vmPath += "vm.js";
+//    }
+//    std::ifstream f(vmPath);
+//    std::stringstream buffer;
+//    buffer << f.rdbuf();
 
-    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
+    std::string vmPath;
+    Local<String> source;
+    if (vmType == 0) {
+        vmPath = "compile_vm.js";
+        source = String::NewFromUtf8(isolate, compileVmJsLib, NewStringType::kNormal).ToLocalChecked();
+    } else {
+        vmPath = "vm.js";
+        source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
+    }
+
+//    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
 
