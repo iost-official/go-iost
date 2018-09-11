@@ -37,6 +37,10 @@ func (m *MapHandler) addField(key, field string) {
 func (m *MapHandler) delField(key, field string) {
 	s := m.db.Get(MapPrefix + key)
 	s2 := strings.Replace(s, "@"+field, "", 1)
+	if s2 == "" {
+		m.db.Del(MapPrefix + key)
+		return
+	}
 	m.db.Put(MapPrefix+key, s2)
 }
 
