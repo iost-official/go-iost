@@ -11,13 +11,13 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
-// Monitor ...
+// Monitor monitor interface
 type Monitor interface {
 	Call(host *Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
 	Compile(con *contract.Contract) (string, error)
 }
 
-// Host ...
+// Host host struct, used as isolate of vm
 type Host struct {
 	DBHandler
 	Info
@@ -32,7 +32,7 @@ type Host struct {
 	monitor Monitor
 }
 
-// NewHost ...
+// NewHost get a new host
 func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.Logger) *Host {
 	h := &Host{
 		ctx:     ctx,
@@ -51,18 +51,18 @@ func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.L
 
 }
 
-// Context ...
+// Context get context in host
 func (h *Host) Context() *Context {
 	return h.ctx
 }
 
-// SetContext ...
+// SetContext set a new context to host
 func (h *Host) SetContext(ctx *Context) {
 	h.ctx = ctx
 
 }
 
-// Call  ...
+// Call  call a new contract in this context
 func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
 
 	// save stack
@@ -90,7 +90,7 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *
 	return rtn, cost, err
 }
 
-// CallWithReceipt ...
+// CallWithReceipt call and generate receipt
 func (h *Host) CallWithReceipt(contractName, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
 	rtn, cost, err := h.Call(contractName, api, args...)
 
@@ -113,7 +113,7 @@ func (h *Host) CallWithReceipt(contractName, api string, args ...interface{}) ([
 
 }
 
-// SetCode ...
+// SetCode set code to storage
 func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	code, err := h.monitor.Compile(c)
 	if err != nil {
@@ -121,12 +121,20 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	}
 	c.Code = code
 
+	initABI := contract.ABI{
+		Name:    "init",
+		Payment: 0,
+		Args:    []string{},
+	}
+
+	c.Info.Abis = append(c.Info.Abis, &initABI)
+
 	l := len(c.Encode()) // todo multi Encode call
 	//ilog.Debugf("length is : %v", l)
 
 	h.db.SetContract(c)
 
-	_, cost, err := h.monitor.Call(h, c.ID, "constructor")
+	_, cost, err := h.monitor.Call(h, c.ID, "init")
 
 	cost.AddAssign(CodeSavageCost(l))
 
@@ -135,7 +143,7 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	return cost, err // todo check set cost
 }
 
-// UpdateCode ...
+// UpdateCode update code
 func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*contract.Cost, error) {
 	oc := h.db.Contract(c.ID)
 	if oc == nil {
@@ -163,7 +171,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 	return c2, err
 }
 
-// DestroyCode ...
+// DestroyCode delete code
 func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 	// todo free kv
 
@@ -191,23 +199,23 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 	return DelContractCost, nil
 }
 
-// Logger ...
+// Logger get a log in host
 func (h *Host) Logger() *ilog.Logger {
 	return h.logger
 }
 
-// DB ...
+// DB get current version mvccdb
 func (h *Host) DB() *database.Visitor {
 	return h.db
 }
 
-// PushCtx ...
+// PushCtx make a new context based on current one
 func (h *Host) PushCtx() {
 	ctx := NewContext(h.ctx)
 	h.ctx = ctx
 }
 
-// PopCtx ...
+// PopCtx pop current context
 func (h *Host) PopCtx() {
 	ctx := h.ctx.Base()
 	h.ctx = ctx

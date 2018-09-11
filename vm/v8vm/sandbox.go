@@ -20,6 +20,10 @@ int goGrantServi(SandboxPtr, const char *, const char *, size_t *);
 int goPut(SandboxPtr, const char *, const char *, size_t *);
 char *goGet(SandboxPtr, const char *, size_t *);
 int goDel(SandboxPtr, const char *, size_t *);
+int goMapPut(SandboxPtr, const char *, const char *, const char *, size_t *);
+bool goMapHas(SandboxPtr, const char *, const char *, size_t *);
+char *goMapGet(SandboxPtr, const char *, const char *, size_t *);
+int goMapDel(SandboxPtr, const char *, const char *, size_t *);
 char *goGlobalGet(SandboxPtr, const char *, const char *, size_t *);
 int goConsoleLog(SandboxPtr, const char *, const char *);
 */
@@ -108,6 +112,10 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 	C.InitGoStorage((C.putFunc)(C.goPut),
 		(C.getFunc)(C.goGet),
 		(C.delFunc)(C.goDel),
+		(C.mapPutFunc)(C.goMapPut),
+		(C.mapHasFunc)(C.goMapHas),
+		(C.mapGetFunc)(C.goMapGet),
+		(C.mapDelFunc)(C.goMapDel),
 		(C.globalGetFunc)(C.goGlobalGet))
 	C.loadVM(sbx.context, C.int(vmType))
 }
@@ -168,10 +176,10 @@ var obj = new module.exports;
 
 var ret = 0;
 // store kv that was constructed by contract.
-Object.keys(obj).forEach((key) => {
-   let val = obj[key];
-   ret = IOSTContractStorage.put(key, val);
-});
+//Object.keys(obj).forEach((key) => {
+//   let val = obj[key];
+//   ret = IOSTContractStorage.put(key, val);
+//});
 ret;
 `, code), nil
 	}
@@ -185,8 +193,10 @@ ret;
 %s;
 var obj = new module.exports;
 
+var objObserver = observer.create(obj)
+
 // run contract with specified function and args
-obj.%s(%s)
+objObserver.%s(%s)
 `, code, function, strings.Trim(argStr, "[]")), nil
 }
 

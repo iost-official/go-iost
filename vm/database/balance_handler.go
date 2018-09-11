@@ -1,11 +1,11 @@
 package database
 
 const (
-	// IOSTPrefix ...
+	// IOSTPrefix prefix of iost
 	IOSTPrefix = "i-"
 )
 
-// BalanceHandler ...
+// BalanceHandler handler of balace storage
 type BalanceHandler struct {
 	db database
 }
@@ -14,14 +14,14 @@ func (m *BalanceHandler) balanceKey(to string) string {
 	return IOSTPrefix + to + "-b"
 }
 
-// SetBalance ...
+// SetBalance set balance to id
 func (m *BalanceHandler) SetBalance(to string, delta int64) {
 	ib := m.Balance(to)
 	nb := ib + delta
 	m.db.Put(m.balanceKey(to), MustMarshal(nb))
 }
 
-// Balance ...
+// Balance get balance to id
 func (m *BalanceHandler) Balance(name string) int64 {
 	currentRaw := m.db.Get(m.balanceKey(name))
 	balance := Unmarshal(currentRaw)

@@ -1,75 +1,62 @@
-var IOSTContractStorage = (function () {
+let IOSTContractStorage = (function () {
 
-    var storage = new IOSTStorage;
+    let storage = new IOSTStorage;
 
-    var normalValTypeList = ['number', 'string', 'boolean'];
-
-    var MapStorage = function (key) {
-        this.mapKey = key;
-        this.put = function (field, value) {
-            return storage.mapPut(this.mapKey, value);
+    let simpleStorage = function () {
+        this.put = function (k, v) {
+            if (typeof v !== 'string') {
+                throw new Error("storage put must be string");
+            }
+            return storage.put(k, v);
         };
-        this.get = function (field) {
-            return storage.mapGet(this.mapKey, field);
+        this.get = function (k) {
+            return storage.get(k);
         };
-        this.del = function (field) {
-            return storage.mapDel(this.mapKey, field);
-        };
-        this.keys = function () {
-            return storage.mapKeys(this.mapKey);
-        };
-        this.length = function () {
-            return storage.mapLen(this.mapKey);
+        this.del = function (k) {
+            return storage.del(k);
         }
     };
+    let simpleStorageObj = new simpleStorage;
 
-    var GlobalStorage = function (contract) {
-        this.contract = contract;
+    let mapStorage = function () {
+        this.mapPut = function (k, f, v) {
+            if (typeof v !== 'string') {
+                throw new Error("storage mapPut must be string");
+            }
+            return storage.mapPut(k, f, v);
+        };
+        this.mapHas = function (k, f) {
+            return storage.mapHas(k, f);
+        };
+        this.mapGet = function (k, f) {
+            return storage.mapGet(k, f);
+        };
+        this.mapKeys = function (k) {
+            return [];
+        };
+        this.mapDel = function (k, f) {
+            return storage.mapDel(k, f);
+        }
+    };
+    let mapStorageObj = new mapStorage;
+
+    let globalStorage = function () {
         this.get = function (key) {
-            return storage.globalGet(contract, key);
+            return storage.globalGet(c, k);
         }
     };
+    let globalStorageObj = new globalStorage;
 
     return {
-        put: function (key, val) {
-            let valType = typeof val;
-            if (valType === 'string') {
-                return storage.put(key, val);
-            }
-            if (val instanceof Int64) {
-                return storage.put(key, val.toString())
-            }
-            if (val instanceof BigNumber) {
-                return storage.put(key, val.toString(10))
-            }
-            // _native_log("storage put: " + key + " : " + JSON.stringify(val))
-            return storage.put(key, JSON.stringify(val))
-        },
-        get: function (key, val) {
-            let valType = typeof val;
-            if (valType === 'string') {
-                return storage.get(key);
-            }
-            if (normalValTypeList.indexOf(valType) !== -1) {
-                let valInStorage = storage.get(key);
-                return JSON.parse(valInStorage);
-            }
-
-            if (val instanceof Int64) {
-                let valInStorage = storage.get(key);
-                return new Int64(valInStorage);
-            }
-
-            if (val instanceof BigNumber) {
-                let valInStorage = storage.get(key);
-                return new BigNumber(valInStorage);
-            }
-
-            let valInStorage = storage.get(key);
-            return JSON.parse(valInStorage);
-            // return new MapStorage(key);
-        },
-        GlobalStorage: GlobalStorage
+        put: simpleStorageObj.put,
+        get: simpleStorageObj.get,
+        del: simpleStorageObj.del,
+        mapPut: mapStorageObj.mapPut,
+        mapHas: mapStorageObj.mapHas,
+        mapGet: mapStorageObj.mapGet,
+        mapKeys: mapStorageObj.mapKeys,
+        mapDel: mapStorageObj.mapDel,
+        globalGet: globalStorageObj.get,
     }
 })();
 

@@ -23,7 +23,7 @@ var (
 		},
 	}
 	initFunc = &abi{
-		name: "Init",
+		name: "init",
 		args: []string{},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			return []interface{}{}, host.CommonErrorCost(1), nil
@@ -57,7 +57,7 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
-			token := int64(amount * 1.0 / totalServi * bl)
+			token := amount * 1.0 / totalServi * bl
 			if token > bl {
 				token = bl
 			}
