@@ -1,15 +1,10 @@
 class Test {
-    constructor() {
+    init() {
     }
-
-    single() {
-        let a = 1
-    }
-
-    ten() {
-        let a = 1;
-        for (let i =0; i < 10; i ++) {
-            a ++
+    run (time) {
+        let c = 0;
+        for (let i = 0; i < time; i ++) {
+            c ++
         }
     }
 }

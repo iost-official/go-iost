@@ -6,6 +6,8 @@
 
 void InitInstruction(Isolate *isolate, Local<ObjectTemplate> globalTpl);
 void NewIOSTContractInstruction(const FunctionCallbackInfo<Value> &info);
+void IOSTContractInstruction_Count(const FunctionCallbackInfo<Value> &args);
+void IOSTContractInstruction_Incr(const FunctionCallbackInfo<Value> &args);
 
 class IOSTContractInstruction {
 private:

@@ -199,7 +199,7 @@ func TestJSM(t *testing.T) {
 		ID: "contract",
 		Code: `
 class Contract {
- constructor() {
+ init() {
   
  }
  hello() {

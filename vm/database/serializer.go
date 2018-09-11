@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-// const ...
+// const prefixs
 const (
 	IntPrefix    = "i"
 	StringPrefix = "s"
@@ -20,10 +20,10 @@ var (
 	errInvalidData    = errors.New("invalid data")
 )
 
-// SerializedJSON ...
+// SerializedJSON type of Serialized json
 type SerializedJSON []byte
 
-// Marshal ...
+// Marshal marshal go types to value string
 func Marshal(in interface{}) (string, error) {
 	switch in.(type) {
 	case int64:
@@ -40,7 +40,7 @@ func Marshal(in interface{}) (string, error) {
 	return "", errTypeNotSupport
 }
 
-// MustMarshal ...
+// MustMarshal marshal go types to value string, panic on error
 func MustMarshal(in interface{}) string {
 	s, err := Marshal(in)
 	if err != nil {
@@ -49,7 +49,7 @@ func MustMarshal(in interface{}) string {
 	return s
 }
 
-// Unmarshal ...
+// Unmarshal unmarshal value string to go types
 func Unmarshal(o string) interface{} {
 	if len(o) < 1 {
 		return errInvalidData
@@ -70,7 +70,7 @@ func Unmarshal(o string) interface{} {
 
 }
 
-// MustUnmarshal ...
+// MustUnmarshal  unmarshal value string to go types, panic on error
 func MustUnmarshal(o string) interface{} {
 	rtn := Unmarshal(o)
 	if err, ok := rtn.(error); ok {

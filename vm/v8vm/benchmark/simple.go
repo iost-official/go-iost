@@ -62,7 +62,7 @@ func main() {
 	host, code := MyInit("simple")
 	//vmPool.LoadAndCall(host, code, "show")
 
-	var times float64 = 1000
+	var times float64 = 10000
 
 	fmt.Println("runnig now...")
 	a := time.Now()

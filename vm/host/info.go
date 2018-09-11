@@ -7,18 +7,18 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
-// Info ...
+// Info current info handler of this isolate
 type Info struct {
 	h *Host
 }
 
-// NewInfo ...
+// NewInfo new info
 func NewInfo(h *Host) Info {
 	return Info{h: h}
 }
 
-// BlockInfo ...
-func (h *Info) BlockInfo() (info database.SerializedJSON, cost *contract.Cost) { // todo 清理并且保证正确
+// BlockInfo get block info, in json
+func (h *Info) BlockInfo() (info database.SerializedJSON, cost *contract.Cost) {
 
 	blkInfo := make(map[string]interface{})
 
@@ -35,7 +35,7 @@ func (h *Info) BlockInfo() (info database.SerializedJSON, cost *contract.Cost) {
 	return database.SerializedJSON(bij), BlockInfoCost
 }
 
-// TxInfo ...
+// TxInfo get tx info
 func (h *Info) TxInfo() (info database.SerializedJSON, cost *contract.Cost) {
 
 	txInfo := make(map[string]interface{})
@@ -54,7 +54,7 @@ func (h *Info) TxInfo() (info database.SerializedJSON, cost *contract.Cost) {
 	return database.SerializedJSON(tij), TxInfoCost
 }
 
-// ABIConfig ...
+// ABIConfig set this abi config
 func (h *Info) ABIConfig(key, value string) {
 	switch key {
 	case "payment":
@@ -64,7 +64,7 @@ func (h *Info) ABIConfig(key, value string) {
 	}
 }
 
-// GasLimit ...
+// GasLimit get gas limit
 func (h *Info) GasLimit() int64 {
 	return h.h.ctx.GValue("gas_limit").(int64)
 }

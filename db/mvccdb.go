@@ -191,7 +191,6 @@ func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
-			ilog.Debugf("Failed to get from storage: %v", err)
 			return "", ErrKeyNotFound
 		}
 		return string(v[:]), nil

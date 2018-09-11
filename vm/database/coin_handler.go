@@ -7,7 +7,7 @@ const (
 	CoinPrefix = "o-"
 )
 
-// CoinHandler ...
+// CoinHandler handler of coin
 type CoinHandler struct {
 	db database
 }
@@ -16,7 +16,7 @@ func (m *CoinHandler) getKey(coinName, name string) string {
 	return CoinPrefix + coinName + Separator + name
 }
 
-// SetCoin ...
+// SetCoin set specified coins to id
 func (m *CoinHandler) SetCoin(coinName string, to string, delta int64) {
 	ib := m.Coin(coinName, to)
 	var nb int64
@@ -30,7 +30,7 @@ func (m *CoinHandler) SetCoin(coinName string, to string, delta int64) {
 	m.db.Put(m.getKey(coinName, to), MustMarshal(nb))
 }
 
-// Coin ...
+// Coin get balance of coin
 func (m *CoinHandler) Coin(coinName string, name string) int64 {
 	currentRaw := m.db.Get(m.getKey(coinName, name))
 	balance := Unmarshal(currentRaw)

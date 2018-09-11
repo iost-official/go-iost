@@ -13,6 +13,11 @@ typedef void* IsolatePtr;
 typedef void* SandboxPtr;
 
 typedef struct {
+    const char *data;
+    int raw_size;
+} CustomStartupData;
+
+typedef struct {
     const char *Value;
     const char *Err;
     bool isJson;
@@ -71,7 +76,7 @@ typedef enum {
 } Kind;
 
 extern void init();
-extern IsolatePtr newIsolate();
+extern IsolatePtr newIsolate(CustomStartupData);
 extern void releaseIsolate(IsolatePtr ptr);
 
 extern SandboxPtr newSandbox(IsolatePtr ptr);
@@ -109,17 +114,15 @@ void InitGoBlockchain(transferFunc, withdrawFunc,
 typedef int (*putFunc)(SandboxPtr, const char *, const char *, size_t *);
 typedef char *(*getFunc)(SandboxPtr, const char *, size_t *);
 typedef int (*delFunc)(SandboxPtr, const char *, size_t *);
+typedef int (*mapPutFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
+typedef bool (*mapHasFunc)(SandboxPtr, const char *, const char *, size_t *);
+typedef char *(*mapGetFunc)(SandboxPtr, const char *, const char *, size_t *);
+typedef int (*mapDelFunc)(SandboxPtr, const char *, const char *, size_t *);
 typedef char *(*globalGetFunc)(SandboxPtr, const char *, const char *, size_t *);
 void InitGoStorage(putFunc, getFunc, delFunc,
+    mapPutFunc, mapHasFunc, mapGetFunc, mapDelFunc,
     globalGetFunc);
 
-//extern int goPut(SandboxPtr, char *, char *, size_t *);
-//extern char *goGet(SandboxPtr, char *, size_t *);
-//extern int goDel(SandboxPtr, char *, size_t *);
-
-extern void goMapPut(SandboxPtr, const char *, const char *, const char *, size_t *);
-extern void goMapGet(SandboxPtr, const char *, const char *, size_t *);
-extern void goMapDel(SandboxPtr, const char *, const char *, size_t *);
 extern void goMapKeys(SandboxPtr, const char *, size_t *);
 extern void goMapLen(SandboxPtr, const char *, size_t *);
 extern void goGlobalMapGet(SandboxPtr, const char *, const char *, const char *, size_t *);
@@ -127,6 +130,7 @@ extern void goGlobalMapKeys(SandboxPtr, const char *, const char *, size_t *);
 extern void goGlobalMapLen(SandboxPtr, const char *, const char *, size_t *);
 
 extern int compile(SandboxPtr, const char *code, const char **compiledCode);
+extern CustomStartupData createStartupData();
 
 #ifdef __cplusplus
 }

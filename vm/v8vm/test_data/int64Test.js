@@ -1,42 +1,45 @@
+'use strict';
 class Int64Test {
+
+
     constructor() {
 
     }
 
     getPlus() {
-        this.number = new Int64("1234500000");
-        this.number = this.number.plus(1234);
-        return this.number.toString();
+        const number = new Int64("1234500000");
+        const number2 = number.plus(1234);
+        return number2.toString();
     }
 
     getMinus() {
-        this.number = new Int64("123400789");
-        this.number = this.number.minus(680);
-        return this.number.toString();
+        const number = new Int64("123400789");
+        const number2 = number.minus(680);
+        return number2.toString();
     }
 
     getMulti() {
-        this.number = new Int64("12345667");
-        this.number = this.number.multi(12);
-        return this.number.toString();
+        const number = new Int64("12345667");
+        const number2 = number.multi(12);
+        return number2.toString();
     }
 
     getDiv() {
-        this.number = new Int64("12345667");
-        this.number = this.number.div(12);
-        return this.number.toString();
+        const number = new Int64("12345667");
+        const number2 = number.div(12);
+        return number2.toString();
     }
 
     getMod() {
-        this.number = new Int64("12345667");
-        this.number = this.number.mod(12);
-        return this.number.toString();
+        const number = new Int64("12345667");
+        const number2 = number.mod(12);
+        return number2.toString();
     }
 
     getPow(times) {
-        this.number = new Int64("1234");
-        this.number = this.number.pow(times);
-        return this.number.toString();
+        const number = new Int64("1234");
+        const number2 = number.pow(times);
+        return number2.toString();
     }
 }
 

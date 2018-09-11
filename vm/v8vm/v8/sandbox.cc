@@ -5,9 +5,6 @@
 #include "blockchain.h"
 #include "instruction.h"
 
-#include "vm.js.h"
-#include "compile_vm.js.h"
-
 #include <assert.h>
 #include <cstring>
 #include <string>
@@ -20,9 +17,6 @@
 #include <iostream>
 #include <unistd.h>
 #include <chrono>
-
-char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
-char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
 
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
@@ -84,8 +78,8 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
     Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
     global->SetInternalFieldCount(1);
 
-    InitConsole(isolate, global);
-    InitRequire(isolate, global);
+//    InitConsole(isolate, global);
+//    InitRequire(isolate, global);
     InitStorage(isolate, global);
     InitBlockchain(isolate, global);
     InitInstruction(isolate, global);
@@ -127,6 +121,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     sbx->jsPath = strdup("v8/libjs");
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
+    sbx->threadPool = make_unique<ThreadPool>(2);
 
     return static_cast<SandboxPtr>(sbx);
 }
@@ -227,27 +222,17 @@ void loadVM(SandboxPtr ptr, int vmType) {
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 
-//    std::string vmPath = std::string(sbx->jsPath);
-//    if (vmType == 0) {
-//        vmPath += "compile_vm.js";
-//    } else {
-//        vmPath += "vm.js";
-//    }
-//    std::ifstream f(vmPath);
-//    std::stringstream buffer;
-//    buffer << f.rdbuf();
-
-    std::string vmPath;
-    Local<String> source;
+    std::string vmPath = std::string(sbx->jsPath);
     if (vmType == 0) {
-        vmPath = "compile_vm.js";
-        source = String::NewFromUtf8(isolate, compileVmJsLib, NewStringType::kNormal).ToLocalChecked();
+        vmPath += "compile_vm.js";
     } else {
-        vmPath = "vm.js";
-        source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
+        vmPath += "vm.js";
     }
+    std::ifstream f(vmPath);
+    std::stringstream buffer;
+    buffer << f.rdbuf();
 
-//    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
+    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
 
@@ -322,8 +307,9 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     std::string error;
     bool isJson = false;
     bool isDone = false;
-    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
-    exec.detach();
+    //std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
+    //exec.detach();
+    sbx->threadPool->enqueue(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
 
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
     auto startTime = std::chrono::steady_clock::now();

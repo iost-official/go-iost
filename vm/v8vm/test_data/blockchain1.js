@@ -1,10 +1,10 @@
+'use strict';
 class blockchain1 {
     constructor() {
     }
 
     gs() {
-        var ret = BlockChain.grantServi("a", 100);
-        return ret;
+        return BlockChain.grantServi("a", 100);
     }
 }
 

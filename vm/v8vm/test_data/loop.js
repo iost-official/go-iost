@@ -1,3 +1,4 @@
+'use strict';
 class Datatype {
     constructor() {
     }
@@ -7,32 +8,30 @@ class Datatype {
     }
 
     for2() {
-        for (var i = 0; i >= 0; i++) {}
+        for (let i = 0; i >= 0; i++) {}
     }
 
     for3() {
-        var i = 0;
+        let i = 0;
         for (i = 1; i >= 0; i++)
-            if (i == 10)
-                break
-            else
-                continue
+            if (i === 10)
+                break;
         return i
     }
 
     forin() {
-        var a = [0,1,2,3]
-        var r = 0
-        for (var i in a) {
-            r += Number(i)
+        let a = [0,1,2,3];
+        let r = 0;
+        for (let i in a) {
+            r += Number(i);
             r += a[i]
         }
         return r
     }
 
     forof() {
-        var a = [0,1,2,3]
-        var r = 0
+        let a = [0,1,2,3];
+        let r = 0;
         for (let i of a)
             r += i
         return r
@@ -44,7 +43,7 @@ class Datatype {
 
     dowhile() {
         do {
-            var i = 9;
+            let i = 9;
         }
         while (true)
     }

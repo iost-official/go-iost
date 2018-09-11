@@ -18,10 +18,11 @@ const (
 	Success StatusCode = iota
 	ErrorGasRunOut
 	ErrorBalanceNotEnough
-	ErrorParamter // paramter mismatch when calling function
-	ErrorRuntime  // runtime error
-	ErrorTxFormat // tx format errors
-	ErrorUnknown  // other errors
+	ErrorParamter         // paramter mismatch when calling function
+	ErrorRuntime          // runtime error
+	ErrorTxFormat         // tx format errors
+	ErrorDuplicateSetCode // more than one set code action in a tx
+	ErrorUnknown          // other errors
 )
 
 type Status struct {
