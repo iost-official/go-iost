@@ -16,7 +16,7 @@ class VoteContract {
         if (num === 0) {
             throw new Error("producer list number empty.");
         }
-        var pendingProducerList = JSON.parse(proStr);
+        const pendingProducerList = JSON.parse(proStr);
         if (typeof pendingProducerList !== "object") {
             throw new Error("producer str invalid format. got ", pendingProducerList, ", type = ", typeof pendingProducerList);
         }
@@ -24,12 +24,12 @@ class VoteContract {
             throw new Error("producer list length mismatch with number.");
         }
         this._put("pendingProducerList", pendingProducerList);
-        var producerNumber = pendingProducerList.length;
+        const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
 
-        for (var i = 0; i < producerNumber; i++) {
-            var ret = BlockChain.deposit(pendingProducerList[i], this._get("producerRegisterFee"));
-            if (ret != 0) {
+        for (let i = 0; i < producerNumber; i++) {
+            const ret = BlockChain.deposit(pendingProducerList[i], this._get("producerRegisterFee"));
+            if (ret !== 0) {
                 throw new Error("constructor deposit failed. ret = " + ret);
             }
             this._mapPut("producerTable", pendingProducerList[i], {
@@ -44,14 +44,14 @@ class VoteContract {
     }
 
 	_requireAuth(account) {
-		var ret = BlockChain.requireAuth(account);
+		const ret = BlockChain.requireAuth(account);
 		if (ret !== true) {
 			throw new Error("require auth failed. ret = " + ret);
 		}
 	}
 
 	_getBlockNumber() {
-		var bi = JSON.parse(BlockChain.blockInfo());
+		const bi = JSON.parse(BlockChain.blockInfo());
 		if (!bi || bi === undefined || bi.number === undefined) {
 			throw new Error("get block number failed. bi = " + bi);
 		}
@@ -64,8 +64,8 @@ class VoteContract {
     }
 	_put(k, v) {
         // _native_log("_put " + k + "," + v);
-        var ret = storage.put(k, JSON.stringify(v));
-        if (ret != 0) {
+        const ret = storage.put(k, JSON.stringify(v));
+        if (ret !== 0) {
             throw new Error("storage put failed. ret = " + ret);
         }
     }
@@ -73,14 +73,14 @@ class VoteContract {
         return JSON.parse(storage.mapGet(k, f));
     }
     _mapPut(k, f, v) {
-        var ret = storage.mapPut(k, f, JSON.stringify(v));
+        const ret = storage.mapPut(k, f, JSON.stringify(v));
         if (ret != 0) {
             throw new Error("storage map put failed. ret = " + ret);
         }
     }
 
     _mapDel(k, f) {
-        var ret = storage.mapDel(k, f);
+        const ret = storage.mapDel(k, f);
         if (ret != 0) {
             throw new Error("storage map del failed. ret = " + ret);
         }
@@ -92,7 +92,7 @@ class VoteContract {
 		if (storage.mapHas("producerTable", account)) {
 			throw new Error("producer exists");
 		}
-		var ret = BlockChain.deposit(account, this._get("producerRegisterFee"));
+		const ret = BlockChain.deposit(account, this._get("producerRegisterFee"));
 		if (ret != 0) {
 			throw new Error("register deposit failed. ret = " + ret);
 		}
@@ -112,7 +112,7 @@ class VoteContract {
 		if (!storage.mapHas("producerTable", account)) {
 			throw new Error("producer not exists");
 		}
-		var pro = this._mapGet("producerTable", account);
+		const pro = this._mapGet("producerTable", account);
 		pro.loc = loc;
 		pro.url = url;
 		pro.netId = netId;
@@ -125,7 +125,7 @@ class VoteContract {
         if (!storage.mapHas("producerTable", account)) {
 			throw new Error("producer not exists, " + account);
 		}
-        var pro = this._mapGet("producerTable", account);
+        const pro = this._mapGet("producerTable", account);
 		pro.online = true;
         this._mapPut("producerTable", account, pro);
     }
@@ -140,7 +140,7 @@ class VoteContract {
             this._get("currentProducerList").includes(account)) {
 			throw new Error("producer in pending list or in current list, can't logout");
 		}
-        var pro = this._mapGet("producerTable", account);
+        const pro = this._mapGet("producerTable", account);
 		pro.online = false;
         this._mapPut("producerTable", account, pro);
     }
@@ -160,7 +160,7 @@ class VoteContract {
         this._mapDel("producerTable", account);
         this._mapDel("preProducerMap", account);
 
-		var ret = BlockChain.withdraw(account, this._get("producerRegisterFee"));
+		const ret = BlockChain.withdraw(account, this._get("producerRegisterFee"));
 		if (ret != 0) {
 			throw new Error("withdraw failed. ret = " + ret);
 		}
@@ -174,12 +174,12 @@ class VoteContract {
 			throw new Error("producer not exists");
 		}
 
-		var ret = BlockChain.deposit(voter, amount);
+		const ret = BlockChain.deposit(voter, amount);
 		if (ret != 0) {
 			throw new Error("vote deposit failed. ret = " + ret);
 		}
 
-		var voteRes = {};
+		let voteRes = {};
         if (storage.mapHas("voteTable", voter)) {
 		    voteRes = this._mapGet("voteTable", voter);
 		}
@@ -194,7 +194,7 @@ class VoteContract {
         this._mapPut("voteTable", voter, voteRes);
 
 		// if producer's votes >= preProducerThreshold, then insert into preProducer map
-        var proRes = this._mapGet("producerTable", producer);
+        const proRes = this._mapGet("producerTable", producer);
 		proRes.votes += amount;
 		if (proRes.votes - amount < this._get("preProducerThreshold ")&&
 				proRes.votes >= this._get("preProducerThreshold")) {
@@ -209,7 +209,7 @@ class VoteContract {
 		if (!storage.mapHas("voteTable", voter)) {
             throw new Error("producer not voted");
         }
-        var voteRes = this._mapGet("voteTable", voter);
+        const voteRes = this._mapGet("voteTable", voter);
 		if (!voteRes.hasOwnProperty(producer) ||
 				voteRes[producer].amount < amount) {
 			throw new Error("producer not voted or vote amount less than expected")
@@ -223,7 +223,7 @@ class VoteContract {
 		// if producer not exist, it's because producer has unregistered, do nothing
 		if (storage.mapHas("producerTable", producer)) {
 		    proRes = this._mapGet("producerTable", producer);
-			var ori = proRes.votes;
+			const ori = proRes.votes;
 			proRes.votes = Math.max(0, ori - amount);
 			this._mapPut("producerTable", producer, proRes);
 
@@ -234,14 +234,14 @@ class VoteContract {
 			}
 		}
 
-		var ret = BlockChain.withdraw(voter, amount);
-		if (ret != 0) {
+		const ret = BlockChain.withdraw(voter, amount);
+		if (ret !== 0) {
 			throw new Error("withdraw failed. ret = " + ret);
 		}
 
-        var servi = Math.floor(amount * this._getBlockNumber() / this._get("voteLockTime"));
-		ret = BlockChain.grantServi(voter, servi);
-		if (ret != 0) {
+        const servi = Math.floor(amount * this._getBlockNumber() / this._get("voteLockTime"));
+		const ret2 = BlockChain.grantServi(voter, servi);
+		if (ret2 !== 0) {
 		    throw new Error("grant servi failed. ret = " + ret);
         }
 	}
@@ -249,18 +249,18 @@ class VoteContract {
 	// calculate the vote result, modify pendingProducerList
 	Stat() {
 		// controll auth
-		var bn = this._getBlockNumber();
-		var pendingBlockNumber = this._get("pendingBlockNumber");
+		const bn = this._getBlockNumber();
+		const pendingBlockNumber = this._get("pendingBlockNumber");
 		if (bn % this._get("voteStatInterval ")!= 0 || bn <= pendingBlockNumber) {
 			throw new Error("stat failed. block number mismatch. pending bn = " + pendingBlockNumber + ", bn = " + bn);
 		}
 
 		// add scores for preProducerMap
-		var preList = [];	// list of producers whose vote > threshold
-        var preProducerMapKeys = storage.mapKeys("preProducerMap");
-		for (var i in preProducerMapKeys) {
-		    var key = preProducerMapKeys[i];
-		    var pro = this._mapGet("producerTable", key);
+		const preList = [];	// list of producers whose vote > threshold
+        const preProducerMapKeys = storage.mapKeys("preProducerMap");
+		for (let i in preProducerMapKeys) {
+		    const key = preProducerMapKeys[i];
+		    const pro = this._mapGet("producerTable", key);
             // don't get score if in pending producer list or offline
 		    if (!this._get("pendingProducerList").includes(key) && pro.votes >= this._get("preProducerThreshold ")&& pro.online === true) {
                 preList.push({
@@ -270,49 +270,49 @@ class VoteContract {
                 });
             }
         }
-		for (var i = 0; i < preList.length; i++) {
-			var key = preList[i].key
-			var delta = preList[i].votes - this._get("preProducerThreshold");
-			var proRes = this._get("producerTable", key);
+		for (let i = 0; i < preList.length; i++) {
+			const key = preList[i].key;
+			const delta = preList[i].votes - this._get("preProducerThreshold");
+			const proRes = this._get("producerTable", key);
 			proRes.score += delta;
             this._mapPut("producerTable", key, proRes);
 			preList[i].score += delta;
 		}
 
 		// sort according to score in reversed order
-		var scoreCmp = function(a, b) {
+		const scoreCmp = function(a, b) {
 			return b.score - a.score;
-		}
+		};
 		preList.sort(scoreCmp);
 
 		// update pending list
-        var producerNumber = this._get("producerNumber");
-		var replaceNum = Math.min(preList.length, Math.floor(producerNumber / 6));
-		var oldPreList = [];
-		var pendingProducerList = this._get("pendingProducerList");
+        const producerNumber = this._get("producerNumber");
+		const replaceNum = Math.min(preList.length, Math.floor(producerNumber / 6));
+		const oldPreList = [];
+		const pendingProducerList = this._get("pendingProducerList");
         for (let key in pendingProducerList) {
-		    var x = pendingProducerList[key];
+		    const x = pendingProducerList[key];
 			oldPreList.push({
 				"key": x,
 				"score": this._mapGet("producerTable", x).score
 			});
-		};
+		}
 
 		// replace at most replaceNum producers
-		for (var i = 0; i < replaceNum; i++) {
+		for (let i = 0; i < replaceNum; i++) {
 			oldPreList.push(preList[i]);
 		}
 		oldPreList.sort(scoreCmp);
-		var newList = oldPreList.slice(0, producerNumber);
+		const newList = oldPreList.slice(0, producerNumber);
 
-		var currentList = pendingProducerList;
+		const currentList = pendingProducerList;
 		this._put("currentProducerList", currentList);
 		this._put("pendingProducerList", newList.map(x => x.key));
 		this._put("pendingBlockNumber", this._getBlockNumber());
 
-		for (var i = 0; i < producerNumber; i++) {
+		for (let i = 0; i < producerNumber; i++) {
 			if (!pendingProducerList.includes(currentList[i])) {
-                var proRes = this._mapGet("producerTable", currentList[i]);
+                const proRes = this._mapGet("producerTable", currentList[i]);
                 proRes.score = 0;
                 this._mapPut("producerTable", currentList[i], 0);
 			}
