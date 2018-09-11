@@ -12,6 +12,7 @@ matrix:
       osx_image: xcode10
       go: 1.10.x
       before_install:
+        - brew install rocksdb
         - brew install git-lfs
         - git lfs install
       before_script:

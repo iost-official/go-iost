@@ -2,7 +2,7 @@ FROM ubuntu:16.04
 
 ENV GOVERSION 1.10.1
 
-# Install base tools
+# Install Base Tools
 RUN apt update
 RUN apt install -y git make vim curl wget g++
 
@@ -16,6 +16,12 @@ ENV CGO_ENABLED 1
 ENV GOPATH /gopath
 ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
+
+# Install Rocksdb
+RUN apt install -y libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
+RUN git clone -b "v5.14.3" https://github.com/facebook/rocksdb.git && \
+    cd rocksdb && make static_lib && cp librocksdb.a /lib/x86_64-linux-gnu/
+RUN rm -r rocksdb/
 
 WORKDIR $GOPATH/src/github.com/iost-official/Go-IOS-Protocol
 
