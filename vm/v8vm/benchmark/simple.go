@@ -2,20 +2,21 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/v8vm"
 	"github.com/prometheus/common/log"
-	"time"
 )
 
 var vmPool *v8.VMPool
 
 func init() {
-	vmPool = v8.NewVMPool(3, 1000)
-	vmPool.SetJSPath("./v8/libjs/")
+	vmPool = v8.NewVMPool(3, 100)
+	vmPool.SetJSPath("../v8/libjs/")
 	vmPool.Init()
 }
 

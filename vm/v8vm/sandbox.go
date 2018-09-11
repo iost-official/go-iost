@@ -34,6 +34,8 @@ import (
 
 	"sync"
 
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
@@ -63,16 +65,20 @@ func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
 
 // NewSandbox generate new sandbox for VM and insert into sandbox map
 func NewSandbox(e *VM) *Sandbox {
+	a := time.Now()
 	cPath := C.CString(e.jsPath)
 	defer C.free(unsafe.Pointer(cPath))
 	cSbx := C.newSandbox(e.isolate)
 	C.setJSPath(cSbx, cPath)
+	fmt.Println("C.newSandBox ", time.Since(a))
 
+	b := time.Now()
 	s := &Sandbox{
 		isolate: e.isolate,
 		context: cSbx,
 		modules: NewModules(),
 	}
+	fmt.Println("Sandbox ", time.Since(b))
 	s.Init(e.vmType)
 	sbxMap.Store(cSbx, s)
 
@@ -92,6 +98,7 @@ func (sbx *Sandbox) Release() {
 // Init add system functions
 func (sbx *Sandbox) Init(vmType vmPoolType) {
 	// init require
+	b := time.Now()
 	C.InitGoConsole((C.consoleFunc)(C.goConsoleLog))
 	C.InitGoRequire((C.requireFunc)(C.requireModule))
 	C.InitGoBlockchain((C.transferFunc)(C.goTransfer),
@@ -109,7 +116,10 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 		(C.getFunc)(C.goGet),
 		(C.delFunc)(C.goDel),
 		(C.globalGetFunc)(C.goGlobalGet))
+	fmt.Println("InitGo ", time.Since(b))
+	a := time.Now()
 	C.loadVM(sbx.context, C.int(vmType))
+	fmt.Println("LoadVM", time.Since(a))
 }
 
 // SetGasLimit set gas limit in context
