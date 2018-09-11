@@ -359,7 +359,7 @@ func (p *PoB) scheduleLoop() {
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
-					blk, err := generateBlock(p.account, p.blockCache.Head().Block, p.txPool, p.produceDB)
+					blk, err := generateBlock(p.account, p.txPool, p.produceDB)
 					ilog.Infof("gen block:%v", blk.Head.Number)
 					if err != nil {
 						ilog.Error(err.Error())
@@ -421,7 +421,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 	} else {
 		p.txPool.AddLinkedNode(node, h)
 	}
-
 	p.blockCache.Link(node)
 	p.updateInfo(node)
 	for child := range node.Children {
@@ -433,4 +432,5 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
 	updateLib(node, p.blockCache)
+	p.txPool.AddLinkedNode(node, node) //TODO
 }

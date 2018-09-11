@@ -46,9 +46,9 @@ const (
 )
 
 type ForkChain struct {
-	NewHead       *blockcache.BlockCacheNode
-	OldHead       *blockcache.BlockCacheNode
-	ForkBlockHash []byte
+	NewHead *blockcache.BlockCacheNode
+	OldHead *blockcache.BlockCacheNode
+	ForkBCN *blockcache.BlockCacheNode
 }
 
 type TxsList []*tx.Tx
@@ -100,14 +100,8 @@ func (b *blockTx) setTime(t int64) {
 func (b *blockTx) addBlock(ib *block.Block) {
 
 	for _, v := range ib.Txs {
-		b.txMap.Store(string(v.Hash()), nil)
+		b.txMap.Store(string(v.Hash()), v)
 	}
-
-	//b.txMap.Range(func(key, value interface{}) bool {
-	//	fmt.Println("range:", key.(string))
-	//	return true
-	//})
-
 	b.ParentHash = ib.Head.ParentHash
 }
 

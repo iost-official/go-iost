@@ -6,6 +6,8 @@ import (
 
 	"os"
 
+	"sync"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -18,11 +20,10 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
-	"sync"
 )
 
 var (
-	dbPath1 = "txDB"
+	dbPath1 = "TXDB"
 	dbPath2 = "StateDB"
 	dbPath3 = "BlockChainDB"
 )
@@ -174,7 +175,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(r, ShouldEqual, Success)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 
-			l, err := txPool.PendingTxs(100)
+			l, _, err := txPool.PendingTxs(100)
 			So(err, ShouldBeNil)
 			So(len(l), ShouldEqual, 1)
 			So(string(l[0].Hash()), ShouldEqual, string(t.Hash()))
@@ -188,7 +189,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 			}
 			So(txPool.testPendingTxsNum(), ShouldEqual, 11)
 
-			l, err = txPool.PendingTxs(100)
+			l, _, err = txPool.PendingTxs(100)
 			So(err, ShouldBeNil)
 			So(len(l), ShouldEqual, 11)
 
@@ -547,7 +548,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string,
 }
 
 func stopTest(gl global.BaseVariable) {
-
 	gl.StateDB().Close()
 	gl.BlockChain().Close()
 	os.RemoveAll(dbPath1)

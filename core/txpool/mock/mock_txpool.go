@@ -99,11 +99,12 @@ func (mr *MockTxPoolMockRecorder) ExistTxs(arg0, arg1 interface{}) *gomock.Call 
 }
 
 // PendingTxs mocks base method
-func (m *MockTxPool) PendingTxs(arg0 int) (txpool.TxsList, error) {
+func (m *MockTxPool) PendingTxs(arg0 int) (txpool.TxsList, *blockcache.BlockCacheNode, error) {
 	ret := m.ctrl.Call(m, "PendingTxs", arg0)
 	ret0, _ := ret[0].(txpool.TxsList)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(*blockcache.BlockCacheNode)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // PendingTxs indicates an expected call of PendingTxs
