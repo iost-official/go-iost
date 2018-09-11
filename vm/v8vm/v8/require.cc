@@ -1,4 +1,5 @@
 #include "require.h"
+
 #include "bignumber.js.h"
 #include "blockchain.js.h"
 #include "console.js.h"
@@ -7,12 +8,9 @@
 #include "int64.js.h"
 #include "storage.js.h"
 #include "utils.js.h"
-#include "vm.js.h"
 
 #include <stdlib.h>
 #include <fstream>
-#include <sstream>
-#include <iostream>
 #include <unordered_map>
 
 std::unordered_map<std::string, const char *> jsLib = {
@@ -24,14 +22,8 @@ std::unordered_map<std::string, const char *> jsLib = {
     {"int64", reinterpret_cast<char *>(__libjs_int64_js)},
     {"storage", reinterpret_cast<char *>(__libjs_storage_js)},
     {"utils", reinterpret_cast<char *>(__libjs_utils_js)},
-    {"vm", reinterpret_cast<char *>(__libjs_vm_js)},
 };
 
-static char injectGasFormat[] =
-    "(function(){\n"
-    "const source = \"%s\";\n"
-    "return injectGas(source);\n"
-    "})();";
 static requireFunc CRequire = nullptr;
 
 void InitGoRequire(requireFunc require) {
@@ -52,12 +44,11 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
 
     String::Utf8Value pathStr(path);
 
-    if (jsLib.find(pathStr) == jsLib.end()) {
+    if (jsLib.find(*pathStr) == jsLib.end()) {
         return;
     }
 
-    std::cout << jsLib[pathStr] << std::endl;
-    Local<String> jsLibStr = String::NewFromUtf8(isolate, jsLib[pathStr], NewStringType::kNormal).ToLocalChecked();
+    Local<String> jsLibStr = String::NewFromUtf8(isolate, jsLib[*pathStr], NewStringType::kNormal).ToLocalChecked();
     info.GetReturnValue().Set(jsLibStr);
     return;
 }
