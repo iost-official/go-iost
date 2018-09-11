@@ -48,7 +48,7 @@ class Contract {
                 storage.put("total_coins", JSON.stringify(0));
                 this.clearUserValue();
 
-                storage.put("round", round + 1);
+                storage.put("round", JSON.stringify(round + 1));
                 return
             }
         }
@@ -60,7 +60,9 @@ class Contract {
     getReward(ln, round) {
         const y = new Int64(100);
         const x = new Int64(95);
-        const _tc = new Int64(this.totalCoins);
+
+        const totalCoins = JSON.parse(storage.get("total_coins"));
+        const _tc = new Int64(totalCoins);
 
         const tc = _tc.multi(x).div(y);
         let totalVal = 0;
