@@ -206,7 +206,7 @@ func (pool *TxPoolImpl) DelTx(hash []byte) error {
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 	start := time.Now()
 	defer func(t time.Time) {
-		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
+		cost := time.Since(t).Nanoseconds() / int64(time.Microsecond)
 		metricsGetPendingTxTime.Set(float64(cost), nil)
 	}(start)
 
