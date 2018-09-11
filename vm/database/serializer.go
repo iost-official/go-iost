@@ -4,15 +4,17 @@ import (
 	"encoding/binary"
 
 	"errors"
+	"strings"
 )
 
 // const prefixs
 const (
-	IntPrefix    = "i"
-	StringPrefix = "s"
-	NilPrefix    = "n"
-	BoolPrefix   = "b"
-	JSONPrefix   = "j"
+	IntPrefix       = "i"
+	StringPrefix    = "s"
+	NilPrefix       = "n"
+	BoolPrefix      = "b"
+	JSONPrefix      = "j"
+	MapHolderPrefix = "@"
 )
 
 var (
@@ -65,6 +67,8 @@ func Unmarshal(o string) interface{} {
 		return o[1] == 't'
 	case JSONPrefix:
 		return SerializedJSON(o[1:])
+	case MapHolderPrefix:
+		return strings.Split(o, "@")[1:]
 	}
 	return errInvalidData
 
@@ -74,7 +78,7 @@ func Unmarshal(o string) interface{} {
 func MustUnmarshal(o string) interface{} {
 	rtn := Unmarshal(o)
 	if err, ok := rtn.(error); ok {
-		panic(err)
+		panic(err.Error() + ":" + o)
 	}
 	return rtn
 }
