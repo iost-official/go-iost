@@ -5,6 +5,8 @@
 #include "blockchain.h"
 #include "instruction.h"
 
+#include "vm.js.h"
+#include "compile_vm.js.h"
 #include <assert.h>
 #include <cstring>
 #include <string>
@@ -18,6 +20,8 @@
 #include <unistd.h>
 #include <chrono>
 
+char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
+char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
     std::strcpy(cstr, str.c_str());
@@ -102,6 +106,7 @@ const char* ToCString(const v8::String::Utf8Value& value) {
 }
 
 SandboxPtr newSandbox(IsolatePtr ptr) {
+        auto s1 = std::chrono::steady_clock::now();
     Isolate *isolate = static_cast<Isolate*>(ptr);
     Locker locker(isolate);
 
@@ -109,8 +114,12 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     HandleScope handle_scope(isolate);
 
     Local<ObjectTemplate> globalTpl = createGlobalTpl(isolate);
+        auto s2 = std::chrono::steady_clock::now();
+        std::cout << "lock context: " << std::chrono::duration_cast<std::chrono::milliseconds>(s2 - s1).count() << std::endl;
     Local<Context> context = Context::New(isolate, NULL, globalTpl);
     Context::Scope context_scope(context);
+        auto s3 = std::chrono::steady_clock::now();
+        std::cout << "get global: " << std::chrono::duration_cast<std::chrono::milliseconds>(s3 - s2).count() << std::endl;
 
     Sandbox *sbx = new Sandbox();
     Local<Object> global = context->Global();
@@ -121,7 +130,8 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     sbx->jsPath = strdup("v8/libjs");
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
-    sbx->threadPool = make_unique<ThreadPool>(2);
+        auto s4 = std::chrono::steady_clock::now();
+        std::cout << "reset context: " << std::chrono::duration_cast<std::chrono::milliseconds>(s4 - s3).count() << std::endl;
 
     return static_cast<SandboxPtr>(sbx);
 }
@@ -213,6 +223,7 @@ void loadVM(SandboxPtr ptr, int vmType) {
         return;
     }
 
+    auto s1 = std::chrono::steady_clock::now();
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
     Locker locker(isolate);
@@ -222,19 +233,34 @@ void loadVM(SandboxPtr ptr, int vmType) {
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 
-    std::string vmPath = std::string(sbx->jsPath);
+//    std::string vmPath = std::string(sbx->jsPath);
+//    if (vmType == 0) {
+//        vmPath += "compile_vm.js";
+//    } else {
+//        vmPath += "vm.js";
+//    }
+//    std::ifstream f(vmPath);
+//    std::stringstream buffer;
+//    buffer << f.rdbuf();
+        auto s2 = std::chrono::steady_clock::now();
+        std::cout << "lock isolate: " << std::chrono::duration_cast<std::chrono::milliseconds>(s2 - s1).count() << std::endl;
+
+    std::string vmPath;
+    Local<String> source;
     if (vmType == 0) {
         vmPath += "compile_vm.js";
+        source = String::NewFromUtf8(isolate, compileVmJsLib, NewStringType::kNormal).ToLocalChecked();
     } else {
         vmPath += "vm.js";
+        source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
     }
-    std::ifstream f(vmPath);
-    std::stringstream buffer;
-    buffer << f.rdbuf();
+        auto s3 = std::chrono::steady_clock::now();
+        std::cout << "convert source: " << std::chrono::duration_cast<std::chrono::milliseconds>(s3 - s2).count() << std::endl;
 
-    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
+        auto s4 = std::chrono::steady_clock::now();
+        std::cout << "compile: " << std::chrono::duration_cast<std::chrono::milliseconds>(s4 - s3).count() << std::endl;
 
     if (!script.IsEmpty()) {
         Local<Value> result = script->Run();
@@ -242,6 +268,8 @@ void loadVM(SandboxPtr ptr, int vmType) {
 //            std::cout << "result vm: " << v8ValueToStdString(result) << std::endl;
         }
     }
+        auto s5 = std::chrono::steady_clock::now();
+        std::cout << "run: " << std::chrono::duration_cast<std::chrono::milliseconds>(s5 - s4).count() << std::endl;
 }
 
 void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
@@ -307,9 +335,8 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     std::string error;
     bool isJson = false;
     bool isDone = false;
-    //std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
-    //exec.detach();
-    sbx->threadPool->enqueue(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
+    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
+    exec.detach();
 
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
     auto startTime = std::chrono::steady_clock::now();
