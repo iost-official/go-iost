@@ -108,18 +108,18 @@ const char* ToCString(const v8::String::Utf8Value& value) {
 SandboxPtr newSandbox(IsolatePtr ptr) {
         auto s1 = std::chrono::steady_clock::now();
     Isolate *isolate = static_cast<Isolate*>(ptr);
-    Locker locker(isolate);
 
+    Locker locker(isolate);
     Isolate::Scope isolate_scope(isolate);
     HandleScope handle_scope(isolate);
 
     Local<ObjectTemplate> globalTpl = createGlobalTpl(isolate);
         auto s2 = std::chrono::steady_clock::now();
-        std::cout << "lock context: " << std::chrono::duration_cast<std::chrono::milliseconds>(s2 - s1).count() << std::endl;
+        std::cout << "lock context: " << std::chrono::duration_cast<std::chrono::microseconds>(s2 - s1).count() << std::endl;
     Local<Context> context = Context::New(isolate, NULL, globalTpl);
-    Context::Scope context_scope(context);
+    //Context::Scope context_scope(context);
         auto s3 = std::chrono::steady_clock::now();
-        std::cout << "get global: " << std::chrono::duration_cast<std::chrono::milliseconds>(s3 - s2).count() << std::endl;
+        std::cout << "get global: " << std::chrono::duration_cast<std::chrono::microseconds>(s3 - s2).count() << std::endl;
 
     Sandbox *sbx = new Sandbox();
     Local<Object> global = context->Global();
@@ -131,7 +131,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
         auto s4 = std::chrono::steady_clock::now();
-        std::cout << "reset context: " << std::chrono::duration_cast<std::chrono::milliseconds>(s4 - s3).count() << std::endl;
+        std::cout << "reset context: " << std::chrono::duration_cast<std::chrono::microseconds>(s4 - s3).count() << std::endl;
 
     return static_cast<SandboxPtr>(sbx);
 }
@@ -142,10 +142,6 @@ void releaseSandbox(SandboxPtr ptr) {
     }
 
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
-
-    Locker locker(sbx->isolate);
-    Isolate::Scope isolate_scope(sbx->isolate);
-    HandleScope handle_scope(sbx->isolate);
 
     sbx->context.Reset();
 
@@ -243,7 +239,7 @@ void loadVM(SandboxPtr ptr, int vmType) {
 //    std::stringstream buffer;
 //    buffer << f.rdbuf();
         auto s2 = std::chrono::steady_clock::now();
-        std::cout << "lock isolate: " << std::chrono::duration_cast<std::chrono::milliseconds>(s2 - s1).count() << std::endl;
+        std::cout << "lock isolate: " << std::chrono::duration_cast<std::chrono::microseconds>(s2 - s1).count() << std::endl;
 
     std::string vmPath;
     Local<String> source;
@@ -255,12 +251,12 @@ void loadVM(SandboxPtr ptr, int vmType) {
         source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
     }
         auto s3 = std::chrono::steady_clock::now();
-        std::cout << "convert source: " << std::chrono::duration_cast<std::chrono::milliseconds>(s3 - s2).count() << std::endl;
+        std::cout << "convert source: " << std::chrono::duration_cast<std::chrono::microseconds>(s3 - s2).count() << std::endl;
 
     Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
         auto s4 = std::chrono::steady_clock::now();
-        std::cout << "compile: " << std::chrono::duration_cast<std::chrono::milliseconds>(s4 - s3).count() << std::endl;
+        std::cout << "compile: " << std::chrono::duration_cast<std::chrono::microseconds>(s4 - s3).count() << std::endl;
 
     if (!script.IsEmpty()) {
         Local<Value> result = script->Run();
@@ -269,7 +265,7 @@ void loadVM(SandboxPtr ptr, int vmType) {
         }
     }
         auto s5 = std::chrono::steady_clock::now();
-        std::cout << "run: " << std::chrono::duration_cast<std::chrono::milliseconds>(s5 - s4).count() << std::endl;
+        std::cout << "run: " << std::chrono::duration_cast<std::chrono::microseconds>(s5 - s4).count() << std::endl;
 }
 
 void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
@@ -277,7 +273,6 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     Isolate *isolate = sbx->isolate;
 
     Locker locker(isolate);
-
     Isolate::Scope isolate_scope(isolate);
     HandleScope handle_scope(isolate);
     //Context::Scope context_scope(sbx->context.Get(isolate));

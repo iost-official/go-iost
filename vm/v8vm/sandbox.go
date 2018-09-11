@@ -93,7 +93,9 @@ func NewSandbox(e *VM) *Sandbox {
 func (sbx *Sandbox) Release() {
 	if sbx.context != nil {
 		sbxMap.Delete(sbx.context)
+		a := time.Now()
 		C.releaseSandbox(sbx.context)
+		fmt.Println("Release Sandbox ", time.Since(a))
 	}
 	sbx.context = nil
 }

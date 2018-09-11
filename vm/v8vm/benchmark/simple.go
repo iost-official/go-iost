@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
@@ -15,7 +17,7 @@ import (
 var vmPool *v8.VMPool
 
 func init() {
-	vmPool = v8.NewVMPool(3, 1000)
+	vmPool = v8.NewVMPool(3, 100)
 	vmPool.SetJSPath("../v8/libjs/")
 	vmPool.Init()
 }
@@ -62,12 +64,18 @@ func main() {
 	host, code := MyInit("simple")
 	//vmPool.LoadAndCall(host, code, "show")
 
-	var times float64 = 10000
+	var times = 1000
+	if len(os.Args) >= 2 {
+		timesT, err := strconv.Atoi(os.Args[1])
+		times = timesT
+		if err != nil {
+		}
+	}
 
 	fmt.Println("runnig now...")
 	a := time.Now()
 
-	var i float64 = 0
+	var i = 0
 	for ; i < times; i++ {
 		_, _, err := vmPool.LoadAndCall(host, code, "show")
 		if err != nil {
@@ -75,7 +83,7 @@ func main() {
 		}
 	}
 	timeUsed := time.Since(a).Nanoseconds()
-	tps := int(1000 / (float64(timeUsed) / 1000000 / times))
+	tps := int(1000 / (float64(timeUsed) / 1000000 / float64(times)))
 	fmt.Println("time used: ", time.Since(a))
 	fmt.Println("each: ", tps)
 }
