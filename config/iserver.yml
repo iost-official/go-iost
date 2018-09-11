@@ -12,6 +12,7 @@ genesis:
     - "13200000000"
     - "IOSTxHn7wtQMpgvDbiypByZVNHrE6ELdXFbL1Vic8B23EgRNjQGbs"
     - "13100000000"
+  voteContractPath: "config/"
 
 vm:
   logLevel: ""
@@ -26,6 +27,7 @@ p2p:
   chainID: 1024
   version: 1
   seedNodes:
+  datapath: "./"
 
 rpc:
   JSONPort: 30301

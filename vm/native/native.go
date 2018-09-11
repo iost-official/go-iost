@@ -37,6 +37,7 @@ func (i *Impl) Compile(contract *contract.Contract) (string, error) {
 	return "", nil
 }
 
+// LoadAndCall implement
 func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 	var (
 		a  *abi

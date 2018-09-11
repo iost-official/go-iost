@@ -3,6 +3,8 @@ package host
 import (
 	"testing"
 
+	"errors"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
@@ -76,11 +78,18 @@ func TestHost_MapPut(t *testing.T) {
 
 	mock, host := myinit(t, ctx)
 
-	mock.EXPECT().Put(Any(), Any(), Any()).Do(func(a, b, c string) {
+	mock.EXPECT().Put("state", "m-contractName-hello-1", Any()).Do(func(a, b, c string) {
 		if a != "state" || b != "m-contractName-hello-1" || c != "sworld" {
 			t.Fatal(a, b, c)
 		}
 	})
+	mock.EXPECT().Put("state", "m-contractName-hello", Any()).Do(func(a, b, c string) {
+		if c != "@1" {
+			t.Fatal(c)
+		}
+	})
+	mock.EXPECT().Has("state", "m-contractName-hello-1").Return(false, nil)
+	mock.EXPECT().Get("state", "m-contractName-hello").Return("", errors.New("not found"))
 
 	host.MapPut("hello", "1", "world")
 }
@@ -114,12 +123,7 @@ func TestHost_MapKeys(t *testing.T) {
 
 	mock, host := myinit(t, ctx)
 
-	mock.EXPECT().Keys(Any(), Any()).DoAndReturn(func(a, b string) ([]string, error) {
-		if a != "state" || b != "m-contractName-hello-" {
-			t.Fatal(a, b)
-		}
-		return []string{"m-contractName-hello-a", "m-contractName-hello-b", "m-contractName-hello-c"}, nil
-	})
+	mock.EXPECT().Get("state", "m-contractName-hello").Return("@a@b@c", nil)
 
 	ans, _ := host.MapKeys("hello")
 	if !sliceEqual(ans, []string{"a", "b", "c"}) {

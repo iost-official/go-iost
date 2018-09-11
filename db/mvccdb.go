@@ -191,7 +191,6 @@ func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
-			ilog.Debugf("Failed to get from storage: %v", err)
 			return "", ErrKeyNotFound
 		}
 		return string(v[:]), nil
@@ -326,7 +325,6 @@ func (m *CacheMVCCDB) Flush(t string) error {
 	if commit == nil {
 		return fmt.Errorf("not found tag: %v", t)
 	}
-
 	if err := m.storage.BeginBatch(); err != nil {
 		return err
 	}

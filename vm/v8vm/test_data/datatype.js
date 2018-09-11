@@ -1,10 +1,11 @@
+'use strict';
 class Datatype {
     constructor() {
     }
 
     number(delta) {
-        var a = 0;
-        for (var i = 0; i < 10; i++) {
+        let a = 0;
+        for (let i = 0; i < 10; i++) {
             a += delta;
             delta /= 10;
         }
@@ -15,8 +16,8 @@ class Datatype {
     }
 
     number_big(delta) {
-        var a = new BigNumber(0);
-        for (var i = 0; i < 10; i++) {
+        let a = new BigNumber(0);
+        for (let i = 0; i < 10; i++) {
             a = a.plus(delta);
             delta /= 10;
         }
@@ -27,7 +28,7 @@ class Datatype {
     }
 
     number_op() {
-        var a = new BigNumber(1);
+        let a = new BigNumber(1);
         a <<= 2;
         a >>= 1;
         a **= 3;
@@ -36,7 +37,7 @@ class Datatype {
     }
 
     number_op2() {
-        var a = new BigNumber(8);
+        let a = new BigNumber(8);
         a |= 1;
         a &= 7;
         a ^= 3;
@@ -44,7 +45,7 @@ class Datatype {
     }
 
     number_strange() {
-        var a = new BigNumber(8);
+        let a = new BigNumber(8);
         return a / -0.0;
     }
 
@@ -57,27 +58,27 @@ class Datatype {
     }
 
     bool() {
-        var a = true;
-        var b = true;
+        let a = true;
+        let b = true;
         return !a || !b && a;
     }
 
     string() {
-        var a = "test";
-        for (var i = 0; i < 10; i += 1) {
+        let a = "test";
+        for (let i = 0; i < 10; i += 1) {
             a = a + a;
         }
         return a;
     }
 
     array() {
-        var a = [0, 1, 2];
+        let a = [0, 1, 2];
         a.push(3);
         return a;
     }
 
     object() {
-        var a = {
+        let a = {
             pos: 0,
             str: "test object"
         }

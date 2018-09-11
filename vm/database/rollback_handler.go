@@ -1,6 +1,6 @@
 package database
 
-// RollbackHandler ...
+// RollbackHandler rollback delegate
 type RollbackHandler struct {
 	db  IMultiValue
 	lru *LRU
@@ -13,12 +13,12 @@ func newRollbackHandler(db IMultiValue, lru *LRU) RollbackHandler {
 	}
 }
 
-// Commit ...
+// Commit commit a MVCC version
 func (m *RollbackHandler) Commit() {
 	m.db.Commit()
 }
 
-// Rollback ...
+// Rollback rollback to newest MVCC version
 func (m *RollbackHandler) Rollback() {
 	m.lru.Purge()
 	m.db.Rollback()

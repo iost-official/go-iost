@@ -29,6 +29,7 @@ var (
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
+	metricsTPS                 = metrics.NewGauge("iost_tps", nil)
 )
 
 var (
@@ -67,7 +68,7 @@ type PoB struct {
 }
 
 // NewPoB init a new PoB.
-func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer, witnessList []string) *PoB {
+func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service, synchronizer synchronizer.Synchronizer) *PoB {
 	p := PoB{
 		account:         account,
 		baseVariable:    baseVariable,
@@ -83,10 +84,11 @@ func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCac
 		chRecvBlock:     p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
 		chRecvBlockHash: p2pService.Register("consensus block head", p2p.NewBlockHash),
 		chQueryBlock:    p2pService.Register("consensus query block", p2p.NewBlockRequest),
-		chVerifyBlock:   make(chan *verifyBlockMessage, 10),
+		chVerifyBlock:   make(chan *verifyBlockMessage, 1024),
 		//chGenBlock:      make(chan *block.Block, 10),
 	}
-	staticProperty = newStaticProperty(p.account, witnessList)
+
+	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
 	return &p
 }
 
@@ -99,7 +101,6 @@ func (p *PoB) Start() error {
 	return nil
 }
 
-//Stop make the PoB stop.
 func (p *PoB) Stop() {
 	close(p.exitSignal)
 }
@@ -227,6 +228,28 @@ func (p *PoB) handleGenesisBlock(blk *block.Block) error {
 	return fmt.Errorf("not genesis block")
 }
 
+func (p *PoB) calculateTPS() float64 {
+	cnt := 0
+	n := 0
+	if p.blockCache.Head() == nil {
+		return 0
+	}
+	l := p.blockChain.Length()
+	for i := int64(0); i < 10; i++ {
+		blk, err := p.blockChain.GetBlockByNumber(l - i - 1)
+		if err != nil {
+			ilog.Error("get block by Number failed, ", i)
+			break
+		}
+		cnt += len(blk.Txs)
+		n++
+	}
+	if n == 0 {
+		return 0
+	}
+	return float64(cnt / (n * 3))
+}
+
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
 	blkHash := &message.BlockHash{
 		Height: blk.Head.Number,
@@ -246,6 +269,7 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
+			metricsTPS.Set(p.calculateTPS(), nil)
 			ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
 			blk := vbm.blk
 			if vbm.gen {
@@ -329,20 +353,6 @@ func (p *PoB) blockLoop() {
 			ilog.Info("received block, block number: ", blk.Head.Number)
 			go p.synchronizer.OnRecvBlock(string(blk.HeadHash()), incomingMessage.From())
 			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, gen: false, p2pType: incomingMessage.Type()}
-			/*
-				case blk, ok := <-p.chGenBlock:
-						if !ok {
-							ilog.Infof("chGenBlock has closed")
-							return
-						}
-						ilog.Info("block from myself, block number: ", blk.Head.Number)
-						err := p.handleRecvBlock(blk)
-						if err != nil {
-							ilog.Debugf("received new block error, err:%v", err)
-							continue
-						}
-						go p.synchronizer.CheckGenBlock(blk.HeadHash())
-			*/
 		case <-p.exitSignal:
 			return
 		}
@@ -359,7 +369,9 @@ func (p *PoB) scheduleLoop() {
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
+					p.txPool.Lock()
 					blk, err := generateBlock(p.account, p.txPool, p.produceDB)
+					p.txPool.Lease()
 					ilog.Infof("gen block:%v", blk.Head.Number)
 					if err != nil {
 						ilog.Error(err.Error())
@@ -367,7 +379,6 @@ func (p *PoB) scheduleLoop() {
 					}
 					ilog.Debugf("block tx num: %v", len(blk.Txs))
 					p.chVerifyBlock <- &verifyBlockMessage{blk: blk, gen: true}
-					//p.chGenBlock <- blk
 					blkByte, err := blk.Encode()
 					if err != nil {
 						ilog.Error(err.Error())
@@ -409,12 +420,10 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
 			p.blockCache.Del(node)
-			ilog.Error(err.Error())
 			return err
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
-
 	h := p.blockCache.Head()
 	if node.Number > h.Number {
 		p.txPool.AddLinkedNode(node, node)
@@ -433,4 +442,5 @@ func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
 	updateLib(node, p.blockCache)
 	p.txPool.AddLinkedNode(node, node) //TODO
+	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 }

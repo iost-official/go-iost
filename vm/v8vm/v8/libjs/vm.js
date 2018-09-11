@@ -60,8 +60,7 @@ NativeModule.prototype.cache = function() {
 var require = NativeModule.require;
 
 // storage
-var IOSTContractStorage = require('storage');
-var GlobalStorage = IOSTContractStorage.GlobalStorage;
+var storage = require('storage');
 
 // blockchain
 var BlockChain = require('blockchain');
@@ -70,10 +69,12 @@ var BlockChain = require('blockchain');
 var BigNumber = require('bignumber');
 var Int64 = require('int64');
 
-var injectGas = require('inject_gas');
+// var injectGas = require('inject_gas');
 var observer = require('observer');
 
 var _IOSTInstruction_counter = new IOSTInstruction;
 
 var Console = require('console');
 var console = new Console;
+
+var module = {};

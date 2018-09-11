@@ -98,6 +98,26 @@ func (mr *MockTxPoolMockRecorder) ExistTxs(arg0, arg1 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistTxs", reflect.TypeOf((*MockTxPool)(nil).ExistTxs), arg0, arg1)
 }
 
+// Lease mocks base method
+func (m *MockTxPool) Lease() {
+	m.ctrl.Call(m, "Lease")
+}
+
+// Lease indicates an expected call of Lease
+func (mr *MockTxPoolMockRecorder) Lease() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lease", reflect.TypeOf((*MockTxPool)(nil).Lease))
+}
+
+// Lock mocks base method
+func (m *MockTxPool) Lock() {
+	m.ctrl.Call(m, "Lock")
+}
+
+// Lock indicates an expected call of Lock
+func (mr *MockTxPoolMockRecorder) Lock() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lock", reflect.TypeOf((*MockTxPool)(nil).Lock))
+}
+
 // PendingTxs mocks base method
 func (m *MockTxPool) PendingTxs(arg0 int) (txpool.TxsList, *blockcache.BlockCacheNode, error) {
 	ret := m.ctrl.Call(m, "PendingTxs", arg0)

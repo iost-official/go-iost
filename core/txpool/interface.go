@@ -18,4 +18,6 @@ type TxPool interface {
 	PendingTxs(maxCnt int) (TxsList, *blockcache.BlockCacheNode, error)
 	ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error)
 	CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, error)
+	Lock()
+	Lease()
 }

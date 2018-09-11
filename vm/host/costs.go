@@ -2,6 +2,7 @@ package host
 
 import "github.com/iost-official/Go-IOS-Protocol/core/contract"
 
+// var list cost
 var (
 	PutCost  = contract.NewCost(100, 0, 1)
 	GetCost  = contract.NewCost(100, 0, 1)
@@ -22,18 +23,22 @@ var (
 	RequireAuthCost = contract.NewCost(0, 0, 1)
 )
 
+// EventCost return cost based on event size
 func EventCost(size int) *contract.Cost {
 	return contract.NewCost(1, int64(size/100), 1)
 }
 
+// ReceiptCost based on receipt size
 func ReceiptCost(size int) *contract.Cost {
 	return EventCost(size)
 }
 
+// CodeSavageCost cost in deploy contract based on code size
 func CodeSavageCost(size int) *contract.Cost {
 	return EventCost(size)
 }
 
+// CommonErrorCost returns cost increased by stack layer
 func CommonErrorCost(layer int) *contract.Cost {
 	return contract.NewCost(0, 0, int64(layer*10))
 }

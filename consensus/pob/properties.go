@@ -12,22 +12,25 @@ type StaticProperty struct {
 	account           *account.Account
 	NumberOfWitnesses int64
 	WitnessList       []string
-	WitnessMap        map[string]int64
 	Watermark         map[string]int64
 }
 
 func newStaticProperty(account *account.Account, witnessList []string) *StaticProperty {
 	property := &StaticProperty{
-		account:           account,
-		NumberOfWitnesses: int64(len(witnessList)),
-		WitnessList:       witnessList,
-		WitnessMap:        make(map[string]int64),
-		Watermark:         make(map[string]int64),
+		account:     account,
+		WitnessList: make([]string, 0),
+		Watermark:   make(map[string]int64),
 	}
-	for i, w := range witnessList {
-		property.WitnessMap[w] = int64(i)
-	}
+
+	property.updateWitness(witnessList)
+
 	return property
+}
+
+func (property *StaticProperty) updateWitness(witnessList []string) {
+
+	property.NumberOfWitnesses = int64(len(witnessList))
+	property.WitnessList = witnessList
 }
 
 var (

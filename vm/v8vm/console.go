@@ -8,6 +8,7 @@ import (
 	"reflect"
 )
 
+// const Console log status
 const (
 	ConsoleLogSuccess = iota
 	ConsoleLogUnexpectedError

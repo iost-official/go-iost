@@ -128,6 +128,75 @@ func (e *engineImpl) SetUp(k, v string) error {
 	}
 	return nil
 }
+
+func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
+	loadTxInfo(e.ho, tx0)
+	defer func() {
+		e.ho.PopCtx()
+	}()
+
+	e.ho.Context().GSet("gas_limit", tx0.GasLimit)
+	e.ho.Context().GSet("receipts", make([]tx.Receipt, 0))
+
+	txr := tx.NewTxReceipt(tx0.Hash())
+	hasSetCode := false
+
+	for _, action := range tx0.Actions {
+		if hasSetCode && action.Contract == "iost.system" && action.ActionName == "SetCode" {
+			txr.Receipts = nil
+			txr.Status.Code = tx.ErrorDuplicateSetCode
+			txr.Status.Message = "error duplicate set code in a tx"
+			e.logger.Debugf("rollback")
+			e.ho.DB().Rollback()
+			break
+		}
+		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
+
+		cost, status, receipts, err := e.runAction(*action)
+		e.logger.Infof("run action : %v, result is %v", action, status.Code)
+		e.logger.Debug("used cost > ", cost)
+		e.logger.Debugf("status > \n%v\n", status)
+		//e.logger.Debugf("receipts > \n%v\n", receipts)
+
+		if err != nil {
+			return nil, err
+		}
+
+		txr.Status = status
+		txr.GasUsage += cost.ToGas()
+		//ilog.Debugf("action status: %v", status)
+
+		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
+		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
+
+		e.ho.PayCost(cost, account.GetIDByPubkey(tx0.Publisher.Pubkey))
+
+		if status.Code != tx.Success {
+			txr.Receipts = nil
+			e.logger.Debugf("rollback")
+			e.ho.DB().Rollback()
+			break
+		} else {
+			txr.Receipts = append(txr.Receipts, receipts...)
+			txr.SuccActionNum++
+		}
+	}
+
+	err := e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+	if err != nil {
+		e.ho.DB().Rollback()
+		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+		if err != nil {
+			ilog.Error(err.Error())
+			return nil, err
+		}
+	} else {
+		e.ho.DB().Commit()
+	}
+
+	return &txr, nil
+}
+
 func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	e.ho.Logger().Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
 	err := checkTx(tx0)
@@ -141,64 +210,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
 	}
 
-	loadTxInfo(e.ho, tx0)
-	defer func() {
-		e.ho.PopCtx()
-	}()
-
-	e.ho.Context().GSet("gas_limit", tx0.GasLimit)
-	e.ho.Context().GSet("receipts", make([]tx.Receipt, 0))
-
-	txr := tx.NewTxReceipt(tx0.Hash())
-
-	for _, action := range tx0.Actions {
-
-		cost, status, receipts, err2 := e.runAction(*action)
-		e.logger.Infof("run action : %v, result is %v", action, status.Code)
-		e.logger.Debug("used cost > ", cost)
-		e.logger.Debugf("status > \n%v\n", status)
-		//e.logger.Debugf("receipts > \n%v\n", receipts)
-
-		if err2 != nil {
-			return nil, err2
-		}
-
-		if cost == nil {
-			panic("cost is nil")
-		}
-
-		txr.Status = status
-		txr.GasUsage += cost.ToGas()
-		//ilog.Debugf("action status: %v", status)
-
-		if status.Code != tx.Success {
-			txr.Receipts = nil
-			e.logger.Debugf("rollback")
-			e.ho.DB().Rollback()
-		} else {
-			txr.Receipts = append(txr.Receipts, receipts...)
-			txr.SuccActionNum++
-		}
-
-		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
-		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
-
-		e.ho.PayCost(cost, account.GetIDByPubkey(tx0.Publisher.Pubkey))
-	}
-
-	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
-	if err != nil {
-		e.ho.DB().Rollback()
-		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
-		if err != nil {
-			ilog.Error(err.Error())
-			return nil, err
-		}
-	} else {
-		e.ho.DB().Commit()
-	}
-
-	return &txr, nil
+	return e.exec(tx0)
 }
 func (e *engineImpl) GC() {
 	e.logger.Stop()
