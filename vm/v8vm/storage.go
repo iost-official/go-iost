@@ -7,6 +7,8 @@ import "C"
 import (
 	"errors"
 	"strconv"
+
+	"encoding/json"
 )
 
 // ErrInvalidDbValType error
@@ -123,6 +125,26 @@ func goMapDel(cSbx C.SandboxPtr, key, field *C.char, gasUsed *C.size_t) C.int {
 	*gasUsed = C.size_t(cost.Data)
 
 	return 0
+}
+
+//export goMapKeys
+func goMapKeys(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) *C.char {
+	sbx, ok := GetSandbox(cSbx)
+	if !ok {
+		panic("get sandbox failed.")
+	}
+
+	k := C.GoString(key)
+
+	fstr, cost := sbx.host.MapKeys(k)
+	j, err := json.Marshal(fstr)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Println("storage145", fstr)
+	*gasUsed = C.size_t(cost.Data)
+
+	return C.CString(string(j))
 }
 
 //export goGlobalGet
