@@ -1,6 +1,8 @@
 package database
 
-import "strings"
+import (
+	"strings"
+)
 
 // MapHandler handler of map
 type MapHandler struct {
@@ -15,8 +17,8 @@ const Separator = "-"
 
 // MPut put value in kfv storage o(1)
 func (m *MapHandler) MPut(key, field, value string) {
-	m.db.Put(MapPrefix+key+Separator+field, value)
 	m.addField(key, field)
+	m.db.Put(MapPrefix+key+Separator+field, value)
 }
 
 func (m *MapHandler) addField(key, field string) {

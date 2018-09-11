@@ -22,12 +22,8 @@ public:
     bool MapHas(const char *key, const char *field);
     char *MapGet(const char *key, const char *field);
     int MapDel(const char *key, const char *field);
+    char *MapKeys(const char *key);
 
-    void MapKeys(const char *key) {
-//        size_t gasUsed = 0;
-//        char *ret = goMapKeys(sbx, key, &gasUsed);
-//        return ret;
-    }
     void MapLen(const char *key) {
 //        size_t gasUsed = 0;
 //        char *ret = goMapLen(sbx, key, &gasUsed);
