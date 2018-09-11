@@ -30,19 +30,22 @@ type Logger struct {
 	bufPool *BufPool
 
 	quitCh chan struct{}
+
+	showLocation bool
 }
 
 // New returns a default Logger instance.
 func New() *Logger {
 	return &Logger{
-		callDepth:   1,
-		lowestLevel: LevelFatal,
-		wg:          new(sync.WaitGroup),
-		msg:         make(chan *message, 4096),
-		flush:       make(chan *sync.WaitGroup, 1),
-		bufPool:     NewBufPool(),
-		quitCh:      make(chan struct{}, 1),
-		syncWrite:   true,
+		callDepth:    1,
+		lowestLevel:  LevelFatal,
+		wg:           new(sync.WaitGroup),
+		msg:          make(chan *message, 4096),
+		flush:        make(chan *sync.WaitGroup, 1),
+		bufPool:      NewBufPool(),
+		quitCh:       make(chan struct{}, 1),
+		syncWrite:    true,
+		showLocation: true,
 	}
 }
 
@@ -142,6 +145,11 @@ func (logger *Logger) SetLevel(l Level) {
 // AsyncWrite sets logger's syncWrite to false.
 func (logger *Logger) AsyncWrite() {
 	logger.syncWrite = false
+}
+
+// HideLocation sets logger's showLocation to false.
+func (logger *Logger) HideLocation() {
+	logger.showLocation = false
 }
 
 func (logger *Logger) write(msg *message) {
@@ -271,8 +279,10 @@ func (logger *Logger) genMsg(level Level, log string) {
 	buf.Write(levelBytes[level])
 	buf.WriteString(" ")
 	buf.WriteString(time.Now().In(cstZone).Format("2006-01-02 15:04:05.000"))
-	buf.WriteString(" ")
-	buf.WriteString(location(logger.callDepth + 3))
+	if logger.showLocation {
+		buf.WriteString(" ")
+		buf.WriteString(location(logger.callDepth + 3))
+	}
 	buf.WriteString(" ")
 	buf.WriteString(log)
 	buf.WriteString("\n")
