@@ -37,6 +37,16 @@ func SetCallDepth(d int) {
 	defaultLogger.SetCallDepth(d)
 }
 
+// AsyncWrite sets logger's syncWrite to false.
+func AsyncWrite() {
+	defaultLogger.AsyncWrite()
+}
+
+// HideLocation sets logger's showLocation to false.
+func HideLocation() {
+	defaultLogger.HideLocation()
+}
+
 // Start starts the global defaultLogger.
 func Start() {
 	defaultLogger.Start()
