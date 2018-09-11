@@ -11,6 +11,11 @@ matrix:
     - os: osx
       osx_image: xcode10
       go: 1.10.x
+      before_install:
+        - brew install git-lfs
+        - git lfs install
+      before_script:
+        - git lfs pull
       script:
         - make build
         - make test
@@ -22,6 +27,9 @@ matrix:
         - docker
       before_install:
         - docker pull iostio/iost-dev
+        - git lfs install
+      before_script:
+        - git lfs pull
       script:
         - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make build
         - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make test
