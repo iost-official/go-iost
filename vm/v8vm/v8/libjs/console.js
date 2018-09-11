@@ -1,10 +1,8 @@
 'use strict';
 
-let utils = require('utils');
-
 class Console {
     _format(...args) {
-        let formatStr = utils.format(...args);
+        let formatStr = format(...args);
         return formatStr;
     }
 
@@ -32,5 +30,3 @@ class Console {
         this.info(...args)
     }
 }
-
-module.exports = Console;

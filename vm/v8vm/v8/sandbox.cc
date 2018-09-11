@@ -78,8 +78,8 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
     Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
     global->SetInternalFieldCount(1);
 
-    InitConsole(isolate, global);
-    InitRequire(isolate, global);
+//    InitConsole(isolate, global);
+//    InitRequire(isolate, global);
     InitStorage(isolate, global);
     InitBlockchain(isolate, global);
     InitInstruction(isolate, global);
@@ -121,6 +121,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
     sbx->jsPath = strdup("v8/libjs");
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
+    sbx->threadPool = make_unique<ThreadPool>(2);
 
     return static_cast<SandboxPtr>(sbx);
 }
@@ -306,8 +307,9 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     std::string error;
     bool isJson = false;
     bool isDone = false;
-    std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
-    exec.detach();
+    //std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
+    //exec.detach();
+    sbx->threadPool->enqueue(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
 
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
     auto startTime = std::chrono::steady_clock::now();

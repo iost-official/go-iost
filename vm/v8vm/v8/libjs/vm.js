@@ -66,15 +66,13 @@ var storage = require('storage');
 var BlockChain = require('blockchain');
 
 // other helper funcitons
-var BigNumber = require('bignumber');
-var Int64 = require('int64');
+// var BigNumber = require('bignumber');
+// var Int64 = require('int64');
 
 // var injectGas = require('inject_gas');
 var observer = require('observer');
 
 var _IOSTInstruction_counter = new IOSTInstruction;
 
-var Console = require('console');
+// var Console = require('console');
 var console = new Console;
-
-var module = {};
