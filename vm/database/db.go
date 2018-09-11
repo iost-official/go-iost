@@ -1,6 +1,6 @@
 package database
 
-// Visitor ...
+// Visitor combine of every handler, to be api of database
 type Visitor struct {
 	BasicHandler
 	MapHandler
@@ -10,7 +10,7 @@ type Visitor struct {
 	RollbackHandler
 }
 
-// NewVisitor ...
+// NewVisitor get a visitor of a DB, with cache length determined
 func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 	db := newChainbaseAdapter(cb)
 	cachedDB := NewLRU(cacheLength, db)

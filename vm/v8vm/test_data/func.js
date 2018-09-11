@@ -1,3 +1,4 @@
+'use strict';
 class Func {
     constructor() {
     }
@@ -17,12 +18,12 @@ class Func {
     }
 
     func4() {
-        var a = ["i", "love", "iost"]
-        var b = a.map(w => (w.length))
+        const a = ["i", "love", "iost"];
+        let b = a.map(w => (w.length));
         return b.map(w => function () {
             return w + 1
         }());
     }
-};
+}
 
 module.exports = Func;

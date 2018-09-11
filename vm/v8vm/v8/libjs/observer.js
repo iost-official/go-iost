@@ -31,7 +31,7 @@ module.exports = (function () {
 
                 if (dotIndex === -1) {
                     if (typeof target[property] !== 'function' && typeof target[property] !== 'object') {
-                        let objectStorage = IOSTContractStorage.get(property, target[property]);
+                        let objectStorage = storage.get(property, target[property]);
                         // _native_log("observer get return: " + JSON.stringify(objectStorage));
                         return objectStorage;
                     }
@@ -53,7 +53,7 @@ module.exports = (function () {
                 var value = Reflect.get(target, property, receiver);
                 if (typeof target[property] === 'object' && target[property] !== null) {
                     if (dotIndex === -1) {
-                        let objectStorage = IOSTContractStorage.get(property, target[property]);
+                        let objectStorage = storage.get(property, target[property]);
 
                         // _native_log("observer get return: " + JSON.stringify(objectStorage));
                         let proxy = _create(objectStorage, getPath(path, property));
@@ -102,25 +102,25 @@ module.exports = (function () {
                 // _native_log("setttt: " + JSON.stringify(target) + ' : ' + pathList.length + " : " + path + " : " + prop);
 
                 if (pathList.length === 1) {
-                    IOSTContractStorage.put(prop, value)
+                    storage.put(prop, value)
                 } else if (pathList.length === 2) {
-                    IOSTContractStorage.put(path, target);
+                    storage.put(path, target);
                 } else {
                     if (pathList.length === 3) {
-                        let obj = IOSTContractStorage.get(pathList[0]);
+                        let obj = storage.get(pathList[0]);
                         // pathList.forEach(function (value, index) {
                         //     _native_log("xxzzxx: " + value + " " + index)
                         // });
                         // let obj = _updatedMap[pathList[0]];
                         // _native_log("obj: " + JSON.stringify(obj));
                         obj[pathList[1]][pathList[2]] = value;
-                        IOSTContractStorage.put(pathList[0], obj);
+                        storage.put(pathList[0], obj);
                     }
                     if (pathList.length === 4) {
-                        let obj = IOSTContractStorage.get(pathList[0]);
+                        let obj = storage.get(pathList[0]);
                         // let obj = _updatedMap[pathList[0]];
                         obj[pathList[1]][pathList[2]][pathList[3]] = value;
-                        IOSTContractStorage.put(pathList[0], obj);
+                        storage.put(pathList[0], obj);
                     }
                 }
 

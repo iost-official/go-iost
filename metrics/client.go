@@ -46,6 +46,7 @@ func (c *Client) SetPusher(addr string) error {
 	for _, colloctor := range c.collectorCache {
 		c.pusher.Collector(colloctor)
 	}
+	c.pusher.Collector(prometheus.NewGoCollector())
 	return nil
 }
 

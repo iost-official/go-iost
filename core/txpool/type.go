@@ -16,7 +16,15 @@ var (
 	filterTime    = int64(expiration + expiration/2)
 	//expiration    = 60*60*24*7
 
-	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
+	metricsReceivedTxCount  = metrics.NewCounter("iost_tx_received_count", []string{"from"})
+	metricsGetPendingTxTime = metrics.NewGauge("iost_get_pending_tx_time", nil)
+	metricsExistTxTime      = metrics.NewSummary("iost_exist_tx_time", nil)
+	metricsExistTxCount     = metrics.NewCounter("iost_exist_tx_count", nil)
+	metricsVerifyTxTime     = metrics.NewSummary("iost_verify_tx_time", nil)
+	metricsVerifyTxCount    = metrics.NewCounter("iost_verify_tx_count", nil)
+	metricsAddTxTime        = metrics.NewSummary("iost_add_tx_time", nil)
+	metricsAddTxCount       = metrics.NewCounter("iost_add_tx_count", nil)
+	metricsTxPoolSize       = metrics.NewGauge("iost_txpool_size", nil)
 )
 
 type FRet uint

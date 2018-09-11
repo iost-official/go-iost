@@ -1,3 +1,4 @@
+'use strict';
 class Danger {
     constructor() {
     }
@@ -7,7 +8,7 @@ class Danger {
     }
 
     visitUndefined() {
-        var a = undefined
+        let a = undefined;
         a.c = 1
     }
 

@@ -2,7 +2,7 @@ package host
 
 import "errors"
 
-// var ...
+// var errors
 var (
 	ErrBalanceNotEnough = errors.New("balance not enough")
 	ErrTransferNegValue = errors.New("trasfer amount less than zero")

@@ -9,6 +9,8 @@ import (
 
 	"reflect"
 
+	"time"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -21,6 +23,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 var testID = []string{
@@ -179,7 +182,7 @@ func jsHelloWorld() *contract.Contract {
 		ID: "ContractjsHelloWorld",
 		Code: `
 class Contract {
- constructor() {
+ init() {
 
  }
  hello() {
@@ -324,7 +327,7 @@ func jsCallHelloWorld() *contract.Contract {
 		ID: "Contractcall_hello_world",
 		Code: `
 class Contract {
- constructor() {
+ init() {
 
  }
  call_hello() {
@@ -375,7 +378,7 @@ func jsCallHelloWorldWithReceipt() *contract.Contract {
 		ID: "Contractcall_hello_world",
 		Code: `
 class Contract {
- constructor() {
+ init() {
 
  }
  call_hello() {
@@ -511,6 +514,10 @@ func (j *JSTester) ReadDB(key string) (value interface{}) {
 	return database.MustUnmarshal(j.vi.Get(j.cname + "-" + key))
 }
 
+func (j *JSTester) ReadMap(key, field string) (value interface{}) {
+	return database.MustUnmarshal(j.vi.MGet(j.cname+"-"+key, field))
+}
+
 func (j *JSTester) FlushDB(t *testing.T, keys []string) {
 	for _, k := range keys {
 		t.Logf("%s: %v", k, j.ReadDB(k))
@@ -591,7 +598,7 @@ func TestJSAPI_Database(t *testing.T) {
 
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	this.aa = new Int64(100);
 	}
 	main() {
@@ -616,7 +623,7 @@ func TestJSAPI_Transfer(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	main() {
 		BlockChain.transfer("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
@@ -639,7 +646,7 @@ func TestJSAPI_Transfer_Failed(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	main() {
 		BlockChain.transfer("IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
@@ -662,7 +669,7 @@ func TestJSAPI_Transfer_WrongFormat1(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	main() {
 		var ret = BlockChain.transfer("a", "b", 1);
@@ -689,7 +696,7 @@ func TestJSAPI_Deposit(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	deposit() {
 		return BlockChain.deposit("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "100")
@@ -725,7 +732,7 @@ func TestJSAPI_Info(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	blockInfo() {
 		var info = BlockChain.blockInfo()
@@ -759,7 +766,7 @@ func TestJSRequireAuth(t *testing.T) {
 	js := NewJSTester(t)
 	js.SetJS(`
 class Contract {
-	constructor() {
+	init() {
 	}
 	requireAuth() {
 		var ok = BlockChain.requireAuth("haha")
@@ -790,32 +797,25 @@ func TestJS_Database(t *testing.T) {
 	js.SetAPI("read")
 	js.SetAPI("change")
 	js.DoSet()
-	t.Log("========= constructor")
-	t.Log("num is ", js.ReadDB("num"))
-	t.Log("string is ", js.ReadDB("string"))
-	t.Log("bool is ", js.ReadDB("bool"))
-	t.Log("nil is ", js.ReadDB("nil"))
-	t.Log("array is ", js.ReadDB("array"))
-	t.Log("object is ", js.ReadDB("object"))
-	t.Log("arrayobj is ", js.ReadDB("arrayobj"))
-	t.Log("objobj is ", js.ReadDB("objobj"))
-	t.Log("========= read")
-
-	js.TestJS("read", `[]`)
-	//t.Log("num is ", js.ReadDB("num"))
-	//t.Log("string is ", js.ReadDB("string"))
-	//t.Log("bool is ", js.ReadDB("bool"))
-	//t.Log("array is ", js.ReadDB("array"))
-	//t.Log("object is ", js.ReadDB("object"))
-	//t.Log("arrayobj is ", js.ReadDB("arrayobj"))
-	//t.Log("objobj is ", js.ReadDB("objobj"))
-	js.TestJS("change", `[]`)
-	t.Log("========= change")
-	t.Log("array is ", js.ReadDB("array"))
-	t.Log("object is ", js.ReadDB("object"))
-	t.Log("arrayobj is ", js.ReadDB("arrayobj"))
-	t.Log("objobj is ", js.ReadDB("objobj"))
-	t.Log("keyobj is", js.ReadDB("key"))
+	//t.Log("========= constructor")
+	Convey("test of js database", t, func() {
+		So(js.ReadDB("num").(string), ShouldEqual, "9")
+		So(js.ReadDB("string").(string), ShouldEqual, "hello")
+		So(js.ReadDB("bool").(string), ShouldEqual, "true")
+		So(js.ReadDB("array").(string), ShouldEqual, "[1,2,3]")
+		So(js.ReadDB("obj").(string), ShouldEqual, `{"foo":"bar"}`)
+	})
+	r := js.TestJS("read", `[]`)
+	if r.Status.Code != 0 {
+		t.Fatal(r)
+	}
+	//js.TestJS("change", `[]`)
+	////t.Log("========= change")
+	////t.Log("array is ", js.ReadDB("array"))
+	////t.Log("object is ", js.ReadDB("object"))
+	////t.Log("arrayobj is ", js.ReadDB("arrayobj"))
+	////t.Log("objobj is ", js.ReadDB("objobj"))
+	////t.Log("keyobj is", js.ReadDB("key"))
 }
 
 func TestJS_LuckyBet(t *testing.T) {
@@ -833,38 +833,36 @@ func TestJS_LuckyBet(t *testing.T) {
 
 	// here put the first bet
 	r := js.TestJS("bet", fmt.Sprintf(`["%v",0, 2]`, testID[0]))
-	t.Log("receipt is ", r)
-	t.Log("max user number ", js.ReadDB("maxUserNumber"))
-	t.Log("user count ", js.ReadDB("userNumber"))
-	t.Log("total coins ", js.ReadDB("totalCoins"))
+	Convey("after 1 bet", t, func() {
+		So(r.Status.Code, ShouldEqual, 0)
+		So(js.ReadDB("user_number"), ShouldEqual, "1")
+		So(js.ReadDB("total_coins"), ShouldEqual, "2")
+		So(js.ReadMap("table", "0"), ShouldEqual, `[{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2}]`)
+	})
 	t.Log("table should be saved ", js.ReadDB("table0"))
 
-	for i := 1; i < 3; i++ { // at i = 2, should get reward
+	for i := 1; i < 10; i++ { // at i = 2, should get reward
 		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v, %v]`, testID[0], i, i%4+1))
 		if r.Status.Code != 0 {
-			t.Fatal(r)
+			t.Fatal(r.Status.Message)
 		}
 	}
 
-	t.Log("user count ", js.ReadDB("userNumber"))
-	t.Log("total coins ", js.ReadDB("totalCoins"))
-	t.Log("tables", js.ReadDB("tables"))
-	t.Log("result 0 is ", js.ReadDB("result0"))
-	t.Log("round is ", js.ReadDB("round"))
-	for i := 3; i < 6; i++ { // at i = 6, should get reward 2nd times
-		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v, %v]`, testID[0], i, i%4+1))
-		if r.Status.Code != 0 {
-			t.Fatal(r)
-		}
-	}
-	t.Log("round is ", js.ReadDB("round"))
-
+	Convey("after 1 bet", t, func() {
+		So(r.Status.Code, ShouldEqual, 0)
+		So(js.ReadDB("user_number"), ShouldEqual, "0")
+		So(js.ReadDB("total_coins"), ShouldEqual, "0")
+		So(js.ReadMap("result", "1"), ShouldEqual, `{"number":"nil","user_number":"nil","k_number":1,"total_coins":{"number":"20"},"records":[{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2,"reward":"20"},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":3},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":4},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":1},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":3},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":4},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":1},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2}]}`)
+		So(js.ReadDB("round"), ShouldEqual, "2")
+	})
 }
 
-func TestJS_Vote1(t *testing.T) {
+func TestJS1_Vote1(t *testing.T) {
+	t.Skip()
+
 	js := NewJSTester(t)
 	defer js.Clear()
-	lc, err := ReadFile("test_data/vote.js")
+	lc, err := ReadFile("../config/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -918,9 +916,11 @@ func TestJS_Vote1(t *testing.T) {
 }
 
 func TestJS_VoteServi(t *testing.T) {
+	t.Skip()
+
 	js := NewJSTester(t)
 	defer js.Clear()
-	lc, err := ReadFile("test_data/vote.js")
+	lc, err := ReadFile("../config/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -950,9 +950,11 @@ func TestJS_VoteServi(t *testing.T) {
 }
 
 func TestJS_Vote(t *testing.T) {
+	t.Skip("skip vote")
+
 	js := NewJSTester(t)
 	defer js.Clear()
-	lc, err := ReadFile("test_data/vote.js")
+	lc, err := ReadFile("../config/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -965,13 +967,23 @@ func TestJS_Vote(t *testing.T) {
 	js.SetAPI("Vote", "string", "string", "number")
 	js.SetAPI("Unvote", "string", "string", "number")
 	js.SetAPI("Stat")
-	js.SetAPI("Init")
+	js.SetAPI("init")
+	js.SetAPI("InitProducer", "number", "string")
 	for i := 0; i <= 18; i += 2 {
 		js.vi.SetBalance(testID[i], 5e+7)
 	}
 	js.vi.Commit()
 	t.Log(js.DoSet())
-	t.Log(js.TestJS("Init", `[]`))
+	num := 7
+	proStr := "["
+	for i := 0; i < num; i++ {
+		proStr += fmt.Sprintf(`\"%v\"`, testID[2*i])
+		if i != num-1 {
+			proStr += ","
+		}
+	}
+	proStr += "]"
+	t.Log(js.TestJS("InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr)))
 
 	keys := []string{
 		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
@@ -1157,4 +1169,104 @@ func TestJS_Vote(t *testing.T) {
 	t.Log(js.vi.Servi(testID[0]))
 	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
 	t.Log(js.vi.Balance(testID[0]))
+}
+
+//nolint
+func TestJS_Genesis(t *testing.T) {
+	t.Skip("skip genesis")
+
+	witnessInfo := testID
+	var acts []*tx.Action
+	for i := 0; i < len(witnessInfo)/2; i++ {
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], 50000000))
+		acts = append(acts, &act)
+	}
+	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
+	t.Log("vote contract path: ", VoteContractPath)
+	// deploy iost.vote
+	voteFilePath := VoteContractPath + "vote.js"
+	voteAbiPath := VoteContractPath + "vote.js.abi"
+	fd, err := common.ReadFile(voteFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawCode := string(fd)
+	fd, err = common.ReadFile(voteAbiPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawAbi := string(fd)
+	c := contract.Compiler{}
+	code, err := c.Parse("iost.vote", rawCode, rawAbi)
+	t.Log(code)
+	if err != nil {
+		t.Fatal(err)
+	}
+	num := len(witnessInfo) / 2
+	proStr := "["
+	for i := 0; i < num; i++ {
+		proStr += fmt.Sprintf(`\"%v\"`, witnessInfo[2*i])
+		if i != num-1 {
+			proStr += ","
+		}
+	}
+	proStr += "]"
+	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
+	acts = append(acts, &act)
+	act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
+	acts = append(acts, &act1)
+
+	// deploy iost.bonus
+	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
+	acts = append(acts, &act2)
+
+	trx := tx.NewTx(acts, nil, 10000000, 0, 0)
+	trx.Time = 0
+	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"), crypto.Secp256k1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trx, err = tx.SignTx(trx, acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	blockHead := block.BlockHead{
+		Version:    0,
+		ParentHash: nil,
+		Number:     0,
+		Witness:    acc.ID,
+		Time:       time.Now().Unix() / common.SlotLength,
+	}
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll("mvcc")
+
+	engine := NewEngine(&blockHead, mvccdb)
+	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
+	t.Log("js path: ", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
+	txr, err := engine.Exec(trx)
+	if err != nil {
+		t.Fatal(fmt.Errorf("exec tx failed, stop the pogram. err: %v", err))
+	}
+	t.Log(txr)
+	t.Log(database.MustUnmarshal(database.NewVisitor(0, mvccdb).Get("iost.vote" + "-" + "pendingProducerList")))
+	if txr.Status.Code != tx.Success {
+		t.Fatal("exec trx failed.")
+	}
+	blk := block.Block{
+		Head:     &blockHead,
+		Sign:     &crypto.Signature{},
+		Txs:      []*tx.Tx{trx},
+		Receipts: []*tx.TxReceipt{txr},
+	}
+	blk.Head.TxsHash = blk.CalculateTxsHash()
+	blk.Head.MerkleHash = blk.CalculateMerkleHash()
+	err = blk.CalculateHeadHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 }

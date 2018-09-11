@@ -1,10 +1,12 @@
 class Test {
-    constructor() {
-        this.num = 9;
+    init() {
+        storage.put("num", JSON.stringify(9))
     }
 
     number() {
-        return this._num(this.num)
+        const snum = storage.get("num");
+        const num = JSON.parse(snum);
+        return this._num(num)
     }
 
     _num(d) {

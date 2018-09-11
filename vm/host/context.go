@@ -7,7 +7,7 @@ type Context struct { // thread unsafe
 	gValue map[string]interface{}
 }
 
-// NewContext ...
+// NewContext new context based on base
 func NewContext(base *Context) *Context {
 
 	if base != nil {
@@ -25,7 +25,7 @@ func NewContext(base *Context) *Context {
 
 }
 
-// Value ...
+// Value get value of key
 func (c *Context) Value(key string) (value interface{}) {
 	cc := c
 	for {
@@ -42,12 +42,12 @@ func (c *Context) Value(key string) (value interface{}) {
 	}
 }
 
-// Set  ...
+// Set  set value of k
 func (c *Context) Set(key string, value interface{}) {
 	c.value[key] = value
 }
 
-// GValue ...
+// GValue get global value of key
 func (c *Context) GValue(key string) (value interface{}) {
 	cc := c
 	for cc.base != nil {
@@ -56,7 +56,7 @@ func (c *Context) GValue(key string) (value interface{}) {
 	return cc.gValue[key]
 }
 
-// GSet ...
+// GSet set global value of key, thread unsafe
 func (c *Context) GSet(key string, value interface{}) {
 	cc := c
 	for cc.base != nil {
@@ -65,7 +65,7 @@ func (c *Context) GSet(key string, value interface{}) {
 	cc.gValue[key] = value
 }
 
-// Base ...
+// Base get base of context
 func (c *Context) Base() *Context {
 	return c.base
 }
