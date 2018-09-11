@@ -211,10 +211,12 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 	}(start)
 
 	pool.mu.Lock()
+	cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
+	metricsGetPendingTxLockTime.Set(float64(cost), nil)
 	defer pool.mu.Unlock()
 
+	start = time.Now()
 	var pendingList TxsList
-
 	pool.pendingTx.Range(func(key, value interface{}) bool {
 		if !pool.txTimeOut(value.(*tx.Tx)) {
 			pendingList = append(pendingList, value.(*tx.Tx))
@@ -222,10 +224,15 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, error) {
 
 		return true
 	})
+	cost = time.Since(start).Nanoseconds() / int64(time.Microsecond)
+	metricsGetPendingTxAppendTime.Set(float64(cost), nil)
 
 	metricsTxPoolSize.Set(float64(len(pendingList)), nil)
 
+	start = time.Now()
 	sort.Sort(pendingList)
+	cost = time.Since(start).Nanoseconds() / int64(time.Microsecond)
+	metricsGetPendingTxSortTime.Set(float64(cost), nil)
 
 	l := len(pendingList)
 	if l >= maxCnt {
