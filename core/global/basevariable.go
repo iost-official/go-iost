@@ -3,6 +3,8 @@ package global
 import (
 	"fmt"
 
+	"os"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
@@ -11,9 +13,9 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
-	"os"
 )
 
 type TMode uint
@@ -177,7 +179,8 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 	}
 	if common.Base58Encode(blk.HeadHash()) != conf.Genesis.GenesisHash { //get data from seedNode
-		return nil, fmt.Errorf("the hash of genesis block in db doesn't match that in config")
+		ilog.Errorf("genesis hash unmatched. genesis=%s, config=%s", common.Base58Encode(blk.HeadHash()), conf.Genesis.GenesisHash)
+		return nil, fmt.Errorf("the hash of genesis block in db doesn't match that in config.")
 	}
 	stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
 	if err != nil {
