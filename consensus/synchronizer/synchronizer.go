@@ -640,7 +640,7 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 					var hState string
 					hStateIF, ok := dc.hashState.Load(hash)
 					if ok {
-						hState, ok := hStateIF.(string)
+						hState, ok = hStateIF.(string)
 					}
 					if !ok || hState == Done {
 						dc.hashState.Delete(hash)
