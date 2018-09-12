@@ -72,10 +72,8 @@ func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
 	vi := database.NewVisitor(0, mv)
 
 	spn := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingBlockNumber"))
-	// todo delay
 	if spn == nil {
-		//return errors.New("failed to get pending number")
-		return nil
+		return errors.New("failed to get pending number")
 	}
 	pn, err := strconv.ParseInt(spn.(string), 10, 64)
 	if err != nil {
@@ -84,10 +82,8 @@ func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
 	wl.SetPendingNum(pn)
 
 	jwl := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingProducerList"))
-	// todo delay
 	if jwl == nil {
-		//return errors.New("failed to get pending list")
-		return nil
+		return errors.New("failed to get pending list")
 	}
 
 	str := make([]string, 0)
@@ -105,6 +101,9 @@ func (wl *WitnessList) LibWitnessHandle() {
 }
 
 func (wl *WitnessList) CopyWitness(n *BlockCacheNode) {
+	if n == nil {
+		return
+	}
 	wl.SetActive(n.Active())
 	wl.SetPending(n.Pending())
 	wl.SetPendingNum(n.PendingNum())
@@ -276,33 +275,28 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	bcn.Type = Linked
 	delete(bc.leaf, bcn.Parent)
 	bc.leaf[bcn] = bcn.Number
+	bc.setHead(bcn)
 	if bcn.Number > bc.head.Number {
-		bc.setHead(bcn)
+		bc.head = bcn
 	}
 }
 
 func (bc *BlockCacheImpl) initHead(h *BlockCacheNode) error {
 
 	bc.head = h
-
 	if err := bc.updatePending(bc.head); err != nil {
 		return err
 	}
-
 	return nil
 }
 
 func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
-
-	h.CopyWitness(bc.head)
-	bc.head = h
-
-	if bc.head.Number%common.VoteInterval == 0 {
-		if err := bc.updatePending(bc.head); err != nil {
+	h.CopyWitness(h.Parent)
+	if h.Number%common.VoteInterval == 0 {
+		if err := bc.updatePending(h); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -310,12 +304,11 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 
 	ok := bc.stateDB.Checkout(string(h.Block.HeadHash()))
 	if ok {
-		if err := bc.head.UpdatePending(bc.stateDB); err != nil {
+		if err := h.UpdatePending(bc.stateDB); err != nil {
 			ilog.Error("failed to update pending, err:", err)
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -328,7 +321,7 @@ func (bc *BlockCacheImpl) updateLongest() {
 	for key, val := range bc.leaf {
 		if val > cur {
 			cur = val
-			bc.setHead(key)
+			bc.head = key
 		}
 	}
 }

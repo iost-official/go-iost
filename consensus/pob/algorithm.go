@@ -30,8 +30,13 @@ var (
 	errHeadHash    = errors.New("wrong head hash")
 )
 
-func generateBlock(account *account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	ilog.Info("generate Block start")
+	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
+	txCnt := 10000
+	txsList, head, _ := txPool.PendingTxs(txCnt)
+	ilog.Info("txs in txpool", len(txsList))
+	topBlock := head.Block
 	blk := block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
@@ -43,10 +48,6 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	txCnt := 30000
-	limitTime := time.NewTicker(time.Second)
-	txsList, _ := txPool.PendingTxs(txCnt)
-	ilog.Info("txs in txpool", len(txsList))
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(blk.Head, db)
 	ilog.Info("txlen ", len(txsList))

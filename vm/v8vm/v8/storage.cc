@@ -8,10 +8,12 @@ static mapPutFunc CMapPut = nullptr;
 static mapHasFunc CMapHas = nullptr;
 static mapGetFunc CMapGet = nullptr;
 static mapDelFunc CMapDel = nullptr;
+static mapKeysFunc CMapKeys = nullptr;
 static globalGetFunc CGGet = nullptr;
 
 void InitGoStorage(putFunc put, getFunc get, delFunc del,
-    mapPutFunc mput, mapHasFunc mhas, mapGetFunc mget, mapDelFunc mdel, globalGetFunc gGet) {
+    mapPutFunc mput, mapHasFunc mhas, mapGetFunc mget, mapDelFunc mdel, mapKeysFunc mkeys,
+    globalGetFunc gGet) {
     CPut = put;
     CGet = get;
     CDel = del;
@@ -19,6 +21,7 @@ void InitGoStorage(putFunc put, getFunc get, delFunc del,
     CMapHas = mhas;
     CMapGet = mget;
     CMapDel = mdel;
+    CMapKeys = mkeys;
     CGGet = gGet;
 }
 
@@ -70,6 +73,13 @@ char *IOSTContractStorage::MapGet(const char *key, const char *field) {
 int IOSTContractStorage::MapDel(const char *key, const char *field) {
     size_t gasUsed = 0;
     int ret = CMapDel(sbxPtr, key, field, &gasUsed);
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
+    return ret;
+}
+char* IOSTContractStorage::MapKeys(const char *key) {
+    size_t gasUsed = 0;
+    char *ret = CMapKeys(sbxPtr, key, &gasUsed);
     Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
     sbx->gasUsed += gasUsed;
     return ret;
@@ -411,6 +421,45 @@ void IOSTContractStorage_MapDel(const FunctionCallbackInfo<Value> &args) {
     args.GetReturnValue().Set(ret);
 }
 
+void IOSTContractStorage_MapKeys(const FunctionCallbackInfo<Value> &args) {
+    Isolate *isolate = args.GetIsolate();
+    Local<Object> self = args.Holder();
+
+    if (args.Length() != 1) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTContractStorage_MapDel invalid argument length")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
+    Local<Value> key = args[0];
+    if (!key->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTContractStorage_MapDel key must be string")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
+    String::Utf8Value keyStr(key);
+
+    Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
+    if (!extVal->IsExternal()) {
+        std::cout << "IOSTContractStorage_MapDel val error" << std::endl;
+        return;
+    }
+
+    IOSTContractStorage *ics = static_cast<IOSTContractStorage *>(extVal->Value());
+    char* val = ics->MapKeys(*keyStr);
+    if (val == nullptr) {
+        args.GetReturnValue().SetNull();
+    } else {
+        args.GetReturnValue().Set(String::NewFromUtf8(isolate, val));
+        free(val);
+    }
+}
+
 void IOSTContractStorage_GGet(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> self = args.Holder();
@@ -495,6 +544,10 @@ void InitStorage(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     storageTpl->Set(
         String::NewFromUtf8(isolate, "mapDel"),
         FunctionTemplate::New(isolate, IOSTContractStorage_MapDel)
+    );
+    storageTpl->Set(
+        String::NewFromUtf8(isolate, "mapKeys"),
+        FunctionTemplate::New(isolate, IOSTContractStorage_MapKeys)
     );
     storageTpl->Set(
         String::NewFromUtf8(isolate, "globalGet"),

@@ -153,10 +153,9 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
 
 		cost, status, receipts, err := e.runAction(*action)
-		e.logger.Infof("run action : %v, result is %v", action, status.Code)
-		e.logger.Debug("used cost > ", cost)
-		e.logger.Debugf("status > \n%v\n", status)
-		//e.logger.Debugf("receipts > \n%v\n", receipts)
+		ilog.Infof("run action : %v, result is %v", action, status.Code)
+		ilog.Debug("used cost > ", cost)
+		ilog.Debugf("status > \n%v\n", status)
 
 		if err != nil {
 			return nil, err
@@ -164,7 +163,6 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		txr.Status = status
 		txr.GasUsage += cost.ToGas()
-		//ilog.Debugf("action status: %v", status)
 
 		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
@@ -198,7 +196,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 }
 
 func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
-	e.ho.Logger().Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
+	ilog.Info("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
 	err := checkTx(tx0)
 	if err != nil {
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
@@ -406,6 +404,7 @@ func (e *engineImpl) startLog() {
 	}
 	if ok {
 		e.logger.SetCallDepth(0)
+		e.logger.HideLocation()
 		e.logger.Start()
 	}
 }
@@ -434,5 +433,4 @@ func loadTxInfo(h *host.Host, t *tx.Tx) {
 	authList[account.GetIDByPubkey(t.Publisher.Pubkey)] = 2
 
 	h.Context().Set("auth_list", authList)
-
 }

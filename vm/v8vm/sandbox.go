@@ -24,6 +24,7 @@ int goMapPut(SandboxPtr, const char *, const char *, const char *, size_t *);
 bool goMapHas(SandboxPtr, const char *, const char *, size_t *);
 char *goMapGet(SandboxPtr, const char *, const char *, size_t *);
 int goMapDel(SandboxPtr, const char *, const char *, size_t *);
+char *goMapKeys(SandboxPtr, const char *, size_t *);
 char *goGlobalGet(SandboxPtr, const char *, const char *, size_t *);
 int goConsoleLog(SandboxPtr, const char *, const char *);
 */
@@ -116,6 +117,7 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 		(C.mapHasFunc)(C.goMapHas),
 		(C.mapGetFunc)(C.goMapGet),
 		(C.mapDelFunc)(C.goMapDel),
+		(C.mapKeysFunc)(C.goMapKeys),
 		(C.globalGetFunc)(C.goGlobalGet))
 	C.loadVM(sbx.context, C.int(vmType))
 }
