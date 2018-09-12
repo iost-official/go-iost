@@ -17,6 +17,7 @@ package iwallet
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/iost-official/Go-IOS-Protocol/rpc"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -30,14 +31,11 @@ var netCmd = &cobra.Command{
 	Short: "Get network id",
 	Long:  `Get network id`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("aaa")
 		b, err := GetNetID()
-		fmt.Println("bbbb")
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println("ccc")
-		fmt.Println(b)
+		fmt.Println("netId:", b)
 	},
 }
 
@@ -62,9 +60,7 @@ func GetNetID() (string, error) {
 	}
 	defer conn.Close()
 	client := rpc.NewApisClient(conn)
-	fmt.Println("1111")
-	value, err := client.GetNetID(context.Background(), nil)
-	fmt.Println("22222")
+	value, err := client.GetNetID(context.Background(), &empty.Empty{})
 	if err != nil {
 		return "", err
 	}
