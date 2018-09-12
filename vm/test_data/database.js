@@ -13,25 +13,25 @@ class Test {
 
     read() {
         const num = JSON.parse(storage.get("num"));
-        _native_log("num > "+num ); // 9
+        console.log("num > "+num ); // 9
 
         const str = storage.get("string");
-        _native_log("str > "+str ); //  "hello";
+        console.log("str > "+str ); //  "hello";
 
         const bool = JSON.parse(storage.get("bool"));
-        _native_log("bool > "+bool? "true":"false" );
+        console.log("bool > "+bool? "true":"false" );
 
         const array = JSON.parse(storage.get("array"));
-        _native_log("array > " + array.toString());
+        console.log("array > " + array.toString());
 
         const obj = JSON.parse(storage.get("obj"));
-        _native_log("obj > " + obj.foo); // bar
+        console.log("obj > " + obj.foo); // bar
 
         const map1 = storage.mapGet("map", "field1");
-        _native_log("map > " + map1);
+        console.log("map > " + map1);
 
         const keys = storage.mapKeys("map");
-        _native_log("keys > " + keys.toString());
+        console.log("keys > " + keys.toString());
     }
 
     change() {

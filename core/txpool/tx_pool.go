@@ -50,6 +50,10 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitGenerateMode: make(chan struct{}),
 		quitCh:           make(chan struct{}),
 	}
+	p.forkChain.NewHead = blockCache.LinkedRoot()
+	if p.forkChain.NewHead == nil {
+		return nil, errors.New("failed to head")
+	}
 	p.Lease()
 	return p, nil
 }
