@@ -59,17 +59,19 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
 
 		trx, err := tx.SignTx(trx, staticProperty.account)
-		if err == nil {
-			if receipt, err := engine.Exec(trx); err == nil {
-				blk.Txs = append(blk.Txs, trx)
-				blk.Receipts = append(blk.Receipts, receipt)
-			}
-		} else {
-			ilog.Error("failed to vote, err:", err)
+		if err != nil {
+			ilog.Errorf("fail to signTx, err:%v", err)
 		}
-
+		receipt, err := engine.Exec(trx)
+		if err != nil {
+			ilog.Errorf("fail to exec trx, err:%v", err)
+		}
+		if receipt.Status.Code != tx.Success {
+			ilog.Errorf("status code: %v", receipt.Status.Code)
+		}
+		blk.Txs = append(blk.Txs, trx)
+		blk.Receipts = append(blk.Receipts, receipt)
 	}
-
 L:
 	for _, t := range txsList {
 		select {
