@@ -64,7 +64,7 @@ func main() {
 	host, code := MyInit("simple")
 	//vmPool.LoadAndCall(host, code, "show")
 
-	var times = 1000
+	var times = 10000
 	if len(os.Args) >= 2 {
 		timesT, err := strconv.Atoi(os.Args[1])
 		times = timesT

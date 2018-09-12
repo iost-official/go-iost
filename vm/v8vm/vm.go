@@ -10,10 +10,6 @@ import "C"
 import (
 	"sync"
 
-	"time"
-
-	"fmt"
-
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
@@ -101,7 +97,6 @@ func (e *VM) setReleaseChannel(releaseChannel chan *VM) {
 }
 
 func (e *VM) recycle() {
-	a := time.Now()
 	// first release sandbox
 	if e.sandbox != nil {
 		e.sandbox.Release()
@@ -111,7 +106,6 @@ func (e *VM) recycle() {
 	if e.releaseChannel != nil {
 		e.releaseChannel <- e
 	}
-	fmt.Println("recycle: ", time.Since(a))
 }
 
 // Release release all engine associate resource
