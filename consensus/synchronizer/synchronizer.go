@@ -1,6 +1,7 @@
 package synchronizer
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -343,6 +344,9 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 			}
 			resp.BlockHashes = append(resp.BlockHashes, &blkHash)
 		}
+		for i, j := 0, len(resp.BlockHashes)-1; i < j; i, j = i+1, j-1 {
+			resp.BlockHashes[i], resp.BlockHashes[j] = resp.BlockHashes[j], resp.BlockHashes[i]
+		}
 	}
 	if rh.ReqType == 1 {
 		var blk *block.Block
@@ -393,19 +397,20 @@ func (sy *SyncImpl) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(retryTime):
-			hr := &message.BlockHashQuery{ReqType: 1, Start: 0, End: 0, Nums: make([]int64, 0)}
+			hq := &message.BlockHashQuery{ReqType: 1, Start: 0, End: 0, Nums: make([]int64, 0)}
 			sy.reqMap.Range(func(k, v interface{}) bool {
 				num, ok := k.(int64)
 				if !ok {
 					sy.reqMap.Delete(k)
 					return true
 				}
-				hr.Nums = append(hr.Nums, num)
+				hq.Nums = append(hq.Nums, num)
 				return true
 			})
-			if len(hr.Nums) > 0 {
+			if len(hq.Nums) > 0 {
 				// ilog.Debug("retry download ", hr.Nums)
-				sy.queryBlockHash(hr)
+				hq.Nums = sort.Sort(hq.Nums)
+				sy.queryBlockHash(hq)
 			}
 		case <-sy.exitSignal:
 			return
@@ -491,7 +496,9 @@ func NewDownloadController() (*DownloadControllerImpl, error) {
 func (dc *DownloadControllerImpl) Reset() {
 	dc.hashState = new(sync.Map)
 	dc.peerState = new(sync.Map)
+	dc.peerStateMutex = new(sync.Map)
 	dc.peerMap = new(sync.Map)
+	dc.peerMapMutex = new(sync.Map)
 }
 
 func (dc *DownloadControllerImpl) Stop() {
@@ -500,7 +507,7 @@ func (dc *DownloadControllerImpl) Stop() {
 
 func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 	// ilog.Debugf("peer: %s, hash: %s", peerID, hash)
-	hState, _ := dc.hashState.LoadOrStore(hash, Wait)
+	hStateIF, _ := dc.hashState.LoadOrStore(hash, Wait)
 
 	_, ok := dc.peerState.Load(peerID)
 	if !ok {
@@ -521,8 +528,8 @@ func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 		dc.peerStateMutex.LoadOrStore(peerID, new(sync.Mutex))
 		dc.peerState.LoadOrStore(peerID, pState)
 	}
-	hm, _ := dc.peerMap.Load(peerID)
-	hashMap, _ := hm.(*sync.Map)
+	hmIF, _ := dc.peerMap.Load(peerID)
+	hashMap, _ := hmIF.(*sync.Map)
 	if _, ok = hashMap.Load(hash); !ok {
 		pmMutex, _ := dc.peerMapMutex.Load(peerID)
 		tailNode, _ := hashMap.Load(Tail)
@@ -534,7 +541,7 @@ func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 		hashMap.Store(node.val, node)
 		pmMutex.(*sync.Mutex).Unlock()
 	}
-	if hState.(string) == Wait {
+	if hState, ok := hStateIF.(string); ok && hState == Wait {
 		select {
 		case dc.chDownload <- struct{}{}:
 		default:
@@ -544,24 +551,24 @@ func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 
 func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) {
 	ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.Pretty())
-	if hState, hok := dc.hashState.Load(hash); hok {
-		hs, ok := hState.(string)
+	if hStateIF, ok := dc.hashState.Load(hash); ok {
+		hState, ok := hStateIF.(string)
 		if !ok {
 			dc.hashState.Delete(hash)
-		} else if hs != Done {
+		} else if hState != Done {
 			dc.hashState.Store(hash, Wait)
 		}
 	}
-	if pState, pok := dc.peerState.Load(peerID); pok {
+	if pStateIF, ok := dc.peerState.Load(peerID); ok {
 		psMutex, _ := dc.peerStateMutex.Load(peerID)
 		psMutex.(*sync.Mutex).Lock()
-		ps, ok := pState.(map[string]bool)
+		pState, ok := pStateIF.(map[string]bool)
 		if !ok {
 			dc.peerState.Delete(peerID)
 			return
 		}
-		if _, ok = ps[hash]; ok {
-			delete(ps, hash)
+		if _, ok = pState[hash]; ok {
+			delete(pState, hash)
 			select {
 			case dc.chDownload <- struct{}{}:
 			default:
@@ -576,18 +583,18 @@ func (dc *DownloadControllerImpl) MissionComplete(hash string) {
 }
 
 func (dc *DownloadControllerImpl) FreePeer(hash string, peerID p2p.PeerID) {
-	if pState, pok := dc.peerState.Load(peerID); pok {
+	if pStateIF, ok := dc.peerState.Load(peerID); ok {
 		psMutex, _ := dc.peerStateMutex.Load(peerID)
 		psMutex.(*sync.Mutex).Lock()
-		ps, ok := pState.(map[string]*time.Timer)
+		pState, ok := pStateIF.(map[string]*time.Timer)
 		if !ok {
 			dc.peerState.Delete(peerID)
 			return
 		}
 		psMutex.(*sync.Mutex).Unlock()
-		if timer, ok := ps[hash]; ok {
+		if timer, ok := pState[hash]; ok {
 			timer.Stop()
-			delete(ps, hash)
+			delete(pState, hash)
 			select {
 			case dc.chDownload <- struct{}{}:
 			default:
@@ -619,8 +626,6 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 				hm, _ := dc.peerMap.Load(peerID)
 				hashMap, _ := hm.(*sync.Map)
 
-				//hashMap := v.(*sync.Map)
-				//hashMap.Range(func(k, v interface{}) bool {
 				pmMutex.(*sync.Mutex).Lock()
 				headNode, _ := hashMap.Load(Head)
 				node := headNode.(*hashListNode).next
@@ -630,15 +635,19 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 						break
 					}
 					hash := node.val
-					hState, ok := dc.hashState.Load(hash)
-					if !ok || hState.(string) == Done {
+					var hState string
+					hStateIF, ok := dc.hashState.Load(hash)
+					if ok {
+						hState, ok := hStateIF.(string)
+					}
+					if !ok || hState == Done {
 						dc.hashState.Delete(hash)
 						pmMutex.(*sync.Mutex).Lock()
 						hashMap.Delete(hash)
 						node.prev.next = node.next
 						node.next.prev = node.prev
 						pmMutex.(*sync.Mutex).Unlock()
-					} else if hState.(string) == Wait {
+					} else if hState == Wait {
 						dc.hashState.Store(hash, peerID.Pretty())
 						callback(hash, peerID)
 						psMutex.(*sync.Mutex).Lock()
