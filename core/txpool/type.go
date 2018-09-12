@@ -179,7 +179,7 @@ func (st *sortedTxMap) Size() int {
 	return len(st.txMap)
 }
 
-func (st *sortedTxMap) Iter() *iterator {
+func (st *sortedTxMap) Iter() *Iterator {
 	iter := st.tree.Limit()
 	return &iterator{
 		iter: &iter,
@@ -187,7 +187,7 @@ func (st *sortedTxMap) Iter() *iterator {
 	}
 }
 
-type iterator struct {
+type Iterator struct {
 	iter *rbtree.Iterator
 	rw   *sync.RWMutex
 }
@@ -199,5 +199,5 @@ func (iter *iterator) Next() (*tx.Tx, bool) {
 	}
 
 	iter.iter = &i
-	return i.Item().(*tx.Tx)
+	return i.Item().(*tx.Tx), true
 }

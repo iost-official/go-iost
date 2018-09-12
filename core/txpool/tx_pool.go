@@ -1,7 +1,6 @@
 package txpool
 
 import (
-	"sort"
 	"sync"
 	"time"
 
@@ -31,7 +30,7 @@ type TxPoolImpl struct {
 	forkChain *ForkChain
 	blockList *sync.Map
 	// pendingTx *sync.Map
-	pendingTx *rbtree.Tree
+	pendingTx *sortedTxMap
 
 	mu               sync.RWMutex
 	quitGenerateMode chan struct{}
@@ -47,7 +46,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		chTx:             make(chan *tx.Tx, 102400),
 		forkChain:        new(ForkChain),
 		blockList:        new(sync.Map),
-		pendingTx:        new(sync.Map),
+		pendingTx:        newSortedTxMap(),
 		global:           global,
 		p2pService:       p2ps,
 		chP2PTx:          p2ps.Register("TxPool message", p2p.PublishTxRequest),
@@ -203,7 +202,7 @@ func (pool *TxPoolImpl) AddTx(t *tx.Tx) TAddTx {
 // DelTx del the transaction
 func (pool *TxPoolImpl) DelTx(hash []byte) error {
 
-	pool.pendingTx.Delete(string(hash))
+	pool.pendingTx.Del(hash)
 
 	return nil
 }
@@ -223,28 +222,21 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, *blockcache.BlockCacheN
 
 	start = time.Now()
 	var pendingList TxsList
-	pool.pendingTx.Range(func(key, value interface{}) bool {
-		if !pool.txTimeOut(value.(*tx.Tx)) {
-			pendingList = append(pendingList, value.(*tx.Tx))
+	iter := pool.pendingTx.Iter()
+	var i int
+	tx, ok := iter.Next()
+	for ok && i < maxCnt {
+		if !pool.txTimeOut(tx) {
+			pendingList = append(pendingList, tx)
 		}
-		return true
-	})
+		tx, ok = iter.Next()
+	}
 	cost = time.Since(start).Nanoseconds() / int64(time.Microsecond)
 	metricsGetPendingTxAppendTime.Set(float64(cost), nil)
 
-	metricsTxPoolSize.Set(float64(len(pendingList)), nil)
+	metricsTxPoolSize.Set(float64(pool.pendingTx.Size()), nil)
 
-	start = time.Now()
-	sort.Sort(pendingList)
-	cost = time.Since(start).Nanoseconds() / int64(time.Microsecond)
-	metricsGetPendingTxSortTime.Set(float64(cost), nil)
-
-	l := len(pendingList)
-	if l >= maxCnt {
-		l = maxCnt
-	}
-
-	return pendingList[:l], pool.forkChain.NewHead, nil
+	return pendingList, pool.forkChain.NewHead, nil
 }
 
 // ExistTxs determine if the transaction exists
@@ -512,15 +504,15 @@ func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
 	if pool.existTxInPending(h) {
 		return DupError
 	}
-	pool.pendingTx.Store(string(h), tx)
+	pool.pendingTx.Add(tx)
 	return Success
 }
 
 func (pool *TxPoolImpl) existTxInPending(hash []byte) bool {
 
-	_, ok := pool.pendingTx.Load(string(hash))
+	tx := pool.pendingTx.Get(hash)
 
-	return ok
+	return tx != nil
 }
 
 func (pool *TxPoolImpl) txTimeOut(tx *tx.Tx) bool {
@@ -545,19 +537,15 @@ func (pool *TxPoolImpl) txTimeOut(tx *tx.Tx) bool {
 
 func (pool *TxPoolImpl) clearTimeOutTx() {
 
-	pool.pendingTx.Range(func(key, value interface{}) bool {
-
-		if pool.txTimeOut(value.(*tx.Tx)) {
-			pool.delTxInPending(value.(*tx.Tx).Hash())
+	iter := pool.pendingTx.Iter()
+	tx, ok := iter.Next()
+	for ok {
+		if pool.txTimeOut(tx) {
+			pool.DelTx(tx.Hash())
 		}
+		tx, ok = iter.Next()
+	}
 
-		return true
-	})
-
-}
-
-func (pool *TxPoolImpl) delTxInPending(hash []byte) {
-	pool.pendingTx.Delete(string(hash))
 }
 
 func (pool *TxPoolImpl) delBlockTxInPending(hash []byte) error {
@@ -568,7 +556,7 @@ func (pool *TxPoolImpl) delBlockTxInPending(hash []byte) error {
 	}
 
 	b.txMap.Range(func(key, value interface{}) bool {
-		pool.pendingTx.Delete(key.(string))
+		pool.pendingTx.Del([]byte(key.(string)))
 		return true
 	})
 
@@ -576,7 +564,7 @@ func (pool *TxPoolImpl) delBlockTxInPending(hash []byte) error {
 }
 
 func (pool *TxPoolImpl) clearTxPending() {
-	pool.pendingTx = new(sync.Map)
+	pool.pendingTx = newSortedTxMap()
 }
 
 func (pool *TxPoolImpl) updatePending(blockHash []byte) error {
@@ -587,7 +575,7 @@ func (pool *TxPoolImpl) updatePending(blockHash []byte) error {
 	}
 
 	b.txMap.Range(func(key, value interface{}) bool {
-		pool.delTxInPending(key.([]byte))
+		pool.DelTx(key.([]byte))
 		return true
 	})
 
@@ -648,7 +636,7 @@ func (pool *TxPoolImpl) doChainChange() error {
 				break
 			}
 			for _, t := range oldHead.Block.Txs {
-				pool.pendingTx.Store(string(t.Hash()), t)
+				pool.pendingTx.Add(t)
 			}
 			oldHead = oldHead.Parent
 		}
@@ -659,7 +647,7 @@ func (pool *TxPoolImpl) doChainChange() error {
 				break
 			}
 			for _, t := range newHead.Block.Txs {
-				pool.delTxInPending(t.Hash())
+				pool.DelTx(t.Hash())
 			}
 			newHead = newHead.Parent
 		}
@@ -672,8 +660,7 @@ func (pool *TxPoolImpl) doChainChange() error {
 					break
 				}
 				ob.txMap.Range(func(k, v interface{}) bool {
-					t := v.(*tx.Tx)
-					pool.pendingTx.Store(string(t.Hash()), v)
+					pool.pendingTx.Add(v.(*tx.Tx))
 					return true
 				})
 				ob, ok = pool.block(ob.ParentHash)
@@ -690,7 +677,7 @@ func (pool *TxPoolImpl) doChainChange() error {
 				}
 				nb.txMap.Range(func(k, v interface{}) bool {
 					t := v.(*tx.Tx)
-					pool.delTxInPending(t.Hash())
+					pool.DelTx(t.Hash())
 					return true
 				})
 				nb, ok = pool.block(nb.ParentHash)
@@ -704,14 +691,7 @@ func (pool *TxPoolImpl) doChainChange() error {
 }
 
 func (pool *TxPoolImpl) testPendingTxsNum() int64 {
-	var r int64 = 0
-
-	pool.pendingTx.Range(func(key, value interface{}) bool {
-		r++
-		return true
-	})
-
-	return r
+	return int64(pool.pendingTx.Size())
 }
 
 func (pool *TxPoolImpl) testBlockListNum() int64 {
