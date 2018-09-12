@@ -15,7 +15,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
-	"github.com/yasushi-saito/rbtree"
 )
 
 // TxPoolImpl defines all the API of txpool package.
@@ -36,8 +35,6 @@ type TxPoolImpl struct {
 	quitGenerateMode chan struct{}
 	quitCh           chan struct{}
 }
-
-func CompareTx(a, b rbtree.Item) int {}
 
 // NewTxPoolImpl returns a default TxPoolImpl instance.
 func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2ps p2p.Service) (*TxPoolImpl, error) {
