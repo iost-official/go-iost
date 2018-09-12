@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/metrics"
+	"github.com/yasushi-saito/rbtree"
 )
 
 var (
@@ -121,4 +122,82 @@ func (b *blockTx) existTx(hash []byte) bool {
 	_, r := b.txMap.Load(string(hash))
 
 	return r
+}
+
+type sortedTxMap struct {
+	tree  *rbtree.Tree
+	txMap map[string]*tx.Tx
+	rw    *sync.RWMutex
+}
+
+func compareTx(a, b rbtree.Item) int {
+	txa := a.(*tx.Tx)
+	txb := b.(*tx.Tx)
+	if txa.GasPrice == txb.GasPrice {
+		return int(txb.Time - txa.Time)
+	}
+	return int(txa.GasPrice - txb.GasPrice)
+}
+
+func newSortedTxMap() *sortedTxMap {
+	return &sortedTxMap{
+		tree:  rbtree.NewTree(compareTx),
+		txMap: make(map[string]*tx.Tx),
+		rw:    new(sync.RWMutex),
+	}
+}
+
+func (st *sortedTxMap) Get(hash []byte) *tx.Tx {
+	st.rw.RLock()
+	defer st.rw.RUnlock()
+	return st.txMap[string(hash)]
+}
+
+func (st *sortedTxMap) Add(tx *tx.Tx) {
+	st.rw.Lock()
+	st.tree.Insert(tx)
+	st.txMap[string(tx.Hash())] = tx
+	st.rw.Unlock()
+}
+
+func (st *sortedTxMap) Del(hash []byte) {
+	st.rw.Lock()
+	defer st.rw.Unlock()
+
+	tx := st.txMap[string(hash)]
+	if tx == nil {
+		return
+	}
+	st.tree.DeleteWithKey(tx)
+	delete(st.txMap, string(hash))
+}
+
+func (st *sortedTxMap) Size() int {
+	st.rw.Lock()
+	defer st.rw.Unlock()
+
+	return len(st.txMap)
+}
+
+func (st *sortedTxMap) Iter() *iterator {
+	iter := st.tree.Limit()
+	return &iterator{
+		iter: &iter,
+		rw:   st.rw,
+	}
+}
+
+type iterator struct {
+	iter *rbtree.Iterator
+	rw   *sync.RWMutex
+}
+
+func (iter *iterator) Next() (*tx.Tx, bool) {
+	i := iter.iter.Prev()
+	if i.NegativeLimit() {
+		return nil, false
+	}
+
+	iter.iter = &i
+	return i.Item().(*tx.Tx)
 }
