@@ -99,13 +99,12 @@ func replaceDB(t *testing.T) database.IMultiValue {
 	return mvccdb
 }
 
-func ininit(t *testing.T) (Engine, *database.Visitor) {
+func ininit(t *testing.T) (Engine, *database.Visitor, db.MVCCDB) {
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	os.RemoveAll("mvcc")
 	//mvccdb := replaceDB(t)
 
 	vi := database.NewVisitor(0, mvccdb)
@@ -125,7 +124,12 @@ func ininit(t *testing.T) (Engine, *database.Visitor) {
 	//e.SetUp("js_path", jsPath)
 	e.SetUp("log_level", "debug")
 	e.SetUp("log_enable", "")
-	return e, vi
+	return e, vi, mvccdb
+}
+
+func closeMVCCDB(m db.MVCCDB) {
+	m.Close()
+	os.RemoveAll("mvcc")
 }
 
 func MakeTx(act tx.Action) (*tx.Tx, error) {
@@ -144,7 +148,8 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 
 func TestIntergration_Transfer(t *testing.T) {
 
-	e, vi := ininit(t)
+	e, vi, mvcc := ininit(t)
+	defer closeMVCCDB(mvcc)
 
 	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 
@@ -216,7 +221,8 @@ module.exports = Contract;
 }
 
 func TestIntergration_SetCode(t *testing.T) {
-	e, vi := ininit(t)
+	e, vi, mvcc := ininit(t)
+	defer closeMVCCDB(mvcc)
 
 	jshw := jsHelloWorld()
 
@@ -247,7 +253,7 @@ func TestEngine_InitSetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	os.RemoveAll("mvcc")
+	defer closeMVCCDB(mvccdb)
 
 	vi := database.NewVisitor(0, mvccdb)
 	vi.SetBalance(testID[0], 1000000)
@@ -303,7 +309,8 @@ func TestEngine_InitSetCode(t *testing.T) {
 }
 
 func TestIntergration_CallJSCode(t *testing.T) {
-	e, vi := ininit(t)
+	e, vi, mvcc := ininit(t)
+	defer closeMVCCDB(mvcc)
 
 	jshw := jsHelloWorld()
 	jsc := jsCallHelloWorld()
@@ -354,7 +361,8 @@ module.exports = Contract;
 }
 
 func TestIntergration_CallJSCodeWithReceipt(t *testing.T) {
-	e, vi := ininit(t)
+	e, vi, mvcc := ininit(t)
+	defer closeMVCCDB(mvcc)
 
 	jshw := jsHelloWorld()
 	jsc := jsCallHelloWorldWithReceipt()
@@ -411,7 +419,8 @@ func TestIntergration_Payment_Success(t *testing.T) {
 
 	ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
 
-	e, vi := ininit(t)
+	e, vi, mvcc := ininit(t)
+	defer closeMVCCDB(mvcc)
 	vi.SetContract(jshw)
 
 	vi.SetBalance("CGjsHelloWorld", 1000000)
@@ -441,7 +450,8 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 
 	ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
 
-	e, vi := ininit(t)
+	e, vi, mvcc := ininit(t)
+	defer closeMVCCDB(mvcc)
 	vi.SetContract(jshw)
 
 	vi.SetBalance("CGjsHelloWorld", 1000000)
@@ -480,8 +490,6 @@ func NewJSTester(t fataler) *JSTester {
 	if err != nil {
 		panic(err)
 	}
-
-	os.RemoveAll("mvcc")
 
 	//mvccdb := replaceDB(t)
 
@@ -595,6 +603,7 @@ func (j *JSTester) Clear() {
 
 func TestJSAPI_Database(t *testing.T) {
 	js := NewJSTester(t)
+	defer js.Clear()
 
 	js.SetJS(`
 class Contract {
@@ -621,6 +630,8 @@ module.exports = Contract;
 func TestJSAPI_Transfer(t *testing.T) {
 
 	js := NewJSTester(t)
+	defer js.Clear()
+
 	js.SetJS(`
 class Contract {
 	init() {
@@ -644,6 +655,8 @@ module.exports = Contract;
 func TestJSAPI_Transfer_Failed(t *testing.T) {
 
 	js := NewJSTester(t)
+	defer js.Clear()
+
 	js.SetJS(`
 class Contract {
 	init() {
@@ -667,6 +680,8 @@ module.exports = Contract;
 func TestJSAPI_Transfer_WrongFormat1(t *testing.T) {
 
 	js := NewJSTester(t)
+	defer js.Clear()
+
 	js.SetJS(`
 class Contract {
 	init() {
@@ -694,6 +709,8 @@ module.exports = Contract;
 func TestJSAPI_Deposit(t *testing.T) {
 
 	js := NewJSTester(t)
+	defer js.Clear()
+
 	js.SetJS(`
 class Contract {
 	init() {
@@ -730,6 +747,8 @@ module.exports = Contract;
 func TestJSAPI_Info(t *testing.T) {
 
 	js := NewJSTester(t)
+	defer js.Clear()
+
 	js.SetJS(`
 class Contract {
 	init() {
@@ -764,6 +783,8 @@ module.exports = Contract;
 func TestJSRequireAuth(t *testing.T) {
 
 	js := NewJSTester(t)
+	defer js.Clear()
+
 	js.SetJS(`
 class Contract {
 	init() {
@@ -789,6 +810,7 @@ module.exports = Contract;
 func TestJS_Database(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
+
 	lc, err := ReadFile("test_data/database.js")
 	if err != nil {
 		t.Fatal(err)
@@ -1239,10 +1261,10 @@ func TestJS_Genesis(t *testing.T) {
 		Time:       time.Now().Unix() / common.SlotLength,
 	}
 	mvccdb, err := db.NewMVCCDB("mvcc")
+	defer closeMVCCDB(mvccdb)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll("mvcc")
 
 	engine := NewEngine(&blockHead, mvccdb)
 	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")

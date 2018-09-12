@@ -50,7 +50,7 @@ func (suite *MVCCDBTestSuite) TestPut() {
 	var value string
 	var err error
 	value, err = suite.mvccdb.Get("table01", "key06")
-	suite.Equal(ErrKeyNotFound, err)
+	suite.Nil(err)
 	suite.Equal("", value)
 
 	err = suite.mvccdb.Put("table01", "key06", "value06")
@@ -72,7 +72,7 @@ func (suite *MVCCDBTestSuite) TestDel() {
 	suite.Nil(err)
 
 	value, err = suite.mvccdb.Get("table01", "key04")
-	suite.Equal(ErrKeyNotFound, err)
+	suite.Nil(err)
 	suite.Equal("", value)
 }
 
@@ -100,7 +100,7 @@ func (suite *MVCCDBTestSuite) TestCommit() {
 	suite.Nil(err)
 	suite.Equal("value06", value)
 	value, err = suite.mvccdb.Get("table01", "key04")
-	suite.Equal(ErrKeyNotFound, err)
+	suite.Nil(err)
 	suite.Equal("", value)
 }
 
@@ -114,7 +114,7 @@ func (suite *MVCCDBTestSuite) TestRollback() {
 	suite.mvccdb.Rollback()
 
 	value, err = suite.mvccdb.Get("table01", "key06")
-	suite.Equal(ErrKeyNotFound, err)
+	suite.Nil(err)
 	suite.Equal("", value)
 	value, err = suite.mvccdb.Get("table01", "key04")
 	suite.Nil(err)
@@ -151,7 +151,7 @@ func (suite *MVCCDBTestSuite) TestCheckout() {
 	suite.Nil(err)
 	suite.Equal("value06", value)
 	value, err = suite.mvccdb.Get("table01", "key04")
-	suite.Equal(ErrKeyNotFound, err)
+	suite.Nil(err)
 	suite.Equal("", value)
 }
 
@@ -170,11 +170,11 @@ func (suite *MVCCDBTestSuite) TestFork() {
 	suite.Nil(err)
 	suite.Equal("value06", value)
 	value, err = mvccdb2.Get("table01", "key04")
-	suite.Equal(ErrKeyNotFound, err)
+	suite.Nil(err)
 	suite.Equal("", value)
 
 	value, err = suite.mvccdb.Get("table01", "key06")
-	suite.Equal(ErrKeyNotFound, err)
+	suite.Nil(err)
 	suite.Equal("", value)
 	value, err = suite.mvccdb.Get("table01", "key04")
 	suite.Nil(err)
@@ -193,7 +193,7 @@ func (suite *MVCCDBTestSuite) TestFlush() {
 	suite.Nil(err)
 	suite.Equal("value06", value)
 	value, err = suite.mvccdb.Get("table01", "key04")
-	suite.Equal(ErrKeyNotFound, err)
+	suite.Nil(err)
 	suite.Equal("", value)
 
 	suite.mvccdb.Commit()
@@ -206,7 +206,7 @@ func (suite *MVCCDBTestSuite) TestFlush() {
 	suite.Nil(err)
 	suite.Equal("value06", value)
 	value, err = suite.mvccdb.Get("table01", "key04")
-	suite.Equal(ErrKeyNotFound, err)
+	suite.Nil(err)
 	suite.Equal("", value)
 }
 
@@ -271,7 +271,7 @@ func (suite *MVCCDBTestSuite) TestFlushAndCheckout() {
 	suite.Nil(err)
 	suite.Equal("value06", value)
 	value, err = suite.mvccdb.Get("table01", "key04")
-	suite.Equal(ErrKeyNotFound, err)
+	suite.Nil(err)
 	suite.Equal("", value)
 }
 
