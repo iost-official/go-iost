@@ -502,6 +502,9 @@ func encodeVarintMessage(dAtA []byte, offset int, v uint64) int {
 	return offset + 1
 }
 func (m *RequestBlock) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.BlockNumber != 0 {
@@ -518,6 +521,9 @@ func (m *RequestBlock) Size() (n int) {
 }
 
 func (m *BlockHashQuery) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.ReqType != 0 {
@@ -543,6 +549,9 @@ func (m *BlockHashQuery) Size() (n int) {
 }
 
 func (m *BlockHash) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Height != 0 {
@@ -559,6 +568,9 @@ func (m *BlockHash) Size() (n int) {
 }
 
 func (m *BlockHashResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if len(m.BlockHashes) > 0 {
@@ -574,6 +586,9 @@ func (m *BlockHashResponse) Size() (n int) {
 }
 
 func (m *SyncHeight) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Height != 0 {
