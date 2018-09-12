@@ -409,7 +409,9 @@ func (sy *SyncImpl) retryDownloadLoop() {
 			})
 			if len(hq.Nums) > 0 {
 				// ilog.Debug("retry download ", hr.Nums)
-				hq.Nums = sort.Sort(hq.Nums)
+				sort.Slice(hq.Nums, func(i int, j int) bool {
+					return hq.Nums[i] < hq.Nums[j]
+				})
 				sy.queryBlockHash(hq)
 			}
 		case <-sy.exitSignal:
