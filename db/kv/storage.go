@@ -5,12 +5,11 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db/kv/rocksdb"
 )
 
-type StorageType uint
+type StorageType string
 
 const (
-	_ StorageType = iota
-	LevelDBStorage
-	RocksDBStorage
+	LevelDBStorage StorageType = "leveldb"
+	RocksDBStorage StorageType = "rocksdb"
 )
 
 type StorageBackend interface {
