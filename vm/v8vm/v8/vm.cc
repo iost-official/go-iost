@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "v8.h"
 #include "sandbox.h"
+#include "compile.h"
 #include "snapshot_blob.bin.h"
 #include "natives_blob.bin.h"
 
@@ -30,10 +31,18 @@ void init() {
     return;
 }
 
-IsolatePtr newIsolate() {
-  Isolate::CreateParams create_params;
-  create_params.array_buffer_allocator = ArrayBuffer::Allocator::NewDefaultAllocator();
-  return static_cast<IsolatePtr>(Isolate::New(create_params));
+IsolatePtr newIsolate(CustomStartupData customStartupData) {
+    Isolate::CreateParams params;
+
+    StartupData* blob = new StartupData;
+    blob->data = customStartupData.data;
+    blob->raw_size = customStartupData.raw_size;
+
+    extern intptr_t externalRef[];
+    params.snapshot_blob = blob;
+    params.array_buffer_allocator = ArrayBuffer::Allocator::NewDefaultAllocator();
+    params.external_references = externalRef;
+    return static_cast<IsolatePtr>(Isolate::New(params));
 }
 
 void releaseIsolate(IsolatePtr ptr) {

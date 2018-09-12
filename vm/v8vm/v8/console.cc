@@ -7,7 +7,7 @@ void InitGoConsole(consoleFunc console) {
     CConsole = console;
 }
 
-void consoleLog(const FunctionCallbackInfo<Value> &args) {
+void NewConsoleLog(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Context> context = isolate->GetCurrentContext();
     Local<Object> global = context->Global();
@@ -57,5 +57,5 @@ void InitConsole(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     globalTpl->Set(
         String::NewFromUtf8(isolate, "_cLog", NewStringType::kNormal)
                     .ToLocalChecked(),
-        FunctionTemplate::New(isolate, consoleLog));
+        FunctionTemplate::New(isolate, NewConsoleLog));
 }
