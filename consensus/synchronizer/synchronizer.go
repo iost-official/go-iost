@@ -197,7 +197,7 @@ func (sy *SyncImpl) CheckGenBlock(hash []byte) bool {
 	}
 	bcn, err := sy.blockCache.Find(hash)
 	if err != nil {
-		ilog.Debugf("bcn not found on chekc gen block, err:%s", err)
+		ilog.Errorf("bcn not found on chekc gen block, err:%s", err)
 		return false
 	}
 	height := sy.basevariable.BlockChain().Length() - 1
@@ -228,7 +228,7 @@ func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
 		ilog.Errorf("marshal blockhashquery failed. err=%v", err)
 		return
 	}
-	ilog.Debugf("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
+	ilog.Infof("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
 	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
 }
 
@@ -278,7 +278,7 @@ func (sy *SyncImpl) messageLoop() {
 				var rh message.BlockHashQuery
 				err := rh.Decode(req.Data())
 				if err != nil {
-					ilog.Warnf("unmarshal BlockHashQuery failed:%v", err)
+					ilog.Errorf("unmarshal BlockHashQuery failed:%v", err)
 					break
 				}
 				go sy.handleHashQuery(&rh, req.From())
@@ -286,7 +286,7 @@ func (sy *SyncImpl) messageLoop() {
 				var rh message.BlockHashResponse
 				err := rh.Decode(req.Data())
 				if err != nil {
-					ilog.Debugf("unmarshal BlockHashResponse failed:%v", err)
+					ilog.Errorf("unmarshal BlockHashResponse failed:%v", err)
 					break
 				}
 				go sy.handleHashResp(&rh, req.From())
@@ -332,7 +332,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 			} else {
 				hash, err = sy.basevariable.BlockChain().GetHashByNumber(i)
 				if err != nil {
-					ilog.Warnf("get hash by number from db failed. err=%v, number=%v", err, i)
+					ilog.Errorf("get hash by number from db failed. err=%v, number=%v", err, i)
 					continue
 				}
 			}
@@ -428,7 +428,7 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID
 	}
 	b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.BlockHash)
 	if err != nil {
-		ilog.Warn("handle block query failed to get block.")
+		ilog.Errorf("handle block query failed to get block.")
 		return
 	}
 	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)

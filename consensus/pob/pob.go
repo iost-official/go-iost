@@ -276,7 +276,7 @@ func (p *PoB) verifyLoop() {
 				ilog.Info("block from myself, block number: ", blk.Head.Number)
 				err := p.handleRecvBlock(blk)
 				if err != nil {
-					ilog.Debugf("received new block error, err:%v", err)
+					ilog.Errorf("received new block error, err:%v", err)
 					continue
 				}
 				go p.synchronizer.CheckGenBlock(blk.HeadHash())
@@ -300,7 +300,7 @@ func (p *PoB) verifyLoop() {
 				p.broadcastBlockHash(blk) // can use go
 				p.blockReqMap.Delete(string(blk.HeadHash()))
 				if err != nil && err != errSingle {
-					ilog.Debugf("received new block error, err:%v", err)
+					ilog.Errorf("received new block error, err:%v", err)
 					continue
 				}
 				if err == errSingle {
@@ -312,7 +312,7 @@ func (p *PoB) verifyLoop() {
 				if blk.Head.Number == 0 {
 					err := p.handleGenesisBlock(blk)
 					if err != nil {
-						ilog.Debugf("received genesis block error, err:%v", err)
+						ilog.Errorf("received genesis block error, err:%v", err)
 					}
 					continue
 				} else {
@@ -321,7 +321,7 @@ func (p *PoB) verifyLoop() {
 					}
 					err := p.handleRecvBlock(blk)
 					if err != nil && err != errSingle && err != errDuplicate {
-						ilog.Debugf("received sync block error, err:%v", err)
+						ilog.Errorf("received sync block error, err:%v", err)
 						continue
 					}
 					go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()))
