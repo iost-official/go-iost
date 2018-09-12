@@ -419,6 +419,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
+			ilog.Errorf("verify block failed. err=%v", err)
 			p.blockCache.Del(node)
 			return err
 		}
