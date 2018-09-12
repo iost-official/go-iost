@@ -77,7 +77,3 @@ function formatWithOptions(inspectOptions, f) {
     }
     return str;
 }
-
-module.exports = {
-    format: format
-};
