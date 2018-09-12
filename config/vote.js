@@ -59,7 +59,6 @@ class VoteContract {
 	}
 
     _get(k) {
-        // _native_log(k + "," + storage.get(k));
         return JSON.parse(storage.get(k));
     }
 	_put(k, v) {
@@ -74,14 +73,14 @@ class VoteContract {
     }
     _mapPut(k, f, v) {
         const ret = storage.mapPut(k, f, JSON.stringify(v));
-        if (ret != 0) {
+        if (ret !== 0) {
             throw new Error("storage map put failed. ret = " + ret);
         }
     }
 
     _mapDel(k, f) {
         const ret = storage.mapDel(k, f);
-        if (ret != 0) {
+        if (ret !== 0) {
             throw new Error("storage map del failed. ret = " + ret);
         }
     }
@@ -93,10 +92,10 @@ class VoteContract {
 			throw new Error("producer exists");
 		}
 		const ret = BlockChain.deposit(account, this._get("producerRegisterFee"));
-		if (ret != 0) {
+		if (ret !== 0) {
 			throw new Error("register deposit failed. ret = " + ret);
 		}
-		this._mapPut(producerTable, account, {
+		this._mapPut("producerTable", account, {
 			"loc": loc,
 			"url": url,
 			"netId": netId,
@@ -175,7 +174,7 @@ class VoteContract {
 		}
 
 		const ret = BlockChain.deposit(voter, amount);
-		if (ret != 0) {
+		if (ret !== 0) {
 			throw new Error("vote deposit failed. ret = " + ret);
 		}
 
@@ -187,7 +186,7 @@ class VoteContract {
 		if (voteRes.hasOwnProperty(producer)) {
 			voteRes[producer].amount += amount;
 		} else {
-            voteRes[producer] = {}
+            voteRes[producer] = {};
 			voteRes[producer].amount = amount;
 		}
 		voteRes[producer].time = this._getBlockNumber();
@@ -196,8 +195,9 @@ class VoteContract {
 		// if producer's votes >= preProducerThreshold, then insert into preProducer map
         const proRes = this._mapGet("producerTable", producer);
 		proRes.votes += amount;
-		if (proRes.votes - amount < this._get("preProducerThreshold ")&&
-				proRes.votes >= this._get("preProducerThreshold")) {
+		const preProducerThreshold = this._get("preProducerThreshold");
+		if (proRes.votes - amount <  preProducerThreshold &&
+				proRes.votes >= preProducerThreshold) {
 		    this._mapPut("preProducerMap", producer, true);
 		}
 	}
@@ -214,7 +214,7 @@ class VoteContract {
 				voteRes[producer].amount < amount) {
 			throw new Error("producer not voted or vote amount less than expected")
 		}
-		if (voteRes[producer].time + this._get("voteLockTime ")> this._getBlockNumber()) {
+		if (voteRes[producer].time + this._get("voteLockTime")> this._getBlockNumber()) {
 			throw new Error("vote still lockd")
 		}
 		voteRes[producer].amount -= amount;
@@ -251,7 +251,7 @@ class VoteContract {
 		// controll auth
 		const bn = this._getBlockNumber();
 		const pendingBlockNumber = this._get("pendingBlockNumber");
-		if (bn % this._get("voteStatInterval ")!= 0 || bn <= pendingBlockNumber) {
+		if (bn % this._get("voteStatInterval")!== 0 || bn <= pendingBlockNumber) {
 			throw new Error("stat failed. block number mismatch. pending bn = " + pendingBlockNumber + ", bn = " + bn);
 		}
 
@@ -262,7 +262,7 @@ class VoteContract {
 		    const key = preProducerMapKeys[i];
 		    const pro = this._mapGet("producerTable", key);
             // don't get score if in pending producer list or offline
-		    if (!this._get("pendingProducerList").includes(key) && pro.votes >= this._get("preProducerThreshold ")&& pro.online === true) {
+		    if (!this._get("pendingProducerList").includes(key) && pro.votes >= this._get("preProducerThreshold")&& pro.online === true) {
                 preList.push({
                     "key": key,
                     "votes": pro.votes,

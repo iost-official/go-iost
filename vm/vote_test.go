@@ -1,0 +1,489 @@
+package vm
+
+import (
+	"fmt"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/crypto"
+	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+)
+
+func TestJS1_Vote1(t *testing.T) {
+	ilog.Stop()
+
+	js := NewJSTester(t)
+	defer js.Clear()
+	lc, err := ReadFile("../config/vote.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
+	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
+	js.SetAPI("LogInProducer", "string")
+	js.SetAPI("LogOutProducer", "string")
+	js.SetAPI("UnregisterProducer", "string")
+	js.SetAPI("Vote", "string", "string", "number")
+	js.SetAPI("Unvote", "string", "string", "number")
+	js.SetAPI("Stat")
+	js.SetAPI("Init")
+	for i := 0; i <= 18; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	js.vi.Commit()
+	r := js.DoSet()
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	//r = js.TestJS("init", `[]`)
+	//if r.Status.Code != 0 {
+	//	t.Fatal(r.Status.Message)
+	//}
+	for i := 6; i <= 18; i += 2 {
+		if int64(50000000) != js.vi.Balance(testID[i]) {
+			t.Fatal("error in balance :", i, js.vi.Balance(testID[i]))
+		}
+	}
+
+	//keys := []string{
+	//	"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
+	//	"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
+	//	"producerTable",
+	//	"voteTable",
+	//}
+	////js.FlushDB(t, keys)
+
+	// test register, should success
+	r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+
+	// test require auth
+	r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[2]))
+	if r.Status.Code != 4 {
+		t.Fatal(r.Status.Message)
+	}
+
+	// get pending producer info
+	rtn := database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber"))
+	if rtn != "0" {
+		t.Fatal(rtn)
+	}
+	srtn := js.ReadMap("producerTable", testID[0])
+	if srtn != `{"loc":"loc","url":"url","netId":"netid","online":false,"score":0,"votes":0}` {
+		t.Fatal(srtn)
+	}
+	// test re register
+	r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
+	if r.Status.Code != 4 {
+		t.Fatal(r.Status.Message)
+	}
+}
+
+func TestJS_VoteServi(t *testing.T) {
+	ilog.Stop()
+
+	js := NewJSTester(t)
+	defer js.Clear()
+	lc, err := ReadFile("../config/vote.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
+	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
+	js.SetAPI("LogInProducer", "string")
+	js.SetAPI("LogOutProducer", "string")
+	js.SetAPI("UnregisterProducer", "string")
+	js.SetAPI("Vote", "string", "string", "number")
+	js.SetAPI("Unvote", "string", "string", "number")
+	js.SetAPI("Stat")
+	js.SetAPI("Init")
+	for i := 0; i <= 18; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	js.vi.Commit()
+	r := js.DoSet()
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	//keys := []string{
+	//	"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
+	//	"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
+	//	"producerTable",
+	//	"voteTable",
+	//}
+	////js.FlushDB(t, keys)
+}
+
+func TestJS_Vote(t *testing.T) {
+	ilog.Stop()
+
+	js := NewJSTester(t)
+	defer js.Clear()
+	lc, err := ReadFile("../config/vote.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
+	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
+	js.SetAPI("LogInProducer", "string")
+	js.SetAPI("LogOutProducer", "string")
+	js.SetAPI("UnregisterProducer", "string")
+	js.SetAPI("Vote", "string", "string", "number")
+	js.SetAPI("Unvote", "string", "string", "number")
+	js.SetAPI("Stat")
+	js.SetAPI("init")
+	js.SetAPI("InitProducer", "number", "string")
+	for i := 0; i <= 18; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	js.vi.Commit()
+	r := js.DoSet()
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	num := 7
+	proStr := "["
+	for i := 0; i < num; i++ {
+		proStr += fmt.Sprintf(`\"%v\"`, testID[2*i])
+		if i != num-1 {
+			proStr += ","
+		}
+	}
+	proStr += "]"
+	r = js.TestJS("InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+
+	keys := []string{
+		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
+		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
+		"producerTable",
+		"voteTable",
+	}
+	_ = keys
+	//js.FlushDB(t, keys)
+
+	// test register, login, logout
+	r = js.TestJS("LogOutProducer", `["a"]`)
+	if r.Status.Code != 4 {
+		t.Fatal(r.Status.Message)
+	}
+	r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	if js.ReadMap("producerTable", testID[0]).(string) != `{"loc":"","url":"","netId":"","online":true,"score":0,"votes":0}` {
+		t.Fatal(js.ReadMap("producerTable", testID[0]))
+	}
+
+	r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
+	if r.Status.Code != 4 {
+		t.Fatal(r.Status.Message)
+	}
+	//js.FlushDB(t, keys)
+
+	r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	//js.FlushDB(t, keys)
+
+	r = js.TestJS("UpdateProducer", fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, testID[0], "nloc", "nurl", "nnetid"))
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	if js.ReadMap("producerTable", testID[0]).(string) != `{"loc":"nloc","url":"nurl","netId":"nnetid","online":true,"score":0,"votes":0}` {
+		t.Fatal(js.ReadMap("producerTable", testID[0]))
+	}
+
+	// stat, no changes
+	r = js.TestJS("Stat", `[]`)
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	if js.ReadDB(`pendingProducerList`) != `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
+		`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
+		`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
+		`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9"]` {
+		t.Fatal(js.ReadDB(`pendingProducerList`))
+	}
+
+	// vote and unvote
+	r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 10000000))
+	if r.Status.Code != 4 {
+		t.Fatal(r.Status.Message)
+	}
+	r = js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+
+	// stat testID[0] become pending producer
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	bh := &block.BlockHead{
+		ParentHash: []byte("abc"),
+		Number:     211,
+		Witness:    "witness",
+		Time:       123456,
+	}
+	e := newEngine(bh, js.vi)
+	e.SetUp("js_path", jsPath)
+	js.e = e
+
+	// test unvote
+	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 20000001)))
+	//js.FlushDB(t, keys)
+
+	t.Log(database.MustUnmarshal(js.vi.Get("i-" + testID[0] + "-s")))
+	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 1000000)))
+	//js.FlushDB(t, keys)
+
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.TotalServi())
+	// stat pending producers don't get score
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	// seven
+	for i := 2; i <= 14; i += 2 {
+		js.vi.SetBalance(testID[i], 5e+7)
+	}
+	for i := 2; i <= 14; i += 2 {
+		t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[i])))
+		t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[i], testID[i], 30000000+i)))
+	}
+	//js.FlushDB(t, keys)
+
+	// stat, offline producers don't get score
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	for i := 2; i <= 14; i += 2 {
+		t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[i])))
+	}
+	//js.FlushDB(t, keys)
+
+	// stat, 1 producer become pending
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("LogOutProducer", fmt.Sprintf(`["%v"]`, testID[12])))
+
+	// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[12])))
+
+	// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	// testID[0] become pre producer from pending producer, score = 0
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
+	//js.FlushDB(t, keys)
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.TotalServi())
+
+	// unregister
+	t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+	//js.FlushDB(t, keys)
+
+	// unvote after unregister
+	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 9000000)))
+	//js.FlushDB(t, keys)
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.TotalServi())
+
+	// re register, score = 0, vote = 0
+	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+	//js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 21000001)))
+	//js.FlushDB(t, keys)
+
+	t.Log(js.TestJS("Stat", `[]`))
+	//js.FlushDB(t, keys)
+
+	// unregister pre producer
+	t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+	//js.FlushDB(t, keys)
+
+	// test bonus
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
+	act2 := tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
+
+	trx2, err := MakeTx(act2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, err = js.e.Exec(trx2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(r)
+
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
+	t.Log(js.vi.Balance(testID[0]))
+	act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 21099999))
+
+	trx2, err = MakeTx(act2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, err = js.e.Exec(trx2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(r)
+
+	t.Log(js.vi.Servi(testID[0]))
+	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
+	t.Log(js.vi.Balance(testID[0]))
+}
+
+//nolint
+func TestJS_Genesis(t *testing.T) {
+	t.Skip("skip genesis")
+
+	witnessInfo := testID
+	var acts []*tx.Action
+	for i := 0; i < len(witnessInfo)/2; i++ {
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], 50000000))
+		acts = append(acts, &act)
+	}
+	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
+	t.Log("vote contract path: ", VoteContractPath)
+	// deploy iost.vote
+	voteFilePath := VoteContractPath + "vote.js"
+	voteAbiPath := VoteContractPath + "vote.js.abi"
+	fd, err := common.ReadFile(voteFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawCode := string(fd)
+	fd, err = common.ReadFile(voteAbiPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawAbi := string(fd)
+	c := contract.Compiler{}
+	code, err := c.Parse("iost.vote", rawCode, rawAbi)
+	t.Log(code)
+	if err != nil {
+		t.Fatal(err)
+	}
+	num := len(witnessInfo) / 2
+	proStr := "["
+	for i := 0; i < num; i++ {
+		proStr += fmt.Sprintf(`\"%v\"`, witnessInfo[2*i])
+		if i != num-1 {
+			proStr += ","
+		}
+	}
+	proStr += "]"
+	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
+	acts = append(acts, &act)
+	act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
+	acts = append(acts, &act1)
+
+	// deploy iost.bonus
+	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
+	acts = append(acts, &act2)
+
+	trx := tx.NewTx(acts, nil, 10000000, 0, 0)
+	trx.Time = 0
+	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"), crypto.Secp256k1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trx, err = tx.SignTx(trx, acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	blockHead := block.BlockHead{
+		Version:    0,
+		ParentHash: nil,
+		Number:     0,
+		Witness:    acc.ID,
+		Time:       time.Now().Unix() / common.SlotLength,
+	}
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	defer closeMVCCDB(mvccdb)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	engine := NewEngine(&blockHead, mvccdb)
+	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
+	t.Log("js path: ", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
+	txr, err := engine.Exec(trx)
+	if err != nil {
+		t.Fatal(fmt.Errorf("exec tx failed, stop the pogram. err: %v", err))
+	}
+	t.Log(txr)
+	t.Log(database.MustUnmarshal(database.NewVisitor(0, mvccdb).Get("iost.vote" + "-" + "pendingProducerList")))
+	if txr.Status.Code != tx.Success {
+		t.Fatal("exec trx failed.")
+	}
+	blk := block.Block{
+		Head:     &blockHead,
+		Sign:     &crypto.Signature{},
+		Txs:      []*tx.Tx{trx},
+		Receipts: []*tx.TxReceipt{txr},
+	}
+	blk.Head.TxsHash = blk.CalculateTxsHash()
+	blk.Head.MerkleHash = blk.CalculateMerkleHash()
+	err = blk.CalculateHeadHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}

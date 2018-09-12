@@ -146,7 +146,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 			txr.Receipts = nil
 			txr.Status.Code = tx.ErrorDuplicateSetCode
 			txr.Status.Message = "error duplicate set code in a tx"
-			e.logger.Debugf("rollback")
+			ilog.Debugf("rollback")
 			e.ho.DB().Rollback()
 			break
 		}
@@ -171,7 +171,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
-			e.logger.Debugf("rollback")
+			ilog.Debugf("rollback")
 			e.ho.DB().Rollback()
 			break
 		} else {
