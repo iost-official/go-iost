@@ -136,7 +136,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		}
 
 		if blk.Receipts[0].Status.Code != tx.Success {
-			return errors.New("vote was incorrect")
+			return fmt.Errorf("vote was incorrect, status:%v", blk.Receipts[0].Status)
 		}
 	}
 
