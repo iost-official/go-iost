@@ -1156,6 +1156,12 @@
 			"revisionTime": "2017-05-05T22:16:40Z"
 		},
 		{
+			"checksumSHA1": "NG5wGB2iQ13+HugiJ3rLZ0+fGsA=",
+			"path": "github.com/yasushi-saito/rbtree",
+			"revision": "33ff713a769b9c4fcb4ec67426fe58765a1920dc",
+			"revisionTime": "2018-05-24T17:57:43Z"
+		},
+		{
 			"checksumSHA1": "yNGEI9BMDbGwabUnaHvV9ZZm/a0=",
 			"path": "github.com/yuin/gopher-lua/ast",
 			"revision": "b0fa786cf4ea360285924c4a7fd42325be57aec8",
