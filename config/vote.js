@@ -251,7 +251,7 @@ class VoteContract {
 		// controll auth
 		const bn = this._getBlockNumber();
 		const pendingBlockNumber = this._get("pendingBlockNumber");
-		if (bn % this._get("voteStatInterval ")!= 0 || bn <= pendingBlockNumber) {
+		if (bn % this._get("voteStatInterval")!= 0 || bn <= pendingBlockNumber) {
 			throw new Error("stat failed. block number mismatch. pending bn = " + pendingBlockNumber + ", bn = " + bn);
 		}
 
