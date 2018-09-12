@@ -807,7 +807,7 @@ func TestJS_Database(t *testing.T) {
 	})
 	r := js.TestJS("read", `[]`)
 	if r.Status.Code != 0 {
-		t.Fatal(r)
+		t.Fatal(r.Status.Message)
 	}
 	//js.TestJS("change", `[]`)
 	////t.Log("========= change")

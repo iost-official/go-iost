@@ -7,7 +7,6 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/db/mvcc"
 	"github.com/iost-official/Go-IOS-Protocol/db/storage"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
 //go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/Go-IOS-Protocol/db MVCCDB
@@ -244,7 +243,6 @@ func (m *CacheMVCCDB) Has(table string, key string) (bool, error) {
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
-			ilog.Debugf("Failed to get from storage: %v", err)
 			return false, nil
 		}
 		return v != nil, nil
