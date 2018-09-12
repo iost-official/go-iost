@@ -103,7 +103,7 @@ func TestMultiWork(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer os.RemoveAll("mvcc")
+	defer closeMVCCDB(mvccdb)
 
 	length := 100
 
@@ -130,7 +130,7 @@ func TestMultiVisitor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer os.RemoveAll("mvcc")
+	defer closeMVCCDB(mvccdb)
 	length := 100
 	v1 := NewVisitor(length, mvccdb)
 	v2 := NewVisitor(length, mvccdb)
@@ -147,4 +147,9 @@ func TestMultiVisitor(t *testing.T) {
 		t.Fatal(vv)
 	}
 
+}
+
+func closeMVCCDB(m db.MVCCDB) {
+	m.Close()
+	os.RemoveAll("mvcc")
 }
