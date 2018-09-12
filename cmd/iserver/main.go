@@ -15,6 +15,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -171,7 +172,7 @@ func main() {
 	}
 
 	if conf.Debug != nil {
-		startDebugServer(conf.Debug.ListenAddr, blkCache)
+		startDebugServer(conf.Debug.ListenAddr, blkCache, p2pService)
 	}
 
 	waitExit()
@@ -187,10 +188,16 @@ func waitExit() {
 	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
 }
 
-func startDebugServer(addr string, blkCache blockcache.BlockCache) {
+func startDebugServer(addr string, blkCache blockcache.BlockCache, p2pService p2p.Service) {
 	http.HandleFunc("/debug/blockcache/", func(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte(blkCache.Draw()))
 	})
+	http.HandleFunc("/debug/p2p/neighbors/", func(rw http.ResponseWriter, r *http.Request) {
+		neighbors := p2pService.NeighborStat()
+		bytes, _ := json.MarshalIndent(neighbors, "", "    ")
+		rw.Write(bytes)
+	})
+
 	go func() {
 		err := http.ListenAndServe(addr, nil)
 		if err != nil {

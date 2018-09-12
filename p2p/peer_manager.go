@@ -604,3 +604,19 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		}
 	}
 }
+
+// NeighborStat dumps neighbors' status for debug.
+func (pm *PeerManager) NeighborStat() map[string]interface{} {
+	ret := make(map[string]interface{})
+
+	pm.neighborMutex.RLock()
+	defer pm.neighborMutex.RUnlock()
+
+	for peerID, peer := range pm.neighbors {
+		ret[peerID.Pretty()] = map[string]interface{}{
+			"stream": peer.streamCount,
+		}
+	}
+
+	return ret
+}
