@@ -13,6 +13,11 @@ typedef void* IsolatePtr;
 typedef void* SandboxPtr;
 
 typedef struct {
+    const char *data;
+    int raw_size;
+} CustomStartupData;
+
+typedef struct {
     const char *Value;
     const char *Err;
     bool isJson;
@@ -71,7 +76,7 @@ typedef enum {
 } Kind;
 
 extern void init();
-extern IsolatePtr newIsolate();
+extern IsolatePtr newIsolate(CustomStartupData);
 extern void releaseIsolate(IsolatePtr ptr);
 
 extern SandboxPtr newSandbox(IsolatePtr ptr);
@@ -125,6 +130,7 @@ extern void goGlobalMapKeys(SandboxPtr, const char *, const char *, size_t *);
 extern void goGlobalMapLen(SandboxPtr, const char *, const char *, size_t *);
 
 extern int compile(SandboxPtr, const char *code, const char **compiledCode);
+extern CustomStartupData createStartupData();
 
 #ifdef __cplusplus
 }

@@ -195,10 +195,8 @@ ret;
 %s;
 var obj = new module.exports;
 
-var objObserver = observer.create(obj)
-
 // run contract with specified function and args
-objObserver.%s(%s)
+obj.%s(%s)
 `, code, function, strings.Trim(argStr, "[]")), nil
 }
 
