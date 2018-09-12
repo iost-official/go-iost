@@ -50,7 +50,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitGenerateMode: make(chan struct{}),
 		quitCh:           make(chan struct{}),
 	}
-	p.forkChain.NewHead = blockCache.LinkedRoot()
+	p.forkChain.NewHead = blockCache.Head()
 	if p.forkChain.NewHead == nil {
 		return nil, errors.New("failed to head")
 	}
@@ -154,11 +154,6 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 
 	tFort := pool.updateForkChain(headNode)
 	switch tFort {
-	/*
-		case ForkError:
-			ilog.Errorf("failed to update fork chain")
-			pool.clearTxPending()
-	*/
 	case ForkBCN:
 		pool.mu.Lock()
 		defer pool.mu.Unlock()
@@ -168,12 +163,6 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 		defer pool.mu.Unlock()
 		pool.doChainChangeByTimeout()
 	case SameHead:
-		// TODO:Remove
-		pool.mu.Lock()
-		defer pool.mu.Unlock()
-		if err := pool.delBlockTxInPending(linkedNode.Block.HeadHash()); err != nil {
-			ilog.Errorf("failed to del block tx")
-		}
 	default:
 		return errors.New("failed to tFort")
 	}
@@ -493,10 +482,8 @@ func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
 	}(start)
 
 	h := tx.Hash()
-	if pool.forkChain.NewHead != nil {
-		if pool.existTxInChain(h, pool.forkChain.NewHead.Block) {
-			return DupError
-		}
+	if pool.existTxInChain(h, pool.forkChain.NewHead.Block) {
+		return DupError
 	}
 
 	if pool.existTxInPending(h) {
@@ -585,11 +572,6 @@ func (pool *TxPoolImpl) updatePending(blockHash []byte) error {
 }
 
 func (pool *TxPoolImpl) updateForkChain(headNode *blockcache.BlockCacheNode) TFork {
-	if pool.forkChain.NewHead == nil { // TODO:Remove
-		pool.forkChain.NewHead = headNode
-		return SameHead
-	}
-
 	if pool.forkChain.NewHead == headNode {
 		return SameHead
 	}
@@ -599,6 +581,7 @@ func (pool *TxPoolImpl) updateForkChain(headNode *blockcache.BlockCacheNode) TFo
 		pool.forkChain.ForkBCN = bcn
 		return ForkBCN
 	}
+	pool.forkChain.ForkBCN = nil
 	return NoForkBCN
 
 }
@@ -668,7 +651,7 @@ func (pool *TxPoolImpl) doChainChangeByTimeout() {
 			}
 			ob.txMap.Range(func(k, v interface{}) bool {
 				t := v.(*tx.Tx)
-				pool.pendingTx.Store(string(t.Hash()), v)
+				pool.pendingTx.Store(string(t.Hash()), t)
 				return true
 			})
 			ob, ok = pool.block(ob.ParentHash)
