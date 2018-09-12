@@ -113,12 +113,12 @@ typedef int (*mapPutFunc)(SandboxPtr, const char *, const char *, const char *, 
 typedef bool (*mapHasFunc)(SandboxPtr, const char *, const char *, size_t *);
 typedef char *(*mapGetFunc)(SandboxPtr, const char *, const char *, size_t *);
 typedef int (*mapDelFunc)(SandboxPtr, const char *, const char *, size_t *);
+typedef char *(*mapKeysFunc)(SandboxPtr, const char *, size_t *);
 typedef char *(*globalGetFunc)(SandboxPtr, const char *, const char *, size_t *);
 void InitGoStorage(putFunc, getFunc, delFunc,
-    mapPutFunc, mapHasFunc, mapGetFunc, mapDelFunc,
+    mapPutFunc, mapHasFunc, mapGetFunc, mapDelFunc, mapKeysFunc,
     globalGetFunc);
 
-extern void goMapKeys(SandboxPtr, const char *, size_t *);
 extern void goMapLen(SandboxPtr, const char *, size_t *);
 extern void goGlobalMapGet(SandboxPtr, const char *, const char *, const char *, size_t *);
 extern void goGlobalMapKeys(SandboxPtr, const char *, const char *, size_t *);

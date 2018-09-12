@@ -6,6 +6,8 @@ import (
 
 	"os"
 
+	"sync"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -24,7 +26,7 @@ import (
 )
 
 var (
-	dbPath1 = "txDB"
+	dbPath1 = "TXDB"
 	dbPath2 = "StateDB"
 	dbPath3 = "BlockChainDB"
 )
@@ -199,7 +201,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(r, ShouldEqual, Success)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 
-			l, err := txPool.PendingTxs(100)
+			l, _, err := txPool.PendingTxs(100)
 			So(err, ShouldBeNil)
 			So(len(l), ShouldEqual, 1)
 			So(string(l[0].Hash()), ShouldEqual, string(t.Hash()))
@@ -213,7 +215,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 			}
 			So(txPool.testPendingTxsNum(), ShouldEqual, 11)
 
-			l, err = txPool.PendingTxs(100)
+			l, _, err = txPool.PendingTxs(100)
 			So(err, ShouldBeNil)
 			So(len(l), ShouldEqual, 11)
 
@@ -272,6 +274,43 @@ func TestNewTxPoolImpl(t *testing.T) {
 			}
 
 			So(txPool.testPendingTxsNum(), ShouldEqual, 10)
+		})
+		Convey("CheckTx", func() {
+			txCnt := 10
+			blockCnt := 3
+			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
+
+			for i := 0; i < blockCnt; i++ {
+				//ilog.Debug(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
+				bcn := BlockCache.Add(blockList[i])
+				So(bcn, ShouldNotBeNil)
+				if i == 0 {
+					blockList[0].Head.Time -= int64(21 * time.Second)
+				}
+				err = txPool.AddLinkedNode(bcn, bcn)
+				So(err, ShouldBeNil)
+			}
+
+			rm := new(sync.Map)
+			b := txPool.createTxMapToBlock(rm, blockList[blockCnt-1].HeadHash())
+			So(b, ShouldBeTrue)
+
+			var i int
+			rm.Range(func(key, value interface{}) bool {
+				i++
+				return true
+			})
+			So(i, ShouldEqual, txCnt)
+
+			rm1, err := txPool.createTxMapToChain(blockList[blockCnt-1])
+			So(err, ShouldBeNil)
+			i = 0
+			rm1.Range(func(key, value interface{}) bool {
+				i++
+				return true
+			})
+			So(i, ShouldEqual, txCnt*2)
+
 		})
 		//
 		//Convey("concurrent", func() {
@@ -535,7 +574,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string,
 }
 
 func stopTest(gl global.BaseVariable) {
-
 	gl.StateDB().Close()
 	gl.BlockChain().Close()
 	os.RemoveAll(dbPath1)
