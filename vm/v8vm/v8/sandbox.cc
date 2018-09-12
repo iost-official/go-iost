@@ -5,6 +5,8 @@
 #include "blockchain.h"
 #include "instruction.h"
 
+#include "vm.js.h"
+#include "compile_vm.js.h"
 #include <assert.h>
 #include <cstring>
 #include <string>
@@ -18,6 +20,8 @@
 #include <unistd.h>
 #include <chrono>
 
+char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
+char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
     std::strcpy(cstr, str.c_str());
@@ -78,8 +82,8 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
     Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
     global->SetInternalFieldCount(1);
 
-    InitConsole(isolate, global);
-    InitRequire(isolate, global);
+//    InitConsole(isolate, global);
+//    InitRequire(isolate, global);
     InitStorage(isolate, global);
     InitBlockchain(isolate, global);
     InitInstruction(isolate, global);
@@ -103,14 +107,13 @@ const char* ToCString(const v8::String::Utf8Value& value) {
 
 SandboxPtr newSandbox(IsolatePtr ptr) {
     Isolate *isolate = static_cast<Isolate*>(ptr);
-    Locker locker(isolate);
 
+    Locker locker(isolate);
     Isolate::Scope isolate_scope(isolate);
     HandleScope handle_scope(isolate);
 
     Local<ObjectTemplate> globalTpl = createGlobalTpl(isolate);
     Local<Context> context = Context::New(isolate, NULL, globalTpl);
-    Context::Scope context_scope(context);
 
     Sandbox *sbx = new Sandbox();
     Local<Object> global = context->Global();
@@ -131,10 +134,6 @@ void releaseSandbox(SandboxPtr ptr) {
     }
 
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
-
-    Locker locker(sbx->isolate);
-    Isolate::Scope isolate_scope(sbx->isolate);
-    HandleScope handle_scope(sbx->isolate);
 
     sbx->context.Reset();
 
@@ -221,17 +220,16 @@ void loadVM(SandboxPtr ptr, int vmType) {
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 
-    std::string vmPath = std::string(sbx->jsPath);
+    std::string vmPath;
+    Local<String> source;
     if (vmType == 0) {
         vmPath += "compile_vm.js";
+        source = String::NewFromUtf8(isolate, compileVmJsLib, NewStringType::kNormal).ToLocalChecked();
     } else {
         vmPath += "vm.js";
+        source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
     }
-    std::ifstream f(vmPath);
-    std::stringstream buffer;
-    buffer << f.rdbuf();
 
-    Local<String> source = String::NewFromUtf8(isolate, buffer.str().c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
 
@@ -248,10 +246,8 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     Isolate *isolate = sbx->isolate;
 
     Locker locker(isolate);
-
     Isolate::Scope isolate_scope(isolate);
     HandleScope handle_scope(isolate);
-    //Context::Scope context_scope(sbx->context.Get(isolate));
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 

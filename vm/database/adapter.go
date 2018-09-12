@@ -25,6 +25,9 @@ func (c *chainbaseAdapter) Get(key string) (value string) {
 		c.err = err
 		return "n"
 	}
+	if value == "" {
+		return "n"
+	}
 	return
 }
 func (c *chainbaseAdapter) Put(key, value string) {
