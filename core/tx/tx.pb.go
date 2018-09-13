@@ -638,6 +638,9 @@ func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	return offset + 1
 }
 func (m *ActionRaw) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	l = len(m.Contract)
@@ -659,6 +662,9 @@ func (m *ActionRaw) Size() (n int) {
 }
 
 func (m *TxRaw) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Time != 0 {
@@ -702,6 +708,9 @@ func (m *TxRaw) Size() (n int) {
 }
 
 func (m *ReceiptRaw) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Type != 0 {
@@ -718,6 +727,9 @@ func (m *ReceiptRaw) Size() (n int) {
 }
 
 func (m *StatusRaw) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Code != 0 {
@@ -734,6 +746,9 @@ func (m *StatusRaw) Size() (n int) {
 }
 
 func (m *TxReceiptRaw) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	l = len(m.TxHash)

@@ -106,5 +106,10 @@ func (h *DBHandler) GlobalMapLen(con, key string) (length int, cost *contract.Co
 }
 
 func (h *DBHandler) modifyKey(key string) string {
-	return h.h.ctx.Value("contract_name").(string) + database.Separator + key
+	contractName, ok := h.h.ctx.Value("contract_name").(string)
+	if !ok {
+		return ""
+	}
+
+	return contractName + database.Separator + key
 }
