@@ -3,6 +3,7 @@ package pob
 import (
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
+	"strings"
 )
 
 var staticProperty *StaticProperty
@@ -31,6 +32,15 @@ func (property *StaticProperty) updateWitness(witnessList []string) {
 
 	property.NumberOfWitnesses = int64(len(witnessList))
 	property.WitnessList = witnessList
+}
+
+func (property *StaticProperty) isWitness(w string) bool {
+	for _, v := range property.WitnessList {
+		if strings.Compare(v, w) == 0 {
+			return true
+		}
+	}
+	return false
 }
 
 var (

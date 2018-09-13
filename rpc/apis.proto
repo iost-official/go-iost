@@ -51,6 +51,12 @@ service Apis {
             get: "/getBalance/{ID}/{useLongestChain}"
         };
     }
+    // get the Net ID
+    rpc GetNetID (google.protobuf.Empty) returns (GetNetIDRes) {
+        option (google.api.http) = {
+            get: "/getNetID"
+        };
+    }
     // get the value of the corresponding key in stateDB
     rpc GetState (GetStateReq) returns (GetStateRes) {
         option (google.api.http) = {
@@ -119,6 +125,10 @@ message HeightRes {
 
 message GetBalanceRes {
 	int64 balance=1;
+}
+
+message GetNetIDRes {
+	string ID=1;
 }
 
 message GetStateRes {
