@@ -227,7 +227,7 @@ func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, *blockcache.BlockCacheN
 	var i int
 	tx, ok := iter.Next()
 	for ok && i < maxCnt {
-		if !pool.txTimeOut(tx) {
+		if !pool.TxTimeOut(tx) {
 			pendingList = append(pendingList, tx)
 		}
 		tx, ok = iter.Next()
@@ -381,7 +381,7 @@ func (pool *TxPoolImpl) verifyTx(t *tx.Tx) TAddTx {
 		return GasPriceError
 	}
 
-	if pool.txTimeOut(t) {
+	if pool.TxTimeOut(t) {
 		return TimeError
 	}
 
@@ -524,7 +524,7 @@ func (pool *TxPoolImpl) existTxInPending(hash []byte) bool {
 	return tx != nil
 }
 
-func (pool *TxPoolImpl) txTimeOut(tx *tx.Tx) bool {
+func (pool *TxPoolImpl) TxTimeOut(tx *tx.Tx) bool {
 
 	nTime := time.Now().UnixNano()
 	txTime := tx.Time
@@ -549,7 +549,7 @@ func (pool *TxPoolImpl) clearTimeOutTx() {
 	iter := pool.pendingTx.Iter()
 	tx, ok := iter.Next()
 	for ok {
-		if pool.txTimeOut(tx) {
+		if pool.TxTimeOut(tx) {
 			pool.DelTx(tx.Hash())
 		}
 		tx, ok = iter.Next()

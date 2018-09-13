@@ -199,5 +199,6 @@ func (iter *Iterator) Next() (*tx.Tx, bool) {
 	}
 
 	iter.iter = &i
+
 	return i.Item().(*tx.Tx), true
 }

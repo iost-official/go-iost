@@ -153,3 +153,28 @@ func (m *MockTxPool) Stop() {
 func (mr *MockTxPoolMockRecorder) Stop() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockTxPool)(nil).Stop))
 }
+
+// TxIterator mocks base method
+func (m *MockTxPool) TxIterator() (*txpool.Iterator, *blockcache.BlockCacheNode) {
+	ret := m.ctrl.Call(m, "TxIterator")
+	ret0, _ := ret[0].(*txpool.Iterator)
+	ret1, _ := ret[1].(*blockcache.BlockCacheNode)
+	return ret0, ret1
+}
+
+// TxIterator indicates an expected call of TxIterator
+func (mr *MockTxPoolMockRecorder) TxIterator() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxIterator", reflect.TypeOf((*MockTxPool)(nil).TxIterator))
+}
+
+// TxTimeOut mocks base method
+func (m *MockTxPool) TxTimeOut(arg0 *tx.Tx) bool {
+	ret := m.ctrl.Call(m, "TxTimeOut", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// TxTimeOut indicates an expected call of TxTimeOut
+func (mr *MockTxPoolMockRecorder) TxTimeOut(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxTimeOut", reflect.TypeOf((*MockTxPool)(nil).TxTimeOut), arg0)
+}

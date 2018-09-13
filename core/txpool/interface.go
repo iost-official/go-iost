@@ -21,4 +21,5 @@ type TxPool interface {
 	CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, error)
 	Lock()
 	Lease()
+	TxTimeOut(tx *tx.Tx) bool
 }

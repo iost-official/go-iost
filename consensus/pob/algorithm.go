@@ -72,19 +72,22 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		blk.Receipts = append(blk.Receipts, receipt)
 	}
 	t, ok := txIter.Next()
+L:
 	for ok {
 		select {
 		case <-limitTime.C:
 			ilog.Info("time up")
-			break
+			break L
 		default:
-			if receipt, err := engine.Exec(t); err == nil {
-				blk.Txs = append(blk.Txs, t)
-				blk.Receipts = append(blk.Receipts, receipt)
-				ilog.Debug(err, receipt)
-			} else {
-				ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
-				txPool.DelTx(t.Hash())
+			if !txPool.TxTimeOut(t) {
+				if receipt, err := engine.Exec(t); err == nil {
+					blk.Txs = append(blk.Txs, t)
+					blk.Receipts = append(blk.Receipts, receipt)
+					ilog.Debug(err, receipt)
+				} else {
+					ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
+					txPool.DelTx(t.Hash())
+				}
 			}
 			t, ok = txIter.Next()
 		}

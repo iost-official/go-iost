@@ -115,17 +115,17 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 			t := genTx(accountList[0], expiration)
 
-			b := txPool.txTimeOut(t)
+			b := txPool.TxTimeOut(t)
 			So(b, ShouldBeFalse)
 
 			t.Time -= int64(expiration + int64(1*time.Second))
-			b = txPool.txTimeOut(t)
+			b = txPool.TxTimeOut(t)
 			So(b, ShouldBeTrue)
 
 			t = genTx(accountList[0], expiration)
 
 			t.Expiration -= int64(expiration * 3)
-			b = txPool.txTimeOut(t)
+			b = txPool.TxTimeOut(t)
 			So(b, ShouldBeTrue)
 		})
 		Convey("delTimeOutTx", func() {
