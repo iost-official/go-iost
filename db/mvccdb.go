@@ -1,12 +1,11 @@
 package db
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
+	"github.com/iost-official/Go-IOS-Protocol/db/kv"
 	"github.com/iost-official/Go-IOS-Protocol/db/mvcc"
-	"github.com/iost-official/Go-IOS-Protocol/db/storage"
 )
 
 //go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/Go-IOS-Protocol/db MVCCDB
@@ -15,19 +14,8 @@ const (
 )
 
 var (
-	ErrKeyNotFound   = errors.New("key not found")
-	ErrTableNotValid = errors.New("table name is not valid")
+	ErrTableNotValid = fmt.Errorf("table name is not valid")
 )
-
-type Storage interface {
-	Get(key []byte) ([]byte, error)
-	Put(key []byte, value []byte) error
-	Del(key []byte) error
-	Keys(prefix []byte) ([][]byte, error)
-	BeginBatch() error
-	CommitBatch() error
-	Close() error
-}
 
 type MVCCDB interface {
 	Get(table string, key string) (string, error)
@@ -141,18 +129,18 @@ func (m *CommitManager) FreeBefore(c *Commit) {
 type CacheMVCCDB struct {
 	head    *Commit
 	stage   *Commit
-	storage Storage
+	storage *kv.Storage
 	cm      *CommitManager
 }
 
 func NewCacheMVCCDB(path string, cacheType mvcc.CacheType) (*CacheMVCCDB, error) {
-	storage, err := storage.NewLevelDB(path)
+	storage, err := kv.NewStorage(path, kv.LevelDBStorage)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to new storage: %v", err)
 	}
 	tag, err := storage.Get([]byte(string(SEPARATOR) + "tag"))
 	if err != nil {
-		tag = []byte("")
+		return nil, fmt.Errorf("failed to get from storage: %v", err)
 	}
 	head := NewCommit(cacheType)
 	stage := head.Fork()
@@ -190,16 +178,16 @@ func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 	if v == nil {
 		v, err := m.storage.Get(k)
 		if err != nil {
-			return "", ErrKeyNotFound
+			return "", fmt.Errorf("failed to get from storage: %v", err)
 		}
 		return string(v[:]), nil
 	}
 	i, ok := v.(*Item)
 	if !ok {
-		return "", errors.New("can't assert Item type")
+		return "", fmt.Errorf("can't assert Item type")
 	}
 	if i.deleted {
-		return "", ErrKeyNotFound
+		return "", nil
 	}
 	return i.value, nil
 }
@@ -241,15 +229,11 @@ func (m *CacheMVCCDB) Has(table string, key string) (bool, error) {
 	k := []byte(table + string(SEPARATOR) + key)
 	v := m.stage.Get(k)
 	if v == nil {
-		v, err := m.storage.Get(k)
-		if err != nil {
-			return false, nil
-		}
-		return v != nil, nil
+		return m.storage.Has(k)
 	}
 	i, ok := v.(*Item)
 	if !ok {
-		return false, errors.New("can't assert Item type")
+		return false, fmt.Errorf("can't assert Item type")
 	}
 	if i.deleted {
 		return false, nil
@@ -333,10 +317,10 @@ func (m *CacheMVCCDB) Flush(t string) error {
 	for _, v := range commit.All([]byte("")) {
 		item, ok := v.(*Item)
 		if !ok {
-			return errors.New("can't assert Item type")
+			return fmt.Errorf("can't assert Item type")
 		}
 		if item.deleted {
-			err := m.storage.Del([]byte(item.table + string(SEPARATOR) + item.key))
+			err := m.storage.Delete([]byte(item.table + string(SEPARATOR) + item.key))
 			if err != nil {
 				return err
 			}
