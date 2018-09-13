@@ -83,10 +83,10 @@ func (h *Teller) GrantServi(to string, amount int64) (*contract.Cost, error) {
 	if amount <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
-	cn := h.h.ctx.Value("contract_name").(string)
-	if !strings.HasPrefix(cn, "iost.") {
-		return CommonErrorCost(2), ErrPermissionLost
-	}
+	//cn := h.h.ctx.Value("contract_name").(string) todo privilege of system contracts
+	//if !strings.HasPrefix(cn, "iost.") {
+	//	return CommonErrorCost(2), ErrPermissionLost
+	//}
 	h.h.db.SetServi(to, amount)
 	return TransferCost, nil
 }

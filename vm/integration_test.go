@@ -142,8 +142,17 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	return trx, nil
 }
 
-func TestIntergration_Transfer(t *testing.T) {
+func MakeTxWithAuth(act tx.Action, ac *account.Account) (*tx.Tx, error) {
+	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
+	trx, err := tx.SignTx(trx, ac)
+	if err != nil {
+		return nil, err
+	}
+	return trx, nil
+}
 
+func TestIntergration_Transfer(t *testing.T) {
+	ilog.Stop()
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
 
@@ -160,10 +169,15 @@ func TestIntergration_Transfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log("trasfer succes case:")
-	t.Log(e.Exec(trx))
-	t.Log("balance of sender :", vi.Balance(testID[0]))
-	t.Log("balance of receiver :", vi.Balance(testID[2]))
+	Convey("trasfer success case", t, func() {
+		r, err := (e.Exec(trx))
+		if r.Status.Code != 0 {
+			t.Fatal(r)
+		}
+		So(err, ShouldBeNil)
+		So(vi.Balance(testID[0]), ShouldEqual, int64(999597))
+		So(vi.Balance(testID[2]), ShouldEqual, int64(100))
+	})
 
 	act2 := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
 	trx2 := tx.NewTx([]*tx.Action{&act2}, nil, int64(10000), int64(1), int64(10000000))
@@ -172,10 +186,15 @@ func TestIntergration_Transfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log("trasfer not enough balance case:")
-	t.Log(e.Exec(trx2))
-	t.Log("balance of sender :", vi.Balance(testID[0]))
-	t.Log("balance of receiver :", vi.Balance(testID[2]))
+	Convey("trasfer balance not enough case", t, func() {
+		r, err := e.Exec(trx2)
+		if r.Status.Code != 4 {
+			t.Fatal(r)
+		}
+		So(err, ShouldBeNil)
+		So(vi.Balance(testID[0]), ShouldEqual, int64(999294))
+		So(vi.Balance(testID[2]), ShouldEqual, int64(100))
+	})
 }
 
 func jsHelloWorld() *contract.Contract {
@@ -217,6 +236,7 @@ module.exports = Contract;
 }
 
 func TestIntergration_SetCode(t *testing.T) {
+	ilog.Stop()
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
 
@@ -229,8 +249,12 @@ func TestIntergration_SetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ilog.Debugf(fmt.Sprintln(e.Exec(trx)))
-	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
+	Convey("set code tx", t, func() {
+		r, err := e.Exec(trx)
+		So(r.Status.Code, ShouldEqual, 0)
+		So(err, ShouldBeNil)
+		So(vi.Balance(testID[0]), ShouldEqual, int64(999988))
+	})
 
 	act2 := tx.NewAction("Contract"+common.Base58Encode(trx.Hash()), "hello", `[]`)
 
@@ -239,8 +263,12 @@ func TestIntergration_SetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ilog.Debugf(fmt.Sprintln(e.Exec(trx2)))
-	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
+	Convey("call hello", t, func() {
+		r, err := e.Exec(trx2)
+		So(r.Status.Code, ShouldEqual, 0)
+		So(err, ShouldBeNil)
+		So(vi.Balance(testID[0]), ShouldEqual, int64(999981))
+	})
 }
 
 func TestEngine_InitSetCode(t *testing.T) {
@@ -305,6 +333,7 @@ func TestEngine_InitSetCode(t *testing.T) {
 }
 
 func TestIntergration_CallJSCode(t *testing.T) {
+	ilog.Stop()
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
 
@@ -321,8 +350,16 @@ func TestIntergration_CallJSCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(e.Exec(trx))
-	t.Log("balance of sender :", vi.Balance(testID[0]))
+	r, err := e.Exec(trx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	if vi.Balance(testID[0]) != int64(1000000) { // todo something wrong here!
+		t.Fatal(vi.Balance(testID[0]))
+	}
 }
 
 func jsCallHelloWorld() *contract.Contract {
@@ -357,6 +394,7 @@ module.exports = Contract;
 }
 
 func TestIntergration_CallJSCodeWithReceipt(t *testing.T) {
+	ilog.Stop()
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
 
@@ -373,8 +411,16 @@ func TestIntergration_CallJSCodeWithReceipt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(e.Exec(trx))
-	t.Log("balance of sender :", vi.Balance(testID[0]))
+	r, err := e.Exec(trx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	if vi.Balance(testID[0]) != int64(999999) {
+		t.Fatal(vi.Balance(testID[0]))
+	}
 }
 
 func jsCallHelloWorldWithReceipt() *contract.Contract {
@@ -409,11 +455,12 @@ module.exports = Contract;
 }
 
 func TestIntergration_Payment_Success(t *testing.T) {
+
 	jshw := jsHelloWorld()
 	jshw.Info.Abis[0].Payment = 1
 	jshw.Info.Abis[0].GasPrice = int64(10)
 
-	ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
+	//ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
 
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
@@ -429,9 +476,18 @@ func TestIntergration_Payment_Success(t *testing.T) {
 	}
 
 	r, err := e.Exec(trx)
-	ilog.Debugf("success: %v, %v", r, err)
-	ilog.Debugf("balance of sender : %v", vi.Balance(testID[0]))
-	ilog.Debugf("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	if vi.Balance(testID[0]) != int64(1000000) {
+		t.Fatal(vi.Balance(testID[0]))
+	}
+	if vi.Balance("CGjsHelloWorld") != int64(1000000) { // todo something wrong here
+		t.Fatal(vi.Balance("CGjsHelloWorld"))
+	}
 
 }
 
@@ -528,6 +584,13 @@ func (j *JSTester) FlushDB(t *testing.T, keys []string) {
 	}
 }
 
+func (j *JSTester) NewBlock(bh *block.BlockHead) {
+	j.e = newEngine(bh, j.vi)
+	j.e.SetUp("js_path", jsPath)
+	j.e.SetUp("log_level", "debug")
+	j.e.SetUp("log_enable", "")
+}
+
 func (j *JSTester) SetJS(code string) {
 	j.c = &contract.Contract{
 		ID:   "jsContract",
@@ -581,6 +644,26 @@ func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
 	act2 := tx.NewAction(j.cname, main, args)
 
 	trx2, err := MakeTx(act2)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+
+	r, err := j.e.Exec(trx2)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+	return r
+}
+
+func (j *JSTester) TestJSWithAuth(abi, args, seckey string) *tx.TxReceipt {
+	act2 := tx.NewAction(j.cname, abi, args)
+
+	ac, err := account.NewAccount(common.Base58Decode(seckey), crypto.Secp256k1)
+	if err != nil {
+		panic(err)
+	}
+
+	trx2, err := MakeTxWithAuth(act2, ac)
 	if err != nil {
 		j.t.Fatal(err)
 	}

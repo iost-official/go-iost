@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"strconv"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
@@ -17,6 +19,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestJS1_Vote1(t *testing.T) {
@@ -129,263 +132,300 @@ func TestJS_VoteServi(t *testing.T) {
 }
 
 func TestJS_Vote(t *testing.T) {
-	ilog.Stop()
+	Convey("test of vote", t, func() {
+		ilog.Stop()
 
-	js := NewJSTester(t)
-	defer js.Clear()
-	lc, err := ReadFile("../config/vote.js")
-	if err != nil {
-		t.Fatal(err)
-	}
-	js.SetJS(string(lc))
-	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
-	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
-	js.SetAPI("LogInProducer", "string")
-	js.SetAPI("LogOutProducer", "string")
-	js.SetAPI("UnregisterProducer", "string")
-	js.SetAPI("Vote", "string", "string", "number")
-	js.SetAPI("Unvote", "string", "string", "number")
-	js.SetAPI("Stat")
-	js.SetAPI("init")
-	js.SetAPI("InitProducer", "number", "string")
-	for i := 0; i <= 18; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7)
-	}
-	js.vi.Commit()
-	r := js.DoSet()
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
-	num := 7
-	proStr := "["
-	for i := 0; i < num; i++ {
-		proStr += fmt.Sprintf(`\"%v\"`, testID[2*i])
-		if i != num-1 {
-			proStr += ","
+		js := NewJSTester(t)
+		bh := &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     0,
+			Witness:    "witness",
+			Time:       123456,
 		}
-	}
-	proStr += "]"
-	r = js.TestJS("InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
+		js.NewBlock(bh)
 
-	keys := []string{
-		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
-		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
-		"producerTable",
-		"voteTable",
-	}
-	_ = keys
-	//js.FlushDB(t, keys)
+		defer js.Clear()
+		lc, err := ReadFile("../config/vote.js")
+		if err != nil {
+			t.Fatal(err)
+		}
+		js.SetJS(string(lc))
+		js.SetAPI("RegisterProducer", "string", "string", "string", "string")
+		js.SetAPI("UpdateProducer", "string", "string", "string", "string")
+		js.SetAPI("LogInProducer", "string")
+		js.SetAPI("LogOutProducer", "string")
+		js.SetAPI("UnregisterProducer", "string")
+		js.SetAPI("Vote", "string", "string", "number")
+		js.SetAPI("Unvote", "string", "string", "number")
+		js.SetAPI("Stat")
+		js.SetAPI("init")
+		js.SetAPI("InitProducer", "number", "string")
+		for i := 0; i <= 18; i += 2 {
+			js.vi.SetBalance(testID[i], 5e+7)
+		}
+		js.vi.Commit()
+		r := js.DoSet()
+		if r.Status.Code != 0 {
+			t.Fatal(r.Status.Message)
+		}
+		num := 7
+		proStr := "["
+		for i := 0; i < num; i++ {
+			proStr += fmt.Sprintf(`\"%v\"`, testID[2*i])
+			if i != num-1 {
+				proStr += ","
+			}
+		}
+		proStr += "]"
 
-	// test register, login, logout
-	r = js.TestJS("LogOutProducer", `["a"]`)
-	if r.Status.Code != 4 {
-		t.Fatal(r.Status.Message)
-	}
-	r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
-	if js.ReadMap("producerTable", testID[0]).(string) != `{"loc":"","url":"","netId":"","online":true,"score":0,"votes":0}` {
-		t.Fatal(js.ReadMap("producerTable", testID[0]))
-	}
+		r = js.TestJS("InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
+		if r.Status.Code != 0 {
+			t.Fatal(r.Status.Message)
+		}
 
-	r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
-	if r.Status.Code != 4 {
-		t.Fatal(r.Status.Message)
-	}
-	//js.FlushDB(t, keys)
+		keys := []string{
+			"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
+			"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
+			"producerTable",
+			"voteTable",
+		}
+		_ = keys
+		//js.FlushDB(t, keys)
 
-	r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
-	//js.FlushDB(t, keys)
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     10,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
 
-	r = js.TestJS("UpdateProducer", fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, testID[0], "nloc", "nurl", "nnetid"))
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
-	if js.ReadMap("producerTable", testID[0]).(string) != `{"loc":"nloc","url":"nurl","netId":"nnetid","online":true,"score":0,"votes":0}` {
-		t.Fatal(js.ReadMap("producerTable", testID[0]))
-	}
+		// test register, login, logout
+		r = js.TestJS("LogOutProducer", `["a"]`)
+		So(r.Status.Message, ShouldContainSubstring, "require auth failed")
 
-	// stat, no changes
-	r = js.TestJS("Stat", `[]`)
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
-	if js.ReadDB(`pendingProducerList`) != `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
-		`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
-		`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
-		`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9"]` {
-		t.Fatal(js.ReadDB(`pendingProducerList`))
-	}
+		r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
+		So(r.Status.Message, ShouldEqual, "")
 
-	// vote and unvote
-	r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
-	r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
-	r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 10000000))
-	if r.Status.Code != 4 {
-		t.Fatal(r.Status.Message)
-	}
-	r = js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
+		So(js.ReadMap("producerTable", testID[0]).(string), ShouldEqual, `{"loc":"","url":"","netId":"","online":true,"score":0,"votes":0}`)
 
-	// stat testID[0] become pending producer
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
+		So(r.Status.Message, ShouldContainSubstring, "producer exists")
 
-	bh := &block.BlockHead{
-		ParentHash: []byte("abc"),
-		Number:     211,
-		Witness:    "witness",
-		Time:       123456,
-	}
-	e := newEngine(bh, js.vi)
-	e.SetUp("js_path", jsPath)
-	js.e = e
+		r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
+		So(r.Status.Message, ShouldEqual, "")
 
-	// test unvote
-	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 20000001)))
-	//js.FlushDB(t, keys)
+		r = js.TestJS("UpdateProducer", fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, testID[0], "nloc", "nurl", "nnetid"))
+		So(r.Status.Message, ShouldEqual, "")
 
-	t.Log(database.MustUnmarshal(js.vi.Get("i-" + testID[0] + "-s")))
-	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 1000000)))
-	//js.FlushDB(t, keys)
+		So(js.ReadMap("producerTable", testID[0]).(string), ShouldEqual, `{"loc":"nloc","url":"nurl","netId":"nnetid","online":true,"score":0,"votes":0}`)
 
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.TotalServi())
-	// stat pending producers don't get score
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		// stat, no changes
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldContainSubstring, "block number mismatch")
 
-	// seven
-	for i := 2; i <= 14; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7)
-	}
-	for i := 2; i <= 14; i += 2 {
-		t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[i])))
-		t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[i], testID[i], 30000000+i)))
-	}
-	//js.FlushDB(t, keys)
+		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
+			`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
+			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
+			`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9"]`)
 
-	// stat, offline producers don't get score
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		// vote and unvote
+		r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
+		So(r.Status.Message, ShouldEqual, "")
 
-	for i := 2; i <= 14; i += 2 {
-		t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[i])))
-	}
-	//js.FlushDB(t, keys)
+		r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
+		So(r.Status.Message, ShouldEqual, "")
 
-	// stat, 1 producer become pending
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 10000000))
+		So(r.Status.Message, ShouldContainSubstring, "require auth failed")
 
-	t.Log(js.TestJS("LogOutProducer", fmt.Sprintf(`["%v"]`, testID[12])))
+		r = js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
+		So(r.Status.Message, ShouldContainSubstring, "vote still locked")
 
-	// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		//js.FlushDB(t, keys)
 
-	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[12])))
+		// stat testID[0] become pending producer
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldContainSubstring, "block number mismatch")
 
-	// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     200,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
 
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		r = js.TestJS("Stat", `[]`)
+		if r.Status.Code != 0 {
+			t.Fatal(r.Status.Message)
+		}
 
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
+			`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
+			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
+			`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9"]`)
 
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     211,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
 
-	// testID[0] become pre producer from pending producer, score = 0
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		// test unvote
+		r = js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 20000001))
+		So(r.Status.Message, ShouldContainSubstring, "vote amount less than expected")
 
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		r = js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 1000000))
+		So(r.Status.Message, ShouldEqual, "")
 
-	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
-	//js.FlushDB(t, keys)
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.TotalServi())
+		So(js.vi.Servi(testID[0]), ShouldEqual, int64(1055000))
+		So(js.vi.TotalServi(), ShouldEqual, int64(1055000))
+		// stat pending producers don't get score
 
-	// unregister
-	t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-	//js.FlushDB(t, keys)
+		// seven
+		for i := 2; i <= 14; i += 2 {
+			js.vi.SetBalance(testID[i], 5e+7)
+		}
+		r = js.TestJSWithAuth("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[14]), testID[15])
+		So(r.Status.Message, ShouldEqual, "")
+		for i := 2; i <= 14; i += 2 {
+			r = js.TestJSWithAuth("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[i], testID[i], 30000000+i), testID[i+1])
+			So(r.Status.Message, ShouldEqual, "")
+			So(js.ReadMap("producerTable", testID[i]), ShouldContainSubstring, strconv.Itoa(30000000+i))
+		}
+		So(js.ReadMap("preProducerMap", testID[14]), ShouldEqual, "true")
 
-	// unvote after unregister
-	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 9000000)))
-	//js.FlushDB(t, keys)
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.TotalServi())
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     400,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
 
-	// re register, score = 0, vote = 0
-	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
-	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-	//js.FlushDB(t, keys)
+		// stat, offline producers don't get score
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldEqual, "")
 
-	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 21000001)))
-	//js.FlushDB(t, keys)
+		for i := 2; i <= 14; i += 2 {
+			r = js.TestJSWithAuth("LogInProducer", fmt.Sprintf(`["%v"]`, testID[i]), testID[i+1])
+			So(r.Status.Message, ShouldEqual, "")
+		}
 
-	t.Log(js.TestJS("Stat", `[]`))
-	//js.FlushDB(t, keys)
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     600,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
 
-	// unregister pre producer
-	t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-	//js.FlushDB(t, keys)
+		// stat, 1 producer become pending
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldEqual, "")
 
-	// test bonus
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
-	act2 := tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
+		So(js.ReadMap("producerTable", testID[14]), ShouldContainSubstring, `"score":9000014`)
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, "IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB")
+		return
 
-	trx2, err := MakeTx(act2)
-	if err != nil {
-		t.Fatal(err)
-	}
+		t.Log(js.TestJS("LogOutProducer", fmt.Sprintf(`["%v"]`, testID[12])))
 
-	r, err = js.e.Exec(trx2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(r)
+		// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
+		t.Log(js.TestJS("Stat", `[]`))
+		//js.FlushDB(t, keys)
 
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
-	t.Log(js.vi.Balance(testID[0]))
-	act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 21099999))
+		t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[12])))
 
-	trx2, err = MakeTx(act2)
-	if err != nil {
-		t.Fatal(err)
-	}
+		// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
+		t.Log(js.TestJS("Stat", `[]`))
+		//js.FlushDB(t, keys)
 
-	r, err = js.e.Exec(trx2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(r)
+		t.Log(js.TestJS("Stat", `[]`))
+		//js.FlushDB(t, keys)
 
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
-	t.Log(js.vi.Balance(testID[0]))
+		t.Log(js.TestJS("Stat", `[]`))
+		//js.FlushDB(t, keys)
+
+		t.Log(js.TestJS("Stat", `[]`))
+		//js.FlushDB(t, keys)
+
+		// testID[0] become pre producer from pending producer, score = 0
+		t.Log(js.TestJS("Stat", `[]`))
+		//js.FlushDB(t, keys)
+
+		t.Log(js.TestJS("Stat", `[]`))
+		//js.FlushDB(t, keys)
+
+		t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
+		//js.FlushDB(t, keys)
+		t.Log(js.vi.Servi(testID[0]))
+		t.Log(js.vi.TotalServi())
+
+		// unregister
+		t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+		//js.FlushDB(t, keys)
+
+		// unvote after unregister
+		t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 9000000)))
+		//js.FlushDB(t, keys)
+		t.Log(js.vi.Servi(testID[0]))
+		t.Log(js.vi.TotalServi())
+
+		// re register, score = 0, vote = 0
+		t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
+		t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+		//js.FlushDB(t, keys)
+
+		t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 21000001)))
+		//js.FlushDB(t, keys)
+
+		t.Log(js.TestJS("Stat", `[]`))
+		//js.FlushDB(t, keys)
+
+		// unregister pre producer
+		t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
+		//js.FlushDB(t, keys)
+
+		// test bonus
+		t.Log(js.vi.Servi(testID[0]))
+		t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
+		act2 := tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
+
+		trx2, err := MakeTx(act2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		r, err = js.e.Exec(trx2)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log(r)
+
+		t.Log(js.vi.Servi(testID[0]))
+		t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
+		t.Log(js.vi.Balance(testID[0]))
+		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 21099999))
+
+		trx2, err = MakeTx(act2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		r, err = js.e.Exec(trx2)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log(r)
+
+		t.Log(js.vi.Servi(testID[0]))
+		t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
+		t.Log(js.vi.Balance(testID[0]))
+	})
+
 }
 
 //nolint
