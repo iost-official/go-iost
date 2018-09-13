@@ -102,6 +102,7 @@ func (pool *TxPoolImpl) loop() {
 			}
 
 		case <-clearTx.C:
+			metricsTxPoolSize.Set(float64(pool.pendingTx.Size()), nil)
 			pool.mu.Lock()
 
 			pool.clearBlock()
