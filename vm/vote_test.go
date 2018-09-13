@@ -138,6 +138,7 @@ func TestJS_VoteServi(t *testing.T) {
 }
 
 func TestJS_Vote(t *testing.T) {
+	t.Skip()
 	Convey("test of vote", t, func() {
 		ilog.Stop()
 
