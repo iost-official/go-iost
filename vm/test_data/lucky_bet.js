@@ -104,7 +104,7 @@ class Contract {
 
         }
 
-        storage.mapPut('result', round.toString(), JSON.stringify(result));
+        storage.put('result'+round.toString(), JSON.stringify(result));
     }
 }
 
