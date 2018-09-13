@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 
 	"github.com/bouk/monkey"
+	"github.com/iost-official/Go-IOS-Protocol/p2p"
 )
 
 type Mock_Apis_SubscribeServer struct {
@@ -29,11 +30,11 @@ func (s *Mock_Apis_SubscribeServer) Send(req *SubscribeRes) error {
 }
 
 func TestRpcServer_Subscribe(t *testing.T) {
-	monkey.Patch(NewRPCServer, func(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
+	monkey.Patch(NewRPCServer, func(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable, p2pService p2p.Service) *RPCServer {
 		return &RPCServer{}
 	})
 
-	s := NewRPCServer(nil, nil, nil)
+	s := NewRPCServer(nil, nil, nil, nil)
 	ec := event.GetEventCollectorInstance()
 	req := &SubscribeReq{Topics: []event.Event_Topic{event.Event_TransactionResult}}
 	res := Mock_Apis_SubscribeServer{
