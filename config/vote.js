@@ -27,8 +27,10 @@ class VoteContract {
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
 
+        const producerRegisterFee = this._get("producerRegisterFee");
+
         for (let i = 0; i < producerNumber; i++) {
-            const ret = BlockChain.deposit(pendingProducerList[i], this._get("producerRegisterFee"));
+            const ret = BlockChain.deposit(pendingProducerList[i], producerRegisterFee);
             if (ret !== 0) {
                 throw new Error("constructor deposit failed. ret = " + ret);
             }

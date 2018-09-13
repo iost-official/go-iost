@@ -22,6 +22,12 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func watchTime(f func()) time.Duration {
+	ta := time.Now()
+	f()
+	return time.Now().Sub(ta)
+}
+
 func TestJS1_Vote1(t *testing.T) {
 	ilog.Stop()
 
@@ -178,10 +184,15 @@ func TestJS_Vote(t *testing.T) {
 		}
 		proStr += "]"
 
-		r = js.TestJS("InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
+		tt := watchTime(func() {
+			r = js.TestJS("InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
+		})
 		if r.Status.Code != 0 {
+			t.Log(tt)
 			t.Fatal(r.Status.Message)
 		}
+		t.Log(r.GasUsage)
+		t.Log(tt)
 
 		keys := []string{
 			"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
@@ -307,11 +318,8 @@ func TestJS_Vote(t *testing.T) {
 		js.NewBlock(bh)
 
 		// stat, offline producers don't get score
-		ta := time.Now().UnixNano()
 		r = js.TestJS("Stat", `[]`)
 		So(r.Status.Message, ShouldEqual, "")
-		tb := time.Now().UnixNano()
-		So(tb-ta, ShouldBeLessThan, 200000000000)
 
 		for i := 2; i <= 14; i += 2 {
 			r = js.TestJSWithAuth("LogInProducer", fmt.Sprintf(`["%v"]`, testID[i]), testID[i+1])
