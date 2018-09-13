@@ -1,15 +1,15 @@
 package trie
 
 import (
-	"math"
 	"sync"
-	"time"
 )
 
+// Constant of trie
 const (
 	FreeListSize = uint64(65536)
 )
 
+// Node is node of trie
 type Node struct {
 	context  *Context
 	value    interface{}
@@ -24,7 +24,7 @@ func (n *Node) get(key []byte, i int) *Node {
 	if child == nil {
 		return nil
 	}
-	if child.context.timestamp > n.context.timestamp {
+	if child.context == nil {
 		return nil
 	}
 	return child.get(key, i+1)
@@ -33,7 +33,7 @@ func (n *Node) get(key []byte, i int) *Node {
 func (n *Node) all() []*Node {
 	nodelist := []*Node{n}
 	for _, c := range n.children {
-		if c.context.timestamp > n.context.timestamp {
+		if c.context == nil {
 			continue
 		}
 		nodelist = append(nodelist, c.all()...)
@@ -51,7 +51,7 @@ func (n *Node) put(key []byte, value interface{}, i int) *Node {
 		child = n.context.newNode()
 		n.children[key[i]] = child
 	}
-	if child.context.timestamp > n.context.timestamp {
+	if child.context == nil {
 		child = n.context.newNode()
 		n.children[key[i]] = child
 	}
@@ -69,7 +69,7 @@ func (n *Node) forkWithContext(context *Context) *Node {
 		children: make(map[byte]*Node, len(n.children)),
 	}
 	for k, v := range n.children {
-		if v.context.timestamp > n.context.timestamp {
+		if v.context == nil {
 			continue
 		}
 		node.children[k] = v
@@ -83,16 +83,17 @@ func (n *Node) free() {
 			c.free()
 		}
 	}
-	n.value = nil
-	n.children = nil
 	n.context.freeNode(n)
 }
 
+// FreeList is a free list of trie node
+// All trie that fork from the same trie share the same free list
 type FreeList struct {
 	mu       *sync.Mutex
 	freelist []*Node
 }
 
+// NewFreeList create a default FreeList
 func NewFreeList() *FreeList {
 	f := &FreeList{
 		mu:       new(sync.Mutex),
@@ -102,14 +103,12 @@ func NewFreeList() *FreeList {
 }
 
 type Context struct {
-	freelist  *FreeList
-	timestamp int64
+	freelist *FreeList
 }
 
 func NewContext() *Context {
 	c := &Context{
-		freelist:  NewFreeList(),
-		timestamp: time.Now().UnixNano(),
+		freelist: NewFreeList(),
 	}
 	return c
 }
@@ -123,12 +122,14 @@ func (c *Context) newNode() *Node {
 }
 
 func (c *Context) freeNode(n *Node) {
+	n.context = nil
+	n.value = nil
+	n.children = nil
 }
 
 func (c *Context) fork() *Context {
 	context := &Context{
-		freelist:  c.freelist,
-		timestamp: time.Now().UnixNano(),
+		freelist: c.freelist,
 	}
 	return context
 }
@@ -201,5 +202,5 @@ func (t *Trie) Free() {
 	defer t.rwmu.Unlock()
 
 	t.root.free()
-	t.context.timestamp = math.MaxInt64
+	t.context = nil
 }
