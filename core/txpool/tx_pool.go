@@ -207,6 +207,7 @@ func (pool *TxPoolImpl) DelTx(hash []byte) error {
 }
 
 func (pool *TxPoolImpl) TxIterator() (*Iterator, *blockcache.BlockCacheNode) {
+	metricsTxPoolSize.Set(float64(pool.pendingTx.Size()), nil)
 	return pool.pendingTx.Iter(), pool.forkChain.NewHead
 }
 
