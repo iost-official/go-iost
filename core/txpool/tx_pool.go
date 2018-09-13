@@ -525,14 +525,17 @@ func (pool *TxPoolImpl) TxTimeOut(tx *tx.Tx) bool {
 	exTime := tx.Expiration
 
 	if txTime > nTime {
+		metricsTxErrType.Add(1, map[string]string{"type": "txTime > nTime"})
 		return true
 	}
 
 	if exTime <= nTime {
+		metricsTxErrType.Add(1, map[string]string{"type": "exTime <= nTime"})
 		return true
 	}
 
 	if nTime-txTime > expiration {
+		metricsTxErrType.Add(1, map[string]string{"type": "nTime-txTime > expiration"})
 		return true
 	}
 	return false

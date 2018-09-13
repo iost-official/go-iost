@@ -29,6 +29,7 @@ var (
 	metricsAddTxTime              = metrics.NewSummary("iost_add_tx_time", nil)
 	metricsAddTxCount             = metrics.NewCounter("iost_add_tx_count", nil)
 	metricsTxPoolSize             = metrics.NewGauge("iost_txpool_size", nil)
+	metricsTxErrType              = metrics.NewCounter("iost_txerr_type", []string{"type"})
 )
 
 type FRet uint
