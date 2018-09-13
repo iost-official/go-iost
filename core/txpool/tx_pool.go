@@ -50,7 +50,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitGenerateMode: make(chan struct{}),
 		quitCh:           make(chan struct{}),
 	}
-	p.forkChain.NewHead = blockCache.LinkedRoot()
+	p.forkChain.NewHead = blockCache.Head()
 	if p.forkChain.NewHead == nil {
 		return nil, errors.New("failed to head")
 	}
@@ -154,24 +154,15 @@ func (pool *TxPoolImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, hea
 
 	tFort := pool.updateForkChain(headNode)
 	switch tFort {
-	/*
-		case ForkError:
-			ilog.Errorf("failed to update fork chain")
-			pool.clearTxPending()
-	*/
-	case Fork:
+	case ForkBCN:
 		pool.mu.Lock()
 		defer pool.mu.Unlock()
-		if err := pool.doChainChange(); err != nil {
-			ilog.Errorf("failed to chain change")
-			pool.clearTxPending()
-		}
-	case NotFork:
+		pool.doChainChangeByForkBCN()
+	case NoForkBCN:
 		pool.mu.Lock()
 		defer pool.mu.Unlock()
-		if err := pool.delBlockTxInPending(linkedNode.Block.HeadHash()); err != nil {
-			ilog.Errorf("failed to del block tx")
-		}
+		pool.doChainChangeByTimeout()
+	case SameHead:
 	default:
 		return errors.New("failed to tFort")
 	}
@@ -276,9 +267,8 @@ func (pool *TxPoolImpl) CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx,
 
 		if _, ok := dtm.Load(trh); ok {
 			return v, errors.New("duplicate tx in txs")
-		} else {
-			dtm.Store(trh, nil)
 		}
+		dtm.Store(trh, nil)
 
 		if ok := pool.existTxInPending([]byte(trh)); !ok {
 			if pool.verifyTx(v) != Success {
@@ -492,10 +482,8 @@ func (pool *TxPoolImpl) addTx(tx *tx.Tx) TAddTx {
 	}(start)
 
 	h := tx.Hash()
-	if pool.forkChain.NewHead != nil {
-		if pool.existTxInChain(h, pool.forkChain.NewHead.Block) {
-			return DupError
-		}
+	if pool.existTxInChain(h, pool.forkChain.NewHead.Block) {
+		return DupError
 	}
 
 	if pool.existTxInPending(h) {
@@ -584,32 +572,30 @@ func (pool *TxPoolImpl) updatePending(blockHash []byte) error {
 }
 
 func (pool *TxPoolImpl) updateForkChain(headNode *blockcache.BlockCacheNode) TFork {
-	if pool.forkChain.NewHead == nil {
-		pool.forkChain.NewHead = headNode
-		return NotFork
-	}
-
 	if pool.forkChain.NewHead == headNode {
-		return NotFork
+		return SameHead
 	}
 	pool.forkChain.OldHead, pool.forkChain.NewHead = pool.forkChain.NewHead, headNode
+	bcn, ok := pool.findForkBCN(pool.forkChain.NewHead, pool.forkChain.OldHead)
+	if ok {
+		pool.forkChain.ForkBCN = bcn
+		return ForkBCN
+	}
+	pool.forkChain.ForkBCN = nil
+	return NoForkBCN
 
-	bcn := pool.findForkBCN(pool.forkChain.NewHead, pool.forkChain.OldHead)
-
-	pool.forkChain.ForkBCN = bcn
-	return Fork
 }
 
-func (pool *TxPoolImpl) findForkBCN(newHead *blockcache.BlockCacheNode, oldHead *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
+func (pool *TxPoolImpl) findForkBCN(newHead *blockcache.BlockCacheNode, oldHead *blockcache.BlockCacheNode) (*blockcache.BlockCacheNode, bool) {
 	for {
 		for oldHead != nil && oldHead.Number > newHead.Number {
 			oldHead = oldHead.Parent
 		}
 		if oldHead == nil {
-			return nil
+			return nil, false
 		}
 		if oldHead == newHead {
-			return oldHead
+			return oldHead, true
 		}
 
 		_, ok := pool.block(newHead.Block.HeadHash())
@@ -620,76 +606,77 @@ func (pool *TxPoolImpl) findForkBCN(newHead *blockcache.BlockCacheNode, oldHead 
 		}
 		newHead = newHead.Parent
 		if newHead == nil {
-			return nil
+			return nil, false
 		}
 	}
-
 }
 
-func (pool *TxPoolImpl) doChainChange() error {
+func (pool *TxPoolImpl) doChainChangeByForkBCN() {
 	newHead := pool.forkChain.NewHead
 	oldHead := pool.forkChain.OldHead
 	forkBCN := pool.forkChain.ForkBCN
-	if forkBCN != nil {
-		//Reply to txs
-		for {
-			if oldHead == forkBCN {
-				break
-			}
-			for _, t := range oldHead.Block.Txs {
-				pool.pendingTx.Store(string(t.Hash()), t)
-			}
-			oldHead = oldHead.Parent
+	//Reply to txs
+	ft := time.Now().UnixNano() - filterTime
+	for {
+		if oldHead == nil || oldHead == forkBCN || pool.slotToNSec(oldHead.Block.Head.Time) < ft {
+			break
 		}
+		for _, t := range oldHead.Block.Txs {
+			pool.pendingTx.Store(string(t.Hash()), t)
+		}
+		oldHead = oldHead.Parent
+	}
 
-		//Check duplicate txs
+	//Check duplicate txs
+	for {
+		if newHead == nil || newHead == forkBCN || pool.slotToNSec(newHead.Block.Head.Time) < ft {
+			break
+		}
+		for _, t := range newHead.Block.Txs {
+			pool.delTxInPending(t.Hash())
+		}
+		newHead = newHead.Parent
+	}
+}
+
+func (pool *TxPoolImpl) doChainChangeByTimeout() {
+	newHead := pool.forkChain.NewHead
+	oldHead := pool.forkChain.OldHead
+	ft := time.Now().UnixNano() - filterTime
+	ob, ok := pool.block(oldHead.Block.HeadHash())
+	if ok {
 		for {
-			if newHead == forkBCN {
+			if ob.time() < ft {
 				break
 			}
-			for _, t := range newHead.Block.Txs {
-				pool.delTxInPending(t.Hash())
-			}
-			newHead = newHead.Parent
-		}
-	} else {
-		ft := time.Now().UnixNano() - filterTime
-		ob, ok := pool.block(oldHead.Block.HeadHash())
-		if ok {
-			for {
-				if ob.time() < ft {
-					break
-				}
-				ob.txMap.Range(func(k, v interface{}) bool {
-					t := v.(*tx.Tx)
-					pool.pendingTx.Store(string(t.Hash()), v)
-					return true
-				})
-				ob, ok = pool.block(ob.ParentHash)
-				if !ok {
-					break
-				}
-			}
-		}
-		nb, ok := pool.block(newHead.Block.HeadHash())
-		if ok {
-			for {
-				if nb.time() < ft {
-					break
-				}
-				nb.txMap.Range(func(k, v interface{}) bool {
-					t := v.(*tx.Tx)
-					pool.delTxInPending(t.Hash())
-					return true
-				})
-				nb, ok = pool.block(nb.ParentHash)
-				if !ok {
-					break
-				}
+			ob.txMap.Range(func(k, v interface{}) bool {
+				t := v.(*tx.Tx)
+				pool.pendingTx.Store(string(t.Hash()), t)
+				return true
+			})
+			ob, ok = pool.block(ob.ParentHash)
+			if !ok {
+				break
 			}
 		}
 	}
-	return nil
+	nb, ok := pool.block(newHead.Block.HeadHash())
+	if ok {
+		for {
+			if nb.time() < ft {
+				break
+			}
+			nb.txMap.Range(func(k, v interface{}) bool {
+				t := v.(*tx.Tx)
+				pool.delTxInPending(t.Hash())
+				return true
+			})
+			nb, ok = pool.block(nb.ParentHash)
+			if !ok {
+				break
+			}
+		}
+	}
 }
 
 func (pool *TxPoolImpl) testPendingTxsNum() int64 {
