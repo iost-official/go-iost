@@ -7,10 +7,6 @@ import (
 
 	"os"
 
-	"reflect"
-
-	"time"
-
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -146,8 +142,17 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	return trx, nil
 }
 
-func TestIntergration_Transfer(t *testing.T) {
+func MakeTxWithAuth(act tx.Action, ac *account.Account) (*tx.Tx, error) {
+	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
+	trx, err := tx.SignTx(trx, ac)
+	if err != nil {
+		return nil, err
+	}
+	return trx, nil
+}
 
+func TestIntergration_Transfer(t *testing.T) {
+	ilog.Stop()
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
 
@@ -164,10 +169,15 @@ func TestIntergration_Transfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log("trasfer succes case:")
-	t.Log(e.Exec(trx))
-	t.Log("balance of sender :", vi.Balance(testID[0]))
-	t.Log("balance of receiver :", vi.Balance(testID[2]))
+	Convey("trasfer success case", t, func() {
+		r, err := (e.Exec(trx))
+		if r.Status.Code != 0 {
+			t.Fatal(r)
+		}
+		So(err, ShouldBeNil)
+		So(vi.Balance(testID[0]), ShouldEqual, int64(999597))
+		So(vi.Balance(testID[2]), ShouldEqual, int64(100))
+	})
 
 	act2 := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
 	trx2 := tx.NewTx([]*tx.Action{&act2}, nil, int64(10000), int64(1), int64(10000000))
@@ -176,10 +186,15 @@ func TestIntergration_Transfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log("trasfer not enough balance case:")
-	t.Log(e.Exec(trx2))
-	t.Log("balance of sender :", vi.Balance(testID[0]))
-	t.Log("balance of receiver :", vi.Balance(testID[2]))
+	Convey("trasfer balance not enough case", t, func() {
+		r, err := e.Exec(trx2)
+		if r.Status.Code != 4 {
+			t.Fatal(r)
+		}
+		So(err, ShouldBeNil)
+		So(vi.Balance(testID[0]), ShouldEqual, int64(999294))
+		So(vi.Balance(testID[2]), ShouldEqual, int64(100))
+	})
 }
 
 func jsHelloWorld() *contract.Contract {
@@ -221,6 +236,7 @@ module.exports = Contract;
 }
 
 func TestIntergration_SetCode(t *testing.T) {
+	ilog.Stop()
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
 
@@ -233,8 +249,12 @@ func TestIntergration_SetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ilog.Debugf(fmt.Sprintln(e.Exec(trx)))
-	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
+	Convey("set code tx", t, func() {
+		r, err := e.Exec(trx)
+		So(r.Status.Code, ShouldEqual, 0)
+		So(err, ShouldBeNil)
+		So(vi.Balance(testID[0]), ShouldEqual, int64(999988))
+	})
 
 	act2 := tx.NewAction("Contract"+common.Base58Encode(trx.Hash()), "hello", `[]`)
 
@@ -243,8 +263,12 @@ func TestIntergration_SetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ilog.Debugf(fmt.Sprintln(e.Exec(trx2)))
-	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.Balance(testID[0])))
+	Convey("call hello", t, func() {
+		r, err := e.Exec(trx2)
+		So(r.Status.Code, ShouldEqual, 0)
+		So(err, ShouldBeNil)
+		So(vi.Balance(testID[0]), ShouldEqual, int64(999981))
+	})
 }
 
 func TestEngine_InitSetCode(t *testing.T) {
@@ -309,6 +333,7 @@ func TestEngine_InitSetCode(t *testing.T) {
 }
 
 func TestIntergration_CallJSCode(t *testing.T) {
+	ilog.Stop()
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
 
@@ -325,8 +350,16 @@ func TestIntergration_CallJSCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(e.Exec(trx))
-	t.Log("balance of sender :", vi.Balance(testID[0]))
+	r, err := e.Exec(trx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	if vi.Balance(testID[0]) != int64(1000000) { // todo something wrong here!
+		t.Fatal(vi.Balance(testID[0]))
+	}
 }
 
 func jsCallHelloWorld() *contract.Contract {
@@ -361,6 +394,7 @@ module.exports = Contract;
 }
 
 func TestIntergration_CallJSCodeWithReceipt(t *testing.T) {
+	ilog.Stop()
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
 
@@ -377,8 +411,16 @@ func TestIntergration_CallJSCodeWithReceipt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(e.Exec(trx))
-	t.Log("balance of sender :", vi.Balance(testID[0]))
+	r, err := e.Exec(trx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	if vi.Balance(testID[0]) != int64(999999) {
+		t.Fatal(vi.Balance(testID[0]))
+	}
 }
 
 func jsCallHelloWorldWithReceipt() *contract.Contract {
@@ -413,11 +455,12 @@ module.exports = Contract;
 }
 
 func TestIntergration_Payment_Success(t *testing.T) {
+
 	jshw := jsHelloWorld()
 	jshw.Info.Abis[0].Payment = 1
 	jshw.Info.Abis[0].GasPrice = int64(10)
 
-	ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
+	//ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
 
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
@@ -433,9 +476,18 @@ func TestIntergration_Payment_Success(t *testing.T) {
 	}
 
 	r, err := e.Exec(trx)
-	ilog.Debugf("success: %v, %v", r, err)
-	ilog.Debugf("balance of sender : %v", vi.Balance(testID[0]))
-	ilog.Debugf("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
+	if vi.Balance(testID[0]) != int64(1000000) {
+		t.Fatal(vi.Balance(testID[0]))
+	}
+	if vi.Balance("CGjsHelloWorld") != int64(1000000) { // todo something wrong here
+		t.Fatal(vi.Balance("CGjsHelloWorld"))
+	}
 
 }
 
@@ -500,7 +552,7 @@ func NewJSTester(t fataler) *JSTester {
 
 	bh := &block.BlockHead{
 		ParentHash: []byte("abc"),
-		Number:     10,
+		Number:     200,
 		Witness:    "witness",
 		Time:       123456,
 	}
@@ -530,6 +582,13 @@ func (j *JSTester) FlushDB(t *testing.T, keys []string) {
 	for _, k := range keys {
 		t.Logf("%s: %v", k, j.ReadDB(k))
 	}
+}
+
+func (j *JSTester) NewBlock(bh *block.BlockHead) {
+	j.e = newEngine(bh, j.vi)
+	j.e.SetUp("js_path", jsPath)
+	j.e.SetUp("log_level", "debug")
+	j.e.SetUp("log_enable", "")
 }
 
 func (j *JSTester) SetJS(code string) {
@@ -585,6 +644,26 @@ func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
 	act2 := tx.NewAction(j.cname, main, args)
 
 	trx2, err := MakeTx(act2)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+
+	r, err := j.e.Exec(trx2)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+	return r
+}
+
+func (j *JSTester) TestJSWithAuth(abi, args, seckey string) *tx.TxReceipt {
+	act2 := tx.NewAction(j.cname, abi, args)
+
+	ac, err := account.NewAccount(common.Base58Decode(seckey), crypto.Secp256k1)
+	if err != nil {
+		panic(err)
+	}
+
+	trx2, err := MakeTxWithAuth(act2, ac)
 	if err != nil {
 		j.t.Fatal(err)
 	}
@@ -841,6 +920,8 @@ func TestJS_Database(t *testing.T) {
 }
 
 func TestJS_LuckyBet(t *testing.T) {
+	ilog.Stop()
+
 	js := NewJSTester(t)
 	defer js.Clear()
 	lc, err := ReadFile("test_data/lucky_bet.js")
@@ -861,7 +942,6 @@ func TestJS_LuckyBet(t *testing.T) {
 		So(js.ReadDB("total_coins"), ShouldEqual, "2")
 		So(js.ReadMap("table", "0"), ShouldEqual, `[{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2}]`)
 	})
-	t.Log("table should be saved ", js.ReadDB("table0"))
 
 	for i := 1; i < 10; i++ { // at i = 2, should get reward
 		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v, %v]`, testID[0], i, i%4+1))
@@ -874,421 +954,7 @@ func TestJS_LuckyBet(t *testing.T) {
 		So(r.Status.Code, ShouldEqual, 0)
 		So(js.ReadDB("user_number"), ShouldEqual, "0")
 		So(js.ReadDB("total_coins"), ShouldEqual, "0")
-		So(js.ReadMap("result", "1"), ShouldEqual, `{"k_number":1,"total_coins":{"number":"20"},"records":[{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2,"reward":"20"},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":3},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":4},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":1},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":3},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":4},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":1},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2}]}`)
 		So(js.ReadDB("round"), ShouldEqual, "2")
+		So(js.ReadDB("result1"), ShouldEqual, `{"k_number":1,"total_coins":{"number":"20"},"records":[{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2,"reward":"20"},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":3},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":4},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":1},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":3},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":4},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":1},{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2}]}`)
 	})
-}
-
-func TestJS1_Vote1(t *testing.T) {
-	t.Skip()
-
-	js := NewJSTester(t)
-	defer js.Clear()
-	lc, err := ReadFile("../config/vote.js")
-	if err != nil {
-		t.Fatal(err)
-	}
-	js.SetJS(string(lc))
-	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
-	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
-	js.SetAPI("LogInProducer", "string")
-	js.SetAPI("LogOutProducer", "string")
-	js.SetAPI("UnregisterProducer", "string")
-	js.SetAPI("Vote", "string", "string", "number")
-	js.SetAPI("Unvote", "string", "string", "number")
-	js.SetAPI("Stat")
-	js.SetAPI("Init")
-	for i := 0; i <= 18; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7)
-	}
-	js.vi.Commit()
-	t.Log(js.DoSet())
-	t.Log(js.TestJS("Init", `[]`))
-	for i := 6; i <= 18; i += 2 {
-		t.Log(js.vi.Balance(testID[i]))
-	}
-
-	keys := []string{
-		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
-		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
-		"producerTable",
-		"voteTable",
-	}
-	js.FlushDB(t, keys)
-
-	t.Log(js.vi.Balance(testID[18]))
-	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
-	js.FlushDB(t, keys)
-
-	// test require auth
-	t.Log(js.vi.Balance(testID[18]))
-	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[2])))
-	js.FlushDB(t, keys)
-
-	// get pending producer info
-	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber")))
-	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingBlockNumber"))))
-	t.Log(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList")))
-	t.Log(reflect.TypeOf(database.MustUnmarshal(js.vi.Get(js.cname + "-" + "pendingProducerList"))))
-
-	// test re register
-	t.Log(js.vi.Balance(testID[18]))
-	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
-	js.FlushDB(t, keys)
-}
-
-func TestJS_VoteServi(t *testing.T) {
-	t.Skip()
-
-	js := NewJSTester(t)
-	defer js.Clear()
-	lc, err := ReadFile("../config/vote.js")
-	if err != nil {
-		t.Fatal(err)
-	}
-	js.SetJS(string(lc))
-	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
-	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
-	js.SetAPI("LogInProducer", "string")
-	js.SetAPI("LogOutProducer", "string")
-	js.SetAPI("UnregisterProducer", "string")
-	js.SetAPI("Vote", "string", "string", "number")
-	js.SetAPI("Unvote", "string", "string", "number")
-	js.SetAPI("Stat")
-	js.SetAPI("Init")
-	for i := 0; i <= 18; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7)
-	}
-	js.vi.Commit()
-	t.Log(js.DoSet())
-	t.Log(js.TestJS("Init", `[]`))
-	keys := []string{
-		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
-		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
-		"producerTable",
-		"voteTable",
-	}
-	js.FlushDB(t, keys)
-}
-
-func TestJS_Vote(t *testing.T) {
-	t.Skip("skip vote")
-
-	js := NewJSTester(t)
-	defer js.Clear()
-	lc, err := ReadFile("../config/vote.js")
-	if err != nil {
-		t.Fatal(err)
-	}
-	js.SetJS(string(lc))
-	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
-	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
-	js.SetAPI("LogInProducer", "string")
-	js.SetAPI("LogOutProducer", "string")
-	js.SetAPI("UnregisterProducer", "string")
-	js.SetAPI("Vote", "string", "string", "number")
-	js.SetAPI("Unvote", "string", "string", "number")
-	js.SetAPI("Stat")
-	js.SetAPI("init")
-	js.SetAPI("InitProducer", "number", "string")
-	for i := 0; i <= 18; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7)
-	}
-	js.vi.Commit()
-	t.Log(js.DoSet())
-	num := 7
-	proStr := "["
-	for i := 0; i < num; i++ {
-		proStr += fmt.Sprintf(`\"%v\"`, testID[2*i])
-		if i != num-1 {
-			proStr += ","
-		}
-	}
-	proStr += "]"
-	t.Log(js.TestJS("InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr)))
-
-	keys := []string{
-		"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
-		"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
-		"producerTable",
-		"voteTable",
-	}
-	js.FlushDB(t, keys)
-
-	// test register, login, logout
-	t.Log(js.TestJS("LogOutProducer", `["a"]`))
-	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("UpdateProducer", fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, testID[0], "nloc", "nurl", "nnetid")))
-	js.FlushDB(t, keys)
-
-	// stat, no changes
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	// vote and unvote
-	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 10000000)))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[2], testID[0], 1)))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
-	js.FlushDB(t, keys)
-
-	// stat testID[0] become pending producer
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	bh := &block.BlockHead{
-		ParentHash: []byte("abc"),
-		Number:     211,
-		Witness:    "witness",
-		Time:       123456,
-	}
-	e := newEngine(bh, js.vi)
-	e.SetUp("js_path", jsPath)
-	js.e = e
-
-	// test unvote
-	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 20000001)))
-	js.FlushDB(t, keys)
-
-	t.Log(database.MustUnmarshal(js.vi.Get("i-" + testID[0] + "-s")))
-	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 1000000)))
-	js.FlushDB(t, keys)
-
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.TotalServi())
-	// stat pending producers don't get score
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	// seven
-	for i := 2; i <= 14; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7)
-	}
-	for i := 2; i <= 14; i += 2 {
-		t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[i])))
-		t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[i], testID[i], 30000000+i)))
-	}
-	js.FlushDB(t, keys)
-
-	// stat, offline producers don't get score
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	for i := 2; i <= 14; i += 2 {
-		t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[i])))
-	}
-	js.FlushDB(t, keys)
-
-	// stat, 1 producer become pending
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("LogOutProducer", fmt.Sprintf(`["%v"]`, testID[12])))
-
-	// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[12])))
-
-	// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	// testID[0] become pre producer from pending producer, score = 0
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
-	js.FlushDB(t, keys)
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.TotalServi())
-
-	// unregister
-	t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-	js.FlushDB(t, keys)
-
-	// unvote after unregister
-	t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 9000000)))
-	js.FlushDB(t, keys)
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.TotalServi())
-
-	// re register, score = 0, vote = 0
-	t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
-	t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 21000001)))
-	js.FlushDB(t, keys)
-
-	t.Log(js.TestJS("Stat", `[]`))
-	js.FlushDB(t, keys)
-
-	// unregister pre producer
-	t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-	js.FlushDB(t, keys)
-
-	// test bonus
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
-	act2 := tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
-
-	trx2, err := MakeTx(act2)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	r, err := js.e.Exec(trx2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(r)
-
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
-	t.Log(js.vi.Balance(testID[0]))
-	act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 21099999))
-
-	trx2, err = MakeTx(act2)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	r, err = js.e.Exec(trx2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(r)
-
-	t.Log(js.vi.Servi(testID[0]))
-	t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
-	t.Log(js.vi.Balance(testID[0]))
-}
-
-//nolint
-func TestJS_Genesis(t *testing.T) {
-	t.Skip("skip genesis")
-
-	witnessInfo := testID
-	var acts []*tx.Action
-	for i := 0; i < len(witnessInfo)/2; i++ {
-		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], 50000000))
-		acts = append(acts, &act)
-	}
-	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
-	t.Log("vote contract path: ", VoteContractPath)
-	// deploy iost.vote
-	voteFilePath := VoteContractPath + "vote.js"
-	voteAbiPath := VoteContractPath + "vote.js.abi"
-	fd, err := common.ReadFile(voteFilePath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rawCode := string(fd)
-	fd, err = common.ReadFile(voteAbiPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rawAbi := string(fd)
-	c := contract.Compiler{}
-	code, err := c.Parse("iost.vote", rawCode, rawAbi)
-	t.Log(code)
-	if err != nil {
-		t.Fatal(err)
-	}
-	num := len(witnessInfo) / 2
-	proStr := "["
-	for i := 0; i < num; i++ {
-		proStr += fmt.Sprintf(`\"%v\"`, witnessInfo[2*i])
-		if i != num-1 {
-			proStr += ","
-		}
-	}
-	proStr += "]"
-	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
-	acts = append(acts, &act)
-	act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
-	acts = append(acts, &act1)
-
-	// deploy iost.bonus
-	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
-	acts = append(acts, &act2)
-
-	trx := tx.NewTx(acts, nil, 10000000, 0, 0)
-	trx.Time = 0
-	acc, err := account.NewAccount(common.Base58Decode("BQd9x7rQk9Y3rVWRrvRxk7DReUJWzX4WeP9H9H4CV8Mt"), crypto.Secp256k1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	trx, err = tx.SignTx(trx, acc)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	blockHead := block.BlockHead{
-		Version:    0,
-		ParentHash: nil,
-		Number:     0,
-		Witness:    acc.ID,
-		Time:       time.Now().Unix() / common.SlotLength,
-	}
-	mvccdb, err := db.NewMVCCDB("mvcc")
-	defer closeMVCCDB(mvccdb)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	engine := NewEngine(&blockHead, mvccdb)
-	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
-	t.Log("js path: ", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
-	txr, err := engine.Exec(trx)
-	if err != nil {
-		t.Fatal(fmt.Errorf("exec tx failed, stop the pogram. err: %v", err))
-	}
-	t.Log(txr)
-	t.Log(database.MustUnmarshal(database.NewVisitor(0, mvccdb).Get("iost.vote" + "-" + "pendingProducerList")))
-	if txr.Status.Code != tx.Success {
-		t.Fatal("exec trx failed.")
-	}
-	blk := block.Block{
-		Head:     &blockHead,
-		Sign:     &crypto.Signature{},
-		Txs:      []*tx.Tx{trx},
-		Receipts: []*tx.TxReceipt{txr},
-	}
-	blk.Head.TxsHash = blk.CalculateTxsHash()
-	blk.Head.MerkleHash = blk.CalculateMerkleHash()
-	err = blk.CalculateHeadHash()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 }

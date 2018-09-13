@@ -32,7 +32,7 @@ let IOSTContractStorage = (function () {
             return storage.mapGet(k, f);
         };
         this.mapKeys = function (k) {
-            return storage.mapKeys(k);
+            return JSON.parse(storage.mapKeys(k));
         };
         this.mapDel = function (k, f) {
             return storage.mapDel(k, f);
