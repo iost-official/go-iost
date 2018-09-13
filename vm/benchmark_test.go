@@ -134,18 +134,17 @@ func BenchmarkNative_SetCode(b *testing.B) {
 	cleanUp()
 }
 
-func BenchmarkJS_Gas(b *testing.B) {
+func BenchmarkJS_Gas_Once(b *testing.B) {
 	js := NewJSTester(b)
 	f, err := ReadFile("test_data/gas.js")
 	if err != nil {
 		b.Fatal(err)
 	}
 	js.SetJS(string(f))
-	js.SetAPI("single")
-	js.SetAPI("ten")
+	js.SetAPI("run", "number")
 	js.DoSet()
 
-	act2 := tx.NewAction(js.cname, "ten", `[]`)
+	act2 := tx.NewAction(js.cname, "run", `[1]`)
 
 	trx2, err := MakeTx(act2)
 	if err != nil {

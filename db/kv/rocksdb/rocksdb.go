@@ -6,7 +6,7 @@ package rocksdb
 #include <unistd.h>
 #cgo CFLAGS: -I${SRCDIR}/include
 #cgo darwin LDFLAGS: -lrocksdb -lstdc++ -lz -lbz2 -lsnappy
-#cgo linux LDFLAGS: -L${SRCDIR}/lib -lrocksdb -lstdc++ -lz -lbz2 -Wl,-rpath,${SRCDIR}/lib
+#cgo linux LDFLAGS: -lrocksdb -lstdc++ -lm -lz -lbz2 -lsnappy -llz4 -lzstd
 */
 import "C"
 import (

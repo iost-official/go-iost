@@ -12,7 +12,7 @@ type ContractHandler struct {
 	db database
 }
 
-// SetContract ...
+// SetContract set contract to storage, will not do check
 func (m *ContractHandler) SetContract(contract *contract.Contract) {
 	if contract != nil {
 		m.db.Put(ContractPrefix+contract.ID, contract.Encode())
@@ -21,7 +21,7 @@ func (m *ContractHandler) SetContract(contract *contract.Contract) {
 	}
 }
 
-// Contract ...
+// Contract get contract by key
 func (m *ContractHandler) Contract(key string) (c *contract.Contract) {
 	str := m.db.Get(ContractPrefix + key)
 	c = &contract.Contract{}
@@ -32,12 +32,12 @@ func (m *ContractHandler) Contract(key string) (c *contract.Contract) {
 	return
 }
 
-// HasContract ...
+// HasContract determine if contract existed
 func (m *ContractHandler) HasContract(key string) bool {
 	return m.db.Has(ContractPrefix + key)
 }
 
-// DelContract ...
+// DelContract delete contract, if contract not exist, do nothing
 func (m *ContractHandler) DelContract(key string) {
 	m.db.Del(ContractPrefix + key)
 }

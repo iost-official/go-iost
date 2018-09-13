@@ -16,7 +16,7 @@ void InitGoRequire(requireFunc require) {
     CRequire = require;
 }
 
-void nativeRequire(const FunctionCallbackInfo<Value> &info) {
+void NewNativeRequire(const FunctionCallbackInfo<Value> &info) {
     Isolate *isolate = info.GetIsolate();
     Local<Context> context = isolate->GetCurrentContext();
     Local<Object> global = context->Global();
@@ -53,7 +53,7 @@ void nativeRequire(const FunctionCallbackInfo<Value> &info) {
         return;
     }
 
-    // read go module again
+    // read go standard module again
     char *code = CRequire(sbxPtr, *pathStr);
     char *injectCode = nullptr;
     asprintf(&injectCode, injectGasFormat, code);
@@ -77,5 +77,5 @@ void InitRequire(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     globalTpl->Set(
         String::NewFromUtf8(isolate, "_native_require", NewStringType::kNormal)
                       .ToLocalChecked(),
-        FunctionTemplate::New(isolate, nativeRequire));
+        FunctionTemplate::New(isolate, NewNativeRequire));
 }

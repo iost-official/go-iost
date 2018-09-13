@@ -1,31 +1,14 @@
-FROM ubuntu:16.04
-
-ENV GOVERSION 1.10.1
-
-# Install base tools
-RUN apt update
-RUN apt install -y git make vim curl wget g++
-
-# Install Go
-RUN mkdir /goroot && \
-mkdir /gopath && \
-curl https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
-tar xzf - -C /goroot --strip-components=1
-
-ENV CGO_ENABLED 1
-ENV GOPATH /gopath
-ENV GOROOT /goroot
-ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
-
-# Install Rocksdb
-RUN apt install -y librocksdb4.1
+FROM iostio/iost-dev
 
 # Install project
-RUN mkdir /workdir && mkdir /var/lib/iserver
+RUN mkdir /workdir && mkdir -p /workdir/vm/v8vm/v8/libjs && mkdir /var/lib/iserver && mkdir /workdir/config
 COPY target/iserver /workdir/iserver
 COPY target/iwallet /workdir/iwallet
-COPY config/iserver.yaml /var/lib/iserver/iserver.yaml
+COPY config/iserver.yml /var/lib/iserver/iserver.yml
+COPY vm/v8vm/v8/libv8/_linux_amd64/* /lib/x86_64-linux-gnu/
+COPY vm/v8vm/v8/libjs/* /workdir/vm/v8vm/v8/libjs/
+COPY config/* /workdir/config/
 
 WORKDIR /workdir
 
-CMD ["./iserver", "-f", "config/iserver.yaml"]
+CMD ["./iserver", "-f", "/var/lib/iserver/iserver.yml"]

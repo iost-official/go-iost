@@ -154,12 +154,12 @@ func main() {
 	}
 	app = append(app, txp)
 
-	rpcServer := rpc.NewRPCServer(txp, blkCache, bv)
+	rpcServer := rpc.NewRPCServer(txp, blkCache, bv, p2pService)
 	app = append(app, rpcServer)
 
 	jsonRPCServer := rpc.NewJSONServer(bv)
 	app = append(app, jsonRPCServer)
-	consensus, err := consensus.Factory("pob", acc, bv, blkCache, txp, p2pService, sync, bv.WitnessList())
+	consensus, err := consensus.Factory("pob", acc, bv, blkCache, txp, p2pService, sync)
 	if err != nil {
 		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}

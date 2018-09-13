@@ -1,10 +1,12 @@
+'use strict';
 class BigNumber1{
     constructor() {
-        this.val = new BigNumber(0.00000000008);
-        this.val = this.val.plus(0.0000000000000029);
+        let val = new BigNumber(0.00000000008);
+        storage.put("val", JSON.stringify(val.plus(0.0000000000000029)));
     }
     getVal() {
-        return this.val.toString(10);
+        let val = JSON.parse(storage.get("val"));
+        return new BigNumber(val);
     }
 }
 

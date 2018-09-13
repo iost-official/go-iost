@@ -4,6 +4,9 @@ import (
 	"errors"
 	"time"
 
+	"fmt"
+	"strings"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
@@ -27,8 +30,13 @@ var (
 	errHeadHash    = errors.New("wrong head hash")
 )
 
-func generateBlock(account *account.Account, topBlock *block.Block, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	ilog.Info("generate Block start")
+	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
+	txCnt := 10000
+	txsList, head, _ := txPool.PendingTxs(txCnt)
+	ilog.Info("txs in txpool", len(txsList))
+	topBlock := head.Block
 	blk := block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
@@ -40,12 +48,28 @@ func generateBlock(account *account.Account, topBlock *block.Block, txPool txpoo
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	txCnt := 10000
-	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
-	txsList, _ := txPool.PendingTxs(txCnt)
 	db.Checkout(string(topBlock.HeadHash()))
-	engine := vm.NewEngine(topBlock.Head, db)
-	ilog.Info(len(txsList))
+	engine := vm.NewEngine(blk.Head, db)
+	ilog.Info("txlen ", len(txsList))
+
+	// call vote
+	if blk.Head.Number%common.VoteInterval == 0 {
+		ilog.Info("vote start")
+		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
+		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
+
+		trx, err := tx.SignTx(trx, staticProperty.account)
+		if err == nil {
+			if receipt, err := engine.Exec(trx); err == nil {
+				blk.Txs = append(blk.Txs, trx)
+				blk.Receipts = append(blk.Receipts, receipt)
+			}
+		} else {
+			ilog.Error("failed to vote, err:", err)
+		}
+
+	}
+
 L:
 	for _, t := range txsList {
 		select {
@@ -56,11 +80,14 @@ L:
 			if receipt, err := engine.Exec(t); err == nil {
 				blk.Txs = append(blk.Txs, t)
 				blk.Receipts = append(blk.Receipts, receipt)
+				ilog.Debug(err, receipt)
 			} else {
+				ilog.Debug(err, receipt)
 				txPool.DelTx(t.Hash())
 			}
 		}
 	}
+	ilog.Info("txs in blk", len(blk.Txs))
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	err := blk.CalculateHeadHash()
@@ -77,9 +104,7 @@ L:
 }
 
 func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
-	if witnessOfSlot(head.Time) != head.Witness {
-		return errWitness
-	}
+
 	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
 	hash, err := head.Hash()
 	if err != nil {
@@ -88,11 +113,6 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	if !signature.Verify(hash) {
 		return errSignature
 	}
-	/*
-		if staticProperty.hasSlot(head.Time) {
-			return errSlot
-		}
-	*/
 	return nil
 }
 
@@ -101,6 +121,25 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	if err != nil {
 		return err
 	}
+
+	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+		return errWitness
+	}
+
+	// check vote
+	if blk.Head.Number%common.VoteInterval == 0 {
+		if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
+			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
+			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
+
+			return errors.New("blk did not vote")
+		}
+
+		if blk.Receipts[0].Status.Code != tx.Success {
+			return errors.New("vote was incorrect")
+		}
+	}
+
 	for _, tx := range blk.Txs {
 		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
 		if exist == txpool.FoundChain {
@@ -126,11 +165,9 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
-	//bc.Flush(node) // in debug
+	// bc.Flush(node) // debug do not delete this
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
-		go staticProperty.delSlot(confirmedNode.Block.Head.Time)
-
 		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
 	}
 }

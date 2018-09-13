@@ -20,6 +20,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
@@ -27,26 +28,28 @@ import (
 
 // RPCServer is the class of RPC server
 type RPCServer struct {
-	bc      blockcache.BlockCache
-	txdb    tx.TxDB
-	txpool  txpool.TxPool
-	bchain  block.Chain
-	forkDB  db.MVCCDB
-	visitor *database.Visitor
-	port    int
+	bc         blockcache.BlockCache
+	p2pService p2p.Service
+	txdb       tx.TxDB
+	txpool     txpool.TxPool
+	bchain     block.Chain
+	forkDB     db.MVCCDB
+	visitor    *database.Visitor
+	port       int
 }
 
 // newRPCServer
-func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
+func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable, p2pService p2p.Service) *RPCServer {
 	forkDb := _global.StateDB().Fork()
 	return &RPCServer{
-		txdb:    _global.TxDB(),
-		txpool:  tp,
-		bchain:  _global.BlockChain(),
-		bc:      bcache,
-		forkDB:  forkDb,
-		visitor: database.NewVisitor(0, forkDb),
-		port:    _global.Config().RPC.GRPCPort,
+		txdb:       _global.TxDB(),
+		p2pService: p2pService,
+		txpool:     tp,
+		bchain:     _global.BlockChain(),
+		bc:         bcache,
+		forkDB:     forkDb,
+		visitor:    database.NewVisitor(0, forkDb),
+		port:       _global.Config().RPC.GRPCPort,
 	}
 }
 
@@ -241,9 +244,16 @@ func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 	}, nil
 }
 
+// GetNetID ...
+func (s *RPCServer) GetNetID(ctx context.Context, empty *empty.Empty) (*GetNetIDRes, error) {
+
+	return &GetNetIDRes{
+		ID: s.p2pService.ID(),
+	}, nil
+}
+
 // SendRawTx ...
 func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
-	ilog.Info("RPC received rawTx")
 	if rawTx == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -254,7 +264,6 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	}
 	// add servi
 	//tx.RecordTx(trx, tx.Data.Self())
-	ilog.Infof("the Tx is:\n%+v\n", trx)
 	ret := s.txpool.AddTx(&trx)
 	switch ret {
 	case txpool.TimeError:

@@ -68,10 +68,10 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 		trx, _ := MakeTx(act)
 		txsList = append(txsList, trx)
 	}
-	mockTxPool.EXPECT().PendingTxs(gomock.Any()).Return(txsList, nil).AnyTimes()
+	mockTxPool.EXPECT().PendingTxs(gomock.Any()).Return(txsList, &blockcache.BlockCacheNode{Block: topBlock}, nil).AnyTimes()
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
-		generateBlock(account, topBlock, mockTxPool, stateDB)
+		generateBlock(account, mockTxPool, stateDB)
 	}
 }
 
@@ -135,7 +135,6 @@ func TestNodeInfoUpdate(t *testing.T) {
 			Witness:  "id0",
 			Children: make(map[*blockcache.BlockCacheNode]bool),
 		}
-		staticProperty.addSlot(1)
 		staticProperty.Watermark["id0"] = 2
 		convey.Convey("Normal", func() {
 			node := addBlock(rootNode, 2, "id1", 2)
@@ -236,13 +235,13 @@ func TestVerifyBasics(t *testing.T) {
 					Witness: account0.ID,
 				},
 			}
-			err := verifyBasics(blk.Head, blk.Sign)
-			convey.So(err, convey.ShouldEqual, errWitness)
+			//err := verifyBasics(blk.Head, blk.Sign)
+			//convey.So(err, convey.ShouldEqual, errWitness)
 
 			blk.Head.Witness = account1.ID
 			hash, _ := blk.Head.Hash()
 			blk.Sign = account0.Sign(hash)
-			err = verifyBasics(blk.Head, blk.Sign)
+			err := verifyBasics(blk.Head, blk.Sign)
 			convey.So(err, convey.ShouldEqual, errSignature)
 		})
 		/*

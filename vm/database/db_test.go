@@ -3,9 +3,11 @@ package database
 import (
 	"testing"
 
+	"errors"
+	"os"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/db"
-	"os"
 )
 
 func sliceEqual(a, b []string) bool {
@@ -36,12 +38,21 @@ func TestHandler_Put(t *testing.T) {
 	})
 	v.Put("hello", "world")
 
-	mockMVCC.EXPECT().Put(Any(), Any(), Any()).DoAndReturn(func(table string, key string, value string) error {
+	mockMVCC.EXPECT().Put("state", "m-hello-1", Any()).DoAndReturn(func(table string, key string, value string) error {
 		if !(table == "state" && key == "m-hello-1" && value == "world") {
 			t.Fatal(table, key, value)
 		}
 		return nil
 	})
+
+	mockMVCC.EXPECT().Put("state", "m-hello", Any()).Do(func(a, b, c string) {
+		if c != "@1" {
+			t.Fatal(c)
+		}
+	})
+	mockMVCC.EXPECT().Has("state", "m-hello-1").Return(false, nil)
+	mockMVCC.EXPECT().Get("state", "m-hello").Return("", errors.New("not found"))
+
 	v.MPut("hello", "1", "world")
 }
 
@@ -78,12 +89,7 @@ func TestHandler_Get(t *testing.T) {
 	}
 
 	// test of MKeys
-	mockMVCC.EXPECT().Keys(Any(), Any()).DoAndReturn(func(table string, prefix string) ([]string, error) {
-		if !(table == "state" && prefix == "m-key-") {
-			t.Fatal(table, prefix)
-		}
-		return []string{"m-key-a", "m-key-b", "m-key-c"}, nil
-	})
+	mockMVCC.EXPECT().Get("state", "m-key").Return("@a@b@c", nil)
 
 	strs := v.MKeys("key")
 	if !sliceEqual(strs, []string{"a", "b", "c"}) {
@@ -97,7 +103,7 @@ func TestMultiWork(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer os.RemoveAll("mvcc")
+	defer closeMVCCDB(mvccdb)
 
 	length := 100
 
@@ -124,7 +130,7 @@ func TestMultiVisitor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer os.RemoveAll("mvcc")
+	defer closeMVCCDB(mvccdb)
 	length := 100
 	v1 := NewVisitor(length, mvccdb)
 	v2 := NewVisitor(length, mvccdb)
@@ -141,4 +147,9 @@ func TestMultiVisitor(t *testing.T) {
 		t.Fatal(vv)
 	}
 
+}
+
+func closeMVCCDB(m db.MVCCDB) {
+	m.Close()
+	os.RemoveAll("mvcc")
 }
