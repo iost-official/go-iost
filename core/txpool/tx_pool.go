@@ -54,7 +54,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 	if p.forkChain.NewHead == nil {
 		return nil, errors.New("failed to head")
 	}
-	p.Lease()
+	close(p.quitGenerateMode)
 	return p, nil
 }
 
@@ -116,10 +116,12 @@ func (pool *TxPoolImpl) loop() {
 }
 
 func (pool *TxPoolImpl) Lock() {
+	pool.mu.Lock()
 	pool.quitGenerateMode = make(chan struct{})
 }
 
-func (pool *TxPoolImpl) Lease() {
+func (pool *TxPoolImpl) Release() {
+	pool.mu.Unlock()
 	close(pool.quitGenerateMode)
 }
 
@@ -292,14 +294,6 @@ func (pool *TxPoolImpl) CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx,
 	}
 
 	return nil, nil
-}
-
-func (pool *TxPoolImpl) LockPending() {
-	pool.mu.Lock()
-}
-
-func (pool *TxPoolImpl) UnlockPending() {
-	pool.mu.Unlock()
 }
 
 func (pool *TxPoolImpl) createTxMapToChain(chainBlock *block.Block) (*sync.Map, error) {

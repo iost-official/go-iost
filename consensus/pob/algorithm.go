@@ -33,8 +33,6 @@ var (
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	ilog.Info("generate Block start")
 	limitTime := time.NewTimer(common.SlotLength / 3 * time.Second)
-	// txCnt := 10000
-	// txsList, head, _ := txPool.PendingTxs(txCnt)
 	txIter, head := txPool.TxIterator()
 	topBlock := head.Block
 	blk := block.Block{
@@ -72,6 +70,8 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		blk.Receipts = append(blk.Receipts, receipt)
 	}
 	t, ok := txIter.Next()
+
+	var vmExecTime, iterTime, i int64
 L:
 	for ok {
 		select {
@@ -79,6 +79,8 @@ L:
 			ilog.Info("time up")
 			break L
 		default:
+			i++
+			step1 := time.Now()
 			if !txPool.TxTimeOut(t) {
 				if receipt, err := engine.Exec(t); err == nil {
 					blk.Txs = append(blk.Txs, t)
@@ -89,10 +91,20 @@ L:
 					txPool.DelTx(t.Hash())
 				}
 			}
+			step2 := time.Now()
 			t, ok = txIter.Next()
+			step3 := time.Now()
+			vmExecTime += step2.Sub(step1).Nanoseconds()
+			iterTime += step3.Sub(step2).Nanoseconds()
 		}
 	}
-	ilog.Info("txs in blk", len(blk.Txs))
+	metricsVMTime.Set(float64(vmExecTime), nil)
+	metricsVMAvgTime.Set(float64(vmExecTime/i), nil)
+	metricsIterTime.Set(float64(iterTime), nil)
+	metricsIterAvgTime.Set(float64(iterTime/i), nil)
+	ilog.Infof("tx in blk:%d, iter:%d, vmExecTime:%d, vmAvgTime:%d, iterTime:%d, iterAvgTime:%d",
+		len(blk.Txs), i, vmExecTime, vmExecTime/i, iterTime, iterTime/i)
+
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	err := blk.CalculateHeadHash()

@@ -30,6 +30,10 @@ var (
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
 	metricsTPS                 = metrics.NewGauge("iost_tps", nil)
+	metricsVMTime              = metrics.NewGauge("iost_vm_exec_time", nil)
+	metricsVMAvgTime           = metrics.NewGauge("iost_vm_exec_avg_time", nil)
+	metricsIterTime            = metrics.NewGauge("iost_iter_time", nil)
+	metricsIterAvgTime         = metrics.NewGauge("iost_iter_avg_time", nil)
 )
 
 var (
@@ -371,7 +375,7 @@ func (p *PoB) scheduleLoop() {
 				if p.baseVariable.Mode() == global.ModeNormal {
 					p.txPool.Lock()
 					blk, err := generateBlock(p.account, p.txPool, p.produceDB)
-					p.txPool.Lease()
+					p.txPool.Release()
 					ilog.Infof("gen block:%v", blk.Head.Number)
 					if err != nil {
 						ilog.Error(err.Error())

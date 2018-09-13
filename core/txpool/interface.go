@@ -20,6 +20,6 @@ type TxPool interface {
 	ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error)
 	CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, error)
 	Lock()
-	Lease()
+	Release()
 	TxTimeOut(tx *tx.Tx) bool
 }

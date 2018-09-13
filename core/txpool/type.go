@@ -181,24 +181,38 @@ func (st *sortedTxMap) Size() int {
 
 func (st *sortedTxMap) Iter() *Iterator {
 	iter := st.tree.Limit()
-	return &Iterator{
+	ret := &Iterator{
 		iter: &iter,
 		rw:   st.rw,
+		res:  make(chan *iterRes, 1),
 	}
+	go ret.getNext()
+	return ret
 }
 
 type Iterator struct {
 	iter *rbtree.Iterator
 	rw   *sync.RWMutex
+	res  chan *iterRes
+}
+
+type iterRes struct {
+	tx *tx.Tx
+	ok bool
+}
+
+func (iter *Iterator) getNext() {
+	i := iter.iter.Prev()
+	if i.NegativeLimit() {
+		iter.res <- &iterRes{nil, false}
+		return
+	}
+	iter.iter = &i
+	iter.res <- &iterRes{i.Item().(*tx.Tx), true}
 }
 
 func (iter *Iterator) Next() (*tx.Tx, bool) {
-	i := iter.iter.Prev()
-	if i.NegativeLimit() {
-		return nil, false
-	}
-
-	iter.iter = &i
-
-	return i.Item().(*tx.Tx), true
+	ret := <-iter.res
+	go iter.getNext()
+	return ret.tx, ret.ok
 }
