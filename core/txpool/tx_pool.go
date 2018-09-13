@@ -519,7 +519,6 @@ func (pool *TxPoolImpl) existTxInPending(hash []byte) bool {
 }
 
 func (pool *TxPoolImpl) TxTimeOut(tx *tx.Tx) bool {
-
 	nTime := time.Now().UnixNano()
 	txTime := tx.Time
 	exTime := tx.Expiration
@@ -535,6 +534,7 @@ func (pool *TxPoolImpl) TxTimeOut(tx *tx.Tx) bool {
 	}
 
 	if nTime-txTime > expiration {
+		ilog.Error("nTime:", nTime, "txTime:", txTime, "nTime-txTime:", nTime-txTime, "expiration:", expiration)
 		metricsTxErrType.Add(1, map[string]string{"type": "nTime-txTime > expiration"})
 		return true
 	}
