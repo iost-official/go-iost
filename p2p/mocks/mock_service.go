@@ -81,6 +81,18 @@ func (mr *MockServiceMockRecorder) ID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ID", reflect.TypeOf((*MockService)(nil).ID))
 }
 
+// NeighborStat mocks base method
+func (m *MockService) NeighborStat() map[string]interface{} {
+	ret := m.ctrl.Call(m, "NeighborStat")
+	ret0, _ := ret[0].(map[string]interface{})
+	return ret0
+}
+
+// NeighborStat indicates an expected call of NeighborStat
+func (mr *MockServiceMockRecorder) NeighborStat() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NeighborStat", reflect.TypeOf((*MockService)(nil).NeighborStat))
+}
+
 // Register mocks base method
 func (m *MockService) Register(arg0 string, arg1 ...p2p.MessageType) chan p2p.IncomingMessage {
 	varargs := []interface{}{arg0}
