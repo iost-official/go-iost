@@ -34,6 +34,7 @@ var (
 	metricsVMAvgTime           = metrics.NewGauge("iost_vm_exec_avg_time", nil)
 	metricsIterTime            = metrics.NewGauge("iost_iter_time", nil)
 	metricsIterAvgTime         = metrics.NewGauge("iost_iter_avg_time", nil)
+	metricsNonTimeOutTxSize    = metrics.NewGauge("iost_non_time_out_tx_size", nil)
 )
 
 var (

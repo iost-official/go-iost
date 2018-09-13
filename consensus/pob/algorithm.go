@@ -71,7 +71,7 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 	}
 	t, ok := txIter.Next()
 
-	var vmExecTime, iterTime, i int64
+	var vmExecTime, iterTime, i, j int64
 L:
 	for ok {
 		select {
@@ -82,6 +82,7 @@ L:
 			i++
 			step1 := time.Now()
 			if !txPool.TxTimeOut(t) {
+				j++
 				if receipt, err := engine.Exec(t); err == nil {
 					blk.Txs = append(blk.Txs, t)
 					blk.Receipts = append(blk.Receipts, receipt)
@@ -102,6 +103,7 @@ L:
 	metricsVMAvgTime.Set(float64(vmExecTime/i), nil)
 	metricsIterTime.Set(float64(iterTime), nil)
 	metricsIterAvgTime.Set(float64(iterTime/i), nil)
+	metricsNonTimeOutTxSize.Set(float64(j), nil)
 	ilog.Infof("tx in blk:%d, iter:%d, vmExecTime:%d, vmAvgTime:%d, iterTime:%d, iterAvgTime:%d",
 		len(blk.Txs), i, vmExecTime, vmExecTime/i, iterTime, iterTime/i)
 
