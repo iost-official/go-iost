@@ -98,16 +98,6 @@ func (mr *MockTxPoolMockRecorder) ExistTxs(arg0, arg1 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistTxs", reflect.TypeOf((*MockTxPool)(nil).ExistTxs), arg0, arg1)
 }
 
-// Lease mocks base method
-func (m *MockTxPool) Lease() {
-	m.ctrl.Call(m, "Lease")
-}
-
-// Lease indicates an expected call of Lease
-func (mr *MockTxPoolMockRecorder) Lease() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lease", reflect.TypeOf((*MockTxPool)(nil).Lease))
-}
-
 // Lock mocks base method
 func (m *MockTxPool) Lock() {
 	m.ctrl.Call(m, "Lock")
@@ -130,6 +120,16 @@ func (m *MockTxPool) PendingTxs(arg0 int) (txpool.TxsList, *blockcache.BlockCach
 // PendingTxs indicates an expected call of PendingTxs
 func (mr *MockTxPoolMockRecorder) PendingTxs(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PendingTxs", reflect.TypeOf((*MockTxPool)(nil).PendingTxs), arg0)
+}
+
+// Release mocks base method
+func (m *MockTxPool) Release() {
+	m.ctrl.Call(m, "Release")
+}
+
+// Release indicates an expected call of Release
+func (mr *MockTxPoolMockRecorder) Release() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Release", reflect.TypeOf((*MockTxPool)(nil).Release))
 }
 
 // Start mocks base method

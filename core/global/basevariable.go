@@ -233,7 +233,7 @@ func FakeNew() (*BaseVariableImpl, error) {
 	config := common.Config{}
 	config.VM = &common.VMConfig{}
 	config.VM.JsPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/"
-	fmt.Println(os.Getenv("GOPATH"))
+
 	vm.SetUp(config.VM)
 	VoteContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
 	fmt.Println(VoteContractPath)

@@ -629,7 +629,7 @@ func (pool *TxPoolImpl) doChainChangeByForkBCN() {
 			break
 		}
 		for _, t := range oldHead.Block.Txs {
-			pool.pendingTx.Store(string(t.Hash()), t)
+			pool.pendingTx.Add(t)
 		}
 		oldHead = oldHead.Parent
 	}
@@ -640,7 +640,7 @@ func (pool *TxPoolImpl) doChainChangeByForkBCN() {
 			break
 		}
 		for _, t := range newHead.Block.Txs {
-			pool.delTxInPending(t.Hash())
+			pool.DelTx(t.Hash())
 		}
 		newHead = newHead.Parent
 	}
