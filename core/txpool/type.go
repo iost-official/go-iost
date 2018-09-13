@@ -4,11 +4,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/emirpasic/gods/trees/redblacktree"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/metrics"
-	"github.com/yasushi-saito/rbtree"
 )
 
 var (
@@ -126,12 +126,12 @@ func (b *blockTx) existTx(hash []byte) bool {
 }
 
 type sortedTxMap struct {
-	tree  *rbtree.Tree
+	tree  *redblacktree.Tree
 	txMap map[string]*tx.Tx
 	rw    *sync.RWMutex
 }
 
-func compareTx(a, b rbtree.Item) int {
+func compareTx(a, b interface{}) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
 	if txa.GasPrice == txb.GasPrice {
@@ -142,7 +142,7 @@ func compareTx(a, b rbtree.Item) int {
 
 func newSortedTxMap() *sortedTxMap {
 	return &sortedTxMap{
-		tree:  rbtree.NewTree(compareTx),
+		tree:  redblacktree.NewWith(compareTx),
 		txMap: make(map[string]*tx.Tx),
 		rw:    new(sync.RWMutex),
 	}
@@ -156,7 +156,7 @@ func (st *sortedTxMap) Get(hash []byte) *tx.Tx {
 
 func (st *sortedTxMap) Add(tx *tx.Tx) {
 	st.rw.Lock()
-	st.tree.Insert(tx)
+	st.tree.Put(tx, true)
 	st.txMap[string(tx.Hash())] = tx
 	st.rw.Unlock()
 }
@@ -169,7 +169,7 @@ func (st *sortedTxMap) Del(hash []byte) {
 	if tx == nil {
 		return
 	}
-	st.tree.DeleteWithKey(tx)
+	st.tree.Remove(tx)
 	delete(st.txMap, string(hash))
 }
 
@@ -181,7 +181,8 @@ func (st *sortedTxMap) Size() int {
 }
 
 func (st *sortedTxMap) Iter() *Iterator {
-	iter := st.tree.Limit()
+	iter := st.tree.Iterator()
+	iter.End()
 	ret := &Iterator{
 		iter: &iter,
 		rw:   st.rw,
@@ -192,7 +193,7 @@ func (st *sortedTxMap) Iter() *Iterator {
 }
 
 type Iterator struct {
-	iter *rbtree.Iterator
+	iter *redblacktree.Iterator
 	rw   *sync.RWMutex
 	res  chan *iterRes
 }
@@ -204,14 +205,13 @@ type iterRes struct {
 
 func (iter *Iterator) getNext() {
 	iter.rw.RLock()
-	defer iter.rw.RUnlock()
-	i := iter.iter.Prev()
-	if i.NegativeLimit() {
+	ok := iter.iter.Prev()
+	iter.rw.RUnlock()
+	if !ok {
 		iter.res <- &iterRes{nil, false}
 		return
 	}
-	iter.iter = &i
-	iter.res <- &iterRes{i.Item().(*tx.Tx), true}
+	iter.res <- &iterRes{iter.iter.Key().(*tx.Tx), true}
 }
 
 func (iter *Iterator) Next() (*tx.Tx, bool) {
