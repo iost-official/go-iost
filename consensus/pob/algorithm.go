@@ -73,7 +73,7 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 
 	var vmExecTime, iterTime, i, j int64
 L:
-	for ok && false {
+	for ok {
 		select {
 		case <-limitTime.C:
 			ilog.Info("time up")
