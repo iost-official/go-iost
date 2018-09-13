@@ -16,7 +16,7 @@ var TXRMTDB TXRMerkleTreeDB
 
 var once sync.Once
 
-func Uint64ToInt(n uint64) []byte {
+func Uint64ToByte(n uint64) []byte {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, n)
 	return b
@@ -39,7 +39,7 @@ func (mdb *TXRMerkleTreeDB) Put(m *TXRMerkleTree, blockNum uint64) error {
 	if err != nil {
 		return errors.New("fail to encode TXRMerkleTree")
 	}
-	err = mdb.txrMerkleTreeDB.Put(Uint64ToInt(blockNum), mByte)
+	err = mdb.txrMerkleTreeDB.Put(Uint64ToByte(blockNum), mByte)
 	if err != nil {
 		return errors.New("fail to put TXRMerkleTree")
 	}
@@ -47,7 +47,7 @@ func (mdb *TXRMerkleTreeDB) Put(m *TXRMerkleTree, blockNum uint64) error {
 }
 
 func (mdb *TXRMerkleTreeDB) Get(blockNum uint64) (*TXRMerkleTree, error) {
-	mByte, err := mdb.txrMerkleTreeDB.Get(Uint64ToInt(blockNum))
+	mByte, err := mdb.txrMerkleTreeDB.Get(Uint64ToByte(blockNum))
 	m := TXRMerkleTree{}
 	if err != nil {
 		return nil, errors.New("fail to get TXRMerkleTree")
