@@ -203,7 +203,9 @@ type iterRes struct {
 }
 
 func (iter *Iterator) getNext() {
+	iter.rw.RLock()
 	i := iter.iter.Prev()
+	iter.rw.RUnlock()
 	if i.NegativeLimit() {
 		iter.res <- &iterRes{nil, false}
 		return
