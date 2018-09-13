@@ -115,17 +115,17 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 			t := genTx(accountList[0], expiration)
 
-			b := txPool.txTimeOut(t)
+			b := txPool.TxTimeOut(t)
 			So(b, ShouldBeFalse)
 
 			t.Time -= int64(expiration + int64(1*time.Second))
-			b = txPool.txTimeOut(t)
+			b = txPool.TxTimeOut(t)
 			So(b, ShouldBeTrue)
 
 			t = genTx(accountList[0], expiration)
 
 			t.Expiration -= int64(expiration * 3)
-			b = txPool.txTimeOut(t)
+			b = txPool.TxTimeOut(t)
 			So(b, ShouldBeTrue)
 		})
 		Convey("delTimeOutTx", func() {
@@ -312,6 +312,65 @@ func TestNewTxPoolImpl(t *testing.T) {
 			So(i, ShouldEqual, txCnt*2)
 
 		})
+		Convey("rbtree", func() {
+			t1 := genTx(newAccount, expiration)
+			t2 := genTx(newAccount, expiration)
+			t3 := genTx(newAccount, expiration)
+			t4 := genTx(newAccount, expiration)
+			t5 := genTx(newAccount, expiration)
+			t1.GasPrice = 1
+			t2.GasPrice = 2
+			t3.GasPrice = 2
+			t3.Time = t2.Time + 1
+			t4.GasPrice = 4
+			t5.GasPrice = 5
+
+			sig1, err := tx.SignTxContent(t1, newAccount)
+			So(err, ShouldBeNil)
+			t1.Signs = []*crypto.Signature{sig1}
+			t1, err = tx.SignTx(t1, newAccount)
+			So(err, ShouldBeNil)
+
+			sig2, err := tx.SignTxContent(t2, newAccount)
+			So(err, ShouldBeNil)
+			t2.Signs = []*crypto.Signature{sig2}
+			t2, err = tx.SignTx(t2, newAccount)
+			So(err, ShouldBeNil)
+
+			sig3, err := tx.SignTxContent(t3, newAccount)
+			So(err, ShouldBeNil)
+			t3.Signs = []*crypto.Signature{sig3}
+			t3, err = tx.SignTx(t3, newAccount)
+			So(err, ShouldBeNil)
+
+			sig4, err := tx.SignTxContent(t4, newAccount)
+			So(err, ShouldBeNil)
+			t4.Signs = []*crypto.Signature{sig4}
+			t4, err = tx.SignTx(t4, newAccount)
+			So(err, ShouldBeNil)
+
+			sig5, err := tx.SignTxContent(t5, newAccount)
+			So(err, ShouldBeNil)
+			t5.Signs = []*crypto.Signature{sig5}
+			t5, err = tx.SignTx(t5, newAccount)
+			So(err, ShouldBeNil)
+
+			txPool.AddTx(t4)
+			txPool.AddTx(t2)
+			txPool.AddTx(t5)
+			txPool.AddTx(t1)
+			txPool.AddTx(t3)
+
+			iter, _ := txPool.TxIterator()
+			t, ok := iter.Next()
+			for _, expectTx := range []*tx.Tx{t5, t4, t2, t3, t1} {
+				So(ok, ShouldBeTrue)
+				So(string(expectTx.Hash()), ShouldEqual, string(t.Hash()))
+				t, ok = iter.Next()
+			}
+			So(ok, ShouldBeFalse)
+
+		})
 		//
 		//Convey("concurrent", func() {
 		//	txCnt := 10
@@ -360,6 +419,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		stopTest(gbl)
 	})
+
 }
 
 //result 55.3 ns/op

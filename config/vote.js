@@ -108,7 +108,7 @@ class VoteContract {
 			"votes": 0
 		});
     }
-	
+
 	// update the information of a producer
     UpdateProducer(account, loc, url, netId) {
 		this._requireAuth(account);
