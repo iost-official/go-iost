@@ -307,8 +307,11 @@ func TestJS_Vote(t *testing.T) {
 		js.NewBlock(bh)
 
 		// stat, offline producers don't get score
+		ta := time.Now().UnixNano()
 		r = js.TestJS("Stat", `[]`)
 		So(r.Status.Message, ShouldEqual, "")
+		tb := time.Now().UnixNano()
+		So(tb-ta, ShouldBeLessThan, 200000000000)
 
 		for i := 2; i <= 14; i += 2 {
 			r = js.TestJSWithAuth("LogInProducer", fmt.Sprintf(`["%v"]`, testID[i]), testID[i+1])
