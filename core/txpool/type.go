@@ -44,8 +44,9 @@ const (
 type TFork uint
 
 const (
-	NotFork TFork = iota
-	Fork
+	SameHead TFork = iota
+	ForkBCN
+	NoForkBCN
 	ForkError
 )
 

@@ -374,6 +374,7 @@ func (p *PoB) scheduleLoop() {
 			ilog.Info(p.baseVariable.Mode())
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
+
 				if p.baseVariable.Mode() == global.ModeNormal {
 					p.txPool.Lock()
 					blk, err := generateBlock(p.account, p.txPool, p.produceDB)
@@ -450,4 +451,7 @@ func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateLib(node, p.blockCache)
 	p.txPool.AddLinkedNode(node, node) //TODO
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
+	if staticProperty.isWitness(p.account.ID) {
+		p.p2pService.ConnectBPs(staticProperty.WitnessList)
+	}
 }
