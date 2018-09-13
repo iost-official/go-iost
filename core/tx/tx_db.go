@@ -45,16 +45,16 @@ func (tdb *TxDBImpl) Push(txs []*Tx, receipts []*TxReceipt) error {
 
 	for i, tx := range txs {
 		tHash := tx.Hash()
-		txBth.Put(append(txPrefix, tHash...), tx.Encode())
+		tdb.txDB.Put(append(txPrefix, tHash...), tx.Encode())
 
 		// save receipt
 		rHash := receipts[i].Hash()
-		txBth.Put(append(receiptHashPrefix, tHash...), rHash)
+		tdb.txDB.Put(append(receiptHashPrefix, tHash...), rHash)
 
-		txBth.Put(append(receiptPrefix, rHash...), receipts[i].Encode())
+		tdb.txDB.Put(append(receiptPrefix, rHash...), receipts[i].Encode())
 	}
 
-	err = txdb.txDB.CommitBatch()
+	err = tdb.txDB.CommitBatch()
 	if err != nil {
 		return fmt.Errorf("fail to put block, err:%s", err)
 	}
@@ -67,7 +67,9 @@ func (tdb *TxDBImpl) GetTx(hash []byte) (*Tx, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to Get the tx: %v", err)
 	}
-
+	if len(txData) == 0 {
+		return nil, fmt.Errorf("failed to Get the tx: not found")
+	}
 	err = tx.Decode(txData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to Decode the tx: %v", err)
@@ -76,7 +78,6 @@ func (tdb *TxDBImpl) GetTx(hash []byte) (*Tx, error) {
 }
 
 func (tdb *TxDBImpl) HasTx(hash []byte) (bool, error) {
-
 	return tdb.txDB.Has(append(txPrefix, hash...))
 }
 
@@ -85,6 +86,9 @@ func (tdb *TxDBImpl) GetReceipt(Hash []byte) (*TxReceipt, error) {
 	reData, err := tdb.txDB.Get(append(receiptPrefix, Hash...))
 	if err != nil {
 		return nil, fmt.Errorf("failed to Get the receipt: %v", err)
+	}
+	if len(reData) == 0 {
+		return nil, fmt.Errorf("failed to Get the receipt: not found")
 	}
 
 	err = re.Decode(reData)
