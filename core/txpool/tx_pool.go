@@ -204,6 +204,10 @@ func (pool *TxPoolImpl) DelTx(hash []byte) error {
 	return nil
 }
 
+func (pool *TxPoolImpl) TxIterator() (*Iterator, *blockcache.BlockCacheNode) {
+	return pool.pendingTx.Iter(), pool.forkChain.NewHead
+}
+
 // PendingTxs get the pending transactions
 func (pool *TxPoolImpl) PendingTxs(maxCnt int) (TxsList, *blockcache.BlockCacheNode, error) {
 	start := time.Now()
@@ -288,6 +292,14 @@ func (pool *TxPoolImpl) CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx,
 	}
 
 	return nil, nil
+}
+
+func (pool *TxPoolImpl) LockPending() {
+	pool.mu.Lock()
+}
+
+func (pool *TxPoolImpl) UnlockPending() {
+	pool.mu.Unlock()
 }
 
 func (pool *TxPoolImpl) createTxMapToChain(chainBlock *block.Block) (*sync.Map, error) {

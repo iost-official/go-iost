@@ -32,10 +32,10 @@ var (
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	ilog.Info("generate Block start")
-	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
-	txCnt := 10000
-	txsList, head, _ := txPool.PendingTxs(txCnt)
-	ilog.Info("txs in txpool", len(txsList))
+	limitTime := time.NewTimer(common.SlotLength / 3 * time.Second)
+	// txCnt := 10000
+	// txsList, head, _ := txPool.PendingTxs(txCnt)
+	txIter, head := txPool.TxIterator()
 	topBlock := head.Block
 	blk := block.Block{
 		Head: &block.BlockHead{
@@ -50,7 +50,6 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 	}
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(blk.Head, db)
-	ilog.Info("txlen ", len(txsList))
 
 	// call vote
 	if blk.Head.Number%common.VoteInterval == 0 {
@@ -72,21 +71,22 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		blk.Txs = append(blk.Txs, trx)
 		blk.Receipts = append(blk.Receipts, receipt)
 	}
-L:
-	for _, t := range txsList {
+	t, ok := txIter.Next()
+	for ok {
 		select {
 		case <-limitTime.C:
 			ilog.Info("time up")
-			break L
+			break
 		default:
 			if receipt, err := engine.Exec(t); err == nil {
 				blk.Txs = append(blk.Txs, t)
 				blk.Receipts = append(blk.Receipts, receipt)
 				ilog.Debug(err, receipt)
 			} else {
-				ilog.Debug(err, receipt)
+				ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
 				txPool.DelTx(t.Hash())
 			}
+			t, ok = txIter.Next()
 		}
 	}
 	ilog.Info("txs in blk", len(blk.Txs))
