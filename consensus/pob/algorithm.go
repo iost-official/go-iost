@@ -98,12 +98,14 @@ L:
 			iterTime += step3.Sub(step2).Nanoseconds()
 		}
 	}
-	metricsVMTime.Set(float64(vmExecTime), nil)
-	metricsVMAvgTime.Set(float64(vmExecTime/i), nil)
-	metricsIterTime.Set(float64(iterTime), nil)
-	metricsIterAvgTime.Set(float64(iterTime/i), nil)
-	ilog.Infof("tx in blk:%d, iter:%d, vmExecTime:%d, vmAvgTime:%d, iterTime:%d, iterAvgTime:%d",
-		len(blk.Txs), i, vmExecTime, vmExecTime/i, iterTime, iterTime/i)
+	if i > 0 {
+		metricsVMTime.Set(float64(vmExecTime), nil)
+		metricsVMAvgTime.Set(float64(vmExecTime/i), nil)
+		metricsIterTime.Set(float64(iterTime), nil)
+		metricsIterAvgTime.Set(float64(iterTime/i), nil)
+		ilog.Infof("tx in blk:%d, iter:%d, vmExecTime:%d, vmAvgTime:%d, iterTime:%d, iterAvgTime:%d",
+			len(blk.Txs), i, vmExecTime, vmExecTime/i, iterTime, iterTime/i)
+	}
 
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
