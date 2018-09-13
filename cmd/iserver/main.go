@@ -154,7 +154,7 @@ func main() {
 	}
 	app = append(app, txp)
 
-	rpcServer := rpc.NewRPCServer(txp, blkCache, glb)
+	rpcServer := rpc.NewRPCServer(txp, blkCache, glb, p2pService)
 	app = append(app, rpcServer)
 
 	jsonRPCServer := rpc.NewJSONServer(glb)
