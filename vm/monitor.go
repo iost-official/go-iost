@@ -161,7 +161,7 @@ func Factory(lang string) VM {
 		return &vm
 	case "javascript":
 		vm := v8.NewVMPool(10, 200)
-		vm.SetJSPath(jsPath)
+		//vm.SetJSPath(jsPath)
 		return vm
 	}
 	return nil

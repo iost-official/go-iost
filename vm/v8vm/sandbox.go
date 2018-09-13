@@ -5,7 +5,6 @@ import "C"
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
-char *requireModule(SandboxPtr, const char *);
 int goTransfer(SandboxPtr, const char *, const char *, const char *, size_t *);
 int goWithdraw(SandboxPtr, const char *, const char *, size_t *);
 int goDeposit(SandboxPtr, const char *, const char *, size_t *);
@@ -49,7 +48,6 @@ type Sandbox struct {
 	id      int
 	isolate C.IsolatePtr
 	context C.SandboxPtr
-	modules Modules
 	host    *host.Host
 }
 
@@ -76,7 +74,6 @@ func NewSandbox(e *VM) *Sandbox {
 	s := &Sandbox{
 		isolate: e.isolate,
 		context: cSbx,
-		modules: NewModules(),
 	}
 	s.Init(e.vmType)
 	sbxMap.Store(cSbx, s)
@@ -98,7 +95,6 @@ func (sbx *Sandbox) Release() {
 func (sbx *Sandbox) Init(vmType vmPoolType) {
 	// init require
 	C.InitGoConsole((C.consoleFunc)(C.goConsoleLog))
-	C.InitGoRequire((C.requireFunc)(C.requireModule))
 	C.InitGoBlockchain((C.transferFunc)(C.goTransfer),
 		(C.withdrawFunc)(C.goWithdraw),
 		(C.depositFunc)(C.goDeposit),
@@ -133,15 +129,6 @@ func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.SetGasLimit(host.GasLimit())
 }
 
-// SetModule generate new module and set module in sandbox
-func (sbx *Sandbox) SetModule(name, code string) {
-	if name == "" || code == "" {
-		return
-	}
-	m := NewModule(name, code)
-	sbx.modules.Set(m)
-}
-
 // SetJSPath set js path and ReloadVM
 func (sbx *Sandbox) SetJSPath(path string, vmType vmPoolType) {
 	cPath := C.CString(path)
@@ -166,10 +153,7 @@ func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 
 // Prepare for contract, inject code
 func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args []interface{}) (string, error) {
-	name := contract.ID
 	code := contract.Code
-
-	sbx.SetModule(name, code)
 
 	if function == "constructor" {
 		return fmt.Sprintf(`

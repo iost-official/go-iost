@@ -44,23 +44,3 @@ func (ms Modules) Get(id string) *Module {
 func (ms Modules) Del(id string) {
 	delete(ms, id)
 }
-
-// requireModule get module from modules and return to c function.
-//export requireModule
-func requireModule(cSbx C.SandboxPtr, moduleID *C.char) *C.char {
-	id := C.GoString(moduleID)
-
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-
-	}
-
-	m := sbx.modules.Get(id)
-	if m == nil {
-		return nil
-	}
-
-	m.code = moduleReplacer.Replace(m.code)
-
-	return C.CString(m.code)
-}
