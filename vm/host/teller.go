@@ -150,7 +150,7 @@ func (h *Teller) Deposit(from string, amount int64) (*contract.Cost, error) {
 
 // TopUp ...
 func (h *Teller) TopUp(c, from string, amount int64) (*contract.Cost, error) {
-	return TransferCost, h.transfer(from, ContractGasPrefix+c, amount)
+	return h.Transfer(from, ContractGasPrefix+c, amount)
 
 }
 
