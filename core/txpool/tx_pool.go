@@ -524,7 +524,7 @@ func (pool *TxPoolImpl) TxTimeOut(tx *tx.Tx) bool {
 	}
 
 	if nTime-txTime > Expiration {
-		ilog.Error("nTime:", nTime, "txTime:", txTime, "nTime-txTime:", nTime-txTime, "expiration:", expiration)
+		ilog.Error("nTime:", nTime, "txTime:", txTime, "nTime-txTime:", nTime-txTime, "Expiration:", Expiration)
 		metricsTxErrType.Add(1, map[string]string{"type": "nTime-txTime > expiration"})
 		return true
 	}
