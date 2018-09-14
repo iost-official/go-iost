@@ -99,7 +99,7 @@ L:
 			iterTime += step3.Sub(step2).Nanoseconds()
 		}
 	}
-	if i > 0 {
+	if i > 0 && j > 0 {
 		metricsVMTime.Set(float64(vmExecTime), nil)
 		metricsVMAvgTime.Set(float64(vmExecTime/j), nil)
 		metricsIterTime.Set(float64(iterTime), nil)
