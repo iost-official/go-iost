@@ -106,8 +106,10 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	}
 	engine := vm.NewEngine(&blockHead, db)
 	txr, err := engine.Exec(trx)
-	if err != nil || txr.Status.Code != tx.Success {
-		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: %v", err, txr)
+	if txr.Status.Message != "execution killed" {
+		if err != nil || txr.Status.Code != tx.Success {
+			return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: %v", err, txr)
+		}
 	}
 	blk := block.Block{
 		Head:     &blockHead,
@@ -115,12 +117,6 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		Txs:      []*tx.Tx{trx},
 		Receipts: []*tx.TxReceipt{txr},
 	}
-	//blk := block.Block{
-	//	Head:     &blockHead,
-	//	Sign:     &crypto.Signature{},
-	//	Txs:      make([]*tx.Tx, 0),
-	//	Receipts: make([]*tx.TxReceipt, 0),
-	//}
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	err = blk.CalculateHeadHash()
