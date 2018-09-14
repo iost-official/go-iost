@@ -26,8 +26,6 @@ matrix:
     - os: linux
       dist: trusty
       go: 1.10.x
-      env:
-        - VERBOSE=true
       services:
         - docker
       before_install:
@@ -37,4 +35,4 @@ matrix:
         - git lfs pull
       script:
         - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make build
-        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make test
+        - docker run -it --rm -e VERBOSE=true -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make test
