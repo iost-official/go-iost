@@ -16,7 +16,6 @@ var TXRMTDB TXRMerkleTreeDB
 
 var once sync.Once
 
-<<<<<<< HEAD
 func Uint64ToBytes(n uint64) []byte {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, n)
