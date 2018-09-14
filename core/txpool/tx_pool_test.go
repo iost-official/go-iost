@@ -103,7 +103,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		txPool.Start()
 		Convey("AddTx", func() {
 
-			t := genTx(accountList[0], expiration)
+			t := genTx(accountList[0], Expiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			r := txPool.AddTx(t)
 			So(r, ShouldEqual, Success)
@@ -113,18 +113,18 @@ func TestNewTxPoolImpl(t *testing.T) {
 		})
 		Convey("txTimeOut", func() {
 
-			t := genTx(accountList[0], expiration)
+			t := genTx(accountList[0], Expiration)
 
 			b := txPool.TxTimeOut(t)
 			So(b, ShouldBeFalse)
 
-			t.Time -= int64(expiration + int64(1*time.Second))
+			t.Time -= int64(Expiration + int64(1*time.Second))
 			b = txPool.TxTimeOut(t)
 			So(b, ShouldBeTrue)
 
-			t = genTx(accountList[0], expiration)
+			t = genTx(accountList[0], Expiration)
 
-			t.Expiration -= int64(expiration * 3)
+			t.Expiration -= int64(Expiration * 3)
 			b = txPool.TxTimeOut(t)
 			So(b, ShouldBeTrue)
 		})
@@ -142,7 +142,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		})
 		Convey("ExistTxs FoundPending", func() {
 
-			t := genTx(accountList[0], expiration)
+			t := genTx(accountList[0], Expiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			r := txPool.AddTx(t)
 			So(r, ShouldEqual, Success)
@@ -177,13 +177,13 @@ func TestNewTxPoolImpl(t *testing.T) {
 				So(r1, ShouldEqual, FoundChain)
 			}
 
-			t := genTx(accountList[0], expiration)
+			t := genTx(accountList[0], Expiration)
 			r1, _ := txPool.ExistTxs(t.Hash(), bcn.Block)
 			So(r1, ShouldEqual, NotFound)
 		})
 		Convey("delPending", func() {
 
-			t := genTx(accountList[0], expiration)
+			t := genTx(accountList[0], Expiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			r := txPool.AddTx(t)
 			So(r, ShouldEqual, Success)
@@ -195,7 +195,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		})
 		Convey("Pending", func() {
 
-			t := genTx(accountList[0], expiration)
+			t := genTx(accountList[0], Expiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			r := txPool.AddTx(t)
 			So(r, ShouldEqual, Success)
@@ -313,11 +313,11 @@ func TestNewTxPoolImpl(t *testing.T) {
 
 		})
 		Convey("rbtree", func() {
-			t1 := genTx(newAccount, expiration)
-			t2 := genTx(newAccount, expiration)
-			t3 := genTx(newAccount, expiration)
-			t4 := genTx(newAccount, expiration)
-			t5 := genTx(newAccount, expiration)
+			t1 := genTx(newAccount, Expiration)
+			t2 := genTx(newAccount, Expiration)
+			t3 := genTx(newAccount, Expiration)
+			t4 := genTx(newAccount, Expiration)
+			t5 := genTx(newAccount, Expiration)
 			t1.GasPrice = 1
 			t2.GasPrice = 2
 			t3.GasPrice = 2
@@ -387,7 +387,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		//
 		//	go func() {
 		//		for i := 0; i < 100; i++ {
-		//			t := genTx(accountList[0], expiration)
+		//			t := genTx(accountList[0], Expiration)
 		//			txPool.AddTx(t)
 		//		}
 		//		ch <- 2
@@ -401,7 +401,7 @@ func TestNewTxPoolImpl(t *testing.T) {
 		//	}()
 		//	////time.Sleep(5*time.Second)
 		//
-		//	t := genTx(accountList[0], expiration)
+		//	t := genTx(accountList[0], Expiration)
 		//	txPool.AddTx(t)
 		//	go func() {
 		//		for i := 0; i < 10000; i++ {
@@ -454,7 +454,7 @@ func BenchmarkAddTx(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		t := genTx(accountList[0], expiration)
+		t := genTx(accountList[0], Expiration)
 		b.StartTimer()
 
 		txPool.addTx(t)
@@ -469,7 +469,7 @@ func BenchmarkPendingTxs(b *testing.B) {
 	_, accountList, _, txPool, gl := envInit(b)
 
 	for i := 0; i < 10000; i++ {
-		t := genTx(accountList[0], expiration)
+		t := genTx(accountList[0], Expiration)
 		txPool.addTx(t)
 	}
 
@@ -491,7 +491,7 @@ func BenchmarkDecodeTx(b *testing.B) {
 		panic("account.NewAccount error")
 	}
 
-	tm := genTxMsg(newAccount, expiration)
+	tm := genTxMsg(newAccount, Expiration)
 	var t tx.Tx
 	err = t.Decode(tm.Data())
 	if err != nil {
@@ -516,7 +516,7 @@ func BenchmarkEncodeTx(b *testing.B) {
 		panic("account.NewAccount error")
 	}
 
-	tm := genTx(newAccount, expiration)
+	tm := genTx(newAccount, Expiration)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -531,7 +531,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 
 	_, accountList, _, txPool, gl := envInit(b)
 
-	t := genTx(accountList[0], expiration)
+	t := genTx(accountList[0], Expiration)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -555,7 +555,7 @@ func BenchmarkConcurrentVerifyTx(b *testing.B) {
 	txCnt := 10000
 	goCnt := 4
 
-	t := genTxMsg(accountList[0], expiration)
+	t := genTxMsg(accountList[0], Expiration)
 
 	tc := make(chan p2p.IncomingMessage, txCnt)
 	rc := make(chan *tx.Tx, txCnt)
@@ -641,7 +641,7 @@ func stopTest(gl global.BaseVariable) {
 	os.RemoveAll(dbPath3)
 }
 
-func genTx(a *account.Account, expirationIter int64) *tx.Tx {
+func genTx(a *account.Account, ExpirationIter int64) *tx.Tx {
 	actions := make([]*tx.Action, 0)
 	actions = append(actions, &tx.Action{
 		Contract:   "contract1",
@@ -655,7 +655,7 @@ func genTx(a *account.Account, expirationIter int64) *tx.Tx {
 	})
 
 	ex := time.Now().UnixNano()
-	ex += expirationIter
+	ex += ExpirationIter
 
 	t := tx.NewTx(actions, [][]byte{a.Pubkey}, 100000, 100, ex)
 
@@ -678,8 +678,8 @@ func genTx(a *account.Account, expirationIter int64) *tx.Tx {
 	return t1
 }
 
-func genTxMsg(a *account.Account, expirationIter int64) *p2p.IncomingMessage {
-	t := genTx(a, expirationIter)
+func genTxMsg(a *account.Account, ExpirationIter int64) *p2p.IncomingMessage {
+	t := genTx(a, ExpirationIter)
 
 	broadTx := p2p.NewIncomingMessage("test", t.Encode(), p2p.PublishTxRequest)
 
@@ -711,7 +711,7 @@ func genBlocks(accountList []*account.Account, witnessList []string, blockCnt in
 		}
 
 		for i := 0; i < txCnt; i++ {
-			blk.Txs = append(blk.Txs, genTx(accountList[0], expiration))
+			blk.Txs = append(blk.Txs, genTx(accountList[0], Expiration))
 		}
 
 		blk.Head.TxsHash = blk.CalculateTxsHash()
@@ -754,7 +754,7 @@ func genSingleBlock(accountList []*account.Account, witnessList []string, Parent
 	}}
 
 	for i := 0; i < txCnt; i++ {
-		blk.Txs = append(blk.Txs, genTx(accountList[0], expiration))
+		blk.Txs = append(blk.Txs, genTx(accountList[0], Expiration))
 	}
 
 	blk.Head.TxsHash = blk.CalculateTxsHash()
