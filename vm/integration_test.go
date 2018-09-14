@@ -937,7 +937,7 @@ func TestJS_LuckyBet(t *testing.T) {
 	// here put the first bet
 	r := js.TestJS("bet", fmt.Sprintf(`["%v",0, 2]`, testID[0]))
 	Convey("after 1 bet", t, func() {
-		So(r.Status.Code, ShouldEqual, 0)
+		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB("user_number"), ShouldEqual, "1")
 		So(js.ReadDB("total_coins"), ShouldEqual, "2")
 		So(js.ReadMap("table", "0"), ShouldEqual, `[{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2}]`)
@@ -951,7 +951,7 @@ func TestJS_LuckyBet(t *testing.T) {
 	}
 
 	Convey("after 1 bet", t, func() {
-		So(r.Status.Code, ShouldEqual, 0)
+		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB("user_number"), ShouldEqual, "0")
 		So(js.ReadDB("total_coins"), ShouldEqual, "0")
 		So(js.ReadDB("round"), ShouldEqual, "2")
