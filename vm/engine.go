@@ -238,7 +238,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	}
 
 	if len(arr) != len(abi.Args) {
-		return nil, errors.New("args unmatched to abi")
+		return nil, errors.New("args length unmatched to abi " + abi.Name)
 	}
 	for i := range arr {
 		switch abi.Args[i] {

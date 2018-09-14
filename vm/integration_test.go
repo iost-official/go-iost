@@ -932,10 +932,13 @@ func TestJS_LuckyBet(t *testing.T) {
 	js.SetAPI("clearUserValue")
 	js.SetAPI("bet", "string", "number", "number")
 	js.SetAPI("getReward")
-	js.DoSet()
+	r := js.DoSet()
+	if r.Status.Code != 0 {
+		t.Fatal(r.Status.Message)
+	}
 
 	// here put the first bet
-	r := js.TestJS("bet", fmt.Sprintf(`["%v",0, 2]`, testID[0]))
+	r = js.TestJS("bet", fmt.Sprintf(`["%v",0, 2]`, testID[0]))
 	Convey("after 1 bet", t, func() {
 		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB("user_number"), ShouldEqual, "1")

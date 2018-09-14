@@ -68,6 +68,8 @@ type LogConfig struct {
 // MetricsConfig is the config of metrics.
 type MetricsConfig struct {
 	PushAddr string
+	Username string
+	Password string
 	Enable   bool
 	ID       string
 }
