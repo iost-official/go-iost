@@ -275,6 +275,7 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
+			p.blockCache.Draw()
 			metricsTPS.Set(p.calculateTPS(), nil)
 			ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
 			blk := vbm.blk
