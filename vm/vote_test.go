@@ -165,7 +165,6 @@ func TestJS_Vote(t *testing.T) {
 		js.SetAPI("Vote", "string", "string", "number")
 		js.SetAPI("Unvote", "string", "string", "number")
 		js.SetAPI("Stat")
-		js.SetAPI("init")
 		js.SetAPI("InitProducer", "string")
 		for i := 0; i <= 18; i += 2 {
 			js.vi.SetBalance(testID[i], 5e+7)
@@ -195,7 +194,6 @@ func TestJS_Vote(t *testing.T) {
 			"voteTable",
 		}
 		_ = keys
-		//js.FlushDB(t, keys)
 
 		bh = &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -206,22 +204,25 @@ func TestJS_Vote(t *testing.T) {
 		js.NewBlock(bh)
 
 		// test register, login, logout
-		r = js.TestJS("LogOutProducer", `["a"]`)
-		So(r.Status.Message, ShouldContainSubstring, "require auth failed")
-		t.Log("time of log in", watchTime(func() {
-			r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
-		}))
-
-		So(r.Status.Message, ShouldEqual, "")
-
 		So(js.ReadMap("producerTable", testID[0]).(string), ShouldEqual, `{"loc":"","url":"","netId":"","online":true,"score":0,"votes":0}`)
 
-		t.Log("time of register", watchTime(func() {
-			r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
-		}))
-		So(r.Status.Message, ShouldContainSubstring, "producer exists")
+		r = js.TestJS("LogOutProducer", `["a"]`)
+		So(r.Status.Message, ShouldContainSubstring, "require auth failed")
 
-		r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
+		t.Log("time of log in", watchTime(func() {
+			r = js.TestJSWithAuth("LogInProducer", fmt.Sprintf(`["%v"]`, testID[14]), testID[15])
+		}))
+		So(r.Status.Message, ShouldContainSubstring, "producer not exists")
+
+		t.Log("time of register", watchTime(func() {
+			r = js.TestJSWithAuth("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[14]), testID[15])
+		}))
+		So(r.Status.Message, ShouldEqual, "")
+
+		r = js.TestJSWithAuth("LogInProducer", fmt.Sprintf(`["%v"]`, testID[14]), testID[15])
+		So(r.Status.Message, ShouldEqual, "")
+
+		r = js.TestJSWithAuth("LogOutProducer", fmt.Sprintf(`["%v"]`, testID[14]), testID[15])
 		So(r.Status.Message, ShouldEqual, "")
 
 		r = js.TestJS("UpdateProducer", fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, testID[0], "nloc", "nurl", "nnetid"))
@@ -241,9 +242,11 @@ func TestJS_Vote(t *testing.T) {
 		// vote and unvote
 		r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
 		So(r.Status.Message, ShouldEqual, "")
+		So(js.ReadMap("producerTable", testID[0]).(string), ShouldEqual, `{"loc":"nloc","url":"nurl","netId":"nnetid","online":true,"score":0,"votes":10000000}`)
 
 		r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
 		So(r.Status.Message, ShouldEqual, "")
+		So(js.ReadMap("producerTable", testID[0]).(string), ShouldEqual, `{"loc":"nloc","url":"nurl","netId":"nnetid","online":true,"score":0,"votes":20000000}`)
 
 		r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 10000000))
 		So(r.Status.Message, ShouldContainSubstring, "require auth failed")
@@ -251,9 +254,7 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
 		So(r.Status.Message, ShouldContainSubstring, "vote still locked")
 
-		//js.FlushDB(t, keys)
-
-		// stat testID[0] become pending producer
+		// stat
 		r = js.TestJS("Stat", `[]`)
 		So(r.Status.Message, ShouldContainSubstring, "block number mismatch")
 
@@ -296,17 +297,19 @@ func TestJS_Vote(t *testing.T) {
 		// stat pending producers don't get score
 
 		// seven
-		for i := 2; i <= 14; i += 2 {
-			js.vi.SetBalance(testID[i], 5e+7)
+		for i := 16; i <= 18; i += 2 {
+			r = js.TestJSWithAuth("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[i]), testID[i+1])
+			So(r.Status.Message, ShouldEqual, "")
 		}
-		r = js.TestJSWithAuth("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[14]), testID[15])
-		So(r.Status.Message, ShouldEqual, "")
-		for i := 2; i <= 14; i += 2 {
+
+		for i := 2; i <= 18; i += 2 {
 			r = js.TestJSWithAuth("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[i], testID[i], 30000000+i), testID[i+1])
 			So(r.Status.Message, ShouldEqual, "")
 			So(js.ReadMap("producerTable", testID[i]), ShouldContainSubstring, strconv.Itoa(30000000+i))
 		}
-		So(js.ReadMap("preProducerMap", testID[14]), ShouldEqual, "true")
+		for i := 14; i <= 18; i += 2 {
+			So(js.ReadMap("preProducerMap", testID[i]), ShouldEqual, "true")
+		}
 
 		bh = &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -316,11 +319,15 @@ func TestJS_Vote(t *testing.T) {
 		}
 		js.NewBlock(bh)
 
-		// stat, offline producers don't get score
+		// stat, offline producers and pending producers don't get score
 		r = js.TestJS("Stat", `[]`)
 		So(r.Status.Message, ShouldEqual, "")
 
-		for i := 2; i <= 14; i += 2 {
+		for i := 2; i <= 18; i += 2 {
+			So(js.ReadMap("producerTable", testID[i]), ShouldContainSubstring, `"score":0`)
+		}
+
+		for i := 14; i <= 18; i += 2 {
 			r = js.TestJSWithAuth("LogInProducer", fmt.Sprintf(`["%v"]`, testID[i]), testID[i+1])
 			So(r.Status.Message, ShouldEqual, "")
 		}
@@ -339,71 +346,140 @@ func TestJS_Vote(t *testing.T) {
 		}))
 		So(r.Status.Message, ShouldEqual, "")
 
-		So(js.ReadMap("producerTable", testID[14]), ShouldContainSubstring, `"score":9000014`)
-		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, "IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB")
-		return
+		for i := 14; i <= 18; i += 2 {
+			So(js.ReadMap("producerTable", testID[i]), ShouldContainSubstring, fmt.Sprintf(`"score":%d`, 9000000+i))
+		}
 
-		t.Log(js.TestJS("LogOutProducer", fmt.Sprintf(`["%v"]`, testID[12])))
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[18])
+
+		// stat, offline producer doesn't become pending.
+		r = js.TestJSWithAuth("LogOutProducer", fmt.Sprintf(`["%v"]`, testID[16]), testID[17])
+		So(r.Status.Message, ShouldEqual, "")
+
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     800,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
+
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldEqual, "")
+		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB",`+
+			`"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4","IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
+			`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
+			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh"]`)
+
+		r = js.TestJSWithAuth("LogInProducer", fmt.Sprintf(`["%v"]`, testID[16]), testID[17])
+		So(r.Status.Message, ShouldEqual, "")
 
 		// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
-		t.Log(js.TestJS("Stat", `[]`))
-		//js.FlushDB(t, keys)
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     1000,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldEqual, "")
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[16])
 
-		t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[12])))
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     1200,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldEqual, "")
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[12])
 
-		// stat, offline producer doesn't become pending. offline and pending producer don't get score, other pre producers get score
-		t.Log(js.TestJS("Stat", `[]`))
-		//js.FlushDB(t, keys)
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     1400,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldEqual, "")
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[10])
 
-		t.Log(js.TestJS("Stat", `[]`))
-		//js.FlushDB(t, keys)
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     1600,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldEqual, "")
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[8])
 
-		t.Log(js.TestJS("Stat", `[]`))
-		//js.FlushDB(t, keys)
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     1800,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldEqual, "")
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[6])
 
-		t.Log(js.TestJS("Stat", `[]`))
-		//js.FlushDB(t, keys)
-
-		// testID[0] become pre producer from pending producer, score = 0
-		t.Log(js.TestJS("Stat", `[]`))
-		//js.FlushDB(t, keys)
-
-		t.Log(js.TestJS("Stat", `[]`))
-		//js.FlushDB(t, keys)
-
-		t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000)))
-		//js.FlushDB(t, keys)
-		t.Log(js.vi.Servi(testID[0]))
-		t.Log(js.vi.TotalServi())
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     2000,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldEqual, "")
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[4])
+		So(js.ReadDB("pendingProducerList"), ShouldNotContainSubstring, testID[18])
 
 		// unregister
-		t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-		//js.FlushDB(t, keys)
+		r = js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0]))
+		So(r.Status.Message, ShouldEqual, "")
 
 		// unvote after unregister
-		t.Log(js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 9000000)))
-		//js.FlushDB(t, keys)
-		t.Log(js.vi.Servi(testID[0]))
-		t.Log(js.vi.TotalServi())
+		r = js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 9000000))
+		So(r.Status.Message, ShouldEqual, "")
+
+		So(js.vi.Servi(testID[0]), ShouldEqual, 91055000)
+		So(js.vi.TotalServi(), ShouldEqual, 91055000)
 
 		// re register, score = 0, vote = 0
-		t.Log(js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0])))
-		t.Log(js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-		//js.FlushDB(t, keys)
+		r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
+		So(r.Status.Message, ShouldEqual, "")
+		r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
+		So(r.Status.Message, ShouldEqual, "")
 
-		t.Log(js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 21000001)))
-		//js.FlushDB(t, keys)
+		js.vi.SetBalance(testID[2], 5e+7)
+		r = js.TestJSWithAuth("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 21000001), testID[3])
+		So(r.Status.Message, ShouldEqual, "")
 
-		t.Log(js.TestJS("Stat", `[]`))
-		//js.FlushDB(t, keys)
+		bh = &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     2200,
+			Witness:    "witness",
+			Time:       123456,
+		}
+		js.NewBlock(bh)
+		r = js.TestJS("Stat", `[]`)
+		So(r.Status.Message, ShouldEqual, "")
 
 		// unregister pre producer
-		t.Log(js.TestJS("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[0])))
-		//js.FlushDB(t, keys)
+		r = js.TestJSWithAuth("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[10]), testID[11])
+		So(r.Status.Message, ShouldContainSubstring, "can't unregist")
 
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 21063)
+		native.BonusABI()
 		// test bonus
-		t.Log(js.vi.Servi(testID[0]))
-		t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
 		act2 := tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
 
 		trx2, err := MakeTx(act2)
