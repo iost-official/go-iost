@@ -5,9 +5,18 @@ import (
 
 	"errors"
 
+	"time"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
+
+func watchTime(f func()) time.Duration {
+	ta := time.Now()
+	f()
+	tb := time.Now().Sub(ta)
+	return tb
+}
 
 func sliceEqual(a, b []string) bool {
 	if len(a) == len(b) {
@@ -91,7 +100,12 @@ func TestHost_MapPut(t *testing.T) {
 	mock.EXPECT().Has("state", "m-contractName-hello-1").Return(false, nil)
 	mock.EXPECT().Get("state", "m-contractName-hello").Return("", errors.New("not found"))
 
-	host.MapPut("hello", "1", "world")
+	tr := watchTime(func() {
+		host.MapPut("hello", "1", "world")
+	})
+	if tr > time.Millisecond {
+		t.Log("to slow")
+	}
 }
 
 func TestHost_MapGet(t *testing.T) {
