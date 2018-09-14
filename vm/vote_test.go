@@ -166,7 +166,7 @@ func TestJS_Vote(t *testing.T) {
 		js.SetAPI("Unvote", "string", "string", "number")
 		js.SetAPI("Stat")
 		js.SetAPI("init")
-		js.SetAPI("InitProducer", "number", "string")
+		js.SetAPI("InitProducer", "string")
 		for i := 0; i <= 18; i += 2 {
 			js.vi.SetBalance(testID[i], 5e+7)
 		}
@@ -175,25 +175,18 @@ func TestJS_Vote(t *testing.T) {
 		if r.Status.Code != 0 {
 			t.Fatal(r.Status.Message)
 		}
-		num := 7
-		proStr := "["
-		for i := 0; i < num; i++ {
-			proStr += fmt.Sprintf(`\"%v\"`, testID[2*i])
-			if i != num-1 {
-				proStr += ","
-			}
-		}
-		proStr += "]"
 
-		tt := watchTime(func() {
-			r = js.TestJS("InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
-		})
-		if r.Status.Code != 0 {
+		for i := 0; i < 14; i += 2 {
+			tt := watchTime(func() {
+				r = js.TestJS("InitProducer", fmt.Sprintf(`["%v"]`, testID[i]))
+			})
+			if r.Status.Code != 0 {
+				t.Log(tt)
+				t.Fatal(r.Status.Message)
+			}
+			t.Log(r.GasUsage)
 			t.Log(tt)
-			t.Fatal(r.Status.Message)
 		}
-		t.Log(r.GasUsage)
-		t.Log(tt)
 
 		keys := []string{
 			"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
