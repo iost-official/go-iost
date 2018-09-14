@@ -1,12 +1,12 @@
+const producerRegisterFee = 1000 * 1000;
+const preProducerThreshold = 2100 * 10000;
+const voteLockTime = 200;
+const voteStatInterval = 200;
+
 class VoteContract {
     constructor() {
     }
     init() {
-        this._put("producerRegisterFee", 1000 * 1000);
-        this._put("preProducerThreshold", 2100 * 10000);
-        this._put("voteLockTime", 200);
-        this._put("voteStatInterval", 200);
-        this._put("producerNumber", 7);
         this._put("currentProducerList", []);
         this._put("pendingProducerList", []);
         this._put("pendingBlockNumber", 0);
@@ -27,9 +27,6 @@ class VoteContract {
 
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
-
-
-        const producerRegisterFee = this._get("producerRegisterFee");
 
         for (let i = 0; i < producerNumber; i++) {
             const ret = BlockChain.deposit(pendingProducerList[i], producerRegisterFee);
@@ -59,8 +56,6 @@ class VoteContract {
 
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
-
-        const producerRegisterFee = this._get("producerRegisterFee");
 
         const ret = BlockChain.deposit(proID, producerRegisterFee);
         if (ret !== 0) {
@@ -126,7 +121,7 @@ class VoteContract {
 		if (storage.mapHas("producerTable", account)) {
 			throw new Error("producer exists");
 		}
-		const ret = BlockChain.deposit(account, this._get("producerRegisterFee"));
+		const ret = BlockChain.deposit(account, producerRegisterFee);
 		if (ret !== 0) {
 			throw new Error("register deposit failed. ret = " + ret);
 		}
@@ -194,7 +189,7 @@ class VoteContract {
         this._mapDel("producerTable", account);
         this._mapDel("preProducerMap", account);
 
-		const ret = BlockChain.withdraw(account, this._get("producerRegisterFee"));
+		const ret = BlockChain.withdraw(account, producerRegisterFee);
 		if (ret != 0) {
 			throw new Error("withdraw failed. ret = " + ret);
 		}
@@ -230,7 +225,6 @@ class VoteContract {
 		// if producer's votes >= preProducerThreshold, then insert into preProducer map
         const proRes = this._mapGet("producerTable", producer);
 		proRes.votes += amount;
-		const preProducerThreshold = this._get("preProducerThreshold");
 		if (proRes.votes - amount <  preProducerThreshold &&
 				proRes.votes >= preProducerThreshold) {
 		    this._mapPut("preProducerMap", producer, true);
@@ -252,7 +246,7 @@ class VoteContract {
         if (voteRes[producer].amount < amount) {
 			throw new Error("vote amount less than expected")
 		}
-		if (voteRes[producer].time + this._get("voteLockTime")> this._getBlockNumber()) {
+		if (voteRes[producer].time + voteLockTime> this._getBlockNumber()) {
 			throw new Error("vote still locked")
 		}
 		voteRes[producer].amount -= amount;
@@ -266,8 +260,8 @@ class VoteContract {
 			this._mapPut("producerTable", producer, proRes);
 
 			// if producer's votes < preProducerThreshold, then delete from preProducer map
-			if (ori >= this._get("preProducerThreshold")&&
-					proRes.votes < this._get("preProducerThreshold")) {
+			if (ori >= preProducerThreshold &&
+					proRes.votes < preProducerThreshold) {
 			    this._mapDel("preProducerMap", producer);
 			}
 		}
@@ -277,7 +271,7 @@ class VoteContract {
 			throw new Error("withdraw failed. ret = " + ret);
 		}
 
-        const servi = Math.floor(amount * this._getBlockNumber() / this._get("voteLockTime"));
+        const servi = Math.floor(amount * this._getBlockNumber() / voteLockTime);
 		const ret2 = BlockChain.grantServi(voter, servi);
 		if (ret2 !== 0) {
 		    throw new Error("grant servi failed. ret = " + ret2);
@@ -289,7 +283,7 @@ class VoteContract {
 		// controll auth
 		const bn = this._getBlockNumber();
 		const pendingBlockNumber = this._get("pendingBlockNumber");
-		if (bn % this._get("voteStatInterval")!== 0 || bn <= pendingBlockNumber) {
+		if (bn % voteStatInterval!== 0 || bn <= pendingBlockNumber) {
 			throw new Error("stat failed. block number mismatch. pending bn = " + pendingBlockNumber + ", bn = " + bn);
 		}
 
@@ -298,7 +292,6 @@ class VoteContract {
         const preProducerMapKeys = storage.mapKeys("preProducerMap");
 
         const pendingProducerList = this._get("pendingProducerList");
-        const preProducerThreshold = this._get("preProducerThreshold");
 
 		for (let i in preProducerMapKeys) {
 		    const key = preProducerMapKeys[i];
