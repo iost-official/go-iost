@@ -24,8 +24,10 @@ class VoteContract {
             throw new Error("producer list length mismatch with number.");
         }
         this._put("pendingProducerList", pendingProducerList);
+
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
+
 
         const producerRegisterFee = this._get("producerRegisterFee");
 
@@ -203,8 +205,8 @@ class VoteContract {
 		if (proRes.votes - amount <  preProducerThreshold &&
 				proRes.votes >= preProducerThreshold) {
 		    this._mapPut("preProducerMap", producer, true);
-		    this._mapPut("producerTable", producer, proRes)
 		}
+        this._mapPut("producerTable", producer, proRes)
 	}
 
 	// unvote
