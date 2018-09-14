@@ -7,6 +7,8 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 
+	"sync"
+
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
@@ -25,10 +27,23 @@ type Monitor struct {
 	vms map[string]VM
 }
 
+var jsOnce sync.Once
+
 // NewMonitor ...
 func NewMonitor() *Monitor {
 	m := &Monitor{
 		vms: make(map[string]VM),
+	}
+	_, ok := m.vms["javascript"]
+	if !ok {
+		jsOnce.Do(func() {
+			jsvm := Factory("javascript")
+			m.vms["javascript"] = jsvm
+			err := m.vms["javascript"].Init()
+			if err != nil {
+				panic(err)
+			}
+		})
 	}
 	return m
 }
