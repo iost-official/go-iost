@@ -35,9 +35,9 @@ lint:
 
 test:
 ifeq ($(origin VERBOSE),undefined)
-	go test `go list ./... | grep -v vm`
+	go test `go list ./... | grep -v integration_test`
 else
-	go test -v `go list ./... | grep -v vm`
+	go test -v `go list ./... | grep -v integration_test`
 endif
 
 image:
