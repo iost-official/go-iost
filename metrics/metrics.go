@@ -13,8 +13,8 @@ func InitMetrics(c *Client) {
 }
 
 // SetPusher sets the pusher with the given addr.
-func SetPusher(addr string) error {
-	return defaultClient.SetPusher(addr)
+func SetPusher(addr, username, password string) error {
+	return defaultClient.SetPusher(addr, username, password)
 }
 
 // SetID sets the ID of metrics client.

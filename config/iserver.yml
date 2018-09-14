@@ -45,6 +45,8 @@ log:
 
 metrics:
   pushAddr: "47.75.42.25:9091"
+  username:
+  password:
   enable: true
   id: "10"
 
