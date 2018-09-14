@@ -151,6 +151,17 @@ func TestJS_Vote(t *testing.T) {
 		}
 		js.NewBlock(bh)
 
+		// deploy iost.bonus
+		act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
+		trx2, err := MakeTx(act2)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, err := js.e.Exec(trx2)
+		if err != nil || r.Status.Code != tx.Success {
+			t.Fatal(err, r)
+		}
+
 		defer js.Clear()
 		lc, err := ReadFile("../config/vote.js")
 		if err != nil {
@@ -170,7 +181,7 @@ func TestJS_Vote(t *testing.T) {
 			js.vi.SetBalance(testID[i], 5e+7)
 		}
 		js.vi.Commit()
-		r := js.DoSet()
+		r = js.DoSet()
 		if r.Status.Code != 0 {
 			t.Fatal(r.Status.Message)
 		}
@@ -477,41 +488,36 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJSWithAuth("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[10]), testID[11])
 		So(r.Status.Message, ShouldContainSubstring, "can't unregist")
 
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 21063)
-		native.BonusABI()
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19510)
+
 		// test bonus
-		act2 := tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
-
-		trx2, err := MakeTx(act2)
+		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
+		trx2, err = MakeTx(act2)
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		r, err = js.e.Exec(trx2)
-		if err != nil {
-			t.Fatal(err)
+		if err != nil || r.Status.Code != tx.Success {
+			t.Fatal(err, r)
 		}
-		t.Log(r)
 
-		t.Log(js.vi.Servi(testID[0]))
-		t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
-		t.Log(js.vi.Balance(testID[0]))
-		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 21099999))
+		So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 39884154)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19594)
+		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
 
 		trx2, err = MakeTx(act2)
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		r, err = js.e.Exec(trx2)
-		if err != nil {
-			t.Fatal(err)
+		if err != nil || r.Status.Code != tx.Success {
+			t.Fatal(err, r)
 		}
-		t.Log(r)
 
-		t.Log(js.vi.Servi(testID[0]))
-		t.Log(js.vi.Balance(host.ContractAccountPrefix + "iost.bonus"))
-		t.Log(js.vi.Balance(testID[0]))
+		So(js.vi.Servi(testID[0]), ShouldEqual, 0)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 114)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 39902939)
 	})
 
 }
