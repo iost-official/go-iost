@@ -12,7 +12,7 @@ class VoteContract {
         this._put("pendingBlockNumber", 0);
     }
 
-    InitProducer(num, proStr) {
+    InitProducerOld(num, proStr) {
         if (num === 0) {
             throw new Error("producer list number empty.");
         }
@@ -24,8 +24,10 @@ class VoteContract {
             throw new Error("producer list length mismatch with number.");
         }
         this._put("pendingProducerList", pendingProducerList);
+
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
+
 
         const producerRegisterFee = this._get("producerRegisterFee");
 
@@ -43,6 +45,35 @@ class VoteContract {
                 "votes": 0
             });
         }
+    }
+
+    InitProducer(proID) {
+    	const bn = this._getBlockNumber();
+    	if(bn !== 0) {
+    		throw new Error("init out of genesis block")
+		}
+
+    	let pendingProducerList = this._get("pendingProducerList");
+		pendingProducerList.push(proID);
+        this._put("pendingProducerList", pendingProducerList);
+
+        const producerNumber = pendingProducerList.length;
+        this._put("producerNumber", producerNumber);
+
+        const producerRegisterFee = this._get("producerRegisterFee");
+
+        const ret = BlockChain.deposit(proID, producerRegisterFee);
+        if (ret !== 0) {
+            throw new Error("constructor deposit failed. ret = " + ret);
+        }
+        this._mapPut("producerTable", proID, {
+            "loc": "",
+            "url": "",
+            "netId": "",
+            "online": true,
+            "score": 0,
+            "votes": 0
+        });
     }
 
 	_requireAuth(account) {

@@ -27,7 +27,6 @@
         {
             "name": "InitProducer",
             "args": [
-                "number",
                 "string"
             ],
             "payment": 0,
