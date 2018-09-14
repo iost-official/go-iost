@@ -34,7 +34,11 @@ lint:
 	@gometalinter --config=.gometalinter.json ./...
 
 test:
+ifeq ($(origin VERBOSE),undefined)
+	go test ./...
+else
 	go test -v ./...
+endif
 
 image:
 	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make
