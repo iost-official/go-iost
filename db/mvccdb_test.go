@@ -4,6 +4,9 @@ import (
 	"os/exec"
 	"testing"
 
+	"os"
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -286,4 +289,29 @@ func (suite *MVCCDBTestSuite) TearDownTest() {
 
 func TestMVCCDBTestSuite(t *testing.T) {
 	suite.Run(t, new(MVCCDBTestSuite))
+}
+
+func TestPutTimeout(t *testing.T) {
+	t.Skip() // todo repair or find out why
+	d, err := NewMVCCDB("mvcc_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		d.Close()
+		os.RemoveAll("mvcc_test")
+	}()
+	start := time.Now()
+	d.Put("t", "a", "b")
+	du := time.Now().Sub(start)
+	if du > 0 {
+		t.Error("time usage: ", du)
+	}
+
+	start = time.Now()
+	d.Put("t", "b", "c")
+	du = time.Now().Sub(start)
+	if du > 0 {
+		t.Error("time usage: ", du)
+	}
 }
