@@ -47,7 +47,7 @@ func initMetrics(metricsConfig *common.MetricsConfig) error {
 	if metricsConfig == nil || !metricsConfig.Enable {
 		return nil
 	}
-	err := metrics.SetPusher(metricsConfig.PushAddr)
+	err := metrics.SetPusher(metricsConfig.PushAddr, metricsConfig.Username, metricsConfig.Password)
 	if err != nil {
 		return err
 	}
