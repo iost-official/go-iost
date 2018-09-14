@@ -641,7 +641,7 @@ func stopTest(gl global.BaseVariable) {
 	os.RemoveAll(dbPath3)
 }
 
-func genTx(a *account.Account, ExpirationIter int64) *tx.Tx {
+func genTx(a *account.Account, expirationIter int64) *tx.Tx {
 	actions := make([]*tx.Action, 0)
 	actions = append(actions, &tx.Action{
 		Contract:   "contract1",
@@ -655,7 +655,7 @@ func genTx(a *account.Account, ExpirationIter int64) *tx.Tx {
 	})
 
 	ex := time.Now().UnixNano()
-	ex += ExpirationIter
+	ex += expirationIter
 
 	t := tx.NewTx(actions, [][]byte{a.Pubkey}, 100000, 100, ex)
 
@@ -678,8 +678,8 @@ func genTx(a *account.Account, ExpirationIter int64) *tx.Tx {
 	return t1
 }
 
-func genTxMsg(a *account.Account, ExpirationIter int64) *p2p.IncomingMessage {
-	t := genTx(a, ExpirationIter)
+func genTxMsg(a *account.Account, expirationIter int64) *p2p.IncomingMessage {
+	t := genTx(a, expirationIter)
 
 	broadTx := p2p.NewIncomingMessage("test", t.Encode(), p2p.PublishTxRequest)
 
