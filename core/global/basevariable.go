@@ -26,7 +26,7 @@ const (
 	ModeInit
 )
 
-var VoteContractPath string
+var VoteContractPath string = "../../config/"
 
 func (m TMode) String() string {
 	switch m {
