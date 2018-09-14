@@ -81,7 +81,7 @@ func (c *Client) Stop() {
 	}
 	c.exitCh <- struct{}{}
 	<-c.exitCh
-	c.pusher.Add()
+	c.pusher.Push()
 }
 
 // NewCounter returns a counter-type metrics.
@@ -131,7 +131,7 @@ func (c *Client) startPush() {
 	for {
 		select {
 		case <-timer.C:
-			c.pusher.Add()
+			c.pusher.Push()
 			timer.Reset(pushInterval)
 		case <-c.exitCh:
 			timer.Stop()
