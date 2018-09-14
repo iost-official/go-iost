@@ -203,8 +203,8 @@ class VoteContract {
 		if (proRes.votes - amount <  preProducerThreshold &&
 				proRes.votes >= preProducerThreshold) {
 		    this._mapPut("preProducerMap", producer, true);
-		    this._mapPut("producerTable", producer, proRes)
 		}
+        this._mapPut("producerTable", producer, proRes)
 	}
 
 	// unvote
