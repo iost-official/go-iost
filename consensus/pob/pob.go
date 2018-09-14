@@ -30,6 +30,12 @@ var (
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
 	metricsTPS                 = metrics.NewGauge("iost_tps", nil)
+	metricsVMTime              = metrics.NewGauge("iost_vm_exec_time", nil)
+	metricsVMAvgTime           = metrics.NewGauge("iost_vm_exec_avg_time", nil)
+	metricsIterTime            = metrics.NewGauge("iost_iter_time", nil)
+	metricsIterAvgTime         = metrics.NewGauge("iost_iter_avg_time", nil)
+	metricsNonTimeOutTxSize    = metrics.NewGauge("iost_non_time_out_tx_size", nil)
+	metricsAllTxSize           = metrics.NewGauge("iost_all_out_tx_size", nil)
 )
 
 var (
@@ -276,7 +282,7 @@ func (p *PoB) verifyLoop() {
 				ilog.Info("block from myself, block number: ", blk.Head.Number)
 				err := p.handleRecvBlock(blk)
 				if err != nil {
-					ilog.Debugf("received new block error, err:%v", err)
+					ilog.Errorf("received new block error, err:%v", err)
 					continue
 				}
 				go p.synchronizer.CheckGenBlock(blk.HeadHash())
@@ -300,7 +306,7 @@ func (p *PoB) verifyLoop() {
 				p.broadcastBlockHash(blk) // can use go
 				p.blockReqMap.Delete(string(blk.HeadHash()))
 				if err != nil && err != errSingle {
-					ilog.Debugf("received new block error, err:%v", err)
+					ilog.Errorf("received new block error, err:%v", err)
 					continue
 				}
 				if err == errSingle {
@@ -312,7 +318,7 @@ func (p *PoB) verifyLoop() {
 				if blk.Head.Number == 0 {
 					err := p.handleGenesisBlock(blk)
 					if err != nil {
-						ilog.Debugf("received genesis block error, err:%v", err)
+						ilog.Errorf("received genesis block error, err:%v", err)
 					}
 					continue
 				} else {
@@ -321,7 +327,7 @@ func (p *PoB) verifyLoop() {
 					}
 					err := p.handleRecvBlock(blk)
 					if err != nil && err != errSingle && err != errDuplicate {
-						ilog.Debugf("received sync block error, err:%v", err)
+						ilog.Errorf("received sync block error, err:%v", err)
 						continue
 					}
 					go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()))
@@ -372,7 +378,7 @@ func (p *PoB) scheduleLoop() {
 				if p.baseVariable.Mode() == global.ModeNormal {
 					p.txPool.Lock()
 					blk, err := generateBlock(p.account, p.txPool, p.produceDB)
-					p.txPool.Lease()
+					p.txPool.Release()
 					ilog.Infof("gen block:%v", blk.Head.Number)
 					if err != nil {
 						ilog.Error(err.Error())
@@ -420,6 +426,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
+			ilog.Errorf("verify block failed. err=%v", err)
 			p.blockCache.Del(node)
 			return err
 		}

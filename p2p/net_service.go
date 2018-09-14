@@ -45,6 +45,8 @@ type Service interface {
 	SendToPeer(PeerID, []byte, MessageType, MessagePriority)
 	Register(string, ...MessageType) chan IncomingMessage
 	Deregister(string, ...MessageType)
+
+	NeighborStat() map[string]interface{}
 }
 
 // NetService is the implementation of Service interface.
@@ -162,4 +164,9 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 
 func (ns *NetService) streamHandler(s libnet.Stream) {
 	ns.peerManager.HandleStream(s)
+}
+
+// NeighborStat dumps neighbors' status for debug.
+func (ns *NetService) NeighborStat() map[string]interface{} {
+	return ns.peerManager.NeighborStat()
 }

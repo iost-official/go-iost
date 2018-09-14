@@ -87,6 +87,30 @@
 			"revisionTime": "2017-09-12T18:36:27Z"
 		},
 		{
+			"checksumSHA1": "IlDHv+GrkfH+xp1pdKzOqws1sLY=",
+			"path": "github.com/emirpasic/gods/containers",
+			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
+			"revisionTime": "2018-06-18T11:24:50Z"
+		},
+		{
+			"checksumSHA1": "EMOp3CuX8cfFbxn00GMEDOajyEQ=",
+			"path": "github.com/emirpasic/gods/trees",
+			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
+			"revisionTime": "2018-06-18T11:24:50Z"
+		},
+		{
+			"checksumSHA1": "ZD5sSj4CH6N6YfJzFTqor/hsyTM=",
+			"path": "github.com/emirpasic/gods/trees/redblacktree",
+			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
+			"revisionTime": "2018-06-18T11:24:50Z"
+		},
+		{
+			"checksumSHA1": "6KV7DzMiMWnJbp5qhycmPIQ4t70=",
+			"path": "github.com/emirpasic/gods/utils",
+			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
+			"revisionTime": "2018-06-18T11:24:50Z"
+		},
+		{
 			"checksumSHA1": "Hd1Y5DkzYULQzJlSgYv2w5SiEAo=",
 			"path": "github.com/ethereum/go-ethereum/common/math",
 			"revision": "55b579e02ce6f374bf81061269eabde0d82ae567",
@@ -199,6 +223,12 @@
 			"path": "github.com/gomodule/redigo/redis",
 			"revision": "9352ab68be133885e31a43661cc42a220cb8e821",
 			"revisionTime": "2018-04-01T19:18:55Z"
+		},
+		{
+			"checksumSHA1": "yIkYzW7bzAD81zHyuCNmEj4+oxQ=",
+			"path": "github.com/gopherjs/gopherjs/js",
+			"revision": "89baedc74dd74098df0c4ba8792e3cf6d722d4d0",
+			"revisionTime": "2018-08-20T05:23:04Z"
 		},
 		{
 			"checksumSHA1": "mB5P3/XIC7r4Jc0/K86NA9Jq2CA=",
@@ -355,6 +385,12 @@
 			"path": "github.com/huin/goupnp/ssdp",
 			"revision": "1395d1447324cbea88d249fbfcfd70ea878fdfca",
 			"revisionTime": "2018-04-15T21:51:57Z"
+		},
+		{
+			"checksumSHA1": "40vJyUB4ezQSn/NSadsKEOrudMc=",
+			"path": "github.com/inconshreveable/mousetrap",
+			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
+			"revisionTime": "2014-10-17T20:07:13Z"
 		},
 		{
 			"checksumSHA1": "Cm6ot0fAKhZc3c+lggsVv2QKj7Q=",
@@ -1156,6 +1192,12 @@
 			"revisionTime": "2017-05-05T22:16:40Z"
 		},
 		{
+			"checksumSHA1": "NG5wGB2iQ13+HugiJ3rLZ0+fGsA=",
+			"path": "github.com/yasushi-saito/rbtree",
+			"revision": "33ff713a769b9c4fcb4ec67426fe58765a1920dc",
+			"revisionTime": "2018-05-24T17:57:43Z"
+		},
+		{
 			"checksumSHA1": "yNGEI9BMDbGwabUnaHvV9ZZm/a0=",
 			"path": "github.com/yuin/gopher-lua/ast",
 			"revision": "b0fa786cf4ea360285924c4a7fd42325be57aec8",
@@ -1422,6 +1464,12 @@
 		{
 			"checksumSHA1": "2iGEpqdA3KpuCNSWW6KPCIhpXl4=",
 			"path": "google.golang.org/genproto/googleapis/rpc/status",
+			"revision": "694d95ba50e67b2e363f3483057db5d4910c18f9",
+			"revisionTime": "2018-05-23T21:25:16Z"
+		},
+		{
+			"checksumSHA1": "6g4hBlu3y4+LLRfenbLrx2K+VG0=",
+			"path": "google.golang.org/genproto/protobuf/field_mask",
 			"revision": "694d95ba50e67b2e363f3483057db5d4910c18f9",
 			"revisionTime": "2018-05-23T21:25:16Z"
 		},

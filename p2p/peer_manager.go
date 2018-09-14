@@ -49,9 +49,8 @@ const (
 //   * handling messages according to its type.
 //   * discovering peers and maintaining routing table.
 type PeerManager struct {
-	neighbors     map[peer.ID]*Peer
+	neighbors     *sync.Map // map[peer.ID]*Peer
 	neighborCount int
-	neighborMutex sync.RWMutex
 
 	subs   *sync.Map //  map[MessageType]map[string]chan IncomingMessage
 	quitCh chan struct{}
@@ -72,7 +71,7 @@ type PeerManager struct {
 func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), time.Second, host.Peerstore())
 	return &PeerManager{
-		neighbors:    make(map[peer.ID]*Peer),
+		neighbors:    new(sync.Map),
 		subs:         new(sync.Map),
 		quitCh:       make(chan struct{}),
 		routingTable: routingTable,
@@ -273,56 +272,48 @@ func (pm *PeerManager) AddNeighbor(p *Peer) {
 	p.Start()
 	pm.storePeer(p.id, []multiaddr.Multiaddr{p.addr})
 
-	pm.neighborMutex.Lock()
-	defer pm.neighborMutex.Unlock()
-
-	pm.neighbors[p.id] = p
+	pm.neighbors.Store(p.id, p)
+	pm.neighborCount++
 }
 
 // RemoveNeighbor stops a peer and removes it from the neighbor list.
 func (pm *PeerManager) RemoveNeighbor(peerID peer.ID) {
 	// pm.deletePeer(peerID)
 
-	pm.neighborMutex.Lock()
-	defer pm.neighborMutex.Unlock()
-
-	if peer, exist := pm.neighbors[peerID]; exist {
-		peer.Stop()
-		delete(pm.neighbors, peerID)
+	if peer, ok := pm.neighbors.Load(peerID); ok {
+		peer.(*Peer).Stop()
+		pm.neighbors.Delete(peerID)
+		pm.neighborCount--
 	}
 }
 
 // GetNeighbor returns the peer of the given peerID from the neighbor list.
 func (pm *PeerManager) GetNeighbor(peerID peer.ID) *Peer {
-	pm.neighborMutex.RLock()
-	defer pm.neighborMutex.RUnlock()
-
-	return pm.neighbors[peerID]
+	if peer, ok := pm.neighbors.Load(peerID); ok {
+		return peer.(*Peer)
+	}
+	return nil
 }
 
 // NeighborCount returns the neighbor amount.
 func (pm *PeerManager) NeighborCount() int {
-	pm.neighborMutex.RLock()
-	defer pm.neighborMutex.RUnlock()
-
-	return len(pm.neighbors)
+	return pm.neighborCount
 }
 
 // kickNormalNeighbors removes neighbors that are not block producers.
 func (pm *PeerManager) kickNormalNeighbors() {
 
-	pm.neighborMutex.Lock()
-	defer pm.neighborMutex.Unlock()
-
-	for pid, peer := range pm.neighbors {
-		if len(pm.neighbors) < maxNeighborCount {
-			break
+	pm.neighbors.Range(func(k, v interface{}) bool {
+		if pm.neighborCount < maxNeighborCount {
+			return false
 		}
-		if !pm.isBP(pid) {
-			peer.Stop()
-			delete(pm.neighbors, pid)
+		if !pm.isBP(k.(peer.ID)) {
+			v.(*Peer).Stop()
+			pm.neighbors.Delete(k)
+			pm.neighborCount--
 		}
-	}
+		return true
+	})
 }
 
 // DumpRoutingTable saves routing table in file.
@@ -433,20 +424,15 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-	/* if typ == PublishTxRequest { */
-	// return
-	/* } */
 	if typ == NewBlock || typ == NewBlockHash || typ == SyncBlockHashRequest {
 		ilog.Infof("broadcast message. type=%s", typ)
 	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
-	pm.neighborMutex.RLock()
-	defer pm.neighborMutex.RUnlock()
-
-	for _, peer := range pm.neighbors {
-		peer.SendMessage(msg, mp, true)
-	}
+	pm.neighbors.Range(func(k, v interface{}) bool {
+		v.(*Peer).SendMessage(msg, mp, true)
+		return true
+	})
 }
 
 // SendToPeer sends message to the specified peer.
@@ -487,7 +473,7 @@ func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 
 // handleRoutingTableQuery picks the nearest peers of the given peerIDs and sends the result to it.
 func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, peerID peer.ID) {
-	ilog.Infof("handling routing table query.")
+	ilog.Debug("handling routing table query.")
 	data, _ := msg.data()
 
 	query := &p2pb.RoutingQuery{}
@@ -541,7 +527,7 @@ func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, peerID peer.ID) 
 
 // handleRoutingTableResponse stores the peer information received.
 func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
-	ilog.Infof("handling routing table response.")
+	ilog.Debug("handling routing table response.")
 
 	data, _ := msg.data()
 
@@ -551,7 +537,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 		ilog.Errorf("pb decode failed. err=%v, str=%s", err, data)
 		return
 	}
-	ilog.Infof("receiving peer infos: %v", resp)
+	ilog.Debugf("receiving peer infos: %v", resp)
 	for _, peerInfo := range resp.Peers {
 		if len(peerInfo.Addrs) > 0 {
 			pid, err := peer.IDB58Decode(peerInfo.Id)
@@ -603,4 +589,18 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 			})
 		}
 	}
+}
+
+// NeighborStat dumps neighbors' status for debug.
+func (pm *PeerManager) NeighborStat() map[string]interface{} {
+	ret := make(map[string]interface{})
+
+	pm.neighbors.Range(func(k, v interface{}) bool {
+		ret[k.(peer.ID).Pretty()] = map[string]interface{}{
+			"stream": v.(*Peer).streamCount,
+		}
+		return true
+	})
+
+	return ret
 }
