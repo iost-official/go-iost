@@ -337,13 +337,11 @@ func TestEngine_Loop(t *testing.T) {
 		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
 	}
 
-	host, code = MyInit(t, "loop")
 	_, _, err = vmPool.LoadAndCall(host, code, "for2")
 	if err == nil || err.Error() != "out of gas" {
 		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
 	}
 
-	host, code = MyInit(t, "loop")
 	rs, _, err := vmPool.LoadAndCall(host, code, "for3")
 	if err != nil {
 		t.Fatalf("LoadAndCall for3 run error: %v\n", err)
@@ -352,7 +350,6 @@ func TestEngine_Loop(t *testing.T) {
 		t.Fatalf("LoadAndCall except 10, got %s\n", rs[0].(string))
 	}
 
-	host, code = MyInit(t, "loop")
 	rs, _, err = vmPool.LoadAndCall(host, code, "forin")
 	if err != nil {
 		t.Fatalf("LoadAndCall forin run error: %v\n", err)
@@ -361,7 +358,6 @@ func TestEngine_Loop(t *testing.T) {
 		t.Fatalf("LoadAndCall except 12, got %s\n", rs[0].(string))
 	}
 
-	host, code = MyInit(t, "loop")
 	rs, _, err = vmPool.LoadAndCall(host, code, "forof")
 	if err != nil {
 		t.Fatalf("LoadAndCall forof run error: %v\n", err)
@@ -370,13 +366,11 @@ func TestEngine_Loop(t *testing.T) {
 		t.Fatalf("LoadAndCall except 6, got %s\n", rs[0].(string))
 	}
 
-	host, code = MyInit(t, "loop")
 	_, _, err = vmPool.LoadAndCall(host, code, "while")
 	if err == nil || err.Error() != "out of gas" {
 		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
 	}
 
-	host, code = MyInit(t, "loop")
 	_, _, err = vmPool.LoadAndCall(host, code, "dowhile")
 	if err == nil || err.Error() != "out of gas" {
 		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
@@ -398,7 +392,6 @@ func TestEngine_Func(t *testing.T) {
 	//	t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded, but got %v\n", err)
 	//}
 
-	host, code = MyInit(t, "func")
 	rs, _, err := vmPool.LoadAndCall(host, code, "func3", 4)
 	if err != nil {
 		t.Fatalf("LoadAndCall func3 run error: %v\n", err)
@@ -407,7 +400,6 @@ func TestEngine_Func(t *testing.T) {
 		t.Fatalf("LoadAndCall except 9, got %s\n", rs[0].(string))
 	}
 
-	host, code = MyInit(t, "func")
 	rs, _, err = vmPool.LoadAndCall(host, code, "func4")
 	if err != nil {
 		t.Fatalf("LoadAndCall func4 run error: %v\n", err)
@@ -431,7 +423,6 @@ func TestEngine_Danger(t *testing.T) {
 		t.Fatalf("LoadAndCall for should return error: Uncaught exception: TypeError: Cannot set property 'c' of undefined, but got %v\n", err)
 	}
 
-	host, code = MyInit(t, "danger")
 	_, _, err = vmPool.LoadAndCall(host, code, "throw")
 	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: test throw") {
 		t.Fatalf("LoadAndCall for should return error: Uncaught exception: test throw, but got %v\n", err)
