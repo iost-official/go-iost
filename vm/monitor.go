@@ -30,6 +30,12 @@ func NewMonitor() *Monitor {
 	m := &Monitor{
 		vms: make(map[string]VM),
 	}
+	jsvm := Factory("javascript")
+	m.vms["javascript"] = jsvm
+	err := m.vms["javascript"].Init()
+	if err != nil {
+		panic(err)
+	}
 	return m
 }
 
