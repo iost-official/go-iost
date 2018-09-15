@@ -142,7 +142,7 @@ func (pm *PeerManager) findBPLoop() {
 		case <-time.After(findBPInterval):
 			unknownBPs := make([]string, 0)
 			for _, id := range pm.getBPs() {
-				if len(pm.peerStore.Addrs(id)) == 0 {
+				if len(id) > 0 && len(pm.peerStore.Addrs(id)) == 0 {
 					unknownBPs = append(unknownBPs, id.Pretty())
 				}
 			}

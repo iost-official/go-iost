@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"encoding/json"
 	"strconv"
 
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -13,7 +12,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
 type CacheStatus int
@@ -29,85 +27,6 @@ const (
 	Single
 	Virtual
 )
-
-type WitnessList struct {
-	activeWitnessList    []string
-	pendingWitnessList   []string
-	pendingWitnessNumber int64
-}
-
-// SetPending set pending witness list
-func (wl *WitnessList) SetPending(pl []string) {
-	wl.pendingWitnessList = pl
-}
-
-// SetPendingNum set block number of pending witness
-func (wl *WitnessList) SetPendingNum(n int64) {
-	wl.pendingWitnessNumber = n
-}
-
-// SetActive set active witness list
-func (wl *WitnessList) SetActive(al []string) {
-	wl.activeWitnessList = al
-}
-
-// Pending get pending witness list
-func (wl *WitnessList) Pending() []string {
-	return wl.pendingWitnessList
-}
-
-// Active get active witness list
-func (wl *WitnessList) Active() []string {
-	return wl.activeWitnessList
-}
-
-// SetPendingNum get block number of pending witness
-func (wl *WitnessList) PendingNum() int64 {
-	return wl.pendingWitnessNumber
-}
-
-// UpdatePending update pending witness list
-func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
-
-	vi := database.NewVisitor(0, mv)
-
-	spn := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingBlockNumber"))
-	if spn == nil {
-		return errors.New("failed to get pending number")
-	}
-	pn, err := strconv.ParseInt(spn.(string), 10, 64)
-	if err != nil {
-		return err
-	}
-	wl.SetPendingNum(pn)
-
-	jwl := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingProducerList"))
-	if jwl == nil {
-		return errors.New("failed to get pending list")
-	}
-
-	str := make([]string, 0)
-	err = json.Unmarshal([]byte(jwl.(string)), &str)
-	if err != nil {
-		return err
-	}
-	wl.SetPending(str)
-
-	return nil
-}
-
-func (wl *WitnessList) LibWitnessHandle() {
-	wl.SetActive(wl.Pending())
-}
-
-func (wl *WitnessList) CopyWitness(n *BlockCacheNode) {
-	if n == nil {
-		return
-	}
-	wl.SetActive(n.Active())
-	wl.SetPending(n.Pending())
-	wl.SetPendingNum(n.PendingNum())
-}
 
 type BlockCacheNode struct {
 	Block        *block.Block
@@ -242,15 +161,10 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
 		bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
 
-		if !bc.stateDB.Checkout(string(lib.HeadHash())) {
-			return nil, errors.New("failed to state db")
-		}
-		if err := bc.linkedRoot.UpdatePending(bc.stateDB); err != nil {
+		if err := bc.updatePending(bc.linkedRoot); err != nil {
 			return nil, err
 		}
-
 		bc.linkedRoot.LibWitnessHandle()
-
 		ilog.Info("Witness Block Num:", bc.LinkedRoot().Number)
 		for _, v := range bc.linkedRoot.Active() {
 			ilog.Info("ActiveWitness:", v)
@@ -281,15 +195,6 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	}
 }
 
-func (bc *BlockCacheImpl) initHead(h *BlockCacheNode) error {
-
-	bc.head = h
-	if err := bc.updatePending(bc.head); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
 	h.CopyWitness(h.Parent)
 	if h.Number%common.VoteInterval == 0 {
@@ -308,6 +213,12 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 			ilog.Error("failed to update pending, err:", err)
 			return err
 		}
+		if err := h.UpdateInfo(bc.stateDB); err != nil {
+			ilog.Error("failed to update witness info, err:", err)
+			return err
+		}
+	} else {
+		return errors.New("failed to state db")
 	}
 	return nil
 }
@@ -350,11 +261,9 @@ func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 	bc.linkedRoot = NewBCN(nil, blk)
 	bc.linkedRoot.Type = Linked
 
-	if bc.stateDB.Checkout(string(blk.HeadHash())) {
-		bc.linkedRoot.UpdatePending(bc.stateDB)
+	if err := bc.updatePending(bc.linkedRoot); err == nil {
 		bc.linkedRoot.LibWitnessHandle()
 	}
-
 	bc.head = bc.linkedRoot
 	bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
@@ -386,7 +295,7 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	if bcn.Parent != nil && len(bcn.Parent.Children) == 1 && bcn.Parent.Type == Linked {
 		bc.leaf[bcn.Parent] = bcn.Parent.Number
 	}
-	for ch, _ := range bcn.Children {
+	for ch := range bcn.Children {
 		bc.del(ch)
 	}
 	bc.delNode(bcn)
@@ -397,7 +306,7 @@ func (bc *BlockCacheImpl) delSingle() {
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
-	for bcn, _ := range bc.singleRoot.Children {
+	for bcn := range bc.singleRoot.Children {
 		if bcn.Number <= height {
 			bc.del(bcn)
 		}
@@ -409,7 +318,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	if cur != bc.linkedRoot {
 		bc.flush(cur)
 	}
-	for child, _ := range cur.Children {
+	for child := range cur.Children {
 		if child == retain {
 			continue
 		}
@@ -484,10 +393,19 @@ func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 
 //for debug
 //draw the blockcache
-const PICSIZE int = 10000
+const PICSIZE int = 500
 
-var pic [PICSIZE][PICSIZE]string
+var pic = makePic()
 var picX, picY int
+
+func makePic() [][]string {
+	a := make([][]string, 0)
+	for i := 0; i < PICSIZE; i++ {
+		s := make([]string, PICSIZE)
+		a = append(a, s)
+	}
+	return a
+}
 
 func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 	if x > picX {
@@ -506,23 +424,23 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 		}
 	}
 	pic[x][y] = strconv.FormatInt(root.Number, 10)
-	var width int = 0
-	var f bool = false
+	var width int
+	var f bool
 	i := 0
 	for k := range root.Children {
 		if i == len(root.Children)-1 {
 			f = true
 		}
 		width = calcTree(k, x+width, y+2, f)
-		i += 1
+		i++
 	}
 	if isLast {
 		return x + width
-	} else {
-		return x + width + 2
 	}
+	return x + width + 2
 }
 
+// DrawTree returns the the graph format of blockcache tree.
 func (bcn *BlockCacheNode) DrawTree() string {
 	picX, picY = 0, 0
 	var ret string
@@ -543,6 +461,7 @@ func (bcn *BlockCacheNode) DrawTree() string {
 	return ret
 }
 
+// Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
 	return bc.linkedRoot.DrawTree() + "\n\n" + bc.singleRoot.DrawTree()
 }
