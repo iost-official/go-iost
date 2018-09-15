@@ -271,6 +271,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     Local<Value> ret = script->Run();
 
     if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
+        error = "Caught something not exception!";
         return;
     }
 
