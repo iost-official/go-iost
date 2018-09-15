@@ -138,7 +138,7 @@ func TestJS_VoteServi(t *testing.T) {
 }
 
 func TestJS_Vote(t *testing.T) {
-	t.Skip()
+	//t.Skip()
 	Convey("test of vote", t, func() {
 		ilog.Stop()
 
@@ -166,7 +166,7 @@ func TestJS_Vote(t *testing.T) {
 		js.SetAPI("Unvote", "string", "string", "number")
 		js.SetAPI("Stat")
 		js.SetAPI("init")
-		js.SetAPI("InitProducer", "number", "string")
+		js.SetAPI("InitProducer", "string")
 		for i := 0; i <= 18; i += 2 {
 			js.vi.SetBalance(testID[i], 5e+7)
 		}
@@ -175,25 +175,18 @@ func TestJS_Vote(t *testing.T) {
 		if r.Status.Code != 0 {
 			t.Fatal(r.Status.Message)
 		}
-		num := 7
-		proStr := "["
-		for i := 0; i < num; i++ {
-			proStr += fmt.Sprintf(`\"%v\"`, testID[2*i])
-			if i != num-1 {
-				proStr += ","
-			}
-		}
-		proStr += "]"
 
-		tt := watchTime(func() {
-			r = js.TestJS("InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
-		})
-		if r.Status.Code != 0 {
+		for i := 0; i < 14; i += 2 {
+			tt := watchTime(func() {
+				r = js.TestJS("InitProducer", fmt.Sprintf(`["%v"]`, testID[i]))
+			})
+			if r.Status.Code != 0 {
+				t.Log(tt)
+				t.Fatal(r.Status.Message)
+			}
+			t.Log(r.GasUsage)
 			t.Log(tt)
-			t.Fatal(r.Status.Message)
 		}
-		t.Log(r.GasUsage)
-		t.Log(tt)
 
 		keys := []string{
 			"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
@@ -215,13 +208,17 @@ func TestJS_Vote(t *testing.T) {
 		// test register, login, logout
 		r = js.TestJS("LogOutProducer", `["a"]`)
 		So(r.Status.Message, ShouldContainSubstring, "require auth failed")
+		t.Log("time of log in", watchTime(func() {
+			r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
+		}))
 
-		r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
 		So(r.Status.Message, ShouldEqual, "")
 
 		So(js.ReadMap("producerTable", testID[0]).(string), ShouldEqual, `{"loc":"","url":"","netId":"","online":true,"score":0,"votes":0}`)
 
-		r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
+		t.Log("time of register", watchTime(func() {
+			r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
+		}))
 		So(r.Status.Message, ShouldContainSubstring, "producer exists")
 
 		r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
@@ -267,8 +264,9 @@ func TestJS_Vote(t *testing.T) {
 			Time:       123456,
 		}
 		js.NewBlock(bh)
-
-		r = js.TestJS("Stat", `[]`)
+		t.Log("time of stat", watchTime(func() {
+			r = js.TestJS("Stat", `[]`)
+		}))
 		if r.Status.Code != 0 {
 			t.Fatal(r.Status.Message)
 		}
@@ -336,7 +334,9 @@ func TestJS_Vote(t *testing.T) {
 		js.NewBlock(bh)
 
 		// stat, 1 producer become pending
-		r = js.TestJS("Stat", `[]`)
+		t.Log("time of stat", watchTime(func() {
+			r = js.TestJS("Stat", `[]`)
+		}))
 		So(r.Status.Message, ShouldEqual, "")
 
 		So(js.ReadMap("producerTable", testID[14]), ShouldContainSubstring, `"score":9000014`)
@@ -451,7 +451,6 @@ func TestJS_Genesis(t *testing.T) {
 		acts = append(acts, &act)
 	}
 	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
-	t.Log("vote contract path: ", VoteContractPath)
 	// deploy iost.vote
 	voteFilePath := VoteContractPath + "vote.js"
 	voteAbiPath := VoteContractPath + "vote.js.abi"
@@ -467,23 +466,18 @@ func TestJS_Genesis(t *testing.T) {
 	rawAbi := string(fd)
 	c := contract.Compiler{}
 	code, err := c.Parse("iost.vote", rawCode, rawAbi)
-	t.Log(code)
 	if err != nil {
 		t.Fatal(err)
 	}
 	num := len(witnessInfo) / 2
-	proStr := "["
-	for i := 0; i < num; i++ {
-		proStr += fmt.Sprintf(`\"%v\"`, witnessInfo[2*i])
-		if i != num-1 {
-			proStr += ","
-		}
-	}
-	proStr += "]"
+
 	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
 	acts = append(acts, &act)
-	act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
-	acts = append(acts, &act1)
+
+	for i := 0; i < num; i++ {
+		act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`["%v"]`, witnessInfo[2*i]))
+		acts = append(acts, &act1)
+	}
 
 	// deploy iost.bonus
 	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
@@ -515,13 +509,21 @@ func TestJS_Genesis(t *testing.T) {
 
 	engine := NewEngine(&blockHead, mvccdb)
 	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
-	t.Log("js path: ", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
-	txr, err := engine.Exec(trx)
+	var txr *tx.TxReceipt
+	ti := watchTime(func() {
+		txr, err = engine.Exec(trx)
+	})
 	if err != nil {
 		t.Fatal(fmt.Errorf("exec tx failed, stop the pogram. err: %v", err))
 	}
-	t.Log(txr)
-	t.Log(database.MustUnmarshal(database.NewVisitor(0, mvccdb).Get("iost.vote" + "-" + "pendingProducerList")))
+	if txr.Status.Code != 0 {
+		t.Fatal(txr.Status.Message)
+	}
+	if ti > time.Second {
+		t.Fatal(ti)
+	}
+	//pl := database.MustUnmarshal(database.NewVisitor(0, mvccdb).Get("iost.vote" + "-" + "pendingProducerList"))
+
 	if txr.Status.Code != tx.Success {
 		t.Fatal("exec trx failed.")
 	}
