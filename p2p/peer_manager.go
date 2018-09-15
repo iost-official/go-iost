@@ -113,6 +113,9 @@ func (pm *PeerManager) isBP(id peer.ID) bool {
 func (pm *PeerManager) setBPs(ids []string) {
 	peerIDs := make([]peer.ID, 0, len(ids))
 	for _, id := range ids {
+		if len(id) == 0 {
+			continue
+		}
 		peerID, err := peer.IDB58Decode(id)
 		if err != nil {
 			ilog.Warnf("decode peerID failed. err=%v, id=%v", err, id)
@@ -142,7 +145,7 @@ func (pm *PeerManager) findBPLoop() {
 		case <-time.After(findBPInterval):
 			unknownBPs := make([]string, 0)
 			for _, id := range pm.getBPs() {
-				if len(id) > 0 && len(pm.peerStore.Addrs(id)) == 0 {
+				if len(pm.peerStore.Addrs(id)) == 0 {
 					unknownBPs = append(unknownBPs, id.Pretty())
 				}
 			}
