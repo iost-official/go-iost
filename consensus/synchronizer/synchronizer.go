@@ -466,6 +466,8 @@ const (
 	Tail string = "Tail"
 )
 
+type timerMap = map[string]*time.Timer
+
 type hashListNode struct {
 	val  string
 	prev *hashListNode
@@ -574,7 +576,7 @@ func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 	dc.newPeerMutex.Lock()
 	_, ok := dc.peerState.Load(peerID)
 	if !ok {
-		pState := make(map[string]*time.Timer)
+		pState := make(timerMap)
 		pmMutex, _ := dc.peerMapMutex.LoadOrStore(peerID, new(sync.Mutex))
 		hm, ok := dc.peerMap.LoadOrStore(peerID, new(sync.Map))
 		if !ok {
@@ -632,7 +634,7 @@ func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) {
 		psMutex, ok := dc.getStateMutex(peerID)
 		if ok {
 			psMutex.Lock()
-			pState, ok := pStateIF.(map[string]*time.Timer)
+			pState, ok := pStateIF.(timerMap)
 			if !ok {
 				ilog.Errorf("get peerstate error: %s", peerID.Pretty())
 				// dc.peerState.Delete(peerID)
@@ -659,7 +661,7 @@ func (dc *DownloadControllerImpl) FreePeer(hash string, peerID p2p.PeerID) {
 		psMutex, ok := dc.getStateMutex(peerID)
 		if ok {
 			psMutex.Lock()
-			pState, ok := pStateIF.(map[string]*time.Timer)
+			pState, ok := pStateIF.(timerMap)
 			if !ok {
 				ilog.Errorf("get peerstate error: %s", peerID.Pretty())
 				// dc.peerState.Delete(peerID)
@@ -692,7 +694,7 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 			dc.peerState.Range(func(k, v interface{}) bool {
 				peerID := k.(p2p.PeerID)
 				ilog.Debugf("peerID: %s", peerID.Pretty())
-				ps, ok := v.(map[string]*time.Timer)
+				ps, ok := v.(timerMap)
 				if !ok {
 					ilog.Errorf("get peerstate error: %s", peerID.Pretty())
 					// dc.peerState.Delete(peerID)
