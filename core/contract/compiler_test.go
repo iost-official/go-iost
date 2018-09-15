@@ -11,10 +11,7 @@ var raw = `{
 "version": "1.0.0",
 "abi": [{
 	"name": "abc",
-	"args": ["", "", ""],
-	"payment": 0,
-	"cost_limit": [1,2,3], 
-	"price_limit": 123
+	"args": ["", "", ""]
 	}, {
 		"name": "def",
 	"args": ["string", "string", "number"],

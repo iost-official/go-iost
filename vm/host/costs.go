@@ -4,10 +4,10 @@ import "github.com/iost-official/Go-IOS-Protocol/core/contract"
 
 // var list cost
 var (
-	PutCost  = contract.NewCost(100, 0, 1)
-	GetCost  = contract.NewCost(100, 0, 1)
-	DelCost  = contract.NewCost(1, 0, 1)
-	KeysCost = contract.NewCost(100, 0, 1)
+	PutCost  = contract.NewCost(100, 0, 12)
+	GetCost  = contract.NewCost(100, 0, 8)
+	DelCost  = contract.NewCost(0, 0, 8)
+	KeysCost = contract.NewCost(100, 0, 12)
 
 	CompileErrCost       = contract.NewCost(0, 0, 10)
 	ContractNotFoundCost = contract.NewCost(0, 0, 10)
