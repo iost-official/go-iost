@@ -8,7 +8,7 @@ import (
 type vmPoolType int
 
 const (
-	CompileVMPool vmPoolType = iota
+	CompileVMPool vmPoolType = iota // vm pool with compiled startup data
 	RunVMPool
 )
 

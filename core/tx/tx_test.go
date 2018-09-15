@@ -1,29 +1,15 @@
 package tx
 
 import (
-	"testing"
-	//	"fmt"
 	"bytes"
 	"fmt"
+	"testing"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-/*
-func gentx() Tx {
-	main := lua.NewMethod(0, "main", 0, 1)
-	code := `function main()
-				Put("hello", "world")
-				return "success"
-			end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, Publisher: vm.IOSTAccount("ahaha")}, code, main)
-
-	return NewTx(int64(0), &lc, [1]byte)
-}
-*/
 
 func TestAction(t *testing.T) {
 	Convey("Test of Action Data Structure", t, func() {
@@ -69,7 +55,7 @@ func TestTx(t *testing.T) {
 		Convey("proto marshal", func() {
 			tx := &TxRaw{
 				Time: 99,
-				Actions: []*ActionRaw{&ActionRaw{
+				Actions: []*ActionRaw{{
 					Contract:   "contract1",
 					ActionName: "actionname1",
 					Data:       "{\"num\": 1, \"message\": \"contract1\"}",

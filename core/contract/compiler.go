@@ -18,6 +18,7 @@ import (
 }
 */
 
+// Compiler parse contract from json string
 type Compiler struct {
 }
 
@@ -78,6 +79,7 @@ func (c *Compiler) parseInfo(json *simplejson.Json) (*Info, error) {
 	return &info, nil
 }
 
+// Parse parse contract from json abi string, set code and id
 func (c *Compiler) Parse(id, code, abi string) (*Contract, error) {
 	json, err := simplejson.NewJson([]byte(abi))
 	if err != nil {

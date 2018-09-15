@@ -50,6 +50,9 @@ func TestCompiler_ParseInfo(t *testing.T) {
 
 	var compiler Compiler
 	info, err := compiler.parseInfo(json)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if info.Lang != "javascript" || info.VersionCode != "1.0.0" {
 		t.Fatal(info)

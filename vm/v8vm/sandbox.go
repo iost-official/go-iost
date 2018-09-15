@@ -137,6 +137,7 @@ func (sbx *Sandbox) SetJSPath(path string, vmType vmPoolType) {
 	C.loadVM(sbx.context, C.int(vmType))
 }
 
+// Compile contract before execution, return compiled code
 func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	code := moduleReplacer.Replace(contract.Code)
 	cCode := C.CString(code)
