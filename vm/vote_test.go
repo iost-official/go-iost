@@ -55,23 +55,11 @@ func TestJS1_Vote1(t *testing.T) {
 	if r.Status.Code != 0 {
 		t.Fatal(r.Status.Message)
 	}
-	//r = js.TestJS("init", `[]`)
-	//if r.Status.Code != 0 {
-	//	t.Fatal(r.Status.Message)
-	//}
 	for i := 6; i <= 18; i += 2 {
 		if int64(50000000) != js.vi.Balance(testID[i]) {
 			t.Fatal("error in balance :", i, js.vi.Balance(testID[i]))
 		}
 	}
-
-	//keys := []string{
-	//	"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
-	//	"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
-	//	"producerTable",
-	//	"voteTable",
-	//}
-	////js.FlushDB(t, keys)
 
 	// test register, should success
 	r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
@@ -101,42 +89,7 @@ func TestJS1_Vote1(t *testing.T) {
 	}
 }
 
-func TestJS_VoteServi(t *testing.T) {
-	ilog.Stop()
-
-	js := NewJSTester(t)
-	defer js.Clear()
-	lc, err := ReadFile("../config/vote.js")
-	if err != nil {
-		t.Fatal(err)
-	}
-	js.SetJS(string(lc))
-	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
-	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
-	js.SetAPI("LogInProducer", "string")
-	js.SetAPI("LogOutProducer", "string")
-	js.SetAPI("UnregisterProducer", "string")
-	js.SetAPI("Vote", "string", "string", "number")
-	js.SetAPI("Unvote", "string", "string", "number")
-	js.SetAPI("Stat")
-	js.SetAPI("Init")
-	for i := 0; i <= 18; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7)
-	}
-	js.vi.Commit()
-	r := js.DoSet()
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
-	//keys := []string{
-	//	"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
-	//	"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
-	//	"producerTable",
-	//	"voteTable",
-	//}
-	////js.FlushDB(t, keys)
-}
-
+//nolint
 func TestJS_Vote(t *testing.T) {
 	//t.Skip()
 	Convey("test of vote", t, func() {
@@ -502,8 +455,8 @@ func TestJS_Vote(t *testing.T) {
 		}
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 39884154)
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19594)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 39884142)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19596)
 		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
 
 		trx2, err = MakeTx(act2)
@@ -516,8 +469,8 @@ func TestJS_Vote(t *testing.T) {
 		}
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 0)
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 114)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 39902939)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 116)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 39902915)
 	})
 
 }

@@ -11,10 +11,7 @@ var raw = `{
 "version": "1.0.0",
 "abi": [{
 	"name": "abc",
-	"args": ["", "", ""],
-	"payment": 0,
-	"cost_limit": [1,2,3], 
-	"price_limit": 123
+	"args": ["", "", ""]
 	}, {
 		"name": "def",
 	"args": ["string", "string", "number"],
@@ -50,6 +47,9 @@ func TestCompiler_ParseInfo(t *testing.T) {
 
 	var compiler Compiler
 	info, err := compiler.parseInfo(json)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if info.Lang != "javascript" || info.VersionCode != "1.0.0" {
 		t.Fatal(info)

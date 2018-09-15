@@ -1,14 +1,9 @@
 package vm
 
 import (
-	"sync"
-
 	"errors"
-
-	"runtime"
-
 	"fmt"
-
+	"runtime"
 	"strings"
 
 	"github.com/bitly/go-simplejson"
@@ -40,7 +35,7 @@ type Engine interface {
 	GC()
 }
 
-var staticMonitor *Monitor
+var staticMonitor = NewMonitor()
 var jsPath = "./v8vm/v8/libjs/"
 var logLevel = ""
 
@@ -50,8 +45,6 @@ func SetUp(config *common.VMConfig) error {
 	logLevel = config.LogLevel
 	return nil
 }
-
-var once sync.Once
 
 type engineImpl struct {
 	ho *host.Host
@@ -73,12 +66,6 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 }
 
 func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
-	if staticMonitor == nil {
-		once.Do(func() {
-			staticMonitor = NewMonitor()
-		})
-	}
-
 	ctx := host.NewContext(nil)
 
 	ctx = loadBlkInfo(ctx, bh)
