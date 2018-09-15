@@ -1,14 +1,10 @@
 package vm
 
 import (
+	"errors"
 	"strings"
 
-	"errors"
-
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-
-	"sync"
-
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
@@ -27,24 +23,13 @@ type Monitor struct {
 	vms map[string]VM
 }
 
-var jsOnce sync.Once
-
 // NewMonitor ...
 func NewMonitor() *Monitor {
 	m := &Monitor{
 		vms: make(map[string]VM),
 	}
-	_, ok := m.vms["javascript"]
-	if !ok {
-		jsOnce.Do(func() {
-			jsvm := Factory("javascript")
-			m.vms["javascript"] = jsvm
-			err := m.vms["javascript"].Init()
-			if err != nil {
-				panic(err)
-			}
-		})
-	}
+	jsvm := Factory("javascript")
+	m.vms["javascript"] = jsvm
 	return m
 }
 
@@ -129,15 +114,7 @@ func (m *Monitor) Compile(con *contract.Contract) (string, error) {
 	case "native":
 		return "", nil
 	case "javascript":
-		jsvm, ok := m.vms["javascript"]
-		if !ok {
-			jsvm = Factory(con.Info.Lang)
-			m.vms[con.Info.Lang] = jsvm
-			err := m.vms[con.Info.Lang].Init()
-			if err != nil {
-				panic(err)
-			}
-		}
+		jsvm, _ := m.vms["javascript"]
 		return jsvm.Compile(con)
 	}
 	return "", errors.New("vm unsupported")
@@ -176,6 +153,7 @@ func Factory(lang string) VM {
 		return &vm
 	case "javascript":
 		vm := v8.NewVMPool(10, 200)
+		vm.Init()
 		//vm.SetJSPath(jsPath)
 		return vm
 	}

@@ -295,7 +295,7 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	if bcn.Parent != nil && len(bcn.Parent.Children) == 1 && bcn.Parent.Type == Linked {
 		bc.leaf[bcn.Parent] = bcn.Parent.Number
 	}
-	for ch, _ := range bcn.Children {
+	for ch := range bcn.Children {
 		bc.del(ch)
 	}
 	bc.delNode(bcn)
@@ -306,7 +306,7 @@ func (bc *BlockCacheImpl) delSingle() {
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
-	for bcn, _ := range bc.singleRoot.Children {
+	for bcn := range bc.singleRoot.Children {
 		if bcn.Number <= height {
 			bc.del(bcn)
 		}
@@ -318,7 +318,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	if cur != bc.linkedRoot {
 		bc.flush(cur)
 	}
-	for child, _ := range cur.Children {
+	for child := range cur.Children {
 		if child == retain {
 			continue
 		}
@@ -393,10 +393,19 @@ func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 
 //for debug
 //draw the blockcache
-const PICSIZE int = 100
+const PICSIZE int = 500
 
-var pic [PICSIZE][PICSIZE]string
+var pic = makePic()
 var picX, picY int
+
+func makePic() [][]string {
+	a := make([][]string, 0)
+	for i := 0; i < PICSIZE; i++ {
+		s := make([]string, PICSIZE)
+		a = append(a, s)
+	}
+	return a
+}
 
 func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 	if x > picX {
@@ -414,25 +423,26 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 			pic[i][y-2] = "|"
 		}
 	}
-	pic[x][y] = strconv.FormatInt(root.Number, 10)
-	var width int = 0
-	var f bool = false
+	pic[x][y] = strconv.FormatInt(root.Number, 10) + root.Witness[4:8]
+	var width int
+	var f bool
 	i := 0
 	for k := range root.Children {
 		if i == len(root.Children)-1 {
 			f = true
 		}
 		width = calcTree(k, x+width, y+2, f)
-		i += 1
+		i++
 	}
 	if isLast {
 		return x + width
-	} else {
-		return x + width + 2
 	}
+	return x + width + 2
 }
 
+// DrawTree returns the the graph format of blockcache tree.
 func (bcn *BlockCacheNode) DrawTree() string {
+	picX, picY = 0, 0
 	var ret string
 	for i := 0; i < PICSIZE; i++ {
 		for j := 0; j < PICSIZE; j++ {
@@ -451,6 +461,7 @@ func (bcn *BlockCacheNode) DrawTree() string {
 	return ret
 }
 
+// Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
 	return bc.linkedRoot.DrawTree() + "\n\n" + bc.singleRoot.DrawTree()
 }

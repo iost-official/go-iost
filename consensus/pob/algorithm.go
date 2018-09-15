@@ -23,7 +23,6 @@ import (
 var (
 	errWitness     = errors.New("wrong witness")
 	errSignature   = errors.New("wrong signature")
-	errSlot        = errors.New("witness slot duplicate")
 	errTxTooOld    = errors.New("tx too old")
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
@@ -171,7 +170,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 				return errTxSignature
 			}
 		}
-		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > 60 {
+		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > txpool.Expiration {
 			return errTxTooOld
 		}
 	}

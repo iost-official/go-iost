@@ -40,8 +40,8 @@ func (m *MVCCMap) Get(key []byte) interface{} {
 }
 
 func (m *MVCCMap) Put(key []byte, value interface{}) {
-	m.rwmu.RLock()
-	defer m.rwmu.RUnlock()
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
 
 	m.data[string(key)] = value
 }

@@ -33,6 +33,16 @@ func (m *MockTxDB) EXPECT() *MockTxDBMockRecorder {
 	return m.recorder
 }
 
+// Close mocks base method
+func (m *MockTxDB) Close() {
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close
+func (mr *MockTxDBMockRecorder) Close() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockTxDB)(nil).Close))
+}
+
 // GetReceipt mocks base method
 func (m *MockTxDB) GetReceipt(arg0 []byte) (*tx.TxReceipt, error) {
 	ret := m.ctrl.Call(m, "GetReceipt", arg0)
