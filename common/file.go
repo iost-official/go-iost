@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+// ReadFile read the file
 func ReadFile(src string) ([]byte, error) {
 	fi, err := os.Open(src)
 	if err != nil {

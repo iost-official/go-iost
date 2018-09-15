@@ -7,14 +7,16 @@ import (
 	"strings"
 )
 
+// PublicIPDetechUrls test public ip
 var PublicIPDetechUrls = []string{
 	"http://ipecho.net/plain",
 	"http://myexternalip.com/raw",
 }
 
+// GetPulicIP get public network IP
 func GetPulicIP() string {
-	for _, detectUrl := range PublicIPDetechUrls {
-		resp, err := http.Get(detectUrl)
+	for _, detectURL := range PublicIPDetechUrls {
+		resp, err := http.Get(detectURL)
 		if err != nil {
 			continue
 		}
@@ -28,6 +30,7 @@ func GetPulicIP() string {
 	return ""
 }
 
+// IsPublicIP check public network IP
 func IsPublicIP(IP net.IP) bool {
 	if IP.IsLoopback() || IP.IsLinkLocalMulticast() || IP.IsLinkLocalUnicast() {
 		return false

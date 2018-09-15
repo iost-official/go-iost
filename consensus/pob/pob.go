@@ -429,6 +429,6 @@ func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	p.txPool.AddLinkedNode(node, node) //TODO
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {
-		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetId())
+		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
 	}
 }

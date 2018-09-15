@@ -10,6 +10,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 )
 
+// Block is the implementation of block
 type Block struct {
 	hash     []byte
 	Head     *BlockHead
@@ -18,6 +19,7 @@ type Block struct {
 	Receipts []*tx.TxReceipt
 }
 
+// CalculateTxsHash calculate the hash of the transaction
 func (b *Block) CalculateTxsHash() []byte {
 	hash := make([]byte, 0)
 	for _, tx := range b.Txs {
@@ -26,12 +28,14 @@ func (b *Block) CalculateTxsHash() []byte {
 	return common.Sha3(hash)
 }
 
+// CalculateMerkleHash calculate the hash of the MerkleTree
 func (b *Block) CalculateMerkleHash() []byte {
 	m := merkletree.TXRMerkleTree{}
 	m.Build(b.Receipts)
 	return m.RootHash()
 }
 
+// Encode is marshal
 func (b *Block) Encode() ([]byte, error) {
 	txs := make([][]byte, 0)
 	for _, t := range b.Txs {
@@ -58,6 +62,7 @@ func (b *Block) Encode() ([]byte, error) {
 	return brByte, nil
 }
 
+// Decode is unmarshal
 func (b *Block) Decode(blockByte []byte) error {
 	br := &BlockRaw{}
 	err := proto.Unmarshal(blockByte, br)
@@ -89,20 +94,24 @@ func (b *Block) Decode(blockByte []byte) error {
 	return b.CalculateHeadHash()
 }
 
+// CalculateHeadHash calculate the hash of the head
 func (b *Block) CalculateHeadHash() error {
 	var err error
 	b.hash, err = b.Head.Hash()
 	return err
 }
 
+// HeadHash return block hash
 func (b *Block) HeadHash() []byte {
 	return b.hash
 }
 
+// LenTx return len of transaction
 func (b *Block) LenTx() int {
 	return len(b.Txs)
 }
 
+// Encode is marshal
 func (b *BlockHead) Encode() ([]byte, error) {
 	bhByte, err := proto.Marshal(b)
 	if err != nil {
@@ -111,6 +120,7 @@ func (b *BlockHead) Encode() ([]byte, error) {
 	return bhByte, nil
 }
 
+// Decode is unmarshal
 func (b *BlockHead) Decode(bhByte []byte) error {
 	err := proto.Unmarshal(bhByte, b)
 	if err != nil {
@@ -119,6 +129,7 @@ func (b *BlockHead) Decode(bhByte []byte) error {
 	return nil
 }
 
+// Hash return hash
 func (b *BlockHead) Hash() ([]byte, error) {
 	bhByte, err := b.Encode()
 	if err != nil {
