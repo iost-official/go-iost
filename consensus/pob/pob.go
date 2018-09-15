@@ -29,7 +29,6 @@ var (
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
-	metricsTPS                 = metrics.NewGauge("iost_tps", nil)
 	metricsVMTime              = metrics.NewGauge("iost_vm_exec_time", nil)
 	metricsVMAvgTime           = metrics.NewGauge("iost_vm_exec_avg_time", nil)
 	metricsIterTime            = metrics.NewGauge("iost_iter_time", nil)
@@ -234,28 +233,6 @@ func (p *PoB) handleGenesisBlock(blk *block.Block) error {
 	return fmt.Errorf("not genesis block")
 }
 
-func (p *PoB) calculateTPS() float64 {
-	cnt := 0
-	n := 0
-	if p.blockCache.Head() == nil {
-		return 0
-	}
-	l := p.blockChain.Length()
-	for i := int64(0); i < 10; i++ {
-		blk, err := p.blockChain.GetBlockByNumber(l - i - 1)
-		if err != nil {
-			ilog.Error("get block by Number failed, ", i)
-			break
-		}
-		cnt += len(blk.Txs)
-		n++
-	}
-	if n == 0 {
-		return 0
-	}
-	return float64(cnt / (n * 3))
-}
-
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
 	blkHash := &message.BlockHash{
 		Height: blk.Head.Number,
@@ -275,7 +252,6 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
-			metricsTPS.Set(p.calculateTPS(), nil)
 			ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
 			blk := vbm.blk
 			if vbm.gen {
