@@ -17,16 +17,22 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 )
 
+// TMode type of mode
 type TMode uint
 
 const (
+	// ModeNormal is normal mode
 	ModeNormal TMode = iota
+	// ModeSync is sync mode
 	ModeSync
+	// ModeInit init mode
 	ModeInit
 )
 
-var VoteContractPath string = "../../config/"
+// VoteContractPath is config of vote
+var VoteContractPath = "../../config/"
 
+// String return string of mode
 func (m TMode) String() string {
 	switch m {
 	case ModeNormal:
@@ -40,6 +46,7 @@ func (m TMode) String() string {
 	}
 }
 
+// BaseVariableImpl is the implementation of BaseVariable
 type BaseVariableImpl struct {
 	blockChain  block.Chain
 	stateDB     db.MVCCDB
@@ -49,6 +56,7 @@ type BaseVariableImpl struct {
 	config      *common.Config
 }
 
+// GenGenesis is create a genesis block
 func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	var acts []*tx.Action
 	for i := 0; i < len(witnessInfo)/2; i++ {
@@ -125,6 +133,7 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	return &blk, nil
 }
 
+// New return a BaseVariable instance
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 	var blockChain block.Chain
 	var stateDB db.MVCCDB
@@ -209,6 +218,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 }
 
+// FakeNew is fake BaseVariable
 func FakeNew() (*BaseVariableImpl, error) {
 	blockChain, err := block.NewBlockChain("./Fakedb/BlockChainDB")
 	if err != nil {
@@ -253,30 +263,37 @@ func FakeNew() (*BaseVariableImpl, error) {
 	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config}, nil
 }
 
+// TxDB return the transaction database
 func (g *BaseVariableImpl) TxDB() tx.TxDB {
 	return g.txDB
 }
 
+// StateDB return the state database
 func (g *BaseVariableImpl) StateDB() db.MVCCDB {
 	return g.stateDB
 }
 
+// BlockChain return the block chain
 func (g *BaseVariableImpl) BlockChain() block.Chain {
 	return g.blockChain
 }
 
+// WitnessList return the witness list
 func (g *BaseVariableImpl) WitnessList() []string {
 	return g.witnessList
 }
 
+// Config return the config
 func (g *BaseVariableImpl) Config() *common.Config {
 	return g.config
 }
 
+// Mode return the mode
 func (g *BaseVariableImpl) Mode() TMode {
 	return g.mode
 }
 
+// SetMode is set the mode
 func (g *BaseVariableImpl) SetMode(m TMode) {
 	g.mode = m
 }

@@ -9,6 +9,7 @@ import (
 
 //go:generate mockgen -destination ../mocks/mock_global.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/global BaseVariable
 
+// BaseVariable defines BaseVariable's API.
 type BaseVariable interface {
 	TxDB() tx.TxDB
 	StateDB() db.MVCCDB
