@@ -426,7 +426,10 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 			pic[i][y-2] = "|"
 		}
 	}
-	pic[x][y] = strconv.FormatInt(root.Number, 10) + root.Block.Head.Witness
+	pic[x][y] = strconv.FormatInt(root.Number, 10) 
+	if root != nil {
+		pic[x][y] += root.Witness[4:6]
+	}
 	var width int
 	var f bool
 	i := 0
