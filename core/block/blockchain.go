@@ -90,11 +90,12 @@ func (bc *BlockChain) CheckLength() {
 		_, err := bc.GetBlockByNumber(i - 1)
 		if err != nil {
 			fmt.Println("fail to get the block")
+		} else {
+			bc.blockChainDB.Put(blockLength, Int64ToByte(i))
+			bc.length = i
+			break
 		}
-		break
 	}
-	bc.blockChainDB.Put(blockLength, Int64ToByte(i))
-	bc.length = i
 }
 
 func (bc *BlockChain) Top() (*Block, error) {
