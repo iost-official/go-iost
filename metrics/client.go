@@ -38,11 +38,12 @@ func NewClient() *Client {
 }
 
 // SetPusher sets the pusher with the given addr.
-func (c *Client) SetPusher(addr string) error {
+func (c *Client) SetPusher(addr, username, password string) error {
 	if !isAddrAvailable(addr) {
 		return ErrPusherUnavailable
 	}
 	c.pusher = push.New(addr, "iost")
+	c.pusher.BasicAuth(username, password)
 	for _, colloctor := range c.collectorCache {
 		c.pusher.Collector(colloctor)
 	}
@@ -80,7 +81,7 @@ func (c *Client) Stop() {
 	}
 	c.exitCh <- struct{}{}
 	<-c.exitCh
-	c.pusher.Add()
+	c.pusher.Push()
 }
 
 // NewCounter returns a counter-type metrics.
@@ -130,7 +131,7 @@ func (c *Client) startPush() {
 	for {
 		select {
 		case <-timer.C:
-			c.pusher.Add()
+			c.pusher.Push()
 			timer.Reset(pushInterval)
 		case <-c.exitCh:
 			timer.Stop()
