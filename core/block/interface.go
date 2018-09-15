@@ -13,6 +13,7 @@ type Chain interface {
 	GetBlockByHash(blockHash []byte) (*Block, error)
 	GetBlockByteByHash(blockHash []byte) ([]byte, error)
 	Close()
+	Draw(int64, int64) string
 }
 
 type ChainIterator interface {
