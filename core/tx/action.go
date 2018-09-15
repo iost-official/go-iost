@@ -4,12 +4,6 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-/**
- * Describtion: tx
- * User: wangyu
- * Date: 18-7-30
- */
-
 // Action 的实现
 type Action struct {
 	Contract   string // 合约地址，为空则视为调用系统合约
@@ -17,6 +11,7 @@ type Action struct {
 	Data       string // json
 }
 
+// NewAction constructor of Action
 func NewAction(contract string, name string, data string) Action {
 	return Action{
 		Contract:   contract,
@@ -25,6 +20,7 @@ func NewAction(contract string, name string, data string) Action {
 	}
 }
 
+// Encode encode action as byte array
 func (a *Action) Encode() []byte {
 	ar := &ActionRaw{
 		Contract:   a.Contract,
@@ -38,6 +34,7 @@ func (a *Action) Encode() []byte {
 	return b
 }
 
+// Decode action from byte array
 func (a *Action) Decode(b []byte) error {
 	ar := &ActionRaw{}
 	err := proto.Unmarshal(b, ar)
@@ -50,6 +47,7 @@ func (a *Action) Decode(b []byte) error {
 	return nil
 }
 
+// String return human readable string
 func (a *Action) String() string {
 	str := "Action{"
 	str += "Contract: " + a.Contract + ", "
