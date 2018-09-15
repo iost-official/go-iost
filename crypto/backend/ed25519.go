@@ -7,16 +7,20 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
+// Ed25519 is the ed25519 crypto algorithm
 type Ed25519 struct{}
 
+// Sign will signature the message with seckey by ed25519
 func (b *Ed25519) Sign(message []byte, seckey []byte) []byte {
 	return ed25519.Sign(seckey, message)
 }
 
+// Verify will verify the message with pubkey and sig by ed25519
 func (b *Ed25519) Verify(message []byte, pubkey []byte, sig []byte) bool {
 	return ed25519.Verify(pubkey, message, sig)
 }
 
+// GetPubkey will get the public key of the secret key by ed25519
 func (b *Ed25519) GetPubkey(seckey []byte) []byte {
 	pubkey, ok := ed25519.PrivateKey(seckey).Public().(ed25519.PublicKey)
 	if !ok {
@@ -26,6 +30,7 @@ func (b *Ed25519) GetPubkey(seckey []byte) []byte {
 	return pubkey
 }
 
+// GenSeckey will generate the secret key by ed25519
 func (b *Ed25519) GenSeckey() []byte {
 	seed := make([]byte, 32)
 	_, err := rand.Read(seed)

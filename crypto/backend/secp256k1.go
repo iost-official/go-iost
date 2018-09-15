@@ -7,8 +7,10 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
+// Secp256k1 is the secp256k1 crypto algorithm
 type Secp256k1 struct{}
 
+// Sign will signature the message with seckey by secp256k1
 func (b *Secp256k1) Sign(message []byte, seckey []byte) []byte {
 	sig, err := secp256k1.Sign(message, seckey)
 	if err != nil {
@@ -18,15 +20,18 @@ func (b *Secp256k1) Sign(message []byte, seckey []byte) []byte {
 	return sig[:64]
 }
 
+// Verify will verify the message with pubkey and sig by secp256k1
 func (b *Secp256k1) Verify(message []byte, pubkey []byte, sig []byte) bool {
 	return secp256k1.VerifySignature(pubkey, message, sig)
 }
 
+// GetPubkey will get the public key of the secret key by secp256k1
 func (b *Secp256k1) GetPubkey(seckey []byte) []byte {
 	x, y := secp256k1.S256().ScalarBaseMult(seckey)
 	return secp256k1.CompressPubkey(x, y)
 }
 
+// GenSeckey will generate the secret key by secp256k1
 func (b *Secp256k1) GenSeckey() []byte {
 	seckey := make([]byte, 32)
 	_, err := rand.Read(seckey)
