@@ -1,7 +1,5 @@
 'use strict'
 
-const esprima = require('esprima');
-
 const chargedExpression = {
 	CallExpression: 8,
 	NewExpression: 8,
