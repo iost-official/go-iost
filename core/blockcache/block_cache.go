@@ -408,6 +408,9 @@ func makePic() [][]string {
 }
 
 func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
+	if x >= PICSIZE || y >= PICSIZE {
+		return 0
+	}
 	if x > picX {
 		picX = x
 	}
@@ -423,7 +426,7 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 			pic[i][y-2] = "|"
 		}
 	}
-	pic[x][y] = strconv.FormatInt(root.Number, 10) + root.Witness[4:8]
+	pic[x][y] = strconv.FormatInt(root.Number, 10) + root.Block.Head.Witness
 	var width int
 	var f bool
 	i := 0
