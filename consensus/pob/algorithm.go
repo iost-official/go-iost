@@ -171,7 +171,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 				return errTxSignature
 			}
 		}
-		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > 60 {
+		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > txpool.Expiration {
 			return errTxTooOld
 		}
 	}

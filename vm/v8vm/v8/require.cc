@@ -1,7 +1,7 @@
 #include "require.h"
 
-#include "esprima.js.h"
-#include "inject_gas.js.h"
+//#include "esprima.js.h"
+//#include "inject_gas.js.h"
 #include "storage.js.h"
 #include "blockchain.js.h"
 
@@ -12,8 +12,8 @@
 #include <unordered_map>
 
 std::unordered_map<std::string, const char *> libJS = {
-    {"esprima", reinterpret_cast<char *>(__libjs_esprima_js)},
-    {"inject_gas", reinterpret_cast<char *>(__libjs_inject_gas_js)},
+//    {"esprima", reinterpret_cast<char *>(__libjs_esprima_js)},
+//    {"inject_gas", reinterpret_cast<char *>(__libjs_inject_gas_js)},
     {"storage", reinterpret_cast<char *>(__libjs_storage_js)},
     {"blockchain", reinterpret_cast<char *>(__libjs_blockchain_js)}
 };

@@ -13,10 +13,8 @@ import (
 
 var (
 	clearInterval = 10 * time.Second
-	expiration    = int64(90 * time.Second)
-	//filterTime    = int64(expiration + expiration/2)
-	//expiration    = 60*60*24*7
-	filterTime = int64(90 * time.Second)
+	Expiration    = int64(90 * time.Second)
+	filterTime    = int64(90 * time.Second)
 
 	metricsReceivedTxCount        = metrics.NewCounter("iost_tx_received_count", []string{"from"})
 	metricsGetPendingTxTime       = metrics.NewGauge("iost_get_pending_tx_time", nil)
