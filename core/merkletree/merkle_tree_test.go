@@ -38,7 +38,7 @@ func TestMerkleTree(t *testing.T) {
 		So(hex.EncodeToString(mp[0]), ShouldEqual, "6e6f646535")
 		So(hex.EncodeToString(mp[1]), ShouldEqual, "946f804875563d1f73fb27b1fc8af795850e9128281954028e145108db4a0ab9")
 		So(hex.EncodeToString(mp[2]), ShouldEqual, "e5e1a9ed8c02ed449057a4c17618127fa8e0a1e1c19fa15a371810371ac7530b")
-		success, err := m.MerkleProve([]byte("node5"), rootHash, mp)
+		success, _ := m.MerkleProve([]byte("node5"), rootHash, mp)
 		So(success, ShouldBeTrue)
 		b, err := proto.Marshal(&m)
 		if err != nil {

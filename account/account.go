@@ -41,6 +41,7 @@ var (
 //}
 )
 
+// Account account of the ios
 type Account struct {
 	ID        string
 	Algorithm crypto.Algorithm
@@ -48,6 +49,7 @@ type Account struct {
 	Seckey    []byte
 }
 
+// NewAccount create an account
 func NewAccount(seckey []byte, algo crypto.Algorithm) (*Account, error) {
 	if seckey == nil {
 		seckey = algo.GenSeckey()
@@ -68,14 +70,17 @@ func NewAccount(seckey []byte, algo crypto.Algorithm) (*Account, error) {
 	return account, nil
 }
 
+// Sign sign a tx
 func (a *Account) Sign(info []byte) *crypto.Signature {
 	return crypto.NewSignature(a.Algorithm, info, a.Seckey)
 }
 
+// GetIDByPubkey ...
 func GetIDByPubkey(pubkey []byte) string {
 	return "IOST" + common.Base58Encode(append(pubkey, common.Parity(pubkey)...))
 }
 
+// GetPubkeyByID ...
 func GetPubkeyByID(ID string) []byte {
 	b := common.Base58Decode(ID[4:])
 	return b[:len(b)-4]
