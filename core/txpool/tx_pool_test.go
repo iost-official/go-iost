@@ -6,8 +6,6 @@ import (
 
 	"os"
 
-	"sync"
-
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -23,6 +21,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
+	"sync"
 )
 
 var (
@@ -31,7 +30,7 @@ var (
 	dbPath3 = "BlockChainDB"
 )
 
-func TestNewTxPoolImpl(t *testing.T) {
+func TestNewTxPImpl(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
 		p2pMock := p2p_mock.NewMockService(ctl)
@@ -184,6 +183,84 @@ func TestNewTxPoolImpl(t *testing.T) {
 			r1, _ := txPool.ExistTxs(t.Hash(), bcn.Block)
 			So(r1, ShouldEqual, NotFound)
 		})
+		stopTest(gbl)
+	})
+
+}
+
+func TestNewTxPImplB(t *testing.T) {
+	Convey("test NewTxPoolServer", t, func() {
+		ctl := NewController(t)
+		p2pMock := p2p_mock.NewMockService(ctl)
+
+		p2pCh := make(chan p2p.IncomingMessage, 100)
+		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
+		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
+
+		var accountList []*account.Account
+		var witnessList []string
+		var witnessInfo []string
+		acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
+		newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+		if err != nil {
+			panic("account.NewAccount error")
+		}
+		accountList = append(accountList, newAccount)
+		witnessInfo = append(witnessInfo, newAccount.ID)
+		witnessInfo = append(witnessInfo, "100000")
+		witnessList = append(witnessList, newAccount.ID)
+		for i := 1; i < 3; i++ {
+			newAccount, err := account.NewAccount(nil, crypto.Secp256k1)
+			if err != nil {
+				panic("account.NewAccount error")
+			}
+			accountList = append(accountList, newAccount)
+			witnessList = append(witnessList, newAccount.ID)
+			witnessInfo = append(witnessInfo, newAccount.ID)
+			witnessInfo = append(witnessInfo, "100000")
+		}
+		//conf := &common.Config{
+		//	DB:      &common.DBConfig{},
+		//	Genesis: &common.GenesisConfig{CreateGenesis: true, WitnessInfo: witnessInfo},
+		//}
+		//gl, err := gbl.New(conf)
+
+		statedb := db_mock.NewMockMVCCDB(ctl)
+		statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
+		statedb.EXPECT().Fork().AnyTimes().Return(statedb)
+		statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
+		statedb.EXPECT().Close().AnyTimes()
+
+		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			return database.MustMarshal("4"), nil
+		})
+		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
+		})
+		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
+		})
+
+		b := genBlocks(accountList, witnessList, 1, 11, true)
+		base := core_mock.NewMockChain(ctl)
+		base.EXPECT().Top().AnyTimes().Return(b[0], nil)
+		base.EXPECT().Push(Any()).AnyTimes().Return(nil)
+		base.EXPECT().Length().AnyTimes().Return(int64(1))
+		base.EXPECT().Close().AnyTimes()
+
+		gbl := core_mock.NewMockBaseVariable(ctl)
+		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
+		gbl.EXPECT().BlockChain().AnyTimes().Return(base)
+		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
+
+		So(err, ShouldBeNil)
+		BlockCache, err := blockcache.NewBlockCache(gbl)
+		So(err, ShouldBeNil)
+
+		txPool, err := NewTxPoolImpl(gbl, BlockCache, p2pMock)
+		So(err, ShouldBeNil)
+
+		txPool.Start()
 		Convey("delPending", func() {
 
 			t := genTx(accountList[0], expiration)
@@ -585,7 +662,7 @@ func BenchmarkConcurrentVerifyTx(b *testing.B) {
 	stopTest(gl)
 }
 
-func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string, *TxPoolImpl, global.BaseVariable) {
+func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string, *TxPImpl, global.BaseVariable) {
 	//ctl := gomock.NewController(t)
 
 	var accountList []*account.Account
@@ -613,11 +690,11 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string,
 		ListenAddr: "0.0.0.0:8088",
 	}
 
-	node, err := p2p.NewNetService(config)
+	node, _ := p2p.NewNetService(config)
 
 	conf := &common.Config{}
 
-	gl, err := global.New(conf)
+	gl, _ := global.New(conf)
 
 	blockList := genBlocks(accountList, witnessList, 1, 1, true)
 
@@ -626,9 +703,9 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string,
 	//base.EXPECT().Top().AnyTimes().Return(blockList[0], nil)
 	//base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
 
-	BlockCache, err := blockcache.NewBlockCache(gl)
+	BlockCache, _ := blockcache.NewBlockCache(gl)
 
-	txPool, err := NewTxPoolImpl(gl, BlockCache, node)
+	txPool, _ := NewTxPoolImpl(gl, BlockCache, node)
 
 	txPool.Start()
 	b.ResetTimer()

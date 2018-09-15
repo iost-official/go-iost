@@ -54,12 +54,12 @@ func BytesToInt64(b []byte) int64 {
 	bytesBuffer := bytes.NewBuffer(b)
 	var x int64
 	binary.Read(bytesBuffer, binary.BigEndian, &x)
-	return int64(x)
+	return x
 }
 
 func Uint64ToBytes(i uint64) []byte {
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, uint64(i))
+	binary.LittleEndian.PutUint64(buf, i)
 	return buf
 }
 
