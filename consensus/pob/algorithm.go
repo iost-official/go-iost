@@ -2,6 +2,8 @@ package pob
 
 import (
 	"errors"
+	"os"
+	"runtime/pprof"
 	"time"
 
 	"fmt"
@@ -30,6 +32,13 @@ var (
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+	f, e := os.Create(fmt.Sprintf("/var/lib/iserver/%d.prof", time.Now().Unix()))
+	if e != nil {
+		panic(e)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
 	ilog.Info("generate Block start")
 	limitTime := time.NewTimer(common.SlotLength / 3 * time.Second)
 	txIter, head := txPool.TxIterator()
