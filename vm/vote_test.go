@@ -502,8 +502,8 @@ func TestJS_Vote(t *testing.T) {
 		}
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 39884154)
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19594)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 39884142)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19596)
 		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
 
 		trx2, err = MakeTx(act2)
@@ -516,8 +516,8 @@ func TestJS_Vote(t *testing.T) {
 		}
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 0)
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 114)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 39902939)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 116)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 39902915)
 	})
 
 }
