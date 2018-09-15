@@ -26,6 +26,7 @@ import (
 
 var (
 	metricsGeneratedBlockCount = metrics.NewCounter("iost_pob_generated_block", nil)
+	metricsVerifyBlockCount    = metrics.NewCounter("iost_pob_verify_block", nil)
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
@@ -311,6 +312,7 @@ func (p *PoB) verifyLoop() {
 				}
 			}
 			go p.synchronizer.CheckSyncProcess()
+			metricsVerifyBlockCount.Add(1, nil)
 		case <-p.exitSignal:
 			return
 		}
