@@ -450,6 +450,12 @@ func (bcn *BlockCacheNode) DrawTree() string {
 		}
 	}
 	calcTree(bcn, 0, 0, true)
+	if picX > 499 {
+		picX = 499
+	}
+	if picY > 499 {
+		picY = 499
+	}
 	for i := 0; i <= picX; i++ {
 		l := ""
 		for j := 0; j <= picY; j++ {
