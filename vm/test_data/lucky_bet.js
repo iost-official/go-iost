@@ -2,12 +2,19 @@ const maxUserNumber = 10;
 
 class Contract {
     init() {
+        const start = Date.now();
         storage.put("user_number", JSON.stringify(0));
+        console.log("put u n: ", Date.now() - start);
         storage.put("total_coins", JSON.stringify(0));
+        console.log("put t c: ", Date.now() - start);
         storage.put("last_lucky_block", JSON.stringify(-1));
+        console.log("put llb: ", Date.now() - start);
         storage.put("round", JSON.stringify(1));
+        console.log("put r: ", Date.now() - start);
 
-        this.clearUserValue()
+        this.clearUserValue();
+        console.log("put cuv: ", Date.now() - start);
+
     }
     clearUserValue() {
         for (let i = 0; i < 10; i ++) {
