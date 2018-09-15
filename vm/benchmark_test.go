@@ -48,7 +48,7 @@ func cleanUp() {
 	os.RemoveAll("mvcc")
 }
 
-func BenchmarkNative_Transfer(b *testing.B) {
+func BenchmarkNative_Transfer(b *testing.B) { // 21400 ns/op
 	e, _ := benchInit()
 
 	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
@@ -65,7 +65,7 @@ func BenchmarkNative_Transfer(b *testing.B) {
 	cleanUp()
 }
 
-func BenchmarkNative_Transfer_LRU(b *testing.B) {
+func BenchmarkNative_Transfer_LRU(b *testing.B) { // 15300 ns/op
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
 		panic(err)
@@ -103,7 +103,7 @@ func BenchmarkNative_Transfer_LRU(b *testing.B) {
 	cleanUp()
 }
 
-func BenchmarkNative_Receipt(b *testing.B) {
+func BenchmarkNative_Receipt(b *testing.B) { // 138000 ns/op
 	e, _ := benchInit()
 
 	act := tx.NewAction("iost.system", "Receipt", `["my receipt"]`)
@@ -120,7 +120,7 @@ func BenchmarkNative_Receipt(b *testing.B) {
 	cleanUp()
 }
 
-func BenchmarkNative_SetCode(b *testing.B) {
+func BenchmarkNative_SetCode(b *testing.B) { // 3.03 ms/op
 	e, _ := benchInit()
 
 	hw := jsHelloWorld()
@@ -139,7 +139,7 @@ func BenchmarkNative_SetCode(b *testing.B) {
 	cleanUp()
 }
 
-func BenchmarkJS_Gas_Once(b *testing.B) {
+func BenchmarkJS_Gas_Once(b *testing.B) { // 443 us/op
 	ilog.Stop()
 	js := NewJSTester(b)
 	defer js.Clear()
@@ -164,7 +164,78 @@ func BenchmarkJS_Gas_Once(b *testing.B) {
 		//if i == 0 {
 		//	b.Log("gas is : ", r.GasUsage)
 		//}
-		js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2)
+		if r.Status.Code != 0 || err != nil {
+			b.Fatal(r.Status.Message, err)
+		}
+	}
+	b.StopTimer()
+}
+
+func BenchmarkJS_Gas_100(b *testing.B) { // 483 um/op
+	ilog.Stop()
+	js := NewJSTester(b)
+	js.vi.SetBalance(testID[0], 10000000000)
+	defer js.Clear()
+	f, err := ReadFile("test_data/gas.js")
+	if err != nil {
+		b.Fatal(err)
+	}
+	js.SetJS(string(f))
+	js.SetAPI("run", "number")
+	js.DoSet()
+
+	act2 := tx.NewAction(js.cname, "run", `[100]`)
+
+	trx2, err := MakeTx(act2)
+	if err != nil {
+		js.t.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// r := js.TestJS("single", `[]`)
+		//if i == 0 {
+		//	b.Log("gas is : ", r.GasUsage)
+		//}
+		r, err := js.e.Exec(trx2)
+		if r.Status.Code != 0 || err != nil {
+			b.Fatal(r.Status.Message, err)
+		}
+	}
+	b.StopTimer()
+}
+
+func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
+	ilog.Stop()
+	js := NewJSTester(b)
+	js.vi.SetBalance(testID[0], 10000000000)
+	defer js.Clear()
+	f, err := ReadFile("test_data/gas.js")
+	if err != nil {
+		b.Fatal(err)
+	}
+	js.SetJS(string(f))
+	js.SetAPI("run", "number")
+	js.DoSet()
+
+	act2 := tx.NewAction(js.cname, "run", `[200]`)
+
+	trx2, err := MakeTx(act2)
+	if err != nil {
+		js.t.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// r := js.TestJS("single", `[]`)
+		//if i == 0 {
+		//	b.Log("gas is : ", r.GasUsage)
+		//}
+		r, err := js.e.Exec(trx2)
+		if r.Status.Code != 0 || err != nil {
+			b.Fatal(r.Status.Message, err)
+		}
 	}
 	b.StopTimer()
 }
@@ -191,47 +262,6 @@ func Benchmark_JS_Transfer(b *testing.B) {
 	}
 
 	trx2, err := MakeTxWithAuth(act2, ac)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		r, err := js.e.Exec(trx2)
-		if r.Status.Code != 0 || err != nil {
-			b.Fatal(r.Status.Message, err)
-		}
-	}
-	b.StopTimer()
-}
-
-func BenchmarkVote_InitProducer(b *testing.B) {
-	ilog.Stop()
-	js := NewJSTester(b)
-	bh := block.BlockHead{
-		Number: 0,
-	}
-	js.NewBlock(&bh)
-	js.vi.SetBalance(testID[0], 100000000)
-	defer js.Clear()
-	f, err := ReadFile("../config/vote.js")
-	if err != nil {
-		b.Fatal(err)
-	}
-	js.SetJS(string(f))
-	js.SetAPI("InitProducer", "string")
-	js.DoSet()
-
-	js.vi.SetBalance(testID[0], 100000000)
-
-	act1 := tx.NewAction(js.cname, "InitProducer", fmt.Sprintf(`["%v"]`, testID[0]))
-
-	ac, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
-	if err != nil {
-		panic(err)
-	}
-
-	trx2, err := MakeTxWithAuth(act1, ac)
 	if err != nil {
 		b.Fatal(err)
 	}
