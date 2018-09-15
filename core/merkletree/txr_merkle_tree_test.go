@@ -36,14 +36,14 @@ func TestTXRMerkleTree(t *testing.T) {
 		if err != nil {
 			log.Panic(err)
 		}
-		var m_read TXRMerkleTree
-		err = m_read.Decode(b)
+		var mRead TXRMerkleTree
+		err = mRead.Decode(b)
 		if err != nil {
 			log.Panic(err)
 		}
-		convey.So(reflect.DeepEqual(m.Tx2Txr, m_read.Tx2Txr), convey.ShouldBeTrue)
+		convey.So(reflect.DeepEqual(m.Tx2Txr, mRead.Tx2Txr), convey.ShouldBeTrue)
 		for i := 0; i < 16; i++ {
-			convey.So(bytes.Equal(m.Mt.HashList[i], m_read.Mt.HashList[i]), convey.ShouldBeTrue)
+			convey.So(bytes.Equal(m.Mt.HashList[i], mRead.Mt.HashList[i]), convey.ShouldBeTrue)
 		}
 	})
 }

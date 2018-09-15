@@ -44,13 +44,13 @@ func TestMerkleTree(t *testing.T) {
 		if err != nil {
 			log.Panic(err)
 		}
-		var m_read MerkleTree
-		err = proto.Unmarshal(b, &m_read)
+		var mRead MerkleTree
+		err = proto.Unmarshal(b, &mRead)
 		if err != nil {
 			log.Panic(err)
 		}
 		for i := 0; i < 16; i++ {
-			So(bytes.Equal(m.HashList[i], m_read.HashList[i]), ShouldBeTrue)
+			So(bytes.Equal(m.HashList[i], mRead.HashList[i]), ShouldBeTrue)
 		}
 	})
 }
