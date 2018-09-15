@@ -609,6 +609,11 @@ func (dc *DownloadControllerImpl) FreePeer(hash string, peerID p2p.PeerID) {
 func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID p2p.PeerID)) {
 	for {
 		select {
+		case <-time.After(2 * syncBlockTimeout):
+			select {
+			case dc.chDownload <- struct{}{}:
+			default:
+			}
 		case <-dc.chDownload:
 			ilog.Debugf("Download Begin")
 			dc.peerState.Range(func(k, v interface{}) bool {
