@@ -6,10 +6,12 @@ package contract
 //	CPU  int64
 //}
 
+// ToGas convert cost to gas
 func (c Cost) ToGas() int64 {
 	return c.Data + c.Net + c.CPU
 }
 
+// AddAssign add cost to self
 func (c *Cost) AddAssign(a *Cost) {
 	if a == nil {
 		return
@@ -19,6 +21,7 @@ func (c *Cost) AddAssign(a *Cost) {
 	c.CPU += a.CPU
 }
 
+// IsOverflow decide if exceed limit
 func (c *Cost) IsOverflow(limit *Cost) bool {
 	if c.Data > limit.Data ||
 		c.Net > limit.Net ||
@@ -29,10 +32,12 @@ func (c *Cost) IsOverflow(limit *Cost) bool {
 	return false
 }
 
+// Cost0 construct zero cost
 func Cost0() *Cost {
 	return &Cost{}
 }
 
+// NewCost construct cost with specific data, net, cpu
 func NewCost(data, net, cpu int64) *Cost {
 	return &Cost{
 		Data: data,

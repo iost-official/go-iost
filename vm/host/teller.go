@@ -197,7 +197,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 				return err
 			}
 		} else {
-			ilog.Errorf("key is:", k)
+			ilog.Errorf("key is: %v", k)
 			panic("prefix error")
 		}
 	}
