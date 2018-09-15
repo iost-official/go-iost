@@ -63,11 +63,8 @@ func (n *Node) put(key []byte, value interface{}, i int) *Node {
 }
 
 func (n *Node) forkWithContext(context *Context) *Node {
-	node := &Node{
-		context:  context,
-		value:    n.value,
-		children: make(map[byte]*Node, len(n.children)),
-	}
+	node := context.newNode()
+	node.value = n.value
 	for k, v := range n.children {
 		if v.context == nil {
 			continue
@@ -102,6 +99,25 @@ func NewFreeList() *FreeList {
 	return f
 }
 
+func (f *FreeList) newNode() *Node {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	node := &Node{
+		context:  nil,
+		value:    nil,
+		children: make(map[byte]*Node),
+	}
+	return node
+}
+
+func (f *FreeList) freeNode(n *Node) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	n.children = nil
+}
+
 type Context struct {
 	freelist *FreeList
 }
@@ -114,17 +130,15 @@ func NewContext() *Context {
 }
 
 func (c *Context) newNode() *Node {
-	node := &Node{
-		context:  NewContext(),
-		children: make(map[byte]*Node),
-	}
+	node := c.freelist.newNode()
+	node.context = c
 	return node
 }
 
 func (c *Context) freeNode(n *Node) {
 	n.context = nil
 	n.value = nil
-	n.children = nil
+	c.freelist.freeNode(n)
 }
 
 func (c *Context) fork() *Context {
@@ -201,6 +215,8 @@ func (t *Trie) Free() {
 	t.rwmu.Lock()
 	defer t.rwmu.Unlock()
 
-	t.root.free()
+	if t.context == t.root.context {
+		t.root.free()
+	}
 	t.context = nil
 }
