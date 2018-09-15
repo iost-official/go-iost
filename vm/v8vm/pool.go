@@ -8,7 +8,7 @@ import (
 type vmPoolType int
 
 const (
-	CompileVMPool vmPoolType = iota
+	CompileVMPool vmPoolType = iota // vm pool with compiled startup data
 	RunVMPool
 )
 
@@ -61,7 +61,9 @@ func (vmp *VMPool) SetJSPath(path string) {
 // Compile compile js code to binary.
 func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 	vm := vmp.getCompileVM()
-	defer vm.recycle()
+	defer func() {
+		go vm.recycle()
+	}()
 
 	return vm.compile(contract)
 }

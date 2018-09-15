@@ -11,7 +11,7 @@ func TestCodec(t *testing.T) {
 			Lang:        "javascript",
 			VersionCode: "1.0.0",
 			Abis: []*ABI{
-				&ABI{
+				{
 					Name:     "abi1",
 					Payment:  0,
 					GasPrice: int64(100),

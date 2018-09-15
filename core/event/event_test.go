@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+//nolint
 func TestEventCollector_Post(t *testing.T) {
 	sub1 := NewSubscription(100, []Event_Topic{Event_TransactionResult})
 	sub2 := NewSubscription(100, []Event_Topic{Event_ContractEvent})
@@ -86,6 +87,7 @@ func TestEventCollector_Post(t *testing.T) {
 	}
 }
 
+//nolint
 func TestEventCollector_Full(t *testing.T) {
 	sub1 := NewSubscription(1, []Event_Topic{Event_TransactionResult})
 	sub2 := NewSubscription(1, []Event_Topic{Event_ContractEvent})
