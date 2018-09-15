@@ -80,6 +80,9 @@ func TestNewTxPoolImpl(t *testing.T) {
 		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
+		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
+		})
 
 		b := genBlocks(accountList, witnessList, 1, 11, true)
 		base := core_mock.NewMockChain(ctl)

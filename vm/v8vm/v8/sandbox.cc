@@ -222,13 +222,17 @@ void loadVM(SandboxPtr ptr, int vmType) {
 
     std::string vmPath;
     Local<String> source;
+
     if (vmType == 0) {
-        vmPath += "compile_vm.js";
-        source = String::NewFromUtf8(isolate, compileVmJsLib, NewStringType::kNormal).ToLocalChecked();
-    } else {
-        vmPath += "vm.js";
-        source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
+        return;
     }
+//    if (vmType == 0) {
+//        vmPath += "compile_vm.js";
+//        source = String::NewFromUtf8(isolate, compileVmJsLib, NewStringType::kNormal).ToLocalChecked();
+//    } else {
+    vmPath += "vm.js";
+    source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
+//    }
 
     Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);

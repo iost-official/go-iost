@@ -131,6 +131,7 @@ extern void goGlobalMapLen(SandboxPtr, const char *, const char *, size_t *);
 
 extern int compile(SandboxPtr, const char *code, const char **compiledCode);
 extern CustomStartupData createStartupData();
+extern CustomStartupData createCompileStartupData();
 
 #ifdef __cplusplus
 }
