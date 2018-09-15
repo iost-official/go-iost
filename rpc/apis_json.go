@@ -14,12 +14,14 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
+// JSONServer json rpc server
 type JSONServer struct {
 	endPoint string
 	jsonPort string
 	srv      *http.Server
 }
 
+// NewJSONServer create json rpc server
 func NewJSONServer(_global global.BaseVariable) *JSONServer {
 	endPoint := strconv.Itoa(_global.Config().RPC.GRPCPort)
 	if !strings.HasPrefix(endPoint, ":") {
@@ -37,6 +39,7 @@ func NewJSONServer(_global global.BaseVariable) *JSONServer {
 	}
 }
 
+// Start start json rpc server
 func (j *JSONServer) Start() error {
 	go func() {
 		ctx := context.Background()
@@ -63,6 +66,7 @@ func (j *JSONServer) Start() error {
 	return nil
 }
 
+// Stop stop json rpc server
 func (j *JSONServer) Stop() {
 	err := j.srv.Shutdown(context.Background())
 	if err != nil {

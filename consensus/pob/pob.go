@@ -106,6 +106,7 @@ func (p *PoB) Start() error {
 	return nil
 }
 
+//Stop make the PoB stop
 func (p *PoB) Stop() {
 	close(p.exitSignal)
 }
