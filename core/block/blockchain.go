@@ -85,8 +85,7 @@ func (bc *BlockChain) Push(block *Block) error {
 }
 
 func (bc *BlockChain) CheckLength() {
-	var i int64
-	for i = bc.length; i > 0; i-- {
+	for i := bc.length; i > 0; i-- {
 		_, err := bc.GetBlockByNumber(i - 1)
 		if err != nil {
 			fmt.Println("fail to get the block")
@@ -101,9 +100,8 @@ func (bc *BlockChain) CheckLength() {
 func (bc *BlockChain) Top() (*Block, error) {
 	if bc.length == 0 {
 		return nil, errors.New("no block in blockChaindb")
-	} else {
-		return bc.GetBlockByNumber(bc.length - 1)
 	}
+	return bc.GetBlockByNumber(bc.length - 1)
 }
 
 func (bc *BlockChain) GetHashByNumber(number int64) ([]byte, error) {
