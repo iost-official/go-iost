@@ -147,7 +147,7 @@ func (c *Context) newNode() *Node {
 func (c *Context) freeNode(n *Node) {
 	n.context = nil
 	n.value = nil
-	n.children = nil
+	n.children = make(map[byte]*Node)
 	c.freelist.freeNode(n)
 }
 
