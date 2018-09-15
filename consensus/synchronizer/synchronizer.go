@@ -553,6 +553,20 @@ func (dc *DownloadControllerImpl) getHashMap(peerID p2p.PeerID) (*sync.Map, bool
 	return hashMap, true
 }
 
+func (dc *DownloadControllerImpl) getHashListNode(hashMap *sync.Map, key string) (*hashListNode, bool) {
+	nodeIF, ok := hashMap.Load(key)
+	if !ok {
+		ilog.Error("load tail node error")
+		return nil, false
+	}
+	node, ok := nodeIF.(*hashListNode)
+	if !ok {
+		ilog.Error("change tail node error")
+		return nil, false
+	}
+	return node, true
+}
+
 func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 	// ilog.Debugf("peer: %s, hash: %s", peerID, hash)
 	hStateIF, _ := dc.hashState.LoadOrStore(hash, Wait)
@@ -578,29 +592,15 @@ func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 		dc.peerState.LoadOrStore(peerID, pState)
 	}
 	dc.newPeerMutex.Unlock()
-	/*
-		hmIF, ok := dc.peerMap.Load(peerID)
-		if !ok {
-			ilog.Error("load peerMap error")
-		}
-		hashMap, ok := hmIF.(*sync.Map)
-		if !ok {
-			ilog.Error("change peerMap error")
-		}
-	*/
-	if hashMap, ok = dc.getHashMap(peerID); ok {
+	if hashMap, ok := dc.getHashMap(peerID); ok {
 		if _, ok = hashMap.Load(hash); !ok {
 			pmMutex, ok := dc.getPeerMapMutex(peerID)
 			if !ok {
 				return
 			}
-			tailNode, ok := hashMap.Load(Tail)
+			tail, ok := dc.getHashListNode(hashMap, Tail)
 			if !ok {
-				ilog.Error("load tail node error")
-			}
-			tail, ok := tailNode.(*hashListNode)
-			if !ok {
-				ilog.Error("change tail node error")
+				return
 			}
 			pmMutex.Lock()
 			node := &hashListNode{val: hash, prev: tail.prev, next: tail}
@@ -702,7 +702,6 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 				ilog.Debugf("peerNum: %v", len(ps))
 				psLen := len(ps)
 				psMutex.Unlock()
-
 				if psLen >= peerConNum {
 					return true
 				}
@@ -711,12 +710,20 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 				if !ok {
 					return true
 				}
-				hm, _ := dc.peerMap.Load(peerID)
-				hashMap, _ := hm.(*sync.Map)
+				hashMap, ok := dc.getHashMap(peerID)
+				if !ok {
+					return true
+				}
 
 				pmMutex.Lock()
-				headNode, _ := hashMap.Load(Head)
-				node := headNode.(*hashListNode).next
+				var node *hashListNode
+				headNode, ok := dc.getHashListNode(hashMap, Head)
+				if ok {
+					node = headNode.next
+				} else {
+					pmMutex.Unlock()
+					return true
+				}
 				pmMutex.Unlock()
 				for {
 					if node.val == Tail {
