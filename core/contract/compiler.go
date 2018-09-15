@@ -42,13 +42,20 @@ func (c *Compiler) parseABI(json *simplejson.Json) ([]*ABI, error) {
 
 			abi.Name = ja.Get("name").MustString()
 			abi.Args = ja.Get("args").MustStringArray()
-			abi.Payment = int32(ja.Get("payment").MustInt())
+			if _, ok := ja.CheckGet("payment"); ok {
+				abi.Payment = int32(ja.Get("payment").MustInt())
 
-			data := int64(ja.Get("cost_limit").GetIndex(0).MustInt())
-			net := int64(ja.Get("cost_limit").GetIndex(1).MustInt())
-			cpu := int64(ja.Get("cost_limit").GetIndex(2).MustInt())
-			abi.Limit = NewCost(data, net, cpu)
-			abi.GasPrice = ja.Get("price_limit").MustInt64()
+				data := int64(ja.Get("cost_limit").GetIndex(0).MustInt())
+				net := int64(ja.Get("cost_limit").GetIndex(1).MustInt())
+				cpu := int64(ja.Get("cost_limit").GetIndex(2).MustInt())
+				abi.Limit = NewCost(data, net, cpu)
+				abi.GasPrice = ja.Get("price_limit").MustInt64()
+			} else {
+				abi.Payment = 0
+				abi.Limit = NewCost(1, 1, 1)
+				abi.GasPrice = 1
+			}
+
 		}()
 		if err != nil {
 			return nil, err
