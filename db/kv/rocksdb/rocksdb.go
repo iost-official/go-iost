@@ -14,6 +14,7 @@ import (
 	"unsafe"
 )
 
+// DB is the rocksdb databse
 type DB struct {
 	cdb       *C.rocksdb_t
 	cbatch    *C.rocksdb_writebatch_t
@@ -21,6 +22,7 @@ type DB struct {
 	cwoptions *C.rocksdb_writeoptions_t
 }
 
+// NewDB return new rocksdb
 func NewDB(path string) (*DB, error) {
 	var cpath *C.char = C.CString(path)
 	defer C.free(unsafe.Pointer(cpath))
@@ -54,6 +56,7 @@ func NewDB(path string) (*DB, error) {
 	}, nil
 }
 
+// Get return the value of the specify key
 func (d *DB) Get(key []byte) ([]byte, error) {
 	var ckey *C.char = C.CString(string(key))
 	defer C.free(unsafe.Pointer(ckey))
@@ -75,6 +78,7 @@ func (d *DB) Get(key []byte) ([]byte, error) {
 	return []byte(value), nil
 }
 
+// Put will insert the key-value pair
 func (d *DB) Put(key []byte, value []byte) error {
 	var ckey *C.char = C.CString(string(key))
 	defer C.free(unsafe.Pointer(ckey))
@@ -100,6 +104,7 @@ func (d *DB) Put(key []byte, value []byte) error {
 	return nil
 }
 
+// Has returns whether the specified key exists
 func (d *DB) Has(key []byte) (bool, error) {
 	var ckey *C.char = C.CString(string(key))
 	defer C.free(unsafe.Pointer(ckey))
@@ -121,6 +126,7 @@ func (d *DB) Has(key []byte) (bool, error) {
 	return value != "", nil
 }
 
+// Delete will remove the specify key
 func (d *DB) Delete(key []byte) error {
 	var ckey *C.char = C.CString(string(key))
 	defer C.free(unsafe.Pointer(ckey))
@@ -158,6 +164,7 @@ func bytesPrefix(prefix []byte) (lower, upper []byte) {
 	return
 }
 
+// Keys returns the list of key prefixed with prefix
 func (d *DB) Keys(prefix []byte) ([][]byte, error) {
 	var croptions *C.rocksdb_readoptions_t = C.rocksdb_readoptions_create()
 	defer C.rocksdb_readoptions_destroy(croptions)
@@ -203,6 +210,7 @@ func (d *DB) Keys(prefix []byte) ([][]byte, error) {
 	return keys, nil
 }
 
+// BeginBatch will start the batch transaction
 func (d *DB) BeginBatch() error {
 	if d.cbatch != nil {
 		return fmt.Errorf("not support nested batch write")
@@ -213,6 +221,7 @@ func (d *DB) BeginBatch() error {
 	return nil
 }
 
+// CommitBatch will commit the batch transaction
 func (d *DB) CommitBatch() error {
 	if d.cbatch == nil {
 		return fmt.Errorf("no batch write to commit")
@@ -234,6 +243,7 @@ func (d *DB) CommitBatch() error {
 	return nil
 }
 
+// Close will close the database
 func (d *DB) Close() error {
 	C.rocksdb_close(d.cdb)
 	C.rocksdb_writebatch_destroy(d.cbatch)

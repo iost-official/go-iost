@@ -5,8 +5,10 @@ import (
 	"time"
 )
 
-type AbsTime time.Duration // absolute monotonic time
+// AbsTime absolute monotonic time
+type AbsTime time.Duration
 
+// Now returns a AbsTime instance
 func Now() AbsTime {
 	return AbsTime(monotime.Now())
 }

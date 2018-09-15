@@ -56,9 +56,9 @@ func TestBlockSerialize(t *testing.T) {
 		}
 		blk.Receipts = append(blk.Receipts, &receipt)
 		convey.Convey("Test of block encode and decode", func() {
-			blkByte, err := blk.Encode()
+			blkByte, _ := blk.Encode()
 			blkRead := Block{}
-			err = blkRead.Decode(blkByte)
+			err := blkRead.Decode(blkByte)
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(bytes.Equal(blkRead.Head.ParentHash, blk.Head.ParentHash), convey.ShouldBeTrue)
 			convey.So(len(blkRead.Txs) == len(blk.Txs), convey.ShouldBeTrue)

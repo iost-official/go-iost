@@ -3,6 +3,7 @@ package block
 
 //go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/block Chain
 
+// Chain defines Chain's API.
 type Chain interface {
 	Push(block *Block) error
 	Length() int64
@@ -15,6 +16,7 @@ type Chain interface {
 	Close()
 }
 
+// ChainIterator is iterator of block chain
 type ChainIterator interface {
 	Next() *Block
 }
