@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
+// CVMInitOnce vm init once
 var CVMInitOnce = sync.Once{}
 var customStartupData C.CustomStartupData
 var customCompileStartupData C.CustomStartupData
@@ -51,6 +52,7 @@ func NewVM(vmType vmPoolType, jsPath string) *VM {
 	return e
 }
 
+// NewVMWithChannel return new vm with release channel
 func NewVMWithChannel(vmType vmPoolType, jsPath string, releaseChannel chan *VM) *VM {
 	e := NewVM(vmType, jsPath)
 	e.releaseChannel = releaseChannel
