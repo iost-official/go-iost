@@ -5,5 +5,6 @@
         ".+.pb.go",
         "vendor"
     ],
-    "Deadline": "120s"
+    "Deadline": "120s",
+    "Cyclo": 15
 }
