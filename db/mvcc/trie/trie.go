@@ -122,7 +122,6 @@ func (f *FreeList) freeNode(n *Node) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	n.children = nil
 	if len(f.freelist) < cap(f.freelist) {
 		f.freelist = append(f.freelist, n)
 	}
@@ -148,6 +147,7 @@ func (c *Context) newNode() *Node {
 func (c *Context) freeNode(n *Node) {
 	n.context = nil
 	n.value = nil
+	n.children = nil
 	c.freelist.freeNode(n)
 }
 
