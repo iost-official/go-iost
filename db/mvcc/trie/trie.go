@@ -6,7 +6,7 @@ import (
 
 // Constant of trie
 const (
-	FreeListSize = uint64(65536)
+	FreeListSize = uint64(1048576)
 )
 
 // Node is node of trie
@@ -103,11 +103,18 @@ func (f *FreeList) newNode() *Node {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	node := &Node{
-		context:  nil,
-		value:    nil,
-		children: make(map[byte]*Node),
+	i := len(f.freelist) - 1
+	if i < 0 {
+		return &Node{
+			context:  nil,
+			value:    nil,
+			children: make(map[byte]*Node),
+		}
 	}
+	node := f.freelist[i]
+	f.freelist[i] = nil
+	f.freelist = f.freelist[:i]
+
 	return node
 }
 
@@ -116,6 +123,9 @@ func (f *FreeList) freeNode(n *Node) {
 	defer f.mu.Unlock()
 
 	n.children = nil
+	if len(f.freelist) < cap(f.freelist) {
+		f.freelist = append(f.freelist, n)
+	}
 }
 
 type Context struct {
