@@ -191,9 +191,13 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 
 	rs := C.Execute(sbx.context, cCode)
 
-	result := C.GoString(rs.Value)
 	defer C.free(unsafe.Pointer(rs.Value))
 	defer C.free(unsafe.Pointer(rs.Err))
+
+	var result string
+	if rs.Value != nil {
+		result = C.GoString(rs.Value)
+	}
 
 	var err error
 	if rs.Err != nil {
