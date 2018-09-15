@@ -16,12 +16,12 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/p2p"
 )
 
-type Mock_Apis_SubscribeServer struct {
+type MockApisSubscribeServer struct {
 	Apis_SubscribeServer
 	count int
 }
 
-func (s *Mock_Apis_SubscribeServer) Send(req *SubscribeRes) error {
+func (s *MockApisSubscribeServer) Send(req *SubscribeRes) error {
 	s.count++
 	if req.Ev.Topic != event.Event_TransactionResult || req.Ev.Data != "test1" {
 		return errors.New("unexpected event topic or data. ev = " + req.Ev.String())
@@ -30,14 +30,14 @@ func (s *Mock_Apis_SubscribeServer) Send(req *SubscribeRes) error {
 }
 
 func TestRpcServer_Subscribe(t *testing.T) {
-	monkey.Patch(NewRPCServer, func(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable, p2pService p2p.Service) *RPCServer {
-		return &RPCServer{}
+	monkey.Patch(NewRPCServer, func(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable, p2pService p2p.Service) *GRPCServer {
+		return &GRPCServer{}
 	})
 
 	s := NewRPCServer(nil, nil, nil, nil)
 	ec := event.GetEventCollectorInstance()
 	req := &SubscribeReq{Topics: []event.Event_Topic{event.Event_TransactionResult}}
-	res := Mock_Apis_SubscribeServer{
+	res := MockApisSubscribeServer{
 		count: 0,
 	}
 	go func() {
