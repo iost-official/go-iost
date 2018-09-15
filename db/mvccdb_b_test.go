@@ -177,3 +177,15 @@ func BenchmarkMVCCDBDel(b *testing.B) {
 	cmd := exec.Command("rm", "-r", DBPATH)
 	cmd.Run()
 }
+
+func BenchmarkMVCCDBCreateAndClose(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		mvccdb, err := NewMVCCDB(DBPATH)
+		if err != nil {
+			b.Fatalf("Failed to new mvccdb: %v", err)
+		}
+		mvccdb.Close()
+		cmd := exec.Command("rm", "-r", DBPATH)
+		cmd.Run()
+	}
+}
