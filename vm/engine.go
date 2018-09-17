@@ -353,6 +353,7 @@ func (e *engineImpl) startLog() {
 	if ok {
 		e.logger.SetCallDepth(0)
 		e.logger.HideLocation()
+		e.logger.AsyncWrite()
 		e.logger.Start()
 	}
 }
