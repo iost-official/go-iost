@@ -221,6 +221,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	rtn := make([]interface{}, 0)
 	arr, err := js.Array()
 	if err != nil {
+		ilog.Error(js.EncodePretty())
 		return nil, err
 	}
 
@@ -281,48 +282,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	e.ho.Context().Set("stack0", "direct_call")
 	e.ho.Context().Set("stack_height", 1) // record stack trace
 
-	var cid string
-	if e.ho.IsDomain(action.Contract) {
-		cid = e.ho.URL(action.Contract)
-	} else {
-		cid = action.Contract
-	}
-
-	c := e.ho.DB().Contract(cid)
-	if c == nil || c.Info == nil {
-		cost = host.ContractNotFoundCost
-		status = tx.Status{
-			Code:    tx.ErrorParamter,
-			Message: errContractNotFound.Error() + action.Contract,
-		}
-		return
-	}
-
-	abi := c.ABI(action.ActionName)
-	if abi == nil {
-		cost = host.ABINotFoundCost
-		status = tx.Status{
-			Code:    tx.ErrorParamter,
-			Message: errABINotFound.Error() + action.Contract + "." + action.ActionName,
-		}
-		return
-	}
-
-	args, err := unmarshalArgs(abi, action.Data)
-	if err != nil {
-		cost = host.CommonErrorCost(2)
-		status = tx.Status{
-			Code:    tx.ErrorParamter,
-			Message: "unmarshal args error: " + err.Error(),
-		}
-		return
-	}
-	//var rtn []interface{}
-	//rtn, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	//ilog.Debugf("action %v > %v", action.Contract+"."+action.ActionName, rtn)
-
-	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	//e.logger.Debugf("cost is %v", cost)
+	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, action.Data)
 
 	if cost == nil {
 		panic("cost is nil")
