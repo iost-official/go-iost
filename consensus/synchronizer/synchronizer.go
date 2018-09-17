@@ -28,17 +28,20 @@ var (
 	heightTimeout           int64 = 5 * 3
 )
 
+type callbackfunc = func(hash string, peerID p2p.PeerID)
+
+// Synchronizer defines the functions of synchronizer module
 type Synchronizer interface {
 	Start() error
 	Stop()
 	CheckSync() bool
 	CheckGenBlock(hash []byte) bool
-	SyncBlocks(startNumber int64, endNumber int64) error
 	OnBlockConfirmed(hash string)
 	OnRecvBlock(hash string, peerID p2p.PeerID)
 	CheckSyncProcess()
 }
 
+//SyncImpl is the implementation of Synchronizer.
 type SyncImpl struct {
 	p2pService   p2p.Service
 	blockCache   blockcache.BlockCache
@@ -54,6 +57,7 @@ type SyncImpl struct {
 	exitSignal     chan struct{}
 }
 
+// NewSynchronizer returns a SyncImpl instance.
 func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service) (*SyncImpl, error) {
 	sy := &SyncImpl{
 		p2pService:   p2pserv,
@@ -65,7 +69,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 		syncEnd:      0,
 	}
 	var err error
-	sy.dc, err = NewDownloadController()
+	sy.dc, err = NewDownloadController(sy.reqDownloadBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -93,21 +97,23 @@ func (sy *SyncImpl) reqDownloadBlock(hash string, peerID p2p.PeerID) {
 	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
 }
 
+// Start starts the synchronizer module.
 func (sy *SyncImpl) Start() error {
-	go sy.dc.DownloadLoop(sy.reqDownloadBlock)
+	go sy.dc.Start()
 	go sy.syncHeightLoop()
 	go sy.messageLoop()
 	go sy.retryDownloadLoop()
-	go sy.Initializer()
+	go sy.initializer()
 	return nil
 }
 
+// Stop stops the synchronizer module.
 func (sy *SyncImpl) Stop() {
 	sy.dc.Stop()
 	close(sy.exitSignal)
 }
 
-func (sy *SyncImpl) Initializer() {
+func (sy *SyncImpl) initializer() {
 	if sy.basevariable.Mode() != global.ModeInit {
 		return
 	}
@@ -115,7 +121,7 @@ func (sy *SyncImpl) Initializer() {
 		select {
 		case <-time.After(retryTime):
 			if sy.basevariable.BlockChain().Length() == 0 {
-				sy.SyncBlocks(0, 0)
+				sy.syncBlocks(0, 0)
 				continue
 			} else {
 				sy.basevariable.SetMode(global.ModeNormal)
@@ -125,9 +131,7 @@ func (sy *SyncImpl) Initializer() {
 		case <-sy.exitSignal:
 			return
 		}
-
 	}
-
 }
 
 func (sy *SyncImpl) syncHeightLoop() {
@@ -141,7 +145,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 				ilog.Errorf("marshal syncheight failed. err=%v", err)
 				continue
 			}
-			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.NormalMessage)
+			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.UrgentMessage)
 		case req := <-sy.syncHeightChan:
 			var sh message.SyncHeight
 			err := proto.UnmarshalMerge(req.Data(), &sh)
@@ -158,6 +162,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 
 }
 
+// CheckSync checks if we need to sync.
 func (sy *SyncImpl) CheckSync() bool {
 	if sy.basevariable.Mode() != global.ModeNormal {
 		return false
@@ -186,12 +191,13 @@ func (sy *SyncImpl) CheckSync() bool {
 	if netHeight > height+syncNumber {
 		sy.basevariable.SetMode(global.ModeSync)
 		sy.dc.Reset()
-		go sy.SyncBlocks(height+1, netHeight)
+		go sy.syncBlocks(height+1, netHeight)
 		return true
 	}
 	return false
 }
 
+// CheckGenBlock checks if we need to sync after gen a block.
 func (sy *SyncImpl) CheckGenBlock(hash []byte) bool {
 	if sy.basevariable.Mode() != global.ModeNormal {
 		return false
@@ -217,7 +223,7 @@ func (sy *SyncImpl) CheckGenBlock(hash []byte) bool {
 		}
 	}
 	if num > 0 {
-		go sy.SyncBlocks(height+1, sy.blockCache.Head().Number)
+		go sy.syncBlocks(height+1, sy.blockCache.Head().Number)
 		return true
 	}
 	return false
@@ -233,7 +239,7 @@ func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
 	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
 }
 
-func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
+func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
 		for sy.blockCache.Head().Number+3 < startNumber {
@@ -254,6 +260,7 @@ func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
 	return nil
 }
 
+// CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
 	if sy.syncEnd <= sy.blockCache.Head().Number {
 		sy.basevariable.SetMode(global.ModeNormal)
@@ -263,10 +270,12 @@ func (sy *SyncImpl) CheckSyncProcess() {
 	}
 }
 
+// OnBlockConfirmed confirms a block with block hash.
 func (sy *SyncImpl) OnBlockConfirmed(hash string) {
 	sy.dc.MissionComplete(hash)
 }
 
+// OnRecvBlock would free the peer.
 func (sy *SyncImpl) OnRecvBlock(hash string, peerID p2p.PeerID) {
 	sy.dc.FreePeer(hash, peerID)
 }
@@ -305,69 +314,81 @@ func (sy *SyncImpl) messageLoop() {
 	}
 }
 
+func (sy *SyncImpl) getBlockHashes(start int64, end int64) *message.BlockHashResponse {
+	resp := &message.BlockHashResponse{
+		BlockHashes: make([]*message.BlockHash, 0, end-start+1),
+	}
+	node := sy.blockCache.Head()
+	if node != nil && end > node.Number {
+		end = node.Number
+	}
+
+	for i := end; i >= start; i-- {
+		var hash []byte
+		var err error
+
+		for node != nil && i < node.Number {
+			node = node.Parent
+		}
+
+		if node != nil {
+			hash = node.Block.HeadHash()
+		} else {
+			hash, err = sy.basevariable.BlockChain().GetHashByNumber(i)
+			if err != nil {
+				ilog.Errorf("get hash by number from db failed. err=%v, number=%v", err, i)
+				continue
+			}
+		}
+
+		blkHash := message.BlockHash{
+			Height: i,
+			Hash:   hash,
+		}
+		resp.BlockHashes = append(resp.BlockHashes, &blkHash)
+	}
+	for i, j := 0, len(resp.BlockHashes)-1; i < j; i, j = i+1, j-1 {
+		resp.BlockHashes[i], resp.BlockHashes[j] = resp.BlockHashes[j], resp.BlockHashes[i]
+	}
+	return resp
+}
+
+func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *message.BlockHashResponse {
+	resp := &message.BlockHashResponse{
+		BlockHashes: make([]*message.BlockHash, 0, len(nums)),
+	}
+	var blk *block.Block
+	var err error
+	for _, num := range nums {
+		var hash []byte
+		blk, err = sy.blockCache.GetBlockByNumber(num)
+		if err == nil {
+			hash = blk.HeadHash()
+		} else {
+			hash, err = sy.basevariable.BlockChain().GetHashByNumber(num)
+			if err != nil {
+				continue
+			}
+		}
+		blkHash := message.BlockHash{
+			Height: num,
+			Hash:   hash,
+		}
+		resp.BlockHashes = append(resp.BlockHashes, &blkHash)
+	}
+	return resp
+}
+
 func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerID) {
 	if rh.End < rh.Start || rh.Start < 0 {
 		return
 	}
-	resp := &message.BlockHashResponse{
-		BlockHashes: make([]*message.BlockHash, 0, rh.End-rh.Start+1),
-	}
+	var resp *message.BlockHashResponse
 	if rh.ReqType == 0 {
-		node := sy.blockCache.Head()
-
-		var end = rh.End
-		if node != nil && end > node.Number {
-			end = node.Number
-		}
-
-		for i := end; i >= rh.Start; i-- {
-			var hash []byte
-			var err error
-
-			for node != nil && i < node.Number {
-				node = node.Parent
-			}
-
-			if node != nil {
-				hash = node.Block.HeadHash()
-			} else {
-				hash, err = sy.basevariable.BlockChain().GetHashByNumber(i)
-				if err != nil {
-					ilog.Errorf("get hash by number from db failed. err=%v, number=%v", err, i)
-					continue
-				}
-			}
-
-			blkHash := message.BlockHash{
-				Height: i,
-				Hash:   hash,
-			}
-			resp.BlockHashes = append(resp.BlockHashes, &blkHash)
-		}
-		for i, j := 0, len(resp.BlockHashes)-1; i < j; i, j = i+1, j-1 {
-			resp.BlockHashes[i], resp.BlockHashes[j] = resp.BlockHashes[j], resp.BlockHashes[i]
-		}
+		resp = sy.getBlockHashes(rh.Start, rh.End)
 	}
 	if rh.ReqType == 1 {
-		var blk *block.Block
-		var err error
-		for _, num := range rh.Nums {
-			var hash []byte
-			blk, err = sy.blockCache.GetBlockByNumber(num)
-			if err == nil {
-				hash = blk.HeadHash()
-			} else {
-				hash, err = sy.basevariable.BlockChain().GetHashByNumber(num)
-				if err != nil {
-					continue
-				}
-			}
-			blkHash := message.BlockHash{
-				Height: num,
-				Hash:   hash,
-			}
-			resp.BlockHashes = append(resp.BlockHashes, &blkHash)
-		}
+		resp = sy.getBlockHashesByNums(rh.Nums)
 	}
 	if len(resp.BlockHashes) == 0 {
 		return
@@ -441,28 +462,34 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID
 	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
 }
 
+// DownloadController defines the functions of download controller.
 type DownloadController interface {
 	OnRecvHash(hash string, peerID p2p.PeerID)
 	OnTimeout(hash string, peerID p2p.PeerID)
 	MissionComplete(hash string)
 	FreePeer(hash string, peerID p2p.PeerID)
-	DownloadLoop(callback func(hash string, peerID p2p.PeerID))
 	Reset()
+	Start()
 	Stop()
 }
 
 const (
+	// Done hash state type
 	Done string = "Done"
+	// Wait hash state type
 	Wait string = "Wait"
 )
 
 const (
-	peerConNum        = 10
-	Free       string = "Free"
+	peerConNum = 10
+	// Free peer state type
+	Free string = "Free"
 )
 
 const (
+	// Head hashList node
 	Head string = "Head"
+	// Tail hashList node
 	Tail string = "Tail"
 )
 
@@ -474,6 +501,7 @@ type hashListNode struct {
 	next *hashListNode
 }
 
+//DownloadControllerImpl is the implementation of DownloadController.
 type DownloadControllerImpl struct {
 	hashState      *sync.Map
 	peerState      *sync.Map
@@ -481,11 +509,13 @@ type DownloadControllerImpl struct {
 	peerMap        *sync.Map
 	peerMapMutex   *sync.Map
 	newPeerMutex   *sync.Mutex
+	callback       callbackfunc
 	chDownload     chan struct{}
 	exitSignal     chan struct{}
 }
 
-func NewDownloadController() (*DownloadControllerImpl, error) {
+// NewDownloadController returns a DownloadController instance.
+func NewDownloadController(callback callbackfunc) (*DownloadControllerImpl, error) {
 	dc := &DownloadControllerImpl{
 		hashState:      new(sync.Map), // map[string]string
 		peerState:      new(sync.Map), // map[PeerID](map[string]bool)
@@ -495,10 +525,12 @@ func NewDownloadController() (*DownloadControllerImpl, error) {
 		newPeerMutex:   new(sync.Mutex),
 		chDownload:     make(chan struct{}, 2),
 		exitSignal:     make(chan struct{}),
+		callback:       callback,
 	}
 	return dc, nil
 }
 
+// Reset resets data.
 func (dc *DownloadControllerImpl) Reset() {
 	dc.newPeerMutex.Lock()
 	dc.hashState = new(sync.Map)
@@ -509,6 +541,12 @@ func (dc *DownloadControllerImpl) Reset() {
 	dc.newPeerMutex.Unlock()
 }
 
+// Start starts the DownloadController.
+func (dc *DownloadControllerImpl) Start() {
+	go dc.downloadLoop()
+}
+
+// Stop stops the DownloadController.
 func (dc *DownloadControllerImpl) Stop() {
 	close(dc.exitSignal)
 }
@@ -569,6 +607,7 @@ func (dc *DownloadControllerImpl) getHashListNode(hashMap *sync.Map, key string)
 	return node, true
 }
 
+// OnRecvHash adds a mission.
 func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 	// ilog.Debugf("peer: %s, hash: %s", peerID, hash)
 	hStateIF, _ := dc.hashState.LoadOrStore(hash, Wait)
@@ -620,6 +659,7 @@ func (dc *DownloadControllerImpl) OnRecvHash(hash string, peerID p2p.PeerID) {
 	}
 }
 
+// OnTimeout changes the hash state and frees the peer.
 func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) {
 	ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.Pretty())
 	if hStateIF, ok := dc.hashState.Load(hash); ok {
@@ -652,10 +692,12 @@ func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) {
 	}
 }
 
+// MissionComplete changes the hash state.
 func (dc *DownloadControllerImpl) MissionComplete(hash string) {
 	dc.hashState.Store(hash, Done)
 }
 
+// FreePeer frees the peer.
 func (dc *DownloadControllerImpl) FreePeer(hash string, peerID p2p.PeerID) {
 	if pStateIF, ok := dc.peerState.Load(peerID); ok {
 		psMutex, ok := dc.getStateMutex(peerID)
@@ -678,10 +720,53 @@ func (dc *DownloadControllerImpl) FreePeer(hash string, peerID p2p.PeerID) {
 			psMutex.Unlock()
 		}
 	}
-
 }
 
-func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID p2p.PeerID)) {
+func (dc *DownloadControllerImpl) findWaitHashes(peerID p2p.PeerID, hashMap *sync.Map, ps timerMap, pmMutex *sync.Mutex, psMutex *sync.Mutex) {
+	pmMutex.Lock()
+	node, ok := dc.getHashListNode(hashMap, Head)
+	if !ok {
+		return
+	}
+	node = node.next
+	pmMutex.Unlock()
+	for {
+		if node.val == Tail {
+			return
+		}
+		hash := node.val
+		var hState string
+		hStateIF, ok := dc.hashState.Load(hash)
+		if ok {
+			hState, ok = hStateIF.(string)
+		}
+		if !ok || hState == Done {
+			dc.hashState.Delete(hash)
+			pmMutex.Lock()
+			hashMap.Delete(hash)
+			node.prev.next = node.next
+			node.next.prev = node.prev
+			pmMutex.Unlock()
+		} else if hState == Wait {
+			dc.hashState.Store(hash, peerID.Pretty())
+			dc.callback(hash, peerID)
+			psMutex.Lock()
+			ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
+				dc.OnTimeout(hash, peerID)
+			})
+			psLen := len(ps)
+			psMutex.Unlock()
+			if psLen >= peerConNum {
+				return
+			}
+		}
+		pmMutex.Lock()
+		node = node.next
+		pmMutex.Unlock()
+	}
+}
+
+func (dc *DownloadControllerImpl) downloadLoop() {
 	for {
 		select {
 		case <-time.After(2 * syncBlockTimeout):
@@ -697,11 +782,12 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 				ps, ok := v.(timerMap)
 				if !ok {
 					ilog.Errorf("get peerstate error: %s", peerID.Pretty())
-					// dc.peerState.Delete(peerID)
 					return true
 				}
-				psMutex, ok := dc.getStateMutex(peerID)
-				if !ok {
+				pmMutex, pmmok := dc.getPeerMapMutex(peerID)
+				psMutex, psmok := dc.getStateMutex(peerID)
+				hashMap, hmok := dc.getHashMap(peerID)
+				if !psmok || !pmmok || !hmok {
 					return true
 				}
 				psMutex.Lock()
@@ -711,60 +797,7 @@ func (dc *DownloadControllerImpl) DownloadLoop(callback func(hash string, peerID
 				if psLen >= peerConNum {
 					return true
 				}
-
-				pmMutex, ok := dc.getPeerMapMutex(peerID)
-				if !ok {
-					return true
-				}
-				hashMap, ok := dc.getHashMap(peerID)
-				if !ok {
-					return true
-				}
-
-				pmMutex.Lock()
-				var node *hashListNode
-				headNode, ok := dc.getHashListNode(hashMap, Head)
-				if ok {
-					node = headNode.next
-				} else {
-					pmMutex.Unlock()
-					return true
-				}
-				pmMutex.Unlock()
-				for {
-					if node.val == Tail {
-						break
-					}
-					hash := node.val
-					var hState string
-					hStateIF, ok := dc.hashState.Load(hash)
-					if ok {
-						hState, ok = hStateIF.(string)
-					}
-					if !ok || hState == Done {
-						dc.hashState.Delete(hash)
-						pmMutex.Lock()
-						hashMap.Delete(hash)
-						node.prev.next = node.next
-						node.next.prev = node.prev
-						pmMutex.Unlock()
-					} else if hState == Wait {
-						dc.hashState.Store(hash, peerID.Pretty())
-						callback(hash, peerID)
-						psMutex.Lock()
-						ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
-							dc.OnTimeout(hash, peerID)
-						})
-						psLen := len(ps)
-						psMutex.Unlock()
-						if psLen >= peerConNum {
-							break
-						}
-					}
-					pmMutex.Lock()
-					node = node.next
-					pmMutex.Unlock()
-				}
+				dc.findWaitHashes(peerID, hashMap, ps, pmMutex, psMutex)
 				return true
 			})
 			ilog.Debugf("Download End")
