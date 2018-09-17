@@ -228,7 +228,7 @@ module.exports = Contract;
 		return c.Encode(), nil
 	})
 
-	rs, co, e := monitor.Call(h, "contract", "hello")
+	rs, co, e := monitor.Call(h, "contract", "hello", `[]`)
 	if rs[0] != "world" {
 		t.Fatal(rs, co, e)
 	}

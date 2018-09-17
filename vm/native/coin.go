@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
@@ -58,7 +60,7 @@ var (
 			}
 
 			// check can_issue
-			rtn, cost0, err = h.Call(coinContract.(string), "can_issue", account, amount)
+			rtn, cost0, err = h.Call(coinContract.(string), "can_issue", fmt.Sprintf(`["%v",%v]`, account, amount))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -88,7 +90,7 @@ var (
 			cost.AddAssign(cost0)
 
 			// check can_issue
-			rtn, cost0, err = h.Call(coinContract.(string), "can_setrate", rate)
+			rtn, cost0, err = h.Call(coinContract.(string), "can_setrate", fmt.Sprintf(`[%v]`, rate))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err

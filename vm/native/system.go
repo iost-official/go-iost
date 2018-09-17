@@ -49,18 +49,9 @@ var (
 	}
 	callWithReceipt = &abi{
 		name: "CallWithReceipt",
-		args: []string{"string", "string", "json"},
+		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
-			var json *simplejson.Json
-			json, err = simplejson.NewJson(args[2].([]byte))
-			if err != nil {
-				return nil, host.CommonErrorCost(1), err
-			}
-			arr, err := json.Array()
-			if err != nil {
-				return nil, host.CommonErrorCost(2), err
-			}
-			rtn, cost, err = h.CallWithReceipt(args[0].(string), args[1].(string), arr...)
+			rtn, cost, err = h.CallWithReceipt(args[0].(string), args[1].(string), args[2].(string))
 			return rtn, cost, err
 		},
 	}
