@@ -181,9 +181,12 @@ func (sy *SyncImpl) CheckSync() bool {
 		heights[r] = sh.Height
 		return true
 	})
-	// ilog.Debugf("check sync heights: %v", heights)
+	ilog.Errorf("check sync heights: %v", heights)
 	netHeight := heights[len(heights)/2]
+	ilog.Errorf("check netHeights: %v", netHeight)
+	ilog.Errorf("height+syncNumber: %v", height+syncNumber)
 	if netHeight > height+syncNumber {
+		ilog.Error("start to get from others")
 		sy.basevariable.SetMode(global.ModeSync)
 		sy.dc.Reset()
 		go sy.SyncBlocks(height+1, netHeight)
@@ -234,6 +237,7 @@ func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
 }
 
 func (sy *SyncImpl) SyncBlocks(startNumber int64, endNumber int64) error {
+	ilog.Error("sync start: %v, end: %v", startNumber, endNumber)
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
 		for sy.blockCache.Head().Number+3 < startNumber {
