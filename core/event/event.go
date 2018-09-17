@@ -90,7 +90,7 @@ func (ec *EventCollector) Subscribe(sub *Subscription) {
 	for _, topic := range sub.topics {
 		m, _ := ec.subMap.LoadOrStore(topic, new(sync.Map))
 		m.(*sync.Map).Store(sub, true)
-		log.Debugf("Subscribe topic = %s, sub = %s", topic.String(), sub)
+		log.Debugf("Subscribe topic = %s, sub = %v", topic.String(), sub)
 	}
 }
 
@@ -100,7 +100,7 @@ func (ec *EventCollector) Unsubscribe(sub *Subscription) {
 		m, ok := ec.subMap.Load(topic)
 		if ok && m != nil {
 			m.(*sync.Map).Delete(sub)
-			log.Debugf("Unsubscribe topic = %s, sub = %s", topic.String(), sub)
+			log.Debugf("Unsubscribe topic = %s, sub = %v", topic.String(), sub)
 		}
 	}
 }
