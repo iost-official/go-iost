@@ -412,9 +412,11 @@ func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 	return bc.head
 }
 
-// PICSIZE draw the blockcache
-const PICSIZE int = 500
+//for debug
+//draw the blockcache
+const PICSIZE int = 1000
 
+// PICSIZE draw the blockcache
 var pic = makePic()
 var picX, picY int
 
@@ -428,6 +430,9 @@ func makePic() [][]string {
 }
 
 func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
+	if x >= PICSIZE || y >= PICSIZE {
+		return 0
+	}
 	if x > picX {
 		picX = x
 	}
@@ -443,7 +448,10 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 			pic[i][y-2] = "|"
 		}
 	}
-	pic[x][y] = strconv.FormatInt(root.Number, 10) + root.Witness[4:8]
+	pic[x][y] = strconv.FormatInt(root.Number, 10)
+	if root != nil && len(root.Witness) >= 6 {
+		pic[x][y] += "(" + root.Witness[4:6] + ")"
+	}
 	var width int
 	var f bool
 	i := 0
@@ -451,7 +459,9 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 		if i == len(root.Children)-1 {
 			f = true
 		}
-		width = calcTree(k, x+width, y+2, f)
+		if x+width < PICSIZE && y+2 < PICSIZE {
+			width = calcTree(k, x+width, y+2, f)
+		}
 		i++
 	}
 	if isLast {
@@ -470,6 +480,12 @@ func (bcn *BlockCacheNode) DrawTree() string {
 		}
 	}
 	calcTree(bcn, 0, 0, true)
+	if picX > PICSIZE-1 {
+		picX = PICSIZE - 1
+	}
+	if picY > PICSIZE-1 {
+		picY = PICSIZE - 1
+	}
 	for i := 0; i <= picX; i++ {
 		l := ""
 		for j := 0; j <= picY; j++ {

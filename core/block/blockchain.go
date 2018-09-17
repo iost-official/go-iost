@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"strconv"
+
 	"github.com/iost-official/Go-IOS-Protocol/db/kv"
 )
 
@@ -156,4 +158,17 @@ func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 // Close is close database
 func (bc *BlockChain) Close() {
 	bc.blockChainDB.Close()
+}
+
+func (bc *BlockChain) Draw(start int64, end int64) string {
+	ret := ""
+	for i := start; i <= end; i++ {
+		blk, err := bc.GetBlockByNumber(i)
+		if err != nil {
+			continue
+		}
+		ret += strconv.FormatInt(blk.Head.Number, 10) + "(" + blk.Head.Witness[4:6] + ")-"
+	}
+	ret = ret[0 : len(ret)-1]
+	return ret
 }
