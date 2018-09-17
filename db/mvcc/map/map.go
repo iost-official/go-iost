@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+// MVCCMap is the mvcc map
 type MVCCMap struct {
 	data   map[string]interface{}
 	parent *MVCCMap
@@ -12,6 +13,7 @@ type MVCCMap struct {
 	rwmu   *sync.RWMutex
 }
 
+// New returns new map
 func New() *MVCCMap {
 	return &MVCCMap{
 		data:   make(map[string]interface{}),
@@ -32,6 +34,7 @@ func (m *MVCCMap) getFromLink(key []byte) interface{} {
 	return v
 }
 
+// Get returns the value of specify key
 func (m *MVCCMap) Get(key []byte) interface{} {
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
@@ -39,6 +42,7 @@ func (m *MVCCMap) Get(key []byte) interface{} {
 	return m.getFromLink(key)
 }
 
+// Put will insert the key-value pair
 func (m *MVCCMap) Put(key []byte, value interface{}) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
@@ -49,7 +53,7 @@ func (m *MVCCMap) Put(key []byte, value interface{}) {
 func (m *MVCCMap) allFromLink(prefix []byte) []interface{} {
 	values := make([]interface{}, 0)
 	for k, v := range m.data {
-		if strings.HasPrefix(string(k), string(prefix)) {
+		if strings.HasPrefix(k, string(prefix)) {
 			values = append(values, v)
 		}
 	}
@@ -59,6 +63,7 @@ func (m *MVCCMap) allFromLink(prefix []byte) []interface{} {
 	return append(m.parent.allFromLink(prefix), values...)
 }
 
+// All returns the list of nodes prefixed with prefix
 func (m *MVCCMap) All(prefix []byte) []interface{} {
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
@@ -66,6 +71,8 @@ func (m *MVCCMap) All(prefix []byte) []interface{} {
 	return m.allFromLink(prefix)
 }
 
+// Fork will fork the map
+// thread safe between all forks of the map
 func (m *MVCCMap) Fork() interface{} {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
@@ -92,6 +99,7 @@ func (m *MVCCMap) freeFromLink() {
 	m.data = nil
 }
 
+// Free will free the memory of trie
 func (m *MVCCMap) Free() {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()

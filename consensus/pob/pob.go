@@ -431,6 +431,6 @@ func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateLib(p.blockCache.Head(), p.blockCache)
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {
-		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetId())
+		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
 	}
 }

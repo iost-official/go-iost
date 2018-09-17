@@ -230,7 +230,7 @@ func TestVote(t *testing.T) {
 	})
 	Convey("test info", t, func() {
 		bc, _ := NewBlockCache(global)
-		for _, v := range bc.linkedRoot.NetId() {
+		for _, v := range bc.linkedRoot.NetID() {
 			So("33", ShouldEqual, v)
 		}
 	})

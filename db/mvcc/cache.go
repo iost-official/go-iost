@@ -5,14 +5,17 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db/mvcc/trie"
 )
 
+// CacheType is the cache type
 type CacheType int
 
+// The cache type constant
 const (
 	_ CacheType = iota
 	TrieCache
 	MapCache
 )
 
+// Cache is the cache interface
 type Cache interface {
 	Get(key []byte) interface{}
 	Put(key []byte, value interface{})
@@ -21,6 +24,7 @@ type Cache interface {
 	Free()
 }
 
+// NewCache returns the specify type cache
 func NewCache(t CacheType) Cache {
 	switch t {
 	case TrieCache:

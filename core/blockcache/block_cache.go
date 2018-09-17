@@ -14,20 +14,27 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
+// CacheStatus ...
 type CacheStatus int
 
 const (
+	// DelSingleBlockTime ...
 	DelSingleBlockTime int64 = 10
 )
 
+// BCNType type of BlockCacheNode
 type BCNType int
 
 const (
+	// Linked ...
 	Linked BCNType = iota
+	// Single ...
 	Single
+	// Virtual ...
 	Virtual
 )
 
+// BlockCacheNode is the implementation of BlockCacheNode
 type BlockCacheNode struct {
 	Block        *block.Block
 	Parent       *BlockCacheNode
@@ -68,6 +75,7 @@ func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block
 	}
 }
 
+// NewBCN return a new block cache node instance
 func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	bcn := BlockCacheNode{
 		Block:    block,
@@ -84,6 +92,7 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	return &bcn
 }
 
+// NewVirtualBCN return a new virtual block cache node instance
 func NewVirtualBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	bcn := BlockCacheNode{
 		Block:    nil,
@@ -98,6 +107,7 @@ func NewVirtualBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	return &bcn
 }
 
+// BlockCache defines BlockCache's API
 type BlockCache interface {
 	Add(*block.Block) *BlockCacheNode
 	AddGenesis(*block.Block)
@@ -112,6 +122,7 @@ type BlockCache interface {
 	Draw() string
 }
 
+// BlockCacheImpl is the implementation of BlockCache
 type BlockCacheImpl struct {
 	linkedRoot   *BlockCacheNode
 	singleRoot   *BlockCacheNode
@@ -143,6 +154,7 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 	bc.hash2node.Delete(string(hash))
 }
 
+// NewBlockCache return a new BlockCache instance
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	bc := BlockCacheImpl{
 		linkedRoot:   NewBCN(nil, nil),
@@ -177,7 +189,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	return &bc, nil
 }
 
-//call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
+// Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
 func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
@@ -237,6 +249,7 @@ func (bc *BlockCacheImpl) updateLongest() {
 	}
 }
 
+// Add is add a block
 func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	newNode, nok := bc.hmget(blk.HeadHash())
 	if nok && newNode.Type != Virtual {
@@ -257,6 +270,7 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	return newNode
 }
 
+// AddGenesis is add genesis block
 func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 	bc.linkedRoot = NewBCN(nil, blk)
 	bc.linkedRoot.Type = Linked
@@ -280,6 +294,7 @@ func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	}
 }
 
+// Del is delete a block
 func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 	bc.del(bcn)
 	bc.updateLongest()
@@ -350,12 +365,14 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	return nil
 }
 
+// Flush is save a block
 func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	bc.flush(bcn)
 	bc.delSingle()
 	bc.updateLongest()
 }
 
+// Find is find the block
 func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 	bcn, ok := bc.hmget(hash)
 	if !ok || bcn.Type == Virtual {
@@ -364,6 +381,7 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 	return bcn, nil
 }
 
+// GetBlockByNumber get a block by number
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 	it := bc.head
 	for it != nil {
@@ -375,6 +393,7 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 	return nil, fmt.Errorf("block not found")
 }
 
+// GetBlockByHash get a block by hash
 func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
 	bcn, err := bc.Find(hash)
 	if err != nil {
@@ -383,10 +402,12 @@ func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
 	return bcn.Block, nil
 }
 
+// LinkedRoot return the root node
 func (bc *BlockCacheImpl) LinkedRoot() *BlockCacheNode {
 	return bc.linkedRoot
 }
 
+// Head return head of block cache
 func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 	return bc.head
 }
@@ -395,6 +416,7 @@ func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 //draw the blockcache
 const PICSIZE int = 1000
 
+// PICSIZE draw the blockcache
 var pic = makePic()
 var picX, picY int
 
@@ -426,9 +448,9 @@ func calcTree(root *BlockCacheNode, x int, y int, isLast bool) int {
 			pic[i][y-2] = "|"
 		}
 	}
-	pic[x][y] = strconv.FormatInt(root.Number, 10) 
-	if root != nil && len(root.Witness) >= 6{
-		pic[x][y] += "("+root.Witness[4:6]+")"
+	pic[x][y] = strconv.FormatInt(root.Number, 10)
+	if root != nil && len(root.Witness) >= 6 {
+		pic[x][y] += "(" + root.Witness[4:6] + ")"
 	}
 	var width int
 	var f bool

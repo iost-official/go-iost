@@ -8,20 +8,24 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db/kv"
 )
 
+// TXRMerkleTreeDB is the implementation of TXRMerkleTreeDB
 type TXRMerkleTreeDB struct {
 	txrMerkleTreeDB *kv.Storage
 }
 
+// TXRMTDB ...
 var TXRMTDB TXRMerkleTreeDB
 
 var once sync.Once
 
+// Uint64ToBytes ...
 func Uint64ToBytes(n uint64) []byte {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, n)
 	return b
 }
 
+// Init is init the database
 func Init(LevelDBPath string) error {
 	var err error
 	once.Do(func() {
@@ -34,6 +38,7 @@ func Init(LevelDBPath string) error {
 	return err
 }
 
+// Put ...
 func (mdb *TXRMerkleTreeDB) Put(m *TXRMerkleTree, blockNum uint64) error {
 	mByte, err := m.Encode()
 	if err != nil {
@@ -46,6 +51,7 @@ func (mdb *TXRMerkleTreeDB) Put(m *TXRMerkleTree, blockNum uint64) error {
 	return nil
 }
 
+// Get return the merkle tree
 func (mdb *TXRMerkleTreeDB) Get(blockNum uint64) (*TXRMerkleTree, error) {
 	mByte, err := mdb.txrMerkleTreeDB.Get(Uint64ToBytes(blockNum))
 	if err != nil || len(mByte) == 0 {

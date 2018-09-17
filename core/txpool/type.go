@@ -13,13 +13,14 @@ import (
 
 var (
 	clearInterval = 10 * time.Second
-	Expiration    = int64(90 * time.Second)
-	filterTime    = int64(90 * time.Second)
+	// Expiration is the transaction expiration
+	Expiration = int64(90 * time.Second)
+	filterTime = int64(90 * time.Second)
 
-	metricsReceivedTxCount        = metrics.NewCounter("iost_tx_received_count", []string{"from"})
-	metricsGetPendingTxTime       = metrics.NewGauge("iost_get_pending_tx_time", nil)
-	metricsGetPendingTxLockTime   = metrics.NewGauge("iost_get_pending_tx_lock_time", nil)
-	metricsGetPendingTxSortTime   = metrics.NewGauge("iost_get_pending_tx_sort_time", nil)
+	metricsReceivedTxCount      = metrics.NewCounter("iost_tx_received_count", []string{"from"})
+	metricsGetPendingTxTime     = metrics.NewGauge("iost_get_pending_tx_time", nil)
+	metricsGetPendingTxLockTime = metrics.NewGauge("iost_get_pending_tx_lock_time", nil)
+	//metricsGetPendingTxSortTime   = metrics.NewGauge("iost_get_pending_tx_sort_time", nil)
 	metricsGetPendingTxAppendTime = metrics.NewGauge("iost_get_pending_tx_append_time", nil)
 	metricsExistTxTime            = metrics.NewSummary("iost_exist_tx_time", nil)
 	metricsExistTxCount           = metrics.NewCounter("iost_exist_tx_count", nil)
@@ -31,58 +32,73 @@ var (
 	metricsTxErrType              = metrics.NewCounter("iost_txerr_type", []string{"type"})
 )
 
+// FRet find the return value of the tx
 type FRet uint
 
 const (
+	// NotFound ...
 	NotFound FRet = iota
+	// FoundPending ...
 	FoundPending
+	// FoundChain ...
 	FoundChain
 )
 
-type TFork uint
+// tFork ...
+type tFork uint
 
 const (
-	SameHead TFork = iota
-	ForkBCN
-	NoForkBCN
-	ForkError
+	sameHead tFork = iota
+	forkBCN
+	noForkBCN
 )
 
+// TAddTx add the return value of the tx
 type TAddTx uint
 
 const (
+	// Success ...
 	Success TAddTx = iota
+	// TimeError ...
 	TimeError
+	// VerifyError ...
 	VerifyError
+	// DupError ...
 	DupError
+	// GasPriceError ...
 	GasPriceError
 )
 
-type ForkChain struct {
+type forkChain struct {
 	NewHead *blockcache.BlockCacheNode
 	OldHead *blockcache.BlockCacheNode
 	ForkBCN *blockcache.BlockCacheNode
 }
 
+// TxsList tx sort
 type TxsList []*tx.Tx
 
+// Len ...
 func (s TxsList) Len() int { return len(s) }
+
+// Less ...
 func (s TxsList) Less(i, j int) bool {
 	if s[i].GasPrice > s[j].GasPrice {
 		return true
 	}
 
 	if s[i].GasPrice == s[j].GasPrice {
-		if s[i].Time > s[j].Time {
-			return false
-		} else {
+		if s[i].Time < s[j].Time {
 			return true
 		}
 	}
 	return false
 }
+
+// Swap ...
 func (s TxsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
+// Push ...
 func (s *TxsList) Push(x *tx.Tx) {
 	*s = append(*s, x)
 }
@@ -192,6 +208,7 @@ func (st *SortedTxMap) Iter() *Iterator {
 	return ret
 }
 
+// Iterator This is the iterator
 type Iterator struct {
 	iter *redblacktree.Iterator
 	rw   *sync.RWMutex
@@ -214,6 +231,7 @@ func (iter *Iterator) getNext() {
 	iter.res <- &iterRes{iter.iter.Key().(*tx.Tx), true}
 }
 
+// Next next the tx
 func (iter *Iterator) Next() (*tx.Tx, bool) {
 	ret := <-iter.res
 	go iter.getNext()
