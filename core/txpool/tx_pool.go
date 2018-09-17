@@ -200,6 +200,12 @@ func (pool *TxPImpl) DelTx(hash []byte) error {
 	return nil
 }
 
+func (pool *TxPImpl) DelTxList(delList []*tx.Tx) {
+	for _, t := range delList {
+		pool.pendingTx.Del(t.Hash())
+	}
+}
+
 // TxIterator ...
 func (pool *TxPImpl) TxIterator() (*Iterator, *blockcache.BlockCacheNode) {
 	metricsTxPoolSize.Set(float64(pool.pendingTx.Size()), nil)
@@ -528,7 +534,6 @@ func (pool *TxPImpl) TxTimeOut(tx *tx.Tx) bool {
 	}
 
 	if nTime-txTime > Expiration {
-		ilog.Error("nTime:", nTime, "txTime:", txTime, "nTime-txTime:", nTime-txTime, "Expiration:", Expiration)
 		metricsTxErrType.Add(1, map[string]string{"type": "nTime-txTime > expiration"})
 		return true
 	}

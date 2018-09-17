@@ -78,7 +78,7 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		blk.Receipts = append(blk.Receipts, receipt)
 	}
 	t, ok := txIter.Next()
-
+	delList := []*tx.Tx{}
 	var vmExecTime, iterTime, i, j int64
 L:
 	for ok {
@@ -96,8 +96,10 @@ L:
 					blk.Receipts = append(blk.Receipts, receipt)
 				} else {
 					ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
-					txPool.DelTx(t.Hash())
+					delList = append(delList, t)
 				}
+			} else {
+				delList = append(delList, t)
 			}
 			step2 := time.Now()
 			t, ok = txIter.Next()
@@ -106,6 +108,7 @@ L:
 			iterTime += step3.Sub(step2).Nanoseconds()
 		}
 	}
+
 	if i > 0 && j > 0 {
 		metricsVMTime.Set(float64(vmExecTime), nil)
 		metricsVMAvgTime.Set(float64(vmExecTime/j), nil)
@@ -128,7 +131,7 @@ L:
 
 	metricsGeneratedBlockCount.Add(1, nil)
 	metricsTxSize.Set(float64(len(blk.Txs)), nil)
-
+	go txPool.DelTxList(delList)
 	return &blk, nil
 }
 
