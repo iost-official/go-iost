@@ -30,8 +30,10 @@ type Status struct {
 type ReceiptType int32
 
 const (
-	SystemDefined ReceiptType = iota // system receipt, recording info of calling a method
-	UserDefined                      // user defined receipt, usually a json string
+	// SystemDefined system receipt, recording info of calling a method
+	SystemDefined ReceiptType = iota
+	// UserDefined user defined receipt, usually a json string
+	UserDefined
 )
 
 // Receipt generated when applying transaction
@@ -40,18 +42,17 @@ type Receipt struct {
 	Content string      // can be a raw string or a json string
 }
 
-// TxReceipt Transaction Receipt 实现
+// TxReceipt Transaction Receipt
 type TxReceipt struct {
 	TxHash   []byte
 	GasUsage int64
-	// 目前只收gas，这些可以先没有
 	/*
 		CpuTimeUsage    uint64
 		NetUsage    uint64
 		RAMUsage    uint64
 	*/
 	Status        Status
-	SuccActionNum int32 // 执行成功的 action 个数
+	SuccActionNum int32
 	Receipts      []Receipt
 }
 
