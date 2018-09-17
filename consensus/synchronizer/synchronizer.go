@@ -90,6 +90,7 @@ func (sy *SyncImpl) reqDownloadBlock(hash string, peerID p2p.PeerID) {
 	if err != nil {
 		return
 	}
+	ilog.Infof("req block. hash=%v, peerID=%s", []byte(hash), peerID.Pretty())
 	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
 }
 
