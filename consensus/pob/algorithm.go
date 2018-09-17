@@ -94,7 +94,6 @@ L:
 				if receipt, err := engine.Exec(t); err == nil {
 					blk.Txs = append(blk.Txs, t)
 					blk.Receipts = append(blk.Receipts, receipt)
-					ilog.Debug(err, receipt)
 				} else {
 					ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
 					txPool.DelTx(t.Hash())

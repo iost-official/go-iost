@@ -29,7 +29,7 @@ type TxPoolImpl struct {
 	forkChain *ForkChain
 	blockList *sync.Map
 	// pendingTx *sync.Map
-	pendingTx *sortedTxMap
+	pendingTx *SortedTxMap
 
 	mu               sync.RWMutex
 	quitGenerateMode chan struct{}
@@ -43,7 +43,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		chTx:             make(chan *tx.Tx, 102400),
 		forkChain:        new(ForkChain),
 		blockList:        new(sync.Map),
-		pendingTx:        newSortedTxMap(),
+		pendingTx:        NewSortedTxMap(),
 		global:           global,
 		p2pService:       p2ps,
 		chP2PTx:          p2ps.Register("TxPool message", p2p.PublishTxRequest),
@@ -560,7 +560,7 @@ func (pool *TxPoolImpl) delBlockTxInPending(hash []byte) error {
 }
 
 func (pool *TxPoolImpl) clearTxPending() {
-	pool.pendingTx = newSortedTxMap()
+	pool.pendingTx = NewSortedTxMap()
 }
 
 func (pool *TxPoolImpl) updatePending(blockHash []byte) error {

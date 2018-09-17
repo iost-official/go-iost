@@ -125,7 +125,7 @@ func (b *blockTx) existTx(hash []byte) bool {
 	return r
 }
 
-type sortedTxMap struct {
+type SortedTxMap struct {
 	tree  *redblacktree.Tree
 	txMap map[string]*tx.Tx
 	rw    *sync.RWMutex
@@ -140,28 +140,28 @@ func compareTx(a, b interface{}) int {
 	return int(txa.GasPrice - txb.GasPrice)
 }
 
-func newSortedTxMap() *sortedTxMap {
-	return &sortedTxMap{
+func NewSortedTxMap() *SortedTxMap {
+	return &SortedTxMap{
 		tree:  redblacktree.NewWith(compareTx),
 		txMap: make(map[string]*tx.Tx),
 		rw:    new(sync.RWMutex),
 	}
 }
 
-func (st *sortedTxMap) Get(hash []byte) *tx.Tx {
+func (st *SortedTxMap) Get(hash []byte) *tx.Tx {
 	st.rw.RLock()
 	defer st.rw.RUnlock()
 	return st.txMap[string(hash)]
 }
 
-func (st *sortedTxMap) Add(tx *tx.Tx) {
+func (st *SortedTxMap) Add(tx *tx.Tx) {
 	st.rw.Lock()
 	st.tree.Put(tx, true)
 	st.txMap[string(tx.Hash())] = tx
 	st.rw.Unlock()
 }
 
-func (st *sortedTxMap) Del(hash []byte) {
+func (st *SortedTxMap) Del(hash []byte) {
 	st.rw.Lock()
 	defer st.rw.Unlock()
 
@@ -173,14 +173,14 @@ func (st *sortedTxMap) Del(hash []byte) {
 	delete(st.txMap, string(hash))
 }
 
-func (st *sortedTxMap) Size() int {
+func (st *SortedTxMap) Size() int {
 	st.rw.Lock()
 	defer st.rw.Unlock()
 
 	return len(st.txMap)
 }
 
-func (st *sortedTxMap) Iter() *Iterator {
+func (st *SortedTxMap) Iter() *Iterator {
 	iter := st.tree.Iterator()
 	iter.End()
 	ret := &Iterator{
