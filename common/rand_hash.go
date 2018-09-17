@@ -4,6 +4,7 @@ import "math/rand"
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+// RandHash ...
 func RandHash(n int) []byte {
 	b := make([]rune, n)
 	for i := range b {

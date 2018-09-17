@@ -6,9 +6,12 @@ import (
 	"errors"
 	"fmt"
 
+	"strconv"
+
 	"github.com/iost-official/Go-IOS-Protocol/db/kv"
 )
 
+// BlockChain is the implementation of chain
 type BlockChain struct {
 	blockChainDB *kv.Storage
 	length       int64
@@ -20,22 +23,25 @@ var (
 	blockPrefix       = []byte("H")
 )
 
+// Int64ToByte is int64 to byte
 func Int64ToByte(n int64) []byte {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, uint64(n))
 	return b
 }
 
+// ByteToInt64 is byte to int64
 func ByteToInt64(b []byte) int64 {
 	return int64(binary.LittleEndian.Uint64(b))
 }
 
+// NewBlockChain returns a Chain instance
 func NewBlockChain(path string) (Chain, error) {
 	levelDB, err := kv.NewStorage(path, kv.LevelDBStorage)
 	if err != nil {
 		return nil, fmt.Errorf("fail to init blockchaindb, %v", err)
 	}
-	var length int64 = 0
+	var length int64
 	ok, err := levelDB.Has(blockLength)
 	if err != nil {
 		return nil, fmt.Errorf("fail to check has(blocklength), %v", err)
@@ -58,10 +64,12 @@ func NewBlockChain(path string) (Chain, error) {
 	return BC, err
 }
 
+// Length return length of block chain
 func (bc *BlockChain) Length() int64 {
 	return bc.length
 }
 
+// Push save the block to database
 func (bc *BlockChain) Push(block *Block) error {
 	err := bc.blockChainDB.BeginBatch()
 	if err != nil {
@@ -84,6 +92,7 @@ func (bc *BlockChain) Push(block *Block) error {
 	return nil
 }
 
+// CheckLength is check length of block in database
 func (bc *BlockChain) CheckLength() {
 	for i := bc.length; i > 0; i-- {
 		_, err := bc.GetBlockByNumber(i - 1)
@@ -97,6 +106,7 @@ func (bc *BlockChain) CheckLength() {
 	}
 }
 
+// Top return the block
 func (bc *BlockChain) Top() (*Block, error) {
 	if bc.length == 0 {
 		return nil, errors.New("no block in blockChaindb")
@@ -104,6 +114,7 @@ func (bc *BlockChain) Top() (*Block, error) {
 	return bc.GetBlockByNumber(bc.length - 1)
 }
 
+// GetHashByNumber is get hash by number
 func (bc *BlockChain) GetHashByNumber(number int64) ([]byte, error) {
 	hash, err := bc.blockChainDB.Get(append(blockNumberPrefix, Int64ToByte(number)...))
 	if err != nil || len(hash) == 0 {
@@ -112,6 +123,7 @@ func (bc *BlockChain) GetHashByNumber(number int64) ([]byte, error) {
 	return hash, nil
 }
 
+// GetBlockByteByHash is get block byte by hash
 func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
 	blockByte, err := bc.blockChainDB.Get(append(blockPrefix, hash...))
 	if err != nil || len(blockByte) == 0 {
@@ -120,6 +132,7 @@ func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
 	return blockByte, nil
 }
 
+// GetBlockByHash is get block by hash
 func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
 	blockByte, err := bc.GetBlockByteByHash(hash)
 	if err != nil {
@@ -133,6 +146,7 @@ func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
 	return &block, nil
 }
 
+// GetBlockByNumber is get block by number
 func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 	hash, err := bc.GetHashByNumber(number)
 	if err != nil {
@@ -141,6 +155,20 @@ func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 	return bc.GetBlockByHash(hash)
 }
 
+// Close is close database
 func (bc *BlockChain) Close() {
 	bc.blockChainDB.Close()
+}
+
+func (bc *BlockChain) Draw(start int64, end int64) string {
+	ret := ""
+	for i := start; i <= end; i++ {
+		blk, err := bc.GetBlockByNumber(i)
+		if err != nil {
+			continue
+		}
+		ret += strconv.FormatInt(blk.Head.Number, 10) + "(" + blk.Head.Witness[4:6] + ")-"
+	}
+	ret = ret[0 : len(ret)-1]
+	return ret
 }

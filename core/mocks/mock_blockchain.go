@@ -53,6 +53,18 @@ func (mr *MockChainMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockChain)(nil).Close))
 }
 
+// Draw mocks base method
+func (m *MockChain) Draw(arg0, arg1 int64) string {
+	ret := m.ctrl.Call(m, "Draw", arg0, arg1)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Draw indicates an expected call of Draw
+func (mr *MockChainMockRecorder) Draw(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Draw", reflect.TypeOf((*MockChain)(nil).Draw), arg0, arg1)
+}
+
 // GetBlockByHash mocks base method
 func (m *MockChain) GetBlockByHash(arg0 []byte) (*block.Block, error) {
 	ret := m.ctrl.Call(m, "GetBlockByHash", arg0)

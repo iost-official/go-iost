@@ -8,12 +8,14 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// ACCConfig account of the system
 type ACCConfig struct {
 	ID        string
 	SecKey    string
 	Algorithm string
 }
 
+// GenesisConfig config of the genesis block
 type GenesisConfig struct {
 	CreateGenesis    bool
 	GenesisHash      string
@@ -21,10 +23,12 @@ type GenesisConfig struct {
 	VoteContractPath string
 }
 
+// DBConfig config of the database
 type DBConfig struct {
 	LdbPath string
 }
 
+// VMConfig config of the v8vm
 type VMConfig struct {
 	JsPath   string
 	LogLevel string
@@ -114,6 +118,7 @@ func NewConfig(configfile string) *Config {
 	return c
 }
 
+// YamlString config to string
 func (c *Config) YamlString() string {
 	bs, err := yaml.Marshal(c)
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 
 // Constant of trie
 const (
-	FreeListSize = uint64(1048576)
+	FreeListSize = uint64(0)
 )
 
 // Node is node of trie
@@ -100,37 +100,44 @@ func NewFreeList() *FreeList {
 }
 
 func (f *FreeList) newNode() *Node {
-	f.mu.Lock()
-	defer f.mu.Unlock()
+	//f.mu.Lock()
+	//defer f.mu.Unlock()
 
-	i := len(f.freelist) - 1
-	if i < 0 {
-		return &Node{
-			context:  nil,
-			value:    nil,
-			children: make(map[byte]*Node),
-		}
+	//i := len(f.freelist) - 1
+	//if i < 0 {
+	//	return &Node{
+	//		context:  nil,
+	//		value:    nil,
+	//		children: make(map[byte]*Node),
+	//	}
+	//}
+	//node := f.freelist[i]
+	//f.freelist[i] = nil
+	//f.freelist = f.freelist[:i]
+
+	//return node
+	return &Node{
+		context:  nil,
+		value:    nil,
+		children: make(map[byte]*Node),
 	}
-	node := f.freelist[i]
-	f.freelist[i] = nil
-	f.freelist = f.freelist[:i]
-
-	return node
 }
 
 func (f *FreeList) freeNode(n *Node) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
+	//f.mu.Lock()
+	//defer f.mu.Unlock()
 
-	if len(f.freelist) < cap(f.freelist) {
-		f.freelist = append(f.freelist, n)
-	}
+	//if len(f.freelist) < cap(f.freelist) {
+	//	f.freelist = append(f.freelist, n)
+	//}
 }
 
+// Context is the write context of trie
 type Context struct {
 	freelist *FreeList
 }
 
+// NewContext returns new context
 func NewContext() *Context {
 	c := &Context{
 		freelist: NewFreeList(),
@@ -147,7 +154,7 @@ func (c *Context) newNode() *Node {
 func (c *Context) freeNode(n *Node) {
 	n.context = nil
 	n.value = nil
-	n.children = make(map[byte]*Node)
+	n.children = nil
 	c.freelist.freeNode(n)
 }
 
@@ -158,12 +165,14 @@ func (c *Context) fork() *Context {
 	return context
 }
 
+// Trie is the mvcc trie
 type Trie struct {
 	context *Context
 	root    *Node
 	rwmu    *sync.RWMutex
 }
 
+// New returns new trie
 func New() *Trie {
 	t := &Trie{
 		context: NewContext(),
@@ -173,6 +182,7 @@ func New() *Trie {
 	return t
 }
 
+// Get returns the value of specify key
 func (t *Trie) Get(key []byte) interface{} {
 	t.rwmu.RLock()
 	defer t.rwmu.RUnlock()
@@ -184,6 +194,7 @@ func (t *Trie) Get(key []byte) interface{} {
 	return node.value
 }
 
+// Put will insert the key-value pair
 func (t *Trie) Put(key []byte, value interface{}) {
 	t.rwmu.RLock()
 	defer t.rwmu.RUnlock()
@@ -195,6 +206,7 @@ func (t *Trie) Put(key []byte, value interface{}) {
 	t.root.put(key, value, 0)
 }
 
+// All returns the list of node prefixed with prefix
 func (t *Trie) All(prefix []byte) []interface{} {
 	t.rwmu.RLock()
 	defer t.rwmu.RUnlock()
@@ -209,6 +221,8 @@ func (t *Trie) All(prefix []byte) []interface{} {
 	return valuelist
 }
 
+// Fork will fork the trie
+// thread safe between all forks of the trie
 func (t *Trie) Fork() interface{} {
 	t.rwmu.RLock()
 	defer t.rwmu.RUnlock()
@@ -221,6 +235,7 @@ func (t *Trie) Fork() interface{} {
 	return trie
 }
 
+// Free will free the memory of trie
 func (t *Trie) Free() {
 	t.rwmu.Lock()
 	defer t.rwmu.Unlock()

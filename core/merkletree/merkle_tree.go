@@ -8,6 +8,7 @@ import (
 	"math"
 )
 
+// Build return the merkle tree
 func (m *MerkleTree) Build(data [][]byte) {
 	if len(data) == 0 {
 		m.HashList = make([][]byte, 1)
@@ -47,10 +48,12 @@ func (m *MerkleTree) Build(data [][]byte) {
 	}
 }
 
+// RootHash return root of the tree
 func (m *MerkleTree) RootHash() []byte {
 	return m.HashList[0]
 }
 
+// MerklePath is path of the merkle tree
 func (m *MerkleTree) MerklePath(hash []byte) ([][]byte, error) {
 	if m.LeafNum == 0 {
 		return nil, errors.New("merkletree hasn't built")
@@ -72,6 +75,7 @@ func (m *MerkleTree) MerklePath(hash []byte) ([][]byte, error) {
 	return mp, nil
 }
 
+// MerkleProve is prove of the merkle tree
 func (m *MerkleTree) MerkleProve(hash []byte, rootHash []byte, mp [][]byte) (bool, error) {
 	if hash == nil {
 		return false, errors.New("hash input error")

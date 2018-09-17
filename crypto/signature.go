@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
+// Signature is the signature of some message
 type Signature struct {
 	Algorithm Algorithm
 
@@ -14,6 +15,7 @@ type Signature struct {
 	Pubkey []byte
 }
 
+// NewSignature returns new signature
 func NewSignature(algo Algorithm, info []byte, privkey []byte) *Signature {
 	s := &Signature{
 		Algorithm: algo,
@@ -23,14 +25,17 @@ func NewSignature(algo Algorithm, info []byte, privkey []byte) *Signature {
 	return s
 }
 
+// Verify will verify the info
 func (s *Signature) Verify(info []byte) bool {
 	return s.Algorithm.Verify(info, s.Pubkey, s.Sig)
 }
 
+// SetPubkey will set the public key
 func (s *Signature) SetPubkey(pubkey []byte) {
 	s.Pubkey = pubkey
 }
 
+// Encode will marshal the signature by protobuf
 func (s *Signature) Encode() ([]byte, error) {
 	sr := &SignatureRaw{
 		Algorithm: int32(s.Algorithm),
@@ -44,6 +49,7 @@ func (s *Signature) Encode() ([]byte, error) {
 	return b, nil
 }
 
+// Decode will unmarshal the signature by protobuf
 func (s *Signature) Decode(b []byte) error {
 	sr := &SignatureRaw{}
 	err := proto.Unmarshal(b, sr)
@@ -56,6 +62,7 @@ func (s *Signature) Decode(b []byte) error {
 	return err
 }
 
+// Hash returns the hash code of signature
 func (s *Signature) Hash() []byte {
 	b, _ := s.Encode()
 	return common.Sha3(b)
