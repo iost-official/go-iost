@@ -3,7 +3,8 @@ GO = go
 VERSION = 2.0.0
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/Go-IOS-Protocol
-DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
+DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
+DOCKER_DEVIMAGE = iostio/iost-dev:$(VERSION)-$(COMMIT)
 TARGET_DIR = target
 
 ifeq ($(shell uname),Darwin)
@@ -41,11 +42,11 @@ else
 endif
 
 image:
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make
+	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev:2.0.0-65f0351 make
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 devimage:
-	docker build -f Dockerfile.dev -t iostio/iost-dev .
+	docker build -f Dockerfile.dev -t $(DOCKER_DEVIMAGE) .
 
 swagger:
 	./script/gen_swagger.sh
