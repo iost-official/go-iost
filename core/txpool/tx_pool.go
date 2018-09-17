@@ -29,7 +29,7 @@ type TxPImpl struct {
 	forkChain *forkChain
 	blockList *sync.Map
 	// pendingTx *sync.Map
-	pendingTx *sortedTxMap
+	pendingTx *SortedTxMap
 
 	mu               sync.RWMutex
 	quitGenerateMode chan struct{}
@@ -43,7 +43,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		chTx:             make(chan *tx.Tx, 102400),
 		forkChain:        new(forkChain),
 		blockList:        new(sync.Map),
-		pendingTx:        newSortedTxMap(),
+		pendingTx:        NewSortedTxMap(),
 		global:           global,
 		p2pService:       p2ps,
 		chP2PTx:          p2ps.Register("TxPool message", p2p.PublishTxRequest),
@@ -198,6 +198,12 @@ func (pool *TxPImpl) DelTx(hash []byte) error {
 	pool.pendingTx.Del(hash)
 
 	return nil
+}
+
+func (pool *TxPImpl) DelTxList(delList []*tx.Tx) {
+	for _, t := range delList {
+		pool.pendingTx.Del(t.Hash())
+	}
 }
 
 // TxIterator ...
@@ -528,7 +534,6 @@ func (pool *TxPImpl) TxTimeOut(tx *tx.Tx) bool {
 	}
 
 	if nTime-txTime > Expiration {
-		ilog.Error("nTime:", nTime, "txTime:", txTime, "nTime-txTime:", nTime-txTime, "Expiration:", Expiration)
 		metricsTxErrType.Add(1, map[string]string{"type": "nTime-txTime > expiration"})
 		return true
 	}
@@ -564,7 +569,7 @@ func (pool *TxPImpl) delBlockTxInPending(hash []byte) error {
 }
 
 func (pool *TxPImpl) clearTxPending() {
-	pool.pendingTx = newSortedTxMap()
+	pool.pendingTx = NewSortedTxMap()
 }
 
 func (pool *TxPImpl) updatePending(blockHash []byte) error {

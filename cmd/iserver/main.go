@@ -22,10 +22,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"strconv"
+	"strings"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
@@ -172,7 +176,7 @@ func main() {
 	}
 
 	if conf.Debug != nil {
-		startDebugServer(conf.Debug.ListenAddr, blkCache, p2pService)
+		startDebugServer(conf.Debug.ListenAddr, blkCache, p2pService, bv.BlockChain())
 	}
 
 	waitExit()
@@ -191,9 +195,22 @@ func waitExit() {
 	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
 }
 
-func startDebugServer(addr string, blkCache blockcache.BlockCache, p2pService p2p.Service) {
+func startDebugServer(addr string, blkCache blockcache.BlockCache, p2pService p2p.Service, blkChain block.Chain) {
 	http.HandleFunc("/debug/blockcache/", func(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte(blkCache.Draw()))
+	})
+	http.HandleFunc("/debug/blockchain/", func(rw http.ResponseWriter, r *http.Request) {
+		rg := r.URL.Query()
+		sp := strings.Split(rg["range"][0], "-")
+		start, err := strconv.Atoi(sp[0])
+		if err != nil {
+			return
+		}
+		end, err := strconv.Atoi(sp[1])
+		if err != nil {
+			return
+		}
+		rw.Write([]byte(blkChain.Draw(int64(start), int64(end))))
 	})
 	http.HandleFunc("/debug/p2p/neighbors/", func(rw http.ResponseWriter, r *http.Request) {
 		neighbors := p2pService.NeighborStat()
