@@ -42,7 +42,7 @@ else
 endif
 
 image:
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make
+	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev:2.0.0-65f0351 make
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 devimage:
