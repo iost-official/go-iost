@@ -5,6 +5,8 @@ import (
 
 	"encoding/json"
 
+	"fmt"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
@@ -13,7 +15,7 @@ import (
 
 // Monitor monitor interface
 type Monitor interface {
-	Call(host *Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
+	Call(host *Host, contractName, api string, jarg string) (rtn []interface{}, cost *contract.Cost, err error)
 	Compile(con *contract.Contract) (string, error)
 }
 
@@ -63,7 +65,7 @@ func (h *Host) SetContext(ctx *Context) {
 }
 
 // Call  call a new contract in this context
-func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
+func (h *Host) Call(contract, api, jarg string) ([]interface{}, *contract.Cost, error) {
 
 	// save stack
 	record := contract + "-" + api
@@ -83,7 +85,7 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *
 
 	h.ctx.Set("stack_height", height+1)
 	h.ctx.Set(key, record)
-	rtn, cost, err := h.monitor.Call(h, contract, api, args...)
+	rtn, cost, err := h.monitor.Call(h, contract, api, jarg)
 
 	h.ctx = h.ctx.Base()
 
@@ -91,12 +93,12 @@ func (h *Host) Call(contract, api string, args ...interface{}) ([]interface{}, *
 }
 
 // CallWithReceipt call and generate receipt
-func (h *Host) CallWithReceipt(contractName, api string, args ...interface{}) ([]interface{}, *contract.Cost, error) {
-	rtn, cost, err := h.Call(contractName, api, args...)
+func (h *Host) CallWithReceipt(contractName, api, jarg string) ([]interface{}, *contract.Cost, error) {
+	rtn, cost, err := h.Call(contractName, api, jarg)
 
 	var sarr []interface{}
 	sarr = append(sarr, api)
-	sarr = append(sarr, args)
+	sarr = append(sarr, jarg)
 
 	if err != nil {
 		sarr = append(sarr, err.Error())
@@ -134,7 +136,7 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 
 	h.db.SetContract(c)
 
-	_, cost, err := h.monitor.Call(h, c.ID, "init")
+	_, cost, err := h.monitor.Call(h, c.ID, "init", "[]")
 
 	cost.AddAssign(CodeSavageCost(l))
 
@@ -154,10 +156,10 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 		return ABINotFoundCost, ErrUpdateRefused
 	}
 
-	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update", []byte(id))
+	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update", `["`+string(id)+`"]`)
 
 	if err != nil {
-		return cost, err
+		return cost, fmt.Errorf("call can_update: %v", err)
 	}
 
 	// todo rtn[0] should be bool type
@@ -184,7 +186,7 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 		return ABINotFoundCost, ErrDestroyRefused
 	}
 
-	rtn, cost, err := h.monitor.Call(h, contractName, "can_destroy")
+	rtn, cost, err := h.monitor.Call(h, contractName, "can_destroy", "[]")
 
 	if err != nil {
 		return cost, err

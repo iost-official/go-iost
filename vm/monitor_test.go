@@ -36,7 +36,7 @@ func TestMonitor_Call(t *testing.T) {
 	})
 
 	c := contract.Contract{
-		ID:   "contract",
+		ID:   "Contract",
 		Code: "codes",
 		Info: &contract.Info{
 			Lang:        "",
@@ -57,7 +57,7 @@ func TestMonitor_Call(t *testing.T) {
 		return c.Encode(), nil
 	})
 
-	monitor.Call(h, "contract", "abi", "1")
+	monitor.Call(h, "Contract", "abi", "[\"1\"]")
 
 	if !flag {
 		t.Fatal(flag)
@@ -74,19 +74,19 @@ func TestMonitor_Context(t *testing.T) {
 	outerFlag := false
 	innerFlag := false
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...string) (rtn []string, cost *contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
 		outerFlag = true
-		monitor.Call(h, "contract", "inner", "hello")
+		monitor.Call(h, "Contract", "inner", "[\"hello\"]")
 
 		return []string{"world"}, cost, nil
 	})
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...string) (rtn []string, cost *contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
 		innerFlag = true
 		return []string{"world"}, cost, nil
 	})
 	c := contract.Contract{
-		ID:   "contract",
+		ID:   "Contract",
 		Code: "codes",
 		Info: &contract.Info{
 			Lang:        "",
@@ -94,7 +94,7 @@ func TestMonitor_Context(t *testing.T) {
 			Abis: []*contract.ABI{
 				{
 					Name:     "outer",
-					Args:     []string{"string"},
+					Args:     []string{"number"},
 					Payment:  0,
 					GasPrice: int64(1000),
 					Limit:    contract.NewCost(100, 100, 100),
@@ -114,7 +114,7 @@ func TestMonitor_Context(t *testing.T) {
 		return c.Encode(), nil
 	})
 
-	monitor.Call(h, "contract", "outer", "1")
+	monitor.Call(h, "Contract", "outer", "[1]")
 
 	if !outerFlag || !innerFlag {
 		t.Fatal(outerFlag, innerFlag)
@@ -135,14 +135,14 @@ func TestMonitor_HostCall(t *testing.T) {
 	outerFlag := false
 	innerFlag := false
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...string) (rtn []string, cost *contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
 		outerFlag = true
-		h.Call("contract", "inner", "hello")
+		h.Call("Contract", "inner", "[\"hello\"]")
 
 		return []string{"world"}, cost, nil
 	})
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...string) (rtn []string, cost *contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
 		innerFlag = true
 		if h.Context().Value("abi_name") != "inner" {
 			t.Fatal(h.Context())
@@ -151,7 +151,7 @@ func TestMonitor_HostCall(t *testing.T) {
 		return []string{"world"}, cost, nil
 	})
 	c := contract.Contract{
-		ID:   "contract",
+		ID:   "Contract",
 		Code: "codes",
 		Info: &contract.Info{
 			Lang:        "",
@@ -159,7 +159,7 @@ func TestMonitor_HostCall(t *testing.T) {
 			Abis: []*contract.ABI{
 				{
 					Name:     "outer",
-					Args:     []string{"string"},
+					Args:     []string{"number"},
 					Payment:  0,
 					GasPrice: int64(1000),
 					Limit:    contract.NewCost(100, 100, 100),
@@ -179,7 +179,7 @@ func TestMonitor_HostCall(t *testing.T) {
 		return c.Encode(), nil
 	})
 
-	monitor.Call(h, "contract", "outer", "1")
+	monitor.Call(h, "Contract", "outer", "[1]")
 
 	if !outerFlag || !innerFlag {
 		t.Fatal(outerFlag, innerFlag)
@@ -196,7 +196,7 @@ func TestJSM(t *testing.T) {
 	h := host.NewHost(ctx, vi, monitor, nil)
 
 	c := contract.Contract{
-		ID: "contract",
+		ID: "Contract",
 		Code: `
 class Contract {
  init() {
@@ -228,7 +228,7 @@ module.exports = Contract;
 		return c.Encode(), nil
 	})
 
-	rs, co, e := monitor.Call(h, "contract", "hello")
+	rs, co, e := monitor.Call(h, "Contract", "hello", `[]`)
 	if rs[0] != "world" {
 		t.Fatal(rs, co, e)
 	}

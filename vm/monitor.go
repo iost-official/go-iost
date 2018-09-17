@@ -2,10 +2,10 @@ package vm
 
 import (
 	"errors"
-	"strings"
+
+	"fmt"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 	"github.com/iost-official/Go-IOS-Protocol/vm/v8vm"
@@ -33,20 +33,38 @@ func NewMonitor() *Monitor {
 	return m
 }
 
-// Call ...
-// nolint
-func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
-
-	c := h.DB().Contract(contractName)
-	abi := c.ABI(api)
-	if abi == nil {
-		return nil, host.ContractNotFoundCost, errABINotFound
+func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) (c *contract.Contract, abi *contract.ABI, args []interface{}, err error) {
+	var cid string
+	if h.IsDomain(contractName) {
+		cid = h.URL(contractName)
+	} else {
+		cid = contractName
 	}
 
-	err = checkArgs(abi, args)
+	c = h.DB().Contract(cid)
+	if c == nil {
+		return nil, nil, nil, errContractNotFound
+	}
+
+	abi = c.ABI(api)
+
+	if abi == nil {
+		return nil, nil, nil, errABINotFound
+	}
+
+	args, err = unmarshalArgs(abi, jarg)
+
+	return
+}
+
+// Call ...
+// nolint
+func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost *contract.Cost, err error) {
+
+	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
 
 	if err != nil {
-		return nil, host.ABINotFoundCost, err
+		return nil, host.ABINotFoundCost, fmt.Errorf("\nprepare contract: %v", err)
 	}
 
 	h.PushCtx()
@@ -64,14 +82,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 		}
 	}
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
-	if cost == nil {
-		if strings.HasPrefix(contractName, "Contract") {
-			ilog.Fatalf("will return nil cost : %v.%v", contractName, api)
-		} else {
-			ilog.Debugf("will return nil cost : %v.%v", contractName, api)
-		}
-		cost = contract.NewCost(100, 100, 100)
-	}
 
 	payment, ok := h.Context().GValue("abi_payment").(int)
 	if !ok {
@@ -93,20 +103,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, args ...interface
 
 	return
 }
-
-//func (m *Monitor) Update(contractName string, newContract *contract.Contract) error {
-//	err := m.Destory(contractName)
-//	if err != nil {
-//		return err
-//	}
-//	m.ho.db.SetContract(newContract)
-//	return nil
-//}
-//
-//func (m *Monitor) Destroy(contractName string) error {
-//	m.ho.db.DelContract(contractName)
-//	return nil
-//}
 
 // Compile ...
 func (m *Monitor) Compile(con *contract.Contract) (string, error) {
