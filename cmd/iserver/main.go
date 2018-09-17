@@ -172,7 +172,7 @@ func main() {
 
 	err = app.Start()
 	if err != nil {
-		ilog.Fatal("start iserver failed. err=%v", err)
+		ilog.Fatalf("start iserver failed. err=%v", err)
 	}
 
 	if conf.Debug != nil {

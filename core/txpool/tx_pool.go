@@ -617,7 +617,7 @@ func (pool *TxPImpl) findForkBCN(newHead *blockcache.BlockCacheNode, oldHead *bl
 		_, ok := pool.block(newHead.Block.HeadHash())
 		if !ok {
 			if err := pool.addBlock(newHead.Block); err != nil {
-				ilog.Errorf("failed to add block, err = ", err)
+				ilog.Errorf("failed to add block, err = %v", err)
 			}
 		}
 		newHead = newHead.Parent
