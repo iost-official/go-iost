@@ -128,7 +128,6 @@ var (
 			err = con.Decode(args[0].(string))
 			if err != nil {
 				return nil, host.CommonErrorCost(1), err
-
 			}
 
 			cost1, err := h.UpdateCode(con, []byte(args[1].(string)))

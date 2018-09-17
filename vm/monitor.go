@@ -2,10 +2,10 @@ package vm
 
 import (
 	"errors"
-	"strings"
+
+	"fmt"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 	"github.com/iost-official/Go-IOS-Protocol/vm/v8vm"
@@ -53,6 +53,7 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 	}
 
 	args, err = unmarshalArgs(abi, jarg)
+
 	return
 }
 
@@ -63,7 +64,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
 
 	if err != nil {
-		return nil, host.ABINotFoundCost, err
+		return nil, host.ABINotFoundCost, fmt.Errorf("\nprepare contract: %v", err)
 	}
 
 	h.PushCtx()
@@ -81,14 +82,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		}
 	}
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
-	if cost == nil {
-		if strings.HasPrefix(contractName, "Contract") {
-			ilog.Fatalf("will return nil cost : %v.%v", contractName, api)
-		} else {
-			ilog.Debugf("will return nil cost : %v.%v", contractName, api)
-		}
-		cost = contract.NewCost(100, 100, 100)
-	}
 
 	payment, ok := h.Context().GValue("abi_payment").(int)
 	if !ok {

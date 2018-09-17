@@ -221,6 +221,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	rtn := make([]interface{}, 0)
 	arr, err := js.Array()
 	if err != nil {
+		ilog.Error(js.EncodePretty())
 		return nil, err
 	}
 

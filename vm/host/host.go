@@ -5,6 +5,8 @@ import (
 
 	"encoding/json"
 
+	"fmt"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
@@ -154,10 +156,10 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 		return ABINotFoundCost, ErrUpdateRefused
 	}
 
-	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update", string(id))
+	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update", `["`+string(id)+`"]`)
 
 	if err != nil {
-		return cost, err
+		return cost, fmt.Errorf("call can_update: %v", err)
 	}
 
 	// todo rtn[0] should be bool type

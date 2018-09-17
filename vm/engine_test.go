@@ -570,7 +570,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 	ac := tx.Action{
 		Contract:   "iost.system",
 		ActionName: "CallWithReceipt",
-		Data:       `["iost.system", "Receipt", ["iamreceipt"]]`,
+		Data:       `["iost.system", "Receipt", "[\"iamreceipt\"]"]`,
 	}
 
 	mtx.Actions = append(mtx.Actions, &ac)
@@ -594,7 +594,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 					Payment:  0,
 					GasPrice: int64(100),
 					Limit:    contract.NewCost(1000, 1000, 1000),
-					Args:     []string{"string", "string", "json"},
+					Args:     []string{"string", "string", "string"},
 				},
 			},
 		},
@@ -659,7 +659,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		t.Fatal(txr.Status)
 	}
 	if len(txr.Receipts) != 2 || txr.Receipts[0].Type != tx.UserDefined || txr.Receipts[0].Content != "iamreceipt" ||
-		txr.Receipts[1].Type != tx.SystemDefined || txr.Receipts[1].Content != `["Receipt",["iamreceipt"],"success"]` {
+		txr.Receipts[1].Type != tx.SystemDefined || txr.Receipts[1].Content != `["Receipt","[\"iamreceipt\"]","success"]` {
 		t.Fatal(txr.Receipts)
 	}
 	time.Sleep(10 * time.Millisecond)
