@@ -435,7 +435,7 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.RequestBlock, peerID p2p.PeerID
 	}
 	b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.BlockHash)
 	if err != nil {
-		ilog.Errorf("handle block query failed to get block.")
+		ilog.Errorf("failed to get block. hash=%v, err=%v", rh.BlockHash, err)
 		return
 	}
 	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
