@@ -313,6 +313,8 @@ func (p *PoB) verifyLoop() {
 			}
 			go p.synchronizer.CheckSyncProcess()
 			metricsVerifyBlockCount.Add(1, nil)
+			ilog.Error("after add block: ", blk.Head.Number)
+			p.blockCache.Draw()
 		case <-p.exitSignal:
 			return
 		}
@@ -428,7 +430,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
 	updateLib(node, p.blockCache)
-	p.txPool.AddLinkedNode(node, node) //TODO
+	p.txPool.AddLinkedNode(node, node)
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetId())
