@@ -117,7 +117,8 @@ func (e *engineImpl) SetUp(k, v string) error {
 }
 
 func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
-	loadTxInfo(e.ho, tx0)
+	publisherID := account.GetIDByPubkey(tx0.Publisher.Pubkey)
+	loadTxInfo(e.ho, tx0, publisherID)
 	defer func() {
 		e.ho.PopCtx()
 	}()
@@ -154,7 +155,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
-		e.ho.PayCost(cost, account.GetIDByPubkey(tx0.Publisher.Pubkey))
+		e.ho.PayCost(cost, publisherID)
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
@@ -221,6 +222,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	rtn := make([]interface{}, 0)
 	arr, err := js.Array()
 	if err != nil {
+		ilog.Error(js.EncodePretty())
 		return nil, err
 	}
 
@@ -281,48 +283,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	e.ho.Context().Set("stack0", "direct_call")
 	e.ho.Context().Set("stack_height", 1) // record stack trace
 
-	var cid string
-	if e.ho.IsDomain(action.Contract) {
-		cid = e.ho.URL(action.Contract)
-	} else {
-		cid = action.Contract
-	}
-
-	c := e.ho.DB().Contract(cid)
-	if c == nil || c.Info == nil {
-		cost = host.ContractNotFoundCost
-		status = tx.Status{
-			Code:    tx.ErrorParamter,
-			Message: errContractNotFound.Error() + action.Contract,
-		}
-		return
-	}
-
-	abi := c.ABI(action.ActionName)
-	if abi == nil {
-		cost = host.ABINotFoundCost
-		status = tx.Status{
-			Code:    tx.ErrorParamter,
-			Message: errABINotFound.Error() + action.Contract + "." + action.ActionName,
-		}
-		return
-	}
-
-	args, err := unmarshalArgs(abi, action.Data)
-	if err != nil {
-		cost = host.CommonErrorCost(2)
-		status = tx.Status{
-			Code:    tx.ErrorParamter,
-			Message: "unmarshal args error: " + err.Error(),
-		}
-		return
-	}
-	//var rtn []interface{}
-	//rtn, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	//ilog.Debugf("action %v > %v", action.Contract+"."+action.ActionName, rtn)
-
-	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	//e.logger.Debugf("cost is %v", cost)
+	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, action.Data)
 
 	if cost == nil {
 		panic("cost is nil")
@@ -392,6 +353,7 @@ func (e *engineImpl) startLog() {
 	if ok {
 		e.logger.SetCallDepth(0)
 		e.logger.HideLocation()
+		e.logger.AsyncWrite()
 		e.logger.Start()
 	}
 }
@@ -405,7 +367,7 @@ func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
 	return c
 }
 
-func loadTxInfo(h *host.Host, t *tx.Tx) {
+func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.PushCtx()
 	h.Context().Set("time", t.Time)
 	h.Context().Set("expiration", t.Expiration)
@@ -417,7 +379,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx) {
 		authList[string(v)] = 1
 	}
 
-	authList[account.GetIDByPubkey(t.Publisher.Pubkey)] = 2
+	authList[publisherID] = 2
 
 	h.Context().Set("auth_list", authList)
 }

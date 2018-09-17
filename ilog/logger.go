@@ -140,6 +140,7 @@ func (logger *Logger) SetLevel(l Level) {
 	for _, writer := range logger.writers {
 		writer.SetLevel(l)
 	}
+	logger.lowestLevel = l
 }
 
 // AsyncWrite sets logger's syncWrite to false.
