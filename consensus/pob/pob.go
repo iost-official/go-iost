@@ -313,8 +313,6 @@ func (p *PoB) verifyLoop() {
 			}
 			go p.synchronizer.CheckSyncProcess()
 			metricsVerifyBlockCount.Add(1, nil)
-			ilog.Error("after add block: ", blk.Head.Number)
-			p.blockCache.Draw()
 		case <-p.exitSignal:
 			return
 		}
