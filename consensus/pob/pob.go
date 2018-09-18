@@ -426,7 +426,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
-	updateLib(p.blockCache.Head(), p.blockCache)
+	updateLib(node, p.blockCache)
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())

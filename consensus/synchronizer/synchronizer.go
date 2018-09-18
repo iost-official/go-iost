@@ -153,7 +153,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 				ilog.Errorf("unmarshal syncheight failed. err=%v", err)
 				continue
 			}
-			// ilog.Debugf("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
+			ilog.Infof("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
 			sy.heightMap.Store(req.From(), sh)
 		case <-sy.exitSignal:
 			return
@@ -186,7 +186,6 @@ func (sy *SyncImpl) CheckSync() bool {
 		heights[r] = sh.Height
 		return true
 	})
-	// ilog.Debugf("check sync heights: %v", heights)
 	netHeight := heights[len(heights)/2]
 	if netHeight > height+syncNumber {
 		sy.basevariable.SetMode(global.ModeSync)
