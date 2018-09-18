@@ -146,6 +146,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		ilog.Debugf("status > \n%v\n", status)
 
 		if err != nil {
+			ilog.Error(err)
 			return nil, err
 		}
 
@@ -184,9 +185,10 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 }
 
 func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
-	ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
+	ilog.Info("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
 	err := checkTx(tx0)
 	if err != nil {
+		ilog.Error(err)
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
 	}
 
@@ -194,6 +196,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	bl := e.ho.DB().Balance(e.publisherID)
 
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
+		ilog.Error(errCannotPay)
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
 	}
 
@@ -354,6 +357,7 @@ func (e *engineImpl) startLog() {
 	if ok {
 		e.logger.SetCallDepth(0)
 		e.logger.HideLocation()
+		e.logger.AsyncWrite()
 		e.logger.Start()
 	}
 }

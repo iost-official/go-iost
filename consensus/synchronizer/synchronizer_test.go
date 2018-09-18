@@ -15,14 +15,14 @@ import (
 
 func TestDownloadController(t *testing.T) {
 	Convey("Test DownloadController", t, func() {
-		dc, err := NewDownloadController()
-		So(err, ShouldBeNil)
 		var dHash string
 		var dPID p2p.PeerID
-		go dc.DownloadLoop(func(hash string, peerID p2p.PeerID) {
+		dc, err := NewDownloadController(func(hash string, peerID p2p.PeerID) {
 			dHash = hash
 			dPID = peerID
 		})
+		dc.Start()
+		So(err, ShouldBeNil)
 		Convey("Check OnRecvHash", func() {
 			dc.OnRecvHash("111", "aaa")
 			time.Sleep(100 * time.Millisecond)
@@ -62,7 +62,7 @@ func TestSynchronizer(t *testing.T) {
 		sy, err := NewSynchronizer(baseVariable, blockCache, mockP2PService) //mock
 		sy.Start()
 		So(err, ShouldBeNil)
-		err = sy.SyncBlocks(1, 15)
+		err = sy.syncBlocks(1, 15)
 		So(err, ShouldBeNil)
 		time.Sleep(200 * time.Millisecond)
 	})
