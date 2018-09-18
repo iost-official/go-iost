@@ -188,7 +188,6 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 }
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
-	ilog.Errorf("updateLib, block number: %v(%v)", node.Number, node.Witness)
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
