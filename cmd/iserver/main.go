@@ -125,7 +125,7 @@ func main() {
 	}
 	if conf.Genesis.CreateGenesis {
 		genesisBlock, _ := bv.BlockChain().GetBlockByNumber(0)
-		ilog.Errorf("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
+		ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
 	}
 	var app common.App
 
