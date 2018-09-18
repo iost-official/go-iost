@@ -21,9 +21,9 @@ var (
 	// SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
 	syncNumber int64 = 11
 
-	maxBlockHashQueryNumber int64 = 1000
+	maxBlockHashQueryNumber int64 = 100
 	retryTime                     = 5 * time.Second
-	syncBlockTimeout              = time.Second
+	syncBlockTimeout              = 5 * time.Second
 	syncHeightTime                = 3 * time.Second
 	heightTimeout           int64 = 5 * 3
 )
@@ -481,7 +481,7 @@ const (
 )
 
 const (
-	peerConNum = 10
+	peerConNum = 5
 	// Free peer state type
 	Free string = "Free"
 )
