@@ -50,6 +50,7 @@ type engineImpl struct {
 	ho *host.Host
 
 	jsPath string
+	publisherID string
 
 	logger        *ilog.Logger
 	consoleWriter *ilog.ConsoleWriter
@@ -117,8 +118,7 @@ func (e *engineImpl) SetUp(k, v string) error {
 }
 
 func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
-	publisherID := account.GetIDByPubkey(tx0.Publisher.Pubkey)
-	loadTxInfo(e.ho, tx0, publisherID)
+	loadTxInfo(e.ho, tx0, e.publisherID)
 	defer func() {
 		e.ho.PopCtx()
 	}()
@@ -156,7 +156,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
-		e.ho.PayCost(cost, publisherID)
+		e.ho.PayCost(cost, e.publisherID)
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
@@ -192,7 +192,8 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
 	}
 
-	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
+	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
+	bl := e.ho.DB().Balance(e.publisherID)
 
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
 		ilog.Error(errCannotPay)

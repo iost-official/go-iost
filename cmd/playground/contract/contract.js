@@ -41,10 +41,7 @@ function isPublicMethod(def) {
 function genAbi(def) {
 	var abi = {
 		"name": def.key.name,
-		"args": new Array(def.value.params.length).fill("string"),
-		"payment": 0,
-		"cost_limit": new Array(3).fill(1),
-		"price_limit": 1
+		"args": new Array(def.value.params.length).fill("string")
 	};
 	return abi;
 }
