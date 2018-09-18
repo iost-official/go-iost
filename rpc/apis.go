@@ -30,7 +30,7 @@ import (
 type GRPCServer struct {
 	bc         blockcache.BlockCache
 	p2pService p2p.Service
-	txdb       tx.TxDB
+	txdb       global.TxDB
 	txpool     txpool.TxPool
 	bchain     block.Chain
 	forkDB     db.MVCCDB

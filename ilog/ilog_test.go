@@ -56,7 +56,7 @@ func BenchmarkFileLogger(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		logger.Info("benchmark: %d", i)
+		logger.Infof("benchmark: %d", i)
 	}
 	logger.Flush()
 }
