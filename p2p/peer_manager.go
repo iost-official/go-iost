@@ -427,7 +427,7 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-	if typ == NewBlock || typ == NewBlockHash || typ == SyncBlockHashRequest {
+	if typ == NewBlock || typ == NewBlockHash || typ == SyncBlockHashRequest || typ == SyncHeight {
 		ilog.Infof("broadcast message. type=%s", typ)
 	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
@@ -571,7 +571,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
-	if msg.messageType() != PublishTxRequest && msg.messageType() != SyncHeight {
+	if msg.messageType() != PublishTxRequest {
 		ilog.Infof("receiving message. type=%s", msg.messageType())
 	}
 	switch msg.messageType() {
