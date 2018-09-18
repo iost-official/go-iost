@@ -1,21 +1,22 @@
-package tx
+package global
 
 import (
 	"errors"
 	"fmt"
 
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/db/kv"
 )
 
-//go:generate mockgen -destination ../mocks/mock_txdb.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/tx TxDB
+//go:generate mockgen -destination ../mocks/mock_txdb.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/global TxDB
 
 // TxDB defines the functions of tx database.
 type TxDB interface {
-	Push(txs []*Tx, receipts []*TxReceipt) error
-	GetTx(hash []byte) (*Tx, error)
+	Push(txs []*tx.Tx, receipts []*tx.TxReceipt) error
+	GetTx(hash []byte) (*tx.Tx, error)
 	HasTx(hash []byte) (bool, error)
-	GetReceipt(Hash []byte) (*TxReceipt, error)
-	GetReceiptByTxHash(Hash []byte) (*TxReceipt, error)
+	GetReceipt(Hash []byte) (*tx.TxReceipt, error)
+	GetReceiptByTxHash(Hash []byte) (*tx.TxReceipt, error)
 	HasReceipt(hash []byte) (bool, error)
 	Close()
 }
@@ -41,7 +42,7 @@ func NewTxDB(path string) (TxDB, error) {
 }
 
 // Push save the tx to database
-func (tdb *TxDBImpl) Push(txs []*Tx, receipts []*TxReceipt) error {
+func (tdb *TxDBImpl) Push(txs []*tx.Tx, receipts []*tx.TxReceipt) error {
 	err := tdb.txDB.BeginBatch()
 	if err != nil {
 		return errors.New("fail to begin batch")
@@ -66,8 +67,8 @@ func (tdb *TxDBImpl) Push(txs []*Tx, receipts []*TxReceipt) error {
 }
 
 // GetTx gets tx with tx's hash.
-func (tdb *TxDBImpl) GetTx(hash []byte) (*Tx, error) {
-	tx := Tx{}
+func (tdb *TxDBImpl) GetTx(hash []byte) (*tx.Tx, error) {
+	tx := tx.Tx{}
 	txData, err := tdb.txDB.Get(append(txPrefix, hash...))
 	if err != nil {
 		return nil, fmt.Errorf("failed to Get the tx: %v", err)
@@ -88,8 +89,8 @@ func (tdb *TxDBImpl) HasTx(hash []byte) (bool, error) {
 }
 
 // GetReceipt gets receipt with receipt's hash
-func (tdb *TxDBImpl) GetReceipt(hash []byte) (*TxReceipt, error) {
-	re := TxReceipt{}
+func (tdb *TxDBImpl) GetReceipt(hash []byte) (*tx.TxReceipt, error) {
+	re := tx.TxReceipt{}
 	reData, err := tdb.txDB.Get(append(receiptPrefix, hash...))
 	if err != nil {
 		return nil, fmt.Errorf("failed to Get the receipt: %v", err)
@@ -106,7 +107,7 @@ func (tdb *TxDBImpl) GetReceipt(hash []byte) (*TxReceipt, error) {
 }
 
 // GetReceiptByTxHash gets receipt with tx's hash
-func (tdb *TxDBImpl) GetReceiptByTxHash(hash []byte) (*TxReceipt, error) {
+func (tdb *TxDBImpl) GetReceiptByTxHash(hash []byte) (*tx.TxReceipt, error) {
 
 	reHash, err := tdb.txDB.Get(append(receiptHashPrefix, hash...))
 	if err != nil {
