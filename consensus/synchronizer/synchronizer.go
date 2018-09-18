@@ -145,6 +145,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 				ilog.Errorf("marshal syncheight failed. err=%v", err)
 				continue
 			}
+			ilog.Infof("broadcast sync height")
 			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.UrgentMessage)
 		case req := <-sy.syncHeightChan:
 			var sh message.SyncHeight
