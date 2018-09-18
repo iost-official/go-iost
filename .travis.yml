@@ -29,10 +29,10 @@ matrix:
       services:
         - docker
       before_install:
-        - docker pull iostio/iost-dev
+        - docker pull iostio/iost-dev:2.0.0-go1.11
         - git lfs install
       before_script:
         - git lfs pull
       script:
-        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make build
-        - docker run -it --rm -e VERBOSE=true -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make test
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev:2.0.0-go1.11 make build
+        - docker run -it --rm -e VERBOSE=true -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev:2.0.0-go1.11 make test
