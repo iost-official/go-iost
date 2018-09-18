@@ -32,12 +32,12 @@ var (
 )
 
 const (
-	maxNeighborCount  = 32
+	maxNeighborCount  = 50
 	bucketSize        = 20
 	peerResponseCount = 20
 	maxPeerQuery      = 30
 
-	incomingMsgChanSize = 102400
+	incomingMsgChanSize = 4096
 
 	routingTableFile = "routing.table"
 )
@@ -572,7 +572,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		return
 	}
 	if msg.messageType() != PublishTxRequest {
-		ilog.Infof("receiving message. type=%s", msg.messageType())
+		ilog.Infof("receiving message. type=%s, pid=%s", msg.messageType(), peerID.Pretty())
 	}
 	switch msg.messageType() {
 	case RoutingTableQuery:
@@ -586,7 +586,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 				select {
 				case v.(chan IncomingMessage) <- *inMsg:
 				default:
-					// ilog.Errorf("sending incoming message failed. type=%s", msg.messageType())
+					ilog.Errorf("sending incoming message failed. type=%s", msg.messageType())
 				}
 				return true
 			})
