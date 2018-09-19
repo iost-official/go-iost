@@ -48,7 +48,7 @@ func TestJS1_Vote1(t *testing.T) {
 	js.SetAPI("Stat")
 	js.SetAPI("Init")
 	for i := 0; i <= 18; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7)
+		js.vi.SetBalance(testID[i], 5e+7 * 1e8)
 	}
 	js.vi.Commit()
 	r := js.DoSet()
@@ -131,7 +131,7 @@ func TestJS_Vote(t *testing.T) {
 		js.SetAPI("Stat")
 		js.SetAPI("InitProducer", "string")
 		for i := 0; i <= 18; i += 2 {
-			js.vi.SetBalance(testID[i], 5e+7)
+			js.vi.SetBalance(testID[i], 5e+7 * 1e8)
 		}
 		js.vi.Commit()
 		r = js.DoSet()
@@ -423,7 +423,7 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
 		So(r.Status.Message, ShouldEqual, "")
 
-		js.vi.SetBalance(testID[2], 5e+7)
+		js.vi.SetBalance(testID[2], 5e+7 * 1e8)
 		r = js.TestJSWithAuth("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 21000001), testID[3])
 		So(r.Status.Message, ShouldEqual, "")
 
@@ -441,7 +441,7 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJSWithAuth("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[10]), testID[11])
 		So(r.Status.Message, ShouldContainSubstring, "can't unregist")
 
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19510)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19662)
 
 		// test bonus
 		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
@@ -455,8 +455,8 @@ func TestJS_Vote(t *testing.T) {
 		}
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 39884142)
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19596)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000883675)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19748)
 		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
 
 		trx2, err = MakeTx(act2)
@@ -470,7 +470,7 @@ func TestJS_Vote(t *testing.T) {
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 0)
 		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 116)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 39902915)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000902600)
 	})
 
 }
