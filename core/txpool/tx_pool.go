@@ -177,18 +177,15 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNo
 
 // AddTx add the transaction
 func (pool *TxPImpl) AddTx(t *tx.Tx) TAddTx {
-
 	var r TAddTx
 
 	if r = pool.verifyTx(t); r != Success {
 		return r
 	}
-
 	if r = pool.addTx(t); r == Success {
 		pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.NormalMessage)
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	}
-
 	return r
 }
 
@@ -498,11 +495,13 @@ func (pool *TxPImpl) addTx(tx *tx.Tx) TAddTx {
 		metricsAddTxCount.Add(1, nil)
 	}(start)
 
+	if pool.pendingTx.Size() > maxCacheTxs {
+		return CacheFullError
+	}
 	h := tx.Hash()
 	if pool.existTxInChain(h, pool.forkChain.NewHead.Block) {
 		return DupError
 	}
-
 	if pool.existTxInPending(h) {
 		return DupError
 	}
