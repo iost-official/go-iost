@@ -42,6 +42,31 @@
         ]
       }
     },
+    "/getAddressByPubKey/{pubKey}": {
+      "get": {
+        "summary": "get address by pubkey",
+        "operationId": "GetAddressByPubKey",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpcGetAddressRes"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pubKey",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
     "/getBalance/{ID}/{useLongestChain}": {
       "get": {
         "summary": "get the balance of some account by account ID",
@@ -451,6 +476,14 @@
         "gas": {
           "type": "string",
           "format": "uint64"
+        }
+      }
+    },
+    "rpcGetAddressRes": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
         }
       }
     },

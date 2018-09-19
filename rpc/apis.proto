@@ -51,6 +51,12 @@ service Apis {
             get: "/getBalance/{ID}/{useLongestChain}"
         };
     }
+    // get address by pubkey
+    rpc GetAddressByPubKey(GetAddressReq) returns (GetAddressRes) {
+        option(google.api.http) = {
+            get: "/getAddressByPubKey/{pubKey}"
+        };
+    }
     // get the Net ID
     rpc GetNetID (google.protobuf.Empty) returns (GetNetIDRes) {
         option (google.api.http) = {
@@ -98,7 +104,7 @@ message BlockByHashReq {
 
 message BlockByNumReq {
 	int64 num=1;
-	bool complete=2;	
+	bool complete=2;
 }
 
 message GetBalanceReq {
@@ -121,6 +127,14 @@ message SubscribeReq {
 
 message HeightRes {
 	int64 height=1;
+}
+
+message GetAddressReq {
+    string pubKey = 1;
+}
+
+message GetAddressRes {
+    string address = 1;
 }
 
 message GetBalanceRes {

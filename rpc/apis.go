@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
@@ -239,8 +240,23 @@ func (s *GRPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBa
 	} else {
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
+
 	return &GetBalanceRes{
 		Balance: s.visitor.Balance(key.ID),
+	}, nil
+}
+
+// GetAddressByPubKey get address by public key
+func (s *GRPCServer) GetAddressByPubKey(ctx context.Context, addressReq *GetAddressReq) (*GetAddressRes, error) {
+	pubKeyStr := addressReq.PubKey
+	if len(pubKeyStr) == 0 {
+		return nil, fmt.Errorf("pubkey is nil")
+	}
+
+	pubKey := common.Base58Decode(pubKeyStr)
+	id := account.GetIDByPubkey(pubKey)
+	return &GetAddressRes{
+		Address: id,
 	}, nil
 }
 
