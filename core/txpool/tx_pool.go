@@ -361,7 +361,9 @@ func (pool *TxPImpl) initBlockTx() {
 }
 
 func (pool *TxPImpl) verifyTx(t *tx.Tx) TAddTx {
-
+	if pool.pendingTx.Size() > maxCacheTxs {
+		return CacheFullError
+	}
 	start := time.Now()
 	defer func(t time.Time) {
 		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
@@ -495,9 +497,6 @@ func (pool *TxPImpl) addTx(tx *tx.Tx) TAddTx {
 		metricsAddTxCount.Add(1, nil)
 	}(start)
 
-	if pool.pendingTx.Size() > maxCacheTxs {
-		return CacheFullError
-	}
 	h := tx.Hash()
 	if pool.existTxInChain(h, pool.forkChain.NewHead.Block) {
 		return DupError
