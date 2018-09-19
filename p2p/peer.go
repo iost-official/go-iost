@@ -168,11 +168,11 @@ func (p *Peer) write(m *p2pMessage) error {
 	}
 
 	if m.messageType() == NewBlock {
-		ilog.Infof("start send block. size=%d", len(m.content()))
+		ilog.Infof("start send block. peer=%s, size=%d", p.id.Pretty(), len(m.content()))
 	}
 	_, err = stream.Write(m.content())
 	if m.messageType() == NewBlock {
-		ilog.Infof("send block end")
+		ilog.Infof("send block end. size=%d", len(m.content()))
 	}
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
@@ -232,7 +232,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		}
 		_, err = io.ReadFull(stream, data[dataBegin:])
 		if length > 10000 {
-			ilog.Infof("read data end.")
+			ilog.Infof("read data end. length=%d", length)
 		}
 		if err != nil {
 			ilog.Warnf("read message failed. err=%v", err)
