@@ -270,7 +270,7 @@ func (p *PoB) verifyLoop() {
 				if p.baseVariable.Mode() == global.ModeInit {
 					continue
 				}
-				ilog.Info("received new block, block number: ", blk.Head.Number)
+				ilog.Info("[pob] received new block, block number: ", blk.Head.Number)
 				timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 				if ok {
 					t, ok := timer.(*time.Timer)
@@ -290,6 +290,7 @@ func (p *PoB) verifyLoop() {
 				if err == errSingle {
 					go p.synchronizer.CheckSync()
 				}
+				ilog.Infof("[pob] verify block: %d", blk.Head.Number)
 			}
 			if vbm.p2pType == p2p.SyncBlockResponse {
 				ilog.Info("received sync block, block number: ", blk.Head.Number)
@@ -323,12 +324,7 @@ func (p *PoB) blockLoop() {
 	ilog.Infof("start blockloop")
 	for {
 		select {
-		case incomingMessage, ok := <-p.chRecvBlock:
-			if !ok {
-				ilog.Infof("chRecvBlock has closed")
-				return
-			}
-			ilog.Debugf("recv block chan size:%v", len(p.chRecvBlock))
+		case incomingMessage := <-p.chRecvBlock:
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
