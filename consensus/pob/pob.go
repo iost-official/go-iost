@@ -28,6 +28,7 @@ var (
 	metricsGeneratedBlockCount = metrics.NewCounter("iost_pob_generated_block", nil)
 	metricsVerifyBlockCount    = metrics.NewCounter("iost_pob_verify_block", nil)
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
+	metricsRecvLength          = metrics.NewGauge("iost_pob_recv_length", nil)
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
 	metricsVMTime              = metrics.NewGauge("iost_vm_exec_time", nil)
@@ -256,8 +257,11 @@ func (p *PoB) verifyLoop() {
 		case vbm := <-p.chVerifyBlock:
 			ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
 			blk := vbm.blk
+			if blk.Head.Number == p.blockCache.Head().Number+1 {
+				metricsRecvLength.Set(float64(blk.Head.Number), nil)
+			}
 			if vbm.gen {
-				ilog.Info("block from myself, block number: ", blk.Head.Number)
+				ilog.Info("[pob] block from myself, block number: ", blk.Head.Number)
 				err := p.handleRecvBlock(blk)
 				if err != nil {
 					ilog.Errorf("received new block error, err:%v", err)
@@ -293,7 +297,7 @@ func (p *PoB) verifyLoop() {
 				ilog.Infof("[pob] verify block: %d", blk.Head.Number)
 			}
 			if vbm.p2pType == p2p.SyncBlockResponse {
-				ilog.Info("received sync block, block number: ", blk.Head.Number)
+				ilog.Info("[pob] received sync block, block number: ", blk.Head.Number)
 				if blk.Head.Number == 0 {
 					err := p.handleGenesisBlock(blk)
 					if err != nil {
