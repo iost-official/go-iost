@@ -55,7 +55,7 @@ func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 			return err
 		}
 		if !bytes.Equal(blk.Receipts[k].Encode(), receipt.Encode()) {
-			ilog.Error("block num: %v", blk.Head.Number, " receipt: %v", receipt, " blk.Receipts[%v]: %v", k, blk.Receipts[k], " action name: %v", blk.Txs[k].Actions[0].ActionName)
+			ilog.Errorf("block num: %v , receipt: %v, blk.Receipts[%v]: %v, action name: %v", blk.Head.Number, receipt, k, blk.Receipts[k], blk.Txs[k].Actions[0].ActionName)
 			return errTxReceipt
 		}
 	}
