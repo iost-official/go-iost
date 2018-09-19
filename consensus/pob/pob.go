@@ -255,7 +255,7 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
-			ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
+			ilog.Info("[pob] verify block chan size:%v", len(p.chVerifyBlock))
 			blk := vbm.blk
 			if blk.Head.Number == p.blockCache.Head().Number+1 {
 				metricsRecvLength.Set(float64(blk.Head.Number), nil)
@@ -274,7 +274,7 @@ func (p *PoB) verifyLoop() {
 				if p.baseVariable.Mode() == global.ModeInit {
 					continue
 				}
-				ilog.Info("[pob] received new block, block number: ", blk.Head.Number)
+				ilog.Infof("[pob] received new block, number:%d, hash=%v", blk.Head.Number, blk.HeadHash())
 				timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 				if ok {
 					t, ok := timer.(*time.Timer)
@@ -369,6 +369,7 @@ func (p *PoB) scheduleLoop() {
 						ilog.Error(err.Error())
 						continue
 					}
+					ilog.Info("[pob] send blk: %v", blk.HeadHash())
 					go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 				}
 			}
