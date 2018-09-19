@@ -196,8 +196,8 @@ func (t *Trie) Get(key []byte) interface{} {
 
 // Put will insert the key-value pair
 func (t *Trie) Put(key []byte, value interface{}) {
-	t.rwmu.RLock()
-	defer t.rwmu.RUnlock()
+	t.rwmu.Lock()
+	defer t.rwmu.Unlock()
 
 	if t.root.context != t.context {
 		root := t.root.forkWithContext(t.context)

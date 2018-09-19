@@ -167,7 +167,13 @@ func (p *Peer) write(m *p2pMessage) error {
 		return err
 	}
 
+	if m.messageType() == NewBlock {
+		ilog.Infof("start send block. peer=%s, size=%d", p.id.Pretty(), len(m.content()))
+	}
 	_, err = stream.Write(m.content())
+	if m.messageType() == NewBlock {
+		ilog.Infof("send block end. peer=%s, size=%d", p.id.Pretty(), len(m.content()))
+	}
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
 		p.CloseStream(stream)
@@ -221,7 +227,13 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
 		data := make([]byte, dataBegin+length)
+		if length > 10000 {
+			ilog.Infof("start read data. peer=%s, length=%d", p.id.Pretty(), length+20)
+		}
 		_, err = io.ReadFull(stream, data[dataBegin:])
+		if length > 10000 {
+			ilog.Infof("read data end. peer=%s, length=%d", p.id.Pretty(), length+20)
+		}
 		if err != nil {
 			ilog.Warnf("read message failed. err=%v", err)
 			return

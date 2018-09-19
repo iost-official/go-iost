@@ -39,7 +39,7 @@ type MVCCDB interface {
 
 // NewMVCCDB return new mvccdb
 func NewMVCCDB(path string) (MVCCDB, error) {
-	return NewCacheMVCCDB(path, mvcc.TrieCache)
+	return NewCacheMVCCDB(path, mvcc.MapCache)
 }
 
 // Item is the value of cache
@@ -322,7 +322,7 @@ func (m *CacheMVCCDB) CurrentTag() string {
 	return tags[len(tags)-1]
 }
 
-// Fork will fork the mvcdb
+// Fork will fork the mvccdb
 // thread safe between all forks of the mvccdb
 func (m *CacheMVCCDB) Fork() MVCCDB {
 	mvccdb := &CacheMVCCDB{

@@ -85,7 +85,7 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 // Start starts peer manager's job.
 func (pm *PeerManager) Start() {
 	pm.parseSeeds()
-	pm.LoadRoutingTable()
+	// pm.LoadRoutingTable()
 	pm.routingQuery([]string{pm.host.ID().Pretty()})
 
 	go pm.dumpRoutingTableLoop()
@@ -427,6 +427,9 @@ func (pm *PeerManager) parseSeeds() {
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
+	if typ == PublishTxRequest {
+		return
+	}
 	if typ == NewBlock || typ == NewBlockHash || typ == SyncBlockHashRequest || typ == SyncHeight {
 		ilog.Infof("broadcast message. type=%s", typ)
 	}
