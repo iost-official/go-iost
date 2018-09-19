@@ -23,7 +23,6 @@ import (
 var (
 	errWitness     = errors.New("wrong witness")
 	errSignature   = errors.New("wrong signature")
-	errSlot        = errors.New("witness slot duplicate")
 	errTxTooOld    = errors.New("tx too old")
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
@@ -31,11 +30,10 @@ var (
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+
 	ilog.Info("generate Block start")
-	limitTime := time.NewTicker(common.SlotLength / 3 * time.Second)
-	txCnt := 10000
-	txsList, head, _ := txPool.PendingTxs(txCnt)
-	ilog.Info("txs in txpool", len(txsList))
+	limitTime := time.NewTimer(common.SlotLength / 3 * time.Second)
+	txIter, head := txPool.TxIterator()
 	topBlock := head.Block
 	blk := block.Block{
 		Head: &block.BlockHead{
@@ -50,7 +48,6 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 	}
 	db.Checkout(string(topBlock.HeadHash()))
 	engine := vm.NewEngine(blk.Head, db)
-	ilog.Info("txlen ", len(txsList))
 
 	// call vote
 	if blk.Head.Number%common.VoteInterval == 0 {
@@ -59,35 +56,62 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
 
 		trx, err := tx.SignTx(trx, staticProperty.account)
-		if err == nil {
-			if receipt, err := engine.Exec(trx); err == nil {
-				blk.Txs = append(blk.Txs, trx)
-				blk.Receipts = append(blk.Receipts, receipt)
-			}
-		} else {
-			ilog.Error("failed to vote, err:", err)
+		if err != nil {
+			ilog.Errorf("fail to signTx, err:%v", err)
 		}
-
+		receipt, err := engine.Exec(trx)
+		if err != nil {
+			ilog.Errorf("fail to exec trx, err:%v", err)
+		}
+		if receipt.Status.Code != tx.Success {
+			ilog.Errorf("status code: %v", receipt.Status.Code)
+		}
+		blk.Txs = append(blk.Txs, trx)
+		blk.Receipts = append(blk.Receipts, receipt)
 	}
-
+	t, ok := txIter.Next()
+	delList := []*tx.Tx{}
+	var vmExecTime, iterTime, i, j int64
 L:
-	for _, t := range txsList {
+	for ok {
 		select {
 		case <-limitTime.C:
 			ilog.Info("time up")
 			break L
 		default:
-			if receipt, err := engine.Exec(t); err == nil {
-				blk.Txs = append(blk.Txs, t)
-				blk.Receipts = append(blk.Receipts, receipt)
-				ilog.Debug(err, receipt)
+			i++
+			step1 := time.Now()
+			if !txPool.TxTimeOut(t) {
+				j++
+				if receipt, err := engine.Exec(t); err == nil {
+					blk.Txs = append(blk.Txs, t)
+					blk.Receipts = append(blk.Receipts, receipt)
+				} else {
+					ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
+					delList = append(delList, t)
+				}
 			} else {
-				ilog.Debug(err, receipt)
-				txPool.DelTx(t.Hash())
+				delList = append(delList, t)
 			}
+			step2 := time.Now()
+			t, ok = txIter.Next()
+			step3 := time.Now()
+			vmExecTime += step2.Sub(step1).Nanoseconds()
+			iterTime += step3.Sub(step2).Nanoseconds()
 		}
 	}
-	ilog.Info("txs in blk", len(blk.Txs))
+
+	if i > 0 && j > 0 {
+		metricsVMTime.Set(float64(vmExecTime), nil)
+		metricsVMAvgTime.Set(float64(vmExecTime/j), nil)
+		metricsIterTime.Set(float64(iterTime), nil)
+		metricsIterAvgTime.Set(float64(iterTime/j), nil)
+		metricsNonTimeOutTxSize.Set(float64(j), nil)
+		metricsAllTxSize.Set(float64(i), nil)
+		ilog.Infof("tx in blk:%d, iter:%d, vmExecTime:%d, vmAvgTime:%d, iterTime:%d, iterAvgTime:%d",
+			len(blk.Txs), i, vmExecTime, vmExecTime/j, iterTime, iterTime/j)
+	}
+
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	err := blk.CalculateHeadHash()
@@ -99,7 +123,7 @@ L:
 
 	metricsGeneratedBlockCount.Add(1, nil)
 	metricsTxSize.Set(float64(len(blk.Txs)), nil)
-
+	go txPool.DelTxList(delList)
 	return &blk, nil
 }
 
@@ -136,7 +160,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		}
 
 		if blk.Receipts[0].Status.Code != tx.Success {
-			return errors.New("vote was incorrect")
+			return fmt.Errorf("vote was incorrect, status:%v", blk.Receipts[0].Status)
 		}
 	}
 
@@ -149,7 +173,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 				return errTxSignature
 			}
 		}
-		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > 60 {
+		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > txpool.Expiration {
 			return errTxTooOld
 		}
 	}
@@ -165,7 +189,6 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
-	// bc.Flush(node) // debug do not delete this
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
 		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)

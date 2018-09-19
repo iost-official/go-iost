@@ -45,6 +45,8 @@ type Service interface {
 	SendToPeer(PeerID, []byte, MessageType, MessagePriority)
 	Register(string, ...MessageType) chan IncomingMessage
 	Deregister(string, ...MessageType)
+
+	NeighborStat() map[string]interface{}
 }
 
 // NetService is the implementation of Service interface.
@@ -62,7 +64,7 @@ func NewNetService(config *common.P2PConfig) (*NetService, error) {
 		config: config,
 	}
 
-	if err := os.MkdirAll(config.DataPath, 0766); config.DataPath != "" && err != nil {
+	if err := os.MkdirAll(config.DataPath, 0755); config.DataPath != "" && err != nil {
 		ilog.Errorf("failed to create p2p datapath, err=%v, path=%v", err, config.DataPath)
 		return nil, err
 	}
@@ -162,4 +164,9 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 
 func (ns *NetService) streamHandler(s libnet.Stream) {
 	ns.peerManager.HandleStream(s)
+}
+
+// NeighborStat dumps neighbors' status for debug.
+func (ns *NetService) NeighborStat() map[string]interface{} {
+	return ns.peerManager.NeighborStat()
 }

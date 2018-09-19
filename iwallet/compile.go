@@ -138,7 +138,7 @@ var compileCmd = &cobra.Command{
 		action := tx.NewAction("iost.system", "SetCode", `["`+contract.B64Encode()+`",]`)
 		pubkeys := make([][]byte, len(signers))
 		for i, pubkey := range signers {
-			pubkeys[i] = loadBytes(string(pubkey))
+			pubkeys[i] = loadBytes(pubkey)
 		}
 
 		trx := tx.NewTx([]*tx.Action{&action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())

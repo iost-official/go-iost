@@ -26,10 +26,16 @@ import (
 
 var (
 	metricsGeneratedBlockCount = metrics.NewCounter("iost_pob_generated_block", nil)
+	metricsVerifyBlockCount    = metrics.NewCounter("iost_pob_verify_block", nil)
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
-	metricsTPS                 = metrics.NewGauge("iost_tps", nil)
+	metricsVMTime              = metrics.NewGauge("iost_vm_exec_time", nil)
+	metricsVMAvgTime           = metrics.NewGauge("iost_vm_exec_avg_time", nil)
+	metricsIterTime            = metrics.NewGauge("iost_iter_time", nil)
+	metricsIterAvgTime         = metrics.NewGauge("iost_iter_avg_time", nil)
+	metricsNonTimeOutTxSize    = metrics.NewGauge("iost_non_time_out_tx_size", nil)
+	metricsAllTxSize           = metrics.NewGauge("iost_all_out_tx_size", nil)
 )
 
 var (
@@ -101,6 +107,7 @@ func (p *PoB) Start() error {
 	return nil
 }
 
+//Stop make the PoB stop
 func (p *PoB) Stop() {
 	close(p.exitSignal)
 }
@@ -125,7 +132,7 @@ func (p *PoB) messageLoop() {
 				if err != nil {
 					continue
 				}
-				go p.handleRecvBlockHash(&blkHash, incomingMessage.From())
+				p.handleRecvBlockHash(&blkHash, incomingMessage.From())
 			}
 		case incomingMessage, ok := <-p.chQueryBlock:
 			if !ok {
@@ -134,11 +141,11 @@ func (p *PoB) messageLoop() {
 			}
 			if p.baseVariable.Mode() == global.ModeNormal {
 				var rh message.RequestBlock
-				err := rh.Decode(incomingMessage.Data())
+				err := rh.Unmarshal(incomingMessage.Data())
 				if err != nil {
 					continue
 				}
-				go p.handleBlockQuery(&rh, incomingMessage.From())
+				p.handleBlockQuery(&rh, incomingMessage.From())
 			}
 		case <-p.exitSignal:
 			return
@@ -228,28 +235,6 @@ func (p *PoB) handleGenesisBlock(blk *block.Block) error {
 	return fmt.Errorf("not genesis block")
 }
 
-func (p *PoB) calculateTPS() float64 {
-	cnt := 0
-	n := 0
-	if p.blockCache.Head() == nil {
-		return 0
-	}
-	l := p.blockChain.Length()
-	for i := int64(0); i < 10; i++ {
-		blk, err := p.blockChain.GetBlockByNumber(l - i - 1)
-		if err != nil {
-			ilog.Error("get block by Number failed, ", i)
-			break
-		}
-		cnt += len(blk.Txs)
-		n++
-	}
-	if n == 0 {
-		return 0
-	}
-	return float64(cnt / (n * 3))
-}
-
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
 	blkHash := &message.BlockHash{
 		Height: blk.Head.Number,
@@ -269,14 +254,13 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
-			metricsTPS.Set(p.calculateTPS(), nil)
 			ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
 			blk := vbm.blk
 			if vbm.gen {
 				ilog.Info("block from myself, block number: ", blk.Head.Number)
 				err := p.handleRecvBlock(blk)
 				if err != nil {
-					ilog.Debugf("received new block error, err:%v", err)
+					ilog.Errorf("received new block error, err:%v", err)
 					continue
 				}
 				go p.synchronizer.CheckGenBlock(blk.HeadHash())
@@ -300,7 +284,7 @@ func (p *PoB) verifyLoop() {
 				p.broadcastBlockHash(blk) // can use go
 				p.blockReqMap.Delete(string(blk.HeadHash()))
 				if err != nil && err != errSingle {
-					ilog.Debugf("received new block error, err:%v", err)
+					ilog.Errorf("received new block error, err:%v", err)
 					continue
 				}
 				if err == errSingle {
@@ -312,7 +296,7 @@ func (p *PoB) verifyLoop() {
 				if blk.Head.Number == 0 {
 					err := p.handleGenesisBlock(blk)
 					if err != nil {
-						ilog.Debugf("received genesis block error, err:%v", err)
+						ilog.Errorf("received genesis block error, err:%v", err)
 					}
 					continue
 				} else {
@@ -321,13 +305,14 @@ func (p *PoB) verifyLoop() {
 					}
 					err := p.handleRecvBlock(blk)
 					if err != nil && err != errSingle && err != errDuplicate {
-						ilog.Debugf("received sync block error, err:%v", err)
+						ilog.Errorf("received sync block error, err:%v", err)
 						continue
 					}
 					go p.synchronizer.OnBlockConfirmed(string(blk.HeadHash()))
 				}
 			}
 			go p.synchronizer.CheckSyncProcess()
+			metricsVerifyBlockCount.Add(1, nil)
 		case <-p.exitSignal:
 			return
 		}
@@ -371,7 +356,7 @@ func (p *PoB) scheduleLoop() {
 				if p.baseVariable.Mode() == global.ModeNormal {
 					p.txPool.Lock()
 					blk, err := generateBlock(p.account, p.txPool, p.produceDB)
-					p.txPool.Lease()
+					p.txPool.Release()
 					ilog.Infof("gen block:%v", blk.Head.Number)
 					if err != nil {
 						ilog.Error(err.Error())
@@ -419,6 +404,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		if err != nil {
+			ilog.Errorf("verify block failed. err=%v", err)
 			p.blockCache.Del(node)
 			return err
 		}
@@ -441,6 +427,8 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
 	updateLib(node, p.blockCache)
-	p.txPool.AddLinkedNode(node, node) //TODO
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
+	if staticProperty.isWitness(p.account.ID) {
+		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
+	}
 }

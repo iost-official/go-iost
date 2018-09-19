@@ -156,6 +156,23 @@
         ]
       }
     },
+    "/getNetID": {
+      "get": {
+        "summary": "get the Net ID",
+        "operationId": "GetNetID",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/rpcGetNetIDRes"
+            }
+          }
+        },
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
     "/getState/{key}": {
       "get": {
         "summary": "get the value of the corresponding key in stateDB",
@@ -443,6 +460,14 @@
         "balance": {
           "type": "string",
           "format": "int64"
+        }
+      }
+    },
+    "rpcGetNetIDRes": {
+      "type": "object",
+      "properties": {
+        "ID": {
+          "type": "string"
         }
       }
     },

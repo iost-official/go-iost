@@ -8,13 +8,19 @@ import (
 )
 
 const (
-	HashLength     = 32
+	// HashLength ...
+	HashLength = 32
+	// LongHashLength ...
 	LongHashLength = 64
 )
 
+// Hash ...
 type Hash [HashLength]byte
+
+// LongHash ...
 type LongHash [LongHashLength]byte
 
+// NewHash ...
 func NewHash(bs []byte) Hash {
 	bLen := len(bs)
 	var h Hash
@@ -32,6 +38,7 @@ func NewHash(bs []byte) Hash {
 	return h
 }
 
+// NewLongHash ...
 func NewLongHash(bs []byte) LongHash {
 	bLen := len(bs)
 	var h LongHash
@@ -49,22 +56,32 @@ func NewLongHash(bs []byte) LongHash {
 	return h
 }
 
+// ToHex ...
 func (h Hash) ToHex() string { return hex.EncodeToString(h[:]) }
 
+// ToBase32Std ...
 func (h Hash) ToBase32Std() string { return base32.StdEncoding.EncodeToString(h[:]) }
 
+// ToBase32Hex ...
 func (h Hash) ToBase32Hex() string { return base32.HexEncoding.EncodeToString(h[:]) }
 
+// ToBase64Std ...
 func (h Hash) ToBase64Std() string { return base64.StdEncoding.EncodeToString(h[:]) }
 
+// ToBase64URL ...
 func (h Hash) ToBase64URL() string { return base64.URLEncoding.EncodeToString(h[:]) }
 
+// ToHex ...
 func (h LongHash) ToHex() string { return hex.EncodeToString(h[:]) }
 
+// ToBase32Std ...
 func (h LongHash) ToBase32Std() string { return base32.StdEncoding.EncodeToString(h[:]) }
 
+// ToBase32Hex ...
 func (h LongHash) ToBase32Hex() string { return base32.HexEncoding.EncodeToString(h[:]) }
 
+// ToBase64Std ...
 func (h LongHash) ToBase64Std() string { return base64.StdEncoding.EncodeToString(h[:]) }
 
+// ToBase64URL ...
 func (h LongHash) ToBase64URL() string { return base64.URLEncoding.EncodeToString(h[:]) }

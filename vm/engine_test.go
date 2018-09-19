@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/event"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
@@ -49,6 +50,7 @@ func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockV
 }
 
 func TestNewEngine(t *testing.T) { // test of normal engine work
+	ilog.Stop()
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
@@ -211,6 +213,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 }
 
 func TestCost(t *testing.T) { // tests of context transport
+	ilog.Stop()
 	bh, db, vm := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
@@ -332,6 +335,7 @@ func TestCost(t *testing.T) { // tests of context transport
 }
 
 func TestNative_Transfer(t *testing.T) { // tests of native vm works
+	ilog.Stop()
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
@@ -440,6 +444,7 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 }
 
 func TestNative_TopUp(t *testing.T) { // tests of native vm works
+	ilog.Stop()
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
@@ -450,6 +455,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		GasLimit:   100000,
 		GasPrice:   1,
 		Publisher:  &crypto.Signature{Pubkey: account.GetPubkeyByID("IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ")},
+		Signers:    [][]byte{[]byte("b")},
 	}
 
 	ac := tx.Action{
@@ -519,8 +525,9 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		return nil
 	})
 
-	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ-b", gomock.Any()).Times(2).DoAndReturn(func(table string, key string, value string) error {
-		if database.MustUnmarshal(value).(int64) != int64(999727) && database.MustUnmarshal(value).(int64) != int64(999697) {
+	db.EXPECT().Put("state", "i-IOST8k3qxCkt4HNLGqmVdtxN7N1AnCdodvmb9yX4tUWzRzwWEx7sbQ-b", gomock.Any()).Times(3).DoAndReturn(func(table string, key string, value string) error {
+		if database.MustUnmarshal(value).(int64) != int64(999727) &&
+			database.MustUnmarshal(value).(int64) != int64(999697) {
 			t.Fatal("publisher", database.MustUnmarshal(value).(int64))
 		}
 		return nil
@@ -548,6 +555,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 
 // nolint
 func TestNative_Receipt(t *testing.T) { // tests of native vm works
+	ilog.Stop()
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
@@ -562,7 +570,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 	ac := tx.Action{
 		Contract:   "iost.system",
 		ActionName: "CallWithReceipt",
-		Data:       `["iost.system", "Receipt", ["iamreceipt"]]`,
+		Data:       `["iost.system", "Receipt", "[\"iamreceipt\"]"]`,
 	}
 
 	mtx.Actions = append(mtx.Actions, &ac)
@@ -586,7 +594,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 					Payment:  0,
 					GasPrice: int64(100),
 					Limit:    contract.NewCost(1000, 1000, 1000),
-					Args:     []string{"string", "string", "json"},
+					Args:     []string{"string", "string", "string"},
 				},
 			},
 		},
@@ -634,7 +642,6 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		for {
 			select {
 			case e := <-sub.ReadChan():
-				t.Log(e.String())
 				if e.Topic == event.Event_ContractUserEvent {
 					count0++
 				} else if e.Topic == event.Event_ContractSystemEvent {
@@ -652,7 +659,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		t.Fatal(txr.Status)
 	}
 	if len(txr.Receipts) != 2 || txr.Receipts[0].Type != tx.UserDefined || txr.Receipts[0].Content != "iamreceipt" ||
-		txr.Receipts[1].Type != tx.SystemDefined || txr.Receipts[1].Content != `["Receipt",["iamreceipt"],"success"]` {
+		txr.Receipts[1].Type != tx.SystemDefined || txr.Receipts[1].Content != `["Receipt","[\"iamreceipt\"]","success"]` {
 		t.Fatal(txr.Receipts)
 	}
 	time.Sleep(10 * time.Millisecond)
@@ -667,6 +674,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 }
 
 func TestJS(t *testing.T) {
+	ilog.Stop()
 	bh, db, _ := engineinit(t)
 	e := NewEngine(bh, db)
 	e.SetUp("js_path", jsPath)
@@ -747,8 +755,9 @@ module.exports = Contract;
 		t.Log("exec tx failed, and success rollback")
 	})
 
+	var flag bool
 	db.EXPECT().Commit().Do(func() {
-		t.Log("committed")
+		flag = true
 	})
 
 	txr, err := e.Exec(&mtx)
@@ -757,5 +766,8 @@ module.exports = Contract;
 	}
 	if txr.Status.Code != tx.Success {
 		t.Fatal(txr.Status)
+	}
+	if !flag {
+		t.Fatal("not commit")
 	}
 }

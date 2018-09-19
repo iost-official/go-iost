@@ -32,7 +32,7 @@ let IOSTContractStorage = (function () {
             return storage.mapGet(k, f);
         };
         this.mapKeys = function (k) {
-            return storage.mapKeys(k);
+            return JSON.parse(storage.mapKeys(k));
         };
         this.mapDel = function (k, f) {
             return storage.mapDel(k, f);
@@ -48,17 +48,33 @@ let IOSTContractStorage = (function () {
     let globalStorageObj = new globalStorage;
 
     return {
+        // simply put a k-v pair, value must be string!
+        // put(key, value)
         put: simpleStorageObj.put,
+        // simply get a value using key.
+        // get(key)
         get: simpleStorageObj.get,
+        // simply del a k-v pair using key.
+        // del(key)
         del: simpleStorageObj.del,
+        // map put a (k, f, value) pair. use k + f to find value.
+        // mapPut(key, field, value)
         mapPut: mapStorageObj.mapPut,
+        // map check a (k, f) pair existence. use k + f to check.
+        // mapHas(key, field)
         mapHas: mapStorageObj.mapHas,
+        // map Get a (k, f) pair. use k + f to find value.
+        // mapGet(key, field)
         mapGet: mapStorageObj.mapGet,
+        // map Get fields inside a key.
+        // mapKeys(key)
         mapKeys: mapStorageObj.mapKeys,
+        // map Delete a (k, f) pair. use k + f to delete value.
+        // mapDel(key, field)
         mapDel: mapStorageObj.mapDel,
+        // currently not suportted, dont't use.
         globalGet: globalStorageObj.get,
     }
 })();
 
 module.exports = IOSTContractStorage;
-

@@ -29,7 +29,7 @@ const (
 
 	msgChanSize = 1024
 
-	maxStreamCount = 8
+	maxStreamCount = 4
 )
 
 // Peer represents a neighbor which we connect directily.
@@ -174,7 +174,7 @@ func (p *Peer) write(m *p2pMessage) error {
 		return err
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
-	byteOutSummary.Add(float64(len(m.content())), tagkv)
+	byteOutCounter.Add(float64(len(m.content())), tagkv)
 	packetOutCounter.Add(1, tagkv)
 
 	p.streams <- stream
@@ -185,6 +185,7 @@ func (p *Peer) writeLoop() {
 	for {
 		select {
 		case <-p.quitWriteCh:
+			ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 			return
 		case um := <-p.urgentMsgCh:
 			p.write(um)
@@ -232,7 +233,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 			return
 		}
 		tagkv := map[string]string{"mtype": msg.messageType().String()}
-		byteInSummary.Add(float64(len(msg.content())), tagkv)
+		byteInCounter.Add(float64(len(msg.content())), tagkv)
 		packetInCounter.Add(1, tagkv)
 
 		p.handleMessage(msg)
@@ -247,11 +248,12 @@ func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool
 			return ErrDuplicateMessage
 		}
 	}
-	switch mp {
-	case UrgentMessage:
-		p.urgentMsgCh <- msg
-	case NormalMessage:
-		p.normalMsgCh <- msg
+	ch := p.urgentMsgCh
+	if mp == NormalMessage {
+		ch = p.normalMsgCh
+	}
+	select {
+	case ch <- msg:
 	default:
 		ilog.Errorf("sending message failed. channel is full. messagePriority=%d", mp)
 		return ErrMessageChannelFull

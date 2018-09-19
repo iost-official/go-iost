@@ -1,9 +1,22 @@
 #include "require.h"
 
+//#include "esprima.js.h"
+//#include "inject_gas.js.h"
+#include "storage.js.h"
+#include "blockchain.js.h"
+
 #include <stdlib.h>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <unordered_map>
+
+std::unordered_map<std::string, const char *> libJS = {
+//    {"esprima", reinterpret_cast<char *>(__libjs_esprima_js)},
+//    {"inject_gas", reinterpret_cast<char *>(__libjs_inject_gas_js)},
+    {"storage", reinterpret_cast<char *>(__libjs_storage_js)},
+    {"blockchain", reinterpret_cast<char *>(__libjs_blockchain_js)}
+};
 
 static char injectGasFormat[] =
     "(function(){\n"
@@ -41,36 +54,14 @@ void NewNativeRequire(const FunctionCallbackInfo<Value> &info) {
     }
 
     String::Utf8Value pathStr(path);
-    std::string fullRelPath = std::string(sbx->jsPath) + *pathStr + ".js";
 
-    std::ifstream f(fullRelPath);
-    std::stringstream buffer;
-    buffer << f.rdbuf();
-
-    // if it's jsFile under jsPath
-    if (buffer.str().length() > 0) {
-        info.GetReturnValue().Set(String::NewFromUtf8(isolate, buffer.str().c_str()));
+    if (libJS.find(*pathStr) == libJS.end()) {
         return;
     }
 
-    // read go standard module again
-    char *code = CRequire(sbxPtr, *pathStr);
-    char *injectCode = nullptr;
-    asprintf(&injectCode, injectGasFormat, code);
-    free(code);
-
-    Local<String> source = String::NewFromUtf8(isolate, injectCode, NewStringType::kNormal).ToLocalChecked();
-    free(injectCode);
-    Local<String> fileName = String::NewFromUtf8(isolate, *pathStr, NewStringType::kNormal).ToLocalChecked();
-    Local<Script> script = Script::Compile(source, fileName);
-
-    if (!script.IsEmpty()) {
-        Local<Value> result = script->Run();
-        if (!result.IsEmpty()) {
-            String::Utf8Value retStr(result);
-            info.GetReturnValue().Set(result);
-        }
-    }
+    // if it's jsFile under jsPath
+    info.GetReturnValue().Set(String::NewFromUtf8(isolate, libJS[*pathStr]));
+    return;
 }
 
 void InitRequire(Isolate *isolate, Local<ObjectTemplate> globalTpl) {

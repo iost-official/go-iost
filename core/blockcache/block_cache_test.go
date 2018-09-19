@@ -65,6 +65,10 @@ func TestBlockCache(t *testing.T) {
 	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("[\"aaaa\",\"bbbbb\"]"), nil
 	})
+	//"m-iost.vote-producerTable"
+	statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
+	})
 
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(b0, nil)
@@ -187,6 +191,9 @@ func TestVote(t *testing.T) {
 	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(tpl), nil
 	})
+	statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
+	})
 
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(b0, nil)
@@ -204,10 +211,8 @@ func TestVote(t *testing.T) {
 
 		wl.SetPending(pl)
 		So(StringSliceEqual(pl, wl.Pending()), ShouldBeTrue)
-
 		wl.SetPendingNum(pn)
 		So(wl.PendingNum(), ShouldEqual, pn)
-
 		wl.SetActive(al)
 		So(StringSliceEqual(al, wl.Active()), ShouldBeTrue)
 
@@ -217,15 +222,17 @@ func TestVote(t *testing.T) {
 		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 		bc.Link(&BlockCacheNode{Block: b1})
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-
 		bc.Link(&BlockCacheNode{Block: b2})
-
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-
 		bc.Link(&BlockCacheNode{Block: b3})
-
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
 
+	})
+	Convey("test info", t, func() {
+		bc, _ := NewBlockCache(global)
+		for _, v := range bc.linkedRoot.NetID() {
+			So("33", ShouldEqual, v)
+		}
 	})
 }
 

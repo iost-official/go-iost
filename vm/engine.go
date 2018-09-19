@@ -1,14 +1,9 @@
 package vm
 
 import (
-	"sync"
-
 	"errors"
-
-	"runtime"
-
 	"fmt"
-
+	"runtime"
 	"strings"
 
 	"github.com/bitly/go-simplejson"
@@ -40,7 +35,7 @@ type Engine interface {
 	GC()
 }
 
-var staticMonitor *Monitor
+var staticMonitor = NewMonitor()
 var jsPath = "./v8vm/v8/libjs/"
 var logLevel = ""
 
@@ -51,12 +46,11 @@ func SetUp(config *common.VMConfig) error {
 	return nil
 }
 
-var once sync.Once
-
 type engineImpl struct {
 	ho *host.Host
 
 	jsPath string
+	publisherID string
 
 	logger        *ilog.Logger
 	consoleWriter *ilog.ConsoleWriter
@@ -73,12 +67,6 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 }
 
 func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
-	if staticMonitor == nil {
-		once.Do(func() {
-			staticMonitor = NewMonitor()
-		})
-	}
-
 	ctx := host.NewContext(nil)
 
 	ctx = loadBlkInfo(ctx, bh)
@@ -130,7 +118,7 @@ func (e *engineImpl) SetUp(k, v string) error {
 }
 
 func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
-	loadTxInfo(e.ho, tx0)
+	loadTxInfo(e.ho, tx0, e.publisherID)
 	defer func() {
 		e.ho.PopCtx()
 	}()
@@ -146,18 +134,19 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 			txr.Receipts = nil
 			txr.Status.Code = tx.ErrorDuplicateSetCode
 			txr.Status.Message = "error duplicate set code in a tx"
-			e.logger.Debugf("rollback")
+			ilog.Debugf("rollback")
 			e.ho.DB().Rollback()
 			break
 		}
 		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
 
 		cost, status, receipts, err := e.runAction(*action)
-		ilog.Infof("run action : %v, result is %v", action, status.Code)
+		ilog.Debugf("run action : %v, result is %v", action, status.Code)
 		ilog.Debug("used cost > ", cost)
 		ilog.Debugf("status > \n%v\n", status)
 
 		if err != nil {
+			ilog.Error(err)
 			return nil, err
 		}
 
@@ -167,11 +156,11 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
-		e.ho.PayCost(cost, account.GetIDByPubkey(tx0.Publisher.Pubkey))
+		e.ho.PayCost(cost, e.publisherID)
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
-			e.logger.Debugf("rollback")
+			ilog.Debugf("rollback")
 			e.ho.DB().Rollback()
 			break
 		} else {
@@ -199,12 +188,15 @@ func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	ilog.Info("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
 	err := checkTx(tx0)
 	if err != nil {
+		ilog.Error(err)
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
 	}
 
-	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
+	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
+	bl := e.ho.DB().Balance(e.publisherID)
 
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
+		ilog.Error(errCannotPay)
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
 	}
 
@@ -234,11 +226,12 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	rtn := make([]interface{}, 0)
 	arr, err := js.Array()
 	if err != nil {
+		ilog.Error(js.EncodePretty())
 		return nil, err
 	}
 
 	if len(arr) != len(abi.Args) {
-		return nil, errors.New("args unmatched to abi")
+		return nil, errors.New("args length unmatched to abi " + abi.Name)
 	}
 	for i := range arr {
 		switch abi.Args[i] {
@@ -294,48 +287,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	e.ho.Context().Set("stack0", "direct_call")
 	e.ho.Context().Set("stack_height", 1) // record stack trace
 
-	var cid string
-	if e.ho.IsDomain(action.Contract) {
-		cid = e.ho.URL(action.Contract)
-	} else {
-		cid = action.Contract
-	}
-
-	c := e.ho.DB().Contract(cid)
-	if c == nil || c.Info == nil {
-		cost = host.ContractNotFoundCost
-		status = tx.Status{
-			Code:    tx.ErrorParamter,
-			Message: errContractNotFound.Error() + action.Contract,
-		}
-		return
-	}
-
-	abi := c.ABI(action.ActionName)
-	if abi == nil {
-		cost = host.ABINotFoundCost
-		status = tx.Status{
-			Code:    tx.ErrorParamter,
-			Message: errABINotFound.Error() + action.Contract + "." + action.ActionName,
-		}
-		return
-	}
-
-	args, err := unmarshalArgs(abi, action.Data)
-	if err != nil {
-		cost = host.CommonErrorCost(2)
-		status = tx.Status{
-			Code:    tx.ErrorParamter,
-			Message: "unmarshal args error: " + err.Error(),
-		}
-		return
-	}
-	//var rtn []interface{}
-	//rtn, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	//ilog.Debugf("action %v > %v", action.Contract+"."+action.ActionName, rtn)
-
-	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, args...)
-	//e.logger.Debugf("cost is %v", cost)
+	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, action.Data)
 
 	if cost == nil {
 		panic("cost is nil")
@@ -405,6 +357,7 @@ func (e *engineImpl) startLog() {
 	if ok {
 		e.logger.SetCallDepth(0)
 		e.logger.HideLocation()
+		e.logger.AsyncWrite()
 		e.logger.Start()
 	}
 }
@@ -418,7 +371,7 @@ func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
 	return c
 }
 
-func loadTxInfo(h *host.Host, t *tx.Tx) {
+func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.PushCtx()
 	h.Context().Set("time", t.Time)
 	h.Context().Set("expiration", t.Expiration)
@@ -430,7 +383,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx) {
 		authList[string(v)] = 1
 	}
 
-	authList[account.GetIDByPubkey(t.Publisher.Pubkey)] = 2
+	authList[publisherID] = 2
 
 	h.Context().Set("auth_list", authList)
 }

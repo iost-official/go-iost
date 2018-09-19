@@ -20,38 +20,41 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/Go-IOS-Protocol/p2p"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/Go-IOS-Protocol/new_rpc ApisServer
 
-// RPCServer is the class of RPC server
-type RPCServer struct {
-	bc      blockcache.BlockCache
-	txdb    tx.TxDB
-	txpool  txpool.TxPool
-	bchain  block.Chain
-	forkDB  db.MVCCDB
-	visitor *database.Visitor
-	port    int
+// GRPCServer GRPC rpc server
+type GRPCServer struct {
+	bc         blockcache.BlockCache
+	p2pService p2p.Service
+	txdb       global.TxDB
+	txpool     txpool.TxPool
+	bchain     block.Chain
+	forkDB     db.MVCCDB
+	visitor    *database.Visitor
+	port       int
 }
 
-// newRPCServer
-func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable) *RPCServer {
+// NewRPCServer create GRPC rpc server
+func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable, p2pService p2p.Service) *GRPCServer {
 	forkDb := _global.StateDB().Fork()
-	return &RPCServer{
-		txdb:    _global.TxDB(),
-		txpool:  tp,
-		bchain:  _global.BlockChain(),
-		bc:      bcache,
-		forkDB:  forkDb,
-		visitor: database.NewVisitor(0, forkDb),
-		port:    _global.Config().RPC.GRPCPort,
+	return &GRPCServer{
+		txdb:       _global.TxDB(),
+		p2pService: p2pService,
+		txpool:     tp,
+		bchain:     _global.BlockChain(),
+		bc:         bcache,
+		forkDB:     forkDb,
+		visitor:    database.NewVisitor(0, forkDb),
+		port:       _global.Config().RPC.GRPCPort,
 	}
 }
 
-// Start ...
-func (s *RPCServer) Start() error {
+// Start start GRPC server
+func (s *GRPCServer) Start() error {
 	port := strconv.Itoa(s.port)
 	if !strings.HasPrefix(port, ":") {
 		port = ":" + port
@@ -73,20 +76,20 @@ func (s *RPCServer) Start() error {
 	return nil
 }
 
-// Stop ...
-func (s *RPCServer) Stop() {
+// Stop stop GRPC server
+func (s *GRPCServer) Stop() {
 	return
 }
 
-// GetHeight ...
-func (s *RPCServer) GetHeight(ctx context.Context, empty *empty.Empty) (*HeightRes, error) {
+// GetHeight get current block height
+func (s *GRPCServer) GetHeight(ctx context.Context, empty *empty.Empty) (*HeightRes, error) {
 	return &HeightRes{
 		Height: s.bchain.Length() - 1,
 	}, nil
 }
 
-// GetTxByHash ...
-func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, error) {
+// GetTxByHash get tx by transaction hash
+func (s *GRPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, error) {
 	if hash == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -105,8 +108,8 @@ func (s *RPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, err
 	}, nil
 }
 
-// GetTxReceiptByHash ...
-func (s *RPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*TxReceiptRes, error) {
+// GetTxReceiptByHash get receipt by receipt hash
+func (s *GRPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*TxReceiptRes, error) {
 	if hash == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -124,8 +127,8 @@ func (s *RPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*TxR
 	}, nil
 }
 
-// GetTxReceiptByTxHash...
-func (s *RPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*TxReceiptRes, error) {
+// GetTxReceiptByTxHash get receipt by transaction hash
+func (s *GRPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*TxReceiptRes, error) {
 	if hash == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -143,8 +146,8 @@ func (s *RPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*T
 	}, nil
 }
 
-// GetBlockByHash ...
-func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashReq) (*BlockInfo, error) {
+// GetBlockByHash get block by block head hash
+func (s *GRPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashReq) (*BlockInfo, error) {
 	if blkHashReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -183,8 +186,8 @@ func (s *RPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashR
 	return blkInfo, nil
 }
 
-// GetBlockByNum ...
-func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
+// GetBlockByNum get block by block number
+func (s *GRPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq) (*BlockInfo, error) {
 	if blkNumReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -215,8 +218,8 @@ func (s *RPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq)
 	return blkInfo, nil
 }
 
-// GetState ...
-func (s *RPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRes, error) {
+// GetState get value from state db
+func (s *GRPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRes, error) {
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -226,8 +229,8 @@ func (s *RPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRe
 	}, nil
 }
 
-// GetBalance ...
-func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBalanceRes, error) {
+// GetBalance get account balance
+func (s *GRPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBalanceRes, error) {
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -241,8 +244,16 @@ func (s *RPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBal
 	}, nil
 }
 
-// SendRawTx ...
-func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
+// GetNetID get net id
+func (s *GRPCServer) GetNetID(ctx context.Context, empty *empty.Empty) (*GetNetIDRes, error) {
+
+	return &GetNetIDRes{
+		ID: s.p2pService.ID(),
+	}, nil
+}
+
+// SendRawTx send transaction to blockchain
+func (s *GRPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
 	if rawTx == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -270,13 +281,13 @@ func (s *RPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxR
 	return &res, nil
 }
 
-// EstimateGas ...
-func (s *RPCServer) EstimateGas(ctx context.Context, rawTx *RawTxReq) (*GasRes, error) {
+// EstimateGas estimate gas used by transaction
+func (s *GRPCServer) EstimateGas(ctx context.Context, rawTx *RawTxReq) (*GasRes, error) {
 	return nil, nil
 }
 
-// Subscribe ...
-func (s *RPCServer) Subscribe(req *SubscribeReq, res Apis_SubscribeServer) error {
+// Subscribe used for event
+func (s *GRPCServer) Subscribe(req *SubscribeReq, res Apis_SubscribeServer) error {
 	ec := event.GetEventCollectorInstance()
 	sub := event.NewSubscription(100, req.Topics)
 	ec.Subscribe(sub)

@@ -8,6 +8,8 @@
 #include "int64.js.h"
 #include "utils.js.h"
 #include "console.js.h"
+#include "esprima.js.h"
+#include "inject_gas.js.h"
 
 intptr_t externalRef[] = {
         reinterpret_cast<intptr_t>(NewConsoleLog),
@@ -28,6 +30,14 @@ static char codeFormat[] =
         "%s\n"  // load Int64
         "%s\n"  // load util
         "%s\n"; // load console
+
+static char compileCodeFormat[] =
+    "let exports = {};\n"
+    "let module = {};\n"
+    "module.exports = {};\n"
+    "%s\n" // load esprima
+    "const esprima = module.exports;\n"
+    "%s\n"; // load inject_gas
 
 int compile(SandboxPtr ptr, const char *code, const char **compiledCode) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
@@ -91,6 +101,39 @@ CustomStartupData createStartupData() {
             globalTpl->Set(String::NewFromUtf8(isolate, "_native_require", NewStringType::kNormal).ToLocalChecked(), callback);
 
             Local<Context> context = Context::New(isolate, nullptr, globalTpl);
+            Context::Scope context_scope(context);
+
+            Local<String> source = String::NewFromUtf8(isolate, code, NewStringType::kNormal).ToLocalChecked();
+            Local<Script> script = Script::Compile(context, source).ToLocalChecked();
+            if (!script.IsEmpty()){
+                script->Run();
+            }
+
+            creator.SetDefaultContext(context);
+        }
+        blob = creator.CreateBlob(SnapshotCreator::FunctionCodeHandling::kClear);
+    }
+
+    return CustomStartupData{blob.data, blob.raw_size};
+}
+
+CustomStartupData createCompileStartupData() {
+    char *esprimajs = reinterpret_cast<char *>(__libjs_esprima_js);
+    char *injectgasjs = reinterpret_cast<char *>(__libjs_inject_gas_js);
+
+    char *code = nullptr;
+    asprintf(&code, compileCodeFormat,
+        esprimajs,
+        injectgasjs);
+
+    StartupData blob;
+    {
+        SnapshotCreator creator;
+        Isolate* isolate = creator.GetIsolate();
+        {
+            HandleScope handle_scope(isolate);
+
+            Local<Context> context = Context::New(isolate);
             Context::Scope context_scope(context);
 
             Local<String> source = String::NewFromUtf8(isolate, code, NewStringType::kNormal).ToLocalChecked();

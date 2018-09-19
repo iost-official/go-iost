@@ -15,16 +15,21 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"strconv"
+	"strings"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
+	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
@@ -46,7 +51,7 @@ func initMetrics(metricsConfig *common.MetricsConfig) error {
 	if metricsConfig == nil || !metricsConfig.Enable {
 		return nil
 	}
-	err := metrics.SetPusher(metricsConfig.PushAddr)
+	err := metrics.SetPusher(metricsConfig.PushAddr, metricsConfig.Username, metricsConfig.Password)
 	if err != nil {
 		return err
 	}
@@ -114,13 +119,13 @@ func main() {
 		ilog.Errorf("init metrics failed. err=%v", err)
 	}
 
-	glb, err := global.New(conf)
+	bv, err := global.New(conf)
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)
 	}
 	if conf.Genesis.CreateGenesis {
-		genesisBlock, _ := glb.BlockChain().GetBlockByNumber(0)
-		ilog.Errorf("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
+		genesisBlock, _ := bv.BlockChain().GetBlockByNumber(0)
+		ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
 	}
 	var app common.App
 
@@ -136,30 +141,30 @@ func main() {
 		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
 	}
 
-	blkCache, err := blockcache.NewBlockCache(glb)
+	blkCache, err := blockcache.NewBlockCache(bv)
 	if err != nil {
 		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
 	}
 
-	sync, err := synchronizer.NewSynchronizer(glb, blkCache, p2pService)
+	sync, err := synchronizer.NewSynchronizer(bv, blkCache, p2pService)
 	if err != nil {
 		ilog.Fatalf("synchronizer initialization failed, stop the program! err:%v", err)
 	}
 	app = append(app, sync)
 
 	var txp txpool.TxPool
-	txp, err = txpool.NewTxPoolImpl(glb, blkCache, p2pService)
+	txp, err = txpool.NewTxPoolImpl(bv, blkCache, p2pService)
 	if err != nil {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 	app = append(app, txp)
 
-	rpcServer := rpc.NewRPCServer(txp, blkCache, glb)
+	rpcServer := rpc.NewRPCServer(txp, blkCache, bv, p2pService)
 	app = append(app, rpcServer)
 
-	jsonRPCServer := rpc.NewJSONServer(glb)
+	jsonRPCServer := rpc.NewJSONServer(bv)
 	app = append(app, jsonRPCServer)
-	consensus, err := consensus.Factory("pob", acc, glb, blkCache, txp, p2pService, sync)
+	consensus, err := consensus.Factory("pob", acc, bv, blkCache, txp, p2pService, sync)
 	if err != nil {
 		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
 	}
@@ -167,17 +172,20 @@ func main() {
 
 	err = app.Start()
 	if err != nil {
-		ilog.Fatal("start iserver failed. err=%v", err)
+		ilog.Fatalf("start iserver failed. err=%v", err)
 	}
 
 	if conf.Debug != nil {
-		startDebugServer(conf.Debug.ListenAddr, blkCache)
+		startDebugServer(conf.Debug.ListenAddr, blkCache, p2pService, bv.BlockChain())
 	}
 
 	waitExit()
 
 	app.Stop()
 	ilog.Stop()
+	bv.BlockChain().Close()
+	bv.StateDB().Close()
+	bv.TxDB().Close()
 }
 
 func waitExit() {
@@ -187,10 +195,29 @@ func waitExit() {
 	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
 }
 
-func startDebugServer(addr string, blkCache blockcache.BlockCache) {
+func startDebugServer(addr string, blkCache blockcache.BlockCache, p2pService p2p.Service, blkChain block.Chain) {
 	http.HandleFunc("/debug/blockcache/", func(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte(blkCache.Draw()))
 	})
+	http.HandleFunc("/debug/blockchain/", func(rw http.ResponseWriter, r *http.Request) {
+		rg := r.URL.Query()
+		sp := strings.Split(rg["range"][0], "-")
+		start, err := strconv.Atoi(sp[0])
+		if err != nil {
+			return
+		}
+		end, err := strconv.Atoi(sp[1])
+		if err != nil {
+			return
+		}
+		rw.Write([]byte(blkChain.Draw(int64(start), int64(end))))
+	})
+	http.HandleFunc("/debug/p2p/neighbors/", func(rw http.ResponseWriter, r *http.Request) {
+		neighbors := p2pService.NeighborStat()
+		bytes, _ := json.MarshalIndent(neighbors, "", "    ")
+		rw.Write(bytes)
+	})
+
 	go func() {
 		err := http.ListenAndServe(addr, nil)
 		if err != nil {

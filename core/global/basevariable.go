@@ -3,6 +3,8 @@ package global
 import (
 	"fmt"
 
+	"os"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
@@ -13,19 +15,24 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
-	"os"
 )
 
+// TMode type of mode
 type TMode uint
 
 const (
+	// ModeNormal is normal mode
 	ModeNormal TMode = iota
+	// ModeSync is sync mode
 	ModeSync
+	// ModeInit init mode
 	ModeInit
 )
 
-var VoteContractPath string
+// VoteContractPath is config of vote
+var VoteContractPath = "../../config/"
 
+// String return string of mode
 func (m TMode) String() string {
 	switch m {
 	case ModeNormal:
@@ -39,15 +46,17 @@ func (m TMode) String() string {
 	}
 }
 
+// BaseVariableImpl is the implementation of BaseVariable
 type BaseVariableImpl struct {
 	blockChain  block.Chain
 	stateDB     db.MVCCDB
-	txDB        tx.TxDB
+	txDB        TxDB
 	mode        TMode
 	witnessList []string
 	config      *common.Config
 }
 
+// GenGenesis is create a genesis block
 func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	var acts []*tx.Action
 	for i := 0; i < len(witnessInfo)/2; i++ {
@@ -72,19 +81,16 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	num := len(witnessInfo) / 2
-	proStr := "["
-	for i := 0; i < num; i++ {
-		proStr += fmt.Sprintf(`\"%v\"`, witnessInfo[2*i])
-		if i != num-1 {
-			proStr += ","
-		}
-	}
-	proStr += "]"
+
 	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
 	acts = append(acts, &act)
-	act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`[%d, "%v"]`, num, proStr))
-	acts = append(acts, &act1)
+
+	num := len(witnessInfo) / 2
+	for i := 0; i < num; i++ {
+		act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`["%v"]`, witnessInfo[2*i]))
+		acts = append(acts, &act1)
+	}
+
 	// deploy iost.bonus
 	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
 	acts = append(acts, &act2)
@@ -127,10 +133,11 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	return &blk, nil
 }
 
+// New return a BaseVariable instance
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 	var blockChain block.Chain
 	var stateDB db.MVCCDB
-	var txDB tx.TxDB
+	var txDB TxDB
 	var err error
 	var witnessList []string
 	VoteContractPath = conf.Genesis.VoteContractPath
@@ -152,7 +159,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if hash != "" {
 			return nil, fmt.Errorf("blockchaindb is empty, but statedb is not")
 		}
-		txDB, err = tx.NewTxDB(conf.DB.LdbPath + "TXDB")
+		txDB, err = NewTxDB(conf.DB.LdbPath + "TXDB")
 		if err != nil {
 			return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
 		}
@@ -175,9 +182,6 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			}
 		}
 		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
-	}
-	if common.Base58Encode(blk.HeadHash()) != conf.Genesis.GenesisHash { //get data from seedNode
-		return nil, fmt.Errorf("the hash of genesis block in db doesn't match that in config")
 	}
 	stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
 	if err != nil {
@@ -207,13 +211,14 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			return nil, fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
 		}
 	}
-	txDB, err = tx.NewTxDB(conf.DB.LdbPath + "TXDB")
+	txDB, err = NewTxDB(conf.DB.LdbPath + "TXDB")
 	if err != nil {
 		return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
 	}
 	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 }
 
+// FakeNew is fake BaseVariable
 func FakeNew() (*BaseVariableImpl, error) {
 	blockChain, err := block.NewBlockChain("./Fakedb/BlockChainDB")
 	if err != nil {
@@ -223,7 +228,7 @@ func FakeNew() (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, err
 	}
-	txDB, err := tx.NewTxDB("./Fakedb/TXDB")
+	txDB, err := NewTxDB("./Fakedb/TXDB")
 	if err != nil {
 		return nil, err
 	}
@@ -258,30 +263,37 @@ func FakeNew() (*BaseVariableImpl, error) {
 	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config}, nil
 }
 
-func (g *BaseVariableImpl) TxDB() tx.TxDB {
+// TxDB return the transaction database
+func (g *BaseVariableImpl) TxDB() TxDB {
 	return g.txDB
 }
 
+// StateDB return the state database
 func (g *BaseVariableImpl) StateDB() db.MVCCDB {
 	return g.stateDB
 }
 
+// BlockChain return the block chain
 func (g *BaseVariableImpl) BlockChain() block.Chain {
 	return g.blockChain
 }
 
+// WitnessList return the witness list
 func (g *BaseVariableImpl) WitnessList() []string {
 	return g.witnessList
 }
 
+// Config return the config
 func (g *BaseVariableImpl) Config() *common.Config {
 	return g.config
 }
 
+// Mode return the mode
 func (g *BaseVariableImpl) Mode() TMode {
 	return g.mode
 }
 
+// SetMode is set the mode
 func (g *BaseVariableImpl) SetMode(m TMode) {
 	g.mode = m
 }

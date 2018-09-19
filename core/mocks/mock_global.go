@@ -9,7 +9,6 @@ import (
 	common "github.com/iost-official/Go-IOS-Protocol/common"
 	block "github.com/iost-official/Go-IOS-Protocol/core/block"
 	global "github.com/iost-official/Go-IOS-Protocol/core/global"
-	tx "github.com/iost-official/Go-IOS-Protocol/core/tx"
 	db "github.com/iost-official/Go-IOS-Protocol/db"
 	reflect "reflect"
 )
@@ -96,9 +95,9 @@ func (mr *MockBaseVariableMockRecorder) StateDB() *gomock.Call {
 }
 
 // TxDB mocks base method
-func (m *MockBaseVariable) TxDB() tx.TxDB {
+func (m *MockBaseVariable) TxDB() global.TxDB {
 	ret := m.ctrl.Call(m, "TxDB")
-	ret0, _ := ret[0].(tx.TxDB)
+	ret0, _ := ret[0].(global.TxDB)
 	return ret0
 }
 

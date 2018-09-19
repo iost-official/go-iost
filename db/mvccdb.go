@@ -9,14 +9,18 @@ import (
 )
 
 //go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/Go-IOS-Protocol/db MVCCDB
+
+// constant of mvccdb
 const (
 	SEPARATOR = '/'
 )
 
+// error of mvccdb
 var (
 	ErrTableNotValid = fmt.Errorf("table name is not valid")
 )
 
+// MVCCDB is the interface of mvccdb
 type MVCCDB interface {
 	Get(table string, key string) (string, error)
 	Put(table string, key string, value string) error
@@ -33,10 +37,12 @@ type MVCCDB interface {
 	Close() error
 }
 
+// NewMVCCDB return new mvccdb
 func NewMVCCDB(path string) (MVCCDB, error) {
 	return NewCacheMVCCDB(path, mvcc.TrieCache)
 }
 
+// Item is the value of cache
 type Item struct {
 	table   string
 	key     string
@@ -44,11 +50,13 @@ type Item struct {
 	deleted bool
 }
 
+// Commit is the cache of specify tag
 type Commit struct {
 	mvcc.Cache
 	Tags []string
 }
 
+// NewCommit returns new commit
 func NewCommit(cacheType mvcc.CacheType) *Commit {
 	return &Commit{
 		Cache: mvcc.NewCache(cacheType),
@@ -56,6 +64,8 @@ func NewCommit(cacheType mvcc.CacheType) *Commit {
 	}
 }
 
+// Fork will fork the commit
+// thread safe between all forks of the commit
 func (c *Commit) Fork() *Commit {
 	return &Commit{
 		Cache: c.Cache.Fork().(mvcc.Cache),
@@ -63,12 +73,14 @@ func (c *Commit) Fork() *Commit {
 	}
 }
 
+// CommitManager is the commit manager, support get, delete etc.
 type CommitManager struct {
 	tags    map[string]*Commit
 	commits []*Commit
 	rwmu    *sync.RWMutex
 }
 
+// NewCommitManager returns new commit manager
 func NewCommitManager() *CommitManager {
 	tags := make(map[string]*Commit)
 	commits := make([]*Commit, 0)
@@ -80,6 +92,7 @@ func NewCommitManager() *CommitManager {
 	}
 }
 
+// Add will add a commit
 func (m *CommitManager) Add(c *Commit) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
@@ -87,6 +100,7 @@ func (m *CommitManager) Add(c *Commit) {
 	m.commits = append(m.commits, c)
 }
 
+// Get will get a commit by tag
 func (m *CommitManager) Get(t string) *Commit {
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
@@ -94,6 +108,7 @@ func (m *CommitManager) Get(t string) *Commit {
 	return m.tags[t]
 }
 
+// AddTag will make the commit with the tag
 func (m *CommitManager) AddTag(c *Commit, t string) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
@@ -102,6 +117,7 @@ func (m *CommitManager) AddTag(c *Commit, t string) {
 	m.tags[t] = c
 }
 
+// GetTags returns tags of the commit
 func (m *CommitManager) GetTags(c *Commit) []string {
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
@@ -109,6 +125,7 @@ func (m *CommitManager) GetTags(c *Commit) []string {
 	return c.Tags
 }
 
+// FreeBefore will free the momery of commits before the commit
 func (m *CommitManager) FreeBefore(c *Commit) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
@@ -126,6 +143,7 @@ func (m *CommitManager) FreeBefore(c *Commit) {
 	}
 }
 
+// CacheMVCCDB is the mvcc db with cache
 type CacheMVCCDB struct {
 	head    *Commit
 	stage   *Commit
@@ -133,6 +151,7 @@ type CacheMVCCDB struct {
 	cm      *CommitManager
 }
 
+// NewCacheMVCCDB returns new CacheMVCCDB
 func NewCacheMVCCDB(path string, cacheType mvcc.CacheType) (*CacheMVCCDB, error) {
 	storage, err := kv.NewStorage(path, kv.LevelDBStorage)
 	if err != nil {
@@ -169,6 +188,7 @@ func (m *CacheMVCCDB) isValidTable(table string) bool {
 	return true
 }
 
+// Get returns the value of specify key and table
 func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 	if !m.isValidTable(table) {
 		return "", ErrTableNotValid
@@ -192,6 +212,7 @@ func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 	return i.value, nil
 }
 
+// Put will insert the key-value pair into the table
 func (m *CacheMVCCDB) Put(table string, key string, value string) error {
 	if !m.isValidTable(table) {
 		return ErrTableNotValid
@@ -207,6 +228,7 @@ func (m *CacheMVCCDB) Put(table string, key string, value string) error {
 	return nil
 }
 
+// Del will remove the specify key in the table
 func (m *CacheMVCCDB) Del(table string, key string) error {
 	if !m.isValidTable(table) {
 		return ErrTableNotValid
@@ -222,6 +244,7 @@ func (m *CacheMVCCDB) Del(table string, key string) error {
 	return nil
 }
 
+// Has returns whether the specified key exists in the table
 func (m *CacheMVCCDB) Has(table string, key string) (bool, error) {
 	if !m.isValidTable(table) {
 		return false, ErrTableNotValid
@@ -241,6 +264,7 @@ func (m *CacheMVCCDB) Has(table string, key string) (bool, error) {
 	return true, nil
 }
 
+// Keys returns the list of key prefixed with prefix in the table
 func (m *CacheMVCCDB) Keys(table string, prefix string) ([]string, error) {
 	//if !m.isValidTable(table) {
 	//	return nil, ErrTableNotValid
@@ -263,16 +287,19 @@ func (m *CacheMVCCDB) Keys(table string, prefix string) ([]string, error) {
 	return nil, nil
 }
 
+// Commit will commit current state of mvccdb
 func (m *CacheMVCCDB) Commit() {
 	m.cm.Add(m.stage)
 	m.head = m.stage
 	m.stage = m.head.Fork()
 }
 
+// Rollback will rollback the state of mvccdb
 func (m *CacheMVCCDB) Rollback() {
 	m.stage = m.head.Fork()
 }
 
+// Checkout will checkout the specify tag of mvccdb
 func (m *CacheMVCCDB) Checkout(t string) bool {
 	head := m.cm.Get(t)
 	if head == nil {
@@ -283,15 +310,20 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 	return true
 }
 
+// Tag will add tag to current state of mvccdb
 func (m *CacheMVCCDB) Tag(t string) {
 	m.cm.AddTag(m.head, t)
 }
 
+// CurrentTag will returns current tag of mvccdb
 func (m *CacheMVCCDB) CurrentTag() string {
+	// TODO how to write better in this place
 	tags := m.cm.GetTags(m.head)
 	return tags[len(tags)-1]
 }
 
+// Fork will fork the mvcdb
+// thread safe between all forks of the mvccdb
 func (m *CacheMVCCDB) Fork() MVCCDB {
 	mvccdb := &CacheMVCCDB{
 		head:    m.head,
@@ -302,6 +334,7 @@ func (m *CacheMVCCDB) Fork() MVCCDB {
 	return mvccdb
 }
 
+// Flush will persist the current state of mvccdb
 func (m *CacheMVCCDB) Flush(t string) error {
 	commit := m.cm.Get(t)
 	if commit == nil {
@@ -338,6 +371,7 @@ func (m *CacheMVCCDB) Flush(t string) error {
 	return nil
 }
 
+// Close will close the mvccdb
 func (m *CacheMVCCDB) Close() error {
 	return m.storage.Close()
 }
