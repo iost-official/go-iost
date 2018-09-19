@@ -90,8 +90,9 @@ func (sy *SyncImpl) reqDownloadBlock(hash string, peerID p2p.PeerID) {
 	blkReq := &message.RequestBlock{
 		BlockHash: []byte(hash),
 	}
-	bytes, err := blkReq.Encode()
+	bytes, err := blkReq.Marshal()
 	if err != nil {
+		ilog.Errorf("marshal request block failed. err=%v", err)
 		return
 	}
 	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
@@ -230,7 +231,7 @@ func (sy *SyncImpl) CheckGenBlock(hash []byte) bool {
 }
 
 func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
-	bytes, err := hr.Encode()
+	bytes, err := hr.Marshal()
 	if err != nil {
 		ilog.Errorf("marshal blockhashquery failed. err=%v", err)
 		return
@@ -286,7 +287,7 @@ func (sy *SyncImpl) messageLoop() {
 		case req := <-sy.messageChan:
 			if req.Type() == p2p.SyncBlockHashRequest {
 				var rh message.BlockHashQuery
-				err := rh.Decode(req.Data())
+				err := rh.Unmarshal(req.Data())
 				if err != nil {
 					ilog.Errorf("unmarshal BlockHashQuery failed:%v", err)
 					break
@@ -294,7 +295,7 @@ func (sy *SyncImpl) messageLoop() {
 				go sy.handleHashQuery(&rh, req.From())
 			} else if req.Type() == p2p.SyncBlockHashResponse {
 				var rh message.BlockHashResponse
-				err := rh.Decode(req.Data())
+				err := rh.Unmarshal(req.Data())
 				if err != nil {
 					ilog.Errorf("unmarshal BlockHashResponse failed:%v", err)
 					break
@@ -302,7 +303,7 @@ func (sy *SyncImpl) messageLoop() {
 				go sy.handleHashResp(&rh, req.From())
 			} else if req.Type() == p2p.SyncBlockRequest {
 				var rh message.RequestBlock
-				err := rh.Decode(req.Data())
+				err := rh.Unmarshal(req.Data())
 				if err != nil {
 					break
 				}
@@ -393,7 +394,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 	if len(resp.BlockHashes) == 0 {
 		return
 	}
-	bytes, err := resp.Encode()
+	bytes, err := resp.Marshal()
 	if err != nil {
 		ilog.Errorf("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
 		return
