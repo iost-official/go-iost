@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 )
 
@@ -54,6 +55,7 @@ func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 			return err
 		}
 		if !bytes.Equal(blk.Receipts[k].Encode(), receipt.Encode()) {
+			ilog.Error("block num: %v", blk.Head.Number, " receipt: %v", receipt, " blk.Receipts[%v]: %v", k, blk.Receipts[k], " action name: %v", blk.Txs[k].Actions[0].ActionName)
 			return errTxReceipt
 		}
 	}
