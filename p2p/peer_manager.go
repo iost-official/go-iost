@@ -85,7 +85,7 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 // Start starts peer manager's job.
 func (pm *PeerManager) Start() {
 	pm.parseSeeds()
-	pm.LoadRoutingTable()
+	// pm.LoadRoutingTable()
 	pm.routingQuery([]string{pm.host.ID().Pretty()})
 
 	go pm.dumpRoutingTableLoop()
