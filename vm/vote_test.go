@@ -56,7 +56,7 @@ func TestJS1_Vote1(t *testing.T) {
 		t.Fatal(r.Status.Message)
 	}
 	for i := 6; i <= 18; i += 2 {
-		if int64(50000000) != js.vi.Balance(testID[i]) {
+		if int64(50000000 * 1e8) != js.vi.Balance(testID[i]) {
 			t.Fatal("error in balance :", i, js.vi.Balance(testID[i]))
 		}
 	}
