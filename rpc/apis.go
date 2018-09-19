@@ -274,6 +274,8 @@ func (s *GRPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTx
 		return nil, fmt.Errorf("tx err:%v", "DupError")
 	case txpool.GasPriceError:
 		return nil, fmt.Errorf("tx err:%v", "GasPriceError")
+	case txpool.CacheFullError:
+		return nil, fmt.Errorf("tx err:%v", "CacheFullError")
 	default:
 	}
 	res := SendRawTxRes{}
