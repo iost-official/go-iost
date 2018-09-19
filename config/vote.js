@@ -1,4 +1,5 @@
-const producerRegisterFee = 1000 * 1000;
+const softFloatRate = 1e8;
+const producerRegisterFee = 1000 * 1000 * softFloatRate;
 const preProducerThreshold = 2100 * 10000;
 const voteLockTime = 200;
 const voteStatInterval = 200;
@@ -198,12 +199,13 @@ class VoteContract {
 	// vote, need to pledge token
 	Vote(producer, voter, amount) {
 		this._requireAuth(voter);
+		amount = Math.floor(amount);
 
         if (!storage.mapHas("producerTable", producer)) {
 			throw new Error("producer not exists");
 		}
 
-		const ret = BlockChain.deposit(voter, amount);
+		const ret = BlockChain.deposit(voter, amount * softFloatRate);
 		if (ret !== 0) {
 			throw new Error("vote deposit failed. ret = " + ret);
 		}
@@ -234,6 +236,7 @@ class VoteContract {
 
 	// unvote
 	Unvote(producer, voter, amount) {
+        amount = Math.floor(amount);
 		this._requireAuth(voter);
 
 		if (!storage.mapHas("voteTable", voter)) {
@@ -266,7 +269,7 @@ class VoteContract {
 			}
 		}
 
-		const ret = BlockChain.withdraw(voter, amount);
+		const ret = BlockChain.withdraw(voter, amount * softFloatRate);
 		if (ret !== 0) {
 			throw new Error("withdraw failed. ret = " + ret);
 		}
