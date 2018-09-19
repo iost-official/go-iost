@@ -255,7 +255,7 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
-			ilog.Info("[pob] verify block chan size:%v", len(p.chVerifyBlock))
+			ilog.Infof("[pob] verify block chan size:%v", len(p.chVerifyBlock))
 			blk := vbm.blk
 			if blk.Head.Number == p.blockCache.Head().Number+1 {
 				metricsRecvLength.Set(float64(blk.Head.Number), nil)
