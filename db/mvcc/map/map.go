@@ -23,8 +23,8 @@ func New() *MVCCMap {
 	}
 }
 
-func (m *MVCCMap) getFromLink(key []byte) interface{} {
-	v, ok := m.data[string(key)]
+func (m *MVCCMap) getFromLink(key string) interface{} {
+	v, ok := m.data[key]
 	if !ok {
 		if m.parent == nil {
 			return nil
@@ -39,7 +39,7 @@ func (m *MVCCMap) Get(key []byte) interface{} {
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
 
-	return m.getFromLink(key)
+	return m.getFromLink(string(key))
 }
 
 // Put will insert the key-value pair

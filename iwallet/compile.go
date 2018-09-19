@@ -20,6 +20,9 @@ import (
 
 	"time"
 
+	"go/build"
+	"os/exec"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
@@ -27,13 +30,73 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// generate ABI file
+func generateABI(codePath string) string {
+	var contractPath = ""
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		gopath = build.Default.GOPATH
+	}
+
+	if _, err := os.Stat(home + "/.iwallet/contract_path"); err == nil {
+		fd, err := readFile(home + "/.iwallet/contract_path")
+		if err != nil {
+			fmt.Println("Read ", home+"/.iwallet/contract_path file failed: ", err.Error())
+			return ""
+		}
+		contractPath = string(fd)
+	}
+
+	if contractPath == "" {
+		contractPath = gopath + "/src/github.com/iost-official/Go-IOS-Protocol/cmd/playground/contract"
+	}
+	fmt.Println("contractPath: ", contractPath)
+	cmd := exec.Command("node", contractPath+"/contract.js", codePath)
+
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("run ", "node", contractPath, "/contract.js ", codePath, " Failed,error: ", err.Error())
+		return ""
+	}
+
+	return codePath + ".abi"
+}
+
 // compileCmd represents the compile command
 var compileCmd = &cobra.Command{
 	Use:   "compile",
 	Short: "Compile contract files to smart contract",
 	Long:  `Compile contract files to smart contract. `,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 2 {
+		if resetContractPath {
+			err := os.Remove(home + "/.iwallet/contract_path")
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			fmt.Println("Sucessfully reset contract path", setContractPath)
+			return
+		}
+
+		//set contract path and save it to home/.iwallet/contract_path
+		if setContractPath != "" {
+			contractPathFile, err := os.Create(home + "/.iwallet/contract_path")
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			defer contractPathFile.Close()
+
+			_, err = contractPathFile.WriteString(setContractPath)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			fmt.Println("Sucessfully set contract path to: ", setContractPath)
+			return
+		}
+
+		if len(args) < 1 {
 			fmt.Println(`Error: source code file or abi file not given`)
 			return
 		}
@@ -44,7 +107,17 @@ var compileCmd = &cobra.Command{
 			return
 		}
 		code := string(fd)
-		abiPath := args[1]
+		abiPath := generateABI(codePath)
+
+		if abiPath == "" {
+			fmt.Println("Failed to Gen ABI!")
+			return
+		}
+
+		if genABI {
+			return
+		}
+
 		fd, err = readFile(abiPath)
 		if err != nil {
 			fmt.Println("Read abi file failed: ", err.Error())
@@ -113,10 +186,15 @@ var gasLimit int64
 var gasPrice int64
 var expiration int64
 var signers []string
+var genABI bool
+var setContractPath string
+var resetContractPath bool
+var home string
 
 func init() {
 	rootCmd.AddCommand(compileCmd)
-	home, err := homedir.Dir()
+	var err error
+	home, err = homedir.Dir()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -128,6 +206,9 @@ func init() {
 	compileCmd.Flags().StringSliceVarP(&signers, "signers", "", []string{}, "signers who should sign this transaction")
 	compileCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
 	compileCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
+	compileCmd.Flags().BoolVarP(&genABI, "genABI", "g", false, "generate abi file")
+	compileCmd.Flags().StringVarP(&setContractPath, "setContractPath", "c", "", "set contract path, default is $GOPATH + /src/github.com/iost-official/Go-IOS-Protocol/cmd/playground/contract")
+	compileCmd.Flags().BoolVarP(&resetContractPath, "resetContractPath", "r", false, "clean contract path")
 
 	// Here you will define your flags and configuration settings.
 

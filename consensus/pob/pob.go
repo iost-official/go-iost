@@ -132,7 +132,7 @@ func (p *PoB) messageLoop() {
 				if err != nil {
 					continue
 				}
-				go p.handleRecvBlockHash(&blkHash, incomingMessage.From())
+				p.handleRecvBlockHash(&blkHash, incomingMessage.From())
 			}
 		case incomingMessage, ok := <-p.chQueryBlock:
 			if !ok {
@@ -141,11 +141,11 @@ func (p *PoB) messageLoop() {
 			}
 			if p.baseVariable.Mode() == global.ModeNormal {
 				var rh message.RequestBlock
-				err := rh.Decode(incomingMessage.Data())
+				err := rh.Unmarshal(incomingMessage.Data())
 				if err != nil {
 					continue
 				}
-				go p.handleBlockQuery(&rh, incomingMessage.From())
+				p.handleBlockQuery(&rh, incomingMessage.From())
 			}
 		case <-p.exitSignal:
 			return
