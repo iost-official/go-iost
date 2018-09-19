@@ -14,8 +14,9 @@ import (
 var (
 	clearInterval = 10 * time.Second
 	// Expiration is the transaction expiration
-	Expiration = int64(90 * time.Second)
-	filterTime = int64(90 * time.Second)
+	Expiration  = int64(90 * time.Second)
+	filterTime  = int64(90 * time.Second)
+	maxCacheTxs = 30000
 
 	metricsReceivedTxCount      = metrics.NewCounter("iost_tx_received_count", []string{"from"})
 	metricsGetPendingTxTime     = metrics.NewGauge("iost_get_pending_tx_time", nil)
@@ -67,6 +68,8 @@ const (
 	DupError
 	// GasPriceError ...
 	GasPriceError
+	// CacheFullError ...
+	CacheFullError
 )
 
 type forkChain struct {
