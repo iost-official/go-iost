@@ -224,8 +224,15 @@ func (s *GRPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateR
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash()))
+
+	if key.Field == "" {
+		return &GetStateRes{
+			Value: s.visitor.BasicHandler.Get(key.Key),
+		}, nil
+	}
+
 	return &GetStateRes{
-		Value: s.visitor.BasicHandler.Get(key.Key),
+		Value: s.visitor.MapHandler.MGet(key.Key, key.Field),
 	}, nil
 }
 
