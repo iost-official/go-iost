@@ -49,7 +49,7 @@ func SetUp(config *common.VMConfig) error {
 type engineImpl struct {
 	ho *host.Host
 
-	jsPath string
+	jsPath      string
 	publisherID string
 
 	logger        *ilog.Logger
@@ -153,22 +153,21 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
 
 		txr.Status = status
-		if status.Code == 4 && status.Message == "out of gas" {
-			txr.GasUsage += gasLimit
-		} else {
-			txr.GasUsage += cost.ToGas()
-		}
-
-		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
-
-		e.ho.PayCost(cost, e.publisherID)
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
 			ilog.Debugf("rollback")
 			e.ho.DB().Rollback()
+			if status.Code == 4 && status.Message == "out of gas" {
+				txr.GasUsage += gasLimit
+				e.ho.PayCost(contract.NewCost(0, 0, gasLimit), e.publisherID)
+			}
 			break
 		} else {
+			txr.GasUsage += cost.ToGas()
+			e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
+			e.ho.PayCost(cost, e.publisherID)
+
 			txr.Receipts = append(txr.Receipts, receipts...)
 			txr.SuccActionNum++
 		}
