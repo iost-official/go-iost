@@ -15,11 +15,12 @@ class Contract {
         }
     }
     bet(account, luckyNumber, coins, nonce) {
-        if (coins < 1 || coins > 5) {
-            return "bet coins should be >=1 and <= 5"
+        if (coins < 100000000 || coins > 500000000) {
+            console.log(coins);
+            throw "bet coins should be >=1 and <= 5"
         }
-        if (luckyNumber < 0 && luckyNumber > 9) {
-            return "bet coins should be >=1 and <= 5"
+        if (luckyNumber < 0 || luckyNumber > 9) {
+            throw "lucky number should be >=0 and <= 9"
         }
 
         BlockChain.deposit(account, coins);

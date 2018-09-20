@@ -936,7 +936,7 @@ func TestJS_LuckyBet(t *testing.T) {
 	}
 	js.SetJS(string(lc))
 	js.SetAPI("clearUserValue")
-	js.SetAPI("bet", "string", "number", "number")
+	js.SetAPI("bet", "string", "number", "number", "number")
 	js.SetAPI("getReward")
 	r := js.DoSet()
 	if r.Status.Code != 0 {
@@ -944,30 +944,30 @@ func TestJS_LuckyBet(t *testing.T) {
 	}
 
 	// here put the first bet
-	r = js.TestJS("bet", fmt.Sprintf(`["%v",0, 2]`, testID[0]))
+	r = js.TestJS("bet", fmt.Sprintf(`["%v",0, 200000000, 1]`, testID[0]))
 	Convey("after 1 bet", t, func() {
 		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB("user_number"), ShouldEqual, "1")
-		So(js.ReadDB("total_coins"), ShouldEqual, "2")
-		So(js.ReadMap("table", "0"), ShouldEqual, `[{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":2}]`)
+		So(js.ReadDB("total_coins"), ShouldEqual, "200000000")
+		So(js.ReadMap("table", "0"), ShouldEqual, `[{"account":"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","coins":200000000,"nonce":1}]`)
 	})
 
 	for i := 1; i < 100; i++ { // at i = 2, should get reward
-		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v,%v]`, testID[0], i, (i%4+1)*100000000))
+		r = js.TestJS("bet", fmt.Sprintf(`["%v",%v,%v,%v]`, testID[0], i%10, (i%4+1)*100000000, i))
 		if r.Status.Code != 0 {
 			t.Fatal(r.Status.Message)
 		}
-		if r.GasUsage != 1132 {
+		if r.GasUsage < 1000 {
 			t.Fatal(r.GasUsage)
 		}
 	}
 
-	Convey("after 1 bet", t, func() {
+	Convey("after 100 bet", t, func() {
 		So(r.Status.Message, ShouldEqual, "")
-		So(js.ReadDB("user_number"), ShouldEqual, "10")
+		So(js.ReadDB("user_number"), ShouldEqual, "0")
 		So(js.ReadDB("total_coins"), ShouldEqual, "0")
 		So(js.ReadDB("round"), ShouldEqual, "2")
-		So(js.ReadDB("result1"), ShouldContainSubstring, `"k_number":1,`)
+		So(js.ReadDB("result1"), ShouldContainSubstring, `"k_number":10,`)
 
 	})
 }
