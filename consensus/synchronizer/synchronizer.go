@@ -198,6 +198,7 @@ func (sy *SyncImpl) CheckSync() bool {
 		return true
 	})
 	netHeight := heights[len(heights)/2]
+	ilog.Infof("check sync, heights: %+v", heights)
 	if netHeight > height+syncNumber {
 		sy.basevariable.SetMode(global.ModeSync)
 		sy.dc.Reset()
