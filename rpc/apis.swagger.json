@@ -191,6 +191,12 @@
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "field",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
