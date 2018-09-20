@@ -150,13 +150,20 @@ func (sy *SyncImpl) syncHeightLoop() {
 			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.UrgentMessage)
 		case req := <-sy.syncHeightChan:
 			var sh message.SyncHeight
-			err := proto.UnmarshalMerge(req.Data(), &sh)
+			err := proto.Unmarshal(req.Data(), &sh)
 			if err != nil {
 				ilog.Errorf("unmarshal syncheight failed. err=%v", err)
 				continue
 			}
+			if shIF, ok := sy.heightMap.Load(req.From()); ok {
+				if shOld, ok := shIF.(*message.SyncHeight); ok {
+					if shOld.Height == sh.Height {
+						continue
+					}
+				}
+			}
 			ilog.Infof("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
-			sy.heightMap.Store(req.From(), sh)
+			sy.heightMap.Store(req.From(), &sh)
 		case <-sy.exitSignal:
 			return
 		}
