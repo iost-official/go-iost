@@ -181,7 +181,7 @@ func (sy *SyncImpl) CheckSync() bool {
 	heights = append(heights, sy.blockCache.Head().Number)
 	now := time.Now().Unix()
 	sy.heightMap.Range(func(k, v interface{}) bool {
-		sh, ok := v.(message.SyncHeight)
+		sh, ok := v.(*message.SyncHeight)
 		if !ok || sh.Time+heightTimeout < now {
 			if sh.Time+heightTimeout*100 < now {
 				sy.heightMap.Delete(k)
