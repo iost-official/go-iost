@@ -182,8 +182,11 @@ func (sy *SyncImpl) CheckSync() bool {
 	now := time.Now().Unix()
 	sy.heightMap.Range(func(k, v interface{}) bool {
 		sh, ok := v.(message.SyncHeight)
-		if !ok || sh.Time+heightTimeout < now {
+		if !ok || sh.Time+heightTimeout*100 < now {
 			sy.heightMap.Delete(k)
+			return true
+		}
+		if !ok || sh.Time+heightTimeout < now {
 			return true
 		}
 		heights = append(heights, 0)
