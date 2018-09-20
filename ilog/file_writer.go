@@ -36,7 +36,7 @@ func (fw *FileWriter) Init() error {
 	if !filepath.IsAbs(fw.filepath) {
 		fw.filepath, _ = filepath.Abs(fw.filepath)
 	}
-	if err := os.MkdirAll(fw.filepath, 0766); err != nil {
+	if err := os.MkdirAll(fw.filepath, 0755); err != nil {
 		panic(err)
 	}
 	logFile := fmt.Sprintf("iost_%s.log", time.Now().In(cstZone).Format("2006-01-02_15"))

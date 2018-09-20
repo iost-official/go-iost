@@ -50,6 +50,7 @@ type engineImpl struct {
 	ho *host.Host
 
 	jsPath string
+	publisherID string
 
 	logger        *ilog.Logger
 	consoleWriter *ilog.ConsoleWriter
@@ -117,7 +118,7 @@ func (e *engineImpl) SetUp(k, v string) error {
 }
 
 func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
-	loadTxInfo(e.ho, tx0)
+	loadTxInfo(e.ho, tx0, e.publisherID)
 	defer func() {
 		e.ho.PopCtx()
 	}()
@@ -145,6 +146,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		ilog.Debugf("status > \n%v\n", status)
 
 		if err != nil {
+			ilog.Error(err)
 			return nil, err
 		}
 
@@ -159,7 +161,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
-		e.ho.PayCost(cost, account.GetIDByPubkey(tx0.Publisher.Pubkey))
+		e.ho.PayCost(cost, e.publisherID)
 
 		if status.Code != tx.Success {
 			txr.Receipts = nil
@@ -188,15 +190,18 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 }
 
 func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
-	ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
+	ilog.Info("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
 	err := checkTx(tx0)
 	if err != nil {
+		ilog.Error(err)
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
 	}
 
-	bl := e.ho.DB().Balance(account.GetIDByPubkey(tx0.Publisher.Pubkey))
+	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
+	bl := e.ho.DB().Balance(e.publisherID)
 
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
+		ilog.Error(errCannotPay)
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
 	}
 
@@ -357,6 +362,7 @@ func (e *engineImpl) startLog() {
 	if ok {
 		e.logger.SetCallDepth(0)
 		e.logger.HideLocation()
+		e.logger.AsyncWrite()
 		e.logger.Start()
 	}
 }
@@ -370,7 +376,7 @@ func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
 	return c
 }
 
-func loadTxInfo(h *host.Host, t *tx.Tx) {
+func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.PushCtx()
 	h.Context().Set("time", t.Time)
 	h.Context().Set("expiration", t.Expiration)
@@ -382,7 +388,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx) {
 		authList[string(v)] = 1
 	}
 
-	authList[account.GetIDByPubkey(t.Publisher.Pubkey)] = 2
+	authList[publisherID] = 2
 
 	h.Context().Set("auth_list", authList)
 }

@@ -64,7 +64,7 @@ func NewNetService(config *common.P2PConfig) (*NetService, error) {
 		config: config,
 	}
 
-	if err := os.MkdirAll(config.DataPath, 0766); config.DataPath != "" && err != nil {
+	if err := os.MkdirAll(config.DataPath, 0755); config.DataPath != "" && err != nil {
 		ilog.Errorf("failed to create p2p datapath, err=%v, path=%v", err, config.DataPath)
 		return nil, err
 	}

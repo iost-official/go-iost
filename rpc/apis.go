@@ -30,7 +30,7 @@ import (
 type GRPCServer struct {
 	bc         blockcache.BlockCache
 	p2pService p2p.Service
-	txdb       tx.TxDB
+	txdb       global.TxDB
 	txpool     txpool.TxPool
 	bchain     block.Chain
 	forkDB     db.MVCCDB
@@ -274,6 +274,8 @@ func (s *GRPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTx
 		return nil, fmt.Errorf("tx err:%v", "DupError")
 	case txpool.GasPriceError:
 		return nil, fmt.Errorf("tx err:%v", "GasPriceError")
+	case txpool.CacheFullError:
+		return nil, fmt.Errorf("tx err:%v", "CacheFullError")
 	default:
 	}
 	res := SendRawTxRes{}

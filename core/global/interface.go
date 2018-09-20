@@ -3,7 +3,6 @@ package global
 import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/db"
 )
 
@@ -11,7 +10,7 @@ import (
 
 // BaseVariable defines BaseVariable's API.
 type BaseVariable interface {
-	TxDB() tx.TxDB
+	TxDB() TxDB
 	StateDB() db.MVCCDB
 	Config() *common.Config
 	BlockChain() block.Chain

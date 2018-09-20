@@ -104,7 +104,7 @@ func main() {
 	}
 
 	if *configfile == "" {
-		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/iserver.yaml"
+		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/iserver.yml"
 	}
 
 	conf := common.NewConfig(*configfile)
@@ -125,7 +125,7 @@ func main() {
 	}
 	if conf.Genesis.CreateGenesis {
 		genesisBlock, _ := bv.BlockChain().GetBlockByNumber(0)
-		ilog.Errorf("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
+		ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
 	}
 	var app common.App
 
@@ -172,7 +172,7 @@ func main() {
 
 	err = app.Start()
 	if err != nil {
-		ilog.Fatal("start iserver failed. err=%v", err)
+		ilog.Fatalf("start iserver failed. err=%v", err)
 	}
 
 	if conf.Debug != nil {

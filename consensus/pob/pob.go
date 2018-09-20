@@ -132,7 +132,7 @@ func (p *PoB) messageLoop() {
 				if err != nil {
 					continue
 				}
-				go p.handleRecvBlockHash(&blkHash, incomingMessage.From())
+				p.handleRecvBlockHash(&blkHash, incomingMessage.From())
 			}
 		case incomingMessage, ok := <-p.chQueryBlock:
 			if !ok {
@@ -141,11 +141,11 @@ func (p *PoB) messageLoop() {
 			}
 			if p.baseVariable.Mode() == global.ModeNormal {
 				var rh message.RequestBlock
-				err := rh.Decode(incomingMessage.Data())
+				err := rh.Unmarshal(incomingMessage.Data())
 				if err != nil {
 					continue
 				}
-				go p.handleBlockQuery(&rh, incomingMessage.From())
+				p.handleBlockQuery(&rh, incomingMessage.From())
 			}
 		case <-p.exitSignal:
 			return
@@ -426,7 +426,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
-	updateLib(p.blockCache.Head(), p.blockCache)
+	updateLib(node, p.blockCache)
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())

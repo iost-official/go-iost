@@ -1,4 +1,4 @@
-package tx
+package global
 
 import (
 	"testing"
@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -29,17 +30,17 @@ func TestTxDb(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		a1, _ := account.NewAccount(nil, crypto.Secp256k1)
-		tx1 := NewTx([]*Action{}, [][]byte{a1.Pubkey}, 100000, 100, 11)
-		tx2 := NewTx([]*Action{}, [][]byte{a1.Pubkey}, 88888, 22, 11)
-		var txs []*Tx
-		txs = make([]*Tx, 0)
+		tx1 := tx.NewTx([]*tx.Action{}, [][]byte{a1.Pubkey}, 100000, 100, 11)
+		tx2 := tx.NewTx([]*tx.Action{}, [][]byte{a1.Pubkey}, 88888, 22, 11)
+		var txs []*tx.Tx
+		txs = make([]*tx.Tx, 0)
 		txs = append(txs, tx1)
 
-		re1 := NewTxReceipt(tx1.Hash())
-		re2 := NewTxReceipt(tx2.Hash())
+		re1 := tx.NewTxReceipt(tx1.Hash())
+		re2 := tx.NewTxReceipt(tx2.Hash())
 
-		var res []*TxReceipt
-		res = make([]*TxReceipt, 0)
+		var res []*tx.TxReceipt
+		res = make([]*tx.TxReceipt, 0)
 		res = append(res, &re1)
 
 		err = txDb.Push(txs, res)

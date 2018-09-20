@@ -10,7 +10,7 @@ matrix:
   include:
     - os: osx
       osx_image: xcode10
-      go: 1.10.x
+      go: "1.11"
       env:
         - VERBOSE=true
       before_install:
@@ -25,14 +25,14 @@ matrix:
 
     - os: linux
       dist: trusty
-      go: 1.10.x
+      go: "1.11"
       services:
         - docker
       before_install:
-        - docker pull iostio/iost-dev
+        - docker pull iostio/iost-dev:2.0.0-go1.11
         - git lfs install
       before_script:
         - git lfs pull
       script:
-        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make build
-        - docker run -it --rm -e VERBOSE=true -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev make test
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev:2.0.0-go1.11 make build
+        - docker run -it --rm -e VERBOSE=true -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev:2.0.0-go1.11 make test

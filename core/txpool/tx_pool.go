@@ -177,18 +177,15 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNo
 
 // AddTx add the transaction
 func (pool *TxPImpl) AddTx(t *tx.Tx) TAddTx {
-
 	var r TAddTx
 
 	if r = pool.verifyTx(t); r != Success {
 		return r
 	}
-
 	if r = pool.addTx(t); r == Success {
 		pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.NormalMessage)
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	}
-
 	return r
 }
 
@@ -364,7 +361,9 @@ func (pool *TxPImpl) initBlockTx() {
 }
 
 func (pool *TxPImpl) verifyTx(t *tx.Tx) TAddTx {
-
+	if pool.pendingTx.Size() > maxCacheTxs {
+		return CacheFullError
+	}
 	start := time.Now()
 	defer func(t time.Time) {
 		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
@@ -502,7 +501,6 @@ func (pool *TxPImpl) addTx(tx *tx.Tx) TAddTx {
 	if pool.existTxInChain(h, pool.forkChain.NewHead.Block) {
 		return DupError
 	}
-
 	if pool.existTxInPending(h) {
 		return DupError
 	}
@@ -617,7 +615,7 @@ func (pool *TxPImpl) findForkBCN(newHead *blockcache.BlockCacheNode, oldHead *bl
 		_, ok := pool.block(newHead.Block.HeadHash())
 		if !ok {
 			if err := pool.addBlock(newHead.Block); err != nil {
-				ilog.Errorf("failed to add block, err = ", err)
+				ilog.Errorf("failed to add block, err = %v", err)
 			}
 		}
 		newHead = newHead.Parent
