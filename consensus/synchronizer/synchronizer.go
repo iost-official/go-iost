@@ -25,7 +25,7 @@ var (
 	retryTime                     = 5 * time.Second
 	syncBlockTimeout              = 5 * time.Second
 	syncHeightTime                = 3 * time.Second
-	heightTimeout           int64 = 5 * 3
+	heightTimeout           int64 = 11 * 3
 )
 
 type callbackfunc = func(hash string, peerID p2p.PeerID)
@@ -181,7 +181,7 @@ func (sy *SyncImpl) CheckSync() bool {
 	heights = append(heights, sy.blockCache.Head().Number)
 	now := time.Now().Unix()
 	sy.heightMap.Range(func(k, v interface{}) bool {
-		sh, ok := v.(message.SyncHeight)
+		sh, ok := v.(*message.SyncHeight)
 		if !ok || sh.Time+heightTimeout < now {
 			if sh.Time+heightTimeout*100 < now {
 				sy.heightMap.Delete(k)
@@ -198,6 +198,7 @@ func (sy *SyncImpl) CheckSync() bool {
 		return true
 	})
 	netHeight := heights[len(heights)/2]
+	ilog.Infof("check sync, heights: %+v", heights)
 	if netHeight > height+syncNumber {
 		sy.basevariable.SetMode(global.ModeSync)
 		sy.dc.Reset()
@@ -272,11 +273,10 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 
 // CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
+	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Number, sy.syncEnd)
 	if sy.syncEnd <= sy.blockCache.Head().Number {
 		sy.basevariable.SetMode(global.ModeNormal)
 		sy.dc.Reset()
-	} else {
-		ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Number, sy.syncEnd)
 	}
 }
 
