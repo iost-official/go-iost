@@ -25,7 +25,7 @@ var (
 	retryTime                     = 5 * time.Second
 	syncBlockTimeout              = 5 * time.Second
 	syncHeightTime                = 3 * time.Second
-	heightTimeout           int64 = 5 * 3
+	heightTimeout           int64 = 11 * 3
 )
 
 type callbackfunc = func(hash string, peerID p2p.PeerID)
