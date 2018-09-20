@@ -148,10 +148,15 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 			return nil, err
 		}
 
-		txr.Status = status
-		txr.GasUsage += cost.ToGas()
-
 		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
+
+		txr.Status = status
+		if status.Code == 4 && status.Message == "out of gas" {
+			txr.GasUsage += gasLimit
+		} else {
+			txr.GasUsage += cost.ToGas()
+		}
+
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
 		e.ho.PayCost(cost, account.GetIDByPubkey(tx0.Publisher.Pubkey))

@@ -251,3 +251,5 @@ vm/test_data/lucky_bet.js.after
 /config/levelDB/
 /config/logs/
 /config/priv.key
+
+*.temp
