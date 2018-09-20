@@ -49,7 +49,7 @@ func SetUp(config *common.VMConfig) error {
 type engineImpl struct {
 	ho *host.Host
 
-	jsPath string
+	jsPath      string
 	publisherID string
 
 	logger        *ilog.Logger
@@ -150,10 +150,15 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 			return nil, err
 		}
 
+		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
+
 		txr.Status = status
+		if status.Code == 4 && status.Message == "out of gas" {
+			cost = contract.NewCost(0, 0, gasLimit)
+		}
+
 		txr.GasUsage += cost.ToGas()
 
-		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
 		e.ho.PayCost(cost, e.publisherID)

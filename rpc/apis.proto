@@ -108,6 +108,7 @@ message GetBalanceReq {
 
 message GetStateReq {
 	string key=1;
+    string field = 2;
 }
 
 //the rawdata of a tx
