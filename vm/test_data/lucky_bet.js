@@ -1,4 +1,4 @@
-const maxUserNumber = 10;
+const maxUserNumber = 100;
 
 class Contract {
     init() {
@@ -43,7 +43,7 @@ class Contract {
                 storage.put("last_lucky_block", JSON.stringify(bn));
                 const round = JSON.parse(storage.get("round"));
 
-                this.getReward(bn % 10, round);
+                this.getReward(bn % 10, round, bn, userNumber);
                 storage.put("user_number", JSON.stringify(0));
                 storage.put("total_coins", JSON.stringify(0));
                 this.clearUserValue();
@@ -55,9 +55,11 @@ class Contract {
 
         storage.put("user_number", JSON.stringify(userNumber + 1));
         storage.put("total_coins", JSON.stringify(totalCoins + coins));
+
+
     }
 
-    getReward(ln, round) {
+    getReward(ln, round, height, total_number) {
         const y = new Int64(100);
         const x = new Int64(95);
 
@@ -78,8 +80,8 @@ class Contract {
         }
 
         let result = {
-            number: this.lastLuckyBlock,
-            user_number: this.userNumber,
+            number: height,
+            user_number: total_number,
             k_number: kNum,
             total_coins : tc,
             records : []
