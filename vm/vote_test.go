@@ -448,8 +448,6 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJSWithAuth("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[10]), testID[11])
 		So(r.Status.Message, ShouldContainSubstring, "can't unregist")
 
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19926)
-
 		// test bonus
 		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
 		trx2, err = MakeTx(act2)
@@ -462,8 +460,8 @@ func TestJS_Vote(t *testing.T) {
 		}
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000881055)
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 20012)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000880240)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 20092)
 		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
 
 		trx2, err = MakeTx(act2)
@@ -477,7 +475,7 @@ func TestJS_Vote(t *testing.T) {
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 0)
 		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 116)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000900244)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000899509)
 	})
 
 }
