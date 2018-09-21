@@ -44,7 +44,7 @@ class Contract {
                 storage.put("last_lucky_block", JSON.stringify(bn));
                 const round = JSON.parse(storage.get("round"));
 
-                this.getReward(bn % 10, round, bn, userNumber);
+                this.getReward(bn % 10, round, bn, userNumber + 1);
                 storage.put("user_number", JSON.stringify(0));
                 storage.put("total_coins", JSON.stringify(0));
                 this.clearUserValue();
