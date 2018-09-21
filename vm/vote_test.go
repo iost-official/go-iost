@@ -236,10 +236,11 @@ func TestJS_Vote(t *testing.T) {
 			t.Fatal(r.Status.Message)
 		}
 
-		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
-			`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
-			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
-			`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9"]`)
+		// 0, 6, 2, 12, 8, 10, 4
+		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",` +
+			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY",` +
+			`"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",` +
+			`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs"]`)
 
 		bh = &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -307,6 +308,7 @@ func TestJS_Vote(t *testing.T) {
 		// stat, 1 producer become pending
 		t.Log("time of stat", watchTime(func() {
 			r = js.TestJS("Stat", `[]`)
+			// 14, 16, 18 get score, 18 in, 4 out
 		}))
 		So(r.Status.Message, ShouldEqual, "")
 
@@ -329,11 +331,12 @@ func TestJS_Vote(t *testing.T) {
 		js.NewBlock(bh)
 
 		r = js.TestJS("Stat", `[]`)
+		// 4, 14 get score, 14 in, 10 out
 		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB",`+
 			`"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4","IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
-			`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
-			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh"]`)
+			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY",`+
+			`"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh"]`)
 
 		r = js.TestJSWithAuth("LogInProducer", fmt.Sprintf(`["%v"]`, testID[16]), testID[17])
 		So(r.Status.Message, ShouldEqual, "")
@@ -347,6 +350,7 @@ func TestJS_Vote(t *testing.T) {
 		}
 		js.NewBlock(bh)
 		r = js.TestJS("Stat", `[]`)
+		// 4, 10, 16 get score, 16 in, 8 out
 		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[16])
 
@@ -358,8 +362,9 @@ func TestJS_Vote(t *testing.T) {
 		}
 		js.NewBlock(bh)
 		r = js.TestJS("Stat", `[]`)
+		// 4, 8, 10 get score, 4 in, 12 out
 		So(r.Status.Message, ShouldEqual, "")
-		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[12])
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[4])
 
 		bh = &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -369,6 +374,7 @@ func TestJS_Vote(t *testing.T) {
 		}
 		js.NewBlock(bh)
 		r = js.TestJS("Stat", `[]`)
+		// 8, 10, 12 get score, 10 in, 2 out
 		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[10])
 
@@ -382,6 +388,7 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJS("Stat", `[]`)
 		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[8])
+		So(js.ReadDB("pendingProducerList"), ShouldNotContainSubstring, testID[6])
 
 		bh = &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -392,7 +399,7 @@ func TestJS_Vote(t *testing.T) {
 		js.NewBlock(bh)
 		r = js.TestJS("Stat", `[]`)
 		So(r.Status.Message, ShouldEqual, "")
-		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[6])
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[12])
 
 		bh = &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -441,8 +448,6 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJSWithAuth("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[10]), testID[11])
 		So(r.Status.Message, ShouldContainSubstring, "can't unregist")
 
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19662)
-
 		// test bonus
 		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
 		trx2, err = MakeTx(act2)
@@ -455,8 +460,8 @@ func TestJS_Vote(t *testing.T) {
 		}
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000883675)
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19748)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000880240)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 20092)
 		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
 
 		trx2, err = MakeTx(act2)
@@ -470,7 +475,7 @@ func TestJS_Vote(t *testing.T) {
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 0)
 		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 116)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000902600)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000899509)
 	})
 
 }

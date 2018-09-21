@@ -305,6 +305,7 @@ class VoteContract {
                 pro.online === true) {
                 preList.push({
                     "key": key,
+                    "prior": 0,
                     "votes": pro.votes,
                     "score": pro.score
                 });
@@ -322,7 +323,15 @@ class VoteContract {
 
 		// sort according to score in reversed order
 		const scoreCmp = function(a, b) {
-			return b.score - a.score;
+			if (b.score != a.score) {
+			    return b.score - a.score;
+			} else if (b.prior != a.prior) {
+			    return b.prior - a.prior;
+			} else if (b.key < a.key) {
+			    return 1;
+			} else {
+			    return -1;
+			}
 		};
 		preList.sort(scoreCmp);
 
@@ -334,6 +343,7 @@ class VoteContract {
 		    const x = pendingProducerList[key];
 			oldPreList.push({
 				"key": x,
+                "prior": 1,
 				"score": this._mapGet("producerTable", x).score
 			});
 		}
