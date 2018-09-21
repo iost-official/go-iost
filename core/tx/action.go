@@ -4,11 +4,11 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// Action 的实现
+// Action implement
 type Action struct {
-	Contract   string // 合约地址，为空则视为调用系统合约
-	ActionName string // 方法名称
-	Data       string // json
+	Contract   string // contract name
+	ActionName string // method name of contract
+	Data       string // parameters of method, with json format
 }
 
 // NewAction constructor of Action
