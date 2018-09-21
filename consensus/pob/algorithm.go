@@ -27,6 +27,7 @@ var (
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
+	txLimit        = 3000
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
@@ -92,6 +93,9 @@ L:
 				}
 			} else {
 				delList = append(delList, t)
+			}
+			if len(blk.Txs) >= txLimit {
+				break L
 			}
 			step2 := time.Now()
 			t, ok = txIter.Next()
