@@ -93,7 +93,7 @@ class Contract {
             if( i === ln) {
                 table = winTable;
                 table.forEach(function (record) {
-                    const reward = (tc.multi(record.coins.div(100000000)).div(totalVal.div(100000000)));
+                    const reward = (tc.multi(record.coins/ 100000000).div(totalVal/ 100000000));
                     BlockChain.withdraw(record.account, reward);
                     record.reward = reward.toString();
                     result.records.push(record)
