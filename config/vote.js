@@ -322,7 +322,15 @@ class VoteContract {
 
 		// sort according to score in reversed order
 		const scoreCmp = function(a, b) {
-			return b.score - a.score;
+			if (b.score > a.score) {
+			    return 1;
+            } else if (b.score < a.score) {
+			    return -1;
+            } else if (b.key < a.key) {
+			    return 1;
+            } else {
+			    return -1;
+            }
 		};
 		preList.sort(scoreCmp);
 
