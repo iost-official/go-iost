@@ -74,7 +74,7 @@ var compileCmd = &cobra.Command{
 				fmt.Println(err.Error())
 				return
 			}
-			fmt.Println("Sucessfully reset contract path", setContractPath)
+			fmt.Println("Successfully reset contract path", setContractPath)
 			return
 		}
 
@@ -92,7 +92,7 @@ var compileCmd = &cobra.Command{
 				fmt.Println(err.Error())
 				return
 			}
-			fmt.Println("Sucessfully set contract path to: ", setContractPath)
+			fmt.Println("Successfully set contract path to: ", setContractPath)
 			return
 		}
 
