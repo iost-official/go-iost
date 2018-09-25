@@ -97,7 +97,7 @@ var compileCmd = &cobra.Command{
 		}
 
 		if len(args) < 1 {
-			fmt.Println(`Error: source code file or abi file not given`)
+			fmt.Println(`Error: source code file not given`)
 			return
 		}
 		codePath := args[0]
@@ -107,14 +107,23 @@ var compileCmd = &cobra.Command{
 			return
 		}
 		code := string(fd)
-		abiPath := generateABI(codePath)
+
+		var abiPath string
+
+		if genABI {
+			abiPath = generateABI(codePath)
+			return
+		} else if len(args) < 2 {
+			fmt.Println(`Error: source code file or abi file not given`)
+			return
+		} else {
+			abiPath = args[1]
+			fmt.Println(args)
+
+		}
 
 		if abiPath == "" {
 			fmt.Println("Failed to Gen ABI!")
-			return
-		}
-
-		if genABI {
 			return
 		}
 
