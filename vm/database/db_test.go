@@ -37,6 +37,7 @@ func TestHandler_Put(t *testing.T) {
 		return nil
 	})
 	v.Put("hello", "world")
+	v.Commit()
 
 	mockMVCC.EXPECT().Put("state", "m-hello-1", Any()).DoAndReturn(func(table string, key string, value string) error {
 		if !(table == "state" && key == "m-hello-1" && value == "world") {
@@ -54,6 +55,7 @@ func TestHandler_Put(t *testing.T) {
 	mockMVCC.EXPECT().Get("state", "m-hello").Return("", errors.New("not found"))
 
 	v.MPut("hello", "1", "world")
+	v.Commit()
 }
 
 func TestHandler_Get(t *testing.T) {

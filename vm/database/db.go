@@ -13,7 +13,8 @@ type Visitor struct {
 // NewVisitor get a visitor of a DB, with cache length determined
 func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 	db := newChainbaseAdapter(cb)
-	cachedDB := NewLRU(cacheLength, db)
+	lruDB := NewLRU(cacheLength, db)
+	cachedDB := NewWriteCache(lruDB)
 	v := &Visitor{
 		BasicHandler:    BasicHandler{cachedDB},
 		MapHandler:      MapHandler{cachedDB},
@@ -21,6 +22,6 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 		CoinHandler:     CoinHandler{cachedDB},
 		BalanceHandler:  BalanceHandler{cachedDB},
 	}
-	v.RollbackHandler = newRollbackHandler(cb, cachedDB)
+	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
 	return v
 }

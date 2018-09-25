@@ -4,7 +4,6 @@ type database interface {
 	Get(key string) (value string)
 	Put(key, value string)
 	Has(key string) bool
-	Keys(prefix string) []string
 	Del(key string)
 }
 
@@ -41,11 +40,12 @@ func (c *chainbaseAdapter) Has(key string) bool {
 	}
 	return ok
 }
-func (c *chainbaseAdapter) Keys(prefix string) []string {
-	var rtn []string
-	rtn, c.err = c.cb.Keys(StateTable, prefix)
-	return rtn
-}
+
+//func (c *chainbaseAdapter) Keys(prefix string) []string {
+//	var rtn []string
+//	rtn, c.err = c.cb.Keys(StateTable, prefix)
+//	return rtn
+//}
 
 func (c *chainbaseAdapter) Del(key string) {
 	c.err = c.cb.Del(StateTable, key)

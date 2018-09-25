@@ -8,7 +8,6 @@ type IMultiValue interface {
 	Put(table string, key string, value string) error
 	Del(table string, key string) error
 	Has(table string, key string) (bool, error)
-	Keys(table string, prefix string) ([]string, error)
 	Commit()
 	Rollback()
 }
