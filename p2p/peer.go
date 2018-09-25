@@ -29,7 +29,7 @@ const (
 
 	msgChanSize = 1024
 
-	maxStreamCount = 8
+	maxStreamCount = 4
 )
 
 // Peer represents a neighbor which we connect directily.
@@ -248,11 +248,12 @@ func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool
 			return ErrDuplicateMessage
 		}
 	}
-	switch mp {
-	case UrgentMessage:
-		p.urgentMsgCh <- msg
-	case NormalMessage:
-		p.normalMsgCh <- msg
+	ch := p.urgentMsgCh
+	if mp == NormalMessage {
+		ch = p.normalMsgCh
+	}
+	select {
+	case ch <- msg:
 	default:
 		ilog.Errorf("sending message failed. channel is full. messagePriority=%d", mp)
 		return ErrMessageChannelFull

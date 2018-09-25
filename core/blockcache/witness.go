@@ -9,6 +9,7 @@ import (
 	"sync"
 )
 
+// WitnessList is the implementation of WitnessList
 type WitnessList struct {
 	activeWitnessList    []string
 	pendingWitnessList   []string
@@ -18,8 +19,8 @@ type WitnessList struct {
 
 type witInfo struct {
 	Loc    string `json:"loc"`
-	Url    string `json:"url"`
-	NetId  string `json:"netId"`
+	URL    string `json:"url"`
+	NetID  string `json:"netId"`
 	Online bool   `json:"online"`
 	Score  int64  `json:"score"`
 	Votes  int64  `json:"votes"`
@@ -50,19 +51,19 @@ func (wl *WitnessList) Active() []string {
 	return wl.activeWitnessList
 }
 
-// SetPendingNum get block number of pending witness
+// PendingNum get block number of pending witness
 func (wl *WitnessList) PendingNum() int64 {
 	return wl.pendingWitnessNumber
 }
 
-// NetId get net id
-func (wl *WitnessList) NetId() []string {
+// NetID get net id
+func (wl *WitnessList) NetID() []string {
 	r := make([]string, 0)
 	wl.witnessInfo.Range(func(key, value interface{}) bool {
 		if value == nil {
 			return true
 		}
-		r = append(r, value.(*witInfo).NetId)
+		r = append(r, value.(*witInfo).NetID)
 		return true
 	})
 	return r
@@ -96,7 +97,7 @@ func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
 	return nil
 }
 
-// UpdatePending update pending witness list
+// UpdateInfo update pending witness list
 func (wl *WitnessList) UpdateInfo(mv db.MVCCDB) error {
 
 	wl.witnessInfo.Range(func(key, value interface{}) bool {
@@ -120,10 +121,12 @@ func (wl *WitnessList) UpdateInfo(mv db.MVCCDB) error {
 	return nil
 }
 
+// LibWitnessHandle is set active list
 func (wl *WitnessList) LibWitnessHandle() {
 	wl.SetActive(wl.Pending())
 }
 
+// CopyWitness is copy witness
 func (wl *WitnessList) CopyWitness(n *BlockCacheNode) {
 	if n == nil {
 		return

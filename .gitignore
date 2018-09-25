@@ -201,7 +201,8 @@ core/block/txDB/
 bak/
 blockDB/
 
-dump.rdb
+p2p/priv.key
+storage/
 iserver/iserver
 iserver/blockDB/
 iserver/netpath2/
@@ -246,6 +247,8 @@ scripts/sendtx/iwallet
 cmd/playground/contract/node_modules/
 cmd/playground/contract/package-lock.json
 vm/test_data/lucky_bet.js.after
+
+*.temp
 
 /config/StatePoolDB/
 /config/levelDB/

@@ -48,30 +48,18 @@ func TestJS1_Vote1(t *testing.T) {
 	js.SetAPI("Stat")
 	js.SetAPI("Init")
 	for i := 0; i <= 18; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7)
+		js.vi.SetBalance(testID[i], 5e+7 * 1e8)
 	}
 	js.vi.Commit()
 	r := js.DoSet()
 	if r.Status.Code != 0 {
 		t.Fatal(r.Status.Message)
 	}
-	//r = js.TestJS("init", `[]`)
-	//if r.Status.Code != 0 {
-	//	t.Fatal(r.Status.Message)
-	//}
 	for i := 6; i <= 18; i += 2 {
-		if int64(50000000) != js.vi.Balance(testID[i]) {
+		if int64(50000000 * 1e8) != js.vi.Balance(testID[i]) {
 			t.Fatal("error in balance :", i, js.vi.Balance(testID[i]))
 		}
 	}
-
-	//keys := []string{
-	//	"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
-	//	"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
-	//	"producerTable",
-	//	"voteTable",
-	//}
-	////js.FlushDB(t, keys)
 
 	// test register, should success
 	r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
@@ -101,42 +89,7 @@ func TestJS1_Vote1(t *testing.T) {
 	}
 }
 
-func TestJS_VoteServi(t *testing.T) {
-	ilog.Stop()
-
-	js := NewJSTester(t)
-	defer js.Clear()
-	lc, err := ReadFile("../config/vote.js")
-	if err != nil {
-		t.Fatal(err)
-	}
-	js.SetJS(string(lc))
-	js.SetAPI("RegisterProducer", "string", "string", "string", "string")
-	js.SetAPI("UpdateProducer", "string", "string", "string", "string")
-	js.SetAPI("LogInProducer", "string")
-	js.SetAPI("LogOutProducer", "string")
-	js.SetAPI("UnregisterProducer", "string")
-	js.SetAPI("Vote", "string", "string", "number")
-	js.SetAPI("Unvote", "string", "string", "number")
-	js.SetAPI("Stat")
-	js.SetAPI("Init")
-	for i := 0; i <= 18; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7)
-	}
-	js.vi.Commit()
-	r := js.DoSet()
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
-	}
-	//keys := []string{
-	//	"producerRegisterFee", "producerNumber", "preProducerThreshold", "preProducerMap",
-	//	"voteLockTime", "currentProducerList", "pendingProducerList", "pendingBlockNumber",
-	//	"producerTable",
-	//	"voteTable",
-	//}
-	////js.FlushDB(t, keys)
-}
-
+//nolint
 func TestJS_Vote(t *testing.T) {
 	//t.Skip()
 	Convey("test of vote", t, func() {
@@ -178,7 +131,7 @@ func TestJS_Vote(t *testing.T) {
 		js.SetAPI("Stat")
 		js.SetAPI("InitProducer", "string")
 		for i := 0; i <= 18; i += 2 {
-			js.vi.SetBalance(testID[i], 5e+7)
+			js.vi.SetBalance(testID[i], 5e+7 * 1e8)
 		}
 		js.vi.Commit()
 		r = js.DoSet()
@@ -283,10 +236,11 @@ func TestJS_Vote(t *testing.T) {
 			t.Fatal(r.Status.Message)
 		}
 
-		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
-			`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
-			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
-			`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9"]`)
+		// 0, 6, 2, 12, 8, 10, 4
+		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",` +
+			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY",` +
+			`"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",` +
+			`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs"]`)
 
 		bh = &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -354,6 +308,7 @@ func TestJS_Vote(t *testing.T) {
 		// stat, 1 producer become pending
 		t.Log("time of stat", watchTime(func() {
 			r = js.TestJS("Stat", `[]`)
+			// 14, 16, 18 get score, 18 in, 4 out
 		}))
 		So(r.Status.Message, ShouldEqual, "")
 
@@ -376,11 +331,12 @@ func TestJS_Vote(t *testing.T) {
 		js.NewBlock(bh)
 
 		r = js.TestJS("Stat", `[]`)
+		// 4, 14 get score, 14 in, 10 out
 		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB",`+
 			`"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4","IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
-			`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
-			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh"]`)
+			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY",`+
+			`"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh"]`)
 
 		r = js.TestJSWithAuth("LogInProducer", fmt.Sprintf(`["%v"]`, testID[16]), testID[17])
 		So(r.Status.Message, ShouldEqual, "")
@@ -394,6 +350,7 @@ func TestJS_Vote(t *testing.T) {
 		}
 		js.NewBlock(bh)
 		r = js.TestJS("Stat", `[]`)
+		// 4, 10, 16 get score, 16 in, 8 out
 		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[16])
 
@@ -405,8 +362,9 @@ func TestJS_Vote(t *testing.T) {
 		}
 		js.NewBlock(bh)
 		r = js.TestJS("Stat", `[]`)
+		// 4, 8, 10 get score, 4 in, 12 out
 		So(r.Status.Message, ShouldEqual, "")
-		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[12])
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[4])
 
 		bh = &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -416,6 +374,7 @@ func TestJS_Vote(t *testing.T) {
 		}
 		js.NewBlock(bh)
 		r = js.TestJS("Stat", `[]`)
+		// 8, 10, 12 get score, 10 in, 2 out
 		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[10])
 
@@ -429,6 +388,7 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJS("Stat", `[]`)
 		So(r.Status.Message, ShouldEqual, "")
 		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[8])
+		So(js.ReadDB("pendingProducerList"), ShouldNotContainSubstring, testID[6])
 
 		bh = &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -439,7 +399,7 @@ func TestJS_Vote(t *testing.T) {
 		js.NewBlock(bh)
 		r = js.TestJS("Stat", `[]`)
 		So(r.Status.Message, ShouldEqual, "")
-		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[6])
+		So(js.ReadDB("pendingProducerList"), ShouldContainSubstring, testID[12])
 
 		bh = &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -470,7 +430,7 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
 		So(r.Status.Message, ShouldEqual, "")
 
-		js.vi.SetBalance(testID[2], 5e+7)
+		js.vi.SetBalance(testID[2], 5e+7 * 1e8)
 		r = js.TestJSWithAuth("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 21000001), testID[3])
 		So(r.Status.Message, ShouldEqual, "")
 
@@ -488,8 +448,6 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJSWithAuth("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[10]), testID[11])
 		So(r.Status.Message, ShouldContainSubstring, "can't unregist")
 
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19510)
-
 		// test bonus
 		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
 		trx2, err = MakeTx(act2)
@@ -502,8 +460,8 @@ func TestJS_Vote(t *testing.T) {
 		}
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 39884142)
-		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 19596)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000880240)
+		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 20092)
 		act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
 
 		trx2, err = MakeTx(act2)
@@ -517,7 +475,7 @@ func TestJS_Vote(t *testing.T) {
 
 		So(js.vi.Servi(testID[0]), ShouldEqual, 0)
 		So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 116)
-		So(js.vi.Balance(testID[0]), ShouldEqual, 39902915)
+		So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000899509)
 	})
 
 }

@@ -30,7 +30,7 @@ import (
 type GRPCServer struct {
 	bc         blockcache.BlockCache
 	p2pService p2p.Service
-	txdb       tx.TxDB
+	txdb       global.TxDB
 	txpool     txpool.TxPool
 	bchain     block.Chain
 	forkDB     db.MVCCDB
@@ -224,8 +224,15 @@ func (s *GRPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateR
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash()))
+
+	if key.Field == "" {
+		return &GetStateRes{
+			Value: s.visitor.BasicHandler.Get(key.Key),
+		}, nil
+	}
+
 	return &GetStateRes{
-		Value: s.visitor.BasicHandler.Get(key.Key),
+		Value: s.visitor.MapHandler.MGet(key.Key, key.Field),
 	}, nil
 }
 
@@ -274,6 +281,8 @@ func (s *GRPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTx
 		return nil, fmt.Errorf("tx err:%v", "DupError")
 	case txpool.GasPriceError:
 		return nil, fmt.Errorf("tx err:%v", "GasPriceError")
+	case txpool.CacheFullError:
+		return nil, fmt.Errorf("tx err:%v", "CacheFullError")
 	default:
 	}
 	res := SendRawTxRes{}

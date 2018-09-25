@@ -29,14 +29,14 @@ func TestTXRMerkleTreeDB(t *testing.T) {
 		if err != nil {
 			log.Panic(err)
 		}
-		var m_read *TXRMerkleTree
-		m_read, err = TXRMTDB.Get(32342)
+		var mRead *TXRMerkleTree
+		mRead, err = TXRMTDB.Get(32342)
 		if err != nil {
 			log.Panic(err)
 		}
-		convey.So(reflect.DeepEqual(m.Tx2Txr, m_read.Tx2Txr), convey.ShouldBeTrue)
+		convey.So(reflect.DeepEqual(m.Tx2Txr, mRead.Tx2Txr), convey.ShouldBeTrue)
 		for i := 0; i < 16; i++ {
-			convey.So(bytes.Equal(m.Mt.HashList[i], m_read.Mt.HashList[i]), convey.ShouldBeTrue)
+			convey.So(bytes.Equal(m.Mt.HashList[i], mRead.Mt.HashList[i]), convey.ShouldBeTrue)
 		}
 		cmd := exec.Command("rm", "-r", "./TXRMerkleTreeDB")
 		cmd.Run()

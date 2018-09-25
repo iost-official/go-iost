@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool/mock"
 	"github.com/iost-official/Go-IOS-Protocol/crypto"
 	"github.com/iost-official/Go-IOS-Protocol/db"
@@ -62,13 +63,14 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	vi.Commit()
 	stateDB.Tag(string(topBlock.HeadHash()))
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
-	txsList := make([]*tx.Tx, 0)
-	for i := 0; i < 8000; i++ {
+	pendingTx := txpool.NewSortedTxMap()
+	for i := 0; i < 10000; i++ {
 		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 		trx, _ := MakeTx(act)
-		txsList = append(txsList, trx)
+		pendingTx.Add(trx)
 	}
-	mockTxPool.EXPECT().PendingTxs(gomock.Any()).Return(txsList, &blockcache.BlockCacheNode{Block: topBlock}, nil).AnyTimes()
+	mockTxPool.EXPECT().TxIterator().Return(pendingTx.Iter(), &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
+	mockTxPool.EXPECT().TxTimeOut(gomock.Any()).Return(false).AnyTimes()
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
 		generateBlock(account, mockTxPool, stateDB)

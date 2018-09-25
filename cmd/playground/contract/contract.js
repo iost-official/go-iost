@@ -41,10 +41,7 @@ function isPublicMethod(def) {
 function genAbi(def) {
 	var abi = {
 		"name": def.key.name,
-		"args": new Array(def.value.params.length).fill("string"),
-		"payment": 0,
-		"cost_limit": new Array(3).fill(1),
-		"price_limit": 1
+		"args": new Array(def.value.params.length).fill("string")
 	};
 	return abi;
 }
@@ -55,20 +52,20 @@ function genAbiArr(stat) {
 		console.error("invalid statment for generate abi. stat = " + stat);
 		return null;
 	}
+	var initFound = false;
 	for (var i in stat.body.body) {
 		var def = stat.body.body[i];
 		if (def.type === "MethodDefinition" && isPublicMethod(def)) {
-			abiArr.push(genAbi(def));
+			if (def.key.name == "constructor") {
+			} else if (def.key.name == "init") {
+				initFound = true;
+			} else {
+				abiArr.push(genAbi(def));
+			}
 		}
 	}
-	var constructorFound = false;
-	for (var i in abiArr) {
-		if (abiArr[i].name == "constructor") {
-			constructorFound = true;
-		}
-	}
-	if (!constructorFound) {
-		console.error("constructor not found!");
+	if (!initFound) {
+		console.error("init not found!");
 		return null;
 	}
 	return abiArr;
@@ -123,6 +120,7 @@ function processContract(source) {
 
 	return [newSource, abiStr]
 }
+module.exports = processContract;
 
 
 var fs = require('fs');

@@ -85,6 +85,16 @@ func (mr *MockTxPoolMockRecorder) DelTx(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DelTx", reflect.TypeOf((*MockTxPool)(nil).DelTx), arg0)
 }
 
+// DelTxList mocks base method
+func (m *MockTxPool) DelTxList(arg0 []*tx.Tx) {
+	m.ctrl.Call(m, "DelTxList", arg0)
+}
+
+// DelTxList indicates an expected call of DelTxList
+func (mr *MockTxPoolMockRecorder) DelTxList(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DelTxList", reflect.TypeOf((*MockTxPool)(nil).DelTxList), arg0)
+}
+
 // ExistTxs mocks base method
 func (m *MockTxPool) ExistTxs(arg0 []byte, arg1 *block.Block) (txpool.FRet, error) {
 	ret := m.ctrl.Call(m, "ExistTxs", arg0, arg1)

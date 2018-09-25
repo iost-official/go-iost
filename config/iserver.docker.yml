@@ -12,19 +12,19 @@ vm:
   jspath: vm/v8vm/v8/libjs/
   loglevel: ""
 db:
-  ldbpath: storage/
+  ldbpath: /var/lib/iserver/storage/
 p2p:
   listenaddr: 0.0.0.0:30000
   seednodes:
   chainid: 1024
   version: 1
-  datapath: p2p/
+  datapath: /var/lib/iserver/p2p/
 rpc:
   jsonport: 30001
   grpcport: 30002
 log:
   filelog:
-    path: logs/
+    path: /var/lib/iserver/logs/
     level: info
     enable: true
   consolelog:
@@ -32,9 +32,9 @@ log:
     enable: true
   asyncwrite: true
 metrics:
-  pushAddr:
-  username:
-  password:
+  pushaddr: 
+  username: 
+  password: 
   enable: false
   id: iost-testnet:visitor00
 debug:

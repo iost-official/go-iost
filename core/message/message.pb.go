@@ -844,6 +844,17 @@ func (m *BlockHashQuery) Unmarshal(dAtA []byte) error {
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.Nums) == 0 {
+					m.Nums = make([]int64, 0, elementCount)
+				}
 				for iNdEx < postIndex {
 					var v int64
 					for shift := uint(0); ; shift += 7 {

@@ -27,9 +27,11 @@ var (
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
+	txLimit        = 2000 //limit it to 2000
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+
 	ilog.Info("generate Block start")
 	limitTime := time.NewTimer(common.SlotLength / 3 * time.Second)
 	txIter, head := txPool.TxIterator()
@@ -69,7 +71,7 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		blk.Receipts = append(blk.Receipts, receipt)
 	}
 	t, ok := txIter.Next()
-
+	delList := []*tx.Tx{}
 	var vmExecTime, iterTime, i, j int64
 L:
 	for ok {
@@ -85,11 +87,15 @@ L:
 				if receipt, err := engine.Exec(t); err == nil {
 					blk.Txs = append(blk.Txs, t)
 					blk.Receipts = append(blk.Receipts, receipt)
-					ilog.Debug(err, receipt)
 				} else {
 					ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
-					txPool.DelTx(t.Hash())
+					delList = append(delList, t)
 				}
+			} else {
+				delList = append(delList, t)
+			}
+			if len(blk.Txs) >= txLimit {
+				break L
 			}
 			step2 := time.Now()
 			t, ok = txIter.Next()
@@ -98,6 +104,7 @@ L:
 			iterTime += step3.Sub(step2).Nanoseconds()
 		}
 	}
+
 	if i > 0 && j > 0 {
 		metricsVMTime.Set(float64(vmExecTime), nil)
 		metricsVMAvgTime.Set(float64(vmExecTime/j), nil)
@@ -120,7 +127,7 @@ L:
 
 	metricsGeneratedBlockCount.Add(1, nil)
 	metricsTxSize.Set(float64(len(blk.Txs)), nil)
-
+	go txPool.DelTxList(delList)
 	return &blk, nil
 }
 
@@ -144,6 +151,8 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	}
 
 	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
+			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, staticProperty.WitnessList)
 		return errWitness
 	}
 
@@ -186,7 +195,6 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
-	// bc.Flush(node) // debug do not delete this
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
 		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)

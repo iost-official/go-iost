@@ -5,12 +5,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/common"
 )
 
-/**
- * Describtion: tx
- * User: wangyu
- * Date: 18-7-30
- */
-
+// StatusCode status code of transaction execution result
 type StatusCode int32
 
 // tx execution result
@@ -18,22 +13,26 @@ const (
 	Success StatusCode = iota
 	ErrorGasRunOut
 	ErrorBalanceNotEnough
-	ErrorParamter         // paramter mismatch when calling function
+	ErrorParamter         // parameter mismatch when calling function
 	ErrorRuntime          // runtime error
 	ErrorTxFormat         // tx format errors
 	ErrorDuplicateSetCode // more than one set code action in a tx
 	ErrorUnknown          // other errors
 )
 
+// Status status of transaction execution result, including code and message
 type Status struct {
 	Code    StatusCode
 	Message string
 }
 
+// ReceiptType type of single receipt
 type ReceiptType int32
 
 const (
+	// SystemDefined system receipt, recording info of calling a method
 	SystemDefined ReceiptType = iota
+	// UserDefined user defined receipt, usually a json string
 	UserDefined
 )
 
@@ -43,18 +42,17 @@ type Receipt struct {
 	Content string      // can be a raw string or a json string
 }
 
-// TxReceipt Transaction Receipt 实现
+// TxReceipt Transaction Receipt
 type TxReceipt struct {
 	TxHash   []byte
 	GasUsage int64
-	// 目前只收gas，这些可以先没有
 	/*
 		CpuTimeUsage    uint64
 		NetUsage    uint64
 		RAMUsage    uint64
 	*/
 	Status        Status
-	SuccActionNum int32 // 执行成功的 action 个数
+	SuccActionNum int32
 	Receipts      []Receipt
 }
 
@@ -73,6 +71,7 @@ func NewTxReceipt(txHash []byte) TxReceipt {
 	}
 }
 
+// ToTxReceiptRaw convert TxReceipt to proto buf data structure
 func (r *TxReceipt) ToTxReceiptRaw() *TxReceiptRaw {
 	tr := &TxReceiptRaw{
 		TxHash:   r.TxHash,
@@ -92,6 +91,7 @@ func (r *TxReceipt) ToTxReceiptRaw() *TxReceiptRaw {
 	return tr
 }
 
+// Encode TxReceipt as byte array
 func (r *TxReceipt) Encode() []byte {
 	b, err := proto.Marshal(r.ToTxReceiptRaw())
 	if err != nil {
@@ -100,6 +100,7 @@ func (r *TxReceipt) Encode() []byte {
 	return b
 }
 
+// FromTxReceiptRaw convert TxReceipt from proto buf data structure
 func (r *TxReceipt) FromTxReceiptRaw(tr *TxReceiptRaw) {
 	r.TxHash = tr.TxHash
 	r.GasUsage = tr.GasUsage
@@ -117,6 +118,7 @@ func (r *TxReceipt) FromTxReceiptRaw(tr *TxReceiptRaw) {
 	}
 }
 
+// Decode TxReceipt from byte array
 func (r *TxReceipt) Decode(b []byte) error {
 	tr := &TxReceiptRaw{}
 	err := proto.Unmarshal(b, tr)
@@ -127,7 +129,7 @@ func (r *TxReceipt) Decode(b []byte) error {
 	return nil
 }
 
-// hash
+// Hash return byte hash
 func (r *TxReceipt) Hash() []byte {
 	return common.Sha256(r.Encode())
 }
