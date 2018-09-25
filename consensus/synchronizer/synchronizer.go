@@ -675,7 +675,8 @@ func (dc *DownloadControllerImpl) OnTimeout(hash string, peerID p2p.PeerID) {
 	if hStateIF, ok := dc.hashState.Load(hash); ok {
 		hState, ok := hStateIF.(string)
 		if !ok {
-			dc.hashState.Delete(hash)
+			ilog.Errorf("get hash state error: %s", hash)
+			// dc.hashState.Delete(hash)
 		} else if hState != Done {
 			dc.hashState.Store(hash, Wait)
 		}

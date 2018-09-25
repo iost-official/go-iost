@@ -39,7 +39,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.iwallet.yaml)")
 
 	rootCmd.PersistentFlags().StringVarP(&dest, "dest", "d", "default", "Set destination of output file")
-	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30302", "Set server of this client")
+	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "Set server of this client")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
