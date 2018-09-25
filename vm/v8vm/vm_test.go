@@ -419,12 +419,12 @@ func TestEngine_Danger(t *testing.T) {
 	*/
 
 	_, _, err := vmPool.LoadAndCall(host, code, "visitUndefined")
-	if err == nil || !strings.Contains(err.Error(), "_default_name.js:13: TypeError: Cannot set property 'c' of undefined") {
+	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: TypeError: Cannot set property 'c' of undefined") {
 		t.Fatalf("LoadAndCall for should return error: TypeError: Cannot set property 'c' of undefined, but got %v\n", err)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "throw")
-	if err == nil || !strings.Contains(err.Error(), "test throw") {
+	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: test throw") {
 		t.Fatalf("LoadAndCall for should return error: test throw, but got %v\n", err)
 	}
 }
