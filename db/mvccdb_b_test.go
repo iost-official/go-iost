@@ -274,10 +274,10 @@ func BenchmarkMVCCDBGetAndPutAndCommitAndFlush(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		mvccdb.Get("table01", keys[i])
 		mvccdb.Put("table01", keys[i], values[i])
-		if i%100 == 99 {
+		if i%50 == 49 {
 			mvccdb.Commit()
 		}
-		if i%2000 == 1999 {
+		if i%2500 == 2499 {
 			tag := make([]byte, 32)
 			rand.Read(tag)
 			mvccdb.Tag(string(tag))
