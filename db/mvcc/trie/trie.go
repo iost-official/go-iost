@@ -13,14 +13,23 @@ const (
 type Node struct {
 	context  *Context
 	value    interface{}
-	children map[byte]*Node
+	keys     []byte
+	children []*Node
 }
 
 func (n *Node) get(key []byte, i int) *Node {
 	if i >= len(key) {
 		return n
 	}
-	child := n.children[key[i]]
+
+	var child *Node
+	for k := range n.keys {
+		if n.keys[k] == key[i] {
+			child = n.children[k]
+			break
+		}
+	}
+
 	if child == nil {
 		return nil
 	}
@@ -46,18 +55,28 @@ func (n *Node) put(key []byte, value interface{}, i int) *Node {
 		n.value = value
 		return n
 	}
-	child := n.children[key[i]]
+
+	var k int
+	var child *Node
+	for k = range n.keys {
+		if n.keys[k] == key[i] {
+			child = n.children[k]
+			break
+		}
+	}
+
 	if child == nil {
 		child = n.context.newNode()
-		n.children[key[i]] = child
+		n.keys = append(n.keys, key[i])
+		n.children = append(n.children, child)
 	}
 	if child.context == nil {
 		child = n.context.newNode()
-		n.children[key[i]] = child
+		n.children[k] = child
 	}
 	if child.context != n.context {
 		child = child.forkWithContext(n.context)
-		n.children[key[i]] = child
+		n.children[k] = child
 	}
 	return child.put(key, value, i+1)
 }
@@ -69,7 +88,8 @@ func (n *Node) forkWithContext(context *Context) *Node {
 		if v.context == nil {
 			continue
 		}
-		node.children[k] = v
+		node.keys = append(node.keys, n.keys[k])
+		node.children = append(node.children, v)
 	}
 	return node
 }
@@ -119,7 +139,8 @@ func (f *FreeList) newNode() *Node {
 	return &Node{
 		context:  nil,
 		value:    nil,
-		children: make(map[byte]*Node),
+		keys:     make([]byte, 0),
+		children: make([]*Node, 0),
 	}
 }
 
@@ -154,6 +175,7 @@ func (c *Context) newNode() *Node {
 func (c *Context) freeNode(n *Node) {
 	n.context = nil
 	n.value = nil
+	n.keys = nil
 	n.children = nil
 	c.freelist.freeNode(n)
 }
