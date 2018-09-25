@@ -25,9 +25,7 @@ func TestDownloadController(t *testing.T) {
 		So(err, ShouldBeNil)
 		Convey("Check OnRecvHash", func() {
 			dc.OnRecvHash("111", "aaa")
-			time.Sleep(100 * time.Millisecond)
 			dc.OnRecvHash("222", "bbb")
-			time.Sleep(100 * time.Millisecond)
 			dc.OnRecvHash("222", "ccc")
 			//dc.OnRecvBlock("123", "abc")
 			var hash string
