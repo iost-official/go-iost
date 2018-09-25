@@ -15,24 +15,30 @@ import (
 
 func TestDownloadController(t *testing.T) {
 	Convey("Test DownloadController", t, func() {
-		var dHash string
-		var dPID p2p.PeerID
+		dHash := make(chan string, 10)
+		dPID := make(chan p2p.PeerID, 10)
 		dc, err := NewDownloadController(func(hash string, peerID p2p.PeerID) {
-			dHash = hash
-			dPID = peerID
+			dHash <- hash
+			dPID <- peerID
 		})
 		dc.Start()
 		So(err, ShouldBeNil)
 		Convey("Check OnRecvHash", func() {
 			dc.OnRecvHash("111", "aaa")
-			time.Sleep(100 * time.Millisecond)
 			dc.OnRecvHash("222", "bbb")
-			time.Sleep(100 * time.Millisecond)
 			dc.OnRecvHash("222", "ccc")
 			//dc.OnRecvBlock("123", "abc")
-			time.Sleep(300 * time.Millisecond)
-			So(dHash, ShouldEqual, "222")
-			So(dPID, ShouldEqual, p2p.PeerID("bbb"))
+			var hash string
+			var PID p2p.PeerID
+			hash = <-dHash
+			PID = <-dPID
+			So(hash, ShouldEqual, "111")
+			So(PID, ShouldEqual, p2p.PeerID("aaa"))
+
+			hash = <-dHash
+			PID = <-dPID
+			So(hash, ShouldEqual, "222")
+			So(PID, ShouldEqual, p2p.PeerID("bbb"))
 		})
 		Convey("Stop DownloadLoop", func() {
 			dc.Stop()
