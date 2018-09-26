@@ -17,7 +17,7 @@ import (
 
 var (
 	// TODO: configurable
-	confirmNumber = 3
+	confirmNumber = 8
 	// SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
 	syncNumber int64 = 11
 

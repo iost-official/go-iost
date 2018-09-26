@@ -331,9 +331,6 @@ func (pm *PeerManager) DumpRoutingTable() {
 	for _, peerID := range pm.routingTable.ListPeers() {
 		for _, addr := range pm.peerStore.Addrs(peerID) {
 			line := fmt.Sprintf("%s/ipfs/%s\n", addr.String(), peerID.Pretty())
-			if strings.Index(line, "30000") == -1 {
-				continue
-			}
 			file.WriteString(line)
 		}
 	}
@@ -362,9 +359,6 @@ func (pm *PeerManager) LoadRoutingTable() {
 			break
 		}
 		if strings.HasPrefix(line, "#") {
-			continue
-		}
-		if strings.Index(line, "30000") == -1 {
 			continue
 		}
 		peerID, addr, err := parseMultiaddr(line[:len(line)-1])
@@ -556,9 +550,6 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 			}
 			maddrs := make([]multiaddr.Multiaddr, 0, len(peerInfo.Addrs))
 			for _, addr := range peerInfo.Addrs {
-				if strings.Index(addr, "30000") == -1 {
-					continue
-				}
 				a, err := multiaddr.NewMultiaddr(addr)
 				if err != nil {
 					ilog.Warnf("parse multiaddr failed. err=%v, addr=%v", err, addr)
