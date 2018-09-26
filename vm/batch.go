@@ -24,6 +24,7 @@ func NewBatch() *Batch {
 
 type TxSender interface {
 	Tx() *tx.Tx
+	Return(*tx.Tx)
 }
 
 type Maker struct {
@@ -32,7 +33,7 @@ type Maker struct {
 }
 
 func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.Duration, thread int) *Batch {
-	var mappers, txs, receipts sync.Map
+	var mappers, visitors, txs, receipts sync.Map
 
 	bvr := database.NewBatchVisitorRoot(10000, db)
 	for i := 0; i < thread; i++ {
@@ -53,15 +54,19 @@ func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.D
 				mappers.Store(i2, mapper)
 				txs.Store(i2, t)
 				receipts.Store(i2, tr)
+				visitors.Store(i2, vi)
 			} else {
 				mappers.Store(i2, nil)
-				txs.Store(i2, nil)
-				receipts.Store(i2, nil)
 			}
 		}()
 	}
 	m.wait.Wait()
-	ti := m.Resolve(mappers)
+	ti, td := m.Resolve(mappers)
+
+	for _, i := range td {
+		t, _ := txs.Load(i)
+		m.sender.Return(t.(*tx.Tx))
+	}
 
 	b := NewBatch()
 
@@ -70,11 +75,34 @@ func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.D
 		r, _ := receipts.Load(i)
 		b.Txs = append(b.Txs, t.(*tx.Tx))
 		b.Receipts = append(b.Receipts, r.(*tx.TxReceipt))
+		vi, _ := visitors.Load(i)
+		vi.(*database.Visitor).Commit()
 	}
 
 	return b
 }
 
-func (m *Maker) Resolve(mappers sync.Map) []int {
-	return nil
+func (m *Maker) Resolve(mappers sync.Map) (accept, drop []int) {
+	workMap := make(map[string]database.Access)
+	accept = make([]int, 0)
+	drop = make([]int, 0)
+	mappers.Range(func(key, value interface{}) bool {
+		if value == nil {
+			return true
+		}
+		for k, v := range value.(map[string]database.Access) {
+			x, ok := workMap[k]
+			switch {
+			case !ok:
+				workMap[k] = v
+			case x == database.Read && v == database.Read:
+			case x == database.Write || v == database.Write:
+				drop = append(drop, key.(int))
+				return true
+			}
+		}
+		accept = append(accept, key.(int))
+		return true
+	})
+	return
 }
