@@ -30,7 +30,7 @@ type message struct {
 func newMessage(content string, from string) *message {
 	id, _ := uuid.NewV4()
 	return &message{
-		ID:      string(id.Bytes()),
+		ID:      id.String(),
 		Content: content,
 		From:    from,
 	}
