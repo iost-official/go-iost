@@ -17,15 +17,16 @@ import (
 
 var (
 	// TODO: configurable
-	confirmNumber = 3
+	confirmNumber = 8
 	// SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
 	syncNumber int64 = 11
 
 	maxBlockHashQueryNumber int64 = 100
 	retryTime                     = 5 * time.Second
 	syncBlockTimeout              = 5 * time.Second
-	syncHeightTime                = 22 * 3 * time.Second
-	heightTimeout           int64 = 10 * 22 * 3
+	syncHeightTime                = 3 * time.Second
+	heightAvailableTime     int64 = 22 * 3
+	heightTimeout           int64 = 100 * 22 * 3
 )
 
 type callbackfunc = func(hash string, peerID p2p.PeerID)
@@ -182,8 +183,8 @@ func (sy *SyncImpl) CheckSync() bool {
 	now := time.Now().Unix()
 	sy.heightMap.Range(func(k, v interface{}) bool {
 		sh, ok := v.(*message.SyncHeight)
-		if !ok || sh.Time+heightTimeout < now {
-			if sh.Time+heightTimeout*100 < now {
+		if !ok || sh.Time+heightAvailableTime < now {
+			if sh.Time+heightTimeout < now {
 				sy.heightMap.Delete(k)
 			}
 			return true
