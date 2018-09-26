@@ -29,6 +29,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 
 	pm := NewMonitor()
 	h := host.NewHost(ctx, vi, pm, nil)
+	h.Context().Set("stack_height", 0)
 
 	code := &contract.Contract{
 		ID: "iost.system",
