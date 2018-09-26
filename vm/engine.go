@@ -184,8 +184,6 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 			ilog.Error(err.Error())
 			return nil, err
 		}
-	} else {
-		e.ho.DB().Commit()
 	}
 
 	return &txr, nil
@@ -209,7 +207,13 @@ func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
 	}
 
-	return e.exec(tx0)
+	tr, err := e.exec(tx0)
+	if err != nil {
+		e.ho.DB().Rollback()
+	} else {
+		e.ho.DB().Commit()
+	}
+	return tr, err
 }
 func (e *engineImpl) GC() {
 	e.logger.Stop()
