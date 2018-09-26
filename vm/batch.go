@@ -51,7 +51,7 @@ func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.D
 			tr, err := e.Exec(t, limit)
 
 			if err == nil {
-				mappers.Store(i2, mapper)
+				mappers.Store(i2, mapper.Map())
 				txs.Store(i2, t)
 				receipts.Store(i2, tr)
 				visitors.Store(i2, vi)
@@ -61,7 +61,7 @@ func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.D
 		}()
 	}
 	m.wait.Wait()
-	ti, td := m.Resolve(mappers)
+	ti, td := Resolve(mappers)
 
 	for _, i := range td {
 		t, _ := txs.Load(i)
@@ -82,7 +82,7 @@ func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.D
 	return b
 }
 
-func (m *Maker) Resolve(mappers sync.Map) (accept, drop []int) {
+func Resolve(mappers sync.Map) (accept, drop []int) {
 	workMap := make(map[string]database.Access)
 	accept = make([]int, 0)
 	drop = make([]int, 0)

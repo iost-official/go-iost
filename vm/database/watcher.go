@@ -13,7 +13,9 @@ type Watcher struct {
 }
 
 func (r *Watcher) Get(key string) (value string) {
-	r.m[key] = Read
+	if r.m[key] != Write {
+		r.m[key] = Read
+	}
 	return r.database.Get(key)
 }
 func (r *Watcher) Put(key, value string) {
@@ -21,11 +23,13 @@ func (r *Watcher) Put(key, value string) {
 	r.database.Put(key, value)
 }
 func (r *Watcher) Del(key string) {
-	r.m[key] = Read
+	r.m[key] = Write
 	r.database.Del(key)
 }
 func (r *Watcher) Has(key string) bool {
-	r.m[key] = Read
+	if r.m[key] != Write {
+		r.m[key] = Read
+	}
 	return r.database.Has(key)
 }
 func (r *Watcher) Map() map[string]Access {
