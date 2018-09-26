@@ -84,13 +84,12 @@ func (n *Node) put(key []byte, value interface{}, i int) *Node {
 func (n *Node) forkWithContext(context *Context) *Node {
 	node := context.newNode()
 	node.value = n.value
-	for k, v := range n.children {
-		if v.context == nil {
-			continue
-		}
-		node.keys = append(node.keys, n.keys[k])
-		node.children = append(node.children, v)
-	}
+
+	node.keys = make([]byte, len(n.keys), cap(n.keys))
+	copy(node.keys, n.keys)
+	node.children = make([]*Node, len(n.children), cap(n.children))
+	copy(node.children, n.children)
+
 	return node
 }
 
@@ -120,37 +119,32 @@ func NewFreeList() *FreeList {
 }
 
 func (f *FreeList) newNode() *Node {
-	//f.mu.Lock()
-	//defer f.mu.Unlock()
+	f.mu.Lock()
+	defer f.mu.Unlock()
 
-	//i := len(f.freelist) - 1
-	//if i < 0 {
-	//	return &Node{
-	//		context:  nil,
-	//		value:    nil,
-	//		children: make(map[byte]*Node),
-	//	}
-	//}
-	//node := f.freelist[i]
-	//f.freelist[i] = nil
-	//f.freelist = f.freelist[:i]
-
-	//return node
-	return &Node{
-		context:  nil,
-		value:    nil,
-		keys:     make([]byte, 0),
-		children: make([]*Node, 0),
+	i := len(f.freelist) - 1
+	if i < 0 {
+		return &Node{
+			context:  nil,
+			value:    nil,
+			keys:     make([]byte, 0),
+			children: make([]*Node, 0),
+		}
 	}
+	node := f.freelist[i]
+	f.freelist[i] = nil
+	f.freelist = f.freelist[:i]
+
+	return node
 }
 
 func (f *FreeList) freeNode(n *Node) {
-	//f.mu.Lock()
-	//defer f.mu.Unlock()
+	f.mu.Lock()
+	defer f.mu.Unlock()
 
-	//if len(f.freelist) < cap(f.freelist) {
-	//	f.freelist = append(f.freelist, n)
-	//}
+	if len(f.freelist) < cap(f.freelist) {
+		f.freelist = append(f.freelist, n)
+	}
 }
 
 // Context is the write context of trie
@@ -167,7 +161,14 @@ func NewContext() *Context {
 }
 
 func (c *Context) newNode() *Node {
-	node := c.freelist.newNode()
+	// node := c.freelist.newNode()
+	node := &Node{
+		context:  nil,
+		value:    nil,
+		keys:     make([]byte, 0),
+		children: make([]*Node, 0),
+	}
+
 	node.context = c
 	return node
 }
@@ -177,7 +178,7 @@ func (c *Context) freeNode(n *Node) {
 	n.value = nil
 	n.keys = nil
 	n.children = nil
-	c.freelist.freeNode(n)
+	// c.freelist.freeNode(n)
 }
 
 func (c *Context) fork() *Context {
