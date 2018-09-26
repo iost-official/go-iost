@@ -298,7 +298,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     isDone = true;
 }
 
-ValueTuple Execution(SandboxPtr ptr, const char *code) {
+ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -333,11 +333,11 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
             res.gasUsed = sbx->gasUsed;
             break;
         }
-        auto now = std::chrono::steady_clock::now();
-        auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
-        if (execTime > 200) {
+        auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        //auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
+        if (now > expireTime) {
             isolate->TerminateExecution();
-            res.Err = strdup("execution killed");
+            res.Err = strdup(("execution killed, current time : " + std::to_string(now) + " , expireTime: " + std::to_string(expireTime)).c_str());
             res.gasUsed = sbx->gasUsed;
             break;
         }
