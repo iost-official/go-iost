@@ -74,8 +74,7 @@ class VoteContract {
     }
 
     can_update(data) {
-        this._requireAuth(admin);
-        return true;
+        return false;
     }
 
 	_requireAuth(account) {
