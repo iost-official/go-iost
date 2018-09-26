@@ -50,7 +50,3 @@ func NewBatchVisitor(lruDB *LRU) (*Visitor, Mapper) {
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
 	return v, watcher
 }
-
-func Resolve(maps []map[string]Access, weight []int) []int {
-	return nil
-}
