@@ -41,12 +41,6 @@ func (c *chainbaseAdapter) Has(key string) bool {
 	return ok
 }
 
-//func (c *chainbaseAdapter) Keys(prefix string) []string {
-//	var rtn []string
-//	rtn, c.err = c.cb.Keys(StateTable, prefix)
-//	return rtn
-//}
-
 func (c *chainbaseAdapter) Del(key string) {
 	c.err = c.cb.Del(StateTable, key)
 }

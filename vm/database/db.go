@@ -25,3 +25,32 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
 	return v
 }
+
+func NewBatchVisitorRoot(cacheLength int, cb IMultiValue) *LRU {
+	db := newChainbaseAdapter(cb)
+	lruDB := NewLRU(cacheLength, db)
+	return lruDB
+}
+
+type Mapper interface {
+	Map() map[string]Access
+}
+
+func NewBatchVisitor(lruDB *LRU) (*Visitor, Mapper) {
+	cachedDB := NewWriteCache(lruDB)
+
+	watcher := NewWatcher(cachedDB)
+	v := &Visitor{
+		BasicHandler:    BasicHandler{watcher},
+		MapHandler:      MapHandler{watcher},
+		ContractHandler: ContractHandler{watcher},
+		CoinHandler:     CoinHandler{watcher},
+		BalanceHandler:  BalanceHandler{watcher},
+	}
+	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
+	return v, watcher
+}
+
+func Resolve(maps []map[string]Access, weight []int) []int {
+	return nil
+}
