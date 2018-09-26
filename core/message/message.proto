@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package message;
 
-message RequestBlock {
-    int64 blockNumber = 1;
-    bytes blockHash = 2;
+message BlockInfo {
+    int64 number = 1;
+    bytes hash = 2;
 }
 
 message BlockHashQuery {
@@ -14,13 +14,9 @@ message BlockHashQuery {
     repeated int64 nums = 4;
 }
 
-message BlockHash {
-    int64 height = 1;
-    bytes hash = 2;
-}
 
 message BlockHashResponse {
-    repeated BlockHash blockHashes = 1;
+    repeated BlockInfo blockInfos = 1;
 }
 
 message SyncHeight {
