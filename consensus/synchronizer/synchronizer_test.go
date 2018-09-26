@@ -25,8 +25,8 @@ func TestDownloadController(t *testing.T) {
 		So(err, ShouldBeNil)
 		Convey("Check OnRecvHash", func() {
 			dc.OnRecvHash("111", "aaa")
-			dc.OnRecvHash("222", "bbb")
-			dc.OnRecvHash("222", "ccc")
+			//dc.OnRecvHash("222", "bbb")
+			dc.OnRecvHash("222", "aaa")
 			//dc.OnRecvBlock("123", "abc")
 			var hash string
 			var PID p2p.PeerID
@@ -38,7 +38,7 @@ func TestDownloadController(t *testing.T) {
 			hash = <-dHash
 			PID = <-dPID
 			So(hash, ShouldEqual, "222")
-			So(PID, ShouldEqual, p2p.PeerID("bbb"))
+			So(PID, ShouldEqual, p2p.PeerID("aaa"))
 		})
 		Convey("Stop DownloadLoop", func() {
 			dc.Stop()
