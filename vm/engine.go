@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 
+	"time"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -31,7 +33,7 @@ var (
 // Engine the smart contract engine
 type Engine interface {
 	SetUp(k, v string) error
-	Exec(tx0 *tx.Tx) (*tx.TxReceipt, error)
+	Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error)
 	GC()
 }
 
@@ -189,7 +191,9 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 	return &txr, nil
 }
 
-func (e *engineImpl) Exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
+func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
+	e.ho.SetDeadline(time.Now().Add(limit))
+
 	ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
 	err := checkTx(tx0)
 	if err != nil {
