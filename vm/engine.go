@@ -303,10 +303,19 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	}
 
 	if err != nil {
-		status = tx.Status{
-			Code:    tx.ErrorRuntime,
-			Message: err.Error(),
+
+		if err.Error() == "execution killed" {
+			status = tx.Status{
+				Code:    tx.ErrorTimeout,
+				Message: err.Error(),
+			}
+		} else {
+			status = tx.Status{
+				Code:    tx.ErrorRuntime,
+				Message: err.Error(),
+			}
 		}
+
 		receipt := tx.Receipt{
 			Type:    tx.SystemDefined,
 			Content: err.Error(),
