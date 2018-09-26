@@ -48,7 +48,7 @@ func TestJS1_Vote1(t *testing.T) {
 	js.SetAPI("Stat")
 	js.SetAPI("Init")
 	for i := 0; i <= 18; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7 * 1e8)
+		js.vi.SetBalance(testID[i], 5e+7*1e8)
 	}
 	js.vi.Commit()
 	r := js.DoSet()
@@ -56,7 +56,7 @@ func TestJS1_Vote1(t *testing.T) {
 		t.Fatal(r.Status.Message)
 	}
 	for i := 6; i <= 18; i += 2 {
-		if int64(50000000 * 1e8) != js.vi.Balance(testID[i]) {
+		if int64(50000000*1e8) != js.vi.Balance(testID[i]) {
 			t.Fatal("error in balance :", i, js.vi.Balance(testID[i]))
 		}
 	}
@@ -110,7 +110,7 @@ func TestJS_Vote(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		r, err := js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2, time.Second)
 		if err != nil || r.Status.Code != tx.Success {
 			t.Fatal(err, r)
 		}
@@ -131,7 +131,7 @@ func TestJS_Vote(t *testing.T) {
 		js.SetAPI("Stat")
 		js.SetAPI("InitProducer", "string")
 		for i := 0; i <= 18; i += 2 {
-			js.vi.SetBalance(testID[i], 5e+7 * 1e8)
+			js.vi.SetBalance(testID[i], 5e+7*1e8)
 		}
 		js.vi.Commit()
 		r = js.DoSet()
@@ -237,9 +237,9 @@ func TestJS_Vote(t *testing.T) {
 		}
 
 		// 0, 6, 2, 12, 8, 10, 4
-		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",` +
-			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY",` +
-			`"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",` +
+		So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
+			`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY",`+
+			`"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
 			`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs"]`)
 
 		bh = &block.BlockHead{
@@ -430,7 +430,7 @@ func TestJS_Vote(t *testing.T) {
 		r = js.TestJS("LogInProducer", fmt.Sprintf(`["%v"]`, testID[0]))
 		So(r.Status.Message, ShouldEqual, "")
 
-		js.vi.SetBalance(testID[2], 5e+7 * 1e8)
+		js.vi.SetBalance(testID[2], 5e+7*1e8)
 		r = js.TestJSWithAuth("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[2], 21000001), testID[3])
 		So(r.Status.Message, ShouldEqual, "")
 
@@ -454,7 +454,7 @@ func TestJS_Vote(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		r, err = js.e.Exec(trx2)
+		r, err = js.e.Exec(trx2, time.Second)
 		if err != nil || r.Status.Code != tx.Success {
 			t.Fatal(err, r)
 		}
@@ -468,7 +468,7 @@ func TestJS_Vote(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		r, err = js.e.Exec(trx2)
+		r, err = js.e.Exec(trx2, time.Second)
 		if err != nil || r.Status.Code != tx.Success {
 			t.Fatal(err, r)
 		}
@@ -551,7 +551,7 @@ func TestJS_Genesis(t *testing.T) {
 	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
 	var txr *tx.TxReceipt
 	ti := watchTime(func() {
-		txr, err = engine.Exec(trx)
+		txr, err = engine.Exec(trx, time.Second)
 	})
 	if err != nil {
 		t.Fatal(fmt.Errorf("exec tx failed, stop the pogram. err: %v", err))

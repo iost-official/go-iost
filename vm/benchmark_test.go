@@ -7,6 +7,8 @@ import (
 
 	"fmt"
 
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
@@ -59,7 +61,7 @@ func BenchmarkNative_Transfer(b *testing.B) { // 21400 ns/op
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		e.Exec(trx)
+		e.Exec(trx, time.Second)
 	}
 	b.StopTimer()
 	cleanUp()
@@ -97,7 +99,7 @@ func BenchmarkNative_Transfer_LRU(b *testing.B) { // 15300 ns/op
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		e.Exec(trx)
+		e.Exec(trx, time.Second)
 	}
 	b.StopTimer()
 	cleanUp()
@@ -114,7 +116,7 @@ func BenchmarkNative_Receipt(b *testing.B) { // 138000 ns/op
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		e.Exec(trx)
+		e.Exec(trx, time.Second)
 	}
 	b.StopTimer()
 	cleanUp()
@@ -133,7 +135,7 @@ func BenchmarkNative_SetCode(b *testing.B) { // 3.03 ms/op
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		e.Exec(trx)
+		e.Exec(trx, time.Second)
 	}
 	b.StopTimer()
 	cleanUp()
@@ -164,7 +166,7 @@ func BenchmarkJS_Gas_Once(b *testing.B) { // 443 us/op
 		//if i == 0 {
 		//	b.Log("gas is : ", r.GasUsage)
 		//}
-		r, err := js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2, time.Second)
 		if r.Status.Code != 0 || err != nil {
 			b.Fatal(r.Status.Message, err)
 		}
@@ -198,7 +200,7 @@ func BenchmarkJS_Gas_100(b *testing.B) { // 483 um/op
 		//if i == 0 {
 		//	b.Log("gas is : ", r.GasUsage)
 		//}
-		r, err := js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2, time.Second)
 		if r.Status.Code != 0 || err != nil {
 			b.Fatal(r.Status.Message, err)
 		}
@@ -232,7 +234,7 @@ func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
 		//if i == 0 {
 		//	b.Log("gas is : ", r.GasUsage)
 		//}
-		r, err := js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2, time.Second)
 		if r.Status.Code != 0 || err != nil {
 			b.Fatal(r.Status.Message, err)
 		}
@@ -268,7 +270,7 @@ func Benchmark_JS_Transfer(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r, err := js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2, time.Second)
 		if r.Status.Code != 0 || err != nil {
 			b.Fatal(r.Status.Message, err)
 		}

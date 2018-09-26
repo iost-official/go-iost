@@ -13,8 +13,9 @@ const (
 	Success StatusCode = iota
 	ErrorGasRunOut
 	ErrorBalanceNotEnough
-	ErrorParamter         // parameter mismatch when calling function
-	ErrorRuntime          // runtime error
+	ErrorParamter // parameter mismatch when calling function
+	ErrorRuntime  // runtime error
+	ErrorTimeout
 	ErrorTxFormat         // tx format errors
 	ErrorDuplicateSetCode // more than one set code action in a tx
 	ErrorUnknown          // other errors
