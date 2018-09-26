@@ -183,7 +183,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 			}
 			ilog.Infof("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
 			sy.heightMap.Store(req.From(), &sh)
-			atomic.StoreInt32(&sy.button, 1)
+			//atomic.StoreInt32(&sy.button, 1)
 		case <-checkTicker.C:
 			sy.checkSync()
 			sy.checkGenBlock()
@@ -200,10 +200,12 @@ func (sy *SyncImpl) checkSync() bool {
 	if sy.basevariable.Mode() != global.ModeNormal {
 		return false
 	}
-	if atomic.LoadInt32(&sy.button) == 0 {
-		return false
-	}
-	atomic.StoreInt32(&sy.button, 0)
+	/*
+		if atomic.LoadInt32(&sy.button) == 0 {
+			return false
+		}
+		atomic.StoreInt32(&sy.button, 0)
+	*/
 	height := sy.basevariable.BlockChain().Length() - 1
 	heights := make([]int64, 0, 0)
 	heights = append(heights, sy.blockCache.Head().Number)
