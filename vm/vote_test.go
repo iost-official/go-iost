@@ -481,6 +481,7 @@ func TestJS_Vote(t *testing.T) {
 		})
 
 		Convey("test of vote update", func() {
+			t.Skip()
 
 			fd, err := common.ReadFile("./test_data/vote_update.js")
 			if err != nil {
