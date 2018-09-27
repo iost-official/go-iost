@@ -190,7 +190,7 @@ func (pm *PeerManager) HandleStream(s libnet.Stream) {
 	if peer == nil {
 		if pm.NeighborCount() >= maxNeighborCount {
 			if !pm.isBP(remotePID) {
-				ilog.Debugf("neighbor count exceeds, close stream. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+				ilog.Infof("neighbor count exceeds, close stream. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
 				s.Conn().Close()
 				return
 			}
@@ -586,7 +586,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 				select {
 				case v.(chan IncomingMessage) <- *inMsg:
 				default:
-					ilog.Debugf("sending incoming message failed. type=%s", msg.messageType())
+					ilog.Errorf("sending incoming message failed. type=%s", msg.messageType())
 				}
 				return true
 			})

@@ -105,7 +105,7 @@ func TestEngine_SetCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("compiler parse error: %v\n", err)
 	}
-	rs, _, err = e.LoadAndCall(host, code, "UpdateCode", con.Encode(), "")
+	rs, _, err = e.LoadAndCall(host, code, "UpdateCode", con.B64Encode(), "")
 	if err != nil {
 		t.Fatalf("LoadAndCall update error: %v\n", err)
 	}
@@ -118,7 +118,7 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Fatalf("LoadAndCall destroy error: %v\n", err)
 	}
 
-	_, _, err = e.LoadAndCall(host, code, "UpdateCode", con.Encode(), "")
+	_, _, err = e.LoadAndCall(host, code, "UpdateCode", con.B64Encode(), "")
 	if err == nil || err.Error() != "contract not exists" {
 		t.Fatalf("LoadAndCall for should return contract not exists, but got %v\n", err)
 	}

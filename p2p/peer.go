@@ -129,6 +129,7 @@ func (p *Peer) newStream() (libnet.Stream, error) {
 		return nil, err
 	}
 	p.streamCount++
+	go p.readLoop(stream)
 	return stream, nil
 }
 
@@ -188,7 +189,7 @@ func (p *Peer) writeLoop() {
 			ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 			return
 		case um := <-p.urgentMsgCh:
-			p.write(um)
+			go p.write(um)
 		case nm := <-p.normalMsgCh:
 			for done := false; !done; {
 				select {
@@ -196,12 +197,12 @@ func (p *Peer) writeLoop() {
 					ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 					return
 				case um := <-p.urgentMsgCh:
-					p.write(um)
+					go p.write(um)
 				default:
 					done = true
 				}
 			}
-			p.write(nm)
+			go p.write(nm)
 		}
 	}
 }

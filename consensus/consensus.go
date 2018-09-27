@@ -5,7 +5,6 @@ import (
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/pob"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
 	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
@@ -23,7 +22,7 @@ var cons Consensus
 var once sync.Once
 
 // Factory handles the different consensus strategy.
-func Factory(consensusType string, account *account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service, synchronizer synchronizer.Synchronizer) (Consensus, error) {
+func Factory(consensusType string, account *account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service) (Consensus, error) {
 	if consensusType == "" {
 		consensusType = "pob"
 	}
@@ -34,7 +33,7 @@ func Factory(consensusType string, account *account.Account, baseVariable global
 	case "pob":
 		if cons == nil {
 			once.Do(func() {
-				cons = pob.NewPoB(account, baseVariable, blkcache, txPool, service, synchronizer)
+				cons = pob.NewPoB(account, baseVariable, blkcache, txPool, service)
 			})
 		}
 	}

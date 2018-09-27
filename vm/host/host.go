@@ -168,10 +168,20 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 		return cost, ErrUpdateRefused
 	}
 
-	c2, err := h.SetCode(c)
+	// set code  without invoking init
+	code, err := h.monitor.Compile(c)
+	cost.AddAssign(CompileErrCost)
+	if err != nil {
+		return cost, err
+	}
+	c.Code = code
 
-	c2.AddAssign(cost)
-	return c2, err
+	h.db.SetContract(c)
+
+	l := len(c.Encode()) // todo multi Encode call
+	cost.AddAssign(CodeSavageCost(l))
+
+	return cost, nil
 }
 
 // DestroyCode delete code

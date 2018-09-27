@@ -121,11 +121,11 @@ var (
 	// updateCode can only be invoked in native vm, avoid updating contract during running
 	updateCode = &abi{
 		name: "UpdateCode",
-		args: []string{"string"},
+		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			cost = contract.Cost0()
 			con := &contract.Contract{}
-			err = con.Decode(args[0].(string))
+			err = con.B64Decode(args[0].(string))
 			if err != nil {
 				return nil, host.CommonErrorCost(1), err
 			}

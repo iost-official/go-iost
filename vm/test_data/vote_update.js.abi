@@ -21,12 +21,6 @@
             ]
         },
         {
-            "name": "InitAdmin",
-            "args": [
-                "string"
-            ]
-        },
-        {
             "name": "RegisterProducer",
             "args": [
                 "string",
