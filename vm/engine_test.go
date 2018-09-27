@@ -87,9 +87,9 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		ID:   "Contract0",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "mock",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "mock",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "abi",
 					Args:     []string{"string"},
@@ -161,9 +161,9 @@ func TestLogger(t *testing.T) { // test of normal engine work
 		ID:   "Contract0",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "mock",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "mock",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "abi",
 					Args:     []string{"string"},
@@ -245,9 +245,9 @@ func TestCost(t *testing.T) { // tests of context transport
 		ID:   "Contract0",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "mock",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "mock",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "abi",
 					Args:     []string{"string"},
@@ -361,9 +361,9 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		ID:   "iost.system",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "native",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "native",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "Transfer",
 					Payment:  0,
@@ -470,9 +470,9 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		ID:   "iost.system",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "native",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "native",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "TopUp",
 					Payment:  0,
@@ -579,9 +579,9 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		ID:   "iost.system",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "native",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "native",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "Receipt",
 					Payment:  0,
@@ -710,9 +710,9 @@ class Contract {
 module.exports = Contract;
 `,
 		Info: &contract.Info{
-			Lang:        "javascript",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "javascript",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "hello",
 					Payment:  0,
