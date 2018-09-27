@@ -16,7 +16,7 @@ func init() {
 	domainABIs = make(map[string]*abi)
 	register(&domainABIs, link)
 	register(&domainABIs, transferURL)
-
+	register(&domainABIs, domainInit)
 }
 
 var (
@@ -88,6 +88,13 @@ var (
 
 			return nil, cost, nil
 
+		},
+	}
+	domainInit = &abi{
+		name: "init",
+		args: []string{},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			return []interface{}{}, host.CommonErrorCost(1), nil
 		},
 	}
 )
