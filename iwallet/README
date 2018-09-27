@@ -1,0 +1,20 @@
+A brief introduction for iwallet
+-How to use iwallet?
+the first thing you should do is to read this document.and if you meet some diffcuties in using iwallet,please use -h parameter with no hesitation.
+for example:iwallet -h , iwallet account -h .there is a -h parameter for each subcommand too.
+
+-How to generate an account?
+iwallet account -n filename
+this command create a pair of sec-key and pub-key in the files ~/.iwallet/filename_ed25519 and ~/.iwallet/filename_ed25519.pub.and this command return the corresponding iost account ID,please keep it.
+
+-How to deploy a contract?
+(1)If you want to deploy a contract to the iost blockchain,use the subcommand compile,if you don't have a iost account,please generate an account first with the command account and ensure this account can afford the fee of deploying your contract(typically it equals to the gas cost for deployment),it's a small amount normally.
+(2)Use the subcommand compile to generate the tx,there are two situations:
+	1)if you don't include --signers in subcommand compile,iwallet thinks this tx doesn't need any other signatures except the publisher for this tx(the publisher means the signature of the person who create this tx,every tx has a publisher).So it send the generated tx to the iost node you indicated(you can specify the destination with -s,see iwallet -h for more information) directly.
+	2)if you indicate --signers,then the subcommand compile will save the unsigned tx to a .sc file.
+(3)if it's 2) in step (2),send the .sc file to signers you indicate in --signers,then they should sign this contract with the subcommand sign.the subcommand sign generate the corresponding .sig file which is the signature you need.After collecting all the .sig files from the signers,we advance to (4).
+(4)use the subcommand publish to merge all the signatures to the unsigned tx,and sign the tx with -k,iwallet publish will send the tx to the iost node you indicate with -s ip:port(port is typically 30002),it's localhost:30002 by default.
+
+-How to call a method(function) in a deployed contract which is on the blockchain?
+the steps are similar to deploying a contract.get more info from iwallet call -h.
+
