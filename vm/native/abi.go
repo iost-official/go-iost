@@ -16,6 +16,10 @@ func BonusABI() *contract.Contract {
 	return genNativeAbi("iost.bonus", bonusABIs)
 }
 
+func DomainABI() *contract.Contract {
+	return genNativeAbi("iost.domain", domainABIs)
+}
+
 func genNativeAbi(id string, abi map[string]*abi) *contract.Contract {
 	c := &contract.Contract{
 		ID:   id,

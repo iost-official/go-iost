@@ -25,34 +25,34 @@ func NewDHCP(h *Host) DHCP {
 
 // ContractID find cid from url
 func (d *DHCP) ContractID(url string) string {
-	cid, _ := d.h.MapGet(DHCPTable, url)
-	if s, ok := cid.(string); ok {
-		return s
+	cid := d.h.db.MGet(DHCPTable, url)
+	if cid == "n" {
+		return ""
 	}
-	return ""
+	return cid
 }
 
 // URLOwner find owner of url
 func (d *DHCP) URLOwner(url string) string {
-	owner, _ := d.h.MapGet(DHCPOwnerTable, url)
-	if s, ok := owner.(string); ok {
-		return s
+	owner := d.h.db.MGet(DHCPOwnerTable, url)
+	if owner == "n" {
+		return ""
 	}
-	return ""
+	return owner
 }
 
 // URLTransfer give url to another id
 func (d *DHCP) URLTransfer(url, to string) {
-	d.h.MapPut(DHCPOwnerTable, url, to)
+	d.h.db.MPut(DHCPOwnerTable, url, to)
 }
 
-// URL git url of cid
+// URL get url of cid
 func (d *DHCP) URL(cid string) string {
-	domain, _ := d.h.MapGet(DHCPRTable, cid)
-	if s, ok := domain.(string); ok {
-		return s
+	domain := d.h.db.MGet(DHCPRTable, cid)
+	if domain == "n" {
+		return ""
 	}
-	return ""
+	return domain
 }
 
 // IsDomain determine if s is a domain
@@ -65,14 +65,14 @@ func (d *DHCP) IsDomain(s string) bool {
 
 // WriteLink add url and url owner to contract
 func (d *DHCP) WriteLink(url, cid, owner string) {
-	d.h.MapPut(DHCPTable, url, cid)
-	d.h.MapPut(DHCPRTable, cid, url)
-	d.h.MapPut(DHCPOwnerTable, url, owner)
+	d.h.db.MPut(DHCPTable, url, cid)
+	d.h.db.MPut(DHCPRTable, cid, url)
+	d.h.db.MPut(DHCPOwnerTable, url, owner)
 }
 
 // RemoveLink remove a url
 func (d *DHCP) RemoveLink(url, cid string) {
-	d.h.MapDel(DHCPRTable, cid)
-	d.h.MapDel(DHCPTable, url)
-	d.h.MapDel(DHCPOwnerTable, url)
+	d.h.db.MDel(DHCPRTable, cid)
+	d.h.db.MDel(DHCPTable, url)
+	d.h.db.MDel(DHCPOwnerTable, url)
 }

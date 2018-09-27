@@ -3,6 +3,8 @@ package native
 import (
 	"errors"
 
+	"fmt"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
@@ -14,7 +16,7 @@ func init() {
 	domainABIs = make(map[string]*abi)
 	register(&domainABIs, link)
 	register(&domainABIs, transferURL)
-
+	register(&domainABIs, domainInit)
 }
 
 var (
@@ -39,14 +41,7 @@ var (
 
 			if owner != "" && owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
-				return nil, cost, errors.New("no privilege of claimed url")
-			}
-
-			ok, c := h.RequireAuth(applicant)
-			cost.AddAssign(c)
-
-			if !ok {
-				return nil, cost, errors.New("no privilege of claimed url")
+				return nil, cost, fmt.Errorf("no privilege of claimed url: %v", owner)
 			}
 
 			h.WriteLink(url, cid, applicant)
@@ -93,6 +88,13 @@ var (
 
 			return nil, cost, nil
 
+		},
+	}
+	domainInit = &abi{
+		name: "init",
+		args: []string{},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			return []interface{}{}, host.CommonErrorCost(1), nil
 		},
 	}
 )
