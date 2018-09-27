@@ -20,6 +20,8 @@ var (
 	errTxHash     = errors.New("wrong txs hash")
 	errMerkleHash = errors.New("wrong tx receipt merkle hash")
 	errTxReceipt  = errors.New("wrong tx receipt")
+	// TxExecTimeLimit the maximum verify execution time of a transaction
+	TxExecTimeLimit = 400 * time.Millisecond
 )
 
 // VerifyBlockHead verifies the block head.
@@ -49,8 +51,8 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 //VerifyBlockWithVM verifies the block with VM.
 func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 	engine := vm.NewEngine(blk.Head, db)
-	for k, tx := range blk.Txs {
-		receipt, err := engine.Exec(tx)
+	for k, t := range blk.Txs {
+		receipt, err := engine.Exec(t, TxExecTimeLimit)
 		if err != nil {
 			return err
 		}

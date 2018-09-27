@@ -3,6 +3,8 @@ package vm
 import (
 	"testing"
 
+	"time"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
@@ -194,6 +196,7 @@ func TestJSM(t *testing.T) {
 	ctx.GSet("gas_limit", int64(1000))
 
 	h := host.NewHost(ctx, vi, monitor, nil)
+	h.SetDeadline(time.Now().Add(time.Second))
 
 	c := contract.Contract{
 		ID: "Contract",

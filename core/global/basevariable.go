@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"time"
 )
 
 // TMode type of mode
@@ -32,6 +33,9 @@ const (
 // VoteContractPath is config of vote
 var VoteContractPath = "../../config/"
 var adminID = ""
+
+// GenesisTxExecTime is the maximum execution time of a transaction in genesis block
+var GenesisTxExecTime = 1 * time.Second
 
 // String return string of mode
 func (m TMode) String() string {
@@ -116,7 +120,7 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		Time:       0,
 	}
 	engine := vm.NewEngine(&blockHead, db)
-	txr, err := engine.Exec(trx)
+	txr, err := engine.Exec(trx, GenesisTxExecTime)
 	if err != nil || txr.Status.Code != tx.Success {
 		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: %v", err, txr)
 	}

@@ -28,6 +28,7 @@ var (
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
 	txLimit        = 2000 //limit it to 2000
+	txExecTime     = verifier.TxExecTimeLimit / 2
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
@@ -60,7 +61,7 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		if err != nil {
 			ilog.Errorf("fail to signTx, err:%v", err)
 		}
-		receipt, err := engine.Exec(trx)
+		receipt, err := engine.Exec(trx, txExecTime)
 		if err != nil {
 			ilog.Errorf("fail to exec trx, err:%v", err)
 		}
@@ -84,7 +85,7 @@ L:
 			step1 := time.Now()
 			if !txPool.TxTimeOut(t) {
 				j++
-				if receipt, err := engine.Exec(t); err == nil {
+				if receipt, err := engine.Exec(t, txExecTime); err == nil {
 					blk.Txs = append(blk.Txs, t)
 					blk.Receipts = append(blk.Receipts, receipt)
 				} else {

@@ -1,11 +1,10 @@
 package host
 
 import (
-	"strconv"
-
 	"encoding/json"
-
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
@@ -32,6 +31,8 @@ type Host struct {
 	ctx     *Context
 	db      *database.Visitor
 	monitor Monitor
+
+	deadline time.Time
 }
 
 // NewHost get a new host
@@ -136,7 +137,7 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 
 	h.db.SetContract(c)
 
-	_, cost, err := h.monitor.Call(h, c.ID, "init", "[]")
+	_, cost, err := h.Call(c.ID, "init", "[]")
 
 	cost.AddAssign(CodeSavageCost(l))
 
@@ -156,7 +157,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 		return ABINotFoundCost, ErrUpdateRefused
 	}
 
-	rtn, cost, err := h.monitor.Call(h, c.ID, "can_update", `["`+string(id)+`"]`)
+	rtn, cost, err := h.Call(c.ID, "can_update", `["`+string(id)+`"]`)
 
 	if err != nil {
 		return cost, fmt.Errorf("call can_update: %v", err)
@@ -196,7 +197,7 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 		return ABINotFoundCost, ErrDestroyRefused
 	}
 
-	rtn, cost, err := h.monitor.Call(h, contractName, "can_destroy", "[]")
+	rtn, cost, err := h.Call(contractName, "can_destroy", "[]")
 
 	if err != nil {
 		return cost, err
@@ -231,4 +232,14 @@ func (h *Host) PushCtx() {
 func (h *Host) PopCtx() {
 	ctx := h.ctx.Base()
 	h.ctx = ctx
+}
+
+// Deadline return this host's deadline
+func (h *Host) Deadline() time.Time {
+	return h.deadline
+}
+
+// SetDeadline set this host's deadline
+func (h *Host) SetDeadline(t time.Time) {
+	h.deadline = t
 }

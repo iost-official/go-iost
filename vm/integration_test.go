@@ -7,6 +7,8 @@ import (
 
 	"os"
 
+	"time"
+
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
@@ -170,7 +172,7 @@ func TestIntergration_Transfer(t *testing.T) {
 	}
 
 	Convey("trasfer success case", t, func() {
-		r, err := (e.Exec(trx))
+		r, err := e.Exec(trx, time.Second)
 		if r.Status.Code != 0 {
 			t.Fatal(r)
 		}
@@ -187,7 +189,7 @@ func TestIntergration_Transfer(t *testing.T) {
 	}
 
 	Convey("trasfer balance not enough case", t, func() {
-		r, err := e.Exec(trx2)
+		r, err := e.Exec(trx2, time.Second)
 		if r.Status.Code != 4 {
 			t.Fatal(r)
 		}
@@ -250,7 +252,7 @@ func TestIntergration_SetCode(t *testing.T) {
 	}
 
 	Convey("set code tx", t, func() {
-		r, err := e.Exec(trx)
+		r, err := e.Exec(trx, time.Second)
 		So(r.Status.Code, ShouldEqual, 0)
 		So(err, ShouldBeNil)
 		So(vi.Balance(testID[0]), ShouldEqual, int64(999988))
@@ -264,7 +266,7 @@ func TestIntergration_SetCode(t *testing.T) {
 	}
 
 	Convey("call hello", t, func() {
-		r, err := e.Exec(trx2)
+		r, err := e.Exec(trx2, time.Second)
 		So(r.Status.Code, ShouldEqual, 0)
 		So(err, ShouldBeNil)
 		So(vi.Balance(testID[0]), ShouldEqual, int64(999981))
@@ -306,7 +308,7 @@ func TestEngine_InitSetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r, err := e.Exec(trx)
+	r, err := e.Exec(trx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +324,7 @@ func TestEngine_InitSetCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r, err = e.Exec(trx2)
+	r, err = e.Exec(trx2, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -350,7 +352,7 @@ func TestIntergration_CallJSCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r, err := e.Exec(trx)
+	r, err := e.Exec(trx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -411,7 +413,7 @@ func TestIntergration_CallJSCodeWithReceipt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r, err := e.Exec(trx)
+	r, err := e.Exec(trx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,7 +477,7 @@ func TestIntergration_Payment_Success(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r, err := e.Exec(trx)
+	r, err := e.Exec(trx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -516,7 +518,7 @@ func TestIntergration_Payment_Failed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r, err := e.Exec(trx)
+	r, err := e.Exec(trx, time.Second)
 	ilog.Debugf("success: %v, %v", r, err)
 	ilog.Debugf("balance of sender : %v", vi.Balance(testID[0]))
 	ilog.Debugf("balance of contract : %v", vi.Balance("CGjsHelloWorld"))
@@ -618,7 +620,7 @@ func (j *JSTester) DoSet() *tx.TxReceipt {
 	if err != nil {
 		j.t.Fatal(err)
 	}
-	r, err := j.e.Exec(trx)
+	r, err := j.e.Exec(trx, time.Second)
 	if err != nil {
 		j.t.Fatal(err)
 	}
@@ -648,7 +650,7 @@ func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
 		j.t.Fatal(err)
 	}
 
-	r, err := j.e.Exec(trx2)
+	r, err := j.e.Exec(trx2, time.Second)
 	if err != nil {
 		j.t.Fatal(err)
 	}
@@ -668,7 +670,7 @@ func (j *JSTester) TestJSWithAuth(abi, args, seckey string) *tx.TxReceipt {
 		j.t.Fatal(err)
 	}
 
-	r, err := j.e.Exec(trx2)
+	r, err := j.e.Exec(trx2, time.Second)
 	if err != nil {
 		j.t.Fatal(err)
 	}

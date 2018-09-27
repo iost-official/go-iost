@@ -207,7 +207,7 @@ func (p *PoB) handleGenesisBlock(blk *block.Block) error {
 			return fmt.Errorf("push block in blockChain failed, err: %v", err)
 		}
 		engine := vm.NewEngine(blk.Head, p.verifyDB)
-		txr, err := engine.Exec(blk.Txs[0])
+		txr, err := engine.Exec(blk.Txs[0], global.GenesisTxExecTime)
 		if err != nil {
 			return fmt.Errorf("exec tx failed, err: %v", err)
 		}

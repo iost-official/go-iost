@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"strconv"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
@@ -15,10 +17,9 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
-	"strconv"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
 )
 
 func watchTime(f func()) time.Duration {
@@ -47,7 +48,7 @@ func TestJS1_Vote1(t *testing.T) {
 	js.SetAPI("Stat")
 	js.SetAPI("Init")
 	for i := 0; i <= 18; i += 2 {
-		js.vi.SetBalance(testID[i], 5e+7 * 1e8)
+		js.vi.SetBalance(testID[i], 5e+7*1e8)
 	}
 	js.vi.Commit()
 	r := js.DoSet()
@@ -55,7 +56,7 @@ func TestJS1_Vote1(t *testing.T) {
 		t.Fatal(r.Status.Message)
 	}
 	for i := 6; i <= 18; i += 2 {
-		if int64(50000000 * 1e8) != js.vi.Balance(testID[i]) {
+		if int64(50000000*1e8) != js.vi.Balance(testID[i]) {
 			t.Fatal("error in balance :", i, js.vi.Balance(testID[i]))
 		}
 	}
@@ -109,7 +110,7 @@ func TestJS_Vote(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		r, err := js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2, time.Second)
 		if err != nil || r.Status.Code != tx.Success {
 			t.Fatal(err, r)
 		}
@@ -456,7 +457,7 @@ func TestJS_Vote(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			r, err = js.e.Exec(trx2)
+			r, err = js.e.Exec(trx2, time.Second)
 			if err != nil || r.Status.Code != tx.Success {
 				t.Fatal(err, r)
 			}
@@ -470,7 +471,7 @@ func TestJS_Vote(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			r, err = js.e.Exec(trx2)
+			r, err = js.e.Exec(trx2, time.Second)
 			if err != nil || r.Status.Code != tx.Success {
 				t.Fatal(err, r)
 			}
@@ -513,12 +514,12 @@ func TestJS_Vote(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r, err = js.e.Exec(trx)
+			r, err = js.e.Exec(trx, time.Second)
 			if err != nil || r.Status.Code != tx.Success {
 				t.Fatal(err, r)
 			}
 
-			r, err = js.e.Exec(trx)
+			r, err = js.e.Exec(trx, time.Second)
 			So(err, ShouldEqual, nil)
 			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
 			So(r.Status.Message, ShouldContainSubstring, "update refused")
@@ -598,7 +599,7 @@ func TestJS_Genesis(t *testing.T) {
 	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
 	var txr *tx.TxReceipt
 	ti := watchTime(func() {
-		txr, err = engine.Exec(trx)
+		txr, err = engine.Exec(trx, time.Second)
 	})
 	if err != nil {
 		t.Fatal(fmt.Errorf("exec tx failed, stop the pogram. err: %v", err))
