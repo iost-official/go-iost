@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/database"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
@@ -58,6 +60,7 @@ func ReadFile(src string) ([]byte, error) {
 func TestEngine_SetCode(t *testing.T) {
 	e, host, code := MyInit(t, "setcode")
 	host.Context().Set("tx_hash", "iamhash")
+	host.SetDeadline(time.Now().Add(10 * time.Second))
 	hash := "Contractiamhash"
 
 	rawCode, err := ReadFile(testDataPath + "test.js")
