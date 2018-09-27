@@ -906,7 +906,6 @@ func TestJS_Database(t *testing.T) {
 	js.SetAPI("read")
 	js.SetAPI("change")
 	js.DoSet()
-	//t.Log("========= constructor")
 	Convey("test of js database", t, func() {
 		So(js.ReadDB("num").(string), ShouldEqual, "9")
 		So(js.ReadDB("string").(string), ShouldEqual, "hello")
@@ -918,13 +917,6 @@ func TestJS_Database(t *testing.T) {
 	if r.Status.Code != 0 {
 		t.Fatal(r.Status.Message)
 	}
-	//js.TestJS("change", `[]`)
-	////t.Log("========= change")
-	////t.Log("array is ", js.ReadDB("array"))
-	////t.Log("object is ", js.ReadDB("object"))
-	////t.Log("arrayobj is ", js.ReadDB("arrayobj"))
-	////t.Log("objobj is ", js.ReadDB("objobj"))
-	////t.Log("keyobj is", js.ReadDB("key"))
 }
 
 func TestJS_LuckyBet(t *testing.T) {
@@ -972,4 +964,58 @@ func TestJS_LuckyBet(t *testing.T) {
 		So(js.ReadDB("result1"), ShouldContainSubstring, `{"number":200,"user_number":100,"k_number":10,"total_coins":{"number":"23465000000"},`)
 
 	})
+}
+
+func TestDomain(t *testing.T) {
+	ilog.Stop()
+
+	Convey("test of domain", t, func() {
+		js := NewJSTester(t)
+		defer js.Clear()
+
+		if js.vi.Contract("iost.domain") == nil {
+			js.vi.SetContract(native.DomainABI())
+		}
+
+		lc, err := ReadFile("test_data/transfer.js")
+		So(err, ShouldBeNil)
+
+		js.SetJS(string(lc))
+		js.SetAPI("transfer", "string", "string", "number")
+		js.DoSet()
+
+		act := tx.NewAction("iost.domain", "Link", fmt.Sprintf(`["%v","%v"]`, "ahaha", js.cname))
+
+		trx := tx.NewTx([]*tx.Action{&act}, nil, int64(10000), int64(1), int64(10000000))
+
+		ac, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		So(err, ShouldBeNil)
+
+		trx, err = tx.SignTx(trx, ac)
+		So(err, ShouldBeNil)
+
+		r, err := js.e.Exec(trx, time.Second)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(js.e.(*engineImpl).publisherID, ShouldEqual, "IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn")
+
+		So(js.vi.MGet(host.DHCPRTable, js.cname), ShouldEqual, "ahaha")
+		So(js.vi.MGet(host.DHCPTable, "ahaha"), ShouldEqual, js.cname)
+
+		act2 := tx.NewAction("ahaha", "transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+
+		trx2 := tx.NewTx([]*tx.Action{&act2}, nil, int64(10000), int64(1), int64(10000000))
+
+		ac2, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		So(err, ShouldBeNil)
+
+		trx, err = tx.SignTx(trx2, ac2)
+		So(err, ShouldBeNil)
+
+		r, err = js.e.Exec(trx, time.Second)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+	})
+
 }

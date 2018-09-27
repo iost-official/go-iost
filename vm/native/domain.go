@@ -3,6 +3,8 @@ package native
 import (
 	"errors"
 
+	"fmt"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/vm/host"
@@ -39,14 +41,7 @@ var (
 
 			if owner != "" && owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
-				return nil, cost, errors.New("no privilege of claimed url")
-			}
-
-			ok, c := h.RequireAuth(applicant)
-			cost.AddAssign(c)
-
-			if !ok {
-				return nil, cost, errors.New("no privilege of claimed url")
+				return nil, cost, fmt.Errorf("no privilege of claimed url: %v", owner)
 			}
 
 			h.WriteLink(url, cid, applicant)
