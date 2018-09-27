@@ -21,6 +21,14 @@ class VoteContract {
 
     	let pendingProducerList = this._get("pendingProducerList");
 		pendingProducerList.push(proID);
+        const keyCmp = function(a, b) {
+            if (b < a) {
+                return 1;
+            } else {
+                return -1;
+            }
+        };
+        pendingProducerList.sort(keyCmp);
         this._put("pendingProducerList", pendingProducerList);
 
         const producerNumber = pendingProducerList.length;

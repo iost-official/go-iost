@@ -201,9 +201,9 @@ func TestJS_Vote(t *testing.T) {
 			So(r.Status.Message, ShouldContainSubstring, "block number mismatch")
 
 			So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
-				`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
-				`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
-				`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9"]`)
+				`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY",`+
+				`"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
+				`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs"]`)
 
 			// vote and unvote
 			r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
@@ -462,8 +462,8 @@ func TestJS_Vote(t *testing.T) {
 			}
 
 			So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
-			So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000880253)
-			So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 20091)
+			So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000880250)
+			So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 20089)
 			act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
 
 			trx2, err = MakeTx(act2)
@@ -477,7 +477,7 @@ func TestJS_Vote(t *testing.T) {
 
 			So(js.vi.Servi(testID[0]), ShouldEqual, 0)
 			So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 116)
-			So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000899521)
+			So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000899516)
 		})
 
 		Convey("test of vote update", func() {
