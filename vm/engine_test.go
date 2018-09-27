@@ -121,7 +121,7 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		committed = true
 	})
 
-	txr, err := e.Exec(&mtx)
+	txr, err := e.Exec(&mtx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func TestLogger(t *testing.T) { // test of normal engine work
 		committed = true
 	})
 
-	txr, err := e.Exec(&mtx)
+	txr, err := e.Exec(&mtx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -321,7 +321,7 @@ func TestCost(t *testing.T) { // tests of context transport
 		committed = true
 	})
 
-	txr, err := e.Exec(&mtx)
+	txr, err := e.Exec(&mtx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -429,7 +429,7 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		committed = true
 	})
 
-	txr, err := e.Exec(&mtx)
+	txr, err := e.Exec(&mtx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -539,7 +539,7 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		committed = true
 	})
 
-	txr, err := e.Exec(&mtx)
+	txr, err := e.Exec(&mtx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -651,7 +651,7 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		}
 	}()
 
-	txr, err := e.Exec(&mtx)
+	txr, err := e.Exec(&mtx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -760,7 +760,7 @@ module.exports = Contract;
 		flag = true
 	})
 
-	txr, err := e.Exec(&mtx)
+	txr, err := e.Exec(&mtx, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
