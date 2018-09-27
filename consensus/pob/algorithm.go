@@ -106,17 +106,6 @@ L:
 		}
 	}
 
-	if i > 0 && j > 0 {
-		metricsVMTime.Set(float64(vmExecTime), nil)
-		metricsVMAvgTime.Set(float64(vmExecTime/j), nil)
-		metricsIterTime.Set(float64(iterTime), nil)
-		metricsIterAvgTime.Set(float64(iterTime/j), nil)
-		metricsNonTimeOutTxSize.Set(float64(j), nil)
-		metricsAllTxSize.Set(float64(i), nil)
-		ilog.Infof("tx in blk:%d, iter:%d, vmExecTime:%d, vmAvgTime:%d, iterTime:%d, iterAvgTime:%d",
-			len(blk.Txs), i, vmExecTime, vmExecTime/j, iterTime, iterTime/j)
-	}
-
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	err := blk.CalculateHeadHash()
