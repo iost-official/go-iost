@@ -30,7 +30,7 @@ func main() {
 		ChainID: 111,
 	}
 	if *seed == "" {
-		*seed = "/ip4/47.75.42.25/tcp/3389/ipfs/12D3KooWE9Y2AJvjY7NN2htfTtjVtjRCikaU9CYV9gQ8zAAAwvs4"
+		*seed = "/ip4/47.75.42.25/tcp/3389/ipfs/12D3KooWScGKxdJwgtSU6ShUaiS4nuad73z7wUbUcHEUVQNzomhg"
 	}
 	config.SeedNodes = []string{*seed}
 	if *port <= 0 {

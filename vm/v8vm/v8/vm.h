@@ -83,7 +83,7 @@ extern SandboxPtr newSandbox(IsolatePtr ptr);
 extern void loadVM(SandboxPtr ptr, int vmType);
 extern void releaseSandbox(SandboxPtr ptr);
 
-extern ValueTuple Execute(SandboxPtr ptr, const char *code);
+extern ValueTuple Execute(SandboxPtr ptr, const char *code, long long int expireTime);
 extern void setJSPath(SandboxPtr ptr, const char *jsPath);
 extern void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit);
 

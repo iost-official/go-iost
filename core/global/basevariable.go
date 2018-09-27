@@ -32,6 +32,7 @@ const (
 
 // VoteContractPath is config of vote
 var VoteContractPath = "../../config/"
+var adminID = ""
 
 // GenesisTxExecTime is the maximum execution time of a transaction in genesis block
 var GenesisTxExecTime = 1 * time.Second
@@ -94,6 +95,8 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`["%v"]`, witnessInfo[2*i]))
 		acts = append(acts, &act1)
 	}
+	act11 := tx.NewAction("iost.vote", "InitAdmin", fmt.Sprintf(`["%v"]`, adminID))
+	acts = append(acts, &act11)
 
 	// deploy iost.bonus
 	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
@@ -145,6 +148,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	var err error
 	var witnessList []string
 	VoteContractPath = conf.Genesis.VoteContractPath
+	adminID = conf.Genesis.AdminID
 
 	for i := 0; i < len(conf.Genesis.WitnessInfo)/2; i++ {
 		witnessList = append(witnessList, conf.Genesis.WitnessInfo[2*i])
