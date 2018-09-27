@@ -2,7 +2,7 @@ GO = go
 
 VERSION = 2.0.0
 COMMIT = $(shell git rev-parse --short HEAD)
-PROJECT = github.com/iost-official/Go-IOS-Protocol
+PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
 DOCKER_DEVIMAGE = iostio/iost-dev:$(VERSION)-$(COMMIT)
 TARGET_DIR = target
@@ -42,7 +42,7 @@ else
 endif
 
 image:
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev:2.0.0-go1.11 make
+	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:2.0.0-go1.11 make
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 devimage:
