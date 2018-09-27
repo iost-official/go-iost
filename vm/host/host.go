@@ -180,7 +180,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 	l := len(c.Encode()) // todo multi Encode call
 	cost.AddAssign(CodeSavageCost(l))
 
-	return cost, err
+	return cost, nil
 }
 
 // DestroyCode delete code
