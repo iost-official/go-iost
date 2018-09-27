@@ -308,7 +308,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	if err != nil {
 
-		if err.Error() == "execution killed" {
+		if strings.Contains(err.Error(), "execution killed") {
 			status = tx.Status{
 				Code:    tx.ErrorTimeout,
 				Message: err.Error(),
