@@ -33,8 +33,8 @@ import (
 // publishCmd represents the publish command
 var publishCmd = &cobra.Command{
 	Use:   "publish",
-	Short: "sign to a .sc file with .sig files, and publish it",
-	Long:  `sign to a .sc file with .sig files, and publish it`,
+	Short: "sign a .sc file with .sig files, and publish it",
+	Long:  `sign a .sc file with .sig files, and publish it`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println(`invalid input, check
@@ -106,9 +106,8 @@ var publishCmd = &cobra.Command{
 				return
 			}
 		}
-		fmt.Println("ok")
-		//fmt.Println(hex.EncodeToString(txHash))
-		fmt.Println(saveBytes(txHash))
+		fmt.Println("iost node:receive your tx!")
+		fmt.Println("the transaction hash is:", saveBytes(txHash))
 	},
 }
 
