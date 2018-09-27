@@ -32,7 +32,7 @@ We deployed our testnet node instances with the PoB consensus engine on up to 6 
 
 ## Proof of Believability (PoB) up and running
 
-Our proprietary consensus algorithm, Proof-of-Believability, is up and running in a real environment. The source code is available to view in the [consensus folder](https://github.com/iost-official/Go-IOS-Protocol/tree/master/consensus) of the [IOST GitHub project](https://github.com/iost-official/Go-IOS-Protocol).
+Our proprietary consensus algorithm, Proof-of-Believability, is up and running in a real environment. The source code is available to view in the [consensus folder](https://github.com/iost-official/go-iost/tree/master/consensus) of the [IOST GitHub project](https://github.com/iost-official/go-iost).
 
 The PoB consensus uses a node’s contribution and stake balance to gain block creation chances by becoming a validator. The algorithm factors in both transactions verified and token balance to determine the contribution to the network.
 
@@ -55,7 +55,7 @@ Servi tokens are implemented this way with the following desired properties: non
 
 ### Modify Args
 
-In [account/account.go](https://github.com/iost-official/Go-IOS-Protocol/blob/master/account/account.go), change boot-up node as below
+In [account/account.go](https://github.com/iost-official/go-iost/blob/master/account/account.go), change boot-up node as below
 
 ```
 var (

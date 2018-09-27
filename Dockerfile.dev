@@ -40,6 +40,6 @@ RUN yum install -y python python-devel python-pip
 # Change redis conf
 RUN sed -i 's/\#\ daemonize\ no/daemonize\ yes/g' /etc/redis/redis.conf
 
-WORKDIR $GOPATH/src/github.com/iost-official/Go-IOS-Protocol
+WORKDIR $GOPATH/src/github.com/iost-official/go-iost
 
 CMD ["make"]

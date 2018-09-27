@@ -2,7 +2,7 @@ GO = go
 
 VERSION = 1.0.3
 COMMIT = $(shell git rev-parse --short HEAD)
-PROJECT = github.com/iost-official/Go-IOS-Protocol
+PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iost-node:$(VERSION)-$(COMMIT)
 TARGET_DIR = build
 
@@ -25,7 +25,7 @@ lint:
 	@gometalinter --config=.gometalinter.json ./...
 
 image: devimage
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/Go-IOS-Protocol iost-dev make
+	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost iost-dev make
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 devimage:
