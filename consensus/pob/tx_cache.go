@@ -3,8 +3,8 @@ package pob
 import (
 	"container/heap"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/tx"
 )
 
 type pQueue []*tx.Tx

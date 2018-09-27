@@ -10,11 +10,11 @@ import (
 
 	"sort"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/verifier"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/verifier"
+	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/lua"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"

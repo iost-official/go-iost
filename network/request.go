@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/message"
 )
 
 // NetReqType defines a request's type.

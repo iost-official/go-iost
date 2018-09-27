@@ -15,10 +15,10 @@ import (
 
 	"strconv"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/log"
+	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/gopher-lua"
 )
 

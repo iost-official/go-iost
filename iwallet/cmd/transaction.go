@@ -18,9 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/rpc"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/rpc"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )

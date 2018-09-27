@@ -6,13 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/network"
+	"github.com/iost-official/go-iost/consensus/common"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/message"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/log"
+	"github.com/iost-official/go-iost/network"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

@@ -4,8 +4,8 @@ import (
 	"net"
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/common/mclock"
-	"github.com/iost-official/Go-IOS-Protocol/network/discover"
+	"github.com/iost-official/go-iost/common/mclock"
+	"github.com/iost-official/go-iost/network/discover"
 )
 
 // Peer manages connections with other nodes.

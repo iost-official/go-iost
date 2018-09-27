@@ -4,14 +4,14 @@ import (
 	"testing"
 	//	"fmt"
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/lua"
 
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/vm/mocks"
+	"github.com/iost-official/go-iost/vm/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

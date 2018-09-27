@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/go-iost/core/message"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -37,7 +37,7 @@ func init() {
 	prometheus.MustRegister(receivedBroadTransactionCount)
 }
 
-// go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/Go-IOS-Protocol/network Router
+// go:generate mockgen -destination mocks/mock_router.go -package protocol_mock github.com/iost-official/go-iost/network Router
 
 // ReqType Marked request types using by protocol.
 type ReqType int32

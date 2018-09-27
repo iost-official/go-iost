@@ -9,10 +9,10 @@ import (
 
 	"runtime/debug"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/lua"
 )
 
 var ErrForbiddenCall = errors.New("forbidden call")

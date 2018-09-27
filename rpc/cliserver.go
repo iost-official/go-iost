@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/consensus"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
-	"github.com/iost-official/Go-IOS-Protocol/network"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/message"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/network"
+	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/lua"
 )
 
-//go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/Go-IOS-Protocol/rpc CliServer
+//go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/go-iost/rpc CliServer
 
 type BInfo struct {
 	Head  block.BlockHead

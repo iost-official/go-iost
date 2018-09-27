@@ -3,11 +3,11 @@ package consensus
 import (
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/pob"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/consensus/pob"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/state"
 )
 
 type Consensus interface {

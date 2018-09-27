@@ -5,9 +5,9 @@ import (
 
 	"sort"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/log"
+	"github.com/iost-official/go-iost/vm"
 )
 
 // contract implement of lua contract

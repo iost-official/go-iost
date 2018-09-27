@@ -8,8 +8,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	message "github.com/iost-official/Go-IOS-Protocol/core/message"
-	network "github.com/iost-official/Go-IOS-Protocol/network"
+	message "github.com/iost-official/go-iost/core/message"
+	network "github.com/iost-official/go-iost/network"
 )
 
 // MockRouter is a mock of Router interface

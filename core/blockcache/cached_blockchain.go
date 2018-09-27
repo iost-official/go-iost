@@ -1,11 +1,11 @@
 package blockcache
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/go-iost/core/block"
 
 	"bytes"
 
-	"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/go-iost/log"
 )
 
 type CachedBlockChain struct {

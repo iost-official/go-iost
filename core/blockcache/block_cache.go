@@ -5,10 +5,10 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/log"
-	//"github.com/iost-official/Go-IOS-Protocol/log"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/log"
+	//"github.com/iost-official/go-iost/log"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

@@ -3,10 +3,10 @@ package pob
 import (
 	"testing"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/go-iost/account"
+	. "github.com/iost-official/go-iost/account"
+	. "github.com/iost-official/go-iost/consensus/common"
+	"github.com/iost-official/go-iost/core/block"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

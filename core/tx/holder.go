@@ -1,9 +1,9 @@
 package tx
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/vm"
 )
 
 type Holder struct {

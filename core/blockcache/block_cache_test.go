@@ -6,14 +6,14 @@ import (
 	"errors"
 
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"github.com/iost-official/go-iost/core/mocks"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/db/mocks"
+	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/lua"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
+	"github.com/iost-official/go-iost/core/block"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

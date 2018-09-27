@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/vm/mocks"
+	"github.com/iost-official/go-iost/vm/mocks"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

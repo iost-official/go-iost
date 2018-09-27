@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/tx"
 )
 
 var ErrIllegalTx = errors.New("illegal tx")

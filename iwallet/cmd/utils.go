@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/go-iost/common"
 )
 
 func SaveBytes(buf []byte) string {

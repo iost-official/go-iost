@@ -3,28 +3,28 @@ package pob
 import (
 	"encoding/binary"
 
-	. "github.com/iost-official/Go-IOS-Protocol/account"
-	. "github.com/iost-official/Go-IOS-Protocol/consensus/common"
-	. "github.com/iost-official/Go-IOS-Protocol/core/tx"
-	. "github.com/iost-official/Go-IOS-Protocol/network"
+	. "github.com/iost-official/go-iost/account"
+	. "github.com/iost-official/go-iost/consensus/common"
+	. "github.com/iost-official/go-iost/core/tx"
+	. "github.com/iost-official/go-iost/network"
 
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/message"
 
 	"math/rand"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
-	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/verifier"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/log"
+	"github.com/iost-official/go-iost/verifier"
+	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/lua"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

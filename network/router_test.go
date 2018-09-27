@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
+	"github.com/iost-official/go-iost/core/message"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

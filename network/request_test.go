@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/go-iost/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/go-iost/common"
 )
 
 type TxPoolImpl struct {

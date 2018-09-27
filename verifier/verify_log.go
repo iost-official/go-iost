@@ -1,6 +1,6 @@
 package verifier
 
-import "github.com/iost-official/Go-IOS-Protocol/common"
+import "github.com/iost-official/go-iost/common"
 
 type VerifyLog struct {
 	ThreadCount int

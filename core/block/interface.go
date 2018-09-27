@@ -1,9 +1,9 @@
 // Package block 是区块和区块链的结构体定义和操作方法
 package block
 
-import "github.com/iost-official/Go-IOS-Protocol/core/tx"
+import "github.com/iost-official/go-iost/core/tx"
 
-//go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/block Chain
+//go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/go-iost/core/block Chain
 
 type Chain interface {
 	Push(block *Block) error

@@ -4,10 +4,10 @@ import (
 	sy "sync"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
-	"github.com/iost-official/Go-IOS-Protocol/log"
-	. "github.com/iost-official/Go-IOS-Protocol/network"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/message"
+	"github.com/iost-official/go-iost/log"
+	. "github.com/iost-official/go-iost/network"
 )
 
 var (

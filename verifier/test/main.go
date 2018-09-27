@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/verifier"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/verifier"
+	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/lua"
 )
 
 func main() {

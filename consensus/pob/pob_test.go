@@ -12,20 +12,20 @@ import (
 
 	"os"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
-	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
-	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/network"
-	"github.com/iost-official/Go-IOS-Protocol/network/mocks"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/lua"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/common"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/message"
+	"github.com/iost-official/go-iost/core/mocks"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/log"
+	"github.com/iost-official/go-iost/network"
+	"github.com/iost-official/go-iost/network/mocks"
+	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/lua"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -101,8 +101,8 @@ func envinit(t *testing.T) (*PoB, []account.Account, []string, *txpool.TxPoolSer
 	var witnessList []string
 
 	gopath := os.Getenv("GOPATH")
-	blockDb1 := gopath + "/src/github.com/iost-official/Go-IOS-Protocol/consensus/pob/blockDB"
-	txdb1 := gopath + "/src/github.com/iost-official/Go-IOS-Protocol/consensus/pob/txDB"
+	blockDb1 := gopath + "/src/github.com/iost-official/go-iost/consensus/pob/blockDB"
+	txdb1 := gopath + "/src/github.com/iost-official/go-iost/consensus/pob/txDB"
 	blockDb2 := gopath + "/src/github.com/iost-official/blockDB"
 	txdb2 := gopath + "/src/github.com/iost-official/txDB"
 
@@ -399,8 +399,8 @@ func BenchmarkGenerateBlock(b *testing.B) {
 
 func envInit(b *testing.B) (*PoB, []account.Account, []string, *txpool.TxPoolServer) {
 	gopath := os.Getenv("GOPATH")
-	blockDb1 := gopath + "/src/github.com/iost-official/Go-IOS-Protocol/consensus/pob/blockDB"
-	txdb1 := gopath + "/src/github.com/iost-official/Go-IOS-Protocol/consensus/pob/txDB"
+	blockDb1 := gopath + "/src/github.com/iost-official/go-iost/consensus/pob/blockDB"
+	txdb1 := gopath + "/src/github.com/iost-official/go-iost/consensus/pob/txDB"
 	blockDb2 := gopath + "/src/github.com/iost-official/blockDB"
 	txdb2 := gopath + "/src/github.com/iost-official/txDB"
 

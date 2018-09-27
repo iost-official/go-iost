@@ -15,11 +15,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/network/discover"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/message"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/log"
+	"github.com/iost-official/go-iost/network/discover"
 )
 
 // const

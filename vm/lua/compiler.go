@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/go-iost/vm"
 )
 
 var (

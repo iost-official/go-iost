@@ -7,8 +7,8 @@ import (
 	"fmt"
 
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/db/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

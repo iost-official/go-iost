@@ -7,7 +7,7 @@ import (
 
 	"strconv"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
+	"github.com/iost-official/go-iost/core/state"
 	"github.com/iost-official/gopher-lua"
 )
 

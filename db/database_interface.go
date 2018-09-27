@@ -6,7 +6,7 @@ import (
 	//"os"
 )
 
-//go:generate mockgen -destination mocks/mock_database.go -package db_mock github.com/iost-official/Go-IOS-Protocol/db Database
+//go:generate mockgen -destination mocks/mock_database.go -package db_mock github.com/iost-official/go-iost/db Database
 
 type Database interface {
 	Put(key []byte, value []byte) error

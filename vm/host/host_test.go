@@ -3,8 +3,8 @@ package host
 import (
 	"testing"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/state"
-	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/go-iost/core/state"
+	"github.com/iost-official/go-iost/db"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/iserver/cmd"
+	"github.com/iost-official/go-iost/iserver/cmd"
 )
 
 func main() {

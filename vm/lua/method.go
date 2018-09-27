@@ -1,6 +1,6 @@
 package lua
 
-import "github.com/iost-official/Go-IOS-Protocol/vm"
+import "github.com/iost-official/go-iost/vm"
 
 // Method ...
 type Method struct {

@@ -8,9 +8,9 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/log"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/log"
+	"github.com/iost-official/go-iost/vm"
 )
 
 const base float64 = 1.0

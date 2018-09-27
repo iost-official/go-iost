@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/vm"
 )
 
 //go:generate gencode go -schema=structs.schema -package=block

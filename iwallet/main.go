@@ -1,6 +1,6 @@
 package main
 
-import "github.com/iost-official/Go-IOS-Protocol/iwallet/cmd"
+import "github.com/iost-official/go-iost/iwallet/cmd"
 
 func main() {
 	cmd.Execute()
