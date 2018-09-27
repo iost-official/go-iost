@@ -1,0 +1,15 @@
+language: go
+
+branches:
+  only:
+    - master
+    - develop
+    - /^sprint.*$/
+
+matrix:
+  include:
+    - os: osx
+      osx_image: xcode10
+      go: "1.10.x"
+      script:
+        - make build
