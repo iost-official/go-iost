@@ -5,6 +5,8 @@ import (
 
 	"os"
 
+	"time"
+
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/common"
 	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
@@ -15,7 +17,6 @@ import (
 	"github.com/iost-official/Go-IOS-Protocol/db"
 	"github.com/iost-official/Go-IOS-Protocol/vm"
 	"github.com/iost-official/Go-IOS-Protocol/vm/native"
-	"time"
 )
 
 // TMode type of mode
@@ -101,6 +102,9 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 	// deploy iost.bonus
 	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
 	acts = append(acts, &act2)
+
+	act3 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.domain", native.DomainABI().B64Encode()))
+	acts = append(acts, &act3)
 
 	trx := tx.NewTx(acts, nil, 100000000, 0, 0)
 	trx.Time = 0
