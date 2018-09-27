@@ -189,8 +189,9 @@ obj.%s(%s)
 func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	cCode := C.CString(preparedCode)
 	defer C.free(unsafe.Pointer(cCode))
+	expireTime := C.longlong(sbx.host.Deadline().UnixNano())
 
-	rs := C.Execute(sbx.context, cCode)
+	rs := C.Execute(sbx.context, cCode, expireTime)
 
 	result := C.GoString(rs.Value)
 	defer C.free(unsafe.Pointer(rs.Value))

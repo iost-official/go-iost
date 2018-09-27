@@ -9,7 +9,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
 	"github.com/iost-official/Go-IOS-Protocol/core/block"
 	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
 	"github.com/iost-official/Go-IOS-Protocol/core/global"
@@ -54,9 +53,8 @@ func testRun(t *testing.T) {
 	mockP2PService := p2p_mock.NewMockService(mockController)
 	channel := make(chan p2p.IncomingMessage, 1024)
 	mockP2PService.EXPECT().Register(gomock.Any(), gomock.Any()).Return(channel).AnyTimes()
-	txPool, _ := txpool.NewTxPoolImpl(baseVariable, blockCache, mockP2PService)               //mock
-	synchronizer, _ := synchronizer.NewSynchronizer(baseVariable, blockCache, mockP2PService) //mock
-	pob := NewPoB(account1, baseVariable, blockCache, txPool, mockP2PService, synchronizer)
+	txPool, _ := txpool.NewTxPoolImpl(baseVariable, blockCache, mockP2PService) //mock
+	pob := NewPoB(account1, baseVariable, blockCache, txPool, mockP2PService)
 	pob.Start()
 	fmt.Println(time.Now().Second())
 	fmt.Println(time.Now().Nanosecond())

@@ -3,6 +3,7 @@ const producerRegisterFee = 1000 * 1000 * softFloatRate;
 const preProducerThreshold = 2100 * 10000;
 const voteLockTime = 200;
 const voteStatInterval = 200;
+const admin = "IOSTrGdaqXePYMyo33DhjHthVSzFCmv7khwXejvBTcRvVbFoNjbrV";
 
 class VoteContract {
     constructor() {
@@ -13,6 +14,38 @@ class VoteContract {
         this._put("pendingBlockNumber", 0);
     }
 
+    InitProducerOld(num, proStr) {
+        if (num === 0) {
+            throw new Error("producer list number empty.");
+        }
+        const pendingProducerList = JSON.parse(proStr);
+        if (typeof pendingProducerList !== "object") {
+            throw new Error("producer str invalid format. got ", pendingProducerList, ", type = ", typeof pendingProducerList);
+        }
+        if (pendingProducerList.length !== num) {
+            throw new Error("producer list length mismatch with number.");
+        }
+        this._put("pendingProducerList", pendingProducerList);
+
+        const producerNumber = pendingProducerList.length;
+        this._put("producerNumber", producerNumber);
+
+        for (let i = 0; i < producerNumber; i++) {
+            const ret = BlockChain.deposit(pendingProducerList[i], producerRegisterFee);
+            if (ret !== 0) {
+                throw new Error("constructor deposit failed. ret = " + ret);
+            }
+            this._mapPut("producerTable", pendingProducerList[i], {
+                "loc": "",
+                "url": "",
+                "netId": "",
+                "online": true,
+                "score": 0,
+                "votes": 0
+            });
+        }
+    }
+
     InitProducer(proID) {
     	const bn = this._getBlockNumber();
     	if(bn !== 0) {
@@ -21,14 +54,6 @@ class VoteContract {
 
     	let pendingProducerList = this._get("pendingProducerList");
 		pendingProducerList.push(proID);
-        const keyCmp = function(a, b) {
-            if (b < a) {
-                return 1;
-            } else {
-                return -1;
-            }
-        };
-        pendingProducerList.sort(keyCmp);
         this._put("pendingProducerList", pendingProducerList);
 
         const producerNumber = pendingProducerList.length;
@@ -48,18 +73,8 @@ class VoteContract {
         });
     }
 
-    InitAdmin(adminID) {
-        const bn = this._getBlockNumber();
-        if(bn !== 0) {
-            throw new Error("init out of genesis block")
-        }
-        this._put("adminID", adminID);
-    }
-
     can_update(data) {
-        const admin = this._get("adminID");
-        this._requireAuth(admin);
-        return true;
+        return false;
     }
 
 	_requireAuth(account) {
@@ -78,9 +93,12 @@ class VoteContract {
 	}
 
     _get(k) {
+        // console.log(k);
+        // console.log(storage.get(k));
         return JSON.parse(storage.get(k));
     }
 	_put(k, v) {
+        // _native_log("_put " + k + "," + v);
         const ret = storage.put(k, JSON.stringify(v));
         if (ret !== 0) {
             throw new Error("storage put failed. ret = " + ret);

@@ -146,12 +146,30 @@ var compileCmd = &cobra.Command{
 			fmt.Println("gen compiler instance failed")
 			return
 		}
-		contract, err := compiler.Parse("", code, abi)
+		conID := ""
+		if update {
+			if len(args) < 3 {
+				fmt.Println(`Error: contract id not given`)
+				return
+			}
+			conID = args[2]
+		}
+		contract, err := compiler.Parse(conID, code, abi)
 		if err != nil {
 			fmt.Printf("gen contract error:%v\n", err)
 			return
 		}
-		action := tx.NewAction("iost.system", "SetCode", `["`+contract.B64Encode()+`",]`)
+		methodName := "SetCode"
+		data := `["`+contract.B64Encode()+`"]`
+		if update {
+			methodName = "UpdateCode"
+			if len(args) >= 4 {
+				data = `["`+contract.B64Encode()+`", "` + args[3] + `"]`
+			} else {
+				data = `["`+contract.B64Encode()+`", ""]`
+			}
+		}
+		action := tx.NewAction("iost.system", methodName, data)
 		pubkeys := make([][]byte, len(signers))
 		for i, accID := range signers {
 			pubkeys[i] = account.GetPubkeyByID(accID)
@@ -208,6 +226,7 @@ var gasPrice int64
 var expiration int64
 var signers []string
 var genABI bool
+var update bool
 var setContractPath string
 var resetContractPath bool
 var home string
@@ -228,6 +247,7 @@ func init() {
 	compileCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
 	compileCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
 	compileCmd.Flags().BoolVarP(&genABI, "genABI", "g", false, "generate abi file")
+	compileCmd.Flags().BoolVarP(&update, "update", "u", false, "update contract")
 	compileCmd.Flags().StringVarP(&setContractPath, "setContractPath", "c", "", "set contract path, default is $GOPATH + /src/github.com/iost-official/Go-IOS-Protocol/cmd/playground/contract")
 	compileCmd.Flags().BoolVarP(&resetContractPath, "resetContractPath", "r", false, "clean contract path")
 

@@ -17,17 +17,16 @@ func TestDownloadController(t *testing.T) {
 	Convey("Test DownloadController", t, func() {
 		dHash := make(chan string, 10)
 		dPID := make(chan p2p.PeerID, 10)
-		dc, err := NewDownloadController(func(hash string, peerID p2p.PeerID) {
+		dc, err := NewDownloadController(func(hash string, p interface{}, peerID p2p.PeerID) bool {
 			dHash <- hash
 			dPID <- peerID
+			return true
 		})
 		dc.Start()
 		So(err, ShouldBeNil)
 		Convey("Check OnRecvHash", func() {
-			dc.OnRecvHash("111", "aaa")
-			//dc.OnRecvHash("222", "bbb")
-			dc.OnRecvHash("222", "aaa")
-			//dc.OnRecvBlock("123", "abc")
+			dc.CreateMission("111", 10, "aaa")
+			dc.CreateMission("222", 10, "aaa")
 			var hash string
 			var PID p2p.PeerID
 			hash = <-dHash

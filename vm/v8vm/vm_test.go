@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"time"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/Go-IOS-Protocol/core/contract"
 	"github.com/iost-official/Go-IOS-Protocol/ilog"
@@ -70,6 +72,8 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 		Code: rawCode,
 	}
 
+	expTime := time.Now().Add(time.Second * 10)
+	h.SetDeadline(expTime)
 	code.Code, _ = vmPool.Compile(code)
 
 	return h, code
@@ -82,6 +86,8 @@ func TestEngine_LoadAndCall(t *testing.T) {
 	ctx.GSet("gas_limit", int64(1000000000))
 	ctx.Set("contract_name", "contractName")
 	tHost := host.NewHost(ctx, vi, nil, nil)
+	expTime := time.Now().Add(time.Second * 10)
+	tHost.SetDeadline(expTime)
 
 	code := &contract.Contract{
 		ID: "test.js",
