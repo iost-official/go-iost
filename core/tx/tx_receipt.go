@@ -132,7 +132,7 @@ func (r *TxReceipt) Decode(b []byte) error {
 
 // Hash return byte hash
 func (r *TxReceipt) Hash() []byte {
-	return common.Sha256(r.Encode())
+	return common.Sha3(r.Encode())
 }
 
 func (r *TxReceipt) String() string {

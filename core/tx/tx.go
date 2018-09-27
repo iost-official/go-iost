@@ -82,7 +82,7 @@ func (t *Tx) baseHash() []byte {
 	if err != nil {
 		panic(err)
 	}
-	return common.Sha256(b)
+	return common.Sha3(b)
 }
 
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
@@ -123,7 +123,7 @@ func (t *Tx) publishHash() []byte {
 	if err != nil {
 		panic(err)
 	}
-	return common.Sha256(b)
+	return common.Sha3(b)
 }
 
 // ToTxRaw convert tx to TxRaw for transmission
@@ -228,10 +228,10 @@ func (t *Tx) String() string {
 	return str
 }
 
-// Hash return cached hash if exists, or calculate with Sha256
+// Hash return cached hash if exists, or calculate with Sha3
 func (t *Tx) Hash() []byte {
 	if t.hash == nil {
-		t.hash = common.Sha256(t.Encode())
+		t.hash = common.Sha3(t.Encode())
 	}
 	return t.hash
 }
