@@ -5,11 +5,11 @@ import (
 	//	"fmt"
 
 	. "github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/core/mocks"
-	"github.com/iost-official/Go-IOS-Protocol/db/mocks"
+	"github.com/iost-official/go-iost/core/mocks"
+	"github.com/iost-official/go-iost/db/mocks"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

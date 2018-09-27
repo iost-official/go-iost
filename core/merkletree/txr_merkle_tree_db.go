@@ -5,7 +5,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/db/kv"
+	"github.com/iost-official/go-iost/db/kv"
 )
 
 // TXRMerkleTreeDB is the implementation of TXRMerkleTreeDB

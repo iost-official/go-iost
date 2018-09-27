@@ -8,7 +8,7 @@ import (
 
 	"strconv"
 
-	"github.com/iost-official/Go-IOS-Protocol/db/kv"
+	"github.com/iost-official/go-iost/db/kv"
 )
 
 // BlockChain is the implementation of chain

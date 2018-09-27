@@ -1,8 +1,8 @@
 package kv
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/db/kv/leveldb"
-	"github.com/iost-official/Go-IOS-Protocol/db/kv/rocksdb"
+	"github.com/iost-official/go-iost/db/kv/leveldb"
+	"github.com/iost-official/go-iost/db/kv/rocksdb"
 )
 
 // StorageType is the type of storage, include leveldb and rocksdb

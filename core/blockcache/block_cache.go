@@ -7,11 +7,11 @@ import (
 
 	"strconv"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // CacheStatus ...

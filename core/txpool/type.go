@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/metrics"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/metrics"
 )
 
 var (

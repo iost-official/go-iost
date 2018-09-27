@@ -19,9 +19,9 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/uber-go/atomic"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	p2pb "github.com/iost-official/Go-IOS-Protocol/p2p/pb"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
+	p2pb "github.com/iost-official/go-iost/p2p/pb"
 )
 
 var (

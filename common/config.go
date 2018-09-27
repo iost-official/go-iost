@@ -3,7 +3,7 @@ package common
 import (
 	"os"
 
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
 )

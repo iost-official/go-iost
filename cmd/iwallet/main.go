@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/iwallet"
+	"github.com/iost-official/go-iost/iwallet"
 )
 
 func main() {

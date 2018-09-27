@@ -1,6 +1,6 @@
 package host
 
-import "github.com/iost-official/Go-IOS-Protocol/core/contract"
+import "github.com/iost-official/go-iost/core/contract"
 
 // var list cost
 var (

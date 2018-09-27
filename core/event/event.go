@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/iost-official/Go-IOS-Protocol/ilog"
+	log "github.com/iost-official/go-iost/ilog"
 )
 
 // EventCollectorSize size of post channel in event collector

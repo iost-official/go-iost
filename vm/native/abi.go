@@ -3,7 +3,7 @@ package native
 import (
 	"sort"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/go-iost/core/contract"
 )
 
 // ABI generate iost.system abi and contract

@@ -5,16 +5,16 @@ import (
 
 	"os"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/verifier"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/native"
 	"time"
 )
 
@@ -242,10 +242,10 @@ func FakeNew() (*BaseVariableImpl, error) {
 	}
 	config := common.Config{}
 	config.VM = &common.VMConfig{}
-	config.VM.JsPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/"
+	config.VM.JsPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/vm/v8vm/v8/libjs/"
 
 	vm.SetUp(config.VM)
-	VoteContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
+	VoteContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/"
 	fmt.Println(VoteContractPath)
 	fmt.Println(config.VM.JsPath)
 	blk, err := GenGenesis(stateDB, []string{"a1", "11111111111", "a2", "2222", "a3", "333"})
