@@ -8,17 +8,17 @@ import (
 
 	"strconv"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
-	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -538,7 +538,7 @@ func TestJS_Genesis(t *testing.T) {
 		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], 50000000))
 		acts = append(acts, &act)
 	}
-	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
+	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/"
 	// deploy iost.vote
 	voteFilePath := VoteContractPath + "vote.js"
 	voteAbiPath := VoteContractPath + "vote.js.abi"
@@ -596,7 +596,7 @@ func TestJS_Genesis(t *testing.T) {
 	}
 
 	engine := NewEngine(&blockHead, mvccdb)
-	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
+	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/go-iost/vm/v8vm/v8/libjs/")
 	var txr *tx.TxReceipt
 	ti := watchTime(func() {
 		txr, err = engine.Exec(trx, time.Second)

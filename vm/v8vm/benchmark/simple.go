@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
-	"github.com/iost-official/Go-IOS-Protocol/vm/v8vm"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/vm/v8vm"
 )
 
 var vmPool *v8.VMPool

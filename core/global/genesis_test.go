@@ -6,8 +6,8 @@ import (
 
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 func TestGenGenesis(t *testing.T) {

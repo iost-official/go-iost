@@ -6,7 +6,7 @@ package tx
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import crypto "github.com/iost-official/Go-IOS-Protocol/crypto"
+import crypto "github.com/iost-official/go-iost/crypto"
 
 import io "io"
 

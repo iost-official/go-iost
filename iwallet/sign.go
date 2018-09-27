@@ -21,8 +21,8 @@ import (
 
 	"strings"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )

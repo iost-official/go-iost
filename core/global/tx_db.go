@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/db/kv"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/db/kv"
 )
 
-//go:generate mockgen -destination ../mocks/mock_txdb.go -package core_mock github.com/iost-official/Go-IOS-Protocol/core/global TxDB
+//go:generate mockgen -destination ../mocks/mock_txdb.go -package core_mock github.com/iost-official/go-iost/core/global TxDB
 
 // TxDB defines the functions of tx database.
 type TxDB interface {

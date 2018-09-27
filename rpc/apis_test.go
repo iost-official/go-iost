@@ -3,17 +3,17 @@ package rpc
 import (
 	"errors"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/event"
+	"github.com/iost-official/go-iost/core/event"
 
 	"testing"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/txpool"
 
 	"github.com/bouk/monkey"
-	"github.com/iost-official/Go-IOS-Protocol/p2p"
+	"github.com/iost-official/go-iost/p2p"
 )
 
 type MockApisSubscribeServer struct {

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/smartystreets/goconvey/convey"
 )
 

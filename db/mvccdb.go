@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/db/kv"
-	"github.com/iost-official/Go-IOS-Protocol/db/mvcc"
+	"github.com/iost-official/go-iost/db/kv"
+	"github.com/iost-official/go-iost/db/mvcc"
 )
 
-//go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/Go-IOS-Protocol/db MVCCDB
+//go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/go-iost/db MVCCDB
 
 // constant of mvccdb
 const (

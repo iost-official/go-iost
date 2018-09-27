@@ -4,10 +4,10 @@ import (
 	"errors"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/merkletree"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/merkletree"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
 )
 
 // Block is the implementation of block

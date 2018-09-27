@@ -19,7 +19,7 @@ import (
 
 	"context"
 
-	"github.com/iost-official/Go-IOS-Protocol/rpc"
+	"github.com/iost-official/go-iost/rpc"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )

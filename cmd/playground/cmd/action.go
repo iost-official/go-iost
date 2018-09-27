@@ -19,9 +19,9 @@ import (
 
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/database"
 	"github.com/spf13/cobra"
 )
 

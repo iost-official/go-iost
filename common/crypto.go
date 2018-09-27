@@ -8,7 +8,7 @@ import (
 	"hash/crc32"
 
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/iost-official/Go-IOS-Protocol/common/hash"
+	"github.com/iost-official/go-iost/common/hash"
 	"golang.org/x/crypto/ripemd160"
 )
 

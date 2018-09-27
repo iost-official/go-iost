@@ -1,7 +1,7 @@
 package crypto
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/crypto/backend"
+	"github.com/iost-official/go-iost/crypto/backend"
 )
 
 // AlgorithmBackend is the interface of algorithm backend

@@ -10,8 +10,8 @@ import "C"
 import (
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 // CVMInitOnce vm init once

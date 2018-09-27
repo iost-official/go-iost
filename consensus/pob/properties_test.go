@@ -3,7 +3,7 @@ package pob
 import (
 	"testing"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/go-iost/account"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

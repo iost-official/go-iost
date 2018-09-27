@@ -1,8 +1,8 @@
 package host
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/event"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/event"
 )
 
 // EventPoster the event handler in host

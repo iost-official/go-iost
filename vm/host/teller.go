@@ -3,8 +3,8 @@ package host
 import (
 	"strings"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // const prefixs
