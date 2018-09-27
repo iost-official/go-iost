@@ -40,7 +40,7 @@ var balanceCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println(b, "iost")
+		fmt.Println(b * 1.0 / 1e8, "iost")
 	},
 }
 
