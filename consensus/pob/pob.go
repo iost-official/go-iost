@@ -29,12 +29,6 @@ var (
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
-	metricsVMTime              = metrics.NewGauge("iost_vm_exec_time", nil)
-	metricsVMAvgTime           = metrics.NewGauge("iost_vm_exec_avg_time", nil)
-	metricsIterTime            = metrics.NewGauge("iost_iter_time", nil)
-	metricsIterAvgTime         = metrics.NewGauge("iost_iter_avg_time", nil)
-	metricsNonTimeOutTxSize    = metrics.NewGauge("iost_non_time_out_tx_size", nil)
-	metricsAllTxSize           = metrics.NewGauge("iost_all_out_tx_size", nil)
 )
 
 var (

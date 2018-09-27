@@ -212,18 +212,10 @@ func (pool *TxPImpl) TxIterator() (*Iterator, *blockcache.BlockCacheNode) {
 
 // PendingTxs get the pending transactions
 func (pool *TxPImpl) PendingTxs(maxCnt int) (TxsList, *blockcache.BlockCacheNode, error) {
-	start := time.Now()
-	defer func(t time.Time) {
-		cost := time.Since(t).Nanoseconds() / int64(time.Microsecond)
-		metricsGetPendingTxTime.Set(float64(cost), nil)
-	}(start)
 
 	pool.mu.Lock()
-	cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
-	metricsGetPendingTxLockTime.Set(float64(cost), nil)
 	defer pool.mu.Unlock()
 
-	start = time.Now()
 	var pendingList TxsList
 	iter := pool.pendingTx.Iter()
 	var i int
@@ -234,8 +226,6 @@ func (pool *TxPImpl) PendingTxs(maxCnt int) (TxsList, *blockcache.BlockCacheNode
 		}
 		tx, ok = iter.Next()
 	}
-	cost = time.Since(start).Nanoseconds() / int64(time.Microsecond)
-	metricsGetPendingTxAppendTime.Set(float64(cost), nil)
 
 	metricsTxPoolSize.Set(float64(pool.pendingTx.Size()), nil)
 
@@ -244,12 +234,6 @@ func (pool *TxPImpl) PendingTxs(maxCnt int) (TxsList, *blockcache.BlockCacheNode
 
 // ExistTxs determine if the transaction exists
 func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error) {
-	start := time.Now()
-	defer func(t time.Time) {
-		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
-		metricsExistTxTime.Observe(float64(cost), nil)
-		metricsExistTxCount.Add(1, nil)
-	}(start)
 
 	var r FRet
 
@@ -365,12 +349,6 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) TAddTx {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return CacheFullError
 	}
-	start := time.Now()
-	defer func(t time.Time) {
-		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
-		metricsVerifyTxTime.Observe(float64(cost), nil)
-		metricsVerifyTxCount.Add(1, nil)
-	}(start)
 
 	if t.GasPrice <= 0 {
 		return GasPriceError
@@ -491,12 +469,6 @@ func (pool *TxPImpl) clearBlock() {
 }
 
 func (pool *TxPImpl) addTx(tx *tx.Tx) TAddTx {
-	start := time.Now()
-	defer func(t time.Time) {
-		cost := time.Since(start).Nanoseconds() / int64(time.Microsecond)
-		metricsAddTxTime.Observe(float64(cost), nil)
-		metricsAddTxCount.Add(1, nil)
-	}(start)
 
 	h := tx.Hash()
 	if pool.existTxInChain(h, pool.forkChain.NewHead.Block) {
@@ -523,17 +495,14 @@ func (pool *TxPImpl) TxTimeOut(tx *tx.Tx) bool {
 	exTime := tx.Expiration
 
 	if txTime > nTime {
-		metricsTxErrType.Add(1, map[string]string{"type": "txTime > nTime"})
 		return true
 	}
 
 	if exTime <= nTime {
-		metricsTxErrType.Add(1, map[string]string{"type": "exTime <= nTime"})
 		return true
 	}
 
 	if nTime-txTime > Expiration {
-		metricsTxErrType.Add(1, map[string]string{"type": "nTime-txTime > expiration"})
 		return true
 	}
 	return false
