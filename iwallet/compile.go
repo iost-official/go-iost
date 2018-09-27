@@ -65,8 +65,15 @@ func generateABI(codePath string) string {
 // compileCmd represents the compile command
 var compileCmd = &cobra.Command{
 	Use:   "compile",
-	Short: "Compile contract files to smart contract",
-	Long:  `Compile contract files to smart contract. `,
+	Short: "Generate tx",
+	Long: `Generate a tx by a contract and an abi file
+	example:iwallet compile -e 100 -l 10000 -p 1 --signers "IOSTdhsdhassdjaskd,IOSTskdjsakdjsk,..." ./example.js ./example.js.abi
+	watch out:
+		1.here signers means the account IDs who should sign this tx.for instance.if Alice transfers 100 to Bob in the constructor of the contract you want to deploy,then you should write Alice's account ID in --signers
+		2.if you don't include --signers,iwallet consider this tx as a complete tx,So please use -k to indicate the file which contains your secret key to sign this tx.
+		3.the secret key in the file indicate by -k is to sign the tx,meanwhile the account IDs in --signers are just to indicate this tx needs the authorization of these people.And they will generate their signatures later in the command 'iwallet sign'.
+	`,
+
 	Run: func(cmd *cobra.Command, args []string) {
 		if resetContractPath {
 			err := os.Remove(home + "/.iwallet/contract_path")
@@ -154,6 +161,7 @@ var compileCmd = &cobra.Command{
 
 		if len(signers) == 0 {
 			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
+			fmt.Println("please ensure that the right secret key file path is given by parameter -k,or the secret key file path is ~/.iwallet/id_ed25519 by default,this file indicate the secret key to sign the tx")
 			fsk, err := readFile(kpPath)
 			if err != nil {
 				fmt.Println("Read file failed: ", err.Error())
@@ -172,8 +180,8 @@ var compileCmd = &cobra.Command{
 				fmt.Println(err.Error())
 				return
 			}
-			fmt.Println("ok")
-			fmt.Println(saveBytes(txHash))
+			fmt.Println("iost node:receive your tx!")
+			fmt.Println("the transaction hash is:", saveBytes(txHash))
 			return
 		}
 
@@ -186,7 +194,11 @@ var compileCmd = &cobra.Command{
 		err = saveTo(dest, bytes)
 		if err != nil {
 			fmt.Println(err.Error())
+			return
 		}
+		fmt.Printf("the unsigned tx has been saved to %s\n", dest)
+		fmt.Println("the account IDs of the signers are:", signers)
+		fmt.Println("please inform them to sign this contract with the command 'iwallet sign' and send the generated signatures to you.by this step they give you the authorization,or this tx will fail to pass through the iost vm")
 	},
 }
 
@@ -211,8 +223,8 @@ func init() {
 
 	compileCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
 	compileCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
-	compileCmd.Flags().Int64VarP(&expiration, "expiration", "e", 0, "expiration timestamp for a transaction")
-	compileCmd.Flags().StringSliceVarP(&signers, "signers", "", []string{}, "signers who should sign this transaction")
+	compileCmd.Flags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
+	compileCmd.Flags().StringSliceVarP(&signers, "signers", "n", []string{}, "signers who should sign this transaction")
 	compileCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
 	compileCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
 	compileCmd.Flags().BoolVarP(&genABI, "genABI", "g", false, "generate abi file")
