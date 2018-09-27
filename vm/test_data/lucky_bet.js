@@ -23,7 +23,10 @@ class Contract {
             throw "lucky number should be >=0 and <= 9"
         }
 
-        BlockChain.deposit(account, coins);
+        const result = BlockChain.deposit(account, coins);
+        if (result !== 0) {
+            throw "cannot bet"
+        }
 
         const userNumber = JSON.parse(storage.get("user_number"));
         const totalCoins = JSON.parse(storage.get("total_coins"));
