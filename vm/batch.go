@@ -127,5 +127,6 @@ func (v *Verifier) Do(b *Batch, checkFunc func(t *tx.Tx, r *tx.TxReceipt) error)
 			errs[i2] = checkFunc(b.Txs[i2], b.Receipts[i2])
 		}()
 	}
+	v.wait.Wait()
 	return errs
 }
