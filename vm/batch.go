@@ -32,6 +32,12 @@ type Maker struct {
 	wait   sync.WaitGroup
 }
 
+func NewMaker(sender TxSender) *Maker {
+	return &Maker{
+		sender: sender,
+	}
+}
+
 func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.Duration, thread int) *Batch {
 	var mappers, visitors, txs, receipts sync.Map
 
@@ -105,4 +111,21 @@ func Resolve(mappers sync.Map) (accept, drop []int) {
 		return true
 	})
 	return
+}
+
+type Verifier struct {
+	wait sync.WaitGroup
+}
+
+func (v *Verifier) Do(b *Batch, checkFunc func(t *tx.Tx, r *tx.TxReceipt) error) []error {
+	var errs = make([]error, len(b.Txs))
+	for i := range b.Txs {
+		i2 := i
+		go func() {
+			v.wait.Add(1)
+			defer v.wait.Done()
+			errs[i2] = checkFunc(b.Txs[i2], b.Receipts[i2])
+		}()
+	}
+	return errs
 }
