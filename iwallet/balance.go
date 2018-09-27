@@ -40,12 +40,15 @@ var balanceCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println(b, "iost")
+		fmt.Println(float64(b) / 1e8, "iost")
 	},
 }
 
+var useLongestChain bool
+
 func init() {
 	rootCmd.AddCommand(balanceCmd)
+	balanceCmd.Flags().BoolVarP(&useLongestChain, "use_longest", "l", false, "get balance on longest chain")
 
 	// Here you will define your flags and configuration settings.
 
@@ -65,7 +68,11 @@ func CheckBalance(id string) (int64, error) {
 	}
 	defer conn.Close()
 	client := rpc.NewApisClient(conn)
-	value, err := client.GetBalance(context.Background(), &rpc.GetBalanceReq{ID: id})
+	req := rpc.GetBalanceReq{ID: id}
+	if useLongestChain {
+		req.UseLongestChain = true
+	}
+	value, err := client.GetBalance(context.Background(), &req)
 	if err != nil {
 		return 0, err
 	}

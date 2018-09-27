@@ -18,11 +18,15 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"strings"
+	"math"
 
 	"github.com/iost-official/Go-IOS-Protocol/account"
 	"github.com/iost-official/Go-IOS-Protocol/core/tx"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"github.com/bitly/go-simplejson"
+	"github.com/iost-official/Go-IOS-Protocol/ilog"
 )
 
 // callCmd represents the compile command
@@ -42,6 +46,15 @@ var callCmd = &cobra.Command{
 		}
 		var actions []*tx.Action = make([]*tx.Action, argc/3)
 		for i := 0; i < len(args); i += 3 {
+			// fixme use IOST as Measure Unit in iost.system Transfer, 1 IOST = 1e8
+			if args[i] == "iost.system" && args[i+1] == "Transfer" {
+				data, err := handleTransferData(args[i+2])
+				if err != nil {
+					fmt.Println("parse transfer amount failed. ", err)
+					return
+				}
+				args[i+2] = data
+			}
 			act := tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
 			actions[i] = &act
 		}
@@ -112,4 +125,31 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// compi leCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func handleTransferData(data string) (string, error) {
+	if strings.HasSuffix(data, ",]") {
+		data = data[:len(data)-2] + "]"
+	}
+	js, err := simplejson.NewJson([]byte(data))
+	if err != nil {
+		return "", fmt.Errorf("error in data: %v", err)
+	}
+
+	arr, err := js.Array()
+	if err != nil {
+		ilog.Error(js.EncodePretty())
+		return "", err
+	}
+
+	if len(arr) != 3 {
+		return "", fmt.Errorf("Transfer need 3 arguments, got %v", len(arr))
+	}
+	if amount, err := js.GetIndex(2).Float64(); err == nil {
+		if amount * 1e8 > math.MaxInt64 {
+			return "", fmt.Errorf("you can transfer more than %f iost", math.MaxInt64 / 1e8)
+		}
+		data = fmt.Sprintf(`["%v", "%v", %d]`, js.GetIndex(0).MustString(), js.GetIndex(1).MustString(), int64(amount * 1e8))
+	}
+	return data, nil
 }
