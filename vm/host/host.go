@@ -130,7 +130,7 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 		Args:    []string{},
 	}
 
-	c.Info.Abis = append(c.Info.Abis, &initABI)
+	c.Info.Abi = append(c.Info.Abi, &initABI)
 
 	l := len(c.Encode()) // todo multi Encode call
 	//ilog.Debugf("length is : %v", l)

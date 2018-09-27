@@ -41,9 +41,9 @@ func TestMonitor_Call(t *testing.T) {
 		ID:   "Contract",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "abi",
 					Args:     []string{"string"},
@@ -91,9 +91,9 @@ func TestMonitor_Context(t *testing.T) {
 		ID:   "Contract",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "outer",
 					Args:     []string{"number"},
@@ -156,9 +156,9 @@ func TestMonitor_HostCall(t *testing.T) {
 		ID:   "Contract",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "outer",
 					Args:     []string{"number"},
@@ -213,9 +213,9 @@ class Contract {
 module.exports = Contract;
 `,
 		Info: &contract.Info{
-			Lang:        "javascript",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "javascript",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "hello",
 					Args:     []string{},

@@ -21,14 +21,14 @@ func genNativeAbi(id string, abi map[string]*abi) *contract.Contract {
 		ID:   id,
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "native",
-			VersionCode: "1.0.0",
-			Abis:        make([]*contract.ABI, 0),
+			Lang:    "native",
+			Version: "1.0.0",
+			Abi:     make([]*contract.ABI, 0),
 		},
 	}
 
 	for _, v := range abi {
-		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
+		c.Info.Abi = append(c.Info.Abi, &contract.ABI{
 			Name:     v.name,
 			Args:     v.args,
 			Payment:  0,
@@ -37,7 +37,7 @@ func genNativeAbi(id string, abi map[string]*abi) *contract.Contract {
 		})
 	}
 
-	sort.Sort(abiSlice(c.Info.Abis))
+	sort.Sort(abiSlice(c.Info.Abi))
 
 	return c
 }
