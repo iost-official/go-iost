@@ -24,7 +24,6 @@ var (
 
 	maxBlockHashQueryNumber int64 = 500
 	retryTime                     = 5 * time.Second
-	syncBlockTimeout              = 5 * time.Second
 	checkTime                     = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
 	heightAvailableTime     int64 = 22 * 3
