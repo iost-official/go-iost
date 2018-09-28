@@ -268,7 +268,7 @@ func (p *PoB) verifyLoop() {
 				err := p.handleRecvBlock(blk)
 				p.broadcastBlockHash(blk) // can use go
 				p.blockReqMap.Delete(string(blk.HeadHash()))
-				if err != nil && err != errSingle {
+				if err != nil {
 					ilog.Errorf("received new block error, err:%v", err)
 					continue
 				}
@@ -286,7 +286,7 @@ func (p *PoB) verifyLoop() {
 						continue
 					}
 					err := p.handleRecvBlock(blk)
-					if err != nil && err != errSingle && err != errDuplicate {
+					if err != nil {
 						ilog.Errorf("received sync block error, err:%v", err)
 						continue
 					}
