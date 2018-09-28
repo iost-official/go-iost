@@ -27,7 +27,8 @@ const (
 )
 
 const (
-	peerConNum = 100
+	syncBlockTimeout = 10 * time.Second
+	peerConNum       = 10
 	// Free peer state type
 	Free string = "Free"
 )
