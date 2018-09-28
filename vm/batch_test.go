@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/go-iost/vm/database"
 )
 
 func TestArray(t *testing.T) {

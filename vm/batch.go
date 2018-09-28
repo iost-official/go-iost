@@ -5,9 +5,9 @@ import (
 
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/vm/database"
 )
 
 type Batch struct {
@@ -39,7 +39,12 @@ func NewMaker(sender TxSender) *Maker {
 }
 
 func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.Duration, thread int) *Batch {
-	var mappers, visitors, txs, receipts sync.Map
+	var (
+		mappers = make([]map[string]database.Access, thread)
+		txs = make([]*tx.Tx, thread)
+		receipts = make([]*tx.TxReceipt, thread)
+		visitors = make([]*database.Visitor, thread)
+	)
 
 	bvr := database.NewBatchVisitorRoot(10000, db)
 	for i := 0; i < thread; i++ {
@@ -57,12 +62,12 @@ func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.D
 			tr, err := e.Exec(t, limit)
 
 			if err == nil {
-				mappers.Store(i2, mapper.Map())
-				txs.Store(i2, t)
-				receipts.Store(i2, tr)
-				visitors.Store(i2, vi)
+				mappers[i2] = mapper.Map()
+				txs[i2] = t
+				receipts[i2] = tr
+				visitors[i2] = vi
 			} else {
-				mappers.Store(i2, nil)
+				mappers[i2] = nil
 			}
 		}()
 	}
@@ -70,46 +75,42 @@ func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.D
 	ti, td := Resolve(mappers)
 
 	for _, i := range td {
-		t, _ := txs.Load(i)
-		m.sender.Return(t.(*tx.Tx))
+		m.sender.Return(txs[i])
 	}
 
 	b := NewBatch()
 
 	for _, i := range ti {
-		t, _ := txs.Load(i)
-		r, _ := receipts.Load(i)
-		b.Txs = append(b.Txs, t.(*tx.Tx))
-		b.Receipts = append(b.Receipts, r.(*tx.TxReceipt))
-		vi, _ := visitors.Load(i)
-		vi.(*database.Visitor).Commit()
+		b.Txs = append(b.Txs, txs[i])
+		b.Receipts = append(b.Receipts,receipts[i])
+		visitors[i].Commit()
 	}
 
 	return b
 }
 
-func Resolve(mappers sync.Map) (accept, drop []int) {
+func Resolve(mappers []map[string]database.Access) (accept, drop []int) {
 	workMap := make(map[string]database.Access)
 	accept = make([]int, 0)
 	drop = make([]int, 0)
-	mappers.Range(func(key, value interface{}) bool {
-		if value == nil {
-			return true
+
+	for i, m := range mappers {
+		if m == nil {
+			continue
 		}
-		for k, v := range value.(map[string]database.Access) {
+		for k, v := range m {
 			x, ok := workMap[k]
 			switch {
 			case !ok:
 				workMap[k] = v
 			case x == database.Read && v == database.Read:
 			case x == database.Write || v == database.Write:
-				drop = append(drop, key.(int))
-				return true
+				drop = append(drop, i)
+				continue
 			}
 		}
-		accept = append(accept, key.(int))
-		return true
-	})
+		accept = append(accept, i)
+	}
 	return
 }
 
