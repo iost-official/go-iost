@@ -40,8 +40,8 @@ func NewMaker(sender TxSender) *Maker {
 
 func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.Duration, thread int) *Batch {
 	var (
-		mappers = make([]map[string]database.Access, thread)
-		txs = make([]*tx.Tx, thread)
+		mappers  = make([]map[string]database.Access, thread)
+		txs      = make([]*tx.Tx, thread)
 		receipts = make([]*tx.TxReceipt, thread)
 		visitors = make([]*database.Visitor, thread)
 	)
@@ -82,7 +82,7 @@ func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.D
 
 	for _, i := range ti {
 		b.Txs = append(b.Txs, txs[i])
-		b.Receipts = append(b.Receipts,receipts[i])
+		b.Receipts = append(b.Receipts, receipts[i])
 		visitors[i].Commit()
 	}
 
@@ -93,7 +93,7 @@ func Resolve(mappers []map[string]database.Access) (accept, drop []int) {
 	workMap := make(map[string]database.Access)
 	accept = make([]int, 0)
 	drop = make([]int, 0)
-
+L:
 	for i, m := range mappers {
 		if m == nil {
 			continue
@@ -106,7 +106,7 @@ func Resolve(mappers []map[string]database.Access) (accept, drop []int) {
 			case x == database.Read && v == database.Read:
 			case x == database.Write || v == database.Write:
 				drop = append(drop, i)
-				continue
+				continue L
 			}
 		}
 		accept = append(accept, i)
