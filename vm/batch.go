@@ -5,6 +5,8 @@ import (
 
 	"sync"
 
+	"fmt"
+
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/vm/database"
@@ -118,16 +120,42 @@ type Verifier struct {
 	wait sync.WaitGroup
 }
 
-func (v *Verifier) Do(b *Batch, checkFunc func(t *tx.Tx, r *tx.TxReceipt) error) []error {
-	var errs = make([]error, len(b.Txs))
-	for i := range b.Txs {
+func (v *Verifier) Do(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e Engine, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error {
+	var (
+		thread  = len(b.Txs)
+		mappers = make([]map[string]database.Access, thread)
+		errs    = make([]error, thread)
+	)
+
+	bvr := database.NewBatchVisitorRoot(10000, db)
+	for i := 0; i < thread; i++ {
 		i2 := i
 		go func() {
+			vi, mapper := database.NewBatchVisitor(bvr)
+
+			e := newEngine(bh, vi)
+
 			v.wait.Add(1)
 			defer v.wait.Done()
-			errs[i2] = checkFunc(b.Txs[i2], b.Receipts[i2])
+
+			// todo setup engine=
+			t := b.Txs[i2]
+			errs[i2] = checkFunc(e, t, b.Receipts[i2])
+			if errs[i2] == nil {
+				mappers[i2] = mapper.Map()
+			}
+
 		}()
 	}
 	v.wait.Wait()
-	return errs
+	_, td := Resolve(mappers)
+	if len(td) != 0 {
+		return fmt.Errorf("transaction conflicted")
+	}
+	for _, e := range errs {
+		if e != nil {
+			return e
+		}
+	}
+	return nil
 }
