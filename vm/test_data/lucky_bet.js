@@ -1,4 +1,4 @@
-const maxUserNumber = 100;
+const maxUserNumber = 10;
 
 class Contract {
     init() {
@@ -37,7 +37,10 @@ class Contract {
 
         storage.mapPut('table', luckyNumber.toString(), JSON.stringify(table));
 
-        if (userNumber + 1 >= maxUserNumber) {
+        storage.put("user_number", JSON.stringify(userNumber + 1));
+        storage.put("total_coins", JSON.stringify(totalCoins + coins));
+
+        if (userNumber >= maxUserNumber) {
             const bi = JSON.parse(BlockChain.blockInfo());
             const bn = bi.number;
             const ph = bi.parent_hash;
@@ -53,14 +56,8 @@ class Contract {
                 this.clearUserValue();
 
                 storage.put("round", JSON.stringify(round + 1));
-                return
             }
         }
-
-        storage.put("user_number", JSON.stringify(userNumber + 1));
-        storage.put("total_coins", JSON.stringify(totalCoins + coins));
-
-
     }
 
     getReward(ln, round, height, total_number) {
