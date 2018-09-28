@@ -10,8 +10,8 @@ import (
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // JSONServer json rpc server

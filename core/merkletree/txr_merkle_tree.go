@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/go-iost/core/tx"
 )
 
 // Build return the merkle tree

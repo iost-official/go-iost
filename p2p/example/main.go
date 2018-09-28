@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/p2p"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/p2p"
 )
 
 func init() {

@@ -21,10 +21,10 @@ import (
 	"os"
 	//"encoding/hex"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
-	pb "github.com/iost-official/Go-IOS-Protocol/rpc"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
+	pb "github.com/iost-official/go-iost/rpc"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -33,8 +33,8 @@ import (
 // publishCmd represents the publish command
 var publishCmd = &cobra.Command{
 	Use:   "publish",
-	Short: "sign to a .sc file with .sig files, and publish it",
-	Long:  `sign to a .sc file with .sig files, and publish it`,
+	Short: "sign a .sc file with .sig files, and publish it",
+	Long:  `sign a .sc file with .sig files, and publish it`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println(`invalid input, check
@@ -106,9 +106,8 @@ var publishCmd = &cobra.Command{
 				return
 			}
 		}
-		fmt.Println("ok")
-		//fmt.Println(hex.EncodeToString(txHash))
-		fmt.Println(saveBytes(txHash))
+		fmt.Println("iost node:receive your tx!")
+		fmt.Println("the transaction hash is:", saveBytes(txHash))
 	},
 }
 

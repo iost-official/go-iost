@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
 	libp2p "github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
@@ -19,7 +19,7 @@ import (
 	mplex "github.com/whyrusleeping/go-smux-multiplex"
 )
 
-//go:generate mockgen -destination mocks/mock_service.go -package p2p_mock github.com/iost-official/Go-IOS-Protocol/p2p Service
+//go:generate mockgen -destination mocks/mock_service.go -package p2p_mock github.com/iost-official/go-iost/p2p Service
 
 // PeerID is the alias of peer.ID
 type PeerID = peer.ID

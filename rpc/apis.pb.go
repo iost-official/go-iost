@@ -7,9 +7,9 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import empty "github.com/golang/protobuf/ptypes/empty"
-import block "github.com/iost-official/Go-IOS-Protocol/core/block"
-import event "github.com/iost-official/Go-IOS-Protocol/core/event"
-import tx "github.com/iost-official/Go-IOS-Protocol/core/tx"
+import block "github.com/iost-official/go-iost/core/block"
+import event "github.com/iost-official/go-iost/core/event"
+import tx "github.com/iost-official/go-iost/core/tx"
 import _ "google.golang.org/genproto/googleapis/api/annotations"
 
 import (

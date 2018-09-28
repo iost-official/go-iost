@@ -8,17 +8,17 @@ import (
 
 	"strconv"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
-	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -202,9 +202,9 @@ func TestJS_Vote(t *testing.T) {
 			So(r.Status.Message, ShouldContainSubstring, "block number mismatch")
 
 			So(js.ReadDB(`pendingProducerList`), ShouldEqual, `["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn",`+
-				`"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs",`+
-				`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
-				`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9"]`)
+				`"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd","IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY",`+
+				`"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh",`+
+				`"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs"]`)
 
 			// vote and unvote
 			r = js.TestJS("Vote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 10000000))
@@ -463,8 +463,8 @@ func TestJS_Vote(t *testing.T) {
 			}
 
 			So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
-			So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000880253)
-			So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 20091)
+			So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000880250)
+			So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 20089)
 			act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
 
 			trx2, err = MakeTx(act2)
@@ -478,7 +478,7 @@ func TestJS_Vote(t *testing.T) {
 
 			So(js.vi.Servi(testID[0]), ShouldEqual, 0)
 			So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 116)
-			So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000899521)
+			So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000899516)
 		})
 
 		Convey("test of vote update", func() {
@@ -538,7 +538,7 @@ func TestJS_Genesis(t *testing.T) {
 		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], 50000000))
 		acts = append(acts, &act)
 	}
-	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/"
+	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/"
 	// deploy iost.vote
 	voteFilePath := VoteContractPath + "vote.js"
 	voteAbiPath := VoteContractPath + "vote.js.abi"
@@ -596,7 +596,7 @@ func TestJS_Genesis(t *testing.T) {
 	}
 
 	engine := NewEngine(&blockHead, mvccdb)
-	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/Go-IOS-Protocol/vm/v8vm/v8/libjs/")
+	engine.SetUp("js_path", os.Getenv("GOPATH")+"/src/github.com/iost-official/go-iost/vm/v8vm/v8/libjs/")
 	var txr *tx.TxReceipt
 	ti := watchTime(func() {
 		txr, err = engine.Exec(trx, time.Second)

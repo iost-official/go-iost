@@ -3,8 +3,8 @@ package blockcache
 import (
 	"encoding/json"
 	"errors"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/vm/database"
 	"strconv"
 	"sync"
 )

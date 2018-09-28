@@ -1,8 +1,8 @@
 package mvcc
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/db/mvcc/map"
-	"github.com/iost-official/Go-IOS-Protocol/db/mvcc/trie"
+	"github.com/iost-official/go-iost/db/mvcc/map"
+	"github.com/iost-official/go-iost/db/mvcc/trie"
 )
 
 // CacheType is the cache type

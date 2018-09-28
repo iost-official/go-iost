@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/p2p"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/p2p"
 )
 
 // DownloadController defines the functions of download controller.

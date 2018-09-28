@@ -25,20 +25,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/consensus"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/synchronizer"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/metrics"
-	"github.com/iost-official/Go-IOS-Protocol/p2p"
-	"github.com/iost-official/Go-IOS-Protocol/rpc"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus"
+	"github.com/iost-official/go-iost/consensus/synchronizer"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/metrics"
+	"github.com/iost-official/go-iost/p2p"
+	"github.com/iost-official/go-iost/rpc"
+	"github.com/iost-official/go-iost/vm"
 	flag "github.com/spf13/pflag"
 )
 
@@ -104,7 +104,7 @@ func main() {
 	}
 
 	if *configfile == "" {
-		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/Go-IOS-Protocol/config/iserver.yml"
+		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/iserver.yml"
 	}
 
 	conf := common.NewConfig(*configfile)

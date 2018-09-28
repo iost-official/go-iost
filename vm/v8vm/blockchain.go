@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 // todo replace this error code with c++ error code

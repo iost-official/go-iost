@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/go-iost/common"
 )
 
 // Signature is the signature of some message

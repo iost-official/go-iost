@@ -5,10 +5,10 @@ import (
 
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
-	"github.com/iost-official/Go-IOS-Protocol/vm/native"
-	"github.com/iost-official/Go-IOS-Protocol/vm/v8vm"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/vm/native"
+	"github.com/iost-official/go-iost/vm/v8vm"
 )
 
 var (

@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	blk "github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/event"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/go-iost/account"
+	blk "github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/event"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 func engineinit(t *testing.T) (*blk.BlockHead, *database.MockIMultiValue, *MockVM) {
@@ -87,9 +87,9 @@ func TestNewEngine(t *testing.T) { // test of normal engine work
 		ID:   "Contract0",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "mock",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "mock",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "abi",
 					Args:     []string{"string"},
@@ -161,9 +161,9 @@ func TestLogger(t *testing.T) { // test of normal engine work
 		ID:   "Contract0",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "mock",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "mock",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "abi",
 					Args:     []string{"string"},
@@ -245,9 +245,9 @@ func TestCost(t *testing.T) { // tests of context transport
 		ID:   "Contract0",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "mock",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "mock",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "abi",
 					Args:     []string{"string"},
@@ -361,9 +361,9 @@ func TestNative_Transfer(t *testing.T) { // tests of native vm works
 		ID:   "iost.system",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "native",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "native",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "Transfer",
 					Payment:  0,
@@ -470,9 +470,9 @@ func TestNative_TopUp(t *testing.T) { // tests of native vm works
 		ID:   "iost.system",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "native",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "native",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "TopUp",
 					Payment:  0,
@@ -579,9 +579,9 @@ func TestNative_Receipt(t *testing.T) { // tests of native vm works
 		ID:   "iost.system",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "native",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "native",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "Receipt",
 					Payment:  0,
@@ -710,9 +710,9 @@ class Contract {
 module.exports = Contract;
 `,
 		Info: &contract.Info{
-			Lang:        "javascript",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "javascript",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "hello",
 					Payment:  0,

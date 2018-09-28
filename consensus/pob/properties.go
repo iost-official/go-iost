@@ -1,8 +1,8 @@
 package pob
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"strings"
 )
 

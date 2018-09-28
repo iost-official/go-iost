@@ -9,18 +9,18 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/message"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/metrics"
-	"github.com/iost-official/Go-IOS-Protocol/p2p"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/message"
+	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/metrics"
+	"github.com/iost-official/go-iost/p2p"
+	"github.com/iost-official/go-iost/vm"
 )
 
 var (
@@ -29,12 +29,6 @@ var (
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
-	metricsVMTime              = metrics.NewGauge("iost_vm_exec_time", nil)
-	metricsVMAvgTime           = metrics.NewGauge("iost_vm_exec_avg_time", nil)
-	metricsIterTime            = metrics.NewGauge("iost_iter_time", nil)
-	metricsIterAvgTime         = metrics.NewGauge("iost_iter_avg_time", nil)
-	metricsNonTimeOutTxSize    = metrics.NewGauge("iost_non_time_out_tx_size", nil)
-	metricsAllTxSize           = metrics.NewGauge("iost_all_out_tx_size", nil)
 )
 
 var (

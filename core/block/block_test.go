@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
 	"github.com/smartystreets/goconvey/convey"
 )
 

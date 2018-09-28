@@ -82,7 +82,7 @@ func DecodeContract(str string) *Contract {
 
 // ABI get abi from contract with specific name
 func (c *Contract) ABI(name string) *ABI {
-	for _, a := range c.Info.Abis {
+	for _, a := range c.Info.Abi {
 		if a.Name == name {
 			return a
 		}

@@ -3,8 +3,8 @@ package account
 import (
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/crypto"
 )
 
 var (

@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/p2p"
-	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/p2p"
+	"github.com/iost-official/go-iost/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -4,8 +4,8 @@ package contract;
 
 message Info {
     string lang = 1;
-    string version_code = 2;
-    repeated ABI abis = 3;
+    string version = 2;
+    repeated ABI abi = 3;
 }
 
 

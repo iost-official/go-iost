@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/metrics"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/metrics"
 )
 
 var (
@@ -18,19 +18,8 @@ var (
 	filterTime  = int64(90 * time.Second)
 	maxCacheTxs = 30000
 
-	metricsReceivedTxCount      = metrics.NewCounter("iost_tx_received_count", []string{"from"})
-	metricsGetPendingTxTime     = metrics.NewGauge("iost_get_pending_tx_time", nil)
-	metricsGetPendingTxLockTime = metrics.NewGauge("iost_get_pending_tx_lock_time", nil)
-	//metricsGetPendingTxSortTime   = metrics.NewGauge("iost_get_pending_tx_sort_time", nil)
-	metricsGetPendingTxAppendTime = metrics.NewGauge("iost_get_pending_tx_append_time", nil)
-	metricsExistTxTime            = metrics.NewSummary("iost_exist_tx_time", nil)
-	metricsExistTxCount           = metrics.NewCounter("iost_exist_tx_count", nil)
-	metricsVerifyTxTime           = metrics.NewSummary("iost_verify_tx_time", nil)
-	metricsVerifyTxCount          = metrics.NewCounter("iost_verify_tx_count", nil)
-	metricsAddTxTime              = metrics.NewSummary("iost_add_tx_time", nil)
-	metricsAddTxCount             = metrics.NewCounter("iost_add_tx_count", nil)
-	metricsTxPoolSize             = metrics.NewGauge("iost_txpool_size", nil)
-	metricsTxErrType              = metrics.NewCounter("iost_txerr_type", []string{"type"})
+	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
+	metricsTxPoolSize      = metrics.NewGauge("iost_txpool_size", nil)
 )
 
 // FRet find the return value of the tx

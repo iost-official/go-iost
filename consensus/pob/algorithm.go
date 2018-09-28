@@ -7,17 +7,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/consensus/verifier"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/vm"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/verifier"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm"
 )
 
 var (
@@ -104,17 +104,6 @@ L:
 			vmExecTime += step2.Sub(step1).Nanoseconds()
 			iterTime += step3.Sub(step2).Nanoseconds()
 		}
-	}
-
-	if i > 0 && j > 0 {
-		metricsVMTime.Set(float64(vmExecTime), nil)
-		metricsVMAvgTime.Set(float64(vmExecTime/j), nil)
-		metricsIterTime.Set(float64(iterTime), nil)
-		metricsIterAvgTime.Set(float64(iterTime/j), nil)
-		metricsNonTimeOutTxSize.Set(float64(j), nil)
-		metricsAllTxSize.Set(float64(i), nil)
-		ilog.Infof("tx in blk:%d, iter:%d, vmExecTime:%d, vmAvgTime:%d, iterTime:%d, iterAvgTime:%d",
-			len(blk.Txs), i, vmExecTime, vmExecTime/j, iterTime, iterTime/j)
 	}
 
 	blk.Head.TxsHash = blk.CalculateTxsHash()

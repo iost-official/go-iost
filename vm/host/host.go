@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
 )
 
 // Monitor monitor interface
@@ -130,7 +130,7 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 		Args:    []string{},
 	}
 
-	c.Info.Abis = append(c.Info.Abis, &initABI)
+	c.Info.Abi = append(c.Info.Abi, &initABI)
 
 	l := len(c.Encode()) // todo multi Encode call
 	//ilog.Debugf("length is : %v", l)

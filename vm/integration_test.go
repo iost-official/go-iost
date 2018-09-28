@@ -10,17 +10,17 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
-	"github.com/iost-official/Go-IOS-Protocol/vm/native"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -215,9 +215,9 @@ class Contract {
 module.exports = Contract;
 `,
 		Info: &contract.Info{
-			Lang:        "javascript",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "javascript",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "hello",
 					Payment:  0,
@@ -380,9 +380,9 @@ class Contract {
 module.exports = Contract;
 `,
 		Info: &contract.Info{
-			Lang:        "javascript",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "javascript",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "call_hello",
 					Payment:  0,
@@ -441,9 +441,9 @@ class Contract {
 module.exports = Contract;
 `,
 		Info: &contract.Info{
-			Lang:        "javascript",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "javascript",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "call_hello",
 					Payment:  0,
@@ -459,8 +459,8 @@ module.exports = Contract;
 func TestIntergration_Payment_Success(t *testing.T) {
 
 	jshw := jsHelloWorld()
-	jshw.Info.Abis[0].Payment = 1
-	jshw.Info.Abis[0].GasPrice = int64(10)
+	jshw.Info.Abi[0].Payment = 1
+	jshw.Info.Abi[0].GasPrice = int64(10)
 
 	//ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
 
@@ -495,14 +495,14 @@ func TestIntergration_Payment_Success(t *testing.T) {
 
 func TestIntergration_Payment_Failed(t *testing.T) {
 	jshw := jsHelloWorld()
-	jshw.Info.Abis[0].Payment = 1
-	jshw.Info.Abis[0].GasPrice = int64(10)
+	jshw.Info.Abi[0].Payment = 1
+	jshw.Info.Abi[0].GasPrice = int64(10)
 
-	jshw.Info.Abis[0].Limit.Data = -1
-	jshw.Info.Abis[0].Limit.CPU = -1
-	jshw.Info.Abis[0].Limit.Net = -1
+	jshw.Info.Abi[0].Limit.Data = -1
+	jshw.Info.Abi[0].Limit.CPU = -1
+	jshw.Info.Abi[0].Limit.Net = -1
 
-	ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
+	ilog.Debugf("init %v", jshw.Info.Abi[0].GetLimit())
 
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
@@ -598,9 +598,9 @@ func (j *JSTester) SetJS(code string) {
 		ID:   "jsContract",
 		Code: code,
 		Info: &contract.Info{
-			Lang:        "javascript",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "javascript",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
 					Name:     "constructor",
 					Args:     []string{},
@@ -631,7 +631,7 @@ func (j *JSTester) DoSet() *tx.TxReceipt {
 
 func (j *JSTester) SetAPI(name string, argType ...string) {
 
-	j.c.Info.Abis = append(j.c.Info.Abis, &contract.ABI{
+	j.c.Info.Abi = append(j.c.Info.Abi, &contract.ABI{
 		Name:     name,
 		Payment:  0,
 		GasPrice: int64(1),
@@ -936,6 +936,7 @@ func TestJS_LuckyBet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	js.vi.SetBalance(testID[0], 100000000000000)
 	js.SetJS(string(lc))
 	js.SetAPI("clearUserValue")
 	js.SetAPI("bet", "string", "number", "number", "number")
@@ -970,6 +971,6 @@ func TestJS_LuckyBet(t *testing.T) {
 		So(js.ReadDB("total_coins"), ShouldEqual, "0")
 		So(js.ReadDB("round"), ShouldEqual, "2")
 		So(js.ReadDB("result1"), ShouldContainSubstring, `{"number":200,"user_number":100,"k_number":10,"total_coins":{"number":"23465000000"},`)
-
+		t.Log(js.vi.Balance("CA"+js.cname), js.cname)
 	})
 }
