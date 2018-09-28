@@ -92,20 +92,21 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID) bool {
 	bn, ok := p.(int64)
 	if !ok {
-		ilog.Errorf("marshal block hash response failed.")
+		ilog.Errorf("get p failed.")
 		return false
 	}
 	if bn <= sy.blockCache.LinkedRoot().Number {
 		sy.dc.MissionComplete(hash)
 		return false
 	}
-	if bcn, err := sy.blockCache.Find([]byte(hash)); err == nil {
+	bHash := []byte(hash)
+	if bcn, err := sy.blockCache.Find(bHash); err == nil {
 		if bcn.Type == blockcache.Linked {
 			sy.dc.MissionComplete(hash)
 		}
 		return false
 	}
-	bi := message.BlockInfo{Number: bn, Hash: []byte(hash)}
+	bi := message.BlockInfo{Number: bn, Hash: bHash}
 	bytes, err := bi.Marshal()
 	if err != nil {
 		ilog.Errorf("marshal request block failed. err=%v", err)
@@ -304,10 +305,10 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 
 // CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
+	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Number, sy.syncEnd)
 	if sy.syncEnd <= sy.blockCache.Head().Number {
 		sy.basevariable.SetMode(global.ModeNormal)
 		sy.dc.Reset()
-		ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Number, sy.syncEnd)
 	}
 }
 
