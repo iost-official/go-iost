@@ -196,18 +196,16 @@ func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCac
 	startNumber := node.Number
 	var confirmNum int64
 	confirmUntilMap := make(map[int64]int64, startNumber-root.Number)
-	var index int64
 	for node != root {
 		if node.ConfirmUntil <= node.Number {
 			confirmNum++
-			confirmUntilMap[startNumber-node.ConfirmUntil]++
+			confirmUntilMap[node.ConfirmUntil]++
 		}
 		if confirmNum >= confirmLimit {
 			return node
 		}
-		confirmNum -= confirmUntilMap[index]
+		confirmNum -= confirmUntilMap[node.Number]
 		node = node.Parent
-		index++
 	}
 	return nil
 }
