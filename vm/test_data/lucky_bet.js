@@ -1,4 +1,4 @@
-const maxUserNumber = 10;
+const maxUserNumber = 100;
 
 class Contract {
     init() {
