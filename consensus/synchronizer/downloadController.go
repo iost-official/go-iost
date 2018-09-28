@@ -27,7 +27,7 @@ const (
 )
 
 const (
-	peerConNum = 10
+	peerConNum = 100
 	// Free peer state type
 	Free string = "Free"
 )
