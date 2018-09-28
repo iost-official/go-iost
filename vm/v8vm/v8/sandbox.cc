@@ -310,7 +310,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
     exec.detach();
 
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
-    auto startTime = std::chrono::steady_clock::now();
+//    auto startTime = std::chrono::steady_clock::now();
     while(true) {
         if (error.length() > 0) {
             res.Err = copyString(error);
