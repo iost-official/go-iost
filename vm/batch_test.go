@@ -26,7 +26,7 @@ func TestArray(t *testing.T) {
 func TestResolve(t *testing.T) {
 	var maps = make([]map[string]database.Access, 4)
 	maps[0] = map[string]database.Access{"a": 1, "b": 0}
-	maps[1] = map[string]database.Access{"c": 1, "d": 0}
+	maps[1] = map[string]database.Access{"c": 1, "b": 0}
 	maps[3] = map[string]database.Access{"b": 1, "x": 0}
 
 	i, o := Resolve(maps)
