@@ -354,12 +354,7 @@ func (dc *DownloadControllerImpl) findWaitHashes(peerID p2p.PeerID, hashMap *syn
 func (dc *DownloadControllerImpl) downloadLoop() {
 	for {
 		select {
-		case <-time.After(2 * time.Second):
-			select {
-			case dc.chDownload <- struct{}{}:
-			default:
-			}
-		case <-dc.chDownload:
+		case <-time.After(time.Second):
 			dc.peerState.Range(func(k, v interface{}) bool {
 				peerID := k.(p2p.PeerID)
 				ps, ok := v.(timerMap)
@@ -394,6 +389,7 @@ func (dc *DownloadControllerImpl) downloadLoop() {
 				psMutex.Unlock()
 				return true
 			})
+		case <-dc.chDownload:
 			ilog.Debugf("Download Begin")
 			dc.peerState.Range(func(k, v interface{}) bool {
 				peerID := k.(p2p.PeerID)
