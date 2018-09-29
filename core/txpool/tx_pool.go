@@ -44,7 +44,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		forkChain:        new(forkChain),
 		blockList:        new(sync.Map),
 		pendingTx:        NewSortedTxMap(),
-		chP2PTx:          p2pService.Register("txpool message", p2p.PublishTx),
+		chP2PTx:          p2pService.Register("txpool message", p2p.PublishTxRequest),
 		quitGenerateMode: make(chan struct{}),
 		quitCh:           make(chan struct{}),
 	}
@@ -163,7 +163,7 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) TAddTx {
 	if ret != Success {
 		return ret
 	}
-	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
+	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.NormalMessage)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return ret
 }
@@ -183,7 +183,6 @@ func (pool *TxPImpl) DelTxList(delList []*tx.Tx) {
 
 // TxIterator ...
 func (pool *TxPImpl) TxIterator() (*Iterator, *blockcache.BlockCacheNode) {
-	ilog.Errorf("pendingTx.Size(): %v", pool.pendingTx.Size())
 	metricsTxPoolSize.Set(float64(pool.pendingTx.Size()), nil)
 	return pool.pendingTx.Iter(), pool.forkChain.NewHead
 }
@@ -192,8 +191,8 @@ func (pool *TxPImpl) TxIterator() (*Iterator, *blockcache.BlockCacheNode) {
 func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) FRet {
 	var r FRet
 	switch {
-	//case pool.existTxInPending(hash):
-	//	r = FoundPending
+	case pool.existTxInPending(hash):
+		r = FoundPending
 	case pool.existTxInChain2(hash, chainBlock):
 		r = FoundChain
 	default:
@@ -223,9 +222,9 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) TAddTx {
 	if t.GasPrice <= 0 {
 		return GasPriceError
 	}
-	//if pool.TxTimeOut(t) {
-	//	return TimeError
-	//}
+	if pool.TxTimeOut(t) {
+		return TimeError
+	}
 	if err := t.VerifySelf(); err != nil {
 		return VerifyError
 	}
@@ -335,13 +334,12 @@ func (pool *TxPImpl) clearBlock() {
 }
 
 func (pool *TxPImpl) addTx(tx *tx.Tx) TAddTx {
-	//h := tx.Hash()
-	//if pool.existTxInChain2(h, pool.forkChain.NewHead.Block) {
-	//	return DupError
-	//}
-	//if pool.existTxInPending(h) {
-	//	return DupError
-	//}
+	if pool.existTxInChain2(tx.Hash(), pool.forkChain.NewHead.Block) {
+		return DupError
+	}
+	if pool.existTxInPending(tx.Hash()) {
+		return DupError
+	}
 	pool.pendingTx.Add(tx)
 	return Success
 }
