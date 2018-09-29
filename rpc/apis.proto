@@ -96,22 +96,25 @@ message BlockByHashReq {
 	bool complete=2;
 }
 
+// complete means return the whole block or just blockhead+txhash_list
 message BlockByNumReq {
 	int64 num=1;
 	bool complete=2;	
 }
 
+// useLongestChain means whether geting the balance also from pending blocks(in the longest chain)
 message GetBalanceReq {
 	string ID=1;
     bool useLongestChain = 2;
 }
 
+// get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
 message GetStateReq {
 	string key=1;
     string field = 2;
 }
 
-//the rawdata of a tx
+// the rawdata of a tx
 message RawTxReq {
 	bytes data=1;
 }
@@ -120,10 +123,12 @@ message SubscribeReq {
     repeated event.Event.Topic topics=1;
 }
 
+// the height of the blockchain
 message HeightRes {
 	int64 height=1;
 }
 
+// the queried balance
 message GetBalanceRes {
 	int64 balance=1;
 }
@@ -136,6 +141,7 @@ message GetStateRes {
 	string value=1;
 }
 
+// the hash of the received transaction
 message SendRawTxRes {
 	string hash=1;
 }
@@ -144,6 +150,7 @@ message GasRes {
 	uint64 gas=1;
 }
 
+//the queried transaction
 message txRes {
     tx.TxRaw txRaw = 1;
     bytes hash = 2;
@@ -154,6 +161,7 @@ message txReceiptRes {
     bytes hash = 2;
 }
 
+// the queried Block
 message BlockInfo {
     block.BlockHead head = 1;
     bytes hash = 2;
