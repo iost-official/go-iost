@@ -44,7 +44,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		forkChain:        new(forkChain),
 		blockList:        new(sync.Map),
 		pendingTx:        NewSortedTxMap(),
-		chP2PTx:          p2pService.Register("txpool message", p2p.PublishTxRequest),
+		chP2PTx:          p2pService.Register("txpool message", p2p.PublishTx),
 		quitGenerateMode: make(chan struct{}),
 		quitCh:           make(chan struct{}),
 	}
@@ -163,7 +163,7 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) TAddTx {
 	if ret != Success {
 		return ret
 	}
-	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTxRequest, p2p.NormalMessage)
+	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return ret
 }
