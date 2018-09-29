@@ -1,8 +1,3 @@
-<p>
-<img src="https://ibb.co/dUvUmz" >
-</p>
-
-
 # IOST - A Secure & Scalable Blockchain for Smart Services
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/iost-official/go-iost)](https://goreportcard.com/report/github.com/iost-official/go-iost)
