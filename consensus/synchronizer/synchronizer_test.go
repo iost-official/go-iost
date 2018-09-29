@@ -17,7 +17,7 @@ func TestDownloadController(t *testing.T) {
 	Convey("Test DownloadController", t, func() {
 		dHash := make(chan string, 10)
 		dPID := make(chan p2p.PeerID, 10)
-		dc, err := NewDownloadController(func(hash string, p interface{}, peerID p2p.PeerID) bool {
+		dc, err := NewDownloadController(func(hash string, p interface{}, peerID p2p.PeerID, hState *hashStateInfo) bool {
 			dHash <- hash
 			dPID <- peerID
 			return true

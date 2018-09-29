@@ -36,8 +36,6 @@ type Synchronizer interface {
 	Stop()
 	CheckSync() bool
 	CheckGenBlock(hash []byte) bool
-	OnBlockConfirmed(hash string)
-	OnRecvBlock(hash string, peerID p2p.PeerID)
 	CheckSyncProcess()
 }
 
@@ -88,13 +86,35 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 	return sy, nil
 }
 
-func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID) bool {
+func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID, hState *hashStateInfo) bool {
 	bn, ok := p.(int64)
 	if !ok {
 		ilog.Errorf("get p failed.")
 		return false
 	}
 	ilog.Infof("callback try sync block, num:%v", bn)
+	if bn <= sy.blockCache.LinkedRoot().Number {
+		sy.dc.MissionComplete(hash)
+		ilog.Infof("callback block confirmed, num:%v", bn)
+		return false
+	}
+	if hState.state == Work {
+		ilog.Infof("callback check work hash, num:%v", bn)
+		pid, ok := hState.p.(p2p.PeerID)
+		if !ok {
+			ilog.Errorf("get peerID failed.")
+			return false
+		}
+		bHash := []byte(hash)
+		if bcn, err := sy.blockCache.Find(bHash); err == nil {
+			sy.dc.FreePeer(hash, pid)
+			if bcn.Type == blockcache.Linked {
+				sy.dc.MissionComplete(hash)
+				ilog.Infof("callback block linked, num:%v", bn)
+			}
+		}
+		return false
+	}
 	if bn <= sy.blockCache.LinkedRoot().Number {
 		sy.dc.MissionComplete(hash)
 		ilog.Infof("callback block confirmed, num:%v", bn)
@@ -313,16 +333,6 @@ func (sy *SyncImpl) CheckSyncProcess() {
 		sy.basevariable.SetMode(global.ModeNormal)
 		sy.dc.Reset()
 	}
-}
-
-// OnBlockConfirmed confirms a block with block hash.
-func (sy *SyncImpl) OnBlockConfirmed(hash string) {
-	sy.dc.MissionComplete(hash)
-}
-
-// OnRecvBlock would free the peer.
-func (sy *SyncImpl) OnRecvBlock(hash string, peerID p2p.PeerID) {
-	sy.dc.FreePeer(hash, peerID)
 }
 
 func (sy *SyncImpl) messageLoop() {
