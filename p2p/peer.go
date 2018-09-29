@@ -57,6 +57,7 @@ type Peer struct {
 	normalMsgCh chan *p2pMessage
 
 	quitWriteCh chan struct{}
+	once        sync.Once
 }
 
 // NewPeer returns a new instance of Peer struct.
@@ -87,7 +88,9 @@ func (p *Peer) Start() {
 func (p *Peer) Stop() {
 	ilog.Infof("peer is stopped. id=%s", p.id.Pretty())
 
-	close(p.quitWriteCh)
+	p.once.Do(func() {
+		close(p.quitWriteCh)
+	})
 	p.conn.Close()
 }
 
