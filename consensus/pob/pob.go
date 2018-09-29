@@ -62,7 +62,6 @@ type PoB struct {
 	chRecvBlockHash chan p2p.IncomingMessage
 	chQueryBlock    chan p2p.IncomingMessage
 	chVerifyBlock   chan *verifyBlockMessage
-	//chGenBlock      chan *block.Block
 }
 
 // NewPoB init a new PoB.
@@ -83,7 +82,6 @@ func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCac
 		chQueryBlock:    p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		chVerifyBlock:   make(chan *verifyBlockMessage, 1024),
 	}
-
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
 	return &p
 }

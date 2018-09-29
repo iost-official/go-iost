@@ -17,9 +17,7 @@ type TxPool interface {
 	DelTx(hash []byte) error
 	DelTxList(delList []*tx.Tx)
 	TxIterator() (*Iterator, *blockcache.BlockCacheNode)
-	PendingTxs(maxCnt int) (TxsList, *blockcache.BlockCacheNode, error)
-	ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error)
-	CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, error)
+	ExistTxs(hash []byte, chainBlock *block.Block) FRet
 	Lock()
 	Release()
 	TxTimeOut(tx *tx.Tx) bool

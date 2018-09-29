@@ -5,19 +5,19 @@ import (
 	"time"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 )
 
 var (
-	clearInterval = 10 * time.Second
-	// Expiration is the transaction expiration
-	Expiration  = int64(90 * time.Second)
-	filterTime  = int64(90 * time.Second)
-	maxCacheTxs = 30000
-
+	clearInterval          = 10 * time.Second
+	Expiration             = int64(90 * time.Second) // Expiration is the transaction expiration
+	filterTime             = int64(90 * time.Second)
+	maxCacheTxs            = 30000
 	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
 	metricsTxPoolSize      = metrics.NewGauge("iost_txpool_size", nil)
 )
@@ -96,40 +96,48 @@ func (s *TxsList) Push(x *tx.Tx) {
 }
 
 type blockTx struct {
+	chainMap   *sync.Map
 	txMap      *sync.Map
 	ParentHash []byte
-	cTime      int64
+	time       int64
 }
 
-func newBlockTx() *blockTx {
+func (pool *TxPImpl) newBlockTx(blk *block.Block, parentBlockTx interface{}) *blockTx {
+	ilog.Errorf("new block number: %v", blk.Head.Number)
 	b := &blockTx{
+		chainMap:   new(sync.Map),
 		txMap:      new(sync.Map),
-		ParentHash: make([]byte, 32),
+		ParentHash: blk.Head.ParentHash,
+		time:       common.SlotLength * blk.Head.Time * int64(time.Second),
 	}
-
+	prevcnt := 0
+	nowcnt := 0
+	delcnt := 0
+	addcnt := 0
+	if parentBlockTx != nil {
+		parentBlockTx.(*blockTx).chainMap.Range(func(key, value interface{}) bool {
+			prevcnt += 1
+			if !pool.TxTimeOut(value.(*tx.Tx)) {
+				nowcnt += 1
+				b.chainMap.Store(key, value)
+			} else {
+				delcnt += 1
+			}
+			return true
+		})
+	}
+	for _, v := range blk.Txs {
+		nowcnt += 1
+		addcnt += 1
+		b.chainMap.Store(string(v.Hash()), v)
+		b.txMap.Store(string(v.Hash()), v)
+	}
+	ilog.Errorf("new block number: %v, prevcnt: %v, nowcnt: %v, addcnt: %v, delcnt: %v", blk.Head.Number, prevcnt, nowcnt, addcnt, delcnt)
 	return b
 }
 
-func (b *blockTx) time() int64 {
-	return b.cTime
-}
-
-func (b *blockTx) setTime(t int64) {
-	b.cTime = t
-}
-
-func (b *blockTx) addBlock(ib *block.Block) {
-
-	for _, v := range ib.Txs {
-		b.txMap.Store(string(v.Hash()), v)
-	}
-	b.ParentHash = ib.Head.ParentHash
-}
-
 func (b *blockTx) existTx(hash []byte) bool {
-
 	_, r := b.txMap.Load(string(hash))
-
 	return r
 }
 
