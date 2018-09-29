@@ -332,7 +332,7 @@ func (dc *DownloadControllerImpl) findWaitHashes(peerID p2p.PeerID, hashMap *syn
 			node.prev.next = node.next
 			node.next.prev = node.prev
 			pmMutex.Unlock()
-		} else if dc.callback(hash, node.p, peerID, hState) {
+		} else if hState.state == Wait && dc.callback(hash, node.p, peerID, hState) {
 			hState.p = peerID
 			hState.state = Work
 			psMutex.Lock()
@@ -360,6 +360,40 @@ func (dc *DownloadControllerImpl) downloadLoop() {
 			default:
 			}
 		case <-dc.chDownload:
+			dc.peerState.Range(func(k, v interface{}) bool {
+				peerID := k.(p2p.PeerID)
+				ps, ok := v.(timerMap)
+				if !ok {
+					ilog.Errorf("get peerstate error: %s", peerID.Pretty())
+				}
+				psMutex, psmok := dc.getStateMutex(peerID)
+				hashMap, hmok := dc.getHashMap(peerID)
+				if !psmok && hmok {
+					return true
+				}
+				psMutex.Lock()
+				for hash, _ := range ps {
+					var hState *hashStateInfo
+					hStateIF, ok := dc.hashState.Load(hash)
+					if ok {
+						hState, ok = hStateIF.(*hashStateInfo)
+					}
+					if hState.state != Work {
+						delete(ps, hash)
+					} else {
+						var node *mapEntry
+						nodeIF, ok := hashMap.Load(hash)
+						if ok {
+							node, ok = nodeIF.(*mapEntry)
+						}
+						if ok {
+							dc.callback(hash, node.p, peerID, hState)
+						}
+					}
+				}
+				psMutex.Unlock()
+				return true
+			})
 			ilog.Debugf("Download Begin")
 			dc.peerState.Range(func(k, v interface{}) bool {
 				peerID := k.(p2p.PeerID)
