@@ -449,7 +449,8 @@
             "format": "byte"
           }
         }
-      }
+      },
+      "title": "the queried Block"
     },
     "rpcGasRes": {
       "type": "object",
@@ -467,7 +468,8 @@
           "type": "string",
           "format": "int64"
         }
-      }
+      },
+      "title": "the queried balance"
     },
     "rpcGetNetIDRes": {
       "type": "object",
@@ -492,7 +494,8 @@
           "type": "string",
           "format": "int64"
         }
-      }
+      },
+      "title": "the height of the blockchain"
     },
     "rpcRawTxReq": {
       "type": "object",
@@ -510,7 +513,8 @@
         "hash": {
           "type": "string"
         }
-      }
+      },
+      "title": "the hash of the received transaction"
     },
     "rpcSubscribeReq": {
       "type": "object",
@@ -553,7 +557,8 @@
           "type": "string",
           "format": "byte"
         }
-      }
+      },
+      "title": "the queried transaction"
     },
     "txActionRaw": {
       "type": "object",
