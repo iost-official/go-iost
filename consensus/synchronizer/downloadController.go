@@ -352,27 +352,41 @@ func (dc *DownloadControllerImpl) findWaitHashes(peerID p2p.PeerID, hashMap *syn
 }
 
 func (dc *DownloadControllerImpl) downloadLoop() {
+	checkPeerTicker := time.NewTicker(time.Second)
 	for {
 		select {
-		case <-time.After(time.Second):
+		case <-checkPeerTicker.C:
 			dc.peerState.Range(func(k, v interface{}) bool {
 				peerID := k.(p2p.PeerID)
 				ps, ok := v.(timerMap)
 				if !ok {
 					ilog.Errorf("get peerstate error: %s", peerID.Pretty())
 				}
+				pmMutex, pmmok := dc.getPeerMapMutex(peerID)
 				hashMap, hmok := dc.getHashMap(peerID)
-				if hmok {
+				if !pmmok || !hmok {
 					return true
 				}
+				pmMutex.Lock()
+				hashlist := make([]string, 0, len(ps))
 				for hash, _ := range ps {
+					hashlist = append(hashlist, hash)
+				}
+				pmMutex.Unlock()
+				for _, hash := range hashlist {
 					var hState *hashStateInfo
 					hStateIF, ok := dc.hashState.Load(hash)
 					if ok {
 						hState, ok = hStateIF.(*hashStateInfo)
 					}
 					if hState.state != Work {
+						pmMutex.Lock()
 						delete(ps, hash)
+						pmMutex.Unlock()
+						select {
+						case dc.chDownload <- struct{}{}:
+						default:
+						}
 					} else {
 						var node *mapEntry
 						nodeIF, ok := hashMap.Load(hash)
