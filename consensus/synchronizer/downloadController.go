@@ -101,6 +101,7 @@ func (dc *DownloadControllerImpl) Reset() {
 // Start starts the DownloadController.
 func (dc *DownloadControllerImpl) Start() {
 	go dc.downloadLoop()
+	go dc.freePeerLoop()
 }
 
 // Stop stops the DownloadController.
@@ -351,11 +352,12 @@ func (dc *DownloadControllerImpl) findWaitHashes(peerID p2p.PeerID, hashMap *syn
 	}
 }
 
-func (dc *DownloadControllerImpl) downloadLoop() {
+func (dc *DownloadControllerImpl) freePeerLoop() {
 	checkPeerTicker := time.NewTicker(time.Second)
 	for {
 		select {
 		case <-checkPeerTicker.C:
+			ilog.Debugf("free peer begin")
 			dc.peerState.Range(func(k, v interface{}) bool {
 				peerID := k.(p2p.PeerID)
 				ps, ok := v.(timerMap)
@@ -379,27 +381,47 @@ func (dc *DownloadControllerImpl) downloadLoop() {
 					if ok {
 						hState, ok = hStateIF.(*hashStateInfo)
 					}
-					if hState.state != Work {
-						pmMutex.Lock()
-						delete(ps, hash)
-						pmMutex.Unlock()
-						select {
-						case dc.chDownload <- struct{}{}:
-						default:
-						}
-					} else {
-						var node *mapEntry
-						nodeIF, ok := hashMap.Load(hash)
-						if ok {
-							node, ok = nodeIF.(*mapEntry)
-						}
-						if ok {
-							dc.callback(hash, node.p, peerID, hState)
+					if ok {
+						if hState.state != Work {
+							pmMutex.Lock()
+							delete(ps, hash)
+							pmMutex.Unlock()
+							select {
+							case dc.chDownload <- struct{}{}:
+							default:
+							}
+						} else {
+							var node *mapEntry
+							nodeIF, ok := hashMap.Load(hash)
+							if ok {
+								node, ok = nodeIF.(*mapEntry)
+							}
+							if ok {
+								nhState := hashStateInfo{state: hState.state, p: hState.p}
+								if nhState.state == Work {
+									dc.callback(hash, node.p, peerID, &nhState)
+								}
+							}
 						}
 					}
 				}
 				return true
 			})
+			ilog.Debugf("free peer end")
+		case <-dc.exitSignal:
+			return
+		}
+	}
+}
+
+func (dc *DownloadControllerImpl) downloadLoop() {
+	for {
+		select {
+		case <-time.After(2 * syncBlockTimeout):
+			select {
+			case dc.chDownload <- struct{}{}:
+			default:
+			}
 		case <-dc.chDownload:
 			ilog.Debugf("Download Begin")
 			dc.peerState.Range(func(k, v interface{}) bool {
