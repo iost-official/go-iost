@@ -120,11 +120,6 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID, 
 		ilog.Infof("callback block confirmed, num:%v", bn)
 		return false
 	}
-	if bn <= sy.blockCache.LinkedRoot().Number {
-		sy.dc.MissionComplete(hash)
-		ilog.Infof("callback block confirmed, num:%v", bn)
-		return false
-	}
 	bHash := []byte(hash)
 	if bcn, err := sy.blockCache.Find(bHash); err == nil {
 		if bcn.Type == blockcache.Linked {
