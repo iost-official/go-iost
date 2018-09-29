@@ -22,9 +22,8 @@ var (
 	// SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
 	syncNumber int64 = 11
 
-	maxBlockHashQueryNumber int64 = 100
+	maxBlockHashQueryNumber int64 = 500
 	retryTime                     = 5 * time.Second
-	syncBlockTimeout              = 5 * time.Second
 	checkTime                     = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
 	heightAvailableTime     int64 = 22 * 3
@@ -37,8 +36,6 @@ type Synchronizer interface {
 	Stop()
 	CheckSync() bool
 	CheckGenBlock(hash []byte) bool
-	OnBlockConfirmed(hash string)
-	OnRecvBlock(hash string, peerID p2p.PeerID)
 	CheckSyncProcess()
 }
 
@@ -89,23 +86,53 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 	return sy, nil
 }
 
-func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID) bool {
+func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID, hState *hashStateInfo) bool {
 	bn, ok := p.(int64)
 	if !ok {
-		ilog.Errorf("marshal block hash response failed.")
+		ilog.Errorf("get p failed.")
+		return false
+	}
+	// ilog.Infof("callback try sync block, num:%v", bn)
+	if hState.state == Work {
+		// ilog.Infof("callback check work hash, num:%v", bn)
+		pid, ok := hState.p.(p2p.PeerID)
+		if !ok {
+			ilog.Errorf("get peerID failed.")
+			return false
+		}
+		if bn <= sy.blockCache.LinkedRoot().Number {
+			sy.dc.FreePeer(hash, pid)
+			sy.dc.MissionComplete(hash)
+			// ilog.Infof("callback block confirmed, num:%v", bn)
+			return false
+		}
+		bHash := []byte(hash)
+		if bcn, err := sy.blockCache.Find(bHash); err == nil {
+			sy.dc.FreePeer(hash, pid)
+			if bcn.Type == blockcache.Linked {
+				sy.dc.MissionComplete(hash)
+				// ilog.Infof("callback block linked, num:%v", bn)
+				// return false
+			}
+			// ilog.Infof("callback block is a single block, num:%v", bn)
+		}
 		return false
 	}
 	if bn <= sy.blockCache.LinkedRoot().Number {
 		sy.dc.MissionComplete(hash)
+		// ilog.Infof("callback block confirmed, num:%v", bn)
 		return false
 	}
-	if bcn, err := sy.blockCache.Find([]byte(hash)); err == nil {
+	bHash := []byte(hash)
+	if bcn, err := sy.blockCache.Find(bHash); err == nil {
 		if bcn.Type == blockcache.Linked {
 			sy.dc.MissionComplete(hash)
+			//ilog.Infof("callback block linked, num:%v", bn)
 		}
+		// ilog.Infof("callback block is a single block, num:%v", bn)
 		return false
 	}
-	bi := message.BlockInfo{Number: bn, Hash: []byte(hash)}
+	bi := message.BlockInfo{Number: bn, Hash: bHash}
 	bytes, err := bi.Marshal()
 	if err != nil {
 		ilog.Errorf("marshal request block failed. err=%v", err)
@@ -304,21 +331,11 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 
 // CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
+	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Number, sy.syncEnd)
 	if sy.syncEnd <= sy.blockCache.Head().Number {
 		sy.basevariable.SetMode(global.ModeNormal)
 		sy.dc.Reset()
-		ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Number, sy.syncEnd)
 	}
-}
-
-// OnBlockConfirmed confirms a block with block hash.
-func (sy *SyncImpl) OnBlockConfirmed(hash string) {
-	sy.dc.MissionComplete(hash)
-}
-
-// OnRecvBlock would free the peer.
-func (sy *SyncImpl) OnRecvBlock(hash string, peerID p2p.PeerID) {
-	sy.dc.FreePeer(hash, peerID)
 }
 
 func (sy *SyncImpl) messageLoop() {

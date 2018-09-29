@@ -239,7 +239,7 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
-			ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
+			ilog.Infof("verify block chan size:%v", len(p.chVerifyBlock))
 			blk := vbm.blk
 			if vbm.gen {
 				ilog.Info("block from myself, block number: ", blk.Head.Number)
@@ -266,7 +266,7 @@ func (p *PoB) verifyLoop() {
 				err := p.handleRecvBlock(blk)
 				p.broadcastBlockHash(blk) // can use go
 				p.blockReqMap.Delete(string(blk.HeadHash()))
-				if err != nil && err != errSingle {
+				if err != nil {
 					ilog.Errorf("received new block error, err:%v", err)
 					continue
 				}
@@ -284,7 +284,7 @@ func (p *PoB) verifyLoop() {
 						continue
 					}
 					err := p.handleRecvBlock(blk)
-					if err != nil && err != errSingle && err != errDuplicate {
+					if err != nil {
 						ilog.Errorf("received sync block error, err:%v", err)
 						continue
 					}
@@ -306,7 +306,7 @@ func (p *PoB) blockLoop() {
 				ilog.Infof("chRecvBlock has closed")
 				return
 			}
-			ilog.Debugf("recv block chan size:%v", len(p.chRecvBlock))
+			ilog.Infof("recv block chan size:%v", len(p.chRecvBlock))
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
