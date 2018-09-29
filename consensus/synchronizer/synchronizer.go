@@ -325,7 +325,8 @@ func (sy *SyncImpl) messageLoop() {
 	for {
 		select {
 		case req := <-sy.messageChan:
-			if req.Type() == p2p.SyncBlockHashRequest {
+			switch req.Type() {
+			case p2p.SyncBlockHashRequest:
 				var rh message.BlockHashQuery
 				err := rh.Unmarshal(req.Data())
 				if err != nil {
@@ -333,7 +334,7 @@ func (sy *SyncImpl) messageLoop() {
 					break
 				}
 				go sy.handleHashQuery(&rh, req.From())
-			} else if req.Type() == p2p.SyncBlockHashResponse {
+			case p2p.SyncBlockHashResponse:
 				var rh message.BlockHashResponse
 				err := rh.Unmarshal(req.Data())
 				if err != nil {
@@ -341,7 +342,7 @@ func (sy *SyncImpl) messageLoop() {
 					break
 				}
 				go sy.handleHashResp(&rh, req.From())
-			} else if req.Type() == p2p.SyncBlockRequest {
+			case p2p.SyncBlockRequest:
 				var rh message.BlockInfo
 				err := rh.Unmarshal(req.Data())
 				if err != nil {
@@ -425,12 +426,14 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 		return
 	}
 	var resp *message.BlockHashResponse
-	if rh.ReqType == 0 {
+
+	switch rh.ReqType {
+	case message.RequireType_GETBLOCKHASHES:
 		resp = sy.getBlockHashes(rh.Start, rh.End)
-	}
-	if rh.ReqType == 1 {
+	case message.RequireType_GETBLOCKHASHESBYNUMBER:
 		resp = sy.getBlockHashesByNums(rh.Nums)
 	}
+
 	if len(resp.BlockInfos) == 0 {
 		return
 	}
@@ -445,13 +448,12 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
 	ilog.Infof("receive block hashes: len=%v", len(rh.BlockInfos))
 	for _, blkInfo := range rh.BlockInfos {
+		if blkInfo.Number > sy.blockCache.LinkedRoot().Number {
+			if _, err := sy.blockCache.Find(blkInfo.Hash); err != nil {
+				sy.dc.CreateMission(string(blkInfo.Hash), blkInfo.Number, peerID)
+			}
+		}
 		sy.reqMap.Delete(blkInfo.Number)
-		if blkInfo.Number <= sy.blockCache.LinkedRoot().Number {
-			continue
-		}
-		if _, err := sy.blockCache.Find(blkInfo.Hash); err != nil {
-			sy.dc.CreateMission(string(blkInfo.Hash), blkInfo.Number, peerID)
-		}
 	}
 }
 
