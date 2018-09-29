@@ -90,46 +90,46 @@ message HashReq {
 	string hash=1;
 }
 
-// complete means return the whole block or just blockhead+txhash_list
 message BlockByHashReq {
 	string hash=1;
+	// complete means return the whole block or just blockhead+txhash_list
 	bool complete=2;
 }
 
-// complete means return the whole block or just blockhead+txhash_list
 message BlockByNumReq {
 	int64 num=1;
+	// complete means return the whole block or just blockhead+txhash_list
 	bool complete=2;	
 }
 
-// useLongestChain means whether geting the balance also from pending blocks(in the longest chain)
 message GetBalanceReq {
 	string ID=1;
-    bool useLongestChain = 2;
+	// useLongestChain means whether geting the balance also from pending blocks(in the longest chain)
+	bool useLongestChain = 2;
 }
 
-// get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
 message GetStateReq {
 	string key=1;
-    string field = 2;
+	// get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
+	string field = 2;
 }
 
-// the rawdata of a tx
 message RawTxReq {
+	// the rawdata of a tx
 	bytes data=1;
 }
 
 message SubscribeReq {
-    repeated event.Event.Topic topics=1;
+	repeated event.Event.Topic topics=1;
 }
 
-// the height of the blockchain
 message HeightRes {
+	// the height of the blockchain
 	int64 height=1;
 }
 
-// the queried balance
 message GetBalanceRes {
+	// the queried balance
 	int64 balance=1;
 }
 
@@ -141,8 +141,8 @@ message GetStateRes {
 	string value=1;
 }
 
-// the hash of the received transaction
 message SendRawTxRes {
+	// the hash of the received transaction
 	string hash=1;
 }
 
@@ -150,27 +150,26 @@ message GasRes {
 	uint64 gas=1;
 }
 
-//the queried transaction
 message txRes {
-    tx.TxRaw txRaw = 1;
-    bytes hash = 2;
+	//the queried transaction
+	tx.TxRaw txRaw = 1;
+	bytes hash = 2;
 }
 
 message txReceiptRes {
-    tx.TxReceiptRaw txReceiptRaw = 1;
-    bytes hash = 2;
+	tx.TxReceiptRaw txReceiptRaw = 1;
+	bytes hash = 2;
 }
 
-// the queried Block
 message BlockInfo {
-    block.BlockHead head = 1;
-    bytes hash = 2;
-    repeated tx.TxRaw txs = 3;
+	block.BlockHead head = 1;
+	bytes hash = 2;
+	repeated tx.TxRaw txs = 3;
 	repeated bytes txhash= 4 ;
-    repeated tx.TxReceiptRaw receipts = 5;
-    repeated bytes receiptHash = 6;
+	repeated tx.TxReceiptRaw receipts = 5;
+	repeated bytes receiptHash = 6;
 }
 
 message SubscribeRes {
-    event.Event ev=1;
+	event.Event ev=1;
 }
