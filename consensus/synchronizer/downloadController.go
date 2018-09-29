@@ -361,12 +361,10 @@ func (dc *DownloadControllerImpl) downloadLoop() {
 				if !ok {
 					ilog.Errorf("get peerstate error: %s", peerID.Pretty())
 				}
-				psMutex, psmok := dc.getStateMutex(peerID)
 				hashMap, hmok := dc.getHashMap(peerID)
-				if !psmok && hmok {
+				if hmok {
 					return true
 				}
-				psMutex.Lock()
 				for hash, _ := range ps {
 					var hState *hashStateInfo
 					hStateIF, ok := dc.hashState.Load(hash)
@@ -386,7 +384,6 @@ func (dc *DownloadControllerImpl) downloadLoop() {
 						}
 					}
 				}
-				psMutex.Unlock()
 				return true
 			})
 		case <-dc.chDownload:
