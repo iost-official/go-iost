@@ -1,10 +1,10 @@
 GO = go
 
-VERSION = 2.0.0
+VERSION = 1.0.0
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
-DOCKER_DEVIMAGE = iostio/iost-dev:$(VERSION)-$(COMMIT)
+DOCKER_DEVIMAGE = iostio/iost-dev:$(VERSION)
 TARGET_DIR = target
 
 ifeq ($(shell uname),Darwin)
@@ -42,7 +42,7 @@ else
 endif
 
 image:
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:2.0.0-4f2bf7e make
+	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 devimage:
