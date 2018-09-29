@@ -146,11 +146,12 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return errWitness
 	}
 
-	// check vote
+	// if it's vote block, check for votes
 	if blk.Head.Number%common.VoteInterval == 0 {
-		if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
-			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
-			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
+		if len(blk.Txs) == 0 || len(blk.Txs[0].Actions) == 0 ||
+			blk.Txs[0].Actions[0].Contract != "iost.vote" ||
+			blk.Txs[0].Actions[0].ActionName != "Stat" ||
+			blk.Txs[0].Actions[0].Data != "[]" {
 
 			return errors.New("blk did not vote")
 		}
@@ -160,14 +161,18 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		}
 	}
 
+	// check txs
 	for _, tx := range blk.Txs {
 		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
-		if exist == txpool.FoundChain {
+		switch exist {
+		case txpool.FoundChain:
 			return errTxDup
-		} else if exist != txpool.FoundPending {
-			if err := tx.VerifySelf(); err != nil {
+		case txpool.NotFound:
+			err := tx.VerifySelf()
+			if err != nil {
 				return errTxSignature
 			}
+		case txpool.FoundPending:
 		}
 		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > txpool.Expiration {
 			return errTxTooOld
