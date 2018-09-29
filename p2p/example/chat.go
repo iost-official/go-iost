@@ -110,6 +110,9 @@ func (ct *Chatter) readLoop() {
 		if sendData[len(sendData)-1] == '\n' {
 			sendData = sendData[0 : len(sendData)-1]
 		}
+		if len(sendData) == 0 {
+			continue
+		}
 		msg := newMessage(sendData, ct.p2pService.ID())
 		bytes, err := json.Marshal(msg)
 		if err != nil {
