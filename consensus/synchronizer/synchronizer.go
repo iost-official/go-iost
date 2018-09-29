@@ -93,17 +93,17 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID, 
 		return false
 	}
 	ilog.Infof("callback try sync block, num:%v", bn)
-	if bn <= sy.blockCache.LinkedRoot().Number {
-		sy.dc.MissionComplete(hash)
-		ilog.Infof("callback block confirmed, num:%v", bn)
-		return false
-	}
 	if hState.state == Work {
 		ilog.Infof("callback check work hash, num:%v", bn)
 		pid, ok := hState.p.(p2p.PeerID)
 		if !ok {
 			ilog.Errorf("get peerID failed.")
 			return false
+		}
+		if bn <= sy.blockCache.LinkedRoot().Number {
+			sy.dc.FreePeer(hash, pid)
+			sy.dc.MissionComplete(hash)
+			ilog.Infof("callback block confirmed, num:%v", bn)
 		}
 		bHash := []byte(hash)
 		if bcn, err := sy.blockCache.Find(bHash); err == nil {
@@ -113,6 +113,11 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID, 
 				ilog.Infof("callback block linked, num:%v", bn)
 			}
 		}
+		return false
+	}
+	if bn <= sy.blockCache.LinkedRoot().Number {
+		sy.dc.MissionComplete(hash)
+		ilog.Infof("callback block confirmed, num:%v", bn)
 		return false
 	}
 	if bn <= sy.blockCache.LinkedRoot().Number {
