@@ -9,8 +9,6 @@ import (
 
 var _ LogWriter = &FileWriter{}
 
-var cstZone = time.FixedZone("CST", 8*3600)
-
 // FileWriter is responsible for writing log to file.
 type FileWriter struct {
 	level    Level
@@ -39,7 +37,7 @@ func (fw *FileWriter) Init() error {
 	if err := os.MkdirAll(fw.filepath, 0755); err != nil {
 		panic(err)
 	}
-	logFile := fmt.Sprintf("iost_%s.log", time.Now().In(cstZone).Format("2006-01-02_15"))
+	logFile := fmt.Sprintf("iost_%s.log", time.Now().Format("2006-01-02_15"))
 	linkFile := filepath.Join(fw.filepath, "iost.log")
 
 	_, err := os.Lstat(linkFile)

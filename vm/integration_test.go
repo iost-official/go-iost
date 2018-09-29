@@ -970,7 +970,7 @@ func TestJS_LuckyBet(t *testing.T) {
 		So(js.ReadDB("user_number"), ShouldEqual, "0")
 		So(js.ReadDB("total_coins"), ShouldEqual, "0")
 		So(js.ReadDB("round"), ShouldEqual, "2")
-		So(js.ReadDB("result1"), ShouldContainSubstring, `{"number":200,"user_number":100,"k_number":10,"total_coins":{"number":"23465000000"},`)
+		So(js.ReadDB("result1"), ShouldContainSubstring, `{"number":200,"user_number":100,"k_number":10,"total_coins":{"number":"23845000000"},`)
 		t.Log(js.vi.Balance("CA"+js.cname), js.cname)
 	})
 }
