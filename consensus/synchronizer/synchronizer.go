@@ -104,6 +104,7 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID, 
 			sy.dc.FreePeer(hash, pid)
 			sy.dc.MissionComplete(hash)
 			ilog.Infof("callback block confirmed, num:%v", bn)
+			return false
 		}
 		bHash := []byte(hash)
 		if bcn, err := sy.blockCache.Find(bHash); err == nil {
@@ -111,7 +112,9 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID, 
 			if bcn.Type == blockcache.Linked {
 				sy.dc.MissionComplete(hash)
 				ilog.Infof("callback block linked, num:%v", bn)
+				return false
 			}
+			ilog.Infof("callback block is a single block, num:%v", bn)
 		}
 		return false
 	}
