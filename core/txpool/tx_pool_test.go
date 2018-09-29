@@ -29,6 +29,19 @@ var (
 	dbPath3 = "BlockChainDB"
 )
 
+func (pool *TxPImpl) testPendingTxsNum() int64 {
+	return int64(pool.pendingTx.Size())
+}
+
+func (pool *TxPImpl) testBlockListNum() int64 {
+	var r int64
+	pool.blockList.Range(func(key, value interface{}) bool {
+		r++
+		return true
+	})
+	return r
+}
+
 func TestNewTxPImpl(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
