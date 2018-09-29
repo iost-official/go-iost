@@ -63,6 +63,7 @@
           },
           {
             "name": "useLongestChain",
+            "description": "useLongestChain means whether geting the balance also from pending blocks(in the longest chain)",
             "in": "path",
             "required": true,
             "type": "boolean",
@@ -95,6 +96,7 @@
           },
           {
             "name": "complete",
+            "description": "complete means return the whole block or just blockhead+txhash_list",
             "in": "path",
             "required": true,
             "type": "boolean",
@@ -128,6 +130,7 @@
           },
           {
             "name": "complete",
+            "description": "complete means return the whole block or just blockhead+txhash_list",
             "in": "path",
             "required": true,
             "type": "boolean",
@@ -194,6 +197,7 @@
           },
           {
             "name": "field",
+            "description": "get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case).",
             "in": "query",
             "required": false,
             "type": "string"
@@ -465,7 +469,8 @@
       "properties": {
         "balance": {
           "type": "string",
-          "format": "int64"
+          "format": "int64",
+          "title": "the queried balance"
         }
       }
     },
@@ -490,7 +495,8 @@
       "properties": {
         "height": {
           "type": "string",
-          "format": "int64"
+          "format": "int64",
+          "title": "the height of the blockchain"
         }
       }
     },
@@ -499,16 +505,17 @@
       "properties": {
         "data": {
           "type": "string",
-          "format": "byte"
+          "format": "byte",
+          "title": "the rawdata of a tx"
         }
-      },
-      "title": "the rawdata of a tx"
+      }
     },
     "rpcSendRawTxRes": {
       "type": "object",
       "properties": {
         "hash": {
-          "type": "string"
+          "type": "string",
+          "title": "the hash of the received transaction"
         }
       }
     },
@@ -547,7 +554,8 @@
       "type": "object",
       "properties": {
         "txRaw": {
-          "$ref": "#/definitions/txTxRaw"
+          "$ref": "#/definitions/txTxRaw",
+          "title": "the queried transaction"
         },
         "hash": {
           "type": "string",
