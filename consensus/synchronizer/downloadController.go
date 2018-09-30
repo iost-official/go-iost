@@ -397,6 +397,7 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 					} else if hState == Wait {
 						mok, mdone := mFunc(hash, node.p, peerID)
 						if mok {
+							dc.hashState.Store(hash, peerID.Pretty())
 							psMutex.Lock()
 							ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
 								dc.missionTimeout(hash, peerID)
