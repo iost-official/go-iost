@@ -412,8 +412,7 @@ func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 	return bc.head
 }
 
-//for debug
-//draw the blockcache
+// PICSIZE draw the blockcache, for debug
 const PICSIZE int = 1000
 
 // PICSIZE draw the blockcache
