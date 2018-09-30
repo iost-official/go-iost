@@ -350,7 +350,6 @@ func (pool *TxPImpl) existTxInPending(hash []byte) bool {
 
 // TxTimeOut time to verify the tx
 func (pool *TxPImpl) TxTimeOut(tx *tx.Tx) bool {
-	return false
 	currentTime := time.Now().UnixNano()
 	if tx.Time > currentTime {
 		return true
@@ -358,7 +357,6 @@ func (pool *TxPImpl) TxTimeOut(tx *tx.Tx) bool {
 	if tx.Expiration <= currentTime {
 		return true
 	}
-	ilog.Errorf("new block number: %v, %v, %v, %v", currentTime, tx.Time, currentTime-tx.Time, Expiration)
 	if currentTime-tx.Time > Expiration {
 		return true
 	}
