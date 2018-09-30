@@ -16,17 +16,17 @@ package iwallet
 
 import (
 	"fmt"
-	"os"
-	"time"
-	"strings"
 	"math"
+	"os"
+	"strings"
+	"time"
 
+	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 // callCmd represents the compile command
@@ -153,10 +153,10 @@ func handleTransferData(data string) (string, error) {
 		return "", fmt.Errorf("Transfer need 3 arguments, got %v", len(arr))
 	}
 	if amount, err := js.GetIndex(2).Float64(); err == nil {
-		if amount * 1e8 > math.MaxInt64 {
-			return "", fmt.Errorf("you can transfer more than %f iost", math.MaxInt64 / 1e8)
+		if amount*1e8 > math.MaxInt64 {
+			return "", fmt.Errorf("you can transfer more than %f iost", math.MaxInt64/1e8)
 		}
-		data = fmt.Sprintf(`["%v", "%v", %d]`, js.GetIndex(0).MustString(), js.GetIndex(1).MustString(), int64(amount * 1e8))
+		data = fmt.Sprintf(`["%v", "%v", %d]`, js.GetIndex(0).MustString(), js.GetIndex(1).MustString(), int64(amount*1e8))
 	}
 	return data, nil
 }

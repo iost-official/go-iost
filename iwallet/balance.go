@@ -36,11 +36,11 @@ var balanceCmd = &cobra.Command{
 		}
 		//do some check for arg[0] here
 		id := args[0]
-		b, err := CheckBalance(id)
+		b, err := checkBalance(id)
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println(float64(b) / 1e8, "iost")
+		fmt.Println(float64(b)/1e8, "iost")
 	},
 }
 
@@ -61,7 +61,7 @@ func init() {
 	// balanceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func CheckBalance(id string) (int64, error) {
+func checkBalance(id string) (int64, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
 		return 0, err
