@@ -1,7 +1,5 @@
 package v8
 
-import "C"
-
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
@@ -90,7 +88,6 @@ func (sbx *Sandbox) Release() {
 	sbx.context = nil
 }
 
-// nolint
 // Init add system functions
 func (sbx *Sandbox) Init(vmType vmPoolType) {
 	// init require

@@ -44,7 +44,7 @@ type Receipt struct {
 }
 
 // TxReceipt Transaction Receipt
-type TxReceipt struct {
+type TxReceipt struct { //nolint:golint
 	TxHash   []byte
 	GasUsage int64
 	/*
