@@ -193,7 +193,7 @@ func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) FRet {
 	switch {
 	case pool.existTxInPending(hash):
 		r = FoundPending
-	case pool.existTxInChain2(hash, chainBlock):
+	case pool.existTxInChain1(hash, chainBlock):
 		r = FoundChain
 	default:
 		r = NotFound
