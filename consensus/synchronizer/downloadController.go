@@ -205,39 +205,6 @@ func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peer
 	}
 }
 
-func (dc *DownloadControllerImpl) missionTimeout(hash string, peerID p2p.PeerID) {
-	ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.Pretty())
-	if hStateIF, ok := dc.hashState.Load(hash); ok {
-		hState, ok := hStateIF.(string)
-		if !ok {
-			ilog.Errorf("get hash state error: %s", hash)
-			// dc.hashState.Delete(hash)
-		} else if hState == peerID.Pretty() {
-			dc.hashState.Store(hash, Wait)
-		}
-	}
-	if pStateIF, ok := dc.peerState.Load(peerID); ok {
-		psMutex, ok := dc.getStateMutex(peerID)
-		if ok {
-			psMutex.Lock()
-			pState, ok := pStateIF.(timerMap)
-			if !ok {
-				ilog.Errorf("get peerstate error: %s", peerID.Pretty())
-				// dc.peerState.Delete(peerID)
-			} else {
-				if _, ok = pState[hash]; ok {
-					delete(pState, hash)
-					select {
-					case dc.chDownload <- struct{}{}:
-					default:
-					}
-				}
-			}
-			psMutex.Unlock()
-		}
-	}
-}
-
 func (dc *DownloadControllerImpl) missionComplete(hash string) {
 	if _, ok := dc.hashState.Load(hash); ok {
 		dc.hashState.Store(hash, Done)
@@ -257,7 +224,7 @@ func (dc *DownloadControllerImpl) freePeer(hash string, peerID p2p.PeerID) {
 				if timer, ok := pState[hash]; ok {
 					timer.Stop()
 					delete(pState, hash)
-					ilog.Infof("free peer, peerID:%v", peerID)
+					ilog.Infof("free peer, peerID:%s", peerID.Pretty())
 					select {
 					case dc.chDownload <- struct{}{}:
 					default:
@@ -400,7 +367,8 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 							dc.hashState.Store(hash, peerID.Pretty())
 							psMutex.Lock()
 							ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
-								dc.missionTimeout(hash, peerID)
+								ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.Pretty())
+								dc.freePeer(hash, peerID)
 							})
 							psLen := len(ps)
 							psMutex.Unlock()
