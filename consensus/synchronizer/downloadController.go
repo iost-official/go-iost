@@ -257,6 +257,7 @@ func (dc *DownloadControllerImpl) freePeer(hash string, peerID p2p.PeerID) {
 				if timer, ok := pState[hash]; ok {
 					timer.Stop()
 					delete(pState, hash)
+					ilog.Infof("free peer, peerID:%v", peerID)
 					select {
 					case dc.chDownload <- struct{}{}:
 					default:
