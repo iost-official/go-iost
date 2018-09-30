@@ -21,6 +21,7 @@ matrix:
         - git lfs pull
       script:
         - make build
+        - make lint
         - make test
 
     - os: linux
@@ -29,10 +30,11 @@ matrix:
       services:
         - docker
       before_install:
-        - docker pull iostio/iost-dev:2.0.0-go1.11
+        - docker pull iostio/iost-dev:1.0.0
         - git lfs install
       before_script:
         - git lfs pull
       script:
-        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:2.0.0-go1.11 make build
-        - docker run -it --rm -e VERBOSE=true -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:2.0.0-go1.11 make test
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make build
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make lint
+        - docker run -it --rm -e VERBOSE=true -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make test
