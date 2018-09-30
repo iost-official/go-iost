@@ -5,6 +5,8 @@ import (
 
 	"os"
 
+	"time"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/verifier"
@@ -15,7 +17,6 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/native"
-	"time"
 )
 
 // TMode type of mode
@@ -141,6 +142,7 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 }
 
 // New return a BaseVariable instance
+// nolint: gocyclo
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 	var blockChain block.Chain
 	var stateDB db.MVCCDB

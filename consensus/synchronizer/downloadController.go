@@ -352,62 +352,66 @@ func (dc *DownloadControllerImpl) findWaitHashes(peerID p2p.PeerID, hashMap *syn
 	}
 }
 
+func (dc *DownloadControllerImpl) doFreePeer() {
+	ilog.Debugf("free peer begin")
+	dc.peerState.Range(func(k, v interface{}) bool {
+		peerID := k.(p2p.PeerID)
+		ps, ok := v.(timerMap)
+		if !ok {
+			ilog.Errorf("get peerstate error: %s", peerID.Pretty())
+		}
+		pmMutex, pmmok := dc.getPeerMapMutex(peerID)
+		hashMap, hmok := dc.getHashMap(peerID)
+		if !pmmok || !hmok {
+			return true
+		}
+		pmMutex.Lock()
+		hashlist := make([]string, 0, len(ps))
+		for hash := range ps {
+			hashlist = append(hashlist, hash)
+		}
+		pmMutex.Unlock()
+		for _, hash := range hashlist {
+			var hState *hashStateInfo
+			hStateIF, ok := dc.hashState.Load(hash)
+			if ok {
+				hState, ok = hStateIF.(*hashStateInfo)
+			}
+			if ok {
+				if hState.state != Work {
+					pmMutex.Lock()
+					delete(ps, hash)
+					pmMutex.Unlock()
+					select {
+					case dc.chDownload <- struct{}{}:
+					default:
+					}
+				} else {
+					var node *mapEntry
+					nodeIF, ok := hashMap.Load(hash)
+					if ok {
+						node, ok = nodeIF.(*mapEntry)
+					}
+					if ok {
+						nhState := hashStateInfo{state: hState.state, p: hState.p}
+						if nhState.state == Work {
+							dc.callback(hash, node.p, peerID, &nhState)
+						}
+					}
+				}
+			}
+		}
+		return true
+	})
+	ilog.Debugf("free peer end")
+}
+
 func (dc *DownloadControllerImpl) freePeerLoop() {
 	checkPeerTicker := time.NewTicker(time.Second)
 	for {
 		select {
 		case <-checkPeerTicker.C:
-			ilog.Debugf("free peer begin")
-			dc.peerState.Range(func(k, v interface{}) bool {
-				peerID := k.(p2p.PeerID)
-				ps, ok := v.(timerMap)
-				if !ok {
-					ilog.Errorf("get peerstate error: %s", peerID.Pretty())
-				}
-				pmMutex, pmmok := dc.getPeerMapMutex(peerID)
-				hashMap, hmok := dc.getHashMap(peerID)
-				if !pmmok || !hmok {
-					return true
-				}
-				pmMutex.Lock()
-				hashlist := make([]string, 0, len(ps))
-				for hash := range ps {
-					hashlist = append(hashlist, hash)
-				}
-				pmMutex.Unlock()
-				for _, hash := range hashlist {
-					var hState *hashStateInfo
-					hStateIF, ok := dc.hashState.Load(hash)
-					if ok {
-						hState, ok = hStateIF.(*hashStateInfo)
-					}
-					if ok {
-						if hState.state != Work {
-							pmMutex.Lock()
-							delete(ps, hash)
-							pmMutex.Unlock()
-							select {
-							case dc.chDownload <- struct{}{}:
-							default:
-							}
-						} else {
-							var node *mapEntry
-							nodeIF, ok := hashMap.Load(hash)
-							if ok {
-								node, ok = nodeIF.(*mapEntry)
-							}
-							if ok {
-								nhState := hashStateInfo{state: hState.state, p: hState.p}
-								if nhState.state == Work {
-									dc.callback(hash, node.p, peerID, &nhState)
-								}
-							}
-						}
-					}
-				}
-				return true
-			})
-			ilog.Debugf("free peer end")
+			dc.doFreePeer()
 		case <-dc.exitSignal:
 			return
 		}
