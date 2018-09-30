@@ -132,7 +132,9 @@ func (pool *TxPImpl) verifyWorkers() {
 
 // AddLinkedNode add the findBlock
 func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, newHead *blockcache.BlockCacheNode) error {
+	start := time.Now()
 	err := pool.addBlock(linkedNode.Block)
+	ilog.Error("time use for addLinkedNode: %v", time.Since(start))
 	if err != nil {
 		return fmt.Errorf("failed to add findBlock: %v", err)
 	}
