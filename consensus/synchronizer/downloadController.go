@@ -11,12 +11,10 @@ import (
 // DownloadController defines the functions of download controller.
 type DownloadController interface {
 	CreateMission(hash string, p interface{}, peerID p2p.PeerID)
-	MissionTimeout(hash string, peerID p2p.PeerID)
-	MissionComplete(hash string)
-	FreePeer(hash string, peerID p2p.PeerID)
 	Reset()
-	Start()
 	Stop()
+	DownloadLoop(mFunc MissionFunc)
+	FreePeerLoop(fpFunc FreePeerFunc)
 }
 
 const (
@@ -24,12 +22,10 @@ const (
 	Done string = "Done"
 	// Wait hash state type
 	Wait string = "Wait"
-	// Work hash state type
-	Work string = "Work"
 )
 
 const (
-	syncBlockTimeout = 10 * time.Second
+	syncBlockTimeout = 2 * time.Second
 	peerConNum       = 20
 	// Free peer state type
 	Free string = "Free"
@@ -44,18 +40,17 @@ const (
 
 type timerMap = map[string]*time.Timer
 
-type callbackfunc = func(hash string, p interface{}, peerID p2p.PeerID, hState *hashStateInfo) bool
+// FreePeerFunc checks if the mission is completed.
+type FreePeerFunc = func(hash string, p interface{}) (missionCompleted bool)
+
+// MissionFunc checks if the mission is completed or tries to do the mission.
+type MissionFunc = func(hash string, p interface{}, peerID p2p.PeerID) (missionAccept bool, missionCompleted bool)
 
 type mapEntry struct {
 	val  string
 	p    interface{}
 	prev *mapEntry
 	next *mapEntry
-}
-
-type hashStateInfo struct {
-	state string
-	p     interface{}
 }
 
 //DownloadControllerImpl is the implementation of DownloadController.
@@ -66,13 +61,12 @@ type DownloadControllerImpl struct {
 	peerMap        *sync.Map
 	peerMapMutex   *sync.Map
 	newPeerMutex   *sync.Mutex
-	callback       callbackfunc
 	chDownload     chan struct{}
 	exitSignal     chan struct{}
 }
 
 // NewDownloadController returns a DownloadController instance.
-func NewDownloadController(callback callbackfunc) (*DownloadControllerImpl, error) {
+func NewDownloadController() (*DownloadControllerImpl, error) {
 	dc := &DownloadControllerImpl{
 		hashState:      new(sync.Map), // map[string]string
 		peerState:      new(sync.Map), // map[PeerID](map[string]bool)
@@ -82,7 +76,6 @@ func NewDownloadController(callback callbackfunc) (*DownloadControllerImpl, erro
 		newPeerMutex:   new(sync.Mutex),
 		chDownload:     make(chan struct{}, 2),
 		exitSignal:     make(chan struct{}),
-		callback:       callback,
 	}
 	return dc, nil
 }
@@ -96,12 +89,6 @@ func (dc *DownloadControllerImpl) Reset() {
 	dc.peerMap = new(sync.Map)
 	dc.peerMapMutex = new(sync.Map)
 	dc.newPeerMutex.Unlock()
-}
-
-// Start starts the DownloadController.
-func (dc *DownloadControllerImpl) Start() {
-	go dc.downloadLoop()
-	go dc.freePeerLoop()
 }
 
 // Stop stops the DownloadController.
@@ -165,13 +152,10 @@ func (dc *DownloadControllerImpl) getMapEntry(hashMap *sync.Map, key string) (*m
 	return node, true
 }
 
-// OnRecvHash adds a mission.
+// CreateMission adds a mission.
 func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peerID p2p.PeerID) {
 	// ilog.Debugf("peer: %s, hash: %s", peerID, hash)
-	var hStateIF interface{}
-	if _, ok := dc.hashState.Load(hash); !ok {
-		hStateIF, _ = dc.hashState.LoadOrStore(hash, &hashStateInfo{state: Wait})
-	}
+	hStateIF, _ := dc.hashState.LoadOrStore(hash, Wait)
 
 	dc.newPeerMutex.Lock()
 	if _, ok := dc.peerState.Load(peerID); !ok {
@@ -213,7 +197,7 @@ func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peer
 			pmMutex.Unlock()
 		}
 	}
-	if hState, ok := hStateIF.(*hashStateInfo); ok && hState.state == Wait {
+	if hState, ok := hStateIF.(string); ok && hState == Wait {
 		select {
 		case dc.chDownload <- struct{}{}:
 		default:
@@ -221,19 +205,15 @@ func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peer
 	}
 }
 
-// OnTimeout changes the hash state and frees the peer.
-func (dc *DownloadControllerImpl) MissionTimeout(hash string, peerID p2p.PeerID) {
+func (dc *DownloadControllerImpl) missionTimeout(hash string, peerID p2p.PeerID) {
 	ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.Pretty())
 	if hStateIF, ok := dc.hashState.Load(hash); ok {
-		hState, ok := hStateIF.(*hashStateInfo)
+		hState, ok := hStateIF.(string)
 		if !ok {
 			ilog.Errorf("get hash state error: %s", hash)
 			// dc.hashState.Delete(hash)
-		} else if hState.state == Work {
-			pid, ok := hState.p.(p2p.PeerID)
-			if ok && pid == peerID {
-				hState.state = Wait
-			}
+		} else if hState == peerID.Pretty() {
+			dc.hashState.Store(hash, Wait)
 		}
 	}
 	if pStateIF, ok := dc.peerState.Load(peerID); ok {
@@ -258,21 +238,13 @@ func (dc *DownloadControllerImpl) MissionTimeout(hash string, peerID p2p.PeerID)
 	}
 }
 
-// MissionComplete changes the hash state.
-func (dc *DownloadControllerImpl) MissionComplete(hash string) {
-	if hStateIF, ok := dc.hashState.Load(hash); ok {
-		hState, ok := hStateIF.(*hashStateInfo)
-		if !ok {
-			ilog.Errorf("get hash state error: %s", hash)
-			// dc.hashState.Delete(hash)
-		} else {
-			hState.state = Done
-		}
+func (dc *DownloadControllerImpl) missionComplete(hash string) {
+	if _, ok := dc.hashState.Load(hash); ok {
+		dc.hashState.Store(hash, Done)
 	}
 }
 
-// FreePeer frees the peer.
-func (dc *DownloadControllerImpl) FreePeer(hash string, peerID p2p.PeerID) {
+func (dc *DownloadControllerImpl) freePeer(hash string, peerID p2p.PeerID) {
 	if pStateIF, ok := dc.peerState.Load(peerID); ok {
 		psMutex, ok := dc.getStateMutex(peerID)
 		if ok {
@@ -295,64 +267,18 @@ func (dc *DownloadControllerImpl) FreePeer(hash string, peerID p2p.PeerID) {
 		}
 	}
 	if hStateIF, ok := dc.hashState.Load(hash); ok {
-		hState, ok := hStateIF.(*hashStateInfo)
+		hState, ok := hStateIF.(string)
 		if !ok {
 			ilog.Errorf("get hash state error: %s", hash)
 			// dc.hashState.Delete(hash)
-		} else if hState.state == Work {
-			pid, ok := hState.p.(p2p.PeerID)
-			if ok && pid == peerID {
-				hState.state = Wait
-			}
+		} else if hState == peerID.Pretty() {
+			dc.hashState.Store(hash, Wait)
 		}
 	}
 }
 
-func (dc *DownloadControllerImpl) findWaitHashes(peerID p2p.PeerID, hashMap *sync.Map, ps timerMap, pmMutex *sync.Mutex, psMutex *sync.Mutex) {
-	pmMutex.Lock()
-	node, ok := dc.getMapEntry(hashMap, Head)
-	if !ok {
-		return
-	}
-	node = node.next
-	pmMutex.Unlock()
-	for {
-		if node.val == Tail {
-			return
-		}
-		hash := node.val
-		var hState *hashStateInfo
-		hStateIF, ok := dc.hashState.Load(hash)
-		if ok {
-			hState, ok = hStateIF.(*hashStateInfo)
-		}
-		if !ok || hState.state == Done {
-			dc.hashState.Delete(hash)
-			pmMutex.Lock()
-			hashMap.Delete(hash)
-			node.prev.next = node.next
-			node.next.prev = node.prev
-			pmMutex.Unlock()
-		} else if hState.state == Wait && dc.callback(hash, node.p, peerID, hState) {
-			hState.p = peerID
-			hState.state = Work
-			psMutex.Lock()
-			ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
-				dc.MissionTimeout(hash, peerID)
-			})
-			psLen := len(ps)
-			psMutex.Unlock()
-			if psLen >= peerConNum {
-				return
-			}
-		}
-		pmMutex.Lock()
-		node = node.next
-		pmMutex.Unlock()
-	}
-}
-
-func (dc *DownloadControllerImpl) freePeerLoop() {
+// FreePeerLoop is the Loop to free the peer.
+func (dc *DownloadControllerImpl) FreePeerLoop(fpFunc FreePeerFunc) {
 	checkPeerTicker := time.NewTicker(time.Second)
 	for {
 		select {
@@ -371,18 +297,18 @@ func (dc *DownloadControllerImpl) freePeerLoop() {
 				}
 				pmMutex.Lock()
 				hashlist := make([]string, 0, len(ps))
-				for hash, _ := range ps {
+				for hash := range ps {
 					hashlist = append(hashlist, hash)
 				}
 				pmMutex.Unlock()
 				for _, hash := range hashlist {
-					var hState *hashStateInfo
+					var hState string
 					hStateIF, ok := dc.hashState.Load(hash)
 					if ok {
-						hState, ok = hStateIF.(*hashStateInfo)
+						hState, ok = hStateIF.(string)
 					}
 					if ok {
-						if hState.state != Work {
+						if hState == Done || hState == Wait {
 							pmMutex.Lock()
 							delete(ps, hash)
 							pmMutex.Unlock()
@@ -396,11 +322,8 @@ func (dc *DownloadControllerImpl) freePeerLoop() {
 							if ok {
 								node, ok = nodeIF.(*mapEntry)
 							}
-							if ok {
-								nhState := hashStateInfo{state: hState.state, p: hState.p}
-								if nhState.state == Work {
-									dc.callback(hash, node.p, peerID, &nhState)
-								}
+							if ok && fpFunc(hash, node.p) {
+								dc.freePeer(hash, peerID)
 							}
 						}
 					}
@@ -414,7 +337,8 @@ func (dc *DownloadControllerImpl) freePeerLoop() {
 	}
 }
 
-func (dc *DownloadControllerImpl) downloadLoop() {
+// DownloadLoop is the Loop to download the mission.
+func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 	for {
 		select {
 		case <-time.After(2 * syncBlockTimeout):
@@ -445,7 +369,51 @@ func (dc *DownloadControllerImpl) downloadLoop() {
 				if psLen >= peerConNum {
 					return true
 				}
-				dc.findWaitHashes(peerID, hashMap, ps, pmMutex, psMutex)
+				pmMutex.Lock()
+				node, ok := dc.getMapEntry(hashMap, Head)
+				if !ok {
+					return true
+				}
+				node = node.next
+				pmMutex.Unlock()
+				for {
+					if node.val == Tail {
+						break
+					}
+					hash := node.val
+					var hState string
+					hStateIF, ok := dc.hashState.Load(hash)
+					if ok {
+						hState, ok = hStateIF.(string)
+					}
+					if !ok || hState == Done {
+						dc.hashState.Delete(hash)
+						pmMutex.Lock()
+						hashMap.Delete(hash)
+						node.prev.next = node.next
+						node.next.prev = node.prev
+						pmMutex.Unlock()
+					} else if hState == Wait {
+						mok, mdone := mFunc(hash, node.p, peerID)
+						if mok {
+							psMutex.Lock()
+							ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
+								dc.missionTimeout(hash, peerID)
+							})
+							psLen := len(ps)
+							psMutex.Unlock()
+							if psLen >= peerConNum {
+								break
+							}
+						}
+						if mdone {
+							dc.missionComplete(hash)
+						}
+					}
+					pmMutex.Lock()
+					node = node.next
+					pmMutex.Unlock()
+				}
 				return true
 			})
 			ilog.Debugf("Download End")
