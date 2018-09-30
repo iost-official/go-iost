@@ -291,17 +291,17 @@ func (dc *DownloadControllerImpl) FreePeerLoop(fpFunc FreePeerFunc) {
 				if !ok {
 					ilog.Errorf("get peerstate error: %s", peerID.Pretty())
 				}
-				pmMutex, pmmok := dc.getPeerMapMutex(peerID)
+				psMutex, psmok := dc.getStateMutex(peerID)
 				hashMap, hmok := dc.getHashMap(peerID)
-				if !pmmok || !hmok {
+				if !psmok || !hmok {
 					return true
 				}
-				pmMutex.Lock()
+				psMutex.Lock()
 				hashlist := make([]string, 0, len(ps))
 				for hash := range ps {
 					hashlist = append(hashlist, hash)
 				}
-				pmMutex.Unlock()
+				psMutex.Unlock()
 				for _, hash := range hashlist {
 					var hState string
 					hStateIF, ok := dc.hashState.Load(hash)
@@ -310,9 +310,9 @@ func (dc *DownloadControllerImpl) FreePeerLoop(fpFunc FreePeerFunc) {
 					}
 					if ok {
 						if hState == Done || hState == Wait {
-							pmMutex.Lock()
+							psMutex.Lock()
 							delete(ps, hash)
-							pmMutex.Unlock()
+							psMutex.Unlock()
 							select {
 							case dc.chDownload <- struct{}{}:
 							default:
