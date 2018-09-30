@@ -21,9 +21,9 @@ func TestDownloadController(t *testing.T) {
 		go dc.FreePeerLoop(func(hash string, p interface{}) bool {
 			return false
 		})
-		go dc.DownloadLoop(func(hash string, p interface{}, peerID p2p.PeerID) (bool, bool) {
+		go dc.DownloadLoop(func(hash string, p interface{}, peerID interface{}) (bool, bool) {
 			dHash <- hash
-			dPID <- peerID
+			dPID <- peerID.(p2p.PeerID)
 			return true, false
 		})
 		So(err, ShouldBeNil)

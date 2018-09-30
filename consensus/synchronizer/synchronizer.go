@@ -481,7 +481,7 @@ func (sy *SyncImpl) checkHasBlock(hash string, p interface{}) bool {
 	return false
 }
 
-func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID) (bool, bool) {
+func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{}) (bool, bool) {
 	bn, ok := p.(int64)
 	if !ok {
 		ilog.Errorf("get p failed.")
@@ -507,6 +507,10 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID) 
 		ilog.Errorf("marshal request block failed. err=%v", err)
 		return false, false
 	}
-	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
+	pid, ok := peerID.(p2p.PeerID)
+	if !ok {
+		return false, false
+	}
+	sy.p2pService.SendToPeer(pid, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
 	return true, false
 }
