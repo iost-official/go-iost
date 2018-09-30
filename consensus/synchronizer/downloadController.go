@@ -165,7 +165,7 @@ func (dc *DownloadControllerImpl) getMapEntry(hashMap *sync.Map, key string) (*m
 	return node, true
 }
 
-// OnRecvHash adds a mission.
+// CreateMission adds a mission.
 func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peerID p2p.PeerID) {
 	// ilog.Debugf("peer: %s, hash: %s", peerID, hash)
 	var hStateIF interface{}
@@ -221,7 +221,7 @@ func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peer
 	}
 }
 
-// OnTimeout changes the hash state and frees the peer.
+// MissionTimeout changes the hash state and frees the peer.
 func (dc *DownloadControllerImpl) MissionTimeout(hash string, peerID p2p.PeerID) {
 	ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.Pretty())
 	if hStateIF, ok := dc.hashState.Load(hash); ok {
@@ -371,7 +371,7 @@ func (dc *DownloadControllerImpl) freePeerLoop() {
 				}
 				pmMutex.Lock()
 				hashlist := make([]string, 0, len(ps))
-				for hash, _ := range ps {
+				for hash := range ps {
 					hashlist = append(hashlist, hash)
 				}
 				pmMutex.Unlock()

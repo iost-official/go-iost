@@ -12,7 +12,7 @@ import (
 )
 
 // BlockChain is the implementation of chain
-type BlockChain struct {
+type BlockChain struct { //nolint:golint
 	blockChainDB *kv.Storage
 	length       int64
 }
@@ -160,6 +160,7 @@ func (bc *BlockChain) Close() {
 	bc.blockChainDB.Close()
 }
 
+// Draw the graph about blockchain
 func (bc *BlockChain) Draw(start int64, end int64) string {
 	ret := ""
 	for i := start; i <= end; i++ {
