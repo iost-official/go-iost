@@ -10,14 +10,11 @@ import (
 
 	"fmt"
 
-	"unsafe"
-
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
 
@@ -130,11 +127,71 @@ func (pool *TxPImpl) verifyWorkers() {
 	}
 }
 
+// CheckTxs check txs
+func (pool *TxPImpl) CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, error) {
+	rm, err := pool.createTxMapToChain(chainBlock)
+	if err != nil {
+		return nil, err
+	}
+	dtm := new(sync.Map)
+	for _, v := range txs {
+		trh := string(v.Hash())
+		if _, ok := rm.Load(trh); ok {
+			return v, errors.New("duplicate tx in chain")
+		}
+		if _, ok := dtm.Load(trh); ok {
+			return v, errors.New("duplicate tx in txs")
+		}
+		dtm.Store(trh, nil)
+		if ok := pool.existTxInPending([]byte(trh)); !ok {
+			if pool.verifyTx(v) != Success {
+				return v, errors.New("failed to verify")
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (pool *TxPImpl) createTxMapToChain(chainBlock *block.Block) (*sync.Map, error) {
+	if chainBlock == nil {
+		return nil, errors.New("chainBlock is nil")
+	}
+	rm := new(sync.Map)
+	h := chainBlock.HeadHash()
+	t := pool.slotToNSec(chainBlock.Head.Time)
+	var ok bool
+	for {
+		ret := pool.createTxMapToBlock(rm, h)
+		if !ret {
+			return nil, errors.New("failed to create tx map")
+		}
+		h, ok = pool.parentHash(h)
+		if !ok {
+			return nil, errors.New("failed to get parent chainBlock")
+		}
+		if b, ok := pool.findBlock(h); ok {
+			if (t - b.time) > filterTime {
+				return rm, nil
+			}
+		}
+	}
+}
+
+func (pool *TxPImpl) createTxMapToBlock(tm *sync.Map, blockHash []byte) bool {
+	b, ok := pool.blockList.Load(string(blockHash))
+	if !ok {
+		return false
+	}
+	b.(*blockTx).txMap.Range(func(key, value interface{}) bool {
+		tm.Store(key.(string), nil)
+		return true
+	})
+	return true
+}
+
 // AddLinkedNode add the findBlock
 func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, newHead *blockcache.BlockCacheNode) error {
-	start := time.Now()
 	err := pool.addBlock(linkedNode.Block)
-	ilog.Error("time use for addLinkedNode: %v", time.Since(start))
 	if err != nil {
 		return fmt.Errorf("failed to add findBlock: %v", err)
 	}
@@ -195,7 +252,7 @@ func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) FRet {
 	switch {
 	case pool.existTxInPending(hash):
 		r = FoundPending
-	case pool.existTxInChain1(hash, chainBlock):
+	case pool.existTxInChain2(hash, chainBlock):
 		r = FoundChain
 	default:
 		r = NotFound
@@ -316,23 +373,6 @@ func (pool *TxPImpl) clearBlock() {
 		}
 		return true
 	})
-	listnum := 0
-	totalBytes := 0
-	pool.blockList.Range(func(key, value interface{}) bool {
-		listnum++
-		chainmaplength := 0
-		var keysize, valuesize uintptr
-		value.(*blockTx).chainMap.Range(func(key, value interface{}) bool {
-			chainmaplength++
-			keysize = unsafe.Sizeof(key)
-			valuesize = unsafe.Sizeof(value)
-			return true
-		})
-		ilog.Errorf("keysize: %v, valuesize: %v, chainmaplength: %v", keysize, valuesize, chainmaplength)
-		totalBytes += 8 * chainmaplength * int(keysize+valuesize)
-		return true
-	})
-	ilog.Errorf("totalBytes: %v", totalBytes)
 }
 
 func (pool *TxPImpl) addTx(tx *tx.Tx) TAddTx {

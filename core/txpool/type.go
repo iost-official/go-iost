@@ -9,7 +9,6 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 )
 
@@ -109,7 +108,6 @@ func (pool *TxPImpl) newBlockTx(blk *block.Block, parentBlockTx interface{}) *bl
 		ParentHash: blk.Head.ParentHash,
 		time:       common.SlotLength * blk.Head.Time * int64(time.Second),
 	}
-	start := time.Now()
 	if parentBlockTx != nil {
 		parentBlockTx.(*blockTx).chainMap.Range(func(key, value interface{}) bool {
 			if !pool.TxTimeOut(value.(*tx.Tx)) {
@@ -118,7 +116,6 @@ func (pool *TxPImpl) newBlockTx(blk *block.Block, parentBlockTx interface{}) *bl
 			return true
 		})
 	}
-	ilog.Error("time use for newBlocktx: %v", time.Since(start))
 	for _, v := range blk.Txs {
 		b.chainMap.Store(string(v.Hash()), v)
 		b.txMap.Store(string(v.Hash()), v)
