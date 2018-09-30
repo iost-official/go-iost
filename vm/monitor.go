@@ -14,8 +14,6 @@ import (
 var (
 	errABINotFound     = errors.New("abi not found")
 	errGasPriceIllegal = errors.New("gas price too big")
-	errArgsNotEnough   = errors.New("args not enough")
-	errArgsType        = errors.New("args type not match")
 )
 
 // Monitor ...
