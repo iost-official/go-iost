@@ -21,7 +21,7 @@ type GenesisConfig struct {
 	GenesisHash      string
 	WitnessInfo      []string
 	VoteContractPath string
-	AdminID			 string
+	AdminID          string
 }
 
 // DBConfig config of the database

@@ -495,8 +495,8 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 	bHash := []byte(hash)
 	if bcn, err := sy.blockCache.Find(bHash); err == nil {
 		if bcn.Type == blockcache.Linked {
-			return false, true
 			ilog.Infof("callback block linked, num:%v", bn)
+			return false, true
 		}
 		ilog.Infof("callback block is a single block, num:%v", bn)
 		return false, false

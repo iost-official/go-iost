@@ -241,58 +241,115 @@ func (dc *DownloadControllerImpl) freePeer(hash string, peerID interface{}) {
 	}
 }
 
+func (dc *DownloadControllerImpl) handleFreePeer(fpFunc FreePeerFunc) {
+	ilog.Debugf("free peer begin")
+	dc.peerState.Range(func(peerID, v interface{}) bool {
+		ps, ok := v.(timerMap)
+		if !ok {
+			ilog.Errorf("get peerstate error: %s", peerID.(p2p.PeerID).Pretty())
+		}
+		psMutex, psmok := dc.getStateMutex(peerID)
+		hashMap, hmok := dc.getHashMap(peerID)
+		if !psmok || !hmok {
+			return true
+		}
+		psMutex.Lock()
+		hashlist := make([]string, 0, len(ps))
+		for hash := range ps {
+			hashlist = append(hashlist, hash)
+		}
+		psMutex.Unlock()
+		for _, hash := range hashlist {
+			hState, ok := dc.hashState.Load(hash)
+			if ok {
+				if hState == Done || hState == Wait {
+					psMutex.Lock()
+					delete(ps, hash)
+					psMutex.Unlock()
+					select {
+					case dc.chDownload <- struct{}{}:
+					default:
+					}
+				} else {
+					var node *mapEntry
+					nodeIF, ok := hashMap.Load(hash)
+					if ok {
+						node, ok = nodeIF.(*mapEntry)
+					}
+					if ok && fpFunc(hash, node.p) {
+						dc.freePeer(hash, peerID)
+					}
+				}
+			}
+		}
+		return true
+	})
+	ilog.Debugf("free peer end")
+}
+
 // FreePeerLoop is the Loop to free the peer.
 func (dc *DownloadControllerImpl) FreePeerLoop(fpFunc FreePeerFunc) {
 	checkPeerTicker := time.NewTicker(time.Second)
 	for {
 		select {
 		case <-checkPeerTicker.C:
-			ilog.Debugf("free peer begin")
-			dc.peerState.Range(func(peerID, v interface{}) bool {
-				ps, ok := v.(timerMap)
-				if !ok {
-					ilog.Errorf("get peerstate error: %s", peerID.(p2p.PeerID).Pretty())
-				}
-				psMutex, psmok := dc.getStateMutex(peerID)
-				hashMap, hmok := dc.getHashMap(peerID)
-				if !psmok || !hmok {
-					return true
-				}
-				psMutex.Lock()
-				hashlist := make([]string, 0, len(ps))
-				for hash := range ps {
-					hashlist = append(hashlist, hash)
-				}
-				psMutex.Unlock()
-				for _, hash := range hashlist {
-					hState, ok := dc.hashState.Load(hash)
-					if ok {
-						if hState == Done || hState == Wait {
-							psMutex.Lock()
-							delete(ps, hash)
-							psMutex.Unlock()
-							select {
-							case dc.chDownload <- struct{}{}:
-							default:
-							}
-						} else {
-							var node *mapEntry
-							nodeIF, ok := hashMap.Load(hash)
-							if ok {
-								node, ok = nodeIF.(*mapEntry)
-							}
-							if ok && fpFunc(hash, node.p) {
-								dc.freePeer(hash, peerID)
-							}
-						}
-					}
-				}
-				return true
-			})
-			ilog.Debugf("free peer end")
+			dc.handleFreePeer(fpFunc)
 		case <-dc.exitSignal:
 			return
 		}
+	}
+}
+
+func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sync.Map, ps timerMap, pmMutex *sync.Mutex, psMutex *sync.Mutex, mFunc MissionFunc) bool {
+	psMutex.Lock()
+	ilog.Debugf("peerNum: %v", len(ps))
+	psLen := len(ps)
+	psMutex.Unlock()
+	if psLen >= peerConNum {
+		return true
+	}
+	pmMutex.Lock()
+	node, ok := dc.getMapEntry(hashMap, Head)
+	if !ok {
+		return true
+	}
+	node = node.next
+	pmMutex.Unlock()
+	for {
+		if node.val == Tail {
+			return true
+		}
+		hash := node.val
+		hState, ok := dc.hashState.Load(hash)
+		if !ok || hState == Done {
+			dc.hashState.Delete(hash)
+			pmMutex.Lock()
+			hashMap.Delete(hash)
+			node.prev.next = node.next
+			node.next.prev = node.prev
+			pmMutex.Unlock()
+		} else if hState == Wait {
+			mok, mdone := mFunc(hash, node.p, peerID)
+			if mok {
+				dc.hashState.Store(hash, peerID)
+				psMutex.Lock()
+				ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
+					ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.(p2p.PeerID).Pretty())
+					dc.freePeer(hash, peerID)
+				})
+				psLen := len(ps)
+				psMutex.Unlock()
+				if psLen >= peerConNum {
+					return true
+				}
+			}
+			if mdone {
+				dc.missionComplete(hash)
+			}
+		}
+		pmMutex.Lock()
+		node = node.next
+		pmMutex.Unlock()
 	}
 }
 
@@ -320,56 +377,8 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 				if !psmok || !pmmok || !hmok {
 					return true
 				}
-				psMutex.Lock()
-				ilog.Debugf("peerNum: %v", len(ps))
-				psLen := len(ps)
-				psMutex.Unlock()
-				if psLen >= peerConNum {
-					return true
-				}
-				pmMutex.Lock()
-				node, ok := dc.getMapEntry(hashMap, Head)
-				if !ok {
-					return true
-				}
-				node = node.next
-				pmMutex.Unlock()
-				for {
-					if node.val == Tail {
-						break
-					}
-					hash := node.val
-					hState, ok := dc.hashState.Load(hash)
-					if !ok || hState == Done {
-						dc.hashState.Delete(hash)
-						pmMutex.Lock()
-						hashMap.Delete(hash)
-						node.prev.next = node.next
-						node.next.prev = node.prev
-						pmMutex.Unlock()
-					} else if hState == Wait {
-						mok, mdone := mFunc(hash, node.p, peerID)
-						if mok {
-							dc.hashState.Store(hash, peerID)
-							psMutex.Lock()
-							ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
-								ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.(p2p.PeerID).Pretty())
-								dc.freePeer(hash, peerID)
-							})
-							psLen := len(ps)
-							psMutex.Unlock()
-							if psLen >= peerConNum {
-								break
-							}
-						}
-						if mdone {
-							dc.missionComplete(hash)
-						}
-					}
-					pmMutex.Lock()
-					node = node.next
-					pmMutex.Unlock()
-				}
+
+				dc.handleDownload(peerID, hashMap, ps, pmMutex, psMutex, mFunc)
 				return true
 			})
 			ilog.Debugf("Download End")

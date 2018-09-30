@@ -237,62 +237,65 @@ func (p *PoB) broadcastBlockHash(blk *block.Block) {
 	}
 }
 
+func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
+	ilog.Infof("verify block chan size:%v", len(p.chVerifyBlock))
+	blk := vbm.blk
+	if vbm.gen {
+		ilog.Info("block from myself, block number: ", blk.Head.Number)
+		err := p.handleRecvBlock(blk)
+		if err != nil {
+			ilog.Errorf("received block from myself, error, err:%v", err)
+		}
+		return
+	}
+	if vbm.p2pType == p2p.NewBlock {
+		if p.baseVariable.Mode() == global.ModeInit {
+			return
+		}
+		ilog.Info("received new block, block number: ", blk.Head.Number)
+		timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
+		if ok {
+			t, ok := timer.(*time.Timer)
+			if ok {
+				t.Stop()
+			}
+		} else {
+			p.blockReqMap.Store(string(blk.HeadHash()), nil)
+		}
+		err := p.handleRecvBlock(blk)
+		p.broadcastBlockHash(blk) // can use go
+		p.blockReqMap.Delete(string(blk.HeadHash()))
+		if err != nil {
+			ilog.Errorf("received new block error, err:%v", err)
+			return
+		}
+	}
+	if vbm.p2pType == p2p.SyncBlockResponse {
+		ilog.Info("received sync block, block number: ", blk.Head.Number)
+		if blk.Head.Number == 0 {
+			err := p.handleGenesisBlock(blk)
+			if err != nil {
+				ilog.Errorf("received genesis block error, err:%v", err)
+			}
+			return
+		}
+		if p.baseVariable.Mode() == global.ModeInit {
+			return
+		}
+		err := p.handleRecvBlock(blk)
+		if err != nil {
+			ilog.Errorf("received sync block error, err:%v", err)
+			return
+		}
+	}
+	metricsVerifyBlockCount.Add(1, nil)
+}
+
 func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
-			ilog.Infof("verify block chan size:%v", len(p.chVerifyBlock))
-			blk := vbm.blk
-			if vbm.gen {
-				ilog.Info("block from myself, block number: ", blk.Head.Number)
-				err := p.handleRecvBlock(blk)
-				if err != nil {
-					ilog.Errorf("received block from myself, error, err:%v", err)
-				}
-				continue
-			}
-			if vbm.p2pType == p2p.NewBlock {
-				if p.baseVariable.Mode() == global.ModeInit {
-					continue
-				}
-				ilog.Info("received new block, block number: ", blk.Head.Number)
-				timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
-				if ok {
-					t, ok := timer.(*time.Timer)
-					if ok {
-						t.Stop()
-					}
-				} else {
-					p.blockReqMap.Store(string(blk.HeadHash()), nil)
-				}
-				err := p.handleRecvBlock(blk)
-				p.broadcastBlockHash(blk) // can use go
-				p.blockReqMap.Delete(string(blk.HeadHash()))
-				if err != nil {
-					ilog.Errorf("received new block error, err:%v", err)
-					continue
-				}
-			}
-			if vbm.p2pType == p2p.SyncBlockResponse {
-				ilog.Info("received sync block, block number: ", blk.Head.Number)
-				if blk.Head.Number == 0 {
-					err := p.handleGenesisBlock(blk)
-					if err != nil {
-						ilog.Errorf("received genesis block error, err:%v", err)
-					}
-					continue
-				} else {
-					if p.baseVariable.Mode() == global.ModeInit {
-						continue
-					}
-					err := p.handleRecvBlock(blk)
-					if err != nil {
-						ilog.Errorf("received sync block error, err:%v", err)
-						continue
-					}
-				}
-			}
-			metricsVerifyBlockCount.Add(1, nil)
+			p.doVerifyBlock(vbm)
 		case <-p.exitSignal:
 			return
 		}
