@@ -358,6 +358,7 @@ func (pool *TxPImpl) TxTimeOut(tx *tx.Tx) bool {
 	if tx.Expiration <= currentTime {
 		return true
 	}
+	ilog.Errorf("new block number: %v, %v, %v, %v", currentTime, tx.Time, currentTime-tx.Time, Expiration)
 	if currentTime-tx.Time > Expiration {
 		return true
 	}
