@@ -24,7 +24,6 @@ var (
 
 	maxBlockHashQueryNumber int64 = 100
 	retryTime                     = 5 * time.Second
-	syncBlockTimeout              = 5 * time.Second
 	checkTime                     = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
 	heightAvailableTime     int64 = 22 * 3
@@ -37,8 +36,6 @@ type Synchronizer interface {
 	Stop()
 	CheckSync() bool
 	CheckGenBlock(hash []byte) bool
-	OnBlockConfirmed(hash string)
-	OnRecvBlock(hash string, peerID p2p.PeerID)
 	CheckSyncProcess()
 }
 
@@ -71,7 +68,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 		syncEnd:      0,
 	}
 	var err error
-	sy.dc, err = NewDownloadController(sy.reqSyncBlock)
+	sy.dc, err = NewDownloadController()
 	if err != nil {
 		return nil, err
 	}
@@ -89,35 +86,10 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 	return sy, nil
 }
 
-func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID) bool {
-	bn, ok := p.(int64)
-	if !ok {
-		ilog.Errorf("marshal block hash response failed.")
-		return false
-	}
-	if bn <= sy.blockCache.LinkedRoot().Number {
-		sy.dc.MissionComplete(hash)
-		return false
-	}
-	if bcn, err := sy.blockCache.Find([]byte(hash)); err == nil {
-		if bcn.Type == blockcache.Linked {
-			sy.dc.MissionComplete(hash)
-		}
-		return false
-	}
-	bi := message.BlockInfo{Number: bn, Hash: []byte(hash)}
-	bytes, err := bi.Marshal()
-	if err != nil {
-		ilog.Errorf("marshal request block failed. err=%v", err)
-		return false
-	}
-	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
-	return true
-}
-
 // Start starts the synchronizer module.
 func (sy *SyncImpl) Start() error {
-	go sy.dc.Start()
+	go sy.dc.FreePeerLoop(sy.checkHasBlock)
+	go sy.dc.DownloadLoop(sy.reqSyncBlock)
 	go sy.syncHeightLoop()
 	go sy.messageLoop()
 	go sy.retryDownloadLoop()
@@ -304,21 +276,11 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 
 // CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
+	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Number, sy.syncEnd)
 	if sy.syncEnd <= sy.blockCache.Head().Number {
 		sy.basevariable.SetMode(global.ModeNormal)
 		sy.dc.Reset()
-		ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Number, sy.syncEnd)
 	}
-}
-
-// OnBlockConfirmed confirms a block with block hash.
-func (sy *SyncImpl) OnBlockConfirmed(hash string) {
-	sy.dc.MissionComplete(hash)
-}
-
-// OnRecvBlock would free the peer.
-func (sy *SyncImpl) OnRecvBlock(hash string, peerID p2p.PeerID) {
-	sy.dc.FreePeer(hash, peerID)
 }
 
 func (sy *SyncImpl) messageLoop() {
@@ -501,4 +463,54 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 		return
 	}
 	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
+}
+
+func (sy *SyncImpl) checkHasBlock(hash string, p interface{}) bool {
+	bn, ok := p.(int64)
+	if !ok {
+		ilog.Errorf("get p failed.")
+		return false
+	}
+	if bn <= sy.blockCache.LinkedRoot().Number {
+		return true
+	}
+	bHash := []byte(hash)
+	if _, err := sy.blockCache.Find(bHash); err == nil {
+		return true
+	}
+	return false
+}
+
+func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{}) (bool, bool) {
+	bn, ok := p.(int64)
+	if !ok {
+		ilog.Errorf("get p failed.")
+		return false, false
+	}
+	ilog.Infof("callback try sync block, num:%v", bn)
+	if bn <= sy.blockCache.LinkedRoot().Number {
+		ilog.Infof("callback block confirmed, num:%v", bn)
+		return false, true
+	}
+	bHash := []byte(hash)
+	if bcn, err := sy.blockCache.Find(bHash); err == nil {
+		if bcn.Type == blockcache.Linked {
+			ilog.Infof("callback block linked, num:%v", bn)
+			return false, true
+		}
+		ilog.Infof("callback block is a single block, num:%v", bn)
+		return false, false
+	}
+	bi := message.BlockInfo{Number: bn, Hash: bHash}
+	bytes, err := bi.Marshal()
+	if err != nil {
+		ilog.Errorf("marshal request block failed. err=%v", err)
+		return false, false
+	}
+	pid, ok := peerID.(p2p.PeerID)
+	if !ok {
+		return false, false
+	}
+	sy.p2pService.SendToPeer(pid, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
+	return true, false
 }

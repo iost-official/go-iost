@@ -7,6 +7,7 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
@@ -52,7 +53,11 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 	engine := vm.NewEngine(blk.Head, db)
 	for k, t := range blk.Txs {
-		receipt, err := engine.Exec(t, TxExecTimeLimit)
+		et := TxExecTimeLimit
+		if blk.Receipts[k].Status.Code == tx.ErrorTimeout {
+			et /= 4
+		}
+		receipt, err := engine.Exec(t, et)
 		if err != nil {
 			return err
 		}
