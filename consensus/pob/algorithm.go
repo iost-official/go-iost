@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"fmt"
-	"strings"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
