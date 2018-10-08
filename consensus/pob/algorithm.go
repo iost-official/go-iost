@@ -133,6 +133,7 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	return nil
 }
 
+//nolint
 func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB) error {
 	err := verifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
