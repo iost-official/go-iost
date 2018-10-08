@@ -48,7 +48,7 @@ func generateABI(codePath string) string {
 	}
 
 	if contractPath == "" {
-		contractPath = gopath + "/src/github.com/iost-official/go-iost/cmd/playground/contract"
+		contractPath = gopath + "/src/github.com/iost-official/go-iost/iwallet/contract"
 	}
 	fmt.Println("contractPath: ", contractPath)
 	cmd := exec.Command("node", contractPath+"/contract.js", codePath)
@@ -160,13 +160,13 @@ var compileCmd = &cobra.Command{
 			return
 		}
 		methodName := "SetCode"
-		data := `["`+contract.B64Encode()+`"]`
+		data := `["` + contract.B64Encode() + `"]`
 		if update {
 			methodName = "UpdateCode"
 			if len(args) >= 4 {
-				data = `["`+contract.B64Encode()+`", "` + args[3] + `"]`
+				data = `["` + contract.B64Encode() + `", "` + args[3] + `"]`
 			} else {
-				data = `["`+contract.B64Encode()+`", ""]`
+				data = `["` + contract.B64Encode() + `", ""]`
 			}
 		}
 		action := tx.NewAction("iost.system", methodName, data)
@@ -248,7 +248,7 @@ func init() {
 	compileCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
 	compileCmd.Flags().BoolVarP(&genABI, "genABI", "g", false, "generate abi file")
 	compileCmd.Flags().BoolVarP(&update, "update", "u", false, "update contract")
-	compileCmd.Flags().StringVarP(&setContractPath, "setContractPath", "c", "", "set contract path, default is $GOPATH + /src/github.com/iost-official/go-iost/cmd/playground/contract")
+	compileCmd.Flags().StringVarP(&setContractPath, "setContractPath", "c", "", "set contract path, default is $GOPATH + /src/github.com/iost-official/go-iost/iwallet/contract")
 	compileCmd.Flags().BoolVarP(&resetContractPath, "resetContractPath", "r", false, "clean contract path")
 
 	// Here you will define your flags and configuration settings.
