@@ -14,8 +14,6 @@ import (
 var (
 	errABINotFound     = errors.New("abi not found")
 	errGasPriceIllegal = errors.New("gas price too big")
-	errArgsNotEnough   = errors.New("args not enough")
-	errArgsType        = errors.New("args type not match")
 )
 
 // Monitor ...
@@ -120,30 +118,6 @@ func (m *Monitor) Compile(con *contract.Contract) (string, error) {
 		return jsvm.Compile(con)
 	}
 	return "", errors.New("vm unsupported")
-}
-
-func checkArgs(abi *contract.ABI, args []interface{}) error {
-	if len(abi.Args) > len(args) {
-		return errArgsNotEnough
-	}
-
-	for i, t := range abi.Args {
-		var ok bool
-		switch t {
-		case "string":
-			_, ok = args[i].(string)
-		case "number":
-			_, ok = args[i].(int64)
-		case "bool":
-			_, ok = args[i].(bool)
-		case "json":
-			_, ok = args[i].([]byte)
-		}
-		if !ok {
-			return errArgsType
-		}
-	}
-	return nil
 }
 
 // Factory ...
