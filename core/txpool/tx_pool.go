@@ -252,7 +252,7 @@ func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) FRet {
 	switch {
 	case pool.existTxInPending(hash):
 		r = FoundPending
-	case pool.existTxInChain2(hash, chainBlock):
+	case pool.existTxInChain(hash, chainBlock):
 		r = FoundChain
 	default:
 		r = NotFound
@@ -321,7 +321,7 @@ func (pool *TxPImpl) findBlock(hash []byte) (*blockTx, bool) {
 	return nil, false
 }
 
-func (pool *TxPImpl) existTxInChain1(txHash []byte, block *block.Block) bool {
+func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 	if block == nil {
 		return false
 	}
@@ -345,18 +345,6 @@ func (pool *TxPImpl) existTxInChain1(txHash []byte, block *block.Block) bool {
 	}
 }
 
-func (pool *TxPImpl) existTxInChain2(txHash []byte, blk *block.Block) bool {
-	if blk == nil {
-		return false
-	}
-	b, ok := pool.findBlock(blk.HeadHash())
-	if !ok {
-		return false
-	}
-	_, ok = b.chainMap.Load(string(txHash))
-	return ok
-}
-
 func (pool *TxPImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 	b, ok := pool.blockList.Load(string(blockHash))
 	if !ok {
@@ -376,10 +364,10 @@ func (pool *TxPImpl) clearBlock() {
 }
 
 func (pool *TxPImpl) addTx(tx *tx.Tx) TAddTx {
-	if pool.existTxInChain2(tx.Hash(), pool.forkChain.NewHead.Block) {
+	if pool.existTxInPending(tx.Hash()) {
 		return DupError
 	}
-	if pool.existTxInPending(tx.Hash()) {
+	if pool.existTxInChain(tx.Hash(), pool.forkChain.NewHead.Block) {
 		return DupError
 	}
 	pool.pendingTx.Add(tx)
