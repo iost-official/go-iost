@@ -4,3 +4,4 @@ witnessinfo:
 - "2100000000000000000"
 votecontractpath: config/
 adminid: IOSTbbKmaZi1QRMfd7K8bK22KQSFuKadLhSNBw6tmyCHCRSvTr9QN
+initialtimestamp: "2006-01-02T15:04:05Z"

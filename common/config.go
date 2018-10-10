@@ -18,7 +18,7 @@ type ACCConfig struct {
 // GenesisConfig config of the genesis block
 type GenesisConfig struct {
 	CreateGenesis    bool
-	GenesisHash      string
+	InitialTimestamp string
 	WitnessInfo      []string
 	VoteContractPath string
 	AdminID          string

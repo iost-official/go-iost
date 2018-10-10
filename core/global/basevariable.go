@@ -61,11 +61,10 @@ type BaseVariableImpl struct {
 	mode        TMode
 	witnessList []string
 	config      *common.Config
-	genesisHash string
 }
 
 // GenGenesis is create a genesis block
-func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
+func GenGenesis(db db.MVCCDB, witnessInfo []string, t common.Timestamp) (*block.Block, error) {
 	var acts []*tx.Action
 	for i := 0; i < len(witnessInfo)/2; i++ {
 		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], witnessInfo[2*i+1]))
@@ -120,7 +119,7 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		ParentHash: nil,
 		Number:     0,
 		Witness:    acc.ID,
-		Time:       0,
+		Time:       t.Slot,
 	}
 	engine := vm.NewEngine(&blockHead, db)
 	txr, err := engine.Exec(trx, GenesisTxExecTime)
@@ -183,7 +182,11 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
 		}
 		if genesisConfig.CreateGenesis {
-			blk, err = GenGenesis(stateDB, genesisConfig.WitnessInfo)
+			t, err := common.ParseStringToTimestamp(genesisConfig.InitialTimestamp)
+			if err != nil {
+				ilog.Fatalf("invalid genesis initial time string %v (%v).", genesisConfig.InitialTimestamp, err)
+			}
+			blk, err = GenGenesis(stateDB, genesisConfig.WitnessInfo, t)
 			if err != nil {
 				return nil, fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
 			}
@@ -202,7 +205,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			genesisBlock, _ := blockChain.GetBlockByNumber(0)
 			ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
 		}
-		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf, genesisHash: genesisConfig.GenesisHash}, nil
+		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 	}
 	stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
 	if err != nil {
@@ -262,7 +265,7 @@ func FakeNew() (*BaseVariableImpl, error) {
 	VoteContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/"
 	fmt.Println(VoteContractPath)
 	fmt.Println(config.VM.JsPath)
-	blk, err := GenGenesis(stateDB, []string{"a1", "11111111111", "a2", "2222", "a3", "333"})
+	blk, err := GenGenesis(stateDB, []string{"a1", "11111111111", "a2", "2222", "a3", "333"}, common.Timestamp{})
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +285,7 @@ func FakeNew() (*BaseVariableImpl, error) {
 		return nil, err
 	}
 
-	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config, ""}, nil
+	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config}, nil
 }
 
 // TxDB return the transaction database
@@ -308,11 +311,6 @@ func (g *BaseVariableImpl) WitnessList() []string {
 // Config return the config
 func (g *BaseVariableImpl) Config() *common.Config {
 	return g.config
-}
-
-// GenesisHash return the genesisHash
-func (g *BaseVariableImpl) GenesisHash() string {
-	return g.genesisHash
 }
 
 // Mode return the mode
