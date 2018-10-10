@@ -10,6 +10,6 @@ comment:
   behavior: default
   require_changes: false 
   require_base: no
-  require_head: ye
+  require_head: yes
   branches: null
 
