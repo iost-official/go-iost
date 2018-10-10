@@ -86,15 +86,15 @@ type DebugConfig struct {
 
 // Config provide all configuration for the application
 type Config struct {
-	ACC               *ACCConfig
-	GenesisConfigPath string
-	VM                *VMConfig
-	DB                *DBConfig
-	P2P               *P2PConfig
-	RPC               *RPCConfig
-	Log               *LogConfig
-	Metrics           *MetricsConfig
-	Debug             *DebugConfig
+	ACC     *ACCConfig
+	Genesis string
+	VM      *VMConfig
+	DB      *DBConfig
+	P2P     *P2PConfig
+	RPC     *RPCConfig
+	Log     *LogConfig
+	Metrics *MetricsConfig
+	Debug   *DebugConfig
 }
 
 // LoadYamlAsViper load yaml file as viper object

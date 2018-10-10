@@ -151,7 +151,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	var err error
 	var witnessList []string
 
-	v := common.LoadYamlAsViper(conf.GenesisConfigPath)
+	v := common.LoadYamlAsViper(conf.Genesis)
 	genesisConfig := &common.GenesisConfig{}
 	if err := v.Unmarshal(genesisConfig); err != nil {
 		ilog.Fatalf("Unable to decode into struct, %v", err)
