@@ -223,8 +223,8 @@ func BenchmarkStorage(b *testing.B) {
 			b.Fatalf("Failed to new storage: %v", err)
 		}
 
-		keys := make([][]byte, b.N)
-		values := make([][]byte, b.N)
+		keys := make([][]byte, 0)
+		values := make([][]byte, 0)
 		for i := 0; i < 1000000; i++ {
 			key := make([]byte, 32)
 			value := make([]byte, 32)
@@ -250,6 +250,54 @@ func BenchmarkStorage(b *testing.B) {
 			}
 		})
 
+		storage.Close()
+		cmd := exec.Command("rm", "-r", DBPATH)
+		cmd.Run()
+	}
+}
+
+func BenchmarkKeys(b *testing.B) {
+	for _, t := range []StorageType{LevelDBStorage, RocksDBStorage} {
+		storage, err := NewStorage(DBPATH, t)
+		if err != nil {
+			b.Fatalf("Failed to new storage: %v", err)
+		}
+
+		keys := make([][]byte, 0)
+		values := make([][]byte, 0)
+		headkeys := make([][]byte, 0)
+		headkey := make([]byte, 32)
+		for i := 0; i < 10000; i++ {
+			if i%10000 == 0 {
+				headkey = make([]byte, 32)
+				rand.Read(headkey)
+				headkeys = append(headkeys, headkey)
+			}
+			key := make([]byte, 32)
+			value := make([]byte, 128)
+			rand.Read(key)
+			rand.Read(value)
+			keys = append(keys, append(headkey, key...))
+			values = append(values, value)
+			storage.Put(append(headkey, key...), value)
+		}
+		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Keys", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				for j := 0; j < len(headkeys); j++ {
+					storage.Keys(headkeys[j])
+				}
+			}
+		})
+
+		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Get", func(b *testing.B) {
+			vals := make([][]byte, 0)
+			for i := 0; i < b.N; i++ {
+				for j := 0; j < len(keys); j++ {
+					val, _ := storage.Get(keys[j])
+					vals = append(vals, val)
+				}
+			}
+		})
 		storage.Close()
 		cmd := exec.Command("rm", "-r", DBPATH)
 		cmd.Run()
