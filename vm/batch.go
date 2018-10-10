@@ -12,6 +12,11 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 )
 
+type Batcher interface {
+	Batch(bh *block.BlockHead, db database.IMultiValue, provider Provider, limit time.Duration, thread int) *Batch
+	Verify(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e Engine, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error
+}
+
 type Batch struct {
 	Txs      []*tx.Tx
 	Receipts []*tx.TxReceipt
@@ -24,23 +29,20 @@ func NewBatch() *Batch {
 	}
 }
 
-type TxSender interface {
+type Provider interface {
 	Tx() *tx.Tx
 	Return(*tx.Tx)
 }
 
-type Maker struct {
-	sender TxSender
-	wait   sync.WaitGroup
+type batcherImpl struct {
+	wait sync.WaitGroup
 }
 
-func NewMaker(sender TxSender) *Maker {
-	return &Maker{
-		sender: sender,
-	}
+func NewBatcher() Batcher {
+	return &batcherImpl{}
 }
 
-func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.Duration, thread int) *Batch {
+func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provider Provider, limit time.Duration, thread int) *Batch {
 	var (
 		mappers  = make([]map[string]database.Access, thread)
 		txs      = make([]*tx.Tx, thread)
@@ -60,7 +62,7 @@ func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.D
 			defer m.wait.Done()
 
 			// todo setup engine=
-			t := m.sender.Tx()
+			t := provider.Tx()
 			tr, err := e.Exec(t, limit)
 
 			if err == nil {
@@ -77,7 +79,7 @@ func (m *Maker) Batch(bh *block.BlockHead, db database.IMultiValue, limit time.D
 	ti, td := Resolve(mappers)
 
 	for _, i := range td {
-		m.sender.Return(txs[i])
+		provider.Return(txs[i])
 	}
 
 	b := NewBatch()
@@ -116,11 +118,7 @@ L:
 	return
 }
 
-type Verifier struct {
-	wait sync.WaitGroup
-}
-
-func (v *Verifier) Do(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e Engine, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error {
+func (v *batcherImpl) Verify(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e Engine, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error {
 	var (
 		thread  = len(b.Txs)
 		mappers = make([]map[string]database.Access, thread)
