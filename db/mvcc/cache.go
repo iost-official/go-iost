@@ -22,7 +22,6 @@ type Cache interface {
 	All(prefix []byte) []interface{}
 	Fork() interface{}
 	Free()
-	PrintData()
 }
 
 // NewCache returns the specify type cache
