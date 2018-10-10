@@ -123,10 +123,6 @@ func main() {
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)
 	}
-	if conf.Genesis.CreateGenesis {
-		genesisBlock, _ := bv.BlockChain().GetBlockByNumber(0)
-		ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
-	}
 	var app common.App
 
 	p2pService, err := p2p.NewNetService(conf.P2P)
