@@ -1,16 +1,13 @@
 package pob
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -20,7 +17,6 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/vm"
 )
 
 var (
@@ -32,10 +28,10 @@ var (
 )
 
 var (
-	errSingle     = errors.New("single block")
-	errDuplicate  = errors.New("duplicate block")
-	errTxHash     = errors.New("wrong txs hash")
-	errMerkleHash = errors.New("wrong tx receipt merkle hash")
+	errSingle    = errors.New("single block")
+	errDuplicate = errors.New("duplicate block")
+	// errTxHash     = errors.New("wrong txs hash")
+	// errMerkleHash = errors.New("wrong tx receipt merkle hash")
 )
 
 var blockReqTimeout = 3 * time.Second
@@ -187,41 +183,6 @@ func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 }
 
-func (p *PoB) handleGenesisBlock(blk *block.Block) error {
-	if p.baseVariable.Mode() == global.ModeInit && p.baseVariable.BlockChain().Length() == 0 && common.Base58Encode(blk.HeadHash()) == p.baseVariable.Config().Genesis.GenesisHash {
-		if !bytes.Equal(blk.CalculateTxsHash(), blk.Head.TxsHash) {
-			return errTxHash
-		}
-		if !bytes.Equal(blk.CalculateMerkleHash(), blk.Head.MerkleHash) {
-			return errMerkleHash
-		}
-		p.blockCache.AddGenesis(blk)
-		err := p.blockChain.Push(blk)
-		if err != nil {
-			return fmt.Errorf("push block in blockChain failed, err: %v", err)
-		}
-		engine := vm.NewEngine(blk.Head, p.verifyDB)
-		txr, err := engine.Exec(blk.Txs[0], global.GenesisTxExecTime)
-		if err != nil {
-			return fmt.Errorf("exec tx failed, err: %v", err)
-		}
-		if !bytes.Equal(blk.Receipts[0].Encode(), txr.Encode()) {
-			return fmt.Errorf("wrong tx receipt")
-		}
-		p.verifyDB.Tag(string(blk.HeadHash()))
-		err = p.verifyDB.Flush(string(blk.HeadHash()))
-		if err != nil {
-			return fmt.Errorf("flush stateDB failed, err:%v", err)
-		}
-		err = p.baseVariable.TxDB().Push(blk.Txs, blk.Receipts)
-		if err != nil {
-			return fmt.Errorf("push tx and txr into TxDB failed, err:%v", err)
-		}
-		return nil
-	}
-	return fmt.Errorf("not genesis block")
-}
-
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
 	blkInfo := &message.BlockInfo{
 		Number: blk.Head.Number,
@@ -272,13 +233,6 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	}
 	if vbm.p2pType == p2p.SyncBlockResponse {
 		ilog.Info("received sync block, block number: ", blk.Head.Number)
-		if blk.Head.Number == 0 {
-			err := p.handleGenesisBlock(blk)
-			if err != nil {
-				ilog.Errorf("received genesis block error, err:%v", err)
-			}
-			return
-		}
 		if p.baseVariable.Mode() == global.ModeInit {
 			return
 		}
