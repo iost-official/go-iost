@@ -13,12 +13,6 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 )
 
-//go:generate mockgen -destination mock/engine_mock.go -package mock github.com/iost-official/go-iost/vm Engine
-//go:generate mockgen -destination mock/batcher_mock.go -package mock github.com/iost-official/go-iost/vm Batcher
-
-type Paralleler interface {
-}
-
 type Verifier struct {
 }
 
@@ -43,8 +37,8 @@ func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, provider vm.Pr
 		e := vm.NewEngine(blk.Head, db)
 		return baseGen(blk, db, provider, e, c)
 	case 1:
-		maker := vm.NewMaker(provider)
-		return batchGen(blk, db, maker, c)
+		batcher := vm.NewBatcher()
+		return batchGen(blk, db, provider, batcher, c)
 	}
 	return fmt.Errorf("mode unexpected: %v", c.Mode)
 }
@@ -65,6 +59,9 @@ L:
 			break L
 		default:
 			t := provider.Tx()
+			if t == nil {
+				break L
+			}
 			var r *tx.TxReceipt
 			r, err = engine.Exec(t, c.TxTimeLimit)
 			if err != nil {
@@ -80,7 +77,7 @@ L:
 	return err
 }
 
-func batchGen(blk *block.Block, db database.IMultiValue, maker *vm.Maker, c *Config) error {
+func batchGen(blk *block.Block, db database.IMultiValue, provider vm.Provider, batcher vm.Batcher, c *Config) error {
 	var err error
 
 	blk.Txs = make([]*tx.Tx, 0)
@@ -97,7 +94,7 @@ L:
 		case <-to:
 			break L
 		default:
-			batch := maker.Batch(blk.Head, db, time.Duration(c.TxTimeLimit), c.Thread)
+			batch := batcher.Batch(blk.Head, db, provider, time.Duration(c.TxTimeLimit), c.Thread)
 
 			info.Batch = append(info.Batch, len(batch.Txs))
 			for i, t := range batch.Txs {
@@ -126,8 +123,8 @@ func (v *Verifier) Verify(blk *block.Block, db database.IMultiValue, c *Config) 
 		return baseVerify(e, c, blk.Txs, blk.Receipts)
 	case 1:
 		bs := batches(blk, info)
-		var verifier vm.Verifier
-		return batchVerify(verifier, blk.Head, c, db, bs)
+		var batcher vm.Batcher
+		return batchVerify(batcher, blk.Head, c, db, bs)
 	}
 	return nil
 }
@@ -176,9 +173,9 @@ func baseVerify(engine vm.Engine, c *Config, txs []*tx.Tx, receipts []*tx.TxRece
 	return nil
 }
 
-func batchVerify(verifier vm.Verifier, bh *block.BlockHead, c *Config, db database.IMultiValue, batches []*vm.Batch) error {
+func batchVerify(verifier vm.Batcher, bh *block.BlockHead, c *Config, db database.IMultiValue, batches []*vm.Batch) error {
 	for _, batch := range batches {
-		err := verifier.VerifyBatch(bh, db, func(e vm.Engine, t *tx.Tx, r *tx.TxReceipt) error {
+		err := verifier.Verify(bh, db, func(e vm.Engine, t *tx.Tx, r *tx.TxReceipt) error {
 			err := verify(e, t, r, c.TxTimeLimit)
 			if err != nil {
 				return err

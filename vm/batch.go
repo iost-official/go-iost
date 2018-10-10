@@ -12,6 +12,8 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 )
 
+//go:generate mockgen -destination mock/batcher_mock.go -package mock github.com/iost-official/go-iost/vm Batcher
+
 type Batcher interface {
 	Batch(bh *block.BlockHead, db database.IMultiValue, provider Provider, limit time.Duration, thread int) *Batch
 	Verify(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e Engine, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error
@@ -28,6 +30,8 @@ func NewBatch() *Batch {
 		Receipts: make([]*tx.TxReceipt, 0),
 	}
 }
+
+//go:generate mockgen -destination mock/provider_mock.go -package mock github.com/iost-official/go-iost/vm Provider
 
 type Provider interface {
 	Tx() *tx.Tx
@@ -63,6 +67,9 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 
 			// todo setup engine=
 			t := provider.Tx()
+			if t == nil {
+				return
+			}
 			tr, err := e.Exec(t, limit)
 
 			if err == nil {

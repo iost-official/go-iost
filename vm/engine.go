@@ -30,6 +30,8 @@ var (
 	errCannotPay        = errors.New("publisher's balance less than price * limit")
 )
 
+//go:generate mockgen -destination mock/engine_mock.go -package mock github.com/iost-official/go-iost/vm Engine
+
 // Engine the smart contract engine
 type Engine interface {
 	SetUp(k, v string) error
