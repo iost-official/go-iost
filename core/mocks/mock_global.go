@@ -60,6 +60,18 @@ func (mr *MockBaseVariableMockRecorder) Config() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Config", reflect.TypeOf((*MockBaseVariable)(nil).Config))
 }
 
+// GenesisHash mocks base method
+func (m *MockBaseVariable) GenesisHash() string {
+	ret := m.ctrl.Call(m, "GenesisHash")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GenesisHash indicates an expected call of GenesisHash
+func (mr *MockBaseVariableMockRecorder) GenesisHash() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenesisHash", reflect.TypeOf((*MockBaseVariable)(nil).GenesisHash))
+}
+
 // Mode mocks base method
 func (m *MockBaseVariable) Mode() global.TMode {
 	ret := m.ctrl.Call(m, "Mode")

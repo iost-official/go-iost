@@ -188,7 +188,7 @@ func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 }
 
 func (p *PoB) handleGenesisBlock(blk *block.Block) error {
-	if p.baseVariable.Mode() == global.ModeInit && p.baseVariable.BlockChain().Length() == 0 && common.Base58Encode(blk.HeadHash()) == p.baseVariable.Config().Genesis.GenesisHash {
+	if p.baseVariable.Mode() == global.ModeInit && p.baseVariable.BlockChain().Length() == 0 && common.Base58Encode(blk.HeadHash()) == p.baseVariable.GenesisHash() {
 		if !bytes.Equal(blk.CalculateTxsHash(), blk.Head.TxsHash) {
 			return errTxHash
 		}

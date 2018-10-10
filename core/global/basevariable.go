@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/native"
 )
@@ -60,6 +61,7 @@ type BaseVariableImpl struct {
 	mode        TMode
 	witnessList []string
 	config      *common.Config
+	genesisHash string
 }
 
 // GenGenesis is create a genesis block
@@ -149,11 +151,18 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	var txDB TxDB
 	var err error
 	var witnessList []string
-	VoteContractPath = conf.Genesis.VoteContractPath
-	adminID = conf.Genesis.AdminID
 
-	for i := 0; i < len(conf.Genesis.WitnessInfo)/2; i++ {
-		witnessList = append(witnessList, conf.Genesis.WitnessInfo[2*i])
+	v := common.LoadYamlAsViper(conf.GenesisConfigPath)
+	genesisConfig := &common.GenesisConfig{}
+	if err := v.Unmarshal(genesisConfig); err != nil {
+		ilog.Fatalf("Unable to decode into struct, %v", err)
+	}
+
+	VoteContractPath = genesisConfig.VoteContractPath
+	adminID = genesisConfig.AdminID
+
+	for i := 0; i < len(genesisConfig.WitnessInfo)/2; i++ {
+		witnessList = append(witnessList, genesisConfig.WitnessInfo[2*i])
 	}
 	blockChain, err = block.NewBlockChain(conf.DB.LdbPath + "BlockChainDB")
 	if err != nil {
@@ -173,8 +182,8 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if err != nil {
 			return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
 		}
-		if conf.Genesis.CreateGenesis {
-			blk, err = GenGenesis(stateDB, conf.Genesis.WitnessInfo)
+		if genesisConfig.CreateGenesis {
+			blk, err = GenGenesis(stateDB, genesisConfig.WitnessInfo)
 			if err != nil {
 				return nil, fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
 			}
@@ -190,8 +199,10 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			if err != nil {
 				return nil, fmt.Errorf("push txDB failed, stop the pogram. err: %v", err)
 			}
+			genesisBlock, _ := blockChain.GetBlockByNumber(0)
+			ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
 		}
-		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
+		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf, genesisHash: genesisConfig.GenesisHash}, nil
 	}
 	stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
 	if err != nil {
@@ -225,6 +236,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
 	}
+
 	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 }
 
@@ -270,7 +282,7 @@ func FakeNew() (*BaseVariableImpl, error) {
 		return nil, err
 	}
 
-	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config}, nil
+	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config, ""}, nil
 }
 
 // TxDB return the transaction database
@@ -296,6 +308,11 @@ func (g *BaseVariableImpl) WitnessList() []string {
 // Config return the config
 func (g *BaseVariableImpl) Config() *common.Config {
 	return g.config
+}
+
+// GenesisHash return the genesisHash
+func (g *BaseVariableImpl) GenesisHash() string {
+	return g.genesisHash
 }
 
 // Mode return the mode

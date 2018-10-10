@@ -16,5 +16,6 @@ type BaseVariable interface {
 	BlockChain() block.Chain
 	WitnessList() []string
 	Mode() TMode
+	GenesisHash() string
 	SetMode(m TMode)
 }

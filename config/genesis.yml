@@ -1,0 +1,6 @@
+creategenesis: true
+witnessinfo:
+- IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C
+- "2100000000000000000"
+votecontractpath: config/
+adminid: IOSTbbKmaZi1QRMfd7K8bK22KQSFuKadLhSNBw6tmyCHCRSvTr9QN
