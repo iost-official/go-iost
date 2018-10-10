@@ -42,6 +42,8 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 	}
 
 	c = h.DB().Contract(cid)
+	//ilog.Debugf("after get Contract")
+	//h.DB().PrintCache()
 	if c == nil {
 		return nil, nil, nil, errContractNotFound
 	}
@@ -60,17 +62,19 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 // Call ...
 // nolint
 func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost *contract.Cost, err error) {
-
+	//ilog.Debugf("before prepareContract")
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
-
+	//ilog.Debugf("after prepareContract")
 	if err != nil {
 		return nil, host.ABINotFoundCost, fmt.Errorf("\nprepare contract: %v", err)
 	}
 
 	h.PushCtx()
+	//ilog.Debug("after pushctx")
 
 	h.Context().Set("contract_name", contractName)
 	h.Context().Set("abi_name", api)
+	//ilog.Debug("after set abi_name")
 
 	vm, ok := m.vms[c.Info.Lang]
 	if !ok {
@@ -81,7 +85,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 			panic(err)
 		}
 	}
+	//ilog.Debug("before loadandcall")
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
+	//ilog.Debug("after loadandcall")
 
 	payment, ok := h.Context().GValue("abi_payment").(int)
 	if !ok {

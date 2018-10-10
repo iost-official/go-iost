@@ -93,6 +93,16 @@ func (mr *MockIMultiValueMockRecorder) Keys(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Keys", reflect.TypeOf((*MockIMultiValue)(nil).Keys), arg0, arg1)
 }
 
+// PrintCache mocks base method
+func (m *MockIMultiValue) PrintCache() {
+	m.ctrl.Call(m, "PrintCache")
+}
+
+// PrintCache indicates an expected call of PrintCache
+func (mr *MockIMultiValueMockRecorder) PrintCache() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrintCache", reflect.TypeOf((*MockIMultiValue)(nil).PrintCache))
+}
+
 // Put mocks base method
 func (m *MockIMultiValue) Put(arg0, arg1, arg2 string) error {
 	ret := m.ctrl.Call(m, "Put", arg0, arg1, arg2)

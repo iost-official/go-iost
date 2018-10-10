@@ -6,6 +6,7 @@ type database interface {
 	Has(key string) bool
 	Keys(prefix string) []string
 	Del(key string)
+	PrintCache()
 }
 
 const (
@@ -53,4 +54,8 @@ func (c *chainbaseAdapter) Del(key string) {
 
 func newChainbaseAdapter(cb IMultiValue) *chainbaseAdapter {
 	return &chainbaseAdapter{cb, nil}
+}
+
+func (c *chainbaseAdapter) PrintCache() {
+	c.cb.PrintCache()
 }

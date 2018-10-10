@@ -3,6 +3,8 @@ package mvccmap
 import (
 	"strings"
 	"sync"
+
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // MVCCMap is the mvcc map
@@ -29,6 +31,7 @@ func (m *MVCCMap) getFromLink(key string) interface{} {
 		if m.parent == nil {
 			return nil
 		}
+		//m.data[key] = m.parent.getFromLink(key)
 		return m.parent.getFromLink(key)
 	}
 	return v
@@ -105,4 +108,16 @@ func (m *MVCCMap) Free() {
 	defer m.rwmu.Unlock()
 
 	m.freeFromLink()
+}
+
+func (m *MVCCMap) PrintData() {
+	index := 0
+	for m != nil {
+		ilog.Debugf("round %v", index)
+		for k := range m.data {
+			ilog.Debugf("k: %v", k)
+		}
+		m = m.parent
+		index++
+	}
 }

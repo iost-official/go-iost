@@ -76,9 +76,11 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 	//ilog.Error("iost.system is ", db.Contract("iost.system"))
 
 	if db.Contract("iost.system") == nil {
+
 		db.SetContract(native.ABI())
 	}
-
+	//ilog.Debugf("after Contract")
+	//db.PrintCache()
 	logger := ilog.New()
 	logger.Stop()
 	h := host.NewHost(ctx, db, staticMonitor, logger)
@@ -136,16 +138,18 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 			txr.Receipts = nil
 			txr.Status.Code = tx.ErrorDuplicateSetCode
 			txr.Status.Message = "error duplicate set code in a tx"
-			ilog.Debugf("rollback")
+			//ilog.Debugf("rollback")
 			e.ho.DB().Rollback()
 			break
 		}
+		//ilog.Debugf("before runAction")
 		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
-
 		cost, status, receipts, err := e.runAction(*action)
-		ilog.Debugf("run action : %v, result is %v", action, status.Code)
-		ilog.Debug("used cost > ", cost)
-		ilog.Debugf("status > \n%v\n", status)
+		//ilog.Debugf("after runAction")
+
+		//ilog.Debugf("run action : %v, result is %v", action, status.Code)
+		//ilog.Debug("used cost > ", cost)
+		//ilog.Debugf("status > \n%v\n", status)
 
 		if err != nil {
 			ilog.Error(err)
@@ -162,7 +166,6 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		txr.GasUsage += cost.ToGas()
 
 		e.ho.Context().GSet("gas_limit", gasLimit-cost.ToGas())
-
 		e.ho.PayCost(cost, e.publisherID)
 
 		if status.Code != tx.Success {
@@ -175,8 +178,11 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 			txr.SuccActionNum++
 		}
 	}
-
+	//ilog.Debugf("before dopay")
+	//ilog.Debugf(e.ho.Context().Value("witness").(string))
+	//ilog.Debug(tx0.GasPrice)
 	err := e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+	//ilog.Debugf("after dopay")
 	if err != nil {
 		e.ho.DB().Rollback()
 		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
@@ -192,16 +198,16 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
 	e.ho.SetDeadline(time.Now().Add(limit))
 
-	ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
+	//ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
 	err := checkTx(tx0)
 	if err != nil {
 		ilog.Error(err)
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
 	}
-
 	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
 	bl := e.ho.DB().Balance(e.publisherID)
-
+	//ilog.Debugf("get balance")
+	//e.ho.DB().PrintCache()
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
 		ilog.Error(errCannotPay)
 		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
@@ -213,6 +219,7 @@ func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 	} else {
 		e.ho.DB().Commit()
 	}
+	//e.ho.DB().PrintCache()
 	return tr, err
 }
 func (e *engineImpl) GC() {
@@ -299,8 +306,9 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	e.ho.Context().Set("stack0", "direct_call")
 	e.ho.Context().Set("stack_height", 1) // record stack trace
-
+	//ilog.Debugf("before call")
 	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, action.Data)
+	//ilog.Debugf("after call")
 
 	if cost == nil {
 		panic("cost is nil")

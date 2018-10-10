@@ -268,3 +268,5 @@ func (t *Trie) Free() {
 	}
 	t.context = nil
 }
+
+func (t *Trie) PrintData() {}

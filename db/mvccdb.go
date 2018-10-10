@@ -35,6 +35,7 @@ type MVCCDB interface {
 	Fork() MVCCDB
 	Flush(t string) error
 	Close() error
+	PrintCache()
 }
 
 // NewMVCCDB return new mvccdb
@@ -157,7 +158,7 @@ func NewCacheMVCCDB(path string, cacheType mvcc.CacheType) (*CacheMVCCDB, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to new storage: %v", err)
 	}
-	tag, err := storage.Get([]byte(string(SEPARATOR) + "tag"))
+	tag, err := storage.Get([]byte(string(SEPARATOR) + "tag")) //?errnotfound?
 	if err != nil {
 		return nil, fmt.Errorf("failed to get from storage: %v", err)
 	}
@@ -374,4 +375,8 @@ func (m *CacheMVCCDB) Flush(t string) error {
 // Close will close the mvccdb
 func (m *CacheMVCCDB) Close() error {
 	return m.storage.Close()
+}
+
+func (m *CacheMVCCDB) PrintCache() {
+	m.stage.PrintData()
 }

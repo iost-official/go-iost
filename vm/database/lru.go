@@ -83,3 +83,7 @@ func (m *LRU) Purge() {
 		m.cache.Purge()
 	}
 }
+
+func (m *LRU) PrintCache() {
+	m.db.PrintCache()
+}
