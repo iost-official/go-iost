@@ -66,36 +66,7 @@ type forkChain struct {
 	ForkBCN *blockcache.BlockCacheNode
 }
 
-// TxsList tx sort
-type TxsList []*tx.Tx
-
-// Len ...
-func (s TxsList) Len() int { return len(s) }
-
-// Less ...
-func (s TxsList) Less(i, j int) bool {
-	if s[i].GasPrice > s[j].GasPrice {
-		return true
-	}
-
-	if s[i].GasPrice == s[j].GasPrice {
-		if s[i].Time < s[j].Time {
-			return true
-		}
-	}
-	return false
-}
-
-// Swap ...
-func (s TxsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-
-// Push ...
-func (s *TxsList) Push(x *tx.Tx) {
-	*s = append(*s, x)
-}
-
 type blockTx struct {
-	chainMap   *sync.Map
 	txMap      *sync.Map
 	ParentHash []byte
 	time       int64
@@ -103,21 +74,11 @@ type blockTx struct {
 
 func (pool *TxPImpl) newBlockTx(blk *block.Block, parentBlockTx interface{}) *blockTx {
 	b := &blockTx{
-		chainMap:   new(sync.Map),
 		txMap:      new(sync.Map),
 		ParentHash: blk.Head.ParentHash,
 		time:       common.SlotLength * blk.Head.Time * int64(time.Second),
 	}
-	if parentBlockTx != nil {
-		parentBlockTx.(*blockTx).chainMap.Range(func(key, value interface{}) bool {
-			if !pool.TxTimeOut(value.(*tx.Tx)) {
-				b.chainMap.Store(key, value)
-			}
-			return true
-		})
-	}
 	for _, v := range blk.Txs {
-		b.chainMap.Store(string(v.Hash()), v)
 		b.txMap.Store(string(v.Hash()), v)
 	}
 	return b
