@@ -30,15 +30,9 @@ func NewTeller(h *Host) Teller {
 func (h *Teller) transfer(from, to string, amount int64) error {
 	bf := h.h.db.Balance(from)
 	//ilog.Debugf("%v's balance : %v", from, bf)
-	//h.h.db.PrintCache()
 	if strings.HasPrefix(from, ContractAccountPrefix) && bf >= amount || bf > amount {
-		//ilog.Debugf("here")
 		h.h.db.SetBalance(from, -1*amount)
-		//ilog.Debugf("set 1")
-		//h.h.db.PrintCache()
 		h.h.db.SetBalance(to, amount)
-		//h.h.db.PrintCache()
-		//ilog.Debugf("set 2")
 		return nil
 	}
 	return ErrBalanceNotEnough
@@ -175,7 +169,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 	if gasPrice < 0 {
 		panic("gas_price error")
 	}
-	//ilog.Debug(h.cost)
+
 	for k, c := range h.cost {
 		fee := gasPrice * c.ToGas()
 		if fee == 0 {
@@ -183,7 +177,6 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 		}
 		bfee := fee / 10
 		if strings.HasPrefix(k, "IOST") {
-			//ilog.Debug(witness)
 			err := h.transfer(k, witness, fee-bfee)
 			if err != nil {
 				return err

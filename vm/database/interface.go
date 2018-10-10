@@ -11,5 +11,4 @@ type IMultiValue interface {
 	Keys(table string, prefix string) ([]string, error)
 	Commit()
 	Rollback()
-	PrintCache()
 }

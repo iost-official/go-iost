@@ -235,7 +235,3 @@ func (d *SimpleDB) Commit() {
 func (d *SimpleDB) Rollback() {
 
 }
-
-func (d *SimpleDB) PrintCache() {
-
-}

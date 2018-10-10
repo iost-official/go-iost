@@ -1,7 +1,5 @@
 package database
 
-import "strconv"
-
 const (
 	// IOSTPrefix prefix of iost
 	IOSTPrefix = "i-"
@@ -20,14 +18,17 @@ func (m *BalanceHandler) balanceKey(to string) string {
 func (m *BalanceHandler) SetBalance(to string, delta int64) {
 	ib := m.Balance(to)
 	nb := ib + delta
-	m.db.Put(m.balanceKey(to), strconv.Itoa(int(nb)))
+	m.db.Put(m.balanceKey(to), MustMarshal(nb))
 }
 
 // Balance get balance to id
 func (m *BalanceHandler) Balance(name string) int64 {
 	currentRaw := m.db.Get(m.balanceKey(name))
-	balance, _ := strconv.Atoi(currentRaw)
-	ib := int64(balance)
+	balance := Unmarshal(currentRaw)
+	ib, ok := balance.(int64)
+	if !ok {
+		return 0
+	}
 	return ib
 }
 

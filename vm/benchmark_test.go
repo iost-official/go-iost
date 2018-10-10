@@ -20,16 +20,17 @@ import (
 )
 
 func benchInit() (Engine, *database.Visitor) {
-	//ilog.Stop()
+	ilog.Stop()
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
 		panic(err)
 	}
 
 	vi := database.NewVisitor(0, mvccdb)
-	vi.SetBalance(testID[0], 1000000000000)
+	vi.SetBalance(testID[0], 1000000)
 	vi.SetContract(systemContract)
 	vi.Commit()
+
 	bh := &block.BlockHead{
 		ParentHash: []byte("abc"),
 		Number:     10,
@@ -57,6 +58,7 @@ func BenchmarkNative_Transfer(b *testing.B) { // 21400 ns/op
 	if err != nil {
 		b.Fatal(err)
 	}
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		e.Exec(trx, time.Second)
@@ -72,7 +74,7 @@ func BenchmarkNative_Transfer_LRU(b *testing.B) { // 15300 ns/op
 	}
 
 	vi := database.NewVisitor(100, mvccdb)
-	vi.SetBalance(testID[0], 1000000000000)
+	vi.SetBalance(testID[0], 1000000)
 	vi.SetContract(systemContract)
 	vi.Commit()
 
@@ -175,7 +177,7 @@ func BenchmarkJS_Gas_Once(b *testing.B) { // 443 us/op
 func BenchmarkJS_Gas_100(b *testing.B) { // 483 um/op
 	ilog.Stop()
 	js := NewJSTester(b)
-	js.vi.SetBalance(testID[0], 1000000000000)
+	js.vi.SetBalance(testID[0], 10000000000)
 	defer js.Clear()
 	f, err := ReadFile("test_data/gas.js")
 	if err != nil {

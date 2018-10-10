@@ -43,7 +43,7 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 		a  *abi
 		ok bool
 	)
-	//ilog.Debugf(con.ID)
+
 	switch con.ID {
 	case "iost.system":
 		a, ok = systemABIs[api]
@@ -58,7 +58,6 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 		ilog.Fatal("error", con.ID, api, systemABIs)
 		return nil, host.CommonErrorCost(1), errors.New("unknown api name")
 	}
-	//ilog.Debugf(a.name)
-	//ilog.Debug(args)
+
 	return a.do(h, args...)
 }
