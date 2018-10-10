@@ -3,7 +3,6 @@ package synchronizer
 import (
 	"sort"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -49,7 +48,6 @@ type SyncImpl struct {
 	reqMap       *sync.Map
 	heightMap    *sync.Map
 	syncEnd      int64
-	button       int32
 
 	messageChan    chan p2p.IncomingMessage
 	syncHeightChan chan p2p.IncomingMessage
@@ -81,7 +79,6 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 
 	sy.syncHeightChan = sy.p2pService.Register("sync height", p2p.SyncHeight)
 	sy.exitSignal = make(chan struct{})
-	atomic.StoreInt32(&sy.button, 0)
 
 	return sy, nil
 }
@@ -112,7 +109,7 @@ func (sy *SyncImpl) initializer() {
 		case <-time.After(retryTime):
 			if sy.basevariable.BlockChain().Length() == 0 {
 				ilog.Errorf("block chain is empty")
-				continue
+				return
 			} else {
 				sy.basevariable.SetMode(global.ModeNormal)
 				sy.checkSync()
@@ -155,7 +152,6 @@ func (sy *SyncImpl) syncHeightLoop() {
 			}
 			ilog.Infof("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
 			sy.heightMap.Store(req.From(), &sh)
-			//atomic.StoreInt32(&sy.button, 1)
 		case <-checkTicker.C:
 			sy.checkSync()
 			sy.checkGenBlock()
@@ -172,12 +168,6 @@ func (sy *SyncImpl) checkSync() bool {
 	if sy.basevariable.Mode() != global.ModeNormal {
 		return false
 	}
-	/*
-		if atomic.LoadInt32(&sy.button) == 0 {
-			return false
-		}
-		atomic.StoreInt32(&sy.button, 0)
-	*/
 	height := sy.basevariable.BlockChain().Length() - 1
 	heights := make([]int64, 0, 0)
 	heights = append(heights, sy.blockCache.Head().Number)
