@@ -28,10 +28,10 @@ var (
 )
 
 var (
-	errSingle     = errors.New("single block")
-	errDuplicate  = errors.New("duplicate block")
-	errTxHash     = errors.New("wrong txs hash")
-	errMerkleHash = errors.New("wrong tx receipt merkle hash")
+	errSingle    = errors.New("single block")
+	errDuplicate = errors.New("duplicate block")
+	// errTxHash     = errors.New("wrong txs hash")
+	// errMerkleHash = errors.New("wrong tx receipt merkle hash")
 )
 
 var blockReqTimeout = 3 * time.Second
