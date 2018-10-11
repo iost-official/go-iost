@@ -60,19 +60,6 @@ func (mr *MockTxPoolMockRecorder) AddTx(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTx", reflect.TypeOf((*MockTxPool)(nil).AddTx), arg0)
 }
 
-// CheckTxs mocks base method
-func (m *MockTxPool) CheckTxs(arg0 []*tx.Tx, arg1 *block.Block) (*tx.Tx, error) {
-	ret := m.ctrl.Call(m, "CheckTxs", arg0, arg1)
-	ret0, _ := ret[0].(*tx.Tx)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckTxs indicates an expected call of CheckTxs
-func (mr *MockTxPoolMockRecorder) CheckTxs(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckTxs", reflect.TypeOf((*MockTxPool)(nil).CheckTxs), arg0, arg1)
-}
-
 // DelTx mocks base method
 func (m *MockTxPool) DelTx(arg0 []byte) error {
 	ret := m.ctrl.Call(m, "DelTx", arg0)
@@ -96,11 +83,10 @@ func (mr *MockTxPoolMockRecorder) DelTxList(arg0 interface{}) *gomock.Call {
 }
 
 // ExistTxs mocks base method
-func (m *MockTxPool) ExistTxs(arg0 []byte, arg1 *block.Block) (txpool.FRet, error) {
+func (m *MockTxPool) ExistTxs(arg0 []byte, arg1 *block.Block) txpool.FRet {
 	ret := m.ctrl.Call(m, "ExistTxs", arg0, arg1)
 	ret0, _ := ret[0].(txpool.FRet)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // ExistTxs indicates an expected call of ExistTxs
@@ -116,20 +102,6 @@ func (m *MockTxPool) Lock() {
 // Lock indicates an expected call of Lock
 func (mr *MockTxPoolMockRecorder) Lock() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lock", reflect.TypeOf((*MockTxPool)(nil).Lock))
-}
-
-// PendingTxs mocks base method
-func (m *MockTxPool) PendingTxs(arg0 int) (txpool.TxsList, *blockcache.BlockCacheNode, error) {
-	ret := m.ctrl.Call(m, "PendingTxs", arg0)
-	ret0, _ := ret[0].(txpool.TxsList)
-	ret1, _ := ret[1].(*blockcache.BlockCacheNode)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// PendingTxs indicates an expected call of PendingTxs
-func (mr *MockTxPoolMockRecorder) PendingTxs(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PendingTxs", reflect.TypeOf((*MockTxPool)(nil).PendingTxs), arg0)
 }
 
 // Release mocks base method

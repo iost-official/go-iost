@@ -3,7 +3,6 @@ package synchronizer
 import (
 	"sort"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -49,7 +48,6 @@ type SyncImpl struct {
 	reqMap       *sync.Map
 	heightMap    *sync.Map
 	syncEnd      int64
-	button       int32
 
 	messageChan    chan p2p.IncomingMessage
 	syncHeightChan chan p2p.IncomingMessage
@@ -81,7 +79,6 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 
 	sy.syncHeightChan = sy.p2pService.Register("sync height", p2p.SyncHeight)
 	sy.exitSignal = make(chan struct{})
-	atomic.StoreInt32(&sy.button, 0)
 
 	return sy, nil
 }
@@ -112,12 +109,11 @@ func (sy *SyncImpl) initializer() {
 		case <-time.After(retryTime):
 			if sy.basevariable.BlockChain().Length() == 0 {
 				ilog.Errorf("block chain is empty")
-				continue
-			} else {
-				sy.basevariable.SetMode(global.ModeNormal)
-				sy.checkSync()
 				return
 			}
+			sy.basevariable.SetMode(global.ModeNormal)
+			sy.checkSync()
+			return
 		case <-sy.exitSignal:
 			return
 		}
@@ -155,7 +151,6 @@ func (sy *SyncImpl) syncHeightLoop() {
 			}
 			ilog.Infof("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
 			sy.heightMap.Store(req.From(), &sh)
-			//atomic.StoreInt32(&sy.button, 1)
 		case <-checkTicker.C:
 			sy.checkSync()
 			sy.checkGenBlock()
@@ -172,12 +167,6 @@ func (sy *SyncImpl) checkSync() bool {
 	if sy.basevariable.Mode() != global.ModeNormal {
 		return false
 	}
-	/*
-		if atomic.LoadInt32(&sy.button) == 0 {
-			return false
-		}
-		atomic.StoreInt32(&sy.button, 0)
-	*/
 	height := sy.basevariable.BlockChain().Length() - 1
 	heights := make([]int64, 0, 0)
 	heights = append(heights, sy.blockCache.Head().Number)
@@ -287,7 +276,8 @@ func (sy *SyncImpl) messageLoop() {
 	for {
 		select {
 		case req := <-sy.messageChan:
-			if req.Type() == p2p.SyncBlockHashRequest {
+			switch req.Type() {
+			case p2p.SyncBlockHashRequest:
 				var rh message.BlockHashQuery
 				err := rh.Unmarshal(req.Data())
 				if err != nil {
@@ -295,7 +285,7 @@ func (sy *SyncImpl) messageLoop() {
 					break
 				}
 				go sy.handleHashQuery(&rh, req.From())
-			} else if req.Type() == p2p.SyncBlockHashResponse {
+			case p2p.SyncBlockHashResponse:
 				var rh message.BlockHashResponse
 				err := rh.Unmarshal(req.Data())
 				if err != nil {
@@ -303,7 +293,7 @@ func (sy *SyncImpl) messageLoop() {
 					break
 				}
 				go sy.handleHashResp(&rh, req.From())
-			} else if req.Type() == p2p.SyncBlockRequest {
+			case p2p.SyncBlockRequest:
 				var rh message.BlockInfo
 				err := rh.Unmarshal(req.Data())
 				if err != nil {
@@ -387,12 +377,14 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 		return
 	}
 	var resp *message.BlockHashResponse
-	if rh.ReqType == 0 {
+
+	switch rh.ReqType {
+	case message.RequireType_GETBLOCKHASHES:
 		resp = sy.getBlockHashes(rh.Start, rh.End)
-	}
-	if rh.ReqType == 1 {
+	case message.RequireType_GETBLOCKHASHESBYNUMBER:
 		resp = sy.getBlockHashesByNums(rh.Nums)
 	}
+
 	if len(resp.BlockInfos) == 0 {
 		return
 	}
@@ -407,13 +399,12 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
 	ilog.Infof("receive block hashes: len=%v", len(rh.BlockInfos))
 	for _, blkInfo := range rh.BlockInfos {
+		if blkInfo.Number > sy.blockCache.LinkedRoot().Number {
+			if _, err := sy.blockCache.Find(blkInfo.Hash); err != nil {
+				sy.dc.CreateMission(string(blkInfo.Hash), blkInfo.Number, peerID)
+			}
+		}
 		sy.reqMap.Delete(blkInfo.Number)
-		if blkInfo.Number <= sy.blockCache.LinkedRoot().Number {
-			continue
-		}
-		if _, err := sy.blockCache.Find(blkInfo.Hash); err != nil {
-			sy.dc.CreateMission(string(blkInfo.Hash), blkInfo.Number, peerID)
-		}
 	}
 }
 

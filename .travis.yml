@@ -23,6 +23,8 @@ matrix:
         - make build
         - make lint
         - make test
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
 
     - os: linux
       dist: trusty
@@ -38,3 +40,5 @@ matrix:
         - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make build
         - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make lint
         - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make test
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
