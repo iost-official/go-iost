@@ -186,7 +186,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			if err != nil {
 				return nil, fmt.Errorf("flush block into stateDB failed, stop the program. err: %v", err)
 			}
-			err = txDB.Push(blk.Txs, blk.Receipts)
+			err = txDB.Push(blk.HeadHash(), blk.Txs, blk.Receipts)
 			if err != nil {
 				return nil, fmt.Errorf("push txDB failed, stop the pogram. err: %v", err)
 			}
@@ -265,7 +265,7 @@ func FakeNew() (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = txDB.Push(blk.Txs, blk.Receipts)
+	err = txDB.Push(blk.HeadHash(), blk.Txs, blk.Receipts)
 	if err != nil {
 		return nil, err
 	}

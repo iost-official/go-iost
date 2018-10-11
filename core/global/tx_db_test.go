@@ -43,7 +43,7 @@ func TestTxDb(t *testing.T) {
 		res = make([]*tx.TxReceipt, 0)
 		res = append(res, &re1)
 
-		err = txDb.Push(txs, res)
+		err = txDb.Push([]byte("123"), txs, res)
 		So(err, ShouldBeNil)
 
 		b, err := txDb.HasTx(tx1.Hash())
