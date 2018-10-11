@@ -31,20 +31,27 @@ type Info struct {
 
 //var ParallelMask int64 = 1 // 0000 0001
 
-func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, provider vm.TxIter, c *Config) (droplist []*tx.Tx, err []error, err2 error) {
+func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter vm.TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
+	var pi = &ProviderImpl{
+		cache: make([]*tx.Tx, 0),
+		iter:  iter,
+	}
 	switch c.Mode {
 	case 0:
 		e := vm.NewEngine(blk.Head, db)
-		return baseGen(blk, db, provider, e, c),
+		err = baseGen(blk, db, pi, e, c)
+		droplist, errs = pi.List()
+		return
 	case 1:
 		batcher := vm.NewBatcher()
-		return batchGen(blk, db, provider, batcher, c)
+		err = batchGen(blk, db, pi, batcher, c)
+		droplist, errs = pi.List()
+		return
 	}
-	return []*tx.Tx{} ,[]error{}, fmt.Errorf("mode unexpected: %v", c.Mode)
+	return []*tx.Tx{}, []error{}, fmt.Errorf("mode unexpected: %v", c.Mode)
 }
 
-func baseGen(blk *block.Block, db database.IMultiValue, provider vm.Provider, engine vm.Engine, c *Config) error {
-	var err error
+func baseGen(blk *block.Block, db database.IMultiValue, provider vm.Provider, engine vm.Engine, c *Config) (err error) {
 
 	blk.Txs = make([]*tx.Tx, 0)
 	blk.Receipts = make([]*tx.TxReceipt, 0)
@@ -65,7 +72,7 @@ L:
 			var r *tx.TxReceipt
 			r, err = engine.Exec(t, c.TxTimeLimit)
 			if err != nil {
-				fmt.Println(err)
+				provider.Drop(t, err)
 				continue L
 			}
 			blk.Txs = append(blk.Txs, t)
@@ -74,11 +81,13 @@ L:
 	}
 	buf, err := json.Marshal(info)
 	blk.Head.Info = buf
+	for _, t := range blk.Txs {
+		provider.Drop(t, nil)
+	}
 	return err
 }
 
-func batchGen(blk *block.Block, db database.IMultiValue, provider vm.Provider, batcher vm.Batcher, c *Config) error {
-	var err error
+func batchGen(blk *block.Block, db database.IMultiValue, provider vm.Provider, batcher vm.Batcher, c *Config) (err error) {
 
 	blk.Txs = make([]*tx.Tx, 0)
 	blk.Receipts = make([]*tx.TxReceipt, 0)

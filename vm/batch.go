@@ -36,10 +36,11 @@ func NewBatch() *Batch {
 type Provider interface {
 	Tx() *tx.Tx
 	Return(*tx.Tx)
+	Drop(t *tx.Tx, err error)
 }
 
 type TxIter interface {
-	Next()
+	Next() *tx.Tx
 }
 
 type batcherImpl struct {
@@ -56,11 +57,16 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 		txs      = make([]*tx.Tx, thread)
 		receipts = make([]*tx.TxReceipt, thread)
 		visitors = make([]*database.Visitor, thread)
+		errs     = make([]error, thread)
 	)
 
 	bvr := database.NewBatchVisitorRoot(10000, db)
 	for i := 0; i < thread; i++ {
 		i2 := i
+		t := provider.Tx()
+		if t == nil {
+			break
+		}
 		go func() {
 			vi, mapper := database.NewBatchVisitor(bvr)
 
@@ -70,20 +76,18 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 			defer m.wait.Done()
 
 			// todo setup engine=
-			t := provider.Tx()
-			if t == nil {
-				return
-			}
+
 			tr, err := e.Exec(t, limit)
 
 			if err == nil {
 				mappers[i2] = mapper.Map()
-				txs[i2] = t
-				receipts[i2] = tr
-				visitors[i2] = vi
 			} else {
 				mappers[i2] = nil
 			}
+			txs[i2] = t
+			receipts[i2] = tr
+			visitors[i2] = vi
+			errs[i2] = err
 		}()
 	}
 	m.wait.Wait()
@@ -91,6 +95,10 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 
 	for _, i := range td {
 		provider.Return(txs[i])
+	}
+
+	for i := range txs {
+		provider.Drop(txs[i], errs[i])
 	}
 
 	b := NewBatch()
