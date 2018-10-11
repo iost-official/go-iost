@@ -77,7 +77,7 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 
 			// todo setup engine=
 
-			tr, err := e.Exec(t, limit)
+			tr, err := e.(*engineImpl).exec(t, limit)
 
 			if err == nil {
 				mappers[i2] = mapper.Map()
@@ -98,7 +98,9 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 	}
 
 	for i := range txs {
-		provider.Drop(txs[i], errs[i])
+		if errs[i] != nil {
+			provider.Drop(txs[i], errs[i])
+		}
 	}
 
 	b := NewBatch()

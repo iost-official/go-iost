@@ -32,10 +32,13 @@ type Info struct {
 //var ParallelMask int64 = 1 // 0000 0001
 
 func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter vm.TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
-	var pi = &ProviderImpl{
-		cache: make([]*tx.Tx, 0),
-		iter:  iter,
+	if blk.Txs == nil {
+		blk.Txs = make([]*tx.Tx, 0)
 	}
+	if blk.Receipts == nil {
+		blk.Receipts = make([]*tx.TxReceipt, 0)
+	}
+	var pi = NewProvider(iter)
 	switch c.Mode {
 	case 0:
 		e := vm.NewEngine(blk.Head, db)
@@ -52,32 +55,34 @@ func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter vm.TxIter
 }
 
 func baseGen(blk *block.Block, db database.IMultiValue, provider vm.Provider, engine vm.Engine, c *Config) (err error) {
-
-	blk.Txs = make([]*tx.Tx, 0)
-	blk.Receipts = make([]*tx.TxReceipt, 0)
 	info := Info{
-		Mode: 1,
+		Mode: 0,
 	}
-	to := time.After(c.Timeout)
+	tn := time.Now()
+	to := time.Now().Add(c.Timeout)
 L:
-	for {
-		select {
-		case <-to:
-			break L
-		default:
-			t := provider.Tx()
-			if t == nil {
-				break L
-			}
-			var r *tx.TxReceipt
-			r, err = engine.Exec(t, c.TxTimeLimit)
-			if err != nil {
-				provider.Drop(t, err)
-				continue L
-			}
-			blk.Txs = append(blk.Txs, t)
-			blk.Receipts = append(blk.Receipts, r)
+	for tn.Before(to) {
+		limit := to.Sub(tn)
+		if limit > c.TxTimeLimit {
+			limit = c.TxTimeLimit
 		}
+		t := provider.Tx()
+		if t == nil {
+			break L
+		}
+		var r *tx.TxReceipt
+		r, err = engine.Exec(t, limit)
+		if err != nil {
+			provider.Drop(t, err)
+			continue L
+		}
+		if r.Status.Code == 5 && limit < c.TxTimeLimit {
+			provider.Return(t)
+			break L
+		}
+		blk.Txs = append(blk.Txs, t)
+		blk.Receipts = append(blk.Receipts, r)
+		tn = time.Now()
 	}
 	buf, err := json.Marshal(info)
 	blk.Head.Info = buf
@@ -88,30 +93,30 @@ L:
 }
 
 func batchGen(blk *block.Block, db database.IMultiValue, provider vm.Provider, batcher vm.Batcher, c *Config) (err error) {
-
-	blk.Txs = make([]*tx.Tx, 0)
-	blk.Receipts = make([]*tx.TxReceipt, 0)
 	info := Info{
 		Mode:   1,
 		Thread: c.Thread,
 		Batch:  make([]int, 0),
 	}
-	to := time.After(c.Timeout)
-L:
-	for {
-		select {
-		case <-to:
-			break L
-		default:
-			batch := batcher.Batch(blk.Head, db, provider, time.Duration(c.TxTimeLimit), c.Thread)
-
-			info.Batch = append(info.Batch, len(batch.Txs))
-			for i, t := range batch.Txs {
-				blk.Txs = append(blk.Txs, t)
-				blk.Receipts = append(blk.Receipts, batch.Receipts[i])
-			}
+	tn := time.Now()
+	to := time.Now().Add(c.Timeout)
+	for tn.Before(to) {
+		limit := to.Sub(tn)
+		if limit > c.TxTimeLimit {
+			limit = c.TxTimeLimit
 		}
+		batch := batcher.Batch(blk.Head, db, provider, limit, c.Thread)
 
+		info.Batch = append(info.Batch, len(batch.Txs))
+		for i, t := range batch.Txs {
+			if limit < c.TxTimeLimit && batch.Receipts[i].Status.Code == 5 {
+				provider.Return(t)
+				continue
+			}
+			blk.Txs = append(blk.Txs, t)
+			blk.Receipts = append(blk.Receipts, batch.Receipts[i])
+			provider.Drop(t, nil)
+		}
 	}
 
 	blk.Head.Info, err = json.Marshal(info)

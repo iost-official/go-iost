@@ -121,7 +121,22 @@ func (e *engineImpl) SetUp(k, v string) error {
 	return nil
 }
 
-func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
+func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
+	e.ho.SetDeadline(time.Now().Add(limit))
+	err := checkTx(tx0)
+	if err != nil {
+		ilog.Error(err)
+		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
+	}
+
+	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
+	bl := e.ho.DB().Balance(e.publisherID)
+
+	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
+		ilog.Error(errCannotPay)
+		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
+	}
+
 	loadTxInfo(e.ho, tx0, e.publisherID)
 	defer func() {
 		e.ho.PopCtx()
@@ -178,7 +193,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		}
 	}
 
-	err := e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
 	if err != nil {
 		e.ho.DB().Rollback()
 		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
@@ -192,31 +207,9 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 }
 
 func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
-	e.ho.SetDeadline(time.Now().Add(limit))
-
-	ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
-	err := checkTx(tx0)
-	if err != nil {
-		ilog.Error(err)
-		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
-	}
-
-	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
-	bl := e.ho.DB().Balance(e.publisherID)
-
-	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
-		ilog.Error(errCannotPay)
-		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
-	}
-
-	tr, err := e.exec(tx0)
-	if err != nil {
-		e.ho.DB().Rollback()
-		return tr, err
-	} else {
-		e.ho.DB().Commit()
-		return tr, err
-	}
+	r, err := e.exec(tx0, limit)
+	e.ho.DB().Commit()
+	return r, err
 }
 func (e *engineImpl) GC() {
 	e.logger.Stop()
