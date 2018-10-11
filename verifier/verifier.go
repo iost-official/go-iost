@@ -31,16 +31,16 @@ type Info struct {
 
 //var ParallelMask int64 = 1 // 0000 0001
 
-func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, provider vm.Provider, c *Config) error {
+func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, provider vm.TxIter, c *Config) (droplist []*tx.Tx, err []error, err2 error) {
 	switch c.Mode {
 	case 0:
 		e := vm.NewEngine(blk.Head, db)
-		return baseGen(blk, db, provider, e, c)
+		return baseGen(blk, db, provider, e, c),
 	case 1:
 		batcher := vm.NewBatcher()
 		return batchGen(blk, db, provider, batcher, c)
 	}
-	return fmt.Errorf("mode unexpected: %v", c.Mode)
+	return []*tx.Tx{} ,[]error{}, fmt.Errorf("mode unexpected: %v", c.Mode)
 }
 
 func baseGen(blk *block.Block, db database.IMultiValue, provider vm.Provider, engine vm.Engine, c *Config) error {

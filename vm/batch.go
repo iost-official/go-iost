@@ -38,6 +38,10 @@ type Provider interface {
 	Return(*tx.Tx)
 }
 
+type TxIter interface {
+	Next()
+}
+
 type batcherImpl struct {
 	wait sync.WaitGroup
 }
