@@ -12,7 +12,7 @@ import (
 
 // TxDB defines the functions of tx database.
 type TxDB interface {
-	Push(txs []*tx.Tx, receipts []*tx.TxReceipt) error
+	Push(hash []byte, txs []*tx.Tx, receipts []*tx.TxReceipt) error
 	GetTx(hash []byte) (*tx.Tx, error)
 	HasTx(hash []byte) (bool, error)
 	GetReceipt(Hash []byte) (*tx.TxReceipt, error)
@@ -27,9 +27,11 @@ type TxDBImpl struct {
 }
 
 var (
-	txPrefix          = []byte("t") // txPrefix+tx hash -> tx data
-	receiptHashPrefix = []byte("h") // receiptHashPrefix + tx hash -> receipt hash
-	receiptPrefix     = []byte("r") // receiptPrefix + receipt hash -> receipt data
+	txPrefix        = []byte("t") // txPrefix+tx hash -> tx data
+	bTxPrefix       = []byte("B") // txPrefix+tx hash -> tx data
+	txReceiptPrefix = []byte("h") // receiptHashPrefix + tx hash -> receipt hash
+	receiptPrefix   = []byte("r") // receiptPrefix + receipt hash -> receipt data
+	bReceiptPrefix  = []byte("b") // txPrefix+tx hash -> tx data
 )
 
 // NewTxDB returns a TxDB instance.
@@ -42,7 +44,7 @@ func NewTxDB(path string) (TxDB, error) {
 }
 
 // Push save the tx to database
-func (tdb *TxDBImpl) Push(txs []*tx.Tx, receipts []*tx.TxReceipt) error {
+func (tdb *TxDBImpl) Push(hash []byte, txs []*tx.Tx, receipts []*tx.TxReceipt) error {
 	err := tdb.txDB.BeginBatch()
 	if err != nil {
 		return errors.New("fail to begin batch")
@@ -50,13 +52,14 @@ func (tdb *TxDBImpl) Push(txs []*tx.Tx, receipts []*tx.TxReceipt) error {
 
 	for i, tx := range txs {
 		tHash := tx.Hash()
-		tdb.txDB.Put(append(txPrefix, tHash...), tx.Encode())
+		tdb.txDB.Put(append(txPrefix, tHash...), append(hash, tHash...))
+		tdb.txDB.Put(append(bTxPrefix, append(hash, tHash...)), tx.Encode())
 
 		// save receipt
 		rHash := receipts[i].Hash()
-		tdb.txDB.Put(append(receiptHashPrefix, tHash...), rHash)
-
-		tdb.txDB.Put(append(receiptPrefix, rHash...), receipts[i].Encode())
+		tdb.txDB.Put(append(txReceiptPrefix, tHash...), append(hash, rHash...))
+		tdb.txDB.Put(append(receiptPrefix, rHash...), append(hash, rHash...))
+		tdb.txDB.Put(append(bReceptPrefix, append(hash, rHash...)), receipts[i].Encode())
 	}
 
 	err = tdb.txDB.CommitBatch()
@@ -69,7 +72,11 @@ func (tdb *TxDBImpl) Push(txs []*tx.Tx, receipts []*tx.TxReceipt) error {
 // GetTx gets tx with tx's hash.
 func (tdb *TxDBImpl) GetTx(hash []byte) (*tx.Tx, error) {
 	tx := tx.Tx{}
-	txData, err := tdb.txDB.Get(append(txPrefix, hash...))
+	bTx, err := tdb.txDB.Get(append(txPrefix, hash...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to Get the tx: %v", err)
+	}
+	txData, err := tdb.txDB.Get(append(bTxPrefix, bTx...))
 	if err != nil {
 		return nil, fmt.Errorf("failed to Get the tx: %v", err)
 	}
@@ -91,7 +98,11 @@ func (tdb *TxDBImpl) HasTx(hash []byte) (bool, error) {
 // GetReceipt gets receipt with receipt's hash
 func (tdb *TxDBImpl) GetReceipt(hash []byte) (*tx.TxReceipt, error) {
 	re := tx.TxReceipt{}
-	reData, err := tdb.txDB.Get(append(receiptPrefix, hash...))
+	bReHash, err := tdb.txDB.Get(append(receiptPrefix, hash...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to Get the receipt: %v", err)
+	}
+	reData, err := tdb.txDB.Get(append(bReceiptPrefix, bReHash...))
 	if err != nil {
 		return nil, fmt.Errorf("failed to Get the receipt: %v", err)
 	}
@@ -108,18 +119,27 @@ func (tdb *TxDBImpl) GetReceipt(hash []byte) (*tx.TxReceipt, error) {
 
 // GetReceiptByTxHash gets receipt with tx's hash
 func (tdb *TxDBImpl) GetReceiptByTxHash(hash []byte) (*tx.TxReceipt, error) {
-
-	reHash, err := tdb.txDB.Get(append(receiptHashPrefix, hash...))
+	bReHash, err := tdb.txDB.Get(append(txReceiptPrefix, hash...))
 	if err != nil {
 		return nil, fmt.Errorf("failed to Get the receipt hash: %v", err)
 	}
+	reData, err := tdb.txDB.Get(append(bReceiptPrefix, bReHash...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to Get the receipt: %v", err)
+	}
+	if len(reData) == 0 {
+		return nil, fmt.Errorf("failed to Get the receipt: not found")
+	}
 
-	return tdb.GetReceipt(reHash)
+	err = re.Decode(reData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to Decode the receipt: %v", err)
+	}
+	return &re, nil
 }
 
 // HasReceipt checks if database has receipt.
 func (tdb *TxDBImpl) HasReceipt(hash []byte) (bool, error) {
-
 	return tdb.txDB.Has(append(receiptPrefix, hash...))
 }
 

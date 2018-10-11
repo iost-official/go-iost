@@ -268,7 +268,7 @@ func BenchmarkKeys(b *testing.B) {
 		headkeys := make([][]byte, 0)
 		headkey := make([]byte, 32)
 		for i := 0; i < 10000; i++ {
-			if i%10000 == 0 {
+			if i%2500 == 0 {
 				headkey = make([]byte, 32)
 				rand.Read(headkey)
 				headkeys = append(headkeys, headkey)
