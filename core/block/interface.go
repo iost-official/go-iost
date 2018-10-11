@@ -16,8 +16,3 @@ type Chain interface {
 	Close()
 	Draw(int64, int64) string
 }
-
-// ChainIterator is iterator of block chain
-type ChainIterator interface {
-	Next() *Block
-}
