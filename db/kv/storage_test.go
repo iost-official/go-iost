@@ -226,7 +226,7 @@ func BenchmarkStorage(b *testing.B) {
 
 		keys := make([][]byte, 0)
 		values := make([][]byte, 0)
-		for i := 0; i < 1000000; i++ {
+		for i := 0; i < 400000; i++ {
 			key := make([]byte, 32)
 			value := make([]byte, 32)
 			rand.Read(key)
@@ -241,11 +241,19 @@ func BenchmarkStorage(b *testing.B) {
 				assert.Nil(b, err)
 			}
 		})
+
+		for i := 0; i < 400000; i++ {
+			err := storage.Put(keys[i], values[i])
+			assert.Nil(b, err)
+		}
+
 		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Get", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				value, err := storage.Get(keys[i])
 				assert.Nil(b, err)
-				assert.Equal(b, values[i], value, "Num: %v", i)
+				if !assert.Equal(b, values[i], value) {
+					b.Fatalf("Num: %v", i)
+				}
 			}
 		})
 		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Delete", func(b *testing.B) {
