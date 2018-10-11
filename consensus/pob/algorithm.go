@@ -31,7 +31,6 @@ var (
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
-
 	ilog.Info("generate Block start")
 	limitTime := time.NewTimer(common.SlotLength / 3 * time.Second)
 	txIter, head := txPool.TxIterator()
@@ -72,7 +71,6 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 	}
 	t, ok := txIter.Next()
 	delList := []*tx.Tx{}
-	var vmExecTime, iterTime, i, j int64
 L:
 	for ok {
 		select {
@@ -80,10 +78,7 @@ L:
 			ilog.Info("time up")
 			break L
 		default:
-			i++
-			step1 := time.Now()
 			if !txPool.TxTimeOut(t) {
-				j++
 				if receipt, err := engine.Exec(t, txExecTime); err == nil {
 					blk.Txs = append(blk.Txs, t)
 					blk.Receipts = append(blk.Receipts, receipt)
@@ -97,11 +92,7 @@ L:
 			if len(blk.Txs) >= txLimit {
 				break L
 			}
-			step2 := time.Now()
 			t, ok = txIter.Next()
-			step3 := time.Now()
-			vmExecTime += step2.Sub(step1).Nanoseconds()
-			iterTime += step3.Sub(step2).Nanoseconds()
 		}
 	}
 
@@ -160,10 +151,9 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 			return fmt.Errorf("vote was incorrect, status:%v", blk.Receipts[0].Status)
 		}
 	}
-
 	// check txs
 	for _, tx := range blk.Txs {
-		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
+		exist := txPool.ExistTxs(tx.Hash(), parent)
 		switch exist {
 		case txpool.FoundChain:
 			return errTxDup

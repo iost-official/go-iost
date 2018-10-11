@@ -58,7 +58,6 @@ type PoB struct {
 	chRecvBlockHash chan p2p.IncomingMessage
 	chQueryBlock    chan p2p.IncomingMessage
 	chVerifyBlock   chan *verifyBlockMessage
-	//chGenBlock      chan *block.Block
 }
 
 // NewPoB init a new PoB.
@@ -79,7 +78,6 @@ func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCac
 		chQueryBlock:    p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		chVerifyBlock:   make(chan *verifyBlockMessage, 1024),
 	}
-
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
 	return &p
 }
@@ -199,6 +197,9 @@ func (p *PoB) broadcastBlockHash(blk *block.Block) {
 }
 
 func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
+	if p.baseVariable.Mode() == global.ModeInit {
+		return
+	}
 	ilog.Infof("verify block chan size:%v", len(p.chVerifyBlock))
 	blk := vbm.blk
 	if vbm.gen {
@@ -209,10 +210,8 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		}
 		return
 	}
-	if vbm.p2pType == p2p.NewBlock {
-		if p.baseVariable.Mode() == global.ModeInit {
-			return
-		}
+	switch vbm.p2pType {
+	case p2p.NewBlock:
 		ilog.Info("received new block, block number: ", blk.Head.Number)
 		timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 		if ok {
@@ -230,12 +229,8 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 			ilog.Errorf("received new block error, err:%v", err)
 			return
 		}
-	}
-	if vbm.p2pType == p2p.SyncBlockResponse {
+	case p2p.SyncBlockResponse:
 		ilog.Info("received sync block, block number: ", blk.Head.Number)
-		if p.baseVariable.Mode() == global.ModeInit {
-			return
-		}
 		err := p.handleRecvBlock(blk)
 		if err != nil {
 			ilog.Errorf("received sync block error, err:%v", err)

@@ -14,10 +14,9 @@ import (
 var (
 	clearInterval = 10 * time.Second
 	// Expiration is the transaction expiration
-	Expiration  = int64(90 * time.Second)
-	filterTime  = int64(90 * time.Second)
-	maxCacheTxs = 30000
-
+	Expiration             = int64(90 * time.Second)
+	filterTime             = int64(90 * time.Second)
+	maxCacheTxs            = 30000
 	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
 	metricsTxPoolSize      = metrics.NewGauge("iost_txpool_size", nil)
 )
@@ -67,69 +66,26 @@ type forkChain struct {
 	ForkBCN *blockcache.BlockCacheNode
 }
 
-// TxsList tx sort
-type TxsList []*tx.Tx
-
-// Len ...
-func (s TxsList) Len() int { return len(s) }
-
-// Less ...
-func (s TxsList) Less(i, j int) bool {
-	if s[i].GasPrice > s[j].GasPrice {
-		return true
-	}
-
-	if s[i].GasPrice == s[j].GasPrice {
-		if s[i].Time < s[j].Time {
-			return true
-		}
-	}
-	return false
-}
-
-// Swap ...
-func (s TxsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-
-// Push ...
-func (s *TxsList) Push(x *tx.Tx) {
-	*s = append(*s, x)
-}
-
 type blockTx struct {
 	txMap      *sync.Map
 	ParentHash []byte
-	cTime      int64
+	time       int64
 }
 
-func newBlockTx() *blockTx {
+func (pool *TxPImpl) newBlockTx(blk *block.Block) *blockTx {
 	b := &blockTx{
 		txMap:      new(sync.Map),
-		ParentHash: make([]byte, 32),
+		ParentHash: blk.Head.ParentHash,
+		time:       slotToNSec(blk.Head.Time),
 	}
-
+	for _, v := range blk.Txs {
+		b.txMap.Store(string(v.Hash()), v)
+	}
 	return b
 }
 
-func (b *blockTx) time() int64 {
-	return b.cTime
-}
-
-func (b *blockTx) setTime(t int64) {
-	b.cTime = t
-}
-
-func (b *blockTx) addBlock(ib *block.Block) {
-
-	for _, v := range ib.Txs {
-		b.txMap.Store(string(v.Hash()), v)
-	}
-	b.ParentHash = ib.Head.ParentHash
-}
-
 func (b *blockTx) existTx(hash []byte) bool {
-
 	_, r := b.txMap.Load(string(hash))
-
 	return r
 }
 
