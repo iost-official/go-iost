@@ -39,7 +39,7 @@ type Provider interface {
 }
 
 type TxIter interface {
-	Next()
+	Next() (*tx.Tx, bool)
 }
 
 type batcherImpl struct {
