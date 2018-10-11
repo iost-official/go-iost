@@ -110,11 +110,10 @@ func (sy *SyncImpl) initializer() {
 			if sy.basevariable.BlockChain().Length() == 0 {
 				ilog.Errorf("block chain is empty")
 				return
-			} else {
-				sy.basevariable.SetMode(global.ModeNormal)
-				sy.checkSync()
-				return
 			}
+			sy.basevariable.SetMode(global.ModeNormal)
+			sy.checkSync()
+			return
 		case <-sy.exitSignal:
 			return
 		}
