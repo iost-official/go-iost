@@ -155,7 +155,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		gasLimit := e.ho.Context().GValue("gas_limit").(int64)
 
 		txr.Status = status
-		if status.Code == 4 && status.Message == "out of gas" {
+		if (status.Code == 4 && status.Message == "out of gas") || (status.Code == 5) {
 			cost = contract.NewCost(0, 0, gasLimit)
 		}
 
