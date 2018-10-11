@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
@@ -13,8 +12,9 @@ import (
 )
 
 var (
-	clearInterval          = 10 * time.Second
-	Expiration             = int64(90 * time.Second) // Expiration is the transaction expiration
+	clearInterval = 10 * time.Second
+	// Expiration is the transaction expiration
+	Expiration             = int64(90 * time.Second)
 	filterTime             = int64(90 * time.Second)
 	maxCacheTxs            = 30000
 	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
@@ -72,11 +72,11 @@ type blockTx struct {
 	time       int64
 }
 
-func (pool *TxPImpl) newBlockTx(blk *block.Block, parentBlockTx interface{}) *blockTx {
+func (pool *TxPImpl) newBlockTx(blk *block.Block) *blockTx {
 	b := &blockTx{
 		txMap:      new(sync.Map),
 		ParentHash: blk.Head.ParentHash,
-		time:       common.SlotLength * blk.Head.Time * int64(time.Second),
+		time:       slotToNSec(blk.Head.Time),
 	}
 	for _, v := range blk.Txs {
 		b.txMap.Store(string(v.Hash()), v)

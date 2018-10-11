@@ -158,7 +158,7 @@ func (pool *TxPImpl) createTxMapToChain(chainBlock *block.Block) (*sync.Map, err
 	}
 	rm := new(sync.Map)
 	h := chainBlock.HeadHash()
-	t := pool.slotToNSec(chainBlock.Head.Time)
+	t := slotToNSec(chainBlock.Head.Time)
 	var ok bool
 	for {
 		ret := pool.createTxMapToBlock(rm, h)
@@ -267,7 +267,7 @@ func (pool *TxPImpl) initBlockTx() {
 		if err != nil {
 			break
 		}
-		if pool.slotToNSec(blk.Head.Time) < filterLimit {
+		if slotToNSec(blk.Head.Time) < filterLimit {
 			break
 		}
 		pool.addBlock(blk)
@@ -290,7 +290,7 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) TAddTx {
 	return Success
 }
 
-func (pool *TxPImpl) slotToNSec(t int64) int64 {
+func slotToNSec(t int64) int64 {
 	return common.SlotLength * t * int64(time.Second)
 }
 
@@ -301,8 +301,7 @@ func (pool *TxPImpl) addBlock(blk *block.Block) error {
 	if _, ok := pool.blockList.Load(string(blk.HeadHash())); ok {
 		return nil
 	}
-	parentBlockTx, _ := pool.blockList.Load(string(blk.Head.ParentHash))
-	pool.blockList.Store(string(blk.HeadHash()), pool.newBlockTx(blk, parentBlockTx))
+	pool.blockList.Store(string(blk.HeadHash()), pool.newBlockTx(blk))
 	return nil
 }
 
@@ -326,7 +325,7 @@ func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 		return false
 	}
 	h := block.HeadHash()
-	filterLimit := pool.slotToNSec(block.Head.Time) - filterTime
+	filterLimit := slotToNSec(block.Head.Time) - filterTime
 	var ok bool
 	for {
 		ret := pool.existTxInBlock(txHash, h)
@@ -354,7 +353,7 @@ func (pool *TxPImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 }
 
 func (pool *TxPImpl) clearBlock() {
-	filterLimit := pool.slotToNSec(pool.blockCache.LinkedRoot().Block.Head.Time) - filterTime
+	filterLimit := slotToNSec(pool.blockCache.LinkedRoot().Block.Head.Time) - filterTime
 	pool.blockList.Range(func(key, value interface{}) bool {
 		if value.(*blockTx).time < filterLimit {
 			pool.blockList.Delete(key)
@@ -443,7 +442,7 @@ func (pool *TxPImpl) doChainChangeByForkBCN() {
 	//add txs
 	filterLimit := time.Now().UnixNano() - filterTime
 	for {
-		if oldHead == nil || oldHead == forkBCN || pool.slotToNSec(oldHead.Block.Head.Time) < filterLimit {
+		if oldHead == nil || oldHead == forkBCN || slotToNSec(oldHead.Block.Head.Time) < filterLimit {
 			break
 		}
 		for _, t := range oldHead.Block.Txs {
@@ -454,7 +453,7 @@ func (pool *TxPImpl) doChainChangeByForkBCN() {
 
 	//del txs
 	for {
-		if newHead == nil || newHead == forkBCN || pool.slotToNSec(newHead.Block.Head.Time) < filterLimit {
+		if newHead == nil || newHead == forkBCN || slotToNSec(newHead.Block.Head.Time) < filterLimit {
 			break
 		}
 		for _, t := range newHead.Block.Txs {
