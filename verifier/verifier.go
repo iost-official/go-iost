@@ -40,6 +40,10 @@ type Info struct {
 
 //var ParallelMask int64 = 1 // 0000 0001
 
+func (v *Verifier) Exec(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
+
+}
+
 func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
 	if blk.Txs == nil {
 		blk.Txs = make([]*tx.Tx, 0)
