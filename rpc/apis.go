@@ -3,8 +3,6 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/core/contract"
 	"net"
 	"strconv"
 	"strings"
@@ -12,10 +10,12 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/bitly/go-simplejson"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
@@ -86,8 +86,8 @@ func (s *GRPCServer) Stop() {
 // GetVersionInfo return the version info
 func (s *GRPCServer) GetVersionInfo(ctx context.Context, empty *empty.Empty) (*VersionInfoRes, error) {
 	return &VersionInfoRes{
-		BuildTime: global.BUILD_TIME,
-		GitHash: global.GIT_HASH,
+		BuildTime: global.BuildTime,
+		GitHash:   global.GitHash,
 	}, nil
 }
 

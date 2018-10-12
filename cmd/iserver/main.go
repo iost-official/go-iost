@@ -111,8 +111,8 @@ func main() {
 
 	initLogger(conf.Log)
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
-	ilog.Infof("build time:%v", global.BUILD_TIME)
-	ilog.Infof("git hash:%v", global.GIT_HASH)
+	ilog.Infof("build time:%v", global.BuildTime)
+	ilog.Infof("git hash:%v", global.GitHash)
 
 	vm.SetUp(conf.VM)
 

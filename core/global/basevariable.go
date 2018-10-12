@@ -39,8 +39,11 @@ var adminID = ""
 // GenesisTxExecTime is the maximum execution time of a transaction in genesis block
 var GenesisTxExecTime = 1 * time.Second
 
-var BUILD_TIME string
-var GIT_HASH string
+// BuildTime build time
+var BuildTime string
+
+// GitHash git hash
+var GitHash string
 
 // String return string of mode
 func (m TMode) String() string {
