@@ -3,33 +3,25 @@ package websocket
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
-	"net/url"
 
-	tpt "github.com/libp2p/go-libp2p-transport"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr-net"
 )
 
-type wsConn struct {
-	manet.Conn
-	t tpt.Transport
-}
-
-var _ tpt.Conn = (*wsConn)(nil)
-
-func (c *wsConn) Transport() tpt.Transport {
-	return c.t
-}
-
 type listener struct {
-	manet.Listener
+	net.Listener
 
+	laddr ma.Multiaddr
+
+	closed   chan struct{}
 	incoming chan *Conn
+}
 
-	tpt tpt.Transport
-
-	origin *url.URL
+func (l *listener) serve() {
+	defer close(l.closed)
+	http.Serve(l.Listener, l)
 }
 
 func (l *listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -40,35 +32,55 @@ func (l *listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	l.incoming <- NewConn(c, cancel)
+
+	var cnCh <-chan bool
+	if cn, ok := w.(http.CloseNotifier); ok {
+		cnCh = cn.CloseNotify()
+	}
+
+	wscon := NewConn(c, cancel)
+	// Just to make sure.
+	defer wscon.Close()
+
+	select {
+	case l.incoming <- wscon:
+	case <-l.closed:
+		c.Close()
+		return
+	case <-cnCh:
+		return
+	}
 
 	// wait until conn gets closed, otherwise the handler closes it early
-	<-ctx.Done()
+	select {
+	case <-ctx.Done():
+	case <-l.closed:
+		c.Close()
+		return
+	case <-cnCh:
+		return
+	}
 }
 
-func (l *listener) Accept() (tpt.Conn, error) {
-	c, ok := <-l.incoming
-	if !ok {
+func (l *listener) Accept() (manet.Conn, error) {
+	select {
+	case c, ok := <-l.incoming:
+		if !ok {
+			return nil, fmt.Errorf("listener is closed")
+		}
+
+		mnc, err := manet.WrapNetConn(c)
+		if err != nil {
+			c.Close()
+			return nil, err
+		}
+
+		return mnc, nil
+	case <-l.closed:
 		return nil, fmt.Errorf("listener is closed")
 	}
-
-	mnc, err := manet.WrapNetConn(c)
-	if err != nil {
-		c.Close()
-		return nil, err
-	}
-
-	return &wsConn{
-		Conn: mnc,
-		t:    l.tpt,
-	}, nil
 }
 
 func (l *listener) Multiaddr() ma.Multiaddr {
-	wsma, err := ma.NewMultiaddr("/ws")
-	if err != nil {
-		panic(err)
-	}
-
-	return l.Listener.Multiaddr().Encapsulate(wsma)
+	return l.laddr
 }

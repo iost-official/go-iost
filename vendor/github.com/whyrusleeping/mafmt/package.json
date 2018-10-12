@@ -7,9 +7,9 @@
   "gxDependencies": [
     {
       "author": "whyrusleeping",
-      "hash": "QmWWQ2Txc2c6tqjsBpzg5Ar652cHPGNsQQp2SejkNmkUMb",
+      "hash": "QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7",
       "name": "go-multiaddr",
-      "version": "1.2.6"
+      "version": "1.3.0"
     }
   ],
   "gxVersion": "0.6.0",
@@ -19,6 +19,6 @@
   "license": "",
   "name": "mafmt",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "1.2.5"
+  "version": "1.2.7"
 }
 

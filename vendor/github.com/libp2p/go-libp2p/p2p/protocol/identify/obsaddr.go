@@ -4,11 +4,17 @@ import (
 	"sync"
 	"time"
 
+	net "github.com/libp2p/go-libp2p-net"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
 const ActivationThresh = 4
+
+type observation struct {
+	seenTime      time.Time
+	connDirection net.Direction
+}
 
 // ObservedAddr is an entry for an address reported by our peers.
 // We only use addresses that:
@@ -16,17 +22,16 @@ const ActivationThresh = 4
 // - have been observed at least once recently (1h), because our position in the
 //   network, or network port mapppings, may have changed.
 type ObservedAddr struct {
-	Addr      ma.Multiaddr
-	SeenBy    map[string]time.Time
-	LastSeen  time.Time
-	Activated bool
+	Addr     ma.Multiaddr
+	SeenBy   map[string]observation // peer(observer) address -> observation info
+	LastSeen time.Time
 }
 
-func (oa *ObservedAddr) TryActivate(ttl time.Duration) bool {
+func (oa *ObservedAddr) activated(ttl time.Duration) bool {
 	// cleanup SeenBy set
 	now := time.Now()
-	for k, t := range oa.SeenBy {
-		if now.Sub(t) > ttl*ActivationThresh {
+	for k, ob := range oa.SeenBy {
+		if now.Sub(ob.seenTime) > ttl*ActivationThresh {
 			delete(oa.SeenBy, k)
 		}
 	}
@@ -41,60 +46,75 @@ func (oa *ObservedAddr) TryActivate(ttl time.Duration) bool {
 type ObservedAddrSet struct {
 	sync.Mutex // guards whole datastruct.
 
-	addrs map[string]*ObservedAddr
+	// local(internal) address -> list of observed(external) addresses
+	addrs map[string][]*ObservedAddr
 	ttl   time.Duration
 }
 
-func (oas *ObservedAddrSet) Addrs() []ma.Multiaddr {
+// Addrs return all activated observed addresses
+func (oas *ObservedAddrSet) Addrs() (addrs []ma.Multiaddr) {
 	oas.Lock()
 	defer oas.Unlock()
 
 	// for zero-value.
-	if oas.addrs == nil {
+	if len(oas.addrs) == 0 {
 		return nil
 	}
 
 	now := time.Now()
-	addrs := make([]ma.Multiaddr, 0, len(oas.addrs))
-	for s, a := range oas.addrs {
-		// remove timed out addresses.
-		if now.Sub(a.LastSeen) > oas.ttl {
-			delete(oas.addrs, s)
-			continue
+	for local, observedAddrs := range oas.addrs {
+		filteredAddrs := make([]*ObservedAddr, 0, len(observedAddrs))
+		for _, a := range observedAddrs {
+			// leave only alive observed addresses
+			if now.Sub(a.LastSeen) <= oas.ttl {
+				filteredAddrs = append(filteredAddrs, a)
+				if a.activated(oas.ttl) {
+					addrs = append(addrs, a.Addr)
+				}
+			}
 		}
-
-		if a.Activated || a.TryActivate(oas.ttl) {
-			addrs = append(addrs, a.Addr)
-		}
+		oas.addrs[local] = filteredAddrs
 	}
 	return addrs
 }
 
-func (oas *ObservedAddrSet) Add(addr ma.Multiaddr, observer ma.Multiaddr) {
+func (oas *ObservedAddrSet) Add(observed, local, observer ma.Multiaddr,
+	direction net.Direction) {
+
 	oas.Lock()
 	defer oas.Unlock()
 
 	// for zero-value.
 	if oas.addrs == nil {
-		oas.addrs = make(map[string]*ObservedAddr)
+		oas.addrs = make(map[string][]*ObservedAddr)
 		oas.ttl = pstore.OwnObservedAddrTTL
 	}
 
-	s := addr.String()
-	oa, found := oas.addrs[s]
-
-	// first time seeing address.
-	if !found {
-		oa = &ObservedAddr{
-			Addr:   addr,
-			SeenBy: make(map[string]time.Time),
-		}
-		oas.addrs[s] = oa
+	now := time.Now()
+	observerString := observerGroup(observer)
+	localString := local.String()
+	ob := observation{
+		seenTime:      now,
+		connDirection: direction,
 	}
 
-	// mark the observer
-	oa.SeenBy[observerGroup(observer)] = time.Now()
-	oa.LastSeen = time.Now()
+	observedAddrs := oas.addrs[localString]
+	// check if observed address seen yet, if so, update it
+	for i, previousObserved := range observedAddrs {
+		if previousObserved.Addr.Equal(observed) {
+			observedAddrs[i].SeenBy[observerString] = ob
+			observedAddrs[i].LastSeen = now
+			return
+		}
+	}
+	// observed address not seen yet, append it
+	oas.addrs[localString] = append(oas.addrs[localString], &ObservedAddr{
+		Addr: observed,
+		SeenBy: map[string]observation{
+			observerString: ob,
+		},
+		LastSeen: now,
+	})
 }
 
 // observerGroup is a function that determines what part of
