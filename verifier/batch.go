@@ -1,4 +1,4 @@
-package vm
+package verifier
 
 import (
 	"time"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
 )
 
@@ -16,7 +17,7 @@ import (
 
 type Batcher interface {
 	Batch(bh *block.BlockHead, db database.IMultiValue, provider Provider, limit time.Duration, thread int) *Batch
-	Verify(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e Engine, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error
+	Verify(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error
 }
 
 type Batch struct {

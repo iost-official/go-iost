@@ -9,11 +9,20 @@ import (
 
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/native"
 )
 
 type Verifier struct {
+}
+
+func NewVerifier(db database.Visitor) *Verifier {
+	if db.Contract("iost.system") == nil {
+		db.SetContract(native.ABI())
+	}
+	return &Verifier{}
 }
 
 type Config struct {
@@ -31,7 +40,7 @@ type Info struct {
 
 //var ParallelMask int64 = 1 // 0000 0001
 
-func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter vm.TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
+func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
 	if blk.Txs == nil {
 		blk.Txs = make([]*tx.Tx, 0)
 	}
@@ -41,12 +50,12 @@ func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter vm.TxIter
 	var pi = NewProvider(iter)
 	switch c.Mode {
 	case 0:
-		e := vm.NewEngine(blk.Head, db)
+		e := &vm.Isolator{}
 		err = baseGen(blk, db, pi, e, c)
 		droplist, errs = pi.List()
 		return
 	case 1:
-		batcher := vm.NewBatcher()
+		batcher := NewBatcher()
 		err = batchGen(blk, db, pi, batcher, c)
 		droplist, errs = pi.List()
 		return
@@ -54,14 +63,23 @@ func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter vm.TxIter
 	return []*tx.Tx{}, []error{}, fmt.Errorf("mode unexpected: %v", c.Mode)
 }
 
-func baseGen(blk *block.Block, db database.IMultiValue, provider vm.Provider, engine vm.Engine, c *Config) (err error) {
+func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isolator *vm.Isolator, c *Config) (err error) {
 	info := Info{
 		Mode: 0,
 	}
-	tn := time.Now()
+	var tn time.Time
 	to := time.Now().Add(c.Timeout)
+
+	vi, _ := database.NewBatchVisitor(database.NewBatchVisitorRoot(100, db))
+	var l ilog.Logger
+	l.Stop()
+	isolator.Prepare(blk.Head, vi, &l)
+
 L:
 	for tn.Before(to) {
+		isolator.ClearTx()
+		tn = time.Now()
+
 		limit := to.Sub(tn)
 		if limit > c.TxTimeLimit {
 			limit = c.TxTimeLimit
@@ -70,8 +88,11 @@ L:
 		if t == nil {
 			break L
 		}
+
+		isolator.PrepareTx(t, limit)
+
 		var r *tx.TxReceipt
-		r, err = engine.Exec(t, limit)
+		r, err = isolator.Run()
 		if err != nil {
 			provider.Drop(t, err)
 			continue L
@@ -80,9 +101,14 @@ L:
 			provider.Return(t)
 			break L
 		}
+		err = isolator.PayCost()
+		if err != nil {
+			provider.Drop(t, err)
+			continue L
+		}
+		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)
-		tn = time.Now()
 	}
 	buf, err := json.Marshal(info)
 	blk.Head.Info = buf
@@ -92,7 +118,7 @@ L:
 	return err
 }
 
-func batchGen(blk *block.Block, db database.IMultiValue, provider vm.Provider, batcher vm.Batcher, c *Config) (err error) {
+func batchGen(blk *block.Block, db database.IMultiValue, provider Provider, batcher Batcher, c *Config) (err error) {
 	info := Info{
 		Mode:   1,
 		Thread: c.Thread,
@@ -133,24 +159,28 @@ func (v *Verifier) Verify(blk *block.Block, db database.IMultiValue, c *Config) 
 	}
 	switch info.Mode {
 	case 0:
-		e := vm.NewEngine(blk.Head, db)
+		e := vm.Isolator{}
+		vi, _ := database.NewBatchVisitor(database.NewBatchVisitorRoot(100, db))
+		var l ilog.Logger
+		l.Stop()
+		e.Prepare(blk.Head, vi, &l)
 		return baseVerify(e, c, blk.Txs, blk.Receipts)
 	case 1:
 		bs := batches(blk, info)
-		var batcher vm.Batcher
+		var batcher Batcher
 		return batchVerify(batcher, blk.Head, c, db, bs)
 	}
 	return nil
 }
 
-func batches(blk *block.Block, info Info) []*vm.Batch {
-	var rtn = make([]*vm.Batch, 0)
+func batches(blk *block.Block, info Info) []*Batch {
+	var rtn = make([]*Batch, 0)
 	var k = 0
 	for _, j := range info.Batch {
 		txs := blk.Txs[k:j]
 		rs := blk.Receipts[k:j]
 		k = j
-		rtn = append(rtn, &vm.Batch{
+		rtn = append(rtn, &Batch{
 			Txs:      txs,
 			Receipts: rs,
 		})
@@ -158,14 +188,18 @@ func batches(blk *block.Block, info Info) []*vm.Batch {
 	return rtn
 }
 
-func verify(e vm.Engine, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration) error {
+func verify(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration) error {
 	var to time.Duration
 	if r.Status.Code == tx.ErrorTimeout {
 		to = timeout / 2
 	} else {
 		to = timeout * 2
 	}
-	receipt, err := e.Exec(t, to)
+	err := e.PrepareTx(t, to)
+	if err != nil {
+		return err
+	}
+	receipt, err := e.Run()
 	if err != nil {
 		return err
 	}
@@ -177,7 +211,7 @@ func verify(e vm.Engine, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration) error
 	return nil
 }
 
-func baseVerify(engine vm.Engine, c *Config, txs []*tx.Tx, receipts []*tx.TxReceipt) error {
+func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxReceipt) error {
 	for k, t := range txs {
 		err := verify(engine, t, receipts[k], c.TxTimeLimit)
 		if err != nil {
@@ -187,9 +221,9 @@ func baseVerify(engine vm.Engine, c *Config, txs []*tx.Tx, receipts []*tx.TxRece
 	return nil
 }
 
-func batchVerify(verifier vm.Batcher, bh *block.BlockHead, c *Config, db database.IMultiValue, batches []*vm.Batch) error {
+func batchVerify(verifier Batcher, bh *block.BlockHead, c *Config, db database.IMultiValue, batches []*Batch) error {
 	for _, batch := range batches {
-		err := verifier.Verify(bh, db, func(e vm.Engine, t *tx.Tx, r *tx.TxReceipt) error {
+		err := verifier.Verify(bh, db, func(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt) error {
 			err := verify(e, t, r, c.TxTimeLimit)
 			if err != nil {
 				return err

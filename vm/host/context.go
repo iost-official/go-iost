@@ -65,6 +65,14 @@ func (c *Context) GSet(key string, value interface{}) {
 	cc.gValue[key] = value
 }
 
+func (c *Context) GClear() {
+	cc := c
+	for cc.base != nil {
+		cc = cc.base
+	}
+	cc.gValue = make(map[string]interface{})
+}
+
 // Base get base of context
 func (c *Context) Base() *Context {
 	return c.base

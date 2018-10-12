@@ -51,9 +51,7 @@ func SetUp(config *common.VMConfig) error {
 }
 
 type engineImpl struct {
-	ho *host.Host
-
-	jsPath      string
+	ho          *host.Host
 	publisherID string
 
 	logger        *ilog.Logger
@@ -213,13 +211,6 @@ func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 }
 func (e *engineImpl) GC() {
 	e.logger.Stop()
-}
-
-func checkTx(tx0 *tx.Tx) error {
-	if tx0.GasPrice < 0 || tx0.GasPrice > 10000 {
-		return errGasPriceIllegal
-	}
-	return nil
 }
 
 // nolint

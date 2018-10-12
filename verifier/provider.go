@@ -2,16 +2,15 @@ package verifier
 
 import (
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/vm"
 )
 
 type ProviderImpl struct {
 	cache    []*tx.Tx
-	iter     vm.TxIter
+	iter     TxIter
 	droplist map[*tx.Tx]error
 }
 
-func NewProvider(iter vm.TxIter) *ProviderImpl {
+func NewProvider(iter TxIter) *ProviderImpl {
 	return &ProviderImpl{
 		cache:    make([]*tx.Tx, 0),
 		droplist: make(map[*tx.Tx]error),
