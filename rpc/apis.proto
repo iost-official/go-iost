@@ -2,6 +2,7 @@ syntax = "proto3";
 package rpc;
 
 import "github.com/iost-official/go-iost/core/tx/tx.proto";
+import "github.com/iost-official/go-iost/core/contract/contract.proto";
 import "github.com/iost-official/go-iost/core/block/block.proto";
 import "github.com/iost-official/go-iost/core/event/event.proto";
 import "google/api/annotations.proto";
@@ -63,6 +64,12 @@ service Apis {
             get: "/getState/{key}"
         };
     }
+    // get contract by cid
+    rpc GetContract (GetContractReq) returns (GetContractRes) {
+        option (google.api.http) = {
+            get: "/getContract/{key}"
+        };
+    }
     // receive encoded tx
     rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {
         option (google.api.http) = {
@@ -119,6 +126,11 @@ message GetStateReq {
     string field = 2;
 }
 
+message GetContractReq {
+    //contract id
+    string key=1;
+}
+
 message RawTxReq {
     // the rawdata of a tx
     bytes data=1;
@@ -147,6 +159,11 @@ message GetNetIDRes {
 message GetStateRes {
     //the value of the corresponding key in the StateDB
     string value=1;
+}
+
+message GetContractRes {
+    //contract id
+    contract.Contract value=1;
 }
 
 message SendRawTxRes {

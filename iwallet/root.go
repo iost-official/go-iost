@@ -40,7 +40,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&dest, "dest", "d", "default", "Set destination of output file")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "Set server of this client")
-	rootCmd.PersistentFlags().BoolVarP(&checkResult, "checkResult", "c", true, "Check publish/call status after sending to chain")
+	rootCmd.PersistentFlags().BoolVarP(&checkResult, "checkResult", "", true, "Check publish/call status after sending to chain")
 	rootCmd.PersistentFlags().Float32VarP(&checkResultDelay, "checkResultDelay", "", 1, "RPC checking will occur at [checkResultDelay] seconds after sending to chain.")
 	rootCmd.PersistentFlags().Int32VarP(&checkResultMaxRetry, "checkResultMaxRetry", "", 60, "Max times to call grpc to check tx status")
 
