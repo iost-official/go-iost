@@ -215,7 +215,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		err = v.Verify(blk, stateDB, &verifier.Config{
 			Mode:        0,
 			Timeout:     common.SlotLength / 3 * time.Second,
-			TxTimeLimit: time.Millisecond,
+			TxTimeLimit: time.Millisecond * 100,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)

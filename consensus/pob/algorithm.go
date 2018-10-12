@@ -77,7 +77,7 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - st.Sub(time.Now()),
-		TxTimeLimit: time.Millisecond,
+		TxTimeLimit: time.Millisecond * 100,
 	})
 	if err != nil {
 		go txPool.DelTxList(dropList)
@@ -186,7 +186,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	return v.Verify(blk, db, &verifier.Config{
 		Mode:        0,
 		Timeout:     common.SlotLength / 3 * time.Second,
-		TxTimeLimit: time.Millisecond,
+		TxTimeLimit: time.Millisecond * 100,
 	})
 }
 

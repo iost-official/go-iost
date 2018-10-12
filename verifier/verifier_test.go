@@ -33,7 +33,7 @@ func initProvider(controller *Controller) vm.Provider {
 		index++
 		return txs[i]
 	})
-	return provider
+	return nil
 }
 
 func TestBase(t *testing.T) {
