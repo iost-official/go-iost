@@ -26,7 +26,7 @@ var (
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
-	txLimit        = 8000 //limit it to 2000
+	txLimit        = 80000 //limit it to 2000
 	txExecTime     = verifier.TxExecTimeLimit / 2
 )
 
@@ -108,7 +108,8 @@ L:
 	metricsGeneratedBlockCount.Add(1, nil)
 	metricsTxSize.Set(float64(len(blk.Txs)), nil)
 	go txPool.DelTxList(delList)
-	ilog.Info("[pob] generate Block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
+	ilog.Info("[pob] generate Block end, number: %v, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
+	ilog.Infof("[pob] block size: %v", len(blk.Txs))
 	return &blk, nil
 }
 

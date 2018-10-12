@@ -143,9 +143,9 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
 
 		cost, status, receipts, err := e.runAction(*action)
-		ilog.Debugf("run action : %v, result is %v", action, status.Code)
-		ilog.Debug("used cost > ", cost)
-		ilog.Debugf("status > \n%v\n", status)
+		//ilog.Debugf("run action : %v, result is %v", action, status.Code)
+		//ilog.Debug("used cost > ", cost)
+		//ilog.Debugf("status > \n%v\n", status)
 
 		if err != nil {
 			ilog.Error(err)
@@ -192,7 +192,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
 	e.ho.SetDeadline(time.Now().Add(limit))
 
-	ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
+	//ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
 	err := checkTx(tx0)
 	if err != nil {
 		ilog.Error(err)

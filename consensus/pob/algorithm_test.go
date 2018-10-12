@@ -58,13 +58,13 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	}
 	defer stateDB.Close()
 	vi := database.NewVisitor(0, stateDB)
-	vi.SetBalance(testID[0], 100000000)
+	vi.SetBalance(testID[0], 1000000000000)
 	vi.SetContract(native.ABI())
 	vi.Commit()
 	stateDB.Tag(string(topBlock.HeadHash()))
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
 	pendingTx := txpool.NewSortedTxMap()
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 20000; i++ {
 		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 		trx, _ := MakeTx(act)
 		pendingTx.Add(trx)
@@ -75,6 +75,7 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	for j := 0; j < b.N; j++ {
 		generateBlock(account, mockTxPool, stateDB)
 	}
+	b.StopTimer()
 }
 
 func TestConfirmNode(t *testing.T) {
