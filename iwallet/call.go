@@ -47,10 +47,10 @@ func checkTransaction(txHash []byte) {
 			continue
 		}
 		if tx.StatusCode(txReceipt.Status.Code) != tx.Success {
-			fmt.Println("send tx failed: ", txReceipt.Status.Message)
+			fmt.Println("exec tx failed: ", txReceipt.Status.Message)
 			fmt.Println("full error information: ", txReceipt)
 		} else {
-			fmt.Println("send tx done. gas used: ", txReceipt.GasUsage)
+			fmt.Println("exec tx done. gas used: ", txReceipt.GasUsage)
 			fmt.Println("The contract id is Contract" + saveBytes(txHash))
 		}
 		break
