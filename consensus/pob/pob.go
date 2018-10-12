@@ -8,6 +8,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -212,6 +213,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	}
 	switch vbm.p2pType {
 	case p2p.NewBlock:
+		ilog.Infof("[pob] received new block, number:%d, hash=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		ilog.Info("received new block, block number: ", blk.Head.Number)
 		timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 		if ok {
@@ -222,7 +224,9 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		} else {
 			p.blockReqMap.Store(string(blk.HeadHash()), nil)
 		}
+		ilog.Infof("[pob] handle recv new block start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		err := p.handleRecvBlock(blk)
+		ilog.Infof("[pob] handle recv new block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		p.broadcastBlockHash(blk) // can use go
 		p.blockReqMap.Delete(string(blk.HeadHash()))
 		if err != nil {
@@ -244,6 +248,7 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
+			ilog.Infof("[pob] verify block chan size:%v", len(p.chVerifyBlock))
 			p.doVerifyBlock(vbm)
 		case <-p.exitSignal:
 			return
@@ -320,9 +325,12 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	if err != nil {
 		return err
 	}
+	ilog.Infof("[pob] verifyBasics end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
+	ilog.Infof("[pob] add into blockCache end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	if err == nil && parent.Type == blockcache.Linked {
+		ilog.Infof("[pob] add ExistingBlock start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		return p.addExistingBlock(blk, parent.Block)
 	}
 	return errSingle
@@ -331,9 +339,13 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
+	ilog.Infof("[pob] verifyDB checkout end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
+		ilog.Infof("[pob] verifyDB checkout parentHash end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
+		ilog.Infof("[pob] verify block start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
+		ilog.Infof("[pob] verify block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		if err != nil {
 			ilog.Errorf("verify block failed. err=%v", err)
 			p.blockCache.Del(node)
@@ -341,17 +353,22 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
+	ilog.Infof("[pob] addLinkedNode start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	h := p.blockCache.Head()
 	if node.Number > h.Number {
 		p.txPool.AddLinkedNode(node, node)
 	} else {
 		p.txPool.AddLinkedNode(node, h)
 	}
+	ilog.Infof("[pob] addLinkedNode end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	p.blockCache.Link(node)
+	ilog.Infof("[pob] updateInfo start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	p.updateInfo(node)
+	ilog.Infof("[pob] updateInfo end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block)
 	}
+	ilog.Infof("[pob] addExistingBlock end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	return nil
 }
 

@@ -51,6 +51,7 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 
 //VerifyBlockWithVM verifies the block with VM.
 func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
+	ilog.Infof("[pob] verifyBlockWithVM start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	engine := vm.NewEngine(blk.Head, db)
 	for k, t := range blk.Txs {
 		et := TxExecTimeLimit
@@ -66,5 +67,6 @@ func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 			return errTxReceipt
 		}
 	}
+	ilog.Infof("[pob] verifyBlockWithVM end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	return nil
 }
