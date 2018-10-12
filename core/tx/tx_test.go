@@ -44,7 +44,7 @@ func TestTx(t *testing.T) {
 			ActionName: "actionname2",
 			Data:       "1",
 		})
-		// seckey := verifier.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
+		// seckey := cverifier.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 		// acc, err := account.NewAccount(seckey)
 		// So(err, ShouldEqual, nil)
 

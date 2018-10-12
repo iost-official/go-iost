@@ -9,12 +9,12 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/verifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/native"
 )
@@ -211,7 +211,12 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
 		}
-		err = verifier.VerifyBlockWithVM(blk, stateDB)
+		v := verifier.Verifier{}
+		err = v.Verify(blk, stateDB, &verifier.Config{
+			Mode:        0,
+			Timeout:     common.SlotLength / 3 * time.Second,
+			TxTimeLimit: time.Millisecond,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
 		}

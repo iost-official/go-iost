@@ -9,7 +9,7 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/verifier"
+	"github.com/iost-official/go-iost/consensus/cverifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
@@ -17,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm"
 )
 
@@ -28,13 +29,14 @@ var (
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
 	txLimit        = 2000 //limit it to 2000
-	txExecTime     = verifier.TxExecTimeLimit / 2
+	txExecTime     = cverifier.TxExecTimeLimit / 2
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 
 	ilog.Info("generate Block start")
-	limitTime := time.NewTimer(common.SlotLength / 3 * time.Second)
+	st := time.Now()
+	limitTime := common.SlotLength / 3 * time.Second
 	txIter, head := txPool.TxIterator()
 	topBlock := head.Block
 	blk := block.Block{
@@ -71,44 +73,52 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		blk.Txs = append(blk.Txs, trx)
 		blk.Receipts = append(blk.Receipts, receipt)
 	}
-	t, ok := txIter.Next()
-	delList := []*tx.Tx{}
-	var vmExecTime, iterTime, i, j int64
-L:
-	for ok {
-		select {
-		case <-limitTime.C:
-			ilog.Info("time up")
-			break L
-		default:
-			i++
-			step1 := time.Now()
-			if !txPool.TxTimeOut(t) {
-				j++
-				if receipt, err := engine.Exec(t, txExecTime); err == nil {
-					blk.Txs = append(blk.Txs, t)
-					blk.Receipts = append(blk.Receipts, receipt)
-				} else {
-					ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
-					delList = append(delList, t)
-				}
-			} else {
-				delList = append(delList, t)
-			}
-			if len(blk.Txs) >= txLimit {
-				break L
-			}
-			step2 := time.Now()
-			t, ok = txIter.Next()
-			step3 := time.Now()
-			vmExecTime += step2.Sub(step1).Nanoseconds()
-			iterTime += step3.Sub(step2).Nanoseconds()
-		}
+	v := verifier.Verifier{}
+	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
+		Mode:        0,
+		Timeout:     limitTime - st.Sub(time.Now()),
+		TxTimeLimit: time.Millisecond,
+	})
+	if err != nil {
+		go txPool.DelTxList(dropList)
 	}
+	//t, ok := txIter.Next()
+	//	var vmExecTime, iterTime, i, j int64
+	//L:
+	//	for ok {
+	//		select {
+	//		case <-limitTime.C:
+	//			ilog.Info("time up")
+	//			break L
+	//		default:
+	//			i++
+	//			step1 := time.Now()
+	//			if !txPool.TxTimeOut(t) {
+	//				j++
+	//				if receipt, err := engine.Exec(t, txExecTime); err == nil {
+	//					blk.Txs = append(blk.Txs, t)
+	//					blk.Receipts = append(blk.Receipts, receipt)
+	//				} else {
+	//					ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
+	//					delList = append(delList, t)
+	//				}
+	//			} else {
+	//				delList = append(delList, t)
+	//			}
+	//			if len(blk.Txs) >= txLimit {
+	//				break L
+	//			}
+	//			step2 := time.Now()
+	//			t, ok = txIter.Next()
+	//			step3 := time.Now()
+	//			vmExecTime += step2.Sub(step1).Nanoseconds()
+	//			iterTime += step3.Sub(step2).Nanoseconds()
+	//		}
+	//	}
 
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
-	err := blk.CalculateHeadHash()
+	err = blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +127,6 @@ L:
 
 	metricsGeneratedBlockCount.Add(1, nil)
 	metricsTxSize.Set(float64(len(blk.Txs)), nil)
-	go txPool.DelTxList(delList)
 	return &blk, nil
 }
 
@@ -135,7 +144,7 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 }
 
 func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB) error {
-	err := verifier.VerifyBlockHead(blk, parent, lib)
+	err := cverifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
 	}
@@ -173,7 +182,12 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 			return errTxTooOld
 		}
 	}
-	return verifier.VerifyBlockWithVM(blk, db)
+	v := verifier.Verifier{}
+	return v.Verify(blk, db, &verifier.Config{
+		Mode:        0,
+		Timeout:     common.SlotLength / 3 * time.Second,
+		TxTimeLimit: time.Millisecond,
+	})
 }
 
 func updateWaterMark(node *blockcache.BlockCacheNode) {

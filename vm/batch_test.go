@@ -31,9 +31,10 @@ func TestResolve(t *testing.T) {
 
 	i, o := Resolve(maps)
 	convey.Convey("test of resolve", t, func() {
-		//convey.So(i, convey.ShouldEqual, []int{0,1,2,3,4,5,6,7,8,9})
+		convey.So(i, convey.ShouldContain, 0)
+		convey.So(i, convey.ShouldContain, 1)
+		convey.So(o, convey.ShouldContain, 3)
 	})
-	t.Log(i, o)
 }
 
 func BenchmarkResolve(b *testing.B) {

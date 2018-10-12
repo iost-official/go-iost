@@ -25,7 +25,11 @@ func (p *ProviderImpl) Tx() *tx.Tx {
 		p.cache = p.cache[:len(p.cache)-1]
 		return t
 	}
-	return p.iter.Next()
+	t, ok := p.iter.Next()
+	if !ok {
+		return nil
+	}
+	return t
 }
 func (p *ProviderImpl) Return(t *tx.Tx) {
 	p.cache = append(p.cache, t)
