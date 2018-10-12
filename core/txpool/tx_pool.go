@@ -114,14 +114,15 @@ func (pool *TxPImpl) verifyWorkers() {
 		if err != nil {
 			continue
 		}
-		ret := pool.verifyTx(&t)
+		ret := pool.verifyDuplicate(&t)
 		if ret != Success {
 			continue
 		}
-		ret = pool.addTx(&t)
+		ret = pool.verifyTx(&t)
 		if ret != Success {
 			continue
 		}
+		pool.pendingTx.Add(&t)
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
 		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage)
 	}
@@ -214,14 +215,15 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, newHea
 
 // AddTx add the transaction
 func (pool *TxPImpl) AddTx(t *tx.Tx) TAddTx {
-	ret := pool.verifyTx(t)
+	ret := pool.verifyDuplicate(t)
 	if ret != Success {
 		return ret
 	}
-	ret = pool.addTx(t)
+	ret = pool.verifyTx(t)
 	if ret != Success {
 		return ret
 	}
+	pool.pendingTx.Add(t)
 	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return ret
@@ -362,14 +364,13 @@ func (pool *TxPImpl) clearBlock() {
 	})
 }
 
-func (pool *TxPImpl) addTx(tx *tx.Tx) TAddTx {
-	if pool.existTxInPending(tx.Hash()) {
+func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) TAddTx {
+	if pool.existTxInPending(t.Hash()) {
 		return DupError
 	}
-	if pool.existTxInChain(tx.Hash(), pool.forkChain.NewHead.Block) {
+	if pool.existTxInChain(t.Hash(), pool.forkChain.NewHead.Block) {
 		return DupError
 	}
-	pool.pendingTx.Add(tx)
 	return Success
 }
 
