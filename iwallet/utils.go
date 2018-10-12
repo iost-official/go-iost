@@ -1,6 +1,10 @@
 package iwallet
 
 import (
+	"context"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/rpc"
+	"google.golang.org/grpc"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -59,4 +63,19 @@ func getSignAlgo(algo string) crypto.Algorithm {
 	default:
 		return crypto.Ed25519
 	}
+}
+
+func getTxReceiptByTxHash(server string, txHashStr string) (*tx.TxReceiptRaw, error) {
+	conn, err := grpc.Dial(server, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := rpc.NewApisClient(conn)
+	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpc.HashReq{Hash: txHashStr})
+	if err != nil {
+		return nil, err
+	}
+	//ilog.Debugf("getTxReceiptByTxHash(%v): %v", txHashStr, resp.TxReceiptRaw)
+	return resp.TxReceiptRaw, nil
 }

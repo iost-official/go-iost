@@ -108,6 +108,9 @@ var publishCmd = &cobra.Command{
 		}
 		fmt.Println("iost node:receive your tx!")
 		fmt.Println("the transaction hash is:", saveBytes(txHash))
+		if checkResult {
+			checkTransaction(txHash)
+		}
 	},
 }
 
