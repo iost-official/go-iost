@@ -344,7 +344,9 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		ilog.Infof("[pob] verifyDB checkout parentHash end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		ilog.Infof("[pob] verify block start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
+		p.txPool.Lock()
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
+		p.txPool.Release()
 		ilog.Infof("[pob] verify block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		if err != nil {
 			ilog.Errorf("verify block failed. err=%v", err)

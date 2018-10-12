@@ -68,6 +68,7 @@ func BenchmarkNative_Transfer(b *testing.B) { // 21400 ns/op
 }
 
 func BenchmarkNative_Transfer_LRU(b *testing.B) { // 15300 ns/op
+	ilog.Stop()
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
 		panic(err)
