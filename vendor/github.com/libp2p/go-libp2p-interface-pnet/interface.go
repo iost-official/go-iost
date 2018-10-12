@@ -1,9 +1,8 @@
 package ipnet
 
 import (
+	"net"
 	"os"
-
-	tconn "github.com/libp2p/go-libp2p-transport"
 )
 
 // EnvKey defines environment variable name for forcing usage of PNet in libp2p
@@ -23,7 +22,7 @@ func init() {
 }
 
 // ErrNotInPrivateNetwork is an error that should be returned by libp2p when it
-// tries to dial witt ForcePrivateNetwork set and no PNet Protector
+// tries to dial with ForcePrivateNetwork set and no PNet Protector
 var ErrNotInPrivateNetwork = NewError("private network was not configured but" +
 	" is enforced by the environment")
 
@@ -32,7 +31,7 @@ var ErrNotInPrivateNetwork = NewError("private network was not configured but" +
 // so they can be only established with selected number of peers.
 type Protector interface {
 	// Wraps passed connection to protect it
-	Protect(tconn.Conn) (tconn.Conn, error)
+	Protect(net.Conn) (net.Conn, error)
 
 	// Returns key fingerprint that is safe to expose
 	Fingerprint() []byte

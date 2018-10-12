@@ -1,6 +1,7 @@
 package global
 
 import (
+	"github.com/iost-official/go-iost/common"
 	"os"
 	"testing"
 
@@ -35,7 +36,7 @@ func TestGenGenesis(t *testing.T) {
 		"13600000000",
 		"IOSTCJqjtLBntuWRGaZumevYgBEZsU8AaAdUpEMnpGieKV676B9St",
 		"13700000000",
-	})
+	}, common.Timestamp{})
 	if err != nil {
 		t.Fatal(err)
 	}

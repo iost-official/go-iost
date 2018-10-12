@@ -128,7 +128,7 @@ func (sw *sweeper) update() {
 			// Remove the snapshot total, it'll get added back on
 			// registration.
 			//
-			// `^uint64(total - 1)` is the two's compliment of
+			// `^uint64(total - 1)` is the two's complement of
 			// `total`. It's the "correct" way to subtract
 			// atomically in go.
 			atomic.AddUint64(&m.accumulator, ^uint64(m.snapshot.Total-1))

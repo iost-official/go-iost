@@ -8,32 +8,32 @@
   },
   "gxDependencies": [
     {
-      "hash": "QmTG23dvpBCBjqQwyDxV8CQT6jmS4PSftNr1VqHhE3MLy7",
+      "hash": "QmZChCsSt8DctjceaL56Eibc29CVQq4dGKRXC5JRZ6Ppae",
       "name": "go-log",
-      "version": "1.4.1"
+      "version": "1.5.7"
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmcJukH2sAFjY3HdBKq35WDzWoL3UUu2gt9wdfqZTUyM74",
+      "hash": "QmbNepETomvmXfz1X5pHNFD2QuPqnqi47dTd94QJWSorQ3",
       "name": "go-libp2p-peer",
-      "version": "2.3.2"
+      "version": "2.3.8"
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmdeiKhUy1TVGBaKxt7y1QmBDLBdisSrLJ1x58Eoj4PXUh",
+      "hash": "QmWtCpWB39Rzc2xTB75MKorsxNpo3TyecTEN24CJ3KVohE",
       "name": "go-libp2p-peerstore",
-      "version": "1.4.17"
+      "version": "2.0.4"
     },
     {
-      "hash": "QmUJzxQQ2kzwQubsMqBTr1NGDpLfh7pGA2E1oaJULcKDPq",
+      "hash": "QmNfQbgBfARAtrYsBguChX6VJ5nbjeoYy1KdC36aaYWqG8",
       "name": "go-testutil",
-      "version": "1.2.1"
+      "version": "1.2.8"
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmNiJuT8Ja3hMVpBHXv3Q6dwmperaQ6JjLtpMQgMCD7xvx",
+      "hash": "QmPdKqUcHGFdeSpvjVoaTRPPstGif9GBZb5Q56RVw9o69A",
       "name": "go-ipfs-util",
-      "version": "1.2.7"
+      "version": "1.2.8"
     }
   ],
   "gxVersion": "0.4.0",
@@ -41,6 +41,6 @@
   "license": "MIT",
   "name": "go-libp2p-kbucket",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "2.1.18"
+  "version": "2.2.11"
 }
 

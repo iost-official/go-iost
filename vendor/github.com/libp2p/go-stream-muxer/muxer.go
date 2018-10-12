@@ -1,10 +1,14 @@
 package streammux
 
 import (
+	"errors"
 	"io"
 	"net"
 	"time"
 )
+
+// ErrReset is returned when reading or writing on a reset stream.
+var ErrReset = errors.New("stream reset")
 
 // Stream is a bidirectional io pipe within a connection.
 type Stream interface {

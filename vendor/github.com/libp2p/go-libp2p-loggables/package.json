@@ -9,27 +9,27 @@
   "gxDependencies": [
     {
       "author": "whyrusleeping",
-      "hash": "QmcJukH2sAFjY3HdBKq35WDzWoL3UUu2gt9wdfqZTUyM74",
+      "hash": "QmbNepETomvmXfz1X5pHNFD2QuPqnqi47dTd94QJWSorQ3",
       "name": "go-libp2p-peer",
-      "version": "2.3.2"
+      "version": "2.3.8"
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmTG23dvpBCBjqQwyDxV8CQT6jmS4PSftNr1VqHhE3MLy7",
+      "hash": "QmZChCsSt8DctjceaL56Eibc29CVQq4dGKRXC5JRZ6Ppae",
       "name": "go-log",
-      "version": "1.4.1"
+      "version": "1.5.7"
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmWWQ2Txc2c6tqjsBpzg5Ar652cHPGNsQQp2SejkNmkUMb",
+      "hash": "QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7",
       "name": "go-multiaddr",
-      "version": "1.2.6"
+      "version": "1.3.0"
     },
     {
-      "author": "satori",
-      "hash": "QmcBWojPoNh4qm7zvv4qiepvCnnc7ALS9qcp7TNwwxT1gT",
-      "name": "go.uuid",
-      "version": "1.1.0"
+      "author": "google",
+      "hash": "QmSSeQqc5QeuefkaM6JFV5tSF9knLUkXKVhW1eYRiqe72W",
+      "name": "uuid",
+      "version": "0.1.0"
     }
   ],
   "gxVersion": "0.4.0",
@@ -37,6 +37,6 @@
   "license": "MIT",
   "name": "go-libp2p-loggables",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "1.1.14"
+  "version": "1.1.22"
 }
 

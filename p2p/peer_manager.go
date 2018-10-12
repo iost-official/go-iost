@@ -11,6 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
+	p2pb "github.com/iost-official/go-iost/p2p/pb"
+
 	host "github.com/libp2p/go-libp2p-host"
 	kbucket "github.com/libp2p/go-libp2p-kbucket"
 	libnet "github.com/libp2p/go-libp2p-net"
@@ -18,10 +22,6 @@ import (
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/uber-go/atomic"
-
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/ilog"
-	p2pb "github.com/iost-official/go-iost/p2p/pb"
 )
 
 var (
@@ -571,7 +571,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
-	if msg.messageType() != PublishTxRequest {
+	if msg.messageType() != PublishTx {
 		ilog.Infof("receiving message. type=%s, pid=%s", msg.messageType(), peerID.Pretty())
 	}
 	switch msg.messageType() {

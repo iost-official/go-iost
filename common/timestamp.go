@@ -1,6 +1,9 @@
 package common
 
-import "time"
+import (
+	"github.com/iost-official/go-iost/ilog"
+	"time"
+)
 
 const (
 	// SlotLength interval of generate block
@@ -70,4 +73,14 @@ func (t *Timestamp) After(t2 Timestamp) bool {
 		return true
 	}
 	return false
+}
+
+// ParseStringToTimestamp from time string to Timestamp
+func ParseStringToTimestamp(s string) (Timestamp, error) {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		ilog.Errorf("time parse error: %v", err)
+		return Timestamp{0}, err
+	}
+	return GetTimestamp(t.Unix()), err
 }
