@@ -8,8 +8,8 @@ type WriteCache struct {
 type Mode int
 
 const (
-	Default Mode = iota
-	Delete
+	Default Mode = 0
+	Delete  Mode = 1
 )
 
 type Record struct {
@@ -26,6 +26,9 @@ func NewWriteCache(db database) *WriteCache {
 
 func (w *WriteCache) Get(key string) (value string) {
 	if v, ok := w.m[key]; ok {
+		if v.mode == Delete {
+			return "n"
+		}
 		return v.value
 	} else {
 		return w.db.Get(key)
@@ -47,7 +50,7 @@ func (w *WriteCache) Has(key string) bool {
 func (w *WriteCache) Del(key string) {
 	w.m[key] = &Record{
 		value: "",
-		mode:  Default,
+		mode:  Delete,
 	}
 }
 func (w *WriteCache) Flush() {

@@ -230,7 +230,7 @@ func TestEngine_Storage(t *testing.T) {
 		t.Fatalf("LoadAndCall mhas run error: %v\n", err)
 	}
 	if len(rs) != 1 || rs[0].(string) != "false" {
-		t.Fatalf("LoadAndCall except true, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except false, got %s\n", rs[0])
 	}
 }
 

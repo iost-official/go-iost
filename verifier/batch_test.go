@@ -4,6 +4,8 @@ import (
 	"sync"
 	"testing"
 
+	"time"
+
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/smartystreets/goconvey/convey"
 )
@@ -16,6 +18,7 @@ func TestArray(t *testing.T) {
 		go func() {
 			w.Add(1)
 			defer w.Done()
+			time.Sleep(time.Millisecond)
 			m[i2] = i2
 		}()
 	}
