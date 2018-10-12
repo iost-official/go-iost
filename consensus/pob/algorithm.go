@@ -170,7 +170,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	}
 
 	for _, tx := range blk.Txs {
-		exist, _ := txPool.ExistTxs(tx.Hash(), parent)
+		exist := txPool.ExistTxs(tx.Hash(), parent)
 		if exist == txpool.FoundChain {
 			return errTxDup
 		} else if exist != txpool.FoundPending {
