@@ -39,18 +39,19 @@ func checkTransaction(txHash []byte) {
 		time.Sleep(time.Duration(checkResultDelay*1000) * time.Millisecond)
 		txReceipt, err := getTxReceiptByTxHash(server, saveBytes(txHash))
 		if err != nil {
-			fmt.Printf("cannot get txReceipt. %v", err)
+			fmt.Println("result not ready, please wait. Details: ", err)
 			continue
 		}
 		if txReceipt == nil {
-			fmt.Println("the TxReceipt is empty. please wait...")
+			fmt.Println("result not ready, please wait.")
 			continue
 		}
 		if tx.StatusCode(txReceipt.Status.Code) != tx.Success {
-			fmt.Println("send tx failed: ", txReceipt.Status.Message)
+			fmt.Println("exec tx failed: ", txReceipt.Status.Message)
 			fmt.Println("full error information: ", txReceipt)
 		} else {
-			fmt.Println("send tx done. gas used: ", txReceipt.GasUsage)
+			fmt.Println("exec tx done. gas used: ", txReceipt.GasUsage)
+			fmt.Println("The contract id is Contract" + saveBytes(txHash))
 		}
 		break
 	}
