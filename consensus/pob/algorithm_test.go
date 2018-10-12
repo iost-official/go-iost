@@ -71,6 +71,8 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	}
 	mockTxPool.EXPECT().TxIterator().Return(pendingTx.Iter(), &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
 	mockTxPool.EXPECT().TxTimeOut(gomock.Any()).Return(false).AnyTimes()
+	mockTxPool.EXPECT().DelTxList(gomock.Any()).AnyTimes()
+
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
 		generateBlock(account, mockTxPool, stateDB)
