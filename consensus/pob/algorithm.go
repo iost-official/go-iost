@@ -18,7 +18,6 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/verifier"
-	"github.com/iost-official/go-iost/vm"
 )
 
 var (
@@ -51,9 +50,9 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		Receipts: []*tx.TxReceipt{},
 	}
 	db.Checkout(string(topBlock.HeadHash()))
-	engine := vm.NewEngine(blk.Head, db)
 
 	// call vote
+	v := verifier.Verifier{}
 	if blk.Head.Number%common.VoteInterval == 0 {
 		ilog.Info("vote start")
 		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
@@ -63,7 +62,7 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		if err != nil {
 			ilog.Errorf("fail to signTx, err:%v", err)
 		}
-		receipt, err := engine.Exec(trx, txExecTime)
+		receipt, err := v.Exec(blk.Head, db, trx, time.Millisecond*100)
 		if err != nil {
 			ilog.Errorf("fail to exec trx, err:%v", err)
 		}
@@ -73,7 +72,6 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		blk.Txs = append(blk.Txs, trx)
 		blk.Receipts = append(blk.Receipts, receipt)
 	}
-	v := verifier.Verifier{}
 	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - st.Sub(time.Now()),

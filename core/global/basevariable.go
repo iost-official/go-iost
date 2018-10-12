@@ -121,8 +121,8 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string, t common.Timestamp) (*block.
 		Witness:    acc.ID,
 		Time:       t.Slot,
 	}
-	engine := vm.NewEngine(&blockHead, db)
-	txr, err := engine.Exec(trx, GenesisTxExecTime)
+	v := verifier.Verifier{}
+	txr, err := v.Exec(&blockHead, db, trx, time.Millisecond*100)
 	if err != nil || txr.Status.Code != tx.Success {
 		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: %v", err, txr)
 	}

@@ -88,7 +88,7 @@ func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isola
 	var tn time.Time
 	to := time.Now().Add(c.Timeout)
 
-	vi := database.NewVisitor(100, db
+	vi := database.NewVisitor(100, db)
 	var l ilog.Logger
 	l.Stop()
 	isolator.Prepare(blk.Head, vi, &l)
