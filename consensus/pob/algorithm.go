@@ -26,12 +26,12 @@ var (
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
-	txLimit        = 2000 //limit it to 2000
+	txLimit        = 8000 //limit it to 2000
 	txExecTime     = verifier.TxExecTimeLimit / 2
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
-	ilog.Info("generate Block start")
+	ilog.Info("[pob] generate Block start")
 	limitTime := time.NewTimer(common.SlotLength / 3 * time.Second)
 	txIter, head := txPool.TxIterator()
 	topBlock := head.Block
@@ -108,6 +108,7 @@ L:
 	metricsGeneratedBlockCount.Add(1, nil)
 	metricsTxSize.Set(float64(len(blk.Txs)), nil)
 	go txPool.DelTxList(delList)
+	ilog.Info("[pob] generate Block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	return &blk, nil
 }
 
