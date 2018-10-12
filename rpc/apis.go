@@ -83,6 +83,14 @@ func (s *GRPCServer) Stop() {
 	return
 }
 
+// GetVersionInfo return the version info
+func (s *GRPCServer) GetVersionInfo(ctx context.Context, empty *empty.Empty) (*VersionInfoRes, error) {
+	return &VersionInfoRes{
+		BuildTime: global.BUILD_TIME,
+		GitHash: global.GIT_HASH,
+	}, nil
+}
+
 // GetHeight get current block height
 func (s *GRPCServer) GetHeight(ctx context.Context, empty *empty.Empty) (*HeightRes, error) {
 	return &HeightRes{

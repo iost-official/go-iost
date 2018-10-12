@@ -10,6 +10,12 @@ import "google/protobuf/Empty.proto";
 
 // rpc apis
 service Apis {
+    // get the version info
+    rpc GetVersionInfo (google.protobuf.Empty) returns (VersionInfoRes) {
+        option (google.api.http) = {
+            get: "/getVersionInfo"
+        };
+    }
     // get the current height of the blockchain
     rpc GetHeight (google.protobuf.Empty) returns (HeightRes) {
         option (google.api.http) = {
@@ -139,6 +145,12 @@ message RawTxReq {
 message SubscribeReq {
     //type of event:0-TransactionResult,1-ContractEvent,2-ContractUserEvent,3-ContractSystemEvent
     repeated event.Event.Topic topics=1;
+}
+
+message VersionInfoRes {
+    // build time and git hash
+    string buildTime=1;
+    string gitHash=2;
 }
 
 message HeightRes {

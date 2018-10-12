@@ -316,6 +316,23 @@
         ]
       }
     },
+    "/getVersionInfo": {
+      "get": {
+        "summary": "get the version info",
+        "operationId": "GetVersionInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcVersionInfoRes"
+            }
+          }
+        },
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
     "/sendRawTx": {
       "post": {
         "summary": "receive encoded tx",
@@ -661,6 +678,18 @@
         "ev": {
           "$ref": "#/definitions/eventEvent",
           "title": "event"
+        }
+      }
+    },
+    "rpcVersionInfoRes": {
+      "type": "object",
+      "properties": {
+        "buildTime": {
+          "type": "string",
+          "title": "build time and git hash"
+        },
+        "gitHash": {
+          "type": "string"
         }
       }
     },
