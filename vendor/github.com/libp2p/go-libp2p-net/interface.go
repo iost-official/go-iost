@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/jbenet/goprocess"
-	iconn "github.com/libp2p/go-libp2p-interface-conn"
+	ic "github.com/libp2p/go-libp2p-crypto"
 	peer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	protocol "github.com/libp2p/go-libp2p-protocol"
@@ -29,26 +29,81 @@ type Stream interface {
 	Protocol() protocol.ID
 	SetProtocol(protocol.ID)
 
+	// Stat returns metadata pertaining to this stream.
+	Stat() Stat
+
 	// Conn returns the connection this stream is part of.
 	Conn() Conn
+}
+
+// Direction represents which peer in a stream initiated a connection.
+type Direction int
+
+const (
+	// DirUnknown is the default direction.
+	DirUnknown Direction = iota
+	// DirInbound is for when the remote peer initiated a connection.
+	DirInbound
+	// DirOutbound is for when the local peer initiated a connection.
+	DirOutbound
+)
+
+// Stat stores metadata pertaining to a given Stream/Conn.
+type Stat struct {
+	Direction Direction
+	Extra     map[interface{}]interface{}
 }
 
 // StreamHandler is the type of function used to listen for
 // streams opened by the remote side.
 type StreamHandler func(Stream)
 
+// ConnSecurity is the interface that one can mix into a connection interface to
+// give it the security methods.
+type ConnSecurity interface {
+	// LocalPeer returns our peer ID
+	LocalPeer() peer.ID
+
+	// LocalPrivateKey returns our private key
+	LocalPrivateKey() ic.PrivKey
+
+	// RemotePeer returns the peer ID of the remote peer.
+	RemotePeer() peer.ID
+
+	// RemotePublicKey returns the public key of the remote peer.
+	RemotePublicKey() ic.PubKey
+}
+
+// ConnMultiaddrs is an interface mixin for connection types that provide multiaddr
+// addresses for the endpoints.
+type ConnMultiaddrs interface {
+	// LocalMultiaddr returns the local Multiaddr associated
+	// with this connection
+	LocalMultiaddr() ma.Multiaddr
+
+	// RemoteMultiaddr returns the remote Multiaddr associated
+	// with this connection
+	RemoteMultiaddr() ma.Multiaddr
+}
+
 // Conn is a connection to a remote peer. It multiplexes streams.
 // Usually there is no need to use a Conn directly, but it may
 // be useful to get information about the peer on the other side:
 //  stream.Conn().RemotePeer()
 type Conn interface {
-	iconn.PeerConn
+	io.Closer
+
+	ConnSecurity
+	ConnMultiaddrs
 
 	// NewStream constructs a new Stream over this conn.
 	NewStream() (Stream, error)
 
 	// GetStreams returns all open streams over this conn.
-	GetStreams() ([]Stream, error)
+	GetStreams() []Stream
+
+	// Stat stores metadata pertaining to this conn.
+	Stat() Stat
 }
 
 // ConnHandler is the type of function used to listen for

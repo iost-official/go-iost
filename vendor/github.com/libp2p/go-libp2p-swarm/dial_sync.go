@@ -7,8 +7,10 @@ import (
 	peer "github.com/libp2p/go-libp2p-peer"
 )
 
+// DialFunc is the type of function expected by DialSync.
 type DialFunc func(context.Context, peer.ID) (*Conn, error)
 
+// NewDialSync constructs a new DialSync
 func NewDialSync(dfn DialFunc) *DialSync {
 	return &DialSync{
 		dials:    make(map[peer.ID]*activeDial),
@@ -16,6 +18,8 @@ func NewDialSync(dfn DialFunc) *DialSync {
 	}
 }
 
+// DialSync is a dial synchronization helper that ensures that at most one dial
+// to any given peer is active at any given time.
 type DialSync struct {
 	dials    map[peer.ID]*activeDial
 	dialsLk  sync.Mutex
@@ -35,11 +39,11 @@ type activeDial struct {
 	ds *DialSync
 }
 
-func (dr *activeDial) wait(ctx context.Context) (*Conn, error) {
-	defer dr.decref()
+func (ad *activeDial) wait(ctx context.Context) (*Conn, error) {
+	defer ad.decref()
 	select {
-	case <-dr.waitch:
-		return dr.conn, dr.err
+	case <-ad.waitch:
+		return ad.conn, ad.err
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
@@ -102,6 +106,17 @@ func (ds *DialSync) getActiveDial(p peer.ID) *activeDial {
 	return actd
 }
 
+// DialLock initiates a dial to the given peer if there are none in progress
+// then waits for the dial to that peer to complete.
 func (ds *DialSync) DialLock(ctx context.Context, p peer.ID) (*Conn, error) {
 	return ds.getActiveDial(p).wait(ctx)
+}
+
+// CancelDial cancels all in-progress dials to the given peer.
+func (ds *DialSync) CancelDial(p peer.ID) {
+	ds.dialsLk.Lock()
+	defer ds.dialsLk.Unlock()
+	if ad, ok := ds.dials[p]; ok {
+		ad.cancel()
+	}
 }
