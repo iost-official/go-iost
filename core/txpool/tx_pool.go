@@ -15,7 +15,6 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
 
@@ -107,8 +106,6 @@ func (pool *TxPImpl) Release() {
 
 func (pool *TxPImpl) verifyWorkers() {
 	for v := range pool.chP2PTx {
-		ilog.Infof("[pob] chP2PTx chan size:%v", len(pool.chP2PTx))
-
 		select {
 		case <-pool.quitGenerateMode:
 		}
