@@ -9,6 +9,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
 )
@@ -71,14 +72,20 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 		go func() {
 			vi, mapper := database.NewBatchVisitor(bvr)
 
-			e := newEngine(bh, vi)
+			e := vm.Isolator{}
+			err := e.Prepare(bh, vi, &ilog.Logger{})
+			if err != nil {
+				return
+			}
 
 			m.wait.Add(1)
 			defer m.wait.Done()
 
 			// todo setup engine=
 
-			tr, err := e.(*engineImpl).exec(t, limit)
+			e.PrepareTx(t, limit)
+
+			tr, err := e.Run()
 
 			if err == nil {
 				mappers[i2] = mapper.Map()
@@ -140,7 +147,7 @@ L:
 	return
 }
 
-func (v *batcherImpl) Verify(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e Engine, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error {
+func (v *batcherImpl) Verify(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error {
 	var (
 		thread  = len(b.Txs)
 		mappers = make([]map[string]database.Access, thread)
@@ -153,7 +160,11 @@ func (v *batcherImpl) Verify(bh *block.BlockHead, db database.IMultiValue, check
 		go func() {
 			vi, mapper := database.NewBatchVisitor(bvr)
 
-			e := newEngine(bh, vi)
+			e := vm.Isolator{}
+			err := e.Prepare(bh, vi, &ilog.Logger{})
+			if err != nil {
+				return
+			}
 
 			v.wait.Add(1)
 			defer v.wait.Done()
