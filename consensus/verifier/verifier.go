@@ -55,7 +55,7 @@ func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 	engine := vm.NewEngine(blk.Head, db)
 
 	for k, t := range blk.Txs {
-		t1 := time.Now()
+		//t1 := time.Now()
 		et := TxExecTimeLimit
 		if blk.Receipts[k].Status.Code == tx.ErrorTimeout {
 			et /= 4
@@ -68,7 +68,7 @@ func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 			ilog.Errorf("block num: %v , receipt: %v, blk.Receipts[%v]: %v, action name: %v", blk.Head.Number, receipt, k, blk.Receipts[k], blk.Txs[k].Actions[0].ActionName)
 			return errTxReceipt
 		}
-		ilog.Infof("[pob] time for verify one tx: %v", time.Since(t1))
+		//ilog.Infof("[pob] time for verify one tx: %v", time.Since(t1))
 	}
 	ilog.Infof("[pob] verifyBlockWithVM end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	return nil
