@@ -205,6 +205,23 @@
         ]
       }
     },
+    "/getPeerInfo": {
+      "get": {
+        "summary": "get peer info",
+        "operationId": "GetPeerInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcGetPeerInfoRes"
+            }
+          }
+        },
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
     "/getState/{key}": {
       "get": {
         "summary": "get the value of the corresponding key in stateDB",
@@ -622,6 +639,21 @@
         }
       }
     },
+    "rpcGetPeerInfoRes": {
+      "type": "object",
+      "properties": {
+        "peerCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "peerInfo": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcPeerInfo"
+          }
+        }
+      }
+    },
     "rpcGetStateRes": {
       "type": "object",
       "properties": {
@@ -638,6 +670,17 @@
           "type": "string",
           "format": "int64",
           "title": "the height of the blockchain"
+        }
+      }
+    },
+    "rpcPeerInfo": {
+      "type": "object",
+      "properties": {
+        "ID": {
+          "type": "string"
+        },
+        "addr": {
+          "type": "string"
         }
       }
     },
