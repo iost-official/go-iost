@@ -9,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/verifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
@@ -16,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/core/txpool/mock"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/smartystreets/goconvey/convey"
@@ -76,6 +78,50 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
 		generateBlock(account, mockTxPool, stateDB)
+	}
+	b.StopTimer()
+}
+
+func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
+	account, _ := account.NewAccount(nil, crypto.Secp256k1)
+	topBlock := &block.Block{
+		Head: &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     10,
+			Witness:    "witness",
+			Time:       123456,
+		},
+	}
+	topBlock.CalculateHeadHash()
+	mockController := gomock.NewController(nil)
+	stateDB, err := db.NewMVCCDB("./StateDB")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer stateDB.Close()
+	vi := database.NewVisitor(0, stateDB)
+	vi.SetBalance(testID[0], 1000000000000)
+	vi.SetContract(native.ABI())
+	vi.Commit()
+	stateDB.Tag(string(topBlock.HeadHash()))
+	mockTxPool := txpool_mock.NewMockTxPool(mockController)
+	pendingTx := txpool.NewSortedTxMap()
+	for i := 0; i < 30000; i++ {
+		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+		trx, _ := MakeTx(act)
+		pendingTx.Add(trx)
+	}
+	mockTxPool.EXPECT().TxIterator().Return(pendingTx.Iter(), &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
+	mockTxPool.EXPECT().TxTimeOut(gomock.Any()).Return(false).AnyTimes()
+	mockTxPool.EXPECT().DelTxList(gomock.Any()).AnyTimes()
+	blk, _ := generateBlock(account, mockTxPool, stateDB)
+
+	b.ResetTimer()
+	for j := 0; j < b.N; j++ {
+		t1 := time.Now()
+		stateDB.Checkout(string(topBlock.HeadHash()))
+		err = verifier.VerifyBlockWithVM(blk, stateDB)
+		ilog.Info(time.Since(t1))
 	}
 	b.StopTimer()
 }
