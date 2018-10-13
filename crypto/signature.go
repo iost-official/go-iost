@@ -3,7 +3,6 @@ package crypto
 import (
 	"errors"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 )
 
@@ -42,7 +41,7 @@ func (s *Signature) Encode() ([]byte, error) {
 		Sig:       s.Sig,
 		PubKey:    s.Pubkey,
 	}
-	b, err := proto.Marshal(sr)
+	b, err := sr.Marshal()
 	if err != nil {
 		return nil, errors.New("fail to encode signature")
 	}
@@ -52,7 +51,7 @@ func (s *Signature) Encode() ([]byte, error) {
 // Decode will unmarshal the signature by protobuf
 func (s *Signature) Decode(b []byte) error {
 	sr := &SignatureRaw{}
-	err := proto.Unmarshal(b, sr)
+	err := sr.Unmarshal(b)
 	if err != nil {
 		return err
 	}
