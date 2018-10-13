@@ -211,6 +211,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
+
 	hash := stateDB.CurrentTag()
 	blk, err = blockChain.GetBlockByHash([]byte(hash))
 	if err != nil && hash != "" {

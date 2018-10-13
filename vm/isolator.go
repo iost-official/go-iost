@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/vm/native"
 )
 
 type Isolator struct {
@@ -22,6 +23,10 @@ type Isolator struct {
 }
 
 func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *ilog.Logger) error {
+	if db.Contract("iost.system") == nil {
+		db.SetContract(native.ABI())
+	}
+
 	e.blockBaseCtx = host.NewContext(nil)
 	e.blockBaseCtx = loadBlkInfo(e.blockBaseCtx, bh)
 	e.h = host.NewHost(e.blockBaseCtx, db, staticMonitor, logger)
@@ -37,9 +42,7 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	}
 	e.publisherID = account.GetIDByPubkey(t.Publisher.Pubkey)
 	bl := e.h.DB().Balance(e.publisherID)
-
 	if bl < 0 || bl < t.GasPrice*t.GasLimit {
-		ilog.Error(errCannotPay)
 		return errCannotPay
 	}
 

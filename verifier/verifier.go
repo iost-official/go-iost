@@ -47,12 +47,16 @@ func (v *Verifier) Exec(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, 
 	l.Stop()
 	err := isolator.Prepare(bh, vi, &l)
 	if err != nil {
-		return nil, err
+		return &tx.TxReceipt{}, err
 	}
-	isolator.PrepareTx(t, limit)
+	err = isolator.PrepareTx(t, limit)
+
+	if err != nil {
+		return &tx.TxReceipt{}, err
+	}
 	r, err := isolator.Run()
 	if err != nil {
-		return nil, err
+		return &tx.TxReceipt{}, err
 	}
 	isolator.Commit()
 	return r, err
