@@ -17,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -274,4 +275,80 @@ func TestJS_Database(t *testing.T) {
 	if r.Status.Code != 0 {
 		t.Fatal(r.Status.Message)
 	}
+}
+
+func TestGenesis(t *testing.T) {
+	ilog.Stop()
+	mvccdb, err := db.NewMVCCDB("mvcc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll("mvcc")
+
+	var acts []*tx.Action
+	for i := 0; i < 3; i++ {
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, testID[2*i], "1000000000000000"))
+		acts = append(acts, &act)
+	}
+	// deploy iost.vote
+	voteFilePath := "../config/vote.js"
+	voteAbiPath := "../config/vote.js.abi"
+	fd, err := common.ReadFile(voteFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawCode := string(fd)
+	fd, err = common.ReadFile(voteAbiPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawAbi := string(fd)
+	c := contract.Compiler{}
+	code, err := c.Parse("iost.vote", rawCode, rawAbi)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
+	acts = append(acts, &act)
+
+	num := 3
+	for i := 0; i < num; i++ {
+		act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`["%v"]`, testID[2*i]))
+		acts = append(acts, &act1)
+	}
+	act11 := tx.NewAction("iost.vote", "InitAdmin", fmt.Sprintf(`["%v"]`, testID[0]))
+	acts = append(acts, &act11)
+
+	// deploy iost.bonus
+	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
+	acts = append(acts, &act2)
+
+	trx := tx.NewTx(acts, nil, 100000000, 0, 0)
+	trx.Time = 0
+	acc, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trx, err = tx.SignTx(trx, acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blockHead := block.BlockHead{
+		Version:    0,
+		ParentHash: nil,
+		Number:     0,
+		Witness:    acc.ID,
+		Time:       0,
+	}
+	v := Verifier{}
+	txr, err := v.Exec(&blockHead, mvccdb, trx, time.Millisecond*100)
+	if err != nil || txr.Status.Code != tx.Success {
+		t.Fatal(err)
+	}
+	fmt.Println(txr)
+
+	vi := database.NewVisitor(0, mvccdb)
+	fmt.Println(vi.Get("iost.vote-" + "pendingBlockNumber"))
+	fmt.Println(vi.Balance(testID[0]))
 }

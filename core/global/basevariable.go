@@ -17,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
 )
 
@@ -291,6 +292,8 @@ func FakeNew() (*BaseVariableImpl, error) {
 		return nil, err
 	}
 
+	vi := database.NewVisitor(0, stateDB)
+	fmt.Println("basevariable 296", vi.Get("iost.vote-"+"pendingBlockNumber"))
 	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config}, nil
 }
 
