@@ -124,7 +124,7 @@ func (pool *TxPImpl) verifyWorkers() {
 		}
 		pool.pendingTx.Add(&t)
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
-		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage)
+		//pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage)
 	}
 }
 
