@@ -64,6 +64,12 @@ service Apis {
             get: "/getNetID"
         };
     }
+    // get peer info
+    rpc GetPeerInfo (google.protobuf.Empty) returns (GetPeerInfoRes) {
+        option (google.api.http) = {
+            get: "/getPeerInfo"
+        };
+    }
     // get the value of the corresponding key in stateDB
     rpc GetState (GetStateReq) returns (GetStateRes) {
         option (google.api.http) = {
@@ -214,6 +220,16 @@ message BlockInfo {
     repeated tx.TxReceiptRaw receipts = 5;
     //transaction receiptHash list
     repeated bytes receiptHash = 6;
+}
+
+message PeerInfo {
+    string ID=1;
+    string addr=2;
+}
+
+message GetPeerInfoRes {
+    int32 peerCount=1;
+    repeated PeerInfo peerInfo=2;
 }
 
 message SubscribeRes {

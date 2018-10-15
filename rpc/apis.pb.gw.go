@@ -251,6 +251,15 @@ func request_Apis_GetNetID_0(ctx context.Context, marshaler runtime.Marshaler, c
 
 }
 
+func request_Apis_GetPeerInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ApisClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq empty.Empty
+	var metadata runtime.ServerMetadata
+
+	msg, err := client.GetPeerInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
 var (
 	filter_Apis_GetState_0 = &utilities.DoubleArray{Encoding: map[string]int{"key": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
@@ -659,6 +668,35 @@ func RegisterApisHandlerClient(ctx context.Context, mux *runtime.ServeMux, clien
 
 	})
 
+	mux.Handle("GET", pattern_Apis_GetPeerInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Apis_GetPeerInfo_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Apis_GetPeerInfo_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("GET", pattern_Apis_GetState_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -826,6 +864,8 @@ var (
 
 	pattern_Apis_GetNetID_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getNetID"}, ""))
 
+	pattern_Apis_GetPeerInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getPeerInfo"}, ""))
+
 	pattern_Apis_GetState_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"getState", "key"}, ""))
 
 	pattern_Apis_GetContract_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"getContract", "key"}, ""))
@@ -855,6 +895,8 @@ var (
 	forward_Apis_GetBalance_0 = runtime.ForwardResponseMessage
 
 	forward_Apis_GetNetID_0 = runtime.ForwardResponseMessage
+
+	forward_Apis_GetPeerInfo_0 = runtime.ForwardResponseMessage
 
 	forward_Apis_GetState_0 = runtime.ForwardResponseMessage
 

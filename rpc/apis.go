@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/grpc"
-
 	"github.com/bitly/go-simplejson"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/libp2p/go-libp2p-peer"
+	"google.golang.org/grpc"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -306,6 +307,22 @@ func (s *GRPCServer) GetNetID(ctx context.Context, empty *empty.Empty) (*GetNetI
 	return &GetNetIDRes{
 		ID: s.p2pService.ID(),
 	}, nil
+}
+
+// GetPeerInfo return peer id and addr. It does not work now... TODO: debug and fix...
+func (s *GRPCServer) GetPeerInfo(ctx context.Context, empty *empty.Empty) (*GetPeerInfoRes, error) {
+	netService, ok := s.p2pService.(*p2p.NetService)
+	if !ok {
+		return nil, fmt.Errorf("internal error: netService type conversion failed")
+	}
+	neighbors := netService.GetNeighbors()
+	res := &GetPeerInfoRes{}
+	neighbors.Range(func(k, v interface{}) bool {
+		res.PeerInfo = append(res.PeerInfo, &PeerInfo{ID: k.(peer.ID).Pretty(), Addr: v.(*p2p.Peer).GetAddr()})
+		return true
+	})
+	res.PeerCount = (int32)(len(res.PeerInfo))
+	return res, nil
 }
 
 // SendRawTx send transaction to blockchain
