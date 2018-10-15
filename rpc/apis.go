@@ -309,7 +309,7 @@ func (s *GRPCServer) GetNetID(ctx context.Context, empty *empty.Empty) (*GetNetI
 	}, nil
 }
 
-// GetPeerInfo return peer id and addr
+// GetPeerInfo return peer id and addr. It does not work now... TODO: debug and fix...
 func (s *GRPCServer) GetPeerInfo(ctx context.Context, empty *empty.Empty) (*GetPeerInfoRes, error) {
 	netService, ok := s.p2pService.(*p2p.NetService)
 	if !ok {
