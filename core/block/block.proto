@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "github.com/iost-official/go-iost/crypto/signature.proto";
+import "github.com/iost-official/go-iost/core/tx/tx.proto";
 package block;
 
 message BlockHead {
@@ -15,8 +17,10 @@ message BlockHead {
 
 message BlockRaw {
     BlockHead head = 1;
-    bytes sign = 2;
-    repeated bytes txs = 3;
-    repeated bytes receipts = 4;
+    crypto.SignatureRaw sign = 2;
+    repeated bytes txHashes = 3;
+    repeated tx.TxRaw txs = 4;
+    repeated bytes receiptHashes = 5;
+    repeated tx.TxReceiptRaw receipts = 6;
 }
 

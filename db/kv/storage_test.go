@@ -303,3 +303,54 @@ func BenchmarkKeys(b *testing.B) {
 		cmd.Run()
 	}
 }
+
+func BenchmarkRange(b *testing.B) {
+	storage, err := NewStorage(DBPATH, LevelDBStorage)
+	if err != nil {
+		b.Fatalf("Failed to new storage: %v", err)
+	}
+
+	keys := make([][]byte, 0)
+	values := make([][]byte, 0)
+	headkeys := make([][]byte, 0)
+	headkey := make([]byte, 32)
+	bnum := 100
+	txnum := 2000
+
+	for i := 0; i < txnum*bnum; i++ {
+		if i%txnum == 0 {
+			headkey = make([]byte, 32)
+			rand.Read(headkey)
+			headkeys = append(headkeys, headkey)
+		}
+		key := make([]byte, 32)
+		value := make([]byte, 128)
+		rand.Read(key)
+		rand.Read(value)
+		keys = append(keys, append(headkey, key...))
+		values = append(values, value)
+		storage.Put(append(headkey, key...), value)
+	}
+	b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Range", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			storage.Range(headkeys[i%bnum])
+		}
+	})
+	b.Run(reflect.TypeOf(storage.StorageBackend).String()+"RangeAll", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			iter, _ := storage.Range(headkeys[i%bnum])
+			for iter.Next() {
+			}
+		}
+	})
+	b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Get", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for j := 0; j < txnum; j++ {
+				storage.Get(keys[i%bnum*txnum+j])
+			}
+		}
+	})
+	storage.Close()
+	cmd := exec.Command("rm", "-r", DBPATH)
+	cmd.Run()
+}

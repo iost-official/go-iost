@@ -252,3 +252,7 @@ func (d *DB) Close() error {
 
 	return nil
 }
+
+func (d *DB) Range(prefix []byte) (interface{}, error) {
+	return nil, nil
+}
