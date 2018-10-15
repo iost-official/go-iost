@@ -138,7 +138,7 @@ func BenchmarkBlock(b *testing.B) {
 			bc.GetBlockByHash(hashes[i%bnum])
 		}
 	})
-	b.Run("Get2", func(b *testing.B) {
+	b.Run("Range", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			bc.GetBlockMByHash(hashes[i%bnum])
 			bc.GetBlockTxsMap(hashes[i%bnum])

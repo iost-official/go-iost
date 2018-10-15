@@ -2,6 +2,7 @@ syntax = "proto3";
 package rpc;
 
 import "github.com/iost-official/go-iost/core/tx/tx.proto";
+import "github.com/iost-official/go-iost/core/contract/contract.proto";
 import "github.com/iost-official/go-iost/core/block/block.proto";
 import "github.com/iost-official/go-iost/core/event/event.proto";
 import "google/api/annotations.proto";
@@ -9,6 +10,12 @@ import "google/protobuf/Empty.proto";
 
 // rpc apis
 service Apis {
+    // get the version info
+    rpc GetVersionInfo (google.protobuf.Empty) returns (VersionInfoRes) {
+        option (google.api.http) = {
+            get: "/getVersionInfo"
+        };
+    }
     // get the current height of the blockchain
     rpc GetHeight (google.protobuf.Empty) returns (HeightRes) {
         option (google.api.http) = {
@@ -61,6 +68,12 @@ service Apis {
     rpc GetState (GetStateReq) returns (GetStateRes) {
         option (google.api.http) = {
             get: "/getState/{key}"
+        };
+    }
+    // get contract by cid
+    rpc GetContract (GetContractReq) returns (GetContractRes) {
+        option (google.api.http) = {
+            get: "/getContract/{key}"
         };
     }
     // receive encoded tx
@@ -119,6 +132,11 @@ message GetStateReq {
     string field = 2;
 }
 
+message GetContractReq {
+    //contract id
+    string key=1;
+}
+
 message RawTxReq {
     // the rawdata of a tx
     bytes data=1;
@@ -127,6 +145,12 @@ message RawTxReq {
 message SubscribeReq {
     //type of event:0-TransactionResult,1-ContractEvent,2-ContractUserEvent,3-ContractSystemEvent
     repeated event.Event.Topic topics=1;
+}
+
+message VersionInfoRes {
+    // build time and git hash
+    string buildTime=1;
+    string gitHash=2;
 }
 
 message HeightRes {
@@ -147,6 +171,11 @@ message GetNetIDRes {
 message GetStateRes {
     //the value of the corresponding key in the StateDB
     string value=1;
+}
+
+message GetContractRes {
+    //contract id
+    contract.Contract value=1;
 }
 
 message SendRawTxRes {

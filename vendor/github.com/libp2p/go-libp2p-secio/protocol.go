@@ -6,11 +6,12 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"io"
+	"net"
 	"time"
 
 	proto "github.com/gogo/protobuf/proto"
 	logging "github.com/ipfs/go-log"
+	cs "github.com/libp2p/go-conn-security"
 	ci "github.com/libp2p/go-libp2p-crypto"
 	peer "github.com/libp2p/go-libp2p-peer"
 	pb "github.com/libp2p/go-libp2p-secio/pb"
@@ -25,6 +26,9 @@ var ErrUnsupportedKeyType = errors.New("unsupported key type")
 
 // ErrClosed signals the closing of a connection.
 var ErrClosed = errors.New("connection closed")
+
+// ErrWrongPeer is returned when we attempt to handshake with the wrong peer.
+var ErrWrongPeer = errors.New("connected to wrong peer")
 
 // ErrBadSig signals that the peer sent us a handshake packet with a bad signature.
 var ErrBadSig = errors.New("bad signature")
@@ -44,8 +48,9 @@ const nonceSize = 16
 // secureSession encapsulates all the parameters needed for encrypting
 // and decrypting traffic from an insecure channel.
 type secureSession struct {
-	secure    msgio.ReadWriteCloser
-	insecure  io.ReadWriteCloser
+	msgio.ReadWriteCloser
+
+	insecure  net.Conn
 	insecureM msgio.ReadWriter
 
 	localKey   ci.PrivKey
@@ -58,17 +63,17 @@ type secureSession struct {
 	sharedSecret []byte
 }
 
-var _ Session = &secureSession{}
+var _ cs.Conn = &secureSession{}
 
 func (s *secureSession) Loggable() map[string]interface{} {
 	m := make(map[string]interface{})
 	m["localPeer"] = s.localPeer.Pretty()
 	m["remotePeer"] = s.remotePeer.Pretty()
-	m["established"] = (s.secure != nil)
+	m["established"] = (s.ReadWriteCloser != nil)
 	return m
 }
 
-func newSecureSession(ctx context.Context, local peer.ID, key ci.PrivKey, insecure io.ReadWriteCloser) (*secureSession, error) {
+func newSecureSession(ctx context.Context, local peer.ID, key ci.PrivKey, insecure net.Conn, remotePeer peer.ID) (*secureSession, error) {
 	s := &secureSession{localPeer: local, localKey: key}
 
 	switch {
@@ -84,6 +89,7 @@ func newSecureSession(ctx context.Context, local peer.ID, key ci.PrivKey, insecu
 
 	s.insecure = insecure
 	s.insecureM = msgio.NewReadWriter(insecure)
+	s.remotePeer = remotePeer
 
 	handshakeCtx, cancel := context.WithTimeout(ctx, HandshakeTimeout) // remove
 	defer cancel()
@@ -149,9 +155,9 @@ func (s *secureSession) runHandshakeSync() error {
 	proposeOut := new(pb.Propose)
 	proposeOut.Rand = nonceOut
 	proposeOut.Pubkey = myPubKeyBytes
-	proposeOut.Exchanges = &SupportedExchanges
-	proposeOut.Ciphers = &SupportedCiphers
-	proposeOut.Hashes = &SupportedHashes
+	proposeOut.Exchanges = SupportedExchanges
+	proposeOut.Ciphers = SupportedCiphers
+	proposeOut.Hashes = SupportedHashes
 
 	// log.Debugf("1.0 Propose: nonce:%s exchanges:%s ciphers:%s hashes:%s",
 	// 	nonceOut, SupportedExchanges, SupportedCiphers, SupportedHashes)
@@ -188,9 +194,21 @@ func (s *secureSession) runHandshakeSync() error {
 	}
 
 	// get peer id
-	s.remotePeer, err = peer.IDFromPublicKey(s.remote.permanentPubKey)
+	actualRemotePeer, err := peer.IDFromPublicKey(s.remote.permanentPubKey)
 	if err != nil {
 		return err
+	}
+	switch s.remotePeer {
+	case actualRemotePeer:
+		// All good.
+	case "":
+		// No peer set. We're accepting a remote connection.
+		s.remotePeer = actualRemotePeer
+	default:
+		// Peer mismatch. Bail.
+		s.insecure.Close()
+		log.Debugf("expected peer %s, got peer %s", s.remotePeer, actualRemotePeer)
+		return ErrWrongPeer
 	}
 
 	log.Debugf("1.1 Identify: %s Remote Peer Identified as %s", s.localPeer, s.remotePeer)
@@ -347,16 +365,16 @@ func (s *secureSession) runHandshakeSync() error {
 	// setup ETM ReadWriter
 	w := NewETMWriter(s.insecure, s.local.cipher, s.local.mac)
 	r := NewETMReader(s.insecure, s.remote.cipher, s.remote.mac)
-	s.secure = msgio.Combine(w, r).(msgio.ReadWriteCloser)
+	s.ReadWriteCloser = msgio.Combine(w, r).(msgio.ReadWriteCloser)
 
 	// log.Debug("3.0 finish. sending: %v", proposeIn.GetRand())
 
 	// send their Nonce and receive ours
-	nonceOut2, err := readWriteMsg(s.secure, proposeIn.GetRand())
+	nonceOut2, err := readWriteMsg(s.ReadWriteCloser, proposeIn.GetRand())
 	if err != nil {
 		return err
 	}
-	defer s.secure.ReleaseMsg(nonceOut2)
+	defer s.ReleaseMsg(nonceOut2)
 
 	// log.Debug("3.0 finish.\n\texpect: %v\n\tactual: %v", nonceOut, nonceOut2)
 	if !bytes.Equal(nonceOut, nonceOut2) {

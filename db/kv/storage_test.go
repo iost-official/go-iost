@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -225,7 +226,7 @@ func BenchmarkStorage(b *testing.B) {
 
 		keys := make([][]byte, 0)
 		values := make([][]byte, 0)
-		for i := 0; i < 1000000; i++ {
+		for i := 0; i < 400000; i++ {
 			key := make([]byte, 32)
 			value := make([]byte, 32)
 			rand.Read(key)
@@ -236,17 +237,29 @@ func BenchmarkStorage(b *testing.B) {
 
 		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Put", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				storage.Put(keys[i], values[i])
+				err := storage.Put(keys[i], values[i])
+				assert.Nil(b, err)
 			}
 		})
+
+		for i := 0; i < 400000; i++ {
+			err := storage.Put(keys[i], values[i])
+			assert.Nil(b, err)
+		}
+
 		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Get", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				storage.Get(keys[i])
+				value, err := storage.Get(keys[i])
+				assert.Nil(b, err)
+				if !assert.Equal(b, values[i], value) {
+					b.Fatalf("Num: %v", i)
+				}
 			}
 		})
 		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Delete", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				storage.Delete(keys[i])
+				err := storage.Delete(keys[i])
+				assert.Nil(b, err)
 			}
 		})
 

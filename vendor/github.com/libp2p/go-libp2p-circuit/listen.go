@@ -1,18 +1,15 @@
 package relay
 
 import (
-	"fmt"
 	"net"
 
 	pb "github.com/libp2p/go-libp2p-circuit/pb"
 
-	peer "github.com/libp2p/go-libp2p-peer"
-	tpt "github.com/libp2p/go-libp2p-transport"
-	filter "github.com/libp2p/go-maddr-filter"
 	ma "github.com/multiformats/go-multiaddr"
+	manet "github.com/multiformats/go-multiaddr-net"
 )
 
-var _ tpt.Listener = (*RelayListener)(nil)
+var _ manet.Listener = (*RelayListener)(nil)
 
 type RelayListener Relay
 
@@ -21,10 +18,11 @@ func (l *RelayListener) Relay() *Relay {
 }
 
 func (r *Relay) Listener() *RelayListener {
+	// TODO: Only allow one!
 	return (*RelayListener)(r)
 }
 
-func (l *RelayListener) Accept() (tpt.Conn, error) {
+func (l *RelayListener) Accept() (manet.Conn, error) {
 	select {
 	case c := <-l.incoming:
 		err := l.Relay().writeResponse(c.Stream, pb.CircuitRelay_SUCCESS)
@@ -34,7 +32,8 @@ func (l *RelayListener) Accept() (tpt.Conn, error) {
 			return nil, err
 		}
 
-		log.Infof("accepted relay connection: %s", c.ID())
+		// TODO: Pretty print.
+		log.Infof("accepted relay connection: %s", c)
 
 		return c, nil
 	case <-l.ctx.Done():
@@ -50,19 +49,7 @@ func (l *RelayListener) Addr() net.Addr {
 }
 
 func (l *RelayListener) Multiaddr() ma.Multiaddr {
-	a, err := ma.NewMultiaddr(fmt.Sprintf("/p2p-circuit/ipfs/%s", l.self.Pretty()))
-	if err != nil {
-		panic(err)
-	}
-	return a
-}
-
-func (l *RelayListener) LocalPeer() peer.ID {
-	return l.self
-}
-
-func (l *RelayListener) SetAddrFilters(f *filter.Filters) {
-	// noop ?
+	return ma.Cast(ma.CodeToVarint(P_CIRCUIT))
 }
 
 func (l *RelayListener) Close() error {
