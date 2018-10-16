@@ -335,7 +335,7 @@ func request_Apis_SendRawTx_0(ctx context.Context, marshaler runtime.Marshaler, 
 
 }
 
-func request_Apis_EstimateGas_0(ctx context.Context, marshaler runtime.Marshaler, client ApisClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Apis_ExecTx_0(ctx context.Context, marshaler runtime.Marshaler, client ApisClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq RawTxReq
 	var metadata runtime.ServerMetadata
 
@@ -343,7 +343,7 @@ func request_Apis_EstimateGas_0(ctx context.Context, marshaler runtime.Marshaler
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.EstimateGas(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ExecTx(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
@@ -784,7 +784,7 @@ func RegisterApisHandlerClient(ctx context.Context, mux *runtime.ServeMux, clien
 
 	})
 
-	mux.Handle("POST", pattern_Apis_EstimateGas_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Apis_ExecTx_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -802,14 +802,14 @@ func RegisterApisHandlerClient(ctx context.Context, mux *runtime.ServeMux, clien
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Apis_EstimateGas_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Apis_ExecTx_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Apis_EstimateGas_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Apis_ExecTx_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -872,7 +872,7 @@ var (
 
 	pattern_Apis_SendRawTx_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"sendRawTx"}, ""))
 
-	pattern_Apis_EstimateGas_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"estimateGas"}, ""))
+	pattern_Apis_ExecTx_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"execTx"}, ""))
 
 	pattern_Apis_Subscribe_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"subscribe"}, ""))
 )
@@ -904,7 +904,7 @@ var (
 
 	forward_Apis_SendRawTx_0 = runtime.ForwardResponseMessage
 
-	forward_Apis_EstimateGas_0 = runtime.ForwardResponseMessage
+	forward_Apis_ExecTx_0 = runtime.ForwardResponseMessage
 
 	forward_Apis_Subscribe_0 = runtime.ForwardResponseStream
 )

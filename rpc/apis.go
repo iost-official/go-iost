@@ -3,6 +3,8 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"github.com/iost-official/go-iost/consensus/verifier"
+	"github.com/iost-official/go-iost/vm"
 	"net"
 	"strconv"
 	"strings"
@@ -356,9 +358,36 @@ func (s *GRPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTx
 	return &res, nil
 }
 
-// EstimateGas estimate gas used by transaction
-func (s *GRPCServer) EstimateGas(ctx context.Context, rawTx *RawTxReq) (*GasRes, error) {
-	return nil, nil
+// ExecTx only exec the tx, but not put it onto chain
+func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, error) {
+	if rawTx == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	var trx tx.Tx
+	err := trx.Decode(rawTx.Data)
+	if err != nil {
+		return nil, err
+	}
+	_, head := s.txpool.TxIterator()
+	topBlock := head.Block
+	blk := block.Block{
+		Head: &block.BlockHead{
+			Version:    0,
+			ParentHash: topBlock.HeadHash(),
+			Number:     topBlock.Head.Number + 1,
+			Witness:    "",
+			Time:       time.Now().Unix() / common.SlotLength,
+		},
+		Txs:      []*tx.Tx{},
+		Receipts: []*tx.TxReceipt{},
+	}
+	engine := vm.NewSimulatedEngine(blk.Head, s.forkDB)
+	receipt, err := engine.Exec(&trx, verifier.TxExecTimeLimit/2)
+	if err != nil {
+		ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
+		return nil, err
+	}
+	return &ExecTxRes{TxReceiptRaw: receipt.ToTxReceiptRaw()}, nil
 }
 
 // Subscribe used for event

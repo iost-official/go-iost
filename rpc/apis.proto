@@ -90,9 +90,9 @@ service Apis {
         };
     }
     // not supported yet
-    rpc EstimateGas (RawTxReq) returns (GasRes) {
+    rpc ExecTx (RawTxReq) returns (ExecTxRes) {
         option (google.api.http) = {
-            post: "/estimateGas"
+            post: "/execTx"
             body: "*"
         };
     }
@@ -189,9 +189,9 @@ message SendRawTxRes {
     string hash=1;
 }
 
-message GasRes {
+message ExecTxRes {
     //not support yet
-    uint64 gas=1;
+    tx.TxReceiptRaw txReceiptRaw = 1;
 }
 
 message txRes {

@@ -57,6 +57,8 @@ type engineImpl struct {
 	logger        *ilog.Logger
 	consoleWriter *ilog.ConsoleWriter
 	fileWriter    *ilog.FileWriter
+
+	isSimulated bool
 }
 
 // NewEngine ...
@@ -68,7 +70,24 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	return e
 }
 
+// NewSimulatedEngine create an engine that only execute the tx but not put it onto the chain
+func NewSimulatedEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
+	db := database.NewVisitor(defaultCacheLength, cb)
+
+	e := newSimulatedEngine(bh, db)
+
+	return e
+}
+
 func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
+	return newEngineImpl(bh, db, false)
+}
+
+func newSimulatedEngine(bh *block.BlockHead, db *database.Visitor) Engine {
+	return newEngineImpl(bh, db, true)
+}
+
+func newEngineImpl(bh *block.BlockHead, db *database.Visitor, isSimulated bool) Engine {
 	ctx := host.NewContext(nil)
 
 	ctx = loadBlkInfo(ctx, bh)
@@ -83,7 +102,7 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 	logger.Stop()
 	h := host.NewHost(ctx, db, staticMonitor, logger)
 
-	e := &engineImpl{ho: h, logger: logger}
+	e := &engineImpl{ho: h, logger: logger, isSimulated: isSimulated}
 	runtime.SetFinalizer(e, func(e *engineImpl) {
 		e.GC()
 	})
@@ -202,16 +221,22 @@ func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
 	bl := e.ho.DB().Balance(e.publisherID)
 
-	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
-		ilog.Error(errCannotPay)
-		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
+	if !e.isSimulated {
+		if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
+			ilog.Error(errCannotPay)
+			return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
+		}
 	}
 
 	tr, err := e.exec(tx0)
 	if err != nil {
 		e.ho.DB().Rollback()
 	} else {
-		e.ho.DB().Commit()
+		if !e.isSimulated {
+			e.ho.DB().Commit()
+		} else {
+			e.ho.DB().Rollback()
+		}
 	}
 	return tr, err
 }

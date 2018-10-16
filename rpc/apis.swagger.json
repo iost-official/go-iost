@@ -15,15 +15,15 @@
     "application/json"
   ],
   "paths": {
-    "/estimateGas": {
+    "/execTx": {
       "post": {
         "summary": "not supported yet",
-        "operationId": "EstimateGas",
+        "operationId": "ExecTx",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcGasRes"
+              "$ref": "#/definitions/rpcExecTxRes"
             }
           }
         },
@@ -601,12 +601,11 @@
         }
       }
     },
-    "rpcGasRes": {
+    "rpcExecTxRes": {
       "type": "object",
       "properties": {
-        "gas": {
-          "type": "string",
-          "format": "uint64",
+        "txReceiptRaw": {
+          "$ref": "#/definitions/txTxReceiptRaw",
           "title": "not support yet"
         }
       }
