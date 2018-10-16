@@ -220,7 +220,8 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	}
 	switch vbm.p2pType {
 	case p2p.NewBlock:
-		metricsTransferCost.Set(calculateTime(), nil)
+		t1 := calculateTime()
+		metricsTransferCost.Set(t1, nil)
 		ilog.Infof("[pob] received new block, number:%d, hash=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		ilog.Info("received new block, block number: ", blk.Head.Number)
 		timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
@@ -234,7 +235,9 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		}
 		ilog.Infof("[pob] handle recv new block start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		err := p.handleRecvBlock(blk)
-		metricsTimeCost.Set(calculateTime(), nil)
+		t2 := calculateTime()
+		metricsTimeCost.Set(t2, nil)
+		ilog.Infof("[pob] transfer cost: %v, total cost: %v", t1, t2)
 		ilog.Infof("[pob] handle recv new block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		p.broadcastBlockHash(blk) // can use go
 		p.blockReqMap.Delete(string(blk.HeadHash()))
