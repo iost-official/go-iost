@@ -235,6 +235,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		msg, err := parseP2PMessage(data)
 		if msg.messageType() == NewBlock {
 			ilog.Infof("[pob] New Block recv time cost: %v", time.Since(t1).Nanoseconds()/1e6)
+			ilog.Infof("[pob] recv start time: %v, recv end time: %v", t1, time.Now())
 			metricsRecvBlockTimeCost.Set(float64(time.Since(t1).Nanoseconds()/1e6), nil)
 		}
 		if err != nil {
