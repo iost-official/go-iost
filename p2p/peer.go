@@ -11,8 +11,8 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 
 	libnet "github.com/libp2p/go-libp2p-net"
-	peer "github.com/libp2p/go-libp2p-peer"
-	multiaddr "github.com/multiformats/go-multiaddr"
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/willf/bloom"
 )
 
@@ -213,6 +213,7 @@ func (p *Peer) writeLoop() {
 func (p *Peer) readLoop(stream libnet.Stream) {
 	header := make([]byte, dataBegin)
 	for {
+		t1 := time.Now()
 		_, err := io.ReadFull(stream, header)
 		if err != nil {
 			ilog.Warnf("read header failed. err=%v", err)
@@ -232,6 +233,10 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		}
 		copy(data[0:dataBegin], header)
 		msg, err := parseP2PMessage(data)
+		if msg.messageType() == NewBlock {
+			ilog.Infof("[pob] New Block recv time cost: %v", time.Since(t1).Nanoseconds()/1e6)
+			metricsRecvBlockTimeCost.Set(float64(time.Since(t1).Nanoseconds()/1e6), nil)
+		}
 		if err != nil {
 			ilog.Errorf("parse p2pmessage failed. err=%v", err)
 			return
