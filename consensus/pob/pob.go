@@ -21,13 +21,14 @@ import (
 )
 
 var (
-	metricsGeneratedBlockCount = metrics.NewCounter("iost_pob_generated_block", nil)
-	metricsVerifyBlockCount    = metrics.NewCounter("iost_pob_verify_block", nil)
-	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
-	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
-	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
-	metricsTimeCost            = metrics.NewGauge("iost_time_cost", nil)
-	metricsTransferCost        = metrics.NewGauge("iost_transfer_cost", nil)
+	metricsGeneratedBlockCount   = metrics.NewCounter("iost_pob_generated_block", nil)
+	metricsVerifyBlockCount      = metrics.NewCounter("iost_pob_verify_block", nil)
+	metricsConfirmedLength       = metrics.NewGauge("iost_pob_confirmed_length", nil)
+	metricsTxSize                = metrics.NewGauge("iost_block_tx_size", nil)
+	metricsMode                  = metrics.NewGauge("iost_node_mode", nil)
+	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
+	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
+	metricsGenerateBlockTimeCost = metrics.NewGauge("iost_generate_block_time_cost", nil)
 )
 
 var (
@@ -318,6 +319,10 @@ func (p *PoB) scheduleLoop() {
 						continue
 					}
 					go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
+
+					ilog.Infof("[pob] generate block time cost: %v", calculateTime())
+					metricsGenerateBlockTimeCost.Set(calculateTime(), nil)
+
 				}
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
