@@ -295,3 +295,13 @@ func (p *Peer) hasMessage(msg *p2pMessage) bool {
 
 	return p.recentMsg.Test(msg.content())
 }
+
+// GetID return the net id
+func (p *Peer) GetID() string {
+	return p.id.Pretty()
+}
+
+// GetAddr return the address
+func (p *Peer) GetAddr() string {
+	return p.addr.String()
+}

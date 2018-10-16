@@ -8,12 +8,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bitly/go-simplejson"
+	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/libp2p/go-libp2p-peer"
 	"google.golang.org/grpc"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
@@ -79,6 +82,14 @@ func (s *GRPCServer) Start() error {
 // Stop stop GRPC server
 func (s *GRPCServer) Stop() {
 	return
+}
+
+// GetVersionInfo return the version info
+func (s *GRPCServer) GetVersionInfo(ctx context.Context, empty *empty.Empty) (*VersionInfoRes, error) {
+	return &VersionInfoRes{
+		BuildTime: global.BuildTime,
+		GitHash:   global.GitHash,
+	}, nil
 }
 
 // GetHeight get current block height
@@ -236,6 +247,45 @@ func (s *GRPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateR
 	}, nil
 }
 
+// GetContract return a contract by contract id
+func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*GetContractRes, error) {
+	if key == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	if key.Key == "" {
+		return nil, fmt.Errorf("argument cannot be empty string")
+	}
+	if !strings.HasPrefix(key.Key, "Contract") {
+		return nil, fmt.Errorf("Contract id should start with \"Contract\"")
+	}
+	txHashBytes := common.Base58Decode(key.Key[len("Contract"):])
+	trx, err := s.txdb.GetTx(txHashBytes)
+	if err != nil {
+		return nil, err
+	}
+	// assume only one 'SetCode' action
+	txActionName := trx.Actions[0].ActionName
+	if trx.Actions[0].Contract != "iost.system" || txActionName != "SetCode" && txActionName != "UpdateCode" {
+		return nil, fmt.Errorf("Not a SetCode or Update transaction")
+	}
+	js, err := simplejson.NewJson([]byte(trx.Actions[0].Data))
+	if err != nil {
+		return nil, err
+	}
+	contractStr, err := js.GetIndex(0).String()
+	if err != nil {
+		return nil, err
+	}
+	contract := &contract.Contract{}
+	err = contract.B64Decode(contractStr)
+	if err != nil {
+		return nil, err
+	}
+	return &GetContractRes{Value: contract}, nil
+	//return &GetContractRes{Value: s.visitor.Contract(key.Key)}, nil
+
+}
+
 // GetBalance get account balance
 func (s *GRPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBalanceRes, error) {
 	if key == nil {
@@ -257,6 +307,22 @@ func (s *GRPCServer) GetNetID(ctx context.Context, empty *empty.Empty) (*GetNetI
 	return &GetNetIDRes{
 		ID: s.p2pService.ID(),
 	}, nil
+}
+
+// GetPeerInfo return peer id and addr. It does not work now... TODO: debug and fix...
+func (s *GRPCServer) GetPeerInfo(ctx context.Context, empty *empty.Empty) (*GetPeerInfoRes, error) {
+	netService, ok := s.p2pService.(*p2p.NetService)
+	if !ok {
+		return nil, fmt.Errorf("internal error: netService type conversion failed")
+	}
+	neighbors := netService.GetNeighbors()
+	res := &GetPeerInfoRes{}
+	neighbors.Range(func(k, v interface{}) bool {
+		res.PeerInfo = append(res.PeerInfo, &PeerInfo{ID: k.(peer.ID).Pretty(), Addr: v.(*p2p.Peer).GetAddr()})
+		return true
+	})
+	res.PeerCount = (int32)(len(res.PeerInfo))
+	return res, nil
 }
 
 // SendRawTx send transaction to blockchain

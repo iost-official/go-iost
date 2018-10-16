@@ -18,6 +18,8 @@ ifeq ($(shell uname),Linux)
 	export CGO_CFLAGS=-I$(shell pwd)/vm/v8vm/v8/include/_linux_amd64
 	export LD_LIBRARY_PATH=$(shell pwd)/vm/v8vm/v8/libv8/_linux_amd64
 endif
+BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
+LD_FLAGS := -X github.com/iost-official/go-iost/core/global.BUILD_TIME=$(BUILD_TIME) -X github.com/iost-official/go-iost/core/global.GIT_HASH=$(shell git rev-parse HEAD)
 
 .PHONY: all build iserver iwallet lint test image devimage swagger protobuf install clean debug clear_debug_file
 
@@ -26,7 +28,7 @@ all: build
 build: iserver iwallet
 
 iserver:
-	$(GO) build -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
+	$(GO) build -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
 
 iwallet:
 	$(GO) build -o $(TARGET_DIR)/iwallet $(PROJECT)/cmd/iwallet
@@ -42,7 +44,7 @@ else
 endif
 
 image:
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make
+	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 devimage:
