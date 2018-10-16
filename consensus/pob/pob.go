@@ -26,6 +26,7 @@ var (
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
+	metricsTimeCost            = metrics.NewGauge("iost_time_cost", nil)
 )
 
 var (
@@ -229,9 +230,8 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		err := p.handleRecvBlock(blk)
 		currentSlot := time.Now().UnixNano() / (1e9 * common.SlotLength)
 		timeCost := time.Now().UnixNano() - currentSlot*1e9*common.SlotLength
-		tc := time.Unix(timeCost/1e9, timeCost%1e9)
-		ilog.Infof("[pob] tc: %v", tc)
-		ilog.Infof("[pob] recv + handle time cost: %v, number: %v, hash = %v", tc.Second(), blk.Head.Number, common.Base58Encode(blk.HeadHash()))
+		metricsTimeCost.Set(float64(timeCost/1e6), nil)
+		ilog.Infof("[pob] recv + handle time cost: %v, number: %v, hash = %v", timeCost/1e6, blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		ilog.Infof("[pob] handle recv new block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		p.broadcastBlockHash(blk) // can use go
 		p.blockReqMap.Delete(string(blk.HeadHash()))
