@@ -34,7 +34,8 @@ func (s *MockApisSubscribeServer) Send(req *SubscribeRes) error {
 	return nil
 }
 
-func disableTestGRPCServer_ExecTx(t *testing.T) {
+func TestGRPCServer_ExecTx(t *testing.T) {
+	t.Skip("The test need an iserver to run. So fix it later")
 	server := "localhost:30002"
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
