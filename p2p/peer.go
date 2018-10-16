@@ -213,7 +213,6 @@ func (p *Peer) writeLoop() {
 func (p *Peer) readLoop(stream libnet.Stream) {
 	header := make([]byte, dataBegin)
 	for {
-		t1 := time.Now()
 		_, err := io.ReadFull(stream, header)
 		if err != nil {
 			ilog.Warnf("read header failed. err=%v", err)
@@ -226,6 +225,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
 		data := make([]byte, dataBegin+length)
+		t1 := time.Now()
 		_, err = io.ReadFull(stream, data[dataBegin:])
 		if err != nil {
 			ilog.Warnf("read message failed. err=%v", err)
