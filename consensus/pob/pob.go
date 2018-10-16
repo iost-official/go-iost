@@ -27,6 +27,7 @@ var (
 	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
 	metricsTimeCost            = metrics.NewGauge("iost_time_cost", nil)
+	metricsTransferCost        = metrics.NewGauge("iost_transfer_cost", nil)
 )
 
 var (
@@ -198,6 +199,11 @@ func (p *PoB) broadcastBlockHash(blk *block.Block) {
 	}
 }
 
+func calculateTime() float64 {
+	currentSlot := time.Now().UnixNano() / (1e9 * common.SlotLength)
+	return float64((time.Now().UnixNano() - currentSlot*1e9*common.SlotLength) / 1e6)
+}
+
 func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	if p.baseVariable.Mode() == global.ModeInit {
 		return
@@ -214,6 +220,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	}
 	switch vbm.p2pType {
 	case p2p.NewBlock:
+		metricsTransferCost.Set(calculateTime(), nil)
 		ilog.Infof("[pob] received new block, number:%d, hash=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		ilog.Info("received new block, block number: ", blk.Head.Number)
 		timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
@@ -226,12 +233,8 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 			p.blockReqMap.Store(string(blk.HeadHash()), nil)
 		}
 		ilog.Infof("[pob] handle recv new block start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-
 		err := p.handleRecvBlock(blk)
-		currentSlot := time.Now().UnixNano() / (1e9 * common.SlotLength)
-		timeCost := time.Now().UnixNano() - currentSlot*1e9*common.SlotLength
-		metricsTimeCost.Set(float64(timeCost/1e6), nil)
-		ilog.Infof("[pob] recv + handle time cost: %v, number: %v, hash = %v", timeCost/1e6, blk.Head.Number, common.Base58Encode(blk.HeadHash()))
+		metricsTimeCost.Set(calculateTime(), nil)
 		ilog.Infof("[pob] handle recv new block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		p.broadcastBlockHash(blk) // can use go
 		p.blockReqMap.Delete(string(blk.HeadHash()))
