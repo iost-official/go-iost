@@ -221,9 +221,11 @@ func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
 	bl := e.ho.DB().Balance(e.publisherID)
 
-	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
-		ilog.Error(errCannotPay)
-		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
+	if !e.isSimulated {
+		if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
+			ilog.Error(errCannotPay)
+			return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
+		}
 	}
 
 	tr, err := e.exec(tx0)

@@ -358,8 +358,8 @@ func (s *GRPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTx
 	return &res, nil
 }
 
-// EstimateGas estimate gas used by transaction
-func (s *GRPCServer) EstimateGas(ctx context.Context, rawTx *RawTxReq) (*GasRes, error) {
+// ExecTx only exec the tx, but not put it onto chain
+func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, error) {
 	if rawTx == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -387,7 +387,7 @@ func (s *GRPCServer) EstimateGas(ctx context.Context, rawTx *RawTxReq) (*GasRes,
 		ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
 		return nil, err
 	}
-	return &GasRes{Gas: (uint64)(receipt.GasUsage)}, nil
+	return &ExecTxRes{TxReceiptRaw: receipt.ToTxReceiptRaw()}, nil
 }
 
 // Subscribe used for event
