@@ -1,18 +1,23 @@
 package rpc
 
 import (
+	"context"
 	"errors"
-
-	"github.com/iost-official/go-iost/core/event"
-
+	"fmt"
 	"testing"
 	"time"
 
-	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/txpool"
+	"google.golang.org/grpc"
 
 	"github.com/bouk/monkey"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/event"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/p2p"
 )
 
@@ -27,6 +32,40 @@ func (s *MockApisSubscribeServer) Send(req *SubscribeRes) error {
 		return errors.New("unexpected event topic or data. ev = " + req.Ev.String())
 	}
 	return nil
+}
+
+func disableTestGRPCServer_ExecTx(t *testing.T) {
+	server := "localhost:30002"
+	conn, err := grpc.Dial(server, grpc.WithInsecure())
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	defer conn.Close()
+	client := NewApisClient(conn)
+	rootAccount, err := account.NewAccount(common.Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB"), crypto.Ed25519)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	newAccount, err := account.NewAccount(nil, crypto.Ed25519)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	dataString := fmt.Sprintf(`["%v", "%v", %d]`, rootAccount.ID, newAccount.ID, 100000000)
+	action := tx.NewAction("iost.system", "Transfer", dataString)
+	trx := tx.NewTx([]*tx.Action{&action}, make([][]byte, 0),
+		10000,
+		1,
+		time.Now().Add(time.Second*time.Duration(3)).UnixNano())
+	stx, err := tx.SignTx(trx, rootAccount)
+
+	resp, err := client.ExecTx(context.Background(), &RawTxReq{Data: stx.Encode()})
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if resp.TxReceiptRaw.GasUsage != 303 {
+		t.Fatalf("gas used %d. should be 303", resp.TxReceiptRaw.GasUsage)
+	}
+
 }
 
 func TestRpcServer_Subscribe(t *testing.T) {
