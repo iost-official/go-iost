@@ -240,7 +240,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		metricsTimeCost.Set(t2, nil)
 		ilog.Infof("[pob] transfer cost: %v, total cost: %v", t1, t2)
 		ilog.Infof("[pob] handle recv new block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-		p.broadcastBlockHash(blk) // can use go
+		go p.broadcastBlockHash(blk)
 		p.blockReqMap.Delete(string(blk.HeadHash()))
 		if err != nil {
 			ilog.Errorf("received new block error, err:%v", err)
@@ -318,11 +318,9 @@ func (p *PoB) scheduleLoop() {
 						ilog.Error(err.Error())
 						continue
 					}
-					go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
-
+					p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 					ilog.Infof("[pob] generate block time cost: %v", calculateTime())
 					metricsGenerateBlockTimeCost.Set(calculateTime(), nil)
-
 				}
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
