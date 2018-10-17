@@ -42,7 +42,7 @@ type GRPCServer struct {
 	forkDB     db.MVCCDB
 	visitor    *database.Visitor
 	port       int
-	bv         *global.BaseVariable
+	bv         global.BaseVariable
 }
 
 // NewRPCServer create GRPC rpc server
@@ -57,7 +57,7 @@ func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global
 		forkDB:     forkDb,
 		visitor:    database.NewVisitor(0, forkDb),
 		port:       _global.Config().RPC.GRPCPort,
-		bv:         &_global,
+		bv:         _global,
 	}
 }
 
@@ -107,15 +107,15 @@ func (s *GRPCServer) GetNodeInfo(ctx context.Context, empty *empty.Empty) (*Node
 	res.Network.ID = s.p2pService.ID()
 	res.GitHash = global.GitHash
 	res.BuildTime = global.BuildTime
-	res.Mode = (*s.bv).Mode().String()
+	res.Mode = s.bv.Mode().String()
 	return res, nil
 }
 
 // GetChainInfo return the chain info
 func (s *GRPCServer) GetChainInfo(ctx context.Context, empty *empty.Empty) (*ChainInfoRes, error) {
 	return &ChainInfoRes{
-		NetType:              (*s.bv).Config().Version.NetType,
-		ProtocolVersion:      (*s.bv).Config().Version.ProtocolVersion,
+		NetType:              s.bv.Config().Version.NetType,
+		ProtocolVersion:      s.bv.Config().Version.ProtocolVersion,
 		Height:               s.bchain.Length() - 1,
 		WitnessList:          pob.GetStaticProperty().WitnessList,
 		HeadBlock:            toBlockInfo(s.bc.Head().Block, false),
