@@ -16,6 +16,12 @@ service Apis {
             get: "/getVersionInfo"
         };
     }
+    // get the chain info
+        rpc GetChainInfo (google.protobuf.Empty) returns (ChainInfoRes) {
+            option (google.api.http) = {
+                get: "/getChainInfo"
+            };
+        }
     // get the current height of the blockchain
     rpc GetHeight (google.protobuf.Empty) returns (HeightRes) {
         option (google.api.http) = {
@@ -159,6 +165,32 @@ message VersionInfoRes {
     string gitHash=2;
 }
 
+message BlockInfo {
+    //BlockHead
+    block.BlockHead head = 1;
+    //block hash
+    bytes hash = 2;
+    //transaction list,works when complete is true
+    repeated tx.TxRaw txs = 3;
+    //transaction hash list,works when complete is false
+    repeated bytes txhash= 4 ;
+    //transaction receipt list
+    repeated tx.TxReceiptRaw receipts = 5;
+    //transaction receiptHash list
+    repeated bytes receiptHash = 6;
+}
+
+message ChainInfoRes {
+    string netType = 1;
+    string protocolVersion = 2;
+    int64 height=3;
+    repeated string witnessList = 4;
+    // the longest chain block
+    BlockInfo headBlock = 5;
+    // the latest confirmed block
+    BlockInfo latestConfirmedBlock = 6;
+}
+
 message HeightRes {
     // the height of the blockchain
     int64 height=1;
@@ -205,21 +237,6 @@ message txReceiptRes {
     //transaction receipt
     tx.TxReceiptRaw txReceiptRaw = 1;
     bytes hash = 2;
-}
-
-message BlockInfo {
-    //BlockHead
-    block.BlockHead head = 1;
-    //block hash
-    bytes hash = 2;
-    //transaction list,works when complete is true
-    repeated tx.TxRaw txs = 3;
-    //transaction hash list,works when complete is false
-    repeated bytes txhash= 4 ;
-    //transaction receipt list
-    repeated tx.TxReceiptRaw receipts = 5;
-    //transaction receiptHash list
-    repeated bytes receiptHash = 6;
 }
 
 message PeerInfo {

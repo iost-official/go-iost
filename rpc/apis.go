@@ -3,8 +3,6 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"github.com/iost-official/go-iost/consensus/verifier"
-	"github.com/iost-official/go-iost/vm"
 	"net"
 	"strconv"
 	"strings"
@@ -16,6 +14,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/pob"
+	"github.com/iost-official/go-iost/consensus/verifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/contract"
@@ -26,6 +26,7 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
+	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
 )
 
@@ -41,6 +42,7 @@ type GRPCServer struct {
 	forkDB     db.MVCCDB
 	visitor    *database.Visitor
 	port       int
+	config     *common.Config
 }
 
 // NewRPCServer create GRPC rpc server
@@ -55,6 +57,7 @@ func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global
 		forkDB:     forkDb,
 		visitor:    database.NewVisitor(0, forkDb),
 		port:       _global.Config().RPC.GRPCPort,
+		config:     _global.Config(),
 	}
 }
 
@@ -91,6 +94,18 @@ func (s *GRPCServer) GetVersionInfo(ctx context.Context, empty *empty.Empty) (*V
 	return &VersionInfoRes{
 		BuildTime: global.BuildTime,
 		GitHash:   global.GitHash,
+	}, nil
+}
+
+// GetChainInfo return the chain info
+func (s *GRPCServer) GetChainInfo(ctx context.Context, empty *empty.Empty) (*ChainInfoRes, error) {
+	return &ChainInfoRes{
+		NetType:              s.config.Version.NetType,
+		ProtocolVersion:      s.config.Version.ProtocolVersion,
+		Height:               s.bchain.Length() - 1,
+		WitnessList:          pob.GetStaticProperty().WitnessList,
+		HeadBlock:            toBlockInfo(s.bc.Head().Block, false),
+		LatestConfirmedBlock: toBlockInfo(s.bc.LinkedRoot().Block, false),
 	}, nil
 }
 
@@ -159,23 +174,7 @@ func (s *GRPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*
 	}, nil
 }
 
-// GetBlockByHash get block by block head hash
-func (s *GRPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashReq) (*BlockInfo, error) {
-	if blkHashReq == nil {
-		return nil, fmt.Errorf("argument cannot be nil pointer")
-	}
-
-	hash := blkHashReq.Hash
-	hashBytes := common.Base58Decode(hash)
-	complete := blkHashReq.Complete
-
-	blk, _ := s.bchain.GetBlockByHash(hashBytes)
-	if blk == nil {
-		blk, _ = s.bc.GetBlockByHash(hashBytes)
-	}
-	if blk == nil {
-		return nil, fmt.Errorf("cant find the block")
-	}
+func toBlockInfo(blk *block.Block, complete bool) *BlockInfo {
 	blkInfo := &BlockInfo{
 		Head:   blk.Head,
 		Hash:   blk.HeadHash(),
@@ -196,6 +195,27 @@ func (s *GRPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHash
 			blkInfo.ReceiptHash = append(blkInfo.ReceiptHash, receipt.Hash())
 		}
 	}
+	return blkInfo
+}
+
+// GetBlockByHash get block by block head hash
+func (s *GRPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHashReq) (*BlockInfo, error) {
+	if blkHashReq == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+
+	hash := blkHashReq.Hash
+	hashBytes := common.Base58Decode(hash)
+	complete := blkHashReq.Complete
+
+	blk, _ := s.bchain.GetBlockByHash(hashBytes)
+	if blk == nil {
+		blk, _ = s.bc.GetBlockByHash(hashBytes)
+	}
+	if blk == nil {
+		return nil, fmt.Errorf("cant find the block")
+	}
+	blkInfo := toBlockInfo(blk, complete)
 	return blkInfo, nil
 }
 
@@ -215,19 +235,7 @@ func (s *GRPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq
 	if blk == nil {
 		return nil, fmt.Errorf("cant find the block")
 	}
-	blkInfo := &BlockInfo{
-		Head:   blk.Head,
-		Hash:   blk.HeadHash(),
-		Txs:    make([]*tx.TxRaw, 0),
-		Txhash: make([][]byte, 0),
-	}
-	for _, trx := range blk.Txs {
-		if complete {
-			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
-		} else {
-			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
-		}
-	}
+	blkInfo := toBlockInfo(blk, complete)
 	return blkInfo, nil
 }
 

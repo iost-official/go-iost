@@ -84,6 +84,12 @@ type DebugConfig struct {
 	ListenAddr string
 }
 
+// VersionConfig contrains nettype(mainnet / testnet etc) and protocol info
+type VersionConfig struct {
+	NetType         string
+	ProtocolVersion string
+}
+
 // Config provide all configuration for the application
 type Config struct {
 	ACC     *ACCConfig
@@ -95,6 +101,7 @@ type Config struct {
 	Log     *LogConfig
 	Metrics *MetricsConfig
 	Debug   *DebugConfig
+	Version *VersionConfig
 }
 
 // LoadYamlAsViper load yaml file as viper object
