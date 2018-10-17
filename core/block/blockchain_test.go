@@ -126,6 +126,8 @@ func BenchmarkBlock(b *testing.B) {
 		for j := 0; j < txnum; j++ {
 			txn := tx.NewTx(actions, [][]byte{a1.Pubkey, a2.Pubkey}, 9999, 1, 1)
 			tBlock.Txs = append(tBlock.Txs, txn)
+			tr := tx.NewTxReceipt(txn.Hash())
+			tBlock.Receipts = append(tBlock.Receipts, &tr)
 		}
 		tBlock.CalculateHeadHash()
 		tBlock.Sign = a1.Sign(tBlock.HeadHash())
@@ -136,12 +138,6 @@ func BenchmarkBlock(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			bc.GetBlockByHash(hashes[i%bnum])
-		}
-	})
-	b.Run("Range", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			bc.GetBlockMByHash(hashes[i%bnum])
-			bc.GetBlockTxsMap(hashes[i%bnum])
 		}
 	})
 }

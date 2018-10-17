@@ -4,6 +4,11 @@ import "github.com/iost-official/go-iost/crypto/signature.proto";
 import "github.com/iost-official/go-iost/core/tx/tx.proto";
 package block;
 
+enum BlockType{
+    NORMAL = 0;
+    ONLYHASH = 1;
+}
+
 message BlockHead {
     int64 version = 1;
     bytes parentHash = 2;
@@ -18,9 +23,10 @@ message BlockHead {
 message BlockRaw {
     BlockHead head = 1;
     crypto.SignatureRaw sign = 2;
-    repeated bytes txHashes = 3;
-    repeated tx.TxRaw txs = 4;
-    repeated bytes receiptHashes = 5;
-    repeated tx.TxReceiptRaw receipts = 6;
+    repeated tx.TxRaw txs = 3;
+    repeated tx.TxReceiptRaw receipts = 4;
+    repeated bytes txHashes = 5;
+    repeated bytes receiptHashes =6;
+    BlockType blockType = 7;
 }
 
