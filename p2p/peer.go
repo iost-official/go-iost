@@ -210,7 +210,8 @@ func (p *Peer) writeLoop() {
 			ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 			return
 		case um := <-p.urgentMsgCh:
-			go p.write(um)
+			//go p.write(um)
+			p.write(um)
 		case nm := <-p.normalMsgCh:
 			for done := false; !done; {
 				select {
@@ -218,12 +219,14 @@ func (p *Peer) writeLoop() {
 					ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 					return
 				case um := <-p.urgentMsgCh:
-					go p.write(um)
+					//go p.write(um)
+					p.write(um)
 				default:
 					done = true
 				}
 			}
-			go p.write(nm)
+			//go p.write(nm)
+			p.write(nm)
 		}
 	}
 }
