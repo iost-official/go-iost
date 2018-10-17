@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -42,7 +43,7 @@ type GRPCServer struct {
 	forkDB     db.MVCCDB
 	visitor    *database.Visitor
 	port       int
-	config     *common.Config
+	bv         global.BaseVariable
 }
 
 // NewRPCServer create GRPC rpc server
@@ -57,7 +58,7 @@ func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global
 		forkDB:     forkDb,
 		visitor:    database.NewVisitor(0, forkDb),
 		port:       _global.Config().RPC.GRPCPort,
-		config:     _global.Config(),
+		bv:         _global,
 	}
 }
 
@@ -89,30 +90,37 @@ func (s *GRPCServer) Stop() {
 	return
 }
 
-// GetVersionInfo return the version info
-func (s *GRPCServer) GetVersionInfo(ctx context.Context, empty *empty.Empty) (*VersionInfoRes, error) {
-	return &VersionInfoRes{
-		BuildTime: global.BuildTime,
-		GitHash:   global.GitHash,
-	}, nil
+// GetNodeInfo return the node info
+func (s *GRPCServer) GetNodeInfo(ctx context.Context, empty *empty.Empty) (*NodeInfoRes, error) {
+	netService, ok := s.p2pService.(*p2p.NetService)
+	if !ok {
+		return nil, fmt.Errorf("internal error: netService type conversion failed")
+	}
+	neighbors := netService.GetNeighbors()
+	res := &NodeInfoRes{}
+	res.Network = &NetworkInfo{}
+	res.Network.PeerInfo = make([]*PeerInfo, 0)
+	neighbors.Range(func(k, v interface{}) bool {
+		res.Network.PeerInfo = append(res.Network.PeerInfo, &PeerInfo{ID: k.(peer.ID).Pretty(), Addr: v.(*p2p.Peer).GetAddr()})
+		return true
+	})
+	res.Network.PeerCount = (int32)(len(res.Network.PeerInfo))
+	res.Network.ID = s.p2pService.ID()
+	res.GitHash = global.GitHash
+	res.BuildTime = global.BuildTime
+	res.Mode = s.bv.Mode().String()
+	return res, nil
 }
 
 // GetChainInfo return the chain info
 func (s *GRPCServer) GetChainInfo(ctx context.Context, empty *empty.Empty) (*ChainInfoRes, error) {
 	return &ChainInfoRes{
-		NetType:              s.config.Version.NetType,
-		ProtocolVersion:      s.config.Version.ProtocolVersion,
+		NetType:              s.bv.Config().Version.NetType,
+		ProtocolVersion:      s.bv.Config().Version.ProtocolVersion,
 		Height:               s.bchain.Length() - 1,
 		WitnessList:          pob.GetStaticProperty().WitnessList,
 		HeadBlock:            toBlockInfo(s.bc.Head().Block, false),
 		LatestConfirmedBlock: toBlockInfo(s.bc.LinkedRoot().Block, false),
-	}, nil
-}
-
-// GetHeight get current block height
-func (s *GRPCServer) GetHeight(ctx context.Context, empty *empty.Empty) (*HeightRes, error) {
-	return &HeightRes{
-		Height: s.bchain.Length() - 1,
 	}, nil
 }
 
@@ -239,22 +247,28 @@ func (s *GRPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq
 	return blkInfo, nil
 }
 
-// GetState get value from state db
-func (s *GRPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRes, error) {
-	if key == nil {
+// GetContractStorage get contract storage from state db
+func (s *GRPCServer) GetContractStorage(ctx context.Context, req *GetContractStorageReq) (*GetContractStorageRes, error) {
+	if req == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash()))
-
-	if key.Field == "" {
-		return &GetStateRes{
-			Value: s.visitor.BasicHandler.Get(key.Key),
-		}, nil
+	if req.ContractID == "" {
+		return nil, fmt.Errorf("contract id cannot be empty")
 	}
-
-	return &GetStateRes{
-		Value: s.visitor.MapHandler.MGet(key.Key, key.Field),
-	}, nil
+	s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash()))
+	var value string
+	if req.Field == "" {
+		k := req.ContractID + database.Separator + req.Key
+		value = s.visitor.BasicHandler.Get(k)
+	} else {
+		k := req.ContractID + database.Separator + req.Key
+		value = s.visitor.MapHandler.MGet(k, req.Field)
+	}
+	data, err := json.Marshal(database.Unmarshal(value))
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal %v", value)
+	}
+	return &GetContractStorageRes{JsonStr: string(data)}, nil
 }
 
 // GetContract return a contract by contract id
@@ -309,30 +323,6 @@ func (s *GRPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBa
 	return &GetBalanceRes{
 		Balance: s.visitor.Balance(key.ID),
 	}, nil
-}
-
-// GetNetID get net id
-func (s *GRPCServer) GetNetID(ctx context.Context, empty *empty.Empty) (*GetNetIDRes, error) {
-
-	return &GetNetIDRes{
-		ID: s.p2pService.ID(),
-	}, nil
-}
-
-// GetPeerInfo return peer id and addr. It does not work now... TODO: debug and fix...
-func (s *GRPCServer) GetPeerInfo(ctx context.Context, empty *empty.Empty) (*GetPeerInfoRes, error) {
-	netService, ok := s.p2pService.(*p2p.NetService)
-	if !ok {
-		return nil, fmt.Errorf("internal error: netService type conversion failed")
-	}
-	neighbors := netService.GetNeighbors()
-	res := &GetPeerInfoRes{}
-	neighbors.Range(func(k, v interface{}) bool {
-		res.PeerInfo = append(res.PeerInfo, &PeerInfo{ID: k.(peer.ID).Pretty(), Addr: v.(*p2p.Peer).GetAddr()})
-		return true
-	})
-	res.PeerCount = (int32)(len(res.PeerInfo))
-	return res, nil
 }
 
 // SendRawTx send transaction to blockchain

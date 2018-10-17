@@ -58,10 +58,10 @@ func getNetID() (string, error) {
 	}
 	defer conn.Close()
 	client := rpc.NewApisClient(conn)
-	value, err := client.GetNetID(context.Background(), &empty.Empty{})
+	value, err := client.GetNodeInfo(context.Background(), &empty.Empty{})
 	if err != nil {
 		return "", err
 	}
 
-	return value.ID, nil
+	return value.Network.ID, nil
 }
