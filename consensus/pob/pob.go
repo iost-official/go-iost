@@ -173,6 +173,7 @@ func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 			ilog.Errorf("fail to encode block: %v, err=%v", rh.Number, err)
 			return
 		}
+		ilog.Infof("[pob] send to peer block")
 		p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 		return
 	}
@@ -182,6 +183,7 @@ func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 		ilog.Warnf("failed to get block from blockchain. err=%v", err)
 		return
 	}
+	ilog.Infof("[pob] send to peer block")
 	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 }
 
