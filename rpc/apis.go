@@ -89,12 +89,23 @@ func (s *GRPCServer) Stop() {
 	return
 }
 
-// GetVersionInfo return the version info
-func (s *GRPCServer) GetVersionInfo(ctx context.Context, empty *empty.Empty) (*VersionInfoRes, error) {
-	return &VersionInfoRes{
-		BuildTime: global.BuildTime,
-		GitHash:   global.GitHash,
-	}, nil
+// GetNodeInfo return the node info
+func (s *GRPCServer) GetNodeInfo(ctx context.Context, empty *empty.Empty) (*NodeInfoRes, error) {
+	netService, ok := s.p2pService.(*p2p.NetService)
+	if !ok {
+		return nil, fmt.Errorf("internal error: netService type conversion failed")
+	}
+	neighbors := netService.GetNeighbors()
+	res := &NodeInfoRes{}
+	neighbors.Range(func(k, v interface{}) bool {
+		res.Network.PeerInfo = append(res.Network.PeerInfo, &PeerInfo{ID: k.(peer.ID).Pretty(), Addr: v.(*p2p.Peer).GetAddr()})
+		return true
+	})
+	res.Network.PeerCount = (int32)(len(res.Network.PeerInfo))
+	res.Network.ID = s.p2pService.ID()
+	res.GitHash = global.GitHash
+	res.BuildTime = global.BuildTime
+	return res, nil
 }
 
 // GetChainInfo return the chain info
@@ -309,30 +320,6 @@ func (s *GRPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBa
 	return &GetBalanceRes{
 		Balance: s.visitor.Balance(key.ID),
 	}, nil
-}
-
-// GetNetID get net id
-func (s *GRPCServer) GetNetID(ctx context.Context, empty *empty.Empty) (*GetNetIDRes, error) {
-
-	return &GetNetIDRes{
-		ID: s.p2pService.ID(),
-	}, nil
-}
-
-// GetPeerInfo return peer id and addr. It does not work now... TODO: debug and fix...
-func (s *GRPCServer) GetPeerInfo(ctx context.Context, empty *empty.Empty) (*GetPeerInfoRes, error) {
-	netService, ok := s.p2pService.(*p2p.NetService)
-	if !ok {
-		return nil, fmt.Errorf("internal error: netService type conversion failed")
-	}
-	neighbors := netService.GetNeighbors()
-	res := &GetPeerInfoRes{}
-	neighbors.Range(func(k, v interface{}) bool {
-		res.PeerInfo = append(res.PeerInfo, &PeerInfo{ID: k.(peer.ID).Pretty(), Addr: v.(*p2p.Peer).GetAddr()})
-		return true
-	})
-	res.PeerCount = (int32)(len(res.PeerInfo))
-	return res, nil
 }
 
 // SendRawTx send transaction to blockchain
