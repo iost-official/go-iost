@@ -10,6 +10,8 @@ import (
 
 	"github.com/iost-official/go-iost/ilog"
 
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/metrics"
 	libnet "github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/multiformats/go-multiaddr"
@@ -18,9 +20,10 @@ import (
 
 // errors
 var (
-	ErrStreamCountExceed  = errors.New("stream count exceed")
-	ErrMessageChannelFull = errors.New("message channel is full")
-	ErrDuplicateMessage   = errors.New("reduplicate message")
+	ErrStreamCountExceed         = errors.New("stream count exceed")
+	ErrMessageChannelFull        = errors.New("message channel is full")
+	ErrDuplicateMessage          = errors.New("reduplicate message")
+	metricsBlockHeaderArriveTime = metrics.NewGauge("iost_header_arrive_time", nil)
 )
 
 const (
@@ -210,14 +213,20 @@ func (p *Peer) writeLoop() {
 	}
 }
 
+func calculateTime(t time.Time) float64 {
+	currentSlot := t.UnixNano() / (1e9 * common.SlotLength)
+	return float64((t.UnixNano() - currentSlot*1e9*common.SlotLength) / 1e6)
+}
+
 func (p *Peer) readLoop(stream libnet.Stream) {
 	header := make([]byte, dataBegin)
 	for {
-		_, err := io.ReadFull(stream, header)
+		_, err := io.ReadFull(stream, header) //wait up to 3000ms
 		if err != nil {
 			ilog.Warnf("read header failed. err=%v", err)
 			return
 		}
+		t1 := time.Now()
 		chainID := binary.BigEndian.Uint32(header[chainIDBegin:chainIDEnd])
 		if chainID != p.peerManager.config.ChainID {
 			ilog.Warnf("mismatched chainID. chainID=%d", chainID)
@@ -225,8 +234,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
 		data := make([]byte, dataBegin+length)
-		t1 := time.Now()
-		_, err = io.ReadFull(stream, data[dataBegin:])
+		_, err = io.ReadFull(stream, data[dataBegin:]) //0ms
 		if err != nil {
 			ilog.Warnf("read message failed. err=%v", err)
 			return
@@ -236,6 +244,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		if msg.messageType() == NewBlock {
 			ilog.Infof("[pob] New Block recv time cost: %v", time.Since(t1).Nanoseconds()/1e6)
 			ilog.Infof("[pob] recv start time: %v, recv end time: %v", t1, time.Now())
+			metricsBlockHeaderArriveTime.Set(calculateTime(t1), nil)
 			metricsRecvBlockTimeCost.Set(float64(time.Since(t1).Nanoseconds()/1e6), nil)
 		}
 		if err != nil {
