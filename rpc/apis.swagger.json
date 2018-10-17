@@ -188,18 +188,40 @@
         ]
       }
     },
-    "/getHeight": {
+    "/getContractStorage/{contractID}/{key}": {
       "get": {
-        "summary": "get the current height of the blockchain",
-        "operationId": "GetHeight",
+        "summary": "get the value of the corresponding key in stateDB",
+        "operationId": "GetContractStorage",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcHeightRes"
+              "$ref": "#/definitions/rpcGetContractStorageRes"
             }
           }
         },
+        "parameters": [
+          {
+            "name": "contractID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "key",
+            "description": "the key in the StateDB",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "field",
+            "description": "get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case).",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
         "tags": [
           "Apis"
         ]
@@ -217,39 +239,6 @@
             }
           }
         },
-        "tags": [
-          "Apis"
-        ]
-      }
-    },
-    "/getState/{key}": {
-      "get": {
-        "summary": "get the value of the corresponding key in stateDB",
-        "operationId": "GetState",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/rpcGetStateRes"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "description": "the key in the StateDB",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "field",
-            "description": "get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case).",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
         "tags": [
           "Apis"
         ]
@@ -641,22 +630,12 @@
         }
       }
     },
-    "rpcGetStateRes": {
+    "rpcGetContractStorageRes": {
       "type": "object",
       "properties": {
-        "value": {
+        "jsonStr": {
           "type": "string",
           "title": "the value of the corresponding key in the StateDB"
-        }
-      }
-    },
-    "rpcHeightRes": {
-      "type": "object",
-      "properties": {
-        "height": {
-          "type": "string",
-          "format": "int64",
-          "title": "the height of the blockchain"
         }
       }
     },

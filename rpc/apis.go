@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -120,13 +121,6 @@ func (s *GRPCServer) GetChainInfo(ctx context.Context, empty *empty.Empty) (*Cha
 		WitnessList:          pob.GetStaticProperty().WitnessList,
 		HeadBlock:            toBlockInfo(s.bc.Head().Block, false),
 		LatestConfirmedBlock: toBlockInfo(s.bc.LinkedRoot().Block, false),
-	}, nil
-}
-
-// GetHeight get current block height
-func (s *GRPCServer) GetHeight(ctx context.Context, empty *empty.Empty) (*HeightRes, error) {
-	return &HeightRes{
-		Height: s.bchain.Length() - 1,
 	}, nil
 }
 
@@ -253,22 +247,28 @@ func (s *GRPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq
 	return blkInfo, nil
 }
 
-// GetState get value from state db
-func (s *GRPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRes, error) {
-	if key == nil {
+// GetContractStorage get contract storage from state db
+func (s *GRPCServer) GetContractStorage(ctx context.Context, req *GetContractStorageReq) (*GetContractStorageRes, error) {
+	if req == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash()))
-
-	if key.Field == "" {
-		return &GetStateRes{
-			Value: s.visitor.BasicHandler.Get(key.Key),
-		}, nil
+	if req.ContractID == "" {
+		return nil, fmt.Errorf("contract id cannot be empty")
 	}
-
-	return &GetStateRes{
-		Value: s.visitor.MapHandler.MGet(key.Key, key.Field),
-	}, nil
+	s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash()))
+	var value string
+	if req.Field == "" {
+		k := req.ContractID + database.Separator + req.Key
+		value = s.visitor.BasicHandler.Get(k)
+	} else {
+		k := req.ContractID + database.Separator + req.Key
+		value = s.visitor.MapHandler.MGet(k, req.Field)
+	}
+	data, err := json.Marshal(database.Unmarshal(value))
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal %v", value)
+	}
+	return &GetContractStorageRes{JsonStr: string(data)}, nil
 }
 
 // GetContract return a contract by contract id

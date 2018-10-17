@@ -17,15 +17,9 @@ service Apis {
         };
     }
     // get the chain info
-        rpc GetChainInfo (google.protobuf.Empty) returns (ChainInfoRes) {
-            option (google.api.http) = {
-                get: "/getChainInfo"
-            };
-        }
-    // get the current height of the blockchain
-    rpc GetHeight (google.protobuf.Empty) returns (HeightRes) {
+    rpc GetChainInfo (google.protobuf.Empty) returns (ChainInfoRes) {
         option (google.api.http) = {
-            get: "/getHeight"
+             get: "/getChainInfo"
         };
     }
     // get the tx by hash
@@ -65,9 +59,9 @@ service Apis {
         };
     }
     // get the value of the corresponding key in stateDB
-    rpc GetState (GetStateReq) returns (GetStateRes) {
+    rpc GetContractStorage (GetContractStorageReq) returns (GetContractStorageRes) {
         option (google.api.http) = {
-            get: "/getState/{key}"
+            get: "/getContractStorage/{contractID}/{key}"
         };
     }
     // get contract by cid
@@ -125,11 +119,12 @@ message GetBalanceReq {
     bool useLongestChain = 2;
 }
 
-message GetStateReq {
+message GetContractStorageReq {
+    string contractID=1;
     //the key in the StateDB
-    string key=1;
+    string key=2;
     // get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
-    string field = 2;
+    string field=3;
 }
 
 message GetContractReq {
@@ -192,24 +187,14 @@ message ChainInfoRes {
     BlockInfo latestConfirmedBlock = 6;
 }
 
-message HeightRes {
-    // the height of the blockchain
-    int64 height=1;
-}
-
 message GetBalanceRes {
     // the queried balance
     int64 balance=1;
 }
 
-message GetNetIDRes {
-    //NetID
-    string ID=1;
-}
-
-message GetStateRes {
+message GetContractStorageRes {
     //the value of the corresponding key in the StateDB
-    string value=1;
+    string jsonStr=1;
 }
 
 message GetContractRes {
