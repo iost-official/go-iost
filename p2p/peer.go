@@ -24,6 +24,10 @@ var (
 	ErrMessageChannelFull        = errors.New("message channel is full")
 	ErrDuplicateMessage          = errors.New("reduplicate message")
 	metricsBlockHeaderArriveTime = metrics.NewGauge("iost_header_arrive_time", nil)
+	metricsGetStreamTimeCost     = metrics.NewGauge("iost_get_stream_time_cost", nil)
+	metricsWriteStreamTimeCost   = metrics.NewGauge("iost_write_stream_time_cost", nil)
+	metricsGetStreamStartTime    = metrics.NewGauge("iost_get_stream_start_time", nil)
+	metricsWriteStreamStartTime  = metrics.NewGauge("iost_write_stream_start_time", nil)
 )
 
 const (
@@ -158,7 +162,9 @@ func (p *Peer) getStream() (libnet.Stream, error) {
 }
 
 func (p *Peer) write(m *p2pMessage) error {
+	t1 := time.Now()
 	stream, err := p.getStream()
+	t2 := time.Now()
 	// if getStream fails, the TCP connection may be broken and we should stop the peer.
 	if err != nil {
 		ilog.Errorf("get stream fails. err=%v", err)
@@ -173,12 +179,21 @@ func (p *Peer) write(m *p2pMessage) error {
 		p.CloseStream(stream)
 		return err
 	}
-
+	t3 := time.Now()
 	_, err = stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
 		p.CloseStream(stream)
 		return err
+	}
+	t4 := time.Now()
+	if m.messageType() == NewBlock {
+		ilog.Infof("[pob] get stream start time: %v, stream start write time: %v", t1, t3)
+		ilog.Infof("[pob] get stream time cost: %v, stream write time cost: %v", t2.Sub(t1).Nanoseconds()/1e6, t4.Sub(t3).Nanoseconds()/1e6)
+		metricsGetStreamTimeCost.Set(float64(t2.Sub(t1).Nanoseconds()/1e6), nil)
+		metricsWriteStreamTimeCost.Set(float64(t4.Sub(t3).Nanoseconds()/1e6), nil)
+		metricsGetStreamStartTime.Set(calculateTime(t1), nil)
+		metricsWriteStreamStartTime.Set(calculateTime(t3), nil)
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
 	byteOutCounter.Add(float64(len(m.content())), tagkv)
