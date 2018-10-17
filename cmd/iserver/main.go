@@ -183,7 +183,6 @@ func main() {
 	ilog.Stop()
 	bv.BlockChain().Close()
 	bv.StateDB().Close()
-	bv.TxDB().Close()
 }
 
 func waitExit() {

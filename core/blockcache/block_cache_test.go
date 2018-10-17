@@ -75,7 +75,6 @@ func TestBlockCache(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
-	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
@@ -200,7 +199,6 @@ func TestVote(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
-	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 
 	Convey("test api", t, func() {
