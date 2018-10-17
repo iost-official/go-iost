@@ -3,7 +3,6 @@ package global
 import (
 	"errors"
 	"fmt"
-
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db/kv"
 )

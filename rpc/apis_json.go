@@ -46,7 +46,7 @@ func (j *JSONServer) Start() error {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		mux := runtime.NewServeMux()
+		mux := runtime.NewServeMux(runtime.WithMarshalerOption("*", &runtime.JSONPb{OrigName: true, EmitDefaults: true}))
 		opts := []grpc.DialOption{grpc.WithInsecure()}
 
 		err := RegisterApisHandlerFromEndpoint(ctx, mux, j.endPoint, opts)
