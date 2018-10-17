@@ -39,7 +39,7 @@ type MVCCDB interface {
 
 // NewMVCCDB return new mvccdb
 func NewMVCCDB(path string) (MVCCDB, error) {
-	return NewCacheMVCCDB(path, mvcc.TrieCache)
+	return NewCacheMVCCDB(path, mvcc.MapCache)
 }
 
 // Item is the value of cache

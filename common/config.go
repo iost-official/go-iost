@@ -5,7 +5,7 @@ import (
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // ACCConfig account of the system
@@ -18,10 +18,10 @@ type ACCConfig struct {
 // GenesisConfig config of the genesis block
 type GenesisConfig struct {
 	CreateGenesis    bool
-	GenesisHash      string
+	InitialTimestamp string
 	WitnessInfo      []string
 	VoteContractPath string
-	AdminID			 string
+	AdminID          string
 }
 
 // DBConfig config of the database
@@ -87,7 +87,7 @@ type DebugConfig struct {
 // Config provide all configuration for the application
 type Config struct {
 	ACC     *ACCConfig
-	Genesis *GenesisConfig
+	Genesis string
 	VM      *VMConfig
 	DB      *DBConfig
 	P2P     *P2PConfig
@@ -97,8 +97,8 @@ type Config struct {
 	Debug   *DebugConfig
 }
 
-// NewConfig returns a new instance of Config
-func NewConfig(configfile string) *Config {
+// LoadYamlAsViper load yaml file as viper object
+func LoadYamlAsViper(configfile string) *viper.Viper {
 	v := viper.GetViper()
 	v.SetConfigType("yaml")
 
@@ -111,6 +111,12 @@ func NewConfig(configfile string) *Config {
 		ilog.Fatalf("Failed to read config file: %v", err)
 	}
 
+	return v
+}
+
+// NewConfig returns a new instance of Config
+func NewConfig(configfile string) *Config {
+	v := LoadYamlAsViper(configfile)
 	c := &Config{}
 	if err := v.Unmarshal(c); err != nil {
 		ilog.Fatalf("Unable to decode into struct, %v", err)

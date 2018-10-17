@@ -4,13 +4,13 @@
 [![](https://img.shields.io/badge/freenode-%23ipfs-blue.svg?style=flat-square)](http://webchat.freenode.net/?channels=%23ipfs)
 [![](https://img.shields.io/badge/project-IPFS-blue.svg?style=flat-square)](http://ipfs.io/)
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
-[![GoDoc](https://godoc.org/github.com/ipfs/go-libp2p-secio?status.svg)](https://godoc.org/github.com/ipfs/go-libp2p-secio)
-[![Coverage Status](https://coveralls.io/repos/github/ipfs/go-libp2p-secio/badge.svg?branch=master)](https://coveralls.io/github/ipfs/go-libp2p-secio?branch=master)
-[![Build Status](https://travis-ci.org/ipfs/go-libp2p-secio.svg?branch=master)](https://travis-ci.org/ipfs/go-libp2p-secio)
+[![GoDoc](https://godoc.org/github.com/libp2p/go-libp2p-secio?status.svg)](https://godoc.org/github.com/libp2p/go-libp2p-secio)
+[![Coverage Status](https://coveralls.io/repos/github/libp2p/go-libp2p-secio/badge.svg?branch=master)](https://coveralls.io/github/libp2p/go-libp2p-secio?branch=master)
+[![Build Status](https://travis-ci.org/libp2p/go-libp2p-secio.svg?branch=master)](https://travis-ci.org/libp2p/go-libp2p-secio)
 
 > go-libp2p's secio encrypted transport
 
-Package `secio` is used to encrypt `go-libp2p-conn` connections. Connections wrapped by `secio` use secure sessions provided by this package to encrypt all traffic. A TLS-like handshake is used to setup the communication channel.
+Package `go-libp2p-secio` is a libp2p [stream security transport](https://github.com/libp2p/go-stream-security). Connections wrapped by `secio` use secure sessions provided by this package to encrypt all traffic. A TLS-like handshake is used to setup the communication channel.
 
 ## Install
 
@@ -31,7 +31,7 @@ go get -u github.com/whyrusleeping/gx
 go get -u github.com/whyrusleeping/gx-go
 cd <your-project-repository>
 gx init
-gx import github.com/multiformats/go-libp2p-secio
+gx import github.com/libp2p/go-libp2p-secio
 gx install --global
 gx-go --rewrite
 ```
@@ -44,7 +44,7 @@ For more information about how `go-libp2p-secio` is used in the libp2p context, 
 
 Feel free to join in. All welcome. Open an [issue](https://github.com/libp2p/go-libp2p-secio/issues)!
 
-This repository falls under the IPFS [Code of Conduct](https://github.com/ipfs/community/blob/master/code-of-conduct.md).
+This repository falls under the IPFS [Code of Conduct](https://github.com/libp2p/community/blob/master/code-of-conduct.md).
 
 ### Want to hack on IPFS?
 

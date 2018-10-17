@@ -22,6 +22,7 @@ type StorageBackend interface {
 	Has(key []byte) (bool, error)
 	Delete(key []byte) error
 	Keys(prefix []byte) ([][]byte, error)
+	Range(prefix []byte) (interface{}, error)
 	BeginBatch() error
 	CommitBatch() error
 	Close() error
@@ -54,4 +55,15 @@ func NewStorage(path string, t StorageType) (*Storage, error) {
 		}
 		return &Storage{StorageBackend: sb}, nil
 	}
+}
+
+type Interator interface {
+	Next() bool
+	Key() []byte
+	Value() []byte
+}
+
+func (s *Storage) Range(prefix []byte) (Interator, error) {
+	iterIF, _ := s.StorageBackend.Range(prefix)
+	return iterIF.(Interator), nil
 }

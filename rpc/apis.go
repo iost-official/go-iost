@@ -10,10 +10,12 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/bitly/go-simplejson"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
@@ -30,7 +32,6 @@ import (
 type GRPCServer struct {
 	bc         blockcache.BlockCache
 	p2pService p2p.Service
-	txdb       global.TxDB
 	txpool     txpool.TxPool
 	bchain     block.Chain
 	forkDB     db.MVCCDB
@@ -42,7 +43,6 @@ type GRPCServer struct {
 func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable, p2pService p2p.Service) *GRPCServer {
 	forkDb := _global.StateDB().Fork()
 	return &GRPCServer{
-		txdb:       _global.TxDB(),
 		p2pService: p2pService,
 		txpool:     tp,
 		bchain:     _global.BlockChain(),
@@ -81,6 +81,14 @@ func (s *GRPCServer) Stop() {
 	return
 }
 
+// GetVersionInfo return the version info
+func (s *GRPCServer) GetVersionInfo(ctx context.Context, empty *empty.Empty) (*VersionInfoRes, error) {
+	return &VersionInfoRes{
+		BuildTime: global.BuildTime,
+		GitHash:   global.GitHash,
+	}, nil
+}
+
 // GetHeight get current block height
 func (s *GRPCServer) GetHeight(ctx context.Context, empty *empty.Empty) (*HeightRes, error) {
 	return &HeightRes{
@@ -96,7 +104,7 @@ func (s *GRPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, er
 	txHash := hash.Hash
 	txHashBytes := common.Base58Decode(txHash)
 
-	trx, err := s.txdb.GetTx(txHashBytes)
+	trx, err := s.bchain.GetTx(txHashBytes)
 
 	if err != nil {
 		return nil, err
@@ -116,7 +124,7 @@ func (s *GRPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*Tx
 	receiptHash := hash.Hash
 	receiptHashBytes := common.Base58Decode(receiptHash)
 
-	receipt, err := s.txdb.GetReceipt(receiptHashBytes)
+	receipt, err := s.bchain.GetReceipt(receiptHashBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +143,7 @@ func (s *GRPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*
 	txHash := hash.Hash
 	txHashBytes := common.Base58Decode(txHash)
 
-	receipt, err := s.txdb.GetReceiptByTxHash(txHashBytes)
+	receipt, err := s.bchain.GetReceiptByTxHash(txHashBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -234,6 +242,45 @@ func (s *GRPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateR
 	return &GetStateRes{
 		Value: s.visitor.MapHandler.MGet(key.Key, key.Field),
 	}, nil
+}
+
+// GetContract return a contract by contract id
+func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*GetContractRes, error) {
+	if key == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	if key.Key == "" {
+		return nil, fmt.Errorf("argument cannot be empty string")
+	}
+	if !strings.HasPrefix(key.Key, "Contract") {
+		return nil, fmt.Errorf("Contract id should start with \"Contract\"")
+	}
+	txHashBytes := common.Base58Decode(key.Key[len("Contract"):])
+	trx, err := s.bchain.GetTx(txHashBytes)
+	if err != nil {
+		return nil, err
+	}
+	// assume only one 'SetCode' action
+	txActionName := trx.Actions[0].ActionName
+	if trx.Actions[0].Contract != "iost.system" || txActionName != "SetCode" && txActionName != "UpdateCode" {
+		return nil, fmt.Errorf("Not a SetCode or Update transaction")
+	}
+	js, err := simplejson.NewJson([]byte(trx.Actions[0].Data))
+	if err != nil {
+		return nil, err
+	}
+	contractStr, err := js.GetIndex(0).String()
+	if err != nil {
+		return nil, err
+	}
+	contract := &contract.Contract{}
+	err = contract.B64Decode(contractStr)
+	if err != nil {
+		return nil, err
+	}
+	return &GetContractRes{Value: contract}, nil
+	//return &GetContractRes{Value: s.visitor.Contract(key.Key)}, nil
+
 }
 
 // GetBalance get account balance

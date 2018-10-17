@@ -10,6 +10,7 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
+
 	libp2p "github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
@@ -154,7 +155,7 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 		libp2p.Identity(pk),
 		libp2p.NATPortMap(),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", tcpAddr.IP, tcpAddr.Port)),
-		libp2p.Muxer(mplex.DefaultTransport),
+		libp2p.Muxer(protocolID, mplex.DefaultTransport),
 	}
 	h, err := libp2p.New(context.Background(), opts...)
 	if err != nil {

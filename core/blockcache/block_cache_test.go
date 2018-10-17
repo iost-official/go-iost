@@ -53,7 +53,7 @@ func TestBlockCache(t *testing.T) {
 	s3 := genBlock(s2, "w4", 4)
 
 	txdb := core_mock.NewMockTxDB(ctl)
-	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
+	txdb.EXPECT().Push(Any(), Any(), Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
@@ -75,7 +75,6 @@ func TestBlockCache(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
-	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
@@ -177,7 +176,7 @@ func TestVote(t *testing.T) {
 	//fmt.Println(b5)
 
 	txdb := core_mock.NewMockTxDB(ctl)
-	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
+	txdb.EXPECT().Push(Any(), Any(), Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
@@ -200,7 +199,6 @@ func TestVote(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
-	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 
 	Convey("test api", t, func() {

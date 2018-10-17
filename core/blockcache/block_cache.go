@@ -35,7 +35,7 @@ const (
 )
 
 // BlockCacheNode is the implementation of BlockCacheNode
-type BlockCacheNode struct {
+type BlockCacheNode struct { //nolint:golint
 	Block        *block.Block
 	Parent       *BlockCacheNode
 	Children     map[*BlockCacheNode]bool
@@ -123,7 +123,7 @@ type BlockCache interface {
 }
 
 // BlockCacheImpl is the implementation of BlockCache
-type BlockCacheImpl struct {
+type BlockCacheImpl struct { //nolint:golint
 	linkedRoot   *BlockCacheNode
 	singleRoot   *BlockCacheNode
 	head         *BlockCacheNode
@@ -352,11 +352,6 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			ilog.Errorf("flush mvcc error: %v", err)
 			return err
 		}
-		err = bc.baseVariable.TxDB().Push(retain.Block.Txs, retain.Block.Receipts)
-		if err != nil {
-			ilog.Errorf("Database error, Transaction Push err:%v", err)
-			return err
-		}
 		bc.delNode(cur)
 		retain.Parent = nil
 		retain.LibWitnessHandle()
@@ -412,11 +407,10 @@ func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 	return bc.head
 }
 
-//for debug
-//draw the blockcache
+// PICSIZE draw the blockcache, for debug
 const PICSIZE int = 1000
 
-// PICSIZE draw the blockcache
+// Variable for drawing the blockcache
 var pic = makePic()
 var picX, picY int
 

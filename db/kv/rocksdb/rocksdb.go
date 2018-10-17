@@ -34,11 +34,12 @@ func NewDB(path string) (*DB, error) {
 	C.rocksdb_options_increase_parallelism(coptions, C.int(cpus))
 	C.rocksdb_options_optimize_level_style_compaction(coptions, 0)
 	C.rocksdb_options_set_create_if_missing(coptions, 1)
+	C.rocksdb_options_set_max_open_files(coptions, 256)
 
 	var cerr *C.char
 	defer C.free(unsafe.Pointer(cerr))
 
-	var db *C.rocksdb_t = C.rocksdb_open(coptions, cpath, &cerr)
+	var cdb *C.rocksdb_t = C.rocksdb_open(coptions, cpath, &cerr)
 	var croptions *C.rocksdb_readoptions_t = C.rocksdb_readoptions_create()
 	var cwoptions *C.rocksdb_writeoptions_t = C.rocksdb_writeoptions_create()
 
@@ -49,7 +50,7 @@ func NewDB(path string) (*DB, error) {
 	}
 
 	return &DB{
-		cdb:       db,
+		cdb:       cdb,
 		cbatch:    nil,
 		croptions: croptions,
 		cwoptions: cwoptions,
@@ -70,7 +71,7 @@ func (d *DB) Get(key []byte) ([]byte, error) {
 	defer C.free(unsafe.Pointer(cvalue))
 
 	err := C.GoString(cerr)
-	value := C.GoString(cvalue)
+	value := C.GoStringN(cvalue, C.int(clen))
 
 	if err != "" {
 		return nil, fmt.Errorf("failed to get by rocksdb: %v", err)
@@ -118,7 +119,7 @@ func (d *DB) Has(key []byte) (bool, error) {
 	defer C.free(unsafe.Pointer(cvalue))
 
 	err := C.GoString(cerr)
-	value := C.GoString(cvalue)
+	value := C.GoStringN(cvalue, C.int(clen))
 
 	if err != "" {
 		return false, fmt.Errorf("failed to has by rocksdb: %v", err)
@@ -192,7 +193,7 @@ func (d *DB) Keys(prefix []byte) ([][]byte, error) {
 		// rocksdb_iter_key return a const char*, so free it in C/C++ code
 		var ckey *C.char = C.rocksdb_iter_key(iter, &ckeylen)
 
-		key := C.GoString(ckey)
+		key := C.GoStringN(ckey, C.int(ckeylen))
 
 		keys = append(keys, []byte(key))
 	}
@@ -251,4 +252,8 @@ func (d *DB) Close() error {
 	C.rocksdb_writeoptions_destroy(d.cwoptions)
 
 	return nil
+}
+
+func (d *DB) Range(prefix []byte) (interface{}, error) {
+	return nil, nil
 }

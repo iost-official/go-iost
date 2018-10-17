@@ -111,6 +111,8 @@ func main() {
 
 	initLogger(conf.Log)
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
+	ilog.Infof("build time:%v", global.BuildTime)
+	ilog.Infof("git hash:%v", global.GitHash)
 
 	vm.SetUp(conf.VM)
 
@@ -122,10 +124,6 @@ func main() {
 	bv, err := global.New(conf)
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)
-	}
-	if conf.Genesis.CreateGenesis {
-		genesisBlock, _ := bv.BlockChain().GetBlockByNumber(0)
-		ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
 	}
 	var app common.App
 
@@ -185,7 +183,6 @@ func main() {
 	ilog.Stop()
 	bv.BlockChain().Close()
 	bv.StateDB().Close()
-	bv.TxDB().Close()
 }
 
 func waitExit() {

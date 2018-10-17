@@ -8,11 +8,12 @@ import (
 
 	"strconv"
 
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db/kv"
 )
 
 // BlockChain is the implementation of chain
-type BlockChain struct {
+type BlockChain struct { //nolint:golint
 	blockChainDB *kv.Storage
 	length       int64
 }
@@ -21,6 +22,11 @@ var (
 	blockLength       = []byte("BlockLength")
 	blockNumberPrefix = []byte("n")
 	blockPrefix       = []byte("H")
+	txPrefix          = []byte("t") // txPrefix+tx hash -> tx data
+	bTxPrefix         = []byte("B") // txPrefix+tx hash -> tx data
+	txReceiptPrefix   = []byte("h") // receiptHashPrefix + tx hash -> receipt hash
+	receiptPrefix     = []byte("r") // receiptPrefix + receipt hash -> receipt data
+	bReceiptPrefix    = []byte("b") // txPrefix+tx hash -> tx data
 )
 
 // Int64ToByte is int64 to byte
@@ -78,12 +84,23 @@ func (bc *BlockChain) Push(block *Block) error {
 	hash := block.HeadHash()
 	number := block.Head.Number
 	bc.blockChainDB.Put(append(blockNumberPrefix, Int64ToByte(number)...), hash)
-	blockByte, err := block.Encode()
+	blockByte, err := block.EncodeM()
 	if err != nil {
 		return errors.New("fail to encode block")
 	}
 	bc.blockChainDB.Put(append(blockPrefix, hash...), blockByte)
 	bc.blockChainDB.Put(blockLength, Int64ToByte(number+1))
+	for i, tx := range block.Txs {
+		tHash := tx.Hash()
+		bc.blockChainDB.Put(append(txPrefix, tHash...), append(hash, tHash...))
+		bc.blockChainDB.Put(append(bTxPrefix, append(hash, tHash...)...), tx.Encode())
+
+		// save receipt
+		rHash := block.Receipts[i].Hash()
+		bc.blockChainDB.Put(append(txReceiptPrefix, tHash...), append(hash, rHash...))
+		bc.blockChainDB.Put(append(receiptPrefix, rHash...), append(hash, rHash...))
+		bc.blockChainDB.Put(append(bReceiptPrefix, append(hash, rHash...)...), block.Receipts[i].Encode())
+	}
 	err = bc.blockChainDB.CommitBatch()
 	if err != nil {
 		return fmt.Errorf("fail to put block, err:%s", err)
@@ -138,12 +155,40 @@ func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	var block Block
-	err = block.Decode(blockByte)
+	var blk Block
+	err = blk.Decode(blockByte)
 	if err != nil {
 		return nil, errors.New("fail to decode blockByte")
 	}
-	return &block, nil
+	if blk.TxHashes != nil {
+		blk.Txs = make([]*tx.Tx, len(blk.TxHashes))
+		txsMap, err := bc.getBlockTxsMap(hash)
+		if err != nil {
+			return nil, err
+		}
+		for i, hash := range blk.TxHashes {
+			if tx, ok := txsMap[string(hash)]; ok {
+				blk.Txs[i] = tx
+			} else {
+				return nil, fmt.Errorf("miss the tx, tx hash: %s", hash)
+			}
+		}
+	}
+	if blk.ReceiptHashes != nil {
+		blk.Receipts = make([]*tx.TxReceipt, len(blk.ReceiptHashes))
+		receiptMap, err := bc.getBlockReceiptMap(hash)
+		if err != nil {
+			return nil, err
+		}
+		for i, hash := range blk.ReceiptHashes {
+			if tr, ok := receiptMap[string(hash)]; ok {
+				blk.Receipts[i] = tr
+			} else {
+				return nil, fmt.Errorf("miss the tx receipt, tx receipt hash: %s", hash)
+			}
+		}
+	}
+	return &blk, nil
 }
 
 // GetBlockByNumber is get block by number
@@ -155,11 +200,119 @@ func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 	return bc.GetBlockByHash(hash)
 }
 
+func (bc *BlockChain) getBlockTxsMap(hash []byte) (map[string]*tx.Tx, error) {
+	iter, err := bc.blockChainDB.Range(append(bTxPrefix, hash...))
+	if err != nil {
+		return nil, errors.New("fail to get block txs")
+	}
+	txsMap := make(map[string]*tx.Tx, 0)
+	for iter.Next() {
+		var tt tx.Tx
+		err = tt.Decode(iter.Value())
+		if err != nil {
+			return nil, errors.New("fail to decode tx")
+		}
+		txsMap[string(tt.Hash())] = &tt
+	}
+	return txsMap, nil
+}
+
+func (bc *BlockChain) getBlockReceiptMap(hash []byte) (map[string]*tx.TxReceipt, error) {
+	iter, err := bc.blockChainDB.Range(append(bReceiptPrefix, hash...))
+	if err != nil {
+		return nil, errors.New("fail to get block txs")
+	}
+	receiptMap := make(map[string]*tx.TxReceipt, 0)
+	for iter.Next() {
+		var tr tx.TxReceipt
+		err = tr.Decode(iter.Value())
+		if err != nil {
+			return nil, errors.New("fail to decode tx")
+		}
+		receiptMap[string(tr.Hash())] = &tr
+	}
+	return receiptMap, nil
+}
+
+// GetTx gets tx with tx's hash.
+func (bc *BlockChain) GetTx(hash []byte) (*tx.Tx, error) {
+	tx := tx.Tx{}
+	bTx, err := bc.blockChainDB.Get(append(txPrefix, hash...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to Get the tx: %v", err)
+	}
+	txData, err := bc.blockChainDB.Get(append(bTxPrefix, bTx...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to Get the tx: %v", err)
+	}
+	if len(txData) == 0 {
+		return nil, fmt.Errorf("failed to Get the tx: not found")
+	}
+	err = tx.Decode(txData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to Decode the tx: %v", err)
+	}
+	return &tx, nil
+}
+
+// HasTx checks if database has tx.
+func (bc *BlockChain) HasTx(hash []byte) (bool, error) {
+	return bc.blockChainDB.Has(append(txPrefix, hash...))
+}
+
+// GetReceipt gets receipt with receipt's hash
+func (bc *BlockChain) GetReceipt(hash []byte) (*tx.TxReceipt, error) {
+	bReHash, err := bc.blockChainDB.Get(append(receiptPrefix, hash...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to Get the receipt: %v", err)
+	}
+	reData, err := bc.blockChainDB.Get(append(bReceiptPrefix, bReHash...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to Get the receipt: %v", err)
+	}
+	if len(reData) == 0 {
+		return nil, fmt.Errorf("failed to Get the receipt: not found")
+	}
+	re := tx.TxReceipt{}
+	err = re.Decode(reData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to Decode the receipt: %v", err)
+	}
+	return &re, nil
+}
+
+// GetReceiptByTxHash gets receipt with tx's hash
+func (bc *BlockChain) GetReceiptByTxHash(hash []byte) (*tx.TxReceipt, error) {
+	bReHash, err := bc.blockChainDB.Get(append(txReceiptPrefix, hash...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to Get the receipt hash: %v", err)
+	}
+	reData, err := bc.blockChainDB.Get(append(bReceiptPrefix, bReHash...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to Get the receipt: %v", err)
+	}
+	if len(reData) == 0 {
+		return nil, fmt.Errorf("failed to Get the receipt: not found")
+	}
+	re := tx.TxReceipt{}
+	err = re.Decode(reData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to Decode the receipt: %v", err)
+	}
+	return &re, nil
+}
+
+// HasReceipt checks if database has receipt.
+func (bc *BlockChain) HasReceipt(hash []byte) (bool, error) {
+	return bc.blockChainDB.Has(append(receiptPrefix, hash...))
+}
+
 // Close is close database
 func (bc *BlockChain) Close() {
 	bc.blockChainDB.Close()
 }
 
+// Draw the graph about blockchain
 func (bc *BlockChain) Draw(start int64, end int64) string {
 	ret := ""
 	for i := start; i <= end; i++ {

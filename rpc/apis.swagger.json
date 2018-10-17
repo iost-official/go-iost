@@ -21,7 +21,7 @@
         "operationId": "EstimateGas",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcGasRes"
             }
@@ -48,7 +48,7 @@
         "operationId": "GetBalance",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcGetBalanceRes"
             }
@@ -57,6 +57,7 @@
         "parameters": [
           {
             "name": "ID",
+            "description": "account ID",
             "in": "path",
             "required": true,
             "type": "string"
@@ -81,7 +82,7 @@
         "operationId": "GetBlockByHash",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcBlockInfo"
             }
@@ -90,6 +91,7 @@
         "parameters": [
           {
             "name": "hash",
+            "description": "block hash",
             "in": "path",
             "required": true,
             "type": "string"
@@ -114,7 +116,7 @@
         "operationId": "getBlockByNum",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcBlockInfo"
             }
@@ -123,6 +125,7 @@
         "parameters": [
           {
             "name": "num",
+            "description": "block number",
             "in": "path",
             "required": true,
             "type": "string",
@@ -142,13 +145,39 @@
         ]
       }
     },
+    "/getContract/{key}": {
+      "get": {
+        "summary": "get contract by cid",
+        "operationId": "GetContract",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcGetContractRes"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "description": "contract id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
     "/getHeight": {
       "get": {
         "summary": "get the current height of the blockchain",
         "operationId": "GetHeight",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcHeightRes"
             }
@@ -165,7 +194,7 @@
         "operationId": "GetNetID",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcGetNetIDRes"
             }
@@ -182,7 +211,7 @@
         "operationId": "GetState",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcGetStateRes"
             }
@@ -191,6 +220,7 @@
         "parameters": [
           {
             "name": "key",
+            "description": "the key in the StateDB",
             "in": "path",
             "required": true,
             "type": "string"
@@ -214,7 +244,7 @@
         "operationId": "GetTxByHash",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpctxRes"
             }
@@ -223,6 +253,7 @@
         "parameters": [
           {
             "name": "hash",
+            "description": "transaction hash",
             "in": "path",
             "required": true,
             "type": "string"
@@ -239,7 +270,7 @@
         "operationId": "GetTxReceiptByHash",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpctxReceiptRes"
             }
@@ -248,6 +279,7 @@
         "parameters": [
           {
             "name": "hash",
+            "description": "transaction hash",
             "in": "path",
             "required": true,
             "type": "string"
@@ -264,7 +296,7 @@
         "operationId": "GetTxReceiptByTxHash",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpctxReceiptRes"
             }
@@ -273,11 +305,29 @@
         "parameters": [
           {
             "name": "hash",
+            "description": "transaction hash",
             "in": "path",
             "required": true,
             "type": "string"
           }
         ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/getVersionInfo": {
+      "get": {
+        "summary": "get the version info",
+        "operationId": "GetVersionInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcVersionInfoRes"
+            }
+          }
+        },
         "tags": [
           "Apis"
         ]
@@ -289,7 +339,7 @@
         "operationId": "SendRawTx",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcSendRawTxRes"
             }
@@ -316,7 +366,7 @@
         "operationId": "Subscribe",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
               "$ref": "#/definitions/rpcSubscribeRes"
             }
@@ -385,6 +435,79 @@
         }
       }
     },
+    "contractABI": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "payment": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "limit": {
+          "$ref": "#/definitions/contractCost"
+        },
+        "gas_price": {
+          "type": "string",
+          "format": "int64"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "contractContract": {
+      "type": "object",
+      "properties": {
+        "ID": {
+          "type": "string"
+        },
+        "info": {
+          "$ref": "#/definitions/contractInfo"
+        },
+        "code": {
+          "type": "string"
+        }
+      }
+    },
+    "contractCost": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "int64"
+        },
+        "net": {
+          "type": "string",
+          "format": "int64"
+        },
+        "CPU": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "contractInfo": {
+      "type": "object",
+      "properties": {
+        "lang": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "abi": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/contractABI"
+          }
+        }
+      }
+    },
     "cryptoSignatureRaw": {
       "type": "object",
       "properties": {
@@ -421,37 +544,43 @@
       "type": "object",
       "properties": {
         "head": {
-          "$ref": "#/definitions/blockBlockHead"
+          "$ref": "#/definitions/blockBlockHead",
+          "title": "BlockHead"
         },
         "hash": {
           "type": "string",
-          "format": "byte"
+          "format": "byte",
+          "title": "block hash"
         },
         "txs": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/txTxRaw"
-          }
+          },
+          "title": "transaction list,works when complete is true"
         },
         "txhash": {
           "type": "array",
           "items": {
             "type": "string",
             "format": "byte"
-          }
+          },
+          "title": "transaction hash list,works when complete is false"
         },
         "receipts": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/txTxReceiptRaw"
-          }
+          },
+          "title": "transaction receipt list"
         },
         "receiptHash": {
           "type": "array",
           "items": {
             "type": "string",
             "format": "byte"
-          }
+          },
+          "title": "transaction receiptHash list"
         }
       }
     },
@@ -460,7 +589,8 @@
       "properties": {
         "gas": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "title": "not support yet"
         }
       }
     },
@@ -474,11 +604,21 @@
         }
       }
     },
+    "rpcGetContractRes": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/contractContract",
+          "title": "contract id"
+        }
+      }
+    },
     "rpcGetNetIDRes": {
       "type": "object",
       "properties": {
         "ID": {
-          "type": "string"
+          "type": "string",
+          "title": "NetID"
         }
       }
     },
@@ -486,7 +626,8 @@
       "type": "object",
       "properties": {
         "value": {
-          "type": "string"
+          "type": "string",
+          "title": "the value of the corresponding key in the StateDB"
         }
       }
     },
@@ -526,7 +667,8 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/EventTopic"
-          }
+          },
+          "title": "type of event:0-TransactionResult,1-ContractEvent,2-ContractUserEvent,3-ContractSystemEvent"
         }
       }
     },
@@ -534,7 +676,20 @@
       "type": "object",
       "properties": {
         "ev": {
-          "$ref": "#/definitions/eventEvent"
+          "$ref": "#/definitions/eventEvent",
+          "title": "event"
+        }
+      }
+    },
+    "rpcVersionInfoRes": {
+      "type": "object",
+      "properties": {
+        "buildTime": {
+          "type": "string",
+          "title": "build time and git hash"
+        },
+        "gitHash": {
+          "type": "string"
         }
       }
     },
@@ -542,7 +697,8 @@
       "type": "object",
       "properties": {
         "txReceiptRaw": {
-          "$ref": "#/definitions/txTxReceiptRaw"
+          "$ref": "#/definitions/txTxReceiptRaw",
+          "title": "transaction receipt"
         },
         "hash": {
           "type": "string",
@@ -559,7 +715,8 @@
         },
         "hash": {
           "type": "string",
-          "format": "byte"
+          "format": "byte",
+          "title": "transaction hash"
         }
       }
     },

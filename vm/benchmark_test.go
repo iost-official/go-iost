@@ -27,7 +27,7 @@ func benchInit() (Engine, *database.Visitor) {
 	}
 
 	vi := database.NewVisitor(0, mvccdb)
-	vi.SetBalance(testID[0], 1000000)
+	vi.SetBalance(testID[0], 1000000000000)
 	vi.SetContract(systemContract)
 	vi.Commit()
 
@@ -74,7 +74,7 @@ func BenchmarkNative_Transfer_LRU(b *testing.B) { // 15300 ns/op
 	}
 
 	vi := database.NewVisitor(100, mvccdb)
-	vi.SetBalance(testID[0], 1000000)
+	vi.SetBalance(testID[0], 1000000000000)
 	vi.SetContract(systemContract)
 	vi.Commit()
 

@@ -109,13 +109,13 @@ func (mr *MockTxDBMockRecorder) HasTx(arg0 interface{}) *gomock.Call {
 }
 
 // Push mocks base method
-func (m *MockTxDB) Push(arg0 []*tx.Tx, arg1 []*tx.TxReceipt) error {
-	ret := m.ctrl.Call(m, "Push", arg0, arg1)
+func (m *MockTxDB) Push(arg0 []byte, arg1 []*tx.Tx, arg2 []*tx.TxReceipt) error {
+	ret := m.ctrl.Call(m, "Push", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Push indicates an expected call of Push
-func (mr *MockTxDBMockRecorder) Push(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Push", reflect.TypeOf((*MockTxDB)(nil).Push), arg0, arg1)
+func (mr *MockTxDBMockRecorder) Push(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Push", reflect.TypeOf((*MockTxDB)(nil).Push), arg0, arg1, arg2)
 }

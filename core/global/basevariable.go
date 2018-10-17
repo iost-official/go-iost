@@ -5,6 +5,8 @@ import (
 
 	"os"
 
+	"time"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/verifier"
@@ -13,9 +15,9 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/native"
-	"time"
 )
 
 // TMode type of mode
@@ -37,6 +39,12 @@ var adminID = ""
 // GenesisTxExecTime is the maximum execution time of a transaction in genesis block
 var GenesisTxExecTime = 1 * time.Second
 
+// BuildTime build time
+var BuildTime string
+
+// GitHash git hash
+var GitHash string
+
 // String return string of mode
 func (m TMode) String() string {
 	switch m {
@@ -55,14 +63,13 @@ func (m TMode) String() string {
 type BaseVariableImpl struct {
 	blockChain  block.Chain
 	stateDB     db.MVCCDB
-	txDB        TxDB
 	mode        TMode
 	witnessList []string
 	config      *common.Config
 }
 
 // GenGenesis is create a genesis block
-func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
+func GenGenesis(db db.MVCCDB, witnessInfo []string, t common.Timestamp) (*block.Block, error) {
 	var acts []*tx.Action
 	for i := 0; i < len(witnessInfo)/2; i++ {
 		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], witnessInfo[2*i+1]))
@@ -117,7 +124,7 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 		ParentHash: nil,
 		Number:     0,
 		Witness:    acc.ID,
-		Time:       0,
+		Time:       t.Slot,
 	}
 	engine := vm.NewEngine(&blockHead, db)
 	txr, err := engine.Exec(trx, GenesisTxExecTime)
@@ -141,17 +148,24 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string) (*block.Block, error) {
 }
 
 // New return a BaseVariable instance
+// nolint: gocyclo
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 	var blockChain block.Chain
 	var stateDB db.MVCCDB
-	var txDB TxDB
 	var err error
 	var witnessList []string
-	VoteContractPath = conf.Genesis.VoteContractPath
-	adminID = conf.Genesis.AdminID
 
-	for i := 0; i < len(conf.Genesis.WitnessInfo)/2; i++ {
-		witnessList = append(witnessList, conf.Genesis.WitnessInfo[2*i])
+	v := common.LoadYamlAsViper(conf.Genesis)
+	genesisConfig := &common.GenesisConfig{}
+	if err := v.Unmarshal(genesisConfig); err != nil {
+		ilog.Fatalf("Unable to decode into struct, %v", err)
+	}
+
+	VoteContractPath = genesisConfig.VoteContractPath
+	adminID = genesisConfig.AdminID
+
+	for i := 0; i < len(genesisConfig.WitnessInfo)/2; i++ {
+		witnessList = append(witnessList, genesisConfig.WitnessInfo[2*i])
 	}
 	blockChain, err = block.NewBlockChain(conf.DB.LdbPath + "BlockChainDB")
 	if err != nil {
@@ -167,12 +181,12 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if hash != "" {
 			return nil, fmt.Errorf("blockchaindb is empty, but statedb is not")
 		}
-		txDB, err = NewTxDB(conf.DB.LdbPath + "TXDB")
-		if err != nil {
-			return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
-		}
-		if conf.Genesis.CreateGenesis {
-			blk, err = GenGenesis(stateDB, conf.Genesis.WitnessInfo)
+		if genesisConfig.CreateGenesis {
+			t, err := common.ParseStringToTimestamp(genesisConfig.InitialTimestamp)
+			if err != nil {
+				ilog.Fatalf("invalid genesis initial time string %v (%v).", genesisConfig.InitialTimestamp, err)
+			}
+			blk, err = GenGenesis(stateDB, genesisConfig.WitnessInfo, t)
 			if err != nil {
 				return nil, fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
 			}
@@ -184,12 +198,10 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			if err != nil {
 				return nil, fmt.Errorf("flush block into stateDB failed, stop the program. err: %v", err)
 			}
-			err = txDB.Push(blk.Txs, blk.Receipts)
-			if err != nil {
-				return nil, fmt.Errorf("push txDB failed, stop the pogram. err: %v", err)
-			}
+			genesisBlock, _ := blockChain.GetBlockByNumber(0)
+			ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
 		}
-		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
+		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 	}
 	stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
 	if err != nil {
@@ -219,11 +231,8 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			return nil, fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
 		}
 	}
-	txDB, err = NewTxDB(conf.DB.LdbPath + "TXDB")
-	if err != nil {
-		return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
-	}
-	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
+
+	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 }
 
 // FakeNew is fake BaseVariable
@@ -236,10 +245,6 @@ func FakeNew() (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, err
 	}
-	txDB, err := NewTxDB("./Fakedb/TXDB")
-	if err != nil {
-		return nil, err
-	}
 	config := common.Config{}
 	config.VM = &common.VMConfig{}
 	config.VM.JsPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/vm/v8vm/v8/libjs/"
@@ -248,7 +253,7 @@ func FakeNew() (*BaseVariableImpl, error) {
 	VoteContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/"
 	fmt.Println(VoteContractPath)
 	fmt.Println(config.VM.JsPath)
-	blk, err := GenGenesis(stateDB, []string{"a1", "11111111111", "a2", "2222", "a3", "333"})
+	blk, err := GenGenesis(stateDB, []string{"a1", "11111111111", "a2", "2222", "a3", "333"}, common.Timestamp{})
 	if err != nil {
 		return nil, err
 	}
@@ -263,17 +268,7 @@ func FakeNew() (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = txDB.Push(blk.Txs, blk.Receipts)
-	if err != nil {
-		return nil, err
-	}
-
-	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config}, nil
-}
-
-// TxDB return the transaction database
-func (g *BaseVariableImpl) TxDB() TxDB {
-	return g.txDB
+	return &BaseVariableImpl{blockChain, stateDB, ModeNormal, []string{""}, &config}, nil
 }
 
 // StateDB return the state database

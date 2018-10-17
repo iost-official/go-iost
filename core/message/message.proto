@@ -7,8 +7,13 @@ message BlockInfo {
     bytes hash = 2;
 }
 
+enum RequireType{
+    GETBLOCKHASHES = 0;
+    GETBLOCKHASHESBYNUMBER = 1;
+}
+
 message BlockHashQuery {
-    int32 reqType =1;
+    RequireType reqType =1;
     int64 start = 2;
     int64 end = 3;
     repeated int64 nums = 4;

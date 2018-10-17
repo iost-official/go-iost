@@ -62,6 +62,7 @@ func (d *DB) Delete(key []byte) error {
 func (d *DB) Keys(prefix []byte) ([][]byte, error) {
 	iter := d.db.NewIterator(util.BytesPrefix(prefix), nil)
 	keys := make([][]byte, 0)
+
 	for iter.Next() {
 		key := make([]byte, len(iter.Key()))
 		copy(key, iter.Key())
@@ -100,4 +101,9 @@ func (d *DB) CommitBatch() error {
 // Close will close the database
 func (d *DB) Close() error {
 	return d.db.Close()
+}
+
+func (d *DB) Range(prefix []byte) (interface{}, error) {
+	iter := d.db.NewIterator(util.BytesPrefix(prefix), nil)
+	return iter, nil
 }

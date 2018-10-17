@@ -16,18 +16,46 @@ package iwallet
 
 import (
 	"fmt"
-	"os"
-	"time"
-	"strings"
 	"math"
+	"os"
+	"strings"
+	"time"
 
+	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/ilog"
 )
+
+var checkResult bool
+var checkResultDelay float32
+var checkResultMaxRetry int32
+
+func checkTransaction(txHash []byte) {
+	// It may be better to to create a grpc client and reuse it. TODO later
+	for i := int32(0); i < checkResultMaxRetry; i++ {
+		time.Sleep(time.Duration(checkResultDelay*1000) * time.Millisecond)
+		txReceipt, err := getTxReceiptByTxHash(server, saveBytes(txHash))
+		if err != nil {
+			fmt.Println("result not ready, please wait. Details: ", err)
+			continue
+		}
+		if txReceipt == nil {
+			fmt.Println("result not ready, please wait.")
+			continue
+		}
+		if tx.StatusCode(txReceipt.Status.Code) != tx.Success {
+			fmt.Println("exec tx failed: ", txReceipt.Status.Message)
+			fmt.Println("full error information: ", txReceipt)
+		} else {
+			fmt.Println("exec tx done. gas used: ", txReceipt.GasUsage)
+			fmt.Println("The contract id is Contract" + saveBytes(txHash))
+		}
+		break
+	}
+}
 
 // callCmd represents the compile command
 var callCmd = &cobra.Command{
@@ -87,6 +115,9 @@ var callCmd = &cobra.Command{
 			}
 			fmt.Println("iost node:receive your tx!")
 			fmt.Println("the transaction hash is:", saveBytes(txHash))
+			if checkResult {
+				checkTransaction(txHash)
+			}
 			return
 		}
 
@@ -122,7 +153,6 @@ func init() {
 	callCmd.Flags().StringSliceVarP(&signers, "signers", "n", []string{}, "signers who should sign this transaction")
 	callCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
 	callCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
-
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
@@ -153,10 +183,10 @@ func handleTransferData(data string) (string, error) {
 		return "", fmt.Errorf("Transfer need 3 arguments, got %v", len(arr))
 	}
 	if amount, err := js.GetIndex(2).Float64(); err == nil {
-		if amount * 1e8 > math.MaxInt64 {
-			return "", fmt.Errorf("you can transfer more than %f iost", math.MaxInt64 / 1e8)
+		if amount*1e8 > math.MaxInt64 {
+			return "", fmt.Errorf("you can transfer more than %f iost", math.MaxInt64/1e8)
 		}
-		data = fmt.Sprintf(`["%v", "%v", %d]`, js.GetIndex(0).MustString(), js.GetIndex(1).MustString(), int64(amount * 1e8))
+		data = fmt.Sprintf(`["%v", "%v", %d]`, js.GetIndex(0).MustString(), js.GetIndex(1).MustString(), int64(amount*1e8))
 	}
 	return data, nil
 }
