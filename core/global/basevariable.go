@@ -63,7 +63,6 @@ func (m TMode) String() string {
 type BaseVariableImpl struct {
 	blockChain  block.Chain
 	stateDB     db.MVCCDB
-	txDB        TxDB
 	mode        TMode
 	witnessList []string
 	config      *common.Config
@@ -153,7 +152,6 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string, t common.Timestamp) (*block.
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 	var blockChain block.Chain
 	var stateDB db.MVCCDB
-	var txDB TxDB
 	var err error
 	var witnessList []string
 
@@ -183,10 +181,6 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if hash != "" {
 			return nil, fmt.Errorf("blockchaindb is empty, but statedb is not")
 		}
-		txDB, err = NewTxDB(conf.DB.LdbPath + "TXDB")
-		if err != nil {
-			return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
-		}
 		if genesisConfig.CreateGenesis {
 			t, err := common.ParseStringToTimestamp(genesisConfig.InitialTimestamp)
 			if err != nil {
@@ -204,14 +198,10 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			if err != nil {
 				return nil, fmt.Errorf("flush block into stateDB failed, stop the program. err: %v", err)
 			}
-			err = txDB.Push(blk.HeadHash(), blk.Txs, blk.Receipts)
-			if err != nil {
-				return nil, fmt.Errorf("push txDB failed, stop the pogram. err: %v", err)
-			}
 			genesisBlock, _ := blockChain.GetBlockByNumber(0)
 			ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
 		}
-		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
+		return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 	}
 	stateDB, err = db.NewMVCCDB(conf.DB.LdbPath + "StateDB")
 	if err != nil {
@@ -241,12 +231,8 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			return nil, fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
 		}
 	}
-	txDB, err = NewTxDB(conf.DB.LdbPath + "TXDB")
-	if err != nil {
-		return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
-	}
 
-	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, txDB: txDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
+	return &BaseVariableImpl{blockChain: blockChain, stateDB: stateDB, mode: ModeInit, witnessList: witnessList, config: conf}, nil
 }
 
 // FakeNew is fake BaseVariable
@@ -256,10 +242,6 @@ func FakeNew() (*BaseVariableImpl, error) {
 		return nil, err
 	}
 	stateDB, err := db.NewMVCCDB("./Fakedb/StateDB")
-	if err != nil {
-		return nil, err
-	}
-	txDB, err := NewTxDB("./Fakedb/TXDB")
 	if err != nil {
 		return nil, err
 	}
@@ -286,17 +268,7 @@ func FakeNew() (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = txDB.Push(blk.HeadHash(), blk.Txs, blk.Receipts)
-	if err != nil {
-		return nil, err
-	}
-
-	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config}, nil
-}
-
-// TxDB return the transaction database
-func (g *BaseVariableImpl) TxDB() TxDB {
-	return g.txDB
+	return &BaseVariableImpl{blockChain, stateDB, ModeNormal, []string{""}, &config}, nil
 }
 
 // StateDB return the state database

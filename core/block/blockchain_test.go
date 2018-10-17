@@ -140,4 +140,5 @@ func BenchmarkBlock(b *testing.B) {
 			bc.GetBlockByHash(hashes[i%bnum])
 		}
 	})
+	os.RemoveAll("./BlockChainDB/")
 }

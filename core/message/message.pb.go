@@ -40,7 +40,7 @@ func (x RequireType) String() string {
 	return proto.EnumName(RequireType_name, int32(x))
 }
 func (RequireType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_message_14f23df24c662109, []int{0}
+	return fileDescriptor_message_2ed8e3832a7346c2, []int{0}
 }
 
 type BlockInfo struct {
@@ -55,7 +55,7 @@ func (m *BlockInfo) Reset()         { *m = BlockInfo{} }
 func (m *BlockInfo) String() string { return proto.CompactTextString(m) }
 func (*BlockInfo) ProtoMessage()    {}
 func (*BlockInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_14f23df24c662109, []int{0}
+	return fileDescriptor_message_2ed8e3832a7346c2, []int{0}
 }
 func (m *BlockInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -112,7 +112,7 @@ func (m *BlockHashQuery) Reset()         { *m = BlockHashQuery{} }
 func (m *BlockHashQuery) String() string { return proto.CompactTextString(m) }
 func (*BlockHashQuery) ProtoMessage()    {}
 func (*BlockHashQuery) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_14f23df24c662109, []int{1}
+	return fileDescriptor_message_2ed8e3832a7346c2, []int{1}
 }
 func (m *BlockHashQuery) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -180,7 +180,7 @@ func (m *BlockHashResponse) Reset()         { *m = BlockHashResponse{} }
 func (m *BlockHashResponse) String() string { return proto.CompactTextString(m) }
 func (*BlockHashResponse) ProtoMessage()    {}
 func (*BlockHashResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_14f23df24c662109, []int{2}
+	return fileDescriptor_message_2ed8e3832a7346c2, []int{2}
 }
 func (m *BlockHashResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -228,7 +228,7 @@ func (m *SyncHeight) Reset()         { *m = SyncHeight{} }
 func (m *SyncHeight) String() string { return proto.CompactTextString(m) }
 func (*SyncHeight) ProtoMessage()    {}
 func (*SyncHeight) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_14f23df24c662109, []int{3}
+	return fileDescriptor_message_2ed8e3832a7346c2, []int{3}
 }
 func (m *SyncHeight) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1091,9 +1091,9 @@ var (
 	ErrIntOverflowMessage   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("core/message/message.proto", fileDescriptor_message_14f23df24c662109) }
+func init() { proto.RegisterFile("core/message/message.proto", fileDescriptor_message_2ed8e3832a7346c2) }
 
-var fileDescriptor_message_14f23df24c662109 = []byte{
+var fileDescriptor_message_2ed8e3832a7346c2 = []byte{
 	// 318 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x51, 0x4d, 0x4f, 0xc2, 0x40,
 	0x10, 0x65, 0x5d, 0x84, 0x38, 0x18, 0x52, 0x27, 0x84, 0x34, 0x1c, 0x9a, 0xa6, 0xa7, 0xc6, 0x03,

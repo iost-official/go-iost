@@ -51,7 +51,6 @@ func SignTxContent(tx *Tx, account *account.Account) (*crypto.Signature, error) 
 	}
 	return account.Sign(tx.baseHash()), nil
 }
-
 func (t *Tx) containSigner(pubkey []byte) bool {
 	found := false
 	for _, signer := range t.Signers {
