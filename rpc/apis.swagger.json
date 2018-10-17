@@ -145,6 +145,23 @@
         ]
       }
     },
+    "/getChainInfo": {
+      "get": {
+        "summary": "get the chain info",
+        "operationId": "GetChainInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcChainInfoRes"
+            }
+          }
+        },
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
     "/getContract/{key}": {
       "get": {
         "summary": "get contract by cid",
@@ -598,6 +615,35 @@
             "format": "byte"
           },
           "title": "transaction receiptHash list"
+        }
+      }
+    },
+    "rpcChainInfoRes": {
+      "type": "object",
+      "properties": {
+        "netType": {
+          "type": "string"
+        },
+        "protocolVersion": {
+          "type": "string"
+        },
+        "height": {
+          "type": "string",
+          "format": "int64"
+        },
+        "witnessList": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "headBlock": {
+          "$ref": "#/definitions/rpcBlockInfo",
+          "title": "the longest chain block"
+        },
+        "latestConfirmedBlock": {
+          "$ref": "#/definitions/rpcBlockInfo",
+          "title": "the latest confirmed block"
         }
       }
     },
