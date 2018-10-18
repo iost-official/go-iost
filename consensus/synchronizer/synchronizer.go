@@ -27,6 +27,7 @@ var (
 	syncHeightTime                = 3 * time.Second
 	heightAvailableTime     int64 = 22 * 3
 	heightTimeout           int64 = 100 * 22 * 3
+	continuousNum                 = 2
 )
 
 // Synchronizer defines the functions of synchronizer module
@@ -215,17 +216,17 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	if bcn != sy.lastBcn {
 		sy.lastBcn = bcn
 		witness := bcn.Block.Head.Witness
-		for i := 0; i < confirmNumber; i++ {
-			bcn = bcn.Parent
+		for i := 0; i < confirmNumber*continuousNum; i++ {
 			if bcn == nil {
 				break
 			}
 			if witness == bcn.Block.Head.Witness {
 				num++
 			}
+			bcn = bcn.Parent
 		}
 	}
-	if num > 0 {
+	if num > continuousNum {
 		go sy.syncBlocks(height+1, sy.blockCache.Head().Number)
 		return true
 	}
