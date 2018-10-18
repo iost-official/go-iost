@@ -37,15 +37,15 @@ func (m *MockTxPool) EXPECT() *MockTxPoolMockRecorder {
 }
 
 // AddLinkedNode mocks base method
-func (m *MockTxPool) AddLinkedNode(arg0, arg1 *blockcache.BlockCacheNode) error {
-	ret := m.ctrl.Call(m, "AddLinkedNode", arg0, arg1)
+func (m *MockTxPool) AddLinkedNode(arg0 *blockcache.BlockCacheNode) error {
+	ret := m.ctrl.Call(m, "AddLinkedNode", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddLinkedNode indicates an expected call of AddLinkedNode
-func (mr *MockTxPoolMockRecorder) AddLinkedNode(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddLinkedNode", reflect.TypeOf((*MockTxPool)(nil).AddLinkedNode), arg0, arg1)
+func (mr *MockTxPoolMockRecorder) AddLinkedNode(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddLinkedNode", reflect.TypeOf((*MockTxPool)(nil).AddLinkedNode), arg0)
 }
 
 // AddTx mocks base method

@@ -38,7 +38,10 @@ var (
 	// errMerkleHash = errors.New("wrong tx receipt merkle hash")
 )
 
-var blockReqTimeout = 3 * time.Second
+var (
+	blockReqTimeout = 3 * time.Second
+	continuousNum   = 2
+)
 
 type verifyBlockMessage struct {
 	blk     *block.Block
@@ -301,28 +304,41 @@ func (p *PoB) scheduleLoop() {
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
-			ilog.Info(p.baseVariable.Mode())
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
-					p.txPool.Lock()
-					blk, err := generateBlock(p.account, p.txPool, p.produceDB)
-					p.txPool.Release()
-					ilog.Infof("gen block:%v", blk.Head.Number)
-					if err != nil {
-						ilog.Error(err.Error())
-						continue
+					generateBlockTicker := time.NewTicker(time.Second / 10)
+					num := 0
+					for {
+						p.txPool.Lock()
+						blk, err := generateBlock(p.account, p.txPool, p.produceDB)
+						p.txPool.Release()
+						if err != nil {
+							ilog.Error(err)
+							continue
+						}
+						blkByte, err := blk.Encode()
+						if err != nil {
+							ilog.Error(err.Error())
+							continue
+						}
+						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
+						ilog.Infof("[pob] generate block time cost: %v", calculateTime())
+						metricsGenerateBlockTimeCost.Set(calculateTime(), nil)
+						err = p.handleRecvBlock(blk)
+						if err != nil {
+							ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
+							continue
+						}
+						num++
+						if num >= continuousNum {
+							break
+						}
+						select {
+						case <-generateBlockTicker.C:
+						}
 					}
-					ilog.Debugf("block tx num: %v", len(blk.Txs))
-					p.chVerifyBlock <- &verifyBlockMessage{blk: blk, gen: true}
-					blkByte, err := blk.Encode()
-					if err != nil {
-						ilog.Error(err.Error())
-						continue
-					}
-					p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
-					ilog.Infof("[pob] generate block time cost: %v", calculateTime())
-					metricsGenerateBlockTimeCost.Set(calculateTime(), nil)
+					generateBlockTicker.Stop()
 				}
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
@@ -373,12 +389,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
 	ilog.Infof("[pob] addLinkedNode start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-	h := p.blockCache.Head()
-	if node.Number > h.Number {
-		p.txPool.AddLinkedNode(node, node)
-	} else {
-		p.txPool.AddLinkedNode(node, h)
-	}
+	p.txPool.AddLinkedNode(node)
 	ilog.Infof("[pob] addLinkedNode end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	p.blockCache.Link(node)
 	ilog.Infof("[pob] updateInfo start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))

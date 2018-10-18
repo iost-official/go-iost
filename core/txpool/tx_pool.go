@@ -191,10 +191,17 @@ func (pool *TxPImpl) createTxMapToBlock(tm *sync.Map, blockHash []byte) bool {
 }
 
 // AddLinkedNode add the findBlock
-func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, newHead *blockcache.BlockCacheNode) error {
+func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error {
 	err := pool.addBlock(linkedNode.Block)
 	if err != nil {
 		return fmt.Errorf("failed to add findBlock: %v", err)
+	}
+	var newHead *blockcache.BlockCacheNode
+	h := pool.blockCache.Head()
+	if linkedNode.Number > h.Number {
+		newHead = linkedNode
+	} else {
+		newHead = h
 	}
 	typeOfFork := pool.updateForkChain(newHead)
 	switch typeOfFork {
