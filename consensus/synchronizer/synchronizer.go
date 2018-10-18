@@ -243,6 +243,7 @@ func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
 }
 
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
+	ilog.Infof("sync Blocks %v, %v", startNumber, endNumber)
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
 		for sy.blockCache.Head().Number+3 < startNumber {
@@ -423,7 +424,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 				return true
 			})
 			if len(hq.Nums) > 0 {
-				// ilog.Debug("retry download ", hr.Nums)
+				ilog.Infof("retry download ", hq.Nums)
 				sort.Slice(hq.Nums, func(i int, j int) bool {
 					return hq.Nums[i] < hq.Nums[j]
 				})
