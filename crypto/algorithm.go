@@ -29,7 +29,19 @@ func (a Algorithm) getBackend() AlgorithmBackend {
 	case Ed25519:
 		return &backend.Ed25519{}
 	default:
-		return &backend.Secp256k1{}
+		return &backend.Ed25519{}
+	}
+}
+
+// New returns a new algorithm by name
+func NewAlgorithm(name string) Algorithm {
+	switch name {
+	case "secp256k1":
+		return Secp256k1
+	case "ed25519":
+		return Ed25519
+	default:
+		return Ed25519
 	}
 }
 

@@ -32,17 +32,6 @@ type IServer struct {
 	debug     *DebugServer
 }
 
-func getSignAlgo(algo string) crypto.Algorithm {
-	switch algo {
-	case "secp256k1":
-		return crypto.Secp256k1
-	case "ed25519":
-		return crypto.Ed25519
-	default:
-		return crypto.Ed25519
-	}
-}
-
 // New returns a iserver application
 func New(conf *common.Config) *IServer {
 	bv, err := global.New(conf)
@@ -56,7 +45,7 @@ func New(conf *common.Config) *IServer {
 	}
 
 	accSecKey := conf.ACC.SecKey
-	acc, err := account.NewAccount(common.Base58Decode(accSecKey), getSignAlgo(conf.ACC.Algorithm))
+	acc, err := account.NewAccount(common.Base58Decode(accSecKey), crypto.NewAlgorithm(conf.ACC.Algorithm))
 	if err != nil {
 		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
 	}
