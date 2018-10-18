@@ -32,7 +32,7 @@ var (
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	ilog.Info("[pob] generate Block start")
-	limitTime := time.NewTimer(common.SlotLength * time.Second / 10)
+	limitTime := time.NewTimer(common.SlotLength * time.Second / 30)
 	txIter, head := txPool.TxIterator()
 	topBlock := head.Block
 	blk := block.Block{
