@@ -9,14 +9,15 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/verifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
 )
 
@@ -127,8 +128,8 @@ func GenGenesis(db db.MVCCDB, witnessInfo []string, t common.Timestamp) (*block.
 		Witness:    acc.ID,
 		Time:       t.Slot,
 	}
-	engine := vm.NewEngine(&blockHead, db)
-	txr, err := engine.Exec(trx, GenesisTxExecTime)
+	v := verifier.Verifier{}
+	txr, err := v.Exec(&blockHead, db, trx, time.Millisecond*100)
 	if err != nil || txr.Status.Code != tx.Success {
 		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: %v", err, txr)
 	}
@@ -217,6 +218,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
+
 	hash := stateDB.CurrentTag()
 	blk, err = blockChain.GetBlockByHash([]byte(hash))
 	if err != nil && hash != "" {
@@ -231,7 +233,12 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
 		}
-		err = verifier.VerifyBlockWithVM(blk, stateDB)
+		v := verifier.Verifier{}
+		err = v.Verify(blk, stateDB, &verifier.Config{
+			Mode:        0,
+			Timeout:     common.SlotLength / 3 * time.Second,
+			TxTimeLimit: time.Millisecond * 100,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
 		}
@@ -291,6 +298,8 @@ func FakeNew() (*BaseVariableImpl, error) {
 		return nil, err
 	}
 
+	vi := database.NewVisitor(0, stateDB)
+	fmt.Println("basevariable 296", vi.Get("iost.vote-"+"pendingBlockNumber"))
 	return &BaseVariableImpl{blockChain, stateDB, txDB, ModeNormal, []string{""}, &config}, nil
 }
 

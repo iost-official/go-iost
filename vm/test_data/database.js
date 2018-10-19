@@ -13,10 +13,14 @@ class Test {
 
     read() {
         const num = JSON.parse(storage.get("num"));
-        console.log("num > "+num ); // 9
+        if (num !== 9) {
+            throw num
+        }
 
         const str = storage.get("string");
-        console.log("str > "+str ); //  "hello";
+        if (str !== "hello") {
+            throw str
+        }
 
         const bool = JSON.parse(storage.get("bool"));
         console.log("bool > "+bool? "true":"false" );

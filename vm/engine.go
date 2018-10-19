@@ -30,6 +30,8 @@ var (
 	errCannotPay        = errors.New("publisher's balance less than price * limit")
 )
 
+//go:generate mockgen -destination mock/engine_mock.go -package mock github.com/iost-official/go-iost/vm Engine
+
 // Engine the smart contract engine
 type Engine interface {
 	SetUp(k, v string) error
@@ -49,16 +51,12 @@ func SetUp(config *common.VMConfig) error {
 }
 
 type engineImpl struct {
-	ho *host.Host
-
-	jsPath      string
+	ho          *host.Host
 	publisherID string
 
 	logger        *ilog.Logger
 	consoleWriter *ilog.ConsoleWriter
 	fileWriter    *ilog.FileWriter
-
-	isSimulated bool
 }
 
 // NewEngine ...
@@ -70,24 +68,7 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	return e
 }
 
-// NewSimulatedEngine create an engine that only execute the tx but not put it onto the chain
-func NewSimulatedEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
-	db := database.NewVisitor(defaultCacheLength, cb)
-
-	e := newSimulatedEngine(bh, db)
-
-	return e
-}
-
 func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
-	return newEngineImpl(bh, db, false)
-}
-
-func newSimulatedEngine(bh *block.BlockHead, db *database.Visitor) Engine {
-	return newEngineImpl(bh, db, true)
-}
-
-func newEngineImpl(bh *block.BlockHead, db *database.Visitor, isSimulated bool) Engine {
 	ctx := host.NewContext(nil)
 
 	ctx = loadBlkInfo(ctx, bh)
@@ -102,7 +83,7 @@ func newEngineImpl(bh *block.BlockHead, db *database.Visitor, isSimulated bool) 
 	logger.Stop()
 	h := host.NewHost(ctx, db, staticMonitor, logger)
 
-	e := &engineImpl{ho: h, logger: logger, isSimulated: isSimulated}
+	e := &engineImpl{ho: h, logger: logger}
 	runtime.SetFinalizer(e, func(e *engineImpl) {
 		e.GC()
 	})
@@ -138,7 +119,23 @@ func (e *engineImpl) SetUp(k, v string) error {
 	return nil
 }
 
-func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
+// nolint
+func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
+	e.ho.SetDeadline(time.Now().Add(limit))
+	err := checkTx(tx0)
+	if err != nil {
+		ilog.Error(err)
+		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
+	}
+
+	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
+	bl := e.ho.DB().Balance(e.publisherID)
+
+	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
+		ilog.Error(errCannotPay)
+		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
+	}
+
 	loadTxInfo(e.ho, tx0, e.publisherID)
 	defer func() {
 		e.ho.PopCtx()
@@ -195,7 +192,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 		}
 	}
 
-	err := e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
 	if err != nil {
 		e.ho.DB().Rollback()
 		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
@@ -209,46 +206,12 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 }
 
 func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
-	e.ho.SetDeadline(time.Now().Add(limit))
-
-	ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
-	err := checkTx(tx0)
-	if err != nil {
-		ilog.Error(err)
-		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
-	}
-
-	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
-	bl := e.ho.DB().Balance(e.publisherID)
-
-	if !e.isSimulated {
-		if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
-			ilog.Error(errCannotPay)
-			return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
-		}
-	}
-
-	tr, err := e.exec(tx0)
-	if err != nil {
-		e.ho.DB().Rollback()
-	} else {
-		if !e.isSimulated {
-			e.ho.DB().Commit()
-		} else {
-			e.ho.DB().Rollback()
-		}
-	}
-	return tr, err
+	r, err := e.exec(tx0, limit)
+	e.ho.DB().Commit()
+	return r, err
 }
 func (e *engineImpl) GC() {
 	e.logger.Stop()
-}
-
-func checkTx(tx0 *tx.Tx) error {
-	if tx0.GasPrice < 0 || tx0.GasPrice > 10000 {
-		return errGasPriceIllegal
-	}
-	return nil
 }
 
 // nolint

@@ -65,9 +65,9 @@ func (m *LRU) Has(key string) bool {
 }
 
 // Keys list keys under prefix, do nothing
-func (m *LRU) Keys(prefix string) []string {
-	return m.db.Keys(prefix)
-}
+//func (m *LRU) Keys(prefix string) []string {
+//	return m.db.Keys(prefix)
+//}
 
 // Del delete key from cache
 func (m *LRU) Del(key string) {
