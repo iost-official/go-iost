@@ -16,16 +16,19 @@ import (
 
 //go:generate mockgen -destination mock/batcher_mock.go -package mock github.com/iost-official/go-iost/vm Batcher
 
+// Batcher batch generator and verifier
 type Batcher interface {
 	Batch(bh *block.BlockHead, db database.IMultiValue, provider Provider, limit time.Duration, thread int) *Batch
 	Verify(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error
 }
 
+// Batch tx batch in parallel
 type Batch struct {
 	Txs      []*tx.Tx
 	Receipts []*tx.TxReceipt
 }
 
+// NewBatch make a new batch pointer
 func NewBatch() *Batch {
 	return &Batch{
 		Txs:      make([]*tx.Tx, 0),
@@ -35,12 +38,14 @@ func NewBatch() *Batch {
 
 //go:generate mockgen -destination mock/provider_mock.go -package mock github.com/iost-official/go-iost/vm Provider
 
+// Provider of tx
 type Provider interface {
 	Tx() *tx.Tx
 	Return(*tx.Tx)
 	Drop(t *tx.Tx, err error)
 }
 
+// TxIter iterator of tx pool
 type TxIter interface {
 	Next() (*tx.Tx, bool)
 }
@@ -49,10 +54,12 @@ type batcherImpl struct {
 	wait sync.WaitGroup
 }
 
+// NewBatcher init of Batcher
 func NewBatcher() Batcher {
 	return &batcherImpl{}
 }
 
+// Batch gen batch with verifier
 func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provider Provider, limit time.Duration, thread int) *Batch {
 	var (
 		mappers  = make([]map[string]database.Access, thread)
@@ -80,8 +87,6 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 
 			m.wait.Add(1)
 			defer m.wait.Done()
-
-			// todo setup engine=
 
 			e.PrepareTx(t, limit)
 
@@ -122,6 +127,7 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 	return b
 }
 
+// Resolve Resolve conflict of parallel exec
 func Resolve(mappers []map[string]database.Access) (accept, drop []int) {
 	workMap := make(map[string]database.Access)
 	accept = make([]int, 0)
@@ -147,7 +153,8 @@ L:
 	return
 }
 
-func (v *batcherImpl) Verify(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error {
+// Verify use check function to verify batch
+func (m *batcherImpl) Verify(bh *block.BlockHead, db database.IMultiValue, checkFunc func(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt) error, b *Batch) error {
 	var (
 		thread  = len(b.Txs)
 		mappers = make([]map[string]database.Access, thread)
@@ -166,10 +173,9 @@ func (v *batcherImpl) Verify(bh *block.BlockHead, db database.IMultiValue, check
 				return
 			}
 
-			v.wait.Add(1)
-			defer v.wait.Done()
+			m.wait.Add(1)
+			defer m.wait.Done()
 
-			// todo setup engine=
 			t := b.Txs[i2]
 			errs[i2] = checkFunc(e, t, b.Receipts[i2])
 			if errs[i2] == nil {
@@ -178,7 +184,7 @@ func (v *batcherImpl) Verify(bh *block.BlockHead, db database.IMultiValue, check
 
 		}()
 	}
-	v.wait.Wait()
+	m.wait.Wait()
 	_, td := Resolve(mappers)
 	if len(td) != 0 {
 		return fmt.Errorf("transaction conflicted")

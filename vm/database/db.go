@@ -26,16 +26,19 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 	return v
 }
 
+// NewBatchVisitorRoot get LRU to next step
 func NewBatchVisitorRoot(cacheLength int, cb IMultiValue) *LRU {
 	db := newChainbaseAdapter(cb)
 	lruDB := NewLRU(cacheLength, db)
 	return lruDB
 }
 
+// Mapper generator of conflict map
 type Mapper interface {
 	Map() map[string]Access
 }
 
+// NewBatchVisitor get visitor with mapper
 func NewBatchVisitor(lruDB *LRU) (*Visitor, Mapper) {
 	cachedDB := NewWriteCache(lruDB)
 

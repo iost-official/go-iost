@@ -27,8 +27,8 @@ var (
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
-	txLimit        = 2000 //limit it to 2000
-	txExecTime     = cverifier.TxExecTimeLimit / 2
+	//txLimit        = 2000 //limit it to 2000
+	//txExecTime     = cverifier.TxExecTimeLimit / 2
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {

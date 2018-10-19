@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/go-iost/vm/native"
 )
 
+// Isolator new entrance instead of Engine
 type Isolator struct {
 	h            *host.Host
 	publisherID  string
@@ -22,6 +23,7 @@ type Isolator struct {
 	blockBaseCtx *host.Context
 }
 
+// Prepare Isolator
 func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *ilog.Logger) error {
 	if db.Contract("iost.system") == nil {
 		db.SetContract(native.ABI())
@@ -33,6 +35,7 @@ func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 	return nil
 }
 
+// PrepareTx read tx and ready to run
 func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	e.t = t
 	e.h.SetDeadline(time.Now().Add(limit))
@@ -101,6 +104,7 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.S
 	return
 }
 
+// Run actions in tx
 func (e *Isolator) Run() (*tx.TxReceipt, error) {
 	e.h.Context().GSet("gas_limit", e.t.GasLimit)
 	e.h.Context().GSet("receipts", make([]tx.Receipt, 0))
@@ -149,6 +153,8 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 	}
 	return &txr, nil
 }
+
+// PayCost as name
 func (e *Isolator) PayCost() error {
 	err := e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice)
 	if err != nil {
@@ -160,12 +166,18 @@ func (e *Isolator) PayCost() error {
 	}
 	return nil
 }
+
+// Commit flush changes to db
 func (e *Isolator) Commit() {
 	e.h.DB().Commit()
 }
+
+// ClearAll clear this isolator
 func (e *Isolator) ClearAll() {
 	e.h = nil
 }
+
+// ClearTx clear this tx
 func (e *Isolator) ClearTx() {
 	e.h.SetContext(e.blockBaseCtx)
 	e.h.Context().GClear()

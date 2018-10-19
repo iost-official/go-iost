@@ -65,6 +65,7 @@ func (c *Context) GSet(key string, value interface{}) {
 	cc.gValue[key] = value
 }
 
+// GClear clear global values
 func (c *Context) GClear() {
 	cc := c
 	for cc.base != nil {

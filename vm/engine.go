@@ -119,6 +119,7 @@ func (e *engineImpl) SetUp(k, v string) error {
 	return nil
 }
 
+// nolint
 func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
 	e.ho.SetDeadline(time.Now().Add(limit))
 	err := checkTx(tx0)
