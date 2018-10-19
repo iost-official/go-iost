@@ -58,6 +58,7 @@ func ReadFile(src string) ([]byte, error) {
 
 // nolint
 func TestEngine_SetCode(t *testing.T) {
+
 	e, host, code := MyInit(t, "setcode")
 	host.Context().Set("tx_hash", "iamhash")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
@@ -105,6 +106,7 @@ func TestEngine_SetCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("compiler parse error: %v\n", err)
 	}
+
 	rs, _, err = e.LoadAndCall(host, code, "UpdateCode", con.B64Encode(), "")
 	if err != nil {
 		t.Fatalf("LoadAndCall update error: %v\n", err)

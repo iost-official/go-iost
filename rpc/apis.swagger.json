@@ -15,15 +15,15 @@
     "application/json"
   ],
   "paths": {
-    "/estimateGas": {
+    "/execTx": {
       "post": {
         "summary": "not supported yet",
-        "operationId": "EstimateGas",
+        "operationId": "ExecTx",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcGasRes"
+              "$ref": "#/definitions/rpcExecTxRes"
             }
           }
         },
@@ -145,6 +145,23 @@
         ]
       }
     },
+    "/getChainInfo": {
+      "get": {
+        "summary": "get the chain info",
+        "operationId": "GetChainInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcChainInfoRes"
+            }
+          }
+        },
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
     "/getContract/{key}": {
       "get": {
         "summary": "get contract by cid",
@@ -171,53 +188,25 @@
         ]
       }
     },
-    "/getHeight": {
-      "get": {
-        "summary": "get the current height of the blockchain",
-        "operationId": "GetHeight",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/rpcHeightRes"
-            }
-          }
-        },
-        "tags": [
-          "Apis"
-        ]
-      }
-    },
-    "/getNetID": {
-      "get": {
-        "summary": "get the Net ID",
-        "operationId": "GetNetID",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/rpcGetNetIDRes"
-            }
-          }
-        },
-        "tags": [
-          "Apis"
-        ]
-      }
-    },
-    "/getState/{key}": {
+    "/getContractStorage/{contractID}/{key}": {
       "get": {
         "summary": "get the value of the corresponding key in stateDB",
-        "operationId": "GetState",
+        "operationId": "GetContractStorage",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcGetStateRes"
+              "$ref": "#/definitions/rpcGetContractStorageRes"
             }
           }
         },
         "parameters": [
+          {
+            "name": "contractID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
           {
             "name": "key",
             "description": "the key in the StateDB",
@@ -233,6 +222,23 @@
             "type": "string"
           }
         ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/getNodeInfo": {
+      "get": {
+        "summary": "get the version info",
+        "operationId": "GetNodeInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcNodeInfoRes"
+            }
+          }
+        },
         "tags": [
           "Apis"
         ]
@@ -311,23 +317,6 @@
             "type": "string"
           }
         ],
-        "tags": [
-          "Apis"
-        ]
-      }
-    },
-    "/getVersionInfo": {
-      "get": {
-        "summary": "get the version info",
-        "operationId": "GetVersionInfo",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/rpcVersionInfoRes"
-            }
-          }
-        },
         "tags": [
           "Apis"
         ]
@@ -584,12 +573,40 @@
         }
       }
     },
-    "rpcGasRes": {
+    "rpcChainInfoRes": {
       "type": "object",
       "properties": {
-        "gas": {
+        "netType": {
+          "type": "string"
+        },
+        "protocolVersion": {
+          "type": "string"
+        },
+        "height": {
           "type": "string",
-          "format": "uint64",
+          "format": "int64"
+        },
+        "witnessList": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "headBlock": {
+          "$ref": "#/definitions/rpcBlockInfo",
+          "title": "the longest chain block"
+        },
+        "latestConfirmedBlock": {
+          "$ref": "#/definitions/rpcBlockInfo",
+          "title": "the latest confirmed block"
+        }
+      }
+    },
+    "rpcExecTxRes": {
+      "type": "object",
+      "properties": {
+        "txReceiptRaw": {
+          "$ref": "#/definitions/txTxReceiptRaw",
           "title": "not support yet"
         }
       }
@@ -613,31 +630,59 @@
         }
       }
     },
-    "rpcGetNetIDRes": {
+    "rpcGetContractStorageRes": {
       "type": "object",
       "properties": {
-        "ID": {
-          "type": "string",
-          "title": "NetID"
-        }
-      }
-    },
-    "rpcGetStateRes": {
-      "type": "object",
-      "properties": {
-        "value": {
+        "jsonStr": {
           "type": "string",
           "title": "the value of the corresponding key in the StateDB"
         }
       }
     },
-    "rpcHeightRes": {
+    "rpcNetworkInfo": {
       "type": "object",
       "properties": {
-        "height": {
+        "ID": {
+          "type": "string"
+        },
+        "peerCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "peerInfo": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcPeerInfo"
+          }
+        }
+      }
+    },
+    "rpcNodeInfoRes": {
+      "type": "object",
+      "properties": {
+        "buildTime": {
           "type": "string",
-          "format": "int64",
-          "title": "the height of the blockchain"
+          "title": "build time and git hash"
+        },
+        "gitHash": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "network": {
+          "$ref": "#/definitions/rpcNetworkInfo"
+        }
+      }
+    },
+    "rpcPeerInfo": {
+      "type": "object",
+      "properties": {
+        "ID": {
+          "type": "string"
+        },
+        "addr": {
+          "type": "string"
         }
       }
     },
@@ -678,18 +723,6 @@
         "ev": {
           "$ref": "#/definitions/eventEvent",
           "title": "event"
-        }
-      }
-    },
-    "rpcVersionInfoRes": {
-      "type": "object",
-      "properties": {
-        "buildTime": {
-          "type": "string",
-          "title": "build time and git hash"
-        },
-        "gitHash": {
-          "type": "string"
         }
       }
     },

@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
@@ -172,4 +173,9 @@ func (ns *NetService) streamHandler(s libnet.Stream) {
 // NeighborStat dumps neighbors' status for debug.
 func (ns *NetService) NeighborStat() map[string]interface{} {
 	return ns.peerManager.NeighborStat()
+}
+
+// GetNeighbors return neighbors
+func (ns *NetService) GetNeighbors() *sync.Map {
+	return ns.peerManager.neighbors
 }
