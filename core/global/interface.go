@@ -14,7 +14,6 @@ type BaseVariable interface {
 	StateDB() db.MVCCDB
 	Config() *common.Config
 	BlockChain() block.Chain
-	WitnessList() []string
 	Mode() TMode
 	SetMode(m TMode)
 }

@@ -38,6 +38,9 @@ func New(conf *common.Config) *IServer {
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)
 	}
+	if err := recoverDB(bv); err != nil {
+		ilog.Fatalf("Recover DB failed: %v", err)
+	}
 
 	p2pService, err := p2p.NewNetService(conf.P2P)
 	if err != nil {
