@@ -98,18 +98,18 @@ var publishCmd = &cobra.Command{
 
 		saveTo(dest, stx.Encode())
 
-		var txHash []byte
 		if !isLocal {
+			var txHash []byte
 			txHash, err = sendTx(stx)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
-		}
-		fmt.Println("iost node:receive your tx!")
-		fmt.Println("the transaction hash is:", saveBytes(txHash))
-		if checkResult {
-			checkTransaction(txHash)
+			fmt.Println("iost node:receive your tx!")
+			fmt.Println("the transaction hash is:", saveBytes(txHash))
+			if checkResult {
+				checkTransaction(txHash)
+			}
 		}
 	},
 }

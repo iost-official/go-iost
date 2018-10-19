@@ -62,6 +62,26 @@ func (v *Verifier) Exec(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, 
 	return r, err
 }
 
+func (v *Verifier) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
+	var isolator vm.Isolator
+	vi := database.NewVisitor(100, db)
+	var l ilog.Logger
+	l.Stop()
+	err := isolator.Prepare(bh, vi, &l)
+	if err != nil {
+		return &tx.TxReceipt{}, err
+	}
+	err = isolator.PrepareTx(t, limit)
+	if err != nil {
+		return &tx.TxReceipt{}, err
+	}
+	r, err := isolator.Run()
+	if err != nil {
+		return &tx.TxReceipt{}, err
+	}
+	return r, err
+}
+
 func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
 	if blk.Txs == nil {
 		blk.Txs = make([]*tx.Tx, 0)
