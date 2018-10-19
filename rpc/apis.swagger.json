@@ -162,7 +162,7 @@
         ]
       }
     },
-    "/getContract/{key}": {
+    "/getContract/{contractID}": {
       "get": {
         "summary": "get contract by cid",
         "operationId": "GetContract",
@@ -176,7 +176,7 @@
         },
         "parameters": [
           {
-            "name": "key",
+            "name": "contractID",
             "description": "contract id",
             "in": "path",
             "required": true,
@@ -538,7 +538,6 @@
         },
         "hash": {
           "type": "string",
-          "format": "byte",
           "title": "block hash"
         },
         "txs": {
@@ -551,8 +550,7 @@
         "txhash": {
           "type": "array",
           "items": {
-            "type": "string",
-            "format": "byte"
+            "type": "string"
           },
           "title": "transaction hash list,works when complete is false"
         },
@@ -566,8 +564,7 @@
         "receiptHash": {
           "type": "array",
           "items": {
-            "type": "string",
-            "format": "byte"
+            "type": "string"
           },
           "title": "transaction receiptHash list"
         }
@@ -734,8 +731,7 @@
           "title": "transaction receipt"
         },
         "hash": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         }
       }
     },
@@ -748,7 +744,6 @@
         },
         "hash": {
           "type": "string",
-          "format": "byte",
           "title": "transaction hash"
         }
       }

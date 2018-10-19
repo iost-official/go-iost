@@ -140,7 +140,7 @@ func (s *GRPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, er
 
 	return &TxRes{
 		TxRaw: trx.ToTxRaw(),
-		Hash:  trx.Hash(),
+		Hash:  common.Base58Encode(trx.Hash()),
 	}, nil
 }
 
@@ -159,7 +159,7 @@ func (s *GRPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*Tx
 
 	return &TxReceiptRes{
 		TxReceiptRaw: receipt.ToTxReceiptRaw(),
-		Hash:         receiptHashBytes,
+		Hash:         common.Base58Encode(receiptHashBytes),
 	}, nil
 }
 
@@ -178,30 +178,28 @@ func (s *GRPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*
 
 	return &TxReceiptRes{
 		TxReceiptRaw: receipt.ToTxReceiptRaw(),
-		Hash:         receipt.Hash(),
+		Hash:         common.Base58Encode(receipt.Hash()),
 	}, nil
 }
 
 func toBlockInfo(blk *block.Block, complete bool) *BlockInfo {
 	blkInfo := &BlockInfo{
 		Head:   blk.Head,
-		Hash:   blk.HeadHash(),
+		Hash:   common.Base58Encode(blk.HeadHash()),
 		Txs:    make([]*tx.TxRaw, 0),
-		Txhash: make([][]byte, 0),
+		Txhash: make([]string, 0),
 	}
 	for _, trx := range blk.Txs {
 		if complete {
 			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
-		} else {
-			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
 		}
+		blkInfo.Txhash = append(blkInfo.Txhash, common.Base58Encode(trx.Hash()))
 	}
 	for _, receipt := range blk.Receipts {
 		if complete {
 			blkInfo.Receipts = append(blkInfo.Receipts, receipt.ToTxReceiptRaw())
-		} else {
-			blkInfo.ReceiptHash = append(blkInfo.ReceiptHash, receipt.Hash())
 		}
+		blkInfo.ReceiptHash = append(blkInfo.ReceiptHash, common.Base58Encode(receipt.Hash()))
 	}
 	return blkInfo
 }
@@ -276,13 +274,13 @@ func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*Get
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	if key.Key == "" {
+	if key.ContractID == "" {
 		return nil, fmt.Errorf("argument cannot be empty string")
 	}
-	if !strings.HasPrefix(key.Key, "Contract") {
+	if !strings.HasPrefix(key.ContractID, "Contract") {
 		return nil, fmt.Errorf("Contract id should start with \"Contract\"")
 	}
-	txHashBytes := common.Base58Decode(key.Key[len("Contract"):])
+	txHashBytes := common.Base58Decode(key.ContractID[len("Contract"):])
 	trx, err := s.txdb.GetTx(txHashBytes)
 	if err != nil {
 		return nil, err
