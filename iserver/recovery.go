@@ -6,9 +6,9 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/genesis"
-	"github.com/iost-official/go-iost/consensus/verifier"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/verifier"
 )
 
 func recoverDB(bv global.BaseVariable) error {
