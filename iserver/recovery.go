@@ -11,7 +11,7 @@ import (
 	"github.com/iost-official/go-iost/verifier"
 )
 
-func recoverDB(bv global.BaseVariable) error {
+func checkGenesis(bv global.BaseVariable) error {
 	blockChain := bv.BlockChain()
 	stateDB := bv.StateDB()
 	txDB := bv.TxDB()
@@ -19,6 +19,7 @@ func recoverDB(bv global.BaseVariable) error {
 
 	blk, err := blockChain.GetBlockByNumber(0)
 	if err != nil { //blockchaindb is empty
+		ilog.Infof("Genesis is not exist.")
 		hash := stateDB.CurrentTag()
 		if hash != "" {
 			return fmt.Errorf("blockchaindb is empty, but statedb is not")
@@ -40,21 +41,29 @@ func recoverDB(bv global.BaseVariable) error {
 		if err != nil {
 			return fmt.Errorf("push txDB failed, stop the pogram. err: %v", err)
 		}
-		genesisBlock, _ := blockChain.GetBlockByNumber(0)
-		ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
-		return nil
+		ilog.Infof("Created Genesis.")
 	}
-	var startNumebr int64
+	// TODO check genesis hash between config and db
+	ilog.Infof("GenesisHash: %v", common.Base58Encode(blk.HeadHash()))
+
+	return nil
+}
+
+func recoverDB(bv global.BaseVariable) error {
+	blockChain := bv.BlockChain()
+	stateDB := bv.StateDB()
+
+	startNumebr := int64(0)
 	hash := stateDB.CurrentTag()
 	if hash != "" {
-		blk, err = blockChain.GetBlockByHash([]byte(hash))
+		blk, err := blockChain.GetBlockByHash([]byte(hash))
 		if err != nil {
 			return fmt.Errorf("statedb doesn't coincides with blockchaindb. err: %v", err)
 		}
 		startNumebr = blk.Head.Number + 1
 	}
 	for i := startNumebr; i < blockChain.Length(); i++ {
-		blk, err = blockChain.GetBlockByNumber(i)
+		blk, err := blockChain.GetBlockByNumber(i)
 		if err != nil {
 			return fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
 		}
