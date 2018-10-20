@@ -201,36 +201,42 @@ func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 }
 
 func (bc *BlockChain) getBlockTxsMap(hash []byte) (map[string]*tx.Tx, error) {
-	iter, err := bc.blockChainDB.Range(append(bTxPrefix, hash...))
-	if err != nil {
-		return nil, errors.New("fail to get block txs")
-	}
+	iter := bc.blockChainDB.NewIteratorByPrefix(append(bTxPrefix, hash...))
 	txsMap := make(map[string]*tx.Tx, 0)
 	for iter.Next() {
 		var tt tx.Tx
-		err = tt.Decode(iter.Value())
+		err := tt.Decode(iter.Value())
 		if err != nil {
-			return nil, errors.New("fail to decode tx")
+			return nil, fmt.Errorf("fail to decode tx: %v", err)
 		}
 		txsMap[string(tt.Hash())] = &tt
 	}
+	iter.Release()
+	err := iter.Error()
+	if err != nil {
+		return nil, fmt.Errorf("fail to get block txs: %v", err)
+	}
+
 	return txsMap, nil
 }
 
 func (bc *BlockChain) getBlockReceiptMap(hash []byte) (map[string]*tx.TxReceipt, error) {
-	iter, err := bc.blockChainDB.Range(append(bReceiptPrefix, hash...))
-	if err != nil {
-		return nil, errors.New("fail to get block txs")
-	}
+	iter := bc.blockChainDB.NewIteratorByPrefix(append(bReceiptPrefix, hash...))
 	receiptMap := make(map[string]*tx.TxReceipt, 0)
 	for iter.Next() {
 		var tr tx.TxReceipt
-		err = tr.Decode(iter.Value())
+		err := tr.Decode(iter.Value())
 		if err != nil {
-			return nil, errors.New("fail to decode tx")
+			return nil, fmt.Errorf("fail to decode tx receipt: %v", err)
 		}
 		receiptMap[string(tr.Hash())] = &tr
 	}
+	iter.Release()
+	err := iter.Error()
+	if err != nil {
+		return nil, fmt.Errorf("fail to get block receipts: %v", err)
+	}
+
 	return receiptMap, nil
 }
 

@@ -22,10 +22,10 @@ type StorageBackend interface {
 	Has(key []byte) (bool, error)
 	Delete(key []byte) error
 	Keys(prefix []byte) ([][]byte, error)
-	Range(prefix []byte) (interface{}, error)
 	BeginBatch() error
 	CommitBatch() error
 	Close() error
+	NewIteratorByPrefix(prefix []byte) interface{}
 }
 
 // Storage is a kv database
@@ -57,13 +57,24 @@ func NewStorage(path string, t StorageType) (*Storage, error) {
 	}
 }
 
-type Interator interface {
+// NewIteratorByPrefix returns a new iterator by prefix
+func (s *Storage) NewIteratorByPrefix(prefix []byte) *Iterator {
+	ib := s.StorageBackend.NewIteratorByPrefix(prefix).(IteratorBackend)
+	return &Iterator{
+		IteratorBackend: ib,
+	}
+}
+
+// IteratorBackend is the storage iterator backend
+type IteratorBackend interface {
 	Next() bool
 	Key() []byte
 	Value() []byte
+	Error() error
+	Release()
 }
 
-func (s *Storage) Range(prefix []byte) (Interator, error) {
-	iterIF, _ := s.StorageBackend.Range(prefix)
-	return iterIF.(Interator), nil
+// Iterator is the storage iterator
+type Iterator struct {
+	IteratorBackend
 }

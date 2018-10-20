@@ -317,7 +317,7 @@ func BenchmarkKeys(b *testing.B) {
 	}
 }
 
-func BenchmarkRange(b *testing.B) {
+func BenchmarkIterator(b *testing.B) {
 	storage, err := NewStorage(DBPATH, LevelDBStorage)
 	if err != nil {
 		b.Fatalf("Failed to new storage: %v", err)
@@ -344,15 +344,25 @@ func BenchmarkRange(b *testing.B) {
 		values = append(values, value)
 		storage.Put(append(headkey, key...), value)
 	}
-	b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Range", func(b *testing.B) {
+	b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Iterator", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			storage.Range(headkeys[i%bnum])
+			iter := storage.NewIteratorByPrefix(headkeys[i%bnum])
+			iter.Release()
+			err := iter.Error()
+			if !assert.Nil(b, err) {
+				b.Fatalf("Fail to New the Iterator: %v", err)
+			}
 		}
 	})
-	b.Run(reflect.TypeOf(storage.StorageBackend).String()+"RangeAll", func(b *testing.B) {
+	b.Run(reflect.TypeOf(storage.StorageBackend).String()+"IteratorAll", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			iter, _ := storage.Range(headkeys[i%bnum])
+			iter := storage.NewIteratorByPrefix(headkeys[i%bnum])
 			for iter.Next() {
+			}
+			iter.Release()
+			err := iter.Error()
+			if !assert.Nil(b, err) {
+				b.Fatalf("Fail to iterate the Iterator: %v", err)
 			}
 		}
 	})
