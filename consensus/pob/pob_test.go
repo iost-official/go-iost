@@ -62,7 +62,7 @@ func testRun(t *testing.T) {
 	channel := make(chan p2p.IncomingMessage, 1024)
 	mockP2PService.EXPECT().Register(gomock.Any(), gomock.Any()).Return(channel).AnyTimes()
 	txPool, _ := txpool.NewTxPoolImpl(baseVariable, blockCache, mockP2PService) //mock
-	pob := NewPoB(account1, baseVariable, blockCache, txPool, mockP2PService)
+	pob := New(account1, baseVariable, blockCache, txPool, mockP2PService)
 	pob.Start()
 	fmt.Println(time.Now().Second())
 	fmt.Println(time.Now().Nanosecond())

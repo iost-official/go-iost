@@ -28,8 +28,8 @@ type Consensus interface {
 func New(cType Type, account *account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service) Consensus {
 	switch cType {
 	case Pob:
-		return pob.NewPoB(account, baseVariable, blkcache, txPool, service)
+		return pob.New(account, baseVariable, blkcache, txPool, service)
 	default:
-		return pob.NewPoB(account, baseVariable, blkcache, txPool, service)
+		return pob.New(account, baseVariable, blkcache, txPool, service)
 	}
 }
