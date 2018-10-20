@@ -15,8 +15,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/cverifier"
 	"github.com/iost-official/go-iost/consensus/pob"
-	"github.com/iost-official/go-iost/consensus/verifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/contract"
@@ -27,7 +27,7 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
 )
 
@@ -377,11 +377,10 @@ func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, e
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	engine := vm.NewSimulatedEngine(blk.Head, s.forkDB)
-	receipt, err := engine.Exec(&trx, verifier.TxExecTimeLimit/2)
+	v := verifier.Verifier{}
+	receipt, err := v.Try(blk.Head, s.forkDB, &trx, cverifier.TxExecTimeLimit)
 	if err != nil {
-		ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
-		return nil, err
+		return nil, fmt.Errorf("exec tx failed: %v", err)
 	}
 	return &ExecTxRes{TxReceiptRaw: receipt.ToTxReceiptRaw()}, nil
 }

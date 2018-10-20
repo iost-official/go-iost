@@ -9,6 +9,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/genesis"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -32,7 +34,13 @@ func testRun(t *testing.T) {
 	id2Seckey[account1.ID] = account1.Seckey
 	id2Seckey[account2.ID] = account2.Seckey
 	id2Seckey[account3.ID] = account3.Seckey
-	baseVariable, err := global.FakeNew()
+	baseVariable, err := global.New(&common.Config{
+		DB: &common.DBConfig{
+			LdbPath: "Fakedb/",
+		},
+	})
+	genesis.FakeBv(baseVariable)
+
 	if err != nil {
 		t.Fatal(err)
 	}
