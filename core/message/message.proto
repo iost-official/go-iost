@@ -10,7 +10,6 @@ message BlockInfo {
 enum RequireType{
     GETBLOCKHASHES = 0;
     GETBLOCKHASHESBYNUMBER = 1;
-
 }
 
 message BlockHashQuery {

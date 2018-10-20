@@ -14,7 +14,6 @@ import (
 func checkGenesis(bv global.BaseVariable) error {
 	blockChain := bv.BlockChain()
 	stateDB := bv.StateDB()
-	txDB := bv.TxDB()
 	conf := bv.Config()
 
 	blk, err := blockChain.GetBlockByNumber(0)
@@ -36,10 +35,6 @@ func checkGenesis(bv global.BaseVariable) error {
 		err = stateDB.Flush(string(blk.HeadHash()))
 		if err != nil {
 			return fmt.Errorf("flush block into stateDB failed, stop the program. err: %v", err)
-		}
-		err = txDB.Push(blk.Txs, blk.Receipts)
-		if err != nil {
-			return fmt.Errorf("push txDB failed, stop the pogram. err: %v", err)
 		}
 		ilog.Infof("Created Genesis.")
 	}

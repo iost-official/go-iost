@@ -44,7 +44,6 @@ func (m TMode) String() string {
 type BaseVariableImpl struct {
 	blockChain block.Chain
 	stateDB    db.MVCCDB
-	txDB       TxDB
 	mode       TMode
 	config     *common.Config
 }
@@ -62,23 +61,12 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
 
-	txDB, err := NewTxDB(conf.DB.LdbPath + "TXDB")
-	if err != nil {
-		return nil, fmt.Errorf("new txDB failed, stop the program. err: %v", err)
-	}
-
 	return &BaseVariableImpl{
 		blockChain: blockChain,
 		stateDB:    stateDB,
-		txDB:       txDB,
 		mode:       ModeInit,
 		config:     conf,
 	}, nil
-}
-
-// TxDB return the transaction database
-func (g *BaseVariableImpl) TxDB() TxDB {
-	return g.txDB
 }
 
 // StateDB return the state database

@@ -37,7 +37,6 @@ import (
 type GRPCServer struct {
 	bc         blockcache.BlockCache
 	p2pService p2p.Service
-	txdb       global.TxDB
 	txpool     txpool.TxPool
 	bchain     block.Chain
 	forkDB     db.MVCCDB
@@ -50,7 +49,6 @@ type GRPCServer struct {
 func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable, p2pService p2p.Service) *GRPCServer {
 	forkDb := _global.StateDB().Fork()
 	return &GRPCServer{
-		txdb:       _global.TxDB(),
 		p2pService: p2pService,
 		txpool:     tp,
 		bchain:     _global.BlockChain(),
@@ -132,7 +130,7 @@ func (s *GRPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, er
 	txHash := hash.Hash
 	txHashBytes := common.Base58Decode(txHash)
 
-	trx, err := s.txdb.GetTx(txHashBytes)
+	trx, err := s.bchain.GetTx(txHashBytes)
 
 	if err != nil {
 		return nil, err
@@ -152,7 +150,7 @@ func (s *GRPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*Tx
 	receiptHash := hash.Hash
 	receiptHashBytes := common.Base58Decode(receiptHash)
 
-	receipt, err := s.txdb.GetReceipt(receiptHashBytes)
+	receipt, err := s.bchain.GetReceipt(receiptHashBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +169,7 @@ func (s *GRPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*
 	txHash := hash.Hash
 	txHashBytes := common.Base58Decode(txHash)
 
-	receipt, err := s.txdb.GetReceiptByTxHash(txHashBytes)
+	receipt, err := s.bchain.GetReceiptByTxHash(txHashBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -280,8 +278,10 @@ func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*Get
 	if !strings.HasPrefix(key.ContractID, "Contract") {
 		return nil, fmt.Errorf("Contract id should start with \"Contract\"")
 	}
+
 	txHashBytes := common.Base58Decode(key.ContractID[len("Contract"):])
-	trx, err := s.txdb.GetTx(txHashBytes)
+	trx, err := s.bchain.GetTx(txHashBytes)
+
 	if err != nil {
 		return nil, err
 	}

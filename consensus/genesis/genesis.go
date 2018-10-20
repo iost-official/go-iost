@@ -147,10 +147,6 @@ func FakeBv(bv global.BaseVariable) error {
 	if err != nil {
 		return err
 	}
-	err = bv.TxDB().Push(blk.Txs, blk.Receipts)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }

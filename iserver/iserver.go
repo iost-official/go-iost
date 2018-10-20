@@ -136,5 +136,4 @@ func (s *IServer) Stop() {
 	}
 	s.bv.BlockChain().Close()
 	s.bv.StateDB().Close()
-	s.bv.TxDB().Close()
 }

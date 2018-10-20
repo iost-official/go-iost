@@ -114,7 +114,6 @@ func main() {
 	waitExit()
 
 	iserver.Stop()
-
 	ilog.Stop()
 }
 

@@ -7,6 +7,7 @@ package core_mock
 import (
 	gomock "github.com/golang/mock/gomock"
 	block "github.com/iost-official/go-iost/core/block"
+	tx "github.com/iost-official/go-iost/core/tx"
 	reflect "reflect"
 )
 
@@ -115,6 +116,71 @@ func (m *MockChain) GetHashByNumber(arg0 int64) ([]byte, error) {
 // GetHashByNumber indicates an expected call of GetHashByNumber
 func (mr *MockChainMockRecorder) GetHashByNumber(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHashByNumber", reflect.TypeOf((*MockChain)(nil).GetHashByNumber), arg0)
+}
+
+// GetReceipt mocks base method
+func (m *MockChain) GetReceipt(arg0 []byte) (*tx.TxReceipt, error) {
+	ret := m.ctrl.Call(m, "GetReceipt", arg0)
+	ret0, _ := ret[0].(*tx.TxReceipt)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetReceipt indicates an expected call of GetReceipt
+func (mr *MockChainMockRecorder) GetReceipt(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReceipt", reflect.TypeOf((*MockChain)(nil).GetReceipt), arg0)
+}
+
+// GetReceiptByTxHash mocks base method
+func (m *MockChain) GetReceiptByTxHash(arg0 []byte) (*tx.TxReceipt, error) {
+	ret := m.ctrl.Call(m, "GetReceiptByTxHash", arg0)
+	ret0, _ := ret[0].(*tx.TxReceipt)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetReceiptByTxHash indicates an expected call of GetReceiptByTxHash
+func (mr *MockChainMockRecorder) GetReceiptByTxHash(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReceiptByTxHash", reflect.TypeOf((*MockChain)(nil).GetReceiptByTxHash), arg0)
+}
+
+// GetTx mocks base method
+func (m *MockChain) GetTx(arg0 []byte) (*tx.Tx, error) {
+	ret := m.ctrl.Call(m, "GetTx", arg0)
+	ret0, _ := ret[0].(*tx.Tx)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTx indicates an expected call of GetTx
+func (mr *MockChainMockRecorder) GetTx(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTx", reflect.TypeOf((*MockChain)(nil).GetTx), arg0)
+}
+
+// HasReceipt mocks base method
+func (m *MockChain) HasReceipt(arg0 []byte) (bool, error) {
+	ret := m.ctrl.Call(m, "HasReceipt", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasReceipt indicates an expected call of HasReceipt
+func (mr *MockChainMockRecorder) HasReceipt(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasReceipt", reflect.TypeOf((*MockChain)(nil).HasReceipt), arg0)
+}
+
+// HasTx mocks base method
+func (m *MockChain) HasTx(arg0 []byte) (bool, error) {
+	ret := m.ctrl.Call(m, "HasTx", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasTx indicates an expected call of HasTx
+func (mr *MockChainMockRecorder) HasTx(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasTx", reflect.TypeOf((*MockChain)(nil).HasTx), arg0)
 }
 
 // Length mocks base method
