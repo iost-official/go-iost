@@ -67,7 +67,7 @@ service Apis {
     // get contract by cid
     rpc GetContract (GetContractReq) returns (GetContractRes) {
         option (google.api.http) = {
-            get: "/getContract/{key}"
+            get: "/getContract/{contractID}"
         };
     }
     // receive encoded tx
@@ -129,7 +129,7 @@ message GetContractStorageReq {
 
 message GetContractReq {
     //contract id
-    string key=1;
+    string contractID=1;
 }
 
 message RawTxReq {
@@ -165,15 +165,15 @@ message BlockInfo {
     //BlockHead
     block.BlockHead head = 1;
     //block hash
-    bytes hash = 2;
+    string hash = 2;
     //transaction list,works when complete is true
     repeated tx.TxRaw txs = 3;
     //transaction hash list,works when complete is false
-    repeated bytes txhash= 4 ;
+    repeated string txhash= 4 ;
     //transaction receipt list
     repeated tx.TxReceiptRaw receipts = 5;
     //transaction receiptHash list
-    repeated bytes receiptHash = 6;
+    repeated string receiptHash = 6;
 }
 
 message ChainInfoRes {
@@ -216,13 +216,13 @@ message txRes {
     //the queried transaction
     tx.TxRaw txRaw = 1;
     //transaction hash
-    bytes hash = 2;
+    string hash = 2;
 }
 
 message txReceiptRes {
     //transaction receipt
     tx.TxReceiptRaw txReceiptRaw = 1;
-    bytes hash = 2;
+    string hash = 2;
 }
 
 message SubscribeRes {
