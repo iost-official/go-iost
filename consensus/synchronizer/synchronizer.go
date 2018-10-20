@@ -19,7 +19,6 @@ var (
 	// TODO: configurable
 	confirmNumber = 8
 	// SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
-	syncNumber int64 = 11
 
 	maxBlockHashQueryNumber int64 = 100
 	retryTime                     = 5 * time.Second
@@ -27,7 +26,8 @@ var (
 	syncHeightTime                = 3 * time.Second
 	heightAvailableTime     int64 = 22 * 3
 	heightTimeout           int64 = 100 * 22 * 3
-	continuousNum                 = 5
+	continuousNum           int64 = 5
+	syncNumber                    = 11 * continuousNum
 )
 
 // Synchronizer defines the functions of synchronizer module
@@ -154,7 +154,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 			sy.heightMap.Store(req.From(), &sh)
 		case <-checkTicker.C:
 			sy.checkSync()
-			//sy.checkGenBlock()
+			sy.checkGenBlock()
 			sy.CheckSyncProcess()
 		case <-sy.exitSignal:
 			syncHeightTicker.Stop()
