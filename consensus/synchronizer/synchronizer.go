@@ -17,9 +17,7 @@ import (
 
 var (
 	// TODO: configurable
-	confirmNumber = 8
-	// SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
-
+	confirmNumber           int64 = 8
 	maxBlockHashQueryNumber int64 = 100
 	retryTime                     = 5 * time.Second
 	checkTime                     = 3 * time.Second
@@ -27,7 +25,7 @@ var (
 	heightAvailableTime     int64 = 22 * 3
 	heightTimeout           int64 = 100 * 22 * 3
 	continuousNum           int64 = 5
-	syncNumber                    = 11 * continuousNum
+	syncNumber              int64 = 11 * continuousNum
 )
 
 // Synchronizer defines the functions of synchronizer module
@@ -212,11 +210,11 @@ func (sy *SyncImpl) checkGenBlock() bool {
 		return false
 	}
 	height := sy.basevariable.BlockChain().Length() - 1
-	num := 0
+	var num int64
 	if bcn != sy.lastBcn {
 		sy.lastBcn = bcn
 		witness := bcn.Block.Head.Witness
-		for i := 0; i < confirmNumber*continuousNum; i++ {
+		for i := int64(0); i < confirmNumber*continuousNum; i++ {
 			if bcn == nil {
 				break
 			}
