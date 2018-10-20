@@ -154,7 +154,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 			sy.heightMap.Store(req.From(), &sh)
 		case <-checkTicker.C:
 			sy.checkSync()
-			sy.checkGenBlock()
+			//sy.checkGenBlock()
 			sy.CheckSyncProcess()
 		case <-sy.exitSignal:
 			syncHeightTicker.Stop()
