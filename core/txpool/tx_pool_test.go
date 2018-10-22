@@ -119,11 +119,11 @@ func TestNewTxPImpl(t *testing.T) {
 
 			t := genTx(accountList[0], Expiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
+			err := txPool.AddTx(t)
+			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-			r = txPool.AddTx(t)
-			So(r, ShouldEqual, DupError)
+			err = txPool.AddTx(t)
+			So(err.Error(), ShouldStartWith, "DupError")
 		})
 		Convey("txTimeOut", func() {
 
@@ -147,8 +147,8 @@ func TestNewTxPImpl(t *testing.T) {
 			t := genTx(accountList[0], int64(30*time.Millisecond))
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
+			err := txPool.AddTx(t)
+			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			time.Sleep(50 * time.Millisecond)
 			txPool.clearTimeOutTx()
@@ -158,8 +158,8 @@ func TestNewTxPImpl(t *testing.T) {
 
 			t := genTx(accountList[0], Expiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
+			err := txPool.AddTx(t)
+			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			r1 := txPool.ExistTxs(t.Hash(), nil)
 			So(r1, ShouldEqual, FoundPending)
@@ -277,8 +277,8 @@ func TestNewTxPImplB(t *testing.T) {
 
 			t := genTx(accountList[0], Expiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
+			err := txPool.AddTx(t)
+			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			e := txPool.DelTx(t.Hash())
 			So(e, ShouldBeNil)
@@ -308,8 +308,8 @@ func TestNewTxPImplB(t *testing.T) {
 			So(bcn, ShouldNotBeNil)
 
 			for i := 0; i < forkBlockTxCnt-3; i++ {
-				r := txPool.AddTx(forkBlock.Txs[i])
-				So(r, ShouldEqual, Success)
+				err := txPool.AddTx(forkBlock.Txs[i])
+				So(err, ShouldBeNil)
 			}
 
 			So(txPool.testPendingTxsNum(), ShouldEqual, 3)
