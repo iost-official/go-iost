@@ -225,6 +225,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 		}
 	}
 	if num > continuousNum {
+		ilog.Infof("num: %v, continuousNum: %v", num, continuousNum)
 		go sy.syncBlocks(height+1, sy.blockCache.Head().Number)
 		return true
 	}
