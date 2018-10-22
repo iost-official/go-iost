@@ -210,9 +210,9 @@ func (p *Peer) writeLoop() {
 			ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 			return
 		case um := <-p.urgentMsgCh:
-			ilog.Info(um.messageType())
+			//ilog.Info(um.messageType())
 			//go p.write(um)
-			//p.write(um)
+			p.write(um)
 		case nm := <-p.normalMsgCh:
 			for done := false; !done; {
 				select {
@@ -221,15 +221,15 @@ func (p *Peer) writeLoop() {
 					return
 				case um := <-p.urgentMsgCh:
 					//go p.write(um)
-					//p.write(um)
-					ilog.Info(um.messageType())
+					p.write(um)
+					//ilog.Info(um.messageType())
 				default:
 					done = true
 				}
 			}
 			//go p.write(nm)
-			//p.write(nm)
-			ilog.Info(nm.messageType())
+			p.write(nm)
+			//ilog.Info(nm.messageType())
 		}
 	}
 }
@@ -288,7 +288,7 @@ func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool
 			return ErrDuplicateMessage
 		}
 	}
-	p.write(msg)
+	//p.write(msg)
 	ch := p.urgentMsgCh
 	if mp == NormalMessage {
 		ch = p.normalMsgCh
