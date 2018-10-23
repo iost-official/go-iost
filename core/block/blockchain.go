@@ -22,11 +22,11 @@ var (
 	blockLength       = []byte("BlockLength")
 	blockNumberPrefix = []byte("n")
 	blockPrefix       = []byte("H")
-	txPrefix          = []byte("t") // txPrefix+tx hash -> tx data
-	bTxPrefix         = []byte("B") // txPrefix+tx hash -> tx data
-	txReceiptPrefix   = []byte("h") // receiptHashPrefix + tx hash -> receipt hash
-	receiptPrefix     = []byte("r") // receiptPrefix + receipt hash -> receipt data
-	bReceiptPrefix    = []byte("b") // txPrefix+tx hash -> tx data
+	txPrefix          = []byte("t") // txPrefix + tx hash -> block hash + tx hash
+	bTxPrefix         = []byte("B") // bTxPrefix + block hash + tx hash -> tx data
+	txReceiptPrefix   = []byte("h") // txReceiptPrefix + tx hash -> block hash + receipt hash
+	receiptPrefix     = []byte("r") // receiptPrefix + receipt hash -> block hash + receipt hash
+	bReceiptPrefix    = []byte("b") // bReceiptPrefix + block hash + receipt hash -> receipt data
 )
 
 // Int64ToByte is int64 to byte
