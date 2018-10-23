@@ -205,9 +205,9 @@ func (p *PoB) broadcastBlockHash(blk *block.Block) {
 	}
 }
 
-func calculateTime() float64 {
-	currentSlot := time.Now().UnixNano() / (1e9 * common.SlotLength)
-	return float64((time.Now().UnixNano() - currentSlot*1e9*common.SlotLength) / 1e6)
+func calculateTime(blk *block.Block) float64 {
+	//currentSlot := time.Now().UnixNano() / (1e9 * common.SlotLength)
+	return float64((time.Now().UnixNano() - blk.Head.Time*1e9*common.SlotLength) / 1e6)
 }
 
 func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
@@ -226,7 +226,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	}
 	switch vbm.p2pType {
 	case p2p.NewBlock:
-		t1 := calculateTime()
+		t1 := calculateTime(blk)
 		metricsTransferCost.Set(t1, nil)
 		ilog.Infof("[pob] received new block, number:%d, hash=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		ilog.Info("received new block, block number: ", blk.Head.Number)
@@ -241,7 +241,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		}
 		ilog.Infof("[pob] handle recv new block start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		err := p.handleRecvBlock(blk, true)
-		t2 := calculateTime()
+		t2 := calculateTime(blk)
 		metricsTimeCost.Set(t2, nil)
 		ilog.Infof("[pob] transfer cost: %v, total cost: %v", t1, t2)
 		ilog.Infof("[pob] handle recv new block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
