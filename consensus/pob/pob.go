@@ -176,7 +176,6 @@ func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 			ilog.Errorf("fail to encode block: %v, err=%v", rh.Number, err)
 			return
 		}
-		ilog.Infof("[pob] send to peer block")
 		p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 		return
 	}
@@ -186,7 +185,6 @@ func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 		ilog.Warnf("failed to get block from blockchain. err=%v", err)
 		return
 	}
-	ilog.Infof("[pob] send to peer block")
 	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 }
 
@@ -228,8 +226,6 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	case p2p.NewBlock:
 		t1 := calculateTime(blk)
 		metricsTransferCost.Set(t1, nil)
-		ilog.Infof("[pob] received new block, number:%d, hash=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-		ilog.Info("received new block, block number: ", blk.Head.Number)
 		timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 		if ok {
 			t, ok := timer.(*time.Timer)
@@ -362,12 +358,9 @@ func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	if err != nil {
 		return err
 	}
-	ilog.Infof("[pob] verifyBasics end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
-	ilog.Infof("[pob] add into blockCache end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	if err == nil && parent.Type == blockcache.Linked {
-		ilog.Infof("[pob] add ExistingBlock start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		return p.addExistingBlock(blk, parent.Block, update)
 	}
 	return errSingle
@@ -376,15 +369,11 @@ func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, update bool) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
-	ilog.Infof("[pob] verifyDB checkout end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
-		ilog.Infof("[pob] verifyDB checkout parentHash end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-		ilog.Infof("[pob] verify block start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		p.txPool.Lock()
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
 		p.txPool.Release()
-		ilog.Infof("[pob] verify block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		if err != nil {
 			ilog.Errorf("verify block failed. err=%v", err)
 			p.blockCache.Del(node)
@@ -392,9 +381,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
-	ilog.Infof("[pob] addLinkedNode start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	p.txPool.AddLinkedNode(node)
-	ilog.Infof("[pob] addLinkedNode end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	p.blockCache.Link(node)
 	ilog.Infof("[pob] updateInfo start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	p.updateInfo(node, update)
@@ -402,7 +389,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, true)
 	}
-	ilog.Infof("[pob] addExistingBlock end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	return nil
 }
 

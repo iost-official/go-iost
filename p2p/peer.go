@@ -192,8 +192,6 @@ func (p *Peer) write(m *p2pMessage) error {
 	}
 	t4 := time.Now()
 	if m.messageType() == NewBlock {
-		ilog.Infof("[pob] get stream start time: %v, stream start write time: %v", t1, t3)
-		ilog.Infof("[pob] get stream time cost: %v, stream write time cost: %v", t2.Sub(t1).Nanoseconds()/1e6, t4.Sub(t3).Nanoseconds()/1e6)
 		metricsGetStreamTimeCost.Set(float64(t2.Sub(t1).Nanoseconds()/1e6), nil)
 		metricsWriteStreamTimeCost.Set(float64(t4.Sub(t3).Nanoseconds()/1e6), nil)
 		metricsGetStreamStartTime.Set(calculateTime(t1), nil)
@@ -267,8 +265,6 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		copy(data[0:dataBegin], header)
 		msg, err := parseP2PMessage(data)
 		if msg.messageType() == NewBlock {
-			ilog.Infof("[pob] New Block recv time cost: %v", time.Since(t1).Nanoseconds()/1e6)
-			ilog.Infof("[pob] recv start time: %v, recv end time: %v", t1, time.Now())
 			metricsBlockHeaderArriveTime.Set(calculateTime(t1), nil)
 			metricsRecvBlockTimeCost.Set(float64(time.Since(t1).Nanoseconds()/1e6), nil)
 		}

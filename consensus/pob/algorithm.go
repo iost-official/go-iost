@@ -108,8 +108,6 @@ L:
 	metricsGeneratedBlockCount.Add(1, nil)
 	metricsTxSize.Set(float64(len(blk.Txs)), nil)
 	go txPool.DelTxList(delList)
-	ilog.Infof("[pob] generate Block end, number: %v, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-	ilog.Infof("[pob] block size: %v", len(blk.Txs))
 	return &blk, nil
 }
 
@@ -128,7 +126,6 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 
 //nolint
 func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB) error {
-	ilog.Infof("[pob] verifyBlockHead start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	err := verifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
@@ -155,7 +152,6 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		}
 	}
 	// check txs
-	ilog.Infof("[pob] verify tx in txpool start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	var notFoundPending int64
 
 	for _, tx := range blk.Txs {
@@ -175,8 +171,6 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 			return errTxTooOld
 		}
 	}
-	ilog.Infof("[pob] all tx: %v, tx not found in pending: %v", len(blk.Txs), notFoundPending)
-	ilog.Infof("[pob] verify tx in txpool end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	return verifier.VerifyBlockWithVM(blk, db)
 }
 
@@ -188,9 +182,7 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 }
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
-	ilog.Infof("[pob] calculate start, number: %d, hash = %v", node.Number, common.Base58Encode(node.Block.HeadHash()))
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
-	ilog.Infof("[pob] calculate end, number: %d, hash = %v", node.Number, common.Base58Encode(node.Block.HeadHash()))
 	if confirmedNode != nil {
 		ilog.Infof("[pob] flush start, number: %d, hash = %v", node.Number, common.Base58Encode(node.Block.HeadHash()))
 		bc.Flush(confirmedNode)
