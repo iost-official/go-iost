@@ -218,7 +218,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	blk := vbm.blk
 	if vbm.gen {
 		ilog.Info("block from myself, block number: ", blk.Head.Number)
-		err := p.handleRecvBlock(blk)
+		err := p.handleRecvBlock(blk, true)
 		if err != nil {
 			ilog.Errorf("received block from myself, error, err:%v", err)
 		}
@@ -240,7 +240,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 			p.blockReqMap.Store(string(blk.HeadHash()), nil)
 		}
 		ilog.Infof("[pob] handle recv new block start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-		err := p.handleRecvBlock(blk)
+		err := p.handleRecvBlock(blk, true)
 		t2 := calculateTime()
 		metricsTimeCost.Set(t2, nil)
 		ilog.Infof("[pob] transfer cost: %v, total cost: %v", t1, t2)
@@ -253,7 +253,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		}
 	case p2p.SyncBlockResponse:
 		ilog.Info("received sync block, block number: ", blk.Head.Number)
-		err := p.handleRecvBlock(blk)
+		err := p.handleRecvBlock(blk, true)
 		if err != nil {
 			ilog.Errorf("received sync block error, err:%v", err)
 			return
@@ -325,7 +325,11 @@ func (p *PoB) scheduleLoop() {
 						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 						ilog.Infof("[pob] generate block time cost: %v", calculateTime())
 						metricsGenerateBlockTimeCost.Set(calculateTime(), nil)
-						err = p.handleRecvBlock(blk)
+						if num == continuousNum-1 {
+							err = p.handleRecvBlock(blk, true)
+						} else {
+							err = p.handleRecvBlock(blk, false)
+						}
 						if err != nil {
 							ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
 							continue
@@ -349,7 +353,7 @@ func (p *PoB) scheduleLoop() {
 	}
 }
 
-func (p *PoB) handleRecvBlock(blk *block.Block) error {
+func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
@@ -364,12 +368,12 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	ilog.Infof("[pob] add into blockCache end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	if err == nil && parent.Type == blockcache.Linked {
 		ilog.Infof("[pob] add ExistingBlock start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-		return p.addExistingBlock(blk, parent.Block)
+		return p.addExistingBlock(blk, parent.Block, update)
 	}
 	return errSingle
 }
 
-func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
+func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, update bool) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
 	ilog.Infof("[pob] verifyDB checkout end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
@@ -393,18 +397,20 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 	ilog.Infof("[pob] addLinkedNode end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	p.blockCache.Link(node)
 	ilog.Infof("[pob] updateInfo start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-	p.updateInfo(node)
+	p.updateInfo(node, update)
 	ilog.Infof("[pob] updateInfo end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	for child := range node.Children {
-		p.addExistingBlock(child.Block, node.Block)
+		p.addExistingBlock(child.Block, node.Block, true)
 	}
 	ilog.Infof("[pob] addExistingBlock end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	return nil
 }
 
-func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
+func (p *PoB) updateInfo(node *blockcache.BlockCacheNode, update bool) {
 	updateWaterMark(node)
-	updateLib(node, p.blockCache)
+	if update {
+		updateLib(node, p.blockCache)
+	}
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
