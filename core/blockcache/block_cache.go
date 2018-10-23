@@ -492,7 +492,6 @@ func (bcn *BlockCacheNode) DrawTree() string {
 		}
 		ret += l
 	}
-	ilog.Info(ret)
 	return ret
 }
 

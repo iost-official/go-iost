@@ -182,8 +182,10 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 }
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
+	ilog.Infof("[pob] start to updateLib")
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode == nil {
+		ilog.Infof("[pob] start to draw")
 		ilog.Info(bc.Draw())
 	}
 	if confirmedNode != nil {
