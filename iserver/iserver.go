@@ -74,10 +74,7 @@ func New(conf *common.Config) *IServer {
 	grpcServer := rpc.NewRPCServer(txp, blkCache, bv, p2pService)
 
 	httpServer := rpc.NewJSONServer(bv)
-	consensus, err := consensus.Factory("pob", acc, bv, blkCache, txp, p2pService)
-	if err != nil {
-		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
-	}
+	consensus := consensus.New(consensus.Pob, acc, bv, blkCache, txp, p2pService)
 
 	debug := NewDebugServer(conf.Debug, p2pService, blkCache, bv.BlockChain())
 
