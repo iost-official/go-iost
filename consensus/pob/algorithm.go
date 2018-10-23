@@ -186,7 +186,7 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode == nil {
 		ilog.Infof("[pob] start to draw")
-		ilog.Info(bc.Draw())
+		ilog.Infof("[pob]" + bc.Draw())
 	}
 	if confirmedNode != nil {
 		ilog.Infof("[pob] flush start, number: %d, hash = %v", node.Number, common.Base58Encode(node.Block.HeadHash()))
