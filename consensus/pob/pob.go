@@ -323,8 +323,8 @@ func (p *PoB) scheduleLoop() {
 							continue
 						}
 						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
-						ilog.Infof("[pob] generate block time cost: %v", calculateTime())
-						metricsGenerateBlockTimeCost.Set(calculateTime(), nil)
+						ilog.Infof("[pob] generate block time cost: %v", calculateTime(blk))
+						metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
 						if num == continuousNum-1 {
 							err = p.handleRecvBlock(blk, true)
 						} else {
