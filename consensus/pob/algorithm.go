@@ -183,6 +183,9 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
+	if confirmedNode == nil {
+		ilog.Info(bc.Draw())
+	}
 	if confirmedNode != nil {
 		ilog.Infof("[pob] flush start, number: %d, hash = %v", node.Number, common.Base58Encode(node.Block.HeadHash()))
 		bc.Flush(confirmedNode)
