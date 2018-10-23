@@ -49,9 +49,9 @@ func (mr *MockTxPoolMockRecorder) AddLinkedNode(arg0, arg1 interface{}) *gomock.
 }
 
 // AddTx mocks base method
-func (m *MockTxPool) AddTx(arg0 *tx.Tx) txpool.TAddTx {
+func (m *MockTxPool) AddTx(arg0 *tx.Tx) error {
 	ret := m.ctrl.Call(m, "AddTx", arg0)
-	ret0, _ := ret[0].(txpool.TAddTx)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 

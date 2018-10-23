@@ -42,24 +42,6 @@ const (
 	noForkBCN
 )
 
-// TAddTx add the return value of the tx
-type TAddTx uint
-
-const (
-	// Success ...
-	Success TAddTx = iota
-	// TimeError ...
-	TimeError
-	// VerifyError ...
-	VerifyError
-	// DupError ...
-	DupError
-	// GasPriceError ...
-	GasPriceError
-	// CacheFullError ...
-	CacheFullError
-)
-
 type forkChain struct {
 	NewHead *blockcache.BlockCacheNode
 	OldHead *blockcache.BlockCacheNode
