@@ -212,7 +212,6 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	if p.baseVariable.Mode() == global.ModeInit {
 		return
 	}
-	ilog.Infof("verify block chan size:%v", len(p.chVerifyBlock))
 	blk := vbm.blk
 	if vbm.gen {
 		ilog.Info("block from myself, block number: ", blk.Head.Number)
@@ -248,7 +247,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 			return
 		}
 	case p2p.SyncBlockResponse:
-		ilog.Info("received sync block, block number: ", blk.Head.Number)
+		ilog.Info("[pob] received sync block, block number: ", blk.Head.Number)
 		err := p.handleRecvBlock(blk, true)
 		if err != nil {
 			ilog.Errorf("received sync block error, err:%v", err)
