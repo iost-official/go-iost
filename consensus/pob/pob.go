@@ -60,8 +60,8 @@ type PoB struct {
 	chVerifyBlock   chan *verifyBlockMessage
 }
 
-// NewPoB init a new PoB.
-func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+// New init a new PoB.
+func New(account *account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
 	p := PoB{
 		account:         account,
 		baseVariable:    baseVariable,
