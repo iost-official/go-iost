@@ -22,9 +22,6 @@ var contractID string
 
 func initConn(num int) {
 	conns = make([]*grpc.ClientConn, num)
-	//allServers := []string{"13.237.151.211:30002", "35.177.202.166:30002", "18.136.110.166:30002",
-	//allServers := []string{"13.237.151.211:30002","35.177.202.166:30002", "18.136.110.166:30002", "13.232.76.188:30002", "52.59.86.255:30002"}
-	//allServers := []string{"52.37.130.27:30002", "18.228.149.97:30002"}
 	allServers := []string{"localhost:30002"}
 
 	for i := 0; i < num; i++ {
