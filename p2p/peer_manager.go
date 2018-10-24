@@ -78,6 +78,7 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 	pm := &PeerManager{
 		neighbors:     make(map[peer.ID]*Peer),
 		neighborCount: make(map[bool]int),
+		neighborCap:   make(map[bool]int),
 		neighborMutex: new(sync.RWMutex),
 		subs:          new(sync.Map),
 		quitCh:        make(chan struct{}),
@@ -285,15 +286,16 @@ func (pm *PeerManager) deletePeerInfo(peerID peer.ID) {
 
 // AddNeighbor starts a peer and adds it to the neighbor list.
 func (pm *PeerManager) AddNeighbor(p *Peer) {
-	p.Start()
-	pm.storePeerInfo(p.id, []multiaddr.Multiaddr{p.addr})
 
 	pm.neighborMutex.Lock()
+	defer pm.neighborMutex.Unlock()
+
 	if pm.neighbors[p.id] == nil {
+		p.Start()
+		pm.storePeerInfo(p.id, []multiaddr.Multiaddr{p.addr})
 		pm.neighbors[p.id] = p
 		pm.neighborCount[p.initiative]++
 	}
-	pm.neighborMutex.Unlock()
 }
 
 // RemoveNeighbor stops a peer and removes it from the neighbor list.
