@@ -76,7 +76,7 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 	//ilog.Error("iost.system is ", db.Contract("iost.system"))
 
 	if db.Contract("iost.system") == nil {
-		db.SetContract(native.ABI())
+		db.SetContract(native.SystemABI())
 	}
 
 	logger := ilog.New()
