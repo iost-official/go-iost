@@ -510,7 +510,7 @@ func (bc *BlockCacheImpl) Draw() string {
 }
 func (bcn *BlockCacheNode) DrawChildren(root treeprint.Tree) {
 	for c := range bcn.Children {
-		root.AddNode(c.Number)
+		root.AddNode(strconv.Itoa(int(c.Number)) + c.Witness[4:6])
 		c.DrawChildren(root.FindLastNode())
 	}
 }
