@@ -373,6 +373,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		}
 		bc.delNode(cur)
 		retain.Parent = nil
+		retain.drawNode.SetRoot(nil)
 		retain.LibWitnessHandle()
 		bc.linkedRoot = retain
 	}

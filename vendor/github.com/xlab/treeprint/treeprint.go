@@ -40,6 +40,8 @@ type Tree interface {
 	SetValue(value Value)
 
 	N() []*node
+
+	SetRoot(r *node)
 }
 
 type node struct {
@@ -47,6 +49,10 @@ type node struct {
 	Meta  MetaValue
 	Value Value
 	Nodes []*node
+}
+
+func (n *node) SetRoot(r *node) {
+	n.Root = r
 }
 
 func (n *node) N() []*node {
