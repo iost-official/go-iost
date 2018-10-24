@@ -134,7 +134,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 				continue
 			}
 			ilog.Infof("broadcast sync height")
-			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.UrgentMessage)
+			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.UrgentMessage, true)
 		case req := <-sy.syncHeightChan:
 			var sh message.SyncHeight
 			err := proto.Unmarshal(req.Data(), &sh)
@@ -239,7 +239,7 @@ func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
 		return
 	}
 	ilog.Infof("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
-	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
+	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage, true)
 }
 
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
@@ -393,7 +393,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 		ilog.Errorf("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
 		return
 	}
-	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage)
+	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage, true)
 }
 
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
@@ -445,7 +445,7 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 			ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
 			return
 		}
-		sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
+		sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage, true)
 		return
 	}
 	b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.Hash)
@@ -453,7 +453,7 @@ func (sy *SyncImpl) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 		ilog.Errorf("handle block query failed to get block.")
 		return
 	}
-	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
+	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage, true)
 }
 
 func (sy *SyncImpl) checkHasBlock(hash string, p interface{}) bool {
@@ -502,6 +502,6 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 	if !ok {
 		return false, false
 	}
-	sy.p2pService.SendToPeer(pid, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
+	sy.p2pService.SendToPeer(pid, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage, true)
 	return true, false
 }

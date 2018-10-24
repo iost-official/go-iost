@@ -123,7 +123,7 @@ func (pool *TxPImpl) verifyWorkers() {
 			continue
 		}
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
-		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage)
+		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage, true)
 	}
 }
 
@@ -222,7 +222,7 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 	if err != nil {
 		return err
 	}
-	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
+	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage, true)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return nil
 }
