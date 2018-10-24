@@ -135,7 +135,6 @@ type BlockCacheImpl struct { //nolint:golint
 	leaf         map[*BlockCacheNode]int64
 	baseVariable global.BaseVariable
 	stateDB      db.MVCCDB
-	tree         treeprint.Tree
 }
 
 func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
@@ -191,7 +190,6 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		}
 	}
 	bc.head = bc.linkedRoot
-	bc.tree = treeprint.New()
 	return &bc, nil
 }
 
@@ -509,5 +507,5 @@ func (bcn *BlockCacheNode) DrawTree() string {
 
 // Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
-	return bc.tree.String()
+	return bc.linkedRoot.drawNode.String()
 }
