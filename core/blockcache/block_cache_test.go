@@ -8,9 +8,12 @@ import (
 	"github.com/iost-official/go-iost/core/mocks"
 	"github.com/iost-official/go-iost/db/mocks"
 
+	"fmt"
+
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/xlab/treeprint"
 )
 
 func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
@@ -28,6 +31,14 @@ func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 	ret.CalculateHeadHash()
 	return ret
 }
+
+func TestDrawTree(t *testing.T) {
+	tree := treeprint.New()
+	tree.AddNode("1")
+	node1 := tree.FindLastNode()
+	node1.AddNode("2")
+	fmt.Println(tree.String())
+}
 func TestBlockCache(t *testing.T) {
 	ctl := NewController(t)
 	b0 := &block.Block{
@@ -42,10 +53,10 @@ func TestBlockCache(t *testing.T) {
 	b1 := genBlock(b0, "w1", 1)
 	b2 := genBlock(b1, "w2", 2)
 	b2a := genBlock(b1, "w3", 3)
-	b3 := genBlock(b2, "w4", 4)
-	b4 := genBlock(b2a, "w5", 5)
+	b3 := genBlock(b2, "w4", 3)
+	b4 := genBlock(b3, "w5", 4)
 	b3a := genBlock(b2, "w6", 6)
-	b5 := genBlock(b3a, "w7", 7)
+	b5 := genBlock(b4, "w7", 5)
 
 	s1 := genBlock(nil, "w1", 1)
 	s2 := genBlock(s1, "w2", 2)
@@ -123,34 +134,15 @@ func TestBlockCache(t *testing.T) {
 			b2node := bc.Add(b2)
 			bc.Link(b2node)
 			//bc.Draw()
-			b2anode := bc.Add(b2a)
-			bc.Link(b2anode)
-			//bc.Draw()
 			b3node := bc.Add(b3)
 			bc.Link(b3node)
 			//bc.Draw()
 			b4node := bc.Add(b4)
 			bc.Link(b4node)
 			//bc.Draw()
-			b3anode := bc.Add(b3a)
-			bc.Link(b3anode)
-			//bc.Draw()
 			b5node := bc.Add(b5)
 			bc.Link(b5node)
 			//bc.Draw()
-			So(bc.head, ShouldEqual, b5node)
-			blk, _ := bc.GetBlockByNumber(7)
-			So(blk, ShouldEqual, b5node.Block)
-			blk, _ = bc.GetBlockByNumber(6)
-			So(blk, ShouldEqual, b3anode.Block)
-			blk, _ = bc.GetBlockByNumber(2)
-			So(blk, ShouldEqual, b2node.Block)
-			blk, _ = bc.GetBlockByNumber(1)
-			So(blk, ShouldEqual, b1node.Block)
-			blk, _ = bc.GetBlockByNumber(4)
-			So(blk, ShouldEqual, nil)
-
-			bc.Flush(b4node)
 
 		})
 

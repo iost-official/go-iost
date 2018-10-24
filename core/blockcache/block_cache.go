@@ -216,7 +216,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	fa.drawNode.AddNode(pattern)
 	bcn.drawNode = fa.drawNode.FindLastNode()
 	ilog.Info("[pob] ", len(bc.linkedRoot.drawNode.N()))
-
+	ilog.Info("[pob] ", fa.drawNode.String())
 	ilog.Infof("[pob]" + bc.linkedRoot.drawNode.String())
 }
 
