@@ -46,7 +46,6 @@ type BlockCacheNode struct { //nolint:golint
 	ConfirmUntil int64
 	WitnessList
 	Extension []byte
-	drawNode  treeprint.Tree
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
@@ -188,8 +187,6 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		}
 	}
 	bc.head = bc.linkedRoot
-	bc.linkedRoot.drawNode = treeprint.New()
-	bc.linkedRoot.drawNode.SetValue(strconv.FormatInt(bc.linkedRoot.Number, 10) + "(" + bc.linkedRoot.Witness[4:6] + ")")
 	return &bc, nil
 }
 
@@ -214,11 +211,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 		pattern += "(" + bcn.Witness[4:6] + ")"
 	}
 	ilog.Infof("[pob] %v", pattern)
-	fa.drawNode.AddNode(pattern)
-	bcn.drawNode = fa.drawNode.FindLastNode()
-	ilog.Info("[pob] ", len(bc.linkedRoot.drawNode.N()))
-	ilog.Info("[pob] ", fa.drawNode.String())
-	ilog.Infof("[pob]" + bc.linkedRoot.drawNode.String())
+	bc.Draw()
 }
 
 func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
@@ -373,7 +366,6 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		}
 		bc.delNode(cur)
 		retain.Parent = nil
-		retain.drawNode.SetRoot(nil)
 		retain.LibWitnessHandle()
 		bc.linkedRoot = retain
 	}
@@ -511,8 +503,14 @@ func (bcn *BlockCacheNode) DrawTree() string {
 }
 
 // Draw returns the linkedroot's and singleroot's tree graph.
-func (bc *BlockCacheImpl) Draw() string {
-	ilog.Info("[pob] ", bc.linkedRoot.Children)
-	ilog.Info("[pob] ", bc.linkedRoot.DrawTree())
-	return bc.linkedRoot.drawNode.String()
+func (bc *BlockCacheImpl) Draw() {
+	tree := treeprint.New()
+	bc.linkedRoot.DrawChildren(tree)
+	fmt.Println(tree.String())
+}
+func (bcn *BlockCacheNode) DrawChildren(root treeprint.Tree) {
+	for c := range bcn.Children {
+		root.AddNode(c.Number)
+		c.DrawChildren(root.FindLastNode())
+	}
 }

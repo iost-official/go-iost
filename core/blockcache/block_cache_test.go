@@ -39,6 +39,7 @@ func TestDrawTree(t *testing.T) {
 	node1.AddNode("2")
 	fmt.Println(tree.String())
 }
+
 func TestBlockCache(t *testing.T) {
 	ctl := NewController(t)
 	b0 := &block.Block{
