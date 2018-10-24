@@ -145,6 +145,7 @@ func (p *Peer) write(m *p2pMessage) error {
 		return err
 	}
 
+	ilog.Infof("message chain id: %v", m.chainID())
 	_, err = stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
