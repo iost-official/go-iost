@@ -880,6 +880,12 @@
 			"revisionTime": "2018-01-03T17:44:51Z"
 		},
 		{
+			"checksumSHA1": "SfAsVu2hQv53ENPGT6fBQQc+p5o=",
+			"path": "github.com/silenceper/pool",
+			"revision": "b2541842a15712128f10232e2124b831a47713f3",
+			"revisionTime": "2018-09-14T14:45:19Z"
+		},
+		{
 			"checksumSHA1": "wVmkBavCZSwHYTDGxa1xOD3RKe0=",
 			"path": "github.com/smartystreets/assertions",
 			"revision": "7678a5452ebea5b7090a6b163f844c133f523da2",
