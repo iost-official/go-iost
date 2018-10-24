@@ -83,7 +83,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager, initiative bool) *Peer {
 			go peer.readLoop(conn)
 			return conn, nil
 		},
-		Close:       func(v interface{}) error { return v.(libnet.Stream).Close() },
+		Close:       func(v interface{}) error { return nil },
 		IdleTimeout: time.Minute,
 	}
 	peer.streamPool, _ = pool.NewChannelPool(poolConfig)
