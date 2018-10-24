@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/xlab/treeprint"
 )
 
 // CacheStatus ...
@@ -45,6 +46,7 @@ type BlockCacheNode struct { //nolint:golint
 	ConfirmUntil int64
 	WitnessList
 	Extension []byte
+	drawNode  treeprint.Tree
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
@@ -131,6 +133,7 @@ type BlockCacheImpl struct { //nolint:golint
 	leaf         map[*BlockCacheNode]int64
 	baseVariable global.BaseVariable
 	stateDB      db.MVCCDB
+	tree         treeprint.Tree
 }
 
 func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
@@ -205,6 +208,12 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn.Number > bc.head.Number {
 		bc.head = bcn
 	}
+	pattern := strconv.FormatInt(bcn.Number, 10)
+	if bcn != nil && len(bcn.Witness) >= 6 {
+		pattern += "(" + bcn.Witness[4:6] + ")"
+	}
+	bcn.drawNode = fa.drawNode.AddNode(pattern)
+	ilog.Infof("[pob]" + bc.Draw())
 }
 
 func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
@@ -497,5 +506,5 @@ func (bcn *BlockCacheNode) DrawTree() string {
 
 // Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
-	return bc.linkedRoot.DrawTree() + "\n\n" + bc.singleRoot.DrawTree()
+	return bc.tree.String()
 }
