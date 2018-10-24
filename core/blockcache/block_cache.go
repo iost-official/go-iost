@@ -212,9 +212,9 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn != nil && len(bcn.Witness) >= 6 {
 		pattern += "(" + bcn.Witness[4:6] + ")"
 	}
-	ilog.Info("[pob] %v", pattern)
+	ilog.Infof("[pob] %v", pattern)
 	bcn.drawNode = fa.drawNode.AddNode(pattern)
-	ilog.Infof("[pob]" + bc.Draw())
+	ilog.Infof("[pob]" + fa.drawNode.String())
 }
 
 func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
@@ -508,5 +508,6 @@ func (bcn *BlockCacheNode) DrawTree() string {
 // Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
 	ilog.Info("[pob] ", bc.linkedRoot.Children)
+	ilog.Info("[pob] ", bc.linkedRoot.DrawTree())
 	return bc.linkedRoot.drawNode.String()
 }

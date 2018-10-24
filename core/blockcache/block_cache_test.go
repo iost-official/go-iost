@@ -85,6 +85,7 @@ func TestBlockCache(t *testing.T) {
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			//bc.Draw()
 			bc.Add(b2)
+
 		})
 
 		Convey("Flush", func() {
@@ -150,7 +151,6 @@ func TestBlockCache(t *testing.T) {
 			So(blk, ShouldEqual, nil)
 
 			bc.Flush(b4node)
-			//bc.Draw()
 
 		})
 
