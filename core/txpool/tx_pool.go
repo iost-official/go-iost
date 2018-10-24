@@ -114,12 +114,12 @@ func (pool *TxPImpl) verifyWorkers() {
 		if err != nil {
 			continue
 		}
-		ret := pool.verifyTx(&t)
-		if ret != Success {
+		err = pool.verifyTx(&t)
+		if err != nil {
 			continue
 		}
-		ret = pool.addTx(&t)
-		if ret != Success {
+		err = pool.addTx(&t)
+		if err != nil {
 			continue
 		}
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
@@ -144,7 +144,7 @@ func (pool *TxPImpl) CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, er
 		}
 		dtm.Store(trh, nil)
 		if ok := pool.existTxInPending([]byte(trh)); !ok {
-			if pool.verifyTx(v) != Success {
+			if pool.verifyTx(v) != nil {
 				return v, errors.New("failed to verify")
 			}
 		}
@@ -213,18 +213,18 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, newHea
 }
 
 // AddTx add the transaction
-func (pool *TxPImpl) AddTx(t *tx.Tx) TAddTx {
-	ret := pool.verifyTx(t)
-	if ret != Success {
-		return ret
+func (pool *TxPImpl) AddTx(t *tx.Tx) error {
+	err := pool.verifyTx(t)
+	if err != nil {
+		return err
 	}
-	ret = pool.addTx(t)
-	if ret != Success {
-		return ret
+	err = pool.addTx(t)
+	if err != nil {
+		return err
 	}
 	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
-	return ret
+	return nil
 }
 
 // DelTx del the transaction
@@ -274,20 +274,20 @@ func (pool *TxPImpl) initBlockTx() {
 	}
 }
 
-func (pool *TxPImpl) verifyTx(t *tx.Tx) TAddTx {
+func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
-		return CacheFullError
+		return fmt.Errorf("CacheFullError. Pending tx size is %d. Max cache is %d", pool.pendingTx.Size(), maxCacheTxs)
 	}
 	if t.GasPrice <= 0 {
-		return GasPriceError
+		return fmt.Errorf("GasPriceError. gas price %d", t.GasPrice)
 	}
 	if pool.TxTimeOut(t) {
-		return TimeError
+		return fmt.Errorf("TimeError")
 	}
 	if err := t.VerifySelf(); err != nil {
-		return VerifyError
+		return fmt.Errorf("VerifyError %v", err)
 	}
-	return Success
+	return nil
 }
 
 func slotToNSec(t int64) int64 {
@@ -362,15 +362,15 @@ func (pool *TxPImpl) clearBlock() {
 	})
 }
 
-func (pool *TxPImpl) addTx(tx *tx.Tx) TAddTx {
+func (pool *TxPImpl) addTx(tx *tx.Tx) error {
 	if pool.existTxInPending(tx.Hash()) {
-		return DupError
+		return fmt.Errorf("DupError. tx exists in pending")
 	}
 	if pool.existTxInChain(tx.Hash(), pool.forkChain.NewHead.Block) {
-		return DupError
+		return fmt.Errorf("DupError. tx exists in chain")
 	}
 	pool.pendingTx.Add(tx)
-	return Success
+	return nil
 }
 
 func (pool *TxPImpl) existTxInPending(hash []byte) bool {

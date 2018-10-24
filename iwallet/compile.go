@@ -62,6 +62,63 @@ func generateABI(codePath string) string {
 	return codePath + ".abi"
 }
 
+// PublishContract converts contract js code to transaction. If 'send', also send it to chain.
+func PublishContract(codePath string, abiPath string, conID string, acc *account.Account, expiration int64,
+	signers []string, gasLimit int64, gasPrice int64, update bool, updateID string, send bool) (stx *tx.Tx, txHash []byte, err error) {
+
+	fd, err := readFile(codePath)
+	if err != nil {
+		fmt.Println("Read source code file failed: ", err.Error())
+		return nil, nil, err
+	}
+	code := string(fd)
+
+	fd, err = readFile(abiPath)
+	if err != nil {
+		fmt.Println("Read abi file failed: ", err.Error())
+		return nil, nil, err
+	}
+	abi := string(fd)
+
+	compiler := new(contract.Compiler)
+	if compiler == nil {
+		fmt.Println("gen compiler instance failed")
+		return nil, nil, err
+	}
+	contract, err := compiler.Parse(conID, code, abi)
+	if err != nil {
+		fmt.Printf("gen contract error:%v\n", err)
+		return nil, nil, err
+	}
+
+	methodName := "SetCode"
+	data := `["` + contract.B64Encode() + `"]`
+	if update {
+		methodName = "UpdateCode"
+		data = `["` + contract.B64Encode() + `", "` + updateID + `"]`
+	}
+
+	pubkeys := make([][]byte, len(signers))
+	for i, accID := range signers {
+		pubkeys[i] = account.GetPubkeyByID(accID)
+	}
+
+	action := tx.NewAction("iost.system", methodName, data)
+	trx := tx.NewTx([]*tx.Action{&action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
+	if !send {
+		return trx, nil, nil
+	}
+	stx, err = tx.SignTx(trx, acc)
+	var hash []byte
+	hash, err = sendTx(stx)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, nil, err
+	}
+	fmt.Println("Sending tx to rpc server finished. The transaction hash is:", saveBytes(hash))
+	return trx, hash, nil
+}
+
 // compileCmd represents the compile command
 var compileCmd = &cobra.Command{
 	Use:   "compile",
@@ -108,12 +165,6 @@ var compileCmd = &cobra.Command{
 			return
 		}
 		codePath := args[0]
-		fd, err := readFile(codePath)
-		if err != nil {
-			fmt.Println("Read source code file failed: ", err.Error())
-			return
-		}
-		code := string(fd)
 
 		var abiPath string
 
@@ -126,7 +177,6 @@ var compileCmd = &cobra.Command{
 		} else {
 			abiPath = args[1]
 			fmt.Println(args)
-
 		}
 
 		if abiPath == "" {
@@ -134,18 +184,6 @@ var compileCmd = &cobra.Command{
 			return
 		}
 
-		fd, err = readFile(abiPath)
-		if err != nil {
-			fmt.Println("Read abi file failed: ", err.Error())
-			return
-		}
-		abi := string(fd)
-
-		compiler := new(contract.Compiler)
-		if compiler == nil {
-			fmt.Println("gen compiler instance failed")
-			return
-		}
 		conID := ""
 		if update {
 			if len(args) < 3 {
@@ -154,72 +192,54 @@ var compileCmd = &cobra.Command{
 			}
 			conID = args[2]
 		}
-		contract, err := compiler.Parse(conID, code, abi)
-		if err != nil {
-			fmt.Printf("gen contract error:%v\n", err)
-			return
-		}
-		methodName := "SetCode"
-		data := `["` + contract.B64Encode() + `"]`
-		if update {
-			methodName = "UpdateCode"
-			if len(args) >= 4 {
-				data = `["` + contract.B64Encode() + `", "` + args[3] + `"]`
-			} else {
-				data = `["` + contract.B64Encode() + `", ""]`
-			}
-		}
-		action := tx.NewAction("iost.system", methodName, data)
-		pubkeys := make([][]byte, len(signers))
-		for i, accID := range signers {
-			pubkeys[i] = account.GetPubkeyByID(accID)
+
+		updateID := ""
+		if update && len(args) >= 4 {
+			updateID = args[3]
 		}
 
-		trx := tx.NewTx([]*tx.Action{&action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
-
+		send := false
+		var acc *account.Account
 		if len(signers) == 0 {
 			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
 			fmt.Println("please ensure that the right secret key file path is given by parameter -k,or the secret key file path is ~/.iwallet/id_ed25519 by default,this file indicate the secret key to sign the tx")
+			send = true
 			fsk, err := readFile(kpPath)
 			if err != nil {
 				fmt.Println("Read file failed: ", err.Error())
 				return
 			}
-
-			acc, err := account.NewAccount(loadBytes(string(fsk)), getSignAlgo(signAlgo))
+			acc, err = account.NewAccount(loadBytes(string(fsk)), getSignAlgo(signAlgo))
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
-			stx, err := tx.SignTx(trx, acc)
-			var txHash []byte
-			txHash, err = sendTx(stx)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			fmt.Println("iost node:receive your tx!")
-			fmt.Println("the transaction hash is:", saveBytes(txHash))
-			if checkResult {
-				checkTransaction(txHash)
-			}
-			return
 		}
-
-		bytes := trx.Encode()
-
-		if dest == "default" {
-			dest = changeSuffix(args[0], ".sc")
-		}
-
-		err = saveTo(dest, bytes)
+		trx, txHash, err := PublishContract(codePath, abiPath, conID, acc, expiration, signers, gasLimit, gasPrice, update, updateID, send)
 		if err != nil {
 			fmt.Println(err.Error())
-			return
 		}
-		fmt.Printf("the unsigned tx has been saved to %s\n", dest)
-		fmt.Println("the account IDs of the signers are:", signers)
-		fmt.Println("please inform them to sign this contract with the command 'iwallet sign' and send the generated signatures to you.by this step they give you the authorization,or this tx will fail to pass through the iost vm")
+		if send {
+			if checkResult {
+				succ := checkTransaction(txHash)
+				if succ {
+					fmt.Println("The contract id is Contract" + saveBytes(txHash))
+				}
+			}
+		} else {
+			bytes := trx.Encode()
+			if dest == "default" {
+				dest = changeSuffix(args[0], ".sc")
+			}
+			err = saveTo(dest, bytes)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			fmt.Printf("the unsigned tx has been saved to %s\n", dest)
+			fmt.Println("the account IDs of the signers are:", signers)
+			fmt.Println("please inform them to sign this contract with the command 'iwallet sign' and send the generated signatures to you.by this step they give you the authorization,or this tx will fail to pass through the iost vm")
+		}
 	},
 }
 

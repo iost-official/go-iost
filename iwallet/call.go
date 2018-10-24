@@ -33,7 +33,7 @@ var checkResult bool
 var checkResultDelay float32
 var checkResultMaxRetry int32
 
-func checkTransaction(txHash []byte) {
+func checkTransaction(txHash []byte) bool {
 	// It may be better to to create a grpc client and reuse it. TODO later
 	for i := int32(0); i < checkResultMaxRetry; i++ {
 		time.Sleep(time.Duration(checkResultDelay*1000) * time.Millisecond)
@@ -51,10 +51,11 @@ func checkTransaction(txHash []byte) {
 			fmt.Println("full error information: ", txReceipt)
 		} else {
 			fmt.Println("exec tx done. gas used: ", txReceipt.GasUsage)
-			fmt.Println("The contract id is Contract" + saveBytes(txHash))
+			return true
 		}
 		break
 	}
+	return false
 }
 
 // callCmd represents the compile command
