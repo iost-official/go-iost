@@ -153,7 +153,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	}
 	// check txs
 	var notFoundPending int64
-
+	ilog.Info("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, blk.HeadHash(), blk.Head.Witness[4:6])
 	for _, tx := range blk.Txs {
 		exist := txPool.ExistTxs(tx.Hash(), parent)
 		switch exist {

@@ -377,6 +377,7 @@ func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) TAddTx {
 		return DupError
 	}
 	if pool.existTxInChain(t.Hash(), pool.forkChain.NewHead.Block) {
+		ilog.Infof("tx found in chain")
 		return DupError
 	}
 	return Success
