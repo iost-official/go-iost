@@ -51,9 +51,9 @@ func New(conf *common.Config) *IServer {
 	}
 
 	accSecKey := conf.ACC.SecKey
-	acc, err := account.NewAccount(common.Base58Decode(accSecKey), crypto.NewAlgorithm(conf.ACC.Algorithm))
+	acc, err := account.NewKeyPair(common.Base58Decode(accSecKey), crypto.NewAlgorithm(conf.ACC.Algorithm))
 	if err != nil {
-		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
+		ilog.Fatalf("NewKeyPair failed, stop the program! err:%v", err)
 	}
 
 	blkCache, err := blockcache.NewBlockCache(bv)

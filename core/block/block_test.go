@@ -35,7 +35,7 @@ func TestBlockSerialize(t *testing.T) {
 			},
 			Sign: &crypto.Signature{},
 		}
-		a1, _ := account.NewAccount(nil, crypto.Secp256k1)
+		a1, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 		tx0 := tx.Tx{
 			Time: 1,
 			Actions: []*tx.Action{{

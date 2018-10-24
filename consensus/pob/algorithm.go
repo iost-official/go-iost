@@ -31,7 +31,7 @@ var (
 	//txExecTime     = cverifier.TxExecTimeLimit / 2
 )
 
-func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
+func generateBlock(account *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) { // TODO 应传入account
 
 	ilog.Info("generate Block start")
 	st := time.Now()

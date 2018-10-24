@@ -45,12 +45,12 @@ func TestTx(t *testing.T) {
 			Data:       "1",
 		})
 		// seckey := cverifier.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-		// acc, err := account.NewAccount(seckey)
+		// acc, err := account.NewKeyPair(seckey)
 		// So(err, ShouldEqual, nil)
 
-		a1, _ := account.NewAccount(nil, crypto.Secp256k1)
-		a2, _ := account.NewAccount(nil, crypto.Secp256k1)
-		a3, _ := account.NewAccount(nil, crypto.Secp256k1)
+		a1, _ := account.NewKeyPair(nil, crypto.Secp256k1)
+		a2, _ := account.NewKeyPair(nil, crypto.Secp256k1)
+		a3, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 
 		Convey("proto marshal", func() {
 			tx := &TxRaw{

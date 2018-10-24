@@ -63,7 +63,7 @@ func generateABI(codePath string) string {
 }
 
 // PublishContract converts contract js code to transaction. If 'send', also send it to chain.
-func PublishContract(codePath string, abiPath string, conID string, acc *account.Account, expiration int64,
+func PublishContract(codePath string, abiPath string, conID string, acc *account.KeyPair, expiration int64,
 	signers []string, gasLimit int64, gasPrice int64, update bool, updateID string, send bool) (stx *tx.Tx, txHash []byte, err error) {
 
 	fd, err := readFile(codePath)
@@ -199,7 +199,7 @@ var compileCmd = &cobra.Command{
 		}
 
 		send := false
-		var acc *account.Account
+		var acc *account.KeyPair
 		if len(signers) == 0 {
 			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
 			fmt.Println("please ensure that the right secret key file path is given by parameter -k,or the secret key file path is ~/.iwallet/id_ed25519 by default,this file indicate the secret key to sign the tx")
@@ -209,7 +209,7 @@ var compileCmd = &cobra.Command{
 				fmt.Println("Read file failed: ", err.Error())
 				return
 			}
-			acc, err = account.NewAccount(loadBytes(string(fsk)), getSignAlgo(signAlgo))
+			acc, err = account.NewKeyPair(loadBytes(string(fsk)), getSignAlgo(signAlgo))
 			if err != nil {
 				fmt.Println(err.Error())
 				return

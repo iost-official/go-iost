@@ -102,7 +102,7 @@ var callCmd = &cobra.Command{
 				return
 			}
 
-			acc, err := account.NewAccount(loadBytes(string(fsk)), getSignAlgo(signAlgo))
+			acc, err := account.NewKeyPair(loadBytes(string(fsk)), getSignAlgo(signAlgo))
 			if err != nil {
 				fmt.Println(err.Error())
 				return

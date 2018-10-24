@@ -1,22 +1,23 @@
 package pob
 
 import (
+	"strings"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"strings"
 )
 
 var staticProperty *StaticProperty
 
 // StaticProperty handles the the static property of pob.
 type StaticProperty struct {
-	account           *account.Account
+	account           *account.KeyPair
 	NumberOfWitnesses int64
 	WitnessList       []string
 	Watermark         map[string]int64
 }
 
-func newStaticProperty(account *account.Account, witnessList []string) *StaticProperty {
+func newStaticProperty(account *account.KeyPair, witnessList []string) *StaticProperty {
 	property := &StaticProperty{
 		account:     account,
 		WitnessList: make([]string, 0),

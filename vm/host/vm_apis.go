@@ -35,7 +35,7 @@ func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
 }
 
 // RequireAuth ...
-func (h *APIDelegate) RequireAuth(pubkey string) (ok bool, cost *contract.Cost) {
+func (h *APIDelegate) RequireAuth(pubkey, permission string) (ok bool, cost *contract.Cost) {
 	authList := h.h.ctx.Value("auth_list")
 	i, ok := authList.(map[string]int)[pubkey]
 	return ok && i > 0, RequireAuthCost

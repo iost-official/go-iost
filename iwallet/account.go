@@ -30,7 +30,7 @@ import (
 // accountCmd represents the account command
 var accountCmd = &cobra.Command{
 	Use:   "account",
-	Short: "Account manage",
+	Short: "KeyPair manage",
 	Long:  `Manage account of local storage`,
 	Run: func(cmd *cobra.Command, args []string) {
 		switch {
@@ -39,7 +39,7 @@ var accountCmd = &cobra.Command{
 				fmt.Println("invalid nick name")
 			}
 			algo := getSignAlgo(signAlgo)
-			ac, _ := account.NewAccount(nil, algo)
+			ac, _ := account.NewKeyPair(nil, algo)
 			if !filepath.IsAbs(kvPath) {
 				kvPath, _ = filepath.Abs(kvPath)
 			}

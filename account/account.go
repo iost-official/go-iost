@@ -7,16 +7,16 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 )
 
-// Account account of the ios
-type Account struct {
+// KeyPair account of the ios
+type KeyPair struct {
 	ID        string
 	Algorithm crypto.Algorithm
 	Pubkey    []byte
 	Seckey    []byte
 }
 
-// NewAccount create an account
-func NewAccount(seckey []byte, algo crypto.Algorithm) (*Account, error) {
+// NewKeyPair create an account
+func NewKeyPair(seckey []byte, algo crypto.Algorithm) (*KeyPair, error) {
 	if seckey == nil {
 		seckey = algo.GenSeckey()
 	}
@@ -27,7 +27,7 @@ func NewAccount(seckey []byte, algo crypto.Algorithm) (*Account, error) {
 	pubkey := algo.GetPubkey(seckey)
 	id := GetIDByPubkey(pubkey)
 
-	account := &Account{
+	account := &KeyPair{
 		ID:        id,
 		Algorithm: algo,
 		Pubkey:    pubkey,
@@ -37,7 +37,7 @@ func NewAccount(seckey []byte, algo crypto.Algorithm) (*Account, error) {
 }
 
 // Sign sign a tx
-func (a *Account) Sign(info []byte) *crypto.Signature {
+func (a *KeyPair) Sign(info []byte) *crypto.Signature {
 	return crypto.NewSignature(a.Algorithm, info, a.Seckey)
 }
 

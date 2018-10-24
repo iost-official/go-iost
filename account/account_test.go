@@ -15,13 +15,13 @@ import (
 )
 
 func TestMember(t *testing.T) {
-	Convey("Test of Account", t, func() {
-		m, err := NewAccount(nil, crypto.Secp256k1)
+	Convey("Test of KeyPair", t, func() {
+		m, err := NewKeyPair(nil, crypto.Secp256k1)
 		Convey("New member: ", func() {
 			So(err, ShouldBeNil)
 			So(len(m.Pubkey), ShouldEqual, 33)
 			So(len(m.Seckey), ShouldEqual, 32)
-			So(len(m.ID), ShouldEqual, len(GetIDByPubkey(m.Pubkey)))
+			//So(len(m.ID), ShouldEqual, len(GetIDByPubkey(m.Pubkey)))
 		})
 
 		Convey("sign and verify: ", func() {
@@ -34,7 +34,7 @@ func TestMember(t *testing.T) {
 
 		})
 		Convey("sec to pub", func() {
-			m, err := NewAccount(Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4"), crypto.Secp256k1)
+			m, err := NewKeyPair(Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4"), crypto.Secp256k1)
 			So(err, ShouldBeNil)
 			fmt.Println(Base58Encode(m.Pubkey))
 		})

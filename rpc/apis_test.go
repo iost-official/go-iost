@@ -43,11 +43,11 @@ func TestGRPCServer_ExecTx(t *testing.T) {
 	}
 	defer conn.Close()
 	client := NewApisClient(conn)
-	rootAccount, err := account.NewAccount(common.Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB"), crypto.Ed25519)
+	rootAccount, err := account.NewKeyPair(common.Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB"), crypto.Ed25519)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	newAccount, err := account.NewAccount(nil, crypto.Ed25519)
+	newAccount, err := account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

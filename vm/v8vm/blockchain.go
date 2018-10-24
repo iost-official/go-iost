@@ -258,7 +258,7 @@ func goRequireAuth(cSbx C.SandboxPtr, pubKey *C.char, ok *C.bool, gasUsed *C.siz
 
 	pubKeyStr := C.GoString(pubKey)
 
-	callOk, RequireAuthCost := sbx.host.APIDelegate.RequireAuth(pubKeyStr)
+	callOk, RequireAuthCost := sbx.host.APIDelegate.RequireAuth(pubKeyStr, "active") // TODO change to right
 
 	*ok = C.bool(callOk)
 	if callOk != true {
