@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 )
 
+// DomainABIs list of domain abi
 var DomainABIs map[string]*abi
 
 func init() {

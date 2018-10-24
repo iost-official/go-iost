@@ -6,18 +6,18 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 )
 
-// ABI generate iost.system abi and contract
-func ABI() *contract.Contract {
-	return NativeAbi("iost.system", systemABIs)
+// SystemABI generate iost.system abi and contract
+func SystemABI() *contract.Contract {
+	return ABI("iost.system", systemABIs)
 }
 
 // BonusABI generate iost.bonus abi and contract
 func BonusABI() *contract.Contract {
-	return NativeAbi("iost.bonus", bonusABIs)
+	return ABI("iost.bonus", bonusABIs)
 }
 
-// NativeABI generate native abis
-func NativeAbi(id string, abi map[string]*abi) *contract.Contract {
+// ABI generate native abis
+func ABI(id string, abi map[string]*abi) *contract.Contract {
 	c := &contract.Contract{
 		ID:   id,
 		Code: "codes",

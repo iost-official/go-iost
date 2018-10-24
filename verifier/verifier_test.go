@@ -388,7 +388,7 @@ func TestDomain(t *testing.T) {
 		So(js.ReadDB("array").(string), ShouldEqual, "[1,2,3]")
 		So(js.ReadDB("obj").(string), ShouldEqual, `{"foo":"bar"}`)
 	})
-	js.vi.SetContract(native.NativeAbi("iost.domain", native.DomainABIs))
+	js.vi.SetContract(native.ABI("iost.domain", native.DomainABIs))
 	js.vi.Commit()
 	js.Call("iost.domain", "Link", fmt.Sprintf(`["abcde","%v"]`, js.cname))
 	js.Call("abcde", "read", "[]")
