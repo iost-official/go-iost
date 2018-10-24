@@ -506,5 +506,6 @@ func (bcn *BlockCacheNode) DrawTree() string {
 
 // Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
+	ilog.Info(bc.linkedRoot.Children)
 	return bc.linkedRoot.drawNode.String()
 }
