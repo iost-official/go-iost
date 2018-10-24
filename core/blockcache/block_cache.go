@@ -213,8 +213,9 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 		pattern += "(" + bcn.Witness[4:6] + ")"
 	}
 	ilog.Infof("[pob] %v", pattern)
-	bcn.drawNode = fa.drawNode.AddNode(pattern)
-	ilog.Infof("[pob]" + fa.drawNode.String())
+	fa.drawNode.AddNode(pattern)
+	bcn.drawNode = fa.drawNode.FindLastNode()
+	ilog.Infof("[pob]" + bc.linkedRoot.drawNode.String())
 }
 
 func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
