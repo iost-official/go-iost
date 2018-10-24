@@ -647,6 +647,10 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 // NeighborStat dumps neighbors' status for debug.
 func (pm *PeerManager) NeighborStat() map[string]interface{} {
 	ret := make(map[string]interface{})
+	ret["neighbor_count"] = map[string]interface{}{
+		"initiative": pm.NeighborCount(true),
+		"passive":    pm.NeighborCount(false),
+	}
 
 	for _, p := range pm.GetAllNeighbors() {
 		ret[p.ID()] = map[string]interface{}{
