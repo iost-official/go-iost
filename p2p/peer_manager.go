@@ -434,10 +434,10 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
-	if typ == NewBlock {
-		pm.syncBroadcast(msg, mp)
-		return
-	}
+	/*  if typ == NewBlock { */
+	// pm.syncBroadcast(msg, mp)
+	// return
+	/* } */
 
 	pm.neighbors.Range(func(k, v interface{}) bool {
 		v.(*Peer).SendMessage(msg, mp, true)

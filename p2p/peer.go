@@ -288,10 +288,10 @@ func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool
 			return ErrDuplicateMessage
 		}
 	}
-	if msg.messageType() == NewBlock {
-		p.write(msg)
-		return nil
-	}
+	/*  if msg.messageType() == NewBlock { */
+	// p.write(msg)
+	// return nil
+	/* } */
 	ch := p.urgentMsgCh
 	if mp == NormalMessage {
 		ch = p.normalMsgCh
