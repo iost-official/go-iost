@@ -8,12 +8,13 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 )
 
-var domainABIs map[string]*abi
+// DomainABIs list of domain abi
+var DomainABIs map[string]*abi
 
 func init() {
-	domainABIs = make(map[string]*abi)
-	register(&domainABIs, link)
-	register(&domainABIs, transferURL)
+	DomainABIs = make(map[string]*abi)
+	register(&DomainABIs, link)
+	register(&DomainABIs, transferURL)
 
 }
 
@@ -42,12 +43,12 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant)
-			cost.AddAssign(c)
-
-			if !ok {
-				return nil, cost, errors.New("no privilege of claimed url")
-			}
+			//ok, c := h.RequireAuth(applicant, "iost.domain")
+			//cost.AddAssign(c)
+			//
+			//if !ok {
+			//	return nil, cost, errors.New("no privilege of applicant")
+			//}
 
 			h.WriteLink(url, cid, applicant)
 			cost.AddAssign(host.PutCost)
