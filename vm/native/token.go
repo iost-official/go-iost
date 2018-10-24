@@ -5,6 +5,7 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 	"errors"
 	"strconv"
+	"math"
 )
 
 var tokenABIs map[string]*abi
@@ -27,8 +28,9 @@ func init() {
 	register(&tokenABIs, issueTokenABI)
 	register(&tokenABIs, transferTokenABI)
 	register(&tokenABIs, balanceOfTokenABI)
-	register(&tokenABIs, getSupplyTokenABI)
-	register(&tokenABIs, getTotalSupplyTokenABI)
+	register(&tokenABIs, supplyTokenABI)
+	register(&tokenABIs, totalSupplyTokenABI)
+	register(&tokenABIs, destroyTokenABI)
 }
 
 func checkTokenExists(h *host.Host, tokenName string) (ok bool, cost *contract.Cost) {
@@ -85,8 +87,12 @@ var (
 			if decimal >= 19 {
 				return nil, cost, errors.New("invalid decimal")
 			}
+			if totalSupply > math.MaxInt64 / int64(math.Pow10(decimal)) {
+				return nil, cost, errors.New("invalid totalSupply")
+			}
+			totalSupply *= int64(math.Pow10(decimal))
 
-			// put table
+			// put info
 			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, IssuerMapField, issuer)
 			cost.AddAssign(cost0)
 			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, TotalSupplyMapField, totalSupply)
@@ -134,7 +140,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 
-			// todo get amount
+			// todo get amount by fixed point number
 			amount, err := strconv.ParseInt(amountStr, 10, 64)
 			cost.AddAssign(host.CommonOpCost(1))
 			if err != nil {
@@ -149,7 +155,7 @@ var (
 				return nil, cost, errors.New("supply to much")
 			}
 
-			// put table
+			// set supply, set balance
 			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, SupplyMapField, supply.(int64) + amount)
 			cost.AddAssign(cost0)
 
@@ -189,7 +195,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 
-			// todo get amount
+			// todo get amount by fixed point number
 			amount, err := strconv.ParseInt(amountStr, 10, 64)
 			cost.AddAssign(host.CommonOpCost(1))
 			if err != nil {
@@ -199,7 +205,7 @@ var (
 				return nil, cost, host.ErrInvalidAmount
 			}
 
-			// put table
+			// set balance
 			fbalance, cost0 := getBalance(h, tokenName, from)
 			cost.AddAssign(cost0)
 			tbalance, cost0 := getBalance(h, tokenName, to)
@@ -214,6 +220,63 @@ var (
 			cost0 = setBalance(h, tokenName, from, fbalance)
 			cost.AddAssign(cost0)
 			cost0 = setBalance(h, tokenName, to, tbalance)
+			cost.AddAssign(cost0)
+
+			return []interface{}{}, cost, nil
+		},
+	}
+
+	destroyTokenABI = &abi{
+		name: "destroy",
+		args: []string{"string", "string", "string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			cost = contract.Cost0()
+			cost.AddAssign(host.CommonOpCost(1))
+			tokenName := args[0].(string)
+			from := args[1].(string)
+			amountStr := args[1].(string)
+
+			// get token info
+			ok, cost0 := checkTokenExists(h, tokenName)
+			cost.AddAssign(cost0)
+			if !ok {
+				return nil, cost, host.ErrTokenNotExists
+			}
+
+			// check auth
+			ok, cost0 = h.RequireAuth(from)
+			cost.AddAssign(cost0)
+			if !ok {
+				return nil, cost, host.ErrPermissionLost
+			}
+
+			// todo get amount by fixed point number
+			amount, err := strconv.ParseInt(amountStr, 10, 64)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			if amount <= 0 {
+				return nil, cost, host.ErrInvalidAmount
+			}
+
+			// set balance
+			fbalance, cost0 := getBalance(h, tokenName, from)
+			cost.AddAssign(cost0)
+			if fbalance < amount {
+				return nil, cost, host.ErrBalanceNotEnough
+			}
+			fbalance -= amount
+			cost0 = setBalance(h, tokenName, from, fbalance)
+			cost.AddAssign(cost0)
+
+			// set supply
+			tmp, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, SupplyMapField)
+			supply := tmp.(int64)
+			cost.AddAssign(cost0)
+
+			supply -= amount
+			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, SupplyMapField, supply)
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -243,8 +306,8 @@ var (
 		},
 	}
 
-	getSupplyTokenABI = &abi{
-		name: "getSupply",
+	supplyTokenABI = &abi{
+		name: "supply",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			cost = contract.Cost0()
@@ -265,8 +328,8 @@ var (
 		},
 	}
 
-	getTotalSupplyTokenABI = &abi{
-		name: "getTotalSupply",
+	totalSupplyTokenABI = &abi{
+		name: "totalSupply",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			cost = contract.Cost0()
