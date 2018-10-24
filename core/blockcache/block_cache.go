@@ -90,6 +90,7 @@ func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	} else {
 		bcn.Number = -1
 	}
+	bcn.drawNode = treeprint.New()
 	bcn.setParent(parent)
 	return &bcn
 }
@@ -106,6 +107,7 @@ func NewVirtualBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
 	}
 	bcn.setParent(parent)
 	bcn.Type = Virtual
+	bcn.drawNode = treeprint.New()
 	return &bcn
 }
 
@@ -189,6 +191,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		}
 	}
 	bc.head = bc.linkedRoot
+	bc.tree = treeprint.New()
 	return &bc, nil
 }
 
