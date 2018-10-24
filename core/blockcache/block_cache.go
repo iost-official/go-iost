@@ -503,10 +503,10 @@ func (bcn *BlockCacheNode) DrawTree() string {
 }
 
 // Draw returns the linkedroot's and singleroot's tree graph.
-func (bc *BlockCacheImpl) Draw() {
+func (bc *BlockCacheImpl) Draw() string {
 	tree := treeprint.New()
 	bc.linkedRoot.DrawChildren(tree)
-	fmt.Println(tree.String())
+	return tree.String()
 }
 func (bcn *BlockCacheNode) DrawChildren(root treeprint.Tree) {
 	for c := range bcn.Children {
