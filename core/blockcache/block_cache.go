@@ -189,6 +189,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	}
 	bc.head = bc.linkedRoot
 	bc.linkedRoot.drawNode = treeprint.New()
+	bc.linkedRoot.drawNode.SetValue(strconv.FormatInt(bc.linkedRoot.Number, 10) + "(" + bc.linkedRoot.Witness[4:6] + ")")
 	return &bc, nil
 }
 
