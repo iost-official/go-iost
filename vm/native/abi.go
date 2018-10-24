@@ -8,15 +8,16 @@ import (
 
 // ABI generate iost.system abi and contract
 func ABI() *contract.Contract {
-	return genNativeAbi("iost.system", systemABIs)
+	return NativeAbi("iost.system", systemABIs)
 }
 
 // BonusABI generate iost.bonus abi and contract
 func BonusABI() *contract.Contract {
-	return genNativeAbi("iost.bonus", bonusABIs)
+	return NativeAbi("iost.bonus", bonusABIs)
 }
 
-func genNativeAbi(id string, abi map[string]*abi) *contract.Contract {
+// NativeABI generate native abis
+func NativeAbi(id string, abi map[string]*abi) *contract.Contract {
 	c := &contract.Contract{
 		ID:   id,
 		Code: "codes",
