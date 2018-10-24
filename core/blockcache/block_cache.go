@@ -210,7 +210,6 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn != nil && len(bcn.Witness) >= 6 {
 		pattern += "(" + bcn.Witness[4:6] + ")"
 	}
-	ilog.Infof("[pob] %v", pattern)
 	bc.Draw()
 }
 
@@ -506,6 +505,7 @@ func (bcn *BlockCacheNode) DrawTree() string {
 func (bc *BlockCacheImpl) Draw() string {
 	tree := treeprint.New()
 	bc.linkedRoot.DrawChildren(tree)
+	ilog.Infof("")
 	return tree.String()
 }
 func (bcn *BlockCacheNode) DrawChildren(root treeprint.Tree) {

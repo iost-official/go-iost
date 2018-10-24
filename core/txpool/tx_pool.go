@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
 
@@ -192,6 +193,8 @@ func (pool *TxPImpl) createTxMapToBlock(tm *sync.Map, blockHash []byte) bool {
 
 // AddLinkedNode add the findBlock
 func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
 	err := pool.addBlock(linkedNode.Block)
 	if err != nil {
 		return fmt.Errorf("failed to add findBlock: %v", err)
@@ -206,12 +209,8 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error 
 	typeOfFork := pool.updateForkChain(newHead)
 	switch typeOfFork {
 	case forkBCN:
-		pool.mu.Lock()
-		defer pool.mu.Unlock()
 		pool.doChainChangeByForkBCN()
 	case noForkBCN:
-		pool.mu.Lock()
-		defer pool.mu.Unlock()
 		pool.doChainChangeByTimeout()
 	case sameHead:
 	default:
@@ -339,6 +338,8 @@ func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 	for {
 		ret := pool.existTxInBlock(txHash, h)
 		if ret {
+			bcn, _ := pool.blockCache.Find(h)
+			ilog.Info(bcn.Number, " ", bcn.Witness)
 			return true
 		}
 		h, ok = pool.parentHash(h)

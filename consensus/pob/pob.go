@@ -382,9 +382,9 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 	}
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
-	ilog.Infof("[pob] updateInfo start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
+	ilog.Infof("[pob] updateInfo start, number: %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	p.updateInfo(node, update)
-	ilog.Infof("[pob] updateInfo end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
+	ilog.Infof("[pob] updateInfo end, number: %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, true)
 	}

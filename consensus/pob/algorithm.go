@@ -158,6 +158,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		exist := txPool.ExistTxs(tx.Hash(), parent)
 		switch exist {
 		case txpool.FoundChain:
+			ilog.Infof("FoundChain: %v", tx)
 			return errTxDup
 		case txpool.NotFound:
 			notFoundPending += 1
