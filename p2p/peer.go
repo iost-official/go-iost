@@ -162,9 +162,9 @@ func (p *Peer) getStream() (libnet.Stream, error) {
 }
 
 func (p *Peer) write(m *p2pMessage) error {
-	id := time.Now().UnixNano()
-	ilog.Infoln("************ start write *************", id)
-	defer ilog.Infoln("************* end write ************", id)
+	//id := time.Now().UnixNano()
+	//ilog.Infoln("************ start write *************", id)
+	//defer ilog.Infoln("************* end write ************", id)
 
 	t1 := time.Now()
 	stream, err := p.getStream()
