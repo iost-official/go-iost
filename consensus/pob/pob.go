@@ -342,7 +342,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
 	h := p.blockCache.Head()
-	if node.Number > h.Number {
+	if node.Head.Number > h.Head.Number {
 		p.txPool.AddLinkedNode(node, node)
 	} else {
 		p.txPool.AddLinkedNode(node, h)
