@@ -15,8 +15,8 @@ func TestArray(t *testing.T) {
 	var w sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		i2 := i
+		w.Add(1)
 		go func() {
-			w.Add(1)
 			defer w.Done()
 			time.Sleep(time.Millisecond)
 			m[i2] = i2
