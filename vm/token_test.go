@@ -5,18 +5,50 @@ import (
 	"github.com/smartystreets/goconvey/convey"
 	"github.com/iost-official/go-iost/core/contract"
 	"time"
+	"github.com/iost-official/go-iost/vm/native"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
 )
+
+func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
+	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
+	vi := database.NewVisitor(100, db)
+
+	ctx := host.NewContext(nil)
+	ctx.Set("gas_price", int64(1))
+	var gasLimit = int64(10000)
+	if len(optional) > 0 {
+		gasLimit = optional[0].(int64)
+	}
+	ctx.GSet("gas_limit", gasLimit)
+	ctx.Set("contract_name", conName)
+	ctx.Set("tx_hash", []byte("iamhash"))
+	ctx.Set("auth_list", make(map[string]int))
+
+	// pm := NewMonitor()
+	h := host.NewHost(ctx, vi, nil, nil)
+	h.Context().Set("stack_height", 0)
+
+	code := &contract.Contract{
+		ID: "iost.system",
+	}
+
+	e := &native.Impl{}
+	e.Init()
+
+	return e, h, code
+}
 
 func TestToken_Create(t *testing.T) {
 	issuer0 := "issuer0"
-	e, host, code := MyInit(t, "token")
+	e, host, code := InitVM(t, "token")
 	code.ID = "iost.token"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
 	convey.Convey("Test of Token create", t, func() {
 		convey.Reset(func() {
-			e, host, code = MyInit(t, "token")
+			e, host, code = InitVM(t, "token")
 			code.ID = "iost.token"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
@@ -76,7 +108,7 @@ func TestToken_Create(t *testing.T) {
 
 func TestToken_Issue(t *testing.T) {
 	issuer0 := "issuer0"
-	e, host, code := MyInit(t, "token")
+	e, host, code := InitVM(t, "token")
 	code.ID = "iost.token"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
@@ -84,7 +116,7 @@ func TestToken_Issue(t *testing.T) {
 	convey.Convey("Test of Token issue", t, func() {
 
 		convey.Reset(func() {
-			e, host, code = MyInit(t, "token")
+			e, host, code = InitVM(t, "token")
 			code.ID = "iost.token"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
@@ -180,7 +212,7 @@ func TestToken_Issue(t *testing.T) {
 
 func TestToken_Transfer(t *testing.T) {
 	issuer0 := "issuer0"
-	e, host, code := MyInit(t, "token")
+	e, host, code := InitVM(t, "token")
 	code.ID = "iost.token"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
@@ -188,7 +220,7 @@ func TestToken_Transfer(t *testing.T) {
 	convey.Convey("Test of Token transfer", t, func() {
 
 		convey.Reset(func() {
-			e, host, code = MyInit(t, "token")
+			e, host, code = InitVM(t, "token")
 			code.ID = "iost.token"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
@@ -313,7 +345,7 @@ func TestToken_Transfer(t *testing.T) {
 
 func TestToken_Destroy(t *testing.T) {
 	issuer0 := "issuer0"
-	e, host, code := MyInit(t, "token")
+	e, host, code := InitVM(t, "token")
 	code.ID = "iost.token"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
@@ -321,7 +353,7 @@ func TestToken_Destroy(t *testing.T) {
 	convey.Convey("Test of Token destroy", t, func() {
 
 		convey.Reset(func() {
-			e, host, code = MyInit(t, "token")
+			e, host, code = InitVM(t, "token")
 			code.ID = "iost.token"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)

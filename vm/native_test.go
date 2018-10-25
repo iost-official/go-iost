@@ -15,7 +15,7 @@ import (
 
 var testDataPath = "./test_data/"
 
-func MyInit(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
+func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
 	vi := database.NewVisitor(100, db)
 
@@ -60,7 +60,7 @@ func ReadFile(src string) ([]byte, error) {
 // nolint
 func TestEngine_SetCode(t *testing.T) {
 
-	e, host, code := MyInit(t, "setcode")
+	e, host, code := InitVMWithMonitor(t, "setcode")
 	host.Context().Set("tx_hash", "iamhash")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	hash := "Contractiamhash"
