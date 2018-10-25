@@ -347,7 +347,8 @@ func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 				blk, err := pool.global.BlockChain().GetBlockByHash(h)
 				if err != nil {
 					ilog.Infof("find in blockchain")
-					ilog.Info(blk.Head.Number, " ", blk.Head.Witness)
+					ilog.Info(blk)
+					//ilog.Info(blk.xHead.Number, " ", blk.Head.Witness)
 				}
 			}
 			return true
