@@ -335,19 +335,9 @@ func (s *GRPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTx
 	}
 	// add servi
 	//tx.RecordTx(trx, tx.Data.Self())
-	ret := s.txpool.AddTx(&trx)
-	switch ret {
-	case txpool.TimeError:
-		return nil, fmt.Errorf("tx err:%v", "TimeError")
-	case txpool.VerifyError:
-		return nil, fmt.Errorf("tx err:%v", "VerifyError")
-	case txpool.DupError:
-		return nil, fmt.Errorf("tx err:%v", "DupError")
-	case txpool.GasPriceError:
-		return nil, fmt.Errorf("tx err:%v", "GasPriceError")
-	case txpool.CacheFullError:
-		return nil, fmt.Errorf("tx err:%v", "CacheFullError")
-	default:
+	err = s.txpool.AddTx(&trx)
+	if err != nil {
+		return nil, err
 	}
 	res := SendRawTxRes{}
 	res.Hash = string(trx.Hash())

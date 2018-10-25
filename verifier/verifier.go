@@ -22,7 +22,7 @@ type Verifier struct {
 // NewVerifier ...
 func NewVerifier(db database.Visitor) *Verifier {
 	if db.Contract("iost.system") == nil {
-		db.SetContract(native.ABI())
+		db.SetContract(native.SystemABI())
 	}
 	return &Verifier{}
 }

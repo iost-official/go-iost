@@ -25,7 +25,7 @@ func NewDHCP(h *Host) DHCP {
 
 // ContractID find cid from url
 func (d *DHCP) ContractID(url string) string {
-	cid, _ := d.h.MapGet(DHCPTable, url)
+	cid, _ := d.h.GlobalMapGet("iost.domain", DHCPTable, url)
 	if s, ok := cid.(string); ok {
 		return s
 	}
@@ -34,7 +34,7 @@ func (d *DHCP) ContractID(url string) string {
 
 // URLOwner find owner of url
 func (d *DHCP) URLOwner(url string) string {
-	owner, _ := d.h.MapGet(DHCPOwnerTable, url)
+	owner, _ := d.h.GlobalMapGet("iost.domain", DHCPOwnerTable, url)
 	if s, ok := owner.(string); ok {
 		return s
 	}
@@ -48,7 +48,7 @@ func (d *DHCP) URLTransfer(url, to string) {
 
 // URL git url of cid
 func (d *DHCP) URL(cid string) string {
-	domain, _ := d.h.MapGet(DHCPRTable, cid)
+	domain, _ := d.h.GlobalMapGet("iost.domain", DHCPRTable, cid)
 	if s, ok := domain.(string); ok {
 		return s
 	}
