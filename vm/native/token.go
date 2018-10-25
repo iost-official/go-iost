@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strconv"
 	"math"
+	"fmt"
 )
 
 var tokenABIs map[string]*abi
@@ -56,6 +57,24 @@ func setBalance(h *host.Host, tokenName string, from string, balance int64) (cos
 	return cost
 }
 
+func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64, cost *contract.Cost, err error) {
+	// todo use fixed point number
+	decimal, cost := h.MapGet(TokenInfoMapPrefix + tokenName, DecimalMapField)
+	amountFloat, err := strconv.ParseFloat(amountStr, 64)
+	if err != nil {
+		return 0, cost, err
+	}
+	amountFloat *= (math.Pow10(int(decimal.(int64))))
+	return int64(amountFloat), cost, err
+}
+
+func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, cost *contract.Cost) {
+	// todo use fixed point number
+	decimal, cost := h.MapGet(TokenInfoMapPrefix + tokenName, DecimalMapField)
+	amountStr = fmt.Sprintf("%.8f", float64(amount) / math.Pow10(int(decimal.(int64))))
+	return amountStr, cost
+}
+
 var (
 	createTokenABI = &abi{
 		name: "create",
@@ -97,13 +116,13 @@ var (
 			cost.AddAssign(cost0)
 			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, TotalSupplyMapField, totalSupply)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, SupplyMapField, 0)
+			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, SupplyMapField, int64(0))
 			cost.AddAssign(cost0)
 			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, CanTransferMapField, true)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, DefaultRateMapField, 1.0)
+			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, DefaultRateMapField, "1.0")
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, DecimalMapField, decimal)
+			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, DecimalMapField, int64(decimal))
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -140,9 +159,9 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 
-			// todo get amount by fixed point number
-			amount, err := strconv.ParseInt(amountStr, 10, 64)
-			cost.AddAssign(host.CommonOpCost(1))
+			// get amount by fixed point number
+			amount, cost0, err := parseAmount(h, tokenName, amountStr)
+			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
@@ -152,7 +171,7 @@ var (
 
 			// check supply
 			if totalSupply.(int64) - supply.(int64) < amount {
-				return nil, cost, errors.New("supply to much")
+				return nil, cost, errors.New("supply too much")
 			}
 
 			// set supply, set balance
@@ -178,8 +197,12 @@ var (
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
 			from := args[1].(string)
-			to := args[1].(string)
-			amountStr := args[1].(string)
+			to := args[2].(string)
+			amountStr := args[3].(string)
+
+			if from == to {
+				return []interface{}{}, cost, nil
+			}
 
 			// get token info
 			ok, cost0 := checkTokenExists(h, tokenName)
@@ -195,9 +218,9 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 
-			// todo get amount by fixed point number
-			amount, err := strconv.ParseInt(amountStr, 10, 64)
-			cost.AddAssign(host.CommonOpCost(1))
+			// get amount by fixed point number
+			amount, cost0, err := parseAmount(h, tokenName, amountStr)
+			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
@@ -217,9 +240,9 @@ var (
 			fbalance -= amount
 			tbalance += amount
 
-			cost0 = setBalance(h, tokenName, from, fbalance)
-			cost.AddAssign(cost0)
 			cost0 = setBalance(h, tokenName, to, tbalance)
+			cost.AddAssign(cost0)
+			cost0 = setBalance(h, tokenName, from, fbalance)
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -234,7 +257,7 @@ var (
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
 			from := args[1].(string)
-			amountStr := args[1].(string)
+			amountStr := args[2].(string)
 
 			// get token info
 			ok, cost0 := checkTokenExists(h, tokenName)
@@ -250,9 +273,9 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 
-			// todo get amount by fixed point number
-			amount, err := strconv.ParseInt(amountStr, 10, 64)
-			cost.AddAssign(host.CommonOpCost(1))
+			// get amount by fixed point number
+			amount, cost0, err := parseAmount(h, tokenName, amountStr)
+			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
@@ -302,7 +325,10 @@ var (
 			balance, cost0 := getBalance(h, tokenName, to)
 			cost.AddAssign(cost0)
 
-			return []interface{}{balance}, cost, nil
+			balanceStr, cost0 := genAmount(h, tokenName, balance)
+			cost.AddAssign(cost0)
+
+			return []interface{}{balanceStr}, cost, nil
 		},
 	}
 
@@ -323,8 +349,10 @@ var (
 
 			supply, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, SupplyMapField)
 			cost.AddAssign(cost0)
+			supplyStr, cost0 := genAmount(h, tokenName, supply.(int64))
+			cost.AddAssign(cost0)
 
-			return []interface{}{supply.(int64)}, cost, nil
+			return []interface{}{supplyStr}, cost, nil
 		},
 	}
 
@@ -345,8 +373,10 @@ var (
 
 			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, TotalSupplyMapField)
 			cost.AddAssign(cost0)
+			totalSupplyStr, cost0 := genAmount(h, tokenName, totalSupply.(int64))
+			cost.AddAssign(cost0)
 
-			return []interface{}{totalSupply.(int64)}, cost, nil
+			return []interface{}{totalSupplyStr}, cost, nil
 		},
 	}
 )

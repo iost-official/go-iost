@@ -28,6 +28,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	ctx.GSet("gas_limit", gasLimit)
 	ctx.Set("contract_name", conName)
 	ctx.Set("tx_hash", []byte("iamhash"))
+	ctx.Set("auth_list", make(map[string]int))
 
 	pm := NewMonitor()
 	h := host.NewHost(ctx, vi, pm, nil)
