@@ -189,9 +189,9 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 }
 
 func updateWaterMark(node *blockcache.BlockCacheNode) {
-	node.ConfirmUntil = staticProperty.Watermark[node.Witness]
-	if node.Number >= staticProperty.Watermark[node.Witness] {
-		staticProperty.Watermark[node.Witness] = node.Number + 1
+	node.ConfirmUntil = staticProperty.Watermark[node.Head.Witness]
+	if node.Head.Number >= staticProperty.Watermark[node.Head.Witness] {
+		staticProperty.Watermark[node.Head.Witness] = node.Head.Number + 1
 	}
 }
 
@@ -199,24 +199,24 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode != nil {
 		bc.Flush(confirmedNode)
-		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
+		metricsConfirmedLength.Set(float64(confirmedNode.Head.Number+1), nil)
 	}
 }
 
 func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
 	confirmLimit := staticProperty.NumberOfWitnesses*2/3 + 1
-	startNumber := node.Number
+	startNumber := node.Head.Number
 	var confirmNum int64
-	confirmUntilMap := make(map[int64]int64, startNumber-root.Number)
+	confirmUntilMap := make(map[int64]int64, startNumber-root.Head.Number)
 	for node != root {
-		if node.ConfirmUntil <= node.Number {
+		if node.ConfirmUntil <= node.Head.Number {
 			confirmNum++
 			confirmUntilMap[node.ConfirmUntil]++
 		}
 		if confirmNum >= confirmLimit {
 			return node
 		}
-		confirmNum -= confirmUntilMap[node.Number]
+		confirmNum -= confirmUntilMap[node.Head.Number]
 		node = node.Parent
 	}
 	return nil

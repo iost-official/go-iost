@@ -2,8 +2,11 @@ package event
 
 import (
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 //nolint
@@ -16,9 +19,9 @@ func TestEventCollector_Post(t *testing.T) {
 	ec.Subscribe(sub1)
 	ec.Subscribe(sub2)
 	ec.Subscribe(sub3)
-	count1 := 0
-	count2 := 0
-	count3 := 0
+	count1 := int32(0)
+	count2 := int32(0)
+	count3 := int32(0)
 
 	go func(ch <-chan *Event) {
 		t.Log("run sub1")
@@ -31,7 +34,7 @@ func TestEventCollector_Post(t *testing.T) {
 				if e.Data != "test1" {
 					t.Fatalf("sub1 expect event data test1, got %s", e.Data)
 				}
-				count1++
+				atomic.AddInt32(&count1, 1)
 			}
 		}
 	}(sub1.ReadChan())
@@ -47,7 +50,7 @@ func TestEventCollector_Post(t *testing.T) {
 				if e.Data != "test2" {
 					t.Fatalf("sub2 expect event data test2, got %s", e.Data)
 				}
-				count2++
+				atomic.AddInt32(&count2, 1)
 			}
 		}
 	}(sub2.ReadChan())
@@ -60,7 +63,7 @@ func TestEventCollector_Post(t *testing.T) {
 				if e.Topic != Event_TransactionResult && e.Topic != Event_ContractEvent {
 					t.Fatalf("sub3 expect event topic Event_TransactionResult or Event_ContractEvent, got %s", e.Topic.String())
 				}
-				count3++
+				atomic.AddInt32(&count3, 1)
 			}
 		}
 	}(sub3.ReadChan())
@@ -71,9 +74,12 @@ func TestEventCollector_Post(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 100)
 
-	if count1 != 1 || count2 != 2 || count3 != 3 {
-		t.Fatalf("expect count1 = 1, count2 = 2, count3 = 3, got %d %d %d", count1, count2, count3)
-	}
+	fcount1 := atomic.LoadInt32(&count1)
+	fcount2 := atomic.LoadInt32(&count2)
+	fcount3 := atomic.LoadInt32(&count3)
+	assert.EqualValues(t, 1, fcount1)
+	assert.EqualValues(t, 2, fcount2)
+	assert.EqualValues(t, 3, fcount3)
 
 	ec.Unsubscribe(sub1)
 	ec.Post(NewEvent(Event_TransactionResult, "test1"))
@@ -82,9 +88,12 @@ func TestEventCollector_Post(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 100)
 
-	if count1 != 1 || count2 != 4 || count3 != 6 {
-		t.Fatalf("expect count1 = 1, count2 = 4, count3 = 6, got %d %d %d", count1, count2, count3)
-	}
+	fcount1 = atomic.LoadInt32(&count1)
+	fcount2 = atomic.LoadInt32(&count2)
+	fcount3 = atomic.LoadInt32(&count3)
+	assert.EqualValues(t, 1, fcount1)
+	assert.EqualValues(t, 4, fcount2)
+	assert.EqualValues(t, 6, fcount3)
 }
 
 //nolint
@@ -97,9 +106,9 @@ func TestEventCollector_Full(t *testing.T) {
 	ec.Subscribe(sub1)
 	ec.Subscribe(sub2)
 	ec.Subscribe(sub3)
-	count1 := 0
-	count2 := 0
-	count3 := 0
+	count1 := int32(0)
+	count2 := int32(0)
+	count3 := int32(0)
 
 	ec.Post(NewEvent(Event_TransactionResult, "test1"))
 	ec.Post(NewEvent(Event_TransactionResult, "test1"))
@@ -115,7 +124,7 @@ func TestEventCollector_Full(t *testing.T) {
 				if e.Topic != Event_TransactionResult {
 					t.Fatalf("sub1 expect event topic Event_TransactionResult, got %s", e.Topic.String())
 				}
-				count1++
+				atomic.AddInt32(&count1, 1)
 			}
 		}
 	}(sub1.ReadChan())
@@ -128,7 +137,7 @@ func TestEventCollector_Full(t *testing.T) {
 				if e.Topic != Event_ContractEvent {
 					t.Fatalf("sub2 expect event topic Event_ContractEvent, got %s", e.Topic.String())
 				}
-				count2++
+				atomic.AddInt32(&count2, 1)
 			}
 		}
 	}(sub2.ReadChan())
@@ -141,15 +150,18 @@ func TestEventCollector_Full(t *testing.T) {
 				if e.Topic != Event_TransactionResult && e.Topic != Event_ContractEvent {
 					t.Fatalf("sub3 expect event topic Event_TransactionResult or Event_ContractEvent, got %s", e.Topic.String())
 				}
-				count3++
+				atomic.AddInt32(&count3, 1)
 			}
 		}
 	}(sub3.ReadChan())
 
 	time.Sleep(time.Millisecond * 100)
-	if count1 != 1 || count2 != 1 || count3 != 1 {
-		t.Fatalf("expect count1 = 1, count2 = 1, count3 = 1, got %d %d %d", count1, count2, count3)
-	}
+	fcount1 := atomic.LoadInt32(&count1)
+	fcount2 := atomic.LoadInt32(&count2)
+	fcount3 := atomic.LoadInt32(&count3)
+	assert.EqualValues(t, 1, fcount1)
+	assert.EqualValues(t, 1, fcount2)
+	assert.EqualValues(t, 1, fcount3)
 
 	sub1 = NewSubscription(1000, []Event_Topic{Event_TransactionResult})
 	sub2 = NewSubscription(1000, []Event_Topic{Event_ContractEvent})
@@ -171,7 +183,10 @@ func TestEventCollector_Full(t *testing.T) {
 	t1 := time.Now().Nanosecond()
 	fmt.Println(t1 - t0)
 	time.Sleep(time.Millisecond * 100)
-	if count1 > 1001 || count2 != 1 || count3 > 1001 {
-		t.Fatalf("expect count1 <= 1001, count2 = 1, count3 <= 1001, got %d %d %d", count1, count2, count3)
-	}
+	fcount1 = atomic.LoadInt32(&count1)
+	fcount2 = atomic.LoadInt32(&count2)
+	fcount3 = atomic.LoadInt32(&count3)
+	assert.True(t, fcount1 <= 1001, fmt.Sprintf("Expect count1 <= 1001, got count1: %v", fcount1))
+	assert.EqualValues(t, 1, fcount2)
+	assert.True(t, fcount3 <= 1001, fmt.Sprintf("Expect count3 <= 1001, got count3: %v", fcount3))
 }

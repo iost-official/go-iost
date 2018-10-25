@@ -78,9 +78,25 @@ var accountCmd = &cobra.Command{
 				fmt.Println(err.Error())
 				return
 			}
+			idFileName := fileName + ".id"
+			idFile, err := os.Create(idFileName)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			defer idFile.Close()
+			id := account.GetIDByPubkey(ac.Pubkey)
+			_, err = idFile.WriteString(id)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
 			fmt.Println("the iost account ID is:")
-			fmt.Println(account.GetIDByPubkey(ac.Pubkey))
-			fmt.Println("please save your account ID!")
+			fmt.Println(id)
+			fmt.Println("your account id is saved at:")
+			fmt.Println(idFileName)
+			fmt.Println("your account private key is saved at:")
+			fmt.Println(fileName)
 		default:
 			fmt.Println("invalid input")
 		}

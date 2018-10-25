@@ -126,7 +126,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 	for {
 		select {
 		case <-syncHeightTicker.C:
-			num := sy.blockCache.Head().Number
+			num := sy.blockCache.Head().Head.Number
 			sh := &message.SyncHeight{Height: num, Time: time.Now().Unix()}
 			bytes, err := proto.Marshal(sh)
 			if err != nil {
@@ -169,7 +169,7 @@ func (sy *SyncImpl) checkSync() bool {
 	}
 	height := sy.basevariable.BlockChain().Length() - 1
 	heights := make([]int64, 0, 0)
-	heights = append(heights, sy.blockCache.Head().Number)
+	heights = append(heights, sy.blockCache.Head().Head.Number)
 	now := time.Now().Unix()
 	sy.heightMap.Range(func(k, v interface{}) bool {
 		sh, ok := v.(*message.SyncHeight)
@@ -226,7 +226,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 		}
 	}
 	if num > 0 {
-		go sy.syncBlocks(height+1, sy.blockCache.Head().Number)
+		go sy.syncBlocks(height+1, sy.blockCache.Head().Head.Number)
 		return true
 	}
 	return false
@@ -245,7 +245,7 @@ func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
-		for sy.blockCache.Head().Number+3 < startNumber {
+		for sy.blockCache.Head().Head.Number+3 < startNumber {
 			time.Sleep(500 * time.Millisecond)
 		}
 		for i := startNumber; i < startNumber+maxBlockHashQueryNumber; i++ {
@@ -265,8 +265,8 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 
 // CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
-	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Number, sy.syncEnd)
-	if sy.syncEnd <= sy.blockCache.Head().Number {
+	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd)
+	if sy.syncEnd <= sy.blockCache.Head().Head.Number {
 		sy.basevariable.SetMode(global.ModeNormal)
 		sy.dc.Reset()
 	}
@@ -312,15 +312,15 @@ func (sy *SyncImpl) getBlockHashes(start int64, end int64) *message.BlockHashRes
 		BlockInfos: make([]*message.BlockInfo, 0, end-start+1),
 	}
 	node := sy.blockCache.Head()
-	if node != nil && end > node.Number {
-		end = node.Number
+	if node != nil && end > node.Head.Number {
+		end = node.Head.Number
 	}
 
 	for i := end; i >= start; i-- {
 		var hash []byte
 		var err error
 
-		for node != nil && i < node.Number {
+		for node != nil && i < node.Head.Number {
 			node = node.Parent
 		}
 
@@ -399,7 +399,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
 	ilog.Infof("receive block hashes: len=%v", len(rh.BlockInfos))
 	for _, blkInfo := range rh.BlockInfos {
-		if blkInfo.Number > sy.blockCache.LinkedRoot().Number {
+		if blkInfo.Number > sy.blockCache.LinkedRoot().Head.Number {
 			if _, err := sy.blockCache.Find(blkInfo.Hash); err != nil {
 				sy.dc.CreateMission(string(blkInfo.Hash), blkInfo.Number, peerID)
 			}
@@ -462,7 +462,7 @@ func (sy *SyncImpl) checkHasBlock(hash string, p interface{}) bool {
 		ilog.Errorf("get p failed.")
 		return false
 	}
-	if bn <= sy.blockCache.LinkedRoot().Number {
+	if bn <= sy.blockCache.LinkedRoot().Head.Number {
 		return true
 	}
 	bHash := []byte(hash)
@@ -479,7 +479,7 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		return false, false
 	}
 	ilog.Infof("callback try sync block, num:%v", bn)
-	if bn <= sy.blockCache.LinkedRoot().Number {
+	if bn <= sy.blockCache.LinkedRoot().Head.Number {
 		ilog.Infof("callback block confirmed, num:%v", bn)
 		return false, true
 	}
