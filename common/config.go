@@ -37,11 +37,16 @@ type VMConfig struct {
 
 // P2PConfig is the config for p2p network.
 type P2PConfig struct {
-	ListenAddr string
-	SeedNodes  []string
-	ChainID    uint32
-	Version    uint16
-	DataPath   string
+	ListenAddr   string
+	SeedNodes    []string
+	ChainID      uint32
+	Version      uint16
+	DataPath     string
+	InboundConn  int
+	OutboundConn int
+	BlackPID     []string
+	BlackIP      []string
+	AdminPort    string
 }
 
 //RPCConfig is the config for RPC Server.

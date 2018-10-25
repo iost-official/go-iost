@@ -14,6 +14,11 @@ p2p:
   chainid: 1024
   version: 1
   datapath: p2p/
+  inboundConn: 15
+  outboundConn: 15
+  blackPID:
+  blackIP:
+  adminPort: 30005
 rpc:
   jsonport: 30001
   grpcport: 30002
