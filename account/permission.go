@@ -8,19 +8,20 @@ type Account struct {
 	Permissions map[string]*Permission `json:"permissions"`
 }
 type User struct {
-	ID        string `json:"id"`
-	IsKeyPair bool   `json:"is_key_pair"`
-	Weight    int    `json:"weight"`
+	ID         string `json:"id"` // key pair id
+	Permission string `json:"permission"`
+	IsKeyPair  bool   `json:"is_key_pair"`
+	Weight     int    `json:"weight"`
 }
 type Group struct {
-	Name  string           `json:"name"`
-	Users map[string]*User `json:"users"`
+	Name  string  `json:"name"`
+	Users []*User `json:"users"`
 }
 type Permission struct {
-	Name      string            `json:"name"`
-	Groups    map[string]*Group `json:"groups"`
-	Users     map[string]*User  `json:"users"`
-	Threshold int               `json:"threshold"`
+	Name      string   `json:"name"`
+	Groups    []*Group `json:"groups"`
+	Users     []*User  `json:"users"`
+	Threshold int      `json:"threshold"`
 }
 
 func NewAccount(id string) *Account {

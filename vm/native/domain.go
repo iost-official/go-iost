@@ -42,7 +42,7 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant)
+			ok, c := h.RequireAuth(applicant, "domain.iost")
 			cost.AddAssign(c)
 
 			if !ok {
@@ -81,7 +81,7 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant)
+			ok, c := h.RequireAuth(applicant, "domain.iost")
 			cost.AddAssign(c)
 
 			if !ok {
