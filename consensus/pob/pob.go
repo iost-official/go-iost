@@ -238,6 +238,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		err := p.handleRecvBlock(blk, true)
 		t2 := calculateTime(blk)
 		metricsTimeCost.Set(t2, nil)
+		ilog.Infof("[pob]" + p.blockCache.Draw())
 		ilog.Infof("[pob] transfer cost: %v, total cost: %v", t1, t2)
 		ilog.Infof("[pob] handle recv new block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 		//go p.broadcastBlockHash(blk)
@@ -362,7 +363,6 @@ func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent.Block, update)
 	}
-	ilog.Infof("[pob]" + p.blockCache.Draw())
 	return errSingle
 }
 
