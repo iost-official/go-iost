@@ -362,6 +362,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent.Block, update)
 	}
+	ilog.Infof("[pob]" + p.blockCache.Draw())
 	return errSingle
 }
 
