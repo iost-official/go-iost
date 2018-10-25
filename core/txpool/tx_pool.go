@@ -419,7 +419,7 @@ func (pool *TxPImpl) updateForkChain(newHead *blockcache.BlockCacheNode) tFork {
 
 func (pool *TxPImpl) findForkBCN(newHead *blockcache.BlockCacheNode, oldHead *blockcache.BlockCacheNode) (*blockcache.BlockCacheNode, bool) {
 	for {
-		for oldHead != nil && oldHead.Number > newHead.Number {
+		for oldHead != nil && oldHead.Head.Number > newHead.Head.Number {
 			oldHead = oldHead.Parent
 		}
 		if oldHead == nil {
