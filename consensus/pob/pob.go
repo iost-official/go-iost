@@ -250,6 +250,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	case p2p.SyncBlockResponse:
 		ilog.Info("[pob] received sync block, block number: ", blk.Head.Number)
 		err := p.handleRecvBlock(blk, true)
+		ilog.Infof("[pob]" + p.blockCache.Draw())
 		if err != nil {
 			ilog.Errorf("received sync block error, err:%v", err)
 			return
