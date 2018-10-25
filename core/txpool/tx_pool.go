@@ -338,8 +338,15 @@ func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 	for {
 		ret := pool.existTxInBlock(txHash, h)
 		if ret {
-			bcn, _ := pool.blockCache.Find(h)
-			ilog.Info(bcn.Number, " ", bcn.Witness)
+			bcn, err := pool.blockCache.Find(h)
+			if err != nil {
+				ilog.Info(bcn.Number, " ", bcn.Witness)
+			} else {
+				blk, err := pool.global.BlockChain().GetBlockByHash(h)
+				if err != nil {
+					ilog.Info(blk.Head.Number, " ", blk.Head.Witness)
+				}
+			}
 			return true
 		}
 		h, ok = pool.parentHash(h)
