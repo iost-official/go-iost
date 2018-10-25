@@ -135,9 +135,11 @@ func (c *channelPool) Put(conn interface{}) error {
 
 	select {
 	case c.conns <- &idleConn{conn: conn, t: time.Now()}:
+		fmt.Println("put to channel *******")
 		return nil
 	default:
 		//连接池已满，直接关闭该连接
+		fmt.Println("close *******")
 		return c.Close(conn)
 	}
 }
