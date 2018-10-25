@@ -39,85 +39,92 @@ func (h *Teller) transfer(from, to string, amount int64) error {
 }
 
 // GetBalance return balance of an id
-func (h *Teller) GetBalance(from string) (int64, *contract.Cost, error) {
+func (h *Teller) GetBalance(from string) (string, *contract.Cost, error) {
 	var bl int64
 	if strings.HasPrefix(from, "IOST") {
 		bl = h.h.db.Balance(from)
 	} else {
 		bl = h.h.db.Balance(ContractAccountPrefix + from)
 	}
-	return bl, GetCost, nil
+	fpn := FixPointNumber{value: bl, decimal: 8}
+	return fpn.ToString(), GetCost, nil
 }
 
 // GrantCoin issue coin
-func (h *Teller) GrantCoin(coinName, to string, amount int64) (*contract.Cost, error) {
-	if amount <= 0 {
+func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cost, error) {
+	amount, _ := NewFixPointNumber(amountStr, 8)
+	if amount.value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
 	cn := h.h.ctx.Value("contract_name").(string)
 	if !strings.HasPrefix(cn, "iost.") {
 		return CommonErrorCost(2), ErrPermissionLost
 	}
-	h.h.db.SetCoin(coinName, to, amount)
+	h.h.db.SetCoin(coinName, to, amount.value)
 	return TransferCost, nil
 }
 
 // ConsumeCoin consume coin from
-func (h *Teller) ConsumeCoin(coinName, from string, amount int64) (cost *contract.Cost, err error) {
-	if amount <= 0 {
+func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *contract.Cost, err error) {
+	amount, _ := NewFixPointNumber(amountStr, 8)
+	if amount.value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
 	if h.Privilege(from) < 1 {
 		return CommonErrorCost(1), ErrPermissionLost
 	}
 	bl := h.h.db.Coin(coinName, from)
-	if bl < amount {
+	if bl < amount.value {
 		return CommonErrorCost(2), ErrBalanceNotEnough
 	}
-	h.h.db.SetCoin(coinName, from, -1*amount)
+	h.h.db.SetCoin(coinName, from, -1*amount.value)
 	return TransferCost, nil
 }
 
 // GrantServi ...
-func (h *Teller) GrantServi(to string, amount int64) (*contract.Cost, error) {
-	if amount <= 0 {
+func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error) {
+	amount, _ := NewFixPointNumber(amountStr, 8)
+	if amount.value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
 	//cn := h.h.ctx.Value("contract_name").(string) todo privilege of system contracts
 	//if !strings.HasPrefix(cn, "iost.") {
 	//	return CommonErrorCost(2), ErrPermissionLost
 	//}
-	h.h.db.SetServi(to, amount)
+	h.h.db.SetServi(to, amount.value)
 	return TransferCost, nil
 }
 
 // ConsumeServi ...
-func (h *Teller) ConsumeServi(from string, amount int64) (cost *contract.Cost, err error) {
-	if amount <= 0 {
+func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cost, err error) {
+	amount, _ := NewFixPointNumber(amountStr, 8)
+	if amount.value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
 	if h.Privilege(from) < 1 {
 		return CommonErrorCost(1), ErrPermissionLost
 	}
 	bl := h.h.db.Servi(from)
-	if bl < amount {
+	if bl < amount.value {
 		return CommonErrorCost(2), ErrBalanceNotEnough
 	}
-	h.h.db.SetServi(from, -1*amount)
+	h.h.db.SetServi(from, -1*amount.value)
 	return TransferCost, nil
 }
 
 // TotalServi ...
-func (h *Teller) TotalServi() (ts int64, cost *contract.Cost) {
-	ts = h.h.db.TotalServi()
+func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
+	fpn := FixPointNumber{value: h.h.db.TotalServi(), decimal: 8}
+	ts = fpn.ToString()
 	cost = GetCost
 	return
 }
 
 // Transfer ...
-func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error) {
+func (h *Teller) Transfer(from, to string, amountStr string) (*contract.Cost, error) {
 	//ilog.Debugf("amount : %v", amount)
-	if amount <= 0 {
+	amount, _ := NewFixPointNumber(amountStr, 8)
+	if amount.value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
 
@@ -131,32 +138,32 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 		}
 	}
 
-	err := h.transfer(from, to, amount)
+	err := h.transfer(from, to, amount.value)
 	return TransferCost, err
 }
 
 // Withdraw ...
-func (h *Teller) Withdraw(to string, amount int64) (*contract.Cost, error) {
+func (h *Teller) Withdraw(to string, amountStr string) (*contract.Cost, error) {
 	c := h.h.ctx.Value("contract_name").(string)
-	return h.Transfer(ContractAccountPrefix+c, to, amount)
+	return h.Transfer(ContractAccountPrefix+c, to, amountStr)
 }
 
 // Deposit ...
-func (h *Teller) Deposit(from string, amount int64) (*contract.Cost, error) {
+func (h *Teller) Deposit(from string, amountStr string) (*contract.Cost, error) {
 	c := h.h.ctx.Value("contract_name").(string)
-	return h.Transfer(from, ContractAccountPrefix+c, amount)
+	return h.Transfer(from, ContractAccountPrefix+c, amountStr)
 
 }
 
 // TopUp ...
-func (h *Teller) TopUp(c, from string, amount int64) (*contract.Cost, error) {
-	return h.Transfer(from, ContractGasPrefix+c, amount)
-
+func (h *Teller) TopUp(c, from string, amountStr string) (*contract.Cost, error) {
+	return h.Transfer(from, ContractGasPrefix+c, amountStr)
 }
 
 // Countermand ...
-func (h *Teller) Countermand(c, to string, amount int64) (*contract.Cost, error) {
-	return TransferCost, h.transfer(ContractGasPrefix+c, to, amount)
+func (h *Teller) Countermand(c, to string, amountStr string) (*contract.Cost, error) {
+	amount, _ := NewFixPointNumber(amountStr, 8)
+	return TransferCost, h.transfer(ContractGasPrefix+c, to, amount.value)
 }
 
 // PayCost ...
@@ -216,4 +223,59 @@ func (h *Teller) Privilege(id string) int {
 		i = 0
 	}
 	return i
+}
+
+type FixPointNumber struct {
+	value   int64
+	decimal int
+}
+
+func NewFixPointNumber(amount string, decimal int) (*FixPointNumber, bool) {
+	fpn := &FixPointNumber{value: 0, decimal: decimal}
+	if len(amount) == 0 || amount[0] == '.' {
+		return nil, false
+	}
+	i := 0
+	for ; i < len(amount); i++ {
+		if '0' <= amount[i] && amount[i] <= '9' {
+			fpn.value = fpn.value*10 + int64(amount[i]-'0')
+		} else if amount[i] == '.' {
+			break
+		} else {
+			return nil, false
+		}
+	}
+	for i = i + 1; i < len(amount) && decimal > 0; i++ {
+		if '0' <= amount[i] && amount[i] <= '9' {
+			fpn.value = fpn.value*10 + int64(amount[i]-'0')
+			decimal = decimal - 1
+		} else {
+			return nil, false
+		}
+	}
+	for decimal > 0 {
+		fpn.value = fpn.value * 10
+		decimal = decimal - 1
+	}
+	return fpn, true
+}
+
+func (fpn *FixPointNumber) ToString() string {
+	val := fpn.value
+	str := make([]byte, 0, 0)
+	for val > 0 || len(str) <= fpn.decimal {
+		str = append(str, byte('0'+val%10))
+		val /= 10
+	}
+	rtn := make([]byte, 0, 0)
+	for i := len(str) - 1; i >= 0; i-- {
+		if i+1 == fpn.decimal {
+			rtn = append(rtn, '.')
+		}
+		rtn = append(rtn, str[i])
+	}
+	for rtn[len(rtn)-1] == '0' {
+		rtn = rtn[0 : len(rtn)-1]
+	}
+	return string(rtn)
 }
