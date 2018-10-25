@@ -12,7 +12,6 @@ import (
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
-	"github.com/silenceper/pool"
 	"github.com/willf/bloom"
 )
 
@@ -44,7 +43,7 @@ type Peer struct {
 	conn        libnet.Conn
 	peerManager *PeerManager
 
-	streamPool pool.Pool
+	stream libnet.Stream
 
 	recentMsg      *bloom.BloomFilter
 	bloomMutex     sync.Mutex
@@ -65,6 +64,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager, initiative bool) *Peer {
 		id:          stream.Conn().RemotePeer(),
 		addr:        stream.Conn().RemoteMultiaddr(),
 		conn:        stream.Conn(),
+		stream:      stream,
 		peerManager: pm,
 		recentMsg:   bloom.NewWithEstimates(bloomMaxItemCount, bloomErrRate),
 		urgentMsgCh: make(chan *p2pMessage, msgChanSize),
@@ -72,22 +72,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager, initiative bool) *Peer {
 		quitWriteCh: make(chan struct{}),
 		initiative:  initiative,
 	}
-	poolConfig := &pool.PoolConfig{
-		InitialCap: 0,
-		MaxCap:     streamPoolCap,
-		Factory: func() (interface{}, error) {
-			conn, err := peer.conn.NewStream()
-			if err != nil {
-				return nil, err
-			}
-			go peer.readLoop(conn)
-			return conn, nil
-		},
-		Close:       func(v interface{}) error { return nil },
-		IdleTimeout: time.Minute,
-	}
-	peer.streamPool, _ = pool.NewChannelPool(poolConfig)
-	peer.streamPool.Put(stream)
+	go peer.readLoop(stream)
 	return peer
 }
 
@@ -120,43 +105,43 @@ func (p *Peer) Stop() {
 
 // AddStream tries to add a Stream in stream pool.
 func (p *Peer) AddStream(stream libnet.Stream) error {
-	if err := p.streamPool.Put(stream); err != nil {
-		return err
-	}
+	/*  if err := p.streamPool.Put(stream); err != nil { */
+	// return err
+	/* } */
 	go p.readLoop(stream)
 	return nil
 }
 
 func (p *Peer) write(m *p2pMessage) error {
-	s, err := p.streamPool.Get()
+	// s, err := p.streamPool.Get()
 	// if getStream fails, the TCP connection may be broken and we should stop the peer.
-	if err != nil {
-		ilog.Errorf("get stream fails. err=%v", err)
-		p.peerManager.RemoveNeighbor(p.id)
-		return err
-	}
-	stream := s.(libnet.Stream)
+	/* if err != nil { */
+	// ilog.Errorf("get stream fails. err=%v", err)
+	// p.peerManager.RemoveNeighbor(p.id)
+	// return err
+	// }
+	/* stream := s.(libnet.Stream) */
 
 	// 5 kB/s
 	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+1) * time.Second)
-	if err = stream.SetWriteDeadline(deadline); err != nil {
+	if err := p.stream.SetWriteDeadline(deadline); err != nil {
 		ilog.Warnf("set write deadline failed. err=%v", err)
-		stream.Close()
+		p.stream.Close()
 		return err
 	}
 
-	ilog.Infof("message chain id: %v", m.chainID())
-	_, err = stream.Write(m.content())
+	_, err := p.stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
-		stream.Close()
+		// p.stream.Close()
+		p.peerManager.RemoveNeighbor(p.id)
 		return err
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
 	byteOutCounter.Add(float64(len(m.content())), tagkv)
 	packetOutCounter.Add(1, tagkv)
 
-	return p.streamPool.Put(stream)
+	return nil
 }
 
 func (p *Peer) writeLoop() {
@@ -166,7 +151,7 @@ func (p *Peer) writeLoop() {
 			ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 			return
 		case um := <-p.urgentMsgCh:
-			go p.write(um)
+			p.write(um)
 		case nm := <-p.normalMsgCh:
 			for done := false; !done; {
 				select {
@@ -174,12 +159,12 @@ func (p *Peer) writeLoop() {
 					ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 					return
 				case um := <-p.urgentMsgCh:
-					go p.write(um)
+					p.write(um)
 				default:
 					done = true
 				}
 			}
-			go p.write(nm)
+			p.write(nm)
 		}
 	}
 }

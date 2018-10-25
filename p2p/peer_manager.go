@@ -654,11 +654,11 @@ func (pm *PeerManager) NeighborStat() map[string]interface{} {
 		"passive":    pm.NeighborCount(false),
 	}
 
-	for _, p := range pm.GetAllNeighbors() {
-		ret[p.ID()] = map[string]interface{}{
-			"stream": p.streamPool.Len(),
-		}
-	}
+	/*  for _, p := range pm.GetAllNeighbors() { */
+	// ret[p.ID()] = map[string]interface{}{
+	// "stream": p.streamPool.Len(),
+	// }
+	/* } */
 
 	return ret
 }
