@@ -31,9 +31,16 @@ var (
 	findBPInterval           = 2 * time.Second
 )
 
+type connDirection int
+
 const (
-	defaultInitiativeConn = 15
-	defaultPassiveConn    = 15
+	inbound connDirection = iota
+	outbound
+)
+
+const (
+	defaultOutboundConn = 15
+	defaultInboundConn  = 15
 
 	bucketSize        = 20
 	peerResponseCount = 20
@@ -52,10 +59,10 @@ const (
 //   * discovering peers and maintaining routing table.
 type PeerManager struct {
 	neighbors     map[peer.ID]*Peer
-	neighborCount map[bool]int
-	neighborMutex *sync.RWMutex
+	neighborCount map[connDirection]int
+	neighborMutex sync.RWMutex
 
-	neighborCap map[bool]int
+	neighborCap map[connDirection]int
 
 	subs   *sync.Map //  map[MessageType]map[string]chan IncomingMessage
 	quitCh chan struct{}
@@ -70,6 +77,10 @@ type PeerManager struct {
 
 	bpIDs   []peer.ID
 	bpMutex sync.RWMutex
+
+	blackPIDs  map[string]bool
+	blackIPs   map[string]bool
+	blackMutex sync.RWMutex
 }
 
 // NewPeerManager returns a new instance of PeerManager struct.
@@ -77,9 +88,8 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), time.Second, host.Peerstore())
 	pm := &PeerManager{
 		neighbors:     make(map[peer.ID]*Peer),
-		neighborCount: make(map[bool]int),
-		neighborCap:   make(map[bool]int),
-		neighborMutex: new(sync.RWMutex),
+		neighborCount: make(map[connDirection]int),
+		neighborCap:   make(map[connDirection]int),
 		subs:          new(sync.Map),
 		quitCh:        make(chan struct{}),
 		routingTable:  routingTable,
@@ -87,14 +97,26 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 		config:        config,
 		peerStore:     host.Peerstore(),
 		wg:            new(sync.WaitGroup),
+		blackPIDs:     make(map[string]bool),
+		blackIPs:      make(map[string]bool),
 	}
-	pm.neighborCap[true] = config.InitiativeConn
-	if config.InitiativeConn <= 0 {
-		pm.neighborCap[true] = defaultInitiativeConn
+	if config.InboundConn <= 0 {
+		pm.neighborCap[inbound] = defaultOutboundConn
+	} else {
+		pm.neighborCap[inbound] = config.InboundConn
 	}
-	pm.neighborCap[false] = config.PassiveCount
-	if config.PassiveCount <= 0 {
-		pm.neighborCap[false] = defaultPassiveConn
+
+	if config.OutboundConn <= 0 {
+		pm.neighborCap[outbound] = defaultInboundConn
+	} else {
+		pm.neighborCap[outbound] = config.OutboundConn
+	}
+
+	for _, blackIP := range config.BlackIP {
+		pm.blackIPs[blackIP] = true
+	}
+	for _, blackPID := range config.BlackPID {
+		pm.blackPIDs[blackPID] = true
 	}
 	return pm
 }
@@ -180,7 +202,7 @@ func (pm *PeerManager) connectBPs() {
 				ilog.Errorf("create stream failed. pid=%s, err=%v", bpID.Pretty(), err)
 				continue
 			}
-			pm.HandleStream(stream, true)
+			pm.HandleStream(stream, outbound)
 		}
 	}
 }
@@ -199,8 +221,14 @@ func (pm *PeerManager) ConnectBPs(ids []string) {
 // If the peer is new and the neighbor count doesn't reach the threshold, it adds the peer into the neighbor list.
 // If peer already exits, just add the stream to the peer.
 // In other cases, reset the stream.
-func (pm *PeerManager) HandleStream(s libnet.Stream, initiative bool) {
+func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 	remotePID := s.Conn().RemotePeer()
+
+	if pm.isStreamBlack(s) {
+		ilog.Infof("remote peer is in black list. pid=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+		s.Conn().Close()
+		return
+	}
 	ilog.Infof("handle new stream. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
 
 	peer := pm.GetNeighbor(remotePID)
@@ -209,15 +237,20 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, initiative bool) {
 		return
 	}
 
-	if pm.NeighborCount(initiative) >= pm.neighborCap[initiative] {
+	if pm.NeighborCount(direction) >= pm.neighborCap[direction] {
 		if !pm.isBP(remotePID) {
 			ilog.Infof("neighbor count exceeds, close stream. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
-			s.Conn().Close()
+			bytes, _ := pm.getRoutingResponse([]string{remotePID.Pretty()})
+			if len(bytes) > 0 {
+				msg := newP2PMessage(pm.config.ChainID, RoutingTableResponse, pm.config.Version, defaultReservedFlag, bytes)
+				s.Write(msg.content())
+			}
+			time.AfterFunc(time.Second, func() { s.Conn().Close() })
 			return
 		}
-		pm.kickNormalNeighbors(initiative)
+		pm.kickNormalNeighbors(outbound)
 	}
-	pm.AddNeighbor(NewPeer(s, pm, initiative))
+	pm.AddNeighbor(NewPeer(s, pm, outbound))
 	return
 
 }
@@ -294,7 +327,7 @@ func (pm *PeerManager) AddNeighbor(p *Peer) {
 		p.Start()
 		pm.storePeerInfo(p.id, []multiaddr.Multiaddr{p.addr})
 		pm.neighbors[p.id] = p
-		pm.neighborCount[p.initiative]++
+		pm.neighborCount[p.direction]++
 	}
 }
 
@@ -309,7 +342,7 @@ func (pm *PeerManager) RemoveNeighbor(peerID peer.ID) {
 	if p != nil {
 		p.Stop()
 		delete(pm.neighbors, peerID)
-		pm.neighborCount[p.initiative]--
+		pm.neighborCount[p.direction]--
 	}
 }
 
@@ -342,26 +375,26 @@ func (pm *PeerManager) AllNeighborCount() int {
 }
 
 // NeighborCount returns the special neighbor amount.
-func (pm *PeerManager) NeighborCount(initiative bool) int {
+func (pm *PeerManager) NeighborCount(direction connDirection) int {
 	pm.neighborMutex.RLock()
 	defer pm.neighborMutex.RUnlock()
 
-	return pm.neighborCount[initiative]
+	return pm.neighborCount[direction]
 }
 
 // kickNormalNeighbors removes neighbors that are not block producers.
-func (pm *PeerManager) kickNormalNeighbors(initiative bool) {
+func (pm *PeerManager) kickNormalNeighbors(direction connDirection) {
 	pm.neighborMutex.Lock()
 	defer pm.neighborMutex.Unlock()
 
 	for _, p := range pm.neighbors {
-		if pm.neighborCount[initiative] < pm.neighborCap[initiative] {
+		if pm.neighborCount[direction] < pm.neighborCap[direction] {
 			return
 		}
-		if initiative == p.initiative && !pm.isBP(p.id) {
+		if direction == p.direction && !pm.isBP(p.id) {
 			p.Stop()
 			delete(pm.neighbors, p.id)
-			pm.neighborCount[initiative]--
+			pm.neighborCount[direction]--
 		}
 	}
 }
@@ -433,15 +466,15 @@ func (pm *PeerManager) routingQuery(ids []string) {
 	}
 
 	pm.Broadcast(bytes, RoutingTableQuery, UrgentMessage, true)
-	initiativeNeighborCount := pm.NeighborCount(true)
-	if initiativeNeighborCount >= pm.neighborCap[true] {
+	outboundNeighborCount := pm.NeighborCount(outbound)
+	if outboundNeighborCount >= pm.neighborCap[outbound] {
 		return
 	}
 	allPeerIDs := pm.routingTable.ListPeers()
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	perm := r.Perm(len(allPeerIDs))
 
-	for i, t := 0, 0; i < len(perm) && t < pm.neighborCap[true]-initiativeNeighborCount; i++ {
+	for i, t := 0, 0; i < len(perm) && t < pm.neighborCap[outbound]-outboundNeighborCount; i++ {
 		peerID := allPeerIDs[perm[i]]
 		if peerID == pm.host.ID() {
 			continue
@@ -455,7 +488,7 @@ func (pm *PeerManager) routingQuery(ids []string) {
 			pm.deletePeerInfo(peerID)
 			continue
 		}
-		pm.HandleStream(stream, true)
+		pm.HandleStream(stream, outbound)
 		pm.SendToPeer(peerID, bytes, RoutingTableQuery, UrgentMessage, true)
 		t++
 	}
@@ -526,19 +559,8 @@ func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 	}
 }
 
-// handleRoutingTableQuery picks the nearest peers of the given peerIDs and sends the result to it.
-func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, peerID peer.ID) {
-	ilog.Debug("handling routing table query.")
-	data, _ := msg.data()
-
-	query := &p2pb.RoutingQuery{}
-	err := query.Unmarshal(data)
-	if err != nil {
-		ilog.Errorf("pb decode failed. err=%v, str=%s", err, data)
-		return
-	}
-
-	queryIDs := query.GetIds()
+func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
+	queryIDs := peerIDs
 	if len(queryIDs) > maxPeerQuery {
 		queryIDs = queryIDs[:maxPeerQuery]
 	}
@@ -570,14 +592,33 @@ func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, peerID peer.ID) 
 		}
 	}
 	if len(resp.Peers) == 0 {
-		return
+		return []byte{}, nil
 	}
 	bytes, err := resp.Marshal()
 	if err != nil {
 		ilog.Errorf("pb encode failed. err=%v, obj=%+v", err, resp)
+		return nil, err
+	}
+	return bytes, nil
+}
+
+// handleRoutingTableQuery picks the nearest peers of the given peerIDs and sends the result to it.
+func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, peerID peer.ID) {
+	ilog.Debug("handling routing table query.")
+	data, _ := msg.data()
+
+	query := &p2pb.RoutingQuery{}
+	err := query.Unmarshal(data)
+	if err != nil {
+		ilog.Errorf("pb decode failed. err=%v, str=%s", err, data)
 		return
 	}
-	pm.SendToPeer(peerID, bytes, RoutingTableResponse, UrgentMessage, true)
+
+	queryIDs := query.GetIds()
+	bytes, _ := pm.getRoutingResponse(queryIDs)
+	if len(bytes) > 0 {
+		pm.SendToPeer(peerID, bytes, RoutingTableResponse, UrgentMessage, true)
+	}
 }
 
 // handleRoutingTableResponse stores the peer information received.
@@ -649,9 +690,38 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 // NeighborStat dumps neighbors' status for debug.
 func (pm *PeerManager) NeighborStat() map[string]interface{} {
 	ret := make(map[string]interface{})
+
+	blackIPs := make([]string, 0)
+	blackPIDs := make([]string, 0)
+	pm.blackMutex.RLock()
+	defer pm.blackMutex.RUnlock()
+	for ip := range pm.blackIPs {
+		blackIPs = append(blackIPs, ip)
+	}
+	for id := range pm.blackPIDs {
+		blackPIDs = append(blackPIDs, id)
+	}
+	ret["black_ips"] = blackIPs
+	ret["black_pids"] = blackPIDs
+
+	in := make([]string, 0)
+	out := make([]string, 0)
+	for _, p := range pm.GetAllNeighbors() {
+		addr := p.addr.String() + "/ipfs/" + p.ID()
+		if p.direction == inbound {
+			in = append(in, addr)
+		} else {
+			out = append(out, addr)
+		}
+	}
+	ret["neighbors"] = map[string]interface{}{
+		"outbound": out,
+		"inbound":  in,
+	}
+
 	ret["neighbor_count"] = map[string]interface{}{
-		"initiative": pm.NeighborCount(true),
-		"passive":    pm.NeighborCount(false),
+		"outbound": pm.NeighborCount(outbound),
+		"inbound":  pm.NeighborCount(inbound),
 	}
 
 	/*  for _, p := range pm.GetAllNeighbors() { */
@@ -661,4 +731,49 @@ func (pm *PeerManager) NeighborStat() map[string]interface{} {
 	/* } */
 
 	return ret
+}
+
+// PutPeerToBlack puts the peer's PID and IP to black list and close the connection.
+func (pm *PeerManager) PutPeerToBlack(id string) {
+	pid, err := peer.IDB58Decode(id)
+	if err != nil {
+		ilog.Warnf("decode peerID failed. err=%v, id=%v", err, id)
+		return
+	}
+	pm.RemoveNeighbor(pid)
+	pm.PutPIDToBlack(pid)
+}
+
+// PutPIDToBlack puts the PID and corresponding ip to black list.
+func (pm *PeerManager) PutPIDToBlack(pid peer.ID) {
+	pm.blackMutex.Lock()
+	pm.blackPIDs[pid.Pretty()] = true
+	pm.blackMutex.Unlock()
+
+	for _, ma := range pm.peerStore.Addrs(pid) {
+		ip := getIPFromMa(ma.String())
+		if len(ip) > 0 {
+			pm.PutIPToBlack(ip)
+		}
+	}
+}
+
+// PutIPToBlack puts the ip to black list.
+func (pm *PeerManager) PutIPToBlack(ip string) {
+	pm.blackMutex.Lock()
+	pm.blackIPs[ip] = true
+	pm.blackMutex.Unlock()
+}
+
+func (pm *PeerManager) isStreamBlack(s libnet.Stream) bool {
+	pid := s.Conn().RemotePeer()
+	pm.blackMutex.RLock()
+	defer pm.blackMutex.RUnlock()
+
+	if pm.blackPIDs[pid.Pretty()] {
+		return true
+	}
+	ma := s.Conn().RemoteMultiaddr().String()
+	ip := getIPFromMa(ma)
+	return pm.blackIPs[ip]
 }

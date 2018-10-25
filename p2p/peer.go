@@ -27,8 +27,6 @@ const (
 	bloomErrRate      = 0.001
 
 	msgChanSize = 1024
-
-	streamPoolCap = 10
 )
 
 // Peer represents a neighbor which we connect directily.
@@ -52,14 +50,14 @@ type Peer struct {
 	urgentMsgCh chan *p2pMessage
 	normalMsgCh chan *p2pMessage
 
-	initiative bool
+	direction connDirection
 
 	quitWriteCh chan struct{}
 	once        sync.Once
 }
 
 // NewPeer returns a new instance of Peer struct.
-func NewPeer(stream libnet.Stream, pm *PeerManager, initiative bool) *Peer {
+func NewPeer(stream libnet.Stream, pm *PeerManager, direction connDirection) *Peer {
 	peer := &Peer{
 		id:          stream.Conn().RemotePeer(),
 		addr:        stream.Conn().RemoteMultiaddr(),
@@ -70,7 +68,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager, initiative bool) *Peer {
 		urgentMsgCh: make(chan *p2pMessage, msgChanSize),
 		normalMsgCh: make(chan *p2pMessage, msgChanSize),
 		quitWriteCh: make(chan struct{}),
-		initiative:  initiative,
+		direction:   direction,
 	}
 	go peer.readLoop(stream)
 	return peer

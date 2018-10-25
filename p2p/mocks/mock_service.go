@@ -93,6 +93,16 @@ func (mr *MockServiceMockRecorder) NeighborStat() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NeighborStat", reflect.TypeOf((*MockService)(nil).NeighborStat))
 }
 
+// PutPeerToBlack mocks base method
+func (m *MockService) PutPeerToBlack(arg0 string) {
+	m.ctrl.Call(m, "PutPeerToBlack", arg0)
+}
+
+// PutPeerToBlack indicates an expected call of PutPeerToBlack
+func (mr *MockServiceMockRecorder) PutPeerToBlack(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutPeerToBlack", reflect.TypeOf((*MockService)(nil).PutPeerToBlack), arg0)
+}
+
 // Register mocks base method
 func (m *MockService) Register(arg0 string, arg1 ...p2p.MessageType) chan p2p.IncomingMessage {
 	varargs := []interface{}{arg0}
