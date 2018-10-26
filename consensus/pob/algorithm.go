@@ -78,9 +78,6 @@ L:
 			ilog.Info("time up")
 			break L
 		default:
-			if txPool.ExistTxInChain(t.Hash(), head.Block) {
-				ilog.Infof("find tx in chain, %v, %v, %v", head.Number, head.Witness, common.Base58Encode(t.Hash()))
-			}
 			if !txPool.TxTimeOut(t) {
 				if receipt, err := engine.Exec(t, txExecTime); err == nil {
 					blk.Txs = append(blk.Txs, t)
@@ -111,6 +108,11 @@ L:
 	metricsGeneratedBlockCount.Add(1, nil)
 	metricsTxSize.Set(float64(len(blk.Txs)), nil)
 	go txPool.DelTxList(delList)
+	for _, t := range blk.Txs {
+		if txPool.ExistTxInChain(t.Hash(), head.Block) {
+			ilog.Infof("find tx in chain, %v, %v, %v", head.Number, head.Witness, common.Base58Encode(t.Hash()))
+		}
+	}
 	return &blk, nil
 }
 
