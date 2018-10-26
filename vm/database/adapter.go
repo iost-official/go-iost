@@ -22,16 +22,18 @@ func (c *chainbaseAdapter) Get(key string) (value string) {
 	value, err = c.cb.Get(StateTable, key)
 	if err != nil {
 		c.err = err
-		return "n"
+		return NilPrefix
 	}
 	if value == "" {
-		return "n"
+		return NilPrefix
 	}
 	return
 }
+
 func (c *chainbaseAdapter) Put(key, value string) {
 	c.err = c.cb.Put(StateTable, key, value)
 }
+
 func (c *chainbaseAdapter) Has(key string) bool {
 	ok, err := c.cb.Has(StateTable, key)
 	if err != nil {
