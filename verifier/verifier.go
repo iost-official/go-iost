@@ -138,7 +138,11 @@ L:
 			break L
 		}
 
-		isolator.PrepareTx(t, limit)
+		err = isolator.PrepareTx(t, limit)
+		if err != nil {
+			provider.Drop(t, err)
+			continue L
+		}
 
 		var r *tx.TxReceipt
 		r, err = isolator.Run()

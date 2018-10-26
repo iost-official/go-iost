@@ -6,10 +6,10 @@ class Account {
 
     }
     _saveAccount(account) {
-        BlockChain.mapPut("account", account.id, JSON.stringify(account))
+        storage.mapPut("account", account.id, JSON.stringify(account))
     }
     _loadAccount(id) {
-        let a = BlockChain.mapGet("account", id);
+        let a = storage.mapGet("account", id);
         return JSON.parse(a)
     }
 
@@ -118,5 +118,6 @@ class Account {
         acc.permissions[group] = undefined;
         this._saveAccount(acc)
     }
-
 }
+
+module.exports = Account;

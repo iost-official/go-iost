@@ -8,6 +8,8 @@ import (
 
 	"io/ioutil"
 
+	"encoding/json"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -126,6 +128,32 @@ func (j *JSTester) FlushDB(t *testing.T, keys []string) {
 	for _, k := range keys {
 		t.Logf("%s: %v", k, j.ReadDB(k))
 	}
+}
+
+func Compile(id, src, abi string) (*contract.Contract, error) {
+	bs, err := ReadFile(src + ".js")
+	if err != nil {
+		return nil, err
+	}
+	code := string(bs)
+
+	as, err := ReadFile(abi + ".abi")
+	if err != nil {
+		return nil, err
+	}
+
+	var info contract.Info
+	err = json.Unmarshal(as, &info)
+	if err != nil {
+		return nil, err
+	}
+	c := contract.Contract{
+		ID:   id,
+		Info: &info,
+		Code: code,
+	}
+
+	return &c, nil
 }
 
 func (j *JSTester) SetJS(code string) {
@@ -392,5 +420,34 @@ func TestDomain(t *testing.T) {
 	js.vi.Commit()
 	js.Call("iost.domain", "Link", fmt.Sprintf(`["abcde","%v"]`, js.cname))
 	js.Call("abcde", "read", "[]")
+
+}
+
+func array2json(ss []interface{}) string {
+	x, err := json.Marshal(ss)
+	if err != nil {
+		panic(err)
+	}
+	return string(x)
+}
+
+func TestAuthority(t *testing.T) {
+	js := NewJSTester(t)
+	defer js.Clear()
+
+	ca, err := Compile("iost.auth", "../contract/account", "../contract/account.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.vi.SetContract(ca)
+	js.vi.Commit()
+	js.cname = "iost.auth"
+	Convey("test of Auth", t, func() {
+		js.Call("iost.auth", "SignUp", array2json([]interface{}{"myid", "okey", "akey"}))
+		So(js.ReadMap("account", "myid"), ShouldEqual, `{"id":"myid","permissions":{"active":{"name":"active","groups":[],"users":[{"id":"akey","is_key_pair":true}],"threshold":1},"owner":{"name":"owner","groups":[],"users":[{"id":"okey","is_key_pair":true}],"threshold":1}}}`)
+
+		js.Call("iost.auth", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}))
+		So(js.ReadMap("account", "myid"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"users":[],"threshold":1}`)
+	})
 
 }

@@ -4,39 +4,39 @@
   "abi": [
     {
       "name": "SignUp",
-      "args": ["string", "string", "string"] // ID, ownerKey, activeKey
+      "args": ["string", "string", "string"]
     },
     {
       "name": "AddPermission",
-      "args": ["string", "string", "number"] // ID, permission, threshold
+      "args": ["string", "string", "number"]
     },
     {
       "name": "DropPermission",
-      "args": ["string", "string"] // ID, permission, threshold
+      "args": ["string", "string"]
     },
     {
       "name": "AssignPermission",
-      "args": ["string", "string", "string","number"] // ID, permission, User, weight
+      "args": ["string", "string", "string","number"]
     },
     {
       "name": "AddGroup",
-      "args": ["string", "string"] // ID, Group
+      "args": ["string", "string"]
     },
     {
       "name": "AssignGroup",
-      "args": ["string", "string", "string", "number"] // ID, group, User...
+      "args": ["string", "string", "string", "number"]
     },
     {
       "name": "AddPermissionToGroup",
-      "args": ["string", "string", "string"] // ID, permission，group
+      "args": ["string", "string", "string"]
     },
     {
       "name": "DelPermissionInGroup",
-      "args": ["string", "string", "string"] // ID, permission，group
+      "args": ["string", "string", "string"]
     },
     {
       "name": "DropGroup",
-      "args": ["string", "string"] // ID, group
+      "args": ["string", "string"]
     }
   ]
 }
