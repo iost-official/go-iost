@@ -1,0 +1,42 @@
+{
+  "lang": "javascript",
+  "version": "1.0.0",
+  "abi": [
+    {
+      "name": "SignUp",
+      "args": ["string", "string", "string"] // ID, ownerKey, activeKey
+    },
+    {
+      "name": "AddPermission",
+      "args": ["string", "string", "number"] // ID, permission, threshold
+    },
+    {
+      "name": "DropPermission",
+      "args": ["string", "string"] // ID, permission, threshold
+    },
+    {
+      "name": "AssignPermission",
+      "args": ["string", "string", "string","number"] // ID, permission, User, weight
+    },
+    {
+      "name": "AddGroup",
+      "args": ["string", "string"] // ID, Group
+    },
+    {
+      "name": "AssignGroup",
+      "args": ["string", "string", "string", "number"] // ID, group, User...
+    },
+    {
+      "name": "AddPermissionToGroup",
+      "args": ["string", "string", "string"] // ID, permission，group
+    },
+    {
+      "name": "DelPermissionInGroup",
+      "args": ["string", "string", "string"] // ID, permission，group
+    },
+    {
+      "name": "DropGroup",
+      "args": ["string", "string"] // ID, group
+    },
+  ]
+}

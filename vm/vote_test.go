@@ -33,7 +33,7 @@ func TestJS1_Vote1(t *testing.T) {
 
 	js := NewJSTester(t)
 	defer js.Clear()
-	lc, err := ReadFile("../config/vote.js")
+	lc, err := ReadFile("../contract/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}

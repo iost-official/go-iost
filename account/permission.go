@@ -19,7 +19,7 @@ type Group struct {
 }
 type Permission struct {
 	Name      string   `json:"name"`
-	Groups    []*Group `json:"groups"`
+	Groups    []string `json:"groups"`
 	Users     []*User  `json:"users"`
 	Threshold int      `json:"threshold"`
 }

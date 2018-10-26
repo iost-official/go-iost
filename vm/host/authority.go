@@ -44,7 +44,11 @@ func (h *Authority) requireAuth(id, permission string, auth map[string]int) (boo
 
 	u := p.Users
 	for _, g := range p.Groups {
-		u = append(u, g.Users...)
+		grp, ok := a.Groups[g]
+		if !ok {
+			continue
+		}
+		u = append(u, grp.Users...)
 	}
 
 	var weight int
