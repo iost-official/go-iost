@@ -78,6 +78,9 @@ L:
 			ilog.Info("time up")
 			break L
 		default:
+			if txPool.ExistTxInChain(t.Hash(), head.Block) {
+				ilog.Infof("find tx in chain, %v, %v, %v", head.Number, head.Witness, common.Base58Encode(t.Hash()))
+			}
 			if !txPool.TxTimeOut(t) {
 				if receipt, err := engine.Exec(t, txExecTime); err == nil {
 					blk.Txs = append(blk.Txs, t)
@@ -153,12 +156,12 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	}
 	// check txs
 	var notFoundPending int64
-	ilog.Info("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, blk.HeadHash(), blk.Head.Witness[4:6])
+	ilog.Infof("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, blk.HeadHash(), blk.Head.Witness[4:6])
 	for _, tx := range blk.Txs {
 		exist := txPool.ExistTxs(tx.Hash(), parent)
 		switch exist {
 		case txpool.FoundChain:
-			ilog.Infof("FoundChain: %v", tx)
+			ilog.Infof("FoundChain: %v", tx, common.Base58Encode(tx.Hash()))
 			return errTxDup
 		case txpool.NotFound:
 			notFoundPending += 1

@@ -260,7 +260,7 @@ func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) FRet {
 	switch {
 	case pool.existTxInPending(hash):
 		r = FoundPending
-	case pool.existTxInChain(hash, chainBlock):
+	case pool.ExistTxInChain(hash, chainBlock):
 		r = FoundChain
 	default:
 		r = NotFound
@@ -328,7 +328,7 @@ func (pool *TxPImpl) findBlock(hash []byte) (*blockTx, bool) {
 	return nil, false
 }
 
-func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
+func (pool *TxPImpl) ExistTxInChain(txHash []byte, block *block.Block) bool {
 	if block == nil {
 		return false
 	}
@@ -430,6 +430,7 @@ func (pool *TxPImpl) updateForkChain(newHead *blockcache.BlockCacheNode) tFork {
 	pool.forkChain.OldHead, pool.forkChain.NewHead = pool.forkChain.NewHead, newHead
 	bcn, ok := pool.findForkBCN(pool.forkChain.NewHead, pool.forkChain.OldHead)
 	if ok {
+		ilog.Infof("find forkbcn:%v, %v", bcn.Number, bcn.Witness)
 		pool.forkChain.ForkBCN = bcn
 		return forkBCN
 	}
@@ -476,6 +477,7 @@ func (pool *TxPImpl) doChainChangeByForkBCN() {
 		if newHead == nil || newHead == forkBCN || slotToNSec(newHead.Block.Head.Time) < filterLimit {
 			break
 		}
+		ilog.Infof("delete tx from block: %v, %v", newHead.Block.Head.Number, newHead.Block.Head.Witness)
 		for _, t := range newHead.Block.Txs {
 			pool.DelTx(t.Hash())
 		}
