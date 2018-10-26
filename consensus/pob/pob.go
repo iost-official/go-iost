@@ -40,7 +40,7 @@ var (
 
 var (
 	blockReqTimeout = 3 * time.Second
-	continuousNum   = 4
+	continuousNum   = 1
 )
 
 type verifyBlockMessage struct {
