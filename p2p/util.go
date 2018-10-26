@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 
 var (
 	errInvalidMultiaddr = errors.New("invalid multiaddr string")
+
+	ipReg = regexp.MustCompile(`/((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))/`)
 )
 
 // isPortAvailable returns a flag indicating whether or not a TCP port is available.
@@ -39,4 +42,12 @@ func parseMultiaddr(s string) (peer.ID, multiaddr.Multiaddr, error) {
 		return "", nil, err
 	}
 	return peerID, addr, nil
+}
+
+func getIPFromMa(s string) string {
+	str := ipReg.FindString(s)
+	if len(str) > 2 {
+		return str[1 : len(str)-1]
+	}
+	return ""
 }

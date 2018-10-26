@@ -11,7 +11,6 @@ import (
 
 	"github.com/bitly/go-simplejson"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/libp2p/go-libp2p-peer"
 	"google.golang.org/grpc"
 
 	"github.com/iost-official/go-iost/common"
@@ -94,14 +93,12 @@ func (s *GRPCServer) GetNodeInfo(ctx context.Context, empty *empty.Empty) (*Node
 	if !ok {
 		return nil, fmt.Errorf("internal error: netService type conversion failed")
 	}
-	neighbors := netService.GetNeighbors()
 	res := &NodeInfoRes{}
 	res.Network = &NetworkInfo{}
 	res.Network.PeerInfo = make([]*PeerInfo, 0)
-	neighbors.Range(func(k, v interface{}) bool {
-		res.Network.PeerInfo = append(res.Network.PeerInfo, &PeerInfo{ID: k.(peer.ID).Pretty(), Addr: v.(*p2p.Peer).GetAddr()})
-		return true
-	})
+	for _, p := range netService.GetAllNeighbors() {
+		res.Network.PeerInfo = append(res.Network.PeerInfo, &PeerInfo{ID: p.ID(), Addr: p.Addr()})
+	}
 	res.Network.PeerCount = (int32)(len(res.Network.PeerInfo))
 	res.Network.ID = s.p2pService.ID()
 	res.GitHash = global.GitHash
