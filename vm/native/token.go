@@ -1,26 +1,26 @@
 package native
 
 import (
-	"github.com/iost-official/go-iost/vm/host"
-	"github.com/iost-official/go-iost/core/contract"
 	"errors"
-	"strconv"
-	"math"
 	"fmt"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/host"
+	"math"
+	"strconv"
 )
 
 var tokenABIs map[string]*abi
 
 // const prefix
 const (
-	TokenInfoMapPrefix = "TI"
+	TokenInfoMapPrefix    = "TI"
 	TokenBalanceMapPrefix = "TB"
-	IssuerMapField = "issuer"
-	SupplyMapField = "supply"
-	TotalSupplyMapField = "totalSupply"
-	CanTransferMapField = "canTransfer"
-	DefaultRateMapField = "defaultRate"
-	DecimalMapField = "decimal"
+	IssuerMapField        = "issuer"
+	SupplyMapField        = "supply"
+	TotalSupplyMapField   = "totalSupply"
+	CanTransferMapField   = "canTransfer"
+	DefaultRateMapField   = "defaultRate"
+	DecimalMapField       = "decimal"
 )
 
 func init() {
@@ -35,17 +35,17 @@ func init() {
 }
 
 func checkTokenExists(h *host.Host, tokenName string) (ok bool, cost *contract.Cost) {
-	exists, cost0 := h.MapHas(TokenInfoMapPrefix + tokenName, IssuerMapField)
+	exists, cost0 := h.MapHas(TokenInfoMapPrefix+tokenName, IssuerMapField)
 	return exists, cost0
 }
 
 func getBalance(h *host.Host, tokenName string, from string) (balance int64, cost *contract.Cost) {
 	balance = int64(0)
 	cost = contract.Cost0()
-	ok, cost0 := h.MapHas(TokenBalanceMapPrefix + from, tokenName)
+	ok, cost0 := h.MapHas(TokenBalanceMapPrefix+from, tokenName)
 	cost.AddAssign(cost0)
 	if ok {
-		tmp, cost0 := h.MapGet(TokenBalanceMapPrefix + from, tokenName)
+		tmp, cost0 := h.MapGet(TokenBalanceMapPrefix+from, tokenName)
 		cost.AddAssign(cost0)
 		balance = tmp.(int64)
 	}
@@ -53,13 +53,13 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 }
 
 func setBalance(h *host.Host, tokenName string, from string, balance int64) (cost *contract.Cost) {
-	cost = h.MapPut(TokenBalanceMapPrefix + from, tokenName, balance)
+	cost = h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance)
 	return cost
 }
 
 func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64, cost *contract.Cost, err error) {
 	// todo use fixed point number
-	decimal, cost := h.MapGet(TokenInfoMapPrefix + tokenName, DecimalMapField)
+	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
 	amountFloat, err := strconv.ParseFloat(amountStr, 64)
 	if err != nil {
 		return 0, cost, err
@@ -70,8 +70,8 @@ func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64
 
 func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, cost *contract.Cost) {
 	// todo use fixed point number
-	decimal, cost := h.MapGet(TokenInfoMapPrefix + tokenName, DecimalMapField)
-	amountStr = fmt.Sprintf("%.8f", float64(amount) / math.Pow10(int(decimal.(int64))))
+	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
+	amountStr = fmt.Sprintf("%.8f", float64(amount)/math.Pow10(int(decimal.(int64))))
 	return amountStr, cost
 }
 
@@ -106,23 +106,23 @@ var (
 			if decimal >= 19 {
 				return nil, cost, errors.New("invalid decimal")
 			}
-			if totalSupply > math.MaxInt64 / int64(math.Pow10(decimal)) {
+			if totalSupply > math.MaxInt64/int64(math.Pow10(decimal)) {
 				return nil, cost, errors.New("invalid totalSupply")
 			}
 			totalSupply *= int64(math.Pow10(decimal))
 
 			// put info
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, IssuerMapField, issuer)
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, IssuerMapField, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, TotalSupplyMapField, totalSupply)
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, TotalSupplyMapField, totalSupply)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, SupplyMapField, int64(0))
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, int64(0))
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, CanTransferMapField, true)
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, CanTransferMapField, true)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, DefaultRateMapField, "1.0")
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DefaultRateMapField, "1.0")
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, DecimalMapField, int64(decimal))
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DecimalMapField, int64(decimal))
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -145,11 +145,11 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
-			issuer, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, IssuerMapField)
+			issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, IssuerMapField)
 			cost.AddAssign(cost0)
-			supply, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, SupplyMapField)
+			supply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, SupplyMapField)
 			cost.AddAssign(cost0)
-			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, TotalSupplyMapField)
+			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, TotalSupplyMapField)
 			cost.AddAssign(cost0)
 
 			// check auth
@@ -170,12 +170,12 @@ var (
 			}
 
 			// check supply
-			if totalSupply.(int64) - supply.(int64) < amount {
+			if totalSupply.(int64)-supply.(int64) < amount {
 				return nil, cost, errors.New("supply too much")
 			}
 
 			// set supply, set balance
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, SupplyMapField, supply.(int64) + amount)
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+amount)
 			cost.AddAssign(cost0)
 
 			balance, cost0 := getBalance(h, tokenName, to)
@@ -294,12 +294,12 @@ var (
 			cost.AddAssign(cost0)
 
 			// set supply
-			tmp, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, SupplyMapField)
+			tmp, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, SupplyMapField)
 			supply := tmp.(int64)
 			cost.AddAssign(cost0)
 
 			supply -= amount
-			cost0 = h.MapPut(TokenInfoMapPrefix + tokenName, SupplyMapField, supply)
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply)
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -347,7 +347,7 @@ var (
 				return nil, cost, host.ErrTokenNotExists
 			}
 
-			supply, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, SupplyMapField)
+			supply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, SupplyMapField)
 			cost.AddAssign(cost0)
 			supplyStr, cost0 := genAmount(h, tokenName, supply.(int64))
 			cost.AddAssign(cost0)
@@ -371,7 +371,7 @@ var (
 				return nil, cost, host.ErrTokenNotExists
 			}
 
-			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, TotalSupplyMapField)
+			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, TotalSupplyMapField)
 			cost.AddAssign(cost0)
 			totalSupplyStr, cost0 := genAmount(h, tokenName, totalSupply.(int64))
 			cost.AddAssign(cost0)
