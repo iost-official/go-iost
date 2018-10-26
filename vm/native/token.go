@@ -212,6 +212,7 @@ var (
 			}
 
 			// check auth
+			// todo handle from is contract
 			ok, cost0 = h.RequireAuth(from)
 			cost.AddAssign(cost0)
 			if !ok {
