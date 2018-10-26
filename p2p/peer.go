@@ -299,7 +299,7 @@ func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool
 	select {
 	case ch <- msg:
 	default:
-		ilog.Errorf("sending message failed. channel is full. messagePriority=%d", mp)
+		//ilog.Errorf("sending message failed. channel is full. messagePriority=%d", mp)
 		return ErrMessageChannelFull
 	}
 	if msg.needDedup() {
