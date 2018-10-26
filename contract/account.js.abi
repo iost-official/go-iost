@@ -37,6 +37,6 @@
     {
       "name": "DropGroup",
       "args": ["string", "string"] // ID, group
-    },
+    }
   ]
 }
