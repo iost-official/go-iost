@@ -110,6 +110,7 @@ func (pool *TxPImpl) verifyWorkers() {
 		select {
 		case <-pool.quitGenerateMode:
 		}
+		pool.mu.Lock()
 		var t tx.Tx
 		err := t.Decode(v.Data())
 		if err != nil {
@@ -124,6 +125,7 @@ func (pool *TxPImpl) verifyWorkers() {
 			continue
 		}
 		pool.pendingTx.Add(&t)
+		pool.mu.Unlock()
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
 		//pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage)
 	}

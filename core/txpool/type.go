@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 )
 
@@ -123,6 +124,7 @@ func (st *SortedTxMap) Get(hash []byte) *tx.Tx {
 
 // Add adds a tx in SortedTxMap.
 func (st *SortedTxMap) Add(tx *tx.Tx) {
+	ilog.Info("add tx in txpool: %v", tx.Hash())
 	st.rw.Lock()
 	st.tree.Put(tx, true)
 	st.txMap[string(tx.Hash())] = tx
@@ -131,6 +133,7 @@ func (st *SortedTxMap) Add(tx *tx.Tx) {
 
 // Del deletes a tx in SortedTxMap.
 func (st *SortedTxMap) Del(hash []byte) {
+	ilog.Info("del tx in txpool: %v", hash)
 	st.rw.Lock()
 	defer st.rw.Unlock()
 
