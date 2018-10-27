@@ -1,5 +1,9 @@
 package database
 
+import (
+	"fmt"
+)
+
 const (
 	// IOSTPrefix prefix of iost
 	IOSTPrefix = "i-"
@@ -90,7 +94,7 @@ const (
 	gasRateSuffix       = "-gr"
 	gasLimitSuffix      = "-gl"
 	gasUpdateTimeSuffix = "-gt"
-	gasSuffix           = "-g"
+	gasStockSuffix      = "-gs"
 	gasPledgeSuffix     = "-gp"
 )
 
@@ -133,21 +137,23 @@ func (m *BalanceHandler) GetGasUpdateTime(name string) int64 {
 
 // SetGasUpdateTime ...
 func (m *BalanceHandler) SetGasUpdateTime(name string, t int64) {
+	fmt.Printf("set update time %d\n", t)
 	m.PutInt64(m.gasUpdateTimeKey(name), t)
 }
 
-func (m *BalanceHandler) gasKey(name string) string {
-	return IOSTPrefix + name + gasSuffix
+func (m *BalanceHandler) gasStockKey(name string) string {
+	return IOSTPrefix + name + gasStockSuffix
 }
 
-// GetGas ...
-func (m *BalanceHandler) GetGas(name string) int64 {
-	return m.GetInt64(m.gasKey(name))
+// GetGasStock ...
+func (m *BalanceHandler) GetGasStock(name string) int64 {
+	return m.GetInt64(m.gasStockKey(name))
 }
 
-// SetGas ...
-func (m *BalanceHandler) SetGas(name string, g int64) {
-	m.PutInt64(m.gasKey(name), g)
+// SetGasStock ...
+func (m *BalanceHandler) SetGasStock(name string, g int64) {
+	fmt.Printf("set stock %d\n", g)
+	m.PutInt64(m.gasStockKey(name), g)
 }
 
 func (m *BalanceHandler) gasPledgeKey(name string) string {
@@ -162,4 +168,23 @@ func (m *BalanceHandler) GetGasPledge(name string) int64 {
 // SetGasPledge ...
 func (m *BalanceHandler) SetGasPledge(name string, p int64) {
 	m.PutInt64(m.gasPledgeKey(name), p)
+}
+
+// CurrentTotalGas return current total gas
+func (m *BalanceHandler) CurrentTotalGas(name string, now int64) (result int64) {
+	result = m.GetGasStock(name)
+	fmt.Printf("stock %d\n", result)
+	gasUpdateTime := m.GetGasUpdateTime(name)
+	var timeDuration int64
+	if gasUpdateTime > 0 {
+		timeDuration = now - gasUpdateTime
+	}
+	rate := m.GetGasRate(name)
+	limit := m.GetGasLimit(name)
+	result += timeDuration * rate
+	fmt.Printf("result limit %d %d \n", result, limit)
+	if result > limit {
+		result = limit
+	}
+	return
 }

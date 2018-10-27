@@ -2,6 +2,7 @@ package vm
 
 import (
 	"errors"
+	"github.com/iost-official/go-iost/ilog"
 
 	"fmt"
 
@@ -12,6 +13,7 @@ import (
 )
 
 var (
+	// NOLINT
 	errABINotFound     = errors.New("abi not found")
 	errGasPriceIllegal = errors.New("gas price too big")
 )
@@ -41,13 +43,13 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 
 	c = h.DB().Contract(cid)
 	if c == nil {
-		return nil, nil, nil, errContractNotFound
+		return nil, nil, nil, fmt.Errorf("contract %s not found", cid)
 	}
 
 	abi = c.ABI(api)
 
 	if abi == nil {
-		return nil, nil, nil, errABINotFound
+		return nil, nil, nil, fmt.Errorf("abi %s not found", api)
 	}
 
 	args, err = unmarshalArgs(abi, jarg)
@@ -62,7 +64,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
 
 	if err != nil {
-		return nil, host.ABINotFoundCost, fmt.Errorf("\nprepare contract: %v", err)
+		return nil, host.ABINotFoundCost, fmt.Errorf("prepare contract: %v", err)
 	}
 
 	h.PushCtx()
@@ -79,6 +81,8 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 			panic(err)
 		}
 	}
+	ilog.Debugf("Context: %v", h.Context().String())
+	fmt.Printf("Context: %v\n", h.Context().String())
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
 
 	payment, ok := h.Context().GValue("abi_payment").(int)

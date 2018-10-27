@@ -16,6 +16,11 @@ func BonusABI() *contract.Contract {
 	return ABI("iost.bonus", bonusABIs)
 }
 
+// GasABI generate iost.gas abi and contract
+func GasABI() *contract.Contract {
+	return ABI("iost.gas", gasABIs)
+}
+
 // ABI generate native abis
 func ABI(id string, abi map[string]*abi) *contract.Contract {
 	c := &contract.Contract{

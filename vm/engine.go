@@ -25,6 +25,7 @@ const (
 )
 
 var (
+	// nolint
 	errContractNotFound = errors.New("contract not found")
 	errSetUpArgs        = errors.New("key does not exist")
 	errCannotPay        = errors.New("publisher's balance less than price * limit")

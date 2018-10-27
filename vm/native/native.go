@@ -53,6 +53,8 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 		a, ok = coinABIs[api]
 	case "iost.bonus":
 		a, ok = bonusABIs[api]
+	case "iost.gas":
+		a, ok = gasABIs[api]
 	}
 	if !ok {
 		ilog.Fatal("error", con.ID, api, systemABIs)

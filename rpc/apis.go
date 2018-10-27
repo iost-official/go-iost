@@ -305,8 +305,8 @@ func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*Get
 
 }
 
-// GetBalance get account balance
-func (s *GRPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBalanceRes, error) {
+// GetAccountInfo get account balance and gas etc
+func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*GetAccountRes, error) {
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -315,8 +315,10 @@ func (s *GRPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBa
 	} else {
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
-	return &GetBalanceRes{
+	gas := s.visitor.BalanceHandler.CurrentTotalGas(key.ID, s.bchain.Length())
+	return &GetAccountRes{
 		Balance: s.visitor.Balance(key.ID),
+		Gas:     gas,
 	}, nil
 }
 

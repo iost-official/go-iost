@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -108,6 +109,7 @@ func (st *SortedTxMap) Add(tx *tx.Tx) {
 	st.rw.Lock()
 	st.tree.Put(tx, true)
 	st.txMap[string(tx.Hash())] = tx
+	fmt.Printf("add tx %v\n", tx.String())
 	st.rw.Unlock()
 }
 

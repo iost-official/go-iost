@@ -1,9 +1,11 @@
 package host
 
 import (
+	"fmt"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // APIDelegate ...
@@ -38,6 +40,8 @@ func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
 func (h *APIDelegate) RequireAuth(pubkey string) (ok bool, cost *contract.Cost) {
 	authList := h.h.ctx.Value("auth_list")
 	i, ok := authList.(map[string]int)[pubkey]
+	ilog.Debugf("%v -> %v : %v %v\n", authList, pubkey, i, ok)
+	fmt.Println("auth", ok && i > 0)
 	return ok && i > 0, RequireAuthCost
 }
 

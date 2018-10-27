@@ -36,11 +36,11 @@ var balanceCmd = &cobra.Command{
 		}
 		//do some check for arg[0] here
 		id := args[0]
-		b, err := checkBalance(id)
+		info, err := GetAccountInfo(server, id, useLongestChain)
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println(float64(b)/1e8, "iost")
+		fmt.Println(float64(info.Balance)/1e8, "iost")
 	},
 }
 
@@ -61,20 +61,21 @@ func init() {
 	// balanceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func checkBalance(id string) (int64, error) {
+// GetAccountInfo return account info
+func GetAccountInfo(server string, id string, useLongestChain bool) (*rpc.GetAccountRes, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer conn.Close()
 	client := rpc.NewApisClient(conn)
-	req := rpc.GetBalanceReq{ID: id}
+	req := rpc.GetAccountReq{ID: id}
 	if useLongestChain {
 		req.UseLongestChain = true
 	}
-	value, err := client.GetBalance(context.Background(), &req)
+	value, err := client.GetAccountInfo(context.Background(), &req)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return value.Balance, nil
+	return value, nil
 }
