@@ -1,15 +1,15 @@
 package native
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"math"
-	"strconv"
-	"encoding/json"
-	"github.com/iost-official/go-iost/vm/database"
 	"sort"
+	"strconv"
 )
 
 var tokenABIs map[string]*abi
@@ -49,9 +49,10 @@ func setBalance(h *host.Host, tokenName string, from string, balance int64) (cos
 	return cost
 }
 
+// FreezeItem represents freezed balance, will unfreeze after Ftime
 type FreezeItem struct {
 	Amount int64
-	Ftime int64
+	Ftime  int64
 }
 
 func getBalance(h *host.Host, tokenName string, from string) (balance int64, cost *contract.Cost, err error) {
@@ -74,11 +75,11 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 	ntime, cost0 := h.BlockTime()
 	cost.AddAssign(cost0)
 
-	freezeJson, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
+	freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
 	cost.AddAssign(cost0)
 	freezeList := []FreezeItem{}
 
-	err = json.Unmarshal([]byte(freezeJson.(database.SerializedJSON)), &freezeList)
+	err = json.Unmarshal([]byte(freezeJSON.(database.SerializedJSON)), &freezeList)
 	cost.AddAssign(host.CommonOpCost(1))
 	if err != nil {
 		return balance, cost, err
@@ -92,7 +93,7 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 	}
 	cost.AddAssign(host.CommonOpCost(i))
 
-	if addBalance > 0{
+	if addBalance > 0 {
 		balance += addBalance
 		cost0 = setBalance(h, tokenName, from, balance)
 		cost.AddAssign(cost0)
@@ -100,12 +101,12 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 
 	if i > 0 {
 		freezeList = freezeList[i:]
-		freezeJson, err = json.Marshal(freezeList)
+		freezeJSON, err = json.Marshal(freezeList)
 		cost.AddAssign(host.CommonOpCost(1))
 		if err != nil {
 			return balance, cost, err
 		}
-		cost0 = h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJson.([]byte)))
+		cost0 = h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON.([]byte)))
 		cost.AddAssign(cost0)
 	}
 
@@ -116,9 +117,9 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 	ok, cost := h.MapHas(TokenFreezeMapPrefix+from, tokenName)
 	freezeList := []FreezeItem{}
 	if ok {
-		freezeJson, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
+		freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
 		cost.AddAssign(cost0)
-		err = json.Unmarshal([]byte(freezeJson.(database.SerializedJSON)), &freezeList)
+		err = json.Unmarshal([]byte(freezeJSON.(database.SerializedJSON)), &freezeList)
 		cost.AddAssign(host.CommonOpCost(1))
 		if err != nil {
 			return cost, err
@@ -132,12 +133,12 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 	})
 	cost.AddAssign(host.CommonOpCost(len(freezeList)))
 
-	freezeJson, err := json.Marshal(freezeList)
+	freezeJSON, err := json.Marshal(freezeList)
 	cost.AddAssign(host.CommonOpCost(1))
 	if err != nil {
 		return cost, nil
 	}
-	cost0 := h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJson))
+	cost0 := h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON))
 	cost.AddAssign(cost0)
 
 	return cost, nil
