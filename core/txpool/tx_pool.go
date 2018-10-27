@@ -114,14 +114,17 @@ func (pool *TxPImpl) verifyWorkers() {
 		var t tx.Tx
 		err := t.Decode(v.Data())
 		if err != nil {
+			pool.mu.Unlock()
 			continue
 		}
 		ret := pool.verifyDuplicate(&t)
 		if ret != Success {
+			pool.mu.Unlock()
 			continue
 		}
 		ret = pool.verifyTx(&t)
 		if ret != Success {
+			pool.mu.Unlock()
 			continue
 		}
 		pool.pendingTx.Add(&t)

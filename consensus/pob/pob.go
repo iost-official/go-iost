@@ -303,11 +303,13 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Duration(nextSchedule)):
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
+				ilog.Infof("Mode: %v", p.baseVariable.Mode())
 				if p.baseVariable.Mode() == global.ModeNormal {
 					generateBlockTicker := time.NewTicker(time.Millisecond * 100)
 					num := 0
 					for {
 						p.txPool.Lock()
+						ilog.Infof("successfully get lock")
 						blk, err := generateBlock(p.account, p.txPool, p.produceDB)
 						p.txPool.Release()
 						if err != nil {
