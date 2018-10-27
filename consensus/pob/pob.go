@@ -312,6 +312,7 @@ func (p *PoB) scheduleLoop() {
 						p.txPool.Lock()
 						ilog.Infof("successfully get lock")
 						blk, err := generateBlock(p.account, p.txPool, p.produceDB)
+						ilog.Infof("end of generateBlock")
 						p.txPool.Release()
 						ilog.Infof("end of release")
 						if err != nil {
