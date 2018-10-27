@@ -29,6 +29,7 @@ var (
 	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
 	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
 	metricsGenerateBlockTimeCost = metrics.NewGauge("iost_generate_block_time_cost", nil)
+	metricsHeadTxsCount          = metrics.NewGauge("iost_head_txs_count", nil)
 )
 
 var (
@@ -40,7 +41,7 @@ var (
 
 var (
 	blockReqTimeout = 3 * time.Second
-	continuousNum   = 5
+	continuousNum   = 2
 )
 
 type verifyBlockMessage struct {
@@ -312,16 +313,20 @@ func (p *PoB) scheduleLoop() {
 						ilog.Infof("successfully get lock")
 						blk, err := generateBlock(p.account, p.txPool, p.produceDB)
 						p.txPool.Release()
+						ilog.Infof("end of release")
 						if err != nil {
 							ilog.Error(err)
 							continue
 						}
+						ilog.Infof("start to encode")
 						blkByte, err := blk.Encode()
 						if err != nil {
 							ilog.Error(err.Error())
 							continue
 						}
+						ilog.Infof("start to broadcast")
 						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
+						ilog.Infof("end of broadcast")
 						ilog.Infof("[pob] generate block time cost: %v", calculateTime(blk))
 						metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
 						if num == continuousNum-1 {
@@ -353,6 +358,7 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
+	metricsHeadTxsCount.Set(float64(len(blk.Txs)), nil)
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
