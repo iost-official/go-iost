@@ -28,6 +28,18 @@ var (
 	metricsWriteStreamTimeCost   = metrics.NewGauge("iost_write_stream_time_cost", nil)
 	metricsGetStreamStartTime    = metrics.NewGauge("iost_get_stream_start_time", nil)
 	metricsWriteStreamStartTime  = metrics.NewGauge("iost_write_stream_start_time", nil)
+
+	id2Node = map[string]string{
+		"12D3KooWET6Hb5xYm2HkoqDUj5PAH4YDNvi8tmxVuoEFhq8GyWdq": "node01",
+		"12D3KooWCiySXaC9rxLcmdatptEbWRJkLRWZbCR7vXkvWAQc7Qit": "node02",
+		"12D3KooWDEaC2moDFZM444AViJ4qw4bRYJrMHf5rAPi6MkhxCtu6": "node03",
+		"12D3KooWS49zFyryuovXMJB4QD9ggS9Rj7aQuY8ArDiJTHu926Hz": "node04",
+		"12D3KooWRKQQL1AaafaYTwS8gFDFURuaQA65FWTiGC4pjxwM7mko": "node05",
+		"12D3KooWPUbYHZvcXv825FwDAtyyzaMNGnLHzwctXCFt4z5DgnYi": "node06",
+		"12D3KooWHHuSZBKb7Fq4AZa7YPHajWHTvRidwZ3McBk3TAJbtF58": "node07",
+		"12D3KooWCKC6YNr9nZbVqNesofJscb4oruUnP3yHkzxeomW24k5v": "node08",
+		"12D3KooWPXZomMoouWgFuUw4guGqKxAtnwboM61XkgEwjo17zD2c": "node09",
+	}
 )
 
 const (
@@ -280,9 +292,13 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 
 		sendingTime := binary.BigEndian.Uint64(data[dataBegin+length:])
 		latency := time.Now().UnixNano() - int64(sendingTime)
+		nodeNum := id2Node[p.id.Pretty()]
+		if nodeNum == "" {
+			nodeNum = p.id.Pretty()
+		}
 		latencyGauge.Set(float64(latency), map[string]string{
 			"mtype": msg.messageType().String(),
-			"from":  p.id.Pretty(),
+			"from":  nodeNum,
 		})
 
 		p.handleMessage(msg)
