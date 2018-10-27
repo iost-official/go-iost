@@ -7,6 +7,9 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 	"math"
 	"strconv"
+	"encoding/json"
+	"github.com/iost-official/go-iost/vm/database"
+	"sort"
 )
 
 var tokenABIs map[string]*abi
@@ -15,6 +18,7 @@ var tokenABIs map[string]*abi
 const (
 	TokenInfoMapPrefix    = "TI"
 	TokenBalanceMapPrefix = "TB"
+	TokenFreezeMapPrefix  = "TF"
 	IssuerMapField        = "issuer"
 	SupplyMapField        = "supply"
 	TotalSupplyMapField   = "totalSupply"
@@ -28,6 +32,7 @@ func init() {
 	register(&tokenABIs, createTokenABI)
 	register(&tokenABIs, issueTokenABI)
 	register(&tokenABIs, transferTokenABI)
+	register(&tokenABIs, transferFreezeTokenABI)
 	register(&tokenABIs, balanceOfTokenABI)
 	register(&tokenABIs, supplyTokenABI)
 	register(&tokenABIs, totalSupplyTokenABI)
@@ -39,7 +44,17 @@ func checkTokenExists(h *host.Host, tokenName string) (ok bool, cost *contract.C
 	return exists, cost0
 }
 
-func getBalance(h *host.Host, tokenName string, from string) (balance int64, cost *contract.Cost) {
+func setBalance(h *host.Host, tokenName string, from string, balance int64) (cost *contract.Cost) {
+	cost = h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance)
+	return cost
+}
+
+type FreezeItem struct {
+	Amount int64
+	Ftime int64
+}
+
+func getBalance(h *host.Host, tokenName string, from string) (balance int64, cost *contract.Cost, err error) {
 	balance = int64(0)
 	cost = contract.Cost0()
 	ok, cost0 := h.MapHas(TokenBalanceMapPrefix+from, tokenName)
@@ -49,12 +64,83 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 		cost.AddAssign(cost0)
 		balance = tmp.(int64)
 	}
-	return balance, cost
+
+	ok, cost0 = h.MapHas(TokenFreezeMapPrefix+from, tokenName)
+	cost.AddAssign(cost0)
+	if !ok {
+		return balance, cost, nil
+	}
+
+	ntime, cost0 := h.BlockTime()
+	cost.AddAssign(cost0)
+
+	freezeJson, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
+	cost.AddAssign(cost0)
+	freezeList := []FreezeItem{}
+
+	err = json.Unmarshal([]byte(freezeJson.(database.SerializedJSON)), &freezeList)
+	cost.AddAssign(host.CommonOpCost(1))
+	if err != nil {
+		return balance, cost, err
+	}
+
+	addBalance := int64(0)
+	i := 0
+	for i < len(freezeList) && freezeList[i].Ftime <= ntime {
+		addBalance += freezeList[i].Amount
+		i++
+	}
+	cost.AddAssign(host.CommonOpCost(i))
+
+	if addBalance > 0{
+		balance += addBalance
+		cost0 = setBalance(h, tokenName, from, balance)
+		cost.AddAssign(cost0)
+	}
+
+	if i > 0 {
+		freezeList = freezeList[i:]
+		freezeJson, err = json.Marshal(freezeList)
+		cost.AddAssign(host.CommonOpCost(1))
+		if err != nil {
+			return balance, cost, err
+		}
+		cost0 = h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJson.([]byte)))
+		cost.AddAssign(cost0)
+	}
+
+	return balance, cost, nil
 }
 
-func setBalance(h *host.Host, tokenName string, from string, balance int64) (cost *contract.Cost) {
-	cost = h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance)
-	return cost
+func freezeBalance(h *host.Host, tokenName string, from string, balance int64, ftime int64) (cost *contract.Cost, err error) {
+	ok, cost := h.MapHas(TokenFreezeMapPrefix+from, tokenName)
+	freezeList := []FreezeItem{}
+	if ok {
+		freezeJson, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
+		cost.AddAssign(cost0)
+		err = json.Unmarshal([]byte(freezeJson.(database.SerializedJSON)), &freezeList)
+		cost.AddAssign(host.CommonOpCost(1))
+		if err != nil {
+			return cost, err
+		}
+	}
+
+	freezeList = append(freezeList, FreezeItem{balance, ftime})
+	sort.Slice(freezeList, func(i, j int) bool {
+		return freezeList[i].Ftime < freezeList[j].Ftime ||
+			freezeList[i].Ftime == freezeList[j].Ftime && freezeList[i].Amount < freezeList[j].Amount
+	})
+	cost.AddAssign(host.CommonOpCost(len(freezeList)))
+
+	freezeJson, err := json.Marshal(freezeList)
+	cost.AddAssign(host.CommonOpCost(1))
+	if err != nil {
+		return cost, nil
+	}
+	cost0 := h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJson))
+	cost.AddAssign(cost0)
+
+	return cost, nil
 }
 
 func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64, cost *contract.Cost, err error) {
@@ -178,7 +264,11 @@ var (
 			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+amount)
 			cost.AddAssign(cost0)
 
-			balance, cost0 := getBalance(h, tokenName, to)
+			balance, cost0, err := getBalance(h, tokenName, to)
+			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 			cost.AddAssign(cost0)
 
 			balance += amount
@@ -230,10 +320,16 @@ var (
 			}
 
 			// set balance
-			fbalance, cost0 := getBalance(h, tokenName, from)
+			fbalance, cost0, err := getBalance(h, tokenName, from)
 			cost.AddAssign(cost0)
-			tbalance, cost0 := getBalance(h, tokenName, to)
+			if err != nil {
+				return nil, cost, err
+			}
+			tbalance, cost0, err := getBalance(h, tokenName, to)
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 			if fbalance < amount {
 				return nil, cost, host.ErrBalanceNotEnough
 			}
@@ -245,6 +341,68 @@ var (
 			cost.AddAssign(cost0)
 			cost0 = setBalance(h, tokenName, from, fbalance)
 			cost.AddAssign(cost0)
+
+			return []interface{}{}, cost, nil
+		},
+	}
+
+	transferFreezeTokenABI = &abi{
+		name: "transferFreeze",
+		args: []string{"string", "string", "string", "string", "number"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			cost = contract.Cost0()
+			cost.AddAssign(host.CommonOpCost(1))
+			tokenName := args[0].(string)
+			from := args[1].(string)
+			to := args[2].(string)
+			amountStr := args[3].(string)
+			ftime := args[4].(int64)
+
+			// get token info
+			ok, cost0 := checkTokenExists(h, tokenName)
+			cost.AddAssign(cost0)
+			if !ok {
+				return nil, cost, host.ErrTokenNotExists
+			}
+
+			// check auth
+			// todo handle from is contract
+			ok, cost0 = h.RequireAuth(from)
+			cost.AddAssign(cost0)
+			if !ok {
+				return nil, cost, host.ErrPermissionLost
+			}
+
+			// get amount by fixed point number
+			amount, cost0, err := parseAmount(h, tokenName, amountStr)
+			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
+			if amount <= 0 {
+				return nil, cost, host.ErrInvalidAmount
+			}
+
+			// sub balance of from
+			fbalance, cost0, err := getBalance(h, tokenName, from)
+			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
+			if fbalance < amount {
+				return nil, cost, host.ErrBalanceNotEnough
+			}
+
+			fbalance -= amount
+			cost0 = setBalance(h, tokenName, from, fbalance)
+			cost.AddAssign(cost0)
+
+			// freeze token of to
+			cost0, err = freezeBalance(h, tokenName, to, amount, ftime)
+			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			return []interface{}{}, cost, nil
 		},
@@ -285,8 +443,11 @@ var (
 			}
 
 			// set balance
-			fbalance, cost0 := getBalance(h, tokenName, from)
+			fbalance, cost0, err := getBalance(h, tokenName, from)
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 			if fbalance < amount {
 				return nil, cost, host.ErrBalanceNotEnough
 			}
@@ -323,8 +484,11 @@ var (
 				return nil, cost, host.ErrTokenNotExists
 			}
 
-			balance, cost0 := getBalance(h, tokenName, to)
+			balance, cost0, err := getBalance(h, tokenName, to)
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			balanceStr, cost0 := genAmount(h, tokenName, balance)
 			cost.AddAssign(cost0)
