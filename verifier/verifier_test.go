@@ -334,8 +334,8 @@ func TestGenesis(t *testing.T) {
 		acts = append(acts, &act)
 	}
 	// deploy iost.vote
-	voteFilePath := "../config/vote.js"
-	voteAbiPath := "../config/vote.js.abi"
+	voteFilePath := "../contract/vote.js"
+	voteAbiPath := "../contract/vote.js.abi"
 	fd, err := common.ReadFile(voteFilePath)
 	if err != nil {
 		t.Fatal(err)
