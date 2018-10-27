@@ -26,7 +26,7 @@ type Isolator struct {
 // Prepare Isolator
 func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *ilog.Logger) error {
 	if db.Contract("iost.system") == nil {
-		db.SetContract(native.ABI())
+		db.SetContract(native.SystemABI())
 	}
 
 	e.blockBaseCtx = host.NewContext(nil)

@@ -192,6 +192,21 @@ func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
 	return r
 }
 
+func (j *JSTester) Call(contract, abi, args string) *tx.TxReceipt {
+	act2 := tx.NewAction(contract, abi, args)
+
+	trx2, err := MakeTx(act2)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+
+	r, err := j.e.Exec(bh, j.mvccdb, trx2, time.Second)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+	return r
+}
+
 func (j *JSTester) TestJSWithAuth(abi, args, seckey string) *tx.TxReceipt {
 	act2 := tx.NewAction(j.cname, abi, args)
 
@@ -351,4 +366,31 @@ func TestGenesis(t *testing.T) {
 	vi := database.NewVisitor(0, mvccdb)
 	fmt.Println(vi.Get("iost.vote-" + "pendingBlockNumber"))
 	fmt.Println(vi.Balance(testID[0]))
+}
+
+func TestDomain(t *testing.T) {
+	js := NewJSTester(t)
+	defer js.Clear()
+
+	lc, err := ReadFile("../vm/test_data/database.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.SetJS(string(lc))
+	js.SetAPI("read")
+	js.SetAPI("change")
+	js.DoSet()
+	//t.Log("========= constructor")
+	Convey("test of js database", t, func() {
+		So(js.ReadDB("num").(string), ShouldEqual, "9")
+		So(js.ReadDB("string").(string), ShouldEqual, "hello")
+		So(js.ReadDB("bool").(string), ShouldEqual, "true")
+		So(js.ReadDB("array").(string), ShouldEqual, "[1,2,3]")
+		So(js.ReadDB("obj").(string), ShouldEqual, `{"foo":"bar"}`)
+	})
+	js.vi.SetContract(native.ABI("iost.domain", native.DomainABIs))
+	js.vi.Commit()
+	js.Call("iost.domain", "Link", fmt.Sprintf(`["abcde","%v"]`, js.cname))
+	js.Call("abcde", "read", "[]")
+
 }

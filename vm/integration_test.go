@@ -37,7 +37,7 @@ var testID = []string{
 	"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4", "7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
 }
 
-var systemContract = native.ABI()
+var systemContract = native.SystemABI()
 
 func replaceDB(t *testing.T) database.IMultiValue {
 	ctl := gomock.NewController(t)
