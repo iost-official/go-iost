@@ -28,6 +28,7 @@ var (
 	errHeadHash    = errors.New("wrong head hash")
 	txLimit        = 80000 //limit it to 2000
 	txExecTime     = verifier.TxExecTimeLimit / 2
+	generateTxsNum = 0
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
@@ -106,7 +107,8 @@ L:
 	db.Tag(string(blk.HeadHash()))
 
 	metricsGeneratedBlockCount.Add(1, nil)
-	metricsTxSize.Set(float64(len(blk.Txs)), nil)
+	generateTxsNum += len(blk.Txs)
+	ilog.Infof("add %v", len(blk.Txs))
 	go txPool.DelTxList(delList)
 	//for _, t := range blk.Txs {
 	//	if txPool.ExistTxInChain(t.Hash(), head.Block) {

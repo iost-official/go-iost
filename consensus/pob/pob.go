@@ -29,7 +29,6 @@ var (
 	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
 	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
 	metricsGenerateBlockTimeCost = metrics.NewGauge("iost_generate_block_time_cost", nil)
-	metricsHeadTxsCount          = metrics.NewGauge("iost_head_txs_count", nil)
 )
 
 var (
@@ -308,6 +307,7 @@ func (p *PoB) scheduleLoop() {
 				if p.baseVariable.Mode() == global.ModeNormal {
 					generateBlockTicker := time.NewTicker(time.Millisecond * 100)
 					num := 0
+					generateTxsNum = 0
 					for {
 						p.txPool.Lock()
 						ilog.Infof("successfully get lock")
@@ -347,6 +347,8 @@ func (p *PoB) scheduleLoop() {
 						case <-generateBlockTicker.C:
 						}
 					}
+					ilog.Infof("total num: %v", generateTxsNum)
+					metricsTxSize.Set(float64(generateTxsNum), nil)
 					generateBlockTicker.Stop()
 				}
 			}
