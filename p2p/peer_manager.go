@@ -91,7 +91,7 @@ func (pm *PeerManager) Start() {
 	pm.routingQuery([]string{pm.host.ID().Pretty()})
 
 	go pm.dumpRoutingTableLoop()
-	//go pm.syncRoutingTableLoop()
+	go pm.syncRoutingTableLoop()
 	go pm.metricsStatLoop()
 	go pm.findBPLoop()
 
