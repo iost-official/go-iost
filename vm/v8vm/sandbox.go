@@ -12,7 +12,7 @@ int goBlockInfo(SandboxPtr, char **, size_t *);
 int goTxInfo(SandboxPtr, char **, size_t *);
 int goCall(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 int goCallWithReceipt(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
-int goRequireAuth(SandboxPtr, const char *, bool *, size_t *);
+int goRequireAuth(SandboxPtr, const char *, const char *, bool *, size_t *);
 int goGrantServi(SandboxPtr, const char *, const char *, size_t *);
 int goPut(SandboxPtr, const char *, const char *, size_t *);
 char *goGet(SandboxPtr, const char *, size_t *);

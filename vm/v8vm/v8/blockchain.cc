@@ -117,10 +117,10 @@ char *IOSTBlockchain::CallWithReceipt(const char *contract, const char *api, con
     return result;
 }
 
-bool IOSTBlockchain::RequireAuth(const char *pubKey) {
+bool IOSTBlockchain::RequireAuth(const char *pubKey, const char *permission) {
     size_t gasUsed = 0;
     bool ok = false;
-    int ret = CRequireAuth(sbxPtr, pubKey, &ok, &gasUsed);
+    int ret = CRequireAuth(sbxPtr, pubKey, permission, &ok, &gasUsed);
 
     Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
     sbx->gasUsed += gasUsed;
@@ -557,7 +557,7 @@ void IOSTBlockchain_requireAuth(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> self = args.Holder();
 
-    if (args.Length() != 1) {
+    if (args.Length() != 2) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTBlockchain_requireAuth invalid argument length")
         );
@@ -574,7 +574,17 @@ void IOSTBlockchain_requireAuth(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
+    Local<Value> permission = args[1];
+    if (!permission->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTBlockchain_requireAuth permission must be string")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
     String::Utf8Value pubKeyStr(pubKey);
+    String::Utf8Value permissionStr(permission);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -583,7 +593,7 @@ void IOSTBlockchain_requireAuth(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTBlockchain *bc = static_cast<IOSTBlockchain *>(extVal->Value());
-    bool ret = bc->RequireAuth(*pubKeyStr);
+    bool ret = bc->RequireAuth(*pubKeyStr, *permissionStr);
 
     args.GetReturnValue().Set(ret);
 }
