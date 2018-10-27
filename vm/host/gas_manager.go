@@ -47,7 +47,7 @@ func (g *GasManager) CostGas(name string, cost int64) error {
 	return nil
 }
 
-// Change ...
+// ChangeGas ...
 func (g *GasManager) ChangeGas(name string, gasStockDelta int64, rateDelta int64, limitDelta int64) error {
 	// pledge first time
 	if g.h.db.BalanceHandler.GetGasUpdateTime(name) == 0 {

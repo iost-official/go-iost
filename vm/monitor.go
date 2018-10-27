@@ -2,8 +2,6 @@ package vm
 
 import (
 	"errors"
-	"github.com/iost-official/go-iost/ilog"
-
 	"fmt"
 
 	"github.com/iost-official/go-iost/core/contract"
@@ -13,8 +11,6 @@ import (
 )
 
 var (
-	// NOLINT
-	errABINotFound     = errors.New("abi not found")
 	errGasPriceIllegal = errors.New("gas price too big")
 )
 
@@ -81,8 +77,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 			panic(err)
 		}
 	}
-	ilog.Debugf("Context: %v", h.Context().String())
-	fmt.Printf("Context: %v\n", h.Context().String())
 	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
 
 	payment, ok := h.Context().GValue("abi_payment").(int)

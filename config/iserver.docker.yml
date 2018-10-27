@@ -20,10 +20,10 @@ rpc:
 log:
   filelog:
     path: /var/lib/iserver/logs/
-    level: debug
+    level: info
     enable: true
   consolelog:
-    level: debug
+    level: info
     enable: true
   asyncwrite: true
 metrics:

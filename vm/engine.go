@@ -25,10 +25,8 @@ const (
 )
 
 var (
-	// nolint
-	errContractNotFound = errors.New("contract not found")
-	errSetUpArgs        = errors.New("key does not exist")
-	errCannotPay        = errors.New("publisher's balance less than price * limit")
+	errSetUpArgs = errors.New("key does not exist")
+	errCannotPay = errors.New("publisher's balance less than price * limit")
 )
 
 //go:generate mockgen -destination mock/engine_mock.go -package mock github.com/iost-official/go-iost/vm Engine

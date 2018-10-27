@@ -28,9 +28,6 @@ func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 	if db.Contract("iost.system") == nil {
 		db.SetContract(native.SystemABI())
 	}
-	if db.Contract("iost.gas") == nil {
-		db.SetContract(native.GasABI())
-	}
 
 	e.blockBaseCtx = host.NewContext(nil)
 	e.blockBaseCtx = loadBlkInfo(e.blockBaseCtx, bh)

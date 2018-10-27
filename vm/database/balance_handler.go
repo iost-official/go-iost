@@ -1,9 +1,5 @@
 package database
 
-import (
-	"fmt"
-)
-
 const (
 	// IOSTPrefix prefix of iost
 	IOSTPrefix = "i-"
@@ -137,7 +133,6 @@ func (m *BalanceHandler) GetGasUpdateTime(name string) int64 {
 
 // SetGasUpdateTime ...
 func (m *BalanceHandler) SetGasUpdateTime(name string, t int64) {
-	fmt.Printf("set update time %d\n", t)
 	m.PutInt64(m.gasUpdateTimeKey(name), t)
 }
 
@@ -152,7 +147,6 @@ func (m *BalanceHandler) GetGasStock(name string) int64 {
 
 // SetGasStock ...
 func (m *BalanceHandler) SetGasStock(name string, g int64) {
-	fmt.Printf("set stock %d\n", g)
 	m.PutInt64(m.gasStockKey(name), g)
 }
 
@@ -173,7 +167,6 @@ func (m *BalanceHandler) SetGasPledge(name string, p int64) {
 // CurrentTotalGas return current total gas
 func (m *BalanceHandler) CurrentTotalGas(name string, now int64) (result int64) {
 	result = m.GetGasStock(name)
-	fmt.Printf("stock %d\n", result)
 	gasUpdateTime := m.GetGasUpdateTime(name)
 	var timeDuration int64
 	if gasUpdateTime > 0 {
@@ -182,7 +175,6 @@ func (m *BalanceHandler) CurrentTotalGas(name string, now int64) (result int64) 
 	rate := m.GetGasRate(name)
 	limit := m.GetGasLimit(name)
 	result += timeDuration * rate
-	fmt.Printf("result limit %d %d \n", result, limit)
 	if result > limit {
 		result = limit
 	}
