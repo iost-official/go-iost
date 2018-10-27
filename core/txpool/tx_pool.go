@@ -110,13 +110,12 @@ func (pool *TxPImpl) verifyWorkers() {
 		select {
 		case <-pool.quitGenerateMode:
 		}
-		pool.mu.Lock()
 		var t tx.Tx
 		err := t.Decode(v.Data())
 		if err != nil {
-			pool.mu.Unlock()
 			continue
 		}
+		pool.mu.Lock()
 		ret := pool.verifyDuplicate(&t)
 		if ret != Success {
 			pool.mu.Unlock()
