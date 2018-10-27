@@ -361,7 +361,6 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
-	metricsHeadTxsCount.Set(float64(len(blk.Txs)), nil)
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
