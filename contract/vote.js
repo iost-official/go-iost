@@ -3,6 +3,8 @@ const producerRegisterFee = 1000 * 1000 * softFloatRate;
 const preProducerThreshold = 2100 * 10000;
 const voteLockTime = 200;
 const voteStatInterval = 200;
+const producerPermission = "active";
+const votePermission = "vote";
 
 class VoteContract {
     constructor() {
@@ -58,12 +60,12 @@ class VoteContract {
 
     can_update(data) {
         const admin = this._get("adminID");
-        this._requireAuth(admin);
+        this._requireAuth(admin, producerPermission);
         return true;
     }
 
-	_requireAuth(account) {
-		const ret = BlockChain.requireAuth(account);
+	_requireAuth(account, permission) {
+		const ret = BlockChain.requireAuth(account, permission);
 		if (ret !== true) {
 			throw new Error("require auth failed. ret = " + ret);
 		}
@@ -105,7 +107,7 @@ class VoteContract {
 
 	// register account as a producer, need to pledge token
     RegisterProducer(account, loc, url, netId) {
-		this._requireAuth(account);
+		this._requireAuth(account, producerPermission);
 		if (storage.mapHas("producerTable", account)) {
 			throw new Error("producer exists");
 		}
@@ -125,7 +127,7 @@ class VoteContract {
 
 	// update the information of a producer
     UpdateProducer(account, loc, url, netId) {
-		this._requireAuth(account);
+		this._requireAuth(account, producerPermission);
 		if (!storage.mapHas("producerTable", account)) {
 			throw new Error("producer not exists");
 		}
@@ -138,7 +140,7 @@ class VoteContract {
 
 	// producer log in as online state
     LogInProducer(account) {
-		this._requireAuth(account);
+		this._requireAuth(account, producerPermission);
         if (!storage.mapHas("producerTable", account)) {
 			throw new Error("producer not exists, " + account);
 		}
@@ -149,7 +151,7 @@ class VoteContract {
 
 	// producer log out as offline state
     LogOutProducer(account) {
-		this._requireAuth(account);
+		this._requireAuth(account, producerPermission);
         if (!storage.mapHas("producerTable", account)) {
 			throw new Error("producer not exists");
 		}
@@ -164,7 +166,7 @@ class VoteContract {
 
 	// remove account from producer list
 	UnregisterProducer(account) {
-		this._requireAuth(account);
+		this._requireAuth(account, producerPermission);
         if (!storage.mapHas("producerTable", account)) {
 			throw new Error("producer not exists");
 		}
@@ -185,7 +187,7 @@ class VoteContract {
 
 	// vote, need to pledge token
 	Vote(producer, voter, amount) {
-		this._requireAuth(voter);
+		this._requireAuth(voter, votePermission);
 		amount = Math.floor(amount);
 
         if (!storage.mapHas("producerTable", producer)) {
@@ -224,7 +226,7 @@ class VoteContract {
 	// unvote
 	Unvote(producer, voter, amount) {
         amount = Math.floor(amount);
-		this._requireAuth(voter);
+		this._requireAuth(voter, votePermission);
 
 		if (!storage.mapHas("voteTable", voter)) {
             throw new Error("producer not voted");

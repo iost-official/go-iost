@@ -23,6 +23,7 @@ class Account {
             users: [{
                 id: active,
                 is_key_pair: true,
+                weight: 1,
             }],
             threshold: 1,
         };
@@ -32,6 +33,7 @@ class Account {
             users: [{
                 id: owner,
                 is_key_pair: true,
+                weight: 1,
             }],
             threshold: 1,
         };
