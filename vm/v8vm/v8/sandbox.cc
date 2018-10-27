@@ -114,6 +114,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
 
     Local<ObjectTemplate> globalTpl = createGlobalTpl(isolate);
     Local<Context> context = Context::New(isolate, NULL, globalTpl);
+    context->AllowCodeGenerationFromStrings(false);
 
     Sandbox *sbx = new Sandbox();
     Local<Object> global = context->Global();
