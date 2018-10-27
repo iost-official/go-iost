@@ -184,7 +184,8 @@ func (p *Peer) write(m *p2pMessage) error {
 		return err
 	}
 	t3 := time.Now()
-	_, err = stream.Write(m.content())
+	_, err = stream.Write(m.setTime().content())
+
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
 		p.CloseStream(stream)
@@ -256,8 +257,9 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 			return
 		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
-		data := make([]byte, dataBegin+length)
-		_, err = io.ReadFull(stream, data[dataBegin:]) //0ms
+		// data := make([]byte, dataBegin+length)
+		data := make([]byte, dataBegin+length+8)
+		_, err = io.ReadFull(stream, data[dataBegin:])
 		if err != nil {
 			ilog.Warnf("read message failed. err=%v", err)
 			return
@@ -275,6 +277,13 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		tagkv := map[string]string{"mtype": msg.messageType().String()}
 		byteInCounter.Add(float64(len(msg.content())), tagkv)
 		packetInCounter.Add(1, tagkv)
+
+		sendingTime := binary.BigEndian.Uint64(data[dataBegin+length:])
+		latency := time.Now().UnixNano() - int64(sendingTime)
+		latencyGauge.Set(float64(latency), map[string]string{
+			"mtype": msg.messageType().String(),
+			"from":  p.id.Pretty(),
+		})
 
 		p.handleMessage(msg)
 	}

@@ -9,4 +9,6 @@ var (
 	packetOutCounter   = metrics.NewCounter("iost_p2p_packet_out", []string{"mtype"})
 	byteInCounter      = metrics.NewCounter("iost_p2p_bytes_in", []string{"mtype"})
 	packetInCounter    = metrics.NewCounter("iost_p2p_packet_in", []string{"mtype"})
+
+	latencyGauge = metrics.NewGauge("iost_p2p_latency", []string{"mtype", "from"})
 )
