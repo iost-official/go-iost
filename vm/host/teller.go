@@ -225,11 +225,13 @@ func (h *Teller) Privilege(id string) int {
 	return i
 }
 
+// FixPointNumber implements fixed point number for user of token balance
 type FixPointNumber struct {
 	Value   int64
 	Decimal int
 }
 
+// NewFixPointNumber generate FixPointNumber from string and decimal, will truncate if decimal is smaller
 func NewFixPointNumber(amount string, decimal int) (*FixPointNumber, bool) {
 	fpn := &FixPointNumber{Value: 0, Decimal: decimal}
 	if len(amount) == 0 || amount[0] == '.' {
@@ -260,6 +262,7 @@ func NewFixPointNumber(amount string, decimal int) (*FixPointNumber, bool) {
 	return fpn, true
 }
 
+// ToString generate string of FixPointNumber without post zero
 func (fpn *FixPointNumber) ToString() string {
 	val := fpn.Value
 	str := make([]byte, 0, 0)

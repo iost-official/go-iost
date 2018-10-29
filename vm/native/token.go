@@ -154,7 +154,7 @@ func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64
 
 func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, cost *contract.Cost) {
 	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
-	amountNumber := host.FixPointNumber{Value:amount, Decimal:int(decimal.(int64))}
+	amountNumber := host.FixPointNumber{Value: amount, Decimal: int(decimal.(int64))}
 	cost.AddAssign(host.CommonOpCost(1))
 	return amountNumber.ToString(), cost
 }
@@ -169,11 +169,11 @@ var (
 			tokenName := args[0].(string)
 			issuer := args[1].(string)
 			totalSupply := args[2].(int64)
-			configJson := []byte(args[3].(database.SerializedJSON))
+			configJSON := []byte(args[3].(database.SerializedJSON))
 
 			// config
 			config := make(map[string]interface{})
-			err = json.Unmarshal(configJson, &config)
+			err = json.Unmarshal(configJSON, &config)
 			cost.AddAssign(host.CommonOpCost(2))
 			if err != nil {
 				return nil, cost, err
@@ -327,7 +327,7 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
-			canTransfer, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, CanTransferMapField)
+			canTransfer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, CanTransferMapField)
 			cost.AddAssign(cost0)
 			if !(canTransfer.(bool)) {
 				return nil, cost, host.ErrTokenNoTransfer
@@ -396,7 +396,7 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
-			canTransfer, cost0 := h.MapGet(TokenInfoMapPrefix + tokenName, CanTransferMapField)
+			canTransfer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, CanTransferMapField)
 			cost.AddAssign(cost0)
 			if !(canTransfer.(bool)) {
 				return nil, cost, host.ErrTokenNoTransfer
