@@ -86,11 +86,12 @@ func publish() string {
 	acc, _ := account.NewAccount(loadBytes(rootKey), crypto.Ed25519)
 	codePath := "transfer.js"
 	abiPath := codePath + ".abi"
+	iwallet.SetServer("52.37.130.27:30002")
 	_, txHash, err := iwallet.PublishContract(codePath, abiPath, "", acc, 5, make([]string, 0), 10000, 1, false, "", true)
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(time.Duration(5) * time.Second)
+	time.Sleep(time.Duration(50) * time.Second)
 	client := rpc.NewApisClient(conns[0])
 	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpc.HashReq{Hash: common.Base58Encode(txHash)})
 	if err != nil {
