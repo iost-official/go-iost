@@ -16,6 +16,11 @@ func BonusABI() *contract.Contract {
 	return ABI("iost.bonus", bonusABIs)
 }
 
+// GasABI generate iost.gas abi and contract
+func GasABI() *contract.Contract {
+	return ABI("iost.gas", gasABIs)
+}
+
 // TokenABI generate iost.token abi and contract
 func TokenABI() *contract.Contract {
 	return ABI("iost.token", tokenABIs)
