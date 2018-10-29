@@ -9,7 +9,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/verifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
@@ -17,7 +16,7 @@ import (
 	"github.com/iost-official/go-iost/core/txpool/mock"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/smartystreets/goconvey/convey"
@@ -101,7 +100,7 @@ func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 46635359
 	defer stateDB.Close()
 	vi := database.NewVisitor(0, stateDB)
 	vi.SetBalance(testID[0], 1000000000000)
-	vi.SetContract(native.ABI())
+	vi.SetContract(native.SystemABI())
 	vi.Commit()
 	stateDB.Tag(string(topBlock.HeadHash()))
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
@@ -118,10 +117,12 @@ func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 46635359
 
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
-		t1 := time.Now()
-		stateDB.Checkout(string(topBlock.HeadHash()))
-		err = verifier.VerifyBlockWithVM(blk, stateDB)
-		ilog.Info(time.Since(t1))
+		v := verifier.Verifier{}
+		v.Verify(blk, stateDB, &verifier.Config{
+			Mode:        0,
+			Timeout:     time.Millisecond * 1000,
+			TxTimeLimit: time.Millisecond * 100,
+		})
 	}
 	b.StopTimer()
 }

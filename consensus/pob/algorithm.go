@@ -27,8 +27,6 @@ var (
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
-	txLimit        = 80000 //limit it to 2000
-	txExecTime     = cverifier.TxExecTimeLimit / 2
 	generateTxsNum = 0
 )
 
@@ -170,9 +168,9 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode != nil {
-		ilog.Infof("[pob] flush start, number: %d, hash = %v", node.Number, common.Base58Encode(node.Block.HeadHash()))
+		ilog.Infof("[pob] flush start, number: %d, hash = %v", node.Head.Number, common.Base58Encode(node.Block.HeadHash()))
 		bc.Flush(confirmedNode)
-		ilog.Infof("[pob] flush end, number: %d, hash = %v", node.Number, common.Base58Encode(node.Block.HeadHash()))
+		ilog.Infof("[pob] flush end, number: %d, hash = %v", node.Head.Number, common.Base58Encode(node.Block.HeadHash()))
 		metricsConfirmedLength.Set(float64(confirmedNode.Head.Number+1), nil)
 	}
 }

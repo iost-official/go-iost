@@ -414,9 +414,9 @@ func (bc *BlockCacheImpl) Draw() string {
 
 func (bcn *BlockCacheNode) DrawChildren(root treeprint.Tree) {
 	for c := range bcn.Children {
-		pattern := strconv.Itoa(int(c.Number))
-		if c.Witness != "" {
-			pattern += "(" + c.Witness[4:6] + ")"
+		pattern := strconv.Itoa(int(c.Head.Number))
+		if c.Head.Witness != "" {
+			pattern += "(" + c.Head.Witness[4:6] + ")"
 		}
 		root.AddNode(pattern)
 		c.DrawChildren(root.FindLastNode())
