@@ -121,11 +121,11 @@ func (pool *TxPImpl) verifyWorkers() {
 			pool.mu.Unlock()
 			continue
 		}
-		ret = pool.verifyTx(&t)
-		if ret != Success {
-			pool.mu.Unlock()
-			continue
-		}
+		//ret = pool.verifyTx(&t)
+		//if ret != Success {
+		//	pool.mu.Unlock()
+		//	continue
+		//}
 		pool.pendingTx.Add(&t)
 		pool.mu.Unlock()
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
@@ -225,18 +225,19 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error 
 
 // AddTx add the transaction
 func (pool *TxPImpl) AddTx(t *tx.Tx) TAddTx {
-	ret := pool.verifyDuplicate(t)
-	if ret != Success {
-		return ret
-	}
-	ret = pool.verifyTx(t)
-	if ret != Success {
-		return ret
-	}
+	//ret := pool.verifyDuplicate(t)
+	//if ret != Success {
+	//	return ret
+	//}
+	//ret = pool.verifyTx(t)
+	//if ret != Success {
+	//	return ret
+	//}
 	pool.pendingTx.Add(t)
 	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
-	return ret
+	//return ret
+	return Success
 }
 
 // DelTx del the transaction
