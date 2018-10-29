@@ -4,6 +4,24 @@ import (
 	"fmt"
 )
 
+const (
+	// GasMinPledge Every user must pledge a minimum amount of IOST (including GAS and RAM)
+	GasMinPledge = 100
+
+	// Each IOST you pledge, you will get `GasImmediateReward` gas immediately.
+	// Then gas will be generated at a rate of `GasIncreaseRate` gas per block.
+	// Your gas production will stop when it reaches the limit.
+	// When you use some gas later, the total amount will be less than the limit,
+	// so gas production will continue again util the limit.
+
+	// GasImmediateReward immediate reward per IOST
+	GasImmediateReward = 10
+	// GasLimit gas limit per IOST
+	GasLimit = 30
+	// GasIncreaseRate gas increase per IOST per block
+	GasIncreaseRate = 1
+)
+
 // GasManager handle the logic of gas
 type GasManager struct {
 	h *Host
@@ -47,14 +65,38 @@ func (g *GasManager) CostGas(name string, cost int64) error {
 	return nil
 }
 
-// ChangeGas ...
-func (g *GasManager) ChangeGas(name string, gasStockDelta int64, rateDelta int64, limitDelta int64) error {
+// Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.
+func (g *GasManager) Pledge(name string, pledgeAmount int64) error {
+	if pledgeAmount == 0 {
+		return fmt.Errorf("invalid pledge amount %d", pledgeAmount)
+	}
+	if pledgeAmount < 0 {
+		unpledgeAmount := -pledgeAmount
+		pledged := g.h.db.BalanceHandler.GetGasPledge(name)
+		// how to deal with overflow here?
+		if pledged-unpledgeAmount < GasMinPledge {
+			return fmt.Errorf("%d should be pledged at least ", GasMinPledge)
+		}
+	}
+
+	limitDelta := pledgeAmount * GasLimit
+	rateDelta := pledgeAmount * GasIncreaseRate
+	gasDelta := pledgeAmount * GasImmediateReward
+	if pledgeAmount < 0 {
+		// unpledge should not change current generated gas
+		gasDelta = 0
+	}
+
 	// pledge first time
 	if g.h.db.BalanceHandler.GetGasUpdateTime(name) == 0 {
+		if pledgeAmount < 0 {
+			return fmt.Errorf("cannot unpledge! No pledge before")
+		}
+		g.h.db.BalanceHandler.SetGasPledge(name, pledgeAmount)
 		g.h.db.BalanceHandler.SetGasUpdateTime(name, g.h.ctx.Value("number").(int64))
 		g.h.db.BalanceHandler.SetGasRate(name, rateDelta)
 		g.h.db.BalanceHandler.SetGasLimit(name, limitDelta)
-		g.h.db.BalanceHandler.SetGasStock(name, gasStockDelta)
+		g.h.db.BalanceHandler.SetGasStock(name, gasDelta)
 		return nil
 	}
 	g.RefreshGas(name)
@@ -68,11 +110,16 @@ func (g *GasManager) ChangeGas(name string, gasStockDelta int64, rateDelta int64
 	if limitNew <= 0 {
 		return fmt.Errorf("change gasLimit failed! current: %d, delta %d", limitOld, limitDelta)
 	}
+	gasOld := g.h.db.BalanceHandler.GetGasStock(name)
+	gasNew := gasOld + gasDelta
+	if gasNew > limitNew {
+		// clear the gas above the new limit.
+		gasNew = limitNew
+	}
+
+	g.h.db.BalanceHandler.SetGasPledge(name, g.h.db.BalanceHandler.GetGasPledge(name)+pledgeAmount)
 	g.h.db.BalanceHandler.SetGasRate(name, rateNew)
 	g.h.db.BalanceHandler.SetGasLimit(name, limitNew)
-	// clear the gas above the new limit. This can also be written as 'g.RefreshGas(name)'
-	if g.h.db.BalanceHandler.GetGasStock(name) > limitNew {
-		g.h.db.BalanceHandler.SetGasStock(name, limitNew)
-	}
+	g.h.db.BalanceHandler.SetGasStock(name, gasNew)
 	return nil
 }

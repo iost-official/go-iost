@@ -140,7 +140,7 @@ func (m *BalanceHandler) gasStockKey(name string) string {
 	return IOSTPrefix + name + gasStockSuffix
 }
 
-// GetGasStock ...
+// GetGasStock `gasStock` means the gas amount at last update time.
 func (m *BalanceHandler) GetGasStock(name string) int64 {
 	return m.GetInt64(m.gasStockKey(name))
 }
@@ -164,7 +164,7 @@ func (m *BalanceHandler) SetGasPledge(name string, p int64) {
 	m.PutInt64(m.gasPledgeKey(name), p)
 }
 
-// CurrentTotalGas return current total gas
+// CurrentTotalGas return current total gas. It is min(limit, last_updated_gas + time_since_last_updated * increase_speed)
 func (m *BalanceHandler) CurrentTotalGas(name string, now int64) (result int64) {
 	result = m.GetGasStock(name)
 	gasUpdateTime := m.GetGasUpdateTime(name)

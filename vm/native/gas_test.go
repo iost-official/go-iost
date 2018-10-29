@@ -1,6 +1,10 @@
 package native
 
 import (
+	"fmt"
+	"math/rand"
+	"testing"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
@@ -8,20 +12,27 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
-	"testing"
 )
 
-func myInit() *host.Host {
+const initCoin int64 = 5000
+const initNumber int64 = 10
+
+func myInit() (*host.Host, *account.Account) {
 	var tmpDB db.MVCCDB
-	tmpDB, err := db.NewMVCCDB("/tmp/gas_test")
+	tmpDB, err := db.NewMVCCDB(fmt.Sprintf("/tmp/gas_test%06d", rand.Intn(1000000)))
 	visitor := database.NewVisitor(100, tmpDB)
 	if err != nil {
 		panic(err)
 	}
-	//monitor := vm.NewMonitor()
 	context := host.NewContext(nil)
-	host := host.NewHost(context, visitor, nil, nil)
-	return host
+	h := host.NewHost(context, visitor, nil, nil)
+	testAcc := getTestAccount()
+	h.DB().SetBalance(testAcc.ID, initCoin)
+	h.Context().Set("number", initNumber)
+	authList := make(map[string]int)
+	authList[testAcc.ID] = 2
+	h.Context().Set("auth_list", authList)
+	return h, testAcc
 }
 
 func getAccount(k string) *account.Account {
@@ -52,89 +63,137 @@ func min(a int64, b int64) int64 {
 	return b
 }
 
-func TestGas_AllInOneTest(t *testing.T) {
-	ilog.Info("Init the test environ")
-	host := myInit()
-	testAcc := getTestAccount()
-	t.Logf("test with account %s", testAcc.ID)
-	initCoin := int64(5000)
-	host.DB().SetBalance(testAcc.ID, initCoin)
-	initNumber := int64(10)
-	host.Context().Set("number", initNumber)
-	gas := host.GasManager.CurrentGas(testAcc.ID)
+func TestGas_NoPledge(t *testing.T) {
+	ilog.Info("test an account who did not pledge has 0 gas")
+	h, testAcc := myInit()
+	gas := h.GasManager.CurrentGas(testAcc.ID)
 	if gas != 0 {
 		t.Fatalf("initial gas error %d", gas)
 	}
-	ilog.Info("start test pledge")
-	ilog.Info("test auth. It should failed now.")
+}
+
+func TestGas_PledgeAuth(t *testing.T) {
+	ilog.Info("test pledging requires auth")
+	h, testAcc := myInit()
 	pledgeAmount := int64(200)
 	authList := make(map[string]int)
-	host.Context().Set("auth_list", authList)
-	_, _, err := pledgeGas.do(host, testAcc.ID, pledgeAmount)
+	h.Context().Set("auth_list", authList)
+	_, _, err := pledgeGas.do(h, testAcc.ID, pledgeAmount)
 	if err == nil {
 		t.Fatalf("check auth should not succeed")
 	}
+}
+
+func TestGas_Pledge(t *testing.T) {
 	ilog.Info("test pledge")
-	authList[testAcc.ID] = 2
-	host.Context().Set("auth_list", authList)
-	_, _, err = pledgeGas.do(host, testAcc.ID, pledgeAmount)
+	h, testAcc := myInit()
+	pledgeAmount := int64(200)
+	_, _, err := pledgeGas.do(h, testAcc.ID, pledgeAmount)
 	if err != nil {
 		t.Fatalf("pledge err %v", err)
 	}
-	if host.DB().Balance(testAcc.ID) != (initCoin - pledgeAmount) {
-		t.Fatalf("invalid balance after pledge %d", host.DB().Balance(testAcc.ID))
+	if h.DB().Balance(testAcc.ID) != (initCoin - pledgeAmount) {
+		t.Fatalf("invalid balance after pledge %d", h.DB().Balance(testAcc.ID))
 	}
-	if host.DB().Balance(getGasAccount().ID) != pledgeAmount {
-		t.Fatalf("invalid balance after pledge %d", host.DB().Balance(testAcc.ID))
+	if h.DB().Balance(getGasAccount().ID) != pledgeAmount {
+		t.Fatalf("invalid balance after pledge %d", h.DB().Balance(testAcc.ID))
 	}
-	ilog.Info("After pledge, check gas amount")
-	delta := int64(0)
-	gas = host.GasManager.CurrentGas(testAcc.ID)
-	gasEstimated := min(pledgeAmount*gasLimitRatio, pledgeAmount*gasImmediateRatio+delta*pledgeAmount*gasRateRatio)
+	ilog.Info("After pledge, you will get some gas immediately")
+	gas := h.GasManager.CurrentGas(testAcc.ID)
+	gasEstimated := pledgeAmount * host.GasImmediateReward
 	if gas != gasEstimated {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
 	}
-	ilog.Info("check gas increase rate")
-	delta = int64(5)
-	host.Context().Set("number", initNumber+delta)
-	gas = host.GasManager.CurrentGas(testAcc.ID)
-	gasEstimated = min(pledgeAmount*gasLimitRatio, pledgeAmount*gasImmediateRatio+delta*pledgeAmount*gasRateRatio)
+	ilog.Info("Then gas increases at a predefined rate")
+	delta := int64(5)
+	h.Context().Set("number", initNumber+delta)
+	gas = h.GasManager.CurrentGas(testAcc.ID)
+	gasEstimated = pledgeAmount*host.GasImmediateReward + delta*pledgeAmount*host.GasIncreaseRate
 	if gas != gasEstimated {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
 	}
-	ilog.Info("check gas limit")
+	ilog.Info("Then gas will reach limit and not increase any longer")
 	delta = int64(100)
-	host.Context().Set("number", initNumber+delta)
-	gas = host.GasManager.CurrentGas(testAcc.ID)
-	gasEstimated = min(pledgeAmount*gasLimitRatio, pledgeAmount*gasImmediateRatio+delta*pledgeAmount*gasRateRatio)
+	h.Context().Set("number", initNumber+delta)
+	gas = h.GasManager.CurrentGas(testAcc.ID)
+	gasEstimated = pledgeAmount * host.GasLimit
 	if gas != gasEstimated {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
 	}
-	ilog.Info("check gas amount after usage")
+}
+
+func TestGas_PledgeMore(t *testing.T) {
+	ilog.Info("test you can pledge more after first time pledge")
+	h, testAcc := myInit()
+	firstTimePledgeAmount := int64(200)
+	_, _, err := pledgeGas.do(h, testAcc.ID, firstTimePledgeAmount)
+	if err != nil {
+		t.Fatalf("pledge err %v", err)
+	}
+	delta1 := int64(5)
+	h.Context().Set("number", initNumber+delta1)
+	gasBeforeSecondPledge := h.GasManager.CurrentGas(testAcc.ID)
+	secondTimePledgeAmount := int64(300)
+	_, _, err = pledgeGas.do(h, testAcc.ID, secondTimePledgeAmount)
+	if err != nil {
+		t.Fatalf("pledge err %v", err)
+	}
+	delta2 := int64(10)
+	h.Context().Set("number", initNumber+delta1+delta2)
+	gasAfterSecondPledge := h.GasManager.CurrentGas(testAcc.ID)
+	gasEstimated := gasBeforeSecondPledge + secondTimePledgeAmount*host.GasImmediateReward + (secondTimePledgeAmount+firstTimePledgeAmount)*host.GasIncreaseRate*delta2
+	if gasAfterSecondPledge != gasEstimated {
+		t.Fatalf("invalid gas %d != %d", gasAfterSecondPledge, gasEstimated)
+	}
+}
+
+func TestGas_UseGas(t *testing.T) {
+	ilog.Info("test using gas")
+	h, testAcc := myInit()
+	pledgeAmount := int64(200)
+	_, _, err := pledgeGas.do(h, testAcc.ID, pledgeAmount)
+	if err != nil {
+		t.Fatalf("pledge err %v", err)
+	}
+	delta1 := int64(5)
+	h.Context().Set("number", initNumber+delta1)
+	gasBeforeUse := h.GasManager.CurrentGas(testAcc.ID)
 	gasCost := int64(100)
-	err = host.GasManager.CostGas(testAcc.ID, gasCost)
+	err = h.GasManager.CostGas(testAcc.ID, gasCost)
 	if err != nil {
 		t.Fatalf("cost gas failed %v", err)
 	}
-	gas = host.GasManager.CurrentGas(testAcc.ID)
-	gasEstimated = gasEstimated - gasCost
-	if gas != gasEstimated {
-		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
+	gasAfterUse := h.GasManager.CurrentGas(testAcc.ID)
+	gasEstimated := gasBeforeUse - gasCost
+	if gasAfterUse != gasEstimated {
+		t.Fatalf("invalid gas %d != %d", gasAfterUse, gasEstimated)
 	}
+}
+
+func TestGas_Unpledge(t *testing.T) {
 	ilog.Info("test unpledge")
+	h, testAcc := myInit()
+	pledgeAmount := int64(200)
+	_, _, err := pledgeGas.do(h, testAcc.ID, pledgeAmount)
+	if err != nil {
+		t.Fatalf("pledge err %v", err)
+	}
+	delta1 := int64(5)
+	h.Context().Set("number", initNumber+delta1)
 	unpledgeAmount := int64(100)
-	_, _, err = unpledgeGas.do(host, testAcc.ID, unpledgeAmount)
+	_, _, err = unpledgeGas.do(h, testAcc.ID, unpledgeAmount)
 	if err != nil {
 		t.Fatalf("unpledge err %v", err)
 	}
-	if host.DB().Balance(testAcc.ID) != (initCoin - pledgeAmount + unpledgeAmount) {
-		t.Fatalf("invalid balance after unpledge %d", host.DB().Balance(testAcc.ID))
+	if h.DB().Balance(testAcc.ID) != (initCoin - pledgeAmount + unpledgeAmount) {
+		t.Fatalf("invalid balance after unpledge %d", h.DB().Balance(testAcc.ID))
 	}
-	if host.DB().Balance(getGasAccount().ID) != (pledgeAmount - unpledgeAmount) {
-		t.Fatalf("invalid balance after unpledge %d", host.DB().Balance(testAcc.ID))
+	if h.DB().Balance(getGasAccount().ID) != (pledgeAmount - unpledgeAmount) {
+		t.Fatalf("invalid balance after unpledge %d", h.DB().Balance(testAcc.ID))
 	}
-	gas = host.GasManager.CurrentGas(testAcc.ID)
-	gasEstimated = (pledgeAmount - unpledgeAmount) * gasLimitRatio
+	gas := h.GasManager.CurrentGas(testAcc.ID)
+	ilog.Info("After unpledging, the gas limit will decrease. If current gas is more than the new limit, it will be decrease.")
+	gasEstimated := (pledgeAmount - unpledgeAmount) * host.GasLimit
 	if gas != gasEstimated {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
 	}

@@ -10,18 +10,6 @@ import (
 )
 
 const (
-	// Every user must pledge a mininum amount of IOST (including GAS and RAM)
-	gasMinPledgeAmount = 100
-	// Each IOST you pledge, you will get `gasImmediateRatio` gas immediately.
-	// Then gas will be generated at a rate of `gasRateRatio` gas per block.
-	// So after `pergasFillBlockNum` blocks (3 days here), you will reach `gasLimitRatio` gas.
-	// Your gas production will stop because it reaches the limit.
-	// When you use some gas later, the total amount will be less than the limit,
-	// gas production will continue again util the limit.
-	gasImmediateRatio = 10
-	gasLimitRatio     = 30
-	// gasFillBlockNum = 3 * 24 * 3600 / common.SlotLength
-	gasRateRatio = 1 //(gasLimitRatio - gasImmediateRatio) / float64(gasFillBlockNum)
 	// priv: 2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1
 	gasAccount = "IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4"
 	//gasAccount = account.NewAccount(common.Base58Decode("5C9JWxSk6w8qpeow1tKK6owvQzxjBoVaSWTfcxmHqpnEcRGDX26T9px1ScXUKhsghUNwTvoxMxxcQoLdoZhSswkx"), crypto.Ed25519)
@@ -72,8 +60,7 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
-			h.DB().SetGasPledge(userName, h.DB().GetGasPledge(userName)+pledgeAmount)
-			err = h.GasManager.ChangeGas(userName, pledgeAmount*gasImmediateRatio, pledgeAmount*gasRateRatio, pledgeAmount*gasLimitRatio)
+			err = h.GasManager.Pledge(userName, pledgeAmount)
 			cost.AddAssign(host.PledgeGasCost)
 			if err != nil {
 				return nil, cost, err
@@ -106,16 +93,11 @@ var (
 			if unpledgeAmount < minPledgeAmount {
 				return nil, host.CommonErrorCost(1), fmt.Errorf("min pledge num is %d", minPledgeAmount)
 			}
-			pledged := h.DB().GetGasPledge(userName)
-			if pledged < unpledgeAmount+gasMinPledgeAmount {
-				return nil, host.CommonErrorCost(1), fmt.Errorf("you can unpledge %d most", (pledged - minPledgeAmount))
-			}
-			err = h.GasManager.ChangeGas(userName, 0, -unpledgeAmount*gasRateRatio, -unpledgeAmount*gasLimitRatio)
+			err = h.GasManager.Pledge(userName, -unpledgeAmount)
 			cost.AddAssign(host.PledgeGasCost)
 			if err != nil {
 				return nil, cost, err
 			}
-			h.DB().SetGasPledge(userName, h.DB().GetGasPledge(userName)-unpledgeAmount)
 			// TODO fix the account here
 			err = h.Teller.TransferWithoutCheckPermission(gasAccount, userName, unpledgeAmount)
 			if err != nil {
