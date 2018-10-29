@@ -387,15 +387,15 @@ func (pool *TxPImpl) clearBlock() {
 	})
 }
 
-func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) TAddTx {
+func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) error {
 	if pool.existTxInPending(t.Hash()) {
-		return DupError
+		return fmt.Errorf("DupError. tx exists in pending")
 	}
 	if pool.ExistTxInChain(t.Hash(), pool.forkChain.NewHead.Block) {
 		ilog.Infof("tx found in chain")
-		return DupError
+		return fmt.Errorf("DupError. tx exists in chain")
 	}
-	return Success
+	return nil
 }
 
 func (pool *TxPImpl) existTxInPending(hash []byte) bool {

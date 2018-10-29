@@ -23,9 +23,7 @@ var (
 	ErrMessageChannelFull        = errors.New("message channel is full")
 	ErrDuplicateMessage          = errors.New("reduplicate message")
 	metricsBlockHeaderArriveTime = metrics.NewGauge("iost_header_arrive_time", nil)
-	metricsGetStreamTimeCost     = metrics.NewGauge("iost_get_stream_time_cost", nil)
 	metricsWriteStreamTimeCost   = metrics.NewGauge("iost_write_stream_time_cost", nil)
-	metricsGetStreamStartTime    = metrics.NewGauge("iost_get_stream_start_time", nil)
 	metricsWriteStreamStartTime  = metrics.NewGauge("iost_write_stream_start_time", nil)
 
 	id2Node = map[string]string{
@@ -147,7 +145,6 @@ func (p *Peer) write(m *p2pMessage) error {
 		return err
 	}
 	t1 := time.Now()
-
 	_, err := p.stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
@@ -200,7 +197,7 @@ func calculateTime(t time.Time) float64 {
 func (p *Peer) readLoop(stream libnet.Stream) {
 	header := make([]byte, dataBegin)
 	for {
-		_, err := io.ReadFull(stream, header) //wait up to 3000ms
+		_, err := io.ReadFull(stream, header)
 		if err != nil {
 			ilog.Warnf("read header failed. err=%v", err)
 			return
@@ -213,7 +210,7 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
 		// data := make([]byte, dataBegin+length)
-		data := make([]byte, dataBegin+length+8)
+		data := make([]byte, dataBegin+length)
 		_, err = io.ReadFull(stream, data[dataBegin:])
 		if err != nil {
 			ilog.Warnf("read message failed. err=%v", err)
@@ -232,18 +229,6 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		tagkv := map[string]string{"mtype": msg.messageType().String()}
 		byteInCounter.Add(float64(len(msg.content())), tagkv)
 		packetInCounter.Add(1, tagkv)
-
-		sendingTime := binary.BigEndian.Uint64(data[dataBegin+length:])
-		latency := time.Now().UnixNano() - int64(sendingTime)
-		nodeNum := id2Node[p.id.Pretty()]
-		if nodeNum == "" {
-			nodeNum = p.id.Pretty()
-		}
-		latencyGauge.Set(float64(latency), map[string]string{
-			"mtype": msg.messageType().String(),
-			"from":  nodeNum,
-		})
-
 		p.handleMessage(msg)
 	}
 }

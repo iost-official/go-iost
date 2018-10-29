@@ -8,12 +8,9 @@ import (
 	"github.com/iost-official/go-iost/core/mocks"
 	"github.com/iost-official/go-iost/db/mocks"
 
-	"fmt"
-
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/xlab/treeprint"
 )
 
 func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
@@ -31,15 +28,6 @@ func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 	ret.CalculateHeadHash()
 	return ret
 }
-
-func TestDrawTree(t *testing.T) {
-	tree := treeprint.New()
-	tree.AddNode("1")
-	node1 := tree.FindLastNode()
-	node1.AddNode("2")
-	fmt.Println(tree.String())
-}
-
 func TestBlockCache(t *testing.T) {
 	ctl := NewController(t)
 	b0 := &block.Block{
@@ -54,16 +42,18 @@ func TestBlockCache(t *testing.T) {
 	b1 := genBlock(b0, "w1", 1)
 	b2 := genBlock(b1, "w2", 2)
 	b2a := genBlock(b1, "w3", 3)
-	b3 := genBlock(b2, "w4", 3)
-	b4 := genBlock(b3, "w5", 4)
+	b3 := genBlock(b2, "w4", 4)
+	b4 := genBlock(b2a, "w5", 5)
 	b3a := genBlock(b2, "w6", 6)
-	b5 := genBlock(b4, "w7", 5)
+	b5 := genBlock(b3a, "w7", 7)
 
 	s1 := genBlock(nil, "w1", 1)
 	s2 := genBlock(s1, "w2", 2)
 	s2a := genBlock(s1, "w3", 3)
 	s3 := genBlock(s2, "w4", 4)
 
+	txdb := core_mock.NewMockTxDB(ctl)
+	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
@@ -85,6 +75,7 @@ func TestBlockCache(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
+	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
@@ -94,7 +85,6 @@ func TestBlockCache(t *testing.T) {
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			//bc.Draw()
 			bc.Add(b2)
-
 		})
 
 		Convey("Flush", func() {
@@ -132,14 +122,34 @@ func TestBlockCache(t *testing.T) {
 			b2node := bc.Add(b2)
 			bc.Link(b2node)
 			//bc.Draw()
+			b2anode := bc.Add(b2a)
+			bc.Link(b2anode)
+			//bc.Draw()
 			b3node := bc.Add(b3)
 			bc.Link(b3node)
 			//bc.Draw()
 			b4node := bc.Add(b4)
 			bc.Link(b4node)
 			//bc.Draw()
+			b3anode := bc.Add(b3a)
+			bc.Link(b3anode)
+			//bc.Draw()
 			b5node := bc.Add(b5)
 			bc.Link(b5node)
+			//bc.Draw()
+			So(bc.head, ShouldEqual, b5node)
+			blk, _ := bc.GetBlockByNumber(7)
+			So(blk, ShouldEqual, b5node.Block)
+			blk, _ = bc.GetBlockByNumber(6)
+			So(blk, ShouldEqual, b3anode.Block)
+			blk, _ = bc.GetBlockByNumber(2)
+			So(blk, ShouldEqual, b2node.Block)
+			blk, _ = bc.GetBlockByNumber(1)
+			So(blk, ShouldEqual, b1node.Block)
+			blk, _ = bc.GetBlockByNumber(4)
+			So(blk, ShouldEqual, nil)
+
+			bc.Flush(b4node)
 			//bc.Draw()
 
 		})
@@ -166,6 +176,8 @@ func TestVote(t *testing.T) {
 	//
 	//fmt.Println(b5)
 
+	txdb := core_mock.NewMockTxDB(ctl)
+	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
@@ -188,6 +200,7 @@ func TestVote(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
+	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 
 	Convey("test api", t, func() {
@@ -207,14 +220,11 @@ func TestVote(t *testing.T) {
 	Convey("test update", t, func() {
 		bc, _ := NewBlockCache(global)
 		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
-		node1 := NewBCN(bc.linkedRoot, b1)
-		node2 := NewBCN(node1, b2)
-		node3 := NewBCN(node2, b3)
-		bc.Link(node1)
+		bc.Link(&BlockCacheNode{Block: b1})
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-		bc.Link(node2)
+		bc.Link(&BlockCacheNode{Block: b2})
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-		bc.Link(node3)
+		bc.Link(&BlockCacheNode{Block: b3})
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
 
 	})

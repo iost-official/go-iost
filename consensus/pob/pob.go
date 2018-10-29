@@ -212,6 +212,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	if p.baseVariable.Mode() == global.ModeInit {
 		return
 	}
+	ilog.Infof("verify block chan size:%v", len(p.chVerifyBlock))
 	blk := vbm.blk
 	if vbm.gen {
 		ilog.Info("block from myself, block number: ", blk.Head.Number)
@@ -386,6 +387,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 	}
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
+	p.blockCache.Draw()
 	ilog.Infof("[pob] updateInfo start, number: %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	p.updateInfo(node, update)
 	ilog.Infof("[pob] updateInfo end, number: %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"hash/crc32"
 	"strconv"
-	"time"
 
 	"github.com/golang/snappy"
 )
@@ -108,11 +107,6 @@ var (
 	errInvalidChecksum   = errors.New("invalid data checksum")
 )
 
-func (m *p2pMessage) setTime() *p2pMessage {
-	binary.BigEndian.PutUint64((*m)[dataBegin+int(m.length()):], uint64(time.Now().UnixNano()))
-	return m
-}
-
 func (m *p2pMessage) content() []byte {
 	return []byte(*m)
 }
@@ -146,7 +140,7 @@ func (m *p2pMessage) isCompressed() bool {
 }
 
 func (m *p2pMessage) rawData() []byte {
-	return m.content()[dataBegin : dataBegin+m.length()]
+	return m.content()[dataBegin:]
 }
 
 func (m *p2pMessage) data() ([]byte, error) {
@@ -167,7 +161,7 @@ func newP2PMessage(chainID uint32, messageType MessageType, version uint16, rese
 		data = snappy.Encode(nil, data)
 	}
 	// content := make([]byte, dataBegin+len(data))
-	content := make([]byte, dataBegin+len(data)+8)
+	content := make([]byte, dataBegin+len(data))
 	binary.BigEndian.PutUint32(content, chainID)
 	binary.BigEndian.PutUint16(content[messageTypeBegin:messageTypeEnd], uint16(messageType))
 	binary.BigEndian.PutUint16(content[versionBegin:versionEnd], version)

@@ -201,11 +201,6 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn.Head.Number > bc.head.Head.Number {
 		bc.head = bcn
 	}
-	pattern := strconv.FormatInt(bcn.Number, 10)
-	if bcn != nil && len(bcn.Witness) >= 6 {
-		pattern += "(" + bcn.Witness[4:6] + ")"
-	}
-	bc.Draw()
 }
 
 func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
