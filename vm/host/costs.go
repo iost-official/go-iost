@@ -22,7 +22,7 @@ var (
 
 	RequireAuthCost = contract.NewCost(0, 0, 1)
 
-	PledgeGasCost = contract.NewCost(500, 0, 20)
+	PledgeForGasCost = contract.NewCost(500, 0, 20)
 )
 
 // EventCost return cost based on event size

@@ -61,7 +61,7 @@ var (
 				return nil, cost, err
 			}
 			err = h.GasManager.Pledge(userName, pledgeAmount)
-			cost.AddAssign(host.PledgeGasCost)
+			cost.AddAssign(host.PledgeForGasCost)
 			if err != nil {
 				return nil, cost, err
 			}
@@ -94,12 +94,12 @@ var (
 				return nil, host.CommonErrorCost(1), fmt.Errorf("min pledge num is %d", minPledgeAmount)
 			}
 			err = h.GasManager.Pledge(userName, -unpledgeAmount)
-			cost.AddAssign(host.PledgeGasCost)
+			cost.AddAssign(host.PledgeForGasCost)
 			if err != nil {
 				return nil, cost, err
 			}
 			// TODO fix the account here
-			err = h.Teller.TransferWithoutCheckPermission(gasAccount, userName, unpledgeAmount)
+			err = h.Teller.TransferRaw(gasAccount, userName, unpledgeAmount)
 			if err != nil {
 				return nil, cost, err
 			}

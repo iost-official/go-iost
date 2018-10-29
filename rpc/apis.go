@@ -315,7 +315,7 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	} else {
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
-	gas := s.visitor.BalanceHandler.CurrentTotalGas(key.ID, s.bchain.Length())
+	gas := s.visitor.GasHandler.CurrentTotalGas(key.ID, s.bchain.Length())
 	return &GetAccountRes{
 		Balance: s.visitor.Balance(key.ID),
 		Gas:     gas,

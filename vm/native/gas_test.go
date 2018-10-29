@@ -17,7 +17,7 @@ import (
 const initCoin int64 = 5000
 const initNumber int64 = 10
 
-func myInit() (*host.Host, *account.Account) {
+func gasTestInit() (*host.Host, *account.Account) {
 	var tmpDB db.MVCCDB
 	tmpDB, err := db.NewMVCCDB(fmt.Sprintf("/tmp/gas_test%06d", rand.Intn(1000000)))
 	visitor := database.NewVisitor(100, tmpDB)
@@ -65,7 +65,7 @@ func min(a int64, b int64) int64 {
 
 func TestGas_NoPledge(t *testing.T) {
 	ilog.Info("test an account who did not pledge has 0 gas")
-	h, testAcc := myInit()
+	h, testAcc := gasTestInit()
 	gas := h.GasManager.CurrentGas(testAcc.ID)
 	if gas != 0 {
 		t.Fatalf("initial gas error %d", gas)
@@ -74,7 +74,7 @@ func TestGas_NoPledge(t *testing.T) {
 
 func TestGas_PledgeAuth(t *testing.T) {
 	ilog.Info("test pledging requires auth")
-	h, testAcc := myInit()
+	h, testAcc := gasTestInit()
 	pledgeAmount := int64(200)
 	authList := make(map[string]int)
 	h.Context().Set("auth_list", authList)
@@ -86,7 +86,7 @@ func TestGas_PledgeAuth(t *testing.T) {
 
 func TestGas_Pledge(t *testing.T) {
 	ilog.Info("test pledge")
-	h, testAcc := myInit()
+	h, testAcc := gasTestInit()
 	pledgeAmount := int64(200)
 	_, _, err := pledgeGas.do(h, testAcc.ID, pledgeAmount)
 	if err != nil {
@@ -124,7 +124,7 @@ func TestGas_Pledge(t *testing.T) {
 
 func TestGas_PledgeMore(t *testing.T) {
 	ilog.Info("test you can pledge more after first time pledge")
-	h, testAcc := myInit()
+	h, testAcc := gasTestInit()
 	firstTimePledgeAmount := int64(200)
 	_, _, err := pledgeGas.do(h, testAcc.ID, firstTimePledgeAmount)
 	if err != nil {
@@ -149,7 +149,7 @@ func TestGas_PledgeMore(t *testing.T) {
 
 func TestGas_UseGas(t *testing.T) {
 	ilog.Info("test using gas")
-	h, testAcc := myInit()
+	h, testAcc := gasTestInit()
 	pledgeAmount := int64(200)
 	_, _, err := pledgeGas.do(h, testAcc.ID, pledgeAmount)
 	if err != nil {
@@ -172,7 +172,7 @@ func TestGas_UseGas(t *testing.T) {
 
 func TestGas_Unpledge(t *testing.T) {
 	ilog.Info("test unpledge")
-	h, testAcc := myInit()
+	h, testAcc := gasTestInit()
 	pledgeAmount := int64(200)
 	_, _, err := pledgeGas.do(h, testAcc.ID, pledgeAmount)
 	if err != nil {

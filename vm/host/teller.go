@@ -27,8 +27,8 @@ func NewTeller(h *Host) Teller {
 	}
 }
 
-// TransferWithoutCheckPermission ...
-func (h *Teller) TransferWithoutCheckPermission(from, to string, amount int64) error {
+// TransferRaw ...
+func (h *Teller) TransferRaw(from, to string, amount int64) error {
 	bf := h.h.db.Balance(from)
 	//ilog.Debugf("%v's balance : %v", from, bf)
 	if strings.HasPrefix(from, ContractAccountPrefix) && bf >= amount || bf > amount {
@@ -132,7 +132,7 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 		}
 	}
 
-	err := h.TransferWithoutCheckPermission(from, to, amount)
+	err := h.TransferRaw(from, to, amount)
 	return TransferCost, err
 }
 
@@ -157,7 +157,7 @@ func (h *Teller) TopUp(c, from string, amount int64) (*contract.Cost, error) {
 
 // Countermand ...
 func (h *Teller) Countermand(c, to string, amount int64) (*contract.Cost, error) {
-	return TransferCost, h.TransferWithoutCheckPermission(ContractGasPrefix+c, to, amount)
+	return TransferCost, h.TransferRaw(ContractGasPrefix+c, to, amount)
 }
 
 // PayCost ...
@@ -178,22 +178,22 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 		}
 		bfee := fee / 10
 		if strings.HasPrefix(k, "IOST") {
-			err := h.TransferWithoutCheckPermission(k, witness, fee-bfee)
+			err := h.TransferRaw(k, witness, fee-bfee)
 			if err != nil {
 				return err
 			}
 			// 10% of gas transferred to iost.bonus
-			err = h.TransferWithoutCheckPermission(k, ContractAccountPrefix+"iost.bonus", bfee)
+			err = h.TransferRaw(k, ContractAccountPrefix+"iost.bonus", bfee)
 			if err != nil {
 				return err
 			}
 		} else if strings.HasPrefix(k, ContractGasPrefix) {
-			err := h.TransferWithoutCheckPermission(k, witness, fee-bfee)
+			err := h.TransferRaw(k, witness, fee-bfee)
 			if err != nil {
 				return err
 			}
 			// 10% of gas transferred to iost.bonus
-			err = h.TransferWithoutCheckPermission(k, ContractAccountPrefix+"iost.bonus", bfee)
+			err = h.TransferRaw(k, ContractAccountPrefix+"iost.bonus", bfee)
 			if err != nil {
 				return err
 			}
