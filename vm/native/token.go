@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/host"
 	"math"
 	"sort"
 	"strconv"
+
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 var tokenABIs map[string]*abi
@@ -175,7 +176,7 @@ var (
 			// todo config
 
 			// check auth
-			ok, cost0 := h.RequireAuth(issuer)
+			ok, cost0 := h.RequireAuth(issuer, "token.iost")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -240,7 +241,7 @@ var (
 			cost.AddAssign(cost0)
 
 			// check auth
-			ok, cost0 = h.RequireAuth(issuer.(string))
+			ok, cost0 = h.RequireAuth(issuer.(string), "token.iost")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -304,7 +305,7 @@ var (
 
 			// check auth
 			// todo handle from is contract
-			ok, cost0 = h.RequireAuth(from)
+			ok, cost0 = h.RequireAuth(from, "transfer")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -368,7 +369,7 @@ var (
 
 			// check auth
 			// todo handle from is contract
-			ok, cost0 = h.RequireAuth(from)
+			ok, cost0 = h.RequireAuth(from, "transfer")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -427,7 +428,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from)
+			ok, cost0 = h.RequireAuth(from, "token.iost")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
