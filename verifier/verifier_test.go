@@ -247,7 +247,7 @@ func TestTransfer(t *testing.T) {
 	tt, err := MakeTx(tx.Action{
 		Contract:   "iost.system",
 		ActionName: "Transfer",
-		Data:       fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], 10000),
+		Data:       fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], 0.0001),
 	})
 	if err != nil {
 		t.Fatal(err)
