@@ -3,13 +3,11 @@ package native
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"math"
 	"sort"
-	"strconv"
 )
 
 var tokenABIs map[string]*abi
@@ -145,21 +143,20 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 }
 
 func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64, cost *contract.Cost, err error) {
-	// todo use fixed point number
 	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
-	amountFloat, err := strconv.ParseFloat(amountStr, 64)
-	if err != nil {
-		return 0, cost, err
+	amountNumber, ok := host.NewFixPointNumber(amountStr, int(decimal.(int64)))
+	cost.AddAssign(host.CommonOpCost(3))
+	if !ok {
+		return 0, cost, host.ErrInvalidAmount
 	}
-	amountFloat *= (math.Pow10(int(decimal.(int64))))
-	return int64(amountFloat), cost, err
+	return amountNumber.Value, cost, err
 }
 
 func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, cost *contract.Cost) {
-	// todo use fixed point number
 	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
-	amountStr = fmt.Sprintf("%.8f", float64(amount)/math.Pow10(int(decimal.(int64))))
-	return amountStr, cost
+	amountNumber := host.FixPointNumber{Value:amount, Decimal:int(decimal.(int64))}
+	cost.AddAssign(host.CommonOpCost(1))
+	return amountNumber.ToString(), cost
 }
 
 var (
