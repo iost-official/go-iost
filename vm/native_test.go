@@ -15,7 +15,7 @@ import (
 
 var testDataPath = "./test_data/"
 
-func MyInit(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
+func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
 	vi := database.NewVisitor(100, db)
 
@@ -28,6 +28,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	ctx.GSet("gas_limit", gasLimit)
 	ctx.Set("contract_name", conName)
 	ctx.Set("tx_hash", []byte("iamhash"))
+	ctx.Set("auth_list", make(map[string]int))
 
 	pm := NewMonitor()
 	h := host.NewHost(ctx, vi, pm, nil)
@@ -59,7 +60,7 @@ func ReadFile(src string) ([]byte, error) {
 // nolint
 func TestEngine_SetCode(t *testing.T) {
 
-	e, host, code := MyInit(t, "setcode")
+	e, host, code := InitVMWithMonitor(t, "setcode")
 	host.Context().Set("tx_hash", "iamhash")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	hash := "Contractiamhash"

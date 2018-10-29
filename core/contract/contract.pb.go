@@ -33,7 +33,7 @@ func (m *Info) Reset()         { *m = Info{} }
 func (m *Info) String() string { return proto.CompactTextString(m) }
 func (*Info) ProtoMessage()    {}
 func (*Info) Descriptor() ([]byte, []int) {
-	return fileDescriptor_contract_2526cdeed5d608f9, []int{0}
+	return fileDescriptor_contract_57af315884a7a5bd, []int{0}
 }
 func (m *Info) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -84,21 +84,22 @@ func (m *Info) GetAbi() []*ABI {
 }
 
 type ABI struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Payment              int32    `protobuf:"varint,2,opt,name=payment,proto3" json:"payment,omitempty"`
-	Limit                *Cost    `protobuf:"bytes,3,opt,name=limit" json:"limit,omitempty"`
-	GasPrice             int64    `protobuf:"varint,4,opt,name=gas_price,json=gasPrice,proto3" json:"gas_price,omitempty"`
-	Args                 []string `protobuf:"bytes,5,rep,name=args" json:"args,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Name                 string    `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Payment              int32     `protobuf:"varint,2,opt,name=payment,proto3" json:"payment,omitempty"`
+	Limit                *Cost     `protobuf:"bytes,3,opt,name=limit" json:"limit,omitempty"`
+	GasPrice             int64     `protobuf:"varint,4,opt,name=gas_price,json=gasPrice,proto3" json:"gas_price,omitempty"`
+	Args                 []string  `protobuf:"bytes,5,rep,name=args" json:"args,omitempty"`
+	AmountLimit          []*Amount `protobuf:"bytes,6,rep,name=amountLimit" json:"amountLimit,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
 func (m *ABI) Reset()         { *m = ABI{} }
 func (m *ABI) String() string { return proto.CompactTextString(m) }
 func (*ABI) ProtoMessage()    {}
 func (*ABI) Descriptor() ([]byte, []int) {
-	return fileDescriptor_contract_2526cdeed5d608f9, []int{1}
+	return fileDescriptor_contract_57af315884a7a5bd, []int{1}
 }
 func (m *ABI) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -162,6 +163,68 @@ func (m *ABI) GetArgs() []string {
 	return nil
 }
 
+func (m *ABI) GetAmountLimit() []*Amount {
+	if m != nil {
+		return m.AmountLimit
+	}
+	return nil
+}
+
+type Amount struct {
+	Token                string   `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Val                  int64    `protobuf:"varint,2,opt,name=val,proto3" json:"val,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Amount) Reset()         { *m = Amount{} }
+func (m *Amount) String() string { return proto.CompactTextString(m) }
+func (*Amount) ProtoMessage()    {}
+func (*Amount) Descriptor() ([]byte, []int) {
+	return fileDescriptor_contract_57af315884a7a5bd, []int{2}
+}
+func (m *Amount) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Amount) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Amount.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Amount) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Amount.Merge(dst, src)
+}
+func (m *Amount) XXX_Size() int {
+	return m.Size()
+}
+func (m *Amount) XXX_DiscardUnknown() {
+	xxx_messageInfo_Amount.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Amount proto.InternalMessageInfo
+
+func (m *Amount) GetToken() string {
+	if m != nil {
+		return m.Token
+	}
+	return ""
+}
+
+func (m *Amount) GetVal() int64 {
+	if m != nil {
+		return m.Val
+	}
+	return 0
+}
+
 type Cost struct {
 	Data                 int64    `protobuf:"varint,1,opt,name=data,proto3" json:"data,omitempty"`
 	Net                  int64    `protobuf:"varint,2,opt,name=net,proto3" json:"net,omitempty"`
@@ -175,7 +238,7 @@ func (m *Cost) Reset()         { *m = Cost{} }
 func (m *Cost) String() string { return proto.CompactTextString(m) }
 func (*Cost) ProtoMessage()    {}
 func (*Cost) Descriptor() ([]byte, []int) {
-	return fileDescriptor_contract_2526cdeed5d608f9, []int{2}
+	return fileDescriptor_contract_57af315884a7a5bd, []int{3}
 }
 func (m *Cost) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -238,7 +301,7 @@ func (m *Contract) Reset()         { *m = Contract{} }
 func (m *Contract) String() string { return proto.CompactTextString(m) }
 func (*Contract) ProtoMessage()    {}
 func (*Contract) Descriptor() ([]byte, []int) {
-	return fileDescriptor_contract_2526cdeed5d608f9, []int{3}
+	return fileDescriptor_contract_57af315884a7a5bd, []int{4}
 }
 func (m *Contract) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -291,6 +354,7 @@ func (m *Contract) GetCode() string {
 func init() {
 	proto.RegisterType((*Info)(nil), "contract.Info")
 	proto.RegisterType((*ABI)(nil), "contract.ABI")
+	proto.RegisterType((*Amount)(nil), "contract.Amount")
 	proto.RegisterType((*Cost)(nil), "contract.Cost")
 	proto.RegisterType((*Contract)(nil), "contract.Contract")
 }
@@ -394,6 +458,50 @@ func (m *ABI) MarshalTo(dAtA []byte) (int, error) {
 			i++
 			i += copy(dAtA[i:], s)
 		}
+	}
+	if len(m.AmountLimit) > 0 {
+		for _, msg := range m.AmountLimit {
+			dAtA[i] = 0x32
+			i++
+			i = encodeVarintContract(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Amount) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Amount) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintContract(dAtA, i, uint64(len(m.Token)))
+		i += copy(dAtA[i:], m.Token)
+	}
+	if m.Val != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintContract(dAtA, i, uint64(m.Val))
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -534,6 +642,28 @@ func (m *ABI) Size() (n int) {
 			l = len(s)
 			n += 1 + l + sovContract(uint64(l))
 		}
+	}
+	if len(m.AmountLimit) > 0 {
+		for _, e := range m.AmountLimit {
+			l = e.Size()
+			n += 1 + l + sovContract(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Amount) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovContract(uint64(l))
+	}
+	if m.Val != 0 {
+		n += 1 + sovContract(uint64(m.Val))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -891,6 +1021,136 @@ func (m *ABI) Unmarshal(dAtA []byte) error {
 			}
 			m.Args = append(m.Args, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AmountLimit", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContract
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContract
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AmountLimit = append(m.AmountLimit, &Amount{})
+			if err := m.AmountLimit[len(m.AmountLimit)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContract(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthContract
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Amount) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContract
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Amount: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Amount: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContract
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContract
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Val", wireType)
+			}
+			m.Val = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContract
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Val |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipContract(dAtA[iNdEx:])
@@ -1269,29 +1529,32 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("core/contract/contract.proto", fileDescriptor_contract_2526cdeed5d608f9)
+	proto.RegisterFile("core/contract/contract.proto", fileDescriptor_contract_57af315884a7a5bd)
 }
 
-var fileDescriptor_contract_2526cdeed5d608f9 = []byte{
-	// 312 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x91, 0x41, 0x6a, 0xeb, 0x30,
-	0x10, 0x86, 0x9f, 0x22, 0xe7, 0x35, 0x99, 0xd0, 0x10, 0xb4, 0x12, 0xb4, 0xb8, 0xc6, 0x74, 0xe1,
-	0x55, 0x0a, 0xe9, 0xbe, 0x90, 0x38, 0x1b, 0xef, 0x82, 0x20, 0xeb, 0xa2, 0x38, 0x8a, 0x11, 0xc4,
-	0x92, 0x91, 0x45, 0xa1, 0x57, 0xe8, 0x09, 0x7a, 0xa4, 0x2e, 0x7b, 0x84, 0xe2, 0x5e, 0xa4, 0x8c,
-	0x12, 0xa7, 0x74, 0xf7, 0xcd, 0xfc, 0xf8, 0x9b, 0xdf, 0x36, 0xdc, 0x96, 0xd6, 0xa9, 0x87, 0xd2,
-	0x1a, 0xef, 0x64, 0xe9, 0x2f, 0x30, 0x6f, 0x9c, 0xf5, 0x96, 0x8d, 0xfa, 0x39, 0xdd, 0x42, 0x54,
-	0x98, 0x83, 0x65, 0x0c, 0xa2, 0xa3, 0x34, 0x15, 0x27, 0x09, 0xc9, 0xc6, 0x22, 0x30, 0xe3, 0x70,
-	0xf5, 0xa2, 0x5c, 0xab, 0xad, 0xe1, 0x83, 0xb0, 0xee, 0x47, 0x76, 0x07, 0x54, 0xee, 0x34, 0xa7,
-	0x09, 0xcd, 0x26, 0x8b, 0xeb, 0xf9, 0xc5, 0xbe, 0x5c, 0x15, 0x02, 0x93, 0xf4, 0x8d, 0x00, 0x5d,
-	0xae, 0x0a, 0xd4, 0x1a, 0x59, 0xab, 0x5e, 0x8b, 0x8c, 0xda, 0x46, 0xbe, 0xd6, 0xca, 0xf8, 0xa0,
-	0x1d, 0x8a, 0x7e, 0x64, 0xf7, 0x30, 0x3c, 0xea, 0x5a, 0x7b, 0x4e, 0x13, 0x92, 0x4d, 0x16, 0xd3,
-	0x5f, 0x71, 0x6e, 0x5b, 0x2f, 0x4e, 0x21, 0xbb, 0x81, 0x71, 0x25, 0xdb, 0xe7, 0xc6, 0xe9, 0x52,
-	0xf1, 0x28, 0x21, 0x19, 0x15, 0xa3, 0x4a, 0xb6, 0x1b, 0x9c, 0xf1, 0xa0, 0x74, 0x55, 0xcb, 0x87,
-	0x09, 0xc5, 0x83, 0xc8, 0xe9, 0x13, 0x44, 0xf8, 0x3c, 0x66, 0x7b, 0xe9, 0x65, 0x28, 0x43, 0x45,
-	0x60, 0x36, 0x03, 0x6a, 0xd4, 0xa9, 0x08, 0x15, 0x88, 0xb8, 0xc9, 0x37, 0xdb, 0x50, 0x81, 0x0a,
-	0xc4, 0x54, 0xc0, 0x28, 0x3f, 0x17, 0x61, 0x53, 0x18, 0x14, 0xeb, 0xf3, 0xeb, 0x0c, 0x8a, 0x35,
-	0x4b, 0x21, 0xd2, 0xe6, 0x60, 0x83, 0xe0, 0x4f, 0x63, 0xfc, 0xaa, 0x22, 0x64, 0x78, 0xb7, 0xb4,
-	0x7b, 0x15, 0x94, 0x63, 0x11, 0x78, 0x35, 0xfb, 0xe8, 0x62, 0xf2, 0xd9, 0xc5, 0xe4, 0xab, 0x8b,
-	0xc9, 0xfb, 0x77, 0xfc, 0x6f, 0xf7, 0x3f, 0xfc, 0x9a, 0xc7, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff,
-	0xb2, 0x9a, 0xf0, 0x4c, 0xba, 0x01, 0x00, 0x00,
+var fileDescriptor_contract_57af315884a7a5bd = []byte{
+	// 359 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x92, 0x4f, 0x6b, 0xf2, 0x40,
+	0x10, 0xc6, 0xdf, 0x75, 0x13, 0x5f, 0x1d, 0x79, 0x45, 0x96, 0xf7, 0x10, 0x68, 0x49, 0x43, 0xe8,
+	0x21, 0x27, 0x5b, 0xec, 0xbd, 0xe0, 0x9f, 0x4b, 0xa0, 0x07, 0x59, 0xf0, 0x5c, 0xd6, 0xb8, 0x86,
+	0x50, 0xb3, 0x2b, 0xc9, 0x56, 0xe8, 0x37, 0xe9, 0xa7, 0xe9, 0xb9, 0xc7, 0x7e, 0x84, 0x62, 0xbf,
+	0x48, 0x99, 0xd1, 0x58, 0x7b, 0x7b, 0x9e, 0x99, 0xe1, 0x37, 0xcf, 0x24, 0x0b, 0x97, 0x99, 0xad,
+	0xf4, 0x4d, 0x66, 0x8d, 0xab, 0x54, 0xe6, 0x4e, 0x62, 0xb8, 0xad, 0xac, 0xb3, 0xa2, 0xd3, 0xf8,
+	0x78, 0x01, 0x5e, 0x6a, 0xd6, 0x56, 0x08, 0xf0, 0x36, 0xca, 0xe4, 0x01, 0x8b, 0x58, 0xd2, 0x95,
+	0xa4, 0x45, 0x00, 0x7f, 0x77, 0xba, 0xaa, 0x0b, 0x6b, 0x82, 0x16, 0x95, 0x1b, 0x2b, 0xae, 0x80,
+	0xab, 0x65, 0x11, 0xf0, 0x88, 0x27, 0xbd, 0xd1, 0xbf, 0xe1, 0x89, 0x3e, 0x9e, 0xa4, 0x12, 0x3b,
+	0xf1, 0x1b, 0x03, 0x3e, 0x9e, 0xa4, 0x88, 0x35, 0xaa, 0xd4, 0x0d, 0x16, 0x35, 0x62, 0xb7, 0xea,
+	0xa5, 0xd4, 0xc6, 0x11, 0xd6, 0x97, 0x8d, 0x15, 0xd7, 0xe0, 0x6f, 0x8a, 0xb2, 0x70, 0x01, 0x8f,
+	0x58, 0xd2, 0x1b, 0xf5, 0x7f, 0xc0, 0x53, 0x5b, 0x3b, 0x79, 0x68, 0x8a, 0x0b, 0xe8, 0xe6, 0xaa,
+	0x7e, 0xdc, 0x56, 0x45, 0xa6, 0x03, 0x2f, 0x62, 0x09, 0x97, 0x9d, 0x5c, 0xd5, 0x73, 0xf4, 0xb8,
+	0x50, 0x55, 0x79, 0x1d, 0xf8, 0x11, 0xc7, 0x85, 0xa8, 0xc5, 0x08, 0x7a, 0xaa, 0xb4, 0xcf, 0xc6,
+	0x3d, 0x10, 0xbc, 0x4d, 0xa9, 0x07, 0x67, 0xa9, 0xa9, 0x29, 0xcf, 0x87, 0xe2, 0x5b, 0x68, 0x1f,
+	0xca, 0xe2, 0x3f, 0xf8, 0xce, 0x3e, 0x69, 0x73, 0xbc, 0xe1, 0x60, 0xc4, 0x00, 0xf8, 0x4e, 0x6d,
+	0xe8, 0x00, 0x2e, 0x51, 0xc6, 0xf7, 0xe0, 0x61, 0x4a, 0x4c, 0xb0, 0x52, 0x4e, 0xd1, 0x38, 0x97,
+	0xa4, 0x71, 0xda, 0x68, 0xd7, 0x4c, 0x1b, 0xed, 0xb0, 0x32, 0x9d, 0x2f, 0xe8, 0x50, 0x2e, 0x51,
+	0xc6, 0x12, 0x3a, 0xd3, 0x63, 0x22, 0xd1, 0x87, 0x56, 0x3a, 0x3b, 0x2e, 0x6c, 0xa5, 0x33, 0x11,
+	0x83, 0x57, 0x98, 0xb5, 0x25, 0xc0, 0xaf, 0xef, 0x82, 0xff, 0x4e, 0x52, 0x0f, 0xf7, 0x66, 0x76,
+	0xa5, 0x09, 0xd9, 0x95, 0xa4, 0x27, 0x83, 0xf7, 0x7d, 0xc8, 0x3e, 0xf6, 0x21, 0xfb, 0xdc, 0x87,
+	0xec, 0xf5, 0x2b, 0xfc, 0xb3, 0x6c, 0xd3, 0x03, 0xb8, 0xfb, 0x0e, 0x00, 0x00, 0xff, 0xff, 0x1f,
+	0xd6, 0x55, 0xc9, 0x20, 0x02, 0x00, 0x00,
 }
