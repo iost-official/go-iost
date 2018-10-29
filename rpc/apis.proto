@@ -11,21 +11,15 @@ import "google/protobuf/Empty.proto";
 // rpc apis
 service Apis {
     // get the version info
-    rpc GetVersionInfo (google.protobuf.Empty) returns (VersionInfoRes) {
+    rpc GetNodeInfo (google.protobuf.Empty) returns (NodeInfoRes) {
         option (google.api.http) = {
-            get: "/getVersionInfo"
+            get: "/getNodeInfo"
         };
     }
     // get the chain info
-        rpc GetChainInfo (google.protobuf.Empty) returns (ChainInfoRes) {
-            option (google.api.http) = {
-                get: "/getChainInfo"
-            };
-        }
-    // get the current height of the blockchain
-    rpc GetHeight (google.protobuf.Empty) returns (HeightRes) {
+    rpc GetChainInfo (google.protobuf.Empty) returns (ChainInfoRes) {
         option (google.api.http) = {
-            get: "/getHeight"
+             get: "/getChainInfo"
         };
     }
     // get the tx by hash
@@ -64,28 +58,16 @@ service Apis {
             get: "/getBalance/{ID}/{useLongestChain}"
         };
     }
-    // get the Net ID
-    rpc GetNetID (google.protobuf.Empty) returns (GetNetIDRes) {
-        option (google.api.http) = {
-            get: "/getNetID"
-        };
-    }
-    // get peer info
-    rpc GetPeerInfo (google.protobuf.Empty) returns (GetPeerInfoRes) {
-        option (google.api.http) = {
-            get: "/getPeerInfo"
-        };
-    }
     // get the value of the corresponding key in stateDB
-    rpc GetState (GetStateReq) returns (GetStateRes) {
+    rpc GetContractStorage (GetContractStorageReq) returns (GetContractStorageRes) {
         option (google.api.http) = {
-            get: "/getState/{key}"
+            get: "/getContractStorage/{contractID}/{key}"
         };
     }
     // get contract by cid
     rpc GetContract (GetContractReq) returns (GetContractRes) {
         option (google.api.http) = {
-            get: "/getContract/{key}"
+            get: "/getContract/{contractID}"
         };
     }
     // receive encoded tx
@@ -137,16 +119,17 @@ message GetBalanceReq {
     bool useLongestChain = 2;
 }
 
-message GetStateReq {
+message GetContractStorageReq {
+    string contractID=1;
     //the key in the StateDB
-    string key=1;
+    string key=2;
     // get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
-    string field = 2;
+    string field=3;
 }
 
 message GetContractReq {
     //contract id
-    string key=1;
+    string contractID=1;
 }
 
 message RawTxReq {
@@ -159,25 +142,38 @@ message SubscribeReq {
     repeated event.Event.Topic topics=1;
 }
 
-message VersionInfoRes {
+message PeerInfo {
+    string ID=1;
+    string addr=2;
+}
+
+message NetworkInfo {
+    string ID=1;
+    int32 peerCount=2;
+    repeated PeerInfo peerInfo=3;
+}
+
+message NodeInfoRes {
     // build time and git hash
     string buildTime=1;
     string gitHash=2;
+    string mode=3;
+    NetworkInfo network=4;
 }
 
 message BlockInfo {
     //BlockHead
     block.BlockHead head = 1;
     //block hash
-    bytes hash = 2;
+    string hash = 2;
     //transaction list,works when complete is true
     repeated tx.TxRaw txs = 3;
     //transaction hash list,works when complete is false
-    repeated bytes txhash= 4 ;
+    repeated string txhash= 4 ;
     //transaction receipt list
     repeated tx.TxReceiptRaw receipts = 5;
     //transaction receiptHash list
-    repeated bytes receiptHash = 6;
+    repeated string receiptHash = 6;
 }
 
 message ChainInfoRes {
@@ -191,24 +187,14 @@ message ChainInfoRes {
     BlockInfo latestConfirmedBlock = 6;
 }
 
-message HeightRes {
-    // the height of the blockchain
-    int64 height=1;
-}
-
 message GetBalanceRes {
     // the queried balance
     int64 balance=1;
 }
 
-message GetNetIDRes {
-    //NetID
-    string ID=1;
-}
-
-message GetStateRes {
+message GetContractStorageRes {
     //the value of the corresponding key in the StateDB
-    string value=1;
+    string jsonStr=1;
 }
 
 message GetContractRes {
@@ -230,23 +216,13 @@ message txRes {
     //the queried transaction
     tx.TxRaw txRaw = 1;
     //transaction hash
-    bytes hash = 2;
+    string hash = 2;
 }
 
 message txReceiptRes {
     //transaction receipt
     tx.TxReceiptRaw txReceiptRaw = 1;
-    bytes hash = 2;
-}
-
-message PeerInfo {
-    string ID=1;
-    string addr=2;
-}
-
-message GetPeerInfoRes {
-    int32 peerCount=1;
-    repeated PeerInfo peerInfo=2;
+    string hash = 2;
 }
 
 message SubscribeRes {

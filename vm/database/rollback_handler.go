@@ -2,24 +2,27 @@ package database
 
 // RollbackHandler rollback delegate
 type RollbackHandler struct {
-	db  IMultiValue
 	lru *LRU
+	wc  *WriteCache
 }
 
-func newRollbackHandler(db IMultiValue, lru *LRU) RollbackHandler {
+func newRollbackHandler(lru *LRU, wc *WriteCache) RollbackHandler {
 	return RollbackHandler{
-		db:  db,
 		lru: lru,
+		wc:  wc,
 	}
 }
 
 // Commit commit a MVCC version
 func (m *RollbackHandler) Commit() {
-	m.db.Commit()
+	//ilog.Debug("write cache is:", m.wc.m)
+	m.wc.Flush()
+	m.wc.Drop()
+	//m.lru.Purge()
 }
 
 // Rollback rollback to newest MVCC version
 func (m *RollbackHandler) Rollback() {
-	m.lru.Purge()
-	m.db.Rollback()
+	m.wc.Drop()
+	//m.lru.Purge()
 }

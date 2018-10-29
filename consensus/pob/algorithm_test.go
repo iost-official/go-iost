@@ -61,7 +61,7 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	defer stateDB.Close()
 	vi := database.NewVisitor(0, stateDB)
 	vi.SetBalance(testID[0], 1000000000000)
-	vi.SetContract(native.ABI())
+	vi.SetContract(native.SystemABI())
 	vi.Commit()
 	stateDB.Tag(string(topBlock.HeadHash()))
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
@@ -133,8 +133,12 @@ func TestConfirmNode(t *testing.T) {
 		staticProperty = newStaticProperty(acc, []string{"id0", "id1", "id2", "id3", "id4"})
 
 		rootNode := &blockcache.BlockCacheNode{
-			Number:       1,
-			Witness:      "id0",
+			Block: &block.Block{
+				Head: &block.BlockHead{
+					Number:  1,
+					Witness: "id0",
+				},
+			},
 			ConfirmUntil: 0,
 		}
 		convey.Convey("Normal", func() {
@@ -144,7 +148,7 @@ func TestConfirmNode(t *testing.T) {
 			node = addNode(node, 5, 0, "id4")
 
 			confirmNode := calculateConfirm(node, rootNode)
-			convey.So(confirmNode.Number, convey.ShouldEqual, 2)
+			convey.So(confirmNode.Head.Number, convey.ShouldEqual, 2)
 		})
 
 		convey.Convey("Diconvey.Sordered normal", func() {
@@ -156,7 +160,7 @@ func TestConfirmNode(t *testing.T) {
 			node = addNode(node, 7, 0, "id3")
 
 			confirmNode := calculateConfirm(node, rootNode)
-			convey.So(confirmNode.Number, convey.ShouldEqual, 4)
+			convey.So(confirmNode.Head.Number, convey.ShouldEqual, 4)
 		})
 
 		convey.Convey("Diconvey.Sordered not enough", func() {
@@ -173,7 +177,7 @@ func TestConfirmNode(t *testing.T) {
 
 			node = addNode(node, 7, 2, "id0")
 			confirmNode = calculateConfirm(node, rootNode)
-			convey.So(confirmNode.Number, convey.ShouldEqual, 4)
+			convey.So(confirmNode.Head.Number, convey.ShouldEqual, 4)
 		})
 	})
 }
@@ -182,8 +186,12 @@ func TestNodeInfoUpdate(t *testing.T) {
 	convey.Convey("Test of node info update", t, func() {
 		staticProperty = newStaticProperty(&account.Account{ID: "id0"}, []string{"id0", "id1", "id2"})
 		rootNode := &blockcache.BlockCacheNode{
-			Number:   1,
-			Witness:  "id0",
+			Block: &block.Block{
+				Head: &block.BlockHead{
+					Number:  1,
+					Witness: "id0",
+				},
+			},
 			Children: make(map[*blockcache.BlockCacheNode]bool),
 		}
 		staticProperty.Watermark["id0"] = 2
@@ -201,7 +209,7 @@ func TestNodeInfoUpdate(t *testing.T) {
 			convey.So(staticProperty.Watermark["id0"], convey.ShouldEqual, 5)
 
 			node = calculateConfirm(node, rootNode)
-			convey.So(node.Number, convey.ShouldEqual, 2)
+			convey.So(node.Head.Number, convey.ShouldEqual, 2)
 		})
 
 		convey.Convey("Slot witness error", func() {
@@ -240,7 +248,7 @@ func TestNodeInfoUpdate(t *testing.T) {
 			node = addBlock(node, 6, "id2", 9)
 			updateWaterMark(node)
 			confirmNode = calculateConfirm(node, rootNode)
-			convey.So(confirmNode.Number, convey.ShouldEqual, 4)
+			convey.So(confirmNode.Head.Number, convey.ShouldEqual, 4)
 		})
 	})
 }
@@ -397,10 +405,14 @@ func TestVerifyBlock(t *testing.T) {
 
 func addNode(parent *blockcache.BlockCacheNode, number int64, confirm int64, witness string) *blockcache.BlockCacheNode {
 	node := &blockcache.BlockCacheNode{
+		Block: &block.Block{
+			Head: &block.BlockHead{
+				Number:  number,
+				Witness: witness,
+			},
+		},
 		Parent:       parent,
-		Number:       number,
 		ConfirmUntil: confirm,
-		Witness:      witness,
 	}
 	return node
 }

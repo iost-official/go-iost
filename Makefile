@@ -19,7 +19,7 @@ ifeq ($(shell uname),Linux)
 	export LD_LIBRARY_PATH=$(shell pwd)/vm/v8vm/v8/libv8/_linux_amd64
 endif
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
-LD_FLAGS := -X github.com/iost-official/go-iost/core/global.BUILD_TIME=$(BUILD_TIME) -X github.com/iost-official/go-iost/core/global.GIT_HASH=$(shell git rev-parse HEAD)
+LD_FLAGS := -X github.com/iost-official/go-iost/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/core/global.GitHash=$(shell git rev-parse HEAD)
 
 .PHONY: all build iserver iwallet lint test image devimage swagger protobuf install clean debug clear_debug_file
 
@@ -38,9 +38,9 @@ lint:
 
 test:
 ifeq ($(origin VERBOSE),undefined)
-	go test -coverprofile=coverage.txt -covermode=atomic ./...
+	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
 else
-	go test -v -coverprofile=coverage.txt -covermode=atomic ./...
+	go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 endif
 
 image:

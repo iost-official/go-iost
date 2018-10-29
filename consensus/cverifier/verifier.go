@@ -1,4 +1,4 @@
-package verifier
+package cverifier
 
 import (
 	"bytes"

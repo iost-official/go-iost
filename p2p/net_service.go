@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
@@ -42,10 +41,11 @@ type Service interface {
 	Stop()
 
 	ID() string
-	ConnectBPs(ids []string)
+	ConnectBPs([]string)
+	PutPeerToBlack(string)
 
-	Broadcast([]byte, MessageType, MessagePriority)
-	SendToPeer(PeerID, []byte, MessageType, MessagePriority)
+	Broadcast([]byte, MessageType, MessagePriority, bool)
+	SendToPeer(PeerID, []byte, MessageType, MessagePriority, bool)
 	Register(string, ...MessageType) chan IncomingMessage
 	Deregister(string, ...MessageType)
 
@@ -56,6 +56,7 @@ type Service interface {
 type NetService struct {
 	host        host.Host
 	peerManager *PeerManager
+	adminServer *adminServer
 	config      *common.P2PConfig
 }
 
@@ -87,6 +88,8 @@ func NewNetService(config *common.P2PConfig) (*NetService, error) {
 
 	ns.peerManager = NewPeerManager(host, config)
 
+	ns.adminServer = newAdminServer(config.AdminPort, ns.peerManager)
+
 	return ns, nil
 }
 
@@ -103,6 +106,7 @@ func (ns *NetService) LocalAddrs() []multiaddr.Multiaddr {
 // Start starts the jobs.
 func (ns *NetService) Start() error {
 	go ns.peerManager.Start()
+	go ns.adminServer.Start()
 	for _, addr := range ns.LocalAddrs() {
 		ilog.Infof("local multiaddr: %s/ipfs/%s", addr, ns.ID())
 	}
@@ -112,6 +116,7 @@ func (ns *NetService) Start() error {
 // Stop stops all the jobs.
 func (ns *NetService) Stop() {
 	ns.host.Close()
+	ns.adminServer.Stop()
 	ns.peerManager.Stop()
 	return
 }
@@ -122,13 +127,13 @@ func (ns *NetService) ConnectBPs(ids []string) {
 }
 
 // Broadcast broadcasts the data.
-func (ns *NetService) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
-	ns.peerManager.Broadcast(data, typ, mp)
+func (ns *NetService) Broadcast(data []byte, typ MessageType, mp MessagePriority, async bool) {
+	ns.peerManager.Broadcast(data, typ, mp, async)
 }
 
 // SendToPeer sends data to the given peer.
-func (ns *NetService) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
-	ns.peerManager.SendToPeer(peerID, data, typ, mp)
+func (ns *NetService) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority, async bool) {
+	ns.peerManager.SendToPeer(peerID, data, typ, mp, async)
 }
 
 // Register registers a message channel of the given types.
@@ -167,7 +172,7 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 }
 
 func (ns *NetService) streamHandler(s libnet.Stream) {
-	ns.peerManager.HandleStream(s)
+	ns.peerManager.HandleStream(s, inbound)
 }
 
 // NeighborStat dumps neighbors' status for debug.
@@ -175,7 +180,12 @@ func (ns *NetService) NeighborStat() map[string]interface{} {
 	return ns.peerManager.NeighborStat()
 }
 
-// GetNeighbors return neighbors
-func (ns *NetService) GetNeighbors() *sync.Map {
-	return ns.peerManager.neighbors
+// GetAllNeighbors return all neighbors.
+func (ns *NetService) GetAllNeighbors() []*Peer {
+	return ns.peerManager.GetAllNeighbors()
+}
+
+// PutPeerToBlack puts the peer's PID and IP to black list and close the connection.
+func (ns *NetService) PutPeerToBlack(id string) {
+	ns.peerManager.PutPeerToBlack(id)
 }

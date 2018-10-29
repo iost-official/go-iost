@@ -34,7 +34,7 @@ func NewMonitor() *Monitor {
 func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) (c *contract.Contract, abi *contract.ABI, args []interface{}, err error) {
 	var cid string
 	if h.IsDomain(contractName) {
-		cid = h.URL(contractName)
+		cid = h.ContractID(contractName)
 	} else {
 		cid = contractName
 	}
@@ -67,7 +67,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 
 	h.PushCtx()
 
-	h.Context().Set("contract_name", contractName)
+	h.Context().Set("contract_name", c.ID)
 	h.Context().Set("abi_name", api)
 
 	vm, ok := m.vms[c.Info.Lang]

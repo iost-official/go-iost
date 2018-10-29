@@ -5,11 +5,17 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	"github.com/golang/mock/gomock"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/genesis"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/p2p/mocks"
+	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -49,13 +55,23 @@ func TestDownloadController(t *testing.T) {
 }
 
 func TestSynchronizer(t *testing.T) {
+	ilog.Stop()
 	Convey("Test Synchronizer", t, func() {
-		baseVariable, err := global.FakeNew()
+		baseVariable, err := global.New(&common.Config{
+			DB: &common.DBConfig{
+				LdbPath: "Fakedb/",
+			},
+		})
+		genesis.FakeBv(baseVariable)
+
 		So(err, ShouldBeNil)
 		So(baseVariable, ShouldNotBeNil)
 		defer func() {
 			os.RemoveAll("Fakedb")
 		}()
+
+		vi := database.NewVisitor(0, baseVariable.StateDB())
+		fmt.Println("synchronizer 65", vi.Get("iost.vote-"+"pendingBlockNumber"))
 
 		blockCache, err := blockcache.NewBlockCache(baseVariable)
 		So(err, ShouldBeNil)
@@ -64,7 +80,7 @@ func TestSynchronizer(t *testing.T) {
 		channel := make(chan p2p.IncomingMessage, 1024)
 		mockP2PService.EXPECT().Register(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(channel).AnyTimes()
 		mockP2PService.EXPECT().Register(gomock.Any(), gomock.Any()).Return(channel)
-		mockP2PService.EXPECT().Broadcast(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(a interface{}, b interface{}, c interface{}) {
+		mockP2PService.EXPECT().Broadcast(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Do(func(a interface{}, b interface{}, c interface{}, d interface{}) {
 			channel <- *p2p.NewIncomingMessage("abc", a.([]byte), b.(p2p.MessageType))
 		}).AnyTimes()
 		sy, err := NewSynchronizer(baseVariable, blockCache, mockP2PService) //mock

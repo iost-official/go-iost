@@ -5,10 +5,11 @@ import (
 	"time"
 
 	"fmt"
+	"strings"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/verifier"
+	"github.com/iost-official/go-iost/consensus/cverifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
@@ -16,7 +17,7 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/verifier"
 )
 
 var (
@@ -27,13 +28,14 @@ var (
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
 	txLimit        = 80000 //limit it to 2000
-	txExecTime     = verifier.TxExecTimeLimit / 2
+	txExecTime     = cverifier.TxExecTimeLimit / 2
 	generateTxsNum = 0
 )
 
 func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) {
 	ilog.Info("[pob] generate Block start")
-	limitTime := time.NewTimer(time.Millisecond * 500)
+	st := time.Now()
+	limitTime := time.Millisecond * 500
 	txIter, head := txPool.TxIterator()
 	topBlock := head.Block
 	blk := block.Block{
@@ -48,9 +50,9 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		Receipts: []*tx.TxReceipt{},
 	}
 	db.Checkout(string(topBlock.HeadHash()))
-	engine := vm.NewEngine(blk.Head, db)
 
 	// call vote
+	v := verifier.Verifier{}
 	if blk.Head.Number%common.VoteInterval == 0 {
 		ilog.Info("vote start")
 		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
@@ -60,7 +62,7 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		if err != nil {
 			ilog.Errorf("fail to signTx, err:%v", err)
 		}
-		receipt, err := engine.Exec(trx, txExecTime)
+		receipt, err := v.Exec(blk.Head, db, trx, time.Millisecond*100)
 		if err != nil {
 			ilog.Errorf("fail to exec trx, err:%v", err)
 		}
@@ -70,36 +72,17 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 		blk.Txs = append(blk.Txs, trx)
 		blk.Receipts = append(blk.Receipts, receipt)
 	}
-	t, ok := txIter.Next()
-	delList := []*tx.Tx{}
-L:
-	for ok {
-		select {
-		case <-limitTime.C:
-			ilog.Info("time up")
-			break L
-		default:
-			if !txPool.TxTimeOut(t) {
-				if receipt, err := engine.Exec(t, txExecTime); err == nil {
-					blk.Txs = append(blk.Txs, t)
-					blk.Receipts = append(blk.Receipts, receipt)
-				} else {
-					ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
-					delList = append(delList, t)
-				}
-			} else {
-				delList = append(delList, t)
-			}
-			if len(blk.Txs) >= txLimit {
-				break L
-			}
-			t, ok = txIter.Next()
-		}
+	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
+		Mode:        0,
+		Timeout:     limitTime - st.Sub(time.Now()),
+		TxTimeLimit: time.Millisecond * 100,
+	})
+	if err != nil {
+		go txPool.DelTxList(dropList)
 	}
-
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
-	err := blk.CalculateHeadHash()
+	err = blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +91,6 @@ L:
 
 	metricsGeneratedBlockCount.Add(1, nil)
 	generateTxsNum += len(blk.Txs)
-	go txPool.DelTxList(delList)
 	return &blk, nil
 }
 
@@ -125,9 +107,8 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	return nil
 }
 
-//nolint
 func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB) error {
-	err := verifier.VerifyBlockHead(blk, parent, lib)
+	err := cverifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
 	}
@@ -138,12 +119,11 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return errWitness
 	}
 
-	// if it's vote block, check for votes
+	// check vote
 	if blk.Head.Number%common.VoteInterval == 0 {
-		if len(blk.Txs) == 0 || len(blk.Txs[0].Actions) == 0 ||
-			blk.Txs[0].Actions[0].Contract != "iost.vote" ||
-			blk.Txs[0].Actions[0].ActionName != "Stat" ||
-			blk.Txs[0].Actions[0].Data != "[]" {
+		if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
+			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
+			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
 
 			return errors.New("blk did not vote")
 		}
@@ -167,19 +147,23 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 			if err != nil {
 				return errTxSignature
 			}
-		case txpool.FoundPending:
 		}
 		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > txpool.Expiration {
 			return errTxTooOld
 		}
 	}
-	return verifier.VerifyBlockWithVM(blk, db)
+	v := verifier.Verifier{}
+	return v.Verify(blk, db, &verifier.Config{
+		Mode:        0,
+		Timeout:     common.SlotLength / 3 * time.Second,
+		TxTimeLimit: time.Millisecond * 100,
+	})
 }
 
 func updateWaterMark(node *blockcache.BlockCacheNode) {
-	node.ConfirmUntil = staticProperty.Watermark[node.Witness]
-	if node.Number >= staticProperty.Watermark[node.Witness] {
-		staticProperty.Watermark[node.Witness] = node.Number + 1
+	node.ConfirmUntil = staticProperty.Watermark[node.Head.Witness]
+	if node.Head.Number >= staticProperty.Watermark[node.Head.Witness] {
+		staticProperty.Watermark[node.Head.Witness] = node.Head.Number + 1
 	}
 }
 
@@ -189,24 +173,24 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 		ilog.Infof("[pob] flush start, number: %d, hash = %v", node.Number, common.Base58Encode(node.Block.HeadHash()))
 		bc.Flush(confirmedNode)
 		ilog.Infof("[pob] flush end, number: %d, hash = %v", node.Number, common.Base58Encode(node.Block.HeadHash()))
-		metricsConfirmedLength.Set(float64(confirmedNode.Number+1), nil)
+		metricsConfirmedLength.Set(float64(confirmedNode.Head.Number+1), nil)
 	}
 }
 
 func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
 	confirmLimit := staticProperty.NumberOfWitnesses*2/3 + 1
-	startNumber := node.Number
+	startNumber := node.Head.Number
 	var confirmNum int64
-	confirmUntilMap := make(map[int64]int64, startNumber-root.Number)
+	confirmUntilMap := make(map[int64]int64, startNumber-root.Head.Number)
 	for node != root {
-		if node.ConfirmUntil <= node.Number {
+		if node.ConfirmUntil <= node.Head.Number {
 			confirmNum++
 			confirmUntilMap[node.ConfirmUntil]++
 		}
 		if confirmNum >= confirmLimit {
 			return node
 		}
-		confirmNum -= confirmUntilMap[node.Number]
+		confirmNum -= confirmUntilMap[node.Head.Number]
 		node = node.Parent
 	}
 	return nil

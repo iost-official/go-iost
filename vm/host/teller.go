@@ -207,7 +207,10 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 
 // Privilege ...
 func (h *Teller) Privilege(id string) int {
-	am := h.h.ctx.Value("auth_list").(map[string]int)
+	am, ok := h.h.ctx.Value("auth_list").(map[string]int)
+	if !ok {
+		return 0
+	}
 	i, ok := am[id]
 	if !ok {
 		i = 0

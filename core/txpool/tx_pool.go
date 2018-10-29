@@ -121,15 +121,15 @@ func (pool *TxPImpl) verifyWorkers() {
 			pool.mu.Unlock()
 			continue
 		}
-		//ret = pool.verifyTx(&t)
-		//if ret != Success {
-		//	pool.mu.Unlock()
-		//	continue
-		//}
+		ret = pool.verifyTx(&t)
+		if ret != Success {
+			pool.mu.Unlock()
+			continue
+		}
 		pool.pendingTx.Add(&t)
 		pool.mu.Unlock()
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
-		//pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage)
+		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage, true)
 	}
 }
 
@@ -150,7 +150,7 @@ func (pool *TxPImpl) CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, er
 		}
 		dtm.Store(trh, nil)
 		if ok := pool.existTxInPending([]byte(trh)); !ok {
-			if pool.verifyTx(v) != Success {
+			if pool.verifyTx(v) != nil {
 				return v, errors.New("failed to verify")
 			}
 		}
@@ -287,20 +287,20 @@ func (pool *TxPImpl) initBlockTx() {
 	}
 }
 
-func (pool *TxPImpl) verifyTx(t *tx.Tx) TAddTx {
+func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
-		return CacheFullError
+		return fmt.Errorf("CacheFullError. Pending tx size is %d. Max cache is %d", pool.pendingTx.Size(), maxCacheTxs)
 	}
 	if t.GasPrice <= 0 {
-		return GasPriceError
+		return fmt.Errorf("GasPriceError. gas price %d", t.GasPrice)
 	}
 	if pool.TxTimeOut(t) {
-		return TimeError
+		return fmt.Errorf("TimeError")
 	}
 	if err := t.VerifySelf(); err != nil {
-		return VerifyError
+		return fmt.Errorf("VerifyError %v", err)
 	}
-	return Success
+	return nil
 }
 
 func slotToNSec(t int64) int64 {
@@ -445,7 +445,7 @@ func (pool *TxPImpl) updateForkChain(newHead *blockcache.BlockCacheNode) tFork {
 
 func (pool *TxPImpl) findForkBCN(newHead *blockcache.BlockCacheNode, oldHead *blockcache.BlockCacheNode) (*blockcache.BlockCacheNode, bool) {
 	for {
-		for oldHead != nil && oldHead.Number > newHead.Number {
+		for oldHead != nil && oldHead.Head.Number > newHead.Head.Number {
 			oldHead = oldHead.Parent
 		}
 		if oldHead == nil {

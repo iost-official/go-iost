@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -62,6 +63,7 @@ func (d *DB) Delete(key []byte) error {
 func (d *DB) Keys(prefix []byte) ([][]byte, error) {
 	iter := d.db.NewIterator(util.BytesPrefix(prefix), nil)
 	keys := make([][]byte, 0)
+
 	for iter.Next() {
 		key := make([]byte, len(iter.Key()))
 		copy(key, iter.Key())
@@ -100,4 +102,42 @@ func (d *DB) CommitBatch() error {
 // Close will close the database
 func (d *DB) Close() error {
 	return d.db.Close()
+}
+
+// NewIteratorByPrefix returns a new iterator by prefix
+func (d *DB) NewIteratorByPrefix(prefix []byte) interface{} {
+	iter := d.db.NewIterator(util.BytesPrefix(prefix), nil)
+	return &Iter{
+		iter: iter,
+	}
+}
+
+// Iter is the iterator for leveldb
+type Iter struct {
+	iter iterator.Iterator
+}
+
+// Next do next item of iterator
+func (i *Iter) Next() bool {
+	return i.iter.Next()
+}
+
+// Key returns the key of current item
+func (i *Iter) Key() []byte {
+	return i.iter.Key()
+}
+
+// Value returns the value of current item
+func (i *Iter) Value() []byte {
+	return i.iter.Value()
+}
+
+// Error returns the error of iterator
+func (i *Iter) Error() error {
+	return i.iter.Error()
+}
+
+// Release will release the iterator
+func (i *Iter) Release() {
+	i.iter.Release()
 }

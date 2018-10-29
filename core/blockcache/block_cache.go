@@ -3,9 +3,8 @@ package blockcache
 import (
 	"errors"
 	"fmt"
-	"sync"
-
 	"strconv"
+	"sync"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -26,26 +25,21 @@ const (
 // BCNType type of BlockCacheNode
 type BCNType int
 
+// The types of BlockCacheNode
 const (
-	// Linked ...
 	Linked BCNType = iota
-	// Single ...
 	Single
-	// Virtual ...
 	Virtual
 )
 
 // BlockCacheNode is the implementation of BlockCacheNode
 type BlockCacheNode struct { //nolint:golint
-	Block        *block.Block
+	*block.Block
+	WitnessList
 	Parent       *BlockCacheNode
 	Children     map[*BlockCacheNode]bool
 	Type         BCNType
-	Number       int64
-	Witness      string
 	ConfirmUntil int64
-	WitnessList
-	Extension []byte
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
@@ -70,42 +64,43 @@ func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
 func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block.Block) {
 	if bcn.Type == Virtual && parent != nil && block != nil {
 		bcn.Block = block
-		bcn.Number = block.Head.Number
-		bcn.Witness = block.Head.Witness
 		bcn.setParent(parent)
 	}
 }
 
 // NewBCN return a new block cache node instance
-func NewBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
-	bcn := BlockCacheNode{
-		Block:    block,
+func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
+	bcn := &BlockCacheNode{
+		Block:    blk,
 		Parent:   nil,
 		Children: make(map[*BlockCacheNode]bool),
 	}
-	if block != nil {
-		bcn.Number = block.Head.Number
-		bcn.Witness = block.Head.Witness
-	} else {
-		bcn.Number = -1
+	if blk == nil {
+		bcn.Block = &block.Block{
+			Head: &block.BlockHead{
+				Number: -1,
+			},
+		}
 	}
 	bcn.setParent(parent)
-	return &bcn
+	return bcn
 }
 
 // NewVirtualBCN return a new virtual block cache node instance
-func NewVirtualBCN(parent *BlockCacheNode, block *block.Block) *BlockCacheNode {
-	bcn := BlockCacheNode{
-		Block:    nil,
+func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
+	bcn := &BlockCacheNode{
+		Block: &block.Block{
+			Head: &block.BlockHead{},
+		},
 		Parent:   nil,
 		Children: make(map[*BlockCacheNode]bool),
 	}
-	if block != nil {
-		bcn.Number = block.Head.Number - 1
+	if blk != nil {
+		bcn.Head.Number = blk.Head.Number - 1
 	}
 	bcn.setParent(parent)
 	bcn.Type = Virtual
-	return &bcn
+	return bcn
 }
 
 // BlockCache defines BlockCache's API
@@ -165,20 +160,20 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		baseVariable: baseVariable,
 		stateDB:      baseVariable.StateDB().Fork(),
 	}
-	bc.linkedRoot.Number = -1
+	bc.linkedRoot.Head.Number = -1
 	lib, err := baseVariable.BlockChain().Top()
 	if err == nil {
 		bc.linkedRoot = NewBCN(nil, lib)
 		bc.linkedRoot.Type = Linked
 		bc.singleRoot.Type = Virtual
 		bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
-		bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
+		bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
 
 		if err := bc.updatePending(bc.linkedRoot); err != nil {
 			return nil, err
 		}
 		bc.linkedRoot.LibWitnessHandle()
-		ilog.Info("Witness Block Num:", bc.LinkedRoot().Number)
+		ilog.Info("Witness Block Num:", bc.LinkedRoot().Head.Number)
 		for _, v := range bc.linkedRoot.Active() {
 			ilog.Info("ActiveWitness:", v)
 		}
@@ -201,9 +196,9 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	}
 	bcn.Type = Linked
 	delete(bc.leaf, bcn.Parent)
-	bc.leaf[bcn] = bcn.Number
+	bc.leaf[bcn] = bcn.Head.Number
 	bc.setHead(bcn)
-	if bcn.Number > bc.head.Number {
+	if bcn.Head.Number > bc.head.Head.Number {
 		bc.head = bcn
 	}
 	pattern := strconv.FormatInt(bcn.Number, 10)
@@ -215,7 +210,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 
 func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
 	h.CopyWitness(h.Parent)
-	if h.Number%common.VoteInterval == 0 {
+	if h.Head.Number%common.VoteInterval == 0 {
 		if err := bc.updatePending(h); err != nil {
 			return err
 		}
@@ -246,7 +241,7 @@ func (bc *BlockCacheImpl) updateLongest() {
 	if ok {
 		return
 	}
-	cur := bc.linkedRoot.Number
+	cur := bc.linkedRoot.Head.Number
 	for key, val := range bc.leaf {
 		if val > cur {
 			cur = val
@@ -286,7 +281,7 @@ func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 	}
 	bc.head = bc.linkedRoot
 	bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
-	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Number
+	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
 }
 
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
@@ -314,7 +309,7 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 		delete(bc.leaf, bcn)
 	}
 	if bcn.Parent != nil && len(bcn.Parent.Children) == 1 && bcn.Parent.Type == Linked {
-		bc.leaf[bcn.Parent] = bcn.Parent.Number
+		bc.leaf[bcn.Parent] = bcn.Parent.Head.Number
 	}
 	for ch := range bcn.Children {
 		bc.del(ch)
@@ -323,12 +318,12 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) delSingle() {
-	height := bc.linkedRoot.Number
+	height := bc.linkedRoot.Head.Number
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
 	for bcn := range bc.singleRoot.Children {
-		if bcn.Number <= height {
+		if bcn.Head.Number <= height {
 			bc.del(bcn)
 		}
 	}
@@ -352,15 +347,10 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
-		ilog.Info("[pob] confirm ", retain.Number)
+		ilog.Info("[pob] confirm ", retain.Head.Number)
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
 		if err != nil {
 			ilog.Errorf("flush mvcc error: %v", err)
-			return err
-		}
-		err = bc.baseVariable.TxDB().Push(retain.Block.Txs, retain.Block.Receipts)
-		if err != nil {
-			ilog.Errorf("Database error, Transaction Push err:%v", err)
 			return err
 		}
 		bc.delNode(cur)
@@ -391,7 +381,7 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 	it := bc.head
 	for it != nil {
-		if it.Number == num {
+		if it.Head.Number == num {
 			return it.Block, nil
 		}
 		it = it.Parent

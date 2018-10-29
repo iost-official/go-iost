@@ -162,7 +162,7 @@
         ]
       }
     },
-    "/getContract/{key}": {
+    "/getContract/{contractID}": {
       "get": {
         "summary": "get contract by cid",
         "operationId": "GetContract",
@@ -176,7 +176,7 @@
         },
         "parameters": [
           {
-            "name": "key",
+            "name": "contractID",
             "description": "contract id",
             "in": "path",
             "required": true,
@@ -188,70 +188,25 @@
         ]
       }
     },
-    "/getHeight": {
-      "get": {
-        "summary": "get the current height of the blockchain",
-        "operationId": "GetHeight",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/rpcHeightRes"
-            }
-          }
-        },
-        "tags": [
-          "Apis"
-        ]
-      }
-    },
-    "/getNetID": {
-      "get": {
-        "summary": "get the Net ID",
-        "operationId": "GetNetID",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/rpcGetNetIDRes"
-            }
-          }
-        },
-        "tags": [
-          "Apis"
-        ]
-      }
-    },
-    "/getPeerInfo": {
-      "get": {
-        "summary": "get peer info",
-        "operationId": "GetPeerInfo",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/rpcGetPeerInfoRes"
-            }
-          }
-        },
-        "tags": [
-          "Apis"
-        ]
-      }
-    },
-    "/getState/{key}": {
+    "/getContractStorage/{contractID}/{key}": {
       "get": {
         "summary": "get the value of the corresponding key in stateDB",
-        "operationId": "GetState",
+        "operationId": "GetContractStorage",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcGetStateRes"
+              "$ref": "#/definitions/rpcGetContractStorageRes"
             }
           }
         },
         "parameters": [
+          {
+            "name": "contractID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
           {
             "name": "key",
             "description": "the key in the StateDB",
@@ -267,6 +222,23 @@
             "type": "string"
           }
         ],
+        "tags": [
+          "Apis"
+        ]
+      }
+    },
+    "/getNodeInfo": {
+      "get": {
+        "summary": "get the version info",
+        "operationId": "GetNodeInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcNodeInfoRes"
+            }
+          }
+        },
         "tags": [
           "Apis"
         ]
@@ -345,23 +317,6 @@
             "type": "string"
           }
         ],
-        "tags": [
-          "Apis"
-        ]
-      }
-    },
-    "/getVersionInfo": {
-      "get": {
-        "summary": "get the version info",
-        "operationId": "GetVersionInfo",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/rpcVersionInfoRes"
-            }
-          }
-        },
         "tags": [
           "Apis"
         ]
@@ -583,7 +538,6 @@
         },
         "hash": {
           "type": "string",
-          "format": "byte",
           "title": "block hash"
         },
         "txs": {
@@ -596,8 +550,7 @@
         "txhash": {
           "type": "array",
           "items": {
-            "type": "string",
-            "format": "byte"
+            "type": "string"
           },
           "title": "transaction hash list,works when complete is false"
         },
@@ -611,8 +564,7 @@
         "receiptHash": {
           "type": "array",
           "items": {
-            "type": "string",
-            "format": "byte"
+            "type": "string"
           },
           "title": "transaction receiptHash list"
         }
@@ -675,18 +627,21 @@
         }
       }
     },
-    "rpcGetNetIDRes": {
+    "rpcGetContractStorageRes": {
       "type": "object",
       "properties": {
-        "ID": {
+        "jsonStr": {
           "type": "string",
-          "title": "NetID"
+          "title": "the value of the corresponding key in the StateDB"
         }
       }
     },
-    "rpcGetPeerInfoRes": {
+    "rpcNetworkInfo": {
       "type": "object",
       "properties": {
+        "ID": {
+          "type": "string"
+        },
         "peerCount": {
           "type": "integer",
           "format": "int32"
@@ -699,22 +654,21 @@
         }
       }
     },
-    "rpcGetStateRes": {
+    "rpcNodeInfoRes": {
       "type": "object",
       "properties": {
-        "value": {
+        "buildTime": {
           "type": "string",
-          "title": "the value of the corresponding key in the StateDB"
-        }
-      }
-    },
-    "rpcHeightRes": {
-      "type": "object",
-      "properties": {
-        "height": {
-          "type": "string",
-          "format": "int64",
-          "title": "the height of the blockchain"
+          "title": "build time and git hash"
+        },
+        "gitHash": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "network": {
+          "$ref": "#/definitions/rpcNetworkInfo"
         }
       }
     },
@@ -769,18 +723,6 @@
         }
       }
     },
-    "rpcVersionInfoRes": {
-      "type": "object",
-      "properties": {
-        "buildTime": {
-          "type": "string",
-          "title": "build time and git hash"
-        },
-        "gitHash": {
-          "type": "string"
-        }
-      }
-    },
     "rpctxReceiptRes": {
       "type": "object",
       "properties": {
@@ -789,8 +731,7 @@
           "title": "transaction receipt"
         },
         "hash": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         }
       }
     },
@@ -803,7 +744,6 @@
         },
         "hash": {
           "type": "string",
-          "format": "byte",
           "title": "transaction hash"
         }
       }

@@ -64,8 +64,6 @@ func TestBlockCache(t *testing.T) {
 	s2a := genBlock(s1, "w3", 3)
 	s3 := genBlock(s2, "w4", 4)
 
-	txdb := core_mock.NewMockTxDB(ctl)
-	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
@@ -87,7 +85,6 @@ func TestBlockCache(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
-	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
@@ -169,8 +166,6 @@ func TestVote(t *testing.T) {
 	//
 	//fmt.Println(b5)
 
-	txdb := core_mock.NewMockTxDB(ctl)
-	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
@@ -193,7 +188,6 @@ func TestVote(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
-	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 
 	Convey("test api", t, func() {
@@ -213,11 +207,14 @@ func TestVote(t *testing.T) {
 	Convey("test update", t, func() {
 		bc, _ := NewBlockCache(global)
 		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
-		bc.Link(&BlockCacheNode{Block: b1})
+		node1 := NewBCN(bc.linkedRoot, b1)
+		node2 := NewBCN(node1, b2)
+		node3 := NewBCN(node2, b3)
+		bc.Link(node1)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-		bc.Link(&BlockCacheNode{Block: b2})
+		bc.Link(node2)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-		bc.Link(&BlockCacheNode{Block: b3})
+		bc.Link(node3)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
 
 	})

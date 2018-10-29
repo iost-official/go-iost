@@ -67,8 +67,8 @@ type PoB struct {
 	chVerifyBlock   chan *verifyBlockMessage
 }
 
-// NewPoB init a new PoB.
-func NewPoB(account *account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+// New init a new PoB.
+func New(account *account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
 	p := PoB{
 		account:         account,
 		baseVariable:    baseVariable,
@@ -163,7 +163,7 @@ func (p *PoB) handleRecvBlockHash(blkInfo *message.BlockInfo, peerID p2p.PeerID)
 	p.blockReqMap.Store(string(blkInfo.Hash), time.AfterFunc(blockReqTimeout, func() {
 		p.blockReqMap.Delete(string(blkInfo.Hash))
 	}))
-	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage)
+	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage, true)
 }
 
 func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
@@ -176,7 +176,7 @@ func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 			ilog.Errorf("fail to encode block: %v, err=%v", rh.Number, err)
 			return
 		}
-		p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
+		p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage, true)
 		return
 	}
 	ilog.Infof("failed to get block from blockcache. err=%v, try from blockchain", err)
@@ -185,7 +185,7 @@ func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 		ilog.Warnf("failed to get block from blockchain. err=%v", err)
 		return
 	}
-	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
+	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage, true)
 }
 
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
@@ -198,7 +198,7 @@ func (p *PoB) broadcastBlockHash(blk *block.Block) {
 		ilog.Error("fail to encode block hash")
 	} else {
 		if p.baseVariable.Mode() == global.ModeNormal {
-			p.p2pService.Broadcast(b, p2p.NewBlockHash, p2p.UrgentMessage)
+			p.p2pService.Broadcast(b, p2p.NewBlockHash, p2p.UrgentMessage, true)
 		}
 	}
 }
@@ -320,7 +320,7 @@ func (p *PoB) scheduleLoop() {
 							ilog.Error(err.Error())
 							continue
 						}
-						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
+						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
 						ilog.Infof("[pob] generate block time cost: %v", calculateTime(blk))
 						metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
 						if num == continuousNum-1 {
