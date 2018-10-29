@@ -40,7 +40,7 @@ var (
 
 var (
 	blockReqTimeout = 3 * time.Second
-	continuousNum   = 5
+	continuousNum   = 1
 )
 
 type verifyBlockMessage struct {
@@ -303,31 +303,24 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Duration(nextSchedule)):
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
-				ilog.Infof("Mode: %v", p.baseVariable.Mode())
 				if p.baseVariable.Mode() == global.ModeNormal {
-					generateBlockTicker := time.NewTicker(time.Millisecond * 100)
+					generateBlockTicker := time.NewTicker(time.Millisecond * 1000)
 					num := 0
 					generateTxsNum = 0
 					for {
 						p.txPool.Lock()
-						ilog.Infof("successfully get lock")
 						blk, err := generateBlock(p.account, p.txPool, p.produceDB)
-						ilog.Infof("end of generateBlock")
 						p.txPool.Release()
-						ilog.Infof("end of release")
 						if err != nil {
 							ilog.Error(err)
 							continue
 						}
-						ilog.Infof("start to encode")
 						blkByte, err := blk.Encode()
 						if err != nil {
 							ilog.Error(err.Error())
 							continue
 						}
-						ilog.Infof("start to broadcast")
 						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
-						ilog.Infof("end of broadcast")
 						ilog.Infof("[pob] generate block time cost: %v", calculateTime(blk))
 						metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
 						if num == continuousNum-1 {
@@ -347,7 +340,6 @@ func (p *PoB) scheduleLoop() {
 						case <-generateBlockTicker.C:
 						}
 					}
-					ilog.Infof("total num: %v", generateTxsNum)
 					metricsTxSize.Set(float64(generateTxsNum), nil)
 					generateBlockTicker.Stop()
 				}
