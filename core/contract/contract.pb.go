@@ -490,9 +490,6 @@ func encodeVarintContract(dAtA []byte, offset int, v uint64) int {
 	return offset + 1
 }
 func (m *Info) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.Lang)
@@ -516,9 +513,6 @@ func (m *Info) Size() (n int) {
 }
 
 func (m *ABI) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.Name)
@@ -548,9 +542,6 @@ func (m *ABI) Size() (n int) {
 }
 
 func (m *Cost) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	if m.Data != 0 {
@@ -569,9 +560,6 @@ func (m *Cost) Size() (n int) {
 }
 
 func (m *Contract) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.ID)

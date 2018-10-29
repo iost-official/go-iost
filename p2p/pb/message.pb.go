@@ -295,9 +295,6 @@ func encodeVarintMessage(dAtA []byte, offset int, v uint64) int {
 	return offset + 1
 }
 func (m *RoutingQuery) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	if len(m.Ids) > 0 {
@@ -313,9 +310,6 @@ func (m *RoutingQuery) Size() (n int) {
 }
 
 func (m *PeerInfo) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	l = len(m.Id)
@@ -335,9 +329,6 @@ func (m *PeerInfo) Size() (n int) {
 }
 
 func (m *RoutingResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
 	var l int
 	_ = l
 	if len(m.Peers) > 0 {
