@@ -1,4 +1,4 @@
-const softFloatRate = 1e8;
+const softFloatRate = 1;
 const producerRegisterFee = 1000 * 1000 * softFloatRate;
 const preProducerThreshold = 2100 * 10000;
 const voteLockTime = 200;

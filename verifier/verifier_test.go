@@ -359,7 +359,7 @@ func TestGenesis(t *testing.T) {
 	v := Verifier{}
 	txr, err := v.Exec(&blockHead, mvccdb, trx, time.Millisecond*100)
 	if err != nil || txr.Status.Code != tx.Success {
-		t.Fatal(err)
+		t.Fatal(err, txr)
 	}
 	fmt.Println(txr)
 
