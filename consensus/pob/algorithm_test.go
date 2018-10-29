@@ -59,13 +59,13 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	}
 	defer stateDB.Close()
 	vi := database.NewVisitor(0, stateDB)
-	vi.SetBalance(testID[0], 1000000000000)
+	vi.SetBalance(testID[0], 100000000000000000)
 	vi.SetContract(native.SystemABI())
 	vi.Commit()
 	stateDB.Tag(string(topBlock.HeadHash()))
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
 	pendingTx := txpool.NewSortedTxMap()
-	for i := 0; i < 20000; i++ {
+	for i := 0; i < 40000; i++ {
 		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 		trx, _ := MakeTx(act)
 		pendingTx.Add(trx)
@@ -73,7 +73,6 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	mockTxPool.EXPECT().TxIterator().Return(pendingTx.Iter(), &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
 	mockTxPool.EXPECT().TxTimeOut(gomock.Any()).Return(false).AnyTimes()
 	mockTxPool.EXPECT().DelTxList(gomock.Any()).AnyTimes()
-
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
 		generateBlock(account, mockTxPool, stateDB)
