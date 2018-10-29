@@ -27,7 +27,8 @@ func NewTeller(h *Host) Teller {
 	}
 }
 
-func (h *Teller) transfer(from, to string, amount int64) error {
+// TransferRaw ...
+func (h *Teller) TransferRaw(from, to string, amount int64) error {
 	bf := h.h.db.Balance(from)
 	//ilog.Debugf("%v's balance : %v", from, bf)
 	if strings.HasPrefix(from, ContractAccountPrefix) && bf >= amount || bf > amount {
@@ -131,7 +132,7 @@ func (h *Teller) Transfer(from, to string, amount int64) (*contract.Cost, error)
 		}
 	}
 
-	err := h.transfer(from, to, amount)
+	err := h.TransferRaw(from, to, amount)
 	return TransferCost, err
 }
 
@@ -156,7 +157,7 @@ func (h *Teller) TopUp(c, from string, amount int64) (*contract.Cost, error) {
 
 // Countermand ...
 func (h *Teller) Countermand(c, to string, amount int64) (*contract.Cost, error) {
-	return TransferCost, h.transfer(ContractGasPrefix+c, to, amount)
+	return TransferCost, h.TransferRaw(ContractGasPrefix+c, to, amount)
 }
 
 // PayCost ...
@@ -177,22 +178,22 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 		}
 		bfee := fee / 10
 		if strings.HasPrefix(k, "IOST") {
-			err := h.transfer(k, witness, fee-bfee)
+			err := h.TransferRaw(k, witness, fee-bfee)
 			if err != nil {
 				return err
 			}
 			// 10% of gas transferred to iost.bonus
-			err = h.transfer(k, ContractAccountPrefix+"iost.bonus", bfee)
+			err = h.TransferRaw(k, ContractAccountPrefix+"iost.bonus", bfee)
 			if err != nil {
 				return err
 			}
 		} else if strings.HasPrefix(k, ContractGasPrefix) {
-			err := h.transfer(k, witness, fee-bfee)
+			err := h.TransferRaw(k, witness, fee-bfee)
 			if err != nil {
 				return err
 			}
 			// 10% of gas transferred to iost.bonus
-			err = h.transfer(k, ContractAccountPrefix+"iost.bonus", bfee)
+			err = h.TransferRaw(k, ContractAccountPrefix+"iost.bonus", bfee)
 			if err != nil {
 				return err
 			}

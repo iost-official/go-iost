@@ -53,9 +53,9 @@ service Apis {
         };
     }
     // get the balance of some account by account ID
-    rpc GetBalance (GetBalanceReq) returns (GetBalanceRes) {
+    rpc GetAccountInfo (GetAccountReq) returns (GetAccountRes) {
         option (google.api.http) = {
-            get: "/getBalance/{ID}/{useLongestChain}"
+            get: "/getAccountInfo/{ID}/{useLongestChain}"
         };
     }
     // get the value of the corresponding key in stateDB
@@ -112,7 +112,7 @@ message BlockByNumReq {
     bool complete=2;    
 }
 
-message GetBalanceReq {
+message GetAccountReq {
     //account ID
     string ID=1;
     // useLongestChain means whether geting the balance also from pending blocks(in the longest chain)
@@ -187,9 +187,11 @@ message ChainInfoRes {
     BlockInfo latestConfirmedBlock = 6;
 }
 
-message GetBalanceRes {
+message GetAccountRes {
     // the queried balance
     int64 balance=1;
+    // current gas
+    int64 gas=2;
 }
 
 message GetContractStorageRes {
