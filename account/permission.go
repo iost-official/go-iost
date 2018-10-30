@@ -1,22 +1,27 @@
 package account
 
-import "encoding/json"
-
+// Account type of a permission tree
 type Account struct {
 	ID          string                 `json:"id"`
 	Groups      map[string]*Group      `json:"groups"`
 	Permissions map[string]*Permission `json:"permissions"`
 }
+
+// User identity of a permission owner
 type User struct {
 	ID         string `json:"id"` // key pair id
 	Permission string `json:"permission"`
 	IsKeyPair  bool   `json:"is_key_pair"`
 	Weight     int    `json:"weight"`
 }
+
+// Group group of permissions
 type Group struct {
 	Name  string  `json:"name"`
 	Users []*User `json:"users"`
 }
+
+// Permission permission struct
 type Permission struct {
 	Name      string   `json:"name"`
 	Groups    []string `json:"groups"`
@@ -24,6 +29,7 @@ type Permission struct {
 	Threshold int      `json:"threshold"`
 }
 
+// NewAccount a new empty account
 func NewAccount(id string) *Account {
 	return &Account{
 		ID:          id,
@@ -32,6 +38,7 @@ func NewAccount(id string) *Account {
 	}
 }
 
+// NewInitAccount new account with owner and active
 func NewInitAccount(id, ownerKey, activeKey string) *Account {
 	a := &Account{
 		ID:          id,
@@ -61,12 +68,4 @@ func NewInitAccount(id, ownerKey, activeKey string) *Account {
 		},
 	}
 	return a
-}
-
-func (a *Account) Encode() []byte {
-	buf, err := json.Marshal(a)
-	if err != nil {
-		panic(err)
-	}
-	return buf
 }

@@ -7,10 +7,12 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 )
 
+// Authority module of ...
 type Authority struct {
 	h *Host
 }
 
+// RequireAuth check auth
 func (h *Authority) RequireAuth(id, p string) (bool, *contract.Cost) {
 	authList := h.h.ctx.Value("auth_list")
 	authMap := authList.(map[string]int)
@@ -18,6 +20,7 @@ func (h *Authority) RequireAuth(id, p string) (bool, *contract.Cost) {
 	return h.requireAuth(id, p, authMap)
 }
 
+// ReadAuth read auth
 func (h *Authority) ReadAuth(id string) (*account.Account, *contract.Cost) {
 	acc, cost := h.h.GlobalMapGet("iost.auth", "account", id)
 	if acc == nil {
