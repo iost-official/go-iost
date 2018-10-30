@@ -275,7 +275,7 @@ func TestTransfer(t *testing.T) {
 	tt, err := MakeTx(tx.Action{
 		Contract:   "iost.system",
 		ActionName: "Transfer",
-		Data:       fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], 10000),
+		Data:       fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], 0.0001),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -336,12 +336,12 @@ func TestGenesis(t *testing.T) {
 	// deploy iost.vote
 	voteFilePath := "../contract/vote.js"
 	voteAbiPath := "../contract/vote.js.abi"
-	fd, err := common.ReadFile(voteFilePath)
+	fd, err := ioutil.ReadFile(voteFilePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	rawCode := string(fd)
-	fd, err = common.ReadFile(voteAbiPath)
+	fd, err = ioutil.ReadFile(voteAbiPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -387,7 +387,7 @@ func TestGenesis(t *testing.T) {
 	v := Verifier{}
 	txr, err := v.Exec(&blockHead, mvccdb, trx, time.Millisecond*100)
 	if err != nil || txr.Status.Code != tx.Success {
-		t.Fatal(err)
+		t.Fatal(err, txr)
 	}
 	fmt.Println(txr)
 

@@ -8,6 +8,9 @@ import (
 
 	"strconv"
 
+	"encoding/json"
+	"io/ioutil"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -19,7 +22,6 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
-	"encoding/json"
 )
 
 func watchTime(f func()) time.Duration {
@@ -63,6 +65,7 @@ func array2json(ss []interface{}) string {
 }
 
 var adminID string
+
 func prepareContract(t *testing.T) *JSTester {
 	js := NewJSTester(t)
 	lc, err := ReadFile("../contract/vote.js")
@@ -144,7 +147,7 @@ func TestJS1_Vote1(t *testing.T) {
 	defer js.Clear()
 
 	for i := 6; i <= 18; i += 2 {
-		if ! (int64(40000000*1e8) < js.vi.Balance(testID[i])) {
+		if !(int64(40000000*1e8) < js.vi.Balance(testID[i])) {
 			t.Fatal("error in balance :", i, js.vi.Balance(testID[i]))
 		}
 	}
@@ -307,8 +310,8 @@ func TestJS_Vote(t *testing.T) {
 			r = js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 1000000))
 			So(r.Status.Message, ShouldEqual, "")
 
-			So(js.vi.Servi(testID[0]), ShouldEqual, int64(1055000))
-			So(js.vi.TotalServi(), ShouldEqual, int64(1055000))
+			So(js.vi.Servi(testID[0]), ShouldEqual, int64(1055000*1e8))
+			So(js.vi.TotalServi(), ShouldEqual, int64(1055000*1e8))
 			// stat pending producers don't get score
 
 			// seven
@@ -471,8 +474,8 @@ func TestJS_Vote(t *testing.T) {
 			r = js.TestJS("Unvote", fmt.Sprintf(`["%v", "%v", %d]`, testID[0], testID[0], 9000000))
 			So(r.Status.Message, ShouldEqual, "")
 
-			So(js.vi.Servi(testID[0]), ShouldEqual, 91055000)
-			So(js.vi.TotalServi(), ShouldEqual, 91055000)
+			So(js.vi.Servi(testID[0]), ShouldEqual, 91055000*1e8)
+			So(js.vi.TotalServi(), ShouldEqual, 91055000*1e8)
 
 			// re register, score = 0, vote = 0
 			r = js.TestJS("RegisterProducer", fmt.Sprintf(`["%v","loc","url","netid"]`, testID[0]))
@@ -498,47 +501,45 @@ func TestJS_Vote(t *testing.T) {
 			r = js.TestJSWithAuth("UnregisterProducer", fmt.Sprintf(`["%v"]`, testID[10]), testID[11])
 			So(r.Status.Message, ShouldContainSubstring, "can't unregist")
 
-			// test bonus
-			act2 := tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
-			trx2, err := MakeTx(act2)
-			if err != nil {
-				t.Fatal(err)
-			}
-			r, err = js.e.Exec(trx2, time.Second)
-			if err != nil || r.Status.Code != tx.Success {
-				t.Fatal(err, r)
-			}
-
-			/*
-			So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
-			So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000876051)
-			So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 23299)
-			act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
-
-			trx2, err = MakeTx(act2)
-			if err != nil {
-				t.Fatal(err)
-			}
-			r, err = js.e.Exec(trx2, time.Second)
-			if err != nil || r.Status.Code != tx.Success {
-				t.Fatal(err, r)
-			}
-
-			So(js.vi.Servi(testID[0]), ShouldEqual, 0)
-			So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 137)
-			So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000899516)
-			*/
+			//// test bonus
+			//act2 := tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 1))
+			//trx2, err := MakeTx(act2)
+			//if err != nil {
+			//	t.Fatal(err)
+			//}
+			//r, err = js.e.Exec(trx2, time.Second)
+			//if err != nil || r.Status.Code != tx.Success {
+			//	t.Fatal(err, r)
+			//}
+			//
+			//So(js.vi.Servi(testID[0]), ShouldEqual, 91054999)
+			//So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000876051)
+			//So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 23299)
+			//act2 = tx.NewAction("iost.bonus", "ClaimBonus", fmt.Sprintf(`["%v", %d]`, testID[0], 91054999))
+			//
+			//trx2, err = MakeTx(act2)
+			//if err != nil {
+			//	t.Fatal(err)
+			//}
+			//r, err = js.e.Exec(trx2, time.Second)
+			//if err != nil || r.Status.Code != tx.Success {
+			//	t.Fatal(err, r)
+			//}
+			//
+			//So(js.vi.Servi(testID[0]), ShouldEqual, 0)
+			//So(js.vi.Balance(host.ContractAccountPrefix+"iost.bonus"), ShouldEqual, 620)
+			//So(js.vi.Balance(testID[0]), ShouldEqual, 3900000000492070)
 		})
 
 		Convey("test of vote update", func() {
 			t.Skip()
 
-			fd, err := common.ReadFile("./test_data/vote_update.js")
+			fd, err := ioutil.ReadFile("./test_data/vote_update.js")
 			if err != nil {
 				t.Fatal(err)
 			}
 			rawCode := string(fd)
-			fd, err = common.ReadFile("./test_data/vote_update.js.abi")
+			fd, err = ioutil.ReadFile("./test_data/vote_update.js.abi")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -591,12 +592,12 @@ func TestJS_Genesis(t *testing.T) {
 	// deploy iost.vote
 	voteFilePath := VoteContractPath + "vote.js"
 	voteAbiPath := VoteContractPath + "vote.js.abi"
-	fd, err := common.ReadFile(voteFilePath)
+	fd, err := ioutil.ReadFile(voteFilePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	rawCode := string(fd)
-	fd, err = common.ReadFile(voteAbiPath)
+	fd, err = ioutil.ReadFile(voteAbiPath)
 	if err != nil {
 		t.Fatal(err)
 	}

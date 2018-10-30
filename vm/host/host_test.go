@@ -183,7 +183,7 @@ func TestTeller_Transfer(t *testing.T) {
 		return nil
 	})
 
-	host.Transfer("hello", "world", 3)
-	host.Transfer("hello", "world", 3)
+	host.Transfer("hello", "world", "3")
+	host.Transfer("hello", "world", "3")
 
 }

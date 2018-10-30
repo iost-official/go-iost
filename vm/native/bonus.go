@@ -31,11 +31,11 @@ var (
 	}
 	claimBonus = &abi{
 		name: "ClaimBonus",
-		args: []string{"string", "number"},
+		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			cost = contract.Cost0()
 			acc := args[0].(string)
-			amount := args[1].(int64)
+			amount := args[1].(string)
 
 			ok, cost0 := h.RequireAuth(acc, "active")
 			cost.AddAssign(cost0)
@@ -43,7 +43,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 
-			totalServi, cost0 := h.TotalServi()
+			_, cost0 = h.TotalServi()
 			cost.AddAssign(cost0)
 
 			cost0, err = h.ConsumeServi(acc, amount)
@@ -52,22 +52,24 @@ var (
 				return nil, cost, err
 			}
 
-			bl, cost0, err := h.GetBalance("iost.bonus")
+			_, cost0, err = h.GetBalance("iost.bonus")
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
-			token := amount * 1.0 / totalServi * bl
-			if token > bl {
-				token = bl
-			}
-			if token <= 0 {
-				return []interface{}{}, cost, nil
-			}
+			/*
+				token := amount * 1.0 / totalServi * bl
+				if token > bl {
+					token = bl
+				}
+				if token <= 0 {
+					return []interface{}{}, cost, nil
+				}
 
-			cost0, err = h.Withdraw(acc, token)
-			cost.AddAssign(cost0)
+				cost0, err = h.Withdraw(acc, token)
+				cost.AddAssign(cost0)
 
+			*/
 			return []interface{}{}, cost, err
 		},
 	}
