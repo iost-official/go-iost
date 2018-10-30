@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/vm/host"
 )
 
@@ -15,6 +14,9 @@ const (
 	gasAccount = "IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4"
 	//gasAccount = account.NewAccount(common.Base58Decode("5C9JWxSk6w8qpeow1tKK6owvQzxjBoVaSWTfcxmHqpnEcRGDX26T9px1ScXUKhsghUNwTvoxMxxcQoLdoZhSswkx"), crypto.Ed25519)
 )
+
+// IOSTRatio ...
+const IOSTRatio int64 = 100000000
 
 var gasABIs map[string]*abi
 
@@ -57,7 +59,7 @@ var (
 				return nil, host.CommonErrorCost(1), fmt.Errorf("balance not enough %d < %d", balance, pledgeAmount)
 			}
 			// TODO fix the account here
-			err = h.Teller.TransferRaw(userName, gasAccount, pledgeAmount*global.IOSTRatio)
+			err = h.Teller.TransferRaw(userName, gasAccount, pledgeAmount*IOSTRatio)
 			cost.AddAssign(host.TransferCost)
 			if err != nil {
 				return nil, cost, err
@@ -101,7 +103,7 @@ var (
 				return nil, cost, err
 			}
 			// TODO fix the account here
-			err = h.Teller.TransferRaw(gasAccount, userName, unpledgeAmount*global.IOSTRatio)
+			err = h.Teller.TransferRaw(gasAccount, userName, unpledgeAmount*IOSTRatio)
 			cost.AddAssign(host.PledgeForGasCost)
 			if err != nil {
 				return nil, cost, err
@@ -110,3 +112,5 @@ var (
 		},
 	}
 )
+
+

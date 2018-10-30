@@ -26,8 +26,6 @@ var BuildTime string
 // GitHash git hash
 var GitHash string
 
-const IOSTRatio int64 = 100000000
-
 // String return string of mode
 func (m TMode) String() string {
 	switch m {
