@@ -137,33 +137,37 @@ L:
 		if t == nil {
 			break L
 		}
-
+		ilog.Infof("[tx]tx: %v", t)
 		isolator.PrepareTx(t, limit)
-
 		var r *tx.TxReceipt
 		r, err = isolator.Run()
 		if err != nil {
 			provider.Drop(t, err)
 			continue L
 		}
+		ilog.Infof("[tx]one", t)
 		if r.Status.Code == 5 && limit < c.TxTimeLimit {
 			provider.Return(t)
 			break L
 		}
+		ilog.Infof("[tx]two", t)
 		err = isolator.PayCost()
 		if err != nil {
 			provider.Drop(t, err)
 			continue L
 		}
+		ilog.Infof("[tx]three", t)
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)
+		ilog.Infof("[tx]success", t)
 	}
 	buf, err := json.Marshal(info)
 	blk.Head.Info = buf
 	for _, t := range blk.Txs {
 		provider.Drop(t, nil)
 	}
+	ilog.Infof("blk gen success, return")
 	return err
 }
 
