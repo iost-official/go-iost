@@ -13,6 +13,7 @@ typedef struct {
   const char *jsPath;
   size_t gasUsed;
   size_t gasLimit;
+  size_t memLimit;
   std::unique_ptr<ThreadPool> threadPool;
 } Sandbox;
 

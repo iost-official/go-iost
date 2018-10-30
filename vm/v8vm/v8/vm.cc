@@ -1,5 +1,6 @@
 #include "vm.h"
 #include "v8.h"
+#include "allocator.h"
 #include "sandbox.h"
 #include "compile.h"
 #include "snapshot_blob.bin.h"
@@ -40,7 +41,7 @@ IsolatePtr newIsolate(CustomStartupData customStartupData) {
 
     extern intptr_t externalRef[];
     params.snapshot_blob = blob;
-    params.array_buffer_allocator = ArrayBuffer::Allocator::NewDefaultAllocator();
+    params.array_buffer_allocator = new ArrayBufferAllocator();
     params.external_references = externalRef;
     return static_cast<IsolatePtr>(Isolate::New(params));
 }

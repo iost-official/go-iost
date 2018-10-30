@@ -155,6 +155,11 @@ void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit) {
     sbx->gasLimit = gasLimit;
 }
 
+void setSandboxMemLimit(SandboxPtr ptr, size_t memLimit) {
+    Sandbox *sbx = static_cast<Sandbox*>(ptr);
+    sbx->memLimit = memLimit;
+}
+
 std::string reportException(Isolate *isolate, Local<Context> ctx, TryCatch& tryCatch) {
     std::stringstream ss;
     ss << "Uncaught exception: ";
@@ -246,9 +251,21 @@ void loadVM(SandboxPtr ptr, int vmType) {
     }
 }
 
+size_t MemoryUsage(Isolate* isolate) {
+    // V8 memory usage
+    HeapStatistics v8_heap_stats;
+    isolate->GetHeapStatistics(&v8_heap_stats);
+
+    /*fields[1] = v8_heap_stats.total_heap_size();
+    fields[2] = v8_heap_stats.used_heap_size();
+    fields[3] = v8_heap_stats.external_memory();*/
+    return v8_heap_stats.total_heap_size();
+}
+
 void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
+
 
     Locker locker(isolate);
     Isolate::Scope isolate_scope(isolate);
@@ -326,6 +343,12 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
         }
         if (isDone) {
             res.gasUsed = sbx->gasUsed;
+            break;
+        }
+        if (MemoryUsage(isolate) > sbx->memLimit) {
+            isolate->TerminateExecution();
+            res.Err = strdup("out of memory");
+            res.gasUsed = sbx->gasLimit;
             break;
         }
         if (sbx->gasUsed > sbx->gasLimit) {

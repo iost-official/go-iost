@@ -35,6 +35,7 @@ extern void releaseSandbox(SandboxPtr ptr);
 extern ValueTuple Execute(SandboxPtr ptr, const char *code, long long int expireTime);
 extern void setJSPath(SandboxPtr ptr, const char *jsPath);
 extern void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit);
+extern void setSandboxMemLimit(SandboxPtr ptr, size_t memLimit);
 
 // log
 typedef int (*consoleFunc)(SandboxPtr, const char *, const char *);

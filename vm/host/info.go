@@ -7,6 +7,10 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 )
 
+const (
+	memLimit = 10000000 // 10mb
+)
+
 // Info current info handler of this isolate
 type Info struct {
 	h *Host
@@ -73,4 +77,9 @@ func (h *Info) ABIConfig(key, value string) {
 // GasLimit get gas limit
 func (h *Info) GasLimit() int64 {
 	return h.h.ctx.GValue("gas_limit").(int64)
+}
+
+// MemLimit get gas limit
+func (h *Info) MemLimit() int64 {
+	return memLimit
 }
