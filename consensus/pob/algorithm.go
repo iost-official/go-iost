@@ -4,6 +4,9 @@ import (
 	"errors"
 	"time"
 
+	"fmt"
+	"strings"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/cverifier"
@@ -48,25 +51,25 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 
 	// call vote
 	v := verifier.Verifier{}
-	//if blk.Head.Number%common.VoteInterval == 0 {
-	//	ilog.Info("vote start")
-	//	act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
-	//	trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
-	//
-	//	trx, err := tx.SignTx(trx, staticProperty.account)
-	//	if err != nil {
-	//		ilog.Errorf("fail to signTx, err:%v", err)
-	//	}
-	//	receipt, err := v.Exec(blk.Head, db, trx, time.Millisecond*100)
-	//	if err != nil {
-	//		ilog.Errorf("fail to exec trx, err:%v", err)
-	//	}
-	//	if receipt.Status.Code != tx.Success {
-	//		ilog.Errorf("status code: %v", receipt.Status.Code)
-	//	}
-	//	blk.Txs = append(blk.Txs, trx)
-	//	blk.Receipts = append(blk.Receipts, receipt)
-	//}
+	if blk.Head.Number%common.VoteInterval == 0 {
+		ilog.Info("vote start")
+		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
+		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
+
+		trx, err := tx.SignTx(trx, staticProperty.account)
+		if err != nil {
+			ilog.Errorf("fail to signTx, err:%v", err)
+		}
+		receipt, err := v.Exec(blk.Head, db, trx, time.Millisecond*100)
+		if err != nil {
+			ilog.Errorf("fail to exec trx, err:%v", err)
+		}
+		if receipt.Status.Code != tx.Success {
+			ilog.Errorf("status code: %v", receipt.Status.Code)
+		}
+		blk.Txs = append(blk.Txs, trx)
+		blk.Receipts = append(blk.Receipts, receipt)
+	}
 	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
@@ -83,7 +86,6 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 	}
 	blk.Sign = account.Sign(blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
-	ilog.Infof("blk: %v", blk)
 	ilog.Infof("generate block txs num: %v, %v, %v", len(blk.Txs), blk.Head.Number, blk.Head.Witness)
 	metricsGeneratedBlockCount.Add(1, nil)
 	generateTxsNum += len(blk.Txs)
@@ -116,18 +118,18 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	}
 
 	// check vote
-	//if blk.Head.Number%common.VoteInterval == 0 {
-	//	if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
-	//		strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
-	//		strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
-	//
-	//		return errors.New("blk did not vote")
-	//	}
-	//
-	//	if blk.Receipts[0].Status.Code != tx.Success {
-	//		return fmt.Errorf("vote was incorrect, status:%v", blk.Receipts[0].Status)
-	//	}
-	//}
+	if blk.Head.Number%common.VoteInterval == 0 {
+		if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
+			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
+			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
+
+			return errors.New("blk did not vote")
+		}
+
+		if blk.Receipts[0].Status.Code != tx.Success {
+			return fmt.Errorf("vote was incorrect, status:%v", blk.Receipts[0].Status)
+		}
+	}
 	// check txs
 	var notFoundPending int64
 	ilog.Infof("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])

@@ -12,7 +12,6 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
 
@@ -168,10 +167,8 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 	if err != nil {
 		return err
 	}
-	ilog.Info("add tx: %v", common.Base58Encode(t.Hash()))
 	pool.pendingTx.Add(t)
-	ilog.Infof("txpool size: %v", pool.pendingTx.Size())
-	//pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage, true)
+	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage, true)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return nil
 }
@@ -192,7 +189,6 @@ func (pool *TxPImpl) DelTxList(delList []*tx.Tx) {
 // TxIterator ...
 func (pool *TxPImpl) TxIterator() (*Iterator, *blockcache.BlockCacheNode) {
 	metricsTxPoolSize.Set(float64(pool.pendingTx.Size()), nil)
-	ilog.Infof("txpool size: %v", pool.pendingTx.Size())
 	return pool.pendingTx.Iter(), pool.forkChain.NewHead
 }
 

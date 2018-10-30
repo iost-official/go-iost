@@ -134,7 +134,6 @@ L:
 			limit = c.TxTimeLimit
 		}
 		t := provider.Tx()
-		ilog.Infof("[tx]tx: %v", t)
 		if t == nil {
 			break L
 		}
@@ -150,22 +149,18 @@ L:
 			provider.Drop(t, err)
 			continue L
 		}
-		ilog.Infof("[tx]one", t)
 		if r.Status.Code == tx.ErrorTimeout && limit < c.TxTimeLimit {
 			provider.Return(t)
 			break L
 		}
-		ilog.Infof("[tx]two", t)
 		err = isolator.PayCost()
 		if err != nil {
 			provider.Drop(t, err)
 			continue L
 		}
-		ilog.Infof("[tx]three", t)
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)
-		ilog.Infof("[tx]success", t)
 	}
 	buf, err := json.Marshal(info)
 	blk.Head.Info = buf
