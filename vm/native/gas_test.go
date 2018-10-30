@@ -1,11 +1,11 @@
 package native
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
 
-	"github.com/gin-gonic/gin/json"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
