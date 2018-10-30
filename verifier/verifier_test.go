@@ -308,12 +308,12 @@ func TestGenesis(t *testing.T) {
 	// deploy iost.vote
 	voteFilePath := "../config/vote.js"
 	voteAbiPath := "../config/vote.js.abi"
-	fd, err := common.ReadFile(voteFilePath)
+	fd, err := ioutil.ReadFile(voteFilePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	rawCode := string(fd)
-	fd, err = common.ReadFile(voteAbiPath)
+	fd, err = ioutil.ReadFile(voteAbiPath)
 	if err != nil {
 		t.Fatal(err)
 	}

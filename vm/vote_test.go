@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -484,12 +485,12 @@ func TestJS_Vote(t *testing.T) {
 		Convey("test of vote update", func() {
 			t.Skip()
 
-			fd, err := common.ReadFile("./test_data/vote_update.js")
+			fd, err := ioutil.ReadFile("./test_data/vote_update.js")
 			if err != nil {
 				t.Fatal(err)
 			}
 			rawCode := string(fd)
-			fd, err = common.ReadFile("./test_data/vote_update.js.abi")
+			fd, err = ioutil.ReadFile("./test_data/vote_update.js.abi")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -542,12 +543,12 @@ func TestJS_Genesis(t *testing.T) {
 	// deploy iost.vote
 	voteFilePath := VoteContractPath + "vote.js"
 	voteAbiPath := VoteContractPath + "vote.js.abi"
-	fd, err := common.ReadFile(voteFilePath)
+	fd, err := ioutil.ReadFile(voteFilePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	rawCode := string(fd)
-	fd, err = common.ReadFile(voteAbiPath)
+	fd, err = ioutil.ReadFile(voteAbiPath)
 	if err != nil {
 		t.Fatal(err)
 	}

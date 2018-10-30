@@ -2,7 +2,9 @@ package genesis
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/iost-official/go-iost/account"
@@ -46,14 +48,14 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		acts = append(acts, &act)
 	}
 	// deploy iost.vote
-	voteFilePath := gConf.VoteContractPath + "vote.js"
-	voteAbiPath := gConf.VoteContractPath + "vote.js.abi"
-	fd, err := common.ReadFile(voteFilePath)
+	voteFilePath := filepath.Join(gConf.VoteContractPath, "vote.js")
+	voteAbiPath := filepath.Join(gConf.VoteContractPath, "vote.js.abi")
+	fd, err := ioutil.ReadFile(voteFilePath)
 	if err != nil {
 		return nil, err
 	}
 	rawCode := string(fd)
-	fd, err = common.ReadFile(voteAbiPath)
+	fd, err = ioutil.ReadFile(voteAbiPath)
 	if err != nil {
 		return nil, err
 	}
