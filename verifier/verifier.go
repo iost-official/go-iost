@@ -262,6 +262,7 @@ func verify(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration) err
 		r.SuccActionNum != receipt.SuccActionNum {
 		return fmt.Errorf("receipt not match: %v, %v", r, receipt)
 	}
+	e.Commit()
 	return nil
 }
 
