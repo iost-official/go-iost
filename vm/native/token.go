@@ -6,11 +6,10 @@ import (
 	"math"
 	"sort"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
-	"math"
-	"sort"
 )
 
 var tokenABIs map[string]*abi
