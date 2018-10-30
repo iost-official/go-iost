@@ -99,8 +99,8 @@ func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter TxIter, c
 	var pi = NewProvider(iter)
 	switch c.Mode {
 	case 0:
-		e := &vm.Isolator{}
-		err = baseGen(blk, db, pi, e, c)
+		isolator := &vm.Isolator{}
+		err = baseGen(blk, db, pi, isolator, c)
 		droplist, errs = pi.List()
 		return
 	case 1:
@@ -212,12 +212,12 @@ func (v *Verifier) Verify(blk *block.Block, db database.IMultiValue, c *Config) 
 	}
 	switch info.Mode {
 	case 0:
-		e := vm.Isolator{}
+		isolator := vm.Isolator{}
 		vi, _ := database.NewBatchVisitor(database.NewBatchVisitorRoot(100, db))
 		var l ilog.Logger
 		l.Stop()
-		e.Prepare(blk.Head, vi, &l)
-		return baseVerify(e, c, blk.Txs, blk.Receipts)
+		isolator.Prepare(blk.Head, vi, &l)
+		return baseVerify(isolator, c, blk.Txs, blk.Receipts)
 	case 1:
 		bs := batches(blk, info)
 		var batcher Batcher
@@ -241,18 +241,18 @@ func batches(blk *block.Block, info Info) []*Batch {
 	return rtn
 }
 
-func verify(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration) error {
+func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration) error {
 	var to time.Duration
 	if r.Status.Code == tx.ErrorTimeout {
 		to = timeout / 2
 	} else {
 		to = timeout * 2
 	}
-	err := e.PrepareTx(t, to)
+	err := isolator.PrepareTx(t, to)
 	if err != nil {
 		return err
 	}
-	receipt, err := e.Run()
+	receipt, err := isolator.Run()
 	if err != nil {
 		return err
 	}
@@ -261,6 +261,7 @@ func verify(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration) err
 		r.SuccActionNum != receipt.SuccActionNum {
 		return fmt.Errorf("receipt not match: %v, %v", r, receipt)
 	}
+	isolator.Commit()
 	return nil
 }
 
