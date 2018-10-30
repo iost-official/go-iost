@@ -51,25 +51,25 @@ func generateBlock(account *account.Account, txPool txpool.TxPool, db db.MVCCDB)
 
 	// call vote
 	v := verifier.Verifier{}
-	if blk.Head.Number%common.VoteInterval == 0 {
-		ilog.Info("vote start")
-		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
-		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
-
-		trx, err := tx.SignTx(trx, staticProperty.account)
-		if err != nil {
-			ilog.Errorf("fail to signTx, err:%v", err)
-		}
-		receipt, err := v.Exec(blk.Head, db, trx, time.Millisecond*100)
-		if err != nil {
-			ilog.Errorf("fail to exec trx, err:%v", err)
-		}
-		if receipt.Status.Code != tx.Success {
-			ilog.Errorf("status code: %v", receipt.Status.Code)
-		}
-		blk.Txs = append(blk.Txs, trx)
-		blk.Receipts = append(blk.Receipts, receipt)
-	}
+	//if blk.Head.Number%common.VoteInterval == 0 {
+	//	ilog.Info("vote start")
+	//	act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
+	//	trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
+	//
+	//	trx, err := tx.SignTx(trx, staticProperty.account)
+	//	if err != nil {
+	//		ilog.Errorf("fail to signTx, err:%v", err)
+	//	}
+	//	receipt, err := v.Exec(blk.Head, db, trx, time.Millisecond*100)
+	//	if err != nil {
+	//		ilog.Errorf("fail to exec trx, err:%v", err)
+	//	}
+	//	if receipt.Status.Code != tx.Success {
+	//		ilog.Errorf("status code: %v", receipt.Status.Code)
+	//	}
+	//	blk.Txs = append(blk.Txs, trx)
+	//	blk.Receipts = append(blk.Receipts, receipt)
+	//}
 	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
