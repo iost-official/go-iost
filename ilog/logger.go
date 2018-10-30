@@ -144,6 +144,11 @@ func (logger *Logger) SetLevel(l Level) {
 	logger.lowestLevel = l
 }
 
+// GetLevel returns the lowestLevel
+func (logger *Logger) GetLevel() (l Level) {
+	return logger.lowestLevel
+}
+
 // AsyncWrite sets logger's syncWrite to false.
 func (logger *Logger) AsyncWrite() {
 	logger.syncWrite = false

@@ -1,14 +1,11 @@
 package txpool
 
 import (
+	"errors"
+	"fmt"
+	"runtime"
 	"sync"
 	"time"
-
-	"errors"
-
-	"runtime"
-
-	"fmt"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"

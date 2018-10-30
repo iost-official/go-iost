@@ -138,7 +138,12 @@ L:
 			break L
 		}
 		ilog.Infof("[tx]tx: %v", t)
-		isolator.PrepareTx(t, limit)
+		err := isolator.PrepareTx(t, limit)
+		if err != nil {
+			ilog.Errorf("PrepareTx failed. %v %v", t.String(), err)
+			provider.Drop(t, err)
+			continue L
+		}
 		var r *tx.TxReceipt
 		r, err = isolator.Run()
 		if err != nil {
@@ -146,7 +151,7 @@ L:
 			continue L
 		}
 		ilog.Infof("[tx]one", t)
-		if r.Status.Code == 5 && limit < c.TxTimeLimit {
+		if r.Status.Code == tx.ErrorTimeout && limit < c.TxTimeLimit {
 			provider.Return(t)
 			break L
 		}
