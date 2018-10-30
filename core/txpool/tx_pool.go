@@ -170,6 +170,7 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 	}
 	ilog.Info("add tx: %v", common.Base58Encode(t.Hash()))
 	pool.pendingTx.Add(t)
+	ilog.Infof("txpool size: %v", pool.pendingTx.Size())
 	//pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage, true)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return nil

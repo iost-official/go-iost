@@ -134,10 +134,10 @@ L:
 			limit = c.TxTimeLimit
 		}
 		t := provider.Tx()
+		ilog.Infof("[tx]tx: %v", t)
 		if t == nil {
 			break L
 		}
-		ilog.Infof("[tx]tx: %v", t)
 		err := isolator.PrepareTx(t, limit)
 		if err != nil {
 			ilog.Errorf("PrepareTx failed. %v %v", t.String(), err)
