@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/vm/host"
-	"strconv"
 )
 
 const (
@@ -42,7 +42,7 @@ var (
 			auth, cost0 := h.RequireAuth(userName)
 			cost.AddAssign(cost0)
 			if !auth {
-				return nil, host.CommonErrorCost(1), errors.New("wtf") //host.ErrPermissionLost
+				return nil, host.CommonErrorCost(1), host.ErrPermissionLost
 			}
 			pledgeAmount, ok := args[1].(int64)
 			if !ok {
@@ -56,9 +56,9 @@ var (
 			if balance < pledgeAmount {
 				return nil, host.CommonErrorCost(1), fmt.Errorf("balance not enough %d < %d", balance, pledgeAmount)
 			}
-			// todo use iost.token Transfer
-			cost0, err = h.Teller.Transfer(userName, gasAccount, strconv.FormatInt(pledgeAmount, 10))
-			cost.AddAssign(cost0)
+			// TODO fix the account here
+			err = h.Teller.TransferRaw(userName, gasAccount, pledgeAmount*global.IOSTRatio)
+			cost.AddAssign(host.TransferCost)
 			if err != nil {
 				return nil, cost, err
 			}
@@ -85,7 +85,7 @@ var (
 			auth, cost0 := h.RequireAuth(userName)
 			cost.AddAssign(cost0)
 			if !auth {
-				return nil, host.CommonErrorCost(1), errors.New("haha") //host.ErrPermissionLost
+				return nil, host.CommonErrorCost(1), host.ErrPermissionLost
 			}
 			unpledgeAmount, ok := args[1].(int64)
 			if !ok {
@@ -101,7 +101,8 @@ var (
 				return nil, cost, err
 			}
 			// TODO fix the account here
-			err = h.Teller.TransferRaw(gasAccount, userName, unpledgeAmount)
+			err = h.Teller.TransferRaw(gasAccount, userName, unpledgeAmount*global.IOSTRatio)
+			cost.AddAssign(host.PledgeForGasCost)
 			if err != nil {
 				return nil, cost, err
 			}
