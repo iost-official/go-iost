@@ -1,5 +1,9 @@
 package database
 
+import (
+	"github.com/iost-official/go-iost/common"
+)
+
 const (
 	gasRateSuffix       = "-gr"
 	gasLimitSuffix      = "-gl"
@@ -13,25 +17,36 @@ type GasHandler struct {
 	db database
 }
 
-// GetInt64 return the value as int64. If no key exists, return 0
-func (m *GasHandler) GetInt64(key string) (value int64) {
+// If no key exists, return 0
+func (m *GasHandler) getFN(key string) (value *common.FixPointNumber) {
+	value, _ = common.UnmarshalFixPointNumber(m.db.Get(key))
+	return
+}
+
+// putFN ...
+func (m *GasHandler) putFN(key string, value *common.FixPointNumber) {
+	m.db.Put(key, value.Marshal())
+}
+
+// getInt64 return the value as int64. If no key exists, return 0
+func (m *GasHandler) getInt64(key string) (value int64) {
 	value, _ = Unmarshal(m.db.Get(key)).(int64)
 	return
 }
 
-// GetFloat64 return the value as float64. If no key exists, return 0
-func (m *GasHandler) GetFloat64(key string) (value float64) {
+// putInt64 ...
+func (m *GasHandler) putInt64(key string, value int64) {
+	m.db.Put(key, MustMarshal(value))
+}
+
+// getFloat64 return the value as float64. If no key exists, return 0
+func (m *GasHandler) getFloat64(key string) (value float64) {
 	value, _ = Unmarshal(m.db.Get(key)).(float64)
 	return
 }
 
-// PutInt64 ...
-func (m *GasHandler) PutInt64(key string, value int64) {
-	m.db.Put(key, MustMarshal(value))
-}
-
-// PutFloat64 ...
-func (m *GasHandler) PutFloat64(key string, value float64) {
+// putFloat64 ...
+func (m *GasHandler) putFloat64(key string, value float64) {
 	m.db.Put(key, MustMarshal(value))
 }
 
@@ -40,13 +55,13 @@ func (m *GasHandler) gasRateKey(name string) string {
 }
 
 // GetGasRate ...
-func (m *GasHandler) GetGasRate(name string) int64 {
-	return m.GetInt64(m.gasRateKey(name))
+func (m *GasHandler) GetGasRate(name string) *common.FixPointNumber {
+	return m.getFN(m.gasRateKey(name))
 }
 
 // SetGasRate ...
-func (m *GasHandler) SetGasRate(name string, r int64) {
-	m.PutInt64(m.gasRateKey(name), r)
+func (m *GasHandler) SetGasRate(name string, r *common.FixPointNumber) {
+	m.putFN(m.gasRateKey(name), r)
 }
 
 func (m *GasHandler) gasLimitKey(name string) string {
@@ -54,13 +69,13 @@ func (m *GasHandler) gasLimitKey(name string) string {
 }
 
 // GetGasLimit ...
-func (m *GasHandler) GetGasLimit(name string) int64 {
-	return m.GetInt64(m.gasLimitKey(name))
+func (m *GasHandler) GetGasLimit(name string) *common.FixPointNumber {
+	return m.getFN(m.gasLimitKey(name))
 }
 
 // SetGasLimit ...
-func (m *GasHandler) SetGasLimit(name string, l int64) {
-	m.PutInt64(m.gasLimitKey(name), l)
+func (m *GasHandler) SetGasLimit(name string, l *common.FixPointNumber) {
+	m.putFN(m.gasLimitKey(name), l)
 }
 
 func (m *GasHandler) gasUpdateTimeKey(name string) string {
@@ -69,12 +84,12 @@ func (m *GasHandler) gasUpdateTimeKey(name string) string {
 
 // GetGasUpdateTime ...
 func (m *GasHandler) GetGasUpdateTime(name string) int64 {
-	return m.GetInt64(m.gasUpdateTimeKey(name))
+	return m.getInt64(m.gasUpdateTimeKey(name))
 }
 
 // SetGasUpdateTime ...
 func (m *GasHandler) SetGasUpdateTime(name string, t int64) {
-	m.PutInt64(m.gasUpdateTimeKey(name), t)
+	m.putInt64(m.gasUpdateTimeKey(name), t)
 }
 
 func (m *GasHandler) gasStockKey(name string) string {
@@ -82,13 +97,13 @@ func (m *GasHandler) gasStockKey(name string) string {
 }
 
 // GetGasStock `gasStock` means the gas amount at last update time.
-func (m *GasHandler) GetGasStock(name string) int64 {
-	return m.GetInt64(m.gasStockKey(name))
+func (m *GasHandler) GetGasStock(name string) *common.FixPointNumber {
+	return m.getFN(m.gasStockKey(name))
 }
 
 // SetGasStock ...
-func (m *GasHandler) SetGasStock(name string, g int64) {
-	m.PutInt64(m.gasStockKey(name), g)
+func (m *GasHandler) SetGasStock(name string, g *common.FixPointNumber) {
+	m.putFN(m.gasStockKey(name), g)
 }
 
 func (m *GasHandler) gasPledgeKey(name string) string {
@@ -96,17 +111,17 @@ func (m *GasHandler) gasPledgeKey(name string) string {
 }
 
 // GetGasPledge ...
-func (m *GasHandler) GetGasPledge(name string) int64 {
-	return m.GetInt64(m.gasPledgeKey(name))
+func (m *GasHandler) GetGasPledge(name string) *common.FixPointNumber {
+	return m.getFN(m.gasPledgeKey(name))
 }
 
 // SetGasPledge ...
-func (m *GasHandler) SetGasPledge(name string, p int64) {
-	m.PutInt64(m.gasPledgeKey(name), p)
+func (m *GasHandler) SetGasPledge(name string, p *common.FixPointNumber) {
+	m.putFN(m.gasPledgeKey(name), p)
 }
 
 // CurrentTotalGas return current total gas. It is min(limit, last_updated_gas + time_since_last_updated * increase_speed)
-func (m *GasHandler) CurrentTotalGas(name string, now int64) (result int64) {
+func (m *GasHandler) CurrentTotalGas(name string, now int64) (result *common.FixPointNumber) {
 	result = m.GetGasStock(name)
 	gasUpdateTime := m.GetGasUpdateTime(name)
 	var timeDuration int64
@@ -115,8 +130,9 @@ func (m *GasHandler) CurrentTotalGas(name string, now int64) (result int64) {
 	}
 	rate := m.GetGasRate(name)
 	limit := m.GetGasLimit(name)
-	result += timeDuration * rate
-	if result > limit {
+	//fmt.Printf("CurrentTotalGas stock %v rate %v limit %v", result, rate, limit)
+	result = result.Add(rate.Times(timeDuration))
+	if limit.LessThen(result) {
 		result = limit
 	}
 	return

@@ -1,8 +1,10 @@
 package host
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 )
@@ -30,13 +32,12 @@ func NewTeller(h *Host) Teller {
 // TransferRaw ...
 func (h *Teller) TransferRaw(from, to string, amount int64) error {
 	bf := h.h.db.Balance(from)
-	//ilog.Debugf("%v's balance : %v", from, bf)
 	if strings.HasPrefix(from, ContractAccountPrefix) && bf >= amount || bf > amount {
 		h.h.db.SetBalance(from, -1*amount)
 		h.h.db.SetBalance(to, amount)
 		return nil
 	}
-	return ErrBalanceNotEnough
+	return fmt.Errorf("balance not enough %v < %v", amount, bf)
 }
 
 // GetBalance return balance of an id
@@ -47,13 +48,13 @@ func (h *Teller) GetBalance(from string) (string, *contract.Cost, error) {
 	} else {
 		bl = h.h.db.Balance(ContractAccountPrefix + from)
 	}
-	fpn := FixPointNumber{Value: bl, Decimal: 8}
+	fpn := common.FixPointNumber{Value: bl, Decimal: 8}
 	return fpn.ToString(), GetCost, nil
 }
 
 // GrantCoin issue coin
 func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cost, error) {
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixPointNumber(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -67,7 +68,7 @@ func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cos
 
 // ConsumeCoin consume coin from
 func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *contract.Cost, err error) {
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixPointNumber(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -84,7 +85,7 @@ func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *con
 
 // GrantServi ...
 func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error) {
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixPointNumber(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -98,7 +99,7 @@ func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error)
 
 // ConsumeServi ...
 func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cost, err error) {
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixPointNumber(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -115,7 +116,7 @@ func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cos
 
 // TotalServi ...
 func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
-	fpn := FixPointNumber{Value: h.h.db.TotalServi(), Decimal: 8}
+	fpn := common.FixPointNumber{Value: h.h.db.TotalServi(), Decimal: 8}
 	ts = fpn.ToString()
 	cost = GetCost
 	return
@@ -123,8 +124,7 @@ func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
 
 // Transfer ...
 func (h *Teller) Transfer(from, to string, amountStr string) (*contract.Cost, error) {
-	//ilog.Debugf("amount : %v", amount)
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixPointNumber(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -163,7 +163,7 @@ func (h *Teller) TopUp(c, from string, amountStr string) (*contract.Cost, error)
 
 // Countermand ...
 func (h *Teller) Countermand(c, to string, amountStr string) (*contract.Cost, error) {
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixPointNumber(amountStr, 8)
 	return TransferCost, h.TransferRaw(ContractGasPrefix+c, to, amount.Value)
 }
 
@@ -224,65 +224,4 @@ func (h *Teller) Privilege(id string) int {
 		i = 0
 	}
 	return i
-}
-
-// FixPointNumber implements fixed point number for user of token balance
-type FixPointNumber struct {
-	Value   int64
-	Decimal int
-}
-
-// NewFixPointNumber generate FixPointNumber from string and decimal, will truncate if decimal is smaller
-func NewFixPointNumber(amount string, decimal int) (*FixPointNumber, bool) {
-	fpn := &FixPointNumber{Value: 0, Decimal: decimal}
-	if len(amount) == 0 || amount[0] == '.' {
-		return nil, false
-	}
-	i := 0
-	for ; i < len(amount); i++ {
-		if '0' <= amount[i] && amount[i] <= '9' {
-			fpn.Value = fpn.Value*10 + int64(amount[i]-'0')
-		} else if amount[i] == '.' {
-			break
-		} else {
-			return nil, false
-		}
-	}
-	for i = i + 1; i < len(amount) && decimal > 0; i++ {
-		if '0' <= amount[i] && amount[i] <= '9' {
-			fpn.Value = fpn.Value*10 + int64(amount[i]-'0')
-			decimal = decimal - 1
-		} else {
-			return nil, false
-		}
-	}
-	for decimal > 0 {
-		fpn.Value = fpn.Value * 10
-		decimal = decimal - 1
-	}
-	return fpn, true
-}
-
-// ToString generate string of FixPointNumber without post zero
-func (fpn *FixPointNumber) ToString() string {
-	val := fpn.Value
-	str := make([]byte, 0, 0)
-	for val > 0 || len(str) <= fpn.Decimal {
-		str = append(str, byte('0'+val%10))
-		val /= 10
-	}
-	rtn := make([]byte, 0, 0)
-	for i := len(str) - 1; i >= 0; i-- {
-		if i+1 == fpn.Decimal {
-			rtn = append(rtn, '.')
-		}
-		rtn = append(rtn, str[i])
-	}
-	for rtn[len(rtn)-1] == '0' {
-		rtn = rtn[0 : len(rtn)-1]
-	}
-	if rtn[len(rtn)-1] == '.' {
-		rtn = rtn[0 : len(rtn)-1]
-	}
-	return string(rtn)
 }
