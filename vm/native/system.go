@@ -29,10 +29,10 @@ func init() {
 var (
 	requireAuth = &abi{
 		name: "RequireAuth",
-		args: []string{"string"},
+		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			var b bool
-			b, cost = h.RequireAuth(args[0].(string))
+			b, cost = h.RequireAuth(args[0].(string), args[1].(string))
 			rtn = []interface{}{
 				b,
 			}

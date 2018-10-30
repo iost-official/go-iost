@@ -8,6 +8,8 @@ import (
 
 	"io/ioutil"
 
+	"encoding/json"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -48,7 +50,7 @@ type fataler interface {
 func MakeTx(act tx.Action) (*tx.Tx, error) {
 	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
 
-	ac, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
+	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +62,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	return trx, nil
 }
 
-func MakeTxWithAuth(act tx.Action, ac *account.Account) (*tx.Tx, error) {
+func MakeTxWithAuth(act tx.Action, ac *account.KeyPair) (*tx.Tx, error) {
 	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
 	trx, err := tx.SignTx(trx, ac)
 	if err != nil {
@@ -126,6 +128,32 @@ func (j *JSTester) FlushDB(t *testing.T, keys []string) {
 	for _, k := range keys {
 		t.Logf("%s: %v", k, j.ReadDB(k))
 	}
+}
+
+func Compile(id, src, abi string) (*contract.Contract, error) {
+	bs, err := ReadFile(src + ".js")
+	if err != nil {
+		return nil, err
+	}
+	code := string(bs)
+
+	as, err := ReadFile(abi + ".abi")
+	if err != nil {
+		return nil, err
+	}
+
+	var info contract.Info
+	err = json.Unmarshal(as, &info)
+	if err != nil {
+		return nil, err
+	}
+	c := contract.Contract{
+		ID:   id,
+		Info: &info,
+		Code: code,
+	}
+
+	return &c, nil
 }
 
 func (j *JSTester) SetJS(code string) {
@@ -210,7 +238,7 @@ func (j *JSTester) Call(contract, abi, args string) *tx.TxReceipt {
 func (j *JSTester) TestJSWithAuth(abi, args, seckey string) *tx.TxReceipt {
 	act2 := tx.NewAction(j.cname, abi, args)
 
-	ac, err := account.NewAccount(common.Base58Decode(seckey), crypto.Secp256k1)
+	ac, err := account.NewKeyPair(common.Base58Decode(seckey), crypto.Secp256k1)
 	if err != nil {
 		panic(err)
 	}
@@ -306,8 +334,8 @@ func TestGenesis(t *testing.T) {
 		acts = append(acts, &act)
 	}
 	// deploy iost.vote
-	voteFilePath := "../config/vote.js"
-	voteAbiPath := "../config/vote.js.abi"
+	voteFilePath := "../contract/vote.js"
+	voteAbiPath := "../contract/vote.js.abi"
 	fd, err := ioutil.ReadFile(voteFilePath)
 	if err != nil {
 		t.Fatal(err)
@@ -341,7 +369,7 @@ func TestGenesis(t *testing.T) {
 
 	trx := tx.NewTx(acts, nil, 100000000, 0, 0)
 	trx.Time = 0
-	acc, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
+	acc, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,5 +420,34 @@ func TestDomain(t *testing.T) {
 	js.vi.Commit()
 	js.Call("iost.domain", "Link", fmt.Sprintf(`["abcde","%v"]`, js.cname))
 	js.Call("abcde", "read", "[]")
+
+}
+
+func array2json(ss []interface{}) string {
+	x, err := json.Marshal(ss)
+	if err != nil {
+		panic(err)
+	}
+	return string(x)
+}
+
+func TestAuthority(t *testing.T) {
+	js := NewJSTester(t)
+	defer js.Clear()
+
+	ca, err := Compile("iost.auth", "../contract/account", "../contract/account.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	js.vi.SetContract(ca)
+	js.vi.Commit()
+	js.cname = "iost.auth"
+	Convey("test of Auth", t, func() {
+		js.Call("iost.auth", "SignUp", array2json([]interface{}{"myid", "okey", "akey"}))
+		So(js.ReadMap("account", "myid"), ShouldEqual, `{"id":"myid","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"akey","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"okey","is_key_pair":true,"weight":1}],"threshold":1}}}`)
+
+		js.Call("iost.auth", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}))
+		So(js.ReadMap("account", "myid"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
+	})
 
 }

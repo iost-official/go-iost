@@ -45,7 +45,7 @@ func NewTx(actions []*Action, signers [][]byte, gasLimit int64, gasPrice int64, 
 }
 
 // SignTxContent sign tx content, only signers should do this
-func SignTxContent(tx *Tx, account *account.Account) (*crypto.Signature, error) {
+func SignTxContent(tx *Tx, account *account.KeyPair) (*crypto.Signature, error) {
 	if !tx.containSigner(account.Pubkey) {
 		return nil, errors.New("account not included in signer list of this transaction")
 	}
@@ -85,7 +85,7 @@ func (t *Tx) baseHash() []byte {
 }
 
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
-func SignTx(tx *Tx, account *account.Account, signs ...*crypto.Signature) (*Tx, error) {
+func SignTx(tx *Tx, account *account.KeyPair, signs ...*crypto.Signature) (*Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
 
 	sig := account.Sign(tx.publishHash())

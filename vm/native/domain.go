@@ -43,12 +43,12 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			//ok, c := h.RequireAuth(applicant, "iost.domain")
-			//cost.AddAssign(c)
-			//
-			//if !ok {
-			//	return nil, cost, errors.New("no privilege of applicant")
-			//}
+			ok, c := h.RequireAuth(applicant, "domain.iost")
+			cost.AddAssign(c)
+
+			if !ok {
+				return nil, cost, errors.New("no privilege of claimed url")
+			}
 
 			h.WriteLink(url, cid, applicant)
 			cost.AddAssign(host.PutCost)
@@ -82,7 +82,7 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant)
+			ok, c := h.RequireAuth(applicant, "domain.iost")
 			cost.AddAssign(c)
 
 			if !ok {

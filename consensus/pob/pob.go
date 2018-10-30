@@ -44,7 +44,7 @@ type verifyBlockMessage struct {
 
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
-	account         *account.Account
+	account         *account.KeyPair
 	baseVariable    global.BaseVariable
 	blockChain      block.Chain
 	blockCache      blockcache.BlockCache
@@ -61,7 +61,7 @@ type PoB struct {
 }
 
 // New init a new PoB.
-func New(account *account.Account, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
 	p := PoB{
 		account:         account,
 		baseVariable:    baseVariable,

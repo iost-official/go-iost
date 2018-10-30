@@ -1,6 +1,7 @@
 package native
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -27,10 +28,12 @@ func gasTestInit() (*host.Host, *account.Account) {
 	context := host.NewContext(nil)
 	h := host.NewHost(context, visitor, nil, nil)
 	testAcc := getTestAccount()
-	h.DB().SetBalance(testAcc.ID, initCoin*IOSTRatio)
-	if h.DB().Balance(testAcc.ID) != initCoin*IOSTRatio {
-		panic(fmt.Sprintf("coin num err %d", h.DB().Balance(testAcc.ID)))
+	as, err := json.Marshal(testAcc)
+	if err != nil {
+		panic(err)
 	}
+	h.DB().SetBalance(testAcc.ID, initCoin*IOSTRatio)
+	h.DB().MPut("iost.auth-account", testAcc.ID, database.MustMarshal(string(as)))
 	h.Context().Set("number", initNumber)
 	authList := make(map[string]int)
 	authList[testAcc.ID] = 2
@@ -39,12 +42,12 @@ func gasTestInit() (*host.Host, *account.Account) {
 }
 
 func getAccount(k string) *account.Account {
-	acc, err := account.NewAccount(common.Base58Decode(k), crypto.Ed25519)
+	key, err := account.NewKeyPair(common.Base58Decode(k), crypto.Ed25519)
 	if err != nil {
 		panic(err)
 	}
-	return acc
-
+	a := account.NewInitAccount(key.ID, key.ID, key.ID)
+	return a
 }
 
 func getTestAccount() *account.Account {
