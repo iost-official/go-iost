@@ -10,6 +10,8 @@ import (
 
 var systemABIs map[string]*abi
 
+var ConID string
+
 func init() {
 	systemABIs = make(map[string]*abi)
 	register(&systemABIs, requireAuth)
@@ -112,7 +114,7 @@ var (
 			}
 			actID := "Contract" + id
 			con.ID = actID
-
+			ConID = actID
 			cost2, err := h.SetCode(con)
 			cost.AddAssign(cost2)
 			return []interface{}{actID}, cost, err

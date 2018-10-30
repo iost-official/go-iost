@@ -8,9 +8,11 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/native"
 	"github.com/xlab/treeprint"
 )
 
@@ -344,10 +346,17 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		}
 		ilog.Info("[pob] confirm ", retain.Head.Number)
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
+
 		if err != nil {
 			ilog.Errorf("flush mvcc error: %v", err)
 			return err
 		}
+		b, err := bc.baseVariable.StateDB().Get("state", "c-"+native.ConID)
+		ilog.Info("can get from stateDB?", b)
+		value, err := bc.baseVariable.StateDB().Get("state", "c-"+native.ConID)
+		c := &contract.Contract{}
+		c.Decode(value)
+		ilog.Info("get from statedb of the contract: ", native.ConID, c)
 		bc.delNode(cur)
 		retain.Parent = nil
 		retain.LibWitnessHandle()

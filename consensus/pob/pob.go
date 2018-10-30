@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/message"
 	"github.com/iost-official/go-iost/core/txpool"
@@ -18,6 +19,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 	"github.com/iost-official/go-iost/p2p"
+	"github.com/iost-official/go-iost/vm/native"
 )
 
 var (
@@ -354,7 +356,11 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
-	_, err := p.blockCache.Find(blk.HeadHash())
+	value, err := p.verifyDB.Get("state", "c-"+native.ConID)
+	c := &contract.Contract{}
+	c.Decode(value)
+	ilog.Info("get from statedb of the contract: ", native.ConID, c)
+	_, err = p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
 	}
@@ -389,7 +395,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 	p.blockCache.Link(node)
 	p.blockCache.Draw()
 	ilog.Infof("[pob] updateInfo start, number: %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
-	p.updateInfo(node, update)
+	p.updateInfo(node, true)
 	ilog.Infof("[pob] updateInfo end, number: %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, true)
