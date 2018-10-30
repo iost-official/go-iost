@@ -32,6 +32,37 @@ func NewAccount(id string) *Account {
 	}
 }
 
+func NewInitAccount(id, ownerKey, activeKey string) *Account {
+	a := &Account{
+		ID:          id,
+		Groups:      make(map[string]*Group),
+		Permissions: make(map[string]*Permission),
+	}
+	a.Permissions["owner"] = &Permission{
+		Name:      "owner",
+		Threshold: 1,
+		Users: []*User{
+			{
+				ID:        ownerKey,
+				IsKeyPair: true,
+				Weight:    1,
+			},
+		},
+	}
+	a.Permissions["active"] = &Permission{
+		Name:      "active",
+		Threshold: 1,
+		Users: []*User{
+			{
+				ID:        activeKey,
+				IsKeyPair: true,
+				Weight:    1,
+			},
+		},
+	}
+	return a
+}
+
 func (a *Account) Encode() []byte {
 	buf, err := json.Marshal(a)
 	if err != nil {

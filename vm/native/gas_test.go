@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/gin-gonic/gin/json"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
@@ -27,7 +28,12 @@ func gasTestInit() (*host.Host, *account.Account) {
 	context := host.NewContext(nil)
 	h := host.NewHost(context, visitor, nil, nil)
 	testAcc := getTestAccount()
+	as, err := json.Marshal(testAcc)
+	if err != nil {
+		panic(err)
+	}
 	h.DB().SetBalance(testAcc.ID, initCoin)
+	h.DB().MPut("iost.auth-account", testAcc.ID, database.MustMarshal(string(as)))
 	h.Context().Set("number", initNumber)
 	authList := make(map[string]int)
 	authList[testAcc.ID] = 2
@@ -36,12 +42,12 @@ func gasTestInit() (*host.Host, *account.Account) {
 }
 
 func getAccount(k string) *account.Account {
-	acc, err := account.NewAccount(common.Base58Decode(k), crypto.Ed25519)
+	key, err := account.NewKeyPair(common.Base58Decode(k), crypto.Ed25519)
 	if err != nil {
 		panic(err)
 	}
-	return acc
-
+	a := account.NewInitAccount(key.ID, key.ID, key.ID)
+	return a
 }
 
 func getTestAccount() *account.Account {

@@ -38,7 +38,7 @@ var (
 			if !strings.HasPrefix(userName, "IOST") {
 				return nil, host.CommonErrorCost(1), errors.New("userName should start with IOST")
 			}
-			auth, cost0 := h.RequireAuth(userName)
+			auth, cost0 := h.RequireAuth(userName, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, host.CommonErrorCost(1), errors.New("wtf") //host.ErrPermissionLost
@@ -80,7 +80,7 @@ var (
 			if !strings.HasPrefix(userName, "IOST") {
 				return nil, host.CommonErrorCost(1), errors.New("userName should start with IOST")
 			}
-			auth, cost0 := h.RequireAuth(userName)
+			auth, cost0 := h.RequireAuth(userName, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, host.CommonErrorCost(1), errors.New("haha") //host.ErrPermissionLost
