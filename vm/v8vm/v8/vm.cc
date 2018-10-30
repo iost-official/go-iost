@@ -32,8 +32,9 @@ void init() {
     return;
 }
 
-IsolatePtr newIsolate(CustomStartupData customStartupData) {
+IsolateWrapperPtr newIsolate(CustomStartupData customStartupData) {
     Isolate::CreateParams params;
+    IsolateWrapper* isolateWrapperPtr = new IsolateWrapper();
 
     StartupData* blob = new StartupData;
     blob->data = customStartupData.data;
@@ -43,15 +44,17 @@ IsolatePtr newIsolate(CustomStartupData customStartupData) {
     params.snapshot_blob = blob;
     params.array_buffer_allocator = new ArrayBufferAllocator();
     params.external_references = externalRef;
-    return static_cast<IsolatePtr>(Isolate::New(params));
+    isolateWrapperPtr->isolate = static_cast<Isolate*>(Isolate::New(params));
+    isolateWrapperPtr->allocator = static_cast<void*>(params.array_buffer_allocator);
+    return isolateWrapperPtr;
 }
 
-void releaseIsolate(IsolatePtr ptr) {
+void releaseIsolate(IsolateWrapperPtr ptr) {
     if (ptr == nullptr) {
         return;
     }
 
-    Isolate *isolate = static_cast<Isolate*>(ptr);
+    Isolate *isolate = static_cast<Isolate*>((static_cast<IsolateWrapper*>(ptr))->isolate);
     isolate->Dispose();
     return;
 }

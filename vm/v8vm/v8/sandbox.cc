@@ -105,8 +105,10 @@ const char* ToCString(const v8::String::Utf8Value& value) {
   return *value ? *value : "<string conversion failed>";
 }
 
-SandboxPtr newSandbox(IsolatePtr ptr) {
-    Isolate *isolate = static_cast<Isolate*>(ptr);
+SandboxPtr newSandbox(IsolateWrapperPtr ptr) {
+    IsolateWrapper *isolateWrapper = static_cast<IsolateWrapper*>(ptr);
+    Isolate *isolate = static_cast<Isolate*>(isolateWrapper->isolate);
+    ArrayBufferAllocator* allocator= static_cast<ArrayBufferAllocator*>(isolateWrapper->allocator);
 
     Locker locker(isolate);
     Isolate::Scope isolate_scope(isolate);
@@ -122,6 +124,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
 
     sbx->context.Reset(isolate, context);
     sbx->isolate = isolate;
+    sbx->allocator = allocator;
     sbx->jsPath = strdup("v8/libjs");
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
@@ -251,7 +254,7 @@ void loadVM(SandboxPtr ptr, int vmType) {
     }
 }
 
-size_t MemoryUsage(Isolate* isolate) {
+size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator) {
     // V8 memory usage
     HeapStatistics v8_heap_stats;
     isolate->GetHeapStatistics(&v8_heap_stats);
@@ -345,7 +348,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
             res.gasUsed = sbx->gasUsed;
             break;
         }
-        if (MemoryUsage(isolate) > sbx->memLimit) {
+        if (MemoryUsage(isolate, sbx->allocator) > sbx->memLimit) {
             isolate->TerminateExecution();
             res.Err = strdup("out of memory");
             res.gasUsed = sbx->gasLimit;

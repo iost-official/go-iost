@@ -44,7 +44,7 @@ import (
 // code to run in a single instance of IVM.
 type Sandbox struct {
 	id      int
-	isolate C.IsolatePtr
+	isolate C.IsolateWrapperPtr
 	context C.SandboxPtr
 	host    *host.Host
 }
