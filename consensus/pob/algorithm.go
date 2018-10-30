@@ -4,9 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"fmt"
-	"strings"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/cverifier"
@@ -119,18 +116,18 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	}
 
 	// check vote
-	if blk.Head.Number%common.VoteInterval == 0 {
-		if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
-			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
-			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
-
-			return errors.New("blk did not vote")
-		}
-
-		if blk.Receipts[0].Status.Code != tx.Success {
-			return fmt.Errorf("vote was incorrect, status:%v", blk.Receipts[0].Status)
-		}
-	}
+	//if blk.Head.Number%common.VoteInterval == 0 {
+	//	if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
+	//		strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
+	//		strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
+	//
+	//		return errors.New("blk did not vote")
+	//	}
+	//
+	//	if blk.Receipts[0].Status.Code != tx.Success {
+	//		return fmt.Errorf("vote was incorrect, status:%v", blk.Receipts[0].Status)
+	//	}
+	//}
 	// check txs
 	var notFoundPending int64
 	ilog.Infof("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
