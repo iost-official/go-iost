@@ -25,7 +25,7 @@ type Consensus interface {
 }
 
 // New returns the different consensus strategy.
-func New(cType Type, account *account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service) Consensus {
+func New(cType Type, account *account.KeyPair, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service) Consensus {
 	switch cType {
 	case Pob:
 		return pob.New(account, baseVariable, blkcache, txPool, service)

@@ -133,7 +133,7 @@ func closeMVCCDB(m db.MVCCDB) {
 func MakeTx(act tx.Action) (*tx.Tx, error) {
 	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
 
-	ac, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
+	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	return trx, nil
 }
 
-func MakeTxWithAuth(act tx.Action, ac *account.Account) (*tx.Tx, error) {
+func MakeTxWithAuth(act tx.Action, ac *account.KeyPair) (*tx.Tx, error) {
 	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
 	trx, err := tx.SignTx(trx, ac)
 	if err != nil {
@@ -162,7 +162,7 @@ func TestIntergration_Transfer(t *testing.T) {
 
 	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(10000), int64(1), int64(10000000))
 
-	ac, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
+	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -660,7 +660,7 @@ func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
 func (j *JSTester) TestJSWithAuth(abi, args, seckey string) *tx.TxReceipt {
 	act2 := tx.NewAction(j.cname, abi, args)
 
-	ac, err := account.NewAccount(common.Base58Decode(seckey), crypto.Secp256k1)
+	ac, err := account.NewKeyPair(common.Base58Decode(seckey), crypto.Secp256k1)
 	if err != nil {
 		panic(err)
 	}

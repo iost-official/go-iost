@@ -87,8 +87,8 @@ func TestChainImpl(t *testing.T) {
 }
 
 func BenchmarkBlock(b *testing.B) {
-	a1, _ := account.NewAccount(nil, crypto.Secp256k1)
-	a2, _ := account.NewAccount(nil, crypto.Secp256k1)
+	a1, _ := account.NewKeyPair(nil, crypto.Secp256k1)
+	a2, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 	actions := []*tx.Action{}
 	actions = append(actions, &tx.Action{
 		Contract:   "contract1",

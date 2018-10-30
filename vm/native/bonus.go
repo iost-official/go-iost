@@ -37,7 +37,7 @@ var (
 			acc := args[0].(string)
 			amount := args[1].(string)
 
-			ok, cost0 := h.RequireAuth(acc)
+			ok, cost0 := h.RequireAuth(acc, "active")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost

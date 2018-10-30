@@ -51,22 +51,22 @@ func TestNewTxPImpl(t *testing.T) {
 		p2pMock.EXPECT().Broadcast(Any(), Any(), Any(), Any()).AnyTimes()
 		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
-		var accountList []*account.Account
+		var accountList []*account.KeyPair
 		var witnessList []string
 		var witnessInfo []string
 		acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-		newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+		newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
 		if err != nil {
-			panic("account.NewAccount error")
+			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
 		witnessInfo = append(witnessInfo, newAccount.ID)
 		witnessInfo = append(witnessInfo, "100000")
 		witnessList = append(witnessList, newAccount.ID)
 		for i := 1; i < 3; i++ {
-			newAccount, err := account.NewAccount(nil, crypto.Secp256k1)
+			newAccount, err := account.NewKeyPair(nil, crypto.Secp256k1)
 			if err != nil {
-				panic("account.NewAccount error")
+				panic("account.NewKeyPair error")
 			}
 			accountList = append(accountList, newAccount)
 			witnessList = append(witnessList, newAccount.ID)
@@ -209,22 +209,22 @@ func TestNewTxPImplB(t *testing.T) {
 		p2pMock.EXPECT().Broadcast(Any(), Any(), Any(), Any()).AnyTimes()
 		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
-		var accountList []*account.Account
+		var accountList []*account.KeyPair
 		var witnessList []string
 		var witnessInfo []string
 		acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-		newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+		newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
 		if err != nil {
-			panic("account.NewAccount error")
+			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
 		witnessInfo = append(witnessInfo, newAccount.ID)
 		witnessInfo = append(witnessInfo, "100000")
 		witnessList = append(witnessList, newAccount.ID)
 		for i := 1; i < 3; i++ {
-			newAccount, err := account.NewAccount(nil, crypto.Secp256k1)
+			newAccount, err := account.NewKeyPair(nil, crypto.Secp256k1)
 			if err != nil {
-				panic("account.NewAccount error")
+				panic("account.NewKeyPair error")
 			}
 			accountList = append(accountList, newAccount)
 			witnessList = append(witnessList, newAccount.ID)
@@ -484,9 +484,9 @@ func BenchmarkAddTx(b *testing.B) {
 //result 4445 ns/op
 func BenchmarkDecodeTx(b *testing.B) {
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+	newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
 	if err != nil {
-		panic("account.NewAccount error")
+		panic("account.NewKeyPair error")
 	}
 
 	tm := genTxMsg(newAccount, Expiration)
@@ -509,9 +509,9 @@ func BenchmarkDecodeTx(b *testing.B) {
 //result 3416 ns/op
 func BenchmarkEncodeTx(b *testing.B) {
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+	newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
 	if err != nil {
-		panic("account.NewAccount error")
+		panic("account.NewKeyPair error")
 	}
 
 	tm := genTx(newAccount, Expiration)
@@ -580,25 +580,25 @@ func BenchmarkVerifyTx(b *testing.B) {
 	stopTest(gl)
 }*/
 
-func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string, *TxPImpl, global.BaseVariable) {
+func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string, *TxPImpl, global.BaseVariable) {
 	//ctl := gomock.NewController(t)
 
-	var accountList []*account.Account
+	var accountList []*account.KeyPair
 	var witnessList []string
 
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+	newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
 	if err != nil {
-		panic("account.NewAccount error")
+		panic("account.NewKeyPair error")
 	}
 	accountList = append(accountList, newAccount)
 	witnessList = append(witnessList, newAccount.ID)
 	//_accId := newAccount.ID
 
 	for i := 1; i < 3; i++ {
-		newAccount, err := account.NewAccount(nil, crypto.Secp256k1)
+		newAccount, err := account.NewKeyPair(nil, crypto.Secp256k1)
 		if err != nil {
-			panic("account.NewAccount error")
+			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
 		witnessList = append(witnessList, newAccount.ID)
@@ -639,7 +639,7 @@ func stopTest(gl global.BaseVariable) {
 	os.RemoveAll(dbPath3)
 }
 
-func genTx(a *account.Account, expirationIter int64) *tx.Tx {
+func genTx(a *account.KeyPair, expirationIter int64) *tx.Tx {
 	actions := make([]*tx.Action, 0)
 	actions = append(actions, &tx.Action{
 		Contract:   "contract1",
@@ -676,7 +676,7 @@ func genTx(a *account.Account, expirationIter int64) *tx.Tx {
 	return t1
 }
 
-func genTxMsg(a *account.Account, expirationIter int64) *p2p.IncomingMessage {
+func genTxMsg(a *account.KeyPair, expirationIter int64) *p2p.IncomingMessage {
 	t := genTx(a, expirationIter)
 
 	broadTx := p2p.NewIncomingMessage("test", t.Encode(), p2p.PublishTx)
@@ -684,7 +684,7 @@ func genTxMsg(a *account.Account, expirationIter int64) *p2p.IncomingMessage {
 	return broadTx
 }
 
-func genBlocks(accountList []*account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
+func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
 	slot := common.GetCurrentTimestamp().Slot
 	var hash []byte
@@ -722,7 +722,7 @@ func genBlocks(accountList []*account.Account, witnessList []string, blockCnt in
 	return
 }
 
-func genNodes(accountList []*account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) []*blockcache.BlockCacheNode {
+func genNodes(accountList []*account.KeyPair, witnessList []string, blockCnt int, txCnt int, continuity bool) []*blockcache.BlockCacheNode {
 
 	var bcnList []*blockcache.BlockCacheNode
 
@@ -737,7 +737,7 @@ func genNodes(accountList []*account.Account, witnessList []string, blockCnt int
 	return bcnList
 }
 
-func genSingleBlock(accountList []*account.Account, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
+func genSingleBlock(accountList []*account.KeyPair, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
 
 	slot := common.GetCurrentTimestamp().Slot
 

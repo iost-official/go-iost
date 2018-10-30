@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/iost-official/go-iost/iwallet"
 	"sync"
+
+	"github.com/iost-official/go-iost/iwallet"
 
 	"time"
 
@@ -65,9 +66,9 @@ func loadBytes(s string) []byte {
 
 func transfer(i int) {
 	//action := tx.NewAction("iost.system", "Transfer", `["IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C","IOSTgw6cmmWyiW25TMAK44N9coLCMaygx5eTfGVwjCcriEWEEjK2H",1]`)
-	tmpAccount, _ := account.NewAccount(nil, crypto.Ed25519)
+	tmpAccount, _ := account.NewKeyPair(nil, crypto.Ed25519)
 	action := tx.NewAction(contractID, "bet", fmt.Sprintf("[\"%s\",%d,%d,%d]", tmpAccount.ID, i%10, 100000000, 1))
-	acc, _ := account.NewAccount(loadBytes(rootKey), crypto.Ed25519)
+	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
 	trx := tx.NewTx([]*tx.Action{&action}, [][]byte{}, 1000+int64(i), 1, time.Now().Add(time.Second*time.Duration(10000)).UnixNano())
 	stx, err := tx.SignTx(trx, acc)
 	if err != nil {
@@ -83,7 +84,7 @@ func transfer(i int) {
 }
 
 func publish() string {
-	acc, _ := account.NewAccount(loadBytes(rootKey), crypto.Ed25519)
+	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
 	codePath := "../../vm/test_data/lucky_bet.js"
 	abiPath := codePath + ".abi"
 	_, txHash, err := iwallet.PublishContract(codePath, abiPath, "", acc, 5, make([]string, 0), 10000, 1, false, "", true)

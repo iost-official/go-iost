@@ -46,7 +46,12 @@ func gasTestInit() (*host.Host, *account.Account) {
 	context := host.NewContext(nil)
 	h := host.NewHost(context, visitor, nil, nil)
 	testAcc := getTestAccount()
+        as, err := json.Marshal(testAcc)
+	if err != nil {
+		panic(err)
+	}
 	h.DB().SetBalance(testAcc.ID, toIOSTFN(initCoin).Value)
+        h.DB().MPut("iost.auth-account", testAcc.ID, database.MustMarshal(string(as)))
 	h.Context().Set("number", initNumber)
 	h.Context().Set("contract_name", "iost.gas")
 	authList := make(map[string]int)
@@ -56,11 +61,12 @@ func gasTestInit() (*host.Host, *account.Account) {
 }
 
 func getAccount(k string) *account.Account {
-	acc, err := account.NewAccount(common.Base58Decode(k), crypto.Ed25519)
+	key, err := account.NewKeyPair(common.Base58Decode(k), crypto.Ed25519)
 	if err != nil {
 		panic(err)
 	}
-	return acc
+	a := account.NewInitAccount(key.ID, key.ID, key.ID)
+	return a
 }
 
 func getTestAccount() *account.Account {
