@@ -57,30 +57,28 @@ var (
 	}
 	transfer = &abi{
 		name: "Transfer",
-		args: []string{"string", "string", "number"},
+		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
-			arg2 := args[2].(int64)
-			cost, err = h.Transfer(args[0].(string), args[1].(string), arg2)
+			cost, err = h.Transfer(args[0].(string), args[1].(string), args[2].(string))
 			return []interface{}{}, cost, err
 		},
 	}
 	topUp = &abi{
 		name: "TopUp",
-		args: []string{"string", "string", "number"},
+		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
-			cost, err = h.TopUp(args[0].(string), args[1].(string), args[2].(int64))
+			cost, err = h.TopUp(args[0].(string), args[1].(string), args[2].(string))
 			return []interface{}{}, cost, err
 		},
 	}
 	countermand = &abi{
 		name: "Contermand",
-		args: []string{"string", "string", "number"},
+		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 
-			arg2 := args[2].(int64)
-			cost, err = h.Countermand(args[0].(string), args[1].(string), arg2)
+			cost, err = h.Countermand(args[0].(string), args[1].(string), args[2].(string))
 			return []interface{}{}, cost, err
 		},
 	}
