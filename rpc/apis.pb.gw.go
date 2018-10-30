@@ -204,8 +204,8 @@ func request_Apis_GetBlockByNum_0(ctx context.Context, marshaler runtime.Marshal
 
 }
 
-func request_Apis_GetBalance_0(ctx context.Context, marshaler runtime.Marshaler, client ApisClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetBalanceReq
+func request_Apis_GetAccountInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ApisClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetAccountReq
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -237,7 +237,7 @@ func request_Apis_GetBalance_0(ctx context.Context, marshaler runtime.Marshaler,
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "useLongestChain", err)
 	}
 
-	msg, err := client.GetBalance(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GetAccountInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
@@ -603,7 +603,7 @@ func RegisterApisHandlerClient(ctx context.Context, mux *runtime.ServeMux, clien
 
 	})
 
-	mux.Handle("GET", pattern_Apis_GetBalance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Apis_GetAccountInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -621,14 +621,14 @@ func RegisterApisHandlerClient(ctx context.Context, mux *runtime.ServeMux, clien
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Apis_GetBalance_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Apis_GetAccountInfo_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Apis_GetBalance_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Apis_GetAccountInfo_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -795,7 +795,7 @@ var (
 
 	pattern_Apis_GetBlockByNum_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getBlockByNum", "num", "complete"}, ""))
 
-	pattern_Apis_GetBalance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getBalance", "ID", "useLongestChain"}, ""))
+	pattern_Apis_GetAccountInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getAccountInfo", "ID", "useLongestChain"}, ""))
 
 	pattern_Apis_GetContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getContractStorage", "contractID", "key"}, ""))
 
@@ -823,7 +823,7 @@ var (
 
 	forward_Apis_GetBlockByNum_0 = runtime.ForwardResponseMessage
 
-	forward_Apis_GetBalance_0 = runtime.ForwardResponseMessage
+	forward_Apis_GetAccountInfo_0 = runtime.ForwardResponseMessage
 
 	forward_Apis_GetContractStorage_0 = runtime.ForwardResponseMessage
 

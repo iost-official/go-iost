@@ -137,16 +137,19 @@ L:
 		if t == nil {
 			break L
 		}
-
-		isolator.PrepareTx(t, limit)
-
+		err := isolator.PrepareTx(t, limit)
+		if err != nil {
+			ilog.Errorf("PrepareTx failed. %v %v", t.String(), err)
+			provider.Drop(t, err)
+			continue L
+		}
 		var r *tx.TxReceipt
 		r, err = isolator.Run()
 		if err != nil {
 			provider.Drop(t, err)
 			continue L
 		}
-		if r.Status.Code == 5 && limit < c.TxTimeLimit {
+		if r.Status.Code == tx.ErrorTimeout && limit < c.TxTimeLimit {
 			provider.Return(t)
 			break L
 		}

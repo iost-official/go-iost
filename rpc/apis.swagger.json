@@ -42,15 +42,15 @@
         ]
       }
     },
-    "/getBalance/{ID}/{useLongestChain}": {
+    "/getAccountInfo/{ID}/{useLongestChain}": {
       "get": {
         "summary": "get the balance of some account by account ID",
-        "operationId": "GetBalance",
+        "operationId": "GetAccountInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcGetBalanceRes"
+              "$ref": "#/definitions/rpcGetAccountRes"
             }
           }
         },
@@ -608,13 +608,18 @@
         }
       }
     },
-    "rpcGetBalanceRes": {
+    "rpcGetAccountRes": {
       "type": "object",
       "properties": {
         "balance": {
           "type": "string",
           "format": "int64",
           "title": "the queried balance"
+        },
+        "gas": {
+          "type": "string",
+          "format": "int64",
+          "title": "current gas"
         }
       }
     },
