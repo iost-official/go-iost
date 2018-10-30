@@ -8,8 +8,10 @@ import (
 
 	"strconv"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db/kv"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // BlockChain is the implementation of chain
@@ -92,16 +94,19 @@ func (bc *BlockChain) Push(block *Block) error {
 	bc.blockChainDB.Put(blockLength, Int64ToByte(number+1))
 	for i, tx := range block.Txs {
 		tHash := tx.Hash()
+		ilog.Info("push tx: %v, %v", common.Base58Encode(tx.Hash()), tx)
 		bc.blockChainDB.Put(append(txPrefix, tHash...), append(hash, tHash...))
 		bc.blockChainDB.Put(append(bTxPrefix, append(hash, tHash...)...), tx.Encode())
 
 		// save receipt
 		rHash := block.Receipts[i].Hash()
+		ilog.Infof("receipt: %v", block.Receipts[i])
 		bc.blockChainDB.Put(append(txReceiptPrefix, tHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(receiptPrefix, rHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(bReceiptPrefix, append(hash, rHash...)...), block.Receipts[i].Encode())
 	}
 	err = bc.blockChainDB.CommitBatch()
+	ilog.Infof("commit end")
 	if err != nil {
 		return fmt.Errorf("fail to put block, err:%s", err)
 	}
@@ -289,6 +294,7 @@ func (bc *BlockChain) GetReceipt(hash []byte) (*tx.TxReceipt, error) {
 
 // GetReceiptByTxHash gets receipt with tx's hash
 func (bc *BlockChain) GetReceiptByTxHash(hash []byte) (*tx.TxReceipt, error) {
+	ilog.Infof("want to get receipt of tx: %v", common.Base58Encode(hash))
 	bReHash, err := bc.blockChainDB.Get(append(txReceiptPrefix, hash...))
 	if err != nil {
 		return nil, fmt.Errorf("failed to Get the receipt hash: %v", err)
@@ -305,6 +311,7 @@ func (bc *BlockChain) GetReceiptByTxHash(hash []byte) (*tx.TxReceipt, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to Decode the receipt: %v", err)
 	}
+	ilog.Infof("retrieve receipt: %v", re)
 	return &re, nil
 }
 
