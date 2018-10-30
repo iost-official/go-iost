@@ -16,8 +16,9 @@ type Authority struct {
 func (h *Authority) RequireAuth(id, p string) (bool, *contract.Cost) {
 	authList := h.h.ctx.Value("auth_list")
 	authMap := authList.(map[string]int)
+	reenterMap := make(map[string]int)
 
-	return h.requireAuth(id, p, authMap)
+	return h.requireAuth(id, p, authMap, reenterMap)
 }
 
 // ReadAuth read auth
@@ -34,7 +35,12 @@ func (h *Authority) ReadAuth(id string) (*account.Account, *contract.Cost) {
 	return &a, cost
 }
 
-func (h *Authority) requireAuth(id, permission string, auth map[string]int) (bool, *contract.Cost) {
+func (h *Authority) requireAuth(id, permission string, auth, reenter map[string]int) (bool, *contract.Cost) {
+	if _, ok := reenter[id+"@"+permission]; ok {
+		return false, CommonErrorCost(1)
+	}
+	reenter[id+"@"+permission] = 1
+
 	a, c := h.ReadAuth(id)
 	if a == nil {
 		return false, c
@@ -64,7 +70,7 @@ func (h *Authority) requireAuth(id, permission string, auth map[string]int) (boo
 				}
 			}
 		} else {
-			ok, cost := h.requireAuth(user.ID, user.Permission, auth)
+			ok, cost := h.requireAuth(user.ID, user.Permission, auth, reenter)
 			c.AddAssign(cost)
 			if ok {
 				weight += user.Weight

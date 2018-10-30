@@ -444,10 +444,10 @@ func TestAuthority(t *testing.T) {
 	js.cname = "iost.auth"
 	Convey("test of Auth", t, func() {
 		js.Call("iost.auth", "SignUp", array2json([]interface{}{"myid", "okey", "akey"}))
-		So(js.ReadMap("account", "myid"), ShouldEqual, `{"id":"myid","permissions":{"active":{"name":"active","groups":[],"users":[{"id":"akey","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"users":[{"id":"okey","is_key_pair":true,"weight":1}],"threshold":1}}}`)
+		So(js.ReadMap("account", "myid"), ShouldEqual, `{"id":"myid","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"akey","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"okey","is_key_pair":true,"weight":1}],"threshold":1}}}`)
 
 		js.Call("iost.auth", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}))
-		So(js.ReadMap("account", "myid"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"users":[],"threshold":1}`)
+		So(js.ReadMap("account", "myid"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 	})
 
 }

@@ -2,20 +2,21 @@ package vm
 
 import (
 	"testing"
-	"github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/go-iost/core/contract"
 	"time"
-	"github.com/iost-official/go-iost/vm/native"
+
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/vm/native"
+	"github.com/smartystreets/goconvey/convey"
 )
 
 func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
 	vi := database.NewVisitor(100, db)
-	vi.MPut("iost.auth-account", "issuer0", database.MustMarshal(`{"id":"issuer0","permissions":{"active":{"name":"active","groups":[],"users":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"users":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
-	vi.MPut("iost.auth-account", "user0", database.MustMarshal(`{"id":"user0","permissions":{"active":{"name":"active","groups":[],"users":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"users":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
-	vi.MPut("iost.auth-account", "user1", database.MustMarshal(`{"id":"user1","permissions":{"active":{"name":"active","groups":[],"users":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"users":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1}}}`))
+	vi.MPut("iost.auth-account", "issuer0", database.MustMarshal(`{"id":"issuer0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
+	vi.MPut("iost.auth-account", "user0", database.MustMarshal(`{"id":"user0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
+	vi.MPut("iost.auth-account", "user1", database.MustMarshal(`{"id":"user1","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1}}}`))
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
@@ -490,7 +491,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 			convey.So(true, convey.ShouldEqual, len(rs) > 0 && rs[0] == "0.00000000")
 			convey.So(true, convey.ShouldEqual, cost.ToGas() == contract.NewCost(1000, 0, 221).ToGas())
 
-			host.Context().Set("time", now + 1)
+			host.Context().Set("time", now+1)
 
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			convey.So(true, convey.ShouldEqual, err == nil)
@@ -499,7 +500,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 
 			// transferFreeze to self
 			authList["user0"] = 1
-			_, cost, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user0", "10", now + 10)
+			_, cost, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user0", "10", now+10)
 			convey.So(true, convey.ShouldEqual, err == nil)
 			convey.So(true, convey.ShouldEqual, cost.ToGas() > 0)
 
@@ -507,19 +508,19 @@ func TestToken_TransferFreeze(t *testing.T) {
 			convey.So(true, convey.ShouldEqual, err == nil)
 			convey.So(true, convey.ShouldEqual, len(rs) > 0 && rs[0] == "12.30000000")
 
-			_, cost, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user0", "1", now + 20)
+			_, cost, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user0", "1", now+20)
 			convey.So(true, convey.ShouldEqual, err == nil)
 
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			convey.So(true, convey.ShouldEqual, err == nil)
 			convey.So(true, convey.ShouldEqual, len(rs) > 0 && rs[0] == "11.30000000")
 
-			host.Context().Set("time", now + 11)
+			host.Context().Set("time", now+11)
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			convey.So(true, convey.ShouldEqual, err == nil)
 			convey.So(true, convey.ShouldEqual, len(rs) > 0 && rs[0] == "21.30000000")
 
-			host.Context().Set("time", now + 21)
+			host.Context().Set("time", now+21)
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			convey.So(true, convey.ShouldEqual, err == nil)
 			convey.So(true, convey.ShouldEqual, len(rs) > 0 && rs[0] == "22.30000000")
@@ -533,7 +534,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 		})
 
 		convey.Convey("transferFreeze too much", func() {
-			_, _, err := e.LoadAndCall(host, code, "transferFreeze", "iost", "issuer0", "user0", "100.1", now - 1)
+			_, _, err := e.LoadAndCall(host, code, "transferFreeze", "iost", "issuer0", "user0", "100.1", now-1)
 			convey.So(true, convey.ShouldEqual, err.Error() == "balance not enough")
 
 			rs, _, err := e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
@@ -544,12 +545,12 @@ func TestToken_TransferFreeze(t *testing.T) {
 			convey.So(true, convey.ShouldEqual, err == nil)
 			convey.So(true, convey.ShouldEqual, len(rs) > 0 && rs[0] == "0.00000000")
 
-			_, _, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "issuer0", "user0", "100", now + 100)
+			_, _, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "issuer0", "user0", "100", now+100)
 			convey.So(true, convey.ShouldEqual, err == nil)
 
 			authList["user0"] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user1", "10", now + 100)
+			_, _, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user1", "10", now+100)
 			convey.So(true, convey.ShouldEqual, err.Error() == "balance not enough")
 
 			_, _, err = e.LoadAndCall(host, code, "transfer", "iost", "user0", "user1", "10")

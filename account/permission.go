@@ -7,8 +7,8 @@ type Account struct {
 	Permissions map[string]*Permission `json:"permissions"`
 }
 
-// User identity of a permission owner
-type User struct {
+// Item identity of a permission owner
+type Item struct {
 	ID         string `json:"id"` // key pair id
 	Permission string `json:"permission"`
 	IsKeyPair  bool   `json:"is_key_pair"`
@@ -18,14 +18,14 @@ type User struct {
 // Group group of permissions
 type Group struct {
 	Name  string  `json:"name"`
-	Users []*User `json:"users"`
+	Users []*Item `json:"items"`
 }
 
 // Permission permission struct
 type Permission struct {
 	Name      string   `json:"name"`
 	Groups    []string `json:"groups"`
-	Users     []*User  `json:"users"`
+	Users     []*Item  `json:"items"`
 	Threshold int      `json:"threshold"`
 }
 
@@ -48,7 +48,7 @@ func NewInitAccount(id, ownerKey, activeKey string) *Account {
 	a.Permissions["owner"] = &Permission{
 		Name:      "owner",
 		Threshold: 1,
-		Users: []*User{
+		Users: []*Item{
 			{
 				ID:        ownerKey,
 				IsKeyPair: true,
@@ -59,7 +59,7 @@ func NewInitAccount(id, ownerKey, activeKey string) *Account {
 	a.Permissions["active"] = &Permission{
 		Name:      "active",
 		Threshold: 1,
-		Users: []*User{
+		Users: []*Item{
 			{
 				ID:        activeKey,
 				IsKeyPair: true,
