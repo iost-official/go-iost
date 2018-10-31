@@ -280,7 +280,7 @@ func Benchmark_JS_Transfer(b *testing.B) { //577385ns(local) vs 1060847ns(server
 	b.StopTimer()
 }
 
-func Benchmark_JS_Transfer_another(b *testing.B) { //629123ns(local) vs 1060847ns(server)
+func Benchmark_JS_Transfer_another(b *testing.B) { //629123ns(local) vs 1048236(server)
 	ilog.Stop()
 	js := NewJSTester(b)
 	defer js.Clear()

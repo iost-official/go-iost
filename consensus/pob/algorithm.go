@@ -71,11 +71,16 @@ func generateBlock(account *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB)
 		blk.Txs = append(blk.Txs, trx)
 		blk.Receipts = append(blk.Receipts, receipt)
 	}
+	t1 := time.Now()
 	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: time.Millisecond * 100,
 	})
+	t2 := time.Since(t1)
+	ilog.Info("time spent:", t2)
+	ilog.Info("time spent per tx:", t2.Nanoseconds()/int64(len(blk.Txs)))
+
 	if err != nil {
 		go txPool.DelTxList(dropList)
 	}
