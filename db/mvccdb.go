@@ -6,7 +6,6 @@ import (
 
 	"github.com/iost-official/go-iost/db/kv"
 	"github.com/iost-official/go-iost/db/mvcc"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 //go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/go-iost/db MVCCDB
@@ -360,7 +359,6 @@ func (m *CacheMVCCDB) Flush(t string) error {
 				return err
 			}
 		} else {
-			ilog.Info("put contract ", item.table+string(SEPARATOR)+item.key, item.value)
 			err := m.storage.Put([]byte(item.table+string(SEPARATOR)+item.key), []byte(item.value))
 			if err != nil {
 				return err

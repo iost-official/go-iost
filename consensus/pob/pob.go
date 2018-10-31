@@ -11,7 +11,6 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/message"
 	"github.com/iost-official/go-iost/core/txpool"
@@ -19,7 +18,6 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/vm/native"
 )
 
 var (
@@ -356,11 +354,8 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
-	value, err := p.verifyDB.Get("state", "c-"+native.ConID)
-	c := &contract.Contract{}
-	c.Decode(value)
-	ilog.Info("get from statedb of the contract: ", native.ConID, c)
-	_, err = p.blockCache.Find(blk.HeadHash())
+
+	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
 	}

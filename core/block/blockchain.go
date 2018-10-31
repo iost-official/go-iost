@@ -10,7 +10,6 @@ import (
 
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db/kv"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 // BlockChain is the implementation of chain
@@ -97,7 +96,6 @@ func (bc *BlockChain) Push(block *Block) error {
 		bc.blockChainDB.Put(append(bTxPrefix, append(hash, tHash...)...), tx.Encode())
 
 		// save receipt
-		ilog.Info("push %v", block.Receipts[i])
 		rHash := block.Receipts[i].Hash()
 		bc.blockChainDB.Put(append(txReceiptPrefix, tHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(receiptPrefix, rHash...), append(hash, rHash...))
