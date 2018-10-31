@@ -50,7 +50,7 @@ func cleanUp() {
 	os.RemoveAll("mvcc")
 }
 
-func BenchmarkNative_Transfer(b *testing.B) { // 21400 ns/op
+func BenchmarkNative_Transfer(b *testing.B) { // 39851 ns/op
 	e, _ := benchInit()
 
 	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
@@ -67,7 +67,7 @@ func BenchmarkNative_Transfer(b *testing.B) { // 21400 ns/op
 	cleanUp()
 }
 
-func BenchmarkNative_Transfer_LRU(b *testing.B) { // 15300 ns/op
+func BenchmarkNative_Transfer_LRU(b *testing.B) { // 37445 ns/op
 	ilog.Stop()
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
@@ -243,11 +243,48 @@ func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
 	b.StopTimer()
 }
 
-func Benchmark_JS_Transfer(b *testing.B) {
-	//ilog.Stop()
+func Benchmark_JS_Transfer(b *testing.B) { //577385ns(local) vs 1060847ns(server)
+	ilog.Stop()
 	js := NewJSTester(b)
 	defer js.Clear()
 	f, err := ReadFile("test_data/transfer.js")
+	if err != nil {
+		b.Fatal(err)
+	}
+	js.SetJS(string(f))
+	js.SetAPI("transfer", "string", "string", "number")
+	js.DoSet()
+
+	js.vi.SetBalance(testID[0], 100000000)
+
+	act2 := tx.NewAction(js.cname, "transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], 100))
+
+	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+	if err != nil {
+		panic(err)
+	}
+
+	trx2, err := MakeTxWithAuth(act2, ac)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		js.e.Exec(trx2, time.Second)
+		//r, err := js.e.Exec(trx2, time.Second)
+		//if r.Status.Code != 0 || err != nil {
+		//	b.Fatal(r.Status.Message, err)
+		//}
+	}
+	b.StopTimer()
+}
+
+func Benchmark_JS_Transfer_another(b *testing.B) { //629123ns(local) vs 1060847ns(server)
+	ilog.Stop()
+	js := NewJSTester(b)
+	defer js.Clear()
+	f, err := ReadFile("../test/performance/transfer.js")
 	if err != nil {
 		b.Fatal(err)
 	}
