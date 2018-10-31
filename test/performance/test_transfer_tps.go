@@ -67,7 +67,7 @@ func loadBytes(s string) []byte {
 func transfer(i int) {
 	//action := tx.NewAction("iost.system", "Transfer", `["IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C","IOSTgw6cmmWyiW25TMAK44N9coLCMaygx5eTfGVwjCcriEWEEjK2H",1]`)
 	action := tx.NewAction(contractID, "transfer", `["IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C","IOSTgw6cmmWyiW25TMAK44N9coLCMaygx5eTfGVwjCcriEWEEjK2H",1]`)
-	acc, _ := account.NewAccount(loadBytes(rootKey), crypto.Ed25519)
+	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
 	trx := tx.NewTx([]*tx.Action{&action}, [][]byte{}, 1000, 1, time.Now().Add(time.Second*time.Duration(10000)).UnixNano())
 	stx, err := tx.SignTx(trx, acc)
 	if err != nil {
@@ -83,7 +83,7 @@ func transfer(i int) {
 }
 
 func publish() string {
-	acc, _ := account.NewAccount(loadBytes(rootKey), crypto.Ed25519)
+	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
 	codePath := "transfer.js"
 	abiPath := codePath + ".abi"
 	iwallet.SetServer("13.237.151.211:30002")
