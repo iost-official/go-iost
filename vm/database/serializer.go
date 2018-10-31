@@ -2,7 +2,6 @@ package database
 
 import (
 	"encoding/binary"
-
 	"errors"
 	"strings"
 )
@@ -58,7 +57,7 @@ func Unmarshal(o string) interface{} {
 	}
 	switch o[0:1] {
 	case IntPrefix:
-		return rawToInt64(o)
+		return rawToInt64(o[1:])
 	case StringPrefix:
 		return o[1:]
 	case NilPrefix:
@@ -90,7 +89,7 @@ func int64ToRaw(i int64) string {
 }
 
 func rawToInt64(s string) int64 {
-	b := []byte(s[1:])
+	b := []byte(s)
 	return int64(binary.LittleEndian.Uint64(b))
 }
 

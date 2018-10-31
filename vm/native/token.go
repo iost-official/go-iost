@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
@@ -145,7 +146,7 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 
 func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64, cost *contract.Cost, err error) {
 	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
-	amountNumber, ok := host.NewFixPointNumber(amountStr, int(decimal.(int64)))
+	amountNumber, ok := common.NewFixed(amountStr, int(decimal.(int64)))
 	cost.AddAssign(host.CommonOpCost(3))
 	if !ok {
 		return 0, cost, host.ErrInvalidAmount
@@ -155,7 +156,7 @@ func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64
 
 func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, cost *contract.Cost) {
 	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
-	amountNumber := host.FixPointNumber{Value: amount, Decimal: int(decimal.(int64))}
+	amountNumber := common.Fixed{Value: amount, Decimal: int(decimal.(int64))}
 	cost.AddAssign(host.CommonOpCost(1))
 	return amountNumber.ToString(), cost
 }
