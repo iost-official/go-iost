@@ -106,7 +106,7 @@ func publish() string {
 func main() {
 
 	var iterNum = 800
-	var parallelNum = 30
+	var parallelNum = 200
 	initConn(parallelNum)
 
 	contractID = publish()
