@@ -145,29 +145,6 @@ func TestHost_MapKeys(t *testing.T) {
 	}
 }
 
-func TestHost_RequireAuth(t *testing.T) {
-
-	ctx := NewContext(nil)
-	ctx.Set("commit", "abc")
-	ctx.Set("contract_name", "contractName")
-	ctx.Set("auth_list", map[string]int{"a": 1, "b": 0})
-
-	_, host := myinit(t, ctx)
-
-	ans, _ := host.RequireAuth("a")
-	if !ans {
-		t.Fatal(ans)
-	}
-	ans, _ = host.RequireAuth("b")
-	if ans {
-		t.Fatal(ans)
-	}
-	ans, _ = host.RequireAuth("c")
-	if ans {
-		t.Fatal(ans)
-	}
-}
-
 func TestHost_BlockInfo(t *testing.T) {
 
 }
@@ -206,7 +183,7 @@ func TestTeller_Transfer(t *testing.T) {
 		return nil
 	})
 
-	host.Transfer("hello", "world", 3)
-	host.Transfer("hello", "world", 3)
+	host.Transfer("hello", "world", "3")
+	host.Transfer("hello", "world", "3")
 
 }

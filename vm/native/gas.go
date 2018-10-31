@@ -15,6 +15,9 @@ const (
 	//gasAccount = account.NewAccount(common.Base58Decode("5C9JWxSk6w8qpeow1tKK6owvQzxjBoVaSWTfcxmHqpnEcRGDX26T9px1ScXUKhsghUNwTvoxMxxcQoLdoZhSswkx"), crypto.Ed25519)
 )
 
+// IOSTRatio ...
+const IOSTRatio int64 = 100000000
+
 var gasABIs map[string]*abi
 
 func init() {
@@ -38,10 +41,10 @@ var (
 			if !strings.HasPrefix(userName, "IOST") {
 				return nil, host.CommonErrorCost(1), errors.New("userName should start with IOST")
 			}
-			auth, cost0 := h.RequireAuth(userName)
+			auth, cost0 := h.RequireAuth(userName, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
-				return nil, host.CommonErrorCost(1), errors.New("wtf") //host.ErrPermissionLost
+				return nil, host.CommonErrorCost(1), host.ErrPermissionLost
 			}
 			pledgeAmount, ok := args[1].(int64)
 			if !ok {
@@ -55,8 +58,9 @@ var (
 			if balance < pledgeAmount {
 				return nil, host.CommonErrorCost(1), fmt.Errorf("balance not enough %d < %d", balance, pledgeAmount)
 			}
-			cost0, err = h.Teller.Transfer(userName, gasAccount, pledgeAmount)
-			cost.AddAssign(cost0)
+			// TODO fix the account here
+			err = h.Teller.TransferRaw(userName, gasAccount, pledgeAmount*IOSTRatio)
+			cost.AddAssign(host.TransferCost)
 			if err != nil {
 				return nil, cost, err
 			}
@@ -80,10 +84,10 @@ var (
 			if !strings.HasPrefix(userName, "IOST") {
 				return nil, host.CommonErrorCost(1), errors.New("userName should start with IOST")
 			}
-			auth, cost0 := h.RequireAuth(userName)
+			auth, cost0 := h.RequireAuth(userName, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
-				return nil, host.CommonErrorCost(1), errors.New("haha") //host.ErrPermissionLost
+				return nil, host.CommonErrorCost(1), host.ErrPermissionLost
 			}
 			unpledgeAmount, ok := args[1].(int64)
 			if !ok {
@@ -99,7 +103,8 @@ var (
 				return nil, cost, err
 			}
 			// TODO fix the account here
-			err = h.Teller.TransferRaw(gasAccount, userName, unpledgeAmount)
+			err = h.Teller.TransferRaw(gasAccount, userName, unpledgeAmount*IOSTRatio)
+			cost.AddAssign(host.PledgeForGasCost)
 			if err != nil {
 				return nil, cost, err
 			}

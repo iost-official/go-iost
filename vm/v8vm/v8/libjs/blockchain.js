@@ -53,8 +53,8 @@ let BlockChain = (function () {
             return bc.callWithReceipt(contract, api, args);
         },
         //
-        requireAuth: function (pubKey) {
-            return bc.requireAuth(pubKey);
+        requireAuth: function (pubKey, permission) {
+            return bc.requireAuth(pubKey, permission);
         },
         // not supportted
         grantServi: function (pubKey, amount) {

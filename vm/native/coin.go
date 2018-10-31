@@ -45,12 +45,12 @@ var (
 
 	issueCoin = &abi{
 		name: "IssueCoin",
-		args: []string{"string", "string", "number"},
+		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			cost = contract.Cost0()
 			coinName := args[0].(string)
 			account := args[1].(string)
-			amount := args[2].(int64)
+			amount := args[2].(string)
 
 			// get coin contract
 			coinContract, cost0 := h.Get(CoinContractPrefix + coinName)
@@ -60,7 +60,7 @@ var (
 			}
 
 			// check can_issue
-			rtn, cost0, err = h.Call(coinContract.(string), "can_issue", fmt.Sprintf(`["%v",%v]`, account, amount))
+			rtn, cost0, err = h.Call(coinContract.(string), "can_issue", fmt.Sprintf(`["%v","%s"]`, account, amount))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err

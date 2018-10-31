@@ -3,13 +3,12 @@ package native
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"math"
+	"sort"
+
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
-	"math"
-	"sort"
-	"strconv"
 )
 
 var tokenABIs map[string]*abi
@@ -145,21 +144,20 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 }
 
 func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64, cost *contract.Cost, err error) {
-	// todo use fixed point number
 	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
-	amountFloat, err := strconv.ParseFloat(amountStr, 64)
-	if err != nil {
-		return 0, cost, err
+	amountNumber, ok := host.NewFixPointNumber(amountStr, int(decimal.(int64)))
+	cost.AddAssign(host.CommonOpCost(3))
+	if !ok {
+		return 0, cost, host.ErrInvalidAmount
 	}
-	amountFloat *= (math.Pow10(int(decimal.(int64))))
-	return int64(amountFloat), cost, err
+	return amountNumber.Value, cost, err
 }
 
 func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, cost *contract.Cost) {
-	// todo use fixed point number
 	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
-	amountStr = fmt.Sprintf("%.8f", float64(amount)/math.Pow10(int(decimal.(int64))))
-	return amountStr, cost
+	amountNumber := host.FixPointNumber{Value: amount, Decimal: int(decimal.(int64))}
+	cost.AddAssign(host.CommonOpCost(1))
+	return amountNumber.ToString(), cost
 }
 
 var (
@@ -172,10 +170,40 @@ var (
 			tokenName := args[0].(string)
 			issuer := args[1].(string)
 			totalSupply := args[2].(int64)
-			// todo config
+			configJSON := []byte(args[3].(database.SerializedJSON))
+
+			// config
+			config := make(map[string]interface{})
+			err = json.Unmarshal(configJSON, &config)
+			cost.AddAssign(host.CommonOpCost(2))
+			if err != nil {
+				return nil, cost, err
+			}
+			decimal := 8
+			canTransfer := true
+			defaultRate := "1.0"
+			cost.AddAssign(host.CommonOpCost(3))
+			if tmp, ok := config[DecimalMapField]; ok {
+				if _, ok = tmp.(float64); !ok {
+					return nil, cost, errors.New("decimal in config should be number")
+				}
+				decimal = int(tmp.(float64))
+			}
+			if tmp, ok := config[CanTransferMapField]; ok {
+				canTransfer, ok = tmp.(bool)
+				if !ok {
+					return nil, cost, errors.New("canTransfer in config should be bool")
+				}
+			}
+			if tmp, ok := config[DefaultRateMapField]; ok {
+				defaultRate, ok = tmp.(string)
+				if !ok {
+					return nil, cost, errors.New("defaultRate in config should be string")
+				}
+			}
 
 			// check auth
-			ok, cost0 := h.RequireAuth(issuer)
+			ok, cost0 := h.RequireAuth(issuer, "token.iost")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -189,8 +217,7 @@ var (
 			}
 
 			// check valid
-			decimal := 8
-			if decimal >= 19 {
+			if decimal < 0 || decimal >= 19 {
 				return nil, cost, errors.New("invalid decimal")
 			}
 			if totalSupply > math.MaxInt64/int64(math.Pow10(decimal)) {
@@ -205,9 +232,9 @@ var (
 			cost.AddAssign(cost0)
 			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, int64(0))
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, CanTransferMapField, true)
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, CanTransferMapField, canTransfer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DefaultRateMapField, "1.0")
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DefaultRateMapField, defaultRate)
 			cost.AddAssign(cost0)
 			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DecimalMapField, int64(decimal))
 			cost.AddAssign(cost0)
@@ -240,7 +267,7 @@ var (
 			cost.AddAssign(cost0)
 
 			// check auth
-			ok, cost0 = h.RequireAuth(issuer.(string))
+			ok, cost0 = h.RequireAuth(issuer.(string), "token.iost")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -301,10 +328,15 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
+			canTransfer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, CanTransferMapField)
+			cost.AddAssign(cost0)
+			if !(canTransfer.(bool)) {
+				return nil, cost, host.ErrTokenNoTransfer
+			}
 
 			// check auth
 			// todo handle from is contract
-			ok, cost0 = h.RequireAuth(from)
+			ok, cost0 = h.RequireAuth(from, "transfer")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -365,10 +397,15 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
+			canTransfer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, CanTransferMapField)
+			cost.AddAssign(cost0)
+			if !(canTransfer.(bool)) {
+				return nil, cost, host.ErrTokenNoTransfer
+			}
 
 			// check auth
 			// todo handle from is contract
-			ok, cost0 = h.RequireAuth(from)
+			ok, cost0 = h.RequireAuth(from, "transfer")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -427,7 +464,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from)
+			ok, cost0 = h.RequireAuth(from, "token.iost")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost

@@ -6,7 +6,6 @@ package v8
 import "C"
 import (
 	"encoding/json"
-	"strconv"
 
 	"github.com/iost-official/go-iost/vm/host"
 )
@@ -54,12 +53,8 @@ func goTransfer(cSbx C.SandboxPtr, from, to, amount *C.char, gasUsed *C.size_t) 
 	fromStr := C.GoString(from)
 	toStr := C.GoString(to)
 	amountStr := C.GoString(amount)
-	amountInt64, err := strconv.ParseInt(amountStr, 10, 64)
-	if err != nil || amountInt64 <= 0 {
-		return TransferInvalidAmount
-	}
 
-	cost, err := sbx.host.Transfer(fromStr, toStr, amountInt64)
+	cost, err := sbx.host.Transfer(fromStr, toStr, amountStr)
 	*gasUsed = C.size_t(cost.Data)
 
 	if err != nil && err == host.ErrBalanceNotEnough {
@@ -78,12 +73,7 @@ func goWithdraw(cSbx C.SandboxPtr, to, amount *C.char, gasUsed *C.size_t) int {
 
 	toStr := C.GoString(to)
 	amountStr := C.GoString(amount)
-	amountInt64, err := strconv.ParseInt(amountStr, 10, 64)
-	if err != nil || amountInt64 <= 0 {
-		return TransferInvalidAmount
-	}
-
-	cost, err := sbx.host.Withdraw(toStr, amountInt64)
+	cost, err := sbx.host.Withdraw(toStr, amountStr)
 	*gasUsed = C.size_t(cost.Data)
 
 	if err != nil && err == host.ErrBalanceNotEnough {
@@ -102,12 +92,7 @@ func goDeposit(cSbx C.SandboxPtr, from, amount *C.char, gasUsed *C.size_t) int {
 
 	fromStr := C.GoString(from)
 	amountStr := C.GoString(amount)
-	amountInt64, err := strconv.ParseInt(amountStr, 10, 64)
-	if err != nil || amountInt64 <= 0 {
-		return TransferInvalidAmount
-	}
-
-	cost, err := sbx.host.Deposit(fromStr, amountInt64)
+	cost, err := sbx.host.Deposit(fromStr, amountStr)
 	*gasUsed = C.size_t(cost.Data)
 
 	if err != nil && err == host.ErrBalanceNotEnough {
@@ -127,12 +112,7 @@ func goTopUp(cSbx C.SandboxPtr, contract, from, amount *C.char, gasUsed *C.size_
 	contractStr := C.GoString(contract)
 	fromStr := C.GoString(from)
 	amountStr := C.GoString(amount)
-	amountInt64, err := strconv.ParseInt(amountStr, 10, 64)
-	if err != nil || amountInt64 <= 0 {
-		return TransferInvalidAmount
-	}
-
-	cost, err := sbx.host.TopUp(contractStr, fromStr, amountInt64)
+	cost, err := sbx.host.TopUp(contractStr, fromStr, amountStr)
 	*gasUsed = C.size_t(cost.Data)
 
 	if err != nil && err == host.ErrBalanceNotEnough {
@@ -152,12 +132,7 @@ func goCountermand(cSbx C.SandboxPtr, contract, to, amount *C.char, gasUsed *C.s
 	contractStr := C.GoString(contract)
 	toStr := C.GoString(to)
 	amountStr := C.GoString(amount)
-	amountInt64, err := strconv.ParseInt(amountStr, 10, 64)
-	if err != nil || amountInt64 <= 0 {
-		return TransferInvalidAmount
-	}
-
-	cost, err := sbx.host.Countermand(contractStr, toStr, amountInt64)
+	cost, err := sbx.host.Countermand(contractStr, toStr, amountStr)
 	*gasUsed = C.size_t(cost.Data)
 
 	if err != nil && err == host.ErrBalanceNotEnough {
@@ -250,15 +225,16 @@ func goCallWithReceipt(cSbx C.SandboxPtr, contract, api, args *C.char, result **
 }
 
 //export goRequireAuth
-func goRequireAuth(cSbx C.SandboxPtr, pubKey *C.char, ok *C.bool, gasUsed *C.size_t) int {
+func goRequireAuth(cSbx C.SandboxPtr, ID *C.char, permission *C.char, ok *C.bool, gasUsed *C.size_t) int {
 	sbx, sbOk := GetSandbox(cSbx)
 	if !sbOk {
 		return APICallUnexpectedError
 	}
 
-	pubKeyStr := C.GoString(pubKey)
+	pubKeyStr := C.GoString(ID)
+	permissionStr := C.GoString(permission)
 
-	callOk, RequireAuthCost := sbx.host.APIDelegate.RequireAuth(pubKeyStr)
+	callOk, RequireAuthCost := sbx.host.RequireAuth(pubKeyStr, permissionStr)
 
 	*ok = C.bool(callOk)
 	if callOk != true {
@@ -279,12 +255,7 @@ func goGrantServi(cSbx C.SandboxPtr, pubKey *C.char, amount *C.char, gasUsed *C.
 
 	pubKeyStr := C.GoString(pubKey)
 	amountStr := C.GoString(amount)
-	amountInt64, err := strconv.ParseInt(amountStr, 10, 64)
-	if err != nil || amountInt64 <= 0 {
-		return APICallUnexpectedError
-	}
-
-	cost, err := sbx.host.GrantServi(pubKeyStr, amountInt64)
+	cost, err := sbx.host.GrantServi(pubKeyStr, amountStr)
 	*gasUsed = C.size_t(cost.Data)
 
 	if err != nil {

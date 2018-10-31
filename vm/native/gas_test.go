@@ -1,6 +1,7 @@
 package native
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -27,7 +28,12 @@ func gasTestInit() (*host.Host, *account.Account) {
 	context := host.NewContext(nil)
 	h := host.NewHost(context, visitor, nil, nil)
 	testAcc := getTestAccount()
-	h.DB().SetBalance(testAcc.ID, initCoin)
+	as, err := json.Marshal(testAcc)
+	if err != nil {
+		panic(err)
+	}
+	h.DB().SetBalance(testAcc.ID, initCoin*IOSTRatio)
+	h.DB().MPut("iost.auth-account", testAcc.ID, database.MustMarshal(string(as)))
 	h.Context().Set("number", initNumber)
 	authList := make(map[string]int)
 	authList[testAcc.ID] = 2
@@ -36,12 +42,12 @@ func gasTestInit() (*host.Host, *account.Account) {
 }
 
 func getAccount(k string) *account.Account {
-	acc, err := account.NewAccount(common.Base58Decode(k), crypto.Ed25519)
+	key, err := account.NewKeyPair(common.Base58Decode(k), crypto.Ed25519)
 	if err != nil {
 		panic(err)
 	}
-	return acc
-
+	a := account.NewInitAccount(key.ID, key.ID, key.ID)
+	return a
 }
 
 func getTestAccount() *account.Account {
@@ -92,10 +98,10 @@ func TestGas_Pledge(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pledge err %v", err)
 	}
-	if h.DB().Balance(testAcc.ID) != (initCoin - pledgeAmount) {
+	if h.DB().Balance(testAcc.ID) != (initCoin-pledgeAmount)*IOSTRatio {
 		t.Fatalf("invalid balance after pledge %d", h.DB().Balance(testAcc.ID))
 	}
-	if h.DB().Balance(getGasAccount().ID) != pledgeAmount {
+	if h.DB().Balance(getGasAccount().ID) != pledgeAmount*IOSTRatio {
 		t.Fatalf("invalid balance after pledge %d", h.DB().Balance(testAcc.ID))
 	}
 	ilog.Info("After pledge, you will get some gas immediately")
@@ -145,6 +151,12 @@ func TestGas_PledgeMore(t *testing.T) {
 	if gasAfterSecondPledge != gasEstimated {
 		t.Fatalf("invalid gas %d != %d", gasAfterSecondPledge, gasEstimated)
 	}
+	if h.DB().Balance(testAcc.ID) != (initCoin-firstTimePledgeAmount-secondTimePledgeAmount)*IOSTRatio {
+		t.Fatalf("invalid balance after pledge %d", h.DB().Balance(testAcc.ID))
+	}
+	if h.DB().Balance(getGasAccount().ID) != (firstTimePledgeAmount+secondTimePledgeAmount)*IOSTRatio {
+		t.Fatalf("invalid balance after pledge %d", h.DB().Balance(getGasAccount().ID))
+	}
 }
 
 func TestGas_UseGas(t *testing.T) {
@@ -185,10 +197,10 @@ func TestGas_Unpledge(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unpledge err %v", err)
 	}
-	if h.DB().Balance(testAcc.ID) != (initCoin - pledgeAmount + unpledgeAmount) {
+	if h.DB().Balance(testAcc.ID) != (initCoin-pledgeAmount+unpledgeAmount)*IOSTRatio {
 		t.Fatalf("invalid balance after unpledge %d", h.DB().Balance(testAcc.ID))
 	}
-	if h.DB().Balance(getGasAccount().ID) != (pledgeAmount - unpledgeAmount) {
+	if h.DB().Balance(getGasAccount().ID) != (pledgeAmount-unpledgeAmount)*IOSTRatio {
 		t.Fatalf("invalid balance after unpledge %d", h.DB().Balance(testAcc.ID))
 	}
 	gas := h.GasManager.CurrentGas(testAcc.ID)
