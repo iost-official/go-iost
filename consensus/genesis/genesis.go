@@ -41,10 +41,9 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil {
 		ilog.Fatalf("invalid genesis initial time string %v (%v).", gConf.InitialTimestamp, err)
 	}
-
 	var acts []*tx.Action
-	for i := 0; i < len(witnessInfo)/2; i++ {
-		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], witnessInfo[2*i+1]))
+	for _, v := range witnessInfo {
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, v.Owner, v.Balance))
 		acts = append(acts, &act)
 	}
 	// deploy iost.vote
@@ -133,7 +132,10 @@ func FakeBv(bv global.BaseVariable) error {
 	blk, err := GenGenesis(
 		bv.StateDB(),
 		&common.GenesisConfig{
-			WitnessInfo:      []string{"a1", "11111111111", "a2", "2222", "a3", "333"},
+			WitnessInfo: []*common.Witness{
+				{"a1", "a1", "a1", "11111111111"},
+				{"a2", "a2", "a2", "222222"},
+				{"a3", "a3", "a3", "333333333"}},
 			InitialTimestamp: "2006-01-02T15:04:05Z",
 			VoteContractPath: os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/",
 		},
