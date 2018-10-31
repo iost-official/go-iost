@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/iost-official/go-iost/vm/v8vm"
-	"github.com/iost-official/go-iost/common"
 )
 
 var (
@@ -98,7 +98,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		}
 	}
 	beforeBalance := make(map[string][]int64)
-	for acc, _ := range authList {
+	for acc := range authList {
 		beforeBalance[acc] = []int64{}
 		for _, limit := range fixedAmountLimit {
 			beforeBalance[acc] = append(beforeBalance[acc], h.DB().TokenBalance(limit.Token, acc))
@@ -124,7 +124,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	}
 
 	// check amount limit
-	for acc, _ := range authList {
+	for acc := range authList {
 		for i, limit := range fixedAmountLimit {
 			afterBalance := h.DB().TokenBalance(limit.Token, acc)
 			delta := common.Fixed{beforeBalance[acc][i] - afterBalance, fixedAmountLimit[i].Val.Decimal}

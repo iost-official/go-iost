@@ -21,9 +21,10 @@ const (
 	ContractPay
 )
 
+// FixedAmount the limit amount of token used by contract
 type FixedAmount struct {
 	Token string
-	Val  *common.Fixed
+	Val   *common.Fixed
 }
 
 //type ContractInfo struct {
