@@ -446,6 +446,24 @@
           "items": {
             "type": "string"
           }
+        },
+        "amountLimit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/contractAmount"
+          }
+        }
+      }
+    },
+    "contractAmount": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "val": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },
@@ -618,7 +636,6 @@
         },
         "gas": {
           "type": "string",
-          "format": "int64",
           "title": "current gas"
         }
       }
