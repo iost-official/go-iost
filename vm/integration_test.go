@@ -547,8 +547,8 @@ func NewJSTester(t fataler) *JSTester {
 
 	//mvccdb := replaceDB(t)
 
-	vi := database.NewVisitor(0, mvccdb)
-	vi.SetBalance(testID[0], 1000000 * 1e8)
+	vi := database.NewVisitor(100, mvccdb)
+	vi.SetBalance(testID[0], 1000000*1e8)
 	vi.SetContract(systemContract)
 	vi.Commit()
 
@@ -813,15 +813,15 @@ module.exports = Contract;
 	r := js.TestJS("deposit", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
-	if 100 * 1e8!= js.vi.Balance(host.ContractAccountPrefix+js.cname) {
-		t.Fatal(js.vi.Balance(host.ContractAccountPrefix+js.cname))
+	if 100*1e8 != js.vi.Balance(host.ContractAccountPrefix+js.cname) {
+		t.Fatal(js.vi.Balance(host.ContractAccountPrefix + js.cname))
 		t.Fatalf("balance of contract " + js.cname + "should be 100.")
 	}
 
 	r = js.TestJS("withdraw", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
-	if 1 * 1e8 != js.vi.Balance(host.ContractAccountPrefix+js.cname) {
+	if 1*1e8 != js.vi.Balance(host.ContractAccountPrefix+js.cname) {
 		t.Fatalf("balance of contract " + js.cname + "should be 1.")
 	}
 }

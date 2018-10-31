@@ -244,7 +244,7 @@ func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
 }
 
 func Benchmark_JS_Transfer(b *testing.B) {
-	ilog.Stop()
+	//ilog.Stop()
 	js := NewJSTester(b)
 	defer js.Clear()
 	f, err := ReadFile("test_data/transfer.js")
@@ -271,10 +271,11 @@ func Benchmark_JS_Transfer(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r, err := js.e.Exec(trx2, time.Second)
-		if r.Status.Code != 0 || err != nil {
-			b.Fatal(r.Status.Message, err)
-		}
+		js.e.Exec(trx2, time.Second)
+		//r, err := js.e.Exec(trx2, time.Second)
+		//if r.Status.Code != 0 || err != nil {
+		//	b.Fatal(r.Status.Message, err)
+		//}
 	}
 	b.StopTimer()
 }
