@@ -502,16 +502,14 @@ func (pm *PeerManager) parseSeeds() {
 			ilog.Errorf("parse seed nodes error. seed=%s, err=%v", seed, err)
 			continue
 		}
-		ret := []multiaddr.Multiaddr{addr}
 
-		if madns.Matches(addr) {
-			resAddr, err := madns.Resolve(context.Background(), addr)
-			if err == nil {
-				ret = append(ret, resAddr...)
-			}
+		resAddrs, err := madns.Resolve(context.Background(), addr)
+		if err != nil {
+			ilog.Errorf("resolve multiaddr failed. err=%v, addr=%v", err, addr)
+			continue
 		}
 
-		pm.storePeerInfo(peerID, ret)
+		pm.storePeerInfo(peerID, resAddrs)
 	}
 }
 
