@@ -104,6 +104,7 @@ func NewJSTester(t fataler) *JSTester {
 
 	vi := database.NewVisitor(0, mvccdb)
 	vi.SetBalance(testID[0], 1000000)
+
 	vi.Commit()
 
 	e := Verifier{}
@@ -224,6 +225,25 @@ func (j *JSTester) Call(contract, abi, args string) *tx.TxReceipt {
 	act2 := tx.NewAction(contract, abi, args)
 
 	trx2, err := MakeTx(act2)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+
+	r, err := j.e.Exec(bh, j.mvccdb, trx2, time.Second)
+	if err != nil {
+		j.t.Fatal(err)
+	}
+	return r
+}
+
+func (j *JSTester) CallWithAuth(contract, abi, args string, seckey string) *tx.TxReceipt {
+	act2 := tx.NewAction(contract, abi, args)
+	ac, err := account.NewKeyPair(common.Base58Decode(seckey), crypto.Secp256k1)
+	if err != nil {
+		panic(err)
+	}
+
+	trx2, err := MakeTxWithAuth(act2, ac)
 	if err != nil {
 		j.t.Fatal(err)
 	}
@@ -450,4 +470,73 @@ func TestAuthority(t *testing.T) {
 		So(js.ReadMap("account", "myid"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 	})
 
+}
+
+func prepareContract(t *testing.T, js *JSTester) {
+	bh = &block.BlockHead{
+		ParentHash: []byte("abc"),
+		Number:     0,
+		Witness:    "witness",
+		Time:       123456,
+	}
+	for i := 0; i < 18; i++ {
+		js.vi.MPut("iost.auth-account", testID[i], database.MustMarshal(fmt.Sprintf(`{"id":"%s","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"%s","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"%s","is_key_pair":true,"weight":1}],"threshold":1}}}`, testID[i], testID[i], testID[i])))
+	}
+	js.vi.Commit()
+	// deploy iost.token
+	r := js.Call("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.token", native.TokenABI().B64Encode()))
+	if r.Status.Code != tx.Success {
+		t.Fatal(r)
+	}
+	// create token
+	r = js.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000))
+	if r.Status.Code != tx.Success {
+		t.Fatal(r)
+	}
+	// issue token
+	r = js.Call("iost.token", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", testID[0], "1000"))
+	if r.Status.Code != tx.Success {
+		t.Fatal(r)
+	}
+	if 1e11 != js.vi.TokenBalance("iost", testID[0]) {
+		t.Fatal(js.vi.TokenBalance("iost", testID[0]))
+	}
+	js.vi.Commit()
+}
+
+func TestAmountLimit(t *testing.T) {
+	ilog.Stop()
+	js := NewJSTester(t)
+	defer js.Clear()
+	prepareContract(t, js)
+
+	ca, err := Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
+	if err != nil || ca == nil {
+		t.Fatal(err)
+	}
+	js.vi.SetContract(ca)
+	js.vi.Commit()
+	js.cname = "Contracttransfer"
+
+	Convey("test of amount limit", t, func() {
+		r := js.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "10"))
+		js.vi.Commit()
+		So(r.Status.Code, ShouldEqual, tx.Success)
+		balance0 := js.vi.ToFixedNumber("iost", js.vi.TokenBalance("iost", testID[0]))
+		balance2 := js.vi.ToFixedNumber("iost", js.vi.TokenBalance("iost", testID[2]))
+		So(balance0.ToString(), ShouldEqual, "990")
+		So(balance2.ToString(), ShouldEqual, "10")
+	})
+
+	Convey("test out of amount limit", t, func() {
+		r := js.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "110"))
+		js.vi.Commit()
+		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+		So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
+		// balance0 := js.vi.ToFixedNumber("iost", js.vi.TokenBalance("iost", testID[0]))
+		// balance2 := js.vi.ToFixedNumber("iost", js.vi.TokenBalance("iost", testID[2]))
+		// todo
+		// So(balance0.ToString(), ShouldEqual, "990")
+		// So(balance2.ToString(), ShouldEqual, "10")
+	})
 }

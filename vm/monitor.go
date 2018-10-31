@@ -89,12 +89,12 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	}
 	cost = host.CommonOpCost(len(authList) * len(amountLimit))
 
-	fixedAmountLimit := []*contract.FixedAmount{}
+	fixedAmountLimit := []contract.FixedAmount{}
 	for _, limit := range amountLimit {
 		decimal := h.DB().Decimal(limit.Token)
 		fixedAmount, ok := common.NewFixed(limit.Val, decimal)
 		if ok {
-			fixedAmountLimit = append(fixedAmountLimit, &contract.FixedAmount{limit.Token, fixedAmount})
+			fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
 		}
 	}
 	beforeBalance := make(map[string][]int64)
@@ -127,7 +127,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	for acc, _ := range authList {
 		for i, limit := range fixedAmountLimit {
 			afterBalance := h.DB().TokenBalance(limit.Token, acc)
-			delta := common.Fixed{afterBalance - beforeBalance[acc][i], fixedAmountLimit[i].Val.Decimal}
+			delta := common.Fixed{beforeBalance[acc][i] - afterBalance, fixedAmountLimit[i].Val.Decimal}
 			if delta.Value > fixedAmountLimit[i].Val.Value {
 				err = errors.New(fmt.Sprintf("token %s exceed amountLimit in abi. limit %s, got %s",
 					limit.Token,
