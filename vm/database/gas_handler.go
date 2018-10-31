@@ -18,13 +18,13 @@ type GasHandler struct {
 }
 
 // If no key exists, return 0
-func (m *GasHandler) getFN(key string) (value *common.FixPointNumber) {
-	value, _ = common.UnmarshalFixPointNumber(m.db.Get(key))
+func (m *GasHandler) getFN(key string) (value *common.Fixed) {
+	value, _ = common.UnmarshalFixed(m.db.Get(key))
 	return
 }
 
 // putFN ...
-func (m *GasHandler) putFN(key string, value *common.FixPointNumber) {
+func (m *GasHandler) putFN(key string, value *common.Fixed) {
 	m.db.Put(key, value.Marshal())
 }
 
@@ -55,12 +55,12 @@ func (m *GasHandler) gasRateKey(name string) string {
 }
 
 // GetGasRate ...
-func (m *GasHandler) GetGasRate(name string) *common.FixPointNumber {
+func (m *GasHandler) GetGasRate(name string) *common.Fixed {
 	return m.getFN(m.gasRateKey(name))
 }
 
 // SetGasRate ...
-func (m *GasHandler) SetGasRate(name string, r *common.FixPointNumber) {
+func (m *GasHandler) SetGasRate(name string, r *common.Fixed) {
 	m.putFN(m.gasRateKey(name), r)
 }
 
@@ -69,12 +69,12 @@ func (m *GasHandler) gasLimitKey(name string) string {
 }
 
 // GetGasLimit ...
-func (m *GasHandler) GetGasLimit(name string) *common.FixPointNumber {
+func (m *GasHandler) GetGasLimit(name string) *common.Fixed {
 	return m.getFN(m.gasLimitKey(name))
 }
 
 // SetGasLimit ...
-func (m *GasHandler) SetGasLimit(name string, l *common.FixPointNumber) {
+func (m *GasHandler) SetGasLimit(name string, l *common.Fixed) {
 	m.putFN(m.gasLimitKey(name), l)
 }
 
@@ -97,12 +97,12 @@ func (m *GasHandler) gasStockKey(name string) string {
 }
 
 // GetGasStock `gasStock` means the gas amount at last update time.
-func (m *GasHandler) GetGasStock(name string) *common.FixPointNumber {
+func (m *GasHandler) GetGasStock(name string) *common.Fixed {
 	return m.getFN(m.gasStockKey(name))
 }
 
 // SetGasStock ...
-func (m *GasHandler) SetGasStock(name string, g *common.FixPointNumber) {
+func (m *GasHandler) SetGasStock(name string, g *common.Fixed) {
 	m.putFN(m.gasStockKey(name), g)
 }
 
@@ -111,17 +111,17 @@ func (m *GasHandler) gasPledgeKey(name string) string {
 }
 
 // GetGasPledge ...
-func (m *GasHandler) GetGasPledge(name string) *common.FixPointNumber {
+func (m *GasHandler) GetGasPledge(name string) *common.Fixed {
 	return m.getFN(m.gasPledgeKey(name))
 }
 
 // SetGasPledge ...
-func (m *GasHandler) SetGasPledge(name string, p *common.FixPointNumber) {
+func (m *GasHandler) SetGasPledge(name string, p *common.Fixed) {
 	m.putFN(m.gasPledgeKey(name), p)
 }
 
 // CurrentTotalGas return current total gas. It is min(limit, last_updated_gas + time_since_last_updated * increase_speed)
-func (m *GasHandler) CurrentTotalGas(name string, now int64) (result *common.FixPointNumber) {
+func (m *GasHandler) CurrentTotalGas(name string, now int64) (result *common.Fixed) {
 	result = m.GetGasStock(name)
 	gasUpdateTime := m.GetGasUpdateTime(name)
 	var timeDuration int64
@@ -132,7 +132,7 @@ func (m *GasHandler) CurrentTotalGas(name string, now int64) (result *common.Fix
 	limit := m.GetGasLimit(name)
 	//fmt.Printf("CurrentTotalGas stock %v rate %v limit %v", result, rate, limit)
 	result = result.Add(rate.Times(timeDuration))
-	if limit.LessThen(result) {
+	if limit.LessThan(result) {
 		result = limit
 	}
 	return
