@@ -133,9 +133,9 @@ func FakeBv(bv global.BaseVariable) error {
 		bv.StateDB(),
 		&common.GenesisConfig{
 			WitnessInfo: []*common.Witness{
-				{"a1", "a1", "a1", "11111111111"},
-				{"a2", "a2", "a2", "222222"},
-				{"a3", "a3", "a3", "333333333"}},
+				{ID: "a1", Owner: "a1", Active: "a1", Balance: "11111111111"},
+				{ID: "a2", Owner: "a2", Active: "a2", Balance: "222222"},
+				{ID: "a3", Owner: "a3", Active: "a3", Balance: "333333333"}},
 			InitialTimestamp: "2006-01-02T15:04:05Z",
 			VoteContractPath: os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/",
 		},
