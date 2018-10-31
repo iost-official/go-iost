@@ -79,7 +79,9 @@ func generateBlock(account *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB)
 	})
 	t2 := time.Since(t1)
 	ilog.Info("time spent:", t2)
-	ilog.Info("time spent per tx:", t2.Nanoseconds()/int64(len(blk.Txs)))
+	if len(blk.Txs) != 0 {
+		ilog.Info("time spent per tx:", t2.Nanoseconds()/int64(len(blk.Txs)))
+	}
 
 	if err != nil {
 		go txPool.DelTxList(dropList)
