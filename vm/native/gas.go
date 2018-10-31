@@ -16,7 +16,7 @@ const IOSTRatio int64 = 100000000
 var gasMinPledgeInIOST int64 = 10
 
 // GasMinPledge Every user must pledge a minimum amount of IOST (including GAS and RAM)
-var GasMinPledge = &common.FixPointNumber{Value: gasMinPledgeInIOST * IOSTRatio, Decimal: 8}
+var GasMinPledge = &common.Fixed{Value: gasMinPledgeInIOST * IOSTRatio, Decimal: 8}
 
 // Each IOST you pledge, you will get `GasImmediateReward` gas immediately.
 // Then gas will be generated at a rate of `GasIncreaseRate` gas per block.
@@ -25,13 +25,13 @@ var GasMinPledge = &common.FixPointNumber{Value: gasMinPledgeInIOST * IOSTRatio,
 // so gas production will continue again util the limit.
 
 // GasImmediateReward immediate reward per IOST
-var GasImmediateReward = &common.FixPointNumber{Value: 10 * IOSTRatio, Decimal: 8}
+var GasImmediateReward = &common.Fixed{Value: 10 * IOSTRatio, Decimal: 8}
 
 // GasLimit gas limit per IOST
-var GasLimit = &common.FixPointNumber{Value: 30 * IOSTRatio, Decimal: 8}
+var GasLimit = &common.Fixed{Value: 30 * IOSTRatio, Decimal: 8}
 
 // GasIncreaseRate gas increase per IOST per block
-var GasIncreaseRate = &common.FixPointNumber{Value: 1 * IOSTRatio, Decimal: 8}
+var GasIncreaseRate = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
 
 var gasABIs map[string]*abi
 
@@ -44,7 +44,7 @@ func init() {
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.
-func pledge(h *host.Host, name string, pledgeAmountF *common.FixPointNumber) error {
+func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 	pledgeAmount := pledgeAmountF.Value
 	if pledgeAmount == 0 {
 		return fmt.Errorf("invalid pledge amount %v", pledgeAmount)
@@ -53,7 +53,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.FixPointNumber) err
 		unpledgeAmount := pledgeAmountF.Neg()
 		pledged := h.DB().GasHandler.GetGasPledge(name)
 		// how to deal with overflow here?
-		if pledged.Sub(unpledgeAmount).LessThen(GasMinPledge) {
+		if pledged.Sub(unpledgeAmount).LessThan(GasMinPledge) {
 			return fmt.Errorf("%v should be pledged at least ", GasMinPledge)
 		}
 	}
@@ -92,7 +92,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.FixPointNumber) err
 	}
 	gasOld := h.DB().GasHandler.GetGasStock(name)
 	gasNew := gasOld.Add(gasDelta)
-	if limitNew.LessThen(gasNew) {
+	if limitNew.LessThan(gasNew) {
 		// clear the gas above the new limit.
 		gasNew = limitNew
 	}
@@ -128,7 +128,7 @@ var (
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[1])
 			}
-			pledgeAmount, ok := common.NewFixPointNumber(pledgeAmountStr, 8)
+			pledgeAmount, ok := common.NewFixed(pledgeAmountStr, 8)
 			cost.AddAssign(host.CommonErrorCost(1))
 			if !ok || pledgeAmount.Value <= 0 {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[1])
@@ -172,7 +172,7 @@ var (
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[1])
 			}
-			unpledgeAmount, ok := common.NewFixPointNumber(unpledgeAmountStr, 8)
+			unpledgeAmount, ok := common.NewFixed(unpledgeAmountStr, 8)
 			cost.AddAssign(host.CommonErrorCost(1))
 			if !ok || unpledgeAmount.Value <= 0 {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[1])
