@@ -48,13 +48,13 @@ func (h *Teller) GetBalance(from string) (string, *contract.Cost, error) {
 	} else {
 		bl = h.h.db.Balance(ContractAccountPrefix + from)
 	}
-	fpn := common.FixPointNumber{Value: bl, Decimal: 8}
+	fpn := common.Fixed{Value: bl, Decimal: 8}
 	return fpn.ToString(), GetCost, nil
 }
 
 // GrantCoin issue coin
 func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cost, error) {
-	amount, _ := common.NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -68,7 +68,7 @@ func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cos
 
 // ConsumeCoin consume coin from
 func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *contract.Cost, err error) {
-	amount, _ := common.NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -85,7 +85,7 @@ func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *con
 
 // GrantServi ...
 func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error) {
-	amount, _ := common.NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -99,7 +99,7 @@ func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error)
 
 // ConsumeServi ...
 func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cost, err error) {
-	amount, _ := common.NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -116,7 +116,7 @@ func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cos
 
 // TotalServi ...
 func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
-	fpn := common.FixPointNumber{Value: h.h.db.TotalServi(), Decimal: 8}
+	fpn := common.Fixed{Value: h.h.db.TotalServi(), Decimal: 8}
 	ts = fpn.ToString()
 	cost = GetCost
 	return
@@ -124,7 +124,7 @@ func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
 
 // Transfer ...
 func (h *Teller) Transfer(from, to string, amountStr string) (*contract.Cost, error) {
-	amount, _ := common.NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -163,7 +163,7 @@ func (h *Teller) TopUp(c, from string, amountStr string) (*contract.Cost, error)
 
 // Countermand ...
 func (h *Teller) Countermand(c, to string, amountStr string) (*contract.Cost, error) {
-	amount, _ := common.NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	return TransferCost, h.TransferRaw(ContractGasPrefix+c, to, amount.Value)
 }
 

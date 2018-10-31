@@ -27,8 +27,8 @@ func toString(n int64) string {
 	return strconv.FormatInt(n, 10)
 }
 
-func toIOSTFN(n int64) *common.FixPointNumber {
-	return &common.FixPointNumber{Value: n * IOSTRatio, Decimal: 8}
+func toIOSTFN(n int64) *common.Fixed {
+	return &common.Fixed{Value: n * IOSTRatio, Decimal: 8}
 }
 
 const initCoin int64 = 5000
@@ -47,12 +47,12 @@ func gasTestInit() (*host.Host, *account.Account) {
 	context := host.NewContext(nil)
 	h := host.NewHost(context, visitor, nil, nil)
 	testAcc := getTestAccount()
-        as, err := json.Marshal(testAcc)
+	as, err := json.Marshal(testAcc)
 	if err != nil {
 		panic(err)
 	}
 	h.DB().SetBalance(testAcc.ID, toIOSTFN(initCoin).Value)
-        h.DB().MPut("iost.auth-account", testAcc.ID, database.MustMarshal(string(as)))
+	h.DB().MPut("iost.auth-account", testAcc.ID, database.MustMarshal(string(as)))
 	h.Context().Set("number", initNumber)
 	h.Context().Set("contract_name", "iost.gas")
 	authList := make(map[string]int)
