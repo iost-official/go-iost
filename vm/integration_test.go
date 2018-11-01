@@ -137,7 +137,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	trx, err = tx.SignTx(trx, ac)
+	trx, err = tx.SignTx(trx, ac.ID, ac)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 
 func MakeTxWithAuth(act tx.Action, ac *account.KeyPair) (*tx.Tx, error) {
 	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
-	trx, err := tx.SignTx(trx, ac)
+	trx, err := tx.SignTx(trx, ac.ID, ac)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func TestIntergration_Transfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	trx, err = tx.SignTx(trx, ac)
+	trx, err = tx.SignTx(trx, ac.ID, ac)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +183,7 @@ func TestIntergration_Transfer(t *testing.T) {
 
 	act2 := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
 	trx2 := tx.NewTx([]*tx.Action{&act2}, nil, int64(10000), int64(1), int64(10000000))
-	trx2, err = tx.SignTx(trx2, ac)
+	trx2, err = tx.SignTx(trx2, ac.ID, ac)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -548,7 +548,7 @@ func NewJSTester(t fataler) *JSTester {
 	//mvccdb := replaceDB(t)
 
 	vi := database.NewVisitor(0, mvccdb)
-	vi.SetBalance(testID[0], 1000000 * 1e8)
+	vi.SetBalance(testID[0], 1000000*1e8)
 	vi.SetContract(systemContract)
 	vi.Commit()
 
@@ -813,15 +813,15 @@ module.exports = Contract;
 	r := js.TestJS("deposit", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
-	if 100 * 1e8!= js.vi.Balance(host.ContractAccountPrefix+js.cname) {
-		t.Fatal(js.vi.Balance(host.ContractAccountPrefix+js.cname))
+	if 100*1e8 != js.vi.Balance(host.ContractAccountPrefix+js.cname) {
+		t.Fatal(js.vi.Balance(host.ContractAccountPrefix + js.cname))
 		t.Fatalf("balance of contract " + js.cname + "should be 100.")
 	}
 
 	r = js.TestJS("withdraw", fmt.Sprintf(`[]`))
 	t.Log("receipt is ", r)
 	t.Log("balance of sender :", js.vi.Balance(testID[0]))
-	if 1 * 1e8 != js.vi.Balance(host.ContractAccountPrefix+js.cname) {
+	if 1*1e8 != js.vi.Balance(host.ContractAccountPrefix+js.cname) {
 		t.Fatalf("balance of contract " + js.cname + "should be 1.")
 	}
 }
