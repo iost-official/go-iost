@@ -6,6 +6,7 @@
 
 #include "bignumber.js.h"
 #include "int64.js.h"
+#include "float64.js.h"
 #include "utils.js.h"
 #include "console.js.h"
 #include "esprima.js.h"
@@ -28,6 +29,7 @@ static char codeFormat[] =
         "%s\n" // load BigNumber
         "let BigNumber = module.exports;\n"
         "%s\n"  // load Int64
+        "%s\n"  // load Float64
         "%s\n"  // load util
         "%s\n"; // load console
 
@@ -72,6 +74,7 @@ int compile(SandboxPtr ptr, const char *code, const char **compiledCode) {
 CustomStartupData createStartupData() {
     char *bignumberjs = reinterpret_cast<char *>(__libjs_bignumber_js);
     char *int64js = reinterpret_cast<char *>(__libjs_int64_js);
+    char *float64js = reinterpret_cast<char *>(__libjs_float64_js);
     char *utilsjs = reinterpret_cast<char *>(__libjs_utils_js);
     char *consolejs = reinterpret_cast<char *>(__libjs_console_js);
 
@@ -79,6 +82,7 @@ CustomStartupData createStartupData() {
     asprintf(&code, codeFormat,
         bignumberjs,
         int64js,
+        float64js,
         utilsjs,
         consolejs);
 

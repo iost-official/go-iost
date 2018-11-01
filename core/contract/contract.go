@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
 )
 
 //go:generate protoc --gofast_out=. contract.proto
@@ -19,6 +20,12 @@ const (
 	SelfPay PaymentCode = iota
 	ContractPay
 )
+
+// FixedAmount the limit amount of token used by contract
+type FixedAmount struct {
+	Token string
+	Val   *common.Fixed
+}
 
 //type ContractInfo struct {
 //	Name     string
