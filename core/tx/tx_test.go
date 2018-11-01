@@ -33,7 +33,7 @@ func TestAction(t *testing.T) {
 
 func TestTx(t *testing.T) {
 	Convey("Test of Tx Data Structure", t, func() {
-		actions := []*Action{}
+		var actions []*Action
 		actions = append(actions, &Action{
 			Contract:   "contract1",
 			ActionName: "actionname1",
@@ -88,7 +88,7 @@ func TestTx(t *testing.T) {
 			sig, err := SignTxContent(tx, a1)
 			So(err, ShouldEqual, nil)
 
-			_, err = SignTx(tx, a1, sig)
+			_, err = SignTx(tx, a1.ID, a1, sig)
 			So(err, ShouldEqual, nil)
 
 			hash = tx.Hash()
@@ -119,9 +119,9 @@ func TestTx(t *testing.T) {
 				So(bytes.Equal(tx.Signs[i].Pubkey, tx1.Signs[i].Pubkey), ShouldBeTrue)
 				So(bytes.Equal(tx.Signs[i].Sig, tx1.Signs[i].Sig), ShouldBeTrue)
 			}
-			So(tx.Publisher == nil && tx1.Publisher == nil || tx.Publisher.Algorithm == tx1.Publisher.Algorithm, ShouldBeTrue)
-			So(tx.Publisher == nil && tx1.Publisher == nil || bytes.Equal(tx.Publisher.Pubkey, tx1.Publisher.Pubkey), ShouldBeTrue)
-			So(tx.Publisher == nil && tx1.Publisher == nil || bytes.Equal(tx.Publisher.Sig, tx1.Publisher.Sig), ShouldBeTrue)
+			So(tx.PublishSign == nil && tx1.PublishSign == nil || tx.PublishSign.Algorithm == tx1.PublishSign.Algorithm, ShouldBeTrue)
+			So(tx.PublishSign == nil && tx1.PublishSign == nil || bytes.Equal(tx.PublishSign.Pubkey, tx1.PublishSign.Pubkey), ShouldBeTrue)
+			So(tx.PublishSign == nil && tx1.PublishSign == nil || bytes.Equal(tx.PublishSign.Sig, tx1.PublishSign.Sig), ShouldBeTrue)
 
 		})
 
@@ -141,12 +141,12 @@ func TestTx(t *testing.T) {
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "publisher error")
 
-			tx3, err := SignTx(tx, a3)
+			tx3, err := SignTx(tx, a3.ID, a3)
 			So(err, ShouldBeNil)
 			err = tx3.VerifySelf()
 			So(err, ShouldBeNil)
 
-			tx.Publisher = &crypto.Signature{
+			tx.PublishSign = &crypto.Signature{
 				Algorithm: crypto.Secp256k1,
 				Sig:       []byte("hello"),
 				Pubkey:    []byte("world"),

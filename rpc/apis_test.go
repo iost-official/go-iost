@@ -57,7 +57,7 @@ func TestGRPCServer_ExecTx(t *testing.T) {
 		10000,
 		1,
 		time.Now().Add(time.Second*time.Duration(3)).UnixNano())
-	stx, err := tx.SignTx(trx, rootAccount)
+	stx, err := tx.SignTx(trx, rootAccount.ID, rootAccount)
 
 	resp, err := client.ExecTx(context.Background(), &RawTxReq{Data: stx.Encode()})
 	if err != nil {

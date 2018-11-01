@@ -89,7 +89,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil {
 		return nil, err
 	}
-	trx, err = tx.SignTx(trx, acc)
+	trx, err = tx.SignTx(trx, acc.ID, acc)
 	if err != nil {
 		return nil, err
 	}
