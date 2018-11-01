@@ -98,9 +98,9 @@ func PublishContract(codePath string, abiPath string, conID string, acc *account
 		data = `["` + contract.B64Encode() + `", "` + updateID + `"]`
 	}
 
-	pubkeys := make([][]byte, len(signers))
+	pubkeys := make([]string, len(signers))
 	for i, accID := range signers {
-		pubkeys[i] = account.GetPubkeyByID(accID)
+		pubkeys[i] = accID
 	}
 
 	action := tx.NewAction("iost.system", methodName, data)

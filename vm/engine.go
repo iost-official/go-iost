@@ -388,7 +388,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 
 	authList := make(map[string]int)
 	for _, v := range t.Signers {
-		authList[string(v)] = 1
+		authList[v] = 1
 	}
 
 	authList[publisherID] = 2
