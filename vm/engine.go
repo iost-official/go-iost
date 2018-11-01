@@ -394,4 +394,5 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	authList[publisherID] = 2
 
 	h.Context().Set("auth_list", authList)
+	h.Context().Set("auth_contract_list", make(map[string]int))
 }

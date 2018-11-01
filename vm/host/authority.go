@@ -13,12 +13,23 @@ type Authority struct {
 	h *Host
 }
 
+
+func (h *Authority) requireContractAuth(id, p string) (bool, *contract.Cost) {
+	cost := CommonOpCost(1)
+	authContractList := h.h.ctx.Value("auth_contract_list").(map[string]int)
+	if _, ok := authContractList[id]; ok || h.h.ctx.Value("contract_name").(string) == id {
+		return true, cost
+	}
+	return false, cost
+}
+
 // RequireAuth check auth
 func (h *Authority) RequireAuth(id, p string) (bool, *contract.Cost) {
+	if h.isContract(id) {
+		return h.requireContractAuth(id, p)
+	}
 	authList := h.h.ctx.Value("auth_list")
 	authMap := authList.(map[string]int)
-	// add current contract auth
-	authMap[h.h.ctx.Value("contract_name").(string)] = 1
 	reenterMap := make(map[string]int)
 
 	return h.requireAuth(id, p, authMap, reenterMap)

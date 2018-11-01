@@ -90,9 +90,9 @@ func (h *Host) Call(contract, api, jarg string, withAuth ...bool) ([]interface{}
 
 	// handle withAuth
 	if len(withAuth) > 0 && withAuth[0] {
-		authList := h.ctx.Value("auth_list").(map[string]int)
+		authList := h.ctx.Value("auth_contract_list").(map[string]int)
 		authList[h.ctx.Value("contract_name").(string)] = 1
-		h.ctx.Set("auth_list", authList)
+		h.ctx.Set("auth_contract_list", authList)
 	}
 
 	h.ctx.Set("stack_height", height+1)
