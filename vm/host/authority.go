@@ -5,6 +5,7 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/database"
 )
 
 // Authority module of ...
@@ -18,30 +19,34 @@ func (h *Authority) RequireAuth(id, p string) (bool, *contract.Cost) {
 	authMap := authList.(map[string]int)
 	reenterMap := make(map[string]int)
 
-	return h.requireAuth(id, p, authMap, reenterMap)
+	return Auth(h.h.db, id, p, authMap, reenterMap)
 }
 
 // ReadAuth read auth
-func (h *Authority) ReadAuth(id string) (*account.Account, *contract.Cost) {
-	acc, cost := h.h.GlobalMapGet("iost.auth", "account", id)
+func ReadAuth(vi *database.Visitor, id string) (*account.Account, *contract.Cost) {
+	sa := vi.MGet("iost.auth-account", id)
+	acc := database.MustUnmarshal(sa)
+	c := contract.NewCost(0, 0, int64(len(sa)))
 	if acc == nil {
-		return nil, cost
+		return nil, c
 	}
 	var a account.Account
 	err := json.Unmarshal([]byte(acc.(string)), &a)
 	if err != nil {
 		panic(err)
 	}
-	return &a, cost
+	return &a, c
 }
 
-func (h *Authority) requireAuth(id, permission string, auth, reenter map[string]int) (bool, *contract.Cost) {
+// Auth check auth
+func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]int) (bool, *contract.Cost) {
 	if _, ok := reenter[id+"@"+permission]; ok {
 		return false, CommonErrorCost(1)
 	}
 	reenter[id+"@"+permission] = 1
 
-	a, c := h.ReadAuth(id)
+	a, c := ReadAuth(vi, id)
+
 	if a == nil {
 		return false, c
 	}
@@ -70,7 +75,7 @@ func (h *Authority) requireAuth(id, permission string, auth, reenter map[string]
 				}
 			}
 		} else {
-			ok, cost := h.requireAuth(user.ID, user.Permission, auth, reenter)
+			ok, cost := Auth(vi, user.ID, user.Permission, auth, reenter)
 			c.AddAssign(cost)
 			if ok {
 				weight += user.Weight

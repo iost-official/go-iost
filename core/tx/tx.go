@@ -7,6 +7,8 @@ import (
 
 	"fmt"
 
+	"strings"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -55,7 +57,7 @@ func SignTxContent(tx *Tx, id string, account *account.KeyPair) (*crypto.Signatu
 func (t *Tx) containSigner(id string) bool {
 	found := false
 	for _, signer := range t.Signers {
-		if signer == id {
+		if strings.HasPrefix(signer, id) {
 			found = true
 		}
 	}

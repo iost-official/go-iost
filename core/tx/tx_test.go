@@ -131,9 +131,6 @@ func TestTx(t *testing.T) {
 			So(tx.VerifySigner(sig1), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig1)
 
-			err = tx.VerifySelf()
-			So(err.Error(), ShouldEqual, "signer not enough")
-
 			sig2, err := SignTxContent(tx, a2.ID, a2)
 			So(tx.VerifySigner(sig2), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig2)
