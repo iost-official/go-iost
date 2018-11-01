@@ -44,17 +44,17 @@ func prepareContract(t *testing.T, s *Simulator) {
 		s.SetAccount(account.NewInitAccount(testID[i], testID[i], testID[i]))
 	}
 	// deploy iost.token
-	r, err := s.Call("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.token", native.TokenABI().B64Encode()), kp)
+	r, err := s.Call("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.token", native.TokenABI().B64Encode()), "a", kp)
 	if r.Status.Code != tx.Success {
 		t.Fatal(r)
 	}
 	// create token
-	r, err = s.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000), kp)
+	r, err = s.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000), "a", kp)
 	if r.Status.Code != tx.Success {
 		t.Fatal(r)
 	}
 	// issue token
-	r, err = s.Call("iost.token", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", testID[0], "1000"), kp)
+	r, err = s.Call("iost.token", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", testID[0], "1000"), "a", kp)
 	if r.Status.Code != tx.Success {
 		t.Fatal(r)
 	}
@@ -83,7 +83,7 @@ func TestTransfer(t *testing.T) { // todo auth error
 		t.Fatal(err)
 	}
 
-	r, err := s.Call("iost.system", "Transfer", fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp)
+	r, err := s.Call("iost.system", "Transfer", fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], 0.0001), testID[0], kp)
 
 	Convey("test transfer", t, func() {
 		So(err, ShouldBeNil)
@@ -110,7 +110,7 @@ func TestJS_Database(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cname := s.DeployContract(c, kp)
+	cname := s.DeployContract(c, kp.ID, kp)
 	t.Log("cname ", cname)
 
 	Convey("test of s database", t, func() {
@@ -121,7 +121,7 @@ func TestJS_Database(t *testing.T) {
 		So(s.Visitor.Get(cname+"-"+"array"), ShouldEqual, "s[1,2,3]")
 		So(s.Visitor.Get(cname+"-"+"obj"), ShouldEqual, `s{"foo":"bar"}`)
 
-		r, err := s.Call(cname, "read", `[]`, kp)
+		r, err := s.Call(cname, "read", `[]`, kp.ID, kp)
 
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -184,7 +184,7 @@ func TestGenesis(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	trx, err = tx.SignTx(trx, acc)
+	trx, err = tx.SignTx(trx, acc.ID, acc)
 	if err != nil {
 		t.Fatal(err)
 	}

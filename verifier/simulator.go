@@ -22,6 +22,7 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 )
 
+// Simulator of txs and contract
 type Simulator struct {
 	Visitor  *database.Visitor
 	Verifier *Verifier
@@ -30,6 +31,7 @@ type Simulator struct {
 	mvcc     db.MVCCDB
 }
 
+// NewSimulator get a simulator with default settings
 func NewSimulator() *Simulator {
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
@@ -46,10 +48,12 @@ func NewSimulator() *Simulator {
 	}
 }
 
+// SetBlockHead ...
 func (s *Simulator) SetBlockHead(head *block.BlockHead) {
 	s.Head = head
 }
 
+// SetAccount ...
 func (s *Simulator) SetAccount(acc *account.Account) {
 	buf, err := json.Marshal(acc)
 	if err != nil {
@@ -58,18 +62,20 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 	s.Visitor.MPut("iost.auth-account", acc.ID, database.MustMarshal(string(buf)))
 }
 
+// SetContract without run init
 func (s *Simulator) SetContract(c *contract.Contract) {
 	s.Visitor.SetContract(c)
 }
 
-func (s *Simulator) DeployContract(c *contract.Contract, publisher *account.KeyPair) string {
+// DeployContract via iost.system/SetCode
+func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) string {
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   "iost.system",
 		ActionName: "SetCode",
 		Data:       fmt.Sprintf(`["%v"]`, c.B64Encode()),
 	}}, nil, int64(100000), int64(1), int64(10000000))
 
-	r, err := s.CallTx(trx, publisher)
+	r, err := s.CallTx(trx, publisher, kp)
 	if err != nil {
 		panic(err)
 	}
@@ -79,6 +85,7 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher *account.KeyP
 	return "Contract" + common.Base58Encode(trx.Hash())
 }
 
+// Compile files
 func (s *Simulator) Compile(id, src, abi string) (*contract.Contract, error) {
 
 	bs, err := ioutil.ReadFile(src + ".js")
@@ -106,7 +113,8 @@ func (s *Simulator) Compile(id, src, abi string) (*contract.Contract, error) {
 	return &c, nil
 }
 
-func (s *Simulator) Call(contractName, abi, args string, auths ...*account.KeyPair) (*tx.TxReceipt, error) {
+// Call abi with basic settings
+func (s *Simulator) Call(contractName, abi, args string, publisher string, auth *account.KeyPair) (*tx.TxReceipt, error) {
 
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   contractName,
@@ -114,23 +122,24 @@ func (s *Simulator) Call(contractName, abi, args string, auths ...*account.KeyPa
 		Data:       args,
 	}}, nil, int64(100000), int64(1), int64(10000000))
 
-	return s.CallTx(trx, auths...)
+	return s.CallTx(trx, publisher, auth)
 }
 
-func (s *Simulator) CallTx(trx *tx.Tx, auths ...*account.KeyPair) (*tx.TxReceipt, error) {
+// CallTx with user defiened tx
+func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) (*tx.TxReceipt, error) {
 	var sigs = make([]*crypto.Signature, 0)
 
-	if len(auths) > 1 {
-		for _, auth := range auths[1:] {
-			sig, err := tx.SignTxContent(trx, auth)
-			if err != nil {
-				return nil, err
-			}
-			sigs = append(sigs, sig)
-		}
-	}
+	//if len(auths) > 1 {
+	//	for _, auth := range auths[1:] {
+	//		sig, err := tx.SignTxContent(trx, auth)
+	//		if err != nil {
+	//			return nil, err
+	//		}
+	//		sigs = append(sigs, sig)
+	//	}
+	//}
 
-	stx, err := tx.SignTx(trx, auths[0], sigs...)
+	stx, err := tx.SignTx(trx, publisher, auth, sigs...)
 	if err != nil {
 		return nil, err
 	}
@@ -155,6 +164,7 @@ func (s *Simulator) CallTx(trx *tx.Tx, auths ...*account.KeyPair) (*tx.TxReceipt
 	return r, nil
 }
 
+// Clear mvccdb
 func (s *Simulator) Clear() {
 	s.mvcc.Close()
 	os.RemoveAll("mvcc")
