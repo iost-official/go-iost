@@ -3,6 +3,8 @@ package host
 import (
 	"encoding/json"
 
+	"strings"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
@@ -13,13 +15,34 @@ type Authority struct {
 	h *Host
 }
 
+func (h *Authority) requireContractAuth(id, p string) (bool, *contract.Cost) {
+	cost := CommonOpCost(1)
+	authContractList := h.h.ctx.Value("auth_contract_list").(map[string]int)
+	if _, ok := authContractList[id]; ok || h.h.ctx.Value("contract_name").(string) == id {
+		return true, cost
+	}
+	return false, cost
+}
+
 // RequireAuth check auth
 func (h *Authority) RequireAuth(id, p string) (bool, *contract.Cost) {
+	if h.isContract(id) {
+		return h.requireContractAuth(id, p)
+	}
 	authList := h.h.ctx.Value("auth_list")
 	authMap := authList.(map[string]int)
 	reenterMap := make(map[string]int)
 
 	return Auth(h.h.db, id, p, authMap, reenterMap)
+}
+
+// ReadAuth read auth
+func (h *Authority) isContract(id string) bool {
+	// todo tell apart contractid and accountid
+	if strings.HasPrefix(id, "Contract") || strings.Contains(id, ".") {
+		return true
+	}
+	return false
 }
 
 // ReadAuth read auth
