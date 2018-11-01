@@ -25,7 +25,7 @@ type Block struct {
 func (b *Block) CalculateTxsHash() []byte {
 	hash := make([]byte, 0)
 	for _, tx := range b.Txs {
-		hash = append(hash, tx.Publisher.Sig...)
+		hash = append(hash, tx.PublishSign.Sig...)
 	}
 	return common.Sha3(hash)
 }
