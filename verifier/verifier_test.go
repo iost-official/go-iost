@@ -506,37 +506,62 @@ func prepareContract(t *testing.T, js *JSTester) {
 
 func TestAmountLimit(t *testing.T) {
 	ilog.Stop()
-	js := NewJSTester(t)
-	defer js.Clear()
-	prepareContract(t, js)
-
-	ca, err := Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
-	if err != nil || ca == nil {
-		t.Fatal(err)
-	}
-	js.vi.SetContract(ca)
-	js.vi.Commit()
-	js.cname = "Contracttransfer"
-
 	Convey("test of amount limit", t, func() {
-		r := js.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "10"))
-		js.vi.Commit()
-		So(r.Status.Code, ShouldEqual, tx.Success)
-		balance0 := js.vi.ToFixedNumber("iost", js.vi.TokenBalance("iost", testID[0]))
-		balance2 := js.vi.ToFixedNumber("iost", js.vi.TokenBalance("iost", testID[2]))
-		So(balance0.ToString(), ShouldEqual, "990")
-		So(balance2.ToString(), ShouldEqual, "10")
-	})
+		js := NewJSTester(t)
+		defer js.Clear()
+		prepareContract(t, js)
 
-	Convey("test out of amount limit", t, func() {
-		r := js.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "110"))
+		ca, err := Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
+		if err != nil || ca == nil {
+			t.Fatal(err)
+		}
+		js.vi.SetContract(ca)
 		js.vi.Commit()
-		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
-		So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
-		// balance0 := js.vi.ToFixedNumber("iost", js.vi.TokenBalance("iost", testID[0]))
-		// balance2 := js.vi.ToFixedNumber("iost", js.vi.TokenBalance("iost", testID[2]))
-		// todo
-		// So(balance0.ToString(), ShouldEqual, "990")
-		// So(balance2.ToString(), ShouldEqual, "10")
+
+		ca, err = Compile("Contracttransfer1", "./test_data/transfer1", "./test_data/transfer1.js")
+		if err != nil || ca == nil {
+			t.Fatal(err)
+		}
+		js.vi.SetContract(ca)
+		js.vi.Commit()
+		js.cname = "Contracttransfer1"
+
+		Reset(func() {
+			js.vi.SetTokenBalanceFixed("iost", testID[0], "1000")
+			js.vi.SetTokenBalanceFixed("iost", testID[2], "0")
+		})
+
+		Convey("test of amount limit", func() {
+			r := js.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "10"))
+			js.vi.Commit()
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			balance0 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[0]), Decimal:js.vi.Decimal("iost")}
+			balance2 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[2]), Decimal:js.vi.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "990")
+			So(balance2.ToString(), ShouldEqual, "10")
+		})
+
+		Convey("test out of amount limit", func() {
+			r := js.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "110"))
+			js.vi.Commit()
+			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
+			//balance0 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[0]), Decimal:js.vi.Decimal("iost")}
+			//balance2 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[2]), Decimal:js.vi.Decimal("iost")}
+			// todo exit when monitor.Call return err
+			// So(balance0.ToString(), ShouldEqual, "990")
+			// So(balance2.ToString(), ShouldEqual, "10")
+		})
+
+		Convey("test amount limit two level invocation", func() {
+			r := js.Call("Contracttransfer1", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "120"))
+			js.vi.Commit()
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			balance0 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[0]), Decimal:js.vi.Decimal("iost")}
+			balance2 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[2]), Decimal:js.vi.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "880")
+			So(balance2.ToString(), ShouldEqual, "120")
+		})
+
 	})
 }
