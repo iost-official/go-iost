@@ -76,7 +76,7 @@ var signCmd = &cobra.Command{
 			return
 		}
 
-		sig, err := tx.SignTxContent(&mtx, acc)
+		sig, err := tx.SignTxContent(&mtx, "todo", acc) // TODO 修改iwallet
 		if err != nil {
 			fmt.Println(err.Error())
 			return
