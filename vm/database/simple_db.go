@@ -180,7 +180,7 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.Publisher.Pubkey = account.GetPubkeyByID(p)
+	t.PublishSign.Pubkey = account.GetPubkeyByID(p)
 	t.GasLimit, err = json.Get("gas_limit").Int64()
 	if err != nil {
 		return nil, err

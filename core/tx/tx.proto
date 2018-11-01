@@ -17,7 +17,8 @@ message TxRaw {
     repeated ActionRaw actions = 5;
     repeated bytes signers = 6;
     repeated crypto.SignatureRaw signs = 7;
-    crypto.SignatureRaw publisher = 8;
+    string publisher = 8;
+    crypto.SignatureRaw publishSign = 9;
 }
 
 message ReceiptRaw {

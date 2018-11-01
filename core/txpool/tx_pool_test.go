@@ -344,31 +344,31 @@ func TestNewTxPImplB(t *testing.T) {
 			sig1, err := tx.SignTxContent(t1, newAccount)
 			So(err, ShouldBeNil)
 			t1.Signs = []*crypto.Signature{sig1}
-			t1, err = tx.SignTx(t1, newAccount)
+			t1, err = tx.SignTx(t1, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 
 			sig2, err := tx.SignTxContent(t2, newAccount)
 			So(err, ShouldBeNil)
 			t2.Signs = []*crypto.Signature{sig2}
-			t2, err = tx.SignTx(t2, newAccount)
+			t2, err = tx.SignTx(t2, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 
 			sig3, err := tx.SignTxContent(t3, newAccount)
 			So(err, ShouldBeNil)
 			t3.Signs = []*crypto.Signature{sig3}
-			t3, err = tx.SignTx(t3, newAccount)
+			t3, err = tx.SignTx(t3, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 
 			sig4, err := tx.SignTxContent(t4, newAccount)
 			So(err, ShouldBeNil)
 			t4.Signs = []*crypto.Signature{sig4}
-			t4, err = tx.SignTx(t4, newAccount)
+			t4, err = tx.SignTx(t4, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 
 			sig5, err := tx.SignTxContent(t5, newAccount)
 			So(err, ShouldBeNil)
 			t5.Signs = []*crypto.Signature{sig5}
-			t5, err = tx.SignTx(t5, newAccount)
+			t5, err = tx.SignTx(t5, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 
 			txPool.AddTx(t4)
@@ -664,7 +664,7 @@ func genTx(a *account.KeyPair, expirationIter int64) *tx.Tx {
 
 	t.Signs = append(t.Signs, sig1)
 
-	t1, err := tx.SignTx(t, a)
+	t1, err := tx.SignTx(t, a.ID, a)
 	if err != nil {
 		ilog.Debug("failed to SignTx")
 	}

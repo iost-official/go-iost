@@ -43,7 +43,7 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	if err != nil {
 		return err
 	}
-	e.publisherID = account.GetIDByPubkey(t.Publisher.Pubkey)
+	e.publisherID = account.GetIDByPubkey(t.PublishSign.Pubkey)
 	bl := e.h.DB().Balance(e.publisherID)
 	if bl < 0 || bl < t.GasPrice*t.GasLimit {
 		return errCannotPay
