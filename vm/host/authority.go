@@ -5,6 +5,7 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/contract"
+	"strings"
 )
 
 // Authority module of ...
@@ -22,7 +23,19 @@ func (h *Authority) RequireAuth(id, p string) (bool, *contract.Cost) {
 }
 
 // ReadAuth read auth
+func (h *Authority) isContract(id string) bool {
+	// todo tell apart contractid and accountid
+	if strings.HasPrefix(id, "Contract") || strings.Contains(id, ".") {
+		return true
+	}
+	return false
+}
+
+// ReadAuth read auth
 func (h *Authority) ReadAuth(id string) (*account.Account, *contract.Cost) {
+	if h.isContract(id) {
+		return account.NewInitAccount(id, id, id), CommonOpCost(1)
+	}
 	acc, cost := h.h.GlobalMapGet("iost.auth", "account", id)
 	if acc == nil {
 		return nil, cost
