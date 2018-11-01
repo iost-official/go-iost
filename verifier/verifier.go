@@ -12,19 +12,10 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/native"
 )
 
 // Verifier ..
 type Verifier struct {
-}
-
-// NewVerifier ...
-func NewVerifier(db database.Visitor) *Verifier {
-	if db.Contract("iost.system") == nil {
-		db.SetContract(native.SystemABI())
-	}
-	return &Verifier{}
 }
 
 // Config config of verifier

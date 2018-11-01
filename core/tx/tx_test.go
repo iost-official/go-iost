@@ -60,7 +60,7 @@ func TestTx(t *testing.T) {
 					ActionName: "actionname1",
 					Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 				}},
-				Signers: [][]byte{a1.Pubkey},
+				Signers: []string{a1.ID},
 			}
 			b, err := proto.Marshal(tx)
 			So(err, ShouldEqual, nil)
@@ -74,8 +74,8 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("encode and decode", func() {
-			tx := NewTx(actions, [][]byte{a1.Pubkey}, 100000, 100, 11)
-			tx1 := NewTx([]*Action{}, [][]byte{}, 0, 0, 0)
+			tx := NewTx(actions, []string{a1.ID}, 100000, 100, 11)
+			tx1 := NewTx([]*Action{}, []string{}, 0, 0, 0)
 			hash := tx.Hash()
 
 			encode := tx.Encode()
@@ -85,7 +85,7 @@ func TestTx(t *testing.T) {
 			hash1 := tx1.Hash()
 			So(bytes.Equal(hash, hash1), ShouldEqual, true)
 
-			sig, err := SignTxContent(tx, a1)
+			sig, err := SignTxContent(tx, a1.ID, a1)
 			So(err, ShouldEqual, nil)
 
 			_, err = SignTx(tx, a1.ID, a1, sig)
@@ -111,7 +111,7 @@ func TestTx(t *testing.T) {
 			}
 			So(len(tx.Signers) == len(tx1.Signers), ShouldBeTrue)
 			for i := 0; i < len(tx.Signers); i++ {
-				So(bytes.Equal(tx.Signers[i], tx1.Signers[i]), ShouldBeTrue)
+				So(tx.Signers[i], ShouldEqual, tx1.Signers[i])
 			}
 			So(len(tx.Signs) == len(tx1.Signs), ShouldBeTrue)
 			for i := 0; i < len(tx.Signs); i++ {
@@ -126,15 +126,12 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("sign and verify", func() {
-			tx := NewTx(actions, [][]byte{a1.Pubkey, a2.Pubkey}, 9999, 1, 1)
-			sig1, err := SignTxContent(tx, a1)
+			tx := NewTx(actions, []string{a1.ID, a2.ID}, 9999, 1, 1)
+			sig1, err := SignTxContent(tx, a1.ID, a1)
 			So(tx.VerifySigner(sig1), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig1)
 
-			err = tx.VerifySelf()
-			So(err.Error(), ShouldEqual, "signer not enough")
-
-			sig2, err := SignTxContent(tx, a2)
+			sig2, err := SignTxContent(tx, a2.ID, a2)
 			So(tx.VerifySigner(sig2), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig2)
 

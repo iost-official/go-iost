@@ -307,7 +307,7 @@ func TestVerifyBlock(t *testing.T) {
 				ActionName: "actionname1",
 				Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 			}},
-			Signers: [][]byte{account1.Pubkey},
+			Signers: []string{account1.ID},
 		}
 		rcpt0 := &tx.TxReceipt{
 			TxHash: tx0.Hash(),
