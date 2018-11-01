@@ -2,6 +2,7 @@ package host
 
 import (
 	"fmt"
+
 	"github.com/iost-official/go-iost/common"
 )
 
@@ -18,12 +19,12 @@ func NewGasManager(h *Host) GasManager {
 }
 
 // CurrentGas returns the current total gas of a user. It is dynamically calculated
-func (g *GasManager) CurrentGas(name string) *common.FixPointNumber {
+func (g *GasManager) CurrentGas(name string) *common.Fixed {
 	blockNumber := g.h.ctx.Value("number").(int64)
 	return g.h.db.GasHandler.CurrentTotalGas(name, blockNumber)
 }
 
-func (g *GasManager) refreshGasWithValue(name string, value *common.FixPointNumber) error {
+func (g *GasManager) refreshGasWithValue(name string, value *common.Fixed) error {
 	g.h.db.GasHandler.SetGasStock(name, value)
 	g.h.db.GasHandler.SetGasUpdateTime(name, g.h.ctx.Value("number").(int64))
 	return nil
@@ -35,13 +36,13 @@ func (g *GasManager) RefreshGas(name string) error {
 }
 
 // CostGas subtract gas of a user
-func (g *GasManager) CostGas(name string, cost *common.FixPointNumber) error {
+func (g *GasManager) CostGas(name string, cost *common.Fixed) error {
 	err := g.RefreshGas(name)
 	if err != nil {
 		return err
 	}
 	currentGas := g.h.db.GasHandler.GetGasStock(name)
-	if currentGas.LessThen(cost) {
+	if currentGas.LessThan(cost) {
 		return fmt.Errorf("Gas not enough! Now: %d, Need %d", currentGas, cost)
 	}
 	g.h.db.GasHandler.SetGasStock(name, currentGas.Sub(cost))
