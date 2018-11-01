@@ -1,11 +1,12 @@
 package tx
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
+
+	"strings"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -22,14 +23,14 @@ type Tx struct {
 	GasPrice    int64               `json:"gas_price,string"`
 	GasLimit    int64               `json:"gas_limit,string"`
 	Actions     []*Action           `json:"-"`
-	Signers     [][]byte            `json:"-"`
+	Signers     []string            `json:"-"`
 	Signs       []*crypto.Signature `json:"-"`
 	Publisher   string              `json:"-"`
 	PublishSign *crypto.Signature   `json:"-"`
 }
 
 // NewTx return a new Tx
-func NewTx(actions []*Action, signers [][]byte, gasLimit int64, gasPrice int64, expiration int64) *Tx {
+func NewTx(actions []*Action, signers []string, gasLimit int64, gasPrice int64, expiration int64) *Tx {
 	return &Tx{
 		Time:        time.Now().UnixNano(),
 		Actions:     actions,
@@ -43,16 +44,16 @@ func NewTx(actions []*Action, signers [][]byte, gasLimit int64, gasPrice int64, 
 }
 
 // SignTxContent sign tx content, only signers should do this
-func SignTxContent(tx *Tx, account *account.KeyPair) (*crypto.Signature, error) {
-	if !tx.containSigner(account.Pubkey) {
+func SignTxContent(tx *Tx, id string, account *account.KeyPair) (*crypto.Signature, error) {
+	if !tx.containSigner(id) {
 		return nil, errors.New("account not included in signer list of this transaction")
 	}
 	return account.Sign(tx.baseHash()), nil
 }
 
-func (t *Tx) containSigner(pubkey []byte) bool {
+func (t *Tx) containSigner(id string) bool {
 	for _, signer := range t.Signers {
-		if bytes.Equal(signer, pubkey) {
+		if strings.HasPrefix(signer, id) {
 			return true
 		}
 	}
@@ -237,21 +238,21 @@ func (t *Tx) Hash() []byte {
 }
 
 // VerifySelf verify tx's signature
-func (t *Tx) VerifySelf() error {
+func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 	baseHash := t.baseHash()
-	signerSet := make(map[string]bool)
+	//signerSet := make(map[string]bool)
 	for _, sign := range t.Signs {
 		ok := sign.Verify(baseHash)
 		if !ok {
 			return fmt.Errorf("signer error")
 		}
-		signerSet[string(sign.Pubkey)] = true
+		//signerSet[account.GetIDByPubkey(sign.Pubkey)] = true
 	}
-	for _, signer := range t.Signers {
-		if _, ok := signerSet[string(signer)]; !ok {
-			return fmt.Errorf("signer not enough")
-		}
-	}
+	//for _, signer := range t.Signers {
+	//	if _, ok := signerSet[signer]; !ok {
+	//		return fmt.Errorf("signer not enough")
+	//	}
+	//}
 	ok := t.PublishSign != nil && t.PublishSign.Verify(t.publishHash())
 	if !ok {
 		return fmt.Errorf("publisher error")

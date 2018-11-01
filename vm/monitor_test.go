@@ -138,6 +138,7 @@ func TestMonitor_HostCall(t *testing.T) {
 	innerFlag := false
 
 	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
+		cost = contract.Cost0()
 		outerFlag = true
 		h.Call("Contract", "inner", "[\"hello\"]")
 
@@ -145,6 +146,7 @@ func TestMonitor_HostCall(t *testing.T) {
 	})
 
 	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
+		cost = contract.Cost0()
 		innerFlag = true
 		if h.Context().Value("abi_name") != "inner" {
 			t.Fatal(h.Context())

@@ -120,7 +120,7 @@ func (e *engineImpl) SetUp(k, v string) error {
 // nolint
 func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
 	e.ho.SetDeadline(time.Now().Add(limit))
-	err := checkTx(tx0)
+	err := checkTxParams(tx0)
 	if err != nil {
 		ilog.Error(err)
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
@@ -388,10 +388,11 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 
 	authList := make(map[string]int)
 	for _, v := range t.Signers {
-		authList[string(v)] = 1
+		authList[v] = 1
 	}
 
 	authList[publisherID] = 2
 
 	h.Context().Set("auth_list", authList)
+	h.Context().Set("auth_contract_list", make(map[string]int))
 }

@@ -70,7 +70,7 @@ func (h *Host) SetContext(ctx *Context) {
 }
 
 // Call  call a new contract in this context
-func (h *Host) Call(contract, api, jarg string) ([]interface{}, *contract.Cost, error) {
+func (h *Host) Call(contract, api, jarg string, withAuth ...bool) ([]interface{}, *contract.Cost, error) {
 
 	// save stack
 	record := contract + "-" + api
@@ -88,13 +88,26 @@ func (h *Host) Call(contract, api, jarg string) ([]interface{}, *contract.Cost, 
 
 	h.ctx = NewContext(h.ctx)
 
+	// handle withAuth
+	if len(withAuth) > 0 && withAuth[0] {
+		authList := h.ctx.Value("auth_contract_list").(map[string]int)
+		authList[h.ctx.Value("contract_name").(string)] = 1
+		h.ctx.Set("auth_contract_list", authList)
+	}
+
 	h.ctx.Set("stack_height", height+1)
 	h.ctx.Set(key, record)
 	rtn, cost, err := h.monitor.Call(h, contract, api, jarg)
+	cost.AddAssign(CommonOpCost(height))
 
 	h.ctx = h.ctx.Base()
 
 	return rtn, cost, err
+}
+
+// CallWithAuth  call a new contract with permission of current contract
+func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, *contract.Cost, error) {
+	return h.Call(contract, api, jarg, true)
 }
 
 // CallWithReceipt call and generate receipt
