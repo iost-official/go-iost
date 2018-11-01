@@ -20,7 +20,7 @@ type Witness struct {
 	ID      string
 	Owner   string
 	Active  string
-	Balance string
+	Balance int64
 }
 
 // GenesisConfig config of the genesis block
