@@ -25,7 +25,7 @@ type Host struct {
 	Teller
 	APIDelegate
 	EventPoster
-	DHCP
+	DNS
 	Authority
 	GasManager
 
@@ -50,7 +50,7 @@ func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.L
 	h.Teller = NewTeller(h)
 	h.APIDelegate = NewAPI(h)
 	h.EventPoster = EventPoster{}
-	h.DHCP = NewDHCP(h)
+	h.DNS = NewDNS(h)
 	h.Authority = Authority{h: h}
 	h.GasManager = NewGasManager(h)
 
