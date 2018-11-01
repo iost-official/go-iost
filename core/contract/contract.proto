@@ -20,7 +20,7 @@ message ABI {
 
 message Amount {
     string token = 1;
-    int64  val = 2;
+    string val = 2;
 }
 
 message Cost {
