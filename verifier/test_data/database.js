@@ -23,19 +23,24 @@ class Test {
         }
 
         const bool = JSON.parse(storage.get("bool"));
-        console.log("bool > "+bool? "true":"false" );
+        if (!bool) {
+            throw bool
+        }
 
         const array = JSON.parse(storage.get("array"));
-        console.log("array > " + array.toString());
+        if (array[0] !== 1) {
+            throw array
+        }
 
         const obj = JSON.parse(storage.get("obj"));
-        console.log("obj > " + obj.foo); // bar
+        if (obj.foo !== "bar") {
+            throw obj
+        }
 
         const map1 = storage.mapGet("map", "field1");
-        console.log("map > " + map1);
-
-        const keys = storage.mapKeys("map");
-        console.log("keys > " + keys.toString());
+        if (map1 !== "value") {
+            throw map1
+        }
     }
 
     change() {
