@@ -511,3 +511,12 @@ func TestEngine_Blockchain(t *testing.T) {
 	}
 	t.Log(rs)
 }
+
+func TestEngine_Float64(t *testing.T) {
+	host, code := MyInit(t, "float64Test")
+	rs, _, err := vmPool.LoadAndCall(host, code, "number")
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+	t.Log(rs)
+}

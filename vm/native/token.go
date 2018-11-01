@@ -29,6 +29,7 @@ const (
 
 func init() {
 	tokenABIs = make(map[string]*abi)
+	register(&tokenABIs, initTokenABI)
 	register(&tokenABIs, createTokenABI)
 	register(&tokenABIs, issueTokenABI)
 	register(&tokenABIs, transferTokenABI)
@@ -162,6 +163,14 @@ func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, 
 }
 
 var (
+	initTokenABI = &abi{
+		name: "init",
+		args: []string{},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+			return []interface{}{}, host.CommonErrorCost(1), nil
+		},
+	}
+
 	createTokenABI = &abi{
 		name: "create",
 		args: []string{"string", "string", "number", "json"},
@@ -171,7 +180,7 @@ var (
 			tokenName := args[0].(string)
 			issuer := args[1].(string)
 			totalSupply := args[2].(int64)
-			configJSON := []byte(args[3].(database.SerializedJSON))
+			configJSON := args[3].([]byte)
 
 			// config
 			config := make(map[string]interface{})

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
@@ -77,7 +78,40 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 			panic(err)
 		}
 	}
-	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
+	// check amount limit
+	authList := map[string]int{}
+	if h.Context().Value("auth_list") != nil {
+		authList = h.Context().Value("auth_list").(map[string]int)
+	}
+	amountLimit := abi.AmountLimit
+	if amountLimit == nil {
+		amountLimit = []*contract.Amount{}
+	}
+	fixedAmountLimit := []contract.FixedAmount{}
+	beforeBalance := make(map[string][]int64)
+	cost = contract.Cost0()
+
+	// only check amount limit when executing action, not system call
+	if h.Context().Value("stack_height") == 1 {
+		cost0 := host.CommonOpCost(len(authList) * len(amountLimit))
+		cost.AddAssign(cost0)
+		for _, limit := range amountLimit {
+			decimal := h.DB().Decimal(limit.Token)
+			fixedAmount, ok := common.NewFixed(limit.Val, decimal)
+			if ok {
+				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
+			}
+		}
+		for acc := range authList {
+			beforeBalance[acc] = []int64{}
+			for _, limit := range fixedAmountLimit {
+				beforeBalance[acc] = append(beforeBalance[acc], h.DB().TokenBalance(limit.Token, acc))
+			}
+		}
+	}
+
+	rtn, cost0, err := vm.LoadAndCall(h, c, api, args...)
+	cost.AddAssign(cost0)
 
 	payment, ok := h.Context().GValue("abi_payment").(int)
 	if !ok {
@@ -92,6 +126,23 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		if b > gasPrice*cost.ToGas() {
 			h.PayCost(cost, host.ContractGasPrefix+contractName)
 			cost = contract.Cost0()
+		}
+	}
+
+	// check amount limit
+	if h.Context().Value("stack_height") == 1 {
+		for acc := range authList {
+			for i, limit := range fixedAmountLimit {
+				afterBalance := h.DB().TokenBalance(limit.Token, acc)
+				delta := common.Fixed{beforeBalance[acc][i] - afterBalance, fixedAmountLimit[i].Val.Decimal}
+				if delta.Value > fixedAmountLimit[i].Val.Value {
+					err = errors.New(fmt.Sprintf("token %s exceed amountLimit in abi. limit %s, got %s",
+						limit.Token,
+						fixedAmountLimit[i].Val.ToString(),
+						delta.ToString()))
+					return nil, cost, err
+				}
+			}
 		}
 	}
 
