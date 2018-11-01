@@ -17,6 +17,8 @@ type Authority struct {
 func (h *Authority) RequireAuth(id, p string) (bool, *contract.Cost) {
 	authList := h.h.ctx.Value("auth_list")
 	authMap := authList.(map[string]int)
+	// add current contract auth
+	authMap[h.h.ctx.Value("contract_name").(string)] = 1
 	reenterMap := make(map[string]int)
 
 	return h.requireAuth(id, p, authMap, reenterMap)
