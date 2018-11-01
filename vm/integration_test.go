@@ -896,6 +896,7 @@ module.exports = Contract;
 }
 
 func TestJS_Database(t *testing.T) {
+	t.Skip("dep")
 	js := NewJSTester(t)
 	defer js.Clear()
 
