@@ -255,7 +255,7 @@ func TestIntergration_SetCode(t *testing.T) {
 		r, err := e.Exec(trx, time.Second)
 		So(r.Status.Code, ShouldEqual, 0)
 		So(err, ShouldBeNil)
-		So(vi.Balance(testID[0]), ShouldEqual, int64(999988))
+		So(vi.Balance(testID[0]), ShouldEqual, int64(999978))
 	})
 
 	act2 := tx.NewAction("Contract"+common.Base58Encode(trx.Hash()), "hello", `[]`)
@@ -269,7 +269,7 @@ func TestIntergration_SetCode(t *testing.T) {
 		r, err := e.Exec(trx2, time.Second)
 		So(r.Status.Code, ShouldEqual, 0)
 		So(err, ShouldBeNil)
-		So(vi.Balance(testID[0]), ShouldEqual, int64(999981))
+		So(vi.Balance(testID[0]), ShouldEqual, int64(999971))
 	})
 }
 
