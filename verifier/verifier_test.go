@@ -37,7 +37,7 @@ func TestTransfer(t *testing.T) {
 
 	s := NewSimulator()
 	defer s.Clear()
-	s.Visitor.SetBalance("a", 10000000)
+	s.Visitor.SetBalance(testID[0], 10000000)
 
 	kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {

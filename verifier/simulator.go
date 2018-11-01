@@ -105,12 +105,14 @@ func (s *Simulator) Call(contractName, abi, args string, auths ...*account.KeyPa
 func (s *Simulator) CallTx(trx *tx.Tx, auths ...*account.KeyPair) (*tx.TxReceipt, error) {
 	var sigs = make([]*crypto.Signature, 0)
 
-	for _, auth := range auths[1:] {
-		sig, err := tx.SignTxContent(trx, auth)
-		if err != nil {
-			return nil, err
+	if len(auths) > 1 {
+		for _, auth := range auths[1:] {
+			sig, err := tx.SignTxContent(trx, auth)
+			if err != nil {
+				return nil, err
+			}
+			sigs = append(sigs, sig)
 		}
-		sigs = append(sigs, sig)
 	}
 
 	stx, err := tx.SignTx(trx, auths[0], sigs...)
