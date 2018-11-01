@@ -1,8 +1,8 @@
 package database
 
 import (
-	"github.com/iost-official/go-iost/common"
 	"errors"
+	"github.com/iost-official/go-iost/common"
 )
 
 // TokenContractName name of basic token contract
@@ -41,7 +41,7 @@ func (m *TokenHandler) TokenBalanceFixed(tokenName, acc string) common.Fixed {
 	if !ok {
 		ib = 0
 	}
-	return common.Fixed{Value:ib, Decimal:m.Decimal(tokenName)}
+	return common.Fixed{Value: ib, Decimal: m.Decimal(tokenName)}
 }
 
 // SetTokenBalance set token balance of acc, used for test
@@ -67,4 +67,3 @@ func (m *TokenHandler) Decimal(tokenName string) int {
 	}
 	return int(decimal)
 }
-
