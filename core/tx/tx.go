@@ -16,28 +16,29 @@ import (
 
 // Tx Transaction structure
 type Tx struct {
-	hash       []byte
-	Time       int64               `json:"time,string"`
-	Expiration int64               `json:"expiration,string"`
-	GasPrice   int64               `json:"gas_price,string"`
-	GasLimit   int64               `json:"gas_limit,string"`
-	Actions    []*Action           `json:"-"`
-	Signers    [][]byte            `json:"-"`
-	Signs      []*crypto.Signature `json:"-"`
-	Publisher  *crypto.Signature   `json:"-"`
+	hash        []byte
+	Time        int64               `json:"time,string"`
+	Expiration  int64               `json:"expiration,string"`
+	GasPrice    int64               `json:"gas_price,string"`
+	GasLimit    int64               `json:"gas_limit,string"`
+	Actions     []*Action           `json:"-"`
+	Signers     [][]byte            `json:"-"`
+	Signs       []*crypto.Signature `json:"-"`
+	Publisher   string              `json:"-"`
+	PublishSign *crypto.Signature   `json:"-"`
 }
 
 // NewTx return a new Tx
 func NewTx(actions []*Action, signers [][]byte, gasLimit int64, gasPrice int64, expiration int64) *Tx {
 	return &Tx{
-		Time:       time.Now().UnixNano(),
-		Actions:    actions,
-		Signers:    signers,
-		GasLimit:   gasLimit,
-		GasPrice:   gasPrice,
-		Expiration: expiration,
-		hash:       nil,
-		Publisher:  &crypto.Signature{},
+		Time:        time.Now().UnixNano(),
+		Actions:     actions,
+		Signers:     signers,
+		GasLimit:    gasLimit,
+		GasPrice:    gasPrice,
+		Expiration:  expiration,
+		hash:        nil,
+		PublishSign: &crypto.Signature{},
 	}
 }
 
@@ -82,10 +83,12 @@ func (t *Tx) baseHash() []byte {
 }
 
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
-func SignTx(tx *Tx, account *account.KeyPair, signs ...*crypto.Signature) (*Tx, error) {
+func SignTx(tx *Tx, id string, kp *account.KeyPair, signs ...*crypto.Signature) (*Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
 
-	tx.Publisher = account.Sign(tx.publishHash())
+	sig := kp.Sign(tx.publishHash())
+	tx.PublishSign = sig
+	tx.Publisher = id
 	tx.hash = nil
 	return tx, nil
 }
@@ -146,12 +149,12 @@ func (t *Tx) ToTxRaw() *TxRaw {
 			PubKey:    s.Pubkey,
 		})
 	}
-
-	if t.Publisher != nil {
-		tr.Publisher = &crypto.SignatureRaw{
-			Algorithm: int32(t.Publisher.Algorithm),
-			Sig:       t.Publisher.Sig,
-			PubKey:    t.Publisher.Pubkey,
+	tr.Publisher = t.Publisher
+	if t.PublishSign != nil {
+		tr.PublishSign = &crypto.SignatureRaw{
+			Algorithm: int32(t.PublishSign.Algorithm),
+			Sig:       t.PublishSign.Sig,
+			PubKey:    t.PublishSign.Pubkey,
 		}
 	}
 	return tr
@@ -190,12 +193,12 @@ func (t *Tx) FromTxRaw(tr *TxRaw) {
 			Pubkey:    sr.PubKey,
 		})
 	}
-	t.Publisher = nil
-	if tr.Publisher != nil {
-		t.Publisher = &crypto.Signature{
-			Algorithm: crypto.Algorithm(tr.Publisher.Algorithm),
-			Sig:       tr.Publisher.Sig,
-			Pubkey:    tr.Publisher.PubKey,
+	t.Publisher = tr.Publisher
+	if tr.PublishSign != nil {
+		t.PublishSign = &crypto.Signature{
+			Algorithm: crypto.Algorithm(tr.PublishSign.Algorithm),
+			Sig:       tr.PublishSign.Sig,
+			Pubkey:    tr.PublishSign.PubKey,
 		}
 	}
 	t.hash = nil
@@ -216,7 +219,7 @@ func (t *Tx) Decode(b []byte) error {
 func (t *Tx) String() string {
 	str := "Tx{\n"
 	str += "	Time: " + strconv.FormatInt(t.Time, 10) + ",\n"
-	str += "	Pubkey: " + string(t.Publisher.Pubkey) + ",\n"
+	str += "	Pubkey: " + string(t.PublishSign.Pubkey) + ",\n"
 	str += "	Action:\n"
 	for _, a := range t.Actions {
 		str += "		" + a.String()
@@ -249,7 +252,7 @@ func (t *Tx) VerifySelf() error {
 			return fmt.Errorf("signer not enough")
 		}
 	}
-	ok := t.Publisher != nil && t.Publisher.Verify(t.publishHash())
+	ok := t.PublishSign != nil && t.PublishSign.Verify(t.publishHash())
 	if !ok {
 		return fmt.Errorf("publisher error")
 	}

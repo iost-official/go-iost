@@ -88,7 +88,7 @@ var publishCmd = &cobra.Command{
 			return
 		}
 
-		stx, err := tx.SignTx(&mtx, acc, signs...)
+		stx, err := tx.SignTx(&mtx, acc.ID, acc, signs...)
 		if err != nil {
 			fmt.Println(err.Error())
 			return

@@ -107,7 +107,7 @@ var callCmd = &cobra.Command{
 				fmt.Println(err.Error())
 				return
 			}
-			stx, err := tx.SignTx(trx, acc)
+			stx, err := tx.SignTx(trx, acc.ID, acc)
 			var txHash []byte
 			txHash, err = sendTx(stx)
 			if err != nil {
