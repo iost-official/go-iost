@@ -2,24 +2,13 @@ package verifier
 
 import (
 	"fmt"
-	"os"
 	"testing"
-	"time"
-
-	"io/ioutil"
-
-	"encoding/json"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -43,255 +32,29 @@ var bh = &block.BlockHead{
 	Time:       123456,
 }
 
-type fataler interface {
-	Fatal(args ...interface{})
-}
-
-func MakeTx(act tx.Action) (*tx.Tx, error) {
-	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
-
-	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-	if err != nil {
-		return nil, err
-	}
-
-	trx, err = tx.SignTx(trx, ac)
-	if err != nil {
-		return nil, err
-	}
-	return trx, nil
-}
-
-func MakeTxWithAuth(act tx.Action, ac *account.KeyPair) (*tx.Tx, error) {
-	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
-	trx, err := tx.SignTx(trx, ac)
-	if err != nil {
-		return nil, err
-	}
-	return trx, nil
-}
-
-func ReadFile(src string) ([]byte, error) {
-	fi, err := os.Open(src)
-	if err != nil {
-		return nil, err
-	}
-	defer fi.Close()
-	fd, err := ioutil.ReadAll(fi)
-	if err != nil {
-		return nil, err
-	}
-	return fd, nil
-}
-
-type JSTester struct {
-	t      fataler
-	e      Verifier
-	vi     *database.Visitor
-	mvccdb db.MVCCDB
-
-	cname string
-	c     *contract.Contract
-}
-
-func NewJSTester(t fataler) *JSTester {
-	mvccdb, err := db.NewMVCCDB("mvcc")
-	if err != nil {
-		panic(err)
-	}
-
-	//mvccdb := replaceDB(t)
-
-	vi := database.NewVisitor(0, mvccdb)
-	vi.SetBalance(testID[0], 1000000)
-	vi.Commit()
-
-	e := Verifier{}
-
-	return &JSTester{
-		t:      t,
-		vi:     vi,
-		e:      e,
-		mvccdb: mvccdb,
-	}
-}
-
-func (j *JSTester) ReadDB(key string) (value interface{}) {
-	return database.MustUnmarshal(j.vi.Get(j.cname + "-" + key))
-}
-
-func (j *JSTester) ReadMap(key, field string) (value interface{}) {
-	return database.MustUnmarshal(j.vi.MGet(j.cname+"-"+key, field))
-}
-
-func (j *JSTester) FlushDB(t *testing.T, keys []string) {
-	for _, k := range keys {
-		t.Logf("%s: %v", k, j.ReadDB(k))
-	}
-}
-
-func Compile(id, src, abi string) (*contract.Contract, error) {
-	bs, err := ReadFile(src + ".js")
-	if err != nil {
-		return nil, err
-	}
-	code := string(bs)
-
-	as, err := ReadFile(abi + ".abi")
-	if err != nil {
-		return nil, err
-	}
-
-	var info contract.Info
-	err = json.Unmarshal(as, &info)
-	if err != nil {
-		return nil, err
-	}
-	c := contract.Contract{
-		ID:   id,
-		Info: &info,
-		Code: code,
-	}
-
-	return &c, nil
-}
-
-func (j *JSTester) SetJS(code string) {
-	j.c = &contract.Contract{
-		ID:   "jsContract",
-		Code: code,
-		Info: &contract.Info{
-			Lang:    "javascript",
-			Version: "1.0.0",
-			Abi: []*contract.ABI{
-				{
-					Name:     "constructor",
-					Args:     []string{},
-					Payment:  0,
-					GasPrice: int64(1),
-					Limit:    contract.NewCost(100, 100, 100),
-				},
-			},
-		},
-	}
-}
-
-func (j *JSTester) DoSet() *tx.TxReceipt {
-	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, j.c.B64Encode()))
-
-	trx, err := MakeTx(act)
-	if err != nil {
-		j.t.Fatal(err)
-	}
-	r, err := j.e.Exec(bh, j.mvccdb, trx, time.Second)
-	if err != nil {
-		j.t.Fatal(err)
-	}
-	j.cname = "Contract" + common.Base58Encode(trx.Hash())
-
-	return r
-}
-
-func (j *JSTester) SetAPI(name string, argType ...string) {
-
-	j.c.Info.Abi = append(j.c.Info.Abi, &contract.ABI{
-		Name:     name,
-		Payment:  0,
-		GasPrice: int64(1),
-		Limit:    contract.NewCost(100, 100, 100),
-		Args:     argType,
-	})
-
-}
-
-func (j *JSTester) TestJS(main, args string) *tx.TxReceipt {
-
-	act2 := tx.NewAction(j.cname, main, args)
-
-	trx2, err := MakeTx(act2)
-	if err != nil {
-		j.t.Fatal(err)
-	}
-
-	r, err := j.e.Exec(bh, j.mvccdb, trx2, time.Second)
-	if err != nil {
-		j.t.Fatal(err)
-	}
-	return r
-}
-
-func (j *JSTester) Call(contract, abi, args string) *tx.TxReceipt {
-	act2 := tx.NewAction(contract, abi, args)
-
-	trx2, err := MakeTx(act2)
-	if err != nil {
-		j.t.Fatal(err)
-	}
-
-	r, err := j.e.Exec(bh, j.mvccdb, trx2, time.Second)
-	if err != nil {
-		j.t.Fatal(err)
-	}
-	return r
-}
-
-func (j *JSTester) TestJSWithAuth(abi, args, seckey string) *tx.TxReceipt {
-	act2 := tx.NewAction(j.cname, abi, args)
-
-	ac, err := account.NewKeyPair(common.Base58Decode(seckey), crypto.Secp256k1)
-	if err != nil {
-		panic(err)
-	}
-
-	trx2, err := MakeTxWithAuth(act2, ac)
-	if err != nil {
-		j.t.Fatal(err)
-	}
-
-	r, err := j.e.Exec(bh, j.mvccdb, trx2, time.Second)
-	if err != nil {
-		j.t.Fatal(err)
-	}
-	return r
-}
-
-func (j *JSTester) Clear() {
-	j.mvccdb.Close()
-	os.RemoveAll("mvcc")
-}
-
 func TestTransfer(t *testing.T) {
 	ilog.Stop()
-	mvccdb, err := db.NewMVCCDB("mvcc")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll("mvcc")
 
-	vi := database.NewVisitor(0, mvccdb)
-	vi.SetBalance(testID[0], 10000000)
-	vi.Commit()
+	s := NewSimulator()
+	defer s.Clear()
+	s.Visitor.SetBalance("a", 10000000)
 
-	tt, err := MakeTx(tx.Action{
-		Contract:   "iost.system",
-		ActionName: "Transfer",
-		Data:       fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], 0.0001),
-	})
+	kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	v := Verifier{}
-	r, err := v.Exec(bh, mvccdb, tt, time.Second)
-
-	vi2 := database.NewVisitor(0, mvccdb)
+	r, err := s.Call("iost.system", "Transfer", fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp)
 
 	Convey("test transfer", t, func() {
+		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(vi2.Balance(testID[0]), ShouldEqual, int64(9990000))
-		So(vi2.Balance(testID[2]), ShouldEqual, int64(10000))
+		So(s.Visitor.Balance(testID[0]), ShouldEqual, int64(9990000))
+		So(s.Visitor.Balance(testID[2]), ShouldEqual, int64(10000))
 	})
 }
+
+/*
 
 func TestJS_Database(t *testing.T) {
 	ilog.Stop()
@@ -319,7 +82,6 @@ func TestJS_Database(t *testing.T) {
 		t.Fatal(r.Status.Message)
 	}
 }
-
 func TestGenesis(t *testing.T) {
 	ilog.Stop()
 	mvccdb, err := db.NewMVCCDB("mvcc")
@@ -451,3 +213,4 @@ func TestAuthority(t *testing.T) {
 	})
 
 }
+*/
