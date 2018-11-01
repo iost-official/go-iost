@@ -55,7 +55,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 		return nil, err
 	}
 
-	trx, err = tx.SignTx(trx, ac)
+	trx, err = tx.SignTx(trx, ac.ID, ac)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 
 func MakeTxWithAuth(act tx.Action, ac *account.KeyPair) (*tx.Tx, error) {
 	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
-	trx, err := tx.SignTx(trx, ac)
+	trx, err := tx.SignTx(trx, ac.ID, ac)
 	if err != nil {
 		return nil, err
 	}
@@ -373,7 +373,7 @@ func TestGenesis(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	trx, err = tx.SignTx(trx, acc)
+	trx, err = tx.SignTx(trx, acc.ID, acc)
 	if err != nil {
 		t.Fatal(err)
 	}
