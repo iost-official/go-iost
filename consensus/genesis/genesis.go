@@ -43,7 +43,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	}
 	var acts []*tx.Action
 	for _, v := range witnessInfo {
-		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, v.Owner, v.Balance))
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, v.ID, v.Balance))
 		acts = append(acts, &act)
 	}
 	// deploy iost.vote
@@ -68,9 +68,8 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
 	acts = append(acts, &act)
 
-	num := len(witnessInfo) / 2
-	for i := 0; i < num; i++ {
-		act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`["%v"]`, witnessInfo[2*i]))
+	for _, v := range witnessInfo {
+		act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`["%v"]`, v.Owner))
 		acts = append(acts, &act1)
 	}
 	act11 := tx.NewAction("iost.vote", "InitAdmin", fmt.Sprintf(`["%v"]`, gConf.AdminID))
@@ -133,9 +132,9 @@ func FakeBv(bv global.BaseVariable) error {
 		bv.StateDB(),
 		&common.GenesisConfig{
 			WitnessInfo: []*common.Witness{
-				{ID: "a1", Owner: "a1", Active: "a1", Balance: "11111111111"},
-				{ID: "a2", Owner: "a2", Active: "a2", Balance: "222222"},
-				{ID: "a3", Owner: "a3", Active: "a3", Balance: "333333333"}},
+				{ID: "a1", Owner: "a1", Active: "a1", Balance: 11111111111},
+				{ID: "a2", Owner: "a2", Active: "a2", Balance: 222222},
+				{ID: "a3", Owner: "a3", Active: "a3", Balance: 333333333}},
 			InitialTimestamp: "2006-01-02T15:04:05Z",
 			VoteContractPath: os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/",
 		},
