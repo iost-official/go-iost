@@ -13,7 +13,6 @@ type Authority struct {
 	h *Host
 }
 
-
 func (h *Authority) requireContractAuth(id, p string) (bool, *contract.Cost) {
 	cost := CommonOpCost(1)
 	authContractList := h.h.ctx.Value("auth_contract_list").(map[string]int)
