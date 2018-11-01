@@ -36,7 +36,7 @@ var (
 
 			applicant := tij.Get("publisher").MustString()
 
-			owner := h.DHCP.URLOwner(url)
+			owner := h.DNS.URLOwner(url)
 
 			if owner != "" && owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
@@ -75,7 +75,7 @@ var (
 
 			applicant := tij.Get("publisher").MustString()
 
-			owner := h.DHCP.URLOwner(url)
+			owner := h.DNS.URLOwner(url)
 
 			if owner != "" && owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
