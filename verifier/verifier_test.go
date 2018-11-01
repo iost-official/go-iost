@@ -7,8 +7,10 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -23,6 +25,43 @@ var testID = []string{
 	"IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB", "AG8uECmAwFis8uxTdWqcgGD9tGDwoP6CxqhkhpuCdSeC",
 	"IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9", "GJt5WSSv5WZi1axd3qkb1vLEfxCEgKGupcXf45b5tERU",
 	"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4", "7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
+}
+
+func prepareContract(t *testing.T, s *Simulator) {
+	bh = &block.BlockHead{
+		ParentHash: []byte("abc"),
+		Number:     0,
+		Witness:    "witness",
+		Time:       123456,
+	}
+
+	kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 18; i += 2 {
+		s.SetAccount(account.NewInitAccount(testID[i], testID[i], testID[i]))
+	}
+	// deploy iost.token
+	r, err := s.Call("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.token", native.TokenABI().B64Encode()), kp)
+	if r.Status.Code != tx.Success {
+		t.Fatal(r)
+	}
+	// create token
+	r, err = s.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000), kp)
+	if r.Status.Code != tx.Success {
+		t.Fatal(r)
+	}
+	// issue token
+	r, err = s.Call("iost.token", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", testID[0], "1000"), kp)
+	if r.Status.Code != tx.Success {
+		t.Fatal(r)
+	}
+	if 1e11 != s.Visitor.TokenBalance("iost", testID[0]) {
+		t.Fatal(s.Visitor.TokenBalance("iost", testID[0]))
+	}
+	s.Visitor.Commit()
 }
 
 var bh = &block.BlockHead{
@@ -223,39 +262,6 @@ func TestAuthority(t *testing.T) {
 	})
 
 }
-*/
-
-func prepareContract(t *testing.T, js *JSTester) {
-	bh = &block.BlockHead{
-		ParentHash: []byte("abc"),
-		Number:     0,
-		Witness:    "witness",
-		Time:       123456,
-	}
-	for i := 0; i < 18; i++ {
-		js.vi.MPut("iost.auth-account", testID[i], database.MustMarshal(fmt.Sprintf(`{"id":"%s","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"%s","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"%s","is_key_pair":true,"weight":1}],"threshold":1}}}`, testID[i], testID[i], testID[i])))
-	}
-	js.vi.Commit()
-	// deploy iost.token
-	r := js.Call("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.token", native.TokenABI().B64Encode()))
-	if r.Status.Code != tx.Success {
-		t.Fatal(r)
-	}
-	// create token
-	r = js.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000))
-	if r.Status.Code != tx.Success {
-		t.Fatal(r)
-	}
-	// issue token
-	r = js.Call("iost.token", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", testID[0], "1000"))
-	if r.Status.Code != tx.Success {
-		t.Fatal(r)
-	}
-	if 1e11 != js.vi.TokenBalance("iost", testID[0]) {
-		t.Fatal(js.vi.TokenBalance("iost", testID[0]))
-	}
-	js.vi.Commit()
-}
 
 func TestAmountLimit(t *testing.T) {
 	ilog.Stop()
@@ -288,8 +294,8 @@ func TestAmountLimit(t *testing.T) {
 			r := js.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "10"))
 			js.vi.Commit()
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance0 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[0]), Decimal:js.vi.Decimal("iost")}
-			balance2 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[2]), Decimal:js.vi.Decimal("iost")}
+			balance0 := common.Fixed{Value: js.vi.TokenBalance("iost", testID[0]), Decimal: js.vi.Decimal("iost")}
+			balance2 := common.Fixed{Value: js.vi.TokenBalance("iost", testID[2]), Decimal: js.vi.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "990")
 			So(balance2.ToString(), ShouldEqual, "10")
 		})
@@ -310,11 +316,13 @@ func TestAmountLimit(t *testing.T) {
 			r := js.Call("Contracttransfer1", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "120"))
 			js.vi.Commit()
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance0 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[0]), Decimal:js.vi.Decimal("iost")}
-			balance2 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[2]), Decimal:js.vi.Decimal("iost")}
+			balance0 := common.Fixed{Value: js.vi.TokenBalance("iost", testID[0]), Decimal: js.vi.Decimal("iost")}
+			balance2 := common.Fixed{Value: js.vi.TokenBalance("iost", testID[2]), Decimal: js.vi.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "880")
 			So(balance2.ToString(), ShouldEqual, "120")
 		})
 
 	})
 }
+
+*/
