@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
@@ -40,6 +41,8 @@ func NewSimulator() *Simulator {
 		Visitor:  database.NewVisitor(0, mvccdb),
 		Verifier: &v,
 		mvcc:     mvccdb,
+		Head:     &block.BlockHead{},
+		Logger:   ilog.DefaultLogger(),
 	}
 }
 
@@ -60,8 +63,20 @@ func (s *Simulator) SetContract(c *contract.Contract) {
 }
 
 func (s *Simulator) DeployContract(c *contract.Contract, publisher *account.KeyPair) string {
-	s.Call("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, c.B64Encode()), publisher)
-	return "Contract"
+	trx := tx.NewTx([]*tx.Action{{
+		Contract:   "iost.system",
+		ActionName: "SetCode",
+		Data:       fmt.Sprintf(`["%v"]`, c.B64Encode()),
+	}}, nil, int64(100000), int64(1), int64(10000000))
+
+	r, err := s.CallTx(trx, publisher)
+	if err != nil {
+		panic(err)
+	}
+	if r.Status.Code != 0 {
+		panic(r)
+	}
+	return "Contract" + common.Base58Encode(trx.Hash())
 }
 
 func (s *Simulator) Compile(id, src, abi string) (*contract.Contract, error) {

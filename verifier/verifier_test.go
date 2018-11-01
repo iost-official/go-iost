@@ -32,7 +32,7 @@ var bh = &block.BlockHead{
 	Time:       123456,
 }
 
-func TestTransfer(t *testing.T) {
+func TestTransfer(t *testing.T) { // todo auth error
 	ilog.Stop()
 
 	s := NewSimulator()
@@ -54,34 +54,44 @@ func TestTransfer(t *testing.T) {
 	})
 }
 
-/*
-
 func TestJS_Database(t *testing.T) {
-	ilog.Stop()
-	js := NewJSTester(t)
-	defer js.Clear()
+	//ilog.Stop()
 
-	lc, err := ReadFile("../vm/test_data/database.js")
+	s := NewSimulator()
+	defer s.Clear()
+	s.Visitor.SetBalance(testID[0], 10000000)
+
+	c, err := s.Compile("datatbase", "test_data/database", "test_data/database")
 	if err != nil {
 		t.Fatal(err)
 	}
-	js.SetJS(string(lc))
-	js.SetAPI("read")
-	js.SetAPI("change")
-	js.DoSet()
-	//t.Log("========= constructor")
-	Convey("test of js database", t, func() {
-		So(js.ReadDB("num").(string), ShouldEqual, "9")
-		So(js.ReadDB("string").(string), ShouldEqual, "hello")
-		So(js.ReadDB("bool").(string), ShouldEqual, "true")
-		So(js.ReadDB("array").(string), ShouldEqual, "[1,2,3]")
-		So(js.ReadDB("obj").(string), ShouldEqual, `{"foo":"bar"}`)
-	})
-	r := js.TestJS("read", `[]`)
-	if r.Status.Code != 0 {
-		t.Fatal(r.Status.Message)
+
+	kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	cname := s.DeployContract(c, kp)
+	t.Log("cname ", cname)
+
+	Convey("test of s database", t, func() {
+		So(s.Visitor.Contract(cname), ShouldNotBeNil)
+		So(s.Visitor.Get(cname+"-"+"num"), ShouldEqual, "s9")
+		So(s.Visitor.Get(cname+"-"+"string"), ShouldEqual, "shello")
+		So(s.Visitor.Get(cname+"-"+"bool"), ShouldEqual, "strue")
+		So(s.Visitor.Get(cname+"-"+"array"), ShouldEqual, "s[1,2,3]")
+		So(s.Visitor.Get(cname+"-"+"obj"), ShouldEqual, `s{"foo":"bar"}`)
+
+		r, err := s.Call(cname, "read", `[]`, kp)
+
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+	})
+
 }
+
+/*
+
 func TestGenesis(t *testing.T) {
 	ilog.Stop()
 	mvccdb, err := db.NewMVCCDB("mvcc")
