@@ -2,9 +2,10 @@ package tx
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
+
+	"fmt"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
@@ -237,21 +238,21 @@ func (t *Tx) Hash() []byte {
 }
 
 // VerifySelf verify tx's signature
-func (t *Tx) VerifySelf() error {
+func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 	baseHash := t.baseHash()
-	signerSet := make(map[string]bool)
+	//signerSet := make(map[string]bool)
 	for _, sign := range t.Signs {
 		ok := sign.Verify(baseHash)
 		if !ok {
 			return fmt.Errorf("signer error")
 		}
-		signerSet[account.GetIDByPubkey(sign.Pubkey)] = true
+		//signerSet[account.GetIDByPubkey(sign.Pubkey)] = true
 	}
-	for _, signer := range t.Signers {
-		if _, ok := signerSet[signer]; !ok {
-			return fmt.Errorf("signer not enough")
-		}
-	}
+	//for _, signer := range t.Signers {
+	//	if _, ok := signerSet[signer]; !ok {
+	//		return fmt.Errorf("signer not enough")
+	//	}
+	//}
 	ok := t.PublishSign != nil && t.PublishSign.Verify(t.publishHash())
 	if !ok {
 		return fmt.Errorf("publisher error")
