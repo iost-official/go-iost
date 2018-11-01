@@ -39,7 +39,7 @@ func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	e.t = t
 	e.h.SetDeadline(time.Now().Add(limit))
-	err := checkTx(t)
+	err := checkTxParams(t)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (e *Isolator) ClearTx() {
 	e.h.SetContext(e.blockBaseCtx)
 	e.h.Context().GClear()
 }
-func checkTx(t *tx.Tx) error {
+func checkTxParams(t *tx.Tx) error {
 	if t.GasPrice < 0 || t.GasPrice > 10000 {
 		return errGasPriceIllegal
 	}

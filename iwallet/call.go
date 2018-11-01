@@ -88,9 +88,9 @@ var callCmd = &cobra.Command{
 			act := tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
 			actions[i] = &act
 		}
-		pubkeys := make([][]byte, len(signers))
+		pubkeys := make([]string, len(signers))
 		for i, accID := range signers {
-			pubkeys[i] = account.GetPubkeyByID(accID)
+			pubkeys[i] = accID
 		}
 		trx := tx.NewTx(actions, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
 		if len(signers) == 0 {
