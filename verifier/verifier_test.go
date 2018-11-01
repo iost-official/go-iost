@@ -28,13 +28,6 @@ var testID = []string{
 }
 
 func prepareContract(t *testing.T, s *Simulator) {
-	bh = &block.BlockHead{
-		ParentHash: []byte("abc"),
-		Number:     0,
-		Witness:    "witness",
-		Time:       123456,
-	}
-
 	kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		t.Fatal(err)
@@ -42,21 +35,20 @@ func prepareContract(t *testing.T, s *Simulator) {
 
 	for i := 0; i < 18; i += 2 {
 		s.SetAccount(account.NewInitAccount(testID[i], testID[i], testID[i]))
+		s.Visitor.SetBalance(testID[i], 10000000)
 	}
 	// deploy iost.token
-	r, err := s.Call("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.token", native.TokenABI().B64Encode()), "a", kp)
-	if r.Status.Code != tx.Success {
-		t.Fatal(r)
-	}
+	s.SetContract(native.TokenABI())
+
 	// create token
-	r, err = s.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000), "a", kp)
-	if r.Status.Code != tx.Success {
-		t.Fatal(r)
+	r, err := s.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000), "a", kp)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
 	}
 	// issue token
 	r, err = s.Call("iost.token", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", testID[0], "1000"), "a", kp)
-	if r.Status.Code != tx.Success {
-		t.Fatal(r)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
 	}
 	if 1e11 != s.Visitor.TokenBalance("iost", testID[0]) {
 		t.Fatal(s.Visitor.TokenBalance("iost", testID[0]))
@@ -129,6 +121,105 @@ func TestJS_Database(t *testing.T) {
 
 }
 
+func TestAmountLimit(t *testing.T) {
+	ilog.Stop()
+	Convey("test of amount limit", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		prepareContract(t, s)
+
+		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
+		if err != nil || ca == nil {
+			t.Fatal(err)
+		}
+		s.SetContract(ca)
+
+		ca, err = s.Compile("Contracttransfer1", "./test_data/transfer1", "./test_data/transfer1.js")
+		if err != nil || ca == nil {
+			t.Fatal(err)
+		}
+		s.SetContract(ca)
+
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		Reset(func() {
+			s.Visitor.SetTokenBalanceFixed("iost", testID[0], "1000")
+			s.Visitor.SetTokenBalanceFixed("iost", testID[2], "0")
+		})
+
+		Convey("test of amount limit", func() {
+			r, err := s.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "10"), testID[0], kp)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", testID[0]), Decimal: s.Visitor.Decimal("iost")}
+			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", testID[2]), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "990")
+			So(balance2.ToString(), ShouldEqual, "10")
+		})
+
+		Convey("test out of amount limit", func() {
+			r, err := s.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "110"), testID[0], kp)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
+			//balance0 := common.Fixed{Value:s.Visitor.TokenBalance("iost", testID[0]), Decimal:s.Visitor.Decimal("iost")}
+			//balance2 := common.Fixed{Value:s.Visitor.TokenBalance("iost", testID[2]), Decimal:s.Visitor.Decimal("iost")}
+			// todo exit when monitor.Call return err
+			// So(balance0.ToString(), ShouldEqual, "990")
+			// So(balance2.ToString(), ShouldEqual, "10")
+		})
+
+		Convey("test amount limit two level invocation", func() {
+			r, err := s.Call("Contracttransfer1", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "120"), testID[0], kp)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", testID[0]), Decimal: s.Visitor.Decimal("iost")}
+			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", testID[2]), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "880")
+			So(balance2.ToString(), ShouldEqual, "120")
+		})
+
+	})
+}
+
+func TestNativeVM_GasLimit(t *testing.T) {
+	ilog.Stop()
+	Convey("test of amount limit", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		prepareContract(t, s)
+
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+
+		Convey("test out of gas limit", func() {
+			tx0 := tx.NewTx([]*tx.Action{{
+				Contract:   "iost.token",
+				ActionName: "transfer",
+				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, testID[0], testID[2], "10"),
+			}}, nil, int64(100), int64(1), int64(10000000))
+
+			r, err := s.CallTx(tx0, testID[0], kp)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+			So(r.Status.Message, ShouldContainSubstring, "gas limit exceeded")
+		})
+
+	})
+}
 /*
 
 func TestGenesis(t *testing.T) {
@@ -263,66 +354,5 @@ func TestAuthority(t *testing.T) {
 
 }
 
-func TestAmountLimit(t *testing.T) {
-	ilog.Stop()
-	Convey("test of amount limit", t, func() {
-		js := NewJSTester(t)
-		defer js.Clear()
-		prepareContract(t, js)
-
-		ca, err := Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
-		if err != nil || ca == nil {
-			t.Fatal(err)
-		}
-		js.vi.SetContract(ca)
-		js.vi.Commit()
-
-		ca, err = Compile("Contracttransfer1", "./test_data/transfer1", "./test_data/transfer1.js")
-		if err != nil || ca == nil {
-			t.Fatal(err)
-		}
-		js.vi.SetContract(ca)
-		js.vi.Commit()
-		js.cname = "Contracttransfer1"
-
-		Reset(func() {
-			js.vi.SetTokenBalanceFixed("iost", testID[0], "1000")
-			js.vi.SetTokenBalanceFixed("iost", testID[2], "0")
-		})
-
-		Convey("test of amount limit", func() {
-			r := js.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "10"))
-			js.vi.Commit()
-			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance0 := common.Fixed{Value: js.vi.TokenBalance("iost", testID[0]), Decimal: js.vi.Decimal("iost")}
-			balance2 := common.Fixed{Value: js.vi.TokenBalance("iost", testID[2]), Decimal: js.vi.Decimal("iost")}
-			So(balance0.ToString(), ShouldEqual, "990")
-			So(balance2.ToString(), ShouldEqual, "10")
-		})
-
-		Convey("test out of amount limit", func() {
-			r := js.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "110"))
-			js.vi.Commit()
-			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
-			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
-			//balance0 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[0]), Decimal:js.vi.Decimal("iost")}
-			//balance2 := common.Fixed{Value:js.vi.TokenBalance("iost", testID[2]), Decimal:js.vi.Decimal("iost")}
-			// todo exit when monitor.Call return err
-			// So(balance0.ToString(), ShouldEqual, "990")
-			// So(balance2.ToString(), ShouldEqual, "10")
-		})
-
-		Convey("test amount limit two level invocation", func() {
-			r := js.Call("Contracttransfer1", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "120"))
-			js.vi.Commit()
-			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance0 := common.Fixed{Value: js.vi.TokenBalance("iost", testID[0]), Decimal: js.vi.Decimal("iost")}
-			balance2 := common.Fixed{Value: js.vi.TokenBalance("iost", testID[2]), Decimal: js.vi.Decimal("iost")}
-			So(balance0.ToString(), ShouldEqual, "880")
-			So(balance2.ToString(), ShouldEqual, "120")
-		})
-
-	})
-}
 
 */
