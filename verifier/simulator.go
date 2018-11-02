@@ -10,6 +10,8 @@ import (
 
 	"os"
 
+	"errors"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -84,7 +86,7 @@ func (s *Simulator) SetContract(c *contract.Contract) {
 }
 
 // DeployContract via iost.system/SetCode
-func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) string {
+func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, error) {
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   "iost.system",
 		ActionName: "SetCode",
@@ -93,12 +95,12 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 
 	r, err := s.CallTx(trx, publisher, kp)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	if r.Status.Code != 0 {
-		panic(r)
+		return "", errors.New(r.Status.Message)
 	}
-	return "Contract" + common.Base58Encode(trx.Hash())
+	return "Contract" + common.Base58Encode(trx.Hash()), nil
 }
 
 // Compile files

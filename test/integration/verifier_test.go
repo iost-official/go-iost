@@ -49,7 +49,8 @@ func TestSetCode(t *testing.T) {
 	Convey("set code", t, func() {
 		c, err := s.Compile("hw", "test_data/helloworld", "test_data/helloworld")
 		So(err, ShouldBeNil)
-		cname := s.DeployContract(c, kp.ID, kp)
+		cname, err := s.DeployContract(c, kp.ID, kp)
+		So(err, ShouldBeNil)
 		So(cname, ShouldStartWith, "Contract")
 
 		//So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(1)) // todo check gas
@@ -74,7 +75,8 @@ func TestJS_Database(t *testing.T) {
 	kp := prepareAuth(t, s)
 	s.SetGas(kp.ID, 1000)
 
-	cname := s.DeployContract(c, kp.ID, kp)
+	cname, err := s.DeployContract(c, kp.ID, kp)
+	So(err, ShouldBeNil)
 	t.Log("cname ", cname)
 
 	Convey("test of s database", t, func() {
@@ -205,8 +207,8 @@ func TestDomain(t *testing.T) {
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 1000)
 
-		cname := s.DeployContract(c, kp.ID, kp)
-
+		cname, err := s.DeployContract(c, kp.ID, kp)
+		So(err, ShouldBeNil)
 		s.Visitor.SetContract(native.ABI("iost.domain", native.DomainABIs))
 		r1, err := s.Call("iost.domain", "Link", fmt.Sprintf(`["abcde","%v"]`, cname), kp.ID, kp)
 		So(err, ShouldBeNil)
