@@ -43,8 +43,13 @@ func NewSimulator() *Simulator {
 		Visitor:  database.NewVisitor(0, mvccdb),
 		Verifier: &v,
 		mvcc:     mvccdb,
-		Head:     &block.BlockHead{},
-		Logger:   ilog.DefaultLogger(),
+		Head: &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     0,
+			Witness:    "witness",
+			Time:       123456,
+		},
+		Logger: ilog.DefaultLogger(),
 	}
 }
 
