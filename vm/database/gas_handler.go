@@ -12,6 +12,7 @@ const (
 	gasPledgeSuffix     = "-gp"
 )
 
+// decimals of gas
 const (
 	DecPledge  = 8
 	DecGasRate = 8

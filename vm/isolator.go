@@ -44,13 +44,13 @@ func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	e.t = t
 	e.h.SetDeadline(time.Now().Add(limit))
+	e.publisherID = t.Publisher
+
 	if !e.genesisMode {
 		err := checkTxParams(t)
 		if err != nil {
 			return err
 		}
-
-		e.publisherID = t.Publisher
 		gas := e.h.CurrentGas(e.publisherID)
 		if gas.Value < t.GasPrice*t.GasLimit*10^(database.DecGas-2) {
 			return errCannotPay

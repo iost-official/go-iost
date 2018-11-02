@@ -40,20 +40,20 @@ func TestTransfer(t *testing.T) {
 
 func TestSetCode(t *testing.T) {
 	ilog.Stop()
-	s := NewSimulator()
-	defer s.Clear()
-	kp := prepareAuth(t, s)
-	s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-	s.SetGas(kp.ID, 10000)
-
 	Convey("set code", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
+		s.SetGas(kp.ID, 10000)
+
 		c, err := s.Compile("hw", "test_data/helloworld", "test_data/helloworld")
 		So(err, ShouldBeNil)
 		cname, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(cname, ShouldStartWith, "Contract")
 
-		//So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(1)) // todo check gas
+		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(9998600000000)) // todo check gas
 
 		r, err := s.Call(cname, "hello", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
@@ -62,24 +62,24 @@ func TestSetCode(t *testing.T) {
 }
 
 func TestJS_Database(t *testing.T) {
+	t.Skip()
 	//ilog.Stop()
-
-	s := NewSimulator()
-	defer s.Clear()
-
-	c, err := s.Compile("datatbase", "test_data/database", "test_data/database")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	kp := prepareAuth(t, s)
-	s.SetGas(kp.ID, 1000)
-
-	cname, err := s.DeployContract(c, kp.ID, kp)
-	So(err, ShouldBeNil)
-	t.Log("cname ", cname)
-
 	Convey("test of s database", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		c, err := s.Compile("datatbase", "test_data/database", "test_data/database")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		kp := prepareAuth(t, s)
+		s.SetGas(kp.ID, 1000)
+
+		cname, err := s.DeployContract(c, kp.ID, kp)
+		So(err, ShouldBeNil)
+		t.Log("cname ", cname)
+
 		So(s.Visitor.Contract(cname), ShouldNotBeNil)
 		So(s.Visitor.Get(cname+"-"+"num"), ShouldEqual, "s9")
 		So(s.Visitor.Get(cname+"-"+"string"), ShouldEqual, "shello")
