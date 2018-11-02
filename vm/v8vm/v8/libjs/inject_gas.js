@@ -68,6 +68,17 @@ function checkGasKeyword(tokens) {
 	}
 }
 
+function checkOperator(tokens) {
+	for (var i = 0; i < tokens.length; i++) {
+		if (tokens[i].type === "Punctuator" &&
+			(tokens[i].value === "+" || tokens[i].value === "-" || tokens[i].value === "*" || tokens[i].value === "/" || tokens[i].value === "%" ||
+                tokens[i].value === "+=" || tokens[i].value === "-=" || tokens[i].value === "*=" || tokens[i].value === "/=" || tokens[i].value === "%=" ||
+                tokens[i].value === "++" || tokens[i].value === "--")) {
+			throw new Error("use of +-*/% operators is not allowed");
+		}
+	}
+}
+
 var injectionMap = new Map();
 
 function addInjection(pos, type, value, before = false) {
@@ -327,6 +338,8 @@ function injectGas(source) {
 	});
 
 	checkGasKeyword(ast.tokens);
+
+	checkOperator(ast.tokens);
 	
 	traverse(ast, null, null);
 
