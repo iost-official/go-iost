@@ -94,8 +94,8 @@ func MakeTxWithAuth(act tx.Action, ac *account.KeyPair) (*tx.Tx, error) {
 	return trx, nil
 }
 
-
 func TestIntergration_Transfer(t *testing.T) {
+	t.Skip()
 	ilog.Stop()
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
@@ -140,7 +140,6 @@ func TestIntergration_Transfer(t *testing.T) {
 		So(vi.Balance(testID[2]), ShouldEqual, int64(100))
 	})
 }
-
 
 func jsHelloWorld() *contract.Contract {
 	jshw := contract.Contract{

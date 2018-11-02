@@ -2,13 +2,10 @@ package verifier
 
 import (
 	"encoding/json"
-	"io/ioutil"
-
 	"fmt"
-
-	"time"
-
+	"io/ioutil"
 	"os"
+	"time"
 
 	"errors"
 
@@ -93,7 +90,6 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 		Data:       fmt.Sprintf(`["%v"]`, c.B64Encode()),
 	}}, nil, 100000, 100, 10000000, 0)
 
-
 	r, err := s.CallTx(trx, publisher, kp)
 	if err != nil {
 		return "", err
@@ -140,7 +136,6 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		ActionName: abi,
 		Data:       args,
 	}}, nil, 100000, 100, 10000000, 0)
-
 
 	return s.CallTx(trx, publisher, auth)
 }
