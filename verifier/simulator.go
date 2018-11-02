@@ -15,7 +15,6 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
@@ -132,8 +131,6 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 
 // CallTx with user defiened tx
 func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) (*tx.TxReceipt, error) {
-	var sigs = make([]*crypto.Signature, 0)
-
 	//if len(auths) > 1 {
 	//	for _, auth := range auths[1:] {
 	//		sig, err := tx.SignTxContent(trx, auth)
@@ -144,7 +141,7 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	//	}
 	//}
 
-	stx, err := tx.SignTx(trx, publisher, auth, sigs...)
+	stx, err := tx.SignTx(trx, publisher, auth)
 	if err != nil {
 		return nil, err
 	}

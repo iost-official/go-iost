@@ -47,7 +47,7 @@ var (
 			cost.AddAssign(c)
 
 			if !ok {
-				return nil, cost, errors.New("no privilege of claimed url")
+				return nil, cost, errors.New("no permission of claimed url")
 			}
 
 			h.WriteLink(url, cid, applicant)
@@ -86,7 +86,7 @@ var (
 			cost.AddAssign(c)
 
 			if !ok {
-				return nil, cost, errors.New("no privilege of claimed url")
+				return nil, cost, errors.New("no permission of claimed url")
 			}
 
 			h.URLTransfer(url, to)
