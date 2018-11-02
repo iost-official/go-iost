@@ -56,7 +56,7 @@ func generateBlock(account *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB)
 	if blk.Head.Number%common.VoteInterval == 0 {
 		ilog.Info("vote start")
 		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
-		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0)
+		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0, 0)
 
 		trx, err := tx.SignTx(trx, staticProperty.account.ID, staticProperty.account)
 		if err != nil {
