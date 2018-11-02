@@ -334,12 +334,12 @@ func TestNewTxPImplB(t *testing.T) {
 			t3 := genTx(newAccount, Expiration)
 			t4 := genTx(newAccount, Expiration)
 			t5 := genTx(newAccount, Expiration)
-			t1.GasPrice = 1
-			t2.GasPrice = 2
-			t3.GasPrice = 2
+			t1.GasPrice = 100
+			t2.GasPrice = 200
+			t3.GasPrice = 200
 			t3.Time = t2.Time + 1
-			t4.GasPrice = 4
-			t5.GasPrice = 5
+			t4.GasPrice = 400
+			t5.GasPrice = 500
 
 			sig1, err := tx.SignTxContent(t1, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)

@@ -174,7 +174,7 @@ func (h *Teller) PayCost(c *contract.Cost, who string) {
 
 // DoPay ...
 func (h *Teller) DoPay(witness string, gasPrice int64) error {
-	if gasPrice < 0 {
+	if gasPrice < 100 {
 		panic("gas_price error")
 	}
 
