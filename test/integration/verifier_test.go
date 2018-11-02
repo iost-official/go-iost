@@ -132,7 +132,7 @@ func TestAmountLimit(t *testing.T) {
 		Reset(func() {
 			s.Visitor.SetTokenBalanceFixed("iost", testID[0], "1000")
 			s.Visitor.SetTokenBalanceFixed("iost", testID[2], "0")
-			s.SetGas(kp.ID, 1000)
+			s.SetGas(kp.ID, 10000)
 		})
 
 		Convey("test of amount limit", func() {
@@ -187,7 +187,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		s.SetGas(kp.ID, 1000)
+		s.SetGas(kp.ID, 10000)
 
 		Convey("test out of gas limit", func() {
 			tx0 := tx.NewTx([]*tx.Action{{
