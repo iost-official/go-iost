@@ -6,7 +6,6 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 // const prefixs
@@ -183,30 +182,14 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 		if fee == 0 {
 			continue
 		}
-		bfee := fee / 10
-		if strings.HasPrefix(k, "IOST") {
-			err := h.TransferRaw(k, witness, fee-bfee)
-			if err != nil {
-				return err
-			}
-			// 10% of gas transferred to iost.bonus
-			err = h.TransferRaw(k, ContractAccountPrefix+"iost.bonus", bfee)
-			if err != nil {
-				return err
-			}
-		} else if strings.HasPrefix(k, ContractGasPrefix) {
-			err := h.TransferRaw(k, witness, fee-bfee)
-			if err != nil {
-				return err
-			}
-			// 10% of gas transferred to iost.bonus
-			err = h.TransferRaw(k, ContractAccountPrefix+"iost.bonus", bfee)
-			if err != nil {
-				return err
-			}
-		} else {
-			ilog.Errorf("key is: %v", k)
-			panic("prefix error")
+
+		gas := &common.Fixed{
+			Value:   fee * 1000000,
+			Decimal: 8, // TODO magic number
+		}
+		err := h.h.CostGas(k, gas)
+		if err != nil {
+			return fmt.Errorf("pay cost failed: %v, %v", k, err)
 		}
 	}
 

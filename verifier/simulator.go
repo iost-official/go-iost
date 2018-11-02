@@ -88,7 +88,7 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 		Contract:   "iost.system",
 		ActionName: "SetCode",
 		Data:       fmt.Sprintf(`["%v"]`, c.B64Encode()),
-	}}, nil, int64(100000), int64(1), int64(10000000))
+	}}, nil, int64(100000), int64(100), int64(10000000))
 
 	r, err := s.CallTx(trx, publisher, kp)
 	if err != nil {
@@ -135,7 +135,7 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, int64(10000), int64(1), int64(10000000))
+	}}, nil, int64(10000), int64(100), int64(10000000))
 
 	return s.CallTx(trx, publisher, auth)
 }
@@ -171,6 +171,11 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	r, err := isolator.Run()
 	if err != nil {
 		return &tx.TxReceipt{}, err
+	}
+
+	err = isolator.PayCost()
+	if err != nil {
+		return nil, err
 	}
 	isolator.Commit()
 

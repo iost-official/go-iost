@@ -8,7 +8,7 @@ package contract
 
 // ToGas convert cost to gas
 func (c Cost) ToGas() int64 {
-	return c.Data + c.Net + c.CPU
+	return c.Net + c.CPU
 }
 
 // AddAssign add cost to self

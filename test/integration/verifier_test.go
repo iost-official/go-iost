@@ -33,7 +33,7 @@ func TestTransfer(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.Balance(testID[0]), ShouldEqual, int64(99990000))
 		So(s.Visitor.Balance(testID[2]), ShouldEqual, int64(10000))
-		//So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(1)) // todo check gas
+		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(99700000000))
 	})
 
 	s.Visitor.SetBalance(kp.ID, -99990000)
