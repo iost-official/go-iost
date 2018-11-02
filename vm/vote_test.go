@@ -142,6 +142,7 @@ func prepareContract(t *testing.T) *JSTester {
 }
 
 func TestJS1_Vote1(t *testing.T) {
+	t.Skip()
 	ilog.Stop()
 	js := prepareContract(t)
 	defer js.Clear()
@@ -182,7 +183,7 @@ func TestJS1_Vote1(t *testing.T) {
 
 //nolint
 func TestJS_Vote(t *testing.T) {
-	//t.Skip()
+	t.Skip()
 	Convey("test of vote", t, func() {
 		ilog.Stop()
 
@@ -552,7 +553,7 @@ func TestJS_Vote(t *testing.T) {
 
 			act := tx.NewAction("iost.system", "UpdateCode", fmt.Sprintf(`["%v", "%v"]`, code.B64Encode(), ""))
 
-			trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(1), int64(10000000))
+			trx := tx.NewTx([]*tx.Action{&act}, nil, int64(100000), int64(100), int64(10000000))
 
 			ac, err := account.NewKeyPair(common.Base58Decode("37qTTtYLMt7FirFxVxYGDD547hZtRw7MpAyeoiJRF72hVXiWwBCz3AzCxeFnPuHaULxz3jT8sQg93EofBBBr99Q9"), crypto.Ed25519)
 			So(account.GetIDByPubkey(ac.Pubkey), ShouldEqual, adminID)

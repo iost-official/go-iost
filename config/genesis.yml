@@ -3,7 +3,7 @@ witnessinfo:
   - id: producer00001
     owner: IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C
     active: IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C
-    balance: "2100000000000000000"
+    balance: 2100000000000000000
 votecontractpath: contract/
 adminid: IOSTbbKmaZi1QRMfd7K8bK22KQSFuKadLhSNBw6tmyCHCRSvTr9QN
 initialtimestamp: "2006-01-02T15:04:05Z"

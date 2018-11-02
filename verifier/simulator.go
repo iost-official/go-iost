@@ -15,7 +15,6 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
@@ -43,8 +42,13 @@ func NewSimulator() *Simulator {
 		Visitor:  database.NewVisitor(0, mvccdb),
 		Verifier: &v,
 		mvcc:     mvccdb,
-		Head:     &block.BlockHead{},
-		Logger:   ilog.DefaultLogger(),
+		Head: &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     0,
+			Witness:    "witness",
+			Time:       123456,
+		},
+		Logger: ilog.DefaultLogger(),
 	}
 }
 
@@ -60,6 +64,17 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 		panic(err)
 	}
 	s.Visitor.MPut("iost.auth-account", acc.ID, database.MustMarshal(string(buf)))
+}
+
+func (s *Simulator) SetGas(id string, i int64) {
+	s.Visitor.SetGasStock(id, &common.Fixed{
+		Value:   i * 100000000,
+		Decimal: 8,
+	})
+	s.Visitor.SetGasLimit(id, &common.Fixed{
+		Value:   i * 100000000,
+		Decimal: 8,
+	})
 }
 
 // SetContract without run init
@@ -120,15 +135,13 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, int64(100000), int64(1), int64(10000000))
+	}}, nil, int64(10000), int64(1), int64(10000000))
 
 	return s.CallTx(trx, publisher, auth)
 }
 
 // CallTx with user defiened tx
 func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) (*tx.TxReceipt, error) {
-	var sigs = make([]*crypto.Signature, 0)
-
 	//if len(auths) > 1 {
 	//	for _, auth := range auths[1:] {
 	//		sig, err := tx.SignTxContent(trx, auth)
@@ -139,7 +152,7 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	//	}
 	//}
 
-	stx, err := tx.SignTx(trx, publisher, auth, sigs...)
+	stx, err := tx.SignTx(trx, publisher, auth)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +166,7 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	err = isolator.PrepareTx(stx, time.Second)
 
 	if err != nil {
-		return &tx.TxReceipt{}, err
+		return &tx.TxReceipt{}, fmt.Errorf("prepare tx error: %v", err)
 	}
 	r, err := isolator.Run()
 	if err != nil {
