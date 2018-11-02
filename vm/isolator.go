@@ -52,8 +52,8 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	return nil
 }
 
-func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
-	receipts = make([]tx.Receipt, 0)
+func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, receipts []*tx.Receipt, err error) {
+	receipts = make([]*tx.Receipt, 0)
 
 	e.h.PushCtx()
 	defer func() {
@@ -72,18 +72,18 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.S
 	if err != nil {
 
 		if strings.Contains(err.Error(), "execution killed") {
-			status = tx.Status{
+			status = &tx.Status{
 				Code:    tx.ErrorTimeout,
 				Message: err.Error(),
 			}
 		} else {
-			status = tx.Status{
+			status = &tx.Status{
 				Code:    tx.ErrorRuntime,
 				Message: err.Error(),
 			}
 		}
 
-		receipt := tx.Receipt{
+		receipt := &tx.Receipt{
 			Type:    tx.SystemDefined,
 			Content: err.Error(),
 		}
@@ -94,9 +94,9 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.S
 		return
 	}
 
-	receipts = append(receipts, e.h.Context().GValue("receipts").([]tx.Receipt)...)
+	receipts = append(receipts, e.h.Context().GValue("receipts").([]*tx.Receipt)...)
 
-	status = tx.Status{
+	status = &tx.Status{
 		Code:    tx.Success,
 		Message: "",
 	}
@@ -106,7 +106,7 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.S
 // Run actions in tx
 func (e *Isolator) Run() (*tx.TxReceipt, error) {
 	e.h.Context().GSet("gas_limit", e.t.GasLimit)
-	e.h.Context().GSet("receipts", make([]tx.Receipt, 0))
+	e.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
 
 	txr := tx.NewTxReceipt(e.t.Hash())
 	hasSetCode := false
@@ -150,7 +150,7 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 			txr.SuccActionNum++
 		}
 	}
-	return &txr, nil
+	return txr, nil
 }
 
 // PayCost as name

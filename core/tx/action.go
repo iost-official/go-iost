@@ -12,8 +12,8 @@ type Action struct {
 }
 
 // NewAction constructor of Action
-func NewAction(contract string, name string, data string) Action {
-	return Action{
+func NewAction(contract string, name string, data string) *Action {
+	return &Action{
 		Contract:   contract,
 		ActionName: name,
 		Data:       data,
