@@ -13,9 +13,9 @@ const (
 )
 
 const (
-	decPledge  = 8
-	decGasRate = 8
-	decGas     = 8
+	DecPledge  = 8
+	DecGasRate = 8
+	DecGas     = 8
 )
 
 // GasHandler handle gas related storage
@@ -70,7 +70,7 @@ func (m *GasHandler) GetGasRate(name string) *common.Fixed {
 	if f == nil {
 		return &common.Fixed{
 			Value:   0,
-			Decimal: decGasRate, // TODO set correct decimal of gas rate
+			Decimal: DecGasRate, // TODO set correct decimal of gas rate
 		}
 	}
 	return f
@@ -91,7 +91,7 @@ func (m *GasHandler) GasLimit(name string) *common.Fixed {
 	if f == nil {
 		return &common.Fixed{
 			Value:   0,
-			Decimal: decGas, // TODO set correct decimal of gas
+			Decimal: DecGas, // TODO set correct decimal of gas
 		}
 	}
 	return f
@@ -126,7 +126,7 @@ func (m *GasHandler) GasStock(name string) *common.Fixed {
 	if f == nil {
 		return &common.Fixed{
 			Value:   0,
-			Decimal: decGas, // TODO set correct decimal of gas
+			Decimal: DecGas, // TODO set correct decimal of gas
 		}
 	}
 	return f
@@ -147,7 +147,7 @@ func (m *GasHandler) GasPledge(name string) *common.Fixed {
 	if f == nil {
 		return &common.Fixed{
 			Value:   0,
-			Decimal: decPledge, // TODO set correct decimal of pledge
+			Decimal: DecPledge, // TODO set correct decimal of pledge
 		}
 	}
 	return f

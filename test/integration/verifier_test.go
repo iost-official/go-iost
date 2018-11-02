@@ -23,29 +23,19 @@ func TestTransfer(t *testing.T) {
 	defer s.Clear()
 	kp := prepareAuth(t, s)
 
-	s.Visitor.SetBalance(kp.ID, 100000000)
 	s.SetGas(kp.ID, 1000)
 
-	r, err := s.Call("iost.system", "Transfer", fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
+	prepareContract(t, s)
+
+	r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
 
 	Convey("test transfer success case", t, func() {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.Balance(testID[0]), ShouldEqual, int64(99990000))
-		So(s.Visitor.Balance(testID[2]), ShouldEqual, int64(10000))
-		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(99700000000))
+		So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
+		So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
+		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(99776600000000))
 	})
-
-	s.Visitor.SetBalance(kp.ID, -99990000)
-	r, err = s.Call("iost.system", "Transfer", fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
-
-	Convey("test transfer balance not enough", t, func() {
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldContainSubstring, "balance not enough")
-		So(s.Visitor.Balance(testID[0]), ShouldEqual, int64(0))
-		So(s.Visitor.Balance(testID[2]), ShouldEqual, int64(10000))
-	})
-
 }
 
 func TestSetCode(t *testing.T) {
@@ -54,7 +44,6 @@ func TestSetCode(t *testing.T) {
 	defer s.Clear()
 	kp := prepareAuth(t, s)
 	s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-	s.Visitor.SetBalance(kp.ID, 100000000)
 	s.SetGas(kp.ID, 10000)
 
 	Convey("set code", t, func() {
@@ -83,7 +72,6 @@ func TestJS_Database(t *testing.T) {
 	}
 
 	kp := prepareAuth(t, s)
-	s.Visitor.SetBalance(kp.ID, 1000000000)
 	s.SetGas(kp.ID, 1000)
 
 	cname := s.DeployContract(c, kp.ID, kp)
@@ -215,11 +203,9 @@ func TestDomain(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		kp := prepareAuth(t, s)
-		s.Visitor.SetBalance(kp.ID, 1000000000)
 		s.SetGas(kp.ID, 1000)
 
 		cname := s.DeployContract(c, kp.ID, kp)
-		t.Log("cname ", cname)
 
 		s.Visitor.SetContract(native.ABI("iost.domain", native.DomainABIs))
 		r1, err := s.Call("iost.domain", "Link", fmt.Sprintf(`["abcde","%v"]`, cname), kp.ID, kp)
@@ -250,7 +236,6 @@ func TestAuthority(t *testing.T) {
 	s.Visitor.SetContract(ca)
 
 	kp := prepareAuth(t, s)
-	s.Visitor.SetBalance(kp.ID, 1000000000)
 	s.SetGas(kp.ID, 1000)
 
 	Convey("test of Auth", t, func() {

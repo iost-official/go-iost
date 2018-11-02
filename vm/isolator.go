@@ -49,13 +49,13 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		if err != nil {
 			return err
 		}
-	}
-	e.publisherID = t.Publisher
-	gas := e.h.CurrentGas(e.publisherID)
-	if gas.ToFloat() < float64(t.GasPrice*t.GasLimit)/100 {
-		return errCannotPay
-	}
 
+		e.publisherID = t.Publisher
+		gas := e.h.CurrentGas(e.publisherID)
+		if gas.Value < t.GasPrice*t.GasLimit*10^(database.DecGas-2) {
+			return errCannotPay
+		}
+	}
 	loadTxInfo(e.h, t, e.publisherID)
 	return nil
 }
@@ -78,7 +78,6 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.S
 	}
 
 	if err != nil {
-
 		if strings.Contains(err.Error(), "execution killed") {
 			status = tx.Status{
 				Code:    tx.ErrorTimeout,
