@@ -87,7 +87,7 @@ func (e *VM) setHost(host *host.Host) {
 	e.sandbox.SetHost(host)
 }
 
-func (e *VM) setContract(contract *contract.Contract, api string, args ...interface{}) (string, error) {
+func (e *VM) setContract(contract *contract.Contract, api string, args []interface{}) (string, error) {
 	return e.sandbox.Prepare(contract, api, args)
 }
 

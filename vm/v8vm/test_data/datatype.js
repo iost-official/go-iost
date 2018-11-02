@@ -57,6 +57,11 @@ class Datatype {
         return a;
     }
 
+    param3(a) {
+        a.push({a:3});
+        return a;
+    }
+
     bool() {
         let a = true;
         let b = true;
