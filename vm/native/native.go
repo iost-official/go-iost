@@ -67,11 +67,10 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 }
 
 // CheckCost check if cost exceed gas_limit
-func CheckCost(h *host.Host, cost *contract.Cost) (bool) {
+func CheckCost(h *host.Host, cost *contract.Cost) bool {
 	gasLimit := h.Context().GValue("gas_limit").(int64)
 	if cost.ToGas() > gasLimit {
 		return false
 	}
 	return true
 }
-
