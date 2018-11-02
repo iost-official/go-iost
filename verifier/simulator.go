@@ -77,7 +77,7 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 		Contract:   "iost.system",
 		ActionName: "SetCode",
 		Data:       fmt.Sprintf(`["%v"]`, c.B64Encode()),
-	}}, nil, int64(100000), int64(1), int64(10000000))
+	}}, nil, 100000, 1, 10000000, 0)
 
 	r, err := s.CallTx(trx, publisher, kp)
 	if err != nil {
@@ -124,7 +124,7 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, int64(100000), int64(1), int64(10000000))
+	}}, nil, 100000, 1, 10000000, 0)
 
 	return s.CallTx(trx, publisher, auth)
 }

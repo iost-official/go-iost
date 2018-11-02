@@ -27,7 +27,7 @@ var testID = []string{
 }
 
 func MakeTx(act tx.Action) (*tx.Tx, error) {
-	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(10000), int64(1), int64(10000000))
+	trx := tx.NewTx([]*tx.Action{&act}, nil, 10000, 1, 10000000, 0)
 
 	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {

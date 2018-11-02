@@ -438,6 +438,9 @@ func encodeVarintMessage(dAtA []byte, offset int, v uint64) int {
 	return offset + 1
 }
 func (m *BlockInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Number != 0 {
@@ -454,6 +457,9 @@ func (m *BlockInfo) Size() (n int) {
 }
 
 func (m *BlockHashQuery) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.ReqType != 0 {
@@ -479,6 +485,9 @@ func (m *BlockHashQuery) Size() (n int) {
 }
 
 func (m *BlockHashResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if len(m.BlockInfos) > 0 {
@@ -494,6 +503,9 @@ func (m *BlockHashResponse) Size() (n int) {
 }
 
 func (m *SyncHeight) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Height != 0 {
@@ -748,6 +760,17 @@ func (m *BlockHashQuery) Unmarshal(dAtA []byte) error {
 				postIndex := iNdEx + packedLen
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.Nums) == 0 {
+					m.Nums = make([]int64, 0, elementCount)
 				}
 				for iNdEx < postIndex {
 					var v int64
