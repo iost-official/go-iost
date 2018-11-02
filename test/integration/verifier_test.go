@@ -55,7 +55,7 @@ func TestSetCode(t *testing.T) {
 	kp := prepareAuth(t, s)
 	s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
 	s.Visitor.SetBalance(kp.ID, 100000000)
-	s.SetGas(kp.ID, 1000)
+	s.SetGas(kp.ID, 10000)
 
 	Convey("set code", t, func() {
 		c, err := s.Compile("hw", "test_data/helloworld", "test_data/helloworld")
