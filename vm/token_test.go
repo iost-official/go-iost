@@ -20,7 +20,7 @@ func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
-	var gasLimit = int64(10000)
+	var gasLimit = int64(1000000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
 	}
