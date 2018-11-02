@@ -2,14 +2,12 @@ package tx
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
-	"fmt"
-
 	"strings"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
@@ -20,22 +18,22 @@ import (
 // Tx Transaction structure
 type Tx struct {
 	hash        []byte
-	Time        int64               `json:"time,string"`
-	Expiration  int64               `json:"expiration,string"`
-	GasLimit    int64               `json:"gas_limit,string"`
+	Time        int64               `json:"time"`
+	Expiration  int64               `json:"expiration"`
+	GasPrice    int64               `json:"gas_price"`
+	GasLimit    int64               `json:"gas_limit"`
+	DelaySecond int64               `json:"delay_second"`
 	Actions     []*Action           `json:"-"`
 	Signers     []string            `json:"-"`
 	Signs       []*crypto.Signature `json:"-"`
 	Publisher   string              `json:"-"`
 	PublishSign *crypto.Signature   `json:"-"`
-	GasPrice    int64               `json:"gas_price,string"`
 }
 
 // NewTx return a new Tx
-func NewTx(actions []*Action, signers []string, gasLimit int64, gasPrice int64, expiration int64) *Tx {
-	now := time.Now().UnixNano()
+func NewTx(actions []*Action, signers []string, gasLimit, gasPrice, expiration, delaySecond int64) *Tx {
 	return &Tx{
-		Time:        now,
+		Time:        time.Now().UnixNano(),
 		Actions:     actions,
 		Signers:     signers,
 		GasLimit:    gasLimit,
@@ -43,6 +41,7 @@ func NewTx(actions []*Action, signers []string, gasLimit int64, gasPrice int64, 
 		Expiration:  expiration,
 		hash:        nil,
 		PublishSign: &crypto.Signature{},
+		DelaySecond: delaySecond,
 	}
 }
 
@@ -55,21 +54,22 @@ func SignTxContent(tx *Tx, id string, account *account.KeyPair) (*crypto.Signatu
 }
 
 func (t *Tx) containSigner(id string) bool {
-	found := false
 	for _, signer := range t.Signers {
 		if strings.HasPrefix(signer, id) {
-			found = true
+			return true
 		}
 	}
-	return found
+	return false
 }
 
 func (t *Tx) baseHash() []byte {
 	tr := &TxRaw{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
+		Time:        t.Time,
+		Expiration:  t.Expiration,
+		GasLimit:    t.GasLimit,
+		GasPrice:    t.GasPrice,
+		Signers:     t.Signers,
+		DelaySecond: t.DelaySecond,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -78,9 +78,8 @@ func (t *Tx) baseHash() []byte {
 			Data:       a.Data,
 		})
 	}
-	tr.Signers = t.Signers
 
-	b, err := proto.Marshal(tr)
+	b, err := tr.Marshal()
 	if err != nil {
 		panic(err)
 	}
@@ -101,10 +100,12 @@ func SignTx(tx *Tx, id string, kp *account.KeyPair, signs ...*crypto.Signature) 
 // publishHash
 func (t *Tx) publishHash() []byte {
 	tr := &TxRaw{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
+		Time:        t.Time,
+		Expiration:  t.Expiration,
+		GasLimit:    t.GasLimit,
+		GasPrice:    t.GasPrice,
+		Signers:     t.Signers,
+		DelaySecond: t.DelaySecond,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -113,7 +114,7 @@ func (t *Tx) publishHash() []byte {
 			Data:       a.Data,
 		})
 	}
-	tr.Signers = t.Signers
+
 	for _, s := range t.Signs {
 		tr.Signs = append(tr.Signs, &crypto.SignatureRaw{
 			Algorithm: int32(s.Algorithm),
@@ -122,7 +123,7 @@ func (t *Tx) publishHash() []byte {
 		})
 	}
 
-	b, err := proto.Marshal(tr)
+	b, err := tr.Marshal()
 	if err != nil {
 		panic(err)
 	}
@@ -132,10 +133,12 @@ func (t *Tx) publishHash() []byte {
 // ToTxRaw convert tx to TxRaw for transmission
 func (t *Tx) ToTxRaw() *TxRaw {
 	tr := &TxRaw{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
+		Time:        t.Time,
+		Expiration:  t.Expiration,
+		GasLimit:    t.GasLimit,
+		GasPrice:    t.GasPrice,
+		Signers:     t.Signers,
+		DelaySecond: t.DelaySecond,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -144,7 +147,7 @@ func (t *Tx) ToTxRaw() *TxRaw {
 			Data:       a.Data,
 		})
 	}
-	tr.Signers = t.Signers
+
 	for _, s := range t.Signs {
 		tr.Signs = append(tr.Signs, &crypto.SignatureRaw{
 			Algorithm: int32(s.Algorithm),
@@ -166,7 +169,7 @@ func (t *Tx) ToTxRaw() *TxRaw {
 // Encode tx to byte array
 func (t *Tx) Encode() []byte {
 	tr := t.ToTxRaw()
-	b, err := proto.Marshal(tr)
+	b, err := tr.Marshal()
 	if err != nil {
 		panic(err)
 	}
@@ -180,6 +183,7 @@ func (t *Tx) FromTxRaw(tr *TxRaw) {
 	t.GasLimit = tr.GasLimit
 	t.GasPrice = tr.GasPrice
 	t.Actions = []*Action{}
+	t.DelaySecond = tr.DelaySecond
 	for _, a := range tr.Actions {
 		t.Actions = append(t.Actions, &Action{
 			Contract:   a.Contract,
@@ -210,7 +214,7 @@ func (t *Tx) FromTxRaw(tr *TxRaw) {
 // Decode tx from byte array
 func (t *Tx) Decode(b []byte) error {
 	tr := &TxRaw{}
-	err := proto.Unmarshal(b, tr)
+	err := tr.Unmarshal(b)
 	if err != nil {
 		return err
 	}

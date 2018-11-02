@@ -54,9 +54,7 @@ func TestGRPCServer_ExecTx(t *testing.T) {
 	dataString := fmt.Sprintf(`["%v", "%v", %d]`, rootAccount.ID, newAccount.ID, 100000000)
 	action := tx.NewAction("iost.system", "Transfer", dataString)
 	trx := tx.NewTx([]*tx.Action{&action}, make([]string, 0),
-		10000,
-		1,
-		time.Now().Add(time.Second*time.Duration(3)).UnixNano())
+		10000, 1, time.Now().Add(time.Second*time.Duration(3)).UnixNano(), 0)
 	stx, err := tx.SignTx(trx, rootAccount.ID, rootAccount)
 
 	resp, err := client.ExecTx(context.Background(), &RawTxReq{Data: stx.Encode()})

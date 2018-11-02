@@ -74,8 +74,8 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("encode and decode", func() {
-			tx := NewTx(actions, []string{a1.ID}, 100000, 100, 11)
-			tx1 := NewTx([]*Action{}, []string{}, 0, 0, 0)
+			tx := NewTx(actions, []string{a1.ID}, 100000, 100, 11, 0)
+			tx1 := NewTx([]*Action{}, []string{}, 0, 0, 0, 0)
 			hash := tx.Hash()
 
 			encode := tx.Encode()
@@ -126,7 +126,7 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("sign and verify", func() {
-			tx := NewTx(actions, []string{a1.ID, a2.ID}, 9999, 1, 1)
+			tx := NewTx(actions, []string{a1.ID, a2.ID}, 9999, 1, 1, 0)
 			sig1, err := SignTxContent(tx, a1.ID, a1)
 			So(tx.VerifySigner(sig1), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig1)
