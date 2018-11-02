@@ -155,7 +155,7 @@ func (f *Fixed) ToString() string {
 	return string(rtn)
 }
 
-// ToFloat
+// ToFloat ...
 func (f *Fixed) ToFloat() float64 {
 	return float64(f.Value) / float64(10^f.Decimal)
 }

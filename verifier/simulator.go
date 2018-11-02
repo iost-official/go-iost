@@ -66,13 +66,14 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 	s.Visitor.MPut("iost.auth-account", acc.ID, database.MustMarshal(string(buf)))
 }
 
+// SetGas to id
 func (s *Simulator) SetGas(id string, i int64) {
 	s.Visitor.SetGasStock(id, &common.Fixed{
-		Value:   i * 100000000,
+		Value:   i * 10e8,
 		Decimal: 8,
 	})
 	s.Visitor.SetGasLimit(id, &common.Fixed{
-		Value:   i * 100000000,
+		Value:   i * 10e8,
 		Decimal: 8,
 	})
 }
