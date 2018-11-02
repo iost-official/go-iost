@@ -18,10 +18,11 @@ import (
 // Tx Transaction structure
 type Tx struct {
 	hash        []byte
-	Time        int64               `json:"time,string"`
-	Expiration  int64               `json:"expiration,string"`
-	GasPrice    int64               `json:"gas_price,string"`
-	GasLimit    int64               `json:"gas_limit,string"`
+	Time        int64               `json:"time"`
+	Expiration  int64               `json:"expiration"`
+	GasPrice    int64               `json:"gas_price"`
+	GasLimit    int64               `json:"gas_limit"`
+	DelaySecond int64               `json:"delay_second"`
 	Actions     []*Action           `json:"-"`
 	Signers     []string            `json:"-"`
 	Signs       []*crypto.Signature `json:"-"`
@@ -30,7 +31,7 @@ type Tx struct {
 }
 
 // NewTx return a new Tx
-func NewTx(actions []*Action, signers []string, gasLimit int64, gasPrice int64, expiration int64) *Tx {
+func NewTx(actions []*Action, signers []string, gasLimit, gasPrice, expiration, delaySecond int64) *Tx {
 	return &Tx{
 		Time:        time.Now().UnixNano(),
 		Actions:     actions,
@@ -40,6 +41,7 @@ func NewTx(actions []*Action, signers []string, gasLimit int64, gasPrice int64, 
 		Expiration:  expiration,
 		hash:        nil,
 		PublishSign: &crypto.Signature{},
+		DelaySecond: delaySecond,
 	}
 }
 
@@ -62,11 +64,12 @@ func (t *Tx) containSigner(id string) bool {
 
 func (t *Tx) baseHash() []byte {
 	tr := &TxRaw{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
-		Signers:    t.Signers,
+		Time:        t.Time,
+		Expiration:  t.Expiration,
+		GasLimit:    t.GasLimit,
+		GasPrice:    t.GasPrice,
+		Signers:     t.Signers,
+		DelaySecond: t.DelaySecond,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -97,11 +100,12 @@ func SignTx(tx *Tx, id string, kp *account.KeyPair, signs ...*crypto.Signature) 
 // publishHash
 func (t *Tx) publishHash() []byte {
 	tr := &TxRaw{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
-		Signers:    t.Signers,
+		Time:        t.Time,
+		Expiration:  t.Expiration,
+		GasLimit:    t.GasLimit,
+		GasPrice:    t.GasPrice,
+		Signers:     t.Signers,
+		DelaySecond: t.DelaySecond,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -129,11 +133,12 @@ func (t *Tx) publishHash() []byte {
 // ToTxRaw convert tx to TxRaw for transmission
 func (t *Tx) ToTxRaw() *TxRaw {
 	tr := &TxRaw{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
-		Signers:    t.Signers,
+		Time:        t.Time,
+		Expiration:  t.Expiration,
+		GasLimit:    t.GasLimit,
+		GasPrice:    t.GasPrice,
+		Signers:     t.Signers,
+		DelaySecond: t.DelaySecond,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -178,6 +183,7 @@ func (t *Tx) FromTxRaw(tr *TxRaw) {
 	t.GasLimit = tr.GasLimit
 	t.GasPrice = tr.GasPrice
 	t.Actions = []*Action{}
+	t.DelaySecond = tr.DelaySecond
 	for _, a := range tr.Actions {
 		t.Actions = append(t.Actions, &Action{
 			Contract:   a.Contract,

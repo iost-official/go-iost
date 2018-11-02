@@ -18,7 +18,7 @@ func TestCheckPublisher(t *testing.T) {
 		"iost.system",
 		"Transfer",
 		"[]",
-	}}, []string{}, 10000, 1, 10000)
+	}}, []string{}, 10000, 1, 10000, 0)
 
 	kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
@@ -89,7 +89,7 @@ func TestCheckSigners(t *testing.T) {
 		"iost.system",
 		"Transfer",
 		"[]",
-	}}, []string{"a@acitve", "b@acitve"}, 10000, 1, 10000)
+	}}, []string{"a@acitve", "b@acitve"}, 10000, 1, 10000, 0)
 
 	sig1, err := tx.SignTxContent(tr, "a", kp)
 	if err != nil {

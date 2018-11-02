@@ -82,7 +82,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	act3 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.gas", native.GasABI().B64Encode()))
 	acts = append(acts, &act3)
 
-	trx := tx.NewTx(acts, nil, 100000000, 0, 0)
+	trx := tx.NewTx(acts, nil, 100000000, 0, 0, 0)
 	trx.Time = 0
 	acc, err := account.NewKeyPair(common.Base58Decode("2vj2Ab8Taz1TT2MSQHxmSffGnvsc9EVrmjx1W7SBQthCpuykhbRn2it8DgNkcm4T9tdBgsue3uBiAzxLpLJoDUbc"), crypto.Ed25519) // TODO 修改为account
 	if err != nil {

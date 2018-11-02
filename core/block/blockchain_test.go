@@ -124,7 +124,7 @@ func BenchmarkBlock(b *testing.B) {
 			},
 		}
 		for j := 0; j < txnum; j++ {
-			txn := tx.NewTx(actions, []string{a1.ID, a2.ID}, 9999, 1, 1)
+			txn := tx.NewTx(actions, []string{a1.ID, a2.ID}, 9999, 1, 1, 0)
 			tBlock.Txs = append(tBlock.Txs, txn)
 			tr := tx.NewTxReceipt(txn.Hash())
 			tBlock.Receipts = append(tBlock.Receipts, &tr)
