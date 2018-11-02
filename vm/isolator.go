@@ -5,7 +5,6 @@ import (
 
 	"strings"
 
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
@@ -43,7 +42,7 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	if err != nil {
 		return err
 	}
-	e.publisherID = account.GetIDByPubkey(t.PublishSign.Pubkey)
+	e.publisherID = t.Publisher
 	bl := e.h.DB().Balance(e.publisherID)
 	if bl < 0 || bl < t.GasPrice*t.GasLimit {
 		return errCannotPay
