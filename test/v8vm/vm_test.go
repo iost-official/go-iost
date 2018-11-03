@@ -262,7 +262,6 @@ func TestEngine_DataType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall number_strange run error: %v\n", err)
 	}
-	// todo get return string -infinity
 	if len(rs) != 1 || rs[0].(string) != "-Infinity" {
 		t.Fatalf("LoadAndCall except Infinity, got %s\n", rs[0])
 	}
@@ -279,7 +278,6 @@ func TestEngine_DataType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall param2 run error: %v\n", err)
 	}
-	// todo get return string undefined
 	if len(rs) != 1 || rs[0] != "null" {
 		t.Fatalf("LoadAndCall except undefined, got %s\n", rs[0])
 	}
@@ -297,7 +295,6 @@ func TestEngine_DataType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall bool run error: %v\n", err)
 	}
-	// todo get return string false
 	if len(rs) != 1 || rs[0].(string) != "false" {
 		t.Fatalf("LoadAndCall except undefined, got %s\n", rs[0])
 	}
