@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"fmt"
 	"time"
 
 	"strings"
@@ -116,6 +117,23 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 	e.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
 
 	txr := tx.NewTxReceipt(e.t.Hash())
+
+	if e.t.DelaySecond > 0 {
+		e.h.DB().StoreDelaytx(string(e.t.Hash()))
+		txr.Status = &tx.Status{
+			Code:    tx.Success,
+			Message: "",
+		}
+		txr.GasUsage = e.t.DelaySecond
+		return txr, nil
+	}
+
+	if len(e.t.ReferredTx) > 0 {
+		if !e.h.DB().HasDelaytx(string(e.t.ReferredTx)) {
+			return nil, fmt.Errorf("delay tx not found, hash=%v", e.t.ReferredTx)
+		}
+	}
+
 	hasSetCode := false
 
 	for _, action := range e.t.Actions {
@@ -157,6 +175,10 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 			txr.SuccActionNum++
 		}
 	}
+	if len(e.t.ReferredTx) > 0 {
+		e.h.DB().DelDelaytx(string(e.t.ReferredTx))
+	}
+
 	return txr, nil
 }
 

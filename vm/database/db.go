@@ -10,6 +10,7 @@ type Visitor struct {
 	TokenHandler
 	CoinHandler
 	RollbackHandler
+	DelaytxHandler
 }
 
 // NewVisitor get a visitor of a DB, with cache length determined

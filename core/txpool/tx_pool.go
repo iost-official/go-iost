@@ -26,6 +26,7 @@ type TxPImpl struct {
 	pendingTx        *SortedTxMap
 	mu               sync.RWMutex
 	chP2PTx          chan p2p.IncomingMessage
+	deferServer      *DeferServer
 	quitGenerateMode chan struct{}
 	quitCh           chan struct{}
 }
@@ -44,6 +45,11 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitCh:           make(chan struct{}),
 	}
 	p.forkChain.NewHead = blockCache.Head()
+	deferServer, err := NewDeferServer("DelayTxDB", p)
+	if err != nil {
+		return nil, err
+	}
+	p.deferServer = deferServer
 	close(p.quitGenerateMode)
 	return p, nil
 }
@@ -57,6 +63,23 @@ func (pool *TxPImpl) Start() error {
 // Stop stops all the jobs.
 func (pool *TxPImpl) Stop() {
 	close(pool.quitCh)
+}
+
+// AddDefertx adds defer transaction.
+func (pool *TxPImpl) AddDefertx(t *tx.Tx) error {
+	if pool.pendingTx.Size() > maxCacheTxs {
+		return fmt.Errorf("CacheFullError. Pending tx size is %d. Max cache is %d", pool.pendingTx.Size(), maxCacheTxs)
+	}
+	referredTx, err := pool.global.BlockChain().GetTx(t.ReferredTx)
+	if err != nil {
+		return err
+	}
+	t.Actions = referredTx.Actions
+	t.Expiration = referredTx.Expiration + referredTx.DelaySecond
+	t.GasLimit = referredTx.GasLimit
+	t.GasPrice = referredTx.GasPrice
+	t.ReferredTx = nil
+	return pool.addTx(t)
 }
 
 func (pool *TxPImpl) loop() {
@@ -287,6 +310,22 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if err := t.VerifySelf(); err != nil {
 		return fmt.Errorf("VerifyError %v", err)
 	}
+
+	if len(t.ReferredTx) > 0 {
+		referredTx, err := pool.global.BlockChain().GetTx(t.ReferredTx)
+		if err != nil {
+			return fmt.Errorf("get referred tx error, %v", err)
+		}
+		if len(referredTx.Actions) != len(t.Actions) {
+			return errors.New("unmatched referred tx action length")
+		}
+		for i := 0; i < len(referredTx.Actions); i++ {
+			if *referredTx.Actions[i] != *t.Actions[i] {
+				return errors.New("unmatched referred tx action")
+			}
+		}
+	}
+
 	return nil
 }
 

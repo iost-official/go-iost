@@ -20,6 +20,7 @@ message TxRaw {
     string publisher = 8;
     crypto.SignatureRaw publishSign = 9;
     int64 delaySecond = 10;
+    bytes referredTx = 11;
 }
 
 message ReceiptRaw {

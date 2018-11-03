@@ -28,6 +28,7 @@ type Tx struct {
 	Signs       []*crypto.Signature `json:"-"`
 	Publisher   string              `json:"-"`
 	PublishSign *crypto.Signature   `json:"-"`
+	ReferredTx  []byte              `json:"referred_tx"`
 }
 
 // NewTx return a new Tx
@@ -139,6 +140,7 @@ func (t *Tx) ToTxRaw() *TxRaw {
 		GasPrice:    t.GasPrice,
 		Signers:     t.Signers,
 		DelaySecond: t.DelaySecond,
+		ReferredTx:  t.ReferredTx,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -184,6 +186,7 @@ func (t *Tx) FromTxRaw(tr *TxRaw) {
 	t.GasPrice = tr.GasPrice
 	t.Actions = []*Action{}
 	t.DelaySecond = tr.DelaySecond
+	t.ReferredTx = tr.ReferredTx
 	for _, a := range tr.Actions {
 		t.Actions = append(t.Actions, &Action{
 			Contract:   a.Contract,
@@ -245,6 +248,12 @@ func (t *Tx) Hash() []byte {
 
 // VerifySelf verify tx's signature
 func (t *Tx) VerifySelf() error { // only check whether sigs are legal
+	if t.DelaySecond > 0 && len(t.ReferredTx) > 0 {
+		return errors.New("invalid tx. including both delaysecond and referredtx")
+	}
+	if len(t.ReferredTx) > 0 {
+		return nil
+	}
 	baseHash := t.baseHash()
 	//signerSet := make(map[string]bool)
 	for _, sign := range t.Signs {
