@@ -51,7 +51,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 	}
 	if pledgeAmount < 0 {
 		unpledgeAmount := pledgeAmountF.Neg()
-		pledged := h.DB().GasHandler.GetGasPledge(name)
+		pledged := h.DB().GasHandler.GasPledge(name)
 		// how to deal with overflow here?
 		if pledged.Sub(unpledgeAmount).LessThan(GasMinPledge) {
 			return fmt.Errorf("%v should be pledged at least ", GasMinPledge)
@@ -68,7 +68,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 	fmt.Printf("limitd rated gasd %v %v %v\n", limitDelta, rateDelta, gasDelta)
 
 	// pledge first time
-	if h.DB().GasHandler.GetGasUpdateTime(name) == 0 {
+	if h.DB().GasHandler.GasUpdateTime(name) == 0 {
 		if pledgeAmount < 0 {
 			return fmt.Errorf("cannot unpledge! No pledge before")
 		}
@@ -85,12 +85,12 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 	if rateNew.Value <= 0 {
 		return fmt.Errorf("change gasRate failed! current: %v, delta %v", rateOld, rateDelta)
 	}
-	limitOld := h.DB().GasHandler.GetGasLimit(name)
+	limitOld := h.DB().GasHandler.GasLimit(name)
 	limitNew := limitOld.Add(limitDelta)
 	if limitNew.Value <= 0 {
 		return fmt.Errorf("change gasLimit failed! current: %v, delta %v", limitOld, limitDelta)
 	}
-	gasOld := h.DB().GasHandler.GetGasStock(name)
+	gasOld := h.DB().GasHandler.GasStock(name)
 	gasNew := gasOld.Add(gasDelta)
 	if limitNew.LessThan(gasNew) {
 		// clear the gas above the new limit.
@@ -98,7 +98,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 	}
 
 	fmt.Printf("Pledge %v", pledgeAmountF)
-	h.DB().GasHandler.SetGasPledge(name, h.DB().GasHandler.GetGasPledge(name).Add(pledgeAmountF))
+	h.DB().GasHandler.SetGasPledge(name, h.DB().GasHandler.GasPledge(name).Add(pledgeAmountF))
 	h.DB().GasHandler.SetGasRate(name, rateNew)
 	h.DB().GasHandler.SetGasLimit(name, limitNew)
 	h.DB().GasHandler.SetGasStock(name, gasNew)

@@ -2,13 +2,12 @@ package verifier
 
 import (
 	"encoding/json"
-	"io/ioutil"
-
 	"fmt"
-
+	"io/ioutil"
+	"os"
 	"time"
 
-	"os"
+	"errors"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -66,27 +65,39 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 	s.Visitor.MPut("iost.auth-account", acc.ID, database.MustMarshal(string(buf)))
 }
 
+// SetGas to id
+func (s *Simulator) SetGas(id string, i int64) {
+	s.Visitor.SetGasStock(id, &common.Fixed{
+		Value:   i * 10e8,
+		Decimal: 8,
+	})
+	s.Visitor.SetGasLimit(id, &common.Fixed{
+		Value:   i * 10e8,
+		Decimal: 8,
+	})
+}
+
 // SetContract without run init
 func (s *Simulator) SetContract(c *contract.Contract) {
 	s.Visitor.SetContract(c)
 }
 
 // DeployContract via iost.system/SetCode
-func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) string {
+func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, error) {
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   "iost.system",
 		ActionName: "SetCode",
 		Data:       fmt.Sprintf(`["%v"]`, c.B64Encode()),
-	}}, nil, 100000, 1, 10000000, 0)
+	}}, nil, 100000, 100, 10000000, 0)
 
 	r, err := s.CallTx(trx, publisher, kp)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	if r.Status.Code != 0 {
-		panic(r)
+		return "", errors.New(r.Status.Message)
 	}
-	return "Contract" + common.Base58Encode(trx.Hash())
+	return "Contract" + common.Base58Encode(trx.Hash()), nil
 }
 
 // Compile files
@@ -124,7 +135,7 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, 100000, 1, 10000000, 0)
+	}}, nil, 100000, 100, 10000000, 0)
 
 	return s.CallTx(trx, publisher, auth)
 }
@@ -155,11 +166,16 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	err = isolator.PrepareTx(stx, time.Second)
 
 	if err != nil {
-		return &tx.TxReceipt{}, err
+		return &tx.TxReceipt{}, fmt.Errorf("prepare tx error: %v", err)
 	}
 	r, err := isolator.Run()
 	if err != nil {
 		return &tx.TxReceipt{}, err
+	}
+
+	err = isolator.PayCost()
+	if err != nil {
+		return nil, err
 	}
 	isolator.Commit()
 
