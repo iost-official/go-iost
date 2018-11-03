@@ -278,7 +278,7 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return fmt.Errorf("CacheFullError. Pending tx size is %d. Max cache is %d", pool.pendingTx.Size(), maxCacheTxs)
 	}
-	if t.GasPrice <= 0 {
+	if t.GasPrice < 100 {
 		return fmt.Errorf("GasPriceError. gas price %d", t.GasPrice)
 	}
 	if pool.TxTimeOut(t) {

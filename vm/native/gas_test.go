@@ -2,10 +2,10 @@ package native
 
 import (
 	"encoding/json"
-	"fmt"
-	"math/rand"
 	"strconv"
 	"testing"
+
+	"os"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -39,7 +39,11 @@ const initNumber int64 = 10
 
 func gasTestInit() (*host.Host, *account.Account) {
 	var tmpDB db.MVCCDB
-	tmpDB, err := db.NewMVCCDB(fmt.Sprintf("/tmp/gas_test%06d", rand.Intn(1000000)))
+	tmpDB, err := db.NewMVCCDB("mvcc")
+	defer func() {
+		tmpDB.Close()
+		os.RemoveAll("mvcc")
+	}()
 	visitor := database.NewVisitor(100, tmpDB)
 	if err != nil {
 		panic(err)

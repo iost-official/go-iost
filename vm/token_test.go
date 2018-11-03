@@ -167,7 +167,7 @@ func TestToken_Issue(t *testing.T) {
 		Convey("correct issue", func() {
 			_, cost, err := e.LoadAndCall(host, code, "issue", "iost", "user0", "1.1")
 			So(err, ShouldBeNil)
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)
@@ -192,7 +192,7 @@ func TestToken_Issue(t *testing.T) {
 		Convey("issue too much", func() {
 			_, cost, err := e.LoadAndCall(host, code, "issue", "iost", "user0", "1.1")
 			So(err, ShouldBeNil)
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, cost, err = e.LoadAndCall(host, code, "issue", "iost", "user0", "100")
 			So(true, ShouldEqual, err.Error() == "supply too much")
@@ -209,7 +209,7 @@ func TestToken_Issue(t *testing.T) {
 		Convey("issue invalid amount", func() {
 			_, cost, err := e.LoadAndCall(host, code, "issue", "iost", "issuer0", "-1.1")
 			So(true, ShouldEqual, err.Error() == "invalid amount")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost", "issuer0", "1.1")
 			So(err, ShouldBeNil)
@@ -264,7 +264,7 @@ func TestToken_Transfer(t *testing.T) {
 		Convey("correct transfer", func() {
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "22.3")
 			So(err, ShouldBeNil)
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)
@@ -301,13 +301,13 @@ func TestToken_Transfer(t *testing.T) {
 			host.Context().Set("auth_list", authList)
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "1.1")
 			So(true, ShouldEqual, err.Error() == "transaction has no permission")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 		})
 
 		Convey("transfer too much", func() {
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "100.1")
 			So(true, ShouldEqual, err.Error() == "balance not enough")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
 			So(err, ShouldBeNil)
@@ -325,7 +325,7 @@ func TestToken_Transfer(t *testing.T) {
 		Convey("transfer invalid amount", func() {
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "-1.1")
 			So(true, ShouldEqual, err.Error() == "invalid amount")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, cost, err = e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "1.1")
 			So(err, ShouldBeNil)
@@ -380,7 +380,7 @@ func TestToken_Destroy(t *testing.T) {
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "100")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, cost, err = e.LoadAndCall(host, code, "destroy", "iost", "issuer0", "22.3")
 			So(err, ShouldBeNil)
@@ -417,7 +417,7 @@ func TestToken_Destroy(t *testing.T) {
 			rs, cost, err = e.LoadAndCall(host, code, "supply", "iost")
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "88.7")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, cost, err = e.LoadAndCall(host, code, "issue", "iost", "user0", "21")
 			So(true, ShouldEqual, err.Error() == "supply too much")
@@ -441,13 +441,13 @@ func TestToken_Destroy(t *testing.T) {
 			rs, cost, err = e.LoadAndCall(host, code, "supply", "iost")
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "100")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 		})
 
 		Convey("destroy invalid amount", func() {
 			_, cost, err := e.LoadAndCall(host, code, "destroy", "iost", "issuer0", "-1.1")
 			So(true, ShouldEqual, err.Error() == "invalid amount")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, cost, err = e.LoadAndCall(host, code, "destroy", "iost", "issuer0", "1.1")
 			So(err, ShouldBeNil)
@@ -502,7 +502,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 		Convey("correct transferFreeze", func() {
 			_, cost, err := e.LoadAndCall(host, code, "transferFreeze", "iost", "issuer0", "user0", "22.3", now)
 			So(err, ShouldBeNil)
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)
@@ -526,7 +526,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 			authList["user0"] = 1
 			_, cost, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user0", "10", now+10)
 			So(err, ShouldBeNil)
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)
