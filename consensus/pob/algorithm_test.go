@@ -27,13 +27,13 @@ var testID = []string{
 }
 
 func MakeTx(act tx.Action) (*tx.Tx, error) {
-	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(10000), int64(1), int64(10000000))
+	trx := tx.NewTx([]*tx.Action{&act}, nil, 10000, 1, 10000000, 0)
 
 	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		return nil, err
 	}
-	trx, err = tx.SignTx(trx, ac)
+	trx, err = tx.SignTx(trx, ac.ID, ac)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +307,7 @@ func TestVerifyBlock(t *testing.T) {
 				ActionName: "actionname1",
 				Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 			}},
-			Signers: [][]byte{account1.Pubkey},
+			Signers: []string{account1.ID},
 		}
 		rcpt0 := &tx.TxReceipt{
 			TxHash: tx0.Hash(),

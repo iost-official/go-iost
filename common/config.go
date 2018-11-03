@@ -15,11 +15,19 @@ type ACCConfig struct {
 	Algorithm string
 }
 
+// Witness config of the genesis block
+type Witness struct {
+	ID      string
+	Owner   string
+	Active  string
+	Balance int64
+}
+
 // GenesisConfig config of the genesis block
 type GenesisConfig struct {
 	CreateGenesis    bool
 	InitialTimestamp string
-	WitnessInfo      []string
+	WitnessInfo      []*Witness
 	VoteContractPath string
 	AdminID          string
 }

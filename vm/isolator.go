@@ -5,7 +5,6 @@ import (
 
 	"strings"
 
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
@@ -21,12 +20,18 @@ type Isolator struct {
 	publisherID  string
 	t            *tx.Tx
 	blockBaseCtx *host.Context
+	genesisMode  bool
 }
 
 // Prepare Isolator
 func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *ilog.Logger) error {
 	if db.Contract("iost.system") == nil {
 		db.SetContract(native.SystemABI())
+	}
+	if bh.Number == 0 {
+		e.genesisMode = true
+	} else {
+		e.genesisMode = false
 	}
 
 	e.blockBaseCtx = host.NewContext(nil)
@@ -39,16 +44,18 @@ func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	e.t = t
 	e.h.SetDeadline(time.Now().Add(limit))
-	err := checkTx(t)
-	if err != nil {
-		return err
-	}
-	e.publisherID = account.GetIDByPubkey(t.Publisher.Pubkey)
-	bl := e.h.DB().Balance(e.publisherID)
-	if bl < 0 || bl < t.GasPrice*t.GasLimit {
-		return errCannotPay
-	}
+	e.publisherID = t.Publisher
 
+	if !e.genesisMode {
+		err := checkTxParams(t)
+		if err != nil {
+			return err
+		}
+		gas := e.h.CurrentGas(e.publisherID)
+		if gas.Value < t.GasPrice*t.GasLimit*10^(database.DecGas-2) {
+			return errCannotPay
+		}
+	}
 	loadTxInfo(e.h, t, e.publisherID)
 	return nil
 }
@@ -71,7 +78,6 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.S
 	}
 
 	if err != nil {
-
 		if strings.Contains(err.Error(), "execution killed") {
 			status = tx.Status{
 				Code:    tx.ErrorTimeout,
@@ -182,8 +188,8 @@ func (e *Isolator) ClearTx() {
 	e.h.SetContext(e.blockBaseCtx)
 	e.h.Context().GClear()
 }
-func checkTx(t *tx.Tx) error {
-	if t.GasPrice < 0 || t.GasPrice > 10000 {
+func checkTxParams(t *tx.Tx) error {
+	if t.GasPrice < 100 || t.GasPrice > 10000 {
 		return errGasPriceIllegal
 	}
 	return nil

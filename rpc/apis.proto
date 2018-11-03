@@ -191,7 +191,7 @@ message GetAccountRes {
     // the queried balance
     int64 balance=1;
     // current gas
-    int64 gas=2;
+    string gas=2;
 }
 
 message GetContractStorageRes {

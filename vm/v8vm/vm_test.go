@@ -1,6 +1,7 @@
 package v8
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -289,11 +290,20 @@ func TestEngine_DataType(t *testing.T) {
 
 	rs, _, err = vmPool.LoadAndCall(host, code, "param2")
 	if err != nil {
-		t.Fatalf("LoadAndCall param run error: %v\n", err)
+		t.Fatalf("LoadAndCall param2 run error: %v\n", err)
 	}
 	// todo get return string undefined
 	if len(rs) != 1 || rs[0] != "null" {
 		t.Fatalf("LoadAndCall except undefined, got %s\n", rs[0])
+	}
+
+	b, _ := json.Marshal([]int64{1, 2})
+	rs, _, err = vmPool.LoadAndCall(host, code, "param3", b)
+	if err != nil {
+		t.Fatalf("LoadAndCall param3 run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0] != "[1,2,{\"a\":3}]" {
+		t.Fatalf("LoadAndCall except [1,2,{\"a\":3}], got %s\n", rs[0])
 	}
 
 	rs, _, err = vmPool.LoadAndCall(host, code, "bool")
@@ -506,6 +516,15 @@ func TestEngine_Console(t *testing.T) {
 func TestEngine_Blockchain(t *testing.T) {
 	host, code := MyInit(t, "blockchain1")
 	rs, _, err := vmPool.LoadAndCall(host, code, "gs")
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+	t.Log(rs)
+}
+
+func TestEngine_Float64(t *testing.T) {
+	host, code := MyInit(t, "float64Test")
+	rs, _, err := vmPool.LoadAndCall(host, code, "number")
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}

@@ -170,9 +170,9 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 	}
 
 	t := &tx.Tx{}
-	s := make([][]byte, 0)
+	s := make([]string, 0)
 	for _, v := range json.Get("signers").MustArray() {
-		s = append(s, []byte(v.(string)))
+		s = append(s, v.(string))
 	}
 
 	t.Signers = s
@@ -180,7 +180,7 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.Publisher.Pubkey = account.GetPubkeyByID(p)
+	t.PublishSign.Pubkey = account.GetPubkeyByID(p)
 	t.GasLimit, err = json.Get("gas_limit").Int64()
 	if err != nil {
 		return nil, err

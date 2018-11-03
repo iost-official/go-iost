@@ -15,9 +15,11 @@ message TxRaw {
     int64 gasLimit = 3;
     int64 gasPrice = 4;
     repeated ActionRaw actions = 5;
-    repeated bytes signers = 6;
+    repeated string signers = 6;
     repeated crypto.SignatureRaw signs = 7;
-    crypto.SignatureRaw publisher = 8;
+    string publisher = 8;
+    crypto.SignatureRaw publishSign = 9;
+    int64 delaySecond = 10;
 }
 
 message ReceiptRaw {

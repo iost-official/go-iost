@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
 
@@ -109,10 +110,12 @@ func (pool *TxPImpl) verifyWorkers() {
 		var t tx.Tx
 		err := t.Decode(v.Data())
 		if err != nil {
+			ilog.Errorf("decode tx error. err=%v", err)
 			continue
 		}
 		err = pool.verifyTx(&t)
 		if err != nil {
+			ilog.Errorf("verify tx error. err=%v", err)
 			continue
 		}
 		err = pool.addTx(&t)
@@ -130,16 +133,16 @@ func (pool *TxPImpl) CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, er
 	if err != nil {
 		return nil, err
 	}
-	dtm := new(sync.Map)
+	dtm := make(map[string]struct{})
 	for _, v := range txs {
 		trh := string(v.Hash())
-		if _, ok := rm.Load(trh); ok {
+		if _, ok := rm[trh]; ok {
 			return v, errors.New("duplicate tx in chain")
 		}
-		if _, ok := dtm.Load(trh); ok {
+		if _, ok := dtm[trh]; ok {
 			return v, errors.New("duplicate tx in txs")
 		}
-		dtm.Store(trh, nil)
+		dtm[trh] = struct{}{}
 		if ok := pool.existTxInPending([]byte(trh)); !ok {
 			if pool.verifyTx(v) != nil {
 				return v, errors.New("failed to verify")
@@ -149,11 +152,11 @@ func (pool *TxPImpl) CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, er
 	return nil, nil
 }
 
-func (pool *TxPImpl) createTxMapToChain(chainBlock *block.Block) (*sync.Map, error) {
+func (pool *TxPImpl) createTxMapToChain(chainBlock *block.Block) (map[string]struct{}, error) {
 	if chainBlock == nil {
 		return nil, errors.New("chainBlock is nil")
 	}
-	rm := new(sync.Map)
+	rm := make(map[string]struct{})
 	h := chainBlock.HeadHash()
 	t := slotToNSec(chainBlock.Head.Time)
 	var ok bool
@@ -174,13 +177,13 @@ func (pool *TxPImpl) createTxMapToChain(chainBlock *block.Block) (*sync.Map, err
 	}
 }
 
-func (pool *TxPImpl) createTxMapToBlock(tm *sync.Map, blockHash []byte) bool {
+func (pool *TxPImpl) createTxMapToBlock(tm map[string]struct{}, blockHash []byte) bool {
 	b, ok := pool.blockList.Load(string(blockHash))
 	if !ok {
 		return false
 	}
 	b.(*blockTx).txMap.Range(func(key, value interface{}) bool {
-		tm.Store(key.(string), nil)
+		tm[key.(string)] = struct{}{}
 		return true
 	})
 	return true
@@ -275,7 +278,7 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return fmt.Errorf("CacheFullError. Pending tx size is %d. Max cache is %d", pool.pendingTx.Size(), maxCacheTxs)
 	}
-	if t.GasPrice <= 0 {
+	if t.GasPrice < 100 {
 		return fmt.Errorf("GasPriceError. gas price %d", t.GasPrice)
 	}
 	if pool.TxTimeOut(t) {

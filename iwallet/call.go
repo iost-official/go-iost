@@ -88,11 +88,11 @@ var callCmd = &cobra.Command{
 			act := tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
 			actions[i] = &act
 		}
-		pubkeys := make([][]byte, len(signers))
+		pubkeys := make([]string, len(signers))
 		for i, accID := range signers {
-			pubkeys[i] = account.GetPubkeyByID(accID)
+			pubkeys[i] = accID
 		}
-		trx := tx.NewTx(actions, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
+		trx := tx.NewTx(actions, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano(), delaySecond)
 		if len(signers) == 0 {
 			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
 			fmt.Println("please ensure that the right secret key file path is given by parameter -k,or the secret key file path is ~/.iwallet/id_ed25519 by default,this file indicate the secret key to sign the tx")
@@ -107,7 +107,7 @@ var callCmd = &cobra.Command{
 				fmt.Println(err.Error())
 				return
 			}
-			stx, err := tx.SignTx(trx, acc)
+			stx, err := tx.SignTx(trx, acc.ID, acc)
 			var txHash []byte
 			txHash, err = sendTx(stx)
 			if err != nil {

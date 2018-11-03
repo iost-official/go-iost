@@ -318,7 +318,7 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	gas := s.visitor.GasHandler.CurrentTotalGas(key.ID, s.bchain.Length())
 	return &GetAccountRes{
 		Balance: s.visitor.Balance(key.ID),
-		Gas:     gas,
+		Gas:     gas.ToString(),
 	}, nil
 }
 

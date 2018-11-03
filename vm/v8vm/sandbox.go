@@ -179,7 +179,7 @@ var obj = new module.exports;
 
 // run contract with specified function and args
 obj.%s(%s)
-`, code, function, strings.Trim(argStr, "[]")), nil
+`, code, function, argStr), nil
 }
 
 // Execute prepared code, return results, gasUsed
@@ -205,10 +205,24 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 }
 
 func formatFuncArgs(args []interface{}) (string, error) {
-	argStr, err := json.Marshal(args)
-	if err != nil {
-		return "", err
+	if len(args) == 0 {
+		// hack for vm_test param2
+		return "null", nil
 	}
+	var strArgs []string
+	for _, arg := range args {
+		switch v := arg.(type) {
+		case []byte:
+			strArgs = append(strArgs, string(v))
+		default:
+			b, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			strArgs = append(strArgs, string(b))
+		}
+	}
+	argStr := strings.Join(strArgs, ",")
 
-	return string(argStr), nil
+	return argStr, nil
 }
