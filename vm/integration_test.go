@@ -21,6 +21,7 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
+	"io/ioutil"
 )
 
 var testID = []string{
@@ -823,7 +824,7 @@ func TestJS_Database(t *testing.T) {
 	js := NewJSTester(t)
 	defer js.Clear()
 
-	lc, err := ReadFile("test_data/database.js")
+	lc, err := ioutil.ReadFile("test_data/database.js")
 	if err != nil {
 		t.Fatal(err)
 	}
