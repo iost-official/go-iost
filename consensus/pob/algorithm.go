@@ -158,6 +158,8 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		}
 	}
 	v := verifier.Verifier{}
+	ilog.Infof("[pob] start to verify block in vm, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
+	defer ilog.Infof("[pob] end of verify block in vm, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	return v.Verify(blk, db, &verifier.Config{
 		Mode:        0,
 		Timeout:     common.SlotLength / 3 * time.Second,
