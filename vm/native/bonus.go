@@ -9,9 +9,9 @@ var bonusABIs map[string]*abi
 
 func init() {
 	bonusABIs = make(map[string]*abi)
-	register(&bonusABIs, claimBonus)
-	register(&bonusABIs, constructor)
-	register(&bonusABIs, initFunc)
+	register(bonusABIs, claimBonus)
+	register(bonusABIs, constructor)
+	register(bonusABIs, initFunc)
 }
 
 var (

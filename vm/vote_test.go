@@ -553,8 +553,7 @@ func TestJS_Vote(t *testing.T) {
 
 			act := tx.NewAction("iost.system", "UpdateCode", fmt.Sprintf(`["%v", "%v"]`, code.B64Encode(), ""))
 
-
-			trx := tx.NewTx([]*tx.Action{&act}, nil, 100000, 100, 10000000, 0)
+			trx := tx.NewTx([]*tx.Action{act}, nil, 100000, 100, 10000000, 0)
 
 			ac, err := account.NewKeyPair(common.Base58Decode("37qTTtYLMt7FirFxVxYGDD547hZtRw7MpAyeoiJRF72hVXiWwBCz3AzCxeFnPuHaULxz3jT8sQg93EofBBBr99Q9"), crypto.Ed25519)
 			So(account.GetIDByPubkey(ac.Pubkey), ShouldEqual, adminID)
@@ -588,7 +587,7 @@ func TestJS_Genesis(t *testing.T) {
 	var acts []*tx.Action
 	for i := 0; i < len(witnessInfo)/2; i++ {
 		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], 50000000))
-		acts = append(acts, &act)
+		acts = append(acts, act)
 	}
 	VoteContractPath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/"
 	// deploy iost.vote
@@ -612,16 +611,16 @@ func TestJS_Genesis(t *testing.T) {
 	num := len(witnessInfo) / 2
 
 	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
-	acts = append(acts, &act)
+	acts = append(acts, act)
 
 	for i := 0; i < num; i++ {
 		act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`["%v"]`, witnessInfo[2*i]))
-		acts = append(acts, &act1)
+		acts = append(acts, act1)
 	}
 
 	// deploy iost.bonus
 	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
-	acts = append(acts, &act2)
+	acts = append(acts, act2)
 
 	trx := tx.NewTx(acts, nil, 10000000, 0, 0, 0)
 	trx.Time = 0

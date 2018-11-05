@@ -17,9 +17,9 @@ const (
 
 func init() {
 	coinABIs = make(map[string]*abi)
-	register(&coinABIs, createCoin)
-	register(&coinABIs, issueCoin)
-	register(&coinABIs, setCoinRate)
+	register(coinABIs, createCoin)
+	register(coinABIs, issueCoin)
+	register(coinABIs, setCoinRate)
 }
 
 var (

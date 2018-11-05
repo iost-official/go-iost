@@ -86,7 +86,7 @@ var callCmd = &cobra.Command{
 				args[i+2] = data
 			}
 			act := tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
-			actions[i] = &act
+			actions[i] = act
 		}
 		pubkeys := make([]string, len(signers))
 		for i, accID := range signers {
