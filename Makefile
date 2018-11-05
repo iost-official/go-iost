@@ -21,17 +21,20 @@ endif
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
 LD_FLAGS := -X github.com/iost-official/go-iost/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/core/global.GitHash=$(shell git rev-parse HEAD)
 
-.PHONY: all build iserver iwallet lint test image devimage swagger protobuf install clean debug clear_debug_file
+.PHONY: all build iserver iwallet itest lint test image devimage swagger protobuf install clean debug clear_debug_file
 
 all: build
 
-build: iserver iwallet
+build: iserver iwallet itest
 
 iserver:
 	$(GO) build -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
 
 iwallet:
 	$(GO) build -o $(TARGET_DIR)/iwallet $(PROJECT)/cmd/iwallet
+
+itest:
+	$(GO) build -o $(TARGET_DIR)/itest $(PROJECT)/cmd/itest
 
 lint:
 	@gometalinter --config=.gometalinter.json ./...
