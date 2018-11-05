@@ -229,6 +229,17 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 	return DelContractCost, nil
 }
 
+// CancelDelaytx deletes delaytx hash.
+func (h *Host) CancelDelaytx(txHash string) (*contract.Cost, error) {
+
+	if !h.db.HasDelaytx(txHash) {
+		return DelaytxNotFoundCost, ErrDelaytxNotFound
+	}
+
+	h.db.DelDelaytx(txHash)
+	return DelDelaytxCost, nil
+}
+
 // Logger get a log in host
 func (h *Host) Logger() *ilog.Logger {
 	return h.logger

@@ -22,16 +22,17 @@ type Tx struct {
 	Expiration   int64               `json:"expiration"`
 	GasPrice     int64               `json:"gas_price"`
 	GasLimit     int64               `json:"gas_limit"`
-	DelaySecond  int64               `json:"delay_second"`
+	Delay        int64               `json:"delay"`
 	Actions      []*Action           `json:"-"`
 	Signers      []string            `json:"-"`
 	Signs        []*crypto.Signature `json:"-"`
 	Publisher    string              `json:"-"`
 	PublishSigns []*crypto.Signature `json:"-"`
+	ReferredTx   []byte              `json:"referred_tx"`
 }
 
 // NewTx return a new Tx
-func NewTx(actions []*Action, signers []string, gasLimit, gasPrice, expiration, delaySecond int64) *Tx {
+func NewTx(actions []*Action, signers []string, gasLimit, gasPrice, expiration, delay int64) *Tx {
 	return &Tx{
 		Time:         time.Now().UnixNano(),
 		Actions:      actions,
@@ -41,7 +42,7 @@ func NewTx(actions []*Action, signers []string, gasLimit, gasPrice, expiration, 
 		Expiration:   expiration,
 		hash:         nil,
 		PublishSigns: []*crypto.Signature{},
-		DelaySecond:  delaySecond,
+		Delay:        delay,
 	}
 }
 
@@ -64,12 +65,12 @@ func (t *Tx) containSigner(id string) bool {
 
 func (t *Tx) baseHash() []byte {
 	tr := &TxRaw{
-		Time:        t.Time,
-		Expiration:  t.Expiration,
-		GasLimit:    t.GasLimit,
-		GasPrice:    t.GasPrice,
-		Signers:     t.Signers,
-		DelaySecond: t.DelaySecond,
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasLimit:   t.GasLimit,
+		GasPrice:   t.GasPrice,
+		Signers:    t.Signers,
+		Delay:      t.Delay,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -103,12 +104,12 @@ func SignTx(tx *Tx, id string, kps []*account.KeyPair, signs ...*crypto.Signatur
 // publishHash
 func (t *Tx) publishHash() []byte {
 	tr := &TxRaw{
-		Time:        t.Time,
-		Expiration:  t.Expiration,
-		GasLimit:    t.GasLimit,
-		GasPrice:    t.GasPrice,
-		Signers:     t.Signers,
-		DelaySecond: t.DelaySecond,
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasLimit:   t.GasLimit,
+		GasPrice:   t.GasPrice,
+		Signers:    t.Signers,
+		Delay:      t.Delay,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -136,12 +137,13 @@ func (t *Tx) publishHash() []byte {
 // ToTxRaw convert tx to TxRaw for transmission
 func (t *Tx) ToTxRaw() *TxRaw {
 	tr := &TxRaw{
-		Time:        t.Time,
-		Expiration:  t.Expiration,
-		GasLimit:    t.GasLimit,
-		GasPrice:    t.GasPrice,
-		Signers:     t.Signers,
-		DelaySecond: t.DelaySecond,
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasLimit:   t.GasLimit,
+		GasPrice:   t.GasPrice,
+		Signers:    t.Signers,
+		Delay:      t.Delay,
+		ReferredTx: t.ReferredTx,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, &ActionRaw{
@@ -187,7 +189,8 @@ func (t *Tx) FromTxRaw(tr *TxRaw) {
 	t.GasLimit = tr.GasLimit
 	t.GasPrice = tr.GasPrice
 	t.Actions = []*Action{}
-	t.DelaySecond = tr.DelaySecond
+	t.Delay = tr.Delay
+	t.ReferredTx = tr.ReferredTx
 	for _, a := range tr.Actions {
 		t.Actions = append(t.Actions, &Action{
 			Contract:   a.Contract,
@@ -250,6 +253,12 @@ func (t *Tx) Hash() []byte {
 
 // VerifySelf verify tx's signature
 func (t *Tx) VerifySelf() error { // only check whether sigs are legal
+	if t.Delay > 0 && len(t.ReferredTx) > 0 {
+		return errors.New("invalid tx. including both delaysecond and referredtx")
+	}
+	if len(t.ReferredTx) > 0 {
+		return nil
+	}
 	baseHash := t.baseHash()
 	//signerSet := make(map[string]bool)
 	for _, sign := range t.Signs {

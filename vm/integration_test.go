@@ -9,6 +9,8 @@ import (
 
 	"time"
 
+	"io/ioutil"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -21,7 +23,6 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
-	"io/ioutil"
 )
 
 var testID = []string{
@@ -72,8 +73,8 @@ func closeMVCCDB(m db.MVCCDB) {
 	os.RemoveAll("mvcc")
 }
 
-func MakeTx(act tx.Action) (*tx.Tx, error) {
-	trx := tx.NewTx([]*tx.Action{&act}, nil, 100000, 1, 10000000, 0)
+func MakeTx(act *tx.Action) (*tx.Tx, error) {
+	trx := tx.NewTx([]*tx.Action{act}, nil, 100000, 1, 10000000, 0)
 
 	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
@@ -86,8 +87,8 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	return trx, nil
 }
 
-func MakeTxWithAuth(act tx.Action, ac *account.KeyPair) (*tx.Tx, error) {
-	trx := tx.NewTx([]*tx.Action{&act}, nil, 100000, 1, 10000000, 0)
+func MakeTxWithAuth(act *tx.Action, ac *account.KeyPair) (*tx.Tx, error) {
+	trx := tx.NewTx([]*tx.Action{act}, nil, 100000, 1, 10000000, 0)
 	trx, err := tx.SignTx(trx, ac.ID, []*account.KeyPair{ac})
 	if err != nil {
 		return nil, err
@@ -103,7 +104,7 @@ func TestIntergration_Transfer(t *testing.T) {
 
 	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], "0.000001"))
 
-	trx := tx.NewTx([]*tx.Action{&act}, nil, 10000, 1, 10000000, 0)
+	trx := tx.NewTx([]*tx.Action{act}, nil, 10000, 1, 10000000, 0)
 
 	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
@@ -125,7 +126,7 @@ func TestIntergration_Transfer(t *testing.T) {
 	})
 
 	act2 := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
-	trx2 := tx.NewTx([]*tx.Action{&act2}, nil, 10000, 1, 10000000, 0)
+	trx2 := tx.NewTx([]*tx.Action{act2}, nil, 10000, 1, 10000000, 0)
 	trx2, err = tx.SignTx(trx2, ac.ID, []*account.KeyPair{ac})
 	if err != nil {
 		t.Fatal(err)
