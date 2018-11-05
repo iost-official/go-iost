@@ -26,8 +26,8 @@ var testID = []string{
 	"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "8dJ9YKovJ5E7hkebAQaScaG1BA8snRUHPUbVcArcTVq6",
 }
 
-func MakeTx(act tx.Action) (*tx.Tx, error) {
-	trx := tx.NewTx([]*tx.Action{&act}, nil, 10000, 1, 10000000, 0)
+func MakeTx(act *tx.Action) (*tx.Tx, error) {
+	trx := tx.NewTx([]*tx.Action{act}, nil, 10000, 1, 10000000, 0)
 
 	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {

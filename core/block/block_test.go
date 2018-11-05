@@ -49,7 +49,7 @@ func TestBlockSerialize(t *testing.T) {
 		receipt := tx.TxReceipt{
 			TxHash:   tx0.Hash(),
 			GasUsage: 10,
-			Status: tx.Status{
+			Status: &tx.Status{
 				Code:    tx.Success,
 				Message: "run success",
 			},

@@ -27,11 +27,11 @@ func TestTxReceipt(t *testing.T) {
 			tx := NewTxReceipt([]byte{0, 1, 2})
 			tx.SuccActionNum = 99
 			tx.GasUsage = 88
-			tx.Status = Status{
+			tx.Status = &Status{
 				Code:    ErrorGasRunOut,
 				Message: "error gas run out",
 			}
-			tx.Receipts = append(tx.Receipts, Receipt{
+			tx.Receipts = append(tx.Receipts, &Receipt{
 				Type:    SystemDefined,
 				Content: "{\"num\": 1, \"message\": \"contract1\"}",
 			})

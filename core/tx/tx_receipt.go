@@ -52,23 +52,23 @@ type TxReceipt struct { //nolint:golint
 		NetUsage    uint64
 		RAMUsage    uint64
 	*/
-	Status        Status
+	Status        *Status
 	SuccActionNum int32
-	Receipts      []Receipt
+	Receipts      []*Receipt
 }
 
 // NewTxReceipt generate tx receipt for a tx hash
-func NewTxReceipt(txHash []byte) TxReceipt {
-	var status = Status{
+func NewTxReceipt(txHash []byte) *TxReceipt {
+	var status = &Status{
 		Code:    Success,
 		Message: "",
 	}
-	return TxReceipt{
+	return &TxReceipt{
 		TxHash:        txHash,
 		GasUsage:      0,
 		Status:        status,
 		SuccActionNum: 0,
-		Receipts:      []Receipt{},
+		Receipts:      []*Receipt{},
 	}
 }
 
@@ -105,14 +105,14 @@ func (r *TxReceipt) Encode() []byte {
 func (r *TxReceipt) FromTxReceiptRaw(tr *TxReceiptRaw) {
 	r.TxHash = tr.TxHash
 	r.GasUsage = tr.GasUsage
-	r.Status = Status{
+	r.Status = &Status{
 		Code:    StatusCode(tr.Status.Code),
 		Message: tr.Status.Message,
 	}
 	r.SuccActionNum = tr.SuccActionNum
-	r.Receipts = []Receipt{}
+	r.Receipts = []*Receipt{}
 	for _, re := range tr.Receipts {
-		r.Receipts = append(r.Receipts, Receipt{
+		r.Receipts = append(r.Receipts, &Receipt{
 			Type:    ReceiptType(re.Type),
 			Content: re.Content,
 		})
