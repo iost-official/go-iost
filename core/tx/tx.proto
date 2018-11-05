@@ -18,7 +18,7 @@ message TxRaw {
     repeated string signers = 6;
     repeated crypto.SignatureRaw signs = 7;
     string publisher = 8;
-    crypto.SignatureRaw publishSign = 9;
+    repeated crypto.SignatureRaw publishSigns = 9;
     int64 delay = 10;
     bytes referredTx = 11;
 }

@@ -12,7 +12,10 @@ import (
 
 // CheckPublisher check publisher of tx
 func CheckPublisher(db database.IMultiValue, t *tx.Tx) error {
-	auth := map[string]int{account.GetIDByPubkey(t.PublishSign.Pubkey): 2}
+	auth := map[string]int{}
+	for _, sig := range t.PublishSigns {
+		auth[account.GetIDByPubkey(sig.Pubkey)] = 2
+	}
 	reenter := make(map[string]int)
 	vi := database.NewVisitor(0, db)
 	ok, _ := host.Auth(vi, t.Publisher, "active", auth, reenter)
@@ -31,7 +34,9 @@ func CheckSigners(db database.IMultiValue, t *tx.Tx) error {
 		keyname := account.GetIDByPubkey(v.Pubkey)
 		auth[keyname] = 1
 	}
-	auth[account.GetIDByPubkey(t.PublishSign.Pubkey)] = 2
+	for _, sig := range t.PublishSigns {
+		auth[account.GetIDByPubkey(sig.Pubkey)] = 2
+	}
 
 	vi := database.NewVisitor(100, db)
 	for _, a := range t.Signers {

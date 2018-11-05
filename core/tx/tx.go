@@ -17,32 +17,32 @@ import (
 
 // Tx Transaction structure
 type Tx struct {
-	hash        []byte
-	Time        int64               `json:"time"`
-	Expiration  int64               `json:"expiration"`
-	GasPrice    int64               `json:"gas_price"`
-	GasLimit    int64               `json:"gas_limit"`
-	Delay       int64               `json:"delay"`
-	Actions     []*Action           `json:"-"`
-	Signers     []string            `json:"-"`
-	Signs       []*crypto.Signature `json:"-"`
-	Publisher   string              `json:"-"`
-	PublishSign *crypto.Signature   `json:"-"`
-	ReferredTx  []byte              `json:"referred_tx"`
+	hash         []byte
+	Time         int64               `json:"time"`
+	Expiration   int64               `json:"expiration"`
+	GasPrice     int64               `json:"gas_price"`
+	GasLimit     int64               `json:"gas_limit"`
+	Delay        int64               `json:"delay"`
+	Actions      []*Action           `json:"-"`
+	Signers      []string            `json:"-"`
+	Signs        []*crypto.Signature `json:"-"`
+	Publisher    string              `json:"-"`
+	PublishSigns []*crypto.Signature `json:"-"`
+	ReferredTx   []byte              `json:"referred_tx"`
 }
 
 // NewTx return a new Tx
 func NewTx(actions []*Action, signers []string, gasLimit, gasPrice, expiration, delay int64) *Tx {
 	return &Tx{
-		Time:        time.Now().UnixNano(),
-		Actions:     actions,
-		Signers:     signers,
-		GasLimit:    gasLimit,
-		GasPrice:    gasPrice,
-		Expiration:  expiration,
-		hash:        nil,
-		PublishSign: &crypto.Signature{},
-		Delay:       delay,
+		Time:         time.Now().UnixNano(),
+		Actions:      actions,
+		Signers:      signers,
+		GasLimit:     gasLimit,
+		GasPrice:     gasPrice,
+		Expiration:   expiration,
+		hash:         nil,
+		PublishSigns: []*crypto.Signature{},
+		Delay:        delay,
 	}
 }
 
@@ -88,11 +88,14 @@ func (t *Tx) baseHash() []byte {
 }
 
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
-func SignTx(tx *Tx, id string, kp *account.KeyPair, signs ...*crypto.Signature) (*Tx, error) {
+func SignTx(tx *Tx, id string, kps []*account.KeyPair, signs ...*crypto.Signature) (*Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
 
-	sig := kp.Sign(tx.publishHash())
-	tx.PublishSign = sig
+	tx.PublishSigns = []*crypto.Signature{}
+	for _, kp := range kps {
+		sig := kp.Sign(tx.publishHash())
+		tx.PublishSigns = append(tx.PublishSigns, sig)
+	}
 	tx.Publisher = id
 	tx.hash = nil
 	return tx, nil
@@ -158,12 +161,13 @@ func (t *Tx) ToTxRaw() *TxRaw {
 		})
 	}
 	tr.Publisher = t.Publisher
-	if t.PublishSign != nil {
-		tr.PublishSign = &crypto.SignatureRaw{
-			Algorithm: int32(t.PublishSign.Algorithm),
-			Sig:       t.PublishSign.Sig,
-			PubKey:    t.PublishSign.Pubkey,
-		}
+	tr.PublishSigns = []*crypto.SignatureRaw{}
+	for _, sig := range t.PublishSigns {
+		tr.PublishSigns = append(tr.PublishSigns, &crypto.SignatureRaw{
+			Algorithm: int32(sig.Algorithm),
+			Sig:       sig.Sig,
+			PubKey:    sig.Pubkey,
+		})
 	}
 	return tr
 }
@@ -204,12 +208,13 @@ func (t *Tx) FromTxRaw(tr *TxRaw) {
 		})
 	}
 	t.Publisher = tr.Publisher
-	if tr.PublishSign != nil {
-		t.PublishSign = &crypto.Signature{
-			Algorithm: crypto.Algorithm(tr.PublishSign.Algorithm),
-			Sig:       tr.PublishSign.Sig,
-			Pubkey:    tr.PublishSign.PubKey,
-		}
+	t.PublishSigns = []*crypto.Signature{}
+	for _, sig := range tr.PublishSigns {
+		t.PublishSigns = append(t.PublishSigns, &crypto.Signature{
+			Algorithm: crypto.Algorithm(sig.Algorithm),
+			Sig:       sig.Sig,
+			Pubkey:    sig.PubKey,
+		})
 	}
 	t.hash = nil
 }
@@ -229,7 +234,7 @@ func (t *Tx) Decode(b []byte) error {
 func (t *Tx) String() string {
 	str := "Tx{\n"
 	str += "	Time: " + strconv.FormatInt(t.Time, 10) + ",\n"
-	str += "	Pubkey: " + string(t.PublishSign.Pubkey) + ",\n"
+	str += "	Publisher: " + t.Publisher + ",\n"
 	str += "	Action:\n"
 	for _, a := range t.Actions {
 		str += "		" + a.String()
@@ -268,9 +273,14 @@ func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 	//		return fmt.Errorf("signer not enough")
 	//	}
 	//}
-	ok := t.PublishSign != nil && t.PublishSign.Verify(t.publishHash())
-	if !ok {
-		return fmt.Errorf("publisher error")
+	if len(t.PublishSigns) == 0 {
+		return fmt.Errorf("publisher empty error")
+	}
+	for _, sign := range t.PublishSigns {
+		ok := sign != nil && sign.Verify(t.publishHash())
+		if !ok {
+			return fmt.Errorf("publisher error")
+		}
 	}
 	return nil
 }
