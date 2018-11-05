@@ -33,7 +33,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	trx, err = tx.SignTx(trx, ac.ID, ac)
+	trx, err = tx.SignTx(trx, ac.ID, []*account.KeyPair{ac})
 	if err != nil {
 		return nil, err
 	}

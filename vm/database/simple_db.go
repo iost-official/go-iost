@@ -18,6 +18,7 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
 )
 
 // SimpleDB implements simple database interface
@@ -180,7 +181,9 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.PublishSign.Pubkey = account.GetPubkeyByID(p)
+	t.PublishSigns = append(t.PublishSigns, &crypto.Signature{
+		Pubkey:	account.GetPubkeyByID(p),
+	})
 	t.GasLimit, err = json.Get("gas_limit").Int64()
 	if err != nil {
 		return nil, err

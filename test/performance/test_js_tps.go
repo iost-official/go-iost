@@ -70,7 +70,7 @@ func transfer(i int) {
 	action := tx.NewAction(contractID, "bet", fmt.Sprintf("[\"%s\",%d,%d,%d]", tmpAccount.ID, i%10, 100000000, 1))
 	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
 	trx := tx.NewTx([]*tx.Action{&action}, []string{}, 1000+int64(i), 1, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
-	stx, err := tx.SignTx(trx, acc.ID, acc)
+	stx, err := tx.SignTx(trx, acc.ID, []*account.KeyPair{acc})
 	if err != nil {
 		fmt.Println("signtx", stx, err)
 		return

@@ -561,7 +561,7 @@ func TestJS_Vote(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			trx, err = tx.SignTx(trx, ac.ID, ac)
+			trx, err = tx.SignTx(trx, ac.ID, []*account.KeyPair{ac})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -629,7 +629,7 @@ func TestJS_Genesis(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	trx, err = tx.SignTx(trx, acc.ID, acc)
+	trx, err = tx.SignTx(trx, acc.ID, []*account.KeyPair{acc})
 	if err != nil {
 		t.Fatal(err)
 	}

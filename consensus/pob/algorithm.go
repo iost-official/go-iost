@@ -31,7 +31,7 @@ var (
 	//txExecTime     = cverifier.TxExecTimeLimit / 2
 )
 
-func generateBlock(account *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) { // TODO 应传入account
+func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) { // TODO 应传入acc
 
 	ilog.Info("generate Block start")
 	st := time.Now()
@@ -43,7 +43,7 @@ func generateBlock(account *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB)
 			Version:    0,
 			ParentHash: topBlock.HeadHash(),
 			Number:     topBlock.Head.Number + 1,
-			Witness:    account.ID,
+			Witness:    acc.ID,
 			Time:       time.Now().Unix() / common.SlotLength,
 		},
 		Txs:      []*tx.Tx{},
@@ -58,7 +58,7 @@ func generateBlock(account *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB)
 		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
 		trx := tx.NewTx([]*tx.Action{&act}, nil, 100000000, 0, 0, 0)
 
-		trx, err := tx.SignTx(trx, staticProperty.account.ID, staticProperty.account)
+		trx, err := tx.SignTx(trx, staticProperty.account.ID, []*account.KeyPair{staticProperty.account})
 		if err != nil {
 			ilog.Errorf("fail to signTx, err:%v", err)
 		}
@@ -120,7 +120,7 @@ func generateBlock(account *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB)
 	if err != nil {
 		return nil, err
 	}
-	blk.Sign = account.Sign(blk.HeadHash())
+	blk.Sign = acc.Sign(blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
 
 	metricsGeneratedBlockCount.Add(1, nil)
