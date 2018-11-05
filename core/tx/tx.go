@@ -231,7 +231,7 @@ func (t *Tx) Decode(b []byte) error {
 func (t *Tx) String() string {
 	str := "Tx{\n"
 	str += "	Time: " + strconv.FormatInt(t.Time, 10) + ",\n"
-	str += "	Publisher: " + string(t.Publisher) + ",\n"
+	str += "	Publisher: " + t.Publisher + ",\n"
 	str += "	Action:\n"
 	for _, a := range t.Actions {
 		str += "		" + a.String()
