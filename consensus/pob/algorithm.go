@@ -30,11 +30,10 @@ var (
 	generateTxsNum = 0
 )
 
-func generateBlock(account *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) { // TODO 应传入account
+func generateBlock(account *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Durationß) (*block.Block, error) { // TODO 应传入account
 
 	ilog.Info("[pob]generate Block start")
 	st := time.Now()
-	limitTime := time.Millisecond * 400
 	txIter, head := txPool.TxIterator()
 	topBlock := head.Block
 	blk := block.Block{
