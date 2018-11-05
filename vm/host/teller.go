@@ -179,20 +179,20 @@ func (h *Teller) DoPay(witness string, gasPrice int64) error {
 
 	for k, c := range h.cost {
 		fee := gasPrice * c.ToGas()
-		if fee == 0 {
-			continue
+		if fee != 0 {
+			gas := &common.Fixed{
+				Value:   fee * 1000000,
+				Decimal: 8, // TODO magic number
+			}
+			err := h.h.CostGas(k, gas)
+			if err != nil {
+				return fmt.Errorf("pay cost failed: %v, %v", k, err)
+			}
 		}
-
-		gas := &common.Fixed{
-			Value:   fee * 1000000,
-			Decimal: 8, // TODO magic number
-		}
-		err := h.h.CostGas(k, gas)
-		if err != nil {
-			return fmt.Errorf("pay cost failed: %v, %v", k, err)
-		}
+		//ram := c.Data // todo activate ram
+		//currentRam := h.h.db.TokenBalance("ram", k)
+		//h.h.db.SetTokenBalance("ram", k, currentRam+ram)
 	}
-
 	return nil
 }
 
