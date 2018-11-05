@@ -169,7 +169,7 @@ func TestEngine_Storage(t *testing.T) {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
 	// todo get return nil
-	if len(rs) != 1 || rs[0].(string) != "nil" {
+	if len(rs) != 1 || rs[0].(string) != "null" {
 		t.Fatalf("LoadAndCall except mySetVal, got %s\n", rs[0])
 	}
 
