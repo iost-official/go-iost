@@ -305,7 +305,7 @@ func (p *PoB) scheduleLoop() {
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
-					generateBlockTicker := time.NewTicker(time.Millisecond * 1000)
+					generateBlockTicker := time.NewTicker(time.Millisecond * 500)
 					num := 0
 					generateTxsNum = 0
 					for {
