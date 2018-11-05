@@ -1,8 +1,10 @@
 package tx
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
+	txpb "github.com/iost-official/go-iost/core/tx/pb"
+
+	"github.com/golang/protobuf/proto"
 )
 
 // StatusCode status code of transaction execution result
@@ -72,19 +74,19 @@ func NewTxReceipt(txHash []byte) *TxReceipt {
 	}
 }
 
-// ToTxReceiptRaw convert TxReceipt to proto buf data structure
-func (r *TxReceipt) ToTxReceiptRaw() *TxReceiptRaw {
-	tr := &TxReceiptRaw{
+// ToPb convert TxReceipt to proto buf data structure.
+func (r *TxReceipt) ToPb() *txpb.TxReceipt {
+	tr := &txpb.TxReceipt{
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
-		Status: &StatusRaw{
+		Status: &txpb.Status{
 			Code:    int32(r.Status.Code),
 			Message: r.Status.Message,
 		},
 		SuccActionNum: r.SuccActionNum,
 	}
 	for _, re := range r.Receipts {
-		tr.Receipts = append(tr.Receipts, &ReceiptRaw{
+		tr.Receipts = append(tr.Receipts, &txpb.Receipt{
 			Type:    int32(re.Type),
 			Content: re.Content,
 		})
@@ -94,15 +96,15 @@ func (r *TxReceipt) ToTxReceiptRaw() *TxReceiptRaw {
 
 // Encode TxReceipt as byte array
 func (r *TxReceipt) Encode() []byte {
-	b, err := proto.Marshal(r.ToTxReceiptRaw())
+	b, err := proto.Marshal(r.ToPb())
 	if err != nil {
 		panic(err)
 	}
 	return b
 }
 
-// FromTxReceiptRaw convert TxReceipt from proto buf data structure
-func (r *TxReceipt) FromTxReceiptRaw(tr *TxReceiptRaw) {
+// FromPb convert TxReceipt from proto buf data structure
+func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) {
 	r.TxHash = tr.TxHash
 	r.GasUsage = tr.GasUsage
 	r.Status = &Status{
@@ -121,12 +123,12 @@ func (r *TxReceipt) FromTxReceiptRaw(tr *TxReceiptRaw) {
 
 // Decode TxReceipt from byte array
 func (r *TxReceipt) Decode(b []byte) error {
-	tr := &TxReceiptRaw{}
-	err := proto.Unmarshal(b, tr)
+	tr := &txpb.TxReceipt{}
+	err := tr.Unmarshal(b)
 	if err != nil {
 		return err
 	}
-	r.FromTxReceiptRaw(tr)
+	r.FromPb(tr)
 	return nil
 }
 
@@ -136,10 +138,10 @@ func (r *TxReceipt) Hash() []byte {
 }
 
 func (r *TxReceipt) String() string {
-	tr := &TxReceiptRaw{
+	tr := &txpb.TxReceipt{
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
-		Status: &StatusRaw{
+		Status: &txpb.Status{
 			Code:    int32(r.Status.Code),
 			Message: r.Status.Message,
 		},

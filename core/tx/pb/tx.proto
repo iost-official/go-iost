@@ -1,20 +1,20 @@
 syntax = "proto3";
 
 import "github.com/iost-official/go-iost/crypto/signature.proto";
-package tx;
+package txpb;
 
-message ActionRaw {
+message Action {
     string contract = 1;
     string actionName = 2;
     string data = 3;
 }
 
-message TxRaw {
+message Tx {
     int64 time = 1;
     int64 expiration = 2;
     int64 gasLimit = 3;
     int64 gasPrice = 4;
-    repeated ActionRaw actions = 5;
+    repeated Action actions = 5;
     repeated string signers = 6;
     repeated crypto.SignatureRaw signs = 7;
     string publisher = 8;
@@ -23,20 +23,20 @@ message TxRaw {
     bytes referredTx = 11;
 }
 
-message ReceiptRaw {
+message Receipt {
     int32 type = 1;
     string content = 2;
 }
 
-message StatusRaw {
+message Status {
     int32 code = 1;
     string message = 2;
 }
 
-message TxReceiptRaw {
+message TxReceipt {
     bytes txHash = 1;
     int64 gasUsage = 2;
-    StatusRaw status = 3;
+    Status status = 3;
     int32 succActionNum = 4;
-    repeated ReceiptRaw receipts = 5;
+    repeated Receipt receipts = 5;
 }

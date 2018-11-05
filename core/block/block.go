@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
+	blockpb "github.com/iost-official/go-iost/core/block/pb"
 	"github.com/iost-official/go-iost/core/merkletree"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
@@ -13,7 +14,7 @@ import (
 // Block is the implementation of block
 type Block struct {
 	hash          []byte
-	Head          *BlockHead
+	Head          *blockpb.BlockHead
 	Sign          *crypto.Signature
 	Txs           []*tx.Tx
 	Receipts      []*tx.TxReceipt
@@ -41,9 +42,9 @@ func (b *Block) CalculateMerkleHash() []byte {
 
 // Encode is marshal
 func (b *Block) Encode() ([]byte, error) {
-	br := &BlockRaw{
+	br := &blockpb.Block{
 		Head:      b.Head,
-		BlockType: BlockType_NORMAL,
+		BlockType: blockpb.BlockType_NORMAL,
 	}
 	for _, t := range b.Txs {
 		br.Txs = append(br.Txs, t.ToTxRaw())
@@ -65,7 +66,7 @@ func (b *Block) Encode() ([]byte, error) {
 
 // Decode is unmarshal
 func (b *Block) Decode(blockByte []byte) error {
-	br := &BlockRaw{}
+	br := &blockpb.Block{}
 	err := proto.Unmarshal(blockByte, br)
 	if err != nil {
 		return errors.New("fail to decode blockraw")

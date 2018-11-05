@@ -1,0 +1,13 @@
+syntax = "proto3";
+package mtpb;
+
+message MerkleTree {
+    repeated bytes hash_list = 1;
+    map<string, int32> hash2_idx = 2;
+    int32  leaf_num = 3;
+}
+
+message TXRMerkleTree {
+    MerkleTree mt = 1;
+    map<string, bytes> tx2_txr = 2;
+}
