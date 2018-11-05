@@ -10,9 +10,9 @@ import (
 
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db/kv"
-	"go.uber.org/atomic"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
+	"github.com/uber-go/atomic"
 )
 
 func compareDelayTx(a, b interface{}) int {
