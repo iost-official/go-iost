@@ -17,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
+	"io/ioutil"
 )
 
 func benchInit() (Engine, *database.Visitor) {
@@ -145,7 +146,7 @@ func BenchmarkJS_Gas_Once(b *testing.B) { // 443 us/op
 	ilog.Stop()
 	js := NewJSTester(b)
 	defer js.Clear()
-	f, err := ReadFile("test_data/gas.js")
+	f, err := ioutil.ReadFile("test_data/gas.js")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -179,7 +180,7 @@ func BenchmarkJS_Gas_100(b *testing.B) { // 483 um/op
 	js := NewJSTester(b)
 	js.vi.SetBalance(testID[0], 10000000000)
 	defer js.Clear()
-	f, err := ReadFile("test_data/gas.js")
+	f, err := ioutil.ReadFile("test_data/gas.js")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -213,7 +214,7 @@ func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
 	js := NewJSTester(b)
 	js.vi.SetBalance(testID[0], 10000000000)
 	defer js.Clear()
-	f, err := ReadFile("test_data/gas.js")
+	f, err := ioutil.ReadFile("test_data/gas.js")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -246,7 +247,7 @@ func Benchmark_JS_Transfer(b *testing.B) {
 	ilog.Stop()
 	js := NewJSTester(b)
 	defer js.Clear()
-	f, err := ReadFile("test_data/transfer.js")
+	f, err := ioutil.ReadFile("test_data/transfer.js")
 	if err != nil {
 		b.Fatal(err)
 	}

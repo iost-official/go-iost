@@ -31,13 +31,13 @@ func watchTime(f func()) time.Duration {
 }
 
 func Compile(id, src, abi string) (*contract.Contract, error) {
-	bs, err := ReadFile(src + ".js")
+	bs, err := ioutil.ReadFile(src + ".js")
 	if err != nil {
 		return nil, err
 	}
 	code := string(bs)
 
-	as, err := ReadFile(abi + ".abi")
+	as, err := ioutil.ReadFile(abi + ".abi")
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ var adminID string
 
 func prepareContract(t *testing.T) *JSTester {
 	js := NewJSTester(t)
-	lc, err := ReadFile("../contract/vote.js")
+	lc, err := ioutil.ReadFile("../contract/vote.js")
 	if err != nil {
 		t.Fatal(err)
 	}

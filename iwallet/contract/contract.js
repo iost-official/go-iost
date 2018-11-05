@@ -71,6 +71,17 @@ function genAbiArr(stat) {
 	return abiArr;
 }
 
+function checkOperator(tokens) {
+    for (var i = 0; i < tokens.length; i++) {
+        if (tokens[i].type === "Punctuator" &&
+            (tokens[i].value === "+" || tokens[i].value === "-" || tokens[i].value === "*" || tokens[i].value === "/" || tokens[i].value === "%" ||
+                tokens[i].value === "+=" || tokens[i].value === "-=" || tokens[i].value === "*=" || tokens[i].value === "/=" || tokens[i].value === "%=" ||
+                tokens[i].value === "++" || tokens[i].value === "--")) {
+            throw new Error("use of +-*/% operators is not allowed");
+        }
+    }
+}
+
 function processContract(source) {
 	var newSource, abi;
     var ast = esprima.parseModule(source, {
@@ -82,8 +93,11 @@ function processContract(source) {
 	var abiArr = [];
 	if (!ast || ast === null || !ast.body || ast.body === null || ast.body.length === 0) {
 		console.error("invalid source! ast = " + ast);
-		return ["", ""]
+		return ["", ""];
 	}
+
+	checkOperator(ast.tokens);
+
 	var validRange = [];
 	var className;
 	for (var i in ast.body) {

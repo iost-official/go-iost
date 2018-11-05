@@ -37,7 +37,6 @@ func prepareContract(t fataler, s *Simulator) {
 
 	for i := 0; i < 18; i += 2 {
 		s.SetAccount(account.NewInitAccount(testID[i], testID[i], testID[i]))
-		s.Visitor.SetBalance(testID[i], 1000000000)
 		s.SetGas(testID[i], 100000)
 	}
 	// deploy iost.token
