@@ -14,7 +14,7 @@ import (
 func CheckPublisher(db database.IMultiValue, t *tx.Tx) error {
 	auth := map[string]int{}
 	for _, sig := range t.PublishSigns {
-		auth[account.GetIDByPubkey(sig.Pubkey)]	= 2
+		auth[account.GetIDByPubkey(sig.Pubkey)] = 2
 	}
 	reenter := make(map[string]int)
 	vi := database.NewVisitor(0, db)

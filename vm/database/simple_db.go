@@ -182,7 +182,7 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 		return nil, err
 	}
 	t.PublishSigns = append(t.PublishSigns, &crypto.Signature{
-		Pubkey:	account.GetPubkeyByID(p),
+		Pubkey: account.GetPubkeyByID(p),
 	})
 	t.GasLimit, err = json.Get("gas_limit").Int64()
 	if err != nil {
