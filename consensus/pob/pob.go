@@ -312,7 +312,7 @@ func (p *PoB) scheduleLoop() {
 						if num < generateTxsNum-2 {
 							limitTime = time.Millisecond * 400
 						} else {
-							limitTime = time.Millisecond * 20
+							limitTime = 0
 						}
 						blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
 						p.txPool.Release()
@@ -326,7 +326,7 @@ func (p *PoB) scheduleLoop() {
 							continue
 						}
 						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
-						ilog.Infof("[pob] generate block time cost: %v", calculateTime(blk))
+						ilog.Infof("[pob] generate block time cost: %v, %v, %v, %v", num, limitTime, calculateTime(blk), p.account.ID[4:6])
 						metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
 						if num == continuousNum-1 {
 							err = p.handleRecvBlock(blk)
