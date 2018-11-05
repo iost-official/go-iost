@@ -45,10 +45,10 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitCh:           make(chan struct{}),
 	}
 	p.forkChain.NewHead = blockCache.Head()
-	deferServer, err := NewDeferServer("DelayTxDB", p)
-	if err != nil {
-		return nil, err
-	}
+	deferServer, _ := NewDeferServer("DelayTxDB", p)
+	/*  if err != nil { */
+	// return nil, err
+	/* } */
 	p.deferServer = deferServer
 	close(p.quitGenerateMode)
 	return p, nil
