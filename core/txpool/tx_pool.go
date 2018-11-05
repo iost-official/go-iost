@@ -75,7 +75,7 @@ func (pool *TxPImpl) AddDefertx(t *tx.Tx) error {
 		return err
 	}
 	t.Actions = referredTx.Actions
-	t.Expiration = referredTx.Expiration + referredTx.DelaySecond
+	t.Expiration = referredTx.Expiration + referredTx.Delay
 	t.GasLimit = referredTx.GasLimit
 	t.GasPrice = referredTx.GasPrice
 	t.ReferredTx = nil
@@ -316,6 +316,12 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 		if err != nil {
 			return fmt.Errorf("get referred tx error, %v", err)
 		}
+		if referredTx.Time+referredTx.Delay != t.Time {
+			return errors.New("unmatched referred tx delay time")
+		}
+		if referredTx.Expiration+referredTx.Delay != t.Expiration {
+			return errors.New("unmatched referred tx expiration time")
+		}
 		if len(referredTx.Actions) != len(t.Actions) {
 			return errors.New("unmatched referred tx action length")
 		}
@@ -403,10 +409,10 @@ func (pool *TxPImpl) clearBlock() {
 
 func (pool *TxPImpl) addTx(tx *tx.Tx) error {
 	if pool.existTxInPending(tx.Hash()) {
-		return fmt.Errorf("DupError. tx exists in pending")
+		return errors.New("DupError. tx exists in pending")
 	}
 	if pool.existTxInChain(tx.Hash(), pool.forkChain.NewHead.Block) {
-		return fmt.Errorf("DupError. tx exists in chain")
+		return errors.New("DupError. tx exists in chain")
 	}
 	pool.pendingTx.Add(tx)
 	return nil

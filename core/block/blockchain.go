@@ -101,7 +101,7 @@ func (bc *BlockChain) Push(block *Block) error {
 		bc.blockChainDB.Put(append(receiptPrefix, rHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(bReceiptPrefix, append(hash, rHash...)...), block.Receipts[i].Encode())
 
-		if tx.DelaySecond > 0 {
+		if tx.Delay > 0 {
 
 		}
 	}

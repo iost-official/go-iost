@@ -118,13 +118,13 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 
 	txr := tx.NewTxReceipt(e.t.Hash())
 
-	if e.t.DelaySecond > 0 {
+	if e.t.Delay > 0 {
 		e.h.DB().StoreDelaytx(string(e.t.Hash()))
 		txr.Status = &tx.Status{
 			Code:    tx.Success,
 			Message: "",
 		}
-		txr.GasUsage = e.t.DelaySecond
+		txr.GasUsage = e.t.Delay / 1e9
 		return txr, nil
 	}
 

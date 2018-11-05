@@ -3,12 +3,14 @@ package txpool
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db/kv"
+	"go.uber.org/atomic"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
 )
@@ -26,8 +28,9 @@ func compareDelayTx(a, b interface{}) int {
 type DeferServer struct {
 	deferTxDB *kv.Storage
 
-	index *redblacktree.Tree
-	rw    *sync.RWMutex
+	index            *redblacktree.Tree
+	rw               *sync.RWMutex
+	nextScheduleTime atomic.Int64
 
 	txpool *TxPImpl
 
@@ -98,12 +101,24 @@ func (d *DeferServer) DelDelaytx(txHash []byte) error {
 func (d *DeferServer) StoreDelaytx(t *tx.Tx) {
 	newTx := &tx.Tx{
 		ReferredTx: t.ReferredTx,
-		Time:       t.Time + t.DelaySecond,
+		Time:       t.Time + t.Delay,
 	}
 	d.deferTxDB.Put(t.Hash(), newTx.Encode())
 	d.rw.Lock()
 	d.index.Put(newTx, true)
 	d.rw.Unlock()
+	if newTx.Time < d.nextScheduleTime.Load() {
+		d.nextScheduleTime.Store(newTx.Time)
+		d.restartDeferTicker()
+	}
+}
+
+// DumpDelayTx dumps all delay transactions for debug.
+func (d *DeferServer) DumpDelayTx() []*tx.Tx {
+	ret := make([]*tx.Tx, 0)
+	d.rw.RLock()
+	d.rw.RUnlock()
+	return ret
 }
 
 // Start starts the defer server.
@@ -114,15 +129,26 @@ func (d *DeferServer) Start() error {
 
 // Stop stops the defer server.
 func (d *DeferServer) Stop() {
-	close(d.quitCh)
+	d.stopDeferTicker()
+}
+
+func (d *DeferServer) stopDeferTicker() {
+	d.quitCh <- struct{}{}
+	<-d.quitCh
+}
+
+func (d *DeferServer) restartDeferTicker() {
+	d.stopDeferTicker()
+	go d.deferTicker()
 }
 
 func (d *DeferServer) deferTicker() {
 	for {
 		select {
 		case <-d.quitCh:
+			d.quitCh <- struct{}{}
 			return
-		case <-time.After(time.Second):
+		case <-time.After(time.Duration(d.nextScheduleTime.Load() - time.Now().UnixNano())):
 			iter := d.index.Iterator()
 			d.rw.RLock()
 			ok := iter.Next()
@@ -130,6 +156,7 @@ func (d *DeferServer) deferTicker() {
 			for ok {
 				newTx := iter.Key().(*tx.Tx)
 				if newTx.Time > time.Now().UnixNano() {
+					d.nextScheduleTime.Store(newTx.Time)
 					break
 				}
 				err := d.txpool.AddDefertx(newTx)
@@ -141,6 +168,9 @@ func (d *DeferServer) deferTicker() {
 				d.rw.RLock()
 				ok = iter.Next()
 				d.rw.RUnlock()
+			}
+			if !ok {
+				d.nextScheduleTime.Store(math.MaxInt64)
 			}
 		}
 	}
