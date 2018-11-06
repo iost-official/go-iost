@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package message;
+package msgpb;
 
 message BlockInfo {
     int64 number = 1;
