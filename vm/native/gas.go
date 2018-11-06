@@ -37,10 +37,10 @@ var gasABIs map[string]*abi
 
 func init() {
 	gasABIs = make(map[string]*abi)
-	register(&gasABIs, constructor)
-	register(&gasABIs, initFunc)
-	register(&gasABIs, pledgeGas)
-	register(&gasABIs, unpledgeGas)
+	register(gasABIs, constructor)
+	register(gasABIs, initFunc)
+	register(gasABIs, pledgeGas)
+	register(gasABIs, unpledgeGas)
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.

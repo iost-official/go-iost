@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+import "github.com/iost-official/go-iost/crypto/pb/signature.proto";
+package txpb;
+
+message Action {
+    string contract = 1;
+    string actionName = 2;
+    string data = 3;
+}
+
+message Tx {
+    int64 time = 1;
+    int64 expiration = 2;
+    int64 gasLimit = 3;
+    int64 gasPrice = 4;
+    repeated Action actions = 5;
+    repeated string signers = 6;
+    repeated sigpb.Signature signs = 7;
+    string publisher = 8;
+    repeated sigpb.Signature publishSigns = 9;
+    int64 delay = 10;
+    bytes referredTx = 11;
+}
+
+message Receipt {
+    string funcName = 1;
+    string content = 2;
+}
+
+message Status {
+    int32 code = 1;
+    string message = 2;
+}
+
+message TxReceipt {
+    bytes txHash = 1;
+    int64 gasUsage = 2;
+    map<string, int64> ramUsage = 3;
+    Status status = 4;
+    repeated Return returns = 5;
+    repeated Receipt receipts = 6;
+
+}
+
+message Return {
+    string funcName = 1;
+    string value = 2;
+}

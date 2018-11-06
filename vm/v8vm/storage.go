@@ -41,8 +41,12 @@ func goGet(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) *C.char {
 	val, cost := sbx.host.Get(k)
 
 	*gasUsed = C.size_t(cost.Data)
-	valStr, _ := dbValToString(val)
 
+	if val == nil {
+		return nil
+	}
+
+	valStr, _ := dbValToString(val)
 	return C.CString(valStr)
 }
 
@@ -106,8 +110,12 @@ func goMapGet(cSbx C.SandboxPtr, key, field *C.char, gasUsed *C.size_t) *C.char 
 	val, cost := sbx.host.MapGet(k, f)
 
 	*gasUsed = C.size_t(cost.Data)
-	valStr, _ := dbValToString(val)
 
+	if val == nil {
+		return nil
+	}
+
+	valStr, _ := dbValToString(val)
 	return C.CString(valStr)
 }
 
@@ -156,12 +164,15 @@ func goGlobalGet(cSbx C.SandboxPtr, contractName, key *C.char, gasUsed *C.size_t
 
 	c := C.GoString(contractName)
 	k := C.GoString(key)
-
 	val, cost := sbx.host.GlobalGet(c, k)
-	valStr, _ := dbValToString(val)
 
 	*gasUsed = C.size_t(cost.Data)
 
+	if val == nil {
+		return nil
+	}
+
+	valStr, _ := dbValToString(val)
 	return C.CString(valStr)
 }
 
@@ -171,8 +182,6 @@ func dbValToString(val interface{}) (string, error) {
 		return strconv.FormatInt(v, 10), nil
 	case string:
 		return v, nil
-	case nil:
-		return "nil", nil
 	case bool:
 		return strconv.FormatBool(v), nil
 	case []byte:

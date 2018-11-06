@@ -7,6 +7,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
+	txpb "github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -53,9 +54,9 @@ func TestTx(t *testing.T) {
 		a3, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 
 		Convey("proto marshal", func() {
-			tx := &TxRaw{
+			tx := &txpb.Tx{
 				Time: 99,
-				Actions: []*ActionRaw{{
+				Actions: []*txpb.Action{{
 					Contract:   "contract1",
 					ActionName: "actionname1",
 					Data:       "{\"num\": 1, \"message\": \"contract1\"}",
@@ -65,7 +66,7 @@ func TestTx(t *testing.T) {
 			b, err := proto.Marshal(tx)
 			So(err, ShouldEqual, nil)
 
-			var tx1 *TxRaw = &TxRaw{}
+			var tx1 *txpb.Tx = &txpb.Tx{}
 
 			err = proto.Unmarshal(b, tx1)
 			So(err, ShouldEqual, nil)
@@ -88,7 +89,7 @@ func TestTx(t *testing.T) {
 			sig, err := SignTxContent(tx, a1.ID, a1)
 			So(err, ShouldEqual, nil)
 
-			_, err = SignTx(tx, a1.ID, a1, sig)
+			_, err = SignTx(tx, a1.ID, []*account.KeyPair{a1}, sig)
 			So(err, ShouldEqual, nil)
 
 			hash = tx.Hash()
@@ -119,10 +120,12 @@ func TestTx(t *testing.T) {
 				So(bytes.Equal(tx.Signs[i].Pubkey, tx1.Signs[i].Pubkey), ShouldBeTrue)
 				So(bytes.Equal(tx.Signs[i].Sig, tx1.Signs[i].Sig), ShouldBeTrue)
 			}
-			So(tx.PublishSign == nil && tx1.PublishSign == nil || tx.PublishSign.Algorithm == tx1.PublishSign.Algorithm, ShouldBeTrue)
-			So(tx.PublishSign == nil && tx1.PublishSign == nil || bytes.Equal(tx.PublishSign.Pubkey, tx1.PublishSign.Pubkey), ShouldBeTrue)
-			So(tx.PublishSign == nil && tx1.PublishSign == nil || bytes.Equal(tx.PublishSign.Sig, tx1.PublishSign.Sig), ShouldBeTrue)
-
+			So(len(tx.PublishSigns), ShouldEqual, len(tx1.PublishSigns))
+			for i := 0; i < len(tx.PublishSigns); i++ {
+				So(tx.PublishSigns[i].Algorithm, ShouldEqual, tx1.PublishSigns[i].Algorithm)
+				So(bytes.Equal(tx.PublishSigns[i].Pubkey, tx1.PublishSigns[i].Pubkey), ShouldBeTrue)
+				So(bytes.Equal(tx.PublishSigns[i].Sig, tx1.PublishSigns[i].Sig), ShouldBeTrue)
+			}
 		})
 
 		Convey("sign and verify", func() {
@@ -136,18 +139,18 @@ func TestTx(t *testing.T) {
 			tx.Signs = append(tx.Signs, sig2)
 
 			err = tx.VerifySelf()
-			So(err.Error(), ShouldEqual, "publisher error")
+			So(err.Error(), ShouldEqual, "publisher empty error")
 
-			tx3, err := SignTx(tx, a3.ID, a3)
+			tx3, err := SignTx(tx, a3.ID, []*account.KeyPair{a3})
 			So(err, ShouldBeNil)
 			err = tx3.VerifySelf()
 			So(err, ShouldBeNil)
 
-			tx.PublishSign = &crypto.Signature{
+			tx.PublishSigns = []*crypto.Signature{&crypto.Signature{
 				Algorithm: crypto.Secp256k1,
 				Sig:       []byte("hello"),
 				Pubkey:    []byte("world"),
-			}
+			}}
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "publisher error")
 

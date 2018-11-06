@@ -13,8 +13,8 @@ var DomainABIs map[string]*abi
 
 func init() {
 	DomainABIs = make(map[string]*abi)
-	register(&DomainABIs, link)
-	register(&DomainABIs, transferURL)
+	register(DomainABIs, link)
+	register(DomainABIs, transferURL)
 
 }
 

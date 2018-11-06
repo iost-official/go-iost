@@ -3,12 +3,80 @@ package block
 import (
 	"errors"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
+	blockpb "github.com/iost-official/go-iost/core/block/pb"
 	"github.com/iost-official/go-iost/core/merkletree"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 )
+
+// BlockHead is the struct of block head.
+type BlockHead struct { // nolint
+	Version    int64
+	ParentHash []byte
+	TxsHash    []byte
+	MerkleHash []byte
+	Info       []byte
+	Number     int64
+	Witness    string
+	Time       int64
+}
+
+// ToPb convert BlockHead to proto buf data structure.
+func (b *BlockHead) ToPb() *blockpb.BlockHead {
+	return &blockpb.BlockHead{
+		Version:    b.Version,
+		ParentHash: b.ParentHash,
+		TxsHash:    b.TxsHash,
+		MerkleHash: b.MerkleHash,
+		Info:       b.Info,
+		Number:     b.Number,
+		Witness:    b.Witness,
+		Time:       b.Time,
+	}
+}
+
+// FromPb convert BlockHead from proto buf data structure.
+func (b *BlockHead) FromPb(bh *blockpb.BlockHead) *BlockHead {
+	b.Version = bh.Version
+	b.ParentHash = bh.ParentHash
+	b.TxsHash = bh.TxsHash
+	b.MerkleHash = bh.MerkleHash
+	b.Info = bh.Info
+	b.Number = bh.Number
+	b.Witness = bh.Witness
+	b.Time = bh.Time
+	return b
+}
+
+// Encode is marshal
+func (b *BlockHead) Encode() ([]byte, error) {
+	bhByte, err := b.ToPb().Marshal()
+	if err != nil {
+		return nil, errors.New("fail to encode blockhead")
+	}
+	return bhByte, nil
+}
+
+// Decode is unmarshal
+func (b *BlockHead) Decode(bhByte []byte) error {
+	bh := &blockpb.BlockHead{}
+	err := bh.Unmarshal(bhByte)
+	if err != nil {
+		return errors.New("fail to decode blockhead")
+	}
+	b.FromPb(bh)
+	return nil
+}
+
+// Hash return hash
+func (b *BlockHead) Hash() ([]byte, error) {
+	bhByte, err := b.Encode()
+	if err != nil {
+		return nil, err
+	}
+	return common.Sha3(bhByte), nil
+}
 
 // Block is the implementation of block
 type Block struct {
@@ -25,7 +93,9 @@ type Block struct {
 func (b *Block) CalculateTxsHash() []byte {
 	hash := make([]byte, 0)
 	for _, tx := range b.Txs {
-		hash = append(hash, tx.PublishSign.Sig...)
+		for _, sig := range tx.PublishSigns {
+			hash = append(hash, sig.Sig...)
+		}
 	}
 	return common.Sha3(hash)
 }
@@ -39,22 +109,19 @@ func (b *Block) CalculateMerkleHash() []byte {
 
 // Encode is marshal
 func (b *Block) Encode() ([]byte, error) {
-	br := &BlockRaw{
-		Head:      b.Head,
-		BlockType: BlockType_NORMAL,
+	br := &blockpb.Block{
+		Head:      b.Head.ToPb(),
+		BlockType: blockpb.BlockType_NORMAL,
 	}
 	for _, t := range b.Txs {
-		br.Txs = append(br.Txs, t.ToTxRaw())
+		br.Txs = append(br.Txs, t.ToPb())
 	}
 	for _, r := range b.Receipts {
-		br.Receipts = append(br.Receipts, r.ToTxReceiptRaw())
+		br.Receipts = append(br.Receipts, r.ToPb())
 	}
-	br.Sign = &crypto.SignatureRaw{
-		Algorithm: int32(b.Sign.Algorithm),
-		Sig:       b.Sign.Sig,
-		PubKey:    b.Sign.Pubkey,
-	}
-	brByte, err := proto.Marshal(br)
+
+	br.Sign = b.Sign.ToPb()
+	brByte, err := br.Marshal()
 	if err != nil {
 		return nil, errors.New("fail to encode blockraw")
 	}
@@ -63,34 +130,32 @@ func (b *Block) Encode() ([]byte, error) {
 
 // Decode is unmarshal
 func (b *Block) Decode(blockByte []byte) error {
-	br := &BlockRaw{}
-	err := proto.Unmarshal(blockByte, br)
+	br := &blockpb.Block{}
+	err := br.Unmarshal(blockByte)
 	if err != nil {
 		return errors.New("fail to decode blockraw")
 	}
-	b.Head = br.Head
+	h := &BlockHead{}
+	h.FromPb(br.Head)
+	b.Head = h
+
 	b.TxHashes = nil
-	b.Sign = &crypto.Signature{
-		Algorithm: crypto.Algorithm(br.Sign.Algorithm),
-		Sig:       br.Sign.Sig,
-		Pubkey:    br.Sign.PubKey,
-	}
+	sig := &crypto.Signature{}
+	b.Sign = sig.FromPb(br.Sign)
 	if err != nil {
 		return errors.New("fail to decode signature")
 	}
 	switch br.BlockType {
-	case BlockType_NORMAL:
+	case blockpb.BlockType_NORMAL:
 		for _, t := range br.Txs {
-			var tt tx.Tx
-			tt.FromTxRaw(t)
-			b.Txs = append(b.Txs, &tt)
+			tt := &tx.Tx{}
+			b.Txs = append(b.Txs, tt.FromPb(t))
 		}
 		for _, r := range br.Receipts {
-			var rcpt tx.TxReceipt
-			rcpt.FromTxReceiptRaw(r)
-			b.Receipts = append(b.Receipts, &rcpt)
+			rcpt := &tx.TxReceipt{}
+			b.Receipts = append(b.Receipts, rcpt.FromPb(r))
 		}
-	case BlockType_ONLYHASH:
+	case blockpb.BlockType_ONLYHASH:
 		b.TxHashes = br.TxHashes
 		b.ReceiptHashes = br.ReceiptHashes
 	}
@@ -114,51 +179,20 @@ func (b *Block) LenTx() int {
 	return len(b.Txs)
 }
 
-// Encode is marshal
-func (b *BlockHead) Encode() ([]byte, error) {
-	bhByte, err := proto.Marshal(b)
-	if err != nil {
-		return nil, errors.New("fail to encode blockhead")
-	}
-	return bhByte, nil
-}
-
-// Decode is unmarshal
-func (b *BlockHead) Decode(bhByte []byte) error {
-	err := proto.Unmarshal(bhByte, b)
-	if err != nil {
-		return errors.New("fail to decode blockhead")
-	}
-	return nil
-}
-
-// Hash return hash
-func (b *BlockHead) Hash() ([]byte, error) {
-	bhByte, err := b.Encode()
-	if err != nil {
-		return nil, err
-	}
-	return common.Sha3(bhByte), nil
-}
-
 // EncodeM is marshal
 func (b *Block) EncodeM() ([]byte, error) {
-	br := &BlockRaw{
-		Head:      b.Head,
-		BlockType: BlockType_ONLYHASH,
+	br := &blockpb.Block{
+		Head:      b.Head.ToPb(),
+		BlockType: blockpb.BlockType_ONLYHASH,
 	}
-	br.Sign = &crypto.SignatureRaw{
-		Algorithm: int32(b.Sign.Algorithm),
-		Sig:       b.Sign.Sig,
-		PubKey:    b.Sign.Pubkey,
-	}
+	br.Sign = b.Sign.ToPb()
 	for _, t := range b.Txs {
 		br.TxHashes = append(br.TxHashes, t.Hash())
 	}
 	for _, r := range b.Receipts {
 		br.ReceiptHashes = append(br.ReceiptHashes, r.Hash())
 	}
-	brByte, err := proto.Marshal(br)
+	brByte, err := br.Marshal()
 	if err != nil {
 		return nil, errors.New("fail to encode blockraw")
 	}

@@ -248,8 +248,7 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 		return err
 	}
 	if r.Status != receipt.Status ||
-		r.GasUsage != receipt.GasUsage ||
-		r.SuccActionNum != receipt.SuccActionNum {
+		r.GasUsage != receipt.GasUsage {
 		return fmt.Errorf("receipt not match: %v, %v", r, receipt)
 	}
 	isolator.Commit()

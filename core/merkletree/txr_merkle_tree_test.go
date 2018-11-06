@@ -18,19 +18,19 @@ func TestTXRMerkleTree(t *testing.T) {
 	convey.Convey("Test of TXR", t, func() {
 		m := TXRMerkleTree{}
 		txrs := []*tx.TxReceipt{
-			{TxHash: []byte("node1")},
-			{TxHash: []byte("node2")},
-			{TxHash: []byte("node3")},
-			{TxHash: []byte("node4")},
-			{TxHash: []byte("node5")},
+			tx.NewTxReceipt([]byte("node1")),
+			tx.NewTxReceipt([]byte("node2")),
+			tx.NewTxReceipt([]byte("node3")),
+			tx.NewTxReceipt([]byte("node4")),
+			tx.NewTxReceipt([]byte("node5")),
 		}
 		m.Build(txrs)
-		convey.So(hex.EncodeToString(m.Tx2Txr["node1"]), convey.ShouldEqual, "0a056e6f6465311a00")
+		convey.So(hex.EncodeToString(m.Tx2Txr["node1"]), convey.ShouldEqual, "0a056e6f6465312200")
 		txr, err := m.GetTXR([]byte("node1"))
 		if err != nil {
 			log.Panic(err)
 		}
-		convey.So(hex.EncodeToString(txr.Encode()), convey.ShouldEqual, "0a056e6f6465311a00")
+		convey.So(hex.EncodeToString(txr.Encode()), convey.ShouldEqual, "0a056e6f6465312200")
 
 		b, err := m.Encode()
 		if err != nil {
@@ -53,7 +53,7 @@ func BenchmarkTXRMerkleTree_Build(b *testing.B) { // 2439313ns = 2.4ms
 	var txrs []*tx.TxReceipt
 	for i := 0; i < 3000; i++ {
 		fmt.Println(i)
-		txrs = append(txrs, &tx.TxReceipt{TxHash: []byte("node1")})
+		txrs = append(txrs, tx.NewTxReceipt([]byte("node1")))
 	}
 	m := TXRMerkleTree{}
 	b.ResetTimer()

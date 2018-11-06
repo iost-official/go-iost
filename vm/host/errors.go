@@ -25,4 +25,6 @@ var (
 	ErrTokenNotExists    = errors.New("token not exists")
 	ErrTokenNoTransfer   = errors.New("token can't transfer")
 	ErrTokenIssueRefused = errors.New("token issue refused")
+
+	ErrDelaytxNotFound = errors.New("delaytx not exists")
 )
