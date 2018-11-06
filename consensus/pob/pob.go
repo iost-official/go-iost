@@ -5,13 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/message"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
@@ -111,8 +108,8 @@ func (p *PoB) messageLoop() {
 				return
 			}
 			if p.baseVariable.Mode() == global.ModeNormal {
-				var blkInfo message.BlockInfo
-				err := proto.Unmarshal(incomingMessage.Data(), &blkInfo)
+				var blkInfo msgpb.BlockInfo
+				blkInfo.Unmarshal(incomingMessage.Data())
 				if err != nil {
 					continue
 				}
@@ -124,7 +121,7 @@ func (p *PoB) messageLoop() {
 				return
 			}
 			if p.baseVariable.Mode() == global.ModeNormal {
-				var rh message.BlockInfo
+				var rh msgpb.BlockInfo
 				err := rh.Unmarshal(incomingMessage.Data())
 				if err != nil {
 					continue
@@ -137,7 +134,7 @@ func (p *PoB) messageLoop() {
 	}
 }
 
-func (p *PoB) handleRecvBlockHash(blkInfo *message.BlockInfo, peerID p2p.PeerID) {
+func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
 	_, ok := p.blockReqMap.Load(string(blkInfo.Hash))
 	if ok {
 		ilog.Info("block in block request map, block number: ", blkInfo.Number)
@@ -148,7 +145,7 @@ func (p *PoB) handleRecvBlockHash(blkInfo *message.BlockInfo, peerID p2p.PeerID)
 		ilog.Info("duplicate block, block number: ", blkInfo.Number)
 		return
 	}
-	bytes, err := proto.Marshal(blkInfo)
+	bytes, err := blkInfo.Marshal()
 	if err != nil {
 		ilog.Debugf("fail to Marshal requestblock, %v", err)
 		return
@@ -159,7 +156,7 @@ func (p *PoB) handleRecvBlockHash(blkInfo *message.BlockInfo, peerID p2p.PeerID)
 	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage, true)
 }
 
-func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
+func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 	var b []byte
 	var err error
 	node, err := p.blockCache.Find(rh.Hash)
@@ -182,11 +179,11 @@ func (p *PoB) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
 }
 
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
-	blkInfo := &message.BlockInfo{
+	blkInfo := &msgpb.BlockInfo{
 		Number: blk.Head.Number,
 		Hash:   blk.HeadHash(),
 	}
-	b, err := proto.Marshal(blkInfo)
+	b, err := blkInfo.Marshal()
 	if err != nil {
 		ilog.Error("fail to encode block hash")
 	} else {
