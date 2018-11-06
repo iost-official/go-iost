@@ -381,14 +381,17 @@
     "EventTopic": {
       "type": "string",
       "enum": [
-        "TransactionResult",
+        "ContractReceipt",
         "ContractEvent",
-        "ContractUserEvent",
-        "ContractSystemEvent"
+        "TransactionResult",
+        "TransactionConfirm",
+        "TransactionPending",
+        "NewBlock",
+        "ProducerState"
       ],
-      "default": "TransactionResult"
+      "default": "ContractReceipt"
     },
-    "blockBlockHead": {
+    "blockpbBlockHead": {
       "type": "object",
       "properties": {
         "version": {
@@ -462,8 +465,7 @@
           "type": "string"
         },
         "val": {
-          "type": "string",
-          "format": "int64"
+          "type": "string"
         }
       }
     },
@@ -551,7 +553,7 @@
       "type": "object",
       "properties": {
         "head": {
-          "$ref": "#/definitions/blockBlockHead",
+          "$ref": "#/definitions/blockpbBlockHead",
           "title": "BlockHead"
         },
         "hash": {
@@ -561,7 +563,7 @@
         "txs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/txTxRaw"
+            "$ref": "#/definitions/txpbTx"
           },
           "title": "transaction list,works when complete is true"
         },
@@ -575,7 +577,7 @@
         "receipts": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/txTxReceiptRaw"
+            "$ref": "#/definitions/txpbTxReceipt"
           },
           "title": "transaction receipt list"
         },
@@ -621,7 +623,7 @@
       "type": "object",
       "properties": {
         "txReceiptRaw": {
-          "$ref": "#/definitions/txTxReceiptRaw",
+          "$ref": "#/definitions/txpbTxReceipt",
           "title": "not support yet"
         }
       }
@@ -749,7 +751,7 @@
       "type": "object",
       "properties": {
         "txReceiptRaw": {
-          "$ref": "#/definitions/txTxReceiptRaw",
+          "$ref": "#/definitions/txpbTxReceipt",
           "title": "transaction receipt"
         },
         "hash": {
@@ -761,7 +763,7 @@
       "type": "object",
       "properties": {
         "txRaw": {
-          "$ref": "#/definitions/txTxRaw",
+          "$ref": "#/definitions/txpbTx",
           "title": "the queried transaction"
         },
         "hash": {
@@ -770,7 +772,7 @@
         }
       }
     },
-    "txActionRaw": {
+    "txpbAction": {
       "type": "object",
       "properties": {
         "contract": {
@@ -784,19 +786,29 @@
         }
       }
     },
-    "txReceiptRaw": {
+    "txpbReceipt": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "integer",
-          "format": "int32"
+        "funcName": {
+          "type": "string"
         },
         "content": {
           "type": "string"
         }
       }
     },
-    "txStatusRaw": {
+    "txpbReturn": {
+      "type": "object",
+      "properties": {
+        "funcName": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "txpbStatus": {
       "type": "object",
       "properties": {
         "code": {
@@ -808,7 +820,7 @@
         }
       }
     },
-    "txTxRaw": {
+    "txpbTx": {
       "type": "object",
       "properties": {
         "time": {
@@ -830,14 +842,13 @@
         "actions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/txActionRaw"
+            "$ref": "#/definitions/txpbAction"
           }
         },
         "signers": {
           "type": "array",
           "items": {
-            "type": "string",
-            "format": "byte"
+            "type": "string"
           }
         },
         "signs": {
@@ -847,11 +858,25 @@
           }
         },
         "publisher": {
-          "$ref": "#/definitions/cryptoSignatureRaw"
+          "type": "string"
+        },
+        "publishSigns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/cryptoSignatureRaw"
+          }
+        },
+        "delay": {
+          "type": "string",
+          "format": "int64"
+        },
+        "referredTx": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
-    "txTxReceiptRaw": {
+    "txpbTxReceipt": {
       "type": "object",
       "properties": {
         "txHash": {
@@ -862,17 +887,26 @@
           "type": "string",
           "format": "int64"
         },
-        "status": {
-          "$ref": "#/definitions/txStatusRaw"
+        "ramUsage": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
         },
-        "succActionNum": {
-          "type": "integer",
-          "format": "int32"
+        "status": {
+          "$ref": "#/definitions/txpbStatus"
+        },
+        "returns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/txpbReturn"
+          }
         },
         "receipts": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/txReceiptRaw"
+            "$ref": "#/definitions/txpbReceipt"
           }
         }
       }

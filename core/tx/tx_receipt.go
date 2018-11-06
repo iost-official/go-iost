@@ -1,8 +1,12 @@
 package tx
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
+	txpb "github.com/iost-official/go-iost/core/tx/pb"
+
+	"fmt"
+
+	"github.com/golang/protobuf/proto"
 )
 
 // StatusCode status code of transaction execution result
@@ -20,6 +24,12 @@ const (
 	ErrorDuplicateSetCode // more than one set code action in a tx
 	ErrorUnknown          // other errors
 )
+
+// Return is the result of txreceipt.
+type Return struct {
+	FuncName string
+	Value    string
+}
 
 // Status status of transaction execution result, including code and message
 type Status struct {
@@ -39,7 +49,8 @@ const (
 
 // Receipt generated when applying transaction
 type Receipt struct {
-	ReceiptRaw
+	FuncName string
+	Content  string // can be a raw string or a json string
 }
 
 // TxReceipt Transaction Receipt
@@ -47,79 +58,98 @@ type TxReceipt struct { //nolint:golint
 	TxHash   []byte
 	GasUsage int64
 	RAMUsage map[string]int64
-	/*
-		CpuTimeUsage    uint64
-		NetUsage    uint64
-	*/
-	Status   Status
+	Status   *Status
 	Returns  []*Return
-	Receipts []Receipt
+	Receipts []*Receipt
 }
 
 // NewTxReceipt generate tx receipt for a tx hash
-func NewTxReceipt(txHash []byte) TxReceipt {
-	var status = Status{
+func NewTxReceipt(txHash []byte) *TxReceipt {
+	var status = &Status{
 		Code:    Success,
 		Message: "",
 	}
-	return TxReceipt{
+	return &TxReceipt{
 		TxHash:   txHash,
 		GasUsage: 0,
+		RAMUsage: make(map[string]int64),
 		Status:   status,
 		Returns:  []*Return{},
-		Receipts: []Receipt{},
+		Receipts: []*Receipt{},
 	}
 }
 
-// ToTxReceiptRaw convert TxReceipt to proto buf data structure
-func (r *TxReceipt) ToTxReceiptRaw() *TxReceiptRaw {
-	tr := &TxReceiptRaw{
+// ToPb convert TxReceipt to proto buf data structure.
+func (r *TxReceipt) ToPb() *txpb.TxReceipt {
+	tr := &txpb.TxReceipt{
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
-		Status: &StatusRaw{
+		RamUsage: r.RAMUsage,
+		Status: &txpb.Status{
 			Code:    int32(r.Status.Code),
 			Message: r.Status.Message,
 		},
-		Returns: r.Returns,
+		Returns:  []*txpb.Return{},
+		Receipts: []*txpb.Receipt{},
+	}
+	for _, rt := range r.Returns {
+		if rt == nil {
+			fmt.Println("rt is nil")
+			break
+		}
+		tr.Returns = append(tr.Returns, &txpb.Return{
+			FuncName: rt.FuncName,
+			Value:    rt.Value,
+		})
 	}
 	for _, re := range r.Receipts {
-		tr.Receipts = append(tr.Receipts, &re.ReceiptRaw)
+		tr.Receipts = append(tr.Receipts, &txpb.Receipt{
+			FuncName: re.FuncName,
+			Content:  re.Content,
+		})
 	}
 	return tr
 }
 
 // Encode TxReceipt as byte array
 func (r *TxReceipt) Encode() []byte {
-	b, err := proto.Marshal(r.ToTxReceiptRaw())
+	b, err := proto.Marshal(r.ToPb())
 	if err != nil {
 		panic(err)
 	}
 	return b
 }
 
-// FromTxReceiptRaw convert TxReceipt from proto buf data structure
-func (r *TxReceipt) FromTxReceiptRaw(tr *TxReceiptRaw) {
+// FromPb convert TxReceipt from proto buf data structure
+func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) {
 	r.TxHash = tr.TxHash
 	r.GasUsage = tr.GasUsage
-	r.Status = Status{
+	r.Status = &Status{
 		Code:    StatusCode(tr.Status.Code),
 		Message: tr.Status.Message,
 	}
-	r.Returns = tr.Returns
-	r.Receipts = []Receipt{}
+	for _, rt := range tr.Returns {
+		r.Returns = append(r.Returns, &Return{
+			FuncName: rt.FuncName,
+			Value:    rt.Value,
+		})
+	}
 	for _, re := range tr.Receipts {
-		r.Receipts = append(r.Receipts, Receipt{*re})
+		r.Receipts = append(r.Receipts, &Receipt{
+			FuncName: re.FuncName,
+			Content:  re.Content,
+		})
 	}
 }
 
 // Decode TxReceipt from byte array
 func (r *TxReceipt) Decode(b []byte) error {
-	tr := &TxReceiptRaw{}
-	err := proto.Unmarshal(b, tr)
+	tr := &txpb.TxReceipt{}
+	err := tr.Unmarshal(b)
 	if err != nil {
 		return err
 	}
-	r.FromTxReceiptRaw(tr)
+	r.FromPb(tr)
 	return nil
 }
 
@@ -129,14 +159,13 @@ func (r *TxReceipt) Hash() []byte {
 }
 
 func (r *TxReceipt) String() string {
-	tr := &TxReceiptRaw{
+	tr := &txpb.TxReceipt{
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
-		Status: &StatusRaw{
+		Status: &txpb.Status{
 			Code:    int32(r.Status.Code),
 			Message: r.Status.Message,
 		},
-		Returns: r.Returns,
 	}
 	return tr.String()
 }

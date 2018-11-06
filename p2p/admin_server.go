@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/iost-official/go-iost/ilog"
+
 	peer "github.com/libp2p/go-libp2p-peer"
 )
 

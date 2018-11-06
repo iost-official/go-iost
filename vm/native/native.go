@@ -18,8 +18,8 @@ type abi struct {
 type Impl struct {
 }
 
-func register(m *map[string]*abi, a *abi) {
-	(*m)[a.name] = a
+func register(m map[string]*abi, a *abi) {
+	m[a.name] = a
 }
 
 // Init .

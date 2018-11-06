@@ -1,7 +1,7 @@
 package tx
 
 import (
-	"github.com/golang/protobuf/proto"
+	txpb "github.com/iost-official/go-iost/core/tx/pb"
 )
 
 // Action implement
@@ -12,8 +12,8 @@ type Action struct {
 }
 
 // NewAction constructor of Action
-func NewAction(contract string, name string, data string) Action {
-	return Action{
+func NewAction(contract string, name string, data string) *Action {
+	return &Action{
 		Contract:   contract,
 		ActionName: name,
 		Data:       data,
@@ -22,12 +22,12 @@ func NewAction(contract string, name string, data string) Action {
 
 // Encode encode action as byte array
 func (a *Action) Encode() []byte {
-	ar := &ActionRaw{
+	ar := &txpb.Action{
 		Contract:   a.Contract,
 		ActionName: a.ActionName,
 		Data:       a.Data,
 	}
-	b, err := proto.Marshal(ar)
+	b, err := ar.Marshal()
 	if err != nil {
 		panic(err)
 	}
@@ -36,8 +36,8 @@ func (a *Action) Encode() []byte {
 
 // Decode action from byte array
 func (a *Action) Decode(b []byte) error {
-	ar := &ActionRaw{}
-	err := proto.Unmarshal(b, ar)
+	ar := &txpb.Action{}
+	err := ar.Unmarshal(b)
 	if err != nil {
 		return err
 	}

@@ -104,11 +104,11 @@ func PublishContract(codePath string, abiPath string, conID string, acc *account
 	}
 
 	action := tx.NewAction("iost.system", methodName, data)
-	trx := tx.NewTx([]*tx.Action{&action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano(), delaySecond)
+	trx := tx.NewTx([]*tx.Action{action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano(), delaySecond)
 	if !send {
 		return trx, nil, nil
 	}
-	stx, err = tx.SignTx(trx, acc.ID, acc)
+	stx, err = tx.SignTx(trx, acc.ID, []*account.KeyPair{acc})
 	var hash []byte
 	hash, err = sendTx(stx)
 	if err != nil {

@@ -100,6 +100,10 @@ func (bc *BlockChain) Push(block *Block) error {
 		bc.blockChainDB.Put(append(txReceiptPrefix, tHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(receiptPrefix, rHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(bReceiptPrefix, append(hash, rHash...)...), block.Receipts[i].Encode())
+
+		if tx.Delay > 0 {
+
+		}
 	}
 	err = bc.blockChainDB.CommitBatch()
 	if err != nil {

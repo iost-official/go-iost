@@ -140,7 +140,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 	}()
 
 	e.ho.Context().GSet("gas_limit", tx0.GasLimit)
-	e.ho.Context().GSet("receipts", make([]tx.Receipt, 0))
+	e.ho.Context().GSet("receipts", make([]*tx.Receipt, 0))
 
 	txr := tx.NewTxReceipt(tx0.Hash())
 	hasSetCode := false
@@ -186,7 +186,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 			break
 		} else {
 			txr.Receipts = append(txr.Receipts, receipts...)
-			txr.SuccActionNum++
+			//txr.SuccActionNum++
 		}
 	}
 
@@ -200,7 +200,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 		}
 	}
 
-	return &txr, nil
+	return txr, nil
 }
 
 func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
@@ -267,16 +267,16 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,
 		GasUsage: 0,
-		Status: tx.Status{
+		Status: &tx.Status{
 			Code:    code,
 			Message: message,
 		},
-		SuccActionNum: 0,
-		Receipts:      make([]tx.Receipt, 0),
+		//SuccActionNum: 0,
+		Receipts: make([]*tx.Receipt, 0),
 	}
 }
-func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
-	receipts = make([]tx.Receipt, 0)
+func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, receipts []*tx.Receipt, err error) {
+	receipts = make([]*tx.Receipt, 0)
 
 	e.ho.PushCtx()
 	defer func() {
@@ -295,19 +295,19 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	if err != nil {
 
 		if strings.Contains(err.Error(), "execution killed") {
-			status = tx.Status{
+			status = &tx.Status{
 				Code:    tx.ErrorTimeout,
 				Message: err.Error(),
 			}
 		} else {
-			status = tx.Status{
+			status = &tx.Status{
 				Code:    tx.ErrorRuntime,
 				Message: err.Error(),
 			}
 		}
 
-		receipt := tx.Receipt{
-			Type:    tx.SystemDefined,
+		receipt := &tx.Receipt{
+			//Type:    tx.SystemDefined,
 			Content: err.Error(),
 		}
 		receipts = append(receipts, receipt)
@@ -317,9 +317,9 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		return
 	}
 
-	receipts = append(receipts, e.ho.Context().GValue("receipts").([]tx.Receipt)...)
+	receipts = append(receipts, e.ho.Context().GValue("receipts").([]*tx.Receipt)...)
 
-	status = tx.Status{
+	status = &tx.Status{
 		Code:    tx.Success,
 		Message: "",
 	}

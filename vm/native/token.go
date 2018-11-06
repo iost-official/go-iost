@@ -29,15 +29,15 @@ const (
 
 func init() {
 	tokenABIs = make(map[string]*abi)
-	register(&tokenABIs, initTokenABI)
-	register(&tokenABIs, createTokenABI)
-	register(&tokenABIs, issueTokenABI)
-	register(&tokenABIs, transferTokenABI)
-	register(&tokenABIs, transferFreezeTokenABI)
-	register(&tokenABIs, balanceOfTokenABI)
-	register(&tokenABIs, supplyTokenABI)
-	register(&tokenABIs, totalSupplyTokenABI)
-	register(&tokenABIs, destroyTokenABI)
+	register(tokenABIs, initTokenABI)
+	register(tokenABIs, createTokenABI)
+	register(tokenABIs, issueTokenABI)
+	register(tokenABIs, transferTokenABI)
+	register(tokenABIs, transferFreezeTokenABI)
+	register(tokenABIs, balanceOfTokenABI)
+	register(tokenABIs, supplyTokenABI)
+	register(tokenABIs, totalSupplyTokenABI)
+	register(tokenABIs, destroyTokenABI)
 }
 
 func checkTokenExists(h *host.Host, tokenName string) (ok bool, cost *contract.Cost) {
