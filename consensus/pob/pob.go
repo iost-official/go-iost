@@ -309,10 +309,10 @@ func (p *PoB) scheduleLoop() {
 					for {
 						p.txPool.Lock()
 						var limitTime time.Duration
-						if num < generateTxsNum-2 {
+						if num < continuousNum-2 {
 							limitTime = time.Millisecond * 400
 						} else {
-							limitTime = 0
+							limitTime = time.Millisecond * 10
 						}
 						blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
 						p.txPool.Release()
