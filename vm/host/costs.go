@@ -17,6 +17,7 @@ var (
 
 	BlockInfoCost = contract.NewCost(0, 0, 1)
 	TxInfoCost    = contract.NewCost(0, 0, 1)
+	ContextInfoCost    = contract.NewCost(0, 0, 1)
 
 	TransferCost = contract.NewCost(0, 0, 3)
 
