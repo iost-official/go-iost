@@ -13,10 +13,10 @@ import (
 // IOSTRatio ...
 const IOSTRatio int64 = 100000000
 
-var gasMinPledgeInIOST int64 = 10
+var GasMinPledgeInIOST int64 = 10
 
 // GasMinPledge Every user must pledge a minimum amount of IOST (including GAS and RAM)
-var GasMinPledge = &common.Fixed{Value: gasMinPledgeInIOST * IOSTRatio, Decimal: 8}
+var GasMinPledge = &common.Fixed{Value: GasMinPledgeInIOST * IOSTRatio, Decimal: 8}
 
 // Each IOST you pledge, you will get `GasImmediateReward` gas immediately.
 // Then gas will be generated at a rate of `GasIncreaseRate` gas per block.
