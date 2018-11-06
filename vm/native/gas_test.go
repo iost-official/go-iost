@@ -49,6 +49,8 @@ func gasTestInit() (*host.Host, *account.Account) {
 		panic(err)
 	}
 	context := host.NewContext(nil)
+
+	// pm := vm.NewMonitor()
 	h := host.NewHost(context, visitor, nil, nil)
 	testAcc := getTestAccount()
 	as, err := json.Marshal(testAcc)
@@ -59,6 +61,11 @@ func gasTestInit() (*host.Host, *account.Account) {
 	h.DB().MPut("iost.auth-account", testAcc.ID, database.MustMarshal(string(as)))
 	h.Context().Set("number", initNumber)
 	h.Context().Set("contract_name", "iost.gas")
+	h.Context().Set("stack_height", 1)
+
+	tokenContract := TokenABI()
+	h.SetCode(tokenContract)
+
 	authList := make(map[string]int)
 	authList[testAcc.ID] = 2
 	h.Context().Set("auth_list", authList)

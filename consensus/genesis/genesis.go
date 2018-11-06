@@ -111,6 +111,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	t, err := common.ParseStringToTimestamp(gConf.InitialTimestamp)
 	if err != nil {
 		ilog.Fatalf("invalid genesis initial time string %v (%v).", gConf.InitialTimestamp, err)
+		return nil, err
 	}
 	trx, acc, err := genGenesisTx(gConf)
 	if err != nil {
