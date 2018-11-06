@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "github.com/iost-official/go-iost/crypto/signature.proto";
+import "github.com/iost-official/go-iost/crypto/pb/signature.proto";
 package txpb;
 
 message Action {
@@ -16,9 +16,9 @@ message Tx {
     int64 gasPrice = 4;
     repeated Action actions = 5;
     repeated string signers = 6;
-    repeated crypto.SignatureRaw signs = 7;
+    repeated sigpb.Signature signs = 7;
     string publisher = 8;
-    repeated crypto.SignatureRaw publishSigns = 9;
+    repeated sigpb.Signature publishSigns = 9;
     int64 delay = 10;
     bytes referredTx = 11;
 }

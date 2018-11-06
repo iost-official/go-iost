@@ -74,11 +74,7 @@ func (t *Tx) baseHash() []byte {
 		Delay:      t.Delay,
 	}
 	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, &txpb.Action{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		tr.Actions = append(tr.Actions, a.ToPb())
 	}
 
 	b, err := tr.Marshal()
@@ -113,19 +109,11 @@ func (t *Tx) publishHash() []byte {
 		Delay:      t.Delay,
 	}
 	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, &txpb.Action{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		tr.Actions = append(tr.Actions, a.ToPb())
 	}
 
 	for _, s := range t.Signs {
-		tr.Signs = append(tr.Signs, &crypto.SignatureRaw{
-			Algorithm: int32(s.Algorithm),
-			Sig:       s.Sig,
-			PubKey:    s.Pubkey,
-		})
+		tr.Signs = append(tr.Signs, s.ToPb())
 	}
 
 	b, err := tr.Marshal()
@@ -147,28 +135,15 @@ func (t *Tx) ToPb() *txpb.Tx {
 		ReferredTx: t.ReferredTx,
 	}
 	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, &txpb.Action{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		tr.Actions = append(tr.Actions, a.ToPb())
 	}
 
 	for _, s := range t.Signs {
-		tr.Signs = append(tr.Signs, &crypto.SignatureRaw{
-			Algorithm: int32(s.Algorithm),
-			Sig:       s.Sig,
-			PubKey:    s.Pubkey,
-		})
+		tr.Signs = append(tr.Signs, s.ToPb())
 	}
 	tr.Publisher = t.Publisher
-	tr.PublishSigns = []*crypto.SignatureRaw{}
 	for _, sig := range t.PublishSigns {
-		tr.PublishSigns = append(tr.PublishSigns, &crypto.SignatureRaw{
-			Algorithm: int32(sig.Algorithm),
-			Sig:       sig.Sig,
-			PubKey:    sig.Pubkey,
-		})
+		tr.PublishSigns = append(tr.PublishSigns, sig.ToPb())
 	}
 	return tr
 }
@@ -184,7 +159,7 @@ func (t *Tx) Encode() []byte {
 }
 
 // FromPb convert tx from txpb.Tx.
-func (t *Tx) FromPb(tr *txpb.Tx) {
+func (t *Tx) FromPb(tr *txpb.Tx) *Tx {
 	t.Time = tr.Time
 	t.Expiration = tr.Expiration
 	t.GasLimit = tr.GasLimit
@@ -193,31 +168,23 @@ func (t *Tx) FromPb(tr *txpb.Tx) {
 	t.Delay = tr.Delay
 	t.ReferredTx = tr.ReferredTx
 	for _, a := range tr.Actions {
-		t.Actions = append(t.Actions, &Action{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		ac := &Action{}
+		t.Actions = append(t.Actions, ac.FromPb(a))
 	}
 	t.Signers = tr.Signers
 	t.Signs = []*crypto.Signature{}
 	for _, sr := range tr.Signs {
-		t.Signs = append(t.Signs, &crypto.Signature{
-			Algorithm: crypto.Algorithm(sr.Algorithm),
-			Sig:       sr.Sig,
-			Pubkey:    sr.PubKey,
-		})
+		sig := &crypto.Signature{}
+		t.Signs = append(t.Signs, sig.FromPb(sr))
 	}
 	t.Publisher = tr.Publisher
 	t.PublishSigns = []*crypto.Signature{}
-	for _, sig := range tr.PublishSigns {
-		t.PublishSigns = append(t.PublishSigns, &crypto.Signature{
-			Algorithm: crypto.Algorithm(sig.Algorithm),
-			Sig:       sig.Sig,
-			Pubkey:    sig.PubKey,
-		})
+	for _, sr := range tr.PublishSigns {
+		sig := &crypto.Signature{}
+		t.PublishSigns = append(t.PublishSigns, sig.FromPb(sr))
 	}
 	t.hash = nil
+	return t
 }
 
 // Decode tx from byte array
