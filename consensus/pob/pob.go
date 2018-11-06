@@ -38,7 +38,7 @@ var (
 
 var (
 	blockReqTimeout = 3 * time.Second
-	continuousNum   = 6
+	continuousNum   = 15
 )
 
 type verifyBlockMessage struct {
@@ -303,14 +303,15 @@ func (p *PoB) scheduleLoop() {
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
-					generateBlockTicker := time.NewTicker(time.Millisecond * 500)
+					p.baseVariable.SetMode(global.ModeGenerate)
+					generateBlockTicker := time.NewTicker(time.Millisecond * 200)
 					num := 0
 					generateTxsNum = 0
 					for {
 						p.txPool.Lock()
 						var limitTime time.Duration
 						if num < continuousNum-2 {
-							limitTime = time.Millisecond * 400
+							limitTime = time.Millisecond * 180
 						} else {
 							limitTime = time.Millisecond * 10
 						}
@@ -328,6 +329,9 @@ func (p *PoB) scheduleLoop() {
 						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
 						ilog.Infof("[pob] generate block time cost: %v, %v, %v, %v", num, limitTime, calculateTime(blk), p.account.ID[4:6])
 						metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
+						if num == continuousNum-1 {
+							p.baseVariable.SetMode(global.ModeNormal)
+						}
 						err = p.handleRecvBlock(blk)
 						if err != nil {
 							ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
@@ -399,7 +403,9 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
-	updateLib(node, p.blockCache)
+	if p.baseVariable.Mode() != global.ModeGenerate {
+		updateLib(node, p.blockCache)
+	}
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
