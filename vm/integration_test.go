@@ -9,6 +9,8 @@ import (
 
 	"time"
 
+	"io/ioutil"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -21,7 +23,6 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
-	"io/ioutil"
 )
 
 var testID = []string{
@@ -79,7 +80,7 @@ func MakeTx(act *tx.Action) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	trx, err = tx.SignTx(trx, ac.ID, ac)
+	trx, err = tx.SignTx(trx, ac.ID, []*account.KeyPair{ac})
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +89,7 @@ func MakeTx(act *tx.Action) (*tx.Tx, error) {
 
 func MakeTxWithAuth(act *tx.Action, ac *account.KeyPair) (*tx.Tx, error) {
 	trx := tx.NewTx([]*tx.Action{act}, nil, 100000, 1, 10000000, 0)
-	trx, err := tx.SignTx(trx, ac.ID, ac)
+	trx, err := tx.SignTx(trx, ac.ID, []*account.KeyPair{ac})
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +110,7 @@ func TestIntergration_Transfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	trx, err = tx.SignTx(trx, ac.ID, ac)
+	trx, err = tx.SignTx(trx, ac.ID, []*account.KeyPair{ac})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +127,7 @@ func TestIntergration_Transfer(t *testing.T) {
 
 	act2 := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
 	trx2 := tx.NewTx([]*tx.Action{act2}, nil, 10000, 1, 10000000, 0)
-	trx2, err = tx.SignTx(trx2, ac.ID, ac)
+	trx2, err = tx.SignTx(trx2, ac.ID, []*account.KeyPair{ac})
 	if err != nil {
 		t.Fatal(err)
 	}
