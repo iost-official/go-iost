@@ -116,9 +116,10 @@ var (
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
 			}
-			if !strings.HasPrefix(userName, "IOST") {
-				return nil, cost, errors.New("userName should start with IOST")
-			}
+			// todo check is account name
+			// if !strings.HasPrefix(userName, "IOST") {
+			// 	return nil, cost, errors.New("userName should start with IOST")
+			// }
 			auth, cost0 := h.RequireAuth(userName, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
