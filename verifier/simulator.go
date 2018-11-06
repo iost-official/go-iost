@@ -173,7 +173,7 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 		return &tx.TxReceipt{}, err
 	}
 
-	err = isolator.PayCost()
+	r, err = isolator.PayCost()
 	if err != nil {
 		return nil, err
 	}

@@ -62,8 +62,7 @@ func TestSetCode(t *testing.T) {
 }
 
 func TestJS_Database(t *testing.T) {
-	t.Skip()
-	//ilog.Stop()
+	ilog.Stop()
 	Convey("test of s database", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
@@ -78,7 +77,6 @@ func TestJS_Database(t *testing.T) {
 
 		cname, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
-		t.Log("cname ", cname)
 
 		So(s.Visitor.Contract(cname), ShouldNotBeNil)
 		So(s.Visitor.Get(cname+"-"+"num"), ShouldEqual, "s9")
@@ -91,6 +89,8 @@ func TestJS_Database(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
+		So(len(r.Returns), ShouldEqual, 1)
+		So(r.Returns[0].Value, ShouldEqual, `["true"]`)
 	})
 
 }
