@@ -192,7 +192,7 @@ var (
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
 			cost0, err = h.Withdraw(userName, unpledgeAmountStr)
-			_, cost0, err = h.Call("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`,  contractName, userName, unpledgeAmountStr))
+			_, cost0, err = h.CallWithAuth("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`,  contractName, userName, unpledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err

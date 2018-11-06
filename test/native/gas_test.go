@@ -2,6 +2,7 @@ package native
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -12,17 +13,11 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 )
-
-func min(a int64, b int64) int64 {
-	if a < b {
-		return a
-	}
-	return b
-}
 
 func toString(n int64) string {
 	return strconv.FormatInt(n, 10)
@@ -50,24 +45,26 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Accou
 		panic(err)
 	}
 	context := host.NewContext(nil)
+	context.Set("gas_price", int64(1))
+	context.GSet("gas_limit", int64(100000))
 
-	// pm := vm.NewMonitor()
-	h := host.NewHost(context, visitor, nil, nil)
+	monitor := vm.NewMonitor()
+	h := host.NewHost(context, visitor, monitor, nil)
 	testAcc := getTestAccount()
 	as, err := json.Marshal(testAcc)
 	if err != nil {
 		panic(err)
 	}
-	h.DB().SetBalance(testAcc.ID, toIOSTFN(initCoin).Value)
 	h.DB().MPut("iost.auth-account", testAcc.ID, database.MustMarshal(string(as)))
 	h.Context().Set("number", initNumber)
-	h.Context().Set("contract_name", "iost.gas")
-	h.Context().Set("stack_height", 1)
+	h.Context().Set("stack_height", 0)
+	h.Context().Set("contract_name", "iost.token")
 
-	tokenContract := TokenABI()
+	tokenContract := native.TokenABI()
 	h.SetCode(tokenContract)
 
 	authList := make(map[string]int)
+	h.Context().Set("auth_contract_list", authList)
 	authList[testAcc.ID] = 2
 	h.Context().Set("auth_list", authList)
 
@@ -77,6 +74,19 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Accou
 
 	e := &native.Impl{}
 	e.Init()
+
+	_, _, err = e.LoadAndCall(h, tokenContract, "create", "iost", testAcc.ID, int64(initCoin), []byte("{}"))
+	if err != nil {
+		panic("create iost " + err.Error())
+	}
+	_, _, err = e.LoadAndCall(h, tokenContract, "issue", "iost", testAcc.ID, fmt.Sprintf("%d", initCoin))
+	if err != nil {
+		panic("issue iost " + err.Error())
+	}
+	if initCoin*1e8 != visitor.TokenBalance("iost", testAcc.ID) {
+		panic("set initial coins failed " + strconv.FormatInt(visitor.TokenBalance("iost", testAcc.ID), 10))
+	}
+	h.Context().Set("contract_name", "iost.gas")
 
 	return e, h, code, testAcc
 }
@@ -133,11 +143,11 @@ func TestGas_Pledge(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pledge err %v", err)
 	}
-	if h.DB().Balance(testAcc.ID) != (initCoinFN.Value - pledgeAmount.Value) {
-		t.Fatalf("invalid balance after pledge %d", h.DB().Balance(testAcc.ID))
+	if h.DB().TokenBalance("iost", testAcc.ID) != (initCoinFN.Value - pledgeAmount.Value) {
+		t.Fatalf("invalid balance after pledge %d", h.DB().TokenBalance("iost", testAcc.ID))
 	}
-	if h.DB().Balance(host.ContractAccountPrefix+"iost.gas") != pledgeAmount.Value {
-		t.Fatalf("invalid balance after pledge %d", h.DB().Balance(host.ContractAccountPrefix+"iost.gas"))
+	if h.DB().TokenBalance("iost", "iost.gas") != pledgeAmount.Value {
+		t.Fatalf("invalid balance after pledge %d", h.DB().TokenBalance("iost", host.ContractAccountPrefix+"iost.gas"))
 	}
 	ilog.Info("After pledge, you will get some gas immediately")
 	gas := h.GasManager.CurrentGas(testAcc.ID)
@@ -187,11 +197,11 @@ func TestGas_PledgeMore(t *testing.T) {
 	if !gasAfterSecondPledge.Equals(gasEstimated) {
 		t.Fatalf("invalid gas %d != %d", gasAfterSecondPledge, gasEstimated)
 	}
-	if h.DB().Balance(testAcc.ID) != initCoinFN.Sub(firstTimePledgeAmount).Sub(secondTimePledgeAmount).Value {
-		t.Fatalf("invalid balance after pledge %d", h.DB().Balance(testAcc.ID))
+	if h.DB().TokenBalance("iost", testAcc.ID) != initCoinFN.Sub(firstTimePledgeAmount).Sub(secondTimePledgeAmount).Value {
+		t.Fatalf("invalid balance after pledge %d", h.DB().TokenBalance("iost", testAcc.ID))
 	}
-	if h.DB().Balance(host.ContractAccountPrefix+"iost.gas") != firstTimePledgeAmount.Add(secondTimePledgeAmount).Value {
-		t.Fatalf("invalid balance after pledge %d", h.DB().Balance(host.ContractAccountPrefix+"iost.gas"))
+	if h.DB().TokenBalance("iost", "iost.gas") != firstTimePledgeAmount.Add(secondTimePledgeAmount).Value {
+		t.Fatalf("invalid balance after pledge %d", h.DB().TokenBalance("iost", host.ContractAccountPrefix+"iost.gas"))
 	}
 }
 
@@ -233,11 +243,11 @@ func TestGas_Unpledge(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unpledge err %v", err)
 	}
-	if h.DB().Balance(testAcc.ID) != initCoinFN.Sub(pledgeAmount).Add(unpledgeAmount).Value {
-		t.Fatalf("invalid balance after unpledge %d", h.DB().Balance(testAcc.ID))
+	if h.DB().TokenBalance("iost", testAcc.ID) != initCoinFN.Sub(pledgeAmount).Add(unpledgeAmount).Value {
+		t.Fatalf("invalid balance after unpledge %d", h.DB().TokenBalance("iost", testAcc.ID))
 	}
-	if h.DB().Balance(host.ContractAccountPrefix+"iost.gas") != pledgeAmount.Sub(unpledgeAmount).Value {
-		t.Fatalf("invalid balance after unpledge %d", h.DB().Balance(host.ContractAccountPrefix+"iost.gas"))
+	if h.DB().TokenBalance("iost", "iost.gas") != pledgeAmount.Sub(unpledgeAmount).Value {
+		t.Fatalf("invalid balance after unpledge %d", h.DB().TokenBalance("iost", host.ContractAccountPrefix+"iost.gas"))
 	}
 	gas := h.GasManager.CurrentGas(testAcc.ID)
 	ilog.Info("After unpledging, the gas limit will decrease. If current gas is more than the new limit, it will be decrease.")
