@@ -17,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
+	"github.com/iost-official/go-iost/account"
 )
 
 const (
@@ -394,11 +395,12 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.Context().Set("publisher", publisherID)
 
 	authList := make(map[string]int)
-	for _, v := range t.Signers {
-		authList[v] = 1
+	for _, v := range t.Signs {
+		authList[account.GetIDByPubkey(v.Pubkey)] = 1
 	}
-
-	authList[publisherID] = 2
+	for _, v := range t.PublishSigns {
+		authList[account.GetIDByPubkey(v.Pubkey)] = 2
+	}
 
 	h.Context().Set("auth_list", authList)
 	h.Context().Set("auth_contract_list", make(map[string]int))

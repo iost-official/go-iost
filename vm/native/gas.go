@@ -138,7 +138,9 @@ var (
 			if pledgeAmount.Value < minPledgeAmount {
 				return nil, cost, fmt.Errorf("min pledge num is %d", minPledgeAmount)
 			}
-			cost0, err = h.Deposit(userName, pledgeAmountStr)
+			contractName, cost0 := h.ContractName()
+			cost.AddAssign(cost0)
+			_, cost0, err = h.Call("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, userName, contractName, pledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -187,7 +189,10 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+			contractName, cost0 := h.ContractName()
+			cost.AddAssign(cost0)
 			cost0, err = h.Withdraw(userName, unpledgeAmountStr)
+			_, cost0, err = h.Call("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`,  contractName, userName, unpledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
