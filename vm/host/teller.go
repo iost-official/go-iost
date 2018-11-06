@@ -6,6 +6,7 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // const prefixs
@@ -30,13 +31,28 @@ func NewTeller(h *Host) Teller {
 
 // TransferRaw ...
 func (h *Teller) TransferRaw(from, to string, amount int64) error {
-	bf := h.h.db.Balance(from)
-	if strings.HasPrefix(from, ContractAccountPrefix) && bf >= amount || bf > amount {
+	srcBalance := h.h.db.Balance(from)
+	if strings.HasPrefix(from, ContractAccountPrefix) && srcBalance >= amount || srcBalance > amount {
 		h.h.db.SetBalance(from, -1*amount)
 		h.h.db.SetBalance(to, amount)
 		return nil
 	}
-	return fmt.Errorf("balance not enough %v < %v", amount, bf)
+	return ErrBalanceNotEnough
+}
+
+// TransferRawNew ...
+func (h *Teller) TransferRawNew(from, to string, amount int64) error {
+	tokenName := "iost"
+	srcBalance := h.h.db.TokenBalance(tokenName, from)
+	dstBalance := h.h.db.TokenBalance(tokenName, to)
+	if strings.HasPrefix(from, ContractAccountPrefix) && srcBalance >= amount || srcBalance > amount {
+		h.h.db.SetTokenBalance(tokenName, from, srcBalance-amount)
+		h.h.db.SetTokenBalance(tokenName, to, dstBalance+amount)
+		ilog.Debugf("TransferRaw src %v: %v -> %v and dst %v: %v -> %v\n", from, srcBalance, srcBalance-amount, to, dstBalance, dstBalance+amount)
+		return nil
+	}
+	ilog.Debugf("TransferRaw balance not enough %v has %v < %v", from, srcBalance, amount)
+	return ErrBalanceNotEnough
 }
 
 // GetBalance return balance of an id
