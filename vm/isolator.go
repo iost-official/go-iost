@@ -210,7 +210,7 @@ func (e *Isolator) PayCost() (*tx.TxReceipt, error) {
 		e.h.DB().Rollback()
 		e.tr.RAMUsage = make(map[string]int64)
 		e.tr.Status.Code = tx.ErrorBalanceNotEnough
-		e.tr.Status.Message = "balance not enough after executing actions" + err.Error()
+		e.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
 
 		err = e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice, false)
 		if err != nil {

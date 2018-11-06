@@ -75,6 +75,13 @@ func (s *Simulator) SetGas(id string, i int64) {
 		Value:   i * 10e8,
 		Decimal: 8,
 	})
+	s.Visitor.Commit()
+}
+
+// SetRAM to id
+func (s *Simulator) SetRAM(id string, r int64) {
+	s.Visitor.SetTokenBalance("ram", id, r)
+	s.Visitor.Commit()
 }
 
 // SetContract without run init
