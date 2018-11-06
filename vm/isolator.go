@@ -205,7 +205,7 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 
 // PayCost as name
 func (e *Isolator) PayCost() (*tx.TxReceipt, error) {
-	err := e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice, false)
+	err := e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice, true)
 	if err != nil {
 		e.h.DB().Rollback()
 		e.tr.RAMUsage = make(map[string]int64)
