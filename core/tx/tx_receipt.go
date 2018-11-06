@@ -4,6 +4,8 @@ import (
 	"github.com/iost-official/go-iost/common"
 	txpb "github.com/iost-official/go-iost/core/tx/pb"
 
+	"fmt"
+
 	"github.com/golang/protobuf/proto"
 )
 
@@ -87,8 +89,14 @@ func (r *TxReceipt) ToPb() *txpb.TxReceipt {
 			Code:    int32(r.Status.Code),
 			Message: r.Status.Message,
 		},
+		Returns:  []*txpb.Return{},
+		Receipts: []*txpb.Receipt{},
 	}
 	for _, rt := range r.Returns {
+		if rt == nil {
+			fmt.Println("rt is nil")
+			break
+		}
 		tr.Returns = append(tr.Returns, &txpb.Return{
 			FuncName: rt.FuncName,
 			Value:    rt.Value,
