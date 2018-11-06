@@ -25,7 +25,10 @@ func TestTransfer(t *testing.T) {
 
 	s.SetGas(kp.ID, 1000)
 
-	prepareContract(t, s)
+	err := prepareContract(s)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
 
@@ -100,7 +103,10 @@ func TestAmountLimit(t *testing.T) {
 	Convey("test of amount limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(t, s)
+		err := prepareContract(s)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
 		if err != nil || ca == nil {
@@ -171,7 +177,10 @@ func TestNativeVM_GasLimit(t *testing.T) {
 	Convey("test of amount limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(t, s)
+		err := prepareContract(s)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		if err != nil {

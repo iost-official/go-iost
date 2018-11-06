@@ -193,12 +193,14 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 				return fmt.Errorf("pay cost failed: %v, %v", k, err)
 			}
 		}
-		ram := c.Data // todo activate ram
-		currentRam := h.h.db.TokenBalance("ram", k)
-		if currentRam-ram < 0 {
-			return fmt.Errorf("pay ram failed: need %v, actual %v", ram, currentRam)
+		if isPayRAM {
+			ram := c.Data
+			currentRam := h.h.db.TokenBalance("ram", k)
+			if currentRam-ram < 0 {
+				return fmt.Errorf("pay ram failed: need %v, actual %v", ram, currentRam)
+			}
+			h.h.db.SetTokenBalance("ram", k, currentRam+ram)
 		}
-		h.h.db.SetTokenBalance("ram", k, currentRam+ram)
 	}
 	return nil
 }
