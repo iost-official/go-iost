@@ -22,6 +22,7 @@ import (
 	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
@@ -134,7 +135,7 @@ func (s *GRPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, er
 	}
 
 	return &TxRes{
-		TxRaw: trx.ToTxRaw(),
+		TxRaw: trx.ToPb(),
 		Hash:  common.Base58Encode(trx.Hash()),
 	}, nil
 }
@@ -153,7 +154,7 @@ func (s *GRPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*Tx
 	}
 
 	return &TxReceiptRes{
-		TxReceiptRaw: receipt.ToTxReceiptRaw(),
+		TxReceiptRaw: receipt.ToPb(),
 		Hash:         common.Base58Encode(receiptHashBytes),
 	}, nil
 }
@@ -172,27 +173,27 @@ func (s *GRPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*
 	}
 
 	return &TxReceiptRes{
-		TxReceiptRaw: receipt.ToTxReceiptRaw(),
+		TxReceiptRaw: receipt.ToPb(),
 		Hash:         common.Base58Encode(receipt.Hash()),
 	}, nil
 }
 
 func toBlockInfo(blk *block.Block, complete bool) *BlockInfo {
 	blkInfo := &BlockInfo{
-		Head:   blk.Head,
+		Head:   blk.Head.ToPb(),
 		Hash:   common.Base58Encode(blk.HeadHash()),
-		Txs:    make([]*tx.TxRaw, 0),
+		Txs:    make([]*txpb.Tx, 0),
 		Txhash: make([]string, 0),
 	}
 	for _, trx := range blk.Txs {
 		if complete {
-			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
+			blkInfo.Txs = append(blkInfo.Txs, trx.ToPb())
 		}
 		blkInfo.Txhash = append(blkInfo.Txhash, common.Base58Encode(trx.Hash()))
 	}
 	for _, receipt := range blk.Receipts {
 		if complete {
-			blkInfo.Receipts = append(blkInfo.Receipts, receipt.ToTxReceiptRaw())
+			blkInfo.Receipts = append(blkInfo.Receipts, receipt.ToPb())
 		}
 		blkInfo.ReceiptHash = append(blkInfo.ReceiptHash, common.Base58Encode(receipt.Hash()))
 	}
@@ -371,7 +372,7 @@ func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, e
 	if err != nil {
 		return nil, fmt.Errorf("exec tx failed: %v", err)
 	}
-	return &ExecTxRes{TxReceiptRaw: receipt.ToTxReceiptRaw()}, nil
+	return &ExecTxRes{TxReceiptRaw: receipt.ToPb()}, nil
 }
 
 // Subscribe used for event

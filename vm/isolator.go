@@ -6,6 +6,8 @@ import (
 
 	"strings"
 
+	"encoding/json"
+
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
@@ -61,7 +63,7 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	return nil
 }
 
-func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, receipts []*tx.Receipt, err error) {
+func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, ret *tx.Return, receipts []*tx.Receipt, err error) {
 	receipts = make([]*tx.Receipt, 0)
 
 	e.h.PushCtx()
@@ -72,7 +74,9 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.
 	e.h.Context().Set("stack0", "direct_call")
 	e.h.Context().Set("stack_height", 1) // record stack trace
 
-	_, cost, err = staticMonitor.Call(e.h, action.Contract, action.ActionName, action.Data)
+	var rtn []interface{}
+
+	rtn, cost, err = staticMonitor.Call(e.h, action.Contract, action.ActionName, action.Data)
 
 	if cost == nil {
 		panic("cost is nil")
@@ -92,10 +96,20 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.
 		}
 
 		receipt := &tx.Receipt{
-			Type:    tx.SystemDefined,
-			Content: err.Error(),
+			FuncName: action.Contract + "/" + action.ActionName,
+			Content:  err.Error(),
 		}
 		receipts = append(receipts, receipt)
+
+		rj, errj := json.Marshal(rtn)
+		if errj != nil {
+			panic(errj)
+		}
+
+		ret = &tx.Return{
+			FuncName: action.Contract + "/" + action.ActionName,
+			Value:    string(rj),
+		}
 
 		err = nil
 
@@ -145,7 +159,7 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 		}
 		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
 
-		cost, status, receipts, err := e.runAction(*action)
+		cost, status, rets, receipts, err := e.runAction(*action)
 		ilog.Debugf("run action : %v, result is %v", action, status.Code)
 		ilog.Debug("used cost > ", cost)
 		ilog.Debugf("status > \n%v\n", status)
@@ -172,8 +186,8 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 			break
 		} else {
 			txr.Receipts = append(txr.Receipts, receipts...)
-			txr.SuccActionNum++
 		}
+		txr.Returns = append(txr.Returns, rets)
 	}
 	if len(e.t.ReferredTx) > 0 {
 		e.h.DB().DelDelaytx(string(e.t.ReferredTx))
