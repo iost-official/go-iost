@@ -23,6 +23,12 @@ const (
 	ErrorUnknown          // other errors
 )
 
+// Return is the result of txreceipt.
+type Return struct {
+	FuncName string
+	Value    string
+}
+
 // Status status of transaction execution result, including code and message
 type Status struct {
 	Code    StatusCode
@@ -41,22 +47,18 @@ const (
 
 // Receipt generated when applying transaction
 type Receipt struct {
-	Type    ReceiptType // system defined or user defined receipt type
-	Content string      // can be a raw string or a json string
+	FuncName string
+	Content  string // can be a raw string or a json string
 }
 
 // TxReceipt Transaction Receipt
 type TxReceipt struct { //nolint:golint
 	TxHash   []byte
 	GasUsage int64
-	/*
-		CpuTimeUsage    uint64
-		NetUsage    uint64
-		RAMUsage    uint64
-	*/
-	Status        *Status
-	SuccActionNum int32
-	Receipts      []*Receipt
+	RAMUsage map[string]int64
+	Status   *Status
+	Returns  []*Return
+	Receipts []*Receipt
 }
 
 // NewTxReceipt generate tx receipt for a tx hash
@@ -66,11 +68,12 @@ func NewTxReceipt(txHash []byte) *TxReceipt {
 		Message: "",
 	}
 	return &TxReceipt{
-		TxHash:        txHash,
-		GasUsage:      0,
-		Status:        status,
-		SuccActionNum: 0,
-		Receipts:      []*Receipt{},
+		TxHash:   txHash,
+		GasUsage: 0,
+		RAMUsage: make(map[string]int64),
+		Status:   status,
+		Returns:  []*Return{},
+		Receipts: []*Receipt{},
 	}
 }
 
@@ -79,16 +82,22 @@ func (r *TxReceipt) ToPb() *txpb.TxReceipt {
 	tr := &txpb.TxReceipt{
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
+		RamUsage: r.RAMUsage,
 		Status: &txpb.Status{
 			Code:    int32(r.Status.Code),
 			Message: r.Status.Message,
 		},
-		SuccActionNum: r.SuccActionNum,
+	}
+	for _, rt := range r.Returns {
+		tr.Returns = append(tr.Returns, &txpb.Return{
+			FuncName: rt.FuncName,
+			Value:    rt.Value,
+		})
 	}
 	for _, re := range r.Receipts {
 		tr.Receipts = append(tr.Receipts, &txpb.Receipt{
-			Type:    int32(re.Type),
-			Content: re.Content,
+			FuncName: re.FuncName,
+			Content:  re.Content,
 		})
 	}
 	return tr
@@ -111,12 +120,16 @@ func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) {
 		Code:    StatusCode(tr.Status.Code),
 		Message: tr.Status.Message,
 	}
-	r.SuccActionNum = tr.SuccActionNum
-	r.Receipts = []*Receipt{}
+	for _, rt := range tr.Returns {
+		r.Returns = append(r.Returns, &Return{
+			FuncName: rt.FuncName,
+			Value:    rt.Value,
+		})
+	}
 	for _, re := range tr.Receipts {
 		r.Receipts = append(r.Receipts, &Receipt{
-			Type:    ReceiptType(re.Type),
-			Content: re.Content,
+			FuncName: re.FuncName,
+			Content:  re.Content,
 		})
 	}
 }
@@ -145,7 +158,6 @@ func (r *TxReceipt) String() string {
 			Code:    int32(r.Status.Code),
 			Message: r.Status.Message,
 		},
-		SuccActionNum: r.SuccActionNum,
 	}
 	return tr.String()
 }

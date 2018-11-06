@@ -24,7 +24,7 @@ message Tx {
 }
 
 message Receipt {
-    int32 type = 1;
+    string funcName = 1;
     string content = 2;
 }
 
@@ -36,7 +36,14 @@ message Status {
 message TxReceipt {
     bytes txHash = 1;
     int64 gasUsage = 2;
-    Status status = 3;
-    int32 succActionNum = 4;
-    repeated Receipt receipts = 5;
+    map<string, int64> ramUsage = 3;
+    Status status = 4;
+    repeated Return returns = 5;
+    repeated Receipt receipts = 6;
+
+}
+
+message Return {
+    string funcName = 1;
+    string value = 2;
 }
