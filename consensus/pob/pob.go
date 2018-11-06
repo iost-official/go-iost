@@ -38,7 +38,7 @@ var (
 
 var (
 	blockReqTimeout = 3 * time.Second
-	continuousNum   = 15
+	continuousNum   = 10
 )
 
 type verifyBlockMessage struct {
@@ -303,14 +303,14 @@ func (p *PoB) scheduleLoop() {
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
-					generateBlockTicker := time.NewTicker(time.Millisecond * 200)
+					generateBlockTicker := time.NewTicker(time.Millisecond * 300)
 					num := 0
 					generateTxsNum = 0
 					for {
 						p.txPool.Lock()
 						var limitTime time.Duration
 						if num < continuousNum-2 {
-							limitTime = time.Millisecond * 180
+							limitTime = time.Millisecond * 250
 						} else {
 							limitTime = time.Millisecond * 10
 						}
