@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -109,7 +110,7 @@ func (p *PoB) messageLoop() {
 			}
 			if p.baseVariable.Mode() == global.ModeNormal {
 				var blkInfo msgpb.BlockInfo
-				blkInfo.Unmarshal(incomingMessage.Data())
+				err := blkInfo.Unmarshal(incomingMessage.Data())
 				if err != nil {
 					continue
 				}
