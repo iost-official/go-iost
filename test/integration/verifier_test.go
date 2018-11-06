@@ -24,15 +24,13 @@ func TestTransfer(t *testing.T) {
 	kp := prepareAuth(t, s)
 
 	s.SetGas(kp.ID, 1000)
-
-	err := prepareContract(s)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
-
 	Convey("test transfer success case", t, func() {
+
+		err := prepareContract(s)
+		So(err, ShouldBeNil)
+
+		r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
+
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
@@ -71,9 +69,7 @@ func TestJS_Database(t *testing.T) {
 		defer s.Clear()
 
 		c, err := s.Compile("datatbase", "test_data/database", "test_data/database")
-		if err != nil {
-			t.Fatal(err)
-		}
+		So(err, ShouldBeNil)
 
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 1000)
@@ -104,26 +100,20 @@ func TestAmountLimit(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 		err := prepareContract(s)
-		if err != nil {
-			t.Fatal(err)
-		}
+		So(err, ShouldBeNil)
 
 		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
-		if err != nil || ca == nil {
-			t.Fatal(err)
-		}
+		So(err, ShouldBeNil)
+		So(ca, ShouldNotBeNil)
 		s.SetContract(ca)
 
 		ca, err = s.Compile("Contracttransfer1", "./test_data/transfer1", "./test_data/transfer1.js")
-		if err != nil || ca == nil {
-			t.Fatal(err)
-		}
+		So(err, ShouldBeNil)
+		So(ca, ShouldNotBeNil)
 		s.SetContract(ca)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
+		So(err, ShouldBeNil)
 
 		Reset(func() {
 			s.Visitor.SetTokenBalanceFixed("iost", testID[0], "1000")
@@ -178,29 +168,24 @@ func TestNativeVM_GasLimit(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 		err := prepareContract(s)
-		if err != nil {
-			t.Fatal(err)
-		}
+		So(err, ShouldBeNil)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
+		So(err, ShouldBeNil)
+
 		s.SetGas(kp.ID, 10000)
 
-		Convey("test out of gas limit", func() {
-			tx0 := tx.NewTx([]*tx.Action{{
-				Contract:   "iost.token",
-				ActionName: "transfer",
-				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, testID[0], testID[2], "10"),
-			}}, nil, 100, 100, 10000000, 0)
+		tx0 := tx.NewTx([]*tx.Action{{
+			Contract:   "iost.token",
+			ActionName: "transfer",
+			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, testID[0], testID[2], "10"),
+		}}, nil, 100, 100, 10000000, 0)
 
-			r, err := s.CallTx(tx0, testID[0], kp)
-			s.Visitor.Commit()
-			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
-			So(r.Status.Message, ShouldContainSubstring, "gas limit exceeded")
-		})
+		r, err := s.CallTx(tx0, testID[0], kp)
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+		So(r.Status.Message, ShouldContainSubstring, "gas limit exceeded")
 
 	})
 }
@@ -239,17 +224,15 @@ func array2json(ss []interface{}) string {
 func TestAuthority(t *testing.T) {
 	s := NewSimulator()
 	defer s.Clear()
-
-	ca, err := s.Compile("iost.auth", "../../contract/account", "../../contract/account.js")
-	if err != nil {
-		t.Fatal(err)
-	}
-	s.Visitor.SetContract(ca)
-
-	kp := prepareAuth(t, s)
-	s.SetGas(kp.ID, 1000)
-
 	Convey("test of Auth", t, func() {
+
+		ca, err := s.Compile("iost.auth", "../../contract/account", "../../contract/account.js")
+		So(err, ShouldBeNil)
+		s.Visitor.SetContract(ca)
+
+		kp := prepareAuth(t, s)
+		s.SetGas(kp.ID, 1000)
+
 		s.Call("iost.auth", "SignUp", array2json([]interface{}{"myid", "okey", "akey"}), kp.ID, kp)
 		So(s.Visitor.MGet("iost.auth-account", "myid"), ShouldEqual, `s{"id":"myid","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"akey","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"okey","is_key_pair":true,"weight":1}],"threshold":1}}}`)
 
