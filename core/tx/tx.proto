@@ -23,7 +23,7 @@ message TxRaw {
 }
 
 message ReceiptRaw {
-    int32 type = 1;
+    string funcName = 1;
     string content = 2;
 }
 
@@ -35,7 +35,13 @@ message StatusRaw {
 message TxReceiptRaw {
     bytes txHash = 1;
     int64 gasUsage = 2;
-    StatusRaw status = 3;
-    int32 succActionNum = 4;
-    repeated ReceiptRaw receipts = 5;
+    map<string, int64> RAMUsage = 3;
+    StatusRaw status = 4;
+    repeated Return returns = 5;
+    repeated ReceiptRaw receipts = 6;
+}
+
+message Return {
+    string funcName = 1;
+    string value = 2;
 }
