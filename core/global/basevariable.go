@@ -18,8 +18,6 @@ const (
 	ModeSync
 	// ModeInit init mode
 	ModeInit
-	// ModeGenerate generate block
-	ModeGenerate
 )
 
 // BuildTime build time
@@ -37,8 +35,6 @@ func (m TMode) String() string {
 		return "ModeSync"
 	case ModeInit:
 		return "ModeInit"
-	case ModeGenerate:
-		return "ModeGenerate"
 	default:
 		return ""
 	}

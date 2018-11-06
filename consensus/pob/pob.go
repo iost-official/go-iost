@@ -214,7 +214,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	blk := vbm.blk
 	if vbm.gen {
 		ilog.Info("block from myself, block number: ", blk.Head.Number)
-		err := p.handleRecvBlock(blk)
+		err := p.handleRecvBlock(blk, true)
 		if err != nil {
 			ilog.Errorf("received block from myself, error, err:%v", err)
 		}
@@ -234,7 +234,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 			p.blockReqMap.Store(string(blk.HeadHash()), nil)
 		}
 		ilog.Infof("[pob] handle recv new block start, number = %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
-		err := p.handleRecvBlock(blk)
+		err := p.handleRecvBlock(blk, true)
 		t2 := calculateTime(blk)
 		metricsTimeCost.Set(t2, nil)
 		ilog.Infof("[pob]" + p.blockCache.Draw())
@@ -248,7 +248,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		}
 	case p2p.SyncBlockResponse:
 		ilog.Info("[pob] received sync block, block number: ", blk.Head.Number)
-		err := p.handleRecvBlock(blk)
+		err := p.handleRecvBlock(blk, true)
 		ilog.Infof("[pob]" + p.blockCache.Draw())
 		if err != nil {
 			ilog.Errorf("received sync block error, err:%v", err)
@@ -303,7 +303,6 @@ func (p *PoB) scheduleLoop() {
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
-					p.baseVariable.SetMode(global.ModeGenerate)
 					generateBlockTicker := time.NewTicker(time.Millisecond * 200)
 					num := 0
 					generateTxsNum = 0
@@ -329,10 +328,11 @@ func (p *PoB) scheduleLoop() {
 						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
 						ilog.Infof("[pob] generate block time cost: %v, %v, %v, %v", num, limitTime, calculateTime(blk), p.account.ID[4:6])
 						metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
+						update := false
 						if num == continuousNum-1 {
-							p.baseVariable.SetMode(global.ModeNormal)
+							update = true
 						}
-						err = p.handleRecvBlock(blk)
+						err = p.handleRecvBlock(blk, update)
 						if err != nil {
 							ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
 							continue
@@ -357,7 +357,7 @@ func (p *PoB) scheduleLoop() {
 	}
 }
 
-func (p *PoB) handleRecvBlock(blk *block.Block) error {
+func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
@@ -369,12 +369,12 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent.Block)
+		return p.addExistingBlock(blk, parent.Block, update)
 	}
 	return errSingle
 }
 
-func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
+func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, update bool) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
 	if !ok {
@@ -393,17 +393,17 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 	p.blockCache.Link(node)
 	p.blockCache.Draw()
 	ilog.Infof("[pob] updateInfo start, number: %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
-	p.updateInfo(node)
+	p.updateInfo(node, update)
 	ilog.Infof("[pob] updateInfo end, number: %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	for child := range node.Children {
-		p.addExistingBlock(child.Block, node.Block)
+		p.addExistingBlock(child.Block, node.Block, true)
 	}
 	return nil
 }
 
-func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
+func (p *PoB) updateInfo(node *blockcache.BlockCacheNode, update bool) {
 	updateWaterMark(node)
-	if p.baseVariable.Mode() != global.ModeGenerate {
+	if update {
 		updateLib(node, p.blockCache)
 	}
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
