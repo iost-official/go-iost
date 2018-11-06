@@ -135,7 +135,7 @@ func (t *Tx) publishHash() []byte {
 	return common.Sha3(b)
 }
 
-// ToPb convert tx to TxRaw for transmission
+// ToPb convert tx to txpb.Tx for transmission.
 func (t *Tx) ToPb() *txpb.Tx {
 	tr := &txpb.Tx{
 		Time:       t.Time,
@@ -183,7 +183,7 @@ func (t *Tx) Encode() []byte {
 	return b
 }
 
-// FromPb convert tx from txpb.Tx
+// FromPb convert tx from txpb.Tx.
 func (t *Tx) FromPb(tr *txpb.Tx) {
 	t.Time = tr.Time
 	t.Expiration = tr.Expiration
