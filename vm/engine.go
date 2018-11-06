@@ -257,6 +257,12 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
+			// make sure s is a valid json
+			_, err = simplejson.NewJson(s)
+			if err != nil {
+				ilog.Error(string(s))
+				return nil, err
+			}
 			rtn = append(rtn, s)
 		}
 	}
