@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
-
 	"strings"
+	"time"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
