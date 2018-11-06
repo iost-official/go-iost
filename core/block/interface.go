@@ -1,4 +1,3 @@
-// Package block 是区块和区块链的结构体定义和操作方法
 package block
 
 import "github.com/iost-official/go-iost/core/tx"

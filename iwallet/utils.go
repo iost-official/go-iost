@@ -2,15 +2,16 @@ package iwallet
 
 import (
 	"context"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/rpc"
-	"google.golang.org/grpc"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/rpc"
+
+	"google.golang.org/grpc"
 )
 
 func saveBytes(buf []byte) string {
@@ -65,7 +66,7 @@ func getSignAlgo(algo string) crypto.Algorithm {
 	}
 }
 
-func getTxReceiptByTxHash(server string, txHashStr string) (*tx.TxReceiptRaw, error) {
+func getTxReceiptByTxHash(server string, txHashStr string) (*txpb.TxReceipt, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
