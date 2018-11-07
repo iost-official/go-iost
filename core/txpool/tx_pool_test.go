@@ -173,7 +173,7 @@ func TestNewTxPImpl(t *testing.T) {
 			bcn := blockcache.NewBCN(nil, b[0])
 			So(txPool.testBlockListNum(), ShouldEqual, 0)
 
-			err := txPool.AddLinkedNode(bcn, bcn)
+			err := txPool.AddLinkedNode(bcn)
 			So(err, ShouldBeNil)
 
 			// need delay
@@ -297,7 +297,7 @@ func TestNewTxPImplB(t *testing.T) {
 				bcn := BlockCache.Add(blockList[i])
 				So(bcn, ShouldNotBeNil)
 
-				err = txPool.AddLinkedNode(bcn, bcn)
+				err = txPool.AddLinkedNode(bcn)
 				So(err, ShouldBeNil)
 			}
 
@@ -315,7 +315,7 @@ func TestNewTxPImplB(t *testing.T) {
 			So(txPool.testPendingTxsNum(), ShouldEqual, 3)
 
 			// fork chain
-			err = txPool.AddLinkedNode(bcn, bcn)
+			err = txPool.AddLinkedNode(bcn)
 			So(err, ShouldBeNil)
 			// need delay
 			for i := 0; i < 20; i++ {
@@ -470,7 +470,7 @@ func BenchmarkAddTx(b *testing.B) {
 	blockList := genNodes(accountList, witnessList, blockCnt, listTxCnt, true)
 
 	for i := 0; i < blockCnt; i++ {
-		txPool.AddLinkedNode(blockList[i], blockList[i])
+		txPool.AddLinkedNode(blockList[i])
 	}
 	time.Sleep(200 * time.Millisecond)
 
@@ -480,7 +480,8 @@ func BenchmarkAddTx(b *testing.B) {
 		t := genTx(accountList[0], Expiration)
 		b.StartTimer()
 
-		txPool.addTx(t)
+		txPool.verifyDuplicate(t)
+		txPool.pendingTx.Add(t)
 	}
 
 	b.StopTimer()
