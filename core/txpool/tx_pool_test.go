@@ -313,9 +313,10 @@ func TestNewTxPImplB(t *testing.T) {
 			}
 
 			So(txPool.testPendingTxsNum(), ShouldEqual, 3)
-
+			ilog.Info(txPool.pendingTx.Size())
 			// fork chain
 			err = txPool.AddLinkedNode(bcn)
+			ilog.Info(txPool.pendingTx.Size())
 			So(err, ShouldBeNil)
 			// need delay
 			for i := 0; i < 20; i++ {
