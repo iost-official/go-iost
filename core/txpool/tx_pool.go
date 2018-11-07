@@ -45,7 +45,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitCh:           make(chan struct{}),
 	}
 	p.forkChain.NewHead = blockCache.Head()
-	deferServer, _ := NewDeferServer("DelayTxDB", p)
+	deferServer, _ := NewDeferServer(p)
 	/*  if err != nil { */
 	// return nil, err
 	/* } */
@@ -66,19 +66,21 @@ func (pool *TxPImpl) Stop() {
 }
 
 // AddDefertx adds defer transaction.
-func (pool *TxPImpl) AddDefertx(t *tx.Tx) error {
+func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
-		return fmt.Errorf("CacheFullError. Pending tx size is %d. Max cache is %d", pool.pendingTx.Size(), maxCacheTxs)
+		return ErrCacheFull
 	}
-	referredTx, err := pool.global.BlockChain().GetTx(t.ReferredTx)
+	referredTx, err := pool.global.BlockChain().GetTx(txHash)
 	if err != nil {
 		return err
 	}
-	t.Actions = referredTx.Actions
-	t.Expiration = referredTx.Expiration + referredTx.Delay
-	t.GasLimit = referredTx.GasLimit
-	t.GasPrice = referredTx.GasPrice
-	t.ReferredTx = nil
+	t := &tx.Tx{
+		Actions:    referredTx.Actions,
+		Time:       referredTx.Time + referredTx.Delay,
+		Expiration: referredTx.Expiration + referredTx.Delay,
+		GasLimit:   referredTx.GasLimit,
+		GasPrice:   referredTx.GasPrice,
+	}
 	return pool.addTx(t)
 }
 
@@ -311,7 +313,7 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 		return fmt.Errorf("VerifyError %v", err)
 	}
 
-	if len(t.ReferredTx) > 0 {
+	if t.IsDefer() {
 		referredTx, err := pool.global.BlockChain().GetTx(t.ReferredTx)
 		if err != nil {
 			return fmt.Errorf("get referred tx error, %v", err)
@@ -409,10 +411,10 @@ func (pool *TxPImpl) clearBlock() {
 
 func (pool *TxPImpl) addTx(tx *tx.Tx) error {
 	if pool.existTxInPending(tx.Hash()) {
-		return errors.New("DupError. tx exists in pending")
+		return ErrDupPendingTx
 	}
 	if pool.existTxInChain(tx.Hash(), pool.forkChain.NewHead.Block) {
-		return errors.New("DupError. tx exists in chain")
+		return ErrDupChainTx
 	}
 	pool.pendingTx.Add(tx)
 	return nil
