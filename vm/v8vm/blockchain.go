@@ -197,6 +197,33 @@ func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gas
 	return ContractCallSuccess
 }
 
+//export goCallWithAuth
+func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gasUsed *C.size_t) int {
+	sbx, ok := GetSandbox(cSbx)
+	if !ok {
+		return ContractCallUnexpectedError
+	}
+
+	contractStr := C.GoString(contract)
+	apiStr := C.GoString(api)
+	argsStr := C.GoString(args)
+
+	callRs, cost, err := sbx.host.Call(contractStr, apiStr, argsStr, true)
+	*gasUsed = C.size_t(cost.Data)
+	if err != nil {
+		return ContractCallUnexpectedError
+	}
+
+	rsStr, err := json.Marshal(callRs)
+	if err != nil {
+		return ContractCallUnexpectedError
+	}
+
+	*result = C.CString(string(rsStr))
+
+	return ContractCallSuccess
+}
+
 //export goCallWithReceipt
 func goCallWithReceipt(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gasUsed *C.size_t) int {
 	sbx, ok := GetSandbox(cSbx)
