@@ -32,7 +32,7 @@ func TestGenGenesis(t *testing.T) {
 			{"a1", "IOSTCJqjtLBntuWRGaZumevYgBEZsU8AaAdUpEMnpGieKV676B9St", "IOSTCJqjtLBntuWRGaZumevYgBEZsU8AaAdUpEMnpGieKV676B9St", 13700000000},
 		},
 		InitialTimestamp: "2006-01-02T15:04:05Z",
-		VoteContractPath: os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/contract/",
+		ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/contract/",
 	})
 	if err != nil {
 		t.Fatal(err)

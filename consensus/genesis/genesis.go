@@ -47,8 +47,8 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		acts = append(acts, act)
 	}
 	// deploy iost.vote
-	voteFilePath := filepath.Join(gConf.VoteContractPath, "vote.js")
-	voteAbiPath := filepath.Join(gConf.VoteContractPath, "vote.js.abi")
+	voteFilePath := filepath.Join(gConf.ContractPath, "vote.js")
+	voteAbiPath := filepath.Join(gConf.ContractPath, "vote.js.abi")
 	fd, err := ioutil.ReadFile(voteFilePath)
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func FakeBv(bv global.BaseVariable) error {
 				{ID: "a2", Owner: "a2", Active: "a2", Balance: 222222},
 				{ID: "a3", Owner: "a3", Active: "a3", Balance: 333333333}},
 			InitialTimestamp: "2006-01-02T15:04:05Z",
-			VoteContractPath: os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/",
+			ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/",
 		},
 	)
 	if err != nil {

@@ -28,7 +28,7 @@ type GenesisConfig struct {
 	CreateGenesis    bool
 	InitialTimestamp string
 	WitnessInfo      []*Witness
-	VoteContractPath string
+	ContractPath     string
 	AdminID          string
 }
 
