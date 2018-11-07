@@ -21,21 +21,27 @@ var GasMinPledge = &common.Fixed{Value: GasMinPledgeInIOST * IOSTRatio, Decimal:
 
 // Each IOST you pledge, you will get `GasImmediateReward` gas immediately.
 // Then gas will be generated at a rate of `GasIncreaseRate` gas per block.
+// Then it takes `GasFulfillDuration` time to reach the limit.
 // Your gas production will stop when it reaches the limit.
 // When you use some gas later, the total amount will be less than the limit,
-// so gas production will continue again util the limit.
+// so gas production will resume again util the limit.
 
 // GasImmediateReward immediate reward per IOST
-var GasImmediateReward = &common.Fixed{Value: 10 * IOSTRatio, Decimal: 8}
+var GasImmediateReward = &common.Fixed{Value: 300 * IOSTRatio, Decimal: 8}
 
 // GasLimit gas limit per IOST
-var GasLimit = &common.Fixed{Value: 30 * IOSTRatio, Decimal: 8}
+var GasLimit = &common.Fixed{Value: 900 * IOSTRatio, Decimal: 8}
+
+// GasFillDuration it takes 3 days to fulfill the gas buffer. TODO when BlockHead.time is fixed, fix the 'SlotLength' here
+var GasFulfillDuration int64 = 3 * 24 * 3600 / common.SlotLength
 
 // GasIncreaseRate gas increase per IOST per block
-var GasIncreaseRate = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
+var GasIncreaseRate = GasLimit.Sub(GasImmediateReward).Div(GasFulfillDuration)
 
-// UnpledgeFreeze coins will be frozen for 3 days after being unpledged
-var UnpledgeFreeze int64 = 3 * 24 * 3600 / common.SlotLength
+//var GasIncreaseRate = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
+
+// UnpledgeFreezeDuration coins will be frozen for 3 days after being unpledged. TODO when BlockHead.time is fixed, fix the 'SlotLength' here
+var UnpledgeFreezeDuration int64 = 3 * 24 * 3600 / common.SlotLength
 
 var gasABIs map[string]*abi
 
@@ -205,7 +211,7 @@ var (
 			}
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
-			freezeTime := h.Context().Value("time").(int64) + UnpledgeFreeze
+			freezeTime := h.Context().Value("time").(int64) + UnpledgeFreezeDuration
 			_, cost0, err = h.CallWithAuth("iost.token", "transferFreeze",
 				fmt.Sprintf(`["iost", "%v", "%v", "%v", %v]`, contractName, receiver, unpledgeAmountStr, freezeTime))
 			cost.AddAssign(cost0)

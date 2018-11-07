@@ -99,6 +99,11 @@ func (f *Fixed) Times(i int64) *Fixed {
 	return &Fixed{Value: f.Value * i, Decimal: f.Decimal}
 }
 
+// Div divide by a scalar
+func (f *Fixed) Div(i int64) *Fixed {
+	return &Fixed{Value: f.Value / i, Decimal: f.Decimal}
+}
+
 // LessThan ...
 func (f *Fixed) LessThan(other *Fixed) bool {
 	fpnNew, otherNew := UnifyDecimal(f, other)

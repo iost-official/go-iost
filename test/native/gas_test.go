@@ -55,7 +55,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Accou
 	}
 	h.DB().MPut("iost.auth-account", testAcc.ID, database.MustMarshal(string(as)))
 	h.Context().Set("number", int64(0))
-	h.Context().Set("time", int64(1541576370 / 3))
+	h.Context().Set("time", int64(1541576370/3))
 	h.Context().Set("stack_height", 0)
 	h.Context().Set("publisher", testAcc.ID)
 
@@ -93,7 +93,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Accou
 }
 
 func timePass(h *host.Host, duration int64) {
-	h.Context().Set("time", h.Context().Value("time").(int64) + duration)
+	h.Context().Set("time", h.Context().Value("time").(int64)+duration)
 }
 
 func getAccount(k string) *account.Account {
@@ -169,7 +169,7 @@ func TestGas_Pledge(t *testing.T) {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
 	}
 	ilog.Info("Then gas will reach limit and not increase any longer")
-	delta = int64(100)
+	delta = int64(native.GasFulfillDuration)
 	timePass(h, delta)
 	gas = h.GasManager.CurrentGas(testAcc.ID)
 	gasEstimated = pledgeAmount.Multiply(native.GasLimit)
@@ -243,7 +243,7 @@ func TestGas_Unpledge(t *testing.T) {
 	}
 	delta1 := int64(10)
 	timePass(h, delta1)
-	unpledgeAmount := toIOSTFixed(100)
+	unpledgeAmount := toIOSTFixed(190)
 	balanceBeforeUnpledge := h.DB().TokenBalance("iost", testAcc.ID)
 	_, _, err = e.LoadAndCall(h, code, "UnpledgeGas", testAcc.ID, testAcc.ID, unpledgeAmount.ToString())
 	if err != nil {
@@ -262,13 +262,13 @@ func TestGas_Unpledge(t *testing.T) {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
 	}
 	ilog.Info("after 3 days, the frozen money is available")
-	timePass(h, native.UnpledgeFreeze)
+	timePass(h, native.UnpledgeFreezeDuration)
 	h.Context().Set("contract_name", "iost.token")
 	rs, _, err := e.LoadAndCall(h, native.TokenABI(), "balanceOf", "iost", testAcc.ID)
 	if err != nil {
 		t.Fatalf("unpledge err %v", err)
 	}
-	expected :=  initCoinFN.Sub(pledgeAmount).Add(unpledgeAmount)
+	expected := initCoinFN.Sub(pledgeAmount).Add(unpledgeAmount)
 	if rs[0] != expected.ToString() {
 		t.Fatalf("invalid balance after unpledge %v != %v", rs[0], expected.ToString())
 	}
@@ -332,19 +332,19 @@ func TestGas_PledgeUnpledgeForOther(t *testing.T) {
 	}
 	h.DB().MPut("iost.auth-account", otherAcc.ID, database.MustMarshal(string(as)))
 
-	unpledgeAmount := toIOSTFixed(100)
+	unpledgeAmount := toIOSTFixed(190)
 	_, _, err = e.LoadAndCall(h, code, "UnpledgeGas", otherAcc.ID, testAcc.ID, unpledgeAmount.ToString())
 	if err != nil {
 		t.Fatalf("unpledge err %v", err)
 	}
 
-	timePass(h, native.UnpledgeFreeze)
+	timePass(h, native.UnpledgeFreezeDuration)
 	h.Context().Set("contract_name", "iost.token")
 	rs, _, err := e.LoadAndCall(h, native.TokenABI(), "balanceOf", "iost", testAcc.ID)
 	if err != nil {
 		t.Fatalf("unpledge err %v", err)
 	}
-	expected :=  initCoinFN.Sub(pledgeAmount).Add(unpledgeAmount)
+	expected := initCoinFN.Sub(pledgeAmount).Add(unpledgeAmount)
 	if rs[0] != expected.ToString() {
 		t.Fatalf("invalid balance after unpledge %v != %v", rs[0], expected.ToString())
 	}
