@@ -64,7 +64,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 		syncEnd:      0,
 	}
 	var err error
-	sy.dc, err = NewDownloadController()
+	sy.dc, err = NewDownloadController(sy.checkHasBlock, sy.reqSyncBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -83,8 +83,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 
 // Start starts the synchronizer module.
 func (sy *SyncImpl) Start() error {
-	go sy.dc.FreePeerLoop(sy.checkHasBlock)
-	go sy.dc.DownloadLoop(sy.reqSyncBlock)
+	sy.dc.Start()
 	go sy.syncHeightLoop()
 	go sy.messageLoop()
 	go sy.retryDownloadLoop()
@@ -190,7 +189,7 @@ func (sy *SyncImpl) checkSync() bool {
 	ilog.Infof("check sync, heights: %+v", heights)
 	if netHeight > height+syncNumber {
 		sy.basevariable.SetMode(global.ModeSync)
-		sy.dc.Reset()
+		sy.dc.ReStart()
 		go sy.syncBlocks(height+1, netHeight)
 		return true
 	}
@@ -266,7 +265,7 @@ func (sy *SyncImpl) CheckSyncProcess() {
 	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd)
 	if sy.syncEnd <= sy.blockCache.Head().Head.Number {
 		sy.basevariable.SetMode(global.ModeNormal)
-		sy.dc.Reset()
+		sy.dc.ReStart()
 	}
 }
 
