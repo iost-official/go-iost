@@ -67,16 +67,6 @@ func (s *Status) FromPb(st *txpb.Status) *Status {
 	return s
 }
 
-// ReceiptType type of single receipt
-type ReceiptType int32
-
-const (
-	// SystemDefined system receipt, recording info of calling a method
-	SystemDefined ReceiptType = iota
-	// UserDefined user defined receipt, usually a json string
-	UserDefined
-)
-
 // Receipt generated when applying transaction
 type Receipt struct {
 	FuncName string

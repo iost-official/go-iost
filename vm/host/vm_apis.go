@@ -17,7 +17,7 @@ func NewAPI(h *Host) APIDelegate {
 	return APIDelegate{h: h, ec: event.GetEventCollectorInstance()}
 }
 
-func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
+func (h *APIDelegate) receipt(s string) {
 	fn := h.h.Context().Value("contract_name").(string) + "/" + h.h.Context().Value("abi_name").(string)
 	rec := &tx.Receipt{
 		FuncName: fn,
@@ -34,6 +34,6 @@ func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
 
 // Receipt ...
 func (h *APIDelegate) Receipt(s string) *contract.Cost {
-	h.receipt(tx.UserDefined, s)
+	h.receipt(s)
 	return ReceiptCost(len(s))
 }

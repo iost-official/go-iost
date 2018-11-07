@@ -52,12 +52,13 @@ var (
 				return nil, cost, err
 			}
 
-			_, cost0, err = h.GetBalance("iost.bonus")
-			cost.AddAssign(cost0)
-			if err != nil {
-				return nil, cost, err
-			}
 			/*
+				deprecated GetBalance
+				_, cost0, err = h.GetBalance("iost.bonus")
+				cost.AddAssign(cost0)
+				if err != nil {
+					return nil, cost, err
+				}
 				token := amount * 1.0 / totalServi * bl
 				if token > bl {
 					token = bl

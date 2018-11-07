@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/iost-official/go-iost/vm/host"
+	"errors"
 )
 
 // todo replace this error code with c++ error code
@@ -43,138 +44,58 @@ const (
 	APICallUnexpectedError
 )
 
-//export goTransfer
-func goTransfer(cSbx C.SandboxPtr, from, to, amount *C.char, gasUsed *C.size_t) int {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return TransferUnexpectedError
-	}
-
-	fromStr := C.GoString(from)
-	toStr := C.GoString(to)
-	amountStr := C.GoString(amount)
-
-	cost, err := sbx.host.Transfer(fromStr, toStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
-
-	if err != nil && err == host.ErrBalanceNotEnough {
-		return TransferBalanceNotEnough
-	}
-
-	return TransferSuccess
-}
-
-//export goWithdraw
-func goWithdraw(cSbx C.SandboxPtr, to, amount *C.char, gasUsed *C.size_t) int {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return TransferUnexpectedError
-	}
-
-	toStr := C.GoString(to)
-	amountStr := C.GoString(amount)
-	cost, err := sbx.host.Withdraw(toStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
-
-	if err != nil && err == host.ErrBalanceNotEnough {
-		return TransferBalanceNotEnough
-	}
-
-	return TransferSuccess
-}
-
-//export goDeposit
-func goDeposit(cSbx C.SandboxPtr, from, amount *C.char, gasUsed *C.size_t) int {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return TransferUnexpectedError
-	}
-
-	fromStr := C.GoString(from)
-	amountStr := C.GoString(amount)
-	cost, err := sbx.host.Deposit(fromStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
-
-	if err != nil && err == host.ErrBalanceNotEnough {
-		return TransferBalanceNotEnough
-	}
-
-	return TransferSuccess
-}
-
-//export goTopUp
-func goTopUp(cSbx C.SandboxPtr, contract, from, amount *C.char, gasUsed *C.size_t) int {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return TransferUnexpectedError
-	}
-
-	contractStr := C.GoString(contract)
-	fromStr := C.GoString(from)
-	amountStr := C.GoString(amount)
-	cost, err := sbx.host.TopUp(contractStr, fromStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
-
-	if err != nil && err == host.ErrBalanceNotEnough {
-		return TransferBalanceNotEnough
-	}
-
-	return TransferSuccess
-}
-
-//export goCountermand
-func goCountermand(cSbx C.SandboxPtr, contract, to, amount *C.char, gasUsed *C.size_t) int {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return TransferUnexpectedError
-	}
-
-	contractStr := C.GoString(contract)
-	toStr := C.GoString(to)
-	amountStr := C.GoString(amount)
-	cost, err := sbx.host.Countermand(contractStr, toStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
-
-	if err != nil && err == host.ErrBalanceNotEnough {
-		return TransferBalanceNotEnough
-	}
-
-	return TransferSuccess
-}
+var (
+	ErrGetSandbox = errors.New("get sandbox failed.")
+	MessageSuccess = ""
+)
 
 //export goBlockInfo
-func goBlockInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) int {
+func goBlockInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return BlockInfoUnexpectedError
+		return C.Cstring(ErrGetSandbox.Error())
 	}
 
 	blkInfo, cost := sbx.host.BlockInfo()
 	*gasUsed = C.size_t(cost.Data)
 	*info = C.CString(string(blkInfo))
 
-	return BlockInfoSuccess
+	return C.Cstring(MessageSuccess)
 }
 
 //export goTxInfo
-func goTxInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) int {
+func goTxInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return TxInfoUnexpectedError
+		return C.Cstring(ErrGetSandbox.Error())
 	}
 
 	txInfo, cost := sbx.host.TxInfo()
 	*gasUsed = C.size_t(cost.Data)
 	*info = C.CString(string(txInfo))
 
-	return TxInfoSuccess
+	return C.Cstring(MessageSuccess)
+}
+
+//export goContextInfo
+func goContextInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
+	sbx, ok := GetSandbox(cSbx)
+	if !ok {
+		return C.Cstring(ErrGetSandbox.Error())
+	}
+
+	ctxInfo, cost := sbx.host.ContextInfo()
+	*gasUsed = C.size_t(cost.Data)
+	*info = C.CString(string(ctxInfo))
+
+	return C.Cstring(MessageSuccess)
 }
 
 //export goCall
-func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gasUsed *C.size_t) int {
+func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return ContractCallUnexpectedError
+		return C.Cstring(ErrGetSandbox.Error())
 	}
 
 	contractStr := C.GoString(contract)
@@ -184,78 +105,51 @@ func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gas
 	callRs, cost, err := sbx.host.Call(contractStr, apiStr, argsStr)
 	*gasUsed = C.size_t(cost.Data)
 	if err != nil {
-		return ContractCallUnexpectedError
+		return C.Cstring(err.Error())
 	}
 
 	rsStr, err := json.Marshal(callRs)
 	if err != nil {
-		return ContractCallUnexpectedError
+		return C.Cstring(host.ErrInvalidData.Error())
 	}
 
 	*result = C.CString(string(rsStr))
 
-	return ContractCallSuccess
+	return C.Cstring(MessageSuccess)
 }
 
 //export goCallWithAuth
-func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gasUsed *C.size_t) int {
+func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return ContractCallUnexpectedError
+		return C.Cstring(ErrGetSandbox.Error())
 	}
 
 	contractStr := C.GoString(contract)
 	apiStr := C.GoString(api)
 	argsStr := C.GoString(args)
 
-	callRs, cost, err := sbx.host.Call(contractStr, apiStr, argsStr, true)
+	callRs, cost, err := sbx.host.CallWithAuth(contractStr, apiStr, argsStr)
 	*gasUsed = C.size_t(cost.Data)
 	if err != nil {
-		return ContractCallUnexpectedError
+		return C.Cstring(err.Error())
 	}
 
 	rsStr, err := json.Marshal(callRs)
 	if err != nil {
-		return ContractCallUnexpectedError
+		return C.Cstring(host.ErrInvalidData.Error())
 	}
 
 	*result = C.CString(string(rsStr))
 
-	return ContractCallSuccess
-}
-
-//export goCallWithReceipt
-func goCallWithReceipt(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gasUsed *C.size_t) int {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return ContractCallUnexpectedError
-	}
-
-	contractStr := C.GoString(contract)
-	apiStr := C.GoString(api)
-	argsStr := C.GoString(args)
-
-	callRs, cost, err := sbx.host.CallWithReceipt(contractStr, apiStr, argsStr)
-	*gasUsed = C.size_t(cost.Data)
-	if err != nil {
-		return ContractCallUnexpectedError
-	}
-
-	rsStr, err := json.Marshal(callRs)
-	if err != nil {
-		return ContractCallUnexpectedError
-	}
-
-	*result = C.CString(string(rsStr))
-
-	return ContractCallSuccess
+	return C.Cstring(MessageSuccess)
 }
 
 //export goRequireAuth
-func goRequireAuth(cSbx C.SandboxPtr, ID *C.char, permission *C.char, ok *C.bool, gasUsed *C.size_t) int {
+func goRequireAuth(cSbx C.SandboxPtr, ID *C.char, permission *C.char, ok *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, sbOk := GetSandbox(cSbx)
 	if !sbOk {
-		return APICallUnexpectedError
+		return C.Cstring(ErrGetSandbox.Error())
 	}
 
 	pubKeyStr := C.GoString(ID)
@@ -264,30 +158,40 @@ func goRequireAuth(cSbx C.SandboxPtr, ID *C.char, permission *C.char, ok *C.bool
 	callOk, RequireAuthCost := sbx.host.RequireAuth(pubKeyStr, permissionStr)
 
 	*ok = C.bool(callOk)
-	if callOk != true {
-		return APICallUnexpectedError
-	}
 
 	*gasUsed = C.size_t(RequireAuthCost.Data)
 
-	return APICallSuccess
+	return C.Cstring(MessageSuccess)
 }
 
-//export goGrantServi
-func goGrantServi(cSbx C.SandboxPtr, pubKey *C.char, amount *C.char, gasUsed *C.size_t) int {
+//export goReceipt
+func goReceipt(cSbx C.SandboxPtr, content *C.char, gasUsed *C.size_t) *C.char {
 	sbx, sbOk := GetSandbox(cSbx)
 	if !sbOk {
-		return APICallUnexpectedError
+		return C.Cstring(ErrGetSandbox.Error())
 	}
 
-	pubKeyStr := C.GoString(pubKey)
-	amountStr := C.GoString(amount)
-	cost, err := sbx.host.GrantServi(pubKeyStr, amountStr)
+	contentStr := C.GoString(content)
+
+	cost := sbx.host.Receipt(contentStr)
+
 	*gasUsed = C.size_t(cost.Data)
 
-	if err != nil {
-		return APICallUnexpectedError
+	return C.Cstring(MessageSuccess)
+}
+
+//export goEvent
+func goEvent(cSbx C.SandboxPtr, content *C.char, gasUsed *C.size_t) *C.char {
+	sbx, sbOk := GetSandbox(cSbx)
+	if !sbOk {
+		return C.Cstring(ErrGetSandbox.Error())
 	}
 
-	return APICallSuccess
+	contentStr := C.GoString(content)
+
+	cost := sbx.host.PostEvent(contentStr)
+
+	*gasUsed = C.size_t(cost.CPU)
+
+	return C.Cstring(MessageSuccess)
 }
