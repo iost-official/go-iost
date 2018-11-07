@@ -1,5 +1,6 @@
 package contract
 
+// Cost ...
 type Cost struct {
 	Data int64
 	Net  int64
