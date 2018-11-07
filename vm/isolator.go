@@ -49,6 +49,8 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	e.t = t
 	e.h.SetDeadline(time.Now().Add(limit))
 	e.publisherID = t.Publisher
+	l := len(t.Encode())
+	e.h.PayCost(contract.NewCost(0, int64(l), 0), t.Publisher)
 
 	if !e.genesisMode {
 		err := checkTxParams(t)
