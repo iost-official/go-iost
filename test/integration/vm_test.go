@@ -19,7 +19,7 @@ func Test_callWithAuth(t *testing.T) {
 	Convey("test of callWithAuth", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(t, s)
+		prepareContract(s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		if err != nil {
