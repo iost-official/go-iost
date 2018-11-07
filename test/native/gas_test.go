@@ -59,6 +59,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Accou
 	h.Context().Set("number", initNumber)
 	h.Context().Set("stack_height", 0)
 	h.Context().Set("contract_name", "iost.token")
+	h.Context().Set("publisher", testAcc.ID)
 
 	tokenContract := native.TokenABI()
 	h.SetCode(tokenContract)
@@ -171,6 +172,35 @@ func TestGas_Pledge(t *testing.T) {
 	if !gas.Equals(gasEstimated) {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
 	}
+}
+
+func TestGas_PledgeForOther(t *testing.T) {
+	ilog.Info("test pledge for others")
+	e, h, code, testAcc := gasTestInit()
+	otherAcc := getAccount("5oyBNyBeMFUKndGF8E3xkxmS3qugdYbwntSu8NEYtvC2DMmVcXgtmBqRxCLUCjxcu9zdcH3RkfKec3Q2xeiG48RL")
+	pledgeAmount := toIOSTFN(200)
+	_, _, err := e.LoadAndCall(h, code, "PledgeGas", otherAcc.ID, pledgeAmount.ToString())
+	if err != nil {
+		t.Fatalf("pledge err %v", err)
+	}
+	if h.DB().TokenBalance("iost", testAcc.ID) != (initCoinFN.Value - pledgeAmount.Value) {
+		t.Fatalf("invalid balance after pledge %d", h.DB().TokenBalance("iost", testAcc.ID))
+	}
+	if h.DB().TokenBalance("iost", "iost.gas") != pledgeAmount.Value {
+		t.Fatalf("invalid balance after pledge %d", h.DB().TokenBalance("iost", host.ContractAccountPrefix+"iost.gas"))
+	}
+	ilog.Info("After pledge, you will get some gas immediately")
+	gas := h.GasManager.CurrentGas(otherAcc.ID)
+	gasEstimated := pledgeAmount.Multiply(native.GasImmediateReward)
+	if !gas.Equals(gasEstimated) {
+		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
+	}
+	ilog.Info("If one pledge for others, he will get no gas himself")
+	gas = h.GasManager.CurrentGas(testAcc.ID)
+	if gas.Value != 0 {
+		t.Fatalf("invalid gas should be empty buy get %v", gas)
+	}
+
 }
 
 func TestGas_PledgeMore(t *testing.T) {

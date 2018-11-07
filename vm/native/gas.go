@@ -120,11 +120,11 @@ var (
 			// if !strings.HasPrefix(userName, "IOST") {
 			// 	return nil, cost, errors.New("userName should start with IOST")
 			// }
-			auth, cost0 := h.RequireAuth(userName, "transfer")
-			cost.AddAssign(cost0)
-			if !auth {
-				return nil, cost, host.ErrPermissionLost
-			}
+			//auth, cost0 := h.RequireAuth(userName, "transfer")
+			//cost.AddAssign(cost0)
+			//if !auth {
+			//	return nil, cost, host.ErrPermissionLost
+			//}
 			pledgeAmountStr, ok := args[1].(string)
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[1])
@@ -140,7 +140,8 @@ var (
 			}
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
-			_, cost0, err = h.Call("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, userName, contractName, pledgeAmountStr))
+			publisher := h.Context().Value("publisher")
+			_, cost0, err = h.Call("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, publisher, contractName, pledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -191,7 +192,7 @@ var (
 			}
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
-			cost0, err = h.Withdraw(userName, unpledgeAmountStr)
+			//cost0, err = h.Withdraw(userName, unpledgeAmountStr)
 			_, cost0, err = h.CallWithAuth("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`,  contractName, userName, unpledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
