@@ -9,6 +9,14 @@
         "token": "iost",
         "val": "100"
       }]
+    },
+    {
+      "name": "withdraw",
+      "args": ["string", "string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "100"
+      }]
     }
   ]
 }
