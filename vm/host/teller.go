@@ -188,7 +188,12 @@ func (h *Teller) Costs() map[string]*contract.Cost {
 
 // PayCost ...
 func (h *Teller) PayCost(c *contract.Cost, who string) {
-	h.cost[who] = c
+	if oc, ok := h.cost[who]; ok {
+		oc.AddAssign(c)
+		h.cost[who] = oc
+	} else {
+		h.cost[who] = c
+	}
 }
 
 // DoPay ...
@@ -209,13 +214,21 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 				return fmt.Errorf("pay cost failed: %v, %v", k, err)
 			}
 		}
-		if isPayRAM {
-			ram := c.Data
-			currentRam := h.h.db.TokenBalance("ram", k)
-			if currentRam-ram < 0 {
-				return fmt.Errorf("pay ram failed. id: %v need %v, actual %v", k, ram, currentRam)
+		if isPayRAM && !strings.HasPrefix(k, "iost") {
+			var payer string
+			if strings.HasPrefix(k, "Contract") {
+				p, _ := h.h.GlobalMapGet("iost.system", "contract_owner", k)
+				payer = p.(string)
+			} else {
+				payer = k
 			}
-			h.h.db.SetTokenBalance("ram", k, currentRam-ram)
+
+			ram := c.Data
+			currentRam := h.h.db.TokenBalance("ram", payer)
+			if currentRam-ram < 0 {
+				return fmt.Errorf("pay ram failed. id: %v need %v, actual %v", payer, ram, currentRam)
+			}
+			h.h.db.SetTokenBalance("ram", payer, currentRam-ram)
 		}
 	}
 	return nil

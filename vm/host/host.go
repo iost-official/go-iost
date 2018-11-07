@@ -134,7 +134,7 @@ func (h *Host) CallWithReceipt(contractName, api, jarg string) ([]interface{}, *
 }
 
 // SetCode set code to storage
-func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
+func (h *Host) SetCode(c *contract.Contract, owner string) (*contract.Cost, error) {
 	code, err := h.monitor.Compile(c)
 	if err != nil {
 		return CompileErrCost, err
@@ -150,17 +150,13 @@ func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
 	c.Info.Abi = append(c.Info.Abi, &initABI)
 
 	l := len(c.Encode()) // todo multi Encode call
-	//ilog.Debugf("length is : %v", l)
+	h.PayCost(contract.NewCost(int64(l), 0, 0), owner)
 
 	h.db.SetContract(c)
 
 	_, cost, err := h.Call(c.ID, "init", "[]")
 
-	cost.AddAssign(CodeSavageCost(l))
-
-	//ilog.Debugf("set gas is : %v", cost.ToGas())
-
-	return cost, err // todo check set cost
+	return cost, err
 }
 
 // UpdateCode update code
@@ -173,6 +169,8 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 	if abi == nil {
 		return ABINotFoundCost, ErrUpdateRefused
 	}
+
+	oldL := len(oc.Encode())
 
 	rtn, cost, err := h.Call(c.ID, "can_update", `["`+string(id)+`"]`)
 
@@ -195,8 +193,10 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 
 	h.db.SetContract(c)
 
+	owner, co := h.GlobalMapGet("iost.system", "contract_owner", c.ID)
+	cost.AddAssign(co)
 	l := len(c.Encode()) // todo multi Encode call
-	cost.AddAssign(CodeSavageCost(l))
+	h.PayCost(contract.NewCost(int64(l-oldL), 0, 0), owner.(string))
 
 	return cost, nil
 }
@@ -214,6 +214,8 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 		return ABINotFoundCost, ErrDestroyRefused
 	}
 
+	oldL := len(oc.Encode())
+
 	rtn, cost, err := h.Call(contractName, "can_destroy", "[]")
 
 	if err != nil {
@@ -224,6 +226,12 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, ErrDestroyRefused
 	}
+
+	owner, co := h.GlobalMapGet("iost.system", "contract_owner", oc.ID)
+	cost.AddAssign(co)
+	h.PayCost(contract.NewCost(int64(-oldL), 0, 0), owner.(string))
+
+	h.db.MDel("iost.system-contract_owner", oc.ID)
 
 	h.db.DelContract(contractName)
 	return DelContractCost, nil

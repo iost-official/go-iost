@@ -25,7 +25,7 @@ func goPut(cSbx C.SandboxPtr, key, val *C.char, gasUsed *C.size_t) C.int {
 	v := C.GoString(val)
 
 	cost := sbx.host.Put(k, v)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return 0
 }
@@ -40,7 +40,7 @@ func goGet(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) *C.char {
 	k := C.GoString(key)
 	val, cost := sbx.host.Get(k)
 
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
 		return nil
@@ -60,7 +60,7 @@ func goDel(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) C.int {
 	k := C.GoString(key)
 
 	cost := sbx.host.Del(k)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return 0
 }
@@ -77,7 +77,7 @@ func goMapPut(cSbx C.SandboxPtr, key, field, val *C.char, gasUsed *C.size_t) C.i
 	v := C.GoString(val)
 
 	cost := sbx.host.MapPut(k, f, v)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return 0
 }
@@ -93,7 +93,7 @@ func goMapHas(cSbx C.SandboxPtr, key, field *C.char, gasUsed *C.size_t) C.bool {
 	f := C.GoString(field)
 	ret, cost := sbx.host.MapHas(k, f)
 
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return C.bool(ret)
 }
@@ -109,7 +109,7 @@ func goMapGet(cSbx C.SandboxPtr, key, field *C.char, gasUsed *C.size_t) *C.char 
 	f := C.GoString(field)
 	val, cost := sbx.host.MapGet(k, f)
 
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
 		return nil
@@ -130,7 +130,7 @@ func goMapDel(cSbx C.SandboxPtr, key, field *C.char, gasUsed *C.size_t) C.int {
 	f := C.GoString(field)
 
 	cost := sbx.host.MapDel(k, f)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return 0
 }
@@ -150,7 +150,7 @@ func goMapKeys(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) *C.char {
 		panic(err)
 	}
 	//fmt.Println("storage145", fstr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return C.CString(string(j))
 }
@@ -166,7 +166,7 @@ func goGlobalGet(cSbx C.SandboxPtr, contractName, key *C.char, gasUsed *C.size_t
 	k := C.GoString(key)
 	val, cost := sbx.host.GlobalGet(c, k)
 
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
 		return nil

@@ -55,7 +55,7 @@ func goTransfer(cSbx C.SandboxPtr, from, to, amount *C.char, gasUsed *C.size_t) 
 	amountStr := C.GoString(amount)
 
 	cost, err := sbx.host.Transfer(fromStr, toStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	if err != nil && err == host.ErrBalanceNotEnough {
 		return TransferBalanceNotEnough
@@ -74,7 +74,7 @@ func goWithdraw(cSbx C.SandboxPtr, to, amount *C.char, gasUsed *C.size_t) int {
 	toStr := C.GoString(to)
 	amountStr := C.GoString(amount)
 	cost, err := sbx.host.Withdraw(toStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	if err != nil && err == host.ErrBalanceNotEnough {
 		return TransferBalanceNotEnough
@@ -93,7 +93,7 @@ func goDeposit(cSbx C.SandboxPtr, from, amount *C.char, gasUsed *C.size_t) int {
 	fromStr := C.GoString(from)
 	amountStr := C.GoString(amount)
 	cost, err := sbx.host.Deposit(fromStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	if err != nil && err == host.ErrBalanceNotEnough {
 		return TransferBalanceNotEnough
@@ -113,7 +113,7 @@ func goTopUp(cSbx C.SandboxPtr, contract, from, amount *C.char, gasUsed *C.size_
 	fromStr := C.GoString(from)
 	amountStr := C.GoString(amount)
 	cost, err := sbx.host.TopUp(contractStr, fromStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	if err != nil && err == host.ErrBalanceNotEnough {
 		return TransferBalanceNotEnough
@@ -133,7 +133,7 @@ func goCountermand(cSbx C.SandboxPtr, contract, to, amount *C.char, gasUsed *C.s
 	toStr := C.GoString(to)
 	amountStr := C.GoString(amount)
 	cost, err := sbx.host.Countermand(contractStr, toStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	if err != nil && err == host.ErrBalanceNotEnough {
 		return TransferBalanceNotEnough
@@ -150,7 +150,7 @@ func goBlockInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) int {
 	}
 
 	blkInfo, cost := sbx.host.BlockInfo()
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 	*info = C.CString(string(blkInfo))
 
 	return BlockInfoSuccess
@@ -164,7 +164,7 @@ func goTxInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) int {
 	}
 
 	txInfo, cost := sbx.host.TxInfo()
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 	*info = C.CString(string(txInfo))
 
 	return TxInfoSuccess
@@ -182,7 +182,7 @@ func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gas
 	argsStr := C.GoString(args)
 
 	callRs, cost, err := sbx.host.Call(contractStr, apiStr, argsStr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 	if err != nil {
 		return ContractCallUnexpectedError
 	}
@@ -209,7 +209,7 @@ func goCallWithReceipt(cSbx C.SandboxPtr, contract, api, args *C.char, result **
 	argsStr := C.GoString(args)
 
 	callRs, cost, err := sbx.host.CallWithReceipt(contractStr, apiStr, argsStr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 	if err != nil {
 		return ContractCallUnexpectedError
 	}
@@ -241,7 +241,7 @@ func goRequireAuth(cSbx C.SandboxPtr, ID *C.char, permission *C.char, ok *C.bool
 		return APICallUnexpectedError
 	}
 
-	*gasUsed = C.size_t(RequireAuthCost.Data)
+	*gasUsed = C.size_t(RequireAuthCost.CPU)
 
 	return APICallSuccess
 }
@@ -256,7 +256,7 @@ func goGrantServi(cSbx C.SandboxPtr, pubKey *C.char, amount *C.char, gasUsed *C.
 	pubKeyStr := C.GoString(pubKey)
 	amountStr := C.GoString(amount)
 	cost, err := sbx.host.GrantServi(pubKeyStr, amountStr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	if err != nil {
 		return APICallUnexpectedError
