@@ -27,12 +27,9 @@ func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
 	rs := h.h.ctx.GValue("receipts").([]*tx.Receipt)
 	h.h.ctx.GSet("receipts", append(rs, rec))
 
+	// post event for receipt
 	topic := event.Event_ContractReceipt
-	if t == tx.UserDefined {
-		topic = event.Event_ContractEvent
-	}
 	h.ec.Post(event.NewEvent(topic, rec.Content))
-
 }
 
 // Receipt ...

@@ -110,7 +110,7 @@ func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, *contrac
 	return h.Call(contract, api, jarg, true)
 }
 
-// CallWithReceipt call and generate receipt
+// todo deprecated CallWithReceipt call and generate receipt
 func (h *Host) CallWithReceipt(contractName, api, jarg string) ([]interface{}, *contract.Cost, error) {
 	rtn, cost, err := h.Call(contractName, api, jarg)
 
@@ -180,7 +180,6 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 		return cost, fmt.Errorf("call can_update: %v", err)
 	}
 
-	// todo rtn[0] should be bool type
 	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, ErrUpdateRefused
 	}
@@ -220,7 +219,6 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 		return cost, err
 	}
 
-	// todo rtn[0] should be bool type
 	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, ErrDestroyRefused
 	}

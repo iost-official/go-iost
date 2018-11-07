@@ -28,7 +28,7 @@ func NewTeller(h *Host) Teller {
 	}
 }
 
-// TransferRaw ...
+// todo deprecated TransferRaw ...
 func (h *Teller) TransferRaw(from, to string, amount int64) error {
 	bf := h.h.db.Balance(from)
 	if strings.HasPrefix(from, ContractAccountPrefix) && bf >= amount || bf > amount {
@@ -39,7 +39,7 @@ func (h *Teller) TransferRaw(from, to string, amount int64) error {
 	return fmt.Errorf("balance not enough %v < %v", amount, bf)
 }
 
-// GetBalance return balance of an id
+// todo deprecated GetBalance return balance of an id
 func (h *Teller) GetBalance(from string) (string, *contract.Cost, error) {
 	var bl int64
 	if strings.HasPrefix(from, "IOST") {
@@ -51,7 +51,7 @@ func (h *Teller) GetBalance(from string) (string, *contract.Cost, error) {
 	return fpn.ToString(), GetCost, nil
 }
 
-// GrantCoin issue coin
+// todo deprecated GrantCoin issue coin
 func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -65,7 +65,7 @@ func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cos
 	return TransferCost, nil
 }
 
-// ConsumeCoin consume coin from
+// todo deprecated ConsumeCoin consume coin from
 func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *contract.Cost, err error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -82,7 +82,7 @@ func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *con
 	return TransferCost, nil
 }
 
-// GrantServi ...
+// todo deprecated GrantServi ...
 func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -96,7 +96,7 @@ func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error)
 	return TransferCost, nil
 }
 
-// ConsumeServi ...
+// todo deprecated ConsumeServi ...
 func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cost, err error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -113,7 +113,7 @@ func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cos
 	return TransferCost, nil
 }
 
-// TotalServi ...
+// todo deprecated TotalServi ...
 func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
 	fpn := common.Fixed{Value: h.h.db.TotalServi(), Decimal: 8}
 	ts = fpn.ToString()
@@ -121,7 +121,7 @@ func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
 	return
 }
 
-// Transfer ...
+// todo deprecated Transfer ...
 func (h *Teller) Transfer(from, to string, amountStr string) (*contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -142,25 +142,25 @@ func (h *Teller) Transfer(from, to string, amountStr string) (*contract.Cost, er
 	return TransferCost, err
 }
 
-// Withdraw ...
+// todo deprecated Withdraw ...
 func (h *Teller) Withdraw(to string, amountStr string) (*contract.Cost, error) {
 	c := h.h.ctx.Value("contract_name").(string)
 	return h.Transfer(ContractAccountPrefix+c, to, amountStr)
 }
 
-// Deposit ...
+// todo deprecated Deposit ...
 func (h *Teller) Deposit(from string, amountStr string) (*contract.Cost, error) {
 	c := h.h.ctx.Value("contract_name").(string)
 	return h.Transfer(from, ContractAccountPrefix+c, amountStr)
 
 }
 
-// TopUp ...
+// todo deprecated TopUp ...
 func (h *Teller) TopUp(c, from string, amountStr string) (*contract.Cost, error) {
 	return h.Transfer(from, ContractGasPrefix+c, amountStr)
 }
 
-// Countermand ...
+// todo deprecated Countermand ...
 func (h *Teller) Countermand(c, to string, amountStr string) (*contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	return TransferCost, h.TransferRaw(ContractGasPrefix+c, to, amount.Value)
