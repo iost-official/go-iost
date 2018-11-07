@@ -13,6 +13,7 @@ import (
 // IOSTRatio ...
 const IOSTRatio int64 = 100000000
 
+// GasMinPledgeInIOST Every user must pledge a minimum amount of IOST
 var GasMinPledgeInIOST int64 = 10
 
 // GasMinPledge Every user must pledge a minimum amount of IOST (including GAS and RAM)
@@ -203,7 +204,7 @@ var (
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
 			//cost0, err = h.Withdraw(userName, unpledgeAmountStr)
-			_, cost0, err = h.CallWithAuth("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`,  contractName, receiver, unpledgeAmountStr))
+			_, cost0, err = h.CallWithAuth("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, contractName, receiver, unpledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
 				fmt.Println("aaaaa")
