@@ -34,6 +34,19 @@ func (m *MockChain) EXPECT() *MockChainMockRecorder {
 	return m.recorder
 }
 
+// AllDelaytx mocks base method
+func (m *MockChain) AllDelaytx() ([]*tx.Tx, error) {
+	ret := m.ctrl.Call(m, "AllDelaytx")
+	ret0, _ := ret[0].([]*tx.Tx)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AllDelaytx indicates an expected call of AllDelaytx
+func (mr *MockChainMockRecorder) AllDelaytx() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllDelaytx", reflect.TypeOf((*MockChain)(nil).AllDelaytx))
+}
+
 // CheckLength mocks base method
 func (m *MockChain) CheckLength() {
 	m.ctrl.Call(m, "CheckLength")
