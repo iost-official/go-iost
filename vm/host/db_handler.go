@@ -122,9 +122,8 @@ func (h *DBHandler) modifyKey(key string, owner ...string) string {
 func (h *DBHandler) modifyGlobalKey(contractName, key string, owner ...string) string {
 	if len(owner) > 0 {
 		return contractName + "@" + owner[0] + database.Separator + key
-	} else {
-		return contractName + database.Separator + key
 	}
+	return contractName + database.Separator + key
 }
 
 func (h *DBHandler) payRAM(k, v string, who ...string) {

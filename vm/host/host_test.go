@@ -185,10 +185,6 @@ func TestHost_MapPut(t *testing.T) {
 	if host.cost["contractName"].Data != 26 {
 		t.Fatal(host.cost)
 	}
-
-	mock.EXPECT().Get("state", "m-contractName-hello").Return("", errors.New("not found"))
-	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", errors.New("not found"))
-	host.MapPut("hello", "1", "world", "abc")
 }
 
 func TestHost_MapPut_Owner(t *testing.T) {
