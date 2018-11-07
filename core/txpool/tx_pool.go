@@ -26,6 +26,7 @@ type TxPImpl struct {
 	pendingTx        *SortedTxMap
 	mu               sync.RWMutex
 	chP2PTx          chan p2p.IncomingMessage
+	deferServer      *DeferServer
 	quitGenerateMode chan struct{}
 	quitCh           chan struct{}
 }
@@ -44,6 +45,11 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitCh:           make(chan struct{}),
 	}
 	p.forkChain.NewHead = blockCache.Head()
+	deferServer, _ := NewDeferServer(p)
+	/*  if err != nil { */
+	// return nil, err
+	/* } */
+	p.deferServer = deferServer
 	close(p.quitGenerateMode)
 	return p, nil
 }
@@ -57,6 +63,25 @@ func (pool *TxPImpl) Start() error {
 // Stop stops all the jobs.
 func (pool *TxPImpl) Stop() {
 	close(pool.quitCh)
+}
+
+// AddDefertx adds defer transaction.
+func (pool *TxPImpl) AddDefertx(txHash []byte) error {
+	if pool.pendingTx.Size() > maxCacheTxs {
+		return ErrCacheFull
+	}
+	referredTx, err := pool.global.BlockChain().GetTx(txHash)
+	if err != nil {
+		return err
+	}
+	t := &tx.Tx{
+		Actions:    referredTx.Actions,
+		Time:       referredTx.Time + referredTx.Delay,
+		Expiration: referredTx.Expiration + referredTx.Delay,
+		GasLimit:   referredTx.GasLimit,
+		GasPrice:   referredTx.GasPrice,
+	}
+	return pool.addTx(t)
 }
 
 func (pool *TxPImpl) loop() {
@@ -287,6 +312,28 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if err := t.VerifySelf(); err != nil {
 		return fmt.Errorf("VerifyError %v", err)
 	}
+
+	if t.IsDefer() {
+		referredTx, err := pool.global.BlockChain().GetTx(t.ReferredTx)
+		if err != nil {
+			return fmt.Errorf("get referred tx error, %v", err)
+		}
+		if referredTx.Time+referredTx.Delay != t.Time {
+			return errors.New("unmatched referred tx delay time")
+		}
+		if referredTx.Expiration+referredTx.Delay != t.Expiration {
+			return errors.New("unmatched referred tx expiration time")
+		}
+		if len(referredTx.Actions) != len(t.Actions) {
+			return errors.New("unmatched referred tx action length")
+		}
+		for i := 0; i < len(referredTx.Actions); i++ {
+			if *referredTx.Actions[i] != *t.Actions[i] {
+				return errors.New("unmatched referred tx action")
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -364,10 +411,10 @@ func (pool *TxPImpl) clearBlock() {
 
 func (pool *TxPImpl) addTx(tx *tx.Tx) error {
 	if pool.existTxInPending(tx.Hash()) {
-		return fmt.Errorf("DupError. tx exists in pending")
+		return ErrDupPendingTx
 	}
 	if pool.existTxInChain(tx.Hash(), pool.forkChain.NewHead.Block) {
-		return fmt.Errorf("DupError. tx exists in chain")
+		return ErrDupChainTx
 	}
 	pool.pendingTx.Add(tx)
 	return nil

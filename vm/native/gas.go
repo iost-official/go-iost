@@ -13,10 +13,11 @@ import (
 // IOSTRatio ...
 const IOSTRatio int64 = 100000000
 
-var gasMinPledgeInIOST int64 = 10
+// GasMinPledgeInIOST Every user must pledge a minimum amount of IOST
+var GasMinPledgeInIOST int64 = 10
 
 // GasMinPledge Every user must pledge a minimum amount of IOST (including GAS and RAM)
-var GasMinPledge = &common.Fixed{Value: gasMinPledgeInIOST * IOSTRatio, Decimal: 8}
+var GasMinPledge = &common.Fixed{Value: GasMinPledgeInIOST * IOSTRatio, Decimal: 8}
 
 // Each IOST you pledge, you will get `GasImmediateReward` gas immediately.
 // Then gas will be generated at a rate of `GasIncreaseRate` gas per block.
@@ -37,10 +38,10 @@ var gasABIs map[string]*abi
 
 func init() {
 	gasABIs = make(map[string]*abi)
-	register(&gasABIs, constructor)
-	register(&gasABIs, initFunc)
-	register(&gasABIs, pledgeGas)
-	register(&gasABIs, unpledgeGas)
+	register(gasABIs, constructor)
+	register(gasABIs, initFunc)
+	register(gasABIs, pledgeGas)
+	register(gasABIs, unpledgeGas)
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.
@@ -65,7 +66,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 		// unpledge should not change current generated gas
 		gasDelta.Value = 0
 	}
-	fmt.Printf("limitd rated gasd %v %v %v\n", limitDelta, rateDelta, gasDelta)
+	//fmt.Printf("limitd rated gasd %v %v %v\n", limitDelta, rateDelta, gasDelta)
 
 	// pledge first time
 	if h.DB().GasHandler.GasUpdateTime(name) == 0 {
@@ -97,7 +98,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 		gasNew = limitNew
 	}
 
-	fmt.Printf("Pledge %v", pledgeAmountF)
+	//fmt.Printf("Pledge %v", pledgeAmountF)
 	h.DB().GasHandler.SetGasPledge(name, h.DB().GasHandler.GasPledge(name).Add(pledgeAmountF))
 	h.DB().GasHandler.SetGasRate(name, rateNew)
 	h.DB().GasHandler.SetGasLimit(name, limitNew)
@@ -108,41 +109,49 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 var (
 	pledgeGas = &abi{
 		name: "PledgeGas",
-		args: []string{"string", "string"},
+		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			cost = contract.Cost0()
-			userName, ok := args[0].(string)
+			payer, ok := args[0].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
 			}
-			if !strings.HasPrefix(userName, "IOST") {
-				return nil, cost, errors.New("userName should start with IOST")
+			gasUser, ok := args[1].(string)
+			cost.AddAssign(host.CommonErrorCost(1))
+			if !ok {
+				return nil, cost, fmt.Errorf("invalid user name %s", args[1])
 			}
-			auth, cost0 := h.RequireAuth(userName, "transfer")
+			// todo check is account name
+			// if !strings.HasPrefix(userName, "IOST") {
+			// 	return nil, cost, errors.New("userName should start with IOST")
+			// }
+			auth, cost0 := h.RequireAuth(payer, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
 			}
-			pledgeAmountStr, ok := args[1].(string)
+			pledgeAmountStr, ok := args[2].(string)
 			if !ok {
-				return nil, cost, fmt.Errorf("invalid amount %s", args[1])
+				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
 			pledgeAmount, ok := common.NewFixed(pledgeAmountStr, 8)
 			cost.AddAssign(host.CommonErrorCost(1))
 			if !ok || pledgeAmount.Value <= 0 {
-				return nil, cost, fmt.Errorf("invalid amount %s", args[1])
+				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
 			var minPledgeAmount int64 = 1 * IOSTRatio
 			if pledgeAmount.Value < minPledgeAmount {
 				return nil, cost, fmt.Errorf("min pledge num is %d", minPledgeAmount)
 			}
-			cost0, err = h.Deposit(userName, pledgeAmountStr)
+			contractName, cost0 := h.ContractName()
+			cost.AddAssign(cost0)
+			_, cost0, err = h.Call("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, payer, contractName, pledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
-			err = pledge(h, userName, pledgeAmount)
+			err = pledge(h, gasUser, pledgeAmount)
 			cost.AddAssign(host.PledgeForGasCost)
 			if err != nil {
 				return nil, cost, err
@@ -152,43 +161,53 @@ var (
 	}
 	unpledgeGas = &abi{
 		name: "UnpledgeGas",
-		args: []string{"string", "string"},
+		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
 			cost = contract.Cost0()
-			userName, ok := args[0].(string)
+			gasUser, ok := args[0].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
 			}
-			if !strings.HasPrefix(userName, "IOST") {
+			receiver, ok := args[1].(string)
+			cost.AddAssign(host.CommonErrorCost(1))
+			if !ok {
+				return nil, cost, fmt.Errorf("invalid user name %s", args[1])
+			}
+			if !strings.HasPrefix(gasUser, "IOST") {
 				return nil, cost, errors.New("userName should start with IOST")
 			}
-			auth, cost0 := h.RequireAuth(userName, "transfer")
+			auth, cost0 := h.RequireAuth(gasUser, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
+				fmt.Println("bbbbb")
 				return nil, cost, host.ErrPermissionLost
 			}
-			unpledgeAmountStr, ok := args[1].(string)
+			unpledgeAmountStr, ok := args[2].(string)
 			if !ok {
-				return nil, cost, fmt.Errorf("invalid amount %s", args[1])
+				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
 			unpledgeAmount, ok := common.NewFixed(unpledgeAmountStr, 8)
 			cost.AddAssign(host.CommonErrorCost(1))
 			if !ok || unpledgeAmount.Value <= 0 {
-				return nil, cost, fmt.Errorf("invalid amount %s", args[1])
+				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
 			var minUnpledgeAmount int64 = 1 * IOSTRatio
 			if unpledgeAmount.Value < minUnpledgeAmount {
 				return nil, cost, fmt.Errorf("min unpledge num is %d", minUnpledgeAmount)
 			}
-			err = pledge(h, userName, unpledgeAmount.Neg())
+			err = pledge(h, gasUser, unpledgeAmount.Neg())
 			cost.AddAssign(host.PledgeForGasCost)
 			if err != nil {
 				return nil, cost, err
 			}
-			cost0, err = h.Withdraw(userName, unpledgeAmountStr)
+			contractName, cost0 := h.ContractName()
+			cost.AddAssign(cost0)
+			//cost0, err = h.Withdraw(userName, unpledgeAmountStr)
+			_, cost0, err = h.CallWithAuth("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, contractName, receiver, unpledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
+				fmt.Println("aaaaa")
 				return nil, cost, err
 			}
 			return []interface{}{}, cost, nil

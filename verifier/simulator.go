@@ -75,6 +75,13 @@ func (s *Simulator) SetGas(id string, i int64) {
 		Value:   i * 10e8,
 		Decimal: 8,
 	})
+	s.Visitor.Commit()
+}
+
+// SetRAM to id
+func (s *Simulator) SetRAM(id string, r int64) {
+	s.Visitor.SetTokenBalance("ram", id, r)
+	s.Visitor.Commit()
 }
 
 // SetContract without run init
@@ -152,7 +159,7 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	//	}
 	//}
 
-	stx, err := tx.SignTx(trx, publisher, auth)
+	stx, err := tx.SignTx(trx, publisher, []*account.KeyPair{auth})
 	if err != nil {
 		return nil, err
 	}
@@ -168,12 +175,12 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	if err != nil {
 		return &tx.TxReceipt{}, fmt.Errorf("prepare tx error: %v", err)
 	}
-	r, err := isolator.Run()
+	_, err = isolator.Run()
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
 
-	err = isolator.PayCost()
+	r, err := isolator.PayCost()
 	if err != nil {
 		return nil, err
 	}

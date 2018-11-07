@@ -1,4 +1,3 @@
-// Package block 是区块和区块链的结构体定义和操作方法
 package block
 
 import "github.com/iost-official/go-iost/core/tx"
@@ -21,5 +20,6 @@ type Chain interface {
 	GetReceiptByTxHash(Hash []byte) (*tx.TxReceipt, error)
 	HasReceipt(hash []byte) (bool, error)
 	Close()
+	AllDelaytx() ([]*tx.Tx, error)
 	Draw(int64, int64) string
 }

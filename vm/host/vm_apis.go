@@ -18,12 +18,13 @@ func NewAPI(h *Host) APIDelegate {
 }
 
 func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
-	rec := tx.Receipt{
-		Type:    t,
-		Content: s,
+	fn := h.h.Context().Value("contract_name").(string) + "/" + h.h.Context().Value("abi_name").(string)
+	rec := &tx.Receipt{
+		FuncName: fn,
+		Content:  s,
 	}
 
-	rs := h.h.ctx.GValue("receipts").([]tx.Receipt)
+	rs := h.h.ctx.GValue("receipts").([]*tx.Receipt)
 	h.h.ctx.GSet("receipts", append(rs, rec))
 
 	topic := event.Event_ContractReceipt

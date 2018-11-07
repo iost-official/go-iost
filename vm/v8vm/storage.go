@@ -25,7 +25,7 @@ func goPut(cSbx C.SandboxPtr, key, val *C.char, gasUsed *C.size_t) C.int {
 	v := C.GoString(val)
 
 	cost := sbx.host.Put(k, v)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return 0
 }
@@ -40,9 +40,13 @@ func goGet(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) *C.char {
 	k := C.GoString(key)
 	val, cost := sbx.host.Get(k)
 
-	*gasUsed = C.size_t(cost.Data)
-	valStr, _ := dbValToString(val)
+	*gasUsed = C.size_t(cost.CPU)
 
+	if val == nil {
+		return nil
+	}
+
+	valStr, _ := dbValToString(val)
 	return C.CString(valStr)
 }
 
@@ -56,7 +60,7 @@ func goDel(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) C.int {
 	k := C.GoString(key)
 
 	cost := sbx.host.Del(k)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return 0
 }
@@ -73,7 +77,7 @@ func goMapPut(cSbx C.SandboxPtr, key, field, val *C.char, gasUsed *C.size_t) C.i
 	v := C.GoString(val)
 
 	cost := sbx.host.MapPut(k, f, v)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return 0
 }
@@ -89,7 +93,7 @@ func goMapHas(cSbx C.SandboxPtr, key, field *C.char, gasUsed *C.size_t) C.bool {
 	f := C.GoString(field)
 	ret, cost := sbx.host.MapHas(k, f)
 
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return C.bool(ret)
 }
@@ -105,9 +109,13 @@ func goMapGet(cSbx C.SandboxPtr, key, field *C.char, gasUsed *C.size_t) *C.char 
 	f := C.GoString(field)
 	val, cost := sbx.host.MapGet(k, f)
 
-	*gasUsed = C.size_t(cost.Data)
-	valStr, _ := dbValToString(val)
+	*gasUsed = C.size_t(cost.CPU)
 
+	if val == nil {
+		return nil
+	}
+
+	valStr, _ := dbValToString(val)
 	return C.CString(valStr)
 }
 
@@ -122,7 +130,7 @@ func goMapDel(cSbx C.SandboxPtr, key, field *C.char, gasUsed *C.size_t) C.int {
 	f := C.GoString(field)
 
 	cost := sbx.host.MapDel(k, f)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return 0
 }
@@ -142,7 +150,7 @@ func goMapKeys(cSbx C.SandboxPtr, key *C.char, gasUsed *C.size_t) *C.char {
 		panic(err)
 	}
 	//fmt.Println("storage145", fstr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return C.CString(string(j))
 }
@@ -156,12 +164,15 @@ func goGlobalGet(cSbx C.SandboxPtr, contractName, key *C.char, gasUsed *C.size_t
 
 	c := C.GoString(contractName)
 	k := C.GoString(key)
-
 	val, cost := sbx.host.GlobalGet(c, k)
+
+	*gasUsed = C.size_t(cost.CPU)
+
+	if val == nil {
+		return nil
+	}
+
 	valStr, _ := dbValToString(val)
-
-	*gasUsed = C.size_t(cost.Data)
-
 	return C.CString(valStr)
 }
 
@@ -171,8 +182,6 @@ func dbValToString(val interface{}) (string, error) {
 		return strconv.FormatInt(v, 10), nil
 	case string:
 		return v, nil
-	case nil:
-		return "nil", nil
 	case bool:
 		return strconv.FormatBool(v), nil
 	case []byte:

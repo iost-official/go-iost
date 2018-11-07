@@ -1,9 +1,8 @@
-package v8
+package v8vm
 
 import (
 	"encoding/json"
 	"io/ioutil"
-	"os"
 	"strings"
 	"testing"
 
@@ -14,30 +13,18 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/vm/v8vm"
 )
 
-var vmPool *VMPool
+var vmPool *v8.VMPool
 
 func init() {
-	vmPool = NewVMPool(3, 3)
+	vmPool = v8.NewVMPool(3, 3)
 	//vmPool.SetJSPath("./v8/libjs/")
 	vmPool.Init()
 }
 
 var testDataPath = "./test_data/"
-
-func ReadFile(src string) ([]byte, error) {
-	fi, err := os.Open(src)
-	if err != nil {
-		return nil, err
-	}
-	defer fi.Close()
-	fd, err := ioutil.ReadAll(fi)
-	if err != nil {
-		return nil, err
-	}
-	return fd, nil
-}
 
 func Init(t *testing.T) *database.Visitor {
 	mc := NewController(t)
@@ -61,7 +48,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 	ctx.Set("contract_name", conName)
 	h := host.NewHost(ctx, vi, nil, ilog.DefaultLogger())
 
-	fd, err := ReadFile(testDataPath + conName + ".js")
+	fd, err := ioutil.ReadFile(testDataPath + conName + ".js")
 	if err != nil {
 		t.Fatal("Read file failed: ", err.Error())
 		return nil, nil
@@ -182,7 +169,7 @@ func TestEngine_Storage(t *testing.T) {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
 	// todo get return nil
-	if len(rs) != 1 || rs[0].(string) != "nil" {
+	if len(rs) != 1 || rs[0].(string) != "null" {
 		t.Fatalf("LoadAndCall except mySetVal, got %s\n", rs[0])
 	}
 
@@ -275,7 +262,6 @@ func TestEngine_DataType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall number_strange run error: %v\n", err)
 	}
-	// todo get return string -infinity
 	if len(rs) != 1 || rs[0].(string) != "-Infinity" {
 		t.Fatalf("LoadAndCall except Infinity, got %s\n", rs[0])
 	}
@@ -292,7 +278,6 @@ func TestEngine_DataType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall param2 run error: %v\n", err)
 	}
-	// todo get return string undefined
 	if len(rs) != 1 || rs[0] != "null" {
 		t.Fatalf("LoadAndCall except undefined, got %s\n", rs[0])
 	}
@@ -310,7 +295,6 @@ func TestEngine_DataType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall bool run error: %v\n", err)
 	}
-	// todo get return string false
 	if len(rs) != 1 || rs[0].(string) != "false" {
 		t.Fatalf("LoadAndCall except undefined, got %s\n", rs[0])
 	}

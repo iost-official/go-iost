@@ -1,6 +1,8 @@
 package txpool
 
 import (
+	"bytes"
+	"errors"
 	"sync"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/iost-official/go-iost/metrics"
 )
 
+// Values.
 var (
 	clearInterval = 10 * time.Second
 	// Expiration is the transaction expiration
@@ -19,6 +22,10 @@ var (
 	maxCacheTxs            = 30000
 	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
 	metricsTxPoolSize      = metrics.NewGauge("iost_txpool_size", nil)
+
+	ErrDupPendingTx = errors.New("tx exists in pending")
+	ErrDupChainTx   = errors.New("tx exists in chain")
+	ErrCacheFull    = errors.New("txpool is full")
 )
 
 // FRet find the return value of the tx
@@ -81,6 +88,9 @@ type SortedTxMap struct {
 func compareTx(a, b interface{}) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
+	if txa.GasPrice == txb.GasPrice && txb.Time == txa.Time {
+		return bytes.Compare(txa.Hash(), txb.Hash())
+	}
 	if txa.GasPrice == txb.GasPrice {
 		return int(txb.Time - txa.Time)
 	}

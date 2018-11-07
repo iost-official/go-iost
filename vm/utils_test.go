@@ -24,7 +24,7 @@ func TestCheckPublisher(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t2, err := tx.SignTx(tr, "a", kp)
+	t2, err := tx.SignTx(tr, "a", []*account.KeyPair{kp})
 	if err != nil {
 		t.Fatal(err)
 	}

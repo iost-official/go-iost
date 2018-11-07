@@ -1,9 +1,12 @@
 package vm
 
 import (
+	"fmt"
 	"time"
 
 	"strings"
+
+	"encoding/json"
 
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
@@ -19,6 +22,7 @@ type Isolator struct {
 	h            *host.Host
 	publisherID  string
 	t            *tx.Tx
+	tr           *tx.TxReceipt
 	blockBaseCtx *host.Context
 	genesisMode  bool
 }
@@ -60,8 +64,8 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	return nil
 }
 
-func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
-	receipts = make([]tx.Receipt, 0)
+func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, ret *tx.Return, receipts []*tx.Receipt, err error) {
+	receipts = make([]*tx.Receipt, 0)
 
 	e.h.PushCtx()
 	defer func() {
@@ -71,7 +75,9 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.S
 	e.h.Context().Set("stack0", "direct_call")
 	e.h.Context().Set("stack_height", 1) // record stack trace
 
-	_, cost, err = staticMonitor.Call(e.h, action.Contract, action.ActionName, action.Data)
+	var rtn []interface{}
+
+	rtn, cost, err = staticMonitor.Call(e.h, action.Contract, action.ActionName, action.Data)
 
 	if cost == nil {
 		panic("cost is nil")
@@ -79,20 +85,20 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.S
 
 	if err != nil {
 		if strings.Contains(err.Error(), "execution killed") {
-			status = tx.Status{
+			status = &tx.Status{
 				Code:    tx.ErrorTimeout,
 				Message: err.Error(),
 			}
 		} else {
-			status = tx.Status{
+			status = &tx.Status{
 				Code:    tx.ErrorRuntime,
 				Message: err.Error(),
 			}
 		}
 
-		receipt := tx.Receipt{
-			Type:    tx.SystemDefined,
-			Content: err.Error(),
+		receipt := &tx.Receipt{
+			FuncName: action.Contract + "/" + action.ActionName,
+			Content:  err.Error(),
 		}
 		receipts = append(receipts, receipt)
 
@@ -101,9 +107,19 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.S
 		return
 	}
 
-	receipts = append(receipts, e.h.Context().GValue("receipts").([]tx.Receipt)...)
+	rj, errj := json.Marshal(rtn)
+	if errj != nil {
+		panic(errj)
+	}
 
-	status = tx.Status{
+	ret = &tx.Return{
+		FuncName: action.Contract + "/" + action.ActionName,
+		Value:    string(rj),
+	}
+
+	receipts = append(receipts, e.h.Context().GValue("receipts").([]*tx.Receipt)...)
+
+	status = &tx.Status{
 		Code:    tx.Success,
 		Message: "",
 	}
@@ -111,26 +127,45 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status tx.S
 }
 
 // Run actions in tx
-func (e *Isolator) Run() (*tx.TxReceipt, error) {
+func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 	e.h.Context().GSet("gas_limit", e.t.GasLimit)
-	e.h.Context().GSet("receipts", make([]tx.Receipt, 0))
+	e.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
 
-	txr := tx.NewTxReceipt(e.t.Hash())
+	e.tr = tx.NewTxReceipt(e.t.Hash())
+
+	if e.t.Delay > 0 {
+		e.h.DB().StoreDelaytx(string(e.t.Hash()))
+		e.tr.Status = &tx.Status{
+			Code:    tx.Success,
+			Message: "",
+		}
+		e.tr.GasUsage = e.t.Delay / 1e9
+		return e.tr, nil
+	}
+
+	if e.t.IsDefer() {
+		if !e.h.DB().HasDelaytx(string(e.t.ReferredTx)) {
+			return nil, fmt.Errorf("delay tx not found, hash=%v", e.t.ReferredTx)
+		}
+		e.h.DB().DelDelaytx(string(e.t.ReferredTx))
+	}
+
 	hasSetCode := false
 
 	for _, action := range e.t.Actions {
 		if hasSetCode && action.Contract == "iost.system" && action.ActionName == "SetCode" {
-			txr.Receipts = nil
-			txr.Status.Code = tx.ErrorDuplicateSetCode
-			txr.Status.Message = "error duplicate set code in a tx"
+			e.tr.Receipts = nil
+			e.tr.Status.Code = tx.ErrorDuplicateSetCode
+			e.tr.Status.Message = "error duplicate set code in a tx"
 			break
 		}
 		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
 
-		cost, status, receipts, err := e.runAction(*action)
+		cost, status, ret, receipts, err := e.runAction(*action)
 		ilog.Debugf("run action : %v, result is %v", action, status.Code)
 		ilog.Debug("used cost > ", cost)
 		ilog.Debugf("status > \n%v\n", status)
+		ilog.Debug("return value: ", ret)
 
 		if err != nil {
 			return nil, err
@@ -138,39 +173,49 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 
 		gasLimit := e.h.Context().GValue("gas_limit").(int64)
 
-		txr.Status = status
+		e.tr.Status = status
 		if (status.Code == 4 && status.Message == "out of gas") || (status.Code == 5) {
 			cost = contract.NewCost(0, 0, gasLimit)
 		}
 
-		txr.GasUsage += cost.ToGas()
+		e.tr.GasUsage += cost.ToGas()
+		if status.Code == 0 {
+			for k, v := range e.h.Costs() {
+				e.tr.RAMUsage[k] = v.Data
+			}
+		}
 
 		e.h.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
 		e.h.PayCost(cost, e.publisherID)
 
 		if status.Code != tx.Success {
-			txr.Receipts = nil
+			e.tr.Receipts = nil
 			break
 		} else {
-			txr.Receipts = append(txr.Receipts, receipts...)
-			txr.SuccActionNum++
+			e.tr.Receipts = append(e.tr.Receipts, receipts...)
 		}
+		e.tr.Returns = append(e.tr.Returns, ret)
 	}
-	return &txr, nil
+
+	return e.tr, nil
 }
 
 // PayCost as name
-func (e *Isolator) PayCost() error {
-	err := e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice)
+func (e *Isolator) PayCost() (*tx.TxReceipt, error) {
+	err := e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice, true)
 	if err != nil {
 		e.h.DB().Rollback()
-		err = e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice)
+		e.tr.RAMUsage = make(map[string]int64)
+		e.tr.Status.Code = tx.ErrorBalanceNotEnough
+		e.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
+
+		err = e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice, false)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return e.tr, nil
 }
 
 // Commit flush changes to db

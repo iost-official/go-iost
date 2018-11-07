@@ -28,8 +28,8 @@ type GenesisConfig struct {
 	CreateGenesis    bool
 	InitialTimestamp string
 	WitnessInfo      []*Witness
-	VoteContractPath string
-	AdminID          string
+	ContractPath     string
+	AdminInfo        *Witness
 }
 
 // DBConfig config of the database

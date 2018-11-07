@@ -12,17 +12,18 @@ var systemABIs map[string]*abi
 
 func init() {
 	systemABIs = make(map[string]*abi)
-	register(&systemABIs, requireAuth)
-	register(&systemABIs, receipt)
-	register(&systemABIs, callWithReceipt)
-	register(&systemABIs, transfer)
-	register(&systemABIs, topUp)
-	register(&systemABIs, countermand)
-	register(&systemABIs, setCode)
-	register(&systemABIs, updateCode)
-	register(&systemABIs, destroyCode)
-	register(&systemABIs, issueIOST)
-	register(&systemABIs, initSetCode)
+	register(systemABIs, requireAuth)
+	register(systemABIs, receipt)
+	register(systemABIs, callWithReceipt)
+	register(systemABIs, transfer)
+	register(systemABIs, topUp)
+	register(systemABIs, countermand)
+	register(systemABIs, setCode)
+	register(systemABIs, updateCode)
+	register(systemABIs, destroyCode)
+	register(systemABIs, issueIOST)
+	register(systemABIs, initSetCode)
+	register(systemABIs, cancelDelaytx)
 }
 
 // var .
@@ -111,8 +112,13 @@ var (
 			actID := "Contract" + id
 			con.ID = actID
 
-			cost2, err := h.SetCode(con)
+			publisher := h.Context().Value("publisher").(string)
+			cost2, err := h.SetCode(con, publisher)
 			cost.AddAssign(cost2)
+
+			cost2 = h.MapPut("contract_owner", actID, publisher)
+			cost.AddAssign(cost2)
+
 			return []interface{}{actID}, cost, err
 		},
 	}
@@ -175,9 +181,20 @@ var (
 			actID := args[0].(string)
 			con.ID = actID
 
-			cost2, err := h.SetCode(con)
+			cost2, err := h.SetCode(con, "")
 			cost.AddAssign(cost2)
 			return []interface{}{actID}, cost, err
+		},
+	}
+
+	// cancelDelaytx cancels a delay transaction.
+	cancelDelaytx = &abi{
+		name: "CancelDelaytx",
+		args: []string{"string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+
+			cost, err = h.CancelDelaytx(args[0].(string))
+			return []interface{}{}, cost, err
 		},
 	}
 )

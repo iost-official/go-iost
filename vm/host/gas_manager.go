@@ -43,7 +43,7 @@ func (g *GasManager) CostGas(name string, cost *common.Fixed) error {
 	}
 	currentGas := g.h.db.GasHandler.GasStock(name)
 	if currentGas.LessThan(cost) {
-		return fmt.Errorf("Gas not enough! Now: %d, Need %d", currentGas, cost)
+		return fmt.Errorf("gas not enough! Now: %d, Need %d", currentGas, cost)
 	}
 	g.h.db.GasHandler.SetGasStock(name, currentGas.Sub(cost))
 	return nil
