@@ -33,6 +33,9 @@ var GasLimit = &common.Fixed{Value: 30 * IOSTRatio, Decimal: 8}
 // GasIncreaseRate gas increase per IOST per block
 var GasIncreaseRate = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
 
+// UnpledgeFreeze coins will be frozen for 3 days after being unpledged
+var UnpledgeFreeze int64 = 3 * 24 * 3600 / common.SlotLength
+
 var gasABIs map[string]*abi
 
 func init() {
@@ -73,7 +76,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 			return fmt.Errorf("cannot unpledge! No pledge before")
 		}
 		h.DB().GasHandler.SetGasPledge(name, pledgeAmountF)
-		h.DB().GasHandler.SetGasUpdateTime(name, h.Context().Value("number").(int64))
+		h.DB().GasHandler.SetGasUpdateTime(name, h.Context().Value("time").(int64))
 		h.DB().GasHandler.SetGasRate(name, rateDelta)
 		h.DB().GasHandler.SetGasLimit(name, limitDelta)
 		h.DB().GasHandler.SetGasStock(name, gasDelta)
@@ -179,7 +182,6 @@ var (
 			auth, cost0 := h.RequireAuth(gasUser, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
-				fmt.Println("bbbbb")
 				return nil, cost, host.ErrPermissionLost
 			}
 			unpledgeAmountStr, ok := args[2].(string)
@@ -202,11 +204,11 @@ var (
 			}
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
-			//cost0, err = h.Withdraw(userName, unpledgeAmountStr)
-			_, cost0, err = h.CallWithAuth("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`,  contractName, receiver, unpledgeAmountStr))
+			freezeTime := h.Context().Value("time").(int64) + UnpledgeFreeze
+			_, cost0, err = h.CallWithAuth("iost.token", "transferFreeze",
+				fmt.Sprintf(`["iost", "%v", "%v", "%v", %v]`, contractName, receiver, unpledgeAmountStr, freezeTime))
 			cost.AddAssign(cost0)
 			if err != nil {
-				fmt.Println("aaaaa")
 				return nil, cost, err
 			}
 			return []interface{}{}, cost, nil
