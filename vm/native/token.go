@@ -88,7 +88,7 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 
 	addBalance := int64(0)
 	i := 0
-	for i < len(freezeList)  {
+	for i < len(freezeList) {
 		if freezeList[i].Ftime > ntime {
 			break
 		}

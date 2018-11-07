@@ -32,7 +32,7 @@ var GasImmediateReward = &common.Fixed{Value: 300 * IOSTRatio, Decimal: 8}
 // GasLimit gas limit per IOST
 var GasLimit = &common.Fixed{Value: 900 * IOSTRatio, Decimal: 8}
 
-// GasFillDuration it takes 3 days to fulfill the gas buffer. TODO when BlockHead.time is fixed, fix the 'SlotLength' here
+// GasFulfillDuration it takes 3 days to fulfill the gas buffer. TODO when BlockHead.time is fixed, fix the 'SlotLength' here
 var GasFulfillDuration int64 = 3 * 24 * 3600 / common.SlotLength
 
 // GasIncreaseRate gas increase per IOST per block
