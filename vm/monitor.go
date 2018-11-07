@@ -87,7 +87,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	if amountLimit == nil {
 		amountLimit = []*contract.Amount{}
 	}
-	fixedAmountLimit := []contract.FixedAmount{}
+	var fixedAmountLimit []contract.FixedAmount
 	beforeBalance := make(map[string][]int64)
 	cost = contract.Cost0()
 
