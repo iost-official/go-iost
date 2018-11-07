@@ -590,6 +590,7 @@ var (
 			}
 
 			balanceStr, cost0 := genAmount(h, tokenName, balance)
+
 			cost.AddAssign(cost0)
 
 			return []interface{}{balanceStr}, cost, nil

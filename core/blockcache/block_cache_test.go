@@ -57,13 +57,13 @@ func TestBlockCache(t *testing.T) {
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
 	statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 
-	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+	statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("1"), nil
 	})
-	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+	statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("[\"aaaa\",\"bbbbb\"]"), nil
 	})
-	//"m-iost.vote-producerTable"
+	//"m-iost.vote_producer-producerTable"
 	statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
 	})
@@ -180,10 +180,10 @@ func TestVote(t *testing.T) {
 
 	tpl := "[\"a1\",\"a2\",\"a3\",\"a4\",\"a5\"]"
 	//tpl1 := "[\"b1\",\"b2\",\"b3\",\"b4\",\"b5\"]"
-	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+	statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("5"), nil
 	})
-	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+	statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(tpl), nil
 	})
 	statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {

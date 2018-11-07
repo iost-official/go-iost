@@ -381,7 +381,7 @@ func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
 
 func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.PushCtx()
-	h.Context().Set("time", t.Time)
+	h.Context().Set("tx_time", t.Time)
 	h.Context().Set("expiration", t.Expiration)
 	h.Context().Set("gas_price", t.GasPrice)
 	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))
