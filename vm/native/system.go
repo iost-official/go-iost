@@ -111,6 +111,7 @@ var (
 			}
 			actID := "Contract" + id
 			con.ID = actID
+
 			cost2, err := h.SetCode(con)
 			cost.AddAssign(cost2)
 			return []interface{}{actID}, cost, err

@@ -41,7 +41,6 @@ var (
 
 type verifyBlockMessage struct {
 	blk     *block.Block
-	gen     bool
 	p2pType p2p.MessageType
 }
 
@@ -210,14 +209,6 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	}
 	ilog.Infof("verify block chan size:%v", len(p.chVerifyBlock))
 	blk := vbm.blk
-	if vbm.gen {
-		ilog.Info("block from myself, block number: ", blk.Head.Number)
-		err := p.handleRecvBlock(blk, true)
-		if err != nil {
-			ilog.Errorf("received block from myself, error, err:%v", err)
-		}
-		return
-	}
 	switch vbm.p2pType {
 	case p2p.NewBlock:
 		t1 := calculateTime(blk)
@@ -285,7 +276,7 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			ilog.Info("received block, block number: ", blk.Head.Number)
-			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, gen: false, p2pType: incomingMessage.Type()}
+			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, p2pType: incomingMessage.Type()}
 		case <-p.exitSignal:
 			return
 		}
@@ -390,9 +381,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
 	p.blockCache.Draw()
-	ilog.Infof("[pob] updateInfo start, number: %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	p.updateInfo(node, update)
-	ilog.Infof("[pob] updateInfo end, number: %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, true)
 	}
@@ -402,7 +391,9 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode, update bool) {
 	updateWaterMark(node)
 	if update {
+		ilog.Infof("[pob] updateInfo start, number: %d, hash = %v, witness = %v", node.Head.Number, common.Base58Encode(node.HeadHash()), node.Head.Witness[4:6])
 		updateLib(node, p.blockCache)
+		ilog.Infof("[pob] updateInfo end, number: %d, hash = %v, witness = %v", node.Head.Number, common.Base58Encode(node.HeadHash()), node.Head.Witness[4:6])
 	}
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {

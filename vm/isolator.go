@@ -159,17 +159,10 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 		}
 		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
 
-<<<<<<< HEAD
-		cost, status, receipts, err := e.runAction(*action)
-		//ilog.Debugf("run action : %v, result is %v", action, status.Code)
-		//ilog.Debug("used cost > ", cost)
-		//ilog.Debugf("status > \n%v\n", status)
-=======
 		cost, status, rets, receipts, err := e.runAction(*action)
 		ilog.Debugf("run action : %v, result is %v", action, status.Code)
 		ilog.Debug("used cost > ", cost)
 		ilog.Debugf("status > \n%v\n", status)
->>>>>>> develop
 
 		if err != nil {
 			return nil, err

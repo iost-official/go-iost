@@ -15,7 +15,6 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	p2pb "github.com/iost-official/go-iost/p2p/pb"
 
-	"github.com/iost-official/go-iost/metrics"
 	host "github.com/libp2p/go-libp2p-host"
 	kbucket "github.com/libp2p/go-libp2p-kbucket"
 	libnet "github.com/libp2p/go-libp2p-net"
@@ -31,7 +30,6 @@ var (
 	syncRoutingTableInterval = 30 * time.Second
 	metricsStatInterval      = 3 * time.Second
 	findBPInterval           = 2 * time.Second
-	metricsRecvBlockTimeCost = metrics.NewGauge("iost_recv_block_time_cost", nil)
 )
 
 type connDirection int

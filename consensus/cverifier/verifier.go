@@ -49,13 +49,11 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 	return nil
 }
 
-//VerifyBlockWithVM verifies the Block with VM.
+//VerifyBlockWithVM verifies the block with VM.
 func VerifyBlockWithVM(blk *block.Block, db db.MVCCDB) error {
 	ilog.Infof("[pob] verifyBlockWithVM start, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
 	engine := vm.NewEngine(blk.Head, db)
-
 	for k, t := range blk.Txs {
-		//t1 := time.Now()
 		et := TxExecTimeLimit
 		if blk.Receipts[k].Status.Code == tx.ErrorTimeout {
 			et /= 4

@@ -9,6 +9,8 @@ import (
 
 	"time"
 
+	"io/ioutil"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -17,7 +19,6 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
-	"io/ioutil"
 )
 
 func benchInit() (Engine, *database.Visitor) {
@@ -273,47 +274,10 @@ func Benchmark_JS_Transfer(b *testing.B) { //577385ns(local) vs 1060847ns(server
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		js.e.Exec(trx2, time.Second)
-		//r, err := js.e.Exec(trx2, time.Second)
-		//if r.Status.Code != 0 || err != nil {
-		//	b.Fatal(r.Status.Message, err)
-		//}
-	}
-	b.StopTimer()
-}
-
-func Benchmark_JS_Transfer_another(b *testing.B) { //629123ns(local) vs 1048236(server)
-	ilog.Stop()
-	js := NewJSTester(b)
-	defer js.Clear()
-	f, err := ReadFile("../test/performance/transfer.js")
-	if err != nil {
-		b.Fatal(err)
-	}
-	js.SetJS(string(f))
-	js.SetAPI("transfer", "string", "string", "number")
-	js.DoSet()
-
-	js.vi.SetBalance(testID[0], 100000000)
-
-	act2 := tx.NewAction(js.cname, "transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], 100))
-
-	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-	if err != nil {
-		panic(err)
-	}
-
-	trx2, err := MakeTxWithAuth(act2, ac)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		js.e.Exec(trx2, time.Second)
-		//r, err := js.e.Exec(trx2, time.Second)
-		//if r.Status.Code != 0 || err != nil {
-		//	b.Fatal(r.Status.Message, err)
-		//}
+		r, err := js.e.Exec(trx2, time.Second)
+		if r.Status.Code != 0 || err != nil {
+			b.Fatal(r.Status.Message, err)
+		}
 	}
 	b.StopTimer()
 }

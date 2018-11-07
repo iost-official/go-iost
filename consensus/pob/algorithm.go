@@ -80,7 +80,6 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	if len(blk.Txs) != 0 {
 		ilog.Info("time spent per tx:", t2.Nanoseconds()/int64(len(blk.Txs)))
 	}
-
 	if err != nil {
 		go txPool.DelTxList(dropList)
 	}
@@ -137,7 +136,6 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		}
 	}
 	// check txs
-	var notFoundPending int64
 	ilog.Infof("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	for _, tx := range blk.Txs {
 		exist := txPool.ExistTxs(tx.Hash(), parent)
@@ -146,7 +144,6 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 			ilog.Infof("FoundChain: %v, %v", tx, common.Base58Encode(tx.Hash()))
 			return errTxDup
 		case txpool.NotFound:
-			notFoundPending += 1
 			err := tx.VerifySelf()
 			if err != nil {
 				return errTxSignature

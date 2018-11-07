@@ -158,7 +158,6 @@ L:
 	for _, t := range blk.Txs {
 		provider.Drop(t, nil)
 	}
-	ilog.Infof("blk gen success, return")
 	return err
 }
 

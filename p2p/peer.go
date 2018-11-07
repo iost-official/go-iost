@@ -9,8 +9,6 @@ import (
 
 	"github.com/iost-official/go-iost/ilog"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/metrics"
 	libnet "github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/multiformats/go-multiaddr"
@@ -19,24 +17,9 @@ import (
 
 // errors
 var (
-	ErrStreamCountExceed         = errors.New("stream count exceed")
-	ErrMessageChannelFull        = errors.New("message channel is full")
-	ErrDuplicateMessage          = errors.New("reduplicate message")
-	metricsBlockHeaderArriveTime = metrics.NewGauge("iost_header_arrive_time", nil)
-	metricsWriteStreamTimeCost   = metrics.NewGauge("iost_write_stream_time_cost", nil)
-	metricsWriteStreamStartTime  = metrics.NewGauge("iost_write_stream_start_time", nil)
-
-	id2Node = map[string]string{
-		"12D3KooWET6Hb5xYm2HkoqDUj5PAH4YDNvi8tmxVuoEFhq8GyWdq": "node01",
-		"12D3KooWCiySXaC9rxLcmdatptEbWRJkLRWZbCR7vXkvWAQc7Qit": "node02",
-		"12D3KooWDEaC2moDFZM444AViJ4qw4bRYJrMHf5rAPi6MkhxCtu6": "node03",
-		"12D3KooWS49zFyryuovXMJB4QD9ggS9Rj7aQuY8ArDiJTHu926Hz": "node04",
-		"12D3KooWRKQQL1AaafaYTwS8gFDFURuaQA65FWTiGC4pjxwM7mko": "node05",
-		"12D3KooWPUbYHZvcXv825FwDAtyyzaMNGnLHzwctXCFt4z5DgnYi": "node06",
-		"12D3KooWHHuSZBKb7Fq4AZa7YPHajWHTvRidwZ3McBk3TAJbtF58": "node07",
-		"12D3KooWCKC6YNr9nZbVqNesofJscb4oruUnP3yHkzxeomW24k5v": "node08",
-		"12D3KooWPXZomMoouWgFuUw4guGqKxAtnwboM61XkgEwjo17zD2c": "node09",
-	}
+	ErrStreamCountExceed  = errors.New("stream count exceed")
+	ErrMessageChannelFull = errors.New("message channel is full")
+	ErrDuplicateMessage   = errors.New("reduplicate message")
 )
 
 const (
@@ -144,18 +127,12 @@ func (p *Peer) write(m *p2pMessage) error {
 		p.stream.Close()
 		return err
 	}
-	t1 := time.Now()
 	_, err := p.stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
 		// p.stream.Close()
 		p.peerManager.RemoveNeighbor(p.id)
 		return err
-	}
-	t2 := time.Now()
-	if m.messageType() == NewBlock {
-		metricsWriteStreamTimeCost.Set(float64(t2.Sub(t1).Nanoseconds()/1e6), nil)
-		metricsWriteStreamStartTime.Set(calculateTime(t1), nil)
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
 	byteOutCounter.Add(float64(len(m.content())), tagkv)
@@ -189,11 +166,6 @@ func (p *Peer) writeLoop() {
 	}
 }
 
-func calculateTime(t time.Time) float64 {
-	currentSlot := t.UnixNano() / (1e9 * common.SlotLength)
-	return float64((t.UnixNano() - currentSlot*1e9*common.SlotLength) / 1e6)
-}
-
 func (p *Peer) readLoop(stream libnet.Stream) {
 	header := make([]byte, dataBegin)
 	for {
@@ -202,14 +174,12 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 			ilog.Warnf("read header failed. err=%v", err)
 			return
 		}
-		t1 := time.Now()
 		chainID := binary.BigEndian.Uint32(header[chainIDBegin:chainIDEnd])
 		if chainID != p.peerManager.config.ChainID {
 			ilog.Warnf("mismatched chainID. chainID=%d", chainID)
 			return
 		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
-		// data := make([]byte, dataBegin+length)
 		data := make([]byte, dataBegin+length)
 		_, err = io.ReadFull(stream, data[dataBegin:])
 		if err != nil {
@@ -218,10 +188,6 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		}
 		copy(data[0:dataBegin], header)
 		msg, err := parseP2PMessage(data)
-		if msg.messageType() == NewBlock {
-			metricsBlockHeaderArriveTime.Set(calculateTime(t1), nil)
-			metricsRecvBlockTimeCost.Set(float64(time.Since(t1).Nanoseconds()/1e6), nil)
-		}
 		if err != nil {
 			ilog.Errorf("parse p2pmessage failed. err=%v", err)
 			return
@@ -254,7 +220,7 @@ func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate, asy
 	select {
 	case ch <- msg:
 	default:
-		//ilog.Errorf("sending message failed. channel is full. messagePriority=%d", mp)
+		ilog.Errorf("sending message failed. channel is full. messagePriority=%d", mp)
 		return ErrMessageChannelFull
 	}
 	if msg.needDedup() {
