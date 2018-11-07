@@ -20,5 +20,6 @@ type Chain interface {
 	GetReceiptByTxHash(Hash []byte) (*tx.TxReceipt, error)
 	HasReceipt(hash []byte) (bool, error)
 	Close()
+	AllDelaytx() ([]*tx.Tx, error)
 	Draw(int64, int64) string
 }
