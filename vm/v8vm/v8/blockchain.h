@@ -24,6 +24,7 @@ public:
     char *BlockInfo();
     char *TxInfo();
     char *Call(const char *, const char *, const char *);
+    char *CallWithAuth(const char *, const char *, const char *);
     char *CallWithReceipt(const char *, const char *, const char *);
     bool RequireAuth(const char *pubKey, const char *permission);
     int GrantServi(const char *, const char *);

@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"encoding/json"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -19,7 +18,6 @@ import (
 	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/native"
-	"io/ioutil"
 )
 
 // GenesisTxExecTime is the maximum execution time of a transaction in genesis block
@@ -33,36 +31,6 @@ func GenGenesisByFile(db db.MVCCDB, path string) (*block.Block, error) {
 		ilog.Fatalf("Unable to decode into struct, %v", err)
 	}
 	return GenGenesis(db, genesisConfig)
-}
-
-func Compile(id, src, abi string) (*contract.Contract, error) {
-	println(id, src, abi)
-
-	bs, err := ioutil.ReadFile(src)
-	if err != nil {
-		return nil, err
-	}
-	code := string(bs)
-
-	as, err := ioutil.ReadFile(abi)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println(string(as))
-	var info contract.Info
-	err = json.Unmarshal(as, &info)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println(info)
-	c := contract.Contract{
-		ID:   id,
-		Info: &info,
-		Code: code,
-	}
-
-	return &c, nil
 }
 
 func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error) {
@@ -79,18 +47,19 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	// deploy iost.account
 	accountFilePath := filepath.Join(gConf.ContractPath, "account.js")
 	accountAbiPath := filepath.Join(gConf.ContractPath, "account.js.abi")
-	code, err := Compile("iost.auth", accountFilePath, accountAbiPath)
+	code, err := contract.Compile("iost.auth", accountFilePath, accountAbiPath)
 
 	if err != nil {
 		return nil, nil, err
 	}
 	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.auth", code.B64Encode())))
 
+	initAccountID := "inituser"
 	// new account
 	adminInfo := gConf.AdminInfo
 	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.Owner, adminInfo.Active)))
 	// init account
-	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, acc.ID, acc.ID, acc.ID)))
+	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, initAccountID, acc.ID, acc.ID)))
 
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, v.ID, v.Owner, v.Active)))
@@ -98,18 +67,18 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 
 	// deploy iost.token and create iost
 	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.token", native.TokenABI().B64Encode())))
-	acts = append(acts, tx.NewAction("iost.token", "create", fmt.Sprintf(`["iost", "%v", 21000000000, {}]`, acc.ID)))
+	acts = append(acts, tx.NewAction("iost.token", "create", fmt.Sprintf(`["iost", "%v", 21000000000, {}]`, initAccountID)))
 
 	// issue token
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("iost.token", "issue", fmt.Sprintf(`["iost", "%v", "%v"]`, v.ID, v.Balance)))
 	}
-	acts = append(acts, tx.NewAction("iost.token", "issue", fmt.Sprintf(`["iost", "%v", "%v"]`, acc.ID, adminInfo.Balance)))
+	acts = append(acts, tx.NewAction("iost.token", "issue", fmt.Sprintf(`["iost", "%v", "%v"]`, initAccountID, adminInfo.Balance)))
 
 	// deploy iost.vote
 	voteFilePath := filepath.Join(gConf.ContractPath, "vote.js")
 	voteAbiPath := filepath.Join(gConf.ContractPath, "vote.js.abi")
-	code, err = Compile("iost.vote", voteFilePath, voteAbiPath)
+	code, err = contract.Compile("iost.vote", voteFilePath, voteAbiPath)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -126,12 +95,12 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	// deploy iost.gas
 	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.gas", native.GasABI().B64Encode())))
 
-	// todo pledge gas for admin
-	// acts = append(acts, tx.NewAction("iost.gas", "PledgeGas", fmt.Sprintf(`["%v", "%v"]`, adminInfo.ID, adminInfo.Balance)))
+	// pledge gas for admin
+	acts = append(acts, tx.NewAction("iost.gas", "PledgeGas", fmt.Sprintf(`["%v", "%v", "%v"]`, initAccountID, adminInfo.ID, adminInfo.Balance)))
 
 	trx := tx.NewTx(acts, nil, 100000000, 0, 0, 0)
 	trx.Time = 0
-	trx, err = tx.SignTx(trx, acc.ID, []*account.KeyPair{acc})
+	trx, err = tx.SignTx(trx, "inituser@active", []*account.KeyPair{acc})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -143,6 +112,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	t, err := common.ParseStringToTimestamp(gConf.InitialTimestamp)
 	if err != nil {
 		ilog.Fatalf("invalid genesis initial time string %v (%v).", gConf.InitialTimestamp, err)
+		return nil, err
 	}
 	trx, acc, err := genGenesisTx(gConf)
 	if err != nil {
