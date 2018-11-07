@@ -141,10 +141,11 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		return e.tr, nil
 	}
 
-	if len(e.t.ReferredTx) > 0 {
+	if e.t.IsDefer() {
 		if !e.h.DB().HasDelaytx(string(e.t.ReferredTx)) {
 			return nil, fmt.Errorf("delay tx not found, hash=%v", e.t.ReferredTx)
 		}
+		e.h.DB().DelDelaytx(string(e.t.ReferredTx))
 	}
 
 	hasSetCode := false
@@ -193,9 +194,6 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			e.tr.Receipts = append(e.tr.Receipts, receipts...)
 		}
 		e.tr.Returns = append(e.tr.Returns, ret)
-	}
-	if len(e.t.ReferredTx) > 0 {
-		e.h.DB().DelDelaytx(string(e.t.ReferredTx))
 	}
 
 	return e.tr, nil

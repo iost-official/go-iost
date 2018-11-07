@@ -34,7 +34,7 @@ func TestTransfer(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 		So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(99999827600000000))
+		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(99999737400000000))
 	})
 }
 
@@ -55,7 +55,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(cname, ShouldStartWith, "Contract")
 
-		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(9997000000000))
+		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(9956000000000))
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(62))
 
 		r, err := s.Call(cname, "hello", "[]", kp.ID, kp)
