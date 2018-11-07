@@ -62,7 +62,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Accou
 	h.Context().Set("publisher", testAcc.ID)
 
 	tokenContract := native.TokenABI()
-	h.SetCode(tokenContract)
+	h.SetCode(tokenContract, "")
 
 	authList := make(map[string]int)
 	h.Context().Set("auth_contract_list", authList)
