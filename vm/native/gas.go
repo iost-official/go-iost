@@ -13,6 +13,7 @@ import (
 // IOSTRatio ...
 const IOSTRatio int64 = 100000000
 
+// GasMinPledgeInIOST Every user must pledge a minimum amount of IOST
 var GasMinPledgeInIOST int64 = 10
 
 // GasMinPledge Every user must pledge a minimum amount of IOST (including GAS and RAM)

@@ -3,10 +3,10 @@ package contract
 import (
 	"encoding/base64"
 
+	"encoding/json"
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	"io/ioutil"
-	"encoding/json"
 )
 
 //go:generate protoc --gofast_out=. contract.proto
@@ -99,6 +99,7 @@ func (c *Contract) ABI(name string) *ABI {
 	return nil
 }
 
+// Compile read src and abi file, generate contract structure
 func Compile(id, src, abi string) (*Contract, error) {
 	bs, err := ioutil.ReadFile(src)
 	if err != nil {

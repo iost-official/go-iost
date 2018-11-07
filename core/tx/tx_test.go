@@ -7,6 +7,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
+	txpb "github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -53,9 +54,9 @@ func TestTx(t *testing.T) {
 		a3, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 
 		Convey("proto marshal", func() {
-			tx := &TxRaw{
+			tx := &txpb.Tx{
 				Time: 99,
-				Actions: []*ActionRaw{{
+				Actions: []*txpb.Action{{
 					Contract:   "contract1",
 					ActionName: "actionname1",
 					Data:       "{\"num\": 1, \"message\": \"contract1\"}",
@@ -65,7 +66,7 @@ func TestTx(t *testing.T) {
 			b, err := proto.Marshal(tx)
 			So(err, ShouldEqual, nil)
 
-			var tx1 *TxRaw = &TxRaw{}
+			var tx1 *txpb.Tx = &txpb.Tx{}
 
 			err = proto.Unmarshal(b, tx1)
 			So(err, ShouldEqual, nil)
