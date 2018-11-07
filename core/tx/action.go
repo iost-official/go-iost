@@ -1,7 +1,7 @@
 package tx
 
 import (
-	"github.com/golang/protobuf/proto"
+	txpb "github.com/iost-official/go-iost/core/tx/pb"
 )
 
 // Action implement
@@ -20,14 +20,26 @@ func NewAction(contract string, name string, data string) *Action {
 	}
 }
 
-// Encode encode action as byte array
-func (a *Action) Encode() []byte {
-	ar := &ActionRaw{
+// ToPb convert Action to proto buf data structure.
+func (a *Action) ToPb() *txpb.Action {
+	return &txpb.Action{
 		Contract:   a.Contract,
 		ActionName: a.ActionName,
 		Data:       a.Data,
 	}
-	b, err := proto.Marshal(ar)
+}
+
+// FromPb convert Action from proto buf data structure.
+func (a *Action) FromPb(ac *txpb.Action) *Action {
+	a.Contract = ac.Contract
+	a.ActionName = ac.ActionName
+	a.Data = ac.Data
+	return a
+}
+
+// Encode encode action as byte array
+func (a *Action) Encode() []byte {
+	b, err := a.ToPb().Marshal()
 	if err != nil {
 		panic(err)
 	}
@@ -36,14 +48,12 @@ func (a *Action) Encode() []byte {
 
 // Decode action from byte array
 func (a *Action) Decode(b []byte) error {
-	ar := &ActionRaw{}
-	err := proto.Unmarshal(b, ar)
+	ac := &txpb.Action{}
+	err := ac.Unmarshal(b)
 	if err != nil {
 		return err
 	}
-	a.Contract = ar.Contract
-	a.ActionName = ar.ActionName
-	a.Data = ar.Data
+	a.FromPb(ac)
 	return nil
 }
 

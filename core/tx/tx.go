@@ -10,6 +10,7 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
 )
 
@@ -64,7 +65,7 @@ func (t *Tx) containSigner(id string) bool {
 }
 
 func (t *Tx) baseHash() []byte {
-	tr := &TxRaw{
+	tr := &txpb.Tx{
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
@@ -73,11 +74,7 @@ func (t *Tx) baseHash() []byte {
 		Delay:      t.Delay,
 	}
 	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, &ActionRaw{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		tr.Actions = append(tr.Actions, a.ToPb())
 	}
 
 	b, err := tr.Marshal()
@@ -103,7 +100,7 @@ func SignTx(tx *Tx, id string, kps []*account.KeyPair, signs ...*crypto.Signatur
 
 // publishHash
 func (t *Tx) publishHash() []byte {
-	tr := &TxRaw{
+	tr := &txpb.Tx{
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
@@ -112,19 +109,11 @@ func (t *Tx) publishHash() []byte {
 		Delay:      t.Delay,
 	}
 	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, &ActionRaw{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		tr.Actions = append(tr.Actions, a.ToPb())
 	}
 
 	for _, s := range t.Signs {
-		tr.Signs = append(tr.Signs, &crypto.SignatureRaw{
-			Algorithm: int32(s.Algorithm),
-			Sig:       s.Sig,
-			PubKey:    s.Pubkey,
-		})
+		tr.Signs = append(tr.Signs, s.ToPb())
 	}
 
 	b, err := tr.Marshal()
@@ -134,9 +123,9 @@ func (t *Tx) publishHash() []byte {
 	return common.Sha3(b)
 }
 
-// ToTxRaw convert tx to TxRaw for transmission
-func (t *Tx) ToTxRaw() *TxRaw {
-	tr := &TxRaw{
+// ToPb convert tx to txpb.Tx for transmission.
+func (t *Tx) ToPb() *txpb.Tx {
+	tr := &txpb.Tx{
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
@@ -146,35 +135,22 @@ func (t *Tx) ToTxRaw() *TxRaw {
 		ReferredTx: t.ReferredTx,
 	}
 	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, &ActionRaw{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		tr.Actions = append(tr.Actions, a.ToPb())
 	}
 
 	for _, s := range t.Signs {
-		tr.Signs = append(tr.Signs, &crypto.SignatureRaw{
-			Algorithm: int32(s.Algorithm),
-			Sig:       s.Sig,
-			PubKey:    s.Pubkey,
-		})
+		tr.Signs = append(tr.Signs, s.ToPb())
 	}
 	tr.Publisher = t.Publisher
-	tr.PublishSigns = []*crypto.SignatureRaw{}
 	for _, sig := range t.PublishSigns {
-		tr.PublishSigns = append(tr.PublishSigns, &crypto.SignatureRaw{
-			Algorithm: int32(sig.Algorithm),
-			Sig:       sig.Sig,
-			PubKey:    sig.Pubkey,
-		})
+		tr.PublishSigns = append(tr.PublishSigns, sig.ToPb())
 	}
 	return tr
 }
 
 // Encode tx to byte array
 func (t *Tx) Encode() []byte {
-	tr := t.ToTxRaw()
+	tr := t.ToPb()
 	b, err := tr.Marshal()
 	if err != nil {
 		panic(err)
@@ -182,8 +158,8 @@ func (t *Tx) Encode() []byte {
 	return b
 }
 
-// FromTxRaw convert tx from TxRaw
-func (t *Tx) FromTxRaw(tr *TxRaw) {
+// FromPb convert tx from txpb.Tx.
+func (t *Tx) FromPb(tr *txpb.Tx) *Tx {
 	t.Time = tr.Time
 	t.Expiration = tr.Expiration
 	t.GasLimit = tr.GasLimit
@@ -192,41 +168,33 @@ func (t *Tx) FromTxRaw(tr *TxRaw) {
 	t.Delay = tr.Delay
 	t.ReferredTx = tr.ReferredTx
 	for _, a := range tr.Actions {
-		t.Actions = append(t.Actions, &Action{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		ac := &Action{}
+		t.Actions = append(t.Actions, ac.FromPb(a))
 	}
 	t.Signers = tr.Signers
 	t.Signs = []*crypto.Signature{}
 	for _, sr := range tr.Signs {
-		t.Signs = append(t.Signs, &crypto.Signature{
-			Algorithm: crypto.Algorithm(sr.Algorithm),
-			Sig:       sr.Sig,
-			Pubkey:    sr.PubKey,
-		})
+		sig := &crypto.Signature{}
+		t.Signs = append(t.Signs, sig.FromPb(sr))
 	}
 	t.Publisher = tr.Publisher
 	t.PublishSigns = []*crypto.Signature{}
-	for _, sig := range tr.PublishSigns {
-		t.PublishSigns = append(t.PublishSigns, &crypto.Signature{
-			Algorithm: crypto.Algorithm(sig.Algorithm),
-			Sig:       sig.Sig,
-			Pubkey:    sig.PubKey,
-		})
+	for _, sr := range tr.PublishSigns {
+		sig := &crypto.Signature{}
+		t.PublishSigns = append(t.PublishSigns, sig.FromPb(sr))
 	}
 	t.hash = nil
+	return t
 }
 
 // Decode tx from byte array
 func (t *Tx) Decode(b []byte) error {
-	tr := &TxRaw{}
+	tr := &txpb.Tx{}
 	err := tr.Unmarshal(b)
 	if err != nil {
 		return err
 	}
-	t.FromTxRaw(tr)
+	t.FromPb(tr)
 	return nil
 }
 

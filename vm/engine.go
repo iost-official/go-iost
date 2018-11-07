@@ -187,7 +187,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 			break
 		} else {
 			txr.Receipts = append(txr.Receipts, receipts...)
-			txr.SuccActionNum++
+			//txr.SuccActionNum++
 		}
 	}
 
@@ -278,8 +278,8 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 			Code:    code,
 			Message: message,
 		},
-		SuccActionNum: 0,
-		Receipts:      make([]*tx.Receipt, 0),
+		//SuccActionNum: 0,
+		Receipts: make([]*tx.Receipt, 0),
 	}
 }
 func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, receipts []*tx.Receipt, err error) {
@@ -314,7 +314,7 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status *t
 		}
 
 		receipt := &tx.Receipt{
-			Type:    tx.SystemDefined,
+			//Type:    tx.SystemDefined,
 			Content: err.Error(),
 		}
 		receipts = append(receipts, receipt)
