@@ -1,10 +1,10 @@
 package tx
 
 import (
+	"fmt"
+
 	"github.com/iost-official/go-iost/common"
 	txpb "github.com/iost-official/go-iost/core/tx/pb"
-
-	"fmt"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -31,10 +31,40 @@ type Return struct {
 	Value    string
 }
 
+// ToPb convert Return to proto buf data structure.
+func (r *Return) ToPb() *txpb.Return {
+	return &txpb.Return{
+		FuncName: r.FuncName,
+		Value:    r.Value,
+	}
+}
+
+// FromPb convert Return from proto buf data structure.
+func (r *Return) FromPb(s *txpb.Return) *Return {
+	r.FuncName = s.FuncName
+	r.Value = s.Value
+	return r
+}
+
 // Status status of transaction execution result, including code and message
 type Status struct {
 	Code    StatusCode
 	Message string
+}
+
+// ToPb convert Status to proto buf data structure.
+func (s *Status) ToPb() *txpb.Status {
+	return &txpb.Status{
+		Code:    int32(s.Code),
+		Message: s.Message,
+	}
+}
+
+// FromPb convert Status from proto buf data structure.
+func (s *Status) FromPb(st *txpb.Status) *Status {
+	s.Code = StatusCode(st.Code)
+	s.Message = st.Message
+	return s
 }
 
 // ReceiptType type of single receipt
@@ -51,6 +81,21 @@ const (
 type Receipt struct {
 	FuncName string
 	Content  string // can be a raw string or a json string
+}
+
+// ToPb convert Receipt to proto buf data structure.
+func (r *Receipt) ToPb() *txpb.Receipt {
+	return &txpb.Receipt{
+		FuncName: r.FuncName,
+		Content:  r.Content,
+	}
+}
+
+// FromPb convert Receipt from proto buf data structure.
+func (r *Receipt) FromPb(rp *txpb.Receipt) *Receipt {
+	r.FuncName = rp.FuncName
+	r.Content = rp.Content
+	return r
 }
 
 // TxReceipt Transaction Receipt
@@ -85,10 +130,7 @@ func (r *TxReceipt) ToPb() *txpb.TxReceipt {
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
 		RamUsage: r.RAMUsage,
-		Status: &txpb.Status{
-			Code:    int32(r.Status.Code),
-			Message: r.Status.Message,
-		},
+		Status:   r.Status.ToPb(),
 		Returns:  []*txpb.Return{},
 		Receipts: []*txpb.Receipt{},
 	}
@@ -97,16 +139,10 @@ func (r *TxReceipt) ToPb() *txpb.TxReceipt {
 			fmt.Println("rt is nil")
 			break
 		}
-		tr.Returns = append(tr.Returns, &txpb.Return{
-			FuncName: rt.FuncName,
-			Value:    rt.Value,
-		})
+		tr.Returns = append(tr.Returns, rt.ToPb())
 	}
 	for _, re := range r.Receipts {
-		tr.Receipts = append(tr.Receipts, &txpb.Receipt{
-			FuncName: re.FuncName,
-			Content:  re.Content,
-		})
+		tr.Receipts = append(tr.Receipts, re.ToPb())
 	}
 	return tr
 }
@@ -121,25 +157,20 @@ func (r *TxReceipt) Encode() []byte {
 }
 
 // FromPb convert TxReceipt from proto buf data structure
-func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) {
+func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) *TxReceipt {
 	r.TxHash = tr.TxHash
 	r.GasUsage = tr.GasUsage
-	r.Status = &Status{
-		Code:    StatusCode(tr.Status.Code),
-		Message: tr.Status.Message,
-	}
+	s := &Status{}
+	r.Status = s.FromPb(tr.Status)
 	for _, rt := range tr.Returns {
-		r.Returns = append(r.Returns, &Return{
-			FuncName: rt.FuncName,
-			Value:    rt.Value,
-		})
+		re := &Return{}
+		r.Returns = append(r.Returns, re.FromPb(rt))
 	}
 	for _, re := range tr.Receipts {
-		r.Receipts = append(r.Receipts, &Receipt{
-			FuncName: re.FuncName,
-			Content:  re.Content,
-		})
+		rc := &Receipt{}
+		r.Receipts = append(r.Receipts, rc.FromPb(re))
 	}
+	return r
 }
 
 // Decode TxReceipt from byte array
@@ -162,10 +193,7 @@ func (r *TxReceipt) String() string {
 	tr := &txpb.TxReceipt{
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
-		Status: &txpb.Status{
-			Code:    int32(r.Status.Code),
-			Message: r.Status.Message,
-		},
+		Status:   r.Status.ToPb(),
 	}
 	return tr.String()
 }

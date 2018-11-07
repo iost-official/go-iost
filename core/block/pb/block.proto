@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "github.com/iost-official/go-iost/crypto/signature.proto";
+import "github.com/iost-official/go-iost/crypto/pb/signature.proto";
 import "github.com/iost-official/go-iost/core/tx/pb/tx.proto";
 package blockpb;
 
@@ -22,7 +22,7 @@ message BlockHead {
 
 message Block {
     BlockHead head = 1;
-    crypto.SignatureRaw sign = 2;
+    sigpb.Signature sign = 2;
     repeated txpb.Tx txs = 3;
     repeated txpb.TxReceipt receipts = 4;
     repeated bytes txHashes = 5;
