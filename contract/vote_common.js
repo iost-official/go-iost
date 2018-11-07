@@ -171,7 +171,7 @@ class VoteCommonContract {
 
         const anyOption = !!info.anyOption; // default to false
 
-        const unvoteInterval = info.unvoteInterval;
+        let unvoteInterval = info.unvoteInterval;
         if (unvoteInterval === undefined) {
             unvoteInterval = 0;
         } else if (!Number.isInteger(unvoteInterval) || unvoteInterval < 0) {
