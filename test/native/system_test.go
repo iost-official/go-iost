@@ -29,6 +29,7 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 	ctx.Set("contract_name", conName)
 	ctx.Set("tx_hash", []byte("iamhash"))
 	ctx.Set("auth_list", make(map[string]int))
+	ctx.Set("publisher", "pub")
 
 	pm := vm.NewMonitor()
 	h := host.NewHost(ctx, vi, pm, nil)
@@ -49,6 +50,7 @@ func TestEngine_SetCode(t *testing.T) {
 
 	e, host, code := InitVMWithMonitor(t, "setcode")
 	host.Context().Set("tx_hash", "iamhash")
+	host.Context().Set("contract_name", "iost.system")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	hash := "Contractiamhash"
 

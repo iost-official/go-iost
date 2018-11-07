@@ -114,10 +114,11 @@ var (
 
 			publisher := h.Context().Value("publisher").(string)
 			cost2, err := h.SetCode(con, publisher)
-
-			h.MapPut("contract_owner", actID, publisher)
-
 			cost.AddAssign(cost2)
+
+			cost2 = h.MapPut("contract_owner", actID, publisher)
+			cost.AddAssign(cost2)
+
 			return []interface{}{actID}, cost, err
 		},
 	}
