@@ -12,17 +12,18 @@ var systemABIs map[string]*abi
 
 func init() {
 	systemABIs = make(map[string]*abi)
-	register(&systemABIs, requireAuth)
-	register(&systemABIs, receipt)
-	register(&systemABIs, callWithReceipt)
-	register(&systemABIs, transfer)
-	register(&systemABIs, topUp)
-	register(&systemABIs, countermand)
-	register(&systemABIs, setCode)
-	register(&systemABIs, updateCode)
-	register(&systemABIs, destroyCode)
-	register(&systemABIs, issueIOST)
-	register(&systemABIs, initSetCode)
+	register(systemABIs, requireAuth)
+	register(systemABIs, receipt)
+	register(systemABIs, callWithReceipt)
+	register(systemABIs, transfer)
+	register(systemABIs, topUp)
+	register(systemABIs, countermand)
+	register(systemABIs, setCode)
+	register(systemABIs, updateCode)
+	register(systemABIs, destroyCode)
+	register(systemABIs, issueIOST)
+	register(systemABIs, initSetCode)
+	register(systemABIs, cancelDelaytx)
 }
 
 // var .
@@ -177,6 +178,17 @@ var (
 			cost2, err := h.SetCode(con)
 			cost.AddAssign(cost2)
 			return []interface{}{actID}, cost, err
+		},
+	}
+
+	// cancelDelaytx cancels a delay transaction.
+	cancelDelaytx = &abi{
+		name: "CancelDelaytx",
+		args: []string{"string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+
+			cost, err = h.CancelDelaytx(args[0].(string))
+			return []interface{}{}, cost, err
 		},
 	}
 )

@@ -1,8 +1,10 @@
 package host
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 )
@@ -29,13 +31,27 @@ func NewTeller(h *Host) Teller {
 
 // TransferRaw ...
 func (h *Teller) TransferRaw(from, to string, amount int64) error {
-	bf := h.h.db.Balance(from)
-	//ilog.Debugf("%v's balance : %v", from, bf)
-	if strings.HasPrefix(from, ContractAccountPrefix) && bf >= amount || bf > amount {
+	srcBalance := h.h.db.Balance(from)
+	if strings.HasPrefix(from, ContractAccountPrefix) && srcBalance >= amount || srcBalance > amount {
 		h.h.db.SetBalance(from, -1*amount)
 		h.h.db.SetBalance(to, amount)
 		return nil
 	}
+	return ErrBalanceNotEnough
+}
+
+// TransferRawNew ...
+func (h *Teller) TransferRawNew(from, to string, amount int64) error {
+	tokenName := "iost"
+	srcBalance := h.h.db.TokenBalance(tokenName, from)
+	dstBalance := h.h.db.TokenBalance(tokenName, to)
+	if strings.HasPrefix(from, ContractAccountPrefix) && srcBalance >= amount || srcBalance > amount {
+		h.h.db.SetTokenBalance(tokenName, from, srcBalance-amount)
+		h.h.db.SetTokenBalance(tokenName, to, dstBalance+amount)
+		ilog.Debugf("TransferRaw src %v: %v -> %v and dst %v: %v -> %v\n", from, srcBalance, srcBalance-amount, to, dstBalance, dstBalance+amount)
+		return nil
+	}
+	ilog.Debugf("TransferRaw balance not enough %v has %v < %v", from, srcBalance, amount)
 	return ErrBalanceNotEnough
 }
 
@@ -47,13 +63,13 @@ func (h *Teller) GetBalance(from string) (string, *contract.Cost, error) {
 	} else {
 		bl = h.h.db.Balance(ContractAccountPrefix + from)
 	}
-	fpn := FixPointNumber{Value: bl, Decimal: 8}
+	fpn := common.Fixed{Value: bl, Decimal: 8}
 	return fpn.ToString(), GetCost, nil
 }
 
 // GrantCoin issue coin
 func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cost, error) {
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -67,7 +83,7 @@ func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cos
 
 // ConsumeCoin consume coin from
 func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *contract.Cost, err error) {
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -84,7 +100,7 @@ func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *con
 
 // GrantServi ...
 func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error) {
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -98,7 +114,7 @@ func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error)
 
 // ConsumeServi ...
 func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cost, err error) {
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -115,7 +131,7 @@ func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cos
 
 // TotalServi ...
 func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
-	fpn := FixPointNumber{Value: h.h.db.TotalServi(), Decimal: 8}
+	fpn := common.Fixed{Value: h.h.db.TotalServi(), Decimal: 8}
 	ts = fpn.ToString()
 	cost = GetCost
 	return
@@ -123,8 +139,7 @@ func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
 
 // Transfer ...
 func (h *Teller) Transfer(from, to string, amountStr string) (*contract.Cost, error) {
-	//ilog.Debugf("amount : %v", amount)
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
 	}
@@ -163,7 +178,7 @@ func (h *Teller) TopUp(c, from string, amountStr string) (*contract.Cost, error)
 
 // Countermand ...
 func (h *Teller) Countermand(c, to string, amountStr string) (*contract.Cost, error) {
-	amount, _ := NewFixPointNumber(amountStr, 8)
+	amount, _ := common.NewFixed(amountStr, 8)
 	return TransferCost, h.TransferRaw(ContractGasPrefix+c, to, amount.Value)
 }
 
@@ -174,42 +189,26 @@ func (h *Teller) PayCost(c *contract.Cost, who string) {
 
 // DoPay ...
 func (h *Teller) DoPay(witness string, gasPrice int64) error {
-	if gasPrice < 0 {
+	if gasPrice < 100 {
 		panic("gas_price error")
 	}
 
 	for k, c := range h.cost {
 		fee := gasPrice * c.ToGas()
-		if fee == 0 {
-			continue
+		if fee != 0 {
+			gas := &common.Fixed{
+				Value:   fee * 1000000,
+				Decimal: 8, // TODO magic number
+			}
+			err := h.h.CostGas(k, gas)
+			if err != nil {
+				return fmt.Errorf("pay cost failed: %v, %v", k, err)
+			}
 		}
-		bfee := fee / 10
-		if strings.HasPrefix(k, "IOST") {
-			err := h.TransferRaw(k, witness, fee-bfee)
-			if err != nil {
-				return err
-			}
-			// 10% of gas transferred to iost.bonus
-			err = h.TransferRaw(k, ContractAccountPrefix+"iost.bonus", bfee)
-			if err != nil {
-				return err
-			}
-		} else if strings.HasPrefix(k, ContractGasPrefix) {
-			err := h.TransferRaw(k, witness, fee-bfee)
-			if err != nil {
-				return err
-			}
-			// 10% of gas transferred to iost.bonus
-			err = h.TransferRaw(k, ContractAccountPrefix+"iost.bonus", bfee)
-			if err != nil {
-				return err
-			}
-		} else {
-			ilog.Errorf("key is: %v", k)
-			panic("prefix error")
-		}
+		//ram := c.Data // todo activate ram
+		//currentRam := h.h.db.TokenBalance("ram", k)
+		//h.h.db.SetTokenBalance("ram", k, currentRam+ram)
 	}
-
 	return nil
 }
 
@@ -224,65 +223,4 @@ func (h *Teller) Privilege(id string) int {
 		i = 0
 	}
 	return i
-}
-
-// FixPointNumber implements fixed point number for user of token balance
-type FixPointNumber struct {
-	Value   int64
-	Decimal int
-}
-
-// NewFixPointNumber generate FixPointNumber from string and decimal, will truncate if decimal is smaller
-func NewFixPointNumber(amount string, decimal int) (*FixPointNumber, bool) {
-	fpn := &FixPointNumber{Value: 0, Decimal: decimal}
-	if len(amount) == 0 || amount[0] == '.' {
-		return nil, false
-	}
-	i := 0
-	for ; i < len(amount); i++ {
-		if '0' <= amount[i] && amount[i] <= '9' {
-			fpn.Value = fpn.Value*10 + int64(amount[i]-'0')
-		} else if amount[i] == '.' {
-			break
-		} else {
-			return nil, false
-		}
-	}
-	for i = i + 1; i < len(amount) && decimal > 0; i++ {
-		if '0' <= amount[i] && amount[i] <= '9' {
-			fpn.Value = fpn.Value*10 + int64(amount[i]-'0')
-			decimal = decimal - 1
-		} else {
-			return nil, false
-		}
-	}
-	for decimal > 0 {
-		fpn.Value = fpn.Value * 10
-		decimal = decimal - 1
-	}
-	return fpn, true
-}
-
-// ToString generate string of FixPointNumber without post zero
-func (fpn *FixPointNumber) ToString() string {
-	val := fpn.Value
-	str := make([]byte, 0, 0)
-	for val > 0 || len(str) <= fpn.Decimal {
-		str = append(str, byte('0'+val%10))
-		val /= 10
-	}
-	rtn := make([]byte, 0, 0)
-	for i := len(str) - 1; i >= 0; i-- {
-		if i+1 == fpn.Decimal {
-			rtn = append(rtn, '.')
-		}
-		rtn = append(rtn, str[i])
-	}
-	for rtn[len(rtn)-1] == '0' {
-		rtn = rtn[0 : len(rtn)-1]
-	}
-	if rtn[len(rtn)-1] == '.' {
-		rtn = rtn[0 : len(rtn)-1]
-	}
-	return string(rtn)
 }

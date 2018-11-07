@@ -41,11 +41,10 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil {
 		ilog.Fatalf("invalid genesis initial time string %v (%v).", gConf.InitialTimestamp, err)
 	}
-
 	var acts []*tx.Action
-	for i := 0; i < len(witnessInfo)/2; i++ {
-		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, witnessInfo[2*i], witnessInfo[2*i+1]))
-		acts = append(acts, &act)
+	for _, v := range witnessInfo {
+		act := tx.NewAction("iost.system", "IssueIOST", fmt.Sprintf(`["%v", %v]`, v.ID, v.Balance))
+		acts = append(acts, act)
 	}
 	// deploy iost.vote
 	voteFilePath := filepath.Join(gConf.VoteContractPath, "vote.js")
@@ -67,30 +66,29 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	}
 
 	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode()))
-	acts = append(acts, &act)
+	acts = append(acts, act)
 
-	num := len(witnessInfo) / 2
-	for i := 0; i < num; i++ {
-		act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`["%v"]`, witnessInfo[2*i]))
-		acts = append(acts, &act1)
+	for _, v := range witnessInfo {
+		act1 := tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`["%v"]`, v.Owner))
+		acts = append(acts, act1)
 	}
 	act11 := tx.NewAction("iost.vote", "InitAdmin", fmt.Sprintf(`["%v"]`, gConf.AdminID))
-	acts = append(acts, &act11)
+	acts = append(acts, act11)
 
 	// deploy iost.bonus
 	act2 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode()))
-	acts = append(acts, &act2)
+	acts = append(acts, act2)
 	// deploy iost.gas
 	act3 := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.gas", native.GasABI().B64Encode()))
-	acts = append(acts, &act3)
+	acts = append(acts, act3)
 
-	trx := tx.NewTx(acts, nil, 100000000, 0, 0)
+	trx := tx.NewTx(acts, nil, 100000000, 0, 0, 0)
 	trx.Time = 0
 	acc, err := account.NewKeyPair(common.Base58Decode("2vj2Ab8Taz1TT2MSQHxmSffGnvsc9EVrmjx1W7SBQthCpuykhbRn2it8DgNkcm4T9tdBgsue3uBiAzxLpLJoDUbc"), crypto.Ed25519) // TODO 修改为account
 	if err != nil {
 		return nil, err
 	}
-	trx, err = tx.SignTx(trx, acc)
+	trx, err = tx.SignTx(trx, acc.ID, []*account.KeyPair{acc})
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +131,10 @@ func FakeBv(bv global.BaseVariable) error {
 	blk, err := GenGenesis(
 		bv.StateDB(),
 		&common.GenesisConfig{
-			WitnessInfo:      []string{"a1", "11111111111", "a2", "2222", "a3", "333"},
+			WitnessInfo: []*common.Witness{
+				{ID: "a1", Owner: "a1", Active: "a1", Balance: 11111111111},
+				{ID: "a2", Owner: "a2", Active: "a2", Balance: 222222},
+				{ID: "a3", Owner: "a3", Active: "a3", Balance: 333333333}},
 			InitialTimestamp: "2006-01-02T15:04:05Z",
 			VoteContractPath: os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/",
 		},

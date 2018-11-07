@@ -22,6 +22,7 @@ import (
 	peer "github.com/libp2p/go-libp2p-peer"
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	multiaddr "github.com/multiformats/go-multiaddr"
+	madns "github.com/multiformats/go-multiaddr-dns"
 	"github.com/uber-go/atomic"
 )
 
@@ -503,7 +504,14 @@ func (pm *PeerManager) parseSeeds() {
 			ilog.Errorf("parse seed nodes error. seed=%s, err=%v", seed, err)
 			continue
 		}
-		pm.storePeerInfo(peerID, []multiaddr.Multiaddr{addr})
+
+		resAddrs, err := madns.Resolve(context.Background(), addr)
+		if err != nil {
+			ilog.Errorf("resolve multiaddr failed. err=%v, addr=%v", err, addr)
+			continue
+		}
+
+		pm.storePeerInfo(peerID, resAddrs)
 	}
 }
 

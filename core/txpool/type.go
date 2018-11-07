@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"bytes"
 	"sync"
 	"time"
 
@@ -81,6 +82,9 @@ type SortedTxMap struct {
 func compareTx(a, b interface{}) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
+	if txa.GasPrice == txb.GasPrice && txb.Time == txa.Time {
+		return bytes.Compare(txa.Hash(), txb.Hash())
+	}
 	if txa.GasPrice == txb.GasPrice {
 		return int(txb.Time - txa.Time)
 	}

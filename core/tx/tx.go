@@ -1,16 +1,16 @@
 package tx
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
-	"bytes"
-	"errors"
-	"strconv"
+	"strings"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
 )
 
@@ -18,66 +18,66 @@ import (
 
 // Tx Transaction structure
 type Tx struct {
-	hash       []byte
-	Time       int64               `json:"time,string"`
-	Expiration int64               `json:"expiration,string"`
-	GasLimit   int64               `json:"gas_limit,string"`
-	Actions    []*Action           `json:"-"`
-	Signers    [][]byte            `json:"-"`
-	Signs      []*crypto.Signature `json:"-"`
-	Publisher  *crypto.Signature   `json:"-"`
-	GasPrice   int64               `json:"gas_price,string"`
+	hash         []byte
+	Time         int64               `json:"time"`
+	Expiration   int64               `json:"expiration"`
+	GasPrice     int64               `json:"gas_price"`
+	GasLimit     int64               `json:"gas_limit"`
+	Delay        int64               `json:"delay"`
+	Actions      []*Action           `json:"-"`
+	Signers      []string            `json:"-"`
+	Signs        []*crypto.Signature `json:"-"`
+	Publisher    string              `json:"-"`
+	PublishSigns []*crypto.Signature `json:"-"`
+	ReferredTx   []byte              `json:"referred_tx"`
 }
 
 // NewTx return a new Tx
-func NewTx(actions []*Action, signers [][]byte, gasLimit int64, gasPrice int64, expiration int64) *Tx {
-	now := time.Now().UnixNano()
+func NewTx(actions []*Action, signers []string, gasLimit, gasPrice, expiration, delay int64) *Tx {
 	return &Tx{
-		Time:       now,
-		Actions:    actions,
-		Signers:    signers,
-		GasLimit:   gasLimit,
-		GasPrice:   gasPrice,
-		Expiration: expiration,
-		hash:       nil,
-		Publisher:  &crypto.Signature{},
+		Time:         time.Now().UnixNano(),
+		Actions:      actions,
+		Signers:      signers,
+		GasLimit:     gasLimit,
+		GasPrice:     gasPrice,
+		Expiration:   expiration,
+		hash:         nil,
+		PublishSigns: []*crypto.Signature{},
+		Delay:        delay,
 	}
 }
 
 // SignTxContent sign tx content, only signers should do this
-func SignTxContent(tx *Tx, account *account.KeyPair) (*crypto.Signature, error) {
-	if !tx.containSigner(account.Pubkey) {
+func SignTxContent(tx *Tx, id string, account *account.KeyPair) (*crypto.Signature, error) {
+	if !tx.containSigner(id) {
 		return nil, errors.New("account not included in signer list of this transaction")
 	}
 	return account.Sign(tx.baseHash()), nil
 }
-func (t *Tx) containSigner(pubkey []byte) bool {
-	found := false
+
+func (t *Tx) containSigner(id string) bool {
 	for _, signer := range t.Signers {
-		if bytes.Equal(signer, pubkey) {
-			found = true
+		if strings.HasPrefix(signer, id) {
+			return true
 		}
 	}
-	return found
+	return false
 }
 
 func (t *Tx) baseHash() []byte {
-	tr := &TxRaw{
+	tr := &txpb.Tx{
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
 		GasPrice:   t.GasPrice,
+		Signers:    t.Signers,
+		Delay:      t.Delay,
 	}
 	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, &ActionRaw{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		tr.Actions = append(tr.Actions, a.ToPb())
 	}
-	tr.Signers = t.Signers
 
-	b, err := proto.Marshal(tr)
+	b, err := tr.Marshal()
 	if err != nil {
 		panic(err)
 	}
@@ -85,132 +85,116 @@ func (t *Tx) baseHash() []byte {
 }
 
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
-func SignTx(tx *Tx, account *account.KeyPair, signs ...*crypto.Signature) (*Tx, error) {
+func SignTx(tx *Tx, id string, kps []*account.KeyPair, signs ...*crypto.Signature) (*Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
 
-	sig := account.Sign(tx.publishHash())
-	tx.Publisher = sig
+	tx.PublishSigns = []*crypto.Signature{}
+	for _, kp := range kps {
+		sig := kp.Sign(tx.publishHash())
+		tx.PublishSigns = append(tx.PublishSigns, sig)
+	}
+	tx.Publisher = id
 	tx.hash = nil
 	return tx, nil
 }
 
 // publishHash
 func (t *Tx) publishHash() []byte {
-	tr := &TxRaw{
+	tr := &txpb.Tx{
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
 		GasPrice:   t.GasPrice,
+		Signers:    t.Signers,
+		Delay:      t.Delay,
 	}
 	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, &ActionRaw{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
-	}
-	tr.Signers = t.Signers
-	for _, s := range t.Signs {
-		tr.Signs = append(tr.Signs, &crypto.SignatureRaw{
-			Algorithm: int32(s.Algorithm),
-			Sig:       s.Sig,
-			PubKey:    s.Pubkey,
-		})
+		tr.Actions = append(tr.Actions, a.ToPb())
 	}
 
-	b, err := proto.Marshal(tr)
+	for _, s := range t.Signs {
+		tr.Signs = append(tr.Signs, s.ToPb())
+	}
+
+	b, err := tr.Marshal()
 	if err != nil {
 		panic(err)
 	}
 	return common.Sha3(b)
 }
 
-// ToTxRaw convert tx to TxRaw for transmission
-func (t *Tx) ToTxRaw() *TxRaw {
-	tr := &TxRaw{
+// ToPb convert tx to txpb.Tx for transmission.
+func (t *Tx) ToPb() *txpb.Tx {
+	tr := &txpb.Tx{
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasLimit:   t.GasLimit,
 		GasPrice:   t.GasPrice,
+		Signers:    t.Signers,
+		Delay:      t.Delay,
+		ReferredTx: t.ReferredTx,
 	}
 	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, &ActionRaw{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		tr.Actions = append(tr.Actions, a.ToPb())
 	}
-	tr.Signers = t.Signers
+
 	for _, s := range t.Signs {
-		tr.Signs = append(tr.Signs, &crypto.SignatureRaw{
-			Algorithm: int32(s.Algorithm),
-			Sig:       s.Sig,
-			PubKey:    s.Pubkey,
-		})
+		tr.Signs = append(tr.Signs, s.ToPb())
 	}
-	tr.Publisher = nil
-	if t.Publisher != nil {
-		tr.Publisher = &crypto.SignatureRaw{
-			Algorithm: int32(t.Publisher.Algorithm),
-			Sig:       t.Publisher.Sig,
-			PubKey:    t.Publisher.Pubkey,
-		}
+	tr.Publisher = t.Publisher
+	for _, sig := range t.PublishSigns {
+		tr.PublishSigns = append(tr.PublishSigns, sig.ToPb())
 	}
 	return tr
 }
 
 // Encode tx to byte array
 func (t *Tx) Encode() []byte {
-	tr := t.ToTxRaw()
-	b, err := proto.Marshal(tr)
+	tr := t.ToPb()
+	b, err := tr.Marshal()
 	if err != nil {
 		panic(err)
 	}
 	return b
 }
 
-// FromTxRaw convert tx from TxRaw
-func (t *Tx) FromTxRaw(tr *TxRaw) {
+// FromPb convert tx from txpb.Tx.
+func (t *Tx) FromPb(tr *txpb.Tx) *Tx {
 	t.Time = tr.Time
 	t.Expiration = tr.Expiration
 	t.GasLimit = tr.GasLimit
 	t.GasPrice = tr.GasPrice
 	t.Actions = []*Action{}
+	t.Delay = tr.Delay
+	t.ReferredTx = tr.ReferredTx
 	for _, a := range tr.Actions {
-		t.Actions = append(t.Actions, &Action{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		ac := &Action{}
+		t.Actions = append(t.Actions, ac.FromPb(a))
 	}
 	t.Signers = tr.Signers
 	t.Signs = []*crypto.Signature{}
 	for _, sr := range tr.Signs {
-		t.Signs = append(t.Signs, &crypto.Signature{
-			Algorithm: crypto.Algorithm(sr.Algorithm),
-			Sig:       sr.Sig,
-			Pubkey:    sr.PubKey,
-		})
+		sig := &crypto.Signature{}
+		t.Signs = append(t.Signs, sig.FromPb(sr))
 	}
-	t.Publisher = nil
-	if tr.Publisher != nil {
-		t.Publisher = &crypto.Signature{
-			Algorithm: crypto.Algorithm(tr.Publisher.Algorithm),
-			Sig:       tr.Publisher.Sig,
-			Pubkey:    tr.Publisher.PubKey,
-		}
+	t.Publisher = tr.Publisher
+	t.PublishSigns = []*crypto.Signature{}
+	for _, sr := range tr.PublishSigns {
+		sig := &crypto.Signature{}
+		t.PublishSigns = append(t.PublishSigns, sig.FromPb(sr))
 	}
 	t.hash = nil
+	return t
 }
 
 // Decode tx from byte array
 func (t *Tx) Decode(b []byte) error {
-	tr := &TxRaw{}
-	err := proto.Unmarshal(b, tr)
+	tr := &txpb.Tx{}
+	err := tr.Unmarshal(b)
 	if err != nil {
 		return err
 	}
-	t.FromTxRaw(tr)
+	t.FromPb(tr)
 	return nil
 }
 
@@ -218,7 +202,7 @@ func (t *Tx) Decode(b []byte) error {
 func (t *Tx) String() string {
 	str := "Tx{\n"
 	str += "	Time: " + strconv.FormatInt(t.Time, 10) + ",\n"
-	str += "	Pubkey: " + string(t.Publisher.Pubkey) + ",\n"
+	str += "	Publisher: " + t.Publisher + ",\n"
 	str += "	Action:\n"
 	for _, a := range t.Actions {
 		str += "		" + a.String()
@@ -236,24 +220,35 @@ func (t *Tx) Hash() []byte {
 }
 
 // VerifySelf verify tx's signature
-func (t *Tx) VerifySelf() error {
+func (t *Tx) VerifySelf() error { // only check whether sigs are legal
+	if t.Delay > 0 && len(t.ReferredTx) > 0 {
+		return errors.New("invalid tx. including both delaysecond and referredtx")
+	}
+	if len(t.ReferredTx) > 0 {
+		return nil
+	}
 	baseHash := t.baseHash()
-	signerSet := make(map[string]bool)
+	//signerSet := make(map[string]bool)
 	for _, sign := range t.Signs {
 		ok := sign.Verify(baseHash)
 		if !ok {
 			return fmt.Errorf("signer error")
 		}
-		signerSet[string(sign.Pubkey)] = true
+		//signerSet[account.GetIDByPubkey(sign.Pubkey)] = true
 	}
-	for _, signer := range t.Signers {
-		if _, ok := signerSet[string(signer)]; !ok {
-			return fmt.Errorf("signer not enough")
+	//for _, signer := range t.Signers {
+	//	if _, ok := signerSet[signer]; !ok {
+	//		return fmt.Errorf("signer not enough")
+	//	}
+	//}
+	if len(t.PublishSigns) == 0 {
+		return fmt.Errorf("publisher empty error")
+	}
+	for _, sign := range t.PublishSigns {
+		ok := sign != nil && sign.Verify(t.publishHash())
+		if !ok {
+			return fmt.Errorf("publisher error")
 		}
-	}
-	ok := t.Publisher != nil && t.Publisher.Verify(t.publishHash())
-	if !ok {
-		return fmt.Errorf("publisher error")
 	}
 	return nil
 }

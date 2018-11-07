@@ -43,13 +43,13 @@ func TestBlockSerialize(t *testing.T) {
 				ActionName: "actionname1",
 				Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 			}},
-			Signers: [][]byte{a1.Pubkey},
+			Signers: []string{a1.ID},
 		}
 		blk.Txs = append(blk.Txs, &tx0)
 		receipt := tx.TxReceipt{
 			TxHash:   tx0.Hash(),
 			GasUsage: 10,
-			Status: tx.Status{
+			Status: &tx.Status{
 				Code:    tx.Success,
 				Message: "run success",
 			},

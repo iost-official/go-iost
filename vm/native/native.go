@@ -18,8 +18,8 @@ type abi struct {
 type Impl struct {
 }
 
-func register(m *map[string]*abi, a *abi) {
-	(*m)[a.name] = a
+func register(m map[string]*abi, a *abi) {
+	m[a.name] = a
 }
 
 // Init .
@@ -64,4 +64,13 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 	}
 
 	return a.do(h, args...)
+}
+
+// CheckCost check if cost exceed gas_limit
+func CheckCost(h *host.Host, cost *contract.Cost) bool {
+	gasLimit := h.Context().GValue("gas_limit").(int64)
+	if cost.ToGas() > gasLimit {
+		return false
+	}
+	return true
 }

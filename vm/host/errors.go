@@ -10,6 +10,7 @@ var (
 	ErrPermissionLost   = errors.New("transaction has no permission")
 	ErrInvalidData      = errors.New("invalid data")
 	ErrInvalidAmount    = errors.New("invalid amount")
+	ErrGasLimitExceeded = errors.New("gas limit exceeded")
 
 	ErrContractNotFound = errors.New("contract not exists")
 	ErrUpdateRefused    = errors.New("update refused")
@@ -24,4 +25,6 @@ var (
 	ErrTokenNotExists    = errors.New("token not exists")
 	ErrTokenNoTransfer   = errors.New("token can't transfer")
 	ErrTokenIssueRefused = errors.New("token issue refused")
+
+	ErrDelaytxNotFound = errors.New("delaytx not exists")
 )

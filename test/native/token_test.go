@@ -1,4 +1,4 @@
-package vm
+package native
 
 import (
 	"testing"
@@ -20,7 +20,7 @@ func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
-	var gasLimit = int64(10000)
+	var gasLimit = int64(1000000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
 	}
@@ -79,31 +79,31 @@ func TestToken_Create(t *testing.T) {
 		})
 
 		Convey("create token without auth", func() {
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err.Error(), ShouldEqual, "transaction has no permission")
 		})
 
 		Convey("create token", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 		})
 
 		Convey("create duplicate token", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
-			_, _, err = e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err = e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err.Error(), ShouldEqual, "token exists")
 		})
 
 		Convey("create token config", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte(`{"canTransfer": false, "decimal": 1, "defaultRate": "1.1"}`)))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte(`{"canTransfer": false, "decimal": 1, "defaultRate": "1.1"}`))
 			So(err, ShouldBeNil)
 
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost", "issuer0", "10.222")
@@ -120,7 +120,7 @@ func TestToken_Create(t *testing.T) {
 			So(true, ShouldEqual, dr.(string) == "1.1")
 
 			// transfer truncate
-			_, _, err = e.LoadAndCall(host, code, "create", "iost1", "issuer0", int64(100), database.SerializedJSON([]byte(`{"decimal": 1}`)))
+			_, _, err = e.LoadAndCall(host, code, "create", "iost1", "issuer0", int64(100), []byte(`{"decimal": 1}`))
 			So(err, ShouldBeNil)
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost1", "issuer0", "100")
 			So(err, ShouldBeNil)
@@ -153,21 +153,21 @@ func TestToken_Issue(t *testing.T) {
 
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 		})
 
 		Convey("issue prepare", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 		})
 
 		Convey("correct issue", func() {
 			_, cost, err := e.LoadAndCall(host, code, "issue", "iost", "user0", "1.1")
 			So(err, ShouldBeNil)
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)
@@ -192,7 +192,7 @@ func TestToken_Issue(t *testing.T) {
 		Convey("issue too much", func() {
 			_, cost, err := e.LoadAndCall(host, code, "issue", "iost", "user0", "1.1")
 			So(err, ShouldBeNil)
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, cost, err = e.LoadAndCall(host, code, "issue", "iost", "user0", "100")
 			So(true, ShouldEqual, err.Error() == "supply too much")
@@ -209,7 +209,7 @@ func TestToken_Issue(t *testing.T) {
 		Convey("issue invalid amount", func() {
 			_, cost, err := e.LoadAndCall(host, code, "issue", "iost", "issuer0", "-1.1")
 			So(true, ShouldEqual, err.Error() == "invalid amount")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost", "issuer0", "1.1")
 			So(err, ShouldBeNil)
@@ -244,7 +244,7 @@ func TestToken_Transfer(t *testing.T) {
 
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost", "issuer0", "100.0")
@@ -254,7 +254,7 @@ func TestToken_Transfer(t *testing.T) {
 		Convey("transfer prepare", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost", "issuer0", "100.0")
@@ -264,7 +264,7 @@ func TestToken_Transfer(t *testing.T) {
 		Convey("correct transfer", func() {
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "22.3")
 			So(err, ShouldBeNil)
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)
@@ -301,13 +301,13 @@ func TestToken_Transfer(t *testing.T) {
 			host.Context().Set("auth_list", authList)
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "1.1")
 			So(true, ShouldEqual, err.Error() == "transaction has no permission")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 		})
 
 		Convey("transfer too much", func() {
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "100.1")
 			So(true, ShouldEqual, err.Error() == "balance not enough")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
 			So(err, ShouldBeNil)
@@ -325,7 +325,7 @@ func TestToken_Transfer(t *testing.T) {
 		Convey("transfer invalid amount", func() {
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "-1.1")
 			So(true, ShouldEqual, err.Error() == "invalid amount")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, cost, err = e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "1.1")
 			So(err, ShouldBeNil)
@@ -359,7 +359,7 @@ func TestToken_Destroy(t *testing.T) {
 
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost", "issuer0", "100.0")
@@ -369,7 +369,7 @@ func TestToken_Destroy(t *testing.T) {
 		Convey("destroy prepare", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost", "issuer0", "100.0")
@@ -380,7 +380,7 @@ func TestToken_Destroy(t *testing.T) {
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "100")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, cost, err = e.LoadAndCall(host, code, "destroy", "iost", "issuer0", "22.3")
 			So(err, ShouldBeNil)
@@ -417,7 +417,7 @@ func TestToken_Destroy(t *testing.T) {
 			rs, cost, err = e.LoadAndCall(host, code, "supply", "iost")
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "88.7")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, cost, err = e.LoadAndCall(host, code, "issue", "iost", "user0", "21")
 			So(true, ShouldEqual, err.Error() == "supply too much")
@@ -441,13 +441,13 @@ func TestToken_Destroy(t *testing.T) {
 			rs, cost, err = e.LoadAndCall(host, code, "supply", "iost")
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "100")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 		})
 
 		Convey("destroy invalid amount", func() {
 			_, cost, err := e.LoadAndCall(host, code, "destroy", "iost", "issuer0", "-1.1")
 			So(true, ShouldEqual, err.Error() == "invalid amount")
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			_, cost, err = e.LoadAndCall(host, code, "destroy", "iost", "issuer0", "1.1")
 			So(err, ShouldBeNil)
@@ -482,7 +482,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost", "issuer0", "100.0")
@@ -492,7 +492,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 		Convey("transferFreeze prepare", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
-			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), database.SerializedJSON([]byte("{}")))
+			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost", "issuer0", "100.0")
@@ -502,7 +502,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 		Convey("correct transferFreeze", func() {
 			_, cost, err := e.LoadAndCall(host, code, "transferFreeze", "iost", "issuer0", "user0", "22.3", now)
 			So(err, ShouldBeNil)
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)
@@ -526,7 +526,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 			authList["user0"] = 1
 			_, cost, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user0", "10", now+10)
 			So(err, ShouldBeNil)
-			So(true, ShouldEqual, cost.ToGas() > 0)
+			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)

@@ -98,17 +98,17 @@ func PublishContract(codePath string, abiPath string, conID string, acc *account
 		data = `["` + contract.B64Encode() + `", "` + updateID + `"]`
 	}
 
-	pubkeys := make([][]byte, len(signers))
+	pubkeys := make([]string, len(signers))
 	for i, accID := range signers {
-		pubkeys[i] = account.GetPubkeyByID(accID)
+		pubkeys[i] = accID
 	}
 
 	action := tx.NewAction("iost.system", methodName, data)
-	trx := tx.NewTx([]*tx.Action{&action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
+	trx := tx.NewTx([]*tx.Action{action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano(), delaySecond)
 	if !send {
 		return trx, nil, nil
 	}
-	stx, err = tx.SignTx(trx, acc)
+	stx, err = tx.SignTx(trx, acc.ID, []*account.KeyPair{acc})
 	var hash []byte
 	hash, err = sendTx(stx)
 	if err != nil {
@@ -247,6 +247,7 @@ var dest string
 var gasLimit int64
 var gasPrice int64
 var expiration int64
+var delaySecond int64
 var signers []string
 var genABI bool
 var update bool
@@ -266,6 +267,7 @@ func init() {
 	compileCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
 	compileCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
 	compileCmd.Flags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
+	compileCmd.Flags().Int64VarP(&delaySecond, "delaysecond", "d", 0, "delay time for a transaction,for example,-d 86400 means the tx will be excuted after 86400 seconds from when it's packed in block")
 	compileCmd.Flags().StringSliceVarP(&signers, "signers", "n", []string{}, "signers who should sign this transaction")
 	compileCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
 	compileCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")

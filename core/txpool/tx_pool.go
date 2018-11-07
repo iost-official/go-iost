@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
 
@@ -25,6 +26,7 @@ type TxPImpl struct {
 	pendingTx        *SortedTxMap
 	mu               sync.RWMutex
 	chP2PTx          chan p2p.IncomingMessage
+	deferServer      *DeferServer
 	quitGenerateMode chan struct{}
 	quitCh           chan struct{}
 }
@@ -43,6 +45,11 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitCh:           make(chan struct{}),
 	}
 	p.forkChain.NewHead = blockCache.Head()
+	deferServer, _ := NewDeferServer("DelayTxDB", p)
+	/*  if err != nil { */
+	// return nil, err
+	/* } */
+	p.deferServer = deferServer
 	close(p.quitGenerateMode)
 	return p, nil
 }
@@ -56,6 +63,28 @@ func (pool *TxPImpl) Start() error {
 // Stop stops all the jobs.
 func (pool *TxPImpl) Stop() {
 	close(pool.quitCh)
+}
+
+// AddDefertx adds defer transaction.
+func (pool *TxPImpl) AddDefertx(t *tx.Tx) error {
+	if pool.pendingTx.Size() > maxCacheTxs {
+		return fmt.Errorf("CacheFullError. Pending tx size is %d. Max cache is %d", pool.pendingTx.Size(), maxCacheTxs)
+	}
+	referredTx, err := pool.global.BlockChain().GetTx(t.ReferredTx)
+	if err != nil {
+		return err
+	}
+	t.Actions = referredTx.Actions
+	t.Expiration = referredTx.Expiration + referredTx.Delay
+	t.GasLimit = referredTx.GasLimit
+	t.GasPrice = referredTx.GasPrice
+	t.ReferredTx = nil
+	err = pool.verifyDuplicate(t)
+	if err != nil {
+		return err
+	}
+	pool.pendingTx.Add(t)
+	return nil
 }
 
 func (pool *TxPImpl) loop() {
@@ -109,6 +138,7 @@ func (pool *TxPImpl) verifyWorkers() {
 		var t tx.Tx
 		err := t.Decode(v.Data())
 		if err != nil {
+			ilog.Errorf("decode tx error. err=%v", err)
 			continue
 		}
 		pool.mu.Lock()
@@ -224,7 +254,7 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return fmt.Errorf("CacheFullError. Pending tx size is %d. Max cache is %d", pool.pendingTx.Size(), maxCacheTxs)
 	}
-	if t.GasPrice <= 0 {
+	if t.GasPrice < 100 {
 		return fmt.Errorf("GasPriceError. gas price %d", t.GasPrice)
 	}
 	if pool.TxTimeOut(t) {
@@ -233,6 +263,28 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if err := t.VerifySelf(); err != nil {
 		return fmt.Errorf("VerifyError %v", err)
 	}
+
+	if len(t.ReferredTx) > 0 {
+		referredTx, err := pool.global.BlockChain().GetTx(t.ReferredTx)
+		if err != nil {
+			return fmt.Errorf("get referred tx error, %v", err)
+		}
+		if referredTx.Time+referredTx.Delay != t.Time {
+			return errors.New("unmatched referred tx delay time")
+		}
+		if referredTx.Expiration+referredTx.Delay != t.Expiration {
+			return errors.New("unmatched referred tx expiration time")
+		}
+		if len(referredTx.Actions) != len(t.Actions) {
+			return errors.New("unmatched referred tx action length")
+		}
+		for i := 0; i < len(referredTx.Actions); i++ {
+			if *referredTx.Actions[i] != *t.Actions[i] {
+				return errors.New("unmatched referred tx action")
+			}
+		}
+	}
+
 	return nil
 }
 

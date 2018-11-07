@@ -51,6 +51,7 @@ func (h *Info) TxInfo() (info database.SerializedJSON, cost *contract.Cost) {
 	txInfo["gas_limit"] = h.h.ctx.GValue("gas_limit")
 	txInfo["gas_price"] = h.h.ctx.Value("gas_price")
 	txInfo["auth_list"] = h.h.ctx.Value("auth_list")
+	txInfo["publisher"] = h.h.ctx.Value("publisher")
 
 	tij, err := json.Marshal(txInfo)
 	if err != nil {

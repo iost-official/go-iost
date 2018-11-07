@@ -5,12 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
-
+	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/message"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
@@ -126,8 +124,8 @@ func (sy *SyncImpl) syncHeightLoop() {
 		select {
 		case <-syncHeightTicker.C:
 			num := sy.blockCache.Head().Head.Number
-			sh := &message.SyncHeight{Height: num, Time: time.Now().Unix()}
-			bytes, err := proto.Marshal(sh)
+			sh := &msgpb.SyncHeight{Height: num, Time: time.Now().Unix()}
+			bytes, err := sh.Marshal()
 			if err != nil {
 				ilog.Errorf("marshal syncheight failed. err=%v", err)
 				continue
@@ -135,14 +133,14 @@ func (sy *SyncImpl) syncHeightLoop() {
 			ilog.Infof("broadcast sync height")
 			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.UrgentMessage, true)
 		case req := <-sy.syncHeightChan:
-			var sh message.SyncHeight
-			err := proto.Unmarshal(req.Data(), &sh)
+			var sh msgpb.SyncHeight
+			err := sh.Unmarshal(req.Data())
 			if err != nil {
 				ilog.Errorf("unmarshal syncheight failed. err=%v", err)
 				continue
 			}
 			if shIF, ok := sy.heightMap.Load(req.From()); ok {
-				if shOld, ok := shIF.(*message.SyncHeight); ok {
+				if shOld, ok := shIF.(*msgpb.SyncHeight); ok {
 					if shOld.Height == sh.Height {
 						continue
 					}
@@ -171,7 +169,7 @@ func (sy *SyncImpl) checkSync() bool {
 	heights = append(heights, sy.blockCache.Head().Head.Number)
 	now := time.Now().Unix()
 	sy.heightMap.Range(func(k, v interface{}) bool {
-		sh, ok := v.(*message.SyncHeight)
+		sh, ok := v.(*msgpb.SyncHeight)
 		if !ok || sh.Time+heightAvailableTime < now {
 			if sh.Time+heightTimeout < now {
 				sy.heightMap.Delete(k)
@@ -232,7 +230,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	return false
 }
 
-func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
+func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
 	bytes, err := hr.Marshal()
 	if err != nil {
 		ilog.Errorf("marshal blockhashquery failed. err=%v", err)
@@ -252,14 +250,14 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 		for i := startNumber; i < startNumber+maxBlockHashQueryNumber; i++ {
 			sy.reqMap.Store(i, true)
 		}
-		sy.queryBlockHash(&message.BlockHashQuery{ReqType: 0, Start: startNumber, End: startNumber + maxBlockHashQueryNumber - 1, Nums: nil})
+		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: 0, Start: startNumber, End: startNumber + maxBlockHashQueryNumber - 1, Nums: nil})
 		startNumber += maxBlockHashQueryNumber
 	}
 	if startNumber <= endNumber {
 		for i := startNumber; i <= endNumber; i++ {
 			sy.reqMap.Store(i, true)
 		}
-		sy.queryBlockHash(&message.BlockHashQuery{ReqType: 0, Start: startNumber, End: endNumber, Nums: nil})
+		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: 0, Start: startNumber, End: endNumber, Nums: nil})
 	}
 	return nil
 }
@@ -279,7 +277,7 @@ func (sy *SyncImpl) messageLoop() {
 		case req := <-sy.messageChan:
 			switch req.Type() {
 			case p2p.SyncBlockHashRequest:
-				var rh message.BlockHashQuery
+				var rh msgpb.BlockHashQuery
 				err := rh.Unmarshal(req.Data())
 				if err != nil {
 					ilog.Errorf("unmarshal BlockHashQuery failed:%v", err)
@@ -287,7 +285,7 @@ func (sy *SyncImpl) messageLoop() {
 				}
 				go sy.handleHashQuery(&rh, req.From())
 			case p2p.SyncBlockHashResponse:
-				var rh message.BlockHashResponse
+				var rh msgpb.BlockHashResponse
 				err := rh.Unmarshal(req.Data())
 				if err != nil {
 					ilog.Errorf("unmarshal BlockHashResponse failed:%v", err)
@@ -295,7 +293,7 @@ func (sy *SyncImpl) messageLoop() {
 				}
 				go sy.handleHashResp(&rh, req.From())
 			case p2p.SyncBlockRequest:
-				var rh message.BlockInfo
+				var rh msgpb.BlockInfo
 				err := rh.Unmarshal(req.Data())
 				if err != nil {
 					break
@@ -308,9 +306,9 @@ func (sy *SyncImpl) messageLoop() {
 	}
 }
 
-func (sy *SyncImpl) getBlockHashes(start int64, end int64) *message.BlockHashResponse {
-	resp := &message.BlockHashResponse{
-		BlockInfos: make([]*message.BlockInfo, 0, end-start+1),
+func (sy *SyncImpl) getBlockHashes(start int64, end int64) *msgpb.BlockHashResponse {
+	resp := &msgpb.BlockHashResponse{
+		BlockInfos: make([]*msgpb.BlockInfo, 0, end-start+1),
 	}
 	node := sy.blockCache.Head()
 	if node != nil && end > node.Head.Number {
@@ -335,7 +333,7 @@ func (sy *SyncImpl) getBlockHashes(start int64, end int64) *message.BlockHashRes
 			}
 		}
 
-		blkInfo := message.BlockInfo{
+		blkInfo := msgpb.BlockInfo{
 			Number: i,
 			Hash:   hash,
 		}
@@ -347,9 +345,9 @@ func (sy *SyncImpl) getBlockHashes(start int64, end int64) *message.BlockHashRes
 	return resp
 }
 
-func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *message.BlockHashResponse {
-	resp := &message.BlockHashResponse{
-		BlockInfos: make([]*message.BlockInfo, 0, len(nums)),
+func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *msgpb.BlockHashResponse {
+	resp := &msgpb.BlockHashResponse{
+		BlockInfos: make([]*msgpb.BlockInfo, 0, len(nums)),
 	}
 	var blk *block.Block
 	var err error
@@ -364,7 +362,7 @@ func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *message.BlockHashRespons
 				continue
 			}
 		}
-		blkInfo := message.BlockInfo{
+		blkInfo := msgpb.BlockInfo{
 			Number: num,
 			Hash:   hash,
 		}
@@ -373,16 +371,16 @@ func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *message.BlockHashRespons
 	return resp
 }
 
-func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerID) {
+func (sy *SyncImpl) handleHashQuery(rh *msgpb.BlockHashQuery, peerID p2p.PeerID) {
 	if rh.End < rh.Start || rh.Start < 0 {
 		return
 	}
-	var resp *message.BlockHashResponse
+	var resp *msgpb.BlockHashResponse
 
 	switch rh.ReqType {
-	case message.RequireType_GETBLOCKHASHES:
+	case msgpb.RequireType_GETBLOCKHASHES:
 		resp = sy.getBlockHashes(rh.Start, rh.End)
-	case message.RequireType_GETBLOCKHASHESBYNUMBER:
+	case msgpb.RequireType_GETBLOCKHASHESBYNUMBER:
 		resp = sy.getBlockHashesByNums(rh.Nums)
 	}
 
@@ -397,7 +395,7 @@ func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerI
 	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage, true)
 }
 
-func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
+func (sy *SyncImpl) handleHashResp(rh *msgpb.BlockHashResponse, peerID p2p.PeerID) {
 	ilog.Infof("receive block hashes: len=%v", len(rh.BlockInfos))
 	for _, blkInfo := range rh.BlockInfos {
 		if blkInfo.Number > sy.blockCache.LinkedRoot().Head.Number {
@@ -413,7 +411,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(retryTime):
-			hq := &message.BlockHashQuery{ReqType: 1, Start: 0, End: 0, Nums: make([]int64, 0)}
+			hq := &msgpb.BlockHashQuery{ReqType: 1, Start: 0, End: 0, Nums: make([]int64, 0)}
 			sy.reqMap.Range(func(k, v interface{}) bool {
 				num, ok := k.(int64)
 				if !ok {
@@ -436,7 +434,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 	}
 }
 
-func (sy *SyncImpl) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
+func (sy *SyncImpl) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 	var b []byte
 	var err error
 	node, err := sy.blockCache.Find(rh.Hash)
@@ -493,7 +491,7 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		ilog.Infof("callback block is a single block, num:%v", bn)
 		return false, false
 	}
-	bi := message.BlockInfo{Number: bn, Hash: bHash}
+	bi := msgpb.BlockInfo{Number: bn, Hash: bHash}
 	bytes, err := bi.Marshal()
 	if err != nil {
 		ilog.Errorf("marshal request block failed. err=%v", err)

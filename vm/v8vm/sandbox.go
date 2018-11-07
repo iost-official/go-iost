@@ -11,6 +11,7 @@ int goCountermand(SandboxPtr, const char *, const char *, const char *, size_t *
 int goBlockInfo(SandboxPtr, char **, size_t *);
 int goTxInfo(SandboxPtr, char **, size_t *);
 int goCall(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
+int goCallWithAuth(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 int goCallWithReceipt(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 int goRequireAuth(SandboxPtr, const char *, const char *, bool *, size_t *);
 int goGrantServi(SandboxPtr, const char *, const char *, size_t *);
@@ -100,6 +101,7 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 		(C.blockInfoFunc)(C.goBlockInfo),
 		(C.txInfoFunc)(C.goTxInfo),
 		(C.callFunc)(C.goCall),
+		(C.callFunc)(C.goCallWithAuth),
 		(C.callFunc)(C.goCallWithReceipt),
 		(C.requireAuthFunc)(C.goRequireAuth),
 		(C.grantServiFunc)(C.goGrantServi))
@@ -179,7 +181,7 @@ var obj = new module.exports;
 
 // run contract with specified function and args
 obj.%s(%s)
-`, code, function, strings.Trim(argStr, "[]")), nil
+`, code, function, argStr), nil
 }
 
 // Execute prepared code, return results, gasUsed
@@ -205,10 +207,24 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 }
 
 func formatFuncArgs(args []interface{}) (string, error) {
-	argStr, err := json.Marshal(args)
-	if err != nil {
-		return "", err
+	if len(args) == 0 {
+		// hack for vm_test param2
+		return "null", nil
 	}
+	var strArgs []string
+	for _, arg := range args {
+		switch v := arg.(type) {
+		case []byte:
+			strArgs = append(strArgs, string(v))
+		default:
+			b, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			strArgs = append(strArgs, string(b))
+		}
+	}
+	argStr := strings.Join(strArgs, ",")
 
-	return string(argStr), nil
+	return argStr, nil
 }

@@ -1,8 +1,7 @@
-package vm
+package native
 
 import (
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
+	"github.com/iost-official/go-iost/vm"
 )
 
 var testDataPath = "./test_data/"
@@ -30,7 +30,7 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 	ctx.Set("tx_hash", []byte("iamhash"))
 	ctx.Set("auth_list", make(map[string]int))
 
-	pm := NewMonitor()
+	pm := vm.NewMonitor()
 	h := host.NewHost(ctx, vi, pm, nil)
 	h.Context().Set("stack_height", 0)
 
@@ -44,19 +44,6 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 	return e, h, code
 }
 
-func ReadFile(src string) ([]byte, error) {
-	fi, err := os.Open(src)
-	if err != nil {
-		return nil, err
-	}
-	defer fi.Close()
-	fd, err := ioutil.ReadAll(fi)
-	if err != nil {
-		return nil, err
-	}
-	return fd, nil
-}
-
 // nolint
 func TestEngine_SetCode(t *testing.T) {
 
@@ -65,11 +52,11 @@ func TestEngine_SetCode(t *testing.T) {
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	hash := "Contractiamhash"
 
-	rawCode, err := ReadFile(testDataPath + "test.js")
+	rawCode, err := ioutil.ReadFile(testDataPath + "test.js")
 	if err != nil {
 		t.Fatalf("read file error: %v\n", err)
 	}
-	rawAbi, err := ReadFile(testDataPath + "test.js.abi")
+	rawAbi, err := ioutil.ReadFile(testDataPath + "test.js.abi")
 	if err != nil {
 		t.Fatalf("read file error: %v\n", err)
 	}
@@ -95,11 +82,11 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Fatalf("LoadAndCall for should return destroy refused, but got %v\n", err)
 	}
 
-	rawCode, err = ReadFile(testDataPath + "test_new.js")
+	rawCode, err = ioutil.ReadFile(testDataPath + "test_new.js")
 	if err != nil {
 		t.Fatalf("read file error: %v\n", err)
 	}
-	rawAbi, err = ReadFile(testDataPath + "test_new.js.abi")
+	rawAbi, err = ioutil.ReadFile(testDataPath + "test_new.js.abi")
 	if err != nil {
 		t.Fatalf("read file error: %v\n", err)
 	}

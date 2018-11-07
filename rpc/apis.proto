@@ -1,9 +1,9 @@
 syntax = "proto3";
 package rpc;
 
-import "github.com/iost-official/go-iost/core/tx/tx.proto";
+import "github.com/iost-official/go-iost/core/tx/pb/tx.proto";
 import "github.com/iost-official/go-iost/core/contract/contract.proto";
-import "github.com/iost-official/go-iost/core/block/block.proto";
+import "github.com/iost-official/go-iost/core/block/pb/block.proto";
 import "github.com/iost-official/go-iost/core/event/event.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/Empty.proto";
@@ -163,15 +163,15 @@ message NodeInfoRes {
 
 message BlockInfo {
     //BlockHead
-    block.BlockHead head = 1;
+    blockpb.BlockHead head = 1;
     //block hash
     string hash = 2;
     //transaction list,works when complete is true
-    repeated tx.TxRaw txs = 3;
+    repeated txpb.Tx txs = 3;
     //transaction hash list,works when complete is false
     repeated string txhash= 4 ;
     //transaction receipt list
-    repeated tx.TxReceiptRaw receipts = 5;
+    repeated txpb.TxReceipt receipts = 5;
     //transaction receiptHash list
     repeated string receiptHash = 6;
 }
@@ -191,7 +191,7 @@ message GetAccountRes {
     // the queried balance
     int64 balance=1;
     // current gas
-    int64 gas=2;
+    string gas=2;
 }
 
 message GetContractStorageRes {
@@ -211,19 +211,19 @@ message SendRawTxRes {
 
 message ExecTxRes {
     //not support yet
-    tx.TxReceiptRaw txReceiptRaw = 1;
+    txpb.TxReceipt txReceiptRaw = 1;
 }
 
 message txRes {
     //the queried transaction
-    tx.TxRaw txRaw = 1;
+    txpb.Tx txRaw = 1;
     //transaction hash
     string hash = 2;
 }
 
 message txReceiptRes {
     //transaction receipt
-    tx.TxReceiptRaw txReceiptRaw = 1;
+    txpb.TxReceipt txReceiptRaw = 1;
     string hash = 2;
 }
 

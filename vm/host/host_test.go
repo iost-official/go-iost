@@ -56,7 +56,71 @@ func TestHost_Put(t *testing.T) {
 		}
 	})
 
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("", errors.New("not found"))
+
 	host.Put("hello", "world")
+	if host.cost["contractName"].Data != 24 {
+		t.Fatal(host.cost)
+	}
+}
+
+func TestHost_Put2(t *testing.T) {
+
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
+
+	mock.EXPECT().Put(Any(), Any(), Any()).AnyTimes().Do(func(a, b, c string) {
+		t.Log("put: ", a, b, c)
+	})
+
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa", nil)
+
+	host.Put("hello", "world")
+	if host.cost["contractName"].Data != 4 {
+		t.Fatal(host.cost)
+	}
+}
+
+func TestHost_PutUserSpace(t *testing.T) {
+
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
+
+	mock.EXPECT().Put(Any(), Any(), Any()).AnyTimes().Do(func(a, b, c string) {
+		t.Log("put: ", a, b, c)
+	})
+
+	mock.EXPECT().Get("state", "b-contractName@abc-hello").Return("sa", nil)
+
+	host.Put("hello", "world", "abc")
+	if host.cost["abc"].Data != 4 {
+		t.Fatal(host.cost)
+	}
+}
+
+func TestHost_Del(t *testing.T) {
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
+
+	mock.EXPECT().Put(Any(), Any(), Any()).AnyTimes().Do(func(a, b, c string) {
+		t.Log("put: ", a, b, c)
+	})
+
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld", nil)
+
+	host.Del("hello")
+	if host.cost["contractName"].Data != -24 {
+		t.Fatal(host.cost)
+	}
 }
 
 func TestHost_Get(t *testing.T) {
@@ -99,12 +163,17 @@ func TestHost_MapPut(t *testing.T) {
 	})
 	mock.EXPECT().Has("state", "m-contractName-hello-1").Return(false, nil)
 	mock.EXPECT().Get("state", "m-contractName-hello").Return("", errors.New("not found"))
+	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", errors.New("not found"))
 
 	tr := watchTime(func() {
 		host.MapPut("hello", "1", "world")
 	})
 	if tr > time.Millisecond {
 		t.Log("to slow")
+	}
+
+	if host.cost["contractName"].Data != 26 {
+		t.Fatal(host.cost)
 	}
 }
 

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
@@ -121,13 +120,13 @@ func (e *engineImpl) SetUp(k, v string) error {
 // nolint
 func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
 	e.ho.SetDeadline(time.Now().Add(limit))
-	err := checkTx(tx0)
+	err := checkTxParams(tx0)
 	if err != nil {
 		ilog.Error(err)
 		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
 	}
 
-	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
+	e.publisherID = tx0.Publisher
 	bl := e.ho.DB().Balance(e.publisherID)
 
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
@@ -141,7 +140,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 	}()
 
 	e.ho.Context().GSet("gas_limit", tx0.GasLimit)
-	e.ho.Context().GSet("receipts", make([]tx.Receipt, 0))
+	e.ho.Context().GSet("receipts", make([]*tx.Receipt, 0))
 
 	txr := tx.NewTxReceipt(tx0.Hash())
 	hasSetCode := false
@@ -187,7 +186,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 			break
 		} else {
 			txr.Receipts = append(txr.Receipts, receipts...)
-			txr.SuccActionNum++
+			//txr.SuccActionNum++
 		}
 	}
 
@@ -201,7 +200,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 		}
 	}
 
-	return &txr, nil
+	return txr, nil
 }
 
 func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
@@ -268,16 +267,16 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,
 		GasUsage: 0,
-		Status: tx.Status{
+		Status: &tx.Status{
 			Code:    code,
 			Message: message,
 		},
-		SuccActionNum: 0,
-		Receipts:      make([]tx.Receipt, 0),
+		//SuccActionNum: 0,
+		Receipts: make([]*tx.Receipt, 0),
 	}
 }
-func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
-	receipts = make([]tx.Receipt, 0)
+func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, receipts []*tx.Receipt, err error) {
+	receipts = make([]*tx.Receipt, 0)
 
 	e.ho.PushCtx()
 	defer func() {
@@ -296,19 +295,19 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 	if err != nil {
 
 		if strings.Contains(err.Error(), "execution killed") {
-			status = tx.Status{
+			status = &tx.Status{
 				Code:    tx.ErrorTimeout,
 				Message: err.Error(),
 			}
 		} else {
-			status = tx.Status{
+			status = &tx.Status{
 				Code:    tx.ErrorRuntime,
 				Message: err.Error(),
 			}
 		}
 
-		receipt := tx.Receipt{
-			Type:    tx.SystemDefined,
+		receipt := &tx.Receipt{
+			//Type:    tx.SystemDefined,
 			Content: err.Error(),
 		}
 		receipts = append(receipts, receipt)
@@ -318,9 +317,9 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		return
 	}
 
-	receipts = append(receipts, e.ho.Context().GValue("receipts").([]tx.Receipt)...)
+	receipts = append(receipts, e.ho.Context().GValue("receipts").([]*tx.Receipt)...)
 
-	status = tx.Status{
+	status = &tx.Status{
 		Code:    tx.Success,
 		Message: "",
 	}
@@ -386,13 +385,15 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.Context().Set("expiration", t.Expiration)
 	h.Context().Set("gas_price", t.GasPrice)
 	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))
+	h.Context().Set("publisher", publisherID)
 
 	authList := make(map[string]int)
 	for _, v := range t.Signers {
-		authList[string(v)] = 1
+		authList[v] = 1
 	}
 
 	authList[publisherID] = 2
 
 	h.Context().Set("auth_list", authList)
+	h.Context().Set("auth_contract_list", make(map[string]int))
 }

@@ -1,0 +1,38 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "initAdmin",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "issue",
+            "args": [
+                "number",
+                "number",
+                "number"
+            ]
+        },
+        {
+            "name": "checkIssue",
+            "args": []
+        },
+        {
+            "name": "buy",
+            "args": [
+                "string",
+                "number"
+            ]
+        },
+        {
+            "name": "sell",
+            "args": [
+                "string",
+                "number"
+            ]
+        }
+    ]
+}

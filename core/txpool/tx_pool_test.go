@@ -334,55 +334,61 @@ func TestNewTxPImplB(t *testing.T) {
 			t3 := genTx(newAccount, Expiration)
 			t4 := genTx(newAccount, Expiration)
 			t5 := genTx(newAccount, Expiration)
-			t1.GasPrice = 1
-			t2.GasPrice = 2
-			t3.GasPrice = 2
+			t1.GasPrice = 100
+			t2.GasPrice = 200
+			t3.GasPrice = 200
 			t3.Time = t2.Time + 1
-			t4.GasPrice = 4
-			t5.GasPrice = 5
+			t4.GasPrice = 400
+			t5.GasPrice = 500
 
-			sig1, err := tx.SignTxContent(t1, newAccount)
+			sig1, err := tx.SignTxContent(t1, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 			t1.Signs = []*crypto.Signature{sig1}
-			t1, err = tx.SignTx(t1, newAccount)
+			t1, err = tx.SignTx(t1, newAccount.ID, []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig2, err := tx.SignTxContent(t2, newAccount)
+			sig2, err := tx.SignTxContent(t2, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 			t2.Signs = []*crypto.Signature{sig2}
-			t2, err = tx.SignTx(t2, newAccount)
+			t2, err = tx.SignTx(t2, newAccount.ID, []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig3, err := tx.SignTxContent(t3, newAccount)
+			sig3, err := tx.SignTxContent(t3, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 			t3.Signs = []*crypto.Signature{sig3}
-			t3, err = tx.SignTx(t3, newAccount)
+			t3, err = tx.SignTx(t3, newAccount.ID, []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig4, err := tx.SignTxContent(t4, newAccount)
+			sig4, err := tx.SignTxContent(t4, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 			t4.Signs = []*crypto.Signature{sig4}
-			t4, err = tx.SignTx(t4, newAccount)
+			t4, err = tx.SignTx(t4, newAccount.ID, []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig5, err := tx.SignTxContent(t5, newAccount)
+			sig5, err := tx.SignTxContent(t5, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 			t5.Signs = []*crypto.Signature{sig5}
-			t5, err = tx.SignTx(t5, newAccount)
+			t5, err = tx.SignTx(t5, newAccount.ID, []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			txPool.AddTx(t4)
-			txPool.AddTx(t2)
-			txPool.AddTx(t5)
-			txPool.AddTx(t1)
-			txPool.AddTx(t3)
+			println("before add tx")
+			err = txPool.AddTx(t4)
+			So(err, ShouldBeNil)
+			err = txPool.AddTx(t2)
+			So(err, ShouldBeNil)
+			err = txPool.AddTx(t5)
+			So(err, ShouldBeNil)
+			err = txPool.AddTx(t1)
+			So(err, ShouldBeNil)
+			err = txPool.AddTx(t3)
+			So(err, ShouldBeNil)
 
 			iter, _ := txPool.TxIterator()
-			t, ok := iter.Next()
+			trx, ok := iter.Next()
 			for _, expectTx := range []*tx.Tx{t5, t4, t2, t3, t1} {
 				So(ok, ShouldBeTrue)
-				So(string(expectTx.Hash()), ShouldEqual, string(t.Hash()))
-				t, ok = iter.Next()
+				So(common.Base58Encode(expectTx.Hash()), ShouldEqual, common.Base58Encode(trx.Hash()))
+				trx, ok = iter.Next()
 			}
 			So(ok, ShouldBeFalse)
 
@@ -652,19 +658,18 @@ func genTx(a *account.KeyPair, expirationIter int64) *tx.Tx {
 		Data:       "1",
 	})
 
-	ex := time.Now().UnixNano()
-	ex += expirationIter
+	ex := time.Now().UnixNano() + expirationIter
 
-	t := tx.NewTx(actions, [][]byte{a.Pubkey}, 100000, 100, ex)
+	t := tx.NewTx(actions, []string{a.ID}, 100000, 100, ex, 0)
 
-	sig1, err := tx.SignTxContent(t, a)
+	sig1, err := tx.SignTxContent(t, a.ID, a)
 	if err != nil {
 		ilog.Debug("failed to SignTxContent")
 	}
 
 	t.Signs = append(t.Signs, sig1)
 
-	t1, err := tx.SignTx(t, a)
+	t1, err := tx.SignTx(t, a.ID, []*account.KeyPair{a})
 	if err != nil {
 		ilog.Debug("failed to SignTx")
 	}

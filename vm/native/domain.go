@@ -13,8 +13,8 @@ var DomainABIs map[string]*abi
 
 func init() {
 	DomainABIs = make(map[string]*abi)
-	register(&DomainABIs, link)
-	register(&DomainABIs, transferURL)
+	register(DomainABIs, link)
+	register(DomainABIs, transferURL)
 
 }
 
@@ -36,7 +36,7 @@ var (
 
 			applicant := tij.Get("publisher").MustString()
 
-			owner := h.DHCP.URLOwner(url)
+			owner := h.DNS.URLOwner(url)
 
 			if owner != "" && owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
@@ -47,7 +47,7 @@ var (
 			cost.AddAssign(c)
 
 			if !ok {
-				return nil, cost, errors.New("no privilege of claimed url")
+				return nil, cost, errors.New("no permission of claimed url")
 			}
 
 			h.WriteLink(url, cid, applicant)
@@ -75,7 +75,7 @@ var (
 
 			applicant := tij.Get("publisher").MustString()
 
-			owner := h.DHCP.URLOwner(url)
+			owner := h.DNS.URLOwner(url)
 
 			if owner != "" && owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
@@ -86,7 +86,7 @@ var (
 			cost.AddAssign(c)
 
 			if !ok {
-				return nil, cost, errors.New("no privilege of claimed url")
+				return nil, cost, errors.New("no permission of claimed url")
 			}
 
 			h.URLTransfer(url, to)
