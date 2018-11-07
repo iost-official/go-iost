@@ -30,7 +30,7 @@ var keyFlags = []cli.Flag{
 	},
 	cli.StringFlag{
 		Name:  "output, o",
-		Value: "keys.txt",
+		Value: "keys.json",
 		Usage: "the output file name for creating key pair",
 	},
 }

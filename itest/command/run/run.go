@@ -1,13 +1,16 @@
 package run
 
-import "github.com/urfave/cli"
+import (
+	"github.com/urfave/cli"
+)
 
 var Command = cli.Command{
-	Name:   "run",
-	Usage:  "run test by transaction data",
-	Action: Action,
-}
-
-var Action = func(c *cli.Context) error {
-	return nil
+	Name:  "run",
+	Usage: "run test by benchmark data",
+	Subcommands: []cli.Command{
+		AccountCaseCommand,
+		TransferCaseCommand,
+		ContractCaseCommand,
+		BenchmarkCommand,
+	},
 }

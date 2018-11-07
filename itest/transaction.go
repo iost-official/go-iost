@@ -33,11 +33,3 @@ func NewTransaction(actions []*tx.Action, signers []string) *Transaction {
 		Tx: t,
 	}
 }
-
-func NewTransferTx(sender, recipient, amount string) *Transaction {
-	return nil
-}
-
-func NewAccountTx() *Transaction {
-	return nil
-}
