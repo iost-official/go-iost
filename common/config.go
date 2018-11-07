@@ -29,7 +29,7 @@ type GenesisConfig struct {
 	InitialTimestamp string
 	WitnessInfo      []*Witness
 	ContractPath     string
-	AdminID          string
+	AdminInfo        *Witness
 }
 
 // DBConfig config of the database

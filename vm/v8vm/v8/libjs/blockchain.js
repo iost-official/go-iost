@@ -48,6 +48,10 @@ let BlockChain = (function () {
         call: function (contract, api, args) {
             return bc.call(contract, api, args);
         },
+        // call contract's api using args with auth
+        callWithAuth: function (contract, api, args) {
+            return bc.callWithAuth(contract, api, args);
+        },
         // call contract's api using args with receipt
         callWithReceipt: function (contract, api, args) {
             return bc.callWithReceipt(contract, api, args);

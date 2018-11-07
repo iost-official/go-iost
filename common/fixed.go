@@ -146,13 +146,10 @@ func (f *Fixed) ToString() string {
 		}
 		rtn = append(rtn, str[i])
 	}
-	if f.Decimal == 0 {
-		return string(rtn)
-	}
-	for len(rtn) > 0 && rtn[len(rtn)-1] == '0' {
+	for rtn[len(rtn)-1] == '0' {
 		rtn = rtn[0 : len(rtn)-1]
 	}
-	if len(rtn) > 0 && rtn[len(rtn)-1] == '.' {
+	if rtn[len(rtn)-1] == '.' {
 		rtn = rtn[0 : len(rtn)-1]
 	}
 	return string(rtn)

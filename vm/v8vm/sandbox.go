@@ -11,6 +11,7 @@ int goCountermand(SandboxPtr, const char *, const char *, const char *, size_t *
 int goBlockInfo(SandboxPtr, char **, size_t *);
 int goTxInfo(SandboxPtr, char **, size_t *);
 int goCall(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
+int goCallWithAuth(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 int goCallWithReceipt(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
 int goRequireAuth(SandboxPtr, const char *, const char *, bool *, size_t *);
 int goGrantServi(SandboxPtr, const char *, const char *, size_t *);
@@ -100,6 +101,7 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 		(C.blockInfoFunc)(C.goBlockInfo),
 		(C.txInfoFunc)(C.goTxInfo),
 		(C.callFunc)(C.goCall),
+		(C.callFunc)(C.goCallWithAuth),
 		(C.callFunc)(C.goCallWithReceipt),
 		(C.requireAuthFunc)(C.goRequireAuth),
 		(C.grantServiFunc)(C.goGrantServi))

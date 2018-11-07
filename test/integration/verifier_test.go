@@ -1,10 +1,9 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
-
-	"encoding/json"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -252,4 +251,98 @@ func TestAuthority(t *testing.T) {
 		So(s.Visitor.MGet("iost.auth-account", "myid"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 	})
 
+}
+
+func TestRAM(t *testing.T) {
+	t.Skip("This test can only pass when (1) CallWithAuth is enabled (2) BlockChain.transfer uses token.iost rather than old iost" +
+		"(You can do this by replace TransferRaw with TransferRawNew in teller.py).")
+	s := NewSimulator()
+	defer s.Clear()
+	prepareContract(t, s)
+
+	contractName := "iost.ram"
+	ca, err := s.Compile(contractName, "../../contract/ram", "../../contract/ram.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Visitor.SetContract(ca)
+
+	admin, err := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	kp := prepareAuth(t, s)
+	s.SetGas(kp.ID, 1000)
+
+	r, err := s.Call(contractName, "initAdmin", array2json([]interface{}{admin.ID}), admin.ID, admin)
+	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
+		panic("call failed " + err.Error() + " " + r.String())
+	}
+	r, err = s.Call(contractName, "initContractName", array2json([]interface{}{contractName}), admin.ID, admin)
+	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
+		panic("call failed " + err.Error() + " " + r.String())
+	}
+
+	initialTotal := 128 * 1024 * 1024 * 1024
+	increaseInterval := 24 * 3600 / 3
+	increaseAmount := 188272539 // Math.round(64 * 1024 * 1024 * 1024 / 365)
+	r, err = s.Call(contractName, "issue", array2json([]interface{}{initialTotal, increaseInterval, increaseAmount}), admin.ID, admin)
+	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
+		panic("call failed " + err.Error() + " " + r.String())
+	}
+
+	Convey("test of ram", t, func() {
+		Convey("user has no ram if he did not buy", func() {
+			So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, 0)
+		})
+		Convey("test buy", func() {
+			var buyAmount int64 = 30
+			Convey("user can only buy for himself", func() {
+				r, err := s.Call(contractName, "buy", array2json([]interface{}{testID[4], 1234}), kp.ID, kp)
+				So(err, ShouldEqual, nil)
+				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
+			})
+			Convey("normal buy", func() {
+				balanceBefore := s.Visitor.TokenBalance("iost", kp.ID)
+				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
+				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, buyAmount}), kp.ID, kp)
+				So(err, ShouldEqual, nil)
+				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.Success))
+				balanceAfter := s.Visitor.TokenBalance("iost", kp.ID)
+				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
+				var priceEstimated int64 = 30 * 1e8 // TODO when the final function is set, update here
+				So(balanceAfter, ShouldEqual, balanceBefore-priceEstimated)
+				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, buyAmount)
+				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore-buyAmount)
+			})
+			Convey("TODO when buying triggers increase total ram (How can simulator increase BlockNumber?)", func() {
+			})
+		})
+		Convey("test sell", func() {
+			Convey("user can only sell ram of himself", func() {
+				r, err := s.Call(contractName, "sell", array2json([]interface{}{testID[4], 10}), kp.ID, kp)
+				So(err, ShouldEqual, nil)
+				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
+			})
+			Convey("user cannot sell more than he owns", func() {
+				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, 600}), kp.ID, kp)
+				So(err, ShouldEqual, nil)
+				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
+			})
+			Convey("normal sell", func() {
+				var sellAmount int64 = 10
+				balanceBefore := s.Visitor.TokenBalance("iost", kp.ID)
+				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
+				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, sellAmount}), kp.ID, kp)
+				So(err, ShouldEqual, nil)
+				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.Success))
+				balanceAfter := s.Visitor.TokenBalance("iost", kp.ID)
+				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
+				var priceEstimated int64 = 10 * 1e8 // TODO when the final function is set, update here
+				So(balanceAfter, ShouldEqual, balanceBefore+priceEstimated)
+				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, 20)
+				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+sellAmount)
+			})
+		})
+	})
 }
