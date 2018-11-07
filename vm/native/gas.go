@@ -109,7 +109,7 @@ var (
 	pledgeGas = &abi{
 		name: "PledgeGas",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			userName, ok := args[0].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
@@ -153,7 +153,7 @@ var (
 	unpledgeGas = &abi{
 		name: "UnpledgeGas",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			userName, ok := args[0].(string)
 			cost.AddAssign(host.CommonErrorCost(1))

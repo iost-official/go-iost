@@ -10,7 +10,7 @@ type EventPoster struct {
 }
 
 // Post post the event
-func Post(topic event.Event_Topic, data string) *contract.Cost {
+func Post(topic event.Event_Topic, data string) contract.Cost {
 	e := event.NewEvent(topic, data)
 	event.GetEventCollectorInstance().Post(e)
 	return EventCost(len(data))

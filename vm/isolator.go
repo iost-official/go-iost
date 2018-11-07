@@ -64,7 +64,7 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	return nil
 }
 
-func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, ret *tx.Return, receipts []*tx.Receipt, err error) {
+func (e *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, ret *tx.Return, receipts []*tx.Receipt, err error) {
 	receipts = make([]*tx.Receipt, 0)
 
 	e.h.PushCtx()
@@ -78,10 +78,6 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.
 	var rtn []interface{}
 
 	rtn, cost, err = staticMonitor.Call(e.h, action.Contract, action.ActionName, action.Data)
-
-	if cost == nil {
-		panic("cost is nil")
-	}
 
 	if err != nil {
 		if strings.Contains(err.Error(), "execution killed") {
