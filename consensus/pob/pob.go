@@ -229,7 +229,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		ilog.Infof("[pob]" + p.blockCache.Draw())
 		ilog.Infof("[pob] transfer cost: %v, total cost: %v", t1, t2)
 		ilog.Infof("[pob] handle recv new block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-		//go p.broadcastBlockHash(blk)
+		go p.broadcastBlockHash(blk)
 		p.blockReqMap.Delete(string(blk.HeadHash()))
 		if err != nil {
 			ilog.Errorf("[pob] received new block error, err:%v", err)
