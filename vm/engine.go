@@ -191,10 +191,10 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 		}
 	}
 
-	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice, true)
 	if err != nil {
 		e.ho.DB().Rollback()
-		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice, false)
 		if err != nil {
 			ilog.Error(err.Error())
 			return nil, err

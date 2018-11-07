@@ -22,6 +22,7 @@ type Isolator struct {
 	h            *host.Host
 	publisherID  string
 	t            *tx.Tx
+	tr           *tx.TxReceipt
 	blockBaseCtx *host.Context
 	genesisMode  bool
 }
@@ -101,19 +102,19 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.
 		}
 		receipts = append(receipts, receipt)
 
-		rj, errj := json.Marshal(rtn)
-		if errj != nil {
-			panic(errj)
-		}
-
-		ret = &tx.Return{
-			FuncName: action.Contract + "/" + action.ActionName,
-			Value:    string(rj),
-		}
-
 		err = nil
 
 		return
+	}
+
+	rj, errj := json.Marshal(rtn)
+	if errj != nil {
+		panic(errj)
+	}
+
+	ret = &tx.Return{
+		FuncName: action.Contract + "/" + action.ActionName,
+		Value:    string(rj),
 	}
 
 	receipts = append(receipts, e.h.Context().GValue("receipts").([]*tx.Receipt)...)
@@ -126,20 +127,20 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.
 }
 
 // Run actions in tx
-func (e *Isolator) Run() (*tx.TxReceipt, error) {
+func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 	e.h.Context().GSet("gas_limit", e.t.GasLimit)
 	e.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
 
-	txr := tx.NewTxReceipt(e.t.Hash())
+	e.tr = tx.NewTxReceipt(e.t.Hash())
 
 	if e.t.Delay > 0 {
 		e.h.DB().StoreDelaytx(string(e.t.Hash()))
-		txr.Status = &tx.Status{
+		e.tr.Status = &tx.Status{
 			Code:    tx.Success,
 			Message: "",
 		}
-		txr.GasUsage = e.t.Delay / 1e9
-		return txr, nil
+		e.tr.GasUsage = e.t.Delay / 1e9
+		return e.tr, nil
 	}
 
 	if e.t.IsDefer() {
@@ -153,17 +154,18 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 
 	for _, action := range e.t.Actions {
 		if hasSetCode && action.Contract == "iost.system" && action.ActionName == "SetCode" {
-			txr.Receipts = nil
-			txr.Status.Code = tx.ErrorDuplicateSetCode
-			txr.Status.Message = "error duplicate set code in a tx"
+			e.tr.Receipts = nil
+			e.tr.Status.Code = tx.ErrorDuplicateSetCode
+			e.tr.Status.Message = "error duplicate set code in a tx"
 			break
 		}
 		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
 
-		cost, status, rets, receipts, err := e.runAction(*action)
+		cost, status, ret, receipts, err := e.runAction(*action)
 		ilog.Debugf("run action : %v, result is %v", action, status.Code)
 		ilog.Debug("used cost > ", cost)
 		ilog.Debugf("status > \n%v\n", status)
+		ilog.Debug("return value: ", ret)
 
 		if err != nil {
 			return nil, err
@@ -171,40 +173,49 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) {
 
 		gasLimit := e.h.Context().GValue("gas_limit").(int64)
 
-		txr.Status = status
+		e.tr.Status = status
 		if (status.Code == 4 && status.Message == "out of gas") || (status.Code == 5) {
 			cost = contract.NewCost(0, 0, gasLimit)
 		}
 
-		txr.GasUsage += cost.ToGas()
+		e.tr.GasUsage += cost.ToGas()
+		if status.Code == 0 {
+			for k, v := range e.h.Costs() {
+				e.tr.RAMUsage[k] = v.Data
+			}
+		}
 
 		e.h.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
 		e.h.PayCost(cost, e.publisherID)
 
 		if status.Code != tx.Success {
-			txr.Receipts = nil
+			e.tr.Receipts = nil
 			break
 		} else {
-			txr.Receipts = append(txr.Receipts, receipts...)
+			e.tr.Receipts = append(e.tr.Receipts, receipts...)
 		}
-		txr.Returns = append(txr.Returns, rets)
+		e.tr.Returns = append(e.tr.Returns, ret)
 	}
 
-	return txr, nil
+	return e.tr, nil
 }
 
 // PayCost as name
-func (e *Isolator) PayCost() error {
-	err := e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice)
+func (e *Isolator) PayCost() (*tx.TxReceipt, error) {
+	err := e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice, true)
 	if err != nil {
 		e.h.DB().Rollback()
-		err = e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice)
+		e.tr.RAMUsage = make(map[string]int64)
+		e.tr.Status.Code = tx.ErrorBalanceNotEnough
+		e.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
+
+		err = e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice, false)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return e.tr, nil
 }
 
 // Commit flush changes to db
