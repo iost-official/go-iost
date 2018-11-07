@@ -175,12 +175,12 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	if err != nil {
 		return &tx.TxReceipt{}, fmt.Errorf("prepare tx error: %v", err)
 	}
-	r, err := isolator.Run()
+	_, err = isolator.Run()
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
 
-	r, err = isolator.PayCost()
+	r, err := isolator.PayCost()
 	if err != nil {
 		return nil, err
 	}

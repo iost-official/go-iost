@@ -182,6 +182,7 @@ func (h *Teller) Countermand(c, to string, amountStr string) (*contract.Cost, er
 	return TransferCost, h.TransferRaw(ContractGasPrefix+c, to, amount.Value)
 }
 
+// Costs ...
 func (h *Teller) Costs() map[string]*contract.Cost {
 	return h.cost
 }
@@ -224,11 +225,11 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 			}
 
 			ram := c.Data
-			currentRam := h.h.db.TokenBalance("ram", payer)
-			if currentRam-ram < 0 {
-				return fmt.Errorf("pay ram failed. id: %v need %v, actual %v", payer, ram, currentRam)
+			currentRAM := h.h.db.TokenBalance("ram", payer)
+			if currentRAM-ram < 0 {
+				return fmt.Errorf("pay ram failed. id: %v need %v, actual %v", payer, ram, currentRAM)
 			}
-			h.h.db.SetTokenBalance("ram", payer, currentRam-ram)
+			h.h.db.SetTokenBalance("ram", payer, currentRAM-ram)
 		}
 	}
 	return nil
