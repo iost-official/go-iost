@@ -65,7 +65,7 @@ func (pool *TxPImpl) newBlockTx(blk *block.Block) *blockTx {
 	b := &blockTx{
 		txMap:      new(sync.Map),
 		ParentHash: blk.Head.ParentHash,
-		time:       slotToNSec(blk.Head.Time),
+		time:       blk.Head.Time,
 	}
 	for _, v := range blk.Txs {
 		b.txMap.Store(string(v.Hash()), v)

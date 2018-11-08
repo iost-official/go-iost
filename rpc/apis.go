@@ -362,7 +362,7 @@ func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, e
 			ParentHash: topBlock.HeadHash(),
 			Number:     topBlock.Head.Number + 1,
 			Witness:    "",
-			Time:       time.Now().Unix() / common.SlotLength,
+			Time:       time.Now().UnixNano(),
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
