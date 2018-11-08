@@ -114,6 +114,11 @@ func (h *Teller) TotalServi() (ts string, cost contract.Cost) {
 	return
 }
 
+// Costs ...
+func (h *Teller) Costs() map[string]contract.Cost {
+	return h.cost
+}
+
 // PayCost ...
 func (h *Teller) PayCost(c contract.Cost, who string) {
 	if oc, ok := h.cost[who]; ok {

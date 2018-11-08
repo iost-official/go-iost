@@ -16,14 +16,14 @@ private:
 public:
     IOSTBlockchain(SandboxPtr ptr): sbxPtr(ptr) {}
 
-    char* blockInfo(char **result);
-	char* txInfo(char **result);
-	char* contextInfo(char **result);
-	char* call(const char *contract, const char *api, const char *args, char **result);
-	char* callWithAuth(const char *contract, const char *api, const char *args, char **result);
-	char* requireAuth(const char *accountID, const char *permission, bool *result);
-	char* receipt(const char *content);
-	char* event(const char *content);
+    char* BlockInfo(char **result);
+	char* TxInfo(char **result);
+	char* ContextInfo(char **result);
+	char* Call(const char *contract, const char *api, const char *args, char **result);
+	char* CallWithAuth(const char *contract, const char *api, const char *args, char **result);
+	char* RequireAuth(const char *accountID, const char *permission, bool *result);
+	char* Receipt(const char *content);
+	char* Event(const char *content);
 };
 
 #endif // IOST_V8_BLOCKCHAIN_H

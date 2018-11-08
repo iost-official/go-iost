@@ -131,14 +131,13 @@ func TestEngine_Storage(t *testing.T) {
 		t.Fatalf("LoadAndCall except mySetVal, got %s\n", rs[0])
 	}
 
-	rtn, cost, err := vmPool.LoadAndCall(host, code, "put", "mySetKey", "mySetVal")
+	rtn, _, err := vmPool.LoadAndCall(host, code, "put", "mySetKey", "mySetVal")
 	if err != nil {
 		t.Fatalf("LoadAndCall put run error: %v\n", err)
 	}
-	if len(rtn) != 1 || rtn[0] != "0" {
-		t.Fatalf("return of put should be float64 0")
+	if len(rtn) != 1 || rtn[0] != "" {
+		t.Fatalf("return of put should be \"\"")
 	}
-	t.Log(cost)
 
 	rs, _, err = vmPool.LoadAndCall(host, code, "get", "mySetKey")
 	if err != nil {
@@ -170,7 +169,7 @@ func TestEngine_Storage(t *testing.T) {
 	}
 	// todo get return nil
 	if len(rs) != 1 || rs[0].(string) != "null" {
-		t.Fatalf("LoadAndCall except mySetVal, got %s\n", rs[0])
+		t.Fatalf("LoadAndCall except null, got %s\n", rs[0])
 	}
 
 	rs, _, err = vmPool.LoadAndCall(host, code, "mhas", "ptable", "a")
@@ -185,8 +184,8 @@ func TestEngine_Storage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall mset run error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "0" {
-		t.Fatalf("LoadAndCall except 0, got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != "" {
+		t.Fatalf("LoadAndCall except , got %s\n", rs[0])
 	}
 
 	rs, _, err = vmPool.LoadAndCall(host, code, "mhas", "ptable", "a")
@@ -209,8 +208,8 @@ func TestEngine_Storage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall mdelete run error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "0" {
-		t.Fatalf("LoadAndCall except 0, got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != "" {
+		t.Fatalf("LoadAndCall except , got %s\n", rs[0])
 	}
 
 	rs, _, err = vmPool.LoadAndCall(host, code, "mhas", "ptable", "a")

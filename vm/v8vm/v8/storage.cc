@@ -1,4 +1,6 @@
 #include "storage.h"
+#include <stdio.h>
+#include <string.h>
 #include <iostream>
 
 static putFunc CPut = nullptr;
@@ -156,7 +158,7 @@ char* IOSTContractStorage::GlobalMapGet(const char *contract, const char *key, c
 
 char* IOSTContractStorage::GlobalMapKeys(const char *contract,  const char *key, const char *owner, char **result) {
     size_t gasUsed = 0;
-    char *ret = CGMapKeys(sbxPtr, key, owner, result, &gasUsed);
+    char *ret = CGMapKeys(sbxPtr, contract, key, owner, result, &gasUsed);
     Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
     sbx->gasUsed += gasUsed;
     return ret;
@@ -240,7 +242,7 @@ void IOSTContractStorage_Put(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTContractStorage *ics = static_cast<IOSTContractStorage *>(extVal->Value());
-    char* ret = ics->Put(*keyStr, *valStr, *owner);
+    char* ret = ics->Put(*keyStr, *valStr, *ownerStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -273,7 +275,7 @@ void IOSTContractStorage_Has(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> owner = args[1];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_Has owner must be string.")
         );
@@ -325,7 +327,7 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> owner = args[1];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_Get owner must be string.")
         );
@@ -335,7 +337,8 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
 
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-    String::Utf8Value resultStr("");
+    std::cout << (*keyStr) << std::endl;
+    char* resultStr = "";
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -344,7 +347,7 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTContractStorage *ics = static_cast<IOSTContractStorage *>(extVal->Value());
-    char *ret = ics->Get(*keyStr, *ownerStr, resultStr);
+    char *ret = ics->Get(*keyStr, *ownerStr, &resultStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -352,7 +355,8 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, *resultStr));
+
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
 }
 
 void IOSTContractStorage_Del(const FunctionCallbackInfo<Value> &args) {
@@ -376,7 +380,7 @@ void IOSTContractStorage_Del(const FunctionCallbackInfo<Value> &args) {
         return;
     }
     Local<Value> owner = args[1];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_Del owner must be string.")
         );
@@ -408,6 +412,7 @@ void IOSTContractStorage_Del(const FunctionCallbackInfo<Value> &args) {
 void IOSTContractStorage_MapPut(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> self = args.Holder();
+    std::cout << "arg length: " << args.Length() << std::endl;
 
     if (args.Length() != 4) {
         Local<Value> err = Exception::Error(
@@ -506,7 +511,7 @@ void IOSTContractStorage_MapHas(const FunctionCallbackInfo<Value> &args) {
         return;
     }
     Local<Value> owner = args[2];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_MapHas owner must be string.")
         );
@@ -526,7 +531,7 @@ void IOSTContractStorage_MapHas(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTContractStorage *ics = static_cast<IOSTContractStorage *>(extVal->Value());
-    char *ret = ics->MapHas(*keyStr, *fieldStr, *owner, &result);
+    char *ret = ics->MapHas(*keyStr, *fieldStr, *ownerStr, &result);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -567,7 +572,7 @@ void IOSTContractStorage_MapGet(const FunctionCallbackInfo<Value> &args) {
         return;
     }
     Local<Value> owner = args[2];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_MapGet owner must be string.")
         );
@@ -578,7 +583,7 @@ void IOSTContractStorage_MapGet(const FunctionCallbackInfo<Value> &args) {
     String::Utf8Value keyStr(key);
     String::Utf8Value fieldStr(field);
     String::Utf8Value ownerStr(owner);
-    String::Utf8Value resultStr("");
+    char* resultStr = "";
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -587,7 +592,7 @@ void IOSTContractStorage_MapGet(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTContractStorage *ics = static_cast<IOSTContractStorage *>(extVal->Value());
-    char *val = ics->MapGet(*keyStr, *fieldStr, *ownerStr, resultStr);
+    char *ret = ics->MapGet(*keyStr, *fieldStr, *ownerStr, &resultStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -595,7 +600,7 @@ void IOSTContractStorage_MapGet(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, *resultStr));
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
 }
 
 void IOSTContractStorage_MapDel(const FunctionCallbackInfo<Value> &args) {
@@ -628,7 +633,7 @@ void IOSTContractStorage_MapDel(const FunctionCallbackInfo<Value> &args) {
         return;
     }
     Local<Value> owner = args[2];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_MapDel owner must be string.")
         );
@@ -679,7 +684,7 @@ void IOSTContractStorage_MapKeys(const FunctionCallbackInfo<Value> &args) {
         return;
     }
     Local<Value> owner = args[2];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_MapKeys owner must be string.")
         );
@@ -689,7 +694,7 @@ void IOSTContractStorage_MapKeys(const FunctionCallbackInfo<Value> &args) {
 
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-    String::Utf8Value resultStr("");
+    char *resultStr = "";
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -698,7 +703,7 @@ void IOSTContractStorage_MapKeys(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTContractStorage *ics = static_cast<IOSTContractStorage *>(extVal->Value());
-    char *ret = ics->MapKeys(*keyStr, *ownerStr, resultStr);
+    char *ret = ics->MapKeys(*keyStr, *ownerStr, &resultStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -706,7 +711,7 @@ void IOSTContractStorage_MapKeys(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, *resultStr));
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
 }
 
 void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
@@ -730,7 +735,7 @@ void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
         return;
     }
     Local<Value> owner = args[2];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_MapLen owner must be string.")
         );
@@ -740,7 +745,7 @@ void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
 
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-	int result;
+	size_t result;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -757,7 +762,7 @@ void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    args.GetReturnValue().Set(retsult);
+    args.GetReturnValue().Set((int)result);
 }
 
 void IOSTContractStorage_GlobalHas(const FunctionCallbackInfo<Value> &args) {
@@ -773,7 +778,7 @@ void IOSTContractStorage_GlobalHas(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> contract = args[0];
-    if (!key->IsString()) {
+    if (!contract->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalHas contract must be string")
         );
@@ -791,7 +796,7 @@ void IOSTContractStorage_GlobalHas(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> owner = args[2];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalHas owner must be string.")
         );
@@ -835,7 +840,7 @@ void IOSTContractStorage_GlobalGet(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> contract = args[0];
-    if (!key->IsString()) {
+    if (!contract->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalGet contract must be string")
         );
@@ -853,7 +858,7 @@ void IOSTContractStorage_GlobalGet(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> owner = args[2];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalGet owner must be string.")
         );
@@ -864,7 +869,7 @@ void IOSTContractStorage_GlobalGet(const FunctionCallbackInfo<Value> &args) {
     String::Utf8Value contractStr(contract);
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-    String::Utf8Value resultStr("");
+    char* resultStr = "";
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -873,7 +878,7 @@ void IOSTContractStorage_GlobalGet(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTContractStorage *ics = static_cast<IOSTContractStorage *>(extVal->Value());
-    char *ret = ics->GlobalGet(*contractStr, *keyStr, *ownerStr, resultStr);
+    char *ret = ics->GlobalGet(*contractStr, *keyStr, *ownerStr, &resultStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -881,7 +886,7 @@ void IOSTContractStorage_GlobalGet(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, *resultStr));
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
 }
 
 void IOSTContractStorage_GlobalMapHas(const FunctionCallbackInfo<Value> &args) {
@@ -897,7 +902,7 @@ void IOSTContractStorage_GlobalMapHas(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> contract = args[0];
-    if (!key->IsString()) {
+    if (!contract->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalMapHas contract must be string")
         );
@@ -924,7 +929,7 @@ void IOSTContractStorage_GlobalMapHas(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> owner = args[3];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalMapHas owner must be string.")
         );
@@ -969,7 +974,7 @@ void IOSTContractStorage_GlobalMapGet(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> contract = args[0];
-    if (!key->IsString()) {
+    if (!contract->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalMapGet contract must be string")
         );
@@ -996,7 +1001,7 @@ void IOSTContractStorage_GlobalMapGet(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> owner = args[3];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalMapGet owner must be string.")
         );
@@ -1008,7 +1013,7 @@ void IOSTContractStorage_GlobalMapGet(const FunctionCallbackInfo<Value> &args) {
     String::Utf8Value keyStr(key);
     String::Utf8Value fieldStr(field);
     String::Utf8Value ownerStr(owner);
-    String::Utf8Value resultStr("");
+    char* resultStr = "";
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -1017,7 +1022,7 @@ void IOSTContractStorage_GlobalMapGet(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTContractStorage *ics = static_cast<IOSTContractStorage *>(extVal->Value());
-    char *ret = ics->GlobalMapGet(*contractStr, *keyStr, *fieldStr, *ownerStr, resultStr);
+    char *ret = ics->GlobalMapGet(*contractStr, *keyStr, *fieldStr, *ownerStr, &resultStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -1025,7 +1030,7 @@ void IOSTContractStorage_GlobalMapGet(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, *resultStr));
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
 }
 
 void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) {
@@ -1041,7 +1046,7 @@ void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) 
     }
 
     Local<Value> contract = args[0];
-    if (!key->IsString()) {
+    if (!contract->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalMapKeys contract must be string")
         );
@@ -1059,7 +1064,7 @@ void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) 
     }
 
     Local<Value> owner = args[2];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalMapKeys owner must be string.")
         );
@@ -1070,7 +1075,7 @@ void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) 
     String::Utf8Value contractStr(contract);
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-    String::Utf8Value resultStr("");
+    char *resultStr = "";
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -1079,7 +1084,7 @@ void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) 
     }
 
     IOSTContractStorage *ics = static_cast<IOSTContractStorage *>(extVal->Value());
-    char *ret = ics->GlobalMapKeys(*contractStr, *keyStr, *ownerStr, resultStr);
+    char *ret = ics->GlobalMapKeys(*contractStr, *keyStr, *ownerStr, &resultStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -1087,7 +1092,7 @@ void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) 
         isolate->ThrowException(err);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, *resultStr));
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
 }
 
 void IOSTContractStorage_GlobalMapLen(const FunctionCallbackInfo<Value> &args) {
@@ -1103,7 +1108,7 @@ void IOSTContractStorage_GlobalMapLen(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> contract = args[0];
-    if (!key->IsString()) {
+    if (!contract->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalMapLen contract must be string")
         );
@@ -1121,7 +1126,7 @@ void IOSTContractStorage_GlobalMapLen(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> owner = args[2];
-    if (!val->IsString()) {
+    if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_GlobalMapLen owner must be string.")
         );
@@ -1132,7 +1137,7 @@ void IOSTContractStorage_GlobalMapLen(const FunctionCallbackInfo<Value> &args) {
     String::Utf8Value contractStr(contract);
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-	int result;
+	size_t result;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -1149,7 +1154,7 @@ void IOSTContractStorage_GlobalMapLen(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    args.GetReturnValue().Set(result);
+    args.GetReturnValue().Set((int)result);
 }
 
 void InitStorage(Isolate *isolate, Local<ObjectTemplate> globalTpl) {

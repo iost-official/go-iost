@@ -27,7 +27,7 @@ func goPut(cSbx C.SandboxPtr, key, val, owner *C.char, gasUsed *C.size_t) *C.cha
 
 	var cost contract.Cost
 
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		cost = sbx.host.Put(k, v)
 	} else {
 		o := C.GoString(owner)
@@ -49,7 +49,7 @@ func goHas(cSbx C.SandboxPtr, key, owner *C.char, result *C.bool, gasUsed *C.siz
 	var ret bool
 	var cost contract.Cost
 
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		ret, cost = sbx.host.Has(k)
 	} else {
 		o := C.GoString(owner)
@@ -73,7 +73,7 @@ func goGet(cSbx C.SandboxPtr, key, owner *C.char, result **C.char, gasUsed *C.si
 	var val interface{}
 	var cost contract.Cost
 
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		val, cost = sbx.host.Get(k)
 	} else {
 		o := C.GoString(owner)
@@ -82,7 +82,7 @@ func goGet(cSbx C.SandboxPtr, key, owner *C.char, result **C.char, gasUsed *C.si
 
 	*gasUsed = C.size_t(cost.CPU)
 	if val == nil {
-		*result = nil
+		*result = C.CString("")
 		return nil
 	}
 
@@ -105,7 +105,7 @@ func goDel(cSbx C.SandboxPtr, key, owner *C.char, gasUsed *C.size_t) *C.char {
 	k := C.GoString(key)
 	var cost contract.Cost
 
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		cost = sbx.host.Del(k)
 	} else {
 		o := C.GoString(owner)
@@ -128,7 +128,7 @@ func goMapPut(cSbx C.SandboxPtr, key, field, val, owner *C.char, gasUsed *C.size
 	v := C.GoString(val)
 
 	var cost contract.Cost
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		cost = sbx.host.MapPut(k, f, v)
 	} else {
 		o := C.GoString(owner)
@@ -150,7 +150,7 @@ func goMapHas(cSbx C.SandboxPtr, key, field, owner *C.char, result *C.bool, gasU
 	f := C.GoString(field)
 	var cost contract.Cost
 	var ret bool
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		ret, cost = sbx.host.MapHas(k, f)
 	} else {
 		o := C.GoString(owner)
@@ -174,7 +174,7 @@ func goMapGet(cSbx C.SandboxPtr, key, field, owner *C.char, result **C.char, gas
 	f := C.GoString(field)
 	var cost contract.Cost
 	var val interface{}
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		val, cost = sbx.host.MapGet(k, f)
 	} else {
 		o := C.GoString(owner)
@@ -204,7 +204,7 @@ func goMapDel(cSbx C.SandboxPtr, key, field, owner *C.char, gasUsed *C.size_t) *
 	f := C.GoString(field)
 
 	var cost contract.Cost
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		cost = sbx.host.MapDel(k, f)
 	} else {
 		o := C.GoString(owner)
@@ -227,7 +227,7 @@ func goMapKeys(cSbx C.SandboxPtr, key, owner *C.char, result **C.char, gasUsed *
 
 	var cost contract.Cost
 	var fstr []string
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		fstr, cost = sbx.host.MapKeys(k)
 	} else {
 		o := C.GoString(owner)
@@ -255,7 +255,7 @@ func goMapLen(cSbx C.SandboxPtr, key, owner *C.char, result *C.size_t, gasUsed *
 
 	var cost contract.Cost
 	var len int
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		len, cost = sbx.host.MapLen(k)
 	} else {
 		o := C.GoString(owner)
@@ -279,7 +279,7 @@ func goGlobalHas(cSbx C.SandboxPtr, contractName, key, owner *C.char, result *C.
 	var ret bool
 	var cost contract.Cost
 
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		ret, cost = sbx.host.GlobalHas(c, k)
 	} else {
 		o := C.GoString(owner)
@@ -304,7 +304,7 @@ func goGlobalGet(cSbx C.SandboxPtr, contractName, key, owner *C.char, result **C
 
 	var cost contract.Cost
 	var val interface{}
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		val, cost = sbx.host.GlobalGet(c, k)
 	} else {
 		o := C.GoString(owner)
@@ -335,7 +335,7 @@ func goGlobalMapHas(cSbx C.SandboxPtr, contractName, key, field, owner *C.char, 
 	f := C.GoString(field)
 	var cost contract.Cost
 	var ret bool
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		ret, cost = sbx.host.GlobalMapHas(c, k, f)
 	} else {
 		o := C.GoString(owner)
@@ -360,7 +360,7 @@ func goGlobalMapGet(cSbx C.SandboxPtr, contractName, key, field, owner *C.char, 
 	f := C.GoString(field)
 	var cost contract.Cost
 	var val interface{}
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		val, cost = sbx.host.GlobalMapGet(c, k, f)
 	} else {
 		o := C.GoString(owner)
@@ -391,7 +391,7 @@ func goGlobalMapKeys(cSbx C.SandboxPtr, contractName, key, owner *C.char, result
 
 	var cost contract.Cost
 	var fstr []string
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		fstr, cost = sbx.host.GlobalMapKeys(c, k)
 	} else {
 		o := C.GoString(owner)
@@ -419,7 +419,7 @@ func goGlobalMapLen(cSbx C.SandboxPtr, contractName, key, owner *C.char, result 
 
 	var cost contract.Cost
 	var len int
-	if owner == nil {
+	if owner == nil || C.GoString(owner) == "" {
 		len, cost = sbx.host.GlobalMapLen(c, k)
 	} else {
 		o := C.GoString(owner)
