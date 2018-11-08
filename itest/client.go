@@ -13,8 +13,10 @@ import (
 
 // Constant of Client
 var (
-	Interval = 15 * time.Second
-	Timeout  = (90 + 30) * time.Second
+	Interval   = 15 * time.Second
+	Timeout    = (90 + 30) * time.Second
+	InitToken  = "IOST"
+	InitAmount = "1000000"
 )
 
 // Error of Client
@@ -156,27 +158,17 @@ func (c *Client) checkTransaction(hash string) error {
 	}
 }
 
-func (c *Client) CreateAccount(name string, key *Key, creater *Account) (*Account, error) {
+func (c *Client) CreateAccount(creater *Account, name string, key *Key) (*Account, error) {
 	action1 := tx.NewAction(
 		"iost.auth",
 		"SignUp",
-		fmt.Sprintf(
-			`["%v", "%v", "%v"]`,
-			name,
-			key.ID,
-			key.ID,
-		),
+		fmt.Sprintf(`["%v", "%v", "%v"]`, name, key.ID, key.ID),
 	)
 
 	action2 := tx.NewAction(
-		"iost.auth",
-		"SignUp",
-		fmt.Sprintf(
-			`["%v", "%v", "%v"]`,
-			name,
-			key.ID,
-			key.ID,
-		),
+		"iost.token",
+		"transfer",
+		fmt.Sprintf(`["%v", "%v", %v, %v]`, InitToken, creater.ID, name, InitAmount),
 	)
 
 	actions := []*tx.Action{action1, action2}
@@ -199,10 +191,46 @@ func (c *Client) CreateAccount(name string, key *Key, creater *Account) (*Accoun
 	return account, nil
 }
 
-func (c *Client) Transfer(token, sender, recipient, amount string) error {
+func (c *Client) Transfer(sender *Account, token, recipient, amount string) error {
+	action := tx.NewAction(
+		"iost.token",
+		"transfer",
+		fmt.Sprintf(`["%v", "%v", %v, %v]`, token, sender.ID, recipient, amount),
+	)
+
+	actions := []*tx.Action{action}
+	transaction := NewTransaction(actions)
+
+	st, err := sender.Sign(transaction)
+	if err != nil {
+		return err
+	}
+
+	if _, err := c.SendTransaction(st); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (c *Client) SetContract(abi, code string) error {
+func (c *Client) SetContract(creater *Account, contract *Contract) error {
+	action := tx.NewAction(
+		"iost.system",
+		"SetCode",
+		fmt.Sprintf(`["%v"]`, contract),
+	)
+
+	actions := []*tx.Action{action}
+	transaction := NewTransaction(actions)
+
+	st, err := creater.Sign(transaction)
+	if err != nil {
+		return err
+	}
+
+	if _, err := c.SendTransaction(st); err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -24,7 +24,7 @@ func (t *ITest) CreateAccount(name string) (*Account, error) {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
-	account, err := client.CreateAccount(name, key, t.bank)
+	account, err := client.CreateAccount(t.bank, name, key)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func (t *ITest) CreateAccount(name string) (*Account, error) {
 	return account, nil
 }
 
-func (t *ITest) Transfer(token, sender, recipient, amount string) error {
+func (t *ITest) Transfer(sender *Account, token, recipient, amount string) error {
 	return nil
 }
 
