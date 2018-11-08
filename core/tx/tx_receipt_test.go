@@ -42,6 +42,8 @@ func TestTxReceipt(t *testing.T) {
 			})
 			tx.RAMUsage = map[string]int64{
 				"aaa": 1111,
+				"bbb": 2222,
+				"ccc": 333,
 			}
 			tx1 := NewTxReceipt([]byte{})
 
