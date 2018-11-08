@@ -11,39 +11,6 @@ import (
 	"errors"
 )
 
-// todo replace this error code with c++ error code
-// transfer err list
-const (
-	TransferSuccess = iota
-	TransferInvalidAmount
-	TransferBalanceNotEnough
-	TransferUnexpectedError
-)
-
-// blockInfo err list
-const (
-	BlockInfoSuccess = iota
-	BlockInfoUnexpectedError
-)
-
-// txInfo err list
-const (
-	TxInfoSuccess = iota
-	TxInfoUnexpectedError
-)
-
-// contractCall err list
-const (
-	ContractCallSuccess = iota
-	ContractCallUnexpectedError
-)
-
-// APICall err list
-const (
-	APICallSuccess = iota
-	APICallUnexpectedError
-)
-
 var (
 	ErrGetSandbox = errors.New("get sandbox failed.")
 	MessageSuccess = ""
