@@ -44,7 +44,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 			ParentHash: topBlock.HeadHash(),
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
-			Time:       time.Now().Unix() / common.SlotLength,
+			Time:       time.Now().UnixNano(),
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -147,7 +147,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return err
 	}
 
-	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+	if witnessOfNanoSec(blk.Head.Time) != blk.Head.Witness {
 		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
 			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, staticProperty.WitnessList)
 		return errWitness
@@ -176,7 +176,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 				return errTxSignature
 			}
 		}
-		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > txpool.Expiration {
+		if blk.Head.Time-tx.Time > txpool.Expiration {
 			return errTxTooOld
 		}
 	}
