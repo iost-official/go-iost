@@ -179,16 +179,16 @@ func Test_Vote1(t *testing.T) {
 			// do stat
 			s.Head.Number = 200
 			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
-			// acc	: score		, votes
-			// 0	: 0			, 0
-			// 1	: 0			, 0
-			// 2	: 0			, 0
-			// 3	: 0			, 0
-			// 4	: 0			, 0
-			// 5	: 0			, 0
-			// 6	: 90000000	, 300000000
-			// 7	: 5000000	, 215000000
-			// 8	: 10000000	, 220000000
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: 0				, 0
+			// 2	: 0				, 0
+			// 3	: 0				, 0
+			// 4	: 0				, 0
+			// 5	: 0				, 0
+			// 6	: q^1*90000000	, 300000000
+			// 7	: 1*5000000		, 215000000
+			// 8	: 1*10000000	, 220000000
 			// 0, 3, 1, 4, 5, 2
 			currentList, _ := json.Marshal([]string{testID[0], testID[6], testID[2], testID[8], testID[10], testID[4]})
 			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
@@ -203,16 +203,16 @@ func Test_Vote1(t *testing.T) {
 			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[8], testID[0], "250000000"), kp.ID, kp)
 			s.Head.Number += 200
 			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
-			// acc	: score		, votes
-			// 0	: 0			, 0
-			// 1	: 0			, 240000000
-			// 2	: 20000000	, 230000000
-			// 3	: 0			, 260000000
-			// 4	: 0			, 250000000
-			// 5	: 0			, 0
-			// 6	: 90000000	, 300000000
-			// 7	: 10000000	, 215000000
-			// 8	: 20000000	, 220000000
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: 0				, 240000000
+			// 2	: q^1*20000000	, 230000000
+			// 3	: 0				, 260000000
+			// 4	: 0				, 250000000
+			// 5	: 0				, 0
+			// 6	: q^2*90000000	, 300000000
+			// 7	: 10000000		, 215000000
+			// 8	: 20000000		, 220000000
 			// 6, 0, 3, 1, 4, 5
 			currentList = pendingList
 			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
@@ -224,16 +224,16 @@ func Test_Vote1(t *testing.T) {
 			s.Call("iost.vote_producer", "Unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[12], testID[16], "60000000"), kp8.ID, kp8)
 			s.Head.Number += 200
 			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
-			// acc	: score		, votes
-			// 0	: 0			, 0
-			// 1	: 0			, 240000000
-			// 2	: 20000000	, 230000000
-			// 3	: 0			, 260000000
-			// 4	: 0			, 250000000
-			// 5	: 0			, 0
-			// 6	: 90000000	, 240000000
-			// 7	: 15000000	, 215000000
-			// 8	: 30000000	, 220000000
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: 0				, 240000000
+			// 2	: q^2*20000000	, 230000000
+			// 3	: 0				, 260000000
+			// 4	: 0				, 250000000
+			// 5	: 0				, 0
+			// 6	: q^3*90000000	, 240000000
+			// 7	: 15000000		, 215000000
+			// 8	: q^1*30000000	, 220000000
 			// 6, 2, 0, 3, 1, 4
 			currentList = pendingList
 			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
@@ -244,16 +244,16 @@ func Test_Vote1(t *testing.T) {
 			// do stat
 			s.Head.Number += 200
 			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
-			// acc	: score		, votes
-			// 0	: 0			, 0
-			// 1	: 0			, 240000000
-			// 2	: 20000000	, 230000000
-			// 3	: 0			, 260000000
-			// 4	: 40000000	, 250000000
-			// 5	: 0			, 0
-			// 6	: 90000000	, 240000000
-			// 7	: 20000000	, 215000000
-			// 8	: 30000000	, 220000000
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: 0				, 240000000
+			// 2	: q^3*20000000	, 230000000
+			// 3	: 0				, 260000000
+			// 4	: q^1*40000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: q^4*90000000	, 240000000
+			// 7	: 20000000		, 215000000
+			// 8	: q^2*30000000	, 220000000
 			// 6, 8, 2, 0, 3, 1
 			currentList = pendingList
 			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
@@ -264,36 +264,36 @@ func Test_Vote1(t *testing.T) {
 			// do stat
 			s.Head.Number += 200
 			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
-			// acc	: score		, votes
-			// 0	: 0			, 0
-			// 1	: 30000000	, 240000000
-			// 2	: 20000000	, 230000000
-			// 3	: 0			, 260000000
-			// 4	: 40000000	, 250000000
-			// 5	: 0			, 0
-			// 6	: 90000000	, 240000000
-			// 7	: 25000000	, 215000000
-			// 8	: 30000000	, 220000000
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: q^1*30000000	, 240000000
+			// 2	: q^4*20000000	, 230000000
+			// 3	: 0				, 260000000
+			// 4	: q^2*40000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: q^5*90000000	, 240000000
+			// 7	: 25000000		, 215000000
+			// 8	: q^3*30000000	, 220000000
 			// 6, 4, 8, 2, 0, 3
 			currentList = pendingList
 			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
-			// 6, 4, 8, 1, 2, 0
-			pendingList, _ = json.Marshal([]string{testID[12], testID[8], testID[16], testID[2], testID[4], testID[0]})
+			// 6, 4, 1, 8, 2, 0
+			pendingList, _ = json.Marshal([]string{testID[12], testID[8], testID[2], testID[16], testID[4], testID[0]})
 			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 
 			// do stat
 			s.Head.Number += 200
 			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
-			// acc	: score		, votes
-			// 0	: 0			, 0
-			// 1	: 30000000	, 240000000
-			// 2	: 20000000	, 230000000
-			// 3	: 50000000	, 260000000
-			// 4	: 40000000	, 250000000
-			// 5	: 0			, 0
-			// 6	: 90000000	, 240000000
-			// 7	: 30000000	, 215000000
-			// 8	: 30000000	, 220000000
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: q^2*30000000	, 240000000
+			// 2	: q^5*20000000	, 230000000
+			// 3	: q^1*50000000	, 260000000
+			// 4	: q^3*40000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: q^6*90000000	, 240000000
+			// 7	: 30000000		, 215000000
+			// 8	: q^4*30000000	, 220000000
 			// 6, 4, 8, 1, 2, 0
 			currentList = pendingList
 			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
@@ -304,16 +304,16 @@ func Test_Vote1(t *testing.T) {
 			// do stat
 			s.Head.Number += 200
 			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
-			// acc	: score		, votes
-			// 0	: 0			, 0
-			// 1	: 30000000	, 240000000
-			// 2	: 0			, 230000000
-			// 3	: 50000000	, 260000000
-			// 4	: 40000000	, 250000000
-			// 5	: 0			, 0
-			// 6	: 90000000	, 240000000
-			// 7	: 35000000	, 215000000
-			// 8	: 30000000	, 220000000
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: q^3*30000000	, 240000000
+			// 2	: 0				, 230000000
+			// 3	: q^2*50000000	, 260000000
+			// 4	: q^4*40000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: q^7*90000000	, 240000000
+			// 7	: q^1*35000000	, 215000000
+			// 8	: q^4*30000000	, 220000000
 			// 6, 3, 4, 1, 8, 2
 			currentList = pendingList
 			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
@@ -324,16 +324,16 @@ func Test_Vote1(t *testing.T) {
 			// do stat
 			s.Head.Number += 200
 			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
-			// acc	: score		, votes
-			// 0	: 0			, 0
-			// 1	: 30000000	, 240000000
-			// 2	: 20000000	, 230000000
-			// 3	: 50000000	, 260000000
-			// 4	: 40000000	, 250000000
-			// 5	: 0			, 0
-			// 6	: 90000000	, 240000000
-			// 7	: 35000000	, 215000000
-			// 8	: 30000000	, 220000000
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: q^4*30000000	, 240000000
+			// 2	: 20000000		, 230000000
+			// 3	: q^3*50000000	, 260000000
+			// 4	: q^5*40000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: q^8*90000000	, 240000000
+			// 7	: q^2*35000000	, 215000000
+			// 8	: q^5*30000000	, 220000000
 			// 6, 3, 4, 7, 1, 8
 			currentList = pendingList
 			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
@@ -344,21 +344,21 @@ func Test_Vote1(t *testing.T) {
 			// do stat
 			s.Head.Number += 200
 			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
-			// acc	: score		, votes
-			// 0	: 0			, 0
-			// 1	: 30000000	, 240000000
-			// 2	: 40000000	, 230000000
-			// 3	: 50000000	, 260000000
-			// 4	: 40000000	, 250000000
-			// 5	: 0			, 0
-			// 6	: 90000000	, 240000000
-			// 7	: 35000000	, 215000000
-			// 8	: 0			, 220000000
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: q^5*30000000	, 240000000
+			// 2	: q^1*40000000	, 230000000
+			// 3	: q^4*50000000	, 260000000
+			// 4	: q^6*40000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: q^9*90000000	, 240000000
+			// 7	: q^3*35000000	, 215000000
+			// 8	: 0				, 220000000
 			// 6, 3, 4, 7, 1, 8
 			currentList = pendingList
 			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
-			// 6, 3, 4, 2, 7, 1
-			pendingList, _ = json.Marshal([]string{testID[12], testID[6], testID[8], testID[4], testID[14], testID[2]})
+			// 6, 3, 2, 4, 7, 1
+			pendingList, _ = json.Marshal([]string{testID[12], testID[6], testID[4], testID[8], testID[14], testID[2]})
 			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 		})
 	})

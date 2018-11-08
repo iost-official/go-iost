@@ -19,12 +19,14 @@ func Test_callWithAuth(t *testing.T) {
 	Convey("test of callWithAuth", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(t, s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		prepareContract(t, s)
+		createToken(t, s, kp)
 
 		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
 		if err != nil || ca == nil {

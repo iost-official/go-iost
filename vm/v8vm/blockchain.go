@@ -181,7 +181,7 @@ func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gas
 	apiStr := C.GoString(api)
 	argsStr := C.GoString(args)
 
-	callRs, cost, err := sbx.host.Call(contractStr, apiStr, argsStr, true)
+	callRs, cost, err := sbx.host.Call(contractStr, apiStr, argsStr)
 	*gasUsed = C.size_t(cost.Data)
 	if err != nil {
 		return ContractCallUnexpectedError

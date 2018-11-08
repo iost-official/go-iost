@@ -2,6 +2,8 @@ const producerRegisterFee = "200000000";
 const preProducerThreshold = "210000000";
 const voteLockTime = 864000;
 const voteStatInterval = 200;
+const iostDecimal = 8;
+const scoreDecreaseRate = new Float64("0.999995");
 const producerPermission = "active";
 const votePermission = "vote";
 
@@ -92,7 +94,7 @@ class VoteContract {
     }
 
     _call(contract, api, args) {
-        const ret = JSON.parse(BlockChain.call(contract, api, JSON.stringify(args)));
+        const ret = JSON.parse(BlockChain.callWithAuth(contract, api, JSON.stringify(args)));
         if (ret && Array.isArray(ret) && ret.length == 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
@@ -322,21 +324,38 @@ class VoteContract {
         // update pending list
         const producerNumber = this._get("producerNumber");
         const replaceNum = Math.min(preList.length, Math.floor(producerNumber / 6));
+        const maxInsertPlace = Math.floor(producerNumber * 2 / 3);
         const oldPreList = [];
+        let minScore = new Float64(MaxFloat64);
         for (let key in pendingProducerList) {
             const x = pendingProducerList[key];
+            const score = new Float64(this._mapGet("producerTable", x).score);
             oldPreList.push({
                 "key": x,
                 "prior": 1,
-                "score": new Float64(this._mapGet("producerTable", x).score)
+                "score": score
             });
+            if (score.lt(minScore)) {
+                minScore = score;
+            }
         }
 
         // replace at most replaceNum producers
-        for (let i = 0; i < replaceNum; i++) {
-            oldPreList.push(preList[i]);
+        for (let i = replaceNum - 1; i >= 0; i--) {
+            const preProducer = preList[i];
+            if (!minScore.lt(preProducer.score)) {
+                continue;
+            }
+            let insertPlace = maxInsertPlace;
+            for (let j = maxInsertPlace - 1; j >= 0 ; j--) {
+                if (scoreCmp(preProducer, oldPreList[j]) < 0) {
+                    insertPlace = j;
+                } else {
+                    break;
+                }
+            }
+            oldPreList.splice(insertPlace, 0, preProducer);
         }
-        oldPreList.sort(scoreCmp);
         const newList = oldPreList.slice(0, producerNumber);
 
         const currentList = pendingProducerList;
@@ -352,8 +371,13 @@ class VoteContract {
                 this._mapPut("producerTable", key, proRes);
             }
         }
-    }
 
+        for (const key of pendingList) {
+            const proRes = this._mapGet("producerTable", key);
+            proRes.score = new Float64(proRes.score).multi(scoreDecreaseRate).number.toFixed(iostDecimal);
+            this._mapPut("producerTable", key, proRes);
+        }
+    }
 }
 
 module.exports = VoteContract;
