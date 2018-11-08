@@ -88,10 +88,20 @@ func (h *DBHandler) MapLen(key string, owner ...string) (int, contract.Cost) {
 	return len(h.h.db.MKeys(h.modifyKey(key, owner...))), KeysCost
 }
 
-// GlobalGet get another contract's data
+// GlobalHas if another contract's db has key
+func (h *DBHandler) GlobalHas(con, key string, owner ...string) (bool, contract.Cost) {
+	return h.h.db.Has(h.modifyGlobalKey(con, key, owner...)), GetCost
+}
+
+// GlobalHas get another contract's data
 func (h *DBHandler) GlobalGet(con, key string, owner ...string) (value interface{}, cost contract.Cost) {
 	o := h.h.db.Get(h.modifyGlobalKey(con, key, owner...))
 	return database.MustUnmarshal(o), GetCost
+}
+
+// GlobalMapHas if another contract's map has field
+func (h *DBHandler) GlobalMapHas(con, key, field string, owner ...string) (bool, contract.Cost) {
+	return h.h.db.MHas(h.modifyGlobalKey(con, key, owner...), field), GetCost
 }
 
 // GlobalMapGet get another contract's map data
