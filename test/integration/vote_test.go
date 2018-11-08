@@ -36,6 +36,9 @@ func prepareVote(t *testing.T, s *Simulator, kp *account.KeyPair) (*tx.TxReceipt
 	if err != nil {
 		t.Fatal(err)
 	}
+	s.Visitor.MPut("iost.system-contract_owner", "Contractvoteresult", `s`+kp.ID)
+	s.SetGas(kp.ID, 1e8)
+	s.SetRAM(kp.ID, 1e8)
 
 	config := make(map[string]interface{})
 	config["resultNumber"] = 2
@@ -65,7 +68,7 @@ func Test_NewVote(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 		prepareToken(t, s, kp)
 
 		Convey("test NewVote", func() {
@@ -99,7 +102,7 @@ func Test_AddOption(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -125,7 +128,7 @@ func Test_RemoveOption(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -151,7 +154,7 @@ func Test_Vote(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -242,7 +245,7 @@ func Test_DelVote(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -286,7 +289,7 @@ func Test_MixVoteOption(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 

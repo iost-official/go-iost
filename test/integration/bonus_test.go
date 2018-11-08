@@ -25,7 +25,7 @@ func Test_IssueBonus(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 
 		// deploy iost.issue
 		setNonNativeContract(s, "iost.bonus", "bonus.js", ContractPath)
@@ -60,7 +60,7 @@ func Test_ExchangeIOST(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 
 		// deploy iost.issue
 		setNonNativeContract(s, "iost.bonus", "bonus.js", ContractPath)

@@ -41,6 +41,8 @@ class Test {
         if (map1 !== "value") {
             throw map1
         }
+
+        return true
     }
 
     change() {

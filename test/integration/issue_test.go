@@ -26,7 +26,7 @@ func Test_Isue(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 
 		// deploy iost.issue
 		setNonNativeContract(s, "iost.issue", "issue.js", ContractPath)

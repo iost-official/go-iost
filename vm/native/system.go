@@ -31,7 +31,7 @@ var (
 	requireAuth = &abi{
 		name: "RequireAuth",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			var b bool
 			b, cost = h.RequireAuth(args[0].(string), args[1].(string))
 			rtn = []interface{}{
@@ -43,7 +43,7 @@ var (
 	receipt = &abi{
 		name: "Receipt",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = h.Receipt(args[0].(string))
 			return []interface{}{}, cost, nil
 		},
@@ -51,7 +51,7 @@ var (
 	callWithReceipt = &abi{
 		name: "CallWithReceipt",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			rtn, cost, err = h.CallWithReceipt(args[0].(string), args[1].(string), args[2].(string))
 			return rtn, cost, err
 		},
@@ -59,7 +59,7 @@ var (
 	transfer = &abi{
 		name: "Transfer",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost, err = h.Transfer(args[0].(string), args[1].(string), args[2].(string))
 			return []interface{}{}, cost, err
@@ -68,7 +68,7 @@ var (
 	topUp = &abi{
 		name: "TopUp",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost, err = h.TopUp(args[0].(string), args[1].(string), args[2].(string))
 			return []interface{}{}, cost, err
@@ -77,7 +77,7 @@ var (
 	countermand = &abi{
 		name: "Contermand",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost, err = h.Countermand(args[0].(string), args[1].(string), args[2].(string))
 			return []interface{}{}, cost, err
@@ -87,7 +87,7 @@ var (
 	setCode = &abi{
 		name: "SetCode",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost = contract.Cost0()
 			con := &contract.Contract{}
@@ -112,8 +112,13 @@ var (
 			actID := "Contract" + id
 			con.ID = actID
 
-			cost2, err := h.SetCode(con)
+			publisher := h.Context().Value("publisher").(string)
+			cost2, err := h.SetCode(con, publisher)
 			cost.AddAssign(cost2)
+
+			cost2 = h.MapPut("contract_owner", actID, publisher)
+			cost.AddAssign(cost2)
+
 			return []interface{}{actID}, cost, err
 		},
 	}
@@ -121,7 +126,7 @@ var (
 	updateCode = &abi{
 		name: "UpdateCode",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			con := &contract.Contract{}
 			err = con.B64Decode(args[0].(string))
@@ -138,7 +143,7 @@ var (
 	destroyCode = &abi{
 		name: "DestroyCode",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost, err = h.DestroyCode(args[0].(string))
 			return []interface{}{}, cost, err
@@ -147,7 +152,7 @@ var (
 	issueIOST = &abi{
 		name: "IssueIOST",
 		args: []string{"string", "number"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			if h.Context().Value("number").(int64) != 0 {
 				return []interface{}{}, contract.Cost0(), errors.New("issue IOST in normal block")
 			}
@@ -160,7 +165,7 @@ var (
 	initSetCode = &abi{
 		name: "InitSetCode",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 
 			if h.Context().Value("number").(int64) != 0 {
@@ -176,7 +181,7 @@ var (
 			actID := args[0].(string)
 			con.ID = actID
 
-			cost2, err := h.SetCode(con)
+			cost2, err := h.SetCode(con, "")
 			cost.AddAssign(cost2)
 			return []interface{}{actID}, cost, err
 		},
@@ -186,7 +191,7 @@ var (
 	cancelDelaytx = &abi{
 		name: "CancelDelaytx",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost, err = h.CancelDelaytx(args[0].(string))
 			return []interface{}{}, cost, err

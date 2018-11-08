@@ -101,6 +101,7 @@ func TestNewTxPImpl(t *testing.T) {
 		base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 		base.EXPECT().Length().AnyTimes().Return(int64(1))
 		base.EXPECT().Close().AnyTimes()
+		base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 
 		gbl := core_mock.NewMockBaseVariable(ctl)
 		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
@@ -123,7 +124,7 @@ func TestNewTxPImpl(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			err = txPool.AddTx(t)
-			So(err.Error(), ShouldStartWith, "DupError")
+			So(err, ShouldEqual, ErrDupPendingTx)
 		})
 		Convey("txTimeOut", func() {
 
@@ -259,6 +260,7 @@ func TestNewTxPImplB(t *testing.T) {
 		base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 		base.EXPECT().Length().AnyTimes().Return(int64(1))
 		base.EXPECT().Close().AnyTimes()
+		base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 
 		gbl := core_mock.NewMockBaseVariable(ctl)
 		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
