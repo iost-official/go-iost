@@ -36,7 +36,7 @@ func (h *APIDelegate) receipt(t tx.ReceiptType, s string) {
 }
 
 // Receipt ...
-func (h *APIDelegate) Receipt(s string) *contract.Cost {
+func (h *APIDelegate) Receipt(s string) contract.Cost {
 	h.receipt(tx.UserDefined, s)
 	return ReceiptCost(len(s))
 }

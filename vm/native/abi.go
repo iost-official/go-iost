@@ -40,11 +40,8 @@ func ABI(id string, abi map[string]*abi) *contract.Contract {
 
 	for _, v := range abi {
 		c.Info.Abi = append(c.Info.Abi, &contract.ABI{
-			Name:     v.name,
-			Args:     v.args,
-			Payment:  0,
-			GasPrice: int64(1000),
-			Limit:    contract.NewCost(100, 100, 100),
+			Name: v.name,
+			Args: v.args,
 		})
 	}
 

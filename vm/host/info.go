@@ -18,7 +18,7 @@ func NewInfo(h *Host) Info {
 }
 
 // BlockInfo get block info, in json
-func (h *Info) BlockInfo() (info database.SerializedJSON, cost *contract.Cost) {
+func (h *Info) BlockInfo() (info database.SerializedJSON, cost contract.Cost) {
 
 	blkInfo := make(map[string]interface{})
 
@@ -36,19 +36,19 @@ func (h *Info) BlockInfo() (info database.SerializedJSON, cost *contract.Cost) {
 }
 
 // BlockTime get block time, in int64
-func (h *Info) BlockTime() (ntime int64, cost *contract.Cost) {
+func (h *Info) BlockTime() (ntime int64, cost contract.Cost) {
 	ntime = h.h.ctx.Value("time").(int64)
 	return ntime, ContextInfoCost
 }
 
 // ContractName get block time, in int64
-func (h *Info) ContractName() (name string, cost *contract.Cost) {
+func (h *Info) ContractName() (name string, cost contract.Cost) {
 	name = h.h.ctx.Value("contract_name").(string)
 	return name, ContextInfoCost
 }
 
 // TxInfo get tx info
-func (h *Info) TxInfo() (info database.SerializedJSON, cost *contract.Cost) {
+func (h *Info) TxInfo() (info database.SerializedJSON, cost contract.Cost) {
 
 	txInfo := make(map[string]interface{})
 	txInfo["time"] = h.h.ctx.Value("time")

@@ -18,7 +18,7 @@ func NewDBHandler(h *Host) DBHandler {
 }
 
 // Put put kv to db
-func (h *DBHandler) Put(key string, value interface{}, owner ...string) *contract.Cost {
+func (h *DBHandler) Put(key string, value interface{}, owner ...string) contract.Cost {
 	sv := database.MustMarshal(value)
 	var mk = h.modifyKey(key, owner...)
 	h.payRAM(mk, sv, owner...)
@@ -27,14 +27,14 @@ func (h *DBHandler) Put(key string, value interface{}, owner ...string) *contrac
 }
 
 // Get get value of key from db
-func (h *DBHandler) Get(key string, owner ...string) (value interface{}, cost *contract.Cost) {
+func (h *DBHandler) Get(key string, owner ...string) (value interface{}, cost contract.Cost) {
 	var mk = h.modifyKey(key, owner...)
 	rtn := database.MustUnmarshal(h.h.db.Get(mk))
 	return rtn, GetCost
 }
 
 // Del delete key
-func (h *DBHandler) Del(key string, owner ...string) *contract.Cost {
+func (h *DBHandler) Del(key string, owner ...string) contract.Cost {
 	var mk = h.modifyKey(key, owner...)
 	h.releaseRAM(mk, owner...)
 	h.h.db.Del(h.modifyKey(key))
@@ -42,12 +42,12 @@ func (h *DBHandler) Del(key string, owner ...string) *contract.Cost {
 }
 
 // Has if db has key
-func (h *DBHandler) Has(key string, owner ...string) (bool, *contract.Cost) {
+func (h *DBHandler) Has(key string, owner ...string) (bool, contract.Cost) {
 	return h.h.db.Has(h.modifyKey(key, owner...)), GetCost
 }
 
 // MapPut put kfv to db
-func (h *DBHandler) MapPut(key, field string, value interface{}, owner ...string) *contract.Cost {
+func (h *DBHandler) MapPut(key, field string, value interface{}, owner ...string) contract.Cost {
 	sv := database.MustMarshal(value)
 	mk := h.modifyKey(key, owner...)
 
@@ -57,20 +57,20 @@ func (h *DBHandler) MapPut(key, field string, value interface{}, owner ...string
 }
 
 // MapGet get value by kf from db
-func (h *DBHandler) MapGet(key, field string, owner ...string) (value interface{}, cost *contract.Cost) {
+func (h *DBHandler) MapGet(key, field string, owner ...string) (value interface{}, cost contract.Cost) {
 	var mk = h.modifyKey(key, owner...)
 	rtn := database.MustUnmarshal(h.h.db.MGet(mk, field))
 	return rtn, GetCost
 }
 
 // MapKeys list keys
-func (h *DBHandler) MapKeys(key string, owner ...string) (fields []string, cost *contract.Cost) {
+func (h *DBHandler) MapKeys(key string, owner ...string) (fields []string, cost contract.Cost) {
 	var mk = h.modifyKey(key, owner...)
 	return h.h.db.MKeys(mk), KeysCost
 }
 
 // MapDel delete field
-func (h *DBHandler) MapDel(key, field string, owner ...string) *contract.Cost {
+func (h *DBHandler) MapDel(key, field string, owner ...string) contract.Cost {
 	var mk = h.modifyKey(key, owner...)
 	h.releaseRAMForMap(mk, field)
 
@@ -79,34 +79,34 @@ func (h *DBHandler) MapDel(key, field string, owner ...string) *contract.Cost {
 }
 
 // MapHas if has field
-func (h *DBHandler) MapHas(key, field string, owner ...string) (bool, *contract.Cost) {
+func (h *DBHandler) MapHas(key, field string, owner ...string) (bool, contract.Cost) {
 	return h.h.db.MHas(h.modifyKey(key, owner...), field), GetCost
 }
 
 // MapLen get length of map
-func (h *DBHandler) MapLen(key string, owner ...string) (int, *contract.Cost) {
+func (h *DBHandler) MapLen(key string, owner ...string) (int, contract.Cost) {
 	return len(h.h.db.MKeys(h.modifyKey(key, owner...))), KeysCost
 }
 
 // GlobalGet get another contract's data
-func (h *DBHandler) GlobalGet(con, key string, owner ...string) (value interface{}, cost *contract.Cost) {
+func (h *DBHandler) GlobalGet(con, key string, owner ...string) (value interface{}, cost contract.Cost) {
 	o := h.h.db.Get(h.modifyGlobalKey(con, key, owner...))
 	return database.MustUnmarshal(o), GetCost
 }
 
 // GlobalMapGet get another contract's map data
-func (h *DBHandler) GlobalMapGet(con, key, field string, owner ...string) (value interface{}, cost *contract.Cost) {
+func (h *DBHandler) GlobalMapGet(con, key, field string, owner ...string) (value interface{}, cost contract.Cost) {
 	o := h.h.db.MGet(h.modifyGlobalKey(con, key, owner...), field)
 	return database.MustUnmarshal(o), GetCost
 }
 
 // GlobalMapKeys get another contract's map keys
-func (h *DBHandler) GlobalMapKeys(con, key string, owner ...string) (keys []string, cost *contract.Cost) {
+func (h *DBHandler) GlobalMapKeys(con, key string, owner ...string) (keys []string, cost contract.Cost) {
 	return h.h.db.MKeys(h.modifyGlobalKey(con, key, owner...)), GetCost
 }
 
 // GlobalMapLen get another contract's map length
-func (h *DBHandler) GlobalMapLen(con, key string, owner ...string) (length int, cost *contract.Cost) {
+func (h *DBHandler) GlobalMapLen(con, key string, owner ...string) (length int, cost contract.Cost) {
 	k, cost := h.GlobalMapKeys(con, key)
 	return len(k), cost
 }
@@ -135,11 +135,11 @@ func (h *DBHandler) payRAM(k, v string, who ...string) {
 	}
 	oldV := h.h.db.Get(k)
 	if oldV == "n" {
-		h.h.PayCost(&contract.Cost{
+		h.h.PayCost(contract.Cost{
 			Data: int64(len(k) + len(v)),
 		}, a)
 	} else {
-		h.h.PayCost(&contract.Cost{
+		h.h.PayCost(contract.Cost{
 			Data: int64(len(v) - len(oldV)),
 		}, a)
 	}
@@ -154,11 +154,11 @@ func (h *DBHandler) payRAMForMap(k, f, v string, who ...string) {
 	}
 	oldV := h.h.db.MGet(k, f)
 	if oldV == "n" {
-		h.h.PayCost(&contract.Cost{
+		h.h.PayCost(contract.Cost{
 			Data: int64(len(k) + 2*len(f) + len(v)),
 		}, a)
 	} else {
-		h.h.PayCost(&contract.Cost{
+		h.h.PayCost(contract.Cost{
 			Data: int64(len(v) - len(oldV)),
 		}, a)
 	}
@@ -173,7 +173,7 @@ func (h *DBHandler) releaseRAM(k string, who ...string) {
 		a, _ = h.h.ctx.Value("contract_name").(string)
 	}
 	v := h.h.db.Get(k)
-	h.h.PayCost(&contract.Cost{
+	h.h.PayCost(contract.Cost{
 		Data: -int64(len(k) + len(v)),
 	}, a)
 }
@@ -186,7 +186,7 @@ func (h *DBHandler) releaseRAMForMap(k, f string, who ...string) {
 		a, _ = h.h.ctx.Value("contract_name").(string)
 	}
 	v := h.h.db.Get(k)
-	h.h.PayCost(&contract.Cost{
+	h.h.PayCost(contract.Cost{
 		Data: -int64(len(k) + 2*len(f) + len(v)),
 	}, a)
 }
