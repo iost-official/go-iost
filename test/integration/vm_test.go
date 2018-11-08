@@ -25,7 +25,7 @@ func Test_callWithAuth(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 		createToken(t, s, kp)
 
 		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")

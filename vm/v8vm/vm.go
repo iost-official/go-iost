@@ -91,9 +91,9 @@ func (e *VM) setContract(contract *contract.Contract, api string, args []interfa
 	return e.sandbox.Prepare(contract, api, args)
 }
 
-func (e *VM) execute(code string) (rtn []interface{}, cost *contract.Cost, err error) {
+func (e *VM) execute(code string) (rtn []interface{}, cost contract.Cost, err error) {
 	rs, gasUsed, err := e.sandbox.Execute(code)
-	gasCost := contract.NewCost(gasUsed, 0, 0)
+	gasCost := contract.NewCost(0, 0, gasUsed)
 	return []interface{}{rs}, gasCost, err
 }
 

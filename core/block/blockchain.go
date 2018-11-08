@@ -22,11 +22,12 @@ var (
 	blockLength       = []byte("BlockLength")
 	blockNumberPrefix = []byte("n")
 	blockPrefix       = []byte("H")
-	txPrefix          = []byte("t") // txPrefix + tx hash -> block hash + tx hash
-	bTxPrefix         = []byte("B") // bTxPrefix + block hash + tx hash -> tx data
-	txReceiptPrefix   = []byte("h") // txReceiptPrefix + tx hash -> block hash + receipt hash
-	receiptPrefix     = []byte("r") // receiptPrefix + receipt hash -> block hash + receipt hash
-	bReceiptPrefix    = []byte("b") // bReceiptPrefix + block hash + receipt hash -> receipt data
+	txPrefix          = []byte("t")      // txPrefix + tx hash -> block hash + tx hash
+	bTxPrefix         = []byte("B")      // bTxPrefix + block hash + tx hash -> tx data
+	txReceiptPrefix   = []byte("h")      // txReceiptPrefix + tx hash -> block hash + receipt hash
+	receiptPrefix     = []byte("r")      // receiptPrefix + receipt hash -> block hash + receipt hash
+	bReceiptPrefix    = []byte("b")      // bReceiptPrefix + block hash + receipt hash -> receipt data
+	delaytxPrefix     = []byte("delay-") // delaytxPrefix + tx hash -> tx data
 )
 
 // Int64ToByte is int64 to byte
@@ -90,10 +91,11 @@ func (bc *BlockChain) Push(block *Block) error {
 	}
 	bc.blockChainDB.Put(append(blockPrefix, hash...), blockByte)
 	bc.blockChainDB.Put(blockLength, Int64ToByte(number+1))
-	for i, tx := range block.Txs {
-		tHash := tx.Hash()
+	for i, t := range block.Txs {
+		tHash := t.Hash()
+		txBytes := t.Encode()
 		bc.blockChainDB.Put(append(txPrefix, tHash...), append(hash, tHash...))
-		bc.blockChainDB.Put(append(bTxPrefix, append(hash, tHash...)...), tx.Encode())
+		bc.blockChainDB.Put(append(bTxPrefix, append(hash, tHash...)...), txBytes)
 
 		// save receipt
 		rHash := block.Receipts[i].Hash()
@@ -101,8 +103,11 @@ func (bc *BlockChain) Push(block *Block) error {
 		bc.blockChainDB.Put(append(receiptPrefix, rHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(bReceiptPrefix, append(hash, rHash...)...), block.Receipts[i].Encode())
 
-		if tx.Delay > 0 {
-
+		if t.Delay > 0 {
+			bc.blockChainDB.Put(append(delaytxPrefix, tHash...), txBytes)
+		}
+		if t.IsDefer() {
+			bc.blockChainDB.Delete(append(delaytxPrefix, t.ReferredTx...))
 		}
 	}
 	err = bc.blockChainDB.CommitBatch()
@@ -320,6 +325,24 @@ func (bc *BlockChain) HasReceipt(hash []byte) (bool, error) {
 // Close is close database
 func (bc *BlockChain) Close() {
 	bc.blockChainDB.Close()
+}
+
+// AllDelaytx returns all delay transactions.
+func (bc *BlockChain) AllDelaytx() ([]*tx.Tx, error) {
+	txBytes, err := bc.blockChainDB.Keys(delaytxPrefix)
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]*tx.Tx, 0)
+	for _, txByte := range txBytes {
+		t := &tx.Tx{}
+		err = t.Decode(txByte)
+		if err != nil {
+			continue
+		}
+		ret = append(ret, t)
+	}
+	return ret, nil
 }
 
 // Draw the graph about blockchain

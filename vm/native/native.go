@@ -11,7 +11,7 @@ import (
 type abi struct {
 	name string
 	args []string
-	do   func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
+	do   func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error)
 }
 
 // Impl .
@@ -38,7 +38,7 @@ func (i *Impl) Compile(contract *contract.Contract) (string, error) {
 }
 
 // LoadAndCall implement
-func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 	var (
 		a  *abi
 		ok bool
@@ -67,7 +67,7 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 }
 
 // CheckCost check if cost exceed gas_limit
-func CheckCost(h *host.Host, cost *contract.Cost) bool {
+func CheckCost(h *host.Host, cost contract.Cost) bool {
 	gasLimit := h.Context().GValue("gas_limit").(int64)
 	if cost.ToGas() > gasLimit {
 		return false

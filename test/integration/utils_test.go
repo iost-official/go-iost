@@ -35,31 +35,33 @@ type fataler interface {
 	Fatal(args ...interface{})
 }
 
-func prepareContract(t fataler, s *Simulator) {
+func prepareContract(s *Simulator) {
 	for i := 0; i < 18; i += 2 {
 		s.SetAccount(account.NewInitAccount(testID[i], testID[i], testID[i]))
-		s.SetGas(testID[i], 100000)
+		s.SetGas(testID[i], 100000000)
+		s.SetRAM(testID[i], 1000)
 	}
 	// deploy iost.token
 	s.SetContract(native.TokenABI())
 	s.Visitor.Commit()
 }
 
-func createToken(t fataler, s *Simulator, kp *account.KeyPair) {
+func createToken(t fataler, s *Simulator, kp *account.KeyPair) error {
 	// create token
 	r, err := s.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000000), kp.ID, kp)
 	if err != nil || r.Status.Code != tx.Success {
-		t.Fatal(err, r)
+		return fmt.Errorf("err %v, receipt: %v", err, r)
 	}
 	// issue token
 	r, err = s.Call("iost.token", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", testID[0], "1000"), kp.ID, kp)
 	if err != nil || r.Status.Code != tx.Success {
-		t.Fatal(err, r)
+		return fmt.Errorf("err %v, receipt: %v", err, r)
 	}
 	if 1e11 != s.Visitor.TokenBalance("iost", testID[0]) {
-		t.Fatal(s.Visitor.TokenBalance("iost", testID[0]))
+		return fmt.Errorf("err %v, receipt: %v", err, r)
 	}
 	s.Visitor.Commit()
+	return nil
 }
 
 func setNonNativeContract(s *Simulator, name string, filename string, ContractPath string) error {
