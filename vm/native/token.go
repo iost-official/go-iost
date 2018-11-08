@@ -88,7 +88,10 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 
 	addBalance := int64(0)
 	i := 0
-	for i < len(freezeList) && freezeList[i].Ftime <= ntime {
+	for i < len(freezeList) {
+		if freezeList[i].Ftime > ntime {
+			break
+		}
 		addBalance += freezeList[i].Amount
 		i++
 	}
@@ -426,7 +429,7 @@ var (
 			from := args[1].(string)
 			to := args[2].(string)
 			amountStr := args[3].(string)
-			ftime := args[4].(int64)
+			ftime := args[4].(int64) // time.Now().Unix() / common.SlotLength
 
 			// get token info
 			ok, cost0 := checkTokenExists(h, tokenName)

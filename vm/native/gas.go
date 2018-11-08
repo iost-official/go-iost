@@ -21,18 +21,27 @@ var GasMinPledge = &common.Fixed{Value: GasMinPledgeInIOST * IOSTRatio, Decimal:
 
 // Each IOST you pledge, you will get `GasImmediateReward` gas immediately.
 // Then gas will be generated at a rate of `GasIncreaseRate` gas per block.
+// Then it takes `GasFulfillDuration` time to reach the limit.
 // Your gas production will stop when it reaches the limit.
 // When you use some gas later, the total amount will be less than the limit,
-// so gas production will continue again util the limit.
+// so gas production will resume again util the limit.
 
 // GasImmediateReward immediate reward per IOST
-var GasImmediateReward = &common.Fixed{Value: 10 * IOSTRatio, Decimal: 8}
+var GasImmediateReward = &common.Fixed{Value: 300 * IOSTRatio, Decimal: 8}
 
 // GasLimit gas limit per IOST
-var GasLimit = &common.Fixed{Value: 30 * IOSTRatio, Decimal: 8}
+var GasLimit = &common.Fixed{Value: 900 * IOSTRatio, Decimal: 8}
+
+// GasFulfillDuration it takes 3 days to fulfill the gas buffer. TODO when BlockHead.time is fixed, fix the 'SlotLength' here
+var GasFulfillDuration int64 = 3 * 24 * 3600 / common.SlotLength
 
 // GasIncreaseRate gas increase per IOST per block
-var GasIncreaseRate = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
+var GasIncreaseRate = GasLimit.Sub(GasImmediateReward).Div(GasFulfillDuration)
+
+//var GasIncreaseRate = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
+
+// UnpledgeFreezeDuration coins will be frozen for 3 days after being unpledged. TODO when BlockHead.time is fixed, fix the 'SlotLength' here
+var UnpledgeFreezeDuration int64 = 3 * 24 * 3600 / common.SlotLength
 
 var gasABIs map[string]*abi
 
@@ -74,7 +83,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 			return fmt.Errorf("cannot unpledge! No pledge before")
 		}
 		h.DB().GasHandler.SetGasPledge(name, pledgeAmountF)
-		h.DB().GasHandler.SetGasUpdateTime(name, h.Context().Value("number").(int64))
+		h.DB().GasHandler.SetGasUpdateTime(name, h.Context().Value("time").(int64))
 		h.DB().GasHandler.SetGasRate(name, rateDelta)
 		h.DB().GasHandler.SetGasLimit(name, limitDelta)
 		h.DB().GasHandler.SetGasStock(name, gasDelta)
@@ -180,7 +189,6 @@ var (
 			auth, cost0 := h.RequireAuth(gasUser, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
-				fmt.Println("bbbbb")
 				return nil, cost, host.ErrPermissionLost
 			}
 			unpledgeAmountStr, ok := args[2].(string)
@@ -203,11 +211,11 @@ var (
 			}
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
-			//cost0, err = h.Withdraw(userName, unpledgeAmountStr)
-			_, cost0, err = h.CallWithAuth("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, contractName, receiver, unpledgeAmountStr))
+			freezeTime := h.Context().Value("time").(int64) + UnpledgeFreezeDuration
+			_, cost0, err = h.CallWithAuth("iost.token", "transferFreeze",
+				fmt.Sprintf(`["iost", "%v", "%v", "%v", %v]`, contractName, receiver, unpledgeAmountStr, freezeTime))
 			cost.AddAssign(cost0)
 			if err != nil {
-				fmt.Println("aaaaa")
 				return nil, cost, err
 			}
 			return []interface{}{}, cost, nil
