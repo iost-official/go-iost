@@ -283,8 +283,8 @@ func TestRAM(t *testing.T) {
 	}
 
 	var initialTotal int64 = 128 * 1024 * 1024 * 1024
-	var increaseInterval int64 = 24 * 3600 / 3
-	var increaseAmount int64 = 188272539 // Math.round(64 * 1024 * 1024 * 1024 / 365)
+	var increaseInterval int64 = 24 * 3600
+	var increaseAmount int64 = 64 * 1024 * 1024 * 1024 / 365
 	r, err = s.Call(contractName, "issue", array2json([]interface{}{initialTotal, increaseInterval, increaseAmount}), admin.ID, admin)
 	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
 		panic("call failed " + err.Error() + " " + r.String())
@@ -317,7 +317,7 @@ func TestRAM(t *testing.T) {
 			})
 			Convey("when buying triggers increasing total ram", func() {
 				head := s.Head
-				head.Number = head.Number + increaseInterval
+				head.Time = head.Time + increaseInterval * 1000 * 1000 * 1000
 				s.SetBlockHead(head)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
 				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, buyAmount}), kp.ID, kp)

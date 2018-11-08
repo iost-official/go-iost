@@ -29,6 +29,14 @@ class RAMContract {
         return bi.number;
     }
 
+    _getBlockTime() {
+        const bi = JSON.parse(BlockChain.blockInfo());
+        if (!bi || bi === undefined || bi.number === undefined) {
+            throw new Error("get block time failed. bi = " + bi);
+        }
+        return bi.time;
+    }
+
     _get(k) {
         var raw = storage.get(k);
         if (raw == "nil") {
@@ -108,7 +116,7 @@ class RAMContract {
         BlockChain.callWithAuth("iost.token", "create", JSON.stringify(data));
         data = [this._getTokenName(), this._getContractName(), (initialTotal).toString()];
         BlockChain.callWithAuth("iost.token", "issue", JSON.stringify(data));
-        this._put("lastUpdateBlockNumber", bn);
+        this._put("lastUpdateBlockTime", this._getBlockTime());
         this._put("increaseInterval", increaseInterval);
         this._put("increaseAmount", increaseAmount);
     }
@@ -132,8 +140,9 @@ class RAMContract {
     }
 
     _checkIssue() {
-        const bn = this._getBlockNumber();
-        if (bn < this._get("lastUpdateBlockNumber") + this._get("increaseInterval")) {
+        const t = this._getBlockTime();
+        const nextUpdateTime = this._get("lastUpdateBlockTime") + this._get("increaseInterval") * 1000 * 1000 * 1000;
+        if (t < nextUpdateTime) {
             return
         }
         const data = [this._getTokenName(), this._getContractName(), this._get("increaseAmount").toString()];
@@ -141,7 +150,7 @@ class RAMContract {
         if (ret != "[]") {
             throw "issue err " + ret
         }
-        this._put("lastUpdateBlockNumber", bn);
+        this._put("lastUpdateBlockTime", t);
     }
 
     buy(account, amount) {
