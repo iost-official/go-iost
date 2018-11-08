@@ -1,7 +1,6 @@
 package genesis
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -36,7 +35,7 @@ func GenGenesisByFile(db db.MVCCDB, path string) (*block.Block, error) {
 
 func compile(id string, path string, name string) (*contract.Contract, error) {
 	if id == "" || path == "" || name == "" {
-		return nil, errors.New("arguments is error")
+		return nil, fmt.Errorf("arguments is error, id:%v, path:%v, name:%v", id, path, name)
 	}
 	cFilePath := filepath.Join(path, name)
 	cAbiPath := filepath.Join(path, name+".abi")
