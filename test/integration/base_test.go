@@ -30,13 +30,17 @@ func Test_Base(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(t, s)
+		prepareContract(s)
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 		prepareBase(t, s, kp)
 		for i := 0; i < 12; i += 2 {
 			s.Call("iost.vote_producer", "InitProducer", fmt.Sprintf(`["%v"]`, testID[i]), kp.ID, kp)
 		}
+
+		re, err := s.Call("iost.base", "Exec", `[]`, kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(re.Status.Code, ShouldEqual, 0)
 
 	})
 }
