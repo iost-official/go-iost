@@ -19,12 +19,17 @@ import (
 
 // Isolator new entrance instead of Engine
 type Isolator struct {
-	h            *host.Host
-	publisherID  string
-	t            *tx.Tx
-	tr           *tx.TxReceipt
-	blockBaseCtx *host.Context
-	genesisMode  bool
+	h             *host.Host
+	publisherID   string
+	t             *tx.Tx
+	tr            *tx.TxReceipt
+	blockBaseCtx  *host.Context
+	genesisMode   bool
+	blockBaseMode bool
+}
+
+func (e *Isolator) TriggerBlockBaseMode() {
+	e.blockBaseMode = true
 }
 
 // Prepare Isolator
@@ -52,7 +57,7 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	l := len(t.Encode())
 	e.h.PayCost(contract.NewCost(0, int64(l), 0), t.Publisher)
 
-	if !e.genesisMode {
+	if !e.genesisMode && !e.blockBaseMode {
 		err := checkTxParams(t)
 		if err != nil {
 			return err
@@ -230,6 +235,7 @@ func (e *Isolator) ClearAll() {
 func (e *Isolator) ClearTx() {
 	e.h.SetContext(e.blockBaseCtx)
 	e.h.Context().GClear()
+	e.blockBaseMode = false
 }
 func checkTxParams(t *tx.Tx) error {
 	if t.GasPrice < 100 || t.GasPrice > 10000 {
