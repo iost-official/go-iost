@@ -221,6 +221,7 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, newHea
 		return fmt.Errorf("failed to add findBlock: %v", err)
 	}
 	typeOfFork := pool.updateForkChain(newHead)
+	ilog.Info(typeOfFork)
 	switch typeOfFork {
 	case forkBCN:
 		pool.mu.Lock()
@@ -486,6 +487,7 @@ func (pool *TxPImpl) doChainChangeByForkBCN() {
 	newHead := pool.forkChain.NewHead
 	oldHead := pool.forkChain.OldHead
 	forkBCN := pool.forkChain.ForkBCN
+	ilog.Info("here", oldHead, newHead)
 	//add txs
 	filterLimit := time.Now().UnixNano() - filterTime
 	for {
