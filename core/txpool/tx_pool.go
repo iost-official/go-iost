@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -335,10 +334,6 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	}
 
 	return nil
-}
-
-func slotToNSec(t int64) int64 {
-	return common.SlotLength * t * int64(time.Second)
 }
 
 func (pool *TxPImpl) addBlock(blk *block.Block) error {
