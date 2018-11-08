@@ -1,54 +1,24 @@
 package itest
 
 import (
-	"encoding/json"
-
 	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/crypto"
-	log "github.com/sirupsen/logrus"
+	"github.com/iost-official/go-iost/core/tx"
 )
 
 type Account struct {
-	ID  string
-	key *account.KeyPair
+	ID      string
+	Balance int64
+	key     *Key
 }
 
-type Key struct {
-	*account.KeyPair
-}
-
-type KeyJSON struct {
-	Seckey    []byte           `json:"seckey"`
-	Algorithm crypto.Algorithm `json:"algorithm"`
-}
-
-func NewKey(algo crypto.Algorithm) *Key {
-	keypair, err := account.NewKeyPair(nil, algo)
+func (a *Account) Sign(t *Transaction) (*Transaction, error) {
+	st, err := tx.SignTx(t.Tx, a.ID, []*account.KeyPair{a.key.KeyPair})
 	if err != nil {
-		log.Fatalf("Create key pair failed: %v", err)
+		return nil, err
 	}
-	return &Key{
-		KeyPair: keypair,
-	}
-}
 
-func (k *Key) UnmarshalJSON(b []byte) error {
-	aux := &KeyJSON{}
-	err := json.Unmarshal(b, aux)
-	if err != nil {
-		return err
+	transaction := &Transaction{
+		Tx: st,
 	}
-	k.KeyPair, err = account.NewKeyPair(aux.Seckey, aux.Algorithm)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (k *Key) MarshalJSON() ([]byte, error) {
-	aux := &KeyJSON{
-		Seckey:    k.KeyPair.Seckey,
-		Algorithm: k.KeyPair.Algorithm,
-	}
-	return json.Marshal(aux)
+	return transaction, nil
 }

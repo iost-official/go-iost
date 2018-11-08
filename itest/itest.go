@@ -1,12 +1,7 @@
 package itest
 
 import (
-	"context"
-	"fmt"
 	"math/rand"
-
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/rpc"
 )
 
 type ITest struct {
@@ -24,65 +19,17 @@ func New(bank *Account, keys []*Key, clients []*Client) *ITest {
 }
 
 func (t *ITest) CreateAccount(name string) (*Account, error) {
-	index := rand.Intn(len(t.keys))
-	key := t.keys[index]
+	kIndex := rand.Intn(len(t.keys))
+	key := t.keys[kIndex]
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
 
-	action1 := tx.NewAction(
-		"iost.auth",
-		"SignUp",
-		fmt.Sprintf(
-			`["%v", "%v", "%v"]`,
-			name,
-			key.ID,
-			key.ID,
-		),
-	)
-
-	action2 := tx.NewAction(
-		"iost.auth",
-		"SignUp",
-		fmt.Sprintf(
-			`["%v", "%v", "%v"]`,
-			name,
-			key.ID,
-			key.ID,
-		),
-	)
-
-	actions := []*tx.Action{&action1, &action2}
-	signers := []string{t.bank.ID}
-	transaction := NewTransaction(actions, signers)
-	_, err := t.SendTransaction(transaction)
+	account, err := client.CreateAccount(name, key, t.bank)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Check transaction by hash
-
-	return t.GetAccount(name)
-}
-
-func (t *ITest) GetAccount(name string) (*Account, error) {
-	index := rand.Intn(len(t.clients))
-	grpc, err := t.clients[index].GetGRPC()
-	if err != nil {
-		return nil, err
-	}
-
-	_, err := grpc.GetAccountInfo(
-		context.Background(),
-		&rpc.GetAccountReq{
-			ID:              name,
-			UseLongestChain: true,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: Check account by resp
-
-	return nil, nil
+	return account, nil
 }
 
 func (t *ITest) Transfer(token, sender, recipient, amount string) error {
@@ -93,22 +40,38 @@ func (t *ITest) SetContract(abi, code string) error {
 	return nil
 }
 
+func (t *ITest) GetTransaction(hash string) (*Transaction, error) {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	transaction, err := client.GetTransaction(hash)
+	if err != nil {
+		return nil, err
+	}
+
+	return transaction, nil
+}
+
+func (t *ITest) GetAccount(name string) (*Account, error) {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	account, err := client.GetAccount(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return account, nil
+}
+
 func (t *ITest) SendTransaction(transaction *Transaction) (string, error) {
-	index := rand.Intn(len(t.clients))
-	grpc, err := t.clients[index].GetGRPC()
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	hash, err := client.SendTransaction(transaction)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := grpc.SendRawTx(
-		context.Background(),
-		&rpc.RawTxReq{
-			Data: transaction.Encode(),
-		},
-	)
-	if err != nil {
-		return "", err
-	}
-
-	return resp.GetHash(), nil
+	return hash, nil
 }
