@@ -22,7 +22,7 @@ var (
 	link = &abi{
 		name: "Link",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			url := args[0].(string)
 			cid := args[1].(string)
@@ -61,7 +61,7 @@ var (
 	transferURL = &abi{
 		name: "Transfer",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			url := args[0].(string)
 			to := args[1].(string)

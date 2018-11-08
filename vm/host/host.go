@@ -14,7 +14,7 @@ import (
 
 // Monitor monitor interface
 type Monitor interface {
-	Call(host *Host, contractName, api string, jarg string) (rtn []interface{}, cost *contract.Cost, err error)
+	Call(host *Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error)
 	Compile(con *contract.Contract) (string, error)
 }
 
@@ -70,17 +70,17 @@ func (h *Host) SetContext(ctx *Context) {
 }
 
 // Call  call a new contract in this context
-func (h *Host) Call(contract, api, jarg string, withAuth ...bool) ([]interface{}, *contract.Cost, error) {
+func (h *Host) Call(cont, api, jarg string, withAuth ...bool) ([]interface{}, contract.Cost, error) {
 
 	// save stack
-	record := contract + "-" + api
+	record := cont + "-" + api
 
 	height := h.ctx.Value("stack_height").(int)
 
 	for i := 0; i < height; i++ {
 		key := "stack" + strconv.Itoa(i)
 		if h.ctx.Value(key).(string) == record {
-			return nil, nil, ErrReenter
+			return nil, contract.Cost{}, ErrReenter
 		}
 	}
 
@@ -97,7 +97,7 @@ func (h *Host) Call(contract, api, jarg string, withAuth ...bool) ([]interface{}
 
 	h.ctx.Set("stack_height", height+1)
 	h.ctx.Set(key, record)
-	rtn, cost, err := h.monitor.Call(h, contract, api, jarg)
+	rtn, cost, err := h.monitor.Call(h, cont, api, jarg)
 	cost.AddAssign(CommonOpCost(height))
 
 	h.ctx = h.ctx.Base()
@@ -106,12 +106,12 @@ func (h *Host) Call(contract, api, jarg string, withAuth ...bool) ([]interface{}
 }
 
 // CallWithAuth  call a new contract with permission of current contract
-func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, *contract.Cost, error) {
+func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, contract.Cost, error) {
 	return h.Call(contract, api, jarg, true)
 }
 
 // CallWithReceipt call and generate receipt
-func (h *Host) CallWithReceipt(contractName, api, jarg string) ([]interface{}, *contract.Cost, error) {
+func (h *Host) CallWithReceipt(contractName, api, jarg string) ([]interface{}, contract.Cost, error) {
 	rtn, cost, err := h.Call(contractName, api, jarg)
 
 	var sarr []interface{}
@@ -134,7 +134,7 @@ func (h *Host) CallWithReceipt(contractName, api, jarg string) ([]interface{}, *
 }
 
 // SetCode set code to storage
-func (h *Host) SetCode(c *contract.Contract, owner string) (*contract.Cost, error) {
+func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error) {
 	code, err := h.monitor.Compile(c)
 	if err != nil {
 		return CompileErrCost, err
@@ -142,9 +142,8 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (*contract.Cost, erro
 	c.Code = code
 
 	initABI := contract.ABI{
-		Name:    "init",
-		Payment: 0,
-		Args:    []string{},
+		Name: "init",
+		Args: []string{},
 	}
 
 	c.Info.Abi = append(c.Info.Abi, &initABI)
@@ -160,7 +159,7 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (*contract.Cost, erro
 }
 
 // UpdateCode update code
-func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*contract.Cost, error) {
+func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (contract.Cost, error) {
 	oc := h.db.Contract(c.ID)
 	if oc == nil {
 		return ContractNotFoundCost, ErrContractNotFound
@@ -202,7 +201,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 }
 
 // DestroyCode delete code
-func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
+func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 	// todo free kv
 
 	oc := h.db.Contract(contractName)
@@ -238,7 +237,7 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 }
 
 // CancelDelaytx deletes delaytx hash.
-func (h *Host) CancelDelaytx(txHash string) (*contract.Cost, error) {
+func (h *Host) CancelDelaytx(txHash string) (contract.Cost, error) {
 
 	if !h.db.HasDelaytx(txHash) {
 		return DelaytxNotFoundCost, ErrDelaytxNotFound

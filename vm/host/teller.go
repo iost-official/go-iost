@@ -18,14 +18,14 @@ const (
 // Teller handler of iost
 type Teller struct {
 	h    *Host
-	cost map[string]*contract.Cost
+	cost map[string]contract.Cost
 }
 
 // NewTeller new teller
 func NewTeller(h *Host) Teller {
 	return Teller{
 		h:    h,
-		cost: make(map[string]*contract.Cost),
+		cost: make(map[string]contract.Cost),
 	}
 }
 
@@ -56,7 +56,7 @@ func (h *Teller) TransferRawNew(from, to string, amount int64) error {
 }
 
 // GetBalance return balance of an id
-func (h *Teller) GetBalance(from string) (string, *contract.Cost, error) {
+func (h *Teller) GetBalance(from string) (string, contract.Cost, error) {
 	var bl int64
 	if strings.HasPrefix(from, "IOST") {
 		bl = h.h.db.Balance(from)
@@ -68,7 +68,7 @@ func (h *Teller) GetBalance(from string) (string, *contract.Cost, error) {
 }
 
 // GrantCoin issue coin
-func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cost, error) {
+func (h *Teller) GrantCoin(coinName, to string, amountStr string) (contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
@@ -82,7 +82,7 @@ func (h *Teller) GrantCoin(coinName, to string, amountStr string) (*contract.Cos
 }
 
 // ConsumeCoin consume coin from
-func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *contract.Cost, err error) {
+func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost contract.Cost, err error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
@@ -99,7 +99,7 @@ func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost *con
 }
 
 // GrantServi ...
-func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error) {
+func (h *Teller) GrantServi(to string, amountStr string) (contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
@@ -113,7 +113,7 @@ func (h *Teller) GrantServi(to string, amountStr string) (*contract.Cost, error)
 }
 
 // ConsumeServi ...
-func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cost, err error) {
+func (h *Teller) ConsumeServi(from string, amountStr string) (cost contract.Cost, err error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
@@ -130,7 +130,7 @@ func (h *Teller) ConsumeServi(from string, amountStr string) (cost *contract.Cos
 }
 
 // TotalServi ...
-func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
+func (h *Teller) TotalServi() (ts string, cost contract.Cost) {
 	fpn := common.Fixed{Value: h.h.db.TotalServi(), Decimal: 8}
 	ts = fpn.ToString()
 	cost = GetCost
@@ -138,7 +138,7 @@ func (h *Teller) TotalServi() (ts string, cost *contract.Cost) {
 }
 
 // Transfer ...
-func (h *Teller) Transfer(from, to string, amountStr string) (*contract.Cost, error) {
+func (h *Teller) Transfer(from, to string, amountStr string) (contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
 		return CommonErrorCost(1), ErrTransferNegValue
@@ -159,36 +159,36 @@ func (h *Teller) Transfer(from, to string, amountStr string) (*contract.Cost, er
 }
 
 // Withdraw ...
-func (h *Teller) Withdraw(to string, amountStr string) (*contract.Cost, error) {
+func (h *Teller) Withdraw(to string, amountStr string) (contract.Cost, error) {
 	c := h.h.ctx.Value("contract_name").(string)
 	return h.Transfer(ContractAccountPrefix+c, to, amountStr)
 }
 
 // Deposit ...
-func (h *Teller) Deposit(from string, amountStr string) (*contract.Cost, error) {
+func (h *Teller) Deposit(from string, amountStr string) (contract.Cost, error) {
 	c := h.h.ctx.Value("contract_name").(string)
 	return h.Transfer(from, ContractAccountPrefix+c, amountStr)
 
 }
 
 // TopUp ...
-func (h *Teller) TopUp(c, from string, amountStr string) (*contract.Cost, error) {
+func (h *Teller) TopUp(c, from string, amountStr string) (contract.Cost, error) {
 	return h.Transfer(from, ContractGasPrefix+c, amountStr)
 }
 
 // Countermand ...
-func (h *Teller) Countermand(c, to string, amountStr string) (*contract.Cost, error) {
+func (h *Teller) Countermand(c, to string, amountStr string) (contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	return TransferCost, h.TransferRaw(ContractGasPrefix+c, to, amount.Value)
 }
 
 // Costs ...
-func (h *Teller) Costs() map[string]*contract.Cost {
+func (h *Teller) Costs() map[string]contract.Cost {
 	return h.cost
 }
 
 // PayCost ...
-func (h *Teller) PayCost(c *contract.Cost, who string) {
+func (h *Teller) PayCost(c contract.Cost, who string) {
 	if oc, ok := h.cost[who]; ok {
 		oc.AddAssign(c)
 		h.cost[who] = oc

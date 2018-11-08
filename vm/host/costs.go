@@ -30,26 +30,26 @@ var (
 )
 
 // EventCost return cost based on event size
-func EventCost(size int) *contract.Cost {
-	return contract.NewCost(0, int64(size/100), 1)
+func EventCost(size int) contract.Cost {
+	return contract.NewCost(0, int64(size), 1)
 }
 
 // ReceiptCost based on receipt size
-func ReceiptCost(size int) *contract.Cost {
+func ReceiptCost(size int) contract.Cost {
 	return EventCost(size)
 }
 
 // CodeSavageCost cost in deploy contract based on code size
-func CodeSavageCost(size int) *contract.Cost {
+func CodeSavageCost(size int) contract.Cost {
 	return EventCost(size)
 }
 
 // CommonErrorCost returns cost increased by stack layer
-func CommonErrorCost(layer int) *contract.Cost {
+func CommonErrorCost(layer int) contract.Cost {
 	return contract.NewCost(0, 0, int64(layer*10))
 }
 
 // CommonOpCost returns cost increased by stack layer
-func CommonOpCost(layer int) *contract.Cost {
+func CommonOpCost(layer int) contract.Cost {
 	return contract.NewCost(0, 0, int64(layer*10))
 }
