@@ -63,7 +63,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 		if err != nil {
 			ilog.Errorf("fail to exec trx, err:%v", err)
 		}
-		if receipt.Status.Code != tx.Success {
+		if receipt.Status.Code != tx.Success { //rt is nil
 			ilog.Errorf("status code: %v", receipt.Status.Code)
 		}
 		blk.Txs = append(blk.Txs, trx)
