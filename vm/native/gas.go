@@ -66,7 +66,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 		// unpledge should not change current generated gas
 		gasDelta.Value = 0
 	}
-	fmt.Printf("limitd rated gasd %v %v %v\n", limitDelta, rateDelta, gasDelta)
+	//fmt.Printf("limitd rated gasd %v %v %v\n", limitDelta, rateDelta, gasDelta)
 
 	// pledge first time
 	if h.DB().GasHandler.GasUpdateTime(name) == 0 {

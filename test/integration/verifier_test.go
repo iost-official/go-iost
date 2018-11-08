@@ -56,7 +56,7 @@ func TestSetCode(t *testing.T) {
 		So(cname, ShouldStartWith, "Contract")
 
 		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(9956000000000))
-		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(62))
+		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldBeBetweenOrEqual, int64(62), int64(63))
 
 		r, err := s.Call(cname, "hello", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
