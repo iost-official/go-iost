@@ -110,20 +110,6 @@ var (
 			return []interface{}{}, cost, err
 		},
 	}
-<<<<<<< HEAD
-=======
-	issueIOST = &abi{
-		name: "IssueIOST",
-		args: []string{"string", "number"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			if h.Context().Value("number").(int64) != 0 {
-				return []interface{}{}, contract.Cost0(), errors.New("issue IOST in normal block")
-			}
-			h.DB().SetBalance(args[0].(string), args[1].(int64))
-			return []interface{}{}, contract.Cost0(), nil
-		},
-	}
->>>>>>> 130d2b9d11e9c07f006a6c8add68838d1697bd77
 
 	// initSetCode can only be invoked in genesis block, use specific id for deploying contract
 	initSetCode = &abi{

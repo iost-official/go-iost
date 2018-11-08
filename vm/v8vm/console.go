@@ -15,29 +15,29 @@ var (
 )
 
 //export goConsoleLog
-func goConsoleLog(cSbx C.SandboxPtr, logLevel, logDetail *C.char) int {
+func goConsoleLog(cSbx C.SandboxPtr, logLevel, logDetail *C.char) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	levelStr := C.GoString(logLevel)
 	detailStr := C.GoString(logDetail)
 
 	if sbx.host.Logger() == nil {
-		return C.Cstring(ErrConsoleNoLogger.Error())
+		return C.CString(ErrConsoleNoLogger.Error())
 	}
 
 	loggerVal := reflect.ValueOf(sbx.host.Logger())
 	loggerFunc := loggerVal.MethodByName(levelStr)
 
 	if !loggerFunc.IsValid() {
-		return C.Cstring(ErrConsoleInvalidLogLevel.Error())
+		return C.CString(ErrConsoleInvalidLogLevel.Error())
 	}
 
 	loggerFunc.Call([]reflect.Value{
 		reflect.ValueOf(detailStr),
 	})
 
-	return C.Cstring(MessageSuccess)
+	return C.CString(MessageSuccess)
 }

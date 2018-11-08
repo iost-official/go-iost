@@ -19,7 +19,7 @@ var ErrInvalidDbValType = errors.New("invalid db value type")
 func goPut(cSbx C.SandboxPtr, key, val, owner *C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	k := C.GoString(key)
@@ -35,14 +35,14 @@ func goPut(cSbx C.SandboxPtr, key, val, owner *C.char, gasUsed *C.size_t) *C.cha
 	}
 	*gasUsed = C.size_t(cost.CPU)
 
-	return C.Cstring(MessageSuccess)
+	return nil
 }
 
 //export goHas
 func goHas(cSbx C.SandboxPtr, key, owner *C.char, result *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	k := C.GoString(key)
@@ -59,14 +59,14 @@ func goHas(cSbx C.SandboxPtr, key, owner *C.char, result *C.bool, gasUsed *C.siz
 	*gasUsed = C.size_t(cost.CPU)
 	*result = C.bool(ret)
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goGet
 func goGet(cSbx C.SandboxPtr, key, owner *C.char, result **C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	k := C.GoString(key)
@@ -83,23 +83,23 @@ func goGet(cSbx C.SandboxPtr, key, owner *C.char, result **C.char, gasUsed *C.si
 	*gasUsed = C.size_t(cost.CPU)
 	if val == nil {
 		*result = nil
-		return C.Cstring(MessageSuccess)
+		return nil
 	}
 
 	valStr, err := dbValToString(val)
 	if err != nil {
-		return C.Cstring(err.Error())
+		return C.CString(err.Error())
 	}
 	*result = C.CString(valStr)
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goDel
 func goDel(cSbx C.SandboxPtr, key, owner *C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	k := C.GoString(key)
@@ -113,14 +113,14 @@ func goDel(cSbx C.SandboxPtr, key, owner *C.char, gasUsed *C.size_t) *C.char {
 	}
 	*gasUsed = C.size_t(cost.CPU)
 
-	return C.Cstring(MessageSuccess)
+	return nil
 }
 
 //export goMapPut
 func goMapPut(cSbx C.SandboxPtr, key, field, val, owner *C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	k := C.GoString(key)
@@ -136,14 +136,14 @@ func goMapPut(cSbx C.SandboxPtr, key, field, val, owner *C.char, gasUsed *C.size
 	}
 	*gasUsed = C.size_t(cost.CPU)
 
-	return C.Cstring(MessageSuccess)
+	return nil
 }
 
 //export goMapHas
 func goMapHas(cSbx C.SandboxPtr, key, field, owner *C.char, result *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	k := C.GoString(key)
@@ -160,14 +160,14 @@ func goMapHas(cSbx C.SandboxPtr, key, field, owner *C.char, result *C.bool, gasU
 	*gasUsed = C.size_t(cost.CPU)
 	*result = C.bool(ret)
 
-	return C.Cstring(MessageSuccess)
+	return nil
 }
 
 //export goMapGet
 func goMapGet(cSbx C.SandboxPtr, key, field, owner *C.char, result **C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	k := C.GoString(key)
@@ -185,19 +185,19 @@ func goMapGet(cSbx C.SandboxPtr, key, field, owner *C.char, result **C.char, gas
 
 	if val == nil {
 		*result = nil
-		return C.Cstring(MessageSuccess)
+		return nil
 	}
 	valStr, _ := dbValToString(val)
-	*result = C.Cstring(valStr)
+	*result = C.CString(valStr)
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goMapDel
 func goMapDel(cSbx C.SandboxPtr, key, field, owner *C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	k := C.GoString(key)
@@ -213,14 +213,14 @@ func goMapDel(cSbx C.SandboxPtr, key, field, owner *C.char, gasUsed *C.size_t) *
 
 	*gasUsed = C.size_t(cost.CPU)
 
-	return C.Cstring(MessageSuccess)
+	return nil
 }
 
 //export goMapKeys
 func goMapKeys(cSbx C.SandboxPtr, key, owner *C.char, result **C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	k := C.GoString(key)
@@ -235,20 +235,20 @@ func goMapKeys(cSbx C.SandboxPtr, key, owner *C.char, result **C.char, gasUsed *
 	}
 	j, err := json.Marshal(fstr)
 	if err != nil {
-		return C.Cstring(err.Error())
+		return C.CString(err.Error())
 	}
 	//fmt.Println("storage145", fstr)
 	*gasUsed = C.size_t(cost.CPU)
-	*result = C.Cstring(string(j))
+	*result = C.CString(string(j))
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goMapLen
 func goMapLen(cSbx C.SandboxPtr, key, owner *C.char, result *C.size_t, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	k := C.GoString(key)
@@ -264,14 +264,14 @@ func goMapLen(cSbx C.SandboxPtr, key, owner *C.char, result *C.size_t, gasUsed *
 	*gasUsed = C.size_t(cost.CPU)
 	*result = C.size_t(len)
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goGlobalHas
 func goGlobalHas(cSbx C.SandboxPtr, contractName, key, owner *C.char, result *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	c := C.GoString(contractName)
@@ -289,14 +289,14 @@ func goGlobalHas(cSbx C.SandboxPtr, contractName, key, owner *C.char, result *C.
 	*gasUsed = C.size_t(cost.CPU)
 	*result = C.bool(ret)
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goGlobalGet
 func goGlobalGet(cSbx C.SandboxPtr, contractName, key, owner *C.char, result **C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	c := C.GoString(contractName)
@@ -315,19 +315,19 @@ func goGlobalGet(cSbx C.SandboxPtr, contractName, key, owner *C.char, result **C
 
 	if val == nil {
 		*result = nil
-		return C.Cstring(MessageSuccess)
+		return nil
 	}
 	valStr, _ := dbValToString(val)
-	*result = C.Cstring(valStr)
+	*result = C.CString(valStr)
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goGlobalMapHas
 func goGlobalMapHas(cSbx C.SandboxPtr, contractName, key, field, owner *C.char, result *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	c := C.GoString(contractName)
@@ -345,14 +345,14 @@ func goGlobalMapHas(cSbx C.SandboxPtr, contractName, key, field, owner *C.char, 
 	*gasUsed = C.size_t(cost.CPU)
 	*result = C.bool(ret)
 
-	return C.Cstring(MessageSuccess)
+	return nil
 }
 
 //export goGlobalMapGet
 func goGlobalMapGet(cSbx C.SandboxPtr, contractName, key, field, owner *C.char, result **C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	c := C.GoString(contractName)
@@ -371,19 +371,19 @@ func goGlobalMapGet(cSbx C.SandboxPtr, contractName, key, field, owner *C.char, 
 
 	if val == nil {
 		*result = nil
-		return C.Cstring(MessageSuccess)
+		return nil
 	}
 	valStr, _ := dbValToString(val)
-	*result = C.Cstring(valStr)
+	*result = C.CString(valStr)
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goGlobalMapKeys
 func goGlobalMapKeys(cSbx C.SandboxPtr, contractName, key, owner *C.char, result **C.char, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	c := C.GoString(contractName)
@@ -399,19 +399,19 @@ func goGlobalMapKeys(cSbx C.SandboxPtr, contractName, key, owner *C.char, result
 	}
 	j, err := json.Marshal(fstr)
 	if err != nil {
-		return C.Cstring(err.Error())
+		return C.CString(err.Error())
 	}
 	*gasUsed = C.size_t(cost.CPU)
-	*result = C.Cstring(string(j))
+	*result = C.CString(string(j))
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goGlobalMapLen
 func goGlobalMapLen(cSbx C.SandboxPtr, contractName, key, owner *C.char, result *C.size_t, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return C.Cstring(ErrGetSandbox.Error())
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	c := C.GoString(contractName)
@@ -428,7 +428,7 @@ func goGlobalMapLen(cSbx C.SandboxPtr, contractName, key, owner *C.char, result 
 	*gasUsed = C.size_t(cost.CPU)
 	*result = C.size_t(len)
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 func dbValToString(val interface{}) (string, error) {

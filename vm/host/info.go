@@ -48,7 +48,7 @@ func (h *Info) ContractName() (name string, cost contract.Cost) {
 }
 
 // ContextInfo get context info
-func (h *Info) ContextInfo() (info database.SerializedJSON, cost *contract.Cost) {
+func (h *Info) ContextInfo() (info database.SerializedJSON, cost contract.Cost) {
 	ctxInfo := make(map[string]interface{})
 
 	ctxInfo["contract_name"] = h.h.ctx.Value("contract_name")
