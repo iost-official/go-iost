@@ -23,7 +23,7 @@ class Base {
     }
 
     _vote() {
-        BlockChain.call("iost.vote", "Stat", `[]`);
+        BlockChain.call("iost.vote_producer", "Stat", `[]`);
     }
 
     // The first contract executed

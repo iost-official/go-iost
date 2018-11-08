@@ -1,6 +1,7 @@
 package genesis
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,6 +34,15 @@ func GenGenesisByFile(db db.MVCCDB, path string) (*block.Block, error) {
 	return GenGenesis(db, genesisConfig)
 }
 
+func compile(id string, path string, name string) (*contract.Contract, error) {
+	if id == "" || path == "" || name == "" {
+		return nil, errors.New("arguments is error")
+	}
+	cFilePath := filepath.Join(path, name)
+	cAbiPath := filepath.Join(path, name+".abi")
+	return contract.Compile(id, cFilePath, cAbiPath)
+}
+
 func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error) {
 	witnessInfo := gConf.WitnessInfo
 	// new account
@@ -45,10 +55,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	var acts []*tx.Action
 
 	// deploy iost.account
-	accountFilePath := filepath.Join(gConf.ContractPath, "account.js")
-	accountAbiPath := filepath.Join(gConf.ContractPath, "account.js.abi")
-	code, err := contract.Compile("iost.auth", accountFilePath, accountAbiPath)
-
+	code, err := compile("iost.auth", gConf.ContractPath, "account.js")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -76,18 +83,30 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	acts = append(acts, tx.NewAction("iost.token", "issue", fmt.Sprintf(`["iost", "%v", "%v"]`, initAccountID, adminInfo.Balance)))
 
 	// deploy iost.vote
-	voteFilePath := filepath.Join(gConf.ContractPath, "vote.js")
-	voteAbiPath := filepath.Join(gConf.ContractPath, "vote.js.abi")
-	code, err = contract.Compile("iost.vote", voteFilePath, voteAbiPath)
+	code, err = compile("iost.vote", gConf.ContractPath, "vote_common.js")
 	if err != nil {
 		return nil, nil, err
 	}
 	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode())))
 
-	for _, v := range witnessInfo {
-		acts = append(acts, tx.NewAction("iost.vote", "InitProducer", fmt.Sprintf(`["%v"]`, v.Owner)))
+	// deploy iost.vote_producer
+	code, err = compile("iost.vote_producer", gConf.ContractPath, "vote.js")
+	if err != nil {
+		return nil, nil, err
 	}
-	acts = append(acts, tx.NewAction("iost.vote", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
+	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote_producer", code.B64Encode())))
+
+	// deploy iost.base
+	code, err = compile("iost.base", gConf.ContractPath, "base.js")
+	if err != nil {
+		return nil, nil, err
+	}
+	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.base", code.B64Encode())))
+
+	for _, v := range witnessInfo {
+		acts = append(acts, tx.NewAction("iost.vote_producer", "InitProducer", fmt.Sprintf(`["%v"]`, v.Owner)))
+	}
+	acts = append(acts, tx.NewAction("iost.vote_producer", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy iost.bonus
 	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", native.BonusABI().B64Encode())))
