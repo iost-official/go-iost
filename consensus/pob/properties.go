@@ -48,6 +48,10 @@ var (
 	second2nanosecond int64 = 1000000000
 )
 
+func witnessOfNanoSec(nanosec int64) string {
+	return witnessOfSec(nanosec / second2nanosecond)
+}
+
 func witnessOfSec(sec int64) string {
 	return witnessOfSlot(sec / common.SlotLength)
 }
