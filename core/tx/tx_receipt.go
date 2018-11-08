@@ -158,6 +158,7 @@ func (r *TxReceipt) Encode() []byte {
 func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) *TxReceipt {
 	r.TxHash = tr.TxHash
 	r.GasUsage = tr.GasUsage
+	r.RAMUsage = tr.RamUsage
 	s := &Status{}
 	r.Status = s.FromPb(tr.Status)
 	for _, rt := range tr.Returns {
