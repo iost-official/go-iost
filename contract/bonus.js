@@ -1,4 +1,4 @@
-const slotLength = 3;
+const secondToNano = 1e9;
 const activePermission = "active";
 const totalSupply = 9 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000;
 
@@ -71,7 +71,7 @@ class BonusContract {
     }
 
     _getBlockTime() {
-        return this._getBlockInfo().time;
+        return Math.floor(this._getBlockInfo().time / secondToNano);
     }
 
     _get(k) {
@@ -145,8 +145,7 @@ class BonusContract {
 
         const lastExchangeTime = this._get(account) || 0;
         const currentTime = this._getBlockTime();
-        if (lastExchangeTime !== undefined
-            && slotLength * (currentTime - lastExchangeTime) < 86400) {
+        if (currentTime - lastExchangeTime < 86400) {
             throw new Error("last exchange less than one day.");
         }
 
