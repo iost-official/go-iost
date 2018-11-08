@@ -638,7 +638,7 @@ func TestJS_Genesis(t *testing.T) {
 		ParentHash: nil,
 		Number:     0,
 		Witness:    acc.ID,
-		Time:       time.Now().Unix() / common.SlotLength,
+		Time:       time.Now().UnixNano(),
 	}
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	defer closeMVCCDB(mvccdb)

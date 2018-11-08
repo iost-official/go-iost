@@ -14,7 +14,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func Test_Isue(t *testing.T) {
+func Test_IOSTIssue(t *testing.T) {
 	ilog.Stop()
 	Convey("test iost.issue", t, func() {
 		s := NewSimulator()
@@ -59,7 +59,7 @@ func Test_Isue(t *testing.T) {
 		})
 
 		Convey("test IssueIOST", func() {
-			s.Head.Time += 4
+			s.Head.Time += 4 * 3 * 1e9
 			r, err := s.Call("iost.issue", "IssueIOST", `[]`, kp.ID, kp)
 			s.Visitor.Commit()
 
@@ -71,14 +71,14 @@ func Test_Isue(t *testing.T) {
 		})
 
 		Convey("test IssueRAM", func() {
-			s.Head.Time += 28801
+			s.Head.Time += 28801 * 3 * 1e9
 
 			r, err := s.Call("iost.issue", "IssueRAM", `[]`, kp.ID, kp)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.Visitor.TokenBalance("ram", "iost.pledge"), ShouldEqual, int64(128+6538*28801))
+			So(s.Visitor.TokenBalance("ram", "iost.pledge"), ShouldEqual, int64(128+2179*3*28801))
 		})
 	})
 }

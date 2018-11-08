@@ -100,5 +100,5 @@ var bh = &block.BlockHead{
 	ParentHash: []byte("abc"),
 	Number:     200,
 	Witness:    "witness",
-	Time:       123460,
+	Time:       123460 * 1e9,
 }

@@ -302,7 +302,7 @@ func TestNewTxPImplB(t *testing.T) {
 				err = txPool.AddLinkedNode(bcn, bcn)
 				So(err, ShouldBeNil)
 			}
-
+			ilog.Info(txPool.testPendingTxsNum())
 			forkBlockTxCnt := 6
 			forkBlock := genSingleBlock(accountList, witnessList, blockList[1].HeadHash(), forkBlockTxCnt)
 			//ilog.Debug(("Sing hash:", forkBlock.HeadHash(), " Sing parentHash:", forkBlock.Head.ParentHash)
@@ -318,6 +318,7 @@ func TestNewTxPImplB(t *testing.T) {
 
 			// fork chain
 			err = txPool.AddLinkedNode(bcn, bcn)
+			ilog.Info(txPool.testPendingTxsNum())
 			So(err, ShouldBeNil)
 			// need delay
 			for i := 0; i < 20; i++ {
@@ -693,7 +694,6 @@ func genTxMsg(a *account.KeyPair, expirationIter int64) *p2p.IncomingMessage {
 
 func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
-	slot := common.GetCurrentTimestamp().Slot
 	var hash []byte
 
 	for i := 0; i < blockCnt; i++ {
@@ -710,7 +710,7 @@ func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt in
 				Info:       []byte(""),
 				Number:     int64(i + 1),
 				Witness:    witnessList[0],
-				Time:       slot + int64(i),
+				Time:       time.Now().UnixNano(),
 			},
 			Sign: &crypto.Signature{},
 		}
@@ -745,9 +745,6 @@ func genNodes(accountList []*account.KeyPair, witnessList []string, blockCnt int
 }
 
 func genSingleBlock(accountList []*account.KeyPair, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
-
-	slot := common.GetCurrentTimestamp().Slot
-
 	blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
 		Version:    0,
 		ParentHash: ParentHash,
@@ -755,7 +752,7 @@ func genSingleBlock(accountList []*account.KeyPair, witnessList []string, Parent
 		Info:       []byte(""),
 		Number:     int64(1),
 		Witness:    witnessList[0],
-		Time:       slot,
+		Time:       time.Now().UnixNano(),
 	}}
 
 	for i := 0; i < txCnt; i++ {

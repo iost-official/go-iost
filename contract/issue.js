@@ -1,4 +1,4 @@
-const slotLength = 3;
+const secondToNano = 1e9;
 const iostIssueRate = new BigNumber("1.0000000028119105");
 const activePermission = "active";
 const iostTotalSupply = 90 * 1000 * 1000 * 1000;
@@ -117,7 +117,7 @@ class IssueContract {
     }
 
     _getBlockTime() {
-        return this._getBlockInfo().time;
+        return Math.floor(this._getBlockInfo().time / secondToNano);
     }
 
     _get(k) {
@@ -156,7 +156,7 @@ class IssueContract {
             throw new Error("IOSTLastIssueTime not set.");
         }
         const currentTime = this._getBlockTime();
-        const gap = currentTime - lastIssueTime;
+        const gap = Math.floor((currentTime - lastIssueTime) / 3);
         if (gap <= 0) {
             return
         }
@@ -193,11 +193,11 @@ class IssueContract {
         }
         const currentTime = this._getBlockTime();
         const gap = currentTime - lastIssueTime;
-        if (gap * slotLength < 86400 /* one day */) {
+        if (gap < 86400 /* one day */) {
             return;
         }
         this._put("RAMLastIssueTime", currentTime);
-        const issueAmount = 6538 * gap;
+        const issueAmount = 2179 * gap;
         this._call("iost.token", "issue", [
             "ram",
             "iost.pledge",
