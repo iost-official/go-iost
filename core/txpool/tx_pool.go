@@ -183,7 +183,7 @@ func (pool *TxPImpl) createTxMapToChain(chainBlock *block.Block) (map[string]str
 	}
 	rm := make(map[string]struct{})
 	h := chainBlock.HeadHash()
-	t := slotToNSec(chainBlock.Head.Time)
+	t := chainBlock.Head.Time
 	var ok bool
 	for {
 		ret := pool.createTxMapToBlock(rm, h)
@@ -292,7 +292,7 @@ func (pool *TxPImpl) initBlockTx() {
 		if err != nil {
 			break
 		}
-		if slotToNSec(blk.Head.Time) < filterLimit {
+		if blk.Head.Time < filterLimit {
 			break
 		}
 		pool.addBlock(blk)
@@ -372,7 +372,7 @@ func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
 		return false
 	}
 	h := block.HeadHash()
-	filterLimit := slotToNSec(block.Head.Time) - filterTime
+	filterLimit := block.Head.Time - filterTime
 	var ok bool
 	for {
 		ret := pool.existTxInBlock(txHash, h)
@@ -400,7 +400,7 @@ func (pool *TxPImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
 }
 
 func (pool *TxPImpl) clearBlock() {
-	filterLimit := slotToNSec(pool.blockCache.LinkedRoot().Block.Head.Time) - filterTime
+	filterLimit := pool.blockCache.LinkedRoot().Block.Head.Time - filterTime
 	pool.blockList.Range(func(key, value interface{}) bool {
 		if value.(*blockTx).time < filterLimit {
 			pool.blockList.Delete(key)
@@ -489,7 +489,7 @@ func (pool *TxPImpl) doChainChangeByForkBCN() {
 	//add txs
 	filterLimit := time.Now().UnixNano() - filterTime
 	for {
-		if oldHead == nil || oldHead == forkBCN || slotToNSec(oldHead.Block.Head.Time) < filterLimit {
+		if oldHead == nil || oldHead == forkBCN || oldHead.Block.Head.Time < filterLimit {
 			break
 		}
 		for _, t := range oldHead.Block.Txs {
@@ -500,7 +500,7 @@ func (pool *TxPImpl) doChainChangeByForkBCN() {
 
 	//del txs
 	for {
-		if newHead == nil || newHead == forkBCN || slotToNSec(newHead.Block.Head.Time) < filterLimit {
+		if newHead == nil || newHead == forkBCN || newHead.Block.Head.Time < filterLimit {
 			break
 		}
 		for _, t := range newHead.Block.Txs {
