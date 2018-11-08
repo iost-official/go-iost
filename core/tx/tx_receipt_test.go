@@ -40,6 +40,9 @@ func TestTxReceipt(t *testing.T) {
 				FuncName: "iost.token/transfer",
 				Content:  "{\"num\": 1, \"message\": \"contract1\"}",
 			})
+			tx.RAMUsage = map[string]int64{
+				"aaa": 1111,
+			}
 			tx1 := NewTxReceipt([]byte{})
 
 			encode := tx.Encode()
