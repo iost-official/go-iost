@@ -18,21 +18,21 @@ var (
 	constructor = &abi{
 		name: "constructor",
 		args: []string{},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			return []interface{}{}, host.CommonErrorCost(1), nil
 		},
 	}
 	initFunc = &abi{
 		name: "init",
 		args: []string{},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			return []interface{}{}, host.CommonErrorCost(1), nil
 		},
 	}
 	claimBonus = &abi{
 		name: "ClaimBonus",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			acc := args[0].(string)
 			amount := args[1].(string)

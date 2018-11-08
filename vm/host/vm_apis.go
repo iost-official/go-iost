@@ -33,7 +33,7 @@ func (h *APIDelegate) receipt(s string) {
 }
 
 // Receipt ...
-func (h *APIDelegate) Receipt(s string) *contract.Cost {
+func (h *APIDelegate) Receipt(s string) contract.Cost {
 	h.receipt(s)
 	return ReceiptCost(len(s))
 }

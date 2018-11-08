@@ -5,8 +5,6 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	txpb "github.com/iost-official/go-iost/core/tx/pb"
-
-	"github.com/golang/protobuf/proto"
 )
 
 // StatusCode status code of transaction execution result
@@ -139,7 +137,7 @@ func (r *TxReceipt) ToPb() *txpb.TxReceipt {
 
 // Encode TxReceipt as byte array
 func (r *TxReceipt) Encode() []byte {
-	b, err := proto.Marshal(r.ToPb())
+	b, err := r.ToPb().Marshal()
 	if err != nil {
 		panic(err)
 	}

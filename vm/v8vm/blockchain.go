@@ -24,7 +24,7 @@ func goBlockInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
 	}
 
 	blkInfo, cost := sbx.host.BlockInfo()
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 	*info = C.CString(string(blkInfo))
 
 	return C.Cstring(MessageSuccess)
@@ -38,7 +38,7 @@ func goTxInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
 	}
 
 	txInfo, cost := sbx.host.TxInfo()
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 	*info = C.CString(string(txInfo))
 
 	return C.Cstring(MessageSuccess)
@@ -52,7 +52,7 @@ func goContextInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char 
 	}
 
 	ctxInfo, cost := sbx.host.ContextInfo()
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 	*info = C.CString(string(ctxInfo))
 
 	return C.Cstring(MessageSuccess)
@@ -70,7 +70,7 @@ func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gas
 	argsStr := C.GoString(args)
 
 	callRs, cost, err := sbx.host.Call(contractStr, apiStr, argsStr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 	if err != nil {
 		return C.Cstring(err.Error())
 	}
@@ -97,7 +97,7 @@ func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.c
 	argsStr := C.GoString(args)
 
 	callRs, cost, err := sbx.host.CallWithAuth(contractStr, apiStr, argsStr)
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 	if err != nil {
 		return C.Cstring(err.Error())
 	}
@@ -126,7 +126,7 @@ func goRequireAuth(cSbx C.SandboxPtr, ID *C.char, permission *C.char, ok *C.bool
 
 	*ok = C.bool(callOk)
 
-	*gasUsed = C.size_t(RequireAuthCost.Data)
+	*gasUsed = C.size_t(RequireAuthCost.CPU)
 
 	return C.Cstring(MessageSuccess)
 }
@@ -142,7 +142,7 @@ func goReceipt(cSbx C.SandboxPtr, content *C.char, gasUsed *C.size_t) *C.char {
 
 	cost := sbx.host.Receipt(contentStr)
 
-	*gasUsed = C.size_t(cost.Data)
+	*gasUsed = C.size_t(cost.CPU)
 
 	return C.Cstring(MessageSuccess)
 }

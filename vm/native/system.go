@@ -26,7 +26,7 @@ var (
 	requireAuth = &abi{
 		name: "RequireAuth",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			var b bool
 			b, cost = h.RequireAuth(args[0].(string), args[1].(string))
 			rtn = []interface{}{
@@ -38,7 +38,7 @@ var (
 	receipt = &abi{
 		name: "Receipt",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = h.Receipt(args[0].(string))
 			return []interface{}{}, cost, nil
 		},
@@ -47,7 +47,7 @@ var (
 	setCode = &abi{
 		name: "SetCode",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost = contract.Cost0()
 			con := &contract.Contract{}
@@ -72,8 +72,13 @@ var (
 			actID := "Contract" + id
 			con.ID = actID
 
-			cost2, err := h.SetCode(con)
+			publisher := h.Context().Value("publisher").(string)
+			cost2, err := h.SetCode(con, publisher)
 			cost.AddAssign(cost2)
+
+			cost2 = h.MapPut("contract_owner", actID, publisher)
+			cost.AddAssign(cost2)
+
 			return []interface{}{actID}, cost, err
 		},
 	}
@@ -81,7 +86,7 @@ var (
 	updateCode = &abi{
 		name: "UpdateCode",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			con := &contract.Contract{}
 			err = con.B64Decode(args[0].(string))
@@ -99,18 +104,32 @@ var (
 	destroyCode = &abi{
 		name: "DestroyCode",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost, err = h.DestroyCode(args[0].(string))
 			return []interface{}{}, cost, err
 		},
 	}
+<<<<<<< HEAD
+=======
+	issueIOST = &abi{
+		name: "IssueIOST",
+		args: []string{"string", "number"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			if h.Context().Value("number").(int64) != 0 {
+				return []interface{}{}, contract.Cost0(), errors.New("issue IOST in normal block")
+			}
+			h.DB().SetBalance(args[0].(string), args[1].(int64))
+			return []interface{}{}, contract.Cost0(), nil
+		},
+	}
+>>>>>>> 130d2b9d11e9c07f006a6c8add68838d1697bd77
 
 	// initSetCode can only be invoked in genesis block, use specific id for deploying contract
 	initSetCode = &abi{
 		name: "InitSetCode",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 
 			if h.Context().Value("number").(int64) != 0 {
@@ -126,7 +145,7 @@ var (
 			actID := args[0].(string)
 			con.ID = actID
 
-			cost2, err := h.SetCode(con)
+			cost2, err := h.SetCode(con, "")
 			cost.AddAssign(cost2)
 			return []interface{}{actID}, cost, err
 		},
@@ -136,7 +155,7 @@ var (
 	cancelDelaytx = &abi{
 		name: "CancelDelaytx",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost, err = h.CancelDelaytx(args[0].(string))
 			return []interface{}{}, cost, err

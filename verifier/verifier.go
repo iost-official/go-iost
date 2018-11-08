@@ -144,7 +144,7 @@ L:
 			provider.Return(t)
 			break L
 		}
-		err = isolator.PayCost()
+		r, err = isolator.PayCost()
 		if err != nil {
 			provider.Drop(t, err)
 			continue L
@@ -251,6 +251,24 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 		r.GasUsage != receipt.GasUsage {
 		return fmt.Errorf("receipt not match: %v, %v", r, receipt)
 	}
+	for k, v := range r.RAMUsage {
+		if v != receipt.RAMUsage[k] {
+			return fmt.Errorf("receipt not match: %v, %v", r, receipt)
+		}
+	}
+	for i, br := range r.Receipts {
+		if br.FuncName != receipt.Receipts[i].FuncName ||
+			br.Content != receipt.Receipts[i].Content {
+			return fmt.Errorf("receipt not match: %v, %v", r, receipt)
+		}
+	}
+	for i, br := range r.Returns {
+		if br.FuncName != receipt.Receipts[i].FuncName ||
+			br.Value != receipt.Receipts[i].Content {
+			return fmt.Errorf("receipt not match: %v, %v", r, receipt)
+		}
+	}
+
 	isolator.Commit()
 	return nil
 }
