@@ -36,10 +36,11 @@ message Status {
 message TxReceipt {
     bytes txHash = 1;
     int64 gasUsage = 2;
-    map<string, int64> ramUsage = 3;
-    Status status = 4;
-    repeated Return returns = 5;
-    repeated Receipt receipts = 6;
+    repeated string ramUsageName = 3;
+    repeated int64 ramUsage = 4;
+    Status status = 5;
+    repeated Return returns = 6;
+    repeated Receipt receipts = 7;
 
 }
 
