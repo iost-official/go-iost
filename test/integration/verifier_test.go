@@ -24,9 +24,10 @@ func TestTransfer(t *testing.T) {
 
 	s.SetGas(kp.ID, 1000)
 	Convey("test transfer success case", t, func() {
+		prepareContract(s)
+		createToken(t, s, kp)
 
-		err := prepareContract(s)
-		So(err, ShouldBeNil)
+		totalGas := s.Visitor.CurrentTotalGas(kp.ID, 0).Value
 
 		r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
 
@@ -34,7 +35,7 @@ func TestTransfer(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 		So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(99999737400000000))
+		So(totalGas-s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(90900000000))
 	})
 }
 
@@ -103,8 +104,7 @@ func TestAmountLimit(t *testing.T) {
 	Convey("test of amount limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		err := prepareContract(s)
-		So(err, ShouldBeNil)
+		prepareContract(s)
 
 		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
 		So(err, ShouldBeNil)
@@ -120,6 +120,8 @@ func TestAmountLimit(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		s.SetRAM(testID[0], 10000)
+
+		createToken(t, s, kp)
 
 		Reset(func() {
 			s.Visitor.SetTokenBalanceFixed("iost", testID[0], "1000")
@@ -174,12 +176,13 @@ func TestNativeVM_GasLimit(t *testing.T) {
 	Convey("test of amount limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		err := prepareContract(s)
-		So(err, ShouldBeNil)
+		prepareContract(s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		So(err, ShouldBeNil)
-
+		if err != nil {
+			t.Fatal(err)
+		}
+		createToken(t, s, kp)
 		s.SetGas(kp.ID, 10000)
 
 		tx0 := tx.NewTx([]*tx.Action{{

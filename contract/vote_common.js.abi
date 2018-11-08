@@ -15,56 +15,39 @@
             "args": ["string"]
         },
         {
-            "name": "InitProducer",
-            "args": [
-                "string"
-            ]
-        },
-        {
             "name": "InitAdmin",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "RegisterProducer",
+            "name": "NewVote",
             "args": [
                 "string",
                 "string",
-                "string",
-                "string"
+                "json"
             ]
         },
         {
-            "name": "UpdateProducer",
+            "name": "AddOption",
             "args": [
                 "string",
                 "string",
+                "bool"
+            ]
+        },
+        {
+            "name": "RemoveOption",
+            "args": [
                 "string",
-                "string"
-            ]
-        },
-        {
-            "name": "LogInProducer",
-            "args": [
-                "string"
-            ]
-        },
-        {
-            "name": "LogOutProducer",
-            "args": [
-                "string"
-            ]
-        },
-        {
-            "name": "UnregisterProducer",
-            "args": [
-                "string"
+                "string",
+                "bool"
             ]
         },
         {
             "name": "Vote",
             "args": [
+                "string",
                 "string",
                 "string",
                 "string"
@@ -75,12 +58,21 @@
             "args": [
                 "string",
                 "string",
+                "string",
                 "string"
             ]
         },
         {
-            "name": "Stat",
-            "args": []
+            "name": "GetResult",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "DelVote",
+            "args": [
+                "string"
+            ]
         }
     ]
 }
