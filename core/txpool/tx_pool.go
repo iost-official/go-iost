@@ -21,7 +21,7 @@ type TxPImpl struct {
 	blockCache       blockcache.BlockCache
 	p2pService       p2p.Service
 	forkChain        *forkChain
-	blockList        *sync.Map
+	blockList        *sync.Map // map[string]*blockTx
 	pendingTx        *SortedTxMap
 	mu               sync.RWMutex
 	chP2PTx          chan p2p.IncomingMessage
@@ -44,10 +44,10 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitCh:           make(chan struct{}),
 	}
 	p.forkChain.NewHead = blockCache.Head()
-	deferServer, _ := NewDeferServer(p)
-	/*  if err != nil { */
-	// return nil, err
-	/* } */
+	deferServer, err := NewDeferServer(p)
+	if err != nil {
+		return nil, err
+	}
 	p.deferServer = deferServer
 	close(p.quitGenerateMode)
 	return p, nil
@@ -103,11 +103,11 @@ func (pool *TxPImpl) loop() {
 	for {
 		select {
 		case <-clearTx.C:
-			metricsTxPoolSize.Set(float64(pool.pendingTx.Size()), nil)
 			pool.mu.Lock()
 			pool.clearBlock()
-			pool.clearTimeOutTx()
+			pool.clearTimeoutTx()
 			pool.mu.Unlock()
+			metricsTxPoolSize.Set(float64(pool.pendingTx.Size()), nil)
 		case <-pool.quitCh:
 			return
 		}
@@ -266,7 +266,6 @@ func (pool *TxPImpl) DelTxList(delList []*tx.Tx) {
 
 // TxIterator ...
 func (pool *TxPImpl) TxIterator() (*Iterator, *blockcache.BlockCacheNode) {
-	metricsTxPoolSize.Set(float64(pool.pendingTx.Size()), nil)
 	return pool.pendingTx.Iter(), pool.forkChain.NewHead
 }
 
@@ -300,12 +299,12 @@ func (pool *TxPImpl) initBlockTx() {
 
 func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
-		return fmt.Errorf("CacheFullError. Pending tx size is %d. Max cache is %d", pool.pendingTx.Size(), maxCacheTxs)
+		return ErrCacheFull
 	}
 	if t.GasPrice < 100 {
 		return fmt.Errorf("GasPriceError. gas price %d", t.GasPrice)
 	}
-	if pool.TxTimeOut(t) {
+	if !t.IsTimeValid(time.Now().UnixNano()) {
 		return fmt.Errorf("TimeError")
 	}
 	if err := t.VerifySelf(); err != nil {
@@ -340,10 +339,7 @@ func (pool *TxPImpl) addBlock(blk *block.Block) error {
 	if blk == nil {
 		return errors.New("failed to linkedBlock")
 	}
-	if _, ok := pool.blockList.Load(string(blk.HeadHash())); ok {
-		return nil
-	}
-	pool.blockList.Store(string(blk.HeadHash()), pool.newBlockTx(blk))
+	pool.blockList.LoadOrStore(string(blk.HeadHash()), newBlockTx(blk))
 	return nil
 }
 
@@ -419,26 +415,11 @@ func (pool *TxPImpl) existTxInPending(hash []byte) bool {
 	return pool.pendingTx.Get(hash) != nil
 }
 
-// TxTimeOut time to verify the tx
-func (pool *TxPImpl) TxTimeOut(tx *tx.Tx) bool {
-	currentTime := time.Now().UnixNano()
-	if tx.Time > currentTime {
-		return true
-	}
-	if tx.Expiration <= currentTime {
-		return true
-	}
-	if currentTime-tx.Time > Expiration {
-		return true
-	}
-	return false
-}
-
-func (pool *TxPImpl) clearTimeOutTx() {
+func (pool *TxPImpl) clearTimeoutTx() {
 	iter := pool.pendingTx.Iter()
 	t, ok := iter.Next()
 	for ok {
-		if pool.TxTimeOut(t) {
+		if !t.IsTimeValid(time.Now().UnixNano()) {
 			pool.pendingTx.Del(t.Hash())
 		}
 		t, ok = iter.Next()

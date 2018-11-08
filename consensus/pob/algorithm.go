@@ -21,12 +21,12 @@ import (
 )
 
 var (
-	errWitness     = errors.New("wrong witness")
-	errSignature   = errors.New("wrong signature")
-	errTxTooOld    = errors.New("tx too old")
-	errTxDup       = errors.New("duplicate tx")
-	errTxSignature = errors.New("tx wrong signature")
-	errHeadHash    = errors.New("wrong head hash")
+	errWitness       = errors.New("wrong witness")
+	errSignature     = errors.New("wrong signature")
+	errTxInvalidTime = errors.New("tx invalid time")
+	errTxDup         = errors.New("duplicate tx")
+	errTxSignature   = errors.New("tx wrong signature")
+	errHeadHash      = errors.New("wrong head hash")
 	//txLimit        = 2000 //limit it to 2000
 	//txExecTime     = cverifier.TxExecTimeLimit / 2
 )
@@ -167,17 +167,17 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		}
 	}
 
-	for _, tx := range blk.Txs {
-		exist := txPool.ExistTxs(tx.Hash(), parent)
+	for _, t := range blk.Txs {
+		exist := txPool.ExistTxs(t.Hash(), parent)
 		if exist == txpool.FoundChain {
 			return errTxDup
 		} else if exist != txpool.FoundPending {
-			if err := tx.VerifySelf(); err != nil {
+			if err := t.VerifySelf(); err != nil {
 				return errTxSignature
 			}
 		}
-		if blk.Head.Time-tx.Time > txpool.Expiration {
-			return errTxTooOld
+		if !t.IsTimeValid(blk.Head.Time) {
+			return errTxInvalidTime
 		}
 	}
 	v := verifier.Verifier{}

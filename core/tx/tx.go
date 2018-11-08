@@ -13,6 +13,11 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 )
 
+// values
+var (
+	MaxExpiration = int64(90 * time.Second)
+)
+
 //go:generate protoc  --go_out=plugins=grpc:. ./core/tx/tx.proto
 
 // Tx Transaction structure
@@ -228,8 +233,9 @@ func (t *Tx) IsDefer() bool {
 // VerifySelf verify tx's signature
 func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 	if t.Delay > 0 && t.IsDefer() {
-		return errors.New("invalid tx. including both delaysecond and referredtx")
+		return errors.New("invalid tx. including both delay and referredtx field")
 	}
+	// Defer tx does not need to verify signature.
 	if t.IsDefer() {
 		return nil
 	}
@@ -262,4 +268,19 @@ func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 // VerifySigner verify signer's signature
 func (t *Tx) VerifySigner(sig *crypto.Signature) bool {
 	return sig.Verify(t.baseHash())
+}
+
+// IsTimeValid checks whether the transaction time is valid compared to the given time ct.
+// ct may be time.Now().UnixNano() or block head time.
+func (t *Tx) IsTimeValid(ct int64) bool {
+	if t.Time > ct {
+		return false
+	}
+	if t.Expiration <= ct {
+		return false
+	}
+	if ct-t.Time > MaxExpiration {
+		return false
+	}
+	return true
 }
