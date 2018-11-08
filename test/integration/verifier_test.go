@@ -263,7 +263,7 @@ func TestRAM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Visitor.SetContract(ca)
+	s.SetContract(ca)
 
 	admin, err := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
 	if err != nil {
@@ -288,10 +288,11 @@ func TestRAM(t *testing.T) {
 	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
 		panic("call failed " + err.Error() + " " + r.String())
 	}
+	initRAM := s.Visitor.TokenBalance("ram", kp.ID)
 
 	Convey("test of ram", t, func() {
 		Convey("user has no ram if he did not buy", func() {
-			So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, 0)
+			So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, initRAM)
 		})
 		Convey("test buy", func() {
 			var buyAmount int64 = 30
@@ -310,10 +311,10 @@ func TestRAM(t *testing.T) {
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
 				var priceEstimated int64 = 30 * 1e8 // TODO when the final function is set, update here
 				So(balanceAfter, ShouldEqual, balanceBefore-priceEstimated)
-				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, buyAmount)
+				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, initRAM+buyAmount)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore-buyAmount)
 			})
-			Convey("TODO when buying triggers increase total ram", func() {
+			Convey("when buying triggers increasing total ram", func() {
 				head := s.Head
 				head.Number = head.Number + increaseInterval
 				s.SetBlockHead(head)
@@ -332,7 +333,7 @@ func TestRAM(t *testing.T) {
 				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
 			})
 			Convey("user cannot sell more than he owns", func() {
-				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, 600}), kp.ID, kp)
+				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, 6000}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
 			})
@@ -347,7 +348,7 @@ func TestRAM(t *testing.T) {
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
 				var priceEstimated int64 = 10 * 1e8 // TODO when the final function is set, update here
 				So(balanceAfter, ShouldEqual, balanceBefore+priceEstimated)
-				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, 50)
+				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, initRAM+50)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+sellAmount)
 			})
 		})

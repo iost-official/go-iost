@@ -188,6 +188,9 @@ func (r *TxReceipt) Hash() []byte {
 }
 
 func (r *TxReceipt) String() string {
+	if r == nil {
+		return "<nil TxReceipt>"
+	}
 	tr := &txpb.TxReceipt{
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
