@@ -199,9 +199,9 @@ func (h *Teller) PayCost(c contract.Cost, who string) {
 
 // DoPay ...
 func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
-	if gasPrice < 100 {
-		panic("gas_price error")
-	}
+	//if gasPrice < 100 {
+	//	panic("gas_price error")
+	//}
 
 	for k, c := range h.cost {
 		fee := gasPrice * c.ToGas()
