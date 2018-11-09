@@ -4,14 +4,14 @@ let BlockChain = (function () {
     let contractName = function () {
         let ctxInfo = JSON.parse(bc.contextInfo());
         return ctxInfo["contract_name"];
-    }
+    };
     // transfer IOSToken
     let transfer = function (from, to, amount) {
         if (!(amount instanceof Float64)) {
             amount = new Float64(amount);
         }
         return bc.call("iost.token", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\"]");
-    }
+    };
     return {
         // transfer IOSToken
         transfer: transfer,

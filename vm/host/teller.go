@@ -29,7 +29,7 @@ func NewTeller(h *Host) Teller {
 	}
 }
 
-// TransferRawNew ...
+// TransferRawNew ... todo deprecated
 func (h *Teller) TransferRawNew(from, to string, amount int64) error {
 	tokenName := "iost"
 	srcBalance := h.h.db.TokenBalance(tokenName, from)
