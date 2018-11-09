@@ -339,7 +339,7 @@ function injectGas(source) {
 
 	checkGasKeyword(ast.tokens);
 
-	checkOperator(ast.tokens);
+	// checkOperator(ast.tokens);
 	
 	traverse(ast, null, null);
 

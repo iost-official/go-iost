@@ -6,15 +6,19 @@ class Storage1 {
     }
 
     put(k, v) {
-        return storage.put(k, v);
+        storage.put(k, v);
     }
 
     get(k) {
-        return storage.get(k);
+        let ret = storage.get(k);
+        if (ret === "") {
+            return "null";
+        }
+        return ret;
     }
 
     delete(k) {
-        return storage.del(k);
+        storage.del(k);
     }
 
     getThisNum() {
@@ -26,7 +30,7 @@ class Storage1 {
     }
 
     mset(k, f, v) {
-        return storage.mapPut(k, f, JSON.stringify(v));
+        storage.mapPut(k, f, JSON.stringify(v));
     }
 
     mget(k, f) {
@@ -38,7 +42,7 @@ class Storage1 {
     }
 
     mdelete(k, f) {
-        return storage.mapDel(k, f);
+        storage.mapDel(k, f);
     }
 }
 
