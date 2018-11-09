@@ -8,7 +8,6 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
@@ -27,6 +26,8 @@ func Test_IOSTIssue(t *testing.T) {
 		}
 
 		prepareContract(s)
+
+		s.Head.Number = 0
 
 		// deploy iost.issue
 		setNonNativeContract(s, "iost.issue", "issue.js", ContractPath)
@@ -53,7 +54,7 @@ func Test_IOSTIssue(t *testing.T) {
 
 		Convey("test init", func() {
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(123000*1e8))
 			So(s.Visitor.TokenBalance("ram", "iost.pledge"), ShouldEqual, int64(128))
 		})
@@ -64,7 +65,7 @@ func Test_IOSTIssue(t *testing.T) {
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 
 			So(s.Visitor.TokenBalance("iost", "iost.bonus"), ShouldEqual, int64(45654))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(92691))
@@ -77,7 +78,7 @@ func Test_IOSTIssue(t *testing.T) {
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("ram", "iost.pledge"), ShouldEqual, int64(128+2179*3*28801))
 		})
 	})
