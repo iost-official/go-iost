@@ -16,7 +16,7 @@ type TokenHandler struct {
 }
 
 func (m *TokenHandler) balanceKey(tokenName, acc string) string {
-	return "m-" + TokenContractName + "@" + acc + "-" + "TB" + acc  + "-" + tokenName
+	return "m-" + TokenContractName + "@" + acc + "-" + "TB" + acc + "-" + tokenName
 }
 
 func (m *TokenHandler) decimalKey(tokenName string) string {
