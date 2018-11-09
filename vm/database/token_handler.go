@@ -2,7 +2,9 @@ package database
 
 import (
 	"errors"
+
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // TokenContractName name of basic token contract
@@ -26,6 +28,7 @@ func (m *TokenHandler) decimalKey(tokenName string) string {
 func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 	currentRaw := m.db.Get(m.balanceKey(tokenName, acc))
 	balance := Unmarshal(currentRaw)
+	ilog.Errorf("TokenBalance is %v %v %v", tokenName, acc, balance)
 	ib, ok := balance.(int64)
 	if !ok {
 		ib = 0

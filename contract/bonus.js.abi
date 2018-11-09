@@ -1,0 +1,35 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "constructor",
+            "args": []
+        },
+        {
+            "name": "init",
+            "args": []
+        },
+        {
+            "name": "can_update",
+            "args": ["string"]
+        },
+        {
+            "name": "InitAdmin",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "IssueContribute",
+            "args": ["number"]
+        },
+        {
+            "name": "ExchangeIOST",
+            "args": [
+                "string",
+                "string"
+            ]
+        }
+    ]
+}

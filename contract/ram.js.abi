@@ -3,6 +3,18 @@
     "version": "1.0.0",
     "abi": [
         {
+            "name": "can_update",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "initContractName",
+            "args": [
+                "string"
+            ]
+        },
+        {
             "name": "initAdmin",
             "args": [
                 "string"
@@ -15,10 +27,6 @@
                 "number",
                 "number"
             ]
-        },
-        {
-            "name": "checkIssue",
-            "args": []
         },
         {
             "name": "buy",

@@ -2,10 +2,14 @@ package integration
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
@@ -25,16 +29,13 @@ var testID = []string{
 	"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4", "7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
 }
 
+var ContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/contract/"
+
 type fataler interface {
 	Fatal(args ...interface{})
 }
 
-func prepareContract(s *Simulator) error {
-	kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-	if err != nil {
-		return err
-	}
-
+func prepareContract(s *Simulator) {
 	for i := 0; i < 18; i += 2 {
 		s.SetAccount(account.NewInitAccount(testID[i], testID[i], testID[i]))
 		s.SetGas(testID[i], 100000000)
@@ -42,9 +43,12 @@ func prepareContract(s *Simulator) error {
 	}
 	// deploy iost.token
 	s.SetContract(native.TokenABI())
+	s.Visitor.Commit()
+}
 
+func createToken(t fataler, s *Simulator, kp *account.KeyPair) error {
 	// create token
-	r, err := s.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000), kp.ID, kp)
+	r, err := s.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000000), kp.ID, kp)
 	if err != nil || r.Status.Code != tx.Success {
 		return fmt.Errorf("err %v, receipt: %v", err, r)
 	}
@@ -57,6 +61,30 @@ func prepareContract(s *Simulator) error {
 		return fmt.Errorf("err %v, receipt: %v", err, r)
 	}
 	s.Visitor.Commit()
+	return nil
+}
+
+func setNonNativeContract(s *Simulator, name string, filename string, ContractPath string) error {
+	jsPath := filepath.Join(ContractPath, filename)
+	abiPath := filepath.Join(ContractPath, filename+".abi")
+	fd, err := ioutil.ReadFile(jsPath)
+	if err != nil {
+		return err
+	}
+	rawCode := string(fd)
+	fd, err = ioutil.ReadFile(abiPath)
+	if err != nil {
+		return err
+	}
+	rawAbi := string(fd)
+	c := contract.Compiler{}
+	code, err := c.Parse(name, rawCode, rawAbi)
+	if err != nil {
+		return err
+	}
+	code.Info.Abi = append(code.Info.Abi, &contract.ABI{Name:"init", Args:[]string{}})
+
+	s.SetContract(code)
 	return nil
 }
 
@@ -73,5 +101,5 @@ var bh = &block.BlockHead{
 	ParentHash: []byte("abc"),
 	Number:     200,
 	Witness:    "witness",
-	Time:       123456,
+	Time:       123460 * 1e9,
 }

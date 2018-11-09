@@ -71,7 +71,7 @@ func TestSynchronizer(t *testing.T) {
 		}()
 
 		vi := database.NewVisitor(0, baseVariable.StateDB())
-		fmt.Println("synchronizer 65", vi.Get("iost.vote-"+"pendingBlockNumber"))
+		fmt.Println("synchronizer 65", vi.Get("iost.vote_producer-"+"pendingBlockNumber"))
 
 		blockCache, err := blockcache.NewBlockCache(baseVariable)
 		So(err, ShouldBeNil)

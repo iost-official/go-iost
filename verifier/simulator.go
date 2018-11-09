@@ -43,9 +43,9 @@ func NewSimulator() *Simulator {
 		mvcc:     mvccdb,
 		Head: &block.BlockHead{
 			ParentHash: []byte("abc"),
-			Number:     0,
+			Number:     1,
 			Witness:    "witness",
-			Time:       123456,
+			Time:       int64(1541541540 * 1000 * 1000 * 1000),
 		},
 		Logger: ilog.DefaultLogger(),
 	}
