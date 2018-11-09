@@ -147,6 +147,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 				return fmt.Errorf("pay cost failed: %v, %v", k, err)
 			}
 		}
+		// contracts in "iost" domain will not pay for ram
 		if isPayRAM && !strings.HasPrefix(k, "iost") {
 			var payer string
 			if strings.HasPrefix(k, "Contract") {

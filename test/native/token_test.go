@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
@@ -471,7 +470,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 	code.ID = "iost.token"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
-	now := int64(time.Now().Unix()) / common.SlotLength
+	now := int64(time.Now().Unix()) * 1e9
 
 	Convey("Test of Token transferFreeze", t, func() {
 

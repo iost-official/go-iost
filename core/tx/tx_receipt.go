@@ -117,11 +117,13 @@ func (r *TxReceipt) ToPb() *txpb.TxReceipt {
 	tr := &txpb.TxReceipt{
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
-		RamUsage: r.RAMUsage,
 		Status:   r.Status.ToPb(),
 		Returns:  []*txpb.Return{},
 		Receipts: []*txpb.Receipt{},
 	}
+
+	tr.RamUsageName, tr.RamUsage = mapToSortedSlices(r.RAMUsage)
+
 	for _, rt := range r.Returns {
 		if rt == nil {
 			fmt.Println("rt is nil")
@@ -148,6 +150,10 @@ func (r *TxReceipt) Encode() []byte {
 func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) *TxReceipt {
 	r.TxHash = tr.TxHash
 	r.GasUsage = tr.GasUsage
+	r.RAMUsage = make(map[string]int64)
+	for i, k := range tr.RamUsageName {
+		r.RAMUsage[k] = tr.RamUsage[i]
+	}
 	s := &Status{}
 	r.Status = s.FromPb(tr.Status)
 	for _, rt := range tr.Returns {
@@ -178,6 +184,28 @@ func (r *TxReceipt) Hash() []byte {
 }
 
 func (r *TxReceipt) String() string {
+	if r == nil {
+		return "<nil TxReceipt>"
+	}
 	tr := r.ToPb()
 	return tr.String()
+}
+
+func mapToSortedSlices(m map[string]int64) ([]string, []int64) {
+	var sk = make([]string, 0)
+	var sv = make([]int64, 0)
+	for k, v := range m {
+		sk = append(sk, k)
+		sv = append(sv, v)
+	}
+
+	for i := 1; i < len(sk); i++ {
+		for j := 0; j < len(sk)-i; j++ {
+			if sk[j] > sk[j+1] {
+				sk[j], sk[j+1] = sk[j+1], sk[j]
+				sv[j], sv[j+1] = sv[j+1], sv[j]
+			}
+		}
+	}
+	return sk, sv
 }

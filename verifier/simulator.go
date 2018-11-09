@@ -45,7 +45,7 @@ func NewSimulator() *Simulator {
 			ParentHash: []byte("abc"),
 			Number:     0,
 			Witness:    "witness",
-			Time:       123456,
+			Time:       int64(1541541540 * 1000 * 1000 * 1000),
 		},
 		Logger: ilog.DefaultLogger(),
 	}

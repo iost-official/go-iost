@@ -15,6 +15,14 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func array2json(ss []interface{}) string {
+	x, err := json.Marshal(ss)
+	if err != nil {
+		panic(err)
+	}
+	return string(x)
+}
+
 func TestTransfer(t *testing.T) {
 	ilog.Stop()
 
@@ -221,14 +229,6 @@ func TestDomain(t *testing.T) {
 	})
 }
 
-func array2json(ss []interface{}) string {
-	x, err := json.Marshal(ss)
-	if err != nil {
-		panic(err)
-	}
-	return string(x)
-}
-
 func TestAuthority(t *testing.T) {
 	s := NewSimulator()
 	defer s.Clear()
@@ -255,8 +255,6 @@ func TestAuthority(t *testing.T) {
 }
 
 func TestRAM(t *testing.T) {
-	t.Skip("This test can only pass when (1) CallWithAuth is enabled (2) BlockChain.transfer uses token.iost rather than old iost" +
-		"(You can do this by replace TransferRaw with TransferRawNew in teller.py).")
 	s := NewSimulator()
 	defer s.Clear()
 	prepareContract(s)
@@ -266,7 +264,7 @@ func TestRAM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Visitor.SetContract(ca)
+	s.SetContract(ca)
 
 	admin, err := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
 	if err != nil {
@@ -284,17 +282,18 @@ func TestRAM(t *testing.T) {
 		panic("call failed " + err.Error() + " " + r.String())
 	}
 
-	initialTotal := 128 * 1024 * 1024 * 1024
-	increaseInterval := 24 * 3600 / 3
-	increaseAmount := 188272539 // Math.round(64 * 1024 * 1024 * 1024 / 365)
+	var initialTotal int64 = 128 * 1024 * 1024 * 1024
+	var increaseInterval int64 = 24 * 3600
+	var increaseAmount int64 = 64 * 1024 * 1024 * 1024 / 365
 	r, err = s.Call(contractName, "issue", array2json([]interface{}{initialTotal, increaseInterval, increaseAmount}), admin.ID, admin)
 	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
 		panic("call failed " + err.Error() + " " + r.String())
 	}
+	initRAM := s.Visitor.TokenBalance("ram", kp.ID)
 
 	Convey("test of ram", t, func() {
 		Convey("user has no ram if he did not buy", func() {
-			So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, 0)
+			So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, initRAM)
 		})
 		Convey("test buy", func() {
 			var buyAmount int64 = 30
@@ -313,10 +312,19 @@ func TestRAM(t *testing.T) {
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
 				var priceEstimated int64 = 30 * 1e8 // TODO when the final function is set, update here
 				So(balanceAfter, ShouldEqual, balanceBefore-priceEstimated)
-				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, buyAmount)
+				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, initRAM+buyAmount)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore-buyAmount)
 			})
-			Convey("TODO when buying triggers increase total ram (How can simulator increase BlockNumber?)", func() {
+			Convey("when buying triggers increasing total ram", func() {
+				head := s.Head
+				head.Time = head.Time + increaseInterval * 1000 * 1000 * 1000
+				s.SetBlockHead(head)
+				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
+				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, buyAmount}), kp.ID, kp)
+				So(err, ShouldEqual, nil)
+				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.Success))
+				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
+				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+increaseAmount-buyAmount)
 			})
 		})
 		Convey("test sell", func() {
@@ -326,7 +334,7 @@ func TestRAM(t *testing.T) {
 				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
 			})
 			Convey("user cannot sell more than he owns", func() {
-				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, 600}), kp.ID, kp)
+				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, 6000}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
 			})
@@ -341,7 +349,7 @@ func TestRAM(t *testing.T) {
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
 				var priceEstimated int64 = 10 * 1e8 // TODO when the final function is set, update here
 				So(balanceAfter, ShouldEqual, balanceBefore+priceEstimated)
-				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, 20)
+				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, initRAM+50)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+sellAmount)
 			})
 		})
