@@ -63,39 +63,30 @@ class VoteCommonContract {
 
     _get(k) {
         const val = storage.get(k);
-        if (val === "nil") {
+        if (val === "") {
             return null;
         }
         return JSON.parse(val);
     }
 
     _put(k, v) {
-        const ret = storage.put(k, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage put failed. ret = " + ret);
-        }
+        storage.put(k, JSON.stringify(v));
     }
 
     _mapGet(k, f) {
         const val = storage.mapGet(k, f);
-        if (val === "nil") {
+        if (val === "") {
             return null;
         }
         return JSON.parse(val);
     }
 
     _mapPut(k, f, v) {
-        const ret = storage.mapPut(k, f, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage map put failed. ret = " + ret);
-        }
+        storage.mapPut(k, f, JSON.stringify(v));
     }
 
     _mapDel(k, f) {
-        const ret = storage.mapDel(k, f);
-        if (ret !== 0) {
-            throw new Error("storage map del failed. ret = " + ret);
-        }
+        storage.mapDel(k, f);
     }
 
     _nextId() {

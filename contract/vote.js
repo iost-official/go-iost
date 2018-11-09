@@ -308,7 +308,7 @@ class VoteContract {
             if (!a.score.eq(b.score)) {
                 return a.score.lt(b.score) ? 1 : -1;
             } else if (b.prior != a.prior) {
-                return b.prior - a.prior;>>>>>>> develop
+                return b.prior - a.prior;
             } else {
                 return b.key < a.key ? 1 : -1;
             }
@@ -331,7 +331,7 @@ class VoteContract {
             });
             if (score.lt(minScore)) {
                 minScore = score;
-            }>>>>>>> develop
+            }
         }
 
         // replace at most replaceNum producers
@@ -346,7 +346,7 @@ class VoteContract {
                     insertPlace = j;
                 } else {
                     break;
-                }>>>>>>> develop
+                }
             }
             oldPreList.splice(insertPlace, 0, preProducer);
         }

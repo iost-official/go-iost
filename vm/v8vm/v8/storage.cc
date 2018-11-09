@@ -681,7 +681,7 @@ void IOSTContractStorage_MapKeys(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    Local<Value> owner = args[2];
+    Local<Value> owner = args[1];
     if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_MapKeys owner must be string.")
