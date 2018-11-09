@@ -120,7 +120,11 @@ class VoteContract {
     }
 
     _mapGet(k, f) {
-        return JSON.parse(storage.mapGet(k, f));
+        const val = storage.mapGet(k, f);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
     }
 
     _mapPut(k, f, v) {
@@ -267,8 +271,8 @@ class VoteContract {
         // controll auth
         const bn = this._getBlockNumber();
         const pendingBlockNumber = this._get("pendingBlockNumber");
-        if (bn % voteStatInterval!== 0 || bn <= pendingBlockNumber) {
-            throw new Error("stat failed. block number mismatch. pending bn = " + pendingBlockNumber + ", bn = " + bn);
+        if (bn % voteStatInterval !== 0 || bn <= pendingBlockNumber) {
+            return;
         }
 
         const voteId = this._getVoteId();

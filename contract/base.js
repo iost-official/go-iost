@@ -13,8 +13,13 @@ class Base {
         return bi.number;
     }
     _get(k) {
-        return JSON.parse(storage.get(k));
+        const val = storage.get(k);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
     }
+
     _put(k, v) {
         storage.put(k, JSON.stringify(v));
     }

@@ -83,7 +83,11 @@ class BonusContract {
     }
 
     _mapGet(k, f) {
-        return JSON.parse(storage.mapGet(k, f));
+        const val = storage.mapGet(k, f);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
     }
 
     _mapPut(k, f, v) {
