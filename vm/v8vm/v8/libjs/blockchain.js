@@ -34,6 +34,11 @@ let BlockChain = (function () {
         contextInfo: function () {
             return bc.contextInfo();
         },
+        // get contractName
+        contractName: function () {
+            let ctxInfo = JSON.parse(bc.contextInfo());
+            return ctxInfo["contract_name"];
+        },
         // call contract's api using args
         call: function (contract, api, args) {
             return bc.call(contract, api, args);
