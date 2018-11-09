@@ -81,16 +81,18 @@ func (v *Verifier) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, l
 
 // Gen gen block
 func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
+	isolator := &vm.Isolator{}
+
 	if blk.Txs == nil {
 		blk.Txs = make([]*tx.Tx, 0)
 	}
+	blockBaseExec(blk, db, isolator, BlockBaseTx, c)
 	if blk.Receipts == nil {
 		blk.Receipts = make([]*tx.TxReceipt, 0)
 	}
 	var pi = NewProvider(iter)
 	switch c.Mode {
 	case 0:
-		isolator := &vm.Isolator{}
 		err = baseGen(blk, db, pi, isolator, c)
 		droplist, errs = pi.List()
 		return
@@ -103,17 +105,40 @@ func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter TxIter, c
 	return []*tx.Tx{}, []error{}, fmt.Errorf("mode unexpected: %v", c.Mode)
 }
 
+func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isolator, t *tx.Tx, c *Config) (err error) {
+	vi := database.NewVisitor(100, db)
+	var l ilog.Logger
+	l.Stop()
+	isolator.Prepare(blk.Head, vi, &l)
+	isolator.TriggerBlockBaseMode()
+	err = isolator.PrepareTx(t, c.Timeout)
+	if err != nil {
+		return err
+	}
+	r, err := isolator.Run()
+	if err != nil {
+		return err
+	}
+	if r.Status.Code != tx.Success {
+		return fmt.Errorf(r.Status.Message)
+	}
+
+	r, err = isolator.PayCost()
+	if err != nil {
+		return err
+	}
+	isolator.Commit()
+	blk.Txs = append(blk.Txs, t)
+	blk.Receipts = append(blk.Receipts, r)
+	return nil
+}
+
 func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isolator *vm.Isolator, c *Config) (err error) {
 	info := Info{
 		Mode: 0,
 	}
 	var tn time.Time
 	to := time.Now().Add(c.Timeout)
-
-	vi := database.NewVisitor(100, db)
-	var l ilog.Logger
-	l.Stop()
-	isolator.Prepare(blk.Head, vi, &l)
 
 L:
 	for tn.Before(to) {
@@ -201,6 +226,11 @@ func (v *Verifier) Verify(blk *block.Block, db database.IMultiValue, c *Config) 
 	if err != nil {
 		return err
 	}
+
+	err = verifyBlockBase(blk, db, c)
+	if err != nil {
+		return err
+	}
 	switch info.Mode {
 	case 0:
 		isolator := vm.Isolator{}
@@ -208,7 +238,7 @@ func (v *Verifier) Verify(blk *block.Block, db database.IMultiValue, c *Config) 
 		var l ilog.Logger
 		l.Stop()
 		isolator.Prepare(blk.Head, vi, &l)
-		return baseVerify(isolator, c, blk.Txs, blk.Receipts)
+		return baseVerify(isolator, c, blk.Txs[1:], blk.Receipts[1:])
 	case 1:
 		bs := batches(blk, info)
 		var batcher Batcher
@@ -232,7 +262,33 @@ func batches(blk *block.Block, info Info) []*Batch {
 	return rtn
 }
 
-func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration) error {
+func verifyBlockBase(blk *block.Block, db database.IMultiValue, c *Config) error {
+	if len(blk.Txs) < 1 || len(blk.Receipts) < 1 {
+		return fmt.Errorf("block did not contain block base tx")
+	}
+
+	for i, a := range blk.Txs[0].Actions {
+		if a.ActionName != BlockBaseTx.Actions[i].ActionName ||
+			a.Contract != BlockBaseTx.Actions[i].Contract ||
+			a.Data != BlockBaseTx.Actions[i].Data {
+			return fmt.Errorf("block base tx not match")
+		}
+	}
+
+	var engine vm.Isolator
+	err := verify(engine, blk.Txs[0], blk.Receipts[0], c.Timeout, true)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration, isBlockBase bool) error {
+	isolator.ClearTx()
+	if isBlockBase {
+		isolator.TriggerBlockBaseMode()
+	}
 	var to time.Duration
 	if r.Status.Code == tx.ErrorTimeout {
 		to = timeout / 2
@@ -275,7 +331,7 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 
 func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxReceipt) error {
 	for k, t := range txs {
-		err := verify(engine, t, receipts[k], c.TxTimeLimit)
+		err := verify(engine, t, receipts[k], c.TxTimeLimit, false)
 		if err != nil {
 			return err
 		}
@@ -284,9 +340,10 @@ func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxRe
 }
 
 func batchVerify(verifier Batcher, bh *block.BlockHead, c *Config, db database.IMultiValue, batches []*Batch) error {
+
 	for _, batch := range batches {
 		err := verifier.Verify(bh, db, func(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt) error {
-			err := verify(e, t, r, c.TxTimeLimit)
+			err := verify(e, t, r, c.TxTimeLimit, false)
 			if err != nil {
 				return err
 			}

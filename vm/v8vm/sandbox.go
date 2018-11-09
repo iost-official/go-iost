@@ -180,7 +180,7 @@ ret;
 var obj = new module.exports;
 
 // run contract with specified function and args
-obj.%s(%s)
+obj.%s(%s);
 `, code, function, argStr), nil
 }
 

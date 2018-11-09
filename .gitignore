@@ -161,6 +161,8 @@ prototype
 /core/block/database/
 core/tx/database/
 database/database/
+core/txpool/DelayTxDB/
+data/
 
 
 /core/tx/database/
