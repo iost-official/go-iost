@@ -16,10 +16,7 @@ class Base {
         return JSON.parse(storage.get(k));
     }
     _put(k, v) {
-        const ret = storage.put(k, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage put failed. ret = " + ret);
-        }
+        storage.put(k, JSON.stringify(v));
     }
 
     _vote() {

@@ -82,6 +82,7 @@ func setNonNativeContract(s *Simulator, name string, filename string, ContractPa
 	if err != nil {
 		return err
 	}
+	code.Info.Abi = append(code.Info.Abi, &contract.ABI{Name:"init", Args:[]string{}})
 
 	s.SetContract(code)
 	return nil

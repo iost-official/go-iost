@@ -10,13 +10,15 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/go-iost/core/tx"
 )
 
 func prepareBase(t *testing.T, s *Simulator, kp *account.KeyPair) {
 	// deploy iost.base
 	setNonNativeContract(s, "iost.base", "base.js", ContractPath)
-	s.Call("iost.base", "Exec", `[]`, kp.ID, kp)
-
+	r, err := s.Call("iost.base", "init", `[]`, kp.ID, kp)
+	So(err, ShouldBeNil)
+	So(r.Status.Code, ShouldEqual, tx.Success)
 	s.Visitor.Commit()
 }
 
