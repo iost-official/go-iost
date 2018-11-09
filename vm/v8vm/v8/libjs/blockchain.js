@@ -1,26 +1,27 @@
 let BlockChain = (function () {
     let bc = new IOSTBlockchain;
+    // get contractName
+    let contractName = function () {
+        let ctxInfo = JSON.parse(bc.contextInfo());
+        return ctxInfo["contract_name"];
+    }
+    // transfer IOSToken
+    let transfer = function (from, to, amount) {
+        if (!(amount instanceof Float64)) {
+            amount = new Float64(amount);
+        }
+        return bc.call("iost.token", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\"]");
+    }
     return {
         // transfer IOSToken
-        transfer: function (from, to, amount) {
-            if (!(amount instanceof Int64)) {
-                amount = new Int64(amount);
-            }
-            return
-        },
+        transfer: transfer,
         // withdraw IOSToken
         withdraw: function (to, amount) {
-            if (!(amount instanceof Int64)) {
-                amount = new Int64(amount);
-            }
-            return
+            return transfer(contractName(), to, amount);
         },
         // deposit IOSToken
         deposit: function (from, amount) {
-            if (!(amount instanceof Int64)) {
-                amount = new Int64(amount);
-            }
-            return
+            return transfer(from, contractName(), amount);
         },
         // get blockInfo
         blockInfo: function () {
@@ -35,10 +36,7 @@ let BlockChain = (function () {
             return bc.contextInfo();
         },
         // get contractName
-        contractName: function () {
-            let ctxInfo = JSON.parse(bc.contextInfo());
-            return ctxInfo["contract_name"];
-        },
+        contractName: contractName,
         // call contract's api using args
         call: function (contract, api, args) {
             return bc.call(contract, api, args);

@@ -36,7 +36,7 @@ class VoteContract {
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
 
-        BlockChain.deposit(proID, producerRegisterFee);
+        // BlockChain.deposit(proID, producerRegisterFee);
         this._mapPut("producerTable", proID, {
             "loc": "",
             "url": "",
