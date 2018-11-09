@@ -98,6 +98,21 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	// pledge gas for admin
 	acts = append(acts, tx.NewAction("iost.gas", "PledgeGas", fmt.Sprintf(`["%v", "%v", "%v"]`, initAccountID, adminInfo.ID, adminInfo.Balance)))
 
+	// deploy iost.ram
+	ramFilePath := filepath.Join(gConf.ContractPath, "ram.js")
+	ramAbiPath := filepath.Join(gConf.ContractPath, "ram.js.abi")
+	code, err = contract.Compile("iost.ram", ramFilePath, ramAbiPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.ram", code.B64Encode())))
+	acts = append(acts, tx.NewAction("iost.ram", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
+	acts = append(acts, tx.NewAction("iost.ram", "initContractName", fmt.Sprintf(`["%v"]`, "iost.ram")))
+	var initialTotal int64 = 128 * 1024 * 1024 * 1024        // 128GB at first
+	var increaseInterval int64 = 24 * 3600 / 3               // increase every day
+	var increaseAmount int64 = 64 * 1024 * 1024 * 1024 / 365 // 64GB per year
+	acts = append(acts, tx.NewAction("iost.ram", "issue", fmt.Sprintf(`[%v, %v, %v]`, initialTotal, increaseInterval, increaseAmount)))
+
 	trx := tx.NewTx(acts, nil, 100000000, 0, 0, 0)
 	trx.Time = 0
 	trx, err = tx.SignTx(trx, "inituser@active", []*account.KeyPair{acc})

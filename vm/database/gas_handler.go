@@ -163,14 +163,14 @@ func (m *GasHandler) SetGasPledge(name string, p *common.Fixed) {
 func (m *GasHandler) CurrentTotalGas(name string, now int64) (result *common.Fixed) {
 	result = m.GasStock(name)
 	gasUpdateTime := m.GasUpdateTime(name)
-	var timeDuration int64
+	var durationSeconds int64
 	if gasUpdateTime > 0 {
-		timeDuration = now - gasUpdateTime
+		durationSeconds = (now - gasUpdateTime) / 1e9
 	}
 	rate := m.GetGasRate(name)
 	limit := m.GasLimit(name)
 	//fmt.Printf("CurrentTotalGas stock %v rate %v limit %v", result, rate, limit)
-	result = result.Add(rate.Times(timeDuration))
+	result = result.Add(rate.Times(durationSeconds))
 	if limit.LessThan(result) {
 		result = limit
 	}
