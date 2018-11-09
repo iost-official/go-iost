@@ -16,6 +16,9 @@ type Authority struct {
 }
 
 func (h *Authority) requireContractAuth(id, p string) (bool, contract.Cost) {
+	if i, ok := h.h.ctx.Value("number").(int64); ok && i == 0 {
+		return true, contract.Cost0()
+	}
 	cost := CommonOpCost(1)
 	authContractList := h.h.ctx.Value("auth_contract_list").(map[string]int)
 	if _, ok := authContractList[id]; ok || h.h.ctx.Value("contract_name").(string) == id {
@@ -26,6 +29,9 @@ func (h *Authority) requireContractAuth(id, p string) (bool, contract.Cost) {
 
 // RequireAuth check auth
 func (h *Authority) RequireAuth(id, p string) (bool, contract.Cost) {
+	if i, ok := h.h.ctx.Value("number").(int64); ok && i == 0 {
+		return true, contract.Cost0()
+	}
 	if h.isContract(id) {
 		return h.requireContractAuth(id, p)
 	}
