@@ -429,7 +429,7 @@ var (
 			from := args[1].(string)
 			to := args[2].(string)
 			amountStr := args[3].(string)
-			ftime := args[4].(int64) // time.Now().Unix() / common.SlotLength
+			ftime := args[4].(int64) // time.Now().UnixNano()
 
 			// get token info
 			ok, cost0 := checkTokenExists(h, tokenName)
@@ -593,6 +593,7 @@ var (
 			}
 
 			balanceStr, cost0 := genAmount(h, tokenName, balance)
+
 			cost.AddAssign(cost0)
 
 			return []interface{}{balanceStr}, cost, nil
