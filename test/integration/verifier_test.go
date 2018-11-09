@@ -260,20 +260,20 @@ func TestAuthority(t *testing.T) {
 func TestRAM(t *testing.T) {
 	s := NewSimulator()
 	defer s.Clear()
-	prepareContract(s)
 
+	prepareContract(s)
 	contractName := "iost.ram"
-	ca, err := s.Compile(contractName, "../../contract/ram", "../../contract/ram.js")
+	err := setNonNativeContract(s, contractName, "ram.js", ContractPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.SetContract(ca)
 
 	admin, err := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	kp := prepareAuth(t, s)
+	createToken(t, s, kp)
 	s.SetGas(kp.ID, 1000)
 
 	r, err := s.Call(contractName, "initAdmin", array2json([]interface{}{admin.ID}), admin.ID, admin)
@@ -310,7 +310,7 @@ func TestRAM(t *testing.T) {
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
 				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, buyAmount}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
-				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.Success))
+				So(r.Status.Message, ShouldEqual, "")
 				balanceAfter := s.Visitor.TokenBalance("iost", kp.ID)
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
 				var priceEstimated int64 = 30 * 1e8 // TODO when the final function is set, update here
@@ -320,12 +320,12 @@ func TestRAM(t *testing.T) {
 			})
 			Convey("when buying triggers increasing total ram", func() {
 				head := s.Head
-				head.Time = head.Time + increaseInterval * 1000 * 1000 * 1000
+				head.Time = head.Time + increaseInterval*1000*1000*1000
 				s.SetBlockHead(head)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
 				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, buyAmount}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
-				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.Success))
+				So(r.Status.Message, ShouldEqual, "")
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+increaseAmount-buyAmount)
 			})
@@ -347,7 +347,7 @@ func TestRAM(t *testing.T) {
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
 				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, sellAmount}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
-				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.Success))
+				So(r.Status.Message, ShouldEqual, "")
 				balanceAfter := s.Visitor.TokenBalance("iost", kp.ID)
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
 				var priceEstimated int64 = 10 * 1e8 // TODO when the final function is set, update here
