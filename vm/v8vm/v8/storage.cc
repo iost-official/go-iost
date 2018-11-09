@@ -179,7 +179,7 @@ void NewIOSTContractStorage(const FunctionCallbackInfo<Value> &args) {
 
     Local<Value> val = global->GetInternalField(0);
     if (!val->IsExternal()) {
-           std::cout << "NewIOSTContractStorage val error" << std::endl;
+        std::cout << "NewIOSTContractStorage val error" << std::endl;
         return;
     }
     SandboxPtr sbx = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
@@ -337,7 +337,6 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
 
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-    std::cout << (*keyStr) << std::endl;
     char* resultStr = "";
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -412,7 +411,6 @@ void IOSTContractStorage_Del(const FunctionCallbackInfo<Value> &args) {
 void IOSTContractStorage_MapPut(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> self = args.Holder();
-    std::cout << "arg length: " << args.Length() << std::endl;
 
     if (args.Length() != 4) {
         Local<Value> err = Exception::Error(

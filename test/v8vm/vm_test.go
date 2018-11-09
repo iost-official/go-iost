@@ -62,7 +62,10 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 
 	expTime := time.Now().Add(time.Second * 10)
 	h.SetDeadline(expTime)
-	code.Code, _ = vmPool.Compile(code)
+	code.Code, err = vmPool.Compile(code)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	return h, code
 }
@@ -494,15 +497,6 @@ func TestEngine_Console(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
-}
-
-func TestEngine_Blockchain(t *testing.T) {
-	host, code := MyInit(t, "blockchain1")
-	rs, _, err := vmPool.LoadAndCall(host, code, "gs")
-	if err != nil {
-		t.Fatalf("LoadAndCall console error: %v", err)
-	}
-	t.Log(rs)
 }
 
 func TestEngine_Float64(t *testing.T) {

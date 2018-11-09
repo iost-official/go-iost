@@ -13,7 +13,6 @@ import (
 
 var (
 	ErrGetSandbox = errors.New("get sandbox failed.")
-	MessageSuccess = ""
 )
 
 //export goBlockInfo
@@ -27,7 +26,7 @@ func goBlockInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
 	*gasUsed = C.size_t(cost.CPU)
 	*info = C.CString(string(blkInfo))
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goTxInfo
@@ -41,7 +40,7 @@ func goTxInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
 	*gasUsed = C.size_t(cost.CPU)
 	*info = C.CString(string(txInfo))
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goContextInfo
@@ -55,7 +54,7 @@ func goContextInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char 
 	*gasUsed = C.size_t(cost.CPU)
 	*info = C.CString(string(ctxInfo))
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goCall
@@ -82,7 +81,7 @@ func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gas
 
 	*result = C.CString(string(rsStr))
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goCallWithAuth
@@ -109,7 +108,7 @@ func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.c
 
 	*result = C.CString(string(rsStr))
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goRequireAuth
@@ -128,7 +127,7 @@ func goRequireAuth(cSbx C.SandboxPtr, ID *C.char, permission *C.char, ok *C.bool
 
 	*gasUsed = C.size_t(RequireAuthCost.CPU)
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goReceipt
@@ -144,7 +143,7 @@ func goReceipt(cSbx C.SandboxPtr, content *C.char, gasUsed *C.size_t) *C.char {
 
 	*gasUsed = C.size_t(cost.CPU)
 
-	return C.CString(MessageSuccess)
+	return nil
 }
 
 //export goEvent
@@ -160,5 +159,5 @@ func goEvent(cSbx C.SandboxPtr, content *C.char, gasUsed *C.size_t) *C.char {
 
 	*gasUsed = C.size_t(cost.CPU)
 
-	return C.CString(MessageSuccess)
+	return nil
 }

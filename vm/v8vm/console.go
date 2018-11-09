@@ -39,5 +39,5 @@ func goConsoleLog(cSbx C.SandboxPtr, logLevel, logDetail *C.char) *C.char {
 		reflect.ValueOf(detailStr),
 	})
 
-	return C.CString(MessageSuccess)
+	return nil
 }

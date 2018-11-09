@@ -157,7 +157,10 @@ func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	defer C.free(unsafe.Pointer(cCode))
 
 	var cCompiledCode *C.char
-	C.compile(sbx.context, cCode, &cCompiledCode)
+	ret := C.compile(sbx.context, cCode, &cCompiledCode)
+	if ret == 1 {
+		return "", errors.New("compile code error.")
+	}
 
 	compiledCode := C.GoString(cCompiledCode)
 	C.free(unsafe.Pointer(cCompiledCode))
