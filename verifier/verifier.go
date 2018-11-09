@@ -226,6 +226,11 @@ func (v *Verifier) Verify(blk *block.Block, db database.IMultiValue, c *Config) 
 	if err != nil {
 		return err
 	}
+
+	err = verifyBlockBase(blk, db, c)
+	if err != nil {
+		return err
+	}
 	switch info.Mode {
 	case 0:
 		isolator := vm.Isolator{}
@@ -233,13 +238,8 @@ func (v *Verifier) Verify(blk *block.Block, db database.IMultiValue, c *Config) 
 		var l ilog.Logger
 		l.Stop()
 		isolator.Prepare(blk.Head, vi, &l)
-		return baseVerify(isolator, c, blk.Txs, blk.Receipts)
+		return baseVerify(isolator, c, blk.Txs[1:], blk.Receipts[1:])
 	case 1:
-		var engine vm.Isolator
-		err := verify(engine, blk.Txs[0], blk.Receipts[0], c.TxTimeLimit, true)
-		if err != nil {
-			return err
-		}
 		bs := batches(blk, info)
 		var batcher Batcher
 		return batchVerify(batcher, blk.Head, c, db, bs)
@@ -260,6 +260,28 @@ func batches(blk *block.Block, info Info) []*Batch {
 		})
 	}
 	return rtn
+}
+
+func verifyBlockBase(blk *block.Block, db database.IMultiValue, c *Config) error {
+	if len(blk.Txs) < 1 || len(blk.Receipts) < 1 {
+		return fmt.Errorf("block did not contain block base tx")
+	}
+
+	for i, a := range blk.Txs[0].Actions {
+		if a.ActionName != BlockBaseTx.Actions[i].ActionName ||
+			a.Contract != BlockBaseTx.Actions[i].Contract ||
+			a.Data != BlockBaseTx.Actions[i].Data {
+			return fmt.Errorf("block base tx not match")
+		}
+	}
+
+	var engine vm.Isolator
+	err := verify(engine, blk.Txs[0], blk.Receipts[0], c.Timeout, true)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration, isBlockBase bool) error {
@@ -309,7 +331,7 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 
 func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxReceipt) error {
 	for k, t := range txs {
-		err := verify(engine, t, receipts[k], c.TxTimeLimit, k == 0)
+		err := verify(engine, t, receipts[k], c.TxTimeLimit, false)
 		if err != nil {
 			return err
 		}

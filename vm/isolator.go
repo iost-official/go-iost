@@ -28,6 +28,7 @@ type Isolator struct {
 	blockBaseMode bool
 }
 
+// TriggerBlockBaseMode start blockbase mode
 func (e *Isolator) TriggerBlockBaseMode() {
 	e.blockBaseMode = true
 }
