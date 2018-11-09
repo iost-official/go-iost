@@ -114,10 +114,10 @@ func TestToken_Create(t *testing.T) {
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "10.2")
 
 			_, _, err = e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "22.3")
-			So(true, ShouldEqual, err.Error() == "token can't transfer")
+			So(err.Error(), ShouldEqual, "token can't transfer")
 
-			dr, _ := host.MapGet("TIiost", "defaultRate")
-			So(true, ShouldEqual, dr.(string) == "1.1")
+			dr, _ := host.MapGet("TIiost", "defaultRate", "issuer0")
+			So(dr.(string), ShouldEqual, "1.1")
 
 			// transfer truncate
 			_, _, err = e.LoadAndCall(host, code, "create", "iost1", "issuer0", int64(100), []byte(`{"decimal": 1}`))
