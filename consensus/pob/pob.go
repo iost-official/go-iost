@@ -83,7 +83,8 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 
 	// exec vote_producer
 	act := tx.NewAction("iost.base", "Exec", fmt.Sprintf(`[]`))
-	verifier.BlockBaseTx.Actions[0] = act
+	verifier.BlockBaseTx.Actions = append(verifier.BlockBaseTx.Actions, act)
+
 	return &p
 }
 
