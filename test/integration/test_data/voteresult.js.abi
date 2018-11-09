@@ -1,0 +1,14 @@
+{
+  "lang": "javascript",
+  "version": "1.0.0",
+  "abi": [
+    {
+      "name": "GetResult",
+      "args": ["string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "0"
+      }]
+    }
+  ]
+}
