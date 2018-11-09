@@ -36,10 +36,7 @@ class VoteContract {
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
 
-        const ret = BlockChain.deposit(proID, producerRegisterFee);
-        if (ret !== 0) {
-            throw new Error("constructor deposit failed. ret = " + ret);
-        }
+        BlockChain.deposit(proID, producerRegisterFee);
         this._mapPut("producerTable", proID, {
             "loc": "",
             "url": "",
@@ -83,26 +80,17 @@ class VoteContract {
         return JSON.parse(storage.get(k));
     }
 	_put(k, v) {
-        const ret = storage.put(k, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage put failed. ret = " + ret);
-        }
+        storage.put(k, JSON.stringify(v));
     }
     _mapGet(k, f) {
         return JSON.parse(storage.mapGet(k, f));
     }
     _mapPut(k, f, v) {
-        const ret = storage.mapPut(k, f, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage map put failed. ret = " + ret);
-        }
+        storage.mapPut(k, f, JSON.stringify(v));
     }
 
     _mapDel(k, f) {
-        const ret = storage.mapDel(k, f);
-        if (ret !== 0) {
-            throw new Error("storage map del failed. ret = " + ret);
-        }
+        storage.mapDel(k, f);
     }
 
 	// register account as a producer, need to pledge token
@@ -111,10 +99,7 @@ class VoteContract {
 		if (storage.mapHas("producerTable", account)) {
 			throw new Error("producer exists");
 		}
-		const ret = BlockChain.deposit(account, producerRegisterFee);
-		if (ret !== 0) {
-			throw new Error("register deposit failed. ret = " + ret);
-		}
+		BlockChain.deposit(account, producerRegisterFee);
 		this._mapPut("producerTable", account, {
 			"loc": loc,
 			"url": url,
@@ -194,10 +179,7 @@ class VoteContract {
 			throw new Error("producer not exists");
 		}
 
-		const ret = BlockChain.deposit(voter, amount * softFloatRate);
-		if (ret !== 0) {
-			throw new Error("vote deposit failed. ret = " + ret);
-		}
+		BlockChain.deposit(voter, amount * softFloatRate);
 
 		let voteRes = {};
         if (storage.mapHas("voteTable", voter)) {

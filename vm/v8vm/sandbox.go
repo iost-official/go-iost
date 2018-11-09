@@ -208,7 +208,6 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	expireTime := C.longlong(sbx.host.Deadline().UnixNano())
 
 	rs := C.Execute(sbx.context, cCode, expireTime)
-	fmt.Println(rs)
 
 	var result string
 	result = C.GoString(rs.Value)
