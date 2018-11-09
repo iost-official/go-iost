@@ -10,6 +10,9 @@ func TestFixed_ToString(t *testing.T) {
 	f := Fixed{-9223372036854775808, 4}
 	_, err := f.ToString()
 	assert.Equal(t, err, errOverflow)
+	f = Fixed{100, 0}
+	s, err := f.ToString()
+	assert.Equal(t, s, "100")
 }
 
 func TestNewFixed(t *testing.T) {
