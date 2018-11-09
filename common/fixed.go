@@ -215,7 +215,7 @@ func (f *Fixed) ToString() (string, error) {
 		rtn = append(rtn, str[i])
 	}
 	if f.Decimal == 0 {
-		return string(rtn)
+		return string(rtn), nil
 	}
 	for rtn[len(rtn)-1] == '0' {
 		rtn = rtn[0 : len(rtn)-1]
