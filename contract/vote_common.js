@@ -72,6 +72,9 @@ class VoteCommonContract {
 
     _mapGet(k, f) {
         const val = storage.mapGet(k, f);
+        if (val === "") {
+            return null;
+        }
         return JSON.parse(val);
     }
 

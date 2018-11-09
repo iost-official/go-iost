@@ -6,11 +6,11 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/go-iost/core/tx"
 )
 
 func prepareBase(t *testing.T, s *Simulator, kp *account.KeyPair) {
@@ -37,14 +37,14 @@ func Test_Base(t *testing.T) {
 		prepareContract(s)
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
-		prepareBase(t, s, kp)
 		for i := 0; i < 12; i += 2 {
 			s.Call("iost.vote_producer", "InitProducer", fmt.Sprintf(`["%v"]`, testID[i]), kp.ID, kp)
 		}
+		prepareBase(t, s, kp)
 
+		s.Head.Number = 200
 		re, err := s.Call("iost.base", "Exec", `[]`, kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(re.Status.Code, ShouldEqual, 0)
-
 	})
 }
