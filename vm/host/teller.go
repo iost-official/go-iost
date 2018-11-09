@@ -29,18 +29,7 @@ func NewTeller(h *Host) Teller {
 	}
 }
 
-// TransferRaw ...
-func (h *Teller) TransferRaw(from, to string, amount int64) error {
-	srcBalance := h.h.db.Balance(from)
-	if strings.HasPrefix(from, ContractAccountPrefix) && srcBalance >= amount || srcBalance > amount {
-		h.h.db.SetBalance(from, -1*amount)
-		h.h.db.SetBalance(to, amount)
-		return nil
-	}
-	return ErrBalanceNotEnough
-}
-
-// TransferRawNew ...
+// TransferRawNew ... todo deprecated
 func (h *Teller) TransferRawNew(from, to string, amount int64) error {
 	tokenName := "iost"
 	srcBalance := h.h.db.TokenBalance(tokenName, from)
@@ -55,19 +44,7 @@ func (h *Teller) TransferRawNew(from, to string, amount int64) error {
 	return ErrBalanceNotEnough
 }
 
-// GetBalance return balance of an id
-func (h *Teller) GetBalance(from string) (string, contract.Cost, error) {
-	var bl int64
-	if strings.HasPrefix(from, "IOST") {
-		bl = h.h.db.Balance(from)
-	} else {
-		bl = h.h.db.Balance(ContractAccountPrefix + from)
-	}
-	fpn := common.Fixed{Value: bl, Decimal: 8}
-	return fpn.ToString(), GetCost, nil
-}
-
-// GrantCoin issue coin
+// GrantCoin issue coin. todo deprecated
 func (h *Teller) GrantCoin(coinName, to string, amountStr string) (contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -81,7 +58,7 @@ func (h *Teller) GrantCoin(coinName, to string, amountStr string) (contract.Cost
 	return TransferCost, nil
 }
 
-// ConsumeCoin consume coin from
+// ConsumeCoin consume coin from todo deprecated
 func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost contract.Cost, err error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -98,7 +75,7 @@ func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost cont
 	return TransferCost, nil
 }
 
-// GrantServi ...
+// GrantServi ...todo deprecated
 func (h *Teller) GrantServi(to string, amountStr string) (contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -112,7 +89,7 @@ func (h *Teller) GrantServi(to string, amountStr string) (contract.Cost, error) 
 	return TransferCost, nil
 }
 
-// ConsumeServi ...
+// ConsumeServi ...todo deprecated
 func (h *Teller) ConsumeServi(from string, amountStr string) (cost contract.Cost, err error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -129,57 +106,12 @@ func (h *Teller) ConsumeServi(from string, amountStr string) (cost contract.Cost
 	return TransferCost, nil
 }
 
-// TotalServi ...
+// TotalServi ... todo deprecated
 func (h *Teller) TotalServi() (ts string, cost contract.Cost) {
 	fpn := common.Fixed{Value: h.h.db.TotalServi(), Decimal: 8}
 	ts = fpn.ToString()
 	cost = GetCost
 	return
-}
-
-// Transfer ...
-func (h *Teller) Transfer(from, to string, amountStr string) (contract.Cost, error) {
-	amount, _ := common.NewFixed(amountStr, 8)
-	if amount.Value <= 0 {
-		return CommonErrorCost(1), ErrTransferNegValue
-	}
-
-	if strings.HasPrefix(from, ContractAccountPrefix) {
-		if from != ContractAccountPrefix+h.h.ctx.Value("contract_name").(string) {
-			return CommonErrorCost(2), ErrPermissionLost
-		}
-	} else {
-		if h.Privilege(from) < 1 {
-			return CommonErrorCost(2), ErrPermissionLost
-		}
-	}
-
-	err := h.TransferRaw(from, to, amount.Value)
-	return TransferCost, err
-}
-
-// Withdraw ...
-func (h *Teller) Withdraw(to string, amountStr string) (contract.Cost, error) {
-	c := h.h.ctx.Value("contract_name").(string)
-	return h.Transfer(ContractAccountPrefix+c, to, amountStr)
-}
-
-// Deposit ...
-func (h *Teller) Deposit(from string, amountStr string) (contract.Cost, error) {
-	c := h.h.ctx.Value("contract_name").(string)
-	return h.Transfer(from, ContractAccountPrefix+c, amountStr)
-
-}
-
-// TopUp ...
-func (h *Teller) TopUp(c, from string, amountStr string) (contract.Cost, error) {
-	return h.Transfer(from, ContractGasPrefix+c, amountStr)
-}
-
-// Countermand ...
-func (h *Teller) Countermand(c, to string, amountStr string) (contract.Cost, error) {
-	amount, _ := common.NewFixed(amountStr, 8)
-	return TransferCost, h.TransferRaw(ContractGasPrefix+c, to, amount.Value)
 }
 
 // Costs ...

@@ -162,7 +162,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// compi leCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// compileCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func handleTransferData(data string) (string, error) {
@@ -181,7 +181,7 @@ func handleTransferData(data string) (string, error) {
 	}
 
 	if len(arr) != 3 {
-		return "", fmt.Errorf("Transfer need 3 arguments, got %v", len(arr))
+		return "", fmt.Errorf("transfer need 3 arguments, got %v", len(arr))
 	}
 	if amount, err := js.GetIndex(2).Float64(); err == nil {
 		if amount*1e8 > math.MaxInt64 {

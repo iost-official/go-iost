@@ -47,6 +47,21 @@ func (h *Info) ContractName() (name string, cost contract.Cost) {
 	return name, ContextInfoCost
 }
 
+// ContextInfo get context info
+func (h *Info) ContextInfo() (info database.SerializedJSON, cost contract.Cost) {
+	ctxInfo := make(map[string]interface{})
+
+	ctxInfo["contract_name"] = h.h.ctx.Value("contract_name")
+	ctxInfo["abi_name"] = h.h.ctx.Value("abi_name")
+
+	cij, err := json.Marshal(ctxInfo)
+	if err != nil {
+		panic(err)
+	}
+
+	return database.SerializedJSON(cij), ContextInfoCost
+}
+
 // TxInfo get tx info
 func (h *Info) TxInfo() (info database.SerializedJSON, cost contract.Cost) {
 

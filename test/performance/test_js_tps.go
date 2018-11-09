@@ -49,7 +49,7 @@ func transParallel(num int) {
 
 func sendTx(stx *tx.Tx, i int) ([]byte, error) {
 	client := rpc.NewApisClient(conns[i])
-	resp, err := client.SendRawTx(context.Background(), &rpc.RawTxReq{Data: stx.Encode()})
+	resp, err := client.SendTx(context.Background(), &rpc.TxReq{Tx: stx.ToPb()})
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +97,8 @@ func publish() string {
 	if err != nil {
 		panic(err)
 	}
-	if tx.StatusCode(resp.TxReceiptRaw.Status.Code) != tx.Success {
-		panic("publish contract fail " + (resp.TxReceiptRaw.String()))
+	if tx.StatusCode(resp.TxReceipt.Status.Code) != tx.Success {
+		panic("publish contract fail " + (resp.TxReceipt.String()))
 	}
 	return "Contract" + common.Base58Encode(txHash)
 }

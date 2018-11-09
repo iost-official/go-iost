@@ -54,7 +54,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Accou
 		panic(err)
 	}
 	h.DB().MPut("iost.auth-account", testAcc.ID, database.MustMarshal(string(as)))
-	h.Context().Set("number", int64(0))
+	h.Context().Set("number", int64(1))
 	h.Context().Set("time", int64(1541576370 * 1e9))
 	h.Context().Set("stack_height", 0)
 	h.Context().Set("publisher", testAcc.ID)

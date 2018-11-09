@@ -39,25 +39,19 @@ class RAMContract {
 
     _get(k) {
         var raw = storage.get(k);
-        if (raw == "nil") {
+        if (raw == "") {
             return null;
         }
         return JSON.parse(raw);
     }
     _put(k, v) {
-        const ret = storage.put(k, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage put failed. ret = " + ret);
-        }
+        storage.put(k, JSON.stringify(v));
     }
     _mapGet(k, f) {
         return JSON.parse(storage.mapGet(k, f));
     }
     _mapPut(k, f, v) {
-        const ret = storage.mapPut(k, f, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage map put failed. ret = " + ret);
-        }
+        storage.mapPut(k, f, JSON.stringify(v));
     }
 
     _mapDel(k, f) {

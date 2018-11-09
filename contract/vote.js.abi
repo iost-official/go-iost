@@ -67,7 +67,7 @@
             "args": [
                 "string",
                 "string",
-                "number"
+                "string"
             ]
         },
         {
@@ -75,7 +75,7 @@
             "args": [
                 "string",
                 "string",
-                "number"
+                "string"
             ]
         },
         {
