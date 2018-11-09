@@ -120,11 +120,6 @@ func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isola
 	if r.Status.Code != tx.Success {
 		return nil, fmt.Errorf(r.Status.Message)
 	}
-
-	r, err = isolator.PayCost()
-	if err != nil {
-		return nil, err
-	}
 	isolator.Commit()
 
 	return r, nil
@@ -176,6 +171,9 @@ L:
 		blk.Receipts = append(blk.Receipts, r)
 	}
 	buf, err := json.Marshal(info)
+	if err != nil {
+		panic(err)
+	}
 	blk.Head.Info = buf
 	for _, t := range blk.Txs {
 		provider.Drop(t, nil)

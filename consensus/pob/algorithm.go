@@ -39,6 +39,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 		Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: topBlock.HeadHash(),
+			Info:       make([]byte, 0),
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
 			Time:       time.Now().UnixNano(),
@@ -57,6 +58,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 	})
 	if err != nil {
 		go txPool.DelTxList(dropList)
+		ilog.Errorf("Gen is err: %v", err)
 	}
 	//t, ok := txIter.Next()
 	//	var vmExecTime, iterTime, i, j int64
@@ -131,7 +133,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return errWitness
 	}
 
-	for _, tx := range blk.Txs {
+	for _, tx := range blk.Txs[1:] {
 		exist := txPool.ExistTxs(tx.Hash(), parent)
 		if exist == txpool.FoundChain {
 			return errTxDup
