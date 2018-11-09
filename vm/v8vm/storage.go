@@ -184,7 +184,7 @@ func goMapGet(cSbx C.SandboxPtr, key, field, owner *C.char, result **C.char, gas
 	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
-		*result = nil
+		*result = C.CString("")
 		return nil
 	}
 	valStr, _ := dbValToString(val)
@@ -237,7 +237,6 @@ func goMapKeys(cSbx C.SandboxPtr, key, owner *C.char, result **C.char, gasUsed *
 	if err != nil {
 		return C.CString(err.Error())
 	}
-	//fmt.Println("storage145", fstr)
 	*gasUsed = C.size_t(cost.CPU)
 	*result = C.CString(string(j))
 
@@ -314,7 +313,7 @@ func goGlobalGet(cSbx C.SandboxPtr, contractName, key, owner *C.char, result **C
 	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
-		*result = nil
+		*result = C.CString("")
 		return nil
 	}
 	valStr, _ := dbValToString(val)
@@ -370,7 +369,7 @@ func goGlobalMapGet(cSbx C.SandboxPtr, contractName, key, field, owner *C.char, 
 	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
-		*result = nil
+		*result = C.CString("")
 		return nil
 	}
 	valStr, _ := dbValToString(val)

@@ -61,8 +61,9 @@ func Test_ExchangeIOST(t *testing.T) {
 		}
 
 		prepareContract(s)
+		prepareIssue(s, kp)
 
-		// deploy iost.issue
+		// deploy iost.bonus
 		setNonNativeContract(s, "iost.bonus", "bonus.js", ContractPath)
 		s.Call("iost.bonus", "init", `[]`, kp.ID, kp)
 

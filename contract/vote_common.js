@@ -39,16 +39,13 @@ class VoteCommonContract {
     }
 
     _requireAuth(account, permission) {
-        const ret = BlockChain.requireAuth(account, permission);
-        if (ret !== true) {
-            throw new Error("require auth failed. ret = " + ret);
-        }
+        BlockChain.requireAuth(account, permission);
     }
 
     _call(contract, api, args) {
         const ret = JSON.parse(BlockChain.callWithAuth(contract, api, JSON.stringify(args)));
         if (ret && Array.isArray(ret) && ret.length == 1) {
-            return JSON.parse(ret[0]);
+            return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
     }
@@ -124,7 +121,7 @@ class VoteCommonContract {
 
     _checkDel(voteId) {
         const info = this._mapGet("voteInfo", voteId);
-        if (!info) {
+        if (info === false) {
             throw new Error("vote has been deleted.");
         }
     }
@@ -169,7 +166,11 @@ class VoteCommonContract {
             throw new Error("unvoteInterval not valid.");
         }
 
-        this._call("iost.token", "transfer", ["iost", owner, "iost.vote", newVoteFee]);
+        const bn = this._getBlockNumber();
+
+        if (bn > 0) {
+            this._call("iost.token", "transfer", ["iost", owner, "iost.vote", newVoteFee]);
+        }
 
         const voteId = this._nextId();
 
@@ -179,7 +180,7 @@ class VoteCommonContract {
             minVote: minVote,
             anyOption: anyOption,
             unvoteInterval: unvoteInterval,
-            deposit: newVoteFee
+            deposit: bn > 0 ? newVoteFee : "0"
         });
 
         for (const option of options) {
@@ -425,6 +426,13 @@ class VoteCommonContract {
         this._requireOwner(voteId);
         this._checkDel(voteId);
 
+        const owner = this._mapGet("owner", voteId);
+        const info = this._mapGet("voteInfo", voteId);
+
+        const deposit = new Float64(info.deposit);
+        if (!deposit.isZero()) {
+            this._call("iost.token", "transfer", ["iost", owner, "iost.vote", deposit]);
+        }
         this._delVote(voteId);
     }
 }

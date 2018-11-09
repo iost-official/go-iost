@@ -149,6 +149,7 @@ func Test_Vote(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
+		s.Head.Number = 0
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		if err != nil {
 			t.Fatal(err)
@@ -240,6 +241,7 @@ func Test_DelVote(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
+		s.Head.Number = 0
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		if err != nil {
 			t.Fatal(err)
@@ -284,6 +286,7 @@ func Test_MixVoteOption(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
+		s.Head.Number = 0
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		if err != nil {
 			t.Fatal(err)
