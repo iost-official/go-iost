@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/iost-official/go-iost/core/tx"
+
 	"github.com/iost-official/go-iost/ilog"
 
 	"github.com/iost-official/go-iost/account"
@@ -12,6 +14,34 @@ import (
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func prepareIssue(s *Simulator, kp *account.KeyPair) (*tx.TxReceipt, error) {
+	s.Head.Number = 0
+
+	// deploy iost.issue
+	setNonNativeContract(s, "iost.issue", "issue.js", ContractPath)
+	s.Call("iost.issue", "init", `[]`, kp.ID, kp)
+
+	witness := common.Witness{
+		ID:      testID[0],
+		Owner:   testID[0],
+		Active:  testID[0],
+		Balance: 123000,
+	}
+	genesisConfig := make(map[string]interface{})
+	genesisConfig["iostWitnessInfo"] = []interface{}{witness}
+	genesisConfig["iostDecimal"] = 8
+	genesisConfig["foundationAcc"] = testID[2]
+	genesisConfig["ramGenesisAmount"] = 128
+	params := []interface{}{
+		testID[0],
+		genesisConfig,
+	}
+	b, _ := json.Marshal(params)
+	r, err := s.Call("iost.issue", "InitGenesis", string(b), kp.ID, kp)
+	s.Visitor.Commit()
+	return r, err
+}
 
 func Test_IOSTIssue(t *testing.T) {
 	ilog.Stop()
@@ -26,31 +56,7 @@ func Test_IOSTIssue(t *testing.T) {
 		}
 
 		prepareContract(s)
-
-		s.Head.Number = 0
-
-		// deploy iost.issue
-		setNonNativeContract(s, "iost.issue", "issue.js", ContractPath)
-		s.Call("iost.issue", "init", `[]`, kp.ID, kp)
-
-		witness := common.Witness{
-			ID:      testID[0],
-			Owner:   testID[0],
-			Active:  testID[0],
-			Balance: 123000,
-		}
-		genesisConfig := make(map[string]interface{})
-		genesisConfig["iostWitnessInfo"] = []interface{}{witness}
-		genesisConfig["iostDecimal"] = 8
-		genesisConfig["foundationAcc"] = testID[2]
-		genesisConfig["ramGenesisAmount"] = 128
-		params := []interface{}{
-			testID[0],
-			genesisConfig,
-		}
-		b, _ := json.Marshal(params)
-		r, err := s.Call("iost.issue", "InitGenesis", string(b), kp.ID, kp)
-		s.Visitor.Commit()
+		r, err := prepareIssue(s, kp)
 
 		Convey("test init", func() {
 			So(err, ShouldBeNil)

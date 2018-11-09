@@ -2,13 +2,14 @@ package integration
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func prepareBase(t *testing.T, s *Simulator, kp *account.KeyPair) {
@@ -25,6 +26,7 @@ func Test_Base(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
+		s.Head.Number = 0
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		if err != nil {
 			t.Fatal(err)

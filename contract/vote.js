@@ -88,10 +88,7 @@ class VoteContract {
     }
 
     _requireAuth(account, permission) {
-        const ret = BlockChain.requireAuth(account, permission);
-        if (ret !== true) {
-            throw new Error("require auth failed. ret = " + ret);
-        }
+        BlockChain.requireAuth(account, permission);
     }
 
     _call(contract, api, args) {
@@ -111,7 +108,11 @@ class VoteContract {
     }
 
     _get(k) {
-        return JSON.parse(storage.get(k));
+        const val = storage.get(k);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
     }
 
 	_put(k, v) {

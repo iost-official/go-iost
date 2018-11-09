@@ -24,7 +24,6 @@ class IssueContract {
             iostTotalSupply,
             {
                 "can_transfer": true,
-                "default_rate": 1,
                 "decimal": config.iostDecimal
             }
         ]);
@@ -46,7 +45,6 @@ class IssueContract {
             ramTotalSupply,
             {
                 "can_transfer": false,
-                "default_rate": 1,
                 "decimal": 0
             }
         ]);
@@ -90,16 +88,13 @@ class IssueContract {
     }
 
     _requireAuth(account, permission) {
-        const ret = BlockChain.requireAuth(account, permission);
-        if (ret !== true) {
-            throw new Error("require auth failed. ret = " + ret);
-        }
+        BlockChain.requireAuth(account, permission);
     }
 
     _call(contract, api, args) {
         const ret = JSON.parse(BlockChain.callWithAuth(contract, api, JSON.stringify(args)));
         if (ret && Array.isArray(ret) && ret.length == 1) {
-            return JSON.parse(ret[0]);
+            return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
     }
@@ -121,14 +116,15 @@ class IssueContract {
     }
 
     _get(k) {
-        return JSON.parse(storage.get(k));
+        const val = storage.get(k);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
     }
 
     _put(k, v) {
-        const ret = storage.put(k, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage put failed. ret = " + ret);
-        }
+        storage.put(k, JSON.stringify(v));
     }
 
     _mapGet(k, f) {
@@ -136,17 +132,11 @@ class IssueContract {
     }
 
     _mapPut(k, f, v) {
-        const ret = storage.mapPut(k, f, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage map put failed. ret = " + ret);
-        }
+        storage.mapPut(k, f, JSON.stringify(v));
     }
 
     _mapDel(k, f) {
-        const ret = storage.mapDel(k, f);
-        if (ret !== 0) {
-            throw new Error("storage map del failed. ret = " + ret);
-        }
+        storage.mapDel(k, f);
     }
 
     // IssueIOST to iost.bonus and iost foundation
