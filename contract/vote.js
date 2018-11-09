@@ -53,7 +53,7 @@ class VoteContract {
 
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
-
+      
         this._call("iost.token", "transfer", ["iost", proID, "iost.vote_producer", producerRegisterFee]);
 
         const voteId = this._getVoteId();
@@ -62,6 +62,7 @@ class VoteContract {
             proID,
             false
         ]);
+
         this._mapPut("producerTable", proID, {
             "loc": "",
             "url": "",
@@ -87,10 +88,7 @@ class VoteContract {
     }
 
     _requireAuth(account, permission) {
-        const ret = BlockChain.requireAuth(account, permission);
-        if (ret !== true) {
-            throw new Error("require auth failed. ret = " + ret);
-        }
+        BlockChain.requireAuth(account, permission);
     }
 
     _call(contract, api, args) {
@@ -110,32 +108,31 @@ class VoteContract {
     }
 
     _get(k) {
-        return JSON.parse(storage.get(k));
+        const val = storage.get(k);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
     }
 
-    _put(k, v) {
-        const ret = storage.put(k, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage put failed. ret = " + ret);
-        }
+	_put(k, v) {
+        storage.put(k, JSON.stringify(v));
     }
 
     _mapGet(k, f) {
-        return JSON.parse(storage.mapGet(k, f));
+        const val = storage.mapGet(k, f);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
     }
 
     _mapPut(k, f, v) {
-        const ret = storage.mapPut(k, f, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage map put failed. ret = " + ret);
-        }
+        storage.mapPut(k, f, JSON.stringify(v));
     }
 
     _mapDel(k, f) {
-        const ret = storage.mapDel(k, f);
-        if (ret !== 0) {
-            throw new Error("storage map del failed. ret = " + ret);
-        }
+        storage.mapDel(k, f);
     }
 
     _getVoteId() {
@@ -144,6 +141,7 @@ class VoteContract {
 
     // register account as a producer, need to pledge token
     RegisterProducer(account, loc, url, netId) {
+
         this._requireAuth(account, producerPermission);
         if (storage.mapHas("producerTable", account)) {
             throw new Error("producer exists");
@@ -166,6 +164,7 @@ class VoteContract {
             "registerFee": producerRegisterFee,
             "score": "0"
         });
+
     }
 
     // update the information of a producer
@@ -272,8 +271,8 @@ class VoteContract {
         // controll auth
         const bn = this._getBlockNumber();
         const pendingBlockNumber = this._get("pendingBlockNumber");
-        if (bn % voteStatInterval!== 0 || bn <= pendingBlockNumber) {
-            throw new Error("stat failed. block number mismatch. pending bn = " + pendingBlockNumber + ", bn = " + bn);
+        if (bn % voteStatInterval !== 0 || bn <= pendingBlockNumber) {
+            return;
         }
 
         const voteId = this._getVoteId();

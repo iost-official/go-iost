@@ -14,14 +14,9 @@ func init() {
 	systemABIs = make(map[string]*abi)
 	register(systemABIs, requireAuth)
 	register(systemABIs, receipt)
-	register(systemABIs, callWithReceipt)
-	register(systemABIs, transfer)
-	register(systemABIs, topUp)
-	register(systemABIs, countermand)
 	register(systemABIs, setCode)
 	register(systemABIs, updateCode)
 	register(systemABIs, destroyCode)
-	register(systemABIs, issueIOST)
 	register(systemABIs, initSetCode)
 	register(systemABIs, cancelDelaytx)
 }
@@ -46,41 +41,6 @@ var (
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = h.Receipt(args[0].(string))
 			return []interface{}{}, cost, nil
-		},
-	}
-	callWithReceipt = &abi{
-		name: "CallWithReceipt",
-		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			rtn, cost, err = h.CallWithReceipt(args[0].(string), args[1].(string), args[2].(string))
-			return rtn, cost, err
-		},
-	}
-	transfer = &abi{
-		name: "Transfer",
-		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-
-			cost, err = h.Transfer(args[0].(string), args[1].(string), args[2].(string))
-			return []interface{}{}, cost, err
-		},
-	}
-	topUp = &abi{
-		name: "TopUp",
-		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-
-			cost, err = h.TopUp(args[0].(string), args[1].(string), args[2].(string))
-			return []interface{}{}, cost, err
-		},
-	}
-	countermand = &abi{
-		name: "Contermand",
-		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-
-			cost, err = h.Countermand(args[0].(string), args[1].(string), args[2].(string))
-			return []interface{}{}, cost, err
 		},
 	}
 	// setcode can only be invoked in native vm, avoid updating contract during running
@@ -139,6 +99,7 @@ var (
 			return []interface{}{}, cost, err
 		},
 	}
+	// todo deprecated
 	// destroyCode can only be invoked in native vm, avoid updating contract during running
 	destroyCode = &abi{
 		name: "DestroyCode",
@@ -147,17 +108,6 @@ var (
 
 			cost, err = h.DestroyCode(args[0].(string))
 			return []interface{}{}, cost, err
-		},
-	}
-	issueIOST = &abi{
-		name: "IssueIOST",
-		args: []string{"string", "number"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			if h.Context().Value("number").(int64) != 0 {
-				return []interface{}{}, contract.Cost0(), errors.New("issue IOST in normal block")
-			}
-			h.DB().SetBalance(args[0].(string), args[1].(int64))
-			return []interface{}{}, contract.Cost0(), nil
 		},
 	}
 
