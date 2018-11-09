@@ -33,10 +33,26 @@ func (t *ITest) CreateAccount(name string) (*Account, error) {
 }
 
 func (t *ITest) Transfer(sender *Account, token, recipient, amount string) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.Transfer(sender, token, recipient, amount)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (t *ITest) SetContract(abi, code string) error {
+func (t *ITest) SetContract(contract *Contract) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.SetContract(t.bank, contract)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
