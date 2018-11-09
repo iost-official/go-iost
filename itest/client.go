@@ -25,7 +25,7 @@ var (
 )
 
 type Client struct {
-	grpc rpc.ApisClient
+	grpc rpc.ApisClient `json:"-"`
 	name string
 	addr string
 }

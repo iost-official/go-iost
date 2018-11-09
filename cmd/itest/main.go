@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/iost-official/go-iost/itest/command/create"
 	"github.com/iost-official/go-iost/itest/command/run"
-	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -21,6 +21,6 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 }

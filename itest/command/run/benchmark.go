@@ -6,9 +6,10 @@ import (
 )
 
 var BenchmarkCommand = cli.Command{
-	Name:   "benchmark, bench",
-	Usage:  "run benchmark test by data",
-	Action: BenchmarkAction,
+	Name:      "benchmark",
+	ShortName: "bench",
+	Usage:     "run benchmark test by data",
+	Action:    BenchmarkAction,
 }
 
 var BenchmarkAction = func(c *cli.Context) error {

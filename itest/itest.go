@@ -10,11 +10,11 @@ type ITest struct {
 	clients []*Client
 }
 
-func New(bank *Account, keys []*Key, clients []*Client) *ITest {
+func New(itc *ITestConfig, keys []*Key) *ITest {
 	return &ITest{
-		bank:    bank,
+		bank:    itc.bank,
 		keys:    keys,
-		clients: clients,
+		clients: itc.clients,
 	}
 }
 

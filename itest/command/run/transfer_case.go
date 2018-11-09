@@ -3,9 +3,10 @@ package run
 import "github.com/urfave/cli"
 
 var TransferCaseCommand = cli.Command{
-	Name:   "transfer_case, t_case",
-	Usage:  "run transfer test case",
-	Action: TransferCaseAction,
+	Name:      "transfer_case",
+	ShortName: "t_case",
+	Usage:     "run transfer test case",
+	Action:    TransferCaseAction,
 }
 
 var TransferCaseAction = func(c *cli.Context) error {

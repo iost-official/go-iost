@@ -1,32 +1,30 @@
 package itest
 
 import (
+	"encoding/json"
 	"os"
-
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
 
 type ITestConfig struct {
-	iserver map[string]string
 	bank    *Account
+	clients []*Client
 }
 
-func NewITestConfig(configfile string) *ITestConfig {
-	file, err := os.Open(configfile)
+func LoadITestConfig(file string) (*ITestConfig, error) {
+	f, err := os.Open(file)
 	if err != nil {
-		log.Fatalf("Open config file failed: %v", err)
+		return nil, err
 	}
 
 	data := []byte{}
-	if _, err := file.Read(data); err != nil {
-		log.Fatalf("Read config file failed: %v", err)
+	if _, err := f.Read(data); err != nil {
+		return nil, err
 	}
 
 	itc := &ITestConfig{}
-	if err := yaml.Unmarshal(data, itc); err != nil {
-		log.Fatalf("Unmarshal config file failed: %v", err)
+	if err := json.Unmarshal(data, itc); err != nil {
+		return nil, err
 	}
 
-	return itc
+	return itc, nil
 }

@@ -2,6 +2,7 @@ package itest
 
 import (
 	"encoding/json"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 
@@ -18,8 +19,45 @@ type KeyJSON struct {
 	Algorithm crypto.Algorithm `json:"algorithm"`
 }
 
-func NewKey(algo crypto.Algorithm) *Key {
-	keypair, err := account.NewKeyPair(nil, algo)
+func LoadKeys(file string) ([]*Key, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+
+	data := []byte{}
+	if _, err := f.Read(data); err != nil {
+		return nil, err
+	}
+
+	keys := []*Key{}
+	if err := json.Unmarshal(data, keys); err != nil {
+		return nil, err
+	}
+
+	return keys, nil
+}
+
+func DumpKeys(keys []*Key, file string) error {
+	f, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	b, err := json.Marshal(keys)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(b); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func NewKey(seckey []byte, algo crypto.Algorithm) *Key {
+	keypair, err := account.NewKeyPair(seckey, algo)
 	if err != nil {
 		log.Fatalf("Create key pair failed: %v", err)
 	}

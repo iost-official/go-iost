@@ -1,10 +1,6 @@
 package create
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/itest"
 	"github.com/urfave/cli"
@@ -40,21 +36,15 @@ var keyAction = func(c *cli.Context) error {
 	algo := crypto.NewAlgorithm(c.String("algorithm"))
 	ofile := c.String("output")
 
-	f, err := os.Create(ofile)
-	if err != nil {
+	keys := make([]*itest.Key, 0)
+	for i := 0; i < num; i++ {
+		key := itest.NewKey(nil, algo)
+		keys = append(keys, key)
+	}
+
+	if err := itest.DumpKeys(keys, ofile); err != nil {
 		return err
 	}
-	defer f.Close()
 
-	for i := 0; i < num; i++ {
-		key := itest.NewKey(algo)
-		b, err := json.Marshal(key)
-		if err != nil {
-			return err
-		}
-		if _, err := fmt.Fprintln(f, string(b)); err != nil {
-			return err
-		}
-	}
 	return nil
 }
