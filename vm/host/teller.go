@@ -44,7 +44,7 @@ func (h *Teller) TransferRawNew(from, to string, amount int64) error {
 	return ErrBalanceNotEnough
 }
 
-// todo deprecated GrantCoin issue coin
+// GrantCoin issue coin. todo deprecated
 func (h *Teller) GrantCoin(coinName, to string, amountStr string) (contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -58,7 +58,7 @@ func (h *Teller) GrantCoin(coinName, to string, amountStr string) (contract.Cost
 	return TransferCost, nil
 }
 
-// todo deprecated ConsumeCoin consume coin from
+// ConsumeCoin consume coin from todo deprecated
 func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost contract.Cost, err error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -75,7 +75,7 @@ func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost cont
 	return TransferCost, nil
 }
 
-// todo deprecated GrantServi ...
+// GrantServi ...todo deprecated
 func (h *Teller) GrantServi(to string, amountStr string) (contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -89,7 +89,7 @@ func (h *Teller) GrantServi(to string, amountStr string) (contract.Cost, error) 
 	return TransferCost, nil
 }
 
-// todo deprecated ConsumeServi ...
+// ConsumeServi ...todo deprecated
 func (h *Teller) ConsumeServi(from string, amountStr string) (cost contract.Cost, err error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {
@@ -106,7 +106,7 @@ func (h *Teller) ConsumeServi(from string, amountStr string) (cost contract.Cost
 	return TransferCost, nil
 }
 
-// todo deprecated TotalServi ...
+// TotalServi ... todo deprecated
 func (h *Teller) TotalServi() (ts string, cost contract.Cost) {
 	fpn := common.Fixed{Value: h.h.db.TotalServi(), Decimal: 8}
 	ts = fpn.ToString()

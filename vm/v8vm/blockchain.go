@@ -7,12 +7,13 @@ import "C"
 import (
 	"encoding/json"
 
-	"github.com/iost-official/go-iost/vm/host"
 	"errors"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 var (
-	ErrGetSandbox = errors.New("get sandbox failed.")
+	// ErrGetSandbox error when GetSandbox failed.
+	ErrGetSandbox = errors.New("get sandbox failed")
 )
 
 //export goBlockInfo

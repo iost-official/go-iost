@@ -93,7 +93,7 @@ func (h *DBHandler) GlobalHas(con, key string, owner ...string) (bool, contract.
 	return h.h.db.Has(h.modifyGlobalKey(con, key, owner...)), GetCost
 }
 
-// GlobalHas get another contract's data
+// GlobalGet get another contract's data
 func (h *DBHandler) GlobalGet(con, key string, owner ...string) (value interface{}, cost contract.Cost) {
 	o := h.h.db.Get(h.modifyGlobalKey(con, key, owner...))
 	return database.MustUnmarshal(o), GetCost

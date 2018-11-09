@@ -5,13 +5,14 @@ package v8
 */
 import "C"
 import (
-	"reflect"
 	"errors"
+	"reflect"
 )
 
+// Error message
 var (
-	ErrConsoleNoLogger = errors.New("no logger error.")
-	ErrConsoleInvalidLogLevel = errors.New("log invalid level.")
+	ErrConsoleNoLogger        = errors.New("no logger error")
+	ErrConsoleInvalidLogLevel = errors.New("log invalid level")
 )
 
 //export goConsoleLog

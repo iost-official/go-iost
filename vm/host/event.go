@@ -9,11 +9,9 @@ import (
 type EventPoster struct {
 }
 
-// Post post the event
+// PostEvent post the event
 func (p *EventPoster) PostEvent(data string) contract.Cost {
 	e := event.NewEvent(event.Event_ContractEvent, data)
 	event.GetEventCollectorInstance().Post(e)
 	return EventCost(len(data))
 }
-
-

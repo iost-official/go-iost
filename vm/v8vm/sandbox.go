@@ -108,7 +108,7 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 		(C.requireAuthFunc)(C.goRequireAuth),
 		(C.receiptFunc)(C.goReceipt),
 		(C.eventFunc)(C.goEvent),
-		)
+	)
 	C.InitGoStorage(
 		(C.putFunc)(C.goPut),
 		(C.hasFunc)(C.goHas),
@@ -127,7 +127,7 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 		(C.globalMapGetFunc)(C.goGlobalMapGet),
 		(C.globalMapKeysFunc)(C.goGlobalMapKeys),
 		(C.globalMapLenFunc)(C.goGlobalMapLen),
-		)
+	)
 	C.loadVM(sbx.context, C.int(vmType))
 }
 
@@ -159,7 +159,7 @@ func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	var cCompiledCode *C.char
 	ret := C.compile(sbx.context, cCode, &cCompiledCode)
 	if ret == 1 {
-		return "", errors.New("compile code error.")
+		return "", errors.New("compile code error")
 	}
 
 	compiledCode := C.GoString(cCompiledCode)
