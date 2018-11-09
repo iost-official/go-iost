@@ -57,12 +57,12 @@ func TestGRPCServer_ExecTx(t *testing.T) {
 		10000, 1, time.Now().Add(time.Second*time.Duration(3)).UnixNano(), 0)
 	stx, err := tx.SignTx(trx, rootAccount.ID, []*account.KeyPair{rootAccount})
 
-	resp, err := client.ExecTx(context.Background(), &RawTxReq{Data: stx.Encode()})
+	resp, err := client.ExecTx(context.Background(), &TxReq{Tx: stx.ToPb()})
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	if resp.TxReceiptRaw.GasUsage != 303 {
-		t.Fatalf("gas used %d. should be 303", resp.TxReceiptRaw.GasUsage)
+	if resp.TxReceipt.GasUsage != 303 {
+		t.Fatalf("gas used %d. should be 303", resp.TxReceipt.GasUsage)
 	}
 
 }

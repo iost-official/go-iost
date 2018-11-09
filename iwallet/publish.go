@@ -147,7 +147,7 @@ func sendTx(stx *tx.Tx) ([]byte, error) {
 	}
 	defer conn.Close()
 	client := pb.NewApisClient(conn)
-	resp, err := client.SendRawTx(context.Background(), &pb.RawTxReq{Data: stx.Encode()})
+	resp, err := client.SendTx(context.Background(), &pb.TxReq{Tx: stx.ToPb()})
 	if err != nil {
 		return nil, err
 	}

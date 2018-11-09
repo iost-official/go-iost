@@ -33,7 +33,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcRawTxReq"
+              "$ref": "#/definitions/rpcTxReq"
             }
           }
         ],
@@ -64,7 +64,7 @@
           },
           {
             "name": "useLongestChain",
-            "description": "useLongestChain means whether geting the balance also from pending blocks(in the longest chain)",
+            "description": "useLongestChain means whether getting the balance also from pending blocks(in the longest chain)",
             "in": "path",
             "required": true,
             "type": "boolean",
@@ -322,15 +322,15 @@
         ]
       }
     },
-    "/sendRawTx": {
+    "/sendTx": {
       "post": {
         "summary": "receive encoded tx",
-        "operationId": "SendRawTx",
+        "operationId": "SendTx",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcSendRawTxRes"
+              "$ref": "#/definitions/rpcSendTxRes"
             }
           }
         },
@@ -340,7 +340,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcRawTxReq"
+              "$ref": "#/definitions/rpcTxReq"
             }
           }
         ],
@@ -433,17 +433,6 @@
         "name": {
           "type": "string"
         },
-        "payment": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "limit": {
-          "$ref": "#/definitions/contractCost"
-        },
-        "gas_price": {
-          "type": "string",
-          "format": "int64"
-        },
         "args": {
           "type": "array",
           "items": {
@@ -483,23 +472,6 @@
         }
       }
     },
-    "contractCost": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "string",
-          "format": "int64"
-        },
-        "net": {
-          "type": "string",
-          "format": "int64"
-        },
-        "CPU": {
-          "type": "string",
-          "format": "int64"
-        }
-      }
-    },
     "contractInfo": {
       "type": "object",
       "properties": {
@@ -514,23 +486,6 @@
           "items": {
             "$ref": "#/definitions/contractABI"
           }
-        }
-      }
-    },
-    "cryptoSignatureRaw": {
-      "type": "object",
-      "properties": {
-        "algorithm": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "sig": {
-          "type": "string",
-          "format": "byte"
-        },
-        "pubKey": {
-          "type": "string",
-          "format": "byte"
         }
       }
     },
@@ -622,9 +577,8 @@
     "rpcExecTxRes": {
       "type": "object",
       "properties": {
-        "txReceiptRaw": {
-          "$ref": "#/definitions/txpbTxReceipt",
-          "title": "not support yet"
+        "txReceipt": {
+          "$ref": "#/definitions/txpbTxReceipt"
         }
       }
     },
@@ -707,17 +661,7 @@
         }
       }
     },
-    "rpcRawTxReq": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "string",
-          "format": "byte",
-          "title": "the rawdata of a tx"
-        }
-      }
-    },
-    "rpcSendRawTxRes": {
+    "rpcSendTxRes": {
       "type": "object",
       "properties": {
         "hash": {
@@ -747,10 +691,18 @@
         }
       }
     },
+    "rpcTxReq": {
+      "type": "object",
+      "properties": {
+        "tx": {
+          "$ref": "#/definitions/txpbTx"
+        }
+      }
+    },
     "rpctxReceiptRes": {
       "type": "object",
       "properties": {
-        "txReceiptRaw": {
+        "txReceipt": {
           "$ref": "#/definitions/txpbTxReceipt",
           "title": "transaction receipt"
         },
@@ -762,13 +714,30 @@
     "rpctxRes": {
       "type": "object",
       "properties": {
-        "txRaw": {
+        "tx": {
           "$ref": "#/definitions/txpbTx",
           "title": "the queried transaction"
         },
         "hash": {
           "type": "string",
           "title": "transaction hash"
+        }
+      }
+    },
+    "sigpbSignature": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sig": {
+          "type": "string",
+          "format": "byte"
+        },
+        "pubKey": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -854,7 +823,7 @@
         "signs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/cryptoSignatureRaw"
+            "$ref": "#/definitions/sigpbSignature"
           }
         },
         "publisher": {
@@ -863,7 +832,7 @@
         "publishSigns": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/cryptoSignatureRaw"
+            "$ref": "#/definitions/sigpbSignature"
           }
         },
         "delay": {
@@ -887,9 +856,15 @@
           "type": "string",
           "format": "int64"
         },
+        "ramUsageName": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "ramUsage": {
-          "type": "object",
-          "additionalProperties": {
+          "type": "array",
+          "items": {
             "type": "string",
             "format": "int64"
           }
