@@ -78,5 +78,5 @@ func getTxReceiptByTxHash(server string, txHashStr string) (*txpb.TxReceipt, err
 		return nil, err
 	}
 	//ilog.Debugf("getTxReceiptByTxHash(%v): %v", txHashStr, resp.TxReceiptRaw)
-	return resp.TxReceiptRaw, nil
+	return resp.TxReceipt, nil
 }
