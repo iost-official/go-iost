@@ -85,8 +85,8 @@ func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter TxIter, c
 
 	if blk.Txs == nil {
 		blk.Txs = make([]*tx.Tx, 0)
-		blockBaseExec(blk, db, isolator, BlockBaseTx, c)
 	}
+	blockBaseExec(blk, db, isolator, BlockBaseTx, c)
 	if blk.Receipts == nil {
 		blk.Receipts = make([]*tx.TxReceipt, 0)
 	}
