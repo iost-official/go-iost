@@ -18,7 +18,7 @@ var errDoubleDot = errors.New("double dot error")
 type Fixed struct {
 	Value   int64
 	Decimal int
-	err     error
+	Err     error
 }
 
 // Marshal ...
@@ -54,7 +54,7 @@ func (f *Fixed) IsZero() bool {
 // Neg get negative number
 func (f *Fixed) Neg() *Fixed {
 	if multiplyOverflow(f.Value, -1) {
-		f.err = errOverflow
+		f.Err = errOverflow
 		return nil
 	}
 	return &Fixed{Value: -f.Value, Decimal: f.Decimal}
@@ -66,7 +66,7 @@ func (f *Fixed) changeDecimal(targetDecimal int) *Fixed {
 	for targetDecimal > decimal {
 		decimal++
 		if multiplyOverflow(value, 10) {
-			f.err = errOverflow
+			f.Err = errOverflow
 			return nil
 		}
 		value *= 10
@@ -92,14 +92,14 @@ func (f *Fixed) shrinkDecimal() *Fixed {
 func UnifyDecimal(a *Fixed, b *Fixed) (*Fixed, *Fixed, error) {
 	if a.Decimal < b.Decimal {
 		aChanged := a.changeDecimal(b.Decimal)
-		if aChanged.err != nil {
-			return nil, nil, aChanged.err
+		if aChanged.Err != nil {
+			return nil, nil, aChanged.Err
 		}
 		return aChanged, b, nil
 	}
 	bChanged := b.changeDecimal(a.Decimal)
-	if bChanged.err != nil {
-		return nil, nil, bChanged.err
+	if bChanged.Err != nil {
+		return nil, nil, bChanged.Err
 	}
 	return a, bChanged, nil
 }
@@ -107,7 +107,7 @@ func UnifyDecimal(a *Fixed, b *Fixed) (*Fixed, *Fixed, error) {
 // Equals check equal
 func (f *Fixed) Equals(other *Fixed) bool {
 	fpnNew, otherNew, err := UnifyDecimal(f, other)
-	f.err = err
+	f.Err = err
 	return fpnNew.Value == otherNew.Value
 }
 
@@ -115,7 +115,7 @@ func (f *Fixed) Equals(other *Fixed) bool {
 func (f *Fixed) Add(other *Fixed) *Fixed {
 	fpnNew, otherNew, err := UnifyDecimal(f, other)
 	if err != nil {
-		f.err = err
+		f.Err = err
 		return nil
 	}
 	return &Fixed{Value: fpnNew.Value + otherNew.Value, Decimal: fpnNew.Decimal}
@@ -124,8 +124,8 @@ func (f *Fixed) Add(other *Fixed) *Fixed {
 // Sub ...
 func (f *Fixed) Sub(other *Fixed) *Fixed {
 	ret := other.Neg()
-	if other.err != nil {
-		f.err = other.err
+	if other.Err != nil {
+		f.Err = other.Err
 		return nil
 	}
 	return f.Add(ret)
@@ -136,7 +136,7 @@ func (f *Fixed) Multiply(other *Fixed) *Fixed {
 	fpnNew := f.shrinkDecimal()
 	otherNew := other.shrinkDecimal()
 	if multiplyOverflow(fpnNew.Value, otherNew.Value) {
-		f.err = errOverflow
+		f.Err = errOverflow
 		return nil
 	}
 	return &Fixed{Value: fpnNew.Value * otherNew.Value, Decimal: fpnNew.Decimal + otherNew.Decimal}
@@ -145,7 +145,7 @@ func (f *Fixed) Multiply(other *Fixed) *Fixed {
 // Times multiply a scalar
 func (f *Fixed) Times(i int64) *Fixed {
 	if multiplyOverflow(f.Value, i) {
-		f.err = errOverflow
+		f.Err = errOverflow
 		return nil
 	}
 	return &Fixed{Value: f.Value * i, Decimal: f.Decimal}
@@ -154,7 +154,7 @@ func (f *Fixed) Times(i int64) *Fixed {
 // Div divide by a scalar
 func (f *Fixed) Div(i int64) *Fixed {
 	if i == 0 {
-		f.err = errDivideByZero
+		f.Err = errDivideByZero
 		return nil
 	}
 	return &Fixed{Value: f.Value / i, Decimal: f.Decimal}
@@ -163,7 +163,7 @@ func (f *Fixed) Div(i int64) *Fixed {
 // LessThan ...
 func (f *Fixed) LessThan(other *Fixed) bool {
 	fpnNew, otherNew, err := UnifyDecimal(f, other)
-	f.err = err
+	f.Err = err
 	return fpnNew.Value < otherNew.Value
 }
 
@@ -178,7 +178,7 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 		if err != nil {
 			return nil, err
 		} else {
-			return fpn.Neg(), fpn.err
+			return fpn.Neg(), fpn.Err
 		}
 	}
 	fpn := &Fixed{Value: 0, Decimal: 0}
@@ -208,14 +208,14 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 			return nil, errAbnormalChar
 		}
 	}
-	return fpn.changeDecimal(decimal), fpn.err
+	return fpn.changeDecimal(decimal), fpn.Err
 }
 
 // ToString generate string of Fixed without post zero
 func (f *Fixed) ToString() string {
 	if f.Value < 0 {
 		ret := f.Neg()
-		if f.err != nil {
+		if f.Err != nil {
 			return ""
 		}
 		str := ret.ToString()
