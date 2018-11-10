@@ -181,6 +181,7 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 		}
 	}
 	fpn := &Fixed{Value: 0, Decimal: 0}
+	decimalStart := false
 	for i := 0; i < len(amount); i++ {
 		if '0' <= amount[i] && amount[i] <= '9' {
 			num := int64(amount[i] - '0')
@@ -191,8 +192,14 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 			if fpn.Value < 0 {
 				return nil, errOverflow
 			}
+			if decimalStart {
+				fpn.Decimal++
+			}
+			if fpn.Decimal >= decimal {
+				break
+			}
 		} else if amount[i] == '.' {
-			fpn.Decimal = len(amount) - i - 1
+			decimalStart = true
 		} else {
 			return nil, errAbnormalChar
 		}
