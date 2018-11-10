@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
 )
 
@@ -16,7 +17,10 @@ const (
     "algorithm":"ed25519"
   },
   "clients":[
-    {"name": "iserver", "addr": "127.0.0.1:30002"}
+    {
+      "name": "iserver",
+      "addr": "127.0.0.1:30002"
+    }
   ]
 }
 `
@@ -48,8 +52,10 @@ func LoadITestConfig(file string) (*ITestConfig, error) {
 		return nil, err
 	}
 
-	ilog.Debugf("Bank: %v", itc.Bank)
-	ilog.Debugf("Clients: %v", itc.Clients)
+	ilog.Debugf("Bank id: %v", itc.Bank.ID)
+	ilog.Debugf("Bank seckey: %v", common.Base58Encode(itc.Bank.key.Seckey))
+	ilog.Debugf("Clients name: %v", itc.Clients[0].Name)
+	ilog.Debugf("Clients addr: %v", itc.Clients[0].Addr)
 
 	return itc, nil
 }

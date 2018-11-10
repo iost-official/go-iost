@@ -25,19 +25,19 @@ var (
 )
 
 type Client struct {
-	grpc rpc.ApisClient `json:"-"`
-	name string
-	addr string
+	grpc rpc.ApisClient
+	Name string
+	Addr string
 }
 
 func (c *Client) getGRPC() (rpc.ApisClient, error) {
 	if c.grpc == nil {
-		conn, err := grpc.Dial(c.addr, grpc.WithInsecure())
+		conn, err := grpc.Dial(c.Addr, grpc.WithInsecure())
 		if err != nil {
 			return nil, err
 		}
 		c.grpc = rpc.NewApisClient(conn)
-		ilog.Infof("Create grpc connection with %v successful", c.addr)
+		ilog.Infof("Create grpc connection with %v successful", c.Addr)
 	}
 	return c.grpc, nil
 }
@@ -59,7 +59,7 @@ func (c *Client) GetTransaction(hash string) (*Transaction, error) {
 	}
 
 	transaction := &Transaction{
-		Tx: (&tx.Tx{}).FromPb(resp.GetTxRaw()),
+		Tx: (&tx.Tx{}).FromPb(resp.Tx),
 	}
 
 	return transaction, nil
@@ -82,7 +82,7 @@ func (c *Client) GetReceipt(hash string) (*Receipt, error) {
 	}
 
 	receipt := &Receipt{
-		TxReceipt: (&tx.TxReceipt{}).FromPb(resp.GetTxReceiptRaw()),
+		TxReceipt: (&tx.TxReceipt{}).FromPb(resp.GetTxReceipt()),
 	}
 
 	return receipt, nil
@@ -120,10 +120,10 @@ func (c *Client) SendTransaction(transaction *Transaction) (string, error) {
 		return "", err
 	}
 
-	resp, err := grpc.SendRawTx(
+	resp, err := grpc.SendTx(
 		context.Background(),
-		&rpc.RawTxReq{
-			Data: transaction.Encode(),
+		&rpc.TxReq{
+			Tx: transaction.ToPb(),
 		},
 	)
 	if err != nil {
