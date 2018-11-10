@@ -39,11 +39,7 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 	if !bytes.Equal(blk.CalculateTxsHash(), bh.TxsHash) {
 		return errTxHash
 	}
-	mh, err := blk.CalculateMerkleHash()
-	if err != nil {
-		return err
-	}
-	if !bytes.Equal(mh, bh.MerkleHash) {
+	if !bytes.Equal(blk.CalculateMerkleHash(), bh.MerkleHash) {
 		return errMerkleHash
 	}
 	return nil

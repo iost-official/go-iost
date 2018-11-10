@@ -95,7 +95,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 	//	}
 
 	blk.Head.TxsHash = blk.CalculateTxsHash()
-	blk.Head.MerkleHash, err = blk.CalculateMerkleHash()
+	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	err = blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err

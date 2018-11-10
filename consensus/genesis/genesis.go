@@ -171,7 +171,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		Receipts: []*tx.TxReceipt{txr},
 	}
 	blk.Head.TxsHash = blk.CalculateTxsHash()
-	blk.Head.MerkleHash, err = blk.CalculateMerkleHash()
+	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	if err != nil {
 		return nil, err
 	}
