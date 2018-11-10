@@ -133,7 +133,11 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return errWitness
 	}
 
-	for _, tx := range blk.Txs[1:] {
+	for i, tx := range blk.Txs {
+		if i == 0 {
+			// base tx
+			continue
+		}
 		exist := txPool.ExistTxs(tx.Hash(), parent)
 		if exist == txpool.FoundChain {
 			return errTxDup
