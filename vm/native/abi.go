@@ -11,11 +11,6 @@ func SystemABI() *contract.Contract {
 	return ABI("iost.system", systemABIs)
 }
 
-// BonusABI generate iost.bonus abi and contract
-func BonusABI() *contract.Contract {
-	return ABI("iost.bonus", bonusABIs)
-}
-
 // GasABI generate iost.gas abi and contract
 func GasABI() *contract.Contract {
 	return ABI("iost.gas", gasABIs)

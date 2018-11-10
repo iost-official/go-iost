@@ -6,9 +6,7 @@ type Visitor struct {
 	GasHandler
 	MapHandler
 	ContractHandler
-	BalanceHandler
 	TokenHandler
-	CoinHandler
 	RollbackHandler
 	DelaytxHandler
 }
@@ -22,9 +20,7 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 		BasicHandler:    BasicHandler{cachedDB},
 		MapHandler:      MapHandler{cachedDB},
 		ContractHandler: ContractHandler{cachedDB},
-		CoinHandler:     CoinHandler{cachedDB},
 		TokenHandler:    TokenHandler{cachedDB},
-		BalanceHandler:  BalanceHandler{cachedDB},
 		GasHandler:      GasHandler{cachedDB},
 	}
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
@@ -52,9 +48,7 @@ func NewBatchVisitor(lruDB *LRU) (*Visitor, Mapper) {
 		BasicHandler:    BasicHandler{watcher},
 		MapHandler:      MapHandler{watcher},
 		ContractHandler: ContractHandler{watcher},
-		CoinHandler:     CoinHandler{watcher},
 		TokenHandler:    TokenHandler{watcher},
-		BalanceHandler:  BalanceHandler{watcher},
 		GasHandler:      GasHandler{watcher},
 	}
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
