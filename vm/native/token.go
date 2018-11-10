@@ -46,7 +46,7 @@ func checkTokenExists(h *host.Host, tokenName string) (ok bool, cost contract.Co
 }
 
 func setBalance(h *host.Host, tokenName string, from string, balance int64) (cost contract.Cost) {
-	cost = h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance, from)
+	cost = h.MapPut(TokenBalanceMapPrefix, tokenName, balance, from)
 	return cost
 }
 
@@ -59,15 +59,15 @@ type FreezeItem struct {
 func getBalance(h *host.Host, tokenName string, from string) (balance int64, cost contract.Cost, err error) {
 	balance = int64(0)
 	cost = contract.Cost0()
-	ok, cost0 := h.MapHas(TokenBalanceMapPrefix+from, tokenName, from)
+	ok, cost0 := h.MapHas(TokenBalanceMapPrefix, tokenName, from)
 	cost.AddAssign(cost0)
 	if ok {
-		tmp, cost0 := h.MapGet(TokenBalanceMapPrefix+from, tokenName, from)
+		tmp, cost0 := h.MapGet(TokenBalanceMapPrefix, tokenName, from)
 		cost.AddAssign(cost0)
 		balance = tmp.(int64)
 	}
 
-	ok, cost0 = h.MapHas(TokenFreezeMapPrefix+from, tokenName, from)
+	ok, cost0 = h.MapHas(TokenFreezeMapPrefix, tokenName, from)
 	cost.AddAssign(cost0)
 	if !ok {
 		return balance, cost, nil
@@ -76,7 +76,7 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 	ntime, cost0 := h.BlockTime()
 	cost.AddAssign(cost0)
 
-	freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName, from)
+	freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix, tokenName, from)
 	cost.AddAssign(cost0)
 	freezeList := []FreezeItem{}
 
@@ -110,7 +110,7 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 		if err != nil {
 			return balance, cost, err
 		}
-		cost0 = h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON.([]byte)), from)
+		cost0 = h.MapPut(TokenFreezeMapPrefix, tokenName, database.SerializedJSON(freezeJSON.([]byte)), from)
 		cost.AddAssign(cost0)
 	}
 
@@ -118,10 +118,10 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 }
 
 func freezeBalance(h *host.Host, tokenName string, from string, balance int64, ftime int64) (cost contract.Cost, err error) {
-	ok, cost := h.MapHas(TokenFreezeMapPrefix+from, tokenName, from)
+	ok, cost := h.MapHas(TokenFreezeMapPrefix, tokenName, from)
 	freezeList := []FreezeItem{}
 	if ok {
-		freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName, from)
+		freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix, tokenName, from)
 		cost.AddAssign(cost0)
 		err = json.Unmarshal([]byte(freezeJSON.(database.SerializedJSON)), &freezeList)
 		cost.AddAssign(host.CommonOpCost(1))
@@ -142,7 +142,7 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 	if err != nil {
 		return cost, nil
 	}
-	cost0 := h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON), from)
+	cost0 := h.MapPut(TokenFreezeMapPrefix, tokenName, database.SerializedJSON(freezeJSON), from)
 	cost.AddAssign(cost0)
 
 	return cost, nil
