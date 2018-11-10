@@ -2,7 +2,6 @@ package common
 
 import (
 	"bytes"
-	"fmt"
 )
 
 // SimpleNotation is a simple serialize notation used to convert struct to bytes.
@@ -92,7 +91,6 @@ func (sn *SimpleNotation) WriteMapStringToI64(m map[string]int64, escape bool) {
 			}
 		}
 	}
-	fmt.Println(key)
 	var buf bytes.Buffer
 	for _, k := range key {
 		buf.WriteByte(sn.mapSep)
