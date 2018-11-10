@@ -4,9 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"fmt"
-	"strings"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/cverifier"
@@ -42,6 +39,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 		Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: topBlock.HeadHash(),
+			Info:       make([]byte, 0),
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
 			Time:       time.Now().UnixNano(),
@@ -60,6 +58,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 	})
 	if err != nil {
 		go txPool.DelTxList(dropList)
+		ilog.Errorf("Gen is err: %v", err)
 	}
 	//t, ok := txIter.Next()
 	//	var vmExecTime, iterTime, i, j int64
@@ -134,30 +133,20 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return errWitness
 	}
 
-	// check vote
-	if blk.Head.Number%common.VoteInterval == 0 {
-		if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
-			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
-			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
-
-			return errors.New("blk did not vote")
+	for i, tx := range blk.Txs {
+		if i == 0 {
+			// base tx
+			continue
 		}
-
-		if blk.Receipts[0].Status.Code != tx.Success {
-			return fmt.Errorf("vote was incorrect, status:%v", blk.Receipts[0].Status)
-		}
-	}
-
-	for _, t := range blk.Txs {
-		exist := txPool.ExistTxs(t.Hash(), parent)
+		exist := txPool.ExistTxs(tx.Hash(), parent)
 		if exist == txpool.FoundChain {
 			return errTxDup
 		} else if exist != txpool.FoundPending {
-			if err := t.VerifySelf(); err != nil {
+			if err := tx.VerifySelf(); err != nil {
 				return errTxSignature
 			}
 		}
-		if !t.IsTimeValid(blk.Head.Time) {
+		if !tx.IsTimeValid(blk.Head.Time) {
 			return errTxInvalidTime
 		}
 	}
