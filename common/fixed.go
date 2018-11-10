@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"math"
+
+	"github.com/iost-official/go-iost/ilog"
 )
 
 var errOverflow = errors.New("overflow error")
@@ -15,6 +17,7 @@ var errDivideByZero = errors.New("divide by zero error")
 type Fixed struct {
 	Value   int64
 	Decimal int
+	err     error
 }
 
 // Marshal ...
@@ -48,20 +51,22 @@ func (f *Fixed) IsZero() bool {
 }
 
 // Neg get negative number
-func (f *Fixed) Neg() (*Fixed, error) {
+func (f *Fixed) Neg() *Fixed {
 	if multiplyOverflow(f.Value, -1) {
-		return nil, errOverflow
+		f.err = errOverflow
+		return nil
 	}
-	return &Fixed{Value: -f.Value, Decimal: f.Decimal}, nil
+	return &Fixed{Value: -f.Value, Decimal: f.Decimal}
 }
 
-func (f *Fixed) changeDecimal(targetDecimal int) (*Fixed, error) {
+func (f *Fixed) changeDecimal(targetDecimal int) *Fixed {
 	value := f.Value
 	decimal := f.Decimal
 	for targetDecimal > decimal {
 		decimal++
 		if multiplyOverflow(value, 10) {
-			return nil, errOverflow
+			f.err = errOverflow
+			return nil
 		}
 		value *= 10
 	}
@@ -69,7 +74,7 @@ func (f *Fixed) changeDecimal(targetDecimal int) (*Fixed, error) {
 		decimal--
 		value /= 10
 	}
-	return &Fixed{Value: value, Decimal: decimal}, nil
+	return &Fixed{Value: value, Decimal: decimal}
 }
 
 func (f *Fixed) shrinkDecimal() *Fixed {
@@ -85,93 +90,97 @@ func (f *Fixed) shrinkDecimal() *Fixed {
 // UnifyDecimal make two fix point number have same decimal.
 func UnifyDecimal(a *Fixed, b *Fixed) (*Fixed, *Fixed, error) {
 	if a.Decimal < b.Decimal {
-		aChanged, err := a.changeDecimal(b.Decimal)
-		if err != nil {
-			return nil, nil, err
+		aChanged := a.changeDecimal(b.Decimal)
+		if aChanged.err != nil {
+			return nil, nil, aChanged.err
 		}
-		return aChanged, b, err
+		return aChanged, b, nil
 	}
-	bChanged, err := b.changeDecimal(a.Decimal)
-	if err != nil {
-		return nil, nil, err
+	bChanged := b.changeDecimal(a.Decimal)
+	if bChanged.err != nil {
+		return nil, nil, bChanged.err
 	}
 	return a, bChanged, nil
 }
 
 // Equals check equal
-func (f *Fixed) Equals(other *Fixed) (bool, error) {
+func (f *Fixed) Equals(other *Fixed) bool {
 	fpnNew, otherNew, err := UnifyDecimal(f, other)
-	return fpnNew.Value == otherNew.Value, err
+	f.err = err
+	return fpnNew.Value == otherNew.Value
 }
 
 // Add ...
-func (f *Fixed) Add(other *Fixed) (*Fixed, error) {
+func (f *Fixed) Add(other *Fixed) *Fixed {
 	fpnNew, otherNew, err := UnifyDecimal(f, other)
 	if err != nil {
-		return nil, err
+		f.err = err
+		return nil
 	}
-	return &Fixed{Value: fpnNew.Value + otherNew.Value, Decimal: fpnNew.Decimal}, nil
+	return &Fixed{Value: fpnNew.Value + otherNew.Value, Decimal: fpnNew.Decimal}
 }
 
 // Sub ...
-func (f *Fixed) Sub(other *Fixed) (*Fixed, error) {
-	ret, err := other.Neg()
-	if err != nil {
-		return nil, err
+func (f *Fixed) Sub(other *Fixed) *Fixed {
+	ret := other.Neg()
+	if other.err != nil {
+		f.err = other.err
+		return nil
 	}
-	ret, err = f.Add(ret)
-	if err != nil {
-		return nil, err
-	}
-	return ret, nil
+	return f.Add(ret)
 }
 
 // Multiply ...
-func (f *Fixed) Multiply(other *Fixed) (*Fixed, error) {
+func (f *Fixed) Multiply(other *Fixed) *Fixed {
 	fpnNew := f.shrinkDecimal()
 	otherNew := other.shrinkDecimal()
 	if multiplyOverflow(fpnNew.Value, otherNew.Value) {
-		return nil, errOverflow
+		f.err = errOverflow
+		return nil
 	}
-	return &Fixed{Value: fpnNew.Value * otherNew.Value, Decimal: fpnNew.Decimal + otherNew.Decimal}, nil
+	return &Fixed{Value: fpnNew.Value * otherNew.Value, Decimal: fpnNew.Decimal + otherNew.Decimal}
 }
 
 // Times multiply a scalar
-func (f *Fixed) Times(i int64) (*Fixed, error) {
+func (f *Fixed) Times(i int64) *Fixed {
 	if multiplyOverflow(f.Value, i) {
-		return nil, errOverflow
+		f.err = errOverflow
+		return nil
 	}
-	return &Fixed{Value: f.Value * i, Decimal: f.Decimal}, nil
+	return &Fixed{Value: f.Value * i, Decimal: f.Decimal}
 }
 
 // Div divide by a scalar
-func (f *Fixed) Div(i int64) (*Fixed, error) {
+func (f *Fixed) Div(i int64) *Fixed {
 	if i == 0 {
-		return nil, errDivideByZero
+		f.err = errDivideByZero
+		return nil
 	}
-	return &Fixed{Value: f.Value / i, Decimal: f.Decimal}, nil
+	return &Fixed{Value: f.Value / i, Decimal: f.Decimal}
 }
 
 // LessThan ...
-func (f *Fixed) LessThan(other *Fixed) (bool, error) {
+func (f *Fixed) LessThan(other *Fixed) bool {
 	fpnNew, otherNew, err := UnifyDecimal(f, other)
-	return fpnNew.Value < otherNew.Value, err
+	f.err = err
+	return fpnNew.Value < otherNew.Value
 }
 
 // NewFixed generate Fixed from string and decimal, will truncate if decimal is smaller
 func NewFixed(amount string, decimal int) (*Fixed, error) {
-	if amount[0] == '-' {
-		fpn, err := NewFixed(amount[1:], decimal)
-		if err != nil {
-			return nil, err
-		} else {
-			return fpn.Neg()
-		}
-	}
-	fpn := &Fixed{Value: 0, Decimal: 0}
 	if len(amount) == 0 || amount[0] == '.' {
 		return nil, errAmountFormat
 	}
+	if amount[0] == '-' {
+		fpn, err := NewFixed(amount[1:], decimal)
+		ilog.Info(fpn, err)
+		if err != nil {
+			return nil, err
+		} else {
+			return fpn.Neg(), fpn.err
+		}
+	}
+	fpn := &Fixed{Value: 0, Decimal: 0}
 	for i := 0; i < len(amount); i++ {
 		if '0' <= amount[i] && amount[i] <= '9' {
 			num := int64(amount[i] - '0')
@@ -188,18 +197,18 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 			return nil, errAbnormalChar
 		}
 	}
-	return fpn.changeDecimal(decimal)
+	return fpn.changeDecimal(decimal), fpn.err
 }
 
 // ToString generate string of Fixed without post zero
-func (f *Fixed) ToString() (string, error) {
+func (f *Fixed) ToString() string {
 	if f.Value < 0 {
-		ret, err := f.Neg()
-		if err != nil {
-			return "", err
+		ret := f.Neg()
+		if f.err != nil {
+			return ""
 		}
-		str, err := ret.ToString()
-		return "-" + str, nil
+		str := ret.ToString()
+		return "-" + str
 	}
 	val := f.Value
 	str := make([]byte, 0, 0)
@@ -215,7 +224,7 @@ func (f *Fixed) ToString() (string, error) {
 		rtn = append(rtn, str[i])
 	}
 	if f.Decimal == 0 {
-		return string(rtn), nil
+		return string(rtn)
 	}
 	for rtn[len(rtn)-1] == '0' {
 		rtn = rtn[0 : len(rtn)-1]
@@ -223,7 +232,7 @@ func (f *Fixed) ToString() (string, error) {
 	if rtn[len(rtn)-1] == '.' {
 		rtn = rtn[0 : len(rtn)-1]
 	}
-	return string(rtn), nil
+	return string(rtn)
 }
 
 // ToFloat ...

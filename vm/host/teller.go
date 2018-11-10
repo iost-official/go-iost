@@ -64,7 +64,8 @@ func (h *Teller) GetBalance(from string) (string, contract.Cost, error) {
 		bl = h.h.db.Balance(ContractAccountPrefix + from)
 	}
 	fpn := common.Fixed{Value: bl, Decimal: 8}
-	return fpn.ToString(), GetCost, nil
+	s := fpn.ToString()
+	return s, GetCost, nil
 }
 
 // GrantCoin issue coin

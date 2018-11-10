@@ -7,11 +7,11 @@ import (
 )
 
 func TestFixed_ToString(t *testing.T) {
-	f := Fixed{-9223372036854775808, 4}
-	_, err := f.ToString()
-	assert.Equal(t, err, errOverflow)
-	f = Fixed{100, 0}
-	s, err := f.ToString()
+	f := Fixed{-9223372036854775808, 4, nil}
+	f.ToString()
+	assert.Equal(t, f.err, errOverflow)
+	f = Fixed{100, 0, nil}
+	s := f.ToString()
 	assert.Equal(t, s, "100")
 }
 
@@ -26,14 +26,14 @@ func TestNewFixed(t *testing.T) {
 }
 
 func TestFixed_Multiply(t *testing.T) {
-	f1 := Fixed{-9223372036854775807, 4}
-	f2 := Fixed{-9223372036854775807, 4}
-	_, err := f1.Multiply(&f2)
-	assert.Equal(t, err, errOverflow)
+	f1 := Fixed{-9223372036854775807, 4, nil}
+	f2 := Fixed{-9223372036854775807, 4, nil}
+	f1.Multiply(&f2)
+	assert.Equal(t, f1.err, errOverflow)
 }
 
 func TestFixed_Times(t *testing.T) {
-	f1 := Fixed{-9223372036854775807, 4}
-	_, err := f1.Times(3)
-	assert.Equal(t, err, errOverflow)
+	f1 := Fixed{-9223372036854775807, 4, nil}
+	f1.Times(3)
+	assert.Equal(t, f1.err, errOverflow)
 }
