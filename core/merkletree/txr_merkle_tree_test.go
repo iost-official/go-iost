@@ -10,7 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"os"
+
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/smartystreets/goconvey/convey"
 )
 
@@ -27,6 +30,7 @@ func TestTXRMerkleTree(t *testing.T) {
 		m.Build(txrs)
 		convey.So(hex.EncodeToString(m.Tx2Txr["node1"]), convey.ShouldEqual, "0a056e6f6465312200")
 		txr, err := m.GetTXR([]byte("node1"))
+		ilog.Info(err)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -60,4 +64,5 @@ func BenchmarkTXRMerkleTree_Build(b *testing.B) { // 2439313ns = 2.4ms
 	for i := 0; i < b.N; i++ {
 		m.Build(txrs)
 	}
+	os.RemoveAll("TXRMerkleTreeDB")
 }

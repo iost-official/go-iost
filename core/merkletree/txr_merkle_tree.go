@@ -13,7 +13,7 @@ func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) {
 	data := make([][]byte, len(txrs))
 	m.Tx2Txr = make(map[string][]byte)
 	for i, txr := range txrs {
-		m.Tx2Txr[string(txr.TxHash)] = txr.Hash()
+		m.Tx2Txr[string(txr.TxHash)] = txr.Encode()
 		data[i] = m.Tx2Txr[string(txr.TxHash)]
 	}
 	m.Mt.Build(data)
@@ -34,8 +34,13 @@ func (m *TXRMerkleTree) GetTXR(hash []byte) (*tx.TxReceipt, error) {
 }
 
 // RootHash return root of merkle tree
-func (m *TXRMerkleTree) RootHash() []byte {
-	return m.Mt.RootHash()
+func (m *TXRMerkleTree) RootHash() ([]byte, error) {
+	txr := tx.TxReceipt{}
+	err := txr.Decode(m.Mt.RootHash())
+	if err != nil {
+		return nil, err
+	}
+	return txr.Hash(), nil
 }
 
 // MerklePath return path of the merkle tree
