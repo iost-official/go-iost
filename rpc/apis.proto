@@ -186,11 +186,24 @@ message ChainInfoRes {
     BlockInfo latestConfirmedBlock = 6;
 }
 
+message RAMInfo {
+    int64 available = 1;
+}
+
+message GASInfo {
+    // these values are all fix point number
+    string currentTotal = 1;
+    string increaseSpeed = 2;
+    string limit = 3;
+    string pledgedCoin = 4;
+}
+
 message GetAccountRes {
     // the queried balance
-    int64 balance=1;
+    string balance=1;
     // current gas
-    string gas=2;
+    GASInfo gas=2;
+    RAMInfo ram=3;
 }
 
 message GetContractStorageRes {
