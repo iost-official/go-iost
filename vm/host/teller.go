@@ -148,7 +148,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 			}
 		}
 		// contracts in "iost" domain will not pay for ram
-		if isPayRAM && !strings.HasPrefix(k, "iost") {
+		if isPayRAM && c.Data > 0 && !strings.HasPrefix(k, "iost") {
 			var payer string
 			if strings.HasPrefix(k, "Contract") {
 				p, _ := h.h.GlobalMapGet("iost.system", "contract_owner", k)
