@@ -43,9 +43,9 @@ func NewSimulator() *Simulator {
 		mvcc:     mvccdb,
 		Head: &block.BlockHead{
 			ParentHash: []byte("abc"),
-			Number:     0,
+			Number:     1,
 			Witness:    "witness",
-			Time:       123456,
+			Time:       int64(1541541540 * 1000 * 1000 * 1000),
 		},
 		Logger: ilog.DefaultLogger(),
 	}
@@ -75,6 +75,13 @@ func (s *Simulator) SetGas(id string, i int64) {
 		Value:   i * 10e8,
 		Decimal: 8,
 	})
+	s.Visitor.Commit()
+}
+
+// SetRAM to id
+func (s *Simulator) SetRAM(id string, r int64) {
+	s.Visitor.SetTokenBalance("ram", id, r)
+	s.Visitor.Commit()
 }
 
 // SetContract without run init
@@ -168,12 +175,12 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	if err != nil {
 		return &tx.TxReceipt{}, fmt.Errorf("prepare tx error: %v", err)
 	}
-	r, err := isolator.Run()
+	_, err = isolator.Run()
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
 
-	err = isolator.PayCost()
+	r, err := isolator.PayCost()
 	if err != nil {
 		return nil, err
 	}

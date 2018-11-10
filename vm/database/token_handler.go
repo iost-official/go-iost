@@ -2,7 +2,9 @@ package database
 
 import (
 	"errors"
+
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // TokenContractName name of basic token contract
@@ -26,6 +28,7 @@ func (m *TokenHandler) decimalKey(tokenName string) string {
 func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 	currentRaw := m.db.Get(m.balanceKey(tokenName, acc))
 	balance := Unmarshal(currentRaw)
+	ilog.Errorf("TokenBalance is %v %v %v", tokenName, acc, balance)
 	ib, ok := balance.(int64)
 	if !ok {
 		ib = 0
@@ -51,8 +54,8 @@ func (m *TokenHandler) SetTokenBalance(tokenName, acc string, amount int64) {
 
 // SetTokenBalanceFixed set token balance of acc, used for test
 func (m *TokenHandler) SetTokenBalanceFixed(tokenName, acc string, amountStr string) {
-	amountNumber, ok := common.NewFixed(amountStr, m.Decimal(tokenName))
-	if !ok {
+	amountNumber, err := common.NewFixed(amountStr, m.Decimal(tokenName))
+	if err != nil {
 		panic(errors.New("construct Fixed number failed. str = " + amountStr + ", decimal = " + string(m.Decimal(tokenName))))
 	}
 	m.db.Put(m.balanceKey(tokenName, acc), MustMarshal(amountNumber.Value))

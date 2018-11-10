@@ -5,6 +5,8 @@ import (
 
 	"github.com/smartystreets/goconvey/convey"
 
+	"time"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
@@ -12,17 +14,18 @@ import (
 )
 
 func TestVerifyBlockHead(t *testing.T) {
+	stamp := time.Now().UnixNano()
 	Convey("Test of verify block head", t, func() {
 		parentBlk := &block.Block{
 			Head: &block.BlockHead{
 				Number: 3,
-				Time:   common.GetCurrentTimestamp().Slot - 1,
+				Time:   stamp - 1,
 			},
 		}
 		chainTop := &block.Block{
 			Head: &block.BlockHead{
 				Number: 1,
-				Time:   common.GetCurrentTimestamp().Slot - 4,
+				Time:   stamp - 4,
 			},
 		}
 		hash := parentBlk.HeadHash()
@@ -30,7 +33,7 @@ func TestVerifyBlockHead(t *testing.T) {
 			Head: &block.BlockHead{
 				ParentHash: hash,
 				Number:     4,
-				Time:       common.GetCurrentTimestamp().Slot,
+				Time:       stamp,
 				TxsHash:    common.Sha3([]byte{}),
 				MerkleHash: []byte{},
 			},
@@ -41,10 +44,10 @@ func TestVerifyBlockHead(t *testing.T) {
 		})
 
 		convey.Convey("Wrong time", func() {
-			blk.Head.Time = common.GetCurrentTimestamp().Slot - 5
+			blk.Head.Time = stamp - 5
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
 			convey.So(err, convey.ShouldEqual, errOldBlk)
-			blk.Head.Time = common.GetCurrentTimestamp().Slot + 2
+			blk.Head.Time = stamp + 10*1e9
 			err = VerifyBlockHead(blk, parentBlk, chainTop)
 			convey.So(err, convey.ShouldEqual, errFutureBlk)
 		})

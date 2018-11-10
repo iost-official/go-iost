@@ -15,36 +15,24 @@ private:
 public:
     IOSTContractStorage(SandboxPtr ptr): sbxPtr(ptr) {}
 
-    int Put(const char *key, const char *value);
-    char *Get(const char *key);
-    int Del(const char *key);
-    int MapPut(const char *key, const char *field, const char *value);
-    bool MapHas(const char *key, const char *field);
-    char *MapGet(const char *key, const char *field);
-    int MapDel(const char *key, const char *field);
-    char *MapKeys(const char *key);
+    char* Put(const char *key, const char *value, const char *owner);
+    char* Has(const char *key, const char *owner, bool *result);
+	char* Get(const char *key, const char *owner, char **result);
+	char* Del(const char *key, const char *owner);
+	char* MapPut(const char *key, const char *field, const char *value, const char *owner);
+	char* MapHas(const char *key, const char *field, const char *owner, bool *result);
+	char* MapGet(const char *key, const char *field, const char *owner, char **result);
+	char* MapDel(const char *key, const char *field, const char *owner);
+	char* MapKeys(const char *key, const char *owner, char **result);
+	char* MapLen(const char *key, const char *owner, size_t *result);
+	
+	char* GlobalHas(const char *contract, const char *key, const char *owner, bool *result);
+	char* GlobalGet(const char *contract, const char *key, const char *owner, char **result);
+	char* GlobalMapHas(const char *contract, const char *key, const char *field, const char *owner, bool *result);
+	char* GlobalMapGet(const char *contract, const char *key, const char *field, const char *owner, char **result);
+	char* GlobalMapKeys(const char *contract,  const char *key, const char *owner, char **result);
+	char* GlobalMapLen(const char *contract, const char *key, const char *owner, size_t *result);
 
-    void MapLen(const char *key) {
-//        size_t gasUsed = 0;
-//        char *ret = goMapLen(sbx, key, &gasUsed);
-//        return ret;
-    }
-    char *GlobalGet(const char *contract, const char *key);
-    void GlobalMapGet(const char *contract, const char *key, const char *field) {
-//        size_t gasUsed = 0;
-//        char *ret = goGlobalMapGet(sbx, contract, key, field, &gasUsed);
-//        return ret;
-    }
-    void GlobalMapKeys(const char *contract, const char *key) {
-//        size_t gasUsed = 0;
-//        char *ret = goGlobalMapKeys(sbx, contract, key, &gasUsed);
-//        return ret;
-    }
-    void GlobalMapLen(const char *contract, const char *key) {
-//        size_t gasUsed = 0;
-//        char *ret = goGlobalMapLen(sbx, contract, key, &gasUsed);
-//        return ret;
-    }
 };
 
 #endif // IOST_V8_STORAGE_H

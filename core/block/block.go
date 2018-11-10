@@ -36,6 +36,20 @@ func (b *BlockHead) ToPb() *blockpb.BlockHead {
 	}
 }
 
+// ToBytes converts BlockHead to a specific byte slice.
+func (b *BlockHead) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteInt64(b.Version, true)
+	sn.WriteBytes(b.ParentHash, false)
+	sn.WriteBytes(b.TxsHash, false)
+	sn.WriteBytes(b.MerkleHash, false)
+	sn.WriteBytes(b.Info, true)
+	sn.WriteInt64(b.Number, true)
+	sn.WriteString(b.Witness, true)
+	sn.WriteInt64(b.Time, true)
+	return sn.Bytes()
+}
+
 // FromPb convert BlockHead from proto buf data structure.
 func (b *BlockHead) FromPb(bh *blockpb.BlockHead) *BlockHead {
 	b.Version = bh.Version
@@ -71,11 +85,7 @@ func (b *BlockHead) Decode(bhByte []byte) error {
 
 // Hash return hash
 func (b *BlockHead) Hash() ([]byte, error) {
-	bhByte, err := b.Encode()
-	if err != nil {
-		return nil, err
-	}
-	return common.Sha3(bhByte), nil
+	return common.Sha3(b.ToBytes()), nil
 }
 
 // Block is the implementation of block

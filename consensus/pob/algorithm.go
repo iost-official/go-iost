@@ -4,9 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"fmt"
-	"strings"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/cverifier"
@@ -39,9 +36,10 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 		Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: topBlock.HeadHash(),
+			Info:       make([]byte, 0),
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
-			Time:       time.Now().Unix() / common.SlotLength,
+			Time:       time.Now().UnixNano(),
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -50,25 +48,6 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 
 	// call vote
 	v := verifier.Verifier{}
-	if blk.Head.Number%common.VoteInterval == 0 {
-		ilog.Info("vote start")
-		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
-		trx := tx.NewTx([]*tx.Action{act}, nil, 100000000, 0, 0, 0)
-
-		trx, err := tx.SignTx(trx, staticProperty.account.ID, []*account.KeyPair{staticProperty.account})
-		if err != nil {
-			ilog.Errorf("fail to signTx, err:%v", err)
-		}
-		receipt, err := v.Exec(blk.Head, db, trx, time.Millisecond*100)
-		if err != nil {
-			ilog.Errorf("fail to exec trx, err:%v", err)
-		}
-		if receipt.Status.Code != tx.Success { //rt is nil
-			ilog.Errorf("status code: %v", receipt.Status.Code)
-		}
-		blk.Txs = append(blk.Txs, trx)
-		blk.Receipts = append(blk.Receipts, receipt)
-	}
 	t1 := time.Now()
 	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
 		Mode:        0,
@@ -82,6 +61,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	}
 	if err != nil {
 		go txPool.DelTxList(dropList)
+		ilog.Errorf("Gen is err: %v", err)
 	}
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
@@ -116,28 +96,17 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return err
 	}
 
-	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+	if witnessOfNanoSec(blk.Head.Time) != blk.Head.Witness {
 		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
 			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, staticProperty.WitnessList)
 		return errWitness
 	}
-
-	// check vote
-	if blk.Head.Number%common.VoteInterval == 0 {
-		if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
-			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
-			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
-
-			return errors.New("blk did not vote")
-		}
-
-		if blk.Receipts[0].Status.Code != tx.Success {
-			return fmt.Errorf("vote was incorrect, status:%v", blk.Receipts[0].Status)
-		}
-	}
-	// check txs
 	ilog.Infof("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
-	for _, tx := range blk.Txs {
+	for i, tx := range blk.Txs {
+		if i == 0 {
+			// base tx
+			continue
+		}
 		exist := txPool.ExistTxs(tx.Hash(), parent)
 		switch exist {
 		case txpool.FoundChain:
@@ -149,7 +118,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 				return errTxSignature
 			}
 		}
-		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > txpool.Expiration {
+		if blk.Head.Time-tx.Time > txpool.Expiration {
 			return errTxTooOld
 		}
 	}

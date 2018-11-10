@@ -119,7 +119,7 @@ func BenchmarkBlock(b *testing.B) {
 				MerkleHash: merkleHash,
 				Info:       make([]byte, 0),
 				Number:     int64(i),
-				Time:       time.Now().Unix(),
+				Time:       time.Now().UnixNano(),
 				Witness:    "IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C",
 			},
 		}

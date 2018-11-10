@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db"
@@ -28,7 +27,7 @@ var (
 // VerifyBlockHead verifies the block head.
 func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Block) error {
 	bh := blk.Head
-	if bh.Time > time.Now().Unix()/common.SlotLength+1 {
+	if bh.Time > time.Now().UnixNano() {
 		return errFutureBlk
 	}
 	if bh.Time < lib.Head.Time {
