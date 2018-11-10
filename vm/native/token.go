@@ -124,7 +124,7 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 		}
 	}
 
-	freezeList = append(freezeList, database.FreezeItem{balance, ftime})
+	freezeList = append(freezeList, database.FreezeItem{Amount: balance, Ftime: ftime})
 	sort.Slice(freezeList, func(i, j int) bool {
 		return freezeList[i].Ftime < freezeList[j].Ftime ||
 			freezeList[i].Ftime == freezeList[j].Ftime && freezeList[i].Amount < freezeList[j].Amount
