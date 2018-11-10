@@ -27,12 +27,12 @@ func NewSimpleNotation() *SimpleNotation {
 }
 
 func (sn *SimpleNotation) escape(bs []byte) []byte {
-	new := bytes.Replace(bs, []byte{sn.slash}, []byte{sn.slash, sn.slash}, -1)
-	new = bytes.Replace(new, []byte{sn.sliceSep}, []byte{sn.slash, sn.sliceSep}, -1)
-	new = bytes.Replace(new, []byte{sn.fieldSep}, []byte{sn.slash, sn.fieldSep}, -1)
-	new = bytes.Replace(new, []byte{sn.mapKVSep}, []byte{sn.slash, sn.mapKVSep}, -1)
-	new = bytes.Replace(new, []byte{sn.mapSep}, []byte{sn.slash, sn.mapSep}, -1)
-	return new
+	n := bytes.Replace(bs, []byte{sn.slash}, []byte{sn.slash, sn.slash}, -1)
+	n = bytes.Replace(n, []byte{sn.sliceSep}, []byte{sn.slash, sn.sliceSep}, -1)
+	n = bytes.Replace(n, []byte{sn.fieldSep}, []byte{sn.slash, sn.fieldSep}, -1)
+	n = bytes.Replace(n, []byte{sn.mapKVSep}, []byte{sn.slash, sn.mapKVSep}, -1)
+	n = bytes.Replace(n, []byte{sn.mapSep}, []byte{sn.slash, sn.mapSep}, -1)
+	return n
 }
 
 // WriteByte writes a byte to buffer.
