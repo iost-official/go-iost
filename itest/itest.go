@@ -1,6 +1,7 @@
 package itest
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -12,13 +13,19 @@ type ITest struct {
 
 func New(itc *ITestConfig, keys []*Key) *ITest {
 	return &ITest{
-		bank:    itc.bank,
+		bank:    itc.Bank,
 		keys:    keys,
-		clients: itc.clients,
+		clients: itc.Clients,
 	}
 }
 
 func (t *ITest) CreateAccount(name string) (*Account, error) {
+	if len(t.keys) == 0 {
+		return nil, fmt.Errorf("keys is empty")
+	}
+	if len(t.clients) == 0 {
+		return nil, fmt.Errorf("clients is empty")
+	}
 	kIndex := rand.Intn(len(t.keys))
 	key := t.keys[kIndex]
 	cIndex := rand.Intn(len(t.clients))

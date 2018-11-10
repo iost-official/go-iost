@@ -18,15 +18,13 @@ var Command = cli.Command{
 
 var Flags = []cli.Flag{
 	cli.StringFlag{
-		Name:  "bank, b",
-		Usage: "Load bank configuration from `FILE`",
-	},
-	cli.StringFlag{
 		Name:  "keys, k",
+		Value: "",
 		Usage: "Load keys configuration from `FILE`",
 	},
 	cli.StringFlag{
-		Name:  "clients, c",
-		Usage: "Load clients configuration from `FILE`",
+		Name:  "config, c",
+		Value: "",
+		Usage: "Load itest configuration from `FILE`",
 	},
 }

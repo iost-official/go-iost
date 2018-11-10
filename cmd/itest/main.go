@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/iost-official/go-iost/itest/command/create"
 	"github.com/iost-official/go-iost/itest/command/run"
@@ -10,6 +11,8 @@ import (
 )
 
 func main() {
+	log.SetLevel(log.DebugLevel)
+
 	app := cli.NewApp()
 	app.Name = "itest"
 	app.Usage = "The cli tool for testing the IOST testnet"
@@ -21,6 +24,6 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("Run itest failed: %v", err)
 	}
 }

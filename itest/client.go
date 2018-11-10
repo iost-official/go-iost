@@ -32,7 +32,7 @@ type Client struct {
 
 func (c *Client) getGRPC() (rpc.ApisClient, error) {
 	if c.grpc == nil {
-		conn, err := grpc.Dial(c.addr)
+		conn, err := grpc.Dial(c.addr, grpc.WithInsecure())
 		if err != nil {
 			return nil, err
 		}
