@@ -50,12 +50,6 @@ func setBalance(h *host.Host, tokenName string, from string, balance int64) (cos
 	return cost
 }
 
-// FreezeItem represents freezed balance, will unfreeze after Ftime
-type FreezeItem struct {
-	Amount int64
-	Ftime  int64
-}
-
 func getBalance(h *host.Host, tokenName string, from string) (balance int64, cost contract.Cost, err error) {
 	balance = int64(0)
 	cost = contract.Cost0()
@@ -78,7 +72,7 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 
 	freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix, tokenName, from)
 	cost.AddAssign(cost0)
-	freezeList := []FreezeItem{}
+	freezeList := []database.FreezeItem{}
 
 	err = json.Unmarshal([]byte(freezeJSON.(database.SerializedJSON)), &freezeList)
 	cost.AddAssign(host.CommonOpCost(1))
@@ -119,7 +113,7 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 
 func freezeBalance(h *host.Host, tokenName string, from string, balance int64, ftime int64) (cost contract.Cost, err error) {
 	ok, cost := h.MapHas(TokenFreezeMapPrefix, tokenName, from)
-	freezeList := []FreezeItem{}
+	freezeList := []database.FreezeItem{}
 	if ok {
 		freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix, tokenName, from)
 		cost.AddAssign(cost0)
@@ -130,7 +124,7 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 		}
 	}
 
-	freezeList = append(freezeList, FreezeItem{balance, ftime})
+	freezeList = append(freezeList, database.FreezeItem{balance, ftime})
 	sort.Slice(freezeList, func(i, j int) bool {
 		return freezeList[i].Ftime < freezeList[j].Ftime ||
 			freezeList[i].Ftime == freezeList[j].Ftime && freezeList[i].Amount < freezeList[j].Amount

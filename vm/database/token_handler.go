@@ -5,6 +5,8 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
+	"encoding/json"
+	"fmt"
 )
 
 // TokenContractName name of basic token contract
@@ -15,8 +17,18 @@ type TokenHandler struct {
 	db database
 }
 
+// FreezeItem represents freezed balance, will unfreeze after Ftime
+type FreezeItem struct {
+	Amount int64
+	Ftime  int64
+}
+
 func (m *TokenHandler) balanceKey(tokenName, acc string) string {
 	return "m-" + TokenContractName + "@" + acc + "-" + "TB" + "-" + tokenName
+}
+
+func (m *TokenHandler) freezedBalanceKey(tokenName, acc string) string {
+	return "m-" + TokenContractName + "@" + acc + "-" + "TF" + "-" + tokenName
 }
 
 func (m *TokenHandler) decimalKey(tokenName string) string {
@@ -30,7 +42,7 @@ func (m *TokenHandler) decimalKey(tokenName string) string {
 func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 	currentRaw := m.db.Get(m.balanceKey(tokenName, acc))
 	balance := Unmarshal(currentRaw)
-	ilog.Errorf("TokenBalance is %v %v %v", tokenName, acc, balance)
+	ilog.Debugf("TokenBalance is %v %v %v", tokenName, acc, balance)
 	ib, ok := balance.(int64)
 	if !ok {
 		ib = 0
@@ -40,12 +52,34 @@ func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 
 // TokenBalanceFixed get token balance of acc
 func (m *TokenHandler) TokenBalanceFixed(tokenName, acc string) common.Fixed {
-	currentRaw := m.db.Get(m.balanceKey(tokenName, acc))
-	balance := Unmarshal(currentRaw)
-	ib, ok := balance.(int64)
-	if !ok {
-		ib = 0
+	ib := m.TokenBalance(tokenName, acc)
+	return common.Fixed{Value: ib, Decimal: m.Decimal(tokenName)}
+}
+
+// FreezedTokenBalance get freezed token balance of acc
+func (m *TokenHandler) FreezedTokenBalance (tokenName, acc string) int64 {
+	freezeJSON := Unmarshal(m.db.Get(m.freezedBalanceKey(tokenName, acc)))
+	if freezeJSON == nil {
+		return 0
 	}
+	freezeList := []FreezeItem{}
+	fmt.Println(string(freezeJSON.(SerializedJSON)))
+	err := json.Unmarshal([]byte(freezeJSON.(SerializedJSON)), &freezeList)
+	if err != nil {
+		return 0
+	}
+	ilog.Debugf("FreezedTokenBalance is %v %v %v", tokenName, acc, []byte(freezeJSON.(SerializedJSON)))
+
+	ib := int64(0)
+	for _, item := range freezeList {
+		ib += item.Amount
+	}
+	return ib
+}
+
+// FreezedTokenBalanceFixed get token balance of acc
+func (m *TokenHandler) FreezedTokenBalanceFixed(tokenName, acc string) common.Fixed {
+	ib := m.FreezedTokenBalance(tokenName, acc)
 	return common.Fixed{Value: ib, Decimal: m.Decimal(tokenName)}
 }
 
