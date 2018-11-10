@@ -13,7 +13,7 @@ func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) {
 	data := make([][]byte, len(txrs))
 	m.Tx2Txr = make(map[string][]byte)
 	for i, txr := range txrs {
-		m.Tx2Txr[string(txr.TxHash)] = txr.Encode()
+		m.Tx2Txr[string(txr.TxHash)] = txr.Hash()
 		data[i] = m.Tx2Txr[string(txr.TxHash)]
 	}
 	m.Mt.Build(data)
