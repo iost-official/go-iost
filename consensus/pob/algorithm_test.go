@@ -206,9 +206,9 @@ func TestNodeInfoUpdate(t *testing.T) {
 
 func TestVerifyBasics(t *testing.T) {
 	convey.Convey("Test of verifyBasics", t, func() {
-		secKey := common.Sha256([]byte("secKey of id0"))
+		secKey := common.Sha3([]byte("secKey of id0"))
 		account0, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
-		secKey = common.Sha256([]byte("secKey of id1"))
+		secKey = common.Sha3([]byte("secKey of id1"))
 		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		staticProperty = newStaticProperty(account1, []string{account0.ID, account1.ID, "id2"})
 		convey.Convey("Normal (self block)", func() {
@@ -285,11 +285,11 @@ func TestVerifyBasics(t *testing.T) {
 
 func TestVerifyBlock(t *testing.T) {
 	convey.Convey("Test of verify block", t, func() {
-		secKey := common.Sha256([]byte("secKey of id0"))
+		secKey := common.Sha3([]byte("secKey of id0"))
 		account0, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
-		secKey = common.Sha256([]byte("sec of id1"))
+		secKey = common.Sha3([]byte("sec of id1"))
 		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
-		secKey = common.Sha256([]byte("sec of id2"))
+		secKey = common.Sha3([]byte("sec of id2"))
 		account2, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		staticProperty = newStaticProperty(account0, []string{account0.ID, account1.ID, account2.ID})
 		rootTime := common.GetCurrentTimestamp().Slot - 1

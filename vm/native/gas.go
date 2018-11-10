@@ -158,9 +158,9 @@ var (
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
-			pledgeAmount, ok := common.NewFixed(pledgeAmountStr, 8)
+			pledgeAmount, err := common.NewFixed(pledgeAmountStr, 8)
 			cost.AddAssign(host.CommonErrorCost(1))
-			if !ok || pledgeAmount.Value <= 0 {
+			if err != nil || pledgeAmount.Value <= 0 {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
 			var minPledgeAmount int64 = 1 * IOSTRatio
@@ -209,9 +209,9 @@ var (
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
-			unpledgeAmount, ok := common.NewFixed(unpledgeAmountStr, 8)
+			unpledgeAmount, err := common.NewFixed(unpledgeAmountStr, 8)
 			cost.AddAssign(host.CommonErrorCost(1))
-			if !ok || unpledgeAmount.Value <= 0 {
+			if err != nil || unpledgeAmount.Value <= 0 {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
 			var minUnpledgeAmount int64 = 1 * IOSTRatio
