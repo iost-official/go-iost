@@ -203,6 +203,7 @@ func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) *TxReceipt {
 
 // Decode TxReceipt from byte array
 func (r *TxReceipt) Decode(b []byte) error {
+	ilog.Info(b)
 	tr := &txpb.TxReceipt{}
 	err := tr.Unmarshal(b)
 	if err != nil {
