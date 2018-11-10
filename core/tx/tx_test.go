@@ -167,3 +167,45 @@ func TestTx(t *testing.T) {
 
 	})
 }
+
+func BenchmarkHash(b *testing.B) {
+	tx := &Tx{
+		Time:       1234567890,
+		Expiration: 9876543210,
+		GasPrice:   100,
+		GasLimit:   10000,
+		Delay:      0,
+		Publisher:  "root",
+		Actions: []*Action{
+			&Action{
+				Contract:   "contract",
+				ActionName: "actionname",
+				Data:       "data",
+			},
+		},
+		Signers: []string{"signer1", "signer2"},
+		Signs: []*crypto.Signature{
+			&crypto.Signature{
+				Algorithm: crypto.Secp256k1,
+				Sig:       []byte("hello"),
+				Pubkey:    []byte("world"),
+			},
+			&crypto.Signature{
+				Algorithm: crypto.Ed25519,
+				Sig:       []byte("foo"),
+				Pubkey:    []byte("bar"),
+			},
+		},
+		PublishSigns: []*crypto.Signature{
+			&crypto.Signature{
+				Algorithm: crypto.Ed25519,
+				Sig:       []byte("aaa"),
+				Pubkey:    []byte("bbb"),
+			},
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tx.Hash()
+	}
+}

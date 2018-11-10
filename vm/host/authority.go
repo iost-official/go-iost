@@ -15,7 +15,10 @@ type Authority struct {
 	h *Host
 }
 
-func (h *Authority) requireContractAuth(id, p string) (bool, *contract.Cost) {
+func (h *Authority) requireContractAuth(id, p string) (bool, contract.Cost) {
+	if i, ok := h.h.ctx.Value("number").(int64); ok && i == 0 {
+		return true, contract.Cost0()
+	}
 	cost := CommonOpCost(1)
 	authContractList := h.h.ctx.Value("auth_contract_list").(map[string]int)
 	if _, ok := authContractList[id]; ok || h.h.ctx.Value("contract_name").(string) == id {
@@ -25,7 +28,10 @@ func (h *Authority) requireContractAuth(id, p string) (bool, *contract.Cost) {
 }
 
 // RequireAuth check auth
-func (h *Authority) RequireAuth(id, p string) (bool, *contract.Cost) {
+func (h *Authority) RequireAuth(id, p string) (bool, contract.Cost) {
+	if i, ok := h.h.ctx.Value("number").(int64); ok && i == 0 {
+		return true, contract.Cost0()
+	}
 	if h.isContract(id) {
 		return h.requireContractAuth(id, p)
 	}
@@ -46,7 +52,7 @@ func (h *Authority) isContract(id string) bool {
 }
 
 // ReadAuth read auth
-func ReadAuth(vi *database.Visitor, id string) (*account.Account, *contract.Cost) {
+func ReadAuth(vi *database.Visitor, id string) (*account.Account, contract.Cost) {
 	sa := vi.MGet("iost.auth-account", id)
 	acc := database.MustUnmarshal(sa)
 	c := contract.NewCost(0, 0, int64(len(sa)))
@@ -62,7 +68,7 @@ func ReadAuth(vi *database.Visitor, id string) (*account.Account, *contract.Cost
 }
 
 // Auth check auth
-func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]int) (bool, *contract.Cost) {
+func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]int) (bool, contract.Cost) {
 	if _, ok := reenter[id+"@"+permission]; ok {
 		return false, CommonErrorCost(1)
 	}

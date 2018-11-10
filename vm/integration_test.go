@@ -163,17 +163,11 @@ module.exports = Contract;
 			Version: "1.0.0",
 			Abi: []*contract.ABI{
 				{
-					Name:     "hello",
-					Payment:  0,
-					GasPrice: int64(1),
-					Limit:    contract.NewCost(100, 100, 100),
-					Args:     []string{},
+					Name: "hello",
+					Args: []string{},
 				}, {
-					Name:     "constructor",
-					Payment:  0,
-					GasPrice: int64(1),
-					Limit:    contract.NewCost(100, 100, 100),
-					Args:     []string{},
+					Name: "constructor",
+					Args: []string{},
 				},
 			},
 		},
@@ -296,11 +290,8 @@ module.exports = Contract;
 			Version: "1.0.0",
 			Abi: []*contract.ABI{
 				{
-					Name:     "call_hello",
-					Payment:  0,
-					GasPrice: int64(1),
-					Limit:    contract.NewCost(100, 100, 100),
-					Args:     []string{},
+					Name: "call_hello",
+					Args: []string{},
 				},
 			},
 		},
@@ -359,11 +350,8 @@ module.exports = Contract;
 			Version: "1.0.0",
 			Abi: []*contract.ABI{
 				{
-					Name:     "call_hello",
-					Payment:  0,
-					GasPrice: int64(1),
-					Limit:    contract.NewCost(100, 100, 100),
-					Args:     []string{},
+					Name: "call_hello",
+					Args: []string{},
 				},
 			},
 		},
@@ -374,8 +362,6 @@ func TestIntergration_Payment_Success(t *testing.T) {
 	t.Skip("dep")
 
 	jshw := jsHelloWorld()
-	jshw.Info.Abi[0].Payment = 1
-	jshw.Info.Abi[0].GasPrice = int64(10)
 
 	//ilog.Debugf("init %v", jshw.Info.Abis[0].GetLimit())
 
@@ -411,14 +397,6 @@ func TestIntergration_Payment_Success(t *testing.T) {
 func TestIntergration_Payment_Failed(t *testing.T) {
 	t.Skip("dep")
 	jshw := jsHelloWorld()
-	jshw.Info.Abi[0].Payment = 1
-	jshw.Info.Abi[0].GasPrice = int64(10)
-
-	jshw.Info.Abi[0].Limit.Data = -1
-	jshw.Info.Abi[0].Limit.CPU = -1
-	jshw.Info.Abi[0].Limit.Net = -1
-
-	ilog.Debugf("init %v", jshw.Info.Abi[0].GetLimit())
 
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
@@ -518,11 +496,8 @@ func (j *JSTester) SetJS(code string) {
 			Version: "1.0.0",
 			Abi: []*contract.ABI{
 				{
-					Name:     "constructor",
-					Args:     []string{},
-					Payment:  0,
-					GasPrice: int64(1),
-					Limit:    contract.NewCost(100, 100, 100),
+					Name: "constructor",
+					Args: []string{},
 				},
 			},
 		},
@@ -548,11 +523,8 @@ func (j *JSTester) DoSet() *tx.TxReceipt {
 func (j *JSTester) SetAPI(name string, argType ...string) {
 
 	j.c.Info.Abi = append(j.c.Info.Abi, &contract.ABI{
-		Name:     name,
-		Payment:  0,
-		GasPrice: int64(1),
-		Limit:    contract.NewCost(100, 100, 100),
-		Args:     argType,
+		Name: name,
+		Args: argType,
 	})
 
 }

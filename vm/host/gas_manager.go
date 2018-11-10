@@ -20,13 +20,13 @@ func NewGasManager(h *Host) GasManager {
 
 // CurrentGas returns the current total gas of a user. It is dynamically calculated
 func (g *GasManager) CurrentGas(name string) *common.Fixed {
-	blockNumber := g.h.ctx.Value("number").(int64)
-	return g.h.db.GasHandler.CurrentTotalGas(name, blockNumber)
+	t := g.h.ctx.Value("time").(int64)
+	return g.h.db.GasHandler.CurrentTotalGas(name, t)
 }
 
 func (g *GasManager) refreshGasWithValue(name string, value *common.Fixed) error {
 	g.h.db.GasHandler.SetGasStock(name, value)
-	g.h.db.GasHandler.SetGasUpdateTime(name, g.h.ctx.Value("number").(int64))
+	g.h.db.GasHandler.SetGasUpdateTime(name, g.h.ctx.Value("time").(int64))
 	return nil
 }
 
@@ -42,9 +42,11 @@ func (g *GasManager) CostGas(name string, cost *common.Fixed) error {
 		return err
 	}
 	currentGas := g.h.db.GasHandler.GasStock(name)
-	if currentGas.LessThan(cost) {
+	b := currentGas.LessThan(cost)
+	if b {
 		return fmt.Errorf("gas not enough! Now: %d, Need %d", currentGas, cost)
 	}
-	g.h.db.GasHandler.SetGasStock(name, currentGas.Sub(cost))
+	ret := currentGas.Sub(cost)
+	g.h.db.GasHandler.SetGasStock(name, ret)
 	return nil
 }

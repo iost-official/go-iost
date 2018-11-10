@@ -1,40 +1,27 @@
 let BlockChain = (function () {
     let bc = new IOSTBlockchain;
+    // get contractName
+    let contractName = function () {
+        let ctxInfo = JSON.parse(bc.contextInfo());
+        return ctxInfo["contract_name"];
+    };
+    // transfer IOSToken
+    let transfer = function (from, to, amount) {
+        if (!(amount instanceof Float64)) {
+            amount = new Float64(amount);
+        }
+        return bc.call("iost.token", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\"]");
+    };
     return {
         // transfer IOSToken
-        transfer: function (from, to, amount) {
-            if (!(amount instanceof Int64)) {
-                amount = new Int64(amount);
-            }
-            return bc.transfer(from, to, amount.toString());
-        },
+        transfer: transfer,
         // withdraw IOSToken
         withdraw: function (to, amount) {
-            if (!(amount instanceof Int64)) {
-                amount = new Int64(amount);
-            }
-            return bc.withdraw(to, amount.toString());
+            return transfer(contractName(), to, amount);
         },
         // deposit IOSToken
         deposit: function (from, amount) {
-            if (!(amount instanceof Int64)) {
-                amount = new Int64(amount);
-            }
-            return bc.deposit(from, amount.toString());
-        },
-        // put IOSToken into contract
-        topUp: function (contract, from, amount) {
-            if (!(amount instanceof Int64)) {
-                amount = new Int64(amount);
-            }
-            return bc.topUp(contract, from, amount.toString());
-        },
-        // get IOSToken from contract
-        countermand: function (contract, to, amount) {
-            if (!(amount instanceof Int64)) {
-                amount = new Int64(amount);
-            }
-            return bc.countermand(contract, to, amount.toString());
+            return transfer(from, contractName(), amount);
         },
         // get blockInfo
         blockInfo: function () {
@@ -44,6 +31,12 @@ let BlockChain = (function () {
         txInfo: function () {
             return bc.txInfo();
         },
+        // get transactionInfo
+        contextInfo: function () {
+            return bc.contextInfo();
+        },
+        // get contractName
+        contractName: contractName,
         // call contract's api using args
         call: function (contract, api, args) {
             return bc.call(contract, api, args);
@@ -52,18 +45,18 @@ let BlockChain = (function () {
         callWithAuth: function (contract, api, args) {
             return bc.callWithAuth(contract, api, args);
         },
-        // call contract's api using args with receipt
-        callWithReceipt: function (contract, api, args) {
-            return bc.callWithReceipt(contract, api, args);
+        // check account's permission
+        requireAuth: function (accountID, permission) {
+            return bc.requireAuth(accountID, permission);
         },
-        //
-        requireAuth: function (pubKey, permission) {
-            return bc.requireAuth(pubKey, permission);
+        // generate receipt
+        receipt: function (content) {
+            return bc.receipt(content);
         },
-        // not supportted
-        grantServi: function (pubKey, amount) {
-            return bc.grantServi(pubKey, amount.toString());
-        }
+        // post event
+        receipt: function (content) {
+            return bc.event(content);
+        },
     }
 })();
 

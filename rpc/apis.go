@@ -135,8 +135,8 @@ func (s *GRPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, er
 	}
 
 	return &TxRes{
-		TxRaw: trx.ToPb(),
-		Hash:  common.Base58Encode(trx.Hash()),
+		Tx:   trx.ToPb(),
+		Hash: common.Base58Encode(trx.Hash()),
 	}, nil
 }
 
@@ -154,8 +154,8 @@ func (s *GRPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*Tx
 	}
 
 	return &TxReceiptRes{
-		TxReceiptRaw: receipt.ToPb(),
-		Hash:         common.Base58Encode(receiptHashBytes),
+		TxReceipt: receipt.ToPb(),
+		Hash:      common.Base58Encode(receiptHashBytes),
 	}, nil
 }
 
@@ -173,8 +173,8 @@ func (s *GRPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*
 	}
 
 	return &TxReceiptRes{
-		TxReceiptRaw: receipt.ToPb(),
-		Hash:         common.Base58Encode(receipt.Hash()),
+		TxReceipt: receipt.ToPb(),
+		Hash:      common.Base58Encode(receipt.Hash()),
 	}, nil
 }
 
@@ -323,37 +323,28 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	}, nil
 }
 
-// SendRawTx send transaction to blockchain
-func (s *GRPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
-	if rawTx == nil {
+// SendTx send transaction to blockchain
+func (s *GRPCServer) SendTx(ctx context.Context, txReq *TxReq) (*SendTxRes, error) {
+	if txReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	var trx tx.Tx
-	err := trx.Decode(rawTx.Data)
+	err := s.txpool.AddTx(trx.FromPb(txReq.Tx))
 	if err != nil {
 		return nil, err
 	}
-	// add servi
-	//tx.RecordTx(trx, tx.Data.Self())
-	err = s.txpool.AddTx(&trx)
-	if err != nil {
-		return nil, err
-	}
-	res := SendRawTxRes{}
+	res := SendTxRes{}
 	res.Hash = string(trx.Hash())
 	return &res, nil
 }
 
 // ExecTx only exec the tx, but not put it onto chain
-func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, error) {
-	if rawTx == nil {
+func (s *GRPCServer) ExecTx(ctx context.Context, txReq *TxReq) (*ExecTxRes, error) {
+	if txReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	var trx tx.Tx
-	err := trx.Decode(rawTx.Data)
-	if err != nil {
-		return nil, err
-	}
+	trx.FromPb(txReq.Tx)
 	_, head := s.txpool.TxIterator()
 	topBlock := head.Block
 	blk := block.Block{
@@ -362,7 +353,7 @@ func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, e
 			ParentHash: topBlock.HeadHash(),
 			Number:     topBlock.Head.Number + 1,
 			Witness:    "",
-			Time:       time.Now().Unix() / common.SlotLength,
+			Time:       time.Now().UnixNano(),
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -372,7 +363,7 @@ func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, e
 	if err != nil {
 		return nil, fmt.Errorf("exec tx failed: %v", err)
 	}
-	return &ExecTxRes{TxReceiptRaw: receipt.ToPb()}, nil
+	return &ExecTxRes{TxReceipt: receipt.ToPb()}, nil
 }
 
 // Subscribe used for event

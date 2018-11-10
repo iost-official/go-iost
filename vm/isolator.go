@@ -19,12 +19,18 @@ import (
 
 // Isolator new entrance instead of Engine
 type Isolator struct {
-	h            *host.Host
-	publisherID  string
-	t            *tx.Tx
-	tr           *tx.TxReceipt
-	blockBaseCtx *host.Context
-	genesisMode  bool
+	h             *host.Host
+	publisherID   string
+	t             *tx.Tx
+	tr            *tx.TxReceipt
+	blockBaseCtx  *host.Context
+	genesisMode   bool
+	blockBaseMode bool
+}
+
+// TriggerBlockBaseMode start blockbase mode
+func (e *Isolator) TriggerBlockBaseMode() {
+	e.blockBaseMode = true
 }
 
 // Prepare Isolator
@@ -49,8 +55,10 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	e.t = t
 	e.h.SetDeadline(time.Now().Add(limit))
 	e.publisherID = t.Publisher
+	l := len(t.Encode())
+	e.h.PayCost(contract.NewCost(0, int64(l), 0), t.Publisher)
 
-	if !e.genesisMode {
+	if !e.genesisMode && !e.blockBaseMode {
 		err := checkTxParams(t)
 		if err != nil {
 			return err
@@ -64,7 +72,7 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	return nil
 }
 
-func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, ret *tx.Return, receipts []*tx.Receipt, err error) {
+func (e *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, ret *tx.Return, receipts []*tx.Receipt, err error) {
 	receipts = make([]*tx.Receipt, 0)
 
 	e.h.PushCtx()
@@ -78,10 +86,6 @@ func (e *Isolator) runAction(action tx.Action) (cost *contract.Cost, status *tx.
 	var rtn []interface{}
 
 	rtn, cost, err = staticMonitor.Call(e.h, action.Contract, action.ActionName, action.Data)
-
-	if cost == nil {
-		panic("cost is nil")
-	}
 
 	if err != nil {
 		if strings.Contains(err.Error(), "execution killed") {
@@ -232,6 +236,7 @@ func (e *Isolator) ClearAll() {
 func (e *Isolator) ClearTx() {
 	e.h.SetContext(e.blockBaseCtx)
 	e.h.Context().GClear()
+	e.blockBaseMode = false
 }
 func checkTxParams(t *tx.Tx) error {
 	if t.GasPrice < 100 || t.GasPrice > 10000 {

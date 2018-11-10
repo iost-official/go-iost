@@ -282,7 +282,7 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 		Receipts: make([]*tx.Receipt, 0),
 	}
 }
-func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, receipts []*tx.Receipt, err error) {
+func (e *engineImpl) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, receipts []*tx.Receipt, err error) {
 	receipts = make([]*tx.Receipt, 0)
 
 	e.ho.PushCtx()
@@ -294,10 +294,6 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status *t
 	e.ho.Context().Set("stack_height", 1) // record stack trace
 
 	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, action.Data)
-
-	if cost == nil {
-		panic("cost is nil")
-	}
 
 	if err != nil {
 
@@ -388,7 +384,7 @@ func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
 
 func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.PushCtx()
-	h.Context().Set("time", t.Time)
+	h.Context().Set("tx_time", t.Time)
 	h.Context().Set("expiration", t.Expiration)
 	h.Context().Set("gas_price", t.GasPrice)
 	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))

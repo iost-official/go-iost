@@ -48,6 +48,7 @@ func TestToken_Create(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := InitVM(t, "token")
 	code.ID = "iost.token"
+	host.Context().Set("contract_name", "iost.token")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
@@ -55,6 +56,7 @@ func TestToken_Create(t *testing.T) {
 		Reset(func() {
 			e, host, code = InitVM(t, "token")
 			code.ID = "iost.token"
+			host.Context().Set("contract_name", "iost.token")
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 		})
@@ -114,10 +116,10 @@ func TestToken_Create(t *testing.T) {
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "10.2")
 
 			_, _, err = e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "22.3")
-			So(true, ShouldEqual, err.Error() == "token can't transfer")
+			So(err.Error(), ShouldEqual, "token can't transfer")
 
-			dr, _ := host.MapGet("TIiost", "defaultRate")
-			So(true, ShouldEqual, dr.(string) == "1.1")
+			dr, _ := host.MapGet("TIiost", "defaultRate", "issuer0")
+			So(dr.(string), ShouldEqual, "1.1")
 
 			// transfer truncate
 			_, _, err = e.LoadAndCall(host, code, "create", "iost1", "issuer0", int64(100), []byte(`{"decimal": 1}`))
@@ -140,6 +142,7 @@ func TestToken_Issue(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := InitVM(t, "token")
 	code.ID = "iost.token"
+	host.Context().Set("contract_name", "iost.token")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
@@ -148,6 +151,7 @@ func TestToken_Issue(t *testing.T) {
 		Reset(func() {
 			e, host, code = InitVM(t, "token")
 			code.ID = "iost.token"
+			host.Context().Set("contract_name", "iost.token")
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 
@@ -231,6 +235,7 @@ func TestToken_Transfer(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := InitVM(t, "token")
 	code.ID = "iost.token"
+	host.Context().Set("contract_name", "iost.token")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
@@ -239,6 +244,7 @@ func TestToken_Transfer(t *testing.T) {
 		Reset(func() {
 			e, host, code = InitVM(t, "token")
 			code.ID = "iost.token"
+			host.Context().Set("contract_name", "iost.token")
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 
@@ -346,6 +352,7 @@ func TestToken_Destroy(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := InitVM(t, "token")
 	code.ID = "iost.token"
+	host.Context().Set("contract_name", "iost.token")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
@@ -354,6 +361,7 @@ func TestToken_Destroy(t *testing.T) {
 		Reset(func() {
 			e, host, code = InitVM(t, "token")
 			code.ID = "iost.token"
+			host.Context().Set("contract_name", "iost.token")
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 
@@ -468,15 +476,17 @@ func TestToken_TransferFreeze(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := InitVM(t, "token")
 	code.ID = "iost.token"
+	host.Context().Set("contract_name", "iost.token")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
-	now := int64(time.Now().Unix())
+	now := int64(time.Now().Unix()) * 1e9
 
 	Convey("Test of Token transferFreeze", t, func() {
 
 		Reset(func() {
 			e, host, code = InitVM(t, "token")
 			code.ID = "iost.token"
+			host.Context().Set("contract_name", "iost.token")
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 
@@ -508,6 +518,9 @@ func TestToken_TransferFreeze(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "0")
 
+			freezedBalance := host.DB().FreezedTokenBalanceFixed("iost", "user0")
+			So(freezedBalance.ToString(), ShouldEqual, "22.3")
+
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "77.7")
@@ -521,6 +534,9 @@ func TestToken_TransferFreeze(t *testing.T) {
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "22.3")
+
+			freezedBalance = host.DB().FreezedTokenBalanceFixed("iost", "user0")
+			So(freezedBalance.ToString(), ShouldEqual, "0")
 
 			// transferFreeze to self
 			authList["user0"] = 1
@@ -539,15 +555,24 @@ func TestToken_TransferFreeze(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "11.3")
 
+			freezedBalance = host.DB().FreezedTokenBalanceFixed("iost", "user0")
+			So(freezedBalance.ToString(), ShouldEqual, "11")
+
 			host.Context().Set("time", now+11)
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "21.3")
 
+			freezedBalance = host.DB().FreezedTokenBalanceFixed("iost", "user0")
+			So(freezedBalance.ToString(), ShouldEqual, "1")
+
 			host.Context().Set("time", now+21)
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "user0")
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "22.3")
+
+			freezedBalance = host.DB().FreezedTokenBalanceFixed("iost", "user0")
+			So(freezedBalance.ToString(), ShouldEqual, "0")
 		})
 
 		Convey("transferFreeze token without auth", func() {

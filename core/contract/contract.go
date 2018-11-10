@@ -34,7 +34,7 @@ type FixedAmount struct {
 //	Lang     string
 //	Version  VersionCode
 //	Payment  PaymentCode
-//	Limit    *Cost
+//	Limit    Cost
 //	GasPrice uint64
 //}
 //

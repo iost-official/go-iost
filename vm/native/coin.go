@@ -26,7 +26,7 @@ var (
 	createCoin = &abi{
 		name: "CreateCoin",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			coinName := args[0].(string)
 			coinContract := args[1].(string)
@@ -46,7 +46,7 @@ var (
 	issueCoin = &abi{
 		name: "IssueCoin",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			coinName := args[0].(string)
 			account := args[1].(string)
@@ -79,7 +79,7 @@ var (
 	setCoinRate = &abi{
 		name: "SetCoinRate",
 		args: []string{"string", "number"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			coinName := args[0].(string)
 			// 1 iost = rate * coin, rate should be a fixed-point number

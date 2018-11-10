@@ -1,6 +1,7 @@
 package tx
 
 import (
+	"github.com/iost-official/go-iost/common"
 	txpb "github.com/iost-official/go-iost/core/tx/pb"
 )
 
@@ -65,4 +66,13 @@ func (a *Action) String() string {
 	str += "Data: " + a.Data
 	str += "}\n"
 	return str
+}
+
+// ToBytes converts Action to a specific byte slice.
+func (a *Action) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteString(a.Contract, true)
+	sn.WriteString(a.ActionName, true)
+	sn.WriteString(a.Data, true)
+	return sn.Bytes()
 }
