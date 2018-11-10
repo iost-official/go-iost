@@ -25,7 +25,7 @@ func TestTXRMerkleTree(t *testing.T) {
 			tx.NewTxReceipt([]byte("node5")),
 		}
 		m.Build(txrs)
-		convey.So(hex.EncodeToString(m.Tx2Txr["node1"]), convey.ShouldEqual, "0a056e6f6465312200")
+		convey.So(hex.EncodeToString(m.Tx2Txr["node1"]), convey.ShouldEqual, "966ca83b0c876b72584a2c1fd8757c9191d83b40953e3f939c0b1afb22da37c3")
 		txr, err := m.GetTXR([]byte("node1"))
 		if err != nil {
 			log.Panic(err)
