@@ -136,8 +136,8 @@ func (bc *BlockChain) GetHashByNumber(number int64) ([]byte, error) {
 	return hash, nil
 }
 
-// GetBlockByteByHash is get block byte by hash
-func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
+// getBlockByteByHash is get block byte by hash
+func (bc *BlockChain) getBlockByteByHash(hash []byte) ([]byte, error) {
 	blockByte, err := bc.blockChainDB.Get(append(blockPrefix, hash...))
 	if err != nil || len(blockByte) == 0 {
 		return nil, errors.New("fail to get block byte by hash")
@@ -147,7 +147,7 @@ func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
 
 // GetBlockByHash is get block by hash
 func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
-	blockByte, err := bc.GetBlockByteByHash(hash)
+	blockByte, err := bc.getBlockByteByHash(hash)
 	if err != nil {
 		return nil, err
 	}
