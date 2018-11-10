@@ -185,13 +185,13 @@ var (
 			}
 
 			// check supply
-			if totalSupply.(int64)-supply.(int64) < 0 {
+			if totalSupply.(int64)-supply.(int64) <= 0 {
 				return nil, cost, errors.New("supply too much")
 			}
-			tokenID := strconv.FormatInt(supply.(int64), 10)
 
+			tokenID := strconv.FormatInt(supply.(int64), 10)
 			// check auth
-			ok, cost0 = h.RequireAuth(issuer.(string), "token721.iost")
+			ok, cost0 = h.RequireAuth(issuer.(string), "token.iost")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
