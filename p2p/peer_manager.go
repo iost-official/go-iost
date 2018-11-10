@@ -533,7 +533,7 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority, async bool) {
-	if typ == NewBlock || typ == NewBlockRequest || typ == SyncBlockHashResponse ||
+	if typ == NewBlock || typ == SyncBlockHashResponse ||
 		typ == SyncBlockRequest || typ == SyncBlockResponse {
 		ilog.Infof("send message to peer. type=%s, peerID=%s", typ, peerID.Pretty())
 	}

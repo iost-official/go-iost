@@ -176,19 +176,19 @@ func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 	if err == nil {
 		b, err = node.Block.Encode()
 		if err != nil {
-			ilog.Errorf("fail to encode block: %v, err=%v", rh.Number, err)
+			ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
 			return
 		}
-		p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage, true)
+		p.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage, true)
 		return
 	}
-	ilog.Infof("failed to get block from blockcache. err=%v, try from blockchain", err)
-	b, err = p.blockChain.GetBlockByteByHash(rh.Hash)
+	blk, err := p.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
 	if err != nil {
-		ilog.Warnf("failed to get block from blockchain. err=%v", err)
+		ilog.Errorf("handle block query failed to get block.")
 		return
 	}
-	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage, true)
+	b, err = blk.Encode()
+	p.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage, true)
 }
 
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
