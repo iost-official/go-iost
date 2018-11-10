@@ -17,6 +17,7 @@
         {
             "name": "InitProducer",
             "args": [
+                "string",
                 "string"
             ]
         },
@@ -32,12 +33,14 @@
                 "string",
                 "string",
                 "string",
+                "string",
                 "string"
             ]
         },
         {
             "name": "UpdateProducer",
             "args": [
+                "string",
                 "string",
                 "string",
                 "string",

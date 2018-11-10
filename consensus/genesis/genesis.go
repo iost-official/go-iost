@@ -103,7 +103,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.base", code.B64Encode())))
 
 	for _, v := range witnessInfo {
-		acts = append(acts, tx.NewAction("iost.vote_producer", "InitProducer", fmt.Sprintf(`["%v"]`, v.ID)))
+		acts = append(acts, tx.NewAction("iost.vote_producer", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, v.ID, v.Active)))
 	}
 	acts = append(acts, tx.NewAction("iost.vote_producer", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
