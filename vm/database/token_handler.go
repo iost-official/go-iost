@@ -1,10 +1,12 @@
 package database
 
 import (
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
+
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // TokenContractName name of basic token contract

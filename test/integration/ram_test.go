@@ -29,7 +29,7 @@ func TestRAM(t *testing.T) {
 	}
 	kp := prepareAuth(t, s)
 	createToken(t, s, kp)
-	s.SetGas(kp.ID, 1000)
+	s.SetGas(kp.ID, 1000000)
 
 	s.Head.Number = 0
 	r, err := s.Call(contractName, "initAdmin", array2json([]interface{}{admin.ID}), admin.ID, admin)

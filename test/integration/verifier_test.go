@@ -22,7 +22,7 @@ func TestTransfer(t *testing.T) {
 	defer s.Clear()
 	kp := prepareAuth(t, s)
 
-	s.SetGas(kp.ID, 1000)
+	s.SetGas(kp.ID, 100000)
 	Convey("test transfer success case", t, func() {
 		prepareContract(s)
 		createToken(t, s, kp)
@@ -46,7 +46,7 @@ func TestSetCode(t *testing.T) {
 		defer s.Clear()
 		kp := prepareAuth(t, s)
 		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 10000)
+		s.SetGas(kp.ID, 1000000)
 		s.SetRAM(kp.ID, 300)
 
 		c, err := s.Compile("hw", "test_data/helloworld", "test_data/helloworld")
@@ -56,7 +56,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(cname, ShouldStartWith, "Contract")
 
-		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(9956000000000))
+		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(9999560 * 100000000))
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldBeBetweenOrEqual, int64(62), int64(63))
 
 		r, err := s.Call(cname, "hello", "[]", kp.ID, kp)
@@ -76,7 +76,7 @@ func TestJS_Database(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		kp := prepareAuth(t, s)
-		s.SetGas(kp.ID, 1000)
+		s.SetGas(kp.ID, 100000)
 		s.SetRAM(kp.ID, 3000)
 
 		cname, err := s.DeployContract(c, kp.ID, kp)
@@ -126,7 +126,7 @@ func TestAmountLimit(t *testing.T) {
 		Reset(func() {
 			s.Visitor.SetTokenBalanceFixed("iost", testID[0], "1000")
 			s.Visitor.SetTokenBalanceFixed("iost", testID[2], "0")
-			s.SetGas(kp.ID, 10000)
+			s.SetGas(kp.ID, 100000)
 			s.SetRAM(testID[0], 10000)
 		})
 
@@ -183,7 +183,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 			t.Fatal(err)
 		}
 		createToken(t, s, kp)
-		s.SetGas(kp.ID, 10000)
+		s.SetGas(kp.ID, 100000)
 
 		tx0 := tx.NewTx([]*tx.Action{{
 			Contract:   "iost.token",
@@ -209,7 +209,7 @@ func TestDomain(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		kp := prepareAuth(t, s)
-		s.SetGas(kp.ID, 1000)
+		s.SetGas(kp.ID, 100000)
 		s.SetRAM(kp.ID, 3000)
 
 		cname, err := s.DeployContract(c, kp.ID, kp)
@@ -234,7 +234,7 @@ func TestAuthority(t *testing.T) {
 		s.Visitor.SetContract(ca)
 
 		kp := prepareAuth(t, s)
-		s.SetGas(kp.ID, 1000)
+		s.SetGas(kp.ID, 100000)
 
 		r, err := s.Call("iost.auth", "SignUp", array2json([]interface{}{"myid", "okey", "akey"}), kp.ID, kp)
 		So(err, ShouldBeNil)
