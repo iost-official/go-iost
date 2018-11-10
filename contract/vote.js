@@ -335,11 +335,11 @@ class VoteContract {
         const maxInsertPlace = Math.floor(producerNumber * 2 / 3);
         const oldPreList = [];
         let minScore = new Float64(MaxFloat64);
-        for (let key in pendingProducerList) {
-            const x = pendingProducerList[key];
-            const score = new Float64(this._mapGet("producerTable", x).score);
+        for (const key of pendingProducerList) {
+            const account = this._mapGet("producerKeyToId", key);
+            const score = new Float64(this._mapGet("producerTable", account).score);
             oldPreList.push({
-                "key": x,
+                "key": key,
                 "prior": 1,
                 "score": score
             });
