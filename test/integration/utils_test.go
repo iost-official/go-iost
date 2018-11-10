@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -33,6 +34,14 @@ var ContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/
 
 type fataler interface {
 	Fatal(args ...interface{})
+}
+
+func array2json(ss []interface{}) string {
+	x, err := json.Marshal(ss)
+	if err != nil {
+		panic(err)
+	}
+	return string(x)
 }
 
 func prepareContract(s *Simulator) {
