@@ -12,6 +12,7 @@ var errOverflow = errors.New("overflow error")
 var errAbnormalChar = errors.New("abnormal char in amount")
 var errAmountFormat = errors.New("amount format error")
 var errDivideByZero = errors.New("divide by zero error")
+var errDoubleDot = errors.New("double dot error")
 
 // Fixed implements fixed point number for user of token balance
 type Fixed struct {
@@ -199,6 +200,9 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 				}
 			}
 		} else if amount[i] == '.' {
+			if decimalStart == true {
+				return nil, errDoubleDot
+			}
 			decimalStart = true
 		} else {
 			return nil, errAbnormalChar

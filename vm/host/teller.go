@@ -44,6 +44,7 @@ func (h *Teller) TransferRawNew(from, to string, amount int64) error {
 	return ErrBalanceNotEnough
 }
 
+// GrantCoin issue coin. todo deprecated
 func (h *Teller) GrantCoin(coinName, to string, amountStr string) (contract.Cost, error) {
 	amount, _ := common.NewFixed(amountStr, 8)
 	if amount.Value <= 0 {

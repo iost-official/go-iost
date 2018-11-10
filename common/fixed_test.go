@@ -3,6 +3,7 @@ package common
 import (
 	"testing"
 
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,6 +24,8 @@ func TestNewFixed(t *testing.T) {
 	assert.Equal(t, err, errOverflow)
 	_, err = NewFixed("-323.49494", 40)
 	assert.Equal(t, err, errOverflow)
+	f, err = NewFixed("323.494.94", 2)
+	ilog.Info(f, err)
 }
 
 func TestFixed_Multiply(t *testing.T) {
