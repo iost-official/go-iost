@@ -302,15 +302,10 @@ func TestRAM(t *testing.T) {
 		})
 		Convey("test buy", func() {
 			var buyAmount int64 = 30
-			Convey("user can only buy for himself", func() {
-				r, err := s.Call(contractName, "buy", array2json([]interface{}{testID[4], 1234}), kp.ID, kp)
-				So(err, ShouldEqual, nil)
-				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
-			})
 			Convey("normal buy", func() {
 				balanceBefore := s.Visitor.TokenBalance("iost", kp.ID)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
-				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, buyAmount}), kp.ID, kp)
+				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, kp.ID, buyAmount}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				balanceAfter := s.Visitor.TokenBalance("iost", kp.ID)
@@ -325,21 +320,32 @@ func TestRAM(t *testing.T) {
 				head.Time = head.Time + increaseInterval*1000*1000*1000
 				s.SetBlockHead(head)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
-				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, buyAmount}), kp.ID, kp)
+				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, kp.ID, buyAmount}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+increaseAmount-buyAmount)
 			})
+			Convey("user can buy for others", func() {
+				other := testID[4]
+				balanceBefore := s.Visitor.TokenBalance("iost", kp.ID)
+				otherRAMBefore := s.Visitor.TokenBalance("ram", other)
+				myRAMBefore := s.Visitor.TokenBalance("ram", kp.ID)
+				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, other, buyAmount}), kp.ID, kp)
+				So(err, ShouldEqual, nil)
+				So(r.Status.Message, ShouldEqual, "")
+				balanceAfter := s.Visitor.TokenBalance("iost", kp.ID)
+				otherRAMAfter := s.Visitor.TokenBalance("ram", other)
+				myRAMAfter := s.Visitor.TokenBalance("ram", kp.ID)
+				var priceEstimated int64 = 30 * 1e8 // TODO when the final function is set, update here
+				So(balanceAfter, ShouldEqual, balanceBefore-priceEstimated)
+				So(myRAMAfter, ShouldEqual, myRAMBefore)
+				So(otherRAMAfter, ShouldEqual, otherRAMBefore+buyAmount)
+			})
 		})
 		Convey("test sell", func() {
-			Convey("user can only sell ram of himself", func() {
-				r, err := s.Call(contractName, "sell", array2json([]interface{}{testID[4], 10}), kp.ID, kp)
-				So(err, ShouldEqual, nil)
-				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
-			})
 			Convey("user cannot sell more than he owns", func() {
-				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, 6000}), kp.ID, kp)
+				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, kp.ID, 6000}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
 			})
@@ -347,15 +353,34 @@ func TestRAM(t *testing.T) {
 				var sellAmount int64 = 10
 				balanceBefore := s.Visitor.TokenBalance("iost", kp.ID)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
-				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, sellAmount}), kp.ID, kp)
+				myRAMBefore := s.Visitor.TokenBalance("ram", kp.ID)
+				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, kp.ID, sellAmount}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				balanceAfter := s.Visitor.TokenBalance("iost", kp.ID)
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
+				myRAMAfter := s.Visitor.TokenBalance("ram", kp.ID)
 				var priceEstimated int64 = 10 * 1e8 // TODO when the final function is set, update here
 				So(balanceAfter, ShouldEqual, balanceBefore+priceEstimated)
-				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, initRAM+50)
+				So(myRAMAfter, ShouldEqual, myRAMBefore-sellAmount)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+sellAmount)
+			})
+			Convey("user can sell ram for others", func() {
+				var sellAmount int64 = 10
+				other := testID[4]
+				balanceBefore := s.Visitor.TokenBalance("iost", kp.ID)
+				otherBalanceBefore := s.Visitor.TokenBalance("iost", other)
+				myRAMBefore := s.Visitor.TokenBalance("ram", kp.ID)
+				r, err := s.Call(contractName, "sell", array2json([]interface{}{kp.ID, other, sellAmount}), kp.ID, kp)
+				So(err, ShouldEqual, nil)
+				So(r.Status.Message, ShouldEqual, "")
+				balanceAfter := s.Visitor.TokenBalance("iost", kp.ID)
+				otherBalanceAfter := s.Visitor.TokenBalance("iost", other)
+				myRAMAfter := s.Visitor.TokenBalance("ram", kp.ID)
+				var priceEstimated int64 = 10 * 1e8 // TODO when the final function is set, update here
+				So(balanceAfter, ShouldEqual, balanceBefore)
+				So(myRAMAfter, ShouldEqual, myRAMBefore-sellAmount)
+				So(otherBalanceAfter, ShouldEqual, otherBalanceBefore+priceEstimated)
 			})
 		})
 	})

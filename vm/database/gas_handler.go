@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	gasPrefix           = "g-"
 	gasRateSuffix       = "-gr"
 	gasLimitSuffix      = "-gl"
 	gasUpdateTimeSuffix = "-gt"
@@ -62,11 +63,11 @@ func (m *GasHandler) putFloat64(key string, value float64) {
 }
 
 func (m *GasHandler) gasRateKey(name string) string {
-	return IOSTPrefix + name + gasRateSuffix
+	return gasPrefix + name + gasRateSuffix
 }
 
-// GetGasRate ...
-func (m *GasHandler) GetGasRate(name string) *common.Fixed {
+// GasRate ...
+func (m *GasHandler) GasRate(name string) *common.Fixed {
 	f := m.getFixed(m.gasRateKey(name))
 	if f == nil {
 		return &common.Fixed{
@@ -83,7 +84,7 @@ func (m *GasHandler) SetGasRate(name string, r *common.Fixed) {
 }
 
 func (m *GasHandler) gasLimitKey(name string) string {
-	return IOSTPrefix + name + gasLimitSuffix
+	return gasPrefix + name + gasLimitSuffix
 }
 
 // GasLimit ...
@@ -104,7 +105,7 @@ func (m *GasHandler) SetGasLimit(name string, l *common.Fixed) {
 }
 
 func (m *GasHandler) gasUpdateTimeKey(name string) string {
-	return IOSTPrefix + name + gasUpdateTimeSuffix
+	return gasPrefix + name + gasUpdateTimeSuffix
 }
 
 // GasUpdateTime ...
@@ -118,7 +119,7 @@ func (m *GasHandler) SetGasUpdateTime(name string, t int64) {
 }
 
 func (m *GasHandler) gasStockKey(name string) string {
-	return IOSTPrefix + name + gasStockSuffix
+	return gasPrefix + name + gasStockSuffix
 }
 
 // GasStock `gasStock` means the gas amount at last update time.
@@ -139,7 +140,7 @@ func (m *GasHandler) SetGasStock(name string, g *common.Fixed) {
 }
 
 func (m *GasHandler) gasPledgeKey(name string) string {
-	return IOSTPrefix + name + gasPledgeSuffix
+	return gasPrefix + name + gasPledgeSuffix
 }
 
 // GasPledge ...
@@ -167,7 +168,7 @@ func (m *GasHandler) CurrentTotalGas(name string, now int64) (result *common.Fix
 	if gasUpdateTime > 0 {
 		durationSeconds = (now - gasUpdateTime) / 1e9
 	}
-	rate := m.GetGasRate(name)
+	rate := m.GasRate(name)
 	limit := m.GasLimit(name)
 	//fmt.Printf("CurrentTotalGas stock %v rate %v limit %v", result, rate, limit)
 	result = result.Add(rate.Times(durationSeconds))

@@ -346,6 +346,8 @@ var (
 			to := args[2].(string)
 			amountStr := args[3].(string)
 
+			//fmt.Printf("token transfer %v %v %v %v\n", tokenName, from, to, amountStr)
+
 			if from == to {
 				return []interface{}{}, cost, nil
 			}
@@ -411,6 +413,7 @@ var (
 			tbalance += amount
 
 			cost0 = setBalance(h, tokenName, to, tbalance)
+			//fmt.Printf("transfer set %v %v %v\n", tokenName, to, tbalance)
 			cost.AddAssign(cost0)
 			cost0 = setBalance(h, tokenName, from, fbalance)
 			cost.AddAssign(cost0)

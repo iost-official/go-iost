@@ -2,9 +2,7 @@ package database
 
 import (
 	"errors"
-
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 // TokenContractName name of basic token contract
@@ -28,7 +26,7 @@ func (m *TokenHandler) decimalKey(tokenName string) string {
 func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 	currentRaw := m.db.Get(m.balanceKey(tokenName, acc))
 	balance := Unmarshal(currentRaw)
-	ilog.Errorf("TokenBalance is %v %v %v", tokenName, acc, balance)
+	//fmt.Printf("TokenBalance is %v %v %v\n", tokenName, acc, balance)
 	ib, ok := balance.(int64)
 	if !ok {
 		ib = 0
@@ -37,14 +35,14 @@ func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 }
 
 // TokenBalanceFixed get token balance of acc
-func (m *TokenHandler) TokenBalanceFixed(tokenName, acc string) common.Fixed {
+func (m *TokenHandler) TokenBalanceFixed(tokenName, acc string) *common.Fixed {
 	currentRaw := m.db.Get(m.balanceKey(tokenName, acc))
 	balance := Unmarshal(currentRaw)
 	ib, ok := balance.(int64)
 	if !ok {
 		ib = 0
 	}
-	return common.Fixed{Value: ib, Decimal: m.Decimal(tokenName)}
+	return &common.Fixed{Value: ib, Decimal: m.Decimal(tokenName)}
 }
 
 // SetTokenBalance set token balance of acc, used for test

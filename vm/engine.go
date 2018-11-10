@@ -128,7 +128,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 	}
 
 	e.publisherID = tx0.Publisher
-	bl := e.ho.DB().Balance(e.publisherID)
+	bl := e.ho.DB().TokenBalance("iost", e.publisherID)
 
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
 		ilog.Error(errCannotPay)
