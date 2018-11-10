@@ -2,6 +2,7 @@ package run
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest"
@@ -47,14 +48,22 @@ var AccountCaseAction = func(c *cli.Context) error {
 
 	ilog.Infof("Create %v account...", num)
 
+	var wg sync.WaitGroup
+
 	for i := 0; i < num; i++ {
-		name := fmt.Sprintf("account%04d", i)
-		_, err := it.CreateAccount(name)
-		if err != nil {
-			return err
-		}
-		// TODO Get account by rpc, and compare account result
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Add(-1)
+			name := fmt.Sprintf("account%04d", n)
+			_, err := it.CreateAccount(name)
+			if err != nil {
+				ilog.Fatalf("Create account failed: %v", err)
+			}
+			// TODO Get account by rpc, and compare account result
+		}(i)
 	}
+
+	wg.Wait()
 
 	ilog.Infof("Create %v account successful!", c.Int("number"))
 	return nil

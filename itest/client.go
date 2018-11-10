@@ -3,6 +3,7 @@ package itest
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/iost-official/go-iost/core/tx"
@@ -25,12 +26,15 @@ var (
 )
 
 type Client struct {
-	grpc rpc.ApisClient
-	Name string
-	Addr string
+	grpc  rpc.ApisClient
+	mutex sync.Mutex
+	Name  string
+	Addr  string
 }
 
 func (c *Client) getGRPC() (rpc.ApisClient, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	if c.grpc == nil {
 		conn, err := grpc.Dial(c.Addr, grpc.WithInsecure())
 		if err != nil {
