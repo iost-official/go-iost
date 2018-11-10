@@ -3,12 +3,22 @@ package common
 import (
 	"encoding/binary"
 	"errors"
+	"math"
+
+	"github.com/iost-official/go-iost/ilog"
 )
+
+var errOverflow = errors.New("overflow error")
+var errAbnormalChar = errors.New("abnormal char in amount")
+var errAmountFormat = errors.New("amount format error")
+var errDivideByZero = errors.New("divide by zero error")
+var errDoubleDot = errors.New("double dot error")
 
 // Fixed implements fixed point number for user of token balance
 type Fixed struct {
 	Value   int64
 	Decimal int
+	Err     error
 }
 
 // Marshal ...
@@ -28,6 +38,14 @@ func UnmarshalFixed(s string) (*Fixed, error) {
 	return &Fixed{Value: int64(binary.LittleEndian.Uint64([]byte(s[:8]))), Decimal: int(int32(binary.LittleEndian.Uint32([]byte(s[8:]))))}, nil
 }
 
+func multiplyOverflow(a int64, b int64) bool {
+	x := a * b
+	if a != 0 && x/a != b {
+		return true
+	}
+	return false
+}
+
 // IsZero checks whether the value is zero
 func (f *Fixed) IsZero() bool {
 	return f.Value == 0
@@ -35,6 +53,10 @@ func (f *Fixed) IsZero() bool {
 
 // Neg get negative number
 func (f *Fixed) Neg() *Fixed {
+	if multiplyOverflow(f.Value, -1) {
+		f.Err = errOverflow
+		return nil
+	}
 	return &Fixed{Value: -f.Value, Decimal: f.Decimal}
 }
 
@@ -43,6 +65,10 @@ func (f *Fixed) changeDecimal(targetDecimal int) *Fixed {
 	decimal := f.Decimal
 	for targetDecimal > decimal {
 		decimal++
+		if multiplyOverflow(value, 10) {
+			f.Err = errOverflow
+			return nil
+		}
 		value *= 10
 	}
 	for targetDecimal < decimal {
@@ -63,86 +89,137 @@ func (f *Fixed) shrinkDecimal() *Fixed {
 }
 
 // UnifyDecimal make two fix point number have same decimal.
-func UnifyDecimal(a *Fixed, b *Fixed) (resultA *Fixed, resultB *Fixed) {
+func UnifyDecimal(a *Fixed, b *Fixed) (*Fixed, *Fixed, error) {
 	if a.Decimal < b.Decimal {
-		return a.changeDecimal(b.Decimal), b
+		aChanged := a.changeDecimal(b.Decimal)
+		if aChanged.Err != nil {
+			return nil, nil, aChanged.Err
+		}
+		return aChanged, b, nil
 	}
-	return a, b.changeDecimal(a.Decimal)
+	bChanged := b.changeDecimal(a.Decimal)
+	if bChanged.Err != nil {
+		return nil, nil, bChanged.Err
+	}
+	return a, bChanged, nil
 }
 
 // Equals check equal
 func (f *Fixed) Equals(other *Fixed) bool {
-	fpnNew, otherNew := UnifyDecimal(f, other)
+	fpnNew, otherNew, err := UnifyDecimal(f, other)
+	f.Err = err
 	return fpnNew.Value == otherNew.Value
 }
 
 // Add ...
 func (f *Fixed) Add(other *Fixed) *Fixed {
-	fpnNew, otherNew := UnifyDecimal(f, other)
+	fpnNew, otherNew, err := UnifyDecimal(f, other)
+	if err != nil {
+		f.Err = err
+		return nil
+	}
 	return &Fixed{Value: fpnNew.Value + otherNew.Value, Decimal: fpnNew.Decimal}
 }
 
 // Sub ...
 func (f *Fixed) Sub(other *Fixed) *Fixed {
-	return f.Add(other.Neg())
+	ret := other.Neg()
+	if other.Err != nil {
+		f.Err = other.Err
+		return nil
+	}
+	return f.Add(ret)
 }
 
 // Multiply ...
 func (f *Fixed) Multiply(other *Fixed) *Fixed {
 	fpnNew := f.shrinkDecimal()
 	otherNew := other.shrinkDecimal()
+	if multiplyOverflow(fpnNew.Value, otherNew.Value) {
+		f.Err = errOverflow
+		return nil
+	}
 	return &Fixed{Value: fpnNew.Value * otherNew.Value, Decimal: fpnNew.Decimal + otherNew.Decimal}
 }
 
 // Times multiply a scalar
 func (f *Fixed) Times(i int64) *Fixed {
+	if multiplyOverflow(f.Value, i) {
+		f.Err = errOverflow
+		return nil
+	}
 	return &Fixed{Value: f.Value * i, Decimal: f.Decimal}
 }
 
 // Div divide by a scalar
 func (f *Fixed) Div(i int64) *Fixed {
+	if i == 0 {
+		f.Err = errDivideByZero
+		return nil
+	}
 	return &Fixed{Value: f.Value / i, Decimal: f.Decimal}
 }
 
 // LessThan ...
 func (f *Fixed) LessThan(other *Fixed) bool {
-	fpnNew, otherNew := UnifyDecimal(f, other)
+	fpnNew, otherNew, err := UnifyDecimal(f, other)
+	f.Err = err
 	return fpnNew.Value < otherNew.Value
 }
 
 // NewFixed generate Fixed from string and decimal, will truncate if decimal is smaller
-func NewFixed(amount string, decimal int) (*Fixed, bool) {
-	fpn := &Fixed{Value: 0, Decimal: decimal}
+func NewFixed(amount string, decimal int) (*Fixed, error) {
 	if len(amount) == 0 || amount[0] == '.' {
-		return nil, false
+		return nil, errAmountFormat
 	}
-	i := 0
-	for ; i < len(amount); i++ {
+	if amount[0] == '-' {
+		fpn, err := NewFixed(amount[1:], decimal)
+		ilog.Info(fpn, err)
+		if err != nil {
+			return nil, err
+		}
+		return fpn.Neg(), fpn.Err
+	}
+	fpn := &Fixed{Value: 0, Decimal: 0}
+	decimalStart := false
+	for i := 0; i < len(amount); i++ {
 		if '0' <= amount[i] && amount[i] <= '9' {
-			fpn.Value = fpn.Value*10 + int64(amount[i]-'0')
+			num := int64(amount[i] - '0')
+			if multiplyOverflow(fpn.Value, 10) {
+				return nil, errOverflow
+			}
+			fpn.Value = fpn.Value*10 + num
+			if fpn.Value < 0 {
+				return nil, errOverflow
+			}
+			if decimalStart {
+				fpn.Decimal++
+				if fpn.Decimal >= decimal {
+					break
+				}
+			}
 		} else if amount[i] == '.' {
-			break
+			if decimalStart == true {
+				return nil, errDoubleDot
+			}
+			decimalStart = true
 		} else {
-			return nil, false
+			return nil, errAbnormalChar
 		}
 	}
-	for i = i + 1; i < len(amount) && decimal > 0; i++ {
-		if '0' <= amount[i] && amount[i] <= '9' {
-			fpn.Value = fpn.Value*10 + int64(amount[i]-'0')
-			decimal = decimal - 1
-		} else {
-			return nil, false
-		}
-	}
-	for decimal > 0 {
-		fpn.Value = fpn.Value * 10
-		decimal = decimal - 1
-	}
-	return fpn, true
+	return fpn.changeDecimal(decimal), fpn.Err
 }
 
 // ToString generate string of Fixed without post zero
 func (f *Fixed) ToString() string {
+	if f.Value < 0 {
+		ret := f.Neg()
+		if f.Err != nil {
+			return ""
+		}
+		str := ret.ToString()
+		return "-" + str
+	}
 	val := f.Value
 	str := make([]byte, 0, 0)
 	for val > 0 || len(str) <= f.Decimal {
@@ -170,5 +247,5 @@ func (f *Fixed) ToString() string {
 
 // ToFloat ...
 func (f *Fixed) ToFloat() float64 {
-	return float64(f.Value) / float64(10^f.Decimal)
+	return float64(f.Value) / math.Pow10(f.Decimal)
 }
