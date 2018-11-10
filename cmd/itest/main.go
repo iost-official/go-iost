@@ -3,15 +3,14 @@ package main
 import (
 	"os"
 
-	log "github.com/sirupsen/logrus"
-
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest/command/create"
 	"github.com/iost-official/go-iost/itest/command/run"
 	"github.com/urfave/cli"
 )
 
 func main() {
-	log.SetLevel(log.DebugLevel)
+	ilog.SetLevel(ilog.LevelDebug)
 
 	app := cli.NewApp()
 	app.Name = "itest"
@@ -24,6 +23,6 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatalf("Run itest failed: %v", err)
+		ilog.Fatalf("Run itest failed: %v", err)
 	}
 }

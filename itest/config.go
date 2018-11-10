@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 const (
@@ -48,8 +48,8 @@ func LoadITestConfig(file string) (*ITestConfig, error) {
 		return nil, err
 	}
 
-	log.Debugf("Bank: %v", itc.Bank)
-	log.Debugf("Clients: %v", itc.Clients)
+	ilog.Debugf("Bank: %v", itc.Bank)
+	ilog.Debugf("Clients: %v", itc.Clients)
 
 	return itc, nil
 }

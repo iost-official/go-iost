@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"os"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 const (
@@ -76,7 +75,7 @@ func DumpKeys(keys []*Key, file string) error {
 func NewKey(seckey []byte, algo crypto.Algorithm) *Key {
 	keypair, err := account.NewKeyPair(seckey, algo)
 	if err != nil {
-		log.Fatalf("Create key pair failed: %v", err)
+		ilog.Fatalf("Create key pair failed: %v", err)
 	}
 	return &Key{
 		KeyPair: keypair,
