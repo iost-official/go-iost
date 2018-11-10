@@ -194,9 +194,9 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 			}
 			if decimalStart {
 				fpn.Decimal++
-			}
-			if fpn.Decimal >= decimal {
-				break
+				if fpn.Decimal >= decimal {
+					break
+				}
 			}
 		} else if amount[i] == '.' {
 			decimalStart = true
