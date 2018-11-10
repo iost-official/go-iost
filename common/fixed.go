@@ -177,9 +177,8 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 		ilog.Info(fpn, err)
 		if err != nil {
 			return nil, err
-		} else {
-			return fpn.Neg(), fpn.Err
 		}
+		return fpn.Neg(), fpn.Err
 	}
 	fpn := &Fixed{Value: 0, Decimal: 0}
 	decimalStart := false
