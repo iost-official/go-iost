@@ -5,6 +5,7 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	txpb "github.com/iost-official/go-iost/core/tx/pb"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // StatusCode status code of transaction execution result
@@ -68,6 +69,7 @@ func (s *Status) ToPb() *txpb.Status {
 
 // FromPb convert Status from proto buf data structure.
 func (s *Status) FromPb(st *txpb.Status) *Status {
+	ilog.Info(st)
 	s.Code = StatusCode(st.Code)
 	s.Message = st.Message
 	return s
@@ -187,6 +189,7 @@ func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) *TxReceipt {
 	r.RAMUsage = tr.RamUsage
 	s := &Status{}
 	r.Status = s.FromPb(tr.Status)
+	ilog.Info(tr)
 	for _, rt := range tr.Returns {
 		re := &Return{}
 		r.Returns = append(r.Returns, re.FromPb(rt))

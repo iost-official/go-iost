@@ -111,7 +111,7 @@ func (b *Block) CalculateTxsHash() []byte {
 }
 
 // CalculateMerkleHash calculate the hash of the MerkleTree
-func (b *Block) CalculateMerkleHash() []byte {
+func (b *Block) CalculateMerkleHash() ([]byte, error) {
 	m := merkletree.TXRMerkleTree{}
 	m.Build(b.Receipts)
 	return m.RootHash()
