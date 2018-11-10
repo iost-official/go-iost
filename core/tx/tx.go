@@ -15,6 +15,16 @@ import (
 
 //go:generate protoc  --go_out=plugins=grpc:. ./core/tx/tx.proto
 
+// ToBytesLevel judges which fields of tx should be written to bytes.
+type ToBytesLevel int
+
+// consts
+const (
+	Base ToBytesLevel = iota
+	Publish
+	Full
+)
+
 // Tx Transaction structure
 type Tx struct {
 	hash         []byte
@@ -64,23 +74,7 @@ func (t *Tx) containSigner(id string) bool {
 }
 
 func (t *Tx) baseHash() []byte {
-	tr := &txpb.Tx{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
-		Signers:    t.Signers,
-		Delay:      t.Delay,
-	}
-	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, a.ToPb())
-	}
-
-	b, err := tr.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	return common.Sha3(b)
+	return common.Sha3(t.ToBytes(Base))
 }
 
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
@@ -99,27 +93,7 @@ func SignTx(tx *Tx, id string, kps []*account.KeyPair, signs ...*crypto.Signatur
 
 // publishHash
 func (t *Tx) publishHash() []byte {
-	tr := &txpb.Tx{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
-		Signers:    t.Signers,
-		Delay:      t.Delay,
-	}
-	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, a.ToPb())
-	}
-
-	for _, s := range t.Signs {
-		tr.Signs = append(tr.Signs, s.ToPb())
-	}
-
-	b, err := tr.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	return common.Sha3(b)
+	return common.Sha3(t.ToBytes(Publish))
 }
 
 // ToPb convert tx to txpb.Tx for transmission.
@@ -210,10 +184,10 @@ func (t *Tx) String() string {
 	return str
 }
 
-// Hash return cached hash if exists, or calculate with Sha3
+// Hash return cached hash if exists, or calculate with Sha3.
 func (t *Tx) Hash() []byte {
 	if t.hash == nil {
-		t.hash = common.Sha3(t.Encode())
+		t.hash = common.Sha3(t.ToBytes(Full))
 	}
 	return t.hash
 }
@@ -262,4 +236,44 @@ func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 // VerifySigner verify signer's signature
 func (t *Tx) VerifySigner(sig *crypto.Signature) bool {
 	return sig.Verify(t.baseHash())
+}
+
+// ToBytes converts tx to bytes.
+func (t *Tx) ToBytes(l ToBytesLevel) []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteInt64(t.Time, true)
+	sn.WriteInt64(t.Expiration, true)
+	sn.WriteInt64(t.GasPrice, true)
+	sn.WriteInt64(t.GasLimit, true)
+	sn.WriteInt64(t.Delay, true)
+	for _, signer := range t.Signers {
+		sn.WriteString(signer, true)
+	}
+
+	if l > Base {
+		actionBytes := make([][]byte, 0, len(t.Actions))
+		for _, a := range t.Actions {
+			actionBytes = append(actionBytes, a.ToBytes())
+		}
+		sn.WriteBytesSlice(actionBytes, false)
+
+		signBytes := make([][]byte, 0, len(t.Signs))
+		for _, sig := range t.Signs {
+			signBytes = append(signBytes, sig.ToBytes())
+		}
+		sn.WriteBytesSlice(signBytes, false)
+	}
+
+	if l > Publish {
+		sn.WriteBytes(t.ReferredTx, true)
+		sn.WriteString(t.Publisher, true)
+
+		signBytes := make([][]byte, 0, len(t.PublishSigns))
+		for _, sig := range t.PublishSigns {
+			signBytes = append(signBytes, sig.ToBytes())
+		}
+		sn.WriteBytesSlice(signBytes, false)
+	}
+
+	return sn.Bytes()
 }

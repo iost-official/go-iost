@@ -97,8 +97,8 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		cost.AddAssign(cost0)
 		for _, limit := range amountLimit {
 			decimal := h.DB().Decimal(limit.Token)
-			fixedAmount, ok := common.NewFixed(limit.Val, decimal)
-			if ok {
+			fixedAmount, err := common.NewFixed(limit.Val, decimal)
+			if err == nil {
 				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
 			}
 		}

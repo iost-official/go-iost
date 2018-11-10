@@ -150,9 +150,9 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 
 func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64, cost contract.Cost, err error) {
 	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
-	amountNumber, ok := common.NewFixed(amountStr, int(decimal.(int64)))
+	amountNumber, err := common.NewFixed(amountStr, int(decimal.(int64)))
 	cost.AddAssign(host.CommonOpCost(3))
-	if !ok {
+	if err != nil {
 		return 0, cost, host.ErrInvalidAmount
 	}
 	return amountNumber.Value, cost, err
