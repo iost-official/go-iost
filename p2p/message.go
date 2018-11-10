@@ -45,7 +45,6 @@ const (
 	RoutingTableResponse
 	NewBlock
 	NewBlockHash
-	NewBlockRequest
 	SyncBlockHashRequest
 	SyncBlockHashResponse
 	SyncBlockRequest
@@ -79,8 +78,6 @@ func (m MessageType) String() string {
 		return "PublishTx"
 	case NewBlockHash:
 		return "NewBlockHash"
-	case NewBlockRequest:
-		return "NewBlockRequest"
 	default:
 		return "unknown_type:" + strconv.Itoa(int(m))
 	}

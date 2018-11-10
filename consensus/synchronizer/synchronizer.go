@@ -447,11 +447,12 @@ func (sy *SyncImpl) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 		sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage, true)
 		return
 	}
-	b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.Hash)
+	blk, err := sy.basevariable.BlockChain().GetBlockByHash(rh.Hash)
 	if err != nil {
 		ilog.Errorf("handle block query failed to get block.")
 		return
 	}
+	b, err = blk.Encode()
 	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage, true)
 }
 
