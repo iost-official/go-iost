@@ -88,7 +88,10 @@ class IssueContract {
     }
 
     _requireAuth(account, permission) {
-        BlockChain.requireAuth(account, permission);
+        const ret = BlockChain.requireAuth(account, permission);
+        if (ret !== true) {
+            throw new Error("require auth failed. ret = " + ret);
+        }
     }
 
     _call(contract, api, args) {

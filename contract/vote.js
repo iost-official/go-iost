@@ -33,14 +33,14 @@ class VoteContract {
         this._put("voteId", JSON.stringify(voteId));
     }
 
-    InitProducer(proID) {
+    InitProducer(proID, proPubkey) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
             throw new Error("init out of genesis block")
         }
 
         let pendingProducerList = this._get("pendingProducerList");
-        pendingProducerList.push(proID);
+        pendingProducerList.push(proPubkey);
         const keyCmp = function(a, b) {
             if (b < a) {
                 return 1;
@@ -64,6 +64,7 @@ class VoteContract {
         ]);
 
         this._mapPut("producerTable", proID, {
+            "pubkey" : proPubkey,
             "loc": "",
             "url": "",
             "netId": "",
@@ -71,6 +72,7 @@ class VoteContract {
             "registerFee": producerRegisterFee,
             "score": "0"
         });
+        this._mapPut("producerKeyToId", proPubkey, proID);
     }
 
     InitAdmin(adminID) {
@@ -140,7 +142,7 @@ class VoteContract {
     }
 
     // register account as a producer, need to pledge token
-    RegisterProducer(account, loc, url, netId) {
+    RegisterProducer(account, pubkey, loc, url, netId) {
 
         this._requireAuth(account, producerPermission);
         if (storage.mapHas("producerTable", account)) {
@@ -157,6 +159,7 @@ class VoteContract {
         ]);
 
         this._mapPut("producerTable", account, {
+            "pubkey" : pubkey,
             "loc": loc,
             "url": url,
             "netId": netId,
@@ -164,16 +167,21 @@ class VoteContract {
             "registerFee": producerRegisterFee,
             "score": "0"
         });
-
+        this._mapPut("producerKeyToId", pubkey, account);
     }
 
     // update the information of a producer
-    UpdateProducer(account, loc, url, netId) {
+    UpdateProducer(account, pubkey, loc, url, netId) {
         this._requireAuth(account, producerPermission);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
         }
         const pro = this._mapGet("producerTable", account);
+        if (pro.pubkey !== pubkey) {
+            this._mapDel("producerKeyToId", pro.pubkey, account);
+            this._mapPut("producerKeyToId", pubkey, account);
+        }
+        pro.pubkey = pubkey,
         pro.loc = loc;
         pro.url = url;
         pro.netId = netId;
@@ -225,9 +233,9 @@ class VoteContract {
         // will clear votes and score of the producer
 
         const pro = this._mapGet("producerTable", account);
-
         this._mapDel("producerTable", account);
         this._mapDel("preProducerMap", account);
+        this._mapDel("producerKeyToId", pro.pubkey, account);
 
         this._call("iost.token", "transfer", ["iost", "iost.vote_producer", account, pro.registerFee]);
         /*
@@ -283,15 +291,16 @@ class VoteContract {
 
         const ppThreshold = new Float64(preProducerThreshold);
         for (const res of voteRes) {
-            const key = res.option;
-            const pro = this._mapGet("producerTable", key);
+            const id = res.option;
+            const pro = this._mapGet("producerTable", id);
             // don't get score if in pending producer list or offline
             const votes = new Float64(res.votes);
-            if (!pendingProducerList.includes(key) &&
+            if (!pendingProducerList.includes(pro.pubkey) &&
                 !votes.lt(ppThreshold) &&
                 pro.online === true) {
                 preList.push({
-                    "key": key,
+                    "id" : id,
+                    "key": pro.pubkey,
                     "prior": 0,
                     "votes": votes,
                     "score": pro.score
@@ -299,13 +308,13 @@ class VoteContract {
             }
         }
         for (let i = 0; i < preList.length; i++) {
-            const key = preList[i].key;
+            const id = preList[i].id;
             const delta = preList[i].votes.minus(ppThreshold);
-            const proRes = this._mapGet("producerTable", key);
+            const proRes = this._mapGet("producerTable", id);
             preList[i].score = delta.plus(new Float64(proRes.score));
 
             proRes.score = preList[i].score.number.toFixed();
-            this._mapPut("producerTable", key, proRes);
+            this._mapPut("producerTable", id, proRes);
         }
 
         // sort according to score in reversed order
@@ -326,11 +335,11 @@ class VoteContract {
         const maxInsertPlace = Math.floor(producerNumber * 2 / 3);
         const oldPreList = [];
         let minScore = new Float64(MaxFloat64);
-        for (let key in pendingProducerList) {
-            const x = pendingProducerList[key];
-            const score = new Float64(this._mapGet("producerTable", x).score);
+        for (const key of pendingProducerList) {
+            const account = this._mapGet("producerKeyToId", key);
+            const score = new Float64(this._mapGet("producerTable", account).score);
             oldPreList.push({
-                "key": x,
+                "key": key,
                 "prior": 1,
                 "score": score
             });
@@ -365,16 +374,18 @@ class VoteContract {
 
         for (const key of currentList) {
             if (!pendingList.includes(key)) {
-                const proRes = this._mapGet("producerTable", key);
+                const account = this._mapGet("producerKeyToId", key);
+                const proRes = this._mapGet("producerTable", account);
                 proRes.score = "0";
-                this._mapPut("producerTable", key, proRes);
+                this._mapPut("producerTable", account, proRes);
             }
         }
 
         for (const key of pendingList) {
-            const proRes = this._mapGet("producerTable", key);
+            const account = this._mapGet("producerKeyToId", key);
+            const proRes = this._mapGet("producerTable", account);
             proRes.score = new Float64(proRes.score).multi(scoreDecreaseRate).number.toFixed(iostDecimal);
-            this._mapPut("producerTable", key, proRes);
+            this._mapPut("producerTable", account, proRes);
         }
     }
 }
