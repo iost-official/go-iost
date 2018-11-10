@@ -3,10 +3,10 @@ package database
 import (
 	"errors"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/ilog"
 	"encoding/json"
 	"fmt"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // TokenContractName name of basic token contract
@@ -57,7 +57,7 @@ func (m *TokenHandler) TokenBalanceFixed(tokenName, acc string) common.Fixed {
 }
 
 // FreezedTokenBalance get freezed token balance of acc
-func (m *TokenHandler) FreezedTokenBalance (tokenName, acc string) int64 {
+func (m *TokenHandler) FreezedTokenBalance(tokenName, acc string) int64 {
 	freezeJSON := Unmarshal(m.db.Get(m.freezedBalanceKey(tokenName, acc)))
 	if freezeJSON == nil {
 		return 0
