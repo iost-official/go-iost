@@ -1,0 +1,44 @@
+acc:
+  id: producer00002
+  seckey: 1rATSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB
+  algorithm: ed25519
+genesis: config/genesis.yml
+vm:
+  jspath: vm/v8vm/v8/libjs/
+  loglevel: ""
+db:
+  ldbpath: storage/
+p2p:
+  listenaddr: 0.0.0.0:30000
+  seednodes:
+  chainid: 1024
+  version: 1
+  datapath: p2p/
+  inboundConn: 15
+  outboundConn: 15
+  blackPID:
+  blackIP:
+  adminPort: 30005
+rpc:
+  jsonport: 30001
+  grpcport: 30002
+log:
+  filelog:
+    path: logs/
+    level: info
+    enable: true
+  consolelog:
+    level: info
+    enable: true
+  asyncwrite: true
+metrics:
+  pushAddr:
+  username:
+  password:
+  enable: false
+  id: iost-testnet:visitor00
+debug:
+  listenaddr: 0.0.0.0:30003
+version:
+  nettype: "debugnet"
+  protocolversion: "1.0"
