@@ -27,8 +27,8 @@ func (m *TokenHandler) decimalKey(tokenName string) string {
 // TokenBalance get token balance of acc
 func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 	currentRaw := m.db.Get(m.balanceKey(tokenName, acc))
-	ilog.Errorf("TokenBalance is %v %v %v", tokenName, acc, currentRaw)
 	balance := Unmarshal(currentRaw)
+	ilog.Errorf("TokenBalance is %v %v %v", tokenName, acc, balance)
 	ib, ok := balance.(int64)
 	if !ok {
 		ib = 0

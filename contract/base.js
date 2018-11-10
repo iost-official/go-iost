@@ -13,13 +13,15 @@ class Base {
         return bi.number;
     }
     _get(k) {
-        return JSON.parse(storage.get(k));
-    }
-    _put(k, v) {
-        const ret = storage.put(k, JSON.stringify(v));
-        if (ret !== 0) {
-            throw new Error("storage put failed. ret = " + ret);
+        const val = storage.get(k);
+        if (val === "") {
+            return null;
         }
+        return JSON.parse(val);
+    }
+
+    _put(k, v) {
+        storage.put(k, JSON.stringify(v));
     }
 
     _vote() {

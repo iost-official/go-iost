@@ -64,6 +64,10 @@ int compile(SandboxPtr ptr, const char *code, const char **compiledCode) {
         Local<Value> result = script->Run();
         if (!result.IsEmpty()) {
             String::Utf8Value retStr(result);
+            // inject gas failed will return empty result. todo catch exception
+            if (retStr.length() == 0) {
+                return 1;
+            }
             *compiledCode = strdup(*retStr);
             return 0;
         }

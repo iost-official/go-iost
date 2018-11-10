@@ -1,13 +1,11 @@
 package host
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 )
@@ -110,29 +108,6 @@ func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, contract
 	return h.Call(contract, api, jarg, true)
 }
 
-// CallWithReceipt call and generate receipt
-func (h *Host) CallWithReceipt(contractName, api, jarg string) ([]interface{}, contract.Cost, error) {
-	rtn, cost, err := h.Call(contractName, api, jarg)
-
-	var sarr []interface{}
-	sarr = append(sarr, api)
-	sarr = append(sarr, jarg)
-
-	if err != nil {
-		sarr = append(sarr, err.Error())
-	} else {
-		sarr = append(sarr, "success")
-	}
-	s, err := json.Marshal(sarr)
-	if err != nil {
-		return rtn, cost, err
-	}
-	h.receipt(tx.SystemDefined, string(s))
-	cost.AddAssign(ReceiptCost(len(s)))
-	return rtn, cost, err
-
-}
-
 // SetCode set code to storage
 func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error) {
 	code, err := h.monitor.Compile(c)
@@ -177,7 +152,6 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 		return cost, fmt.Errorf("call can_update: %v", err)
 	}
 
-	// todo rtn[0] should be bool type
 	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, ErrUpdateRefused
 	}
@@ -221,7 +195,6 @@ func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 		return cost, err
 	}
 
-	// todo rtn[0] should be bool type
 	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, ErrDestroyRefused
 	}
