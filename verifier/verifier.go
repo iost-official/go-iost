@@ -82,14 +82,12 @@ func (v *Verifier) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, l
 // Gen gen block
 func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
 	isolator := &vm.Isolator{}
-
-	if blk.Txs == nil {
-		blk.Txs = make([]*tx.Tx, 0)
+	r, err := blockBaseExec(blk, db, isolator, BlockBaseTx, c)
+	if err != nil {
+		return nil, nil, err
 	}
-	blockBaseExec(blk, db, isolator, BlockBaseTx, c)
-	if blk.Receipts == nil {
-		blk.Receipts = make([]*tx.TxReceipt, 0)
-	}
+	blk.Txs = append(blk.Txs, BlockBaseTx)
+	blk.Receipts = append(blk.Receipts, r)
 	var pi = NewProvider(iter)
 	switch c.Mode {
 	case 0:
@@ -105,7 +103,7 @@ func (v *Verifier) Gen(blk *block.Block, db database.IMultiValue, iter TxIter, c
 	return []*tx.Tx{}, []error{}, fmt.Errorf("mode unexpected: %v", c.Mode)
 }
 
-func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isolator, t *tx.Tx, c *Config) (err error) {
+func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isolator, t *tx.Tx, c *Config) (tr *tx.TxReceipt, err error) {
 	vi := database.NewVisitor(100, db)
 	var l ilog.Logger
 	l.Stop()
@@ -113,24 +111,18 @@ func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isola
 	isolator.TriggerBlockBaseMode()
 	err = isolator.PrepareTx(t, c.Timeout)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	r, err := isolator.Run()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if r.Status.Code != tx.Success {
-		return fmt.Errorf(r.Status.Message)
-	}
-
-	r, err = isolator.PayCost()
-	if err != nil {
-		return err
+		return nil, fmt.Errorf(r.Status.Message)
 	}
 	isolator.Commit()
-	blk.Txs = append(blk.Txs, t)
-	blk.Receipts = append(blk.Receipts, r)
-	return nil
+
+	return r, nil
 }
 
 func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isolator *vm.Isolator, c *Config) (err error) {
@@ -179,6 +171,9 @@ L:
 		blk.Receipts = append(blk.Receipts, r)
 	}
 	buf, err := json.Marshal(info)
+	if err != nil {
+		panic(err)
+	}
 	blk.Head.Info = buf
 	for _, t := range blk.Txs {
 		provider.Drop(t, nil)
@@ -274,11 +269,13 @@ func verifyBlockBase(blk *block.Block, db database.IMultiValue, c *Config) error
 			return fmt.Errorf("block base tx not match")
 		}
 	}
-
-	var engine vm.Isolator
-	err := verify(engine, blk.Txs[0], blk.Receipts[0], c.Timeout, true)
+	isolator := &vm.Isolator{}
+	r, err := blockBaseExec(blk, db, isolator, blk.Txs[0], c)
 	if err != nil {
 		return err
+	}
+	if r.Status.Code != tx.Success {
+		return fmt.Errorf("block base tx receipt error: %v", r.Status.Message)
 	}
 
 	return nil
