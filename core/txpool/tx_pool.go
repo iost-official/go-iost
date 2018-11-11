@@ -79,6 +79,8 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 		Expiration: referredTx.Expiration + referredTx.Delay,
 		GasLimit:   referredTx.GasLimit,
 		GasPrice:   referredTx.GasPrice,
+		Publisher:  referredTx.Publisher,
+		ReferredTx: txHash,
 	}
 	return pool.addTx(t)
 }
@@ -213,8 +215,20 @@ func (pool *TxPImpl) createTxMapToBlock(tm map[string]struct{}, blockHash []byte
 	return true
 }
 
+func (pool *TxPImpl) processDelaytx(blk *block.Block) {
+	for _, t := range blk.Txs {
+		if t.Delay > 0 {
+			pool.deferServer.StoreDeferTx(t)
+		}
+		if t.IsDefer() {
+			pool.deferServer.DelDeferTx(t)
+		}
+	}
+}
+
 // AddLinkedNode add the findBlock
 func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode, newHead *blockcache.BlockCacheNode) error {
+	pool.processDelaytx(linkedNode.Block)
 	err := pool.addBlock(linkedNode.Block)
 	if err != nil {
 		return fmt.Errorf("failed to add findBlock: %v", err)
@@ -316,19 +330,9 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 		if err != nil {
 			return fmt.Errorf("get referred tx error, %v", err)
 		}
-		if referredTx.Time+referredTx.Delay != t.Time {
-			return errors.New("unmatched referred tx delay time")
-		}
-		if referredTx.Expiration+referredTx.Delay != t.Expiration {
-			return errors.New("unmatched referred tx expiration time")
-		}
-		if len(referredTx.Actions) != len(t.Actions) {
-			return errors.New("unmatched referred tx action length")
-		}
-		for i := 0; i < len(referredTx.Actions); i++ {
-			if *referredTx.Actions[i] != *t.Actions[i] {
-				return errors.New("unmatched referred tx action")
-			}
+		err = t.VerifyDefer(referredTx)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -419,7 +423,7 @@ func (pool *TxPImpl) clearTimeoutTx() {
 	iter := pool.pendingTx.Iter()
 	t, ok := iter.Next()
 	for ok {
-		if !t.IsTimeValid(time.Now().UnixNano()) {
+		if !t.IsTimeValid(time.Now().UnixNano()) && !t.IsDefer() {
 			pool.pendingTx.Del(t.Hash())
 		}
 		t, ok = iter.Next()

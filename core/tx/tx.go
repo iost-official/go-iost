@@ -204,6 +204,28 @@ func (t *Tx) IsDefer() bool {
 	return len(t.ReferredTx) > 0
 }
 
+// VerifyDefer verifes whether the defer tx is matched  with the referred tx.
+func (t *Tx) VerifyDefer(referredTx *Tx) error {
+	if referredTx.Publisher != t.Publisher {
+		return errors.New("unmatched referred tx publisher")
+	}
+	if referredTx.Time+referredTx.Delay != t.Time {
+		return errors.New("unmatched referred tx delay time")
+	}
+	if referredTx.Expiration+referredTx.Delay != t.Expiration {
+		return errors.New("unmatched referred tx expiration time")
+	}
+	if len(referredTx.Actions) != len(t.Actions) {
+		return errors.New("unmatched referred tx action length")
+	}
+	for i := 0; i < len(referredTx.Actions); i++ {
+		if *referredTx.Actions[i] != *t.Actions[i] {
+			return errors.New("unmatched referred tx action")
+		}
+	}
+	return nil
+}
+
 // VerifySelf verify tx's signature
 func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 	if t.Delay > 0 && t.IsDefer() {
@@ -244,19 +266,24 @@ func (t *Tx) VerifySigner(sig *crypto.Signature) bool {
 	return sig.Verify(t.baseHash())
 }
 
+// IsExpired checks whether the transaction is expired compared to the given time ct.
+func (t *Tx) IsExpired(ct int64) bool {
+	if t.Expiration <= ct {
+		return true
+	}
+	if ct-t.Time > MaxExpiration {
+		return true
+	}
+	return false
+}
+
 // IsTimeValid checks whether the transaction time is valid compared to the given time ct.
 // ct may be time.Now().UnixNano() or block head time.
 func (t *Tx) IsTimeValid(ct int64) bool {
 	if t.Time > ct {
 		return false
 	}
-	if t.Expiration <= ct {
-		return false
-	}
-	if ct-t.Time > MaxExpiration {
-		return false
-	}
-	return true
+	return !t.IsExpired(ct)
 }
 
 // ToBytes converts tx to bytes.
