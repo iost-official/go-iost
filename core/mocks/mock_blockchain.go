@@ -105,19 +105,6 @@ func (mr *MockChainMockRecorder) GetBlockByNumber(arg0 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByNumber", reflect.TypeOf((*MockChain)(nil).GetBlockByNumber), arg0)
 }
 
-// GetBlockByteByHash mocks base method
-func (m *MockChain) GetBlockByteByHash(arg0 []byte) ([]byte, error) {
-	ret := m.ctrl.Call(m, "GetBlockByteByHash", arg0)
-	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBlockByteByHash indicates an expected call of GetBlockByteByHash
-func (mr *MockChainMockRecorder) GetBlockByteByHash(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByteByHash", reflect.TypeOf((*MockChain)(nil).GetBlockByteByHash), arg0)
-}
-
 // GetHashByNumber mocks base method
 func (m *MockChain) GetHashByNumber(arg0 int64) ([]byte, error) {
 	ret := m.ctrl.Call(m, "GetHashByNumber", arg0)

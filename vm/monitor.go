@@ -97,8 +97,8 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		cost.AddAssign(cost0)
 		for _, limit := range amountLimit {
 			decimal := h.DB().Decimal(limit.Token)
-			fixedAmount, ok := common.NewFixed(limit.Val, decimal)
-			if ok {
+			fixedAmount, err := common.NewFixed(limit.Val, decimal)
+			if err == nil {
 				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
 			}
 		}
@@ -122,7 +122,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	//if payment == 1 &&
 	//	abi.GasPrice > gasPrice &&
 	//	!{
-	//	b := h.DB().Balance(host.ContractGasPrefix + contractName)
+	//	b := h.DB().TokenBalance("iost",host.ContractGasPrefix + contractName)
 	//	if b > gasPriceCost.ToGas() {
 	//		h.PayCost(cost, host.ContractGasPrefix+contractName)
 	//		cost = contract.Cost0()

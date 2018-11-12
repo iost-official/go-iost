@@ -48,7 +48,6 @@ func Test_IOSTIssue(t *testing.T) {
 	Convey("test iost.issue", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		s.Visitor.SetBalance(testID[0], 10000000)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		if err != nil {

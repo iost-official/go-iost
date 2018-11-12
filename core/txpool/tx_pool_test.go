@@ -118,7 +118,7 @@ func TestNewTxPImpl(t *testing.T) {
 		txPool.Start()
 		Convey("AddTx", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			err := txPool.AddTx(t)
 			So(err, ShouldBeNil)
@@ -128,20 +128,20 @@ func TestNewTxPImpl(t *testing.T) {
 		})
 		Convey("txTimeOut", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 
-			b := txPool.TxTimeOut(t)
+			b := t.IsTimeValid(time.Now().UnixNano())
+			So(b, ShouldBeTrue)
+
+			t.Time -= int64(tx.MaxExpiration + int64(1*time.Second))
+			b = t.IsTimeValid(time.Now().UnixNano())
 			So(b, ShouldBeFalse)
 
-			t.Time -= int64(Expiration + int64(1*time.Second))
-			b = txPool.TxTimeOut(t)
-			So(b, ShouldBeTrue)
+			t = genTx(accountList[0], tx.MaxExpiration)
 
-			t = genTx(accountList[0], Expiration)
-
-			t.Expiration -= int64(Expiration * 3)
-			b = txPool.TxTimeOut(t)
-			So(b, ShouldBeTrue)
+			t.Expiration -= int64(tx.MaxExpiration * 3)
+			b = t.IsTimeValid(time.Now().UnixNano())
+			So(b, ShouldBeFalse)
 		})
 		Convey("delTimeOutTx", func() {
 
@@ -152,12 +152,12 @@ func TestNewTxPImpl(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			time.Sleep(50 * time.Millisecond)
-			txPool.clearTimeOutTx()
+			txPool.clearTimeoutTx()
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 		})
 		Convey("ExistTxs FoundPending", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			err := txPool.AddTx(t)
 			So(err, ShouldBeNil)
@@ -192,7 +192,7 @@ func TestNewTxPImpl(t *testing.T) {
 				So(r1, ShouldEqual, FoundChain)
 			}
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			r1 := txPool.ExistTxs(t.Hash(), bcn.Block)
 			So(r1, ShouldEqual, NotFound)
 		})
@@ -277,7 +277,7 @@ func TestNewTxPImplB(t *testing.T) {
 		txPool.Start()
 		Convey("delPending", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			err := txPool.AddTx(t)
 			So(err, ShouldBeNil)
@@ -332,11 +332,11 @@ func TestNewTxPImplB(t *testing.T) {
 		})
 
 		Convey("rbtree", func() {
-			t1 := genTx(newAccount, Expiration)
-			t2 := genTx(newAccount, Expiration)
-			t3 := genTx(newAccount, Expiration)
-			t4 := genTx(newAccount, Expiration)
-			t5 := genTx(newAccount, Expiration)
+			t1 := genTx(newAccount, tx.MaxExpiration)
+			t2 := genTx(newAccount, tx.MaxExpiration)
+			t3 := genTx(newAccount, tx.MaxExpiration)
+			t4 := genTx(newAccount, tx.MaxExpiration)
+			t5 := genTx(newAccount, tx.MaxExpiration)
 			t1.GasPrice = 100
 			t2.GasPrice = 200
 			t3.GasPrice = 200
@@ -480,7 +480,7 @@ func BenchmarkAddTx(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		t := genTx(accountList[0], Expiration)
+		t := genTx(accountList[0], tx.MaxExpiration)
 		b.StartTimer()
 
 		txPool.addTx(t)
@@ -498,7 +498,7 @@ func BenchmarkDecodeTx(b *testing.B) {
 		panic("account.NewKeyPair error")
 	}
 
-	tm := genTxMsg(newAccount, Expiration)
+	tm := genTxMsg(newAccount, tx.MaxExpiration)
 	var t tx.Tx
 	err = t.Decode(tm.Data())
 	if err != nil {
@@ -523,7 +523,7 @@ func BenchmarkEncodeTx(b *testing.B) {
 		panic("account.NewKeyPair error")
 	}
 
-	tm := genTx(newAccount, Expiration)
+	tm := genTx(newAccount, tx.MaxExpiration)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -538,7 +538,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 
 	_, accountList, _, txPool, gl := envInit(b)
 
-	t := genTx(accountList[0], Expiration)
+	t := genTx(accountList[0], tx.MaxExpiration)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -716,7 +716,7 @@ func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt in
 		}
 
 		for i := 0; i < txCnt; i++ {
-			blk.Txs = append(blk.Txs, genTx(accountList[0], Expiration))
+			blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
 		}
 
 		blk.Head.TxsHash = blk.CalculateTxsHash()
@@ -756,7 +756,7 @@ func genSingleBlock(accountList []*account.KeyPair, witnessList []string, Parent
 	}}
 
 	for i := 0; i < txCnt; i++ {
-		blk.Txs = append(blk.Txs, genTx(accountList[0], Expiration))
+		blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
 	}
 
 	blk.Head.TxsHash = blk.CalculateTxsHash()

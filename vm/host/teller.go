@@ -6,7 +6,6 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 // const prefixs
@@ -27,91 +26,6 @@ func NewTeller(h *Host) Teller {
 		h:    h,
 		cost: make(map[string]contract.Cost),
 	}
-}
-
-// TransferRawNew ... todo deprecated
-func (h *Teller) TransferRawNew(from, to string, amount int64) error {
-	tokenName := "iost"
-	srcBalance := h.h.db.TokenBalance(tokenName, from)
-	dstBalance := h.h.db.TokenBalance(tokenName, to)
-	if strings.HasPrefix(from, ContractAccountPrefix) && srcBalance >= amount || srcBalance > amount {
-		h.h.db.SetTokenBalance(tokenName, from, srcBalance-amount)
-		h.h.db.SetTokenBalance(tokenName, to, dstBalance+amount)
-		ilog.Debugf("TransferRaw src %v: %v -> %v and dst %v: %v -> %v\n", from, srcBalance, srcBalance-amount, to, dstBalance, dstBalance+amount)
-		return nil
-	}
-	ilog.Debugf("TransferRaw balance not enough %v has %v < %v", from, srcBalance, amount)
-	return ErrBalanceNotEnough
-}
-
-// GrantCoin issue coin. todo deprecated
-func (h *Teller) GrantCoin(coinName, to string, amountStr string) (contract.Cost, error) {
-	amount, _ := common.NewFixed(amountStr, 8)
-	if amount.Value <= 0 {
-		return CommonErrorCost(1), ErrTransferNegValue
-	}
-	cn := h.h.ctx.Value("contract_name").(string)
-	if !strings.HasPrefix(cn, "iost.") {
-		return CommonErrorCost(2), ErrPermissionLost
-	}
-	h.h.db.SetCoin(coinName, to, amount.Value)
-	return TransferCost, nil
-}
-
-// ConsumeCoin consume coin from todo deprecated
-func (h *Teller) ConsumeCoin(coinName, from string, amountStr string) (cost contract.Cost, err error) {
-	amount, _ := common.NewFixed(amountStr, 8)
-	if amount.Value <= 0 {
-		return CommonErrorCost(1), ErrTransferNegValue
-	}
-	if h.Privilege(from) < 1 {
-		return CommonErrorCost(1), ErrPermissionLost
-	}
-	bl := h.h.db.Coin(coinName, from)
-	if bl < amount.Value {
-		return CommonErrorCost(2), ErrBalanceNotEnough
-	}
-	h.h.db.SetCoin(coinName, from, -1*amount.Value)
-	return TransferCost, nil
-}
-
-// GrantServi ...todo deprecated
-func (h *Teller) GrantServi(to string, amountStr string) (contract.Cost, error) {
-	amount, _ := common.NewFixed(amountStr, 8)
-	if amount.Value <= 0 {
-		return CommonErrorCost(1), ErrTransferNegValue
-	}
-	//cn := h.h.ctx.Value("contract_name").(string) todo privilege of system contracts
-	//if !strings.HasPrefix(cn, "iost.") {
-	//	return CommonErrorCost(2), ErrPermissionLost
-	//}
-	h.h.db.SetServi(to, amount.Value)
-	return TransferCost, nil
-}
-
-// ConsumeServi ...todo deprecated
-func (h *Teller) ConsumeServi(from string, amountStr string) (cost contract.Cost, err error) {
-	amount, _ := common.NewFixed(amountStr, 8)
-	if amount.Value <= 0 {
-		return CommonErrorCost(1), ErrTransferNegValue
-	}
-	if h.Privilege(from) < 1 {
-		return CommonErrorCost(1), ErrPermissionLost
-	}
-	bl := h.h.db.Servi(from)
-	if bl < amount.Value {
-		return CommonErrorCost(2), ErrBalanceNotEnough
-	}
-	h.h.db.SetServi(from, -1*amount.Value)
-	return TransferCost, nil
-}
-
-// TotalServi ... todo deprecated
-func (h *Teller) TotalServi() (ts string, cost contract.Cost) {
-	fpn := common.Fixed{Value: h.h.db.TotalServi(), Decimal: 8}
-	ts = fpn.ToString()
-	cost = GetCost
-	return
 }
 
 // Costs ...
@@ -148,7 +62,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 			}
 		}
 		// contracts in "iost" domain will not pay for ram
-		if isPayRAM && !strings.HasPrefix(k, "iost") {
+		if isPayRAM && c.Data > 0 && !strings.HasPrefix(k, "iost") {
 			var payer string
 			if strings.HasPrefix(k, "Contract") {
 				p, _ := h.h.GlobalMapGet("iost.system", "contract_owner", k)
