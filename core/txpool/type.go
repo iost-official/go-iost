@@ -16,10 +16,9 @@ import (
 // Values.
 var (
 	clearInterval = 10 * time.Second
-	// Expiration is the transaction expiration
-	Expiration             = int64(90 * time.Second)
-	filterTime             = int64(90 * time.Second)
-	maxCacheTxs            = 30000
+	filterTime    = int64(90 * time.Second)
+	maxCacheTxs   = 30000
+
 	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
 	metricsTxPoolSize      = metrics.NewGauge("iost_txpool_size", nil)
 
@@ -61,7 +60,7 @@ type blockTx struct {
 	time       int64
 }
 
-func (pool *TxPImpl) newBlockTx(blk *block.Block) *blockTx {
+func newBlockTx(blk *block.Block) *blockTx {
 	b := &blockTx{
 		txMap:      new(sync.Map),
 		ParentHash: blk.Head.ParentHash,

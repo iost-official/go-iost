@@ -64,7 +64,9 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 			return err
 		}
 		gas := e.h.CurrentGas(e.publisherID)
-		if gas.Value < t.GasPrice*t.GasLimit*10^(database.DecGas-2) {
+		// gas is stored in 10**8 format. And gasPrice is in 0.01 unit. So mul 1e6 here
+		if gas.Value < t.GasPrice*t.GasLimit*100000000/100 {
+			ilog.Debugf("err %v publisher %v current gas %v price %v limit %v\n", errCannotPay, e.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
 			return errCannotPay
 		}
 	}
@@ -143,7 +145,7 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			Code:    tx.Success,
 			Message: "",
 		}
-		e.tr.GasUsage = e.t.Delay / 1e9
+		e.tr.GasUsage = e.t.Delay / 1e9 // TODO: determine the price
 		return e.tr, nil
 	}
 
@@ -152,6 +154,15 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			return nil, fmt.Errorf("delay tx not found, hash=%v", e.t.ReferredTx)
 		}
 		e.h.DB().DelDelaytx(string(e.t.ReferredTx))
+
+		if !e.t.IsExpired(e.blockBaseCtx.Value("time").(int64)) {
+			e.tr.Status = &tx.Status{
+				Code:    tx.Success,
+				Message: "transaction expired",
+			}
+			e.tr.GasUsage = 1 // TODO: determine the price
+			return e.tr, nil
+		}
 	}
 
 	hasSetCode := false

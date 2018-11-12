@@ -26,7 +26,7 @@ const (
 
 var (
 	errSetUpArgs = errors.New("key does not exist")
-	errCannotPay = errors.New("publisher's balance less than price * limit")
+	errCannotPay = errors.New("publisher's gas less than price * limit")
 )
 
 //go:generate mockgen -destination mock/engine_mock.go -package mock github.com/iost-official/go-iost/vm Engine
@@ -128,7 +128,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 	}
 
 	e.publisherID = tx0.Publisher
-	bl := e.ho.DB().Balance(e.publisherID)
+	bl := e.ho.DB().TokenBalance("iost", e.publisherID)
 
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
 		ilog.Error(errCannotPay)
@@ -220,7 +220,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	}
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
-		return nil, fmt.Errorf("error in abi file: %v", err)
+		return nil, fmt.Errorf("error in data: %v, %v", err, data)
 	}
 
 	rtn := make([]interface{}, 0)

@@ -3,10 +3,11 @@ package pob
 import (
 	"errors"
 	"fmt"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/verifier"
 	"sync"
 	"time"
+
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/verifier"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
@@ -166,22 +167,20 @@ func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
 }
 
 func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
-	var b []byte
-	var err error
+	var blk *block.Block
 	node, err := p.blockCache.Find(rh.Hash)
 	if err == nil {
-		b, err = node.Block.Encode()
+		blk = node.Block
+	} else {
+		blk, err = p.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
 		if err != nil {
-			ilog.Errorf("fail to encode block: %v, err=%v", rh.Number, err)
+			ilog.Errorf("handle block query failed to get block.")
 			return
 		}
-		p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage, true)
-		return
 	}
-	ilog.Infof("failed to get block from blockcache. err=%v, try from blockchain", err)
-	b, err = p.blockChain.GetBlockByteByHash(rh.Hash)
+	b, err := blk.Encode()
 	if err != nil {
-		ilog.Warnf("failed to get block from blockchain. err=%v", err)
+		ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
 		return
 	}
 	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage, true)
@@ -339,7 +338,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
-		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB)
+		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB, p.blockChain)
 		if err != nil {
 			ilog.Errorf("verify block failed. err=%v", err)
 			p.blockCache.Del(node)

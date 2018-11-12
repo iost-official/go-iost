@@ -13,7 +13,22 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 )
 
+// values
+var (
+	MaxExpiration = int64(90 * time.Second)
+)
+
 //go:generate protoc  --go_out=plugins=grpc:. ./core/tx/tx.proto
+
+// ToBytesLevel judges which fields of tx should be written to bytes.
+type ToBytesLevel int
+
+// consts
+const (
+	Base ToBytesLevel = iota
+	Publish
+	Full
+)
 
 // Tx Transaction structure
 type Tx struct {
@@ -64,23 +79,7 @@ func (t *Tx) containSigner(id string) bool {
 }
 
 func (t *Tx) baseHash() []byte {
-	tr := &txpb.Tx{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
-		Signers:    t.Signers,
-		Delay:      t.Delay,
-	}
-	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, a.ToPb())
-	}
-
-	b, err := tr.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	return common.Sha3(b)
+	return common.Sha3(t.ToBytes(Base))
 }
 
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
@@ -99,27 +98,7 @@ func SignTx(tx *Tx, id string, kps []*account.KeyPair, signs ...*crypto.Signatur
 
 // publishHash
 func (t *Tx) publishHash() []byte {
-	tr := &txpb.Tx{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
-		Signers:    t.Signers,
-		Delay:      t.Delay,
-	}
-	for _, a := range t.Actions {
-		tr.Actions = append(tr.Actions, a.ToPb())
-	}
-
-	for _, s := range t.Signs {
-		tr.Signs = append(tr.Signs, s.ToPb())
-	}
-
-	b, err := tr.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	return common.Sha3(b)
+	return common.Sha3(t.ToBytes(Publish))
 }
 
 // ToPb convert tx to txpb.Tx for transmission.
@@ -210,10 +189,10 @@ func (t *Tx) String() string {
 	return str
 }
 
-// Hash return cached hash if exists, or calculate with Sha3
+// Hash return cached hash if exists, or calculate with Sha3.
 func (t *Tx) Hash() []byte {
 	if t.hash == nil {
-		t.hash = common.Sha3(t.Encode())
+		t.hash = common.Sha3(t.ToBytes(Full))
 	}
 	return t.hash
 }
@@ -225,11 +204,34 @@ func (t *Tx) IsDefer() bool {
 	return len(t.ReferredTx) > 0
 }
 
+// VerifyDefer verifes whether the defer tx is matched  with the referred tx.
+func (t *Tx) VerifyDefer(referredTx *Tx) error {
+	if referredTx.Publisher != t.Publisher {
+		return errors.New("unmatched referred tx publisher")
+	}
+	if referredTx.Time+referredTx.Delay != t.Time {
+		return errors.New("unmatched referred tx delay time")
+	}
+	if referredTx.Expiration+referredTx.Delay != t.Expiration {
+		return errors.New("unmatched referred tx expiration time")
+	}
+	if len(referredTx.Actions) != len(t.Actions) {
+		return errors.New("unmatched referred tx action length")
+	}
+	for i := 0; i < len(referredTx.Actions); i++ {
+		if *referredTx.Actions[i] != *t.Actions[i] {
+			return errors.New("unmatched referred tx action")
+		}
+	}
+	return nil
+}
+
 // VerifySelf verify tx's signature
 func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 	if t.Delay > 0 && t.IsDefer() {
-		return errors.New("invalid tx. including both delaysecond and referredtx")
+		return errors.New("invalid tx. including both delay and referredtx field")
 	}
+	// Defer tx does not need to verify signature.
 	if t.IsDefer() {
 		return nil
 	}
@@ -262,4 +264,64 @@ func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 // VerifySigner verify signer's signature
 func (t *Tx) VerifySigner(sig *crypto.Signature) bool {
 	return sig.Verify(t.baseHash())
+}
+
+// IsExpired checks whether the transaction is expired compared to the given time ct.
+func (t *Tx) IsExpired(ct int64) bool {
+	if t.Expiration <= ct {
+		return true
+	}
+	if ct-t.Time > MaxExpiration {
+		return true
+	}
+	return false
+}
+
+// IsTimeValid checks whether the transaction time is valid compared to the given time ct.
+// ct may be time.Now().UnixNano() or block head time.
+func (t *Tx) IsTimeValid(ct int64) bool {
+	if t.Time > ct {
+		return false
+	}
+	return !t.IsExpired(ct)
+}
+
+// ToBytes converts tx to bytes.
+func (t *Tx) ToBytes(l ToBytesLevel) []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteInt64(t.Time, true)
+	sn.WriteInt64(t.Expiration, true)
+	sn.WriteInt64(t.GasPrice, true)
+	sn.WriteInt64(t.GasLimit, true)
+	sn.WriteInt64(t.Delay, true)
+	for _, signer := range t.Signers {
+		sn.WriteString(signer, true)
+	}
+
+	if l > Base {
+		actionBytes := make([][]byte, 0, len(t.Actions))
+		for _, a := range t.Actions {
+			actionBytes = append(actionBytes, a.ToBytes())
+		}
+		sn.WriteBytesSlice(actionBytes, false)
+
+		signBytes := make([][]byte, 0, len(t.Signs))
+		for _, sig := range t.Signs {
+			signBytes = append(signBytes, sig.ToBytes())
+		}
+		sn.WriteBytesSlice(signBytes, false)
+	}
+
+	if l > Publish {
+		sn.WriteBytes(t.ReferredTx, true)
+		sn.WriteString(t.Publisher, true)
+
+		signBytes := make([][]byte, 0, len(t.PublishSigns))
+		for _, sig := range t.PublishSigns {
+			signBytes = append(signBytes, sig.ToBytes())
+		}
+		sn.WriteBytesSlice(signBytes, false)
+	}
+
+	return sn.Bytes()
 }
