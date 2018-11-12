@@ -110,29 +110,23 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		exist := txPool.ExistTxs(t.Hash(), parent)
 		switch exist {
 		case txpool.FoundChain:
-			ilog.Infof("FoundChain: %v, %v", tx, common.Base58Encode(t.Hash()))
+			ilog.Infof("FoundChain: %v, %v", t, common.Base58Encode(t.Hash()))
 			return errTxDup
 		case txpool.NotFound:
 			err := t.VerifySelf()
 			if err != nil {
-=======
-		exist := txPool.ExistTxs(t.Hash(), parent)
-		if exist == txpool.FoundChain {
-			return errTxDup
-		} else if exist != txpool.FoundPending {
-			if err := t.VerifySelf(); err != nil {
->>>>>>> develop
 				return errTxSignature
 			}
-			if t.IsDefer() {
-				referredTx, err := chain.GetTx(t.ReferredTx)
-				if err != nil {
-					return fmt.Errorf("get referred tx error, %v", err)
-				}
-				err = t.VerifyDefer(referredTx)
-				if err != nil {
-					return err
-				}
+
+		}
+		if t.IsDefer() {
+			referredTx, err := chain.GetTx(t.ReferredTx)
+			if err != nil {
+				return fmt.Errorf("get referred tx error, %v", err)
+			}
+			err = t.VerifyDefer(referredTx)
+			if err != nil {
+				return err
 			}
 		}
 	}
