@@ -29,7 +29,7 @@ class Base {
     }
 
     _bonus(data) {
-        BlockChain.call("iost.bonus", "IssueContribute", JSON.stringify(data))
+        BlockChain.call("iost.bonus", "IssueContribute", JSON.stringify([data]));
     }
 
     // The first contract executed
@@ -42,6 +42,7 @@ class Base {
         this._put("execBlockNumber", bn);
 
         this._vote();
+        this._bonus(data);
     }
 
 }
