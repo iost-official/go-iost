@@ -32,7 +32,7 @@ func TestTransfer(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 		So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-		So(totalGas-s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(91700000000))
+		So(totalGas-s.Visitor.CurrentTotalGas(kp.ID, s.Head.Time).Value, ShouldEqual, int64(91700000000))
 	})
 }
 
