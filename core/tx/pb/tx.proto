@@ -38,12 +38,7 @@ message TxReceipt {
     int64 gasUsage = 2;
     map<string, int64> ramUsage = 3;
     Status status = 4;
-    repeated Return returns = 5;
+    repeated string returns = 5;
     repeated Receipt receipts = 6;
 
-}
-
-message Return {
-    string funcName = 1;
-    string value = 2;
 }
