@@ -213,7 +213,7 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
-			tbalance += 1
+			tbalance++
 			cost0 = setToken721Balance(h, tokenName, to, tbalance)
 			cost.AddAssign(cost0)
 
@@ -222,6 +222,9 @@ var (
 
 			cost0, err = addToken721Tokens(h, tokenName, to, tokenID)
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			return []interface{}{}, cost, nil
 		},
@@ -296,8 +299,8 @@ var (
 				return nil, cost, err
 			}
 
-			fbalance -= 1
-			tbalance += 1
+			fbalance--
+			tbalance++
 
 			cost0 = setToken721Balance(h, tokenName, from, fbalance)
 			cost.AddAssign(cost0)
