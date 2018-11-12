@@ -11,7 +11,7 @@ import (
 
 type Account struct {
 	ID      string
-	Balance int64
+	Balance string
 	key     *Key
 }
 
