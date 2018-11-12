@@ -145,7 +145,7 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			Code:    tx.Success,
 			Message: "",
 		}
-		e.tr.GasUsage = e.t.Delay / 1e9
+		e.tr.GasUsage = e.t.Delay / 1e9 // TODO: determine the price
 		return e.tr, nil
 	}
 
@@ -154,6 +154,15 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			return nil, fmt.Errorf("delay tx not found, hash=%v", e.t.ReferredTx)
 		}
 		e.h.DB().DelDelaytx(string(e.t.ReferredTx))
+
+		if !e.t.IsExpired(e.blockBaseCtx.Value("time").(int64)) {
+			e.tr.Status = &tx.Status{
+				Code:    tx.Success,
+				Message: "transaction expired",
+			}
+			e.tr.GasUsage = 1 // TODO: determine the price
+			return e.tr, nil
+		}
 	}
 
 	hasSetCode := false

@@ -1,6 +1,7 @@
 package verifier
 
 import (
+	"errors"
 	"time"
 
 	"encoding/json"
@@ -12,6 +13,11 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
+)
+
+// values
+var (
+	ErrInvalidTimeTx = errors.New("invalid time tx")
 )
 
 // Verifier ..
@@ -146,6 +152,10 @@ L:
 		if t == nil {
 			break L
 		}
+		if !t.IsTimeValid(blk.Head.Time) && !t.IsDefer() {
+			provider.Drop(t, ErrInvalidTimeTx)
+			continue L
+		}
 		err := isolator.PrepareTx(t, limit)
 		if err != nil {
 			ilog.Errorf("PrepareTx failed. tx %v limit %v err %v", t.String(), limit, err)
@@ -237,11 +247,11 @@ func (v *Verifier) Verify(blk *block.Block, db database.IMultiValue, c *Config) 
 		var l ilog.Logger
 		l.Stop()
 		isolator.Prepare(blk.Head, vi, &l)
-		return baseVerify(isolator, c, blk.Txs[1:], blk.Receipts[1:])
+		return baseVerify(isolator, c, blk.Txs[1:], blk.Receipts[1:], blk)
 	case 1:
 		bs := batches(blk, info)
 		var batcher Batcher
-		return batchVerify(batcher, blk.Head, c, db, bs)
+		return batchVerify(batcher, blk.Head, c, db, bs, blk)
 	}
 	return nil
 }
@@ -285,7 +295,10 @@ func verifyBlockBase(blk *block.Block, db database.IMultiValue, c *Config) error
 	return nil
 }
 
-func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration, isBlockBase bool) error {
+func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration, isBlockBase bool, blk *block.Block) error { // nolint
+	if !t.IsTimeValid(blk.Head.Time) && !t.IsDefer() {
+		return ErrInvalidTimeTx
+	}
 	isolator.ClearTx()
 	if isBlockBase {
 		isolator.TriggerBlockBaseMode()
@@ -330,9 +343,9 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 	return nil
 }
 
-func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxReceipt) error {
+func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxReceipt, blk *block.Block) error {
 	for k, t := range txs {
-		err := verify(engine, t, receipts[k], c.TxTimeLimit, false)
+		err := verify(engine, t, receipts[k], c.TxTimeLimit, false, blk)
 		if err != nil {
 			return err
 		}
@@ -340,11 +353,11 @@ func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxRe
 	return nil
 }
 
-func batchVerify(verifier Batcher, bh *block.BlockHead, c *Config, db database.IMultiValue, batches []*Batch) error {
+func batchVerify(verifier Batcher, bh *block.BlockHead, c *Config, db database.IMultiValue, batches []*Batch, blk *block.Block) error {
 
 	for _, batch := range batches {
 		err := verifier.Verify(bh, db, func(e vm.Isolator, t *tx.Tx, r *tx.TxReceipt) error {
-			err := verify(e, t, r, c.TxTimeLimit, false)
+			err := verify(e, t, r, c.TxTimeLimit, false, blk)
 			if err != nil {
 				return err
 			}
