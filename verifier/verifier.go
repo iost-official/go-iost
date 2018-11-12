@@ -329,8 +329,7 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 		}
 	}
 	for i, br := range r.Returns {
-		if br.FuncName != receipt.Receipts[i].FuncName ||
-			br.Value != receipt.Receipts[i].Content {
+		if br != receipt.Returns[i] {
 			return fmt.Errorf("receipt not match: %v, %v", r, receipt)
 		}
 	}

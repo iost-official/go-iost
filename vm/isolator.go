@@ -74,7 +74,7 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	return nil
 }
 
-func (e *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, ret *tx.Return, receipts []*tx.Receipt, err error) {
+func (e *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, ret string, receipts []*tx.Receipt, err error) {
 	receipts = make([]*tx.Receipt, 0)
 
 	e.h.PushCtx()
@@ -118,10 +118,7 @@ func (e *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 		panic(errj)
 	}
 
-	ret = &tx.Return{
-		FuncName: action.Contract + "/" + action.ActionName,
-		Value:    string(rj),
-	}
+	ret = string(rj)
 
 	receipts = append(receipts, e.h.Context().GValue("receipts").([]*tx.Receipt)...)
 
