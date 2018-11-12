@@ -29,7 +29,6 @@ var (
 )
 
 func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) { // TODO 应传入acc
-
 	ilog.Info("generate Block start")
 	st := time.Now()
 	limitTime := common.SlotLength / 3 * time.Second
@@ -43,6 +42,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
 			Time:       time.Now().UnixNano(),
+			GasUsage:   0,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -51,7 +51,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 
 	// call vote
 	v := verifier.Verifier{}
-	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
+	dropList, _, err := v.Gen(&blk, topBlock, db, txIter, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - st.Sub(time.Now()),
 		TxTimeLimit: time.Millisecond * 100,
@@ -158,7 +158,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		}
 	}
 	v := verifier.Verifier{}
-	return v.Verify(blk, db, &verifier.Config{
+	return v.Verify(blk, parent, db, &verifier.Config{
 		Mode:        0,
 		Timeout:     common.SlotLength / 3 * time.Second,
 		TxTimeLimit: time.Millisecond * 100,
