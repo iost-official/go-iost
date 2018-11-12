@@ -242,14 +242,6 @@ func (v *Verifier) Verify(blk *block.Block, parent *block.Block, db database.IMu
 		return err
 	}
 
-	gasUsage := int64(0)
-	for _, txr := range blk.Receipts {
-		gasUsage += txr.GasUsage
-	}
-	if blk.Head.GasUsage != gasUsage {
-		return fmt.Errorf("GasUsage not match: %v %v", blk.Head.GasUsage, gasUsage)
-	}
-
 	err = verifyBlockBase(blk, parent, db, c)
 	if err != nil {
 		return err
