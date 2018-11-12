@@ -135,6 +135,7 @@ func blockBaseExec(blk *block.Block, parent *block.Block, db database.IMultiValu
 		return nil, fmt.Errorf(r.Status.Message)
 	}
 	isolator.Commit()
+	isolator.ClearTx()
 
 	return r, nil
 }
@@ -165,22 +166,25 @@ L:
 		}
 		err := isolator.PrepareTx(t, limit)
 		if err != nil {
-			ilog.Errorf("PrepareTx failed. %v %v", t.String(), err)
+			ilog.Errorf("PrepareTx failed. tx %v limit %v err %v", t.String(), limit, err)
 			provider.Drop(t, err)
 			continue L
 		}
 		var r *tx.TxReceipt
 		r, err = isolator.Run()
 		if err != nil {
+			ilog.Errorf("isolator run error %v", err)
 			provider.Drop(t, err)
 			continue L
 		}
 		if r.Status.Code == tx.ErrorTimeout && limit < c.TxTimeLimit {
+			ilog.Errorf("isolator run time out")
 			provider.Return(t)
 			break L
 		}
 		r, err = isolator.PayCost()
 		if err != nil {
+			ilog.Errorf("pay cost err %v", err)
 			provider.Drop(t, err)
 			continue L
 		}

@@ -131,7 +131,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 
 	// pledge gas for admin
 	gasPledgeAmount := 10000
-	acts = append(acts, tx.NewAction("iost.gas", "PledgeGas", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.ID, gasPledgeAmount)))
+	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.ID, gasPledgeAmount)))
 
 	// deploy iost.ram
 	code, err = compile("iost.ram", gConf.ContractPath, "ram.js")
@@ -159,7 +159,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 
 // GenGenesis is create a genesis block
 func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error) {
-	t, err := common.ParseStringToTimestamp(gConf.InitialTimestamp)
+	t, err := time.Parse(time.RFC3339, gConf.InitialTimestamp)
 	if err != nil {
 		ilog.Fatalf("invalid genesis initial time string %v (%v).", gConf.InitialTimestamp, err)
 		return nil, err
@@ -174,7 +174,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		ParentHash: nil,
 		Number:     0,
 		Witness:    acc.ID,
-		Time:       t.Slot,
+		Time:       t.UnixNano(),
 		GasUsage:   0,
 	}
 	v := verifier.Verifier{}
