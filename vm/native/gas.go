@@ -90,7 +90,7 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 		return nil
 	}
 	h.GasManager.RefreshGas(name)
-	rateOld := h.DB().GasHandler.GetGasRate(name)
+	rateOld := h.DB().GasHandler.GasRate(name)
 	rateNew := rateOld.Add(rateDelta)
 	if rateNew.Value <= 0 {
 		return fmt.Errorf("change gasRate failed! current: %v, delta %v", rateOld, rateDelta)
@@ -116,6 +116,20 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 }
 
 var (
+	constructor = &abi{
+		name: "constructor",
+		args: []string{},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			return []interface{}{}, host.CommonErrorCost(1), nil
+		},
+	}
+	initFunc = &abi{
+		name: "init",
+		args: []string{},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			return []interface{}{}, host.CommonErrorCost(1), nil
+		},
+	}
 	pledgeGas = &abi{
 		name: "PledgeGas",
 		args: []string{"string", "string", "string"},

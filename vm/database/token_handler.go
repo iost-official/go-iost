@@ -1,10 +1,10 @@
 package database
 
 import (
-	"errors"
-
 	"encoding/json"
+	"errors"
 	"fmt"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
 )
@@ -42,7 +42,6 @@ func (m *TokenHandler) decimalKey(tokenName string) string {
 func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 	currentRaw := m.db.Get(m.balanceKey(tokenName, acc))
 	balance := Unmarshal(currentRaw)
-	ilog.Debugf("TokenBalance is %v %v %v", tokenName, acc, balance)
 	ib, ok := balance.(int64)
 	if !ok {
 		ib = 0
@@ -51,9 +50,9 @@ func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 }
 
 // TokenBalanceFixed get token balance of acc
-func (m *TokenHandler) TokenBalanceFixed(tokenName, acc string) common.Fixed {
+func (m *TokenHandler) TokenBalanceFixed(tokenName, acc string) *common.Fixed {
 	ib := m.TokenBalance(tokenName, acc)
-	return common.Fixed{Value: ib, Decimal: m.Decimal(tokenName)}
+	return &common.Fixed{Value: ib, Decimal: m.Decimal(tokenName)}
 }
 
 // FreezedTokenBalance get freezed token balance of acc
@@ -78,9 +77,9 @@ func (m *TokenHandler) FreezedTokenBalance(tokenName, acc string) int64 {
 }
 
 // FreezedTokenBalanceFixed get token balance of acc
-func (m *TokenHandler) FreezedTokenBalanceFixed(tokenName, acc string) common.Fixed {
+func (m *TokenHandler) FreezedTokenBalanceFixed(tokenName, acc string) *common.Fixed {
 	ib := m.FreezedTokenBalance(tokenName, acc)
-	return common.Fixed{Value: ib, Decimal: m.Decimal(tokenName)}
+	return &common.Fixed{Value: ib, Decimal: m.Decimal(tokenName)}
 }
 
 // SetTokenBalance set token balance of acc, used for test
