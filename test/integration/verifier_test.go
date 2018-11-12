@@ -91,7 +91,7 @@ func TestJS_Database(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(len(r.Returns), ShouldEqual, 1)
-		So(r.Returns[0].Value, ShouldEqual, `["true"]`)
+		So(r.Returns[0], ShouldEqual, `["true"]`)
 	})
 
 }
