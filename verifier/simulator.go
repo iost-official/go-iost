@@ -98,10 +98,15 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 
 	fmt.Println(string(sc))
 
+	jargs, err := json.Marshal([]string{string(sc)})
+	if err != nil {
+		panic(err)
+	}
+
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   "iost.system",
 		ActionName: "SetCode",
-		Data:       fmt.Sprintf(`[%v]`, string(sc)),
+		Data:       string(jargs),
 	}}, nil, 100000, 100, 10000000, 0)
 
 	r, err := s.CallTx(trx, publisher, kp)
