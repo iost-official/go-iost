@@ -131,7 +131,7 @@ var (
 		},
 	}
 	pledgeGas = &abi{
-		name: "PledgeGas",
+		name: "pledge",
 		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
@@ -183,7 +183,7 @@ var (
 		},
 	}
 	unpledgeGas = &abi{
-		name: "UnpledgeGas",
+		name: "unpledge",
 		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()

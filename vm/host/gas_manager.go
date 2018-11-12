@@ -2,6 +2,7 @@ package host
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/ilog"
 
 	"github.com/iost-official/go-iost/common"
 )
@@ -21,6 +22,9 @@ func NewGasManager(h *Host) GasManager {
 // CurrentGas returns the current total gas of a user. It is dynamically calculated
 func (g *GasManager) CurrentGas(name string) *common.Fixed {
 	t := g.h.ctx.Value("time").(int64)
+	if t <= 0 {
+		ilog.Fatalf("CurrentGas invalid time %v", t)
+	}
 	return g.h.db.GasHandler.CurrentTotalGas(name, t)
 }
 
