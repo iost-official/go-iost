@@ -49,6 +49,7 @@ func (b *BlockHead) ToBytes() []byte {
 	sn.WriteInt64(b.Number, true)
 	sn.WriteString(b.Witness, true)
 	sn.WriteInt64(b.Time, true)
+	sn.WriteInt64(b.GasUsage, true)
 	return sn.Bytes()
 }
 
