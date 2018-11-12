@@ -21,6 +21,25 @@ func New(itc *ITestConfig, keys []*Key) *ITest {
 	}
 }
 
+func Load(keysfile, configfile string) (*ITest, error) {
+	ilog.Infof("Load itest from file...")
+
+	keys, err := LoadKeys(keysfile)
+	if err != nil {
+		return nil, fmt.Errorf("load keys failed: %v", err)
+	}
+
+	itc, err := LoadITestConfig(configfile)
+	if err != nil {
+		return nil, fmt.Errorf("load itest config failed: %v", err)
+	}
+
+	it := New(itc, keys)
+
+	ilog.Infof("Load itest from file successful!")
+	return it, nil
+}
+
 func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 	ilog.Infof("Create %v account...", num)
 

@@ -1,9 +1,6 @@
 package run
 
 import (
-	"fmt"
-
-	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest"
 	"github.com/urfave/cli"
 )
@@ -25,27 +22,16 @@ var AccountCaseFlags = []cli.Flag{
 }
 
 var AccountCaseAction = func(c *cli.Context) error {
-	num := c.Int("number")
+	anum := c.Int("account")
 	keysfile := c.GlobalString("keys")
 	configfile := c.GlobalString("config")
 
-	ilog.Infof("Load config from file...")
-
-	keys, err := itest.LoadKeys(keysfile)
+	it, err := itest.Load(keysfile, configfile)
 	if err != nil {
-		return fmt.Errorf("load keys failed: %v", err)
+		return err
 	}
 
-	itc, err := itest.LoadITestConfig(configfile)
-	if err != nil {
-		return fmt.Errorf("load itest config failed: %v", err)
-	}
-
-	it := itest.New(itc, keys)
-
-	ilog.Infof("Load config from file successful!")
-
-	if _, err := it.CreateAccountN(num); err != nil {
+	if _, err := it.CreateAccountN(anum); err != nil {
 		return err
 	}
 
