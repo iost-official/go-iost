@@ -317,7 +317,7 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
 	gas := &GASInfo{}
-	gas.CurrentTotal = s.visitor.GasHandler.CurrentTotalGas(key.ID, s.bchain.Length()).ToString()
+	gas.CurrentTotal = s.visitor.GasHandler.CurrentTotalGas(key.ID, s.bc.LinkedRoot().Head.Time).ToString()
 	gas.IncreaseSpeed = s.visitor.GasHandler.GasRate(key.ID).ToString()
 	gas.Limit = s.visitor.GasHandler.GasLimit(key.ID).ToString()
 	gas.PledgedCoin = s.visitor.GasHandler.GasPledge(key.ID).ToString()
@@ -336,12 +336,13 @@ func (s *GRPCServer) SendTx(ctx context.Context, txReq *TxReq) (*SendTxRes, erro
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	var trx tx.Tx
-	err := s.txpool.AddTx(trx.FromPb(txReq.Tx))
+	trx.FromPb(txReq.Tx)
+	err := s.txpool.AddTx(&trx)
 	if err != nil {
 		return nil, err
 	}
 	res := SendTxRes{}
-	res.Hash = string(trx.Hash())
+	res.Hash = common.Base58Encode(trx.Hash())
 	return &res, nil
 }
 

@@ -2,6 +2,7 @@ package database
 
 import (
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 const (
@@ -37,6 +38,9 @@ func (m *GasHandler) getFixed(key string) (value *common.Fixed) {
 
 // putFixed ...
 func (m *GasHandler) putFixed(key string, value *common.Fixed) {
+	if value.Err != nil {
+		ilog.Fatalf("GasHandler putFixed %v", value)
+	}
 	m.db.Put(key, value.Marshal())
 }
 
@@ -115,6 +119,7 @@ func (m *GasHandler) GasUpdateTime(name string) int64 {
 
 // SetGasUpdateTime ...
 func (m *GasHandler) SetGasUpdateTime(name string, t int64) {
+	ilog.Debugf("SetGasUpdateTime %v %v", name, t)
 	m.putInt64(m.gasUpdateTimeKey(name), t)
 }
 
@@ -136,6 +141,7 @@ func (m *GasHandler) GasStock(name string) *common.Fixed {
 
 // SetGasStock ...
 func (m *GasHandler) SetGasStock(name string, g *common.Fixed) {
+	//ilog.Debugf("SetGasStock %v %v", name, g)
 	m.putFixed(m.gasStockKey(name), g)
 }
 
@@ -162,16 +168,27 @@ func (m *GasHandler) SetGasPledge(name string, p *common.Fixed) {
 
 // CurrentTotalGas return current total gas. It is min(limit, last_updated_gas + time_since_last_updated * increase_speed)
 func (m *GasHandler) CurrentTotalGas(name string, now int64) (result *common.Fixed) {
+	if now <= 0 {
+		ilog.Fatalf("CurrentTotalGas failed. invalid now time %v", now)
+	}
 	result = m.GasStock(name)
 	gasUpdateTime := m.GasUpdateTime(name)
 	var durationSeconds int64
 	if gasUpdateTime > 0 {
 		durationSeconds = (now - gasUpdateTime) / 1e9
 	}
+	if durationSeconds < 0 {
+		ilog.Fatalf("CurrentTotalGas durationSeconds invalid %v = %v - %v", durationSeconds, now, gasUpdateTime)
+	}
 	rate := m.GasRate(name)
 	limit := m.GasLimit(name)
-	//fmt.Printf("CurrentTotalGas stock %v rate %v limit %v", result, rate, limit)
-	result = result.Add(rate.Times(durationSeconds))
+	//ilog.Debugf("CurrentTotalGas stock %v rate %v limit %v\n", result, rate, limit)
+	delta := rate.Times(durationSeconds)
+	if delta == nil {
+		ilog.Errorf("CurrentTotalGas may overflow rate %v durationSeconds %v", rate, durationSeconds)
+		return
+	}
+	result = result.Add(delta)
 	if limit.LessThan(result) {
 		result = limit
 	}

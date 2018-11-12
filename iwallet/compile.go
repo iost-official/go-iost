@@ -64,31 +64,31 @@ func generateABI(codePath string) string {
 
 // PublishContract converts contract js code to transaction. If 'send', also send it to chain.
 func PublishContract(codePath string, abiPath string, conID string, acc *account.KeyPair, expiration int64,
-	signers []string, gasLimit int64, gasPrice int64, update bool, updateID string, send bool) (stx *tx.Tx, txHash []byte, err error) {
+	signers []string, gasLimit int64, gasPrice int64, update bool, updateID string, send bool) (stx *tx.Tx, txHash string, err error) {
 
 	fd, err := readFile(codePath)
 	if err != nil {
 		fmt.Println("Read source code file failed: ", err.Error())
-		return nil, nil, err
+		return nil, "", err
 	}
 	code := string(fd)
 
 	fd, err = readFile(abiPath)
 	if err != nil {
 		fmt.Println("Read abi file failed: ", err.Error())
-		return nil, nil, err
+		return nil, "", err
 	}
 	abi := string(fd)
 
 	compiler := new(contract.Compiler)
 	if compiler == nil {
 		fmt.Println("gen compiler instance failed")
-		return nil, nil, err
+		return nil, "", err
 	}
 	contract, err := compiler.Parse(conID, code, abi)
 	if err != nil {
 		fmt.Printf("gen contract error:%v\n", err)
-		return nil, nil, err
+		return nil, "", err
 	}
 
 	methodName := "SetCode"
@@ -106,16 +106,16 @@ func PublishContract(codePath string, abiPath string, conID string, acc *account
 	action := tx.NewAction("iost.system", methodName, data)
 	trx := tx.NewTx([]*tx.Action{action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano(), delaySecond*1e9)
 	if !send {
-		return trx, nil, nil
+		return trx, "", nil
 	}
 	stx, err = tx.SignTx(trx, acc.ID, []*account.KeyPair{acc})
-	var hash []byte
+	var hash string
 	hash, err = sendTx(stx)
 	if err != nil {
 		fmt.Println(err.Error())
-		return nil, nil, err
+		return nil, "", err
 	}
-	fmt.Println("Sending tx to rpc server finished. The transaction hash is:", saveBytes(hash))
+	fmt.Println("Sending tx to rpc server finished. The transaction hash is:", hash)
 	return trx, hash, nil
 }
 
@@ -223,7 +223,7 @@ var compileCmd = &cobra.Command{
 			if checkResult {
 				succ := checkTransaction(txHash)
 				if succ {
-					fmt.Println("The contract id is Contract" + saveBytes(txHash))
+					fmt.Println("The contract id is Contract" + txHash)
 				}
 			}
 		} else {
@@ -268,7 +268,7 @@ func init() {
 	compileCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
 	compileCmd.Flags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
 	compileCmd.Flags().Int64VarP(&delaySecond, "delaysecond", "d", 0, "delay time for a transaction,for example,-d 86400 means the tx will be excuted after 86400 seconds from now on")
-	compileCmd.Flags().StringSliceVarP(&signers, "signers", "n", []string{}, "signers who should sign this transaction")
+	compileCmd.Flags().StringSliceVarP(&signers, "signers", "", []string{}, "signers who should sign this transaction")
 	compileCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
 	compileCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
 	compileCmd.Flags().BoolVarP(&genABI, "genABI", "g", false, "generate abi file")
