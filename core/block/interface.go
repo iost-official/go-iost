@@ -13,7 +13,6 @@ type Chain interface {
 	GetHashByNumber(number int64) ([]byte, error)
 	GetBlockByNumber(number int64) (*Block, error)
 	GetBlockByHash(blockHash []byte) (*Block, error)
-	GetBlockByteByHash(blockHash []byte) ([]byte, error)
 	GetTx(hash []byte) (*tx.Tx, error)
 	HasTx(hash []byte) (bool, error)
 	GetReceipt(Hash []byte) (*tx.TxReceipt, error)

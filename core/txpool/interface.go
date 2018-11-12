@@ -20,5 +20,4 @@ type TxPool interface {
 	ExistTxs(hash []byte, chainBlock *block.Block) FRet
 	Lock()
 	Release()
-	TxTimeOut(tx *tx.Tx) bool
 }

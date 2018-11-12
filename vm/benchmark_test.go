@@ -29,7 +29,7 @@ func benchInit() (Engine, *database.Visitor) {
 	}
 
 	vi := database.NewVisitor(0, mvccdb)
-	vi.SetBalance(testID[0], 1000000000000)
+	vi.SetTokenBalance("iost", testID[0], 1000000000000)
 	vi.SetContract(systemContract)
 	vi.Commit()
 
@@ -77,7 +77,7 @@ func BenchmarkNative_Transfer_LRU(b *testing.B) { // 37445 ns/op
 	}
 
 	vi := database.NewVisitor(100, mvccdb)
-	vi.SetBalance(testID[0], 1000000000000)
+	vi.SetTokenBalance("iost", testID[0], 1000000000000)
 	vi.SetContract(systemContract)
 	vi.Commit()
 
@@ -180,7 +180,7 @@ func BenchmarkJS_Gas_Once(b *testing.B) { // 443 us/op
 func BenchmarkJS_Gas_100(b *testing.B) { // 483 um/op
 	ilog.Stop()
 	js := NewJSTester(b)
-	js.vi.SetBalance(testID[0], 10000000000)
+	js.vi.SetTokenBalance("iost", testID[0], 10000000000)
 	defer js.Clear()
 	f, err := ioutil.ReadFile("test_data/gas.js")
 	if err != nil {
@@ -214,7 +214,7 @@ func BenchmarkJS_Gas_100(b *testing.B) { // 483 um/op
 func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
 	ilog.Stop()
 	js := NewJSTester(b)
-	js.vi.SetBalance(testID[0], 10000000000)
+	js.vi.SetTokenBalance("iost", testID[0], 10000000000)
 	defer js.Clear()
 	f, err := ioutil.ReadFile("test_data/gas.js")
 	if err != nil {
@@ -257,7 +257,7 @@ func Benchmark_JS_Transfer(b *testing.B) { //577385ns(local) vs 1060847ns(server
 	js.SetAPI("transfer", "string", "string", "number")
 	js.DoSet()
 
-	js.vi.SetBalance(testID[0], 100000000)
+	js.vi.SetTokenBalance("iost", testID[0], 100000000)
 
 	act2 := tx.NewAction(js.cname, "transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], 100))
 

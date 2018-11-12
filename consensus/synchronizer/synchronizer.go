@@ -435,21 +435,20 @@ func (sy *SyncImpl) retryDownloadLoop() {
 }
 
 func (sy *SyncImpl) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
-	var b []byte
-	var err error
+	var blk *block.Block
 	node, err := sy.blockCache.Find(rh.Hash)
 	if err == nil {
-		b, err = node.Block.Encode()
+		blk = node.Block
+	} else {
+		blk, err = sy.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
 		if err != nil {
-			ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
+			ilog.Errorf("handle block query failed to get block.")
 			return
 		}
-		sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage, true)
-		return
 	}
-	blk, err := sy.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
+	b, err := blk.Encode()
 	if err != nil {
-		ilog.Errorf("handle block query failed to get block.")
+		ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
 		return
 	}
 	b, err = blk.Encode()

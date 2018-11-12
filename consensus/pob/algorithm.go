@@ -2,6 +2,7 @@ package pob
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/iost-official/go-iost/account"
@@ -20,7 +21,6 @@ import (
 var (
 	errWitness     = errors.New("wrong witness")
 	errSignature   = errors.New("wrong signature")
-	errTxTooOld    = errors.New("tx too old")
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
@@ -90,7 +90,7 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB) error {
+func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain) error {
 	err := cverifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
@@ -102,24 +102,38 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return errWitness
 	}
 	ilog.Infof("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
-	for i, tx := range blk.Txs {
+	for i, t := range blk.Txs {
 		if i == 0 {
 			// base tx
 			continue
 		}
-		exist := txPool.ExistTxs(tx.Hash(), parent)
+		exist := txPool.ExistTxs(t.Hash(), parent)
 		switch exist {
 		case txpool.FoundChain:
-			ilog.Infof("FoundChain: %v, %v", tx, common.Base58Encode(tx.Hash()))
+			ilog.Infof("FoundChain: %v, %v", tx, common.Base58Encode(t.Hash()))
 			return errTxDup
 		case txpool.NotFound:
-			err := tx.VerifySelf()
+			err := t.VerifySelf()
 			if err != nil {
+=======
+		exist := txPool.ExistTxs(t.Hash(), parent)
+		if exist == txpool.FoundChain {
+			return errTxDup
+		} else if exist != txpool.FoundPending {
+			if err := t.VerifySelf(); err != nil {
+>>>>>>> develop
 				return errTxSignature
 			}
-		}
-		if blk.Head.Time-tx.Time > txpool.Expiration {
-			return errTxTooOld
+			if t.IsDefer() {
+				referredTx, err := chain.GetTx(t.ReferredTx)
+				if err != nil {
+					return fmt.Errorf("get referred tx error, %v", err)
+				}
+				err = t.VerifyDefer(referredTx)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 	v := verifier.Verifier{}
