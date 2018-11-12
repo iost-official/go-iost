@@ -16,7 +16,7 @@ import (
 var (
 	Interval   = 15 * time.Second
 	Timeout    = (90 + 30) * time.Second
-	InitToken  = "IOST"
+	InitToken  = "iost"
 	InitAmount = "1000000"
 )
 
