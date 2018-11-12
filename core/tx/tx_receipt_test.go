@@ -25,12 +25,8 @@ func TestTxReceipt(t *testing.T) {
 
 		Convey("encode and decode", func() {
 			tx := NewTxReceipt([]byte{0, 1, 2})
-			tx.Returns = []*Return{
-				{
-					FuncName: "iost.token/transfer",
-					Value:    "0",
-				},
-			}
+			tx.Returns = []string{"0"}
+
 			tx.GasUsage = 88
 			tx.Status = &Status{
 				Code:    ErrorGasRunOut,
@@ -61,8 +57,7 @@ func TestTxReceipt(t *testing.T) {
 			So(tx.Status.Message, ShouldEqual, tx1.Status.Message)
 			So(len(tx.Receipts), ShouldEqual, len(tx1.Receipts))
 			for i := 0; i < len(tx.Receipts); i++ {
-				So(tx.Returns[i].FuncName, ShouldEqual, tx1.Returns[i].FuncName)
-				So(tx.Returns[i].Value, ShouldEqual, tx1.Returns[i].Value)
+				So(tx.Returns[i], ShouldEqual, tx1.Returns[i])
 				So(tx.Receipts[i].FuncName, ShouldEqual, tx1.Receipts[i].FuncName)
 				So(tx.Receipts[i].Content, ShouldEqual, tx1.Receipts[i].Content)
 			}
