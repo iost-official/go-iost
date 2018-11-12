@@ -4,6 +4,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// Command is the command of run
 var Command = cli.Command{
 	Name:  "run",
 	Usage: "run test by benchmark data",
@@ -16,6 +17,7 @@ var Command = cli.Command{
 	},
 }
 
+// Flags is the flags of run command
 var Flags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "keys, k",

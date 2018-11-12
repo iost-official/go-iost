@@ -5,6 +5,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// AccountCaseCommand is the command of account test case
 var AccountCaseCommand = cli.Command{
 	Name:      "account_case",
 	ShortName: "a_case",
@@ -13,6 +14,7 @@ var AccountCaseCommand = cli.Command{
 	Action:    AccountCaseAction,
 }
 
+// AccountCaseFlags is the flags of account test case
 var AccountCaseFlags = []cli.Flag{
 	cli.IntFlag{
 		Name:  "account, a",
@@ -21,6 +23,7 @@ var AccountCaseFlags = []cli.Flag{
 	},
 }
 
+// AccountCaseAction is the action of account test case
 var AccountCaseAction = func(c *cli.Context) error {
 	anum := c.Int("account")
 	keysfile := c.GlobalString("keys")

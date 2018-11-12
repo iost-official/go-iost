@@ -16,10 +16,12 @@ var (
 	Signers    = make([]string, 0)      // No mutiple signers
 )
 
+// Transaction is the transaction object
 type Transaction struct {
 	*tx.Tx
 }
 
+// NewTransaction will return a new transaction by actions
 func NewTransaction(actions []*tx.Action) *Transaction {
 	t := tx.NewTx(
 		actions,

@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// TransferCaseCommand is the command of transfer test case
 var TransferCaseCommand = cli.Command{
 	Name:      "transfer_case",
 	ShortName: "t_case",
@@ -16,6 +17,7 @@ var TransferCaseCommand = cli.Command{
 	Action:    TransferCaseAction,
 }
 
+// TransferCaseFlags is the flags of transfer test case
 var TransferCaseFlags = []cli.Flag{
 	cli.IntFlag{
 		Name:  "account, a",
@@ -29,6 +31,7 @@ var TransferCaseFlags = []cli.Flag{
 	},
 }
 
+// TransferCaseAction is the action of transfer test case
 var TransferCaseAction = func(c *cli.Context) error {
 	anum := c.Int("account")
 	tnum := c.Int("transaction")

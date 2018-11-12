@@ -9,18 +9,21 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 )
 
+// Account is account of user
 type Account struct {
 	ID      string
 	Balance string
 	key     *Key
 }
 
+// AccountJSON is the json serialization of account
 type AccountJSON struct {
 	ID        string `json:"id"`
 	Seckey    string `json:"seckey"`
 	Algorithm string `json:"algorithm"`
 }
 
+// Sign will sign the transaction by current account
 func (a *Account) Sign(t *Transaction) (*Transaction, error) {
 	st, err := tx.SignTx(t.Tx, a.ID, []*account.KeyPair{a.key.KeyPair})
 	if err != nil {
@@ -33,6 +36,7 @@ func (a *Account) Sign(t *Transaction) (*Transaction, error) {
 	return transaction, nil
 }
 
+// UnmarshalJSON will unmarshal account from json
 func (a *Account) UnmarshalJSON(b []byte) error {
 	aux := &AccountJSON{}
 	err := json.Unmarshal(b, aux)
@@ -48,6 +52,7 @@ func (a *Account) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// MarshalJSON will marshal account to json
 func (a *Account) MarshalJSON() ([]byte, error) {
 	aux := &AccountJSON{
 		ID:        a.ID,

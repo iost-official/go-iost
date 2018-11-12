@@ -10,6 +10,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 )
 
+// Constant of key
 const (
 	DefaultKeys = `
 [
@@ -22,15 +23,18 @@ const (
 `
 )
 
+// Key is the key pair
 type Key struct {
 	*account.KeyPair
 }
 
+// KeyJSON is the json serialization of key
 type KeyJSON struct {
 	Seckey    string `json:"seckey"`
 	Algorithm string `json:"algorithm"`
 }
 
+// LoadKeys will load keys from file
 func LoadKeys(file string) ([]*Key, error) {
 	data := []byte{}
 	if file == "" {
@@ -54,6 +58,7 @@ func LoadKeys(file string) ([]*Key, error) {
 	return keys, nil
 }
 
+// DumpKeys will dump the keys to file
 func DumpKeys(keys []*Key, file string) error {
 	f, err := os.Create(file)
 	if err != nil {
@@ -72,6 +77,7 @@ func DumpKeys(keys []*Key, file string) error {
 	return nil
 }
 
+// NewKey will return a new key
 func NewKey(seckey []byte, algo crypto.Algorithm) *Key {
 	keypair, err := account.NewKeyPair(seckey, algo)
 	if err != nil {
@@ -82,6 +88,7 @@ func NewKey(seckey []byte, algo crypto.Algorithm) *Key {
 	}
 }
 
+// UnmarshalJSON will unmarshal key from json
 func (k *Key) UnmarshalJSON(b []byte) error {
 	aux := &KeyJSON{}
 	err := json.Unmarshal(b, aux)
@@ -98,6 +105,7 @@ func (k *Key) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// MarshalJSON will marshal key to json
 func (k *Key) MarshalJSON() ([]byte, error) {
 	aux := &KeyJSON{
 		Seckey:    common.Base58Encode(k.KeyPair.Seckey),

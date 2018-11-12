@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 )
 
+// Constant of itest config
 const (
 	DefaultITestConfig = `
 {
@@ -26,12 +27,14 @@ const (
 `
 )
 
-type ITestConfig struct {
+// Config is the config of itest
+type Config struct {
 	Bank    *Account
 	Clients []*Client
 }
 
-func LoadITestConfig(file string) (*ITestConfig, error) {
+// LoadConfig will load the itest config from file
+func LoadConfig(file string) (*Config, error) {
 	data := []byte{}
 	if file == "" {
 		data = []byte(DefaultITestConfig)
@@ -47,15 +50,15 @@ func LoadITestConfig(file string) (*ITestConfig, error) {
 		}
 	}
 
-	itc := &ITestConfig{}
-	if err := json.Unmarshal(data, itc); err != nil {
+	c := &Config{}
+	if err := json.Unmarshal(data, c); err != nil {
 		return nil, err
 	}
 
-	ilog.Debugf("Bank id: %v", itc.Bank.ID)
-	ilog.Debugf("Bank seckey: %v", common.Base58Encode(itc.Bank.key.Seckey))
-	ilog.Debugf("Clients name: %v", itc.Clients[0].Name)
-	ilog.Debugf("Clients addr: %v", itc.Clients[0].Addr)
+	ilog.Debugf("Bank id: %v", c.Bank.ID)
+	ilog.Debugf("Bank seckey: %v", common.Base58Encode(c.Bank.key.Seckey))
+	ilog.Debugf("Clients name: %v", c.Clients[0].Name)
+	ilog.Debugf("Clients addr: %v", c.Clients[0].Addr)
 
-	return itc, nil
+	return c, nil
 }

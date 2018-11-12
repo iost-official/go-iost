@@ -5,6 +5,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// BenchmarkCommand is the command of benchmark
 var BenchmarkCommand = cli.Command{
 	Name:      "benchmark",
 	ShortName: "bench",
@@ -12,6 +13,7 @@ var BenchmarkCommand = cli.Command{
 	Action:    BenchmarkAction,
 }
 
+// BenchmarkAction is the action of benchmark
 var BenchmarkAction = func(c *cli.Context) error {
 	dfile := "benchmark.json"
 

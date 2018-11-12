@@ -25,6 +25,7 @@ var (
 	ErrTimeout = fmt.Errorf("Transaction be on chain timeout")
 )
 
+// Client is a grpc client for iserver
 type Client struct {
 	grpc  rpc.ApisClient
 	mutex sync.Mutex
@@ -46,6 +47,7 @@ func (c *Client) getGRPC() (rpc.ApisClient, error) {
 	return c.grpc, nil
 }
 
+// GetTransaction will get transaction by tx hash
 func (c *Client) GetTransaction(hash string) (*Transaction, error) {
 	grpc, err := c.getGRPC()
 	if err != nil {
@@ -69,6 +71,7 @@ func (c *Client) GetTransaction(hash string) (*Transaction, error) {
 	return transaction, nil
 }
 
+// GetReceipt will get receipt by tx hash
 func (c *Client) GetReceipt(hash string) (*Receipt, error) {
 	grpc, err := c.getGRPC()
 	if err != nil {
@@ -92,6 +95,7 @@ func (c *Client) GetReceipt(hash string) (*Receipt, error) {
 	return receipt, nil
 }
 
+// GetAccount will get account by name
 func (c *Client) GetAccount(name string) (*Account, error) {
 	grpc, err := c.getGRPC()
 	if err != nil {
@@ -118,6 +122,7 @@ func (c *Client) GetAccount(name string) (*Account, error) {
 	return account, nil
 }
 
+// SendTransaction will send transaction to blockchain
 func (c *Client) SendTransaction(transaction *Transaction) (string, error) {
 	grpc, err := c.getGRPC()
 	if err != nil {
@@ -152,17 +157,17 @@ func (c *Client) checkTransaction(hash string) error {
 			<-ticker.C
 			r, err := c.GetReceipt(hash)
 			if err == nil && r != nil {
-				if r.Success() {
-					return nil
-				} else {
+				if !r.Success() {
 					return fmt.Errorf("%v: %v", r.Status.Code, r.Status.Message)
 				}
+				return nil
 			}
 		}
 	}
 }
 
-func (c *Client) CreateAccount(creater *Account, name string, key *Key) (*Account, error) {
+// CreateAccount will create account by sending transaction
+func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Account, error) {
 	action1 := tx.NewAction(
 		"iost.auth",
 		"SignUp",
@@ -172,13 +177,13 @@ func (c *Client) CreateAccount(creater *Account, name string, key *Key) (*Accoun
 	action2 := tx.NewAction(
 		"iost.token",
 		"transfer",
-		fmt.Sprintf(`["%v", "%v", %v, %v]`, InitToken, creater.ID, name, InitAmount),
+		fmt.Sprintf(`["%v", "%v", %v, %v]`, InitToken, creator.ID, name, InitAmount),
 	)
 
 	actions := []*tx.Action{action1, action2}
 	transaction := NewTransaction(actions)
 
-	st, err := creater.Sign(transaction)
+	st, err := creator.Sign(transaction)
 	if err != nil {
 		return nil, err
 	}
@@ -195,6 +200,7 @@ func (c *Client) CreateAccount(creater *Account, name string, key *Key) (*Accoun
 	return account, nil
 }
 
+// Transfer will transfer token by sending transaction
 func (c *Client) Transfer(sender *Account, token, recipient, amount string) error {
 	action := tx.NewAction(
 		"iost.token",
@@ -217,7 +223,8 @@ func (c *Client) Transfer(sender *Account, token, recipient, amount string) erro
 	return nil
 }
 
-func (c *Client) SetContract(creater *Account, contract *Contract) error {
+// SetContract will set the contract by sending transaction
+func (c *Client) SetContract(creator *Account, contract *Contract) error {
 	action := tx.NewAction(
 		"iost.system",
 		"SetCode",
@@ -227,7 +234,7 @@ func (c *Client) SetContract(creater *Account, contract *Contract) error {
 	actions := []*tx.Action{action}
 	transaction := NewTransaction(actions)
 
-	st, err := creater.Sign(transaction)
+	st, err := creator.Sign(transaction)
 	if err != nil {
 		return err
 	}
