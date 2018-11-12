@@ -70,8 +70,6 @@ func getToken721Tokens(h *host.Host, tokenName string, from string) (tokens []st
 		tokens = strings.Split(tokensStr, "|")
 		tokens = tokens[1:]
 	}
-	// fmt.Println(tokensStr)
-	// fmt.Println(tokens)
 	return tokens, tokensStr, cost, nil
 }
 
@@ -93,8 +91,11 @@ func delToken721Tokens(h *host.Host, tokenName string, from string, tokenID stri
 	if err != nil {
 		return cost, err
 	}
-	tokensStr = strings.Replace(tokensStr, "|"+tokenID+"|", "|", 1)
-	cost0 := h.MapPut(Token721TokensPrefix+from, tokenName, tokensStr, from)
+	newTokensStr := strings.Replace(tokensStr, "|"+tokenID+"|", "|", 1)
+	if tokensStr == newTokensStr {
+		return cost, host.ErrInvalidData
+	}
+	cost0 := h.MapPut(Token721TokensPrefix+from, tokenName, newTokensStr, from)
 	cost.AddAssign(cost0)
 	return cost, nil
 }
@@ -261,9 +262,24 @@ var (
 
 			tmp, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, tokenID)
 			cost.AddAssign(cost0)
+			if tmp == nil {
+				return nil, cost, host.ErrInvalidData
+			}
 			owner := tmp.(string)
 			if owner != from {
 				return nil, cost, host.ErrInvalidData
+			}
+
+			cost0, err = delToken721Tokens(h, tokenName, from, tokenID)
+			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
+
+			cost0, err = addToken721Tokens(h, tokenName, to, tokenID)
+			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
 			}
 
 			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to)
@@ -293,12 +309,6 @@ var (
 			cost0 = h.MapDel(Token721MetadataMapPrefix+tokenName, tokenID, from)
 			cost.AddAssign(cost0)
 			cost0 = h.MapPut(Token721MetadataMapPrefix+tokenName, tokenID, metaDateJSON, to)
-			cost.AddAssign(cost0)
-
-			cost0, err = delToken721Tokens(h, tokenName, from, tokenID)
-			cost.AddAssign(cost0)
-
-			cost0, err = addToken721Tokens(h, tokenName, to, tokenID)
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
