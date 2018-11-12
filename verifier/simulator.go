@@ -91,10 +91,17 @@ func (s *Simulator) SetContract(c *contract.Contract) {
 
 // DeployContract via iost.system/SetCode
 func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, error) {
+	sc, err := json.Marshal(c)
+	if err != nil {
+		return "", nil
+	}
+
+	fmt.Println(string(sc))
+
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   "iost.system",
 		ActionName: "SetCode",
-		Data:       fmt.Sprintf(`["%v"]`, c.B64Encode()),
+		Data:       fmt.Sprintf(`["%v"]`, string(sc)),
 	}}, nil, 100000, 100, 10000000, 0)
 
 	r, err := s.CallTx(trx, publisher, kp)
