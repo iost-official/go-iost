@@ -96,8 +96,6 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 		return "", nil
 	}
 
-	fmt.Println(string(sc))
-
 	jargs, err := json.Marshal([]string{string(sc)})
 	if err != nil {
 		panic(err)
