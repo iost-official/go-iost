@@ -220,7 +220,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	}
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
-		return nil, fmt.Errorf("error in abi file: %v", err)
+		return nil, fmt.Errorf("error in abi file: %v", err, data)
 	}
 
 	rtn := make([]interface{}, 0)
