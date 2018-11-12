@@ -2,7 +2,6 @@ package run
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest"
@@ -19,7 +18,7 @@ var AccountCaseCommand = cli.Command{
 
 var AccountCaseFlags = []cli.Flag{
 	cli.IntFlag{
-		Name:  "number, n",
+		Name:  "account, a",
 		Value: 100,
 		Usage: "number of account",
 	},
@@ -46,25 +45,9 @@ var AccountCaseAction = func(c *cli.Context) error {
 
 	ilog.Infof("Load config from file successful!")
 
-	ilog.Infof("Create %v account...", num)
-
-	var wg sync.WaitGroup
-
-	for i := 0; i < num; i++ {
-		wg.Add(1)
-		go func(n int) {
-			defer wg.Add(-1)
-			name := fmt.Sprintf("account%04d", n)
-			_, err := it.CreateAccount(name)
-			if err != nil {
-				ilog.Fatalf("Create account failed: %v", err)
-			}
-			// TODO Get account by rpc, and compare account result
-		}(i)
+	if _, err := it.CreateAccountN(num); err != nil {
+		return err
 	}
 
-	wg.Wait()
-
-	ilog.Infof("Create %v account successful!", c.Int("number"))
 	return nil
 }

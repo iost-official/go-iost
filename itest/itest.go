@@ -3,6 +3,8 @@ package itest
 import (
 	"fmt"
 	"math/rand"
+
+	"github.com/iost-official/go-iost/ilog"
 )
 
 type ITest struct {
@@ -17,6 +19,50 @@ func New(itc *ITestConfig, keys []*Key) *ITest {
 		keys:    keys,
 		clients: itc.Clients,
 	}
+}
+
+func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
+	ilog.Infof("Create %v account...", num)
+
+	var res chan interface{}
+	for i := 0; i < num; i++ {
+		go func(n int, res chan interface{}) {
+			name := fmt.Sprintf("account%04d", n)
+			account, err := t.CreateAccount(name)
+			if err != nil {
+				res <- err
+			} else {
+				res <- account
+			}
+		}(i, res)
+	}
+
+	accounts := []*Account{}
+	for i := 0; i < num; i++ {
+		select {
+		case r := <-res:
+			err, ok := r.(error)
+			if ok {
+				ilog.Errorf("Create account failed: %v", err)
+				break
+			}
+			account, ok := r.(*Account)
+			if ok {
+				accounts = append(accounts, account)
+				break
+			}
+		}
+	}
+
+	ilog.Infof("Create %v account successful!", len(accounts))
+
+	if len(accounts) != num {
+		return nil, fmt.Errorf("Create %v account failed!", num-len(accounts))
+	}
+
+	// TODO Get account by rpc, and compare account result
+
+	return accounts, nil
 }
 
 func (t *ITest) CreateAccount(name string) (*Account, error) {
