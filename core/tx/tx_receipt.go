@@ -1,8 +1,6 @@
 package tx
 
 import (
-	"fmt"
-
 	"github.com/iost-official/go-iost/common"
 	txpb "github.com/iost-official/go-iost/core/tx/pb"
 )
@@ -22,35 +20,6 @@ const (
 	ErrorDuplicateSetCode // more than one set code action in a tx
 	ErrorUnknown          // other errors
 )
-
-// Return is the result of txreceipt.
-type Return struct {
-	FuncName string
-	Value    string
-}
-
-// ToPb convert Return to proto buf data structure.
-func (r *Return) ToPb() *txpb.Return {
-	return &txpb.Return{
-		FuncName: r.FuncName,
-		Value:    r.Value,
-	}
-}
-
-// FromPb convert Return from proto buf data structure.
-func (r *Return) FromPb(s *txpb.Return) *Return {
-	r.FuncName = s.FuncName
-	r.Value = s.Value
-	return r
-}
-
-// ToBytes converts Return to a specific byte slice.
-func (r *Return) ToBytes() []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteString(r.FuncName, true)
-	sn.WriteString(r.Value, true)
-	return sn.Bytes()
-}
 
 // Status status of transaction execution result, including code and message
 type Status struct {
@@ -126,7 +95,7 @@ type TxReceipt struct { //nolint:golint
 	GasUsage int64
 	RAMUsage map[string]int64
 	Status   *Status
-	Returns  []*Return
+	Returns  []string
 	Receipts []*Receipt
 }
 
@@ -141,7 +110,7 @@ func NewTxReceipt(txHash []byte) *TxReceipt {
 		GasUsage: 0,
 		RAMUsage: make(map[string]int64),
 		Status:   status,
-		Returns:  []*Return{},
+		Returns:  []string{},
 		Receipts: []*Receipt{},
 	}
 }
@@ -152,18 +121,14 @@ func (r *TxReceipt) ToPb() *txpb.TxReceipt {
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
 		Status:   r.Status.ToPb(),
-		Returns:  []*txpb.Return{},
+		Returns:  []string{},
 		Receipts: []*txpb.Receipt{},
 	}
 
 	tr.RamUsage = r.RAMUsage
 
 	for _, rt := range r.Returns {
-		if rt == nil {
-			fmt.Println("rt is nil")
-			break
-		}
-		tr.Returns = append(tr.Returns, rt.ToPb())
+		tr.Returns = append(tr.Returns, rt)
 	}
 	for _, re := range r.Receipts {
 		tr.Receipts = append(tr.Receipts, re.ToPb())
@@ -188,8 +153,7 @@ func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) *TxReceipt {
 	s := &Status{}
 	r.Status = s.FromPb(tr.Status)
 	for _, rt := range tr.Returns {
-		re := &Return{}
-		r.Returns = append(r.Returns, re.FromPb(rt))
+		r.Returns = append(r.Returns, rt)
 	}
 	for _, re := range tr.Receipts {
 		rc := &Receipt{}
@@ -219,10 +183,7 @@ func (r *TxReceipt) ToBytes() []byte {
 
 	returnBytes := make([][]byte, 0, len(r.Returns))
 	for _, rt := range r.Returns {
-		if rt == nil {
-			break
-		}
-		returnBytes = append(returnBytes, rt.ToBytes())
+		returnBytes = append(returnBytes, []byte(rt))
 	}
 	sn.WriteBytesSlice(returnBytes, false)
 
