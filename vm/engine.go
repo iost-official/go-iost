@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
-
 	"time"
 
 	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/account"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
@@ -220,7 +219,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	}
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
-		return nil, fmt.Errorf("error in abi file: %v", err)
+		return nil, fmt.Errorf("error in data: %v, %v", err, data)
 	}
 
 	rtn := make([]interface{}, 0)
@@ -371,33 +370,4 @@ func (e *engineImpl) startLog() {
 		e.logger.AsyncWrite()
 		e.logger.Start()
 	}
-}
-
-func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
-	c := host.NewContext(ctx)
-	c.Set("parent_hash", common.Base58Encode(bh.ParentHash))
-	c.Set("number", bh.Number)
-	c.Set("witness", bh.Witness)
-	c.Set("time", bh.Time)
-	return c
-}
-
-func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
-	h.PushCtx()
-	h.Context().Set("tx_time", t.Time)
-	h.Context().Set("expiration", t.Expiration)
-	h.Context().Set("gas_price", t.GasPrice)
-	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))
-	h.Context().Set("publisher", publisherID)
-
-	authList := make(map[string]int)
-	for _, v := range t.Signs {
-		authList[account.GetIDByPubkey(v.Pubkey)] = 1
-	}
-	for _, v := range t.PublishSigns {
-		authList[account.GetIDByPubkey(v.Pubkey)] = 2
-	}
-
-	h.Context().Set("auth_list", authList)
-	h.Context().Set("auth_contract_list", make(map[string]int))
 }

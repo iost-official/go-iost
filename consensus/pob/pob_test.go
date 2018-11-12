@@ -46,9 +46,10 @@ func testRun(t *testing.T) {
 	}
 	genesisBlock := &block.Block{
 		Head: &block.BlockHead{
-			Version: 0,
-			Number:  0,
-			Time:    0,
+			Version:  0,
+			Number:   0,
+			Time:     0,
+			GasUsage: 0,
 		},
 		Txs:      make([]*tx.Tx, 0),
 		Receipts: make([]*tx.TxReceipt, 0),
