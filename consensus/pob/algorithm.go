@@ -19,12 +19,11 @@ import (
 )
 
 var (
-	errWitness       = errors.New("wrong witness")
-	errSignature     = errors.New("wrong signature")
-	errTxInvalidTime = errors.New("tx invalid time")
-	errTxDup         = errors.New("duplicate tx")
-	errTxSignature   = errors.New("tx wrong signature")
-	errHeadHash      = errors.New("wrong head hash")
+	errWitness     = errors.New("wrong witness")
+	errSignature   = errors.New("wrong signature")
+	errTxDup       = errors.New("duplicate tx")
+	errTxSignature = errors.New("tx wrong signature")
+	errHeadHash    = errors.New("wrong head hash")
 	//txLimit        = 2000 //limit it to 2000
 	//txExecTime     = cverifier.TxExecTimeLimit / 2
 )

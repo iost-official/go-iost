@@ -291,7 +291,7 @@ func verifyBlockBase(blk *block.Block, db database.IMultiValue, c *Config) error
 	return nil
 }
 
-func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration, isBlockBase bool, blk *block.Block) error {
+func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration, isBlockBase bool, blk *block.Block) error { // nolint
 	if !t.IsTimeValid(blk.Head.Time) && !t.IsDefer() {
 		return ErrInvalidTimeTx
 	}
