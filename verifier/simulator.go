@@ -101,7 +101,7 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   "iost.system",
 		ActionName: "SetCode",
-		Data:       fmt.Sprintf(`["%v"]`, string(sc)),
+		Data:       fmt.Sprintf(`[%v]`, string(sc)),
 	}}, nil, 100000, 100, 10000000, 0)
 
 	r, err := s.CallTx(trx, publisher, kp)
