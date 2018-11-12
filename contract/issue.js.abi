@@ -18,15 +18,12 @@
             "name": "InitGenesis",
             "args": [
                 "string",
+                "json",
                 "json"
             ]
         },
         {
             "name": "IssueIOST",
-            "args": []
-        },
-        {
-            "name": "IssueRAM",
             "args": []
         }
     ]

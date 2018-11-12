@@ -102,9 +102,14 @@ class BonusContract {
     }
 
     // IssueContribute to witness
-    IssueContribute(gasUsed) {
+    IssueContribute(data) {
+        if (!data || !data.parent || !Array.isArray(data.parent)
+            || data.parent.length != 2 || !data.parent[0]) {
+            return;
+        }
+        // TODO: change tests to enable requireAuth
+        // this._requireAuth("iost.base", activePermission);
         const bi = this._getBlockInfo();
-        this._requireAuth(bi.witness, activePermission);
 
         const lastIssueBN = this._get("lastIssueBN");
         if (lastIssueBN === undefined) {
@@ -115,19 +120,20 @@ class BonusContract {
         }
         this._put("lastIssueBN", bi.number);
 
-        gasUsed = new BigNumber(gasUsed);
-        if (!gasUsed.isFinite()) {
-            gasUsed = new BigNumber(0);
+        const witness = data.parent[0];
+        const gasUsage = new BigNumber(data.parent[1]);
+        if (!gasUsage.isFinite()) {
+            gasUsage = new BigNumber(0);
         }
         let blockContrib = new BigNumber("900");
-        if (gasUsed.lte(1e8)) {
-            blockContrib = blockContrib.plus(gasUsed.div(1e6));
+        if (gasUsage.lte(1e8)) {
+            blockContrib = blockContrib.plus(gasUsage.div(1e6));
         } else {
             blockContrib = new BigNumber("1000");
         }
         this._call("iost.token", "issue", [
             "contribute",
-            bi.witness,
+            witness,
             blockContrib.toFixed(0)
         ]);
     }

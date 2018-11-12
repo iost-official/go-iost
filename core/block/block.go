@@ -20,6 +20,7 @@ type BlockHead struct { // nolint
 	Number     int64
 	Witness    string
 	Time       int64
+	GasUsage   int64
 }
 
 // ToPb convert BlockHead to proto buf data structure.
@@ -33,6 +34,7 @@ func (b *BlockHead) ToPb() *blockpb.BlockHead {
 		Number:     b.Number,
 		Witness:    b.Witness,
 		Time:       b.Time,
+		GasUsage:   b.GasUsage,
 	}
 }
 
@@ -60,6 +62,7 @@ func (b *BlockHead) FromPb(bh *blockpb.BlockHead) *BlockHead {
 	b.Number = bh.Number
 	b.Witness = bh.Witness
 	b.Time = bh.Time
+	b.GasUsage = bh.GasUsage
 	return b
 }
 
