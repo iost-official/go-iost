@@ -43,7 +43,7 @@ func Test_Base(t *testing.T) {
 		prepareBase(t, s, kp)
 
 		s.Head.Number = 200
-		re, err := s.Call("iost.base", "Exec", `[]`, kp.ID, kp)
+		re, err := s.Call("iost.base", "Exec", `[{}]`, kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(re.Status.Code, ShouldEqual, 0)
 	})

@@ -1,4 +1,10 @@
 creategenesis: true
+tokeninfo:
+  foundationaccount: admin
+  iosttotalsupply: 90000000000
+  iostdecimal: 8
+  ramtotalsupply: 9000000000000000000
+  ramgenesisamount: 137438953472
 witnessinfo:
   - id: producer00001
     owner: IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C
