@@ -262,7 +262,7 @@ func TestGas_unpledge(t *testing.T) {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
 	}
 	ilog.Info("after 3 days, the frozen money is available")
-	timePass(h, native.unpledgeFreezeSeconds)
+	timePass(h, native.UnpledgeFreezeSeconds)
 	h.Context().Set("contract_name", "iost.token")
 	rs, _, err := e.LoadAndCall(h, native.TokenABI(), "balanceOf", "iost", testAcc.ID)
 	if err != nil {

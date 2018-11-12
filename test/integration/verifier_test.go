@@ -26,10 +26,8 @@ func TestTransfer(t *testing.T) {
 		prepareContract(s)
 		createToken(t, s, kp)
 
-		totalGas := s.Visitor.CurrentTotalGas(kp.ID, 0).Value
-
+		totalGas := s.Visitor.CurrentTotalGas(kp.ID, s.Head.Time).Value
 		r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
-
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
