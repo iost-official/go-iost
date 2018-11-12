@@ -72,8 +72,16 @@ func (s *Signature) Decode(b []byte) error {
 	return nil
 }
 
+// ToBytes converts Signature to a specific byte slice.
+func (s *Signature) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteByte(byte(s.Algorithm), true)
+	sn.WriteBytes(s.Sig, true)
+	sn.WriteBytes(s.Pubkey, true)
+	return sn.Bytes()
+}
+
 // Hash returns the hash code of signature
 func (s *Signature) Hash() []byte {
-	b, _ := s.Encode()
-	return common.Sha3(b)
+	return common.Sha3(s.ToBytes())
 }

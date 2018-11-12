@@ -1,13 +1,12 @@
 package block
 
 import (
-	"encoding/binary"
-
 	"errors"
 	"fmt"
 
 	"strconv"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db/kv"
 )
@@ -30,18 +29,6 @@ var (
 	delaytxPrefix     = []byte("delay-") // delaytxPrefix + tx hash -> tx data
 )
 
-// Int64ToByte is int64 to byte
-func Int64ToByte(n int64) []byte {
-	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, uint64(n))
-	return b
-}
-
-// ByteToInt64 is byte to int64
-func ByteToInt64(b []byte) int64 {
-	return int64(binary.LittleEndian.Uint64(b))
-}
-
 // NewBlockChain returns a Chain instance
 func NewBlockChain(path string) (Chain, error) {
 	levelDB, err := kv.NewStorage(path, kv.LevelDBStorage)
@@ -58,9 +45,9 @@ func NewBlockChain(path string) (Chain, error) {
 		if err != nil || len(lengthByte) == 0 {
 			return nil, errors.New("fail to get blocklength")
 		}
-		length = ByteToInt64(lengthByte)
+		length = common.BytesToInt64(lengthByte)
 	} else {
-		lengthByte := Int64ToByte(0)
+		lengthByte := common.Int64ToBytes(0)
 		tempErr := levelDB.Put(blockLength, lengthByte)
 		if tempErr != nil {
 			err = errors.New("fail to put blocklength")
@@ -84,13 +71,13 @@ func (bc *BlockChain) Push(block *Block) error {
 	}
 	hash := block.HeadHash()
 	number := block.Head.Number
-	bc.blockChainDB.Put(append(blockNumberPrefix, Int64ToByte(number)...), hash)
+	bc.blockChainDB.Put(append(blockNumberPrefix, common.Int64ToBytes(number)...), hash)
 	blockByte, err := block.EncodeM()
 	if err != nil {
 		return errors.New("fail to encode block")
 	}
 	bc.blockChainDB.Put(append(blockPrefix, hash...), blockByte)
-	bc.blockChainDB.Put(blockLength, Int64ToByte(number+1))
+	bc.blockChainDB.Put(blockLength, common.Int64ToBytes(number+1))
 	for i, t := range block.Txs {
 		tHash := t.Hash()
 		txBytes := t.Encode()
@@ -125,7 +112,7 @@ func (bc *BlockChain) CheckLength() {
 		if err != nil {
 			fmt.Println("fail to get the block")
 		} else {
-			bc.blockChainDB.Put(blockLength, Int64ToByte(i))
+			bc.blockChainDB.Put(blockLength, common.Int64ToBytes(i))
 			bc.length = i
 			break
 		}
@@ -142,15 +129,15 @@ func (bc *BlockChain) Top() (*Block, error) {
 
 // GetHashByNumber is get hash by number
 func (bc *BlockChain) GetHashByNumber(number int64) ([]byte, error) {
-	hash, err := bc.blockChainDB.Get(append(blockNumberPrefix, Int64ToByte(number)...))
+	hash, err := bc.blockChainDB.Get(append(blockNumberPrefix, common.Int64ToBytes(number)...))
 	if err != nil || len(hash) == 0 {
 		return nil, errors.New("fail to get hash by number")
 	}
 	return hash, nil
 }
 
-// GetBlockByteByHash is get block byte by hash
-func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
+// getBlockByteByHash is get block byte by hash
+func (bc *BlockChain) getBlockByteByHash(hash []byte) ([]byte, error) {
 	blockByte, err := bc.blockChainDB.Get(append(blockPrefix, hash...))
 	if err != nil || len(blockByte) == 0 {
 		return nil, errors.New("fail to get block byte by hash")
@@ -160,7 +147,7 @@ func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
 
 // GetBlockByHash is get block by hash
 func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
-	blockByte, err := bc.GetBlockByteByHash(hash)
+	blockByte, err := bc.getBlockByteByHash(hash)
 	if err != nil {
 		return nil, err
 	}
