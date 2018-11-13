@@ -23,7 +23,7 @@ var contractID string
 
 func initConn(num int) {
 	conns = make([]*grpc.ClientConn, num)
-	allServers := []string{"52.37.130.27:30002", "18.228.149.97:30002"}
+	allServers := []string{"127.0.0.1:30002", "52.37.130.27:30002", "18.228.149.97:30002"}
 
 	for i := 0; i < num; i++ {
 		conn, err := grpc.Dial(allServers[i%len(allServers)], grpc.WithInsecure())

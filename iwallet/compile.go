@@ -24,7 +24,6 @@ import (
 	"os/exec"
 
 	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/mitchellh/go-homedir"
@@ -116,7 +115,7 @@ func PublishContract(codePath string, abiPath string, conID string, acc *account
 		fmt.Println(err.Error())
 		return nil, "", err
 	}
-	fmt.Println("Sending tx to rpc server finished. The transaction hash is:", common.Base58Encode([]byte(hash)))
+	fmt.Println("Sending tx to rpc server finished. The transaction hash is:", hash)
 	return trx, hash, nil
 }
 
