@@ -78,6 +78,21 @@ func (sn *SimpleNotation) WriteBytesSlice(p [][]byte, escape bool) {
 	sn.WriteBytes(buf.Bytes(), false)
 }
 
+// WriteStringSlice writes a string slice to buffer.
+func (sn *SimpleNotation) WriteStringSlice(p []string, escape bool) {
+	var buf bytes.Buffer
+	for _, s := range p {
+		buf.WriteByte(sn.sliceSep)
+		bs := []byte(s)
+		if escape {
+			bs = sn.escape(bs)
+		}
+		buf.Write(bs)
+	}
+
+	sn.WriteBytes(buf.Bytes(), false)
+}
+
 // WriteMapStringToI64 writes a map[string]int64 to buffer.
 func (sn *SimpleNotation) WriteMapStringToI64(m map[string]int64, escape bool) {
 	key := make([]string, 0, len(m))
