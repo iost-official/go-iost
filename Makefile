@@ -21,17 +21,20 @@ endif
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
 LD_FLAGS := -X github.com/iost-official/go-iost/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/core/global.GitHash=$(shell git rev-parse HEAD)
 
-.PHONY: all build iserver iwallet lint test image devimage swagger protobuf install clean debug clear_debug_file
+.PHONY: all build iserver iwallet itest lint test image push devimage swagger protobuf install clean debug clear_debug_file
 
 all: build
 
-build: iserver iwallet
+build: iserver iwallet itest
 
 iserver:
 	$(GO) build -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
 
 iwallet:
 	$(GO) build -o $(TARGET_DIR)/iwallet $(PROJECT)/cmd/iwallet
+
+itest:
+	$(GO) build -o $(TARGET_DIR)/itest $(PROJECT)/cmd/itest
 
 lint:
 	@gometalinter --config=.gometalinter.json ./...
@@ -46,6 +49,9 @@ endif
 image:
 	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
+
+push:
+	docker push $(DOCKER_IMAGE)
 
 devimage:
 	docker build -f Dockerfile.dev -t $(DOCKER_DEVIMAGE) .
