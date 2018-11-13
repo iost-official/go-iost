@@ -17,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
+	"github.com/iost-official/go-iost/core/tx"
 )
 
 func toString(n int64) string {
@@ -75,6 +76,8 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Accou
 	e.Init()
 
 	h.Context().Set("contract_name", "iost.token")
+	h.Context().Set("abi_name", "abi")
+	h.Context().GSet("receipts", []*tx.Receipt{})
 	_, _, err = e.LoadAndCall(h, tokenContract, "create", "iost", testAcc.ID, int64(initCoin), []byte("{}"))
 	if err != nil {
 		panic("create iost " + err.Error())

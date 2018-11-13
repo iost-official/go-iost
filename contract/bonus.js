@@ -173,7 +173,8 @@ class BonusContract {
             "iost",
             "iost.bonus",
             account,
-            bonus.toFixed()
+            bonus.toFixed(),
+            ""
         ]);
     }
 }

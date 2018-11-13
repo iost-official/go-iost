@@ -37,13 +37,13 @@ func TestTransfer(t *testing.T) {
 
 		totalGas := s.Visitor.CurrentTotalGas(kp.ID, 0).Value
 
-		r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
+		r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v",""]`, testID[0], testID[2], 0.0001), kp.ID, kp)
 
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 		So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-		So(totalGas-s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(91700000000))
+		So(totalGas-s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(106500000000))
 	})
 }
 
@@ -197,7 +197,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 		tx0 := tx.NewTx([]*tx.Action{{
 			Contract:   "iost.token",
 			ActionName: "transfer",
-			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, testID[0], testID[2], "10"),
+			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "10"),
 		}}, nil, 100, 100, 10000000, 0)
 
 		r, err := s.CallTx(tx0, testID[0], kp)

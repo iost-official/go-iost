@@ -151,11 +151,11 @@ class RAMContract {
         this._requireAuth(account, defaultPermission);
         this._checkIssue();
         const price = this._price("buy", amount);
-        let ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(["iost", account, this._getContractName(), price.toString()]));
+        let ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(["iost", account, this._getContractName(), price.toString(), ""]));
         if (ret != "[]") {
             throw "deposit err " + ret
         }
-        const data = [this._getTokenName(), this._getContractName(), account, (amount).toString()];
+        const data = [this._getTokenName(), this._getContractName(), account, (amount).toString(), ""];
         ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(data));
         if (ret != "[]") {
             throw "transfer err " + ret
@@ -165,13 +165,13 @@ class RAMContract {
 
     sell(account, amount) {
         this._requireAuth(account, defaultPermission);
-        const data = [this._getTokenName(), account, this._getContractName(), (amount).toString()];
+        const data = [this._getTokenName(), account, this._getContractName(), (amount).toString(), ""];
         let ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(data));
         if (ret != "[]") {
             throw "transfer err " + ret
         }
         const price = this._price("sell", amount);
-        ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(["iost", this._getContractName(), account, price.toString()]));
+        ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(["iost", this._getContractName(), account, price.toString(), ""]));
         if (ret != "[]") {
             throw "withdraw err " + ret
         }

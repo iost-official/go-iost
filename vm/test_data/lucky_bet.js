@@ -23,7 +23,7 @@ class Contract {
             throw "lucky number should be >=0 and <= 9"
         }
 
-        const result = BlockChain.deposit(account, coins);
+        const result = BlockChain.deposit(account, coins, "");
         if (result !== 0) {
             throw "cannot bet"
         }
@@ -96,7 +96,7 @@ class Contract {
                 table = winTable;
                 table.forEach(function (record) {
                     const reward = (tc.multi(record.coins/ 100000000).div(totalVal/ 100000000));
-                    BlockChain.withdraw(record.account, reward);
+                    BlockChain.withdraw(record.account, reward, "");
                     record.reward = reward.toString();
                     result.records.push(record)
                 })
