@@ -18,6 +18,7 @@ message BlockHead {
     int64 number = 6;
     string witness = 7;
     int64 time = 8;
+    int64 gasUsage = 9;
 }
 
 message Block {
@@ -26,7 +27,7 @@ message Block {
     repeated txpb.Tx txs = 3;
     repeated txpb.TxReceipt receipts = 4;
     repeated bytes txHashes = 5;
-    repeated bytes receiptHashes =6;
+    repeated bytes receiptHashes = 6;
     BlockType blockType = 7;
 }
 

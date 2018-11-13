@@ -3,6 +3,8 @@ package native
 import (
 	"errors"
 
+	"encoding/json"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
@@ -51,9 +53,18 @@ var (
 
 			cost = contract.Cost0()
 			con := &contract.Contract{}
-			err = con.B64Decode(args[0].(string))
-			if err != nil {
-				return nil, host.CommonErrorCost(1), err
+			codeRaw := args[0].(string)
+
+			if codeRaw[0] == '{' {
+				err = json.Unmarshal([]byte(codeRaw), con)
+				if err != nil {
+					return nil, host.CommonErrorCost(1), err
+				}
+			} else {
+				err = con.B64Decode(codeRaw)
+				if err != nil {
+					return nil, host.CommonErrorCost(1), err
+				}
 			}
 
 			info, cost1 := h.TxInfo()

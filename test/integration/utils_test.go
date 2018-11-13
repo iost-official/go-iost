@@ -111,4 +111,5 @@ var bh = &block.BlockHead{
 	Number:     200,
 	Witness:    "witness",
 	Time:       123460 * 1e9,
+	GasUsage:   0,
 }

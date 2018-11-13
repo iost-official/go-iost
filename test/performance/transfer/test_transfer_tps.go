@@ -94,14 +94,14 @@ func publish() string {
 	}
 	time.Sleep(time.Duration(50) * time.Second)
 	client := rpc.NewApisClient(conns[0])
-	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpc.HashReq{Hash: common.Base58Encode(txHash)})
+	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpc.HashReq{Hash: txHash})
 	if err != nil {
 		panic(err)
 	}
 	if tx.StatusCode(resp.TxReceipt.Status.Code) != tx.Success {
 		panic("publish contract fail " + (resp.TxReceipt.String()))
 	}
-	return "Contract" + common.Base58Encode(txHash)
+	return "Contract" + txHash
 }
 
 func main() {

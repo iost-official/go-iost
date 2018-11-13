@@ -40,6 +40,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
 			Time:       time.Now().UnixNano(),
+			GasUsage:   0,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -49,7 +50,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	// call vote
 	v := verifier.Verifier{}
 	t1 := time.Now()
-	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
+	dropList, _, err := v.Gen(&blk, topBlock, db, txIter, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: time.Millisecond * 100,
@@ -133,7 +134,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	v := verifier.Verifier{}
 	ilog.Infof("[pob] start to verify block in vm, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	defer ilog.Infof("[pob] end of verify block in vm, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
-	return v.Verify(blk, db, &verifier.Config{
+	return v.Verify(blk, parent, db, &verifier.Config{
 		Mode:        0,
 		Timeout:     time.Millisecond * 250,
 		TxTimeLimit: time.Millisecond * 100,

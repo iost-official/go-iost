@@ -708,6 +708,7 @@ func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt in
 				Number:     int64(i + 1),
 				Witness:    witnessList[0],
 				Time:       time.Now().UnixNano(),
+				GasUsage:   0,
 			},
 			Sign: &crypto.Signature{},
 		}

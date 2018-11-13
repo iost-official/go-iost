@@ -49,6 +49,7 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 			Number:     10,
 			Witness:    "witness",
 			Time:       123456,
+			GasUsage:   0,
 		},
 	}
 	topBlock.CalculateHeadHash()

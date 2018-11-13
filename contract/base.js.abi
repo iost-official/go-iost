@@ -4,7 +4,9 @@
     "abi": [
         {
             "name": "Exec",
-            "args": []
+            "args": [
+                "json"
+            ]
         }
     ]
 }

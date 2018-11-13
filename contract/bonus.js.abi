@@ -22,7 +22,9 @@
         },
         {
             "name": "IssueContribute",
-            "args": ["number"]
+            "args": [
+                "json"
+            ]
         },
         {
             "name": "ExchangeIOST",
