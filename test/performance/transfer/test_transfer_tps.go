@@ -18,7 +18,7 @@ import (
 )
 
 var conns []*grpc.ClientConn
-var rootKey = "5ifJUpGWJ69S2eKsKYLDcajVxrc5yZk2CD7tJ29yK6FyjAtmeboK3G4Ag5p22uZTijBP3ftEDV4ymXZF1jGqu9j4"
+var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"
 var contractID string
 
 func initConn(num int) {
