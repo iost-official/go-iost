@@ -87,7 +87,7 @@ func publish() string {
 	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
 	codePath := "transfer.js"
 	abiPath := codePath + ".abi"
-	iwallet.SetServer("13.237.151.211:30002")
+	//iwallet.SetServer("13.237.151.211:30002")
 	_, txHash, err := iwallet.PublishContract(codePath, abiPath, "", acc, 90, make([]string, 0), 10000, 100, false, "", true)
 	if err != nil {
 		panic(err)
