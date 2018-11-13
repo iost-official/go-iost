@@ -7,7 +7,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
-	txpb "github.com/iost-official/go-iost/core/tx/pb"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -169,6 +170,8 @@ func TestTx(t *testing.T) {
 }
 
 func TestTx_ToBytes(t *testing.T) {
+	var sep = `\` + "`" + "^"
+	fmt.Println(sep, "is", []byte(sep))
 	txx := &Tx{
 		Time:       123,
 		Expiration: 456,
@@ -183,10 +186,27 @@ func TestTx_ToBytes(t *testing.T) {
 		Data:       "[]",
 	},
 	}
-	fmt.Println(string(txx.ToBytes(0)))
+	by := txx.ToBytes(0)
+	fmt.Print("[")
+	for _, v := range by {
+		fmt.Print(v, ",")
+	}
+	fmt.Print("]")
 
-	var js = []byte{96, 0, 0, 0, 0, 0, 0, 0, 123, 96, 0, 0, 0, 0, 0, 0, 1, 239, 191, 189, 96, 0, 0, 0, 0, 0, 0, 0, 100, 96, 0, 0, 0, 0, 0, 1, 239, 191, 189, 64, 96, 0, 0, 0, 0, 0, 0, 0, 0, 96, 94, 97, 98, 99, 96, 94, 99, 111, 110, 116, 94, 97, 98, 105, 94, 91, 93}
+	var js = []byte{96, 0, 0, 0, 0, 0, 0, 0, 123, 96, 0, 0, 0, 0, 0, 0, 1, 200, 96, 0, 0, 0, 0, 0, 0, 0, 100, 96, 0, 0,
+		0, 0, 0, 1, 226, 64, 96, 0, 0, 0, 0, 0, 0, 0, 0, 96, 94, 97, 98, 99, 96, 94, 96, 99, 111, 110, 116, 96, 97, 98,
+		105, 96, 91, 93}
 	fmt.Println(string(js))
+
+	if !bytes.Equal(by, js) {
+		t.Fatal("result not same with iost.js !")
+	}
+
+	fmt.Println(txx.baseHash())
+
+	hexhash := fmt.Sprintf("%x", common.Sha3(txx.ToBytes(0)))
+
+	fmt.Println("hash>", hexhash)
 }
 
 func BenchmarkHash(b *testing.B) {
