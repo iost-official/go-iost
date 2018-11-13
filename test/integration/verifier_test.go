@@ -114,6 +114,11 @@ func TestAmountLimit(t *testing.T) {
 		defer s.Clear()
 		prepareContract(s)
 
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		So(err, ShouldBeNil)
+
+		createToken(t, s, kp)
+
 		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
 		So(err, ShouldBeNil)
 		So(ca, ShouldNotBeNil)
@@ -122,14 +127,10 @@ func TestAmountLimit(t *testing.T) {
 		ca, err = s.Compile("Contracttransfer1", "./test_data/transfer1", "./test_data/transfer1.js")
 		So(err, ShouldBeNil)
 		So(ca, ShouldNotBeNil)
-		s.SetContract(ca)
-
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		contractTransfer1, err := s.DeployContract(ca, testID[0], kp)
 		So(err, ShouldBeNil)
 
 		s.SetRAM(testID[0], 10000)
-
-		createToken(t, s, kp)
 
 		Reset(func() {
 			s.Visitor.SetTokenBalanceFixed("iost", testID[0], "1000")
@@ -165,7 +166,7 @@ func TestAmountLimit(t *testing.T) {
 		})
 
 		Convey("test amount limit two level invocation", func() {
-			r, err := s.Call("Contracttransfer1", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "120"), testID[0], kp)
+			r, err := s.Call(contractTransfer1, "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "120"), testID[0], kp)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)

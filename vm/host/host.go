@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/common"
 )
 
 // Monitor monitor interface
@@ -108,6 +109,24 @@ func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, contract
 	return h.Call(contract, api, jarg, true)
 }
 
+func (h *Host) checkAmountLimitValid(c *contract.Contract) (contract.Cost, error) {
+	cost := contract.Cost0()
+	for _, abi := range c.Info.Abi {
+		for _, limit := range abi.AmountLimit {
+			cost.AddAssign(CommonOpCost(1))
+			decimal := h.db.Decimal(limit.Token)
+			if decimal == -1 {
+				return cost, ErrAmountLimitTokenNotExists
+			}
+			_, err := common.NewFixed(limit.Val, decimal)
+			if err != nil {
+				return cost, err
+			}
+		}
+	}
+	return cost, nil
+}
+
 // SetCode set code to storage
 func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error) {
 	code, err := h.monitor.Compile(c)
@@ -115,6 +134,11 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 		return CompileErrCost, err
 	}
 	c.Code = code
+
+	cost, err := h.checkAmountLimitValid(c)
+	if err != nil {
+		return cost, err
+	}
 
 	initABI := contract.ABI{
 		Name: "init",
@@ -128,7 +152,8 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 
 	h.db.SetContract(c)
 
-	_, cost, err := h.Call(c.ID, "init", "[]")
+	_, cost0, err := h.Call(c.ID, "init", "[]")
+	cost.AddAssign(cost0)
 
 	return cost, err
 }

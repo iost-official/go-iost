@@ -23,6 +23,7 @@ var (
 
 	ErrTokenExists       = errors.New("token exists")
 	ErrTokenNotExists    = errors.New("token not exists")
+	ErrAmountLimitTokenNotExists    = errors.New("token not exists in amountLimit")
 	ErrTokenNoTransfer   = errors.New("token can't transfer")
 	ErrTokenIssueRefused = errors.New("token issue refused")
 

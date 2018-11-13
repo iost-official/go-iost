@@ -102,7 +102,7 @@ func (m *TokenHandler) Decimal(tokenName string) int {
 	decimalRaw := m.db.Get(m.decimalKey(tokenName))
 	decimal, ok := Unmarshal(decimalRaw).(int64)
 	if !ok {
-		decimal = 0
+		decimal = -1
 	}
 	return int(decimal)
 }
