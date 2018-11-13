@@ -76,6 +76,11 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 		if t == nil {
 			break
 		}
+		if !t.IsTimeValid(bh.Time) && !t.IsDefer() {
+			i--
+			provider.Drop(t, ErrInvalidTimeTx)
+			continue
+		}
 		go func() {
 			vi, mapper := database.NewBatchVisitor(bvr)
 

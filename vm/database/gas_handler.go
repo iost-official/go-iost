@@ -2,9 +2,11 @@ package database
 
 import (
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 const (
+	gasPrefix           = "g-"
 	gasRateSuffix       = "-gr"
 	gasLimitSuffix      = "-gl"
 	gasUpdateTimeSuffix = "-gt"
@@ -36,6 +38,9 @@ func (m *GasHandler) getFixed(key string) (value *common.Fixed) {
 
 // putFixed ...
 func (m *GasHandler) putFixed(key string, value *common.Fixed) {
+	if value.Err != nil {
+		ilog.Fatalf("GasHandler putFixed %v", value)
+	}
 	m.db.Put(key, value.Marshal())
 }
 
@@ -62,11 +67,11 @@ func (m *GasHandler) putFloat64(key string, value float64) {
 }
 
 func (m *GasHandler) gasRateKey(name string) string {
-	return IOSTPrefix + name + gasRateSuffix
+	return gasPrefix + name + gasRateSuffix
 }
 
-// GetGasRate ...
-func (m *GasHandler) GetGasRate(name string) *common.Fixed {
+// GasRate ...
+func (m *GasHandler) GasRate(name string) *common.Fixed {
 	f := m.getFixed(m.gasRateKey(name))
 	if f == nil {
 		return &common.Fixed{
@@ -83,7 +88,7 @@ func (m *GasHandler) SetGasRate(name string, r *common.Fixed) {
 }
 
 func (m *GasHandler) gasLimitKey(name string) string {
-	return IOSTPrefix + name + gasLimitSuffix
+	return gasPrefix + name + gasLimitSuffix
 }
 
 // GasLimit ...
@@ -104,7 +109,7 @@ func (m *GasHandler) SetGasLimit(name string, l *common.Fixed) {
 }
 
 func (m *GasHandler) gasUpdateTimeKey(name string) string {
-	return IOSTPrefix + name + gasUpdateTimeSuffix
+	return gasPrefix + name + gasUpdateTimeSuffix
 }
 
 // GasUpdateTime ...
@@ -114,11 +119,12 @@ func (m *GasHandler) GasUpdateTime(name string) int64 {
 
 // SetGasUpdateTime ...
 func (m *GasHandler) SetGasUpdateTime(name string, t int64) {
+	ilog.Debugf("SetGasUpdateTime %v %v", name, t)
 	m.putInt64(m.gasUpdateTimeKey(name), t)
 }
 
 func (m *GasHandler) gasStockKey(name string) string {
-	return IOSTPrefix + name + gasStockSuffix
+	return gasPrefix + name + gasStockSuffix
 }
 
 // GasStock `gasStock` means the gas amount at last update time.
@@ -135,11 +141,12 @@ func (m *GasHandler) GasStock(name string) *common.Fixed {
 
 // SetGasStock ...
 func (m *GasHandler) SetGasStock(name string, g *common.Fixed) {
+	//ilog.Debugf("SetGasStock %v %v", name, g)
 	m.putFixed(m.gasStockKey(name), g)
 }
 
 func (m *GasHandler) gasPledgeKey(name string) string {
-	return IOSTPrefix + name + gasPledgeSuffix
+	return gasPrefix + name + gasPledgeSuffix
 }
 
 // GasPledge ...
@@ -161,16 +168,27 @@ func (m *GasHandler) SetGasPledge(name string, p *common.Fixed) {
 
 // CurrentTotalGas return current total gas. It is min(limit, last_updated_gas + time_since_last_updated * increase_speed)
 func (m *GasHandler) CurrentTotalGas(name string, now int64) (result *common.Fixed) {
+	if now <= 0 {
+		ilog.Fatalf("CurrentTotalGas failed. invalid now time %v", now)
+	}
 	result = m.GasStock(name)
 	gasUpdateTime := m.GasUpdateTime(name)
 	var durationSeconds int64
 	if gasUpdateTime > 0 {
 		durationSeconds = (now - gasUpdateTime) / 1e9
 	}
-	rate := m.GetGasRate(name)
+	if durationSeconds < 0 {
+		ilog.Fatalf("CurrentTotalGas durationSeconds invalid %v = %v - %v", durationSeconds, now, gasUpdateTime)
+	}
+	rate := m.GasRate(name)
 	limit := m.GasLimit(name)
-	//fmt.Printf("CurrentTotalGas stock %v rate %v limit %v", result, rate, limit)
-	result = result.Add(rate.Times(durationSeconds))
+	//ilog.Debugf("CurrentTotalGas stock %v rate %v limit %v\n", result, rate, limit)
+	delta := rate.Times(durationSeconds)
+	if delta == nil {
+		ilog.Errorf("CurrentTotalGas may overflow rate %v durationSeconds %v", rate, durationSeconds)
+		return
+	}
+	result = result.Add(delta)
 	if limit.LessThan(result) {
 		result = limit
 	}
