@@ -10,7 +10,7 @@ import (
 // Constant of Transaction
 var (
 	GasLimit   = int64(10000)           // about 2000~10000 gas per tx
-	GasPrice   = int64(100)             // 100 coin/gas
+	GasPrice   = int64(1)               // 0.01 coin/gas
 	Expiration = int64(math.MaxInt64)   // Max expired time is 90 seconds
 	Delay      = int64(0 * time.Second) // No delay
 	Signers    = make([]string, 0)      // No mutiple signers

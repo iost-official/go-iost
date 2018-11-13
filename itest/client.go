@@ -19,7 +19,7 @@ var (
 	InitToken  = "iost"
 	InitAmount = "1000000"
 	InitPledge = "1000000"
-	InitRam    = "1000000"
+	InitRAM    = "1000000"
 )
 
 // Error of Client
@@ -184,9 +184,9 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	)
 
 	action2 := tx.NewAction(
-		"iost.token",
-		"transfer",
-		fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, InitToken, creator.ID, name, InitAmount),
+		"iost.ram",
+		"buy",
+		fmt.Sprintf(`["%v", "%v", "%v"]`, creator.ID, name, InitRAM),
 	)
 
 	action3 := tx.NewAction(
@@ -196,9 +196,9 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	)
 
 	action4 := tx.NewAction(
-		"iost.ram",
-		"buy",
-		fmt.Sprintf(`["%v", "%v", "%v"]`, creator.ID, name, InitRam),
+		"iost.token",
+		"transfer",
+		fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, InitToken, creator.ID, name, InitAmount),
 	)
 
 	actions := []*tx.Action{action1, action2, action3, action4}

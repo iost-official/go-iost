@@ -23,7 +23,7 @@ log:
     level: info
     enable: true
   consolelog:
-    level: info
+    level: debug
     enable: true
   asyncwrite: true
 metrics:
