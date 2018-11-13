@@ -18,6 +18,8 @@ var (
 	Timeout    = (90 + 30) * time.Second
 	InitToken  = "iost"
 	InitAmount = "1000000"
+	InitPledge = "1000000"
+	InitRam    = "1000000"
 )
 
 // Error of Client
@@ -180,7 +182,19 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 		fmt.Sprintf(`["%v", "%v", %v, %v]`, InitToken, creator.ID, name, InitAmount),
 	)
 
-	actions := []*tx.Action{action1, action2}
+	action3 := tx.NewAction(
+		"iost.gas",
+		"pledge",
+		fmt.Sprintf(`["%v", "%v", "%v"]`, creator.ID, name, InitPledge),
+	)
+
+	action4 := tx.NewAction(
+		"iost.ram",
+		"buy",
+		fmt.Sprintf(`["%v", "%v", "%v"]`, creator.ID, name, InitRam),
+	)
+
+	actions := []*tx.Action{action1, action2, action3, action4}
 	transaction := NewTransaction(actions)
 
 	st, err := creator.Sign(transaction)
