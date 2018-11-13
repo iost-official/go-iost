@@ -247,6 +247,7 @@ func (e *Isolator) ClearTx() {
 	e.h.Context().GClear()
 	e.blockBaseMode = false
 	e.h.ClearCosts()
+	e.h.DB().Rollback()
 }
 func checkTxParams(t *tx.Tx) error {
 	if t.GasPrice < 100 || t.GasPrice > 10000 {
