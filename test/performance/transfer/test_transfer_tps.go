@@ -1,4 +1,4 @@
-package transfer
+package main
 
 import (
 	"context"
