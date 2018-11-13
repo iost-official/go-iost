@@ -87,6 +87,10 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	if amountLimit == nil {
 		amountLimit = []*contract.Amount{}
 	}
+	var userAmountLimit []*contract.Amount
+	if h.Context().Value("amount_limit") != nil {
+		userAmountLimit = h.Context().Value("amount_limit").([]*contract.Amount)
+	}
 	var fixedAmountLimit []contract.FixedAmount
 	beforeBalance := make(map[string][]int64)
 	cost = contract.Cost0()
@@ -96,6 +100,13 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		cost0 := host.CommonOpCost(len(authList) * len(amountLimit))
 		cost.AddAssign(cost0)
 		for _, limit := range amountLimit {
+			decimal := h.DB().Decimal(limit.Token)
+			fixedAmount, err := common.NewFixed(limit.Val, decimal)
+			if err == nil {
+				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
+			}
+		}
+		for _, limit := range userAmountLimit {
 			decimal := h.DB().Decimal(limit.Token)
 			fixedAmount, err := common.NewFixed(limit.Val, decimal)
 			if err == nil {

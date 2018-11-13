@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/core/contract"
 )
 
 //go:generate protoc  --go_out=plugins=grpc:. ./core/tx/tx.proto
@@ -39,6 +40,7 @@ type Tx struct {
 	Publisher    string              `json:"-"`
 	PublishSigns []*crypto.Signature `json:"-"`
 	ReferredTx   []byte              `json:"referred_tx"`
+	AmountLimit	 []*contract.Amount  `json:"amountLimit"`
 }
 
 // NewTx return a new Tx
@@ -53,6 +55,7 @@ func NewTx(actions []*Action, signers []string, gasLimit, gasPrice, expiration, 
 		hash:         nil,
 		PublishSigns: []*crypto.Signature{},
 		Delay:        delay,
+		AmountLimit: []*contract.Amount{},
 	}
 }
 
@@ -106,6 +109,7 @@ func (t *Tx) ToPb() *txpb.Tx {
 		Signers:    t.Signers,
 		Delay:      t.Delay,
 		ReferredTx: t.ReferredTx,
+		AmountLimit:t.AmountLimit,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, a.ToPb())
@@ -140,6 +144,7 @@ func (t *Tx) FromPb(tr *txpb.Tx) *Tx {
 	t.Actions = []*Action{}
 	t.Delay = tr.Delay
 	t.ReferredTx = tr.ReferredTx
+	t.AmountLimit = tr.AmountLimit
 	for _, a := range tr.Actions {
 		ac := &Action{}
 		t.Actions = append(t.Actions, ac.FromPb(a))
@@ -180,6 +185,8 @@ func (t *Tx) String() string {
 	for _, a := range t.Actions {
 		str += "		" + a.String()
 	}
+	str += "    AmountLimit:\n"
+	str += fmt.Sprintf("%v", t.AmountLimit) + ",\n"
 	str += "}\n"
 	return str
 }
