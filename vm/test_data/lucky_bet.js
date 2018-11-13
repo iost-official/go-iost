@@ -23,7 +23,7 @@ class Contract {
             throw "lucky number should be >=0 and <= 9"
         }
 
-        BlockChain.deposit(account, coins);
+        BlockChain.deposit(account, coins, "");
 
         let userNumber = JSON.parse(storage.get("user_number"));
         let totalCoins = JSON.parse(storage.get("total_coins"));
@@ -93,7 +93,7 @@ class Contract {
                 table = winTable;
                 table.forEach(function (record) {
                     const reward = (tc.multi(record.coins).div(totalVal));
-                    BlockChain.withdraw(record.account, reward);
+                    BlockChain.withdraw(record.account, reward, "");
                     record.reward = reward.toString();
                     result.records.push(record)
                 })
