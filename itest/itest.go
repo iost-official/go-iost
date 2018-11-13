@@ -48,7 +48,7 @@ func Load(keysfile, configfile string) (*ITest, error) {
 func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 	ilog.Infof("Create %v account...", num)
 
-	var res chan interface{}
+	res := make(chan interface{})
 	for i := 0; i < num; i++ {
 		go func(n int, res chan interface{}) {
 			name := fmt.Sprintf("account%04d", n)
@@ -63,24 +63,19 @@ func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 
 	accounts := []*Account{}
 	for i := 0; i < num; i++ {
-		select {
-		case r := <-res:
-			err, ok := r.(error)
-			if ok {
-				ilog.Errorf("Create account failed: %v", err)
-				break
-			}
-			account, ok := r.(*Account)
-			if ok {
-				accounts = append(accounts, account)
-				break
-			}
+		switch value := (<-res).(type) {
+		case error:
+			ilog.Errorf("Create account failed: %v", value)
+		case *Account:
+			accounts = append(accounts, value)
+		default:
+			return nil, fmt.Errorf("unexpect res: %v", value)
 		}
 	}
 
 	if len(accounts) != num {
 		return nil, fmt.Errorf(
-			"expect create %v account\nbut only created %v account",
+			"expect create %v account, but only created %v account",
 			num,
 			len(accounts),
 		)
@@ -142,13 +137,10 @@ func (t *ITest) TransferN(num int, accounts []*Account) error {
 	}
 
 	for i := 0; i < num; i++ {
-		select {
-		case r := <-res:
-			err, ok := r.(error)
-			if ok {
-				ilog.Errorf("Send transfer transaction failed: %v", err)
-				break
-			}
+		err, ok := (<-res).(error)
+		if ok {
+			ilog.Errorf("Send transfer transaction failed: %v", err)
+			break
 		}
 	}
 

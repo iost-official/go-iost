@@ -141,9 +141,11 @@ func (c *Client) SendTransaction(transaction *Transaction) (string, error) {
 		return "", err
 	}
 
+	ilog.Debugf("Check transaction receipt for %v...", resp.GetHash())
 	if err := c.checkTransaction(resp.GetHash()); err != nil {
 		return "", err
 	}
+	ilog.Debugf("Check transaction receipt for %v successful!", resp.GetHash())
 
 	return resp.GetHash(), nil
 }
@@ -157,13 +159,18 @@ func (c *Client) checkTransaction(hash string) error {
 			return ErrTimeout
 		default:
 			<-ticker.C
+
+			ilog.Debugf("Get receipt for %v...", hash)
 			r, err := c.GetReceipt(hash)
-			if err == nil && r != nil {
-				if !r.Success() {
-					return fmt.Errorf("%v: %v", r.Status.Code, r.Status.Message)
-				}
-				return nil
+			if err != nil {
+				break
 			}
+			ilog.Debugf("Get receipt for %v successful!", hash)
+
+			if !r.Success() {
+				return fmt.Errorf("%v: %v", r.Status.Code, r.Status.Message)
+			}
+			return nil
 		}
 	}
 }
@@ -179,7 +186,7 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	action2 := tx.NewAction(
 		"iost.token",
 		"transfer",
-		fmt.Sprintf(`["%v", "%v", %v, %v]`, InitToken, creator.ID, name, InitAmount),
+		fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, InitToken, creator.ID, name, InitAmount),
 	)
 
 	action3 := tx.NewAction(
