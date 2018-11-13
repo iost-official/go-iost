@@ -109,7 +109,7 @@ func PublishContract(codePath string, abiPath string, conID string, acc *account
 	if !send {
 		return trx, "", nil
 	}
-	stx, err = tx.SignTx(trx, acc.ID, []*account.KeyPair{acc})
+	stx, err = tx.SignTx(trx, "admin", []*account.KeyPair{acc})
 	var hash string
 	hash, err = sendTx(stx)
 	if err != nil {
