@@ -202,9 +202,11 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 		return nil, err
 	}
 
+	ilog.Debugf("Sending create account transaction for %v...", name)
 	if _, err := c.SendTransaction(st); err != nil {
 		return nil, err
 	}
+	ilog.Debugf("Sended create account transaction for %v!", name)
 
 	account := &Account{
 		ID:      name,

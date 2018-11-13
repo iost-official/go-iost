@@ -18,12 +18,12 @@ var TransferCaseCommand = cli.Command{
 var TransferCaseFlags = []cli.Flag{
 	cli.IntFlag{
 		Name:  "account, a",
-		Value: 100,
+		Value: 10,
 		Usage: "number of account",
 	},
 	cli.IntFlag{
 		Name:  "transaction, t",
-		Value: 10000,
+		Value: 1000,
 		Usage: "number of transaction",
 	},
 }
