@@ -54,6 +54,15 @@ func TestWriteBytesSlice(t *testing.T) {
 	assert.Equal(t, []byte{'`', '^', 'a', 'a', '^', 'b', 'b', '`', '^', '\\', '^', '\\', '`'}, sn.Bytes())
 }
 
+func TestWriteStringSlice(t *testing.T) {
+	sn := NewSimpleNotation()
+	sn.WriteStringSlice([]string{"aa", "bb"}, true)
+	assert.Equal(t, []byte{'`', '^', 'a', 'a', '^', 'b', 'b'}, sn.Bytes())
+
+	sn.WriteBytesSlice([][]byte{[]byte("^`")}, true)
+	assert.Equal(t, []byte{'`', '^', 'a', 'a', '^', 'b', 'b', '`', '^', '\\', '^', '\\', '`'}, sn.Bytes())
+}
+
 func TestWriteMapStringToI64(t *testing.T) {
 	sn := NewSimpleNotation()
 	sn.WriteMapStringToI64(map[string]int64{"bb": 1024, "aa": 7}, true)

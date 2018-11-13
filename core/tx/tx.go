@@ -294,17 +294,15 @@ func (t *Tx) ToBytes(l ToBytesLevel) []byte {
 	sn.WriteInt64(t.GasPrice, true)
 	sn.WriteInt64(t.GasLimit, true)
 	sn.WriteInt64(t.Delay, true)
-	for _, signer := range t.Signers {
-		sn.WriteString(signer, true)
+
+	sn.WriteStringSlice(t.Signers, true)
+	actionBytes := make([][]byte, 0, len(t.Actions))
+	for _, a := range t.Actions {
+		actionBytes = append(actionBytes, a.ToBytes())
 	}
+	sn.WriteBytesSlice(actionBytes, false)
 
 	if l > Base {
-		actionBytes := make([][]byte, 0, len(t.Actions))
-		for _, a := range t.Actions {
-			actionBytes = append(actionBytes, a.ToBytes())
-		}
-		sn.WriteBytesSlice(actionBytes, false)
-
 		signBytes := make([][]byte, 0, len(t.Signs))
 		for _, sig := range t.Signs {
 			signBytes = append(signBytes, sig.ToBytes())
