@@ -116,7 +116,7 @@ func (c *Client) GetAccount(name string) (*Account, error) {
 	// TODO: Get account permission by resp
 	account := &Account{
 		ID:      name,
-		Balance: resp.GetBalance(),
+		balance: resp.GetBalance(),
 	}
 
 	return account, nil
@@ -193,19 +193,20 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	}
 
 	account := &Account{
-		ID:  name,
-		key: key,
+		ID:      name,
+		balance: InitAmount,
+		key:     key,
 	}
 
 	return account, nil
 }
 
 // Transfer will transfer token by sending transaction
-func (c *Client) Transfer(sender *Account, token, recipient, amount string) error {
+func (c *Client) Transfer(sender, recipient *Account, token, amount string) error {
 	action := tx.NewAction(
 		"iost.token",
 		"transfer",
-		fmt.Sprintf(`["%v", "%v", %v, %v]`, token, sender.ID, recipient, amount),
+		fmt.Sprintf(`["%v", "%v", %v, %v]`, token, sender.ID, recipient.ID, amount),
 	)
 
 	actions := []*tx.Action{action}

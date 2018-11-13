@@ -3,6 +3,7 @@ package itest
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
 
 	"github.com/iost-official/go-iost/ilog"
 )
@@ -77,11 +78,15 @@ func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 		}
 	}
 
-	ilog.Infof("Create %v account successful!", len(accounts))
-
 	if len(accounts) != num {
-		return nil, fmt.Errorf("create %v account failed", num-len(accounts))
+		return nil, fmt.Errorf(
+			"expect create %v account\nbut only created %v account",
+			num,
+			len(accounts),
+		)
 	}
+
+	ilog.Infof("Create %v account successful!", len(accounts))
 
 	// TODO Get account by rpc, and compare account result
 
@@ -109,12 +114,55 @@ func (t *ITest) CreateAccount(name string) (*Account, error) {
 	return account, nil
 }
 
+func (t *ITest) TransferN(num int, accounts []*Account) error {
+	ilog.Infof("Send %v transfer transaction...", num)
+
+	var res chan interface{}
+	for i := 0; i < num; i++ {
+		go func(res chan interface{}) {
+			A := accounts[rand.Intn(len(accounts))]
+			B := accounts[rand.Intn(len(accounts))]
+			amount := float64(rand.Int63n(10000)) / 100
+			ABalance, err := strconv.ParseFloat(A.Balance(), 64)
+			if err != nil {
+				res <- err
+				return
+			}
+			BBalance, err := strconv.ParseFloat(B.Balance(), 64)
+			if err != nil {
+				res <- err
+				return
+			}
+
+			A.SetBalance(strconv.FormatFloat(ABalance-amount, 'f', -1, 64))
+			B.SetBalance(strconv.FormatFloat(BBalance+amount, 'f', -1, 64))
+
+			res <- t.Transfer(A, B, "iost", fmt.Sprintf("%0.8f", amount))
+		}(res)
+	}
+
+	for i := 0; i < num; i++ {
+		select {
+		case r := <-res:
+			err, ok := r.(error)
+			if ok {
+				ilog.Errorf("Send transfer transaction failed: %v", err)
+				break
+			}
+		}
+	}
+
+	ilog.Infof("Send %v transfer transaction successful!", num)
+
+	return nil
+}
+
 // Transfer will transfer token from sender to recipient
-func (t *ITest) Transfer(sender *Account, token, recipient, amount string) error {
+func (t *ITest) Transfer(sender, recipient *Account, token, amount string) error {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
-	err := client.Transfer(sender, token, recipient, amount)
+	err := client.Transfer(sender, recipient, token, amount)
 	if err != nil {
 		return err
 	}
