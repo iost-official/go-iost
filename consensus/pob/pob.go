@@ -206,8 +206,7 @@ func (p *PoB) broadcastBlockHash(blk *block.Block) {
 }
 
 func calculateTime(blk *block.Block) float64 {
-	//currentSlot := time.Now().UnixNano() / (1e9 * common.SlotLength)
-	return float64((time.Now().UnixNano() - blk.Head.Time*1e9*common.SlotLength) / 1e6)
+	return float64((time.Now().UnixNano() - blk.Head.Time) / 1e6)
 }
 
 func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
