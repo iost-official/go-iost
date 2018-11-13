@@ -332,7 +332,7 @@ var (
 
 	transferTokenABI = &abi{
 		name: "transfer",
-		args: []string{"string", "string", "string", "string"},
+		args: []string{"string", "string", "string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
@@ -340,6 +340,7 @@ var (
 			from := args[1].(string)
 			to := args[2].(string)
 			amountStr := args[3].(string)
+			_ = args[4].(string) // memo
 
 			if from == to {
 				return []interface{}{}, cost, nil
@@ -417,7 +418,7 @@ var (
 
 	transferFreezeTokenABI = &abi{
 		name: "transferFreeze",
-		args: []string{"string", "string", "string", "string", "number"},
+		args: []string{"string", "string", "string", "string", "number", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
@@ -426,6 +427,7 @@ var (
 			to := args[2].(string)
 			amountStr := args[3].(string)
 			ftime := args[4].(int64) // time.Now().UnixNano()
+			_ = args[5].(string) // memo
 
 			// get token info
 			ok, cost0 := checkTokenExists(h, tokenName)
