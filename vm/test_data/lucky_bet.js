@@ -15,7 +15,7 @@ class Contract {
         }
     }
     bet(account, luckyNumber, coins, nonce) {
-        if (coins < 100000000 || coins > 500000000) {
+        if (coins < 1 || coins > 5) {
             console.log(coins);
             throw "bet coins should be >=1 and <= 5"
         }
@@ -23,10 +23,7 @@ class Contract {
             throw "lucky number should be >=0 and <= 9"
         }
 
-        const result = BlockChain.deposit(account, coins);
-        if (result !== 0) {
-            throw "cannot bet"
-        }
+        BlockChain.deposit(account, coins);
 
         let userNumber = JSON.parse(storage.get("user_number"));
         let totalCoins = JSON.parse(storage.get("total_coins"));
@@ -95,7 +92,7 @@ class Contract {
             if( i === ln) {
                 table = winTable;
                 table.forEach(function (record) {
-                    const reward = (tc.multi(record.coins/ 100000000).div(totalVal/ 100000000));
+                    const reward = (tc.multi(record.coins).div(totalVal));
                     BlockChain.withdraw(record.account, reward);
                     record.reward = reward.toString();
                     result.records.push(record)

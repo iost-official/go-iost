@@ -17,7 +17,6 @@ package iwallet
 import (
 	"context"
 	"fmt"
-
 	"os"
 	//"encoding/hex"
 

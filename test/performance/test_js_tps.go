@@ -18,8 +18,11 @@ import (
 )
 
 var conns []*grpc.ClientConn
-var rootKey = "1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB"
+var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"
 var contractID string
+
+var testID string
+var testKp *account.KeyPair
 
 func initConn(num int) {
 	conns = make([]*grpc.ClientConn, num)
@@ -47,13 +50,13 @@ func transParallel(num int) {
 	wg.Wait()
 }
 
-func sendTx(stx *tx.Tx, i int) ([]byte, error) {
+func sendTx(stx *tx.Tx, i int) (string, error) {
 	client := rpc.NewApisClient(conns[i])
 	resp, err := client.SendTx(context.Background(), &rpc.TxReq{Tx: stx.ToPb()})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return []byte(resp.Hash), nil
+	return resp.Hash, nil
 }
 
 func loadBytes(s string) []byte {
@@ -66,16 +69,14 @@ func loadBytes(s string) []byte {
 
 func transfer(i int) {
 	//action := tx.NewAction("iost.system", "Transfer", `["IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C","IOSTgw6cmmWyiW25TMAK44N9coLCMaygx5eTfGVwjCcriEWEEjK2H",1]`)
-	tmpAccount, _ := account.NewKeyPair(nil, crypto.Ed25519)
-	action := tx.NewAction(contractID, "bet", fmt.Sprintf("[\"%s\",%d,%d,%d]", tmpAccount.ID, i%10, 100000000, 1))
-	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
-	trx := tx.NewTx([]*tx.Action{action}, []string{}, 1000+int64(i), 1, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
-	stx, err := tx.SignTx(trx, acc.ID, []*account.KeyPair{acc})
+	action := tx.NewAction(contractID, "bet", fmt.Sprintf("[\"%s\",%d,%d,%d]", testID, i%10, 1, 1))
+	trx := tx.NewTx([]*tx.Action{action}, []string{}, 10000+int64(i), 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
+	stx, err := tx.SignTx(trx, testID, []*account.KeyPair{testKp})
 	if err != nil {
 		fmt.Println("signtx", stx, err)
 		return
 	}
-	var txHash []byte
+	var txHash string
 	txHash, err = sendTx(stx, i)
 	if err != nil {
 		fmt.Println("sendtx", txHash, err)
@@ -84,10 +85,9 @@ func transfer(i int) {
 }
 
 func publish() string {
-	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
-	codePath := "../../vm/test_data/lucky_bet.js"
+	codePath := "vm/test_data/lucky_bet.js"
 	abiPath := codePath + ".abi"
-	_, txHash, err := iwallet.PublishContract(codePath, abiPath, "", acc, 5, make([]string, 0), 10000, 1, false, "", true)
+	_, txHash, err := iwallet.PublishContract(codePath, abiPath, "", testID, testKp, 5, make([]string, 0), 10000, 100, false, "", true)
 	if err != nil {
 		panic(err)
 	}
@@ -103,11 +103,25 @@ func publish() string {
 	return "Contract" + txHash
 }
 
+func initAcc() {
+	adminKp, err := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
+	if err != nil {
+		panic(err)
+	}
+	testKp, err = account.NewKeyPair(nil, crypto.Ed25519)
+	if err != nil {
+		panic(err)
+	}
+	testID = "testID"
+	iwallet.CreateNewAccount("admin", adminKp, testID, testKp, 100000, 10000, 100000)
+}
+
 func main() {
 
 	var iterNum = 800
 	var parallelNum = 30
 	initConn(parallelNum)
+	initAcc()
 
 	contractID = publish()
 
