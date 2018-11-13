@@ -26,15 +26,13 @@ func TestTransfer(t *testing.T) {
 		prepareContract(s)
 		createToken(t, s, kp)
 
-		totalGas := s.Visitor.CurrentTotalGas(kp.ID, 0).Value
-
+		totalGas := s.Visitor.CurrentTotalGas(kp.ID, s.Head.Time).Value
 		r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
-
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 		So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-		So(totalGas-s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(91700000000))
+		So(totalGas-s.Visitor.CurrentTotalGas(kp.ID, s.Head.Time).Value, ShouldEqual, int64(91700000000))
 	})
 }
 
@@ -55,7 +53,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(cname, ShouldStartWith, "Contract")
 
-		So(s.Visitor.CurrentTotalGas(kp.ID, 0).Value, ShouldEqual, int64(999950500000000))
+		So(s.Visitor.CurrentTotalGas(kp.ID, s.Head.Time).Value, ShouldEqual, int64(999950500000000))
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldBeBetweenOrEqual, int64(62), int64(63))
 
 		r, err := s.Call(cname, "hello", "[]", kp.ID, kp)

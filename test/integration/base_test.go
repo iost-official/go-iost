@@ -40,10 +40,15 @@ func Test_Base(t *testing.T) {
 		for i := 0; i < 12; i += 2 {
 			s.Call("iost.vote_producer", "InitProducer", fmt.Sprintf(`["%v"]`, testID[i]), kp.ID, kp)
 		}
+
+		// deploy iost.bonus
+		setNonNativeContract(s, "iost.bonus", "bonus.js", ContractPath)
+		s.Call("iost.bonus", "init", `[]`, kp.ID, kp)
+
 		prepareBase(t, s, kp)
 
 		s.Head.Number = 200
-		re, err := s.Call("iost.base", "Exec", `[]`, kp.ID, kp)
+		re, err := s.Call("iost.base", "Exec", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, kp.ID, 12345678), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(re.Status.Code, ShouldEqual, 0)
 	})
