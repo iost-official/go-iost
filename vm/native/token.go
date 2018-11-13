@@ -347,7 +347,10 @@ var (
 			from := args[1].(string)
 			to := args[2].(string)
 			amountStr := args[3].(string)
-			_ = args[4].(string) // memo
+			memo := args[4].(string) // memo
+			if len(memo) > 512 {
+				return nil, cost, host.ErrMemoTooLarge
+			}
 
 			//fmt.Printf("token transfer %v %v %v %v\n", tokenName, from, to, amountStr)
 
@@ -444,7 +447,10 @@ var (
 			to := args[2].(string)
 			amountStr := args[3].(string)
 			ftime := args[4].(int64) // time.Now().UnixNano()
-			_ = args[5].(string)     // memo
+			memo := args[5].(string)     // memo
+			if len(memo) > 512 {
+				return nil, cost, host.ErrMemoTooLarge
+			}
 
 			// get token info
 			ok, cost0 := checkTokenExists(h, tokenName)

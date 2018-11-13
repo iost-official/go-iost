@@ -26,6 +26,7 @@ var (
 	ErrAmountLimitTokenNotExists = errors.New("token not exists in amountLimit")
 	ErrTokenNoTransfer           = errors.New("token can't transfer")
 	ErrTokenIssueRefused         = errors.New("token issue refused")
+	ErrMemoTooLarge = errors.New("memo too large")
 
 	ErrDelaytxNotFound = errors.New("delaytx not exists")
 )
