@@ -444,7 +444,7 @@ var (
 			to := args[2].(string)
 			amountStr := args[3].(string)
 			ftime := args[4].(int64) // time.Now().UnixNano()
-			_ = args[5].(string) // memo
+			_ = args[5].(string)     // memo
 
 			// get token info
 			ok, cost0 := checkTokenExists(h, tokenName)

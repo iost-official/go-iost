@@ -9,9 +9,9 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/core/contract"
 )
 
 // values
@@ -45,7 +45,7 @@ type Tx struct {
 	Publisher    string              `json:"-"`
 	PublishSigns []*crypto.Signature `json:"-"`
 	ReferredTx   []byte              `json:"referred_tx"`
-	AmountLimit	 []*contract.Amount  `json:"amountLimit"`
+	AmountLimit  []*contract.Amount  `json:"amountLimit"`
 }
 
 // NewTx return a new Tx
@@ -60,7 +60,7 @@ func NewTx(actions []*Action, signers []string, gasLimit, gasPrice, expiration, 
 		hash:         nil,
 		PublishSigns: []*crypto.Signature{},
 		Delay:        delay,
-		AmountLimit: []*contract.Amount{},
+		AmountLimit:  []*contract.Amount{},
 	}
 }
 
@@ -107,14 +107,14 @@ func (t *Tx) publishHash() []byte {
 // ToPb convert tx to txpb.Tx for transmission.
 func (t *Tx) ToPb() *txpb.Tx {
 	tr := &txpb.Tx{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasLimit:   t.GasLimit,
-		GasPrice:   t.GasPrice,
-		Signers:    t.Signers,
-		Delay:      t.Delay,
-		ReferredTx: t.ReferredTx,
-		AmountLimit:t.AmountLimit,
+		Time:        t.Time,
+		Expiration:  t.Expiration,
+		GasLimit:    t.GasLimit,
+		GasPrice:    t.GasPrice,
+		Signers:     t.Signers,
+		Delay:       t.Delay,
+		ReferredTx:  t.ReferredTx,
+		AmountLimit: t.AmountLimit,
 	}
 	for _, a := range t.Actions {
 		tr.Actions = append(tr.Actions, a.ToPb())

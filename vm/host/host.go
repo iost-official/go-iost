@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/common"
 )
 
 // Monitor monitor interface
