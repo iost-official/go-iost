@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -33,6 +34,14 @@ var ContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/
 
 type fataler interface {
 	Fatal(args ...interface{})
+}
+
+func array2json(ss []interface{}) string {
+	x, err := json.Marshal(ss)
+	if err != nil {
+		panic(err)
+	}
+	return string(x)
 }
 
 func prepareContract(s *Simulator) {
@@ -82,7 +91,7 @@ func setNonNativeContract(s *Simulator, name string, filename string, ContractPa
 	if err != nil {
 		return err
 	}
-	code.Info.Abi = append(code.Info.Abi, &contract.ABI{Name:"init", Args:[]string{}})
+	code.Info.Abi = append(code.Info.Abi, &contract.ABI{Name: "init", Args: []string{}})
 
 	s.SetContract(code)
 	return nil
@@ -102,4 +111,5 @@ var bh = &block.BlockHead{
 	Number:     200,
 	Witness:    "witness",
 	Time:       123460 * 1e9,
+	GasUsage:   0,
 }

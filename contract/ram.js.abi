@@ -32,12 +32,14 @@
             "name": "buy",
             "args": [
                 "string",
+                "string",
                 "number"
             ]
         },
         {
             "name": "sell",
             "args": [
+                "string",
                 "string",
                 "number"
             ]

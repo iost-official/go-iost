@@ -22,22 +22,23 @@ import (
 	"time"
 
 	"github.com/bitly/go-simplejson"
+	"github.com/mitchellh/go-homedir"
+	"github.com/spf13/cobra"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/mitchellh/go-homedir"
-	"github.com/spf13/cobra"
 )
 
 var checkResult bool
 var checkResultDelay float32
 var checkResultMaxRetry int32
 
-func checkTransaction(txHash []byte) bool {
+func checkTransaction(txHash string) bool {
 	// It may be better to to create a grpc client and reuse it. TODO later
 	for i := int32(0); i < checkResultMaxRetry; i++ {
 		time.Sleep(time.Duration(checkResultDelay*1000) * time.Millisecond)
-		txReceipt, err := getTxReceiptByTxHash(server, saveBytes(txHash))
+		txReceipt, err := getTxReceiptByTxHash(server, txHash)
 		if err != nil {
 			fmt.Println("result not ready, please wait. Details: ", err)
 			continue
@@ -50,7 +51,7 @@ func checkTransaction(txHash []byte) bool {
 			fmt.Println("exec tx failed: ", txReceipt.Status.Message)
 			fmt.Println("full error information: ", txReceipt)
 		} else {
-			fmt.Println("exec tx done. gas used: ", txReceipt.GasUsage)
+			fmt.Println("exec tx done. ", txReceipt.String())
 			return true
 		}
 		break
@@ -96,26 +97,35 @@ var callCmd = &cobra.Command{
 		if len(signers) == 0 {
 			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
 			fmt.Println("please ensure that the right secret key file path is given by parameter -k,or the secret key file path is ~/.iwallet/id_ed25519 by default,this file indicate the secret key to sign the tx")
+			if accountName == "" {
+				panic("you must provide account name")
+			}
+			home, err := homedir.Dir()
+			if err != nil {
+				panic(err)
+			}
+			kpPath := fmt.Sprintf("%s/.iwallet/%s_ed25519", home, accountName)
 			fsk, err := readFile(kpPath)
 			if err != nil {
 				fmt.Println("Read file failed: ", err.Error())
 				return
 			}
 
-			acc, err := account.NewKeyPair(loadBytes(string(fsk)), getSignAlgo(signAlgo))
+			keyPair, err := account.NewKeyPair(loadBytes(string(fsk)), getSignAlgo(signAlgo))
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
-			stx, err := tx.SignTx(trx, acc.ID, []*account.KeyPair{acc})
-			var txHash []byte
+			ilog.Infof("sendTx %v", trx)
+			stx, err := tx.SignTx(trx, accountName, []*account.KeyPair{keyPair})
+			var txHash string
 			txHash, err = sendTx(stx)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
 			fmt.Println("iost node:receive your tx!")
-			fmt.Println("the transaction hash is:", saveBytes(txHash))
+			fmt.Println("the transaction hash is:", txHash)
 			if checkResult {
 				checkTransaction(txHash)
 			}
@@ -148,8 +158,9 @@ func init() {
 		os.Exit(1)
 	}
 
-	callCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
-	callCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
+	callCmd.Flags().StringVarP(&accountName, "account", "", "", "which account to use")
+	callCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 10000, "gasLimit for a transaction")
+	callCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 100, "gasPrice for a transaction")
 	callCmd.Flags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
 	callCmd.Flags().StringSliceVarP(&signers, "signers", "n", []string{}, "signers who should sign this transaction")
 	callCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")

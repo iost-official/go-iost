@@ -46,6 +46,7 @@ func NewSimulator() *Simulator {
 			Number:     1,
 			Witness:    "witness",
 			Time:       int64(1541541540 * 1000 * 1000 * 1000),
+			GasUsage:   0,
 		},
 		Logger: ilog.DefaultLogger(),
 	}
@@ -91,10 +92,20 @@ func (s *Simulator) SetContract(c *contract.Contract) {
 
 // DeployContract via iost.system/SetCode
 func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, error) {
+	sc, err := json.Marshal(c)
+	if err != nil {
+		return "", nil
+	}
+
+	jargs, err := json.Marshal([]string{string(sc)})
+	if err != nil {
+		panic(err)
+	}
+
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   "iost.system",
 		ActionName: "SetCode",
-		Data:       fmt.Sprintf(`["%v"]`, c.B64Encode()),
+		Data:       string(jargs),
 	}}, nil, 100000, 100, 10000000, 0)
 
 	r, err := s.CallTx(trx, publisher, kp)

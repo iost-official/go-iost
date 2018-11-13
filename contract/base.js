@@ -28,8 +28,12 @@ class Base {
         BlockChain.call("iost.vote_producer", "Stat", `[]`);
     }
 
+    _bonus(data) {
+        BlockChain.call("iost.bonus", "IssueContribute", JSON.stringify([data]));
+    }
+
     // The first contract executed
-    Exec() {
+    Exec(data) {
         const bn = this._getBlockNumber();
         const execBlockNumber = this._get("execBlockNumber");
         if (bn === execBlockNumber){
@@ -38,6 +42,7 @@ class Base {
         this._put("execBlockNumber", bn);
 
         this._vote();
+        this._bonus(data);
     }
 
 }

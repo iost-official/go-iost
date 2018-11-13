@@ -2,6 +2,7 @@ package pob
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/iost-official/go-iost/account"
@@ -20,7 +21,6 @@ import (
 var (
 	errWitness     = errors.New("wrong witness")
 	errSignature   = errors.New("wrong signature")
-	errTxTooOld    = errors.New("tx too old")
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
@@ -29,7 +29,6 @@ var (
 )
 
 func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) { // TODO 应传入acc
-
 	ilog.Info("generate Block start")
 	st := time.Now()
 	limitTime := common.SlotLength / 3 * time.Second
@@ -43,6 +42,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
 			Time:       time.Now().UnixNano(),
+			GasUsage:   0,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -51,7 +51,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 
 	// call vote
 	v := verifier.Verifier{}
-	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
+	dropList, _, err := v.Gen(&blk, topBlock, db, txIter, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - st.Sub(time.Now()),
 		TxTimeLimit: time.Millisecond * 100,
@@ -121,7 +121,7 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB) error {
+func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain) error {
 	err := cverifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
@@ -133,25 +133,32 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return errWitness
 	}
 
-	for i, tx := range blk.Txs {
+	for i, t := range blk.Txs {
 		if i == 0 {
 			// base tx
 			continue
 		}
-		exist := txPool.ExistTxs(tx.Hash(), parent)
+		exist := txPool.ExistTxs(t.Hash(), parent)
 		if exist == txpool.FoundChain {
 			return errTxDup
 		} else if exist != txpool.FoundPending {
-			if err := tx.VerifySelf(); err != nil {
+			if err := t.VerifySelf(); err != nil {
 				return errTxSignature
 			}
-		}
-		if blk.Head.Time-tx.Time > txpool.Expiration {
-			return errTxTooOld
+			if t.IsDefer() {
+				referredTx, err := chain.GetTx(t.ReferredTx)
+				if err != nil {
+					return fmt.Errorf("get referred tx error, %v", err)
+				}
+				err = t.VerifyDefer(referredTx)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 	v := verifier.Verifier{}
-	return v.Verify(blk, db, &verifier.Config{
+	return v.Verify(blk, parent, db, &verifier.Config{
 		Mode:        0,
 		Timeout:     common.SlotLength / 3 * time.Second,
 		TxTimeLimit: time.Millisecond * 100,

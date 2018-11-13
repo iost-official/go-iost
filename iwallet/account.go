@@ -16,16 +16,109 @@ package iwallet
 
 import (
 	"fmt"
-	"path/filepath"
-
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/crypto"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
 )
+
+func saveAccount(name string, kp *account.KeyPair) {
+	if !filepath.IsAbs(kvPath) {
+		kvPath, _ = filepath.Abs(kvPath)
+	}
+
+	if err := os.MkdirAll(kvPath, 0700); err != nil {
+		panic(err)
+	}
+	fileName := kvPath + "/" + name
+	if kp.Algorithm == crypto.Ed25519 {
+		fileName += "_ed25519"
+	}
+	if kp.Algorithm == crypto.Secp256k1 {
+		fileName += "_secp256k1"
+	}
+
+	pubfile, err := os.Create(fileName + ".pub")
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	defer pubfile.Close()
+
+	_, err = pubfile.WriteString(saveBytes(kp.Pubkey))
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	secFile, err := os.Create(fileName)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	defer secFile.Close()
+
+	_, err = secFile.WriteString(saveBytes(kp.Seckey))
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	idFileName := fileName + ".id"
+	idFile, err := os.Create(idFileName)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	defer idFile.Close()
+	id := account.GetIDByPubkey(kp.Pubkey)
+	_, err = idFile.WriteString(id)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("the iost account ID is:")
+	fmt.Println(id)
+	fmt.Println("your account id is saved at:")
+	fmt.Println(idFileName)
+	fmt.Println("your account private key is saved at:")
+	fmt.Println(fileName)
+}
+
+// CreateNewAccount ...
+func CreateNewAccount(creatorID string, creatorKp *account.KeyPair, newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) {
+	var acts []*tx.Action
+	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
+	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, creatorID, newID, initialGasPledge)))
+	acts = append(acts, tx.NewAction("iost.ram", "buy", fmt.Sprintf(`["%v", "%v", %v]`, creatorID, newID, initialRAM)))
+	acts = append(acts, tx.NewAction("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, creatorID, newID, initialCoins)))
+	trx := tx.NewTx(acts, make([]string, len(signers)), 10000, 100, time.Now().Add(time.Second*time.Duration(5)).UnixNano(), 0)
+	stx, err := tx.SignTx(trx, creatorID, []*account.KeyPair{creatorKp})
+	if err != nil {
+		panic(err)
+	}
+	var txHash string
+	txHash, err = sendTx(stx)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("iost node:receive your tx!")
+	fmt.Println("the transaction hash is:", txHash)
+	if checkResult {
+		checkTransaction(txHash)
+	}
+	info, err := GetAccountInfo(server, newID, useLongestChain)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(info)
+}
 
 // accountCmd represents the account command
 var accountCmd = &cobra.Command{
@@ -33,89 +126,51 @@ var accountCmd = &cobra.Command{
 	Short: "KeyPair manage",
 	Long:  `Manage account of local storage`,
 	Run: func(cmd *cobra.Command, args []string) {
-		switch {
-		case nickName != "no":
-			if strings.ContainsAny(nickName, `?*:|/\"`) || len(nickName) > 16 {
-				fmt.Println("invalid nick name")
-			}
-			algo := getSignAlgo(signAlgo)
-			ac, _ := account.NewKeyPair(nil, algo)
-			if !filepath.IsAbs(kvPath) {
-				kvPath, _ = filepath.Abs(kvPath)
-			}
-			if err := os.MkdirAll(kvPath, 0700); err != nil {
-				panic(err)
-			}
-			fileName := kvPath + "/" + nickName
-			if algo == crypto.Ed25519 {
-				fileName += "_ed25519"
-			}
-			if algo == crypto.Secp256k1 {
-				fileName += "_secp256k1"
-			}
-			pubfile, err := os.Create(fileName + ".pub")
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			defer pubfile.Close()
-
-			_, err = pubfile.WriteString(saveBytes(ac.Pubkey))
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-
-			secFile, err := os.Create(fileName)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			defer secFile.Close()
-
-			_, err = secFile.WriteString(saveBytes(ac.Seckey))
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			idFileName := fileName + ".id"
-			idFile, err := os.Create(idFileName)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			defer idFile.Close()
-			id := account.GetIDByPubkey(ac.Pubkey)
-			_, err = idFile.WriteString(id)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			fmt.Println("the iost account ID is:")
-			fmt.Println(id)
-			fmt.Println("your account id is saved at:")
-			fmt.Println(idFileName)
-			fmt.Println("your account private key is saved at:")
-			fmt.Println(fileName)
-		default:
-			fmt.Println("invalid input")
+		if accountName == "" {
+			panic("you must provide account name")
 		}
+		home, err := homedir.Dir()
+		if err != nil {
+			panic(err)
+		}
+		kpPath := fmt.Sprintf("%s/.iwallet/%s_ed25519", home, accountName)
+		fsk, err := readFile(kpPath)
+		if err != nil {
+			fmt.Println("Read file failed: ", err.Error())
+			return
+		}
+
+		keyPair, err := account.NewKeyPair(loadBytes(string(fsk)), getSignAlgo(signAlgo))
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		newName := args[0]
+		if strings.ContainsAny(newName, `?*:|/\"`) || len(newName) > 16 {
+			panic("invalid nick name")
+		}
+		algo := getSignAlgo(signAlgo)
+		newKp, err := account.NewKeyPair(nil, algo)
+		if err != nil {
+			panic(err)
+		}
+		CreateNewAccount(accountName, keyPair, newName, newKp, 10, 100, 0)
+		saveAccount(newName, newKp)
 	},
 }
 
 var kvPath string
-var nickName string
+var accountName string
 
 func init() {
 	rootCmd.AddCommand(accountCmd)
 
 	home, err := homedir.Dir()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		panic(err)
 	}
 
-	accountCmd.Flags().StringVarP(&nickName, "name", "n", "id", "Create new account, using input as nickname")
+	accountCmd.Flags().StringVarP(&accountName, "account", "", "id", "Create new account, using input as nickname")
 	accountCmd.Flags().StringVarP(&kvPath, "path", "p", home+"/.iwallet", "Set path of key pair file")
 	accountCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
 

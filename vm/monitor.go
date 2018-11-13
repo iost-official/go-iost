@@ -133,7 +133,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	//if payment == 1 &&
 	//	abi.GasPrice > gasPrice &&
 	//	!{
-	//	b := h.DB().Balance(host.ContractGasPrefix + contractName)
+	//	b := h.DB().TokenBalance("iost",host.ContractGasPrefix + contractName)
 	//	if b > gasPriceCost.ToGas() {
 	//		h.PayCost(cost, host.ContractGasPrefix+contractName)
 	//		cost = contract.Cost0()

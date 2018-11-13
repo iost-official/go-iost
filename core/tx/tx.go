@@ -14,6 +14,11 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 )
 
+// values
+var (
+	MaxExpiration = int64(90 * time.Second)
+)
+
 //go:generate protoc  --go_out=plugins=grpc:. ./core/tx/tx.proto
 
 // ToBytesLevel judges which fields of tx should be written to bytes.
@@ -206,11 +211,34 @@ func (t *Tx) IsDefer() bool {
 	return len(t.ReferredTx) > 0
 }
 
+// VerifyDefer verifes whether the defer tx is matched  with the referred tx.
+func (t *Tx) VerifyDefer(referredTx *Tx) error {
+	if referredTx.Publisher != t.Publisher {
+		return errors.New("unmatched referred tx publisher")
+	}
+	if referredTx.Time+referredTx.Delay != t.Time {
+		return errors.New("unmatched referred tx delay time")
+	}
+	if referredTx.Expiration+referredTx.Delay != t.Expiration {
+		return errors.New("unmatched referred tx expiration time")
+	}
+	if len(referredTx.Actions) != len(t.Actions) {
+		return errors.New("unmatched referred tx action length")
+	}
+	for i := 0; i < len(referredTx.Actions); i++ {
+		if *referredTx.Actions[i] != *t.Actions[i] {
+			return errors.New("unmatched referred tx action")
+		}
+	}
+	return nil
+}
+
 // VerifySelf verify tx's signature
 func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 	if t.Delay > 0 && t.IsDefer() {
-		return errors.New("invalid tx. including both delaysecond and referredtx")
+		return errors.New("invalid tx. including both delay and referredtx field")
 	}
+	// Defer tx does not need to verify signature.
 	if t.IsDefer() {
 		return nil
 	}
@@ -245,6 +273,26 @@ func (t *Tx) VerifySigner(sig *crypto.Signature) bool {
 	return sig.Verify(t.baseHash())
 }
 
+// IsExpired checks whether the transaction is expired compared to the given time ct.
+func (t *Tx) IsExpired(ct int64) bool {
+	if t.Expiration <= ct {
+		return true
+	}
+	if ct-t.Time > MaxExpiration {
+		return true
+	}
+	return false
+}
+
+// IsTimeValid checks whether the transaction time is valid compared to the given time ct.
+// ct may be time.Now().UnixNano() or block head time.
+func (t *Tx) IsTimeValid(ct int64) bool {
+	if t.Time > ct {
+		return false
+	}
+	return !t.IsExpired(ct)
+}
+
 // ToBytes converts tx to bytes.
 func (t *Tx) ToBytes(l ToBytesLevel) []byte {
 	sn := common.NewSimpleNotation()
@@ -253,17 +301,15 @@ func (t *Tx) ToBytes(l ToBytesLevel) []byte {
 	sn.WriteInt64(t.GasPrice, true)
 	sn.WriteInt64(t.GasLimit, true)
 	sn.WriteInt64(t.Delay, true)
-	for _, signer := range t.Signers {
-		sn.WriteString(signer, true)
+
+	sn.WriteStringSlice(t.Signers, true)
+	actionBytes := make([][]byte, 0, len(t.Actions))
+	for _, a := range t.Actions {
+		actionBytes = append(actionBytes, a.ToBytes())
 	}
+	sn.WriteBytesSlice(actionBytes, false)
 
 	if l > Base {
-		actionBytes := make([][]byte, 0, len(t.Actions))
-		for _, a := range t.Actions {
-			actionBytes = append(actionBytes, a.ToBytes())
-		}
-		sn.WriteBytesSlice(actionBytes, false)
-
 		signBytes := make([][]byte, 0, len(t.Signs))
 		for _, sig := range t.Signs {
 			signBytes = append(signBytes, sig.ToBytes())
