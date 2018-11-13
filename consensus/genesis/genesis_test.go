@@ -32,9 +32,17 @@ func TestGenGenesis(t *testing.T) {
 			{"a6", "IOST2v2ZumgyNXtpf1MEbkbbAK3tFfC856oMoVUYfYDvC1mpX14AvA", "IOST2v2ZumgyNXtpf1MEbkbbAK3tFfC856oMoVUYfYDvC1mpX14AvA", 3 * 1e8},
 			{"a7", "IOSTCJqjtLBntuWRGaZumevYgBEZsU8AaAdUpEMnpGieKV676B9St", "IOSTCJqjtLBntuWRGaZumevYgBEZsU8AaAdUpEMnpGieKV676B9St", 3 * 1e8},
 		},
+		TokenInfo: &common.TokenInfo{
+			FoundationAccount: "a8",
+			IOSTTotalSupply:   90000000000,
+			IOSTDecimal:       8,
+			RAMTotalSupply:    9000000000000000000,
+			RAMGenesisAmount:  137438953472,
+		},
 		InitialTimestamp: "2006-01-02T15:04:05Z",
-		ContractPath: os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/contract/",
-		AdminInfo: &common.Witness{"a8", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", 3 * 1e8},
+		ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/contract/",
+		AdminInfo:        &common.Witness{"a8", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", 3 * 1e8},
+		FoundationInfo:   &common.Witness{"f8", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", 0},
 	})
 	if err != nil {
 		t.Fatal(err)

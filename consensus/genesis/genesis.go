@@ -1,6 +1,7 @@
 package genesis
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -60,26 +61,45 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	}
 	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.auth", code.B64Encode())))
 
-	initAccountID := "inituser"
 	// new account
 	adminInfo := gConf.AdminInfo
 	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.Owner, adminInfo.Active)))
+	// new account
+	foundationInfo := gConf.FoundationInfo
+	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, foundationInfo.ID, foundationInfo.Owner, foundationInfo.Active)))
 	// init account
-	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, initAccountID, keyPair.ID, keyPair.ID)))
+	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, "inituser", keyPair.ID, keyPair.ID)))
 
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, v.ID, v.Owner, v.Active)))
 	}
 
-	// deploy iost.token and create iost
+	// deploy iost.token
 	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.token", native.TokenABI().B64Encode())))
-	acts = append(acts, tx.NewAction("iost.token", "create", fmt.Sprintf(`["iost", "%v", 21000000000, {}]`, initAccountID)))
 
-	// issue token
-	for _, v := range witnessInfo {
-		acts = append(acts, tx.NewAction("iost.token", "issue", fmt.Sprintf(`["iost", "%v", "%v"]`, v.ID, v.Balance)))
+	// deploy iost.bonus
+	code, err = compile("iost.bonus", gConf.ContractPath, "bonus.js")
+	if err != nil {
+		return nil, nil, err
 	}
-	acts = append(acts, tx.NewAction("iost.token", "issue", fmt.Sprintf(`["iost", "%v", "%v"]`, adminInfo.ID, adminInfo.Balance)))
+	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.bonus", code.B64Encode())))
+	acts = append(acts, tx.NewAction("iost.bonus", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
+
+	// deploy iost.issue and create iost
+	code, err = compile("iost.issue", gConf.ContractPath, "issue.js")
+	if err != nil {
+		return nil, nil, err
+	}
+	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.issue", code.B64Encode())))
+	genesisConfig := gConf.TokenInfo
+	tokenHolder := append(witnessInfo, adminInfo)
+	params := []interface{}{
+		adminInfo.ID,
+		genesisConfig,
+		tokenHolder,
+	}
+	b, _ := json.Marshal(params)
+	acts = append(acts, tx.NewAction("iost.issue", "InitGenesis", string(b)))
 
 	// deploy iost.vote
 	code, err = compile("iost.vote", gConf.ContractPath, "vote_common.js")
@@ -87,6 +107,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 		return nil, nil, err
 	}
 	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.vote", code.B64Encode())))
+	acts = append(acts, tx.NewAction("iost.vote", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy iost.vote_producer
 	code, err = compile("iost.vote_producer", gConf.ContractPath, "vote.js")
@@ -115,9 +136,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.ID, gasPledgeAmount)))
 
 	// deploy iost.ram
-	ramFilePath := filepath.Join(gConf.ContractPath, "ram.js")
-	ramAbiPath := filepath.Join(gConf.ContractPath, "ram.js.abi")
-	code, err = contract.Compile("iost.ram", ramFilePath, ramAbiPath)
+	code, err = compile("iost.ram", gConf.ContractPath, "ram.js")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -158,6 +177,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		Number:     0,
 		Witness:    acc.ID,
 		Time:       t.UnixNano(),
+		GasUsage:   0,
 	}
 	v := verifier.Verifier{}
 	txr, err := v.Exec(&blockHead, db, trx, GenesisTxExecTime)
@@ -170,6 +190,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		Txs:      []*tx.Tx{trx},
 		Receipts: []*tx.TxReceipt{txr},
 	}
+	blk.Head.GasUsage = txr.GasUsage
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	if err != nil {

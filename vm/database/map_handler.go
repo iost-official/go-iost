@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -22,10 +23,12 @@ func (m *MapHandler) MPut(key, field, value string) {
 }
 
 func (m *MapHandler) addField(key, field string) {
+	fmt.Println("addField", key, field)
 	if m.MHas(key, field) {
 		return
 	}
 	s := m.db.Get(MapPrefix + key)
+	fmt.Println(">>> addField", key, field, s)
 	if s == "n" {
 		m.db.Put(MapPrefix+key, "@"+field)
 		return

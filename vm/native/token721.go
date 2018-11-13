@@ -5,7 +5,6 @@ import (
 	"errors"
 	"math"
 	"strconv"
-	"strings"
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
@@ -19,7 +18,6 @@ const (
 	Token721BalanceMapPrefix  = "T721B"
 	Token721IssuerMapField    = "T721issuer"
 	Token721MetadataMapPrefix = "T721M"
-	Token721TokensPrefix      = "T721T"
 )
 
 func init() {
@@ -56,48 +54,6 @@ func setToken721Balance(h *host.Host, tokenName string, from string, balance int
 	cost = h.MapPut(Token721BalanceMapPrefix+from, tokenName, balance, from)
 	return cost
 
-}
-func getToken721Tokens(h *host.Host, tokenName string, from string) (tokens []string, tokensStr string, cost contract.Cost, err error) {
-	tokensStr = "|"
-	tokens = make([]string, 0, 0)
-	cost = contract.Cost0()
-	ok, cost0 := h.MapHas(Token721TokensPrefix+from, tokenName, from)
-	cost.AddAssign(cost0)
-	if ok {
-		tmp, cost0 := h.MapGet(Token721TokensPrefix+from, tokenName, from)
-		cost.AddAssign(cost0)
-		tokensStr = tmp.(string)
-		tokens = strings.Split(tokensStr, "|")
-		tokens = tokens[1:]
-	}
-	return tokens, tokensStr, cost, nil
-}
-
-func addToken721Tokens(h *host.Host, tokenName string, from string, tokenID string) (cost contract.Cost, err error) {
-	var tokensStr string
-	_, tokensStr, cost, err = getToken721Tokens(h, tokenName, from)
-	if err != nil {
-		return cost, err
-	}
-	tokensStr += tokenID + "|"
-	cost0 := h.MapPut(Token721TokensPrefix+from, tokenName, tokensStr, from)
-	cost.AddAssign(cost0)
-	return cost, nil
-}
-
-func delToken721Tokens(h *host.Host, tokenName string, from string, tokenID string) (cost contract.Cost, err error) {
-	var tokensStr string
-	_, tokensStr, cost, err = getToken721Tokens(h, tokenName, from)
-	if err != nil {
-		return cost, err
-	}
-	newTokensStr := strings.Replace(tokensStr, "|"+tokenID+"|", "|", 1)
-	if tokensStr == newTokensStr {
-		return cost, host.ErrInvalidData
-	}
-	cost0 := h.MapPut(Token721TokensPrefix+from, tokenName, newTokensStr, from)
-	cost.AddAssign(cost0)
-	return cost, nil
 }
 
 var (
@@ -220,12 +176,6 @@ var (
 			cost0 = h.MapPut(Token721MetadataMapPrefix+tokenName, tokenID, metaDateJSON, to)
 			cost.AddAssign(cost0)
 
-			cost0, err = addToken721Tokens(h, tokenName, to, tokenID)
-			cost.AddAssign(cost0)
-			if err != nil {
-				return nil, cost, err
-			}
-
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -271,18 +221,6 @@ var (
 			owner := tmp.(string)
 			if owner != from {
 				return nil, cost, host.ErrInvalidData
-			}
-
-			cost0, err = delToken721Tokens(h, tokenName, from, tokenID)
-			cost.AddAssign(cost0)
-			if err != nil {
-				return nil, cost, err
-			}
-
-			cost0, err = addToken721Tokens(h, tokenName, to, tokenID)
-			cost.AddAssign(cost0)
-			if err != nil {
-				return nil, cost, err
 			}
 
 			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to)
@@ -387,11 +325,8 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
-			tokens, _, cost0, err := getToken721Tokens(h, tokenName, owner)
+			tokens, cost0 := h.MapKeys(Token721MetadataMapPrefix+tokenName, owner)
 			cost.AddAssign(cost0)
-			if err != nil {
-				return nil, cost, err
-			}
 			if int(index) >= len(tokens) {
 				return nil, cost, errors.New("out of range")
 			}
