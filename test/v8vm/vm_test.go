@@ -225,6 +225,43 @@ func TestEngine_Storage(t *testing.T) {
 }
 
 // nolint
+func TestEngine_Storage2(t *testing.T) {
+	host, code := MyInit(t, "storage2")
+
+	rs, _, err := vmPool.LoadAndCall(host, code, "get", "a")
+	if err != nil {
+		t.Fatalf("LoadAndCall get run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "null" {
+		t.Fatalf("LoadAndCall except null, got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "mget", "a", "b")
+	if err != nil {
+		t.Fatalf("LoadAndCall get run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "null" {
+		t.Fatalf("LoadAndCall except null, got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "gget", "ns", "a")
+	if err != nil {
+		t.Fatalf("LoadAndCall get run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "null" {
+		t.Fatalf("LoadAndCall except null, got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "gmget", "ns", "a", "b")
+	if err != nil {
+		t.Fatalf("LoadAndCall get run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "null" {
+		t.Fatalf("LoadAndCall except null, got %s\n", rs[0])
+	}
+}
+
+// nolint
 func TestEngine_DataType(t *testing.T) {
 	host, code := MyInit(t, "datatype")
 

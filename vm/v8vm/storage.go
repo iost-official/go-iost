@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"encoding/json"
+
 	"github.com/iost-official/go-iost/core/contract"
 )
 
@@ -82,7 +83,7 @@ func goGet(cSbx C.SandboxPtr, key, owner *C.char, result **C.char, gasUsed *C.si
 
 	*gasUsed = C.size_t(cost.CPU)
 	if val == nil {
-		*result = C.CString("")
+		*result = nil
 		return nil
 	}
 
@@ -184,7 +185,7 @@ func goMapGet(cSbx C.SandboxPtr, key, field, owner *C.char, result **C.char, gas
 	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
-		*result = C.CString("")
+		*result = nil
 		return nil
 	}
 	valStr, _ := dbValToString(val)
@@ -313,7 +314,7 @@ func goGlobalGet(cSbx C.SandboxPtr, contractName, key, owner *C.char, result **C
 	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
-		*result = C.CString("")
+		*result = nil
 		return nil
 	}
 	valStr, _ := dbValToString(val)
@@ -369,7 +370,7 @@ func goGlobalMapGet(cSbx C.SandboxPtr, contractName, key, field, owner *C.char, 
 	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
-		*result = C.CString("")
+		*result = nil
 		return nil
 	}
 	valStr, _ := dbValToString(val)
