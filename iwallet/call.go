@@ -116,6 +116,7 @@ var callCmd = &cobra.Command{
 				fmt.Println(err.Error())
 				return
 			}
+			ilog.Infof("sendTx %v", trx)
 			stx, err := tx.SignTx(trx, accountName, []*account.KeyPair{keyPair})
 			var txHash string
 			txHash, err = sendTx(stx)
@@ -158,8 +159,8 @@ func init() {
 	}
 
 	callCmd.Flags().StringVarP(&accountName, "account", "", "", "which account to use")
-	callCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
-	callCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
+	callCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 10000, "gasLimit for a transaction")
+	callCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 100, "gasPrice for a transaction")
 	callCmd.Flags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
 	callCmd.Flags().StringSliceVarP(&signers, "signers", "n", []string{}, "signers who should sign this transaction")
 	callCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")

@@ -34,6 +34,9 @@ func (m *TokenHandler) freezedBalanceKey(tokenName, acc string) string {
 func (m *TokenHandler) decimalKey(tokenName string) string {
 	issuerKey := "m-" + TokenContractName + "-" + "TI" + tokenName + "-" + "issuer"
 	issuer := Unmarshal(m.db.Get(issuerKey))
+	if issuer == nil {
+		return ""
+	}
 	key := "m-" + TokenContractName + "@" + issuer.(string) + "-" + "TI" + tokenName + "-" + "decimal"
 	return key
 }
@@ -101,7 +104,7 @@ func (m *TokenHandler) Decimal(tokenName string) int {
 	decimalRaw := m.db.Get(m.decimalKey(tokenName))
 	decimal, ok := Unmarshal(decimalRaw).(int64)
 	if !ok {
-		decimal = 0
+		decimal = -1
 	}
 	return int(decimal)
 }
