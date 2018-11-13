@@ -1,6 +1,10 @@
 creategenesis: true
 tokeninfo:
+<<<<<<< HEAD
   foundationaccount: foundation
+=======
+  foundationaccount: admin
+>>>>>>> 310afd1aca56c85c0107425ca3ab56afda7368e0
   iosttotalsupply: 90000000000
   iostdecimal: 8
   ramtotalsupply: 9000000000000000000
