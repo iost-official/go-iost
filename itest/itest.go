@@ -109,6 +109,7 @@ func (t *ITest) CreateAccount(name string) (*Account, error) {
 	return account, nil
 }
 
+//TransferN will send n transfer transaction concurrently
 func (t *ITest) TransferN(num int, accounts []*Account) error {
 	ilog.Infof("Send %v transfer transaction...", num)
 
