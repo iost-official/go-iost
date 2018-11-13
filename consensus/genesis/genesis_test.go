@@ -42,7 +42,7 @@ func TestGenGenesis(t *testing.T) {
 		InitialTimestamp: "2006-01-02T15:04:05Z",
 		ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/contract/",
 		AdminInfo:        &common.Witness{"a8", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", 3 * 1e8},
-		Foundation:       &common.Witness{"f8", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", 0},
+		FoundationInfo:   &common.Witness{"f8", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", 0},
 	})
 	if err != nil {
 		t.Fatal(err)
