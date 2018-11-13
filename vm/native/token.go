@@ -447,7 +447,7 @@ var (
 			to := args[2].(string)
 			amountStr := args[3].(string)
 			ftime := args[4].(int64) // time.Now().UnixNano()
-			memo := args[5].(string)     // memo
+			memo := args[5].(string) // memo
 			if len(memo) > 512 {
 				return nil, cost, host.ErrMemoTooLarge
 			}
