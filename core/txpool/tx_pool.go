@@ -213,7 +213,7 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 		return err
 	}
 	pool.pendingTx.Add(t)
-	//pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage, true)
+	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage, true)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return nil
 }

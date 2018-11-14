@@ -8,7 +8,6 @@ import (
 
 	"fmt"
 
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
@@ -160,7 +159,6 @@ L:
 		if t == nil {
 			break L
 		}
-		ilog.Info(common.Base58Encode(t.Hash()))
 		if !t.IsTimeValid(blk.Head.Time) && !t.IsDefer() {
 			provider.Drop(t, ErrInvalidTimeTx)
 			continue L
@@ -181,14 +179,12 @@ L:
 		if r.Status.Code == tx.ErrorTimeout && limit < c.TxTimeLimit {
 			ilog.Errorf("isolator run time out")
 			provider.Return(t)
-			ilog.Info("2", r)
 			break L
 		}
 		r, err = isolator.PayCost()
 		if err != nil {
 			ilog.Errorf("pay cost err %v", err)
 			provider.Drop(t, err)
-			ilog.Info("3", err)
 			continue L
 		}
 		isolator.Commit()
