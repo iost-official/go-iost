@@ -36,7 +36,7 @@ func (m *LRU) Get(key string) (value string) {
 	if !ok {
 		value = m.db.Get(key)
 		if value != NilPrefix {
-			m.cache.Add(key, v)
+			m.cache.Add(key, value)
 		}
 		return value
 	}
