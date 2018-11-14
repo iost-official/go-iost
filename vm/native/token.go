@@ -326,13 +326,20 @@ var (
 			cost0 = setBalance(h, tokenName, to, balance)
 			cost.AddAssign(cost0)
 
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
 
 	transferTokenABI = &abi{
 		name: "transfer",
-		args: []string{"string", "string", "string", "string"},
+		args: []string{"string", "string", "string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
@@ -340,6 +347,10 @@ var (
 			from := args[1].(string)
 			to := args[2].(string)
 			amountStr := args[3].(string)
+			memo := args[4].(string) // memo
+			if len(memo) > 512 {
+				return nil, cost, host.ErrMemoTooLarge
+			}
 
 			//fmt.Printf("token transfer %v %v %v %v\n", tokenName, from, to, amountStr)
 
@@ -414,13 +425,20 @@ var (
 			cost0 = setBalance(h, tokenName, from, fbalance)
 			cost.AddAssign(cost0)
 
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
 
 	transferFreezeTokenABI = &abi{
 		name: "transferFreeze",
-		args: []string{"string", "string", "string", "string", "number"},
+		args: []string{"string", "string", "string", "string", "number", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
@@ -429,6 +447,10 @@ var (
 			to := args[2].(string)
 			amountStr := args[3].(string)
 			ftime := args[4].(int64) // time.Now().UnixNano()
+			memo := args[5].(string) // memo
+			if len(memo) > 512 {
+				return nil, cost, host.ErrMemoTooLarge
+			}
 
 			// get token info
 			ok, cost0 := checkTokenExists(h, tokenName)
@@ -495,6 +517,13 @@ var (
 				return nil, cost, err
 			}
 
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
