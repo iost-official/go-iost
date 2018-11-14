@@ -22,6 +22,7 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 	t = tx.NewTx(t.Actions, t.Signers, t.GasLimit, t.GasPrice, t.Expiration, t.Delay)
 
 	txData, err := baseTxData(blk.Head, parent.Head)
+	ilog.Info(blk.Head.Number, blk.Head.Witness[4:6], parent.Head, txData)
 	if err != nil {
 		return nil, err
 	}
@@ -33,9 +34,8 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 
 func baseTxData(bh *block.BlockHead, pbh *block.BlockHead) (string, error) {
 	if pbh != nil {
+		ilog.Info(bh.Number, bh.Witness[4:6])
 		ilog.Info(pbh)
-		ilog.Info(pbh.Witness)
-		ilog.Info(pbh.GasUsage)
 		return fmt.Sprintf(`[{"parent":["%v", "%v"]}]`, pbh.Witness, pbh.GasUsage), nil
 	}
 	if bh.Number != 0 {
