@@ -18,7 +18,7 @@ var AccountCaseCommand = cli.Command{
 var AccountCaseFlags = []cli.Flag{
 	cli.IntFlag{
 		Name:  "account, a",
-		Value: 100,
+		Value: 10,
 		Usage: "number of account",
 	},
 }
