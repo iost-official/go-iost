@@ -61,7 +61,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 				Value:   fee * 1000000,
 				Decimal: 8, // TODO magic number
 			}
-			err := h.h.CostGas(k, gas)
+			_, err := h.h.CostGas(k, gas)
 			if err != nil {
 				return fmt.Errorf("pay cost failed: %v, %v", k, err)
 			}

@@ -1,15 +1,16 @@
 package native
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/go-iost/core/tx"
 )
 
 func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
@@ -315,7 +316,7 @@ func TestToken_Transfer(t *testing.T) {
 
 		Convey("transfer too much", func() {
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "100.1", "")
-			So(true, ShouldEqual, err.Error() == "balance not enough")
+			So(true, ShouldEqual, strings.HasPrefix(err.Error(), "balance not enough"))
 			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
@@ -443,7 +444,7 @@ func TestToken_Destroy(t *testing.T) {
 
 		Convey("destroy too much", func() {
 			_, cost, err := e.LoadAndCall(host, code, "destroy", "iost", "issuer0", "100.1")
-			So(true, ShouldEqual, err.Error() == "balance not enough")
+			So(true, ShouldEqual, strings.HasPrefix(err.Error(), "balance not enough"))
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
 			So(err, ShouldBeNil)
@@ -587,7 +588,7 @@ func TestToken_TransferFreeze(t *testing.T) {
 
 		Convey("transferFreeze too much", func() {
 			_, _, err := e.LoadAndCall(host, code, "transferFreeze", "iost", "issuer0", "user0", "100.1", now-1, "")
-			So(true, ShouldEqual, err.Error() == "balance not enough")
+			So(true, ShouldEqual, strings.HasPrefix(err.Error(), "balance not enough"))
 
 			rs, _, err := e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
 			So(err, ShouldBeNil)
@@ -603,10 +604,10 @@ func TestToken_TransferFreeze(t *testing.T) {
 			authList["user0"] = 1
 			host.Context().Set("auth_list", authList)
 			_, _, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user1", "10", now+100, "")
-			So(true, ShouldEqual, err.Error() == "balance not enough")
+			So(true, ShouldEqual, strings.HasPrefix(err.Error(), "balance not enough"))
 
 			_, _, err = e.LoadAndCall(host, code, "transfer", "iost", "user0", "user1", "10", "")
-			So(true, ShouldEqual, err.Error() == "balance not enough")
+			So(true, ShouldEqual, strings.HasPrefix(err.Error(), "balance not enough"))
 		})
 
 	})

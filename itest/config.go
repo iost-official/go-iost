@@ -14,7 +14,7 @@ const (
 {
   "bank":{
     "id": "admin",
-    "seckey": "zRGrECumZAomHRJa1Jr9u4HdGypeBDJGvyF7XEcjh5cJcK7aBGBPWF5MWf9NsfjtgqSYnrXBZmEyUZ8NzSJ4LVT",
+    "seckey": "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1",
     "algorithm":"ed25519"
   },
   "clients":[
