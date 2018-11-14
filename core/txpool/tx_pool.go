@@ -359,10 +359,10 @@ func (pool *TxPImpl) clearBlock() {
 
 func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) error {
 	if pool.existTxInPending(t.Hash()) {
-		return fmt.Errorf("DupError. tx exists in pending")
+		return ErrDupPendingTx
 	}
 	if pool.existTxInChain(t.Hash(), pool.forkChain.NewHead.Block) {
-		return fmt.Errorf("DupError. tx exists in chain")
+		return ErrDupChainTx
 	}
 	return nil
 }
