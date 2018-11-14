@@ -2,11 +2,11 @@ package verifier
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
-	"errors"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"

@@ -225,7 +225,7 @@ func TestGas_UseGas(t *testing.T) {
 	timePass(h, delta1)
 	gasBeforeUse, _ := h.GasManager.CurrentGas(testAcc.ID)
 	gasCost := toIOSTFixed(100)
-	err, _ = h.GasManager.CostGas(testAcc.ID, gasCost)
+	_, err = h.GasManager.CostGas(testAcc.ID, gasCost)
 	if err != nil {
 		t.Fatalf("cost gas failed %v", err)
 	}

@@ -41,7 +41,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-		        So(r.GasUsage, ShouldEqual, 576)
+		        So(r.GasUsage, ShouldEqual, 721)
 		})
 
 		Convey("test of token memo", func() {
@@ -140,7 +140,7 @@ func TestAmountLimit(t *testing.T) {
 		ca, err = s.Compile("Contracttransfer1", "./test_data/transfer1", "./test_data/transfer1.js")
 		So(err, ShouldBeNil)
 		So(ca, ShouldNotBeNil)
-		contractTransfer1, err := s.DeployContract(ca, testID[0], kp)
+		contractTransfer1, _, err := s.DeployContract(ca, testID[0], kp)
 		So(err, ShouldBeNil)
 
 		s.SetRAM(testID[0], 10000)
@@ -194,7 +194,7 @@ func TestAmountLimit(t *testing.T) {
 			ca, err = s.Compile("Contracttransfer2", "./test_data/transfer2", "./test_data/transfer2.js")
 			So(err, ShouldBeNil)
 			So(ca, ShouldNotBeNil)
-			_, err := s.DeployContract(ca, testID[0], kp)
+			_, _, err := s.DeployContract(ca, testID[0], kp)
 			So(err.Error(), ShouldContainSubstring, "abnormal char in amount")
 		})
 
