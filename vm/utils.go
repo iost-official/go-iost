@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
@@ -48,6 +49,22 @@ func CheckSigners(db database.IMultiValue, t *tx.Tx) error {
 		ok, _ := host.Auth(vi, x[0], x[1], auth, reenter)
 		if !ok {
 			return errors.New("missing authority")
+		}
+	}
+	return nil
+}
+
+// CheckAmountLimit check amountLimit of tx valid
+func CheckAmountLimit(db database.IMultiValue, t *tx.Tx) error {
+	vi := database.NewVisitor(100, db)
+	for _, limit := range t.AmountLimit {
+		decimal := vi.Decimal(limit.Token)
+		if decimal == -1 {
+			return errors.New("token not exists in amountLimit")
+		}
+		_, err := common.NewFixed(limit.Val, decimal)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

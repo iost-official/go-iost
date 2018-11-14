@@ -54,7 +54,7 @@ class VoteContract {
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
       
-        this._call("iost.token", "transfer", ["iost", proID, "iost.vote_producer", producerRegisterFee]);
+        this._call("iost.token", "transfer", ["iost", proID, "iost.vote_producer", producerRegisterFee, ""]);
 
         const voteId = this._getVoteId();
         this._call("iost.vote", "AddOption", [
@@ -149,7 +149,7 @@ class VoteContract {
             throw new Error("producer exists");
         }
 
-        this._call("iost.token", "transfer", ["iost", account, "iost.vote_producer", producerRegisterFee]);
+        this._call("iost.token", "transfer", ["iost", account, "iost.vote_producer", producerRegisterFee, ""]);
 
         const voteId = this._getVoteId();
         this._call("iost.vote", "AddOption", [
@@ -237,7 +237,7 @@ class VoteContract {
         this._mapDel("preProducerMap", account);
         this._mapDel("producerKeyToId", pro.pubkey, account);
 
-        this._call("iost.token", "transfer", ["iost", "iost.vote_producer", account, pro.registerFee]);
+        this._call("iost.token", "transfer", ["iost", "iost.vote_producer", account, pro.registerFee, ""]);
         /*
         const ret = BlockChain.withdraw(account, pro.registerFee);
         if (ret != 0) {

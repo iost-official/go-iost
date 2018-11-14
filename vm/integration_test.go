@@ -610,7 +610,7 @@ class Contract {
 	init() {
 	}
 	main() {
-		BlockChain.transfer("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
+		BlockChain.transfer("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100", "")
 	}
 }
 
@@ -636,7 +636,7 @@ class Contract {
 	init() {
 	}
 	main() {
-		BlockChain.transfer("IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100")
+		BlockChain.transfer("IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd", "IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "100", "")
 	}
 }
 
@@ -662,7 +662,7 @@ class Contract {
 	init() {
 	}
 	main() {
-		var ret = BlockChain.transfer("a", "b", 1);
+		var ret = BlockChain.transfer("a", "b", 1, "");
 		if (ret !== 0) {
 			throw new Error("ret = ", ret);
 		}
@@ -692,10 +692,10 @@ class Contract {
 	init() {
 	}
 	deposit() {
-		return BlockChain.deposit("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "100")
+		return BlockChain.deposit("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "100", "")
 	}
 	withdraw() {
-		return BlockChain.withdraw("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "99")
+		return BlockChain.withdraw("IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "99", "")
 	}
 }
 
