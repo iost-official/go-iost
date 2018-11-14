@@ -37,7 +37,7 @@ func (h *DBHandler) Get(key string, owner ...string) (value interface{}, cost co
 func (h *DBHandler) Del(key string, owner ...string) contract.Cost {
 	var mk = h.modifyKey(key, owner...)
 	h.releaseRAM(mk, owner...)
-	h.h.db.Del(h.modifyKey(key))
+	h.h.db.Del(mk)
 	return DelCost
 }
 

@@ -139,7 +139,7 @@ func (sbx *Sandbox) SetGasLimit(limit int64) {
 // SetHost set host in sandbox and set gas limit
 func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
-	sbx.SetGasLimit(host.GasLimit())
+	sbx.SetGasLimit(host.GasLimitValue())
 }
 
 // SetJSPath set js path and ReloadVM

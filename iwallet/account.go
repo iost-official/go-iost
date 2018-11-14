@@ -83,19 +83,24 @@ func saveAccount(name string, kp *account.KeyPair) {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println("the iost account ID is:")
-	fmt.Println(id)
+	//fmt.Println("the iost account ID is:")
+	//fmt.Println(id)
+	fmt.Printf("create account %v done\n", name)
 	fmt.Println("your account id is saved at:")
 	fmt.Println(idFileName)
 	fmt.Println("your account private key is saved at:")
 	fmt.Println(fileName)
 }
 
-func createNewAccount(creatorID string, creatorKp *account.KeyPair, newID string, newKp *account.KeyPair) {
+// CreateNewAccount ...
+func CreateNewAccount(creatorID string, creatorKp *account.KeyPair, newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) {
 	var acts []*tx.Action
 	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
-	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, creatorID, newID, 100)))
-	acts = append(acts, tx.NewAction("iost.ram", "buy", fmt.Sprintf(`["%v", "%v", %v]`, creatorID, newID, 100)))
+	acts = append(acts, tx.NewAction("iost.ram", "buy", fmt.Sprintf(`["%v", "%v", %v]`, creatorID, newID, initialRAM)))
+	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, creatorID, newID, initialGasPledge)))
+	if initialCoins != 0 {
+		acts = append(acts, tx.NewAction("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, creatorID, newID, initialCoins)))
+	}
 	trx := tx.NewTx(acts, make([]string, len(signers)), 10000, 100, time.Now().Add(time.Second*time.Duration(5)).UnixNano(), 0)
 	stx, err := tx.SignTx(trx, creatorID, []*account.KeyPair{creatorKp})
 	if err != nil {
@@ -152,7 +157,7 @@ var accountCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		createNewAccount(accountName, keyPair, newName, newKp)
+		CreateNewAccount(accountName, keyPair, newName, newKp, 10, 300, 0)
 		saveAccount(newName, newKp)
 	},
 }

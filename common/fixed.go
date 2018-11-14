@@ -1,11 +1,8 @@
 package common
 
 import (
-	"encoding/binary"
 	"errors"
 	"math"
-
-	"github.com/iost-official/go-iost/ilog"
 )
 
 var errOverflow = errors.New("overflow error")
@@ -23,19 +20,12 @@ type Fixed struct {
 
 // Marshal ...
 func (f *Fixed) Marshal() string {
-	b1 := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b1, uint64(f.Value))
-	b2 := make([]byte, 4)
-	binary.LittleEndian.PutUint32(b2, uint32(f.Decimal))
-	return string(b1) + string(b2)
+	return f.ToStringWithDecimal()
 }
 
 // UnmarshalFixed unmarshal from string
 func UnmarshalFixed(s string) (*Fixed, error) {
-	if len(s) != 8+4 {
-		return &Fixed{Value: 0, Decimal: 0}, errors.New("invalid length to unmarshal fix point number")
-	}
-	return &Fixed{Value: int64(binary.LittleEndian.Uint64([]byte(s[:8]))), Decimal: int(int32(binary.LittleEndian.Uint32([]byte(s[8:]))))}, nil
+	return NewFixed(s, -1)
 }
 
 func multiplyOverflow(a int64, b int64) bool {
@@ -51,6 +41,16 @@ func (f *Fixed) IsZero() bool {
 	return f.Value == 0
 }
 
+// IsPositive ...
+func (f *Fixed) IsPositive() bool {
+	return f.Value > 0
+}
+
+// IsNegative ...
+func (f *Fixed) IsNegative() bool {
+	return f.Value < 0
+}
+
 // Neg get negative number
 func (f *Fixed) Neg() *Fixed {
 	if multiplyOverflow(f.Value, -1) {
@@ -60,14 +60,14 @@ func (f *Fixed) Neg() *Fixed {
 	return &Fixed{Value: -f.Value, Decimal: f.Decimal}
 }
 
-func (f *Fixed) changeDecimal(targetDecimal int) *Fixed {
+// ChangeDecimal change decimal to give decimal, without changing its real value
+func (f *Fixed) ChangeDecimal(targetDecimal int) *Fixed {
 	value := f.Value
 	decimal := f.Decimal
 	for targetDecimal > decimal {
 		decimal++
 		if multiplyOverflow(value, 10) {
-			f.Err = errOverflow
-			return nil
+			return &Fixed{0, 0, errOverflow}
 		}
 		value *= 10
 	}
@@ -91,13 +91,13 @@ func (f *Fixed) shrinkDecimal() *Fixed {
 // UnifyDecimal make two fix point number have same decimal.
 func UnifyDecimal(a *Fixed, b *Fixed) (*Fixed, *Fixed, error) {
 	if a.Decimal < b.Decimal {
-		aChanged := a.changeDecimal(b.Decimal)
+		aChanged := a.ChangeDecimal(b.Decimal)
 		if aChanged.Err != nil {
 			return nil, nil, aChanged.Err
 		}
 		return aChanged, b, nil
 	}
-	bChanged := b.changeDecimal(a.Decimal)
+	bChanged := b.ChangeDecimal(a.Decimal)
 	if bChanged.Err != nil {
 		return nil, nil, bChanged.Err
 	}
@@ -167,19 +167,23 @@ func (f *Fixed) LessThan(other *Fixed) bool {
 	return fpnNew.Value < otherNew.Value
 }
 
-// NewFixed generate Fixed from string and decimal, will truncate if decimal is smaller
+// NewFixed generate Fixed from string and decimal, will truncate if decimal is smaller. Decimal < 0 means auto detecting decimal
 func NewFixed(amount string, decimal int) (*Fixed, error) {
 	if len(amount) == 0 || amount[0] == '.' {
 		return nil, errAmountFormat
 	}
 	if amount[0] == '-' {
 		fpn, err := NewFixed(amount[1:], decimal)
-		ilog.Info(fpn, err)
+		//ilog.Info(fpn, err)
 		if err != nil {
 			return nil, err
 		}
 		return fpn.Neg(), fpn.Err
 	}
+	return parsePositiveFixed(amount, decimal)
+}
+
+func parsePositiveFixed(amount string, decimal int) (*Fixed, error) {
 	fpn := &Fixed{Value: 0, Decimal: 0}
 	decimalStart := false
 	for i := 0; i < len(amount); i++ {
@@ -194,7 +198,7 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 			}
 			if decimalStart {
 				fpn.Decimal++
-				if fpn.Decimal >= decimal {
+				if decimal >= 0 && fpn.Decimal >= decimal {
 					break
 				}
 			}
@@ -207,11 +211,14 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 			return nil, errAbnormalChar
 		}
 	}
-	return fpn.changeDecimal(decimal), fpn.Err
+	if decimal >= 0 {
+		fpn = fpn.ChangeDecimal(decimal)
+	}
+	return fpn, fpn.Err
 }
 
-// ToString generate string of Fixed without post zero
-func (f *Fixed) ToString() string {
+// ToStringWithDecimal convert to string with tailing 0s
+func (f *Fixed) ToStringWithDecimal() string {
 	if f.Value < 0 {
 		ret := f.Neg()
 		if f.Err != nil {
@@ -233,8 +240,17 @@ func (f *Fixed) ToString() string {
 		}
 		rtn = append(rtn, str[i])
 	}
+	return string(rtn)
+}
+
+// ToString generate string of Fixed without post zero
+func (f *Fixed) ToString() string {
+	rtn := f.ToStringWithDecimal()
+	if rtn == "" {
+		return rtn
+	}
 	if f.Decimal == 0 {
-		return string(rtn)
+		return rtn
 	}
 	for rtn[len(rtn)-1] == '0' {
 		rtn = rtn[0 : len(rtn)-1]
@@ -242,7 +258,7 @@ func (f *Fixed) ToString() string {
 	if rtn[len(rtn)-1] == '.' {
 		rtn = rtn[0 : len(rtn)-1]
 	}
-	return string(rtn)
+	return rtn
 }
 
 // ToFloat ...

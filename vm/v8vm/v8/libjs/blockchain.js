@@ -6,22 +6,22 @@ let BlockChain = (function () {
         return ctxInfo["contract_name"];
     };
     // transfer IOSToken
-    let transfer = function (from, to, amount) {
+    let transfer = function (from, to, amount, memo) {
         if (!(amount instanceof Float64)) {
             amount = new Float64(amount);
         }
-        return bc.call("iost.token", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\"]");
+        return bc.call("iost.token", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\", \"" + memo.toString() + "\"]");
     };
     return {
         // transfer IOSToken
         transfer: transfer,
         // withdraw IOSToken
-        withdraw: function (to, amount) {
-            return transfer(contractName(), to, amount);
+        withdraw: function (to, amount, memo) {
+            return transfer(contractName(), to, amount, memo);
         },
         // deposit IOSToken
-        deposit: function (from, amount) {
-            return transfer(from, contractName(), amount);
+        deposit: function (from, amount, memo) {
+            return transfer(from, contractName(), amount, memo);
         },
         // get blockInfo
         blockInfo: function () {

@@ -63,11 +63,11 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		if err != nil {
 			return err
 		}
-		gas := e.h.CurrentGas(e.publisherID)
-		// gas is stored in 10**8 format. And gasPrice is in 0.01 unit. So mul 1e6 here
-		if gas.Value < t.GasPrice*t.GasLimit*100000000/100 {
+		gas, _ := e.h.CurrentGas(e.publisherID)
+		price := &common.Fixed{Value: t.GasPrice, Decimal: 2}
+		if gas.LessThan(price.Times(t.GasLimit)) {
 			ilog.Debugf("err %v publisher %v current gas %v price %v limit %v\n", errCannotPay, e.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
-			return errCannotPay
+			return fmt.Errorf("publisher's gas less than price * limit %v < %v * %v", gas.ToString(), price.ToString(), t.GasLimit)
 		}
 	}
 	loadTxInfo(e.h, t, e.publisherID)
@@ -247,6 +247,7 @@ func (e *Isolator) ClearTx() {
 	e.h.Context().GClear()
 	e.blockBaseMode = false
 	e.h.ClearCosts()
+	e.h.DB().Rollback()
 }
 func checkTxParams(t *tx.Tx) error {
 	if t.GasPrice < 100 || t.GasPrice > 10000 {
@@ -275,6 +276,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.Context().Set("gas_price", t.GasPrice)
 	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))
 	h.Context().Set("publisher", publisherID)
+	h.Context().Set("amount_limit", t.AmountLimit)
 
 	authList := make(map[string]int)
 	for _, v := range t.Signs {
