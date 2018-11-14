@@ -2,6 +2,7 @@ package itest
 
 import (
 	"encoding/json"
+	"sync"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -12,7 +13,8 @@ import (
 // Account is account of user
 type Account struct {
 	ID      string
-	Balance string
+	balance string
+	rw      sync.RWMutex
 	key     *Key
 }
 
@@ -34,6 +36,20 @@ func (a *Account) Sign(t *Transaction) (*Transaction, error) {
 		Tx: st,
 	}
 	return transaction, nil
+}
+
+// Balance will return the balance of this account
+func (a *Account) Balance() string {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+	return a.balance
+}
+
+// SetBalance will set the balance of this account
+func (a *Account) SetBalance(b string) {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+	a.balance = b
 }
 
 // UnmarshalJSON will unmarshal account from json
