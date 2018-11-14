@@ -12,6 +12,23 @@ const (
 	LevelFatal
 )
 
+func NewLevel(l string) Level {
+	switch l {
+	case "debug":
+		return LevelDebug
+	case "info":
+		return LevelInfo
+	case "warn":
+		return LevelWarn
+	case "error":
+		return LevelError
+	case "fatal":
+		return LevelFatal
+	default:
+		return LevelDebug
+	}
+}
+
 var (
 	levelBytes = map[Level][]byte{
 		LevelDebug: []byte("Debug"),
