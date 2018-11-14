@@ -61,7 +61,8 @@ service Apis {
     // get the value of the corresponding key in stateDB
     rpc GetContractStorage (GetContractStorageReq) returns (GetContractStorageRes) {
         option (google.api.http) = {
-            get: "/getContractStorage/{contractID}/{key}"
+            post: "/getContractStorage"
+            body: "*"
         };
     }
     // get contract by cid
@@ -121,10 +122,12 @@ message GetAccountReq {
 
 message GetContractStorageReq {
     string contractID=1;
+    // ram owner, should be the same as 'put' call. It can be empty
+    string owner=2;
     //the key in the StateDB
-    string key=2;
+    string key=3;
     // get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
-    string field=3;
+    string field=4;
 }
 
 message GetContractReq {
@@ -204,6 +207,7 @@ message GetAccountRes {
     // current gas
     GASInfo gas=2;
     RAMInfo ram=3;
+    string accountJson=4;
 }
 
 message GetContractStorageRes {

@@ -6,6 +6,7 @@ package v8
 import "C"
 import (
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -24,6 +25,7 @@ func goConsoleLog(cSbx C.SandboxPtr, logLevel, logDetail *C.char) *C.char {
 
 	levelStr := C.GoString(logLevel)
 	detailStr := C.GoString(logDetail)
+	fmt.Printf("console.log %v %v\n", levelStr, detailStr)
 
 	if sbx.host.Logger() == nil {
 		return C.CString(ErrConsoleNoLogger.Error())
