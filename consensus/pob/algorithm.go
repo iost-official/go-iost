@@ -24,14 +24,12 @@ var (
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
-	//txLimit        = 2000 //limit it to 2000
-	//txExecTime     = cverifier.TxExecTimeLimit / 2
+	generateTxsNum = 0
 )
 
-func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) { // TODO 应传入acc
-	ilog.Info("generate Block start")
+func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) { // TODO 应传入account
+	ilog.Info("[pob]generate Block start")
 	st := time.Now()
-	limitTime := common.SlotLength / 3 * time.Second
 	txIter, head := txPool.TxIterator()
 	topBlock := head.Block
 	blk := block.Block{
@@ -51,49 +49,21 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 
 	// call vote
 	v := verifier.Verifier{}
+	t1 := time.Now()
 	dropList, _, err := v.Gen(&blk, topBlock, db, txIter, &verifier.Config{
 		Mode:        0,
-		Timeout:     limitTime - st.Sub(time.Now()),
+		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: time.Millisecond * 100,
 	})
+	t2 := time.Since(t1)
+	ilog.Info("time spent:", t2)
+	if len(blk.Txs) != 0 {
+		ilog.Info("time spent per tx:", t2.Nanoseconds()/int64(len(blk.Txs)))
+	}
 	if err != nil {
 		go txPool.DelTxList(dropList)
 		ilog.Errorf("Gen is err: %v", err)
 	}
-	//t, ok := txIter.Next()
-	//	var vmExecTime, iterTime, i, j int64
-	//L:
-	//	for ok {
-	//		select {
-	//		case <-limitTime.C:
-	//			ilog.Info("time up")
-	//			break L
-	//		default:
-	//			i++
-	//			step1 := time.Now()
-	//			if !txPool.TxTimeOut(t) {
-	//				j++
-	//				if receipt, err := engine.Exec(t, txExecTime); err == nil {
-	//					blk.Txs = append(blk.Txs, t)
-	//					blk.Receipts = append(blk.Receipts, receipt)
-	//				} else {
-	//					ilog.Errorf("exec tx failed. err=%v, receipt=%v", err, receipt)
-	//					delList = append(delList, t)
-	//				}
-	//			} else {
-	//				delList = append(delList, t)
-	//			}
-	//			if len(blk.Txs) >= txLimit {
-	//				break L
-	//			}
-	//			step2 := time.Now()
-	//			t, ok = txIter.Next()
-	//			step3 := time.Now()
-	//			vmExecTime += step2.Sub(step1).Nanoseconds()
-	//			iterTime += step3.Sub(step2).Nanoseconds()
-	//		}
-	//	}
-
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
 	err = blk.CalculateHeadHash()
@@ -102,9 +72,9 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 	}
 	blk.Sign = acc.Sign(blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
-
+	ilog.Infof("generate block txs num: %v, %v, %v", len(blk.Txs), blk.Head.Number, blk.Head.Witness)
 	metricsGeneratedBlockCount.Add(1, nil)
-	metricsTxSize.Set(float64(len(blk.Txs)), nil)
+	generateTxsNum += len(blk.Txs)
 	return &blk, nil
 }
 
@@ -132,35 +102,41 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, staticProperty.WitnessList)
 		return errWitness
 	}
-
+	ilog.Infof("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	for i, t := range blk.Txs {
 		if i == 0 {
 			// base tx
 			continue
 		}
 		exist := txPool.ExistTxs(t.Hash(), parent)
-		if exist == txpool.FoundChain {
+		switch exist {
+		case txpool.FoundChain:
+			ilog.Infof("FoundChain: %v, %v", t, common.Base58Encode(t.Hash()))
 			return errTxDup
-		} else if exist != txpool.FoundPending {
-			if err := t.VerifySelf(); err != nil {
+		case txpool.NotFound:
+			err := t.VerifySelf()
+			if err != nil {
 				return errTxSignature
 			}
-			if t.IsDefer() {
-				referredTx, err := chain.GetTx(t.ReferredTx)
-				if err != nil {
-					return fmt.Errorf("get referred tx error, %v", err)
-				}
-				err = t.VerifyDefer(referredTx)
-				if err != nil {
-					return err
-				}
+
+		}
+		if t.IsDefer() {
+			referredTx, err := chain.GetTx(t.ReferredTx)
+			if err != nil {
+				return fmt.Errorf("get referred tx error, %v", err)
+			}
+			err = t.VerifyDefer(referredTx)
+			if err != nil {
+				return err
 			}
 		}
 	}
 	v := verifier.Verifier{}
+	ilog.Infof("[pob] start to verify block in vm, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
+	defer ilog.Infof("[pob] end of verify block in vm, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	return v.Verify(blk, parent, db, &verifier.Config{
 		Mode:        0,
-		Timeout:     common.SlotLength / 3 * time.Second,
+		Timeout:     time.Millisecond * 250,
 		TxTimeLimit: time.Millisecond * 100,
 	})
 }
@@ -175,7 +151,9 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode != nil {
+		ilog.Infof("[pob] flush start, number: %d, hash = %v", node.Head.Number, common.Base58Encode(node.Block.HeadHash()))
 		bc.Flush(confirmedNode)
+		ilog.Infof("[pob] flush end, number: %d, hash = %v", node.Head.Number, common.Base58Encode(node.Block.HeadHash()))
 		metricsConfirmedLength.Set(float64(confirmedNode.Head.Number+1), nil)
 	}
 }

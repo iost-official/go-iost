@@ -193,9 +193,6 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	blk.Head.GasUsage = txr.GasUsage
 	blk.Head.TxsHash = blk.CalculateTxsHash()
 	blk.Head.MerkleHash = blk.CalculateMerkleHash()
-	if err != nil {
-		return nil, err
-	}
 	err = blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err
