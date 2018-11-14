@@ -115,7 +115,7 @@ func getTestAccount() *account.Account {
 func TestGas_NoPledge(t *testing.T) {
 	ilog.Info("test an account who did not pledge has 0 gas")
 	_, h, _, testAcc := gasTestInit()
-	gas := h.GasManager.CurrentGas(testAcc.ID)
+	gas, _ := h.GasManager.CurrentGas(testAcc.ID)
 	if gas.Value != 0 {
 		t.Fatalf("initial gas error %d", gas)
 	}
@@ -158,7 +158,7 @@ func TestGas_Pledge(t *testing.T) {
 		t.Fatalf("invalid balance after pledge %d", h.DB().TokenBalance("iost", host.ContractAccountPrefix+"iost.gas"))
 	}
 	ilog.Info("After pledge, you will get some gas immediately")
-	gas := h.GasManager.CurrentGas(testAcc.ID)
+	gas, _ := h.GasManager.CurrentGas(testAcc.ID)
 	gasEstimated := pledgeAmount.Multiply(native.GasImmediateReward)
 	if !gas.Equals(gasEstimated) {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
@@ -166,15 +166,15 @@ func TestGas_Pledge(t *testing.T) {
 	ilog.Info("Then gas increases at a predefined rate")
 	delta := int64(5)
 	timePass(h, delta)
-	gas = h.GasManager.CurrentGas(testAcc.ID)
+	gas, _ = h.GasManager.CurrentGas(testAcc.ID)
 	gasEstimated = pledgeAmount.Multiply(native.GasImmediateReward).Add(pledgeAmount.Multiply(native.GasIncreaseRate).Times(delta))
 	if !gas.Equals(gasEstimated) {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
 	}
 	ilog.Info("Then gas will reach limit and not increase any longer")
-	delta = int64(native.GasFulfillSeconds)
+	delta = int64(native.GasFulfillSeconds + 4000)
 	timePass(h, delta)
-	gas = h.GasManager.CurrentGas(testAcc.ID)
+	gas, _ = h.GasManager.CurrentGas(testAcc.ID)
 	gasEstimated = pledgeAmount.Multiply(native.GasLimit)
 	if !gas.Equals(gasEstimated) {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
@@ -191,7 +191,7 @@ func TestGas_PledgeMore(t *testing.T) {
 	}
 	delta1 := int64(5)
 	timePass(h, delta1)
-	gasBeforeSecondPledge := h.GasManager.CurrentGas(testAcc.ID)
+	gasBeforeSecondPledge, _ := h.GasManager.CurrentGas(testAcc.ID)
 	secondTimePledgeAmount := toIOSTFixed(300)
 	_, _, err = e.LoadAndCall(h, code, "pledge", testAcc.ID, testAcc.ID, secondTimePledgeAmount.ToString())
 	if err != nil {
@@ -199,7 +199,7 @@ func TestGas_PledgeMore(t *testing.T) {
 	}
 	delta2 := int64(10)
 	timePass(h, delta2)
-	gasAfterSecondPledge := h.GasManager.CurrentGas(testAcc.ID)
+	gasAfterSecondPledge, _ := h.GasManager.CurrentGas(testAcc.ID)
 	gasEstimated := gasBeforeSecondPledge.Add(secondTimePledgeAmount.Multiply(native.GasImmediateReward).Add(
 		secondTimePledgeAmount.Add(firstTimePledgeAmount).Multiply(native.GasIncreaseRate).Times(delta2)))
 	if !gasAfterSecondPledge.Equals(gasEstimated) {
@@ -223,13 +223,13 @@ func TestGas_UseGas(t *testing.T) {
 	}
 	delta1 := int64(5)
 	timePass(h, delta1)
-	gasBeforeUse := h.GasManager.CurrentGas(testAcc.ID)
+	gasBeforeUse, _ := h.GasManager.CurrentGas(testAcc.ID)
 	gasCost := toIOSTFixed(100)
-	err = h.GasManager.CostGas(testAcc.ID, gasCost)
+	_, err = h.GasManager.CostGas(testAcc.ID, gasCost)
 	if err != nil {
 		t.Fatalf("cost gas failed %v", err)
 	}
-	gasAfterUse := h.GasManager.CurrentGas(testAcc.ID)
+	gasAfterUse, _ := h.GasManager.CurrentGas(testAcc.ID)
 	gasEstimated := gasBeforeUse.Sub(gasCost)
 	if !gasAfterUse.Equals(gasEstimated) {
 		t.Fatalf("invalid gas %d != %d", gasAfterUse, gasEstimated)
@@ -258,7 +258,7 @@ func TestGas_unpledge(t *testing.T) {
 	if h.DB().TokenBalance("iost", "iost.gas") != pledgeAmount.Sub(unpledgeAmount).Value {
 		t.Fatalf("invalid balance after unpledge %d", h.DB().TokenBalance("iost", host.ContractAccountPrefix+"iost.gas"))
 	}
-	gas := h.GasManager.CurrentGas(testAcc.ID)
+	gas, _ := h.GasManager.CurrentGas(testAcc.ID)
 	ilog.Info("After unpledging, the gas limit will decrease. If current gas is more than the new limit, it will be decrease.")
 	gasEstimated := pledgeAmount.Sub(unpledgeAmount).Multiply(native.GasLimit)
 	if !gas.Equals(gasEstimated) {
@@ -313,30 +313,20 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 		t.Fatalf("invalid balance after pledge %d", h.DB().TokenBalance("iost", host.ContractAccountPrefix+"iost.gas"))
 	}
 	ilog.Info("After pledge, you will get some gas immediately")
-	gas := h.GasManager.CurrentGas(otherAcc.ID)
+	gas, _ := h.GasManager.CurrentGas(otherAcc.ID)
 	gasEstimated := pledgeAmount.Multiply(native.GasImmediateReward)
 	if !gas.Equals(gasEstimated) {
 		t.Fatalf("invalid gas %d != %d", gas, gasEstimated)
 	}
 	ilog.Info("If one pledge for others, he will get no gas himself")
-	gas = h.GasManager.CurrentGas(testAcc.ID)
+	gas, _ = h.GasManager.CurrentGas(testAcc.ID)
 	if gas.Value != 0 {
 		t.Fatalf("invalid gas should be empty buy get %v", gas)
 	}
 
-	ilog.Info("Test unpledge to other receiver")
-
-	authList := make(map[string]int)
-	authList[otherAcc.ID] = 2
-	h.Context().Set("auth_list", authList)
-	as, err := json.Marshal(otherAcc)
-	if err != nil {
-		panic(err)
-	}
-	h.DB().MPut("iost.auth-account", otherAcc.ID, database.MustMarshal(string(as)))
-
+	ilog.Info("Test unpledge for others")
 	unpledgeAmount := toIOSTFixed(190)
-	_, _, err = e.LoadAndCall(h, code, "unpledge", otherAcc.ID, testAcc.ID, unpledgeAmount.ToString())
+	_, _, err = e.LoadAndCall(h, code, "unpledge", testAcc.ID, otherAcc.ID, unpledgeAmount.ToString())
 	if err != nil {
 		t.Fatalf("unpledge err %v", err)
 	}
