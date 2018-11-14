@@ -22,6 +22,7 @@ func (c *chainbaseAdapter) Get(key string) (value string) {
 	value, err = c.cb.Get(StateTable, key)
 	if err != nil {
 		c.err = err
+		panic(c.err)
 		return NilPrefix
 	}
 	if value == "" {
@@ -32,12 +33,16 @@ func (c *chainbaseAdapter) Get(key string) (value string) {
 
 func (c *chainbaseAdapter) Put(key, value string) {
 	c.err = c.cb.Put(StateTable, key, value)
+	if c.err != nil {
+		panic(c.err)
+	}
 }
 
 func (c *chainbaseAdapter) Has(key string) bool {
 	ok, err := c.cb.Has(StateTable, key)
 	if err != nil {
 		c.err = err
+		panic(c.err)
 		return false
 	}
 	return ok
@@ -45,6 +50,9 @@ func (c *chainbaseAdapter) Has(key string) bool {
 
 func (c *chainbaseAdapter) Del(key string) {
 	c.err = c.cb.Del(StateTable, key)
+	if c.err != nil {
+		panic(c.err)
+	}
 }
 
 func newChainbaseAdapter(cb IMultiValue) *chainbaseAdapter {
