@@ -51,19 +51,13 @@ func recoverDB(bv global.BaseVariable) error {
 
 	startNumebr := int64(0)
 	hash := stateDB.CurrentTag()
+	var parent *block.Block
 	if hash != "" {
 		blk, err := blockChain.GetBlockByHash([]byte(hash))
 		if err != nil {
 			return fmt.Errorf("statedb doesn't coincides with blockchaindb. err: %v", err)
 		}
 		startNumebr = blk.Head.Number + 1
-	}
-	var parent *block.Block
-	if startNumebr > 0 {
-		blk, err := blockChain.GetBlockByNumber(startNumebr - 1)
-		if err != nil {
-			return fmt.Errorf("get parent block failed, stop the pogram. err: %v", err)
-		}
 		parent = blk
 	}
 	for i := startNumebr; i < blockChain.Length(); i++ {
