@@ -39,3 +39,13 @@ func TestFixed_Times(t *testing.T) {
 	f1.Times(3)
 	assert.Equal(t, f1.Err, errOverflow)
 }
+
+func TestFixed_Marshal(t *testing.T) {
+	f := Fixed{1230, 2, nil}
+	assert.Equal(t, "12.30", f.Marshal())
+	f2, err := UnmarshalFixed("12.30")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 2, f2.Decimal)
+	assert.Equal(t, nil, f2.Err)
+	assert.Equal(t, int64(1230), f2.Value)
+}

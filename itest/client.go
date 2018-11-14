@@ -18,6 +18,8 @@ var (
 	Timeout    = (90 + 30) * time.Second
 	InitToken  = "iost"
 	InitAmount = "1000000"
+	InitPledge = "1000000"
+	InitRAM    = "1000000"
 )
 
 // Error of Client
@@ -116,7 +118,7 @@ func (c *Client) GetAccount(name string) (*Account, error) {
 	// TODO: Get account permission by resp
 	account := &Account{
 		ID:      name,
-		Balance: resp.GetBalance(),
+		balance: resp.GetBalance(),
 	}
 
 	return account, nil
@@ -139,9 +141,11 @@ func (c *Client) SendTransaction(transaction *Transaction) (string, error) {
 		return "", err
 	}
 
+	ilog.Debugf("Check transaction receipt for %v...", resp.GetHash())
 	if err := c.checkTransaction(resp.GetHash()); err != nil {
 		return "", err
 	}
+	ilog.Debugf("Check transaction receipt for %v successful!", resp.GetHash())
 
 	return resp.GetHash(), nil
 }
@@ -155,13 +159,18 @@ func (c *Client) checkTransaction(hash string) error {
 			return ErrTimeout
 		default:
 			<-ticker.C
+
+			ilog.Debugf("Get receipt for %v...", hash)
 			r, err := c.GetReceipt(hash)
-			if err == nil && r != nil {
-				if !r.Success() {
-					return fmt.Errorf("%v: %v", r.Status.Code, r.Status.Message)
-				}
-				return nil
+			if err != nil {
+				break
 			}
+			ilog.Debugf("Get receipt for %v successful!", hash)
+
+			if !r.Success() {
+				return fmt.Errorf("%v: %v", r.Status.Code, r.Status.Message)
+			}
+			return nil
 		}
 	}
 }
@@ -175,12 +184,24 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	)
 
 	action2 := tx.NewAction(
-		"iost.token",
-		"transfer",
-		fmt.Sprintf(`["%v", "%v", %v, %v]`, InitToken, creator.ID, name, InitAmount),
+		"iost.ram",
+		"buy",
+		fmt.Sprintf(`["%v", "%v", "%v"]`, creator.ID, name, InitRAM),
 	)
 
-	actions := []*tx.Action{action1, action2}
+	action3 := tx.NewAction(
+		"iost.gas",
+		"pledge",
+		fmt.Sprintf(`["%v", "%v", "%v"]`, creator.ID, name, InitPledge),
+	)
+
+	action4 := tx.NewAction(
+		"iost.token",
+		"transfer",
+		fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, InitToken, creator.ID, name, InitAmount),
+	)
+
+	actions := []*tx.Action{action1, action2, action3, action4}
 	transaction := NewTransaction(actions)
 
 	st, err := creator.Sign(transaction)
@@ -188,24 +209,27 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 		return nil, err
 	}
 
+	ilog.Debugf("Sending create account transaction for %v...", name)
 	if _, err := c.SendTransaction(st); err != nil {
 		return nil, err
 	}
+	ilog.Debugf("Sended create account transaction for %v!", name)
 
 	account := &Account{
-		ID:  name,
-		key: key,
+		ID:      name,
+		balance: InitAmount,
+		key:     key,
 	}
 
 	return account, nil
 }
 
 // Transfer will transfer token by sending transaction
-func (c *Client) Transfer(sender *Account, token, recipient, amount string) error {
+func (c *Client) Transfer(sender, recipient *Account, token, amount string) error {
 	action := tx.NewAction(
 		"iost.token",
 		"transfer",
-		fmt.Sprintf(`["%v", "%v", %v, %v]`, token, sender.ID, recipient, amount),
+		fmt.Sprintf(`["%v", "%v", %v, %v]`, token, sender.ID, recipient.ID, amount),
 	)
 
 	actions := []*tx.Action{action}
