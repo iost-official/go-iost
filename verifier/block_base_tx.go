@@ -37,8 +37,6 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 
 func baseTxData(bh *block.BlockHead, pbh *block.BlockHead) (string, error) {
 	if pbh != nil {
-		ilog.Info(bh.Number, bh.Witness[4:6])
-		ilog.Info(pbh)
 		return fmt.Sprintf(`[{"parent":["%v", "%v"]}]`, pbh.Witness, pbh.GasUsage), nil
 	}
 	if bh.Number != 0 {
