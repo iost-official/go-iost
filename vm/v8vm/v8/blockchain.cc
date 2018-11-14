@@ -175,7 +175,7 @@ void IOSTBlockchain_contextInfo(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> self = args.Holder();
 
-    char *resultStr = "";
+    char *resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
