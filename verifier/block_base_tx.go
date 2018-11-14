@@ -21,7 +21,6 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 	if len(t.Actions) == 0 {
 		return t, nil
 	}
-	t = tx.NewTx(t.Actions, t.Signers, t.GasLimit, t.GasPrice, t.Expiration, t.Delay)
 	txData, err := baseTxData(blk.Head, parent.Head)
 	if err != nil {
 		return nil, err
@@ -29,7 +28,8 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 	// manually deep copy actions
 	act := *BlockBaseTx.Actions[0]
 	act.Data = txData
-	t.Actions[0] = &act
+	acts := []*tx.Action{&act}
+	t = tx.NewTx(acts, t.Signers, t.GasLimit, t.GasPrice, t.Expiration, t.Delay)
 	return t, nil
 }
 
