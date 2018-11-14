@@ -23,7 +23,7 @@ var (
 	heightAvailableTime     int64 = 22 * 3
 	heightTimeout           int64 = 100 * 22 * 3
 	continuousNum           int64 = 10
-	syncNumber              int64 = 11 * continuousNum
+	syncNumber                    = 11 * continuousNum
 )
 
 // Synchronizer defines the functions of synchronizer module
@@ -422,7 +422,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 				return true
 			})
 			if len(hq.Nums) > 0 {
-				ilog.Infof("retry download ", hq.Nums)
+				//ilog.Info("retry download ", hq.Nums)
 				sort.Slice(hq.Nums, func(i int, j int) bool {
 					return hq.Nums[i] < hq.Nums[j]
 				})

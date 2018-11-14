@@ -81,6 +81,7 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		exitSignal:      make(chan struct{}),
 		chRecvBlock:     p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
 		chRecvBlockHash: p2pService.Register("consensus block head", p2p.NewBlockHash),
+		chQueryBlock:    p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		chVerifyBlock:   make(chan *verifyBlockMessage, 1024),
 	}
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
@@ -166,7 +167,7 @@ func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
 	p.blockReqMap.Store(string(blkInfo.Hash), time.AfterFunc(blockReqTimeout, func() {
 		p.blockReqMap.Delete(string(blkInfo.Hash))
 	}))
-	p.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage, true)
+	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage, true)
 }
 
 func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
@@ -186,7 +187,7 @@ func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 		ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
 		return
 	}
-	p.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage, true)
+	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage, true)
 }
 
 func (p *PoB) broadcastBlockHash(blk *block.Block) {

@@ -45,6 +45,7 @@ const (
 	RoutingTableResponse
 	NewBlock
 	NewBlockHash
+	NewBlockRequest
 	SyncBlockHashRequest
 	SyncBlockHashResponse
 	SyncBlockRequest
@@ -64,6 +65,8 @@ func (m MessageType) String() string {
 		return "RoutingTableResponse"
 	case NewBlock:
 		return "NewBlock"
+	case NewBlockRequest:
+		return "NewBlockRequest"
 	case SyncBlockHashRequest:
 		return "SyncBlockHashRequest"
 	case SyncBlockHashResponse:

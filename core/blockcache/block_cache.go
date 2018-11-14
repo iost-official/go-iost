@@ -407,19 +407,19 @@ func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 // Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
 	linkedTree := treeprint.New()
-	bc.linkedRoot.DrawChildren(linkedTree)
+	bc.linkedRoot.drawChildren(linkedTree)
 	singleTree := treeprint.New()
-	bc.singleRoot.DrawChildren(singleTree)
+	bc.singleRoot.drawChildren(singleTree)
 	return linkedTree.String()
 }
 
-func (bcn *BlockCacheNode) DrawChildren(root treeprint.Tree) {
+func (bcn *BlockCacheNode) drawChildren(root treeprint.Tree) {
 	for c := range bcn.Children {
 		pattern := strconv.Itoa(int(c.Head.Number))
 		if c.Head.Witness != "" {
 			pattern += "(" + c.Head.Witness[4:6] + ")"
 		}
 		root.AddNode(pattern)
-		c.DrawChildren(root.FindLastNode())
+		c.drawChildren(root.FindLastNode())
 	}
 }
