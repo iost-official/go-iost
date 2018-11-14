@@ -122,7 +122,7 @@ void IOSTBlockchain_blockInfo(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> self = args.Holder();
 
-    char* resultStr = "";
+    char* resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -138,17 +138,18 @@ void IOSTBlockchain_blockInfo(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
-    free(resultStr);
+    if (resultStr != nullptr) free(resultStr);
 }
 
 void IOSTBlockchain_txInfo(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> self = args.Holder();
 
-    char *resultStr = "";
+    char *resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -163,10 +164,11 @@ void IOSTBlockchain_txInfo(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
-    free(resultStr);
+    if (resultStr != nullptr) free(resultStr);
 }
 
 void IOSTBlockchain_contextInfo(const FunctionCallbackInfo<Value> &args) {
@@ -188,10 +190,11 @@ void IOSTBlockchain_contextInfo(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
-    free(resultStr);
+    if (resultStr != nullptr) free(resultStr);
 }
 
 void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
@@ -234,7 +237,7 @@ void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
     String::Utf8Value contractStr(contract);
     String::Utf8Value apiStr(api);
     String::Utf8Value argStr(arg);
-    char* resultStr = "";
+    char* resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -249,12 +252,12 @@ void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
-    free(resultStr);
+    if (resultStr != nullptr) free(resultStr);
 }
-
 
 void IOSTBlockchain_callWithAuth(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
@@ -296,7 +299,7 @@ void IOSTBlockchain_callWithAuth(const FunctionCallbackInfo<Value> &args) {
     String::Utf8Value contractStr(contract);
     String::Utf8Value apiStr(api);
     String::Utf8Value argStr(arg);
-    char* resultStr = "";
+    char* resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -311,10 +314,11 @@ void IOSTBlockchain_callWithAuth(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
-    free(resultStr);
+    if (resultStr != nullptr) free(resultStr);
 }
 
 void IOSTBlockchain_requireAuth(const FunctionCallbackInfo<Value> &args) {
@@ -364,6 +368,7 @@ void IOSTBlockchain_requireAuth(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(result);
@@ -405,6 +410,7 @@ void IOSTBlockchain_receipt(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().SetNull();
@@ -446,6 +452,7 @@ void IOSTBlockchain_event(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().SetNull();
