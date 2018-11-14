@@ -3,6 +3,7 @@ package native
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"sort"
 
@@ -410,7 +411,7 @@ var (
 				return nil, cost, err
 			}
 			if fbalance < amount {
-				return nil, cost, host.ErrBalanceNotEnough
+				return nil, cost, fmt.Errorf("balance not enough %v < %v", fbalance, amount)
 			}
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrGasLimitExceeded
@@ -500,7 +501,7 @@ var (
 				return nil, cost, err
 			}
 			if fbalance < amount {
-				return nil, cost, host.ErrBalanceNotEnough
+				return nil, cost, fmt.Errorf("balance not enough %v < %v", fbalance, amount)
 			}
 
 			fbalance -= amount
@@ -577,7 +578,7 @@ var (
 				return nil, cost, err
 			}
 			if fbalance < amount {
-				return nil, cost, host.ErrBalanceNotEnough
+				return nil, cost, fmt.Errorf("balance not enough %v < %v", fbalance, amount)
 			}
 			fbalance -= amount
 			cost0 = setBalance(h, tokenName, from, fbalance)
