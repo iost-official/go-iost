@@ -5,6 +5,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // BlockBaseTx the first tx in a block
@@ -32,6 +33,9 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 
 func baseTxData(bh *block.BlockHead, pbh *block.BlockHead) (string, error) {
 	if pbh != nil {
+		ilog.Info(pbh)
+		ilog.Info(pbh.Witness)
+		ilog.Info(pbh.GasUsage)
 		return fmt.Sprintf(`[{"parent":["%v", "%v"]}]`, pbh.Witness, pbh.GasUsage), nil
 	}
 	if bh.Number != 0 {
