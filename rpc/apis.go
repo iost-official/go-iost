@@ -29,6 +29,7 @@ import (
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/go-iost/new_rpc ApisServer
@@ -135,8 +136,8 @@ func (s *GRPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, er
 	}
 
 	return &TxRes{
-		TxRaw: trx.ToPb(),
-		Hash:  common.Base58Encode(trx.Hash()),
+		Tx:   trx.ToPb(),
+		Hash: common.Base58Encode(trx.Hash()),
 	}, nil
 }
 
@@ -154,8 +155,8 @@ func (s *GRPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*Tx
 	}
 
 	return &TxReceiptRes{
-		TxReceiptRaw: receipt.ToPb(),
-		Hash:         common.Base58Encode(receiptHashBytes),
+		TxReceipt: receipt.ToPb(),
+		Hash:      common.Base58Encode(receiptHashBytes),
 	}, nil
 }
 
@@ -173,8 +174,8 @@ func (s *GRPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*
 	}
 
 	return &TxReceiptRes{
-		TxReceiptRaw: receipt.ToPb(),
-		Hash:         common.Base58Encode(receipt.Hash()),
+		TxReceipt: receipt.ToPb(),
+		Hash:      common.Base58Encode(receipt.Hash()),
 	}, nil
 }
 
@@ -316,44 +317,54 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	} else {
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
-	gas := s.visitor.GasHandler.CurrentTotalGas(key.ID, s.bchain.Length())
+	ram := &RAMInfo{}
+	ram.Available = s.visitor.TokenBalance("ram", key.ID)
+	balance := s.visitor.TokenBalanceFixed("iost", key.ID).ToString()
+
+	gas := &GASInfo{}
+	var h *host.Host
+	c := host.NewContext(nil)
+	h = host.NewHost(c, s.visitor, nil, nil)
+	h.Context().Set("contract_name", "iost.gas")
+	g := host.NewGasManager(h)
+	v, _ := g.CurrentTotalGas(key.ID, s.bc.LinkedRoot().Head.Time)
+	gas.CurrentTotal = v.ToString()
+	v, _ = g.GasRate(key.ID)
+	gas.IncreaseSpeed = v.ToString()
+	v, _ = g.GasLimit(key.ID)
+	gas.Limit = v.ToString()
+	v, _ = g.GasPledge(key.ID, key.ID)
+	gas.PledgedCoin = v.ToString()
 	return &GetAccountRes{
-		Balance: s.visitor.Balance(key.ID),
-		Gas:     gas.ToString(),
+		Balance: balance,
+		Gas:     gas,
+		Ram:     ram,
 	}, nil
 }
 
-// SendRawTx send transaction to blockchain
-func (s *GRPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
-	if rawTx == nil {
+// SendTx send transaction to blockchain
+func (s *GRPCServer) SendTx(ctx context.Context, txReq *TxReq) (*SendTxRes, error) {
+	if txReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	var trx tx.Tx
-	err := trx.Decode(rawTx.Data)
+	trx.FromPb(txReq.Tx)
+	err := s.txpool.AddTx(&trx)
 	if err != nil {
 		return nil, err
 	}
-	// add servi
-	//tx.RecordTx(trx, tx.Data.Self())
-	err = s.txpool.AddTx(&trx)
-	if err != nil {
-		return nil, err
-	}
-	res := SendRawTxRes{}
-	res.Hash = string(trx.Hash())
+	res := SendTxRes{}
+	res.Hash = common.Base58Encode(trx.Hash())
 	return &res, nil
 }
 
 // ExecTx only exec the tx, but not put it onto chain
-func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, error) {
-	if rawTx == nil {
+func (s *GRPCServer) ExecTx(ctx context.Context, txReq *TxReq) (*ExecTxRes, error) {
+	if txReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	var trx tx.Tx
-	err := trx.Decode(rawTx.Data)
-	if err != nil {
-		return nil, err
-	}
+	trx.FromPb(txReq.Tx)
 	_, head := s.txpool.TxIterator()
 	topBlock := head.Block
 	blk := block.Block{
@@ -362,7 +373,7 @@ func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, e
 			ParentHash: topBlock.HeadHash(),
 			Number:     topBlock.Head.Number + 1,
 			Witness:    "",
-			Time:       time.Now().Unix() / common.SlotLength,
+			Time:       time.Now().UnixNano(),
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -372,7 +383,7 @@ func (s *GRPCServer) ExecTx(ctx context.Context, rawTx *RawTxReq) (*ExecTxRes, e
 	if err != nil {
 		return nil, fmt.Errorf("exec tx failed: %v", err)
 	}
-	return &ExecTxRes{TxReceiptRaw: receipt.ToPb()}, nil
+	return &ExecTxRes{TxReceipt: receipt.ToPb()}, nil
 }
 
 // Subscribe used for event

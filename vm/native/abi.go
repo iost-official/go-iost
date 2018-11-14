@@ -11,11 +11,6 @@ func SystemABI() *contract.Contract {
 	return ABI("iost.system", systemABIs)
 }
 
-// BonusABI generate iost.bonus abi and contract
-func BonusABI() *contract.Contract {
-	return ABI("iost.bonus", bonusABIs)
-}
-
 // GasABI generate iost.gas abi and contract
 func GasABI() *contract.Contract {
 	return ABI("iost.gas", gasABIs)
@@ -40,11 +35,8 @@ func ABI(id string, abi map[string]*abi) *contract.Contract {
 
 	for _, v := range abi {
 		c.Info.Abi = append(c.Info.Abi, &contract.ABI{
-			Name:     v.name,
-			Args:     v.args,
-			Payment:  0,
-			GasPrice: int64(1000),
-			Limit:    contract.NewCost(100, 100, 100),
+			Name: v.name,
+			Args: v.args,
 		})
 	}
 

@@ -1,13 +1,12 @@
 package block
 
 import (
-	"encoding/binary"
-
 	"errors"
 	"fmt"
 
 	"strconv"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db/kv"
 )
@@ -22,24 +21,13 @@ var (
 	blockLength       = []byte("BlockLength")
 	blockNumberPrefix = []byte("n")
 	blockPrefix       = []byte("H")
-	txPrefix          = []byte("t") // txPrefix + tx hash -> block hash + tx hash
-	bTxPrefix         = []byte("B") // bTxPrefix + block hash + tx hash -> tx data
-	txReceiptPrefix   = []byte("h") // txReceiptPrefix + tx hash -> block hash + receipt hash
-	receiptPrefix     = []byte("r") // receiptPrefix + receipt hash -> block hash + receipt hash
-	bReceiptPrefix    = []byte("b") // bReceiptPrefix + block hash + receipt hash -> receipt data
+	txPrefix          = []byte("t")      // txPrefix + tx hash -> block hash + tx hash
+	bTxPrefix         = []byte("B")      // bTxPrefix + block hash + tx hash -> tx data
+	txReceiptPrefix   = []byte("h")      // txReceiptPrefix + tx hash -> block hash + receipt hash
+	receiptPrefix     = []byte("r")      // receiptPrefix + receipt hash -> block hash + receipt hash
+	bReceiptPrefix    = []byte("b")      // bReceiptPrefix + block hash + receipt hash -> receipt data
+	delaytxPrefix     = []byte("delay-") // delaytxPrefix + tx hash -> tx data
 )
-
-// Int64ToByte is int64 to byte
-func Int64ToByte(n int64) []byte {
-	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, uint64(n))
-	return b
-}
-
-// ByteToInt64 is byte to int64
-func ByteToInt64(b []byte) int64 {
-	return int64(binary.LittleEndian.Uint64(b))
-}
 
 // NewBlockChain returns a Chain instance
 func NewBlockChain(path string) (Chain, error) {
@@ -57,9 +45,9 @@ func NewBlockChain(path string) (Chain, error) {
 		if err != nil || len(lengthByte) == 0 {
 			return nil, errors.New("fail to get blocklength")
 		}
-		length = ByteToInt64(lengthByte)
+		length = common.BytesToInt64(lengthByte)
 	} else {
-		lengthByte := Int64ToByte(0)
+		lengthByte := common.Int64ToBytes(0)
 		tempErr := levelDB.Put(blockLength, lengthByte)
 		if tempErr != nil {
 			err = errors.New("fail to put blocklength")
@@ -83,17 +71,18 @@ func (bc *BlockChain) Push(block *Block) error {
 	}
 	hash := block.HeadHash()
 	number := block.Head.Number
-	bc.blockChainDB.Put(append(blockNumberPrefix, Int64ToByte(number)...), hash)
+	bc.blockChainDB.Put(append(blockNumberPrefix, common.Int64ToBytes(number)...), hash)
 	blockByte, err := block.EncodeM()
 	if err != nil {
 		return errors.New("fail to encode block")
 	}
 	bc.blockChainDB.Put(append(blockPrefix, hash...), blockByte)
-	bc.blockChainDB.Put(blockLength, Int64ToByte(number+1))
-	for i, tx := range block.Txs {
-		tHash := tx.Hash()
+	bc.blockChainDB.Put(blockLength, common.Int64ToBytes(number+1))
+	for i, t := range block.Txs {
+		tHash := t.Hash()
+		txBytes := t.Encode()
 		bc.blockChainDB.Put(append(txPrefix, tHash...), append(hash, tHash...))
-		bc.blockChainDB.Put(append(bTxPrefix, append(hash, tHash...)...), tx.Encode())
+		bc.blockChainDB.Put(append(bTxPrefix, append(hash, tHash...)...), txBytes)
 
 		// save receipt
 		rHash := block.Receipts[i].Hash()
@@ -101,8 +90,11 @@ func (bc *BlockChain) Push(block *Block) error {
 		bc.blockChainDB.Put(append(receiptPrefix, rHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(bReceiptPrefix, append(hash, rHash...)...), block.Receipts[i].Encode())
 
-		if tx.Delay > 0 {
-
+		if t.Delay > 0 {
+			bc.blockChainDB.Put(append(delaytxPrefix, tHash...), txBytes)
+		}
+		if t.IsDefer() {
+			bc.blockChainDB.Delete(append(delaytxPrefix, t.ReferredTx...))
 		}
 	}
 	err = bc.blockChainDB.CommitBatch()
@@ -120,7 +112,7 @@ func (bc *BlockChain) CheckLength() {
 		if err != nil {
 			fmt.Println("fail to get the block")
 		} else {
-			bc.blockChainDB.Put(blockLength, Int64ToByte(i))
+			bc.blockChainDB.Put(blockLength, common.Int64ToBytes(i))
 			bc.length = i
 			break
 		}
@@ -137,15 +129,15 @@ func (bc *BlockChain) Top() (*Block, error) {
 
 // GetHashByNumber is get hash by number
 func (bc *BlockChain) GetHashByNumber(number int64) ([]byte, error) {
-	hash, err := bc.blockChainDB.Get(append(blockNumberPrefix, Int64ToByte(number)...))
+	hash, err := bc.blockChainDB.Get(append(blockNumberPrefix, common.Int64ToBytes(number)...))
 	if err != nil || len(hash) == 0 {
 		return nil, errors.New("fail to get hash by number")
 	}
 	return hash, nil
 }
 
-// GetBlockByteByHash is get block byte by hash
-func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
+// getBlockByteByHash is get block byte by hash
+func (bc *BlockChain) getBlockByteByHash(hash []byte) ([]byte, error) {
 	blockByte, err := bc.blockChainDB.Get(append(blockPrefix, hash...))
 	if err != nil || len(blockByte) == 0 {
 		return nil, errors.New("fail to get block byte by hash")
@@ -155,7 +147,7 @@ func (bc *BlockChain) GetBlockByteByHash(hash []byte) ([]byte, error) {
 
 // GetBlockByHash is get block by hash
 func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
-	blockByte, err := bc.GetBlockByteByHash(hash)
+	blockByte, err := bc.getBlockByteByHash(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -320,6 +312,24 @@ func (bc *BlockChain) HasReceipt(hash []byte) (bool, error) {
 // Close is close database
 func (bc *BlockChain) Close() {
 	bc.blockChainDB.Close()
+}
+
+// AllDelaytx returns all delay transactions.
+func (bc *BlockChain) AllDelaytx() ([]*tx.Tx, error) {
+	txBytes, err := bc.blockChainDB.Keys(delaytxPrefix)
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]*tx.Tx, 0)
+	for _, txByte := range txBytes {
+		t := &tx.Tx{}
+		err = t.Decode(txByte)
+		if err != nil {
+			continue
+		}
+		ret = append(ret, t)
+	}
+	return ret, nil
 }
 
 // Draw the graph about blockchain

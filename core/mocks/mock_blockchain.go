@@ -34,6 +34,19 @@ func (m *MockChain) EXPECT() *MockChainMockRecorder {
 	return m.recorder
 }
 
+// AllDelaytx mocks base method
+func (m *MockChain) AllDelaytx() ([]*tx.Tx, error) {
+	ret := m.ctrl.Call(m, "AllDelaytx")
+	ret0, _ := ret[0].([]*tx.Tx)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AllDelaytx indicates an expected call of AllDelaytx
+func (mr *MockChainMockRecorder) AllDelaytx() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllDelaytx", reflect.TypeOf((*MockChain)(nil).AllDelaytx))
+}
+
 // CheckLength mocks base method
 func (m *MockChain) CheckLength() {
 	m.ctrl.Call(m, "CheckLength")
@@ -90,19 +103,6 @@ func (m *MockChain) GetBlockByNumber(arg0 int64) (*block.Block, error) {
 // GetBlockByNumber indicates an expected call of GetBlockByNumber
 func (mr *MockChainMockRecorder) GetBlockByNumber(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByNumber", reflect.TypeOf((*MockChain)(nil).GetBlockByNumber), arg0)
-}
-
-// GetBlockByteByHash mocks base method
-func (m *MockChain) GetBlockByteByHash(arg0 []byte) ([]byte, error) {
-	ret := m.ctrl.Call(m, "GetBlockByteByHash", arg0)
-	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBlockByteByHash indicates an expected call of GetBlockByteByHash
-func (mr *MockChainMockRecorder) GetBlockByteByHash(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByteByHash", reflect.TypeOf((*MockChain)(nil).GetBlockByteByHash), arg0)
 }
 
 // GetHashByNumber mocks base method

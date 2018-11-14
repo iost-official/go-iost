@@ -3,27 +3,34 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
-int goTransfer(SandboxPtr, const char *, const char *, const char *, size_t *);
-int goWithdraw(SandboxPtr, const char *, const char *, size_t *);
-int goDeposit(SandboxPtr, const char *, const char *, size_t *);
-int goTopUp(SandboxPtr, const char *, const char *, const char *, size_t *);
-int goCountermand(SandboxPtr, const char *, const char *, const char *, size_t *);
-int goBlockInfo(SandboxPtr, char **, size_t *);
-int goTxInfo(SandboxPtr, char **, size_t *);
-int goCall(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
-int goCallWithReceipt(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
-int goRequireAuth(SandboxPtr, const char *, const char *, bool *, size_t *);
-int goGrantServi(SandboxPtr, const char *, const char *, size_t *);
-int goPut(SandboxPtr, const char *, const char *, size_t *);
-char *goGet(SandboxPtr, const char *, size_t *);
-int goDel(SandboxPtr, const char *, size_t *);
-int goMapPut(SandboxPtr, const char *, const char *, const char *, size_t *);
-bool goMapHas(SandboxPtr, const char *, const char *, size_t *);
-char *goMapGet(SandboxPtr, const char *, const char *, size_t *);
-int goMapDel(SandboxPtr, const char *, const char *, size_t *);
-char *goMapKeys(SandboxPtr, const char *, size_t *);
-char *goGlobalGet(SandboxPtr, const char *, const char *, size_t *);
-int goConsoleLog(SandboxPtr, const char *, const char *);
+char* goBlockInfo(SandboxPtr, char **, size_t *);
+char* goTxInfo(SandboxPtr, char **, size_t *);
+char* goContextInfo(SandboxPtr, char **, size_t *);
+char* goCall(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
+char* goCallWithAuth(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
+char* goRequireAuth(SandboxPtr, const char *, const char *, bool *, size_t *);
+char* goReceipt(SandboxPtr, const char *, size_t *);
+char* goEvent(SandboxPtr, const char *, size_t *);
+
+char* goPut(SandboxPtr, const char *, const char *, const char *, size_t *);
+char* goHas(SandboxPtr, const char *, const char *, bool *, size_t *);
+char* goGet(SandboxPtr, const char *, const char *, char **, size_t *);
+char* goDel(SandboxPtr, const char *, const char *, size_t *);
+char* goMapPut(SandboxPtr, const char *, const char *, const char *, const char *, size_t *);
+char* goMapHas(SandboxPtr, const char *, const char *, const char *, bool *, size_t *);
+char* goMapGet(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
+char* goMapDel(SandboxPtr, const char *, const char *, const char *, size_t *);
+char* goMapKeys(SandboxPtr, const char *, const char *, char **, size_t *);
+char* goMapLen(SandboxPtr, const char *, const char *, size_t *, size_t *);
+
+char* goGlobalHas(SandboxPtr, const char *, const char *, const char *, bool *, size_t *);
+char* goGlobalGet(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
+char* goGlobalMapHas(SandboxPtr, const char *, const char *, const char *, const char *, bool *, size_t *);
+char* goGlobalMapGet(SandboxPtr, const char *, const char *, const char *, const char *, char **, size_t *);
+char* goGlobalMapKeys(SandboxPtr, const char *,  const char *, const char *, char **, size_t *);
+char* goGlobalMapLen(SandboxPtr, const char *, const char *, const char *, size_t *, size_t *);
+
+char* goConsoleLog(SandboxPtr, const char *, const char *);
 */
 import "C"
 import (
@@ -92,18 +99,19 @@ func (sbx *Sandbox) Release() {
 func (sbx *Sandbox) Init(vmType vmPoolType) {
 	// init require
 	C.InitGoConsole((C.consoleFunc)(C.goConsoleLog))
-	C.InitGoBlockchain((C.transferFunc)(C.goTransfer),
-		(C.withdrawFunc)(C.goWithdraw),
-		(C.depositFunc)(C.goDeposit),
-		(C.topUpFunc)(C.goTopUp),
-		(C.countermandFunc)(C.goCountermand),
+	C.InitGoBlockchain(
 		(C.blockInfoFunc)(C.goBlockInfo),
 		(C.txInfoFunc)(C.goTxInfo),
+		(C.contextInfoFunc)(C.goContextInfo),
 		(C.callFunc)(C.goCall),
-		(C.callFunc)(C.goCallWithReceipt),
+		(C.callFunc)(C.goCallWithAuth),
 		(C.requireAuthFunc)(C.goRequireAuth),
-		(C.grantServiFunc)(C.goGrantServi))
-	C.InitGoStorage((C.putFunc)(C.goPut),
+		(C.receiptFunc)(C.goReceipt),
+		(C.eventFunc)(C.goEvent),
+	)
+	C.InitGoStorage(
+		(C.putFunc)(C.goPut),
+		(C.hasFunc)(C.goHas),
 		(C.getFunc)(C.goGet),
 		(C.delFunc)(C.goDel),
 		(C.mapPutFunc)(C.goMapPut),
@@ -111,7 +119,15 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 		(C.mapGetFunc)(C.goMapGet),
 		(C.mapDelFunc)(C.goMapDel),
 		(C.mapKeysFunc)(C.goMapKeys),
-		(C.globalGetFunc)(C.goGlobalGet))
+		(C.mapLenFunc)(C.goMapLen),
+
+		(C.globalHasFunc)(C.goGlobalHas),
+		(C.globalGetFunc)(C.goGlobalGet),
+		(C.globalMapHasFunc)(C.goGlobalMapHas),
+		(C.globalMapGetFunc)(C.goGlobalMapGet),
+		(C.globalMapKeysFunc)(C.goGlobalMapKeys),
+		(C.globalMapLenFunc)(C.goGlobalMapLen),
+	)
 	C.loadVM(sbx.context, C.int(vmType))
 }
 
@@ -123,7 +139,7 @@ func (sbx *Sandbox) SetGasLimit(limit int64) {
 // SetHost set host in sandbox and set gas limit
 func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
-	sbx.SetGasLimit(host.GasLimit())
+	sbx.SetGasLimit(host.GasLimitValue())
 }
 
 // SetJSPath set js path and ReloadVM
@@ -141,7 +157,10 @@ func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	defer C.free(unsafe.Pointer(cCode))
 
 	var cCompiledCode *C.char
-	C.compile(sbx.context, cCode, &cCompiledCode)
+	ret := C.compile(sbx.context, cCode, &cCompiledCode)
+	if ret == 1 {
+		return "", errors.New("compile code error")
+	}
 
 	compiledCode := C.GoString(cCompiledCode)
 	C.free(unsafe.Pointer(cCompiledCode))
@@ -178,7 +197,7 @@ ret;
 var obj = new module.exports;
 
 // run contract with specified function and args
-obj.%s(%s)
+obj.%s(%s);
 `, code, function, argStr), nil
 }
 
@@ -190,7 +209,8 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 
 	rs := C.Execute(sbx.context, cCode, expireTime)
 
-	result := C.GoString(rs.Value)
+	var result string
+	result = C.GoString(rs.Value)
 	defer C.free(unsafe.Pointer(rs.Value))
 	defer C.free(unsafe.Pointer(rs.Err))
 

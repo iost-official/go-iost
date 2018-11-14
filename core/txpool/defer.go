@@ -4,18 +4,20 @@ import (
 	"bytes"
 	"fmt"
 	"math"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/db/kv"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
 	"github.com/uber-go/atomic"
 )
 
-func compareDelayTx(a, b interface{}) int {
+var (
+	minTickerTime = time.Second
+)
+
+func compareDeferTx(a, b interface{}) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
 	if txa.Time == txb.Time {
@@ -24,11 +26,9 @@ func compareDelayTx(a, b interface{}) int {
 	return int(txa.Time - txb.Time)
 }
 
-// DeferServer manages delayed transaction and sends them to txpool on time.
+// DeferServer manages defer transaction and sends them to txpool on time.
 type DeferServer struct {
-	deferTxDB *kv.Storage
-
-	index            *redblacktree.Tree
+	pool             *redblacktree.Tree
 	rw               *sync.RWMutex
 	nextScheduleTime atomic.Int64
 
@@ -38,20 +38,14 @@ type DeferServer struct {
 }
 
 // NewDeferServer returns a new DeferServer instance.
-func NewDeferServer(path string, txpool *TxPImpl) (*DeferServer, error) {
-	levelDB, err := kv.NewStorage(path, kv.LevelDBStorage)
-	if err != nil {
-		return nil, fmt.Errorf("fail to init deferserver DB, %v", err)
-	}
-
+func NewDeferServer(txpool *TxPImpl) (*DeferServer, error) {
 	deferServer := &DeferServer{
-		deferTxDB: levelDB,
-		index:     redblacktree.NewWith(compareDelayTx),
-		rw:        new(sync.RWMutex),
-		txpool:    txpool,
-		quitCh:    make(chan struct{}),
+		pool:   redblacktree.NewWith(compareDeferTx),
+		rw:     new(sync.RWMutex),
+		txpool: txpool,
+		quitCh: make(chan struct{}),
 	}
-	err = deferServer.buildIndex()
+	err := deferServer.buildIndex()
 	if err != nil {
 		return nil, fmt.Errorf("build defertx index error, %v", err)
 	}
@@ -60,63 +54,58 @@ func NewDeferServer(path string, txpool *TxPImpl) (*DeferServer, error) {
 }
 
 func (d *DeferServer) buildIndex() error {
-	keys, err := d.deferTxDB.Keys([]byte{})
+	txs, err := d.txpool.global.BlockChain().AllDelaytx()
 	if err != nil {
 		return err
 	}
-	for _, key := range keys {
-		newTx, err := d.getNewTx(key)
-		if err != nil {
-			return err
-		}
-		d.index.Put(newTx, true)
+	for _, t := range txs {
+		d.pool.Put(d.toIndex(t), true)
 	}
 	return nil
 }
 
-func (d *DeferServer) getNewTx(txHash []byte) (*tx.Tx, error) {
-	newTxBytes, err := d.deferTxDB.Get(txHash)
-	if err != nil {
-		return nil, err
+func (d *DeferServer) toIndex(delayTx *tx.Tx) *tx.Tx {
+	return &tx.Tx{
+		ReferredTx: delayTx.Hash(),
+		Time:       delayTx.Time + delayTx.Delay,
 	}
-	newTx := &tx.Tx{}
-	err = newTx.Decode(newTxBytes)
-	return newTx, err
 }
 
-// DelDelaytx deletes a tx in defer server.
-func (d *DeferServer) DelDelaytx(txHash []byte) error {
-	newTx, err := d.getNewTx(txHash)
-	if err != nil {
-		return err
+// DelDeferTx deletes a tx in defer server.
+func (d *DeferServer) DelDeferTx(deferTx *tx.Tx) error {
+	idx := &tx.Tx{
+		ReferredTx: deferTx.ReferredTx,
+		Time:       deferTx.Time,
 	}
-	d.deferTxDB.Delete(txHash)
 	d.rw.Lock()
-	d.index.Remove(newTx)
+	d.pool.Remove(idx)
 	d.rw.Unlock()
 	return nil
 }
 
-// StoreDelaytx stores a tx in defer server.
-func (d *DeferServer) StoreDelaytx(t *tx.Tx) {
-	newTx := &tx.Tx{
-		ReferredTx: t.ReferredTx,
-		Time:       t.Time + t.Delay,
-	}
-	d.deferTxDB.Put(t.Hash(), newTx.Encode())
+// StoreDeferTx stores a tx in defer server.
+func (d *DeferServer) StoreDeferTx(delayTx *tx.Tx) {
+	idx := d.toIndex(delayTx)
 	d.rw.Lock()
-	d.index.Put(newTx, true)
+	d.pool.Put(idx, true)
 	d.rw.Unlock()
-	if newTx.Time < d.nextScheduleTime.Load() {
-		d.nextScheduleTime.Store(newTx.Time)
+	if idx.Time < d.nextScheduleTime.Load() {
+		d.nextScheduleTime.Store(idx.Time)
 		d.restartDeferTicker()
 	}
 }
 
-// DumpDelayTx dumps all delay transactions for debug.
-func (d *DeferServer) DumpDelayTx() []*tx.Tx {
+// DumpDeferTx dumps all defer transactions for debug.
+func (d *DeferServer) DumpDeferTx() []*tx.Tx {
 	ret := make([]*tx.Tx, 0)
+	iter := d.pool.Iterator()
 	d.rw.RLock()
+	ok := iter.Next()
+	for ok {
+		deferTx := iter.Key().(*tx.Tx)
+		ret = append(ret, deferTx)
+		ok = iter.Next()
+	}
 	d.rw.RUnlock()
 	return ret
 }
@@ -144,25 +133,33 @@ func (d *DeferServer) restartDeferTicker() {
 
 func (d *DeferServer) deferTicker() {
 	for {
+		scheduled := time.Duration(d.nextScheduleTime.Load() - time.Now().UnixNano())
+		if scheduled < minTickerTime {
+			scheduled = minTickerTime
+		}
 		select {
 		case <-d.quitCh:
 			d.quitCh <- struct{}{}
 			return
-		case <-time.After(time.Duration(d.nextScheduleTime.Load() - time.Now().UnixNano())):
-			iter := d.index.Iterator()
+		case <-time.After(scheduled):
+			iter := d.pool.Iterator()
 			d.rw.RLock()
 			ok := iter.Next()
 			d.rw.RUnlock()
 			for ok {
-				newTx := iter.Key().(*tx.Tx)
-				if newTx.Time > time.Now().UnixNano() {
-					d.nextScheduleTime.Store(newTx.Time)
+				deferTx := iter.Key().(*tx.Tx)
+				if deferTx.Time > time.Now().UnixNano() {
+					d.nextScheduleTime.Store(deferTx.Time)
 					break
 				}
-				err := d.txpool.AddDefertx(newTx)
-				if err == nil || strings.Index(err.Error(), "DupError.") > 0 {
+				err := d.txpool.AddDefertx(deferTx.ReferredTx)
+				if err == ErrCacheFull {
+					d.nextScheduleTime.Store(deferTx.Time)
+					break
+				}
+				if err == nil || err == ErrDupChainTx || err == ErrDupPendingTx {
 					d.rw.Lock()
-					d.index.Remove(newTx)
+					d.pool.Remove(deferTx)
 					d.rw.Unlock()
 				}
 				d.rw.RLock()
@@ -174,5 +171,4 @@ func (d *DeferServer) deferTicker() {
 			}
 		}
 	}
-
 }

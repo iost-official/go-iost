@@ -41,7 +41,11 @@ function isPublicMethod(def) {
 function genAbi(def) {
 	var abi = {
 		"name": def.key.name,
-		"args": new Array(def.value.params.length).fill("string")
+		"args": new Array(def.value.params.length).fill("string"),
+		"amountLimit": [{
+            "token": "iost",
+            "val": 0
+        }]
 	};
 	return abi;
 }

@@ -71,14 +71,14 @@ service Apis {
         };
     }
     // receive encoded tx
-    rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {
+    rpc SendTx (TxReq) returns (SendTxRes) {
         option (google.api.http) = {
-            post: "/sendRawTx"
+            post: "/sendTx"
             body: "*"
         };
     }
     // not supported yet
-    rpc ExecTx (RawTxReq) returns (ExecTxRes) {
+    rpc ExecTx (TxReq) returns (ExecTxRes) {
         option (google.api.http) = {
             post: "/execTx"
             body: "*"
@@ -115,7 +115,7 @@ message BlockByNumReq {
 message GetAccountReq {
     //account ID
     string ID=1;
-    // useLongestChain means whether geting the balance also from pending blocks(in the longest chain)
+    // useLongestChain means whether getting the balance also from pending blocks(in the longest chain)
     bool useLongestChain = 2;
 }
 
@@ -132,9 +132,8 @@ message GetContractReq {
     string contractID=1;
 }
 
-message RawTxReq {
-    // the rawdata of a tx
-    bytes data=1;
+message TxReq {
+    txpb.Tx tx=1;
 }
 
 message SubscribeReq {
@@ -187,11 +186,24 @@ message ChainInfoRes {
     BlockInfo latestConfirmedBlock = 6;
 }
 
+message RAMInfo {
+    int64 available = 1;
+}
+
+message GASInfo {
+    // these values are all fix point number
+    string currentTotal = 1;
+    string increaseSpeed = 2;
+    string limit = 3;
+    string pledgedCoin = 4;
+}
+
 message GetAccountRes {
     // the queried balance
-    int64 balance=1;
+    string balance=1;
     // current gas
-    string gas=2;
+    GASInfo gas=2;
+    RAMInfo ram=3;
 }
 
 message GetContractStorageRes {
@@ -204,26 +216,25 @@ message GetContractRes {
     contract.Contract value=1;
 }
 
-message SendRawTxRes {
+message SendTxRes {
     // the hash of the received transaction
     string hash=1;
 }
 
 message ExecTxRes {
-    //not support yet
-    txpb.TxReceipt txReceiptRaw = 1;
+    txpb.TxReceipt txReceipt = 1;
 }
 
 message txRes {
     //the queried transaction
-    txpb.Tx txRaw = 1;
+    txpb.Tx tx = 1;
     //transaction hash
     string hash = 2;
 }
 
 message txReceiptRes {
     //transaction receipt
-    txpb.TxReceipt txReceiptRaw = 1;
+    txpb.TxReceipt txReceipt = 1;
     string hash = 2;
 }
 

@@ -20,6 +20,7 @@ type BlockHead struct { // nolint
 	Number     int64
 	Witness    string
 	Time       int64
+	GasUsage   int64
 }
 
 // ToPb convert BlockHead to proto buf data structure.
@@ -33,7 +34,23 @@ func (b *BlockHead) ToPb() *blockpb.BlockHead {
 		Number:     b.Number,
 		Witness:    b.Witness,
 		Time:       b.Time,
+		GasUsage:   b.GasUsage,
 	}
+}
+
+// ToBytes converts BlockHead to a specific byte slice.
+func (b *BlockHead) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteInt64(b.Version, true)
+	sn.WriteBytes(b.ParentHash, false)
+	sn.WriteBytes(b.TxsHash, false)
+	sn.WriteBytes(b.MerkleHash, false)
+	sn.WriteBytes(b.Info, true)
+	sn.WriteInt64(b.Number, true)
+	sn.WriteString(b.Witness, true)
+	sn.WriteInt64(b.Time, true)
+	sn.WriteInt64(b.GasUsage, true)
+	return sn.Bytes()
 }
 
 // FromPb convert BlockHead from proto buf data structure.
@@ -46,6 +63,7 @@ func (b *BlockHead) FromPb(bh *blockpb.BlockHead) *BlockHead {
 	b.Number = bh.Number
 	b.Witness = bh.Witness
 	b.Time = bh.Time
+	b.GasUsage = bh.GasUsage
 	return b
 }
 
@@ -71,11 +89,7 @@ func (b *BlockHead) Decode(bhByte []byte) error {
 
 // Hash return hash
 func (b *BlockHead) Hash() ([]byte, error) {
-	bhByte, err := b.Encode()
-	if err != nil {
-		return nil, err
-	}
-	return common.Sha3(bhByte), nil
+	return common.Sha3(b.ToBytes()), nil
 }
 
 // Block is the implementation of block

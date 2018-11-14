@@ -7,7 +7,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
-	txpb "github.com/iost-official/go-iost/core/tx/pb"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -146,7 +147,7 @@ func TestTx(t *testing.T) {
 			err = tx3.VerifySelf()
 			So(err, ShouldBeNil)
 
-			tx.PublishSigns = []*crypto.Signature{&crypto.Signature{
+			tx.PublishSigns = []*crypto.Signature{{
 				Algorithm: crypto.Secp256k1,
 				Sig:       []byte("hello"),
 				Pubkey:    []byte("world"),
@@ -166,4 +167,86 @@ func TestTx(t *testing.T) {
 		})
 
 	})
+}
+
+func TestTx_ToBytes(t *testing.T) {
+	var sep = `\` + "`" + "^"
+	fmt.Println(sep, "is", []byte(sep))
+	txx := &Tx{
+		Time:       123,
+		Expiration: 456,
+		GasPrice:   100,
+		GasLimit:   123456,
+		Delay:      0,
+	}
+	txx.Signers = []string{"abc"}
+	txx.Actions = []*Action{{
+		Contract:   "cont",
+		ActionName: "abi",
+		Data:       "[]",
+	},
+	}
+	by := txx.ToBytes(0)
+	fmt.Print("[")
+	for _, v := range by {
+		fmt.Print(v, ",")
+	}
+	fmt.Print("]")
+
+	var js = []byte{96, 0, 0, 0, 0, 0, 0, 0, 123, 96, 0, 0, 0, 0, 0, 0, 1, 200, 96, 0, 0, 0, 0, 0, 0, 0, 100, 96, 0, 0,
+		0, 0, 0, 1, 226, 64, 96, 0, 0, 0, 0, 0, 0, 0, 0, 96, 94, 97, 98, 99, 96, 94, 96, 99, 111, 110, 116, 96, 97, 98,
+		105, 96, 91, 93}
+	fmt.Println(string(js))
+
+	if !bytes.Equal(by, js) {
+		t.Fatal("result not same with iost.js !")
+	}
+
+	fmt.Println(txx.baseHash())
+
+	hexhash := fmt.Sprintf("%x", common.Sha3(txx.ToBytes(0)))
+
+	fmt.Println("hash>", hexhash)
+}
+
+func BenchmarkHash(b *testing.B) {
+	tx := &Tx{
+		Time:       1234567890,
+		Expiration: 9876543210,
+		GasPrice:   100,
+		GasLimit:   10000,
+		Delay:      0,
+		Publisher:  "root",
+		Actions: []*Action{
+			{
+				Contract:   "contract",
+				ActionName: "actionname",
+				Data:       "data",
+			},
+		},
+		Signers: []string{"signer1", "signer2"},
+		Signs: []*crypto.Signature{
+			{
+				Algorithm: crypto.Secp256k1,
+				Sig:       []byte("hello"),
+				Pubkey:    []byte("world"),
+			},
+			{
+				Algorithm: crypto.Ed25519,
+				Sig:       []byte("foo"),
+				Pubkey:    []byte("bar"),
+			},
+		},
+		PublishSigns: []*crypto.Signature{
+			{
+				Algorithm: crypto.Ed25519,
+				Sig:       []byte("aaa"),
+				Pubkey:    []byte("bbb"),
+			},
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tx.Hash()
+	}
 }

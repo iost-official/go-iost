@@ -2,6 +2,7 @@ package txpool
 
 import (
 	"bytes"
+	"errors"
 	"sync"
 	"time"
 
@@ -12,14 +13,18 @@ import (
 	"github.com/iost-official/go-iost/metrics"
 )
 
+// Values.
 var (
 	clearInterval = 10 * time.Second
-	// Expiration is the transaction expiration
-	Expiration             = int64(90 * time.Second)
-	filterTime             = int64(90 * time.Second)
-	maxCacheTxs            = 30000
+	filterTime    = int64(90 * time.Second)
+	maxCacheTxs   = 30000
+
 	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
 	metricsTxPoolSize      = metrics.NewGauge("iost_txpool_size", nil)
+
+	ErrDupPendingTx = errors.New("tx exists in pending")
+	ErrDupChainTx   = errors.New("tx exists in chain")
+	ErrCacheFull    = errors.New("txpool is full")
 )
 
 // FRet find the return value of the tx
@@ -55,11 +60,11 @@ type blockTx struct {
 	time       int64
 }
 
-func (pool *TxPImpl) newBlockTx(blk *block.Block) *blockTx {
+func newBlockTx(blk *block.Block) *blockTx {
 	b := &blockTx{
 		txMap:      new(sync.Map),
 		ParentHash: blk.Head.ParentHash,
-		time:       slotToNSec(blk.Head.Time),
+		time:       blk.Head.Time,
 	}
 	for _, v := range blk.Txs {
 		b.txMap.Store(string(v.Hash()), v)

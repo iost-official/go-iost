@@ -56,7 +56,7 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 
 // Call ...
 // nolint
-func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost *contract.Cost, err error) {
+func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error) {
 
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
 
@@ -87,7 +87,11 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	if amountLimit == nil {
 		amountLimit = []*contract.Amount{}
 	}
-	fixedAmountLimit := []contract.FixedAmount{}
+	var userAmountLimit []*contract.Amount
+	if h.Context().Value("amount_limit") != nil {
+		userAmountLimit = h.Context().Value("amount_limit").([]*contract.Amount)
+	}
+	var fixedAmountLimit []contract.FixedAmount
 	beforeBalance := make(map[string][]int64)
 	cost = contract.Cost0()
 
@@ -97,8 +101,15 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		cost.AddAssign(cost0)
 		for _, limit := range amountLimit {
 			decimal := h.DB().Decimal(limit.Token)
-			fixedAmount, ok := common.NewFixed(limit.Val, decimal)
-			if ok {
+			fixedAmount, err := common.NewFixed(limit.Val, decimal)
+			if err == nil {
+				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
+			}
+		}
+		for _, limit := range userAmountLimit {
+			decimal := h.DB().Decimal(limit.Token)
+			fixedAmount, err := common.NewFixed(limit.Val, decimal)
+			if err == nil {
 				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
 			}
 		}
@@ -113,28 +124,31 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	rtn, cost0, err := vm.LoadAndCall(h, c, api, args...)
 	cost.AddAssign(cost0)
 
-	payment, ok := h.Context().GValue("abi_payment").(int)
-	if !ok {
-		payment = int(abi.Payment)
-	}
-	var gasPrice = h.Context().Value("gas_price").(int64)
+	//payment, ok := h.Context().GValue("abi_payment").(int)
+	//if !ok {
+	//	payment = int(abi.Payment)
+	//}
+	//var gasPrice = h.Context().Value("gas_price").(int64)
 
-	if payment == 1 &&
-		abi.GasPrice > gasPrice &&
-		!cost.IsOverflow(abi.Limit) {
-		b := h.DB().Balance(host.ContractGasPrefix + contractName)
-		if b > gasPrice*cost.ToGas() {
-			h.PayCost(cost, host.ContractGasPrefix+contractName)
-			cost = contract.Cost0()
-		}
-	}
+	//if payment == 1 &&
+	//	abi.GasPrice > gasPrice &&
+	//	!{
+	//	b := h.DB().TokenBalance("iost",host.ContractGasPrefix + contractName)
+	//	if b > gasPriceCost.ToGas() {
+	//		h.PayCost(cost, host.ContractGasPrefix+contractName)
+	//		cost = contract.Cost0()
+	//	}
+	//}
 
 	// check amount limit
 	if h.Context().Value("stack_height") == 1 {
 		for acc := range authList {
 			for i, limit := range fixedAmountLimit {
 				afterBalance := h.DB().TokenBalance(limit.Token, acc)
-				delta := common.Fixed{beforeBalance[acc][i] - afterBalance, fixedAmountLimit[i].Val.Decimal}
+				delta := common.Fixed{
+					Value:   beforeBalance[acc][i] - afterBalance,
+					Decimal: fixedAmountLimit[i].Val.Decimal,
+				}
 				if delta.Value > fixedAmountLimit[i].Val.Value {
 					err = errors.New(fmt.Sprintf("token %s exceed amountLimit in abi. limit %s, got %s",
 						limit.Token,

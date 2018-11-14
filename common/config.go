@@ -23,13 +23,24 @@ type Witness struct {
 	Balance int64
 }
 
-// GenesisConfig config of the genesis block
+// TokenInfo config of the genesis block
+type TokenInfo struct {
+	FoundationAccount string
+	IOSTTotalSupply   int64
+	IOSTDecimal       int64
+	RAMTotalSupply    int64
+	RAMGenesisAmount  int64
+}
+
+// GenesisConfig config of the genesis bloc
 type GenesisConfig struct {
 	CreateGenesis    bool
 	InitialTimestamp string
+	TokenInfo        *TokenInfo
 	WitnessInfo      []*Witness
-	VoteContractPath string
-	AdminID          string
+	ContractPath     string
+	AdminInfo        *Witness
+	FoundationInfo   *Witness
 }
 
 // DBConfig config of the database

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "github.com/iost-official/go-iost/crypto/pb/signature.proto";
+import "github.com/iost-official/go-iost/core/contract/contract.proto";
 package txpb;
 
 message Action {
@@ -21,6 +22,7 @@ message Tx {
     repeated sigpb.Signature publishSigns = 9;
     int64 delay = 10;
     bytes referredTx = 11;
+    repeated contract.Amount amountLimit = 12;
 }
 
 message Receipt {
@@ -38,12 +40,7 @@ message TxReceipt {
     int64 gasUsage = 2;
     map<string, int64> ramUsage = 3;
     Status status = 4;
-    repeated Return returns = 5;
+    repeated string returns = 5;
     repeated Receipt receipts = 6;
 
-}
-
-message Return {
-    string funcName = 1;
-    string value = 2;
 }

@@ -2,10 +2,8 @@ package pob
 
 import (
 	"errors"
-	"time"
-
 	"fmt"
-	"strings"
+	"time"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -23,7 +21,6 @@ import (
 var (
 	errWitness     = errors.New("wrong witness")
 	errSignature   = errors.New("wrong signature")
-	errTxTooOld    = errors.New("tx too old")
 	errTxDup       = errors.New("duplicate tx")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
@@ -32,7 +29,6 @@ var (
 )
 
 func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*block.Block, error) { // TODO 应传入acc
-
 	ilog.Info("generate Block start")
 	st := time.Now()
 	limitTime := common.SlotLength / 3 * time.Second
@@ -42,9 +38,11 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 		Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: topBlock.HeadHash(),
+			Info:       make([]byte, 0),
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
-			Time:       time.Now().Unix() / common.SlotLength,
+			Time:       time.Now().UnixNano(),
+			GasUsage:   0,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -53,32 +51,14 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB) (*b
 
 	// call vote
 	v := verifier.Verifier{}
-	if blk.Head.Number%common.VoteInterval == 0 {
-		ilog.Info("vote start")
-		act := tx.NewAction("iost.vote", "Stat", fmt.Sprintf(`[]`))
-		trx := tx.NewTx([]*tx.Action{act}, nil, 100000000, 0, 0, 0)
-
-		trx, err := tx.SignTx(trx, staticProperty.account.ID, []*account.KeyPair{staticProperty.account})
-		if err != nil {
-			ilog.Errorf("fail to signTx, err:%v", err)
-		}
-		receipt, err := v.Exec(blk.Head, db, trx, time.Millisecond*100)
-		if err != nil {
-			ilog.Errorf("fail to exec trx, err:%v", err)
-		}
-		if receipt.Status.Code != tx.Success {
-			ilog.Errorf("status code: %v", receipt.Status.Code)
-		}
-		blk.Txs = append(blk.Txs, trx)
-		blk.Receipts = append(blk.Receipts, receipt)
-	}
-	dropList, _, err := v.Gen(&blk, db, txIter, &verifier.Config{
+	dropList, _, err := v.Gen(&blk, topBlock, db, txIter, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - st.Sub(time.Now()),
 		TxTimeLimit: time.Millisecond * 100,
 	})
 	if err != nil {
 		go txPool.DelTxList(dropList)
+		ilog.Errorf("Gen is err: %v", err)
 	}
 	//t, ok := txIter.Next()
 	//	var vmExecTime, iterTime, i, j int64
@@ -141,47 +121,44 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB) error {
+func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain) error {
 	err := cverifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
 	}
 
-	if witnessOfSlot(blk.Head.Time) != blk.Head.Witness {
+	if witnessOfNanoSec(blk.Head.Time) != blk.Head.Witness {
 		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
 			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, staticProperty.WitnessList)
 		return errWitness
 	}
 
-	// check vote
-	if blk.Head.Number%common.VoteInterval == 0 {
-		if len(blk.Txs) == 0 || strings.Compare(blk.Txs[0].Actions[0].Contract, "iost.vote") != 0 ||
-			strings.Compare(blk.Txs[0].Actions[0].ActionName, "Stat") != 0 ||
-			strings.Compare(blk.Txs[0].Actions[0].Data, fmt.Sprintf(`[]`)) != 0 {
-
-			return errors.New("blk did not vote")
+	for i, t := range blk.Txs {
+		if i == 0 {
+			// base tx
+			continue
 		}
-
-		if blk.Receipts[0].Status.Code != tx.Success {
-			return fmt.Errorf("vote was incorrect, status:%v", blk.Receipts[0].Status)
-		}
-	}
-
-	for _, tx := range blk.Txs {
-		exist := txPool.ExistTxs(tx.Hash(), parent)
+		exist := txPool.ExistTxs(t.Hash(), parent)
 		if exist == txpool.FoundChain {
 			return errTxDup
 		} else if exist != txpool.FoundPending {
-			if err := tx.VerifySelf(); err != nil {
+			if err := t.VerifySelf(); err != nil {
 				return errTxSignature
 			}
-		}
-		if blk.Head.Time*common.SlotLength-tx.Time/1e9 > txpool.Expiration {
-			return errTxTooOld
+			if t.IsDefer() {
+				referredTx, err := chain.GetTx(t.ReferredTx)
+				if err != nil {
+					return fmt.Errorf("get referred tx error, %v", err)
+				}
+				err = t.VerifyDefer(referredTx)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 	v := verifier.Verifier{}
-	return v.Verify(blk, db, &verifier.Config{
+	return v.Verify(blk, parent, db, &verifier.Config{
 		Mode:        0,
 		Timeout:     common.SlotLength / 3 * time.Second,
 		TxTimeLimit: time.Millisecond * 100,

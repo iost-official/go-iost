@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
-
 	"time"
 
 	"github.com/bitly/go-simplejson"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
@@ -25,7 +25,7 @@ const (
 
 var (
 	errSetUpArgs = errors.New("key does not exist")
-	errCannotPay = errors.New("publisher's balance less than price * limit")
+	errCannotPay = errors.New("publisher's gas less than price * limit")
 )
 
 //go:generate mockgen -destination mock/engine_mock.go -package mock github.com/iost-official/go-iost/vm Engine
@@ -127,7 +127,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 	}
 
 	e.publisherID = tx0.Publisher
-	bl := e.ho.DB().Balance(e.publisherID)
+	bl := e.ho.DB().TokenBalance("iost", e.publisherID)
 
 	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
 		ilog.Error(errCannotPay)
@@ -190,10 +190,10 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 		}
 	}
 
-	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice, true)
 	if err != nil {
 		e.ho.DB().Rollback()
-		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice, false)
 		if err != nil {
 			ilog.Error(err.Error())
 			return nil, err
@@ -219,7 +219,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	}
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
-		return nil, fmt.Errorf("error in abi file: %v", err)
+		return nil, fmt.Errorf("error in data: %v, %v", err, data)
 	}
 
 	rtn := make([]interface{}, 0)
@@ -257,6 +257,12 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
+			// make sure s is a valid json
+			_, err = simplejson.NewJson(s)
+			if err != nil {
+				ilog.Error(string(s))
+				return nil, err
+			}
 			rtn = append(rtn, s)
 		}
 	}
@@ -275,7 +281,7 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 		Receipts: make([]*tx.Receipt, 0),
 	}
 }
-func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status *tx.Status, receipts []*tx.Receipt, err error) {
+func (e *engineImpl) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, receipts []*tx.Receipt, err error) {
 	receipts = make([]*tx.Receipt, 0)
 
 	e.ho.PushCtx()
@@ -287,10 +293,6 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status *t
 	e.ho.Context().Set("stack_height", 1) // record stack trace
 
 	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, action.Data)
-
-	if cost == nil {
-		panic("cost is nil")
-	}
 
 	if err != nil {
 
@@ -368,32 +370,4 @@ func (e *engineImpl) startLog() {
 		e.logger.AsyncWrite()
 		e.logger.Start()
 	}
-}
-
-func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
-	c := host.NewContext(ctx)
-	c.Set("parent_hash", common.Base58Encode(bh.ParentHash))
-	c.Set("number", bh.Number)
-	c.Set("witness", bh.Witness)
-	c.Set("time", bh.Time)
-	return c
-}
-
-func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
-	h.PushCtx()
-	h.Context().Set("time", t.Time)
-	h.Context().Set("expiration", t.Expiration)
-	h.Context().Set("gas_price", t.GasPrice)
-	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))
-	h.Context().Set("publisher", publisherID)
-
-	authList := make(map[string]int)
-	for _, v := range t.Signers {
-		authList[v] = 1
-	}
-
-	authList[publisherID] = 2
-
-	h.Context().Set("auth_list", authList)
-	h.Context().Set("auth_contract_list", make(map[string]int))
 }

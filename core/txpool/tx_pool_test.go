@@ -85,10 +85,10 @@ func TestNewTxPImpl(t *testing.T) {
 		statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 		statedb.EXPECT().Close().AnyTimes()
 
-		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("4"), nil
 		})
-		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
@@ -101,6 +101,7 @@ func TestNewTxPImpl(t *testing.T) {
 		base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 		base.EXPECT().Length().AnyTimes().Return(int64(1))
 		base.EXPECT().Close().AnyTimes()
+		base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 
 		gbl := core_mock.NewMockBaseVariable(ctl)
 		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
@@ -117,30 +118,30 @@ func TestNewTxPImpl(t *testing.T) {
 		txPool.Start()
 		Convey("AddTx", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			err := txPool.AddTx(t)
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			err = txPool.AddTx(t)
-			So(err.Error(), ShouldStartWith, "DupError")
+			So(err, ShouldEqual, ErrDupPendingTx)
 		})
 		Convey("txTimeOut", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 
-			b := txPool.TxTimeOut(t)
+			b := t.IsTimeValid(time.Now().UnixNano())
+			So(b, ShouldBeTrue)
+
+			t.Time -= int64(tx.MaxExpiration + int64(1*time.Second))
+			b = t.IsTimeValid(time.Now().UnixNano())
 			So(b, ShouldBeFalse)
 
-			t.Time -= int64(Expiration + int64(1*time.Second))
-			b = txPool.TxTimeOut(t)
-			So(b, ShouldBeTrue)
+			t = genTx(accountList[0], tx.MaxExpiration)
 
-			t = genTx(accountList[0], Expiration)
-
-			t.Expiration -= int64(Expiration * 3)
-			b = txPool.TxTimeOut(t)
-			So(b, ShouldBeTrue)
+			t.Expiration -= int64(tx.MaxExpiration * 3)
+			b = t.IsTimeValid(time.Now().UnixNano())
+			So(b, ShouldBeFalse)
 		})
 		Convey("delTimeOutTx", func() {
 
@@ -151,12 +152,12 @@ func TestNewTxPImpl(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			time.Sleep(50 * time.Millisecond)
-			txPool.clearTimeOutTx()
+			txPool.clearTimeoutTx()
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 		})
 		Convey("ExistTxs FoundPending", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			err := txPool.AddTx(t)
 			So(err, ShouldBeNil)
@@ -191,7 +192,7 @@ func TestNewTxPImpl(t *testing.T) {
 				So(r1, ShouldEqual, FoundChain)
 			}
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			r1 := txPool.ExistTxs(t.Hash(), bcn.Block)
 			So(r1, ShouldEqual, NotFound)
 		})
@@ -243,10 +244,10 @@ func TestNewTxPImplB(t *testing.T) {
 		statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 		statedb.EXPECT().Close().AnyTimes()
 
-		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("4"), nil
 		})
-		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
@@ -259,6 +260,7 @@ func TestNewTxPImplB(t *testing.T) {
 		base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 		base.EXPECT().Length().AnyTimes().Return(int64(1))
 		base.EXPECT().Close().AnyTimes()
+		base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 
 		gbl := core_mock.NewMockBaseVariable(ctl)
 		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
@@ -275,7 +277,7 @@ func TestNewTxPImplB(t *testing.T) {
 		txPool.Start()
 		Convey("delPending", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			err := txPool.AddTx(t)
 			So(err, ShouldBeNil)
@@ -300,7 +302,7 @@ func TestNewTxPImplB(t *testing.T) {
 				err = txPool.AddLinkedNode(bcn, bcn)
 				So(err, ShouldBeNil)
 			}
-
+			ilog.Info(txPool.testPendingTxsNum())
 			forkBlockTxCnt := 6
 			forkBlock := genSingleBlock(accountList, witnessList, blockList[1].HeadHash(), forkBlockTxCnt)
 			//ilog.Debug(("Sing hash:", forkBlock.HeadHash(), " Sing parentHash:", forkBlock.Head.ParentHash)
@@ -316,6 +318,7 @@ func TestNewTxPImplB(t *testing.T) {
 
 			// fork chain
 			err = txPool.AddLinkedNode(bcn, bcn)
+			ilog.Info(txPool.testPendingTxsNum())
 			So(err, ShouldBeNil)
 			// need delay
 			for i := 0; i < 20; i++ {
@@ -329,11 +332,11 @@ func TestNewTxPImplB(t *testing.T) {
 		})
 
 		Convey("rbtree", func() {
-			t1 := genTx(newAccount, Expiration)
-			t2 := genTx(newAccount, Expiration)
-			t3 := genTx(newAccount, Expiration)
-			t4 := genTx(newAccount, Expiration)
-			t5 := genTx(newAccount, Expiration)
+			t1 := genTx(newAccount, tx.MaxExpiration)
+			t2 := genTx(newAccount, tx.MaxExpiration)
+			t3 := genTx(newAccount, tx.MaxExpiration)
+			t4 := genTx(newAccount, tx.MaxExpiration)
+			t5 := genTx(newAccount, tx.MaxExpiration)
 			t1.GasPrice = 100
 			t2.GasPrice = 200
 			t3.GasPrice = 200
@@ -477,7 +480,7 @@ func BenchmarkAddTx(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		t := genTx(accountList[0], Expiration)
+		t := genTx(accountList[0], tx.MaxExpiration)
 		b.StartTimer()
 
 		txPool.addTx(t)
@@ -495,7 +498,7 @@ func BenchmarkDecodeTx(b *testing.B) {
 		panic("account.NewKeyPair error")
 	}
 
-	tm := genTxMsg(newAccount, Expiration)
+	tm := genTxMsg(newAccount, tx.MaxExpiration)
 	var t tx.Tx
 	err = t.Decode(tm.Data())
 	if err != nil {
@@ -520,7 +523,7 @@ func BenchmarkEncodeTx(b *testing.B) {
 		panic("account.NewKeyPair error")
 	}
 
-	tm := genTx(newAccount, Expiration)
+	tm := genTx(newAccount, tx.MaxExpiration)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -535,7 +538,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 
 	_, accountList, _, txPool, gl := envInit(b)
 
-	t := genTx(accountList[0], Expiration)
+	t := genTx(accountList[0], tx.MaxExpiration)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -691,7 +694,6 @@ func genTxMsg(a *account.KeyPair, expirationIter int64) *p2p.IncomingMessage {
 
 func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
-	slot := common.GetCurrentTimestamp().Slot
 	var hash []byte
 
 	for i := 0; i < blockCnt; i++ {
@@ -708,13 +710,14 @@ func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt in
 				Info:       []byte(""),
 				Number:     int64(i + 1),
 				Witness:    witnessList[0],
-				Time:       slot + int64(i),
+				Time:       time.Now().UnixNano(),
+				GasUsage:   0,
 			},
 			Sign: &crypto.Signature{},
 		}
 
 		for i := 0; i < txCnt; i++ {
-			blk.Txs = append(blk.Txs, genTx(accountList[0], Expiration))
+			blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
 		}
 
 		blk.Head.TxsHash = blk.CalculateTxsHash()
@@ -743,9 +746,6 @@ func genNodes(accountList []*account.KeyPair, witnessList []string, blockCnt int
 }
 
 func genSingleBlock(accountList []*account.KeyPair, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
-
-	slot := common.GetCurrentTimestamp().Slot
-
 	blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
 		Version:    0,
 		ParentHash: ParentHash,
@@ -753,11 +753,11 @@ func genSingleBlock(accountList []*account.KeyPair, witnessList []string, Parent
 		Info:       []byte(""),
 		Number:     int64(1),
 		Witness:    witnessList[0],
-		Time:       slot,
+		Time:       time.Now().UnixNano(),
 	}}
 
 	for i := 0; i < txCnt; i++ {
-		blk.Txs = append(blk.Txs, genTx(accountList[0], Expiration))
+		blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
 	}
 
 	blk.Head.TxsHash = blk.CalculateTxsHash()

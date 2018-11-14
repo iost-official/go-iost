@@ -26,10 +26,10 @@ func TestMember(t *testing.T) {
 
 		Convey("sign and verify: ", func() {
 			info := []byte("hello world")
-			sig := crypto.Secp256k1.Sign(Sha256(info), m.Seckey)
-			So(crypto.Secp256k1.Verify(Sha256(info), m.Pubkey, sig), ShouldBeTrue)
+			sig := crypto.Secp256k1.Sign(Sha3(info), m.Seckey)
+			So(crypto.Secp256k1.Verify(Sha3(info), m.Pubkey, sig), ShouldBeTrue)
 
-			sig2 := m.Sign(Sha256(info))
+			sig2 := m.Sign(Sha3(info))
 			So(bytes.Equal(sig2.Pubkey, m.Pubkey), ShouldBeTrue)
 
 		})

@@ -2,12 +2,11 @@ package verifier
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
-
-	"errors"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -18,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 // Simulator of txs and contract
@@ -26,7 +26,7 @@ type Simulator struct {
 	Verifier *Verifier
 	Head     *block.BlockHead
 	Logger   *ilog.Logger
-	mvcc     db.MVCCDB
+	Mvcc     db.MVCCDB
 }
 
 // NewSimulator get a simulator with default settings
@@ -40,12 +40,13 @@ func NewSimulator() *Simulator {
 	return &Simulator{
 		Visitor:  database.NewVisitor(0, mvccdb),
 		Verifier: &v,
-		mvcc:     mvccdb,
+		Mvcc:     mvccdb,
 		Head: &block.BlockHead{
 			ParentHash: []byte("abc"),
-			Number:     0,
+			Number:     1,
 			Witness:    "witness",
-			Time:       123456,
+			Time:       int64(1541541540 * 1000 * 1000 * 1000),
+			GasUsage:   0,
 		},
 		Logger: ilog.DefaultLogger(),
 	}
@@ -67,14 +68,21 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 
 // SetGas to id
 func (s *Simulator) SetGas(id string, i int64) {
-	s.Visitor.SetGasStock(id, &common.Fixed{
-		Value:   i * 10e8,
-		Decimal: 8,
-	})
-	s.Visitor.SetGasLimit(id, &common.Fixed{
-		Value:   i * 10e8,
-		Decimal: 8,
-	})
+	prefix := "iost.gas@" + id + database.Separator
+	value := &common.Fixed{
+		Value:   i * 10e2,
+		Decimal: 2,
+	}
+	valueStr := database.MustMarshal(value.Marshal())
+	s.Visitor.Put(prefix+host.GasStockKey, valueStr)
+	s.Visitor.Put(prefix+host.GasLimitKey, valueStr)
+	s.Visitor.Commit()
+}
+
+// SetRAM to id
+func (s *Simulator) SetRAM(id string, r int64) {
+	s.Visitor.SetTokenBalance("ram", id, r)
+	s.Visitor.Commit()
 }
 
 // SetContract without run init
@@ -83,21 +91,31 @@ func (s *Simulator) SetContract(c *contract.Contract) {
 }
 
 // DeployContract via iost.system/SetCode
-func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, error) {
+func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, *tx.TxReceipt, error) {
+	sc, err := json.Marshal(c)
+	if err != nil {
+		return "", nil, nil
+	}
+
+	jargs, err := json.Marshal([]string{string(sc)})
+	if err != nil {
+		panic(err)
+	}
+
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   "iost.system",
 		ActionName: "SetCode",
-		Data:       fmt.Sprintf(`["%v"]`, c.B64Encode()),
+		Data:       string(jargs),
 	}}, nil, 100000, 100, 10000000, 0)
 
 	r, err := s.CallTx(trx, publisher, kp)
 	if err != nil {
-		return "", err
+		return "", r, err
 	}
 	if r.Status.Code != 0 {
-		return "", errors.New(r.Status.Message)
+		return "", r, errors.New(r.Status.Message)
 	}
-	return "Contract" + common.Base58Encode(trx.Hash()), nil
+	return "Contract" + common.Base58Encode(trx.Hash()), r, nil
 }
 
 // Compile files
@@ -168,12 +186,12 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	if err != nil {
 		return &tx.TxReceipt{}, fmt.Errorf("prepare tx error: %v", err)
 	}
-	r, err := isolator.Run()
+	_, err = isolator.Run()
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
 
-	err = isolator.PayCost()
+	r, err := isolator.PayCost()
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +202,6 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 
 // Clear mvccdb
 func (s *Simulator) Clear() {
-	s.mvcc.Close()
+	s.Mvcc.Close()
 	os.RemoveAll("mvcc")
 }

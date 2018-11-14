@@ -1,0 +1,206 @@
+const secondToNano = 1e9;
+const iostIssueRate = new BigNumber("1.0000000028119105");
+const activePermission = "active";
+
+class IssueContract {
+    constructor() {
+        BigNumber.config({
+            DECIMAL_PLACES: 50,
+            POW_PRECISION: 50,
+            ROUNDING_MODE: BigNumber.ROUND_DOWN
+        })
+    }
+
+    init() {
+        this._put("FoundationAccount", "");
+    }
+
+    _initIOST(config, witnessInfo) {
+        this._call("iost.token", "create", [
+            "iost",
+            "iost.issue",
+            config.IOSTTotalSupply,
+            {
+                "can_transfer": true,
+                "decimal": config.IOSTDecimal
+            }
+        ]);
+        for (const info of witnessInfo) {
+            this._call("iost.token", "issue", [
+                "iost",
+                info.ID,
+                new BigNumber(info.Balance).toFixed()
+            ]);
+        }
+        this._put("IOSTDecimal", config.IOSTDecimal);
+        this._put("IOSTLastIssueTime", this._getBlockTime());
+    }
+
+    _initRAM(config) {
+        this._call("iost.token", "create", [
+            "ram",
+            "iost.issue",
+            config.RAMTotalSupply,
+            {
+                "can_transfer": false,
+                "decimal": 0
+            }
+        ]);
+        this._call("iost.token", "issue", [
+            "ram",
+            "iost.pledge",
+            new BigNumber(config.RAMGenesisAmount).toFixed()
+        ]);
+        this._put("RAMLastIssueTime", this._getBlockTime());
+    }
+
+    /**
+     * genesisConfig = {
+     *      FoundationAccount string
+     *      IOSTTotalSupply   int64
+     *      IOSTDecimal       int64
+     *      RAMTotalSupply    int64
+     *      RAMGenesisAmount  int64
+     * }
+     * witnessInfo = [{
+     *      ID      string
+     *      Owner   string
+     *      Active  string
+     *      Balance int64
+     * }]
+     */
+    InitGenesis(adminID, genesisConfig, witnessInfo) {
+        const bn = this._getBlockNumber();
+        if(bn !== 0) {
+            throw new Error("init out of genesis block")
+        }
+        this._put("adminID", adminID);
+        this._put("FoundationAccount", genesisConfig.FoundationAccount);
+
+        this._initIOST(genesisConfig, witnessInfo);
+        // this._initRAM(genesisConfig);
+    }
+
+    can_update(data) {
+        const admin = this._get("adminID");
+        this._requireAuth(admin, activePermission);
+        return true;
+    }
+
+    _requireAuth(account, permission) {
+        const ret = BlockChain.requireAuth(account, permission);
+        if (ret !== true) {
+            throw new Error("require auth failed. ret = " + ret);
+        }
+    }
+
+    _call(contract, api, args) {
+        const ret = JSON.parse(BlockChain.callWithAuth(contract, api, JSON.stringify(args)));
+        if (ret && Array.isArray(ret) && ret.length == 1) {
+            return ret[0] === "" ? "" : JSON.parse(ret[0]);
+        }
+        return ret;
+    }
+
+    _getBlockInfo() {
+        const bi = JSON.parse(BlockChain.blockInfo());
+        if (!bi || bi === undefined) {
+            throw new Error("get block info failed. bi = " + bi);
+        }
+        return bi;
+    }
+
+    _getBlockNumber() {
+        return this._getBlockInfo().number;
+    }
+
+    _getBlockTime() {
+        return Math.floor(this._getBlockInfo().time / secondToNano);
+    }
+
+    _get(k) {
+        const val = storage.get(k);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
+    }
+
+    _put(k, v) {
+        storage.put(k, JSON.stringify(v));
+    }
+
+    _mapGet(k, f) {
+        const val = storage.mapGet(k, f);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
+    }
+
+    _mapPut(k, f, v) {
+        storage.mapPut(k, f, JSON.stringify(v));
+    }
+
+    _mapDel(k, f) {
+        storage.mapDel(k, f);
+    }
+
+    // IssueIOST to iost.bonus and iost foundation
+    IssueIOST() {
+        const lastIssueTime = this._get("IOSTLastIssueTime");
+        if (lastIssueTime === 0 || lastIssueTime === undefined) {
+            throw new Error("IOSTLastIssueTime not set.");
+        }
+        const currentTime = this._getBlockTime();
+        const gap = Math.floor((currentTime - lastIssueTime) / 3);
+        if (gap <= 0) {
+            return
+        }
+
+        const foundationAcc = this._get("FoundationAccount");
+        const decimal = this._get("IOSTDecimal");
+        if (!foundationAcc) {
+            throw new Error("FoundationAccount not set.");
+        }
+
+        this._put("IOSTLastIssueTime", currentTime);
+
+        const supply = new Float64(this._call("iost.token", "supply", ["iost"]));
+        const issueAmount = supply.multi(iostIssueRate.pow(gap).minus(1));
+        const bonus = issueAmount.multi(0.33);
+        this._call("iost.token", "issue", [
+            "iost",
+            "iost.bonus",
+            bonus.number.toFixed(decimal)
+        ]);
+        this._call("iost.token", "issue", [
+            "iost",
+            foundationAcc,
+            issueAmount.minus(bonus).number.toFixed(decimal)
+        ]);
+    }
+
+    // IssueRAM to iost.pledge
+    IssueRAM() {
+        // this._requireAuth("iost.pledge", activePermission);
+        const lastIssueTime = this._get("RAMLastIssueTime");
+        if (lastIssueTime === 0 || lastIssueTime === undefined) {
+            throw new Error("RAMLastIssueTime not set.");
+        }
+        const currentTime = this._getBlockTime();
+        const gap = currentTime - lastIssueTime;
+        if (gap < 86400 /* one day */) {
+            return;
+        }
+        this._put("RAMLastIssueTime", currentTime);
+        const issueAmount = 2179 * gap;
+        this._call("iost.token", "issue", [
+            "ram",
+            "iost.pledge",
+            JSON.stringify(issueAmount)
+        ]);
+    }
+}
+
+module.exports = IssueContract;
