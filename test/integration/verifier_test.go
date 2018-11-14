@@ -26,13 +26,12 @@ func TestTransfer(t *testing.T) {
 		prepareContract(s)
 		createToken(t, s, kp)
 
-		totalGas := s.Visitor.CurrentTotalGas(kp.ID, s.Head.Time).Value
 		r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 		So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-		So(totalGas-s.Visitor.CurrentTotalGas(kp.ID, s.Head.Time).Value, ShouldEqual, int64(91700000000))
+		So(r.GasUsage, ShouldEqual, 576)
 	})
 }
 
@@ -49,14 +48,13 @@ func TestSetCode(t *testing.T) {
 		c, err := s.Compile("hw", "test_data/helloworld", "test_data/helloworld")
 		So(err, ShouldBeNil)
 		So(len(c.Encode()), ShouldEqual, 146)
-		cname, err := s.DeployContract(c, kp.ID, kp)
+		cname, r, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(cname, ShouldStartWith, "Contract")
-
-		So(s.Visitor.CurrentTotalGas(kp.ID, s.Head.Time).Value, ShouldEqual, int64(999950500000000))
+		So(r.GasUsage, ShouldEqual, 30)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldBeBetweenOrEqual, int64(62), int64(63))
 
-		r, err := s.Call(cname, "hello", "[]", kp.ID, kp)
+		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 	})
@@ -76,7 +74,7 @@ func TestJS_Database(t *testing.T) {
 		s.SetGas(kp.ID, 100000)
 		s.SetRAM(kp.ID, 3000)
 
-		cname, err := s.DeployContract(c, kp.ID, kp)
+		cname, _, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
 
 		So(s.Visitor.Contract(cname), ShouldNotBeNil)
@@ -209,7 +207,7 @@ func TestDomain(t *testing.T) {
 		s.SetGas(kp.ID, 100000)
 		s.SetRAM(kp.ID, 3000)
 
-		cname, err := s.DeployContract(c, kp.ID, kp)
+		cname, _, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(native.ABI("iost.domain", native.DomainABIs))
 		r1, err := s.Call("iost.domain", "Link", fmt.Sprintf(`["abcde","%v"]`, cname), kp.ID, kp)

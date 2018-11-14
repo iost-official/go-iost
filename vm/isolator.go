@@ -63,9 +63,9 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		if err != nil {
 			return err
 		}
-		gas := e.h.CurrentGas(e.publisherID)
-		// gas is stored in 10**8 format. And gasPrice is in 0.01 unit. So mul 1e6 here
-		if gas.Value < t.GasPrice*t.GasLimit*100000000/100 {
+		gas, _ := e.h.CurrentGas(e.publisherID)
+		price := &common.Fixed{Value: t.GasPrice, Decimal: 2}
+		if gas.LessThan(price.Times(t.GasLimit)) {
 			ilog.Debugf("err %v publisher %v current gas %v price %v limit %v\n", errCannotPay, e.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
 			return errCannotPay
 		}

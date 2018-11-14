@@ -51,6 +51,16 @@ func (f *Fixed) IsZero() bool {
 	return f.Value == 0
 }
 
+// IsPositive ...
+func (f *Fixed) IsPositive() bool {
+	return f.Value > 0
+}
+
+// IsNegative ...
+func (f *Fixed) IsNegative() bool {
+	return f.Value < 0
+}
+
 // Neg get negative number
 func (f *Fixed) Neg() *Fixed {
 	if multiplyOverflow(f.Value, -1) {
@@ -60,7 +70,8 @@ func (f *Fixed) Neg() *Fixed {
 	return &Fixed{Value: -f.Value, Decimal: f.Decimal}
 }
 
-func (f *Fixed) changeDecimal(targetDecimal int) *Fixed {
+// ChangeDecimal change decimal to give decimal, without changing its real value
+func (f *Fixed) ChangeDecimal(targetDecimal int) *Fixed {
 	value := f.Value
 	decimal := f.Decimal
 	for targetDecimal > decimal {
@@ -91,13 +102,13 @@ func (f *Fixed) shrinkDecimal() *Fixed {
 // UnifyDecimal make two fix point number have same decimal.
 func UnifyDecimal(a *Fixed, b *Fixed) (*Fixed, *Fixed, error) {
 	if a.Decimal < b.Decimal {
-		aChanged := a.changeDecimal(b.Decimal)
+		aChanged := a.ChangeDecimal(b.Decimal)
 		if aChanged.Err != nil {
 			return nil, nil, aChanged.Err
 		}
 		return aChanged, b, nil
 	}
-	bChanged := b.changeDecimal(a.Decimal)
+	bChanged := b.ChangeDecimal(a.Decimal)
 	if bChanged.Err != nil {
 		return nil, nil, bChanged.Err
 	}
@@ -207,7 +218,7 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 			return nil, errAbnormalChar
 		}
 	}
-	return fpn.changeDecimal(decimal), fpn.Err
+	return fpn.ChangeDecimal(decimal), fpn.Err
 }
 
 // ToString generate string of Fixed without post zero

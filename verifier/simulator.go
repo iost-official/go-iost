@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
-
 	"errors"
 
 	"github.com/iost-official/go-iost/account"
@@ -18,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 // Simulator of txs and contract
@@ -68,14 +68,14 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 
 // SetGas to id
 func (s *Simulator) SetGas(id string, i int64) {
-	s.Visitor.SetGasStock(id, &common.Fixed{
-		Value:   i * 10e8,
-		Decimal: 8,
-	})
-	s.Visitor.SetGasLimit(id, &common.Fixed{
-		Value:   i * 10e8,
-		Decimal: 8,
-	})
+	prefix := "iost.gas@" + id + database.Separator
+	value := &common.Fixed{
+		Value:   i * 10e2,
+		Decimal: 2,
+	}
+	valueStr := database.MustMarshal(value.Marshal())
+	s.Visitor.Put(prefix+host.GasStockKey, valueStr)
+	s.Visitor.Put(prefix+host.GasLimitKey, valueStr)
 	s.Visitor.Commit()
 }
 
@@ -91,10 +91,10 @@ func (s *Simulator) SetContract(c *contract.Contract) {
 }
 
 // DeployContract via iost.system/SetCode
-func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, error) {
+func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, *tx.TxReceipt, error) {
 	sc, err := json.Marshal(c)
 	if err != nil {
-		return "", nil
+		return "", nil, nil
 	}
 
 	jargs, err := json.Marshal([]string{string(sc)})
@@ -110,12 +110,12 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 
 	r, err := s.CallTx(trx, publisher, kp)
 	if err != nil {
-		return "", err
+		return "", r, err
 	}
 	if r.Status.Code != 0 {
-		return "", errors.New(r.Status.Message)
+		return "", r, errors.New(r.Status.Message)
 	}
-	return "Contract" + common.Base58Encode(trx.Hash()), nil
+	return "Contract" + common.Base58Encode(trx.Hash()), r, nil
 }
 
 // Compile files
