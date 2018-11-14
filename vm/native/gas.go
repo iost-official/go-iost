@@ -1,10 +1,7 @@
 package native
 
 import (
-	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
@@ -27,16 +24,16 @@ var GasMinPledge = &common.Fixed{Value: GasMinPledgeInIOST * IOSTRatio, Decimal:
 // so gas production will resume again util the limit.
 
 // GasImmediateReward immediate reward per IOST
-var GasImmediateReward = &common.Fixed{Value: 300 * IOSTRatio, Decimal: 8}
+var GasImmediateReward = &common.Fixed{Value: 300 * 100, Decimal: 2}
 
 // GasLimit gas limit per IOST
-var GasLimit = &common.Fixed{Value: 900 * IOSTRatio, Decimal: 8}
+var GasLimit = &common.Fixed{Value: 900 * 100, Decimal: 2}
 
 // GasFulfillSeconds it takes 3 days to fulfill the gas buffer.
 var GasFulfillSeconds int64 = 3 * 24 * 3600
 
 // GasIncreaseRate gas increase per IOST per second
-var GasIncreaseRate = GasLimit.Sub(GasImmediateReward).Div(GasFulfillSeconds)
+var GasIncreaseRate = GasLimit.Sub(GasImmediateReward).ChangeDecimal(4).Div(GasFulfillSeconds)
 
 //var GasIncreaseRate = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
 
@@ -54,53 +51,73 @@ func init() {
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.
-func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
-	pledgeAmount := pledgeAmountF.Value
-	if pledgeAmount == 0 {
-		return fmt.Errorf("invalid pledge amount %v", pledgeAmount)
+func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fixed) (contract.Cost, error) {
+	finalCost := contract.Cost0()
+	if pledgeAmountF.IsZero() {
+		return finalCost, fmt.Errorf("invalid pledge amount %v", pledgeAmountF.ToString())
 	}
-	if pledgeAmount < 0 {
+	pledged, cost := h.GasManager.GasPledge(name, pledger)
+	finalCost.AddAssign(cost)
+	if pledgeAmountF.IsNegative() {
 		unpledgeAmount := pledgeAmountF.Neg()
-		pledged := h.DB().GasHandler.GasPledge(name)
-		// how to deal with overflow here?
-		if pledged.Sub(unpledgeAmount).LessThan(GasMinPledge) {
-			return fmt.Errorf("%v should be pledged at least ", GasMinPledge)
+		newPledge := pledged.Sub(unpledgeAmount)
+		if pledger == name {
+			if newPledge.LessThan(GasMinPledge) {
+				return finalCost, fmt.Errorf("unpledge to much %v - %v < %v", pledged.ToString(), unpledgeAmount.ToString(), GasMinPledge.ToString())
+			}
+		}
+		if newPledge.Value <= 0 {
+			pledgeAmountF = pledged.Neg()
+			cost = h.GasManager.DelGasPledge(name, pledger)
+			finalCost.AddAssign(cost)
+			//return fmt.Errorf("unpledge to much %v > %v", unpledgeAmount.ToString(), pledged.ToString()), finalCost
 		}
 	}
 
 	limitDelta := pledgeAmountF.Multiply(GasLimit)
 	rateDelta := pledgeAmountF.Multiply(GasIncreaseRate)
 	gasDelta := pledgeAmountF.Multiply(GasImmediateReward)
-	if pledgeAmount < 0 {
+	if pledgeAmountF.IsNegative() {
 		// unpledge should not change current generated gas
 		gasDelta.Value = 0
 	}
 	//fmt.Printf("limitd rated gasd %v %v %v\n", limitDelta, rateDelta, gasDelta)
 
 	// pledge first time
-	if h.DB().GasHandler.GasUpdateTime(name) == 0 {
-		if pledgeAmount < 0 {
-			return fmt.Errorf("cannot unpledge! No pledge before")
+	t, cost := h.GasManager.GasUpdateTime(name)
+	finalCost.AddAssign(cost)
+	if t == 0 {
+		if pledgeAmountF.IsNegative() {
+			return finalCost, fmt.Errorf("cannot unpledge! No pledge before")
 		}
-		h.DB().GasHandler.SetGasPledge(name, pledgeAmountF)
-		h.DB().GasHandler.SetGasUpdateTime(name, h.Context().Value("time").(int64))
-		h.DB().GasHandler.SetGasRate(name, rateDelta)
-		h.DB().GasHandler.SetGasLimit(name, limitDelta)
-		h.DB().GasHandler.SetGasStock(name, gasDelta)
-		return nil
+		cost = h.GasManager.SetGasPledge(name, pledger, pledgeAmountF)
+		finalCost.AddAssign(cost)
+		cost = h.GasManager.SetGasUpdateTime(name, h.Context().Value("time").(int64))
+		finalCost.AddAssign(cost)
+		cost = h.GasManager.SetGasRate(name, rateDelta)
+		finalCost.AddAssign(cost)
+		cost = h.GasManager.SetGasLimit(name, limitDelta)
+		finalCost.AddAssign(cost)
+		cost = h.GasManager.SetGasStock(name, gasDelta)
+		finalCost.AddAssign(cost)
+		return finalCost, nil
 	}
-	h.GasManager.RefreshGas(name)
-	rateOld := h.DB().GasHandler.GasRate(name)
+	cost, _ = h.GasManager.RefreshGas(name)
+	finalCost.AddAssign(cost)
+	rateOld, cost := h.GasManager.GasRate(name)
+	finalCost.AddAssign(cost)
 	rateNew := rateOld.Add(rateDelta)
 	if rateNew.Value <= 0 {
-		return fmt.Errorf("change gasRate failed! current: %v, delta %v", rateOld, rateDelta)
+		return finalCost, fmt.Errorf("change gasRate failed! current: %v, delta %v", rateOld.ToString(), rateDelta.ToString())
 	}
-	limitOld := h.DB().GasHandler.GasLimit(name)
+	limitOld, cost := h.GasManager.GasLimit(name)
+	finalCost.AddAssign(cost)
 	limitNew := limitOld.Add(limitDelta)
 	if limitNew.Value <= 0 {
-		return fmt.Errorf("change gasLimit failed! current: %v, delta %v", limitOld, limitDelta)
+		return finalCost, fmt.Errorf("change gasLimit failed! current: %v, delta %v", limitOld.ToString(), limitDelta.ToString())
 	}
-	gasOld := h.DB().GasHandler.GasStock(name)
+	gasOld, cost := h.GasManager.GasStock(name)
+	finalCost.AddAssign(cost)
 	gasNew := gasOld.Add(gasDelta)
 	if limitNew.LessThan(gasNew) {
 		// clear the gas above the new limit.
@@ -108,11 +125,18 @@ func pledge(h *host.Host, name string, pledgeAmountF *common.Fixed) error {
 	}
 
 	//fmt.Printf("Pledge %v", pledgeAmountF)
-	h.DB().GasHandler.SetGasPledge(name, h.DB().GasHandler.GasPledge(name).Add(pledgeAmountF))
-	h.DB().GasHandler.SetGasRate(name, rateNew)
-	h.DB().GasHandler.SetGasLimit(name, limitNew)
-	h.DB().GasHandler.SetGasStock(name, gasNew)
-	return nil
+	newPledge := pledged.Add(pledgeAmountF)
+	if !newPledge.IsZero() {
+		cost = h.GasManager.SetGasPledge(name, pledger, newPledge)
+		finalCost.AddAssign(cost)
+	}
+	cost = h.GasManager.SetGasRate(name, rateNew)
+	finalCost.AddAssign(cost)
+	cost = h.GasManager.SetGasLimit(name, limitNew)
+	finalCost.AddAssign(cost)
+	cost = h.GasManager.SetGasStock(name, gasNew)
+	finalCost.AddAssign(cost)
+	return finalCost, nil
 }
 
 var (
@@ -135,7 +159,7 @@ var (
 		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
-			payer, ok := args[0].(string)
+			pledger, ok := args[0].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
@@ -145,11 +169,7 @@ var (
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[1])
 			}
-			// todo check is account name
-			// if !strings.HasPrefix(userName, "IOST") {
-			// 	return nil, cost, errors.New("userName should start with IOST")
-			// }
-			auth, cost0 := h.RequireAuth(payer, "transfer")
+			auth, cost0 := h.RequireAuth(pledger, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
@@ -169,13 +189,13 @@ var (
 			}
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
-			_, cost0, err = h.Call("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, payer, contractName, pledgeAmountStr))
+			_, cost0, err = h.Call("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, pledger, contractName, pledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
-			err = pledge(h, gasUser, pledgeAmount)
-			cost.AddAssign(host.PledgeForGasCost)
+			cost0, err = pledge(h, pledger, gasUser, pledgeAmount)
+			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
@@ -187,20 +207,17 @@ var (
 		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
-			gasUser, ok := args[0].(string)
-			cost.AddAssign(host.CommonErrorCost(1))
-			if !ok {
-				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
-			}
-			receiver, ok := args[1].(string)
+			pledger, ok := args[0].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
 			if !ok {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[1])
 			}
-			if !strings.HasPrefix(gasUser, "IOST") {
-				return nil, cost, errors.New("userName should start with IOST")
+			gasUser, ok := args[1].(string)
+			cost.AddAssign(host.CommonErrorCost(1))
+			if !ok {
+				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
 			}
-			auth, cost0 := h.RequireAuth(gasUser, "transfer")
+			auth, cost0 := h.RequireAuth(pledger, "transfer")
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
@@ -218,8 +235,15 @@ var (
 			if unpledgeAmount.Value < minUnpledgeAmount {
 				return nil, cost, fmt.Errorf("min unpledge num is %d", minUnpledgeAmount)
 			}
-			err = pledge(h, gasUser, unpledgeAmount.Neg())
-			cost.AddAssign(host.PledgeForGasCost)
+			pledged, cost := h.GasManager.GasPledge(gasUser, pledger)
+			if pledged.IsZero() {
+				return nil, cost, fmt.Errorf("%v did not pledge for %v", pledger, gasUser)
+			}
+			if pledged.LessThan(unpledgeAmount) {
+				unpledgeAmount = pledged.Neg()
+			}
+			cost0, err = pledge(h, pledger, gasUser, unpledgeAmount.Neg())
+			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
@@ -227,7 +251,7 @@ var (
 			cost.AddAssign(cost0)
 			freezeTime := h.Context().Value("time").(int64) + UnpledgeFreezeSeconds*1e9
 			_, cost0, err = h.CallWithAuth("iost.token", "transferFreeze",
-				fmt.Sprintf(`["iost", "%v", "%v", "%v", %v, ""]`, contractName, receiver, unpledgeAmountStr, freezeTime))
+				fmt.Sprintf(`["iost", "%v", "%v", "%v", %v, ""]`, contractName, pledger, unpledgeAmount.ToString(), freezeTime))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err

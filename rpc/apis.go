@@ -29,6 +29,7 @@ import (
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 //go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/go-iost/new_rpc ApisServer
@@ -316,15 +317,26 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	} else {
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
-	gas := &GASInfo{}
-	gas.CurrentTotal = s.visitor.GasHandler.CurrentTotalGas(key.ID, s.bc.LinkedRoot().Head.Time).ToString()
-	gas.IncreaseSpeed = s.visitor.GasHandler.GasRate(key.ID).ToString()
-	gas.Limit = s.visitor.GasHandler.GasLimit(key.ID).ToString()
-	gas.PledgedCoin = s.visitor.GasHandler.GasPledge(key.ID).ToString()
 	ram := &RAMInfo{}
 	ram.Available = s.visitor.TokenBalance("ram", key.ID)
+	balance := s.visitor.TokenBalanceFixed("iost", key.ID).ToString()
+
+	gas := &GASInfo{}
+	var h *host.Host
+	c := host.NewContext(nil)
+	h = host.NewHost(c, s.visitor, nil, nil)
+	h.Context().Set("contract_name", "iost.gas")
+	g := host.NewGasManager(h)
+	v, _ := g.CurrentTotalGas(key.ID, s.bc.LinkedRoot().Head.Time)
+	gas.CurrentTotal = v.ToString()
+	v, _ = g.GasRate(key.ID)
+	gas.IncreaseSpeed = v.ToString()
+	v, _ = g.GasLimit(key.ID)
+	gas.Limit = v.ToString()
+	v, _ = g.GasPledge(key.ID, key.ID)
+	gas.PledgedCoin = v.ToString()
 	return &GetAccountRes{
-		Balance: s.visitor.TokenBalanceFixed("iost", key.ID).ToString(),
+		Balance: balance,
 		Gas:     gas,
 		Ram:     ram,
 	}, nil
