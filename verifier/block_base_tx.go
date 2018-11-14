@@ -19,16 +19,19 @@ var BlockBaseTx = &tx.Tx{
 // NewBaseTx is new baseTx
 func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 	t := BlockBaseTx
-	t = tx.NewTx(t.Actions, t.Signers, t.GasLimit, t.GasPrice, t.Expiration, t.Delay)
-
+	if len(t.Actions) == 0 {
+		return t, nil
+	}
 	txData, err := baseTxData(blk.Head, parent.Head)
 	ilog.Info(blk.Head.Number, blk.Head.Witness[4:6], parent.Head, txData)
 	if err != nil {
 		return nil, err
 	}
-	if len(t.Actions) > 0 {
-		t.Actions[0].Data = txData
-	}
+	// manually deep copy actions
+	act := *BlockBaseTx.Actions[0]
+	act.Data = txData
+	acts := []*tx.Action{&act}
+	t = tx.NewTx(acts, t.Signers, t.GasLimit, t.GasPrice, t.Expiration, t.Delay)
 	return t, nil
 }
 

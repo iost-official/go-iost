@@ -93,23 +93,24 @@ func saveAccount(name string, kp *account.KeyPair) {
 }
 
 // CreateNewAccount ...
-func CreateNewAccount(creatorID string, creatorKp *account.KeyPair, newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) {
+func CreateNewAccount(creatorID string, creatorKp *account.KeyPair, newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
 	var acts []*tx.Action
 	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
 	acts = append(acts, tx.NewAction("iost.ram", "buy", fmt.Sprintf(`["%v", "%v", %v]`, creatorID, newID, initialRAM)))
 	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, creatorID, newID, initialGasPledge)))
 	if initialCoins != 0 {
-		acts = append(acts, tx.NewAction("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v"]`, creatorID, newID, initialCoins)))
+		acts = append(acts, tx.NewAction("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, creatorID, newID, initialCoins)))
 	}
 	trx := tx.NewTx(acts, make([]string, len(signers)), 10000, 100, time.Now().Add(time.Second*time.Duration(5)).UnixNano(), 0)
 	stx, err := tx.SignTx(trx, creatorID, []*account.KeyPair{creatorKp})
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var txHash string
 	txHash, err = sendTx(stx)
 	if err != nil {
-		panic(err)
+		//fmt.Printf("send tx failed %v", err)
+		return err
 	}
 	fmt.Println("iost node:receive your tx!")
 	fmt.Println("the transaction hash is:", txHash)
@@ -118,9 +119,10 @@ func CreateNewAccount(creatorID string, creatorKp *account.KeyPair, newID string
 	}
 	info, err := GetAccountInfo(server, newID, useLongestChain)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Println(info)
+	return nil
 }
 
 // accountCmd represents the account command
@@ -157,7 +159,11 @@ var accountCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		CreateNewAccount(accountName, keyPair, newName, newKp, 10, 300, 0)
+		err = CreateNewAccount(accountName, keyPair, newName, newKp, 10, 300, 0)
+		if err != nil {
+			fmt.Printf("create new account error %v", err)
+			return
+		}
 		saveAccount(newName, newKp)
 	},
 }
