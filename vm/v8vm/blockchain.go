@@ -6,8 +6,8 @@ package v8
 import "C"
 import (
 	"encoding/json"
+
 	"errors"
-	"fmt"
 	"github.com/iost-official/go-iost/vm/host"
 )
 
@@ -72,7 +72,6 @@ func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gas
 	callRs, cost, err := sbx.host.Call(contractStr, apiStr, argsStr)
 	*gasUsed = C.size_t(cost.CPU)
 	if err != nil {
-		fmt.Printf("goCall err %v %v %v %v\n", contractStr, apiStr, argsStr, err.Error())
 		return C.CString(err.Error())
 	}
 
