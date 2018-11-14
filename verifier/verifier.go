@@ -290,9 +290,6 @@ func verifyBlockBase(blk *block.Block, parent *block.Block, db database.IMultiVa
 		if a.ActionName != BlockBaseTx.Actions[i].ActionName ||
 			a.Contract != BlockBaseTx.Actions[i].Contract ||
 			a.Data != txData {
-			ilog.Info(a.ActionName, BlockBaseTx.Actions[i].ActionName)
-			ilog.Info(a.Contract, BlockBaseTx.Actions[i].Contract)
-			ilog.Info(a.Data, txData)
 			return fmt.Errorf("block base tx not match")
 		}
 	}
