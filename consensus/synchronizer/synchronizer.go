@@ -22,7 +22,7 @@ var (
 	syncHeightTime                = 3 * time.Second
 	heightAvailableTime     int64 = 22 * 3
 	heightTimeout           int64 = 100 * 22 * 3
-	continuousNum           int64 = 10
+	continuousNum           int64 = 1
 	syncNumber                    = 11 * continuousNum
 )
 
