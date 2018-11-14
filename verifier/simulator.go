@@ -26,7 +26,7 @@ type Simulator struct {
 	Verifier *Verifier
 	Head     *block.BlockHead
 	Logger   *ilog.Logger
-	mvcc     db.MVCCDB
+	Mvcc     db.MVCCDB
 }
 
 // NewSimulator get a simulator with default settings
@@ -40,7 +40,7 @@ func NewSimulator() *Simulator {
 	return &Simulator{
 		Visitor:  database.NewVisitor(0, mvccdb),
 		Verifier: &v,
-		mvcc:     mvccdb,
+		Mvcc:     mvccdb,
 		Head: &block.BlockHead{
 			ParentHash: []byte("abc"),
 			Number:     1,
@@ -202,6 +202,6 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 
 // Clear mvccdb
 func (s *Simulator) Clear() {
-	s.mvcc.Close()
+	s.Mvcc.Close()
 	os.RemoveAll("mvcc")
 }
