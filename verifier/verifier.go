@@ -88,12 +88,16 @@ func (v *Verifier) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, l
 // Gen gen block
 func (v *Verifier) Gen(blk *block.Block, parent *block.Block, db database.IMultiValue, iter TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
 	isolator := &vm.Isolator{}
-	r, err := blockBaseExec(blk, parent, db, isolator, BlockBaseTx, c)
+	baseTx, err := NewBaseTx(blk, parent)
+	if err != nil {
+		return nil, nil, err
+	}
+	r, err := blockBaseExec(blk, db, isolator, baseTx, c)
 	if err != nil {
 		return nil, nil, err
 	}
 	blk.Head.GasUsage += r.GasUsage
-	blk.Txs = append(blk.Txs, BlockBaseTx)
+	blk.Txs = append(blk.Txs, baseTx)
 	blk.Receipts = append(blk.Receipts, r)
 	var pi = NewProvider(iter)
 	switch c.Mode {
@@ -110,17 +114,11 @@ func (v *Verifier) Gen(blk *block.Block, parent *block.Block, db database.IMulti
 	return []*tx.Tx{}, []error{}, fmt.Errorf("mode unexpected: %v", c.Mode)
 }
 
-func blockBaseExec(blk *block.Block, parent *block.Block, db database.IMultiValue, isolator *vm.Isolator, t *tx.Tx, c *Config) (tr *tx.TxReceipt, err error) {
+func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isolator, t *tx.Tx, c *Config) (tr *tx.TxReceipt, err error) {
 	vi := database.NewVisitor(100, db)
 	var l ilog.Logger
 	l.Stop()
-	txData, err := baseTxData(blk.Head, parent.Head)
-	if err != nil {
-		return nil, err
-	}
-	if len(t.Actions) > 0 {
-		t.Actions[0].Data = txData
-	}
+
 	isolator.Prepare(blk.Head, vi, &l)
 	isolator.TriggerBlockBaseMode()
 	err = isolator.PrepareTx(t, c.Timeout)
@@ -280,16 +278,6 @@ func batches(blk *block.Block, info Info) []*Batch {
 	return rtn
 }
 
-func baseTxData(bh *block.BlockHead, pbh *block.BlockHead) (string, error) {
-	if pbh != nil {
-		return fmt.Sprintf(`[{"parent":["%v", "%v"]}]`, pbh.Witness, pbh.GasUsage), nil
-	}
-	if bh.Number != 0 {
-		return "", fmt.Errorf("block dit not have parent")
-	}
-	return `[{"parent":["", "0"]}]`, nil
-}
-
 func verifyBlockBase(blk *block.Block, parent *block.Block, db database.IMultiValue, c *Config) error {
 	if len(blk.Txs) < 1 || len(blk.Receipts) < 1 {
 		return fmt.Errorf("block did not contain block base tx")
@@ -307,7 +295,7 @@ func verifyBlockBase(blk *block.Block, parent *block.Block, db database.IMultiVa
 		}
 	}
 	isolator := &vm.Isolator{}
-	r, err := blockBaseExec(blk, parent, db, isolator, blk.Txs[0], c)
+	r, err := blockBaseExec(blk, db, isolator, blk.Txs[0], c)
 	if err != nil {
 		return err
 	}
