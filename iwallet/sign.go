@@ -14,6 +14,7 @@
 
 package iwallet
 
+/*
 import (
 	"fmt"
 	"io/ioutil"
@@ -27,8 +28,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var kpPath string
-var signAlgo string
 
 // signCmd represents the sign command
 var signCmd = &cobra.Command{
@@ -123,3 +122,4 @@ func init() {
 	// is called directly, e.g.:
 	// signCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
+*/

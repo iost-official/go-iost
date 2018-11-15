@@ -16,32 +16,24 @@ package iwallet
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
 // balanceCmd represents the balance command
-var accountInfoCmd = &cobra.Command{
-	Use:   "balance",
-	Short: "check information of specified account",
-	Long:  `check information of specified account`,
+var nodeCmd = &cobra.Command{
+	Use:   "net",
+	Short: "Get node info",
+	Long:  `Get node info`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println("please enter the account ID")
-			return
-		}
-		//do some check for arg[0] here
-		id := args[0]
-		info, err := sdk.getAccountInfo(id)
+		r, err := sdk.getNodeInfo()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("cannot get node info %v\n", err)
 			return
 		}
-		fmt.Println(info)
+		fmt.Println("node info:", r.String())
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(accountInfoCmd)
-	accountInfoCmd.Flags().BoolVarP(&sdk.useLongestChain, "use_longest", "", false, "get balance on longest chain")
+	rootCmd.AddCommand(nodeCmd)
 }
