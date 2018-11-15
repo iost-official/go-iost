@@ -43,7 +43,7 @@ func (g *GasManager) getFixed(owner string, key string) (*common.Fixed, contract
 	var err error
 	result, cost := g.h.Get(key, owner)
 	if result == nil {
-		ilog.Errorf("GasManager failed %v %v", owner, key)
+		//ilog.Errorf("GasManager failed %v %v", owner, key)
 		return nil, cost
 	}
 	value, err := common.UnmarshalFixed(result.(string))
