@@ -687,7 +687,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
-	if msg.messageType() != PublishTx {
+	if msg.messageType() != PublishTx && msg.messageType() != SyncHeight {
 		ilog.Infof("receiving message. type=%s, pid=%s", msg.messageType(), peerID.Pretty())
 	}
 	switch msg.messageType() {
