@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"strconv"
 
 	"github.com/iost-official/go-iost/ilog"
+)
+
+// Constant of itest
+const (
+	Zero = 1e-6
 )
 
 // ITest is the test controller
@@ -120,23 +124,12 @@ func (t *ITest) TransferN(num int, accounts []*Account) error {
 			A := accounts[rand.Intn(len(accounts))]
 			B := accounts[rand.Intn(len(accounts))]
 			amount := float64(rand.Int63n(10000)) / 100
-			ABalance, err := strconv.ParseFloat(A.Balance(), 64)
-			if err != nil {
-				res <- err
-				return
-			}
-			BBalance, err := strconv.ParseFloat(B.Balance(), 64)
-			if err != nil {
-				res <- err
-				return
-			}
 
-			A.SetBalance(strconv.FormatFloat(ABalance-amount, 'f', -1, 64))
-			B.SetBalance(strconv.FormatFloat(BBalance+amount, 'f', -1, 64))
-
-			err = t.Transfer(A, B, "iost", fmt.Sprintf("%0.8f", amount))
+			A.AddBalance(-amount)
+			B.AddBalance(amount)
 			ilog.Debugf("Transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
-			res <- err
+
+			res <- t.Transfer(A, B, "iost", fmt.Sprintf("%0.8f", amount))
 		}(res)
 	}
 
@@ -194,17 +187,9 @@ func (t *ITest) CheckAccounts(a []*Account) error {
 	ilog.Infof("Check %v accounts info...", len(a))
 
 	for _, i := range a {
-		expect, err := strconv.ParseFloat(i.Balance(), 64)
-		if err != nil {
-			return err
-		}
-
-		actual, err := strconv.ParseFloat(aMap[i.ID].Balance(), 64)
-		if err != nil {
-			return err
-		}
-
-		if math.Abs(expect-actual) < 1e-6 {
+		expect := i.Balance()
+		actual := aMap[i.ID].Balance()
+		if math.Abs(expect-actual) > Zero {
 			return fmt.Errorf(
 				"expect account %v's balance is %0.8f, but balance is %0.8f",
 				i.ID,
