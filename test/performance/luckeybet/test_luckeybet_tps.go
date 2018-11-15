@@ -86,7 +86,10 @@ func transfer(i int) {
 func publish() string {
 	codePath := "vm/test_data/lucky_bet.js"
 	abiPath := codePath + ".abi"
-	_, txHash, err := iwallet.PublishContract(codePath, abiPath, "", testID, testKp, 5, make([]string, 0), 10000, 100, false, "", true)
+	sdk := iwallet.SDK{}
+	sdk.SetAccount(testID, testKp)
+	sdk.SetTxInfo(10000, 100, 5, 0)
+	_, txHash, err := sdk.PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {
 		panic(err)
 	}
@@ -112,7 +115,9 @@ func initAcc() {
 		panic(err)
 	}
 	testID = "testID"
-	iwallet.CreateNewAccount("admin", adminKp, testID, testKp, 100000, 10000, 100000)
+	sdk := iwallet.SDK{}
+	sdk.SetAccount("admin", adminKp)
+	sdk.CreateNewAccount(testID, testKp, 100000, 10000, 100000)
 }
 
 func main() {

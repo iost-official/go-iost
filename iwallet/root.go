@@ -38,11 +38,18 @@ func init() {
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.iwallet.yaml)")
 
-	rootCmd.PersistentFlags().StringVarP(&dest, "dest", "d", "default", "Set destination of output file")
-	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "Set server of this client")
-	rootCmd.PersistentFlags().BoolVarP(&checkResult, "checkResult", "", true, "Check publish/call status after sending to chain")
-	rootCmd.PersistentFlags().Float32VarP(&checkResultDelay, "checkResultDelay", "", 3, "RPC checking will occur at [checkResultDelay] seconds after sending to chain.")
-	rootCmd.PersistentFlags().Int32VarP(&checkResultMaxRetry, "checkResultMaxRetry", "", 10, "Max times to call grpc to check tx status")
+	rootCmd.PersistentFlags().StringVarP(&sdk.accountName, "account", "", "", "which account to use")
+	rootCmd.PersistentFlags().StringVarP(&sdk.server, "server", "s", "localhost:30002", "Set server of this client")
+	rootCmd.PersistentFlags().BoolVarP(&sdk.checkResult, "checkResult", "", true, "Check publish/call status after sending to chain")
+	rootCmd.PersistentFlags().Float32VarP(&sdk.checkResultDelay, "checkResultDelay", "", 3, "RPC checking will occur at [checkResultDelay] seconds after sending to chain.")
+	rootCmd.PersistentFlags().Int32VarP(&sdk.checkResultMaxRetry, "checkResultMaxRetry", "", 10, "Max times to call grpc to check tx status")
+	rootCmd.PersistentFlags().StringVarP(&sdk.signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
+	rootCmd.PersistentFlags().Int64VarP(&sdk.gasLimit, "gaslimit", "l", 10000, "gasLimit for a transaction")
+	rootCmd.PersistentFlags().Int64VarP(&sdk.gasPrice, "gasprice", "p", 100, "gasPrice for a transaction")
+	rootCmd.PersistentFlags().Int64VarP(&sdk.expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
+
+	//rootCmd.PersistentFlags().StringVarP(&dest, "dest", "d", "default", "Set destination of output file")
+	//rootCmd.Flags().StringSliceVarP(&signers, "signers", "n", []string{}, "signers who should sign this transaction")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
