@@ -51,7 +51,6 @@ func TestBlockCache(t *testing.T) {
 	s2 := genBlock(s1, "w2", 2)
 	s2a := genBlock(s1, "w3", 3)
 	s3 := genBlock(s2, "w4", 4)
-
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)

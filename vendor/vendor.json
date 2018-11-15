@@ -1120,6 +1120,12 @@
 			"revisionTime": "2017-05-05T22:16:40Z"
 		},
 		{
+			"checksumSHA1": "Oen67XBkt5voJj1wya8kIakvdT4=",
+			"path": "github.com/xlab/treeprint",
+			"revision": "d6fb6747feb6e7cfdc44682a024bddf87ef07ec2",
+			"revisionTime": "2018-06-15T14:19:04Z"
+		},
+		{
 			"checksumSHA1": "BwuTN1p5tDdEH4nNn2oEWYnwIow=",
 			"path": "golang.org/x/crypto/blake2s",
 			"revision": "75e913eb8a8e3d31a97b216de09de106a7b07681",

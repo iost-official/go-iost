@@ -10,6 +10,7 @@ import (
 	"github.com/iost-official/go-iost/verifier"
 
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -22,25 +23,28 @@ import (
 )
 
 var (
-	metricsGeneratedBlockCount = metrics.NewCounter("iost_pob_generated_block", nil)
-	metricsVerifyBlockCount    = metrics.NewCounter("iost_pob_verify_block", nil)
-	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
-	metricsTxSize              = metrics.NewGauge("iost_block_tx_size", nil)
-	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
+	metricsGeneratedBlockCount   = metrics.NewCounter("iost_pob_generated_block", nil)
+	metricsVerifyBlockCount      = metrics.NewCounter("iost_pob_verify_block", nil)
+	metricsConfirmedLength       = metrics.NewGauge("iost_pob_confirmed_length", nil)
+	metricsTxSize                = metrics.NewGauge("iost_block_tx_size", nil)
+	metricsMode                  = metrics.NewGauge("iost_node_mode", nil)
+	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
+	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
+	metricsGenerateBlockTimeCost = metrics.NewGauge("iost_generate_block_time_cost", nil)
 )
 
 var (
 	errSingle    = errors.New("single block")
 	errDuplicate = errors.New("duplicate block")
-	// errTxHash     = errors.New("wrong txs hash")
-	// errMerkleHash = errors.New("wrong tx receipt merkle hash")
 )
 
-var blockReqTimeout = 3 * time.Second
+var (
+	blockReqTimeout = 3 * time.Second
+	continuousNum   = 1
+)
 
 type verifyBlockMessage struct {
 	blk     *block.Block
-	gen     bool
 	p2pType p2p.MessageType
 }
 
@@ -201,23 +205,20 @@ func (p *PoB) broadcastBlockHash(blk *block.Block) {
 	}
 }
 
+func calculateTime(blk *block.Block) float64 {
+	return float64((time.Now().UnixNano() - blk.Head.Time) / 1e6)
+}
+
 func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	if p.baseVariable.Mode() == global.ModeInit {
 		return
 	}
 	ilog.Infof("verify block chan size:%v", len(p.chVerifyBlock))
 	blk := vbm.blk
-	if vbm.gen {
-		ilog.Info("block from myself, block number: ", blk.Head.Number)
-		err := p.handleRecvBlock(blk)
-		if err != nil {
-			ilog.Errorf("received block from myself, error, err:%v", err)
-		}
-		return
-	}
 	switch vbm.p2pType {
 	case p2p.NewBlock:
-		ilog.Info("received new block, block number: ", blk.Head.Number)
+		t1 := calculateTime(blk)
+		metricsTransferCost.Set(t1, nil)
 		timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
 		if ok {
 			t, ok := timer.(*time.Timer)
@@ -227,16 +228,23 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		} else {
 			p.blockReqMap.Store(string(blk.HeadHash()), nil)
 		}
-		err := p.handleRecvBlock(blk)
-		p.broadcastBlockHash(blk) // can use go
+		ilog.Infof("[pob] handle recv new block start, number = %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
+		err := p.handleRecvBlock(blk, true)
+		t2 := calculateTime(blk)
+		metricsTimeCost.Set(t2, nil)
+		ilog.Infof("[pob]" + p.blockCache.Draw())
+		ilog.Infof("[pob] transfer cost: %v, total cost: %v", t1, t2)
+		ilog.Infof("[pob] handle recv new block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
+		//go p.broadcastBlockHash(blk)
 		p.blockReqMap.Delete(string(blk.HeadHash()))
 		if err != nil {
-			ilog.Errorf("received new block error, err:%v", err)
+			ilog.Errorf("[pob] received new block error, err:%v", err)
 			return
 		}
 	case p2p.SyncBlockResponse:
-		ilog.Info("received sync block, block number: ", blk.Head.Number)
-		err := p.handleRecvBlock(blk)
+		ilog.Info("[pob] received sync block, block number: ", blk.Head.Number)
+		err := p.handleRecvBlock(blk, true)
+		ilog.Infof("[pob]" + p.blockCache.Draw())
 		if err != nil {
 			ilog.Errorf("received sync block error, err:%v", err)
 			return
@@ -249,6 +257,7 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
+			ilog.Infof("[pob] verify block chan size:%v", len(p.chVerifyBlock))
 			p.doVerifyBlock(vbm)
 		case <-p.exitSignal:
 			return
@@ -273,7 +282,7 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			ilog.Info("received block, block number: ", blk.Head.Number)
-			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, gen: false, p2pType: incomingMessage.Type()}
+			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, p2pType: incomingMessage.Type()}
 		case <-p.exitSignal:
 			return
 		}
@@ -286,26 +295,53 @@ func (p *PoB) scheduleLoop() {
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
-			ilog.Info(p.baseVariable.Mode())
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
 				if p.baseVariable.Mode() == global.ModeNormal {
-					p.txPool.Lock()
-					blk, err := generateBlock(p.account, p.txPool, p.produceDB)
-					p.txPool.Release()
-					ilog.Infof("gen block:%v", blk.Head.Number)
-					if err != nil {
-						ilog.Error(err.Error())
-						continue
+					generateBlockTicker := time.NewTicker(time.Millisecond * 300)
+					num := 0
+					generateTxsNum = 0
+					for {
+						p.txPool.Lock()
+						var limitTime time.Duration
+						if num < continuousNum-2 {
+							limitTime = time.Millisecond * 250
+						} else {
+							limitTime = time.Millisecond * 10
+						}
+						blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
+						p.txPool.Release()
+						if err != nil {
+							ilog.Error(err)
+							continue
+						}
+						blkByte, err := blk.Encode()
+						if err != nil {
+							ilog.Error(err.Error())
+							continue
+						}
+						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
+						ilog.Infof("[pob] generate block time cost: %v, %v, %v, %v", num, limitTime, calculateTime(blk), p.account.ID[4:6])
+						metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
+						update := false
+						if num == continuousNum-1 {
+							update = true
+						}
+						err = p.handleRecvBlock(blk, update)
+						if err != nil {
+							ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
+							continue
+						}
+						num++
+						if num >= continuousNum {
+							break
+						}
+						select {
+						case <-generateBlockTicker.C:
+						}
 					}
-					ilog.Debugf("block tx num: %v", len(blk.Txs))
-					p.chVerifyBlock <- &verifyBlockMessage{blk: blk, gen: true}
-					blkByte, err := blk.Encode()
-					if err != nil {
-						ilog.Error(err.Error())
-						continue
-					}
-					go p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
+					metricsTxSize.Set(float64(generateTxsNum), nil)
+					generateBlockTicker.Stop()
 				}
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
@@ -316,7 +352,7 @@ func (p *PoB) scheduleLoop() {
 	}
 }
 
-func (p *PoB) handleRecvBlock(blk *block.Block) error {
+func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
@@ -328,17 +364,19 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent.Block)
+		return p.addExistingBlock(blk, parent.Block, update)
 	}
 	return errSingle
 }
 
-func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error {
+func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, update bool) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
+		p.txPool.Lock()
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB, p.blockChain)
+		p.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed. err=%v", err)
 			p.blockCache.Del(node)
@@ -346,23 +384,23 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block) error
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))
 	}
-	h := p.blockCache.Head()
-	if node.Head.Number > h.Head.Number {
-		p.txPool.AddLinkedNode(node, node)
-	} else {
-		p.txPool.AddLinkedNode(node, h)
-	}
+	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
-	p.updateInfo(node)
+	p.blockCache.Draw()
+	p.updateInfo(node, update)
 	for child := range node.Children {
-		p.addExistingBlock(child.Block, node.Block)
+		p.addExistingBlock(child.Block, node.Block, true)
 	}
 	return nil
 }
 
-func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
+func (p *PoB) updateInfo(node *blockcache.BlockCacheNode, update bool) {
 	updateWaterMark(node)
-	updateLib(node, p.blockCache)
+	if update {
+		ilog.Infof("[pob] updateInfo start, number: %d, hash = %v, witness = %v", node.Head.Number, common.Base58Encode(node.HeadHash()), node.Head.Witness[4:6])
+		updateLib(node, p.blockCache)
+		ilog.Infof("[pob] updateInfo end, number: %d, hash = %v, witness = %v", node.Head.Number, common.Base58Encode(node.HeadHash()), node.Head.Witness[4:6])
+	}
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
