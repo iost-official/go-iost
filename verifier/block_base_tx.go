@@ -5,7 +5,6 @@ import (
 
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 // BlockBaseTx the first tx in a block
@@ -23,7 +22,6 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 		return t, nil
 	}
 	txData, err := baseTxData(blk.Head, parent.Head)
-	ilog.Info(blk.Head.Number, blk.Head.Witness[4:6], parent.Head, txData)
 	if err != nil {
 		return nil, err
 	}
