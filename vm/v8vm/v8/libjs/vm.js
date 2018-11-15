@@ -73,5 +73,14 @@ var BlockChain = require('blockchain');
 
 var _IOSTInstruction_counter = new IOSTInstruction;
 
+// + - * / % **, | & ^ >> >>> <<, || &&, == != === !== > >= < <=, instanceOf in
+var _IOSTBinaryOp = function(left, right, op) {
+    if ((typeof left === "string" || typeof right === "string") &&
+        (op === "+" || op === "==" || op === "!=" || op === "===" || op === "!==" || op === "<" || op === "<=" || op === ">" || op === ">=")) {
+        _IOSTInstruction_counter.incr(left.toString().length + right.toString().length);
+    }
+    return eval("left " + op + " right");
+}
+
 // var Console = require('console');
 var console = new Console;
