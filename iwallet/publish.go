@@ -139,6 +139,11 @@ func init() {
 	// publishCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
+// SetServer set the server.
+func SetServer(s string) {
+	server = s
+}
+
 func sendTx(stx *tx.Tx) (string, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {

@@ -12,7 +12,7 @@ import (
 type TxPool interface {
 	Start() error
 	Stop()
-	AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error
+	AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error
 	AddTx(tx *tx.Tx) error
 	DelTx(hash []byte) error
 	DelTxList(delList []*tx.Tx)
