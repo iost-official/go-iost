@@ -12,6 +12,7 @@ const (
 	LevelFatal
 )
 
+// NewLevel will return a new level by name
 func NewLevel(l string) Level {
 	switch l {
 	case "debug":
