@@ -210,8 +210,8 @@ func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peer
 				node.prev.next = node
 				node.next.prev = node
 				hashMap.Store(node.val, node)
+				pmMutex.Unlock()
 			}
-			pmMutex.Unlock()
 		}
 	}
 	hState, _ := dc.hashState.LoadOrStore(hash, Wait)
