@@ -32,7 +32,7 @@ var accountInfoCmd = &cobra.Command{
 		}
 		//do some check for arg[0] here
 		id := args[0]
-		info, err := sdk.GetAccountInfo(id)
+		info, err := sdk.getAccountInfo(id)
 		if err != nil {
 			fmt.Println(err)
 			return
