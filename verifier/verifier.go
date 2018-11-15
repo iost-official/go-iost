@@ -363,6 +363,7 @@ func checkReceiptEqual(r *tx.TxReceipt, receipt *tx.TxReceipt) error {
 			return fmt.Errorf("receipt not match, returns not same: %v != %v \n%v\n%v", br, receipt.Returns[i], r, receipt)
 		}
 	}
+	return nil
 }
 
 func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxReceipt, blk *block.Block) error {
