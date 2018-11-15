@@ -2,12 +2,8 @@ package pob
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
-
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/verifier"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
@@ -84,11 +80,6 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		chVerifyBlock:   make(chan *verifyBlockMessage, 1024),
 	}
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
-
-	// exec vote_producer
-	act := tx.NewAction("iost.base", "Exec", fmt.Sprintf(`[]`))
-	verifier.BlockBaseTx.Actions = append(verifier.BlockBaseTx.Actions, act)
-
 	return &p
 }
 
