@@ -387,8 +387,8 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 			ilog.Debugf("Download Begin")
 			dc.peerState.Range(func(peerID, v interface{}) bool {
 				select {
-				//case <-dc.exitSignal:
-				//	return false
+				case <-dc.exitSignal:
+					return false
 				default:
 					ilog.Debugf("peerID: %s", peerID.(p2p.PeerID).Pretty())
 					ps, ok := v.(timerMap)
