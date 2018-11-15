@@ -9,6 +9,8 @@ import (
 
 	"time"
 
+	"io/ioutil"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -17,7 +19,6 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
-	"io/ioutil"
 )
 
 func benchInit() (Engine, *database.Visitor) {
@@ -51,7 +52,7 @@ func cleanUp() {
 	os.RemoveAll("mvcc")
 }
 
-func BenchmarkNative_Transfer(b *testing.B) { // 21400 ns/op
+func BenchmarkNative_Transfer(b *testing.B) { // 39851 ns/op
 	e, _ := benchInit()
 
 	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
@@ -68,7 +69,8 @@ func BenchmarkNative_Transfer(b *testing.B) { // 21400 ns/op
 	cleanUp()
 }
 
-func BenchmarkNative_Transfer_LRU(b *testing.B) { // 15300 ns/op
+func BenchmarkNative_Transfer_LRU(b *testing.B) { // 37445 ns/op
+	ilog.Stop()
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
 		panic(err)
@@ -243,7 +245,7 @@ func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
 	b.StopTimer()
 }
 
-func Benchmark_JS_Transfer(b *testing.B) {
+func Benchmark_JS_Transfer(b *testing.B) { //577385ns(local) vs 1060847ns(server)
 	ilog.Stop()
 	js := NewJSTester(b)
 	defer js.Clear()
@@ -271,6 +273,7 @@ func Benchmark_JS_Transfer(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		js.e.Exec(trx2, time.Second)
 		r, err := js.e.Exec(trx2, time.Second)
 		if r.Status.Code != 0 || err != nil {
 			b.Fatal(r.Status.Message, err)

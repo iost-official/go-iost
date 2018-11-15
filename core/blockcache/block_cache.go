@@ -3,6 +3,7 @@ package blockcache
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/iost-official/go-iost/common"
@@ -10,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/xlab/treeprint"
 )
 
 // CacheStatus ...
@@ -340,8 +342,9 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
-		ilog.Info("confirm ", retain.Head.Number)
+		ilog.Info("[pob] confirm ", retain.Head.Number)
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
+
 		if err != nil {
 			ilog.Errorf("flush mvcc error: %v", err)
 			return err
@@ -399,4 +402,24 @@ func (bc *BlockCacheImpl) LinkedRoot() *BlockCacheNode {
 // Head return head of block cache
 func (bc *BlockCacheImpl) Head() *BlockCacheNode {
 	return bc.head
+}
+
+// Draw returns the linkedroot's and singleroot's tree graph.
+func (bc *BlockCacheImpl) Draw() string {
+	linkedTree := treeprint.New()
+	bc.linkedRoot.drawChildren(linkedTree)
+	singleTree := treeprint.New()
+	bc.singleRoot.drawChildren(singleTree)
+	return linkedTree.String()
+}
+
+func (bcn *BlockCacheNode) drawChildren(root treeprint.Tree) {
+	for c := range bcn.Children {
+		pattern := strconv.Itoa(int(c.Head.Number))
+		if c.Head.Witness != "" {
+			pattern += "(" + c.Head.Witness[4:6] + ")"
+		}
+		root.AddNode(pattern)
+		c.drawChildren(root.FindLastNode())
+	}
 }

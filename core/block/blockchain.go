@@ -340,7 +340,7 @@ func (bc *BlockChain) Draw(start int64, end int64) string {
 		if err != nil {
 			continue
 		}
-		ret += strconv.FormatInt(blk.Head.Number, 10) + "(" + blk.Head.Witness[4:6] + ")-"
+		ret += strconv.FormatInt(blk.Head.Number, 10) + "(" + blk.Head.Witness[4:6] + ")(" + strconv.Itoa(len(blk.Txs)) + ")-"
 	}
 	ret = ret[0 : len(ret)-1]
 	return ret
