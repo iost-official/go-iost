@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"bytes"
+	"encoding/base64"
+	"fmt"
 
 	"github.com/iost-official/go-iost/common"
 	. "github.com/smartystreets/goconvey/convey"
@@ -60,4 +62,33 @@ func TestSign(t *testing.T) {
 			So(Secp256k1.Verify(info, pubkey, []byte{5, 6, 7, 8}), ShouldBeFalse)
 		})
 	})
+}
+
+func TestSignature_Platform(t *testing.T) {
+	algo := NewAlgorithm("ed25519")
+
+	seckey := common.Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB")
+	t.Log(fmt.Sprintf("seckey > %x", seckey))
+	info := common.Sha3([]byte("hello"))
+	t.Log(fmt.Sprintf("info   > %x", info))
+	pubkey := algo.GetPubkey(seckey)
+	t.Log(fmt.Sprintf("pubkey > %x", pubkey))
+	t.Log("pubkey in base64 >", base64.StdEncoding.EncodeToString(pubkey))
+
+	sig := algo.Sign(info, seckey)
+	t.Log(fmt.Sprintf("sig    > %x", sig))
+	t.Log("sig in base64 >", base64.StdEncoding.EncodeToString(sig))
+
+	t.Log("secp256k1-----------------")
+
+	secp := NewAlgorithm("secp256k1")
+	sec := common.Base58Decode("EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE")
+	pubkey2 := secp.GetPubkey(sec)
+	t.Log(fmt.Sprintf("pubkey    > %x", pubkey2))
+	t.Log("pubkey in base64 >", base64.StdEncoding.EncodeToString(pubkey2))
+
+	sig2 := secp.Sign(info, sec)
+	t.Log(fmt.Sprintf("sig    > %x", sig2))
+	t.Log("sig in base64 >", base64.StdEncoding.EncodeToString(sig2))
+
 }
