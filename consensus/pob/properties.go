@@ -5,6 +5,7 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 var staticProperty *StaticProperty
@@ -59,6 +60,7 @@ func witnessOfSec(sec int64) string {
 func witnessOfSlot(slot int64) string {
 	index := slot % staticProperty.NumberOfWitnesses
 	witness := staticProperty.WitnessList[index]
+	ilog.Info(index, staticProperty.WitnessList, witness)
 	return witness
 }
 

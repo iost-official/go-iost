@@ -297,6 +297,10 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Duration(nextSchedule)):
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			if witnessOfSec(time.Now().Unix()) == p.account.ID {
+				ilog.Info(time.Now().UnixNano())
+				ilog.Info(witnessOfNanoSec(time.Now().UnixNano()))
+				ilog.Info(time.Now().Unix())
+				ilog.Info(witnessOfSec(time.Now().Unix()), p.account.ID)
 				if p.baseVariable.Mode() == global.ModeNormal {
 					generateBlockTicker := time.NewTicker(time.Millisecond * 300)
 					num := 0
@@ -365,7 +369,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
-	ilog.Info(err, parent.Type)
+	ilog.Info(err, parent)
 	if err == nil && parent.Type == blockcache.Linked {
 		ilog.Info("start to add")
 		return p.addExistingBlock(blk, parent.Block, update)
