@@ -328,7 +328,6 @@ func (p *PoB) scheduleLoop() {
 						update = true
 					}
 					err = p.handleRecvBlock(blk, update)
-					p.blockCache.Draw()
 					if err != nil {
 						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
 						continue
@@ -353,7 +352,6 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
-	ilog.Info("start to handle")
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
@@ -364,16 +362,13 @@ func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
-	ilog.Info(err, parent)
 	if err == nil && parent.Type == blockcache.Linked {
-		ilog.Info("start to add")
 		return p.addExistingBlock(blk, parent.Block, update)
 	}
 	return errSingle
 }
 
 func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, update bool) error {
-	ilog.Info("add existing block")
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
 	if !ok {
@@ -400,7 +395,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode, update bool) {
 	updateWaterMark(node)
-	ilog.Info(update)
 	if update {
 		ilog.Infof("[pob] updateInfo start, number: %d, hash = %v, witness = %v", node.Head.Number, common.Base58Encode(node.HeadHash()), node.Head.Witness[4:6])
 		updateLib(node, p.blockCache)
