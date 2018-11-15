@@ -342,13 +342,13 @@ func checkReceiptEqual(r *tx.TxReceipt, receipt *tx.TxReceipt) error {
 	if r.GasUsage != receipt.GasUsage {
 		return fmt.Errorf("receipt not match, gas usage not same: %v != %v \n%v\n%v", r.GasUsage, receipt.GasUsage, r, receipt)
 	}
+	if len(r.RAMUsage) != len(receipt.RAMUsage) {
+		return fmt.Errorf("receipt not match, ram usage length not same: %v != %v \n%v\n%v", len(r.RAMUsage), len(receipt.RAMUsage), r, receipt)
+	}
 	for k, v := range r.RAMUsage {
 		if v != receipt.RAMUsage[k] {
 			return fmt.Errorf("receipt not match, ram usage not same: %v != %v \n%v\n%v", v, receipt.RAMUsage[k], r, receipt)
 		}
-	}
-	if len(r.RAMUsage) != len(receipt.RAMUsage) {
-		return fmt.Errorf("receipt not match, ram usage length not same: %v != %v \n%v\n%v", len(r.RAMUsage), len(receipt.RAMUsage), r, receipt)
 	}
 	for i, br := range r.Receipts {
 		if br.FuncName != receipt.Receipts[i].FuncName {
