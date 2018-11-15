@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package rpcpb;
+
+message EmptyRequest {}
+
+// The message defines peer information.
+message PeerInfo {
+    // peer ID
+    string id = 1;
+    // peer addr
+    string addr = 2;
+}
+
+// The message defines network connection information.
+message NetworkInfo {
+    // local network ID
+    string id = 1;
+    // peer connection count
+    int32 peer_count = 2;
+    // peers' information
+    repeated PeerInfo peer_info = 3;
+}
+
+// The message containing the node's information.
+message NodeInfoResponse {
+    // build time
+    string build_time = 1;
+    // git hash
+    string git_hash = 2;
+    // node mode
+    string mode = 3;
+    // network connection information
+    NetworkInfo network = 4;
+}
+
+message Block {
+    
+}
+
+message ChainInfoResponse {
+    // the name of network, such mainnet or testnet
+    string net_name = 1;
+    // the iost protocol version
+    string protocol_version = 2;
+    // the block height
+    int64 height = 3;
+    // the current witness list
+    repeated string witness_list = 4;
+    // the head of the longest chain
+    Block head_block = 5;
+    // the last irreversible block
+    Block irreversible_block = 6;
+}
+
+
+// The request message containing the block's hash.
+message GetBlockByHashRequest {
+    // block hash
+    string hash = 1;
+    // complete means whether including the whole block or just blockhead+txhash_list
+    bool complete = 2;
+}
+
+// The request message containing the block's number.
+message GetBlockByNumberRequest {
+    // block number
+    int64 number = 1;
+    // complete means whether including the whole block or just blockhead+txhash_list
+    bool complete = 2;
+}
