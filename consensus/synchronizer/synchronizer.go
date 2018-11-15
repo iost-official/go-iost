@@ -63,7 +63,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 		syncEnd:      0,
 	}
 	var err error
-	sy.dc, err = NewDownloadController()
+	sy.dc, err = NewDownloadController(sy.checkHasBlock, sy.reqSyncBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +82,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 
 // Start starts the synchronizer module.
 func (sy *SyncImpl) Start() error {
-	go sy.dc.FreePeerLoop(sy.checkHasBlock)
-	go sy.dc.DownloadLoop(sy.reqSyncBlock)
+	sy.dc.Start()
 	go sy.syncHeightLoop()
 	go sy.messageLoop()
 	go sy.retryDownloadLoop()
@@ -189,7 +188,7 @@ func (sy *SyncImpl) checkSync() bool {
 	ilog.Infof("check sync, heights: %+v", heights)
 	if netHeight > height+syncNumber {
 		sy.baseVariable.SetMode(global.ModeSync)
-		sy.dc.Reset()
+		sy.dc.ReStart()
 		go sy.syncBlocks(height+1, netHeight)
 		return true
 	}
@@ -267,7 +266,7 @@ func (sy *SyncImpl) CheckSyncProcess() {
 	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd)
 	if sy.syncEnd <= sy.blockCache.Head().Head.Number {
 		sy.baseVariable.SetMode(global.ModeNormal)
-		sy.dc.Reset()
+		sy.dc.ReStart()
 	}
 }
 
@@ -476,18 +475,18 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		ilog.Errorf("get p failed.")
 		return false, false
 	}
-	ilog.Infof("callback try sync block, num:%v", bn)
+	//ilog.Infof("callback try sync block, num:%v", bn)
 	if bn <= sy.blockCache.LinkedRoot().Head.Number {
-		ilog.Infof("callback block confirmed, num:%v", bn)
+		//ilog.Infof("callback block confirmed, num:%v", bn)
 		return false, true
 	}
 	bHash := []byte(hash)
 	if bcn, err := sy.blockCache.Find(bHash); err == nil {
 		if bcn.Type == blockcache.Linked {
-			ilog.Infof("callback block linked, num:%v", bn)
+			//ilog.Infof("callback block linked, num:%v", bn)
 			return false, true
 		}
-		ilog.Infof("callback block is a single block, num:%v", bn)
+		//ilog.Infof("callback block is a single block, num:%v", bn)
 		return false, false
 	}
 	bi := msgpb.BlockInfo{Number: bn, Hash: bHash}
