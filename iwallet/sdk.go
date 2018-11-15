@@ -4,41 +4,37 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
+	"os"
+	"time"
+
+	"github.com/mitchellh/go-homedir"
+	"google.golang.org/grpc"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/rpc"
-	"github.com/mitchellh/go-homedir"
-	"google.golang.org/grpc"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 // SDK ...
 type SDK struct {
-	isLocal             bool
 	server              string
-	kpPath              string
+	accountName         string
+	keyPair             *account.KeyPair
 	signAlgo            string
 	gasLimit            int64
 	gasPrice            int64
 	expiration          int64
 	delaySecond         int64
-	accountDir          string
-	accountName         string
 	checkResult         bool
 	checkResultDelay    float32
 	checkResultMaxRetry int32
 	useLongestChain     bool
-	keyPair             *account.KeyPair
 }
 
-var sdk = &SDK{
-	signAlgo: "ed25519",
-}
+var sdk = &SDK{}
 
 // SetAccount ...
 func (s *SDK) SetAccount(name string, kp *account.KeyPair) {
@@ -59,41 +55,46 @@ func (s *SDK) SetServer(server string) {
 	s.server = server
 }
 
-// CreateNewAccount ...
-func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
-	var acts []*tx.Action
-	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
-	acts = append(acts, tx.NewAction("iost.ram", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
-	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
-	if initialCoins != 0 {
-		acts = append(acts, tx.NewAction("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
-	}
-	trx := s.createTx(acts)
-	stx, err := s.signTx(trx)
-	if err != nil {
-		return err
-	}
-	var txHash string
-	txHash, err = s.sendTx(stx)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("send tx done\n")
-	fmt.Println("the create user transaction hash is:", txHash)
-	if s.checkResult {
-		s.checkTransaction(txHash)
-	}
-	fmt.Printf("\nbalance of %v\n", newID)
-	info, err := s.GetAccountInfo(newID)
-	if err != nil {
-		return err
-	}
-	fmt.Println(info)
-	return nil
+func (s *SDK) createTx(actions []*tx.Action) *tx.Tx {
+	trx := tx.NewTx(actions, []string{}, s.gasLimit, s.gasPrice, time.Now().Add(time.Second*time.Duration(s.expiration)).UnixNano(), s.delaySecond*1e9)
+	return trx
 }
 
-// GetAccountInfo return account info
-func (s *SDK) GetAccountInfo(id string) (*rpc.GetAccountRes, error) {
+func (s *SDK) signTx(t *tx.Tx) (*tx.Tx, error) {
+	return tx.SignTx(t, s.accountName, []*account.KeyPair{s.keyPair})
+}
+
+func (s *SDK) getSignAlgoName() string {
+	return s.signAlgo
+}
+
+func (s *SDK) getSignAlgo() crypto.Algorithm {
+	switch s.getSignAlgoName() {
+	case "secp256k1":
+		return crypto.Secp256k1
+	case "ed25519":
+		return crypto.Ed25519
+	default:
+		return crypto.Ed25519
+	}
+}
+
+func (s *SDK) getNodeInfo() (*rpc.NodeInfoRes, error) {
+	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := rpc.NewApisClient(conn)
+	value, err := client.GetNodeInfo(context.Background(), &empty.Empty{})
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+// getAccountInfo return account info
+func (s *SDK) getAccountInfo(id string) (*rpc.GetAccountRes, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -110,7 +111,6 @@ func (s *SDK) GetAccountInfo(id string) (*rpc.GetAccountRes, error) {
 	}
 	return value, nil
 }
-
 func (s *SDK) getGetBlockByNum(num int64, complete bool) (*rpc.BlockInfo, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
@@ -141,13 +141,19 @@ func (s *SDK) getTxByHash(hash string) (*rpc.TxRes, error) {
 	return client.GetTxByHash(context.Background(), &rpc.HashReq{Hash: hash})
 }
 
-func (s *SDK) createTx(actions []*tx.Action) *tx.Tx {
-	trx := tx.NewTx(actions, []string{}, s.gasLimit, s.gasPrice, time.Now().Add(time.Second*time.Duration(s.expiration)).UnixNano(), s.delaySecond*1e9)
-	return trx
-}
-
-func (s *SDK) signTx(t *tx.Tx) (*tx.Tx, error) {
-	return tx.SignTx(t, s.accountName, []*account.KeyPair{s.keyPair})
+func (s *SDK) getTxReceiptByTxHash(txHashStr string) (*txpb.TxReceipt, error) {
+	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := rpc.NewApisClient(conn)
+	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpc.HashReq{Hash: txHashStr})
+	if err != nil {
+		return nil, err
+	}
+	//ilog.Debugf("getTxReceiptByTxHash(%v): %v", txHashStr, resp.TxReceiptRaw)
+	return resp.TxReceipt, nil
 }
 
 func (s *SDK) sendTx(stx *tx.Tx) (string, error) {
@@ -189,48 +195,12 @@ func (s *SDK) checkTransaction(txHash string) bool {
 	return false
 }
 
-func (s *SDK) getNodeInfo() (*rpc.NodeInfoRes, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
+func (s *SDK) getAccountDir() (string, error) {
+	home, err := homedir.Dir()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	value, err := client.GetNodeInfo(context.Background(), &empty.Empty{})
-	if err != nil {
-		return nil, err
-	}
-	return value, nil
-}
-
-func (s *SDK) getTxReceiptByTxHash(txHashStr string) (*txpb.TxReceipt, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpc.HashReq{Hash: txHashStr})
-	if err != nil {
-		return nil, err
-	}
-	//ilog.Debugf("getTxReceiptByTxHash(%v): %v", txHashStr, resp.TxReceiptRaw)
-	return resp.TxReceipt, nil
-}
-
-func (s *SDK) getSignAlgoName() string {
-	return s.signAlgo
-}
-
-func (s *SDK) getSignAlgo() crypto.Algorithm {
-	switch s.getSignAlgoName() {
-	case "secp256k1":
-		return crypto.Secp256k1
-	case "ed25519":
-		return crypto.Ed25519
-	default:
-		return crypto.Ed25519
-	}
+	return home + "/.iwallet", nil
 }
 
 func (s *SDK) loadAccount() error {
@@ -251,25 +221,6 @@ func (s *SDK) loadAccount() error {
 		return err
 	}
 	return nil
-}
-
-func (s *SDK) getAccountDir() (string, error) {
-	if s.accountDir != "" {
-		// TODO move this code to load condig
-		if !filepath.IsAbs(s.accountDir) {
-			dir, err := filepath.Abs(s.accountDir)
-			if err != nil {
-				return "", err
-			}
-			return dir, nil
-		}
-		return s.accountDir, nil
-	}
-	home, err := homedir.Dir()
-	if err != nil {
-		return "", err
-	}
-	return home + "/.iwallet", nil
 }
 
 func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
@@ -330,6 +281,39 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 	//fmt.Println(idFileName)
 	fmt.Println("your account private key is saved at:")
 	fmt.Println(fileName)
+	return nil
+}
+
+// CreateNewAccount ...
+func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
+	var acts []*tx.Action
+	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
+	acts = append(acts, tx.NewAction("iost.ram", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
+	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
+	if initialCoins != 0 {
+		acts = append(acts, tx.NewAction("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
+	}
+	trx := s.createTx(acts)
+	stx, err := s.signTx(trx)
+	if err != nil {
+		return err
+	}
+	var txHash string
+	txHash, err = s.sendTx(stx)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("send tx done\n")
+	fmt.Println("the create user transaction hash is:", txHash)
+	if s.checkResult {
+		s.checkTransaction(txHash)
+	}
+	fmt.Printf("\nbalance of %v\n", newID)
+	info, err := s.getAccountInfo(newID)
+	if err != nil {
+		return err
+	}
+	fmt.Println(info)
 	return nil
 }
 
