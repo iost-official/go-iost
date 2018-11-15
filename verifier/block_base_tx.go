@@ -7,30 +7,24 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 )
 
-// BlockBaseTx the first tx in a block
-var BlockBaseTx = &tx.Tx{
-	Publisher: "_Block_Base",
-	GasLimit:  1000000,
-	GasPrice:  100,
-	Actions:   []*tx.Action{},
-}
-
 // NewBaseTx is new baseTx
 func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
-	t := BlockBaseTx
-	if len(t.Actions) == 0 {
-		return t, nil
+	acts := []*tx.Action{}
+	if blk.Head.Number > 0 {
+		txData, err := baseTxData(blk.Head, parent.Head)
+		if err != nil {
+			return nil, err
+		}
+		act := tx.NewAction("iost.base", "Exec", txData)
+		acts = append(acts, act)
 	}
-	txData, err := baseTxData(blk.Head, parent.Head)
-	if err != nil {
-		return nil, err
+	tx := &tx.Tx{
+		Publisher: "_Block_Base",
+		GasLimit:  1000000,
+		GasPrice:  100,
+		Actions:   acts,
 	}
-	// manually deep copy actions
-	act := *BlockBaseTx.Actions[0]
-	act.Data = txData
-	acts := []*tx.Action{&act}
-	t = tx.NewTx(acts, t.Signers, t.GasLimit, t.GasPrice, t.Expiration, t.Delay)
-	return t, nil
+	return tx, nil
 }
 
 func baseTxData(bh *block.BlockHead, pbh *block.BlockHead) (string, error) {
