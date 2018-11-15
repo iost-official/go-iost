@@ -28,7 +28,7 @@ var (
 )
 
 func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) { // TODO 应传入account
-	ilog.Info("[pob]generate Block start")
+	ilog.Info("generate Block start")
 	st := time.Now()
 	txIter, head := txPool.TxIterator()
 	topBlock := head.Block
@@ -56,7 +56,6 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 		TxTimeLimit: time.Millisecond * 100,
 	})
 	t2 := time.Since(t1)
-	ilog.Info("time spent:", t2)
 	if len(blk.Txs) != 0 {
 		ilog.Info("time spent per tx:", t2.Nanoseconds()/int64(len(blk.Txs)))
 	}
@@ -72,7 +71,6 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	}
 	blk.Sign = acc.Sign(blk.HeadHash())
 	db.Tag(string(blk.HeadHash()))
-	ilog.Infof("generate block txs num: %v, %v, %v", len(blk.Txs), blk.Head.Number, blk.Head.Witness)
 	metricsGeneratedBlockCount.Add(1, nil)
 	generateTxsNum += len(blk.Txs)
 	return &blk, nil
@@ -132,8 +130,6 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		}
 	}
 	v := verifier.Verifier{}
-	ilog.Infof("[pob] start to verify block in vm, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
-	defer ilog.Infof("[pob] end of verify block in vm, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	return v.Verify(blk, parent, db, &verifier.Config{
 		Mode:        0,
 		Timeout:     time.Millisecond * 250,
@@ -151,9 +147,7 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
 	if confirmedNode != nil {
-		ilog.Infof("[pob] flush start, number: %d, hash = %v", node.Head.Number, common.Base58Encode(node.Block.HeadHash()))
 		bc.Flush(confirmedNode)
-		ilog.Infof("[pob] flush end, number: %d, hash = %v", node.Head.Number, common.Base58Encode(node.Block.HeadHash()))
 		metricsConfirmedLength.Set(float64(confirmedNode.Head.Number+1), nil)
 	}
 }
