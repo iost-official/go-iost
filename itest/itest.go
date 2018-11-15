@@ -2,6 +2,7 @@ package itest
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"strconv"
 
@@ -109,11 +110,11 @@ func (t *ITest) CreateAccount(name string) (*Account, error) {
 	return account, nil
 }
 
-//TransferN will send n transfer transaction concurrently
+// TransferN will send n transfer transaction concurrently
 func (t *ITest) TransferN(num int, accounts []*Account) error {
 	ilog.Infof("Send %v transfer transaction...", num)
 
-	var res chan interface{}
+	res := make(chan interface{})
 	for i := 0; i < num; i++ {
 		go func(res chan interface{}) {
 			A := accounts[rand.Intn(len(accounts))]
@@ -133,19 +134,86 @@ func (t *ITest) TransferN(num int, accounts []*Account) error {
 			A.SetBalance(strconv.FormatFloat(ABalance-amount, 'f', -1, 64))
 			B.SetBalance(strconv.FormatFloat(BBalance+amount, 'f', -1, 64))
 
-			res <- t.Transfer(A, B, "iost", fmt.Sprintf("%0.8f", amount))
+			err = t.Transfer(A, B, "iost", fmt.Sprintf("%0.8f", amount))
+			ilog.Debugf("Transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
+			res <- err
 		}(res)
 	}
 
 	for i := 0; i < num; i++ {
-		err, ok := (<-res).(error)
-		if ok {
-			ilog.Errorf("Send transfer transaction failed: %v", err)
-			break
+		switch value := (<-res).(type) {
+		case error:
+			return fmt.Errorf("Send transfer transaction failed: %v", value)
+		default:
 		}
 	}
 
 	ilog.Infof("Send %v transfer transaction successful!", num)
+
+	return nil
+}
+
+// CheckAccounts will check account info by getting account info
+func (t *ITest) CheckAccounts(a []*Account) error {
+	ilog.Infof("Get %v accounts info...", len(a))
+
+	res := make(chan interface{})
+	for _, i := range a {
+		go func(name string, res chan interface{}) {
+			account, err := t.GetAccount(name)
+			if err != nil {
+				res <- err
+			} else {
+				res <- account
+			}
+		}(i.ID, res)
+	}
+
+	aMap := make(map[string]*Account)
+	for i := 0; i < len(a); i++ {
+		switch value := (<-res).(type) {
+		case error:
+			ilog.Errorf("Get account failed: %v", value)
+		case *Account:
+			aMap[value.ID] = value
+		default:
+			return fmt.Errorf("unexpect res: %v", value)
+		}
+	}
+
+	if len(aMap) != len(a) {
+		return fmt.Errorf(
+			"expect get %v account, but only ge %v account",
+			len(a),
+			len(aMap),
+		)
+	}
+
+	ilog.Infof("Get %v accounts info successful!", len(aMap))
+
+	ilog.Infof("Check %v accounts info...", len(a))
+
+	for _, i := range a {
+		expect, err := strconv.ParseFloat(i.Balance(), 64)
+		if err != nil {
+			return err
+		}
+
+		actual, err := strconv.ParseFloat(aMap[i.ID].Balance(), 64)
+		if err != nil {
+			return err
+		}
+
+		if math.Abs(expect-actual) < 1e-6 {
+			return fmt.Errorf(
+				"expect account %v's balance is %0.8f, but balance is %0.8f",
+				i.ID,
+				expect,
+				actual,
+			)
+		}
+	}
+	ilog.Infof("Check %v accounts info successful!", len(a))
 
 	return nil
 }
