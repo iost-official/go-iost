@@ -286,52 +286,52 @@ func (p *PoB) scheduleLoop() {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
-			if witnessOfSec(time.Now().Unix()) == p.account.ID {
-				if p.baseVariable.Mode() == global.ModeNormal {
-					generateBlockTicker := time.NewTicker(time.Millisecond * 300)
-					num := 0
-					generateTxsNum = 0
-					for {
-						p.txPool.Lock()
-						var limitTime time.Duration
-						if num < continuousNum-2 {
-							limitTime = time.Millisecond * 250
-						} else {
-							limitTime = time.Millisecond * 10
-						}
-						blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
-						p.txPool.Release()
-						if err != nil {
-							ilog.Error(err)
-							continue
-						}
-						blkByte, err := blk.Encode()
-						if err != nil {
-							ilog.Error(err.Error())
-							continue
-						}
-						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
-						metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
-						update := false
-						if num == continuousNum-1 {
-							update = true
-						}
-						err = p.handleRecvBlock(blk, update)
-						if err != nil {
-							ilog.Errorf("handle block from myself, error, err:%v", err)
-							continue
-						}
-						num++
-						if num >= continuousNum {
-							break
-						}
-						select {
-						case <-generateBlockTicker.C:
-						}
+			if witnessOfSec(time.Now().Unix()) == p.account.ID && !staticProperty.SlotUsed[time.Now().Unix()] && p.baseVariable.Mode() == global.ModeNormal {
+				staticProperty.SlotUsed[time.Now().Unix()] = true
+				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
+				num := 0
+				generateTxsNum = 0
+				for {
+					p.txPool.Lock()
+					var limitTime time.Duration
+					if num < continuousNum-2 {
+						limitTime = time.Millisecond * 250
+					} else {
+						limitTime = time.Millisecond * 10
 					}
-					metricsTxSize.Set(float64(generateTxsNum), nil)
-					generateBlockTicker.Stop()
+					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
+					p.txPool.Release()
+					if err != nil {
+						ilog.Error(err)
+						continue
+					}
+					blkByte, err := blk.Encode()
+					if err != nil {
+						ilog.Error(err.Error())
+						continue
+					}
+					p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
+					ilog.Infof("[pob] generate block time cost: %v, %v, %v, %v", num, limitTime, calculateTime(blk), p.account.ID[4:6])
+					metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
+					update := false
+					if num == continuousNum-1 {
+						update = true
+					}
+					err = p.handleRecvBlock(blk, update)
+					if err != nil {
+						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
+						continue
+					}
+					num++
+					if num >= continuousNum {
+						break
+					}
+					select {
+					case <-generateBlockTicker.C:
+					}
 				}
+				metricsTxSize.Set(float64(generateTxsNum), nil)
+				generateBlockTicker.Stop()
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
 			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
