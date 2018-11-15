@@ -282,14 +282,14 @@ func verifyBlockBase(blk *block.Block, parent *block.Block, db database.IMultiVa
 	if len(blk.Txs) < 1 || len(blk.Receipts) < 1 {
 		return fmt.Errorf("block did not contain block base tx")
 	}
-	txData, err := baseTxData(blk.Head, parent.Head)
+	baseTx, err := NewBaseTx(blk, parent)
 	if err != nil {
 		return err
 	}
 	for i, a := range blk.Txs[0].Actions {
-		if a.ActionName != BlockBaseTx.Actions[i].ActionName ||
-			a.Contract != BlockBaseTx.Actions[i].Contract ||
-			a.Data != txData {
+		if a.ActionName != baseTx.Actions[i].ActionName ||
+			a.Contract != baseTx.Actions[i].Contract ||
+			a.Data != baseTx.Actions[i].Data {
 			return fmt.Errorf("block base tx not match")
 		}
 	}

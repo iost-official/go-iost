@@ -210,8 +210,8 @@ func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peer
 				node.prev.next = node
 				node.next.prev = node
 				hashMap.Store(node.val, node)
+				pmMutex.Unlock()
 			}
-			pmMutex.Unlock()
 		}
 	}
 	hState, _ := dc.hashState.LoadOrStore(hash, Wait)
@@ -308,13 +308,13 @@ func (dc *DownloadControllerImpl) handleFreePeer(fpFunc FreePeerFunc) {
 // FreePeerLoop is the Loop to free the peer.
 func (dc *DownloadControllerImpl) FreePeerLoop(fpFunc FreePeerFunc) {
 	dc.wg.Add(1)
+	defer dc.wg.Done()
 	checkPeerTicker := time.NewTicker(time.Second)
 	for {
 		select {
 		case <-checkPeerTicker.C:
 			dc.handleFreePeer(fpFunc)
 		case <-dc.exitSignal:
-			dc.wg.Done()
 			return
 		}
 	}
@@ -376,6 +376,7 @@ func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sy
 // DownloadLoop is the Loop to download the mission.
 func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 	dc.wg.Add(1)
+	defer dc.wg.Done()
 	for {
 		select {
 		case <-time.After(2 * syncBlockTimeout):
@@ -409,7 +410,6 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 			})
 			ilog.Debugf("Download End")
 		case <-dc.exitSignal:
-			dc.wg.Done()
 			return
 		}
 	}
