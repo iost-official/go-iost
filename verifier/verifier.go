@@ -149,7 +149,6 @@ L:
 	for tn.Before(to) {
 		isolator.ClearTx()
 		tn = time.Now()
-
 		limit := to.Sub(tn)
 		if limit > c.TxTimeLimit {
 			limit = c.TxTimeLimit
@@ -283,7 +282,6 @@ func verifyBlockBase(blk *block.Block, parent *block.Block, db database.IMultiVa
 	if len(blk.Txs) < 1 || len(blk.Receipts) < 1 {
 		return fmt.Errorf("block did not contain block base tx")
 	}
-
 	txData, err := baseTxData(blk.Head, parent.Head)
 	if err != nil {
 		return err

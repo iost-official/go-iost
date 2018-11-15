@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"fmt"
-
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/genesis"
@@ -15,7 +13,6 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/p2p/mocks"
-	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -23,7 +20,7 @@ func TestDownloadController(t *testing.T) {
 	Convey("Test DownloadController", t, func() {
 		dHash := make(chan string, 10)
 		dPID := make(chan p2p.PeerID, 10)
-		dc, err := NewDownloadController()
+		dc, err := NewDownloadController(nil, nil)
 		go dc.FreePeerLoop(func(hash string, p interface{}) bool {
 			return false
 		})
@@ -38,15 +35,22 @@ func TestDownloadController(t *testing.T) {
 			dc.CreateMission("222", 10, "aaa")
 			var hash string
 			var PID p2p.PeerID
+			hashes := make(map[string]bool, 0)
+			pids := make(map[p2p.PeerID]bool, 0)
 			hash = <-dHash
 			PID = <-dPID
-			So(hash, ShouldEqual, "111")
-			So(PID, ShouldEqual, p2p.PeerID("aaa"))
+			hashes[hash] = true
+			pids[PID] = true
+			hash = <-dHash
+			PID = <-dPID
+			hashes[hash] = true
+			pids[PID] = true
 
-			hash = <-dHash
-			PID = <-dPID
-			So(hash, ShouldEqual, "222")
-			So(PID, ShouldEqual, p2p.PeerID("aaa"))
+			_, ok := hashes["111"]
+			So(ok, ShouldEqual, true)
+			_, ok = hashes["222"]
+			So(ok, ShouldEqual, true)
+			So(len(pids), ShouldEqual, 1)
 		})
 		Convey("Stop DownloadLoop", func() {
 			dc.Stop()
@@ -70,8 +74,7 @@ func TestSynchronizer(t *testing.T) {
 			os.RemoveAll("Fakedb")
 		}()
 
-		vi := database.NewVisitor(0, baseVariable.StateDB())
-		fmt.Println("synchronizer 65", vi.Get("iost.vote_producer-"+"pendingBlockNumber"))
+		// vi := database.NewVisitor(0, baseVariable.StateDB())
 
 		blockCache, err := blockcache.NewBlockCache(baseVariable)
 		So(err, ShouldBeNil)
