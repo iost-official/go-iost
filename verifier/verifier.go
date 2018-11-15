@@ -327,6 +327,15 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 	if err != nil {
 		return err
 	}
+	err = checkReceiptEqual(r, receipt)
+	if err != nil {
+		return err
+	}
+	isolator.Commit()
+	return nil
+}
+
+func checkReceiptEqual(r *tx.TxReceipt, receipt *tx.TxReceipt) error {
 	if r.Status.Code != receipt.Status.Code || r.Status.Message != r.Status.Message {
 		return fmt.Errorf("receipt not match, status not same: %v != %v \n%v\n%v", r.Status, receipt.Status, r, receipt)
 	}
@@ -337,6 +346,9 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 		if v != receipt.RAMUsage[k] {
 			return fmt.Errorf("receipt not match, ram usage not same: %v != %v \n%v\n%v", v, receipt.RAMUsage[k], r, receipt)
 		}
+	}
+	if len(r.RAMUsage) != len(receipt.RAMUsage) {
+		return fmt.Errorf("receipt not match, ram usage length not same: %v != %v \n%v\n%v", len(r.RAMUsage), len(receipt.RAMUsage), r, receipt)
 	}
 	for i, br := range r.Receipts {
 		if br.FuncName != receipt.Receipts[i].FuncName {
@@ -351,9 +363,6 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 			return fmt.Errorf("receipt not match, returns not same: %v != %v \n%v\n%v", br, receipt.Returns[i], r, receipt)
 		}
 	}
-
-	isolator.Commit()
-	return nil
 }
 
 func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxReceipt, blk *block.Block) error {
