@@ -10,7 +10,6 @@ import (
 	"github.com/iost-official/go-iost/verifier"
 
 	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -228,23 +227,17 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		} else {
 			p.blockReqMap.Store(string(blk.HeadHash()), nil)
 		}
-		ilog.Infof("[pob] handle recv new block start, number = %d, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 		err := p.handleRecvBlock(blk, true)
 		t2 := calculateTime(blk)
 		metricsTimeCost.Set(t2, nil)
-		ilog.Infof("[pob]" + p.blockCache.Draw())
-		ilog.Infof("[pob] transfer cost: %v, total cost: %v", t1, t2)
-		ilog.Infof("[pob] handle recv new block end, number: %d, hash = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()))
-		//go p.broadcastBlockHash(blk)
+		go p.broadcastBlockHash(blk)
 		p.blockReqMap.Delete(string(blk.HeadHash()))
 		if err != nil {
-			ilog.Errorf("[pob] received new block error, err:%v", err)
+			ilog.Errorf("received new block error, err:%v", err)
 			return
 		}
 	case p2p.SyncBlockResponse:
-		ilog.Info("[pob] received sync block, block number: ", blk.Head.Number)
 		err := p.handleRecvBlock(blk, true)
-		ilog.Infof("[pob]" + p.blockCache.Draw())
 		if err != nil {
 			ilog.Errorf("received sync block error, err:%v", err)
 			return
@@ -257,7 +250,6 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
-			ilog.Infof("[pob] verify block chan size:%v", len(p.chVerifyBlock))
 			p.doVerifyBlock(vbm)
 		case <-p.exitSignal:
 			return
@@ -274,14 +266,12 @@ func (p *PoB) blockLoop() {
 				ilog.Infof("chRecvBlock has closed")
 				return
 			}
-			ilog.Infof("recv block chan size:%v", len(p.chRecvBlock))
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
 				ilog.Error("fail to decode block")
 				continue
 			}
-			ilog.Info("received block, block number: ", blk.Head.Number)
 			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, p2pType: incomingMessage.Type()}
 		case <-p.exitSignal:
 			return
@@ -321,7 +311,6 @@ func (p *PoB) scheduleLoop() {
 							continue
 						}
 						p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
-						ilog.Infof("[pob] generate block time cost: %v, %v, %v, %v", num, limitTime, calculateTime(blk), p.account.ID[4:6])
 						metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
 						update := false
 						if num == continuousNum-1 {
@@ -329,7 +318,7 @@ func (p *PoB) scheduleLoop() {
 						}
 						err = p.handleRecvBlock(blk, update)
 						if err != nil {
-							ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
+							ilog.Errorf("handle block from myself, error, err:%v", err)
 							continue
 						}
 						num++
@@ -386,7 +375,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 	}
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
-	p.blockCache.Draw()
 	p.updateInfo(node, update)
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, true)
@@ -397,9 +385,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode, update bool) {
 	updateWaterMark(node)
 	if update {
-		ilog.Infof("[pob] updateInfo start, number: %d, hash = %v, witness = %v", node.Head.Number, common.Base58Encode(node.HeadHash()), node.Head.Witness[4:6])
 		updateLib(node, p.blockCache)
-		ilog.Infof("[pob] updateInfo end, number: %d, hash = %v, witness = %v", node.Head.Number, common.Base58Encode(node.HeadHash()), node.Head.Witness[4:6])
 	}
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {
