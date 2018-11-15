@@ -286,7 +286,7 @@ func (p *PoB) scheduleLoop() {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
-			if witnessOfSec(time.Now().Unix()) == p.account.ID && !staticProperty.SlotUsed[time.Now().Unix()] && p.baseVariable.Mode() == global.ModeNormal {
+			if !staticProperty.SlotUsed[time.Now().Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(time.Now().UnixNano()+int64(time.Millisecond)) == p.account.ID {
 				staticProperty.SlotUsed[time.Now().Unix()] = true
 				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
 				num := 0
