@@ -476,18 +476,18 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		ilog.Errorf("get p failed.")
 		return false, false
 	}
-	ilog.Infof("callback try sync block, num:%v", bn)
+	//ilog.Infof("callback try sync block, num:%v", bn)
 	if bn <= sy.blockCache.LinkedRoot().Head.Number {
-		ilog.Infof("callback block confirmed, num:%v", bn)
+		//ilog.Infof("callback block confirmed, num:%v", bn)
 		return false, true
 	}
 	bHash := []byte(hash)
 	if bcn, err := sy.blockCache.Find(bHash); err == nil {
 		if bcn.Type == blockcache.Linked {
-			ilog.Infof("callback block linked, num:%v", bn)
+			//ilog.Infof("callback block linked, num:%v", bn)
 			return false, true
 		}
-		ilog.Infof("callback block is a single block, num:%v", bn)
+		//ilog.Infof("callback block is a single block, num:%v", bn)
 		return false, false
 	}
 	bi := msgpb.BlockInfo{Number: bn, Hash: bHash}
