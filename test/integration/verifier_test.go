@@ -397,6 +397,7 @@ func TestDomain(t *testing.T) {
 }
 
 func TestAuthority(t *testing.T) {
+	ilog.SetLevel(ilog.LevelInfo)
 	s := NewSimulator()
 	defer s.Clear()
 	Convey("test of Auth", t, func() {
@@ -408,10 +409,10 @@ func TestAuthority(t *testing.T) {
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 100000)
 
-		r, err := s.Call("iost.auth", "SignUp", array2json([]interface{}{"myid", "okey", "akey"}), kp.ID, kp)
+		r, err := s.Call("iost.auth", "SignUp", array2json([]interface{}{"myid", kp.ID, "akey"}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.MGet("iost.auth-account", "myid"), ShouldEqual, `s{"id":"myid","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"akey","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"okey","is_key_pair":true,"weight":1}],"threshold":1}}}`)
+		So(s.Visitor.MGet("iost.auth-account", "myid"), ShouldStartWith, `s{"id":"myid",`)
 
 		r, err = s.Call("iost.auth", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}), kp.ID, kp)
 		So(err, ShouldBeNil)
