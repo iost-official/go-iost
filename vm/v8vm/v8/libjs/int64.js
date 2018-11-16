@@ -83,20 +83,39 @@ class Int64 {
 
     // Check equal n
     eq(n) {
-        this._checkArgument(n);
-        return this.number.eq(n.number);
+        let arg = this._checkArgument(n);
+        return this.number.eq(arg.number);
     }
 
     // Check greater than n
     gt(n) {
-        this._checkArgument(n);
-        return this.number.gt(n.number);
+        let arg = this._checkArgument(n);
+        return this.number.gt(arg.number);
+    }
+
+    // Check greater than or equal to n
+    gte(n) {
+        let arg = this._checkArgument(n);
+        return this.number.gte(arg.number);
     }
 
     // Check less than n
     lt(n) {
-        this._checkArgument(n);
-        return this.number.lt(n.number);
+        let arg = this._checkArgument(n);
+        return this.number.lt(arg.number);
+    }
+
+    // Check less than or equal to n
+    lte(n) {
+        let arg = this._checkArgument(n);
+        return this.number.lte(arg.number);
+    }
+
+    // negated
+    negated(n) {
+        let arg = this._checkArgument(n);
+        arg.number = arg.number.negated();
+        return arg;
     }
 
     // Check is Zero
@@ -104,9 +123,24 @@ class Int64 {
         return this.number.isZero();
     }
 
+    // Check is Positive
+    isPositive() {
+        return this.number.isPositive();
+    }
+
+    // Check is Negative
+    isNegative() {
+        return this.number.isNegative();
+    }
+
     // convert to String
     toString() {
         return this.number.toString();
+    }
+
+    // to fixed
+    toFixed(n) {
+        return this.number.toFixed(n);
     }
 }
 
