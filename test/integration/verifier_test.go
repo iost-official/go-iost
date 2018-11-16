@@ -6,14 +6,14 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
+	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/vm"
 )
 
 func TestTransfer(t *testing.T) {
@@ -41,7 +41,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-		        So(r.GasUsage, ShouldEqual, 721)
+			So(r.GasUsage, ShouldEqual, 721)
 		})
 
 		Convey("test of token memo", func() {
@@ -236,7 +236,7 @@ func TestTxAmountLimit(t *testing.T) {
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "10"),
 			}}, nil, 100000, 100, 10000000, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"iost", Val:"100"})
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
 			r, err := s.CallTx(trx, testID[0], kp)
 			s.Visitor.Commit()
 
@@ -254,7 +254,7 @@ func TestTxAmountLimit(t *testing.T) {
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "110"),
 			}}, nil, 100000, 100, 10000000, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"iost", Val:"100"})
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
 			r, err := s.CallTx(trx, testID[0], kp)
 			s.Visitor.Commit()
 
@@ -272,7 +272,7 @@ func TestTxAmountLimit(t *testing.T) {
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "110"),
 			}}, nil, 100000, 100, 10000000, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"iost1", Val:"100"})
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost1", Val: "100"})
 
 			err = vm.CheckAmountLimit(s.Mvcc, trx)
 			So(err.Error(), ShouldContainSubstring, "token not exists in amountLimit")
@@ -357,6 +357,7 @@ func TestDomain(t *testing.T) {
 }
 
 func TestAuthority(t *testing.T) {
+	ilog.SetLevel(ilog.LevelInfo)
 	s := NewSimulator()
 	defer s.Clear()
 	Convey("test of Auth", t, func() {
@@ -368,10 +369,10 @@ func TestAuthority(t *testing.T) {
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 100000)
 
-		r, err := s.Call("iost.auth", "SignUp", array2json([]interface{}{"myid", "okey", "akey"}), kp.ID, kp)
+		r, err := s.Call("iost.auth", "SignUp", array2json([]interface{}{"myid", kp.ID, "akey"}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.MGet("iost.auth-account", "myid"), ShouldEqual, `s{"id":"myid","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"akey","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"okey","is_key_pair":true,"weight":1}],"threshold":1}}}`)
+		So(s.Visitor.MGet("iost.auth-account", "myid"), ShouldStartWith, `s{"id":"myid",`)
 
 		r, err = s.Call("iost.auth", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}), kp.ID, kp)
 		So(err, ShouldBeNil)
