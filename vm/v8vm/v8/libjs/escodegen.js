@@ -1,14 +1,5 @@
-(function webpackUniversalModuleDefinition(root, factory) {
-	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
-	else if(typeof define === 'function' && define.amd)
-		define([], factory);
-	else if(typeof exports === 'object')
-		exports["escodegen"] = factory();
-	else
-		root["escodegen"] = factory();
-})(window, function() {
-return /******/ (function(modules) { // webpackBootstrap
+module.exports =
+/******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
@@ -317,4 +308,3 @@ eval("module.exports = {\"_from\":\"escodegen@^1.11.0\",\"_id\":\"escodegen@1.11
 /***/ })
 
 /******/ });
-});
