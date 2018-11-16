@@ -2,6 +2,7 @@ package vm
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -54,9 +55,13 @@ func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	e.t = t
 	e.h.SetDeadline(time.Now().Add(limit))
-	e.publisherID = t.Publisher
+	x := strings.Split(t.Publisher, "@")
+	if len(x) != 2 {
+		return errors.New("publisher format error, " + t.Publisher)
+	}
+	e.publisherID = x[0]
 	l := len(t.Encode())
-	e.h.PayCost(contract.NewCost(0, int64(l), 0), t.Publisher)
+	e.h.PayCost(contract.NewCost(0, int64(l), 0), e.publisherID)
 
 	if !e.genesisMode && !e.blockBaseMode {
 		err := checkTxParams(t)
@@ -67,7 +72,7 @@ func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		price := &common.Fixed{Value: t.GasPrice, Decimal: 2}
 		if gas.LessThan(price.Times(t.GasLimit)) {
 			ilog.Infof("err %v publisher %v current gas %v price %v limit %v\n", errCannotPay, e.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
-			return fmt.Errorf("publisher's gas less than price * limit %v < %v * %v", gas.ToString(), price.ToString(), t.GasLimit)
+			return fmt.Errorf("%v gas less than price * limit %v < %v * %v", e.publisherID, gas.ToString(), price.ToString(), t.GasLimit)
 		}
 	}
 	loadTxInfo(e.h, t, e.publisherID)
@@ -186,7 +191,7 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		gasLimit := e.h.Context().GValue("gas_limit").(int64)
 
 		e.tr.Status = status
-		if (status.Code == 4 && status.Message == "out of gas") || (status.Code == 5) {
+		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") || (status.Code == tx.ErrorTimeout) {
 			cost = contract.NewCost(0, 0, gasLimit)
 		}
 
@@ -202,8 +207,9 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		e.h.PayCost(cost, e.publisherID)
 
 		if status.Code != tx.Success {
-			ilog.Debugf("isolator run failed status code %v", status.Code)
+			ilog.Errorf("isolator run action %v failed, status %v, will rollback", action, status)
 			e.tr.Receipts = nil
+			e.h.DB().Rollback()
 			break
 		} else {
 			e.tr.Receipts = append(e.tr.Receipts, receipts...)
@@ -253,6 +259,9 @@ func checkTxParams(t *tx.Tx) error {
 	if t.GasPrice < 100 || t.GasPrice > 10000 {
 		return errGasPriceIllegal
 	}
+	if t.GasLimit < 500 {
+		return errGasLimitIllegal
+	}
 	return nil
 }
 
@@ -286,6 +295,22 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 		authList[account.GetIDByPubkey(v.Pubkey)] = 2
 	}
 
+	signers := make(map[string]int)
+	for _, v := range t.Signers {
+		x := strings.Split(v, "@")
+		if len(x) != 2 {
+			ilog.Error("signer format error. " + v)
+			continue
+		}
+		signers[x[0]] = 1
+	}
+	x := strings.Split(t.Publisher, "@")
+	if len(x) != 2 {
+		ilog.Error("publisher format error. " + t.Publisher)
+	}
+	signers[x[0]] = 2
+
 	h.Context().Set("auth_list", authList)
+	h.Context().Set("signer_list", signers)
 	h.Context().Set("auth_contract_list", make(map[string]int))
 }

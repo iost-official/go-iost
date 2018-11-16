@@ -185,7 +185,7 @@ func (g *GasManager) CurrentTotalGas(name string, now int64) (result *common.Fix
 	finalCost.AddAssign(cost)
 	limit, cost := g.GasLimit(name)
 	finalCost.AddAssign(cost)
-	//fmt.Printf("CurrentTotalGas stock %v rate %v limit %v\n", result, rate, limit)
+	//fmt.Printf("CurrentTotalGas user %v stock %v rate %v limit %v\n", name, result, rate, limit)
 	delta := rate.Times(durationSeconds)
 	if delta == nil {
 		ilog.Errorf("CurrentTotalGas may overflow rate %v durationSeconds %v", rate, durationSeconds)
