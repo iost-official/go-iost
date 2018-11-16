@@ -193,6 +193,27 @@ ret;
 	}
 
 	return fmt.Sprintf(`
+// load Block
+const blockInfo = JSON.parse(BlockChain.blockInfo());
+const block = {
+    number: blockInfo.number,
+    parentHash: blockInfo.parent_hash,
+    witness: blockInfo.witness,
+    time: blockInfo.time
+};
+
+// load tx
+const txInfo = JSON.parse(BlockChain.txInfo());
+const tx = {
+    time: txInfo.time,
+    hash: txInfo.hash,
+    expiration: txInfo.expiration,
+    gasLimit: txInfo.gas_limit,
+    gasPrice: txInfo.gas_price,
+    authList: txInfo.auth_list,
+    publisher: txInfo.publisher
+};
+
 %s;
 var obj = new module.exports;
 
