@@ -172,12 +172,12 @@ class IssueContract {
         this._call("iost.token", "issue", [
             "iost",
             "iost.bonus",
-            bonus.number.toFixed(decimal)
+            bonus.toFixed(decimal)
         ]);
         this._call("iost.token", "issue", [
             "iost",
             foundationAcc,
-            issueAmount.minus(bonus).number.toFixed(decimal)
+            issueAmount.minus(bonus).toFixed(decimal)
         ]);
     }
 

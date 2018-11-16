@@ -43,7 +43,7 @@ func (g *GasManager) getFixed(owner string, key string) (*common.Fixed, contract
 	var err error
 	result, cost := g.h.Get(key, owner)
 	if result == nil {
-		ilog.Errorf("GasManager failed %v %v", owner, key)
+		//ilog.Errorf("GasManager failed %v %v", owner, key)
 		return nil, cost
 	}
 	value, err := common.UnmarshalFixed(result.(string))
@@ -185,7 +185,7 @@ func (g *GasManager) CurrentTotalGas(name string, now int64) (result *common.Fix
 	finalCost.AddAssign(cost)
 	limit, cost := g.GasLimit(name)
 	finalCost.AddAssign(cost)
-	//fmt.Printf("CurrentTotalGas stock %v rate %v limit %v\n", result, rate, limit)
+	//fmt.Printf("CurrentTotalGas user %v stock %v rate %v limit %v\n", name, result, rate, limit)
 	delta := rate.Times(durationSeconds)
 	if delta == nil {
 		ilog.Errorf("CurrentTotalGas may overflow rate %v durationSeconds %v", rate, durationSeconds)

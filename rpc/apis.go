@@ -3,8 +3,10 @@ package rpc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -252,18 +254,29 @@ func (s *GRPCServer) GetContractStorage(ctx context.Context, req *GetContractSto
 	}
 	s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash()))
 	var value string
+
+	k := req.ContractID
+	if req.Owner != "" {
+		k = k + "@" + req.Owner
+	}
+	k = k + database.Separator + req.Key
 	if req.Field == "" {
-		k := req.ContractID + database.Separator + req.Key
 		value = s.visitor.BasicHandler.Get(k)
 	} else {
-		k := req.ContractID + database.Separator + req.Key
 		value = s.visitor.MapHandler.MGet(k, req.Field)
 	}
-	data, err := json.Marshal(database.Unmarshal(value))
-	if err != nil {
-		return nil, fmt.Errorf("cannot unmarshal %v", value)
+	result := database.Unmarshal(value)
+	var data string
+	if result == nil || reflect.TypeOf(result).Kind() != reflect.String {
+		bytes, err := json.Marshal(result)
+		if err != nil {
+			return nil, fmt.Errorf("cannot unmarshal %v", value)
+		}
+		data = string(bytes)
+	} else {
+		data = result.(string)
 	}
-	return &GetContractStorageRes{JsonStr: string(data)}, nil
+	return &GetContractStorageRes{JsonStr: data}, nil
 }
 
 // GetContract return a contract by contract id
@@ -275,7 +288,7 @@ func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*Get
 		return nil, fmt.Errorf("argument cannot be empty string")
 	}
 	if !strings.HasPrefix(key.ContractID, "Contract") {
-		return nil, fmt.Errorf("Contract id should start with \"Contract\"")
+		return nil, fmt.Errorf("contract id should start with \"Contract\"")
 	}
 
 	txHashBytes := common.Base58Decode(key.ContractID[len("Contract"):])
@@ -287,7 +300,7 @@ func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*Get
 	// assume only one 'SetCode' action
 	txActionName := trx.Actions[0].ActionName
 	if trx.Actions[0].Contract != "iost.system" || txActionName != "SetCode" && txActionName != "UpdateCode" {
-		return nil, fmt.Errorf("Not a SetCode or Update transaction")
+		return nil, fmt.Errorf("not a SetCode or Update transaction")
 	}
 	js, err := simplejson.NewJson([]byte(trx.Actions[0].Data))
 	if err != nil {
@@ -297,12 +310,12 @@ func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*Get
 	if err != nil {
 		return nil, err
 	}
-	contract := &contract.Contract{}
-	err = contract.B64Decode(contractStr)
+	c := &contract.Contract{}
+	err = c.B64Decode(contractStr)
 	if err != nil {
 		return nil, err
 	}
-	return &GetContractRes{Value: contract}, nil
+	return &GetContractRes{Value: c}, nil
 	//return &GetContractRes{Value: s.visitor.Contract(key.Key)}, nil
 
 }
@@ -317,6 +330,12 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	} else {
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
+
+	accStr := database.MustUnmarshal(s.visitor.MGet("iost.auth-account", key.ID))
+	if accStr == nil {
+		return nil, fmt.Errorf("non exist user %v", key.ID)
+	}
+
 	ram := &RAMInfo{}
 	ram.Available = s.visitor.TokenBalance("ram", key.ID)
 	balance := s.visitor.TokenBalanceFixed("iost", key.ID).ToString()
@@ -336,9 +355,10 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	v, _ = g.GasPledge(key.ID, key.ID)
 	gas.PledgedCoin = v.ToString()
 	return &GetAccountRes{
-		Balance: balance,
-		Gas:     gas,
-		Ram:     ram,
+		Balance:     balance,
+		Gas:         gas,
+		Ram:         ram,
+		AccountJson: accStr.(string),
 	}, nil
 }
 
@@ -349,6 +369,37 @@ func (s *GRPCServer) SendTx(ctx context.Context, txReq *TxReq) (*SendTxRes, erro
 	}
 	var trx tx.Tx
 	trx.FromPb(txReq.Tx)
+	// check trx is valid
+	// check time
+	if !trx.IsDefer() {
+		now := time.Now().UnixNano()
+		if trx.Time > now {
+			return nil, fmt.Errorf("tx time is in future, %v > %v", trx.Time, now)
+		}
+		if trx.Expiration <= now {
+			return nil, fmt.Errorf("tx already expired , %v <= %v", trx.Expiration, now)
+		}
+		if now-trx.Time > tx.MaxExpiration {
+			return nil, fmt.Errorf("received tx too late, exceed max expiration time , %v - %v > %v", now, trx.Time, tx.MaxExpiration)
+		}
+	}
+	// check gas
+	if trx.GasPrice < 100 || trx.GasPrice > 10000 {
+		return nil, errors.New("gas price illegal, should in [100, 10000]")
+	}
+	if trx.GasLimit < 500 {
+		return nil, errors.New("gas limit illegal, should >= 500")
+	}
+	var h *host.Host
+	c := host.NewContext(nil)
+	h = host.NewHost(c, s.visitor, nil, nil)
+	g := host.NewGasManager(h)
+	gas, _ := g.CurrentTotalGas(trx.Publisher, s.bc.LinkedRoot().Head.Time)
+	price := &common.Fixed{Value: trx.GasPrice, Decimal: 2}
+	if gas.LessThan(price.Times(trx.GasLimit)) {
+		return nil, fmt.Errorf("%v gas less than price * limit %v < %v * %v", trx.Publisher, gas.ToString(), price.ToString(), trx.GasLimit)
+	}
+
 	err := s.txpool.AddTx(&trx)
 	if err != nil {
 		return nil, err
@@ -365,7 +416,7 @@ func (s *GRPCServer) ExecTx(ctx context.Context, txReq *TxReq) (*ExecTxRes, erro
 	}
 	var trx tx.Tx
 	trx.FromPb(txReq.Tx)
-	_, head := s.txpool.TxIterator()
+	_, head := s.txpool.PendingTx()
 	topBlock := head.Block
 	blk := block.Block{
 		Head: &block.BlockHead{

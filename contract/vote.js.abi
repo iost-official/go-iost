@@ -48,6 +48,12 @@
             ]
         },
         {
+            "name": "GetProducer",
+            "args": [
+                "string"
+            ]
+        },
+        {
             "name": "LogInProducer",
             "args": [
                 "string"
@@ -78,6 +84,12 @@
             "args": [
                 "string",
                 "string",
+                "string"
+            ]
+        },
+        {
+            "name": "GetVote",
+            "args": [
                 "string"
             ]
         },
