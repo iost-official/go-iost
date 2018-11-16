@@ -127,6 +127,11 @@ func (pool *TxPImpl) Lock() {
 	pool.quitGenerateMode = make(chan struct{})
 }
 
+// PendingTx is return pendingTx
+func (pool *TxPImpl) PendingTx() *SortedTxMap {
+	return pool.pendingTx
+}
+
 // Release release the txpool
 func (pool *TxPImpl) Release() {
 	pool.mu.Unlock()

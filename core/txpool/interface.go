@@ -20,4 +20,5 @@ type TxPool interface {
 	ExistTxs(hash []byte, chainBlock *block.Block) FRet
 	Lock()
 	Release()
+	PendingTx() *SortedTxMap
 }
