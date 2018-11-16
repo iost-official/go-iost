@@ -58,7 +58,7 @@ func (p *ProviderImpl) List() (a []*tx.Tx, b []error) {
 	return
 }
 
-// Drop drop bad tx
+// Close drop bad tx here
 func (p *ProviderImpl) Close() {
 	for t := range p.droplist {
 		p.pool.Del(t.Hash())
