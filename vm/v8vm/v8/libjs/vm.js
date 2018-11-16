@@ -73,5 +73,56 @@ const BlockChain = require('blockchain');
 
 const _IOSTInstruction_counter = new IOSTInstruction;
 
+// + - * / % **, | & ^ >> >>> <<, || &&, == != === !== > >= < <=, instanceOf in
+var _IOSTBinaryOp = function(left, right, op) {
+    if ((typeof left === "string" || typeof right === "string") &&
+        (op === "+" || op === "==" || op === "!=" || op === "===" || op === "!==" || op === "<" || op === "<=" || op === ">" || op === ">=")) {
+        _IOSTInstruction_counter.incr(left === null || left === undefined ? 0 : left.toString().length);
+        _IOSTInstruction_counter.incr(right === null || right == undefined ? 0 : right.toString().length);
+    }
+    switch (op) {
+        case '+':
+            return left + right;
+        case '-':
+            return left - right;
+        case '*':
+            return left * right;
+        case '/':
+            return left / right;
+        case '%':
+            return left % right;
+        case '**':
+            return left ** right;
+        case '|':
+            return left | right;
+        case '&':
+            return left & right;
+        case '^':
+            return left ^ right;
+        case '>>':
+            return left >> right;
+        case '>>>':
+            return left >>> right;
+        case '<<':
+            return left << right;
+        case '==':
+            return left === right;
+        case '!=':
+            return left !== right;
+        case '===':
+            return left === right;
+        case '!==':
+            return left !== right;
+        case '>':
+            return left > right;
+        case '>=':
+            return left >= right;
+        case '<':
+            return left < right;
+        case '<=':
+            return left <= right;
+    }
+};
+
 // var Console = require('console');
 const console = new Console;

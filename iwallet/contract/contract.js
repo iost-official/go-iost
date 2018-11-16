@@ -44,7 +44,7 @@ function genAbi(def) {
 		"args": new Array(def.value.params.length).fill("string"),
 		"amountLimit": [{
             "token": "iost",
-            "val": 0
+            "val": "0"
         }]
 	};
 	return abi;
