@@ -260,7 +260,7 @@ class VoteContract {
     }
 
     // vote, need to pledge token
-    Vote(producer, voter, amount) {
+    Vote(voter, producer, amount) {
         this._requireAuth(voter, votePermission);
 
         if (!storage.mapHas("producerTable", producer)) {
@@ -277,7 +277,7 @@ class VoteContract {
     }
 
     // unvote
-    Unvote(producer, voter, amount) {
+    Unvote(voter, producer, amount) {
         this._requireAuth(voter, votePermission);
         const voteId = this._getVoteId();
         this._call("iost.vote", "Unvote", [
