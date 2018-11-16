@@ -12,7 +12,7 @@
             "amountLimit": [
                 {
                     "token": "iost",
-                    "val": "0"
+                    "val": "10000"
                 }
             ]
         }
