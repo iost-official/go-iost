@@ -70,7 +70,6 @@ var BlockChain = require('blockchain');
 // var Int64 = require('int64');
 
 // var injectGas = require('inject_gas');
-var observer = require('observer');
 
 var _IOSTInstruction_counter = new IOSTInstruction;
 

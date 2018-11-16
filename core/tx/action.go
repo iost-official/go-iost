@@ -1,33 +1,46 @@
 package tx
 
 import (
-	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
+	txpb "github.com/iost-official/go-iost/core/tx/pb"
 )
 
-// Action 的实现
+// Action implement
 type Action struct {
-	Contract   string // 合约地址，为空则视为调用系统合约
-	ActionName string // 方法名称
-	Data       string // json
+	Contract   string // contract name
+	ActionName string // method name of contract
+	Data       string // parameters of method, with json format
 }
 
 // NewAction constructor of Action
-func NewAction(contract string, name string, data string) Action {
-	return Action{
+func NewAction(contract string, name string, data string) *Action {
+	return &Action{
 		Contract:   contract,
 		ActionName: name,
 		Data:       data,
 	}
 }
 
-// Encode encode action as byte array
-func (a *Action) Encode() []byte {
-	ar := &ActionRaw{
+// ToPb convert Action to proto buf data structure.
+func (a *Action) ToPb() *txpb.Action {
+	return &txpb.Action{
 		Contract:   a.Contract,
 		ActionName: a.ActionName,
 		Data:       a.Data,
 	}
-	b, err := proto.Marshal(ar)
+}
+
+// FromPb convert Action from proto buf data structure.
+func (a *Action) FromPb(ac *txpb.Action) *Action {
+	a.Contract = ac.Contract
+	a.ActionName = ac.ActionName
+	a.Data = ac.Data
+	return a
+}
+
+// Encode encode action as byte array
+func (a *Action) Encode() []byte {
+	b, err := a.ToPb().Marshal()
 	if err != nil {
 		panic(err)
 	}
@@ -36,14 +49,12 @@ func (a *Action) Encode() []byte {
 
 // Decode action from byte array
 func (a *Action) Decode(b []byte) error {
-	ar := &ActionRaw{}
-	err := proto.Unmarshal(b, ar)
+	ac := &txpb.Action{}
+	err := ac.Unmarshal(b)
 	if err != nil {
 		return err
 	}
-	a.Contract = ar.Contract
-	a.ActionName = ar.ActionName
-	a.Data = ar.Data
+	a.FromPb(ac)
 	return nil
 }
 
@@ -55,4 +66,13 @@ func (a *Action) String() string {
 	str += "Data: " + a.Data
 	str += "}\n"
 	return str
+}
+
+// ToBytes converts Action to a specific byte slice.
+func (a *Action) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteString(a.Contract, true)
+	sn.WriteString(a.ActionName, true)
+	sn.WriteString(a.Data, true)
+	return sn.Bytes()
 }

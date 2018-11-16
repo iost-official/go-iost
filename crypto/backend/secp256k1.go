@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // Secp256k1 is the secp256k1 crypto algorithm

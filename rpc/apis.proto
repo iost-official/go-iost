@@ -1,18 +1,25 @@
 syntax = "proto3";
 package rpc;
 
-import "github.com/iost-official/Go-IOS-Protocol/core/tx/tx.proto";
-import "github.com/iost-official/Go-IOS-Protocol/core/block/block.proto";
-import "github.com/iost-official/Go-IOS-Protocol/core/event/event.proto";
+import "github.com/iost-official/go-iost/core/tx/pb/tx.proto";
+import "github.com/iost-official/go-iost/core/contract/contract.proto";
+import "github.com/iost-official/go-iost/core/block/pb/block.proto";
+import "github.com/iost-official/go-iost/core/event/event.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/Empty.proto";
 
 // rpc apis
 service Apis {
-	// get the current height of the blockchain
-	rpc GetHeight (google.protobuf.Empty) returns (HeightRes) {
+    // get the version info
+    rpc GetNodeInfo (google.protobuf.Empty) returns (NodeInfoRes) {
         option (google.api.http) = {
-            get: "/getHeight"
+            get: "/getNodeInfo"
+        };
+    }
+    // get the chain info
+    rpc GetChainInfo (google.protobuf.Empty) returns (ChainInfoRes) {
+        option (google.api.http) = {
+             get: "/getChainInfo"
         };
     }
     // get the tx by hash
@@ -34,52 +41,46 @@ service Apis {
         };
     }
     // get the block by hash
-	rpc GetBlockByHash (BlockByHashReq) returns (BlockInfo) {
+    rpc GetBlockByHash (BlockByHashReq) returns (BlockInfo) {
         option (google.api.http) = {
             get: "/getBlockByHash/{hash}/{complete}"
         };
     }
     // get the block by number
-	rpc getBlockByNum (BlockByNumReq) returns (BlockInfo) {
+    rpc getBlockByNum (BlockByNumReq) returns (BlockInfo) {
         option (google.api.http) = {
             get: "/getBlockByNum/{num}/{complete}"
         };
     }
     // get the balance of some account by account ID
-    rpc GetBalance (GetBalanceReq) returns (GetBalanceRes) {
+    rpc GetAccountInfo (GetAccountReq) returns (GetAccountRes) {
         option (google.api.http) = {
-            get: "/getBalance/{ID}/{useLongestChain}"
-        };
-    }
-    // get address by pubkey
-    rpc GetAddressByPubKey(GetAddressReq) returns (GetAddressRes) {
-        option(google.api.http) = {
-            get: "/getAddressByPubKey/{pubKey}"
-        };
-    }
-    // get the Net ID
-    rpc GetNetID (google.protobuf.Empty) returns (GetNetIDRes) {
-        option (google.api.http) = {
-            get: "/getNetID"
+            get: "/getAccountInfo/{ID}/{useLongestChain}"
         };
     }
     // get the value of the corresponding key in stateDB
-    rpc GetState (GetStateReq) returns (GetStateRes) {
+    rpc GetContractStorage (GetContractStorageReq) returns (GetContractStorageRes) {
         option (google.api.http) = {
-            get: "/getState/{key}"
+            get: "/getContractStorage/{contractID}/{key}"
+        };
+    }
+    // get contract by cid
+    rpc GetContract (GetContractReq) returns (GetContractRes) {
+        option (google.api.http) = {
+            get: "/getContract/{contractID}"
         };
     }
     // receive encoded tx
-    rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {
+    rpc SendTx (TxReq) returns (SendTxRes) {
         option (google.api.http) = {
-            post: "/sendRawTx"
+            post: "/sendTx"
             body: "*"
         };
     }
     // not supported yet
-    rpc EstimateGas (RawTxReq) returns (GasRes) {
+    rpc ExecTx (TxReq) returns (ExecTxRes) {
         option (google.api.http) = {
-            post: "/estimateGas"
+            post: "/execTx"
             body: "*"
         };
     }
@@ -93,89 +94,151 @@ service Apis {
 }
 
 message HashReq {
-	string hash=1;
+    //transaction hash
+    string hash=1;
 }
 
-// complete means return the whole block or just blockhead+txhash_list
 message BlockByHashReq {
-	string hash=1;
-	bool complete=2;
+    //block hash
+    string hash=1;
+    // complete means return the whole block or just blockhead+txhash_list
+    bool complete=2;
 }
 
 message BlockByNumReq {
-	int64 num=1;
-	bool complete=2;
+    //block number
+    int64 num=1;
+    // complete means return the whole block or just blockhead+txhash_list
+    bool complete=2;    
 }
 
-message GetBalanceReq {
-	string ID=1;
+message GetAccountReq {
+    //account ID
+    string ID=1;
+    // useLongestChain means whether getting the balance also from pending blocks(in the longest chain)
     bool useLongestChain = 2;
 }
 
-message GetStateReq {
-	string key=1;
+message GetContractStorageReq {
+    string contractID=1;
+    //the key in the StateDB
+    string key=2;
+    // get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
+    string field=3;
 }
 
-//the rawdata of a tx
-message RawTxReq {
-	bytes data=1;
+message GetContractReq {
+    //contract id
+    string contractID=1;
+}
+
+message TxReq {
+    txpb.Tx tx=1;
 }
 
 message SubscribeReq {
+    //type of event:0-TransactionResult,1-ContractEvent,2-ContractUserEvent,3-ContractSystemEvent
     repeated event.Event.Topic topics=1;
 }
 
-message HeightRes {
-	int64 height=1;
+message PeerInfo {
+    string ID=1;
+    string addr=2;
 }
 
-message GetAddressReq {
-    string pubKey = 1;
+message NetworkInfo {
+    string ID=1;
+    int32 peerCount=2;
+    repeated PeerInfo peerInfo=3;
 }
 
-message GetAddressRes {
-    string address = 1;
-}
-
-message GetBalanceRes {
-	int64 balance=1;
-}
-
-message GetNetIDRes {
-	string ID=1;
-}
-
-message GetStateRes {
-	string value=1;
-}
-
-message SendRawTxRes {
-	string hash=1;
-}
-
-message GasRes {
-	uint64 gas=1;
-}
-
-message txRes {
-    tx.TxRaw txRaw = 1;
-    bytes hash = 2;
-}
-
-message txReceiptRes {
-    tx.TxReceiptRaw txReceiptRaw = 1;
-    bytes hash = 2;
+message NodeInfoRes {
+    // build time and git hash
+    string buildTime=1;
+    string gitHash=2;
+    string mode=3;
+    NetworkInfo network=4;
 }
 
 message BlockInfo {
-    block.BlockHead head = 1;
-    bytes hash = 2;
-    repeated tx.TxRaw txs = 3;
-	repeated bytes txhash= 4 ;
-    repeated tx.TxReceiptRaw receipts = 5;
-    repeated bytes receiptHash = 6;
+    //BlockHead
+    blockpb.BlockHead head = 1;
+    //block hash
+    string hash = 2;
+    //transaction list,works when complete is true
+    repeated txpb.Tx txs = 3;
+    //transaction hash list,works when complete is false
+    repeated string txhash= 4 ;
+    //transaction receipt list
+    repeated txpb.TxReceipt receipts = 5;
+    //transaction receiptHash list
+    repeated string receiptHash = 6;
+}
+
+message ChainInfoRes {
+    string netType = 1;
+    string protocolVersion = 2;
+    int64 height=3;
+    repeated string witnessList = 4;
+    // the longest chain block
+    BlockInfo headBlock = 5;
+    // the latest confirmed block
+    BlockInfo latestConfirmedBlock = 6;
+}
+
+message RAMInfo {
+    int64 available = 1;
+}
+
+message GASInfo {
+    // these values are all fix point number
+    string currentTotal = 1;
+    string increaseSpeed = 2;
+    string limit = 3;
+    string pledgedCoin = 4;
+}
+
+message GetAccountRes {
+    // the queried balance
+    string balance=1;
+    // current gas
+    GASInfo gas=2;
+    RAMInfo ram=3;
+}
+
+message GetContractStorageRes {
+    //the value of the corresponding key in the StateDB
+    string jsonStr=1;
+}
+
+message GetContractRes {
+    //contract id
+    contract.Contract value=1;
+}
+
+message SendTxRes {
+    // the hash of the received transaction
+    string hash=1;
+}
+
+message ExecTxRes {
+    txpb.TxReceipt txReceipt = 1;
+}
+
+message txRes {
+    //the queried transaction
+    txpb.Tx tx = 1;
+    //transaction hash
+    string hash = 2;
+}
+
+message txReceiptRes {
+    //transaction receipt
+    txpb.TxReceipt txReceipt = 1;
+    string hash = 2;
 }
 
 message SubscribeRes {
+    //event
     event.Event ev=1;
 }

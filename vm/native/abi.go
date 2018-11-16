@@ -3,41 +3,44 @@ package native
 import (
 	"sort"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
+	"github.com/iost-official/go-iost/core/contract"
 )
 
-// ABI generate iost.system abi and contract
-func ABI() *contract.Contract {
-	return genNativeAbi("iost.system", systemABIs)
+// SystemABI generate iost.system abi and contract
+func SystemABI() *contract.Contract {
+	return ABI("iost.system", systemABIs)
 }
 
-// BonusABI generate iost.bonus abi and contract
-func BonusABI() *contract.Contract {
-	return genNativeAbi("iost.bonus", bonusABIs)
+// GasABI generate iost.gas abi and contract
+func GasABI() *contract.Contract {
+	return ABI("iost.gas", gasABIs)
 }
 
-func genNativeAbi(id string, abi map[string]*abi) *contract.Contract {
+// TokenABI generate iost.token abi and contract
+func TokenABI() *contract.Contract {
+	return ABI("iost.token", tokenABIs)
+}
+
+// ABI generate native abis
+func ABI(id string, abi map[string]*abi) *contract.Contract {
 	c := &contract.Contract{
 		ID:   id,
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "native",
-			VersionCode: "1.0.0",
-			Abis:        make([]*contract.ABI, 0),
+			Lang:    "native",
+			Version: "1.0.0",
+			Abi:     make([]*contract.ABI, 0),
 		},
 	}
 
 	for _, v := range abi {
-		c.Info.Abis = append(c.Info.Abis, &contract.ABI{
-			Name:     v.name,
-			Args:     v.args,
-			Payment:  0,
-			GasPrice: int64(1000),
-			Limit:    contract.NewCost(100, 100, 100),
+		c.Info.Abi = append(c.Info.Abi, &contract.ABI{
+			Name: v.name,
+			Args: v.args,
 		})
 	}
 
-	sort.Sort(abiSlice(c.Info.Abis))
+	sort.Sort(abiSlice(c.Info.Abi))
 
 	return c
 }

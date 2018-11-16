@@ -1,13 +1,8 @@
 acc:
-  id: IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C
+  id: producer00001
   seckey: 1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB
   algorithm: ed25519
-genesis:
-  creategenesis: true
-  witnessinfo:
-  - IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C
-  - "21000000000"
-  votecontractpath: config/
+genesis: config/genesis.yml
 vm:
   jspath: vm/v8vm/v8/libjs/
   loglevel: ""
@@ -19,6 +14,11 @@ p2p:
   chainid: 1024
   version: 1
   datapath: p2p/
+  inboundConn: 15
+  outboundConn: 15
+  blackPID:
+  blackIP:
+  adminPort: 30005
 rpc:
   jsonport: 30001
   grpcport: 30002
@@ -39,3 +39,6 @@ metrics:
   id: iost-testnet:visitor00
 debug:
   listenaddr: 0.0.0.0:30003
+version:
+  nettype: "debugnet"
+  protocolversion: "1.0"

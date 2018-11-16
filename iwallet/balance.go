@@ -19,7 +19,7 @@ import (
 
 	"context"
 
-	"github.com/iost-official/Go-IOS-Protocol/rpc"
+	"github.com/iost-official/go-iost/rpc"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -36,16 +36,19 @@ var balanceCmd = &cobra.Command{
 		}
 		//do some check for arg[0] here
 		id := args[0]
-		b, err := CheckBalance(id)
+		info, err := GetAccountInfo(server, id, useLongestChain)
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println(b, "iost")
+		fmt.Println(info)
 	},
 }
 
+var useLongestChain bool
+
 func init() {
 	rootCmd.AddCommand(balanceCmd)
+	balanceCmd.Flags().BoolVarP(&useLongestChain, "use_longest", "l", false, "get balance on longest chain")
 
 	// Here you will define your flags and configuration settings.
 
@@ -58,16 +61,21 @@ func init() {
 	// balanceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func CheckBalance(id string) (int64, error) {
+// GetAccountInfo return account info
+func GetAccountInfo(server string, id string, useLongestChain bool) (*rpc.GetAccountRes, error) {
 	conn, err := grpc.Dial(server, grpc.WithInsecure())
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer conn.Close()
 	client := rpc.NewApisClient(conn)
-	value, err := client.GetBalance(context.Background(), &rpc.GetBalanceReq{ID: id})
-	if err != nil {
-		return 0, err
+	req := rpc.GetAccountReq{ID: id}
+	if useLongestChain {
+		req.UseLongestChain = true
 	}
-	return value.Balance, nil
+	value, err := client.GetAccountInfo(context.Background(), &req)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
 }

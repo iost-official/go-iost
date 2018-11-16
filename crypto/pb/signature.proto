@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package sigpb;
+
+message Signature {
+    int32 algorithm = 1;
+    bytes sig = 2;
+    bytes pubKey = 3;
+}

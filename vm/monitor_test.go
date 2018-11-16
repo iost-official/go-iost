@@ -3,10 +3,12 @@ package vm
 import (
 	"testing"
 
+	"time"
+
 	. "github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 func Init(t *testing.T) (*Monitor, *MockVM, *database.MockIMultiValue, *database.Visitor) {
@@ -30,7 +32,7 @@ func TestMonitor_Call(t *testing.T) {
 
 	flag := false
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), Any(), Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...string) (rtn []string, cost *contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), Any(), Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...string) (rtn []string, cost contract.Cost, err error) {
 		flag = true
 		return []string{"world"}, cost, nil
 	})
@@ -39,15 +41,12 @@ func TestMonitor_Call(t *testing.T) {
 		ID:   "Contract",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
-					Name:     "abi",
-					Args:     []string{"string"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
+					Name: "abi",
+					Args: []string{"string"},
 				},
 			},
 		},
@@ -74,14 +73,14 @@ func TestMonitor_Context(t *testing.T) {
 	outerFlag := false
 	innerFlag := false
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost contract.Cost, err error) {
 		outerFlag = true
 		monitor.Call(h, "Contract", "inner", "[\"hello\"]")
 
 		return []string{"world"}, cost, nil
 	})
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost contract.Cost, err error) {
 		innerFlag = true
 		return []string{"world"}, cost, nil
 	})
@@ -89,22 +88,16 @@ func TestMonitor_Context(t *testing.T) {
 		ID:   "Contract",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
-					Name:     "outer",
-					Args:     []string{"number"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
+					Name: "outer",
+					Args: []string{"number"},
 				},
 				{
-					Name:     "inner",
-					Args:     []string{"string"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
+					Name: "inner",
+					Args: []string{"string"},
 				},
 			},
 		},
@@ -135,14 +128,16 @@ func TestMonitor_HostCall(t *testing.T) {
 	outerFlag := false
 	innerFlag := false
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost contract.Cost, err error) {
+		cost = contract.Cost0()
 		outerFlag = true
 		h.Call("Contract", "inner", "[\"hello\"]")
 
 		return []string{"world"}, cost, nil
 	})
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost *contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost contract.Cost, err error) {
+		cost = contract.Cost0()
 		innerFlag = true
 		if h.Context().Value("abi_name") != "inner" {
 			t.Fatal(h.Context())
@@ -154,22 +149,16 @@ func TestMonitor_HostCall(t *testing.T) {
 		ID:   "Contract",
 		Code: "codes",
 		Info: &contract.Info{
-			Lang:        "",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
-					Name:     "outer",
-					Args:     []string{"number"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
+					Name: "outer",
+					Args: []string{"number"},
 				},
 				{
-					Name:     "inner",
-					Args:     []string{"string"},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
+					Name: "inner",
+					Args: []string{"string"},
 				},
 			},
 		},
@@ -194,6 +183,7 @@ func TestJSM(t *testing.T) {
 	ctx.GSet("gas_limit", int64(1000))
 
 	h := host.NewHost(ctx, vi, monitor, nil)
+	h.SetDeadline(time.Now().Add(time.Second))
 
 	c := contract.Contract{
 		ID: "Contract",
@@ -210,15 +200,12 @@ class Contract {
 module.exports = Contract;
 `,
 		Info: &contract.Info{
-			Lang:        "javascript",
-			VersionCode: "1.0.0",
-			Abis: []*contract.ABI{
+			Lang:    "javascript",
+			Version: "1.0.0",
+			Abi: []*contract.ABI{
 				{
-					Name:     "hello",
-					Args:     []string{},
-					Payment:  0,
-					GasPrice: int64(1000),
-					Limit:    contract.NewCost(100, 100, 100),
+					Name: "hello",
+					Args: []string{},
 				},
 			},
 		},

@@ -39,7 +39,10 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.iwallet.yaml)")
 
 	rootCmd.PersistentFlags().StringVarP(&dest, "dest", "d", "default", "Set destination of output file")
-	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30302", "Set server of this client")
+	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "Set server of this client")
+	rootCmd.PersistentFlags().BoolVarP(&checkResult, "checkResult", "", true, "Check publish/call status after sending to chain")
+	rootCmd.PersistentFlags().Float32VarP(&checkResultDelay, "checkResultDelay", "", 3, "RPC checking will occur at [checkResultDelay] seconds after sending to chain.")
+	rootCmd.PersistentFlags().Int32VarP(&checkResultMaxRetry, "checkResultMaxRetry", "", 10, "Max times to call grpc to check tx status")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

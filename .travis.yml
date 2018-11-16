@@ -11,17 +11,20 @@ matrix:
     - os: osx
       osx_image: xcode10
       go: "1.11"
-      env:
-        - VERBOSE=true
       before_install:
         - brew install rocksdb
         - brew install git-lfs
         - git lfs install
+        - brew tap alecthomas/homebrew-tap
+        - brew install gometalinter
       before_script:
         - git lfs pull
       script:
         - make build
+        - make lint
         - make test
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
 
     - os: linux
       dist: trusty
@@ -29,10 +32,13 @@ matrix:
       services:
         - docker
       before_install:
-        - docker pull iostio/iost-dev:2.0.0-go1.11
+        - docker pull iostio/iost-dev:1.0.0
         - git lfs install
       before_script:
         - git lfs pull
       script:
-        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev:2.0.0-go1.11 make build
-        - docker run -it --rm -e VERBOSE=true -v $(pwd):/gopath/src/github.com/iost-official/Go-IOS-Protocol iostio/iost-dev:2.0.0-go1.11 make test
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make build
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make lint
+        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make test
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)

@@ -3,15 +3,15 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
-#cgo darwin LDFLAGS: -lvm
+#cgo darwin LDFLAGS: -L${SRCDIR}/v8/libv8/_darwin_amd64 -lvm
 #cgo linux LDFLAGS: -L${SRCDIR}/v8/libv8/_linux_amd64 -lvm -lv8 -Wl,-rpath,${SRCDIR}/v8/libv8/_linux_amd64
 */
 import "C"
 import (
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 // CVMInitOnce vm init once
@@ -87,13 +87,13 @@ func (e *VM) setHost(host *host.Host) {
 	e.sandbox.SetHost(host)
 }
 
-func (e *VM) setContract(contract *contract.Contract, api string, args ...interface{}) (string, error) {
+func (e *VM) setContract(contract *contract.Contract, api string, args []interface{}) (string, error) {
 	return e.sandbox.Prepare(contract, api, args)
 }
 
-func (e *VM) execute(code string) (rtn []interface{}, cost *contract.Cost, err error) {
+func (e *VM) execute(code string) (rtn []interface{}, cost contract.Cost, err error) {
 	rs, gasUsed, err := e.sandbox.Execute(code)
-	gasCost := contract.NewCost(gasUsed, 0, 0)
+	gasCost := contract.NewCost(0, 0, gasUsed)
 	return []interface{}{rs}, gasCost, err
 }
 

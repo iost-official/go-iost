@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
 	"github.com/smartystreets/goconvey/convey"
 )
 
@@ -35,7 +35,7 @@ func TestBlockSerialize(t *testing.T) {
 			},
 			Sign: &crypto.Signature{},
 		}
-		a1, _ := account.NewAccount(nil, crypto.Secp256k1)
+		a1, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 		tx0 := tx.Tx{
 			Time: 1,
 			Actions: []*tx.Action{{
@@ -43,13 +43,13 @@ func TestBlockSerialize(t *testing.T) {
 				ActionName: "actionname1",
 				Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 			}},
-			Signers: [][]byte{a1.Pubkey},
+			Signers: []string{a1.ID},
 		}
 		blk.Txs = append(blk.Txs, &tx0)
 		receipt := tx.TxReceipt{
 			TxHash:   tx0.Hash(),
 			GasUsage: 10,
-			Status: tx.Status{
+			Status: &tx.Status{
 				Code:    tx.Success,
 				Message: "run success",
 			},

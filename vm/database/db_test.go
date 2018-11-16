@@ -7,7 +7,7 @@ import (
 	"os"
 
 	. "github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/go-iost/db"
 )
 
 func sliceEqual(a, b []string) bool {
@@ -37,6 +37,7 @@ func TestHandler_Put(t *testing.T) {
 		return nil
 	})
 	v.Put("hello", "world")
+	v.Commit()
 
 	mockMVCC.EXPECT().Put("state", "m-hello-1", Any()).DoAndReturn(func(table string, key string, value string) error {
 		if !(table == "state" && key == "m-hello-1" && value == "world") {
@@ -54,6 +55,7 @@ func TestHandler_Put(t *testing.T) {
 	mockMVCC.EXPECT().Get("state", "m-hello").Return("", errors.New("not found"))
 
 	v.MPut("hello", "1", "world")
+	v.Commit()
 }
 
 func TestHandler_Get(t *testing.T) {
@@ -97,6 +99,32 @@ func TestHandler_Get(t *testing.T) {
 	}
 }
 
+func TestWriteCache(t *testing.T) {
+	mockCtl := NewController(t)
+	defer mockCtl.Finish()
+	mockMVCC := NewMockIMultiValue(mockCtl)
+
+	length := 100
+	v := NewVisitor(length, mockMVCC)
+
+	//mockMVCC.EXPECT().Put(Any(), Any(), Any()).DoAndReturn(func(table string, key string, value string) error {
+	//	if !(table == "state" && key == "b-hello" && value == "world") {
+	//		t.Fatal(table, key, value)
+	//	}
+	//	return nil
+	//})
+	v.Put("hello", "world")
+	ok := v.Has("hello")
+	if !ok {
+		t.Fatal(ok)
+	}
+	v.Del("hello")
+	ok = v.Has("hello")
+	if ok {
+		t.Fatal(ok)
+	}
+}
+
 func TestMultiWork(t *testing.T) {
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
@@ -136,12 +164,14 @@ func TestMultiVisitor(t *testing.T) {
 	v2 := NewVisitor(length, mvccdb)
 
 	v1.Put("hello", "world")
+	v1.Commit()
 	vv := v2.Get("hello")
 	if vv != "world" {
 		t.Fatal(vv)
 	}
 
 	v2.Put("hello", "world2")
+	v2.Commit()
 	vv = v1.Get("hello")
 	if vv != "world2" {
 		t.Fatal(vv)

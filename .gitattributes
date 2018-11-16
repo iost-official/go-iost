@@ -1,0 +1,5 @@
+vendor/* linguist-vendored
+vm/v8vm/v8/include/* linguist-vendored
+vm/v8vm/v8/libjs/include/* linguist-generated
+vm/v8vm/v8/libjs/bignumber.js linguist-vendored
+vm/v8vm/v8/libjs/esprima.js linguist-vendored

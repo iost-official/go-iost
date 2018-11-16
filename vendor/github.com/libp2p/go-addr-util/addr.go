@@ -7,54 +7,9 @@ import (
 	logging "github.com/ipfs/go-log"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr-net"
-
-	_ "github.com/libp2p/go-ws-transport"
 )
 
 var log = logging.Logger("addrutil")
-
-// SupportedTransportStrings is the list of supported transports for the swarm.
-// These are strings of encapsulated multiaddr protocols. E.g.:
-//   /ip4/tcp
-var SupportedTransportStrings = []string{
-	"/ip4/tcp",
-	"/ip6/tcp",
-	"/ip4/udp/utp",
-	"/ip6/udp/utp",
-	"/ip4/tcp/ws",
-	"/ip6/tcp/ws",
-	// "/ip4/udp/udt", disabled because the lib doesnt work on arm
-	// "/ip6/udp/udt", disabled because the lib doesnt work on arm
-}
-
-// SupportedTransportProtocols is the list of supported transports for the swarm.
-// These are []ma.Protocol lists. Populated at runtime from SupportedTransportStrings
-var SupportedTransportProtocols = [][]ma.Protocol{}
-
-func init() {
-	// initialize SupportedTransportProtocols
-	transports := make([][]ma.Protocol, len(SupportedTransportStrings))
-	for _, s := range SupportedTransportStrings {
-		t, err := ma.ProtocolsWithString(s)
-		if err != nil {
-			panic(err) // important to fix this in the codebase
-		}
-		transports = append(transports, t)
-	}
-	SupportedTransportProtocols = transports
-}
-
-// AddTransport adds a transport protocol combination to the list of supported transports
-func AddTransport(s string) error {
-	t, err := ma.ProtocolsWithString(s)
-	if err != nil {
-		return err
-	}
-
-	SupportedTransportStrings = append(SupportedTransportStrings, s)
-	SupportedTransportProtocols = append(SupportedTransportProtocols, t)
-	return nil
-}
 
 // FilterAddrs is a filter that removes certain addresses, according the given filters.
 // if all filters return true, the address is kept.
@@ -72,17 +27,6 @@ func FilterAddrs(a []ma.Multiaddr, filters ...func(ma.Multiaddr) bool) []ma.Mult
 	return b
 }
 
-// FilterUsableAddrs removes certain addresses
-// from a list. the addresses removed are those known NOT
-// to work with our network. Namely, addresses with UTP.
-func FilterUsableAddrs(a []ma.Multiaddr) []ma.Multiaddr {
-	return FilterAddrs(a, AddrUsableFunc)
-}
-
-func AddrUsableFunc(m ma.Multiaddr) bool {
-	return AddrUsable(m, false)
-}
-
 // AddrOverNonLocalIP returns whether the addr uses a non-local ip link
 func AddrOverNonLocalIP(a ma.Multiaddr) bool {
 	split := ma.Split(a)
@@ -93,49 +37,6 @@ func AddrOverNonLocalIP(a ma.Multiaddr) bool {
 		return false
 	}
 	return true
-}
-
-// AddrUsable returns whether our network can use this addr.
-// We only use the transports in SupportedTransportStrings,
-// and we do not link local addresses. Loopback is ok
-// as we need to be able to connect to multiple ipfs nodes
-// in the same machine.
-func AddrUsable(a ma.Multiaddr, partial bool) bool {
-	if a == nil {
-		return false
-	}
-
-	if !AddrOverNonLocalIP(a) {
-		return false
-	}
-
-	// test the address protocol list is in SupportedTransportProtocols
-	matches := func(supported, test []ma.Protocol) bool {
-		if len(test) > len(supported) {
-			return false
-		}
-
-		// when partial, it's ok if test < supported.
-		if !partial && len(supported) != len(test) {
-			return false
-		}
-
-		for i := range test {
-			if supported[i].Code != test[i].Code {
-				return false
-			}
-		}
-		return true
-	}
-
-	transport := a.Protocols()
-	for _, supported := range SupportedTransportProtocols {
-		if matches(supported, transport) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // ResolveUnspecifiedAddress expands an unspecified ip addresses (/ip4/0.0.0.0, /ip6/::) to
@@ -221,7 +122,7 @@ func InterfaceAddresses() ([]ma.Multiaddr, error) {
 
 	var out []ma.Multiaddr
 	for _, a := range maddrs {
-		if !AddrUsable(a, true) { // partial
+		if !AddrOverNonLocalIP(a) {
 			// log.Debug("InterfaceAddresses: skipping unusable:", a)
 			continue
 		}

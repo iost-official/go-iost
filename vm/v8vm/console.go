@@ -5,41 +5,40 @@ package v8
 */
 import "C"
 import (
+	"errors"
 	"reflect"
 )
 
-// const Console log status
-const (
-	ConsoleLogSuccess = iota
-	ConsoleLogUnexpectedError
-	ConsoleLogNoLoggerError
-	ConsoleLogInvalidLogLevelError
+// Error message
+var (
+	ErrConsoleNoLogger        = errors.New("no logger error")
+	ErrConsoleInvalidLogLevel = errors.New("log invalid level")
 )
 
 //export goConsoleLog
-func goConsoleLog(cSbx C.SandboxPtr, logLevel, logDetail *C.char) int {
+func goConsoleLog(cSbx C.SandboxPtr, logLevel, logDetail *C.char) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
-		return ContractCallUnexpectedError
+		return C.CString(ErrGetSandbox.Error())
 	}
 
 	levelStr := C.GoString(logLevel)
 	detailStr := C.GoString(logDetail)
 
 	if sbx.host.Logger() == nil {
-		return ConsoleLogNoLoggerError
+		return C.CString(ErrConsoleNoLogger.Error())
 	}
 
 	loggerVal := reflect.ValueOf(sbx.host.Logger())
 	loggerFunc := loggerVal.MethodByName(levelStr)
 
 	if !loggerFunc.IsValid() {
-		return ConsoleLogInvalidLogLevelError
+		return C.CString(ErrConsoleInvalidLogLevel.Error())
 	}
 
 	loggerFunc.Call([]reflect.Value{
 		reflect.ValueOf(detailStr),
 	})
 
-	return ConsoleLogSuccess
+	return nil
 }

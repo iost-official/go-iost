@@ -1,36 +1,30 @@
 package txpool
 
 import (
+	"bytes"
+	"errors"
 	"sync"
 	"time"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/metrics"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/metrics"
 )
 
+// Values.
 var (
 	clearInterval = 10 * time.Second
-	// Expiration is the transaction expiration
-	Expiration  = int64(90 * time.Second)
-	filterTime  = int64(90 * time.Second)
-	maxCacheTxs = 30000
+	filterTime    = int64(90 * time.Second)
+	maxCacheTxs   = 30000
 
-	metricsReceivedTxCount      = metrics.NewCounter("iost_tx_received_count", []string{"from"})
-	metricsGetPendingTxTime     = metrics.NewGauge("iost_get_pending_tx_time", nil)
-	metricsGetPendingTxLockTime = metrics.NewGauge("iost_get_pending_tx_lock_time", nil)
-	//metricsGetPendingTxSortTime   = metrics.NewGauge("iost_get_pending_tx_sort_time", nil)
-	metricsGetPendingTxAppendTime = metrics.NewGauge("iost_get_pending_tx_append_time", nil)
-	metricsExistTxTime            = metrics.NewSummary("iost_exist_tx_time", nil)
-	metricsExistTxCount           = metrics.NewCounter("iost_exist_tx_count", nil)
-	metricsVerifyTxTime           = metrics.NewSummary("iost_verify_tx_time", nil)
-	metricsVerifyTxCount          = metrics.NewCounter("iost_verify_tx_count", nil)
-	metricsAddTxTime              = metrics.NewSummary("iost_add_tx_time", nil)
-	metricsAddTxCount             = metrics.NewCounter("iost_add_tx_count", nil)
-	metricsTxPoolSize             = metrics.NewGauge("iost_txpool_size", nil)
-	metricsTxErrType              = metrics.NewCounter("iost_txerr_type", []string{"type"})
+	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
+	metricsTxPoolSize      = metrics.NewGauge("iost_txpool_size", nil)
+
+	ErrDupPendingTx = errors.New("tx exists in pending")
+	ErrDupChainTx   = errors.New("tx exists in chain")
+	ErrCacheFull    = errors.New("txpool is full")
 )
 
 // FRet find the return value of the tx
@@ -54,96 +48,36 @@ const (
 	noForkBCN
 )
 
-// TAddTx add the return value of the tx
-type TAddTx uint
-
-const (
-	// Success ...
-	Success TAddTx = iota
-	// TimeError ...
-	TimeError
-	// VerifyError ...
-	VerifyError
-	// DupError ...
-	DupError
-	// GasPriceError ...
-	GasPriceError
-	// CacheFullError ...
-	CacheFullError
-)
-
 type forkChain struct {
 	NewHead *blockcache.BlockCacheNode
 	OldHead *blockcache.BlockCacheNode
 	ForkBCN *blockcache.BlockCacheNode
 }
 
-// TxsList tx sort
-type TxsList []*tx.Tx
-
-// Len ...
-func (s TxsList) Len() int { return len(s) }
-
-// Less ...
-func (s TxsList) Less(i, j int) bool {
-	if s[i].GasPrice > s[j].GasPrice {
-		return true
-	}
-
-	if s[i].GasPrice == s[j].GasPrice {
-		if s[i].Time < s[j].Time {
-			return true
-		}
-	}
-	return false
-}
-
-// Swap ...
-func (s TxsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-
-// Push ...
-func (s *TxsList) Push(x *tx.Tx) {
-	*s = append(*s, x)
-}
-
 type blockTx struct {
 	txMap      *sync.Map
 	ParentHash []byte
-	cTime      int64
+	time       int64
 }
 
-func newBlockTx() *blockTx {
+func newBlockTx(blk *block.Block) *blockTx {
 	b := &blockTx{
 		txMap:      new(sync.Map),
-		ParentHash: make([]byte, 32),
+		ParentHash: blk.Head.ParentHash,
+		time:       blk.Head.Time,
 	}
-
+	for _, v := range blk.Txs {
+		b.txMap.Store(string(v.Hash()), v)
+	}
 	return b
 }
 
-func (b *blockTx) time() int64 {
-	return b.cTime
-}
-
-func (b *blockTx) setTime(t int64) {
-	b.cTime = t
-}
-
-func (b *blockTx) addBlock(ib *block.Block) {
-
-	for _, v := range ib.Txs {
-		b.txMap.Store(string(v.Hash()), v)
-	}
-	b.ParentHash = ib.Head.ParentHash
-}
-
 func (b *blockTx) existTx(hash []byte) bool {
-
 	_, r := b.txMap.Load(string(hash))
-
 	return r
 }
 
+// SortedTxMap is a red black tree of tx.
 type SortedTxMap struct {
 	tree  *redblacktree.Tree
 	txMap map[string]*tx.Tx
@@ -153,12 +87,16 @@ type SortedTxMap struct {
 func compareTx(a, b interface{}) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
+	if txa.GasPrice == txb.GasPrice && txb.Time == txa.Time {
+		return bytes.Compare(txa.Hash(), txb.Hash())
+	}
 	if txa.GasPrice == txb.GasPrice {
 		return int(txb.Time - txa.Time)
 	}
 	return int(txa.GasPrice - txb.GasPrice)
 }
 
+// NewSortedTxMap returns a new SortedTxMap instance.
 func NewSortedTxMap() *SortedTxMap {
 	return &SortedTxMap{
 		tree:  redblacktree.NewWith(compareTx),
@@ -167,12 +105,14 @@ func NewSortedTxMap() *SortedTxMap {
 	}
 }
 
+// Get returns a tx of hash.
 func (st *SortedTxMap) Get(hash []byte) *tx.Tx {
 	st.rw.RLock()
 	defer st.rw.RUnlock()
 	return st.txMap[string(hash)]
 }
 
+// Add adds a tx in SortedTxMap.
 func (st *SortedTxMap) Add(tx *tx.Tx) {
 	st.rw.Lock()
 	st.tree.Put(tx, true)
@@ -180,6 +120,7 @@ func (st *SortedTxMap) Add(tx *tx.Tx) {
 	st.rw.Unlock()
 }
 
+// Del deletes a tx in SortedTxMap.
 func (st *SortedTxMap) Del(hash []byte) {
 	st.rw.Lock()
 	defer st.rw.Unlock()
@@ -192,6 +133,7 @@ func (st *SortedTxMap) Del(hash []byte) {
 	delete(st.txMap, string(hash))
 }
 
+// Size returns the size of SortedTxMap.
 func (st *SortedTxMap) Size() int {
 	st.rw.Lock()
 	defer st.rw.Unlock()
@@ -199,6 +141,7 @@ func (st *SortedTxMap) Size() int {
 	return len(st.txMap)
 }
 
+// Iter returns the iterator of SortedTxMap.
 func (st *SortedTxMap) Iter() *Iterator {
 	iter := st.tree.Iterator()
 	iter.End()

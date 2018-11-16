@@ -161,6 +161,8 @@ prototype
 /core/block/database/
 core/tx/database/
 database/database/
+core/txpool/DelayTxDB/
+data/
 
 
 /core/tx/database/
@@ -174,6 +176,7 @@ iwallet/test
 iwallet/iwallet
 
 # build and test
+/coverage.txt
 /target
 imonitor/imonitor
 consensus/common/tx/
@@ -229,8 +232,8 @@ test/data
 /core/block/serviDb/
 scripts/sendtx/iwallet
 
-/Go-IOS-Protocol/core/txpool/BlockChainDB/
-/Go-IOS-Protocol/core/txpool/StatePoolDB/
+/go-iost/core/txpool/BlockChainDB/
+/go-iost/core/txpool/StatePoolDB/
 /consensus/pob/BlockChainDB/
 /consensus/pob/StateDB/
 /consensus/pob/txDB/

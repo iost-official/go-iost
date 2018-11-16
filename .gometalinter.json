@@ -3,6 +3,8 @@
     "Enable": ["vet", "gocyclo", "golint", "ineffassign", "misspell", "deadcode", "unconvert", "gofmt"],
     "Exclude": [
         ".+.pb.go",
+        ".+.pb.gw.go",
+        ".+_test.go",
         "vendor"
     ],
     "Deadline": "120s",

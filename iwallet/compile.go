@@ -23,9 +23,9 @@ import (
 	"go/build"
 	"os/exec"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
@@ -48,7 +48,7 @@ func generateABI(codePath string) string {
 	}
 
 	if contractPath == "" {
-		contractPath = gopath + "/src/github.com/iost-official/Go-IOS-Protocol/cmd/playground/contract"
+		contractPath = gopath + "/src/github.com/iost-official/go-iost/iwallet/contract"
 	}
 	fmt.Println("contractPath: ", contractPath)
 	cmd := exec.Command("node", contractPath+"/contract.js", codePath)
@@ -62,11 +62,75 @@ func generateABI(codePath string) string {
 	return codePath + ".abi"
 }
 
+// PublishContract converts contract js code to transaction. If 'send', also send it to chain.
+func PublishContract(codePath string, abiPath string, conID string, publisher string, acc *account.KeyPair, expiration int64,
+	signers []string, gasLimit int64, gasPrice int64, update bool, updateID string, send bool) (stx *tx.Tx, txHash string, err error) {
+
+	fd, err := readFile(codePath)
+	if err != nil {
+		fmt.Println("Read source code file failed: ", err.Error())
+		return nil, "", err
+	}
+	code := string(fd)
+
+	fd, err = readFile(abiPath)
+	if err != nil {
+		fmt.Println("Read abi file failed: ", err.Error())
+		return nil, "", err
+	}
+	abi := string(fd)
+
+	compiler := new(contract.Compiler)
+	if compiler == nil {
+		fmt.Println("gen compiler instance failed")
+		return nil, "", err
+	}
+	contract, err := compiler.Parse(conID, code, abi)
+	if err != nil {
+		fmt.Printf("gen contract error:%v\n", err)
+		return nil, "", err
+	}
+
+	methodName := "SetCode"
+	data := `["` + contract.B64Encode() + `"]`
+	if update {
+		methodName = "UpdateCode"
+		data = `["` + contract.B64Encode() + `", "` + updateID + `"]`
+	}
+
+	pubkeys := make([]string, len(signers))
+	for i, accID := range signers {
+		pubkeys[i] = accID
+	}
+
+	action := tx.NewAction("iost.system", methodName, data)
+	trx := tx.NewTx([]*tx.Action{action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano(), delaySecond*1e9)
+	if !send {
+		return trx, "", nil
+	}
+	stx, err = tx.SignTx(trx, publisher, []*account.KeyPair{acc})
+	var hash string
+	hash, err = sendTx(stx)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, "", err
+	}
+	fmt.Println("Sending tx to rpc server finished. The transaction hash is:", hash)
+	return trx, hash, nil
+}
+
 // compileCmd represents the compile command
 var compileCmd = &cobra.Command{
 	Use:   "compile",
-	Short: "Compile contract files to smart contract",
-	Long:  `Compile contract files to smart contract. `,
+	Short: "Generate tx",
+	Long: `Generate a tx by a contract and an abi file
+	example:iwallet compile -e 100 -l 10000 -p 1 --signers "IOSTdhsdhassdjaskd,IOSTskdjsakdjsk,..." ./example.js ./example.js.abi
+	watch out:
+		1.here signers means the account IDs who should sign this tx.for instance.if Alice transfers 100 to Bob in the constructor of the contract you want to deploy,then you should write Alice's account ID in --signers
+		2.if you don't include --signers,iwallet consider this tx as a complete tx,So please use -k to indicate the file which contains your secret key to sign this tx.
+		3.the secret key in the file indicate by -k is to sign the tx,meanwhile the account IDs in --signers are just to indicate this tx needs the authorization of these people.And they will generate their signatures later in the command 'iwallet sign'.
+	`,
+
 	Run: func(cmd *cobra.Command, args []string) {
 		if resetContractPath {
 			err := os.Remove(home + "/.iwallet/contract_path")
@@ -74,7 +138,7 @@ var compileCmd = &cobra.Command{
 				fmt.Println(err.Error())
 				return
 			}
-			fmt.Println("Sucessfully reset contract path", setContractPath)
+			fmt.Println("Successfully reset contract path", setContractPath)
 			return
 		}
 
@@ -92,91 +156,99 @@ var compileCmd = &cobra.Command{
 				fmt.Println(err.Error())
 				return
 			}
-			fmt.Println("Sucessfully set contract path to: ", setContractPath)
+			fmt.Println("Successfully set contract path to: ", setContractPath)
 			return
 		}
 
 		if len(args) < 1 {
-			fmt.Println(`Error: source code file or abi file not given`)
+			fmt.Println(`Error: source code file not given`)
 			return
 		}
 		codePath := args[0]
-		fd, err := readFile(codePath)
-		if err != nil {
-			fmt.Println("Read source code file failed: ", err.Error())
+
+		var abiPath string
+
+		if genABI {
+			abiPath = generateABI(codePath)
 			return
+		} else if len(args) < 2 {
+			fmt.Println(`Error: source code file or abi file not given`)
+			return
+		} else {
+			abiPath = args[1]
+			fmt.Println(args)
 		}
-		code := string(fd)
-		abiPath := generateABI(codePath)
 
 		if abiPath == "" {
 			fmt.Println("Failed to Gen ABI!")
 			return
 		}
 
-		if genABI {
-			return
+		conID := ""
+		if update {
+			if len(args) < 3 {
+				fmt.Println(`Error: contract id not given`)
+				return
+			}
+			conID = args[2]
 		}
 
-		fd, err = readFile(abiPath)
-		if err != nil {
-			fmt.Println("Read abi file failed: ", err.Error())
-			return
-		}
-		abi := string(fd)
-
-		compiler := new(contract.Compiler)
-		if compiler == nil {
-			fmt.Println("gen compiler instance failed")
-			return
-		}
-		contract, err := compiler.Parse("", code, abi)
-		if err != nil {
-			fmt.Printf("gen contract error:%v\n", err)
-			return
-		}
-		action := tx.NewAction("iost.system", "SetCode", `["`+contract.B64Encode()+`",]`)
-		pubkeys := make([][]byte, len(signers))
-		for i, pubkey := range signers {
-			pubkeys[i] = loadBytes(pubkey)
+		updateID := ""
+		if update && len(args) >= 4 {
+			updateID = args[3]
 		}
 
-		trx := tx.NewTx([]*tx.Action{&action}, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
-
+		send := false
+		var keyPair *account.KeyPair
 		if len(signers) == 0 {
 			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
+			fmt.Println("please ensure that the right secret key file path is given by parameter -k,or the secret key file path is ~/.iwallet/id_ed25519 by default,this file indicate the secret key to sign the tx")
+			send = true
+
+			if accountName == "" {
+				panic("you must provide account name")
+			}
+			home, err := homedir.Dir()
+			if err != nil {
+				panic(err)
+			}
+			kpPath := fmt.Sprintf("%s/.iwallet/%s_ed25519", home, accountName)
 			fsk, err := readFile(kpPath)
 			if err != nil {
 				fmt.Println("Read file failed: ", err.Error())
 				return
 			}
 
-			acc, err := account.NewAccount(loadBytes(string(fsk)), getSignAlgo(signAlgo))
+			keyPair, err = account.NewKeyPair(loadBytes(string(fsk)), getSignAlgo(signAlgo))
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
-			stx, err := tx.SignTx(trx, acc)
-			var txHash []byte
-			txHash, err = sendTx(stx)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			fmt.Println("ok")
-			fmt.Println(saveBytes(txHash))
-			return
 		}
-
-		bytes := trx.Encode()
-
-		if dest == "default" {
-			dest = changeSuffix(args[0], ".sc")
-		}
-
-		err = saveTo(dest, bytes)
+		trx, txHash, err := PublishContract(codePath, abiPath, conID, accountName, keyPair, expiration, signers, gasLimit, gasPrice, update, updateID, send)
 		if err != nil {
 			fmt.Println(err.Error())
+		}
+		if send {
+			if checkResult {
+				succ := checkTransaction(txHash)
+				if succ {
+					fmt.Println("The contract id is Contract" + txHash)
+				}
+			}
+		} else {
+			bytes := trx.Encode()
+			if dest == "default" {
+				dest = changeSuffix(args[0], ".sc")
+			}
+			err = saveTo(dest, bytes)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			fmt.Printf("the unsigned tx has been saved to %s\n", dest)
+			fmt.Println("the account IDs of the signers are:", signers)
+			fmt.Println("please inform them to sign this contract with the command 'iwallet sign' and send the generated signatures to you.by this step they give you the authorization,or this tx will fail to pass through the iost vm")
 		}
 	},
 }
@@ -185,8 +257,10 @@ var dest string
 var gasLimit int64
 var gasPrice int64
 var expiration int64
+var delaySecond int64
 var signers []string
 var genABI bool
+var update bool
 var setContractPath string
 var resetContractPath bool
 var home string
@@ -199,15 +273,17 @@ func init() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	compileCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
-	compileCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
-	compileCmd.Flags().Int64VarP(&expiration, "expiration", "e", 0, "expiration timestamp for a transaction")
+	compileCmd.Flags().StringVarP(&accountName, "account", "", "", "which account to use")
+	compileCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 10000, "gasLimit for a transaction")
+	compileCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 100, "gasPrice for a transaction")
+	compileCmd.Flags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
+	compileCmd.Flags().Int64VarP(&delaySecond, "delaysecond", "d", 0, "delay time for a transaction,for example,-d 86400 means the tx will be excuted after 86400 seconds from now on")
 	compileCmd.Flags().StringSliceVarP(&signers, "signers", "", []string{}, "signers who should sign this transaction")
 	compileCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
 	compileCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
 	compileCmd.Flags().BoolVarP(&genABI, "genABI", "g", false, "generate abi file")
-	compileCmd.Flags().StringVarP(&setContractPath, "setContractPath", "c", "", "set contract path, default is $GOPATH + /src/github.com/iost-official/Go-IOS-Protocol/cmd/playground/contract")
+	compileCmd.Flags().BoolVarP(&update, "update", "u", false, "update contract")
+	compileCmd.Flags().StringVarP(&setContractPath, "setContractPath", "c", "", "set contract path, default is $GOPATH + /src/github.com/iost-official/go-iost/iwallet/contract")
 	compileCmd.Flags().BoolVarP(&resetContractPath, "resetContractPath", "r", false, "clean contract path")
 
 	// Here you will define your flags and configuration settings.

@@ -27,7 +27,7 @@ func (n *RelayNotifiee) OpenedStream(net inet.Network, s inet.Stream) {}
 func (n *RelayNotifiee) ClosedStream(net inet.Network, s inet.Stream) {}
 
 func (n *RelayNotifiee) Connected(s inet.Network, c inet.Conn) {
-	if n.Relay().Transport().Matches(c.RemoteMultiaddr()) {
+	if n.Relay().Matches(c.RemoteMultiaddr()) {
 		return
 	}
 
@@ -36,7 +36,6 @@ func (n *RelayNotifiee) Connected(s inet.Network, c inet.Conn) {
 		defer cancel()
 
 		canhop, err := n.Relay().CanHop(ctx, id)
-
 		if err != nil {
 			log.Debugf("Error testing relay hop: %s", err.Error())
 			return

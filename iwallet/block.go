@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/iost-official/Go-IOS-Protocol/rpc"
+	"github.com/iost-official/go-iost/rpc"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -73,8 +73,8 @@ var blockCmd = &cobra.Command{
 				return
 			}
 		}
-		blockInfoJson, err := json.Marshal(blockInfo)
-		fmt.Println(string(blockInfoJson))
+		blockInfoJSON, err := json.Marshal(blockInfo)
+		fmt.Println(string(blockInfoJSON))
 	},
 }
 

@@ -34,8 +34,11 @@ func (m *LRU) Get(key string) (value string) {
 	}
 	v, ok := m.cache.Get(key)
 	if !ok {
-		v = m.db.Get(key)
-		m.cache.Add(key, v)
+		value = m.db.Get(key)
+		if value != NilPrefix {
+			m.cache.Add(key, value)
+		}
+		return value
 	}
 	return v.(string)
 }
@@ -65,9 +68,9 @@ func (m *LRU) Has(key string) bool {
 }
 
 // Keys list keys under prefix, do nothing
-func (m *LRU) Keys(prefix string) []string {
-	return m.db.Keys(prefix)
-}
+//func (m *LRU) Keys(prefix string) []string {
+//	return m.db.Keys(prefix)
+//}
 
 // Del delete key from cache
 func (m *LRU) Del(key string) {

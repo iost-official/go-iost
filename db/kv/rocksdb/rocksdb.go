@@ -34,11 +34,12 @@ func NewDB(path string) (*DB, error) {
 	C.rocksdb_options_increase_parallelism(coptions, C.int(cpus))
 	C.rocksdb_options_optimize_level_style_compaction(coptions, 0)
 	C.rocksdb_options_set_create_if_missing(coptions, 1)
+	C.rocksdb_options_set_max_open_files(coptions, 256)
 
 	var cerr *C.char
 	defer C.free(unsafe.Pointer(cerr))
 
-	var db *C.rocksdb_t = C.rocksdb_open(coptions, cpath, &cerr)
+	var cdb *C.rocksdb_t = C.rocksdb_open(coptions, cpath, &cerr)
 	var croptions *C.rocksdb_readoptions_t = C.rocksdb_readoptions_create()
 	var cwoptions *C.rocksdb_writeoptions_t = C.rocksdb_writeoptions_create()
 
@@ -49,7 +50,7 @@ func NewDB(path string) (*DB, error) {
 	}
 
 	return &DB{
-		cdb:       db,
+		cdb:       cdb,
 		cbatch:    nil,
 		croptions: croptions,
 		cwoptions: cwoptions,
@@ -70,7 +71,7 @@ func (d *DB) Get(key []byte) ([]byte, error) {
 	defer C.free(unsafe.Pointer(cvalue))
 
 	err := C.GoString(cerr)
-	value := C.GoString(cvalue)
+	value := C.GoStringN(cvalue, C.int(clen))
 
 	if err != "" {
 		return nil, fmt.Errorf("failed to get by rocksdb: %v", err)
@@ -118,7 +119,7 @@ func (d *DB) Has(key []byte) (bool, error) {
 	defer C.free(unsafe.Pointer(cvalue))
 
 	err := C.GoString(cerr)
-	value := C.GoString(cvalue)
+	value := C.GoStringN(cvalue, C.int(clen))
 
 	if err != "" {
 		return false, fmt.Errorf("failed to has by rocksdb: %v", err)
@@ -183,23 +184,23 @@ func (d *DB) Keys(prefix []byte) ([][]byte, error) {
 		C.rocksdb_readoptions_set_iterate_upper_bound(croptions, cupper, cupperlen)
 	}
 
-	var iter *C.rocksdb_iterator_t = C.rocksdb_create_iterator(d.cdb, croptions)
-	defer C.rocksdb_iter_destroy(iter)
+	var citer *C.rocksdb_iterator_t = C.rocksdb_create_iterator(d.cdb, croptions)
+	defer C.rocksdb_iter_destroy(citer)
 
 	keys := make([][]byte, 0)
-	for C.rocksdb_iter_seek_to_first(iter); C.rocksdb_iter_valid(iter) != 0; C.rocksdb_iter_next(iter) {
+	for C.rocksdb_iter_seek_to_first(citer); C.rocksdb_iter_valid(citer) != 0; C.rocksdb_iter_next(citer) {
 		var ckeylen C.size_t
 		// rocksdb_iter_key return a const char*, so free it in C/C++ code
-		var ckey *C.char = C.rocksdb_iter_key(iter, &ckeylen)
+		var ckey *C.char = C.rocksdb_iter_key(citer, &ckeylen)
 
-		key := C.GoString(ckey)
+		key := C.GoStringN(ckey, C.int(ckeylen))
 
 		keys = append(keys, []byte(key))
 	}
 
 	var cerr *C.char
 	defer C.free(unsafe.Pointer(cerr))
-	C.rocksdb_iter_get_error(iter, &cerr)
+	C.rocksdb_iter_get_error(citer, &cerr)
 
 	err := C.GoString(cerr)
 
@@ -251,4 +252,89 @@ func (d *DB) Close() error {
 	C.rocksdb_writeoptions_destroy(d.cwoptions)
 
 	return nil
+}
+
+// NewIteratorByPrefix returns a new iterator by prefix
+func (d *DB) NewIteratorByPrefix(prefix []byte) interface{} {
+	var croptions *C.rocksdb_readoptions_t = C.rocksdb_readoptions_create()
+	defer C.rocksdb_readoptions_destroy(croptions)
+
+	lower, upper := bytesPrefix(prefix)
+	if len(lower) != 0 {
+		var clower *C.char = C.CString(string(lower))
+		defer C.free(unsafe.Pointer(clower))
+		var clowerlen C.size_t = C.size_t(len(lower))
+		C.rocksdb_readoptions_set_iterate_lower_bound(croptions, clower, clowerlen)
+	}
+	if len(upper) != 0 {
+		var cupper *C.char = C.CString(string(upper))
+		defer C.free(unsafe.Pointer(cupper))
+		var cupperlen C.size_t = C.size_t(len(upper))
+		C.rocksdb_readoptions_set_iterate_upper_bound(croptions, cupper, cupperlen)
+	}
+
+	var citer *C.rocksdb_iterator_t = C.rocksdb_create_iterator(d.cdb, croptions)
+
+	return &Iter{
+		citer: citer,
+	}
+}
+
+// Iter is the iterator for rocksdb
+type Iter struct {
+	citer *C.rocksdb_iterator_t
+	key   []byte
+	value []byte
+}
+
+// Next do next item of iterator
+func (i *Iter) Next() bool {
+	C.rocksdb_iter_next(i.citer)
+	if C.rocksdb_iter_valid(i.citer) == 0 {
+		return false
+	}
+
+	var ckeylen C.size_t
+	var cvaluelen C.size_t
+	// rocksdb_iter_key and rocksdb_iter_value return a const char*, so free it in C/C++ code
+	var ckey *C.char = C.rocksdb_iter_key(i.citer, &ckeylen)
+	var cvalue *C.char = C.rocksdb_iter_value(i.citer, &cvaluelen)
+
+	key := C.GoStringN(ckey, C.int(ckeylen))
+	value := C.GoStringN(cvalue, C.int(cvaluelen))
+
+	i.key = []byte(key)
+	i.value = []byte(value)
+
+	return true
+}
+
+// Key returns the key of current item
+func (i *Iter) Key() []byte {
+	return i.key
+}
+
+// Value returns the value of current item
+func (i *Iter) Value() []byte {
+	return i.value
+}
+
+// Error returns the error of iterator
+func (i *Iter) Error() error {
+	var cerr *C.char
+	defer C.free(unsafe.Pointer(cerr))
+	C.rocksdb_iter_get_error(i.citer, &cerr)
+
+	err := C.GoString(cerr)
+
+	if err != "" {
+		return fmt.Errorf(err)
+	}
+
+	return nil
+}
+
+// Release will release the iterator
+func (i *Iter) Release() {
+	C.rocksdb_iter_destroy(i.citer)
 }

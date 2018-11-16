@@ -3,7 +3,7 @@ package backend
 import (
 	"crypto/rand"
 
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/go-iost/ilog"
 	"golang.org/x/crypto/ed25519"
 )
 

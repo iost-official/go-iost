@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/db/kv"
-	"github.com/iost-official/Go-IOS-Protocol/db/mvcc"
+	"github.com/iost-official/go-iost/db/kv"
+	"github.com/iost-official/go-iost/db/mvcc"
 )
 
-//go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/Go-IOS-Protocol/db MVCCDB
+//go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/go-iost/db MVCCDB
 
 // constant of mvccdb
 const (
@@ -39,7 +39,7 @@ type MVCCDB interface {
 
 // NewMVCCDB return new mvccdb
 func NewMVCCDB(path string) (MVCCDB, error) {
-	return NewCacheMVCCDB(path, mvcc.TrieCache)
+	return NewCacheMVCCDB(path, mvcc.MapCache)
 }
 
 // Item is the value of cache
@@ -312,6 +312,7 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 
 // Tag will add tag to current state of mvccdb
 func (m *CacheMVCCDB) Tag(t string) {
+	m.Commit()
 	m.cm.AddTag(m.head, t)
 }
 

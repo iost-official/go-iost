@@ -9,12 +9,6 @@
   "gxDependencies": [
     {
       "author": "whyrusleeping",
-      "hash": "QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV",
-      "name": "gogo-protobuf",
-      "version": "0.0.0"
-    },
-    {
-      "author": "whyrusleeping",
       "hash": "QmQ51pHe6u7CWodkUGDLqaCEMchkbMt7VEZnECF5mp6tVb",
       "name": "ed25519",
       "version": "0.0.0"
@@ -37,6 +31,6 @@
   "license": "MIT",
   "name": "go-libp2p-crypto",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "1.6.2"
+  "version": "2.0.1"
 }
 

@@ -1,33 +1,19 @@
 package common
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 
 	"encoding/binary"
 	"hash/crc32"
 
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/iost-official/Go-IOS-Protocol/common/hash"
-	"golang.org/x/crypto/ripemd160"
+	"golang.org/x/crypto/sha3"
 )
-
-// Sha256 ...
-func Sha256(raw []byte) []byte {
-	var data = sha256.Sum256(raw)
-	return data[:]
-}
 
 // Sha3 ...
 func Sha3(raw []byte) []byte {
-	var data = hash.Sha3_256(raw)
+	data := sha3.Sum256(raw)
 	return data[:]
-}
-
-// Hash160 ...
-func Hash160(raw []byte) []byte {
-	var data = sha256.Sum256(raw)
-	return ripemd160.New().Sum(data[len(data):])
 }
 
 // Base58Encode ...

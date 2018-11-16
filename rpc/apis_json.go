@@ -10,8 +10,8 @@ import (
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // JSONServer json rpc server
@@ -46,7 +46,7 @@ func (j *JSONServer) Start() error {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		mux := runtime.NewServeMux()
+		mux := runtime.NewServeMux(runtime.WithMarshalerOption("*", &runtime.JSONPb{OrigName: true, EmitDefaults: true}))
 		opts := []grpc.DialOption{grpc.WithInsecure()}
 
 		err := RegisterApisHandlerFromEndpoint(ctx, mux, j.endPoint, opts)

@@ -114,6 +114,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
 
     Local<ObjectTemplate> globalTpl = createGlobalTpl(isolate);
     Local<Context> context = Context::New(isolate, NULL, globalTpl);
+    context->AllowCodeGenerationFromStrings(false);
 
     Sandbox *sbx = new Sandbox();
     Local<Object> global = context->Global();
@@ -298,7 +299,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     isDone = true;
 }
 
-ValueTuple Execution(SandboxPtr ptr, const char *code) {
+ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -310,7 +311,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
     exec.detach();
 
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
-    auto startTime = std::chrono::steady_clock::now();
+//    auto startTime = std::chrono::steady_clock::now();
     while(true) {
         if (error.length() > 0) {
             res.Err = copyString(error);
@@ -333,11 +334,11 @@ ValueTuple Execution(SandboxPtr ptr, const char *code) {
             res.gasUsed = sbx->gasUsed;
             break;
         }
-        auto now = std::chrono::steady_clock::now();
-        auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
-        if (execTime > 200) {
+        auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        //auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
+        if (now > expireTime) {
             isolate->TerminateExecution();
-            res.Err = strdup("execution killed");
+            res.Err = strdup(("execution killed, current time : " + std::to_string(now) + " , expireTime: " + std::to_string(expireTime)).c_str());
             res.gasUsed = sbx->gasUsed;
             break;
         }

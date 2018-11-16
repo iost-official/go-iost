@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	addrutil "github.com/libp2p/go-addr-util"
 	host "github.com/libp2p/go-libp2p-host"
-	swarm "github.com/libp2p/go-libp2p-swarm"
 	tpt "github.com/libp2p/go-libp2p-transport"
+	tptu "github.com/libp2p/go-libp2p-transport-upgrader"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
@@ -22,29 +21,6 @@ var Protocol = ma.Protocol{
 
 func init() {
 	ma.AddProtocol(Protocol)
-
-	// Add dialer transport
-	const unspecific = "/p2p-circuit/ipfs"
-	const proto = "/ipfs/p2p-circuit/ipfs"
-
-	tps := addrutil.SupportedTransportStrings
-
-	err := addrutil.AddTransport(unspecific)
-	if err != nil {
-		panic(err)
-	}
-
-	err = addrutil.AddTransport(proto)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, tp := range tps {
-		err = addrutil.AddTransport(tp + proto)
-		if err != nil {
-			panic(err)
-		}
-	}
 }
 
 var _ tpt.Transport = (*RelayTransport)(nil)
@@ -59,40 +35,46 @@ func (r *Relay) Transport() *RelayTransport {
 	return (*RelayTransport)(r)
 }
 
-func (t *RelayTransport) Dialer(laddr ma.Multiaddr, opts ...tpt.DialOpt) (tpt.Dialer, error) {
-	if !t.Matches(laddr) {
-		return nil, fmt.Errorf("%s is not a relay address", laddr)
-	}
-	return t.Relay().Dialer(), nil
-}
-
 func (t *RelayTransport) Listen(laddr ma.Multiaddr) (tpt.Listener, error) {
-	if !t.Matches(laddr) {
+	// TODO: Ensure we have a connection to the relay, if specified. Also,
+	// make sure the multiaddr makes sense.
+	if !t.Relay().Matches(laddr) {
 		return nil, fmt.Errorf("%s is not a relay address", laddr)
 	}
-	return t.Relay().Listener(), nil
+	return t.upgrader.UpgradeListener(t, t.Relay().Listener()), nil
 }
 
-func (t *RelayTransport) Matches(a ma.Multiaddr) bool {
-	return t.Relay().Dialer().Matches(a)
+func (t *RelayTransport) CanDial(raddr ma.Multiaddr) bool {
+	return t.Relay().Matches(raddr)
+}
+
+func (t *RelayTransport) Proxy() bool {
+	return true
+}
+
+func (t *RelayTransport) Protocols() []int {
+	return []int{P_CIRCUIT}
 }
 
 // AddRelayTransport constructs a relay and adds it as a transport to the host network.
-func AddRelayTransport(ctx context.Context, h host.Host, opts ...RelayOpt) error {
-	// the necessary methods are not part of the Network interface, only exported by Swarm
-	// TODO: generalize the network interface for adding tranports
-	n, ok := h.Network().(*swarm.Network)
+func AddRelayTransport(ctx context.Context, h host.Host, upgrader *tptu.Upgrader, opts ...RelayOpt) error {
+	n, ok := h.Network().(tpt.Network)
 	if !ok {
-		return fmt.Errorf("%v is not a swarm network", h.Network())
+		return fmt.Errorf("%v is not a transport network", h.Network())
 	}
 
-	s := n.Swarm()
-
-	r, err := NewRelay(ctx, h, opts...)
+	r, err := NewRelay(ctx, h, upgrader, opts...)
 	if err != nil {
 		return err
 	}
 
-	s.AddTransport(r.Transport())
-	return s.AddListenAddr(r.Listener().Multiaddr())
+	// There's no nice way to handle these errors as we have no way to tear
+	// down the relay.
+	// TODO
+	if err := n.AddTransport(r.Transport()); err != nil {
+		log.Error("failed to add relay transport:", err)
+	} else if err := n.Listen(r.Listener().Multiaddr()); err != nil {
+		log.Error("failed to listen on relay transport:", err)
+	}
+	return nil
 }

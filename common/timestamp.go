@@ -1,6 +1,8 @@
 package common
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	// SlotLength interval of generate block
@@ -70,4 +72,13 @@ func (t *Timestamp) After(t2 Timestamp) bool {
 		return true
 	}
 	return false
+}
+
+// ParseStringToTimestamp from time string to Timestamp
+func ParseStringToTimestamp(s string) (Timestamp, error) {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return Timestamp{0}, err
+	}
+	return GetTimestamp(t.Unix()), err
 }

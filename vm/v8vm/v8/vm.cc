@@ -55,7 +55,7 @@ void releaseIsolate(IsolatePtr ptr) {
     return;
 }
 
-ValueTuple Execute(SandboxPtr ptr, const char *code) {
-    ValueTuple ret = Execution(ptr, code);
+ValueTuple Execute(SandboxPtr ptr, const char *code, long long int expireTime) {
+    ValueTuple ret = Execution(ptr, code, expireTime);
     return ret;
 }

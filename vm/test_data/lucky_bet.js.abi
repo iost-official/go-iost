@@ -3,31 +3,13 @@
     "version": "1.0.0",
     "abi": [
         {
-            "name": "constructor",
-            "args": [],
-            "payment": 0,
-            "cost_limit": [
-                1,
-                1,
-                1
-            ],
-            "price_limit": 1
-        },
-        {
             "name": "bet",
             "args": [
                 "string",
                 "number",
                 "number",
                 "number"
-            ],
-            "payment": 0,
-            "cost_limit": [
-                1,
-                1,
-                1
-            ],
-            "price_limit": 1
+            ]
         }
     ]
 }

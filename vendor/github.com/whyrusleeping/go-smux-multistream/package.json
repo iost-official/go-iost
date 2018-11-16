@@ -9,9 +9,9 @@
   "gxDependencies": [
     {
       "author": "whyrusleeping",
-      "hash": "QmTnsezaB1wWNRHeHnYrm8K4d5i9wtyj3GsqjC3Rt5b5v5",
+      "hash": "QmabLh8TrJ3emfAoQk5AbqbLTbMyj7XqumMFmAFxa9epo8",
       "name": "go-multistream",
-      "version": "0.3.6"
+      "version": "0.3.9"
     },
     {
       "author": "whyrusleeping",
@@ -25,6 +25,6 @@
   "license": "",
   "name": "go-smux-multistream",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "2.0.0"
+  "version": "2.0.2"
 }
 

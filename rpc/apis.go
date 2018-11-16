@@ -2,48 +2,54 @@ package rpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/bitly/go-simplejson"
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 
-	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/event"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/core/txpool"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/p2p"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/cverifier"
+	"github.com/iost-official/go-iost/consensus/pob"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/event"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/tx/pb"
+	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/p2p"
+	"github.com/iost-official/go-iost/verifier"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
-//go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/Go-IOS-Protocol/new_rpc ApisServer
+//go:generate mockgen -destination mock_rpc/mock_rpc.go -package rpc_mock github.com/iost-official/go-iost/new_rpc ApisServer
 
 // GRPCServer GRPC rpc server
 type GRPCServer struct {
 	bc         blockcache.BlockCache
 	p2pService p2p.Service
-	txdb       global.TxDB
 	txpool     txpool.TxPool
 	bchain     block.Chain
 	forkDB     db.MVCCDB
 	visitor    *database.Visitor
 	port       int
+	bv         global.BaseVariable
 }
 
 // NewRPCServer create GRPC rpc server
 func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global.BaseVariable, p2pService p2p.Service) *GRPCServer {
 	forkDb := _global.StateDB().Fork()
 	return &GRPCServer{
-		txdb:       _global.TxDB(),
 		p2pService: p2pService,
 		txpool:     tp,
 		bchain:     _global.BlockChain(),
@@ -51,6 +57,7 @@ func NewRPCServer(tp txpool.TxPool, bcache blockcache.BlockCache, _global global
 		forkDB:     forkDb,
 		visitor:    database.NewVisitor(0, forkDb),
 		port:       _global.Config().RPC.GRPCPort,
+		bv:         _global,
 	}
 }
 
@@ -82,10 +89,35 @@ func (s *GRPCServer) Stop() {
 	return
 }
 
-// GetHeight get current block height
-func (s *GRPCServer) GetHeight(ctx context.Context, empty *empty.Empty) (*HeightRes, error) {
-	return &HeightRes{
-		Height: s.bchain.Length() - 1,
+// GetNodeInfo return the node info
+func (s *GRPCServer) GetNodeInfo(ctx context.Context, empty *empty.Empty) (*NodeInfoRes, error) {
+	netService, ok := s.p2pService.(*p2p.NetService)
+	if !ok {
+		return nil, fmt.Errorf("internal error: netService type conversion failed")
+	}
+	res := &NodeInfoRes{}
+	res.Network = &NetworkInfo{}
+	res.Network.PeerInfo = make([]*PeerInfo, 0)
+	for _, p := range netService.GetAllNeighbors() {
+		res.Network.PeerInfo = append(res.Network.PeerInfo, &PeerInfo{ID: p.ID(), Addr: p.Addr()})
+	}
+	res.Network.PeerCount = (int32)(len(res.Network.PeerInfo))
+	res.Network.ID = s.p2pService.ID()
+	res.GitHash = global.GitHash
+	res.BuildTime = global.BuildTime
+	res.Mode = s.bv.Mode().String()
+	return res, nil
+}
+
+// GetChainInfo return the chain info
+func (s *GRPCServer) GetChainInfo(ctx context.Context, empty *empty.Empty) (*ChainInfoRes, error) {
+	return &ChainInfoRes{
+		NetType:              s.bv.Config().Version.NetType,
+		ProtocolVersion:      s.bv.Config().Version.ProtocolVersion,
+		Height:               s.bchain.Length() - 1,
+		WitnessList:          pob.GetStaticProperty().WitnessList,
+		HeadBlock:            toBlockInfo(s.bc.Head().Block, false),
+		LatestConfirmedBlock: toBlockInfo(s.bc.LinkedRoot().Block, false),
 	}, nil
 }
 
@@ -97,15 +129,15 @@ func (s *GRPCServer) GetTxByHash(ctx context.Context, hash *HashReq) (*TxRes, er
 	txHash := hash.Hash
 	txHashBytes := common.Base58Decode(txHash)
 
-	trx, err := s.txdb.GetTx(txHashBytes)
+	trx, err := s.bchain.GetTx(txHashBytes)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &TxRes{
-		TxRaw: trx.ToTxRaw(),
-		Hash:  trx.Hash(),
+		Tx:   trx.ToPb(),
+		Hash: common.Base58Encode(trx.Hash()),
 	}, nil
 }
 
@@ -117,14 +149,14 @@ func (s *GRPCServer) GetTxReceiptByHash(ctx context.Context, hash *HashReq) (*Tx
 	receiptHash := hash.Hash
 	receiptHashBytes := common.Base58Decode(receiptHash)
 
-	receipt, err := s.txdb.GetReceipt(receiptHashBytes)
+	receipt, err := s.bchain.GetReceipt(receiptHashBytes)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TxReceiptRes{
-		TxReceiptRaw: receipt.ToTxReceiptRaw(),
-		Hash:         receiptHashBytes,
+		TxReceipt: receipt.ToPb(),
+		Hash:      common.Base58Encode(receiptHashBytes),
 	}, nil
 }
 
@@ -136,15 +168,37 @@ func (s *GRPCServer) GetTxReceiptByTxHash(ctx context.Context, hash *HashReq) (*
 	txHash := hash.Hash
 	txHashBytes := common.Base58Decode(txHash)
 
-	receipt, err := s.txdb.GetReceiptByTxHash(txHashBytes)
+	receipt, err := s.bchain.GetReceiptByTxHash(txHashBytes)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TxReceiptRes{
-		TxReceiptRaw: receipt.ToTxReceiptRaw(),
-		Hash:         receipt.Hash(),
+		TxReceipt: receipt.ToPb(),
+		Hash:      common.Base58Encode(receipt.Hash()),
 	}, nil
+}
+
+func toBlockInfo(blk *block.Block, complete bool) *BlockInfo {
+	blkInfo := &BlockInfo{
+		Head:   blk.Head.ToPb(),
+		Hash:   common.Base58Encode(blk.HeadHash()),
+		Txs:    make([]*txpb.Tx, 0),
+		Txhash: make([]string, 0),
+	}
+	for _, trx := range blk.Txs {
+		if complete {
+			blkInfo.Txs = append(blkInfo.Txs, trx.ToPb())
+		}
+		blkInfo.Txhash = append(blkInfo.Txhash, common.Base58Encode(trx.Hash()))
+	}
+	for _, receipt := range blk.Receipts {
+		if complete {
+			blkInfo.Receipts = append(blkInfo.Receipts, receipt.ToPb())
+		}
+		blkInfo.ReceiptHash = append(blkInfo.ReceiptHash, common.Base58Encode(receipt.Hash()))
+	}
+	return blkInfo
 }
 
 // GetBlockByHash get block by block head hash
@@ -164,26 +218,7 @@ func (s *GRPCServer) GetBlockByHash(ctx context.Context, blkHashReq *BlockByHash
 	if blk == nil {
 		return nil, fmt.Errorf("cant find the block")
 	}
-	blkInfo := &BlockInfo{
-		Head:   blk.Head,
-		Hash:   blk.HeadHash(),
-		Txs:    make([]*tx.TxRaw, 0),
-		Txhash: make([][]byte, 0),
-	}
-	for _, trx := range blk.Txs {
-		if complete {
-			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
-		} else {
-			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
-		}
-	}
-	for _, receipt := range blk.Receipts {
-		if complete {
-			blkInfo.Receipts = append(blkInfo.Receipts, receipt.ToTxReceiptRaw())
-		} else {
-			blkInfo.ReceiptHash = append(blkInfo.ReceiptHash, receipt.Hash())
-		}
-	}
+	blkInfo := toBlockInfo(blk, complete)
 	return blkInfo, nil
 }
 
@@ -203,35 +238,77 @@ func (s *GRPCServer) GetBlockByNum(ctx context.Context, blkNumReq *BlockByNumReq
 	if blk == nil {
 		return nil, fmt.Errorf("cant find the block")
 	}
-	blkInfo := &BlockInfo{
-		Head:   blk.Head,
-		Hash:   blk.HeadHash(),
-		Txs:    make([]*tx.TxRaw, 0),
-		Txhash: make([][]byte, 0),
-	}
-	for _, trx := range blk.Txs {
-		if complete {
-			blkInfo.Txs = append(blkInfo.Txs, trx.ToTxRaw())
-		} else {
-			blkInfo.Txhash = append(blkInfo.Txhash, trx.Hash())
-		}
-	}
+	blkInfo := toBlockInfo(blk, complete)
 	return blkInfo, nil
 }
 
-// GetState get value from state db
-func (s *GRPCServer) GetState(ctx context.Context, key *GetStateReq) (*GetStateRes, error) {
+// GetContractStorage get contract storage from state db
+func (s *GRPCServer) GetContractStorage(ctx context.Context, req *GetContractStorageReq) (*GetContractStorageRes, error) {
+	if req == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	if req.ContractID == "" {
+		return nil, fmt.Errorf("contract id cannot be empty")
+	}
+	s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash()))
+	var value string
+	if req.Field == "" {
+		k := req.ContractID + database.Separator + req.Key
+		value = s.visitor.BasicHandler.Get(k)
+	} else {
+		k := req.ContractID + database.Separator + req.Key
+		value = s.visitor.MapHandler.MGet(k, req.Field)
+	}
+	data, err := json.Marshal(database.Unmarshal(value))
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal %v", value)
+	}
+	return &GetContractStorageRes{JsonStr: string(data)}, nil
+}
+
+// GetContract return a contract by contract id
+func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*GetContractRes, error) {
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
-	s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash()))
-	return &GetStateRes{
-		Value: s.visitor.BasicHandler.Get(key.Key),
-	}, nil
+	if key.ContractID == "" {
+		return nil, fmt.Errorf("argument cannot be empty string")
+	}
+	if !strings.HasPrefix(key.ContractID, "Contract") {
+		return nil, fmt.Errorf("Contract id should start with \"Contract\"")
+	}
+
+	txHashBytes := common.Base58Decode(key.ContractID[len("Contract"):])
+	trx, err := s.bchain.GetTx(txHashBytes)
+
+	if err != nil {
+		return nil, err
+	}
+	// assume only one 'SetCode' action
+	txActionName := trx.Actions[0].ActionName
+	if trx.Actions[0].Contract != "iost.system" || txActionName != "SetCode" && txActionName != "UpdateCode" {
+		return nil, fmt.Errorf("Not a SetCode or Update transaction")
+	}
+	js, err := simplejson.NewJson([]byte(trx.Actions[0].Data))
+	if err != nil {
+		return nil, err
+	}
+	contractStr, err := js.GetIndex(0).String()
+	if err != nil {
+		return nil, err
+	}
+	contract := &contract.Contract{}
+	err = contract.B64Decode(contractStr)
+	if err != nil {
+		return nil, err
+	}
+	return &GetContractRes{Value: contract}, nil
+	//return &GetContractRes{Value: s.visitor.Contract(key.Key)}, nil
+
 }
 
-// GetBalance get account balance
-func (s *GRPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBalanceRes, error) {
+// GetAccountInfo get account balance and gas etc
+func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*GetAccountRes, error) {
 	if key == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
@@ -240,68 +317,73 @@ func (s *GRPCServer) GetBalance(ctx context.Context, key *GetBalanceReq) (*GetBa
 	} else {
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
+	ram := &RAMInfo{}
+	ram.Available = s.visitor.TokenBalance("ram", key.ID)
+	balance := s.visitor.TokenBalanceFixed("iost", key.ID).ToString()
 
-	return &GetBalanceRes{
-		Balance: s.visitor.Balance(key.ID),
+	gas := &GASInfo{}
+	var h *host.Host
+	c := host.NewContext(nil)
+	h = host.NewHost(c, s.visitor, nil, nil)
+	h.Context().Set("contract_name", "iost.gas")
+	g := host.NewGasManager(h)
+	v, _ := g.CurrentTotalGas(key.ID, s.bc.LinkedRoot().Head.Time)
+	gas.CurrentTotal = v.ToString()
+	v, _ = g.GasRate(key.ID)
+	gas.IncreaseSpeed = v.ToString()
+	v, _ = g.GasLimit(key.ID)
+	gas.Limit = v.ToString()
+	v, _ = g.GasPledge(key.ID, key.ID)
+	gas.PledgedCoin = v.ToString()
+	return &GetAccountRes{
+		Balance: balance,
+		Gas:     gas,
+		Ram:     ram,
 	}, nil
 }
 
-// GetAddressByPubKey get address by public key
-func (s *GRPCServer) GetAddressByPubKey(ctx context.Context, addressReq *GetAddressReq) (*GetAddressRes, error) {
-	pubKeyStr := addressReq.PubKey
-	if len(pubKeyStr) == 0 {
-		return nil, fmt.Errorf("pubkey is nil")
-	}
-
-	pubKey := common.Base58Decode(pubKeyStr)
-	id := account.GetIDByPubkey(pubKey)
-	return &GetAddressRes{
-		Address: id,
-	}, nil
-}
-
-// GetNetID get net id
-func (s *GRPCServer) GetNetID(ctx context.Context, empty *empty.Empty) (*GetNetIDRes, error) {
-
-	return &GetNetIDRes{
-		ID: s.p2pService.ID(),
-	}, nil
-}
-
-// SendRawTx send transaction to blockchain
-func (s *GRPCServer) SendRawTx(ctx context.Context, rawTx *RawTxReq) (*SendRawTxRes, error) {
-	if rawTx == nil {
+// SendTx send transaction to blockchain
+func (s *GRPCServer) SendTx(ctx context.Context, txReq *TxReq) (*SendTxRes, error) {
+	if txReq == nil {
 		return nil, fmt.Errorf("argument cannot be nil pointer")
 	}
 	var trx tx.Tx
-	err := trx.Decode(rawTx.Data)
+	trx.FromPb(txReq.Tx)
+	err := s.txpool.AddTx(&trx)
 	if err != nil {
 		return nil, err
 	}
-	// add servi
-	//tx.RecordTx(trx, tx.Data.Self())
-	ret := s.txpool.AddTx(&trx)
-	switch ret {
-	case txpool.TimeError:
-		return nil, fmt.Errorf("tx err:%v", "TimeError")
-	case txpool.VerifyError:
-		return nil, fmt.Errorf("tx err:%v", "VerifyError")
-	case txpool.DupError:
-		return nil, fmt.Errorf("tx err:%v", "DupError")
-	case txpool.GasPriceError:
-		return nil, fmt.Errorf("tx err:%v", "GasPriceError")
-	case txpool.CacheFullError:
-		return nil, fmt.Errorf("tx err:%v", "CacheFullError")
-	default:
-	}
-	res := SendRawTxRes{}
-	res.Hash = string(trx.Hash())
+	res := SendTxRes{}
+	res.Hash = common.Base58Encode(trx.Hash())
 	return &res, nil
 }
 
-// EstimateGas estimate gas used by transaction
-func (s *GRPCServer) EstimateGas(ctx context.Context, rawTx *RawTxReq) (*GasRes, error) {
-	return nil, nil
+// ExecTx only exec the tx, but not put it onto chain
+func (s *GRPCServer) ExecTx(ctx context.Context, txReq *TxReq) (*ExecTxRes, error) {
+	if txReq == nil {
+		return nil, fmt.Errorf("argument cannot be nil pointer")
+	}
+	var trx tx.Tx
+	trx.FromPb(txReq.Tx)
+	_, head := s.txpool.TxIterator()
+	topBlock := head.Block
+	blk := block.Block{
+		Head: &block.BlockHead{
+			Version:    0,
+			ParentHash: topBlock.HeadHash(),
+			Number:     topBlock.Head.Number + 1,
+			Witness:    "",
+			Time:       time.Now().UnixNano(),
+		},
+		Txs:      []*tx.Tx{},
+		Receipts: []*tx.TxReceipt{},
+	}
+	v := verifier.Verifier{}
+	receipt, err := v.Try(blk.Head, s.forkDB, &trx, cverifier.TxExecTimeLimit)
+	if err != nil {
+		return nil, fmt.Errorf("exec tx failed: %v", err)
+	}
+	return &ExecTxRes{TxReceipt: receipt.ToPb()}, nil
 }
 
 // Subscribe used for event

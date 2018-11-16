@@ -21,8 +21,8 @@ import (
 
 	"strings"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
@@ -70,13 +70,13 @@ var signCmd = &cobra.Command{
 			return
 		}
 
-		acc, err := account.NewAccount(loadBytes(string(seckey)), getSignAlgo(signAlgo))
+		acc, err := account.NewKeyPair(loadBytes(string(seckey)), getSignAlgo(signAlgo))
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
 
-		sig, err := tx.SignTxContent(&mtx, acc)
+		sig, err := tx.SignTxContent(&mtx, "todo", acc) // TODO 修改iwallet
 		if err != nil {
 			fmt.Println(err.Error())
 			return

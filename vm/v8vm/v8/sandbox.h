@@ -16,6 +16,6 @@ typedef struct {
   std::unique_ptr<ThreadPool> threadPool;
 } Sandbox;
 
-extern ValueTuple Execution(SandboxPtr ptr, const char *code);
+extern ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime);
 
 #endif // IOST_V8_SANDBOX_H

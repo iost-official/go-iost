@@ -5,7 +5,7 @@ import (
 
 	"bytes"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
+	"github.com/iost-official/go-iost/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -13,11 +13,11 @@ func TestSignature(t *testing.T) {
 	Convey("Test of Signature", t, func() {
 		Convey("Encode and decode", func() {
 			//ac, _ := account.NewAccount(nil)
-			//sig, err := Sign(Secp256k1, Sha256([]byte("hello")), ac.Seckey)
+			//sig, err := Sign(Secp256k1, Sha3([]byte("hello")), ac.Seckey)
 			//So(err, ShouldBeNil)
 			//So(bytes.Equal(sig.Pubkey, ac.Pubkey), ShouldBeTrue)
-			info := common.Sha256([]byte("hello"))
-			seckey := common.Sha256([]byte("seckey"))
+			info := common.Sha3([]byte("hello"))
+			seckey := common.Sha3([]byte("seckey"))
 			pubkey := Secp256k1.GetPubkey(seckey)
 			sig := NewSignature(Secp256k1, info, seckey)
 			So(bytes.Equal(sig.Pubkey, pubkey), ShouldBeTrue)
@@ -42,9 +42,9 @@ func TestSign(t *testing.T) {
 	var pubkey []byte
 
 	Convey("Test of Crypto", t, func() {
-		Convey("Sha256", func() {
-			sha := "d4daf0546cb71d90688b45488a8fa000b0821ec14b73677b2fb7788739228c8b"
-			So(common.ToHex(common.Sha256(privkey)), ShouldEqual, sha)
+		Convey("Sha3", func() {
+			sha := "f420b28b56ce97e52adf4778a72b622c3e91115445026cf6e641459ec478dae8"
+			So(common.ToHex(common.Sha3(privkey)), ShouldEqual, sha)
 		})
 
 		Convey("Calculate public key", func() {
@@ -53,13 +53,8 @@ func TestSign(t *testing.T) {
 			So(common.ToHex(pubkey), ShouldEqual, pub)
 		})
 
-		Convey("Hash-160", func() {
-			hash := "9c1185a5c5e9fc54612808977ee8f548b2258d31"
-			So(common.ToHex(common.Hash160(Secp256k1.GetPubkey(privkey))), ShouldEqual, hash)
-		})
-
 		Convey("SignInSecp256k1 and verify", func() {
-			info := common.Sha256([]byte{1, 2, 3, 4})
+			info := common.Sha3([]byte{1, 2, 3, 4})
 			sig := Secp256k1.Sign(info, privkey)
 			So(Secp256k1.Verify(info, pubkey, sig), ShouldBeTrue)
 			So(Secp256k1.Verify(info, pubkey, []byte{5, 6, 7, 8}), ShouldBeFalse)

@@ -51,7 +51,7 @@ const (
 	SyncBlockRequest
 	SyncBlockResponse
 	SyncHeight
-	PublishTxRequest
+	PublishTx
 
 	UrgentMessage = 1
 	NormalMessage = 2
@@ -75,8 +75,8 @@ func (m MessageType) String() string {
 		return "SyncBlockResponse"
 	case SyncHeight:
 		return "SyncHeight"
-	case PublishTxRequest:
-		return "PublishTxRequest"
+	case PublishTx:
+		return "PublishTx"
 	case NewBlockHash:
 		return "NewBlockHash"
 	case NewBlockRequest:
@@ -153,8 +153,7 @@ func (m *p2pMessage) data() ([]byte, error) {
 }
 
 func (m *p2pMessage) needDedup() bool {
-	return m.messageType() == NewBlock ||
-		m.messageType() == PublishTxRequest || m.messageType() == NewBlockHash
+	return m.messageType() == PublishTx || m.messageType() == NewBlockHash
 }
 
 func newP2PMessage(chainID uint32, messageType MessageType, version uint16, reserved uint32, data []byte) *p2pMessage {

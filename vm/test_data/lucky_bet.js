@@ -1,4 +1,4 @@
-const maxUserNumber = 10;
+const maxUserNumber = 100;
 
 class Contract {
     init() {
@@ -16,16 +16,17 @@ class Contract {
     }
     bet(account, luckyNumber, coins, nonce) {
         if (coins < 1 || coins > 5) {
-            return "bet coins should be >=1 and <= 5"
+            console.log(coins);
+            throw "bet coins should be >=1 and <= 5"
         }
-        if (luckyNumber < 0 && luckyNumber > 9) {
-            return "bet coins should be >=1 and <= 5"
+        if (luckyNumber < 0 || luckyNumber > 9) {
+            throw "lucky number should be >=0 and <= 9"
         }
 
-        BlockChain.deposit(account, coins);
+        BlockChain.deposit(account, coins, "");
 
-        const userNumber = JSON.parse(storage.get("user_number"));
-        const totalCoins = JSON.parse(storage.get("total_coins"));
+        let userNumber = JSON.parse(storage.get("user_number"));
+        let totalCoins = JSON.parse(storage.get("total_coins"));
 
         let table = JSON.parse(storage.mapGet('table', luckyNumber.toString()));
 
@@ -33,7 +34,12 @@ class Contract {
 
         storage.mapPut('table', luckyNumber.toString(), JSON.stringify(table));
 
-        if (userNumber + 1 >= maxUserNumber) {
+        userNumber += 1
+        totalCoins += coins
+        storage.put("user_number", JSON.stringify(userNumber));
+        storage.put("total_coins", JSON.stringify(totalCoins));
+
+        if (userNumber >= maxUserNumber) {
             const bi = JSON.parse(BlockChain.blockInfo());
             const bn = bi.number;
             const ph = bi.parent_hash;
@@ -43,21 +49,17 @@ class Contract {
                 storage.put("last_lucky_block", JSON.stringify(bn));
                 const round = JSON.parse(storage.get("round"));
 
-                this.getReward(bn % 10, round);
+                this.getReward(bn % 10, round, bn, userNumber);
                 storage.put("user_number", JSON.stringify(0));
                 storage.put("total_coins", JSON.stringify(0));
                 this.clearUserValue();
 
                 storage.put("round", JSON.stringify(round + 1));
-                return
             }
         }
-
-        storage.put("user_number", JSON.stringify(userNumber + 1));
-        storage.put("total_coins", JSON.stringify(totalCoins + coins));
     }
 
-    getReward(ln, round) {
+    getReward(ln, round, height, total_number) {
         const y = new Int64(100);
         const x = new Int64(95);
 
@@ -78,8 +80,8 @@ class Contract {
         }
 
         let result = {
-            number: this.lastLuckyBlock,
-            user_number: this.userNumber,
+            number: height,
+            user_number: total_number,
             k_number: kNum,
             total_coins : tc,
             records : []
@@ -91,7 +93,7 @@ class Contract {
                 table = winTable;
                 table.forEach(function (record) {
                     const reward = (tc.multi(record.coins).div(totalVal));
-                    BlockChain.withdraw(record.account, reward);
+                    BlockChain.withdraw(record.account, reward, "");
                     record.reward = reward.toString();
                     result.records.push(record)
                 })

@@ -7,14 +7,17 @@ import (
 
 	"fmt"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/core/block"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
-	"github.com/iost-official/Go-IOS-Protocol/db"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/vm/database"
+	"time"
+
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
+	"io/ioutil"
 )
 
 func benchInit() (Engine, *database.Visitor) {
@@ -25,7 +28,7 @@ func benchInit() (Engine, *database.Visitor) {
 	}
 
 	vi := database.NewVisitor(0, mvccdb)
-	vi.SetBalance(testID[0], 1000000)
+	vi.SetTokenBalance("iost", testID[0], 1000000000000)
 	vi.SetContract(systemContract)
 	vi.Commit()
 
@@ -59,7 +62,7 @@ func BenchmarkNative_Transfer(b *testing.B) { // 21400 ns/op
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		e.Exec(trx)
+		e.Exec(trx, time.Second)
 	}
 	b.StopTimer()
 	cleanUp()
@@ -72,7 +75,7 @@ func BenchmarkNative_Transfer_LRU(b *testing.B) { // 15300 ns/op
 	}
 
 	vi := database.NewVisitor(100, mvccdb)
-	vi.SetBalance(testID[0], 1000000)
+	vi.SetTokenBalance("iost", testID[0], 1000000000000)
 	vi.SetContract(systemContract)
 	vi.Commit()
 
@@ -97,7 +100,7 @@ func BenchmarkNative_Transfer_LRU(b *testing.B) { // 15300 ns/op
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		e.Exec(trx)
+		e.Exec(trx, time.Second)
 	}
 	b.StopTimer()
 	cleanUp()
@@ -114,7 +117,7 @@ func BenchmarkNative_Receipt(b *testing.B) { // 138000 ns/op
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		e.Exec(trx)
+		e.Exec(trx, time.Second)
 	}
 	b.StopTimer()
 	cleanUp()
@@ -133,7 +136,7 @@ func BenchmarkNative_SetCode(b *testing.B) { // 3.03 ms/op
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		e.Exec(trx)
+		e.Exec(trx, time.Second)
 	}
 	b.StopTimer()
 	cleanUp()
@@ -143,7 +146,7 @@ func BenchmarkJS_Gas_Once(b *testing.B) { // 443 us/op
 	ilog.Stop()
 	js := NewJSTester(b)
 	defer js.Clear()
-	f, err := ReadFile("test_data/gas.js")
+	f, err := ioutil.ReadFile("test_data/gas.js")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -164,7 +167,7 @@ func BenchmarkJS_Gas_Once(b *testing.B) { // 443 us/op
 		//if i == 0 {
 		//	b.Log("gas is : ", r.GasUsage)
 		//}
-		r, err := js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2, time.Second)
 		if r.Status.Code != 0 || err != nil {
 			b.Fatal(r.Status.Message, err)
 		}
@@ -175,9 +178,9 @@ func BenchmarkJS_Gas_Once(b *testing.B) { // 443 us/op
 func BenchmarkJS_Gas_100(b *testing.B) { // 483 um/op
 	ilog.Stop()
 	js := NewJSTester(b)
-	js.vi.SetBalance(testID[0], 10000000000)
+	js.vi.SetTokenBalance("iost", testID[0], 10000000000)
 	defer js.Clear()
-	f, err := ReadFile("test_data/gas.js")
+	f, err := ioutil.ReadFile("test_data/gas.js")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -198,7 +201,7 @@ func BenchmarkJS_Gas_100(b *testing.B) { // 483 um/op
 		//if i == 0 {
 		//	b.Log("gas is : ", r.GasUsage)
 		//}
-		r, err := js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2, time.Second)
 		if r.Status.Code != 0 || err != nil {
 			b.Fatal(r.Status.Message, err)
 		}
@@ -209,9 +212,9 @@ func BenchmarkJS_Gas_100(b *testing.B) { // 483 um/op
 func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
 	ilog.Stop()
 	js := NewJSTester(b)
-	js.vi.SetBalance(testID[0], 10000000000)
+	js.vi.SetTokenBalance("iost", testID[0], 10000000000)
 	defer js.Clear()
-	f, err := ReadFile("test_data/gas.js")
+	f, err := ioutil.ReadFile("test_data/gas.js")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -232,7 +235,7 @@ func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
 		//if i == 0 {
 		//	b.Log("gas is : ", r.GasUsage)
 		//}
-		r, err := js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2, time.Second)
 		if r.Status.Code != 0 || err != nil {
 			b.Fatal(r.Status.Message, err)
 		}
@@ -244,7 +247,7 @@ func Benchmark_JS_Transfer(b *testing.B) {
 	ilog.Stop()
 	js := NewJSTester(b)
 	defer js.Clear()
-	f, err := ReadFile("test_data/transfer.js")
+	f, err := ioutil.ReadFile("test_data/transfer.js")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -252,11 +255,11 @@ func Benchmark_JS_Transfer(b *testing.B) {
 	js.SetAPI("transfer", "string", "string", "number")
 	js.DoSet()
 
-	js.vi.SetBalance(testID[0], 100000000)
+	js.vi.SetTokenBalance("iost", testID[0], 100000000)
 
 	act2 := tx.NewAction(js.cname, "transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], 100))
 
-	ac, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
+	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		panic(err)
 	}
@@ -268,7 +271,7 @@ func Benchmark_JS_Transfer(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r, err := js.e.Exec(trx2)
+		r, err := js.e.Exec(trx2, time.Second)
 		if r.Status.Code != 0 || err != nil {
 			b.Fatal(r.Status.Message, err)
 		}

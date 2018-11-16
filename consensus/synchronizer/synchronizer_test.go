@@ -5,34 +5,48 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	"github.com/golang/mock/gomock"
-	"github.com/iost-official/Go-IOS-Protocol/core/blockcache"
-	"github.com/iost-official/Go-IOS-Protocol/core/global"
-	"github.com/iost-official/Go-IOS-Protocol/p2p"
-	"github.com/iost-official/Go-IOS-Protocol/p2p/mocks"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/genesis"
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/p2p"
+	"github.com/iost-official/go-iost/p2p/mocks"
+	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestDownloadController(t *testing.T) {
 	Convey("Test DownloadController", t, func() {
-		var dHash string
-		var dPID p2p.PeerID
-		dc, err := NewDownloadController(func(hash string, peerID p2p.PeerID) {
-			dHash = hash
-			dPID = peerID
+		dHash := make(chan string, 10)
+		dPID := make(chan p2p.PeerID, 10)
+		dc, err := NewDownloadController()
+		go dc.FreePeerLoop(func(hash string, p interface{}) bool {
+			return false
 		})
-		dc.Start()
+		go dc.DownloadLoop(func(hash string, p interface{}, peerID interface{}) (bool, bool) {
+			dHash <- hash
+			dPID <- peerID.(p2p.PeerID)
+			return true, false
+		})
 		So(err, ShouldBeNil)
 		Convey("Check OnRecvHash", func() {
-			dc.OnRecvHash("111", "aaa")
-			time.Sleep(100 * time.Millisecond)
-			dc.OnRecvHash("222", "bbb")
-			time.Sleep(100 * time.Millisecond)
-			dc.OnRecvHash("222", "ccc")
-			//dc.OnRecvBlock("123", "abc")
-			time.Sleep(300 * time.Millisecond)
-			So(dHash, ShouldEqual, "222")
-			So(dPID, ShouldEqual, p2p.PeerID("bbb"))
+			dc.CreateMission("111", 10, "aaa")
+			dc.CreateMission("222", 10, "aaa")
+			var hash string
+			var PID p2p.PeerID
+			hash = <-dHash
+			PID = <-dPID
+			So(hash, ShouldEqual, "111")
+			So(PID, ShouldEqual, p2p.PeerID("aaa"))
+
+			hash = <-dHash
+			PID = <-dPID
+			So(hash, ShouldEqual, "222")
+			So(PID, ShouldEqual, p2p.PeerID("aaa"))
 		})
 		Convey("Stop DownloadLoop", func() {
 			dc.Stop()
@@ -41,13 +55,23 @@ func TestDownloadController(t *testing.T) {
 }
 
 func TestSynchronizer(t *testing.T) {
+	ilog.Stop()
 	Convey("Test Synchronizer", t, func() {
-		baseVariable, err := global.FakeNew()
+		baseVariable, err := global.New(&common.Config{
+			DB: &common.DBConfig{
+				LdbPath: "Fakedb/",
+			},
+		})
+		genesis.FakeBv(baseVariable)
+
 		So(err, ShouldBeNil)
 		So(baseVariable, ShouldNotBeNil)
 		defer func() {
 			os.RemoveAll("Fakedb")
 		}()
+
+		vi := database.NewVisitor(0, baseVariable.StateDB())
+		fmt.Println("synchronizer 65", vi.Get("iost.vote_producer-"+"pendingBlockNumber"))
 
 		blockCache, err := blockcache.NewBlockCache(baseVariable)
 		So(err, ShouldBeNil)
@@ -56,7 +80,7 @@ func TestSynchronizer(t *testing.T) {
 		channel := make(chan p2p.IncomingMessage, 1024)
 		mockP2PService.EXPECT().Register(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(channel).AnyTimes()
 		mockP2PService.EXPECT().Register(gomock.Any(), gomock.Any()).Return(channel)
-		mockP2PService.EXPECT().Broadcast(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(a interface{}, b interface{}, c interface{}) {
+		mockP2PService.EXPECT().Broadcast(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Do(func(a interface{}, b interface{}, c interface{}, d interface{}) {
 			channel <- *p2p.NewIncomingMessage("abc", a.([]byte), b.(p2p.MessageType))
 		}).AnyTimes()
 		sy, err := NewSynchronizer(baseVariable, blockCache, mockP2PService) //mock

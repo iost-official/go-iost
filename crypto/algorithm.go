@@ -1,7 +1,7 @@
 package crypto
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/crypto/backend"
+	"github.com/iost-official/go-iost/crypto/backend"
 )
 
 // AlgorithmBackend is the interface of algorithm backend
@@ -30,6 +30,30 @@ func (a Algorithm) getBackend() AlgorithmBackend {
 		return &backend.Ed25519{}
 	default:
 		return &backend.Secp256k1{}
+	}
+}
+
+// NewAlgorithm returns a new algorithm by name
+func NewAlgorithm(name string) Algorithm {
+	switch name {
+	case "secp256k1":
+		return Secp256k1
+	case "ed25519":
+		return Ed25519
+	default:
+		return Ed25519
+	}
+}
+
+// String return algorithm readable string
+func (a Algorithm) String() string {
+	switch a {
+	case Secp256k1:
+		return "secp256k1"
+	case Ed25519:
+		return "ed25519"
+	default:
+		return "secp256k1"
 	}
 }
 

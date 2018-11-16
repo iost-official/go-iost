@@ -3,14 +3,14 @@ package pob
 import (
 	"testing"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
+	"github.com/iost-official/go-iost/account"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestGlobalStaticProperty(t *testing.T) {
 	Convey("Test of witness lists of static property", t, func() {
 		prop := newStaticProperty(
-			&account.Account{
+			&account.KeyPair{
 				ID:     "id0",
 				Pubkey: []byte{},
 				Seckey: []byte{},

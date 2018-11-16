@@ -1,8 +1,8 @@
 package kv
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/db/kv/leveldb"
-	"github.com/iost-official/Go-IOS-Protocol/db/kv/rocksdb"
+	"github.com/iost-official/go-iost/db/kv/leveldb"
+	"github.com/iost-official/go-iost/db/kv/rocksdb"
 )
 
 // StorageType is the type of storage, include leveldb and rocksdb
@@ -25,6 +25,7 @@ type StorageBackend interface {
 	BeginBatch() error
 	CommitBatch() error
 	Close() error
+	NewIteratorByPrefix(prefix []byte) interface{}
 }
 
 // Storage is a kv database
@@ -54,4 +55,26 @@ func NewStorage(path string, t StorageType) (*Storage, error) {
 		}
 		return &Storage{StorageBackend: sb}, nil
 	}
+}
+
+// NewIteratorByPrefix returns a new iterator by prefix
+func (s *Storage) NewIteratorByPrefix(prefix []byte) *Iterator {
+	ib := s.StorageBackend.NewIteratorByPrefix(prefix).(IteratorBackend)
+	return &Iterator{
+		IteratorBackend: ib,
+	}
+}
+
+// IteratorBackend is the storage iterator backend
+type IteratorBackend interface {
+	Next() bool
+	Key() []byte
+	Value() []byte
+	Error() error
+	Release()
+}
+
+// Iterator is the storage iterator
+type Iterator struct {
+	IteratorBackend
 }

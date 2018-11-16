@@ -14,8 +14,8 @@ var (
 	// IP6Loopback is the ip6 loopback multiaddr
 	IP6Loopback = ma.StringCast("/ip6/::1")
 
-	// IP6LinkLocalLoopback is the ip6 link-local loopback multiaddr
-	IP6LinkLocalLoopback = ma.StringCast("/ip6/fe80::1")
+	// IP4MappedIP6Loopback is the IPv4 Mapped IPv6 loopback address.
+	IP4MappedIP6Loopback = ma.StringCast("/ip6/::ffff:127.0.0.1")
 )
 
 // Unspecified Addresses (used for )
@@ -28,8 +28,8 @@ var (
 // following byte sequences is considered a loopback multiaddr.
 var loopbackPrefixes = [][]byte{
 	{ma.P_IP4, 127}, // 127.*
-	IP6LinkLocalLoopback.Bytes(),
-	IP6Loopback.Bytes(),
+	{ma.P_IP6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 127}, // ::ffff:127.*
+	IP6Loopback.Bytes(), // ::1
 }
 
 // IsThinWaist returns whether a Multiaddr starts with "Thin Waist" Protocols.
@@ -60,7 +60,7 @@ func IsThinWaist(m ma.Multiaddr) bool {
 }
 
 // IsIPLoopback returns whether a Multiaddr is a "Loopback" IP address
-// This means either /ip4/127.*.*.*, /ip6/::1, or /ip6/fe80::1
+// This means either /ip4/127.*.*.*, /ip6/::1, or /ip6/::ffff:127.*.*.*.*
 func IsIPLoopback(m ma.Multiaddr) bool {
 	b := m.Bytes()
 	for _, prefix := range loopbackPrefixes {

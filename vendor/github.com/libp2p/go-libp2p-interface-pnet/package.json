@@ -7,19 +7,12 @@
   "gx": {
     "dvcsimport": "github.com/libp2p/go-libp2p-interface-pnet"
   },
-  "gxDependencies": [
-    {
-      "author": "whyrusleeping",
-      "hash": "QmPUHzTLPZFYqv8WqcBTuMFYTgeom4uHHEaxzk7bd5GYZB",
-      "name": "go-libp2p-transport",
-      "version": "2.2.14"
-    }
-  ],
+  "gxDependencies": [],
   "gxVersion": "0.9.1",
   "language": "go",
   "license": "MIT",
   "name": "go-libp2p-interface-pnet",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "2.1.7"
+  "version": "3.0.0"
 }
 

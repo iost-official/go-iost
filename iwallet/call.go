@@ -16,23 +16,58 @@ package iwallet
 
 import (
 	"fmt"
+	"math"
 	"os"
+	"strings"
 	"time"
 
-	"github.com/iost-official/Go-IOS-Protocol/account"
-	"github.com/iost-official/Go-IOS-Protocol/core/tx"
+	"github.com/bitly/go-simplejson"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 )
+
+var checkResult bool
+var checkResultDelay float32
+var checkResultMaxRetry int32
+
+func checkTransaction(txHash string) bool {
+	// It may be better to to create a grpc client and reuse it. TODO later
+	for i := int32(0); i < checkResultMaxRetry; i++ {
+		time.Sleep(time.Duration(checkResultDelay*1000) * time.Millisecond)
+		txReceipt, err := getTxReceiptByTxHash(server, txHash)
+		if err != nil {
+			fmt.Println("result not ready, please wait. Details: ", err)
+			continue
+		}
+		if txReceipt == nil {
+			fmt.Println("result not ready, please wait.")
+			continue
+		}
+		if tx.StatusCode(txReceipt.Status.Code) != tx.Success {
+			fmt.Println("exec tx failed: ", txReceipt.Status.Message)
+			fmt.Println("full error information: ", txReceipt)
+		} else {
+			fmt.Println("exec tx done. ", txReceipt.String())
+			return true
+		}
+		break
+	}
+	return false
+}
 
 // callCmd represents the compile command
 var callCmd = &cobra.Command{
 	Use:   "call",
 	Short: "Call a method in some contract",
 	Long: `Call a method in some contract
-			the format of this command is:iwallet call contract_name0 function_name0 parameters0 contract_name1 function_name1 parameters1 ...
-			(you can call more than one function in this command)
-			the parameters is a string whose format is: ["arg0","arg1",...]
+	the format of this command is:iwallet call contract_name0 function_name0 parameters0 contract_name1 function_name1 parameters1 ...
+	(you can call more than one function in this command)
+	the parameters is a string whose format is: ["arg0","arg1",...]
+	example:./iwallet call -e 100 -l 10000 -p 1 "iost.system" "Transfer" '["IOST2g5LzaXkjAwpxCnCm29HK69wdbyRKbfG4BQQT7Yuqk57bgTFkY", "IOST25p7hEUu25YKEc8X9F8A7wXFJnMoWZtVVPVojM9LcCp2UEMhvg", 100]' -k ~/.iwallet/root_ed25519
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		argc := len(args)
@@ -42,36 +77,58 @@ var callCmd = &cobra.Command{
 		}
 		var actions []*tx.Action = make([]*tx.Action, argc/3)
 		for i := 0; i < len(args); i += 3 {
+			// fixme use IOST as Measure Unit in iost.system Transfer, 1 IOST = 1e8
+			if args[i] == "iost.system" && args[i+1] == "Transfer" {
+				data, err := handleTransferData(args[i+2])
+				if err != nil {
+					fmt.Println("parse transfer amount failed. ", err)
+					return
+				}
+				args[i+2] = data
+			}
 			act := tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
-			actions[i] = &act
+			actions[i] = act
 		}
-		pubkeys := make([][]byte, len(signers))
-		for i, pubkey := range signers {
-			pubkeys[i] = loadBytes(pubkey)
+		pubkeys := make([]string, len(signers))
+		for i, accID := range signers {
+			pubkeys[i] = accID
 		}
-		trx := tx.NewTx(actions, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano())
+		trx := tx.NewTx(actions, pubkeys, gasLimit, gasPrice, time.Now().Add(time.Second*time.Duration(expiration)).UnixNano(), delaySecond)
 		if len(signers) == 0 {
 			fmt.Println("you don't indicate any signers,so this tx will be sent to the iostNode directly")
+			fmt.Println("please ensure that the right secret key file path is given by parameter -k,or the secret key file path is ~/.iwallet/id_ed25519 by default,this file indicate the secret key to sign the tx")
+			if accountName == "" {
+				panic("you must provide account name")
+			}
+			home, err := homedir.Dir()
+			if err != nil {
+				panic(err)
+			}
+			kpPath := fmt.Sprintf("%s/.iwallet/%s_ed25519", home, accountName)
 			fsk, err := readFile(kpPath)
 			if err != nil {
 				fmt.Println("Read file failed: ", err.Error())
 				return
 			}
 
-			acc, err := account.NewAccount(loadBytes(string(fsk)), getSignAlgo(signAlgo))
+			keyPair, err := account.NewKeyPair(loadBytes(string(fsk)), getSignAlgo(signAlgo))
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
-			stx, err := tx.SignTx(trx, acc)
-			var txHash []byte
+			ilog.Infof("sendTx %v", trx)
+			stx, err := tx.SignTx(trx, accountName, []*account.KeyPair{keyPair})
+			var txHash string
 			txHash, err = sendTx(stx)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
-			fmt.Println("ok")
-			fmt.Println(saveBytes(txHash))
+			fmt.Println("iost node:receive your tx!")
+			fmt.Println("the transaction hash is:", txHash)
+			if checkResult {
+				checkTransaction(txHash)
+			}
 			return
 		}
 
@@ -83,7 +140,12 @@ var callCmd = &cobra.Command{
 		err := saveTo(dest, bytes)
 		if err != nil {
 			fmt.Println(err.Error())
+			return
 		}
+		fmt.Printf("the unsigned tx has been saved to %s\n", dest)
+		fmt.Println("the account IDs of the signers are:", signers)
+		fmt.Println("please inform them to sign this contract with the command 'iwallet sign' and send the generated signatures to you.by this step they give you the authorization,or this tx will fail to pass through the iost vm")
+
 	},
 }
 
@@ -96,13 +158,13 @@ func init() {
 		os.Exit(1)
 	}
 
-	callCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 1000, "gasLimit for a transaction")
-	callCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 1, "gasPrice for a transaction")
-	callCmd.Flags().Int64VarP(&expiration, "expiration", "", 0, "expiration timestamp for a transaction")
-	callCmd.Flags().StringSliceVarP(&signers, "signers", "", []string{}, "signers who should sign this transaction")
+	callCmd.Flags().StringVarP(&accountName, "account", "", "", "which account to use")
+	callCmd.Flags().Int64VarP(&gasLimit, "gaslimit", "l", 10000, "gasLimit for a transaction")
+	callCmd.Flags().Int64VarP(&gasPrice, "gasprice", "p", 100, "gasPrice for a transaction")
+	callCmd.Flags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
+	callCmd.Flags().StringSliceVarP(&signers, "signers", "n", []string{}, "signers who should sign this transaction")
 	callCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
 	callCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
-
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
@@ -111,5 +173,32 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// compi leCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// compileCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func handleTransferData(data string) (string, error) {
+	if strings.HasSuffix(data, ",]") {
+		data = data[:len(data)-2] + "]"
+	}
+	js, err := simplejson.NewJson([]byte(data))
+	if err != nil {
+		return "", fmt.Errorf("error in data: %v", err)
+	}
+
+	arr, err := js.Array()
+	if err != nil {
+		ilog.Error(js.EncodePretty())
+		return "", err
+	}
+
+	if len(arr) != 3 {
+		return "", fmt.Errorf("transfer need 3 arguments, got %v", len(arr))
+	}
+	if amount, err := js.GetIndex(2).Float64(); err == nil {
+		if amount*1e8 > math.MaxInt64 {
+			return "", fmt.Errorf("you can transfer more than %f iost", math.MaxInt64/1e8)
+		}
+		data = fmt.Sprintf(`["%v", "%v", %d]`, js.GetIndex(0).MustString(), js.GetIndex(1).MustString(), int64(amount*1e8))
+	}
+	return data, nil
 }

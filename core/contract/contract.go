@@ -3,7 +3,10 @@ package contract
 import (
 	"encoding/base64"
 
+	"encoding/json"
 	"github.com/gogo/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
+	"io/ioutil"
 )
 
 //go:generate protoc --gofast_out=. contract.proto
@@ -20,12 +23,18 @@ const (
 	ContractPay
 )
 
+// FixedAmount the limit amount of token used by contract
+type FixedAmount struct {
+	Token string
+	Val   *common.Fixed
+}
+
 //type ContractInfo struct {
 //	Name     string
 //	Lang     string
 //	Version  VersionCode
 //	Payment  PaymentCode
-//	Limit    *Cost
+//	Limit    Cost
 //	GasPrice uint64
 //}
 //
@@ -82,10 +91,37 @@ func DecodeContract(str string) *Contract {
 
 // ABI get abi from contract with specific name
 func (c *Contract) ABI(name string) *ABI {
-	for _, a := range c.Info.Abis {
+	for _, a := range c.Info.Abi {
 		if a.Name == name {
 			return a
 		}
 	}
 	return nil
+}
+
+// Compile read src and abi file, generate contract structure
+func Compile(id, src, abi string) (*Contract, error) {
+	bs, err := ioutil.ReadFile(src)
+	if err != nil {
+		return nil, err
+	}
+	code := string(bs)
+
+	as, err := ioutil.ReadFile(abi)
+	if err != nil {
+		return nil, err
+	}
+
+	var info Info
+	err = json.Unmarshal(as, &info)
+	if err != nil {
+		return nil, err
+	}
+	c := Contract{
+		ID:   id,
+		Info: &info,
+		Code: code,
+	}
+
+	return &c, nil
 }

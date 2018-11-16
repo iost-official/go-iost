@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/p2p"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/p2p"
 )
 
 func init() {
@@ -30,7 +30,7 @@ func main() {
 		ChainID: 111,
 	}
 	if *seed == "" {
-		*seed = "/ip4/47.75.42.25/tcp/3389/ipfs/12D3KooWE9Y2AJvjY7NN2htfTtjVtjRCikaU9CYV9gQ8zAAAwvs4"
+		*seed = "/ip4/47.75.42.25/tcp/3389/ipfs/12D3KooWScGKxdJwgtSU6ShUaiS4nuad73z7wUbUcHEUVQNzomhg"
 	}
 	config.SeedNodes = []string{*seed}
 	if *port <= 0 {

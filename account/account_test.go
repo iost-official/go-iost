@@ -9,32 +9,32 @@ import (
 
 	"strings"
 
-	. "github.com/iost-official/Go-IOS-Protocol/common"
-	"github.com/iost-official/Go-IOS-Protocol/crypto"
+	. "github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestMember(t *testing.T) {
-	Convey("Test of Account", t, func() {
-		m, err := NewAccount(nil, crypto.Secp256k1)
+	Convey("Test of KeyPair", t, func() {
+		m, err := NewKeyPair(nil, crypto.Secp256k1)
 		Convey("New member: ", func() {
 			So(err, ShouldBeNil)
 			So(len(m.Pubkey), ShouldEqual, 33)
 			So(len(m.Seckey), ShouldEqual, 32)
-			So(len(m.ID), ShouldEqual, len(GetIDByPubkey(m.Pubkey)))
+			//So(len(m.ID), ShouldEqual, len(GetIDByPubkey(m.Pubkey)))
 		})
 
 		Convey("sign and verify: ", func() {
 			info := []byte("hello world")
-			sig := crypto.Secp256k1.Sign(Sha256(info), m.Seckey)
-			So(crypto.Secp256k1.Verify(Sha256(info), m.Pubkey, sig), ShouldBeTrue)
+			sig := crypto.Secp256k1.Sign(Sha3(info), m.Seckey)
+			So(crypto.Secp256k1.Verify(Sha3(info), m.Pubkey, sig), ShouldBeTrue)
 
-			sig2 := m.Sign(Sha256(info))
+			sig2 := m.Sign(Sha3(info))
 			So(bytes.Equal(sig2.Pubkey, m.Pubkey), ShouldBeTrue)
 
 		})
 		Convey("sec to pub", func() {
-			m, err := NewAccount(Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4"), crypto.Secp256k1)
+			m, err := NewKeyPair(Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4"), crypto.Secp256k1)
 			So(err, ShouldBeNil)
 			fmt.Println(Base58Encode(m.Pubkey))
 		})

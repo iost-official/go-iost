@@ -1,69 +1,177 @@
 package swarm
 
 import (
+	"fmt"
+	"io"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	inet "github.com/libp2p/go-libp2p-net"
 	protocol "github.com/libp2p/go-libp2p-protocol"
-	ps "github.com/libp2p/go-peerstream"
+	smux "github.com/libp2p/go-stream-muxer"
 )
 
-// Stream is a wrapper around a ps.Stream that exposes a way to get
-// our Conn and Swarm (instead of just the ps.Conn and ps.Swarm)
-type Stream ps.Stream
+type streamState int
 
-// Stream returns the underlying peerstream.Stream
-func (s *Stream) Stream() *ps.Stream {
-	return (*ps.Stream)(s)
+const (
+	streamOpen streamState = iota
+	streamCloseRead
+	streamCloseWrite
+	streamCloseBoth
+	streamReset
+)
+
+// Validate Stream conforms to the go-libp2p-net Stream interface
+var _ inet.Stream = &Stream{}
+
+// Stream is the stream type used by swarm. In general, you won't use this type
+// directly.
+type Stream struct {
+	stream smux.Stream
+	conn   *Conn
+
+	state struct {
+		sync.Mutex
+		v streamState
+	}
+
+	notifyLk sync.Mutex
+
+	protocol atomic.Value
+
+	stat inet.Stat
 }
 
-// Conn returns the Conn associated with this Stream, as an inet.Conn
+func (s *Stream) String() string {
+	return fmt.Sprintf(
+		"<swarm.Stream[%s] %s (%s) <-> %s (%s)>",
+		s.conn.conn.Transport(),
+		s.conn.LocalMultiaddr(),
+		s.conn.LocalPeer(),
+		s.conn.RemoteMultiaddr(),
+		s.conn.RemotePeer(),
+	)
+}
+
+// Conn returns the Conn associated with this stream, as an inet.Conn
 func (s *Stream) Conn() inet.Conn {
-	return s.SwarmConn()
-}
-
-// SwarmConn returns the Conn associated with this Stream, as a *Conn
-func (s *Stream) SwarmConn() *Conn {
-	return (*Conn)(s.Stream().Conn())
+	return s.conn
 }
 
 // Read reads bytes from a stream.
-func (s *Stream) Read(p []byte) (n int, err error) {
-	return s.Stream().Read(p)
+func (s *Stream) Read(p []byte) (int, error) {
+	n, err := s.stream.Read(p)
+	// TODO: push this down to a lower level for better accuracy.
+	if s.conn.swarm.bwc != nil {
+		s.conn.swarm.bwc.LogRecvMessage(int64(n))
+		s.conn.swarm.bwc.LogRecvMessageStream(int64(n), s.Protocol(), s.Conn().RemotePeer())
+	}
+	// If we observe an EOF, this stream is now closed for reading.
+	// If we're already closed for writing, this stream is now fully closed.
+	if err == io.EOF {
+		s.state.Lock()
+		switch s.state.v {
+		case streamCloseWrite:
+			s.state.v = streamCloseBoth
+			s.remove()
+		case streamOpen:
+			s.state.v = streamCloseRead
+		}
+		s.state.Unlock()
+	}
+	return n, err
 }
 
 // Write writes bytes to a stream, flushing for each call.
-func (s *Stream) Write(p []byte) (n int, err error) {
-	return s.Stream().Write(p)
+func (s *Stream) Write(p []byte) (int, error) {
+	n, err := s.stream.Write(p)
+	// TODO: push this down to a lower level for better accuracy.
+	if s.conn.swarm.bwc != nil {
+		s.conn.swarm.bwc.LogSentMessage(int64(n))
+		s.conn.swarm.bwc.LogSentMessageStream(int64(n), s.Protocol(), s.Conn().RemotePeer())
+	}
+	return n, err
 }
 
 // Close closes the stream, indicating this side is finished
 // with the stream.
 func (s *Stream) Close() error {
-	return s.Stream().Close()
+	err := s.stream.Close()
+
+	s.state.Lock()
+	switch s.state.v {
+	case streamCloseRead:
+		s.state.v = streamCloseBoth
+		s.remove()
+	case streamOpen:
+		s.state.v = streamCloseWrite
+	}
+	s.state.Unlock()
+	return err
 }
 
 // Reset resets the stream, closing both ends.
 func (s *Stream) Reset() error {
-	return s.Stream().Reset()
+	err := s.stream.Reset()
+	s.state.Lock()
+	switch s.state.v {
+	case streamOpen, streamCloseRead, streamCloseWrite:
+		s.state.v = streamReset
+		s.remove()
+	}
+	s.state.Unlock()
+	return err
 }
 
+func (s *Stream) remove() {
+	s.conn.removeStream(s)
+
+	// We *must* do this in a goroutine. This can be called during a
+	// an open notification and will block until that notification is done.
+	go func() {
+		s.notifyLk.Lock()
+		defer s.notifyLk.Unlock()
+
+		s.conn.swarm.notifyAll(func(f inet.Notifiee) {
+			f.ClosedStream(s.conn.swarm, s)
+		})
+		s.conn.swarm.refs.Done()
+	}()
+}
+
+// Protocol returns the protocol negotiated on this stream (if set).
 func (s *Stream) Protocol() protocol.ID {
-	return (*ps.Stream)(s).Protocol()
+	// Ignore type error. It means that the protocol is unset.
+	p, _ := s.protocol.Load().(protocol.ID)
+	return p
 }
 
+// SetProtocol sets the protocol for this stream.
+//
+// This doesn't actually *do* anything other than record the fact that we're
+// speaking the given protocol over this stream. It's still up to the user to
+// negotiate the protocol. This is usually done by the Host.
 func (s *Stream) SetProtocol(p protocol.ID) {
-	(*ps.Stream)(s).SetProtocol(p)
+	s.protocol.Store(p)
 }
 
+// SetDeadline sets the read and write deadlines for this stream.
 func (s *Stream) SetDeadline(t time.Time) error {
-	return s.Stream().SetDeadline(t)
+	return s.stream.SetDeadline(t)
 }
 
+// SetReadDeadline sets the read deadline for this stream.
 func (s *Stream) SetReadDeadline(t time.Time) error {
-	return s.Stream().SetReadDeadline(t)
+	return s.stream.SetReadDeadline(t)
 }
 
+// SetWriteDeadline sets the write deadline for this stream.
 func (s *Stream) SetWriteDeadline(t time.Time) error {
-	return s.Stream().SetWriteDeadline(t)
+	return s.stream.SetWriteDeadline(t)
+}
+
+// Stat returns metadata information for this stream.
+func (s *Stream) Stat() inet.Stat {
+	return s.stat
 }

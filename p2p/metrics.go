@@ -1,6 +1,6 @@
 package p2p
 
-import "github.com/iost-official/Go-IOS-Protocol/metrics"
+import "github.com/iost-official/go-iost/metrics"
 
 var (
 	neighborCountGauge = metrics.NewGauge("iost_p2p_neighbor_count", nil)

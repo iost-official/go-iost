@@ -4,16 +4,17 @@ import (
 	"errors"
 
 	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
-var domainABIs map[string]*abi
+// DomainABIs list of domain abi
+var DomainABIs map[string]*abi
 
 func init() {
-	domainABIs = make(map[string]*abi)
-	register(&domainABIs, link)
-	register(&domainABIs, transferURL)
+	DomainABIs = make(map[string]*abi)
+	register(DomainABIs, link)
+	register(DomainABIs, transferURL)
 
 }
 
@@ -21,7 +22,7 @@ var (
 	link = &abi{
 		name: "Link",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			url := args[0].(string)
 			cid := args[1].(string)
@@ -35,18 +36,18 @@ var (
 
 			applicant := tij.Get("publisher").MustString()
 
-			owner := h.DHCP.URLOwner(url)
+			owner := h.DNS.URLOwner(url)
 
 			if owner != "" && owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant)
+			ok, c := h.RequireAuth(applicant, "domain.iost")
 			cost.AddAssign(c)
 
 			if !ok {
-				return nil, cost, errors.New("no privilege of claimed url")
+				return nil, cost, errors.New("no permission of claimed url")
 			}
 
 			h.WriteLink(url, cid, applicant)
@@ -60,7 +61,7 @@ var (
 	transferURL = &abi{
 		name: "Transfer",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			url := args[0].(string)
 			to := args[1].(string)
@@ -74,18 +75,18 @@ var (
 
 			applicant := tij.Get("publisher").MustString()
 
-			owner := h.DHCP.URLOwner(url)
+			owner := h.DNS.URLOwner(url)
 
 			if owner != "" && owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant)
+			ok, c := h.RequireAuth(applicant, "domain.iost")
 			cost.AddAssign(c)
 
 			if !ok {
-				return nil, cost, errors.New("no privilege of claimed url")
+				return nil, cost, errors.New("no permission of claimed url")
 			}
 
 			h.URLTransfer(url, to)

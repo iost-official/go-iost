@@ -8,14 +8,11 @@ func TestCodec(t *testing.T) {
 	c := Contract{
 		Code: "codes",
 		Info: &Info{
-			Lang:        "javascript",
-			VersionCode: "1.0.0",
-			Abis: []*ABI{
+			Lang:    "javascript",
+			Version: "1.0.0",
+			Abi: []*ABI{
 				{
-					Name:     "abi1",
-					Payment:  0,
-					GasPrice: int64(100),
-					Limit:    NewCost(100, 100, 100),
+					Name: "abi1",
 				},
 			},
 		},

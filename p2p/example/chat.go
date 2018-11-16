@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/iost-official/Go-IOS-Protocol/ilog"
-	"github.com/iost-official/Go-IOS-Protocol/p2p"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/p2p"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -30,7 +30,7 @@ type message struct {
 func newMessage(content string, from string) *message {
 	id, _ := uuid.NewV4()
 	return &message{
-		ID:      string(id.Bytes()),
+		ID:      id.String(),
 		Content: content,
 		From:    from,
 	}
@@ -93,7 +93,7 @@ func (ct *Chatter) handleMsgLoop() {
 			// ct.reprint()
 			ct.printPrompt()
 			ct.record(m.ID)
-			ct.p2pService.Broadcast(msg.Data(), chatData, p2p.UrgentMessage)
+			ct.p2pService.Broadcast(msg.Data(), chatData, p2p.UrgentMessage, true)
 		}
 	}
 }
@@ -110,6 +110,9 @@ func (ct *Chatter) readLoop() {
 		if sendData[len(sendData)-1] == '\n' {
 			sendData = sendData[0 : len(sendData)-1]
 		}
+		if len(sendData) == 0 {
+			continue
+		}
 		msg := newMessage(sendData, ct.p2pService.ID())
 		bytes, err := json.Marshal(msg)
 		if err != nil {
@@ -117,7 +120,7 @@ func (ct *Chatter) readLoop() {
 			continue
 		}
 		ct.record(msg.ID)
-		ct.p2pService.Broadcast(bytes, chatData, p2p.UrgentMessage)
+		ct.p2pService.Broadcast(bytes, chatData, p2p.UrgentMessage, true)
 		author := shortID(ct.p2pService.ID()) + ":"
 		ct.clearLastLine(1)
 		fmt.Println(color(author, yellow), color(sendData, blue))

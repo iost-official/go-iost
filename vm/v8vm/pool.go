@@ -1,14 +1,16 @@
 package v8
 
 import (
-	"github.com/iost-official/Go-IOS-Protocol/core/contract"
-	"github.com/iost-official/Go-IOS-Protocol/vm/host"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 type vmPoolType int
 
 const (
-	CompileVMPool vmPoolType = iota // vm pool with compiled startup data
+	// CompileVMPool maintains a pool of compile vm instance
+	CompileVMPool vmPoolType = iota
+	// RunVMPool maintains a pool of run vm instance
 	RunVMPool
 )
 
@@ -69,7 +71,7 @@ func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 }
 
 // LoadAndCall load compiled Javascript code and run code with specified api and args
-func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 	vm := vmp.getRunVM()
 	defer func() {
 		go vm.recycle()

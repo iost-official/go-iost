@@ -11,14 +11,14 @@ import (
 
 	"runtime/pprof"
 
-	"github.com/iost-official/Go-IOS-Protocol/db"
+	"github.com/iost-official/go-iost/db"
 )
 
 func watchTimeout(t *testing.T, f func()) {
 	ta := time.Now()
 	f()
 	tb := time.Now().Sub(ta)
-	if tb > time.Millisecond {
+	if tb > 2*time.Millisecond {
 		t.Error("time overflow")
 	}
 }
@@ -46,7 +46,6 @@ func TestString(t *testing.T) {
 }
 
 func TestMap(t *testing.T) {
-	t.Skip() // todo repair db put time or find out why
 	d, err := db.NewMVCCDB("mvcc")
 	if err != nil {
 		t.Fatal(err)
