@@ -188,6 +188,20 @@ class VoteContract {
         this._mapPut("producerTable", account, pro);
     }
 
+    GetProducer(account) {
+        if (!storage.mapHas("producerTable", account)) {
+            throw new Error("producer not exists");
+        }
+        const pro = this._mapGet("producerTable", account);
+        const voteId = this._getVoteId();
+        const voteInfo = this._call("iost.vote", "GetOption", [
+            voteId,
+            account
+        ]);
+        pro["voteInfo"] = voteInfo;
+        return pro;
+    }
+
     // producer log in as online state
     LogInProducer(account) {
         this._requireAuth(account, producerPermission);
@@ -271,6 +285,14 @@ class VoteContract {
             voter,
             producer,
             amount,
+        ]);
+    }
+
+    GetVote(voter) {
+        const voteId = this._getVoteId();
+        return this._call("iost.vote", "GetVote", [
+            voteId,
+            voter
         ]);
     }
 

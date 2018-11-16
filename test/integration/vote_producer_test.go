@@ -195,6 +195,16 @@ func Test_Vote1(t *testing.T) {
 			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp7.ID, kp.ID, "215000000"), kp.ID, kp)
 			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp8.ID, kp.ID, "220000000"), kp.ID, kp)
 
+			r, err = s.Call("iost.vote_producer", "GetProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Returns[0], ShouldEqual, `["{\"pubkey\":\"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9\",\"loc\":\"loc\",\"url\":\"url\",\"netId\":\"netId\",\"online\":true,\"registerFee\":\"200000000\",\"score\":\"0\",\"voteInfo\":{\"votes\":\"300000000\",\"deleted\":false,\"clearTime\":-1}}"]`)
+
+			r, err = s.Call("iost.vote_producer", "GetVote", fmt.Sprintf(`["%v"]`, kp.ID), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Returns[0], ShouldEqual, `["[{\"option\":\"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9\",\"votes\":\"100000000\",\"voteTime\":1,\"clearedVotes\":\"0\"},{\"option\":\"IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB\",\"votes\":\"215000000\",\"voteTime\":1,\"clearedVotes\":\"0\"},{\"option\":\"IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9\",\"votes\":\"220000000\",\"voteTime\":1,\"clearedVotes\":\"0\"}]"]`)
+
 			// do stat
 			s.Head.Number = 200
 			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
