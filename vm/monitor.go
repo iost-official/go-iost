@@ -79,9 +79,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		}
 	}
 	// check amount limit
-	authList := map[string]int{}
-	if h.Context().Value("auth_list") != nil {
-		authList = h.Context().Value("auth_list").(map[string]int)
+	signerList := map[string]int{}
+	if h.Context().Value("signer_list") != nil {
+		signerList = h.Context().Value("signer_list").(map[string]int)
 	}
 	amountLimit := abi.AmountLimit
 	if amountLimit == nil {
@@ -97,7 +97,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 
 	// only check amount limit when executing action, not system call
 	if h.Context().Value("stack_height") == 1 {
-		cost0 := host.CommonOpCost(len(authList) * len(amountLimit))
+		cost0 := host.CommonOpCost(len(signerList) * len(amountLimit))
 		cost.AddAssign(cost0)
 		for _, limit := range amountLimit {
 			decimal := h.DB().Decimal(limit.Token)
@@ -113,7 +113,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
 			}
 		}
-		for acc := range authList {
+		for acc := range signerList {
 			beforeBalance[acc] = []int64{}
 			for _, limit := range fixedAmountLimit {
 				beforeBalance[acc] = append(beforeBalance[acc], h.DB().TokenBalance(limit.Token, acc))
@@ -142,7 +142,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 
 	// check amount limit
 	if h.Context().Value("stack_height") == 1 {
-		for acc := range authList {
+		for acc := range signerList {
 			for i, limit := range fixedAmountLimit {
 				afterBalance := h.DB().TokenBalance(limit.Token, acc)
 				delta := common.Fixed{
