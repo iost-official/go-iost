@@ -186,7 +186,7 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	action2 := tx.NewAction(
 		"iost.ram",
 		"buy",
-		fmt.Sprintf(`["%v", "%v", "%v"]`, creator.ID, name, InitRAM),
+		fmt.Sprintf(`["%v", "%v", %v]`, creator.ID, name, InitRAM),
 	)
 
 	action3 := tx.NewAction(
@@ -198,7 +198,7 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	action4 := tx.NewAction(
 		"iost.token",
 		"transfer",
-		fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, InitToken, creator.ID, name, InitAmount),
+		fmt.Sprintf(`["%v", "%v", "%v", "%v", ""]`, InitToken, creator.ID, name, InitAmount),
 	)
 
 	actions := []*tx.Action{action1, action2, action3, action4}
@@ -229,7 +229,7 @@ func (c *Client) Transfer(sender, recipient *Account, token, amount string) erro
 	action := tx.NewAction(
 		"iost.token",
 		"transfer",
-		fmt.Sprintf(`["%v", "%v", %v, %v]`, token, sender.ID, recipient.ID, amount),
+		fmt.Sprintf(`["%v", "%v", "%v", "%v", ""]`, token, sender.ID, recipient.ID, amount),
 	)
 
 	actions := []*tx.Action{action}
