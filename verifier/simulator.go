@@ -170,7 +170,7 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	//	}
 	//}
 
-	stx, err := tx.SignTx(trx, publisher + "@active", []*account.KeyPair{auth})
+	stx, err := tx.SignTx(trx, publisher+"@active", []*account.KeyPair{auth})
 	if err != nil {
 		return nil, err
 	}
