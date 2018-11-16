@@ -19,7 +19,7 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 		acts = append(acts, act)
 	}
 	tx := &tx.Tx{
-		Publisher: "_Block_Base@active",
+		Publisher: "_Block_Base",
 		GasLimit:  1000000,
 		GasPrice:  100,
 		Actions:   acts,
