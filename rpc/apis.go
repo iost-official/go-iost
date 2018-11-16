@@ -372,8 +372,15 @@ func (s *GRPCServer) SendTx(ctx context.Context, txReq *TxReq) (*SendTxRes, erro
 	// check trx is valid
 	// check time
 	if !trx.IsDefer() {
-		if !trx.IsTimeValid(time.Now().UnixNano()) {
-			return nil, fmt.Errorf("tx time invalid, check tx.Expiration and tx.Time")
+		now := time.Now().UnixNano()
+		if trx.Time > now {
+			return nil, fmt.Errorf("tx time is in future, %v > %v", trx.Time, now)
+		}
+		if trx.Expiration <= now {
+			return nil, fmt.Errorf("tx already expired , %v <= %v", trx.Expiration, now)
+		}
+		if now-trx.Time > tx.MaxExpiration {
+			return nil, fmt.Errorf("received tx too late, exceed max expiration time , %v - %v > %v", now, trx.Time, tx.MaxExpiration)
 		}
 	}
 	// check gas
@@ -390,7 +397,7 @@ func (s *GRPCServer) SendTx(ctx context.Context, txReq *TxReq) (*SendTxRes, erro
 	gas, _ := g.CurrentTotalGas(trx.Publisher, s.bc.LinkedRoot().Head.Time)
 	price := &common.Fixed{Value: trx.GasPrice, Decimal: 2}
 	if gas.LessThan(price.Times(trx.GasLimit)) {
-		return nil, fmt.Errorf("publisher's gas less than price * limit %v < %v * %v", gas.ToString(), price.ToString(), trx.GasLimit)
+		return nil, fmt.Errorf("%v gas less than price * limit %v < %v * %v", trx.Publisher, gas.ToString(), price.ToString(), trx.GasLimit)
 	}
 
 	err := s.txpool.AddTx(&trx)

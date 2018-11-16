@@ -22,15 +22,17 @@ import (
 
 // SDK ...
 type SDK struct {
-	server              string
-	accountName         string
-	keyPair             *account.KeyPair
-	signAlgo            string
-	gasLimit            int64
-	gasPrice            int64
-	expiration          int64
-	amountLimit         string
-	delaySecond         int64
+	server      string
+	accountName string
+	keyPair     *account.KeyPair
+	signAlgo    string
+
+	gasLimit    int64
+	gasPrice    int64
+	expiration  int64
+	amountLimit string
+	delaySecond int64
+
 	checkResult         bool
 	checkResultDelay    float32
 	checkResultMaxRetry int32
@@ -51,6 +53,13 @@ func (s *SDK) SetTxInfo(gasLimit int64, gasPrice int64, expiration int64, delayS
 	s.gasPrice = gasPrice
 	s.expiration = expiration
 	s.delaySecond = delaySecond
+}
+
+// SetCheckResult ...
+func (s *SDK) SetCheckResult(checkResult bool, checkResultDelay float32, checkResultMaxRetry int32) {
+	s.checkResult = checkResult
+	s.checkResultDelay = checkResultDelay
+	s.checkResultMaxRetry = checkResultMaxRetry
 }
 
 // SetServer ...
@@ -87,7 +96,9 @@ func (s *SDK) createTx(actions []*tx.Action) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	trx := tx.NewTx(actions, []string{}, s.gasLimit, s.gasPrice, time.Now().Add(time.Second*time.Duration(s.expiration)).UnixNano(), s.delaySecond*1e9)
+	now := time.Now().UnixNano()
+	expiration := now + s.expiration*1e9
+	trx := tx.NewTx(actions, []string{}, s.gasLimit, s.gasPrice, expiration, s.delaySecond*1e9)
 	trx.AmountLimit = amountLimits
 	return trx, nil
 }
