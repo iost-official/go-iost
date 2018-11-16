@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"encoding/base64"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -169,8 +171,8 @@ func TestTx(t *testing.T) {
 	})
 }
 
-func TestTx_ToBytes(t *testing.T) {
-	var sep = `\` + "`" + "^"
+func TestTx_Platform(t *testing.T) {
+	var sep = `\` + "`" + "^" + "/" + "<"
 	fmt.Println(sep, "is", []byte(sep))
 	txx := &Tx{
 		Time:       123,
@@ -187,26 +189,42 @@ func TestTx_ToBytes(t *testing.T) {
 	},
 	}
 	by := txx.ToBytes(0)
-	fmt.Print("[")
-	for _, v := range by {
-		fmt.Print(v, ",")
-	}
-	fmt.Print("]")
 
 	var js = []byte{96, 0, 0, 0, 0, 0, 0, 0, 123, 96, 0, 0, 0, 0, 0, 0, 1, 200, 96, 0, 0, 0, 0, 0, 0, 0, 100, 96, 0, 0,
 		0, 0, 0, 1, 226, 64, 96, 0, 0, 0, 0, 0, 0, 0, 0, 96, 94, 97, 98, 99, 96, 94, 96, 99, 111, 110, 116, 96, 97, 98,
 		105, 96, 91, 93}
-	fmt.Println(string(js))
+	fmt.Println("tx bytes 0 >", base64.StdEncoding.EncodeToString(by))
 
 	if !bytes.Equal(by, js) {
 		t.Fatal("result not same with iost.js !")
 	}
 
-	fmt.Println(txx.baseHash())
+	fmt.Println("tx base hash >", base64.StdEncoding.EncodeToString(txx.baseHash()))
 
-	hexhash := fmt.Sprintf("%x", common.Sha3(txx.ToBytes(0)))
+	kp, err := account.NewKeyPair(common.Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB"), crypto.Ed25519)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	fmt.Println("hash>", hexhash)
+	sig, err := SignTxContent(txx, "abc", kp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Printf("sig bytes > %v\n", base64.StdEncoding.EncodeToString(sig.ToBytes()))
+	fmt.Printf("sig pubkey > %v\n", base64.StdEncoding.EncodeToString(sig.Pubkey))
+	fmt.Printf("sig sig > %v\n", base64.StdEncoding.EncodeToString(sig.Sig))
+
+	txx.Signs = append(txx.Signs, sig)
+
+	fmt.Printf("tx bytes 1 > %v\n", base64.StdEncoding.EncodeToString(txx.ToBytes(1)))
+
+	fmt.Printf("tx publish hash > %v\n", base64.StdEncoding.EncodeToString(txx.publishHash()))
+
+	tx2, err := SignTx(txx, "def", []*account.KeyPair{kp})
+
+	fmt.Printf("tx publish sign > %v\n", base64.StdEncoding.EncodeToString(tx2.PublishSigns[0].ToBytes()))
+
 }
 
 func BenchmarkHash(b *testing.B) {

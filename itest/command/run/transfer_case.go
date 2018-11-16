@@ -49,5 +49,9 @@ var TransferCaseAction = func(c *cli.Context) error {
 		return err
 	}
 
+	if err := it.CheckAccounts(accounts); err != nil {
+		return err
+	}
+
 	return nil
 }
