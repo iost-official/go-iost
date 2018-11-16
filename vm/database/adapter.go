@@ -13,7 +13,7 @@ const (
 )
 
 type chainbaseAdapter struct {
-	cb  IMultiValue
+	cb IMultiValue
 }
 
 func (c *chainbaseAdapter) Get(key string) (value string) {
