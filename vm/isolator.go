@@ -289,6 +289,13 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 		authList[account.GetIDByPubkey(v.Pubkey)] = 2
 	}
 
+	signers := make(map[string]int)
+	for _, v := range t.Signers {
+		signers[v] = 1
+	}
+	signers[t.Publisher] = 2
+
 	h.Context().Set("auth_list", authList)
+	h.Context().Set("signer_list", signers)
 	h.Context().Set("auth_contract_list", make(map[string]int))
 }
