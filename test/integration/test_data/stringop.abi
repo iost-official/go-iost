@@ -1,0 +1,22 @@
+{
+  "lang": "javascript",
+  "version": "1.0.0",
+  "abi": [
+    {
+      "name": "add2",
+      "args": []
+    },
+    {
+      "name": "add9",
+      "args": []
+    },
+    {
+      "name": "equal9",
+      "args": []
+    },
+    {
+      "name": "superadd9",
+      "args": []
+    }
+  ]
+}

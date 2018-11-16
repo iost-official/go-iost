@@ -3,7 +3,6 @@ package database
 import (
 	"testing"
 
-	"errors"
 	"os"
 
 	. "github.com/golang/mock/gomock"
@@ -52,7 +51,7 @@ func TestHandler_Put(t *testing.T) {
 		}
 	})
 	mockMVCC.EXPECT().Has("state", "m-hello-1").Return(false, nil)
-	mockMVCC.EXPECT().Get("state", "m-hello").Return("", errors.New("not found"))
+	mockMVCC.EXPECT().Get("state", "m-hello").Return("", nil)
 
 	v.MPut("hello", "1", "world")
 	v.Commit()
