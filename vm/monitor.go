@@ -13,6 +13,7 @@ import (
 
 var (
 	errGasPriceIllegal = errors.New("gas price illegal")
+	errGasLimitIllegal = errors.New("gas limit illegal")
 )
 
 // Monitor ...

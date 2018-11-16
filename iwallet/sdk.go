@@ -3,14 +3,16 @@ package iwallet
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/empty"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/mitchellh/go-homedir"
 	"google.golang.org/grpc"
 
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/tx/pb"
@@ -27,6 +29,7 @@ type SDK struct {
 	gasLimit            int64
 	gasPrice            int64
 	expiration          int64
+	amountLimit         string
 	delaySecond         int64
 	checkResult         bool
 	checkResultDelay    float32
@@ -55,9 +58,38 @@ func (s *SDK) SetServer(server string) {
 	s.server = server
 }
 
-func (s *SDK) createTx(actions []*tx.Action) *tx.Tx {
+func (s *SDK) parseAmountLimit(limitStr string) ([]*contract.Amount, error) {
+	result := make([]*contract.Amount, 0)
+	if limitStr == "" {
+		return result, nil
+	}
+	splits := strings.Split(limitStr, "|")
+	for _, gram := range splits {
+		limit := strings.Split(gram, ":")
+		if len(limit) != 2 {
+			return nil, fmt.Errorf("invalid amount limit %v", gram)
+		}
+		token := limit[0]
+		amountLimit, err := common.UnmarshalFixed(limit[1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid amount limit %v %v", amountLimit, err)
+		}
+		tokenLimit := &contract.Amount{}
+		tokenLimit.Token = token
+		tokenLimit.Val = amountLimit.Marshal()
+		result = append(result, tokenLimit)
+	}
+	return result, nil
+}
+
+func (s *SDK) createTx(actions []*tx.Action) (*tx.Tx, error) {
+	amountLimits, err := s.parseAmountLimit(s.amountLimit)
+	if err != nil {
+		return nil, err
+	}
 	trx := tx.NewTx(actions, []string{}, s.gasLimit, s.gasPrice, time.Now().Add(time.Second*time.Duration(s.expiration)).UnixNano(), s.delaySecond*1e9)
-	return trx
+	trx.AmountLimit = amountLimits
+	return trx, nil
 }
 
 func (s *SDK) signTx(t *tx.Tx) (*tx.Tx, error) {
@@ -293,12 +325,16 @@ func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasP
 	if initialCoins != 0 {
 		acts = append(acts, tx.NewAction("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
 	}
-	trx := s.createTx(acts)
+	trx, err := s.createTx(acts)
+	if err != nil {
+		return err
+	}
 	stx, err := s.signTx(trx)
 	if err != nil {
 		return err
 	}
 	var txHash string
+	fmt.Printf("sending tx\n %v \n", stx.String())
 	txHash, err = s.sendTx(stx)
 	if err != nil {
 		return err
@@ -352,7 +388,10 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 	}
 
 	action := tx.NewAction("iost.system", methodName, data)
-	trx := s.createTx([]*tx.Action{action})
+	trx, err := s.createTx([]*tx.Action{action})
+	if err != nil {
+		return nil, "", err
+	}
 	stx, err = s.signTx(trx)
 	if err != nil {
 		return nil, "", fmt.Errorf("sign tx error %v", err)
@@ -360,7 +399,6 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 	var hash string
 	hash, err = s.sendTx(stx)
 	if err != nil {
-		fmt.Println(err.Error())
 		return nil, "", err
 	}
 	fmt.Println("Sending tx to rpc server finished. The transaction hash is:", hash)

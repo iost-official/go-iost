@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -368,6 +369,30 @@ func (s *GRPCServer) SendTx(ctx context.Context, txReq *TxReq) (*SendTxRes, erro
 	}
 	var trx tx.Tx
 	trx.FromPb(txReq.Tx)
+	// check trx is valid
+	// check time
+	if !trx.IsDefer() {
+		if !trx.IsTimeValid(time.Now().UnixNano()) {
+			return nil, fmt.Errorf("tx time invalid, check tx.Expiration and tx.Time")
+		}
+	}
+	// check gas
+	if trx.GasPrice < 100 || trx.GasPrice > 10000 {
+		return nil, errors.New("gas price illegal, should in [100, 10000]")
+	}
+	if trx.GasLimit < 500 {
+		return nil, errors.New("gas limit illegal, should >= 500")
+	}
+	var h *host.Host
+	c := host.NewContext(nil)
+	h = host.NewHost(c, s.visitor, nil, nil)
+	g := host.NewGasManager(h)
+	gas, _ := g.CurrentTotalGas(trx.Publisher, s.bc.LinkedRoot().Head.Time)
+	price := &common.Fixed{Value: trx.GasPrice, Decimal: 2}
+	if gas.LessThan(price.Times(trx.GasLimit)) {
+		return nil, fmt.Errorf("publisher's gas less than price * limit %v < %v * %v", gas.ToString(), price.ToString(), trx.GasLimit)
+	}
+
 	err := s.txpool.AddTx(&trx)
 	if err != nil {
 		return nil, err

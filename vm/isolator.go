@@ -253,6 +253,9 @@ func checkTxParams(t *tx.Tx) error {
 	if t.GasPrice < 100 || t.GasPrice > 10000 {
 		return errGasPriceIllegal
 	}
+	if t.GasLimit < 500 {
+		return errGasLimitIllegal
+	}
 	return nil
 }
 
