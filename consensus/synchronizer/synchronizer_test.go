@@ -17,6 +17,7 @@ import (
 )
 
 func TestDownloadController(t *testing.T) {
+	t.Skip()
 	Convey("Test DownloadController", t, func() {
 		dHash := make(chan string, 10)
 		dPID := make(chan p2p.PeerID, 10)
