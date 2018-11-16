@@ -335,7 +335,7 @@ class VoteContract {
             const proRes = this._mapGet("producerTable", id);
             preList[i].score = delta.plus(new Float64(proRes.score));
 
-            proRes.score = preList[i].score.number.toFixed();
+            proRes.score = preList[i].score.toFixed();
             this._mapPut("producerTable", id, proRes);
         }
 
@@ -406,7 +406,7 @@ class VoteContract {
         for (const key of pendingList) {
             const account = this._mapGet("producerKeyToId", key);
             const proRes = this._mapGet("producerTable", account);
-            proRes.score = new Float64(proRes.score).multi(scoreDecreaseRate).number.toFixed(iostDecimal);
+            proRes.score = new Float64(proRes.score).multi(scoreDecreaseRate).toFixed(iostDecimal);
             this._mapPut("producerTable", account, proRes);
         }
     }
