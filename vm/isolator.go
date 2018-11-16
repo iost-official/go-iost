@@ -2,7 +2,6 @@ package vm
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -55,13 +54,9 @@ func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	e.t = t
 	e.h.SetDeadline(time.Now().Add(limit))
-	x := strings.Split(t.Publisher, "@")
-	if len(x) != 2 {
-		return errors.New("publisher format error, " + t.Publisher)
-	}
-	e.publisherID = x[0]
+	e.publisherID = t.Publisher
 	l := len(t.Encode())
-	e.h.PayCost(contract.NewCost(0, int64(l), 0), e.publisherID)
+	e.h.PayCost(contract.NewCost(0, int64(l), 0), t.Publisher)
 
 	if !e.genesisMode && !e.blockBaseMode {
 		err := checkTxParams(t)
@@ -304,11 +299,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 		}
 		signers[x[0]] = 1
 	}
-	x := strings.Split(t.Publisher, "@")
-	if len(x) != 2 {
-		ilog.Error("publisher format error. " + t.Publisher)
-	}
-	signers[x[0]] = 2
+	signers[t.Publisher] = 2
 
 	h.Context().Set("auth_list", authList)
 	h.Context().Set("signer_list", signers)
