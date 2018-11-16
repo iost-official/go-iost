@@ -43,11 +43,7 @@ type Provider interface {
 	Tx() *tx.Tx
 	Return(*tx.Tx)
 	Drop(t *tx.Tx, err error)
-}
-
-// TxIter iterator of tx pool
-type TxIter interface {
-	Next() (*tx.Tx, bool)
+	Close()
 }
 
 type batcherImpl struct {

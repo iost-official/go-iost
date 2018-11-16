@@ -10,6 +10,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
@@ -86,7 +87,7 @@ func (v *Verifier) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, l
 }
 
 // Gen gen block
-func (v *Verifier) Gen(blk *block.Block, parent *block.Block, db database.IMultiValue, iter TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
+func (v *Verifier) Gen(blk *block.Block, parent *block.Block, db database.IMultiValue, iter *txpool.SortedTxMap, c *Config) (droplist []*tx.Tx, errs []error, err error) {
 	isolator := &vm.Isolator{}
 	baseTx, err := NewBaseTx(blk, parent)
 	if err != nil {
@@ -111,6 +112,7 @@ func (v *Verifier) Gen(blk *block.Block, parent *block.Block, db database.IMulti
 		droplist, errs = pi.List()
 		return
 	}
+	pi.Close()
 	return []*tx.Tx{}, []error{}, fmt.Errorf("mode unexpected: %v", c.Mode)
 }
 
