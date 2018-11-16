@@ -110,6 +110,7 @@ func (dc *DownloadControllerImpl) Stop() {
 
 // Start starts the DownloadController.
 func (dc *DownloadControllerImpl) Start() {
+	dc.wg.Add(2)
 	go dc.FreePeerLoop(dc.fpFunc)
 	go dc.DownloadLoop(dc.mFunc)
 }
@@ -307,7 +308,6 @@ func (dc *DownloadControllerImpl) handleFreePeer(fpFunc FreePeerFunc) {
 
 // FreePeerLoop is the Loop to free the peer.
 func (dc *DownloadControllerImpl) FreePeerLoop(fpFunc FreePeerFunc) {
-	dc.wg.Add(1)
 	defer dc.wg.Done()
 	checkPeerTicker := time.NewTicker(time.Second)
 	for {
@@ -375,7 +375,6 @@ func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sy
 
 // DownloadLoop is the Loop to download the mission.
 func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
-	dc.wg.Add(1)
 	defer dc.wg.Done()
 	for {
 		select {

@@ -9,7 +9,7 @@ class Test {
 
     transfer(from, to, amount) {
         //Function called by other
-        BlockChain.transfer(from, to, amount)
+        BlockChain.transfer(from, to, amount, "")
 
     }
 

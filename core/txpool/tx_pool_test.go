@@ -382,7 +382,8 @@ func TestNewTxPImplB(t *testing.T) {
 			err = txPool.AddTx(t3)
 			So(err, ShouldBeNil)
 
-			iter, _ := txPool.TxIterator()
+			pt, _ := txPool.PendingTx()
+			iter := pt.Iter()
 			trx, ok := iter.Next()
 			for _, expectTx := range []*tx.Tx{t5, t4, t2, t3, t1} {
 				So(ok, ShouldBeTrue)
