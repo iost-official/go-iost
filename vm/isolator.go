@@ -2,7 +2,6 @@ package vm
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -293,7 +292,11 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 
 	signers := make(map[string]int)
 	for _, v := range t.Signers {
-		signers[v] = 1
+		x := strings.Split(v, "@")
+		if len(x) != 2 {
+			ilog.Error("signer format error. " + v)
+		}
+		signers[x[0]] = 1
 	}
 	signers[t.Publisher] = 2
 
