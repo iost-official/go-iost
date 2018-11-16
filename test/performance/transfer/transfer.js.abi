@@ -7,7 +7,7 @@
             "args": [
                 "string",
                 "string",
-                "string"
+                "number"
             ],
             "amountLimit": [
                 {
