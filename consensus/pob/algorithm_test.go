@@ -72,7 +72,6 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 		pendingTx.Add(trx)
 	}
 	mockTxPool.EXPECT().TxIterator().Return(pendingTx.Iter(), &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
-	mockTxPool.EXPECT().TxTimeOut(gomock.Any()).Return(false).AnyTimes()
 	mockTxPool.EXPECT().DelTxList(gomock.Any()).AnyTimes()
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
@@ -111,7 +110,6 @@ func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 46635359
 		pendingTx.Add(trx)
 	}
 	mockTxPool.EXPECT().TxIterator().Return(pendingTx.Iter(), &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
-	mockTxPool.EXPECT().TxTimeOut(gomock.Any()).Return(false).AnyTimes()
 	mockTxPool.EXPECT().DelTxList(gomock.Any()).AnyTimes()
 	blk, _ := generateBlock(account, mockTxPool, stateDB, time.Millisecond*1000)
 
