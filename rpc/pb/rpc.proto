@@ -318,14 +318,16 @@ message ChainInfoResponse {
     string net_name = 1;
     // the iost protocol version
     string protocol_version = 2;
-    // the block height
-    int64 height = 3;
+    // head block height
+    int64 head_block = 3;
+    // head block hash
+    string head_block_hash = 4;
+    // last irreversible block number
+    int64 lib_block = 5;
+    // last irreversible block hash
+    string lib_block_hash = 6;
     // the current witness list
-    repeated string witness_list = 4;
-    // the head of the longest chain
-    Block head_block = 5;
-    // the last irreversible block
-    Block irreversible_block = 6;
+    repeated string witness_list = 7;
 }
 
 // The request message containing the tx's hash.
