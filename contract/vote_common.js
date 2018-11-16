@@ -275,6 +275,22 @@ class VoteCommonContract {
         }
     }
 
+    GetOption(voteId, option) {
+        this._checkVote(voteId);
+        this._checkDel(voteId);
+
+        if (!storage.mapHas(optionPrefix + voteId, option)) {
+            throw new Error("option not exist");
+        }
+
+        const optionProp = this._mapGet(optionPrefix + voteId, option);
+        return {
+            votes: optionProp[0],
+            deleted: optionProp[1],
+            clearTime: optionProp[2]
+        };
+    }
+
     _clearUserVote(clearTime, userVote) {
         if (clearTime >= userVote[1]) {
             userVote[2] = userVote[0];
@@ -403,6 +419,28 @@ class VoteCommonContract {
                 this._mapPut(preResultPrefix + voteId, option, preResultVotes);
             }
         }
+    }
+
+    GetVote(voteId, account) {
+        this._checkVote(voteId);
+
+        let userVotes = this._mapGet(userVotePrefix + voteId, account);
+        if (!userVotes) {
+            return {};
+        }
+        let votes = [];
+        for (const k in userVotes) {
+            if (!userVotes.hasOwnProperty(k)) {
+                continue;
+            }
+            votes.push({
+                option: k,
+                votes: new Float64(userVotes[k][0]).minus(new Float64(userVotes[k][2])).number.toFixed(),
+                voteTime: userVotes[k][1],
+                clearedVotes: userVotes[k][2]
+            });
+        }
+        return votes;
     }
 
     GetResult(voteId) {

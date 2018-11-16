@@ -68,7 +68,6 @@ func loadBytes(s string) []byte {
 }
 
 func transfer(i int) {
-	//action := tx.NewAction("iost.system", "Transfer", `["IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C","IOSTgw6cmmWyiW25TMAK44N9coLCMaygx5eTfGVwjCcriEWEEjK2H",1]`)
 	action := tx.NewAction(contractID, "bet", fmt.Sprintf("[\"%s\",%d,%d,%d]", testID, i%10, 1, 1))
 	trx := tx.NewTx([]*tx.Action{action}, []string{}, 10000+int64(i), 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
 	stx, err := tx.SignTx(trx, testID, []*account.KeyPair{testKp})
@@ -87,7 +86,10 @@ func transfer(i int) {
 func publish() string {
 	codePath := "vm/test_data/lucky_bet.js"
 	abiPath := codePath + ".abi"
-	_, txHash, err := iwallet.PublishContract(codePath, abiPath, "", testID, testKp, 5, make([]string, 0), 10000, 100, false, "", true)
+	sdk := iwallet.SDK{}
+	sdk.SetAccount(testID, testKp)
+	sdk.SetTxInfo(10000, 100, 5, 0)
+	_, txHash, err := sdk.PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {
 		panic(err)
 	}
@@ -113,7 +115,9 @@ func initAcc() {
 		panic(err)
 	}
 	testID = "testID"
-	iwallet.CreateNewAccount("admin", adminKp, testID, testKp, 100000, 10000, 100000)
+	sdk := iwallet.SDK{}
+	sdk.SetAccount("admin", adminKp)
+	sdk.CreateNewAccount(testID, testKp, 100000, 10000, 100000)
 }
 
 func main() {
