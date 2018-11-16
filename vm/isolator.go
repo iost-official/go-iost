@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
+	"errors"
 )
 
 // Isolator new entrance instead of Engine
@@ -98,6 +99,17 @@ func (i *Isolator) checkAuth(t *tx.Tx) error {
 		return fmt.Errorf("unauthorized publisher: %v", t.Publisher)
 	}
 	i.h.PayCost(c, t.Publisher)
+	// check amount limit
+	for _, limit := range t.AmountLimit {
+		decimal := i.h.DB().Decimal(limit.Token)
+		if decimal == -1 {
+			return errors.New("token in amountLimit not exists, " + limit.Token)
+		}
+		_, err := common.NewFixed(limit.Val, decimal)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
