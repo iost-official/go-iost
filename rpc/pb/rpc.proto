@@ -20,21 +20,14 @@ service ApiService {
     }
 
     // get transaction by hash
-    rpc GetTxByHash (HashRequest) returns (TransactionResponse) {
+    rpc GetTxByHash (TxHashRequest) returns (TransactionResponse) {
         option (google.api.http) = {
             get: "/getTxByHash/{hash}"
         };
     }
 
-    // get transaction receipt by receipt hash
-    rpc GetTxReceiptByHash (HashRequest) returns (TxReceipt) {
-        option (google.api.http) = {
-            get: "/getTxReceiptByHash/{hash}"
-        };
-    }
-
     // get transaction receipt by transaction hash
-    rpc GetTxReceiptByTxHash (HashRequest) returns (TxReceipt) {
+    rpc GetTxReceiptByTxHash (TxHashRequest) returns (TxReceipt) {
         option (google.api.http) = {
             get: "/getTxReceiptByTxHash/{hash}"
         };
@@ -335,9 +328,9 @@ message ChainInfoResponse {
     Block irreversible_block = 6;
 }
 
-// The request message containing the tx's or tx_receipt's hash.
-message HashRequest {
-    // tx or tx_receipt hash
+// The request message containing the tx's hash.
+message TxHashRequest {
+    // tx hash
     string hash = 1;
 }
 
