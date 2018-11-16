@@ -76,9 +76,10 @@ func TestSetCode(t *testing.T) {
 		So(len(c.Encode()), ShouldEqual, 146)
 		cname, r, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldStartWith, "Contract")
 		So(r.GasUsage, ShouldEqual, 30)
-		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldBeBetweenOrEqual, int64(62), int64(63))
+		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)

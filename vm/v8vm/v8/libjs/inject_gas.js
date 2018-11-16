@@ -1,6 +1,4 @@
 'use strict'
-var esprima = require('esprima/dist/esprima.js');
-var escodegen = require('escodegen/escodegen.js');
 
 const chargedExpression = {
     CallExpression: 8,
