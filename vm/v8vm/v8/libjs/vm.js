@@ -10,16 +10,16 @@ function NativeModule(id) {
 NativeModule._cache = {};
 
 NativeModule.require = function (id) {
-    if (id == '_native_module') {
+    if (id === '_native_module') {
         return NativeModule;
     }
 
-    var cached = NativeModule.getCached(id);
+    const cached = NativeModule.getCached(id);
     if (cached) {
         return cached.exports;
     }
 
-    var nativeModule = new NativeModule(id);
+    const nativeModule = new NativeModule(id);
     nativeModule.compile();
     nativeModule.cache();
 
@@ -44,10 +44,10 @@ NativeModule.wrapper = [
 ];
 
 NativeModule.prototype.compile = function () {
-    var source = NativeModule.getSource(this.id);
+    let source = NativeModule.getSource(this.id);
     source = NativeModule.wrap(source);
 
-    var fn = _native_run(source, this.filename);
+    const fn = _native_run(source, this.filename);
     fn(this.exports, NativeModule.require, this, this.filename);
 
     this.loaded = true;
@@ -57,13 +57,13 @@ NativeModule.prototype.cache = function() {
     NativeModule._cache[this.id] = this;
 };
 
-var require = NativeModule.require;
+const require = NativeModule.require;
 
 // storage
-var storage = require('storage');
+const storage = require('storage');
 
 // blockchain
-var BlockChain = require('blockchain');
+const BlockChain = require('blockchain');
 
 // other helper funcitons
 // var BigNumber = require('bignumber');
@@ -71,7 +71,7 @@ var BlockChain = require('blockchain');
 
 // var injectGas = require('inject_gas');
 
-var _IOSTInstruction_counter = new IOSTInstruction;
+const _IOSTInstruction_counter = new IOSTInstruction;
 
 // + - * / % **, | & ^ >> >>> <<, || &&, == != === !== > >= < <=, instanceOf in
 var _IOSTBinaryOp = function(left, right, op) {
@@ -125,4 +125,4 @@ var _IOSTBinaryOp = function(left, right, op) {
 };
 
 // var Console = require('console');
-var console = new Console;
+const console = new Console;

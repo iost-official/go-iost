@@ -2,12 +2,15 @@ package itest
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // Account is account of user
@@ -39,17 +42,31 @@ func (a *Account) Sign(t *Transaction) (*Transaction, error) {
 }
 
 // Balance will return the balance of this account
-func (a *Account) Balance() string {
+func (a *Account) Balance() float64 {
 	a.rw.RLock()
 	defer a.rw.RUnlock()
-	return a.balance
+
+	balance, err := strconv.ParseFloat(a.balance, 64)
+	if err != nil {
+		ilog.Errorf("Convert balance %v to string failed: %v", a.balance, err)
+		return 0
+	}
+
+	return balance
 }
 
-// SetBalance will set the balance of this account
-func (a *Account) SetBalance(b string) {
+// AddBalance will add the balance of this account
+func (a *Account) AddBalance(amount float64) {
 	a.rw.Lock()
 	defer a.rw.Unlock()
-	a.balance = b
+
+	balance, err := strconv.ParseFloat(a.balance, 64)
+	if err != nil {
+		ilog.Errorf("Convert balance %v to string failed: %v", a.balance, err)
+		return
+	}
+
+	a.balance = fmt.Sprintf("%0.8f", balance+amount)
 }
 
 // UnmarshalJSON will unmarshal account from json

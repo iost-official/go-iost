@@ -6,14 +6,14 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
+	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/vm"
 )
 
 func TestTransfer(t *testing.T) {
@@ -41,7 +41,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-		        So(r.GasUsage, ShouldEqual, 721)
+			So(r.GasUsage, ShouldEqual, 721)
 		})
 
 		Convey("test of token memo", func() {
@@ -78,7 +78,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldStartWith, "Contract")
-		So(r.GasUsage, ShouldEqual, 30)
+		So(r.GasUsage, ShouldEqual, 32)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
@@ -204,6 +204,20 @@ func TestAmountLimit(t *testing.T) {
 			So(balance2.ToString(), ShouldEqual, "10")
 		})
 
+		Convey("test out of amount limit, use signers ID", func() {
+			s.SetAccount(account.NewInitAccount("test0", testID[0], testID[0]))
+			s.Visitor.SetTokenBalanceFixed("iost", "test0", "1000")
+			s.SetGas("test0", 100000)
+			s.SetRAM("test0", 10000)
+
+			r, err := s.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, "test0", testID[2], "200"), "test0", kp)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
+			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+		})
+
 		Convey("test out of amount limit", func() {
 			r, err := s.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "110"), testID[0], kp)
 			s.Visitor.Commit()
@@ -211,11 +225,6 @@ func TestAmountLimit(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
 			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
-			//todo
-			//balance0 := common.Fixed{Value:s.Visitor.TokenBalance("iost", testID[0]), Decimal:s.Visitor.Decimal("iost")}
-			//balance2 := common.Fixed{Value:s.Visitor.TokenBalance("iost", testID[2]), Decimal:s.Visitor.Decimal("iost")}
-			// So(balance0.ToString(), ShouldEqual, "990")
-			// So(balance2.ToString(), ShouldEqual, "10")
 		})
 
 		Convey("test amount limit two level invocation", func() {
@@ -267,7 +276,7 @@ func TestTxAmountLimit(t *testing.T) {
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "10"),
 			}}, nil, 100000, 100, 10000000, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"iost", Val:"100"})
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
 			r, err := s.CallTx(trx, testID[0], kp)
 			s.Visitor.Commit()
 
@@ -285,7 +294,7 @@ func TestTxAmountLimit(t *testing.T) {
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "110"),
 			}}, nil, 100000, 100, 10000000, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"iost", Val:"100"})
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
 			r, err := s.CallTx(trx, testID[0], kp)
 			s.Visitor.Commit()
 
@@ -303,7 +312,7 @@ func TestTxAmountLimit(t *testing.T) {
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "110"),
 			}}, nil, 100000, 100, 10000000, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"iost1", Val:"100"})
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost1", Val: "100"})
 
 			err = vm.CheckAmountLimit(s.Mvcc, trx)
 			So(err.Error(), ShouldContainSubstring, "token not exists in amountLimit")
@@ -352,7 +361,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 			Contract:   "iost.token",
 			ActionName: "transfer",
 			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "10"),
-		}}, nil, 100, 100, 10000000, 0)
+		}}, nil, 550, 100, 10000000, 0)
 
 		r, err := s.CallTx(tx0, testID[0], kp)
 		s.Visitor.Commit()

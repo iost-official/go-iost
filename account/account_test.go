@@ -57,3 +57,9 @@ func TestPubkeyAndID(t *testing.T) {
 		}
 	}
 }
+
+func TestID_Platform(t *testing.T) {
+	seckey := Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB")
+	pubkey := crypto.Ed25519.GetPubkey(seckey)
+	fmt.Println("id >", GetIDByPubkey(pubkey))
+}

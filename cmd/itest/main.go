@@ -10,8 +10,6 @@ import (
 )
 
 func main() {
-	ilog.SetLevel(ilog.LevelDebug)
-
 	app := cli.NewApp()
 	app.Name = "itest"
 	app.Usage = "The cli tool for testing the IOST testnet"
@@ -19,6 +17,17 @@ func main() {
 	app.Commands = []cli.Command{
 		create.Command,
 		run.Command,
+	}
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "level, l",
+			Value: "info",
+			Usage: "The level of printing log",
+		},
+	}
+	app.Before = func(c *cli.Context) error {
+		ilog.SetLevel(ilog.NewLevel(c.GlobalString("level")))
+		return nil
 	}
 
 	err := app.Run(os.Args)

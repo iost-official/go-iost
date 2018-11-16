@@ -10,6 +10,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
@@ -86,7 +87,7 @@ func (v *Verifier) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, l
 }
 
 // Gen gen block
-func (v *Verifier) Gen(blk *block.Block, parent *block.Block, db database.IMultiValue, iter TxIter, c *Config) (droplist []*tx.Tx, errs []error, err error) {
+func (v *Verifier) Gen(blk *block.Block, parent *block.Block, db database.IMultiValue, iter *txpool.SortedTxMap, c *Config) (droplist []*tx.Tx, errs []error, err error) {
 	isolator := &vm.Isolator{}
 	baseTx, err := NewBaseTx(blk, parent)
 	if err != nil {
@@ -111,6 +112,7 @@ func (v *Verifier) Gen(blk *block.Block, parent *block.Block, db database.IMulti
 		droplist, errs = pi.List()
 		return
 	}
+	pi.Close()
 	return []*tx.Tx{}, []error{}, fmt.Errorf("mode unexpected: %v", c.Mode)
 }
 
@@ -149,7 +151,6 @@ L:
 	for tn.Before(to) {
 		isolator.ClearTx()
 		tn = time.Now()
-
 		limit := to.Sub(tn)
 		if limit > c.TxTimeLimit {
 			limit = c.TxTimeLimit
@@ -283,15 +284,14 @@ func verifyBlockBase(blk *block.Block, parent *block.Block, db database.IMultiVa
 	if len(blk.Txs) < 1 || len(blk.Receipts) < 1 {
 		return fmt.Errorf("block did not contain block base tx")
 	}
-
-	txData, err := baseTxData(blk.Head, parent.Head)
+	baseTx, err := NewBaseTx(blk, parent)
 	if err != nil {
 		return err
 	}
 	for i, a := range blk.Txs[0].Actions {
-		if a.ActionName != BlockBaseTx.Actions[i].ActionName ||
-			a.Contract != BlockBaseTx.Actions[i].Contract ||
-			a.Data != txData {
+		if a.ActionName != baseTx.Actions[i].ActionName ||
+			a.Contract != baseTx.Actions[i].Contract ||
+			a.Data != baseTx.Actions[i].Data {
 			return fmt.Errorf("block base tx not match")
 		}
 	}
@@ -325,32 +325,50 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 	if err != nil {
 		return err
 	}
-	receipt, err := isolator.Run()
+	_, err = isolator.Run()
 	if err != nil {
 		return err
 	}
-	if r.Status != receipt.Status ||
-		r.GasUsage != receipt.GasUsage {
-		return fmt.Errorf("receipt not match: %v, %v", r, receipt)
+	receipt, err := isolator.PayCost()
+	if err != nil {
+		return err
+	}
+	err = checkReceiptEqual(r, receipt)
+	if err != nil {
+		return err
+	}
+	isolator.Commit()
+	return nil
+}
+
+func checkReceiptEqual(r *tx.TxReceipt, receipt *tx.TxReceipt) error {
+	if r.Status.Code != receipt.Status.Code || r.Status.Message != r.Status.Message {
+		return fmt.Errorf("receipt not match, status not same: %v != %v \n%v\n%v", r.Status, receipt.Status, r, receipt)
+	}
+	if r.GasUsage != receipt.GasUsage {
+		return fmt.Errorf("receipt not match, gas usage not same: %v != %v \n%v\n%v", r.GasUsage, receipt.GasUsage, r, receipt)
+	}
+	if len(r.RAMUsage) != len(receipt.RAMUsage) {
+		return fmt.Errorf("receipt not match, ram usage length not same: %v != %v \n%v\n%v", len(r.RAMUsage), len(receipt.RAMUsage), r, receipt)
 	}
 	for k, v := range r.RAMUsage {
 		if v != receipt.RAMUsage[k] {
-			return fmt.Errorf("receipt not match: %v, %v", r, receipt)
+			return fmt.Errorf("receipt not match, ram usage not same: %v != %v \n%v\n%v", v, receipt.RAMUsage[k], r, receipt)
 		}
 	}
 	for i, br := range r.Receipts {
-		if br.FuncName != receipt.Receipts[i].FuncName ||
-			br.Content != receipt.Receipts[i].Content {
-			return fmt.Errorf("receipt not match: %v, %v", r, receipt)
+		if br.FuncName != receipt.Receipts[i].FuncName {
+			return fmt.Errorf("receipt not match, funcname not same: %v != %v \n%v\n%v", br.FuncName, receipt.Receipts[i].FuncName, r, receipt)
+		}
+		if br.Content != receipt.Receipts[i].Content {
+			return fmt.Errorf("receipt not match, content not same: %v != %v \n%v\n%v", br.Content, receipt.Receipts[i].Content, r, receipt)
 		}
 	}
 	for i, br := range r.Returns {
 		if br != receipt.Returns[i] {
-			return fmt.Errorf("receipt not match: %v, %v", r, receipt)
+			return fmt.Errorf("receipt not match, returns not same: %v != %v \n%v\n%v", br, receipt.Returns[i], r, receipt)
 		}
 	}
-
-	isolator.Commit()
 	return nil
 }
 

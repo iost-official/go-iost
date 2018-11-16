@@ -12,12 +12,12 @@ import (
 type TxPool interface {
 	Start() error
 	Stop()
-	AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error
+	AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error
 	AddTx(tx *tx.Tx) error
 	DelTx(hash []byte) error
 	DelTxList(delList []*tx.Tx)
-	TxIterator() (*Iterator, *blockcache.BlockCacheNode)
 	ExistTxs(hash []byte, chainBlock *block.Block) FRet
 	Lock()
 	Release()
+	PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode)
 }
