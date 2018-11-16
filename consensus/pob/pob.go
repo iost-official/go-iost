@@ -35,7 +35,7 @@ var (
 
 var (
 	blockReqTimeout = 3 * time.Second
-	continuousNum   = 1
+	continuousNum   = 10
 )
 
 type verifyBlockMessage struct {
@@ -314,6 +314,7 @@ func (p *PoB) scheduleLoop() {
 						continue
 					}
 					num++
+					ilog.Info("generateTxsNum: ", generateTxsNum)
 					if num >= continuousNum {
 						break
 					}
