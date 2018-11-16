@@ -30,7 +30,7 @@ var (
 func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) { // TODO 应传入account
 	ilog.Info("generate Block start")
 	st := time.Now()
-	txIter, head := txPool.TxIterator()
+	pTx, head := txPool.PendingTx()
 	topBlock := head.Block
 	blk := block.Block{
 		Head: &block.BlockHead{
@@ -50,7 +50,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	// call vote
 	v := verifier.Verifier{}
 	t1 := time.Now()
-	dropList, _, err := v.Gen(&blk, topBlock, db, txIter, &verifier.Config{
+	dropList, _, err := v.Gen(&blk, topBlock, db, pTx, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: time.Millisecond * 100,
