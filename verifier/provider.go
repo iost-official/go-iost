@@ -2,21 +2,24 @@ package verifier
 
 import (
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/txpool"
 )
 
 // ProviderImpl impl of provider
 type ProviderImpl struct {
 	cache    []*tx.Tx
-	iter     TxIter
+	pool     *txpool.SortedTxMap
+	iter     *txpool.Iterator
 	droplist map[*tx.Tx]error
 }
 
 // NewProvider ...
-func NewProvider(iter TxIter) *ProviderImpl {
+func NewProvider(pool *txpool.SortedTxMap) *ProviderImpl {
 	return &ProviderImpl{
 		cache:    make([]*tx.Tx, 0),
 		droplist: make(map[*tx.Tx]error),
-		iter:     iter,
+		pool:     pool,
+		iter:     pool.Iter(),
 	}
 }
 
@@ -53,4 +56,11 @@ func (p *ProviderImpl) List() (a []*tx.Tx, b []error) {
 		b = append(b, v)
 	}
 	return
+}
+
+// Drop drop bad tx
+func (p *ProviderImpl) Close() {
+	for t := range p.droplist {
+		p.pool.Del(t.Hash())
+	}
 }
