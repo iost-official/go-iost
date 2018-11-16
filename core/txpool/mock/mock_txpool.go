@@ -104,6 +104,18 @@ func (mr *MockTxPoolMockRecorder) Lock() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lock", reflect.TypeOf((*MockTxPool)(nil).Lock))
 }
 
+// PendingTx mocks base method
+func (m *MockTxPool) PendingTx() *txpool.SortedTxMap {
+	ret := m.ctrl.Call(m, "PendingTx")
+	ret0, _ := ret[0].(*txpool.SortedTxMap)
+	return ret0
+}
+
+// PendingTx indicates an expected call of PendingTx
+func (mr *MockTxPoolMockRecorder) PendingTx() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PendingTx", reflect.TypeOf((*MockTxPool)(nil).PendingTx))
+}
+
 // Release mocks base method
 func (m *MockTxPool) Release() {
 	m.ctrl.Call(m, "Release")
@@ -147,16 +159,4 @@ func (m *MockTxPool) TxIterator() (*txpool.Iterator, *blockcache.BlockCacheNode)
 // TxIterator indicates an expected call of TxIterator
 func (mr *MockTxPoolMockRecorder) TxIterator() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxIterator", reflect.TypeOf((*MockTxPool)(nil).TxIterator))
-}
-
-// TxTimeOut mocks base method
-func (m *MockTxPool) TxTimeOut(arg0 *tx.Tx) bool {
-	ret := m.ctrl.Call(m, "TxTimeOut", arg0)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// TxTimeOut indicates an expected call of TxTimeOut
-func (mr *MockTxPoolMockRecorder) TxTimeOut(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxTimeOut", reflect.TypeOf((*MockTxPool)(nil).TxTimeOut), arg0)
 }
