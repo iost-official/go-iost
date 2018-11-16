@@ -65,7 +65,6 @@ func loadBytes(s string) []byte {
 }
 
 func transfer(i int) {
-	//action := tx.NewAction("iost.system", "Transfer", `["IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C","IOSTgw6cmmWyiW25TMAK44N9coLCMaygx5eTfGVwjCcriEWEEjK2H",1]`)
 	action := tx.NewAction(contractID, "transfer", `["IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C","IOSTgw6cmmWyiW25TMAK44N9coLCMaygx5eTfGVwjCcriEWEEjK2H",1]`)
 	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
 	trx := tx.NewTx([]*tx.Action{action}, []string{}, 1000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
