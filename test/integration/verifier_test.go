@@ -164,6 +164,20 @@ func TestAmountLimit(t *testing.T) {
 			So(balance2.ToString(), ShouldEqual, "10")
 		})
 
+		Convey("test out of amount limit, use signers ID", func() {
+			s.SetAccount(account.NewInitAccount("test0", testID[0], testID[0]))
+			s.Visitor.SetTokenBalanceFixed("iost", "test0", "1000")
+			s.SetGas("test0", 100000)
+			s.SetRAM("test0", 10000)
+
+			r, err := s.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, "test0", testID[2], "200"), "test0", kp)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
+			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+		})
+
 		Convey("test out of amount limit", func() {
 			r, err := s.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "110"), testID[0], kp)
 			s.Visitor.Commit()
@@ -171,11 +185,6 @@ func TestAmountLimit(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
 			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
-			//todo
-			//balance0 := common.Fixed{Value:s.Visitor.TokenBalance("iost", testID[0]), Decimal:s.Visitor.Decimal("iost")}
-			//balance2 := common.Fixed{Value:s.Visitor.TokenBalance("iost", testID[2]), Decimal:s.Visitor.Decimal("iost")}
-			// So(balance0.ToString(), ShouldEqual, "990")
-			// So(balance2.ToString(), ShouldEqual, "10")
 		})
 
 		Convey("test amount limit two level invocation", func() {
@@ -312,7 +321,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 			Contract:   "iost.token",
 			ActionName: "transfer",
 			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "10"),
-		}}, nil, 100, 100, 10000000, 0)
+		}}, nil, 550, 100, 10000000, 0)
 
 		r, err := s.CallTx(tx0, testID[0], kp)
 		s.Visitor.Commit()

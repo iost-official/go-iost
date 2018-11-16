@@ -325,7 +325,11 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 	if err != nil {
 		return err
 	}
-	receipt, err := isolator.Run()
+	_, err = isolator.Run()
+	if err != nil {
+		return err
+	}
+	receipt, err := isolator.PayCost()
 	if err != nil {
 		return err
 	}
