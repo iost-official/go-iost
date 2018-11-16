@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
+	"errors"
 )
 
 // Isolator new entrance instead of Engine
@@ -54,9 +55,13 @@ func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	e.t = t
 	e.h.SetDeadline(time.Now().Add(limit))
-	e.publisherID = t.Publisher
+	x := strings.Split(t.Publisher, "@")
+	if len(x) != 2 {
+		return errors.New("publisher format error, " + t.Publisher)
+	}
+	e.publisherID = x[0]
 	l := len(t.Encode())
-	e.h.PayCost(contract.NewCost(0, int64(l), 0), t.Publisher)
+	e.h.PayCost(contract.NewCost(0, int64(l), 0), e.publisherID)
 
 	if !e.genesisMode && !e.blockBaseMode {
 		err := checkTxParams(t)
@@ -292,9 +297,18 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 
 	signers := make(map[string]int)
 	for _, v := range t.Signers {
-		signers[v] = 1
+		x := strings.Split(v, "@")
+		if len(x) != 2 {
+			ilog.Error("signer format error. " + v)
+			continue
+		}
+		signers[x[0]] = 1
 	}
-	signers[t.Publisher] = 2
+	x := strings.Split(t.Publisher, "@")
+	if len(x) != 2 {
+		ilog.Error("publisher format error. " + t.Publisher)
+	}
+	signers[x[0]] = 2
 
 	h.Context().Set("auth_list", authList)
 	h.Context().Set("signer_list", signers)
