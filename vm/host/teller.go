@@ -53,13 +53,12 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 	//if gasPrice < 100 {
 	//	panic("gas_price error")
 	//}
-
 	for k, c := range h.cost {
 		fee := gasPrice * c.ToGas()
 		if fee != 0 {
 			gas := &common.Fixed{
-				Value:   fee * 1000000,
-				Decimal: 8, // TODO magic number
+				Value:   fee,
+				Decimal: 2,
 			}
 			_, err := h.h.CostGas(k, gas)
 			if err != nil {

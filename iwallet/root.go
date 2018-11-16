@@ -43,9 +43,10 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&sdk.checkResult, "checkResult", "", true, "Check publish/call status after sending to chain")
 	rootCmd.PersistentFlags().Float32VarP(&sdk.checkResultDelay, "checkResultDelay", "", 3, "RPC checking will occur at [checkResultDelay] seconds after sending to chain.")
 	rootCmd.PersistentFlags().Int32VarP(&sdk.checkResultMaxRetry, "checkResultMaxRetry", "", 10, "Max times to call grpc to check tx status")
-	rootCmd.PersistentFlags().StringVarP(&sdk.signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
+	rootCmd.PersistentFlags().StringVarP(&sdk.signAlgo, "signAlgo", "", "ed25519", "Sign algorithm")
 	rootCmd.PersistentFlags().Int64VarP(&sdk.gasLimit, "gaslimit", "l", 10000, "gasLimit for a transaction")
 	rootCmd.PersistentFlags().Int64VarP(&sdk.gasPrice, "gasprice", "p", 100, "gasPrice for a transaction")
+	rootCmd.PersistentFlags().StringVarP(&sdk.amountLimit, "amountLimit", "", "", "amount limit for one transaction, eg iost:300.00|ram:2000")
 	rootCmd.PersistentFlags().Int64VarP(&sdk.expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
 
 	//rootCmd.PersistentFlags().StringVarP(&dest, "dest", "d", "default", "Set destination of output file")
