@@ -295,6 +295,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 		x := strings.Split(v, "@")
 		if len(x) != 2 {
 			ilog.Error("signer format error. " + v)
+			continue
 		}
 		signers[x[0]] = 1
 	}
