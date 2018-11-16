@@ -105,10 +105,11 @@ func (mr *MockTxPoolMockRecorder) Lock() *gomock.Call {
 }
 
 // PendingTx mocks base method
-func (m *MockTxPool) PendingTx() *txpool.SortedTxMap {
+func (m *MockTxPool) PendingTx() (*txpool.SortedTxMap, *blockcache.BlockCacheNode) {
 	ret := m.ctrl.Call(m, "PendingTx")
 	ret0, _ := ret[0].(*txpool.SortedTxMap)
-	return ret0
+	ret1, _ := ret[1].(*blockcache.BlockCacheNode)
+	return ret0, ret1
 }
 
 // PendingTx indicates an expected call of PendingTx
@@ -146,17 +147,4 @@ func (m *MockTxPool) Stop() {
 // Stop indicates an expected call of Stop
 func (mr *MockTxPoolMockRecorder) Stop() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockTxPool)(nil).Stop))
-}
-
-// TxIterator mocks base method
-func (m *MockTxPool) TxIterator() (*txpool.Iterator, *blockcache.BlockCacheNode) {
-	ret := m.ctrl.Call(m, "TxIterator")
-	ret0, _ := ret[0].(*txpool.Iterator)
-	ret1, _ := ret[1].(*blockcache.BlockCacheNode)
-	return ret0, ret1
-}
-
-// TxIterator indicates an expected call of TxIterator
-func (mr *MockTxPoolMockRecorder) TxIterator() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxIterator", reflect.TypeOf((*MockTxPool)(nil).TxIterator))
 }

@@ -128,8 +128,9 @@ func (pool *TxPImpl) Lock() {
 }
 
 // PendingTx is return pendingTx
-func (pool *TxPImpl) PendingTx() *SortedTxMap {
-	return pool.pendingTx
+func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
+	return pool.pendingTx, pool.forkChain.NewHead
+
 }
 
 // Release release the txpool
@@ -234,11 +235,6 @@ func (pool *TxPImpl) DelTxList(delList []*tx.Tx) {
 	for _, t := range delList {
 		pool.pendingTx.Del(t.Hash())
 	}
-}
-
-// TxIterator ...
-func (pool *TxPImpl) TxIterator() (*Iterator, *blockcache.BlockCacheNode) {
-	return pool.pendingTx.Iter(), pool.forkChain.NewHead
 }
 
 // ExistTxs determine if the transaction exists

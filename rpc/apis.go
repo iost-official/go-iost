@@ -384,7 +384,7 @@ func (s *GRPCServer) ExecTx(ctx context.Context, txReq *TxReq) (*ExecTxRes, erro
 	}
 	var trx tx.Tx
 	trx.FromPb(txReq.Tx)
-	_, head := s.txpool.TxIterator()
+	_, head := s.txpool.PendingTx()
 	topBlock := head.Block
 	blk := block.Block{
 		Head: &block.BlockHead{
