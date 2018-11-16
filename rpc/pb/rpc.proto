@@ -1,0 +1,486 @@
+syntax = "proto3";
+
+package rpcpb;
+
+import "google/api/annotations.proto";
+
+service ApiService {
+    // get the node information
+    rpc GetNodeInfo (EmptyRequest) returns (NodeInfoResponse) {
+        option (google.api.http) = {
+            get: "/getNodeInfo"
+        };
+    }
+
+    // get the chain information
+    rpc GetChainInfo (EmptyRequest) returns (ChainInfoResponse) {
+        option (google.api.http) = {
+            get: "/getChainInfo"
+        };
+    }
+
+    // get transaction by hash
+    rpc GetTxByHash (TxHashRequest) returns (TransactionResponse) {
+        option (google.api.http) = {
+            get: "/getTxByHash/{hash}"
+        };
+    }
+
+    // get transaction receipt by transaction hash
+    rpc GetTxReceiptByTxHash (TxHashRequest) returns (TxReceipt) {
+        option (google.api.http) = {
+            get: "/getTxReceiptByTxHash/{hash}"
+        };
+    }
+
+    // get block by hash
+    rpc GetBlockByHash (GetBlockByHashRequest) returns (Block) {
+        option (google.api.http) = {
+            get: "/getBlockByHash/{hash}/{complete}"
+        };
+    }
+
+    // get block by number
+    rpc GetBlockByNumber (GetBlockByNumberRequest) returns (Block) {
+        option (google.api.http) = {
+            get: "/getBlockByNumber/{number}/{complete}"
+        };
+    }
+
+    // get account
+    rpc GetAccount (GetAccountRequest) returns (Account) {
+        option (google.api.http) = {
+            get: "/getAccount/{name}/{by_longest_chain}"
+        };
+    }
+
+    // get contract
+    rpc GetContract (GetContractRequest) returns (Contract) {
+        option (google.api.http) = {
+            get: "/getContract/{id}"
+        };
+    }
+
+    // get contract storage
+    rpc GetContractStorage (GetContractStorageRequest) returns (GetContractStorageResponse) {
+        option (google.api.http) = {
+            post: "/getContractStorage"
+            body: "*"
+        };
+    }
+
+    // send transaction
+    rpc SendTransaction (TransactionRequest) returns (SendTransactionResponse) {
+        option (google.api.http) = {
+            post: "/sendTx"
+            body: "*"
+        };
+    }
+
+    // execute transaction
+    rpc ExecTransaction (TransactionRequest) returns (TxReceipt) {
+        option (google.api.http) = {
+            post: "/execTx"
+            body: "*"
+        };
+    }
+
+}
+
+// The message defines an empty request.
+message EmptyRequest {}
+
+// The message defines peer information.
+message PeerInfo {
+    // peer ID
+    string id = 1;
+    // peer addr
+    string addr = 2;
+}
+
+// The message defines network connection information.
+message NetworkInfo {
+    // local network ID
+    string id = 1;
+    // peer connection count
+    int32 peer_count = 2;
+    // peers' information
+    repeated PeerInfo peer_info = 3;
+}
+
+// The message containing the node's information.
+message NodeInfoResponse {
+    // build time
+    string build_time = 1;
+    // git hash
+    string git_hash = 2;
+    // node mode
+    string mode = 3;
+    // network connection information
+    NetworkInfo network = 4;
+}
+
+// The message defines transaction amount limit struct.
+message AmountLimit {
+    // token name
+    string token = 1;
+    // limit value
+    double value = 2;
+}
+
+// The message defines transaction action struct.
+message Action {
+    // contract name
+    string contract = 1;
+    // action name
+    string action_name = 2;
+    // data
+    string data = 3;
+}
+
+// The message defines the transaction receipt struct.
+message TxReceipt {
+    // transaction hash
+    string tx_hash = 1;
+    // gas usage
+    double gas_usage = 2;
+    // ram usage
+    map<string, int64> ram_usage = 3;
+
+    // The enumeration defines transaction receipt status code.
+    enum StatusCode {
+        // success
+        SUCCESS = 0;
+        // run out of gas
+        GAS_RUN_OUT = 1;
+        // balance not enough
+        BALANCE_NOT_ENOUGH = 2;
+        // wrong parameter
+        WRONG_PARAMETER = 3;
+        // runtime error
+        RUNTIME_ERROR = 4;
+        // run out of time
+        TIMEOUT = 5;
+        // wrong transaction format
+        WRONG_TX_FORMAT = 6;
+        // more than one set code action in a transaction
+        DUPLICATE_SET_CODE = 7;
+        // unknown error
+        UNKNOWN_ERROR = 8;
+    }
+
+    // status code
+    StatusCode status_code = 4;
+    // message
+    string message = 5;
+    // transaction returns
+    repeated string returns = 6;
+
+    // The message defines transaction execution receipt.
+    message Receipt {
+        // function name
+        string func_name = 1;
+        // content
+        string content = 2;
+    }
+
+    // transaction receipts
+    repeated Receipt receipts = 7;
+}
+
+// The message defines transaction response struct.
+message TransactionResponse {
+    // transaction hash
+    string hash  = 1;
+    // transaction timestamp
+    int64 time = 2;
+    // expiration timestamp
+    int64 expiration = 3;
+    // gas price
+    double gas_price = 4;
+    // gas limit
+    double gas_limit = 5;
+    // delay nanoseconds
+    int64 delay = 6;
+    // action list
+    repeated Action actions = 7;
+    // signer list
+    repeated string signers = 8;
+    // publisher
+    string publisher = 9;
+    // referred transaction hash
+    string referred_tx = 10;
+    // amount limit
+    repeated AmountLimit amount_limit = 11;
+    // transaction receipt
+    TxReceipt tx_receipt = 12;
+
+    // The enumeration defines transaction status.
+    enum Status {
+        // pending in transaction pool
+        PENDIND = 0;
+        // packed in a block that has not been confirmed
+        PACKED = 1;
+        // packed in a block that is ieerversible
+        IRREVERSIBLE = 2;
+    }
+
+    // transaction status
+    Status status = 13;
+}
+
+// The message defines signature struct.
+message Signature {
+    // The enumeration defines the signature algorithm.
+    enum Algorithm {
+        // secp256k1
+        SECP256K1 = 0;
+        // ed25519
+        ED25519 = 1;
+    }
+
+    // signature algorithm
+    Algorithm algorithm = 1;
+    // signature bytes
+    bytes signature = 2;
+    // public key
+    bytes public_key = 3;
+}
+
+// The message defines the transaction request.
+message TransactionRequest {
+    // transaction timestamp
+    int64 time = 1;
+    // expiration timestamp
+    int64 expiration = 2;
+    // gas price
+    double gas_price = 3;
+    // gas limit
+    double gas_limit = 4;
+    // delay nanoseconds
+    int64 delay = 5;
+    // action list
+    repeated Action actions = 6;
+    // amount limit
+    repeated AmountLimit amount_limit = 7;
+    // signer list
+    repeated string signers = 8;
+    // signatures of signers
+    repeated Signature signatures = 9;
+    // publisher
+    string publisher = 10;
+    // signatures of publisher
+    repeated Signature publisher_sigs = 11;
+}
+
+// The message defines the block struct.
+message Block {
+    // block hash
+    int64 hash = 1;
+    // block version
+    string version = 2;
+    // parent block hash
+    string parent_hash = 3;
+    // transaction merkle tree root hash
+    string tx_merkle_hash = 4;
+    // transaction receipt merkle tree root hash
+    string tx_receipt_merkle_hash = 5;
+    // block number
+    int64 number = 6;
+    // block producer witness
+    string witness = 7;
+    // block timestamp
+    int64 time = 8;
+    // block gas usage
+    double gas_usage = 9;
+    // transaction count
+    int64 tx_count = 10;
+
+    // The message defines block extra information
+    message Info {
+        // pack mode
+        int32 mode =  1;
+        // transaction execution thread number
+        int32 thread = 2;
+        // transaction index of every batch execution
+        repeated int32 batch_index = 3;
+    }
+
+    // extra information
+    Info info = 11;
+    // block transactions
+    repeated TransactionResponse transactions = 12;
+}
+
+// The message defines chain information response.
+message ChainInfoResponse {
+    // the name of network, such mainnet or testnet
+    string net_name = 1;
+    // the iost protocol version
+    string protocol_version = 2;
+    // head block height
+    int64 head_block = 3;
+    // head block hash
+    string head_block_hash = 4;
+    // last irreversible block number
+    int64 lib_block = 5;
+    // last irreversible block hash
+    string lib_block_hash = 6;
+    // the current witness list
+    repeated string witness_list = 7;
+}
+
+// The request message containing the tx's hash.
+message TxHashRequest {
+    // tx hash
+    string hash = 1;
+}
+
+// The request message containing the block's hash.
+message GetBlockByHashRequest {
+    // block hash
+    string hash = 1;
+    // complete means whether including the full transactions and transaction receipts
+    bool complete = 2;
+}
+
+// The request message containing the block's number.
+message GetBlockByNumberRequest {
+    // block number
+    int64 number = 1;
+    // complete means whether including the full transactions and transaction receipts
+    bool complete = 2;
+}
+
+// The message defines account struct.
+message Account {
+    // account name
+    string name = 1;
+    // account balance
+    double balance = 2;
+    // account create timestamp
+    int64 create_time = 3;
+
+    // The message defines account gas information.
+    message  GasInfo {
+        // current total gas amount
+        double current_total = 1;
+        // gas increase speed
+        double increase_speed = 2;
+        // gas limit
+        double limit = 3;
+        // pledged coin
+        double pledged_coin = 4;
+    }
+
+    // gas information
+    GasInfo gas_info = 4;
+
+    // The message defines account ram information.
+    message RAMInfo {
+        // available ram bytes
+        int64 available = 1;
+    }
+
+    // ram information
+    RAMInfo ram_info = 5;
+
+    // The message defines permission item.
+    message Item {
+        // permission name or key pair id
+        string id = 1;
+        // whether it's a key pair
+        bool is_key_pair = 2;
+        // permission weight
+        int64 weight = 3;
+    }
+
+    // The message defines a permission group.
+    message Group {
+        // group name
+        string name = 1;
+        // permission items
+        repeated Item items = 2;
+    }
+
+    // The message defines the permission struct.
+    message Permission {
+        // permission name
+        string name = 1;
+        // permission groups
+        repeated Group groups = 2;
+        // permission items
+        repeated Item items = 3;
+        // permission threshold
+        int64 threshold = 4;
+    }
+
+    // owner permission
+    Permission owner = 6;
+    // active permission
+    Permission active = 7;
+}
+
+// The message defines the get account request.
+message GetAccountRequest {
+    // account name
+    string name = 1;
+    // get account by longest chain head block or last irreversible block
+    bool by_longest_chain = 2;
+}
+
+// The message defines the contract struct.
+message Contract {
+    // contract id
+    string id = 1;
+    // contract code
+    string code = 2;
+    // contract language
+    string language = 3;
+    // contract version
+    string version = 4;
+
+    // The message defines the ABI struct.
+    message ABI {
+        // abi name
+        string name = 1;
+        // abi arguments
+        repeated string args = 2;
+        // abi amount limt
+        repeated AmountLimit amount_limit = 3;
+    }
+
+    // contract abis
+    repeated ABI abis = 5;
+}
+
+// The message defines get contract request.
+message GetContractRequest {
+    // contract id
+    string id = 1;
+}
+
+// The message defines get contract storage request.
+message GetContractStorageRequest {
+    // contract id
+    string id = 1;
+    // ram owner, should be the same as 'put' call. It can be empty.
+    string owner = 2;
+    // the key in the StateDB
+    string key = 3;
+    // get the value from StateDB, field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
+    string field = 4;
+}
+
+// The message defines get contract storage response.
+message GetContractStorageResponse {
+    // the json string data
+    string data = 1;
+}
+
+// The message defines send transaction response.
+message SendTransactionResponse {
+    // the final transaction hash
+    string hash = 1;
+}
+
