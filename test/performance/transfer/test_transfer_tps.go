@@ -105,7 +105,7 @@ func publish() string {
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(50) * time.Second)
 	client := rpc.NewApisClient(conns[0])
 	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpc.HashReq{Hash: txHash})
 	if err != nil {
