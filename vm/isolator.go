@@ -186,7 +186,7 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		gasLimit := e.h.Context().GValue("gas_limit").(int64)
 
 		e.tr.Status = status
-		if (status.Code == 4 && status.Message == "out of gas") || (status.Code == 5) {
+		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") || (status.Code == tx.ErrorTimeout) {
 			cost = contract.NewCost(0, 0, gasLimit)
 		}
 
@@ -202,8 +202,9 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		e.h.PayCost(cost, e.publisherID)
 
 		if status.Code != tx.Success {
-			ilog.Debugf("isolator run failed status code %v", status.Code)
+			ilog.Errorf("isolator run action %v failed, status %v, will rollback", action, status)
 			e.tr.Receipts = nil
+			e.h.DB().Rollback()
 			break
 		} else {
 			e.tr.Receipts = append(e.tr.Receipts, receipts...)

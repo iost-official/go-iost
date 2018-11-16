@@ -151,7 +151,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 					Decimal: fixedAmountLimit[i].Val.Decimal,
 				}
 				if delta.Value > fixedAmountLimit[i].Val.Value {
-					err = errors.New(fmt.Sprintf("token %s exceed amountLimit in abi. limit %s, got %s",
+					err = errors.New(fmt.Sprintf("token %s exceed amountLimit in abi. limit %s, need %s",
 						limit.Token,
 						fixedAmountLimit[i].Val.ToString(),
 						delta.ToString()))
