@@ -47,6 +47,7 @@ func Test_callWithAuth(t *testing.T) {
 	})
 }
 
+/*
 func Test_Info(t *testing.T) {
 	ilog.Stop()
 	Convey("test of info", t, func() {
@@ -178,3 +179,4 @@ func Test_Receipt(t *testing.T) {
 		})
 	})
 }
+*/
