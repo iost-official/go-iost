@@ -251,6 +251,7 @@ void IOSTContractStorage_Put(const FunctionCallbackInfo<Value> &args) {
         return;
     }
     args.GetReturnValue().SetNull();
+    free(ret);
 }
 
 void IOSTContractStorage_Has(const FunctionCallbackInfo<Value> &args) {
@@ -303,6 +304,7 @@ void IOSTContractStorage_Has(const FunctionCallbackInfo<Value> &args) {
         return;
     }
     args.GetReturnValue().Set(result);
+    free(ret);
 }
 
 void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
@@ -354,12 +356,14 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
 
     if (resultStr == nullptr) {
         args.GetReturnValue().SetNull();
     } else {
         args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
     }
+    free(resultStr);
 }
 
 void IOSTContractStorage_Del(const FunctionCallbackInfo<Value> &args) {
@@ -409,6 +413,7 @@ void IOSTContractStorage_Del(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     args.GetReturnValue().SetNull();
 }
 
@@ -480,6 +485,7 @@ void IOSTContractStorage_MapPut(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     args.GetReturnValue().SetNull();
 }
 
@@ -541,6 +547,7 @@ void IOSTContractStorage_MapHas(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     args.GetReturnValue().Set(result);
 }
 
@@ -602,11 +609,13 @@ void IOSTContractStorage_MapGet(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     if (resultStr == nullptr) {
         args.GetReturnValue().SetNull();
     } else {
         args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
     }
+    free(resultStr);
 }
 
 void IOSTContractStorage_MapDel(const FunctionCallbackInfo<Value> &args) {
@@ -666,6 +675,7 @@ void IOSTContractStorage_MapDel(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     args.GetReturnValue().SetNull();
 }
 
@@ -717,7 +727,9 @@ void IOSTContractStorage_MapKeys(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+    free(resultStr);
 }
 
 void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
@@ -768,6 +780,7 @@ void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     args.GetReturnValue().Set((int)result);
 }
 
@@ -830,6 +843,7 @@ void IOSTContractStorage_GlobalHas(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     args.GetReturnValue().Set(result);
 }
 
@@ -892,11 +906,13 @@ void IOSTContractStorage_GlobalGet(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     if (resultStr == nullptr) {
         args.GetReturnValue().SetNull();
     } else {
         args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
     }
+    free(resultStr);
 }
 
 void IOSTContractStorage_GlobalMapHas(const FunctionCallbackInfo<Value> &args) {
@@ -968,6 +984,7 @@ void IOSTContractStorage_GlobalMapHas(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     args.GetReturnValue().Set(result);
 }
 
@@ -1040,11 +1057,13 @@ void IOSTContractStorage_GlobalMapGet(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     if (resultStr == nullptr) {
         args.GetReturnValue().SetNull();
     } else {
         args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
     }
+    free(resultStr);
 }
 
 void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) {
@@ -1106,7 +1125,9 @@ void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) 
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+    free(resultStr);
 }
 
 void IOSTContractStorage_GlobalMapLen(const FunctionCallbackInfo<Value> &args) {
@@ -1168,6 +1189,7 @@ void IOSTContractStorage_GlobalMapLen(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
+    free(ret);
     args.GetReturnValue().Set((int)result);
 }
 
