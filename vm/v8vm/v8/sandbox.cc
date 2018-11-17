@@ -272,6 +272,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     Local<Value> ret = script->Run();
 
     if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
+        isDone = true;
         return;
     }
 
@@ -284,6 +285,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     if (ret->IsString() || ret->IsNumber() || ret->IsBoolean()) {
         String::Utf8Value retV8Str(isolate, ret);
         result = *retV8Str;
+        isDone = true;
         return;
     }
 
@@ -325,6 +327,8 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
             break;
         }
         if (isDone) {
+            res.Value = copyString(result);
+            res.isJson = isJson;
             res.gasUsed = sbx->gasUsed;
             break;
         }
