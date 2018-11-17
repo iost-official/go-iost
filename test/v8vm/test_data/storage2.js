@@ -30,6 +30,19 @@ class Storage2 {
     gmlen(c, k) {
         return storage.globalMapLen(c, k);
     }
+
+    puto(k, v) {
+        storage.put(k, v, "myowner");
+    }
+    mseto(k, f, v) {
+        storage.mapPut(k, f, v, "myowner");
+    }
+    ggeto(c, k) {
+        return storage.globalGet(c, k, "myowner");
+    }
+    gmgeto(c, k, f) {
+        return storage.globalMapGet(c, k, f, "myowner");
+    }
 }
 
 module.exports = Storage2;

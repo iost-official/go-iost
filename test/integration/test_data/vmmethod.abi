@@ -3,8 +3,16 @@
   "version": "1.0.0",
   "abi": [
     {
-      "name": "hello",
+      "name": "contractName",
       "args": []
+    },
+    {
+      "name": "receiptf",
+      "args": ["string"]
+    },
+    {
+      "name": "event",
+      "args": ["string"]
     }
   ]
 }

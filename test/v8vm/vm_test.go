@@ -346,6 +346,37 @@ func TestEngine_Storage2(t *testing.T) {
 	if len(rs) != 1 || rs[0].(string) != "1" {
 		t.Fatalf("LoadAndCall except 1, got %s\n", rs[0])
 	}
+
+	// test owner
+	rs, _, err = vmPool.LoadAndCall(host, code, "puto", "a", "aa")
+	if err != nil {
+		t.Fatalf("LoadAndCall puto run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "" {
+		t.Fatalf("LoadAndCall except , got %s\n", rs[0])
+	}
+	rs, _, err = vmPool.LoadAndCall(host, code, "ggeto", "storage2", "a")
+	if err != nil {
+		t.Fatalf("LoadAndCall ggeto run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "aa" {
+		t.Fatalf("LoadAndCall except aa, got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "mseto", "a", "b", "bb")
+	if err != nil {
+		t.Fatalf("LoadAndCall mseto run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "" {
+		t.Fatalf("LoadAndCall except , got %s\n", rs[0])
+	}
+	rs, _, err = vmPool.LoadAndCall(host, code, "gmgeto", "storage2", "a", "b")
+	if err != nil {
+		t.Fatalf("LoadAndCall gmgeto run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "bb" {
+		t.Fatalf("LoadAndCall except bb, got %s\n", rs[0])
+	}
 }
 
 // nolint
