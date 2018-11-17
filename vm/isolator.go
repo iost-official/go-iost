@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"errors"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -29,65 +30,103 @@ type Isolator struct {
 }
 
 // TriggerBlockBaseMode start blockbase mode
-func (e *Isolator) TriggerBlockBaseMode() {
-	e.blockBaseMode = true
+func (i *Isolator) TriggerBlockBaseMode() {
+	i.blockBaseMode = true
 }
 
 // Prepare Isolator
-func (e *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *ilog.Logger) error {
+func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *ilog.Logger) error {
 	if db.Contract("iost.system") == nil {
 		db.SetContract(native.SystemABI())
 	}
 	if bh.Number == 0 {
-		e.genesisMode = true
+		i.genesisMode = true
 	} else {
-		e.genesisMode = false
+		i.genesisMode = false
 	}
 
-	e.blockBaseCtx = host.NewContext(nil)
-	e.blockBaseCtx = loadBlkInfo(e.blockBaseCtx, bh)
-	e.h = host.NewHost(e.blockBaseCtx, db, staticMonitor, logger)
+	i.blockBaseCtx = host.NewContext(nil)
+	i.blockBaseCtx = loadBlkInfo(i.blockBaseCtx, bh)
+	i.h = host.NewHost(i.blockBaseCtx, db, staticMonitor, logger)
 	return nil
 }
 
 // PrepareTx read tx and ready to run
-func (e *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
-	e.t = t
-	e.h.SetDeadline(time.Now().Add(limit))
-	e.publisherID = t.Publisher
+func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
+	i.t = t
+	i.h.SetDeadline(time.Now().Add(limit))
+	i.publisherID = t.Publisher
 	l := len(t.Encode())
-	e.h.PayCost(contract.NewCost(0, int64(l), 0), t.Publisher)
+	i.h.PayCost(contract.NewCost(0, int64(l), 0), t.Publisher)
 
-	if !e.genesisMode && !e.blockBaseMode {
+	if !i.genesisMode && !i.blockBaseMode {
 		err := checkTxParams(t)
 		if err != nil {
 			return err
 		}
-		gas, _ := e.h.CurrentGas(e.publisherID)
+
+		gas, _ := i.h.CurrentGas(i.publisherID)
 		price := &common.Fixed{Value: t.GasPrice, Decimal: 2}
 		if gas.LessThan(price.Times(t.GasLimit)) {
-			ilog.Infof("err %v publisher %v current gas %v price %v limit %v\n", errCannotPay, e.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
-			return fmt.Errorf("%v gas less than price * limit %v < %v * %v", e.publisherID, gas.ToString(), price.ToString(), t.GasLimit)
+			ilog.Infof("err %v publisher %v current gas %v price %v limit %v\n", errCannotPay, i.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
+			return fmt.Errorf("%v gas less than price * limit %v < %v * %v", i.publisherID, gas.ToString(), price.ToString(), t.GasLimit)
 		}
 	}
-	loadTxInfo(e.h, t, e.publisherID)
+	loadTxInfo(i.h, t, i.publisherID)
+	if !i.genesisMode && !i.blockBaseMode {
+		err := i.checkAuth(t)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func (e *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, ret string, receipts []*tx.Receipt, err error) {
+func (i *Isolator) checkAuth(t *tx.Tx) error {
+	for _, item := range t.Signers {
+		ss := strings.Split(item, "@")
+		if len(ss) != 2 {
+			return fmt.Errorf("illegal signer: %v", item)
+		}
+		b, c := i.h.RequireAuth(ss[0], ss[1])
+		if !b {
+			return fmt.Errorf("unauthorized signer: %v", item)
+		}
+		i.h.PayCost(c, t.Publisher)
+	}
+	b, c := i.h.RequireAuth(t.Publisher, "active")
+	if !b {
+		return fmt.Errorf("unauthorized publisher: %v", t.Publisher)
+	}
+	i.h.PayCost(c, t.Publisher)
+	// check amount limit
+	for _, limit := range t.AmountLimit {
+		decimal := i.h.DB().Decimal(limit.Token)
+		if decimal == -1 {
+			return errors.New("token in amountLimit not exists, " + limit.Token)
+		}
+		_, err := common.NewFixed(limit.Val, decimal)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, ret string, receipts []*tx.Receipt, err error) {
 	receipts = make([]*tx.Receipt, 0)
 
-	e.h.PushCtx()
+	i.h.PushCtx()
 	defer func() {
-		e.h.PopCtx()
+		i.h.PopCtx()
 	}()
 
-	e.h.Context().Set("stack0", "direct_call")
-	e.h.Context().Set("stack_height", 1) // record stack trace
+	i.h.Context().Set("stack0", "direct_call")
+	i.h.Context().Set("stack_height", 1) // record stack trace
 
 	var rtn []interface{}
 
-	rtn, cost, err = staticMonitor.Call(e.h, action.Contract, action.ActionName, action.Data)
+	rtn, cost, err = staticMonitor.Call(i.h, action.Contract, action.ActionName, action.Data)
 
 	if err != nil {
 		if strings.Contains(err.Error(), "execution killed") {
@@ -120,7 +159,7 @@ func (e *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 
 	ret = string(rj)
 
-	receipts = append(receipts, e.h.Context().GValue("receipts").([]*tx.Receipt)...)
+	receipts = append(receipts, i.h.Context().GValue("receipts").([]*tx.Receipt)...)
 
 	status = &tx.Status{
 		Code:    tx.Success,
@@ -130,50 +169,50 @@ func (e *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 }
 
 // Run actions in tx
-func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
-	e.h.Context().GSet("gas_limit", e.t.GasLimit)
-	e.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
+func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
+	i.h.Context().GSet("gas_limit", i.t.GasLimit)
+	i.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
 
-	e.tr = tx.NewTxReceipt(e.t.Hash())
+	i.tr = tx.NewTxReceipt(i.t.Hash())
 
-	if e.t.Delay > 0 {
-		e.h.DB().StoreDelaytx(string(e.t.Hash()))
-		e.tr.Status = &tx.Status{
+	if i.t.Delay > 0 {
+		i.h.DB().StoreDelaytx(string(i.t.Hash()))
+		i.tr.Status = &tx.Status{
 			Code:    tx.Success,
 			Message: "",
 		}
-		e.tr.GasUsage = e.t.Delay / 1e9 // TODO: determine the price
-		return e.tr, nil
+		i.tr.GasUsage = i.t.Delay / 1e9 // TODO: determine the price
+		return i.tr, nil
 	}
 
-	if e.t.IsDefer() {
-		if !e.h.DB().HasDelaytx(string(e.t.ReferredTx)) {
-			return nil, fmt.Errorf("delay tx not found, hash=%v", e.t.ReferredTx)
+	if i.t.IsDefer() {
+		if !i.h.DB().HasDelaytx(string(i.t.ReferredTx)) {
+			return nil, fmt.Errorf("delay tx not found, hash=%v", i.t.ReferredTx)
 		}
-		e.h.DB().DelDelaytx(string(e.t.ReferredTx))
+		i.h.DB().DelDelaytx(string(i.t.ReferredTx))
 
-		if !e.t.IsExpired(e.blockBaseCtx.Value("time").(int64)) {
-			e.tr.Status = &tx.Status{
+		if !i.t.IsExpired(i.blockBaseCtx.Value("time").(int64)) {
+			i.tr.Status = &tx.Status{
 				Code:    tx.Success,
 				Message: "transaction expired",
 			}
-			e.tr.GasUsage = 1 // TODO: determine the price
-			return e.tr, nil
+			i.tr.GasUsage = 1 // TODO: determine the price
+			return i.tr, nil
 		}
 	}
 
 	hasSetCode := false
 
-	for _, action := range e.t.Actions {
+	for _, action := range i.t.Actions {
 		if hasSetCode && action.Contract == "iost.system" && action.ActionName == "SetCode" {
-			e.tr.Receipts = nil
-			e.tr.Status.Code = tx.ErrorDuplicateSetCode
-			e.tr.Status.Message = "error duplicate set code in a tx"
+			i.tr.Receipts = nil
+			i.tr.Status.Code = tx.ErrorDuplicateSetCode
+			i.tr.Status.Message = "error duplicate set code in a tx"
 			break
 		}
 		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
 
-		cost, status, ret, receipts, err := e.runAction(*action)
+		cost, status, ret, receipts, err := i.runAction(*action)
 		ilog.Debugf("run action : %v, result is %v", action, status.Code)
 		ilog.Debug("used cost > ", cost)
 		ilog.Debugf("status > \n%v\n", status)
@@ -183,72 +222,72 @@ func (e *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			return nil, err
 		}
 
-		gasLimit := e.h.Context().GValue("gas_limit").(int64)
+		gasLimit := i.h.Context().GValue("gas_limit").(int64)
 
-		e.tr.Status = status
+		i.tr.Status = status
 		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") || (status.Code == tx.ErrorTimeout) {
 			cost = contract.NewCost(0, 0, gasLimit)
 		}
 
-		e.tr.GasUsage += cost.ToGas()
+		i.tr.GasUsage += cost.ToGas()
 		if status.Code == 0 {
-			for k, v := range e.h.Costs() {
-				e.tr.RAMUsage[k] = v.Data
+			for k, v := range i.h.Costs() {
+				i.tr.RAMUsage[k] = v.Data
 			}
 		}
 
-		e.h.Context().GSet("gas_limit", gasLimit-cost.ToGas())
+		i.h.Context().GSet("gas_limit", gasLimit-cost.ToGas())
 
-		e.h.PayCost(cost, e.publisherID)
+		i.h.PayCost(cost, i.publisherID)
 
 		if status.Code != tx.Success {
 			ilog.Errorf("isolator run action %v failed, status %v, will rollback", action, status)
-			e.tr.Receipts = nil
-			e.h.DB().Rollback()
+			i.tr.Receipts = nil
+			i.h.DB().Rollback()
 			break
 		} else {
-			e.tr.Receipts = append(e.tr.Receipts, receipts...)
+			i.tr.Receipts = append(i.tr.Receipts, receipts...)
 		}
-		e.tr.Returns = append(e.tr.Returns, ret)
+		i.tr.Returns = append(i.tr.Returns, ret)
 	}
 
-	return e.tr, nil
+	return i.tr, nil
 }
 
 // PayCost as name
-func (e *Isolator) PayCost() (*tx.TxReceipt, error) {
-	err := e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice, true)
+func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
+	err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice, true)
 	if err != nil {
-		e.h.DB().Rollback()
-		e.tr.RAMUsage = make(map[string]int64)
-		e.tr.Status.Code = tx.ErrorBalanceNotEnough
-		e.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
+		i.h.DB().Rollback()
+		i.tr.RAMUsage = make(map[string]int64)
+		i.tr.Status.Code = tx.ErrorBalanceNotEnough
+		i.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
 
-		err = e.h.DoPay(e.h.Context().Value("witness").(string), e.t.GasPrice, false)
+		err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice, false)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return e.tr, nil
+	return i.tr, nil
 }
 
 // Commit flush changes to db
-func (e *Isolator) Commit() {
-	e.h.DB().Commit()
+func (i *Isolator) Commit() {
+	i.h.DB().Commit()
 }
 
 // ClearAll clear this isolator
-func (e *Isolator) ClearAll() {
-	e.h = nil
+func (i *Isolator) ClearAll() {
+	i.h = nil
 }
 
 // ClearTx clear this tx
-func (e *Isolator) ClearTx() {
-	e.h.SetContext(e.blockBaseCtx)
-	e.h.Context().GClear()
-	e.blockBaseMode = false
-	e.h.ClearCosts()
-	e.h.DB().Rollback()
+func (i *Isolator) ClearTx() {
+	i.h.SetContext(i.blockBaseCtx)
+	i.h.Context().GClear()
+	i.blockBaseMode = false
+	i.h.ClearCosts()
+	i.h.DB().Rollback()
 }
 func checkTxParams(t *tx.Tx) error {
 	if t.GasPrice < 100 || t.GasPrice > 10000 {
