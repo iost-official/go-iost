@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/iost-official/go-iost/common"
@@ -40,21 +38,18 @@ func main() {
 	//		file.WriteString(fmt.Sprintf("%s,%s\n", account.GetIDByPubkey(ac.Pubkey), common.Base58Encode(ac.Seckey)))
 	//	}
 
+	flag.Parse()
 	genconfig()
 }
 
 func genconfig() {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		log.Fatal(err)
-	}
 	pushAddr := os.Getenv("PROMETHEUS_HOSTNAME")
 	username := os.Getenv("PROMETHEUS_USERNAME")
 	password := os.Getenv("PROMETHEUS_PASSWORD")
 	consoleLog := true
 	seedNodes := []string{fmt.Sprintf("/dns4/iserver-0.iserver.%s.svc.cluster.local/tcp/30000/ipfs/12D3KooWA2QZHXCLsVL9rxrtKPRqBSkQj7mCdHEhRoW8eJtn24ht", *cluster)}
 
-	file, err := os.Open(path.Join(dir, "keypairs"))
+	file, err := os.Open("keypairs")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -116,7 +111,7 @@ func genconfig() {
 		ContractPath:     "contract/",
 	}
 
-	genesisfile, err := os.Create(path.Join(dir, "genesis.yml"))
+	genesisfile, err := os.Create("genesis.yml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -193,7 +188,7 @@ func genconfig() {
 			c.P2P.DataPath = "/data/p2p/"
 		}
 
-		file, err := os.Create(path.Join(dir, fmt.Sprintf("iserver-%d.yml", i)))
+		file, err := os.Create(fmt.Sprintf("iserver-%d.yml", i))
 		if err != nil {
 			log.Fatal(err)
 		}
