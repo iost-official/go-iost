@@ -1,8 +1,6 @@
 const secondToNano = 1e9;
 const iostIssueRate = new BigNumber("1.0000000028119105");
 const activePermission = "active";
-const iostTotalSupply = 90 * 1000 * 1000 * 1000;
-const ramTotalSupply = 9 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000;
 
 class IssueContract {
     constructor() {
@@ -14,27 +12,27 @@ class IssueContract {
     }
 
     init() {
-        this._put("foundationAcc", "")
+        this._put("FoundationAccount", "");
     }
 
-    _initIOST(config) {
+    _initIOST(config, witnessInfo) {
         this._call("iost.token", "create", [
             "iost",
             "iost.issue",
-            iostTotalSupply,
+            config.IOSTTotalSupply,
             {
                 "can_transfer": true,
-                "decimal": config.iostDecimal
+                "decimal": config.IOSTDecimal
             }
         ]);
-        for (const witnessInfo of config.iostWitnessInfo) {
+        for (const info of witnessInfo) {
             this._call("iost.token", "issue", [
                 "iost",
-                witnessInfo.ID,
-                new BigNumber(witnessInfo.Balance)
+                info.ID,
+                new BigNumber(info.Balance).toFixed()
             ]);
         }
-        this._put("IOSTDecimal", config.iostDecimal);
+        this._put("IOSTDecimal", config.IOSTDecimal);
         this._put("IOSTLastIssueTime", this._getBlockTime());
     }
 
@@ -42,7 +40,7 @@ class IssueContract {
         this._call("iost.token", "create", [
             "ram",
             "iost.issue",
-            ramTotalSupply,
+            config.RAMTotalSupply,
             {
                 "can_transfer": false,
                 "decimal": 0
@@ -51,34 +49,36 @@ class IssueContract {
         this._call("iost.token", "issue", [
             "ram",
             "iost.pledge",
-            new BigNumber(config.ramGenesisAmount)
+            new BigNumber(config.RAMGenesisAmount).toFixed()
         ]);
         this._put("RAMLastIssueTime", this._getBlockTime());
     }
 
     /**
      * genesisConfig = {
-     *      iostWitnessInfo: {
-     *          ID: xxx,
-     *          Wwner: xxx,
-     *          Active: xxx,
-     *          Balance: 210xxx
-     *      },
-     *      iostDecimal: 8,
-     *      foundationAcc: "IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C",
-     *      ramGenesisAmount: 128 * 1024 * 1024 * 1024,
+     *      FoundationAccount string
+     *      IOSTTotalSupply   int64
+     *      IOSTDecimal       int64
+     *      RAMTotalSupply    int64
+     *      RAMGenesisAmount  int64
      * }
+     * witnessInfo = [{
+     *      ID      string
+     *      Owner   string
+     *      Active  string
+     *      Balance int64
+     * }]
      */
-    InitGenesis(adminID, genesisConfig) {
+    InitGenesis(adminID, genesisConfig, witnessInfo) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
             throw new Error("init out of genesis block")
         }
         this._put("adminID", adminID);
-        this._put("foundationAcc", genesisConfig.foundationAcc);
+        this._put("FoundationAccount", genesisConfig.FoundationAccount);
 
-        this._initIOST(genesisConfig);
-        this._initRAM(genesisConfig);
+        this._initIOST(genesisConfig, witnessInfo);
+        // this._initRAM(genesisConfig);
     }
 
     can_update(data) {
@@ -88,11 +88,14 @@ class IssueContract {
     }
 
     _requireAuth(account, permission) {
-        BlockChain.requireAuth(account, permission);
+        const ret = BlockChain.requireAuth(account, permission);
+        if (ret !== true) {
+            throw new Error("require auth failed. ret = " + ret);
+        }
     }
 
     _call(contract, api, args) {
-        const ret = JSON.parse(BlockChain.callWithAuth(contract, api, JSON.stringify(args)));
+        const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
         if (ret && Array.isArray(ret) && ret.length == 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
@@ -155,10 +158,10 @@ class IssueContract {
             return
         }
 
-        const foundationAcc = this._get("foundationAcc");
+        const foundationAcc = this._get("FoundationAccount");
         const decimal = this._get("IOSTDecimal");
         if (!foundationAcc) {
-            throw new Error("foundationAcc not set.");
+            throw new Error("FoundationAccount not set.");
         }
 
         this._put("IOSTLastIssueTime", currentTime);
@@ -169,12 +172,12 @@ class IssueContract {
         this._call("iost.token", "issue", [
             "iost",
             "iost.bonus",
-            bonus.number.toFixed(decimal)
+            bonus.toFixed(decimal)
         ]);
         this._call("iost.token", "issue", [
             "iost",
             foundationAcc,
-            issueAmount.minus(bonus).number.toFixed(decimal)
+            issueAmount.minus(bonus).toFixed(decimal)
         ]);
     }
 

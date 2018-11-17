@@ -17,6 +17,7 @@
         {
             "name": "InitProducer",
             "args": [
+                "string",
                 "string"
             ]
         },
@@ -32,6 +33,7 @@
                 "string",
                 "string",
                 "string",
+                "string",
                 "string"
             ]
         },
@@ -41,6 +43,13 @@
                 "string",
                 "string",
                 "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "GetProducer",
+            "args": [
                 "string"
             ]
         },
@@ -75,6 +84,12 @@
             "args": [
                 "string",
                 "string",
+                "string"
+            ]
+        },
+        {
+            "name": "GetVote",
+            "args": [
                 "string"
             ]
         },

@@ -503,14 +503,29 @@ func (pm *PeerManager) parseSeeds() {
 			continue
 		}
 
-		resAddrs, err := madns.Resolve(context.Background(), addr)
-		if err != nil {
-			ilog.Errorf("resolve multiaddr failed. err=%v, addr=%v", err, addr)
-			continue
+		if madns.Matches(addr) {
+			err = pm.dnsResolve(peerID, addr)
+			if err != nil {
+				time.AfterFunc(5*time.Second, func() {
+					ilog.Info("retry resolve dns")
+					pm.dnsResolve(peerID, addr)
+				})
+			}
+		} else {
+			pm.storePeerInfo(peerID, []multiaddr.Multiaddr{addr})
 		}
-
-		pm.storePeerInfo(peerID, resAddrs)
 	}
+
+}
+
+func (pm *PeerManager) dnsResolve(peerID peer.ID, addr multiaddr.Multiaddr) error {
+	resAddrs, err := madns.Resolve(context.Background(), addr)
+	if err != nil {
+		ilog.Errorf("resolve multiaddr failed. err=%v, addr=%v", err, addr)
+		return err
+	}
+	pm.storePeerInfo(peerID, resAddrs)
+	return nil
 }
 
 // Broadcast sends message to all the neighbors.
@@ -672,7 +687,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
-	if msg.messageType() != PublishTx {
+	if msg.messageType() != PublishTx && msg.messageType() != SyncHeight {
 		ilog.Infof("receiving message. type=%s, pid=%s", msg.messageType(), peerID.Pretty())
 	}
 	switch msg.messageType() {

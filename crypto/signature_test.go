@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"bytes"
+	"encoding/base64"
+	"fmt"
 
 	"github.com/iost-official/go-iost/common"
 	. "github.com/smartystreets/goconvey/convey"
@@ -13,11 +15,11 @@ func TestSignature(t *testing.T) {
 	Convey("Test of Signature", t, func() {
 		Convey("Encode and decode", func() {
 			//ac, _ := account.NewAccount(nil)
-			//sig, err := Sign(Secp256k1, Sha256([]byte("hello")), ac.Seckey)
+			//sig, err := Sign(Secp256k1, Sha3([]byte("hello")), ac.Seckey)
 			//So(err, ShouldBeNil)
 			//So(bytes.Equal(sig.Pubkey, ac.Pubkey), ShouldBeTrue)
-			info := common.Sha256([]byte("hello"))
-			seckey := common.Sha256([]byte("seckey"))
+			info := common.Sha3([]byte("hello"))
+			seckey := common.Sha3([]byte("seckey"))
 			pubkey := Secp256k1.GetPubkey(seckey)
 			sig := NewSignature(Secp256k1, info, seckey)
 			So(bytes.Equal(sig.Pubkey, pubkey), ShouldBeTrue)
@@ -42,9 +44,9 @@ func TestSign(t *testing.T) {
 	var pubkey []byte
 
 	Convey("Test of Crypto", t, func() {
-		Convey("Sha256", func() {
-			sha := "d4daf0546cb71d90688b45488a8fa000b0821ec14b73677b2fb7788739228c8b"
-			So(common.ToHex(common.Sha256(privkey)), ShouldEqual, sha)
+		Convey("Sha3", func() {
+			sha := "f420b28b56ce97e52adf4778a72b622c3e91115445026cf6e641459ec478dae8"
+			So(common.ToHex(common.Sha3(privkey)), ShouldEqual, sha)
 		})
 
 		Convey("Calculate public key", func() {
@@ -53,16 +55,40 @@ func TestSign(t *testing.T) {
 			So(common.ToHex(pubkey), ShouldEqual, pub)
 		})
 
-		Convey("Hash-160", func() {
-			hash := "9c1185a5c5e9fc54612808977ee8f548b2258d31"
-			So(common.ToHex(common.Hash160(Secp256k1.GetPubkey(privkey))), ShouldEqual, hash)
-		})
-
 		Convey("SignInSecp256k1 and verify", func() {
-			info := common.Sha256([]byte{1, 2, 3, 4})
+			info := common.Sha3([]byte{1, 2, 3, 4})
 			sig := Secp256k1.Sign(info, privkey)
 			So(Secp256k1.Verify(info, pubkey, sig), ShouldBeTrue)
 			So(Secp256k1.Verify(info, pubkey, []byte{5, 6, 7, 8}), ShouldBeFalse)
 		})
 	})
+}
+
+func TestSignature_Platform(t *testing.T) {
+	algo := NewAlgorithm("ed25519")
+
+	seckey := common.Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB")
+	t.Log(fmt.Sprintf("seckey > %x", seckey))
+	info := common.Sha3([]byte("hello"))
+	t.Log(fmt.Sprintf("info   > %x", info))
+	pubkey := algo.GetPubkey(seckey)
+	t.Log(fmt.Sprintf("pubkey > %x", pubkey))
+	t.Log("pubkey in base64 >", base64.StdEncoding.EncodeToString(pubkey))
+
+	sig := algo.Sign(info, seckey)
+	t.Log(fmt.Sprintf("sig    > %x", sig))
+	t.Log("sig in base64 >", base64.StdEncoding.EncodeToString(sig))
+
+	t.Log("secp256k1-----------------")
+
+	secp := NewAlgorithm("secp256k1")
+	sec := common.Base58Decode("EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE")
+	pubkey2 := secp.GetPubkey(sec)
+	t.Log(fmt.Sprintf("pubkey    > %x", pubkey2))
+	t.Log("pubkey in base64 >", base64.StdEncoding.EncodeToString(pubkey2))
+
+	sig2 := secp.Sign(info, sec)
+	t.Log(fmt.Sprintf("sig    > %x", sig2))
+	t.Log("sig in base64 >", base64.StdEncoding.EncodeToString(sig2))
+
 }

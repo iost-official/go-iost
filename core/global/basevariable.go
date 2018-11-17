@@ -2,6 +2,7 @@ package global
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -45,6 +46,7 @@ type BaseVariableImpl struct {
 	blockChain block.Chain
 	stateDB    db.MVCCDB
 	mode       TMode
+	modeMutex  *sync.RWMutex
 	config     *common.Config
 }
 
@@ -65,6 +67,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 		blockChain: blockChain,
 		stateDB:    stateDB,
 		mode:       ModeInit,
+		modeMutex:  new(sync.RWMutex),
 		config:     conf,
 	}, nil
 }
@@ -86,10 +89,14 @@ func (g *BaseVariableImpl) Config() *common.Config {
 
 // Mode return the mode
 func (g *BaseVariableImpl) Mode() TMode {
+	g.modeMutex.RLock()
+	defer g.modeMutex.RUnlock()
 	return g.mode
 }
 
 // SetMode is set the mode
 func (g *BaseVariableImpl) SetMode(m TMode) {
+	g.modeMutex.Lock()
+	defer g.modeMutex.Unlock()
 	g.mode = m
 }

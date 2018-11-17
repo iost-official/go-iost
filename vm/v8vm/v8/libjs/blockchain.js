@@ -6,22 +6,22 @@ let BlockChain = (function () {
         return ctxInfo["contract_name"];
     };
     // transfer IOSToken
-    let transfer = function (from, to, amount) {
+    let transfer = function (from, to, amount, memo) {
         if (!(amount instanceof Float64)) {
             amount = new Float64(amount);
         }
-        return bc.call("iost.token", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\"]");
+        return JSON.parse(bc.call("iost.token", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\", \"" + memo.toString() + "\"]"));
     };
     return {
         // transfer IOSToken
         transfer: transfer,
         // withdraw IOSToken
-        withdraw: function (to, amount) {
-            return transfer(contractName(), to, amount);
+        withdraw: function (to, amount, memo) {
+            return transfer(contractName(), to, amount, memo);
         },
         // deposit IOSToken
-        deposit: function (from, amount) {
-            return transfer(from, contractName(), amount);
+        deposit: function (from, amount, memo) {
+            return transfer(from, contractName(), amount, memo);
         },
         // get blockInfo
         blockInfo: function () {
@@ -39,11 +39,11 @@ let BlockChain = (function () {
         contractName: contractName,
         // call contract's api using args
         call: function (contract, api, args) {
-            return bc.call(contract, api, args);
+            return JSON.parse(bc.call(contract, api, args));
         },
         // call contract's api using args with auth
         callWithAuth: function (contract, api, args) {
-            return bc.callWithAuth(contract, api, args);
+            return JSON.parse(bc.callWithAuth(contract, api, args));
         },
         // check account's permission
         requireAuth: function (accountID, permission) {
@@ -54,7 +54,7 @@ let BlockChain = (function () {
             return bc.receipt(content);
         },
         // post event
-        receipt: function (content) {
+        event: function (content) {
             return bc.event(content);
         },
     }

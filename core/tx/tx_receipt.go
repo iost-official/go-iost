@@ -1,8 +1,6 @@
 package tx
 
 import (
-	"fmt"
-
 	"github.com/iost-official/go-iost/common"
 	txpb "github.com/iost-official/go-iost/core/tx/pb"
 )
@@ -22,27 +20,6 @@ const (
 	ErrorDuplicateSetCode // more than one set code action in a tx
 	ErrorUnknown          // other errors
 )
-
-// Return is the result of txreceipt.
-type Return struct {
-	FuncName string
-	Value    string
-}
-
-// ToPb convert Return to proto buf data structure.
-func (r *Return) ToPb() *txpb.Return {
-	return &txpb.Return{
-		FuncName: r.FuncName,
-		Value:    r.Value,
-	}
-}
-
-// FromPb convert Return from proto buf data structure.
-func (r *Return) FromPb(s *txpb.Return) *Return {
-	r.FuncName = s.FuncName
-	r.Value = s.Value
-	return r
-}
 
 // Status status of transaction execution result, including code and message
 type Status struct {
@@ -65,6 +42,24 @@ func (s *Status) FromPb(st *txpb.Status) *Status {
 	return s
 }
 
+// ToBytes converts Return to a specific byte slice.
+func (s *Status) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteInt32((int32(s.Code)), true)
+	sn.WriteString(s.Message, true)
+	return sn.Bytes()
+}
+
+// ReceiptType type of single receipt
+type ReceiptType int32
+
+const (
+	// SystemDefined system receipt, recording info of calling a method
+	SystemDefined ReceiptType = iota
+	// UserDefined user defined receipt, usually a json string
+	UserDefined
+)
+
 // Receipt generated when applying transaction
 type Receipt struct {
 	FuncName string
@@ -86,13 +81,21 @@ func (r *Receipt) FromPb(rp *txpb.Receipt) *Receipt {
 	return r
 }
 
+// ToBytes converts Receipt to a specific byte slice.
+func (r *Receipt) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteString(r.FuncName, true)
+	sn.WriteString(r.Content, true)
+	return sn.Bytes()
+}
+
 // TxReceipt Transaction Receipt
 type TxReceipt struct { //nolint:golint
 	TxHash   []byte
 	GasUsage int64
 	RAMUsage map[string]int64
 	Status   *Status
-	Returns  []*Return
+	Returns  []string
 	Receipts []*Receipt
 }
 
@@ -107,7 +110,7 @@ func NewTxReceipt(txHash []byte) *TxReceipt {
 		GasUsage: 0,
 		RAMUsage: make(map[string]int64),
 		Status:   status,
-		Returns:  []*Return{},
+		Returns:  []string{},
 		Receipts: []*Receipt{},
 	}
 }
@@ -118,18 +121,14 @@ func (r *TxReceipt) ToPb() *txpb.TxReceipt {
 		TxHash:   r.TxHash,
 		GasUsage: r.GasUsage,
 		Status:   r.Status.ToPb(),
-		Returns:  []*txpb.Return{},
+		Returns:  []string{},
 		Receipts: []*txpb.Receipt{},
 	}
 
-	tr.RamUsageName, tr.RamUsage = mapToSortedSlices(r.RAMUsage)
+	tr.RamUsage = r.RAMUsage
 
 	for _, rt := range r.Returns {
-		if rt == nil {
-			fmt.Println("rt is nil")
-			break
-		}
-		tr.Returns = append(tr.Returns, rt.ToPb())
+		tr.Returns = append(tr.Returns, rt)
 	}
 	for _, re := range r.Receipts {
 		tr.Receipts = append(tr.Receipts, re.ToPb())
@@ -150,15 +149,11 @@ func (r *TxReceipt) Encode() []byte {
 func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) *TxReceipt {
 	r.TxHash = tr.TxHash
 	r.GasUsage = tr.GasUsage
-	r.RAMUsage = make(map[string]int64)
-	for i, k := range tr.RamUsageName {
-		r.RAMUsage[k] = tr.RamUsage[i]
-	}
+	r.RAMUsage = tr.RamUsage
 	s := &Status{}
 	r.Status = s.FromPb(tr.Status)
 	for _, rt := range tr.Returns {
-		re := &Return{}
-		r.Returns = append(r.Returns, re.FromPb(rt))
+		r.Returns = append(r.Returns, rt)
 	}
 	for _, re := range tr.Receipts {
 		rc := &Receipt{}
@@ -178,9 +173,32 @@ func (r *TxReceipt) Decode(b []byte) error {
 	return nil
 }
 
+// ToBytes converts TxReceipt to a specific byte slice.
+func (r *TxReceipt) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteBytes(r.TxHash, false)
+	sn.WriteInt64(r.GasUsage, true)
+	sn.WriteBytes(r.Status.ToBytes(), false)
+	sn.WriteMapStringToI64(r.RAMUsage, true)
+
+	returnBytes := make([][]byte, 0, len(r.Returns))
+	for _, rt := range r.Returns {
+		returnBytes = append(returnBytes, []byte(rt))
+	}
+	sn.WriteBytesSlice(returnBytes, false)
+
+	receiptBytes := make([][]byte, 0, len(r.Receipts))
+	for _, re := range r.Receipts {
+		receiptBytes = append(receiptBytes, re.ToBytes())
+	}
+	sn.WriteBytesSlice(receiptBytes, false)
+
+	return sn.Bytes()
+}
+
 // Hash return byte hash
 func (r *TxReceipt) Hash() []byte {
-	return common.Sha3(r.Encode())
+	return common.Sha3(r.ToBytes())
 }
 
 func (r *TxReceipt) String() string {
@@ -189,23 +207,4 @@ func (r *TxReceipt) String() string {
 	}
 	tr := r.ToPb()
 	return tr.String()
-}
-
-func mapToSortedSlices(m map[string]int64) ([]string, []int64) {
-	var sk = make([]string, 0)
-	var sv = make([]int64, 0)
-	for k, v := range m {
-		sk = append(sk, k)
-		sv = append(sv, v)
-	}
-
-	for i := 1; i < len(sk); i++ {
-		for j := 0; j < len(sk)-i; j++ {
-			if sk[j] > sk[j+1] {
-				sk[j], sk[j+1] = sk[j+1], sk[j]
-				sv[j], sv[j+1] = sv[j+1], sv[j]
-			}
-		}
-	}
-	return sk, sv
 }

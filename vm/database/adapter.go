@@ -13,16 +13,14 @@ const (
 )
 
 type chainbaseAdapter struct {
-	cb  IMultiValue
-	err error // todo handle error
+	cb IMultiValue
 }
 
 func (c *chainbaseAdapter) Get(key string) (value string) {
 	var err error
 	value, err = c.cb.Get(StateTable, key)
 	if err != nil {
-		c.err = err
-		return NilPrefix
+		panic(err)
 	}
 	if value == "" {
 		return NilPrefix
@@ -31,22 +29,27 @@ func (c *chainbaseAdapter) Get(key string) (value string) {
 }
 
 func (c *chainbaseAdapter) Put(key, value string) {
-	c.err = c.cb.Put(StateTable, key, value)
+	err := c.cb.Put(StateTable, key, value)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (c *chainbaseAdapter) Has(key string) bool {
 	ok, err := c.cb.Has(StateTable, key)
 	if err != nil {
-		c.err = err
-		return false
+		panic(err)
 	}
 	return ok
 }
 
 func (c *chainbaseAdapter) Del(key string) {
-	c.err = c.cb.Del(StateTable, key)
+	err := c.cb.Del(StateTable, key)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func newChainbaseAdapter(cb IMultiValue) *chainbaseAdapter {
-	return &chainbaseAdapter{cb, nil}
+	return &chainbaseAdapter{cb}
 }

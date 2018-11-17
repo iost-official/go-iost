@@ -14,22 +14,7 @@
 
 package iwallet
 
-import (
-	"context"
-	"fmt"
-
-	"os"
-	//"encoding/hex"
-
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/crypto"
-	pb "github.com/iost-official/go-iost/rpc"
-	"github.com/mitchellh/go-homedir"
-	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-)
-
+/*
 // publishCmd represents the publish command
 var publishCmd = &cobra.Command{
 	Use:   "publish",
@@ -99,14 +84,14 @@ var publishCmd = &cobra.Command{
 		saveTo(dest, stx.Encode())
 
 		if !isLocal {
-			var txHash []byte
+			var txHash string
 			txHash, err = sendTx(stx)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
 			}
 			fmt.Println("iost node:receive your tx!")
-			fmt.Println("the transaction hash is:", saveBytes(txHash))
+			fmt.Println("the transaction hash is:", txHash)
 			if checkResult {
 				checkTransaction(txHash)
 			}
@@ -114,8 +99,6 @@ var publishCmd = &cobra.Command{
 	},
 }
 
-var isLocal bool
-var server string
 
 func init() {
 	rootCmd.AddCommand(publishCmd)
@@ -140,26 +123,8 @@ func init() {
 	// publishCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func sendTx(stx *tx.Tx) ([]byte, error) {
-	conn, err := grpc.Dial(server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	client := pb.NewApisClient(conn)
-	resp, err := client.SendTx(context.Background(), &pb.TxReq{Tx: stx.ToPb()})
-	if err != nil {
-		return nil, err
-	}
-	return []byte(resp.Hash), nil
-	/*
-		switch resp.Code {
-		case 0:
-			return resp.Hash, nil
-		case -1:
-			return nil, errors.New("tx rejected")
-		default:
-			return nil, errors.New("unknown return")
-		}
-	*/
+// SetServer set the server.
+func SetServer(s string) {
+	server = s
 }
+*/

@@ -15,6 +15,7 @@ type StaticProperty struct {
 	NumberOfWitnesses int64
 	WitnessList       []string
 	Watermark         map[string]int64
+	SlotUsed          map[int64]bool
 }
 
 func newStaticProperty(account *account.KeyPair, witnessList []string) *StaticProperty {
@@ -22,6 +23,7 @@ func newStaticProperty(account *account.KeyPair, witnessList []string) *StaticPr
 		account:     account,
 		WitnessList: make([]string, 0),
 		Watermark:   make(map[string]int64),
+		SlotUsed:    make(map[int64]bool),
 	}
 
 	property.updateWitness(witnessList)

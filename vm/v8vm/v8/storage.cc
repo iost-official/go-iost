@@ -248,6 +248,7 @@ void IOSTContractStorage_Put(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().SetNull();
@@ -300,6 +301,7 @@ void IOSTContractStorage_Has(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(result);
@@ -337,7 +339,7 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
 
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-    char* resultStr = "";
+    char* resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -352,10 +354,16 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
 
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+    if (resultStr == nullptr) {
+        args.GetReturnValue().SetNull();
+    } else {
+        args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+        free(resultStr);
+    }
 }
 
 void IOSTContractStorage_Del(const FunctionCallbackInfo<Value> &args) {
@@ -403,6 +411,7 @@ void IOSTContractStorage_Del(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().SetNull();
@@ -474,6 +483,7 @@ void IOSTContractStorage_MapPut(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().SetNull();
@@ -535,6 +545,7 @@ void IOSTContractStorage_MapHas(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(result);
@@ -581,7 +592,7 @@ void IOSTContractStorage_MapGet(const FunctionCallbackInfo<Value> &args) {
     String::Utf8Value keyStr(key);
     String::Utf8Value fieldStr(field);
     String::Utf8Value ownerStr(owner);
-    char* resultStr = "";
+    char* resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -596,9 +607,15 @@ void IOSTContractStorage_MapGet(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+    if (resultStr == nullptr) {
+        args.GetReturnValue().SetNull();
+    } else {
+        args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+        free(resultStr);
+    }
 }
 
 void IOSTContractStorage_MapDel(const FunctionCallbackInfo<Value> &args) {
@@ -656,6 +673,7 @@ void IOSTContractStorage_MapDel(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().SetNull();
@@ -692,7 +710,7 @@ void IOSTContractStorage_MapKeys(const FunctionCallbackInfo<Value> &args) {
 
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-    char *resultStr = "";
+    char *resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -707,9 +725,11 @@ void IOSTContractStorage_MapKeys(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+    if (resultStr != nullptr) free(resultStr);
 }
 
 void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
@@ -732,7 +752,7 @@ void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    Local<Value> owner = args[2];
+    Local<Value> owner = args[1];
     if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_MapLen owner must be string.")
@@ -758,6 +778,7 @@ void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set((int)result);
@@ -820,6 +841,7 @@ void IOSTContractStorage_GlobalHas(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(result);
@@ -867,7 +889,7 @@ void IOSTContractStorage_GlobalGet(const FunctionCallbackInfo<Value> &args) {
     String::Utf8Value contractStr(contract);
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-    char* resultStr = "";
+    char* resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -882,9 +904,15 @@ void IOSTContractStorage_GlobalGet(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+    if (resultStr == nullptr) {
+        args.GetReturnValue().SetNull();
+    } else {
+        args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+        free(resultStr);
+    }
 }
 
 void IOSTContractStorage_GlobalMapHas(const FunctionCallbackInfo<Value> &args) {
@@ -954,6 +982,7 @@ void IOSTContractStorage_GlobalMapHas(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(result);
@@ -1011,7 +1040,7 @@ void IOSTContractStorage_GlobalMapGet(const FunctionCallbackInfo<Value> &args) {
     String::Utf8Value keyStr(key);
     String::Utf8Value fieldStr(field);
     String::Utf8Value ownerStr(owner);
-    char* resultStr = "";
+    char* resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -1026,9 +1055,15 @@ void IOSTContractStorage_GlobalMapGet(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+    if (resultStr == nullptr) {
+        args.GetReturnValue().SetNull();
+    } else {
+        args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+        free(resultStr);
+    }
 }
 
 void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) {
@@ -1073,7 +1108,7 @@ void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) 
     String::Utf8Value contractStr(contract);
     String::Utf8Value keyStr(key);
     String::Utf8Value ownerStr(owner);
-    char *resultStr = "";
+    char *resultStr = nullptr;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -1088,9 +1123,11 @@ void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) 
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
+    if (resultStr != nullptr) free(resultStr);
 }
 
 void IOSTContractStorage_GlobalMapLen(const FunctionCallbackInfo<Value> &args) {
@@ -1150,6 +1187,7 @@ void IOSTContractStorage_GlobalMapLen(const FunctionCallbackInfo<Value> &args) {
             String::NewFromUtf8(isolate, ret)
         );
         isolate->ThrowException(err);
+        free(ret);
         return;
     }
     args.GetReturnValue().Set((int)result);
@@ -1210,7 +1248,7 @@ void InitStorage(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     );
     storageTpl->Set(
         String::NewFromUtf8(isolate, "globalHas"),
-        FunctionTemplate::New(isolate, IOSTContractStorage_GlobalGet)
+        FunctionTemplate::New(isolate, IOSTContractStorage_GlobalHas)
     );
     storageTpl->Set(
         String::NewFromUtf8(isolate, "globalMapHas"),

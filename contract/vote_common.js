@@ -39,11 +39,14 @@ class VoteCommonContract {
     }
 
     _requireAuth(account, permission) {
-        BlockChain.requireAuth(account, permission);
+        const ret = BlockChain.requireAuth(account, permission);
+        if (ret !== true) {
+            throw new Error("require auth failed. ret = " + ret);
+        }
     }
 
     _call(contract, api, args) {
-        const ret = JSON.parse(BlockChain.callWithAuth(contract, api, JSON.stringify(args)));
+        const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
         if (ret && Array.isArray(ret) && ret.length == 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
@@ -169,7 +172,7 @@ class VoteCommonContract {
         const bn = this._getBlockNumber();
 
         if (bn > 0) {
-            this._call("iost.token", "transfer", ["iost", owner, "iost.vote", newVoteFee]);
+            this._call("iost.token", "transfer", ["iost", owner, "iost.vote", newVoteFee, ""]);
         }
 
         const voteId = this._nextId();
@@ -272,6 +275,22 @@ class VoteCommonContract {
         }
     }
 
+    GetOption(voteId, option) {
+        this._checkVote(voteId);
+        this._checkDel(voteId);
+
+        if (!storage.mapHas(optionPrefix + voteId, option)) {
+            throw new Error("option not exist");
+        }
+
+        const optionProp = this._mapGet(optionPrefix + voteId, option);
+        return {
+            votes: optionProp[0],
+            deleted: optionProp[1],
+            clearTime: optionProp[2]
+        };
+    }
+
     _clearUserVote(clearTime, userVote) {
         if (clearTime >= userVote[1]) {
             userVote[2] = userVote[0];
@@ -290,7 +309,7 @@ class VoteCommonContract {
 
         amount = this._fixAmount(amount);
 
-        this._call("iost.token", "transfer", ["iost", account, "iost.vote", amount.number.toFixed()]);
+        this._call("iost.token", "transfer", ["iost", account, "iost.vote", amount.toFixed(), ""]);
 
         if (!storage.mapHas(optionPrefix + voteId, option)) {
             throw new Error("option does not exist");
@@ -306,10 +325,10 @@ class VoteCommonContract {
 
         if (userVotes.hasOwnProperty(option)) {
             userVotes[option] = this._clearUserVote(clearTime, userVotes[option]);
-            userVotes[option][0] = new Float64(userVotes[option][0]).plus(amount).number.toFixed();
+            userVotes[option][0] = new Float64(userVotes[option][0]).plus(amount).toFixed();
             userVotes[option][1] = this._getBlockNumber();
         } else {
-            userVotes[option] = this._clearUserVote(clearTime, [amount.number.toFixed(), this._getBlockNumber(), "0"]);
+            userVotes[option] = this._clearUserVote(clearTime, [amount.toFixed(), this._getBlockNumber(), "0"]);
         }
         this._mapPut(userVotePrefix + voteId, account, userVotes);
         if (clearTime == this._getBlockNumber()) {
@@ -318,7 +337,7 @@ class VoteCommonContract {
         }
 
         const votes = new Float64(optionProp[0]).plus(amount);
-        optionProp[0]  = votes.number.toFixed();
+        optionProp[0]  = votes.toFixed();
         this._mapPut(optionPrefix + voteId, option, optionProp);
 
         const info = this._mapGet("voteInfo", voteId);
@@ -358,15 +377,15 @@ class VoteCommonContract {
             throw new Error("unvoteInterval not reached.");
         }
 
-        this._call("iost.token", "transfer", ["iost", "iost.vote", account, amount.number.toFixed()]);
+        this._call("iost.token", "transfer", ["iost", "iost.vote", account, amount.toFixed(), ""]);
 
         const leftVoteNum = votes.minus(amount);
 
-        userVotes[option][0] = leftVoteNum.number.toFixed();
+        userVotes[option][0] = leftVoteNum.toFixed();
 
         const realUnvotes = new Float64(userVotes[option][2]).minus(amount);
         if (realUnvotes.gt(new Float64("0"))) {
-            userVotes[option][2] = realUnvotes.number.toFixed();
+            userVotes[option][2] = realUnvotes.toFixed();
             this._mapPut(userVotePrefix + voteId, account, userVotes);
             return;
         }
@@ -385,14 +404,14 @@ class VoteCommonContract {
 
 
         if (storage.mapHas(optionPrefix + voteId, option)) {
-            optionProp[0] = new Float64(optionProp[0]).plus(realUnvotes).number.toFixed();
+            optionProp[0] = new Float64(optionProp[0]).plus(realUnvotes).toFixed();
             this._mapPut(optionPrefix + voteId, option, optionProp);
         }
 
         if (storage.mapHas(preResultPrefix + voteId, option)) {
             let preResultVotes = this._mapGet(preResultPrefix + voteId, option);
             const votes = new Float64(preResultVotes).plus(realUnvotes);
-            preResultVotes = votes.number.toFixed();
+            preResultVotes = votes.toFixed();
 
             if (votes.lt(new Float64(info.minVote))) {
                 this._mapDel(preResultPrefix + voteId, option);
@@ -400,6 +419,28 @@ class VoteCommonContract {
                 this._mapPut(preResultPrefix + voteId, option, preResultVotes);
             }
         }
+    }
+
+    GetVote(voteId, account) {
+        this._checkVote(voteId);
+
+        let userVotes = this._mapGet(userVotePrefix + voteId, account);
+        if (!userVotes) {
+            return {};
+        }
+        let votes = [];
+        for (const k in userVotes) {
+            if (!userVotes.hasOwnProperty(k)) {
+                continue;
+            }
+            votes.push({
+                option: k,
+                votes: new Float64(userVotes[k][0]).minus(new Float64(userVotes[k][2])).toFixed(),
+                voteTime: userVotes[k][1],
+                clearedVotes: userVotes[k][2]
+            });
+        }
+        return votes;
     }
 
     GetResult(voteId) {
@@ -431,7 +472,7 @@ class VoteCommonContract {
 
         const deposit = new Float64(info.deposit);
         if (!deposit.isZero()) {
-            this._call("iost.token", "transfer", ["iost", owner, "iost.vote", deposit]);
+            this._call("iost.token", "transfer", ["iost", owner, "iost.vote", deposit, ""]);
         }
         this._delVote(voteId);
     }

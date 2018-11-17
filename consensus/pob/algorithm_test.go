@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/go-iost/core/txpool/mock"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/smartystreets/goconvey/convey"
@@ -48,6 +49,7 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 			Number:     10,
 			Witness:    "witness",
 			Time:       123456,
+			GasUsage:   0,
 		},
 	}
 	topBlock.CalculateHeadHash()
@@ -58,23 +60,69 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	}
 	defer stateDB.Close()
 	vi := database.NewVisitor(0, stateDB)
-	vi.SetBalance(testID[0], 100000000)
+	vi.SetTokenBalance("iost", testID[0], 100000000000000000)
 	vi.SetContract(native.SystemABI())
 	vi.Commit()
 	stateDB.Tag(string(topBlock.HeadHash()))
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
 	pendingTx := txpool.NewSortedTxMap()
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 40000; i++ {
 		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 		trx, _ := MakeTx(act)
 		pendingTx.Add(trx)
 	}
-	mockTxPool.EXPECT().TxIterator().Return(pendingTx.Iter(), &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
-	mockTxPool.EXPECT().TxTimeOut(gomock.Any()).Return(false).AnyTimes()
+	mockTxPool.EXPECT().PendingTx().Return(pendingTx, &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
+	mockTxPool.EXPECT().DelTxList(gomock.Any()).AnyTimes()
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
-		generateBlock(account, mockTxPool, stateDB)
+		generateBlock(account, mockTxPool, stateDB, time.Millisecond*1000)
 	}
+	b.StopTimer()
+}
+
+func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
+	account, _ := account.NewKeyPair(nil, crypto.Secp256k1)
+	topBlock := &block.Block{
+		Head: &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     10,
+			Witness:    "witness",
+			Time:       123456,
+		},
+	}
+	topBlock.CalculateHeadHash()
+	mockController := gomock.NewController(nil)
+	stateDB, err := db.NewMVCCDB("./StateDB")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer stateDB.Close()
+	vi := database.NewVisitor(0, stateDB)
+	vi.SetTokenBalance("iost", testID[0], 100000000000000000)
+	vi.SetContract(native.SystemABI())
+	vi.Commit()
+	stateDB.Tag(string(topBlock.HeadHash()))
+	mockTxPool := txpool_mock.NewMockTxPool(mockController)
+	pendingTx := txpool.NewSortedTxMap()
+	for i := 0; i < 30000; i++ {
+		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+		trx, _ := MakeTx(act)
+		pendingTx.Add(trx)
+	}
+	mockTxPool.EXPECT().PendingTx().Return(pendingTx, &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
+	mockTxPool.EXPECT().DelTxList(gomock.Any()).AnyTimes()
+	blk, _ := generateBlock(account, mockTxPool, stateDB, time.Millisecond*1000)
+
+	b.ResetTimer()
+	for j := 0; j < b.N; j++ {
+		v := verifier.Verifier{}
+		v.Verify(blk, topBlock, stateDB, &verifier.Config{
+			Mode:        0,
+			Timeout:     time.Millisecond * 1000,
+			TxTimeLimit: time.Millisecond * 100,
+		})
+	}
+	b.StopTimer()
 }
 
 func TestConfirmNode(t *testing.T) {
@@ -206,9 +254,9 @@ func TestNodeInfoUpdate(t *testing.T) {
 
 func TestVerifyBasics(t *testing.T) {
 	convey.Convey("Test of verifyBasics", t, func() {
-		secKey := common.Sha256([]byte("secKey of id0"))
+		secKey := common.Sha3([]byte("secKey of id0"))
 		account0, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
-		secKey = common.Sha256([]byte("secKey of id1"))
+		secKey = common.Sha3([]byte("secKey of id1"))
 		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		staticProperty = newStaticProperty(account1, []string{account0.ID, account1.ID, "id2"})
 		convey.Convey("Normal (self block)", func() {
@@ -285,11 +333,11 @@ func TestVerifyBasics(t *testing.T) {
 
 func TestVerifyBlock(t *testing.T) {
 	convey.Convey("Test of verify block", t, func() {
-		secKey := common.Sha256([]byte("secKey of id0"))
+		secKey := common.Sha3([]byte("secKey of id0"))
 		account0, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
-		secKey = common.Sha256([]byte("sec of id1"))
+		secKey = common.Sha3([]byte("sec of id1"))
 		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
-		secKey = common.Sha256([]byte("sec of id2"))
+		secKey = common.Sha3([]byte("sec of id2"))
 		account2, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		staticProperty = newStaticProperty(account0, []string{account0.ID, account1.ID, account2.ID})
 		rootTime := common.GetCurrentTimestamp().Slot - 1

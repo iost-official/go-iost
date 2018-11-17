@@ -17,7 +17,7 @@ var (
 	minTickerTime = time.Second
 )
 
-func compareDelayTx(a, b interface{}) int {
+func compareDeferTx(a, b interface{}) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
 	if txa.Time == txb.Time {
@@ -26,9 +26,9 @@ func compareDelayTx(a, b interface{}) int {
 	return int(txa.Time - txb.Time)
 }
 
-// DeferServer manages delayed transaction and sends them to txpool on time.
+// DeferServer manages defer transaction and sends them to txpool on time.
 type DeferServer struct {
-	index            *redblacktree.Tree
+	pool             *redblacktree.Tree
 	rw               *sync.RWMutex
 	nextScheduleTime atomic.Int64
 
@@ -40,7 +40,7 @@ type DeferServer struct {
 // NewDeferServer returns a new DeferServer instance.
 func NewDeferServer(txpool *TxPImpl) (*DeferServer, error) {
 	deferServer := &DeferServer{
-		index:  redblacktree.NewWith(compareDelayTx),
+		pool:   redblacktree.NewWith(compareDeferTx),
 		rw:     new(sync.RWMutex),
 		txpool: txpool,
 		quitCh: make(chan struct{}),
@@ -59,39 +59,38 @@ func (d *DeferServer) buildIndex() error {
 		return err
 	}
 	for _, t := range txs {
-		deferTx := &tx.Tx{
-			ReferredTx: t.ReferredTx,
-			Time:       t.Time + t.Delay,
-		}
-		d.index.Put(deferTx, true)
+		d.pool.Put(d.toIndex(t), true)
 	}
 	return nil
 }
 
-func (d *DeferServer) toDeferTx(t *tx.Tx) *tx.Tx {
+func (d *DeferServer) toIndex(delayTx *tx.Tx) *tx.Tx {
 	return &tx.Tx{
-		ReferredTx: t.ReferredTx,
-		Time:       t.Time + t.Delay,
+		ReferredTx: delayTx.Hash(),
+		Time:       delayTx.Time + delayTx.Delay,
 	}
 }
 
 // DelDeferTx deletes a tx in defer server.
-func (d *DeferServer) DelDeferTx(t *tx.Tx) error {
-	deferTx := d.toDeferTx(t)
+func (d *DeferServer) DelDeferTx(deferTx *tx.Tx) error {
+	idx := &tx.Tx{
+		ReferredTx: deferTx.ReferredTx,
+		Time:       deferTx.Time,
+	}
 	d.rw.Lock()
-	d.index.Remove(deferTx)
+	d.pool.Remove(idx)
 	d.rw.Unlock()
 	return nil
 }
 
 // StoreDeferTx stores a tx in defer server.
-func (d *DeferServer) StoreDeferTx(t *tx.Tx) {
-	deferTx := d.toDeferTx(t)
+func (d *DeferServer) StoreDeferTx(delayTx *tx.Tx) {
+	idx := d.toIndex(delayTx)
 	d.rw.Lock()
-	d.index.Put(deferTx, true)
+	d.pool.Put(idx, true)
 	d.rw.Unlock()
-	if deferTx.Time < d.nextScheduleTime.Load() {
-		d.nextScheduleTime.Store(deferTx.Time)
+	if idx.Time < d.nextScheduleTime.Load() {
+		d.nextScheduleTime.Store(idx.Time)
 		d.restartDeferTicker()
 	}
 }
@@ -99,7 +98,7 @@ func (d *DeferServer) StoreDeferTx(t *tx.Tx) {
 // DumpDeferTx dumps all defer transactions for debug.
 func (d *DeferServer) DumpDeferTx() []*tx.Tx {
 	ret := make([]*tx.Tx, 0)
-	iter := d.index.Iterator()
+	iter := d.pool.Iterator()
 	d.rw.RLock()
 	ok := iter.Next()
 	for ok {
@@ -143,7 +142,7 @@ func (d *DeferServer) deferTicker() {
 			d.quitCh <- struct{}{}
 			return
 		case <-time.After(scheduled):
-			iter := d.index.Iterator()
+			iter := d.pool.Iterator()
 			d.rw.RLock()
 			ok := iter.Next()
 			d.rw.RUnlock()
@@ -160,7 +159,7 @@ func (d *DeferServer) deferTicker() {
 				}
 				if err == nil || err == ErrDupChainTx || err == ErrDupPendingTx {
 					d.rw.Lock()
-					d.index.Remove(deferTx)
+					d.pool.Remove(deferTx)
 					d.rw.Unlock()
 				}
 				d.rw.RLock()
