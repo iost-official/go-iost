@@ -6,17 +6,23 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 )
 
-// ABI generate iost.system abi and contract
-func ABI() *contract.Contract {
-	return genNativeAbi("iost.system", systemABIs)
+// SystemABI generate iost.system abi and contract
+func SystemABI() *contract.Contract {
+	return ABI("iost.system", systemABIs)
 }
 
-// BonusABI generate iost.bonus abi and contract
-func BonusABI() *contract.Contract {
-	return genNativeAbi("iost.bonus", bonusABIs)
+// GasABI generate iost.gas abi and contract
+func GasABI() *contract.Contract {
+	return ABI("iost.gas", gasABIs)
 }
 
-func genNativeAbi(id string, abi map[string]*abi) *contract.Contract {
+// TokenABI generate iost.token abi and contract
+func TokenABI() *contract.Contract {
+	return ABI("iost.token", tokenABIs)
+}
+
+// ABI generate native abis
+func ABI(id string, abi map[string]*abi) *contract.Contract {
 	c := &contract.Contract{
 		ID:   id,
 		Code: "codes",
@@ -29,11 +35,8 @@ func genNativeAbi(id string, abi map[string]*abi) *contract.Contract {
 
 	for _, v := range abi {
 		c.Info.Abi = append(c.Info.Abi, &contract.ABI{
-			Name:     v.name,
-			Args:     v.args,
-			Payment:  0,
-			GasPrice: int64(1000),
-			Limit:    contract.NewCost(100, 100, 100),
+			Name: v.name,
+			Args: v.args,
 		})
 	}
 

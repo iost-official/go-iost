@@ -11,16 +11,13 @@ message Info {
 
 message ABI {
     string name = 1;
-    int32 payment = 2;
-    Cost limit = 3;
-    int64 gas_price = 4;
-    repeated string args = 5;
+    repeated string args = 2;
+    repeated Amount amountLimit = 3;
 }
 
-message Cost {
-    int64 data = 1;
-    int64 net = 2;
-    int64 CPU = 3;
+message Amount {
+    string token = 1;
+    string val = 2;
 }
 
 message Contract {

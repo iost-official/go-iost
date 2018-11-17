@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
-
 	"time"
 
 	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/account"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
@@ -25,10 +24,11 @@ const (
 )
 
 var (
-	errContractNotFound = errors.New("contract not found")
-	errSetUpArgs        = errors.New("key does not exist")
-	errCannotPay        = errors.New("publisher's balance less than price * limit")
+	errSetUpArgs = errors.New("key does not exist")
+	errCannotPay = errors.New("publisher's gas less than price * limit")
 )
+
+//go:generate mockgen -destination mock/engine_mock.go -package mock github.com/iost-official/go-iost/vm Engine
 
 // Engine the smart contract engine
 type Engine interface {
@@ -49,16 +49,12 @@ func SetUp(config *common.VMConfig) error {
 }
 
 type engineImpl struct {
-	ho *host.Host
-
-	jsPath      string
+	ho          *host.Host
 	publisherID string
 
 	logger        *ilog.Logger
 	consoleWriter *ilog.ConsoleWriter
 	fileWriter    *ilog.FileWriter
-
-	isSimulated bool
 }
 
 // NewEngine ...
@@ -70,24 +66,7 @@ func NewEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
 	return e
 }
 
-// NewSimulatedEngine create an engine that only execute the tx but not put it onto the chain
-func NewSimulatedEngine(bh *block.BlockHead, cb database.IMultiValue) Engine {
-	db := database.NewVisitor(defaultCacheLength, cb)
-
-	e := newSimulatedEngine(bh, db)
-
-	return e
-}
-
 func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
-	return newEngineImpl(bh, db, false)
-}
-
-func newSimulatedEngine(bh *block.BlockHead, db *database.Visitor) Engine {
-	return newEngineImpl(bh, db, true)
-}
-
-func newEngineImpl(bh *block.BlockHead, db *database.Visitor, isSimulated bool) Engine {
 	ctx := host.NewContext(nil)
 
 	ctx = loadBlkInfo(ctx, bh)
@@ -95,14 +74,14 @@ func newEngineImpl(bh *block.BlockHead, db *database.Visitor, isSimulated bool) 
 	//ilog.Error("iost.system is ", db.Contract("iost.system"))
 
 	if db.Contract("iost.system") == nil {
-		db.SetContract(native.ABI())
+		db.SetContract(native.SystemABI())
 	}
 
 	logger := ilog.New()
 	logger.Stop()
 	h := host.NewHost(ctx, db, staticMonitor, logger)
 
-	e := &engineImpl{ho: h, logger: logger, isSimulated: isSimulated}
+	e := &engineImpl{ho: h, logger: logger}
 	runtime.SetFinalizer(e, func(e *engineImpl) {
 		e.GC()
 	})
@@ -138,14 +117,30 @@ func (e *engineImpl) SetUp(k, v string) error {
 	return nil
 }
 
-func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
+// nolint
+func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
+	e.ho.SetDeadline(time.Now().Add(limit))
+	err := checkTxParams(tx0)
+	if err != nil {
+		ilog.Error(err)
+		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
+	}
+
+	e.publisherID = tx0.Publisher
+	bl := e.ho.DB().TokenBalance("iost", e.publisherID)
+
+	if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
+		ilog.Error(errCannotPay)
+		return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
+	}
+
 	loadTxInfo(e.ho, tx0, e.publisherID)
 	defer func() {
 		e.ho.PopCtx()
 	}()
 
 	e.ho.Context().GSet("gas_limit", tx0.GasLimit)
-	e.ho.Context().GSet("receipts", make([]tx.Receipt, 0))
+	e.ho.Context().GSet("receipts", make([]*tx.Receipt, 0))
 
 	txr := tx.NewTxReceipt(tx0.Hash())
 	hasSetCode := false
@@ -191,64 +186,30 @@ func (e *engineImpl) exec(tx0 *tx.Tx) (*tx.TxReceipt, error) {
 			break
 		} else {
 			txr.Receipts = append(txr.Receipts, receipts...)
-			txr.SuccActionNum++
+			//txr.SuccActionNum++
 		}
 	}
 
-	err := e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+	err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice, true)
 	if err != nil {
 		e.ho.DB().Rollback()
-		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice)
+		err = e.ho.DoPay(e.ho.Context().Value("witness").(string), tx0.GasPrice, false)
 		if err != nil {
 			ilog.Error(err.Error())
 			return nil, err
 		}
 	}
 
-	return &txr, nil
+	return txr, nil
 }
 
 func (e *engineImpl) Exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
-	e.ho.SetDeadline(time.Now().Add(limit))
-
-	ilog.Debug("exec : ", tx0.Actions[0].Contract, tx0.Actions[0].ActionName)
-	err := checkTx(tx0)
-	if err != nil {
-		ilog.Error(err)
-		return errReceipt(tx0.Hash(), tx.ErrorTxFormat, err.Error()), err
-	}
-
-	e.publisherID = account.GetIDByPubkey(tx0.Publisher.Pubkey)
-	bl := e.ho.DB().Balance(e.publisherID)
-
-	if !e.isSimulated {
-		if bl < 0 || bl < tx0.GasPrice*tx0.GasLimit {
-			ilog.Error(errCannotPay)
-			return errReceipt(tx0.Hash(), tx.ErrorBalanceNotEnough, "publisher's balance less than price * limit"), errCannotPay
-		}
-	}
-
-	tr, err := e.exec(tx0)
-	if err != nil {
-		e.ho.DB().Rollback()
-	} else {
-		if !e.isSimulated {
-			e.ho.DB().Commit()
-		} else {
-			e.ho.DB().Rollback()
-		}
-	}
-	return tr, err
+	r, err := e.exec(tx0, limit)
+	e.ho.DB().Commit()
+	return r, err
 }
 func (e *engineImpl) GC() {
 	e.logger.Stop()
-}
-
-func checkTx(tx0 *tx.Tx) error {
-	if tx0.GasPrice < 0 || tx0.GasPrice > 10000 {
-		return errGasPriceIllegal
-	}
-	return nil
 }
 
 // nolint
@@ -258,7 +219,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	}
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
-		return nil, fmt.Errorf("error in abi file: %v", err)
+		return nil, fmt.Errorf("error in data: %v, %v", err, data)
 	}
 
 	rtn := make([]interface{}, 0)
@@ -296,6 +257,12 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
+			// make sure s is a valid json
+			_, err = simplejson.NewJson(s)
+			if err != nil {
+				ilog.Error(string(s))
+				return nil, err
+			}
 			rtn = append(rtn, s)
 		}
 	}
@@ -306,16 +273,16 @@ func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,
 		GasUsage: 0,
-		Status: tx.Status{
+		Status: &tx.Status{
 			Code:    code,
 			Message: message,
 		},
-		SuccActionNum: 0,
-		Receipts:      make([]tx.Receipt, 0),
+		//SuccActionNum: 0,
+		Receipts: make([]*tx.Receipt, 0),
 	}
 }
-func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx.Status, receipts []tx.Receipt, err error) {
-	receipts = make([]tx.Receipt, 0)
+func (e *engineImpl) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, receipts []*tx.Receipt, err error) {
+	receipts = make([]*tx.Receipt, 0)
 
 	e.ho.PushCtx()
 	defer func() {
@@ -327,26 +294,22 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 
 	_, cost, err = staticMonitor.Call(e.ho, action.Contract, action.ActionName, action.Data)
 
-	if cost == nil {
-		panic("cost is nil")
-	}
-
 	if err != nil {
 
 		if strings.Contains(err.Error(), "execution killed") {
-			status = tx.Status{
+			status = &tx.Status{
 				Code:    tx.ErrorTimeout,
 				Message: err.Error(),
 			}
 		} else {
-			status = tx.Status{
+			status = &tx.Status{
 				Code:    tx.ErrorRuntime,
 				Message: err.Error(),
 			}
 		}
 
-		receipt := tx.Receipt{
-			Type:    tx.SystemDefined,
+		receipt := &tx.Receipt{
+			//Type:    tx.SystemDefined,
 			Content: err.Error(),
 		}
 		receipts = append(receipts, receipt)
@@ -356,9 +319,9 @@ func (e *engineImpl) runAction(action tx.Action) (cost *contract.Cost, status tx
 		return
 	}
 
-	receipts = append(receipts, e.ho.Context().GValue("receipts").([]tx.Receipt)...)
+	receipts = append(receipts, e.ho.Context().GValue("receipts").([]*tx.Receipt)...)
 
-	status = tx.Status{
+	status = &tx.Status{
 		Code:    tx.Success,
 		Message: "",
 	}
@@ -407,30 +370,4 @@ func (e *engineImpl) startLog() {
 		e.logger.AsyncWrite()
 		e.logger.Start()
 	}
-}
-
-func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
-	c := host.NewContext(ctx)
-	c.Set("parent_hash", common.Base58Encode(bh.ParentHash))
-	c.Set("number", bh.Number)
-	c.Set("witness", bh.Witness)
-	c.Set("time", bh.Time)
-	return c
-}
-
-func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
-	h.PushCtx()
-	h.Context().Set("time", t.Time)
-	h.Context().Set("expiration", t.Expiration)
-	h.Context().Set("gas_price", t.GasPrice)
-	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))
-
-	authList := make(map[string]int)
-	for _, v := range t.Signers {
-		authList[string(v)] = 1
-	}
-
-	authList[publisherID] = 2
-
-	h.Context().Set("auth_list", authList)
 }

@@ -11,15 +11,15 @@ import (
 type abi struct {
 	name string
 	args []string
-	do   func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error)
+	do   func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error)
 }
 
 // Impl .
 type Impl struct {
 }
 
-func register(m *map[string]*abi, a *abi) {
-	(*m)[a.name] = a
+func register(m map[string]*abi, a *abi) {
+	m[a.name] = a
 }
 
 // Init .
@@ -38,7 +38,7 @@ func (i *Impl) Compile(contract *contract.Contract) (string, error) {
 }
 
 // LoadAndCall implement
-func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 	var (
 		a  *abi
 		ok bool
@@ -48,11 +48,13 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 	case "iost.system":
 		a, ok = systemABIs[api]
 	case "iost.domain":
-		a, ok = domainABIs[api]
-	case "iost.coin":
-		a, ok = coinABIs[api]
-	case "iost.bonus":
-		a, ok = bonusABIs[api]
+		a, ok = DomainABIs[api]
+	case "iost.gas":
+		a, ok = gasABIs[api]
+	case "iost.token":
+		a, ok = tokenABIs[api]
+	case "iost.token721":
+		a, ok = token721ABIs[api]
 	}
 	if !ok {
 		ilog.Fatal("error", con.ID, api, systemABIs)
@@ -60,4 +62,13 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 	}
 
 	return a.do(h, args...)
+}
+
+// CheckCost check if cost exceed gas_limit
+func CheckCost(h *host.Host, cost contract.Cost) bool {
+	gasLimit := h.Context().GValue("gas_limit").(int64)
+	if cost.ToGas() > gasLimit {
+		return false
+	}
+	return true
 }

@@ -1,9 +1,9 @@
 syntax = "proto3";
 package rpc;
 
-import "github.com/iost-official/go-iost/core/tx/tx.proto";
+import "github.com/iost-official/go-iost/core/tx/pb/tx.proto";
 import "github.com/iost-official/go-iost/core/contract/contract.proto";
-import "github.com/iost-official/go-iost/core/block/block.proto";
+import "github.com/iost-official/go-iost/core/block/pb/block.proto";
 import "github.com/iost-official/go-iost/core/event/event.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/Empty.proto";
@@ -11,21 +11,15 @@ import "google/protobuf/Empty.proto";
 // rpc apis
 service Apis {
     // get the version info
-    rpc GetVersionInfo (google.protobuf.Empty) returns (VersionInfoRes) {
+    rpc GetNodeInfo (google.protobuf.Empty) returns (NodeInfoRes) {
         option (google.api.http) = {
-            get: "/getVersionInfo"
+            get: "/getNodeInfo"
         };
     }
     // get the chain info
-        rpc GetChainInfo (google.protobuf.Empty) returns (ChainInfoRes) {
-            option (google.api.http) = {
-                get: "/getChainInfo"
-            };
-        }
-    // get the current height of the blockchain
-    rpc GetHeight (google.protobuf.Empty) returns (HeightRes) {
+    rpc GetChainInfo (google.protobuf.Empty) returns (ChainInfoRes) {
         option (google.api.http) = {
-            get: "/getHeight"
+             get: "/getChainInfo"
         };
     }
     // get the tx by hash
@@ -59,44 +53,33 @@ service Apis {
         };
     }
     // get the balance of some account by account ID
-    rpc GetBalance (GetBalanceReq) returns (GetBalanceRes) {
+    rpc GetAccountInfo (GetAccountReq) returns (GetAccountRes) {
         option (google.api.http) = {
-            get: "/getBalance/{ID}/{useLongestChain}"
-        };
-    }
-    // get the Net ID
-    rpc GetNetID (google.protobuf.Empty) returns (GetNetIDRes) {
-        option (google.api.http) = {
-            get: "/getNetID"
-        };
-    }
-    // get peer info
-    rpc GetPeerInfo (google.protobuf.Empty) returns (GetPeerInfoRes) {
-        option (google.api.http) = {
-            get: "/getPeerInfo"
+            get: "/getAccountInfo/{ID}/{useLongestChain}"
         };
     }
     // get the value of the corresponding key in stateDB
-    rpc GetState (GetStateReq) returns (GetStateRes) {
+    rpc GetContractStorage (GetContractStorageReq) returns (GetContractStorageRes) {
         option (google.api.http) = {
-            get: "/getState/{key}"
+            post: "/getContractStorage"
+            body: "*"
         };
     }
     // get contract by cid
     rpc GetContract (GetContractReq) returns (GetContractRes) {
         option (google.api.http) = {
-            get: "/getContract/{key}"
+            get: "/getContract/{contractID}"
         };
     }
     // receive encoded tx
-    rpc SendRawTx (RawTxReq) returns (SendRawTxRes) {
+    rpc SendTx (TxReq) returns (SendTxRes) {
         option (google.api.http) = {
-            post: "/sendRawTx"
+            post: "/sendTx"
             body: "*"
         };
     }
     // not supported yet
-    rpc ExecTx (RawTxReq) returns (ExecTxRes) {
+    rpc ExecTx (TxReq) returns (ExecTxRes) {
         option (google.api.http) = {
             post: "/execTx"
             body: "*"
@@ -130,28 +113,30 @@ message BlockByNumReq {
     bool complete=2;    
 }
 
-message GetBalanceReq {
+message GetAccountReq {
     //account ID
     string ID=1;
-    // useLongestChain means whether geting the balance also from pending blocks(in the longest chain)
+    // useLongestChain means whether getting the balance also from pending blocks(in the longest chain)
     bool useLongestChain = 2;
 }
 
-message GetStateReq {
+message GetContractStorageReq {
+    string contractID=1;
+    // ram owner, should be the same as 'put' call. It can be empty
+    string owner=2;
     //the key in the StateDB
-    string key=1;
+    string key=3;
     // get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
-    string field = 2;
+    string field=4;
 }
 
 message GetContractReq {
     //contract id
-    string key=1;
+    string contractID=1;
 }
 
-message RawTxReq {
-    // the rawdata of a tx
-    bytes data=1;
+message TxReq {
+    txpb.Tx tx=1;
 }
 
 message SubscribeReq {
@@ -159,25 +144,38 @@ message SubscribeReq {
     repeated event.Event.Topic topics=1;
 }
 
-message VersionInfoRes {
+message PeerInfo {
+    string ID=1;
+    string addr=2;
+}
+
+message NetworkInfo {
+    string ID=1;
+    int32 peerCount=2;
+    repeated PeerInfo peerInfo=3;
+}
+
+message NodeInfoRes {
     // build time and git hash
     string buildTime=1;
     string gitHash=2;
+    string mode=3;
+    NetworkInfo network=4;
 }
 
 message BlockInfo {
     //BlockHead
-    block.BlockHead head = 1;
+    blockpb.BlockHead head = 1;
     //block hash
-    bytes hash = 2;
+    string hash = 2;
     //transaction list,works when complete is true
-    repeated tx.TxRaw txs = 3;
+    repeated txpb.Tx txs = 3;
     //transaction hash list,works when complete is false
-    repeated bytes txhash= 4 ;
+    repeated string txhash= 4 ;
     //transaction receipt list
-    repeated tx.TxReceiptRaw receipts = 5;
+    repeated txpb.TxReceipt receipts = 5;
     //transaction receiptHash list
-    repeated bytes receiptHash = 6;
+    repeated string receiptHash = 6;
 }
 
 message ChainInfoRes {
@@ -191,24 +189,30 @@ message ChainInfoRes {
     BlockInfo latestConfirmedBlock = 6;
 }
 
-message HeightRes {
-    // the height of the blockchain
-    int64 height=1;
+message RAMInfo {
+    int64 available = 1;
 }
 
-message GetBalanceRes {
+message GASInfo {
+    // these values are all fix point number
+    string currentTotal = 1;
+    string increaseSpeed = 2;
+    string limit = 3;
+    string pledgedCoin = 4;
+}
+
+message GetAccountRes {
     // the queried balance
-    int64 balance=1;
+    string balance=1;
+    // current gas
+    GASInfo gas=2;
+    RAMInfo ram=3;
+    string accountJson=4;
 }
 
-message GetNetIDRes {
-    //NetID
-    string ID=1;
-}
-
-message GetStateRes {
+message GetContractStorageRes {
     //the value of the corresponding key in the StateDB
-    string value=1;
+    string jsonStr=1;
 }
 
 message GetContractRes {
@@ -216,37 +220,26 @@ message GetContractRes {
     contract.Contract value=1;
 }
 
-message SendRawTxRes {
+message SendTxRes {
     // the hash of the received transaction
     string hash=1;
 }
 
 message ExecTxRes {
-    //not support yet
-    tx.TxReceiptRaw txReceiptRaw = 1;
+    txpb.TxReceipt txReceipt = 1;
 }
 
 message txRes {
     //the queried transaction
-    tx.TxRaw txRaw = 1;
+    txpb.Tx tx = 1;
     //transaction hash
-    bytes hash = 2;
+    string hash = 2;
 }
 
 message txReceiptRes {
     //transaction receipt
-    tx.TxReceiptRaw txReceiptRaw = 1;
-    bytes hash = 2;
-}
-
-message PeerInfo {
-    string ID=1;
-    string addr=2;
-}
-
-message GetPeerInfoRes {
-    int32 peerCount=1;
-    repeated PeerInfo peerInfo=2;
+    txpb.TxReceipt txReceipt = 1;
+    string hash = 2;
 }
 
 message SubscribeRes {

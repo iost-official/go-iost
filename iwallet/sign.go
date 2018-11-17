@@ -14,6 +14,7 @@
 
 package iwallet
 
+/*
 import (
 	"fmt"
 	"io/ioutil"
@@ -27,8 +28,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var kpPath string
-var signAlgo string
 
 // signCmd represents the sign command
 var signCmd = &cobra.Command{
@@ -70,13 +69,13 @@ var signCmd = &cobra.Command{
 			return
 		}
 
-		acc, err := account.NewAccount(loadBytes(string(seckey)), getSignAlgo(signAlgo))
+		acc, err := account.NewKeyPair(loadBytes(string(seckey)), getSignAlgo(signAlgo))
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
 
-		sig, err := tx.SignTxContent(&mtx, acc)
+		sig, err := tx.SignTxContent(&mtx, "todo", acc) // TODO 修改iwallet
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -123,3 +122,4 @@ func init() {
 	// is called directly, e.g.:
 	// signCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
+*/

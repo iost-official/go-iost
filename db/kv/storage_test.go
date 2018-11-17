@@ -268,3 +268,112 @@ func BenchmarkStorage(b *testing.B) {
 		cmd.Run()
 	}
 }
+
+func BenchmarkKeys(b *testing.B) {
+	for _, t := range []StorageType{LevelDBStorage, RocksDBStorage} {
+		storage, err := NewStorage(DBPATH, t)
+		if err != nil {
+			b.Fatalf("Failed to new storage: %v", err)
+		}
+
+		keys := make([][]byte, 0)
+		values := make([][]byte, 0)
+		headkeys := make([][]byte, 0)
+		headkey := make([]byte, 32)
+		for i := 0; i < 10000; i++ {
+			if i%2500 == 0 {
+				headkey = make([]byte, 32)
+				rand.Read(headkey)
+				headkeys = append(headkeys, headkey)
+			}
+			key := make([]byte, 32)
+			value := make([]byte, 128)
+			rand.Read(key)
+			rand.Read(value)
+			keys = append(keys, append(headkey, key...))
+			values = append(values, value)
+			storage.Put(append(headkey, key...), value)
+		}
+		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Keys", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				for j := 0; j < len(headkeys); j++ {
+					storage.Keys(headkeys[j])
+				}
+			}
+		})
+
+		b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Get", func(b *testing.B) {
+			vals := make([][]byte, 0)
+			for i := 0; i < b.N; i++ {
+				for j := 0; j < len(keys); j++ {
+					val, _ := storage.Get(keys[j])
+					vals = append(vals, val)
+				}
+			}
+		})
+		storage.Close()
+		cmd := exec.Command("rm", "-r", DBPATH)
+		cmd.Run()
+	}
+}
+
+func BenchmarkIterator(b *testing.B) {
+	storage, err := NewStorage(DBPATH, LevelDBStorage)
+	if err != nil {
+		b.Fatalf("Failed to new storage: %v", err)
+	}
+
+	keys := make([][]byte, 0)
+	values := make([][]byte, 0)
+	headkeys := make([][]byte, 0)
+	headkey := make([]byte, 32)
+	bnum := 100
+	txnum := 2000
+
+	for i := 0; i < txnum*bnum; i++ {
+		if i%txnum == 0 {
+			headkey = make([]byte, 32)
+			rand.Read(headkey)
+			headkeys = append(headkeys, headkey)
+		}
+		key := make([]byte, 32)
+		value := make([]byte, 128)
+		rand.Read(key)
+		rand.Read(value)
+		keys = append(keys, append(headkey, key...))
+		values = append(values, value)
+		storage.Put(append(headkey, key...), value)
+	}
+	b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Iterator", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			iter := storage.NewIteratorByPrefix(headkeys[i%bnum])
+			iter.Release()
+			err := iter.Error()
+			if !assert.Nil(b, err) {
+				b.Fatalf("Fail to New the Iterator: %v", err)
+			}
+		}
+	})
+	b.Run(reflect.TypeOf(storage.StorageBackend).String()+"IteratorAll", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			iter := storage.NewIteratorByPrefix(headkeys[i%bnum])
+			for iter.Next() {
+			}
+			iter.Release()
+			err := iter.Error()
+			if !assert.Nil(b, err) {
+				b.Fatalf("Fail to iterate the Iterator: %v", err)
+			}
+		}
+	})
+	b.Run(reflect.TypeOf(storage.StorageBackend).String()+"Get", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for j := 0; j < txnum; j++ {
+				storage.Get(keys[i%bnum*txnum+j])
+			}
+		}
+	})
+	storage.Close()
+	cmd := exec.Command("rm", "-r", DBPATH)
+	cmd.Run()
+}

@@ -10,11 +10,9 @@ import (
 
 // BaseVariable defines BaseVariable's API.
 type BaseVariable interface {
-	TxDB() TxDB
 	StateDB() db.MVCCDB
 	Config() *common.Config
 	BlockChain() block.Chain
-	WitnessList() []string
 	Mode() TMode
 	SetMode(m TMode)
 }

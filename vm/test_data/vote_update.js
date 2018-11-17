@@ -31,7 +31,7 @@ class VoteContract {
         this._put("producerNumber", producerNumber);
 
         for (let i = 0; i < producerNumber; i++) {
-            const ret = BlockChain.deposit(pendingProducerList[i], producerRegisterFee);
+            const ret = BlockChain.deposit(pendingProducerList[i], producerRegisterFee, "");
             if (ret !== 0) {
                 throw new Error("constructor deposit failed. ret = " + ret);
             }
@@ -59,7 +59,7 @@ class VoteContract {
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
 
-        const ret = BlockChain.deposit(proID, producerRegisterFee);
+        const ret = BlockChain.deposit(proID, producerRegisterFee, "");
         if (ret !== 0) {
             throw new Error("constructor deposit failed. ret = " + ret);
         }
@@ -127,7 +127,7 @@ class VoteContract {
 		if (storage.mapHas("producerTable", account)) {
 			throw new Error("producer exists");
 		}
-		const ret = BlockChain.deposit(account, producerRegisterFee);
+		const ret = BlockChain.deposit(account, producerRegisterFee, "");
 		if (ret !== 0) {
 			throw new Error("register deposit failed. ret = " + ret);
 		}
@@ -195,7 +195,7 @@ class VoteContract {
         this._mapDel("producerTable", account);
         this._mapDel("preProducerMap", account);
 
-		const ret = BlockChain.withdraw(account, producerRegisterFee);
+		const ret = BlockChain.withdraw(account, producerRegisterFee, "");
 		if (ret != 0) {
 			throw new Error("withdraw failed. ret = " + ret);
 		}
@@ -210,7 +210,7 @@ class VoteContract {
 			throw new Error("producer not exists");
 		}
 
-		const ret = BlockChain.deposit(voter, amount * softFloatRate);
+		const ret = BlockChain.deposit(voter, amount * softFloatRate, "");
 		if (ret !== 0) {
 			throw new Error("vote deposit failed. ret = " + ret);
 		}
@@ -274,7 +274,7 @@ class VoteContract {
 			}
 		}
 
-		const ret = BlockChain.withdraw(voter, amount * softFloatRate);
+		const ret = BlockChain.withdraw(voter, amount * softFloatRate, "");
 		if (ret !== 0) {
 			throw new Error("withdraw failed. ret = " + ret);
 		}

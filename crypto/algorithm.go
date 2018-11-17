@@ -33,6 +33,30 @@ func (a Algorithm) getBackend() AlgorithmBackend {
 	}
 }
 
+// NewAlgorithm returns a new algorithm by name
+func NewAlgorithm(name string) Algorithm {
+	switch name {
+	case "secp256k1":
+		return Secp256k1
+	case "ed25519":
+		return Ed25519
+	default:
+		return Ed25519
+	}
+}
+
+// String return algorithm readable string
+func (a Algorithm) String() string {
+	switch a {
+	case Secp256k1:
+		return "secp256k1"
+	case Ed25519:
+		return "ed25519"
+	default:
+		return "secp256k1"
+	}
+}
+
 // Sign will signature the message with seckey
 func (a Algorithm) Sign(message []byte, seckey []byte) []byte {
 	return a.getBackend().Sign(message, seckey)

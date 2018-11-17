@@ -15,13 +15,32 @@ type ACCConfig struct {
 	Algorithm string
 }
 
-// GenesisConfig config of the genesis block
+// Witness config of the genesis block
+type Witness struct {
+	ID      string
+	Owner   string
+	Active  string
+	Balance int64
+}
+
+// TokenInfo config of the genesis block
+type TokenInfo struct {
+	FoundationAccount string
+	IOSTTotalSupply   int64
+	IOSTDecimal       int64
+	RAMTotalSupply    int64
+	RAMGenesisAmount  int64
+}
+
+// GenesisConfig config of the genesis bloc
 type GenesisConfig struct {
 	CreateGenesis    bool
 	InitialTimestamp string
-	WitnessInfo      []string
-	VoteContractPath string
-	AdminID          string
+	TokenInfo        *TokenInfo
+	WitnessInfo      []*Witness
+	ContractPath     string
+	AdminInfo        *Witness
+	FoundationInfo   *Witness
 }
 
 // DBConfig config of the database
@@ -37,11 +56,16 @@ type VMConfig struct {
 
 // P2PConfig is the config for p2p network.
 type P2PConfig struct {
-	ListenAddr string
-	SeedNodes  []string
-	ChainID    uint32
-	Version    uint16
-	DataPath   string
+	ListenAddr   string
+	SeedNodes    []string
+	ChainID      uint32
+	Version      uint16
+	DataPath     string
+	InboundConn  int
+	OutboundConn int
+	BlackPID     []string
+	BlackIP      []string
+	AdminPort    string
 }
 
 //RPCConfig is the config for RPC Server.

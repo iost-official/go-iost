@@ -1,0 +1,50 @@
+{
+  "lang": "javascript",
+  "version": "1.0.0",
+  "abi": [
+    {
+      "name": "SignUp",
+      "args": ["string", "string", "string"]
+    },
+    {
+      "name": "AddPermission",
+      "args": ["string", "string", "number"]
+    },
+    {
+      "name": "DropPermission",
+      "args": ["string", "string"]
+    },
+    {
+      "name": "AssignPermission",
+      "args": ["string", "string", "string","number"]
+    },
+    {
+      "name": "RevokePermission",
+      "args": ["string", "string", "string"]
+    },
+    {
+      "name": "AddGroup",
+      "args": ["string", "string"]
+    },
+    {
+      "name": "DropGroup",
+      "args": ["string", "string"]
+    },
+    {
+      "name": "AssignGroup",
+      "args": ["string", "string", "string", "number"]
+    },
+    {
+      "name": "RevokeGroup",
+      "args": ["string", "string", "string"]
+    },
+    {
+      "name": "AssignPermissionToGroup",
+      "args": ["string", "string", "string"]
+    },
+    {
+      "name": "RevokePermissionInGroup",
+      "args": ["string", "string", "string"]
+    }
+  ]
+}

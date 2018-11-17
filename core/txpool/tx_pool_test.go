@@ -48,25 +48,25 @@ func TestNewTxPImpl(t *testing.T) {
 		p2pMock := p2p_mock.NewMockService(ctl)
 
 		p2pCh := make(chan p2p.IncomingMessage, 100)
-		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
+		p2pMock.EXPECT().Broadcast(Any(), Any(), Any(), Any()).AnyTimes()
 		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
-		var accountList []*account.Account
+		var accountList []*account.KeyPair
 		var witnessList []string
 		var witnessInfo []string
 		acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-		newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+		newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
 		if err != nil {
-			panic("account.NewAccount error")
+			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
 		witnessInfo = append(witnessInfo, newAccount.ID)
 		witnessInfo = append(witnessInfo, "100000")
 		witnessList = append(witnessList, newAccount.ID)
 		for i := 1; i < 3; i++ {
-			newAccount, err := account.NewAccount(nil, crypto.Secp256k1)
+			newAccount, err := account.NewKeyPair(nil, crypto.Secp256k1)
 			if err != nil {
-				panic("account.NewAccount error")
+				panic("account.NewKeyPair error")
 			}
 			accountList = append(accountList, newAccount)
 			witnessList = append(witnessList, newAccount.ID)
@@ -85,10 +85,10 @@ func TestNewTxPImpl(t *testing.T) {
 		statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 		statedb.EXPECT().Close().AnyTimes()
 
-		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("4"), nil
 		})
-		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
@@ -101,6 +101,7 @@ func TestNewTxPImpl(t *testing.T) {
 		base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 		base.EXPECT().Length().AnyTimes().Return(int64(1))
 		base.EXPECT().Close().AnyTimes()
+		base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 
 		gbl := core_mock.NewMockBaseVariable(ctl)
 		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
@@ -117,49 +118,49 @@ func TestNewTxPImpl(t *testing.T) {
 		txPool.Start()
 		Convey("AddTx", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
+			err := txPool.AddTx(t)
+			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-			r = txPool.AddTx(t)
-			So(r, ShouldEqual, DupError)
+			err = txPool.AddTx(t)
+			So(err, ShouldEqual, ErrDupPendingTx)
 		})
 		Convey("txTimeOut", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 
-			b := txPool.TxTimeOut(t)
+			b := t.IsTimeValid(time.Now().UnixNano())
+			So(b, ShouldBeTrue)
+
+			t.Time -= int64(tx.MaxExpiration + int64(1*time.Second))
+			b = t.IsTimeValid(time.Now().UnixNano())
 			So(b, ShouldBeFalse)
 
-			t.Time -= int64(Expiration + int64(1*time.Second))
-			b = txPool.TxTimeOut(t)
-			So(b, ShouldBeTrue)
+			t = genTx(accountList[0], tx.MaxExpiration)
 
-			t = genTx(accountList[0], Expiration)
-
-			t.Expiration -= int64(Expiration * 3)
-			b = txPool.TxTimeOut(t)
-			So(b, ShouldBeTrue)
+			t.Expiration -= int64(tx.MaxExpiration * 3)
+			b = t.IsTimeValid(time.Now().UnixNano())
+			So(b, ShouldBeFalse)
 		})
 		Convey("delTimeOutTx", func() {
 
 			t := genTx(accountList[0], int64(30*time.Millisecond))
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
+			err := txPool.AddTx(t)
+			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			time.Sleep(50 * time.Millisecond)
-			txPool.clearTimeOutTx()
+			txPool.clearTimeoutTx()
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 		})
 		Convey("ExistTxs FoundPending", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
+			err := txPool.AddTx(t)
+			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			r1 := txPool.ExistTxs(t.Hash(), nil)
 			So(r1, ShouldEqual, FoundPending)
@@ -173,7 +174,7 @@ func TestNewTxPImpl(t *testing.T) {
 			bcn := blockcache.NewBCN(nil, b[0])
 			So(txPool.testBlockListNum(), ShouldEqual, 0)
 
-			err := txPool.AddLinkedNode(bcn, bcn)
+			err := txPool.AddLinkedNode(bcn)
 			So(err, ShouldBeNil)
 
 			// need delay
@@ -191,7 +192,7 @@ func TestNewTxPImpl(t *testing.T) {
 				So(r1, ShouldEqual, FoundChain)
 			}
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			r1 := txPool.ExistTxs(t.Hash(), bcn.Block)
 			So(r1, ShouldEqual, NotFound)
 		})
@@ -206,25 +207,25 @@ func TestNewTxPImplB(t *testing.T) {
 		p2pMock := p2p_mock.NewMockService(ctl)
 
 		p2pCh := make(chan p2p.IncomingMessage, 100)
-		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
+		p2pMock.EXPECT().Broadcast(Any(), Any(), Any(), Any()).AnyTimes()
 		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
-		var accountList []*account.Account
+		var accountList []*account.KeyPair
 		var witnessList []string
 		var witnessInfo []string
 		acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-		newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+		newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
 		if err != nil {
-			panic("account.NewAccount error")
+			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
 		witnessInfo = append(witnessInfo, newAccount.ID)
 		witnessInfo = append(witnessInfo, "100000")
 		witnessList = append(witnessList, newAccount.ID)
 		for i := 1; i < 3; i++ {
-			newAccount, err := account.NewAccount(nil, crypto.Secp256k1)
+			newAccount, err := account.NewKeyPair(nil, crypto.Secp256k1)
 			if err != nil {
-				panic("account.NewAccount error")
+				panic("account.NewKeyPair error")
 			}
 			accountList = append(accountList, newAccount)
 			witnessList = append(witnessList, newAccount.ID)
@@ -243,10 +244,10 @@ func TestNewTxPImplB(t *testing.T) {
 		statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 		statedb.EXPECT().Close().AnyTimes()
 
-		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("4"), nil
 		})
-		statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
@@ -259,6 +260,7 @@ func TestNewTxPImplB(t *testing.T) {
 		base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 		base.EXPECT().Length().AnyTimes().Return(int64(1))
 		base.EXPECT().Close().AnyTimes()
+		base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 
 		gbl := core_mock.NewMockBaseVariable(ctl)
 		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
@@ -275,10 +277,10 @@ func TestNewTxPImplB(t *testing.T) {
 		txPool.Start()
 		Convey("delPending", func() {
 
-			t := genTx(accountList[0], Expiration)
+			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			r := txPool.AddTx(t)
-			So(r, ShouldEqual, Success)
+			err := txPool.AddTx(t)
+			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			e := txPool.DelTx(t.Hash())
 			So(e, ShouldBeNil)
@@ -291,31 +293,28 @@ func TestNewTxPImplB(t *testing.T) {
 			txCnt := 10
 			blockCnt := 3
 			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
-
+			txPool.blockCache.Head().Head.Number = 0
 			for i := 0; i < blockCnt; i++ {
-				//ilog.Debug(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
+				//ilog.Info(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
 				bcn := BlockCache.Add(blockList[i])
 				So(bcn, ShouldNotBeNil)
 
-				err = txPool.AddLinkedNode(bcn, bcn)
+				err = txPool.AddLinkedNode(bcn)
 				So(err, ShouldBeNil)
 			}
-
-			forkBlockTxCnt := 6
-			forkBlock := genSingleBlock(accountList, witnessList, blockList[1].HeadHash(), forkBlockTxCnt)
+			forkBlock := genSingleBlock(accountList, witnessList, blockList[1].HeadHash(), 6)
 			//ilog.Debug(("Sing hash:", forkBlock.HeadHash(), " Sing parentHash:", forkBlock.Head.ParentHash)
 			bcn := BlockCache.Add(forkBlock)
 			So(bcn, ShouldNotBeNil)
 
-			for i := 0; i < forkBlockTxCnt-3; i++ {
-				r := txPool.AddTx(forkBlock.Txs[i])
-				So(r, ShouldEqual, Success)
+			for i := 0; i < 6-3; i++ {
+				err := txPool.AddTx(forkBlock.Txs[i])
+				So(err, ShouldBeNil)
 			}
 
 			So(txPool.testPendingTxsNum(), ShouldEqual, 3)
-
 			// fork chain
-			err = txPool.AddLinkedNode(bcn, bcn)
+			err = txPool.AddLinkedNode(bcn)
 			So(err, ShouldBeNil)
 			// need delay
 			for i := 0; i < 20; i++ {
@@ -329,60 +328,67 @@ func TestNewTxPImplB(t *testing.T) {
 		})
 
 		Convey("rbtree", func() {
-			t1 := genTx(newAccount, Expiration)
-			t2 := genTx(newAccount, Expiration)
-			t3 := genTx(newAccount, Expiration)
-			t4 := genTx(newAccount, Expiration)
-			t5 := genTx(newAccount, Expiration)
-			t1.GasPrice = 1
-			t2.GasPrice = 2
-			t3.GasPrice = 2
+			t1 := genTx(newAccount, tx.MaxExpiration)
+			t2 := genTx(newAccount, tx.MaxExpiration)
+			t3 := genTx(newAccount, tx.MaxExpiration)
+			t4 := genTx(newAccount, tx.MaxExpiration)
+			t5 := genTx(newAccount, tx.MaxExpiration)
+			t1.GasPrice = 100
+			t2.GasPrice = 200
+			t3.GasPrice = 200
 			t3.Time = t2.Time + 1
-			t4.GasPrice = 4
-			t5.GasPrice = 5
+			t4.GasPrice = 400
+			t5.GasPrice = 500
 
-			sig1, err := tx.SignTxContent(t1, newAccount)
+			sig1, err := tx.SignTxContent(t1, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 			t1.Signs = []*crypto.Signature{sig1}
-			t1, err = tx.SignTx(t1, newAccount)
+			t1, err = tx.SignTx(t1, newAccount.ID, []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig2, err := tx.SignTxContent(t2, newAccount)
+			sig2, err := tx.SignTxContent(t2, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 			t2.Signs = []*crypto.Signature{sig2}
-			t2, err = tx.SignTx(t2, newAccount)
+			t2, err = tx.SignTx(t2, newAccount.ID, []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig3, err := tx.SignTxContent(t3, newAccount)
+			sig3, err := tx.SignTxContent(t3, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 			t3.Signs = []*crypto.Signature{sig3}
-			t3, err = tx.SignTx(t3, newAccount)
+			t3, err = tx.SignTx(t3, newAccount.ID, []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig4, err := tx.SignTxContent(t4, newAccount)
+			sig4, err := tx.SignTxContent(t4, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 			t4.Signs = []*crypto.Signature{sig4}
-			t4, err = tx.SignTx(t4, newAccount)
+			t4, err = tx.SignTx(t4, newAccount.ID, []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig5, err := tx.SignTxContent(t5, newAccount)
+			sig5, err := tx.SignTxContent(t5, newAccount.ID, newAccount)
 			So(err, ShouldBeNil)
 			t5.Signs = []*crypto.Signature{sig5}
-			t5, err = tx.SignTx(t5, newAccount)
+			t5, err = tx.SignTx(t5, newAccount.ID, []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			txPool.AddTx(t4)
-			txPool.AddTx(t2)
-			txPool.AddTx(t5)
-			txPool.AddTx(t1)
-			txPool.AddTx(t3)
+			println("before add tx")
+			err = txPool.AddTx(t4)
+			So(err, ShouldBeNil)
+			err = txPool.AddTx(t2)
+			So(err, ShouldBeNil)
+			err = txPool.AddTx(t5)
+			So(err, ShouldBeNil)
+			err = txPool.AddTx(t1)
+			So(err, ShouldBeNil)
+			err = txPool.AddTx(t3)
+			So(err, ShouldBeNil)
 
-			iter, _ := txPool.TxIterator()
-			t, ok := iter.Next()
+			pt, _ := txPool.PendingTx()
+			iter := pt.Iter()
+			trx, ok := iter.Next()
 			for _, expectTx := range []*tx.Tx{t5, t4, t2, t3, t1} {
 				So(ok, ShouldBeTrue)
-				So(string(expectTx.Hash()), ShouldEqual, string(t.Hash()))
-				t, ok = iter.Next()
+				So(common.Base58Encode(expectTx.Hash()), ShouldEqual, common.Base58Encode(trx.Hash()))
+				trx, ok = iter.Next()
 			}
 			So(ok, ShouldBeFalse)
 
@@ -464,17 +470,18 @@ func BenchmarkAddTx(b *testing.B) {
 	blockList := genNodes(accountList, witnessList, blockCnt, listTxCnt, true)
 
 	for i := 0; i < blockCnt; i++ {
-		txPool.AddLinkedNode(blockList[i], blockList[i])
+		txPool.AddLinkedNode(blockList[i])
 	}
 	time.Sleep(200 * time.Millisecond)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		t := genTx(accountList[0], Expiration)
+		t := genTx(accountList[0], tx.MaxExpiration)
 		b.StartTimer()
 
-		txPool.addTx(t)
+		txPool.verifyDuplicate(t)
+		txPool.pendingTx.Add(t)
 	}
 
 	b.StopTimer()
@@ -484,12 +491,12 @@ func BenchmarkAddTx(b *testing.B) {
 //result 4445 ns/op
 func BenchmarkDecodeTx(b *testing.B) {
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+	newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
 	if err != nil {
-		panic("account.NewAccount error")
+		panic("account.NewKeyPair error")
 	}
 
-	tm := genTxMsg(newAccount, Expiration)
+	tm := genTxMsg(newAccount, tx.MaxExpiration)
 	var t tx.Tx
 	err = t.Decode(tm.Data())
 	if err != nil {
@@ -509,12 +516,12 @@ func BenchmarkDecodeTx(b *testing.B) {
 //result 3416 ns/op
 func BenchmarkEncodeTx(b *testing.B) {
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+	newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
 	if err != nil {
-		panic("account.NewAccount error")
+		panic("account.NewKeyPair error")
 	}
 
-	tm := genTx(newAccount, Expiration)
+	tm := genTx(newAccount, tx.MaxExpiration)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -529,7 +536,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 
 	_, accountList, _, txPool, gl := envInit(b)
 
-	t := genTx(accountList[0], Expiration)
+	t := genTx(accountList[0], tx.MaxExpiration)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -580,25 +587,25 @@ func BenchmarkVerifyTx(b *testing.B) {
 	stopTest(gl)
 }*/
 
-func envInit(b *testing.B) (blockcache.BlockCache, []*account.Account, []string, *TxPImpl, global.BaseVariable) {
+func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string, *TxPImpl, global.BaseVariable) {
 	//ctl := gomock.NewController(t)
 
-	var accountList []*account.Account
+	var accountList []*account.KeyPair
 	var witnessList []string
 
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
-	newAccount, err := account.NewAccount(acc, crypto.Secp256k1)
+	newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
 	if err != nil {
-		panic("account.NewAccount error")
+		panic("account.NewKeyPair error")
 	}
 	accountList = append(accountList, newAccount)
 	witnessList = append(witnessList, newAccount.ID)
 	//_accId := newAccount.ID
 
 	for i := 1; i < 3; i++ {
-		newAccount, err := account.NewAccount(nil, crypto.Secp256k1)
+		newAccount, err := account.NewKeyPair(nil, crypto.Secp256k1)
 		if err != nil {
-			panic("account.NewAccount error")
+			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
 		witnessList = append(witnessList, newAccount.ID)
@@ -639,7 +646,7 @@ func stopTest(gl global.BaseVariable) {
 	os.RemoveAll(dbPath3)
 }
 
-func genTx(a *account.Account, expirationIter int64) *tx.Tx {
+func genTx(a *account.KeyPair, expirationIter int64) *tx.Tx {
 	actions := make([]*tx.Action, 0)
 	actions = append(actions, &tx.Action{
 		Contract:   "contract1",
@@ -652,19 +659,18 @@ func genTx(a *account.Account, expirationIter int64) *tx.Tx {
 		Data:       "1",
 	})
 
-	ex := time.Now().UnixNano()
-	ex += expirationIter
+	ex := time.Now().UnixNano() + expirationIter
 
-	t := tx.NewTx(actions, [][]byte{a.Pubkey}, 100000, 100, ex)
+	t := tx.NewTx(actions, []string{a.ID}, 100000, 100, ex, 0)
 
-	sig1, err := tx.SignTxContent(t, a)
+	sig1, err := tx.SignTxContent(t, a.ID, a)
 	if err != nil {
 		ilog.Debug("failed to SignTxContent")
 	}
 
 	t.Signs = append(t.Signs, sig1)
 
-	t1, err := tx.SignTx(t, a)
+	t1, err := tx.SignTx(t, a.ID, []*account.KeyPair{a})
 	if err != nil {
 		ilog.Debug("failed to SignTx")
 	}
@@ -676,7 +682,7 @@ func genTx(a *account.Account, expirationIter int64) *tx.Tx {
 	return t1
 }
 
-func genTxMsg(a *account.Account, expirationIter int64) *p2p.IncomingMessage {
+func genTxMsg(a *account.KeyPair, expirationIter int64) *p2p.IncomingMessage {
 	t := genTx(a, expirationIter)
 
 	broadTx := p2p.NewIncomingMessage("test", t.Encode(), p2p.PublishTx)
@@ -684,9 +690,8 @@ func genTxMsg(a *account.Account, expirationIter int64) *p2p.IncomingMessage {
 	return broadTx
 }
 
-func genBlocks(accountList []*account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
+func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt int, txCnt int, continuity bool) (blockPool []*block.Block) {
 
-	slot := common.GetCurrentTimestamp().Slot
 	var hash []byte
 
 	for i := 0; i < blockCnt; i++ {
@@ -703,13 +708,14 @@ func genBlocks(accountList []*account.Account, witnessList []string, blockCnt in
 				Info:       []byte(""),
 				Number:     int64(i + 1),
 				Witness:    witnessList[0],
-				Time:       slot + int64(i),
+				Time:       time.Now().UnixNano(),
+				GasUsage:   0,
 			},
 			Sign: &crypto.Signature{},
 		}
 
 		for i := 0; i < txCnt; i++ {
-			blk.Txs = append(blk.Txs, genTx(accountList[0], Expiration))
+			blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
 		}
 
 		blk.Head.TxsHash = blk.CalculateTxsHash()
@@ -722,7 +728,7 @@ func genBlocks(accountList []*account.Account, witnessList []string, blockCnt in
 	return
 }
 
-func genNodes(accountList []*account.Account, witnessList []string, blockCnt int, txCnt int, continuity bool) []*blockcache.BlockCacheNode {
+func genNodes(accountList []*account.KeyPair, witnessList []string, blockCnt int, txCnt int, continuity bool) []*blockcache.BlockCacheNode {
 
 	var bcnList []*blockcache.BlockCacheNode
 
@@ -737,10 +743,7 @@ func genNodes(accountList []*account.Account, witnessList []string, blockCnt int
 	return bcnList
 }
 
-func genSingleBlock(accountList []*account.Account, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
-
-	slot := common.GetCurrentTimestamp().Slot
-
+func genSingleBlock(accountList []*account.KeyPair, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
 	blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
 		Version:    0,
 		ParentHash: ParentHash,
@@ -748,11 +751,11 @@ func genSingleBlock(accountList []*account.Account, witnessList []string, Parent
 		Info:       []byte(""),
 		Number:     int64(1),
 		Witness:    witnessList[0],
-		Time:       slot,
+		Time:       time.Now().UnixNano(),
 	}}
 
 	for i := 0; i < txCnt; i++ {
-		blk.Txs = append(blk.Txs, genTx(accountList[0], Expiration))
+		blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
 	}
 
 	blk.Head.TxsHash = blk.CalculateTxsHash()

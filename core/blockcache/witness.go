@@ -3,10 +3,11 @@ package blockcache
 import (
 	"encoding/json"
 	"errors"
-	"github.com/iost-official/go-iost/db"
-	"github.com/iost-official/go-iost/vm/database"
 	"strconv"
 	"sync"
+
+	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/vm/database"
 )
 
 // WitnessList is the implementation of WitnessList
@@ -73,7 +74,8 @@ func (wl *WitnessList) NetID() []string {
 func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
 
 	vi := database.NewVisitor(0, mv)
-	spn := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingBlockNumber"))
+	pbn := vi.Get("iost.vote_producer-" + "pendingBlockNumber")
+	spn := database.MustUnmarshal(pbn)
 	if spn == nil {
 		return errors.New("failed to get pending number")
 	}
@@ -83,7 +85,7 @@ func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
 	}
 	wl.SetPendingNum(pn)
 
-	jwl := database.MustUnmarshal(vi.Get("iost.vote-" + "pendingProducerList"))
+	jwl := database.MustUnmarshal(vi.Get("iost.vote_producer-" + "pendingProducerList"))
 	if jwl == nil {
 		return errors.New("failed to get pending list")
 	}
@@ -106,7 +108,7 @@ func (wl *WitnessList) UpdateInfo(mv db.MVCCDB) error {
 	})
 	vi := database.NewVisitor(0, mv)
 	for _, v := range wl.pendingWitnessList {
-		jwl := database.MustUnmarshal(vi.MGet("iost.vote-producerTable", v))
+		jwl := database.MustUnmarshal(vi.MGet("iost.vote_producer-producerTable", v))
 		if jwl == nil {
 			continue
 		}

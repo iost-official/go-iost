@@ -51,21 +51,18 @@ func TestBlockCache(t *testing.T) {
 	s2 := genBlock(s1, "w2", 2)
 	s2a := genBlock(s1, "w3", 3)
 	s3 := genBlock(s2, "w4", 4)
-
-	txdb := core_mock.NewMockTxDB(ctl)
-	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
 	statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 
-	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+	statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("1"), nil
 	})
-	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+	statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("[\"aaaa\",\"bbbbb\"]"), nil
 	})
-	//"m-iost.vote-producerTable"
+	//"m-iost.vote_producer-producerTable"
 	statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
 	})
@@ -75,7 +72,6 @@ func TestBlockCache(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
-	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
@@ -176,8 +172,6 @@ func TestVote(t *testing.T) {
 	//
 	//fmt.Println(b5)
 
-	txdb := core_mock.NewMockTxDB(ctl)
-	txdb.EXPECT().Push(Any(), Any()).AnyTimes().Return(nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
@@ -185,10 +179,10 @@ func TestVote(t *testing.T) {
 
 	tpl := "[\"a1\",\"a2\",\"a3\",\"a4\",\"a5\"]"
 	//tpl1 := "[\"b1\",\"b2\",\"b3\",\"b4\",\"b5\"]"
-	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+	statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("5"), nil
 	})
-	statedb.EXPECT().Get("state", "b-iost.vote-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+	statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(tpl), nil
 	})
 	statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
@@ -200,7 +194,6 @@ func TestVote(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
-	global.EXPECT().TxDB().AnyTimes().Return(txdb)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 
 	Convey("test api", t, func() {
@@ -220,11 +213,14 @@ func TestVote(t *testing.T) {
 	Convey("test update", t, func() {
 		bc, _ := NewBlockCache(global)
 		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
-		bc.Link(&BlockCacheNode{Block: b1})
+		node1 := NewBCN(bc.linkedRoot, b1)
+		node2 := NewBCN(node1, b2)
+		node3 := NewBCN(node2, b3)
+		bc.Link(node1)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-		bc.Link(&BlockCacheNode{Block: b2})
+		bc.Link(node2)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-		bc.Link(&BlockCacheNode{Block: b3})
+		bc.Link(node3)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
 
 	})

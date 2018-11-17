@@ -1,16 +1,9 @@
 package iwallet
 
 import (
-	"context"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/rpc"
-	"google.golang.org/grpc"
+	"github.com/iost-official/go-iost/common"
 	"io/ioutil"
 	"os"
-	"strings"
-
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/crypto"
 )
 
 func saveBytes(buf []byte) string {
@@ -25,6 +18,7 @@ func loadBytes(s string) []byte {
 	return buf
 }
 
+/*
 func changeSuffix(filename, suffix string) string {
 	dist := filename[:strings.LastIndex(filename, ".")]
 	dist = dist + suffix
@@ -40,6 +34,7 @@ func saveTo(Dist string, file []byte) error {
 	defer f.Close()
 	return err
 }
+*/
 
 func readFile(src string) ([]byte, error) {
 	fi, err := os.Open(src)
@@ -52,30 +47,4 @@ func readFile(src string) ([]byte, error) {
 		return nil, err
 	}
 	return fd, nil
-}
-
-func getSignAlgo(algo string) crypto.Algorithm {
-	switch algo {
-	case "secp256k1":
-		return crypto.Secp256k1
-	case "ed25519":
-		return crypto.Ed25519
-	default:
-		return crypto.Ed25519
-	}
-}
-
-func getTxReceiptByTxHash(server string, txHashStr string) (*tx.TxReceiptRaw, error) {
-	conn, err := grpc.Dial(server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpc.HashReq{Hash: txHashStr})
-	if err != nil {
-		return nil, err
-	}
-	//ilog.Debugf("getTxReceiptByTxHash(%v): %v", txHashStr, resp.TxReceiptRaw)
-	return resp.TxReceiptRaw, nil
 }

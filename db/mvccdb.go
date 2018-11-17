@@ -312,6 +312,7 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 
 // Tag will add tag to current state of mvccdb
 func (m *CacheMVCCDB) Tag(t string) {
+	m.Commit()
 	m.cm.AddTag(m.head, t)
 }
 

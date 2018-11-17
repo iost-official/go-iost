@@ -12,10 +12,7 @@ func TestCodec(t *testing.T) {
 			Version: "1.0.0",
 			Abi: []*ABI{
 				{
-					Name:     "abi1",
-					Payment:  0,
-					GasPrice: int64(100),
-					Limit:    NewCost(100, 100, 100),
+					Name: "abi1",
 				},
 			},
 		},

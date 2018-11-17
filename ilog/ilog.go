@@ -32,6 +32,11 @@ func SetLevel(l Level) {
 	defaultLogger.SetLevel(l)
 }
 
+// GetLevel gets the defaultLogger's level.
+func GetLevel() (l Level) {
+	return defaultLogger.GetLevel()
+}
+
 // SetCallDepth sets the global defaultLogger's call depth.
 func SetCallDepth(d int) {
 	defaultLogger.SetCallDepth(d)
