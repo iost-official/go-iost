@@ -50,7 +50,7 @@ class BonusContract {
     }
 
     _call(contract, api, args) {
-        const ret = JSON.parse(BlockChain.callWithAuth(contract, api, JSON.stringify(args)));
+        const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
         if (ret && Array.isArray(ret) && ret.length == 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
