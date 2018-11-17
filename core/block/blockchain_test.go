@@ -87,8 +87,8 @@ func TestChainImpl(t *testing.T) {
 }
 
 func BenchmarkBlock(b *testing.B) {
-	a1, _ := account.NewAccount(nil, crypto.Secp256k1)
-	a2, _ := account.NewAccount(nil, crypto.Secp256k1)
+	a1, _ := account.NewKeyPair(nil, crypto.Secp256k1)
+	a2, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 	actions := []*tx.Action{}
 	actions = append(actions, &tx.Action{
 		Contract:   "contract1",
@@ -119,15 +119,15 @@ func BenchmarkBlock(b *testing.B) {
 				MerkleHash: merkleHash,
 				Info:       make([]byte, 0),
 				Number:     int64(i),
-				Time:       time.Now().Unix(),
+				Time:       time.Now().UnixNano(),
 				Witness:    "IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C",
 			},
 		}
 		for j := 0; j < txnum; j++ {
-			txn := tx.NewTx(actions, [][]byte{a1.Pubkey, a2.Pubkey}, 9999, 1, 1)
+			txn := tx.NewTx(actions, []string{a1.ID, a2.ID}, 9999, 1, 1, 0)
 			tBlock.Txs = append(tBlock.Txs, txn)
 			tr := tx.NewTxReceipt(txn.Hash())
-			tBlock.Receipts = append(tBlock.Receipts, &tr)
+			tBlock.Receipts = append(tBlock.Receipts, tr)
 		}
 		tBlock.CalculateHeadHash()
 		tBlock.Sign = a1.Sign(tBlock.HeadHash())

@@ -13,8 +13,8 @@ var DomainABIs map[string]*abi
 
 func init() {
 	DomainABIs = make(map[string]*abi)
-	register(&DomainABIs, link)
-	register(&DomainABIs, transferURL)
+	register(DomainABIs, link)
+	register(DomainABIs, transferURL)
 
 }
 
@@ -22,7 +22,7 @@ var (
 	link = &abi{
 		name: "Link",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			url := args[0].(string)
 			cid := args[1].(string)
@@ -36,19 +36,19 @@ var (
 
 			applicant := tij.Get("publisher").MustString()
 
-			owner := h.DHCP.URLOwner(url)
+			owner := h.DNS.URLOwner(url)
 
 			if owner != "" && owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			//ok, c := h.RequireAuth(applicant, "iost.domain")
-			//cost.AddAssign(c)
-			//
-			//if !ok {
-			//	return nil, cost, errors.New("no privilege of applicant")
-			//}
+			ok, c := h.RequireAuth(applicant, "domain.iost")
+			cost.AddAssign(c)
+
+			if !ok {
+				return nil, cost, errors.New("no permission of claimed url")
+			}
 
 			h.WriteLink(url, cid, applicant)
 			cost.AddAssign(host.PutCost)
@@ -61,7 +61,7 @@ var (
 	transferURL = &abi{
 		name: "Transfer",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			url := args[0].(string)
 			to := args[1].(string)
@@ -75,18 +75,18 @@ var (
 
 			applicant := tij.Get("publisher").MustString()
 
-			owner := h.DHCP.URLOwner(url)
+			owner := h.DNS.URLOwner(url)
 
 			if owner != "" && owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant)
+			ok, c := h.RequireAuth(applicant, "domain.iost")
 			cost.AddAssign(c)
 
 			if !ok {
-				return nil, cost, errors.New("no privilege of claimed url")
+				return nil, cost, errors.New("no permission of claimed url")
 			}
 
 			h.URLTransfer(url, to)

@@ -285,6 +285,8 @@ func (logger *Logger) genMsg(level Level, log string) {
 	buf.Write(levelBytes[level])
 	buf.WriteString(" ")
 	buf.WriteString(time.Now().Format("2006-01-02 15:04:05.000"))
+	//buf.WriteString(" , slot: " + strconv.Itoa(int(time.Now().Unix())/common.SlotLength))
+	//buf.WriteString(" , phase: " + strconv.Itoa(int(time.Now().Unix())%common.SlotLength))
 	if logger.showLocation {
 		buf.WriteString(" ")
 		buf.WriteString(location(logger.callDepth + 3))

@@ -1,0 +1,30 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "constructor",
+            "args": []
+        },
+        {
+            "name": "init",
+            "args": []
+        },
+        {
+            "name": "can_update",
+            "args": ["string"]
+        },
+        {
+            "name": "InitGenesis",
+            "args": [
+                "string",
+                "json",
+                "json"
+            ]
+        },
+        {
+            "name": "IssueIOST",
+            "args": []
+        }
+    ]
+}

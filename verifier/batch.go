@@ -43,11 +43,7 @@ type Provider interface {
 	Tx() *tx.Tx
 	Return(*tx.Tx)
 	Drop(t *tx.Tx, err error)
-}
-
-// TxIter iterator of tx pool
-type TxIter interface {
-	Next() (*tx.Tx, bool)
+	Close()
 }
 
 type batcherImpl struct {
@@ -75,6 +71,11 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 		t := provider.Tx()
 		if t == nil {
 			break
+		}
+		if !t.IsTimeValid(bh.Time) && !t.IsDefer() {
+			i--
+			provider.Drop(t, ErrInvalidTimeTx)
+			continue
 		}
 		go func() {
 			vi, mapper := database.NewBatchVisitor(bvr)

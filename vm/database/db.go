@@ -3,12 +3,11 @@ package database
 // Visitor combine of every handler, to be api of database
 type Visitor struct {
 	BasicHandler
-	GasHandler
 	MapHandler
 	ContractHandler
-	BalanceHandler
-	CoinHandler
+	TokenHandler
 	RollbackHandler
+	DelaytxHandler
 }
 
 // NewVisitor get a visitor of a DB, with cache length determined
@@ -20,9 +19,7 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 		BasicHandler:    BasicHandler{cachedDB},
 		MapHandler:      MapHandler{cachedDB},
 		ContractHandler: ContractHandler{cachedDB},
-		CoinHandler:     CoinHandler{cachedDB},
-		BalanceHandler:  BalanceHandler{cachedDB},
-		GasHandler:      GasHandler{cachedDB},
+		TokenHandler:    TokenHandler{cachedDB},
 	}
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
 	return v
@@ -49,9 +46,7 @@ func NewBatchVisitor(lruDB *LRU) (*Visitor, Mapper) {
 		BasicHandler:    BasicHandler{watcher},
 		MapHandler:      MapHandler{watcher},
 		ContractHandler: ContractHandler{watcher},
-		CoinHandler:     CoinHandler{watcher},
-		BalanceHandler:  BalanceHandler{watcher},
-		GasHandler:      GasHandler{watcher},
+		TokenHandler:    TokenHandler{watcher},
 	}
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
 	return v, watcher

@@ -10,7 +10,7 @@ import (
 func TestGlobalStaticProperty(t *testing.T) {
 	Convey("Test of witness lists of static property", t, func() {
 		prop := newStaticProperty(
-			&account.Account{
+			&account.KeyPair{
 				ID:     "id0",
 				Pubkey: []byte{},
 				Seckey: []byte{},

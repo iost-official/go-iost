@@ -1,0 +1,92 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "constructor",
+            "args": []
+        },
+        {
+            "name": "init",
+            "args": []
+        },
+        {
+            "name": "can_update",
+            "args": ["string"]
+        },
+        {
+            "name": "InitAdmin",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "NewVote",
+            "args": [
+                "string",
+                "string",
+                "json"
+            ]
+        },
+        {
+            "name": "AddOption",
+            "args": [
+                "string",
+                "string",
+                "bool"
+            ]
+        },
+        {
+            "name": "RemoveOption",
+            "args": [
+                "string",
+                "string",
+                "bool"
+            ]
+        },
+        {
+            "name": "GetOption",
+            "args": [
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "Vote",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "Unvote",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "GetVote",
+            "args": [
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "GetResult",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "DelVote",
+            "args": [
+                "string"
+            ]
+        }
+    ]
+}

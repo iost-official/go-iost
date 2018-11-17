@@ -333,18 +333,6 @@
 			"revisionTime": "2014-10-17T20:07:13Z"
 		},
 		{
-			"checksumSHA1": "bid1xjK/NN/lgtorI4XJ6RVueEY=",
-			"path": "github.com/iost-official/prototype/common",
-			"revision": "82e2dcd1a04e8dac4d6598f73c92d527f963bf1e",
-			"revisionTime": "2018-06-28T17:40:39Z"
-		},
-		{
-			"checksumSHA1": "1Q4lldZMntizs/Zpf6P4kkZ/r84=",
-			"path": "github.com/iost-official/prototype/log",
-			"revision": "82e2dcd1a04e8dac4d6598f73c92d527f963bf1e",
-			"revisionTime": "2018-06-28T17:40:39Z"
-		},
-		{
 			"checksumSHA1": "VVE/aQfaDZrwXwCI2bolNZrI3hA=",
 			"path": "github.com/ipfs/go-ipfs-util",
 			"revision": "9ed527918c2f20abdf0adfab0553cd87db34f656",
@@ -880,6 +868,12 @@
 			"revisionTime": "2018-01-03T17:44:51Z"
 		},
 		{
+			"checksumSHA1": "5fRTP+zI9WQqNzyHbi2qarMGauQ=",
+			"path": "github.com/sirupsen/logrus",
+			"revision": "ea8897e79973357ba785ac2533559a6297e83c44",
+			"revisionTime": "2018-05-23T07:42:43Z"
+		},
+		{
 			"checksumSHA1": "wVmkBavCZSwHYTDGxa1xOD3RKe0=",
 			"path": "github.com/smartystreets/assertions",
 			"revision": "7678a5452ebea5b7090a6b163f844c133f523da2",
@@ -1060,6 +1054,12 @@
 			"revisionTime": "2018-08-06T04:53:14Z"
 		},
 		{
+			"checksumSHA1": "KRlS8eQZGK1oYVCOkIvcMDXabxk=",
+			"path": "github.com/urfave/cli",
+			"revision": "b67dcf995b6a7b7f14fad5fcb7cc5441b05e814b",
+			"revisionTime": "2018-10-29T21:32:00Z"
+		},
+		{
 			"checksumSHA1": "BtK7hL0GNjhCUpNR/JD+9QY0ioo=",
 			"path": "github.com/whyrusleeping/go-logging",
 			"revision": "0457bb6b88fc1973573aaf6b5145d8d3ae972390",
@@ -1118,6 +1118,12 @@
 			"path": "github.com/willf/bloom",
 			"revision": "54e3b963ee1652b06c4562cb9b6020ebc6e36e59",
 			"revisionTime": "2017-05-05T22:16:40Z"
+		},
+		{
+			"checksumSHA1": "Oen67XBkt5voJj1wya8kIakvdT4=",
+			"path": "github.com/xlab/treeprint",
+			"revision": "d6fb6747feb6e7cfdc44682a024bddf87ef07ec2",
+			"revisionTime": "2018-06-15T14:19:04Z"
 		},
 		{
 			"checksumSHA1": "BwuTN1p5tDdEH4nNn2oEWYnwIow=",

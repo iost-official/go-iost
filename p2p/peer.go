@@ -10,8 +10,8 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 
 	libnet "github.com/libp2p/go-libp2p-net"
-	peer "github.com/libp2p/go-libp2p-peer"
-	multiaddr "github.com/multiformats/go-multiaddr"
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/willf/bloom"
 )
 
@@ -127,7 +127,6 @@ func (p *Peer) write(m *p2pMessage) error {
 		p.stream.Close()
 		return err
 	}
-
 	_, err := p.stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
@@ -196,7 +195,6 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		tagkv := map[string]string{"mtype": msg.messageType().String()}
 		byteInCounter.Add(float64(len(msg.content())), tagkv)
 		packetInCounter.Add(1, tagkv)
-
 		p.handleMessage(msg)
 	}
 }
@@ -215,7 +213,6 @@ func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate, asy
 		}
 		return p.write(msg)
 	}
-
 	ch := p.urgentMsgCh
 	if mp == NormalMessage {
 		ch = p.normalMsgCh

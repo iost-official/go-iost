@@ -21,6 +21,7 @@ import (
 	peer "github.com/libp2p/go-libp2p-peer"
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	multiaddr "github.com/multiformats/go-multiaddr"
+	madns "github.com/multiformats/go-multiaddr-dns"
 	"github.com/uber-go/atomic"
 )
 
@@ -501,8 +502,30 @@ func (pm *PeerManager) parseSeeds() {
 			ilog.Errorf("parse seed nodes error. seed=%s, err=%v", seed, err)
 			continue
 		}
-		pm.storePeerInfo(peerID, []multiaddr.Multiaddr{addr})
+
+		if madns.Matches(addr) {
+			err = pm.dnsResolve(peerID, addr)
+			if err != nil {
+				time.AfterFunc(5*time.Second, func() {
+					ilog.Info("retry resolve dns")
+					pm.dnsResolve(peerID, addr)
+				})
+			}
+		} else {
+			pm.storePeerInfo(peerID, []multiaddr.Multiaddr{addr})
+		}
 	}
+
+}
+
+func (pm *PeerManager) dnsResolve(peerID peer.ID, addr multiaddr.Multiaddr) error {
+	resAddrs, err := madns.Resolve(context.Background(), addr)
+	if err != nil {
+		ilog.Errorf("resolve multiaddr failed. err=%v, addr=%v", err, addr)
+		return err
+	}
+	pm.storePeerInfo(peerID, resAddrs)
+	return nil
 }
 
 // Broadcast sends message to all the neighbors.
@@ -664,7 +687,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
 	}
-	if msg.messageType() != PublishTx {
+	if msg.messageType() != PublishTx && msg.messageType() != SyncHeight {
 		ilog.Infof("receiving message. type=%s, pid=%s", msg.messageType(), peerID.Pretty())
 	}
 	switch msg.messageType() {

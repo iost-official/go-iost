@@ -33,7 +33,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcRawTxReq"
+              "$ref": "#/definitions/rpcTxReq"
             }
           }
         ],
@@ -64,7 +64,7 @@
           },
           {
             "name": "useLongestChain",
-            "description": "useLongestChain means whether geting the balance also from pending blocks(in the longest chain)",
+            "description": "useLongestChain means whether getting the balance also from pending blocks(in the longest chain)",
             "in": "path",
             "required": true,
             "type": "boolean",
@@ -188,8 +188,8 @@
         ]
       }
     },
-    "/getContractStorage/{contractID}/{key}": {
-      "get": {
+    "/getContractStorage": {
+      "post": {
         "summary": "get the value of the corresponding key in stateDB",
         "operationId": "GetContractStorage",
         "responses": {
@@ -202,24 +202,12 @@
         },
         "parameters": [
           {
-            "name": "contractID",
-            "in": "path",
+            "name": "body",
+            "in": "body",
             "required": true,
-            "type": "string"
-          },
-          {
-            "name": "key",
-            "description": "the key in the StateDB",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "field",
-            "description": "get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case).",
-            "in": "query",
-            "required": false,
-            "type": "string"
+            "schema": {
+              "$ref": "#/definitions/rpcGetContractStorageReq"
+            }
           }
         ],
         "tags": [
@@ -322,15 +310,15 @@
         ]
       }
     },
-    "/sendRawTx": {
+    "/sendTx": {
       "post": {
         "summary": "receive encoded tx",
-        "operationId": "SendRawTx",
+        "operationId": "SendTx",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcSendRawTxRes"
+              "$ref": "#/definitions/rpcSendTxRes"
             }
           }
         },
@@ -340,7 +328,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcRawTxReq"
+              "$ref": "#/definitions/rpcTxReq"
             }
           }
         ],
@@ -381,14 +369,17 @@
     "EventTopic": {
       "type": "string",
       "enum": [
-        "TransactionResult",
+        "ContractReceipt",
         "ContractEvent",
-        "ContractUserEvent",
-        "ContractSystemEvent"
+        "TransactionResult",
+        "TransactionConfirm",
+        "TransactionPending",
+        "NewBlock",
+        "ProducerState"
       ],
-      "default": "TransactionResult"
+      "default": "ContractReceipt"
     },
-    "blockBlockHead": {
+    "blockpbBlockHead": {
       "type": "object",
       "properties": {
         "version": {
@@ -421,6 +412,10 @@
         "time": {
           "type": "string",
           "format": "int64"
+        },
+        "gasUsage": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },
@@ -430,22 +425,28 @@
         "name": {
           "type": "string"
         },
-        "payment": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "limit": {
-          "$ref": "#/definitions/contractCost"
-        },
-        "gas_price": {
-          "type": "string",
-          "format": "int64"
-        },
         "args": {
           "type": "array",
           "items": {
             "type": "string"
           }
+        },
+        "amountLimit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/contractAmount"
+          }
+        }
+      }
+    },
+    "contractAmount": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "val": {
+          "type": "string"
         }
       }
     },
@@ -463,23 +464,6 @@
         }
       }
     },
-    "contractCost": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "string",
-          "format": "int64"
-        },
-        "net": {
-          "type": "string",
-          "format": "int64"
-        },
-        "CPU": {
-          "type": "string",
-          "format": "int64"
-        }
-      }
-    },
     "contractInfo": {
       "type": "object",
       "properties": {
@@ -494,23 +478,6 @@
           "items": {
             "$ref": "#/definitions/contractABI"
           }
-        }
-      }
-    },
-    "cryptoSignatureRaw": {
-      "type": "object",
-      "properties": {
-        "algorithm": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "sig": {
-          "type": "string",
-          "format": "byte"
-        },
-        "pubKey": {
-          "type": "string",
-          "format": "byte"
         }
       }
     },
@@ -533,7 +500,7 @@
       "type": "object",
       "properties": {
         "head": {
-          "$ref": "#/definitions/blockBlockHead",
+          "$ref": "#/definitions/blockpbBlockHead",
           "title": "BlockHead"
         },
         "hash": {
@@ -543,7 +510,7 @@
         "txs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/txTxRaw"
+            "$ref": "#/definitions/txpbTx"
           },
           "title": "transaction list,works when complete is true"
         },
@@ -557,7 +524,7 @@
         "receipts": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/txTxReceiptRaw"
+            "$ref": "#/definitions/txpbTxReceipt"
           },
           "title": "transaction receipt list"
         },
@@ -602,9 +569,26 @@
     "rpcExecTxRes": {
       "type": "object",
       "properties": {
-        "txReceiptRaw": {
-          "$ref": "#/definitions/txTxReceiptRaw",
-          "title": "not support yet"
+        "txReceipt": {
+          "$ref": "#/definitions/txpbTxReceipt"
+        }
+      }
+    },
+    "rpcGASInfo": {
+      "type": "object",
+      "properties": {
+        "currentTotal": {
+          "type": "string",
+          "title": "these values are all fix point number"
+        },
+        "increaseSpeed": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "string"
+        },
+        "pledgedCoin": {
+          "type": "string"
         }
       }
     },
@@ -613,13 +597,17 @@
       "properties": {
         "balance": {
           "type": "string",
-          "format": "int64",
           "title": "the queried balance"
         },
         "gas": {
-          "type": "string",
-          "format": "int64",
+          "$ref": "#/definitions/rpcGASInfo",
           "title": "current gas"
+        },
+        "ram": {
+          "$ref": "#/definitions/rpcRAMInfo"
+        },
+        "accountJson": {
+          "type": "string"
         }
       }
     },
@@ -629,6 +617,26 @@
         "value": {
           "$ref": "#/definitions/contractContract",
           "title": "contract id"
+        }
+      }
+    },
+    "rpcGetContractStorageReq": {
+      "type": "object",
+      "properties": {
+        "contractID": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "title": "ram owner, should be the same as 'put' call. It can be empty"
+        },
+        "key": {
+          "type": "string",
+          "title": "the key in the StateDB"
+        },
+        "field": {
+          "type": "string",
+          "title": "get the value from StateDB,field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)"
         }
       }
     },
@@ -688,17 +696,16 @@
         }
       }
     },
-    "rpcRawTxReq": {
+    "rpcRAMInfo": {
       "type": "object",
       "properties": {
-        "data": {
+        "available": {
           "type": "string",
-          "format": "byte",
-          "title": "the rawdata of a tx"
+          "format": "int64"
         }
       }
     },
-    "rpcSendRawTxRes": {
+    "rpcSendTxRes": {
       "type": "object",
       "properties": {
         "hash": {
@@ -728,11 +735,19 @@
         }
       }
     },
+    "rpcTxReq": {
+      "type": "object",
+      "properties": {
+        "tx": {
+          "$ref": "#/definitions/txpbTx"
+        }
+      }
+    },
     "rpctxReceiptRes": {
       "type": "object",
       "properties": {
-        "txReceiptRaw": {
-          "$ref": "#/definitions/txTxReceiptRaw",
+        "txReceipt": {
+          "$ref": "#/definitions/txpbTxReceipt",
           "title": "transaction receipt"
         },
         "hash": {
@@ -743,8 +758,8 @@
     "rpctxRes": {
       "type": "object",
       "properties": {
-        "txRaw": {
-          "$ref": "#/definitions/txTxRaw",
+        "tx": {
+          "$ref": "#/definitions/txpbTx",
           "title": "the queried transaction"
         },
         "hash": {
@@ -753,7 +768,24 @@
         }
       }
     },
-    "txActionRaw": {
+    "sigpbSignature": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sig": {
+          "type": "string",
+          "format": "byte"
+        },
+        "pubKey": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "txpbAction": {
       "type": "object",
       "properties": {
         "contract": {
@@ -767,19 +799,18 @@
         }
       }
     },
-    "txReceiptRaw": {
+    "txpbReceipt": {
       "type": "object",
       "properties": {
-        "type": {
-          "type": "integer",
-          "format": "int32"
+        "funcName": {
+          "type": "string"
         },
         "content": {
           "type": "string"
         }
       }
     },
-    "txStatusRaw": {
+    "txpbStatus": {
       "type": "object",
       "properties": {
         "code": {
@@ -791,7 +822,7 @@
         }
       }
     },
-    "txTxRaw": {
+    "txpbTx": {
       "type": "object",
       "properties": {
         "time": {
@@ -813,28 +844,47 @@
         "actions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/txActionRaw"
+            "$ref": "#/definitions/txpbAction"
           }
         },
         "signers": {
           "type": "array",
           "items": {
-            "type": "string",
-            "format": "byte"
+            "type": "string"
           }
         },
         "signs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/cryptoSignatureRaw"
+            "$ref": "#/definitions/sigpbSignature"
           }
         },
         "publisher": {
-          "$ref": "#/definitions/cryptoSignatureRaw"
+          "type": "string"
+        },
+        "publishSigns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/sigpbSignature"
+          }
+        },
+        "delay": {
+          "type": "string",
+          "format": "int64"
+        },
+        "referredTx": {
+          "type": "string",
+          "format": "byte"
+        },
+        "amountLimit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/contractAmount"
+          }
         }
       }
     },
-    "txTxReceiptRaw": {
+    "txpbTxReceipt": {
       "type": "object",
       "properties": {
         "txHash": {
@@ -845,17 +895,26 @@
           "type": "string",
           "format": "int64"
         },
-        "status": {
-          "$ref": "#/definitions/txStatusRaw"
+        "ramUsage": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
         },
-        "succActionNum": {
-          "type": "integer",
-          "format": "int32"
+        "status": {
+          "$ref": "#/definitions/txpbStatus"
+        },
+        "returns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "receipts": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/txReceiptRaw"
+            "$ref": "#/definitions/txpbReceipt"
           }
         }
       }

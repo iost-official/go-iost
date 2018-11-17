@@ -34,8 +34,11 @@ func (m *LRU) Get(key string) (value string) {
 	}
 	v, ok := m.cache.Get(key)
 	if !ok {
-		v = m.db.Get(key)
-		m.cache.Add(key, v)
+		value = m.db.Get(key)
+		if value != NilPrefix {
+			m.cache.Add(key, value)
+		}
+		return value
 	}
 	return v.(string)
 }

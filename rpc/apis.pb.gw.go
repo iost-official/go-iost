@@ -242,44 +242,11 @@ func request_Apis_GetAccountInfo_0(ctx context.Context, marshaler runtime.Marsha
 
 }
 
-var (
-	filter_Apis_GetContractStorage_0 = &utilities.DoubleArray{Encoding: map[string]int{"contractID": 0, "key": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
-)
-
 func request_Apis_GetContractStorage_0(ctx context.Context, marshaler runtime.Marshaler, client ApisClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetContractStorageReq
 	var metadata runtime.ServerMetadata
 
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["contractID"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "contractID")
-	}
-
-	protoReq.ContractID, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "contractID", err)
-	}
-
-	val, ok = pathParams["key"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "key")
-	}
-
-	protoReq.Key, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "key", err)
-	}
-
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_Apis_GetContractStorage_0); err != nil {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -315,21 +282,21 @@ func request_Apis_GetContract_0(ctx context.Context, marshaler runtime.Marshaler
 
 }
 
-func request_Apis_SendRawTx_0(ctx context.Context, marshaler runtime.Marshaler, client ApisClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RawTxReq
+func request_Apis_SendTx_0(ctx context.Context, marshaler runtime.Marshaler, client ApisClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq TxReq
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.SendRawTx(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.SendTx(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
 func request_Apis_ExecTx_0(ctx context.Context, marshaler runtime.Marshaler, client ApisClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RawTxReq
+	var protoReq TxReq
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -632,7 +599,7 @@ func RegisterApisHandlerClient(ctx context.Context, mux *runtime.ServeMux, clien
 
 	})
 
-	mux.Handle("GET", pattern_Apis_GetContractStorage_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Apis_GetContractStorage_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -690,7 +657,7 @@ func RegisterApisHandlerClient(ctx context.Context, mux *runtime.ServeMux, clien
 
 	})
 
-	mux.Handle("POST", pattern_Apis_SendRawTx_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Apis_SendTx_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -708,14 +675,14 @@ func RegisterApisHandlerClient(ctx context.Context, mux *runtime.ServeMux, clien
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Apis_SendRawTx_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Apis_SendTx_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Apis_SendRawTx_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Apis_SendTx_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -797,11 +764,11 @@ var (
 
 	pattern_Apis_GetAccountInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getAccountInfo", "ID", "useLongestChain"}, ""))
 
-	pattern_Apis_GetContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getContractStorage", "contractID", "key"}, ""))
+	pattern_Apis_GetContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getContractStorage"}, ""))
 
 	pattern_Apis_GetContract_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"getContract", "contractID"}, ""))
 
-	pattern_Apis_SendRawTx_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"sendRawTx"}, ""))
+	pattern_Apis_SendTx_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"sendTx"}, ""))
 
 	pattern_Apis_ExecTx_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"execTx"}, ""))
 
@@ -829,7 +796,7 @@ var (
 
 	forward_Apis_GetContract_0 = runtime.ForwardResponseMessage
 
-	forward_Apis_SendRawTx_0 = runtime.ForwardResponseMessage
+	forward_Apis_SendTx_0 = runtime.ForwardResponseMessage
 
 	forward_Apis_ExecTx_0 = runtime.ForwardResponseMessage
 

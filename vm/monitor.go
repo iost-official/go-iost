@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
@@ -11,7 +12,8 @@ import (
 )
 
 var (
-	errGasPriceIllegal = errors.New("gas price too big")
+	errGasPriceIllegal = errors.New("gas price illegal")
+	errGasLimitIllegal = errors.New("gas limit illegal")
 )
 
 // Monitor ...
@@ -55,7 +57,7 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 
 // Call ...
 // nolint
-func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost *contract.Cost, err error) {
+func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error) {
 
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
 
@@ -77,21 +79,85 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 			panic(err)
 		}
 	}
-	rtn, cost, err = vm.LoadAndCall(h, c, api, args...)
-
-	payment, ok := h.Context().GValue("abi_payment").(int)
-	if !ok {
-		payment = int(abi.Payment)
+	// check amount limit
+	signerList := map[string]int{}
+	if h.Context().Value("signer_list") != nil {
+		signerList = h.Context().Value("signer_list").(map[string]int)
 	}
-	var gasPrice = h.Context().Value("gas_price").(int64)
+	amountLimit := abi.AmountLimit
+	if amountLimit == nil {
+		amountLimit = []*contract.Amount{}
+	}
+	var userAmountLimit []*contract.Amount
+	if h.Context().Value("amount_limit") != nil {
+		userAmountLimit = h.Context().Value("amount_limit").([]*contract.Amount)
+	}
+	var fixedAmountLimit []contract.FixedAmount
+	beforeBalance := make(map[string][]int64)
+	cost = contract.Cost0()
 
-	if payment == 1 &&
-		abi.GasPrice > gasPrice &&
-		!cost.IsOverflow(abi.Limit) {
-		b := h.DB().Balance(host.ContractGasPrefix + contractName)
-		if b > gasPrice*cost.ToGas() {
-			h.PayCost(cost, host.ContractGasPrefix+contractName)
-			cost = contract.Cost0()
+	// only check amount limit when executing action, not system call
+	if h.Context().Value("stack_height") == 1 {
+		cost0 := host.CommonOpCost(len(signerList) * len(amountLimit))
+		cost.AddAssign(cost0)
+		for _, limit := range amountLimit {
+			decimal := h.DB().Decimal(limit.Token)
+			fixedAmount, err := common.NewFixed(limit.Val, decimal)
+			if err == nil {
+				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
+			}
+		}
+		for _, limit := range userAmountLimit {
+			decimal := h.DB().Decimal(limit.Token)
+			fixedAmount, err := common.NewFixed(limit.Val, decimal)
+			if err == nil {
+				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
+			}
+		}
+		for acc := range signerList {
+			beforeBalance[acc] = []int64{}
+			for _, limit := range fixedAmountLimit {
+				beforeBalance[acc] = append(beforeBalance[acc], h.DB().TokenBalance(limit.Token, acc))
+			}
+		}
+	}
+
+	rtn, cost0, err := vm.LoadAndCall(h, c, api, args...)
+	cost.AddAssign(cost0)
+
+	//payment, ok := h.Context().GValue("abi_payment").(int)
+	//if !ok {
+	//	payment = int(abi.Payment)
+	//}
+	//var gasPrice = h.Context().Value("gas_price").(int64)
+
+	//if payment == 1 &&
+	//	abi.GasPrice > gasPrice &&
+	//	!{
+	//	b := h.DB().TokenBalance("iost",host.ContractGasPrefix + contractName)
+	//	if b > gasPriceCost.ToGas() {
+	//		h.PayCost(cost, host.ContractGasPrefix+contractName)
+	//		cost = contract.Cost0()
+	//	}
+	//}
+
+	// check amount limit
+	if h.Context().Value("stack_height") == 1 {
+		for acc := range signerList {
+			for i, limit := range fixedAmountLimit {
+				afterBalance := h.DB().TokenBalance(limit.Token, acc)
+				delta := common.Fixed{
+					Value:   beforeBalance[acc][i] - afterBalance,
+					Decimal: fixedAmountLimit[i].Val.Decimal,
+				}
+				if delta.Value > fixedAmountLimit[i].Val.Value {
+					err = errors.New(fmt.Sprintf("token %s exceed amountLimit in abi. limit %s, need %s",
+						limit.Token,
+						fixedAmountLimit[i].Val.ToString(),
+						delta.ToString()))
+					return nil, cost, err
+				}
+			}
 		}
 	}
 

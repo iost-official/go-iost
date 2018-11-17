@@ -27,9 +27,9 @@ func testRun(t *testing.T) {
 	exec.Command("rm", "-r", "./StateDB").Run()
 	exec.Command("rm", "-r", "./TXDB").Run()
 	exec.Command("rm", "", "priv.key").Run()
-	account1, _ := account.NewAccount(nil, crypto.Secp256k1)
-	account2, _ := account.NewAccount(nil, crypto.Secp256k1)
-	account3, _ := account.NewAccount(nil, crypto.Secp256k1)
+	account1, _ := account.NewKeyPair(nil, crypto.Secp256k1)
+	account2, _ := account.NewKeyPair(nil, crypto.Secp256k1)
+	account3, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 	id2Seckey := make(map[string][]byte)
 	id2Seckey[account1.ID] = account1.Seckey
 	id2Seckey[account2.ID] = account2.Seckey
@@ -46,9 +46,10 @@ func testRun(t *testing.T) {
 	}
 	genesisBlock := &block.Block{
 		Head: &block.BlockHead{
-			Version: 0,
-			Number:  0,
-			Time:    0,
+			Version:  0,
+			Number:   0,
+			Time:     0,
+			GasUsage: 0,
 		},
 		Txs:      make([]*tx.Tx, 0),
 		Receipts: make([]*tx.TxReceipt, 0),

@@ -22,7 +22,7 @@ func NewInfo(h *Host) Info {
 }
 
 // BlockInfo get block info, in json
-func (h *Info) BlockInfo() (info database.SerializedJSON, cost *contract.Cost) {
+func (h *Info) BlockInfo() (info database.SerializedJSON, cost contract.Cost) {
 
 	blkInfo := make(map[string]interface{})
 
@@ -40,21 +40,43 @@ func (h *Info) BlockInfo() (info database.SerializedJSON, cost *contract.Cost) {
 }
 
 // BlockTime get block time, in int64
-func (h *Info) BlockTime() (ntime int64, cost *contract.Cost) {
+func (h *Info) BlockTime() (ntime int64, cost contract.Cost) {
 	ntime = h.h.ctx.Value("time").(int64)
-	return ntime, BlockInfoCost
+	return ntime, ContextInfoCost
+}
+
+// ContractName get block time, in int64
+func (h *Info) ContractName() (name string, cost contract.Cost) {
+	name = h.h.ctx.Value("contract_name").(string)
+	return name, ContextInfoCost
+}
+
+// ContextInfo get context info
+func (h *Info) ContextInfo() (info database.SerializedJSON, cost contract.Cost) {
+	ctxInfo := make(map[string]interface{})
+
+	ctxInfo["contract_name"] = h.h.ctx.Value("contract_name")
+	ctxInfo["abi_name"] = h.h.ctx.Value("abi_name")
+
+	cij, err := json.Marshal(ctxInfo)
+	if err != nil {
+		panic(err)
+	}
+
+	return database.SerializedJSON(cij), ContextInfoCost
 }
 
 // TxInfo get tx info
-func (h *Info) TxInfo() (info database.SerializedJSON, cost *contract.Cost) {
+func (h *Info) TxInfo() (info database.SerializedJSON, cost contract.Cost) {
 
 	txInfo := make(map[string]interface{})
-	txInfo["time"] = h.h.ctx.Value("time")
+	txInfo["time"] = h.h.ctx.Value("tx_time")
 	txInfo["hash"] = h.h.ctx.Value("tx_hash")
 	txInfo["expiration"] = h.h.ctx.Value("expiration")
 	txInfo["gas_limit"] = h.h.ctx.GValue("gas_limit")
 	txInfo["gas_price"] = h.h.ctx.Value("gas_price")
 	txInfo["auth_list"] = h.h.ctx.Value("auth_list")
+	txInfo["publisher"] = h.h.ctx.Value("publisher")
 
 	tij, err := json.Marshal(txInfo)
 	if err != nil {
@@ -74,8 +96,8 @@ func (h *Info) ABIConfig(key, value string) {
 	}
 }
 
-// GasLimit get gas limit
-func (h *Info) GasLimit() int64 {
+// GasLimitValue get gas limit
+func (h *Info) GasLimitValue() int64 {
 	return h.h.ctx.GValue("gas_limit").(int64)
 }
 

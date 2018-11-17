@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"sort"
+
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
-	"math"
-	"sort"
-	"strconv"
 )
 
 var tokenABIs map[string]*abi
@@ -29,44 +30,39 @@ const (
 
 func init() {
 	tokenABIs = make(map[string]*abi)
-	register(&tokenABIs, createTokenABI)
-	register(&tokenABIs, issueTokenABI)
-	register(&tokenABIs, transferTokenABI)
-	register(&tokenABIs, transferFreezeTokenABI)
-	register(&tokenABIs, balanceOfTokenABI)
-	register(&tokenABIs, supplyTokenABI)
-	register(&tokenABIs, totalSupplyTokenABI)
-	register(&tokenABIs, destroyTokenABI)
+	register(tokenABIs, initTokenABI)
+	register(tokenABIs, createTokenABI)
+	register(tokenABIs, issueTokenABI)
+	register(tokenABIs, transferTokenABI)
+	register(tokenABIs, transferFreezeTokenABI)
+	register(tokenABIs, balanceOfTokenABI)
+	register(tokenABIs, supplyTokenABI)
+	register(tokenABIs, totalSupplyTokenABI)
+	register(tokenABIs, destroyTokenABI)
 }
 
-func checkTokenExists(h *host.Host, tokenName string) (ok bool, cost *contract.Cost) {
+func checkTokenExists(h *host.Host, tokenName string) (ok bool, cost contract.Cost) {
 	exists, cost0 := h.MapHas(TokenInfoMapPrefix+tokenName, IssuerMapField)
 	return exists, cost0
 }
 
-func setBalance(h *host.Host, tokenName string, from string, balance int64) (cost *contract.Cost) {
-	cost = h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance)
+func setBalance(h *host.Host, tokenName string, from string, balance int64) (cost contract.Cost) {
+	cost = h.MapPut(TokenBalanceMapPrefix, tokenName, balance, from)
 	return cost
 }
 
-// FreezeItem represents freezed balance, will unfreeze after Ftime
-type FreezeItem struct {
-	Amount int64
-	Ftime  int64
-}
-
-func getBalance(h *host.Host, tokenName string, from string) (balance int64, cost *contract.Cost, err error) {
+func getBalance(h *host.Host, tokenName string, from string) (balance int64, cost contract.Cost, err error) {
 	balance = int64(0)
 	cost = contract.Cost0()
-	ok, cost0 := h.MapHas(TokenBalanceMapPrefix+from, tokenName)
+	ok, cost0 := h.MapHas(TokenBalanceMapPrefix, tokenName, from)
 	cost.AddAssign(cost0)
 	if ok {
-		tmp, cost0 := h.MapGet(TokenBalanceMapPrefix+from, tokenName)
+		tmp, cost0 := h.MapGet(TokenBalanceMapPrefix, tokenName, from)
 		cost.AddAssign(cost0)
 		balance = tmp.(int64)
 	}
 
-	ok, cost0 = h.MapHas(TokenFreezeMapPrefix+from, tokenName)
+	ok, cost0 = h.MapHas(TokenFreezeMapPrefix, tokenName, from)
 	cost.AddAssign(cost0)
 	if !ok {
 		return balance, cost, nil
@@ -75,9 +71,9 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 	ntime, cost0 := h.BlockTime()
 	cost.AddAssign(cost0)
 
-	freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
+	freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix, tokenName, from)
 	cost.AddAssign(cost0)
-	freezeList := []FreezeItem{}
+	freezeList := []database.FreezeItem{}
 
 	err = json.Unmarshal([]byte(freezeJSON.(database.SerializedJSON)), &freezeList)
 	cost.AddAssign(host.CommonOpCost(1))
@@ -87,7 +83,10 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 
 	addBalance := int64(0)
 	i := 0
-	for i < len(freezeList) && freezeList[i].Ftime <= ntime {
+	for i < len(freezeList) {
+		if freezeList[i].Ftime > ntime {
+			break
+		}
 		addBalance += freezeList[i].Amount
 		i++
 	}
@@ -106,18 +105,18 @@ func getBalance(h *host.Host, tokenName string, from string) (balance int64, cos
 		if err != nil {
 			return balance, cost, err
 		}
-		cost0 = h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON.([]byte)))
+		cost0 = h.MapPut(TokenFreezeMapPrefix, tokenName, database.SerializedJSON(freezeJSON.([]byte)), from)
 		cost.AddAssign(cost0)
 	}
 
 	return balance, cost, nil
 }
 
-func freezeBalance(h *host.Host, tokenName string, from string, balance int64, ftime int64) (cost *contract.Cost, err error) {
-	ok, cost := h.MapHas(TokenFreezeMapPrefix+from, tokenName)
-	freezeList := []FreezeItem{}
+func freezeBalance(h *host.Host, tokenName string, from string, balance int64, ftime int64) (cost contract.Cost, err error) {
+	ok, cost := h.MapHas(TokenFreezeMapPrefix, tokenName, from)
+	freezeList := []database.FreezeItem{}
 	if ok {
-		freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
+		freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix, tokenName, from)
 		cost.AddAssign(cost0)
 		err = json.Unmarshal([]byte(freezeJSON.(database.SerializedJSON)), &freezeList)
 		cost.AddAssign(host.CommonOpCost(1))
@@ -126,7 +125,7 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 		}
 	}
 
-	freezeList = append(freezeList, FreezeItem{balance, ftime})
+	freezeList = append(freezeList, database.FreezeItem{Amount: balance, Ftime: ftime})
 	sort.Slice(freezeList, func(i, j int) bool {
 		return freezeList[i].Ftime < freezeList[j].Ftime ||
 			freezeList[i].Ftime == freezeList[j].Ftime && freezeList[i].Amount < freezeList[j].Amount
@@ -138,47 +137,91 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 	if err != nil {
 		return cost, nil
 	}
-	cost0 := h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON))
+	cost0 := h.MapPut(TokenFreezeMapPrefix, tokenName, database.SerializedJSON(freezeJSON), from)
 	cost.AddAssign(cost0)
 
 	return cost, nil
 }
 
-func parseAmount(h *host.Host, tokenName string, amountStr string) (amount int64, cost *contract.Cost, err error) {
-	// todo use fixed point number
-	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
-	amountFloat, err := strconv.ParseFloat(amountStr, 64)
+func parseAmount(h *host.Host, tokenName string, amountStr string, issuer string) (amount int64, cost contract.Cost, err error) {
+	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField, issuer)
+	amountNumber, err := common.NewFixed(amountStr, int(decimal.(int64)))
+
+	cost.AddAssign(host.CommonOpCost(3))
 	if err != nil {
-		return 0, cost, err
+		return 0, cost, host.ErrInvalidAmount
 	}
-	amountFloat *= (math.Pow10(int(decimal.(int64))))
-	return int64(amountFloat), cost, err
+	return amountNumber.Value, cost, err
 }
 
-func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, cost *contract.Cost) {
-	// todo use fixed point number
-	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
-	amountStr = fmt.Sprintf("%.8f", float64(amount)/math.Pow10(int(decimal.(int64))))
-	return amountStr, cost
+func genAmount(h *host.Host, tokenName string, amount int64, issuer string) (amountStr string, cost contract.Cost) {
+	decimal, cost := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField, issuer)
+	amountNumber := common.Fixed{Value: amount, Decimal: int(decimal.(int64))}
+	cost.AddAssign(host.CommonOpCost(1))
+	return amountNumber.ToString(), cost
 }
 
 var (
+	initTokenABI = &abi{
+		name: "init",
+		args: []string{},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			return []interface{}{}, host.CommonErrorCost(1), nil
+		},
+	}
+
 	createTokenABI = &abi{
 		name: "create",
 		args: []string{"string", "string", "number", "json"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
 			issuer := args[1].(string)
 			totalSupply := args[2].(int64)
-			// todo config
+			configJSON := args[3].([]byte)
+
+			// config
+			config := make(map[string]interface{})
+			err = json.Unmarshal(configJSON, &config)
+			cost.AddAssign(host.CommonOpCost(2))
+			if err != nil {
+				return nil, cost, err
+			}
+			decimal := 8
+			canTransfer := true
+			defaultRate := "1.0"
+			cost.AddAssign(host.CommonOpCost(3))
+			if tmp, ok := config[DecimalMapField]; ok {
+				if _, ok = tmp.(float64); !ok {
+					return nil, cost, errors.New("decimal in config should be number")
+				}
+				decimal = int(tmp.(float64))
+			}
+			if tmp, ok := config[CanTransferMapField]; ok {
+				canTransfer, ok = tmp.(bool)
+				if !ok {
+					return nil, cost, errors.New("canTransfer in config should be bool")
+				}
+			}
+			if tmp, ok := config[DefaultRateMapField]; ok {
+				defaultRate, ok = tmp.(string)
+				if !ok {
+					return nil, cost, errors.New("defaultRate in config should be string")
+				}
+			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// check auth
-			ok, cost0 := h.RequireAuth(issuer)
+			ok, cost0 := h.RequireAuth(issuer, "token.iost")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
+			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
 			}
 
 			// check exists
@@ -189,8 +232,7 @@ var (
 			}
 
 			// check valid
-			decimal := 8
-			if decimal >= 19 {
+			if decimal < 0 || decimal >= 19 {
 				return nil, cost, errors.New("invalid decimal")
 			}
 			if totalSupply > math.MaxInt64/int64(math.Pow10(decimal)) {
@@ -201,15 +243,15 @@ var (
 			// put info
 			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, IssuerMapField, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, TotalSupplyMapField, totalSupply)
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, TotalSupplyMapField, totalSupply, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, int64(0))
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, int64(0), issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, CanTransferMapField, true)
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, CanTransferMapField, canTransfer, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DefaultRateMapField, "1.0")
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DefaultRateMapField, defaultRate, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DecimalMapField, int64(decimal))
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DecimalMapField, int64(decimal), issuer)
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -219,7 +261,7 @@ var (
 	issueTokenABI = &abi{
 		name: "issue",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
@@ -234,20 +276,26 @@ var (
 			}
 			issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, IssuerMapField)
 			cost.AddAssign(cost0)
-			supply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, SupplyMapField)
+			supply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, SupplyMapField, issuer.(string))
 			cost.AddAssign(cost0)
-			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, TotalSupplyMapField)
+			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, TotalSupplyMapField, issuer.(string))
 			cost.AddAssign(cost0)
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(issuer.(string))
+			ok, cost0 = h.RequireAuth(issuer.(string), "token.iost")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
 			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// get amount by fixed point number
-			amount, cost0, err := parseAmount(h, tokenName, amountStr)
+			amount, cost0, err := parseAmount(h, tokenName, amountStr, issuer.(string))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -260,9 +308,12 @@ var (
 			if totalSupply.(int64)-supply.(int64) < amount {
 				return nil, cost, errors.New("supply too much")
 			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// set supply, set balance
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+amount)
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+amount, issuer.(string))
 			cost.AddAssign(cost0)
 
 			balance, cost0, err := getBalance(h, tokenName, to)
@@ -276,20 +327,33 @@ var (
 			cost0 = setBalance(h, tokenName, to, balance)
 			cost.AddAssign(cost0)
 
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
 
 	transferTokenABI = &abi{
 		name: "transfer",
-		args: []string{"string", "string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		args: []string{"string", "string", "string", "string", "string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
 			from := args[1].(string)
 			to := args[2].(string)
 			amountStr := args[3].(string)
+			memo := args[4].(string) // memo
+			if len(memo) > 512 {
+				return nil, cost, host.ErrMemoTooLarge
+			}
+
+			//fmt.Printf("token transfer %v %v %v %v\n", tokenName, from, to, amountStr)
 
 			if from == to {
 				return []interface{}{}, cost, nil
@@ -301,23 +365,38 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
+			issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, IssuerMapField)
+			cost.AddAssign(cost0)
+			canTransfer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, CanTransferMapField, issuer.(string))
+			cost.AddAssign(cost0)
+			if !(canTransfer.(bool)) {
+				return nil, cost, host.ErrTokenNoTransfer
+			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// check auth
-			// todo handle from is contract
-			ok, cost0 = h.RequireAuth(from)
+			ok, cost0 = h.RequireAuth(from, "transfer")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
 			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// get amount by fixed point number
-			amount, cost0, err := parseAmount(h, tokenName, amountStr)
+			amount, cost0, err := parseAmount(h, tokenName, amountStr, issuer.(string))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
 			if amount <= 0 {
 				return nil, cost, host.ErrInvalidAmount
+			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
 			}
 
 			// set balance
@@ -332,32 +411,47 @@ var (
 				return nil, cost, err
 			}
 			if fbalance < amount {
-				return nil, cost, host.ErrBalanceNotEnough
+				return nil, cost, fmt.Errorf("balance not enough %v < %v", fbalance, amount)
+			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
 			}
 
 			fbalance -= amount
 			tbalance += amount
 
 			cost0 = setBalance(h, tokenName, to, tbalance)
+			//fmt.Printf("transfer set %v %v %v\n", tokenName, to, tbalance)
 			cost.AddAssign(cost0)
 			cost0 = setBalance(h, tokenName, from, fbalance)
 			cost.AddAssign(cost0)
 
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
 
 	transferFreezeTokenABI = &abi{
 		name: "transferFreeze",
-		args: []string{"string", "string", "string", "string", "number"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		args: []string{"string", "string", "string", "string", "number", "string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
 			from := args[1].(string)
 			to := args[2].(string)
 			amountStr := args[3].(string)
-			ftime := args[4].(int64)
+			ftime := args[4].(int64) // time.Now().UnixNano()
+			memo := args[5].(string) // memo
+			if len(memo) > 512 {
+				return nil, cost, host.ErrMemoTooLarge
+			}
 
 			// get token info
 			ok, cost0 := checkTokenExists(h, tokenName)
@@ -365,23 +459,39 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
+			issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, IssuerMapField)
+			cost.AddAssign(cost0)
+			canTransfer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, CanTransferMapField, issuer.(string))
+			cost.AddAssign(cost0)
+			if !(canTransfer.(bool)) {
+				return nil, cost, host.ErrTokenNoTransfer
+			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// check auth
 			// todo handle from is contract
-			ok, cost0 = h.RequireAuth(from)
+			ok, cost0 = h.RequireAuth(from, "transfer")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
 			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// get amount by fixed point number
-			amount, cost0, err := parseAmount(h, tokenName, amountStr)
+			amount, cost0, err := parseAmount(h, tokenName, amountStr, issuer.(string))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
 			if amount <= 0 {
 				return nil, cost, host.ErrInvalidAmount
+			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
 			}
 
 			// sub balance of from
@@ -391,12 +501,15 @@ var (
 				return nil, cost, err
 			}
 			if fbalance < amount {
-				return nil, cost, host.ErrBalanceNotEnough
+				return nil, cost, fmt.Errorf("balance not enough %v < %v", fbalance, amount)
 			}
 
 			fbalance -= amount
 			cost0 = setBalance(h, tokenName, from, fbalance)
 			cost.AddAssign(cost0)
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// freeze token of to
 			cost0, err = freezeBalance(h, tokenName, to, amount, ftime)
@@ -405,6 +518,13 @@ var (
 				return nil, cost, err
 			}
 
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -412,7 +532,7 @@ var (
 	destroyTokenABI = &abi{
 		name: "destroy",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
@@ -425,22 +545,30 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
+			issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, IssuerMapField)
+			cost.AddAssign(cost0)
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from)
+			ok, cost0 = h.RequireAuth(from, "token.iost")
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
 			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// get amount by fixed point number
-			amount, cost0, err := parseAmount(h, tokenName, amountStr)
+			amount, cost0, err := parseAmount(h, tokenName, amountStr, issuer.(string))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
 			if amount <= 0 {
 				return nil, cost, host.ErrInvalidAmount
+			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
 			}
 
 			// set balance
@@ -450,19 +578,22 @@ var (
 				return nil, cost, err
 			}
 			if fbalance < amount {
-				return nil, cost, host.ErrBalanceNotEnough
+				return nil, cost, fmt.Errorf("balance not enough %v < %v", fbalance, amount)
 			}
 			fbalance -= amount
 			cost0 = setBalance(h, tokenName, from, fbalance)
 			cost.AddAssign(cost0)
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
 			// set supply
-			tmp, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, SupplyMapField)
+			tmp, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, SupplyMapField, issuer.(string))
 			supply := tmp.(int64)
 			cost.AddAssign(cost0)
 
 			supply -= amount
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply)
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply, issuer.(string))
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -472,7 +603,7 @@ var (
 	balanceOfTokenABI = &abi{
 		name: "balanceOf",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
@@ -484,14 +615,20 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
+			issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, IssuerMapField)
+			cost.AddAssign(cost0)
 
 			balance, cost0, err := getBalance(h, tokenName, to)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
 
-			balanceStr, cost0 := genAmount(h, tokenName, balance)
+			balanceStr, cost0 := genAmount(h, tokenName, balance, issuer.(string))
+
 			cost.AddAssign(cost0)
 
 			return []interface{}{balanceStr}, cost, nil
@@ -501,7 +638,7 @@ var (
 	supplyTokenABI = &abi{
 		name: "supply",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
@@ -512,10 +649,15 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
-
-			supply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, SupplyMapField)
+			issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, IssuerMapField)
 			cost.AddAssign(cost0)
-			supplyStr, cost0 := genAmount(h, tokenName, supply.(int64))
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrGasLimitExceeded
+			}
+
+			supply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, SupplyMapField, issuer.(string))
+			cost.AddAssign(cost0)
+			supplyStr, cost0 := genAmount(h, tokenName, supply.(int64), issuer.(string))
 			cost.AddAssign(cost0)
 
 			return []interface{}{supplyStr}, cost, nil
@@ -525,7 +667,7 @@ var (
 	totalSupplyTokenABI = &abi{
 		name: "totalSupply",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
@@ -536,10 +678,12 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
-
-			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, TotalSupplyMapField)
+			issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, IssuerMapField)
 			cost.AddAssign(cost0)
-			totalSupplyStr, cost0 := genAmount(h, tokenName, totalSupply.(int64))
+
+			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, TotalSupplyMapField, issuer.(string))
+			cost.AddAssign(cost0)
+			totalSupplyStr, cost0 := genAmount(h, tokenName, totalSupply.(int64), issuer.(string))
 			cost.AddAssign(cost0)
 
 			return []interface{}{totalSupplyStr}, cost, nil

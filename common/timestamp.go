@@ -1,7 +1,6 @@
 package common
 
 import (
-	"github.com/iost-official/go-iost/ilog"
 	"time"
 )
 
@@ -79,7 +78,6 @@ func (t *Timestamp) After(t2 Timestamp) bool {
 func ParseStringToTimestamp(s string) (Timestamp, error) {
 	t, err := time.Parse(time.RFC3339, s)
 	if err != nil {
-		ilog.Errorf("time parse error: %v", err)
 		return Timestamp{0}, err
 	}
 	return GetTimestamp(t.Unix()), err

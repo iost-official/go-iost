@@ -15,13 +15,32 @@ type ACCConfig struct {
 	Algorithm string
 }
 
-// GenesisConfig config of the genesis block
+// Witness config of the genesis block
+type Witness struct {
+	ID      string
+	Owner   string
+	Active  string
+	Balance int64
+}
+
+// TokenInfo config of the genesis block
+type TokenInfo struct {
+	FoundationAccount string
+	IOSTTotalSupply   int64
+	IOSTDecimal       int64
+	RAMTotalSupply    int64
+	RAMGenesisAmount  int64
+}
+
+// GenesisConfig config of the genesis bloc
 type GenesisConfig struct {
 	CreateGenesis    bool
 	InitialTimestamp string
-	WitnessInfo      []string
-	VoteContractPath string
-	AdminID          string
+	TokenInfo        *TokenInfo
+	WitnessInfo      []*Witness
+	ContractPath     string
+	AdminInfo        *Witness
+	FoundationInfo   *Witness
 }
 
 // DBConfig config of the database

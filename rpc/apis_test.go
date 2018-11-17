@@ -43,28 +43,26 @@ func TestGRPCServer_ExecTx(t *testing.T) {
 	}
 	defer conn.Close()
 	client := NewApisClient(conn)
-	rootAccount, err := account.NewAccount(common.Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB"), crypto.Ed25519)
+	rootAccount, err := account.NewKeyPair(common.Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB"), crypto.Ed25519)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	newAccount, err := account.NewAccount(nil, crypto.Ed25519)
+	newAccount, err := account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	dataString := fmt.Sprintf(`["%v", "%v", %d]`, rootAccount.ID, newAccount.ID, 100000000)
 	action := tx.NewAction("iost.system", "Transfer", dataString)
-	trx := tx.NewTx([]*tx.Action{&action}, make([][]byte, 0),
-		10000,
-		1,
-		time.Now().Add(time.Second*time.Duration(3)).UnixNano())
-	stx, err := tx.SignTx(trx, rootAccount)
+	trx := tx.NewTx([]*tx.Action{action}, make([]string, 0),
+		10000, 1, time.Now().Add(time.Second*time.Duration(3)).UnixNano(), 0)
+	stx, err := tx.SignTx(trx, rootAccount.ID, []*account.KeyPair{rootAccount})
 
-	resp, err := client.ExecTx(context.Background(), &RawTxReq{Data: stx.Encode()})
+	resp, err := client.ExecTx(context.Background(), &TxReq{Tx: stx.ToPb()})
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	if resp.TxReceiptRaw.GasUsage != 303 {
-		t.Fatalf("gas used %d. should be 303", resp.TxReceiptRaw.GasUsage)
+	if resp.TxReceipt.GasUsage != 303 {
+		t.Fatalf("gas used %d. should be 303", resp.TxReceipt.GasUsage)
 	}
 
 }

@@ -46,23 +46,6 @@ func initMetrics(metricsConfig *common.MetricsConfig) error {
 	return metrics.Start()
 }
 
-func getLogLevel(l string) ilog.Level {
-	switch l {
-	case "debug":
-		return ilog.LevelDebug
-	case "info":
-		return ilog.LevelInfo
-	case "warn":
-		return ilog.LevelWarn
-	case "error":
-		return ilog.LevelError
-	case "fatal":
-		return ilog.LevelFatal
-	default:
-		return ilog.LevelDebug
-	}
-}
-
 func initLogger(logConfig *common.LogConfig) {
 	if logConfig == nil {
 		return
@@ -73,12 +56,12 @@ func initLogger(logConfig *common.LogConfig) {
 	}
 	if logConfig.ConsoleLog != nil && logConfig.ConsoleLog.Enable {
 		consoleWriter := ilog.NewConsoleWriter()
-		consoleWriter.SetLevel(getLogLevel(logConfig.ConsoleLog.Level))
+		consoleWriter.SetLevel(ilog.NewLevel(logConfig.ConsoleLog.Level))
 		logger.AddWriter(consoleWriter)
 	}
 	if logConfig.FileLog != nil && logConfig.FileLog.Enable {
 		fileWriter := ilog.NewFileWriter(logConfig.FileLog.Path)
-		fileWriter.SetLevel(getLogLevel(logConfig.FileLog.Level))
+		fileWriter.SetLevel(ilog.NewLevel(logConfig.FileLog.Level))
 		logger.AddWriter(fileWriter)
 	}
 	ilog.InitLogger(logger)
