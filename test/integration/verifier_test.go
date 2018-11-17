@@ -76,13 +76,53 @@ func TestSetCode(t *testing.T) {
 		So(len(c.Encode()), ShouldEqual, 146)
 		cname, r, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldStartWith, "Contract")
 		So(r.GasUsage, ShouldEqual, 32)
-		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldBeBetweenOrEqual, int64(62), int64(63))
+		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
+	})
+}
+
+func TestStringGas(t *testing.T) {
+	ilog.SetLevel(ilog.LevelInfo)
+	Convey("string op gas", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
+		s.SetGas(kp.ID, 1000000)
+		s.SetRAM(kp.ID, 1000)
+
+		c, err := s.Compile("so", "test_data/stringop", "test_data/stringop")
+		So(err, ShouldBeNil)
+		So(c, ShouldNotBeNil)
+		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+
+		r, err = s.Call(cname, "add2", "[]", kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, 0)
+		gas2 := r.GasUsage
+
+		r, err = s.Call(cname, "add9", "[]", kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, 0)
+		So(r.GasUsage - gas2, ShouldEqual, 14)
+
+		r, err = s.Call(cname, "equal9", "[]", kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, 0)
+		So(r.GasUsage - gas2, ShouldEqual, 14)
+
+		r, err = s.Call(cname, "superadd9", "[]", kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, 0)
+		So(r.GasUsage - gas2, ShouldBeGreaterThan, 14)
 	})
 }
 

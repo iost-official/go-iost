@@ -74,6 +74,12 @@ class Int64 {
         return new this.constructor(rs);
     }
 
+    // shift n
+    shift(n) {
+        let rs = this.number.shiftedBy(n);
+        return new this.constructor(rs);
+    }
+
     // Power n
     pow(n) {
         let arg = this._checkArgument(n);

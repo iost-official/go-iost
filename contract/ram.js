@@ -152,12 +152,12 @@ class RAMContract {
         this._checkIssue();
         const price = this._price("buy", amount);
         let ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(["iost", payer, this._getContractName(), price.toString(), ""]));
-        if (ret != "[]") {
+        if (ret !== "[]") {
             throw "deposit err " + ret
         }
         const data = [this._getTokenName(), this._getContractName(), account, (amount).toString(), ""];
         ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(data));
-        if (ret != "[]") {
+        if (ret !== "[]") {
             throw "transfer err " + ret
         }
         this._changeLeftSpace(-amount)
