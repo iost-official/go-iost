@@ -142,6 +142,14 @@ func TestEngine_Storage(t *testing.T) {
 		t.Fatalf("return of put should be \"\"")
 	}
 
+	rs, _, err = vmPool.LoadAndCall(host, code, "has", "mySetKey", "string")
+	if err != nil {
+		t.Fatalf("LoadAndCall has run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "true" {
+		t.Fatalf("LoadAndCall except false, got %s\n", rs[0])
+	}
+
 	rs, _, err = vmPool.LoadAndCall(host, code, "get", "mySetKey")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
@@ -166,11 +174,18 @@ func TestEngine_Storage(t *testing.T) {
 		t.Fatalf("LoadAndCall except yeah, got %s\n", rs[0])
 	}
 
+	rs, _, err = vmPool.LoadAndCall(host, code, "has", "mySetKeynotfound", "string")
+	if err != nil {
+		t.Fatalf("LoadAndCall has run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "false" {
+		t.Fatalf("LoadAndCall except false, got %s\n", rs[0])
+	}
+
 	rs, _, err = vmPool.LoadAndCall(host, code, "get", "mySetKeynotfound", "string")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
-	// todo get return nil
 	if len(rs) != 1 || rs[0].(string) != "null" {
 		t.Fatalf("LoadAndCall except null, got %s\n", rs[0])
 	}
@@ -207,6 +222,30 @@ func TestEngine_Storage(t *testing.T) {
 		t.Fatalf("LoadAndCall except aa, got %s\n", rs[0])
 	}
 
+	rs, _, err = vmPool.LoadAndCall(host, code, "mset", "ptable", "b", "aa")
+	if err != nil {
+		t.Fatalf("LoadAndCall mset run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "" {
+		t.Fatalf("LoadAndCall except , got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "mkeys", "ptable")
+	if err != nil {
+		t.Fatalf("LoadAndCall mhas run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "[\"a\",\"b\"]" {
+		t.Fatalf("LoadAndCall except [\"a\",\"b\"], got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "mlen", "ptable")
+	if err != nil {
+		t.Fatalf("LoadAndCall mhas run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "2" {
+		t.Fatalf("LoadAndCall except 2, got %s\n", rs[0])
+	}
+
 	rs, _, err = vmPool.LoadAndCall(host, code, "mdelete", "ptable", "a")
 	if err != nil {
 		t.Fatalf("LoadAndCall mdelete run error: %v\n", err)
@@ -222,42 +261,90 @@ func TestEngine_Storage(t *testing.T) {
 	if len(rs) != 1 || rs[0].(string) != "false" {
 		t.Fatalf("LoadAndCall except false, got %s\n", rs[0])
 	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "mkeys", "ptable")
+	if err != nil {
+		t.Fatalf("LoadAndCall mhas run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "[\"b\"]" {
+		t.Fatalf("LoadAndCall except [\"b\"], got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "mlen", "ptable")
+	if err != nil {
+		t.Fatalf("LoadAndCall mhas run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "1" {
+		t.Fatalf("LoadAndCall except 2, got %s\n", rs[0])
+	}
 }
 
 // nolint
 func TestEngine_Storage2(t *testing.T) {
 	host, code := MyInit(t, "storage2")
 
-	rs, _, err := vmPool.LoadAndCall(host, code, "get", "a")
+	rs, _, err := vmPool.LoadAndCall(host, code, "put", "a", "aa")
+	if err != nil {
+		t.Fatalf("LoadAndCall put run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "" {
+		t.Fatalf("LoadAndCall except , got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "mset", "a", "b", "bb")
+	if err != nil {
+		t.Fatalf("LoadAndCall mset run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "" {
+		t.Fatalf("LoadAndCall except , got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "ghas", "storage2", "a")
+	if err != nil {
+		t.Fatalf("LoadAndCall ghas run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "true" {
+		t.Fatalf("LoadAndCall except true, got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "gget", "storage2", "a")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "null" {
+	if len(rs) != 1 || rs[0].(string) != "aa" {
+		t.Fatalf("LoadAndCall except aa, got %s\n", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "gmhas", "storage2", "a", "b")
+	if err != nil {
+		t.Fatalf("LoadAndCall get run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0].(string) != "true" {
 		t.Fatalf("LoadAndCall except null, got %s\n", rs[0])
 	}
 
-	rs, _, err = vmPool.LoadAndCall(host, code, "mget", "a", "b")
+	rs, _, err = vmPool.LoadAndCall(host, code, "gmget", "storage2", "a", "b")
 	if err != nil {
 		t.Fatalf("LoadAndCall get run error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "null" {
-		t.Fatalf("LoadAndCall except null, got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != "bb" {
+		t.Fatalf("LoadAndCall except bb, got %s\n", rs[0])
 	}
 
-	rs, _, err = vmPool.LoadAndCall(host, code, "gget", "ns", "a")
+	rs, _, err = vmPool.LoadAndCall(host, code, "gmkeys", "storage2", "a")
 	if err != nil {
-		t.Fatalf("LoadAndCall get run error: %v\n", err)
+		t.Fatalf("LoadAndCall mhas run error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "null" {
-		t.Fatalf("LoadAndCall except null, got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != "[\"b\"]" {
+		t.Fatalf("LoadAndCall except [\"b\"], got %s\n", rs[0])
 	}
 
-	rs, _, err = vmPool.LoadAndCall(host, code, "gmget", "ns", "a", "b")
+	rs, _, err = vmPool.LoadAndCall(host, code, "gmlen", "storage2", "a")
 	if err != nil {
-		t.Fatalf("LoadAndCall get run error: %v\n", err)
+		t.Fatalf("LoadAndCall mhas run error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0].(string) != "null" {
-		t.Fatalf("LoadAndCall except null, got %s\n", rs[0])
+	if len(rs) != 1 || rs[0].(string) != "1" {
+		t.Fatalf("LoadAndCall except 1, got %s\n", rs[0])
 	}
 }
 
