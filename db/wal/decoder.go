@@ -81,13 +81,13 @@ func (d *decoder) decodeRecord(log *Log) error {
 
 	// skip pcrc checking if the record type is crcType
 	//if log.Type != LogType_crcType {
-		d.crc.Write(log.Data)
-		if err := log.Check(d.crc.Sum64()); err != nil {
-			if !d.isTornWrite(data) {
-				return io.ErrUnexpectedEOF
-			}
-			return err
+	d.crc.Write(log.Data)
+	if err := log.Check(d.crc.Sum64()); err != nil {
+		if !d.isTornWrite(data) {
+			return io.ErrUnexpectedEOF
 		}
+		return err
+	}
 	//}
 	// Got a record, update last offset
 	d.lastOffset += frameSizeLength + recBytes + padBytes
