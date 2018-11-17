@@ -3,7 +3,6 @@ package native
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/iost-official/go-iost/core/tx"
+	"os"
 )
 
 func toString(n int64) string {
@@ -32,13 +32,9 @@ const initCoin int64 = 5000
 
 var initCoinFN = toIOSTFixed(initCoin)
 
-func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Account) {
+func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Account, db.MVCCDB) {
 	var tmpDB db.MVCCDB
 	tmpDB, err := db.NewMVCCDB("mvcc")
-	defer func() {
-		tmpDB.Close()
-		os.RemoveAll("mvcc")
-	}()
 	visitor := database.NewVisitor(100, tmpDB)
 	if err != nil {
 		panic(err)
@@ -92,7 +88,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Accou
 
 	h.Context().Set("contract_name", "iost.gas")
 
-	return e, h, code, testAcc
+	return e, h, code, testAcc, tmpDB
 }
 
 func timePass(h *host.Host, seconds int64) {
@@ -114,7 +110,11 @@ func getTestAccount() *account.Account {
 
 func TestGas_NoPledge(t *testing.T) {
 	ilog.Info("test an account who did not pledge has 0 gas")
-	_, h, _, testAcc := gasTestInit()
+	_, h, _, testAcc, tmpDB := gasTestInit()
+	defer func() {
+		tmpDB.Close()
+		os.RemoveAll("mvcc")
+	}()
 	gas, _ := h.GasManager.CurrentGas(testAcc.ID)
 	if gas.Value != 0 {
 		t.Fatalf("initial gas error %d", gas)
@@ -123,7 +123,11 @@ func TestGas_NoPledge(t *testing.T) {
 
 func TestGas_PledgeAuth(t *testing.T) {
 	ilog.Info("test pledging requires auth")
-	e, h, code, testAcc := gasTestInit()
+	e, h, code, testAcc, tmpDB := gasTestInit()
+	defer func() {
+		tmpDB.Close()
+		os.RemoveAll("mvcc")
+	}()
 	pledgeAmount := toIOSTFixed(200)
 	authList := make(map[string]int)
 	h.Context().Set("auth_list", authList)
@@ -135,7 +139,11 @@ func TestGas_PledgeAuth(t *testing.T) {
 
 func TestGas_NotEnoughMoney(t *testing.T) {
 	ilog.Info("test pledging with not enough money")
-	e, h, code, testAcc := gasTestInit()
+	e, h, code, testAcc, tmpDB := gasTestInit()
+	defer func() {
+		tmpDB.Close()
+		os.RemoveAll("mvcc")
+	}()
 	pledgeAmount := toIOSTFixed(20000)
 	_, _, err := e.LoadAndCall(h, code, "pledge", testAcc.ID, testAcc.ID, pledgeAmount.ToString())
 	if err == nil {
@@ -145,7 +153,11 @@ func TestGas_NotEnoughMoney(t *testing.T) {
 
 func TestGas_Pledge(t *testing.T) {
 	ilog.Info("test pledge")
-	e, h, code, testAcc := gasTestInit()
+	e, h, code, testAcc, tmpDB := gasTestInit()
+	defer func() {
+		tmpDB.Close()
+		os.RemoveAll("mvcc")
+	}()
 	pledgeAmount := toIOSTFixed(200)
 	_, _, err := e.LoadAndCall(h, code, "pledge", testAcc.ID, testAcc.ID, pledgeAmount.ToString())
 	if err != nil {
@@ -183,7 +195,11 @@ func TestGas_Pledge(t *testing.T) {
 
 func TestGas_PledgeMore(t *testing.T) {
 	ilog.Info("test you can pledge more after first time pledge")
-	e, h, code, testAcc := gasTestInit()
+	e, h, code, testAcc, tmpDB := gasTestInit()
+	defer func() {
+		tmpDB.Close()
+		os.RemoveAll("mvcc")
+	}()
 	firstTimePledgeAmount := toIOSTFixed(200)
 	_, _, err := e.LoadAndCall(h, code, "pledge", testAcc.ID, testAcc.ID, firstTimePledgeAmount.ToString())
 	if err != nil {
@@ -215,7 +231,11 @@ func TestGas_PledgeMore(t *testing.T) {
 
 func TestGas_UseGas(t *testing.T) {
 	ilog.Info("test using gas")
-	e, h, code, testAcc := gasTestInit()
+	e, h, code, testAcc, tmpDB := gasTestInit()
+	defer func() {
+		tmpDB.Close()
+		os.RemoveAll("mvcc")
+	}()
 	pledgeAmount := int64(200)
 	_, _, err := e.LoadAndCall(h, code, "pledge", testAcc.ID, testAcc.ID, toString(pledgeAmount))
 	if err != nil {
@@ -238,7 +258,11 @@ func TestGas_UseGas(t *testing.T) {
 
 func TestGas_unpledge(t *testing.T) {
 	ilog.Info("test unpledge")
-	e, h, code, testAcc := gasTestInit()
+	e, h, code, testAcc, tmpDB := gasTestInit()
+	defer func() {
+		tmpDB.Close()
+		os.RemoveAll("mvcc")
+	}()
 	pledgeAmount := toIOSTFixed(200)
 	_, _, err := e.LoadAndCall(h, code, "pledge", testAcc.ID, testAcc.ID, pledgeAmount.ToString())
 	if err != nil {
@@ -282,7 +306,11 @@ func TestGas_unpledge(t *testing.T) {
 
 func TestGas_unpledgeTooMuch(t *testing.T) {
 	ilog.Info("test unpledge too much: each account has a minimum pledge")
-	e, h, code, testAcc := gasTestInit()
+	e, h, code, testAcc, tmpDB := gasTestInit()
+	defer func() {
+		tmpDB.Close()
+		os.RemoveAll("mvcc")
+	}()
 	pledgeAmount := int64(200)
 	_, _, err := e.LoadAndCall(h, code, "pledge", testAcc.ID, testAcc.ID, toString(pledgeAmount))
 	if err != nil {
@@ -299,7 +327,11 @@ func TestGas_unpledgeTooMuch(t *testing.T) {
 
 func TestGas_PledgeunpledgeForOther(t *testing.T) {
 	ilog.Info("test pledge for others")
-	e, h, code, testAcc := gasTestInit()
+	e, h, code, testAcc, tmpDB := gasTestInit()
+	defer func() {
+		tmpDB.Close()
+		os.RemoveAll("mvcc")
+	}()
 	otherAcc := getAccount("5oyBNyBeMFUKndGF8E3xkxmS3qugdYbwntSu8NEYtvC2DMmVcXgtmBqRxCLUCjxcu9zdcH3RkfKec3Q2xeiG48RL")
 	pledgeAmount := toIOSTFixed(200)
 	_, _, err := e.LoadAndCall(h, code, "pledge", testAcc.ID, otherAcc.ID, pledgeAmount.ToString())

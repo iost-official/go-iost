@@ -35,7 +35,7 @@ var (
 
 var (
 	blockReqTimeout = 3 * time.Second
-	continuousNum   = 1
+	continuousNum   = 10
 )
 
 type verifyBlockMessage struct {
@@ -277,7 +277,7 @@ func (p *PoB) scheduleLoop() {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
-			if witnessOfSec(time.Now().Unix()) == p.account.ID && !staticProperty.SlotUsed[time.Now().Unix()] && p.baseVariable.Mode() == global.ModeNormal {
+			if !staticProperty.SlotUsed[time.Now().Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(time.Now().UnixNano()+int64(time.Millisecond)) == p.account.ID {
 				staticProperty.SlotUsed[time.Now().Unix()] = true
 				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
 				num := 0
@@ -321,6 +321,7 @@ func (p *PoB) scheduleLoop() {
 					case <-generateBlockTicker.C:
 					}
 				}
+				ilog.Info("generateTxsNum: ", generateTxsNum)
 				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
 			}

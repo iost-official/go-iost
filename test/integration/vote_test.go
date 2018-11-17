@@ -113,6 +113,11 @@ func Test_AddOption(t *testing.T) {
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(s.Visitor.MKeys("iost.vote-v-1"), ShouldResemble, []string{"option1", "option2", "option3", "option4", "option5"})
 			So(s.Visitor.MGet("iost.vote-v-1", "option5"), ShouldEqual, `s["0",false,-1]`)
+
+			r, err = s.Call("iost.vote", "GetOption", `["1", "option5"]`, kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Returns[0], ShouldEqual, `["{\"votes\":\"0\",\"deleted\":false,\"clearTime\":-1}"]`)
 		})
 	})
 }
@@ -184,6 +189,16 @@ func Test_Vote(t *testing.T) {
 
 			s.Call("Contractvoteresult", "GetResult", `["1"]`, kp.ID, kp)
 			So(s.Visitor.MGet("Contractvoteresult-vote-result", "1"), ShouldEqual, `s[{"option":"option3","votes":"110"},{"option":"option1","votes":"20"}]`)
+
+			r, err := s.Call("iost.vote", "GetOption", `["1", "option3"]`, kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Returns[0], ShouldEqual, `["{\"votes\":\"110\",\"deleted\":false,\"clearTime\":-1}"]`)
+
+			r, err = s.Call("iost.vote", "GetVote", fmt.Sprintf(`["1", "%v"]`, testID[2]), kp2.ID, kp2)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Returns[0], ShouldEqual, `["[{\"option\":\"option3\",\"votes\":\"10\",\"voteTime\":0,\"clearedVotes\":\"0\"},{\"option\":\"option1\",\"votes\":\"20\",\"voteTime\":0,\"clearedVotes\":\"0\"}]"]`)
 		})
 
 		Convey("test Unvote", func() {
