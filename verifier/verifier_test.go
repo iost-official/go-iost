@@ -8,6 +8,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/db"
 )
 
@@ -25,7 +26,7 @@ func TestVerifier_Gen(t *testing.T) {
 	}
 	defer os.RemoveAll("mvcc")
 
-	mti := mockTxIter{}
+	mti := txpool.NewSortedTxMap()
 
 	blk := block.Block{
 		Head: &block.BlockHead{
@@ -41,7 +42,7 @@ func TestVerifier_Gen(t *testing.T) {
 	}
 
 	var v Verifier
-	a, b, c := v.Gen(&blk, nil, mvccdb, &mti, &Config{
+	a, b, c := v.Gen(&blk, nil, mvccdb, mti, &Config{
 		Mode:        0,
 		Timeout:     time.Second,
 		TxTimeLimit: time.Millisecond * 100,

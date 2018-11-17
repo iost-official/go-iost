@@ -45,8 +45,12 @@ var callCmd = &cobra.Command{
 			act := tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
 			actions[i] = act
 		}
-		trx := sdk.createTx(actions)
-		err := sdk.loadAccount()
+		trx, err := sdk.createTx(actions)
+		if err != nil {
+			fmt.Printf(err.Error())
+			return
+		}
+		err = sdk.loadAccount()
 		if err != nil {
 			fmt.Printf("load account err %v\n", err)
 			return
@@ -57,7 +61,7 @@ var callCmd = &cobra.Command{
 			return
 		}
 		var txHash string
-		fmt.Printf("sending tx %v", trx)
+		fmt.Printf("sending tx %v", stx)
 		txHash, err = sdk.sendTx(stx)
 		if err != nil {
 			fmt.Printf("send tx error %v\n", err)

@@ -20,11 +20,11 @@ import (
 var conns []*grpc.ClientConn
 var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"
 var contractID string
+var sdk = iwallet.SDK{}
 
 func initConn(num int) {
 	conns = make([]*grpc.ClientConn, num)
-	allServers := []string{"127.0.0.1:30002", "52.37.130.27:30002", "18.228.149.97:30002"}
-
+	allServers := []string{"18.182.146.155:30002", "54.64.205.127:30002"}
 	for i := 0; i < num; i++ {
 		conn, err := grpc.Dial(allServers[i%len(allServers)], grpc.WithInsecure())
 		if err != nil {
@@ -65,8 +65,7 @@ func loadBytes(s string) []byte {
 }
 
 func transfer(i int) {
-	//action := tx.NewAction("iost.system", "Transfer", `["IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C","IOSTgw6cmmWyiW25TMAK44N9coLCMaygx5eTfGVwjCcriEWEEjK2H",1]`)
-	action := tx.NewAction(contractID, "transfer", `["IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C","IOSTgw6cmmWyiW25TMAK44N9coLCMaygx5eTfGVwjCcriEWEEjK2H",1]`)
+	action := tx.NewAction(contractID, "transfer", `["admin","testID",1]`)
 	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
 	trx := tx.NewTx([]*tx.Action{action}, []string{}, 1000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
 	stx, err := tx.SignTx(trx, "admin", []*account.KeyPair{acc})
@@ -87,10 +86,21 @@ func publish() string {
 	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
 	codePath := "transfer.js"
 	abiPath := codePath + ".abi"
-	sdk := iwallet.SDK{}
 	sdk.SetAccount("admin", acc)
-	sdk.SetServer("13.237.151.211:30002")
+	sdk.SetServer("54.95.152.91:30002")
 	sdk.SetTxInfo(10000, 100, 90, 0)
+	sdk.SetCheckResult(true, 3, 10)
+	testKp, err := account.NewKeyPair(nil, crypto.Ed25519)
+	if err != nil {
+		panic(err)
+	}
+	testID := "testID"
+	err = sdk.CreateNewAccount(testID, testKp, 100000, 10000, 100000)
+	if err != nil {
+		panic(err)
+	}
+	sdk.SetAccount(testID, testKp)
+
 	_, txHash, err := sdk.PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {
 		panic(err)
@@ -109,8 +119,8 @@ func publish() string {
 
 func main() {
 
-	var iterNum = 800
-	var parallelNum = 200
+	var iterNum = 8000
+	var parallelNum = 100
 	initConn(parallelNum)
 
 	contractID = publish()

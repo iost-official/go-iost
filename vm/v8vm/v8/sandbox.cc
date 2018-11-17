@@ -7,6 +7,7 @@
 
 #include "vm.js.h"
 #include "compile_vm.js.h"
+#include "environment.js.h"
 #include <assert.h>
 #include <cstring>
 #include <string>
@@ -21,6 +22,7 @@
 #include <chrono>
 
 char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
+char *envJsLib = reinterpret_cast<char *>(__libjs_environment_js);
 char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
@@ -221,28 +223,27 @@ void loadVM(SandboxPtr ptr, int vmType) {
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 
-    std::string vmPath;
-    Local<String> source;
-
     if (vmType == 0) {
         return;
     }
-//    if (vmType == 0) {
-//        vmPath += "compile_vm.js";
-//        source = String::NewFromUtf8(isolate, compileVmJsLib, NewStringType::kNormal).ToLocalChecked();
-//    } else {
-    vmPath += "vm.js";
-    source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
-//    }
 
-    Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
+    // load vm
+    const char *vmPath = "vm.js";
+    Local<String> source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
+    Local<String> fileName = String::NewFromUtf8(isolate, vmPath, NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
-
     if (!script.IsEmpty()) {
         Local<Value> result = script->Run();
-        if (!result.IsEmpty()) {
-//            std::cout << "result vm: " << v8ValueToStdString(result) << std::endl;
-        }
+    }
+
+    // load environment
+    const char *envPath = "env.js";
+    source = String::NewFromUtf8(isolate, envJsLib, NewStringType::kNormal).ToLocalChecked();
+
+    fileName = String::NewFromUtf8(isolate, envPath, NewStringType::kNormal).ToLocalChecked();
+    script = Script::Compile(source, fileName);
+    if (!script.IsEmpty()) {
+        Local<Value> result = script->Run();
     }
 }
 
@@ -272,6 +273,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     Local<Value> ret = script->Run();
 
     if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
+        isDone = true;
         return;
     }
 
@@ -284,6 +286,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     if (ret->IsString() || ret->IsNumber() || ret->IsBoolean()) {
         String::Utf8Value retV8Str(isolate, ret);
         result = *retV8Str;
+        isDone = true;
         return;
     }
 
@@ -325,6 +328,8 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
             break;
         }
         if (isDone) {
+            res.Value = copyString(result);
+            res.isJson = isJson;
             res.gasUsed = sbx->gasUsed;
             break;
         }
