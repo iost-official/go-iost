@@ -10,6 +10,7 @@
 #include "utils.js.h"
 #include "console.js.h"
 #include "esprima.js.h"
+#include "escodegen.js.h"
 #include "inject_gas.js.h"
 
 intptr_t externalRef[] = {
@@ -39,6 +40,8 @@ static char compileCodeFormat[] =
     "module.exports = {};\n"
     "%s\n" // load esprima
     "const esprima = module.exports;\n"
+    "%s\n" // load escodegen
+    "const escodegen = module.exports;\n"
     "%s\n"; // load inject_gas
 
 int compile(SandboxPtr ptr, const char *code, const char **compiledCode) {
@@ -127,11 +130,13 @@ CustomStartupData createStartupData() {
 
 CustomStartupData createCompileStartupData() {
     char *esprimajs = reinterpret_cast<char *>(__libjs_esprima_js);
+    char *escodegenjs = reinterpret_cast<char *>(__libjs_escodegen_js);
     char *injectgasjs = reinterpret_cast<char *>(__libjs_inject_gas_js);
 
     char *code = nullptr;
     asprintf(&code, compileCodeFormat,
         esprimajs,
+        escodegenjs,
         injectgasjs);
 
     StartupData blob;

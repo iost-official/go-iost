@@ -3,8 +3,6 @@ package host
 import (
 	"testing"
 
-	"errors"
-
 	"time"
 
 	. "github.com/golang/mock/gomock"
@@ -56,7 +54,7 @@ func TestHost_Put(t *testing.T) {
 		}
 	})
 
-	mock.EXPECT().Get("state", "b-contractName-hello").Return("", errors.New("not found"))
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("", nil)
 
 	host.Put("hello", "world")
 	if host.cost["contractName"].Data != 24 {
@@ -172,8 +170,8 @@ func TestHost_MapPut(t *testing.T) {
 		}
 	})
 	mock.EXPECT().Has("state", "m-contractName-hello-1").Return(false, nil)
-	mock.EXPECT().Get("state", "m-contractName-hello").Return("", errors.New("not found"))
-	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", errors.New("not found"))
+	mock.EXPECT().Get("state", "m-contractName-hello").Return("", nil)
+	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", nil)
 
 	tr := watchTime(func() {
 		host.MapPut("hello", "1", "world")
@@ -206,8 +204,8 @@ func TestHost_MapPut_Owner(t *testing.T) {
 		}
 	})
 	mock.EXPECT().Has("state", "m-contractName@abc-hello-1").Return(false, nil)
-	mock.EXPECT().Get("state", "m-contractName@abc-hello").Return("", errors.New("not found"))
-	mock.EXPECT().Get("state", "m-contractName@abc-hello-1").Return("", errors.New("not found"))
+	mock.EXPECT().Get("state", "m-contractName@abc-hello").Return("", nil)
+	mock.EXPECT().Get("state", "m-contractName@abc-hello-1").Return("", nil)
 
 	tr := watchTime(func() {
 		host.MapPut("hello", "1", "world", "abc")
