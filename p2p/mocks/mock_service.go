@@ -69,6 +69,18 @@ func (mr *MockServiceMockRecorder) Deregister(arg0 interface{}, arg1 ...interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deregister", reflect.TypeOf((*MockService)(nil).Deregister), varargs...)
 }
 
+// GetAllNeighbors mocks base method
+func (m *MockService) GetAllNeighbors() []*p2p.Peer {
+	ret := m.ctrl.Call(m, "GetAllNeighbors")
+	ret0, _ := ret[0].([]*p2p.Peer)
+	return ret0
+}
+
+// GetAllNeighbors indicates an expected call of GetAllNeighbors
+func (mr *MockServiceMockRecorder) GetAllNeighbors() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllNeighbors", reflect.TypeOf((*MockService)(nil).GetAllNeighbors))
+}
+
 // ID mocks base method
 func (m *MockService) ID() string {
 	ret := m.ctrl.Call(m, "ID")
@@ -79,18 +91,6 @@ func (m *MockService) ID() string {
 // ID indicates an expected call of ID
 func (mr *MockServiceMockRecorder) ID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ID", reflect.TypeOf((*MockService)(nil).ID))
-}
-
-// NeighborStat mocks base method
-func (m *MockService) NeighborStat() map[string]interface{} {
-	ret := m.ctrl.Call(m, "NeighborStat")
-	ret0, _ := ret[0].(map[string]interface{})
-	return ret0
-}
-
-// NeighborStat indicates an expected call of NeighborStat
-func (mr *MockServiceMockRecorder) NeighborStat() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NeighborStat", reflect.TypeOf((*MockService)(nil).NeighborStat))
 }
 
 // PutPeerToBlack mocks base method

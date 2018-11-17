@@ -17,6 +17,8 @@ type TxPool interface {
 	DelTx(hash []byte) error
 	DelTxList(delList []*tx.Tx)
 	ExistTxs(hash []byte, chainBlock *block.Block) FRet
+	GetFromPending(hash []byte) (*tx.Tx, error)
+	GetFromChain(hash []byte) (*tx.Tx, *tx.TxReceipt, error)
 	Lock()
 	Release()
 	PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode)
