@@ -73,7 +73,6 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	db.Tag(string(blk.HeadHash()))
 	metricsGeneratedBlockCount.Add(1, nil)
 	generateTxsNum += len(blk.Txs)
-	ilog.Info("generateTxsNum: ", len(blk.Txs))
 	return &blk, nil
 }
 

@@ -314,7 +314,6 @@ func (p *PoB) scheduleLoop() {
 						continue
 					}
 					num++
-					ilog.Info("generateTxsNum: ", generateTxsNum)
 					if num >= continuousNum {
 						break
 					}
@@ -322,6 +321,7 @@ func (p *PoB) scheduleLoop() {
 					case <-generateBlockTicker.C:
 					}
 				}
+				ilog.Info("generateTxsNum: ", generateTxsNum)
 				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
 			}
