@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: iserver
+  labels:
+    k8s-app: iserver
+spec:
+  ports:
+  - port: 30000
+    protocol: TCP
+  clusterIP: None
+  selector:
+    k8s-app: iserver
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: iserver
+spec:
+  serviceName: "iserver"
+  replicas: 9
+  podManagementPolicy: "Parallel"
+  updateStrategy:
+    type: "RollingUpdate"
+  selector:
+    matchLabels:
+      k8s-app: iserver
+  template:
+    metadata:
+      labels:
+        k8s-app: iserver
+    spec:
+      containers:
+        - name: iserver
+          image: "iostio/iost-node:1.0.0-f04e5b6"
+          imagePullPolicy: "IfNotPresent"
+          command:
+            - /bin/bash
+            - -c
+            - ./iserver -f /var/lib/iserver/iserver-${HOSTNAME##*-}.yml
+          ports:
+            - containerPort: 30000
+            - containerPort: 30001
+            - containerPort: 30002
+            - containerPort: 30003
+          volumeMounts:
+            - name: config-volume
+              mountPath: /var/lib/iserver
+            - name: storage-volume
+              mountPath: "/data"
+              subPath: ""
+          resources:
+            limits:
+              cpu: 500m
+              memory: 2000Mi
+            requests:
+              cpu: 100m
+              memory: 500Mi
+      volumes:
+        - name: config-volume
+          configMap:
+            name: iserver-config
+  volumeClaimTemplates:
+    - metadata:
+        name: storage-volume
+      spec:
+        storageClassName: gp2
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "10Gi"
