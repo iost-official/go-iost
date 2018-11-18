@@ -5,6 +5,9 @@ branches:
   - develop
   - "/^sprint.*$/"
 matrix:
+  fast_finish: true
+  allow_failures:
+  - env: JOB=e2e_test
   include:
   - os: osx
     osx_image: xcode10
@@ -65,5 +68,3 @@ matrix:
     - make image
     - make push
     - kubectl get node
-  allow_failures:
-  - env: JOB=e2e_test
