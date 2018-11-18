@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	memLimit = 10000000 // 10mb
+	memLimit = 100000000 // 10mb
 )
 
 // Info current info handler of this isolate
