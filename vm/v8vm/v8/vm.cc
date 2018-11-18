@@ -1,5 +1,6 @@
 #include "vm.h"
 #include "v8.h"
+#include "allocator.h"
 #include "sandbox.h"
 #include "compile.h"
 #include "snapshot_blob.bin.h"
@@ -31,8 +32,9 @@ void init() {
     return;
 }
 
-IsolatePtr newIsolate(CustomStartupData customStartupData) {
+IsolateWrapperPtr newIsolate(CustomStartupData customStartupData) {
     Isolate::CreateParams params;
+    IsolateWrapper* isolateWrapperPtr = new IsolateWrapper();
 
     StartupData* blob = new StartupData;
     blob->data = customStartupData.data;
@@ -40,17 +42,19 @@ IsolatePtr newIsolate(CustomStartupData customStartupData) {
 
     extern intptr_t externalRef[];
     params.snapshot_blob = blob;
-    params.array_buffer_allocator = ArrayBuffer::Allocator::NewDefaultAllocator();
+    params.array_buffer_allocator = new ArrayBufferAllocator();
     params.external_references = externalRef;
-    return static_cast<IsolatePtr>(Isolate::New(params));
+    isolateWrapperPtr->isolate = static_cast<Isolate*>(Isolate::New(params));
+    isolateWrapperPtr->allocator = static_cast<void*>(params.array_buffer_allocator);
+    return isolateWrapperPtr;
 }
 
-void releaseIsolate(IsolatePtr ptr) {
+void releaseIsolate(IsolateWrapperPtr ptr) {
     if (ptr == nullptr) {
         return;
     }
 
-    Isolate *isolate = static_cast<Isolate*>(ptr);
+    Isolate *isolate = static_cast<Isolate*>((static_cast<IsolateWrapper*>(ptr))->isolate);
     isolate->Dispose();
     return;
 }
