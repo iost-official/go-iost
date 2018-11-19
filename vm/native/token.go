@@ -149,7 +149,7 @@ func parseAmount(h *host.Host, tokenName string, amountStr string, issuer string
 
 	cost.AddAssign(host.CommonOpCost(3))
 	if err != nil {
-		return 0, cost, host.ErrInvalidAmount
+		return 0, cost, fmt.Errorf("invalid amount %v %v", amountStr, err)
 	}
 	return amountNumber.Value, cost, err
 }
@@ -351,6 +351,12 @@ var (
 			memo := args[4].(string) // memo
 			if len(memo) > 512 {
 				return nil, cost, host.ErrMemoTooLarge
+			}
+			if !h.IsValidAccount(from) {
+				return nil, cost, fmt.Errorf("invalid account %v", from)
+			}
+			if !h.IsValidAccount(to) {
+				return nil, cost, fmt.Errorf("invalid account %v", to)
 			}
 
 			//fmt.Printf("token transfer %v %v %v %v\n", tokenName, from, to, amountStr)

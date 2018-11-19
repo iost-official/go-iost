@@ -3,8 +3,6 @@ package database
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
 )
@@ -20,6 +18,12 @@ type TokenHandler struct {
 // FreezeItem represents freezed balance, will unfreeze after Ftime
 type FreezeItem struct {
 	Amount int64
+	Ftime  int64
+}
+
+// FreezeItemFixed ...
+type FreezeItemFixed struct {
+	Amount common.Fixed
 	Ftime  int64
 }
 
@@ -65,18 +69,45 @@ func (m *TokenHandler) FreezedTokenBalance(tokenName, acc string) int64 {
 		return 0
 	}
 	freezeList := []FreezeItem{}
-	fmt.Println(string(freezeJSON.(SerializedJSON)))
+	//fmt.Println(string(freezeJSON.(SerializedJSON)))
 	err := json.Unmarshal([]byte(freezeJSON.(SerializedJSON)), &freezeList)
 	if err != nil {
 		return 0
 	}
-	ilog.Debugf("FreezedTokenBalance is %v %v %v", tokenName, acc, []byte(freezeJSON.(SerializedJSON)))
+	ilog.Debugf("FreezedTokenBalance is %v %v %v", tokenName, acc, string([]byte(freezeJSON.(SerializedJSON))))
 
 	ib := int64(0)
 	for _, item := range freezeList {
 		ib += item.Amount
 	}
 	return ib
+}
+
+// AllFreezedTokenBalance get freezed token balance of acc
+func (m *TokenHandler) AllFreezedTokenBalance(tokenName, acc string) []FreezeItem {
+	freezeList := make([]FreezeItem, 0)
+	freezeJSON := Unmarshal(m.db.Get(m.freezedBalanceKey(tokenName, acc)))
+	if freezeJSON == nil {
+		return freezeList
+	}
+	//fmt.Println(string(freezeJSON.(SerializedJSON)))
+	err := json.Unmarshal([]byte(freezeJSON.(SerializedJSON)), &freezeList)
+	if err != nil {
+		ilog.Errorf("frozen token balance is invalid json %v %v", string(freezeJSON.(SerializedJSON)), err)
+		return freezeList
+	}
+	ilog.Debugf("FreezedTokenBalance is %v %v %v", tokenName, acc, string(freezeJSON.(SerializedJSON)))
+	return freezeList
+}
+
+// AllFreezedTokenBalanceFixed get freezed token balance of acc
+func (m *TokenHandler) AllFreezedTokenBalanceFixed(tokenName, acc string) []FreezeItemFixed {
+	freezeList := m.AllFreezedTokenBalance(tokenName, acc)
+	result := make([]FreezeItemFixed, 0)
+	for _, item := range freezeList {
+		result = append(result, FreezeItemFixed{Amount: common.Fixed{Value: item.Amount, Decimal: m.Decimal(tokenName)}, Ftime: item.Ftime})
+	}
+	return result
 }
 
 // FreezedTokenBalanceFixed get token balance of acc

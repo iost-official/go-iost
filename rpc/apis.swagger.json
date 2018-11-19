@@ -379,6 +379,28 @@
       ],
       "default": "ContractReceipt"
     },
+    "GASInfoPledgeInfo": {
+      "type": "object",
+      "properties": {
+        "pledger": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      }
+    },
+    "GetAccountResFrozenBalance": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "string"
+        },
+        "time": {
+          "type": "string"
+        }
+      }
+    },
     "blockpbBlockHead": {
       "type": "object",
       "properties": {
@@ -587,8 +609,11 @@
         "limit": {
           "type": "string"
         },
-        "pledgedCoin": {
-          "type": "string"
+        "pledgedInfo": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GASInfoPledgeInfo"
+          }
         }
       }
     },
@@ -598,6 +623,12 @@
         "balance": {
           "type": "string",
           "title": "the queried balance"
+        },
+        "frozenBalances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GetAccountResFrozenBalance"
+          }
         },
         "gas": {
           "$ref": "#/definitions/rpcGASInfo",
