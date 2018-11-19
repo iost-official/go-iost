@@ -169,7 +169,7 @@ func (g *GasManager) CurrentTotalGas(name string, now int64) (result *common.Fix
 		ilog.Fatalf("CurrentTotalGas failed. invalid now time %v", now)
 	}
 	contractName, _ := g.h.ctx.Value("contract_name").(string)
-	g.h.ctx.Set("contract_name", "iost.gas")
+	g.h.ctx.Set("contract_name", "gas.iost")
 	result, cost := g.GasStock(name)
 	finalCost.AddAssign(cost)
 	gasUpdateTime, cost := g.GasUpdateTime(name)

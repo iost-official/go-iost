@@ -386,7 +386,7 @@ void IOSTBlockchain_receipt(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    Local<Value> content = args[1];
+    Local<Value> content = args[0];
     if (!content->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTBlockchain_receipt content must be string")
@@ -428,7 +428,7 @@ void IOSTBlockchain_event(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    Local<Value> content = args[1];
+    Local<Value> content = args[0];
     if (!content->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTBlockchain_event content must be string")

@@ -7,7 +7,6 @@ import (
 
 	"time"
 
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
 	. "github.com/smartystreets/goconvey/convey"
@@ -31,11 +30,11 @@ func TestVerifyBlockHead(t *testing.T) {
 		hash := parentBlk.HeadHash()
 		blk := &block.Block{
 			Head: &block.BlockHead{
-				ParentHash: hash,
-				Number:     4,
-				Time:       stamp,
-				TxsHash:    common.Sha3([]byte{}),
-				MerkleHash: []byte{},
+				ParentHash:          hash,
+				Number:              4,
+				Time:                stamp,
+				TxMerkleHash:        []byte{},
+				TxReceiptMerkleHash: []byte{},
 			},
 		}
 		convey.Convey("Pass", func() {
@@ -67,10 +66,10 @@ func TestVerifyBlockHead(t *testing.T) {
 		convey.Convey("Wrong tx hash", func() {
 			tx0 := tx.NewTx(nil, nil, 1000, 1, 300, 0)
 			blk.Txs = append(blk.Txs, tx0)
-			blk.Head.TxsHash = blk.CalculateTxsHash()
+			blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
 			convey.So(err, convey.ShouldBeNil)
-			blk.Head.TxsHash = []byte("fake hash")
+			blk.Head.TxMerkleHash = []byte("fake hash")
 			err = VerifyBlockHead(blk, parentBlk, chainTop)
 			convey.So(err, convey.ShouldEqual, errTxHash)
 		})

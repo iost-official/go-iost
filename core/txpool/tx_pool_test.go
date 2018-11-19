@@ -85,10 +85,10 @@ func TestNewTxPImpl(t *testing.T) {
 		statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 		statedb.EXPECT().Close().AnyTimes()
 
-		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("4"), nil
 		})
-		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
@@ -244,10 +244,10 @@ func TestNewTxPImplB(t *testing.T) {
 		statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 		statedb.EXPECT().Close().AnyTimes()
 
-		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("4"), nil
 		})
-		statedb.EXPECT().Get("state", "b-iost.vote_producer-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
@@ -702,14 +702,13 @@ func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt in
 		blk := block.Block{
 			Txs: []*tx.Tx{},
 			Head: &block.BlockHead{
-				Version:    0,
-				ParentHash: hash,
-				MerkleHash: make([]byte, 0),
-				Info:       []byte(""),
-				Number:     int64(i + 1),
-				Witness:    witnessList[0],
-				Time:       time.Now().UnixNano(),
-				GasUsage:   0,
+				Version:             0,
+				ParentHash:          hash,
+				TxReceiptMerkleHash: make([]byte, 0),
+				Info:                []byte(""),
+				Number:              int64(i + 1),
+				Witness:             witnessList[0],
+				Time:                time.Now().UnixNano(),
 			},
 			Sign: &crypto.Signature{},
 		}
@@ -718,7 +717,7 @@ func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt in
 			blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
 		}
 
-		blk.Head.TxsHash = blk.CalculateTxsHash()
+		blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
 		blk.CalculateHeadHash()
 
 		hash = blk.HeadHash()
@@ -745,20 +744,20 @@ func genNodes(accountList []*account.KeyPair, witnessList []string, blockCnt int
 
 func genSingleBlock(accountList []*account.KeyPair, witnessList []string, ParentHash []byte, txCnt int) *block.Block {
 	blk := block.Block{Txs: []*tx.Tx{}, Head: &block.BlockHead{
-		Version:    0,
-		ParentHash: ParentHash,
-		MerkleHash: make([]byte, 0),
-		Info:       []byte(""),
-		Number:     int64(1),
-		Witness:    witnessList[0],
-		Time:       time.Now().UnixNano(),
+		Version:             0,
+		ParentHash:          ParentHash,
+		TxReceiptMerkleHash: make([]byte, 0),
+		Info:                []byte(""),
+		Number:              int64(1),
+		Witness:             witnessList[0],
+		Time:                time.Now().UnixNano(),
 	}}
 
 	for i := 0; i < txCnt; i++ {
 		blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
 	}
 
-	blk.Head.TxsHash = blk.CalculateTxsHash()
+	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
 	blk.CalculateHeadHash()
 
 	return &blk

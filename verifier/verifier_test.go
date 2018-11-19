@@ -35,7 +35,6 @@ func TestVerifier_Gen(t *testing.T) {
 			Number:     0,
 			Witness:    "abc",
 			Time:       time.Now().UnixNano(),
-			GasUsage:   0,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},

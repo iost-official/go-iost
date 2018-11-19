@@ -40,5 +40,5 @@ metrics:
 debug:
   listenaddr: 0.0.0.0:30003
 version:
-  nettype: "debugnet"
+  netname: "debugnet"
   protocolversion: "1.0"

@@ -29,12 +29,12 @@ func TestChainImpl(t *testing.T) {
 		So(err, ShouldBeNil)
 		tBlock := Block{
 			Head: &BlockHead{
-				Version:    2,
-				ParentHash: []byte("parent Hash"),
-				TxsHash:    []byte("tree hash"),
-				Info:       []byte("info "),
-				Number:     int64(0),
-				Time:       201222,
+				Version:      2,
+				ParentHash:   []byte("parent Hash"),
+				TxMerkleHash: []byte("tree hash"),
+				Info:         []byte("info "),
+				Number:       int64(0),
+				Time:         201222,
 			},
 			Sign: &crypto.Signature{},
 		}
@@ -54,7 +54,7 @@ func TestChainImpl(t *testing.T) {
 		So(block, ShouldNotBeNil)
 		So(block.Head.Version, ShouldEqual, 2)
 		So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
-		So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
+		So(string(block.Head.TxMerkleHash), ShouldEqual, string(tBlock.Head.TxMerkleHash))
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
 		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
@@ -65,7 +65,7 @@ func TestChainImpl(t *testing.T) {
 		So(block, ShouldNotBeNil)
 		So(block.Head.Version, ShouldEqual, 2)
 		So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
-		So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
+		So(string(block.Head.TxMerkleHash), ShouldEqual, string(tBlock.Head.TxMerkleHash))
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
 		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
@@ -77,7 +77,7 @@ func TestChainImpl(t *testing.T) {
 		So(block, ShouldNotBeNil)
 		So(block.Head.Version, ShouldEqual, 2)
 		So(string(block.Head.ParentHash), ShouldEqual, string(tBlock.Head.ParentHash))
-		So(string(block.Head.TxsHash), ShouldEqual, string(tBlock.Head.TxsHash))
+		So(string(block.Head.TxMerkleHash), ShouldEqual, string(tBlock.Head.TxMerkleHash))
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
 		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
@@ -113,14 +113,14 @@ func BenchmarkBlock(b *testing.B) {
 		rand.Read(merkleHash)
 		tBlock := &Block{
 			Head: &BlockHead{
-				Version:    2,
-				ParentHash: parentHash,
-				TxsHash:    txsHash,
-				MerkleHash: merkleHash,
-				Info:       make([]byte, 0),
-				Number:     int64(i),
-				Time:       time.Now().UnixNano(),
-				Witness:    "IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C",
+				Version:             2,
+				ParentHash:          parentHash,
+				TxMerkleHash:        txsHash,
+				TxReceiptMerkleHash: merkleHash,
+				Info:                make([]byte, 0),
+				Number:              int64(i),
+				Time:                time.Now().UnixNano(),
+				Witness:             "IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C",
 			},
 		}
 		for j := 0; j < txnum; j++ {

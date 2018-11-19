@@ -49,7 +49,6 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 			Number:     10,
 			Witness:    "witness",
 			Time:       123456,
-			GasUsage:   0,
 		},
 	}
 	topBlock.CalculateHeadHash()
@@ -67,7 +66,7 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
 	pendingTx := txpool.NewSortedTxMap()
 	for i := 0; i < 40000; i++ {
-		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+		act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 		trx, _ := MakeTx(act)
 		pendingTx.Add(trx)
 	}
@@ -105,7 +104,7 @@ func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 46635359
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
 	pendingTx := txpool.NewSortedTxMap()
 	for i := 0; i < 30000; i++ {
-		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+		act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 		trx, _ := MakeTx(act)
 		pendingTx.Add(trx)
 	}
@@ -373,8 +372,8 @@ func TestVerifyBlock(t *testing.T) {
 			Txs:      []*tx.Tx{},
 			Receipts: []*tx.TxReceipt{},
 		}
-		blk.Head.TxsHash = blk.CalculateTxsHash()
-		blk.Head.MerkleHash = blk.CalculateMerkleHash()
+		blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
+		blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
 		info, _ := blk.Head.Hash()
 		var sig *crypto.Signature
 		if witness == account0.ID {
