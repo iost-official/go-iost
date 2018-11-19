@@ -55,7 +55,7 @@ func cleanUp() {
 func BenchmarkNative_Transfer(b *testing.B) { // 39851 ns/op
 	e, _ := benchInit()
 
-	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
+	act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
 	trx, err := MakeTx(act)
 	if err != nil {
 		b.Fatal(err)
@@ -94,7 +94,7 @@ func BenchmarkNative_Transfer_LRU(b *testing.B) { // 37445 ns/op
 	e.SetUp("log_level", "fatal")
 	e.SetUp("log_enable", "")
 
-	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
+	act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
 	trx, err := MakeTx(act)
 	if err != nil {
 		b.Fatal(err)
@@ -111,7 +111,7 @@ func BenchmarkNative_Transfer_LRU(b *testing.B) { // 37445 ns/op
 func BenchmarkNative_Receipt(b *testing.B) { // 138000 ns/op
 	e, _ := benchInit()
 
-	act := tx.NewAction("iost.system", "Receipt", `["my receipt"]`)
+	act := tx.NewAction("system.iost", "Receipt", `["my receipt"]`)
 	trx, err := MakeTx(act)
 	if err != nil {
 		b.Fatal(err)
@@ -130,7 +130,7 @@ func BenchmarkNative_SetCode(b *testing.B) { // 3.03 ms/op
 
 	hw := jsHelloWorld()
 
-	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, hw.B64Encode()))
+	act := tx.NewAction("system.iost", "SetCode", fmt.Sprintf(`["%v"]`, hw.B64Encode()))
 	trx, err := MakeTx(act)
 	if err != nil {
 		b.Fatal(err)

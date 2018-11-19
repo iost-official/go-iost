@@ -36,7 +36,7 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 	h.Context().Set("stack_height", 0)
 
 	code := &contract.Contract{
-		ID: "iost.system",
+		ID: "system.iost",
 	}
 
 	e := &native.Impl{}
@@ -50,7 +50,7 @@ func TestEngine_SetCode(t *testing.T) {
 
 	e, host, code := InitVMWithMonitor(t, "setcode")
 	host.Context().Set("tx_hash", "iamhash")
-	host.Context().Set("contract_name", "iost.system")
+	host.Context().Set("contract_name", "system.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	hash := "Contractiamhash"
 

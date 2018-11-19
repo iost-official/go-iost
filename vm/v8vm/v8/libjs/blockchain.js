@@ -10,7 +10,7 @@ let BlockChain = (function () {
         if (!(amount instanceof Float64)) {
             amount = new Float64(amount);
         }
-        return bc.call("iost.token", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\", \"" + memo.toString() + "\"]");
+        return bc.call("token.iost", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\", \"" + memo.toString() + "\"]");
     };
     return {
         // transfer IOSToken
