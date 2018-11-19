@@ -21,7 +21,7 @@ var customCompileStartupData C.CustomStartupData
 
 // VM contains isolate instance, which is a v8 VM with its own heap.
 type VM struct {
-	isolate              C.IsolatePtr
+	isolate              C.IsolateWrapperPtr
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
 	vmType               vmPoolType
@@ -37,14 +37,14 @@ func NewVM(vmType vmPoolType, jsPath string) *VM {
 		customStartupData = C.createStartupData()
 		customCompileStartupData = C.createCompileStartupData()
 	})
-	var isolate C.IsolatePtr
+	var isolateWrapperPtr C.IsolateWrapperPtr
 	if vmType == CompileVMPool {
-		isolate = C.newIsolate(customCompileStartupData)
+		isolateWrapperPtr = C.newIsolate(customCompileStartupData)
 	} else {
-		isolate = C.newIsolate(customStartupData)
+		isolateWrapperPtr = C.newIsolate(customStartupData)
 	}
 	e := &VM{
-		isolate: isolate,
+		isolate: isolateWrapperPtr,
 		vmType:  vmType,
 		jsPath:  jsPath,
 	}
