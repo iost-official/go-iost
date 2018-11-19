@@ -7,6 +7,7 @@
 
 #include "vm.js.h"
 #include "compile_vm.js.h"
+#include "environment.js.h"
 #include <assert.h>
 #include <cstring>
 #include <string>
@@ -21,6 +22,7 @@
 #include <chrono>
 
 char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
+char *envJsLib = reinterpret_cast<char *>(__libjs_environment_js);
 char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
@@ -105,8 +107,10 @@ const char* ToCString(const v8::String::Utf8Value& value) {
   return *value ? *value : "<string conversion failed>";
 }
 
-SandboxPtr newSandbox(IsolatePtr ptr) {
-    Isolate *isolate = static_cast<Isolate*>(ptr);
+SandboxPtr newSandbox(IsolateWrapperPtr ptr) {
+    IsolateWrapper *isolateWrapper = static_cast<IsolateWrapper*>(ptr);
+    Isolate *isolate = static_cast<Isolate*>(isolateWrapper->isolate);
+    ArrayBufferAllocator* allocator= static_cast<ArrayBufferAllocator*>(isolateWrapper->allocator);
 
     Locker locker(isolate);
     Isolate::Scope isolate_scope(isolate);
@@ -122,6 +126,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
 
     sbx->context.Reset(isolate, context);
     sbx->isolate = isolate;
+    sbx->allocator = allocator;
     sbx->jsPath = strdup("v8/libjs");
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
@@ -153,6 +158,11 @@ void setJSPath(SandboxPtr ptr, const char *jsPath) {
 void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     sbx->gasLimit = gasLimit;
+}
+
+void setSandboxMemLimit(SandboxPtr ptr, size_t memLimit) {
+    Sandbox *sbx = static_cast<Sandbox*>(ptr);
+    sbx->memLimit = memLimit;
 }
 
 std::string reportException(Isolate *isolate, Local<Context> ctx, TryCatch& tryCatch) {
@@ -221,34 +231,45 @@ void loadVM(SandboxPtr ptr, int vmType) {
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 
-    std::string vmPath;
-    Local<String> source;
-
     if (vmType == 0) {
         return;
     }
-//    if (vmType == 0) {
-//        vmPath += "compile_vm.js";
-//        source = String::NewFromUtf8(isolate, compileVmJsLib, NewStringType::kNormal).ToLocalChecked();
-//    } else {
-    vmPath += "vm.js";
-    source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
-//    }
 
-    Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
+    // load vm
+    const char *vmPath = "vm.js";
+    Local<String> source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
+    Local<String> fileName = String::NewFromUtf8(isolate, vmPath, NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
-
     if (!script.IsEmpty()) {
         Local<Value> result = script->Run();
-        if (!result.IsEmpty()) {
-//            std::cout << "result vm: " << v8ValueToStdString(result) << std::endl;
-        }
     }
+
+    // load environment
+    const char *envPath = "env.js";
+    source = String::NewFromUtf8(isolate, envJsLib, NewStringType::kNormal).ToLocalChecked();
+
+    fileName = String::NewFromUtf8(isolate, envPath, NewStringType::kNormal).ToLocalChecked();
+    script = Script::Compile(source, fileName);
+    if (!script.IsEmpty()) {
+        Local<Value> result = script->Run();
+    }
+}
+
+size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator) {
+    // V8 memory usage
+    HeapStatistics v8_heap_stats;
+    isolate->GetHeapStatistics(&v8_heap_stats);
+
+    /*fields[1] = v8_heap_stats.total_heap_size();
+    fields[2] = v8_heap_stats.used_heap_size();
+    fields[3] = v8_heap_stats.external_memory();*/
+    return v8_heap_stats.total_heap_size();
 }
 
 void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
+
 
     Locker locker(isolate);
     Isolate::Scope isolate_scope(isolate);
@@ -272,6 +293,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     Local<Value> ret = script->Run();
 
     if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
+        isDone = true;
         return;
     }
 
@@ -284,6 +306,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     if (ret->IsString() || ret->IsNumber() || ret->IsBoolean()) {
         String::Utf8Value retV8Str(isolate, ret);
         result = *retV8Str;
+        isDone = true;
         return;
     }
 
@@ -325,7 +348,15 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
             break;
         }
         if (isDone) {
+            res.Value = copyString(result);
+            res.isJson = isJson;
             res.gasUsed = sbx->gasUsed;
+            break;
+        }
+        if (MemoryUsage(isolate, sbx->allocator) > sbx->memLimit) {
+            isolate->TerminateExecution();
+            res.Err = strdup("out of memory");
+            res.gasUsed = sbx->gasLimit;
             break;
         }
         if (sbx->gasUsed > sbx->gasLimit) {

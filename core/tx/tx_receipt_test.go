@@ -33,7 +33,7 @@ func TestTxReceipt(t *testing.T) {
 				Message: "error gas run out",
 			}
 			tx.Receipts = append(tx.Receipts, &Receipt{
-				FuncName: "iost.token/transfer",
+				FuncName: "token.iost/transfer",
 				Content:  "{\"num\": 1, \"message\": \"contract1\"}",
 			})
 			tx.RAMUsage = map[string]int64{

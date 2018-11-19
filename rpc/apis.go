@@ -299,7 +299,7 @@ func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*Get
 	}
 	// assume only one 'SetCode' action
 	txActionName := trx.Actions[0].ActionName
-	if trx.Actions[0].Contract != "iost.system" || txActionName != "SetCode" && txActionName != "UpdateCode" {
+	if trx.Actions[0].Contract != "system.iost" || txActionName != "SetCode" && txActionName != "UpdateCode" {
 		return nil, fmt.Errorf("not a SetCode or Update transaction")
 	}
 	js, err := simplejson.NewJson([]byte(trx.Actions[0].Data))
@@ -331,7 +331,7 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
 
-	accStr := database.MustUnmarshal(s.visitor.MGet("iost.auth-account", key.ID))
+	accStr := database.MustUnmarshal(s.visitor.MGet("auth.iost-account", key.ID))
 	if accStr == nil {
 		return nil, fmt.Errorf("non exist user %v", key.ID)
 	}
@@ -344,7 +344,7 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	var h *host.Host
 	c := host.NewContext(nil)
 	h = host.NewHost(c, s.visitor, nil, nil)
-	h.Context().Set("contract_name", "iost.gas")
+	h.Context().Set("contract_name", "gas.iost")
 	g := host.NewGasManager(h)
 	v, _ := g.CurrentTotalGas(key.ID, s.bc.LinkedRoot().Head.Time)
 	gas.CurrentTotal = v.ToString()

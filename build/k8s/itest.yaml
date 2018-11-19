@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: itest
+  labels:
+    app: itest
+spec:
+  containers:
+  - name: itest
+    image: "iostio/iost-node:1.0.0-316191f"
+    imagePullPolicy: "IfNotPresent"
+    command: ['/bin/bash', '-c', 'sleep infinity']
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1000Mi
+      requests:
+        cpu: 100m
+        memory: 200Mi
+

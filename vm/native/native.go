@@ -45,15 +45,15 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 	)
 
 	switch con.ID {
-	case "iost.system":
+	case "system.iost":
 		a, ok = systemABIs[api]
-	case "iost.domain":
+	case "domain.iost":
 		a, ok = DomainABIs[api]
-	case "iost.gas":
+	case "gas.iost":
 		a, ok = gasABIs[api]
-	case "iost.token":
+	case "token.iost":
 		a, ok = tokenABIs[api]
-	case "iost.token721":
+	case "token721.iost":
 		a, ok = token721ABIs[api]
 	}
 	if !ok {

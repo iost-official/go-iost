@@ -51,7 +51,7 @@ import (
 // code to run in a single instance of IVM.
 type Sandbox struct {
 	id      int
-	isolate C.IsolatePtr
+	isolate C.IsolateWrapperPtr
 	context C.SandboxPtr
 	host    *host.Host
 }
@@ -136,9 +136,15 @@ func (sbx *Sandbox) SetGasLimit(limit int64) {
 	C.setSandboxGasLimit(sbx.context, C.size_t(limit))
 }
 
+// SetMemLimit set mem limit in context
+func (sbx *Sandbox) SetMemLimit(limit int64) {
+	C.setSandboxMemLimit(sbx.context, C.size_t(limit))
+}
+
 // SetHost set host in sandbox and set gas limit
 func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
+	sbx.SetMemLimit(host.MemLimit())
 	sbx.SetGasLimit(host.GasLimitValue())
 }
 

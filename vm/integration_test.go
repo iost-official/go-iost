@@ -102,7 +102,7 @@ func TestIntergration_Transfer(t *testing.T) {
 	e, vi, mvcc := ininit(t)
 	defer closeMVCCDB(mvcc)
 
-	act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], "0.000001"))
+	act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v","%v"]`, testID[0], testID[2], "0.000001"))
 
 	trx := tx.NewTx([]*tx.Action{act}, nil, 10000, 1, 10000000, 0)
 
@@ -125,7 +125,7 @@ func TestIntergration_Transfer(t *testing.T) {
 		So(vi.TokenBalance("iost", testID[2]), ShouldEqual, int64(100))
 	})
 
-	act2 := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
+	act2 := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "999896"))
 	trx2 := tx.NewTx([]*tx.Action{act2}, nil, 10000, 1, 10000000, 0)
 	trx2, err = tx.SignTx(trx2, ac.ID, []*account.KeyPair{ac})
 	if err != nil {
@@ -205,7 +205,7 @@ func TestEngine_InitSetCode(t *testing.T) {
 
 	jshw := jsHelloWorld()
 
-	act := tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["iost.test", "%v"]`, jshw.B64Encode()))
+	act := tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["test.iost", "%v"]`, jshw.B64Encode()))
 
 	trx, err := MakeTx(act)
 	if err != nil {
@@ -221,7 +221,7 @@ func TestEngine_InitSetCode(t *testing.T) {
 	}
 	ilog.Debugf(fmt.Sprintln("balance of sender :", vi.TokenBalance("iost", testID[0])))
 
-	act2 := tx.NewAction("iost.test", "hello", `[]`)
+	act2 := tx.NewAction("test.iost", "hello", `[]`)
 
 	trx2, err := MakeTx(act2)
 	if err != nil {
@@ -505,7 +505,7 @@ func (j *JSTester) SetJS(code string) {
 }
 
 func (j *JSTester) DoSet() *tx.TxReceipt {
-	act := tx.NewAction("iost.system", "SetCode", fmt.Sprintf(`["%v"]`, j.c.B64Encode()))
+	act := tx.NewAction("system.iost", "SetCode", fmt.Sprintf(`["%v"]`, j.c.B64Encode()))
 
 	trx, err := MakeTx(act)
 	if err != nil {
