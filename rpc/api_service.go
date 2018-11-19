@@ -2,7 +2,10 @@ package rpc
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"reflect"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/pob"
@@ -13,6 +16,8 @@ import (
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 // APIService implements all rpc APIs.
@@ -157,17 +162,71 @@ func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockB
 
 // GetAccount returns account information corresponding to the given account name.
 func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.Account, error) {
-	return nil, nil
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	acc, _ := host.ReadAuth(dbVisitor, req.GetName())
+	if acc == nil {
+		return nil, errors.New("account not found")
+	}
+	ret := toPbAccount(acc)
+	balance := dbVisitor.TokenBalanceFixed("iost", req.GetName()).ToString()
+	ret.Balance = balance
+	ret.RamInfo = &rpcpb.Account_RAMInfo{
+		Available: dbVisitor.TokenBalance("ram", req.GetName()),
+	}
+
+	var blkTime int64
+	if req.GetByLongestChain() {
+		blkTime = as.bc.Head().Head.Time
+	} else {
+		blkTime = as.bc.LinkedRoot().Head.Time
+	}
+	gasManager := host.NewGasManager(host.NewHost(host.NewContext(nil), dbVisitor, nil, nil))
+	totalGas, _ := gasManager.CurrentTotalGas(req.GetName(), blkTime)
+	gasLimit, _ := gasManager.GasLimit(req.GetName())
+	gasRate, _ := gasManager.GasRate(req.GetName())
+	ret.GasInfo = &rpcpb.Account_GasInfo{
+		CurrentTotal:  totalGas.ToFloat(),
+		Limit:         gasLimit.ToFloat(),
+		IncreaseSpeed: gasRate.ToFloat(),
+	}
+
+	// TODO: pack pledged info and frozen balance
+	return ret, nil
 }
 
 // GetContract returns contract information corresponding to the given contract ID.
 func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractRequest) (*rpcpb.Contract, error) {
-	return nil, nil
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	contract := dbVisitor.Contract(req.GetId())
+	if contract == nil {
+		return nil, errors.New("contract not found")
+	}
+	return toPbContract(contract), nil
 }
 
 // GetContractStorage returns contract storage corresponding to the given key and field.
 func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
-	return nil, nil
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+	var value interface{}
+	if req.GetField() == "" {
+		value, _ = h.GlobalGet(req.GetId(), req.GetKey(), req.GetOwner())
+	} else {
+		value, _ = h.GlobalMapGet(req.GetId(), req.GetKey(), req.GetField(), req.GetOwner())
+	}
+	var data string
+	if reflect.TypeOf(value).Kind() != reflect.String {
+		bytes, err := json.Marshal(value)
+		if err != nil {
+			return nil, fmt.Errorf("cannot unmarshal %v", value)
+		}
+		data = string(bytes)
+	} else {
+		data = value.(string)
+	}
+	return &rpcpb.GetContractStorageResponse{
+		Data: data,
+	}, nil
 }
 
 // SendTransaction sends a transaction to iserver.
@@ -178,4 +237,14 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 // ExecTransaction executes a transaction by the node and returns the receipt.
 func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
 	return nil, nil
+}
+
+func (as *APIService) getStateDBVisitor(longestChain bool) *database.Visitor {
+	stateDB := as.bv.StateDB().Fork()
+	if longestChain {
+		stateDB.Checkout(string(as.bc.Head().HeadHash()))
+	} else {
+		stateDB.Checkout(string(as.bc.LinkedRoot().HeadHash()))
+	}
+	return database.NewVisitor(0, stateDB)
 }

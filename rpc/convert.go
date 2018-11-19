@@ -3,6 +3,7 @@ package rpc
 import (
 	"encoding/json"
 
+	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	contract "github.com/iost-official/go-iost/core/contract"
@@ -90,6 +91,70 @@ func toPbBlock(blk *block.Block, complete bool) *rpcpb.Block {
 		for i, t := range blk.Txs {
 			ret.Transactions = append(ret.Transactions, toPbTx(t, blk.Receipts[i]))
 		}
+	}
+	return ret
+}
+
+func toPbItem(item *account.Item) *rpcpb.Account_Item {
+	return &rpcpb.Account_Item{
+		Id:         item.ID,
+		Permission: item.Permission,
+		IsKeyPair:  item.IsKeyPair,
+		Weight:     int64(item.Weight),
+	}
+}
+
+func toPbGroup(group *account.Group) *rpcpb.Account_Group {
+	ret := &rpcpb.Account_Group{Name: group.Name}
+	for _, u := range group.Users {
+		ret.Items = append(ret.Items, toPbItem(u))
+	}
+	return ret
+}
+
+func toPbPermission(permission *account.Permission) *rpcpb.Account_Permission {
+	ret := &rpcpb.Account_Permission{
+		Name:      permission.Name,
+		Groups:    permission.Groups,
+		Threshold: int64(permission.Threshold),
+	}
+	for _, u := range permission.Users {
+		ret.Items = append(ret.Items, toPbItem(u))
+	}
+	return ret
+}
+
+func toPbAccount(acc *account.Account) *rpcpb.Account {
+	ret := &rpcpb.Account{
+		Name:        acc.ID,
+		Permissions: make(map[string]*rpcpb.Account_Permission),
+		Groups:      make(map[string]*rpcpb.Account_Group),
+	}
+	for k, p := range acc.Permissions {
+		ret.Permissions[k] = toPbPermission(p)
+	}
+	for k, g := range acc.Groups {
+		ret.Groups[k] = toPbGroup(g)
+	}
+	return ret
+}
+
+func toPbContract(c *contract.Contract) *rpcpb.Contract {
+	ret := &rpcpb.Contract{
+		Id:       c.ID,
+		Code:     c.Code,
+		Language: c.Info.Lang,
+		Version:  c.Info.Version,
+	}
+	for _, abi := range c.Info.Abi {
+		pbABI := &rpcpb.Contract_ABI{
+			Name: abi.Name,
+			Args: abi.Args,
+		}
+		for _, al := range abi.AmountLimit {
+			pbABI.AmountLimit = append(pbABI.AmountLimit, toPbAmountLimit(al))
+		}
+		ret.Abis = append(ret.Abis, pbABI)
 	}
 	return ret
 }
