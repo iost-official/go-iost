@@ -112,7 +112,7 @@ func TestStringGas(t *testing.T) {
 		r, err = s.Call(cname, "add9", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldEqual, 14)
+		So(r.GasUsage-gas2, ShouldBeBetweenOrEqual, 12, 14)
 
 		r, err = s.Call(cname, "equal9", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)

@@ -9,11 +9,12 @@ class Storage1 {
         storage.put(k, v);
     }
 
+    has(k) {
+        return storage.has(k);
+    }
+
     get(k) {
         let ret = storage.get(k);
-        if (ret === "") {
-            return "null";
-        }
         return ret;
     }
 
@@ -39,6 +40,14 @@ class Storage1 {
 
     mhas(k, f) {
         return storage.mapHas(k, f);
+    }
+
+    mkeys(k) {
+        return storage.mapKeys(k);
+    }
+
+    mlen(k) {
+        return storage.mapLen(k);
     }
 
     mdelete(k, f) {
