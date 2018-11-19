@@ -39,7 +39,7 @@ itest:
 lint:
 	@gometalinter --config=.gometalinter.json ./...
 vmlib:
-	(pushd vm/v8vm/v8/; make clean js_bin vm install; popd)
+	(cd vm/v8vm/v8/; make clean js_bin vm install; popd)
 test:
 ifeq ($(origin VERBOSE),undefined)
 	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
