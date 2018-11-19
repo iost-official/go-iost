@@ -130,9 +130,8 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 
 	// deploy iost.gas
 	acts = append(acts, tx.NewAction("iost.system", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "iost.gas", native.GasABI().B64Encode())))
-
 	// pledge gas for admin
-	gasPledgeAmount := 100000000
+	gasPledgeAmount := 1000
 	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.ID, gasPledgeAmount)))
 
 	// deploy iost.ram
@@ -147,8 +146,18 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	var increaseInterval int64 = 24 * 3600 / 3               // increase every day
 	var increaseAmount int64 = 64 * 1024 * 1024 * 1024 / 365 // 64GB per year
 	acts = append(acts, tx.NewAction("iost.ram", "issue", fmt.Sprintf(`[%v, %v, %v]`, initialTotal, increaseInterval, increaseAmount)))
+
 	adminInitialRAM := 1024
 	acts = append(acts, tx.NewAction("iost.ram", "buy", fmt.Sprintf(`["%v", "%v", %v]`, adminInfo.ID, adminInfo.ID, adminInitialRAM)))
+	acts = append(acts, tx.NewAction("iost.ram", "buy", fmt.Sprintf(`["%v", "%v", %v]`, adminInfo.ID, foundationInfo.ID, adminInitialRAM)))
+	for _, v := range witnessInfo {
+		acts = append(acts, tx.NewAction("iost.ram", "buy", fmt.Sprintf(`["%v", "%v", %v]`, adminInfo.ID, v.ID, adminInitialRAM)))
+	}
+
+	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, foundationInfo.ID, gasPledgeAmount)))
+	for _, v := range witnessInfo {
+		acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, v.ID, gasPledgeAmount)))
+	}
 
 	trx := tx.NewTx(acts, nil, 100000000, 0, 0, 0)
 	trx.Time = 0
