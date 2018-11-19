@@ -1522,7 +1522,7 @@ func (c *apisClient) GetBlockByNum(ctx context.Context, in *BlockByNumReq, opts 
 
 func (c *apisClient) GetAccountInfo(ctx context.Context, in *GetAccountReq, opts ...grpc.CallOption) (*GetAccountRes, error) {
 	out := new(GetAccountRes)
-	err := c.cc.Invoke(ctx, "/rpc.Apis/getAccountInfo", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/rpc.Apis/GetAccountInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1767,7 +1767,7 @@ func _Apis_GetAccountInfo_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rpc.Apis/getAccountInfo",
+		FullMethod: "/rpc.Apis/GetAccountInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ApisServer).GetAccountInfo(ctx, req.(*GetAccountReq))
@@ -1901,7 +1901,7 @@ var _Apis_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Apis_GetBlockByNum_Handler,
 		},
 		{
-			MethodName: "getAccountInfo",
+			MethodName: "GetAccountInfo",
 			Handler:    _Apis_GetAccountInfo_Handler,
 		},
 		{

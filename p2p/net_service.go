@@ -49,7 +49,7 @@ type Service interface {
 	Register(string, ...MessageType) chan IncomingMessage
 	Deregister(string, ...MessageType)
 
-	NeighborStat() map[string]interface{}
+	GetAllNeighbors() []*Peer
 }
 
 // NetService is the implementation of Service interface.

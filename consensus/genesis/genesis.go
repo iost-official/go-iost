@@ -200,8 +200,8 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		Receipts: []*tx.TxReceipt{txr},
 	}
 	blk.Head.GasUsage = txr.GasUsage
-	blk.Head.TxsHash = blk.CalculateTxsHash()
-	blk.Head.MerkleHash = blk.CalculateMerkleHash()
+	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
+	blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
 	err = blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err
@@ -233,8 +233,8 @@ func FakeBv(bv global.BaseVariable) error {
 		return err
 	}
 	blk.CalculateHeadHash()
-	blk.CalculateTxsHash()
-	blk.CalculateMerkleHash()
+	blk.CalculateTxMerkleHash()
+	blk.CalculateTxReceiptMerkleHash()
 	err = bv.BlockChain().Push(blk)
 	if err != nil {
 		return err
