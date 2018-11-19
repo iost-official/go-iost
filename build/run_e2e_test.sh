@@ -7,5 +7,5 @@ then
 fi
 
 echo "Start e2e test..."
-kubectl exec -it itest -n $NAME -- ./itest run t_case
+kubectl exec -it itest -n $NAME -- ./itest run -c /etc/itest/itest.json t_case
 
