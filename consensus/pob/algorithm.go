@@ -42,7 +42,6 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
 			Time:       time.Now().UnixNano(),
-			GasUsage:   0,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
