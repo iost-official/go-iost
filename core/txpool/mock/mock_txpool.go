@@ -94,6 +94,33 @@ func (mr *MockTxPoolMockRecorder) ExistTxs(arg0, arg1 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistTxs", reflect.TypeOf((*MockTxPool)(nil).ExistTxs), arg0, arg1)
 }
 
+// GetFromChain mocks base method
+func (m *MockTxPool) GetFromChain(arg0 []byte) (*tx.Tx, *tx.TxReceipt, error) {
+	ret := m.ctrl.Call(m, "GetFromChain", arg0)
+	ret0, _ := ret[0].(*tx.Tx)
+	ret1, _ := ret[1].(*tx.TxReceipt)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetFromChain indicates an expected call of GetFromChain
+func (mr *MockTxPoolMockRecorder) GetFromChain(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromChain", reflect.TypeOf((*MockTxPool)(nil).GetFromChain), arg0)
+}
+
+// GetFromPending mocks base method
+func (m *MockTxPool) GetFromPending(arg0 []byte) (*tx.Tx, error) {
+	ret := m.ctrl.Call(m, "GetFromPending", arg0)
+	ret0, _ := ret[0].(*tx.Tx)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFromPending indicates an expected call of GetFromPending
+func (mr *MockTxPoolMockRecorder) GetFromPending(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromPending", reflect.TypeOf((*MockTxPool)(nil).GetFromPending), arg0)
+}
+
 // Lock mocks base method
 func (m *MockTxPool) Lock() {
 	m.ctrl.Call(m, "Lock")

@@ -50,19 +50,19 @@ func prepareContract(s *Simulator) {
 		s.SetGas(testID[i], 100000000)
 		s.SetRAM(testID[i], 10000)
 	}
-	// deploy iost.token
+	// deploy token.iost
 	s.SetContract(native.TokenABI())
 	s.Visitor.Commit()
 }
 
 func createToken(t fataler, s *Simulator, kp *account.KeyPair) error {
 	// create token
-	r, err := s.Call("iost.token", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000000), kp.ID, kp)
+	r, err := s.Call("token.iost", "create", fmt.Sprintf(`["%v", "%v", %v, {}]`, "iost", testID[0], 1000000), kp.ID, kp)
 	if err != nil || r.Status.Code != tx.Success {
 		return fmt.Errorf("err %v, receipt: %v", err, r)
 	}
 	// issue token
-	r, err = s.Call("iost.token", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", testID[0], "1000"), kp.ID, kp)
+	r, err = s.Call("token.iost", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", testID[0], "1000"), kp.ID, kp)
 	if err != nil || r.Status.Code != tx.Success {
 		return fmt.Errorf("err %v, receipt: %v", err, r)
 	}

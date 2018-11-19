@@ -114,7 +114,7 @@ func (s *GRPCServer) GetNodeInfo(ctx context.Context, empty *empty.Empty) (*Node
 // GetChainInfo return the chain info
 func (s *GRPCServer) GetChainInfo(ctx context.Context, empty *empty.Empty) (*ChainInfoRes, error) {
 	return &ChainInfoRes{
-		NetType:              s.bv.Config().Version.NetType,
+		NetType:              s.bv.Config().Version.NetName,
 		ProtocolVersion:      s.bv.Config().Version.ProtocolVersion,
 		Height:               s.bchain.Length() - 1,
 		WitnessList:          pob.GetStaticProperty().WitnessList,
@@ -299,7 +299,7 @@ func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*Get
 	}
 	// assume only one 'SetCode' action
 	txActionName := trx.Actions[0].ActionName
-	if trx.Actions[0].Contract != "iost.system" || txActionName != "SetCode" && txActionName != "UpdateCode" {
+	if trx.Actions[0].Contract != "system.iost" || txActionName != "SetCode" && txActionName != "UpdateCode" {
 		return nil, fmt.Errorf("not a SetCode or Update transaction")
 	}
 	js, err := simplejson.NewJson([]byte(trx.Actions[0].Data))
@@ -331,7 +331,7 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
 
-	accStr := database.MustUnmarshal(s.visitor.MGet("iost.auth-account", key.ID))
+	accStr := database.MustUnmarshal(s.visitor.MGet("auth.iost-account", key.ID))
 	if accStr == nil {
 		return nil, fmt.Errorf("non exist user %v", key.ID)
 	}

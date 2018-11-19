@@ -178,25 +178,25 @@ func (c *Client) checkTransaction(hash string) error {
 // CreateAccount will create account by sending transaction
 func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Account, error) {
 	action1 := tx.NewAction(
-		"iost.auth",
+		"auth.iost",
 		"SignUp",
 		fmt.Sprintf(`["%v", "%v", "%v"]`, name, key.ID, key.ID),
 	)
 
 	action2 := tx.NewAction(
-		"iost.ram",
+		"ram.iost",
 		"buy",
 		fmt.Sprintf(`["%v", "%v", %v]`, creator.ID, name, InitRAM),
 	)
 
 	action3 := tx.NewAction(
-		"iost.gas",
+		"gas.iost",
 		"pledge",
 		fmt.Sprintf(`["%v", "%v", "%v"]`, creator.ID, name, InitPledge),
 	)
 
 	action4 := tx.NewAction(
-		"iost.token",
+		"token.iost",
 		"transfer",
 		fmt.Sprintf(`["%v", "%v", "%v", "%v", ""]`, InitToken, creator.ID, name, InitAmount),
 	)
@@ -227,7 +227,7 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 // Transfer will transfer token by sending transaction
 func (c *Client) Transfer(sender, recipient *Account, token, amount string) error {
 	action := tx.NewAction(
-		"iost.token",
+		"token.iost",
 		"transfer",
 		fmt.Sprintf(`["%v", "%v", "%v", "%v", ""]`, token, sender.ID, recipient.ID, amount),
 	)
@@ -250,7 +250,7 @@ func (c *Client) Transfer(sender, recipient *Account, token, amount string) erro
 // SetContract will set the contract by sending transaction
 func (c *Client) SetContract(creator *Account, contract *Contract) error {
 	action := tx.NewAction(
-		"iost.system",
+		"system.iost",
 		"SetCode",
 		fmt.Sprintf(`["%v"]`, contract),
 	)

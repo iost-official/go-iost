@@ -191,7 +191,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 
 	h.db.SetContract(c)
 
-	owner, co := h.GlobalMapGet("iost.system", "contract_owner", c.ID)
+	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)
 	cost.AddAssign(co)
 	l := len(c.Encode()) // todo multi Encode call
 	h.PayCost(contract.NewCost(int64(l-oldL), 0, 0), owner.(string))
@@ -224,11 +224,11 @@ func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 		return cost, ErrDestroyRefused
 	}
 
-	owner, co := h.GlobalMapGet("iost.system", "contract_owner", oc.ID)
+	owner, co := h.GlobalMapGet("system.iost", "contract_owner", oc.ID)
 	cost.AddAssign(co)
 	h.PayCost(contract.NewCost(int64(-oldL), 0, 0), owner.(string))
 
-	h.db.MDel("iost.system-contract_owner", oc.ID)
+	h.db.MDel("system.iost-contract_owner", oc.ID)
 
 	h.db.DelContract(contractName)
 	return DelContractCost, nil

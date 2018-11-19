@@ -12,6 +12,8 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
+	"encoding/json"
+	"github.com/iost-official/go-iost/core/event"
 )
 
 func Test_callWithAuth(t *testing.T) {
@@ -47,10 +49,9 @@ func Test_callWithAuth(t *testing.T) {
 	})
 }
 
-/*
-func Test_Info(t *testing.T) {
+func Test_VMMethod(t *testing.T) {
 	ilog.Stop()
-	Convey("test of info", t, func() {
+	Convey("test of vm method", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
 
@@ -62,121 +63,65 @@ func Test_Info(t *testing.T) {
 		prepareContract(s)
 		createToken(t, s, kp)
 
-		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
+		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
 		if err != nil || ca == nil {
 			t.Fatal(err)
 		}
-		s.SetContract(ca)
+		cname, r, err := s.DeployContract(ca, testID[0], kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
 
-		Convey("test of callWithAuth", func() {
-			s.Visitor.SetTokenBalanceFixed("iost", "Contracttransfer", "1000")
-			r, err := s.Call("Contracttransfer", "withdraw", fmt.Sprintf(`["%v", "%v"]`, testID[0], "10"), testID[0], kp)
+		Convey("test of contract name", func() {
+			r, err := s.Call(cname, "contractName", "[]", testID[0], kp)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance := common.Fixed{Value: s.Visitor.TokenBalance("iost", "Contracttransfer"), Decimal: s.Visitor.Decimal("iost")}
-			So(balance.ToString(), ShouldEqual, "990")
+			So(len(r.Returns), ShouldEqual, 1)
+			res, err := json.Marshal([]interface{}{cname})
+			So(err, ShouldBeNil)
+			So(r.Returns[0], ShouldEqual, string(res))
 		})
-	})
-}
 
-func Test_Storage(t *testing.T) {
-	ilog.Stop()
-	Convey("test of storage", t, func() {
-		s := NewSimulator()
-		defer s.Clear()
-
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		prepareContract(s)
-		createToken(t, s, kp)
-
-		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
-		if err != nil || ca == nil {
-			t.Fatal(err)
-		}
-		s.SetContract(ca)
-
-		Convey("test of callWithAuth", func() {
-			s.Visitor.SetTokenBalanceFixed("iost", "Contracttransfer", "1000")
-			r, err := s.Call("Contracttransfer", "withdraw", fmt.Sprintf(`["%v", "%v"]`, testID[0], "10"), testID[0], kp)
+		Convey("test of receipt", func() {
+			r, err := s.Call(cname, "receiptf", fmt.Sprintf(`["%v"]`, "receiptdata"), testID[0], kp)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance := common.Fixed{Value: s.Visitor.TokenBalance("iost", "Contracttransfer"), Decimal: s.Visitor.Decimal("iost")}
-			So(balance.ToString(), ShouldEqual, "990")
+			So(len(r.Receipts), ShouldEqual, 1)
+			So(r.Receipts[0].Content, ShouldEqual, "receiptdata")
+			So(r.Receipts[0].FuncName, ShouldEqual, cname + "/receiptf")
 		})
-	})
-}
 
-func Test_Event(t *testing.T) {
-	ilog.Stop()
-	Convey("test of event", t, func() {
-		s := NewSimulator()
-		defer s.Clear()
+		Convey("test of event", func() {
+			eve := event.GetEventCollectorInstance()
+			// contract event
+			sub1 := event.NewSubscription(100, []event.Event_Topic{event.Event_ContractEvent})
+			eve.Subscribe(sub1)
+			sub2 := event.NewSubscription(100, []event.Event_Topic{event.Event_ContractReceipt})
+			eve.Subscribe(sub2)
 
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		prepareContract(s)
-		createToken(t, s, kp)
-
-		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
-		if err != nil || ca == nil {
-			t.Fatal(err)
-		}
-		s.SetContract(ca)
-
-		Convey("test of callWithAuth", func() {
-			s.Visitor.SetTokenBalanceFixed("iost", "Contracttransfer", "1000")
-			r, err := s.Call("Contracttransfer", "withdraw", fmt.Sprintf(`["%v", "%v"]`, testID[0], "10"), testID[0], kp)
+			r, err := s.Call(cname, "event", fmt.Sprintf(`["%v"]`, "eventdata"), testID[0], kp)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance := common.Fixed{Value: s.Visitor.TokenBalance("iost", "Contracttransfer"), Decimal: s.Visitor.Decimal("iost")}
-			So(balance.ToString(), ShouldEqual, "990")
-		})
-	})
-}
 
-func Test_Receipt(t *testing.T) {
-	ilog.Stop()
-	Convey("test of receipt", t, func() {
-		s := NewSimulator()
-		defer s.Clear()
+			e := <- sub1.ReadChan()
+			So(e.Data, ShouldEqual, "eventdata")
+			So(e.Topic, ShouldEqual, event.Event_ContractEvent)
 
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		prepareContract(s)
-		createToken(t, s, kp)
-
-		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
-		if err != nil || ca == nil {
-			t.Fatal(err)
-		}
-		s.SetContract(ca)
-
-		Convey("test of callWithAuth", func() {
-			s.Visitor.SetTokenBalanceFixed("iost", "Contracttransfer", "1000")
-			r, err := s.Call("Contracttransfer", "withdraw", fmt.Sprintf(`["%v", "%v"]`, testID[0], "10"), testID[0], kp)
+			// receipt event
+			r, err = s.Call(cname, "receiptf", fmt.Sprintf(`["%v"]`, "receipteventdata"), testID[0], kp)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance := common.Fixed{Value: s.Visitor.TokenBalance("iost", "Contracttransfer"), Decimal: s.Visitor.Decimal("iost")}
-			So(balance.ToString(), ShouldEqual, "990")
+
+			e = <- sub2.ReadChan()
+			So(e.Data, ShouldEqual, "receipteventdata")
+			So(e.Topic, ShouldEqual, event.Event_ContractReceipt)
 		})
 	})
 }
-*/

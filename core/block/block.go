@@ -12,29 +12,28 @@ import (
 
 // BlockHead is the struct of block head.
 type BlockHead struct { // nolint
-	Version    int64
-	ParentHash []byte
-	TxsHash    []byte
-	MerkleHash []byte
-	Info       []byte
-	Number     int64
-	Witness    string
-	Time       int64
-	GasUsage   int64
+	Version             int64
+	ParentHash          []byte
+	TxMerkleHash        []byte
+	TxReceiptMerkleHash []byte
+	Info                []byte
+	Number              int64
+	Witness             string
+	Time                int64
+	GasUsage            int64
 }
 
 // ToPb convert BlockHead to proto buf data structure.
 func (b *BlockHead) ToPb() *blockpb.BlockHead {
 	return &blockpb.BlockHead{
-		Version:    b.Version,
-		ParentHash: b.ParentHash,
-		TxsHash:    b.TxsHash,
-		MerkleHash: b.MerkleHash,
-		Info:       b.Info,
-		Number:     b.Number,
-		Witness:    b.Witness,
-		Time:       b.Time,
-		GasUsage:   b.GasUsage,
+		Version:             b.Version,
+		ParentHash:          b.ParentHash,
+		TxMerkleHash:        b.TxMerkleHash,
+		TxReceiptMerkleHash: b.TxReceiptMerkleHash,
+		Info:                b.Info,
+		Number:              b.Number,
+		Witness:             b.Witness,
+		Time:                b.Time,
 	}
 }
 
@@ -43,13 +42,12 @@ func (b *BlockHead) ToBytes() []byte {
 	sn := common.NewSimpleNotation()
 	sn.WriteInt64(b.Version, true)
 	sn.WriteBytes(b.ParentHash, false)
-	sn.WriteBytes(b.TxsHash, false)
-	sn.WriteBytes(b.MerkleHash, false)
+	sn.WriteBytes(b.TxMerkleHash, false)
+	sn.WriteBytes(b.TxReceiptMerkleHash, false)
 	sn.WriteBytes(b.Info, true)
 	sn.WriteInt64(b.Number, true)
 	sn.WriteString(b.Witness, true)
 	sn.WriteInt64(b.Time, true)
-	sn.WriteInt64(b.GasUsage, true)
 	return sn.Bytes()
 }
 
@@ -57,13 +55,12 @@ func (b *BlockHead) ToBytes() []byte {
 func (b *BlockHead) FromPb(bh *blockpb.BlockHead) *BlockHead {
 	b.Version = bh.Version
 	b.ParentHash = bh.ParentHash
-	b.TxsHash = bh.TxsHash
-	b.MerkleHash = bh.MerkleHash
+	b.TxMerkleHash = bh.TxMerkleHash
+	b.TxReceiptMerkleHash = bh.TxReceiptMerkleHash
 	b.Info = bh.Info
 	b.Number = bh.Number
 	b.Witness = bh.Witness
 	b.Time = bh.Time
-	b.GasUsage = bh.GasUsage
 	return b
 }
 
@@ -103,19 +100,26 @@ type Block struct {
 	ReceiptHashes [][]byte
 }
 
-// CalculateTxsHash calculate the hash of the transaction
-func (b *Block) CalculateTxsHash() []byte {
-	hash := make([]byte, 0)
-	for _, tx := range b.Txs {
-		for _, sig := range tx.PublishSigns {
-			hash = append(hash, sig.Sig...)
-		}
+// CalculateGasUsage calculates the block's gas usage.
+func (b *Block) CalculateGasUsage() {
+	for _, txr := range b.Receipts {
+		b.Head.GasUsage += txr.GasUsage
 	}
-	return common.Sha3(hash)
 }
 
-// CalculateMerkleHash calculate the hash of the MerkleTree
-func (b *Block) CalculateMerkleHash() []byte {
+// CalculateTxMerkleHash calculate the merkle hash of the transaction.
+func (b *Block) CalculateTxMerkleHash() []byte {
+	m := merkletree.MerkleTree{}
+	hashes := make([][]byte, 0, len(b.Txs))
+	for _, tx := range b.Txs {
+		hashes = append(hashes, tx.Hash())
+	}
+	m.Build(hashes)
+	return m.RootHash()
+}
+
+// CalculateTxReceiptMerkleHash calculate the merkle hash of the transaction receipt.
+func (b *Block) CalculateTxReceiptMerkleHash() []byte {
 	m := merkletree.TXRMerkleTree{}
 	m.Build(b.Receipts)
 	return m.RootHash()
@@ -173,6 +177,7 @@ func (b *Block) Decode(blockByte []byte) error {
 		b.TxHashes = br.TxHashes
 		b.ReceiptHashes = br.ReceiptHashes
 	}
+	b.CalculateGasUsage()
 	return b.CalculateHeadHash()
 }
 
