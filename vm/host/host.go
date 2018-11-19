@@ -280,5 +280,8 @@ func (h *Host) SetDeadline(t time.Time) {
 
 // IsValidAccount check whether account exists
 func (h *Host) IsValidAccount(name string) bool {
-	return strings.HasPrefix(name, "Contract") || strings.HasPrefix(name, "iost.") || database.Unmarshal(h.DB().MGet("iost.auth-account", name)) != nil
+	if h.Context().Value("number") == int64(0) {
+		return true
+	}
+	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().MGet("auth.iost-account", name)) != nil
 }

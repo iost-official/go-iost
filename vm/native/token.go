@@ -149,7 +149,7 @@ func parseAmount(h *host.Host, tokenName string, amountStr string, issuer string
 
 	cost.AddAssign(host.CommonOpCost(3))
 	if err != nil {
-		return 0, cost, host.ErrInvalidAmount
+		return 0, cost, fmt.Errorf("invalid amount %v %v", amountStr, err)
 	}
 	return amountNumber.Value, cost, err
 }

@@ -1,18 +1,19 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
-	"github.com/iost-official/go-iost/ilog"
+	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/crypto"
-	. "github.com/iost-official/go-iost/verifier"
-	. "github.com/smartystreets/goconvey/convey"
-	"encoding/json"
 	"github.com/iost-official/go-iost/core/event"
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
+	. "github.com/iost-official/go-iost/verifier"
 )
 
 func Test_callWithAuth(t *testing.T) {
@@ -87,7 +88,7 @@ func Test_VMMethod(t *testing.T) {
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 			So(len(r.Receipts), ShouldEqual, 1)
 			So(r.Receipts[0].Content, ShouldEqual, "receiptdata")
 			So(r.Receipts[0].FuncName, ShouldEqual, cname + "/receiptf")
@@ -105,7 +106,7 @@ func Test_VMMethod(t *testing.T) {
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 
 			e := <- sub1.ReadChan()
 			So(e.Data, ShouldEqual, "eventdata")
@@ -116,7 +117,7 @@ func Test_VMMethod(t *testing.T) {
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 
 			e = <- sub2.ReadChan()
 			So(e.Data, ShouldEqual, "receipteventdata")
