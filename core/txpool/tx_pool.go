@@ -135,8 +135,8 @@ func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
 
 // Release release the txpool
 func (pool *TxPImpl) Release() {
-	pool.mu.Unlock()
 	close(pool.quitGenerateMode)
+	pool.mu.Unlock()
 }
 
 func (pool *TxPImpl) verifyWorkers() {
