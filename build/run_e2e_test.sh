@@ -1,6 +1,7 @@
 #!/bin/bash
 
-NAME=$(git rev-parse --short HEAD)
+NAME="devnet"
+
 if [ -n "$1" ]
 then
     NAME=$1

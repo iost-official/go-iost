@@ -1,6 +1,7 @@
 #!/bin/bash
 
-NAME=$(git rev-parse --short HEAD)
+NAME="devnet"
+COMMIT=$(git rev-parse --short HEAD)
 
 if [ -n "$1" ]
 then
@@ -21,9 +22,8 @@ go run genconfig.go -c $NAME -s "7,8"
 cd -
 
 echo "Create test cluster $NAME in k8s"
-kubectl create namespace $NAME
 kubectl create configmap iserver-config --from-file=iserver-config -n $NAME
-cat iserver.yaml | sed 's/\$COMMIT'"/$NAME/g" | kubectl create -f - -n $NAME
+cat iserver.yaml | sed 's/\$COMMIT'"/$COMMIT/g" | kubectl create -f - -n $NAME
 kubectl create configmap itest-config --from-file=itest-config -n $NAME
-cat itest.yaml | sed 's/\$COMMIT'"/$NAME/g" | kubectl create -f - -n $NAME
+cat itest.yaml | sed 's/\$COMMIT'"/$COMMIT/g" | kubectl create -f - -n $NAME
 

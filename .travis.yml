@@ -67,6 +67,7 @@ matrix:
     - aws eks update-kubeconfig --region us-west-2 --name devnet
     - make image
     - make push
-    - ./build/create_cluster.sh
-    - ./build/run_e2e_test.sh
     - ./build/delete_cluster.sh
+    - ./build/create_cluster.sh
+    - sleep 90
+    - ./build/run_e2e_test.sh
