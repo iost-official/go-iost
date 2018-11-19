@@ -22,6 +22,7 @@ var (
 	errWitness     = errors.New("wrong witness")
 	errSignature   = errors.New("wrong signature")
 	errTxDup       = errors.New("duplicate tx")
+	errDoubleTx    = errors.New("double tx in block")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
 	generateTxsNum = 0
@@ -102,7 +103,13 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return errWitness
 	}
 	ilog.Infof("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
+	blkTxSet := make(map[string]bool, len(blk.Txs))
 	for i, t := range blk.Txs {
+		if blkTxSet[string(t.Hash())] {
+			return errDoubleTx
+		}
+		blkTxSet[string(t.Hash())] = true
+
 		if i == 0 {
 			// base tx
 			continue
