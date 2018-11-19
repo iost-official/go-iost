@@ -12,13 +12,13 @@ cd build/k8s/
 
 echo "Generate iserver config"
 cd iserver-config/
-go run genconfig.go -c $NAME -m 7 -s 2
+go run genconfig.go -c $NAME -m 3 -s 1
 cd -
 
 echo "Generate itest config"
 cd itest-config/
 export DYLD_LIBRARY_PATH=${GOPATH}/src/github.com/iost-official/go-iost/vm/v8vm/v8/libv8/_darwin_amd64
-go run genconfig.go -c $NAME -s "7,8"
+go run genconfig.go -c $NAME -s "3"
 cd -
 
 echo "Create test cluster $NAME in k8s"
