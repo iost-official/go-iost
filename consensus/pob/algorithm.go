@@ -103,7 +103,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		return errWitness
 	}
 	ilog.Infof("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
-	blkTxSet := make(map[string]bool)
+	blkTxSet := make(map[string]bool, len(blk.Txs))
 	for i, t := range blk.Txs {
 		if blkTxSet[string(t.Hash())] {
 			return errDoubleTx
