@@ -22,10 +22,12 @@ type Server struct {
 	gatewayServer *http.Server
 }
 
+// New returns a new rpc server instance.
 func New() *Server {
 	return &Server{}
 }
 
+// Start starts the rpc server.
 func (s *Server) Start() error {
 	if err := s.startGrpc(); err != nil {
 		return err
@@ -69,6 +71,7 @@ func (s *Server) startGateway() error {
 	return nil
 }
 
+// Stop stops the rpc server.
 func (s *Server) Stop() {
 	s.gatewayServer.Shutdown(nil)
 	s.grpcServer.GracefulStop()

@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"encoding/json"
-	"strconv"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -13,11 +12,6 @@ import (
 
 func gasConvert(a int64) float64 {
 	return float64(a) / 100
-}
-
-func fixToFloat(s string) float64 {
-	v, _ := strconv.ParseFloat(s, 64)
-	return v
 }
 
 func toPbAction(a *tx.Action) *rpcpb.Action {
