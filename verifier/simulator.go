@@ -62,7 +62,7 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 	if err != nil {
 		panic(err)
 	}
-	s.Visitor.MPut("auth.iost-account", acc.ID, database.MustMarshal(string(buf)))
+	s.Visitor.Put("auth.iost@"+acc.ID+"-auth", database.MustMarshal(string(buf)))
 }
 
 // SetGas to id

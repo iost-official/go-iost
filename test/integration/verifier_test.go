@@ -408,16 +408,17 @@ func TestAuthority(t *testing.T) {
 
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 100000)
+		s.SetRAM("myid", 1000)
 
 		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myid", kp.ID, "akey"}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.MGet("auth.iost-account", "myid"), ShouldStartWith, `s{"id":"myid",`)
+		So(s.Visitor.Get("auth.iost@myid-auth"), ShouldStartWith, `s{"id":"myid",`)
 
 		r, err = s.Call("auth.iost", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.MGet("auth.iost-account", "myid"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
+		So(s.Visitor.Get("auth.iost@myid-auth"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 	})
 
 }

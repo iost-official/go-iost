@@ -6,9 +6,12 @@ import (
 	"strconv"
 	"testing"
 
+	"os"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
@@ -16,8 +19,6 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
-	"github.com/iost-official/go-iost/core/tx"
-	"os"
 )
 
 func toString(n int64) string {
@@ -50,7 +51,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, *account.Accou
 	if err != nil {
 		panic(err)
 	}
-	h.DB().MPut("auth.iost-account", testAcc.ID, database.MustMarshal(string(as)))
+	h.DB().Put("auth.iost@"+testAcc.ID+"-auth", database.MustMarshal(string(as)))
 	h.Context().Set("number", int64(1))
 	h.Context().Set("time", int64(1541576370*1e9))
 	h.Context().Set("stack_height", 0)

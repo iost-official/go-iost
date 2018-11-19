@@ -331,7 +331,7 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
 
-	accStr := database.MustUnmarshal(s.visitor.MGet("auth.iost-account", key.ID))
+	accStr := database.MustUnmarshal(s.visitor.MGet("auth.iost-auth", key.ID))
 	if accStr == nil {
 		return nil, fmt.Errorf("non exist user %v", key.ID)
 	}
