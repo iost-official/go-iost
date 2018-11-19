@@ -172,7 +172,7 @@ class VoteCommonContract {
         const bn = this._getBlockNumber();
 
         if (bn > 0) {
-            this._call("iost.token", "transfer", ["iost", owner, "iost.vote", newVoteFee, ""]);
+            this._call("token.iost", "transfer", ["iost", owner, "vote.iost", newVoteFee, ""]);
         }
 
         const voteId = this._nextId();
@@ -309,7 +309,7 @@ class VoteCommonContract {
 
         amount = this._fixAmount(amount);
 
-        this._call("iost.token", "transfer", ["iost", account, "iost.vote", amount.toFixed(), ""]);
+        this._call("token.iost", "transfer", ["iost", account, "vote.iost", amount.toFixed(), ""]);
 
         if (!storage.mapHas(optionPrefix + voteId, option)) {
             throw new Error("option does not exist");
@@ -377,7 +377,7 @@ class VoteCommonContract {
             throw new Error("unvoteInterval not reached.");
         }
 
-        this._call("iost.token", "transfer", ["iost", "iost.vote", account, amount.toFixed(), ""]);
+        this._call("token.iost", "transfer", ["iost", "vote.iost", account, amount.toFixed(), ""]);
 
         const leftVoteNum = votes.minus(amount);
 
@@ -472,7 +472,7 @@ class VoteCommonContract {
 
         const deposit = new Float64(info.deposit);
         if (!deposit.isZero()) {
-            this._call("iost.token", "transfer", ["iost", owner, "iost.vote", deposit, ""]);
+            this._call("token.iost", "transfer", ["iost", owner, "vote.iost", deposit, ""]);
         }
         this._delVote(voteId);
     }
