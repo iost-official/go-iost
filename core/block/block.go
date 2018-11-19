@@ -101,10 +101,13 @@ type Block struct {
 }
 
 // CalculateGasUsage calculates the block's gas usage.
-func (b *Block) CalculateGasUsage() {
-	for _, txr := range b.Receipts {
-		b.Head.GasUsage += txr.GasUsage
+func (b *Block) CalculateGasUsage() int64 {
+	if b.Head.GasUsage == 0 {
+		for _, txr := range b.Receipts {
+			b.Head.GasUsage += txr.GasUsage
+		}
 	}
+	return b.Head.GasUsage
 }
 
 // CalculateTxMerkleHash calculate the merkle hash of the transaction.
@@ -177,7 +180,6 @@ func (b *Block) Decode(blockByte []byte) error {
 		b.TxHashes = br.TxHashes
 		b.ReceiptHashes = br.ReceiptHashes
 	}
-	b.CalculateGasUsage()
 	return b.CalculateHeadHash()
 }
 

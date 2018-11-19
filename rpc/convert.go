@@ -82,7 +82,7 @@ func toPbBlock(blk *block.Block, complete bool) *rpcpb.Block {
 		Number:              blk.Head.Number,
 		Witness:             blk.Head.Witness,
 		Time:                blk.Head.Time,
-		GasUsage:            gasConvert(blk.Head.GasUsage),
+		GasUsage:            gasConvert(blk.CalculateGasUsage()),
 		TxCount:             int64(len(blk.Txs)),
 	}
 	json.Unmarshal(blk.Head.Info, ret.Info)
