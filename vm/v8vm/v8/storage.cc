@@ -752,7 +752,7 @@ void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    Local<Value> owner = args[2];
+    Local<Value> owner = args[1];
     if (!owner->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_MapLen owner must be string.")
@@ -1248,7 +1248,7 @@ void InitStorage(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     );
     storageTpl->Set(
         String::NewFromUtf8(isolate, "globalHas"),
-        FunctionTemplate::New(isolate, IOSTContractStorage_GlobalGet)
+        FunctionTemplate::New(isolate, IOSTContractStorage_GlobalHas)
     );
     storageTpl->Set(
         String::NewFromUtf8(isolate, "globalMapHas"),
