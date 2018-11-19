@@ -114,7 +114,7 @@ func (s *GRPCServer) GetNodeInfo(ctx context.Context, empty *empty.Empty) (*Node
 // GetChainInfo return the chain info
 func (s *GRPCServer) GetChainInfo(ctx context.Context, empty *empty.Empty) (*ChainInfoRes, error) {
 	return &ChainInfoRes{
-		NetType:              s.bv.Config().Version.NetType,
+		NetType:              s.bv.Config().Version.NetName,
 		ProtocolVersion:      s.bv.Config().Version.ProtocolVersion,
 		Height:               s.bchain.Length() - 1,
 		WitnessList:          pob.GetStaticProperty().WitnessList,

@@ -64,8 +64,8 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 		go txPool.DelTxList(dropList)
 		ilog.Errorf("Gen is err: %v", err)
 	}
-	blk.Head.TxsHash = blk.CalculateTxsHash()
-	blk.Head.MerkleHash = blk.CalculateMerkleHash()
+	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
+	blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
 	err = blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err
