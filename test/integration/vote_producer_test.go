@@ -15,16 +15,16 @@ import (
 )
 
 func prepareProducerVote(t *testing.T, s *Simulator, kp *account.KeyPair) {
-	// deploy iost.vote
-	setNonNativeContract(s, "iost.vote", "vote_common.js", ContractPath)
-	s.Call("iost.vote", "init", `[]`, kp.ID, kp)
+	// deploy vote.iost
+	setNonNativeContract(s, "vote.iost", "vote_common.js", ContractPath)
+	s.Call("vote.iost", "init", `[]`, kp.ID, kp)
 
-	// deploy iost.vote_producer
-	setNonNativeContract(s, "iost.vote_producer", "vote.js", ContractPath)
+	// deploy vote_producer.iost
+	setNonNativeContract(s, "vote_producer.iost", "vote.js", ContractPath)
 
-	s.Call("iost.token", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", "iost.vote_producer", "1000"), kp.ID, kp)
+	s.Call("token.iost", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", "vote_producer.iost", "1000"), kp.ID, kp)
 
-	r, err := s.Call("iost.vote_producer", "init", `[]`, kp.ID, kp)
+	r, err := s.Call("vote_producer.iost", "init", `[]`, kp.ID, kp)
 	if err != nil || r.Status.Code != tx.Success {
 		t.Fatal(err, r)
 	}
@@ -48,18 +48,18 @@ func Test_InitProducer(t *testing.T) {
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 
-		So(s.Visitor.Get("iost.vote-current_id"), ShouldEqual, `s"1"`)
-		So(s.Visitor.Get("iost.vote_producer-voteId"), ShouldEqual, `s"1"`)
+		So(s.Visitor.Get("vote.iost-current_id"), ShouldEqual, `s"1"`)
+		So(s.Visitor.Get("vote_producer.iost-voteId"), ShouldEqual, `s"1"`)
 		Convey("test init producer", func() {
 			for i := 0; i < 12; i += 2 {
-				s.Call("iost.vote_producer", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
+				s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
 			}
-			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual,
+			So(s.Visitor.Get("vote_producer.iost-pendingProducerList"), ShouldEqual,
 				`s["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd"`+
 					`,"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh"`+
 					`,"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs"]`)
 
-			So(s.Visitor.MKeys("iost.vote-v-1"), ShouldResemble, []string{testID[0], testID[2], testID[4], testID[6], testID[8], testID[10]})
+			So(s.Visitor.MKeys("vote.iost-v-1"), ShouldResemble, []string{testID[0], testID[2], testID[4], testID[6], testID[8], testID[10]})
 		})
 	})
 }
@@ -80,19 +80,19 @@ func Test_RegisterProducer(t *testing.T) {
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 		for i := 0; i < 12; i += 2 {
-			s.Call("iost.vote_producer", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
+			s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
 		}
 
 		Convey("test register/unregister", func() {
 			kp6, _ := account.NewKeyPair(common.Base58Decode(testID[13]), crypto.Secp256k1)
-			s.Call("iost.vote_producer", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp6.ID, testID[12]), kp6.ID, kp6)
-			So(s.Visitor.MGet("iost.vote_producer-producerTable", testID[12]), ShouldEqual, `s{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000","score":"0"}`)
+			s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp6.ID, testID[12]), kp6.ID, kp6)
+			So(s.Visitor.MGet("vote_producer.iost-producerTable", testID[12]), ShouldEqual, `s{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000","score":"0"}`)
 			So(s.Visitor.TokenBalance("iost", kp6.ID), ShouldEqual, int64(1800000000*1e8))
-			So(s.Visitor.MGet("iost.vote-v-1", kp6.ID), ShouldEqual, `s["0",false,-1]`)
+			So(s.Visitor.MGet("vote.iost-v-1", kp6.ID), ShouldEqual, `s["0",false,-1]`)
 
-			s.Call("iost.vote_producer", "UnregisterProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
-			So(s.Visitor.MHas("iost.vote_producer-producerTable", kp6.ID), ShouldEqual, false)
-			So(s.Visitor.MGet("iost.vote-v-1", kp6.ID), ShouldEqual, `s["0",true,-1]`)
+			s.Call("vote_producer.iost", "UnregisterProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
+			So(s.Visitor.MHas("vote_producer.iost-producerTable", kp6.ID), ShouldEqual, false)
+			So(s.Visitor.MGet("vote.iost-v-1", kp6.ID), ShouldEqual, `s["0",true,-1]`)
 		})
 	})
 }
@@ -113,20 +113,20 @@ func Test_LogInOut(t *testing.T) {
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 		for i := 0; i < 12; i += 2 {
-			s.Call("iost.vote_producer", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
+			s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
 		}
 
 		Convey("test login/logout", func() {
 			kp6, _ := account.NewKeyPair(common.Base58Decode(testID[13]), crypto.Secp256k1)
-			s.Call("iost.vote_producer", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp6.ID, testID[12]), kp6.ID, kp6)
+			s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp6.ID, testID[12]), kp6.ID, kp6)
 
-			s.Call("iost.vote_producer", "LogInProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
-			So(s.Visitor.MGet("iost.vote_producer-producerTable", testID[12]), ShouldEqual, `s{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":true,"registerFee":"200000000","score":"0"}`)
+			s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
+			So(s.Visitor.MGet("vote_producer.iost-producerTable", testID[12]), ShouldEqual, `s{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":true,"registerFee":"200000000","score":"0"}`)
 
-			s.Call("iost.vote_producer", "LogOutProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
-			So(s.Visitor.MGet("iost.vote_producer-producerTable", testID[12]), ShouldEqual, `s{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000","score":"0"}`)
+			s.Call("vote_producer.iost", "LogOutProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
+			So(s.Visitor.MGet("vote_producer.iost-producerTable", testID[12]), ShouldEqual, `s{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000","score":"0"}`)
 
-			r, _ := s.Call("iost.vote_producer", "LogOutProducer", fmt.Sprintf(`["%v"]`, kp.ID), kp.ID, kp)
+			r, _ := s.Call("vote_producer.iost", "LogOutProducer", fmt.Sprintf(`["%v"]`, kp.ID), kp.ID, kp)
 			So(r.Status.Code, ShouldEqual, 4)
 			So(r.Status.Message, ShouldContainSubstring, "producer in pending list or in current list, can't logout")
 		})
@@ -149,7 +149,7 @@ func Test_Vote1(t *testing.T) {
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 		for i := 0; i < 12; i += 2 {
-			r, err := s.Call("iost.vote_producer", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
+			r, err := s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 		}
@@ -159,55 +159,55 @@ func Test_Vote1(t *testing.T) {
 			kp6, _ := account.NewKeyPair(common.Base58Decode(testID[13]), crypto.Secp256k1)
 			kp7, _ := account.NewKeyPair(common.Base58Decode(testID[15]), crypto.Secp256k1)
 			kp8, _ := account.NewKeyPair(common.Base58Decode(testID[17]), crypto.Secp256k1)
-			r, err := s.Call("iost.vote_producer", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp6.ID, testID[12]), kp6.ID, kp6)
+			r, err := s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp6.ID, testID[12]), kp6.ID, kp6)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			r, err = s.Call("iost.vote_producer", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp7.ID, testID[14]), kp7.ID, kp7)
+			r, err = s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp7.ID, testID[14]), kp7.ID, kp7)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			r, err = s.Call("iost.vote_producer", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp8.ID, testID[16]), kp8.ID, kp8)
+			r, err = s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp8.ID, testID[16]), kp8.ID, kp8)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			r, err = s.Call("iost.vote_producer", "LogInProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
+			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			r, err = s.Call("iost.vote_producer", "LogInProducer", fmt.Sprintf(`["%v"]`, kp7.ID), kp7.ID, kp7)
+			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kp7.ID), kp7.ID, kp7)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			r, err = s.Call("iost.vote_producer", "LogInProducer", fmt.Sprintf(`["%v"]`, kp8.ID), kp8.ID, kp8)
+			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kp8.ID), kp8.ID, kp8)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.Visitor.MGet("iost.vote-v-1", kp6.ID), ShouldEqual, `s["0",false,-1]`)
-			So(s.Visitor.MGet("iost.vote-v-1", kp7.ID), ShouldEqual, `s["0",false,-1]`)
-			So(s.Visitor.MGet("iost.vote-v-1", kp8.ID), ShouldEqual, `s["0",false,-1]`)
+			So(s.Visitor.MGet("vote.iost-v-1", kp6.ID), ShouldEqual, `s["0",false,-1]`)
+			So(s.Visitor.MGet("vote.iost-v-1", kp7.ID), ShouldEqual, `s["0",false,-1]`)
+			So(s.Visitor.MGet("vote.iost-v-1", kp8.ID), ShouldEqual, `s["0",false,-1]`)
 
-			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp6.ID, "100000000"), kp.ID, kp)
-			So(s.Visitor.MGet("iost.vote-v-1", testID[12]), ShouldEqual, `s["100000000",false,-1]`)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp6.ID, "100000000"), kp.ID, kp)
+			So(s.Visitor.MGet("vote.iost-v-1", testID[12]), ShouldEqual, `s["100000000",false,-1]`)
 
-			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp7.ID, kp6.ID, "100000000"), kp7.ID, kp7)
-			So(s.Visitor.MGet("iost.vote-v-1", testID[12]), ShouldEqual, `s["200000000",false,-1]`)
-			So(s.Visitor.MHas("iost.vote-p-1", testID[12]), ShouldEqual, false)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp7.ID, kp6.ID, "100000000"), kp7.ID, kp7)
+			So(s.Visitor.MGet("vote.iost-v-1", testID[12]), ShouldEqual, `s["200000000",false,-1]`)
+			So(s.Visitor.MHas("vote.iost-p-1", testID[12]), ShouldEqual, false)
 
-			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp8.ID, kp6.ID, "100000000"), kp8.ID, kp8)
-			So(s.Visitor.MGet("iost.vote-v-1", testID[12]), ShouldEqual, `s["300000000",false,-1]`)
-			So(s.Visitor.MGet("iost.vote-p-1", testID[12]), ShouldEqual, `s"300000000"`)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp8.ID, kp6.ID, "100000000"), kp8.ID, kp8)
+			So(s.Visitor.MGet("vote.iost-v-1", testID[12]), ShouldEqual, `s["300000000",false,-1]`)
+			So(s.Visitor.MGet("vote.iost-p-1", testID[12]), ShouldEqual, `s"300000000"`)
 
-			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp7.ID, "215000000"), kp.ID, kp)
-			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp8.ID, "220000000"), kp.ID, kp)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp7.ID, "215000000"), kp.ID, kp)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp8.ID, "220000000"), kp.ID, kp)
 
-			r, err = s.Call("iost.vote_producer", "GetProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
+			r, err = s.Call("vote_producer.iost", "GetProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(r.Returns[0], ShouldEqual, `["{\"pubkey\":\"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9\",\"loc\":\"loc\",\"url\":\"url\",\"netId\":\"netId\",\"online\":true,\"registerFee\":\"200000000\",\"score\":\"0\",\"voteInfo\":{\"votes\":\"300000000\",\"deleted\":false,\"clearTime\":-1}}"]`)
 
-			r, err = s.Call("iost.vote_producer", "GetVote", fmt.Sprintf(`["%v"]`, kp.ID), kp.ID, kp)
+			r, err = s.Call("vote_producer.iost", "GetVote", fmt.Sprintf(`["%v"]`, kp.ID), kp.ID, kp)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(r.Returns[0], ShouldEqual, `["[{\"option\":\"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9\",\"votes\":\"100000000\",\"voteTime\":1,\"clearedVotes\":\"0\"},{\"option\":\"IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB\",\"votes\":\"215000000\",\"voteTime\":1,\"clearedVotes\":\"0\"},{\"option\":\"IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9\",\"votes\":\"220000000\",\"voteTime\":1,\"clearedVotes\":\"0\"}]"]`)
 
 			// do stat
 			s.Head.Number = 200
-			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
+			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: 0				, 0
@@ -220,18 +220,18 @@ func Test_Vote1(t *testing.T) {
 			// 8	: 1*10000000	, 220000000
 			// 0, 3, 1, 4, 5, 2
 			currentList, _ := json.Marshal([]string{testID[0], testID[6], testID[2], testID[8], testID[10], testID[4]})
-			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
+			So(s.Visitor.Get("vote_producer.iost-currentProducerList"), ShouldEqual, "s"+string(currentList))
 			// 6, 0, 3, 1, 4, 5
 			pendingList, _ := json.Marshal([]string{testID[12], testID[0], testID[6], testID[2], testID[8], testID[10]})
-			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
+			So(s.Visitor.Get("vote_producer.iost-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 
 			// do stat
-			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "240000000"), kp.ID, kp)
-			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[4], "230000000"), kp.ID, kp)
-			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[6], "260000000"), kp.ID, kp)
-			s.Call("iost.vote_producer", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[8], "250000000"), kp.ID, kp)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "240000000"), kp.ID, kp)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[4], "230000000"), kp.ID, kp)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[6], "260000000"), kp.ID, kp)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[8], "250000000"), kp.ID, kp)
 			s.Head.Number += 200
-			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
+			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: 0				, 240000000
@@ -244,15 +244,15 @@ func Test_Vote1(t *testing.T) {
 			// 8	: 20000000		, 220000000
 			// 6, 0, 3, 1, 4, 5
 			currentList = pendingList
-			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
+			So(s.Visitor.Get("vote_producer.iost-currentProducerList"), ShouldEqual, "s"+string(currentList))
 			// 6, 2, 0, 3, 1, 4
 			pendingList, _ = json.Marshal([]string{testID[12], testID[4], testID[0], testID[6], testID[2], testID[8]})
-			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
+			So(s.Visitor.Get("vote_producer.iost-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 
 			// do stat
-			s.Call("iost.vote_producer", "Unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[16], testID[12], "60000000"), kp8.ID, kp8)
+			s.Call("vote_producer.iost", "Unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[16], testID[12], "60000000"), kp8.ID, kp8)
 			s.Head.Number += 200
-			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
+			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: 0				, 240000000
@@ -265,14 +265,14 @@ func Test_Vote1(t *testing.T) {
 			// 8	: q^1*30000000	, 220000000
 			// 6, 2, 0, 3, 1, 4
 			currentList = pendingList
-			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
+			So(s.Visitor.Get("vote_producer.iost-currentProducerList"), ShouldEqual, "s"+string(currentList))
 			// 6, 8, 2, 0, 3, 1
 			pendingList, _ = json.Marshal([]string{testID[12], testID[16], testID[4], testID[0], testID[6], testID[2]})
-			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
+			So(s.Visitor.Get("vote_producer.iost-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
+			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: 0				, 240000000
@@ -285,14 +285,14 @@ func Test_Vote1(t *testing.T) {
 			// 8	: q^2*30000000	, 220000000
 			// 6, 8, 2, 0, 3, 1
 			currentList = pendingList
-			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
+			So(s.Visitor.Get("vote_producer.iost-currentProducerList"), ShouldEqual, "s"+string(currentList))
 			// 6, 4, 8, 2, 0, 3
 			pendingList, _ = json.Marshal([]string{testID[12], testID[8], testID[16], testID[4], testID[0], testID[6]})
-			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
+			So(s.Visitor.Get("vote_producer.iost-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
+			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: q^1*30000000	, 240000000
@@ -305,14 +305,14 @@ func Test_Vote1(t *testing.T) {
 			// 8	: q^3*30000000	, 220000000
 			// 6, 4, 8, 2, 0, 3
 			currentList = pendingList
-			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
+			So(s.Visitor.Get("vote_producer.iost-currentProducerList"), ShouldEqual, "s"+string(currentList))
 			// 6, 4, 1, 8, 2, 0
 			pendingList, _ = json.Marshal([]string{testID[12], testID[8], testID[2], testID[16], testID[4], testID[0]})
-			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
+			So(s.Visitor.Get("vote_producer.iost-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
+			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: q^2*30000000	, 240000000
@@ -325,14 +325,14 @@ func Test_Vote1(t *testing.T) {
 			// 8	: q^4*30000000	, 220000000
 			// 6, 4, 8, 1, 2, 0
 			currentList = pendingList
-			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
+			So(s.Visitor.Get("vote_producer.iost-currentProducerList"), ShouldEqual, "s"+string(currentList))
 			// 6, 3, 4, 1, 8, 2
 			pendingList, _ = json.Marshal([]string{testID[12], testID[6], testID[8], testID[2], testID[16], testID[4]})
-			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
+			So(s.Visitor.Get("vote_producer.iost-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
+			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: q^3*30000000	, 240000000
@@ -345,14 +345,14 @@ func Test_Vote1(t *testing.T) {
 			// 8	: q^4*30000000	, 220000000
 			// 6, 3, 4, 1, 8, 2
 			currentList = pendingList
-			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
+			So(s.Visitor.Get("vote_producer.iost-currentProducerList"), ShouldEqual, "s"+string(currentList))
 			// 6, 3, 4, 7, 1, 8
 			pendingList, _ = json.Marshal([]string{testID[12], testID[6], testID[8], testID[14], testID[2], testID[16]})
-			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
+			So(s.Visitor.Get("vote_producer.iost-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
+			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: q^4*30000000	, 240000000
@@ -365,14 +365,14 @@ func Test_Vote1(t *testing.T) {
 			// 8	: q^5*30000000	, 220000000
 			// 6, 3, 4, 7, 1, 8
 			currentList = pendingList
-			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
+			So(s.Visitor.Get("vote_producer.iost-currentProducerList"), ShouldEqual, "s"+string(currentList))
 			// 6, 3, 4, 7, 1, 8
 			pendingList, _ = json.Marshal([]string{testID[12], testID[6], testID[8], testID[14], testID[2], testID[16]})
-			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
+			So(s.Visitor.Get("vote_producer.iost-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("iost.vote_producer", "Stat", `[]`, kp.ID, kp)
+			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: q^5*30000000	, 240000000
@@ -385,10 +385,10 @@ func Test_Vote1(t *testing.T) {
 			// 8	: 0				, 220000000
 			// 6, 3, 4, 7, 1, 8
 			currentList = pendingList
-			So(s.Visitor.Get("iost.vote_producer-currentProducerList"), ShouldEqual, "s"+string(currentList))
+			So(s.Visitor.Get("vote_producer.iost-currentProducerList"), ShouldEqual, "s"+string(currentList))
 			// 6, 3, 2, 4, 7, 1
 			pendingList, _ = json.Marshal([]string{testID[12], testID[6], testID[4], testID[8], testID[14], testID[2]})
-			So(s.Visitor.Get("iost.vote_producer-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
+			So(s.Visitor.Get("vote_producer.iost-pendingProducerList"), ShouldEqual, "s"+string(pendingList))
 		})
 	})
 }

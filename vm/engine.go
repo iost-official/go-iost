@@ -71,9 +71,9 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 
 	ctx = loadBlkInfo(ctx, bh)
 
-	//ilog.Error("iost.system is ", db.Contract("iost.system"))
+	//ilog.Error("system.iost is ", db.Contract("system.iost"))
 
-	if db.Contract("iost.system") == nil {
+	if db.Contract("system.iost") == nil {
 		db.SetContract(native.SystemABI())
 	}
 
@@ -146,7 +146,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 	hasSetCode := false
 
 	for _, action := range tx0.Actions {
-		if hasSetCode && action.Contract == "iost.system" && action.ActionName == "SetCode" {
+		if hasSetCode && action.Contract == "system.iost" && action.ActionName == "SetCode" {
 			txr.Receipts = nil
 			txr.Status.Code = tx.ErrorDuplicateSetCode
 			txr.Status.Message = "error duplicate set code in a tx"
@@ -154,7 +154,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 			e.ho.DB().Rollback()
 			break
 		}
-		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
+		hasSetCode = action.Contract == "system.iost" && action.ActionName == "SetCode"
 
 		cost, status, receipts, err := e.runAction(*action)
 		ilog.Debugf("run action : %v, result is %v", action, status.Code)

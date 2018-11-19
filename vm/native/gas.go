@@ -189,7 +189,7 @@ var (
 			}
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
-			_, cost0, err = h.Call("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, pledger, contractName, pledgeAmountStr))
+			_, cost0, err = h.Call("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, pledger, contractName, pledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -250,7 +250,7 @@ var (
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
 			freezeTime := h.Context().Value("time").(int64) + UnpledgeFreezeSeconds*1e9
-			_, cost0, err = h.CallWithAuth("iost.token", "transferFreeze",
+			_, cost0, err = h.CallWithAuth("token.iost", "transferFreeze",
 				fmt.Sprintf(`["iost", "%v", "%v", "%v", %v, ""]`, contractName, pledger, unpledgeAmount.ToString(), freezeTime))
 			cost.AddAssign(cost0)
 			if err != nil {
