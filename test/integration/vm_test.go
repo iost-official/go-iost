@@ -8,7 +8,6 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
@@ -40,7 +39,7 @@ func Test_callWithAuth(t *testing.T) {
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 			balance := common.Fixed{Value: s.Visitor.TokenBalance("iost", "Contracttransfer"), Decimal: s.Visitor.Decimal("iost")}
 			So(balance.ToString(), ShouldEqual, "990")
 		})

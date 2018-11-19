@@ -37,7 +37,7 @@ func NewSimulator() *Simulator {
 	}
 	v := Verifier{}
 
-	return &Simulator{
+	s := &Simulator{
 		Visitor:  database.NewVisitor(0, mvccdb),
 		Verifier: &v,
 		Mvcc:     mvccdb,
@@ -50,6 +50,7 @@ func NewSimulator() *Simulator {
 		},
 		Logger: ilog.DefaultLogger(),
 	}
+	return s
 }
 
 // SetBlockHead ...

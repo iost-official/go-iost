@@ -3,6 +3,7 @@ package host
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/iost-official/go-iost/common"
@@ -275,4 +276,9 @@ func (h *Host) Deadline() time.Time {
 // SetDeadline set this host's deadline
 func (h *Host) SetDeadline(t time.Time) {
 	h.deadline = t
+}
+
+// IsValidAccount check whether account exists
+func (h *Host) IsValidAccount(name string) bool {
+	return strings.HasPrefix(name, "Contract") || strings.HasPrefix(name, "iost.") || database.Unmarshal(h.DB().MGet("iost.auth-account", name)) != nil
 }

@@ -161,12 +161,12 @@ var (
 			cost = contract.Cost0()
 			pledger, ok := args[0].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
-			if !ok {
+			if !ok || !h.IsValidAccount(pledger) {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
 			}
 			gasUser, ok := args[1].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
-			if !ok {
+			if !ok || !h.IsValidAccount(gasUser) {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[1])
 			}
 			auth, cost0 := h.RequireAuth(pledger, "transfer")
@@ -209,12 +209,12 @@ var (
 			cost = contract.Cost0()
 			pledger, ok := args[0].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
-			if !ok {
+			if !ok || !h.IsValidAccount(pledger) {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[1])
 			}
 			gasUser, ok := args[1].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
-			if !ok {
+			if !ok || !h.IsValidAccount(gasUser) {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
 			}
 			auth, cost0 := h.RequireAuth(pledger, "transfer")

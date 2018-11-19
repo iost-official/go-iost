@@ -352,6 +352,12 @@ var (
 			if len(memo) > 512 {
 				return nil, cost, host.ErrMemoTooLarge
 			}
+			if !h.IsValidAccount(from) {
+				return nil, cost, fmt.Errorf("invalid account %v", from)
+			}
+			if !h.IsValidAccount(to) {
+				return nil, cost, fmt.Errorf("invalid account %v", to)
+			}
 
 			//fmt.Printf("token transfer %v %v %v %v\n", tokenName, from, to, amountStr)
 

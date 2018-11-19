@@ -74,7 +74,7 @@ func (m *TokenHandler) FreezedTokenBalance(tokenName, acc string) int64 {
 	if err != nil {
 		return 0
 	}
-	ilog.Debugf("FreezedTokenBalance is %v %v %v", tokenName, acc, []byte(freezeJSON.(SerializedJSON)))
+	ilog.Debugf("FreezedTokenBalance is %v %v %v", tokenName, acc, string([]byte(freezeJSON.(SerializedJSON))))
 
 	ib := int64(0)
 	for _, item := range freezeList {
