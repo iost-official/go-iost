@@ -106,7 +106,9 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 		Contract:   "system.iost",
 		ActionName: "SetCode",
 		Data:       string(jargs),
-	}}, nil, 100000, 100, 10000000, 0)
+	}}, nil, 100000, 100, s.Head.Time+10000000, 0)
+
+	trx.Time = s.Head.Time
 
 	r, err := s.CallTx(trx, publisher, kp)
 	if err != nil {
@@ -153,7 +155,9 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, 100000, 100, 10000000, 0)
+	}}, nil, 100000, 100, s.Head.Time+10000000, 0)
+
+	trx.Time = s.Head.Time
 
 	return s.CallTx(trx, publisher, auth)
 }
