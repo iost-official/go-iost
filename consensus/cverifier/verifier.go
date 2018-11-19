@@ -15,7 +15,6 @@ var (
 	errNumber     = errors.New("wrong number")
 	errTxHash     = errors.New("wrong txs hash")
 	errMerkleHash = errors.New("wrong tx receipt merkle hash")
-	errGasUsage   = errors.New("wrong gasUsage")
 	// errTxReceipt  = errors.New("wrong tx receipt")
 
 	// TxExecTimeLimit the maximum verify execution time of a transaction
@@ -37,18 +36,11 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 	if bh.Number != parentBlock.Head.Number+1 {
 		return errNumber
 	}
-	if !bytes.Equal(blk.CalculateTxsHash(), bh.TxsHash) {
+	if !bytes.Equal(blk.CalculateTxMerkleHash(), bh.TxMerkleHash) {
 		return errTxHash
 	}
-	if !bytes.Equal(blk.CalculateMerkleHash(), bh.MerkleHash) {
+	if !bytes.Equal(blk.CalculateTxReceiptMerkleHash(), bh.TxReceiptMerkleHash) {
 		return errMerkleHash
-	}
-	gasUsage := int64(0)
-	for _, txr := range blk.Receipts {
-		gasUsage += txr.GasUsage
-	}
-	if blk.Head.GasUsage != gasUsage {
-		return errGasUsage
 	}
 
 	return nil

@@ -108,9 +108,9 @@ type DebugConfig struct {
 	ListenAddr string
 }
 
-// VersionConfig contrains nettype(mainnet / testnet etc) and protocol info
+// VersionConfig contrains netname(mainnet / testnet etc) and protocol info
 type VersionConfig struct {
-	NetType         string
+	NetName         string
 	ProtocolVersion string
 }
 

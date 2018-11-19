@@ -53,7 +53,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 	if err != nil {
 		panic(err)
 	}
-	h.DB().MPut("iost.auth-account", testAcc, database.MustMarshal(string(acc1)))
+	h.DB().MPut("auth.iost-account", testAcc, database.MustMarshal(string(acc1)))
 
 	otherAcc := "user2"
 	user2 := getAccount(otherAcc,"5oyBNyBeMFUKndGF8E3xkxmS3qugdYbwntSu8NEYtvC2DMmVcXgtmBqRxCLUCjxcu9zdcH3RkfKec3Q2xeiG48RL")
@@ -77,13 +77,13 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 	h.Context().Set("auth_list", authList)
 
 	code := &contract.Contract{
-		ID: "iost.gas",
+		ID: "gas.iost",
 	}
 
 	e := &native.Impl{}
 	e.Init()
 
-	h.Context().Set("contract_name", "iost.token")
+	h.Context().Set("contract_name", "token.iost")
 	h.Context().Set("abi_name", "abi")
 	h.Context().GSet("receipts", []*tx.Receipt{})
 	_, _, err = e.LoadAndCall(h, tokenContract, "create", "iost", testAcc, int64(initCoin), []byte("{}"))
@@ -98,7 +98,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 		panic("set initial coins failed " + strconv.FormatInt(visitor.TokenBalance("iost", testAcc), 10))
 	}
 
-	h.Context().Set("contract_name", "iost.gas")
+	h.Context().Set("contract_name", "gas.iost")
 
 	return e, h, code, testAcc, tmpDB
 }

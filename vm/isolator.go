@@ -38,7 +38,7 @@ func (i *Isolator) TriggerBlockBaseMode() {
 
 // Prepare Isolator
 func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *ilog.Logger) error {
-	if db.Contract("iost.system") == nil {
+	if db.Contract("system.iost") == nil {
 		db.SetContract(native.SystemABI())
 	}
 	if bh.Number == 0 {
@@ -206,13 +206,13 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 	hasSetCode := false
 
 	for _, action := range i.t.Actions {
-		if hasSetCode && action.Contract == "iost.system" && action.ActionName == "SetCode" {
+		if hasSetCode && action.Contract == "system.iost" && action.ActionName == "SetCode" {
 			i.tr.Receipts = nil
 			i.tr.Status.Code = tx.ErrorDuplicateSetCode
 			i.tr.Status.Message = "error duplicate set code in a tx"
 			break
 		}
-		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
+		hasSetCode = action.Contract == "system.iost" && action.ActionName == "SetCode"
 
 		cost, status, ret, receipts, err := i.runAction(*action)
 		ilog.Debugf("run action : %v, result is %v", action, status.Code)

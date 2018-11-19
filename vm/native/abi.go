@@ -6,19 +6,19 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 )
 
-// SystemABI generate iost.system abi and contract
+// SystemABI generate system.iost abi and contract
 func SystemABI() *contract.Contract {
-	return ABI("iost.system", systemABIs)
+	return ABI("system.iost", systemABIs)
 }
 
-// GasABI generate iost.gas abi and contract
+// GasABI generate gas.iost abi and contract
 func GasABI() *contract.Contract {
-	return ABI("iost.gas", gasABIs)
+	return ABI("gas.iost", gasABIs)
 }
 
-// TokenABI generate iost.token abi and contract
+// TokenABI generate token.iost abi and contract
 func TokenABI() *contract.Contract {
-	return ABI("iost.token", tokenABIs)
+	return ABI("token.iost", tokenABIs)
 }
 
 // ABI generate native abis

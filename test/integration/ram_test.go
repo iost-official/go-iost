@@ -17,7 +17,7 @@ func TestRAM(t *testing.T) {
 	defer s.Clear()
 
 	prepareContract(s)
-	contractName := "iost.ram"
+	contractName := "ram.iost"
 	err := setNonNativeContract(s, contractName, "ram.js", ContractPath)
 	if err != nil {
 		t.Fatal(err)

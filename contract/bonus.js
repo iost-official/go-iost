@@ -16,9 +16,9 @@ class BonusContract {
     }
 
     _initContribute() {
-        this._call("iost.token", "create", [
+        this._call("token.iost", "create", [
             "contribute",
-            "iost.bonus",
+            "bonus.iost",
             totalSupply,
             {
                 "can_transfer": false,
@@ -50,7 +50,7 @@ class BonusContract {
     }
 
     _call(contract, api, args) {
-        const ret = JSON.parse(BlockChain.callWithAuth(contract, api, JSON.stringify(args)));
+        const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
         if (ret && Array.isArray(ret) && ret.length == 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
@@ -108,7 +108,7 @@ class BonusContract {
             return;
         }
         // TODO: change tests to enable requireAuth
-        // this._requireAuth("iost.base", activePermission);
+        // this._requireAuth("base.iost", activePermission);
         const bi = this._getBlockInfo();
 
         const lastIssueBN = this._get("lastIssueBN");
@@ -131,7 +131,7 @@ class BonusContract {
         } else {
             blockContrib = new BigNumber("1000");
         }
-        this._call("iost.token", "issue", [
+        this._call("token.iost", "issue", [
             "contribute",
             witness,
             blockContrib.toFixed(0)
@@ -148,7 +148,7 @@ class BonusContract {
             throw new Error("last exchange less than one day.");
         }
 
-        const ownContribute = this._call("iost.token", "balanceOf", [
+        const ownContribute = this._call("token.iost", "balanceOf", [
             "contribute",
             account
         ]);
@@ -160,24 +160,24 @@ class BonusContract {
 
         this._put(account, currentTime);
 
-        this._call("iost.issue", "IssueIOST", []);
+        this._call("issue.iost", "IssueIOST", []);
 
-        const totalBonus = new BigNumber(this._call("iost.token", "balanceOf", [
+        const totalBonus = new BigNumber(this._call("token.iost", "balanceOf", [
             "iost",
-            "iost.bonus"
+            "bonus.iost"
         ]));
 
-        const totalContribute = new BigNumber(this._call("iost.token", "supply", ["contribute"]));
+        const totalContribute = new BigNumber(this._call("token.iost", "supply", ["contribute"]));
         const bonus = totalBonus.times(amount).div(totalContribute);
 
-        this._call("iost.token", "destroy", [
+        this._call("token.iost", "destroy", [
             "contribute",
             account,
             amount.toFixed()
         ]);
-        this._call("iost.token", "transfer", [
+        this._call("token.iost", "transfer", [
             "iost",
-            "iost.bonus",
+            "bonus.iost",
             account,
             bonus.toFixed(),
             ""

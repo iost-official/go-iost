@@ -8,9 +8,9 @@ import (
 )
 
 // TokenContractName name of basic token contract
-const TokenContractName = "iost.token"
+const TokenContractName = "token.iost"
 
-// TokenHandler easy to get balance of iost.token
+// TokenHandler easy to get balance of token.iost
 type TokenHandler struct {
 	db database
 }
