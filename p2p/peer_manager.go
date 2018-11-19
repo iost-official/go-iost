@@ -230,7 +230,7 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 		s.Conn().Close()
 		return
 	}
-	ilog.Infof("handle new stream. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+	ilog.Debugf("handle new stream. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
 
 	peer := pm.GetNeighbor(remotePID)
 	if peer != nil {
@@ -281,7 +281,7 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 			pm.wg.Done()
 			return
 		case <-time.After(syncRoutingTableInterval):
-			ilog.Infof("start sync routing table.")
+			ilog.Debugf("start sync routing table.")
 			pm.routingQuery([]string{pm.host.ID().Pretty()})
 		}
 	}
@@ -530,9 +530,6 @@ func (pm *PeerManager) dnsResolve(peerID peer.ID, addr multiaddr.Multiaddr) erro
 
 // Broadcast sends message to all the neighbors.
 func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority, async bool) {
-	if typ == NewBlock || typ == NewBlockHash || typ == SyncBlockHashRequest || typ == SyncHeight {
-		ilog.Infof("broadcast message. type=%s", typ)
-	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	wg := new(sync.WaitGroup)
@@ -548,10 +545,6 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 
 // SendToPeer sends message to the specified peer.
 func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority, async bool) {
-	if typ == NewBlock || typ == NewBlockRequest || typ == SyncBlockHashResponse ||
-		typ == SyncBlockRequest || typ == SyncBlockResponse {
-		ilog.Infof("send message to peer. type=%s, peerID=%s", typ, peerID.Pretty())
-	}
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	peer := pm.GetNeighbor(peerID)
@@ -686,9 +679,6 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 	if err != nil {
 		ilog.Errorf("get message data failed. err=%v", err)
 		return
-	}
-	if msg.messageType() != PublishTx && msg.messageType() != SyncHeight {
-		ilog.Infof("receiving message. type=%s, pid=%s", msg.messageType(), peerID.Pretty())
 	}
 	switch msg.messageType() {
 	case RoutingTableQuery:
