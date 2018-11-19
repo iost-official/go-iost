@@ -1,9 +1,11 @@
 package rpc
 
 import (
+	"encoding/json"
 	"strconv"
 
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/block"
 	contract "github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/rpc/pb"
@@ -48,11 +50,14 @@ func toPbTxReceipt(tr *tx.TxReceipt) *rpcpb.TxReceipt {
 }
 
 func toPbAmountLimit(a *contract.Amount) *rpcpb.AmountLimit {
-	return &rpcpb.AmountLimit{}
+	return &rpcpb.AmountLimit{
+		Token: a.Token,
+		Value: a.Val,
+	}
 }
 
-func toPbTx(t *tx.Tx, tr *tx.TxReceipt, status rpcpb.TransactionResponse_Status) *rpcpb.TransactionResponse {
-	ret := &rpcpb.TransactionResponse{
+func toPbTx(t *tx.Tx, tr *tx.TxReceipt) *rpcpb.Transaction {
+	ret := &rpcpb.Transaction{
 		Hash:       common.Base58Encode(t.Hash()),
 		Time:       t.Time,
 		Expiration: t.Expiration,
@@ -63,13 +68,34 @@ func toPbTx(t *tx.Tx, tr *tx.TxReceipt, status rpcpb.TransactionResponse_Status)
 		Publisher:  t.Publisher,
 		ReferredTx: common.Base58Encode(t.ReferredTx),
 		TxReceipt:  toPbTxReceipt(tr),
-		Status:     status,
 	}
 	for _, a := range t.Actions {
 		ret.Actions = append(ret.Actions, toPbAction(a))
 	}
 	for _, a := range t.AmountLimit {
 		ret.AmountLimit = append(ret.AmountLimit, toPbAmountLimit(a))
+	}
+	return ret
+}
+
+func toPbBlock(blk *block.Block, complete bool) *rpcpb.Block {
+	ret := &rpcpb.Block{
+		Hash:                common.Base58Encode(blk.HeadHash()),
+		Version:             blk.Head.Version,
+		ParentHash:          common.Base58Encode(blk.Head.ParentHash),
+		TxMerkleHash:        common.Base58Encode(blk.Head.TxMerkleHash),
+		TxReceiptMerkleHash: common.Base58Encode(blk.Head.TxReceiptMerkleHash),
+		Number:              blk.Head.Number,
+		Witness:             blk.Head.Witness,
+		Time:                blk.Head.Time,
+		GasUsage:            gasConvert(blk.Head.GasUsage),
+		TxCount:             int64(len(blk.Txs)),
+	}
+	json.Unmarshal(blk.Head.Info, ret.Info)
+	if complete {
+		for i, t := range blk.Txs {
+			ret.Transactions = append(ret.Transactions, toPbTx(t, blk.Receipts[i]))
+		}
 	}
 	return ret
 }

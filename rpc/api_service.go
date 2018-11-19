@@ -2,12 +2,14 @@ package rpc
 
 import (
 	"context"
+	"errors"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/pob"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc/pb"
@@ -73,28 +75,84 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 
 // GetTxByHash returns the transaction corresponding to the given hash.
 func (as *APIService) GetTxByHash(ctx context.Context, req *rpcpb.TxHashRequest) (*rpcpb.TransactionResponse, error) {
-	txHashBytes := common.Base58Decode(req.Hash)
-	tx, err := as.txpool.GetFromPending(txHashBytes)
-	if err == nil {
-		return toPbTx(tx, nil, rpcpb.TransactionResponse_PENDIND), nil
+	txHashBytes := common.Base58Decode(req.GetHash())
+	status := rpcpb.TransactionResponse_PENDIND
+	var (
+		t         *tx.Tx
+		txReceipt *tx.TxReceipt
+		err       error
+	)
+	t, err = as.txpool.GetFromPending(txHashBytes)
+	if err != nil {
+		status = rpcpb.TransactionResponse_PACKED
+		t, txReceipt, err = as.txpool.GetFromChain(txHashBytes)
+		if err != nil {
+			status = rpcpb.TransactionResponse_IRREVERSIBLE
+			t, err = as.blockchain.GetTx(txHashBytes)
+			if err != nil {
+				return nil, errors.New("tx not found")
+			}
+		}
 	}
 
-	return nil, nil
+	return &rpcpb.TransactionResponse{
+		Status:      status,
+		Transaction: toPbTx(t, txReceipt),
+	}, nil
 }
 
 // GetTxReceiptByTxHash returns transaction receipts corresponding to the given tx hash.
 func (as *APIService) GetTxReceiptByTxHash(ctx context.Context, req *rpcpb.TxHashRequest) (*rpcpb.TxReceipt, error) {
-	return nil, nil
+	txHashBytes := common.Base58Decode(req.GetHash())
+	receipt, err := as.blockchain.GetReceiptByTxHash(txHashBytes)
+	if err != nil {
+		return nil, err
+	}
+	return toPbTxReceipt(receipt), nil
 }
 
 // GetBlockByHash returns block corresponding to the given hash.
-func (as *APIService) GetBlockByHash(ctx context.Context, req *rpcpb.GetBlockByHashRequest) (*rpcpb.Block, error) {
-	return nil, nil
+func (as *APIService) GetBlockByHash(ctx context.Context, req *rpcpb.GetBlockByHashRequest) (*rpcpb.BlockResponse, error) {
+	hashBytes := common.Base58Decode(req.GetHash())
+	var (
+		blk *block.Block
+		err error
+	)
+	status := rpcpb.BlockResponse_PENDIND
+	blk, err = as.bc.GetBlockByHash(hashBytes)
+	if err != nil {
+		status = rpcpb.BlockResponse_IRREVERSIBLE
+		blk, err = as.blockchain.GetBlockByHash(hashBytes)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &rpcpb.BlockResponse{
+		Status: status,
+		Block:  toPbBlock(blk, req.GetComplete()),
+	}, nil
 }
 
 // GetBlockByNumber returns block corresponding to the given number.
-func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockByNumberRequest) (*rpcpb.Block, error) {
-	return nil, nil
+func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockByNumberRequest) (*rpcpb.BlockResponse, error) {
+	number := req.GetNumber()
+	var (
+		blk *block.Block
+		err error
+	)
+	status := rpcpb.BlockResponse_PENDIND
+	blk, err = as.bc.GetBlockByNumber(number)
+	if err != nil {
+		status = rpcpb.BlockResponse_IRREVERSIBLE
+		blk, err = as.blockchain.GetBlockByNumber(number)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &rpcpb.BlockResponse{
+		Status: status,
+		Block:  toPbBlock(blk, req.GetComplete()),
+	}, nil
 }
 
 // GetAccount returns account information corresponding to the given account name.

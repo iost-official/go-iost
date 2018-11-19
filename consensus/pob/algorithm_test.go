@@ -373,8 +373,8 @@ func TestVerifyBlock(t *testing.T) {
 			Txs:      []*tx.Tx{},
 			Receipts: []*tx.TxReceipt{},
 		}
-		blk.Head.TxsHash = blk.CalculateTxsHash()
-		blk.Head.MerkleHash = blk.CalculateMerkleHash()
+		blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
+		blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
 		info, _ := blk.Head.Hash()
 		var sig *crypto.Signature
 		if witness == account0.ID {

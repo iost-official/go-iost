@@ -34,14 +34,14 @@ service ApiService {
     }
 
     // get block by hash
-    rpc GetBlockByHash (GetBlockByHashRequest) returns (Block) {
+    rpc GetBlockByHash (GetBlockByHashRequest) returns (BlockResponse) {
         option (google.api.http) = {
             get: "/getBlockByHash/{hash}/{complete}"
         };
     }
 
     // get block by number
-    rpc GetBlockByNumber (GetBlockByNumberRequest) returns (Block) {
+    rpc GetBlockByNumber (GetBlockByNumberRequest) returns (BlockResponse) {
         option (google.api.http) = {
             get: "/getBlockByNumber/{number}/{complete}"
         };
@@ -125,7 +125,7 @@ message AmountLimit {
     // token name
     string token = 1;
     // limit value
-    double value = 2;
+    string value = 2;
 }
 
 // The message defines transaction action struct.
@@ -188,8 +188,8 @@ message TxReceipt {
     repeated Receipt receipts = 7;
 }
 
-// The message defines transaction response struct.
-message TransactionResponse {
+// The message defines transaction struct.
+message Transaction {
     // transaction hash
     string hash  = 1;
     // transaction timestamp
@@ -214,19 +214,24 @@ message TransactionResponse {
     repeated AmountLimit amount_limit = 11;
     // transaction receipt
     TxReceipt tx_receipt = 12;
+}
 
+// The message defines transaction response.
+message TransactionResponse {
     // The enumeration defines transaction status.
     enum Status {
         // pending in transaction pool
         PENDIND = 0;
         // packed in a block that has not been confirmed
         PACKED = 1;
-        // packed in a block that is ieerversible
+        // packed in a block that is irreversible
         IRREVERSIBLE = 2;
     }
 
     // transaction status
-    Status status = 13;
+    Status status = 1;
+    // transaction
+    Transaction transaction = 2;
 }
 
 // The message defines signature struct.
@@ -276,9 +281,9 @@ message TransactionRequest {
 // The message defines the block struct.
 message Block {
     // block hash
-    int64 hash = 1;
+    string hash = 1;
     // block version
-    string version = 2;
+    int64 version = 2;
     // parent block hash
     string parent_hash = 3;
     // transaction merkle tree root hash
@@ -309,7 +314,23 @@ message Block {
     // extra information
     Info info = 11;
     // block transactions
-    repeated TransactionResponse transactions = 12;
+    repeated Transaction transactions = 12;
+}
+
+message BlockResponse {
+    // The enumeration defines block status.
+    enum Status {
+        // pending in block cache
+        PENDIND = 0;
+        // irreversible
+        IRREVERSIBLE = 1;
+    }
+
+    // transaction status
+    Status status = 1;
+    // block
+    Block block = 2;
+
 }
 
 // The message defines chain information response.
