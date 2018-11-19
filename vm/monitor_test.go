@@ -180,7 +180,7 @@ func TestJSM(t *testing.T) {
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
-	ctx.GSet("gas_limit", int64(1000))
+	ctx.GSet("gas_limit", int64(10000))
 
 	h := host.NewHost(ctx, vi, monitor, nil)
 	h.SetDeadline(time.Now().Add(time.Second))

@@ -9,13 +9,18 @@
 extern "C" {
 #endif // __cplusplus
 
-typedef void* IsolatePtr;
+typedef void* IsolateWrapperPtr;
 typedef void* SandboxPtr;
 
 typedef struct {
     const char *data;
     int raw_size;
 } CustomStartupData;
+
+typedef struct {
+    void* isolate;
+    void* allocator;
+} IsolateWrapper;
 
 typedef struct {
     const char *Value;
@@ -25,16 +30,17 @@ typedef struct {
 } ValueTuple;
 
 extern void init();
-extern IsolatePtr newIsolate(CustomStartupData);
-extern void releaseIsolate(IsolatePtr ptr);
+extern IsolateWrapperPtr newIsolate(CustomStartupData);
+extern void releaseIsolate(IsolateWrapperPtr ptr);
 
-extern SandboxPtr newSandbox(IsolatePtr ptr);
+extern SandboxPtr newSandbox(IsolateWrapperPtr ptr);
 extern void loadVM(SandboxPtr ptr, int vmType);
 extern void releaseSandbox(SandboxPtr ptr);
 
 extern ValueTuple Execute(SandboxPtr ptr, const char *code, long long int expireTime);
 extern void setJSPath(SandboxPtr ptr, const char *jsPath);
 extern void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit);
+extern void setSandboxMemLimit(SandboxPtr ptr, size_t memLimit);
 
 // log
 typedef char* (*consoleFunc)(SandboxPtr, const char *, const char *);

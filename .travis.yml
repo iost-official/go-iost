@@ -1,44 +1,70 @@
 language: go
-
 branches:
   only:
-    - master
-    - develop
-    - /^sprint.*$/
-
+  - master
+  - develop
+  - "/^sprint.*$/"
 matrix:
+  fast_finish: true
+  allow_failures:
+  - env: JOB=e2e_test
   include:
-    - os: osx
-      osx_image: xcode10
-      go: "1.11"
-      before_install:
-        - brew install rocksdb
-        - brew install git-lfs
-        - git lfs install
-        - brew tap alecthomas/homebrew-tap
-        - brew install gometalinter
-      before_script:
-        - git lfs pull
-      script:
-        - make build
-        - make lint
-        - make test
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-
-    - os: linux
-      dist: trusty
-      go: "1.11"
-      services:
-        - docker
-      before_install:
-        - docker pull iostio/iost-dev:1.0.0
-        - git lfs install
-      before_script:
-        - git lfs pull
-      script:
-        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make build
-        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make lint
-        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make test
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+  - os: osx
+    osx_image: xcode10
+    go: "1.11"
+    env: JOB=osx_test
+    before_install:
+    - brew install rocksdb
+    - brew install git-lfs
+    - git lfs install
+    - brew tap alecthomas/homebrew-tap
+    - brew install gometalinter
+    before_script:
+    - git lfs pull
+    script:
+    - make build
+    - make lint
+    - make test
+    after_success:
+    - bash <(curl -s https://codecov.io/bash)
+  - os: linux
+    dist: trusty
+    go: "1.11"
+    env: JOB=linux_test
+    services:
+    - docker
+    before_install:
+    - docker pull iostio/iost-dev:1.0.0
+    - git lfs install
+    before_script:
+    - git lfs pull
+    script:
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make build
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make lint
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make test
+    after_success:
+    - bash <(curl -s https://codecov.io/bash)
+  - os: linux
+    dist: trusty
+    go: "1.11"
+    env: JOB=e2e_test
+    services:
+    - docker
+    before_install:
+    - docker pull iostio/iost-dev:1.0.0
+    - git lfs install
+    - pyenv global 3.6 && pip install awscli
+    - go get -u -v github.com/kubernetes-sigs/aws-iam-authenticator/cmd/aws-iam-authenticator
+    - sudo apt-get update && sudo apt-get install -y apt-transport-https
+    - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+    - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+    - sudo apt-get update && sudo apt-get install -y kubectl
+    before_script:
+    - git lfs pull
+    script:
+    - pyenv global 3.6
+    - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+    - aws eks update-kubeconfig --region us-west-2 --name devnet
+    - make image
+    - make push
+    - kubectl get node
