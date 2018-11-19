@@ -46,7 +46,7 @@ else
 	go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 endif
 
-e2e_test:
+e2e_test: image push
 	./build/delete_cluster.sh
 	./build/create_cluster.sh
 	sleep 90
