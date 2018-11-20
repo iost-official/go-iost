@@ -66,7 +66,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
 
 	if err != nil {
-		return nil, host.ABINotFoundCost, fmt.Errorf("prepare contract: %v", err)
+		return nil, host.Costs["GetCost"], fmt.Errorf("prepare contract: %v", err)
 	}
 
 	h.PushCtx()

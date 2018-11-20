@@ -9,7 +9,7 @@ type Cost struct {
 
 // ToGas convert cost to gas
 func (c Cost) ToGas() int64 {
-	return c.Net + c.CPU
+	return 10*c.Net + c.CPU
 }
 
 // AddAssign add cost to self
@@ -17,6 +17,15 @@ func (c *Cost) AddAssign(a Cost) {
 	c.Data += a.Data
 	c.Net += a.Net
 	c.CPU += a.CPU
+}
+
+// Multiply a cost to int64, return new cost
+func (c Cost) Multiply(i int64) Cost {
+	var d Cost
+	d.Data = i * c.Data
+	d.Net = i * c.Net
+	d.CPU = i * c.CPU
+	return d
 }
 
 // IsOverflow decide if exceed limit

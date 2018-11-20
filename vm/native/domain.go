@@ -51,9 +51,9 @@ var (
 			}
 
 			h.WriteLink(url, cid, applicant)
-			cost.AddAssign(host.PutCost)
-			cost.AddAssign(host.PutCost)
-			cost.AddAssign(host.PutCost)
+			cost.AddAssign(host.Costs["PutCost"])
+			cost.AddAssign(host.Costs["PutCost"])
+			cost.AddAssign(host.Costs["PutCost"])
 
 			return nil, cost, nil
 		},
@@ -90,7 +90,7 @@ var (
 			}
 
 			h.URLTransfer(url, to)
-			cost.AddAssign(host.PutCost)
+			cost.AddAssign(host.Costs["PutCost"])
 
 			return nil, cost, nil
 
