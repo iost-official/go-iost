@@ -49,6 +49,7 @@ matrix:
   - os: linux
     dist: trusty
     go: "1.11"
+    if: env(TRAVIS_EVENT_TYPE) = cron
     env: JOB=e2e_test
     services:
     - docker
@@ -67,6 +68,4 @@ matrix:
     - pyenv global 3.6
     - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
     - aws eks update-kubeconfig --region us-west-2 --name devnet
-    - make image
-    - make push
-    - kubectl get node
+    - make e2e_test
