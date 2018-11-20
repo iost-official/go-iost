@@ -269,8 +269,8 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return ErrCacheFull
 	}
-	if t.GasPrice < 100 {
-		return fmt.Errorf("GasPriceError. gas price %d", t.GasPrice)
+	if err := t.CheckGas(); err != nil {
+		return err
 	}
 	if !t.IsTimeValid(time.Now().UnixNano()) {
 		return fmt.Errorf("TimeError")

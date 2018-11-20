@@ -23,14 +23,14 @@ func (h *DBHandler) Put(key string, value interface{}, owner ...string) contract
 	var mk = h.modifyKey(key, owner...)
 	h.payRAM(mk, sv, owner...)
 	h.h.db.Put(mk, sv)
-	return PutCost
+	return Costs["PutCost"]
 }
 
 // Get get value of key from db
 func (h *DBHandler) Get(key string, owner ...string) (value interface{}, cost contract.Cost) {
 	var mk = h.modifyKey(key, owner...)
 	rtn := database.MustUnmarshal(h.h.db.Get(mk))
-	return rtn, GetCost
+	return rtn, Costs["GetCost"]
 }
 
 // Del delete key
@@ -38,12 +38,12 @@ func (h *DBHandler) Del(key string, owner ...string) contract.Cost {
 	var mk = h.modifyKey(key, owner...)
 	h.releaseRAM(mk, owner...)
 	h.h.db.Del(mk)
-	return DelCost
+	return Costs["DelCost"]
 }
 
 // Has if db has key
 func (h *DBHandler) Has(key string, owner ...string) (bool, contract.Cost) {
-	return h.h.db.Has(h.modifyKey(key, owner...)), GetCost
+	return h.h.db.Has(h.modifyKey(key, owner...)), Costs["GetCost"]
 }
 
 // MapPut put kfv to db
@@ -53,20 +53,20 @@ func (h *DBHandler) MapPut(key, field string, value interface{}, owner ...string
 
 	h.payRAMForMap(mk, field, sv, owner...)
 	h.h.db.MPut(mk, field, sv)
-	return PutCost
+	return Costs["PutCost"]
 }
 
 // MapGet get value by kf from db
 func (h *DBHandler) MapGet(key, field string, owner ...string) (value interface{}, cost contract.Cost) {
 	var mk = h.modifyKey(key, owner...)
 	rtn := database.MustUnmarshal(h.h.db.MGet(mk, field))
-	return rtn, GetCost
+	return rtn, Costs["GetCost"]
 }
 
 // MapKeys list keys
 func (h *DBHandler) MapKeys(key string, owner ...string) (fields []string, cost contract.Cost) {
 	var mk = h.modifyKey(key, owner...)
-	return h.h.db.MKeys(mk), KeysCost
+	return h.h.db.MKeys(mk), Costs["KeysCost"]
 }
 
 // MapDel delete field
@@ -74,44 +74,44 @@ func (h *DBHandler) MapDel(key, field string, owner ...string) contract.Cost {
 	var mk = h.modifyKey(key, owner...)
 	h.releaseRAMForMap(mk, field)
 	h.h.db.MDel(mk, field)
-	return DelCost
+	return Costs["DelCost"]
 }
 
 // MapHas if has field
 func (h *DBHandler) MapHas(key, field string, owner ...string) (bool, contract.Cost) {
-	return h.h.db.MHas(h.modifyKey(key, owner...), field), GetCost
+	return h.h.db.MHas(h.modifyKey(key, owner...), field), Costs["GetCost"]
 }
 
 // MapLen get length of map
 func (h *DBHandler) MapLen(key string, owner ...string) (int, contract.Cost) {
-	return len(h.h.db.MKeys(h.modifyKey(key, owner...))), KeysCost
+	return len(h.h.db.MKeys(h.modifyKey(key, owner...))), Costs["KeysCost"]
 }
 
 // GlobalHas if another contract's db has key
 func (h *DBHandler) GlobalHas(con, key string, owner ...string) (bool, contract.Cost) {
-	return h.h.db.Has(h.modifyGlobalKey(con, key, owner...)), GetCost
+	return h.h.db.Has(h.modifyGlobalKey(con, key, owner...)), Costs["GetCost"]
 }
 
 // GlobalGet get another contract's data
 func (h *DBHandler) GlobalGet(con, key string, owner ...string) (value interface{}, cost contract.Cost) {
 	o := h.h.db.Get(h.modifyGlobalKey(con, key, owner...))
-	return database.MustUnmarshal(o), GetCost
+	return database.MustUnmarshal(o), Costs["GetCost"]
 }
 
 // GlobalMapHas if another contract's map has field
 func (h *DBHandler) GlobalMapHas(con, key, field string, owner ...string) (bool, contract.Cost) {
-	return h.h.db.MHas(h.modifyGlobalKey(con, key, owner...), field), GetCost
+	return h.h.db.MHas(h.modifyGlobalKey(con, key, owner...), field), Costs["GetCost"]
 }
 
 // GlobalMapGet get another contract's map data
 func (h *DBHandler) GlobalMapGet(con, key, field string, owner ...string) (value interface{}, cost contract.Cost) {
 	o := h.h.db.MGet(h.modifyGlobalKey(con, key, owner...), field)
-	return database.MustUnmarshal(o), GetCost
+	return database.MustUnmarshal(o), Costs["GetCost"]
 }
 
 // GlobalMapKeys get another contract's map keys
 func (h *DBHandler) GlobalMapKeys(con, key string, owner ...string) (keys []string, cost contract.Cost) {
-	return h.h.db.MKeys(h.modifyGlobalKey(con, key, owner...)), GetCost
+	return h.h.db.MKeys(h.modifyGlobalKey(con, key, owner...)), Costs["GetCost"]
 }
 
 // GlobalMapLen get another contract's map length
