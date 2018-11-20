@@ -186,7 +186,6 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		Number:     0,
 		Witness:    acc.ID,
 		Time:       t.UnixNano(),
-		GasUsage:   0,
 	}
 	v := verifier.Verifier{}
 	txr, err := v.Exec(&blockHead, db, trx, GenesisTxExecTime)
@@ -199,7 +198,6 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		Txs:      []*tx.Tx{trx},
 		Receipts: []*tx.TxReceipt{txr},
 	}
-	blk.Head.GasUsage = txr.GasUsage
 	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
 	blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
 	err = blk.CalculateHeadHash()

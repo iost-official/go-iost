@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
   - name: itest
-    image: "iostio/iost-node:1.0.0-316191f"
+    image: "iostio/iost-node:1.0.0-$COMMIT"
     imagePullPolicy: "IfNotPresent"
     command: ['/bin/bash', '-c', 'sleep infinity']
     resources:
@@ -17,4 +17,10 @@ spec:
       requests:
         cpu: 100m
         memory: 200Mi
-
+    volumeMounts:
+      - name: config-volume
+        mountPath: /etc/itest
+  volumes:
+    - name: config-volume
+      configMap:
+        name: itest-config

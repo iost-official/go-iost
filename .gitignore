@@ -252,6 +252,7 @@ cmd/playground/contract/package-lock.json
 vm/test_data/lucky_bet.js.after
 
 *.temp
+*.cc.o
 
 /config/StatePoolDB/
 /config/levelDB/

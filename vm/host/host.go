@@ -3,6 +3,7 @@ package host
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"encoding/json"
@@ -276,6 +277,14 @@ func (h *Host) Deadline() time.Time {
 // SetDeadline set this host's deadline
 func (h *Host) SetDeadline(t time.Time) {
 	h.deadline = t
+}
+
+// IsValidAccount check whether account exists
+func (h *Host) IsValidAccount(name string) bool {
+	if h.Context().Value("number") == int64(0) {
+		return true
+	}
+	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().Get("auth.iost@"+name+"-auth")) != nil
 }
 
 // ReadSettings read settings from db

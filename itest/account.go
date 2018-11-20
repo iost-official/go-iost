@@ -28,6 +28,19 @@ type AccountJSON struct {
 	Algorithm string `json:"algorithm"`
 }
 
+// NewAccount return a new account
+func NewAccount(id string, seckey string, algorithm string) *Account {
+	account := &Account{
+		ID: id,
+		key: NewKey(
+			common.Base58Decode(seckey),
+			crypto.NewAlgorithm(algorithm),
+		),
+	}
+
+	return account
+}
+
 // Sign will sign the transaction by current account
 func (a *Account) Sign(t *Transaction) (*Transaction, error) {
 	st, err := tx.SignTx(t.Tx, a.ID, []*account.KeyPair{a.key.KeyPair})

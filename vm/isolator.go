@@ -30,6 +30,8 @@ type Isolator struct {
 	blockBaseMode bool
 }
 
+var staticMonitor = NewMonitor()
+
 // TriggerBlockBaseMode start blockbase mode
 func (i *Isolator) TriggerBlockBaseMode() {
 	i.blockBaseMode = true
@@ -70,7 +72,7 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		gas, _ := i.h.CurrentGas(i.publisherID)
 		price := &common.Fixed{Value: t.GasPrice, Decimal: 2}
 		if gas.LessThan(price.Times(t.GasLimit)) {
-			ilog.Infof("err %v publisher %v current gas %v price %v limit %v\n", errCannotPay, i.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
+			ilog.Infof("publisher's gas less than price * limit: publisher %v current gas %v price %v limit %v\n", i.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
 			return fmt.Errorf("%v gas less than price * limit %v < %v * %v", i.publisherID, gas.ToString(), price.ToString(), t.GasLimit)
 		}
 	}

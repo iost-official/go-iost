@@ -17,14 +17,20 @@ import (
 func prepareProducerVote(t *testing.T, s *Simulator, kp *account.KeyPair) {
 	// deploy vote.iost
 	setNonNativeContract(s, "vote.iost", "vote_common.js", ContractPath)
-	s.Call("vote.iost", "init", `[]`, kp.ID, kp)
+	r, err := s.Call("vote.iost", "init", `[]`, kp.ID, kp)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
+	}
 
 	// deploy vote_producer.iost
 	setNonNativeContract(s, "vote_producer.iost", "vote.js", ContractPath)
 
-	s.Call("token.iost", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", "vote_producer.iost", "1000"), kp.ID, kp)
+	r, err = s.Call("token.iost", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", "vote_producer.iost", "1000"), kp.ID, kp)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
+	}
 
-	r, err := s.Call("vote_producer.iost", "init", `[]`, kp.ID, kp)
+	r, err = s.Call("vote_producer.iost", "init", `[]`, kp.ID, kp)
 	if err != nil || r.Status.Code != tx.Success {
 		t.Fatal(err, r)
 	}

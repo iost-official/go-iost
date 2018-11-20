@@ -1,6 +1,8 @@
 #!/bin/bash
 
-NAME=$(git rev-parse --short HEAD)
+NAME="devnet"
+COMMIT=$(git rev-parse --short HEAD)
+
 if [ -n "$1" ]
 then
     NAME=$1
@@ -10,12 +12,18 @@ cd build/k8s/
 
 echo "Generate iserver config"
 cd iserver-config/
-go run genconfig.go -c $NAME -m 7 -s 2
+go run genconfig.go -c $NAME -m 3 -s 1
+cd -
+
+echo "Generate itest config"
+cd itest-config/
+export DYLD_LIBRARY_PATH=${GOPATH}/src/github.com/iost-official/go-iost/vm/v8vm/v8/libv8/_darwin_amd64
+go run genconfig.go -c $NAME -s "3"
 cd -
 
 echo "Create test cluster $NAME in k8s"
-kubectl create namespace $NAME
 kubectl create configmap iserver-config --from-file=iserver-config -n $NAME
-kubectl create -f iserver.yaml -n $NAME
-kubectl create -f itest.yaml -n $NAME
+cat iserver.yaml | sed 's/\$COMMIT'"/$COMMIT/g" | kubectl create -f - -n $NAME
+kubectl create configmap itest-config --from-file=itest-config -n $NAME
+cat itest.yaml | sed 's/\$COMMIT'"/$COMMIT/g" | kubectl create -f - -n $NAME
 
