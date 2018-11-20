@@ -375,6 +375,9 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 
 // GetBlockByNumber get a block by number
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
+	if num < bc.linkedRoot.Head.Number {
+		return nil, fmt.Errorf("block not found")
+	}
 	it := bc.head
 	for it != nil {
 		if it.Head.Number == num {
