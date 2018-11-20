@@ -27,7 +27,7 @@ class VoteCommonContract {
     InitAdmin(adminID) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
-            throw new Error("init out of genesis block")
+            throw new Error("init out of genesis block");
         }
         this._put("adminID", adminID);
     }
@@ -47,7 +47,7 @@ class VoteCommonContract {
 
     _call(contract, api, args) {
         const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
-        if (ret && Array.isArray(ret) && ret.length == 1) {
+        if (ret && Array.isArray(ret) && ret.length === 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
@@ -191,7 +191,7 @@ class VoteCommonContract {
                 "0",        // votes
                 false,        // deleted
                 -1,            // clearTime
-            ]
+            ];
             this._mapPut(optionPrefix + voteId, option, initVotes);
         }
 
@@ -331,7 +331,7 @@ class VoteCommonContract {
             userVotes[option] = this._clearUserVote(clearTime, [amount.toFixed(), this._getBlockNumber(), "0"]);
         }
         this._mapPut(userVotePrefix + voteId, account, userVotes);
-        if (clearTime == this._getBlockNumber()) {
+        if (clearTime === this._getBlockNumber()) {
             // vote in clear block will do nothing.
             return;
         }
@@ -459,8 +459,7 @@ class VoteCommonContract {
         };
         preResult.sort(voteCmp);
         const info = this._mapGet("voteInfo", voteId);
-        const result = preResult.slice(0, info.resultNumber);
-        return result;
+        return preResult.slice(0, info.resultNumber);
     }
 
     DelVote(voteId) {

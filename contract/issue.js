@@ -96,7 +96,7 @@ class IssueContract {
 
     _call(contract, api, args) {
         const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
-        if (ret && Array.isArray(ret) && ret.length == 1) {
+        if (ret && Array.isArray(ret) && ret.length === 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
