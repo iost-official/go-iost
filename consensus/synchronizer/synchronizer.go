@@ -24,7 +24,6 @@ var (
 	heightTimeout           int64 = 100 * 22 * 3
 	continuousNum           int64 = 10
 	syncNumber                    = 11 * continuousNum
-	lastPrintHeight         int64 = 0
 	printInterval           int64 = 1000
 )
 
@@ -39,14 +38,15 @@ type Synchronizer interface {
 
 //SyncImpl is the implementation of Synchronizer.
 type SyncImpl struct {
-	p2pService   p2p.Service
-	blockCache   blockcache.BlockCache
-	lastBcn      *blockcache.BlockCacheNode
-	baseVariable global.BaseVariable
-	dc           DownloadController
-	reqMap       *sync.Map
-	heightMap    *sync.Map
-	syncEnd      int64
+	p2pService      p2p.Service
+	blockCache      blockcache.BlockCache
+	lastBcn         *blockcache.BlockCacheNode
+	baseVariable    global.BaseVariable
+	dc              DownloadController
+	reqMap          *sync.Map
+	heightMap       *sync.Map
+	syncEnd         int64
+	lastPrintHeight int64
 
 	messageChan    chan p2p.IncomingMessage
 	syncHeightChan chan p2p.IncomingMessage
@@ -188,9 +188,9 @@ func (sy *SyncImpl) checkSync() bool {
 	})
 	netHeight := heights[len(heights)/2]
 	ilog.Debugf("check sync, heights: %+v", heights)
-	if netHeight-lastPrintHeight > printInterval {
+	if netHeight-sy.lastPrintHeight > printInterval {
 		ilog.Infof("sync heights: %+v", heights)
-		lastPrintHeight = netHeight
+		sy.lastPrintHeight = netHeight
 	}
 	if netHeight > height+syncNumber {
 		sy.baseVariable.SetMode(global.ModeSync)
