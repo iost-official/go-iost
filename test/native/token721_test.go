@@ -17,9 +17,9 @@ var test721DataPath = "./test_data/"
 func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(test721DataPath + conName + ".json")
 	vi := database.NewVisitor(100, db)
-	vi.MPut("iost.auth-account", "issuer0", database.MustMarshal(`{"id":"issuer0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
-	vi.MPut("iost.auth-account", "user0", database.MustMarshal(`{"id":"user0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
-	vi.MPut("iost.auth-account", "user1", database.MustMarshal(`{"id":"user1","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1}}}`))
+	vi.MPut("auth.iost-account", "issuer0", database.MustMarshal(`{"id":"issuer0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
+	vi.MPut("auth.iost-account", "user0", database.MustMarshal(`{"id":"user0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
+	vi.MPut("auth.iost-account", "user1", database.MustMarshal(`{"id":"user1","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1}}}`))
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
@@ -38,7 +38,7 @@ func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	h.Context().Set("stack_height", 0)
 
 	code := &contract.Contract{
-		ID: "iost.system",
+		ID: "system.iost",
 	}
 
 	e := &native.Impl{}
@@ -50,14 +50,14 @@ func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 func TestToken721_Create(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := initVM(t, "token")
-	code.ID = "iost.token721"
+	code.ID = "token721.iost"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
 	Convey("Test of Token create", t, func() {
 		Reset(func() {
 			e, host, code = initVM(t, "token")
-			code.ID = "iost.token721"
+			code.ID = "token721.iost"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 		})
@@ -97,7 +97,7 @@ func TestToken721_Create(t *testing.T) {
 func TestToken721_Issue(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := initVM(t, "token")
-	code.ID = "iost.token721"
+	code.ID = "token721.iost"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
@@ -105,7 +105,7 @@ func TestToken721_Issue(t *testing.T) {
 
 		Reset(func() {
 			e, host, code = initVM(t, "token")
-			code.ID = "iost.token721"
+			code.ID = "token721.iost"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 		})
@@ -156,14 +156,14 @@ func TestToken721_Issue(t *testing.T) {
 func TestToken721_Transfer(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := initVM(t, "token")
-	code.ID = "iost.token721"
+	code.ID = "token721.iost"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
 	Convey("Test of Token transfer", t, func() {
 		Reset(func() {
 			e, host, code = initVM(t, "token")
-			code.ID = "iost.token721"
+			code.ID = "token721.iost"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 		})
@@ -236,14 +236,14 @@ func TestToken721_Transfer(t *testing.T) {
 func TestToken721_Metadate(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := initVM(t, "token")
-	code.ID = "iost.token721"
+	code.ID = "token721.iost"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
 	Convey("Test of Token transfer", t, func() {
 		Reset(func() {
 			e, host, code = initVM(t, "token")
-			code.ID = "iost.token721"
+			code.ID = "token721.iost"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 		})

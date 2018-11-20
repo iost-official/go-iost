@@ -163,13 +163,41 @@ func (g *GasManager) DelGasPledge(name string, pledger string) contract.Cost {
 	return g.h.MapDel(GasPledgeKey, pledger, name)
 }
 
+// PledgerInfo ...
+type PledgerInfo struct {
+	Pledger string
+	Amount  *common.Fixed
+}
+
+// PledgerInfo get who pledged how much coins for me
+func (g *GasManager) PledgerInfo(name string) ([]PledgerInfo, contract.Cost) {
+	contractName, _ := g.h.ctx.Value("contract_name").(string)
+	g.h.ctx.Set("contract_name", "iost.gas")
+	finalCost := contract.Cost0()
+	pledgers, cost := g.h.MapKeys(GasPledgeKey, name)
+	//ilog.Errorf("pledge keys %v %v", pledgers, name)
+	finalCost.AddAssign(cost)
+	result := make([]PledgerInfo, 0)
+	for _, pledger := range pledgers {
+		v, cost := g.h.MapGet(GasPledgeKey, pledger, name)
+		finalCost.AddAssign(cost)
+		pledge, err := common.UnmarshalFixed(v.(string))
+		if err != nil {
+			return make([]PledgerInfo, 0), finalCost
+		}
+		result = append(result, PledgerInfo{pledger, pledge})
+	}
+	g.h.ctx.Set("contract_name", contractName)
+	return result, finalCost
+}
+
 // CurrentTotalGas return current total gas. It is min(limit, last_updated_gas + time_since_last_updated * increase_speed)
 func (g *GasManager) CurrentTotalGas(name string, now int64) (result *common.Fixed, finalCost contract.Cost) {
 	if now <= 0 {
 		ilog.Fatalf("CurrentTotalGas failed. invalid now time %v", now)
 	}
 	contractName, _ := g.h.ctx.Value("contract_name").(string)
-	g.h.ctx.Set("contract_name", "iost.gas")
+	g.h.ctx.Set("contract_name", "gas.iost")
 	result, cost := g.GasStock(name)
 	finalCost.AddAssign(cost)
 	gasUpdateTime, cost := g.GasUpdateTime(name)

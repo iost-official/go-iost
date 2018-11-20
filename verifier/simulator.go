@@ -37,7 +37,7 @@ func NewSimulator() *Simulator {
 	}
 	v := Verifier{}
 
-	return &Simulator{
+	s := &Simulator{
 		Visitor:  database.NewVisitor(0, mvccdb),
 		Verifier: &v,
 		Mvcc:     mvccdb,
@@ -46,10 +46,10 @@ func NewSimulator() *Simulator {
 			Number:     1,
 			Witness:    "witness",
 			Time:       int64(1541541540 * 1000 * 1000 * 1000),
-			GasUsage:   0,
 		},
 		Logger: ilog.DefaultLogger(),
 	}
+	return s
 }
 
 // SetBlockHead ...
@@ -63,12 +63,12 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 	if err != nil {
 		panic(err)
 	}
-	s.Visitor.MPut("iost.auth-account", acc.ID, database.MustMarshal(string(buf)))
+	s.Visitor.MPut("auth.iost-account", acc.ID, database.MustMarshal(string(buf)))
 }
 
 // SetGas to id
 func (s *Simulator) SetGas(id string, i int64) {
-	prefix := "iost.gas@" + id + database.Separator
+	prefix := "gas.iost@" + id + database.Separator
 	value := &common.Fixed{
 		Value:   i * 10e2,
 		Decimal: 2,
@@ -90,7 +90,7 @@ func (s *Simulator) SetContract(c *contract.Contract) {
 	s.Visitor.SetContract(c)
 }
 
-// DeployContract via iost.system/SetCode
+// DeployContract via system.iost/SetCode
 func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, *tx.TxReceipt, error) {
 	sc, err := json.Marshal(c)
 	if err != nil {
@@ -103,10 +103,12 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 	}
 
 	trx := tx.NewTx([]*tx.Action{{
-		Contract:   "iost.system",
+		Contract:   "system.iost",
 		ActionName: "SetCode",
 		Data:       string(jargs),
-	}}, nil, 100000, 100, 10000000, 0)
+	}}, nil, 100000, 100, s.Head.Time+10000000, 0)
+
+	trx.Time = s.Head.Time
 
 	r, err := s.CallTx(trx, publisher, kp)
 	if err != nil {
@@ -153,7 +155,9 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, 100000, 100, 10000000, 0)
+	}}, nil, 100000, 100, s.Head.Time+10000000, 0)
+
+	trx.Time = s.Head.Time
 
 	return s.CallTx(trx, publisher, auth)
 }

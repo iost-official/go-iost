@@ -29,6 +29,8 @@ type Isolator struct {
 	blockBaseMode bool
 }
 
+var staticMonitor = NewMonitor()
+
 // TriggerBlockBaseMode start blockbase mode
 func (i *Isolator) TriggerBlockBaseMode() {
 	i.blockBaseMode = true
@@ -36,7 +38,7 @@ func (i *Isolator) TriggerBlockBaseMode() {
 
 // Prepare Isolator
 func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *ilog.Logger) error {
-	if db.Contract("iost.system") == nil {
+	if db.Contract("system.iost") == nil {
 		db.SetContract(native.SystemABI())
 	}
 	if bh.Number == 0 {
@@ -68,7 +70,7 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		gas, _ := i.h.CurrentGas(i.publisherID)
 		price := &common.Fixed{Value: t.GasPrice, Decimal: 2}
 		if gas.LessThan(price.Times(t.GasLimit)) {
-			ilog.Infof("err %v publisher %v current gas %v price %v limit %v\n", errCannotPay, i.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
+			ilog.Infof("publisher's gas less than price * limit: publisher %v current gas %v price %v limit %v\n", i.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
 			return fmt.Errorf("%v gas less than price * limit %v < %v * %v", i.publisherID, gas.ToString(), price.ToString(), t.GasLimit)
 		}
 	}
@@ -204,13 +206,13 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 	hasSetCode := false
 
 	for _, action := range i.t.Actions {
-		if hasSetCode && action.Contract == "iost.system" && action.ActionName == "SetCode" {
+		if hasSetCode && action.Contract == "system.iost" && action.ActionName == "SetCode" {
 			i.tr.Receipts = nil
 			i.tr.Status.Code = tx.ErrorDuplicateSetCode
 			i.tr.Status.Message = "error duplicate set code in a tx"
 			break
 		}
-		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
+		hasSetCode = action.Contract == "system.iost" && action.ActionName == "SetCode"
 
 		cost, status, ret, receipts, err := i.runAction(*action)
 		ilog.Debugf("run action : %v, result is %v", action, status.Code)

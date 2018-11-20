@@ -114,7 +114,7 @@ func (s *GRPCServer) GetNodeInfo(ctx context.Context, empty *empty.Empty) (*Node
 // GetChainInfo return the chain info
 func (s *GRPCServer) GetChainInfo(ctx context.Context, empty *empty.Empty) (*ChainInfoRes, error) {
 	return &ChainInfoRes{
-		NetType:              s.bv.Config().Version.NetType,
+		NetType:              s.bv.Config().Version.NetName,
 		ProtocolVersion:      s.bv.Config().Version.ProtocolVersion,
 		Height:               s.bchain.Length() - 1,
 		WitnessList:          pob.GetStaticProperty().WitnessList,
@@ -299,7 +299,7 @@ func (s *GRPCServer) GetContract(ctx context.Context, key *GetContractReq) (*Get
 	}
 	// assume only one 'SetCode' action
 	txActionName := trx.Actions[0].ActionName
-	if trx.Actions[0].Contract != "iost.system" || txActionName != "SetCode" && txActionName != "UpdateCode" {
+	if trx.Actions[0].Contract != "system.iost" || txActionName != "SetCode" && txActionName != "UpdateCode" {
 		return nil, fmt.Errorf("not a SetCode or Update transaction")
 	}
 	js, err := simplejson.NewJson([]byte(trx.Actions[0].Data))
@@ -331,9 +331,18 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 		s.forkDB.Checkout(string(s.bc.LinkedRoot().Block.HeadHash())) // confirm
 	}
 
-	accStr := database.MustUnmarshal(s.visitor.MGet("iost.auth-account", key.ID))
+	accStr := database.MustUnmarshal(s.visitor.MGet("auth.iost-account", key.ID))
 	if accStr == nil {
 		return nil, fmt.Errorf("non exist user %v", key.ID)
+	}
+
+	frozenBalances := make([]*GetAccountRes_FrozenBalance, 0)
+	frozen := s.visitor.AllFreezedTokenBalanceFixed("iost", key.ID)
+	for _, item := range frozen {
+		frozenBalances = append(frozenBalances, &GetAccountRes_FrozenBalance{
+			Amount: item.Amount.ToString(),
+			Time:   time.Unix(0, item.Ftime).Format(time.RFC3339),
+		})
 	}
 
 	ram := &RAMInfo{}
@@ -344,7 +353,6 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	var h *host.Host
 	c := host.NewContext(nil)
 	h = host.NewHost(c, s.visitor, nil, nil)
-	h.Context().Set("contract_name", "iost.gas")
 	g := host.NewGasManager(h)
 	v, _ := g.CurrentTotalGas(key.ID, s.bc.LinkedRoot().Head.Time)
 	gas.CurrentTotal = v.ToString()
@@ -353,12 +361,21 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	v, _ = g.GasLimit(key.ID)
 	gas.Limit = v.ToString()
 	v, _ = g.GasPledge(key.ID, key.ID)
-	gas.PledgedCoin = v.ToString()
+	gas.PledgedInfo = make([]*GASInfo_PledgeInfo, 0)
+	pledgeInfo, _ := g.PledgerInfo(key.ID)
+	ilog.Errorf("pledge info %v", pledgeInfo)
+	for _, item := range pledgeInfo {
+		gas.PledgedInfo = append(gas.PledgedInfo, &GASInfo_PledgeInfo{
+			Amount:  item.Amount.ToString(),
+			Pledger: item.Pledger,
+		})
+	}
 	return &GetAccountRes{
-		Balance:     balance,
-		Gas:         gas,
-		Ram:         ram,
-		AccountJson: accStr.(string),
+		Balance:        balance,
+		FrozenBalances: frozenBalances,
+		Gas:            gas,
+		Ram:            ram,
+		AccountJson:    accStr.(string),
 	}, nil
 }
 

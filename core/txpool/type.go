@@ -25,6 +25,7 @@ var (
 	ErrDupPendingTx = errors.New("tx exists in pending")
 	ErrDupChainTx   = errors.New("tx exists in chain")
 	ErrCacheFull    = errors.New("txpool is full")
+	ErrTxNotFound   = errors.New("tx not found")
 )
 
 // FRet find the return value of the tx
@@ -55,26 +56,39 @@ type forkChain struct {
 }
 
 type blockTx struct {
-	txMap      *sync.Map
-	ParentHash []byte
-	time       int64
+	txMap        *sync.Map // map[string]*tx.Tx
+	txReceiptMap *sync.Map // map[string]*tx.TxReceipt
+	ParentHash   []byte
+	time         int64
 }
 
 func newBlockTx(blk *block.Block) *blockTx {
 	b := &blockTx{
-		txMap:      new(sync.Map),
-		ParentHash: blk.Head.ParentHash,
-		time:       blk.Head.Time,
+		txMap:        new(sync.Map),
+		txReceiptMap: new(sync.Map),
+		ParentHash:   blk.Head.ParentHash,
+		time:         blk.Head.Time,
 	}
 	for _, v := range blk.Txs {
 		b.txMap.Store(string(v.Hash()), v)
 	}
+	for _, v := range blk.Receipts {
+		b.txReceiptMap.Store(string(v.TxHash), v)
+	}
 	return b
 }
 
-func (b *blockTx) existTx(hash []byte) bool {
-	_, r := b.txMap.Load(string(hash))
-	return r
+func (b *blockTx) getTxAndReceipt(hash []byte) (*tx.Tx, *tx.TxReceipt) {
+	t, exist := b.txMap.Load(string(hash))
+	if !exist {
+		return nil, nil
+	}
+	retTx := t.(*tx.Tx)
+	tr, exist := b.txReceiptMap.Load(string(hash))
+	if exist {
+		return retTx, tr.(*tx.TxReceipt)
+	}
+	return retTx, nil
 }
 
 // SortedTxMap is a red black tree of tx.

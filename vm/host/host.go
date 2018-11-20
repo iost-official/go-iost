@@ -3,6 +3,7 @@ package host
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/iost-official/go-iost/common"
@@ -191,7 +192,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 
 	h.db.SetContract(c)
 
-	owner, co := h.GlobalMapGet("iost.system", "contract_owner", c.ID)
+	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)
 	cost.AddAssign(co)
 	l := len(c.Encode()) // todo multi Encode call
 	h.PayCost(contract.NewCost(int64(l-oldL), 0, 0), owner.(string))
@@ -224,11 +225,11 @@ func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 		return cost, ErrDestroyRefused
 	}
 
-	owner, co := h.GlobalMapGet("iost.system", "contract_owner", oc.ID)
+	owner, co := h.GlobalMapGet("system.iost", "contract_owner", oc.ID)
 	cost.AddAssign(co)
 	h.PayCost(contract.NewCost(int64(-oldL), 0, 0), owner.(string))
 
-	h.db.MDel("iost.system-contract_owner", oc.ID)
+	h.db.MDel("system.iost-contract_owner", oc.ID)
 
 	h.db.DelContract(contractName)
 	return DelContractCost, nil
@@ -275,4 +276,12 @@ func (h *Host) Deadline() time.Time {
 // SetDeadline set this host's deadline
 func (h *Host) SetDeadline(t time.Time) {
 	h.deadline = t
+}
+
+// IsValidAccount check whether account exists
+func (h *Host) IsValidAccount(name string) bool {
+	if h.Context().Value("number") == int64(0) {
+		return true
+	}
+	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().MGet("auth.iost-account", name)) != nil
 }

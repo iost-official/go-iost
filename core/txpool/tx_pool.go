@@ -135,8 +135,8 @@ func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
 
 // Release release the txpool
 func (pool *TxPImpl) Release() {
-	pool.mu.Unlock()
 	close(pool.quitGenerateMode)
+	pool.mu.Unlock()
 }
 
 func (pool *TxPImpl) verifyWorkers() {
@@ -316,36 +316,41 @@ func (pool *TxPImpl) findBlock(hash []byte) (*blockTx, bool) {
 	return nil, false
 }
 
-func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
+func (pool *TxPImpl) getTxAndReceiptInChain(txHash []byte, block *block.Block) (*tx.Tx, *tx.TxReceipt) {
 	if block == nil {
-		return false
+		return nil, nil
 	}
-	h := block.HeadHash()
+	blkHash := block.HeadHash()
 	filterLimit := block.Head.Time - filterTime
 	var ok bool
 	for {
-		ret := pool.existTxInBlock(txHash, h)
-		if ret {
-			return true
+		t, tr := pool.getTxAndReceiptInBlock(txHash, blkHash)
+		if t != nil {
+			return t, tr
 		}
-		h, ok = pool.parentHash(h)
+		blkHash, ok = pool.parentHash(blkHash)
 		if !ok {
-			return false
+			return nil, nil
 		}
-		if b, ok := pool.findBlock(h); ok {
+		if b, ok := pool.findBlock(blkHash); ok {
 			if b.time < filterLimit {
-				return false
+				return nil, nil
 			}
 		}
 	}
 }
 
-func (pool *TxPImpl) existTxInBlock(txHash []byte, blockHash []byte) bool {
+func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
+	t, _ := pool.getTxAndReceiptInChain(txHash, block)
+	return t != nil
+}
+
+func (pool *TxPImpl) getTxAndReceiptInBlock(txHash []byte, blockHash []byte) (*tx.Tx, *tx.TxReceipt) {
 	b, ok := pool.blockList.Load(string(blockHash))
 	if !ok {
-		return false
+		return nil, nil
 	}
-	return b.(*blockTx).existTx(txHash)
+	return b.(*blockTx).getTxAndReceipt(txHash)
 }
 
 func (pool *TxPImpl) clearBlock() {
@@ -479,4 +484,22 @@ func (pool *TxPImpl) doChainChangeByTimeout() {
 			}
 		}
 	}
+}
+
+// GetFromPending gets transaction from pending list.
+func (pool *TxPImpl) GetFromPending(hash []byte) (*tx.Tx, error) {
+	tx := pool.pendingTx.Get(hash)
+	if tx == nil {
+		return nil, ErrTxNotFound
+	}
+	return tx, nil
+}
+
+// GetFromChain gets transaction from longest chain.
+func (pool *TxPImpl) GetFromChain(hash []byte) (*tx.Tx, *tx.TxReceipt, error) {
+	t, tr := pool.getTxAndReceiptInChain(hash, pool.forkChain.NewHead.Block)
+	if t == nil {
+		return nil, nil, ErrTxNotFound
+	}
+	return t, tr, nil
 }

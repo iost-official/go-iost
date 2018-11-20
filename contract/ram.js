@@ -39,7 +39,7 @@ class RAMContract {
 
     _get(k) {
         var raw = storage.get(k);
-        if (raw == "") {
+        if (raw === null || raw === "") {
             return null;
         }
         return JSON.parse(raw);
@@ -87,10 +87,10 @@ class RAMContract {
     }
 
     _getLeftSpace() {
-        if (this._get("leftSpace") == null) {
-            return 0
+        if (this._get("leftSpace") === null) {
+            throw "no leftSpace key";
         }
-        return this._get("_leftSpace");
+        return this._get("leftSpace");
     }
     _changeLeftSpace(delta) {
         this._put("leftSpace", this._getLeftSpace() + delta);
@@ -107,30 +107,33 @@ class RAMContract {
         }
         var veryLarge = 100 * 64 * 1024 * 1024 * 1024;
         let data = [this._getTokenName(), this._getContractName(), veryLarge, {"decimal":0}];
-        BlockChain.callWithAuth("iost.token", "create", JSON.stringify(data));
+        BlockChain.callWithAuth("token.iost", "create", JSON.stringify(data));
         data = [this._getTokenName(), this._getContractName(), (initialTotal).toString()];
-        BlockChain.callWithAuth("iost.token", "issue", JSON.stringify(data));
+        BlockChain.callWithAuth("token.iost", "issue", JSON.stringify(data));
         this._put("lastUpdateBlockTime", this._getBlockTime());
         this._put("increaseInterval", increaseInterval);
         this._put("increaseAmount", increaseAmount);
+        this._put("leftSpace", initialTotal);
     }
 
     _price(action, amount) {
-        return amount * 1; // TODO not use log/exp, implement a price function
-        /*
-        const priceCoefficient = 1; // when RAM is empty, every KB worth `priceCoefficient` IOST
+        //return amount * 1; // TODO not use log/exp, implement a price function
+        const priceCoefficient = 1024; // when RAM is empty, every KiB worth `priceCoefficient` IOST
         const feeRate = 0.01;
         const leftSpace = this._getLeftSpace();
-        if (action == "buy") {
+        if (action === "buy") {
+            if (this._getBlockNumber() === 0) {
+                return priceCoefficient * amount;
+            }
             if (leftSpace <= amount) {
-                throw new Error("buy amount is too much")
+                throw new Error("buy amount is too much. left space is not enough " + leftSpace.toString() + " is less than " + amount.toString())
             }
             return Math.ceil((1 + feeRate) * priceCoefficient * 1024 * 1024 * 128 * Math.log1p(amount / (leftSpace - amount)))
-        } else if (action == "sell") {
+        } else if (action === "sell") {
             return Math.floor(priceCoefficient * 1024 * 1024 * 128 * Math.log1p(amount / leftSpace))
         }
         throw new Error("invalid action")
-        */
+
     }
 
     _checkIssue() {
@@ -139,42 +142,29 @@ class RAMContract {
         if (t < nextUpdateTime) {
             return
         }
-        const data = [this._getTokenName(), this._getContractName(), this._get("increaseAmount").toString()];
-        let ret = BlockChain.callWithAuth("iost.token", "issue", JSON.stringify(data));
-        if (ret != "[]") {
-            throw "issue err " + ret
-        }
+        const increaseAmount = this._get("increaseAmount");
+        const data = [this._getTokenName(), this._getContractName(), increaseAmount.toString()];
+        BlockChain.callWithAuth("token.iost", "issue", JSON.stringify(data));
         this._put("lastUpdateBlockTime", t);
+        this._changeLeftSpace(increaseAmount)
     }
 
     buy(payer, account, amount) {
         this._requireAuth(payer, transferPermission);
         this._checkIssue();
         const price = this._price("buy", amount);
-        let ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(["iost", payer, this._getContractName(), price.toString(), ""]));
-        if (ret !== "[]") {
-            throw "deposit err " + ret
-        }
+        BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", payer, this._getContractName(), price.toString(), ""]));
         const data = [this._getTokenName(), this._getContractName(), account, (amount).toString(), ""];
-        ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(data));
-        if (ret !== "[]") {
-            throw "transfer err " + ret
-        }
+        BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
         this._changeLeftSpace(-amount)
     }
 
     sell(account, receiver, amount) {
         this._requireAuth(account, transferPermission);
         const data = [this._getTokenName(), account, this._getContractName(), (amount).toString(), ""];
-        let ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(data));
-        if (ret != "[]") {
-            throw "transfer err " + ret
-        }
+        BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
         const price = this._price("sell", amount);
-        ret = BlockChain.callWithAuth("iost.token", "transfer", JSON.stringify(["iost", this._getContractName(), receiver, price.toString(), ""]));
-        if (ret != "[]") {
-            throw "withdraw err " + ret
-        }
+        BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", this._getContractName(), receiver, price.toString(), ""]));
         this._changeLeftSpace(amount)
     }
 }

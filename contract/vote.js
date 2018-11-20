@@ -19,8 +19,8 @@ class VoteContract {
     }
 
     _initVote() {
-        const voteId = this._call("iost.vote", "NewVote", [
-            "iost.vote_producer",
+        const voteId = this._call("vote.iost", "NewVote", [
+            "vote_producer.iost",
             "vote for producer",
             {
                 resultNumber: 100,
@@ -53,11 +53,11 @@ class VoteContract {
 
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
-      
-        this._call("iost.token", "transfer", ["iost", proID, "iost.vote_producer", producerRegisterFee, ""]);
+
+        this._call("token.iost", "transfer", ["iost", proID, "vote_producer.iost", producerRegisterFee, ""]);
 
         const voteId = this._getVoteId();
-        this._call("iost.vote", "AddOption", [
+        this._call("vote.iost", "AddOption", [
             voteId,
             proID,
             false
@@ -94,7 +94,7 @@ class VoteContract {
     }
 
     _call(contract, api, args) {
-        const ret = JSON.parse(BlockChain.callWithAuth(contract, api, JSON.stringify(args)));
+        const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
         if (ret && Array.isArray(ret) && ret.length == 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
@@ -149,10 +149,10 @@ class VoteContract {
             throw new Error("producer exists");
         }
 
-        this._call("iost.token", "transfer", ["iost", account, "iost.vote_producer", producerRegisterFee, ""]);
+        this._call("token.iost", "transfer", ["iost", account, "vote_producer.iost", producerRegisterFee, ""]);
 
         const voteId = this._getVoteId();
-        this._call("iost.vote", "AddOption", [
+        this._call("vote.iost", "AddOption", [
             voteId,
             account,
             false
@@ -194,7 +194,7 @@ class VoteContract {
         }
         const pro = this._mapGet("producerTable", account);
         const voteId = this._getVoteId();
-        const voteInfo = this._call("iost.vote", "GetOption", [
+        const voteInfo = this._call("vote.iost", "GetOption", [
             voteId,
             account
         ]);
@@ -239,7 +239,7 @@ class VoteContract {
             throw new Error("producer in pending list or in current list, can't unregist");
         }
         const voteId = this._getVoteId();
-        this._call("iost.vote", "RemoveOption", [
+        this._call("vote.iost", "RemoveOption", [
             voteId,
             account,
             true,
@@ -251,7 +251,7 @@ class VoteContract {
         this._mapDel("preProducerMap", account);
         this._mapDel("producerKeyToId", pro.pubkey, account);
 
-        this._call("iost.token", "transfer", ["iost", "iost.vote_producer", account, pro.registerFee, ""]);
+        this._call("token.iost", "transfer", ["iost", "vote_producer.iost", account, pro.registerFee, ""]);
         /*
         const ret = BlockChain.withdraw(account, pro.registerFee);
         if (ret != 0) {
@@ -268,7 +268,7 @@ class VoteContract {
         }
 
         const voteId = this._getVoteId();
-        this._call("iost.vote", "Vote", [
+        this._call("vote.iost", "Vote", [
             voteId,
             voter,
             producer,
@@ -280,7 +280,7 @@ class VoteContract {
     Unvote(voter, producer, amount) {
         this._requireAuth(voter, votePermission);
         const voteId = this._getVoteId();
-        this._call("iost.vote", "Unvote", [
+        this._call("vote.iost", "Unvote", [
             voteId,
             voter,
             producer,
@@ -290,7 +290,7 @@ class VoteContract {
 
     GetVote(voter) {
         const voteId = this._getVoteId();
-        return this._call("iost.vote", "GetVote", [
+        return this._call("vote.iost", "GetVote", [
             voteId,
             voter
         ]);
@@ -306,7 +306,7 @@ class VoteContract {
         }
 
         const voteId = this._getVoteId();
-        const voteRes = this._call("iost.vote", "GetResult", [voteId]);
+        const voteRes = this._call("vote.iost", "GetResult", [voteId]);
         const preList = [];    // list of producers whose vote > threshold
 
         const pendingProducerList = this._get("pendingProducerList");
