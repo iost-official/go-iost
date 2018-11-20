@@ -8,7 +8,7 @@ class IssueContract {
             DECIMAL_PLACES: 50,
             POW_PRECISION: 50,
             ROUNDING_MODE: BigNumber.ROUND_DOWN
-        })
+        });
     }
 
     init() {
@@ -155,7 +155,7 @@ class IssueContract {
         const currentTime = this._getBlockTime();
         const gap = Math.floor((currentTime - lastIssueTime) / 3);
         if (gap <= 0) {
-            return
+            return;
         }
 
         const foundationAcc = this._get("FoundationAccount");

@@ -31,7 +31,7 @@ class BonusContract {
     InitAdmin(adminID) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
-            throw new Error("init out of genesis block")
+            throw new Error("init out of genesis block");
         }
         this._put("adminID", adminID);
     }

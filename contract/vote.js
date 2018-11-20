@@ -36,7 +36,7 @@ class VoteContract {
     InitProducer(proID, proPubkey) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
-            throw new Error("init out of genesis block")
+            throw new Error("init out of genesis block");
         }
 
         let pendingProducerList = this._get("pendingProducerList");
@@ -194,11 +194,10 @@ class VoteContract {
         }
         const pro = this._mapGet("producerTable", account);
         const voteId = this._getVoteId();
-        const voteInfo = this._call("vote.iost", "GetOption", [
+        pro["voteInfo"] = this._call("vote.iost", "GetOption", [
             voteId,
             account
         ]);
-        pro["voteInfo"] = voteInfo;
         return pro;
     }
 
