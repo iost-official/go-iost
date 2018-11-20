@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package blockcache;
+
+message bcMessage{
+    bytes data  = 1;
+    bcMessageType type = 2;
+}
+
+enum bcMessageType {
+    LinkType = 0;
+    SetRootType = 1;
+}
+
+message BlockCacheRaw{
+    bytes blockBytes = 1;
+    WitnessList witnessList = 2;
+}
+
+message WitnessList{
+    repeated string activeWitnessList = 1;
+	repeated string pendingWitnessList = 2;
+	int64 pendingWitnessNumber = 3;
+	map<string, WitnessInfo> witnessInfo = 4;
+}
+
+message WitnessInfo {
+    string Loc = 1;
+    string URL = 2;
+    string NetID = 3;
+    bool Online = 4;
+    int64 Score = 5;
+    int64 Votes = 6;
+}

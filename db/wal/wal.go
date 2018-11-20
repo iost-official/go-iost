@@ -61,7 +61,7 @@ type WAL struct {
 func Create(dirpath string, metadata []byte) (*WAL, error) {
 	b, err := exists(dirpath)
 	if !b {
-		_, err := os.Create(dirpath)
+		err := os.MkdirAll(dirpath, 0777)
 		if err != nil {
 			ilog.Error("failed to create a WAL Directory! error: ", err)
 			return nil, err
@@ -85,6 +85,11 @@ func Create(dirpath string, metadata []byte) (*WAL, error) {
 		metadata: metadata,
 		st: streamFile,
 	}
+
+	if w.dirFile, err = OpenDir(w.dir); err != nil {
+		return w, err
+	}
+
 	w.encoder, err = newFileEncoder(f, 0)
 	if err != nil {
 		return nil, err
@@ -434,6 +439,27 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 	return metadata, ents, err
 }
 
+func (w *WAL) RemoveFiles(index uint64) error{
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	var fileIndex int
+	for i, file := range w.files {
+		_, lastIndex, err := parseWALName(file.Name())
+		if err != nil {
+			return err
+		}
+		if lastIndex > index{
+			if i == 0 {
+				return nil
+			}
+			fileIndex = i - 1
+			break
+		}
+	}
+	w.files = w.files[fileIndex:]
+	return nil
+}
+
 // cut closes current file written and creates a new one ready to append.
 // cut first creates a temp wal file and writes necessary headers into it.
 // Then cut atomically rename temp wal file to a wal file.
@@ -649,6 +675,26 @@ func (w *WAL) saveState(s *raftpb.HardState) error {
 	return w.encoder.encode(log)
 }
 */
+func (w *WAL) SaveSingle(ent Entry) (uint64, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	// TODO(xiangli): no more reference operator
+	if err := w.saveEntry(&ent); err != nil {
+		return 0, err
+	}
+
+	curOff, err := w.tail().Seek(0, io.SeekCurrent)
+	if err != nil {
+		return 0, err
+	}
+	if curOff < SegmentSizeBytes {
+		return w.lastEntryIndex,nil
+	}
+
+	return w.lastEntryIndex, w.cut()
+}
+
 func (w *WAL) Save(ents []Entry) (uint64, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -673,6 +719,13 @@ func (w *WAL) Save(ents []Entry) (uint64, error) {
 	}
 
 	return w.lastEntryIndex, w.cut()
+}
+func (w *WAL) HasDecoder() bool {
+	if  w.decoder != nil && len(w.decoder.r) != 0 {
+		return true
+	}
+	return false
+
 }
 /*
 func (w *WAL) SaveSnapshot(e walpb.Snapshot) error {
@@ -742,3 +795,9 @@ func closeAll(rcs ...io.ReadCloser) error {
 	return nil
 }
 
+func (w *WAL) CleanDir() error{
+	if w.dirFile != nil {
+		return os.RemoveAll(w.dirFile.Name())
+	}
+	return nil
+}

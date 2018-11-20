@@ -25,6 +25,9 @@ func TestNew(t *testing.T) {
 	if g := filepath.Base(w.tail().Name()); !strings.HasSuffix(g, ".wal.tmp") {
 		t.Errorf("tmp file not end with .wal.tmp, has name: %s", g)
 	}
+	if w.HasDecoder() {
+		t.Fatalf("new wal need recover!")
+	}
 	defer w.Close()
 
 	// file is preallocated to segment size; only read data written by wal
@@ -106,7 +109,7 @@ func TestSave(t *testing.T) {
 	w.Save(ents)
 	w.Close()
 	newW, err := Create(p, []byte("somedata"))
-	if len(newW.decoder.r) == 0 {
+	if !newW.HasDecoder() {
 		t.Fatal("Decoder has no reader!")
 	}
 	metad, entries, err := newW.ReadAll()
@@ -164,7 +167,7 @@ func TestSaveWithCut(t *testing.T) {
 	w.Save(ents)
 	w.Close()
 	newW, err := Create(p, []byte("somedata"))
-	if len(newW.decoder.r) == 0 {
+	if !newW.HasDecoder() {
 		t.Fatal("Decoder has no reader!")
 	}
 	metad, entries, err := newW.ReadAll()

@@ -134,7 +134,9 @@ func (b *Block) Encode() ([]byte, error) {
 		br.Receipts = append(br.Receipts, r.ToPb())
 	}
 
-	br.Sign = b.Sign.ToPb()
+	if b.Sign != nil {
+		br.Sign = b.Sign.ToPb()
+	}
 	brByte, err := br.Marshal()
 	if err != nil {
 		return nil, errors.New("fail to encode blockraw")

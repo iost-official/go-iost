@@ -332,6 +332,22 @@ func (p *PoB) scheduleLoop() {
 		}
 	}
 }
+func (p *PoB) recoverBlock(blk *block.Block, witnessList blockcache.WitnessList) error {
+	_, err := p.blockCache.Find(blk.HeadHash())
+	if err == nil {
+		return errDuplicate
+	}
+	err = verifyBasics(blk.Head, blk.Sign)
+	if err != nil {
+		return err
+	}
+	parent, err := p.blockCache.Find(blk.Head.ParentHash)
+	p.blockCache.AddWithWit(blk, witnessList)
+	if err == nil && parent.Type == blockcache.Linked {
+		return p.addExistingBlock(blk, parent.Block, true)
+	}
+	return errSingle
+}
 
 func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	_, err := p.blockCache.Find(blk.HeadHash())

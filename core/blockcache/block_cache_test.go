@@ -75,7 +75,9 @@ func TestBlockCache(t *testing.T) {
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
+			CleanBlockCacheWAL()
 			bc, _ := NewBlockCache(global)
+			defer bc.CleanDir()
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			_ = bc.Add(b1)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
@@ -84,7 +86,9 @@ func TestBlockCache(t *testing.T) {
 		})
 
 		Convey("Flush", func() {
+			CleanBlockCacheWAL()
 			bc, _ := NewBlockCache(global)
+			defer bc.CleanDir()
 			bc.Add(b1)
 			//bc.Draw()
 			bc.Add(b2)
@@ -111,7 +115,9 @@ func TestBlockCache(t *testing.T) {
 		})
 
 		Convey("GetBlockbyNumber", func() {
+			CleanBlockCacheWAL()
 			bc, _ := NewBlockCache(global)
+			defer bc.CleanDir()
 			b1node := bc.Add(b1)
 			bc.Link(b1node)
 			//bc.Draw()
@@ -212,6 +218,7 @@ func TestVote(t *testing.T) {
 	})
 	Convey("test update", t, func() {
 		bc, _ := NewBlockCache(global)
+		defer bc.CleanDir()
 		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 		node1 := NewBCN(bc.linkedRoot, b1)
 		node2 := NewBCN(node1, b2)
@@ -226,6 +233,7 @@ func TestVote(t *testing.T) {
 	})
 	Convey("test info", t, func() {
 		bc, _ := NewBlockCache(global)
+		defer bc.CleanDir()
 		for _, v := range bc.linkedRoot.NetID() {
 			So("33", ShouldEqual, v)
 		}
