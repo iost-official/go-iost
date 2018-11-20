@@ -162,10 +162,8 @@ func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
 
 func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 	var blk *block.Block
-	node, err := p.blockCache.Find(rh.Hash)
-	if err == nil {
-		blk = node.Block
-	} else {
+	blk, err := p.blockCache.GetBlockByHash(rh.Hash)
+	if err != nil {
 		blk, err = p.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
 		if err != nil {
 			ilog.Errorf("handle block query failed to get block.")

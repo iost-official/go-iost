@@ -435,10 +435,8 @@ func (sy *SyncImpl) retryDownloadLoop() {
 
 func (sy *SyncImpl) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 	var blk *block.Block
-	node, err := sy.blockCache.Find(rh.Hash)
-	if err == nil {
-		blk = node.Block
-	} else {
+	blk, err := sy.blockCache.GetBlockByHash(rh.Hash)
+	if err != nil {
 		blk, err = sy.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
 		if err != nil {
 			ilog.Errorf("handle block query failed to get block.")
