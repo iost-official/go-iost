@@ -138,8 +138,8 @@ func genconfig() {
 		DataPath:   "/data/p2p/",
 	}
 	RPC := &common.RPCConfig{
-		JSONPort: 30001,
-		GRPCPort: 30002,
+		GatewayAddr: "0.0.0.0:30001",
+		GRPCAddr:    "0.0.0.0:30002",
 	}
 	Log := &common.LogConfig{
 		FileLog: &common.FileLogConfig{
