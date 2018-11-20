@@ -68,9 +68,13 @@ func toTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
 		})
 	}
 	for _, a := range t.AmountLimit {
+		fixed, err := common.UnmarshalFixed(a.Val)
+		if err != nil {
+			continue
+		}
 		ret.AmountLimit = append(ret.AmountLimit, &rpcpb.AmountLimit{
 			Token: a.Token,
-			Value: a.Val,
+			Value: fixed.ToFloat(),
 		})
 	}
 	for _, s := range t.Signs {

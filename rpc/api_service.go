@@ -174,7 +174,7 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	ret := toPbAccount(acc)
 
 	// pack balance and ram information
-	balance := dbVisitor.TokenBalanceFixed("iost", req.GetName()).ToString()
+	balance := dbVisitor.TokenBalanceFixed("iost", req.GetName()).ToFloat()
 	ret.Balance = balance
 	ret.RamInfo = &rpcpb.Account_RAMInfo{
 		Available: dbVisitor.TokenBalance("ram", req.GetName()),

@@ -125,7 +125,7 @@ message AmountLimit {
     // token name
     string token = 1;
     // limit value
-    string value = 2;
+    double value = 2;
 }
 
 // The message defines transaction action struct.
@@ -380,7 +380,7 @@ message Account {
     // account name
     string name = 1;
     // account balance
-    string balance = 2;
+    double balance = 2;
     // account create timestamp
     int64 create_time = 3;
 

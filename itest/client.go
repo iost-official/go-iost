@@ -3,6 +3,7 @@ package itest
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -110,7 +111,7 @@ func (c *Client) GetAccount(name string) (*Account, error) {
 	// TODO: Get account permission by resp
 	account := &Account{
 		ID:      name,
-		balance: resp.GetBalance(),
+		balance: strconv.FormatFloat(resp.GetBalance(), 'f', -1, 64),
 	}
 
 	return account, nil

@@ -556,7 +556,8 @@
           "title": "account name"
         },
         "balance": {
-          "type": "string",
+          "type": "number",
+          "format": "double",
           "title": "account balance"
         },
         "create_time": {
@@ -622,7 +623,8 @@
           "title": "token name"
         },
         "value": {
-          "type": "string",
+          "type": "number",
+          "format": "double",
           "title": "limit value"
         }
       },

@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -46,9 +47,13 @@ func toPbTxReceipt(tr *tx.TxReceipt) *rpcpb.TxReceipt {
 }
 
 func toPbAmountLimit(a *contract.Amount) *rpcpb.AmountLimit {
+	fixed, err := common.UnmarshalFixed(a.Val)
+	if err != nil {
+		return nil
+	}
 	return &rpcpb.AmountLimit{
 		Token: a.Token,
-		Value: a.Val,
+		Value: fixed.ToFloat(),
 	}
 }
 
@@ -180,7 +185,7 @@ func toCoreTx(t *rpcpb.TransactionRequest) *tx.Tx {
 	for _, a := range t.AmountLimit {
 		ret.AmountLimit = append(ret.AmountLimit, &contract.Amount{
 			Token: a.Token,
-			Val:   a.Value,
+			Val:   strconv.FormatFloat(a.Value, 'f', -1, 64),
 		})
 	}
 	for _, s := range t.Signatures {
