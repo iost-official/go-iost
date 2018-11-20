@@ -29,7 +29,7 @@ function isExport(stat) {
 
 function getExportName(stat) {
 	if (stat.right.type != "Identifier") {
-		throw "module.exports should be assigned to an identifier";
+		throw new Error("module.exports should be assigned to an identifier");
 	}
 	return stat.right.name;
 }
@@ -134,7 +134,7 @@ function processContract(source) {
 	abi["lang"] = lang;
 	abi["version"] = version;
 	abi["abi"] = abiArr;
-	var abiStr = JSON.stringify(abi, null, 4); 
+	var abiStr = JSON.stringify(abi, null, 4);
 
 	return [newSource, abiStr]
 }
@@ -154,12 +154,12 @@ fs.readFile(file, 'utf8', function(err, contents) {
     	    return console.log(err);
     	}
     	console.log("The new contract file was saved as " + file + ".after");
-	}); 
+	});
 
 	fs.writeFile(file + ".abi", abi, function(err) {
     	if(err) {
     	    return console.log(err);
     	}
     	console.log("The new abi file was saved as " + file + ".abi");
-	}); 
+	});
 });

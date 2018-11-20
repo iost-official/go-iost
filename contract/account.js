@@ -27,13 +27,13 @@ class Account {
 
     _ra(id) {
         if (!BlockChain.requireAuth(id, "owner")) {
-            throw "require auth failed";
+            throw new Error("require auth failed");
         }
     }
 
     SignUp(id, owner, active) {
         if (this._hasAccount(id)) {
-            throw "id existed > " + id
+            throw new Error("id existed > " + id);
         }
         let account = {};
         account.id = id;
@@ -64,7 +64,7 @@ class Account {
         this._ra(id);
         let acc = this._loadAccount(id);
         if (acc.permissions[perm] !== undefined) {
-            throw "permission already exist"
+            throw new Error("permission already exist");
         }
         acc.permissions[perm] = {
             name: perm,
@@ -110,7 +110,7 @@ class Account {
         let acc = this._loadAccount(id);
         const index = Account._find(acc.permissions[perm].items, un);
         if (index < 0) {
-            throw "item not found"
+            throw new Error("item not found");
         } else {
             acc.permissions[perm].items.splice(index, 1)
         }
@@ -120,7 +120,7 @@ class Account {
         this._ra(id);
         let acc = this._loadAccount(id);
         if (acc.groups[grp] !== undefined) {
-            throw "group already exist"
+            throw new Error("group already exist");
         }
         acc.groups[grp] = {
             name : grp,
@@ -165,7 +165,7 @@ class Account {
         let acc = this._loadAccount(id);
         const index = Account._find(acc.permissions[grp].items, un);
         if (index < 0) {
-            throw "item not found"
+            throw new Error("item not found");
         } else {
             acc.permissions[grp].items.splice(index, 1)
         }
