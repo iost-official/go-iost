@@ -36,19 +36,19 @@ func (h *Info) BlockInfo() (info database.SerializedJSON, cost contract.Cost) {
 		panic(err)
 	}
 
-	return database.SerializedJSON(bij), BlockInfoCost
+	return database.SerializedJSON(bij), Costs["ContextCost"]
 }
 
 // BlockTime get block time, in int64
 func (h *Info) BlockTime() (ntime int64, cost contract.Cost) {
 	ntime = h.h.ctx.Value("time").(int64)
-	return ntime, ContextInfoCost
+	return ntime, Costs["ContextCost"]
 }
 
 // ContractName get block time, in int64
 func (h *Info) ContractName() (name string, cost contract.Cost) {
 	name = h.h.ctx.Value("contract_name").(string)
-	return name, ContextInfoCost
+	return name, Costs["ContextCost"]
 }
 
 // ContextInfo get context info
@@ -63,7 +63,7 @@ func (h *Info) ContextInfo() (info database.SerializedJSON, cost contract.Cost) 
 		panic(err)
 	}
 
-	return database.SerializedJSON(cij), ContextInfoCost
+	return database.SerializedJSON(cij), Costs["ContextCost"]
 }
 
 // TxInfo get tx info
@@ -83,7 +83,7 @@ func (h *Info) TxInfo() (info database.SerializedJSON, cost contract.Cost) {
 		panic(err)
 	}
 
-	return database.SerializedJSON(tij), TxInfoCost
+	return database.SerializedJSON(tij), Costs["ContextCost"]
 }
 
 // ABIConfig set this abi config
