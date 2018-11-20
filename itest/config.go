@@ -35,7 +35,7 @@ type Config struct {
 
 // LoadConfig will load the itest config from file
 func LoadConfig(file string) (*Config, error) {
-	data := []byte{}
+	var data []byte
 	if file == "" {
 		data = []byte(DefaultITestConfig)
 	} else {

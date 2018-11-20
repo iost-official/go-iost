@@ -37,7 +37,7 @@ type KeyJSON struct {
 
 // LoadKeys will load keys from file
 func LoadKeys(file string) ([]*Key, error) {
-	data := []byte{}
+	var data []byte
 	if file == "" {
 		data = []byte(DefaultKeys)
 	} else {
