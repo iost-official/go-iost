@@ -20,8 +20,8 @@ p2p:
   blackIP:
   adminPort: 30005
 rpc:
-    gatewayaddr: 0.0.0.0:30001
-    grpcaddr: 0.0.0.0:30002
+  gatewayaddr: 0.0.0.0:30001
+  grpcaddr: 0.0.0.0:30002
 log:
   filelog:
     path: logs/
