@@ -19,6 +19,7 @@ func (c *Cost) AddAssign(a Cost) {
 	c.CPU += a.CPU
 }
 
+// Multiply a cost to int64, return new cost
 func (c Cost) Multiply(i int64) Cost {
 	var d Cost
 	d.Data = i * c.Data
