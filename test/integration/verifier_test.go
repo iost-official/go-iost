@@ -41,7 +41,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 721)
+			So(r.GasUsage, ShouldEqual, 2985)
 		})
 
 		Convey("test of token memo", func() {
@@ -78,7 +78,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractEJuvctjsCVirp9g22As7KbrM71783oq4wYE1Fcy8AXns")
-		So(r.GasUsage, ShouldEqual, 1548)
+		So(r.GasUsage, ShouldEqual, 1704)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)

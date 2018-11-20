@@ -154,7 +154,7 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, 100000, 100, s.Head.Time+10000000, 0)
+	}}, nil, 1000000, 100, s.Head.Time+10000000, 0)
 
 	trx.Time = s.Head.Time
 

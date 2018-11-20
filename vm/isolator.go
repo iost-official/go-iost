@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"errors"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -48,6 +49,7 @@ func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 	i.blockBaseCtx = host.NewContext(nil)
 	i.blockBaseCtx = loadBlkInfo(i.blockBaseCtx, bh)
 	i.h = host.NewHost(i.blockBaseCtx, db, staticMonitor, logger)
+	i.h.ReadSettings()
 	return nil
 }
 
