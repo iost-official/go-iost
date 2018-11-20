@@ -26,8 +26,7 @@ type IServer struct {
 	p2p       *p2p.NetService
 	sync      *synchronizer.SyncImpl
 	txp       *txpool.TxPImpl
-	grpc      *rpc.GRPCServer
-	http      *rpc.JSONServer
+	rpcServer *rpc.Server
 	consensus consensus.Consensus
 	debug     *DebugServer
 }
@@ -71,9 +70,8 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 
-	grpcServer := rpc.NewRPCServer(txp, blkCache, bv, p2pService)
+	rpcServer := rpc.New(txp, blkCache, bv, p2pService)
 
-	httpServer := rpc.NewJSONServer(bv)
 	consensus := consensus.New(consensus.Pob, acc, bv, blkCache, txp, p2pService)
 
 	debug := NewDebugServer(conf.Debug, p2pService, blkCache, bv.BlockChain())
@@ -83,8 +81,7 @@ func New(conf *common.Config) *IServer {
 		p2p:       p2pService,
 		sync:      sync,
 		txp:       txp,
-		grpc:      grpcServer,
-		http:      httpServer,
+		rpcServer: rpcServer,
 		consensus: consensus,
 		debug:     debug,
 	}
@@ -96,8 +93,7 @@ func (s *IServer) Start() error {
 		s.p2p,
 		s.sync,
 		s.txp,
-		s.grpc,
-		s.http,
+		s.rpcServer,
 		s.consensus,
 	}
 	for _, s := range Services {
@@ -122,8 +118,7 @@ func (s *IServer) Stop() {
 	}
 	Services := []Service{
 		s.consensus,
-		s.http,
-		s.grpc,
+		s.rpcServer,
 		s.txp,
 		s.sync,
 		s.p2p,

@@ -70,8 +70,8 @@ type P2PConfig struct {
 
 //RPCConfig is the config for RPC Server.
 type RPCConfig struct {
-	JSONPort int
-	GRPCPort int
+	GatewayAddr string
+	GRPCAddr    string
 }
 
 // FileLogConfig is the config for filewriter of ilog.
