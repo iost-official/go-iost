@@ -6,29 +6,17 @@ var lang = "javascript";
 var version = "1.0.0";
 
 function isClassDecl(stat) {
-	if (!stat || stat === null) {
-		return false;
-	}
-	if (stat.type === "ClassDeclaration") {
-		return true;
-	}
-	return false;
+	return !!(stat && stat.type === "ClassDeclaration");
 }
 
 function isExport(stat) {
-	if (!stat || stat === null) {
-		return false;
-	}
-	if (stat.type === "AssignmentExpression" && stat.left.type === "MemberExpression" &&
-			stat.left.object.type === "Identifier" && stat.left.object.name === "module" &&
-			stat.left.property.type === "Identifier" && stat.left.property.name === "exports") {
-		return true;
-	}
-	return false;
+	return !!(stat && stat.type === "AssignmentExpression" && stat.left && stat.left.type === "MemberExpression"
+    && stat.left.object && stat.left.object.type === "Identifier" && stat.left.object.name === "module"
+    && stat.left.property && stat.left.property.type === "Identifier" && stat.left.property.name === "exports");
 }
 
 function getExportName(stat) {
-	if (stat.right.type != "Identifier") {
+	if (stat.right.type !== "Identifier") {
 		throw new Error("module.exports should be assigned to an identifier");
 	}
 	return stat.right.name;
@@ -39,7 +27,7 @@ function isPublicMethod(def) {
 }
 
 function genAbi(def) {
-	var abi = {
+	return {
 		"name": def.key.name,
 		"args": new Array(def.value.params.length).fill("string"),
 		"amountLimit": [{
@@ -47,7 +35,6 @@ function genAbi(def) {
             "val": "0"
         }]
 	};
-	return abi;
 }
 
 function genAbiArr(stat) {
@@ -60,8 +47,8 @@ function genAbiArr(stat) {
 	for (var i in stat.body.body) {
 		var def = stat.body.body[i];
 		if (def.type === "MethodDefinition" && isPublicMethod(def)) {
-			if (def.key.name == "constructor") {
-			} else if (def.key.name == "init") {
+			if (def.key.name === "constructor") {
+			} else if (def.key.name === "init") {
 				initFound = true;
 			} else {
 				abiArr.push(genAbi(def));
@@ -87,8 +74,7 @@ function checkOperator(tokens) {
 }
 
 function processContract(source) {
-	var newSource, abi;
-    var ast = esprima.parseModule(source, {
+  var ast = esprima.parseModule(source, {
 		range: true,
 		loc: true,
 		tokens: true
@@ -105,7 +91,7 @@ function processContract(source) {
 	var validRange = [];
 	var className;
 	for (var i in ast.body) {
-		var stat = ast.body[i];
+		let stat = ast.body[i];
 
 		if (isClassDecl(stat)) {
 			validRange.push(stat.range);
@@ -117,16 +103,16 @@ function processContract(source) {
 	}
 
 	for (var i in ast.body) {
-		var stat = ast.body[i];
+		let stat = ast.body[i];
 
-		if (isClassDecl(stat) && stat.id.type == "Identifier" && stat.id.name == className) {
+		if (isClassDecl(stat) && stat.id.type === "Identifier" && stat.id.name === className) {
 			abiArr = genAbiArr(stat);
 		}
 	}
 
-	newSource = 'use strict;\n';
+	var newSource = 'use strict;\n';
 	for (var i in validRange) {
-		var r = validRange[i];
+		let r = validRange[i];
     	newSource += source.slice(r[0], r[1]) + "\n";
 	}
 
@@ -143,10 +129,10 @@ module.exports = processContract;
 
 var fs = require('fs');
 
-var file = process.argv[2]
+var file = process.argv[2];
 fs.readFile(file, 'utf8', function(err, contents) {
 	console.log('before calling process, len = ' + contents.length);
-	var [newSource, abi] = processContract(contents)
+	var [newSource, abi] = processContract(contents);
 	console.log('after calling process, newSource len = ' + newSource.length + ", abi len = " + abi.length);
 
 	fs.writeFile(file + ".after", newSource, function(err) {
