@@ -79,6 +79,7 @@ func TestSynchronizer(t *testing.T) {
 
 		// vi := database.NewVisitor(0, baseVariable.StateDB())
 
+		blockcache.CleanBlockCacheWAL()
 		blockCache, err := blockcache.NewBlockCache(baseVariable)
 		So(err, ShouldBeNil)
 		mockController := gomock.NewController(t)
