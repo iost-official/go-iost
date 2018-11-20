@@ -11,7 +11,7 @@ var (
 )
 
 func metricsMiddleware(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	ilog.Warnf("receive rpc request: %s", info.FullMethod)
+	ilog.Debugf("receive rpc request: %s", info.FullMethod)
 	requestCounter.Add(1, map[string]string{"method": info.FullMethod})
 	return handler(srv, ss)
 }
